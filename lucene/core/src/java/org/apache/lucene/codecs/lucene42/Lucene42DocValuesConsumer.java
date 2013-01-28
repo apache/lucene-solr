@@ -202,7 +202,4 @@ class Lucene42DocValuesConsumer extends DocValuesConsumer {
     fst.save(data);
     meta.writeVInt((int)ord);
   }
-  
-  // nocommit: can/should we make override merge + make it smarter to pull the values 
-  // directly from disk for fields that arent already loaded up in ram?
 }

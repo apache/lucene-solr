@@ -55,7 +55,7 @@ public final class PagedBytes {
     private final int blockMask;
     private final int blockSize;
 
-    public Reader(PagedBytes pagedBytes) {
+    private Reader(PagedBytes pagedBytes) {
       blocks = new byte[pagedBytes.blocks.size()][];
       for(int i=0;i<blocks.length;i++) {
         blocks[i] = pagedBytes.blocks.get(i);
@@ -78,7 +78,7 @@ public final class PagedBytes {
      * </p>
      * @lucene.internal 
      **/
-    public BytesRef fillSlice(BytesRef b, long start, int length) {
+    public void fillSlice(BytesRef b, long start, int length) {
       assert length >= 0: "length=" + length;
       assert length <= blockSize+1;
       final int index = (int) (start >> blockBits);
@@ -95,7 +95,6 @@ public final class PagedBytes {
         System.arraycopy(blocks[index], offset, b.bytes, 0, blockSize-offset);
         System.arraycopy(blocks[1+index], 0, b.bytes, blockSize-offset, length-(blockSize-offset));
       }
-      return b;
     }
     
     /**
@@ -105,12 +104,10 @@ public final class PagedBytes {
      * borders.
      * </p>
      * 
-     * @return the given {@link BytesRef}
-     * 
      * @lucene.internal
      **/
     // nocommit: move this shit and any other vint bogusness to fieldcacheimpl!
-    public BytesRef fill(BytesRef b, long start) {
+    public void fill(BytesRef b, long start) {
       final int index = (int) (start >> blockBits);
       final int offset = (int) (start & blockMask);
       final byte[] block = b.bytes = blocks[index];
@@ -123,7 +120,6 @@ public final class PagedBytes {
         b.offset = offset+2;
         assert b.length > 0;
       }
-      return b;
     }
   }
 
@@ -208,7 +204,7 @@ public final class PagedBytes {
     blockEnd.add(upto); 
     frozen = true;
     currentBlock = null;
-    return new Reader(this);
+    return new PagedBytes.Reader(this);
   }
 
   public long getPointer() {

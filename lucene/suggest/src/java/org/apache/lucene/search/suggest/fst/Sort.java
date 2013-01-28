@@ -155,7 +155,8 @@ public final class Sort {
   private final BufferSize ramBufferSize;
   private final File tempDirectory;
   
-  private final BytesRefArray buffer = new BytesRefArray();
+  private final Counter bufferBytesUsed = Counter.newCounter();
+  private final BytesRefArray buffer = new BytesRefArray(bufferBytesUsed);
   private SortInfo sortInfo;
   private int maxTempFiles;
   private final Comparator<BytesRef> comparator;
@@ -396,7 +397,7 @@ public final class Sort {
       buffer.append(scratch);
       // Account for the created objects.
       // (buffer slots do not account to buffer size.) 
-      if (ramBufferSize.bytes < buffer.bytesUsed()) {
+      if (ramBufferSize.bytes < bufferBytesUsed.get()) {
         break;
       }
     }

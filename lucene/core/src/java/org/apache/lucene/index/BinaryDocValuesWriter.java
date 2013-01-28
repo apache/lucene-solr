@@ -37,11 +37,9 @@ class BinaryDocValuesWriter extends DocValuesWriter {
   private int addedValues = 0;
   private final BytesRef emptyBytesRef = new BytesRef();
 
-  // nocommit this needs to update bytesUsed?
-
   public BinaryDocValuesWriter(FieldInfo fieldInfo, Counter iwBytesUsed) {
     this.fieldInfo = fieldInfo;
-    this.bytesRefArray = new BytesRefArray(iwBytesUsed); // nocommit: test that this thing really accounts correctly
+    this.bytesRefArray = new BytesRefArray(iwBytesUsed);
   }
 
   public void addValue(int docID, BytesRef value) {

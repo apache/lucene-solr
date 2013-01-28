@@ -39,13 +39,6 @@ public final class BytesRefArray {
   private final Counter bytesUsed;
   
   /**
-   * Creates a new {@link BytesRefArray}
-   */
-  public BytesRefArray() {
-    this(Counter.newCounter(false));
-  }  
-  
-  /**
    * Creates a new {@link BytesRefArray} with a counter to track allocated bytes
    */
   public BytesRefArray(Counter bytesUsed) {
@@ -110,17 +103,6 @@ public final class BytesRefArray {
     throw new IndexOutOfBoundsException("index " + ord
         + " must be less than the size: " + lastElement);
     
-  }
-  
-  /**
-   * Returns the number internally used bytes to hold the appended bytes in
-   * memory
-   * 
-   * @return the number internally used bytes to hold the appended bytes in
-   *         memory
-   */
-  public long bytesUsed() {
-    return bytesUsed.get();
   }
   
   private int[] sort(final Comparator<BytesRef> comp) {

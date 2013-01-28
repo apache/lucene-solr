@@ -280,7 +280,7 @@ public final class ByteBlockPool {
 
   // Fill in a BytesRef from term's length & bytes encoded in
   // byte block
-  public final BytesRef setBytesRef(BytesRef term, int textStart) {
+  public final void setBytesRef(BytesRef term, int textStart) {
     final byte[] bytes = term.bytes = buffers[textStart >> BYTE_BLOCK_SHIFT];
     int pos = textStart & BYTE_BLOCK_MASK;
     if ((bytes[pos] & 0x80) == 0) {
@@ -293,7 +293,6 @@ public final class ByteBlockPool {
       term.offset = pos+2;
     }
     assert term.length >= 0;
-    return term;
   }
   
   /**
@@ -322,10 +321,10 @@ public final class ByteBlockPool {
   
   /**
    * Copies bytes from the pool starting at the given offset with the given  
-   * length into the given {@link BytesRef} at offset <tt>0</tt> and returns it.
+   * length into the given {@link BytesRef} at offset <tt>0</tt>.
    * <p>Note: this method allows to copy across block boundaries.</p>
    */
-  public final BytesRef copyFrom(final BytesRef bytes, final int offset, final int length) {
+  public final void copyFrom(final BytesRef bytes, final int offset, final int length) {
     bytes.offset = 0;
     bytes.grow(length);
     bytes.length = length;
@@ -349,7 +348,6 @@ public final class ByteBlockPool {
         overflow = overflow - BYTE_BLOCK_SIZE;
       }
     } while (true);
-    return bytes;
   }
 }
 

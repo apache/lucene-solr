@@ -118,7 +118,8 @@ public final class BytesRefHash {
   public BytesRef get(int ord, BytesRef ref) {
     assert bytesStart != null : "bytesStart is null - not initialized";
     assert ord < bytesStart.length: "ord exceeds byteStart len: " + bytesStart.length;
-    return pool.setBytesRef(ref, bytesStart[ord]);
+    pool.setBytesRef(ref, bytesStart[ord]);
+    return ref;
   }
 
   /**
@@ -171,8 +172,9 @@ public final class BytesRefHash {
       protected int compare(int i, int j) {
         final int ord1 = compact[i], ord2 = compact[j];
         assert bytesStart.length > ord1 && bytesStart.length > ord2;
-        return comp.compare(pool.setBytesRef(scratch1, bytesStart[ord1]),
-          pool.setBytesRef(scratch2, bytesStart[ord2]));
+        pool.setBytesRef(scratch1, bytesStart[ord1]);
+        pool.setBytesRef(scratch2, bytesStart[ord2]);
+        return comp.compare(scratch1, scratch2);
       }
 
       @Override
@@ -186,8 +188,8 @@ public final class BytesRefHash {
       protected int comparePivot(int j) {
         final int ord = compact[j];
         assert bytesStart.length > ord;
-        return comp.compare(pivot,
-          pool.setBytesRef(scratch2, bytesStart[ord]));
+        pool.setBytesRef(scratch2, bytesStart[ord]);
+        return comp.compare(pivot, scratch2);
       }
       
       private final BytesRef pivot = new BytesRef(),
@@ -197,7 +199,8 @@ public final class BytesRefHash {
   }
 
   private boolean equals(int ord, BytesRef b) {
-    return pool.setBytesRef(scratch1, bytesStart[ord]).bytesEquals(b);
+    pool.setBytesRef(scratch1, bytesStart[ord]);
+    return scratch1.bytesEquals(b);
   }
 
   private boolean shrink(int targetSize) {

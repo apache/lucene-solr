@@ -22,6 +22,7 @@ import java.util.Comparator;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.BytesRefIterator;
 import org.apache.lucene.util.BytesRefArray;
+import org.apache.lucene.util.Counter;
 
 /**
  * An {@link BytesRefSorter} that keeps all the entries in memory.
@@ -29,7 +30,7 @@ import org.apache.lucene.util.BytesRefArray;
  * @lucene.internal
  */
 public final class InMemorySorter implements BytesRefSorter {
-  private final BytesRefArray buffer = new BytesRefArray();
+  private final BytesRefArray buffer = new BytesRefArray(Counter.newCounter());
   private boolean closed = false;
   private final Comparator<BytesRef> comparator;
 

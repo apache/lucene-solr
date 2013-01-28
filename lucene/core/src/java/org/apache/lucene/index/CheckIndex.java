@@ -1293,7 +1293,6 @@ public class CheckIndex {
   }
   
   private static void checkBinaryDocValues(String fieldName, AtomicReader reader, BinaryDocValues dv) {
-    // nocommit what else to check ...
     BytesRef scratch = new BytesRef();
     for (int i = 0; i < reader.maxDoc(); i++) {
       dv.get(i, scratch);
@@ -1360,7 +1359,6 @@ public class CheckIndex {
   }
   
   private static void checkNumericDocValues(String fieldName, AtomicReader reader, NumericDocValues ndv) {
-    // nocommit what else to check!
     for (int i = 0; i < reader.maxDoc(); i++) {
       ndv.get(i);
     }

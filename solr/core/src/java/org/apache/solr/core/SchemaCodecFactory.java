@@ -55,7 +55,7 @@ public class SchemaCodecFactory extends CodecFactory implements SchemaAware {
         }
         return super.getPostingsFormatForField(field);
       }
-      // nocommit: dv too
+      // TODO: when dv support is added to solr, add it here too
     };
   }
 

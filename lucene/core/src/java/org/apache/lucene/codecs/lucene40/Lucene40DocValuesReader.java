@@ -36,6 +36,7 @@ import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.IndexInput;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.IOUtils;
+import org.apache.lucene.util.PagedBytes;
 import org.apache.lucene.util.packed.PackedInts;
 
 /**
@@ -308,9 +309,9 @@ final class Lucene40DocValuesReader extends DocValuesProducer {
                                    Lucene40DocValuesFormat.BYTES_FIXED_STRAIGHT_VERSION_START, 
                                    Lucene40DocValuesFormat.BYTES_FIXED_STRAIGHT_VERSION_CURRENT);
       final int fixedLength = input.readInt();
-      // nocommit? can the current impl even handle > 2G?
-      final byte bytes[] = new byte[state.segmentInfo.getDocCount() * fixedLength];
-      input.readBytes(bytes, 0, bytes.length);
+      PagedBytes bytes = new PagedBytes(16);
+      bytes.copy(input, fixedLength * (long)state.segmentInfo.getDocCount());
+      final PagedBytes.Reader bytesReader = bytes.freeze(true);
       if (input.getFilePointer() != input.length()) {
         throw new CorruptIndexException("did not read all bytes from file \"" + fileName + "\": read " + input.getFilePointer() + " vs size " + input.length() + " (resource: " + input + ")");
       }
@@ -318,9 +319,7 @@ final class Lucene40DocValuesReader extends DocValuesProducer {
       return new BinaryDocValues() {
         @Override
         public void get(int docID, BytesRef result) {
-          result.bytes = bytes;
-          result.offset = docID * fixedLength;
-          result.length = fixedLength;
+          bytesReader.fillSlice(result, fixedLength * (long)docID, fixedLength);
         }
       };
     } finally {
@@ -347,10 +346,10 @@ final class Lucene40DocValuesReader extends DocValuesProducer {
       CodecUtil.checkHeader(index, Lucene40DocValuesFormat.BYTES_VAR_STRAIGHT_CODEC_NAME_IDX, 
                                    Lucene40DocValuesFormat.BYTES_VAR_STRAIGHT_VERSION_START, 
                                    Lucene40DocValuesFormat.BYTES_VAR_STRAIGHT_VERSION_CURRENT);
-      // nocommit? can the current impl even handle > 2G?
       long totalBytes = index.readVLong();
-      final byte bytes[] = new byte[(int)totalBytes];
-      data.readBytes(bytes, 0, bytes.length);
+      PagedBytes bytes = new PagedBytes(16);
+      bytes.copy(data, totalBytes);
+      final PagedBytes.Reader bytesReader = bytes.freeze(true);
       final PackedInts.Reader reader = PackedInts.getReader(index);
       if (data.getFilePointer() != data.length()) {
         throw new CorruptIndexException("did not read all bytes from file \"" + dataName + "\": read " + data.getFilePointer() + " vs size " + data.length() + " (resource: " + data + ")");
@@ -364,9 +363,7 @@ final class Lucene40DocValuesReader extends DocValuesProducer {
         public void get(int docID, BytesRef result) {
           long startAddress = reader.get(docID);
           long endAddress = reader.get(docID+1);
-          result.bytes = bytes;
-          result.offset = (int)startAddress;
-          result.length = (int)(endAddress - startAddress);
+          bytesReader.fillSlice(result, startAddress, (int)(endAddress - startAddress));
         }
       };
     } finally {
@@ -396,9 +393,9 @@ final class Lucene40DocValuesReader extends DocValuesProducer {
       
       final int fixedLength = data.readInt();
       final int valueCount = index.readInt();
-      // nocommit? can the current impl even handle > 2G?
-      final byte bytes[] = new byte[fixedLength * valueCount];
-      data.readBytes(bytes, 0, bytes.length);
+      PagedBytes bytes = new PagedBytes(16);
+      bytes.copy(data, fixedLength * (long) valueCount);
+      final PagedBytes.Reader bytesReader = bytes.freeze(true);
       final PackedInts.Reader reader = PackedInts.getReader(index);
       if (data.getFilePointer() != data.length()) {
         throw new CorruptIndexException("did not read all bytes from file \"" + dataName + "\": read " + data.getFilePointer() + " vs size " + data.length() + " (resource: " + data + ")");
@@ -410,10 +407,8 @@ final class Lucene40DocValuesReader extends DocValuesProducer {
       return new BinaryDocValues() {
         @Override
         public void get(int docID, BytesRef result) {
-          int ord = (int)reader.get(docID);
-          result.bytes = bytes;
-          result.offset = ord * fixedLength;
-          result.length = fixedLength;
+          final long offset = fixedLength * reader.get(docID);
+          bytesReader.fillSlice(result, offset, fixedLength);
         }
       };
     } finally {
@@ -442,9 +437,9 @@ final class Lucene40DocValuesReader extends DocValuesProducer {
                                    Lucene40DocValuesFormat.BYTES_VAR_DEREF_VERSION_CURRENT);
       
       final long totalBytes = index.readLong();
-      // nocommit? can the current impl even handle > 2G?
-      final byte bytes[] = new byte[(int)totalBytes];
-      data.readBytes(bytes, 0, bytes.length);
+      final PagedBytes bytes = new PagedBytes(16);
+      bytes.copy(data, totalBytes);
+      final PagedBytes.Reader bytesReader = bytes.freeze(true);
       final PackedInts.Reader reader = PackedInts.getReader(index);
       if (data.getFilePointer() != data.length()) {
         throw new CorruptIndexException("did not read all bytes from file \"" + dataName + "\": read " + data.getFilePointer() + " vs size " + data.length() + " (resource: " + data + ")");
@@ -456,16 +451,17 @@ final class Lucene40DocValuesReader extends DocValuesProducer {
       return new BinaryDocValues() {
         @Override
         public void get(int docID, BytesRef result) {
-          int startAddress = (int)reader.get(docID);
-          result.bytes = bytes;
-          result.offset = startAddress;
-          if ((bytes[startAddress] & 128) == 0) {
+          long startAddress = reader.get(docID);
+          BytesRef lengthBytes = new BytesRef();
+          bytesReader.fillSlice(lengthBytes, startAddress, 1);
+          byte code = lengthBytes.bytes[lengthBytes.offset];
+          if ((code & 128) == 0) {
             // length is 1 byte
-            result.offset++;
-            result.length = bytes[startAddress];
+            bytesReader.fillSlice(result, startAddress + 1, (int) code);
           } else {
-            result.offset += 2;
-            result.length = ((bytes[startAddress] & 0x7f) << 8) | ((bytes[startAddress+1] & 0xff));
+            bytesReader.fillSlice(lengthBytes, startAddress + 1, 1);
+            int length = ((code & 0x7f) << 8) | (lengthBytes.bytes[lengthBytes.offset] & 0xff);
+            bytesReader.fillSlice(result, startAddress + 2, length);
           }
         }
       };
@@ -530,9 +526,9 @@ final class Lucene40DocValuesReader extends DocValuesProducer {
     final int fixedLength = data.readInt();
     final int valueCount = index.readInt();
     
-    // nocommit? can the current impl even handle > 2G?
-    final byte[] bytes = new byte[fixedLength*valueCount];
-    data.readBytes(bytes, 0, bytes.length);
+    PagedBytes bytes = new PagedBytes(16);
+    bytes.copy(data, fixedLength * (long) valueCount);
+    final PagedBytes.Reader bytesReader = bytes.freeze(true);
     final PackedInts.Reader reader = PackedInts.getReader(index);
     
     return correctBuggyOrds(new SortedDocValues() {
@@ -543,9 +539,7 @@ final class Lucene40DocValuesReader extends DocValuesProducer {
 
       @Override
       public void lookupOrd(int ord, BytesRef result) {
-        result.bytes = bytes;
-        result.offset = ord * fixedLength;
-        result.length = fixedLength;
+        bytesReader.fillSlice(result, fixedLength * (long) ord, fixedLength);
       }
 
       @Override
@@ -564,10 +558,9 @@ final class Lucene40DocValuesReader extends DocValuesProducer {
                                  Lucene40DocValuesFormat.BYTES_VAR_SORTED_VERSION_CURRENT);
   
     long maxAddress = index.readLong();
-    // nocommit? can the current impl even handle > 2G?
-    final byte[] bytes = new byte[(int)maxAddress];
-    data.readBytes(bytes, 0, bytes.length);
-    
+    PagedBytes bytes = new PagedBytes(16);
+    bytes.copy(data, maxAddress);
+    final PagedBytes.Reader bytesReader = bytes.freeze(true);
     final PackedInts.Reader addressReader = PackedInts.getReader(index);
     final PackedInts.Reader ordsReader = PackedInts.getReader(index);
     
@@ -583,9 +576,7 @@ final class Lucene40DocValuesReader extends DocValuesProducer {
       public void lookupOrd(int ord, BytesRef result) {
         long startAddress = addressReader.get(ord);
         long endAddress = addressReader.get(ord+1);
-        result.bytes = bytes;
-        result.offset = (int)startAddress;
-        result.length = (int)(endAddress - startAddress);
+        bytesReader.fillSlice(result, startAddress, (int)(endAddress - startAddress));
       }
 
       @Override

@@ -24,8 +24,6 @@ import org.apache.lucene.codecs.DocValuesConsumer;
 import org.apache.lucene.util.Counter;
 import org.apache.lucene.util.packed.AppendingLongBuffer;
 
-// nocommit pick numeric or number ... then fix all places ...
-
 /** Buffers up pending long per doc, then flushes when
  *  segment flushes. */
 class NumericDocValuesWriter extends DocValuesWriter {

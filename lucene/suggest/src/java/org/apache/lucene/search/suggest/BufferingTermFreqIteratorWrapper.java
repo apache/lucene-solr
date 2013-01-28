@@ -23,6 +23,7 @@ import org.apache.lucene.search.spell.TermFreqIterator;
 import org.apache.lucene.util.ArrayUtil;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.BytesRefArray;
+import org.apache.lucene.util.Counter;
 
 /**
  * This wrapper buffers incoming elements.
@@ -31,7 +32,7 @@ import org.apache.lucene.util.BytesRefArray;
 public class BufferingTermFreqIteratorWrapper implements TermFreqIterator {
   // TODO keep this for now
   /** buffered term entries */
-  protected BytesRefArray entries = new BytesRefArray();
+  protected BytesRefArray entries = new BytesRefArray(Counter.newCounter());
   /** current buffer position */
   protected int curPos = -1;
   /** buffered weights, parallel with {@link #entries} */

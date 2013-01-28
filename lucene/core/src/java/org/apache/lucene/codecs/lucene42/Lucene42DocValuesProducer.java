@@ -35,6 +35,7 @@ import org.apache.lucene.store.IndexInput;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.IOUtils;
 import org.apache.lucene.util.IntsRef;
+import org.apache.lucene.util.PagedBytes;
 import org.apache.lucene.util.fst.BytesRefFSTEnum;
 import org.apache.lucene.util.fst.BytesRefFSTEnum.InputOutput;
 import org.apache.lucene.util.fst.FST;
@@ -181,17 +182,15 @@ class Lucene42DocValuesProducer extends DocValuesProducer {
   private BinaryDocValues loadBinary(FieldInfo field) throws IOException {
     BinaryEntry entry = binaries.get(field.number);
     data.seek(entry.offset);
-    assert entry.numBytes < Integer.MAX_VALUE; // nocommit
-    final byte[] bytes = new byte[(int)entry.numBytes];
-    data.readBytes(bytes, 0, bytes.length);
+    PagedBytes bytes = new PagedBytes(16);
+    bytes.copy(data, entry.numBytes);
+    final PagedBytes.Reader bytesReader = bytes.freeze(true);
     if (entry.minLength == entry.maxLength) {
       final int fixedLength = entry.minLength;
       return new BinaryDocValues() {
         @Override
         public void get(int docID, BytesRef result) {
-          result.bytes = bytes;
-          result.offset = docID * fixedLength;
-          result.length = fixedLength;
+          bytesReader.fillSlice(result, fixedLength * (long)docID, fixedLength);
         }
       };
     } else {
@@ -201,9 +200,7 @@ class Lucene42DocValuesProducer extends DocValuesProducer {
         public void get(int docID, BytesRef result) {
           long startAddress = docID == 0 ? 0 : addresses.get(docID-1);
           long endAddress = addresses.get(docID); 
-          result.bytes = bytes;
-          result.offset = (int) startAddress;
-          result.length = (int) (endAddress - startAddress);
+          bytesReader.fillSlice(result, startAddress, (int) (endAddress - startAddress));
         }
       };
     }
