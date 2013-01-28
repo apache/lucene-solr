@@ -18,6 +18,10 @@ package org.apache.lucene.index;
  */
 
 import java.io.IOException;
+import java.util.HashMap;
+import java.util.Map;
+import java.util.Set;
+import java.util.Map.Entry;
 
 import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.analysis.MockAnalyzer;
@@ -31,13 +35,20 @@ import org.apache.lucene.document.FloatDocValuesField;
 import org.apache.lucene.document.NumericDocValuesField;
 import org.apache.lucene.document.SortedDocValuesField;
 import org.apache.lucene.document.StringField;
+import org.apache.lucene.document.TextField;
+import org.apache.lucene.index.FieldInfo.DocValuesType;
+import org.apache.lucene.search.BooleanClause;
+import org.apache.lucene.search.BooleanQuery;
 import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.search.Query;
+import org.apache.lucene.search.ScoreDoc;
 import org.apache.lucene.search.TermQuery;
 import org.apache.lucene.search.TopDocs;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.util.BytesRef;
+import org.apache.lucene.util.BytesRefHash;
 import org.apache.lucene.util.LuceneTestCase;
+import org.apache.lucene.util._TestUtil;
 
 /**
  * Abstract class to do basic tests for a docvalues format.
@@ -955,5 +966,123 @@ public abstract class BaseDocValuesFormatTestCase extends LuceneTestCase {
 
     ireader.close();
     directory.close();
+  }
+  
+  /*
+   * Simple test case to show how to use the API
+   */
+  public void testDocValuesSimple() throws IOException {
+    Directory dir = newDirectory();
+    Analyzer analyzer = new MockAnalyzer(random());
+    IndexWriterConfig conf = newIndexWriterConfig(TEST_VERSION_CURRENT, analyzer);
+    conf.setMergePolicy(newLogMergePolicy());
+    IndexWriter writer = new IndexWriter(dir, conf);
+    for (int i = 0; i < 5; i++) {
+      Document doc = new Document();
+      doc.add(new NumericDocValuesField("docId", i));
+      doc.add(new TextField("docId", "" + i, Field.Store.NO));
+      writer.addDocument(doc);
+    }
+    writer.commit();
+    writer.forceMerge(1, true);
+
+    writer.close(true);
+
+    DirectoryReader reader = DirectoryReader.open(dir, 1);
+    assertEquals(1, reader.leaves().size());
+  
+    IndexSearcher searcher = new IndexSearcher(reader);
+
+    BooleanQuery query = new BooleanQuery();
+    query.add(new TermQuery(new Term("docId", "0")), BooleanClause.Occur.SHOULD);
+    query.add(new TermQuery(new Term("docId", "1")), BooleanClause.Occur.SHOULD);
+    query.add(new TermQuery(new Term("docId", "2")), BooleanClause.Occur.SHOULD);
+    query.add(new TermQuery(new Term("docId", "3")), BooleanClause.Occur.SHOULD);
+    query.add(new TermQuery(new Term("docId", "4")), BooleanClause.Occur.SHOULD);
+
+    TopDocs search = searcher.search(query, 10);
+    assertEquals(5, search.totalHits);
+    ScoreDoc[] scoreDocs = search.scoreDocs;
+    NumericDocValues docValues = getOnlySegmentReader(reader).getNumericDocValues("docId");
+    for (int i = 0; i < scoreDocs.length; i++) {
+      assertEquals(i, scoreDocs[i].doc);
+      assertEquals(i, docValues.get(scoreDocs[i].doc));
+    }
+    reader.close();
+    dir.close();
+  }
+  
+  public void testRandomSortedBytes() throws IOException {
+    Directory dir = newDirectory();
+    IndexWriterConfig cfg = newIndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer(random()));
+    IndexWriter w = new IndexWriter(dir, cfg);
+    int numDocs = atLeast(100);
+    BytesRefHash hash = new BytesRefHash();
+    Map<String, String> docToString = new HashMap<String, String>();
+    int maxLength = _TestUtil.nextInt(random(), 1, 50);
+    for (int i = 0; i < numDocs; i++) {
+      Document doc = new Document();
+      doc.add(newTextField("id", "" + i, Field.Store.YES));
+      String string = _TestUtil.randomRealisticUnicodeString(random(), 1, maxLength);
+      BytesRef br = new BytesRef(string);
+      doc.add(new SortedDocValuesField("field", br));
+      hash.add(br);
+      docToString.put("" + i, string);
+      w.addDocument(doc);
+    }
+    if (rarely()) {
+      w.commit();
+    }
+    int numDocsNoValue = atLeast(10);
+    for (int i = 0; i < numDocsNoValue; i++) {
+      Document doc = new Document();
+      doc.add(newTextField("id", "noValue", Field.Store.YES));
+      w.addDocument(doc);
+    }
+    BytesRef bytesRef = new BytesRef();
+    hash.add(bytesRef); // add empty value for the gaps
+    if (rarely()) {
+      w.commit();
+    }
+    for (int i = 0; i < numDocs; i++) {
+      Document doc = new Document();
+      String id = "" + i + numDocs;
+      doc.add(newTextField("id", id, Field.Store.YES));
+      String string = _TestUtil.randomRealisticUnicodeString(random(), 1, maxLength);
+      BytesRef br = new BytesRef(string);
+      hash.add(br);
+      docToString.put(id, string);
+      doc.add(new SortedDocValuesField("field", br));
+      w.addDocument(doc);
+    }
+    w.commit();
+    IndexReader reader = w.getReader();
+    SortedDocValues docValues = MultiDocValues.getSortedValues(reader, "field");
+    int[] sort = hash.sort(BytesRef.getUTF8SortedAsUnicodeComparator());
+    BytesRef expected = new BytesRef();
+    BytesRef actual = new BytesRef();
+    assertEquals(hash.size(), docValues.getValueCount());
+    for (int i = 0; i < hash.size(); i++) {
+      hash.get(sort[i], expected);
+      docValues.lookupOrd(i, actual);
+      assertEquals(expected.utf8ToString(), actual.utf8ToString());
+      int ord = docValues.lookupTerm(expected, actual);
+      assertEquals(i, ord);
+    }
+    AtomicReader slowR = SlowCompositeReaderWrapper.wrap(reader);
+    Set<Entry<String, String>> entrySet = docToString.entrySet();
+
+    for (Entry<String, String> entry : entrySet) {
+      // pk lookup
+      DocsEnum termDocsEnum = slowR.termDocsEnum(new Term("id", entry.getKey()));
+      int docId = termDocsEnum.nextDoc();
+      expected = new BytesRef(entry.getValue());
+      docValues.get(docId, actual);
+      assertEquals(expected, actual);
+    }
+
+    reader.close();
+    w.close();
+    dir.close();
   }
 }

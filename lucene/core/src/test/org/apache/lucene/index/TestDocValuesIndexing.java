@@ -69,47 +69,6 @@ public class TestDocValuesIndexing extends LuceneTestCase {
    * - add multithreaded tests / integrate into stress indexing?
    */
   
-  /*
-   * Simple test case to show how to use the API
-   */
-  public void testDocValuesSimple() throws IOException {
-    Directory dir = newDirectory();
-    IndexWriter writer = new IndexWriter(dir, writerConfig(false));
-    for (int i = 0; i < 5; i++) {
-      Document doc = new Document();
-      doc.add(new NumericDocValuesField("docId", i));
-      doc.add(new TextField("docId", "" + i, Field.Store.NO));
-      writer.addDocument(doc);
-    }
-    writer.commit();
-    writer.forceMerge(1, true);
-
-    writer.close(true);
-
-    DirectoryReader reader = DirectoryReader.open(dir, 1);
-    assertEquals(1, reader.leaves().size());
-  
-    IndexSearcher searcher = new IndexSearcher(reader);
-
-    BooleanQuery query = new BooleanQuery();
-    query.add(new TermQuery(new Term("docId", "0")), BooleanClause.Occur.SHOULD);
-    query.add(new TermQuery(new Term("docId", "1")), BooleanClause.Occur.SHOULD);
-    query.add(new TermQuery(new Term("docId", "2")), BooleanClause.Occur.SHOULD);
-    query.add(new TermQuery(new Term("docId", "3")), BooleanClause.Occur.SHOULD);
-    query.add(new TermQuery(new Term("docId", "4")), BooleanClause.Occur.SHOULD);
-
-    TopDocs search = searcher.search(query, 10);
-    assertEquals(5, search.totalHits);
-    ScoreDoc[] scoreDocs = search.scoreDocs;
-    NumericDocValues docValues = numeric(reader, "docId");
-    for (int i = 0; i < scoreDocs.length; i++) {
-      assertEquals(i, scoreDocs[i].doc);
-      assertEquals(i, docValues.get(scoreDocs[i].doc));
-    }
-    reader.close();
-    dir.close();
-  }
-
   public void testIndexBytesNoDeletes() throws IOException {
     runTestIndexBytes(writerConfig(random().nextBoolean()), false);
   }
@@ -807,89 +766,6 @@ public class TestDocValuesIndexing extends LuceneTestCase {
     r.close();
     w.close();
     d.close();
-  }
-  
-  public void testSortedBytes() throws IOException {
-      DocValuesType type = DocValuesType.SORTED;
-      final Directory d = newDirectory();
-      IndexWriterConfig cfg = newIndexWriterConfig(TEST_VERSION_CURRENT,
-          new MockAnalyzer(random()));
-      IndexWriter w = new IndexWriter(d, cfg);
-      int numDocs = atLeast(100);
-      BytesRefHash hash = new BytesRefHash();
-      Map<String, String> docToString = new HashMap<String, String>();
-      int len = 1 + random().nextInt(50);
-      for (int i = 0; i < numDocs; i++) {
-        Document doc = new Document();
-        doc.add(newTextField("id", "" + i, Field.Store.YES));
-        String string = _TestUtil.randomRealisticUnicodeString(random(), 1, len);
-        BytesRef br = new BytesRef(string);
-        doc.add(new SortedDocValuesField("field", br));
-        hash.add(br);
-        docToString.put("" + i, string);
-        w.addDocument(doc);
-      }
-      if (rarely()) {
-        w.commit();
-      }
-      int numDocsNoValue = atLeast(10);
-      for (int i = 0; i < numDocsNoValue; i++) {
-        Document doc = new Document();
-        doc.add(newTextField("id", "noValue", Field.Store.YES));
-        w.addDocument(doc);
-      }
-      BytesRef bytesRef = new BytesRef();
-      hash.add(bytesRef); // add empty value for the gaps
-      if (rarely()) {
-        w.commit();
-      }
-      for (int i = 0; i < numDocs; i++) {
-        Document doc = new Document();
-        String id = "" + i + numDocs;
-        doc.add(newTextField("id", id, Field.Store.YES));
-        String string = _TestUtil.randomRealisticUnicodeString(random(), 1, len);
-        BytesRef br = new BytesRef(string);
-        hash.add(br);
-        docToString.put(id, string);
-        doc.add(new SortedDocValuesField("field", br));
-        w.addDocument(doc);
-      }
-      w.commit();
-      IndexReader reader = w.getReader();
-      SortedDocValues docValues = MultiDocValues.getSortedValues(reader, "field");
-      int[] sort = hash.sort(BytesRef.getUTF8SortedAsUnicodeComparator());
-      BytesRef expected = new BytesRef();
-      BytesRef actual = new BytesRef();
-      assertEquals(hash.size(), docValues.getValueCount());
-      for (int i = 0; i < hash.size(); i++) {
-        hash.get(sort[i], expected);
-        docValues.lookupOrd(i, actual);
-        assertEquals(expected.utf8ToString(), actual.utf8ToString());
-        int ord = docValues.lookupTerm(expected, actual);
-        assertEquals(i, ord);
-      }
-      AtomicReader slowR = SlowCompositeReaderWrapper.wrap(reader);
-      Set<Entry<String, String>> entrySet = docToString.entrySet();
-
-      for (Entry<String, String> entry : entrySet) {
-        int docId = docId(slowR, new Term("id", entry.getKey()));
-        expected = new BytesRef(entry.getValue());
-        docValues.get(docId, actual);
-        assertEquals(expected, actual);
-      }
-
-      reader.close();
-      w.close();
-      d.close();
-  }
-  
-  public int docId(AtomicReader reader, Term term) throws IOException {
-    int docFreq = reader.docFreq(term);
-    assertEquals(1, docFreq);
-    DocsEnum termDocsEnum = reader.termDocsEnum(term);
-    int nextDoc = termDocsEnum.nextDoc();
-    assertEquals(DocIdSetIterator.NO_MORE_DOCS, termDocsEnum.nextDoc());
-    return nextDoc;
   }
 
   public void testWithThreads() throws Exception {
