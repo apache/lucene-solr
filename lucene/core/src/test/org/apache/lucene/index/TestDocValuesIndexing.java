@@ -1019,7 +1019,6 @@ public class TestDocValuesIndexing extends LuceneTestCase {
   }
 
   public void testDocValuesUnstored() throws IOException {
-    //nocommit convert!
     Directory dir = newDirectory();
     IndexWriterConfig iwconfig = newIndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer(random()));
     iwconfig.setMergePolicy(newLogMergePolicy());

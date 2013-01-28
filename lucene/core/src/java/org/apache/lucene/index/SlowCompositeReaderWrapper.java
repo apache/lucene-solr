@@ -100,13 +100,11 @@ public final class SlowCompositeReaderWrapper extends AtomicReader {
   @Override
   public NumericDocValues getNormValues(String field) throws IOException {
     ensureOpen();
-    // nocommit hmm
     return MultiDocValues.getNormValues(in, field);
   }
   
   @Override
-  public Fields getTermVectors(int docID)
-          throws IOException {
+  public Fields getTermVectors(int docID) throws IOException {
     ensureOpen();
     return in.getTermVectors(docID);
   }

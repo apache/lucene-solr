@@ -29,6 +29,7 @@ import java.util.Set;
 
 import org.apache.lucene.codecs.PostingsFormat;
 import org.apache.lucene.codecs.DocValuesFormat;
+import org.apache.lucene.codecs.asserting.AssertingDocValuesFormat;
 import org.apache.lucene.codecs.asserting.AssertingPostingsFormat;
 import org.apache.lucene.codecs.lucene41.Lucene41PostingsFormat;
 import org.apache.lucene.codecs.lucene41ords.Lucene41WithOrds;
@@ -144,7 +145,8 @@ public class RandomCodec extends Lucene42Codec {
     addDocValues(avoidCodecs,
         new Lucene42DocValuesFormat(),
         new DiskDocValuesFormat(),
-        new SimpleTextDocValuesFormat());
+        new SimpleTextDocValuesFormat(),
+        new AssertingDocValuesFormat());
 
     Collections.shuffle(formats, random);
     Collections.shuffle(dvFormats, random);
