@@ -107,6 +107,9 @@ Optimizations
 
 * SOLR-3915: Color Legend for Cloud UI (steffkes)
 
+* SOLR-4306: Utilize indexInfo=false when gathering core names in UI
+  (steffkes)
+
 Other Changes
 ----------------------
 
