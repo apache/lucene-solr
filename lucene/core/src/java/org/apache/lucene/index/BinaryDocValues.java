@@ -28,12 +28,7 @@ public abstract class BinaryDocValues {
    * constructors, typically implicit.) */
   protected BinaryDocValues() {}
 
-  /** Lookup the value for document.
-   *
-   *  <p><b>NOTE</b>: you should not share the provided
-   *  {@link BytesRef} result with other doc values sources
-   *  (other BinaryDocValues or SortedDocValues): a single
-   *  "private" instance should be used for each source. */
+  /** Lookup the value for document. */
   public abstract void get(int docID, BytesRef result);
 
   /**

@@ -914,4 +914,128 @@ public class TestDemoDocValue extends LuceneTestCase {
     ireader.close();
     directory.close();
   }
+  
+  public void testCodecUsesOwnBytes() throws IOException {
+    Analyzer analyzer = new MockAnalyzer(random());
+
+    Directory directory = newDirectory();
+    // we don't use RandomIndexWriter because it might add more docvalues than we expect !!!!1
+    IndexWriterConfig iwc = newIndexWriterConfig(TEST_VERSION_CURRENT, analyzer);
+    iwc.setMergePolicy(newLogMergePolicy());
+    IndexWriter iwriter = new IndexWriter(directory, iwc);
+    Document doc = new Document();
+    doc.add(new BinaryDocValuesField("dv", new BytesRef("boo!")));
+    iwriter.addDocument(doc);
+    iwriter.close();
+    
+    // Now search the index:
+    IndexReader ireader = DirectoryReader.open(directory); // read-only=true
+    assert ireader.leaves().size() == 1;
+    BinaryDocValues dv = ireader.leaves().get(0).reader().getBinaryDocValues("dv");
+    byte mybytes[] = new byte[20];
+    BytesRef scratch = new BytesRef(mybytes);
+    dv.get(0, scratch);
+    assertEquals("boo!", scratch.utf8ToString());
+    assertFalse(scratch.bytes == mybytes);
+
+    ireader.close();
+    directory.close();
+  }
+  
+  public void testCodecUsesOwnSortedBytes() throws IOException {
+    Analyzer analyzer = new MockAnalyzer(random());
+
+    Directory directory = newDirectory();
+    // we don't use RandomIndexWriter because it might add more docvalues than we expect !!!!1
+    IndexWriterConfig iwc = newIndexWriterConfig(TEST_VERSION_CURRENT, analyzer);
+    iwc.setMergePolicy(newLogMergePolicy());
+    IndexWriter iwriter = new IndexWriter(directory, iwc);
+    Document doc = new Document();
+    doc.add(new SortedDocValuesField("dv", new BytesRef("boo!")));
+    iwriter.addDocument(doc);
+    iwriter.close();
+    
+    // Now search the index:
+    IndexReader ireader = DirectoryReader.open(directory); // read-only=true
+    assert ireader.leaves().size() == 1;
+    BinaryDocValues dv = ireader.leaves().get(0).reader().getSortedDocValues("dv");
+    byte mybytes[] = new byte[20];
+    BytesRef scratch = new BytesRef(mybytes);
+    dv.get(0, scratch);
+    assertEquals("boo!", scratch.utf8ToString());
+    assertFalse(scratch.bytes == mybytes);
+
+    ireader.close();
+    directory.close();
+  }
+  
+  public void testCodecUsesOwnBytesEachTime() throws IOException {
+    Analyzer analyzer = new MockAnalyzer(random());
+
+    Directory directory = newDirectory();
+    // we don't use RandomIndexWriter because it might add more docvalues than we expect !!!!1
+    IndexWriterConfig iwc = newIndexWriterConfig(TEST_VERSION_CURRENT, analyzer);
+    iwc.setMergePolicy(newLogMergePolicy());
+    IndexWriter iwriter = new IndexWriter(directory, iwc);
+    Document doc = new Document();
+    doc.add(new BinaryDocValuesField("dv", new BytesRef("foo!")));
+    iwriter.addDocument(doc);
+    doc = new Document();
+    doc.add(new BinaryDocValuesField("dv", new BytesRef("bar!")));
+    iwriter.addDocument(doc);
+    iwriter.close();
+    
+    // Now search the index:
+    IndexReader ireader = DirectoryReader.open(directory); // read-only=true
+    assert ireader.leaves().size() == 1;
+    BinaryDocValues dv = ireader.leaves().get(0).reader().getBinaryDocValues("dv");
+    BytesRef scratch = new BytesRef();
+    dv.get(0, scratch);
+    assertEquals("foo!", scratch.utf8ToString());
+    
+    BytesRef scratch2 = new BytesRef();
+    dv.get(1, scratch2);
+    assertEquals("bar!", scratch2.utf8ToString());
+    // check scratch is still valid
+    assertEquals("foo!", scratch.utf8ToString());
+
+    ireader.close();
+    directory.close();
+  }
+  
+  public void testCodecUsesOwnSortedBytesEachTime() throws IOException {
+    Analyzer analyzer = new MockAnalyzer(random());
+
+    Directory directory = newDirectory();
+    // we don't use RandomIndexWriter because it might add more docvalues than we expect !!!!1
+    IndexWriterConfig iwc = newIndexWriterConfig(TEST_VERSION_CURRENT, analyzer);
+    iwc.setMergePolicy(newLogMergePolicy());
+    IndexWriter iwriter = new IndexWriter(directory, iwc);
+    Document doc = new Document();
+    doc.add(new SortedDocValuesField("dv", new BytesRef("foo!")));
+    iwriter.addDocument(doc);
+    doc = new Document();
+    doc.add(new SortedDocValuesField("dv", new BytesRef("bar!")));
+    iwriter.addDocument(doc);
+    iwriter.close();
+    
+    // Now search the index:
+    IndexReader ireader = DirectoryReader.open(directory); // read-only=true
+    assert ireader.leaves().size() == 1;
+    BinaryDocValues dv = ireader.leaves().get(0).reader().getSortedDocValues("dv");
+    BytesRef scratch = new BytesRef();
+    dv.get(0, scratch);
+    assertEquals("foo!", scratch.utf8ToString());
+    
+    BytesRef scratch2 = new BytesRef();
+    dv.get(1, scratch2);
+    assertEquals("bar!", scratch2.utf8ToString());
+    // check scratch is still valid
+    assertEquals("foo!", scratch.utf8ToString());
+
+    ireader.close();
+    directory.close();
+  }
+  
+  // nocommit: test add twice
 }

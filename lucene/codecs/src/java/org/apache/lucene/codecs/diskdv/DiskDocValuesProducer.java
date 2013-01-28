@@ -33,7 +33,6 @@ import org.apache.lucene.index.NumericDocValues;
 import org.apache.lucene.index.SegmentReadState;
 import org.apache.lucene.index.SortedDocValues;
 import org.apache.lucene.store.IndexInput;
-import org.apache.lucene.util.ArrayUtil;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.IOUtils;
 import org.apache.lucene.util.packed.BlockPackedReader;
@@ -157,12 +156,13 @@ class DiskDocValuesProducer extends DocValuesProducer {
         long address = bytes.offset + docID * (long)bytes.maxLength;
         try {
           data.seek(address);
-          if (result.bytes.length < bytes.maxLength) {
-            result.offset = 0;
-            result.bytes = new byte[bytes.maxLength];
-          }
-          data.readBytes(result.bytes, result.offset, bytes.maxLength);
-          result.length = bytes.maxLength;
+          // NOTE: we could have one buffer, but various consumers (e.g. FieldComparatorSource) 
+          // assume "they" own the bytes after calling this!
+          final byte[] buffer = new byte[bytes.maxLength];
+          data.readBytes(buffer, 0, buffer.length);
+          result.bytes = buffer;
+          result.offset = 0;
+          result.length = buffer.length;
         } catch (IOException e) {
           throw new RuntimeException(e);
         }
@@ -183,11 +183,12 @@ class DiskDocValuesProducer extends DocValuesProducer {
         int length = (int) (endAddress - startAddress);
         try {
           data.seek(startAddress);
-          if (result.bytes.length < length) {
-            result.offset = 0;
-            result.bytes = new byte[ArrayUtil.oversize(length, 1)];
-          }
-          data.readBytes(result.bytes, result.offset, length);
+          // NOTE: we could have one buffer, but various consumers (e.g. FieldComparatorSource) 
+          // assume "they" own the bytes after calling this!
+          final byte[] buffer = new byte[length];
+          data.readBytes(buffer, 0, buffer.length);
+          result.bytes = buffer;
+          result.offset = 0;
           result.length = length;
         } catch (IOException e) {
           throw new RuntimeException(e);

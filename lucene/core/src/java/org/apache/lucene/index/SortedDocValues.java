@@ -92,6 +92,9 @@ public abstract class SortedDocValues extends BinaryDocValues {
    *  @param key Key to look up
    *  @param spare Spare BytesRef
    **/
+  // nocommit: what does spare mean? its no spare: because people rely upon its return value!
+  // if its 'result' then the parameter and javadoc needs changing, otherwise things need fixing
+  // unconditionally set its value to "NONSENSE" bytes to see the bugs!
   public int lookupTerm(BytesRef key, BytesRef spare) {
 
     int low = 0;
@@ -107,9 +110,8 @@ public abstract class SortedDocValues extends BinaryDocValues {
       } else if (cmp > 0) {
         high = mid - 1;
       } else {
-        // nocommit is this the right way... else caller can
-        // pass this spare down to DiskDV, which will then
-        // "use" our byte[] ...
+        // nocommit: we shouldnt have to set spare at all if its actually a spare, but its not!
+        // ant test  -Dtestcase=TestFieldCacheRewriteMethod -Dtests.method=testRegexps -Dtests.seed=AFC4A08B212CE143 -Dtests.slow=true -Dtests.locale=th -Dtests.timezone=Canada/Mountain -Dtests.file.encoding=ISO-8859-1
         spare.bytes = BytesRef.EMPTY_BYTES;
         spare.offset = 0;
         spare.length = 0;
@@ -117,7 +119,8 @@ public abstract class SortedDocValues extends BinaryDocValues {
       }
     }
 
-    // nocommit is this the right way...
+    // nocommit: we shouldnt have to set spare at all if its actually a spare, but its not!
+    // ant test  -Dtestcase=TestFieldCacheRewriteMethod -Dtests.method=testRegexps -Dtests.seed=AFC4A08B212CE143 -Dtests.slow=true -Dtests.locale=th -Dtests.timezone=Canada/Mountain -Dtests.file.encoding=ISO-8859-1
     spare.bytes = BytesRef.EMPTY_BYTES;
     spare.offset = 0;
     spare.length = 0;

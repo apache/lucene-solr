@@ -239,7 +239,11 @@ class Lucene42DocValuesProducer extends DocValuesProducer {
         try {
           in.setPosition(0);
           fst.getFirstArc(firstArc);
-          Util.toBytesRef(Util.getByOutput(fst, ord, in, firstArc, scratchArc, scratchInts), result);
+          IntsRef output = Util.getByOutput(fst, ord, in, firstArc, scratchArc, scratchInts);
+          result.bytes = new byte[output.length];
+          result.offset = 0;
+          result.length = 0;
+          Util.toBytesRef(output, result);
         } catch (IOException bogus) {
           throw new RuntimeException(bogus);
         }
