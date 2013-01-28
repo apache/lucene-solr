@@ -79,6 +79,9 @@ New Features
   near-real-time reader is opened that contains those changes.
   (Robert Muir, Mike McCandless)
 
+* LUCENE-4723: Add AnalyzerFactoryTask to benchmark, and enable analyzer
+  creation via the resulting factories using NewAnalyzerTask.  (Steve Rowe)
+
 API Changes
 
 * LUCENE-4709: FacetResultNode no longer has a residue field. (Shai Erera)

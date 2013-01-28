@@ -51,7 +51,7 @@ while (<>) {
 
 # Print out platform info
 print "JAVA:\n", `java -version 2>&1`, "\nOS:\n";
-if ($^O =~ /win/i) {
+if ($^O =~ /(?<!dar)win/i) {
   print "$^O\n";
   eval {
     require Win32;
