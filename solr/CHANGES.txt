@@ -93,6 +93,8 @@ Bug Fixes
 * SOLR-3926: Solr should support better way of finding active sorts (Eirik Lygre via
   Erick Erickson)
 
+* SOLR-4342: Fix DataImportHandler stats to be a prper Map (hossman)
+
 Optimizations
 ----------------------
 
