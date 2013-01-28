@@ -15,7 +15,7 @@
  limitations under the License.
 */
 
-$( '.ping a', app.menu_element )
+$( '.ping a', app.core_menu )
   .live
   (
     'click',

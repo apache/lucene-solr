@@ -92,20 +92,26 @@ var sammy = $.sammy
         $( 'li.active', menu_wrapper )
           .removeClass( 'active' );
 
-        if( this.params.splat )
+        // global dashboard doesn't have params.splat
+        if( !this.params.splat )
         {
-          var selector = '~' === this.params.splat[0][0]
-                       ? '#' + this.params.splat[0].replace( /^~/, '' ) + '.global'
-                       : '#menu-selector #' + this.params.splat[0].replace( /\./g, '__' );
+          this.params.splat = [ '~index' ];
+        }
 
-          var active_element = $( selector, menu_wrapper );
-                    
-          if( 0 === active_element.size() )
-          {
-            this.app.error( 'There exists no core with name "' + this.params.splat[0] + '"' );
-            return false;
-          }
+        var selector = '~' === this.params.splat[0][0]
+                     ? '#' + this.params.splat[0].replace( /^~/, '' ) + '.global'
+                     : '#core-selector #' + this.params.splat[0].replace( /\./g, '__' );
 
+        var active_element = $( selector, menu_wrapper );
+                  
+        if( 0 === active_element.size() )
+        {
+          this.app.error( 'There exists no core with name "' + this.params.splat[0] + '"' );
+          return false;
+        }
+
+        if( active_element.hasClass( 'global' ) )
+        {
           active_element
             .addClass( 'active' );
 
@@ -115,10 +121,28 @@ var sammy = $.sammy
               .addClass( 'active' );
           }
 
-          if( !active_element.hasClass( 'global' ) )
+          $( '#core-selector option[selected]' )
+            .removeAttr( 'selected' )
+            .trigger( 'liszt:updated' );
+
+          $( '#core-selector .chzn-container > a' )
+            .addClass( 'chzn-default' );
+        }
+        else
+        {
+          active_element
+            .attr( 'selected', 'selected' )
+            .trigger( 'liszt:updated' );
+
+          if( !this.params.splat[1] )
           {
-            this.active_core = active_element;
+            this.params.splat[1] = 'overview';
           }
+
+          $( '#core-menu .' + this.params.splat[1] )
+            .addClass( 'active' );
+
+          this.active_core = active_element;
         }
       }
     );
@@ -143,9 +167,10 @@ var solr_admin = function( app_config )
 
   plugin_data = null,
     
-  this.menu_element = $( '#menu-selector' );
-  this.config = config;
+  this.menu_element = $( '#core-selector select' );
+  this.core_menu = $( '#core-menu ul' );
 
+  this.config = config;
   this.timeout = null;
 
   this.core_regex_base = '^#\\/([\\w\\d-\\.]+)';
@@ -197,6 +222,9 @@ var solr_admin = function( app_config )
     that.menu_element
       .empty();
 
+    var core_list = [];
+    core_list.push( '<option></option>' );
+
     var core_count = 0;
     for( var core_name in that.cores_data )
     {
@@ -214,31 +242,23 @@ var solr_admin = function( app_config )
         classes.push( 'default' );
       }
 
-      var core_tpl = '<li id="' + core_name.replace( /\./g, '__' ) + '" '
+      var core_tpl = '<option '
+                   + '    id="' + core_name.replace( /\./g, '__' ) + '" '
                    + '    class="' + classes.join( ' ' ) + '"'
                    + '    data-basepath="' + core_path + '"'
                    + '    schema="' + cores.status[core_name]['schema'] + '"'
                    + '    config="' + cores.status[core_name]['config'] + '"'
-                   + '>' + "\n"
-                   + '  <p><a href="#/' + core_name + '" title="' + core_name + '">' + core_name + '</a></p>' + "\n"
-                   + '  <ul>' + "\n"
+                   + '    value="#/' + core_name + '"'
+                   + '    title="' + core_name + '"'
+                   + '>' 
+                   + core_name 
+                   + '</option>';
 
-                   + '    <li class="ping"><a rel="' + core_path + '/admin/ping"><span>Ping</span></a></li>' + "\n"
-                   + '    <li class="query"><a href="#/' + core_name + '/query"><span>Query</span></a></li>' + "\n"
-                   + '    <li class="schema"><a href="#/' + core_name + '/schema"><span>Schema</span></a></li>' + "\n"
-                   + '    <li class="config"><a href="#/' + core_name + '/config"><span>Config</span></a></li>' + "\n"
-                   + '    <li class="replication"><a href="#/' + core_name + '/replication"><span>Replication</span></a></li>' + "\n"
-                   + '    <li class="analysis"><a href="#/' + core_name + '/analysis"><span>Analysis</span></a></li>' + "\n"
-                   + '    <li class="schema-browser"><a href="#/' + core_name + '/schema-browser"><span>Schema Browser</span></a></li>' + "\n"
-                   + '    <li class="plugins"><a href="#/' + core_name + '/plugins"><span>Plugins / Stats</span></a></li>' + "\n"
-                   + '    <li class="dataimport"><a href="#/' + core_name + '/dataimport"><span>Dataimport</span></a></li>' + "\n"
-
-                   + '    </ul>' + "\n"
-                   + '</li>';
-
-      that.menu_element
-        .append( core_tpl );
+      core_list.push( core_tpl );
     }
+
+    that.menu_element
+      .append( core_list.join( "\n" ) );
 
     if( cores.initFailures )
     {
@@ -287,6 +307,52 @@ var solr_admin = function( app_config )
         success : function( response )
         {
           that.set_cores_data( response );
+
+          that.menu_element
+            .chosen()
+            .off( 'change' )
+            .on
+            (
+              'change',
+              function( event )
+              {
+                location.href = $( 'option:selected', this ).val();
+                return false;
+              }
+            )
+            .on
+            (
+              'liszt:updated',
+              function( event )
+              {
+                var core_name = $( 'option:selected', this ).text();
+
+                if( core_name )
+                {
+                  that.core_menu
+                    .html
+                    (
+                      '<li class="overview"><a href="#/' + core_name + '"><span>Overview</span></a></li>' + "\n" +
+                      '<li class="ping"><a rel="' + that.config.solr_path + '/' + core_name + '/admin/ping"><span>Ping</span></a></li>' + "\n" +
+                      '<li class="query"><a href="#/' + core_name + '/query"><span>Query</span></a></li>' + "\n" +
+                      '<li class="schema"><a href="#/' + core_name + '/schema"><span>Schema</span></a></li>' + "\n" +
+                      '<li class="config"><a href="#/' + core_name + '/config"><span>Config</span></a></li>' + "\n" +
+                      '<li class="replication"><a href="#/' + core_name + '/replication"><span>Replication</span></a></li>' + "\n" +
+                      '<li class="analysis"><a href="#/' + core_name + '/analysis"><span>Analysis</span></a></li>' + "\n" +
+                      '<li class="schema-browser"><a href="#/' + core_name + '/schema-browser"><span>Schema Browser</span></a></li>' + "\n" + 
+                      '<li class="plugins"><a href="#/' + core_name + '/plugins"><span>Plugins / Stats</span></a></li>' + "\n" +
+                      '<li class="dataimport"><a href="#/' + core_name + '/dataimport"><span>Dataimport</span></a></li>' + "\n"
+                    )
+                    .show();
+                }
+                else
+                {
+                  that.core_menu
+                    .hide()
+                    .empty();
+                }
+              }
+            );
 
           for( var core_name in response.status )
           {

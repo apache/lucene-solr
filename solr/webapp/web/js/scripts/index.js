@@ -208,9 +208,6 @@ sammy.get
   {
     var content_element = $( '#content' );
 
-    $( '#menu-wrapper #index' )
-      .addClass( 'active' );
-
     content_element
       .html( '<div id="index"></div>' );
 
