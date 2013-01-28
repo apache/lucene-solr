@@ -1,6 +1,6 @@
 package org.apache.lucene.facet.taxonomy;
 
-
+import java.util.Arrays;
 
 /*
  * Licensed to the Apache Software Foundation (ASF) under one or more
@@ -62,6 +62,11 @@ public class CategoryPath implements Comparable<CategoryPath> {
   /** Construct from the given path components. */
   public CategoryPath(final String... components) {
     assert components.length > 0 : "use CategoryPath.EMPTY to create an empty path";
+    for (String comp : components) {
+      if (comp == null || comp.isEmpty()) {
+        throw new IllegalArgumentException("empty or null components not allowed: " + Arrays.toString(components));
+      }
+    }
     this.components = components;
     length = components.length;
   }
@@ -73,6 +78,11 @@ public class CategoryPath implements Comparable<CategoryPath> {
       components = null;
       length = 0;
     } else {
+      for (String comp : comps) {
+        if (comp == null || comp.isEmpty()) {
+          throw new IllegalArgumentException("empty or null components not allowed: " + Arrays.toString(comps));
+        }
+      }
       components = comps;
       length = components.length;
     }
