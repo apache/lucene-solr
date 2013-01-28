@@ -54,7 +54,6 @@ public class DistinctValuesCollectorTest extends AbstractGroupingTestCase {
         DocValuesType.NUMERIC,
         DocValuesType.BINARY,
         DocValuesType.SORTED,
-        // nocommit DocValues.Type.FLOAT_64,
     };
     Directory dir = newDirectory();
     RandomIndexWriter w = new RandomIndexWriter(

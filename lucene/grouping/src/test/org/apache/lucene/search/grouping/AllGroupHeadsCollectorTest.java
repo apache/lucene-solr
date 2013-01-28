@@ -530,7 +530,6 @@ public class AllGroupHeadsCollectorTest extends LuceneTestCase {
     return collector;
   }
 
-  // nocommit: isnt this method elsehwere in this test? either deja-vu or i fixed one just like it a few hundred lines back
   private void addGroupField(Document doc, String groupField, String value, boolean canUseIDV, DocValuesType valueType) {
     doc.add(new TextField(groupField, value, Field.Store.YES));
     if (canUseIDV) {
