@@ -34,6 +34,7 @@ import org.apache.lucene.document.Field;
 import org.apache.lucene.document.FloatDocValuesField;
 import org.apache.lucene.document.NumericDocValuesField;
 import org.apache.lucene.document.SortedDocValuesField;
+import org.apache.lucene.document.StoredField;
 import org.apache.lucene.document.StringField;
 import org.apache.lucene.document.TextField;
 import org.apache.lucene.index.FieldInfo.DocValuesType;
@@ -1084,5 +1085,202 @@ public abstract class BaseDocValuesFormatTestCase extends LuceneTestCase {
     reader.close();
     w.close();
     dir.close();
+  }
+  
+  private void doTestNumericsVsStoredFields(long minValue, long maxValue) throws Exception {
+    Directory dir = newDirectory();
+    IndexWriterConfig conf = newIndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer(random()));
+    IndexWriter writer = new IndexWriter(dir, conf);
+    Document doc = new Document();
+    Field idField = new StringField("id", "", Field.Store.NO);
+    Field storedField = newStringField("stored", "", Field.Store.YES);
+    Field dvField = new NumericDocValuesField("dv", 0);
+    doc.add(idField);
+    doc.add(storedField);
+    doc.add(dvField);
+    
+    // index some docs
+    int numDocs = atLeast(1000);
+    for (int i = 0; i < numDocs; i++) {
+      idField.setStringValue(Integer.toString(i));
+      long value = _TestUtil.nextLong(random(), minValue, maxValue);
+      storedField.setStringValue(Long.toString(value));
+      dvField.setLongValue(value);
+      writer.addDocument(doc);
+      if (random().nextInt(31) == 0) {
+        writer.commit();
+      }
+    }
+    
+    // delete some docs
+    int numDeletions = random().nextInt(numDocs/10);
+    for (int i = 0; i < numDeletions; i++) {
+      int id = random().nextInt(numDocs);
+      writer.deleteDocuments(new Term("id", Integer.toString(id)));
+    }
+    writer.close();
+    
+    // compare
+    DirectoryReader ir = DirectoryReader.open(dir);
+    for (AtomicReaderContext context : ir.leaves()) {
+      AtomicReader r = context.reader();
+      NumericDocValues docValues = r.getNumericDocValues("dv");
+      for (int i = 0; i < r.maxDoc(); i++) {
+        long storedValue = Long.parseLong(r.document(i).get("stored"));
+        assertEquals(storedValue, docValues.get(i));
+      }
+    }
+    ir.close();
+    dir.close();
+  }
+  
+  public void testBooleanNumericsVsStoredFields() throws Exception {
+    doTestNumericsVsStoredFields(0, 1);
+  }
+  
+  public void testByteNumericsVsStoredFields() throws Exception {
+    doTestNumericsVsStoredFields(Byte.MIN_VALUE, Byte.MAX_VALUE);
+  }
+  
+  public void testShortNumericsVsStoredFields() throws Exception {
+    doTestNumericsVsStoredFields(Short.MIN_VALUE, Short.MAX_VALUE);
+  }
+  
+  public void testIntNumericsVsStoredFields() throws Exception {
+    doTestNumericsVsStoredFields(Integer.MIN_VALUE, Integer.MAX_VALUE);
+  }
+  
+  public void testLongNumericsVsStoredFields() throws Exception {
+    doTestNumericsVsStoredFields(Long.MIN_VALUE, Long.MAX_VALUE);
+  }
+  
+  private void doTestBinaryVsStoredFields(int minLength, int maxLength) throws Exception {
+    Directory dir = newDirectory();
+    IndexWriterConfig conf = newIndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer(random()));
+    IndexWriter writer = new IndexWriter(dir, conf);
+    Document doc = new Document();
+    Field idField = new StringField("id", "", Field.Store.NO);
+    Field storedField = new StoredField("stored", new byte[0]);
+    Field dvField = new BinaryDocValuesField("dv", new BytesRef());
+    doc.add(idField);
+    doc.add(storedField);
+    doc.add(dvField);
+    
+    // index some docs
+    int numDocs = atLeast(1000);
+    for (int i = 0; i < numDocs; i++) {
+      idField.setStringValue(Integer.toString(i));
+      final int length;
+      if (minLength == maxLength) {
+        length = minLength; // fixed length
+      } else {
+        length = _TestUtil.nextInt(random(), minLength, maxLength);
+      }
+      byte buffer[] = new byte[length];
+      random().nextBytes(buffer);
+      storedField.setBytesValue(buffer);
+      dvField.setBytesValue(buffer);
+      writer.addDocument(doc);
+      if (random().nextInt(31) == 0) {
+        writer.commit();
+      }
+    }
+    
+    // delete some docs
+    int numDeletions = random().nextInt(numDocs/10);
+    for (int i = 0; i < numDeletions; i++) {
+      int id = random().nextInt(numDocs);
+      writer.deleteDocuments(new Term("id", Integer.toString(id)));
+    }
+    writer.close();
+    
+    // compare
+    DirectoryReader ir = DirectoryReader.open(dir);
+    for (AtomicReaderContext context : ir.leaves()) {
+      AtomicReader r = context.reader();
+      BinaryDocValues docValues = r.getBinaryDocValues("dv");
+      for (int i = 0; i < r.maxDoc(); i++) {
+        BytesRef binaryValue = r.document(i).getBinaryValue("stored");
+        BytesRef scratch = new BytesRef();
+        docValues.get(i, scratch);
+        assertEquals(binaryValue, scratch);
+      }
+    }
+    ir.close();
+    dir.close();
+  }
+  
+  public void testBinaryFixedLengthVsStoredFields() throws Exception {
+    int fixedLength = _TestUtil.nextInt(random(), 1, 10);
+    doTestBinaryVsStoredFields(fixedLength, fixedLength);
+  }
+  
+  public void testBinaryVariableLengthVsStoredFields() throws Exception {
+    doTestBinaryVsStoredFields(1, 10);
+  }
+  
+  private void doTestSortedVsStoredFields(int minLength, int maxLength) throws Exception {
+    Directory dir = newDirectory();
+    IndexWriterConfig conf = newIndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer(random()));
+    IndexWriter writer = new IndexWriter(dir, conf);
+    Document doc = new Document();
+    Field idField = new StringField("id", "", Field.Store.NO);
+    Field storedField = new StoredField("stored", new byte[0]);
+    Field dvField = new SortedDocValuesField("dv", new BytesRef());
+    doc.add(idField);
+    doc.add(storedField);
+    doc.add(dvField);
+    
+    // index some docs
+    int numDocs = atLeast(1000);
+    for (int i = 0; i < numDocs; i++) {
+      idField.setStringValue(Integer.toString(i));
+      final int length;
+      if (minLength == maxLength) {
+        length = minLength; // fixed length
+      } else {
+        length = _TestUtil.nextInt(random(), minLength, maxLength);
+      }
+      byte buffer[] = new byte[length];
+      random().nextBytes(buffer);
+      storedField.setBytesValue(buffer);
+      dvField.setBytesValue(buffer);
+      writer.addDocument(doc);
+      if (random().nextInt(31) == 0) {
+        writer.commit();
+      }
+    }
+    
+    // delete some docs
+    int numDeletions = random().nextInt(numDocs/10);
+    for (int i = 0; i < numDeletions; i++) {
+      int id = random().nextInt(numDocs);
+      writer.deleteDocuments(new Term("id", Integer.toString(id)));
+    }
+    writer.close();
+    
+    // compare
+    DirectoryReader ir = DirectoryReader.open(dir);
+    for (AtomicReaderContext context : ir.leaves()) {
+      AtomicReader r = context.reader();
+      BinaryDocValues docValues = r.getSortedDocValues("dv");
+      for (int i = 0; i < r.maxDoc(); i++) {
+        BytesRef binaryValue = r.document(i).getBinaryValue("stored");
+        BytesRef scratch = new BytesRef();
+        docValues.get(i, scratch);
+        assertEquals(binaryValue, scratch);
+      }
+    }
+    ir.close();
+    dir.close();
+  }
+  
+  public void testSortedFixedLengthVsStoredFields() throws Exception {
+    int fixedLength = _TestUtil.nextInt(random(), 1, 10);
+    doTestSortedVsStoredFields(fixedLength, fixedLength);
+  }
+  
+  public void testSortedVariableLengthVsStoredFields() throws Exception {
+    doTestSortedVsStoredFields(1, 10);
   }
 }
