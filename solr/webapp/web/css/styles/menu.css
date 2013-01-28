@@ -1,13 +1,13 @@
 #menu-wrapper
 {
-  position: absolute;
-  top: 90px;
+  position: fixed;
+  top: 120px;
   width: 150px;
 }
 
 .has-environment #menu-wrapper
 {
-  top: 130px;
+  top: 160px;
 }
 
 #menu-wrapper a
@@ -16,6 +16,23 @@
   padding: 4px 2px;
   overflow: hidden;
   text-overflow: ellipsis;
+}
+
+#core-selector
+{
+  margin-top: 20px;
+  padding-right: 10px;
+}
+
+#core-selector a
+{
+  padding: 0;
+  padding-left: 8px;
+}
+
+#core-selector select
+{
+  width: 100%;
 }
 
 #menu-wrapper .active p
@@ -121,32 +138,27 @@
   display: none;
 }
 
-#menu-selector
-{
-  margin-top: 20px;
-}
-
-#menu-selector p
+#core-menu p
 {
   border-top: 1px solid #f0f0f0;
 }
 
-#menu-selector li:first-child p
+#core-menu li:first-child p
 {
   border-top: 0;
 }
 
-#menu-selector p a
+#core-menu p a
 {
   background-image: url( ../../img/ico/status-offline.png );
 }
 
-#menu-selector .active p a
+#core-menu .active p a
 {
   background-image: url( ../../img/ico/box.png );
 }
 
-#menu-selector ul,
+#core-menu ul,
 #menu ul
 {
   display: none;
@@ -154,7 +166,7 @@
   padding-bottom: 10px;
 }
 
-#menu-selector .active ul,
+#core-menu .active ul,
 #menu .active ul
 {
   display: block;
@@ -165,7 +177,7 @@
   border-bottom: 0;
 }
 
-#menu-selector ul li a,
+#core-menu ul li a,
 #menu ul li a
 {
   background-position: 7px 50%;
@@ -175,20 +187,20 @@
   padding-left: 26px;
 }
 
-#menu-selector ul li:last-child a,
+#core-menu ul li:last-child a,
 #menu ul li:last-child a
 {
   border-bottom: 0;
 }
 
-#menu-selector ul li a:hover,
+#core-menu ul li a:hover,
 #menu ul li a:hover
 {
   background-color: #f0f0f0;
   color: #333;
 }
 
-#menu-selector ul li.active a,
+#core-menu ul li.active a,
 #menu ul li.active a
 {
   background-color: #d0d0d0;
@@ -213,7 +225,7 @@
 #menu #cloud.global .rgraph a { background-image: url( ../../img/ico/asterisk.png ); }
 #menu #cloud.global .dump a { background-image: url( ../../img/ico/download-cloud.png ); }
 
-#menu-selector .ping.error a
+#core-menu .ping.error a
 {
   
   background-color: #ffcccc;
@@ -222,17 +234,18 @@
   cursor: help;
 }
 
-#menu-selector .query a { background-image: url( ../../img/ico/magnifier.png ); }
-#menu-selector .schema a { background-image: url( ../../img/ico/table.png ); }
-#menu-selector .config a { background-image: url( ../../img/ico/gear.png ); }
-#menu-selector .analysis a { background-image: url( ../../img/ico/funnel.png ); }
-#menu-selector .schema-browser a { background-image: url( ../../img/ico/book-open-text.png ); }
-#menu-selector .replication a { background-image: url( ../../img/ico/node.png ); }
-#menu-selector .distribution a { background-image: url( ../../img/ico/node-select.png ); }
-#menu-selector .ping a { background-image: url( ../../img/ico/system-monitor.png ); }
-#menu-selector .logging a { background-image: url( ../../img/ico/inbox-document-text.png ); }
-#menu-selector .plugins a { background-image: url( ../../img/ico/block.png ); }
-#menu-selector .dataimport a { background-image: url( ../../img/ico/document-import.png ); }
+#core-menu .overview a { background-image: url( ../../img/ico/home.png ); }
+#core-menu .query a { background-image: url( ../../img/ico/magnifier.png ); }
+#core-menu .schema a { background-image: url( ../../img/ico/table.png ); }
+#core-menu .config a { background-image: url( ../../img/ico/gear.png ); }
+#core-menu .analysis a { background-image: url( ../../img/ico/funnel.png ); }
+#core-menu .schema-browser a { background-image: url( ../../img/ico/book-open-text.png ); }
+#core-menu .replication a { background-image: url( ../../img/ico/node.png ); }
+#core-menu .distribution a { background-image: url( ../../img/ico/node-select.png ); }
+#core-menu .ping a { background-image: url( ../../img/ico/system-monitor.png ); }
+#core-menu .logging a { background-image: url( ../../img/ico/inbox-document-text.png ); }
+#core-menu .plugins a { background-image: url( ../../img/ico/block.png ); }
+#core-menu .dataimport a { background-image: url( ../../img/ico/document-import.png ); }
 
 
 #content #navigation

@@ -112,6 +112,9 @@ Optimizations
 * SOLR-4306: Utilize indexInfo=false when gathering core names in UI
   (steffkes)
 
+* SOLR-4284: Admin UI - make core list scrollable separate from the rest of
+  the UI (steffkes)
+
 Other Changes
 ----------------------
 

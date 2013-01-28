@@ -228,7 +228,7 @@ sammy.bind
     var related_select_element = $( '#related select', params.schema_browser_element )
     var type = 'index';
 
-    var sammy_basepath = '#/' + $( 'p a', params.active_core ).html() + '/schema-browser';
+    var sammy_basepath = app.core_menu.find( '.active a' ).attr( 'href' );
         
     if( !related_navigation_meta.hasClass( 'done' ) )
     {
@@ -640,7 +640,7 @@ sammy.bind
                     }
 
                     related_select_element
-                      .attr( 'rel', '#/' + $( 'p a', params.active_core ).html() + '/schema-browser' )
+                      .attr( 'rel', app.core_menu.find( '.active a' ).attr( 'href' ) )
                       .append( related_options )
                       .chosen();
                                             

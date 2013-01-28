@@ -172,7 +172,7 @@ ul
 #header
 {
   padding-bottom: 10px;
-  position: absolute;
+  position: fixed;
   z-index: 42;
 }
 
@@ -338,12 +338,6 @@ ul
   display: block;
   min-height: 400px;
   width: 100%;
-}
-
-#content > pre
-{
-  max-height: 600px;
-  overflow: auto;
 }
 
 #content .block
