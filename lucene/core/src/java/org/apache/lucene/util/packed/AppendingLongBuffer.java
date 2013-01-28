@@ -124,7 +124,7 @@ public class AppendingLongBuffer {
       } else if (values[vOff] == null) {
         Arrays.fill(currentValues, minValues[vOff]);
       } else {
-        for (int k = 0; k < MAX_PENDING_COUNT; ++k) {
+        for (int k = 0; k < MAX_PENDING_COUNT; ) {
           k += values[vOff].get(k, currentValues, k, MAX_PENDING_COUNT - k);
         }
         for (int k = 0; k < MAX_PENDING_COUNT; ++k) {
@@ -135,7 +135,7 @@ public class AppendingLongBuffer {
 
     /** Whether or not there are remaining values. */
     public boolean hasNext() {
-      return vOff < valuesOff || pOff < pendingOff;
+      return vOff < valuesOff || (vOff == valuesOff && pOff < pendingOff);
     }
 
     /** Return the next long in the buffer. */
