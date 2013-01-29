@@ -763,6 +763,8 @@ public class IndexWriter implements Closeable, TwoPhaseCommit {
   private FieldNumbers getFieldNumberMap() throws IOException {
     final FieldNumbers map = new FieldNumbers();
 
+    // nocommit for a 4.0 index that has inconsistent DV
+    // types ... this will throw exc on init of IW?
     for(SegmentInfoPerCommit info : segmentInfos) {
       for(FieldInfo fi : getFieldInfos(info.info)) {
         map.addOrGet(fi.name, fi.number, fi.getDocValuesType());

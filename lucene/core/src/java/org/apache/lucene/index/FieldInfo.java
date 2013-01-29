@@ -232,6 +232,9 @@ public final class FieldInfo {
 
   // nocommit type is always number?  should we remove this?
   void setNormValueType(DocValuesType type) {
+    if (normType != null && normType != type) {
+      throw new IllegalArgumentException("cannot change Norm type from " + normType + " to " + type + " for field \"" + name + "\"");
+    }
     normType = type;
     assert checkConsistency();
   }

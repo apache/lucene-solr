@@ -213,15 +213,17 @@ public class FieldInfos implements Iterable<FieldInfo> {
      * Sets the given field number and name if not yet set. 
      */
     // nocommit: why is docvalues involved with global field numbers?
+    // nocommit: and is it even tested...
     synchronized void setIfNotSet(int fieldNumber, String fieldName, DocValuesType dvType) {
       final Integer boxedFieldNumber = Integer.valueOf(fieldNumber);
       if (!numberToName.containsKey(boxedFieldNumber)
           && !nameToNumber.containsKey(fieldName)
-          && !docValuesType.containsKey(fieldName)) {
+          && !docValuesType.containsKey(dvType)) {
         numberToName.put(boxedFieldNumber, fieldName);
         nameToNumber.put(fieldName, boxedFieldNumber);
         docValuesType.put(fieldName, dvType);
       } else {
+        // nocommit should this be a real check?
         assert containsConsistent(boxedFieldNumber, fieldName, dvType);
       }
     }
@@ -319,22 +321,10 @@ public class FieldInfos implements Iterable<FieldInfo> {
         fi.update(isIndexed, storeTermVector, omitNorms, storePayloads, indexOptions);
 
         if (docValues != null) {
-          DocValuesType currentDVType = fi.getDocValuesType();
-          if (currentDVType == null) {
-            fi.setDocValuesType(docValues);
-          } else if (currentDVType != docValues) {
-            throw new IllegalArgumentException("cannot change DocValues type from " + currentDVType + " to " + docValues + " for field \"" + name + "\"");
-          }
           fi.setDocValuesType(docValues);
         }
 
         if (!fi.omitsNorms() && normType != null) {
-          DocValuesType currentDVType = fi.getNormType();
-          if (currentDVType == null) {
-            fi.setNormValueType(docValues);
-          } else if (currentDVType != normType) {
-            throw new IllegalArgumentException("cannot change Norm type from " + currentDVType + " to " + normType + " for field \"" + name + "\"");
-          }
           fi.setNormValueType(normType);
         }
       }
