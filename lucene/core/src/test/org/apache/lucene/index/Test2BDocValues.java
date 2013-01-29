@@ -30,7 +30,7 @@ import org.junit.Ignore;
 import com.carrotsearch.randomizedtesting.annotations.TimeoutSuite;
 
 @TimeoutSuite(millis = 80 * TimeUnits.HOUR)
-@Ignore("probably very slow")
+@Ignore("takes ~ 30 minutes")
 public class Test2BDocValues extends LuceneTestCase {
   
   // indexes Integer.MAX_VALUE docs with an increasing dv field
