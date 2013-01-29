@@ -185,6 +185,9 @@ public final class FieldInfo {
   }
 
   void setDocValuesType(DocValuesType type) {
+    if (docValueType != null && docValueType != type) {
+      throw new IllegalArgumentException("cannot change DocValues type from " + docValueType + " to " + type + " for field \"" + name + "\"");
+    }
     docValueType = type;
     assert checkConsistency();
   }

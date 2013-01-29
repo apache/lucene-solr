@@ -55,12 +55,7 @@ final class DocValuesProcessor extends StoredFieldsConsumer {
     // nocommit: these checks are duplicated everywhere
     final DocValuesType dvType = field.fieldType().docValueType();
     if (dvType != null) {
-      DocValuesType currentDVType = fieldInfo.getDocValuesType();
-      if (currentDVType == null) {
-        fieldInfo.setDocValuesType(dvType);
-      } else if (currentDVType != dvType) {
-        throw new IllegalArgumentException("cannot change DocValues type from " + currentDVType + " to " + dvType + " for field \"" + fieldInfo.name + "\"");
-      }
+      fieldInfo.setDocValuesType(dvType);
       if (dvType == DocValuesType.BINARY) {
         addBinaryField(fieldInfo, docID, field.binaryValue());
       } else if (dvType == DocValuesType.SORTED) {
