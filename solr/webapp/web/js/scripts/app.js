@@ -175,6 +175,12 @@ var solr_admin = function( app_config )
 
   this.core_regex_base = '^#\\/([\\w\\d-\\.]+)';
 
+  browser = {
+    locale : null,
+    language : null,
+    country : null
+  };
+
   show_global_error = function( error )
   {
     var main = $( '#main' );
@@ -294,6 +300,24 @@ var solr_admin = function( app_config )
 
   this.run = function()
   {
+    var navigator_language = navigator.userLanguage || navigator.language;
+    var language_match = navigator_language.match( /^(\w{2})([-_](\w{2}))?$/ );
+    if( language_match )
+    {
+      if( language_match[1] )
+      {
+        browser.language = language_match[1].toLowerCase();
+      }
+      if( language_match[3] )
+      {
+        browser.country = language_match[3].toUpperCase();
+      }
+      if( language_match[1] && language_match[3] )
+      {
+        browser.locale = browser.language + '_' + browser.country
+      }
+    }
+
     $.ajax
     (
       {
@@ -536,7 +560,23 @@ var solr_admin = function( app_config )
 
   this.format_number = function format_number( number )
   {
-    return ( number || 0 ).toString().replace( /\B(?=(\d{3})+(?!\d))/g, ' ' );
+    var sep = {
+      'de_CH' : '\'',
+      'de' : '.',
+      'en' : ',',
+      'es' : '.',
+      'it' : '.',
+      'ja' : ',',
+      'sv' : ' ',
+      'tr' : '.',
+      '_' : '' // fallback
+    };
+
+    return ( number || 0 ).toString().replace
+    (
+      /\B(?=(\d{3})+(?!\d))/g,
+      sep[ browser.locale ] || sep[ browser.language ] || sep['_']
+    );
   };
 
 };

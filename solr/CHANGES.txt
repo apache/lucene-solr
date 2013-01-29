@@ -115,6 +115,8 @@ Optimizations
 * SOLR-4284: Admin UI - make core list scrollable separate from the rest of
   the UI (steffkes)
 
+* SOLR-4364: Admin UI - Locale based number formatting (steffkes)
+
 Other Changes
 ----------------------
 
