@@ -1283,4 +1283,45 @@ public abstract class BaseDocValuesFormatTestCase extends LuceneTestCase {
   public void testSortedVariableLengthVsStoredFields() throws Exception {
     doTestSortedVsStoredFields(1, 10);
   }
+
+  public void testIllegalTypeChange() throws Exception {
+    Directory dir = newDirectory();
+    IndexWriterConfig conf = newIndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer(random()));
+    IndexWriter writer = new IndexWriter(dir, conf);
+    Document doc = new Document();
+    doc.add(new NumericDocValuesField("dv", 0L));
+    writer.addDocument(doc);
+    doc = new Document();
+    doc.add(new SortedDocValuesField("dv", new BytesRef("foo")));
+    try {
+      writer.addDocument(doc);
+      fail("did not hit exception");
+    } catch (IllegalArgumentException iae) {
+      // expected
+    }
+    writer.close();
+    dir.close();
+  }
+
+  public void testIllegalTypeChangeAcrossSegments() throws Exception {
+    Directory dir = newDirectory();
+    IndexWriterConfig conf = newIndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer(random()));
+    IndexWriter writer = new IndexWriter(dir, conf);
+    Document doc = new Document();
+    doc.add(new NumericDocValuesField("dv", 0L));
+    writer.addDocument(doc);
+    writer.close();
+
+    writer = new IndexWriter(dir, conf);
+    doc = new Document();
+    doc.add(new SortedDocValuesField("dv", new BytesRef("foo")));
+    try {
+      writer.addDocument(doc);
+      fail("did not hit exception");
+    } catch (IllegalArgumentException iae) {
+      // expected
+    }
+    writer.close();
+    dir.close();
+  }
 }
