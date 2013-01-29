@@ -160,6 +160,7 @@ public class AppendingLongBuffer {
    * Return the number of bytes used by this instance.
    */
   public long ramBytesUsed() {
+    // TODO: this is called per-doc-per-norms/dv-field, can we optimize this?
     long bytesUsed = RamUsageEstimator.alignObjectSize(
         RamUsageEstimator.NUM_BYTES_OBJECT_HEADER
         + 3 * RamUsageEstimator.NUM_BYTES_OBJECT_REF // the 3 arrays
