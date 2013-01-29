@@ -23,9 +23,6 @@
      kitchen sink thrown in. See example/solr/conf/schema.xml for a 
      more concise example.
 
-     $Id$
-     $Source: /cvs/main/searching/solr-configs/test/WEB-INF/classes/schema.xml,v $
-     $Name:  $
   -->
 
 <schema name="test" version="1.0">

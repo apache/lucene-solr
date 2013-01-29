@@ -17,11 +17,7 @@
  limitations under the License.
 -->
 
-<!-- $Id$
-     $Source$
-     $Name$
-
-
+<!-- 
 
      This is a "kitchen sink" config file that tests can use.
      When writting a new test, feel free to add *new* items (plugins,

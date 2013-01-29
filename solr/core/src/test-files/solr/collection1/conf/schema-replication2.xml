@@ -23,9 +23,6 @@
      kitchen sink thrown in. See example/solr/conf/schema.xml for a 
      more concise example.
 
-     $Id$
-     $Source$
-     $Name$
   -->
 
 <schema name="test" version="1.2">

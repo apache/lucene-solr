@@ -17,13 +17,6 @@
  limitations under the License.
 -->
 
-<!-- $Id: $
-     $Source: $
-     $Name: $
-
-Config for testing responselog component
-  -->
-
 <config>
   <luceneMatchVersion>${tests.luceneMatchVersion:LUCENE_CURRENT}</luceneMatchVersion>
   <requestHandler name="standard"
