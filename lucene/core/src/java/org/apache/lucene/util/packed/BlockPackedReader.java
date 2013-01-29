@@ -212,8 +212,8 @@ public final class BlockPackedReader {
       Arrays.fill(values, minValue);
     } else {
       final PackedInts.Decoder decoder = PackedInts.getDecoder(PackedInts.Format.PACKED, packedIntsVersion, bitsPerValue);
-      final int iterations = blockSize / decoder.valueCount();
-      final int blocksSize = iterations * 8 * decoder.blockCount();
+      final int iterations = blockSize / decoder.byteValueCount();
+      final int blocksSize = iterations * decoder.byteBlockCount();
       if (blocks == null || blocks.length < blocksSize) {
         blocks = new byte[blocksSize];
       }

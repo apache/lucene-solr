@@ -42,8 +42,8 @@ final class PackedWriter extends PackedInts.Writer {
     this.format = format;
     encoder = BulkOperation.of(format, bitsPerValue);
     iterations = encoder.computeIterations(valueCount, mem);
-    nextBlocks = new byte[8 * iterations * encoder.blockCount()];
-    nextValues = new long[iterations * encoder.valueCount()];
+    nextBlocks = new byte[iterations * encoder.byteBlockCount()];
+    nextValues = new long[iterations * encoder.byteValueCount()];
     off = 0;
     written = 0;
     finished = false;

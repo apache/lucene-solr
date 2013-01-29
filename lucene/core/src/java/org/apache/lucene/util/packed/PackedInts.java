@@ -280,15 +280,28 @@ public class PackedInts {
   public static interface Decoder {
 
     /**
-     * The minimum number of long blocks to decode in a single call.
+     * The minimum number of long blocks to encode in a single iteration, when
+     * using long encoding.
      */
-    int blockCount();
+    int longBlockCount();
 
     /**
-     * The number of values that can be stored in <code>blockCount()</code> long
+     * The number of values that can be stored in {@link #longBlockCount()} long
      * blocks.
      */
-    int valueCount();
+    int longValueCount();
+
+    /**
+     * The minimum number of byte blocks to encode in a single iteration, when
+     * using byte encoding.
+     */
+    int byteBlockCount();
+
+    /**
+     * The number of values that can be stored in {@link #byteBlockCount()} byte
+     * blocks.
+     */
+    int byteValueCount();
 
     /**
      * Read <code>iterations * blockCount()</code> blocks from <code>blocks</code>,
@@ -350,15 +363,28 @@ public class PackedInts {
   public static interface Encoder {
 
     /**
-     * The minimum number of long blocks to encode in a single call.
+     * The minimum number of long blocks to encode in a single iteration, when
+     * using long encoding.
      */
-    int blockCount();
+    int longBlockCount();
 
     /**
-     * The number of values that can be stored in <code>blockCount()</code> long
+     * The number of values that can be stored in {@link #longBlockCount()} long
      * blocks.
      */
-    int valueCount();
+    int longValueCount();
+
+    /**
+     * The minimum number of byte blocks to encode in a single iteration, when
+     * using byte encoding.
+     */
+    int byteBlockCount();
+
+    /**
+     * The number of values that can be stored in {@link #byteBlockCount()} byte
+     * blocks.
+     */
+    int byteValueCount();
 
     /**
      * Read <code>iterations * valueCount()</code> values from <code>values</code>,
