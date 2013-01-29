@@ -310,7 +310,7 @@ make many changes to an index in a batch and then send the
 There is also an <span class="codefrag">optimize</span> command that does the 
 same things as <span class="codefrag">commit</span>, but also forces all index 
 segments to be merged into a single segment -- this can be very resource 
-intsenive, but may be worthwhile for improving search speed if your index 
+intensive, but may be worthwhile for improving search speed if your index
 changes very infrequently.
 </p>
 <p>
@@ -411,7 +411,7 @@ and is useful when testing or debugging queries.
 <h2 class="boxed">Highlighting</h2>
 <div class="section">
 <p>
-    Hit highlighting returns relevent snippets of each returned document, and highlights
+    Hit highlighting returns relevant snippets of each returned document, and highlights
     terms from the query within those context snippets.
   </p>
 <p>
@@ -522,7 +522,7 @@ Try it out at
 <p>
     The <a href="http://wiki.apache.org/solr/SchemaXml">schema</a> defines
     the fields in the index and what type of analysis is applied to them.  The current schema your collection is using
-    may be viewed directly via the <a href="http://localhost:8983/solr/#/collection1/schema">Schema tab</a> in the Admin UI, or explored dynamicly using the <a href="http://localhost:8983/solr/#/collection1/schema-browser">Schema Browser tab</a>.
+    may be viewed directly via the <a href="http://localhost:8983/solr/#/collection1/schema">Schema tab</a> in the Admin UI, or explored dynamically using the <a href="http://localhost:8983/solr/#/collection1/schema-browser">Schema Browser tab</a>.
 </p>
 <p>
 The best analysis components (tokenization and filtering) for your textual 
@@ -616,7 +616,7 @@ Mousing over the section label to the left of the section will display the full 
 <p>
 When both <a href="http://localhost:8983/solr/#/collection1/analysis?analysis.fieldvalue=Canon+Power-Shot+SD500&amp;analysis.query=power+shot+sd-500&amp;analysis.fieldtype=text_en_splitting&amp;verbose_output=0">Index and Query</a>
 values are provided, two tables will be displayed side by side showing the 
-results of each chain.  Terms in the Index chain results that are equivilent 
+results of each chain.  Terms in the Index chain results that are equivalent
 to the final terms produced by the Query chain will be highlighted.
 </p>
 <p>
