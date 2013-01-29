@@ -217,7 +217,6 @@ public class TestFieldCache extends LuceneTestCase {
     }
 
     // seek the enum around (note this isn't a great test here)
-    // nocommit
     int num = atLeast(100);
     for (int i = 0; i < num; i++) {
       int k = random().nextInt(nTerms);
