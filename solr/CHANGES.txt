@@ -93,6 +93,8 @@ Bug Fixes
 * SOLR-3926: Solr should support better way of finding active sorts (Eirik Lygre via
   Erick Erickson)
 
+* SOLR-4342: Fix DataImportHandler stats to be a prper Map (hossman)
+
 Optimizations
 ----------------------
 
@@ -106,6 +108,12 @@ Optimizations
   Values which result in horizontal Scrollbar (steffkes)
 
 * SOLR-3915: Color Legend for Cloud UI (steffkes)
+
+* SOLR-4306: Utilize indexInfo=false when gathering core names in UI
+  (steffkes)
+
+* SOLR-4284: Admin UI - make core list scrollable separate from the rest of
+  the UI (steffkes)
 
 Other Changes
 ----------------------

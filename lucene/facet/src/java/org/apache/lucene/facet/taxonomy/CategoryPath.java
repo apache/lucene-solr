@@ -1,7 +1,6 @@
 package org.apache.lucene.facet.taxonomy;
 
-import org.apache.lucene.util.Constants;
-
+import java.util.Arrays;
 
 /*
  * Licensed to the Apache Software Foundation (ASF) under one or more
@@ -28,10 +27,6 @@ import org.apache.lucene.util.Constants;
  */
 public class CategoryPath implements Comparable<CategoryPath> {
 
-  // TODO: revisit when IBM releases Java 7 newer than SR3 (with a fix)
-  // to validate, run e.g. TestAssociationExample with -Dtests.iters=1000
-  private static final boolean IS_J9_JAVA7 = Constants.JRE_IS_MINIMUM_JAVA7 && Constants.JVM_VENDOR.contains("IBM");
-
   /** An empty {@link CategoryPath} */
   public static final CategoryPath EMPTY = new CategoryPath();
 
@@ -48,7 +43,7 @@ public class CategoryPath implements Comparable<CategoryPath> {
 
   // Used by singleton EMPTY
   private CategoryPath() {
-    components = new String[0];
+    components = null;
     length = 0;
   }
 
@@ -67,16 +62,12 @@ public class CategoryPath implements Comparable<CategoryPath> {
   /** Construct from the given path components. */
   public CategoryPath(final String... components) {
     assert components.length > 0 : "use CategoryPath.EMPTY to create an empty path";
-    if (IS_J9_JAVA7) {
-      // On IBM J9 Java 1.7.0, if we do 'this.components = components', then
-      // at some point its length becomes 0 ... quite unexpectedly. If JIT is
-      // disabled, it doesn't happen. This bypasses the bug by copying the 
-      // array (note, Arrays.copyOf did not help either!).
-      this.components = new String[components.length];
-      System.arraycopy(components, 0, this.components, 0, components.length);
-    } else {
-      this.components = components;
+    for (String comp : components) {
+      if (comp == null || comp.isEmpty()) {
+        throw new IllegalArgumentException("empty or null components not allowed: " + Arrays.toString(components));
+      }
     }
+    this.components = components;
     length = components.length;
   }
 
@@ -84,9 +75,14 @@ public class CategoryPath implements Comparable<CategoryPath> {
   public CategoryPath(final String pathString, final char delimiter) {
     String[] comps = pathString.split(Character.toString(delimiter));
     if (comps.length == 1 && comps[0].isEmpty()) {
-      components = EMPTY.components;
+      components = null;
       length = 0;
     } else {
+      for (String comp : comps) {
+        if (comp == null || comp.isEmpty()) {
+          throw new IllegalArgumentException("empty or null components not allowed: " + Arrays.toString(comps));
+        }
+      }
       components = comps;
       length = components.length;
     }

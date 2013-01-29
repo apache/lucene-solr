@@ -1,5 +1,7 @@
 package org.apache.lucene.facet.taxonomy;
 
+import java.util.Arrays;
+
 import org.apache.lucene.facet.FacetTestCase;
 import org.junit.Test;
 
@@ -173,9 +175,46 @@ public class TestCategoryPath extends FacetTestCase {
     pother = new CategoryPath("a/b/c/e", '/');
     assertTrue(pother.compareTo(p) > 0);
     assertTrue(p.compareTo(pother) < 0);
-    pother = new CategoryPath("a/b/c//e", '/');
-    assertTrue(pother.compareTo(p) < 0);
-    assertTrue(p.compareTo(pother) > 0);
   }
 
+  @Test
+  public void testEmptyNullComponents() throws Exception {
+    // LUCENE-4724: CategoryPath should not allow empty or null components
+    String[][] components_tests = new String[][] {
+      new String[] { "", "test" }, // empty in the beginning
+      new String[] { "test", "" }, // empty in the end
+      new String[] { "test", "", "foo" }, // empty in the middle
+      new String[] { null, "test" }, // null at the beginning
+      new String[] { "test", null }, // null in the end
+      new String[] { "test", null, "foo" }, // null in the middle
+    };
+
+    for (String[] components : components_tests) {
+      try {
+        assertNotNull(new CategoryPath(components));
+        fail("empty or null components should not be allowed: " + Arrays.toString(components));
+      } catch (IllegalArgumentException e) {
+        // ok
+      }
+    }
+    
+    String[] path_tests = new String[] {
+        "/test", // empty in the beginning
+        "test//foo", // empty in the middle
+    };
+    
+    for (String path : path_tests) {
+      try {
+        assertNotNull(new CategoryPath(path, '/'));
+        fail("empty or null components should not be allowed: " + path);
+      } catch (IllegalArgumentException e) {
+        // ok
+      }
+    }
+
+    // a trailing path separator is produces only one component
+    assertNotNull(new CategoryPath("test/", '/'));
+    
+  }
+  
 }

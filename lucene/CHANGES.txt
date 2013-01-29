@@ -79,6 +79,9 @@ New Features
   near-real-time reader is opened that contains those changes.
   (Robert Muir, Mike McCandless)
 
+* LUCENE-4723: Add AnalyzerFactoryTask to benchmark, and enable analyzer
+  creation via the resulting factories using NewAnalyzerTask.  (Steve Rowe)
+
 API Changes
 
 * LUCENE-4709: FacetResultNode no longer has a residue field. (Shai Erera)
@@ -103,6 +106,14 @@ Bug Fixes
   PrefixTree based SpatialStrategy. For a pathological case of nearly 360
   degrees and barely any height, it would generate so many indexed terms
   (> 500k) that it could even cause an OutOfMemoryError. Fixed. (David Smiley)
+
+* LUCENE-4704: Make join queries override hashcode and equals methods.
+  (Martijn van Groningen)
+
+* LUCENE-4724: Fix bug in CategoryPath which allowed passing null or empty
+  string components. This is forbidden now (throws an exception). Note that if
+  you have a taxonomy index created with such strings, you should rebuild it.
+  (Michael McCandless, Shai Erera)
 
 ======================= Lucene 4.1.0 =======================
 

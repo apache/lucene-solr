@@ -56,6 +56,12 @@ public class TestCompactLabelToOrdinal extends FacetTestCase {
           .onUnmappableCharacter(CodingErrorAction.REPLACE)
           .onMalformedInput(CodingErrorAction.REPLACE);
       uniqueValues[i] = decoder.decode(ByteBuffer.wrap(buffer, 0, size)).toString();
+      // we cannot have empty path components, so eliminate all prefix as well
+      // as middle consecuive delimiter chars.
+      uniqueValues[i] = uniqueValues[i].replaceAll("/+", "/");
+      if (uniqueValues[i].startsWith("/")) {
+        uniqueValues[i] = uniqueValues[i].substring(1);
+      }
       if (uniqueValues[i].indexOf(CompactLabelToOrdinal.TERMINATOR_CHAR) == -1) {
         i++;
       }

@@ -25,6 +25,7 @@ import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.common.params.UpdateParams;
 import org.apache.solr.common.util.ContentStreamBase;
 import org.apache.solr.common.util.NamedList;
+import org.apache.solr.common.util.SimpleOrderedMap;
 import org.apache.solr.common.util.ContentStream;
 import org.apache.solr.common.util.StrUtils;
 import org.apache.solr.util.SystemIdResolver;
@@ -247,7 +248,7 @@ public class DataImportHandler extends RequestHandlerBase implements
       return super.getStatistics();
 
     DocBuilder.Statistics cumulative = importer.cumulativeStatistics;
-    NamedList result = new NamedList();
+    SimpleOrderedMap result = new SimpleOrderedMap();
 
     result.add("Status", importer.getStatus().toString());
 

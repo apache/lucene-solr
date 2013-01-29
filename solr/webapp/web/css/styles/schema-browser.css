@@ -545,6 +545,7 @@
   clear: left;
   float: left;
   margin-left: 2px;
+  white-space: nowrap;
 }
 
 #content #schema-browser #data #field .histogram-holder li:hover dl

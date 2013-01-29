@@ -71,6 +71,7 @@ public class TestPerfTasksLogic extends BenchmarkTestCase {
   public void setUp() throws Exception {
     super.setUp();
     copyToWorkDir("reuters.first20.lines.txt");
+    copyToWorkDir("test-mapping-ISOLatin1Accent-partial.txt");
   }
 
   /**
@@ -1019,62 +1020,78 @@ public class TestPerfTasksLogic extends BenchmarkTestCase {
   }
   
   /**
-   * Test that we can create ShingleAnalyzerWrappers.
+   * Test that we can create shingle analyzers using AnalyzerFactory.
    */
   public void testShingleAnalyzer() throws Exception {
     String text = "one,two,three, four five six";
     
-    // Default analyzer, maxShingleSize, and outputUnigrams
-    Benchmark benchmark = execBenchmark(getShingleConfig(""));
+    // StandardTokenizer, maxShingleSize, and outputUnigrams
+    Benchmark benchmark = execBenchmark(getAnalyzerFactoryConfig
+        ("shingle-analyzer", "StandardTokenizer,ShingleFilter"));
     benchmark.getRunData().getAnalyzer().tokenStream
         ("bogus", new StringReader(text)).close();
-    assertEqualShingle(benchmark.getRunData().getAnalyzer(), text,
-                       new String[] {"one", "one two", "two", "two three",
-                                     "three", "three four", "four", "four five",
-                                     "five", "five six", "six"});
-    // Default analyzer, maxShingleSize = 3, and outputUnigrams = false
+    BaseTokenStreamTestCase.assertAnalyzesTo(benchmark.getRunData().getAnalyzer(), text,
+                                             new String[] { "one", "one two", "two", "two three",
+                                                            "three", "three four", "four", "four five",
+                                                            "five", "five six", "six" });
+    // StandardTokenizer, maxShingleSize = 3, and outputUnigrams = false
     benchmark = execBenchmark
-      (getShingleConfig("maxShingleSize:3,outputUnigrams:false"));
-    assertEqualShingle(benchmark.getRunData().getAnalyzer(), text,
-                       new String[] { "one two", "one two three", "two three",
-                                      "two three four", "three four", 
-                                      "three four five", "four five",
-                                      "four five six", "five six" });
-    // WhitespaceAnalyzer, default maxShingleSize and outputUnigrams
+      (getAnalyzerFactoryConfig
+          ("shingle-analyzer",
+           "StandardTokenizer,ShingleFilter(maxShingleSize:3,outputUnigrams:false)"));
+    BaseTokenStreamTestCase.assertAnalyzesTo(benchmark.getRunData().getAnalyzer(), text,
+                                             new String[] { "one two", "one two three", "two three",
+                                                            "two three four", "three four",
+                                                            "three four five", "four five",
+                                                            "four five six", "five six" });
+    // WhitespaceTokenizer, default maxShingleSize and outputUnigrams
     benchmark = execBenchmark
-      (getShingleConfig("analyzer:WhitespaceAnalyzer"));
-    assertEqualShingle(benchmark.getRunData().getAnalyzer(), text,
-                       new String[] { "one,two,three,", "one,two,three, four",
-                                      "four", "four five", "five", "five six", 
-                                      "six" });
+      (getAnalyzerFactoryConfig("shingle-analyzer", "WhitespaceTokenizer,ShingleFilter"));
+    BaseTokenStreamTestCase.assertAnalyzesTo(benchmark.getRunData().getAnalyzer(), text,
+                                             new String[] { "one,two,three,", "one,two,three, four",
+                                                            "four", "four five", "five", "five six",
+                                                            "six" });
     
-    // WhitespaceAnalyzer, maxShingleSize=3 and outputUnigrams=false
+    // WhitespaceTokenizer, maxShingleSize=3 and outputUnigrams=false
     benchmark = execBenchmark
-      (getShingleConfig
-        ("outputUnigrams:false,maxShingleSize:3,analyzer:WhitespaceAnalyzer"));
-    assertEqualShingle(benchmark.getRunData().getAnalyzer(), text,
-                       new String[] { "one,two,three, four", 
-                                      "one,two,three, four five",
-                                      "four five", "four five six",
-                                      "five six" });
+      (getAnalyzerFactoryConfig
+        ("shingle-factory",
+         "WhitespaceTokenizer,ShingleFilter(outputUnigrams:false,maxShingleSize:3)"));
+    BaseTokenStreamTestCase.assertAnalyzesTo(benchmark.getRunData().getAnalyzer(), text,
+                                             new String[] { "one,two,three, four",
+                                                            "one,two,three, four five",
+                                                            "four five", "four five six",
+                                                            "five six" });
   }
   
-  private void assertEqualShingle
-    (Analyzer analyzer, String text, String[] expected) throws Exception {
-    BaseTokenStreamTestCase.assertAnalyzesTo(analyzer, text, expected);
-  }
-  
-  private String[] getShingleConfig(String params) { 
+  private String[] getAnalyzerFactoryConfig(String name, String params) {
+    final String singleQuoteEscapedName = name.replaceAll("'", "\\\\'");
     String algLines[] = {
         "content.source=org.apache.lucene.benchmark.byTask.feeds.LineDocSource",
         "docs.file=" + getReuters20LinesFile(),
+        "work.dir=" + getWorkDir().getAbsolutePath().replaceAll("\\\\", "/"), // Fix Windows path
         "content.source.forever=false",
         "directory=RAMDirectory",
-        "NewShingleAnalyzer(" + params + ")",
+        "AnalyzerFactory(name:'" + singleQuoteEscapedName + "', " + params + ")",
+        "NewAnalyzer('" + singleQuoteEscapedName + "')",
         "CreateIndex",
         "{ \"AddDocs\"  AddDoc > : * "
     };
     return algLines;
+  }
+
+  public void testAnalyzerFactory() throws Exception {
+    String text = "Fortieth, Quarantième, Cuadragésimo";
+    Benchmark benchmark = execBenchmark(getAnalyzerFactoryConfig
+        ("ascii folded, pattern replaced, standard tokenized, downcased, bigrammed.'analyzer'",
+         "positionIncrementGap:100,offsetGap:1111,"
+         +"MappingCharFilter(mapping:'test-mapping-ISOLatin1Accent-partial.txt'),"
+         +"PatternReplaceCharFilterFactory(pattern:'e(\\\\\\\\S*)m',replacement:\"$1xxx$1\"),"
+         +"StandardTokenizer,LowerCaseFilter,NGramTokenFilter(minGramSize:2,maxGramSize:2)"));
+    BaseTokenStreamTestCase.assertAnalyzesTo(benchmark.getRunData().getAnalyzer(), text,
+        new String[] { "fo", "or", "rt", "ti", "ie", "et", "th",
+                       "qu", "ua", "ar", "ra", "an", "nt", "ti", "ix", "xx", "xx", "xe",
+                       "cu", "ua", "ad", "dr", "ra", "ag", "gs", "si", "ix", "xx", "xx", "xs", "si", "io"});
   }
   
   private String getReuters20LinesFile() {

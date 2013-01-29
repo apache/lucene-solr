@@ -74,7 +74,7 @@ public class CommonTermsQuery extends Query {
   protected final Occur highFreqOccur;
   protected float lowFreqBoost = 1.0f;
   protected float highFreqBoost = 1.0f;
-  protected int minNrShouldMatch = 0;
+  protected float minNrShouldMatch = 0;
   
   /**
    * Creates a new {@link CommonTermsQuery}
@@ -84,7 +84,7 @@ public class CommonTermsQuery extends Query {
    * @param lowFreqOccur
    *          {@link Occur} used for low frequency terms
    * @param maxTermFrequency
-   *          a value in [0..1] (or absolute number >=1) representing the
+   *          a value in [0..1) (or absolute number >=1) representing the
    *          maximum threshold of a terms document frequency to be considered a
    *          low frequency term.
    * @throws IllegalArgumentException
@@ -104,7 +104,7 @@ public class CommonTermsQuery extends Query {
    * @param lowFreqOccur
    *          {@link Occur} used for low frequency terms
    * @param maxTermFrequency
-   *          a value in [0..1] (or absolute number >=1) representing the
+   *          a value in [0..1) (or absolute number >=1) representing the
    *          maximum threshold of a terms document frequency to be considered a
    *          low frequency term.
    * @param disableCoord
@@ -160,15 +160,19 @@ public class CommonTermsQuery extends Query {
     return buildQuery(maxDoc, contextArray, queryTerms);
   }
   
+  protected int calcLowFreqMinimumNumberShouldMatch(int numOptional) {
+      if (minNrShouldMatch >= 1.0f || minNrShouldMatch == 0.0f) {
+          return (int) minNrShouldMatch;
+      }
+      return (int) (Math.round(minNrShouldMatch * numOptional));
+  }
+  
   protected Query buildQuery(final int maxDoc,
       final TermContext[] contextArray, final Term[] queryTerms) {
     BooleanQuery lowFreq = new BooleanQuery(disableCoord);
     BooleanQuery highFreq = new BooleanQuery(disableCoord);
     highFreq.setBoost(highFreqBoost);
     lowFreq.setBoost(lowFreqBoost);
-    if (lowFreqOccur == Occur.SHOULD) {
-      lowFreq.setMinimumNumberShouldMatch(minNrShouldMatch);
-    }
     BooleanQuery query = new BooleanQuery(true);
     for (int i = 0; i < queryTerms.length; i++) {
       TermContext termContext = contextArray[i];
@@ -185,6 +189,11 @@ public class CommonTermsQuery extends Query {
         }
       }
       
+    }
+    final int numLowFreqClauses = lowFreq.clauses().size(); 
+    if (lowFreqOccur == Occur.SHOULD && numLowFreqClauses > 0) {
+      int minMustMatch = calcLowFreqMinimumNumberShouldMatch(numLowFreqClauses);
+      lowFreq.setMinimumNumberShouldMatch(minMustMatch);
     }
     if (lowFreq.clauses().isEmpty()) {
       /*
@@ -265,7 +274,9 @@ public class CommonTermsQuery extends Query {
   /**
    * Specifies a minimum number of the optional BooleanClauses which must be
    * satisfied in order to produce a match on the low frequency terms query
-   * part.
+   * part. This method accepts a float value in the range [0..1) as a fraction
+   * of the actual query terms in the low frequent clause or a number
+   * <tt>&gt;=1</tt> as an absolut number of clauses that need to match.
    * 
    * <p>
    * By default no optional clauses are necessary for a match (unless there are
@@ -276,7 +287,7 @@ public class CommonTermsQuery extends Query {
    * @param min
    *          the number of optional clauses that must match
    */
-  public void setMinimumNumberShouldMatch(int min) {
+  public void setMinimumNumberShouldMatch(float min) {
     this.minNrShouldMatch = min;
   }
   
@@ -284,7 +295,7 @@ public class CommonTermsQuery extends Query {
    * Gets the minimum number of the optional BooleanClauses which must be
    * satisfied.
    */
-  public int getMinimumNumberShouldMatch() {
+  public float getMinimumNumberShouldMatch() {
     return minNrShouldMatch;
   }
   
@@ -332,7 +343,7 @@ public class CommonTermsQuery extends Query {
     result = prime * result
         + ((lowFreqOccur == null) ? 0 : lowFreqOccur.hashCode());
     result = prime * result + Float.floatToIntBits(maxTermFrequency);
-    result = prime * result + minNrShouldMatch;
+    result = prime * result + Float.floatToIntBits(minNrShouldMatch);
     result = prime * result + ((terms == null) ? 0 : terms.hashCode());
     return result;
   }

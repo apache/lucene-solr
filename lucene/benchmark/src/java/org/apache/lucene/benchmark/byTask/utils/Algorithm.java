@@ -58,11 +58,12 @@ public class Algorithm {
     StreamTokenizer stok = new StreamTokenizer(new StringReader(algTxt));
     stok.commentChar('#');
     stok.eolIsSignificant(false);
-    stok.ordinaryChar('"');
+    stok.quoteChar('"');
+    stok.quoteChar('\'');
     stok.ordinaryChar('/');
     stok.ordinaryChar('(');
     stok.ordinaryChar(')');
-    boolean colonOk = false; 
+    boolean colonOk = false;
     boolean isDisableCountNextTask = false; // only for primitive tasks
     currSequence.setDepth(0);
     
@@ -74,6 +75,7 @@ public class Algorithm {
           Constructor<? extends PerfTask> cnstr = taskClass(config,s)
             .asSubclass(PerfTask.class).getConstructor(PerfRunData.class);
           PerfTask task = cnstr.newInstance(runData);
+          task.setAlgLineNum(stok.lineno());
           task.setDisableCounting(isDisableCountNextTask);
           isDisableCountNextTask = false;
           currSequence.addTask(task);
@@ -90,24 +92,54 @@ public class Algorithm {
           if (stok.ttype!='(') {
             stok.pushBack();
           } else {
-            // get params, for tasks that supports them, - anything until next ')'
+            // get params, for tasks that supports them - allow recursive parenthetical expressions
+            stok.eolIsSignificant(true);  // Allow params tokenizer to keep track of line number
             StringBuilder params = new StringBuilder();
             stok.nextToken();
-            while (stok.ttype!=')') { 
-              switch (stok.ttype) {
-                case StreamTokenizer.TT_NUMBER:  
-                  params.append(stok.nval);
-                  break;
-                case StreamTokenizer.TT_WORD:    
-                  params.append(stok.sval);             
-                  break;
-                case StreamTokenizer.TT_EOF:     
-                  throw new Exception("unexpexted EOF: - "+stok.toString());
-                default:
-                  params.append((char)stok.ttype);
+            if (stok.ttype != ')') {
+              int count = 1;
+              BALANCED_PARENS: while (true) {
+                switch (stok.ttype) {
+                  case StreamTokenizer.TT_NUMBER: {
+                    params.append(stok.nval);
+                    break;
+                  }
+                  case StreamTokenizer.TT_WORD: {
+                    params.append(stok.sval);
+                    break;
+                  }
+                  case StreamTokenizer.TT_EOF: {
+                    throw new RuntimeException("Unexpexted EOF: - "+stok.toString());
+                  }
+                  case '"':
+                  case '\'': {
+                    params.append((char)stok.ttype);
+                    // re-escape delimiters, if any
+                    params.append(stok.sval.replaceAll("" + (char)stok.ttype, "\\\\" + (char)stok.ttype));
+                    params.append((char)stok.ttype);
+                    break;
+                  }
+                  case '(': {
+                    params.append((char)stok.ttype);
+                    ++count;
+                    break;
+                  }
+                  case ')': {
+                    if (--count >= 1) {  // exclude final closing parenthesis
+                      params.append((char)stok.ttype);
+                    } else {
+                      break BALANCED_PARENS;
+                    }
+                    break;
+                  }
+                  default: {
+                    params.append((char)stok.ttype);
+                  }
+                }
+                stok.nextToken();
               }
-              stok.nextToken();
             }
+            stok.eolIsSignificant(false);
             String prm = params.toString().trim();
             if (prm.length()>0) {
               task.setParams(prm);
@@ -182,10 +214,8 @@ public class Algorithm {
               if (stok.ttype!='"') {
                 stok.pushBack();
               } else {
-                stok.nextToken();
                 name = stok.sval;
-                stok.nextToken();
-                if (stok.ttype!='"' || name==null || name.length()==0) { 
+                if (stok.ttype!='"' || name==null || name.length()==0) {
                   throw new Exception("sequence name problem - "+stok.toString()); 
                 }
               }
