@@ -19,8 +19,6 @@
      Striped down schema used by SampleTest to demonstrate picking any
      schema filename you want.
 
-     $Id: schema.xml 382610 2006-03-03 01:43:03Z yonik $
-     $Source: /cvs/main/searching/solr-configs/test/WEB-INF/classes/schema.xml,v $
   -->
 
 <schema name="test" version="1.0">

@@ -17,11 +17,6 @@
  limitations under the License.
 -->
 
-<!-- $Id: solrconfig-master2.xml 1144761 2011-07-09 23:01:53Z sarowe $
-     $Source$
-     $Name$
-  -->
-
 <config>
   <luceneMatchVersion>${tests.luceneMatchVersion:LUCENE_CURRENT}</luceneMatchVersion>
   <dataDir>${solr.data.dir:}</dataDir>

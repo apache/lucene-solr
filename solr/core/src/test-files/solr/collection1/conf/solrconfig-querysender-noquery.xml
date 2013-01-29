@@ -17,11 +17,6 @@
  limitations under the License.
 -->
 
-<!-- $Id: solrconfig-querysender.xml 1048886 2010-12-14 01:10:52Z hossman $
-     $Source$
-     $Name$
-  -->
-
 <config>
   <luceneMatchVersion>${tests.luceneMatchVersion:LUCENE_CURRENT}</luceneMatchVersion>
     <!--  The DirectoryFactory to use for indexes.
