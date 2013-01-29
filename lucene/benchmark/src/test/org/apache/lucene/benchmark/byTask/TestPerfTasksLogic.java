@@ -1070,7 +1070,7 @@ public class TestPerfTasksLogic extends BenchmarkTestCase {
     String algLines[] = {
         "content.source=org.apache.lucene.benchmark.byTask.feeds.LineDocSource",
         "docs.file=" + getReuters20LinesFile(),
-        "work.dir=" + getWorkDir().getAbsolutePath(),
+        "work.dir=" + getWorkDir().getAbsolutePath().replaceAll("\\\\", "/"), // Fix Windows path
         "content.source.forever=false",
         "directory=RAMDirectory",
         "AnalyzerFactory(name:'" + singleQuoteEscapedName + "', " + params + ")",
