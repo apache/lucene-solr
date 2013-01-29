@@ -217,10 +217,6 @@ public class MergeState {
   /** InfoStream for debugging messages. */
   public InfoStream infoStream;
 
-  /** Current field being merged. */
-  // nocommit shouldn't this be ... a param?:
-  public FieldInfo fieldInfo;
-  
   // TODO: get rid of this? it tells you which segments are 'aligned' (e.g. for bulk merging)
   // but is this really so expensive to compute again in different components, versus once in SM?
   
