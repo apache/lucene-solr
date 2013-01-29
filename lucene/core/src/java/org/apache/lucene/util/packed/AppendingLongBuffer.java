@@ -33,6 +33,7 @@ public class AppendingLongBuffer {
 
   private long[] minValues;
   private PackedInts.Reader[] values;
+  private long valuesBytes;
   private int valuesOff;
   private long[] pending;
   private int pendingOff;
@@ -85,6 +86,7 @@ public class AppendingLongBuffer {
         i += mutable.set(i, pending, i, pendingOff - i);
       }
       values[valuesOff] = mutable;
+      valuesBytes += mutable.ramBytesUsed();
     }
     ++valuesOff;
 
@@ -166,12 +168,7 @@ public class AppendingLongBuffer {
         + RamUsageEstimator.sizeOf(minValues)
         + RamUsageEstimator.alignObjectSize(RamUsageEstimator.NUM_BYTES_ARRAY_HEADER + (long) RamUsageEstimator.NUM_BYTES_OBJECT_REF * values.length); // values
 
-    for (int i = 0; i < valuesOff; ++i) {
-      if (values[i] != null) {
-        bytesUsed += values[i].ramBytesUsed();
-      }
-    }
-    return bytesUsed;
+    return bytesUsed + valuesBytes;
   }
 
 }

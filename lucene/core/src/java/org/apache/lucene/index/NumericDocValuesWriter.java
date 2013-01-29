@@ -55,7 +55,7 @@ class NumericDocValuesWriter extends DocValuesWriter {
 
     pending.add(value);
 
-    updateBytesUsed(); // nocommit: O(n^2)!!!!!!!!!!!!
+    updateBytesUsed();
   }
 
   private void updateBytesUsed() {
