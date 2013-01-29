@@ -110,20 +110,10 @@ public abstract class SortedDocValues extends BinaryDocValues {
       } else if (cmp > 0) {
         high = mid - 1;
       } else {
-        // nocommit: we shouldnt have to set spare at all if its actually a spare, but its not!
-        // ant test  -Dtestcase=TestFieldCacheRewriteMethod -Dtests.method=testRegexps -Dtests.seed=AFC4A08B212CE143 -Dtests.slow=true -Dtests.locale=th -Dtests.timezone=Canada/Mountain -Dtests.file.encoding=ISO-8859-1
-        spare.bytes = BytesRef.EMPTY_BYTES;
-        spare.offset = 0;
-        spare.length = 0;
         return mid; // key found
       }
     }
 
-    // nocommit: we shouldnt have to set spare at all if its actually a spare, but its not!
-    // ant test  -Dtestcase=TestFieldCacheRewriteMethod -Dtests.method=testRegexps -Dtests.seed=AFC4A08B212CE143 -Dtests.slow=true -Dtests.locale=th -Dtests.timezone=Canada/Mountain -Dtests.file.encoding=ISO-8859-1
-    spare.bytes = BytesRef.EMPTY_BYTES;
-    spare.offset = 0;
-    spare.length = 0;
     return -(low + 1);  // key not found.
   }
 }

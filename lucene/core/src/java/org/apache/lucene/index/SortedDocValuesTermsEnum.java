@@ -42,6 +42,10 @@ public class SortedDocValuesTermsEnum extends TermsEnum {
     if (ord >= 0) {
       currentOrd = ord;
       term.offset = 0;
+      // nocommit is there cleaner way ...
+      // term.bytes may be pointing to codec-private byte[]
+      // storage, so we must force new byte[] allocation:
+      term.bytes = new byte[text.length];
       term.copyBytes(text);
       return SeekStatus.FOUND;
     } else {
@@ -60,7 +64,6 @@ public class SortedDocValuesTermsEnum extends TermsEnum {
   public boolean seekExact(BytesRef text, boolean useCache) throws IOException {
     int ord = values.lookupTerm(text, term);
     if (ord >= 0) {
-      term.copyBytes(text);
       currentOrd = ord;
       return true;
     } else {
