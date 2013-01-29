@@ -1,4 +1,4 @@
-package org.apache.lucene.util;
+package org.apache.lucene.search.suggest;
 
 /*
  * Licensed to the Apache Software Foundation (ASF) under one or more
@@ -20,6 +20,13 @@ package org.apache.lucene.util;
 import java.util.Arrays;
 import java.util.Comparator;
 
+import org.apache.lucene.util.ArrayUtil;
+import org.apache.lucene.util.BytesRef;
+import org.apache.lucene.util.ByteBlockPool;
+import org.apache.lucene.util.BytesRefIterator;
+import org.apache.lucene.util.Counter;
+import org.apache.lucene.util.RamUsageEstimator;
+import org.apache.lucene.util.SorterTemplate;
 
 /**
  * A simple append only random-access {@link BytesRef} array that stores full
@@ -31,7 +38,7 @@ import java.util.Comparator;
  * @lucene.internal
  * @lucene.experimental
  */
-public final class BytesRefArray {
+final class BytesRefArray {
   private final ByteBlockPool pool;
   private int[] offsets = new int[1];
   private int lastElement = 0;

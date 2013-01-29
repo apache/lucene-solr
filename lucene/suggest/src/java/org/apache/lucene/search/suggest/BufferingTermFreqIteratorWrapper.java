@@ -22,7 +22,6 @@ import java.util.Comparator;
 import org.apache.lucene.search.spell.TermFreqIterator;
 import org.apache.lucene.util.ArrayUtil;
 import org.apache.lucene.util.BytesRef;
-import org.apache.lucene.util.BytesRefArray;
 import org.apache.lucene.util.Counter;
 
 /**

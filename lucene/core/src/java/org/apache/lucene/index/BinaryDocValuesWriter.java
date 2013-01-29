@@ -23,23 +23,32 @@ import java.io.IOException;
 import java.util.Iterator;
 
 import org.apache.lucene.codecs.DocValuesConsumer;
+import org.apache.lucene.store.RAMFile;
+import org.apache.lucene.store.RAMInputStream;
+import org.apache.lucene.store.RAMOutputStream;
 import org.apache.lucene.util.BytesRef;
-import org.apache.lucene.util.BytesRefArray;
 import org.apache.lucene.util.Counter;
+import org.apache.lucene.util.packed.AppendingLongBuffer;
 
 
 /** Buffers up pending byte[] per doc, then flushes when
  *  segment flushes. */
 class BinaryDocValuesWriter extends DocValuesWriter {
 
-  private final BytesRefArray bytesRefArray;
+  private final RAMFile bytes;
+  private final RAMOutputStream bytesWriter;
+  private final AppendingLongBuffer lengths;
   private final FieldInfo fieldInfo;
+  private final Counter iwBytesUsed;
+  private long bytesUsed;
   private int addedValues = 0;
-  private final BytesRef emptyBytesRef = new BytesRef();
 
   public BinaryDocValuesWriter(FieldInfo fieldInfo, Counter iwBytesUsed) {
     this.fieldInfo = fieldInfo;
-    this.bytesRefArray = new BytesRefArray(iwBytesUsed);
+    this.bytes = new RAMFile();
+    this.bytesWriter = new RAMOutputStream(bytes);
+    this.iwBytesUsed = iwBytesUsed;
+    this.lengths = new AppendingLongBuffer();
   }
 
   public void addValue(int docID, BytesRef value) {
@@ -56,19 +65,41 @@ class BinaryDocValuesWriter extends DocValuesWriter {
     // Fill in any holes:
     while(addedValues < docID) {
       addedValues++;
-      bytesRefArray.append(emptyBytesRef);
+      lengths.add(0);
     }
     addedValues++;
-    bytesRefArray.append(value);
+    lengths.add(value.length);
+    try {
+      bytesWriter.writeBytes(value.bytes, value.offset, value.length);
+    } catch (IOException e) {
+      throw new RuntimeException(e);
+    }
+    
+    updateBytesUsed();
+  }
+  
+  private void updateBytesUsed() {
+    // nocommit not totally accurate, but just fix not to use RAMFile anyway
+    long numBuffers = (bytesWriter.getFilePointer() / 1024) + 1; // round up
+    long oversize = numBuffers * (1024 + 32); // fudge for arraylist/etc overhead
+    final long newBytesUsed = lengths.ramBytesUsed() + oversize;
+    iwBytesUsed.addAndGet(newBytesUsed - bytesUsed);
+    bytesUsed = newBytesUsed;
   }
 
   @Override
   public void finish(int maxDoc) {
+    try {
+      bytesWriter.close();
+    } catch (IOException e) {
+      throw new RuntimeException(e);
+    }
   }
 
   @Override
   public void flush(SegmentWriteState state, DocValuesConsumer dvConsumer) throws IOException {
     final int maxDoc = state.segmentInfo.getDocCount();
+    final int size = addedValues;
 
     dvConsumer.addBinaryField(fieldInfo,
                               new Iterable<BytesRef>() {
@@ -76,8 +107,18 @@ class BinaryDocValuesWriter extends DocValuesWriter {
                                 @Override
                                 public Iterator<BytesRef> iterator() {
                                    return new Iterator<BytesRef>() {
+                                     RAMInputStream bytesReader;
+                                     AppendingLongBuffer.Iterator iter = lengths.iterator();
                                      BytesRef value = new BytesRef();
                                      int upto;
+                                     
+                                     {
+                                       try {
+                                         bytesReader = new RAMInputStream("bogus", bytes);
+                                       } catch (IOException e) {
+                                         throw new RuntimeException(e);
+                                       }
+                                     }
 
                                      @Override
                                      public boolean hasNext() {
@@ -91,8 +132,15 @@ class BinaryDocValuesWriter extends DocValuesWriter {
 
                                      @Override
                                      public BytesRef next() {
-                                       if (upto < bytesRefArray.size()) {
-                                         bytesRefArray.get(value, upto);
+                                       if (upto < size) {
+                                         int length = (int) iter.next();
+                                         value.grow(length);
+                                         try {
+                                           bytesReader.readBytes(value.bytes, 0, length);
+                                         } catch (IOException e) {
+                                           throw new RuntimeException(e);
+                                         }
+                                         value.length = length;
                                        } else {
                                          value.length = 0;
                                        }

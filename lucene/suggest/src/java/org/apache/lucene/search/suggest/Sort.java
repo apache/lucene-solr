@@ -1,4 +1,4 @@
-package org.apache.lucene.search.suggest.fst;
+package org.apache.lucene.search.suggest;
 
 /*
  * Licensed to the Apache Software Foundation (ASF) under one or more

@@ -1,4 +1,4 @@
-package org.apache.lucene.search.suggest.fst;
+package org.apache.lucene.search.suggest;
 
 /*
  * Licensed to the Apache Software Foundation (ASF) under one or more
@@ -19,9 +19,9 @@ package org.apache.lucene.search.suggest.fst;
 
 import java.util.Comparator;
 
+import org.apache.lucene.search.suggest.fst.BytesRefSorter;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.BytesRefIterator;
-import org.apache.lucene.util.BytesRefArray;
 import org.apache.lucene.util.Counter;
 
 /**

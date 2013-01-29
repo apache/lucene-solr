@@ -37,7 +37,6 @@ import com.carrotsearch.randomizedtesting.annotations.TimeoutSuite;
 public class Test2BBinaryDocValues extends LuceneTestCase {
   
   // indexes Integer.MAX_VALUE docs with a fixed binary field
-  // nocommit: broken ram accounting? ant test  -Dtestcase=Test2BBinaryDocValues -Dtests.method=testFixedBinary -Dtests.seed=5554AA830176B848 -Dtests.slow=true -Dtests.docvaluesformat=Disk -Dtests.locale=sr_RS_#Latn -Dtests.timezone=Africa/Luanda -Dtests.file.encoding=UTF-8
   public void testFixedBinary() throws Exception {
     BaseDirectoryWrapper dir = newFSDirectory(_TestUtil.getTempDir("2BFixedBinary"));
     if (dir instanceof MockDirectoryWrapper) {
@@ -98,7 +97,6 @@ public class Test2BBinaryDocValues extends LuceneTestCase {
   }
   
   // indexes Integer.MAX_VALUE docs with a variable binary field
-  // nocommit: broken ram accounting? ant test  -Dtestcase=Test2BBinaryDocValues -Dtests.method=testVariableBinary -Dtests.seed=FD50D16920062578 -Dtests.slow=true -Dtests.docvaluesformat=Disk -Dtests.locale=sr_ME_#Latn -Dtests.timezone=America/Argentina/Tucuman -Dtests.file.encoding=UTF-8
   public void testVariableBinary() throws Exception {
     BaseDirectoryWrapper dir = newFSDirectory(_TestUtil.getTempDir("2BVariableBinary"));
     if (dir instanceof MockDirectoryWrapper) {
