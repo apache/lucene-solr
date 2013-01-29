@@ -206,7 +206,6 @@ public class TestFieldCache extends LuceneTestCase {
     }
 
     int nTerms = termsIndex.getValueCount();
-    // System.out.println("nTerms="+nTerms);
 
     TermsEnum tenum = new SortedDocValuesTermsEnum(termsIndex);
     BytesRef val = new BytesRef();
@@ -218,14 +217,21 @@ public class TestFieldCache extends LuceneTestCase {
     }
 
     // seek the enum around (note this isn't a great test here)
+    // nocommit
     int num = atLeast(100);
     for (int i = 0; i < num; i++) {
-      int k = _TestUtil.nextInt(random(), 1, nTerms-1);
+      int k = random().nextInt(nTerms);
       termsIndex.lookupOrd(k, val);
       assertEquals(TermsEnum.SeekStatus.FOUND, tenum.seekCeil(val));
       assertEquals(val, tenum.term());
     }
-    
+
+    for(int i=0;i<nTerms;i++) {
+      termsIndex.lookupOrd(i, val);
+      assertEquals(TermsEnum.SeekStatus.FOUND, tenum.seekCeil(val));
+      assertEquals(val, tenum.term());
+    }
+
     // test bad field
     termsIndex = cache.getTermsIndex(reader, "bogusfield");
 

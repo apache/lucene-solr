@@ -39,7 +39,6 @@ public class SortedDocValuesTermsEnum extends TermsEnum {
   @Override
   public SeekStatus seekCeil(BytesRef text, boolean useCache /* ignored */) throws IOException {
     int ord = values.lookupTerm(text, term);
-    // nocommit >= 0!?
     if (ord >= 0) {
       currentOrd = ord;
       term.offset = 0;
@@ -50,7 +49,7 @@ public class SortedDocValuesTermsEnum extends TermsEnum {
       if (currentOrd == values.getValueCount()) {
         return SeekStatus.END;
       } else {
-        // nocommit hmm can we avoid this "extra" lookup?:
+        // TODO: hmm can we avoid this "extra" lookup?:
         values.lookupOrd(currentOrd, term);
         return SeekStatus.NOT_FOUND;
       }
