@@ -203,7 +203,7 @@ public class TestPackedInts extends LuceneTestCase {
           if (!format.isSupported(bpv)) {
             continue;
           }
-          final long byteCount = format.byteCount(version, valueCount, bpv); 
+          final long byteCount = format.byteCount(version, valueCount, bpv);
           String msg = "format=" + format + ",version=" + version + ",valueCount=" + valueCount + ",bpv=" + bpv;
 
           // test iterator
@@ -697,16 +697,22 @@ public class TestPackedInts extends LuceneTestCase {
 
         final PackedInts.Encoder encoder = PackedInts.getEncoder(format, PackedInts.VERSION_CURRENT, bpv);
         final PackedInts.Decoder decoder = PackedInts.getDecoder(format, PackedInts.VERSION_CURRENT, bpv);
-        final int blockCount = encoder.blockCount();
-        final int valueCount = encoder.valueCount();
-        assertEquals(blockCount, decoder.blockCount());
-        assertEquals(valueCount, decoder.valueCount());
+        final int longBlockCount = encoder.longBlockCount();
+        final int longValueCount = encoder.longValueCount();
+        final int byteBlockCount = encoder.byteBlockCount();
+        final int byteValueCount = encoder.byteValueCount();
+        assertEquals(longBlockCount, decoder.longBlockCount());
+        assertEquals(longValueCount, decoder.longValueCount());
+        assertEquals(byteBlockCount, decoder.byteBlockCount());
+        assertEquals(byteValueCount, decoder.byteValueCount());
 
-        final int iterations = random().nextInt(100);
+        final int longIterations = random().nextInt(100);
+        final int byteIterations = longIterations * longValueCount / byteValueCount;
+        assertEquals(longIterations * longValueCount, byteIterations * byteValueCount);
         final int blocksOffset = random().nextInt(100);
         final int valuesOffset = random().nextInt(100);
         final int blocksOffset2 = random().nextInt(100);
-        final int blocksLen = iterations * blockCount;
+        final int blocksLen = longIterations * longBlockCount;
 
         // 1. generate random inputs
         final long[] blocks = new long[blocksOffset + blocksLen];
@@ -720,8 +726,8 @@ public class TestPackedInts extends LuceneTestCase {
         }
 
         // 2. decode
-        final long[] values = new long[valuesOffset + iterations * valueCount];
-        decoder.decode(blocks, blocksOffset, values, valuesOffset, iterations);
+        final long[] values = new long[valuesOffset + longIterations * longValueCount];
+        decoder.decode(blocks, blocksOffset, values, valuesOffset, longIterations);
         for (long value : values) {
           assertTrue(value <= PackedInts.maxValue(bpv));
         }
@@ -729,7 +735,7 @@ public class TestPackedInts extends LuceneTestCase {
         final int[] intValues;
         if (bpv <= 32) {
           intValues = new int[values.length];
-          decoder.decode(blocks, blocksOffset, intValues, valuesOffset, iterations);
+          decoder.decode(blocks, blocksOffset, intValues, valuesOffset, longIterations);
           assertTrue(equals(intValues, values));
         } else {
           intValues = null;
@@ -737,21 +743,21 @@ public class TestPackedInts extends LuceneTestCase {
 
         // 3. re-encode
         final long[] blocks2 = new long[blocksOffset2 + blocksLen];
-        encoder.encode(values, valuesOffset, blocks2, blocksOffset2, iterations);
+        encoder.encode(values, valuesOffset, blocks2, blocksOffset2, longIterations);
         assertArrayEquals(msg, Arrays.copyOfRange(blocks, blocksOffset, blocks.length),
             Arrays.copyOfRange(blocks2, blocksOffset2, blocks2.length));
         // test encoding from int[]
         if (bpv <= 32) {
           final long[] blocks3 = new long[blocks2.length];
-          encoder.encode(intValues, valuesOffset, blocks3, blocksOffset2, iterations);
+          encoder.encode(intValues, valuesOffset, blocks3, blocksOffset2, longIterations);
           assertArrayEquals(msg, blocks2, blocks3);
         }
 
         // 4. byte[] decoding
         final byte[] byteBlocks = new byte[8 * blocks.length];
         ByteBuffer.wrap(byteBlocks).asLongBuffer().put(blocks);
-        final long[] values2 = new long[valuesOffset + iterations * valueCount];
-        decoder.decode(byteBlocks, blocksOffset * 8, values2, valuesOffset, iterations);
+        final long[] values2 = new long[valuesOffset + longIterations * longValueCount];
+        decoder.decode(byteBlocks, blocksOffset * 8, values2, valuesOffset, byteIterations);
         for (long value : values2) {
           assertTrue(msg, value <= PackedInts.maxValue(bpv));
         }
@@ -759,18 +765,18 @@ public class TestPackedInts extends LuceneTestCase {
         // test decoding to int[]
         if (bpv <= 32) {
           final int[] intValues2 = new int[values2.length];
-          decoder.decode(byteBlocks, blocksOffset * 8, intValues2, valuesOffset, iterations);
+          decoder.decode(byteBlocks, blocksOffset * 8, intValues2, valuesOffset, byteIterations);
           assertTrue(msg, equals(intValues2, values2));
         }
 
         // 5. byte[] encoding
         final byte[] blocks3 = new byte[8 * (blocksOffset2 + blocksLen)];
-        encoder.encode(values, valuesOffset, blocks3, 8 * blocksOffset2, iterations);
+        encoder.encode(values, valuesOffset, blocks3, 8 * blocksOffset2, byteIterations);
         assertEquals(msg, LongBuffer.wrap(blocks2), ByteBuffer.wrap(blocks3).asLongBuffer());
         // test encoding from int[]
         if (bpv <= 32) {
           final byte[] blocks4 = new byte[blocks3.length];
-          encoder.encode(intValues, valuesOffset, blocks4, 8 * blocksOffset2, iterations);
+          encoder.encode(intValues, valuesOffset, blocks4, 8 * blocksOffset2, byteIterations);
           assertArrayEquals(msg, blocks3, blocks4);
         }
       }
