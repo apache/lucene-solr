@@ -165,6 +165,7 @@ public class AppendingLongBuffer {
         RamUsageEstimator.NUM_BYTES_OBJECT_HEADER
         + 3 * RamUsageEstimator.NUM_BYTES_OBJECT_REF // the 3 arrays
         + 2 * RamUsageEstimator.NUM_BYTES_INT) // the 2 offsets
+        + RamUsageEstimator.NUM_BYTES_LONG // valuesBytes
         + RamUsageEstimator.sizeOf(pending)
         + RamUsageEstimator.sizeOf(minValues)
         + RamUsageEstimator.alignObjectSize(RamUsageEstimator.NUM_BYTES_ARRAY_HEADER + (long) RamUsageEstimator.NUM_BYTES_OBJECT_REF * values.length); // values
