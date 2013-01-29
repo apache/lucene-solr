@@ -21,6 +21,8 @@ import org.apache.lucene.analysis.MockAnalyzer;
 import org.apache.lucene.document.BinaryDocValuesField;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.store.BaseDirectoryWrapper;
+import org.apache.lucene.store.ByteArrayDataInput;
+import org.apache.lucene.store.ByteArrayDataOutput;
 import org.apache.lucene.store.MockDirectoryWrapper;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.LuceneTestCase;
@@ -86,6 +88,66 @@ public class Test2BBinaryDocValues extends LuceneTestCase {
         bytes[3] = (byte) expectedValue;
         dv.get(i, scratch);
         assertEquals(data, scratch);
+        expectedValue++;
+      }
+    }
+    
+    r.close();
+    dir.close();
+  }
+  
+  // indexes Integer.MAX_VALUE docs with a variable binary field
+  // nocommit: broken ram accounting? ant test  -Dtestcase=Test2BBinaryDocValues -Dtests.method=testVariableBinary -Dtests.seed=FD50D16920062578 -Dtests.slow=true -Dtests.docvaluesformat=Disk -Dtests.locale=sr_ME_#Latn -Dtests.timezone=America/Argentina/Tucuman -Dtests.file.encoding=UTF-8
+  public void testVariableBinary() throws Exception {
+    BaseDirectoryWrapper dir = newFSDirectory(_TestUtil.getTempDir("2BVariableBinary"));
+    if (dir instanceof MockDirectoryWrapper) {
+      ((MockDirectoryWrapper)dir).setThrottling(MockDirectoryWrapper.Throttling.NEVER);
+    }
+    
+    IndexWriter w = new IndexWriter(dir,
+        new IndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer(random()))
+        .setMaxBufferedDocs(IndexWriterConfig.DISABLE_AUTO_FLUSH)
+        .setRAMBufferSizeMB(256.0)
+        .setMergeScheduler(new ConcurrentMergeScheduler())
+        .setMergePolicy(newLogMergePolicy(false, 10))
+        .setOpenMode(IndexWriterConfig.OpenMode.CREATE));
+
+    Document doc = new Document();
+    byte bytes[] = new byte[4];
+    ByteArrayDataOutput encoder = new ByteArrayDataOutput(bytes);
+    BytesRef data = new BytesRef(bytes);
+    BinaryDocValuesField dvField = new BinaryDocValuesField("dv", data);
+    doc.add(dvField);
+    
+    for (int i = 0; i < Integer.MAX_VALUE; i++) {
+      encoder.reset(bytes);
+      encoder.writeVInt(i % 65535); // 1, 2, or 3 bytes
+      data.length = encoder.getPosition();
+      w.addDocument(doc);
+      if (i % 100000 == 0) {
+        System.out.println("indexed: " + i);
+        System.out.flush();
+      }
+    }
+    
+    w.forceMerge(1);
+    w.close();
+    
+    System.out.println("verifying...");
+    System.out.flush();
+    
+    DirectoryReader r = DirectoryReader.open(dir);
+    int expectedValue = 0;
+    ByteArrayDataInput input = new ByteArrayDataInput();
+    for (AtomicReaderContext context : r.leaves()) {
+      AtomicReader reader = context.reader();
+      BytesRef scratch = new BytesRef(bytes);
+      BinaryDocValues dv = reader.getBinaryDocValues("dv");
+      for (int i = 0; i < reader.maxDoc(); i++) {
+        dv.get(i, scratch);
+        input.reset(scratch.bytes, scratch.offset, scratch.length);
+        assertEquals(expectedValue % 65535, input.readVInt());
+        assertTrue(input.eof());
         expectedValue++;
       }
     }
