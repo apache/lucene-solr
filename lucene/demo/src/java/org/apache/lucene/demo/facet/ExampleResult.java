@@ -1,7 +1,8 @@
-package org.apache.lucene.facet;
+package org.apache.lucene.demo.facet;
+
+import java.util.List;
 
 import org.apache.lucene.facet.search.results.FacetResult;
-import org.apache.lucene.facet.search.results.FacetResultNode;
 
 /*
  * Licensed to the Apache Software Foundation (ASF) under one or more
@@ -20,19 +21,29 @@ import org.apache.lucene.facet.search.results.FacetResultNode;
  * limitations under the License.
  */
 
-public class FacetTestUtils {
+/**
+ * Result of running an example program.
+ * This is a general object for allowing to write a test 
+ * that runs an example and verifies its results.
+ * 
+ * @lucene.experimental
+ */
+public class ExampleResult {
 
-  public static String toSimpleString(FacetResult fr) {
-    StringBuilder sb = new StringBuilder();
-    toSimpleString(0, sb, fr.getFacetResultNode(), "");
-    return sb.toString();
+  private List<FacetResult> facetResults;
+
+  /**
+   * @return the facet results
+   */
+  public List<FacetResult> getFacetResults() {
+    return facetResults;
   }
-  
-  private static void toSimpleString(int depth, StringBuilder sb, FacetResultNode node, String indent) {
-    sb.append(indent + node.label.components[depth] + " (" + (int) node.value + ")\n");
-    for (FacetResultNode childNode : node.subResults) {
-      toSimpleString(depth + 1, sb, childNode, indent + "  ");
-    }
+
+  /**
+   * @param facetResults the facet results to set
+   */
+  public void setFacetResults(List<FacetResult> facetResults) {
+    this.facetResults = facetResults;
   }
 
 }

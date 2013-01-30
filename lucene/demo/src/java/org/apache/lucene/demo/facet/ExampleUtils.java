@@ -1,7 +1,6 @@
-package org.apache.lucene.facet;
+package org.apache.lucene.demo.facet;
 
-import org.apache.lucene.facet.search.results.FacetResult;
-import org.apache.lucene.facet.search.results.FacetResultNode;
+import org.apache.lucene.util.Version;
 
 /*
  * Licensed to the Apache Software Foundation (ASF) under one or more
@@ -20,18 +19,19 @@ import org.apache.lucene.facet.search.results.FacetResultNode;
  * limitations under the License.
  */
 
-public class FacetTestUtils {
+/**
+ * @lucene.experimental
+ */
+public class ExampleUtils {
 
-  public static String toSimpleString(FacetResult fr) {
-    StringBuilder sb = new StringBuilder();
-    toSimpleString(0, sb, fr.getFacetResultNode(), "");
-    return sb.toString();
-  }
+  public static final boolean VERBOSE = Boolean.getBoolean("tests.verbose");
+
+  /** The Lucene {@link Version} used by the example code. */
+  public static final Version EXAMPLE_VER = Version.LUCENE_40;
   
-  private static void toSimpleString(int depth, StringBuilder sb, FacetResultNode node, String indent) {
-    sb.append(indent + node.label.components[depth] + " (" + (int) node.value + ")\n");
-    for (FacetResultNode childNode : node.subResults) {
-      toSimpleString(depth + 1, sb, childNode, indent + "  ");
+  public static void log(Object msg) {
+    if (VERBOSE) {
+      System.out.println(msg.toString());
     }
   }
 
