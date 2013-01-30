@@ -251,7 +251,7 @@ public class TestPayloadsOnVectors extends LuceneTestCase {
       for (int i = 0; i < len; ++i) {
         terms[i] = RandomPicks.randomFrom(random(), sampleTerms);
         if (weird) {
-          positionsIncrements[i] = random().nextInt(1 << 18);
+          positionsIncrements[i] = _TestUtil.nextInt(random(), 1, 1 << 18);
           startOffsets[i] = random().nextInt();
           endOffsets[i] = random().nextInt();
         } else if (i == 0) {
