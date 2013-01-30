@@ -95,6 +95,8 @@ Bug Fixes
 
 * SOLR-4342: Fix DataImportHandler stats to be a prper Map (hossman)
 
+* SOLR-3967: langid.enforceSchema option checks source field instead of target field (janhoy)
+
 Optimizations
 ----------------------
 
