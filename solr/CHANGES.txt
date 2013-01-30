@@ -97,6 +97,9 @@ Bug Fixes
 
 * SOLR-3967: langid.enforceSchema option checks source field instead of target field (janhoy)
 
+* SOLR-3911: Replicate after startup option would not replicate until the
+  IndexWriter was lazily opened. (Mark Miller, Gregg Donovan)
+
 Optimizations
 ----------------------
 

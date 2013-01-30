@@ -116,7 +116,7 @@ public abstract class SolrTestCaseJ4 extends LuceneTestCase {
     changedFactory = true;
   }
 
-  private static void resetFactory() throws Exception {
+  public static void resetFactory() throws Exception {
     if (!changedFactory) return;
     changedFactory = false;
     if (savedFactory != null) {
