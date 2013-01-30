@@ -244,6 +244,7 @@ public abstract class DocValuesConsumer implements Closeable {
     final List<SegmentState> segStates = new ArrayList<SegmentState>();
 
     private static class SegmentState {
+      int segmentID;
       AtomicReader reader;
       FixedBitSet liveTerms;
       int ord = -1;
@@ -293,6 +294,7 @@ public abstract class DocValuesConsumer implements Closeable {
         int maxDoc = reader.maxDoc();
 
         SegmentState state = new SegmentState();
+        state.segmentID = readerIDX;
         state.reader = reader;
         state.values = toMerge.get(readerIDX);
 
@@ -327,11 +329,22 @@ public abstract class DocValuesConsumer implements Closeable {
         }
       }
 
+      int lastOrds[] = new int[segStates.size()];
       BytesRef lastTerm = null;
       int ord = 0;
       while (q.size() != 0) {
         SegmentState top = q.top();
         if (lastTerm == null || !lastTerm.equals(top.scratch)) {
+          // a new unique term: record its segment ID / sourceOrd pair
+          int readerId = top.segmentID;
+          int sourceOrd = top.ord;
+          // nocommit: do this
+          //   ordToReaderID.add(readerId);
+          int delta = sourceOrd - lastOrds[readerId];
+          lastOrds[readerId] = sourceOrd;
+          // nocommit: do this
+          //   top.ordDeltas.add(delta);
+          
           lastTerm = BytesRef.deepCopyOf(top.scratch);
           // nocommit we could spill this to disk instead of
           // RAM, and replay on finish...
@@ -348,6 +361,10 @@ public abstract class DocValuesConsumer implements Closeable {
       }
 
       numMergedTerms = ord;
+      // clear our bitsets for GC: we dont need them anymore (e.g. while flushing merged stuff to codec)
+      for (SegmentState state : segStates) {
+        state.liveTerms = null;
+      }
     }
 
     /*
