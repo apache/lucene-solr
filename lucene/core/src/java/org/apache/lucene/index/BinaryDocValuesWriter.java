@@ -21,6 +21,7 @@ import static org.apache.lucene.util.ByteBlockPool.BYTE_BLOCK_SIZE;
 
 import java.io.IOException;
 import java.util.Iterator;
+import java.util.NoSuchElementException;
 
 import org.apache.lucene.codecs.DocValuesConsumer;
 import org.apache.lucene.store.RAMFile;
@@ -99,60 +100,66 @@ class BinaryDocValuesWriter extends DocValuesWriter {
   @Override
   public void flush(SegmentWriteState state, DocValuesConsumer dvConsumer) throws IOException {
     final int maxDoc = state.segmentInfo.getDocCount();
-    final int size = addedValues;
-
     dvConsumer.addBinaryField(fieldInfo,
                               new Iterable<BytesRef>() {
-
                                 @Override
                                 public Iterator<BytesRef> iterator() {
-                                   return new Iterator<BytesRef>() {
-                                     RAMInputStream bytesReader;
-                                     AppendingLongBuffer.Iterator iter = lengths.iterator();
-                                     BytesRef value = new BytesRef();
-                                     int upto;
-                                     
-                                     {
-                                       try {
-                                         bytesReader = new RAMInputStream("bogus", bytes);
-                                       } catch (IOException e) {
-                                         throw new RuntimeException(e);
-                                       }
-                                     }
-
-                                     @Override
-                                     public boolean hasNext() {
-                                       return upto < maxDoc;
-                                     }
-
-                                     @Override
-                                     public void remove() {
-                                       throw new UnsupportedOperationException();
-                                     }
-
-                                     @Override
-                                     public BytesRef next() {
-                                       if (upto < size) {
-                                         int length = (int) iter.next();
-                                         value.grow(length);
-                                         try {
-                                           bytesReader.readBytes(value.bytes, 0, length);
-                                         } catch (IOException e) {
-                                           throw new RuntimeException(e);
-                                         }
-                                         value.length = length;
-                                       } else {
-                                         value.length = 0;
-                                       }
-                                       upto++;
-                                       return value;
-                                     }
-                                   };
-                                 }
-                               });
+                                   return new BytesIterator(maxDoc);                                 
+                                }
+                              });
   }
 
   @Override
   public void abort() {
+  }
+  
+  // iterates over the values we have in ram
+  private class BytesIterator implements Iterator<BytesRef> {
+    final BytesRef value = new BytesRef();
+    final AppendingLongBuffer.Iterator lengthsIterator = lengths.iterator();
+    final int size = lengths.size();
+    final int maxDoc;
+    final RAMInputStream bytesReader;
+    int upto;
+    
+    BytesIterator(int maxDoc) {
+      this.maxDoc = maxDoc;
+      try {
+        bytesReader = new RAMInputStream("BinaryDocValuesWriter", bytes);
+      } catch (IOException e) {
+        throw new RuntimeException(e);
+      }
+    }
+    
+    @Override
+    public boolean hasNext() {
+      return upto < maxDoc;
+    }
+
+    @Override
+    public BytesRef next() {
+      if (!hasNext()) {
+        throw new NoSuchElementException();
+      }
+      if (upto < size) {
+        int length = (int) lengthsIterator.next();
+        value.grow(length);
+        try {
+          bytesReader.readBytes(value.bytes, 0, length);
+        } catch (IOException e) {
+          throw new RuntimeException(e);
+        }
+        value.length = length;
+      } else {
+        value.length = 0;
+      }
+      upto++;
+      return value;
+    }
+
+    @Override
+    public void remove() {
+      throw new UnsupportedOperationException();
+    }
   }
 }

@@ -406,6 +406,9 @@ public abstract class DocValuesConsumer implements Closeable {
 
                          @Override
                          public BytesRef next() {
+                           if (!hasNext()) {
+                             throw new NoSuchElementException();
+                           }
                            return merger.mergedTerms.get(ordUpto++);
                          }
                        };

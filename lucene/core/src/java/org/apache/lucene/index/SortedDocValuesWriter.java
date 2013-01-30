@@ -21,6 +21,7 @@ import static org.apache.lucene.util.ByteBlockPool.BYTE_BLOCK_SIZE;
 
 import java.io.IOException;
 import java.util.Iterator;
+import java.util.NoSuchElementException;
 
 import org.apache.lucene.codecs.DocValuesConsumer;
 import org.apache.lucene.util.ArrayUtil;
@@ -110,11 +111,12 @@ class SortedDocValuesWriter extends DocValuesWriter {
         emptyOrd = ord;
       }
     } else {
-      emptyOrd = -1;
+      emptyOrd = -1; // nocommit: HUH? how can this possibly work?
     }
 
     final int valueCount = hash.size();
 
+    // nocommit: account for both sortedValues and ordMap as-we-go...
     final int[] sortedValues = hash.sort(BytesRef.getUTF8SortedAsUnicodeComparator());
     final int sortedValueRamUsage = RamUsageEstimator.NUM_BYTES_ARRAY_HEADER + RamUsageEstimator.NUM_BYTES_INT*valueCount;
     final int[] ordMap = new int[valueCount];
@@ -131,27 +133,7 @@ class SortedDocValuesWriter extends DocValuesWriter {
                               new Iterable<BytesRef>() {
                                 @Override
                                 public Iterator<BytesRef> iterator() {
-                                  return new Iterator<BytesRef>() {
-                                    int ordUpto;
-                                    BytesRef scratch = new BytesRef();
-
-                                    @Override
-                                    public boolean hasNext() {
-                                      return ordUpto < valueCount;
-                                    }
-
-                                    @Override
-                                    public void remove() {
-                                      throw new UnsupportedOperationException();
-                                    }
-
-                                    @Override
-                                    public BytesRef next() {
-                                      hash.get(sortedValues[ordUpto], scratch);
-                                      ordUpto++;
-                                      return scratch;
-                                    }
-                                  };
+                                  return new ValuesIterator(sortedValues, valueCount);
                                 }
                               },
 
@@ -159,37 +141,87 @@ class SortedDocValuesWriter extends DocValuesWriter {
                               new Iterable<Number>() {
                                 @Override
                                 public Iterator<Number> iterator() {
-                                  return new Iterator<Number>() {
-                                    int docUpto;
-
-                                    @Override
-                                    public boolean hasNext() {
-                                      return docUpto < maxDoc;
-                                    }
-
-                                    @Override
-                                    public void remove() {
-                                      throw new UnsupportedOperationException();
-                                    }
-
-                                    @Override
-                                    public Number next() {
-                                      int ord;
-                                      if (docUpto < bufferedDocCount) {
-                                        ord = pending[docUpto];
-                                      } else {
-                                        ord = emptyOrd;
-                                      }
-                                      docUpto++;
-                                      // TODO: make reusable Number
-                                      return ordMap[ord];
-                                    }
-                                  };
+                                  return new OrdsIterator(ordMap, bufferedDocCount, maxDoc, emptyOrd);
                                 }
                               });
   }
 
   @Override
   public void abort() {
+  }
+  
+  // iterates over the unique values we have in ram
+  private class ValuesIterator implements Iterator<BytesRef> {
+    final int sortedValues[];
+    final BytesRef scratch = new BytesRef();
+    final int valueCount;
+    int ordUpto;
+    
+    ValuesIterator(int sortedValues[], int valueCount) {
+      this.sortedValues = sortedValues;
+      this.valueCount = valueCount;
+    }
+
+    @Override
+    public boolean hasNext() {
+      return ordUpto < valueCount;
+    }
+
+    @Override
+    public BytesRef next() {
+      if (!hasNext()) {
+        throw new NoSuchElementException();
+      }
+      hash.get(sortedValues[ordUpto], scratch);
+      ordUpto++;
+      return scratch;
+    }
+
+    @Override
+    public void remove() {
+      throw new UnsupportedOperationException();
+    }
+  }
+  
+  // iterates over the ords for each doc we have in ram
+  private class OrdsIterator implements Iterator<Number> {
+    final int ordMap[];
+    final int size;
+    final int maxDoc;
+    final int emptyOrd; // nocommit
+    int docUpto;
+    
+    OrdsIterator(int ordMap[], int size, int maxDoc, int emptyOrd) {
+      this.ordMap = ordMap;
+      this.size = size;
+      this.maxDoc = maxDoc;
+      this.emptyOrd = emptyOrd;
+    }
+    
+    @Override
+    public boolean hasNext() {
+      return docUpto < maxDoc;
+    }
+
+    @Override
+    public Number next() {
+      if (!hasNext()) {
+        throw new NoSuchElementException();
+      }
+      int ord;
+      if (docUpto < size) {
+        ord = pending[docUpto];
+      } else {
+        ord = emptyOrd;
+      }
+      docUpto++;
+      // TODO: make reusable Number
+      return ordMap[ord];
+    }
+
+    @Override
+    public void remove() {
+      throw new UnsupportedOperationException();
+    }
   }
 }

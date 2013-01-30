@@ -19,6 +19,7 @@ package org.apache.lucene.index;
 
 import java.io.IOException;
 import java.util.Iterator;
+import java.util.NoSuchElementException;
 
 import org.apache.lucene.codecs.DocValuesConsumer;
 import org.apache.lucene.util.Counter;
@@ -75,41 +76,52 @@ class NumericDocValuesWriter extends DocValuesWriter {
 
     dvConsumer.addNumericField(fieldInfo,
                                new Iterable<Number>() {
-
                                  @Override
                                  public Iterator<Number> iterator() {
-                                   return new Iterator<Number>() {
-                                     int upto;
-                                     AppendingLongBuffer.Iterator iter = pending.iterator();
-
-                                     @Override
-                                     public boolean hasNext() {
-                                       return upto < maxDoc;
-                                     }
-
-                                     @Override
-                                     public void remove() {
-                                       throw new UnsupportedOperationException();
-                                     }
-
-                                     @Override
-                                     public Number next() {
-                                       long value;
-                                       if (upto < pending.size()) {
-                                         value =  iter.next();
-                                       } else {
-                                         value = 0;
-                                       }
-                                       upto++;
-                                       // TODO: make reusable Number
-                                       return value;
-                                     }
-                                   };
+                                   return new NumericIterator(maxDoc);
                                  }
                                });
   }
 
   @Override
   public void abort() {
+  }
+  
+  // iterates over the values we have in ram
+  private class NumericIterator implements Iterator<Number> {
+    final AppendingLongBuffer.Iterator iter = pending.iterator();
+    final int size = pending.size();
+    final int maxDoc;
+    int upto;
+    
+    NumericIterator(int maxDoc) {
+      this.maxDoc = maxDoc;
+    }
+    
+    @Override
+    public boolean hasNext() {
+      return upto < maxDoc;
+    }
+
+    @Override
+    public Number next() {
+      if (!hasNext()) {
+        throw new NoSuchElementException();
+      }
+      long value;
+      if (upto < size) {
+        value = iter.next();
+      } else {
+        value = 0;
+      }
+      upto++;
+      // TODO: make reusable Number
+      return value;
+    }
+
+    @Override
+    public void remove() {
+      throw new UnsupportedOperationException();
+    }
   }
 }

@@ -18,6 +18,8 @@ package org.apache.lucene.codecs.asserting;
  */
 
 import java.io.IOException;
+import java.util.Iterator;
+import java.util.NoSuchElementException;
 
 import org.apache.lucene.codecs.DocValuesConsumer;
 import org.apache.lucene.codecs.DocValuesFormat;
@@ -75,6 +77,7 @@ public class AssertingDocValuesFormat extends DocValuesFormat {
         count++;
       }
       assert count == maxDoc;
+      checkIterator(values.iterator(), maxDoc);
       in.addNumericField(field, values);
     }
     
@@ -87,6 +90,7 @@ public class AssertingDocValuesFormat extends DocValuesFormat {
         count++;
       }
       assert count == maxDoc;
+      checkIterator(values.iterator(), maxDoc);
       in.addBinaryField(field, values);
     }
     
@@ -118,7 +122,31 @@ public class AssertingDocValuesFormat extends DocValuesFormat {
       
       assert count == maxDoc;
       assert seenOrds.cardinality() == valueCount;
+      checkIterator(values.iterator(), valueCount);
+      checkIterator(docToOrd.iterator(), maxDoc);
       in.addSortedField(field, values, docToOrd);
+    }
+    
+    private <T> void checkIterator(Iterator<T> iterator, int expectedSize) {
+      for (int i = 0; i < expectedSize; i++) {
+        boolean hasNext = iterator.hasNext();
+        assert hasNext;
+        T v = iterator.next();
+        assert v != null;
+        try {
+          iterator.remove();
+          throw new AssertionError("broken iterator (supports remove): " + iterator);
+        } catch (UnsupportedOperationException expected) {
+          // ok
+        }
+      }
+      assert !iterator.hasNext();
+      try {
+        iterator.next();
+        throw new AssertionError("broken iterator (allows next() when hasNext==false) " + iterator);
+      } catch (NoSuchElementException expected) {
+        // ok
+      }
     }
     
     @Override
