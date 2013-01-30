@@ -1,7 +1,10 @@
-package org.apache.lucene.facet;
+package org.apache.lucene.demo.facet;
 
-import org.apache.lucene.facet.search.results.FacetResult;
-import org.apache.lucene.facet.search.results.FacetResultNode;
+import org.junit.Test;
+
+import org.apache.lucene.util.LuceneTestCase;
+import org.apache.lucene.demo.facet.ExampleResult;
+import org.apache.lucene.demo.facet.adaptive.AdaptiveMain;
 
 /*
  * Licensed to the Apache Software Foundation (ASF) under one or more
@@ -20,19 +23,18 @@ import org.apache.lucene.facet.search.results.FacetResultNode;
  * limitations under the License.
  */
 
-public class FacetTestUtils {
-
-  public static String toSimpleString(FacetResult fr) {
-    StringBuilder sb = new StringBuilder();
-    toSimpleString(0, sb, fr.getFacetResultNode(), "");
-    return sb.toString();
-  }
+/**
+ * Test that the adaptive example works as expected. This test helps to verify
+ * that examples code is alive!
+ */
+public class TestAdaptiveExample extends LuceneTestCase {
   
-  private static void toSimpleString(int depth, StringBuilder sb, FacetResultNode node, String indent) {
-    sb.append(indent + node.label.components[depth] + " (" + (int) node.value + ")\n");
-    for (FacetResultNode childNode : node.subResults) {
-      toSimpleString(depth + 1, sb, childNode, indent + "  ");
-    }
+  @Test
+  public void testAdaptive () throws Exception {
+    ExampleResult res = new AdaptiveMain().runSample();
+    assertNotNull("Null result!", res);
+    assertNotNull("Null facet result!", res.getFacetResults());
+    assertEquals("Wrong number of results!",1, res.getFacetResults().size());
+    assertEquals("Wrong number of facets!",3, res.getFacetResults().get(0).getNumValidDescendants());
   }
-
 }

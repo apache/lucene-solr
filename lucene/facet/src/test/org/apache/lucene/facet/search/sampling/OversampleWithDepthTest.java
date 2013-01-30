@@ -3,7 +3,6 @@ package org.apache.lucene.facet.search.sampling;
 import java.io.IOException;
 import java.util.Collections;
 
-import org.apache.lucene.analysis.core.KeywordAnalyzer;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.facet.FacetTestCase;
 import org.apache.lucene.facet.index.FacetFields;
@@ -95,7 +94,7 @@ public class OversampleWithDepthTest extends FacetTestCase {
   }
 
   private void index100Docs(Directory indexDir, Directory taxoDir, FacetIndexingParams fip) throws IOException {
-    IndexWriterConfig iwc = newIndexWriterConfig(TEST_VERSION_CURRENT, new KeywordAnalyzer());
+    IndexWriterConfig iwc = newIndexWriterConfig(TEST_VERSION_CURRENT, null);
     IndexWriter w = new IndexWriter(indexDir, iwc);
     TaxonomyWriter tw = new DirectoryTaxonomyWriter(taxoDir);
     

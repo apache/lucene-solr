@@ -3,7 +3,7 @@ package org.apache.lucene.facet.taxonomy.directory;
 import java.io.IOException;
 import java.util.Random;
 
-import org.apache.lucene.analysis.core.KeywordAnalyzer;
+import org.apache.lucene.analysis.MockAnalyzer;
 import org.apache.lucene.facet.FacetTestCase;
 import org.apache.lucene.facet.taxonomy.CategoryPath;
 import org.apache.lucene.facet.taxonomy.TaxonomyReader;
@@ -256,7 +256,7 @@ public class TestDirectoryTaxonomyReader extends FacetTestCase {
     // hold onto IW to forceMerge
     // note how we don't close it, since DTW will close it.
     final IndexWriter iw = new IndexWriter(dir,
-        new IndexWriterConfig(TEST_VERSION_CURRENT, new KeywordAnalyzer())
+        new IndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer(random()))
             .setMergePolicy(new LogByteSizeMergePolicy()));
     DirectoryTaxonomyWriter writer = new DirectoryTaxonomyWriter(dir) {
       @Override
@@ -299,7 +299,7 @@ public class TestDirectoryTaxonomyReader extends FacetTestCase {
     // hold onto IW to forceMerge
     // note how we don't close it, since DTW will close it.
     final IndexWriter iw = new IndexWriter(dir,
-        new IndexWriterConfig(TEST_VERSION_CURRENT, new KeywordAnalyzer())
+        new IndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer(random()))
             .setMergePolicy(new LogByteSizeMergePolicy()));
     DirectoryTaxonomyWriter writer = new DirectoryTaxonomyWriter(dir) {
       @Override

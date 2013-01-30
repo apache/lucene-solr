@@ -191,8 +191,7 @@
         <exclude name="analysis/stempel/classes/java/org/egothor/stemmer/Compile.class"/>
         <exclude name="analysis/stempel/classes/java/org/egothor/stemmer/DiffIt.class"/>
         <exclude name="benchmark/**"/>
-        <exclude name="demo/classes/java/org/apache/lucene/demo/IndexFiles.class"/>
-        <exclude name="demo/classes/java/org/apache/lucene/demo/SearchFiles.class"/>
+        <exclude name="demo/classes/java/org/apache/lucene/**"/>
         <exclude name="misc/classes/java/org/apache/lucene/index/CompoundFileExtractor.class"/>
         <exclude name="misc/classes/java/org/apache/lucene/index/IndexSplitter.class"/>
         <exclude name="misc/classes/java/org/apache/lucene/index/MultiPassIndexSplitter.class"/>
