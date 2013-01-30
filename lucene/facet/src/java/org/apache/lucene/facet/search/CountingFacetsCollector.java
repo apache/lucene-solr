@@ -85,7 +85,7 @@ import org.apache.lucene.util.encoding.DGapVInt8IntDecoder;
 public class CountingFacetsCollector extends FacetsCollector {
   
   private final FacetSearchParams fsp;
-  private final OrdinalPolicy ordinalPolicy;
+  private final CategoryListParams clp;
   private final TaxonomyReader taxoReader;
   private final BytesRef buf = new BytesRef(32);
   private final FacetArrays facetArrays;
@@ -107,8 +107,7 @@ public class CountingFacetsCollector extends FacetsCollector {
     assert assertParams(fsp) == null : assertParams(fsp);
     
     this.fsp = fsp;
-    CategoryListParams clp = fsp.indexingParams.getCategoryListParams(fsp.facetRequests.get(0).categoryPath);
-    this.ordinalPolicy = clp.getOrdinalPolicy();
+    this.clp = fsp.indexingParams.getCategoryListParams(fsp.facetRequests.get(0).categoryPath);
     this.facetsField = clp.field;
     this.taxoReader = taxoReader;
     this.facetArrays = facetArrays;
@@ -217,21 +216,21 @@ public class CountingFacetsCollector extends FacetsCollector {
     }
   }
 
-  private void countParents(int[] parents) {
-    // counts[0] is the count of ROOT, which we don't care about and counts[1]
-    // can only update counts[0], so we don't bother to visit it too. also,
-    // since parents always have lower ordinals than their children, we traverse
-    // the array backwards. this also allows us to update just the immediate
-    // parent's count (actually, otherwise it would be a mistake).
-    for (int i = counts.length - 1; i > 1; i--) {
-      int count = counts[i];
-      if (count > 0) {
-        int parent = parents[i];
-        if (parent != 0) {
-          counts[parent] += count;
-        }
-      }
+  /**
+   * Computes the counts of ordinals under the given ordinal's tree, by
+   * recursively going down to leaf nodes and rollin up their counts (called
+   * only with categories are indexing with OrdinalPolicy.NO_PARENTS).
+   */
+  private int rollupCounts(int ordinal, int[] children, int[] siblings) {
+    int count = 0;
+    while (ordinal != TaxonomyReader.INVALID_ORDINAL) {
+      int childCount = counts[ordinal];
+      childCount += rollupCounts(children[ordinal], children, siblings);
+      counts[ordinal] = childCount;
+      count += childCount;
+      ordinal = siblings[ordinal];
     }
+    return count;
   }
 
   @Override
@@ -242,11 +241,6 @@ public class CountingFacetsCollector extends FacetsCollector {
       
       ParallelTaxonomyArrays arrays = taxoReader.getParallelTaxonomyArrays();
 
-      if (ordinalPolicy == OrdinalPolicy.NO_PARENTS) {
-        // need to count parents
-        countParents(arrays.parents());
-      }
-
       // compute top-K
       final int[] children = arrays.children();
       final int[] siblings = arrays.siblings();
@@ -256,6 +250,12 @@ public class CountingFacetsCollector extends FacetsCollector {
         if (rootOrd == TaxonomyReader.INVALID_ORDINAL) { // category does not exist
           continue;
         }
+        OrdinalPolicy ordinalPolicy = clp.getOrdinalPolicy(fr.categoryPath.components[0]);
+        if (ordinalPolicy == OrdinalPolicy.NO_PARENTS) {
+          // need to count parents
+          counts[rootOrd] += rollupCounts(children[rootOrd], children, siblings);
+        }
+        
         FacetResultNode root = new FacetResultNode();
         root.ordinal = rootOrd;
         root.label = fr.categoryPath;

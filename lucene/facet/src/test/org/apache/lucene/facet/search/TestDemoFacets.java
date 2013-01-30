@@ -104,9 +104,9 @@ public class TestDemoFacets extends FacetTestCase {
     // Retrieve & verify results:
     List<FacetResult> results = c.getFacetResults();
     assertEquals(2, results.size());
-    assertEquals("Publish Date (5)\n  2012 (2)\n  2010 (2)\n  1999 (1)\n",
+    assertEquals("Publish Date (0)\n  2012 (2)\n  2010 (2)\n  1999 (1)\n",
         FacetTestUtils.toSimpleString(results.get(0)));
-    assertEquals("Author (5)\n  Lisa (2)\n  Frank (1)\n  Susan (1)\n  Bob (1)\n",
+    assertEquals("Author (0)\n  Lisa (2)\n  Frank (1)\n  Susan (1)\n  Bob (1)\n",
         FacetTestUtils.toSimpleString(results.get(1)));
 
     
@@ -117,7 +117,7 @@ public class TestDemoFacets extends FacetTestCase {
     searcher.search(q2, c);
     results = c.getFacetResults();
     assertEquals(1, results.size());
-    assertEquals("Author (2)\n  Lisa (1)\n  Bob (1)\n",
+    assertEquals("Author (0)\n  Lisa (1)\n  Bob (1)\n",
         FacetTestUtils.toSimpleString(results.get(0)));
 
     // Smoke test PrintTaxonomyStats:

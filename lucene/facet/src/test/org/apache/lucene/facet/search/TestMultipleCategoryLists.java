@@ -274,7 +274,6 @@ public class TestMultipleCategoryLists extends FacetTestCase {
     Iterable<? extends FacetResultNode> subResults = resNode.subResults;
     Iterator<? extends FacetResultNode> subIter = subResults.iterator();
 
-    checkResult(resNode, "Band", 5.0);
     checkResult(subIter.next(), "Band/Rock & Pop", 4.0);
     checkResult(subIter.next(), "Band/Punk", 1.0);
 
@@ -283,7 +282,6 @@ public class TestMultipleCategoryLists extends FacetTestCase {
     subResults = resNode.subResults;
     subIter = subResults.iterator();
 
-    checkResult(resNode, "Band", 5.0);
     checkResult(subIter.next(), "Band/Rock & Pop", 4.0);
     checkResult(subIter.next(), "Band/Rock & Pop/Dave Matthews Band", 1.0);
     checkResult(subIter.next(), "Band/Rock & Pop/REM", 1.0);
@@ -297,7 +295,6 @@ public class TestMultipleCategoryLists extends FacetTestCase {
     subResults = resNode.subResults;
     subIter = subResults.iterator();
 
-    checkResult(resNode, "Author", 3.0);
     checkResult(subIter.next(), "Author/Kurt Vonnegut", 1.0);
     checkResult(subIter.next(), "Author/Stephen King", 1.0);
     checkResult(subIter.next(), "Author/Mark Twain", 1.0);
@@ -307,7 +304,6 @@ public class TestMultipleCategoryLists extends FacetTestCase {
     subResults = resNode.subResults;
     subIter = subResults.iterator();
 
-    checkResult(resNode, "Band/Rock & Pop", 4.0);
     checkResult(subIter.next(), "Band/Rock & Pop/Dave Matthews Band", 1.0);
     checkResult(subIter.next(), "Band/Rock & Pop/REM", 1.0);
     checkResult(subIter.next(), "Band/Rock & Pop/U2", 1.0);

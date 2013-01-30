@@ -6,6 +6,7 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashMap;
 import java.util.HashSet;
+import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 
@@ -17,6 +18,7 @@ import org.apache.lucene.document.Field;
 import org.apache.lucene.document.TextField;
 import org.apache.lucene.facet.index.FacetFields;
 import org.apache.lucene.facet.index.params.CategoryListParams;
+import org.apache.lucene.facet.index.params.CategoryListParams.OrdinalPolicy;
 import org.apache.lucene.facet.index.params.FacetIndexingParams;
 import org.apache.lucene.facet.search.params.FacetRequest;
 import org.apache.lucene.facet.search.params.FacetSearchParams;
@@ -44,6 +46,7 @@ import org.apache.lucene.util.Bits;
 import org.apache.lucene.util.IOUtils;
 import org.apache.lucene.util.LuceneTestCase.SuppressCodecs;
 import org.apache.lucene.util._TestUtil;
+import org.apache.lucene.util.collections.IntToObjectMap;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
 
@@ -73,7 +76,8 @@ public abstract class FacetTestBase extends FacetTestCase {
     SearchTaxoDirPair() {}
   }
   
-  private static HashMap<Integer, SearchTaxoDirPair> dirsPerPartitionSize;
+  private static IntToObjectMap<SearchTaxoDirPair> dirsPerPartitionSize;
+  private static IntToObjectMap<FacetIndexingParams> fipPerPartitionSize;
   private static File TEST_DIR;
   
   /** Documents text field. */
@@ -91,12 +95,15 @@ public abstract class FacetTestBase extends FacetTestCase {
   @BeforeClass
   public static void beforeClassFacetTestBase() {
     TEST_DIR = _TestUtil.getTempDir("facets");
-    dirsPerPartitionSize = new HashMap<Integer, FacetTestBase.SearchTaxoDirPair>();
+    dirsPerPartitionSize = new IntToObjectMap<FacetTestBase.SearchTaxoDirPair>();
+    fipPerPartitionSize = new IntToObjectMap<FacetIndexingParams>();
   }
   
   @AfterClass
   public static void afterClassFacetTestBase() throws Exception {
-    for (SearchTaxoDirPair pair : dirsPerPartitionSize.values()) {
+    Iterator<SearchTaxoDirPair> iter = dirsPerPartitionSize.iterator();
+    while (iter.hasNext()) {
+      SearchTaxoDirPair pair = iter.next();
       IOUtils.close(pair.searchDir, pair.taxoDir);
     }
   }
@@ -128,20 +135,16 @@ public abstract class FacetTestBase extends FacetTestCase {
     return DEFAULT_CONTENT[doc];
   }
   
-  /** Prepare index (in RAM) with single partition */
-  protected final void initIndex() throws Exception {
-    initIndex(Integer.MAX_VALUE);
-  }
-  
-  /** Prepare index (in RAM) with some documents and some facets */
-  protected final void initIndex(int partitionSize) throws Exception {
-    initIndex(partitionSize, false);
+  /** Prepare index (in RAM) with some documents and some facets. */
+  protected final void initIndex(FacetIndexingParams fip) throws Exception {
+    initIndex(false, fip);
   }
 
-  /** Prepare index (in RAM/Disk) with some documents and some facets */
-  protected final void initIndex(int partitionSize, boolean forceDisk) throws Exception {
+  /** Prepare index (in RAM/Disk) with some documents and some facets. */
+  protected final void initIndex(boolean forceDisk, FacetIndexingParams fip) throws Exception {
+    int partitionSize = fip.getPartitionSize();
     if (VERBOSE) {
-      System.out.println("Partition Size: " + partitionSize+"  forceDisk: "+forceDisk);
+      System.out.println("Partition Size: " + partitionSize + "  forceDisk: "+forceDisk);
     }
 
     SearchTaxoDirPair pair = dirsPerPartitionSize.get(Integer.valueOf(partitionSize));
@@ -158,7 +161,7 @@ public abstract class FacetTestBase extends FacetTestCase {
       RandomIndexWriter iw = new RandomIndexWriter(random(), pair.searchDir, getIndexWriterConfig(getAnalyzer()));
       TaxonomyWriter taxo = new DirectoryTaxonomyWriter(pair.taxoDir, OpenMode.CREATE);
       
-      populateIndex(iw, taxo, getFacetIndexingParams(partitionSize));
+      populateIndex(iw, taxo, fip);
       
       // commit changes (taxonomy prior to search index for consistency)
       taxo.commit();
@@ -182,14 +185,40 @@ public abstract class FacetTestBase extends FacetTestCase {
 
   /** Returns a {@link FacetIndexingParams} per the given partition size. */
   protected FacetIndexingParams getFacetIndexingParams(final int partSize) {
-    // several of our encoders don't support the value 0, 
-    // which is one of the values encoded when dealing w/ partitions.
-    return new FacetIndexingParams() {
-      @Override
-      public int getPartitionSize() {
-        return partSize;
-      }
-    };
+    return getFacetIndexingParams(partSize, false);
+  }
+  
+  /**
+   * Returns a {@link FacetIndexingParams} per the given partition size. If
+   * requested, then {@link OrdinalPolicy} will be set to
+   * {@link OrdinalPolicy#ALL_PARENTS}, otherwise it will randomize.
+   */
+  protected FacetIndexingParams getFacetIndexingParams(final int partSize, final boolean forceAllParents) {
+    FacetIndexingParams fip = fipPerPartitionSize.get(partSize);
+    if (fip == null) {
+      // randomize OrdinalPolicy. Since not all Collectors / Accumulators
+      // support NO_PARENTS, don't include it.
+      // TODO: once all code paths support NO_PARENTS, randomize it too.
+      CategoryListParams randomOP = new CategoryListParams() {
+        final OrdinalPolicy op = random().nextBoolean() ? OrdinalPolicy.ALL_BUT_DIMENSION : OrdinalPolicy.ALL_PARENTS;
+        @Override
+        public OrdinalPolicy getOrdinalPolicy(String dimension) {
+          return forceAllParents ? OrdinalPolicy.ALL_PARENTS : op;
+        }
+      };
+      
+      // several of our encoders don't support the value 0, 
+      // which is one of the values encoded when dealing w/ partitions,
+      // therefore don't randomize the encoder.
+      fip = new FacetIndexingParams(randomOP) {
+        @Override
+        public int getPartitionSize() {
+          return partSize;
+        }
+      };
+      fipPerPartitionSize.put(partSize, fip);
+    }
+    return fip;
   }
   
   /**

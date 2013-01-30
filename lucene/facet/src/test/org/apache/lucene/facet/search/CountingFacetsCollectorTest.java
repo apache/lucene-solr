@@ -16,8 +16,9 @@ import org.apache.lucene.document.StringField;
 import org.apache.lucene.facet.FacetTestCase;
 import org.apache.lucene.facet.index.FacetFields;
 import org.apache.lucene.facet.index.params.CategoryListParams;
+import org.apache.lucene.facet.index.params.CategoryListParams.OrdinalPolicy;
 import org.apache.lucene.facet.index.params.FacetIndexingParams;
-import org.apache.lucene.facet.index.params.PerDimensionIndexingParams;
+import org.apache.lucene.facet.index.params.PerDimensionOrdinalPolicy;
 import org.apache.lucene.facet.search.params.CountFacetRequest;
 import org.apache.lucene.facet.search.params.FacetRequest;
 import org.apache.lucene.facet.search.params.FacetRequest.SortBy;
@@ -146,13 +147,11 @@ public class CountingFacetsCollectorTest extends FacetTestCase {
         termExpectedCounts.put(cp, termExpectedCounts.get(cp) + 1);
       }
     }
-    // add 1 to each dimension
-    allExpectedCounts.put(CP_A, allExpectedCounts.get(CP_A) + 1);
+    // add 1 to each NO_PARENTS dimension
     allExpectedCounts.put(CP_B, allExpectedCounts.get(CP_B) + 1);
     allExpectedCounts.put(CP_C, allExpectedCounts.get(CP_C) + 1);
     allExpectedCounts.put(CP_D, allExpectedCounts.get(CP_D) + 1);
     if (updateTermExpectedCounts) {
-      termExpectedCounts.put(CP_A, termExpectedCounts.get(CP_A) + 1);
       termExpectedCounts.put(CP_B, termExpectedCounts.get(CP_B) + 1);
       termExpectedCounts.put(CP_C, termExpectedCounts.get(CP_C) + 1);
       termExpectedCounts.put(CP_D, termExpectedCounts.get(CP_D) + 1);
@@ -252,19 +251,13 @@ public class CountingFacetsCollectorTest extends FacetTestCase {
     conf.setMergePolicy(NoMergePolicy.COMPOUND_FILES); // prevent merges, so we can control the index segments
     IndexWriter indexWriter = new IndexWriter(indexDir, conf);
     TaxonomyWriter taxoWriter = new DirectoryTaxonomyWriter(taxoDir);
-    CategoryListParams allParents = new CategoryListParams();
-    CategoryListParams noParents = new CategoryListParams("no_parents") {
-      @Override
-      public OrdinalPolicy getOrdinalPolicy() {
-        return OrdinalPolicy.NO_PARENTS;
-      }
-    };
-    Map<CategoryPath,CategoryListParams> params = new HashMap<CategoryPath,CategoryListParams>();
-    params.put(CP_A, allParents);
-    params.put(CP_B, allParents);
-    params.put(CP_C, noParents);
-    params.put(CP_D, noParents);
-    fip = new PerDimensionIndexingParams(params);
+
+    Map<String,OrdinalPolicy> policies = new HashMap<String,CategoryListParams.OrdinalPolicy>();
+    policies.put(CP_B.components[0], OrdinalPolicy.ALL_PARENTS);
+    policies.put(CP_C.components[0], OrdinalPolicy.NO_PARENTS);
+    policies.put(CP_D.components[0], OrdinalPolicy.NO_PARENTS);
+    CategoryListParams clp = new PerDimensionOrdinalPolicy(policies);
+    fip = new FacetIndexingParams(clp);
     
     allExpectedCounts = newCounts();
     termExpectedCounts = newCounts();

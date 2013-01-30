@@ -87,7 +87,7 @@ public class TestTotalFacetCountsCache extends FacetTestCase {
 
   /** Utility method to add a document and facets to an index/taxonomy. */
   static void addFacets(FacetIndexingParams iParams, IndexWriter iw,
-                        TaxonomyWriter tw, String... strings) throws IOException {
+      TaxonomyWriter tw, String... strings) throws IOException {
     Document doc = new Document();
     FacetFields facetFields = new FacetFields(tw, iParams);
     facetFields.addFields(doc, Collections.singletonList(new CategoryPath(strings)));

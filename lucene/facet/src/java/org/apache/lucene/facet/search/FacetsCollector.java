@@ -43,13 +43,21 @@ public abstract class FacetsCollector extends Collector {
    * Returns the most optimized {@link FacetsCollector} for the given search
    * parameters. The returned {@link FacetsCollector} is guaranteed to satisfy
    * the requested parameters.
+   * 
+   * @throws IllegalArgumentException
+   *           if there is no built-in collector that can satisfy the search
+   *           parameters.
    */
   public static FacetsCollector create(FacetSearchParams fsp, IndexReader indexReader, TaxonomyReader taxoReader) {
     if (CountingFacetsCollector.assertParams(fsp) == null) {
       return new CountingFacetsCollector(fsp, taxoReader);
     }
     
-    return new StandardFacetsCollector(fsp, indexReader, taxoReader);
+    if (StandardFacetsCollector.assertParams(fsp) == null) {
+      return new StandardFacetsCollector(fsp, indexReader, taxoReader);
+    }
+    
+    throw new IllegalArgumentException("None of the built-in FacetsCollectors can handle the given search params");
   }
   
   /**
