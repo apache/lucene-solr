@@ -96,6 +96,8 @@ public class Test2BSortedDocValues extends LuceneTestCase {
   // indexes Integer.MAX_VALUE docs with a fixed binary field
   // nocommit: this must be some kind of worst case for BytesRefHash / its hash fn... 
   // or there is some other perf bug...VERY slow!
+  // if you cut this test to use random.nextBytes its much faster, but still quite slow...
+  // and its not unrealistic for users to index something thats already in sorted order?
   public void test2BOrds() throws Exception {
     BaseDirectoryWrapper dir = newFSDirectory(_TestUtil.getTempDir("2BOrds"));
     if (dir instanceof MockDirectoryWrapper) {
