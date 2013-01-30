@@ -115,6 +115,9 @@ Bug Fixes
   you have a taxonomy index created with such strings, you should rebuild it.
   (Michael McCandless, Shai Erera)
 
+* LUCENE-4732: Fixed TermsEnum.seekCeil/seekExact on term vectors.
+  (Adrien Grand, Robert Muir)
+
 ======================= Lucene 4.1.0 =======================
 
 Changes in backwards compatibility policy

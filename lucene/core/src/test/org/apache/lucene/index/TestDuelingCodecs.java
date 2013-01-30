@@ -30,7 +30,6 @@ import java.util.TreeSet;
 import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.analysis.MockAnalyzer;
 import org.apache.lucene.codecs.Codec;
-import org.apache.lucene.document.Document;
 import org.apache.lucene.index.TermsEnum.SeekStatus;
 import org.apache.lucene.search.DocIdSetIterator;
 import org.apache.lucene.store.Directory;
@@ -39,6 +38,7 @@ import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.FixedBitSet;
 import org.apache.lucene.util.LineFileDocs;
 import org.apache.lucene.util.LuceneTestCase;
+import org.apache.lucene.util._TestUtil;
 import org.apache.lucene.util.automaton.AutomatonTestUtil;
 import org.apache.lucene.util.automaton.CompiledAutomaton;
 import org.apache.lucene.util.automaton.RegExp;
@@ -231,11 +231,11 @@ public class TestDuelingCodecs extends LuceneTestCase {
   private void assertTermsSeeking(Terms leftTerms, Terms rightTerms) throws Exception {
     TermsEnum leftEnum = null;
     TermsEnum rightEnum = null;
-    
+
     // just an upper bound
     int numTests = atLeast(20);
     Random random = random();
-    
+
     // collect this number of terms from the left side
     HashSet<BytesRef> tests = new HashSet<BytesRef>();
     int numPasses = 0;
@@ -259,36 +259,50 @@ public class TestDuelingCodecs extends LuceneTestCase {
           byte newbytes[] = new byte[term.length+5];
           System.arraycopy(term.bytes, term.offset, newbytes, 5, term.length);
           tests.add(new BytesRef(newbytes, 5, term.length));
+        } else if (code == 3) {
+          switch (random().nextInt(3)) {
+            case 0:
+              tests.add(new BytesRef()); // before the first term
+              break;
+            case 1:
+              tests.add(new BytesRef(new byte[] {(byte) 0xFF, (byte) 0xFF})); // past the last term
+              break;
+            case 2:
+              tests.add(new BytesRef(_TestUtil.randomSimpleString(random()))); // random term
+              break;
+            default:
+              throw new AssertionError();
+          }
         }
       }
       numPasses++;
     }
-    
+
+    rightEnum = rightTerms.iterator(rightEnum);
+
     ArrayList<BytesRef> shuffledTests = new ArrayList<BytesRef>(tests);
     Collections.shuffle(shuffledTests, random);
-    
+
     for (BytesRef b : shuffledTests) {
-      leftEnum = leftTerms.iterator(leftEnum);
-      rightEnum = rightTerms.iterator(rightEnum);
-      
-      assertEquals(info, leftEnum.seekExact(b, false), rightEnum.seekExact(b, false));
-      assertEquals(info, leftEnum.seekExact(b, true), rightEnum.seekExact(b, true));
-      
-      SeekStatus leftStatus;
-      SeekStatus rightStatus;
-      
-      leftStatus = leftEnum.seekCeil(b, false);
-      rightStatus = rightEnum.seekCeil(b, false);
-      assertEquals(info, leftStatus, rightStatus);
-      if (leftStatus != SeekStatus.END) {
-        assertEquals(info, leftEnum.term(), rightEnum.term());
+      if (rarely()) {
+        // reuse the enums
+        leftEnum = leftTerms.iterator(leftEnum);
+        rightEnum = rightTerms.iterator(rightEnum);
       }
-      
-      leftStatus = leftEnum.seekCeil(b, true);
-      rightStatus = rightEnum.seekCeil(b, true);
-      assertEquals(info, leftStatus, rightStatus);
-      if (leftStatus != SeekStatus.END) {
-        assertEquals(info, leftEnum.term(), rightEnum.term());
+
+      final boolean useCache = random().nextBoolean();
+      final boolean seekExact = random().nextBoolean();
+
+      if (seekExact) {
+        assertEquals(info, leftEnum.seekExact(b, useCache), rightEnum.seekExact(b, useCache));
+      } else {
+        SeekStatus leftStatus = leftEnum.seekCeil(b, useCache);
+        SeekStatus rightStatus = rightEnum.seekCeil(b, useCache);
+        assertEquals(info, leftStatus, rightStatus);
+        if (leftStatus != SeekStatus.END) {
+          assertEquals(info, leftEnum.term(), rightEnum.term());
+          assertTermStats(leftEnum, rightEnum);
+        }
       }
     }
   }
