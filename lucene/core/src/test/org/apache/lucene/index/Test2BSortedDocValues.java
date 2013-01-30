@@ -93,5 +93,67 @@ public class Test2BSortedDocValues extends LuceneTestCase {
     dir.close();
   }
   
-  // TODO: variable, and also Test2BOrds
+  // indexes Integer.MAX_VALUE docs with a fixed binary field
+  // nocommit: this must be some kind of worst case for BytesRefHash / its hash fn... 
+  // or there is some other perf bug...VERY slow!
+  public void test2BOrds() throws Exception {
+    BaseDirectoryWrapper dir = newFSDirectory(_TestUtil.getTempDir("2BOrds"));
+    if (dir instanceof MockDirectoryWrapper) {
+      ((MockDirectoryWrapper)dir).setThrottling(MockDirectoryWrapper.Throttling.NEVER);
+    }
+    
+    IndexWriter w = new IndexWriter(dir,
+        new IndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer(random()))
+        .setMaxBufferedDocs(IndexWriterConfig.DISABLE_AUTO_FLUSH)
+        .setRAMBufferSizeMB(256.0)
+        .setMergeScheduler(new ConcurrentMergeScheduler())
+        .setMergePolicy(newLogMergePolicy(false, 10))
+        .setOpenMode(IndexWriterConfig.OpenMode.CREATE));
+
+    Document doc = new Document();
+    byte bytes[] = new byte[4];
+    BytesRef data = new BytesRef(bytes);
+    SortedDocValuesField dvField = new SortedDocValuesField("dv", data);
+    doc.add(dvField);
+    
+    for (int i = 0; i < Integer.MAX_VALUE; i++) {
+      bytes[0] = (byte)(i >> 24);
+      bytes[1] = (byte)(i >> 16);
+      bytes[2] = (byte)(i >> 8);
+      bytes[3] = (byte) i;
+      w.addDocument(doc);
+      if (i % 100000 == 0) {
+        System.out.println("indexed: " + i);
+        System.out.flush();
+      }
+    }
+    
+    w.forceMerge(1);
+    w.close();
+    
+    System.out.println("verifying...");
+    System.out.flush();
+    
+    DirectoryReader r = DirectoryReader.open(dir);
+    int expectedValue = 0;
+    for (AtomicReaderContext context : r.leaves()) {
+      AtomicReader reader = context.reader();
+      BytesRef scratch = new BytesRef();
+      BinaryDocValues dv = reader.getSortedDocValues("dv");
+      for (int i = 0; i < reader.maxDoc(); i++) {
+        bytes[0] = (byte)(expectedValue >> 24);
+        bytes[1] = (byte)(expectedValue >> 16);
+        bytes[2] = (byte)(expectedValue >> 8);
+        bytes[3] = (byte) expectedValue;
+        dv.get(i, scratch);
+        assertEquals(data, scratch);
+        expectedValue++;
+      }
+    }
+    
+    r.close();
+    dir.close();
+  }
+  
+  // TODO: variable
 }

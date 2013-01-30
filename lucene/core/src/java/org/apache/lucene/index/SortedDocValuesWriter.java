@@ -89,6 +89,12 @@ class SortedDocValuesWriter extends DocValuesWriter {
     int ord = hash.add(value);
     if (ord < 0) {
       ord = -ord-1;
+    } else {
+      // reserve additional space for each unique value:
+      // 1. when indexing, when hash is 50% full, rehash() suddenly needs 2*size ints.
+      //    TODO: can this same OOM happen in THPF?
+      // 2. when flushing, we need 1 int per value (slot in the ordMap).
+      iwBytesUsed.addAndGet(2 * RamUsageEstimator.NUM_BYTES_INT);
     }
     
     pending.add(ord);
@@ -120,9 +126,7 @@ class SortedDocValuesWriter extends DocValuesWriter {
 
     final int valueCount = hash.size();
 
-    // nocommit: account for both sortedValues and ordMap as-we-go...
     final int[] sortedValues = hash.sort(BytesRef.getUTF8SortedAsUnicodeComparator());
-    final int sortedValueRamUsage = RamUsageEstimator.NUM_BYTES_ARRAY_HEADER + RamUsageEstimator.NUM_BYTES_INT*valueCount;
     final int[] ordMap = new int[valueCount];
 
     for(int ord=0;ord<valueCount;ord++) {
