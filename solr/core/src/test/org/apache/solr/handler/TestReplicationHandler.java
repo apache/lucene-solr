@@ -258,6 +258,7 @@ public class TestReplicationHandler extends SolrTestCaseJ4 {
     doTestStopPoll();
     doTestSnapPullWithMasterUrl();
     doTestReplicateAfterStartup();
+    doTestReplicateAfterStartupWithNoActivity();
     doTestIndexAndConfigAliasReplication();
     doTestBackup();
   }
@@ -656,6 +657,81 @@ public class TestReplicationHandler extends SolrTestCaseJ4 {
     slaveJetty.stop();
     slaveJetty = createJetty(slave);
     slaveClient = createNewSolrServer(slaveJetty.getLocalPort());
+  }
+  
+  private void doTestReplicateAfterStartupWithNoActivity() throws Exception {
+    String factory = System.getProperty("solr.directoryFactory");
+    System.out.println("factory:" + factory);
+    useFactory(null);
+    try {
+    
+    //stop slave
+    slaveJetty.stop();
+
+    nDocs--;
+    masterClient.deleteByQuery("*:*");
+
+    masterClient.commit();
+
+    //change solrconfig having 'replicateAfter startup' option on master
+    master.copyConfigFile(CONF_DIR + "solrconfig-master2.xml",
+                          "solrconfig.xml");
+
+    masterJetty.stop();
+
+    masterJetty = createJetty(master);
+    masterClient = createNewSolrServer(masterJetty.getLocalPort());
+    
+    for (int i = 0; i < nDocs; i++)
+      index(masterClient, "id", i, "name", "name = " + i);
+
+    masterClient.commit();
+    
+    // now we restart to test what happens with no activity before the slave tries to
+    // replicate
+    masterJetty.stop();
+    masterJetty.start(true);
+ 
+    //masterClient = createNewSolrServer(masterJetty.getLocalPort());
+    
+    NamedList masterQueryRsp = rQuery(nDocs, "*:*", masterClient);
+    SolrDocumentList masterQueryResult = (SolrDocumentList) masterQueryRsp.get("response");
+    assertEquals(nDocs, masterQueryResult.getNumFound());
+    
+
+    slave.setTestPort(masterJetty.getLocalPort());
+    slave.copyConfigFile(slave.getSolrConfigFile(), "solrconfig.xml");
+
+    //start slave
+    slaveJetty = createJetty(slave);
+    slaveClient = createNewSolrServer(slaveJetty.getLocalPort());
+
+    //get docs from slave and check if number is equal to master
+    NamedList slaveQueryRsp = rQuery(nDocs, "*:*", slaveClient);
+    SolrDocumentList slaveQueryResult = (SolrDocumentList) slaveQueryRsp.get("response");
+    assertEquals(nDocs, slaveQueryResult.getNumFound());
+
+    //compare results
+    String cmp = BaseDistributedSearchTestCase.compare(masterQueryResult, slaveQueryResult, 0, null);
+    assertEquals(null, cmp);
+
+    // NOTE: the master only replicates after startup now!
+    // revert that change.
+    master.copyConfigFile(CONF_DIR + "solrconfig-master.xml", "solrconfig.xml");
+    masterJetty.stop();
+    masterJetty = createJetty(master);
+    masterClient = createNewSolrServer(masterJetty.getLocalPort());
+
+    slave.setTestPort(masterJetty.getLocalPort());
+    slave.copyConfigFile(slave.getSolrConfigFile(), "solrconfig.xml");
+
+    //start slave
+    slaveJetty.stop();
+    slaveJetty = createJetty(slave);
+    slaveClient = createNewSolrServer(slaveJetty.getLocalPort());
+    } finally {
+      resetFactory();
+    }
   }
 
   private void doTestReplicateAfterCoreReload() throws Exception {
