@@ -222,10 +222,6 @@ public abstract class LanguageIdentifierUpdateProcessor extends UpdateRequestPro
             log.debug("Mapping field "+fieldName+" using document global language "+fieldLang);
           }
           String mappedOutputField = getMappedField(fieldName, fieldLang);
-          if(enforceSchema && schema.getFieldOrNull(fieldName) == null) {
-            log.warn("Unsuccessful field name mapping to {}, field does not exist, skipping mapping.", mappedOutputField, fieldName);
-            mappedOutputField = fieldName;
-          }
 
           if (mappedOutputField != null) {
             log.debug("Mapping field {} to {}", doc.getFieldValue(docIdField), fieldLang);
@@ -350,17 +346,23 @@ public abstract class LanguageIdentifierUpdateProcessor extends UpdateRequestPro
 
   /**
    * Returns the name of the field to map the current contents into, so that they are properly analyzed.  For instance
-   * if the currentField is "text" and the code is "en", the new field would be "text_en".  If such a field doesn't exist,
-   * then null is returned.
+   * if the currentField is "text" and the code is "en", the new field would by default be "text_en".
+   * This method also performs custom regex pattern replace if configured. If enforceSchema=true
+   * and the resulting field name doesn't exist, then null is returned.
    *
    * @param currentField The current field name
    * @param language the language code
-   * @return The new schema field name, based on pattern and replace
+   * @return The new schema field name, based on pattern and replace, or null if illegal
    */
   protected String getMappedField(String currentField, String language) {
     String lc = lcMap.containsKey(language) ? lcMap.get(language) : language;
     String newFieldName = langPattern.matcher(mapPattern.matcher(currentField).replaceFirst(mapReplaceStr)).replaceFirst(lc);
-    log.debug("Doing mapping from "+currentField+" with language "+language+" to field "+newFieldName);
+    if(enforceSchema && schema.getFieldOrNull(newFieldName) == null) {
+      log.warn("Unsuccessful field name mapping from {} to {}, field does not exist and enforceSchema=true; skipping mapping.", currentField, newFieldName);
+      return null;
+    } else {
+      log.debug("Doing mapping from "+currentField+" with language "+language+" to field "+newFieldName);
+    }
     return newFieldName;
   }
 
