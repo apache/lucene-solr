@@ -422,7 +422,7 @@ public class Lucene40TermVectorsReader extends TermVectorsReader implements Clos
       this.storePayloads = storePayloads;
       nextTerm = 0;
       tvf.seek(tvfFPStart);
-      tvfFP = 1+tvfFPStart;
+      tvfFP = tvfFPStart;
       positions = null;
       startOffsets = null;
       endOffsets = null;
