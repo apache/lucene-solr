@@ -4,6 +4,8 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 
+import org.apache.lucene.facet.index.params.CategoryListParams.OrdinalPolicy;
+import org.apache.lucene.facet.index.params.FacetIndexingParams;
 import org.apache.lucene.facet.search.params.CountFacetRequest;
 import org.apache.lucene.facet.search.params.FacetRequest;
 import org.apache.lucene.facet.search.params.FacetRequest.ResultMode;
@@ -73,7 +75,9 @@ public class TestTopKResultsHandler extends BaseTestTopK {
   @Test
   public void testSimple() throws Exception {
     for (int partitionSize : partitionSizes) {
-      initIndex(partitionSize);
+      FacetIndexingParams fip = getFacetIndexingParams(partitionSize);
+      OrdinalPolicy op = fip.getCategoryListParams(null).getOrdinalPolicy(null);
+      initIndex(fip);
 
       List<FacetRequest> facetRequests = new ArrayList<FacetRequest>();
       facetRequests.add(new CountFacetRequest(new CategoryPath("a"), 100));
@@ -87,8 +91,8 @@ public class TestTopKResultsHandler extends BaseTestTopK {
       facetRequests.add(new CountFacetRequest(new CategoryPath("a", "c"), 100));
       
       // do different facet counts and compare to control
-      FacetSearchParams sParams = getFacetSearchParams(facetRequests, getFacetIndexingParams(partitionSize));
-
+      FacetSearchParams sParams = getFacetSearchParams(facetRequests, fip);
+      
       FacetsCollector fc = new StandardFacetsCollector(sParams, indexReader, taxoReader) {
         @Override
         protected FacetsAccumulator initFacetsAccumulator(FacetSearchParams facetSearchParams, IndexReader indexReader, TaxonomyReader taxonomyReader) {
@@ -100,17 +104,21 @@ public class TestTopKResultsHandler extends BaseTestTopK {
       
       searcher.search(new MatchAllDocsQuery(), fc);
       List<FacetResult> facetResults = fc.getFacetResults();
-
+      
       FacetResult fr = facetResults.get(0);
       FacetResultNode parentRes = fr.getFacetResultNode();
-      assertEquals(13.0, parentRes.value, Double.MIN_VALUE);
+      if (op == OrdinalPolicy.ALL_PARENTS) {
+        assertEquals(13.0, parentRes.value, Double.MIN_VALUE);
+      }
       FacetResultNode[] frn = resultNodesAsArray(parentRes);
       assertEquals(7.0, frn[0].value, Double.MIN_VALUE);
       assertEquals(6.0, frn[1].value, Double.MIN_VALUE);
 
       fr = facetResults.get(1);
       parentRes = fr.getFacetResultNode();
-      assertEquals(13.0, parentRes.value, Double.MIN_VALUE);
+      if (op == OrdinalPolicy.ALL_PARENTS) {
+        assertEquals(13.0, parentRes.value, Double.MIN_VALUE);
+      }
       frn = resultNodesAsArray(parentRes);
       assertEquals(7.0, frn[0].value, Double.MIN_VALUE);
       assertEquals(6.0, frn[1].value, Double.MIN_VALUE);
@@ -121,7 +129,9 @@ public class TestTopKResultsHandler extends BaseTestTopK {
 
       fr = facetResults.get(2);
       parentRes = fr.getFacetResultNode();
-      assertEquals(7.0, parentRes.value, Double.MIN_VALUE);
+      if (op == OrdinalPolicy.ALL_PARENTS) {
+        assertEquals(7.0, parentRes.value, Double.MIN_VALUE);
+      }
       frn = resultNodesAsArray(parentRes);
       assertEquals(2.0, frn[0].value, Double.MIN_VALUE);
       assertEquals(2.0, frn[1].value, Double.MIN_VALUE);
@@ -130,13 +140,17 @@ public class TestTopKResultsHandler extends BaseTestTopK {
 
       fr = facetResults.get(3);
       parentRes = fr.getFacetResultNode();
-      assertEquals(2.0, parentRes.value, Double.MIN_VALUE);
+      if (op == OrdinalPolicy.ALL_PARENTS) {
+        assertEquals(2.0, parentRes.value, Double.MIN_VALUE);
+      }
       frn = resultNodesAsArray(parentRes);
       assertEquals(0, frn.length);
 
       fr = facetResults.get(4);
       parentRes = fr.getFacetResultNode();
-      assertEquals(6.0, parentRes.value, Double.MIN_VALUE);
+      if (op == OrdinalPolicy.ALL_PARENTS) {
+        assertEquals(6.0, parentRes.value, Double.MIN_VALUE);
+      }
       frn = resultNodesAsArray(parentRes);
       assertEquals(1.0, frn[0].value, Double.MIN_VALUE);
       closeAll();
@@ -149,12 +163,12 @@ public class TestTopKResultsHandler extends BaseTestTopK {
   @Test
   public void testGetMaxIntFacets() throws Exception {
     for (int partitionSize : partitionSizes) {
-      initIndex(partitionSize);
+      FacetIndexingParams fip = getFacetIndexingParams(partitionSize);
+      initIndex(fip);
 
       // do different facet counts and compare to control
       CategoryPath path = new CategoryPath("a", "b");
-      FacetSearchParams sParams = getFacetSearchParams(getFacetIndexingParams(partitionSize), 
-          new CountFacetRequest(path, Integer.MAX_VALUE));
+      FacetSearchParams sParams = getFacetSearchParams(fip, new CountFacetRequest(path, Integer.MAX_VALUE));
 
       FacetsCollector fc = new StandardFacetsCollector(sParams, indexReader, taxoReader) {
         @Override
@@ -174,7 +188,7 @@ public class TestTopKResultsHandler extends BaseTestTopK {
 
       // As a control base results, ask for top-1000 results
       FacetSearchParams sParams2 = getFacetSearchParams(
-          getFacetIndexingParams(partitionSize), new CountFacetRequest(path, Integer.MAX_VALUE));
+          fip, new CountFacetRequest(path, Integer.MAX_VALUE));
 
       FacetsCollector fc2 = new StandardFacetsCollector(sParams2, indexReader, taxoReader) {
         @Override
@@ -207,12 +221,11 @@ public class TestTopKResultsHandler extends BaseTestTopK {
   @Test
   public void testSimpleSearchForNonexistentFacet() throws Exception {
     for (int partitionSize : partitionSizes) {
-      initIndex(partitionSize);
+      FacetIndexingParams fip = getFacetIndexingParams(partitionSize);
+      initIndex(fip);
 
       CategoryPath path = new CategoryPath("Miau Hattulla");
-      FacetSearchParams sParams = getFacetSearchParams(
-          getFacetIndexingParams(partitionSize),
-          new CountFacetRequest(path, 10));
+      FacetSearchParams sParams = getFacetSearchParams(fip, new CountFacetRequest(path, 10));
 
       FacetsCollector fc = FacetsCollector.create(sParams, indexReader, taxoReader);
       

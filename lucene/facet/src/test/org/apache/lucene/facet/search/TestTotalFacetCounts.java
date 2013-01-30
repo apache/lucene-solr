@@ -8,7 +8,9 @@ import org.apache.lucene.facet.FacetTestCase;
 import org.apache.lucene.facet.FacetTestUtils;
 import org.apache.lucene.facet.FacetTestUtils.IndexTaxonomyReaderPair;
 import org.apache.lucene.facet.FacetTestUtils.IndexTaxonomyWriterPair;
+import org.apache.lucene.facet.index.params.CategoryListParams;
 import org.apache.lucene.facet.index.params.FacetIndexingParams;
+import org.apache.lucene.facet.taxonomy.CategoryPath;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.util.IOUtils;
 import org.apache.lucene.util._TestUtil;
@@ -58,6 +60,16 @@ public class TestTotalFacetCounts extends FacetTestCase {
       @Override
       public int getPartitionSize() {
         return partitionSize;
+      }
+      
+      @Override
+      public CategoryListParams getCategoryListParams(CategoryPath category) {
+        return new CategoryListParams() {
+          @Override
+          public OrdinalPolicy getOrdinalPolicy(String dimension) {
+            return OrdinalPolicy.ALL_PARENTS;
+          }
+        };
       }
     };
     // The counts that the TotalFacetCountsArray should have after adding

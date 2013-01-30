@@ -14,6 +14,7 @@ import org.junit.Before;
 import org.junit.Test;
 
 import org.apache.lucene.facet.FacetTestBase;
+import org.apache.lucene.facet.index.params.FacetIndexingParams;
 import org.apache.lucene.facet.search.FacetsAccumulator;
 import org.apache.lucene.facet.search.ScoredDocIDs;
 import org.apache.lucene.facet.search.ScoredDocIdCollector;
@@ -48,11 +49,14 @@ import org.apache.lucene.facet.taxonomy.CategoryPath;
  */
 public class TestFacetsAccumulatorWithComplement extends FacetTestBase {
   
+  private FacetIndexingParams fip;
+  
   @Override
   @Before
   public void setUp() throws Exception {
     super.setUp();
-    initIndex();
+    fip = getFacetIndexingParams(Integer.MAX_VALUE);
+    initIndex(fip);
   }
   
   @Override
@@ -125,7 +129,7 @@ public class TestFacetsAccumulatorWithComplement extends FacetTestBase {
   
   /** compute facets with certain facet requests and docs */
   private List<FacetResult> findFacets(ScoredDocIDs sDocids, boolean withComplement) throws IOException {
-    FacetSearchParams fsp = new FacetSearchParams(getFacetIndexingParams(Integer.MAX_VALUE), new CountFacetRequest(new CategoryPath("root","a"), 10));
+    FacetSearchParams fsp = new FacetSearchParams(fip, new CountFacetRequest(new CategoryPath("root","a"), 10));
     FacetsAccumulator fAccumulator = new StandardFacetsAccumulator(fsp, indexReader, taxoReader);
     
     fAccumulator.setComplementThreshold(

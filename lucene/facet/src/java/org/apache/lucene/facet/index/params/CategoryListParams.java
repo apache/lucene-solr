@@ -4,6 +4,7 @@ import java.io.IOException;
 
 import org.apache.lucene.facet.search.CategoryListIterator;
 import org.apache.lucene.facet.search.DocValuesCategoryListIterator;
+import org.apache.lucene.facet.taxonomy.CategoryPath;
 import org.apache.lucene.facet.util.PartitionsUtils;
 import org.apache.lucene.util.encoding.DGapVInt8IntEncoder;
 import org.apache.lucene.util.encoding.IntDecoder;
@@ -35,25 +36,61 @@ import org.apache.lucene.util.encoding.UniqueValuesIntEncoder;
  */
 public class CategoryListParams {
 
-  /** OrdinalPolicy defines which ordinals are encoded for every document. */
+  /**
+   * Defines which category ordinals are encoded for every document. This also
+   * affects how category ordinals are aggregated, check the different policies
+   * for more details.
+   */
   public static enum OrdinalPolicy {
     /**
-     * Encodes only the ordinal of leaf nodes. That is, the category A/B/C will
-     * not encode the ordinals of A and A/B.
+     * Encodes only the ordinals of leaf nodes. That is, for the category A/B/C,
+     * the ordinals of A and A/B will not be encoded. This policy is efficient
+     * for hierarchical dimensions, as it reduces the number of ordinals that
+     * are visited per document. During faceted search, this policy behaves
+     * exactly like {@link #ALL_PARENTS}, and the counts of all path components
+     * will be computed as well.
      * 
      * <p>
      * <b>NOTE:</b> this {@link OrdinalPolicy} requires a special collector or
-     * accumulator, which will fix the parents' counts, unless you are not
-     * interested in the parents counts.
+     * accumulator, which will fix the parents' counts.
+     * 
+     * <p>
+     * <b>NOTE:</b> since only leaf nodes are encoded for the document, you
+     * should use this policy when the same document doesn't share two
+     * categories that have a mutual parent, or otherwise the counts will be
+     * wrong (the mutual parent will be over-counted). For example, if a
+     * document has the categories A/B/C and A/B/D, then with this policy the
+     * counts of "A" and "B" will be 2, which is wrong. If you intend to index
+     * hierarchical dimensions, with more than one category per document, you
+     * should use either {@link #ALL_PARENTS} or {@link #ALL_BUT_DIMENSION}.
      */
     NO_PARENTS,
     
     /**
      * Encodes the ordinals of all path components. That is, the category A/B/C
-     * will encode the ordinals of A and A/B as well. This is the default
-     * {@link OrdinalPolicy}.
+     * will encode the ordinals of A and A/B as well. If you don't require the
+     * dimension's count during search, consider using
+     * {@link #ALL_BUT_DIMENSION}.
      */
-    ALL_PARENTS
+    ALL_PARENTS,
+    
+    /**
+     * Encodes the ordinals of all path components except the dimension. The
+     * dimension of a category is defined to be the first components in
+     * {@link CategoryPath#components}. For the category A/B/C, the ordinal of
+     * A/B will be encoded as well, however not the ordinal of A.
+     * 
+     * <p>
+     * <b>NOTE:</b> when facets are aggregated, this policy behaves exactly like
+     * {@link #ALL_PARENTS}, except that the dimension is never counted. I.e. if
+     * you ask to count the facet "A", then while in {@link #ALL_PARENTS} you
+     * will get counts for "A" <u>and its children</u>, with this policy you
+     * will get counts for <u>only its children</u>. This policy is the default
+     * one, and makes sense for using with flat dimensions, whenever your
+     * application does not require the dimension's count. Otherwise, use
+     * {@link #ALL_PARENTS}.
+     */
+    ALL_BUT_DIMENSION
   }
   
   /** The default field used to store the facets information. */
@@ -63,7 +100,7 @@ public class CategoryListParams {
    * The default {@link OrdinalPolicy} that's used when encoding a document's
    * category ordinals.
    */
-  public static final OrdinalPolicy DEFAULT_ORDINAL_POLICY = OrdinalPolicy.ALL_PARENTS;
+  public static final OrdinalPolicy DEFAULT_ORDINAL_POLICY = OrdinalPolicy.ALL_BUT_DIMENSION;
   
   public final String field;
 
@@ -115,19 +152,15 @@ public class CategoryListParams {
       return false;
     }
     CategoryListParams other = (CategoryListParams) o;
-    if (this.hashCode != other.hashCode) {
+    if (hashCode != other.hashCode) {
       return false;
     }
-    
-    // The above hashcodes might equal each other in the case of a collision,
-    // so at this point only directly term equality testing will settle
-    // the equality test.
     return field.equals(other.field);
   }
 
   @Override
   public int hashCode() {
-    return this.hashCode;
+    return hashCode;
   }
 
   /** Create the {@link CategoryListIterator} for the specified partition. */
@@ -137,14 +170,18 @@ public class CategoryListParams {
     return new DocValuesCategoryListIterator(docValuesField, createEncoder().createMatchingDecoder());
   }
   
-  /** Returns the {@link OrdinalPolicy} to use for this {@link CategoryListParams}. */
-  public OrdinalPolicy getOrdinalPolicy() {
+  /**
+   * Returns the {@link OrdinalPolicy} to use for the given dimension. This
+   * {@link CategoryListParams} always returns {@link #DEFAULT_ORDINAL_POLICY}
+   * for all dimensions.
+   */
+  public OrdinalPolicy getOrdinalPolicy(String dimension) {
     return DEFAULT_ORDINAL_POLICY;
   }
   
   @Override
   public String toString() {
-    return "field=" + field + " encoder=" + createEncoder() + " ordinalPolicy=" + getOrdinalPolicy();
+    return "field=" + field + " encoder=" + createEncoder() + " ordinalPolicy=" + getOrdinalPolicy(null);
   }
   
 }

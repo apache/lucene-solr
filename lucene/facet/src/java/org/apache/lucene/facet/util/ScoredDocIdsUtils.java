@@ -74,6 +74,7 @@ public class ScoredDocIdsUtils {
   
   /** Clear all deleted documents from a given open-bit-set according to a given reader */
   private static void clearDeleted(final IndexReader reader, final FixedBitSet set) throws IOException {
+    // TODO use BitsFilteredDocIdSet?
     
     // If there are no deleted docs
     if (!reader.hasDeletions()) {

@@ -3,6 +3,7 @@ package org.apache.lucene.facet.search;
 import java.util.List;
 
 import org.apache.lucene.facet.FacetTestBase;
+import org.apache.lucene.facet.index.params.FacetIndexingParams;
 import org.apache.lucene.facet.search.FacetsCollector;
 import org.apache.lucene.facet.search.params.CountFacetRequest;
 import org.apache.lucene.facet.search.params.FacetSearchParams;
@@ -31,18 +32,21 @@ import org.junit.Before;
 
 public class TestSameRequestAccumulation extends FacetTestBase {
   
+  private FacetIndexingParams fip;
+  
   @Override
   @Before
   public void setUp() throws Exception {
     super.setUp();
-    initIndex();
+    fip = getFacetIndexingParams(Integer.MAX_VALUE);
+    initIndex(fip);
   }
   
   // Following LUCENE-4461 - ensure requesting the (exact) same request more
   // than once does not alter the results
   public void testTwoSameRequests() throws Exception {
     final CountFacetRequest facetRequest = new CountFacetRequest(new CategoryPath("root"), 10);
-    FacetSearchParams fsp = new FacetSearchParams(facetRequest);
+    FacetSearchParams fsp = new FacetSearchParams(fip, facetRequest);
     
     FacetsCollector fc = FacetsCollector.create(fsp, indexReader, taxoReader);
     searcher.search(new MatchAllDocsQuery(), fc);
@@ -50,7 +54,7 @@ public class TestSameRequestAccumulation extends FacetTestBase {
     final String expected = fc.getFacetResults().get(0).toString();
 
     // now add the same facet request with duplicates (same instance and same one)
-    fsp = new FacetSearchParams(facetRequest, facetRequest, new CountFacetRequest(new CategoryPath("root"), 10));
+    fsp = new FacetSearchParams(fip, facetRequest, facetRequest, new CountFacetRequest(new CategoryPath("root"), 10));
 
     // make sure the search params holds 3 requests now
     assertEquals(3, fsp.facetRequests.size());

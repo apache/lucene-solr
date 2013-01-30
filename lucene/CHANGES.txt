@@ -61,6 +61,11 @@ Optimizations
 * LUCENE-4690: Performance improvements and non-hashing versions
   of NumericUtils.*ToPrefixCoded() (yonik)
 
+* LUCENE-4715: CategoryListParams.getOrdinalPolicy now allows to return a
+  different OrdinalPolicy per dimension, to better tune how you index
+  facets. Also added OrdinalPolicy.ALL_BUT_DIMENSION. 
+  (Shai Erera, Michael McCandless)
+
 New Features
 
 * LUCENE-4686: New specialized DGapVInt8IntEncoder for facets (now the 

@@ -45,7 +45,6 @@ public class TestMultiCLExample extends LuceneTestCase {
     assertNotNull("Result should not be null", result);
     FacetResultNode node = result.getFacetResultNode();
     assertEquals("Invalid label", "5", node.label.toString());
-    assertEquals("Invalid value", 2.0, node.value, 0.0);
     assertEquals("Invalid # of subresults", 3, node.subResults.size());
 
     Iterator<? extends FacetResultNode> subResults = node.subResults.iterator();

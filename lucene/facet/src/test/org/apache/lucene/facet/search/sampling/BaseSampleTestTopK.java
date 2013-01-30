@@ -3,6 +3,7 @@ package org.apache.lucene.facet.search.sampling;
 import java.util.List;
 import java.util.Random;
 
+import org.apache.lucene.facet.index.params.FacetIndexingParams;
 import org.apache.lucene.facet.search.BaseTestTopK;
 import org.apache.lucene.facet.search.FacetsAccumulator;
 import org.apache.lucene.facet.search.FacetsCollector;
@@ -46,8 +47,8 @@ public abstract class BaseSampleTestTopK extends BaseTestTopK {
   protected static final int RETRIES = 10;
   
   @Override
-  protected FacetSearchParams searchParamsWithRequests(int numResults, int partitionSize) {
-    FacetSearchParams res = super.searchParamsWithRequests(numResults, partitionSize);
+  protected FacetSearchParams searchParamsWithRequests(int numResults, FacetIndexingParams fip) {
+    FacetSearchParams res = super.searchParamsWithRequests(numResults, fip);
     for (FacetRequest req : res.facetRequests) {
       // randomize the way we aggregate results
       if (random().nextBoolean()) {
@@ -71,20 +72,23 @@ public abstract class BaseSampleTestTopK extends BaseTestTopK {
     boolean useRandomSampler = random().nextBoolean();
     for (int partitionSize : partitionSizes) {
       try {
-        initIndex(partitionSize);
+        // complements return counts for all ordinals, so force ALL_PARENTS indexing
+        // so that it's easier to compare
+        FacetIndexingParams fip = getFacetIndexingParams(partitionSize, true);
+        initIndex(fip);
         // Get all of the documents and run the query, then do different
         // facet counts and compare to control
         Query q = new TermQuery(new Term(CONTENT_FIELD, BETA)); // 90% of the docs
         ScoredDocIdCollector docCollector = ScoredDocIdCollector.create(indexReader.maxDoc(), false);
         
-        FacetSearchParams expectedSearchParams = searchParamsWithRequests(K, partitionSize); 
+        FacetSearchParams expectedSearchParams = searchParamsWithRequests(K, fip); 
         FacetsCollector fc = FacetsCollector.create(expectedSearchParams, indexReader, taxoReader);
         
         searcher.search(q, MultiCollector.wrap(docCollector, fc));
         
         List<FacetResult> expectedResults = fc.getFacetResults();
         
-        FacetSearchParams samplingSearchParams = searchParamsWithRequests(K, partitionSize); 
+        FacetSearchParams samplingSearchParams = searchParamsWithRequests(K, fip); 
         
         // try several times in case of failure, because the test has a chance to fail 
         // if the top K facets are not sufficiently common with the sample set
