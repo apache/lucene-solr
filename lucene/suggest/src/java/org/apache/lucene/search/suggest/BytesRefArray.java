@@ -79,7 +79,7 @@ final class BytesRefArray {
       bytesUsed.addAndGet((offsets.length - oldLen)
           * RamUsageEstimator.NUM_BYTES_INT);
     }
-    pool.copy(bytes);
+    pool.append(bytes);
     offsets[lastElement++] = currentOffset;
     currentOffset += bytes.length;
     return lastElement;
@@ -104,7 +104,7 @@ final class BytesRefArray {
       int offset = offsets[ord];
       int length = ord == lastElement - 1 ? currentOffset - offset
           : offsets[ord + 1] - offset;
-      pool.copyFrom(spare, offset, length);
+      pool.readBytes(spare, offset, length);
       return spare;
     }
     throw new IndexOutOfBoundsException("index " + ord

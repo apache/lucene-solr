@@ -17,38 +17,32 @@ package org.apache.lucene.index;
  * limitations under the License.
  */
 
-import static org.apache.lucene.util.ByteBlockPool.BYTE_BLOCK_SIZE;
-
 import java.io.IOException;
 import java.util.Iterator;
 import java.util.NoSuchElementException;
 
 import org.apache.lucene.codecs.DocValuesConsumer;
-import org.apache.lucene.store.RAMFile;
-import org.apache.lucene.store.RAMInputStream;
-import org.apache.lucene.store.RAMOutputStream;
+import org.apache.lucene.util.ByteBlockPool.DirectTrackingAllocator;
+import org.apache.lucene.util.ByteBlockPool;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.Counter;
 import org.apache.lucene.util.packed.AppendingLongBuffer;
+
+import static org.apache.lucene.util.ByteBlockPool.BYTE_BLOCK_SIZE;
 
 
 /** Buffers up pending byte[] per doc, then flushes when
  *  segment flushes. */
 class BinaryDocValuesWriter extends DocValuesWriter {
 
-  private final RAMFile bytes;
-  private final RAMOutputStream bytesWriter;
+  private final ByteBlockPool pool;
   private final AppendingLongBuffer lengths;
   private final FieldInfo fieldInfo;
-  private final Counter iwBytesUsed;
-  private long bytesUsed;
   private int addedValues = 0;
 
   public BinaryDocValuesWriter(FieldInfo fieldInfo, Counter iwBytesUsed) {
     this.fieldInfo = fieldInfo;
-    this.bytes = new RAMFile();
-    this.bytesWriter = new RAMOutputStream(bytes);
-    this.iwBytesUsed = iwBytesUsed;
+    this.pool = new ByteBlockPool(new DirectTrackingAllocator(iwBytesUsed));
     this.lengths = new AppendingLongBuffer();
   }
 
@@ -70,31 +64,11 @@ class BinaryDocValuesWriter extends DocValuesWriter {
     }
     addedValues++;
     lengths.add(value.length);
-    try {
-      bytesWriter.writeBytes(value.bytes, value.offset, value.length);
-    } catch (IOException e) {
-      throw new RuntimeException(e);
-    }
-    
-    updateBytesUsed();
-  }
-  
-  private void updateBytesUsed() {
-    // nocommit not totally accurate, but just fix not to use RAMFile anyway
-    long numBuffers = (bytesWriter.getFilePointer() / 1024) + 1; // round up
-    long oversize = numBuffers * (1024 + 32); // fudge for arraylist/etc overhead
-    final long newBytesUsed = lengths.ramBytesUsed() + oversize;
-    iwBytesUsed.addAndGet(newBytesUsed - bytesUsed);
-    bytesUsed = newBytesUsed;
+    pool.append(value);
   }
 
   @Override
   public void finish(int maxDoc) {
-    try {
-      bytesWriter.close();
-    } catch (IOException e) {
-      throw new RuntimeException(e);
-    }
   }
 
   @Override
@@ -119,16 +93,11 @@ class BinaryDocValuesWriter extends DocValuesWriter {
     final AppendingLongBuffer.Iterator lengthsIterator = lengths.iterator();
     final int size = lengths.size();
     final int maxDoc;
-    final RAMInputStream bytesReader;
     int upto;
+    long byteOffset;
     
     BytesIterator(int maxDoc) {
       this.maxDoc = maxDoc;
-      try {
-        bytesReader = new RAMInputStream("BinaryDocValuesWriter", bytes);
-      } catch (IOException e) {
-        throw new RuntimeException(e);
-      }
     }
     
     @Override
@@ -143,14 +112,11 @@ class BinaryDocValuesWriter extends DocValuesWriter {
       }
       if (upto < size) {
         int length = (int) lengthsIterator.next();
-        value.grow(length);
-        try {
-          bytesReader.readBytes(value.bytes, 0, length);
-        } catch (IOException e) {
-          throw new RuntimeException(e);
-        }
-        value.length = length;
+        pool.readBytes(value, byteOffset, length);
+        byteOffset += length;
       } else {
+        // This is to handle last N documents not having
+        // this DV field in the end of the segment:
         value.length = 0;
       }
       upto++;
