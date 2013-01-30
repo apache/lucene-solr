@@ -35,6 +35,7 @@ import org.apache.lucene.util.Bits;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.FixedBitSet;
 import org.apache.lucene.util.PriorityQueue;
+import org.apache.lucene.util.packed.AppendingLongBuffer;
 
 /** 
  * Abstract API that consumes numeric, binary and
@@ -240,7 +241,7 @@ public abstract class DocValuesConsumer implements Closeable {
 
     public int numMergedTerms;
 
-    final List<BytesRef> mergedTerms = new ArrayList<BytesRef>();
+    final AppendingLongBuffer ordToReaderId = new AppendingLongBuffer();
     final List<SegmentState> segStates = new ArrayList<SegmentState>();
 
     private static class SegmentState {
@@ -250,6 +251,8 @@ public abstract class DocValuesConsumer implements Closeable {
       int ord = -1;
       SortedDocValues values;
       BytesRef scratch = new BytesRef();
+      int lastOrd = -1; // last REAL ord we looked up: nocommit: clean this up
+      AppendingLongBuffer ordDeltas = new AppendingLongBuffer();
 
       // nocommit can we factor out the compressed fields
       // compression?  ie we have a good idea "roughly" what
@@ -262,10 +265,11 @@ public abstract class DocValuesConsumer implements Closeable {
           ord++;
           if (liveTerms == null || liveTerms.get(ord)) {
             values.lookupOrd(ord, scratch);
+            lastOrd = ord;
             return scratch;
           } else {
             // Skip "deleted" terms (ie, terms that were not
-            // referenced by any live docs):
+            // referenced by any live docs): nocommit: why?!
             values.lookupOrd(ord, scratch);
           }
         }
@@ -337,18 +341,15 @@ public abstract class DocValuesConsumer implements Closeable {
         if (lastTerm == null || !lastTerm.equals(top.scratch)) {
           // a new unique term: record its segment ID / sourceOrd pair
           int readerId = top.segmentID;
-          int sourceOrd = top.ord;
-          // nocommit: do this
-          //   ordToReaderID.add(readerId);
+          ordToReaderId.add(readerId);
+
+          int sourceOrd = top.lastOrd;
+             
           int delta = sourceOrd - lastOrds[readerId];
           lastOrds[readerId] = sourceOrd;
-          // nocommit: do this
-          //   top.ordDeltas.add(delta);
+          top.ordDeltas.add(delta);
           
           lastTerm = BytesRef.deepCopyOf(top.scratch);
-          // nocommit we could spill this to disk instead of
-          // RAM, and replay on finish...
-          mergedTerms.add(lastTerm);
           ord++;
         }
 
@@ -408,12 +409,24 @@ public abstract class DocValuesConsumer implements Closeable {
                    new Iterable<BytesRef>() {
                      @Override
                      public Iterator<BytesRef> iterator() {
+                       // for each next(), tells us what reader to go to
+                       final AppendingLongBuffer.Iterator readerIDs = merger.ordToReaderId.iterator();
+                       // for each next(), gives us the original ord
+                       final AppendingLongBuffer.Iterator ordDeltas[] = new AppendingLongBuffer.Iterator[merger.segStates.size()];
+                       final int lastOrds[] = new int[ordDeltas.length];
+                       
+                       for (int i = 0; i < ordDeltas.length; i++) {
+                         ordDeltas[i] = merger.segStates.get(i).ordDeltas.iterator();
+                       }
+
+                       final BytesRef scratch = new BytesRef();
+                       
                        return new Iterator<BytesRef>() {
                          int ordUpto;
 
                          @Override
                          public boolean hasNext() {
-                           return ordUpto < merger.mergedTerms.size();
+                           return ordUpto < merger.numMergedTerms;
                          }
 
                          @Override
@@ -426,7 +439,12 @@ public abstract class DocValuesConsumer implements Closeable {
                            if (!hasNext()) {
                              throw new NoSuchElementException();
                            }
-                           return merger.mergedTerms.get(ordUpto++);
+                           int readerID = (int) readerIDs.next();
+                           int ord = lastOrds[readerID] + (int) ordDeltas[readerID].next();
+                           merger.segStates.get(readerID).values.lookupOrd(ord, scratch);
+                           lastOrds[readerID] = ord;
+                           ordUpto++;
+                           return scratch;
                          }
                        };
                      }
