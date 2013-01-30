@@ -31,20 +31,19 @@ import org.apache.lucene.util.BytesRefHash.DirectBytesStartArray;
 import org.apache.lucene.util.BytesRefHash;
 import org.apache.lucene.util.Counter;
 import org.apache.lucene.util.RamUsageEstimator;
+import org.apache.lucene.util.packed.AppendingLongBuffer;
 
 
 /** Buffers up pending byte[] per doc, deref and sorting via
  *  int ord, then flushes when segment flushes. */
 class SortedDocValuesWriter extends DocValuesWriter {
   final BytesRefHash hash;
-  private int[] pending = new int[DEFAULT_PENDING_SIZE];
-  private int pendingIndex = 0;
+  private AppendingLongBuffer pending;
   private final Counter iwBytesUsed;
-  private long bytesUsed;
+  private long bytesUsed; // this currently only tracks differences in 'pending'
   private final FieldInfo fieldInfo;
 
   private static final BytesRef EMPTY = new BytesRef(BytesRef.EMPTY_BYTES);
-  private static final int DEFAULT_PENDING_SIZE = 16;
 
   public SortedDocValuesWriter(FieldInfo fieldInfo, Counter iwBytesUsed) {
     this.fieldInfo = fieldInfo;
@@ -54,11 +53,13 @@ class SortedDocValuesWriter extends DocValuesWriter {
             new ByteBlockPool.DirectTrackingAllocator(iwBytesUsed)),
             BytesRefHash.DEFAULT_CAPACITY,
             new DirectBytesStartArray(BytesRefHash.DEFAULT_CAPACITY, iwBytesUsed));
-    iwBytesUsed.addAndGet(RamUsageEstimator.NUM_BYTES_ARRAY_HEADER + RamUsageEstimator.NUM_BYTES_INT * DEFAULT_PENDING_SIZE);
+    pending = new AppendingLongBuffer();
+    bytesUsed = pending.ramBytesUsed();
+    iwBytesUsed.addAndGet(bytesUsed);
   }
 
   public void addValue(int docID, BytesRef value) {
-    if (docID < pendingIndex) {
+    if (docID < pending.size()) {
       throw new IllegalArgumentException("DocValuesField \"" + fieldInfo.name + "\" appears more than once in this document (only one value is allowed per field)");
     }
     if (value == null) {
@@ -69,7 +70,7 @@ class SortedDocValuesWriter extends DocValuesWriter {
     }
 
     // Fill in any holes:
-    while(pendingIndex < docID) {
+    while(pending.size() < docID) {
       addOneValue(EMPTY);
     }
 
@@ -78,7 +79,8 @@ class SortedDocValuesWriter extends DocValuesWriter {
 
   @Override
   public void finish(int maxDoc) {
-    if (pendingIndex < maxDoc) {
+    // nocommit: WTF.. why is this not a while but an if?
+    if (pending.size() < maxDoc) {
       addOneValue(EMPTY);
     }
   }
@@ -89,12 +91,14 @@ class SortedDocValuesWriter extends DocValuesWriter {
       ord = -ord-1;
     }
     
-    if (pendingIndex <= pending.length) {
-      int pendingLen = pending.length;
-      pending = ArrayUtil.grow(pending, pendingIndex+1);
-      iwBytesUsed.addAndGet((pending.length - pendingLen) * RamUsageEstimator.NUM_BYTES_INT);
-    }
-    pending[pendingIndex++] = ord;
+    pending.add(ord);
+    updateBytesUsed();
+  }
+  
+  private void updateBytesUsed() {
+    final long newBytesUsed = pending.ramBytesUsed();
+    iwBytesUsed.addAndGet(newBytesUsed - bytesUsed);
+    bytesUsed = newBytesUsed;
   }
 
   @Override
@@ -102,7 +106,7 @@ class SortedDocValuesWriter extends DocValuesWriter {
     final int maxDoc = state.segmentInfo.getDocCount();
 
     final int emptyOrd;
-    if (pendingIndex < maxDoc) {
+    if (pending.size() < maxDoc) {
       // Make sure we added EMPTY value before sorting:
       int ord = hash.add(EMPTY);
       if (ord < 0) {
@@ -125,8 +129,6 @@ class SortedDocValuesWriter extends DocValuesWriter {
       ordMap[sortedValues[ord]] = ord;
     }
 
-    final int bufferedDocCount = pendingIndex;
-
     dvConsumer.addSortedField(fieldInfo,
 
                               // ord -> value
@@ -141,7 +143,7 @@ class SortedDocValuesWriter extends DocValuesWriter {
                               new Iterable<Number>() {
                                 @Override
                                 public Iterator<Number> iterator() {
-                                  return new OrdsIterator(ordMap, bufferedDocCount, maxDoc, emptyOrd);
+                                  return new OrdsIterator(ordMap, maxDoc, emptyOrd);
                                 }
                               });
   }
@@ -185,15 +187,15 @@ class SortedDocValuesWriter extends DocValuesWriter {
   
   // iterates over the ords for each doc we have in ram
   private class OrdsIterator implements Iterator<Number> {
+    final AppendingLongBuffer.Iterator iter = pending.iterator();
     final int ordMap[];
-    final int size;
+    final int size = pending.size();
     final int maxDoc;
     final int emptyOrd; // nocommit
     int docUpto;
     
-    OrdsIterator(int ordMap[], int size, int maxDoc, int emptyOrd) {
+    OrdsIterator(int ordMap[], int maxDoc, int emptyOrd) {
       this.ordMap = ordMap;
-      this.size = size;
       this.maxDoc = maxDoc;
       this.emptyOrd = emptyOrd;
     }
@@ -210,7 +212,7 @@ class SortedDocValuesWriter extends DocValuesWriter {
       }
       int ord;
       if (docUpto < size) {
-        ord = pending[docUpto];
+        ord = (int) iter.next();
       } else {
         ord = emptyOrd;
       }
