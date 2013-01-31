@@ -251,7 +251,6 @@ public abstract class DocValuesConsumer implements Closeable {
       int ord = -1;
       SortedDocValues values;
       BytesRef scratch = new BytesRef();
-      int lastOrd = -1; // last REAL ord we looked up: nocommit: clean this up
       AppendingLongBuffer ordDeltas = new AppendingLongBuffer();
 
       // nocommit can we factor out the compressed fields
@@ -265,7 +264,6 @@ public abstract class DocValuesConsumer implements Closeable {
           ord++;
           if (liveTerms == null || liveTerms.get(ord)) {
             values.lookupOrd(ord, scratch);
-            lastOrd = ord;
             return scratch;
           }
         }
@@ -339,8 +337,7 @@ public abstract class DocValuesConsumer implements Closeable {
           int readerId = top.segmentID;
           ordToReaderId.add(readerId);
 
-          int sourceOrd = top.lastOrd;
-             
+          int sourceOrd = top.ord;             
           int delta = sourceOrd - lastOrds[readerId];
           lastOrds[readerId] = sourceOrd;
           top.ordDeltas.add(delta);
