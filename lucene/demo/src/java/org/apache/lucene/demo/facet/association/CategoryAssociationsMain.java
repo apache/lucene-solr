@@ -33,6 +33,9 @@ import org.apache.lucene.facet.search.results.FacetResult;
  */
 public class CategoryAssociationsMain {
 
+  /** Sole constructor. */
+  public CategoryAssociationsMain() {}
+
   /**
    * Driver for the simple sample.
    * @throws Exception on error (no detailed exception handling here for sample simplicity
@@ -43,6 +46,9 @@ public class CategoryAssociationsMain {
     ExampleUtils.log("DONE");
   }
 
+  /**
+   * Runs the example demonstrating sum of int-association.
+   */
   public ExampleResult runSumIntAssociationSample() throws Exception {
 
     // create Directories for the search index and for the taxonomy index
@@ -61,6 +67,9 @@ public class CategoryAssociationsMain {
     return res;
   }
   
+  /**
+   * Runs the example demonstrating sum of float-association.
+   */
   public ExampleResult runSumFloatAssociationSample() throws Exception {
     
     // create Directories for the search index and for the taxonomy index

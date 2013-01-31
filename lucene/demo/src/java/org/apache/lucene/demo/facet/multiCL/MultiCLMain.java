@@ -27,12 +27,17 @@ import org.apache.lucene.facet.search.results.FacetResult;
  */
 
 /**
+ * Driver for the multi sample.
+ * 
  * @lucene.experimental
  */
 public class MultiCLMain {
+  
+  /** Sole constructor. */
+  public MultiCLMain() {}
 
   /**
-   * Driver for the multi sample.
+   * Executes the multi sample.
    * 
    * @throws Exception
    *             on error (no detailed exception handling here for sample
@@ -43,6 +48,7 @@ public class MultiCLMain {
     ExampleUtils.log("DONE");
   }
 
+  /** Runs the multi sample and returns the facet results */
   public ExampleResult runSample() throws Exception {
 
     // create Directories for the search index and for the taxonomy index

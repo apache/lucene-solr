@@ -46,6 +46,9 @@ import org.apache.lucene.store.Directory;
  */
 public class AdaptiveSearcher {
   
+  /** No instance */
+  private AdaptiveSearcher() {}
+  
   /**
    * Search with facets through the {@link AdaptiveFacetsAccumulator} 
    * @param indexDir Directory of the search index.

@@ -38,6 +38,9 @@ import org.apache.lucene.facet.taxonomy.directory.DirectoryTaxonomyReader;
  * @lucene.experimental
  */
 public class CategoryAssociationsSearcher {
+  
+  /** No instantiation */
+  private CategoryAssociationsSearcher() {}
 
   /** Search an index with a sum of int-association. */
   public static List<FacetResult> searchSumIntAssociation(Directory indexDir, Directory taxoDir) throws Exception {

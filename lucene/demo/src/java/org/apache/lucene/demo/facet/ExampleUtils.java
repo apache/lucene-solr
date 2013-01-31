@@ -20,15 +20,28 @@ import org.apache.lucene.util.Version;
  */
 
 /**
+ * Simple utility functions for the faceting examples
  * @lucene.experimental
  */
 public class ExampleUtils {
+  
+  /** No instance */
+  private ExampleUtils() {}
 
+  /** 
+   * True if the system property <code>tests.verbose</code> has been set.
+   * If true, it causes {@link #log(Object)} to print messages to the console.
+   */
   public static final boolean VERBOSE = Boolean.getBoolean("tests.verbose");
 
   /** The Lucene {@link Version} used by the example code. */
   public static final Version EXAMPLE_VER = Version.LUCENE_40;
   
+  /**
+   * Logs the String representation of <code>msg</code> to the console,
+   * if {@link #VERBOSE} is true. Otherwise, does nothing.
+   * @see #VERBOSE
+   */
   public static void log(Object msg) {
     if (VERBOSE) {
       System.out.println(msg.toString());

@@ -36,6 +36,9 @@ import org.apache.lucene.facet.taxonomy.directory.DirectoryTaxonomyReader;
  * @lucene.experimental
  */
 public class SimpleMain {
+  
+  /** Sole constructor */
+  public SimpleMain() {}
 
   /**
    * Driver for the simple sample.
@@ -47,6 +50,7 @@ public class SimpleMain {
     ExampleUtils.log("DONE");
   }
 
+  /** Runs the simple sample and returns the facet results */
   public ExampleResult runSimple() throws Exception {
     // create Directories for the search index and for the taxonomy index
     Directory indexDir = new RAMDirectory();
@@ -72,6 +76,7 @@ public class SimpleMain {
     return res;
   }
 
+  /** Runs the simple sample and returns drilldown results */
   public ExampleResult runDrillDown() throws Exception {
     // create Directories for the search index and for the taxonomy index
     Directory indexDir = new RAMDirectory();

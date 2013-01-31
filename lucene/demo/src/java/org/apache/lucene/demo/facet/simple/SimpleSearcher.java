@@ -47,6 +47,9 @@ import org.apache.lucene.search.TopScoreDocCollector;
  */
 public class SimpleSearcher {
   
+  /** No instance */
+  private SimpleSearcher() {}
+  
   /**
    * Search an index with facets.
    * @param indexReader index reader.
