@@ -79,8 +79,7 @@ class SortedDocValuesWriter extends DocValuesWriter {
 
   @Override
   public void finish(int maxDoc) {
-    // nocommit: WTF.. why is this not a while but an if?
-    if (pending.size() < maxDoc) {
+    while(pending.size() < maxDoc) {
       addOneValue(EMPTY);
     }
   }
@@ -112,18 +111,7 @@ class SortedDocValuesWriter extends DocValuesWriter {
     final int maxDoc = state.segmentInfo.getDocCount();
 
     final int emptyOrd;
-    if (pending.size() < maxDoc) {
-      // Make sure we added EMPTY value before sorting:
-      int ord = hash.add(EMPTY);
-      if (ord < 0) {
-        emptyOrd = -ord-1;
-      } else {
-        emptyOrd = ord;
-      }
-    } else {
-      emptyOrd = -1; // nocommit: HUH? how can this possibly work?
-    }
-
+    assert pending.size() == maxDoc;
     final int valueCount = hash.size();
 
     final int[] sortedValues = hash.sort(BytesRef.getUTF8SortedAsUnicodeComparator());
@@ -147,7 +135,7 @@ class SortedDocValuesWriter extends DocValuesWriter {
                               new Iterable<Number>() {
                                 @Override
                                 public Iterator<Number> iterator() {
-                                  return new OrdsIterator(ordMap, maxDoc, emptyOrd);
+                                  return new OrdsIterator(ordMap, maxDoc);
                                 }
                               });
   }
@@ -193,15 +181,13 @@ class SortedDocValuesWriter extends DocValuesWriter {
   private class OrdsIterator implements Iterator<Number> {
     final AppendingLongBuffer.Iterator iter = pending.iterator();
     final int ordMap[];
-    final int size = pending.size();
     final int maxDoc;
-    final int emptyOrd; // nocommit
     int docUpto;
     
-    OrdsIterator(int ordMap[], int maxDoc, int emptyOrd) {
+    OrdsIterator(int ordMap[], int maxDoc) {
       this.ordMap = ordMap;
       this.maxDoc = maxDoc;
-      this.emptyOrd = emptyOrd;
+      assert pending.size() == maxDoc;
     }
     
     @Override
@@ -214,12 +200,7 @@ class SortedDocValuesWriter extends DocValuesWriter {
       if (!hasNext()) {
         throw new NoSuchElementException();
       }
-      int ord;
-      if (docUpto < size) {
-        ord = (int) iter.next();
-      } else {
-        ord = emptyOrd;
-      }
+      int ord = (int) iter.next();
       docUpto++;
       // TODO: make reusable Number
       return ordMap[ord];
