@@ -252,6 +252,100 @@ public class BasicFunctionalityTest extends SolrTestCaseJ4 {
             );
   }
 
+
+  /**
+   * verify that delete by query works with the QParser framework and
+   * pure negative queries
+   */
+  public void testNonTrivialDeleteByQuery() throws Exception {
+    clearIndex();
+    
+    // setup
+    assertU( add(doc("id","101", "text", "red apple" )) );
+    assertU( add(doc("id","102", "text", "purple grape" )) );
+    assertU( add(doc("id","103", "text", "green grape" )) );
+    assertU( add(doc("id","104", "text", "green pear" )) );
+    assertU( add(doc("id","105", "text", "yellow banana" )) );
+    assertU( add(doc("id","106", "text", "red cherry" )) );
+
+    // sanity checks
+    assertU(commit());
+    assertQ(req("id:[100 TO 110]")
+            ,"//*[@numFound='6']"
+            );
+    assertQ(req("*:*")
+            ,"//*[@numFound='6']"
+            );
+    assertQ(req("text:red")
+            ,"//*[@numFound='2']"
+            );
+    assertQ(req("-text:red")
+            ,"//*[@numFound='4']"
+            );
+    assertQ(req("text:grape")
+            ,"//*[@numFound='2']"
+            );
+    assertQ(req("-text:grape")
+            ,"//*[@numFound='4']"
+            );
+    assertQ(req("-text:red -text:grape")
+            ,"//*[@numFound='2']"
+            );
+    assertQ(req("{!lucene q.op=AND df=text}grape green")
+            ,"//*[@numFound='1']"
+            ,"//int[@name='id'][.='103']"
+             );
+    assertQ(req("-_val_:\"{!lucene q.op=AND df=text}grape green\"")
+            ,"//*[@numFound='5']"
+            ,"//int[@name='id'][.='101']"
+            ,"//int[@name='id'][.='102']"
+            ,"//int[@name='id'][.='104']"
+            ,"//int[@name='id'][.='105']"
+            ,"//int[@name='id'][.='106']"
+            );
+
+    // tests
+
+    assertU(delQ("-*:*")); // NOOP
+    assertU(commit());
+    assertQ(req("*:*")
+            ,"//*[@numFound='6']"
+            );
+
+    assertU(delQ("-text:grape -text:red"));
+    assertU(commit());
+    assertQ(req("*:*")
+            ,"//*[@numFound='4']"
+            ,"//int[@name='id'][.='101']"
+            ,"//int[@name='id'][.='102']"
+            ,"//int[@name='id'][.='103']"
+            ,"//int[@name='id'][.='106']"
+            );
+
+    assertU(delQ("{!term f=id}106"));
+    assertU(commit());
+    assertQ(req("*:*")
+            ,"//*[@numFound='3']"
+            ,"//int[@name='id'][.='101']"
+            ,"//int[@name='id'][.='102']"
+            ,"//int[@name='id'][.='103']"
+            );
+
+    assertU(delQ("-_val_:\"{!lucene q.op=AND df=text}grape green\""));
+    assertU(commit());
+    assertQ(req("*:*")
+            ,"//*[@numFound='1']"
+            ,"//int[@name='id'][.='103']"
+            );
+
+    assertU(delQ("-text:doesnotexist"));
+    assertU(commit());
+    assertQ(req("*:*")
+            ,"//*[@numFound='0']"
+            );
+
+  }
+
   @Test
   public void testHTMLStrip() {
     assertU(add(doc("id","200", "HTMLwhitetok","&#65;&#66;&#67;")));
