@@ -1223,13 +1223,7 @@ public class PackedInts {
       this.valueCount = valueCount;
       this.bitsPerValue = bitsPerValue;
       this.version = version;
-    }
-    
-    // nocommit 
-    public int getValueCount() {
-      return valueCount;
-    }
-    
+    }    
   }
 
 }
