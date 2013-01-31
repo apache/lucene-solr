@@ -49,6 +49,17 @@ public class StandardFacetsCollector extends FacetsCollector {
   private List<FacetResult> results;
   private Object resultsGuard;
 
+  static String assertParams(FacetSearchParams fsp) {
+    // make sure none of the categories in the given FacetRequests was indexed with NO_PARENTS
+    for (FacetRequest fr : fsp.facetRequests) {
+      CategoryListParams clp = fsp.indexingParams.getCategoryListParams(fr.categoryPath);
+      if (clp.getOrdinalPolicy(fr.categoryPath.components[0]) == OrdinalPolicy.NO_PARENTS) {
+        return "this collector does not support aggregating categories that were indexed with OrdinalPolicy.NO_PARENTS";
+      }
+    }
+    return null;
+  }
+  
   /**
    * Create a collector for accumulating facets while collecting documents
    * during search.
@@ -62,6 +73,7 @@ public class StandardFacetsCollector extends FacetsCollector {
    *          taxonomy containing the facets.
    */
   public StandardFacetsCollector(FacetSearchParams facetSearchParams, IndexReader indexReader, TaxonomyReader taxonomyReader) {
+    assert assertParams(facetSearchParams) == null : assertParams(facetSearchParams);
     facetsAccumulator = initFacetsAccumulator(facetSearchParams, indexReader, taxonomyReader);
     scoreDocIdCollector = initScoredDocCollector(facetSearchParams, indexReader, taxonomyReader);
     resultsGuard = new Object();

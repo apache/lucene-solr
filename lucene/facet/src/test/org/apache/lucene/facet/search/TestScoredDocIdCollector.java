@@ -5,6 +5,7 @@ import java.util.Arrays;
 import java.util.List;
 
 import org.apache.lucene.facet.FacetTestBase;
+import org.apache.lucene.facet.index.params.FacetIndexingParams;
 import org.apache.lucene.facet.search.params.CountFacetRequest;
 import org.apache.lucene.facet.search.params.FacetSearchParams;
 import org.apache.lucene.facet.search.params.ScoreFacetRequest;
@@ -37,11 +38,14 @@ import org.junit.Test;
 /** Test ScoredDocIdCollector. */
 public class TestScoredDocIdCollector extends FacetTestBase {
 
+  private FacetIndexingParams fip;
+  
   @Override
   @Before
   public void setUp() throws Exception {
     super.setUp();
-    initIndex();
+    fip = getFacetIndexingParams(Integer.MAX_VALUE);
+    initIndex(fip);
   }
 
   @Override
@@ -73,8 +77,8 @@ public class TestScoredDocIdCollector extends FacetTestBase {
 
     // verify by facet values
     CategoryPath cp = new CategoryPath("root","a");
-    FacetSearchParams countFSP = new FacetSearchParams(getFacetIndexingParams(Integer.MAX_VALUE), new CountFacetRequest(cp, 10));
-    FacetSearchParams scoreFSP = new FacetSearchParams(getFacetIndexingParams(Integer.MAX_VALUE), new ScoreFacetRequest(cp, 10));
+    FacetSearchParams countFSP = new FacetSearchParams(fip, new CountFacetRequest(cp, 10));
+    FacetSearchParams scoreFSP = new FacetSearchParams(fip, new ScoreFacetRequest(cp, 10));
     
     List<FacetResult> countRes = findFacets(scoredDocIDs, countFSP);
     List<FacetResult> scoreRes = findFacets(scoredDocIDs, scoreFSP);
@@ -101,10 +105,8 @@ public class TestScoredDocIdCollector extends FacetTestBase {
   }
 
   // compute facets with certain facet requests and docs
-  private List<FacetResult> findFacets(ScoredDocIDs sDocids,
-      FacetSearchParams facetSearchParams) throws IOException {
-    FacetsAccumulator fAccumulator = new StandardFacetsAccumulator(
-        facetSearchParams, indexReader, taxoReader);
+  private List<FacetResult> findFacets(ScoredDocIDs sDocids, FacetSearchParams facetSearchParams) throws IOException {
+    FacetsAccumulator fAccumulator = new StandardFacetsAccumulator(facetSearchParams, indexReader, taxoReader);
     List<FacetResult> res = fAccumulator.accumulate(sDocids);
 
     // Results are ready, printing them...

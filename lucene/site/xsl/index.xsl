@@ -58,7 +58,8 @@
         <li><a href="core/overview-summary.html#overview_description">Introduction to Lucene's APIs</a>:
         High-level summary of the different Lucene packages. </li>
         <li><a href="core/org/apache/lucene/analysis/package-summary.html#package_description">Analysis overview</a>:
-        Introduction to Lucene's analysis API. </li>
+        Introduction to Lucene's analysis API.  See also the
+        <a href="core/org/apache/lucene/analysis/TokenStream.html">TokenStream consumer workflow</a>.</li>
         </ul>
         <h2>Reference Documents</h2>
           <ul>

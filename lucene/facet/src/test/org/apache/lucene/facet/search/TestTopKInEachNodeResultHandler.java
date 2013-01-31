@@ -181,7 +181,6 @@ public class TestTopKInEachNodeResultHandler extends FacetTestCase {
       boolean hasDoctor = "Doctor".equals(fr.getFacetRequest().categoryPath.components[0]);
       assertEquals(9, fr.getNumValidDescendants());
       FacetResultNode parentRes = fr.getFacetResultNode();
-      assertEquals(16.0, parentRes.value, Double.MIN_VALUE);
       assertEquals(2, parentRes.subResults.size());
       // two nodes sorted by descending values: a/b with 8  and a/c with 6
       // a/b has two children a/b/2 with value 3, and a/b/1 with value 2. 
@@ -217,7 +216,6 @@ public class TestTopKInEachNodeResultHandler extends FacetTestCase {
       hasDoctor |= "Doctor".equals(fr.getFacetRequest().categoryPath.components[0]);
       assertEquals(9, fr.getNumValidDescendants());
       parentRes = fr.getFacetResultNode();
-      assertEquals(16.0, parentRes.value, Double.MIN_VALUE);
       assertEquals(2, parentRes.subResults.size());
       // two nodes sorted by descending values: a/b with 8  and a/c with 6
       // a/b has two children a/b/2 with value 3, and a/b/1 with value 2. 
@@ -234,7 +232,6 @@ public class TestTopKInEachNodeResultHandler extends FacetTestCase {
       hasDoctor |= "Doctor".equals(fr.getFacetRequest().categoryPath.components[0]);
       assertEquals(4, fr.getNumValidDescendants(), 4);
       parentRes = fr.getFacetResultNode();
-      assertEquals(16.0, parentRes.value, Double.MIN_VALUE);
       assertEquals(2, parentRes.subResults.size());
       // two nodes sorted by descending values: 
       // a/b with value 8 and a/c with value 6

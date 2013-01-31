@@ -42,7 +42,7 @@ sammy.get
 
         var type_or_name = $( '#type_or_name', analysis_form );
         var schema_browser_element = $( '#tor_schema' );
-        var schema_browser_path = $( 'p > a', active_core ).attr( 'href' ) + '/schema-browser'
+        var schema_browser_path = app.core_menu.find( '.schema-browser a' ).attr( 'href' );
         var schema_browser_map = { 'fieldname' : 'field', 'fieldtype' : 'type' };
 
         type_or_name

@@ -25,6 +25,8 @@ import org.apache.lucene.facet.FacetTestCase;
 import org.apache.lucene.facet.index.params.CategoryListParams;
 import org.apache.lucene.facet.index.params.FacetIndexingParams;
 import org.apache.lucene.facet.index.params.PerDimensionIndexingParams;
+import org.apache.lucene.facet.index.params.CategoryListParams.OrdinalPolicy;
+import org.apache.lucene.facet.index.params.PerDimensionOrdinalPolicy;
 import org.apache.lucene.facet.search.CategoryListIterator;
 import org.apache.lucene.facet.search.DrillDown;
 import org.apache.lucene.facet.search.FacetsCollector;
@@ -368,9 +370,23 @@ public class TestFacetsPayloadMigrationReader extends FacetTestCase {
     
     // set custom CLP fields for two dimensions and use the default ($facets) for the other two
     HashMap<CategoryPath,CategoryListParams> params = new HashMap<CategoryPath,CategoryListParams>();
-    params.put(new CategoryPath(DIMENSIONS[0]), new CategoryListParams(DIMENSIONS[0]));
-    params.put(new CategoryPath(DIMENSIONS[1]), new CategoryListParams(DIMENSIONS[1]));
-    FacetIndexingParams fip = new PerDimensionIndexingParams(params) {
+    params.put(new CategoryPath(DIMENSIONS[0]), new CategoryListParams(DIMENSIONS[0]) {
+      @Override
+      public OrdinalPolicy getOrdinalPolicy(String dimension) {
+        return OrdinalPolicy.ALL_PARENTS;
+      }
+    });
+    params.put(new CategoryPath(DIMENSIONS[1]), new CategoryListParams(DIMENSIONS[1]) {
+      @Override
+      public OrdinalPolicy getOrdinalPolicy(String dimension) {
+        return OrdinalPolicy.ALL_PARENTS;
+      }
+    });
+    
+    HashMap<String,OrdinalPolicy> policies = new HashMap<String,CategoryListParams.OrdinalPolicy>();
+    policies.put(DIMENSIONS[2], OrdinalPolicy.ALL_PARENTS);
+    policies.put(DIMENSIONS[3], OrdinalPolicy.ALL_PARENTS);
+    FacetIndexingParams fip = new PerDimensionIndexingParams(params, new PerDimensionOrdinalPolicy(policies)) {
       @Override
       public int getPartitionSize() {
         return partitionSize;

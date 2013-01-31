@@ -113,7 +113,6 @@ public class TestStandardFacetsAccumulator extends FacetTestCase {
     List<FacetResult> results = fc.getFacetResults();
     assertEquals("received too many facet results", 1, results.size());
     FacetResultNode frn = results.get(0).getFacetResultNode();
-    assertEquals("wrong weight for \"A\"", 4, (int) frn.value);
     assertEquals("wrong number of children", 2, frn.subResults.size());
     for (FacetResultNode node : frn.subResults) {
       assertEquals("wrong weight for child " + node.label, 2, (int) node.value);

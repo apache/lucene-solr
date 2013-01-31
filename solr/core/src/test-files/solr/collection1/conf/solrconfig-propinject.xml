@@ -17,10 +17,7 @@
  limitations under the License.
 -->
 
-<!-- $Id: solrconfig.xml 382610 2006-03-03 01:43:03Z yonik $
-     $Source$
-     $Name$
-
+<!-- 
 
 
      This is a "kitchen sink" config file that tests can use.

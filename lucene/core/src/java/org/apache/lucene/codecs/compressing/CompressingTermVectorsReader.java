@@ -832,10 +832,18 @@ public final class CompressingTermVectorsReader extends TermVectorsReader implem
         }
       }
       // linear scan
-      do {
-        next();
-      } while (ord < numTerms - 1 && term().compareTo(text) < 0);
-      return term().equals(text) ? SeekStatus.FOUND : SeekStatus.END;
+      while (true) {
+        final BytesRef term = next();
+        if (term == null) {
+          return SeekStatus.END;
+        }
+        final int cmp = term.compareTo(text);
+        if (cmp > 0) {
+          return SeekStatus.NOT_FOUND;
+        } else if (cmp == 0) {
+          return SeekStatus.FOUND;
+        }
+      }
     }
 
     @Override

@@ -4,6 +4,7 @@ import java.io.IOException;
 import java.util.HashMap;
 import java.util.List;
 
+import org.apache.lucene.facet.index.params.FacetIndexingParams;
 import org.apache.lucene.facet.search.params.FacetSearchParams;
 import org.apache.lucene.facet.search.results.FacetResult;
 import org.apache.lucene.facet.search.results.FacetResultNode;
@@ -32,10 +33,10 @@ import org.junit.Test;
 
 public class TestTopKResultsHandlerRandom extends BaseTestTopK {
   
-  private List<FacetResult> countFacets(int partitionSize, int numResults, final boolean doComplement)
+  private List<FacetResult> countFacets(FacetIndexingParams fip, int numResults, final boolean doComplement)
       throws IOException {
     Query q = new MatchAllDocsQuery();
-    FacetSearchParams facetSearchParams = searchParamsWithRequests(numResults, partitionSize);
+    FacetSearchParams facetSearchParams = searchParamsWithRequests(numResults, fip);
     FacetsCollector fc = new StandardFacetsCollector(facetSearchParams, indexReader, taxoReader) {
       @Override
       protected FacetsAccumulator initFacetsAccumulator(
@@ -59,7 +60,8 @@ public class TestTopKResultsHandlerRandom extends BaseTestTopK {
   @Test
   public void testTopCountsOrder() throws Exception {
     for (int partitionSize : partitionSizes) {
-      initIndex(partitionSize);
+      FacetIndexingParams fip = getFacetIndexingParams(partitionSize);
+      initIndex(fip);
       
       /*
        * Try out faceted search in it's most basic form (no sampling nor complement
@@ -67,7 +69,7 @@ public class TestTopKResultsHandlerRandom extends BaseTestTopK {
        * being indexed, and later on an "over-all" faceted search is performed. The
        * results are checked against the DF of each facet by itself
        */
-      List<FacetResult> facetResults = countFacets(partitionSize, 100000, false);
+      List<FacetResult> facetResults = countFacets(fip, 100000, false);
       assertCountsAndCardinality(facetCountsTruth(), facetResults);
       
       /*
@@ -77,10 +79,10 @@ public class TestTopKResultsHandlerRandom extends BaseTestTopK {
        * place in here. The results are checked against the a regular (a.k.a
        * no-complement, no-sampling) faceted search with the same parameters.
        */
-      facetResults = countFacets(partitionSize, 100000, true);
+      facetResults = countFacets(fip, 100000, true);
       assertCountsAndCardinality(facetCountsTruth(), facetResults);
       
-      List<FacetResult> allFacetResults = countFacets(partitionSize, 100000, false);
+      List<FacetResult> allFacetResults = countFacets(fip, 100000, false);
       
       HashMap<String,Integer> all = new HashMap<String,Integer>();
       int maxNumNodes = 0;
@@ -108,7 +110,7 @@ public class TestTopKResultsHandlerRandom extends BaseTestTopK {
         if (VERBOSE) {
           System.out.println("-------  verify for "+n+" top results");
         }
-        List<FacetResult> someResults = countFacets(partitionSize, n, false);
+        List<FacetResult> someResults = countFacets(fip, n, false);
         k = 0;
         for (FacetResult fr : someResults) {
           FacetResultNode topResNode = fr.getFacetResultNode();

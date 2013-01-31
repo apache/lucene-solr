@@ -4,21 +4,17 @@ import java.io.File;
 import java.io.IOException;
 import java.util.Collections;
 import java.util.List;
+import java.util.Random;
 
 import org.apache.lucene.analysis.MockAnalyzer;
 import org.apache.lucene.analysis.MockTokenizer;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.facet.FacetTestCase;
-import org.apache.lucene.facet.FacetTestUtils;
-import org.apache.lucene.facet.FacetTestUtils.IndexTaxonomyReaderPair;
-import org.apache.lucene.facet.FacetTestUtils.IndexTaxonomyWriterPair;
-import org.apache.lucene.facet.example.ExampleResult;
-import org.apache.lucene.facet.example.TestMultiCLExample;
-import org.apache.lucene.facet.example.multiCL.MultiCLIndexer;
-import org.apache.lucene.facet.example.multiCL.MultiCLSearcher;
 import org.apache.lucene.facet.index.FacetFields;
 import org.apache.lucene.facet.index.params.FacetIndexingParams;
 import org.apache.lucene.facet.search.TotalFacetCounts.CreationType;
+import org.apache.lucene.facet.search.params.CountFacetRequest;
+import org.apache.lucene.facet.search.params.FacetSearchParams;
 import org.apache.lucene.facet.search.results.FacetResult;
 import org.apache.lucene.facet.search.results.FacetResultNode;
 import org.apache.lucene.facet.taxonomy.CategoryPath;
@@ -30,6 +26,8 @@ import org.apache.lucene.index.DirectoryReader;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.IndexWriter;
 import org.apache.lucene.index.IndexWriterConfig;
+import org.apache.lucene.search.IndexSearcher;
+import org.apache.lucene.search.MatchAllDocsQuery;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.MockDirectoryWrapper;
 import org.apache.lucene.util.IOUtils;
@@ -86,8 +84,8 @@ public class TestTotalFacetCountsCache extends FacetTestCase {
   }
 
   /** Utility method to add a document and facets to an index/taxonomy. */
-  static void addFacets(FacetIndexingParams iParams, IndexWriter iw,
-                        TaxonomyWriter tw, String... strings) throws IOException {
+  private static void addFacets(FacetIndexingParams iParams, IndexWriter iw,
+      TaxonomyWriter tw, String... strings) throws IOException {
     Document doc = new Document();
     FacetFields facetFields = new FacetFields(tw, iParams);
     facetFields.addFields(doc, Collections.singletonList(new CategoryPath(strings)));
@@ -95,7 +93,7 @@ public class TestTotalFacetCountsCache extends FacetTestCase {
   }
 
   /** Clears the cache and sets its size to one. */
-  static void initCache() {
+  private static void initCache() {
     TFC.clear();
     TFC.setCacheSize(1); // Set to keep one in memory
   }
@@ -107,37 +105,35 @@ public class TestTotalFacetCountsCache extends FacetTestCase {
     initCache();
   }
 
-  /** runs a few instances of {@link MultiCLSearcher} in parallel */
+  /** runs few searches in parallel */
   public void testGeneralSynchronization() throws Exception {
-    int numIters = atLeast(2);
+    int numIters = atLeast(4);
+    Random random = random();
     for (int i = 0; i < numIters; i++) {
-      doTestGeneralSynchronization(_TestUtil.nextInt(random(), 2, 4),
-                                  random().nextBoolean() ? -1 : _TestUtil.nextInt(random(), 1, 10),
-                                  _TestUtil.nextInt(random(), 0, 3));
+      int numThreads = random.nextInt(3) + 2; // 2-4
+      int sleepMillis = random.nextBoolean() ? -1 : random.nextInt(10) + 1 /*1-10*/;
+      int cacheSize = random.nextInt(4); // 0-3
+      doTestGeneralSynchronization(numThreads, sleepMillis, cacheSize);
     }
   }
 
-  /**
-   * Run many instances of {@link MultiCLSearcher} in parallel, results should
-   * be sane. Each instance has a random delay for reading bytes, to ensure
-   * that threads finish in different order than started.
-   */
-  @Test @Nightly
-  public void testGeneralSynchronizationBig() throws Exception {
-    int[] numThreads = new int[] { 2, 3, 5, 8 };
-    int[] sleepMillis = new int[] { -1, 1, 20, 33 };
-    int[] cacheSize = new int[] { 0,1,2,3,5 };
-    for (int size : cacheSize) {
-      for (int sleep : sleepMillis) {
-        for (int nThreads : numThreads) {
-          doTestGeneralSynchronization(nThreads, sleep, size);
-        }
-      }
-    }
-  }
+  private static final String[] CATEGORIES = new String[] { "a/b", "c/d", "a/e", "a/d", "c/g", "c/z", "b/a", "1/2", "b/c" };
 
-  private void doTestGeneralSynchronization(int numThreads, int sleepMillis,
-      int cacheSize) throws Exception {
+  private void index(Directory indexDir, Directory taxoDir) throws IOException {
+    IndexWriter indexWriter = new IndexWriter(indexDir, newIndexWriterConfig(TEST_VERSION_CURRENT, null));
+    TaxonomyWriter taxoWriter = new DirectoryTaxonomyWriter(taxoDir);
+    FacetFields facetFields = new FacetFields(taxoWriter);
+    
+    for (String cat : CATEGORIES) {
+      Document doc = new Document();
+      facetFields.addFields(doc, Collections.singletonList(new CategoryPath(cat, '/')));
+      indexWriter.addDocument(doc);
+    }
+    
+    IOUtils.close(indexWriter, taxoWriter);
+  }
+  
+  private void doTestGeneralSynchronization(int numThreads, int sleepMillis, int cacheSize) throws Exception {
     TFC.setCacheSize(cacheSize);
     SlowRAMDirectory slowIndexDir = new SlowRAMDirectory(-1, random());
     MockDirectoryWrapper indexDir = new MockDirectoryWrapper(random(), slowIndexDir);
@@ -145,7 +141,7 @@ public class TestTotalFacetCountsCache extends FacetTestCase {
     MockDirectoryWrapper taxoDir = new MockDirectoryWrapper(random(), slowTaxoDir);
 
     // Index documents without the "slowness"
-    MultiCLIndexer.index(indexDir, taxoDir);
+    index(indexDir, taxoDir);
 
     slowIndexDir.setSleepMillis(sleepMillis);
     slowTaxoDir.setSleepMillis(sleepMillis);
@@ -161,80 +157,64 @@ public class TestTotalFacetCountsCache extends FacetTestCase {
       private IndexReader indexReader;
       private TaxonomyReader taxoReader;
 
-      public Multi(IndexReader indexReader, TaxonomyReader taxoReader,
-                    FacetIndexingParams iParams) {
+      public Multi(IndexReader indexReader, TaxonomyReader taxoReader, FacetIndexingParams iParams) {
         this.indexReader = indexReader;
         this.taxoReader = taxoReader;
         this.iParams = iParams;
       }
 
-      public ExampleResult getResults() {
-        ExampleResult exampleRes = new ExampleResult();
-        exampleRes.setFacetResults(results);
-        return exampleRes;
+      public List<FacetResult> getResults() {
+        return results;
       }
 
       @Override
       public void run() {
         try {
-          results = MultiCLSearcher.searchWithFacets(indexReader, taxoReader, iParams);
+          FacetSearchParams fsp = new FacetSearchParams(iParams, new CountFacetRequest(new CategoryPath("a"), 10),
+              new CountFacetRequest(new CategoryPath("b"), 10));
+          IndexSearcher searcher = new IndexSearcher(indexReader);
+          FacetsCollector fc = FacetsCollector.create(fsp, indexReader, taxoReader);
+          searcher.search(new MatchAllDocsQuery(), fc);
+          results = fc.getFacetResults();
         } catch (Exception e) {
           throw new RuntimeException(e);
         }
       }
     }
 
-    // Instantiate threads, but do not start them
     Multi[] multis = new Multi[numThreads];
-    for (int i = 0; i < numThreads - 1; i++) {
-      multis[i] = new Multi(slowIndexReader, slowTaxoReader, MultiCLIndexer.MULTI_IPARAMS);
+    for (int i = 0; i < numThreads; i++) {
+      multis[i] = new Multi(slowIndexReader, slowTaxoReader, FacetIndexingParams.ALL_PARENTS);
     }
-    // The last thread uses ONLY the DefaultFacetIndexingParams so that
-    // it references a different TFC cache. This will still result
-    // in valid results, but will only search one of the category lists
-    // instead of all of them.
-    multis[numThreads - 1] = new Multi(slowIndexReader, slowTaxoReader, FacetIndexingParams.ALL_PARENTS);
 
-    // Gentleman, start your engines
     for (Multi m : multis) {
       m.start();
     }
 
     // Wait for threads and get results
-    ExampleResult[] multiResults = new ExampleResult[numThreads];
-    for (int i = 0; i < numThreads; i++) {
-      multis[i].join();
-      multiResults[i] = multis[i].getResults();
+    String[] expLabelsA = new String[] { "a/d", "a/e", "a/b" };
+    String[] expLabelsB = new String[] { "b/c", "b/a" };
+    for (Multi m : multis) {
+      m.join();
+      List<FacetResult> facetResults = m.getResults();
+      assertEquals("expected two results", 2, facetResults.size());
+      
+      FacetResultNode nodeA = facetResults.get(0).getFacetResultNode();
+      int i = 0;
+      for (FacetResultNode node : nodeA.subResults) {
+        assertEquals("wrong count", 1, (int) node.value);
+        assertEquals(expLabelsA[i++], node.label.toString('/'));
+      }
+      
+      FacetResultNode nodeB = facetResults.get(1).getFacetResultNode();
+      i = 0;
+      for (FacetResultNode node : nodeB.subResults) {
+        assertEquals("wrong count", 1, (int) node.value);
+        assertEquals(expLabelsB[i++], node.label.toString('/'));
+      }
     }
-
-    // Each of the (numThreads-1) should have the same predictable
-    // results, which we test for here.
-    for (int i = 0; i < numThreads - 1; i++) {
-      ExampleResult eResults = multiResults[i];
-      TestMultiCLExample.assertCorrectMultiResults(eResults);
-    }
-
-    // The last thread, which only searched over the
-    // DefaultFacetIndexingParams,
-    // has its own results
-    ExampleResult eResults = multiResults[numThreads - 1];
-    List<FacetResult> results = eResults.getFacetResults();
-    assertEquals(3, results.size());
-    String[] expLabels = new String[] { "5", "5/5", "6/2" };
-    double[] expValues = new double[] { 0.0, 0.0, 1.0 };
-    for (int i = 0; i < 3; i++) {
-      FacetResult result = results.get(i);
-      assertNotNull("Result should not be null", result);
-      FacetResultNode resNode = result.getFacetResultNode();
-      assertEquals("Invalid label", expLabels[i], resNode.label.toString());
-      assertEquals("Invalid value", expValues[i], resNode.value, 0.0);
-      assertEquals("Invalid number of subresults", 0, resNode.subResults.size());
-    }
-    // we're done, close the index reader and the taxonomy.
-    slowIndexReader.close();
-    slowTaxoReader.close();
-    indexDir.close();
-    taxoDir.close();
+    
+    IOUtils.close(slowIndexReader, slowTaxoReader, indexDir, taxoDir);
   }
 
   /**
@@ -245,77 +225,78 @@ public class TestTotalFacetCountsCache extends FacetTestCase {
   @Test
   public void testGenerationalConsistency() throws Exception {
     // Create temporary RAMDirectories
-    Directory[][] dirs = FacetTestUtils.createIndexTaxonomyDirs(1);
+    Directory indexDir = newDirectory();
+    Directory taxoDir = newDirectory();
 
     // Create our index/taxonomy writers
-    IndexTaxonomyWriterPair[] writers = FacetTestUtils.createIndexTaxonomyWriterPair(dirs);
+    IndexWriter indexWriter = new IndexWriter(indexDir, newIndexWriterConfig(TEST_VERSION_CURRENT, null));
+    TaxonomyWriter taxoWriter = new DirectoryTaxonomyWriter(taxoDir);
     FacetIndexingParams iParams = FacetIndexingParams.ALL_PARENTS;
 
     // Add a facet to the index
-    addFacets(iParams, writers[0].indexWriter, writers[0].taxWriter, "a", "b");
+    addFacets(iParams, indexWriter, taxoWriter, "a", "b");
 
     // Commit Changes
-    writers[0].indexWriter.commit();
-    writers[0].taxWriter.commit();
+    indexWriter.commit();
+    taxoWriter.commit();
 
     // Open readers
-    IndexTaxonomyReaderPair[] readers = FacetTestUtils.createIndexTaxonomyReaderPair(dirs);
+    DirectoryReader indexReader = DirectoryReader.open(indexDir);
+    TaxonomyReader taxoReader = new DirectoryTaxonomyReader(taxoDir);
 
     // As this is the first time we have invoked the TotalFacetCountsManager, 
     // we should expect to compute and not read from disk.
-    TotalFacetCounts totalCounts = 
-      TFC.getTotalCounts(readers[0].indexReader, readers[0].taxReader, iParams);
+    TotalFacetCounts totalCounts = TFC.getTotalCounts(indexReader, taxoReader, iParams);
     int prevGen = assertRecomputed(totalCounts, 0, "after first attempt to get it!");
 
     // Repeating same operation should pull from the cache - not recomputed. 
     assertTrue("Should be obtained from cache at 2nd attempt",totalCounts == 
-      TFC.getTotalCounts(readers[0].indexReader, readers[0].taxReader, iParams));
+      TFC.getTotalCounts(indexReader, taxoReader, iParams));
 
     // Repeat the same operation as above. but clear first - now should recompute again
     initCache();
-    totalCounts = TFC.getTotalCounts(readers[0].indexReader, readers[0].taxReader, iParams);
+    totalCounts = TFC.getTotalCounts(indexReader, taxoReader, iParams);
     prevGen = assertRecomputed(totalCounts, prevGen, "after cache clear, 3rd attempt to get it!");
     
     //store to file
     File outputFile = _TestUtil.createTempFile("test", "tmp", TEMP_DIR);
     initCache();
-    TFC.store(outputFile, readers[0].indexReader, readers[0].taxReader, iParams);
-    totalCounts = TFC.getTotalCounts(readers[0].indexReader, readers[0].taxReader, iParams);
+    TFC.store(outputFile, indexReader, taxoReader, iParams);
+    totalCounts = TFC.getTotalCounts(indexReader, taxoReader, iParams);
     prevGen = assertRecomputed(totalCounts, prevGen, "after cache clear, 4th attempt to get it!");
 
     //clear and load
     initCache();
-    TFC.load(outputFile, readers[0].indexReader, readers[0].taxReader, iParams);
-    totalCounts = TFC.getTotalCounts(readers[0].indexReader, readers[0].taxReader, iParams);
+    TFC.load(outputFile, indexReader, taxoReader, iParams);
+    totalCounts = TFC.getTotalCounts(indexReader, taxoReader, iParams);
     prevGen = assertReadFromDisc(totalCounts, prevGen, "after 5th attempt to get it!");
 
     // Add a new facet to the index, commit and refresh readers
-    addFacets(iParams, writers[0].indexWriter, writers[0].taxWriter, "c", "d");
-    writers[0].indexWriter.close();
-    writers[0].taxWriter.close();
+    addFacets(iParams, indexWriter, taxoWriter, "c", "d");
+    IOUtils.close(indexWriter, taxoWriter);
 
-    DirectoryTaxonomyReader newTaxoReader = TaxonomyReader.openIfChanged(readers[0].taxReader);
+    TaxonomyReader newTaxoReader = TaxonomyReader.openIfChanged(taxoReader);
     assertNotNull(newTaxoReader);
-    assertTrue("should have received more cagtegories in updated taxonomy", newTaxoReader.getSize() > readers[0].taxReader.getSize());
-    readers[0].taxReader.close();
-    readers[0].taxReader = newTaxoReader;
+    assertTrue("should have received more cagtegories in updated taxonomy", newTaxoReader.getSize() > taxoReader.getSize());
+    taxoReader.close();
+    taxoReader = newTaxoReader;
     
-    DirectoryReader r2 = DirectoryReader.openIfChanged(readers[0].indexReader);
+    DirectoryReader r2 = DirectoryReader.openIfChanged(indexReader);
     assertNotNull(r2);
-    readers[0].indexReader.close();
-    readers[0].indexReader = r2;
+    indexReader.close();
+    indexReader = r2;
 
     // now use the new reader - should recompute
-    totalCounts = TFC.getTotalCounts(readers[0].indexReader, readers[0].taxReader, iParams);
+    totalCounts = TFC.getTotalCounts(indexReader, taxoReader, iParams);
     prevGen = assertRecomputed(totalCounts, prevGen, "after updating the index - 7th attempt!");
 
     // try again - should not recompute
     assertTrue("Should be obtained from cache at 8th attempt",totalCounts == 
-      TFC.getTotalCounts(readers[0].indexReader, readers[0].taxReader, iParams));
+      TFC.getTotalCounts(indexReader, taxoReader, iParams));
     
-    readers[0].close();
+    IOUtils.close(indexReader, taxoReader);
     outputFile.delete();
-    IOUtils.close(dirs[0]);
+    IOUtils.close(indexDir, taxoDir);
   }
 
   private int assertReadFromDisc(TotalFacetCounts totalCounts, int prevGen, String errMsg) {
@@ -341,10 +322,12 @@ public class TestTotalFacetCountsCache extends FacetTestCase {
    */
   @Test
   public void testGrowingTaxonomy() throws Exception {
-    // Create temporary RAMDirectories
-    Directory[][] dirs = FacetTestUtils.createIndexTaxonomyDirs(1);
+    Directory indexDir = newDirectory();
+    Directory taxoDir = newDirectory();
+    
     // Create our index/taxonomy writers
-    IndexTaxonomyWriterPair[] writers = FacetTestUtils.createIndexTaxonomyWriterPair(dirs);
+    IndexWriter indexWriter = new IndexWriter(indexDir, newIndexWriterConfig(TEST_VERSION_CURRENT, null));
+    TaxonomyWriter taxoWriter = new DirectoryTaxonomyWriter(taxoDir);
     FacetIndexingParams iParams = new FacetIndexingParams() {
       @Override
       public int getPartitionSize() {
@@ -352,37 +335,38 @@ public class TestTotalFacetCountsCache extends FacetTestCase {
       }
     };
     // Add a facet to the index
-    addFacets(iParams, writers[0].indexWriter, writers[0].taxWriter, "a", "b");
+    addFacets(iParams, indexWriter, taxoWriter, "a", "b");
     // Commit Changes
-    writers[0].indexWriter.commit();
-    writers[0].taxWriter.commit();
+    indexWriter.commit();
+    taxoWriter.commit();
 
-    IndexTaxonomyReaderPair[] readers = FacetTestUtils.createIndexTaxonomyReaderPair(dirs);
+    DirectoryReader indexReader = DirectoryReader.open(indexDir);
+    TaxonomyReader taxoReader = new DirectoryTaxonomyReader(taxoDir);
 
     // Create TFC and write cache to disk
     File outputFile = _TestUtil.createTempFile("test", "tmp", TEMP_DIR);
-    TFC.store(outputFile, readers[0].indexReader, readers[0].taxReader, iParams);
+    TFC.store(outputFile, indexReader, taxoReader, iParams);
     
     // Make the taxonomy grow without touching the index
     for (int i = 0; i < 10; i++) {
-      writers[0].taxWriter.addCategory(new CategoryPath("foo", Integer.toString(i)));
+      taxoWriter.addCategory(new CategoryPath("foo", Integer.toString(i)));
     }
-    writers[0].taxWriter.commit();
-    DirectoryTaxonomyReader newTaxoReader = TaxonomyReader.openIfChanged(readers[0].taxReader);
+    taxoWriter.commit();
+    TaxonomyReader newTaxoReader = TaxonomyReader.openIfChanged(taxoReader);
     assertNotNull(newTaxoReader);
-    readers[0].taxReader.close();
-    readers[0].taxReader = newTaxoReader;
+    taxoReader.close();
+    taxoReader = newTaxoReader;
 
     initCache();
 
     // With the bug, this next call should result in an exception
-    TFC.load(outputFile, readers[0].indexReader, readers[0].taxReader, iParams);
-    TotalFacetCounts totalCounts = TFC.getTotalCounts(readers[0].indexReader, readers[0].taxReader, iParams);
+    TFC.load(outputFile, indexReader, taxoReader, iParams);
+    TotalFacetCounts totalCounts = TFC.getTotalCounts(indexReader, taxoReader, iParams);
     assertReadFromDisc(totalCounts, 0, "after reading from disk.");
+    
     outputFile.delete();
-    writers[0].close();
-    readers[0].close();
-    IOUtils.close(dirs[0]);
+    IOUtils.close(indexWriter, taxoWriter, indexReader, taxoReader);
+    IOUtils.close(indexDir, taxoDir);
   }
 
   /**
@@ -445,46 +429,52 @@ public class TestTotalFacetCountsCache extends FacetTestCase {
    */
   @Test
   public void testMultipleIndices() throws IOException {
-    // Create temporary RAMDirectories
-    Directory[][] dirs = FacetTestUtils.createIndexTaxonomyDirs(2);
+    Directory indexDir1 = newDirectory(), indexDir2 = newDirectory();
+    Directory taxoDir1 = newDirectory(), taxoDir2 = newDirectory();
+    
     // Create our index/taxonomy writers
-    IndexTaxonomyWriterPair[] writers = FacetTestUtils.createIndexTaxonomyWriterPair(dirs);
+    IndexWriter indexWriter1 = new IndexWriter(indexDir1, newIndexWriterConfig(TEST_VERSION_CURRENT, null));
+    IndexWriter indexWriter2 = new IndexWriter(indexDir2, newIndexWriterConfig(TEST_VERSION_CURRENT, null));
+    TaxonomyWriter taxoWriter1 = new DirectoryTaxonomyWriter(taxoDir1);
+    TaxonomyWriter taxoWriter2 = new DirectoryTaxonomyWriter(taxoDir2);
     FacetIndexingParams iParams = FacetIndexingParams.ALL_PARENTS;
 
     // Add a facet to the index
-    addFacets(iParams, writers[0].indexWriter, writers[0].taxWriter, "a", "b");
-    addFacets(iParams, writers[1].indexWriter, writers[1].taxWriter, "d", "e");
+    addFacets(iParams, indexWriter1, taxoWriter1, "a", "b");
+    addFacets(iParams, indexWriter1, taxoWriter1, "d", "e");
     // Commit Changes
-    writers[0].indexWriter.commit();
-    writers[0].taxWriter.commit();
-    writers[1].indexWriter.commit();
-    writers[1].taxWriter.commit();
+    indexWriter1.commit();
+    indexWriter2.commit();
+    taxoWriter1.commit();
+    taxoWriter2.commit();
 
     // Open two readers
-    IndexTaxonomyReaderPair[] readers = FacetTestUtils.createIndexTaxonomyReaderPair(dirs);
+    DirectoryReader indexReader1 = DirectoryReader.open(indexDir1);
+    DirectoryReader indexReader2 = DirectoryReader.open(indexDir2);
+    TaxonomyReader taxoReader1 = new DirectoryTaxonomyReader(taxoDir1);
+    TaxonomyReader taxoReader2 = new DirectoryTaxonomyReader(taxoDir2);
 
     // As this is the first time we have invoked the TotalFacetCountsManager, we
     // should expect to compute.
-    TotalFacetCounts totalCounts0 = 
-      TFC.getTotalCounts(readers[0].indexReader, readers[0].taxReader, iParams);
+    TotalFacetCounts totalCounts0 = TFC.getTotalCounts(indexReader1, taxoReader1, iParams);
     int prevGen = -1;
     prevGen = assertRecomputed(totalCounts0, prevGen, "after attempt 1");
     assertTrue("attempt 1b for same input [0] shout find it in cache",
-        totalCounts0 == TFC.getTotalCounts(readers[0].indexReader, readers[0].taxReader, iParams));
+        totalCounts0 == TFC.getTotalCounts(indexReader1, taxoReader1, iParams));
     
     // 2nd Reader - As this is the first time we have invoked the
     // TotalFacetCountsManager, we should expect a state of NEW to be returned.
-    TotalFacetCounts totalCounts1 = TFC.getTotalCounts(readers[1].indexReader, readers[1].taxReader, iParams);
+    TotalFacetCounts totalCounts1 = TFC.getTotalCounts(indexReader2, taxoReader2, iParams);
     prevGen = assertRecomputed(totalCounts1, prevGen, "after attempt 2");
     assertTrue("attempt 2b for same input [1] shout find it in cache",
-        totalCounts1 == TFC.getTotalCounts(readers[1].indexReader, readers[1].taxReader, iParams));
+        totalCounts1 == TFC.getTotalCounts(indexReader2, taxoReader2, iParams));
 
     // Right now cache size is one, so first TFC is gone and should be recomputed  
-    totalCounts0 = TFC.getTotalCounts(readers[0].indexReader, readers[0].taxReader, iParams);
+    totalCounts0 = TFC.getTotalCounts(indexReader1, taxoReader1, iParams);
     prevGen = assertRecomputed(totalCounts0, prevGen, "after attempt 3");
     
     // Similarly will recompute the second result  
-    totalCounts1 = TFC.getTotalCounts(readers[1].indexReader, readers[1].taxReader, iParams);
+    totalCounts1 = TFC.getTotalCounts(indexReader2, taxoReader2, iParams);
     prevGen = assertRecomputed(totalCounts1, prevGen, "after attempt 4");
 
     // Now we set the cache size to two, meaning both should exist in the
@@ -492,23 +482,19 @@ public class TestTotalFacetCountsCache extends FacetTestCase {
     TFC.setCacheSize(2);
 
     // Re-compute totalCounts0 (was evicted from the cache when the cache was smaller)
-    totalCounts0 = TFC.getTotalCounts(readers[0].indexReader, readers[0].taxReader, iParams);
+    totalCounts0 = TFC.getTotalCounts(indexReader1, taxoReader1, iParams);
     prevGen = assertRecomputed(totalCounts0, prevGen, "after attempt 5");
 
     // now both are in the larger cache and should not be recomputed 
-    totalCounts1 = TFC.getTotalCounts(readers[1].indexReader, readers[1].taxReader, iParams);
+    totalCounts1 = TFC.getTotalCounts(indexReader2, taxoReader2, iParams);
     assertTrue("with cache of size 2 res no. 0 should come from cache",
-        totalCounts0 == TFC.getTotalCounts(readers[0].indexReader, readers[0].taxReader, iParams));
+        totalCounts0 == TFC.getTotalCounts(indexReader1, taxoReader1, iParams));
     assertTrue("with cache of size 2 res no. 1 should come from cache",
-        totalCounts1 == TFC.getTotalCounts(readers[1].indexReader, readers[1].taxReader, iParams));
+        totalCounts1 == TFC.getTotalCounts(indexReader2, taxoReader2, iParams));
     
-    writers[0].close();
-    writers[1].close();
-    readers[0].close();
-    readers[1].close();
-    for (Directory[] dirset : dirs) {
-      IOUtils.close(dirset);
-    }
+    IOUtils.close(indexWriter1, indexWriter2, taxoWriter1, taxoWriter2);
+    IOUtils.close(indexReader1, indexReader2, taxoReader1, taxoReader2);
+    IOUtils.close(indexDir1, indexDir2, taxoDir1, taxoDir2);
   }
 
 }

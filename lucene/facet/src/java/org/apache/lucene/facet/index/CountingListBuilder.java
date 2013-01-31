@@ -3,6 +3,7 @@ package org.apache.lucene.facet.index;
 import java.io.IOException;
 import java.util.Collections;
 import java.util.HashMap;
+import java.util.Iterator;
 import java.util.Map;
 import java.util.Map.Entry;
 
@@ -115,12 +116,12 @@ public class CountingListBuilder implements CategoryListBuilder {
   
   private final OrdinalsEncoder ordinalsEncoder;
   private final TaxonomyWriter taxoWriter;
-  private final OrdinalPolicy ordinalPolicy;
+  private final CategoryListParams clp;
   
   public CountingListBuilder(CategoryListParams categoryListParams, FacetIndexingParams indexingParams, 
       TaxonomyWriter taxoWriter) {
     this.taxoWriter = taxoWriter;
-    this.ordinalPolicy = categoryListParams.getOrdinalPolicy();
+    this.clp = categoryListParams;
     if (indexingParams.getPartitionSize() == Integer.MAX_VALUE) {
       ordinalsEncoder = new NoPartitionsOrdinalsEncoder(categoryListParams);
     } else {
@@ -141,15 +142,22 @@ public class CountingListBuilder implements CategoryListBuilder {
    */
   @Override
   public Map<String,BytesRef> build(IntsRef ordinals, Iterable<CategoryPath> categories) throws IOException {
-    int upto = ordinals.length; // since we add ordinals to IntsRef, iterate upto original length
-    
-    if (ordinalPolicy == OrdinalPolicy.ALL_PARENTS) { // add all parents too
-      for (int i = 0; i < upto; i++) {
-        int ordinal = ordinals.ints[i];
+    int upto = ordinals.length; // since we may add ordinals to IntsRef, iterate upto original length
+
+    Iterator<CategoryPath> iter = categories.iterator();
+    for (int i = 0; i < upto; i++) {
+      int ordinal = ordinals.ints[i];
+      CategoryPath cp = iter.next();
+      OrdinalPolicy op = clp.getOrdinalPolicy(cp.components[0]);
+      if (op != OrdinalPolicy.NO_PARENTS) {
+        // need to add parents too
         int parent = taxoWriter.getParent(ordinal);
         while (parent > 0) {
           ordinals.ints[ordinals.length++] = parent;
           parent = taxoWriter.getParent(parent);
+        }
+        if (op == OrdinalPolicy.ALL_BUT_DIMENSION) { // discard the last added parent, which is the dimension
+          ordinals.length--;
         }
       }
     }

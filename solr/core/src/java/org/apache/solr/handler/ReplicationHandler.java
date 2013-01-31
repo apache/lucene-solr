@@ -42,6 +42,7 @@ import org.apache.commons.io.IOUtils;
 import org.apache.lucene.index.IndexCommit;
 import org.apache.lucene.index.IndexDeletionPolicy;
 import org.apache.lucene.index.DirectoryReader;
+import org.apache.lucene.index.IndexWriter;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.IOContext;
 import org.apache.lucene.store.IndexInput;
@@ -877,9 +878,9 @@ public class ReplicationHandler extends RequestHandlerBase implements SolrCoreAw
             }
           }
 
-          // reboot the writer on the new index
-          // TODO: perhaps this is no longer necessary then?
-         // core.getUpdateHandler().newIndexWriter(true);
+          // ensure the writer is init'd so that we have a list of commit points
+          RefCounted<IndexWriter> iw = core.getUpdateHandler().getSolrCoreState().getIndexWriter(core);
+          iw.decref();
 
         } catch (IOException e) {
           LOG.warn("Unable to get IndexCommit on startup", e);

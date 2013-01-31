@@ -61,6 +61,11 @@ Optimizations
 * LUCENE-4690: Performance improvements and non-hashing versions
   of NumericUtils.*ToPrefixCoded() (yonik)
 
+* LUCENE-4715: CategoryListParams.getOrdinalPolicy now allows to return a
+  different OrdinalPolicy per dimension, to better tune how you index
+  facets. Also added OrdinalPolicy.ALL_BUT_DIMENSION. 
+  (Shai Erera, Michael McCandless)
+
 New Features
 
 * LUCENE-4686: New specialized DGapVInt8IntEncoder for facets (now the 
@@ -114,6 +119,9 @@ Bug Fixes
   string components. This is forbidden now (throws an exception). Note that if
   you have a taxonomy index created with such strings, you should rebuild it.
   (Michael McCandless, Shai Erera)
+
+* LUCENE-4732: Fixed TermsEnum.seekCeil/seekExact on term vectors.
+  (Adrien Grand, Robert Muir)
 
 ======================= Lucene 4.1.0 =======================
 
