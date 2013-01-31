@@ -66,6 +66,8 @@ New Features
 * SOLR-4043: Add ability to get success/failure responses from Collections API.
   (Raintung Li, Mark Miller)
 
+* SOLR-2827: RegexpBoost Update Processor (janhoy)
+
 Bug Fixes
 ----------------------
 

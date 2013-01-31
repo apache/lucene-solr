@@ -28,7 +28,9 @@ import java.io.ByteArrayInputStream;
 import java.io.InputStreamReader;
 import java.io.OutputStream;
 import java.io.UnsupportedEncodingException;
+import java.text.SimpleDateFormat;
 import java.util.ArrayList;
+import java.util.Date;
 import java.util.HashMap;
 import java.util.LinkedHashSet;
 import java.util.List;
@@ -36,6 +38,7 @@ import java.util.Locale;
 import java.util.Map;
 import java.util.Set;
 import java.util.HashSet;
+import java.util.TimeZone;
 import java.util.regex.Pattern;
 import java.util.regex.PatternSyntaxException;
 import java.util.zip.GZIPInputStream;
@@ -190,20 +193,10 @@ public class SimplePostTool {
    * @param millis the time in milliseconds
    */
   private void displayTiming(long millis) {
-    // TODO: if the intent is user-display: this should use SimpleDateFormat 
-    // or similar instead of homemade formatting.
-    long hours = millis / 3600000;
-    long minutes = (millis / 60000) % 60;
-    long seconds = (millis / 1000) % 60;
-    long milliseconds = millis % 1000;
-    if (hours>0) {
-      System.out.println(String.format(Locale.getDefault(), "Time taken: %02d:%02d:%02d.%03d", hours, minutes, seconds, milliseconds));
-    } else if (minutes>0) {
-      System.out.println(String.format(Locale.getDefault(), "Time taken: %02d:%02d.%03d", minutes, seconds, milliseconds));
-    } else {
-      System.out.println(String.format(Locale.getDefault(), "Time taken: %d.%03ds", seconds, milliseconds));
-    }
- }
+    SimpleDateFormat df = new SimpleDateFormat("H:mm:ss.SSS", Locale.getDefault());
+    df.setTimeZone(TimeZone.getTimeZone("UTC"));
+    System.out.println("Time spent: "+df.format(new Date(millis)));
+  }
 
   /**
    * Parses incoming arguments and system params and initializes the tool

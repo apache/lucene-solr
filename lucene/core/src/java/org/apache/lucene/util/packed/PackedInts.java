@@ -1218,7 +1218,9 @@ public class PackedInts {
       }
       while (remaining > 0) {
         final int written = dest.set(destPos, buf, 0, remaining);
+        destPos += written;
         remaining -= written;
+        System.arraycopy(buf, written, buf, 0, remaining);
       }
     }
   }

@@ -153,7 +153,7 @@ class Packed64 extends PackedInts.MutableImpl {
 
     // bulk get
     assert index % decoder.longValueCount() == 0;
-    int blockIndex = (int) ((long) index * bitsPerValue) >>> BLOCK_BITS;
+    int blockIndex = (int) (((long) index * bitsPerValue) >>> BLOCK_BITS);
     assert (((long)index * bitsPerValue) & MOD_MASK) == 0;
     final int iterations = len / decoder.longValueCount();
     decoder.decode(blocks, blockIndex, arr, off, iterations);
@@ -217,7 +217,7 @@ class Packed64 extends PackedInts.MutableImpl {
 
     // bulk set
     assert index % encoder.longValueCount() == 0;
-    int blockIndex = (int) ((long) index * bitsPerValue) >>> BLOCK_BITS;
+    int blockIndex = (int) (((long) index * bitsPerValue) >>> BLOCK_BITS);
     assert (((long)index * bitsPerValue) & MOD_MASK) == 0;
     final int iterations = len / encoder.longValueCount();
     encoder.encode(arr, off, blocks, blockIndex, iterations);

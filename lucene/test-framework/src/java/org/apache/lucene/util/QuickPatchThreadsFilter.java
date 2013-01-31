@@ -23,8 +23,20 @@ import com.carrotsearch.randomizedtesting.ThreadFilter;
  * Last minute patches.
  */
 public class QuickPatchThreadsFilter implements ThreadFilter {
+  static final boolean isJ9;
+  
+  static {
+    isJ9 = System.getProperty("java.vm.info", "<?>").contains("IBM J9");
+  }
+
   @Override
   public boolean reject(Thread t) {
+    if (isJ9) {
+      StackTraceElement [] stack = t.getStackTrace();
+      if (stack.length > 0 && stack[stack.length - 1].getClassName().equals("java.util.Timer$TimerImpl")) {
+        return true; // LUCENE-4736
+      }
+    }
     return false;
   }
 }

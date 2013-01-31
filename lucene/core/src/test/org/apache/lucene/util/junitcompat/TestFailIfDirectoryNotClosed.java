@@ -22,6 +22,7 @@ import org.junit.Assert;
 import org.junit.Test;
 import org.junit.runner.JUnitCore;
 import org.junit.runner.Result;
+import org.junit.runner.notification.Failure;
 
 public class TestFailIfDirectoryNotClosed extends WithNestedTests {
   public TestFailIfDirectoryNotClosed() {
@@ -38,6 +39,10 @@ public class TestFailIfDirectoryNotClosed extends WithNestedTests {
   @Test
   public void testFailIfDirectoryNotClosed() {
     Result r = JUnitCore.runClasses(Nested1.class);
+    for (Failure f : r.getFailures()) {
+      System.out.println("Failure: " + f);
+    }
     Assert.assertEquals(1, r.getFailureCount());
+    Assert.assertTrue(r.getFailures().get(0).toString().contains("Resource in scope SUITE failed to close"));
   }
 }
