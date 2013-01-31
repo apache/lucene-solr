@@ -832,6 +832,10 @@ public class TestPackedInts extends LuceneTestCase {
         assertEquals(arr[i], it.next());
       }
       assertFalse(it.hasNext());
+      
+      for (int i = 0; i < arr.length; ++i) {
+        assertEquals(arr[i], buf.get(i));
+      }
 
       final long expectedBytesUsed = RamUsageEstimator.sizeOf(buf);
       final long computedBytesUsed = buf.ramBytesUsed();

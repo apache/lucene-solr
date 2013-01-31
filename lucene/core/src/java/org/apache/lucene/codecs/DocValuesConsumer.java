@@ -253,11 +253,12 @@ public abstract class DocValuesConsumer implements Closeable {
       BytesRef scratch = new BytesRef();
       AppendingLongBuffer ordDeltas = new AppendingLongBuffer();
 
-      // nocommit can we factor out the compressed fields
-      // compression?  ie we have a good idea "roughly" what
+      // TODO: use another scheme?
+      // currently we +/- delta merged-ord from segment-ord (is this good? makes sense to me?)
+      // but we have a good idea "roughly" what
       // the ord should be (linear projection) so we only
       // need to encode the delta from that ...:        
-      int[] segOrdToMergedOrd;
+      AppendingLongBuffer segOrdToMergedOrd = new AppendingLongBuffer();
 
       public BytesRef nextTerm() {
         while (ord < values.getValueCount()-1) {
@@ -317,11 +318,6 @@ public abstract class DocValuesConsumer implements Closeable {
       TermMergeQueue q = new TermMergeQueue(segStates.size());
       for(SegmentState segState : segStates) {
         if (segState.nextTerm() != null) {
-
-          // nocommit we could defer this to 3rd pass (and
-          // reduce transient RAM spike) but then
-          // we'd spend more effort computing the mapping...:
-          segState.segOrdToMergedOrd = new int[segState.values.getValueCount()];
           q.add(segState);
         }
       }
@@ -345,7 +341,12 @@ public abstract class DocValuesConsumer implements Closeable {
           ord++;
         }
 
-        top.segOrdToMergedOrd[top.ord] = ord-1;
+        long signedDelta = (ord-1) - top.ord; // global ord space - segment ord space
+        // fill in any holes for unused ords, then finally the value we want (segOrdToMergedOrd[top.ord])
+        // TODO: is there a better way...
+        while (top.segOrdToMergedOrd.size() <= top.ord) {
+          top.segOrdToMergedOrd.add(signedDelta);
+        }
         if (top.nextTerm() == null) {
           q.pop();
         } else {
@@ -494,7 +495,7 @@ public abstract class DocValuesConsumer implements Closeable {
                               if (currentLiveDocs == null || currentLiveDocs.get(docIDUpto)) {
                                 nextIsSet = true;
                                 int segOrd = currentReader.values.getOrd(docIDUpto);
-                                nextValue = currentReader.segOrdToMergedOrd[segOrd];
+                                nextValue = (int) (segOrd + currentReader.segOrdToMergedOrd.get(segOrd));
                                 docIDUpto++;
                                 return true;
                               }

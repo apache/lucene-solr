@@ -29,7 +29,9 @@ import org.apache.lucene.util.RamUsageEstimator;
  */
 public class AppendingLongBuffer {
 
-  private static final int MAX_PENDING_COUNT = 1024;
+  private static final int BLOCK_BITS = 10;
+  private static final int MAX_PENDING_COUNT = 1 << BLOCK_BITS;
+  private static final int BLOCK_MASK = MAX_PENDING_COUNT - 1;
 
   private long[] minValues;
   private PackedInts.Reader[] values;
@@ -53,6 +55,24 @@ public class AppendingLongBuffer {
       packPendingValues();
     }
     pending[pendingOff++] = l;
+  }
+  
+  /** Get a value from this buffer. 
+   *  <p>
+   *  <b>NOTE</b>: This class is not really designed for random access!
+   *  You will likely get better performance by using packed ints in another way! */
+  public long get(int index) {
+    assert index < size(); // TODO: do a better check, and throw IndexOutOfBoundsException?
+                           // This class is currently only used by the indexer.
+    int block = index >> BLOCK_BITS;
+    int element = index & BLOCK_MASK;
+    if (block == valuesOff) {
+      return pending[element];
+    } else if (values[block] == null) {
+      return minValues[block];
+    } else {
+      return minValues[block] + values[block].get(element);
+    }
   }
 
   private void packPendingValues() {
