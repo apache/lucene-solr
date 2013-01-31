@@ -165,6 +165,7 @@ public class SimplePostTool {
    * This method delegates to the correct mode method.
    */
   public void execute() {
+    final long startTime = System.currentTimeMillis();
     if (DATA_MODE_FILES.equals(mode) && args.length > 0) {
       doFilesMode();
     } else if(DATA_MODE_ARGS.equals(mode) && args.length > 0) {
@@ -180,8 +181,28 @@ public class SimplePostTool {
     
     if (commit)   commit();
     if (optimize) optimize();
+    final long endTime = System.currentTimeMillis();
+    displayTiming(endTime - startTime);
   }
   
+  /**
+   * Pretty prints the number of milliseconds taken to post the content to Solr
+   * @param millis the time in milliseconds
+   */
+  private void displayTiming(long millis) {
+    long hours = millis / 3600000;
+    long minutes = (millis / 60000) % 60;
+    long seconds = (millis / 1000) % 60;
+    long milliseconds = millis % 1000;
+    if (hours>0) {
+      System.out.println(String.format("Time taken: %02d:%02d:%02d.%03d", hours, minutes, seconds, milliseconds));
+    } else if (minutes>0) {
+      System.out.println(String.format("Time taken: %02d:%02d.%03d", minutes, seconds, milliseconds));
+    } else {
+      System.out.println(String.format("Time taken: %d.%03ds", seconds, milliseconds));
+    }
+ }
+
   /**
    * Parses incoming arguments and system params and initializes the tool
    * @param args the incoming cmd line args

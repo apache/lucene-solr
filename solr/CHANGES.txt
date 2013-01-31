@@ -130,6 +130,8 @@ Other Changes
 
 * SOLR-4353: Renamed example jetty context file to reduce confusion (hossman)
 
+* SOLR-4384: Make post.jar report timing information (Upayavira via janhoy)
+
 ==================  4.1.0 ==================
 
 Versions of Major Components
