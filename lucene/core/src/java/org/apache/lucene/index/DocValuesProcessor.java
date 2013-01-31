@@ -46,13 +46,10 @@ final class DocValuesProcessor extends StoredFieldsConsumer {
 
   @Override
   void finishDocument() {
-    // nocommit catch missing DV fields here?  else we have
-    // null/"" depending on how docs landed in segments?
   }
 
   @Override
   public void addField(int docID, StorableField field, FieldInfo fieldInfo) {
-    // nocommit: these checks are duplicated everywhere
     final DocValuesType dvType = field.fieldType().docValueType();
     if (dvType != null) {
       fieldInfo.setDocValuesType(dvType);
@@ -82,6 +79,10 @@ final class DocValuesProcessor extends StoredFieldsConsumer {
           writer.finish(state.segmentInfo.getDocCount());
           writer.flush(state, dvConsumer);
         }
+        // TODO: catch missing DV fields here?  else we have
+        // null/"" depending on how docs landed in segments?
+        // but we can't detect all cases, and we should leave
+        // this behavior undefined. dv is not "schemaless": its column-stride.
         writers.clear();
         success = true;
       } finally {
