@@ -267,10 +267,6 @@ public abstract class DocValuesConsumer implements Closeable {
             values.lookupOrd(ord, scratch);
             lastOrd = ord;
             return scratch;
-          } else {
-            // Skip "deleted" terms (ie, terms that were not
-            // referenced by any live docs): nocommit: why?!
-            values.lookupOrd(ord, scratch);
           }
         }
 
