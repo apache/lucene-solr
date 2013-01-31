@@ -90,11 +90,7 @@ public abstract class SortedDocValues extends BinaryDocValues {
    *  Arrays.binarySearch}.
    *
    *  @param key Key to look up
-   *  @param spare Spare BytesRef
    **/
-  // nocommit: what does spare mean? its no spare: because people rely upon its return value!
-  // if its 'result' then the parameter and javadoc needs changing, otherwise things need fixing
-  // unconditionally set its value to "NONSENSE" bytes to see the bugs!
   public int lookupTerm(BytesRef key) {
     BytesRef spare = new BytesRef();
     int low = 0;
