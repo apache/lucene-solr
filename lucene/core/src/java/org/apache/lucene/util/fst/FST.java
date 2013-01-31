@@ -27,11 +27,6 @@ import java.io.InputStream;
 import java.io.OutputStream;
 import java.util.HashMap;
 import java.util.Map;
-/*
-import java.io.Writer;
-import java.io.OutputStreamWriter;
-import java.io.FileOutputStream;
-*/
 
 import org.apache.lucene.codecs.CodecUtil;
 import org.apache.lucene.store.ByteArrayDataOutput;
@@ -41,12 +36,15 @@ import org.apache.lucene.store.InputStreamDataInput;
 import org.apache.lucene.store.OutputStreamDataOutput;
 import org.apache.lucene.store.RAMOutputStream;
 import org.apache.lucene.util.ArrayUtil;
+import org.apache.lucene.util.Constants;
 import org.apache.lucene.util.IOUtils;
 import org.apache.lucene.util.IntsRef;
 import org.apache.lucene.util.PriorityQueue;
 import org.apache.lucene.util.fst.Builder.UnCompiledNode;
 import org.apache.lucene.util.packed.GrowableWriter;
 import org.apache.lucene.util.packed.PackedInts;
+//import java.io.Writer;
+//import java.io.OutputStreamWriter;
 
 // TODO: break this into WritableFST and ReadOnlyFST.. then
 // we can have subclasses of ReadOnlyFST to handle the
@@ -276,7 +274,6 @@ public final class FST<T> {
     this.outputs = outputs;
     this.allowArrayArcs = allowArrayArcs;
     version = VERSION_CURRENT;
-    // 32 KB blocks:
     bytes = new BytesStore(bytesPageBits);
     // pad: ensure no node gets address 0 which is reserved to mean
     // the stop state w/ no arcs
@@ -295,9 +292,22 @@ public final class FST<T> {
     nodeRefToAddress = null;
   }
 
+  public static final int DEFAULT_MAX_BLOCK_BITS = Constants.JRE_IS_64BIT ? 30 : 28;
+
   /** Load a previously saved FST. */
   public FST(DataInput in, Outputs<T> outputs) throws IOException {
+    this(in, outputs, DEFAULT_MAX_BLOCK_BITS);
+  }
+
+  /** Load a previously saved FST; maxBlockBits allows you to
+   *  control the size of the byte[] pages used to hold the FST bytes. */
+  public FST(DataInput in, Outputs<T> outputs, int maxBlockBits) throws IOException {
     this.outputs = outputs;
+
+    if (maxBlockBits < 1 || maxBlockBits > 30) {
+      throw new IllegalArgumentException("maxBlockBits should be 1 .. 30; got " + maxBlockBits);
+    }
+
     // NOTE: only reads most recent format; we don't have
     // back-compat promise for FSTs (they are experimental):
     version = CodecUtil.checkHeader(in, FILE_FORMAT_NAME, VERSION_PACKED, VERSION_VINT_TARGET);
@@ -345,13 +355,13 @@ public final class FST<T> {
     } else {
       nodeRefToAddress = null;
     }
-    startNode = in.readVInt();
+    startNode = in.readVLong();
     nodeCount = in.readVLong();
     arcCount = in.readVLong();
     arcWithOutputCount = in.readVLong();
 
-    int numBytes = in.readVInt();
-    bytes = new BytesStore(in, numBytes, Integer.MAX_VALUE);
+    long numBytes = in.readVLong();
+    bytes = new BytesStore(in, numBytes, 1<<maxBlockBits);
     
     NO_OUTPUT = outputs.getNoOutput();
 

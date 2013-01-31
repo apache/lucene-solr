@@ -20,10 +20,16 @@ package org.apache.lucene.util.fst;
 import java.util.Arrays;
 import java.util.Random;
 
+import org.apache.lucene.store.Directory;
+import org.apache.lucene.store.IOContext;
+import org.apache.lucene.store.IndexInput;
+import org.apache.lucene.store.IndexOutput;
+import org.apache.lucene.store.MMapDirectory;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.IntsRef;
 import org.apache.lucene.util.LuceneTestCase;
 import org.apache.lucene.util.TimeUnits;
+import org.apache.lucene.util._TestUtil;
 import org.apache.lucene.util.packed.PackedInts;
 import org.junit.Ignore;
 import com.carrotsearch.randomizedtesting.annotations.TimeoutSuite;
@@ -38,6 +44,8 @@ public class Test2BFST extends LuceneTestCase {
     int[] ints = new int[7];
     IntsRef input = new IntsRef(ints, 0, ints.length);
     long seed = random().nextLong();
+
+    Directory dir = new MMapDirectory(_TestUtil.getTempDir("2BFST"));
 
     for(int doPackIter=0;doPackIter<2;doPackIter++) {
       boolean doPack = doPackIter == 1;
@@ -72,42 +80,56 @@ public class Test2BFST extends LuceneTestCase {
 
         FST<Object> fst = b.finish();
 
-        System.out.println("\nTEST: now verify [fst size=" + fst.sizeInBytes() + "; nodeCount=" + fst.getNodeCount() + "; arcCount=" + fst.getArcCount() + "]");
+        for(int verify=0;verify<2;verify++) {
+          System.out.println("\nTEST: now verify [fst size=" + fst.sizeInBytes() + "; nodeCount=" + fst.getNodeCount() + "; arcCount=" + fst.getArcCount() + "]");
 
-        Arrays.fill(ints2, 0);
-        r = new Random(seed);
+          Arrays.fill(ints2, 0);
+          r = new Random(seed);
 
-        for(int i=0;i<count;i++) {
-          if (i % 1000000 == 0) {
-            System.out.println(i + "...: ");
+          for(int i=0;i<count;i++) {
+            if (i % 1000000 == 0) {
+              System.out.println(i + "...: ");
+            }
+            for(int j=10;j<ints2.length;j++) {
+              ints2[j] = r.nextInt(256);
+            }
+            assertEquals(NO_OUTPUT, Util.get(fst, input2));
+            nextInput(r, ints2);
           }
-          for(int j=10;j<ints2.length;j++) {
-            ints2[j] = r.nextInt(256);
+
+          System.out.println("\nTEST: enum all input/outputs");
+          IntsRefFSTEnum<Object> fstEnum = new IntsRefFSTEnum<Object>(fst);
+
+          Arrays.fill(ints2, 0);
+          r = new Random(seed);
+          int upto = 0;
+          while(true) {
+            IntsRefFSTEnum.InputOutput<Object> pair = fstEnum.next();
+            if (pair == null) {
+              break;
+            }
+            for(int j=10;j<ints2.length;j++) {
+              ints2[j] = r.nextInt(256);
+            }
+            assertEquals(input2, pair.input);
+            assertEquals(NO_OUTPUT, pair.output);
+            upto++;
+            nextInput(r, ints2);
           }
-          assertEquals(NO_OUTPUT, Util.get(fst, input2));
-          nextInput(r, ints2);
+          assertEquals(count, upto);
+
+          if (verify == 0) {
+            System.out.println("\nTEST: save/load FST and re-verify");
+            IndexOutput out = dir.createOutput("fst", IOContext.DEFAULT);
+            fst.save(out);
+            out.close();
+            IndexInput in = dir.openInput("fst", IOContext.DEFAULT);
+            fst = new FST<Object>(in, outputs);
+            in.close();
+          } else {
+            dir.deleteFile("fst");
+          }
         }
-
-        System.out.println("\nTEST: enum all input/outputs");
-        IntsRefFSTEnum<Object> fstEnum = new IntsRefFSTEnum<Object>(fst);
-
-        Arrays.fill(ints2, 0);
-        r = new Random(seed);
-        int upto = 0;
-        while(true) {
-          IntsRefFSTEnum.InputOutput<Object> pair = fstEnum.next();
-          if (pair == null) {
-            break;
-          }
-          for(int j=10;j<ints2.length;j++) {
-            ints2[j] = r.nextInt(256);
-          }
-          assertEquals(input2, pair.input);
-          assertEquals(NO_OUTPUT, pair.output);
-          upto++;
-          nextInput(r, ints2);
-        }
-        assertEquals(count, upto);
       }
 
       // Build FST w/ ByteSequenceOutputs and stop when FST
@@ -138,39 +160,53 @@ public class Test2BFST extends LuceneTestCase {
         }
 
         FST<BytesRef> fst = b.finish();
+        for(int verify=0;verify<2;verify++) {
 
-        System.out.println("\nTEST: now verify [fst size=" + fst.sizeInBytes() + "; nodeCount=" + fst.getNodeCount() + "; arcCount=" + fst.getArcCount() + "]");
+          System.out.println("\nTEST: now verify [fst size=" + fst.sizeInBytes() + "; nodeCount=" + fst.getNodeCount() + "; arcCount=" + fst.getArcCount() + "]");
 
-        r = new Random(seed);
-        Arrays.fill(ints, 0);
+          r = new Random(seed);
+          Arrays.fill(ints, 0);
 
-        for(int i=0;i<count;i++) {
-          if (i % 1000000 == 0) {
-            System.out.println(i + "...: ");
+          for(int i=0;i<count;i++) {
+            if (i % 1000000 == 0) {
+              System.out.println(i + "...: ");
+            }
+            r.nextBytes(outputBytes);
+            assertEquals(output, Util.get(fst, input));
+            nextInput(r, ints);
           }
-          r.nextBytes(outputBytes);
-          assertEquals(output, Util.get(fst, input));
-          nextInput(r, ints);
-        }
 
-        System.out.println("\nTEST: enum all input/outputs");
-        IntsRefFSTEnum<BytesRef> fstEnum = new IntsRefFSTEnum<BytesRef>(fst);
+          System.out.println("\nTEST: enum all input/outputs");
+          IntsRefFSTEnum<BytesRef> fstEnum = new IntsRefFSTEnum<BytesRef>(fst);
 
-        Arrays.fill(ints, 0);
-        r = new Random(seed);
-        int upto = 0;
-        while(true) {
-          IntsRefFSTEnum.InputOutput<BytesRef> pair = fstEnum.next();
-          if (pair == null) {
-            break;
+          Arrays.fill(ints, 0);
+          r = new Random(seed);
+          int upto = 0;
+          while(true) {
+            IntsRefFSTEnum.InputOutput<BytesRef> pair = fstEnum.next();
+            if (pair == null) {
+              break;
+            }
+            assertEquals(input, pair.input);
+            r.nextBytes(outputBytes);
+            assertEquals(output, pair.output);
+            upto++;
+            nextInput(r, ints);
           }
-          assertEquals(input, pair.input);
-          r.nextBytes(outputBytes);
-          assertEquals(output, pair.output);
-          upto++;
-          nextInput(r, ints);
+          assertEquals(count, upto);
+
+          if (verify == 0) {
+            System.out.println("\nTEST: save/load FST and re-verify");
+            IndexOutput out = dir.createOutput("fst", IOContext.DEFAULT);
+            fst.save(out);
+            out.close();
+            IndexInput in = dir.openInput("fst", IOContext.DEFAULT);
+            fst = new FST<BytesRef>(in, outputs);
+            in.close();
+          } else {
+            dir.deleteFile("fst");
+          }
         }
-        assertEquals(count, upto);
       }
 
       // Build FST w/ PositiveIntOutputs and stop when FST
@@ -202,46 +238,62 @@ public class Test2BFST extends LuceneTestCase {
 
         FST<Long> fst = b.finish();
 
-        System.out.println("\nTEST: now verify [fst size=" + fst.sizeInBytes() + "; nodeCount=" + fst.getNodeCount() + "; arcCount=" + fst.getArcCount() + "]");
+        for(int verify=0;verify<2;verify++) {
 
-        Arrays.fill(ints, 0);
+          System.out.println("\nTEST: now verify [fst size=" + fst.sizeInBytes() + "; nodeCount=" + fst.getNodeCount() + "; arcCount=" + fst.getArcCount() + "]");
 
-        output = 1;
-        r = new Random(seed);
-        for(int i=0;i<count;i++) {
-          if (i % 1000000 == 0) {
-            System.out.println(i + "...: ");
+          Arrays.fill(ints, 0);
+
+          output = 1;
+          r = new Random(seed);
+          for(int i=0;i<count;i++) {
+            if (i % 1000000 == 0) {
+              System.out.println(i + "...: ");
+            }
+
+            // forward lookup:
+            assertEquals(output, Util.get(fst, input).longValue());
+            // reverse lookup:
+            assertEquals(input, Util.getByOutput(fst, output));
+            output += 1 + r.nextInt(10);
+            nextInput(r, ints);
           }
 
-          // forward lookup:
-          assertEquals(output, Util.get(fst, input).longValue());
-          // reverse lookup:
-          assertEquals(input, Util.getByOutput(fst, output));
-          output += 1 + r.nextInt(10);
-          nextInput(r, ints);
-        }
+          System.out.println("\nTEST: enum all input/outputs");
+          IntsRefFSTEnum<Long> fstEnum = new IntsRefFSTEnum<Long>(fst);
 
-        System.out.println("\nTEST: enum all input/outputs");
-        IntsRefFSTEnum<Long> fstEnum = new IntsRefFSTEnum<Long>(fst);
-
-        Arrays.fill(ints, 0);
-        r = new Random(seed);
-        int upto = 0;
-        output = 1;
-        while(true) {
-          IntsRefFSTEnum.InputOutput<Long> pair = fstEnum.next();
-          if (pair == null) {
-            break;
+          Arrays.fill(ints, 0);
+          r = new Random(seed);
+          int upto = 0;
+          output = 1;
+          while(true) {
+            IntsRefFSTEnum.InputOutput<Long> pair = fstEnum.next();
+            if (pair == null) {
+              break;
+            }
+            assertEquals(input, pair.input);
+            assertEquals(output, pair.output.longValue());
+            output += 1 + r.nextInt(10);
+            upto++;
+            nextInput(r, ints);
           }
-          assertEquals(input, pair.input);
-          assertEquals(output, pair.output.longValue());
-          output += 1 + r.nextInt(10);
-          upto++;
-          nextInput(r, ints);
+          assertEquals(count, upto);
+
+          if (verify == 0) {
+            System.out.println("\nTEST: save/load FST and re-verify");
+            IndexOutput out = dir.createOutput("fst", IOContext.DEFAULT);
+            fst.save(out);
+            out.close();
+            IndexInput in = dir.openInput("fst", IOContext.DEFAULT);
+            fst = new FST<Long>(in, outputs);
+            in.close();
+          } else {
+            dir.deleteFile("fst");
+          }
         }
-        assertEquals(count, upto);
       }
     }
+    dir.close();
   }
 
   private void nextInput(Random r, int[] ints) {

@@ -46,7 +46,7 @@ class BytesStore extends DataOutput {
   }
 
   /** Pulls bytes from the provided IndexInput.  */
-  public BytesStore(DataInput in, int numBytes, int maxBlockSize) throws IOException {
+  public BytesStore(DataInput in, long numBytes, int maxBlockSize) throws IOException {
     int blockSize = 2;
     int blockBits = 1;
     while(blockSize < numBytes && blockSize < maxBlockSize) {
@@ -56,9 +56,9 @@ class BytesStore extends DataOutput {
     this.blockBits = blockBits;
     this.blockSize = blockSize;
     this.blockMask = blockSize-1;
-    int left = numBytes;
+    long left = numBytes;
     while(left > 0) {
-      final int chunk = Math.min(blockSize, left);
+      final int chunk = (int) Math.min(blockSize, left);
       byte[] block = new byte[chunk];
       in.readBytes(block, 0, block.length);
       blocks.add(block);
