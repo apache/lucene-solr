@@ -133,7 +133,6 @@ public class TestBytesRefHash extends LuceneTestCase {
   /**
    * Test method for {@link org.apache.lucene.util.BytesRefHash#compact()}.
    */
-  /* nocommit: rewrite in terms of TestSort?
   @Test
   public void testCompact() {
     BytesRef ref = new BytesRef();
@@ -170,7 +169,7 @@ public class TestBytesRefHash extends LuceneTestCase {
       assertEquals(0, hash.size());
       hash.reinit();
     }
-  }*/
+  }
 
   /**
    * Test method for

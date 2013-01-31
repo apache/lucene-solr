@@ -130,7 +130,7 @@ public final class BytesRefHash {
    * order to reuse this {@link BytesRefHash} instance.
    * </p>
    */
-  private int[] compact() {
+  int[] compact() {
     assert bytesStart != null : "Bytesstart is null - not initialized";
     int upto = 0;
     for (int i = 0; i < hashSize; i++) {

@@ -848,7 +848,18 @@ public class PackedInts {
     }
   }
   
-  //nocommit javadoc
+  /**
+   * Expert: Restore a {@link Reader} from a stream without reading metadata at
+   * the beginning of the stream. This method is useful to restore data when
+   * metadata has been previously read using {@link #readHeader(DataInput)}.
+   *
+   * @param in           the stream to read data from, positioned at the beginning of the packed values
+   * @param header       metadata result from <code>readHeader()</code>
+   * @return             a Reader
+   * @throws IOException If there is a low-level I/O error
+   * @see #readHeader(DataInput)
+   * @lucene.internal
+   */
   public static Reader getReaderNoHeader(DataInput in, Header header) throws IOException {
     return getReaderNoHeader(in, header.format, header.version, header.valueCount, header.bitsPerValue);
   }
@@ -965,7 +976,19 @@ public class PackedInts {
     }
   }
   
-  //nocommit javadoc
+  /**
+   * Expert: Construct a direct {@link Reader} from an {@link IndexInput} 
+   * without reading metadata at the beginning of the stream. This method is 
+   * useful to restore data when metadata has been previously read using 
+   * {@link #readHeader(DataInput)}.
+   *
+   * @param in           the stream to read data from, positioned at the beginning of the packed values
+   * @param header       metadata result from <code>readHeader()</code>
+   * @return             a Reader
+   * @throws IOException If there is a low-level I/O error
+   * @see #readHeader(DataInput)
+   * @lucene.internal
+   */
   public static Reader getDirectReaderNoHeader(IndexInput in, Header header) throws IOException {
     return getDirectReaderNoHeader(in, header.format, header.version, header.valueCount, header.bitsPerValue);
   }
@@ -1200,8 +1223,18 @@ public class PackedInts {
     }
   }
   
-  //nocommit javadoc
-  public static Header readHeader(IndexInput in) throws IOException {
+  /**
+   * Expert: reads only the metadata from a stream. This is useful to later
+   * restore a stream or open a direct reader via 
+   * {@link #getReaderNoHeader(DataInput, Header)}
+   * or {@link #getDirectReaderNoHeader(IndexInput, Header)}.
+   * @param    in the stream to read data
+   * @return   packed integer metadata.
+   * @throws   IOException If there is a low-level I/O error
+   * @see #getReaderNoHeader(DataInput, Header)
+   * @see #getDirectReaderNoHeader(IndexInput, Header)
+   */
+  public static Header readHeader(DataInput in) throws IOException {
     final int version = CodecUtil.checkHeader(in, CODEC_NAME, VERSION_START, VERSION_CURRENT);
     final int bitsPerValue = in.readVInt();
     assert bitsPerValue > 0 && bitsPerValue <= 64: "bitsPerValue=" + bitsPerValue;
