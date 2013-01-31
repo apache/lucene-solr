@@ -253,10 +253,10 @@ final class DocFieldProcessor extends DocConsumer {
         rehash();
       }
     } else {
-      // nocommit this is wasteful: it's another hash lookup
-      // by field name; can we just do fp.fieldInfo.update
-      // directly?
-      fieldInfos.addOrUpdate(fp.fieldInfo.name, ft);
+      // nocommit: dangerous: maybe FI.update()/FI ctor()/FIS.addOrUpdate need only take FT
+      // instead of a thousand parameters? Surely we can make this better... like:
+      // fp.fieldInfo.update(ft);
+      fp.fieldInfo.update(ft.indexed(), false, ft.omitNorms(), false, ft.indexOptions());
     }
 
     if (thisFieldGen != fp.lastGen) {
