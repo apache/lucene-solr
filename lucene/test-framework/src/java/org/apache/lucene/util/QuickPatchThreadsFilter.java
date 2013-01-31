@@ -24,23 +24,20 @@ import com.carrotsearch.randomizedtesting.ThreadFilter;
  * TODO: remove when integrated in system filters in rr.
  */
 public class QuickPatchThreadsFilter implements ThreadFilter {
+  static final boolean isJ9;
+  
+  static {
+    isJ9 = System.getProperty("java.vm.info", "<?>").contains("IBM J9");
+  }
+
   @Override
   public boolean reject(Thread t) {
-    // MacOS system thread.
-    if (t.getName().equals("AWT-AppKit")) {
-      return true;
+    if (isJ9) {
+      StackTraceElement [] stack = t.getStackTrace();
+      if (stack.length > 0 && stack[stack.length - 1].getClassName().equals("java.util.Timer$TimerImpl")) {
+        return true; // LUCENE-4736
+      }
     }
-
-    // J9 memory pool thread.
-    if (t.getName().equals("MemoryPoolMXBean notification dispatcher")) {
-      return true;
-    }
-    
-    // forked process reaper on Unixish systems
-    if (t.getName().equals("process reaper")) {
-      return true;
-    }
-
     return false;
   }
 }
