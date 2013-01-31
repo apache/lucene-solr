@@ -36,6 +36,9 @@ import org.apache.lucene.facet.search.results.FacetResult;
  * @lucene.experimental
  */
 public class AdaptiveMain {
+  
+  /** Sole constructor */
+  public AdaptiveMain() {}
 
   /**
    * Driver for the adaptive sample.
@@ -46,6 +49,7 @@ public class AdaptiveMain {
     ExampleUtils.log("DONE");
   }
 
+  /** Runs the adaptive sample and returns the facet results */
   public ExampleResult runSample() throws Exception {
 
     // create Directories for the search index and for the taxonomy index

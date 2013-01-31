@@ -39,6 +39,9 @@ import org.apache.lucene.store.Directory;
  * @lucene.experimental
  */
 public class SimpleIndexer {
+  
+  /** No instance */
+  private SimpleIndexer() {}
 
   /**
    * Create an index, and adds to it sample documents and facets.

@@ -28,6 +28,9 @@ import org.apache.lucene.facet.taxonomy.CategoryPath;
  * @lucene.experimental
  */
 public class SimpleUtils {
+  
+  /** No instance */
+  private SimpleUtils() {}
 
   /** 
    * Documents text field.

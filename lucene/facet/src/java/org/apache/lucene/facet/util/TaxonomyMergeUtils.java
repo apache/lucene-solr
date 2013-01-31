@@ -36,6 +36,7 @@ import org.apache.lucene.util.Version;
  */
 
 /**
+ * Utility methods for merging index and taxonomy directories.
  * @lucene.experimental
  */
 public class TaxonomyMergeUtils {

@@ -49,6 +49,9 @@ import org.apache.lucene.facet.taxonomy.directory.DirectoryTaxonomyReader;
  * @lucene.experimental
  */
 public class MultiCLSearcher {
+  
+  /** No instance */
+  private MultiCLSearcher() {}
 
   /**
    * Search an index with facets.
@@ -78,6 +81,18 @@ public class MultiCLSearcher {
     return results;
   }
   
+  /**
+   * Search an index with facets.
+   * 
+   * @param indexReader
+   *            Reader over the search index.
+   * @param taxo
+   *            taxonomy reader.
+   * @throws Exception
+   *             on error (no detailed exception handling here for sample
+   *             simplicity
+   * @return facet results
+   */
   public static List<FacetResult> searchWithFacets(IndexReader indexReader,
       TaxonomyReader taxo, FacetIndexingParams iParams) throws Exception {
     // prepare searcher to search against

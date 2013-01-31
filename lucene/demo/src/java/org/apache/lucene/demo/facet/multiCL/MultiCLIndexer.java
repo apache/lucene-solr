@@ -48,14 +48,17 @@ import org.apache.lucene.store.RAMDirectory;
  * @lucene.experimental
  */
 public class MultiCLIndexer {
+  
+  /** No instance */
+  private MultiCLIndexer() {}
 
-  // Number of documents to index
+  /** Number of documents to index */
   public static int NUM_DOCS = 100;
-  // Number of facets to add per document
+  /** Number of facets to add per document */
   public static int NUM_FACETS_PER_DOC = 10;
-  // Number of tokens in title
+  /** Number of tokens in title */
   public static int TITLE_LENGTH = 5;
-  // Number of tokens in text
+  /** Number of tokens in text */
   public static int TEXT_LENGTH = 100;
   
   // Lorum ipsum to use as content - this will be tokenized and used for document
@@ -73,7 +76,7 @@ public class MultiCLIndexer {
       + "nisi ut aliquid ex ea commodi consequatur? Quis autem vel eum iure"
       + "reprehenderit qui in ea voluptate velit esse quam nihil molestiae "
       + "consequatur vel illum qui dolorem eum fugiat quo voluptas nulla pariatur";
-  // PerDimensionIndexingParams for multiple category lists
+  /** PerDimensionIndexingParams for multiple category lists */
   public static final PerDimensionIndexingParams MULTI_IPARAMS;
 
   // Initialize PerDimensionIndexingParams
@@ -199,6 +202,7 @@ public class MultiCLIndexer {
         + nFacetsAdded + " facets.");
   }
 
+  /** Driver for the example */
   public static void main(String[] args) throws Exception {
     index(new RAMDirectory(), new RAMDirectory());
   }

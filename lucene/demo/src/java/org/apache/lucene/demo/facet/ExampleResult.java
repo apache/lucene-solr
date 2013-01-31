@@ -29,18 +29,21 @@ import org.apache.lucene.facet.search.results.FacetResult;
  * @lucene.experimental
  */
 public class ExampleResult {
+  
+  /** Sole constructor. */
+  public ExampleResult() {}
 
   private List<FacetResult> facetResults;
 
   /**
-   * @return the facet results
+   * Returns the facet results
    */
   public List<FacetResult> getFacetResults() {
     return facetResults;
   }
 
   /**
-   * @param facetResults the facet results to set
+   * Sets the facet results
    */
   public void setFacetResults(List<FacetResult> facetResults) {
     this.facetResults = facetResults;

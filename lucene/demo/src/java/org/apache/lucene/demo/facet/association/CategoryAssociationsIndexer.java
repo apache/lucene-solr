@@ -40,6 +40,9 @@ import org.apache.lucene.store.Directory;
  * @lucene.experimental
  */
 public class CategoryAssociationsIndexer {
+  
+  /** No instance. */
+  private CategoryAssociationsIndexer() {}
 
   /**
    * Create an index, and adds to it sample documents and categories.
