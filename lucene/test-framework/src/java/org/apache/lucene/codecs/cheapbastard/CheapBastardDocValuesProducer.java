@@ -1,4 +1,4 @@
-package org.apache.lucene.codecs.diskdv;
+package org.apache.lucene.codecs.cheapbastard;
 
 /*
  * Licensed to the Apache Software Foundation (ASF) under one or more
@@ -23,10 +23,10 @@ import java.util.Map;
 
 import org.apache.lucene.codecs.CodecUtil;
 import org.apache.lucene.codecs.DocValuesProducer;
+import org.apache.lucene.codecs.diskdv.DiskDocValuesFormat;
 import org.apache.lucene.index.BinaryDocValues;
 import org.apache.lucene.index.CorruptIndexException;
 import org.apache.lucene.index.FieldInfo;
-import org.apache.lucene.index.FieldInfos;
 import org.apache.lucene.index.IndexFileNames;
 import org.apache.lucene.index.NumericDocValues;
 import org.apache.lucene.index.SegmentReadState;
@@ -37,17 +37,13 @@ import org.apache.lucene.util.IOUtils;
 import org.apache.lucene.util.packed.BlockPackedReader;
 import org.apache.lucene.util.packed.MonotonicBlockPackedReader;
 
-class DiskDocValuesProducer extends DocValuesProducer {
+class CheapBastardDocValuesProducer extends DocValuesProducer {
   private final Map<Integer,NumericEntry> numerics;
-  private final Map<Integer,BinaryEntry> binaries;
   private final Map<Integer,NumericEntry> ords;
+  private final Map<Integer,BinaryEntry> binaries;
   private final IndexInput data;
-
-  // memory-resident structures
-  private final Map<Integer,BlockPackedReader> ordinalInstances = new HashMap<Integer,BlockPackedReader>();
-  private final Map<Integer,MonotonicBlockPackedReader> addressInstances = new HashMap<Integer,MonotonicBlockPackedReader>();
   
-  DiskDocValuesProducer(SegmentReadState state, String dataCodec, String dataExtension, String metaCodec, String metaExtension) throws IOException {
+  CheapBastardDocValuesProducer(SegmentReadState state, String dataCodec, String dataExtension, String metaCodec, String metaExtension) throws IOException {
     String metaName = IndexFileNames.segmentFileName(state.segmentInfo.name, state.segmentSuffix, metaExtension);
     // read in the entries from the metadata file.
     IndexInput in = state.directory.openInput(metaName, state.context);
@@ -59,7 +55,7 @@ class DiskDocValuesProducer extends DocValuesProducer {
       numerics = new HashMap<Integer,NumericEntry>();
       ords = new HashMap<Integer,NumericEntry>();
       binaries = new HashMap<Integer,BinaryEntry>();
-      readFields(in, state.fieldInfos);
+      readFields(in);
       success = true;
     } finally {
       if (success) {
@@ -76,7 +72,7 @@ class DiskDocValuesProducer extends DocValuesProducer {
                                 DiskDocValuesFormat.VERSION_START);
   }
   
-  private void readFields(IndexInput meta, FieldInfos infos) throws IOException {
+  private void readFields(IndexInput meta) throws IOException {
     int fieldNumber = meta.readVInt();
     while (fieldNumber != -1) {
       byte type = meta.readByte();
@@ -135,6 +131,10 @@ class DiskDocValuesProducer extends DocValuesProducer {
   @Override
   public NumericDocValues getNumeric(FieldInfo field) throws IOException {
     NumericEntry entry = numerics.get(field.number);
+    return getNumeric(field, entry);
+  }
+  
+  private NumericDocValues getNumeric(FieldInfo field, final NumericEntry entry) throws IOException {
     final IndexInput data = this.data.clone();
     data.seek(entry.offset);
 
@@ -182,18 +182,9 @@ class DiskDocValuesProducer extends DocValuesProducer {
   
   private BinaryDocValues getVariableBinary(FieldInfo field, final BinaryEntry bytes) throws IOException {
     final IndexInput data = this.data.clone();
-    
-    final MonotonicBlockPackedReader addresses;
-    synchronized (addressInstances) {
-      MonotonicBlockPackedReader addrInstance = addressInstances.get(field.number);
-      if (addrInstance == null) {
-        data.seek(bytes.addressesOffset);
-        addrInstance = new MonotonicBlockPackedReader(data, bytes.packedIntsVersion, bytes.blockSize, bytes.count, false);
-        addressInstances.put(field.number, addrInstance);
-      }
-      addresses = addrInstance;
-    }
+    data.seek(bytes.addressesOffset);
 
+    final MonotonicBlockPackedReader addresses = new MonotonicBlockPackedReader(data, bytes.packedIntsVersion, bytes.blockSize, bytes.count, true);
     return new BinaryDocValues() {
       @Override
       public void get(int docID, BytesRef result) {
@@ -220,18 +211,7 @@ class DiskDocValuesProducer extends DocValuesProducer {
   public SortedDocValues getSorted(FieldInfo field) throws IOException {
     final int valueCount = binaries.get(field.number).count;
     final BinaryDocValues binary = getBinary(field);
-    final BlockPackedReader ordinals;
-    synchronized (ordinalInstances) {
-      BlockPackedReader ordsInstance = ordinalInstances.get(field.number);
-      if (ordsInstance == null) {
-        NumericEntry entry = ords.get(field.number);
-        IndexInput data = this.data.clone();
-        data.seek(entry.offset);
-        ordsInstance = new BlockPackedReader(data, entry.packedIntsVersion, entry.blockSize, entry.count, false);
-        ordinalInstances.put(field.number, ordsInstance);
-      }
-      ordinals = ordsInstance;
-    }
+    final NumericDocValues ordinals = getNumeric(field, ords.get(field.number));
     return new SortedDocValues() {
 
       @Override

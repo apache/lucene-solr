@@ -38,7 +38,7 @@ import org.apache.lucene.util.SorterTemplate;
  * @lucene.internal
  * @lucene.experimental
  */
-final class BytesRefArray {
+public final class BytesRefArray {
   private final ByteBlockPool pool;
   private int[] offsets = new int[1];
   private int lastElement = 0;

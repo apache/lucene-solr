@@ -31,24 +31,23 @@ import org.apache.lucene.util.packed.BlockPackedWriter;
 import org.apache.lucene.util.packed.MonotonicBlockPackedWriter;
 import org.apache.lucene.util.packed.PackedInts;
 
-class DiskDocValuesConsumer extends DocValuesConsumer {
+/** writer for {@link DiskDocValuesFormat} */
+public class DiskDocValuesConsumer extends DocValuesConsumer {
 
   static final int BLOCK_SIZE = 16384;
 
   final IndexOutput data, meta;
   final int maxDoc;
   
-  DiskDocValuesConsumer(SegmentWriteState state) throws IOException {
+  public DiskDocValuesConsumer(SegmentWriteState state, String dataCodec, String dataExtension, String metaCodec, String metaExtension) throws IOException {
     boolean success = false;
     try {
-      String dataName = IndexFileNames.segmentFileName(state.segmentInfo.name, state.segmentSuffix, "ddvd");
+      String dataName = IndexFileNames.segmentFileName(state.segmentInfo.name, state.segmentSuffix, dataExtension);
       data = state.directory.createOutput(dataName, state.context);
-      CodecUtil.writeHeader(data, DiskDocValuesFormat.DATA_CODEC, 
-                                  DiskDocValuesFormat.VERSION_CURRENT);
-      String metaName = IndexFileNames.segmentFileName(state.segmentInfo.name, state.segmentSuffix, "ddvm");
+      CodecUtil.writeHeader(data, dataCodec, DiskDocValuesFormat.VERSION_CURRENT);
+      String metaName = IndexFileNames.segmentFileName(state.segmentInfo.name, state.segmentSuffix, metaExtension);
       meta = state.directory.createOutput(metaName, state.context);
-      CodecUtil.writeHeader(meta, DiskDocValuesFormat.METADATA_CODEC, 
-                                  DiskDocValuesFormat.VERSION_CURRENT);
+      CodecUtil.writeHeader(meta, metaCodec, DiskDocValuesFormat.VERSION_CURRENT);
       maxDoc = state.segmentInfo.getDocCount();
       success = true;
     } finally {
@@ -66,6 +65,7 @@ class DiskDocValuesConsumer extends DocValuesConsumer {
     }
 
     meta.writeVInt(field.number);
+    meta.writeByte(DiskDocValuesFormat.NUMERIC);
     meta.writeVInt(PackedInts.VERSION_CURRENT);
     meta.writeLong(data.getFilePointer());
     meta.writeVInt(count);
@@ -82,6 +82,7 @@ class DiskDocValuesConsumer extends DocValuesConsumer {
   public void addBinaryField(FieldInfo field, final Iterable<BytesRef> values) throws IOException {
     // write the byte[] data
     meta.writeVInt(field.number);
+    meta.writeByte(DiskDocValuesFormat.BINARY);
     int minLength = Integer.MAX_VALUE;
     int maxLength = Integer.MIN_VALUE;
     final long startFP = data.getFilePointer();
@@ -116,6 +117,8 @@ class DiskDocValuesConsumer extends DocValuesConsumer {
 
   @Override
   public void addSortedField(FieldInfo field, Iterable<BytesRef> values, Iterable<Number> docToOrd) throws IOException {
+    meta.writeVInt(field.number);
+    meta.writeByte(DiskDocValuesFormat.SORTED);
     addBinaryField(field, values);
     addNumericField(field, docToOrd);
   }

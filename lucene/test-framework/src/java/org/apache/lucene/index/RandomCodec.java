@@ -36,6 +36,7 @@ import org.apache.lucene.codecs.lucene41ords.Lucene41WithOrds;
 import org.apache.lucene.codecs.lucene42.Lucene42Codec;
 import org.apache.lucene.codecs.lucene42.Lucene42DocValuesFormat;
 import org.apache.lucene.codecs.bloom.TestBloomFilteredLucene41Postings;
+import org.apache.lucene.codecs.cheapbastard.CheapBastardDocValuesFormat;
 import org.apache.lucene.codecs.diskdv.DiskDocValuesFormat;
 import org.apache.lucene.codecs.memory.DirectPostingsFormat;
 import org.apache.lucene.codecs.memory.MemoryPostingsFormat;
@@ -146,14 +147,15 @@ public class RandomCodec extends Lucene42Codec {
         new Lucene42DocValuesFormat(),
         new DiskDocValuesFormat(),
         new SimpleTextDocValuesFormat(),
-        new AssertingDocValuesFormat());
+        new AssertingDocValuesFormat(),
+        new CheapBastardDocValuesFormat());
 
     Collections.shuffle(formats, random);
     Collections.shuffle(dvFormats, random);
 
     // Avoid too many open files:
     formats = formats.subList(0, 4);
-    // only if we get big dvFormats = dvFormats.subList(0, 4);
+    dvFormats = dvFormats.subList(0, 4);
   }
 
   public RandomCodec(Random random) {

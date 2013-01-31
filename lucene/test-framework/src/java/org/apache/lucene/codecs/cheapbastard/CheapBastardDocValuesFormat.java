@@ -1,4 +1,4 @@
-package org.apache.lucene.codecs.diskdv;
+package org.apache.lucene.codecs.cheapbastard;
 
 /*
  * Licensed to the Apache Software Foundation (ASF) under one or more
@@ -22,40 +22,45 @@ import java.io.IOException;
 import org.apache.lucene.codecs.DocValuesConsumer;
 import org.apache.lucene.codecs.DocValuesProducer;
 import org.apache.lucene.codecs.DocValuesFormat;
+import org.apache.lucene.codecs.diskdv.DiskDocValuesConsumer;
+import org.apache.lucene.codecs.diskdv.DiskDocValuesFormat;
 import org.apache.lucene.index.SegmentReadState;
 import org.apache.lucene.index.SegmentWriteState;
 
 /**
- * DocValues format that keeps most things on disk.
+ * DocValues format that keeps everything on disk.
  * <p>
- * Things like ordinals and disk offsets are loaded into ram,
- * for single-seek access to all the types.
+ * Internally there are only 2 field types:
+ * <ul>
+ *   <li>BINARY: a big byte[].
+ *   <li>NUMERIC: packed ints
+ * </ul>
+ * SORTED is encoded as BINARY + NUMERIC
+ * <p>
+ * NOTE: Don't use this format in production (its not very efficient).
+ * Most likely you would want some parts in RAM, other parts on disk. 
  * <p>
  * @lucene.experimental
  */
-public final class DiskDocValuesFormat extends DocValuesFormat {
+public final class CheapBastardDocValuesFormat extends DocValuesFormat {
 
-  public DiskDocValuesFormat() {
-    super("Disk");
+  public CheapBastardDocValuesFormat() {
+    super("CheapBastard");
   }
 
   @Override
   public DocValuesConsumer fieldsConsumer(SegmentWriteState state) throws IOException {
-    return new DiskDocValuesConsumer(state, DATA_CODEC, DATA_EXTENSION, META_CODEC, META_EXTENSION);
+    return new DiskDocValuesConsumer(state, DiskDocValuesFormat.DATA_CODEC, 
+                                            DiskDocValuesFormat.DATA_EXTENSION, 
+                                            DiskDocValuesFormat.META_CODEC, 
+                                            DiskDocValuesFormat.META_EXTENSION);
   }
 
   @Override
   public DocValuesProducer fieldsProducer(SegmentReadState state) throws IOException {
-    return new DiskDocValuesProducer(state, DATA_CODEC, DATA_EXTENSION, META_CODEC, META_EXTENSION);
+    return new CheapBastardDocValuesProducer(state, DiskDocValuesFormat.DATA_CODEC, 
+                                                    DiskDocValuesFormat.DATA_EXTENSION, 
+                                                    DiskDocValuesFormat.META_CODEC, 
+                                                    DiskDocValuesFormat.META_EXTENSION);
   }
-  
-  public static final String DATA_CODEC = "DiskDocValuesData";
-  public static final String DATA_EXTENSION = "dvdd";
-  public static final String META_CODEC = "DiskDocValuesMetadata";
-  public static final String META_EXTENSION = "dvdm";
-  public static final int VERSION_START = 0;
-  public static final int VERSION_CURRENT = VERSION_START;
-  public static final byte NUMERIC = 0;
-  public static final byte BINARY = 1;
-  public static final byte SORTED = 2;
 }

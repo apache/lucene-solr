@@ -1,4 +1,4 @@
-package org.apache.lucene.codecs.diskdv;
+package org.apache.lucene.codecs.cheapbastard;
 
 /*
  * Licensed to the Apache Software Foundation (ASF) under one or more
@@ -21,41 +21,26 @@ import java.io.IOException;
 
 import org.apache.lucene.codecs.DocValuesConsumer;
 import org.apache.lucene.codecs.DocValuesProducer;
-import org.apache.lucene.codecs.DocValuesFormat;
+import org.apache.lucene.codecs.NormsFormat;
+import org.apache.lucene.codecs.diskdv.DiskDocValuesConsumer;
 import org.apache.lucene.index.SegmentReadState;
 import org.apache.lucene.index.SegmentWriteState;
 
-/**
- * DocValues format that keeps most things on disk.
- * <p>
- * Things like ordinals and disk offsets are loaded into ram,
- * for single-seek access to all the types.
- * <p>
- * @lucene.experimental
- */
-public final class DiskDocValuesFormat extends DocValuesFormat {
-
-  public DiskDocValuesFormat() {
-    super("Disk");
-  }
+/** Norms format that keeps all norms on disk */
+public final class CheapBastardNormsFormat extends NormsFormat {
 
   @Override
-  public DocValuesConsumer fieldsConsumer(SegmentWriteState state) throws IOException {
+  public DocValuesConsumer normsConsumer(SegmentWriteState state) throws IOException {
     return new DiskDocValuesConsumer(state, DATA_CODEC, DATA_EXTENSION, META_CODEC, META_EXTENSION);
   }
 
   @Override
-  public DocValuesProducer fieldsProducer(SegmentReadState state) throws IOException {
-    return new DiskDocValuesProducer(state, DATA_CODEC, DATA_EXTENSION, META_CODEC, META_EXTENSION);
+  public DocValuesProducer normsProducer(SegmentReadState state) throws IOException {
+    return new CheapBastardDocValuesProducer(state, DATA_CODEC, DATA_EXTENSION, META_CODEC, META_EXTENSION);
   }
   
-  public static final String DATA_CODEC = "DiskDocValuesData";
-  public static final String DATA_EXTENSION = "dvdd";
-  public static final String META_CODEC = "DiskDocValuesMetadata";
-  public static final String META_EXTENSION = "dvdm";
-  public static final int VERSION_START = 0;
-  public static final int VERSION_CURRENT = VERSION_START;
-  public static final byte NUMERIC = 0;
-  public static final byte BINARY = 1;
-  public static final byte SORTED = 2;
+  static final String DATA_CODEC = "CheapBastardNormsData";
+  static final String DATA_EXTENSION = "cbnd";
+  static final String META_CODEC = "CheapBastardNormsMetadata";
+  static final String META_EXTENSION = "cbnm";
 }
