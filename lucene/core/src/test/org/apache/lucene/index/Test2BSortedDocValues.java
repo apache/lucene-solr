@@ -17,13 +17,12 @@ package org.apache.lucene.index;
  * limitations under the License.
  */
 
+import java.util.Random;
+
 import org.apache.lucene.analysis.MockAnalyzer;
-import org.apache.lucene.document.BinaryDocValuesField;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.SortedDocValuesField;
 import org.apache.lucene.store.BaseDirectoryWrapper;
-import org.apache.lucene.store.ByteArrayDataInput;
-import org.apache.lucene.store.ByteArrayDataOutput;
 import org.apache.lucene.store.MockDirectoryWrapper;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.LuceneTestCase;
@@ -34,7 +33,7 @@ import org.junit.Ignore;
 import com.carrotsearch.randomizedtesting.annotations.TimeoutSuite;
 
 @TimeoutSuite(millis = 80 * TimeUnits.HOUR)
-@Ignore("takes ?? minutes")
+@Ignore("very slow")
 public class Test2BSortedDocValues extends LuceneTestCase {
   
   // indexes Integer.MAX_VALUE docs with a fixed binary field
@@ -94,10 +93,7 @@ public class Test2BSortedDocValues extends LuceneTestCase {
   }
   
   // indexes Integer.MAX_VALUE docs with a fixed binary field
-  // nocommit: this must be some kind of worst case for BytesRefHash / its hash fn... 
-  // or there is some other perf bug...VERY slow!
-  // if you cut this test to use random.nextBytes its much faster, but still quite slow...
-  // and its not unrealistic for users to index something thats already in sorted order?
+  // TODO: must use random.nextBytes (like Test2BTerms) to avoid BytesRefHash probing issues
   public void test2BOrds() throws Exception {
     BaseDirectoryWrapper dir = newFSDirectory(_TestUtil.getTempDir("2BOrds"));
     if (dir instanceof MockDirectoryWrapper) {
@@ -118,11 +114,11 @@ public class Test2BSortedDocValues extends LuceneTestCase {
     SortedDocValuesField dvField = new SortedDocValuesField("dv", data);
     doc.add(dvField);
     
+    long seed = random().nextLong();
+    Random random = new Random(seed);
+    
     for (int i = 0; i < Integer.MAX_VALUE; i++) {
-      bytes[0] = (byte)(i >> 24);
-      bytes[1] = (byte)(i >> 16);
-      bytes[2] = (byte)(i >> 8);
-      bytes[3] = (byte) i;
+      random.nextBytes(bytes);
       w.addDocument(doc);
       if (i % 100000 == 0) {
         System.out.println("indexed: " + i);
@@ -137,19 +133,15 @@ public class Test2BSortedDocValues extends LuceneTestCase {
     System.out.flush();
     
     DirectoryReader r = DirectoryReader.open(dir);
-    int expectedValue = 0;
+    random.setSeed(seed);
     for (AtomicReaderContext context : r.leaves()) {
       AtomicReader reader = context.reader();
       BytesRef scratch = new BytesRef();
       BinaryDocValues dv = reader.getSortedDocValues("dv");
       for (int i = 0; i < reader.maxDoc(); i++) {
-        bytes[0] = (byte)(expectedValue >> 24);
-        bytes[1] = (byte)(expectedValue >> 16);
-        bytes[2] = (byte)(expectedValue >> 8);
-        bytes[3] = (byte) expectedValue;
+        random.nextBytes(bytes);
         dv.get(i, scratch);
         assertEquals(data, scratch);
-        expectedValue++;
       }
     }
     

@@ -30,7 +30,8 @@ import org.apache.lucene.store.IndexInput;
  *
  * @lucene.internal
  **/
-// nocommit: make this simply a big ass array and nothing more.
+// TODO: refactor this, byteblockpool, fst.bytestore, and any
+// other "shift/mask big arrays". there are too many of these classes!
 public final class PagedBytes {
   private final List<byte[]> blocks = new ArrayList<byte[]>();
   private final List<Integer> blockEnd = new ArrayList<Integer>();
@@ -106,7 +107,7 @@ public final class PagedBytes {
      * 
      * @lucene.internal
      **/
-    // nocommit: move this shit and any other vint bogusness to fieldcacheimpl!
+    // TODO: this really needs to be refactored into fieldcacheimpl
     public void fill(BytesRef b, long start) {
       final int index = (int) (start >> blockBits);
       final int offset = (int) (start & blockMask);
@@ -217,7 +218,7 @@ public final class PagedBytes {
 
   /** Copy bytes in, writing the length as a 1 or 2 byte
    *  vInt prefix. */
-  // nocommit: move this shit and any other vint bogusness to fieldcacheimpl!
+  // TODO: this really needs to be refactored into fieldcacheimpl!
   public long copyUsingLengthPrefix(BytesRef bytes) {
     if (bytes.length >= 32768) {
       throw new IllegalArgumentException("max length is 32767 (got " + bytes.length + ")");

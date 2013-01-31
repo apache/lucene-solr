@@ -65,8 +65,8 @@ public class TestPerFieldDocValuesFormat extends BaseDocValuesFormatTestCase {
   }
   
   // just a simple trivial test
-  // nocommit: if we are going to pass down suffixes to segmentread/writestate,
-  // then they should be respected by *all* codec apis!
+  // TODO: we should come up with a test that somehow checks that segment suffix
+  // is respected by all codec apis (not just docvalues and postings)
   public void testTwoFieldsTwoFormats() throws IOException {
     Analyzer analyzer = new MockAnalyzer(random());
 

@@ -309,8 +309,8 @@ public abstract class DocValuesConsumer implements Closeable {
           }
         }
 
-        // nocommit we can unload the bits to disk to reduce
-        // transient ram spike...
+        // TODO: we can unload the bits/packed ints to disk to reduce
+        // transient ram spike... most of these just require iterators
       }
 
       // Second pass: merge only the live terms
@@ -337,7 +337,11 @@ public abstract class DocValuesConsumer implements Closeable {
           lastOrds[readerId] = sourceOrd;
           top.ordDeltas.add(delta);
           
-          lastTerm = BytesRef.deepCopyOf(top.scratch);
+          if (lastTerm == null) {
+            lastTerm = BytesRef.deepCopyOf(top.scratch);
+          } else {
+            lastTerm.copyBytes(top.scratch);
+          }
           ord++;
         }
 
@@ -360,28 +364,6 @@ public abstract class DocValuesConsumer implements Closeable {
         state.liveTerms = null;
       }
     }
-
-    /*
-    public void finish(SortedDocValuesConsumer consumer) throws IOException {
-
-      // Third pass: write merged result
-      for(BytesRef term : mergedTerms) {
-        consumer.addValue(term);
-      }
-
-      for(SegmentState segState : segStates) {
-        Bits liveDocs = segState.reader.getLiveDocs();
-        int maxDoc = segState.reader.maxDoc();
-        for(int docID=0;docID<maxDoc;docID++) {
-          if (liveDocs == null || liveDocs.get(docID)) {
-            int segOrd = segState.values.getOrd(docID);
-            int mergedOrd = segState.segOrdToMergedOrd[segOrd];
-            consumer.addDoc(mergedOrd);
-          }
-        }
-      }
-    }
-    */
   }
 
   /**
@@ -472,7 +454,7 @@ public abstract class DocValuesConsumer implements Closeable {
                             }
                             assert nextIsSet;
                             nextIsSet = false;
-                            // nocommit make a mutable number
+                            // TODO make a mutable number
                             return nextValue;
                           }
 
