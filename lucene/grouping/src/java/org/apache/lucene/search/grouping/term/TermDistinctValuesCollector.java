@@ -41,7 +41,6 @@ public class TermDistinctValuesCollector extends AbstractDistinctValuesCollector
   private final List<GroupCount> groups;
   private final SentinelIntSet ordSet;
   private final GroupCount groupCounts[];
-  private final BytesRef spare = new BytesRef();
 
   private SortedDocValues groupFieldTermIndex;
   private SortedDocValues countFieldTermIndex;
@@ -109,9 +108,8 @@ public class TermDistinctValuesCollector extends AbstractDistinctValuesCollector
     groupFieldTermIndex = FieldCache.DEFAULT.getTermsIndex(context.reader(), groupField);
     countFieldTermIndex = FieldCache.DEFAULT.getTermsIndex(context.reader(), countField);
     ordSet.clear();
-    BytesRef scratch = new BytesRef();
     for (GroupCount group : groups) {
-      int groupOrd = group.groupValue == null ? -1 : groupFieldTermIndex.lookupTerm(group.groupValue, spare);
+      int groupOrd = group.groupValue == null ? -1 : groupFieldTermIndex.lookupTerm(group.groupValue);
       if (group.groupValue != null && groupOrd < 0) {
         continue;
       }
@@ -121,7 +119,7 @@ public class TermDistinctValuesCollector extends AbstractDistinctValuesCollector
       Arrays.fill(group.ords, -2);
       int i = 0;
       for (BytesRef value : group.uniqueValues) {
-        int countOrd = value == null ? -1 : countFieldTermIndex.lookupTerm(value, scratch);
+        int countOrd = value == null ? -1 : countFieldTermIndex.lookupTerm(value);
         if (value == null || countOrd >= 0) {
           group.ords[i++] = countOrd;
         }

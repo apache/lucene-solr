@@ -53,7 +53,6 @@ public class TermAllGroupsCollector extends AbstractAllGroupsCollector<BytesRef>
   private final List<BytesRef> groups;
 
   private SortedDocValues index;
-  private final BytesRef spareBytesRef = new BytesRef();
 
   /**
    * Expert: Constructs a {@link AbstractAllGroupsCollector}
@@ -113,7 +112,7 @@ public class TermAllGroupsCollector extends AbstractAllGroupsCollector<BytesRef>
       if (countedGroup == null) {
         ordSet.put(-1);
       } else {
-        int ord = index.lookupTerm(countedGroup, spareBytesRef);
+        int ord = index.lookupTerm(countedGroup);
         if (ord >= 0) {
           ordSet.put(ord);
         }

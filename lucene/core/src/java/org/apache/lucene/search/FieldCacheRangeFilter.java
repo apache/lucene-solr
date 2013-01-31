@@ -91,9 +91,8 @@ public abstract class FieldCacheRangeFilter<T> extends Filter {
       @Override
       public DocIdSet getDocIdSet(AtomicReaderContext context, Bits acceptDocs) throws IOException {
         final SortedDocValues fcsi = FieldCache.DEFAULT.getTermsIndex(context.reader(), field);
-        final BytesRef spare = new BytesRef();
-        final int lowerPoint = lowerVal == null ? -1 : fcsi.lookupTerm(new BytesRef(lowerVal), spare);
-        final int upperPoint = upperVal == null ? -1 : fcsi.lookupTerm(new BytesRef(upperVal), spare);
+        final int lowerPoint = lowerVal == null ? -1 : fcsi.lookupTerm(new BytesRef(lowerVal));
+        final int upperPoint = upperVal == null ? -1 : fcsi.lookupTerm(new BytesRef(upperVal));
 
         final int inclusiveLowerPoint, inclusiveUpperPoint;
 
@@ -149,9 +148,8 @@ public abstract class FieldCacheRangeFilter<T> extends Filter {
       @Override
       public DocIdSet getDocIdSet(AtomicReaderContext context, Bits acceptDocs) throws IOException {
         final SortedDocValues fcsi = FieldCache.DEFAULT.getTermsIndex(context.reader(), field);
-        final BytesRef spare = new BytesRef();
-        final int lowerPoint = lowerVal == null ? -1 : fcsi.lookupTerm(lowerVal, spare);
-        final int upperPoint = upperVal == null ? -1 : fcsi.lookupTerm(upperVal, spare);
+        final int lowerPoint = lowerVal == null ? -1 : fcsi.lookupTerm(lowerVal);
+        final int upperPoint = upperVal == null ? -1 : fcsi.lookupTerm(upperVal);
 
         final int inclusiveLowerPoint, inclusiveUpperPoint;
 

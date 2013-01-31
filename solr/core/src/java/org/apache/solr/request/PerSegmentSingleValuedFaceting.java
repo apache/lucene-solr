@@ -242,11 +242,11 @@ class PerSegmentSingleValuedFaceting {
 
       if (prefix!=null) {
         BytesRef prefixRef = new BytesRef(prefix);
-        startTermIndex = si.lookupTerm(prefixRef, tempBR);
+        startTermIndex = si.lookupTerm(prefixRef);
         if (startTermIndex<0) startTermIndex=-startTermIndex-1;
         prefixRef.append(UnicodeUtil.BIG_TERM);
         // TODO: we could constrain the lower endpoint if we had a binarySearch method that allowed passing start/end
-        endTermIndex = si.lookupTerm(prefixRef, tempBR);
+        endTermIndex = si.lookupTerm(prefixRef);
         assert endTermIndex < 0;
         endTermIndex = -endTermIndex-1;
       } else {

@@ -1067,7 +1067,7 @@ public abstract class BaseDocValuesFormatTestCase extends LuceneTestCase {
       hash.get(sort[i], expected);
       docValues.lookupOrd(i, actual);
       assertEquals(expected.utf8ToString(), actual.utf8ToString());
-      int ord = docValues.lookupTerm(expected, actual);
+      int ord = docValues.lookupTerm(expected);
       assertEquals(i, ord);
     }
     AtomicReader slowR = SlowCompositeReaderWrapper.wrap(reader);

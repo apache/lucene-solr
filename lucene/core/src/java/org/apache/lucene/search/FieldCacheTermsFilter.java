@@ -121,9 +121,8 @@ public class FieldCacheTermsFilter extends Filter {
   public DocIdSet getDocIdSet(AtomicReaderContext context, Bits acceptDocs) throws IOException {
     final SortedDocValues fcsi = getFieldCache().getTermsIndex(context.reader(), field);
     final FixedBitSet bits = new FixedBitSet(fcsi.getValueCount());
-    final BytesRef spare = new BytesRef();
     for (int i=0;i<terms.length;i++) {
-      int ord = fcsi.lookupTerm(terms[i], spare);
+      int ord = fcsi.lookupTerm(terms[i]);
       if (ord >= 0) {
         bits.set(ord);
       }

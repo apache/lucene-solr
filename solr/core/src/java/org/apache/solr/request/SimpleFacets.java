@@ -480,6 +480,8 @@ public class SimpleFacets {
 
     SortedDocValues si = FieldCache.DEFAULT.getTermsIndex(searcher.getAtomicReader(), fieldName);
 
+    final BytesRef br = new BytesRef();
+
     final BytesRef prefixRef;
     if (prefix == null) {
       prefixRef = null;
@@ -490,14 +492,12 @@ public class SimpleFacets {
       prefixRef = new BytesRef(prefix);
     }
 
-    final BytesRef br = new BytesRef();
-
     int startTermIndex, endTermIndex;
     if (prefix!=null) {
-      startTermIndex = si.lookupTerm(prefixRef, br);
+      startTermIndex = si.lookupTerm(prefixRef);
       if (startTermIndex<0) startTermIndex=-startTermIndex-1;
       prefixRef.append(UnicodeUtil.BIG_TERM);
-      endTermIndex = si.lookupTerm(prefixRef, br);
+      endTermIndex = si.lookupTerm(prefixRef);
       assert endTermIndex < 0;
       endTermIndex = -endTermIndex-1;
     } else {

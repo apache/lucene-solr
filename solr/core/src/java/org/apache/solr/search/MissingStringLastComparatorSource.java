@@ -203,7 +203,7 @@ class TermOrdValComparator_SML extends FieldComparator<Comparable> {
           bottomSameReader = true;
           readerGen[bottomSlot] = currentReaderGen;
         } else {
-          final int index = termsIndex.lookupTerm(bottomValue, tempBR);
+          final int index = termsIndex.lookupTerm(bottomValue);
           if (index < 0) {
             bottomOrd = -index - 2;
             bottomSameReader = false;

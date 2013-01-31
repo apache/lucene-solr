@@ -102,11 +102,9 @@ public abstract class DocTermsIndexDocValues extends FunctionValues {
     lowerVal = lowerVal == null ? null : toTerm(lowerVal);
     upperVal = upperVal == null ? null : toTerm(upperVal);
 
-    final BytesRef spare = new BytesRef();
-
     int lower = Integer.MIN_VALUE;
     if (lowerVal != null) {
-      lower = termsIndex.lookupTerm(new BytesRef(lowerVal), spare);
+      lower = termsIndex.lookupTerm(new BytesRef(lowerVal));
       if (lower < 0) {
         lower = -lower-1;
       } else if (!includeLower) {
@@ -116,7 +114,7 @@ public abstract class DocTermsIndexDocValues extends FunctionValues {
 
     int upper = Integer.MAX_VALUE;
     if (upperVal != null) {
-      upper = termsIndex.lookupTerm(new BytesRef(upperVal), spare);
+      upper = termsIndex.lookupTerm(new BytesRef(upperVal));
       if (upper < 0) {
         upper = -upper-2;
       } else if (!includeUpper) {

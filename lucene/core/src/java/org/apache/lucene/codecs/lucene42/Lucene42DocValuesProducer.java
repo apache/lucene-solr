@@ -250,7 +250,7 @@ class Lucene42DocValuesProducer extends DocValuesProducer {
       }
 
       @Override
-      public int lookupTerm(BytesRef key, BytesRef spare) {
+      public int lookupTerm(BytesRef key) {
         try {
           InputOutput<Long> o = fstEnum.seekCeil(key);
           if (o == null) {

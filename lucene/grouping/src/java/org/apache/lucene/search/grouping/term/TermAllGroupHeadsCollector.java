@@ -284,7 +284,7 @@ public abstract class TermAllGroupHeadsCollector<GH extends AbstractAllGroupHead
         if (collectedGroup.groupValue == null) {
           ord = -1;
         } else {
-          ord = groupIndex.lookupTerm(collectedGroup.groupValue, scratchBytesRef);
+          ord = groupIndex.lookupTerm(collectedGroup.groupValue);
         }
         if (collectedGroup.groupValue == null || ord >= 0) {
           ordSet.put(ord);
@@ -298,7 +298,7 @@ public abstract class TermAllGroupHeadsCollector<GH extends AbstractAllGroupHead
             if (collectedGroup.sortValues[i] == null) {
               sortOrd = -1;
             } else {
-              sortOrd = sortsIndex[i].lookupTerm(collectedGroup.sortValues[i], scratchBytesRef);
+              sortOrd = sortsIndex[i].lookupTerm(collectedGroup.sortValues[i]);
             }
             collectedGroup.sortOrds[i] = sortOrd;
           }
@@ -448,7 +448,7 @@ public abstract class TermAllGroupHeadsCollector<GH extends AbstractAllGroupHead
         if (collectedGroup.groupValue == null) {
           groupOrd = -1;
         } else {
-          groupOrd = groupIndex.lookupTerm(collectedGroup.groupValue, scratchBytesRef);
+          groupOrd = groupIndex.lookupTerm(collectedGroup.groupValue);
         }
         if (collectedGroup.groupValue == null || groupOrd >= 0) {
           ordSet.put(groupOrd);
@@ -459,7 +459,7 @@ public abstract class TermAllGroupHeadsCollector<GH extends AbstractAllGroupHead
             if (collectedGroup.sortOrds[i] == -1) {
               sortOrd = -1;
             } else {
-              sortOrd = sortsIndex[i].lookupTerm(collectedGroup.sortValues[i], scratchBytesRef);
+              sortOrd = sortsIndex[i].lookupTerm(collectedGroup.sortValues[i]);
             }
             collectedGroup.sortOrds[i] = sortOrd;
           }
@@ -588,7 +588,7 @@ public abstract class TermAllGroupHeadsCollector<GH extends AbstractAllGroupHead
         if (collectedGroup.groupValue == null) {
           ord = -1;
         } else {
-          ord = groupIndex.lookupTerm(collectedGroup.groupValue, scratchBytesRef);
+          ord = groupIndex.lookupTerm(collectedGroup.groupValue);
         }
         if (collectedGroup.groupValue == null || ord >= 0) {
           ordSet.put(ord);

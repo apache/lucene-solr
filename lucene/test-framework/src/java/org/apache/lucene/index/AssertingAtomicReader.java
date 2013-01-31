@@ -445,13 +445,11 @@ public class AssertingAtomicReader extends FilterAtomicReader {
     }
 
     @Override
-    public int lookupTerm(BytesRef key, BytesRef spare) {
+    public int lookupTerm(BytesRef key) {
       assert key.isValid();
-      assert spare.isValid();
-      int result = in.lookupTerm(key, spare);
+      int result = in.lookupTerm(key);
       assert result < valueCount;
       assert key.isValid();
-      assert spare.isValid();
       return result;
     }
   }

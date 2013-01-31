@@ -40,7 +40,6 @@ public abstract class TermGroupFacetCollector extends AbstractGroupFacetCollecto
 
   final List<GroupedFacetHit> groupedFacetHits;
   final SentinelIntSet segmentGroupedFacetHits;
-  final BytesRef spare = new BytesRef();
 
   SortedDocValues groupFieldTermsIndex;
 
@@ -136,12 +135,12 @@ public abstract class TermGroupFacetCollector extends AbstractGroupFacetCollecto
 
       segmentGroupedFacetHits.clear();
       for (GroupedFacetHit groupedFacetHit : groupedFacetHits) {
-        int facetOrd = groupedFacetHit.facetValue == null ? -1 : facetFieldTermsIndex.lookupTerm(groupedFacetHit.facetValue, spare);
+        int facetOrd = groupedFacetHit.facetValue == null ? -1 : facetFieldTermsIndex.lookupTerm(groupedFacetHit.facetValue);
         if (groupedFacetHit.facetValue != null && facetOrd < 0) {
           continue;
         }
 
-        int groupOrd = groupedFacetHit.groupValue == null ? -1 : groupFieldTermsIndex.lookupTerm(groupedFacetHit.groupValue, spare);
+        int groupOrd = groupedFacetHit.groupValue == null ? -1 : groupFieldTermsIndex.lookupTerm(groupedFacetHit.groupValue);
         if (groupedFacetHit.groupValue != null && groupOrd < 0) {
           continue;
         }
@@ -151,14 +150,14 @@ public abstract class TermGroupFacetCollector extends AbstractGroupFacetCollecto
       }
 
       if (facetPrefix != null) {
-        startFacetOrd = facetFieldTermsIndex.lookupTerm(facetPrefix, spare);
+        startFacetOrd = facetFieldTermsIndex.lookupTerm(facetPrefix);
         if (startFacetOrd < 0) {
           // Points to the ord one higher than facetPrefix
           startFacetOrd = -startFacetOrd - 1;
         }
         BytesRef facetEndPrefix = BytesRef.deepCopyOf(facetPrefix);
         facetEndPrefix.append(UnicodeUtil.BIG_TERM);
-        endFacetOrd = facetFieldTermsIndex.lookupTerm(facetEndPrefix, spare);
+        endFacetOrd = facetFieldTermsIndex.lookupTerm(facetEndPrefix);
         assert endFacetOrd < 0;
         endFacetOrd = -endFacetOrd - 1; // Points to the ord one higher than facetEndPrefix
       } else {
@@ -292,7 +291,7 @@ public abstract class TermGroupFacetCollector extends AbstractGroupFacetCollecto
 
       segmentGroupedFacetHits.clear();
       for (GroupedFacetHit groupedFacetHit : groupedFacetHits) {
-        int groupOrd = groupedFacetHit.groupValue == null ? -1 : groupFieldTermsIndex.lookupTerm(groupedFacetHit.groupValue, spare);
+        int groupOrd = groupedFacetHit.groupValue == null ? -1 : groupFieldTermsIndex.lookupTerm(groupedFacetHit.groupValue);
         if (groupedFacetHit.groupValue != null && groupOrd < 0) {
           continue;
         }

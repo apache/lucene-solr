@@ -40,7 +40,6 @@ public class TermSecondPassGroupingCollector extends AbstractSecondPassGroupingC
 
   private final SentinelIntSet ordSet;
   private SortedDocValues index;
-  private final BytesRef spareBytesRef = new BytesRef();
   private final String groupField;
 
   @SuppressWarnings({"unchecked", "rawtypes"})
@@ -62,7 +61,7 @@ public class TermSecondPassGroupingCollector extends AbstractSecondPassGroupingC
     ordSet.clear();
     for (SearchGroupDocs<BytesRef> group : groupMap.values()) {
 //      System.out.println("  group=" + (group.groupValue == null ? "null" : group.groupValue.utf8ToString()));
-      int ord = group.groupValue == null ? -1 : index.lookupTerm(group.groupValue, spareBytesRef);
+      int ord = group.groupValue == null ? -1 : index.lookupTerm(group.groupValue);
       if (group.groupValue == null || ord >= 0) {
         groupDocs[ordSet.put(ord)] = group;
       }
