@@ -3,6 +3,7 @@ package org.apache.lucene.demo.facet;
 import org.junit.Test;
 
 import org.apache.lucene.util.LuceneTestCase;
+import org.apache.lucene.util.LuceneTestCase.SuppressCodecs;
 import org.apache.lucene.demo.facet.ExampleResult;
 import org.apache.lucene.demo.facet.adaptive.AdaptiveMain;
 
@@ -27,6 +28,7 @@ import org.apache.lucene.demo.facet.adaptive.AdaptiveMain;
  * Test that the adaptive example works as expected. This test helps to verify
  * that examples code is alive!
  */
+@SuppressCodecs("Lucene3x")
 public class TestAdaptiveExample extends LuceneTestCase {
   
   @Test

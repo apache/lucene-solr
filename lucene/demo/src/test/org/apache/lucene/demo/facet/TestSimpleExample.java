@@ -5,6 +5,7 @@ import java.util.Iterator;
 import org.junit.Test;
 
 import org.apache.lucene.util.LuceneTestCase;
+import org.apache.lucene.util.LuceneTestCase.SuppressCodecs;
 import org.apache.lucene.demo.facet.ExampleResult;
 import org.apache.lucene.demo.facet.simple.SimpleMain;
 import org.apache.lucene.facet.search.results.FacetResult;
@@ -31,6 +32,7 @@ import org.apache.lucene.facet.search.results.FacetResultNode;
  * Test that the simple example works as expected. This test helps to verify
  * that examples code is alive!
  */
+@SuppressCodecs("Lucene3x")
 public class TestSimpleExample extends LuceneTestCase {
 
   @Test
