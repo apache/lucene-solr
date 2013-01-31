@@ -274,24 +274,6 @@ public class FieldInfos implements Iterable<FieldInfo> {
       assert globalFieldNumbers.containsConsistent(Integer.valueOf(fi.number), fi.name, fi.getDocValuesType());
       byName.put(fi.name, fi);
     }
-    
-    /** If the field is not yet known, adds it. If it is known, checks to make
-     *  sure that the isIndexed flag is the same as was given previously for this
-     *  field. If not - marks it as being indexed.  Same goes for the TermVector
-     * parameters.
-     *
-     * @param name The name of the field
-     * @param isIndexed true if the field is indexed
-     * @param storeTermVector true if the term vector should be stored
-     * @param omitNorms true if the norms for the indexed field should be omitted
-     * @param storePayloads true if payloads should be stored for this field
-     * @param indexOptions if term freqs should be omitted for this field
-     */
-    // TODO: fix testCodecs to do this another way, its the only user of this
-    FieldInfo addOrUpdate(String name, boolean isIndexed, boolean storeTermVector,
-                         boolean omitNorms, boolean storePayloads, IndexOptions indexOptions, DocValuesType docValues, DocValuesType normType) {
-      return addOrUpdateInternal(name, -1, isIndexed, storeTermVector, omitNorms, storePayloads, indexOptions, docValues, normType);
-    }
 
     /** NOTE: this method does not carry over termVector
      *  booleans nor docValuesType; the indexer chain
