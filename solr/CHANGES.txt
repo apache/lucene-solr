@@ -68,6 +68,9 @@ New Features
 
 * SOLR-2827: RegexpBoost Update Processor (janhoy)
 
+* SOLR-4370: Allow configuring commitWithin to do hard commits. 
+  (Mark Miller, Senthuran Sivananthan)
+
 Bug Fixes
 ----------------------
 
