@@ -214,6 +214,7 @@ public class FieldInfos implements Iterable<FieldInfo> {
      */
     // nocommit: why is docvalues involved with global field numbers?
     // nocommit: and is it even tested...
+    /*
     synchronized void setIfNotSet(int fieldNumber, String fieldName, DocValuesType dvType) {
       final Integer boxedFieldNumber = Integer.valueOf(fieldNumber);
       if (!numberToName.containsKey(boxedFieldNumber)
@@ -227,6 +228,7 @@ public class FieldInfos implements Iterable<FieldInfo> {
         assert containsConsistent(boxedFieldNumber, fieldName, dvType);
       }
     }
+    */
     
     // used by assert
     synchronized boolean containsConsistent(Integer number, String name, DocValuesType dvType) {
@@ -264,17 +266,6 @@ public class FieldInfos implements Iterable<FieldInfo> {
       }
     }
    
-    /**
-     * adds the given field to this FieldInfos name / number mapping. The given FI
-     * must be present in the global field number mapping before this method it
-     * called
-     */
-    private void putInternal(FieldInfo fi) {
-      assert !byName.containsKey(fi.name);
-      assert globalFieldNumbers.containsConsistent(Integer.valueOf(fi.number), fi.name, fi.getDocValuesType());
-      byName.put(fi.name, fi);
-    }
-
     /** NOTE: this method does not carry over termVector
      *  booleans nor docValuesType; the indexer chain
      *  (TermVectorsConsumerPerField, DocFieldProcessor) must
@@ -296,9 +287,16 @@ public class FieldInfos implements Iterable<FieldInfo> {
         boolean omitNorms, boolean storePayloads, IndexOptions indexOptions, DocValuesType docValues, DocValuesType normType) {
       FieldInfo fi = fieldInfo(name);
       if (fi == null) {
-        // get a global number for this field
+        // This field wasn't yet added to this in-RAM
+        // segment's FieldInfo, so now we get a global
+        // number for this field.  If the field was seen
+        // before then we'll get the same name and number,
+        // else we'll allocate a new one:
         final int fieldNumber = globalFieldNumbers.addOrGet(name, preferredFieldNumber, docValues);
-        fi = addInternal(name, fieldNumber, isIndexed, storeTermVector, omitNorms, storePayloads, indexOptions, docValues, normType);
+        fi = new FieldInfo(name, isIndexed, fieldNumber, storeTermVector, omitNorms, storePayloads, indexOptions, docValues, normType, null);
+        assert !byName.containsKey(fi.name);
+        assert globalFieldNumbers.containsConsistent(Integer.valueOf(fi.number), fi.name, fi.getDocValuesType());
+        byName.put(fi.name, fi);
       } else {
         fi.update(isIndexed, storeTermVector, omitNorms, storePayloads, indexOptions);
 
@@ -320,15 +318,6 @@ public class FieldInfos implements Iterable<FieldInfo> {
                  fi.getIndexOptions(), fi.getDocValuesType(), fi.getNormType());
     }
     
-    private FieldInfo addInternal(String name, int fieldNumber, boolean isIndexed,
-                                  boolean storeTermVector, boolean omitNorms, boolean storePayloads,
-                                  IndexOptions indexOptions, DocValuesType docValuesType, DocValuesType normType) {
-      globalFieldNumbers.setIfNotSet(fieldNumber, name, docValuesType);
-      final FieldInfo fi = new FieldInfo(name, isIndexed, fieldNumber, storeTermVector, omitNorms, storePayloads, indexOptions, docValuesType, normType, null);
-      putInternal(fi);
-      return fi;
-    }
-
     public FieldInfo fieldInfo(String fieldName) {
       return byName.get(fieldName);
     }

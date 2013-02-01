@@ -20,6 +20,8 @@ package org.apache.lucene.index;
 import java.util.HashMap;
 import java.util.Map;
 
+// nocommit fails if you repeat: TestDocValuesWithThreads.test2 -seed A765AB92D216E371
+
 /**
  *  Access to the Field Info file that describes document fields and whether or
  *  not they are indexed. Each segment has a separate Field Info file. Objects
@@ -149,6 +151,10 @@ public final class FieldInfo {
     }
 
     return true;
+  }
+
+  void update(IndexableFieldType ft) {
+    update(ft.indexed(), false, ft.omitNorms(), false, ft.indexOptions());
   }
 
   // should only be called by FieldInfos#addOrUpdate

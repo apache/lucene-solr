@@ -253,10 +253,7 @@ final class DocFieldProcessor extends DocConsumer {
         rehash();
       }
     } else {
-      // nocommit: dangerous: maybe FI.update()/FI ctor()/FIS.addOrUpdate need only take FT
-      // instead of a thousand parameters? Surely we can make this better... like:
-      // fp.fieldInfo.update(ft);
-      fp.fieldInfo.update(ft.indexed(), false, ft.omitNorms(), false, ft.indexOptions());
+      fp.fieldInfo.update(ft);
     }
 
     if (thisFieldGen != fp.lastGen) {
