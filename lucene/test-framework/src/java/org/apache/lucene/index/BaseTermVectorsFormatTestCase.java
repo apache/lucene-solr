@@ -618,11 +618,12 @@ public abstract class BaseTermVectorsFormatTestCase extends LuceneTestCase {
     final Directory dir = newDirectory();
     final RandomIndexWriter writer = new RandomIndexWriter(random(), dir);
     for (int i = 0; i < numDocs; ++i) {
-      writer.addDocument(docs[i].toDocument());
+      writer.addDocument(addId(docs[i].toDocument(), ""+i));
     }
     final IndexReader reader = writer.getReader();
     for (int i = 0; i < numDocs; ++i) {
-      assertEquals(docs[i], reader.getTermVectors(i));
+      final int docID = docID(reader, ""+i);
+      assertEquals(docs[i], reader.getTermVectors(docID));
     }
     reader.close();
     writer.close();
