@@ -1091,23 +1091,38 @@ public abstract class BaseDocValuesFormatTestCase extends LuceneTestCase {
   }
   
   public void testBooleanNumericsVsStoredFields() throws Exception {
-    doTestNumericsVsStoredFields(0, 1);
+    int numIterations = atLeast(1);
+    for (int i = 0; i < numIterations; i++) {
+      doTestNumericsVsStoredFields(0, 1);
+    }
   }
   
   public void testByteNumericsVsStoredFields() throws Exception {
-    doTestNumericsVsStoredFields(Byte.MIN_VALUE, Byte.MAX_VALUE);
+    int numIterations = atLeast(1);
+    for (int i = 0; i < numIterations; i++) {
+      doTestNumericsVsStoredFields(Byte.MIN_VALUE, Byte.MAX_VALUE);
+    }
   }
   
   public void testShortNumericsVsStoredFields() throws Exception {
-    doTestNumericsVsStoredFields(Short.MIN_VALUE, Short.MAX_VALUE);
+    int numIterations = atLeast(1);
+    for (int i = 0; i < numIterations; i++) {
+      doTestNumericsVsStoredFields(Short.MIN_VALUE, Short.MAX_VALUE);
+    }
   }
   
   public void testIntNumericsVsStoredFields() throws Exception {
-    doTestNumericsVsStoredFields(Integer.MIN_VALUE, Integer.MAX_VALUE);
+    int numIterations = atLeast(1);
+    for (int i = 0; i < numIterations; i++) {
+      doTestNumericsVsStoredFields(Integer.MIN_VALUE, Integer.MAX_VALUE);
+    }
   }
   
   public void testLongNumericsVsStoredFields() throws Exception {
-    doTestNumericsVsStoredFields(Long.MIN_VALUE, Long.MAX_VALUE);
+    int numIterations = atLeast(1);
+    for (int i = 0; i < numIterations; i++) {
+      doTestNumericsVsStoredFields(Long.MIN_VALUE, Long.MAX_VALUE);
+    }
   }
   
   private void doTestBinaryVsStoredFields(int minLength, int maxLength) throws Exception {
@@ -1167,12 +1182,18 @@ public abstract class BaseDocValuesFormatTestCase extends LuceneTestCase {
   }
   
   public void testBinaryFixedLengthVsStoredFields() throws Exception {
-    int fixedLength = _TestUtil.nextInt(random(), 1, 10);
-    doTestBinaryVsStoredFields(fixedLength, fixedLength);
+    int numIterations = atLeast(1);
+    for (int i = 0; i < numIterations; i++) {
+      int fixedLength = _TestUtil.nextInt(random(), 1, 10);
+      doTestBinaryVsStoredFields(fixedLength, fixedLength);
+    }
   }
   
   public void testBinaryVariableLengthVsStoredFields() throws Exception {
-    doTestBinaryVsStoredFields(1, 10);
+    int numIterations = atLeast(1);
+    for (int i = 0; i < numIterations; i++) {
+      doTestBinaryVsStoredFields(1, 10);
+    }
   }
   
   private void doTestSortedVsStoredFields(int minLength, int maxLength) throws Exception {
@@ -1232,11 +1253,17 @@ public abstract class BaseDocValuesFormatTestCase extends LuceneTestCase {
   }
   
   public void testSortedFixedLengthVsStoredFields() throws Exception {
-    int fixedLength = _TestUtil.nextInt(random(), 1, 10);
-    doTestSortedVsStoredFields(fixedLength, fixedLength);
+    int numIterations = atLeast(1);
+    for (int i = 0; i < numIterations; i++) {
+      int fixedLength = _TestUtil.nextInt(random(), 1, 10);
+      doTestSortedVsStoredFields(fixedLength, fixedLength);
+    }
   }
   
   public void testSortedVariableLengthVsStoredFields() throws Exception {
-    doTestSortedVsStoredFields(1, 10);
+    int numIterations = atLeast(1);
+    for (int i = 0; i < numIterations; i++) {
+      doTestSortedVsStoredFields(1, 10);
+    }
   }
 }
