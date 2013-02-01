@@ -550,4 +550,71 @@ public class TestDocValuesIndexing extends LuceneTestCase {
     writer.close();
     dir.close();
   }
+
+  public void testTypeChangeAfterCloseAndDeleteAll() throws Exception {
+    Directory dir = newDirectory();
+    IndexWriterConfig conf = newIndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer(random()));
+    IndexWriter writer = new IndexWriter(dir, conf);
+    Document doc = new Document();
+    doc.add(new NumericDocValuesField("dv", 0L));
+    writer.addDocument(doc);
+    writer.close();
+
+    writer = new IndexWriter(dir, conf);
+    writer.deleteAll();
+    doc = new Document();
+    doc.add(new SortedDocValuesField("dv", new BytesRef("foo")));
+    writer.addDocument(doc);
+    writer.close();
+    dir.close();
+  }
+
+  public void testTypeChangeAfterDeleteAll() throws Exception {
+    Directory dir = newDirectory();
+    IndexWriterConfig conf = newIndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer(random()));
+    IndexWriter writer = new IndexWriter(dir, conf);
+    Document doc = new Document();
+    doc.add(new NumericDocValuesField("dv", 0L));
+    writer.addDocument(doc);
+    writer.deleteAll();
+    doc = new Document();
+    doc.add(new SortedDocValuesField("dv", new BytesRef("foo")));
+    writer.addDocument(doc);
+    writer.close();
+    dir.close();
+  }
+
+  public void testTypeChangeAfterCommitAndDeleteAll() throws Exception {
+    Directory dir = newDirectory();
+    IndexWriterConfig conf = newIndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer(random()));
+    IndexWriter writer = new IndexWriter(dir, conf);
+    Document doc = new Document();
+    doc.add(new NumericDocValuesField("dv", 0L));
+    writer.addDocument(doc);
+    writer.commit();
+    writer.deleteAll();
+    doc = new Document();
+    doc.add(new SortedDocValuesField("dv", new BytesRef("foo")));
+    writer.addDocument(doc);
+    writer.close();
+    dir.close();
+  }
+
+  public void testTypeChangeAfterOpenCreate() throws Exception {
+    Directory dir = newDirectory();
+    IndexWriterConfig conf = newIndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer(random()));
+    IndexWriter writer = new IndexWriter(dir, conf);
+    Document doc = new Document();
+    doc.add(new NumericDocValuesField("dv", 0L));
+    writer.addDocument(doc);
+    writer.close();
+    conf.setOpenMode(IndexWriterConfig.OpenMode.CREATE);
+    writer = new IndexWriter(dir, conf);
+    writer.deleteAll();
+    doc = new Document();
+    doc.add(new SortedDocValuesField("dv", new BytesRef("foo")));
+    writer.addDocument(doc);
+    writer.close();
+    dir.close();
+  }
 }
