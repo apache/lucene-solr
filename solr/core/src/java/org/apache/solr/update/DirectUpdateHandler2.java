@@ -91,6 +91,8 @@ public class DirectUpdateHandler2 extends UpdateHandler implements SolrCoreState
   // tracks when auto-commit should occur
   protected final CommitTracker commitTracker;
   protected final CommitTracker softCommitTracker;
+  
+  protected boolean commitWithinSoftCommit;
 
   public DirectUpdateHandler2(SolrCore core) {
     super(core);
@@ -106,6 +108,8 @@ public class DirectUpdateHandler2 extends UpdateHandler implements SolrCoreState
     int softCommitDocsUpperBound = updateHandlerInfo.autoSoftCommmitMaxDocs; // getInt("updateHandler/autoSoftCommit/maxDocs", -1);
     int softCommitTimeUpperBound = updateHandlerInfo.autoSoftCommmitMaxTime; // getInt("updateHandler/autoSoftCommit/maxTime", -1);
     softCommitTracker = new CommitTracker("Soft", core, softCommitDocsUpperBound, softCommitTimeUpperBound, true, true);
+    
+    commitWithinSoftCommit = updateHandlerInfo.commitWithinSoftCommit;
   }
   
   public DirectUpdateHandler2(SolrCore core, UpdateHandler updateHandler) {
@@ -126,6 +130,8 @@ public class DirectUpdateHandler2 extends UpdateHandler implements SolrCoreState
     if (this.ulog != null) {
       this.ulog.init(this, core);
     }
+    
+    commitWithinSoftCommit = updateHandlerInfo.commitWithinSoftCommit;
   }
 
   private void deleteAll() throws IOException {
@@ -229,8 +235,13 @@ public class DirectUpdateHandler2 extends UpdateHandler implements SolrCoreState
         }
         
         if ((cmd.getFlags() & UpdateCommand.IGNORE_AUTOCOMMIT) == 0) {
-          commitTracker.addedDocument(-1);
-          softCommitTracker.addedDocument(cmd.commitWithin);
+          if (commitWithinSoftCommit) {
+            commitTracker.addedDocument(-1);
+            softCommitTracker.addedDocument(cmd.commitWithin);
+          } else {
+            softCommitTracker.addedDocument(-1);
+            commitTracker.addedDocument(cmd.commitWithin);
+          }
         }
         
         rc = 1;
@@ -252,7 +263,11 @@ public class DirectUpdateHandler2 extends UpdateHandler implements SolrCoreState
   
   private void updateDeleteTrackers(DeleteUpdateCommand cmd) {
     if ((cmd.getFlags() & UpdateCommand.IGNORE_AUTOCOMMIT) == 0) {
-      softCommitTracker.deletedDocument(cmd.commitWithin);
+      if (commitWithinSoftCommit) {
+        softCommitTracker.deletedDocument(cmd.commitWithin);
+      } else {
+        commitTracker.deletedDocument(cmd.commitWithin);
+      }
       
       if (commitTracker.getTimeUpperBound() > 0) {
         commitTracker.scheduleCommitWithin(commitTracker.getTimeUpperBound());

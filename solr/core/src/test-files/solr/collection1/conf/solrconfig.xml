@@ -97,6 +97,10 @@
     <updateLog enable="${enable.update.log:false}">
   	  <str name="dir">${solr.ulog.dir:}</str>
     </updateLog> 
+    
+    <commitWithin>
+      <softCommit>${solr.commitwithin.softcommit:true}</softCommit>
+    </commitWithin>
 
   </updateHandler>
 
