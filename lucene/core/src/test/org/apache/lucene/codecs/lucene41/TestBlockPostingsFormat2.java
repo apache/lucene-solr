@@ -47,7 +47,6 @@ public class TestBlockPostingsFormat2 extends LuceneTestCase {
     iwc = newIndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer(random()));
     iwc.setCodec(_TestUtil.alwaysPostingsFormat(new Lucene41PostingsFormat()));
     iw = new RandomIndexWriter(random(), dir, iwc);
-    iw.setAddDocValuesFields(false);
     iw.setDoRandomForceMerge(false); // we will ourselves
   }
   
