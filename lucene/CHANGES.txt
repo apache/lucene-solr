@@ -126,6 +126,10 @@ Bug Fixes
 * LUCENE-4739: Fixed bugs that prevented FSTs more than ~1.1GB from
   being saved and loaded (Adrien Grand, Mike McCandless)
 
+Build
+
+* LUCENE-4636: Upgrade ivy to 2.3.0 (Shawn Heisey via Robert Muir)
+
 ======================= Lucene 4.1.0 =======================
 
 Changes in backwards compatibility policy
