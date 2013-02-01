@@ -327,32 +327,29 @@ public final class ByteBlockPool {
   
   /**
    * Reads bytes bytes out of the pool starting at the given offset with the given  
-   * length into the given {@link BytesRef} at offset <tt>0</tt>.
+   * length into the given byte array at offset <tt>off</tt>.
    * <p>Note: this method allows to copy across block boundaries.</p>
    */
-  public void readBytes(final BytesRef bytes, final long offset, final int length) {
-    bytes.offset = 0;
-    bytes.grow(length);
-    bytes.length = length;
+  public void readBytes(final long offset, final byte bytes[], final int off, final int length) {
     if (length == 0) {
       return;
     }
+    int bytesOffset = off;
+    int bytesLength = length;
     int bufferIndex = (int) (offset >> BYTE_BLOCK_SHIFT);
     byte[] buffer = buffers[bufferIndex];
     int pos = (int) (offset & BYTE_BLOCK_MASK);
     int overflow = (pos + length) - BYTE_BLOCK_SIZE;
     do {
       if (overflow <= 0) {
-        System.arraycopy(buffer, pos, bytes.bytes, bytes.offset, bytes.length);
-        bytes.length = length;
-        bytes.offset = 0;
+        System.arraycopy(buffer, pos, bytes, bytesOffset, bytesLength);
         break;
       } else {
         final int bytesToCopy = length - overflow;
-        System.arraycopy(buffer, pos, bytes.bytes, bytes.offset, bytesToCopy);
+        System.arraycopy(buffer, pos, bytes, bytesOffset, bytesToCopy);
         pos = 0;
-        bytes.length -= bytesToCopy;
-        bytes.offset += bytesToCopy;
+        bytesLength -= bytesToCopy;
+        bytesOffset += bytesToCopy;
         buffer = buffers[++bufferIndex];
         overflow = overflow - BYTE_BLOCK_SIZE;
       }

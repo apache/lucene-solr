@@ -112,7 +112,9 @@ class BinaryDocValuesWriter extends DocValuesWriter {
       }
       if (upto < size) {
         int length = (int) lengthsIterator.next();
-        pool.readBytes(value, byteOffset, length);
+        value.grow(length);
+        value.length = length;
+        pool.readBytes(byteOffset, value.bytes, value.offset, value.length);
         byteOffset += length;
       } else {
         // This is to handle last N documents not having

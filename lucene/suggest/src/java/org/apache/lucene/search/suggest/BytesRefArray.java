@@ -104,7 +104,10 @@ public final class BytesRefArray {
       int offset = offsets[ord];
       int length = ord == lastElement - 1 ? currentOffset - offset
           : offsets[ord + 1] - offset;
-      pool.readBytes(spare, offset, length);
+      assert spare.offset == 0;
+      spare.grow(length);
+      spare.length = length;
+      pool.readBytes(offset, spare.bytes, spare.offset, spare.length);
       return spare;
     }
     throw new IndexOutOfBoundsException("index " + ord
