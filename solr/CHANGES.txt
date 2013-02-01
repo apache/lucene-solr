@@ -68,6 +68,9 @@ New Features
 
 * SOLR-2827: RegexpBoost Update Processor (janhoy)
 
+* SOLR-4370: Allow configuring commitWithin to do hard commits. 
+  (Mark Miller, Senthuran Sivananthan)
+
 Bug Fixes
 ----------------------
 
@@ -97,11 +100,6 @@ Bug Fixes
 
 * SOLR-4342: Fix DataImportHandler stats to be a prper Map (hossman)
 
-* SOLR-3967: langid.enforceSchema option checks source field instead of target field (janhoy)
-
-* SOLR-4380: Replicate after startup option would not replicate until the
-  IndexWriter was lazily opened. (Mark Miller, Gregg Donovan)
-
 Optimizations
 ----------------------
 
@@ -119,11 +117,6 @@ Optimizations
 * SOLR-4306: Utilize indexInfo=false when gathering core names in UI
   (steffkes)
 
-* SOLR-4284: Admin UI - make core list scrollable separate from the rest of
-  the UI (steffkes)
-
-* SOLR-4364: Admin UI - Locale based number formatting (steffkes)
-
 Other Changes
 ----------------------
 
@@ -131,8 +124,6 @@ Other Changes
   (Mark Miller)
 
 * SOLR-4353: Renamed example jetty context file to reduce confusion (hossman)
-
-* SOLR-4384: Make post.jar report timing information (Upayavira via janhoy)
 
 ==================  4.1.0 ==================
 

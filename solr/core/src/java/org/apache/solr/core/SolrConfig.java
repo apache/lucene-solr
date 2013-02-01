@@ -238,7 +238,8 @@ public class SolrConfig extends Config {
             getBool("updateHandler/autoCommit/openSearcher",true),
             getInt("updateHandler/commitIntervalLowerBound",-1),
             getInt("updateHandler/autoSoftCommit/maxDocs",-1),
-            getInt("updateHandler/autoSoftCommit/maxTime",-1));
+            getInt("updateHandler/autoSoftCommit/maxTime",-1),
+            getBool("updateHandler/commitWithin/softCommit",true));
   }
 
   private void loadPluginInfo(Class clazz, String tag, boolean requireName, boolean requireClass) {
@@ -402,6 +403,7 @@ public class SolrConfig extends Config {
     public final int autoCommmitMaxDocs,autoCommmitMaxTime,commitIntervalLowerBound,
         autoSoftCommmitMaxDocs,autoSoftCommmitMaxTime;
     public final boolean openSearcher;  // is opening a new searcher part of hard autocommit?
+    public final boolean commitWithinSoftCommit;
 
     /**
      * @param autoCommmitMaxDocs set -1 as default
@@ -409,7 +411,7 @@ public class SolrConfig extends Config {
      * @param commitIntervalLowerBound set -1 as default
      */
     public UpdateHandlerInfo(String className, int autoCommmitMaxDocs, int autoCommmitMaxTime, boolean openSearcher, int commitIntervalLowerBound,
-        int autoSoftCommmitMaxDocs, int autoSoftCommmitMaxTime) {
+        int autoSoftCommmitMaxDocs, int autoSoftCommmitMaxTime, boolean commitWithinSoftCommit) {
       this.className = className;
       this.autoCommmitMaxDocs = autoCommmitMaxDocs;
       this.autoCommmitMaxTime = autoCommmitMaxTime;
@@ -418,6 +420,8 @@ public class SolrConfig extends Config {
       
       this.autoSoftCommmitMaxDocs = autoSoftCommmitMaxDocs;
       this.autoSoftCommmitMaxTime = autoSoftCommmitMaxTime;
+      
+      this.commitWithinSoftCommit = commitWithinSoftCommit;
     } 
   }
 
