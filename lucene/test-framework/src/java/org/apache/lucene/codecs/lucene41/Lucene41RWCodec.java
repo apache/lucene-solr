@@ -1,4 +1,6 @@
-package org.apache.lucene.codecs.intblock;
+package org.apache.lucene.codecs.lucene41;
+
+import org.apache.lucene.codecs.StoredFieldsFormat;
 
 /*
  * Licensed to the Apache Software Foundation (ASF) under one or more
@@ -17,20 +19,14 @@ package org.apache.lucene.codecs.intblock;
  * limitations under the License.
  */
 
-import org.apache.lucene.codecs.Codec;
-import org.apache.lucene.codecs.mockintblock.MockFixedIntBlockPostingsFormat;
-import org.apache.lucene.index.BasePostingsFormatTestCase;
-import org.apache.lucene.util._TestUtil;
-
 /**
- * Basic tests for FixedIntBlock
+ * Read-write version of {@link Lucene41Codec} for testing.
  */
-public class TestFixedIntBlockPostingsFormat extends BasePostingsFormatTestCase {
-  // TODO: randomize blocksize
-  private final Codec codec = _TestUtil.alwaysPostingsFormat(new MockFixedIntBlockPostingsFormat());
+public class Lucene41RWCodec extends Lucene41Codec {
+  private final StoredFieldsFormat fieldsFormat = new Lucene41StoredFieldsFormat();
 
   @Override
-  protected Codec getCodec() {
-    return codec;
+  public StoredFieldsFormat storedFieldsFormat() {
+    return fieldsFormat;
   }
 }

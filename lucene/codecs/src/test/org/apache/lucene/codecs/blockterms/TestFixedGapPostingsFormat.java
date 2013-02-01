@@ -18,10 +18,9 @@ package org.apache.lucene.codecs.blockterms;
  */
 
 import org.apache.lucene.codecs.Codec;
-import org.apache.lucene.codecs.PostingsFormat;
-import org.apache.lucene.codecs.lucene41.Lucene41Codec;
 import org.apache.lucene.codecs.lucene41ords.Lucene41WithOrds;
 import org.apache.lucene.index.BasePostingsFormatTestCase;
+import org.apache.lucene.util._TestUtil;
 
 /**
  * Basic tests of a PF using FixedGap terms dictionary
@@ -29,13 +28,7 @@ import org.apache.lucene.index.BasePostingsFormatTestCase;
 // TODO: we should add an instantiation for VarGap too to TestFramework, and a test in this package
 // TODO: ensure both of these are also in rotation in RandomCodec
 public class TestFixedGapPostingsFormat extends BasePostingsFormatTestCase {
-  private final PostingsFormat postings = new Lucene41WithOrds();
-  private final Codec codec = new Lucene41Codec() {
-    @Override
-    public PostingsFormat getPostingsFormatForField(String field) {
-      return postings;
-    }
-  };
+  private final Codec codec = _TestUtil.alwaysPostingsFormat(new Lucene41WithOrds());
 
   @Override
   protected Codec getCodec() {
