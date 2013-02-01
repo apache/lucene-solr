@@ -187,8 +187,6 @@ public class TestDocValuesWithThreads extends LuceneTestCase {
 
     final long END_TIME = System.currentTimeMillis() + (TEST_NIGHTLY ? 30 : 1);
 
-    final NumericDocValues docIDToID = sr.getNumericDocValues("id");
-
     final int NUM_THREADS = _TestUtil.nextInt(random(), 1, 10);
     Thread[] threads = new Thread[NUM_THREADS];
     for(int thread=0;thread<NUM_THREADS;thread++) {
@@ -197,8 +195,10 @@ public class TestDocValuesWithThreads extends LuceneTestCase {
           public void run() {
             Random random = random();            
             final SortedDocValues stringDVDirect;
+            final NumericDocValues docIDToID;
             try {
               stringDVDirect = sr.getSortedDocValues("stringdv");
+              docIDToID = sr.getNumericDocValues("id");
               assertNotNull(stringDVDirect);
             } catch (IOException ioe) {
               throw new RuntimeException(ioe);

@@ -20,8 +20,6 @@ package org.apache.lucene.index;
 import java.util.HashMap;
 import java.util.Map;
 
-// nocommit fails if you repeat: TestDocValuesWithThreads.test2 -seed A765AB92D216E371
-
 /**
  *  Access to the Field Info file that describes document fields and whether or
  *  not they are indexed. Each segment has a separate Field Info file. Objects
