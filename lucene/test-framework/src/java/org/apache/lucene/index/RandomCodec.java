@@ -29,9 +29,9 @@ import java.util.Set;
 
 import org.apache.lucene.codecs.PostingsFormat;
 import org.apache.lucene.codecs.asserting.AssertingPostingsFormat;
-import org.apache.lucene.codecs.lucene41.Lucene41Codec;
 import org.apache.lucene.codecs.lucene41.Lucene41PostingsFormat;
 import org.apache.lucene.codecs.lucene41ords.Lucene41WithOrds;
+import org.apache.lucene.codecs.lucene42.Lucene42Codec;
 import org.apache.lucene.codecs.bloom.TestBloomFilteredLucene41Postings;
 import org.apache.lucene.codecs.memory.DirectPostingsFormat;
 import org.apache.lucene.codecs.memory.MemoryPostingsFormat;
@@ -54,7 +54,7 @@ import org.apache.lucene.util._TestUtil;
  * documents in different orders and the test will still be deterministic
  * and reproducable.
  */
-public class RandomCodec extends Lucene41Codec {
+public class RandomCodec extends Lucene42Codec {
   /** Shuffled list of postings formats to use for new mappings */
   private List<PostingsFormat> formats = new ArrayList<PostingsFormat>();
   

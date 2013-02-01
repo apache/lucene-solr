@@ -18,7 +18,6 @@ package org.apache.lucene.codecs.lucene41;
  */
 
 import org.apache.lucene.analysis.MockAnalyzer;
-import org.apache.lucene.codecs.PostingsFormat;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
 import org.apache.lucene.document.FieldType;
@@ -46,12 +45,7 @@ public class TestBlockPostingsFormat2 extends LuceneTestCase {
     super.setUp();
     dir = newFSDirectory(_TestUtil.getTempDir("testDFBlockSize"));
     iwc = newIndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer(random()));
-    iwc.setCodec(new Lucene41Codec() {
-      @Override
-      public PostingsFormat getPostingsFormatForField(String field) {
-        return PostingsFormat.forName("Lucene41");
-      }
-    });
+    iwc.setCodec(_TestUtil.alwaysPostingsFormat(new Lucene41PostingsFormat()));
     iw = new RandomIndexWriter(random(), dir, iwc);
     iw.setAddDocValuesFields(false);
     iw.setDoRandomForceMerge(false); // we will ourselves
