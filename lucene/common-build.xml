@@ -58,7 +58,7 @@
 
   <property name="common.classpath.excludes" value="**/*.txt,**/*.template,**/*.sha1" />
 
-  <property name="ivy.bootstrap.version" value="2.2.0" />
+  <property name="ivy.bootstrap.version" value="2.3.0" />
   <property name="ivy.default.configuration" value="*"/>
   <property name="ivy.sync" value="true"/>
 
@@ -321,7 +321,7 @@
   <property name="ivy_bootstrap_url1" value="http://repo1.maven.org/maven2"/>
   <!-- you might need to tweak this from china so it works -->
   <property name="ivy_bootstrap_url2" value="http://mirror.netcologne.de/maven2"/>
-  <property name="ivy_checksum_sha1" value="f9d1e83e82fc085093510f7d2e77d81d52bc2081"/>
+  <property name="ivy_checksum_sha1" value="c5ebf1c253ad4959a29f4acfe696ee48cdd9f473"/>
 
   <target name="ivy-availability-check" unless="ivy.available">
     <condition property="ivy.available">
