@@ -163,7 +163,14 @@ public class FieldInfos implements Iterable<FieldInfo> {
     
     private final Map<Integer,String> numberToName;
     private final Map<String,Integer> nameToNumber;
+    // We use this to enforce that a given field never
+    // changes DV type, even across segments / IndexWriter
+    // sessions:
     private final Map<String,DocValuesType> docValuesType;
+
+    // TODO: we should similarly catch an attempt to turn
+    // norms back on after they were already ommitted; today
+    // we silently discard the norm but this is badly trappy
     private int lowestUnassignedFieldNumber = -1;
     
     FieldNumbers() {
@@ -209,26 +216,8 @@ public class FieldInfos implements Iterable<FieldInfo> {
       return fieldNumber.intValue();
     }
 
-    /**
-     * Sets the given field number and name if not yet set. 
-     */
-    // nocommit: why is docvalues involved with global field numbers?
-    // nocommit: and is it even tested...
-    /*
-    synchronized void setIfNotSet(int fieldNumber, String fieldName, DocValuesType dvType) {
-      final Integer boxedFieldNumber = Integer.valueOf(fieldNumber);
-      if (!numberToName.containsKey(boxedFieldNumber)
-          && !nameToNumber.containsKey(fieldName)
-          && !docValuesType.containsKey(dvType)) {
-        numberToName.put(boxedFieldNumber, fieldName);
-        nameToNumber.put(fieldName, boxedFieldNumber);
-        docValuesType.put(fieldName, dvType);
-      } else {
-        // nocommit should this be a real check?
-        assert containsConsistent(boxedFieldNumber, fieldName, dvType);
-      }
-    }
-    */
+    // nocommit: do we need better tests for attempt to
+    // change doc value type across segments...
     
     // used by assert
     synchronized boolean containsConsistent(Integer number, String name, DocValuesType dvType) {
