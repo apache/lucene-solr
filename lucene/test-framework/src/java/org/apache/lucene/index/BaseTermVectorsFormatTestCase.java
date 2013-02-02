@@ -25,6 +25,7 @@ import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;
+import java.util.concurrent.atomic.AtomicReference;
 
 import org.apache.lucene.analysis.TokenStream;
 import org.apache.lucene.analysis.tokenattributes.CharTermAttribute;
@@ -388,9 +389,9 @@ public abstract class BaseTermVectorsFormatTestCase extends LuceneTestCase {
   }
 
   // to test reuse
-  private TermsEnum termsEnum = null;
-  private DocsEnum docsEnum = null;
-  private DocsAndPositionsEnum docsAndPositionsEnum = null;
+  private final ThreadLocal<TermsEnum> termsEnum = new ThreadLocal<TermsEnum>();
+  private final ThreadLocal<DocsEnum> docsEnum = new ThreadLocal<DocsEnum>();
+  private final ThreadLocal<DocsAndPositionsEnum> docsAndPositionsEnum = new ThreadLocal<DocsAndPositionsEnum>();
 
   protected void assertEquals(RandomTokenStream tk, FieldType ft, Terms terms) throws IOException {
     assertEquals(1, terms.getDocCount());
@@ -406,7 +407,8 @@ public abstract class BaseTermVectorsFormatTestCase extends LuceneTestCase {
     }
     final BytesRef[] sortedTerms = uniqueTerms.toArray(new BytesRef[0]);
     Arrays.sort(sortedTerms, terms.getComparator());
-    termsEnum = terms.iterator(random().nextBoolean() ? null : termsEnum);
+    final TermsEnum termsEnum = terms.iterator(random().nextBoolean() ? null : this.termsEnum.get());
+    this.termsEnum.set(termsEnum);
     for (int i = 0; i < sortedTerms.length; ++i) {
       final BytesRef nextTerm = termsEnum.next();
       assertEquals(sortedTerms[i], nextTerm);
@@ -414,7 +416,7 @@ public abstract class BaseTermVectorsFormatTestCase extends LuceneTestCase {
       assertEquals(1, termsEnum.docFreq());
 
       final FixedBitSet bits = new FixedBitSet(1);
-      docsEnum = termsEnum.docs(bits, random().nextBoolean() ? null : docsEnum);
+      DocsEnum docsEnum = termsEnum.docs(bits, random().nextBoolean() ? null : this.docsEnum.get());
       assertEquals(DocsEnum.NO_MORE_DOCS, docsEnum.nextDoc());
       bits.set(0);
 
@@ -424,9 +426,10 @@ public abstract class BaseTermVectorsFormatTestCase extends LuceneTestCase {
       assertEquals(0, docsEnum.docID());
       assertEquals(tk.freqs.get(termsEnum.term().utf8ToString()), (Integer) docsEnum.freq());
       assertEquals(DocsEnum.NO_MORE_DOCS, docsEnum.nextDoc());
+      this.docsEnum.set(docsEnum);
 
       bits.clear(0);
-      docsAndPositionsEnum = termsEnum.docsAndPositions(bits, random().nextBoolean() ? null : docsAndPositionsEnum);
+      DocsAndPositionsEnum docsAndPositionsEnum = termsEnum.docsAndPositions(bits, random().nextBoolean() ? null : this.docsAndPositionsEnum.get());
       assertEquals(ft.storeTermVectorOffsets() || ft.storeTermVectorPositions(), docsAndPositionsEnum != null);
       if (docsAndPositionsEnum != null) {
         assertEquals(DocsEnum.NO_MORE_DOCS, docsAndPositionsEnum.nextDoc());
@@ -492,6 +495,7 @@ public abstract class BaseTermVectorsFormatTestCase extends LuceneTestCase {
         }
         assertEquals(DocsEnum.NO_MORE_DOCS, docsAndPositionsEnum.nextDoc());
       }
+      this.docsAndPositionsEnum.set(docsAndPositionsEnum);
     }
     assertNull(termsEnum.next());
     for (int i = 0; i < 5; ++i) {
@@ -628,6 +632,99 @@ public abstract class BaseTermVectorsFormatTestCase extends LuceneTestCase {
     reader.close();
     writer.close();
     dir.close();
+  }
+
+  public void testMerge() throws IOException {
+    final RandomDocumentFactory docFactory = new RandomDocumentFactory(5, 20);
+    final int numDocs = _TestUtil.nextInt(random(), 100, 500);
+    final int numDeletes = random().nextInt(numDocs);
+    final Set<Integer> deletes = new HashSet<Integer>();
+    while (deletes.size() < numDeletes) {
+      deletes.add(random().nextInt(numDocs));
+    }
+    for (Options options : validOptions()) {
+      final RandomDocument[] docs = new RandomDocument[numDocs];
+      for (int i = 0; i < numDocs; ++i) {
+        docs[i] = docFactory.newDocument(_TestUtil.nextInt(random(), 1, 3), _TestUtil.nextInt(random(), 10, 50), options);
+      }
+      final Directory dir = newDirectory();
+      final RandomIndexWriter writer = new RandomIndexWriter(random(), dir);
+      for (int i = 0; i < numDocs; ++i) {
+        writer.addDocument(addId(docs[i].toDocument(), ""+i));
+        if (rarely()) {
+          writer.commit();
+        }
+      }
+      for (int delete : deletes) {
+        writer.deleteDocuments(new Term("id", "" + delete));
+      }
+      // merge with deletes
+      writer.forceMerge(1);
+      final IndexReader reader = writer.getReader();
+      for (int i = 0; i < numDocs; ++i) {
+        if (!deletes.contains(i)) {
+          final int docID = docID(reader, ""+i);
+          assertEquals(docs[i], reader.getTermVectors(docID));
+        }
+      }
+      reader.close();
+      writer.close();
+      dir.close();
+    }
+  }
+
+  // run random tests from different threads to make sure the per-thread clones
+  // don't share mutable data
+  public void testClone() throws IOException, InterruptedException {
+    final RandomDocumentFactory docFactory = new RandomDocumentFactory(5, 20);
+    final int numDocs = _TestUtil.nextInt(random(), 100, 1000);
+    for (Options options : validOptions()) {
+      final RandomDocument[] docs = new RandomDocument[numDocs];
+      for (int i = 0; i < numDocs; ++i) {
+        docs[i] = docFactory.newDocument(_TestUtil.nextInt(random(), 1, 3), _TestUtil.nextInt(random(), 10, 50), options);
+      }
+      final Directory dir = newDirectory();
+      final RandomIndexWriter writer = new RandomIndexWriter(random(), dir);
+      for (int i = 0; i < numDocs; ++i) {
+        writer.addDocument(addId(docs[i].toDocument(), ""+i));
+      }
+      final IndexReader reader = writer.getReader();
+      for (int i = 0; i < numDocs; ++i) {
+        final int docID = docID(reader, ""+i);
+        assertEquals(docs[i], reader.getTermVectors(docID));
+      }
+
+      final AtomicReference<Throwable> exception = new AtomicReference<Throwable>();
+      final Thread[] threads = new Thread[2];
+      for (int i = 0; i < threads.length; ++i) {
+        threads[i] = new Thread() {
+          @Override
+          public void run() {
+            try {
+              for (int i = 0; i < atLeast(100); ++i) {
+                final int idx = random().nextInt(numDocs);
+                final int docID = docID(reader, ""+idx);
+                assertEquals(docs[idx], reader.getTermVectors(docID));
+              }
+            } catch (Throwable t) {
+              exception.set(t);
+            }
+          }
+        };
+      }
+      for (Thread thread : threads) {
+        thread.start();
+      }
+      for (Thread thread : threads) {
+        thread.join();
+      }
+      reader.close();
+      writer.close();
+      dir.close();
+      if (exception.get() != null) {
+        throw new RuntimeException("One thread threw an exception", exception.get());
+      }
+    }
   }
 
 }

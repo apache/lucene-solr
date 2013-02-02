@@ -18,18 +18,17 @@ package org.apache.lucene.codecs.lucene42;
  */
 
 import org.apache.lucene.codecs.Codec;
+import org.apache.lucene.codecs.DocValuesFormat;
 import org.apache.lucene.codecs.FieldInfosFormat;
 import org.apache.lucene.codecs.FilterCodec;
 import org.apache.lucene.codecs.LiveDocsFormat;
+import org.apache.lucene.codecs.NormsFormat;
 import org.apache.lucene.codecs.PostingsFormat;
 import org.apache.lucene.codecs.SegmentInfoFormat;
-import org.apache.lucene.codecs.DocValuesFormat;
-import org.apache.lucene.codecs.NormsFormat;
 import org.apache.lucene.codecs.StoredFieldsFormat;
 import org.apache.lucene.codecs.TermVectorsFormat;
 import org.apache.lucene.codecs.lucene40.Lucene40LiveDocsFormat;
 import org.apache.lucene.codecs.lucene40.Lucene40SegmentInfoFormat;
-import org.apache.lucene.codecs.lucene40.Lucene40TermVectorsFormat;
 import org.apache.lucene.codecs.lucene41.Lucene41StoredFieldsFormat;
 import org.apache.lucene.codecs.perfield.PerFieldDocValuesFormat;
 import org.apache.lucene.codecs.perfield.PerFieldPostingsFormat;
@@ -49,7 +48,7 @@ import org.apache.lucene.codecs.perfield.PerFieldPostingsFormat;
 // (it writes a minor version, etc).
 public class Lucene42Codec extends Codec {
   private final StoredFieldsFormat fieldsFormat = new Lucene41StoredFieldsFormat();
-  private final TermVectorsFormat vectorsFormat = new Lucene40TermVectorsFormat();
+  private final TermVectorsFormat vectorsFormat = new Lucene42TermVectorsFormat();
   private final FieldInfosFormat fieldInfosFormat = new Lucene42FieldInfosFormat();
   private final SegmentInfoFormat infosFormat = new Lucene40SegmentInfoFormat();
   private final LiveDocsFormat liveDocsFormat = new Lucene40LiveDocsFormat();

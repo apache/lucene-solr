@@ -28,7 +28,11 @@ import org.apache.lucene.util.ArrayUtil;
 import org.apache.lucene.util.IOUtils;
 import org.apache.lucene.util.packed.PackedInts;
 
-class CompressingStoredFieldsIndexReader implements Closeable, Cloneable {
+/**
+ * Random-access reader for {@link CompressingStoredFieldsIndexWriter}.
+ * @lucene.internal
+ */
+public final class CompressingStoredFieldsIndexReader implements Closeable, Cloneable {
 
   final IndexInput fieldsIndexIn;
 

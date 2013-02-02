@@ -34,7 +34,7 @@ import org.apache.lucene.store.IOContext;
  * order to improve the compression ratio.
  * @lucene.experimental
  */
-public final class CompressingTermVectorsFormat extends TermVectorsFormat {
+public class CompressingTermVectorsFormat extends TermVectorsFormat {
 
   private final String formatName;
   private final String segmentSuffix;
@@ -79,7 +79,7 @@ public final class CompressingTermVectorsFormat extends TermVectorsFormat {
   }
 
   @Override
-  public TermVectorsReader vectorsReader(Directory directory,
+  public final TermVectorsReader vectorsReader(Directory directory,
       SegmentInfo segmentInfo, FieldInfos fieldInfos, IOContext context)
       throws IOException {
     return new CompressingTermVectorsReader(directory, segmentInfo, segmentSuffix,
@@ -87,7 +87,7 @@ public final class CompressingTermVectorsFormat extends TermVectorsFormat {
   }
 
   @Override
-  public TermVectorsWriter vectorsWriter(Directory directory,
+  public final TermVectorsWriter vectorsWriter(Directory directory,
       SegmentInfo segmentInfo, IOContext context) throws IOException {
     return new CompressingTermVectorsWriter(directory, segmentInfo, segmentSuffix,
         context, formatName, compressionMode, chunkSize);
