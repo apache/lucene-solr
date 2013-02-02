@@ -216,9 +216,6 @@ public class FieldInfos implements Iterable<FieldInfo> {
       return fieldNumber.intValue();
     }
 
-    // nocommit: do we need better tests for attempt to
-    // change doc value type across segments...
-    
     // used by assert
     synchronized boolean containsConsistent(Integer number, String name, DocValuesType dvType) {
       return name.equals(numberToName.get(number))
