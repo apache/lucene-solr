@@ -66,6 +66,9 @@ Optimizations
   facets. Also added OrdinalPolicy.ALL_BUT_DIMENSION. 
   (Shai Erera, Michael McCandless)
 
+* LUCENE-4740: Don't track clones of MMapIndexInput if unmapping
+  is disabled. This reduces GC overhead. (Kristofer Karlsson, Uwe Schindler)
+
 New Features
 
 * LUCENE-4686: New specialized DGapVInt8IntEncoder for facets (now the 
