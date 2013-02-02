@@ -69,6 +69,10 @@ Optimizations
 * LUCENE-4740: Don't track clones of MMapIndexInput if unmapping
   is disabled. This reduces GC overhead. (Kristofer Karlsson, Uwe Schindler)
 
+* LUCENE-4733: The default Lucene 4.2 codec now uses a more compact
+  TermVectorsFormat (Lucene42TermVectorsFormat) based on
+  CompressingTermVectorsFormat. (Adrien Grand)
+
 New Features
 
 * LUCENE-4686: New specialized DGapVInt8IntEncoder for facets (now the 
