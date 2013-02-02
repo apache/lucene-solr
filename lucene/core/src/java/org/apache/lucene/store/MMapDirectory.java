@@ -178,36 +178,6 @@ public class MMapDirectory extends FSDirectory {
   }
   
   /**
-   * Try to unmap the buffer, this method silently fails if no support
-   * for that in the JVM. On Windows, this leads to the fact,
-   * that mmapped files cannot be modified or deleted.
-   */
-  final void cleanMapping(final ByteBuffer buffer) throws IOException {
-    if (useUnmapHack) {
-      try {
-        AccessController.doPrivileged(new PrivilegedExceptionAction<Object>() {
-          @Override
-          public Object run() throws Exception {
-            final Method getCleanerMethod = buffer.getClass()
-              .getMethod("cleaner");
-            getCleanerMethod.setAccessible(true);
-            final Object cleaner = getCleanerMethod.invoke(buffer);
-            if (cleaner != null) {
-              cleaner.getClass().getMethod("clean")
-                .invoke(cleaner);
-            }
-            return null;
-          }
-        });
-      } catch (PrivilegedActionException e) {
-        final IOException ioe = new IOException("unable to unmap the mapped buffer");
-        ioe.initCause(e.getCause());
-        throw ioe;
-      }
-    }
-  }
-  
-  /**
    * Returns the current mmap chunk size.
    * @see #MMapDirectory(File, LockFactory, int)
    */
@@ -252,14 +222,42 @@ public class MMapDirectory extends FSDirectory {
   }
 
   private final class MMapIndexInput extends ByteBufferIndexInput {
+    private final boolean useUnmapHack;
     
     MMapIndexInput(String resourceDescription, RandomAccessFile raf) throws IOException {
-      super(resourceDescription, map(raf, 0, raf.length()), raf.length(), chunkSizePower);
+      super(resourceDescription, map(raf, 0, raf.length()), raf.length(), chunkSizePower, getUseUnmap());
+      this.useUnmapHack = getUseUnmap();
     }
     
+    /**
+     * Try to unmap the buffer, this method silently fails if no support
+     * for that in the JVM. On Windows, this leads to the fact,
+     * that mmapped files cannot be modified or deleted.
+     */
     @Override
-    protected void freeBuffer(ByteBuffer buffer) throws IOException {
-      cleanMapping(buffer);
+    protected void freeBuffer(final ByteBuffer buffer) throws IOException {
+      if (useUnmapHack) {
+        try {
+          AccessController.doPrivileged(new PrivilegedExceptionAction<Void>() {
+            @Override
+            public Void run() throws Exception {
+              final Method getCleanerMethod = buffer.getClass()
+                .getMethod("cleaner");
+              getCleanerMethod.setAccessible(true);
+              final Object cleaner = getCleanerMethod.invoke(buffer);
+              if (cleaner != null) {
+                cleaner.getClass().getMethod("clean")
+                  .invoke(cleaner);
+              }
+              return null;
+            }
+          });
+        } catch (PrivilegedActionException e) {
+          final IOException ioe = new IOException("unable to unmap the mapped buffer");
+          ioe.initCause(e.getCause());
+          throw ioe;
+        }
+      }
     }
   }
   
