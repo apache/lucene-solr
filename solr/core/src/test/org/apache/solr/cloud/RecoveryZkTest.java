@@ -90,7 +90,7 @@ public class RecoveryZkTest extends AbstractFullDistribZkTestBase {
     
     waitForThingsToLevelOut(30);
     
-    Thread.sleep(1000);
+    Thread.sleep(5000);
     
     waitForRecoveriesToFinish(DEFAULT_COLLECTION, zkStateReader, false, true);
 
