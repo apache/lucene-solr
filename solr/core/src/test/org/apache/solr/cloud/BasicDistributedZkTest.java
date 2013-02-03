@@ -509,6 +509,8 @@ public class BasicDistributedZkTest extends AbstractFullDistribZkTestBase {
     
     // unload the leader
     collectionClient = new HttpSolrServer(leaderProps.getBaseUrl());
+    collectionClient.setConnectionTimeout(15000);
+    collectionClient.setSoTimeout(30000);
     
     Unload unloadCmd = new Unload(false);
     unloadCmd.setCoreName(leaderProps.getCoreName());
@@ -531,6 +533,9 @@ public class BasicDistributedZkTest extends AbstractFullDistribZkTestBase {
     zkStateReader.getLeaderRetry("unloadcollection", "shard1", 15000);
     
     addClient = new HttpSolrServer(url2 + "/unloadcollection2");
+    addClient.setConnectionTimeout(15000);
+    addClient.setSoTimeout(30000);
+    
     // add a few docs while the leader is down
     for (int x = 101; x < 200; x++) {
       SolrInputDocument doc1 = getDoc(id, x, i1, -600, tlong, 600, t1,
@@ -543,6 +548,8 @@ public class BasicDistributedZkTest extends AbstractFullDistribZkTestBase {
     client = clients.get(3);
     String url4 = getBaseUrl(client);
     server = new HttpSolrServer(url4);
+    server.setConnectionTimeout(15000);
+    server.setSoTimeout(30000);
     
     createCmd = new Create();
     createCmd.setCoreName("unloadcollection4");
@@ -556,6 +563,8 @@ public class BasicDistributedZkTest extends AbstractFullDistribZkTestBase {
     // unload the leader again
     leaderProps = getLeaderUrlFromZk("unloadcollection", "shard1");
     collectionClient = new HttpSolrServer(leaderProps.getBaseUrl());
+    collectionClient.setConnectionTimeout(15000);
+    collectionClient.setSoTimeout(30000);
     
     unloadCmd = new Unload(false);
     unloadCmd.setCoreName(leaderProps.getCoreName());
@@ -578,6 +587,8 @@ public class BasicDistributedZkTest extends AbstractFullDistribZkTestBase {
     
     // bring the downed leader back as replica
     server = new HttpSolrServer(leaderProps.getBaseUrl());
+    server.setConnectionTimeout(15000);
+    server.setSoTimeout(30000);
     
     createCmd = new Create();
     createCmd.setCoreName(leaderProps.getCoreName());
@@ -587,20 +598,23 @@ public class BasicDistributedZkTest extends AbstractFullDistribZkTestBase {
 
     waitForRecoveriesToFinish("unloadcollection", zkStateReader, false);
     
-    
-    server = new HttpSolrServer(url1 + "/unloadcollection");
-   // System.out.println(server.query(new SolrQuery("*:*")).getResults().getNumFound());
     server = new HttpSolrServer(url2 + "/unloadcollection");
+    server.setConnectionTimeout(15000);
+    server.setSoTimeout(30000);
     server.commit();
     SolrQuery q = new SolrQuery("*:*");
     q.set("distrib", false);
     long found1 = server.query(q).getResults().getNumFound();
     server = new HttpSolrServer(url3 + "/unloadcollection");
+    server.setConnectionTimeout(15000);
+    server.setSoTimeout(30000);
     server.commit();
     q = new SolrQuery("*:*");
     q.set("distrib", false);
     long found3 = server.query(q).getResults().getNumFound();
     server = new HttpSolrServer(url4 + "/unloadcollection");
+    server.setConnectionTimeout(15000);
+    server.setSoTimeout(30000);
     server.commit();
     q = new SolrQuery("*:*");
     q.set("distrib", false);
@@ -1047,6 +1061,8 @@ public class BasicDistributedZkTest extends AbstractFullDistribZkTestBase {
     
     // now test that unloading a core gets us a new leader
     HttpSolrServer server = new HttpSolrServer(baseUrl);
+    server.setConnectionTimeout(15000);
+    server.setSoTimeout(30000);
     Unload unloadCmd = new Unload(true);
     unloadCmd.setCoreName(props.getCoreName());
     
