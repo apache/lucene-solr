@@ -73,7 +73,6 @@ import org.apache.lucene.index.IndexWriter;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.IndexInput;
 import org.apache.lucene.store.IndexOutput;
-import org.apache.solr.client.solrj.SolrServer;
 import org.apache.solr.client.solrj.SolrServerException;
 import org.apache.solr.client.solrj.impl.HttpClientUtil;
 import org.apache.solr.client.solrj.impl.HttpSolrServer;
@@ -86,8 +85,8 @@ import org.apache.solr.common.util.ExecutorUtil;
 import org.apache.solr.common.util.FastInputStream;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.core.CachingDirectoryFactory.CloseListener;
-import org.apache.solr.core.DirectoryFactory.DirContext;
 import org.apache.solr.core.DirectoryFactory;
+import org.apache.solr.core.DirectoryFactory.DirContext;
 import org.apache.solr.core.IndexDeletionPolicyWrapper;
 import org.apache.solr.core.SolrCore;
 import org.apache.solr.handler.ReplicationHandler.FileInfo;
@@ -244,7 +243,9 @@ public class SnapPuller {
     params.set(CommonParams.WT, "javabin");
     params.set(CommonParams.QT, "/replication");
     QueryRequest req = new QueryRequest(params);
-    SolrServer server = new HttpSolrServer(masterUrl, myHttpClient); //XXX modify to use shardhandler
+    HttpSolrServer server = new HttpSolrServer(masterUrl, myHttpClient); //XXX modify to use shardhandler
+    server.setSoTimeout(60000);
+    server.setConnectionTimeout(15000);
     try {
       return server.request(req);
     } catch (SolrServerException e) {
@@ -262,7 +263,9 @@ public class SnapPuller {
     params.set(CommonParams.WT, "javabin");
     params.set(CommonParams.QT, "/replication");
     QueryRequest req = new QueryRequest(params);
-    SolrServer server = new HttpSolrServer(masterUrl, myHttpClient);  //XXX modify to use shardhandler
+    HttpSolrServer server = new HttpSolrServer(masterUrl, myHttpClient);  //XXX modify to use shardhandler
+    server.setSoTimeout(60000);
+    server.setConnectionTimeout(15000);
 
     try {
       NamedList response = server.request(req);
@@ -1237,7 +1240,9 @@ public class SnapPuller {
      * Open a new stream using HttpClient
      */
     FastInputStream getStream() throws IOException {
-      SolrServer s = new HttpSolrServer(masterUrl, myHttpClient, null);  //XXX use shardhandler
+      HttpSolrServer s = new HttpSolrServer(masterUrl, myHttpClient, null);  //XXX use shardhandler
+      s.setSoTimeout(60000);
+      s.setConnectionTimeout(15000);
       ModifiableSolrParams params = new ModifiableSolrParams();
 
 //    //the method is command=filecontent
@@ -1496,7 +1501,9 @@ public class SnapPuller {
      * Open a new stream using HttpClient
      */
     FastInputStream getStream() throws IOException {
-      SolrServer s = new HttpSolrServer(masterUrl, myHttpClient, null);  //XXX use shardhandler
+      HttpSolrServer s = new HttpSolrServer(masterUrl, myHttpClient, null);  //XXX use shardhandler
+      s.setSoTimeout(60000);
+      s.setConnectionTimeout(15000);
       ModifiableSolrParams params = new ModifiableSolrParams();
 
 //    //the method is command=filecontent
@@ -1549,7 +1556,9 @@ public class SnapPuller {
     params.set(COMMAND, CMD_DETAILS);
     params.set("slave", false);
     params.set(CommonParams.QT, "/replication");
-    SolrServer server = new HttpSolrServer(masterUrl, myHttpClient); //XXX use shardhandler
+    HttpSolrServer server = new HttpSolrServer(masterUrl, myHttpClient); //XXX use shardhandler
+    server.setSoTimeout(60000);
+    server.setConnectionTimeout(15000);
     QueryRequest request = new QueryRequest(params);
     return server.request(request);
   }
