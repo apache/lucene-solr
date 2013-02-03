@@ -1220,7 +1220,7 @@ public final class ZkController {
     if (!isLeader && !SKIP_AUTO_RECOVERY) {
       HttpSolrServer server = null;
       server = new HttpSolrServer(leaderBaseUrl);
-      server.setConnectionTimeout(45000);
+      server.setConnectionTimeout(15000);
       server.setSoTimeout(120000);
       WaitForState prepCmd = new WaitForState();
       prepCmd.setCoreName(leaderCoreName);
