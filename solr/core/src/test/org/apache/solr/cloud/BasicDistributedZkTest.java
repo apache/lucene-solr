@@ -672,7 +672,7 @@ public class BasicDistributedZkTest extends AbstractFullDistribZkTestBase {
     String url3 = getBaseUrl(client);
     final HttpSolrServer server = new HttpSolrServer(url3);
     server.setConnectionTimeout(15000);
-    server.setSoTimeout(30000);
+    server.setSoTimeout(60000);
     ThreadPoolExecutor executor = new ThreadPoolExecutor(0, Integer.MAX_VALUE,
         5, TimeUnit.SECONDS, new SynchronousQueue<Runnable>(),
         new DefaultSolrThreadFactory("testExecutor"));
