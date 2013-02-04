@@ -18,18 +18,12 @@ package org.apache.lucene.index;
  */
 
 import java.io.IOException;
-import java.util.ArrayList;
 import java.util.List;
 
-import org.apache.lucene.codecs.Codec;
-import org.apache.lucene.index.FieldInfo.DocValuesType;
-import org.apache.lucene.index.IndexReader.ReaderClosedListener;
-import org.apache.lucene.store.Directory;
-import org.apache.lucene.store.RAMDirectory;
-import org.apache.lucene.util.Bits;
+import org.apache.lucene.index.MultiTermsEnum.TermsEnumIndex;
+import org.apache.lucene.index.MultiTermsEnum.TermsEnumWithSlice;
 import org.apache.lucene.util.BytesRef;
-import org.apache.lucene.util.IOUtils;
-import org.apache.lucene.util.Version;
+import org.apache.lucene.util.packed.AppendingLongBuffer;
 
 /**
  * A wrapper for CompositeIndexReader providing access to DocValues.
@@ -45,7 +39,6 @@ import org.apache.lucene.util.Version;
  * @lucene.experimental
  * @lucene.internal
  */
-// nocommit move this back to test-framework!!!
 public class MultiDocValues {
   
   /** No instantiation */
@@ -194,75 +187,115 @@ public class MultiDocValues {
    */
   public static SortedDocValues getSortedValues(final IndexReader r, final String field) throws IOException {
     final List<AtomicReaderContext> leaves = r.leaves();
-    if (leaves.size() == 1) {
+    final int size = leaves.size();
+    
+    if (size == 0) {
+      return null;
+    } else if (size == 1) {
       return leaves.get(0).reader().getSortedDocValues(field);
     }
+    
     boolean anyReal = false;
-
-    for(AtomicReaderContext ctx : leaves) {
-      SortedDocValues values = ctx.reader().getSortedDocValues(field);
-
-      if (values != null) {
+    final SortedDocValues[] values = new SortedDocValues[size];
+    final int[] starts = new int[size+1];
+    for (int i = 0; i < size; i++) {
+      AtomicReaderContext context = leaves.get(i);
+      SortedDocValues v = context.reader().getSortedDocValues(field);
+      if (v == null) {
+        v = SortedDocValues.EMPTY;
+      } else {
         anyReal = true;
       }
+      values[i] = v;
+      starts[i] = context.docBase;
     }
-
+    starts[size] = r.maxDoc();
+    
     if (!anyReal) {
       return null;
     } else {
-      // its called slow-wrapper for a reason right?
-      final Directory scratch = new RAMDirectory();
-      IndexWriterConfig config = new IndexWriterConfig(Version.LUCENE_50, null);
-      config.setCodec(Codec.forName("SimpleText"));
-      IndexWriter writer = new IndexWriter(scratch, config);
-      List<AtomicReader> newLeaves = new ArrayList<AtomicReader>();
-      // fake up fieldinfos
-      FieldInfo fi = new FieldInfo(field, false, 0, false, false, false, null, DocValuesType.SORTED, null, null);
-      final FieldInfos fis = new FieldInfos(new FieldInfo[] { fi });
-      for (AtomicReaderContext ctx : leaves) {
-        final AtomicReader a = ctx.reader();
-        newLeaves.add(new FilterAtomicReader(a) {
-          @Override
-          public Bits getLiveDocs() {
-            return null; // lie
-          }
-          @Override
-          public int numDocs() {
-            return maxDoc(); // lie
-          }
-          @Override
-          public boolean hasDeletions() {
-            return false; // lie
-          }
-          @Override
-          public FieldInfos getFieldInfos() {
-            return fis;
-          }
-          @Override
-          public Fields getTermVectors(int docID) throws IOException {
-            return null; // lie
-          }
-          @Override
-          public void document(int docID, StoredFieldVisitor visitor) throws IOException {
-            // lie
-          }
-          @Override
-          public Fields fields() throws IOException {
-            return null; // lie
-          }
-        });
+      OrdinalMapping mapping = new OrdinalMapping(values);
+      return new MultiSortedDocValues(values, starts, mapping);
+    }
+  }
+  
+  /** maps per-segment ordinals to/from global ordinal space */
+  // TODO: use more efficient packed ints structures (these are all positive values!)
+  // nocommit: cache this in SlowWrapper, it can create MultiSortedDV with it directly.
+  static class OrdinalMapping {
+    // globalOrd -> (globalOrd - segmentOrd)
+    final AppendingLongBuffer globalOrdDeltas;
+    // globalOrd -> sub index
+    final AppendingLongBuffer subIndexes;
+    // segmentOrd -> (globalOrd - segmentOrd)
+    final AppendingLongBuffer ordDeltas[];
+    
+    OrdinalMapping(SortedDocValues subs[]) throws IOException {
+      // create the ordinal mappings by pulling a termsenum over each sub's 
+      // unique terms, and walking a multitermsenum over those
+      globalOrdDeltas = new AppendingLongBuffer();
+      subIndexes = new AppendingLongBuffer();
+      ordDeltas = new AppendingLongBuffer[subs.length];
+      for (int i = 0; i < ordDeltas.length; i++) {
+        ordDeltas[i] = new AppendingLongBuffer();
       }
-      writer.addIndexes(newLeaves.toArray(new AtomicReader[0]));
-      writer.close();
-      final IndexReader newR = DirectoryReader.open(scratch);
-      assert newR.leaves().size() == 1;
-      r.addReaderClosedListener(new ReaderClosedListener() {
-        @Override
-        public void onClose(IndexReader reader) {
-          IOUtils.closeWhileHandlingException(newR, scratch);
+      int segmentOrds[] = new int[subs.length];
+      ReaderSlice slices[] = new ReaderSlice[subs.length];
+      TermsEnumIndex indexes[] = new TermsEnumIndex[slices.length];
+      for (int i = 0; i < slices.length; i++) {
+        slices[i] = new ReaderSlice(0, 0, i);
+        indexes[i] = new TermsEnumIndex(new SortedDocValuesTermsEnum(subs[i]), i);
+      }
+      MultiTermsEnum mte = new MultiTermsEnum(slices);
+      mte.reset(indexes);
+      int globalOrd = 0;
+      while (mte.next() != null) {        
+        TermsEnumWithSlice matches[] = mte.getMatchArray();
+        for (int i = 0; i < mte.getMatchCount(); i++) {
+          int subIndex = matches[i].index;
+          // for each unique term, just mark the first subindex/delta where it occurs
+          if (i == 0) {
+            subIndexes.add(subIndex);
+            globalOrdDeltas.add(globalOrd - segmentOrds[subIndex]);
+          }
+          // for each per-segment ord, map it back to the global term.
+          ordDeltas[subIndex].add(globalOrd - segmentOrds[subIndex]);
+          segmentOrds[subIndex]++;
         }
-      });
-      return newR.leaves().get(0).reader().getSortedDocValues(field);
+        globalOrd++;
+      }
+    }
+  }
+  
+  /** implements SortedDocValues over n subs, using a SortedBytesMapping */
+  static class MultiSortedDocValues extends SortedDocValues {
+    final int docStarts[];
+    final SortedDocValues values[];
+    final OrdinalMapping mapping;
+  
+    MultiSortedDocValues(SortedDocValues values[], int docStarts[], OrdinalMapping mapping) throws IOException {
+      this.values = values;
+      this.docStarts = docStarts;
+      this.mapping = mapping;
+    }
+       
+    @Override
+    public int getOrd(int docID) {
+      int subIndex = ReaderUtil.subIndex(docID, docStarts);
+      int segmentOrd = values[subIndex].getOrd(docID - docStarts[subIndex]);
+      return (int) (segmentOrd + mapping.ordDeltas[subIndex].get(segmentOrd));
+    }
+ 
+    @Override
+    public void lookupOrd(int ord, BytesRef result) {
+      int subIndex = (int) mapping.subIndexes.get(ord);
+      int segmentOrd = (int) (ord - mapping.globalOrdDeltas.get(ord));
+      values[subIndex].lookupOrd(segmentOrd, result);
+    }
+ 
+    @Override
+    public int getValueCount() {
+      return mapping.globalOrdDeltas.size();
     }
   }
 }
