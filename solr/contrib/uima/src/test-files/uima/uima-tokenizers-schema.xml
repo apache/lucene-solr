@@ -300,7 +300,8 @@
     <fieldType name="uima_sentences" class="solr.TextField" positionIncrementGap="100">
       <analyzer>
         <tokenizer class="solr.UIMAAnnotationsTokenizerFactory"
-                   descriptorPath="/uima/AggregateSentenceAE.xml" tokenType="org.apache.uima.SentenceAnnotation"/>
+                   descriptorPath="/uima/AggregateSentenceAE.xml" tokenType="org.apache.uima.SentenceAnnotation"
+                   ngramsize="2"/>
       </analyzer>
     </fieldType>
 
