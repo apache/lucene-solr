@@ -18,10 +18,14 @@ package org.apache.lucene.index;
  */
 
 import java.io.IOException;
+import java.util.HashMap;
+import java.util.Map;
 
 import org.apache.lucene.util.Bits;
 
 import org.apache.lucene.index.DirectoryReader; // javadoc
+import org.apache.lucene.index.MultiDocValues.MultiSortedDocValues;
+import org.apache.lucene.index.MultiDocValues.OrdinalMap;
 import org.apache.lucene.index.MultiReader; // javadoc
 
 /**
@@ -94,8 +98,40 @@ public final class SlowCompositeReaderWrapper extends AtomicReader {
   @Override
   public SortedDocValues getSortedDocValues(String field) throws IOException {
     ensureOpen();
-    return MultiDocValues.getSortedValues(in, field);
+    OrdinalMap map = null;
+    synchronized (cachedOrdMaps) {
+      map = cachedOrdMaps.get(field);
+      if (map == null) {
+        // uncached, or not a multi dv
+        SortedDocValues dv = MultiDocValues.getSortedValues(in, field);
+        if (dv instanceof MultiSortedDocValues) {
+          map = ((MultiSortedDocValues)dv).mapping;
+          cachedOrdMaps.put(field, map);
+        }
+        return dv;
+      }
+    }
+    // cached multi dv
+    assert map != null;
+    int size = in.leaves().size();
+    final SortedDocValues[] values = new SortedDocValues[size];
+    final int[] starts = new int[size+1];
+    for (int i = 0; i < size; i++) {
+      AtomicReaderContext context = in.leaves().get(i);
+      SortedDocValues v = context.reader().getSortedDocValues(field);
+      if (v == null) {
+        v = SortedDocValues.EMPTY;
+      }
+      values[i] = v;
+      starts[i] = context.docBase;
+    }
+    starts[size] = maxDoc();
+    return new MultiSortedDocValues(values, starts, map);
   }
+  
+  // TODO: this could really be a weak map somewhere else on the coreCacheKey,
+  // but do we really need to optimize slow-wrapper any more?
+  private final Map<String,OrdinalMap> cachedOrdMaps = new HashMap<String,OrdinalMap>();
 
   @Override
   public NumericDocValues getNormValues(String field) throws IOException {

@@ -221,7 +221,6 @@ public class MultiDocValues {
   
   /** maps per-segment ordinals to/from global ordinal space */
   // TODO: use more efficient packed ints structures (these are all positive values!)
-  // nocommit: cache this in SlowWrapper, it can create MultiSortedDV with it directly.
   static class OrdinalMap {
     // globalOrd -> (globalOrd - segmentOrd)
     final AppendingLongBuffer globalOrdDeltas;
