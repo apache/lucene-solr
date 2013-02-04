@@ -214,7 +214,7 @@ public class MultiDocValues {
     if (!anyReal) {
       return null;
     } else {
-      OrdinalMapping mapping = new OrdinalMapping(values);
+      OrdinalMap mapping = new OrdinalMap(values);
       return new MultiSortedDocValues(values, starts, mapping);
     }
   }
@@ -222,7 +222,7 @@ public class MultiDocValues {
   /** maps per-segment ordinals to/from global ordinal space */
   // TODO: use more efficient packed ints structures (these are all positive values!)
   // nocommit: cache this in SlowWrapper, it can create MultiSortedDV with it directly.
-  static class OrdinalMapping {
+  static class OrdinalMap {
     // globalOrd -> (globalOrd - segmentOrd)
     final AppendingLongBuffer globalOrdDeltas;
     // globalOrd -> sub index
@@ -230,7 +230,7 @@ public class MultiDocValues {
     // segmentOrd -> (globalOrd - segmentOrd)
     final AppendingLongBuffer ordDeltas[];
     
-    OrdinalMapping(SortedDocValues subs[]) throws IOException {
+    OrdinalMap(SortedDocValues subs[]) throws IOException {
       // create the ordinal mappings by pulling a termsenum over each sub's 
       // unique terms, and walking a multitermsenum over those
       globalOrdDeltas = new AppendingLongBuffer();
@@ -253,13 +253,15 @@ public class MultiDocValues {
         TermsEnumWithSlice matches[] = mte.getMatchArray();
         for (int i = 0; i < mte.getMatchCount(); i++) {
           int subIndex = matches[i].index;
+          int delta = globalOrd - segmentOrds[subIndex];
+          assert delta >= 0;
           // for each unique term, just mark the first subindex/delta where it occurs
           if (i == 0) {
             subIndexes.add(subIndex);
-            globalOrdDeltas.add(globalOrd - segmentOrds[subIndex]);
+            globalOrdDeltas.add(delta);
           }
           // for each per-segment ord, map it back to the global term.
-          ordDeltas[subIndex].add(globalOrd - segmentOrds[subIndex]);
+          ordDeltas[subIndex].add(delta);
           segmentOrds[subIndex]++;
         }
         globalOrd++;
@@ -267,13 +269,13 @@ public class MultiDocValues {
     }
   }
   
-  /** implements SortedDocValues over n subs, using a SortedBytesMapping */
+  /** implements SortedDocValues over n subs, using an OrdinalMap */
   static class MultiSortedDocValues extends SortedDocValues {
     final int docStarts[];
     final SortedDocValues values[];
-    final OrdinalMapping mapping;
+    final OrdinalMap mapping;
   
-    MultiSortedDocValues(SortedDocValues values[], int docStarts[], OrdinalMapping mapping) throws IOException {
+    MultiSortedDocValues(SortedDocValues values[], int docStarts[], OrdinalMap mapping) throws IOException {
       this.values = values;
       this.docStarts = docStarts;
       this.mapping = mapping;
