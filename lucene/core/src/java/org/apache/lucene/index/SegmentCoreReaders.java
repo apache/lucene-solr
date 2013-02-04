@@ -254,7 +254,7 @@ final class SegmentCoreReaders {
     return dvs;
   }
 
-  NumericDocValues getSimpleNormValues(String field) throws IOException {
+  NumericDocValues getNormValues(String field) throws IOException {
     FieldInfo fi = fieldInfos.fieldInfo(field);
     if (fi == null) {
       // Field does not exist

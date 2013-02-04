@@ -250,7 +250,7 @@ public final class SegmentReader extends AtomicReader {
   @Override
   public NumericDocValues getNormValues(String field) throws IOException {
     ensureOpen();
-    return core.getSimpleNormValues(field);
+    return core.getNormValues(field);
   }
 
   /**
