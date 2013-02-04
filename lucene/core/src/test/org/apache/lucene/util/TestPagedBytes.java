@@ -20,21 +20,27 @@ package org.apache.lucene.util;
 import java.io.IOException;
 import java.util.*;
 
+import org.apache.lucene.store.BaseDirectoryWrapper;
 import org.apache.lucene.store.DataInput;
-import org.apache.lucene.store.DataOutput;
+import org.apache.lucene.store.IOContext;
+import org.apache.lucene.store.IndexInput;
+import org.apache.lucene.store.IndexOutput;
+import org.apache.lucene.store.MockDirectoryWrapper;
 import org.junit.Ignore;
 
-// nocommit: clean up these tests (eg. not to use IndexINput/Output)
 public class TestPagedBytes extends LuceneTestCase {
 
-  /*
   public void testDataInputOutput() throws Exception {
     Random random = random();
     for(int iter=0;iter<5*RANDOM_MULTIPLIER;iter++) {
+      BaseDirectoryWrapper dir = newFSDirectory(_TestUtil.getTempDir("testOverflow"));
+      if (dir instanceof MockDirectoryWrapper) {
+        ((MockDirectoryWrapper)dir).setThrottling(MockDirectoryWrapper.Throttling.NEVER);
+      }
       final int blockBits = _TestUtil.nextInt(random, 1, 20);
       final int blockSize = 1 << blockBits;
       final PagedBytes p = new PagedBytes(blockBits);
-      final DataOutput out = p.getDataOutput();
+      final IndexOutput out = dir.createOutput("foo", IOContext.DEFAULT);
       final int numBytes = _TestUtil.nextInt(random(), 2, 10000000);
 
       final byte[] answer = new byte[numBytes];
@@ -49,10 +55,13 @@ public class TestPagedBytes extends LuceneTestCase {
           written += chunk;
         }
       }
-
+      
+      out.close();
+      final IndexInput input = dir.openInput("foo", IOContext.DEFAULT);
+      final DataInput in = input.clone();
+      
+      p.copy(input, input.length());
       final PagedBytes.Reader reader = p.freeze(random.nextBoolean());
-
-      final DataInput in = p.getDataInput();
 
       final byte[] verify = new byte[numBytes];
       int read = 0;
@@ -76,11 +85,17 @@ public class TestPagedBytes extends LuceneTestCase {
           assertEquals(answer[pos + byteUpto], slice.bytes[slice.offset + byteUpto]);
         }
       }
+      input.close();
+      dir.close();
     }
   }
 
   @Ignore // memory hole
   public void testOverflow() throws IOException {
+    BaseDirectoryWrapper dir = newFSDirectory(_TestUtil.getTempDir("testOverflow"));
+    if (dir instanceof MockDirectoryWrapper) {
+      ((MockDirectoryWrapper)dir).setThrottling(MockDirectoryWrapper.Throttling.NEVER);
+    }
     final int blockBits = _TestUtil.nextInt(random(), 14, 28);
     final int blockSize = 1 << blockBits;
     byte[] arr = new byte[_TestUtil.nextInt(random(), blockSize / 2, blockSize * 2)];
@@ -89,23 +104,26 @@ public class TestPagedBytes extends LuceneTestCase {
     }
     final long numBytes = (1L << 31) + _TestUtil.nextInt(random(), 1, blockSize * 3);
     final PagedBytes p = new PagedBytes(blockBits);
-    final PagedBytesDataOutput out = p.getDataOutput();
+    final IndexOutput out = dir.createOutput("foo", IOContext.DEFAULT);
     for (long i = 0; i < numBytes; ) {
-      assertEquals(i, out.getPosition());
+      assertEquals(i, out.getFilePointer());
       final int len = (int) Math.min(arr.length, numBytes - i);
       out.writeBytes(arr, len);
       i += len;
     }
-    assertEquals(numBytes, out.getPosition());
-    p.freeze(random().nextBoolean());
-    final PagedBytesDataInput in = p.getDataInput();
+    assertEquals(numBytes, out.getFilePointer());
+    out.close();
+    final IndexInput in = dir.openInput("foo", IOContext.DEFAULT);
+    p.copy(in, numBytes);
+    final PagedBytes.Reader reader = p.freeze(random().nextBoolean());
 
     for (long offset : new long[] {0L, Integer.MAX_VALUE, numBytes - 1,
         _TestUtil.nextLong(random(), 1, numBytes - 2)}) {
-      in.setPosition(offset);
-      assertEquals(offset, in.getPosition());
-      assertEquals(arr[(int) (offset % arr.length)], in.readByte());
-      assertEquals(offset+1, in.getPosition());
+      BytesRef b = new BytesRef();
+      reader.fillSlice(b, offset, 1);
+      assertEquals(arr[(int) (offset % arr.length)], b.bytes[b.offset]);
     }
-  } */
+    in.close();
+    dir.close();
+  }
 }
