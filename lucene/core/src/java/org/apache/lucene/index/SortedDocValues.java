@@ -67,7 +67,7 @@ public abstract class SortedDocValues extends BinaryDocValues {
     }
   }
 
-  /** An empty SortedDocValues which returns empty bytes for every document */
+  /** An empty SortedDocValues which returns {@link #MISSING} for every document */
   public static final SortedDocValues EMPTY = new SortedDocValues() {
     @Override
     public int getOrd(int docID) {
@@ -76,6 +76,8 @@ public abstract class SortedDocValues extends BinaryDocValues {
 
     @Override
     public void lookupOrd(int ord, BytesRef result) {
+      result.bytes = MISSING;
+      result.offset = 0;
       result.length = 0;
     }
 

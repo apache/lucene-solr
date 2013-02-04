@@ -36,10 +36,12 @@ public abstract class BinaryDocValues {
    */
   public static final byte[] MISSING = new byte[0];
   
-  /** An empty BinaryDocValues which returns empty bytes for every document */
+  /** An empty BinaryDocValues which returns {@link #MISSING} for every document */
   public static final BinaryDocValues EMPTY = new BinaryDocValues() {
     @Override
     public void get(int docID, BytesRef result) {
+      result.bytes = MISSING;
+      result.offset = 0;
       result.length = 0;
     }
   };
