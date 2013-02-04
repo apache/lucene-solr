@@ -43,8 +43,8 @@ public class BytesRefFieldSource extends FieldCacheSource {
   public FunctionValues getValues(Map context, AtomicReaderContext readerContext) throws IOException {
     final FieldInfo fieldInfo = readerContext.reader().getFieldInfos().fieldInfo(field);
     // To be sorted or not to be sorted, that is the question
-    // nocommit: do it cleaner?
-    if (fieldInfo != null && fieldInfo.hasDocValues() && fieldInfo.getDocValuesType() == DocValuesType.BINARY) {
+    // TODO: do it cleaner?
+    if (fieldInfo != null && fieldInfo.getDocValuesType() == DocValuesType.BINARY) {
       final BinaryDocValues binaryValues = FieldCache.DEFAULT.getTerms(readerContext.reader(), field);
       return new FunctionValues() {
 
