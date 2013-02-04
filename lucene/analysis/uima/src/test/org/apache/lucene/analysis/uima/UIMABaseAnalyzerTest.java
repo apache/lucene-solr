@@ -36,6 +36,8 @@ import org.junit.Before;
 import org.junit.Test;
 
 import java.io.StringReader;
+import java.util.HashMap;
+import java.util.Map;
 
 /**
  * Testcase for {@link UIMABaseAnalyzer}
@@ -48,7 +50,7 @@ public class UIMABaseAnalyzerTest extends BaseTokenStreamTestCase {
   @Before
   public void setUp() throws Exception {
     super.setUp();
-    analyzer = new UIMABaseAnalyzer("/uima/AggregateSentenceAE.xml", "org.apache.uima.TokenAnnotation");
+    analyzer = new UIMABaseAnalyzer("/uima/AggregateSentenceAE.xml", "org.apache.uima.TokenAnnotation", null);
   }
 
   @Override
@@ -120,7 +122,15 @@ public class UIMABaseAnalyzerTest extends BaseTokenStreamTestCase {
 
   @Test
   public void testRandomStrings() throws Exception {
-    checkRandomData(random(), new UIMABaseAnalyzer("/uima/TestAggregateSentenceAE.xml", "org.apache.lucene.uima.ts.TokenAnnotation"),
+    checkRandomData(random(), new UIMABaseAnalyzer("/uima/TestAggregateSentenceAE.xml", "org.apache.lucene.uima.ts.TokenAnnotation", null),
+        100 * RANDOM_MULTIPLIER);
+  }
+
+  @Test
+  public void testRandomStringsWithConfigurationParameters() throws Exception {
+    Map<String, Object> cp = new HashMap<String, Object>();
+    cp.put("line-end", "\r");
+    checkRandomData(random(), new UIMABaseAnalyzer("/uima/TestWSTokenizerAE.xml", "org.apache.lucene.uima.ts.TokenAnnotation", cp),
         100 * RANDOM_MULTIPLIER);
   }
 

@@ -28,6 +28,8 @@ import org.apache.uima.resource.ResourceInitializationException;
 
 import java.io.IOException;
 import java.io.Reader;
+import java.util.HashMap;
+import java.util.Map;
 
 /**
  * Abstract base implementation of a {@link Tokenizer} which is able to analyze the given input with a
@@ -39,10 +41,10 @@ public abstract class BaseUIMATokenizer extends Tokenizer {
   protected final AnalysisEngine ae;
   protected final CAS cas;
 
-  protected BaseUIMATokenizer(Reader reader, String descriptorPath) {
+  protected BaseUIMATokenizer(Reader reader, String descriptorPath, Map<String, Object> configurationParameters) {
     super(reader);
     try {
-      ae = AEProviderFactory.getInstance().getAEProvider(descriptorPath).getAE();
+      ae = AEProviderFactory.getInstance().getAEProvider(null, descriptorPath, configurationParameters).getAE();
       cas = ae.newCAS();
     } catch (ResourceInitializationException e) {
       throw new RuntimeException(e);

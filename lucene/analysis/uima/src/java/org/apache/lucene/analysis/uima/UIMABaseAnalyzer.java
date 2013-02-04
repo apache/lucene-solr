@@ -20,6 +20,7 @@ package org.apache.lucene.analysis.uima;
 import org.apache.lucene.analysis.Analyzer;
 
 import java.io.Reader;
+import java.util.Map;
 
 /**
  * An {@link Analyzer} which use the {@link UIMAAnnotationsTokenizer} for creating tokens
@@ -28,15 +29,17 @@ public final class UIMABaseAnalyzer extends Analyzer {
 
   private final String descriptorPath;
   private final String tokenType;
+  private final Map<String, Object> configurationParameters;
 
-  public UIMABaseAnalyzer(String descriptorPath, String tokenType) {
+  public UIMABaseAnalyzer(String descriptorPath, String tokenType, Map<String, Object> configurationParameters) {
     this.descriptorPath = descriptorPath;
     this.tokenType = tokenType;
+    this.configurationParameters = configurationParameters;
   }
 
   @Override
   protected TokenStreamComponents createComponents(String fieldName, Reader reader) {
-    return new TokenStreamComponents(new UIMAAnnotationsTokenizer(descriptorPath, tokenType, reader));
+    return new TokenStreamComponents(new UIMAAnnotationsTokenizer(descriptorPath, tokenType, configurationParameters, reader));
   }
 
 }
