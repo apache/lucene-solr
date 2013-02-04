@@ -31,6 +31,7 @@ import org.apache.lucene.document.SortedDocValuesField;
 import org.apache.lucene.document.TextField;
 import org.apache.lucene.search.FieldCache;
 import org.apache.lucene.store.Directory;
+import org.apache.lucene.util.Bits;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.LuceneTestCase;
 
@@ -722,4 +723,31 @@ public class TestDocValuesIndexing extends LuceneTestCase {
     dir2.close();
     dir.close();
   }
+
+  public void testDocsWithField() throws Exception {
+    Directory dir = newDirectory();
+    IndexWriterConfig conf = newIndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer(random()));
+    IndexWriter writer = new IndexWriter(dir, conf);
+    Document doc = new Document();
+    doc.add(new NumericDocValuesField("dv", 0L));
+    writer.addDocument(doc);
+
+    doc = new Document();
+    doc.add(new TextField("dv", "some text", Field.Store.NO));
+    doc.add(new NumericDocValuesField("dv", 0L));
+    writer.addDocument(doc);
+    
+    DirectoryReader r = writer.getReader();
+    writer.close();
+
+    AtomicReader subR = r.leaves().get(0).reader();
+    assertEquals(2, subR.numDocs());
+
+    Bits bits = FieldCache.DEFAULT.getDocsWithField(subR, "dv");
+    assertTrue(bits.get(0));
+    assertTrue(bits.get(1));
+    r.close();
+    dir.close();
+  }
+
 }
