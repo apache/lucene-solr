@@ -24,16 +24,17 @@ import org.apache.lucene.util.LuceneTestCase.BadApple;
 import org.apache.lucene.util.LuceneTestCase.Slow;
 import org.apache.solr.client.solrj.SolrQuery;
 import org.apache.solr.common.SolrInputDocument;
+import org.apache.solr.core.Diagnostics;
 import org.apache.solr.core.SolrCore;
 import org.apache.solr.servlet.SolrDispatchFilter;
 import org.apache.solr.update.DirectUpdateHandler2;
+import org.apache.solr.update.SolrCmdDistributor;
 import org.junit.After;
 import org.junit.AfterClass;
 import org.junit.Before;
 import org.junit.BeforeClass;
 
 @Slow
-@BadApple
 public class ChaosMonkeySafeLeaderTest extends AbstractFullDistribZkTestBase {
   
   private static final int BASE_RUN_LENGTH = 120000;
@@ -41,12 +42,21 @@ public class ChaosMonkeySafeLeaderTest extends AbstractFullDistribZkTestBase {
 
   @BeforeClass
   public static void beforeSuperClass() {
-
+    SolrCmdDistributor.testing_errorHook = new Diagnostics.Callable() {
+      @Override
+      public void call(Object... data) {
+        SolrCmdDistributor.Request sreq = (SolrCmdDistributor.Request)data[1];
+        if (sreq.exception == null) return;
+        if (sreq.exception.getMessage().contains("Timeout")) {
+          Diagnostics.logThreadDumps("REQUESTING THREAD DUMP DUE TO TIMEOUT: " + sreq.exception.getMessage());
+        }
+      }
+    };
   }
   
   @AfterClass
   public static void afterSuperClass() {
-    
+    SolrCmdDistributor.testing_errorHook = null;
   }
   
   @Before
