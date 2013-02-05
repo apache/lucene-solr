@@ -278,6 +278,8 @@ public class MultiDocValues {
     final OrdinalMap mapping;
   
     MultiSortedDocValues(SortedDocValues values[], int docStarts[], OrdinalMap mapping) throws IOException {
+      assert values.length == mapping.ordDeltas.length;
+      assert docStarts.length == values.length + 1;
       this.values = values;
       this.docStarts = docStarts;
       this.mapping = mapping;
@@ -294,7 +296,6 @@ public class MultiDocValues {
     public void lookupOrd(int ord, BytesRef result) {
       int subIndex = (int) mapping.subIndexes.get(ord);
       int segmentOrd = (int) (ord - mapping.globalOrdDeltas.get(ord));
-      assert subIndex < values.length;
       values[subIndex].lookupOrd(segmentOrd, result);
     }
  
