@@ -94,6 +94,12 @@ New Features
 * LUCENE-4723: Add AnalyzerFactoryTask to benchmark, and enable analyzer
   creation via the resulting factories using NewAnalyzerTask.  (Steve Rowe)
 
+* LUCENE-4728: Unknown and not explicitly mapped queries are now rewritten
+  against the highlighting IndexReader to obtain primitive queries before 
+  discarding the query entirely. WeightedSpanTermExtractor now builds a
+  MemoryIndex only once even if multiple fields are highlighted.
+  (Simon Willnauer)
+
 API Changes
 
 * LUCENE-4709: FacetResultNode no longer has a residue field. (Shai Erera)

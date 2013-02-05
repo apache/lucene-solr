@@ -465,7 +465,9 @@ public class MemoryIndex {
       throw new RuntimeException(e);
     } finally {
       try {
-        if (stream != null) stream.close();
+        if (stream != null) {
+          stream.close();
+        }
       } catch (IOException e2) {
         throw new RuntimeException(e2);
       }
