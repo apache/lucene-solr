@@ -772,23 +772,16 @@ public abstract class TFIDFSimilarity extends Similarity {
     private final IDFStats stats;
     private final float weightValue;
     private final NumericDocValues norms;
-    private static final int SCORE_CACHE_SIZE = 32;
-    private float[] scoreCache = new float[SCORE_CACHE_SIZE];
     
     ExactTFIDFDocScorer(IDFStats stats, NumericDocValues norms) throws IOException {
       this.stats = stats;
       this.weightValue = stats.value;
       this.norms = norms; 
-      for (int i = 0; i < SCORE_CACHE_SIZE; i++)
-        scoreCache[i] = tf(i) * weightValue;
     }
     
     @Override
     public float score(int doc, int freq) {
-      final float raw =                                // compute tf(f)*weight
-        freq < SCORE_CACHE_SIZE                        // check cache
-        ? scoreCache[freq]                             // cache hit
-        : tf(freq)*weightValue;        // cache miss
+      final float raw = tf(freq)*weightValue;  // compute tf(f)*weight
 
       return norms == null ? raw : raw * decodeNormValue((byte)norms.get(doc)); // normalize for field
     }

@@ -38,6 +38,7 @@ import org.apache.lucene.util.fst.Util;
 import org.apache.lucene.util.packed.BlockPackedWriter;
 import org.apache.lucene.util.packed.MonotonicBlockPackedWriter;
 import org.apache.lucene.util.packed.PackedInts;
+import org.apache.lucene.util.packed.PackedInts.FormatAndBits;
 
 /**
  * Writer for {@link Lucene42DocValuesFormat}
@@ -51,14 +52,20 @@ class Lucene42DocValuesConsumer extends DocValuesConsumer {
   static final byte FST = 2;
 
   static final int BLOCK_SIZE = 4096;
+  
+  static final byte DELTA_COMPRESSED = 0;
+  static final byte TABLE_COMPRESSED = 1;
+  static final byte UNCOMPRESSED = 2;
 
   final IndexOutput data, meta;
   final int maxDoc;
+  final float acceptableOverheadRatio;
   
-  Lucene42DocValuesConsumer(SegmentWriteState state, String dataCodec, String dataExtension, String metaCodec, String metaExtension) throws IOException {
+  Lucene42DocValuesConsumer(SegmentWriteState state, String dataCodec, String dataExtension, String metaCodec, String metaExtension, float acceptableOverheadRatio) throws IOException {
+    this.acceptableOverheadRatio = acceptableOverheadRatio;
+    maxDoc = state.segmentInfo.getDocCount();
     boolean success = false;
     try {
-      maxDoc = state.segmentInfo.getDocCount();
       String dataName = IndexFileNames.segmentFileName(state.segmentInfo.name, state.segmentSuffix, dataExtension);
       data = state.directory.createOutput(dataName, state.context);
       CodecUtil.writeHeader(data, dataCodec, VERSION_CURRENT);
@@ -95,29 +102,37 @@ class Lucene42DocValuesConsumer extends DocValuesConsumer {
       }
     }
 
-    final long delta = maxValue - minValue;
-    if (uniqueValues != null && (delta < 0 || PackedInts.bitsRequired(uniqueValues.size()-1) < PackedInts.bitsRequired(delta))) {
-      // smaller to tableize
+    if (uniqueValues != null) {
+      // small number of unique values
       final int bitsPerValue = PackedInts.bitsRequired(uniqueValues.size()-1);
-      meta.writeByte((byte)1); // table-compressed
-      Long[] decode = uniqueValues.toArray(new Long[uniqueValues.size()]);
-      final HashMap<Long,Integer> encode = new HashMap<Long,Integer>();
-      data.writeVInt(decode.length);
-      for (int i = 0; i < decode.length; i++) {
-        data.writeLong(decode[i]);
-        encode.put(decode[i], i);
-      }
+      FormatAndBits formatAndBits = PackedInts.fastestFormatAndBits(maxDoc, bitsPerValue, acceptableOverheadRatio);
+      if (formatAndBits.bitsPerValue == 8 && minValue >= Byte.MIN_VALUE && maxValue <= Byte.MAX_VALUE) {
+        meta.writeByte(UNCOMPRESSED); // uncompressed
+        for (Number nv : values) {
+          data.writeByte((byte) nv.longValue());
+        }
+      } else {
+        meta.writeByte(TABLE_COMPRESSED); // table-compressed
+        Long[] decode = uniqueValues.toArray(new Long[uniqueValues.size()]);
+        final HashMap<Long,Integer> encode = new HashMap<Long,Integer>();
+        data.writeVInt(decode.length);
+        for (int i = 0; i < decode.length; i++) {
+          data.writeLong(decode[i]);
+          encode.put(decode[i], i);
+        }
 
-      meta.writeVInt(PackedInts.VERSION_CURRENT);
-      data.writeVInt(bitsPerValue);
+        meta.writeVInt(PackedInts.VERSION_CURRENT);
+        data.writeVInt(formatAndBits.format.getId());
+        data.writeVInt(formatAndBits.bitsPerValue);
 
-      final PackedInts.Writer writer = PackedInts.getWriterNoHeader(data, PackedInts.Format.PACKED, maxDoc, bitsPerValue, PackedInts.DEFAULT_BUFFER_SIZE);
-      for(Number nv : values) {
-        writer.add(encode.get(nv));
+        final PackedInts.Writer writer = PackedInts.getWriterNoHeader(data, formatAndBits.format, maxDoc, formatAndBits.bitsPerValue, PackedInts.DEFAULT_BUFFER_SIZE);
+        for(Number nv : values) {
+          writer.add(encode.get(nv.longValue()));
+        }
+        writer.finish();
       }
-      writer.finish();
     } else {
-      meta.writeByte((byte)0); // delta-compressed
+      meta.writeByte(DELTA_COMPRESSED); // delta-compressed
 
       meta.writeVInt(PackedInts.VERSION_CURRENT);
       data.writeVInt(BLOCK_SIZE);

@@ -104,8 +104,10 @@ class Lucene42DocValuesProducer extends DocValuesProducer {
       if (fieldType == Lucene42DocValuesConsumer.NUMBER) {
         NumericEntry entry = new NumericEntry();
         entry.offset = meta.readLong();
-        entry.tableized = meta.readByte() != 0;
-        entry.packedIntsVersion = meta.readVInt();
+        entry.format = meta.readByte();
+        if (entry.format != Lucene42DocValuesConsumer.UNCOMPRESSED) {
+          entry.packedIntsVersion = meta.readVInt();
+        }
         numerics.put(fieldNumber, entry);
       } else if (fieldType == Lucene42DocValuesConsumer.BYTES) {
         BinaryEntry entry = new BinaryEntry();
@@ -143,21 +145,22 @@ class Lucene42DocValuesProducer extends DocValuesProducer {
   private NumericDocValues loadNumeric(FieldInfo field) throws IOException {
     NumericEntry entry = numerics.get(field.number);
     data.seek(entry.offset);
-    if (entry.tableized) {
+    if (entry.format == Lucene42DocValuesConsumer.TABLE_COMPRESSED) {
       int size = data.readVInt();
       final long decode[] = new long[size];
       for (int i = 0; i < decode.length; i++) {
         decode[i] = data.readLong();
       }
+      final int formatID = data.readVInt();
       final int bitsPerValue = data.readVInt();
-      final PackedInts.Reader reader = PackedInts.getReaderNoHeader(data, PackedInts.Format.PACKED, entry.packedIntsVersion, maxDoc, bitsPerValue);
+      final PackedInts.Reader reader = PackedInts.getReaderNoHeader(data, PackedInts.Format.byId(formatID), entry.packedIntsVersion, maxDoc, bitsPerValue);
       return new NumericDocValues() {
         @Override
         public long get(int docID) {
           return decode[(int)reader.get(docID)];
         }
       };
-    } else {
+    } else if (entry.format == Lucene42DocValuesConsumer.DELTA_COMPRESSED) {
       final int blockSize = data.readVInt();
       final BlockPackedReader reader = new BlockPackedReader(data, entry.packedIntsVersion, blockSize, maxDoc, false);
       return new NumericDocValues() {
@@ -166,6 +169,17 @@ class Lucene42DocValuesProducer extends DocValuesProducer {
           return reader.get(docID);
         }
       };
+    } else if (entry.format == Lucene42DocValuesConsumer.UNCOMPRESSED) {
+      final byte bytes[] = new byte[maxDoc];
+      data.readBytes(bytes, 0, bytes.length);
+      return new NumericDocValues() {
+        @Override
+        public long get(int docID) {
+          return bytes[docID];
+        }
+      };
+    } else {
+      throw new IllegalStateException();
     }
   }
 
@@ -279,7 +293,7 @@ class Lucene42DocValuesProducer extends DocValuesProducer {
   
   static class NumericEntry {
     long offset;
-    boolean tableized;
+    byte format;
     int packedIntsVersion;
   }
   

@@ -41,6 +41,9 @@ import org.apache.lucene.util.packed.BlockPackedWriter;
  *        the minimum value is encoded, and each entry is a delta from that minimum value.
  *    <li>Table-compressed Numerics: when the number of unique values is very small, a lookup table
  *        is written instead. Each per-document entry is instead the ordinal to this table.
+ *    <li>Uncompressed Numerics: when all values would fit into a single byte, and the 
+ *        <code>acceptableOverheadRatio</code> would pack values into 8 bits per value anyway, they
+ *        are written as absolute values (with no indirection or packing) for performance.
  *    <li>Fixed-width Binary: one large concatenated byte[] is written, along with the fixed length.
  *        Each document's value can be addressed by maxDoc*length. 
  *    <li>Variable-width Binary: one large concatenated byte[] is written, along with end addresses 
@@ -83,6 +86,9 @@ import org.apache.lucene.util.packed.BlockPackedWriter;
  *             from the minimum value within the block. 
  *         <li>1 --&gt; table-compressed. When the number of unique numeric values is small and it would save space,
  *             a lookup table of unique values is written, followed by the ordinal for each document.
+ *         <li>2 --&gt; uncompressed. When the <code>acceptableOverheadRatio</code> parameter would upgrade the number
+ *             of bits required to 8, and all values fit in a byte, these are written as absolute binary values
+ *             for performance.
  *      </ul>
  *   <p>MinLength and MaxLength represent the min and max byte[] value lengths for Binary values.
  *      If they are equal, then all values are of a fixed size, and can be addressed as DataOffset + (docID * length).
@@ -93,11 +99,12 @@ import org.apache.lucene.util.packed.BlockPackedWriter;
  *   <p>For DocValues field, this stores the actual per-document data (the heavy-lifting)</p>
  *   <p>DocValues data (.dvd) --&gt; Header,&lt;NumericData | BinaryData | SortedData&gt;<sup>NumFields</sup></p>
  *   <ul>
- *     <li>NumericData --&gt; DeltaCompressedNumerics | TableCompressedNumerics</li>
+ *     <li>NumericData --&gt; DeltaCompressedNumerics | TableCompressedNumerics | UncompressedNumerics</li>
  *     <li>BinaryData --&gt;  {@link DataOutput#writeByte Byte}<sup>DataLength</sup>,Addresses</li>
  *     <li>SortedData --&gt; {@link FST FST&lt;Int64&gt;}</li>
  *     <li>DeltaCompressedNumerics --&gt; {@link BlockPackedWriter BlockPackedInts(blockSize=4096)}</li>
  *     <li>TableCompressedNumerics --&gt; TableSize,{@link DataOutput#writeLong Int64}<sup>TableSize</sup>,{@link PackedInts PackedInts}</li>
+ *     <li>UncompressedNumerics --&gt; {@link DataOutput#writeByte Byte}<sup>maxdoc</sup></li>
  *     <li>Addresses --&gt; {@link MonotonicBlockPackedWriter MonotonicBlockPackedInts(blockSize=4096)}</li>
  *   </ul>
  * </ol>
@@ -111,7 +118,8 @@ public final class Lucene42DocValuesFormat extends DocValuesFormat {
 
   @Override
   public DocValuesConsumer fieldsConsumer(SegmentWriteState state) throws IOException {
-    return new Lucene42DocValuesConsumer(state, DATA_CODEC, DATA_EXTENSION, METADATA_CODEC, METADATA_EXTENSION);
+    // note: we choose DEFAULT here (its reasonably fast, and for small bpv has tiny waste)
+    return new Lucene42DocValuesConsumer(state, DATA_CODEC, DATA_EXTENSION, METADATA_CODEC, METADATA_EXTENSION, PackedInts.DEFAULT);
   }
   
   @Override

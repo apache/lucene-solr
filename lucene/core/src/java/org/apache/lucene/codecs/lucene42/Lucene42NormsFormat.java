@@ -24,12 +24,15 @@ import org.apache.lucene.codecs.DocValuesProducer;
 import org.apache.lucene.codecs.NormsFormat;
 import org.apache.lucene.index.SegmentReadState;
 import org.apache.lucene.index.SegmentWriteState;
+import org.apache.lucene.util.packed.PackedInts;
 
 /**
  * Lucene 4.2 score normalization format.
  * <p>
  * NOTE: this uses the same format as {@link Lucene42DocValuesFormat}
- * Numeric DocValues, but with different file extensions.
+ * Numeric DocValues, but with different file extensions, and passing
+ * {@link PackedInts#FASTEST} for uncompressed encoding: trading off
+ * space for performance.
  * <p>
  * Files:
  * <ul>
@@ -45,7 +48,8 @@ public final class Lucene42NormsFormat extends NormsFormat {
   
   @Override
   public DocValuesConsumer normsConsumer(SegmentWriteState state) throws IOException {
-    return new Lucene42DocValuesConsumer(state, DATA_CODEC, DATA_EXTENSION, METADATA_CODEC, METADATA_EXTENSION);
+    // note: we choose FASTEST here (otherwise our norms are half as big but 15% slower than previous lucene)
+    return new Lucene42DocValuesConsumer(state, DATA_CODEC, DATA_EXTENSION, METADATA_CODEC, METADATA_EXTENSION, PackedInts.FASTEST);
   }
   
   @Override
