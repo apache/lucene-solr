@@ -25,7 +25,6 @@
   <import file="../common-build.xml"/>
 
   <path id="classpath">
-    <fileset dir="lib"/>
   </path>
 
   <!--  

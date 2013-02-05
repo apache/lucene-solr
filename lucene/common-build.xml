@@ -1902,6 +1902,14 @@ ${tests-output}/junit4-*.suites     - per-JVM executed suites
     <property name="groovy.loaded" value="true"/>
   </target>
   
+  <!-- Forbidden API Task -->
+  <target name="install-forbidden-apis" unless="forbidden-apis.loaded" depends="ivy-availability-check,ivy-configure">
+    <ivy:cachepath organisation="de.thetaphi" module="forbiddenapis" revision="1.0"
+      inline="true" conf="default" transitive="true" pathid="forbidden-apis.classpath"/>
+    <taskdef name="forbidden-apis" classname="de.thetaphi.forbiddenapis.AntTask" classpathref="forbidden-apis.classpath"/>
+    <property name="forbidden-apis.loaded" value="true"/>
+  </target>
+  
   <!-- PEGDOWN macro: Before using depend on the target "resolve-pegdown" -->
   
   <target name="resolve-pegdown" unless="pegdown.loaded" depends="ivy-availability-check,ivy-configure">

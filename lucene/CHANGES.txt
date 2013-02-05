@@ -137,6 +137,9 @@ Build
 
 * LUCENE-4636: Upgrade ivy to 2.3.0 (Shawn Heisey via Robert Muir)
 
+* LUCENE-4570: Use the Policeman Formbidden API checker, released separately
+  from Lucene and downloaded via Ivy.  (Uwe Schindler, Robert Muir)
+
 ======================= Lucene 4.1.0 =======================
 
 Changes in backwards compatibility policy
