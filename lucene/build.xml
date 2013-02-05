@@ -157,28 +157,34 @@
     <license-check-macro dir="${basedir}" licensedir="${common.dir}/licenses" />
   </target>
 
-  <target name="check-forbidden-apis" depends="compile-tools,compile-test,load-custom-tasks,-check-forbidden-jdk-apis,-check-forbidden-test-apis,-check-system-out" description="Check forbidden API calls in compiled class files"/>
+  <target name="check-forbidden-apis" depends="compile-tools,compile-test,install-forbidden-apis,-forbidden-apis-classpath,-check-forbidden-jdk-apis,-check-forbidden-test-apis,-check-system-out" description="Check forbidden API calls in compiled class files"/>
+
+  <!-- TODO: Make the forbidden API checks per module! -->
+  <target name="-forbidden-apis-classpath">
+    <path id="forbidden-apis.classpath">
+      <fileset dir="${basedir}" includes="**/lib/*.jar"/>
+      <dirset dir="${basedir}/build" includes="**/classes/*"/>
+    </path>
+  </target>
 
   <target name="-check-forbidden-jdk-apis">
-    <forbidden-apis> 
-      <apiFileSet dir="${custom-tasks.dir}/forbiddenApis">
-        <include name="jdk.txt" />
-        <include name="jdk-deprecated.txt" />
-        <include name="executors.txt" />
-      </apiFileSet>
+    <forbidden-apis internalRuntimeForbidden="true" classpathref="forbidden-apis.classpath">
+      <bundledSignatures name="jdk-unsafe-${javac.target}"/>
+      <bundledSignatures name="jdk-deprecated-${javac.target}"/>
+      <signaturesFileSet file="${common.dir}/tools/forbiddenApis/executors.txt"/>
       <fileset dir="${basedir}/build" includes="**/*.class" />
     </forbidden-apis>
   </target>
 
   <target name="-check-forbidden-test-apis">
-    <forbidden-apis apiFile="${custom-tasks.dir}/forbiddenApis/tests.txt"> 
+    <forbidden-apis signaturesFile="${common.dir}/tools/forbiddenApis/tests.txt" classpathref="forbidden-apis.classpath"> 
       <classpath refid="junit-path"/>
       <fileset dir="${basedir}/build" includes="**/classes/test/**/*.class,test-framework/**/*.class" />
     </forbidden-apis>
   </target>
 
   <target name="-check-system-out">
-    <forbidden-apis apiFile="${custom-tasks.dir}/forbiddenApis/system-out.txt">
+    <forbidden-apis bundledSignatures="jdk-system-out" classpathref="forbidden-apis.classpath">
       <fileset dir="${basedir}/build">
         <include name="**/classes/java/**/*.class"/>
         <!-- this is basically tests -->
