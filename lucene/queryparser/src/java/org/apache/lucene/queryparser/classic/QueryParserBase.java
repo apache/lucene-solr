@@ -1070,19 +1070,26 @@ public abstract class QueryParserBase implements CommonQueryParserConfiguration 
     } else if (regexp) {
       q = getRegexpQuery(qfield, term.image.substring(1, term.image.length()-1));
     } else if (fuzzy) {
-      float fms = fuzzyMinSim;
-      try {
-        fms = Float.valueOf(fuzzySlop.image.substring(1)).floatValue();
-      } catch (Exception ignored) { }
-      if(fms < 0.0f){
-        throw new ParseException("Minimum similarity for a FuzzyQuery has to be between 0.0f and 1.0f !");
-      } else if (fms >= 1.0f && fms != (int) fms) {
-        throw new ParseException("Fractional edit distances are not allowed!");
-      }
-      q = getFuzzyQuery(qfield, termImage, fms);
+      q = handleBareFuzzy(qfield, fuzzySlop, termImage);
     } else {
       q = getFieldQuery(qfield, termImage, false);
     }
+    return q;
+  }
+
+  Query handleBareFuzzy(String qfield, Token fuzzySlop, String termImage)
+      throws ParseException {
+    Query q;
+    float fms = fuzzyMinSim;
+    try {
+      fms = Float.valueOf(fuzzySlop.image.substring(1)).floatValue();
+    } catch (Exception ignored) { }
+    if(fms < 0.0f){
+      throw new ParseException("Minimum similarity for a FuzzyQuery has to be between 0.0f and 1.0f !");
+    } else if (fms >= 1.0f && fms != (int) fms) {
+      throw new ParseException("Fractional edit distances are not allowed!");
+    }
+    q = getFuzzyQuery(qfield, termImage, fms);
     return q;
   }
 
