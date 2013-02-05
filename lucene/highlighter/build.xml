@@ -27,6 +27,7 @@
 
   <path id="classpath">
     <pathelement path="${memory.jar}"/>
+    <pathelement path="${queries.jar}"/>
     <path refid="base.classpath"/>
   </path>
 

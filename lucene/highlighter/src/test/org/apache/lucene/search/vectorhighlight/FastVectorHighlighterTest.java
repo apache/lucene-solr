@@ -18,6 +18,8 @@ package org.apache.lucene.search.vectorhighlight;
 import java.io.IOException;
 
 import org.apache.lucene.analysis.MockAnalyzer;
+import org.apache.lucene.analysis.MockTokenFilter;
+import org.apache.lucene.analysis.MockTokenizer;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
 import org.apache.lucene.document.FieldType;
@@ -26,7 +28,13 @@ import org.apache.lucene.index.DirectoryReader;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.IndexWriter;
 import org.apache.lucene.index.Term;
+import org.apache.lucene.queries.CommonTermsQuery;
+import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.search.TermQuery;
+import org.apache.lucene.search.TopDocs;
+import org.apache.lucene.search.BooleanClause.Occur;
+import org.apache.lucene.search.highlight.SimpleSpanFragmenter;
+import org.apache.lucene.search.highlight.TokenSources;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.util.LuceneTestCase;
 
@@ -58,6 +66,49 @@ public class FastVectorHighlighterTest extends LuceneTestCase {
     assertEquals("This is a test where <b>foo</b> is highlighed and should be", bestFragments[0]);
     bestFragments = highlighter.getBestFragments(fieldQuery, reader, docId, "field", 30, 1);
     assertEquals("a test where <b>foo</b> is highlighed", bestFragments[0]);
+    reader.close();
+    writer.close();
+    dir.close();
+  }
+  
+  public void testCommonTermsQueryHighlightTest() throws IOException {
+    Directory dir = newDirectory();
+    IndexWriter writer = new IndexWriter(dir, newIndexWriterConfig(TEST_VERSION_CURRENT,  new MockAnalyzer(random(), MockTokenizer.SIMPLE, true, MockTokenFilter.ENGLISH_STOPSET, true)));
+    FieldType type = new FieldType(TextField.TYPE_STORED);
+    type.setStoreTermVectorOffsets(true);
+    type.setStoreTermVectorPositions(true);
+    type.setStoreTermVectors(true);
+    type.freeze();
+    String[] texts = {
+        "Hello this is a piece of text that is very long and contains too much preamble and the meat is really here which says kennedy has been shot",
+        "This piece of text refers to Kennedy at the beginning then has a longer piece of text that is very long in the middle and finally ends with another reference to Kennedy",
+        "JFK has been shot", "John Kennedy has been shot",
+        "This text has a typo in referring to Keneddy",
+        "wordx wordy wordz wordx wordy wordx worda wordb wordy wordc", "y z x y z a b", "lets is a the lets is a the lets is a the lets" };
+    for (int i = 0; i < texts.length; i++) {
+      Document doc = new Document();
+      Field field = new Field("field", texts[i], type);
+      doc.add(field);
+      writer.addDocument(doc);
+    }
+    CommonTermsQuery query = new CommonTermsQuery(Occur.MUST, Occur.SHOULD, 2);
+    query.add(new Term("field", "text"));
+    query.add(new Term("field", "long"));
+    query.add(new Term("field", "very"));
+   
+    FastVectorHighlighter highlighter = new FastVectorHighlighter();
+    IndexReader reader = DirectoryReader.open(writer, true);
+    IndexSearcher searcher = new IndexSearcher(reader);
+    TopDocs hits = searcher.search(query, 10);
+    assertEquals(2, hits.totalHits);
+    FieldQuery fieldQuery  = highlighter.getFieldQuery(query, reader);
+    String[] bestFragments = highlighter.getBestFragments(fieldQuery, reader, hits.scoreDocs[0].doc, "field", 1000, 1);
+    assertEquals("This piece of <b>text</b> refers to Kennedy at the beginning then has a longer piece of <b>text</b> that is <b>very</b> <b>long</b> in the middle and finally ends with another reference to Kennedy", bestFragments[0]);
+
+    fieldQuery  = highlighter.getFieldQuery(query, reader);
+    bestFragments = highlighter.getBestFragments(fieldQuery, reader, hits.scoreDocs[1].doc, "field", 1000, 1);
+    assertEquals("Hello this is a piece of <b>text</b> that is <b>very</b> <b>long</b> and contains too much preamble and the meat is really here which says kennedy has been shot", bestFragments[0]);
+
     reader.close();
     writer.close();
     dir.close();
