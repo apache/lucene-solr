@@ -140,13 +140,6 @@ class FieldCacheImpl implements FieldCache {
     public Object getValue() { return value; }
   }
 
-  /**
-   * Hack: When thrown from a Parser (NUMERIC_UTILS_* ones), this stops
-   * processing terms and returns the current FieldCache
-   * array.
-   */
-  static final class StopFillCacheException extends RuntimeException {
-  }
   
   // per-segment fieldcaches don't purge until the shared core closes.
   final SegmentReader.CoreClosedListener purgeCore = new SegmentReader.CoreClosedListener() {
@@ -360,32 +353,30 @@ class FieldCacheImpl implements FieldCache {
             setDocsWithField = false;
           }
         }
-        final TermsEnum termsEnum = terms.iterator(null);
+        final TermsEnum termsEnum = parser.termsEnum(terms);
+        assert termsEnum != null : "TermsEnum must not be null";
         DocsEnum docs = null;
-        try {
-          while(true) {
-            final BytesRef term = termsEnum.next();
-            if (term == null) {
+        while(true) {
+          final BytesRef term = termsEnum.next();
+          if (term == null) {
+            break;
+          }
+          final byte termval = parser.parseByte(term);
+          docs = termsEnum.docs(null, docs, DocsEnum.FLAG_NONE);
+          while (true) {
+            final int docID = docs.nextDoc();
+            if (docID == DocIdSetIterator.NO_MORE_DOCS) {
               break;
             }
-            final byte termval = parser.parseByte(term);
-            docs = termsEnum.docs(null, docs, DocsEnum.FLAG_NONE);
-            while (true) {
-              final int docID = docs.nextDoc();
-              if (docID == DocIdSetIterator.NO_MORE_DOCS) {
-                break;
+            retArray[docID] = termval;
+            if (setDocsWithField) {
+              if (docsWithField == null) {
+                // Lazy init
+                docsWithField = new FixedBitSet(maxDoc);
               }
-              retArray[docID] = termval;
-              if (setDocsWithField) {
-                if (docsWithField == null) {
-                  // Lazy init
-                  docsWithField = new FixedBitSet(maxDoc);
-                }
-                docsWithField.set(docID);
-              }
+              docsWithField.set(docID);
             }
           }
-        } catch (FieldCache.StopFillCacheException stop) {
         }
       }
       if (setDocsWithField) {
@@ -435,32 +426,30 @@ class FieldCacheImpl implements FieldCache {
             setDocsWithField = false;
           }
         }
-        final TermsEnum termsEnum = terms.iterator(null);
+        final TermsEnum termsEnum = parser.termsEnum(terms);
+        assert termsEnum != null : "TermsEnum must not be null";
         DocsEnum docs = null;
-        try {
-          while(true) {
-            final BytesRef term = termsEnum.next();
-            if (term == null) {
+        while(true) {
+          final BytesRef term = termsEnum.next();
+          if (term == null) {
+            break;
+          }
+          final short termval = parser.parseShort(term);
+          docs = termsEnum.docs(null, docs, DocsEnum.FLAG_NONE);
+          while (true) {
+            final int docID = docs.nextDoc();
+            if (docID == DocIdSetIterator.NO_MORE_DOCS) {
               break;
             }
-            final short termval = parser.parseShort(term);
-            docs = termsEnum.docs(null, docs, DocsEnum.FLAG_NONE);
-            while (true) {
-              final int docID = docs.nextDoc();
-              if (docID == DocIdSetIterator.NO_MORE_DOCS) {
-                break;
+            retArray[docID] = termval;
+            if (setDocsWithField) {
+              if (docsWithField == null) {
+                // Lazy init
+                docsWithField = new FixedBitSet(maxDoc);
               }
-              retArray[docID] = termval;
-              if (setDocsWithField) {
-                if (docsWithField == null) {
-                  // Lazy init
-                  docsWithField = new FixedBitSet(maxDoc);
-                }
-                docsWithField.set(docID);
-              }
+              docsWithField.set(docID);
             }
           }
-        } catch (FieldCache.StopFillCacheException stop) {
         }
       }
       if (setDocsWithField) {
@@ -536,37 +525,35 @@ class FieldCacheImpl implements FieldCache {
             setDocsWithField = false;
           }
         }
-        final TermsEnum termsEnum = terms.iterator(null);
+        final TermsEnum termsEnum = parser.termsEnum(terms);
+        assert termsEnum != null : "TermsEnum must not be null";
         DocsEnum docs = null;
-        try {
-          while(true) {
-            final BytesRef term = termsEnum.next();
-            if (term == null) {
+        while(true) {
+          final BytesRef term = termsEnum.next();
+          if (term == null) {
+            break;
+          }
+          final int termval = parser.parseInt(term);
+          if (retArray == null) {
+            // late init so numeric fields don't double allocate
+            retArray = new int[maxDoc];
+          }
+
+          docs = termsEnum.docs(null, docs, DocsEnum.FLAG_NONE);
+          while (true) {
+            final int docID = docs.nextDoc();
+            if (docID == DocIdSetIterator.NO_MORE_DOCS) {
               break;
             }
-            final int termval = parser.parseInt(term);
-            if (retArray == null) {
-              // late init so numeric fields don't double allocate
-              retArray = new int[maxDoc];
-            }
-
-            docs = termsEnum.docs(null, docs, DocsEnum.FLAG_NONE);
-            while (true) {
-              final int docID = docs.nextDoc();
-              if (docID == DocIdSetIterator.NO_MORE_DOCS) {
-                break;
+            retArray[docID] = termval;
+            if (setDocsWithField) {
+              if (docsWithField == null) {
+                // Lazy init
+                docsWithField = new FixedBitSet(maxDoc);
               }
-              retArray[docID] = termval;
-              if (setDocsWithField) {
-                if (docsWithField == null) {
-                  // Lazy init
-                  docsWithField = new FixedBitSet(maxDoc);
-                }
-                docsWithField.set(docID);
-              }
+              docsWithField.set(docID);
             }
           }
-        } catch (FieldCache.StopFillCacheException stop) {
         }
       }
 
@@ -689,37 +676,35 @@ class FieldCacheImpl implements FieldCache {
             setDocsWithField = false;
           }
         }
-        final TermsEnum termsEnum = terms.iterator(null);
+        final TermsEnum termsEnum = parser.termsEnum(terms);
+        assert termsEnum != null : "TermsEnum must not be null";
         DocsEnum docs = null;
-        try {
-          while(true) {
-            final BytesRef term = termsEnum.next();
-            if (term == null) {
+        while(true) {
+          final BytesRef term = termsEnum.next();
+          if (term == null) {
+            break;
+          }
+          final float termval = parser.parseFloat(term);
+          if (retArray == null) {
+            // late init so numeric fields don't double allocate
+            retArray = new float[maxDoc];
+          }
+          
+          docs = termsEnum.docs(null, docs, DocsEnum.FLAG_NONE);
+          while (true) {
+            final int docID = docs.nextDoc();
+            if (docID == DocIdSetIterator.NO_MORE_DOCS) {
               break;
             }
-            final float termval = parser.parseFloat(term);
-            if (retArray == null) {
-              // late init so numeric fields don't double allocate
-              retArray = new float[maxDoc];
-            }
-            
-            docs = termsEnum.docs(null, docs, DocsEnum.FLAG_NONE);
-            while (true) {
-              final int docID = docs.nextDoc();
-              if (docID == DocIdSetIterator.NO_MORE_DOCS) {
-                break;
+            retArray[docID] = termval;
+            if (setDocsWithField) {
+              if (docsWithField == null) {
+                // Lazy init
+                docsWithField = new FixedBitSet(maxDoc);
               }
-              retArray[docID] = termval;
-              if (setDocsWithField) {
-                if (docsWithField == null) {
-                  // Lazy init
-                  docsWithField = new FixedBitSet(maxDoc);
-                }
-                docsWithField.set(docID);
-              }
+              docsWithField.set(docID);
             }
           }
-        } catch (FieldCache.StopFillCacheException stop) {
         }
       }
 
@@ -779,37 +764,35 @@ class FieldCacheImpl implements FieldCache {
             setDocsWithField = false;
           }
         }
-        final TermsEnum termsEnum = terms.iterator(null);
+        final TermsEnum termsEnum = parser.termsEnum(terms);
+        assert termsEnum != null : "TermsEnum must not be null";
         DocsEnum docs = null;
-        try {
-          while(true) {
-            final BytesRef term = termsEnum.next();
-            if (term == null) {
+        while(true) {
+          final BytesRef term = termsEnum.next();
+          if (term == null) {
+            break;
+          }
+          final long termval = parser.parseLong(term);
+          if (retArray == null) {
+            // late init so numeric fields don't double allocate
+            retArray = new long[maxDoc];
+          }
+
+          docs = termsEnum.docs(null, docs, DocsEnum.FLAG_NONE);
+          while (true) {
+            final int docID = docs.nextDoc();
+            if (docID == DocIdSetIterator.NO_MORE_DOCS) {
               break;
             }
-            final long termval = parser.parseLong(term);
-            if (retArray == null) {
-              // late init so numeric fields don't double allocate
-              retArray = new long[maxDoc];
-            }
-
-            docs = termsEnum.docs(null, docs, DocsEnum.FLAG_NONE);
-            while (true) {
-              final int docID = docs.nextDoc();
-              if (docID == DocIdSetIterator.NO_MORE_DOCS) {
-                break;
+            retArray[docID] = termval;
+            if (setDocsWithField) {
+              if (docsWithField == null) {
+                // Lazy init
+                docsWithField = new FixedBitSet(maxDoc);
               }
-              retArray[docID] = termval;
-              if (setDocsWithField) {
-                if (docsWithField == null) {
-                  // Lazy init
-                  docsWithField = new FixedBitSet(maxDoc);
-                }
-                docsWithField.set(docID);
-              }
+              docsWithField.set(docID);
             }
           }
-        } catch (FieldCache.StopFillCacheException stop) {
         }
       }
 
@@ -870,37 +853,35 @@ class FieldCacheImpl implements FieldCache {
             setDocsWithField = false;
           }
         }
-        final TermsEnum termsEnum = terms.iterator(null);
+        final TermsEnum termsEnum = parser.termsEnum(terms);
+        assert termsEnum != null : "TermsEnum must not be null";
         DocsEnum docs = null;
-        try {
-          while(true) {
-            final BytesRef term = termsEnum.next();
-            if (term == null) {
+        while(true) {
+          final BytesRef term = termsEnum.next();
+          if (term == null) {
+            break;
+          }
+          final double termval = parser.parseDouble(term);
+          if (retArray == null) {
+            // late init so numeric fields don't double allocate
+            retArray = new double[maxDoc];
+          }
+
+          docs = termsEnum.docs(null, docs, DocsEnum.FLAG_NONE);
+          while (true) {
+            final int docID = docs.nextDoc();
+            if (docID == DocIdSetIterator.NO_MORE_DOCS) {
               break;
             }
-            final double termval = parser.parseDouble(term);
-            if (retArray == null) {
-              // late init so numeric fields don't double allocate
-              retArray = new double[maxDoc];
-            }
-
-            docs = termsEnum.docs(null, docs, DocsEnum.FLAG_NONE);
-            while (true) {
-              final int docID = docs.nextDoc();
-              if (docID == DocIdSetIterator.NO_MORE_DOCS) {
-                break;
+            retArray[docID] = termval;
+            if (setDocsWithField) {
+              if (docsWithField == null) {
+                // Lazy init
+                docsWithField = new FixedBitSet(maxDoc);
               }
-              retArray[docID] = termval;
-              if (setDocsWithField) {
-                if (docsWithField == null) {
-                  // Lazy init
-                  docsWithField = new FixedBitSet(maxDoc);
-                }
-                docsWithField.set(docID);
-              }
+              docsWithField.set(docID);
             }
           }
-        } catch (FieldCache.StopFillCacheException stop) {
         }
       }
       if (retArray == null) { // no values

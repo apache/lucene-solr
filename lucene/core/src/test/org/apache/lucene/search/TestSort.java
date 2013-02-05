@@ -53,6 +53,8 @@ import org.apache.lucene.index.RandomIndexWriter;
 import org.apache.lucene.index.StorableField;
 import org.apache.lucene.index.StoredDocument;
 import org.apache.lucene.index.Term;
+import org.apache.lucene.index.Terms;
+import org.apache.lucene.index.TermsEnum;
 import org.apache.lucene.search.BooleanClause.Occur;
 import org.apache.lucene.search.FieldValueHitQueue.Entry;
 import org.apache.lucene.store.Directory;
@@ -581,6 +583,11 @@ public class TestSort extends LuceneTestCase {
       public final int parseInt(final BytesRef term) {
         return (term.bytes[term.offset]-'A') * 123456;
       }
+      
+      @Override
+      public TermsEnum termsEnum(Terms terms) throws IOException {
+        return terms.iterator(null);
+      }
     }), SortField.FIELD_DOC );
     assertMatches (full, queryA, sort, "JIHGFEDCBA");
     assertSaneFieldCaches(getTestName() + " IntParser");
@@ -590,6 +597,10 @@ public class TestSort extends LuceneTestCase {
       @Override
       public final float parseFloat(final BytesRef term) {
         return (float) Math.sqrt( term.bytes[term.offset] );
+      }
+      @Override
+      public TermsEnum termsEnum(Terms terms) throws IOException {
+        return terms.iterator(null);
       }
     }), SortField.FIELD_DOC );
     assertMatches (full, queryA, sort, "JIHGFEDCBA");
@@ -601,6 +612,11 @@ public class TestSort extends LuceneTestCase {
       public final long parseLong(final BytesRef term) {
         return (term.bytes[term.offset]-'A') * 1234567890L;
       }
+      
+      @Override
+      public TermsEnum termsEnum(Terms terms) throws IOException {
+        return terms.iterator(null);
+      }
     }), SortField.FIELD_DOC );
     assertMatches (full, queryA, sort, "JIHGFEDCBA");
     assertSaneFieldCaches(getTestName() + " LongParser");
@@ -610,6 +626,10 @@ public class TestSort extends LuceneTestCase {
       @Override
       public final double parseDouble(final BytesRef term) {
         return Math.pow( term.bytes[term.offset], (term.bytes[term.offset]-'A') );
+      }
+      @Override
+      public TermsEnum termsEnum(Terms terms) throws IOException {
+        return terms.iterator(null);
       }
     }), SortField.FIELD_DOC );
     assertMatches (full, queryA, sort, "JIHGFEDCBA");
@@ -621,6 +641,11 @@ public class TestSort extends LuceneTestCase {
       public final byte parseByte(final BytesRef term) {
         return (byte) (term.bytes[term.offset]-'A');
       }
+
+      @Override
+      public TermsEnum termsEnum(Terms terms) throws IOException {
+        return terms.iterator(null);
+      }
     }), SortField.FIELD_DOC );
     assertMatches (full, queryA, sort, "JIHGFEDCBA");
     assertSaneFieldCaches(getTestName() + " ByteParser");
@@ -630,6 +655,10 @@ public class TestSort extends LuceneTestCase {
       @Override
       public final short parseShort(final BytesRef term) {
         return (short) (term.bytes[term.offset]-'A');
+      }
+      @Override
+      public TermsEnum termsEnum(Terms terms) throws IOException {
+        return terms.iterator(null);
       }
     }), SortField.FIELD_DOC );
     assertMatches (full, queryA, sort, "JIHGFEDCBA");
@@ -707,6 +736,11 @@ public class TestSort extends LuceneTestCase {
       @Override
       public final int parseInt(final BytesRef term) {
         return (term.bytes[term.offset]-'A') * 123456;
+      }
+      
+      @Override
+      public TermsEnum termsEnum(Terms terms) throws IOException {
+        return terms.iterator(null);
       }
     };
 
