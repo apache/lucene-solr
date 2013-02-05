@@ -22,6 +22,8 @@ import org.apache.lucene.document.DoubleField; // javadocs
 import org.apache.lucene.document.FloatField; // javadocs
 import org.apache.lucene.document.IntField; // javadocs
 import org.apache.lucene.document.LongField; // javadocs
+import org.apache.lucene.index.FilteredTermsEnum;
+import org.apache.lucene.index.TermsEnum;
 import org.apache.lucene.search.NumericRangeFilter;
 import org.apache.lucene.search.NumericRangeQuery; // for javadocs
 
@@ -454,6 +456,43 @@ public final class NumericUtils {
       addRange(minBytes, maxBytes);
     }
   
+  }
+  
+  /**
+   * Filters the given {@link TermsEnum} by accepting only prefix coded 64 bit
+   * terms with a shift value of <tt>0</tt>.
+   * 
+   * @param termsEnum
+   *          the terms enum to filter
+   * @return a filtered {@link TermsEnum} that only returns prefix coded 64 bit
+   *         terms with a shift value of <tt>0</tt>.
+   */
+  public static TermsEnum filterPrefixCodedLongs(TermsEnum termsEnum) {
+    return new FilteredTermsEnum(termsEnum, false) {
+      @Override
+      protected AcceptStatus accept(BytesRef term) {
+        return NumericUtils.getPrefixCodedLongShift(term) == 0 ? AcceptStatus.YES : AcceptStatus.END;
+      }
+    };
+  }
+  
+  /**
+   * Filters the given {@link TermsEnum} by accepting only prefix coded 32 bit
+   * terms with a shift value of <tt>0</tt>.
+   * 
+   * @param termsEnum
+   *          the terms enum to filter
+   * @return a filtered {@link TermsEnum} that only returns prefix coded 32 bit
+   *         terms with a shift value of <tt>0</tt>.
+   */
+  public static TermsEnum filterPrefixCodedInts(TermsEnum termsEnum) {
+    return new FilteredTermsEnum(termsEnum, false) {
+      
+      @Override
+      protected AcceptStatus accept(BytesRef term) {
+        return NumericUtils.getPrefixCodedIntShift(term) == 0 ? AcceptStatus.YES : AcceptStatus.END;
+      }
+    };
   }
   
 }
