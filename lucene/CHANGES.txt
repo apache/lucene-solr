@@ -139,6 +139,11 @@ Bug Fixes
 * LUCENE-4739: Fixed bugs that prevented FSTs more than ~1.1GB from
   being saved and loaded (Adrien Grand, Mike McCandless)
 
+Documentation
+
+* LUCENE-4718: Fixed documentation of oal.queryparser.classic.
+  (Hayden Muhl via Adrien Grand)
+
 Build
 
 * LUCENE-4636: Upgrade ivy to 2.3.0 (Shawn Heisey via Robert Muir)
