@@ -111,6 +111,9 @@ public final class SlowCompositeReaderWrapper extends AtomicReader {
         return dv;
       }
     }
+    if (true) { // nocommit
+      return MultiDocValues.getSortedValues(in, field);
+    }
     // cached multi dv
     assert map != null;
     int size = in.leaves().size();

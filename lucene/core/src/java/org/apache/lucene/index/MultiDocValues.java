@@ -291,6 +291,7 @@ public class MultiDocValues {
     public void lookupOrd(int ord, BytesRef result) {
       int subIndex = (int) mapping.subIndexes.get(ord);
       int segmentOrd = (int) (ord - mapping.globalOrdDeltas.get(ord));
+      assert subIndex < values.length;
       values[subIndex].lookupOrd(segmentOrd, result);
     }
  
