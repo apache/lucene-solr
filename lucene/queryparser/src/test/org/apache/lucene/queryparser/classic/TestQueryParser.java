@@ -160,6 +160,28 @@ public class TestQueryParser extends QueryParserTestBase {
     }
   }
   
+  public void testFuzzySlopeExtendability() throws ParseException {
+    QueryParser qp = new QueryParser(TEST_VERSION_CURRENT, "a",  new MockAnalyzer(random(), MockTokenizer.WHITESPACE, false)) {
+
+      @Override
+      Query handleBareFuzzy(String qfield, Token fuzzySlop, String termImage)
+          throws ParseException {
+        
+        if(fuzzySlop.image.endsWith("€")) {
+          float fms = fuzzyMinSim;
+          try {
+            fms = Float.valueOf(fuzzySlop.image.substring(1, fuzzySlop.image.length()-1)).floatValue();
+          } catch (Exception ignored) { }
+          float value = Float.parseFloat(termImage);
+          return getRangeQuery(qfield, Float.toString(value-fms/2.f), Float.toString(value+fms/2.f), true, true);
+        }
+        return super.handleBareFuzzy(qfield, fuzzySlop, termImage);
+      }
+      
+    };
+    assertEquals(qp.parse("a:[11.95 TO 12.95]"), qp.parse("12.45~1€"));
+  }
+  
   @Override
   public void testStarParsing() throws Exception {
     final int[] type = new int[1];
