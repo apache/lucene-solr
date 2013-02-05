@@ -1220,35 +1220,43 @@ public final class ZkController {
     if (!isLeader && !SKIP_AUTO_RECOVERY) {
       HttpSolrServer server = null;
       server = new HttpSolrServer(leaderBaseUrl);
-      server.setConnectionTimeout(15000);
-      server.setSoTimeout(120000);
-      WaitForState prepCmd = new WaitForState();
-      prepCmd.setCoreName(leaderCoreName);
-      prepCmd.setNodeName(getNodeName());
-      prepCmd.setCoreNodeName(coreZkNodeName);
-      prepCmd.setState(ZkStateReader.DOWN);
-      
-      // let's retry a couple times - perhaps the leader just went down,
-      // or perhaps he is just not quite ready for us yet
-      retries = 6;
-      for (int i = 0; i < retries; i++) {
-        try {
-          server.request(prepCmd);
-          break;
-        } catch (Exception e) {
-          SolrException.log(log, "There was a problem making a request to the leader", e);
-          try {
-            Thread.sleep(2000);
-          } catch (InterruptedException e1) {
-            Thread.currentThread().interrupt();
+      try {
+        server.setConnectionTimeout(15000);
+        server.setSoTimeout(120000);
+        WaitForState prepCmd = new WaitForState();
+        prepCmd.setCoreName(leaderCoreName);
+        prepCmd.setNodeName(getNodeName());
+        prepCmd.setCoreNodeName(coreZkNodeName);
+        prepCmd.setState(ZkStateReader.DOWN);
+        
+        // let's retry a couple times - perhaps the leader just went down,
+        // or perhaps he is just not quite ready for us yet
+        retries = 6;
+        for (int i = 0; i < retries; i++) {
+          if (isClosed) {
+            throw new SolrException(ErrorCode.SERVICE_UNAVAILABLE,
+                "We have been closed");
           }
-          if (i == retries - 1) {
-            throw new SolrException(ErrorCode.SERVER_ERROR, "There was a problem making a request to the leader");
+          try {
+            server.request(prepCmd);
+            break;
+          } catch (Exception e) {
+            SolrException.log(log,
+                "There was a problem making a request to the leader", e);
+            try {
+              Thread.sleep(2000);
+            } catch (InterruptedException e1) {
+              Thread.currentThread().interrupt();
+            }
+            if (i == retries - 1) {
+              throw new SolrException(ErrorCode.SERVER_ERROR,
+                  "There was a problem making a request to the leader");
+            }
           }
         }
+      } finally {
+        server.shutdown();
       }
-      
-      server.shutdown();
     }
     return leaderProps;
   }
