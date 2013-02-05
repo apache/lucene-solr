@@ -106,13 +106,12 @@ public final class SlowCompositeReaderWrapper extends AtomicReader {
         SortedDocValues dv = MultiDocValues.getSortedValues(in, field);
         if (dv instanceof MultiSortedDocValues) {
           map = ((MultiSortedDocValues)dv).mapping;
-          cachedOrdMaps.put(field, map);
+          if (map.owner == getCoreCacheKey()) {
+            cachedOrdMaps.put(field, map);
+          }
         }
         return dv;
       }
-    }
-    if (true) { // nocommit
-      return MultiDocValues.getSortedValues(in, field);
     }
     // cached multi dv
     assert map != null;

@@ -214,7 +214,7 @@ public class MultiDocValues {
     if (!anyReal) {
       return null;
     } else {
-      OrdinalMap mapping = new OrdinalMap(values);
+      OrdinalMap mapping = new OrdinalMap(r.getCoreCacheKey(), values);
       return new MultiSortedDocValues(values, starts, mapping);
     }
   }
@@ -222,6 +222,8 @@ public class MultiDocValues {
   /** maps per-segment ordinals to/from global ordinal space */
   // TODO: use more efficient packed ints structures (these are all positive values!)
   static class OrdinalMap {
+    // cache key of whoever asked for this aweful thing
+    final Object owner;
     // globalOrd -> (globalOrd - segmentOrd)
     final AppendingLongBuffer globalOrdDeltas;
     // globalOrd -> sub index
@@ -229,9 +231,10 @@ public class MultiDocValues {
     // segmentOrd -> (globalOrd - segmentOrd)
     final AppendingLongBuffer ordDeltas[];
     
-    OrdinalMap(SortedDocValues subs[]) throws IOException {
+    OrdinalMap(Object owner, SortedDocValues subs[]) throws IOException {
       // create the ordinal mappings by pulling a termsenum over each sub's 
       // unique terms, and walking a multitermsenum over those
+      this.owner = owner;
       globalOrdDeltas = new AppendingLongBuffer();
       subIndexes = new AppendingLongBuffer();
       ordDeltas = new AppendingLongBuffer[subs.length];
