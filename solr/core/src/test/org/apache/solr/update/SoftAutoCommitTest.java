@@ -302,7 +302,7 @@ public class SoftAutoCommitTest extends AbstractSolrTestCase {
     for( int i=0;i<5; i++ ) {
       assertU(adoc("id", ""+500 + i, "subject", "five fast docs"));
     }
-    long fast5end = System.currentTimeMillis() - 100; // minus a tad of slop
+    long fast5end = System.currentTimeMillis() - 200; // minus a tad of slop
     long fast5time = 1 + fast5end - fast5start;
 
     // total time for all 5 adds determines the number of soft to expect
