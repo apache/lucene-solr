@@ -24,7 +24,9 @@ import org.junit.Test;
 import java.util.HashMap;
 import java.util.Map;
 
-import static org.junit.Assert.*;
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertNotNull;
+import static org.junit.Assert.fail;
 
 /**
  * TestCase for {@link OverridingParamsAEProvider}
@@ -56,6 +58,8 @@ public class OverridingParamsAEProviderTest {
     AEProvider aeProvider = new OverridingParamsAEProvider("/uima/AggregateSentenceAE.xml", runtimeParameters);
     AnalysisEngine analysisEngine = aeProvider.getAE();
     assertNotNull(analysisEngine);
-    assertEquals(analysisEngine.getConfigParameterValue("ngramsize"), 3);
+    Object parameterValue = analysisEngine.getConfigParameterValue("ngramsize");
+    assertNotNull(parameterValue);
+    assertEquals(Integer.valueOf(3), Integer.valueOf(parameterValue.toString()));
   }
 }
