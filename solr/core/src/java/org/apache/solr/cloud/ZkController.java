@@ -1194,6 +1194,11 @@ public final class ZkController {
     int retries = 6;
     for (int i = 0; i < retries; i++) {
       try {
+        if (isClosed) {
+          throw new SolrException(ErrorCode.SERVICE_UNAVAILABLE,
+              "We have been closed");
+        }
+        
         // go straight to zk, not the cloud state - we must have current info
         leaderProps = getLeaderProps(collection, shard, 30000);
         break;
