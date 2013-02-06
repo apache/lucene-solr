@@ -721,9 +721,7 @@ public abstract class BaseTermVectorsFormatTestCase extends LuceneTestCase {
       reader.close();
       writer.close();
       dir.close();
-      if (exception.get() != null) {
-        throw new RuntimeException("One thread threw an exception", exception.get());
-      }
+      assertNull("One thread threw an exception", exception.get());
     }
   }
 

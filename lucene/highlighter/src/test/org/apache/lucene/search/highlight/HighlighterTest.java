@@ -46,6 +46,7 @@ import org.apache.lucene.index.StoredDocument;
 import org.apache.lucene.index.IndexWriterConfig.OpenMode;
 import org.apache.lucene.index.IndexWriterConfig;
 import org.apache.lucene.index.Term;
+import org.apache.lucene.queries.CommonTermsQuery;
 import org.apache.lucene.search.*;
 import org.apache.lucene.search.BooleanClause.Occur;
 import org.apache.lucene.search.highlight.SynonymTokenizer.TestHighlightRunner;
@@ -114,6 +115,87 @@ public class HighlighterTest extends BaseTokenStreamTestCase implements Formatte
     }
   }
   
+  public void testHighlightingCommonTermsQuery() throws Exception {
+    Analyzer analyzer = new MockAnalyzer(random(), MockTokenizer.SIMPLE, true);
+    CommonTermsQuery query = new CommonTermsQuery(Occur.MUST, Occur.SHOULD, 3);
+    query.add(new Term(FIELD_NAME, "this"));
+    query.add(new Term(FIELD_NAME, "long"));
+    query.add(new Term(FIELD_NAME, "very"));
+
+    searcher = new IndexSearcher(reader);
+    TopDocs hits = searcher.search(query, 10);
+    assertEquals(2, hits.totalHits);
+    QueryScorer scorer = new QueryScorer(query, FIELD_NAME);
+    Highlighter highlighter = new Highlighter(scorer);
+
+    StoredDocument doc = searcher.doc(hits.scoreDocs[0].doc);
+    String storedField = doc.get(FIELD_NAME);
+
+    TokenStream stream = TokenSources.getAnyTokenStream(searcher
+        .getIndexReader(), hits.scoreDocs[0].doc, FIELD_NAME, doc, analyzer);
+    Fragmenter fragmenter = new SimpleSpanFragmenter(scorer);
+    highlighter.setTextFragmenter(fragmenter);
+    String fragment = highlighter.getBestFragment(stream, storedField);
+    assertEquals("Hello <B>this</B> is a piece of text that is <B>very</B> <B>long</B> and contains too much preamble and the meat is really here which says kennedy has been shot", fragment);
+    
+    doc = searcher.doc(hits.scoreDocs[1].doc);
+    storedField = doc.get(FIELD_NAME);
+
+    stream = TokenSources.getAnyTokenStream(searcher
+        .getIndexReader(), hits.scoreDocs[1].doc, FIELD_NAME, doc, analyzer);
+    highlighter.setTextFragmenter(new SimpleSpanFragmenter(scorer));
+    fragment = highlighter.getBestFragment(stream, storedField);
+    assertEquals("<B>This</B> piece of text refers to Kennedy at the beginning then has a longer piece of text that is <B>very</B>", fragment);
+  }
+  
+  public void testHighlightUnknowQueryAfterRewrite() throws IOException, InvalidTokenOffsetsException {
+    Query query = new Query() {
+      
+      @Override
+      public Query rewrite(IndexReader reader) throws IOException {
+        CommonTermsQuery query = new CommonTermsQuery(Occur.MUST, Occur.SHOULD, 3);
+        query.add(new Term(FIELD_NAME, "this"));
+        query.add(new Term(FIELD_NAME, "long"));
+        query.add(new Term(FIELD_NAME, "very"));
+        return query;
+      }
+
+      @Override
+      public String toString(String field) {
+        return null;
+      }
+      
+    };
+    
+    Analyzer analyzer = new MockAnalyzer(random(), MockTokenizer.SIMPLE, true);
+    
+    searcher = new IndexSearcher(reader);
+    TopDocs hits = searcher.search(query, 10);
+    assertEquals(2, hits.totalHits);
+    QueryScorer scorer = new QueryScorer(query, FIELD_NAME);
+    Highlighter highlighter = new Highlighter(scorer);
+
+    StoredDocument doc = searcher.doc(hits.scoreDocs[0].doc);
+    String storedField = doc.get(FIELD_NAME);
+
+    TokenStream stream = TokenSources.getAnyTokenStream(searcher
+        .getIndexReader(), hits.scoreDocs[0].doc, FIELD_NAME, doc, analyzer);
+    Fragmenter fragmenter = new SimpleSpanFragmenter(scorer);
+    highlighter.setTextFragmenter(fragmenter);
+    String fragment = highlighter.getBestFragment(stream, storedField);
+    assertEquals("Hello <B>this</B> is a piece of text that is <B>very</B> <B>long</B> and contains too much preamble and the meat is really here which says kennedy has been shot", fragment);
+    
+    doc = searcher.doc(hits.scoreDocs[1].doc);
+    storedField = doc.get(FIELD_NAME);
+
+    stream = TokenSources.getAnyTokenStream(searcher
+        .getIndexReader(), hits.scoreDocs[1].doc, FIELD_NAME, doc, analyzer);
+    highlighter.setTextFragmenter(new SimpleSpanFragmenter(scorer));
+    fragment = highlighter.getBestFragment(stream, storedField);
+    assertEquals("<B>This</B> piece of text refers to Kennedy at the beginning then has a longer piece of text that is <B>very</B>", fragment);
+    
+  }
+  
   public void testHighlightingWithDefaultField() throws Exception {
 
     String s1 = "I call our world Flatland, not because we call it so,";
@@ -150,7 +232,7 @@ public class HighlighterTest extends BaseTokenStreamTestCase implements Formatte
         "Query in a named field does not result in highlighting when that field isn't in the query",
         s1, highlightField(q, FIELD_NAME, s1));
   }
-
+  
   /**
    * This method intended for use with <tt>testHighlightingWithDefaultField()</tt>
    */
@@ -603,7 +685,7 @@ public class HighlighterTest extends BaseTokenStreamTestCase implements Formatte
     // Not sure we can assert anything here - just running to check we dont
     // throw any exceptions
   }
-  
+
   public void testSpanHighlighting() throws Exception {
     Query query1 = new SpanNearQuery(new SpanQuery[] {
         new SpanTermQuery(new Term(FIELD_NAME, "wordx")),

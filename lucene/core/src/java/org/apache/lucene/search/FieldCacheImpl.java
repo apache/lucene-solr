@@ -298,7 +298,7 @@ class FieldCacheImpl implements FieldCache {
           }
         }
 
-        final TermsEnum termsEnum = terms.iterator(null);
+        final TermsEnum termsEnum = termsEnum(terms);
 
         DocsEnum docs = null;
         FixedBitSet docsWithField = null;
@@ -307,11 +307,7 @@ class FieldCacheImpl implements FieldCache {
           if (term == null) {
             break;
           }
-          try {
-            visitTerm(term);
-          } catch (StopFillCacheException stop) {
-            break;
-          }
+          visitTerm(term);
           docs = termsEnum.docs(null, docs, DocsEnum.FLAG_NONE);
           while (true) {
             final int docID = docs.nextDoc();
@@ -331,6 +327,7 @@ class FieldCacheImpl implements FieldCache {
       }
     }
 
+    protected abstract TermsEnum termsEnum(Terms terms) throws IOException;
     protected abstract void visitTerm(BytesRef term);
     protected abstract void visitDoc(int docID);
   }
@@ -425,6 +422,11 @@ class FieldCacheImpl implements FieldCache {
           public void visitDoc(int docID) {
             values[docID] = currentValue;
           }
+
+          @Override
+          protected TermsEnum termsEnum(Terms terms) throws IOException {
+            return parser.termsEnum(terms);
+          }
         };
 
       u.uninvert(reader, key.field, setDocsWithField);
@@ -504,6 +506,11 @@ class FieldCacheImpl implements FieldCache {
           @Override
           public void visitDoc(int docID) {
             values[docID] = currentValue;
+          }
+          
+          @Override
+          protected TermsEnum termsEnum(Terms terms) throws IOException {
+            return parser.termsEnum(terms);
           }
         };
 
@@ -609,6 +616,11 @@ class FieldCacheImpl implements FieldCache {
           @Override
           public void visitDoc(int docID) {
             values[docID] = currentValue;
+          }
+          
+          @Override
+          protected TermsEnum termsEnum(Terms terms) throws IOException {
+            return parser.termsEnum(terms);
           }
         };
 
@@ -779,6 +791,11 @@ class FieldCacheImpl implements FieldCache {
           public void visitDoc(int docID) {
             values[docID] = currentValue;
           }
+          
+          @Override
+          protected TermsEnum termsEnum(Terms terms) throws IOException {
+            return parser.termsEnum(terms);
+          }
         };
 
       u.uninvert(reader, key.field, setDocsWithField);
@@ -877,6 +894,11 @@ class FieldCacheImpl implements FieldCache {
           public void visitDoc(int docID) {
             values[docID] = currentValue;
           }
+          
+          @Override
+          protected TermsEnum termsEnum(Terms terms) throws IOException {
+            return parser.termsEnum(terms);
+          }
         };
 
       u.uninvert(reader, key.field, setDocsWithField);
@@ -974,6 +996,11 @@ class FieldCacheImpl implements FieldCache {
           @Override
           public void visitDoc(int docID) {
             values[docID] = currentValue;
+          }
+          
+          @Override
+          protected TermsEnum termsEnum(Terms terms) throws IOException {
+            return parser.termsEnum(terms);
           }
         };
 

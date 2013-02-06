@@ -29,6 +29,8 @@ import org.apache.lucene.index.AtomicReader;
 import org.apache.lucene.index.BinaryDocValues;
 import org.apache.lucene.index.DocTermOrds;
 import org.apache.lucene.index.SortedDocValues;
+import org.apache.lucene.index.Terms;
+import org.apache.lucene.index.TermsEnum;
 import org.apache.lucene.util.Bits;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.NumericUtils;
@@ -90,20 +92,21 @@ public interface FieldCache {
   }
 
   /**
-   * Hack: When thrown from a Parser (NUMERIC_UTILS_* ones), this stops
-   * processing terms and returns the current FieldCache
-   * array.
-   * @lucene.internal
-   */
-  public static final class StopFillCacheException extends RuntimeException {
-  }
-  
-  /**
    * Marker interface as super-interface to all parsers. It
    * is used to specify a custom parser to {@link
    * SortField#SortField(String, FieldCache.Parser)}.
    */
   public interface Parser {
+    
+    /**
+     * Pulls a {@link TermsEnum} from the given {@link Terms}. This method allows certain parsers
+     * to filter the actual TermsEnum before the field cache is filled.
+     * 
+     * @param terms the {@link Terms} instance to create the {@link TermsEnum} from.
+     * @return a possibly filtered {@link TermsEnum} instance, this method must not return <code>null</code>.
+     * @throws IOException if an {@link IOException} occurs
+     */
+    public TermsEnum termsEnum(Terms terms) throws IOException;
   }
 
   /** Interface to parse bytes from document fields.
@@ -171,6 +174,10 @@ public interface FieldCache {
     public String toString() { 
       return FieldCache.class.getName()+".DEFAULT_BYTE_PARSER"; 
     }
+    @Override
+    public TermsEnum termsEnum(Terms terms) throws IOException {
+      return terms.iterator(null);
+    }
   };
 
   /** The default parser for short values, which are encoded by {@link Short#toString(short)} */
@@ -187,6 +194,11 @@ public interface FieldCache {
     public String toString() { 
       return FieldCache.class.getName()+".DEFAULT_SHORT_PARSER"; 
     }
+    
+    @Override
+    public TermsEnum termsEnum(Terms terms) throws IOException {
+      return terms.iterator(null);
+    }
   };
 
   /** The default parser for int values, which are encoded by {@link Integer#toString(int)} */
@@ -199,6 +211,12 @@ public interface FieldCache {
       // directly from byte[]
       return Integer.parseInt(term.utf8ToString());
     }
+    
+    @Override
+    public TermsEnum termsEnum(Terms terms) throws IOException {
+      return terms.iterator(null);
+    }
+    
     @Override
     public String toString() { 
       return FieldCache.class.getName()+".DEFAULT_INT_PARSER"; 
@@ -215,6 +233,12 @@ public interface FieldCache {
       // directly from byte[]
       return Float.parseFloat(term.utf8ToString());
     }
+    
+    @Override
+    public TermsEnum termsEnum(Terms terms) throws IOException {
+      return terms.iterator(null);
+    }
+    
     @Override
     public String toString() { 
       return FieldCache.class.getName()+".DEFAULT_FLOAT_PARSER"; 
@@ -231,6 +255,12 @@ public interface FieldCache {
       // directly from byte[]
       return Long.parseLong(term.utf8ToString());
     }
+    
+    @Override
+    public TermsEnum termsEnum(Terms terms) throws IOException {
+      return terms.iterator(null);
+    }
+    
     @Override
     public String toString() { 
       return FieldCache.class.getName()+".DEFAULT_LONG_PARSER"; 
@@ -247,6 +277,12 @@ public interface FieldCache {
       // directly from byte[]
       return Double.parseDouble(term.utf8ToString());
     }
+    
+    @Override
+    public TermsEnum termsEnum(Terms terms) throws IOException {
+      return terms.iterator(null);
+    }
+    
     @Override
     public String toString() { 
       return FieldCache.class.getName()+".DEFAULT_DOUBLE_PARSER"; 
@@ -260,10 +296,14 @@ public interface FieldCache {
   public static final IntParser NUMERIC_UTILS_INT_PARSER=new IntParser(){
     @Override
     public int parseInt(BytesRef term) {
-      if (NumericUtils.getPrefixCodedIntShift(term) > 0)
-        throw new StopFillCacheException();
       return NumericUtils.prefixCodedToInt(term);
     }
+    
+    @Override
+    public TermsEnum termsEnum(Terms terms) throws IOException {
+      return NumericUtils.filterPrefixCodedInts(terms.iterator(null));
+    }
+    
     @Override
     public String toString() { 
       return FieldCache.class.getName()+".NUMERIC_UTILS_INT_PARSER"; 
@@ -277,13 +317,16 @@ public interface FieldCache {
   public static final FloatParser NUMERIC_UTILS_FLOAT_PARSER=new FloatParser(){
     @Override
     public float parseFloat(BytesRef term) {
-      if (NumericUtils.getPrefixCodedIntShift(term) > 0)
-        throw new StopFillCacheException();
       return NumericUtils.sortableIntToFloat(NumericUtils.prefixCodedToInt(term));
     }
     @Override
     public String toString() { 
       return FieldCache.class.getName()+".NUMERIC_UTILS_FLOAT_PARSER"; 
+    }
+    
+    @Override
+    public TermsEnum termsEnum(Terms terms) throws IOException {
+      return NumericUtils.filterPrefixCodedInts(terms.iterator(null));
     }
   };
 
@@ -294,13 +337,16 @@ public interface FieldCache {
   public static final LongParser NUMERIC_UTILS_LONG_PARSER = new LongParser(){
     @Override
     public long parseLong(BytesRef term) {
-      if (NumericUtils.getPrefixCodedLongShift(term) > 0)
-        throw new StopFillCacheException();
       return NumericUtils.prefixCodedToLong(term);
     }
     @Override
     public String toString() { 
       return FieldCache.class.getName()+".NUMERIC_UTILS_LONG_PARSER"; 
+    }
+    
+    @Override
+    public TermsEnum termsEnum(Terms terms) throws IOException {
+      return NumericUtils.filterPrefixCodedLongs(terms.iterator(null));
     }
   };
 
@@ -311,13 +357,16 @@ public interface FieldCache {
   public static final DoubleParser NUMERIC_UTILS_DOUBLE_PARSER = new DoubleParser(){
     @Override
     public double parseDouble(BytesRef term) {
-      if (NumericUtils.getPrefixCodedLongShift(term) > 0)
-        throw new StopFillCacheException();
       return NumericUtils.sortableLongToDouble(NumericUtils.prefixCodedToLong(term));
     }
     @Override
     public String toString() { 
       return FieldCache.class.getName()+".NUMERIC_UTILS_DOUBLE_PARSER"; 
+    }
+    
+    @Override
+    public TermsEnum termsEnum(Terms terms) throws IOException {
+      return NumericUtils.filterPrefixCodedLongs(terms.iterator(null));
     }
   };
   
@@ -634,7 +683,7 @@ public interface FieldCache {
       return b.toString();
     }
   }
-
+  
   /**
    * EXPERT: Generates an array of CacheEntry objects representing all items 
    * currently in the FieldCache.

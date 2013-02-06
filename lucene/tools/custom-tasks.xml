@@ -10,7 +10,6 @@
     <taskdef resource="lucene-solr.antlib.xml">
       <classpath>
         <pathelement location="${custom-tasks.dir}/../build/tools/classes/java" />
-        <fileset dir="${custom-tasks.dir}/lib" includes="asm-debug-all-4.1.jar" />
       </classpath>
     </taskdef>
     <property name="custom-tasks.loaded" value="true"/>

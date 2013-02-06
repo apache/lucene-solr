@@ -26,6 +26,7 @@ import org.apache.uima.cas.text.AnnotationFS;
 
 import java.io.IOException;
 import java.io.Reader;
+import java.util.Map;
 
 /**
  * a {@link Tokenizer} which creates tokens from UIMA Annotations
@@ -40,8 +41,8 @@ public final class UIMAAnnotationsTokenizer extends BaseUIMATokenizer {
 
   private int finalOffset = 0;
 
-  public UIMAAnnotationsTokenizer(String descriptorPath, String tokenType, Reader input) {
-    super(input, descriptorPath);
+  public UIMAAnnotationsTokenizer(String descriptorPath, String tokenType, Map<String, Object> configurationParameters, Reader input) {
+    super(input, descriptorPath, configurationParameters);
     this.tokenTypeString = tokenType;
     this.termAttr = addAttribute(CharTermAttribute.class);
     this.offsetAttr = addAttribute(OffsetAttribute.class);

@@ -22,6 +22,7 @@ import org.apache.lucene.analysis.util.TokenizerFactory;
 import org.apache.lucene.analysis.uima.UIMAAnnotationsTokenizer;
 
 import java.io.Reader;
+import java.util.HashMap;
 import java.util.Map;
 
 /**
@@ -31,19 +32,29 @@ public class UIMAAnnotationsTokenizerFactory extends TokenizerFactory {
 
   private String descriptorPath;
   private String tokenType;
+  private Map<String, Object> configurationParameters;
 
   @Override
   public void init(Map<String, String> args) {
     super.init(args);
-    descriptorPath = args.get("descriptorPath");
-    tokenType = args.get("tokenType");
-    if (descriptorPath == null || tokenType == null) {
-      throw new IllegalArgumentException("Both descriptorPath and tokenType are mandatory");
+    configurationParameters = new HashMap<String, Object>();
+    for (String k : args.keySet()) {
+      if (k.equals("tokenType")) {
+        tokenType = args.get("tokenType");
+      } else if (k.equals("descriptorPath")) {
+        descriptorPath = args.get("descriptorPath");
+      } else {
+        configurationParameters.put(k, args.get(k));
+      }
     }
+    if (descriptorPath == null || tokenType == null ) {
+      throw new IllegalArgumentException("descriptorPath and tokenType are mandatory");
+    }
+
   }
 
   @Override
   public Tokenizer create(Reader input) {
-    return new UIMAAnnotationsTokenizer(descriptorPath, tokenType, input);
+    return new UIMAAnnotationsTokenizer(descriptorPath, tokenType, configurationParameters, input);
   }
 }

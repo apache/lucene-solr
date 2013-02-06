@@ -187,11 +187,9 @@ public class Highlighter
     ArrayList<TextFragment> docFrags = new ArrayList<TextFragment>();
     StringBuilder newText=new StringBuilder();
 
-      CharTermAttribute termAtt = tokenStream.addAttribute(CharTermAttribute.class);
-      OffsetAttribute offsetAtt = tokenStream.addAttribute(OffsetAttribute.class);
-      tokenStream.addAttribute(PositionIncrementAttribute.class);
-      tokenStream.reset();
-
+    CharTermAttribute termAtt = tokenStream.addAttribute(CharTermAttribute.class);
+    OffsetAttribute offsetAtt = tokenStream.addAttribute(OffsetAttribute.class);
+    tokenStream.reset();
     TextFragment currentFrag =  new TextFragment(newText,newText.length(), docFrags.size());
 
     if (fragmentScorer instanceof QueryScorer) {

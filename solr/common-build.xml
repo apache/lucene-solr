@@ -68,6 +68,10 @@
        where X.Y.M is the last version released (on this branch).
     -->
   <property name="solr.spec.version" value="5.0.0.${dateversion}" />
+  
+  <!-- defined here to be able to make the forbidden-api checker correctly
+   reference it. 'ivy.xml' is also referencing this property. -->
+  <property name="commons-io.version" value="2.1" />
 
   <path id="solr.lucene.libs">
     <!-- List of jars that will be used as the foundation for both
