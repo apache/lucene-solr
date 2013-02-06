@@ -145,6 +145,12 @@
 
   <target name="compile-core" depends="compile-lucene-core"/>
 
+  <!-- lucene/test-framework is excluded from compilation -->
+  <target name="compile" depends="init,compile-lucene-core,compile-codecs"
+          description="Compiles core, codecs, and all modules">
+    <modules-crawl target="compile-core"/>
+  </target>
+
   <!-- Validation (license/notice/api checks). -->
   <target name="validate" depends="check-licenses,rat-sources,check-forbidden-apis" description="Validate stuff." />
 
@@ -526,7 +532,7 @@
     <modules-crawl target="build-artifacts-and-tests"/>
   </target>
 
-  <target name="compile-test" description="Builds core, test-framework, and modules tests">
+  <target name="compile-test" description="Builds core, codecs, test-framework, and modules tests">
     <sequential>
       <ant dir="core" target="compile-test" inheritall="false">
         <propertyset refid="uptodate.and.compiled.properties"/>
@@ -573,6 +579,11 @@
     </ant>
     <property name="core.compiled" value="true"/>
     <property name="lucene-core.uptodate" value="true"/>
+  </target>
+
+  <target name="jar" depends="jar-core,jar-test-framework"
+          description="Jars core, codecs, test-framework, and all modules">
+    <modules-crawl target="jar-core"/>
   </target>
 
   <target name="get-jenkins-line-docs" unless="enwiki.exists">

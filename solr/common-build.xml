@@ -183,7 +183,7 @@
       </jarify>
     </sequential>
   </macrodef>
-  
+
   <target name="jar-core" depends="compile-core">
     <solr-jarify/>
   </target>
@@ -367,6 +367,11 @@
       <propertyset refid="uptodate.and.compiled.properties"/>
     </ant>
   </target>
+  <target name="jar-solrj" description="Jar Solr-J">
+    <ant dir="${common-solr.dir}/solrj" target="jar-core" inheritAll="false">
+      <propertyset refid="uptodate.and.compiled.properties"/>
+    </ant>
+  </target>
 
   <!-- TODO: really a copy should work: but sync is currently safer
        since some buggy tests don't create their own tempdir but
@@ -384,6 +389,12 @@
     </ant>
   	<property name="solr.core.compiled" value="true"/>
     <property name="solr.test.framework.compiled" value="true"/>
+  </target>
+
+  <target name="jar-solr-test-framework" depends="compile-solr-test-framework">
+    <ant dir="${common-solr.dir}/test-framework" target="jar-core" inheritAll="false">
+      <propertyset refid="uptodate.and.compiled.properties"/>
+    </ant>
   </target>
 
   <!-- resolve dependencies in the example (relied upon by compile/tests) -->
@@ -419,6 +430,10 @@
 
   <target name="javadocs-contrib" description="Compile contrib modules">
   	<contrib-crawl target="javadocs"/>
+  </target>
+
+  <target name="jar-contrib" description="Jar contrib modules">
+    <contrib-crawl target="jar-core"/>
   </target>
 
   <target name="contribs-add-to-war">

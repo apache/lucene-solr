@@ -151,6 +151,9 @@ Build
 * LUCENE-4570: Use the Policeman Forbidden API checker, released separately
   from Lucene and downloaded via Ivy.  (Uwe Schindler, Robert Muir)
 
+* LUCENE-4758: 'ant jar', 'ant compile', and 'ant compile-test' should
+  recurse.  (Steve Rowe)
+
 ======================= Lucene 4.1.0 =======================
 
 Changes in backwards compatibility policy
