@@ -32,6 +32,8 @@ import org.apache.solr.client.solrj.impl.HttpClientUtil;
 import org.apache.solr.client.solrj.impl.HttpSolrServer;
 import org.apache.solr.common.SolrInputDocument;
 import org.apache.solr.common.cloud.ZkStateReader;
+import org.apache.solr.core.Diagnostics;
+import org.apache.solr.update.SolrCmdDistributor;
 import org.junit.After;
 import org.junit.AfterClass;
 import org.junit.Before;
@@ -48,10 +50,21 @@ public class ChaosMonkeyNothingIsSafeTest extends AbstractFullDistribZkTestBase 
 
   @BeforeClass
   public static void beforeSuperClass() {
+    SolrCmdDistributor.testing_errorHook = new Diagnostics.Callable() {
+      @Override
+      public void call(Object... data) {
+        SolrCmdDistributor.Request sreq = (SolrCmdDistributor.Request)data[1];
+        if (sreq.exception == null) return;
+        if (sreq.exception.getMessage().contains("Timeout")) {
+          Diagnostics.logThreadDumps("REQUESTING THREAD DUMP DUE TO TIMEOUT: " + sreq.exception.getMessage());
+        }
+      }
+    };
   }
   
   @AfterClass
   public static void afterSuperClass() {
+    SolrCmdDistributor.testing_errorHook = null;
   }
   
   @Before
@@ -102,7 +115,7 @@ public class ChaosMonkeyNothingIsSafeTest extends AbstractFullDistribZkTestBase 
       int i = 0;
       for (i = 0; i < threadCount; i++) {
         StopableIndexingThread indexThread = new StopableIndexingThread(
-            i * 50000, true);
+            (i+1) * 50000, true);
         threads.add(indexThread);
         indexThread.start();
       }
@@ -119,7 +132,7 @@ public class ChaosMonkeyNothingIsSafeTest extends AbstractFullDistribZkTestBase 
       boolean runFullThrottle = random().nextBoolean();
       if (runFullThrottle) {
         FullThrottleStopableIndexingThread ftIndexThread = new FullThrottleStopableIndexingThread(
-            clients, i * 50000, true);
+            clients, (i+1) * 50000, true);
         threads.add(ftIndexThread);
         ftIndexThread.start();
       }
