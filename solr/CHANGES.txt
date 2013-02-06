@@ -74,6 +74,9 @@ New Features
 Bug Fixes
 ----------------------
 
+* SOLR-2850: Do not refine facets when minCount == 1
+  (Matt Smith, lundgren via Adrien Grand)
+
 * SOLR-4309: /browse: Improve JQuery autosuggest behavior (janhoy)
 
 * SOLR-4330: group.sort is ignored when using group.truncate and ex/tag
