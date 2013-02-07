@@ -19,9 +19,7 @@ package org.apache.lucene.index;
 
 import java.io.IOException;
 import java.util.ArrayList;
-import java.util.HashMap;
 import java.util.List;
-import java.util.Map;
 
 import org.apache.lucene.codecs.Codec;
 import org.apache.lucene.codecs.FieldInfosWriter;
@@ -125,7 +123,7 @@ final class SegmentMerger {
       t0 = System.nanoTime();
     }
     if (mergeState.fieldInfos.hasDocValues()) {
-      mergeSimpleDocValues(segmentWriteState);
+      mergeDocValues(segmentWriteState);
     }
     if (mergeState.infoStream.isEnabled("SM")) {
       long t1 = System.nanoTime();
@@ -136,7 +134,7 @@ final class SegmentMerger {
       if (mergeState.infoStream.isEnabled("SM")) {
         t0 = System.nanoTime();
       }
-      mergeSimpleNorms(segmentWriteState);
+      mergeNorms(segmentWriteState);
       if (mergeState.infoStream.isEnabled("SM")) {
         long t1 = System.nanoTime();
         mergeState.infoStream.message("SM", ((t1-t0)/1000000) + " msec to merge norms [" + numMerged + " docs]");
@@ -162,7 +160,7 @@ final class SegmentMerger {
     return mergeState;
   }
 
-  private void mergeSimpleDocValues(SegmentWriteState segmentWriteState) throws IOException {
+  private void mergeDocValues(SegmentWriteState segmentWriteState) throws IOException {
 
     if (codec.docValuesFormat() != null) {
       DocValuesConsumer consumer = codec.docValuesFormat().fieldsConsumer(segmentWriteState);
@@ -217,7 +215,7 @@ final class SegmentMerger {
     }
   }
 
-  private void mergeSimpleNorms(SegmentWriteState segmentWriteState) throws IOException {
+  private void mergeNorms(SegmentWriteState segmentWriteState) throws IOException {
     if (codec.normsFormat() != null) {
       DocValuesConsumer consumer = codec.normsFormat().normsConsumer(segmentWriteState);
       boolean success = false;
