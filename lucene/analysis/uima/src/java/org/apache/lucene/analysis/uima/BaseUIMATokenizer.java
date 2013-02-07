@@ -95,19 +95,4 @@ public abstract class BaseUIMATokenizer extends Tokenizer {
   public void end() throws IOException {
     iterator = null;
   }
-
-  @Override
-  public void close() throws IOException {
-    super.close();
-
-    // release resources and ease GC
-    if (ae != null) {
-      ae.destroy();
-      ae = null;
-    }
-    if (cas != null) {
-      cas.release();
-      cas = null;
-    }
-  }
 }
