@@ -186,6 +186,11 @@ public class SyncSliceTest extends AbstractFullDistribZkTestBase {
     waitForThingsToLevelOut(15);
     waitForRecoveriesToFinish(false);
     
+    Thread.sleep(3000);
+    
+    waitForThingsToLevelOut(15);
+    waitForRecoveriesToFinish(false);
+    
     skipServers = getRandomOtherJetty(leaderJetty, null);
     skipServers.addAll( getRandomOtherJetty(leaderJetty, null));
     // skip list should be 
@@ -212,7 +217,7 @@ public class SyncSliceTest extends AbstractFullDistribZkTestBase {
     shardFailMessage = waitTillInconsistent();
     
     assertNotNull(
-        "shard1 should have just been set up to be inconsistent - but it's still consistent",
+        "Test Setup Failure: shard1 should have just been set up to be inconsistent - but it's still consistent",
         shardFailMessage); 
     
     jetties = new HashSet<CloudJettyRunner>();
