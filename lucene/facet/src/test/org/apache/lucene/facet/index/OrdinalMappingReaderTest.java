@@ -17,13 +17,16 @@ import org.apache.lucene.facet.search.results.FacetResultNode;
 import org.apache.lucene.facet.taxonomy.CategoryPath;
 import org.apache.lucene.facet.taxonomy.directory.DirectoryTaxonomyReader;
 import org.apache.lucene.facet.taxonomy.directory.DirectoryTaxonomyWriter;
+import org.apache.lucene.facet.taxonomy.directory.DirectoryTaxonomyWriter.MemoryOrdinalMap;
 import org.apache.lucene.facet.util.TaxonomyMergeUtils;
 import org.apache.lucene.index.DirectoryReader;
+import org.apache.lucene.index.IndexWriter;
 import org.apache.lucene.index.IndexWriterConfig;
 import org.apache.lucene.index.RandomIndexWriter;
 import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.search.MatchAllDocsQuery;
 import org.apache.lucene.store.Directory;
+import org.apache.lucene.util.IOUtils;
 import org.junit.Test;
 
 /*
@@ -58,7 +61,13 @@ public class OrdinalMappingReaderTest extends FacetTestCase {
     Directory taxDir1 = newDirectory();
     buildIndexWithFacets(dir1, taxDir1, false, fip);
     
-    TaxonomyMergeUtils.merge(dir, taxDir, dir1, taxDir1, fip);
+    IndexWriter destIndexWriter = new IndexWriter(dir1, new IndexWriterConfig(TEST_VERSION_CURRENT, null));
+    DirectoryTaxonomyWriter destTaxWriter = new DirectoryTaxonomyWriter(taxDir1);
+    try {
+      TaxonomyMergeUtils.merge(dir, taxDir, new MemoryOrdinalMap(), destIndexWriter, destTaxWriter, fip);
+    } finally {
+      IOUtils.close(destIndexWriter, destTaxWriter);
+    }
     
     verifyResults(dir1, taxDir1, fip);
     dir1.close();

@@ -168,7 +168,7 @@ public abstract class Sampler {
     FacetRequest origFrq = sampledFreq.orig;
 
     FacetResultNode trimmedRootNode = facetResult.getFacetResultNode();
-    trimSubResults(trimmedRootNode, origFrq.getNumResults());
+    trimSubResults(trimmedRootNode, origFrq.numResults);
     
     return new FacetResult(origFrq, trimmedRootNode, facetResult.getNumValidDescendants());
   }
@@ -199,10 +199,10 @@ public abstract class Sampler {
     if (overSampleFactor > 1) { // any factoring to do?
       List<FacetRequest> facetRequests = new ArrayList<FacetRequest>();
       for (FacetRequest frq : original.facetRequests) {
-        int overSampledNumResults = (int) Math.ceil(frq.getNumResults() * overSampleFactor);
+        int overSampledNumResults = (int) Math.ceil(frq.numResults * overSampleFactor);
         facetRequests.add(new OverSampledFacetRequest(frq, overSampledNumResults));
       }
-      res = new FacetSearchParams(facetRequests, original.indexingParams);
+      res = new FacetSearchParams(original.indexingParams, facetRequests);
     }
     return res;
   }
@@ -233,18 +233,13 @@ public abstract class Sampler {
     }
 
     @Override
+    public FacetArraysSource getFacetArraysSource() {
+      return orig.getFacetArraysSource();
+    }
+
+    @Override
     public double getValueOf(FacetArrays arrays, int idx) {
       return orig.getValueOf(arrays, idx);
-    }
-    
-    @Override
-    public boolean requireDocumentScore() {
-      return orig.requireDocumentScore();
-    }
-    
-    @Override
-    public boolean supportsComplements() {
-      return orig.supportsComplements();
     }
   }
 

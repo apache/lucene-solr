@@ -115,7 +115,7 @@ public class MultiCLSearcher {
     facetRequests.add(new CountFacetRequest(new CategoryPath("5"), 10));
     facetRequests.add(new CountFacetRequest(new CategoryPath("5", "5"), 10));
     facetRequests.add(new CountFacetRequest(new CategoryPath("6", "2"), 10));
-    FacetSearchParams facetSearchParams = new FacetSearchParams(facetRequests, iParams);
+    FacetSearchParams facetSearchParams = new FacetSearchParams(iParams, facetRequests);
 
     // Facets collector is the simplest interface for faceted search.
     // It provides faceted search functions that are sufficient to many

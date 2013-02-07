@@ -332,7 +332,7 @@ public class TestMultipleCategoryLists extends FacetTestCase {
     facetRequests.add(new CountFacetRequest(new CategoryPath("Band", "Rock & Pop"), 10));
 
     // Faceted search parameters indicate which facets are we interested in
-    FacetSearchParams facetSearchParams = new FacetSearchParams(facetRequests, iParams);
+    FacetSearchParams facetSearchParams = new FacetSearchParams(iParams, facetRequests);
 
     // perform documents search and facets accumulation
     FacetsCollector facetsCollector = FacetsCollector.create(facetSearchParams, ir, tr);

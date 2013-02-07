@@ -4,11 +4,12 @@ import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
 
+import org.apache.lucene.facet.partitions.search.IntermediateFacetResult;
+import org.apache.lucene.facet.partitions.search.PartitionsFacetResultsHandler;
 import org.apache.lucene.facet.search.params.FacetRequest;
 import org.apache.lucene.facet.search.params.FacetRequest.SortOrder;
 import org.apache.lucene.facet.search.results.FacetResult;
 import org.apache.lucene.facet.search.results.FacetResultNode;
-import org.apache.lucene.facet.search.results.IntermediateFacetResult;
 import org.apache.lucene.facet.taxonomy.TaxonomyReader;
 import org.apache.lucene.facet.taxonomy.directory.ParallelTaxonomyArrays;
 import org.apache.lucene.util.PriorityQueue;
@@ -33,20 +34,19 @@ import org.apache.lucene.util.collections.IntToObjectMap;
  */
 
 /**
- * Generates {@link FacetResult} from the count arrays aggregated for a
+ * Generates {@link FacetResult} from the {@link FacetArrays} aggregated for a
  * particular {@link FacetRequest}. The generated {@link FacetResult} is a
  * subtree of the taxonomy tree. Its root node,
  * {@link FacetResult#getFacetResultNode()}, is the facet specified by
  * {@link FacetRequest#categoryPath}, and the enumerated children,
- * {@link FacetResultNode#subResults}, of each node in that
- * {@link FacetResult} are the top K ( = {@link FacetRequest#getNumResults()})
- * among its children in the taxonomy. Top in the sense
- * {@link FacetRequest#getSortBy()}, which can be by the values aggregated in
- * the count arrays, or by ordinal numbers; also specified is the sort order,
- * {@link FacetRequest#getSortOrder()}, ascending or descending, of these values
- * or ordinals before their top K are selected. The depth (number of levels
- * excluding the root) of the {@link FacetResult} tree is specified by
- * {@link FacetRequest#getDepth()}.
+ * {@link FacetResultNode#subResults}, of each node in that {@link FacetResult}
+ * are the top K ( = {@link FacetRequest#numResults}) among its children in the
+ * taxonomy. Top in the sense {@link FacetRequest#getSortBy()}, which can be by
+ * the values aggregated in the count arrays, or by ordinal numbers; also
+ * specified is the sort order, {@link FacetRequest#getSortOrder()}, ascending
+ * or descending, of these values or ordinals before their top K are selected.
+ * The depth (number of levels excluding the root) of the {@link FacetResult}
+ * tree is specified by {@link FacetRequest#getDepth()}.
  * <p>
  * Because the number of selected children of each node is restricted, and not
  * the overall number of nodes in the {@link FacetResult}, facets not selected
@@ -67,45 +67,45 @@ import org.apache.lucene.util.collections.IntToObjectMap;
  * 
  * @lucene.experimental
  */
-public class TopKInEachNodeHandler extends FacetResultsHandler {
+public class TopKInEachNodeHandler extends PartitionsFacetResultsHandler {
 
-  public TopKInEachNodeHandler(TaxonomyReader taxonomyReader, FacetRequest facetRequest) {
-    super(taxonomyReader, facetRequest);
+  public TopKInEachNodeHandler(TaxonomyReader taxonomyReader, FacetRequest facetRequest, FacetArrays facetArrays) {
+    super(taxonomyReader, facetRequest, facetArrays);
   }
 
   /**
    * Recursively explore all facets that can be potentially included in the
    * {@link FacetResult} to be generated, and that belong to the given
    * partition, so that values can be examined and collected. For each such
-   * node, gather its top K ({@link FacetRequest#getNumResults()}) children
-   * among its children that are encountered in the given particular partition
-   * (aka current counting list).
+   * node, gather its top K ({@link FacetRequest#numResults}) children among its
+   * children that are encountered in the given particular partition (aka
+   * current counting list).
+   * @param offset
+   *          to <code>offset</code> + the length of the count arrays within
+   *          <code>arrays</code> (exclusive)
    * 
    * @return {@link IntermediateFacetResult} consisting of
-   *         {@link IntToObjectMap} that maps potential
-   *         {@link FacetResult} nodes to their top K children encountered in
-   *         the current partition. Note that the mapped potential tree nodes
-   *         need not belong to the given partition, only the top K children
-   *         mapped to. The aim is to identify nodes that are certainly excluded
-   *         from the {@link FacetResult} to be eventually (after going through
-   *         all the partitions) returned by this handler, because they have K
-   *         better siblings, already identified in this partition. For the
-   *         identified excluded nodes, we only count number of their
-   *         descendants in the subtree (to be included in
+   *         {@link IntToObjectMap} that maps potential {@link FacetResult}
+   *         nodes to their top K children encountered in the current partition.
+   *         Note that the mapped potential tree nodes need not belong to the
+   *         given partition, only the top K children mapped to. The aim is to
+   *         identify nodes that are certainly excluded from the
+   *         {@link FacetResult} to be eventually (after going through all the
+   *         partitions) returned by this handler, because they have K better
+   *         siblings, already identified in this partition. For the identified
+   *         excluded nodes, we only count number of their descendants in the
+   *         subtree (to be included in
    *         {@link FacetResult#getNumValidDescendants()}), but not bother with
    *         selecting top K in these generations, which, by definition, are,
    *         too, excluded from the FacetResult tree.
-   * @param arrays the already filled in count array, potentially only covering
-   *        one partition: the ordinals ranging from
-   * @param offset to <code>offset</code> + the length of the count arrays
-   *        within <code>arrays</code> (exclusive)
-   * @throws IOException in case
-   *         {@link TaxonomyReader#getOrdinal(org.apache.lucene.facet.taxonomy.CategoryPath)}
-   *         does.
-   * @see FacetResultsHandler#fetchPartitionResult(FacetArrays, int)
+   * @throws IOException
+   *           in case
+   *           {@link TaxonomyReader#getOrdinal(org.apache.lucene.facet.taxonomy.CategoryPath)}
+   *           does.
+   * @see #fetchPartitionResult(int)
    */
   @Override
-  public IntermediateFacetResult fetchPartitionResult(FacetArrays arrays, int offset) throws IOException {
+  public IntermediateFacetResult fetchPartitionResult(int offset) throws IOException {
 
     // get the root of the result tree to be returned, and the depth of that result tree
     // (depth means number of node levels excluding the root). 
@@ -114,12 +114,12 @@ public class TopKInEachNodeHandler extends FacetResultsHandler {
       return null;
     }
 
-    int K = Math.min(facetRequest.getNumResults(),taxonomyReader.getSize()); // number of best results in each node
+    int K = Math.min(facetRequest.numResults,taxonomyReader.getSize()); // number of best results in each node
 
     // this will grow into the returned IntermediateFacetResult
     IntToObjectMap<AACO> AACOsOfOnePartition = new IntToObjectMap<AACO>();
 
-    int partitionSize = arrays.arrayLength; // all partitions, except, possibly, the last,
+    int partitionSize = facetArrays.arrayLength; // all partitions, except, possibly, the last,
     // have the same length. Hence modulo is OK.
 
     int depth = facetRequest.getDepth();
@@ -128,9 +128,9 @@ public class TopKInEachNodeHandler extends FacetResultsHandler {
       // Need to only have root node.
       IntermediateFacetResultWithHash tempFRWH = new IntermediateFacetResultWithHash(
           facetRequest, AACOsOfOnePartition);
-      if (isSelfPartition(rootNode, arrays, offset)) {
+      if (isSelfPartition(rootNode, facetArrays, offset)) {
         tempFRWH.isRootNodeIncluded = true;
-        tempFRWH.rootNodeValue = this.facetRequest.getValueOf(arrays, rootNode % partitionSize);
+        tempFRWH.rootNodeValue = this.facetRequest.getValueOf(facetArrays, rootNode % partitionSize);
       }
       return tempFRWH;
     }
@@ -274,7 +274,7 @@ public class TopKInEachNodeHandler extends FacetResultsHandler {
 
         while (tosOrdinal >= offset) { // while tosOrdinal belongs to the given partition; here, too, we use the fact
           // that TaxonomyReader.INVALID_ORDINAL == -1 < offset
-          double value = facetRequest.getValueOf(arrays, tosOrdinal % partitionSize);
+          double value = facetRequest.getValueOf(facetArrays, tosOrdinal % partitionSize);
           if (value != 0) { // the value of yc is not 0, it is to be considered.  
             totalNumOfDescendantsConsidered++;
 
@@ -291,7 +291,7 @@ public class TopKInEachNodeHandler extends FacetResultsHandler {
               totalNumOfDescendantsConsidered--; // reduce the 1 earned when the excluded node entered the heap
               // and now return it and all its descendants. These will never make it to FacetResult
               totalNumOfDescendantsConsidered += countOnly (ac.ordinal, children, 
-                  siblings, arrays, partitionSize, offset, endOffset, localDepth, depth);
+                  siblings, partitionSize, offset, endOffset, localDepth, depth);
               reusables[++tosReuslables] = ac;
             }
           }
@@ -343,9 +343,9 @@ public class TopKInEachNodeHandler extends FacetResultsHandler {
     // now generate a TempFacetResult from AACOsOfOnePartition, and consider self.
     IntermediateFacetResultWithHash tempFRWH = new IntermediateFacetResultWithHash(
         facetRequest, AACOsOfOnePartition);
-    if (isSelfPartition(rootNode, arrays, offset)) {
+    if (isSelfPartition(rootNode, facetArrays, offset)) {
       tempFRWH.isRootNodeIncluded = true;
-      tempFRWH.rootNodeValue = this.facetRequest.getValueOf(arrays, rootNode % partitionSize);
+      tempFRWH.rootNodeValue = this.facetRequest.getValueOf(facetArrays, rootNode % partitionSize);
     }
     tempFRWH.totalNumOfFacetsConsidered = totalNumOfDescendantsConsidered;
     return tempFRWH;
@@ -367,24 +367,21 @@ public class TopKInEachNodeHandler extends FacetResultsHandler {
    * @param youngestChild mapping a given ordinal to its youngest child in the taxonomy (of largest ordinal number),
    * or to -1 if has no children.  
    * @param olderSibling  mapping a given ordinal to its older sibling, or to -1
-   * @param arrays  values for the ordinals in the given partition
-   * @param offset  the first (smallest) ordinal in the given partition
    * @param partitionSize  number of ordinals in the given partition
+   * @param offset  the first (smallest) ordinal in the given partition
    * @param endOffset one larger than the largest ordinal that belong to this partition
    * @param currentDepth the depth or ordinal in the TaxonomyTree (relative to rootnode of the facetRequest)
    * @param maxDepth maximal depth of descendants to be considered here (measured relative to rootnode of the 
    * facetRequest).
-   * 
    * @return the number of nodes, from ordinal down its descendants, of depth <= maxDepth,
    * which reside in the current partition, and whose value != 0
    */
-  private int countOnly(int ordinal, int[] youngestChild, int[] olderSibling,
-                        FacetArrays arrays, int partitionSize, int offset,
-                        int endOffset, int currentDepth, int maxDepth) {
+  private int countOnly(int ordinal, int[] youngestChild, int[] olderSibling, int partitionSize, int offset, 
+      int endOffset, int currentDepth, int maxDepth) {
     int ret = 0;
     if (offset <= ordinal) {
       // ordinal belongs to the current partition
-      if (0 != facetRequest.getValueOf(arrays, ordinal % partitionSize)) {
+      if (0 != facetRequest.getValueOf(facetArrays, ordinal % partitionSize)) {
         ret++;
       }
     }
@@ -398,8 +395,8 @@ public class TopKInEachNodeHandler extends FacetResultsHandler {
       yc = olderSibling[yc];
     }
     while (yc > TaxonomyReader.INVALID_ORDINAL) { // assuming this is -1, smaller than any legal ordinal
-      ret += countOnly (yc, youngestChild, olderSibling, arrays, 
-          partitionSize, offset, endOffset, currentDepth+1, maxDepth);
+      ret += countOnly (yc, youngestChild, olderSibling, partitionSize, 
+          offset, endOffset, currentDepth+1, maxDepth);
       yc = olderSibling[yc];
     }
     return ret;
@@ -409,11 +406,10 @@ public class TopKInEachNodeHandler extends FacetResultsHandler {
    * Merge several partitions' {@link IntermediateFacetResult}-s into one of the
    * same format
    * 
-   * @see FacetResultsHandler#mergeResults(IntermediateFacetResult...)
+   * @see #mergeResults(IntermediateFacetResult...)
    */
   @Override
-  public IntermediateFacetResult mergeResults(IntermediateFacetResult... tmpResults)
-  throws ClassCastException, IllegalArgumentException {
+  public IntermediateFacetResult mergeResults(IntermediateFacetResult... tmpResults) {
 
     if (tmpResults.length == 0) {
       return null;
@@ -428,7 +424,7 @@ public class TopKInEachNodeHandler extends FacetResultsHandler {
     }
 
     // i points to the first non-null input 
-    int K = this.facetRequest.getNumResults(); // number of best result in each node
+    int K = this.facetRequest.numResults; // number of best result in each node
     IntermediateFacetResultWithHash tmpToReturn = (IntermediateFacetResultWithHash)tmpResults[i++];
 
     // now loop over the rest of tmpResults and merge each into tmpToReturn
@@ -667,7 +663,7 @@ public class TopKInEachNodeHandler extends FacetResultsHandler {
    * Enumerated in <i>ordinals</i> are siblings,  
    * potential nodes of the {@link FacetResult} tree  
    * (i.e., the descendants of the root node, no deeper than the specified depth).
-   * No more than K ( = {@link FacetRequest#getNumResults()}) 
+   * No more than K ( = {@link FacetRequest#numResults}) 
    * siblings are enumerated.
    * @lucene.internal
    */
@@ -681,11 +677,6 @@ public class TopKInEachNodeHandler extends FacetResultsHandler {
   }
 
   @Override
-  /**
-   * Recursively label the first facetRequest.getNumLabel() sub results 
-   * of the root of a given {@link FacetResult}, or of an already labeled node in it.
-   * I.e., a node is labeled only if it is the root or all its ancestors are labeled. 
-   */
   public void labelResult(FacetResult facetResult) throws IOException {
     if (facetResult == null) {
       return; // any result to label?
@@ -700,10 +691,9 @@ public class TopKInEachNodeHandler extends FacetResultsHandler {
     }
     node.label = taxonomyReader.getPath(node.ordinal);
 
-    // label the first numToLabel of these children, and recursively -- their children.
+    // recursively label the first numToLabel children of every node
     int numLabeled = 0;
     for (FacetResultNode frn : node.subResults) { 
-      // go over the children of node from first to last, no more than numToLable of them
       recursivelyLabel(frn, numToLabel);
       if (++numLabeled >= numToLabel) {
         return;
@@ -719,7 +709,7 @@ public class TopKInEachNodeHandler extends FacetResultsHandler {
   // so now we test and re-order if necessary.
   public FacetResult rearrangeFacetResult(FacetResult facetResult) {
     PriorityQueue<FacetResultNode> nodesHeap = 
-      new ResultNodeHeap(this.facetRequest.getNumResults(), this.getSuitableACComparator());
+      new ResultNodeHeap(this.facetRequest.numResults, this.getSuitableACComparator());
     FacetResultNode topFrn = facetResult.getFacetResultNode();
     rearrangeChilrenOfNode(topFrn, nodesHeap);
     return facetResult;

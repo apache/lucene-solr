@@ -42,20 +42,20 @@ public class FacetSearchParams {
    * Initializes with the given {@link FacetRequest requests} and default
    * {@link FacetIndexingParams#ALL_PARENTS}. If you used a different
    * {@link FacetIndexingParams}, you should use
-   * {@link #FacetSearchParams(List, FacetIndexingParams)}.
+   * {@link #FacetSearchParams(FacetIndexingParams, List)}.
    */
   public FacetSearchParams(FacetRequest... facetRequests) {
-    this(Arrays.asList(facetRequests), FacetIndexingParams.ALL_PARENTS);
+    this(FacetIndexingParams.ALL_PARENTS, Arrays.asList(facetRequests));
   }
   
   /**
    * Initializes with the given {@link FacetRequest requests} and default
    * {@link FacetIndexingParams#ALL_PARENTS}. If you used a different
    * {@link FacetIndexingParams}, you should use
-   * {@link #FacetSearchParams(List, FacetIndexingParams)}.
+   * {@link #FacetSearchParams(FacetIndexingParams, List)}.
    */
   public FacetSearchParams(List<FacetRequest> facetRequests) {
-    this(facetRequests, FacetIndexingParams.ALL_PARENTS);
+    this(FacetIndexingParams.ALL_PARENTS, facetRequests);
   }
   
   /**
@@ -63,34 +63,35 @@ public class FacetSearchParams {
    * {@link FacetIndexingParams}.
    */
   public FacetSearchParams(FacetIndexingParams indexingParams, FacetRequest... facetRequests) {
-    this(Arrays.asList(facetRequests), indexingParams);
+    this(indexingParams, Arrays.asList(facetRequests));
   }
 
   /**
    * Initializes with the given {@link FacetRequest requests} and
    * {@link FacetIndexingParams}.
    */
-  public FacetSearchParams(List<FacetRequest> facetRequests, FacetIndexingParams indexingParams) {
+  public FacetSearchParams(FacetIndexingParams indexingParams, List<FacetRequest> facetRequests) {
     if (facetRequests == null || facetRequests.size() == 0) {
       throw new IllegalArgumentException("at least one FacetRequest must be defined");
     }
     this.facetRequests = facetRequests;
     this.indexingParams = indexingParams;
   }
-
+  
   @Override
   public String toString() {
-    final char TAB = '\t';
+    final String INDENT = "  ";
     final char NEWLINE = '\n';
 
     StringBuilder sb = new StringBuilder("IndexingParams: ");
-    sb.append(NEWLINE).append(TAB).append(indexingParams);
+    sb.append(NEWLINE).append(INDENT).append(indexingParams);
     
     sb.append(NEWLINE).append("FacetRequests:");
     for (FacetRequest facetRequest : facetRequests) {
-      sb.append(NEWLINE).append(TAB).append(facetRequest);
+      sb.append(NEWLINE).append(INDENT).append(facetRequest);
     }
     
     return sb.toString();
   }
+  
 }

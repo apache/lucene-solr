@@ -268,7 +268,7 @@ public class TestFacetsPayloadMigrationReader extends FacetTestCase {
     for (String dim : expectedCounts.keySet()) {
       requests.add(new CountFacetRequest(new CategoryPath(dim), 5));
     }
-    FacetSearchParams fsp = new FacetSearchParams(requests, fip);
+    FacetSearchParams fsp = new FacetSearchParams(fip, requests);
     FacetsCollector fc = FacetsCollector.create(fsp, indexReader, taxoReader);
     MatchAllDocsQuery base = new MatchAllDocsQuery();
     searcher.search(base, fc);

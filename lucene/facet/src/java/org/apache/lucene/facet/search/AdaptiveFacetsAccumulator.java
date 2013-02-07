@@ -74,7 +74,7 @@ public final class AdaptiveFacetsAccumulator extends StandardFacetsAccumulator {
   
   @Override
   public List<FacetResult> accumulate(ScoredDocIDs docids) throws IOException {
-    FacetsAccumulator delegee = appropriateFacetCountingAccumulator(docids);
+    StandardFacetsAccumulator delegee = appropriateFacetCountingAccumulator(docids);
 
     if (delegee == this) {
       return super.accumulate(docids);
@@ -87,7 +87,7 @@ public final class AdaptiveFacetsAccumulator extends StandardFacetsAccumulator {
    * Compute the appropriate facet accumulator to use.
    * If no special/clever adaptation is possible/needed return this (self).
    */
-  private FacetsAccumulator appropriateFacetCountingAccumulator(ScoredDocIDs docids) {
+  private StandardFacetsAccumulator appropriateFacetCountingAccumulator(ScoredDocIDs docids) {
     // Verify that searchPareams permit sampling/complement/etc... otherwise do default
     if (!mayComplement()) {
       return this;

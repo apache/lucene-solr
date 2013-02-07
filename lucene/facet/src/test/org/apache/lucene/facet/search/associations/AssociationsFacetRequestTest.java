@@ -25,7 +25,6 @@ import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.search.MatchAllDocsQuery;
 import org.apache.lucene.search.Query;
 import org.apache.lucene.store.Directory;
-import org.apache.lucene.util.LuceneTestCase;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.junit.Test;
@@ -119,8 +118,8 @@ public class AssociationsFacetRequestTest extends FacetTestCase {
     
     assertNotNull("No results!",res);
     assertEquals("Wrong number of results!",2, res.size());
-    assertEquals("Wrong count for category 'a'!",200, (int) res.get(0).getFacetResultNode().value);
-    assertEquals("Wrong count for category 'b'!",150, (int) res.get(1).getFacetResultNode().value);
+    assertEquals("Wrong count for category 'a'!", 200, (int) res.get(0).getFacetResultNode().value);
+    assertEquals("Wrong count for category 'b'!", 150, (int) res.get(1).getFacetResultNode().value);
     
     taxo.close();
   }

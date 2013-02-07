@@ -3,10 +3,11 @@ package org.apache.lucene.facet.search;
 import java.io.IOException;
 import java.util.ArrayList;
 
+import org.apache.lucene.facet.partitions.search.IntermediateFacetResult;
+import org.apache.lucene.facet.partitions.search.PartitionsFacetResultsHandler;
 import org.apache.lucene.facet.search.params.FacetRequest;
 import org.apache.lucene.facet.search.results.FacetResult;
 import org.apache.lucene.facet.search.results.FacetResultNode;
-import org.apache.lucene.facet.search.results.IntermediateFacetResult;
 import org.apache.lucene.facet.taxonomy.TaxonomyReader;
 import org.apache.lucene.facet.taxonomy.directory.ParallelTaxonomyArrays;
 import org.apache.lucene.facet.util.ResultSortUtils;
@@ -28,30 +29,29 @@ import org.apache.lucene.facet.util.ResultSortUtils;
  * limitations under the License.
  */
 
-/** 
- * Generate Top-K results for a particular FacetRequest.
- * <p>
- * K is global (among all results) and is defined by {@link FacetRequest#getNumResults()}.
- * <p> 
- * Note: Values of 0 (Zero) are ignored by this results handler.
+/**
+ * Generate Top-K results for a particular {@link FacetRequest}. K is global
+ * (among all results) and is defined by {@link FacetRequest#numResults}.
  * 
  * @lucene.experimental
  */
-public class TopKFacetResultsHandler extends FacetResultsHandler {
+public class TopKFacetResultsHandler extends PartitionsFacetResultsHandler {
   
   /**
-   * Construct top-K results handler.  
-   * @param taxonomyReader taxonomy reader
-   * @param facetRequest facet request being served
+   * Construct top-K results handler.
+   * 
+   * @param taxonomyReader
+   *          taxonomy reader
+   * @param facetRequest
+   *          facet request being served
    */
-  public TopKFacetResultsHandler(TaxonomyReader taxonomyReader,
-      FacetRequest facetRequest) {
-    super(taxonomyReader, facetRequest);
+  public TopKFacetResultsHandler(TaxonomyReader taxonomyReader, FacetRequest facetRequest, FacetArrays facetArrays) {
+    super(taxonomyReader, facetRequest, facetArrays);
   }
   
   // fetch top K for specific partition. 
   @Override
-  public IntermediateFacetResult fetchPartitionResult(FacetArrays facetArrays, int offset)
+  public IntermediateFacetResult fetchPartitionResult(int offset)
   throws IOException {
     TopKFacetResult res = null;
     int ordinal = taxonomyReader.getOrdinal(facetRequest.categoryPath);
@@ -65,7 +65,7 @@ public class TopKFacetResultsHandler extends FacetResultsHandler {
       FacetResultNode parentResultNode = new FacetResultNode(ordinal, value);
       
       Heap<FacetResultNode> heap = ResultSortUtils.createSuitableHeap(facetRequest);
-      int totalFacets = heapDescendants(ordinal, heap, parentResultNode, facetArrays, offset);
+      int totalFacets = heapDescendants(ordinal, heap, parentResultNode, offset);
       res = new TopKFacetResult(facetRequest, parentResultNode, totalFacets);
       res.setHeap(heap);
     }
@@ -113,7 +113,7 @@ public class TopKFacetResultsHandler extends FacetResultsHandler {
    * @return total number of descendants considered here by pq, excluding ordinal itself.
    */
   private int heapDescendants(int ordinal, Heap<FacetResultNode> pq, FacetResultNode parentResultNode, 
-      FacetArrays facetArrays, int offset) throws IOException {
+      int offset) throws IOException {
     int partitionSize = facetArrays.arrayLength;
     int endOffset = offset + partitionSize;
     ParallelTaxonomyArrays childrenArray = taxonomyReader.getParallelTaxonomyArrays();

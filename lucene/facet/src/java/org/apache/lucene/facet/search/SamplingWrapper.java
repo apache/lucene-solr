@@ -4,6 +4,7 @@ import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
 
+import org.apache.lucene.facet.partitions.search.PartitionsFacetResultsHandler;
 import org.apache.lucene.facet.search.params.FacetSearchParams;
 import org.apache.lucene.facet.search.results.FacetResult;
 import org.apache.lucene.facet.search.sampling.Sampler;
@@ -35,12 +36,12 @@ import org.apache.lucene.facet.search.sampling.Sampler.SampleResult;
  * 
  * @lucene.experimental
  */
-public class SamplingWrapper extends FacetsAccumulator {
+public class SamplingWrapper extends StandardFacetsAccumulator {
 
-  private FacetsAccumulator delegee;
+  private StandardFacetsAccumulator delegee;
   private Sampler sampler;
 
-  public SamplingWrapper(FacetsAccumulator delegee, Sampler sampler) {
+  public SamplingWrapper(StandardFacetsAccumulator delegee, Sampler sampler) {
     super(delegee.searchParams, delegee.indexReader, delegee.taxonomyReader);
     this.delegee = delegee;
     this.sampler = sampler;
@@ -48,11 +49,6 @@ public class SamplingWrapper extends FacetsAccumulator {
 
   @Override
   public List<FacetResult> accumulate(ScoredDocIDs docids) throws IOException {
-    // first let delegee accumulate without labeling at all (though
-    // currently it doesn't matter because we have to label all returned anyhow)
-    boolean origAllowLabeling = isAllowLabeling();
-    setAllowLabeling(false);
-
     // Replacing the original searchParams with the over-sampled (and without statistics-compute)
     FacetSearchParams original = delegee.searchParams;
     delegee.searchParams = sampler.overSampledSearchParams(original);
@@ -60,24 +56,20 @@ public class SamplingWrapper extends FacetsAccumulator {
     SampleResult sampleSet = sampler.getSampleSet(docids);
 
     List<FacetResult> sampleRes = delegee.accumulate(sampleSet.docids);
-    setAllowLabeling(origAllowLabeling);
 
     List<FacetResult> fixedRes = new ArrayList<FacetResult>();
     for (FacetResult fres : sampleRes) {
       // for sure fres is not null because this is guaranteed by the delegee.
-      FacetResultsHandler frh = fres.getFacetRequest().createFacetResultsHandler(taxonomyReader);
+      PartitionsFacetResultsHandler frh = createFacetResultsHandler(fres.getFacetRequest());
       // fix the result of current request
-      sampler.getSampleFixer(indexReader, taxonomyReader, searchParams)
-          .fixResult(docids, fres); 
+      sampler.getSampleFixer(indexReader, taxonomyReader, searchParams).fixResult(docids, fres); 
       fres = frh.rearrangeFacetResult(fres); // let delegee's handler do any
       
       // Using the sampler to trim the extra (over-sampled) results
       fres = sampler.trimResult(fres);
       
       // final labeling if allowed (because labeling is a costly operation)
-      if (isAllowLabeling()) {
-        frh.labelResult(fres);
-      }
+      frh.labelResult(fres);
       fixedRes.add(fres); // add to final results
     }
 
@@ -94,16 +86,6 @@ public class SamplingWrapper extends FacetsAccumulator {
   @Override
   public void setComplementThreshold(double complementThreshold) {
     delegee.setComplementThreshold(complementThreshold);
-  }
-
-  @Override
-  protected boolean isAllowLabeling() {
-    return delegee.isAllowLabeling();
-  }
-
-  @Override
-  protected void setAllowLabeling(boolean allowLabeling) {
-    delegee.setAllowLabeling(allowLabeling);
   }
 
 }

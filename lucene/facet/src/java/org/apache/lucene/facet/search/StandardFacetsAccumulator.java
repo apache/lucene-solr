@@ -11,11 +11,15 @@ import java.util.logging.Level;
 import java.util.logging.Logger;
 
 import org.apache.lucene.facet.index.params.FacetIndexingParams;
+import org.apache.lucene.facet.partitions.search.PartitionsFacetResultsHandler;
+import org.apache.lucene.facet.search.FacetsCollector.MatchingDocs;
 import org.apache.lucene.facet.search.aggregator.Aggregator;
+import org.apache.lucene.facet.search.params.CountFacetRequest;
 import org.apache.lucene.facet.search.params.FacetRequest;
+import org.apache.lucene.facet.search.params.FacetRequest.ResultMode;
 import org.apache.lucene.facet.search.params.FacetSearchParams;
 import org.apache.lucene.facet.search.results.FacetResult;
-import org.apache.lucene.facet.search.results.IntermediateFacetResult;
+import org.apache.lucene.facet.partitions.search.IntermediateFacetResult;
 import org.apache.lucene.facet.taxonomy.TaxonomyReader;
 import org.apache.lucene.facet.util.PartitionsUtils;
 import org.apache.lucene.facet.util.ScoredDocIdsUtils;
@@ -66,7 +70,23 @@ public class StandardFacetsAccumulator extends FacetsAccumulator {
 
   private static final Logger logger = Logger.getLogger(StandardFacetsAccumulator.class.getName());
 
-  protected final FacetArrays facetArrays;
+  /**
+   * Default threshold for using the complements optimization.
+   * If accumulating facets for a document set larger than this ratio of the index size than 
+   * perform the complement optimization.
+   * @see #setComplementThreshold(double) for more info on the complements optimization.  
+   */
+  public static final double DEFAULT_COMPLEMENT_THRESHOLD = 0.6;
+
+  /**
+   * Passing this to {@link #setComplementThreshold(double)} will disable using complement optimization.
+   */
+  public static final double DISABLE_COMPLEMENT = Double.POSITIVE_INFINITY; // > 1 actually
+
+  /**
+   * Passing this to {@link #setComplementThreshold(double)} will force using complement optimization.
+   */
+  public static final double FORCE_COMPLEMENT = 0; // <=0  
 
   protected int partitionSize;
   protected int maxPartitions;
@@ -76,15 +96,18 @@ public class StandardFacetsAccumulator extends FacetsAccumulator {
 
   private Object accumulateGuard;
 
+  private double complementThreshold;
+  
+  public StandardFacetsAccumulator(FacetSearchParams searchParams, IndexReader indexReader, 
+      TaxonomyReader taxonomyReader) {
+    this(searchParams, indexReader, taxonomyReader, new FacetArrays(
+        PartitionsUtils.partitionSize(searchParams.indexingParams, taxonomyReader)));
+  }
+
   public StandardFacetsAccumulator(FacetSearchParams searchParams, IndexReader indexReader,
       TaxonomyReader taxonomyReader, FacetArrays facetArrays) {
-    super(searchParams,indexReader,taxonomyReader);
+    super(searchParams, indexReader, taxonomyReader, facetArrays);
     
-    if (facetArrays == null) {
-      throw new IllegalArgumentException("facetArrays cannot be null");
-    }
-    
-    this.facetArrays = facetArrays;
     // can only be computed later when docids size is known
     isUsingComplements = false;
     partitionSize = PartitionsUtils.partitionSize(searchParams.indexingParams, taxonomyReader);
@@ -92,13 +115,7 @@ public class StandardFacetsAccumulator extends FacetsAccumulator {
     accumulateGuard = new Object();
   }
 
-  public StandardFacetsAccumulator(FacetSearchParams searchParams,
-      IndexReader indexReader, TaxonomyReader taxonomyReader) {
-    this(searchParams, indexReader, taxonomyReader, new FacetArrays(
-        PartitionsUtils.partitionSize(searchParams.indexingParams, taxonomyReader)));
-  }
-
-  @Override
+  // TODO: this should be removed once we clean the API
   public List<FacetResult> accumulate(ScoredDocIDs docids) throws IOException {
 
     // synchronize to prevent calling two accumulate()'s at the same time.
@@ -162,8 +179,8 @@ public class StandardFacetsAccumulator extends FacetsAccumulator {
           for (FacetRequest fr : searchParams.facetRequests) {
             // Handle and merge only facet requests which were not already handled.  
             if (handledRequests.add(fr)) {
-              FacetResultsHandler frHndlr = fr.createFacetResultsHandler(taxonomyReader);
-              IntermediateFacetResult res4fr = frHndlr.fetchPartitionResult(facetArrays, offset);
+              PartitionsFacetResultsHandler frHndlr = createFacetResultsHandler(fr);
+              IntermediateFacetResult res4fr = frHndlr.fetchPartitionResult(offset);
               IntermediateFacetResult oldRes = fr2tmpRes.get(fr);
               if (oldRes != null) {
                 res4fr = frHndlr.mergeResults(oldRes, res4fr);
@@ -179,16 +196,14 @@ public class StandardFacetsAccumulator extends FacetsAccumulator {
       // gather results from all requests into a list for returning them
       List<FacetResult> res = new ArrayList<FacetResult>();
       for (FacetRequest fr : searchParams.facetRequests) {
-        FacetResultsHandler frHndlr = fr.createFacetResultsHandler(taxonomyReader);
+        PartitionsFacetResultsHandler frHndlr = createFacetResultsHandler(fr);
         IntermediateFacetResult tmpResult = fr2tmpRes.get(fr);
         if (tmpResult == null) {
           continue; // do not add a null to the list.
         }
         FacetResult facetRes = frHndlr.renderFacetResult(tmpResult);
         // final labeling if allowed (because labeling is a costly operation)
-        if (isAllowLabeling()) {
-          frHndlr.labelResult(facetRes);
-        }
+        frHndlr.labelResult(facetRes);
         res.add(facetRes);
       }
 
@@ -196,6 +211,25 @@ public class StandardFacetsAccumulator extends FacetsAccumulator {
     }
   }
 
+  /** check if all requests are complementable */
+  protected boolean mayComplement() {
+    for (FacetRequest freq : searchParams.facetRequests) {
+      if (!(freq instanceof CountFacetRequest)) {
+        return false;
+      }
+    }
+    return true;
+  }
+
+  @Override
+  protected PartitionsFacetResultsHandler createFacetResultsHandler(FacetRequest fr) {
+    if (fr.getResultMode() == ResultMode.PER_NODE_IN_TREE) {
+      return new TopKInEachNodeHandler(taxonomyReader, fr, facetArrays);
+    } else {
+      return new TopKFacetResultsHandler(taxonomyReader, fr, facetArrays);
+    }
+  }
+  
   /**
    * Set the actual set of documents over which accumulation should take place.
    * <p>
@@ -338,4 +372,43 @@ public class StandardFacetsAccumulator extends FacetsAccumulator {
 
     return categoryLists;
   }
+  
+  @Override
+  public List<FacetResult> accumulate(List<MatchingDocs> matchingDocs) throws IOException {
+    return accumulate(new MatchingDocsAsScoredDocIDs(matchingDocs));
+  }
+
+  /**
+   * Returns the complement threshold.
+   * @see #setComplementThreshold(double)
+   */
+  public double getComplementThreshold() {
+    return complementThreshold;
+  }
+
+  /**
+   * Set the complement threshold.
+   * This threshold will dictate whether the complements optimization is applied.
+   * The optimization is to count for less documents. It is useful when the same 
+   * FacetSearchParams are used for varying sets of documents. The first time 
+   * complements is used the "total counts" are computed - counting for all the 
+   * documents in the collection. Then, only the complementing set of documents
+   * is considered, and used to decrement from the overall counts, thereby 
+   * walking through less documents, which is faster.
+   * <p>
+   * For the default settings see {@link #DEFAULT_COMPLEMENT_THRESHOLD}.
+   * <p>
+   * To forcing complements in all cases pass {@link #FORCE_COMPLEMENT}.
+   * This is mostly useful for testing purposes, as forcing complements when only 
+   * tiny fraction of available documents match the query does not make sense and 
+   * would incur performance degradations.
+   * <p>
+   * To disable complements pass {@link #DISABLE_COMPLEMENT}.
+   * @param complementThreshold the complement threshold to set
+   * @see #getComplementThreshold()
+   */
+  public void setComplementThreshold(double complementThreshold) {
+    this.complementThreshold = complementThreshold;
+  }
+  
 }

@@ -1,11 +1,10 @@
 package org.apache.lucene.facet.search.sampling;
 
-import org.apache.lucene.index.IndexReader;
-import org.apache.lucene.util.LuceneTestCase.Slow;
-
-import org.apache.lucene.facet.search.FacetsAccumulator;
+import org.apache.lucene.facet.search.StandardFacetsAccumulator;
 import org.apache.lucene.facet.search.params.FacetSearchParams;
 import org.apache.lucene.facet.taxonomy.TaxonomyReader;
+import org.apache.lucene.index.IndexReader;
+import org.apache.lucene.util.LuceneTestCase.Slow;
 
 /*
  * Licensed to the Apache Software Foundation (ASF) under one or more
@@ -28,7 +27,7 @@ import org.apache.lucene.facet.taxonomy.TaxonomyReader;
 public class SamplingAccumulatorTest extends BaseSampleTestTopK {
 
   @Override
-  protected FacetsAccumulator getSamplingAccumulator(Sampler sampler, TaxonomyReader taxoReader, 
+  protected StandardFacetsAccumulator getSamplingAccumulator(Sampler sampler, TaxonomyReader taxoReader, 
       IndexReader indexReader, FacetSearchParams searchParams) {
     return new SamplingAccumulator(sampler, searchParams, indexReader, taxoReader);
   }

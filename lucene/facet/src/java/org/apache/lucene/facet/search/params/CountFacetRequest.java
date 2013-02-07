@@ -31,15 +31,6 @@ import org.apache.lucene.facet.taxonomy.TaxonomyReader;
  */
 public class CountFacetRequest extends FacetRequest {
 
-  /**
-   * Create a count facet request for a given node in the taxonomy.
-   * 
-   * @param path category path of the category of interest.
-   * @param num number of child categories for which count info is requeted.
-   *        reqiested. Default implementation will find <b>top</b> categories, -
-   *        this behavior can be overridden by overriding
-   *        {@link #createFacetResultsHandler(TaxonomyReader)}.
-   */
   public CountFacetRequest(CategoryPath path, int num) {
     super(path, num);
   }
@@ -60,12 +51,8 @@ public class CountFacetRequest extends FacetRequest {
   }
 
   @Override
-  public boolean supportsComplements() {
-    return true;
+  public FacetArraysSource getFacetArraysSource() {
+    return FacetArraysSource.INT;
   }
   
-  @Override
-  public boolean requireDocumentScore() {
-    return false;
-  }
 }

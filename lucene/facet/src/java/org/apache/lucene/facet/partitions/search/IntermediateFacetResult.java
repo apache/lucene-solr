@@ -1,7 +1,8 @@
-package org.apache.lucene.facet.search.results;
+package org.apache.lucene.facet.partitions.search;
 
 import org.apache.lucene.facet.search.FacetResultsHandler;
 import org.apache.lucene.facet.search.params.FacetRequest;
+import org.apache.lucene.facet.search.results.FacetResult;
 
 /*
  * Licensed to the Apache Software Foundation (ASF) under one or more

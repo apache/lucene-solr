@@ -109,48 +109,36 @@ public class TestTopKInEachNodeResultHandler extends FacetTestCase {
       // Get all of the documents and run the query, then do different
       // facet counts and compare to control
       Query q = new TermQuery(new Term("content", "alpha"));
-      ScoredDocIdCollector scoredDoc = ScoredDocIdCollector.create(ir.maxDoc(), true);
 
-      // Collector collector = new MultiCollector(scoredDoc);
-      is.search(q, scoredDoc);
-
-      CountFacetRequest cfra23 = new CountFacetRequest(
-          new CategoryPath("a"), 2);
+      CountFacetRequest cfra23 = new CountFacetRequest(new CategoryPath("a"), 2);
       cfra23.setDepth(3);
       cfra23.setResultMode(ResultMode.PER_NODE_IN_TREE);
 
-      CountFacetRequest cfra22 = new CountFacetRequest(
-          new CategoryPath("a"), 2);
+      CountFacetRequest cfra22 = new CountFacetRequest(new CategoryPath("a"), 2);
       cfra22.setDepth(2);
       cfra22.setResultMode(ResultMode.PER_NODE_IN_TREE);
 
-      CountFacetRequest cfra21 = new CountFacetRequest(
-          new CategoryPath("a"), 2);
+      CountFacetRequest cfra21 = new CountFacetRequest(new CategoryPath("a"), 2);
       cfra21.setDepth(1);
       cfra21.setResultMode(ResultMode.PER_NODE_IN_TREE);
 
-      CountFacetRequest cfrb22 = new CountFacetRequest(
-          new CategoryPath("a", "b"), 2);
+      CountFacetRequest cfrb22 = new CountFacetRequest(new CategoryPath("a", "b"), 2);
       cfrb22.setDepth(2);
       cfrb22.setResultMode(ResultMode.PER_NODE_IN_TREE);
 
-      CountFacetRequest cfrb23 = new CountFacetRequest(
-          new CategoryPath("a", "b"), 2);
+      CountFacetRequest cfrb23 = new CountFacetRequest(new CategoryPath("a", "b"), 2);
       cfrb23.setDepth(3);
       cfrb23.setResultMode(ResultMode.PER_NODE_IN_TREE);
 
-      CountFacetRequest cfrb21 = new CountFacetRequest(
-          new CategoryPath("a", "b"), 2);
+      CountFacetRequest cfrb21 = new CountFacetRequest(new CategoryPath("a", "b"), 2);
       cfrb21.setDepth(1);
       cfrb21.setResultMode(ResultMode.PER_NODE_IN_TREE);
 
-      CountFacetRequest doctor = new CountFacetRequest(
-          new CategoryPath("Doctor"), 2);
+      CountFacetRequest doctor = new CountFacetRequest(new CategoryPath("Doctor"), 2);
       doctor.setDepth(1);
       doctor.setResultMode(ResultMode.PER_NODE_IN_TREE);
 
-      CountFacetRequest cfrb20 = new CountFacetRequest(
-          new CategoryPath("a", "b"), 2);
+      CountFacetRequest cfrb20 = new CountFacetRequest(new CategoryPath("a", "b"), 2);
       cfrb20.setDepth(0);
       cfrb20.setResultMode(ResultMode.PER_NODE_IN_TREE);
 
@@ -163,20 +151,16 @@ public class TestTopKInEachNodeResultHandler extends FacetTestCase {
       facetRequests.add(cfrb21);
       facetRequests.add(doctor);
       facetRequests.add(cfrb20);
-      FacetSearchParams facetSearchParams = new FacetSearchParams(facetRequests, iParams);
+      FacetSearchParams facetSearchParams = new FacetSearchParams(iParams, facetRequests);
       
       FacetArrays facetArrays = new FacetArrays(PartitionsUtils.partitionSize(facetSearchParams.indexingParams, tr));
-      FacetsAccumulator fctExtrctr = new StandardFacetsAccumulator(facetSearchParams, is.getIndexReader(), tr, facetArrays);
-      fctExtrctr.setComplementThreshold(FacetsAccumulator.DISABLE_COMPLEMENT);
-      long start = System.currentTimeMillis();
-
-      List<FacetResult> facetResults = fctExtrctr.accumulate(scoredDoc.getScoredDocIDs());
-
-      long end = System.currentTimeMillis();
-      if (VERBOSE) {
-        System.out.println("Time: " + (end - start));
-      }
+      StandardFacetsAccumulator sfa = new StandardFacetsAccumulator(facetSearchParams, is.getIndexReader(), tr, facetArrays);
+      sfa.setComplementThreshold(StandardFacetsAccumulator.DISABLE_COMPLEMENT);
+      FacetsCollector fc = FacetsCollector.create(sfa);
       
+      is.search(q, fc);
+      List<FacetResult> facetResults = fc.getFacetResults();
+
       FacetResult fr = facetResults.get(0); // a, depth=3, K=2
       boolean hasDoctor = "Doctor".equals(fr.getFacetRequest().categoryPath.components[0]);
       assertEquals(9, fr.getNumValidDescendants());
@@ -203,7 +187,7 @@ public class TestTopKInEachNodeResultHandler extends FacetTestCase {
       }
       // now rearrange
       double [] expectedValues00 = { 6.0, 1.0, 5.0, 3.0, 2.0 };
-      fr = cfra23.createFacetResultsHandler(tr).rearrangeFacetResult(fr);
+      fr = sfa.createFacetResultsHandler(cfra23).rearrangeFacetResult(fr);
       i = 0;
       for (FacetResultNode node : parentRes.subResults) {
         assertEquals(expectedValues00[i++], node.value, Double.MIN_VALUE);

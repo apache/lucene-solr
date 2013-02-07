@@ -4,8 +4,8 @@ import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
 
+import org.apache.lucene.facet.partitions.search.PartitionsFacetResultsHandler;
 import org.apache.lucene.facet.search.FacetArrays;
-import org.apache.lucene.facet.search.FacetResultsHandler;
 import org.apache.lucene.facet.search.FacetsAccumulator;
 import org.apache.lucene.facet.search.SamplingWrapper;
 import org.apache.lucene.facet.search.ScoredDocIDs;
@@ -42,7 +42,8 @@ import org.apache.lucene.index.IndexReader;
  * directly extends {@link StandardFacetsAccumulator}.</li>
  * <li>This class can effectively apply sampling on the complement set of
  * matching document, thereby working efficiently with the complement
- * optimization - see {@link FacetsAccumulator#getComplementThreshold()}.</li>
+ * optimization - see {@link StandardFacetsAccumulator#getComplementThreshold()}
+ * .</li>
  * </ol>
  * <p>
  * Note: Sampling accumulation (Accumulation over a sampled-set of the results),
@@ -77,36 +78,26 @@ public class SamplingAccumulator extends StandardFacetsAccumulator {
 
   @Override
   public List<FacetResult> accumulate(ScoredDocIDs docids) throws IOException {
-    // first let delegee accumulate without labeling at all (though
-    // currently it doesn't matter because we have to label all returned anyhow)
-    boolean origAllowLabeling = isAllowLabeling();
-    setAllowLabeling(false);
-    
     // Replacing the original searchParams with the over-sampled
     FacetSearchParams original = searchParams;
     searchParams = sampler.overSampledSearchParams(original);
     
     List<FacetResult> sampleRes = super.accumulate(docids);
-    setAllowLabeling(origAllowLabeling);
     
     List<FacetResult> fixedRes = new ArrayList<FacetResult>();
     for (FacetResult fres : sampleRes) {
       // for sure fres is not null because this is guaranteed by the delegee.
-      FacetResultsHandler frh = fres.getFacetRequest().createFacetResultsHandler(
-          taxonomyReader);
+      PartitionsFacetResultsHandler frh = createFacetResultsHandler(fres.getFacetRequest());
       // fix the result of current request
-      sampler.getSampleFixer(indexReader, taxonomyReader, searchParams)
-          .fixResult(docids, fres);
+      sampler.getSampleFixer(indexReader, taxonomyReader, searchParams).fixResult(docids, fres);
       
-      fres = frh.rearrangeFacetResult(fres); // let delegee's handler do any
+      fres = frh.rearrangeFacetResult(fres); // let delegee's handler do any arranging it needs to
 
       // Using the sampler to trim the extra (over-sampled) results
       fres = sampler.trimResult(fres);
-                                              // arranging it needs to
+
       // final labeling if allowed (because labeling is a costly operation)
-      if (isAllowLabeling()) {
-        frh.labelResult(fres);
-      }
+      frh.labelResult(fres);
       fixedRes.add(fres); // add to final results
     }
     

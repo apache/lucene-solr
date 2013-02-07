@@ -56,6 +56,13 @@ Changes in backwards compatibility policy
     based on any properties of the content.
    (Simon Willnauer, Adrien Grand, Mike McCandless, Robert Muir)
 
+* LUCENE-4757: Cleanup and refactoring of FacetsAccumulator, FacetRequest,
+  FacetsAggregator and FacetResultsHandler API. If your application did 
+  FacetsCollector.create(), you should not be affected, but if you wrote
+  an Aggregator, then you should migrate it to the per-segment
+  FacetsAggregator. You can still use StandardFacetsAccumulator, which works
+  with the old API (for now). (Shai Erera) 
+
 Optimizations
 
 * LUCENE-4687: BloomFilterPostingsFormat now lazily initializes delegate

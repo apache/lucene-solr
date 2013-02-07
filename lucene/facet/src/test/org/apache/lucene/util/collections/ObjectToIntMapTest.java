@@ -4,12 +4,8 @@ import java.util.HashSet;
 import java.util.Iterator;
 import java.util.Random;
 
-import org.junit.Test;
-
 import org.apache.lucene.facet.FacetTestCase;
-import org.apache.lucene.util.LuceneTestCase;
-import org.apache.lucene.util.collections.IntIterator;
-import org.apache.lucene.util.collections.ObjectToIntMap;
+import org.junit.Test;
 
 /*
  * Licensed to the Apache Software Foundation (ASF) under one or more

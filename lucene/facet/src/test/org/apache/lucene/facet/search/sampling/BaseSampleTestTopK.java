@@ -5,11 +5,8 @@ import java.util.Random;
 
 import org.apache.lucene.facet.index.params.FacetIndexingParams;
 import org.apache.lucene.facet.search.BaseTestTopK;
-import org.apache.lucene.facet.search.FacetsAccumulator;
 import org.apache.lucene.facet.search.FacetsCollector;
-import org.apache.lucene.facet.search.ScoredDocIDs;
-import org.apache.lucene.facet.search.ScoredDocIdCollector;
-import org.apache.lucene.facet.search.StandardFacetsCollector;
+import org.apache.lucene.facet.search.StandardFacetsAccumulator;
 import org.apache.lucene.facet.search.params.FacetRequest;
 import org.apache.lucene.facet.search.params.FacetRequest.ResultMode;
 import org.apache.lucene.facet.search.params.FacetSearchParams;
@@ -17,7 +14,6 @@ import org.apache.lucene.facet.search.results.FacetResult;
 import org.apache.lucene.facet.taxonomy.TaxonomyReader;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.Term;
-import org.apache.lucene.search.MultiCollector;
 import org.apache.lucene.search.Query;
 import org.apache.lucene.search.TermQuery;
 
@@ -60,7 +56,7 @@ public abstract class BaseSampleTestTopK extends BaseTestTopK {
     return res;
   }
   
-  protected abstract FacetsAccumulator getSamplingAccumulator(Sampler sampler, TaxonomyReader taxoReader, 
+  protected abstract StandardFacetsAccumulator getSamplingAccumulator(Sampler sampler, TaxonomyReader taxoReader, 
       IndexReader indexReader, FacetSearchParams searchParams);
   
   /**
@@ -79,12 +75,11 @@ public abstract class BaseSampleTestTopK extends BaseTestTopK {
         // Get all of the documents and run the query, then do different
         // facet counts and compare to control
         Query q = new TermQuery(new Term(CONTENT_FIELD, BETA)); // 90% of the docs
-        ScoredDocIdCollector docCollector = ScoredDocIdCollector.create(indexReader.maxDoc(), false);
         
         FacetSearchParams expectedSearchParams = searchParamsWithRequests(K, fip); 
         FacetsCollector fc = FacetsCollector.create(expectedSearchParams, indexReader, taxoReader);
         
-        searcher.search(q, MultiCollector.wrap(docCollector, fc));
+        searcher.search(q, fc);
         
         List<FacetResult> expectedResults = fc.getFacetResults();
         
@@ -95,7 +90,7 @@ public abstract class BaseSampleTestTopK extends BaseTestTopK {
         for (int nTrial = 0; nTrial < RETRIES; nTrial++) {
           try {
             // complement with sampling!
-            final Sampler sampler = createSampler(nTrial, docCollector.getScoredDocIDs(), useRandomSampler);
+            final Sampler sampler = createSampler(nTrial, useRandomSampler);
             
             assertSampling(expectedResults, q, sampler, samplingSearchParams, false);
             assertSampling(expectedResults, q, sampler, samplingSearchParams, true);
@@ -124,19 +119,12 @@ public abstract class BaseSampleTestTopK extends BaseTestTopK {
   
   private FacetsCollector samplingCollector(final boolean complement, final Sampler sampler,
       FacetSearchParams samplingSearchParams) {
-    FacetsCollector samplingFC = new StandardFacetsCollector(samplingSearchParams, indexReader, taxoReader) {
-      @Override
-      protected FacetsAccumulator initFacetsAccumulator(FacetSearchParams facetSearchParams, IndexReader indexReader,
-          TaxonomyReader taxonomyReader) {
-        FacetsAccumulator acc = getSamplingAccumulator(sampler, taxonomyReader, indexReader, facetSearchParams);
-        acc.setComplementThreshold(complement ? FacetsAccumulator.FORCE_COMPLEMENT : FacetsAccumulator.DISABLE_COMPLEMENT);
-        return acc;
-      }
-    };
-    return samplingFC;
+    StandardFacetsAccumulator sfa = getSamplingAccumulator(sampler, taxoReader, indexReader, samplingSearchParams);
+    sfa.setComplementThreshold(complement ? StandardFacetsAccumulator.FORCE_COMPLEMENT : StandardFacetsAccumulator.DISABLE_COMPLEMENT);
+    return FacetsCollector.create(sfa);
   }
   
-  private Sampler createSampler(int nTrial, ScoredDocIDs scoredDocIDs, boolean useRandomSampler) {
+  private Sampler createSampler(int nTrial, boolean useRandomSampler) {
     SamplingParams samplingParams = new SamplingParams();
     
     final double retryFactor = Math.pow(1.01, nTrial);
@@ -149,7 +137,6 @@ public abstract class BaseSampleTestTopK extends BaseTestTopK {
     Sampler sampler = useRandomSampler ? 
         new RandomSampler(samplingParams, new Random(random().nextLong())) :
           new RepeatableSampler(samplingParams);
-    assertTrue("must enable sampling for this test!",sampler.shouldSample(scoredDocIDs));
     return sampler;
   }
   

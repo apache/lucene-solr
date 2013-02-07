@@ -101,14 +101,9 @@ public class TestStandardFacetsAccumulator extends FacetTestCase {
     
     // search for "f:a", only segments 1 and 3 should match results
     Query q = new TermQuery(new Term("f", "a"));
-    FacetRequest countNoComplements = new CountFacetRequest(new CategoryPath("A"), 10) {
-      @Override
-      public boolean supportsComplements() {
-        return false; // disable complements
-      }
-    };
+    FacetRequest countNoComplements = new CountFacetRequest(new CategoryPath("A"), 10);
     FacetSearchParams fsp = new FacetSearchParams(fip, countNoComplements);
-    FacetsCollector fc = new StandardFacetsCollector(fsp , indexReader, taxoReader);
+    FacetsCollector fc = FacetsCollector.create(fsp , indexReader, taxoReader);
     indexSearcher.search(q, fc);
     List<FacetResult> results = fc.getFacetResults();
     assertEquals("received too many facet results", 1, results.size());

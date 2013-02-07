@@ -1,10 +1,11 @@
-package org.apache.lucene.facet.search;
+package org.apache.lucene.facet.associations.search;
 
 import java.io.IOException;
 
-import org.apache.lucene.facet.search.params.FacetRequest;
-import org.apache.lucene.facet.search.results.FacetResult;
-import org.apache.lucene.facet.taxonomy.TaxonomyReader;
+import org.apache.lucene.facet.index.params.CategoryListParams;
+import org.apache.lucene.facet.search.FacetArrays;
+import org.apache.lucene.facet.search.FacetsAggregator;
+import org.apache.lucene.facet.search.FacetsCollector.MatchingDocs;
 
 /*
  * Licensed to the Apache Software Foundation (ASF) under one or more
@@ -24,25 +25,22 @@ import org.apache.lucene.facet.taxonomy.TaxonomyReader;
  */
 
 /**
- * Computes the top categories for a given {@link FacetRequest}. 
- * 
- * @lucene.experimental
+ * A {@link FacetsAggregator} which computes the weight of a category as the sum
+ * of the integer values associated with it in the result documents.
  */
-public abstract class FacetResultsHandler {
-
-  public final TaxonomyReader taxonomyReader;
-
-  public final FacetRequest facetRequest;
+public class AssociationIntSumFacetsAggregator implements FacetsAggregator {
   
-  protected final FacetArrays facetArrays;
-
-  public FacetResultsHandler(TaxonomyReader taxonomyReader, FacetRequest facetRequest, FacetArrays facetArrays) {
-    this.taxonomyReader = taxonomyReader;
-    this.facetRequest = facetRequest;
-    this.facetArrays = facetArrays;
+  @Override
+  public void aggregate(MatchingDocs matchingDocs, CategoryListParams clp,
+      FacetArrays facetArrays) throws IOException {}
+  
+  @Override
+  public void rollupValues(int ordinal, int[] children, int[] siblings,
+      FacetArrays facetArrays) {}
+  
+  @Override
+  public boolean requiresDocScores() {
+    return false;
   }
-
-  /** Computes the {@link FacetResult} for the given {@link FacetArrays}. */
-  public abstract FacetResult compute() throws IOException;
   
 }

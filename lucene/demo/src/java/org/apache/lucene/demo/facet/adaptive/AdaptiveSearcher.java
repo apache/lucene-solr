@@ -5,7 +5,7 @@ import java.util.List;
 import org.apache.lucene.demo.facet.ExampleUtils;
 import org.apache.lucene.demo.facet.simple.SimpleUtils;
 import org.apache.lucene.facet.search.AdaptiveFacetsAccumulator;
-import org.apache.lucene.facet.search.ScoredDocIdCollector;
+import org.apache.lucene.facet.search.FacetsCollector;
 import org.apache.lucene.facet.search.params.CountFacetRequest;
 import org.apache.lucene.facet.search.params.FacetSearchParams;
 import org.apache.lucene.facet.search.results.FacetResult;
@@ -56,7 +56,7 @@ public class AdaptiveSearcher {
    * @throws Exception on error (no detailed exception handling here for sample simplicity
    * @return facet results
    */
-  public static List<FacetResult> searchWithFacets (Directory indexDir, Directory taxoDir) throws Exception {
+  public static List<FacetResult> searchWithFacets(Directory indexDir, Directory taxoDir) throws Exception {
     // prepare index reader and taxonomy.
     TaxonomyReader taxo = new DirectoryTaxonomyReader(taxoDir);
     IndexReader indexReader = DirectoryReader.open(indexDir);
@@ -76,20 +76,17 @@ public class AdaptiveSearcher {
     // regular collector for scoring matched documents
     TopScoreDocCollector topDocsCollector = TopScoreDocCollector.create(10, true); 
     
-    // docids collector for guiding facets accumulation (scoring disabled)
-    ScoredDocIdCollector docIdsCollecor = ScoredDocIdCollector.create(indexReader.maxDoc(), false);
-    
     // Faceted search parameters indicate which facets are we interested in 
-    FacetSearchParams facetSearchParams = new FacetSearchParams(
-        new CountFacetRequest(new CategoryPath("root", "a"), 10));
+    FacetSearchParams fsp = new FacetSearchParams(new CountFacetRequest(new CategoryPath("root", "a"), 10));
+    AdaptiveFacetsAccumulator accumulator = new AdaptiveFacetsAccumulator(fsp, indexReader, taxo);
+    FacetsCollector fc = FacetsCollector.create(accumulator);
     
     // search, into both collectors. note: in case only facets accumulation 
     // is required, the topDocCollector part can be totally discarded
-    searcher.search(q, MultiCollector.wrap(topDocsCollector, docIdsCollecor));
+    searcher.search(q, MultiCollector.wrap(topDocsCollector, fc));
         
     // Obtain facets results and print them
-    AdaptiveFacetsAccumulator accumulator = new AdaptiveFacetsAccumulator(facetSearchParams, indexReader, taxo);
-    List<FacetResult> res = accumulator.accumulate(docIdsCollecor.getScoredDocIDs());
+    List<FacetResult> res = fc.getFacetResults();
     
     int i = 0;
     for (FacetResult facetResult : res) {

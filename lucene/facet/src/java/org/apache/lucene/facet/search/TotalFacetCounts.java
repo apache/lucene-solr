@@ -156,7 +156,7 @@ public class TotalFacetCounts {
     final int[][] counts = new int[(int) Math.ceil(taxonomy.getSize()  /(float) partitionSize)][partitionSize];
     FacetSearchParams newSearchParams = new FacetSearchParams(facetIndexingParams, DUMMY_REQ); 
       //createAllListsSearchParams(facetIndexingParams,  this.totalCounts);
-    FacetsAccumulator fe = new StandardFacetsAccumulator(newSearchParams, indexReader, taxonomy) {
+    StandardFacetsAccumulator sfa = new StandardFacetsAccumulator(newSearchParams, indexReader, taxonomy) {
       @Override
       protected HashMap<CategoryListIterator, Aggregator> getCategoryListMap(
           FacetArrays facetArrays, int partition) throws IOException {
@@ -169,8 +169,8 @@ public class TotalFacetCounts {
         return map;
       }
     };
-    fe.setComplementThreshold(FacetsAccumulator.DISABLE_COMPLEMENT);
-    fe.accumulate(ScoredDocIdsUtils.createAllDocsScoredDocIDs(indexReader));
+    sfa.setComplementThreshold(StandardFacetsAccumulator.DISABLE_COMPLEMENT);
+    sfa.accumulate(ScoredDocIdsUtils.createAllDocsScoredDocIDs(indexReader));
     return new TotalFacetCounts(taxonomy, facetIndexingParams, counts, CreationType.Computed);
   }
   
