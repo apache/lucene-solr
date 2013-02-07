@@ -59,7 +59,7 @@ public class FacetSearchParams {
   }
   
   /**
-   * Initilizes with the given {@link FacetRequest requests} and
+   * Initializes with the given {@link FacetRequest requests} and
    * {@link FacetIndexingParams}.
    */
   public FacetSearchParams(FacetIndexingParams indexingParams, FacetRequest... facetRequests) {
@@ -67,7 +67,7 @@ public class FacetSearchParams {
   }
 
   /**
-   * Initilizes with the given {@link FacetRequest requests} and
+   * Initializes with the given {@link FacetRequest requests} and
    * {@link FacetIndexingParams}.
    */
   public FacetSearchParams(List<FacetRequest> facetRequests, FacetIndexingParams indexingParams) {
