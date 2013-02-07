@@ -34,9 +34,12 @@ import org.apache.lucene.analysis.tokenattributes.CharTermAttribute;
 import org.apache.lucene.analysis.tokenattributes.PositionIncrementAttribute;
 import org.apache.lucene.codecs.Codec;
 import org.apache.lucene.codecs.simpletext.SimpleTextCodec;
+import org.apache.lucene.document.BinaryDocValuesField;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
 import org.apache.lucene.document.FieldType;
+import org.apache.lucene.document.NumericDocValuesField;
+import org.apache.lucene.document.SortedDocValuesField;
 import org.apache.lucene.document.StoredField;
 import org.apache.lucene.document.StringField;
 import org.apache.lucene.document.TextField;
@@ -1017,10 +1020,16 @@ public class TestIndexWriter extends LuceneTestCase {
       Document doc = new Document();
       doc.add(newStringField(random, "id", "500", Field.Store.NO));
       doc.add(newField(random, "field", "some prepackaged text contents", storedTextType));
+      doc.add(new BinaryDocValuesField("binarydv", new BytesRef("500")));
+      doc.add(new NumericDocValuesField("numericdv", 500));
+      doc.add(new SortedDocValuesField("sorteddv", new BytesRef("500")));
       w.addDocument(doc);
       doc = new Document();
       doc.add(newStringField(random, "id", "501", Field.Store.NO));
       doc.add(newField(random, "field", "some more contents", storedTextType));
+      doc.add(new BinaryDocValuesField("binarydv", new BytesRef("501")));
+      doc.add(new NumericDocValuesField("numericdv", 501));
+      doc.add(new SortedDocValuesField("sorteddv", new BytesRef("501")));
       w.addDocument(doc);
       w.deleteDocuments(new Term("id", "500"));
       w.close();
@@ -1045,10 +1054,19 @@ public class TestIndexWriter extends LuceneTestCase {
 
             Document doc = new Document();
             Field idField = newStringField(random, "id", "", Field.Store.NO);
+            Field binaryDVField = new BinaryDocValuesField("binarydv", new BytesRef());
+            Field numericDVField = new NumericDocValuesField("numericdv", 0);
+            Field sortedDVField = new SortedDocValuesField("sorteddv", new BytesRef());
             doc.add(idField);
             doc.add(newField(random, "field", "some text contents", storedTextType));
+            doc.add(binaryDVField);
+            doc.add(numericDVField);
+            doc.add(sortedDVField);
             for(int i=0;i<100;i++) {
               idField.setStringValue(Integer.toString(i));
+              binaryDVField.setBytesValue(new BytesRef(idField.stringValue()));
+              numericDVField.setLongValue(i);
+              sortedDVField.setBytesValue(new BytesRef(idField.stringValue()));
               int action = random.nextInt(100);
               if (action == 17) {
                 w.addIndexes(adder);
@@ -1694,10 +1712,11 @@ public class TestIndexWriter extends LuceneTestCase {
     w.close();
     assertEquals(1, reader.docFreq(new Term("content", bigTerm)));
 
-    FieldCache.DocTermsIndex dti = FieldCache.DEFAULT.getTermsIndex(SlowCompositeReaderWrapper.wrap(reader), "content", random().nextFloat() * PackedInts.FAST);
-    assertEquals(5, dti.numOrd());                // +1 for null ord
-    assertEquals(4, dti.size());
-    assertEquals(bigTermBytesRef, dti.lookup(3, new BytesRef()));
+    SortedDocValues dti = FieldCache.DEFAULT.getTermsIndex(SlowCompositeReaderWrapper.wrap(reader), "content", random().nextFloat() * PackedInts.FAST);
+    assertEquals(4, dti.getValueCount());
+    BytesRef br = new BytesRef();
+    dti.lookupOrd(2, br);
+    assertEquals(bigTermBytesRef, br);
     reader.close();
     dir.close();
   }

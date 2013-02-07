@@ -31,10 +31,7 @@ import java.util.Map;
 import org.apache.lucene.codecs.BlockTreeTermsReader;
 import org.apache.lucene.codecs.Codec;
 import org.apache.lucene.codecs.PostingsFormat; // javadocs
-import org.apache.lucene.document.Document;
 import org.apache.lucene.document.FieldType; // for javadocs
-import org.apache.lucene.index.DocValues.SortedSource;
-import org.apache.lucene.index.DocValues.Source;
 import org.apache.lucene.index.FieldInfo.IndexOptions;
 import org.apache.lucene.search.DocIdSetIterator;
 import org.apache.lucene.store.Directory;
@@ -183,7 +180,7 @@ public class CheckIndex {
       /** Number of deleted documents. */
       public int numDeleted;
 
-      /** True if we were able to open a SegmentReader on this
+      /** True if we were able to open an AtomicReader on this
        *  segment. */
       public boolean openReaderPassed;
 
@@ -343,9 +340,9 @@ public class CheckIndex {
     setInfoStream(out, false);
   }
 
-  private void msg(String msg) {
-    if (infoStream != null)
-      infoStream.println(msg);
+  private static void msg(PrintStream out, String msg) {
+    if (out != null)
+      out.println(msg);
   }
 
   /** Returns a {@link Status} instance detailing
@@ -381,7 +378,7 @@ public class CheckIndex {
     try {
       sis.read(dir);
     } catch (Throwable t) {
-      msg("ERROR: could not read any segments file in directory");
+      msg(infoStream, "ERROR: could not read any segments file in directory");
       result.missingSegments = true;
       if (infoStream != null)
         t.printStackTrace(infoStream);
@@ -416,7 +413,7 @@ public class CheckIndex {
     try {
       input = dir.openInput(segmentsFileName, IOContext.DEFAULT);
     } catch (Throwable t) {
-      msg("ERROR: could not open segments file in directory");
+      msg(infoStream, "ERROR: could not open segments file in directory");
       if (infoStream != null)
         t.printStackTrace(infoStream);
       result.cantOpenSegments = true;
@@ -426,7 +423,7 @@ public class CheckIndex {
     try {
       format = input.readInt();
     } catch (Throwable t) {
-      msg("ERROR: could not read segment file version in directory");
+      msg(infoStream, "ERROR: could not read segment file version in directory");
       if (infoStream != null)
         t.printStackTrace(infoStream);
       result.missingSegmentVersion = true;
@@ -460,7 +457,7 @@ public class CheckIndex {
       versionString = oldest.equals(newest) ? ( "version=" + oldest ) : ("versions=[" + oldest + " .. " + newest + "]");
     }
 
-    msg("Segments file=" + segmentsFileName + " numSegments=" + numSegments
+    msg(infoStream, "Segments file=" + segmentsFileName + " numSegments=" + numSegments
         + " " + versionString + " format=" + sFormat + userDataString);
 
     if (onlySegments != null) {
@@ -472,11 +469,11 @@ public class CheckIndex {
           infoStream.print(" " + s);
       }
       result.segmentsChecked.addAll(onlySegments);
-      msg(":");
+      msg(infoStream, ":");
     }
 
     if (skip) {
-      msg("\nERROR: this index appears to be created by a newer version of Lucene than this tool was compiled on; please re-compile this tool on the matching version of Lucene; exiting");
+      msg(infoStream, "\nERROR: this index appears to be created by a newer version of Lucene than this tool was compiled on; please re-compile this tool on the matching version of Lucene; exiting");
       result.toolOutOfDate = true;
       return result;
     }
@@ -497,38 +494,41 @@ public class CheckIndex {
       }
       Status.SegmentInfoStatus segInfoStat = new Status.SegmentInfoStatus();
       result.segmentInfos.add(segInfoStat);
-      msg("  " + (1+i) + " of " + numSegments + ": name=" + info.info.name + " docCount=" + info.info.getDocCount());
+      msg(infoStream, "  " + (1+i) + " of " + numSegments + ": name=" + info.info.name + " docCount=" + info.info.getDocCount());
       segInfoStat.name = info.info.name;
       segInfoStat.docCount = info.info.getDocCount();
 
       int toLoseDocCount = info.info.getDocCount();
 
-      SegmentReader reader = null;
+      AtomicReader reader = null;
 
       try {
         final Codec codec = info.info.getCodec();
-        msg("    codec=" + codec);
+        msg(infoStream, "    codec=" + codec);
         segInfoStat.codec = codec;
-        msg("    compound=" + info.info.getUseCompoundFile());
+        msg(infoStream, "    compound=" + info.info.getUseCompoundFile());
         segInfoStat.compound = info.info.getUseCompoundFile();
-        msg("    numFiles=" + info.files().size());
+        msg(infoStream, "    numFiles=" + info.files().size());
         segInfoStat.numFiles = info.files().size();
         segInfoStat.sizeMB = info.sizeInBytes()/(1024.*1024.);
-        msg("    size (MB)=" + nf.format(segInfoStat.sizeMB));
+        msg(infoStream, "    size (MB)=" + nf.format(segInfoStat.sizeMB));
         Map<String,String> diagnostics = info.info.getDiagnostics();
         segInfoStat.diagnostics = diagnostics;
         if (diagnostics.size() > 0) {
-          msg("    diagnostics = " + diagnostics);
+          msg(infoStream, "    diagnostics = " + diagnostics);
         }
 
-        // TODO: we could append the info attributes() to the msg?
+        Map<String,String> atts = info.info.attributes();
+        if (atts != null && !atts.isEmpty()) {
+          msg(infoStream, "    attributes = " + atts);
+        }
 
         if (!info.hasDeletions()) {
-          msg("    no deletions");
+          msg(infoStream, "    no deletions");
           segInfoStat.hasDeletions = false;
         }
         else{
-          msg("    has deletions [delGen=" + info.getDelGen() + "]");
+          msg(infoStream, "    has deletions [delGen=" + info.getDelGen() + "]");
           segInfoStat.hasDeletions = true;
           segInfoStat.deletionsGen = info.getDelGen();
         }
@@ -566,7 +566,7 @@ public class CheckIndex {
           }
           
           segInfoStat.numDeleted = info.info.getDocCount() - numDocs;
-          msg("OK [" + (segInfoStat.numDeleted) + " deleted docs]");
+          msg(infoStream, "OK [" + (segInfoStat.numDeleted) + " deleted docs]");
         } else {
           if (info.getDelCount() != 0) {
             throw new RuntimeException("delete count mismatch: info=" + info.getDelCount() + " vs reader=" + (info.info.getDocCount() - numDocs));
@@ -580,7 +580,7 @@ public class CheckIndex {
               }
             }
           }
-          msg("OK");
+          msg(infoStream, "OK");
         }
         if (reader.maxDoc() != info.info.getDocCount()) {
           throw new RuntimeException("SegmentReader.maxDoc() " + reader.maxDoc() + " != SegmentInfos.docCount " + info.info.getDocCount());
@@ -591,22 +591,22 @@ public class CheckIndex {
           infoStream.print("    test: fields..............");
         }         
         FieldInfos fieldInfos = reader.getFieldInfos();
-        msg("OK [" + fieldInfos.size() + " fields]");
+        msg(infoStream, "OK [" + fieldInfos.size() + " fields]");
         segInfoStat.numFields = fieldInfos.size();
         
         // Test Field Norms
-        segInfoStat.fieldNormStatus = testFieldNorms(fieldInfos, reader);
+        segInfoStat.fieldNormStatus = testFieldNorms(reader, infoStream);
 
         // Test the Term Index
-        segInfoStat.termIndexStatus = testPostings(fieldInfos, reader);
+        segInfoStat.termIndexStatus = testPostings(reader, infoStream, verbose);
 
         // Test Stored Fields
-        segInfoStat.storedFieldStatus = testStoredFields(info, reader, nf);
+        segInfoStat.storedFieldStatus = testStoredFields(reader, infoStream);
 
         // Test Term Vectors
-        segInfoStat.termVectorStatus = testTermVectors(fieldInfos, info, reader, nf);
-        
-        segInfoStat.docValuesStatus = testDocValues(info, fieldInfos, reader);
+        segInfoStat.termVectorStatus = testTermVectors(reader, infoStream, verbose, crossCheckTermVectors);
+
+        segInfoStat.docValuesStatus = testDocValues(reader, infoStream);
 
         // Rethrow the first exception we encountered
         //  This will cause stats for failed segments to be incremented properly
@@ -622,16 +622,16 @@ public class CheckIndex {
           throw new RuntimeException("DocValues test failed");
         }
 
-        msg("");
+        msg(infoStream, "");
 
       } catch (Throwable t) {
-        msg("FAILED");
+        msg(infoStream, "FAILED");
         String comment;
         comment = "fixIndex() would remove reference to this segment";
-        msg("    WARNING: " + comment + "; full exception:");
+        msg(infoStream, "    WARNING: " + comment + "; full exception:");
         if (infoStream != null)
           t.printStackTrace(infoStream);
-        msg("");
+        msg(infoStream, "");
         result.totLoseDocCount += toLoseDocCount;
         result.numBadSegments++;
         continue;
@@ -647,16 +647,16 @@ public class CheckIndex {
     if (0 == result.numBadSegments) {
       result.clean = true;
     } else
-      msg("WARNING: " + result.numBadSegments + " broken segments (containing " + result.totLoseDocCount + " documents) detected");
+      msg(infoStream, "WARNING: " + result.numBadSegments + " broken segments (containing " + result.totLoseDocCount + " documents) detected");
 
     if ( ! (result.validCounter = (result.maxSegmentName < sis.counter))) {
       result.clean = false;
       result.newSegments.counter = result.maxSegmentName + 1; 
-      msg("ERROR: Next segment name counter " + sis.counter + " is not greater than max segment name " + result.maxSegmentName);
+      msg(infoStream, "ERROR: Next segment name counter " + sis.counter + " is not greater than max segment name " + result.maxSegmentName);
     }
     
     if (result.clean) {
-      msg("No problems were detected with this index.\n");
+      msg(infoStream, "No problems were detected with this index.\n");
     }
 
     return result;
@@ -664,8 +664,9 @@ public class CheckIndex {
 
   /**
    * Test field norms.
+   * @lucene.experimental
    */
-  private Status.FieldNormStatus testFieldNorms(FieldInfos fieldInfos, SegmentReader reader) {
+  public static Status.FieldNormStatus testFieldNorms(AtomicReader reader, PrintStream infoStream) {
     final Status.FieldNormStatus status = new Status.FieldNormStatus();
 
     try {
@@ -673,21 +674,20 @@ public class CheckIndex {
       if (infoStream != null) {
         infoStream.print("    test: field norms.........");
       }
-      for (FieldInfo info : fieldInfos) {
+      for (FieldInfo info : reader.getFieldInfos()) {
         if (info.hasNorms()) {
-          DocValues dv = reader.normValues(info.name);
-          checkDocValues(dv, info.name, info.getNormType(), reader.maxDoc());
+          checkNorms(info, reader, infoStream);
           ++status.totFields;
         } else {
-          if (reader.normValues(info.name) != null) {
+          if (reader.getNormValues(info.name) != null) {
             throw new RuntimeException("field: " + info.name + " should omit norms but has them!");
           }
         }
       }
 
-      msg("OK [" + status.totFields + " fields]");
+      msg(infoStream, "OK [" + status.totFields + " fields]");
     } catch (Throwable e) {
-      msg("ERROR [" + String.valueOf(e.getMessage()) + "]");
+      msg(infoStream, "ERROR [" + String.valueOf(e.getMessage()) + "]");
       status.error = e;
       if (infoStream != null) {
         e.printStackTrace(infoStream);
@@ -701,14 +701,14 @@ public class CheckIndex {
    * checks Fields api is consistent with itself.
    * searcher is optional, to verify with queries. Can be null.
    */
-  private Status.TermIndexStatus checkFields(Fields fields, Bits liveDocs, int maxDoc, FieldInfos fieldInfos, boolean doPrint, boolean isVectors) throws IOException {
+  private static Status.TermIndexStatus checkFields(Fields fields, Bits liveDocs, int maxDoc, FieldInfos fieldInfos, boolean doPrint, boolean isVectors, PrintStream infoStream, boolean verbose) throws IOException {
     // TODO: we should probably return our own stats thing...?!
     
     final Status.TermIndexStatus status = new Status.TermIndexStatus();
     int computedFieldCount = 0;
     
     if (fields == null) {
-      msg("OK [no fields/terms]");
+      msg(infoStream, "OK [no fields/terms]");
       return status;
     }
     
@@ -769,7 +769,7 @@ public class CheckIndex {
           break;
         }
         
-        checkBounds(term);
+        assert term.isValid();
         
         // make sure terms arrive in order according to
         // the comp
@@ -859,7 +859,7 @@ public class CheckIndex {
               lastPos = pos;
               BytesRef payload = postings.getPayload();
               if (payload != null) {
-                checkBounds(payload);
+                assert payload.isValid();
               }
               if (payload != null && payload.length < 1) {
                 throw new RuntimeException("term " + term + ": doc " + doc + ": pos " + pos + " payload length is out of bounds " + payload.length);
@@ -1155,7 +1155,7 @@ public class CheckIndex {
     }
 
     if (doPrint) {
-      msg("OK [" + status.termCount + " terms; " + status.totFreq + " terms/docs pairs; " + status.totPos + " tokens]");
+      msg(infoStream, "OK [" + status.termCount + " terms; " + status.totFreq + " terms/docs pairs; " + status.totPos + " tokens]");
     }
     
     if (verbose && status.blockTreeStats != null && infoStream != null && status.termCount > 0) {
@@ -1170,8 +1170,17 @@ public class CheckIndex {
 
   /**
    * Test the term index.
+   * @lucene.experimental
    */
-  private Status.TermIndexStatus testPostings(FieldInfos fieldInfos, SegmentReader reader) {
+  public static Status.TermIndexStatus testPostings(AtomicReader reader, PrintStream infoStream) {
+    return testPostings(reader, infoStream, false);
+  }
+  
+  /**
+   * Test the term index.
+   * @lucene.experimental
+   */
+  public static Status.TermIndexStatus testPostings(AtomicReader reader, PrintStream infoStream, boolean verbose) {
 
     // TODO: we should go and verify term vectors match, if
     // crossCheckTermVectors is on...
@@ -1186,15 +1195,16 @@ public class CheckIndex {
       }
 
       final Fields fields = reader.fields();
-      status = checkFields(fields, liveDocs, maxDoc, fieldInfos, true, false);
+      final FieldInfos fieldInfos = reader.getFieldInfos();
+      status = checkFields(fields, liveDocs, maxDoc, fieldInfos, true, false, infoStream, verbose);
       if (liveDocs != null) {
         if (infoStream != null) {
           infoStream.print("    test (ignoring deletes): terms, freq, prox...");
         }
-        checkFields(fields, null, maxDoc, fieldInfos, true, false);
+        checkFields(fields, null, maxDoc, fieldInfos, true, false, infoStream, verbose);
       }
     } catch (Throwable e) {
-      msg("ERROR: " + e);
+      msg(infoStream, "ERROR: " + e);
       status = new Status.TermIndexStatus();
       status.error = e;
       if (infoStream != null) {
@@ -1206,9 +1216,10 @@ public class CheckIndex {
   }
   
   /**
-   * Test stored fields for a segment.
+   * Test stored fields.
+   * @lucene.experimental
    */
-  private Status.StoredFieldStatus testStoredFields(SegmentInfoPerCommit info, SegmentReader reader, NumberFormat format) {
+  public static Status.StoredFieldStatus testStoredFields(AtomicReader reader, PrintStream infoStream) {
     final Status.StoredFieldStatus status = new Status.StoredFieldStatus();
 
     try {
@@ -1218,7 +1229,7 @@ public class CheckIndex {
 
       // Scan stored fields for all documents
       final Bits liveDocs = reader.getLiveDocs();
-      for (int j = 0; j < info.info.getDocCount(); ++j) {
+      for (int j = 0; j < reader.maxDoc(); ++j) {
         // Intentionally pull even deleted documents to
         // make sure they too are not corrupt:
         StoredDocument doc = reader.document(j);
@@ -1233,10 +1244,10 @@ public class CheckIndex {
         throw new RuntimeException("docCount=" + status.docCount + " but saw " + status.docCount + " undeleted docs");
       }
 
-      msg("OK [" + status.totFields + " total field count; avg " + 
-          format.format((((float) status.totFields)/status.docCount)) + " fields per doc]");      
+      msg(infoStream, "OK [" + status.totFields + " total field count; avg " + 
+          NumberFormat.getInstance(Locale.ROOT).format((((float) status.totFields)/status.docCount)) + " fields per doc]");      
     } catch (Throwable e) {
-      msg("ERROR [" + String.valueOf(e.getMessage()) + "]");
+      msg(infoStream, "ERROR [" + String.valueOf(e.getMessage()) + "]");
       status.error = e;
       if (infoStream != null) {
         e.printStackTrace(infoStream);
@@ -1246,124 +1257,33 @@ public class CheckIndex {
     return status;
   }
   
-  /** Helper method to verify values (either docvalues or norms), also checking
-   *  type and size against fieldinfos/segmentinfo
+  /**
+   * Test docvalues.
+   * @lucene.experimental
    */
-  private void checkDocValues(DocValues docValues, String fieldName, DocValues.Type expectedType, int expectedDocs) throws IOException {
-    if (docValues == null) {
-      throw new RuntimeException("field: " + fieldName + " omits docvalues but should have them!");
-    }
-    DocValues.Type type = docValues.getType();
-    if (type != expectedType) {
-      throw new RuntimeException("field: " + fieldName + " has type: " + type + " but fieldInfos says:" + expectedType);
-    }
-    final Source values = docValues.getDirectSource();
-    int size = docValues.getValueSize();
-    for (int i = 0; i < expectedDocs; i++) {
-      switch (type) {
-      case BYTES_FIXED_SORTED:
-      case BYTES_VAR_SORTED:
-      case BYTES_FIXED_DEREF:
-      case BYTES_FIXED_STRAIGHT:
-      case BYTES_VAR_DEREF:
-      case BYTES_VAR_STRAIGHT:
-        BytesRef bytes = new BytesRef();
-        values.getBytes(i, bytes);
-        if (size != -1 && size != bytes.length) {
-          throw new RuntimeException("field: " + fieldName + " returned wrongly sized bytes, was: " + bytes.length + " should be: " + size);
-        }
-        break;
-      case FLOAT_32:
-        assert size == 4;
-        values.getFloat(i);
-        break;
-      case FLOAT_64:
-        assert size == 8;
-        values.getFloat(i);
-        break;
-      case VAR_INTS:
-        assert size == -1;
-        values.getInt(i);
-        break;
-      case FIXED_INTS_16:
-        assert size == 2;
-        values.getInt(i);
-        break;
-      case FIXED_INTS_32:
-        assert size == 4;
-        values.getInt(i);
-        break;
-      case FIXED_INTS_64:
-        assert size == 8;
-        values.getInt(i);
-        break;
-      case FIXED_INTS_8:
-        assert size == 1;
-        values.getInt(i);
-        break;
-      default:
-        throw new IllegalArgumentException("Field: " + fieldName
-                    + " - no such DocValues type: " + type);
-      }
-    }
-    if (type == DocValues.Type.BYTES_FIXED_SORTED || type == DocValues.Type.BYTES_VAR_SORTED) {
-      // check sorted bytes
-      SortedSource sortedValues = values.asSortedSource();
-      Comparator<BytesRef> comparator = sortedValues.getComparator();
-      int maxOrd = sortedValues.getValueCount() - 1;
-      FixedBitSet seenOrds = new FixedBitSet(sortedValues.getValueCount());
-      int lastOrd = -1;
-      BytesRef lastBytes = new BytesRef();
-      for (int i = 0; i < expectedDocs; i++) {
-        int ord = sortedValues.ord(i);
-        if (ord < 0 || ord > maxOrd) {
-          throw new RuntimeException("field: " + fieldName + " ord is out of bounds: " + ord);
-        }
-        BytesRef bytes = new BytesRef();
-        sortedValues.getByOrd(ord, bytes);
-        if (lastOrd != -1) {
-          int ordComp = Integer.signum(new Integer(ord).compareTo(new Integer(lastOrd)));
-          int bytesComp = Integer.signum(comparator.compare(bytes, lastBytes));
-          if (ordComp != bytesComp) {
-            throw new RuntimeException("field: " + fieldName + " ord comparison is wrong: " + ordComp + " comparator claims: " + bytesComp);
-          }
-        }
-        lastOrd = ord;
-        lastBytes = bytes;
-        seenOrds.set(ord);
-      }
-      if (seenOrds.cardinality() != sortedValues.getValueCount()) {
-        // TODO: find the bug here and figure out a workaround (we can implement in LUCENE-4547's back compat layer maybe)
-        // basically ord 0 is unused by any docs: so the sortedbytes ords are all off-by-one
-        // does it always happen? e.g. maybe only if there are missing values? or a bug in its merge optimizations?
-        // throw new RuntimeException("dv for field: " + fieldName + " has holes in its ords, valueCount=" + sortedValues.getValueCount() + " but only used: " + seenOrds.cardinality());
-      }
-    }
-  }
-  
-  private Status.DocValuesStatus testDocValues(SegmentInfoPerCommit info,
-                                               FieldInfos fieldInfos,
-                                               SegmentReader reader) {
+  public static Status.DocValuesStatus testDocValues(AtomicReader reader,
+                                                     PrintStream infoStream) {
     final Status.DocValuesStatus status = new Status.DocValuesStatus();
     try {
       if (infoStream != null) {
         infoStream.print("    test: docvalues...........");
       }
-      for (FieldInfo fieldInfo : fieldInfos) {
+      for (FieldInfo fieldInfo : reader.getFieldInfos()) {
         if (fieldInfo.hasDocValues()) {
           status.totalValueFields++;
-          final DocValues docValues = reader.docValues(fieldInfo.name);
-          checkDocValues(docValues, fieldInfo.name, fieldInfo.getDocValuesType(), reader.maxDoc());
+          checkDocValues(fieldInfo, reader, infoStream);
         } else {
-          if (reader.docValues(fieldInfo.name) != null) {
+          if (reader.getBinaryDocValues(fieldInfo.name) != null ||
+              reader.getNumericDocValues(fieldInfo.name) != null ||
+              reader.getSortedDocValues(fieldInfo.name) != null) {
             throw new RuntimeException("field: " + fieldInfo.name + " has docvalues but should omit them!");
           }
         }
       }
 
-      msg("OK [" + status.docCount + " total doc count; " + status.totalValueFields + " docvalues fields]");
+      msg(infoStream, "OK [" + status.docCount + " total doc count; " + status.totalValueFields + " docvalues fields]");
     } catch (Throwable e) {
-      msg("ERROR [" + String.valueOf(e.getMessage()) + "]");
+      msg(infoStream, "ERROR [" + String.valueOf(e.getMessage()) + "]");
       status.error = e;
       if (infoStream != null) {
         e.printStackTrace(infoStream);
@@ -1372,37 +1292,94 @@ public class CheckIndex {
     return status;
   }
   
-  // basic value checks
-  private static void checkBounds(BytesRef b) {
-    if (b.bytes == null) {
-      throw new RuntimeException("bytes is null");
+  private static void checkBinaryDocValues(String fieldName, AtomicReader reader, BinaryDocValues dv) {
+    BytesRef scratch = new BytesRef();
+    for (int i = 0; i < reader.maxDoc(); i++) {
+      dv.get(i, scratch);
+      assert scratch.isValid();
     }
-    if (b.length < 0) {
-      throw new RuntimeException("length is negative: " + b.length);
+  }
+  
+  private static void checkSortedDocValues(String fieldName, AtomicReader reader, SortedDocValues dv) {
+    checkBinaryDocValues(fieldName, reader, dv);
+    final int maxOrd = dv.getValueCount()-1;
+    FixedBitSet seenOrds = new FixedBitSet(dv.getValueCount());
+    int maxOrd2 = -1;
+    for (int i = 0; i < reader.maxDoc(); i++) {
+      int ord = dv.getOrd(i);
+      if (ord < 0 || ord > maxOrd) {
+        throw new RuntimeException("ord out of bounds: " + ord);
+      }
+      maxOrd2 = Math.max(maxOrd2, ord);
+      seenOrds.set(ord);
     }
-    if (b.length > b.bytes.length) {
-      throw new RuntimeException("length is out of bounds: " + b.length + ", bytes.length=" + b.bytes.length);
+    if (maxOrd != maxOrd2) {
+      throw new RuntimeException("dv for field: " + fieldName + " reports wrong maxOrd=" + maxOrd + " but this is not the case: " + maxOrd2);
     }
-    if (b.offset < 0) {
-      throw new RuntimeException("offset is negative: " + b.offset);
+    if (seenOrds.cardinality() != dv.getValueCount()) {
+      throw new RuntimeException("dv for field: " + fieldName + " has holes in its ords, valueCount=" + dv.getValueCount() + " but only used: " + seenOrds.cardinality());
     }
-    if (b.offset > b.bytes.length) {
-      throw new RuntimeException("offset out of bounds: " + b.offset + ", length=" + b.length);
+    BytesRef lastValue = null;
+    BytesRef scratch = new BytesRef();
+    for (int i = 0; i <= maxOrd; i++) {
+      dv.lookupOrd(i, scratch);
+      assert scratch.isValid();
+      if (lastValue != null) {
+        if (scratch.compareTo(lastValue) <= 0) {
+          throw new RuntimeException("dv for field: " + fieldName + " has ords out of order: " + lastValue + " >=" + scratch);
+        }
+      }
+      lastValue = BytesRef.deepCopyOf(scratch);
     }
-    if (b.offset + b.length < 0) {
-      throw new RuntimeException("offset+length is negative: offset=" + b.offset + ",length=" + b.length);
+  }
+  
+  private static void checkNumericDocValues(String fieldName, AtomicReader reader, NumericDocValues ndv) {
+    for (int i = 0; i < reader.maxDoc(); i++) {
+      ndv.get(i);
     }
-    if (b.offset + b.length > b.bytes.length) {
-      throw new RuntimeException("offset+length out of bounds: offset=" + b.offset + ",length=" + b.length + ",bytes.length=" + b.bytes.length);
+  }
+  
+  private static void checkDocValues(FieldInfo fi, AtomicReader reader, PrintStream infoStream) throws Exception {
+    switch(fi.getDocValuesType()) {
+      case SORTED:
+        checkSortedDocValues(fi.name, reader, reader.getSortedDocValues(fi.name));
+        break;
+      case BINARY:
+        checkBinaryDocValues(fi.name, reader, reader.getBinaryDocValues(fi.name));
+        break;
+      case NUMERIC:
+        checkNumericDocValues(fi.name, reader, reader.getNumericDocValues(fi.name));
+        break;
+      default:
+        throw new AssertionError();
+    }
+  }
+  
+  private static void checkNorms(FieldInfo fi, AtomicReader reader, PrintStream infoStream) throws IOException {
+    switch(fi.getNormType()) {
+      case NUMERIC:
+        checkNumericDocValues(fi.name, reader, reader.getNormValues(fi.name));
+        break;
+      default:
+        throw new AssertionError("wtf: " + fi.getNormType());
     }
   }
 
   /**
-   * Test term vectors for a segment.
+   * Test term vectors.
+   * @lucene.experimental
    */
-  private Status.TermVectorStatus testTermVectors(FieldInfos fieldInfos, SegmentInfoPerCommit info, SegmentReader reader, NumberFormat format) {
-    final Status.TermVectorStatus status = new Status.TermVectorStatus();
+  public static Status.TermVectorStatus testTermVectors(AtomicReader reader, PrintStream infoStream) {
+    return testTermVectors(reader, infoStream, false, false);
+  }
 
+  /**
+   * Test term vectors.
+   * @lucene.experimental
+   */
+  public static Status.TermVectorStatus testTermVectors(AtomicReader reader, PrintStream infoStream, boolean verbose, boolean crossCheckTermVectors) {
+    final Status.TermVectorStatus status = new Status.TermVectorStatus();
+    final FieldInfos fieldInfos = reader.getFieldInfos();
     final Bits onlyDocIsDeleted = new FixedBitSet(1);
     
     try {
@@ -1430,7 +1407,7 @@ public class CheckIndex {
       TermsEnum termsEnum = null;
       TermsEnum postingsTermsEnum = null;
 
-      for (int j = 0; j < info.info.getDocCount(); ++j) {
+      for (int j = 0; j < reader.maxDoc(); ++j) {
         // Intentionally pull/visit (but don't count in
         // stats) deleted documents to make sure they too
         // are not corrupt:
@@ -1441,10 +1418,10 @@ public class CheckIndex {
 
         if (tfv != null) {
           // First run with no deletions:
-          checkFields(tfv, null, 1, fieldInfos, false, true);
+          checkFields(tfv, null, 1, fieldInfos, false, true, infoStream, verbose);
 
           // Again, with the one doc deleted:
-          checkFields(tfv, onlyDocIsDeleted, 1, fieldInfos, false, true);
+          checkFields(tfv, onlyDocIsDeleted, 1, fieldInfos, false, true, infoStream, verbose);
 
           // Only agg stats if the doc is live:
           final boolean doStats = liveDocs == null || liveDocs.get(j);
@@ -1608,10 +1585,10 @@ public class CheckIndex {
         }
       }
       float vectorAvg = status.docCount == 0 ? 0 : status.totVectors / (float)status.docCount;
-      msg("OK [" + status.totVectors + " total vector count; avg " + 
-          format.format(vectorAvg) + " term/freq vector fields per doc]");
+      msg(infoStream, "OK [" + status.totVectors + " total vector count; avg " + 
+          NumberFormat.getInstance(Locale.ROOT).format(vectorAvg) + " term/freq vector fields per doc]");
     } catch (Throwable e) {
-      msg("ERROR [" + String.valueOf(e.getMessage()) + "]");
+      msg(infoStream, "ERROR [" + String.valueOf(e.getMessage()) + "]");
       status.error = e;
       if (infoStream != null) {
         e.printStackTrace(infoStream);

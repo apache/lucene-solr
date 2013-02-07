@@ -97,7 +97,7 @@ public class TestDocumentWriter extends LuceneTestCase {
     // omitNorms is true
     for (FieldInfo fi : reader.getFieldInfos()) {
       if (fi.isIndexed()) {
-        assertTrue(fi.omitsNorms() == (reader.normValues(fi.name) == null));
+        assertTrue(fi.omitsNorms() == (reader.getNormValues(fi.name) == null));
       }
     }
     reader.close();

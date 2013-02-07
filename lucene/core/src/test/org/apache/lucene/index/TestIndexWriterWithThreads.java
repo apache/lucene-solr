@@ -28,6 +28,7 @@ import org.apache.lucene.analysis.MockAnalyzer;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
 import org.apache.lucene.document.FieldType;
+import org.apache.lucene.document.NumericDocValuesField;
 import org.apache.lucene.document.TextField;
 import org.apache.lucene.search.DocIdSetIterator;
 import org.apache.lucene.store.AlreadyClosedException;
@@ -74,6 +75,7 @@ public class TestIndexWriterWithThreads extends LuceneTestCase {
       customType.setStoreTermVectorOffsets(true);
       
       doc.add(newField("field", "aaa bbb ccc ddd eee fff ggg hhh iii jjj", customType));
+      doc.add(new NumericDocValuesField("dv", 5));
 
       int idUpto = 0;
       int fullCount = 0;

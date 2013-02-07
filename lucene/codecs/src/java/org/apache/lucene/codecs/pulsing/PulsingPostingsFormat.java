@@ -100,7 +100,7 @@ public abstract class PulsingPostingsFormat extends PostingsFormat {
       docsReader = wrappedPostingsBaseFormat.postingsReaderBase(state);
       pulsingReader = new PulsingPostingsReader(docsReader);
       FieldsProducer ret = new BlockTreeTermsReader(
-                                                    state.dir, state.fieldInfos, state.segmentInfo,
+                                                    state.directory, state.fieldInfos, state.segmentInfo,
                                                     pulsingReader,
                                                     state.context,
                                                     state.segmentSuffix,

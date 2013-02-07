@@ -20,7 +20,6 @@ package org.apache.lucene.index;
 import java.io.IOException;
 
 import org.apache.lucene.store.Directory;
-import org.apache.lucene.codecs.PerDocProducer;
 import org.apache.lucene.codecs.StoredFieldsReader;
 import org.apache.lucene.codecs.TermVectorsReader;
 import org.apache.lucene.search.FieldCache; // javadocs
@@ -229,27 +228,30 @@ public final class SegmentReader extends AtomicReader {
   public int getTermInfosIndexDivisor() {
     return core.termsIndexDivisor;
   }
-  
+
   @Override
-  public DocValues docValues(String field) throws IOException {
+  public NumericDocValues getNumericDocValues(String field) throws IOException {
     ensureOpen();
-    final PerDocProducer perDoc = core.perDocProducer;
-    if (perDoc == null) {
-      return null;
-    }
-    return perDoc.docValues(field);
+    return core.getNumericDocValues(field);
   }
-  
+
   @Override
-  public DocValues normValues(String field) throws IOException {
+  public BinaryDocValues getBinaryDocValues(String field) throws IOException {
     ensureOpen();
-    final PerDocProducer perDoc = core.norms;
-    if (perDoc == null) {
-      return null;
-    }
-    return perDoc.docValues(field);
+    return core.getBinaryDocValues(field);
   }
-  
+
+  @Override
+  public SortedDocValues getSortedDocValues(String field) throws IOException {
+    ensureOpen();
+    return core.getSortedDocValues(field);
+  }
+
+  @Override
+  public NumericDocValues getNormValues(String field) throws IOException {
+    ensureOpen();
+    return core.getNormValues(field);
+  }
 
   /**
    * Called when the shared core for this SegmentReader

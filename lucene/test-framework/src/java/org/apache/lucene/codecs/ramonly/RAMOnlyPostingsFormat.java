@@ -555,7 +555,7 @@ public final class RAMOnlyPostingsFormat extends PostingsFormat {
 
     // Load our ID:
     final String idFileName = IndexFileNames.segmentFileName(readState.segmentInfo.name, readState.segmentSuffix, ID_EXTENSION);
-    IndexInput in = readState.dir.openInput(idFileName, readState.context);
+    IndexInput in = readState.directory.openInput(idFileName, readState.context);
     boolean success = false;
     final int id;
     try {

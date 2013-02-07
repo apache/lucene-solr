@@ -18,19 +18,12 @@ package org.apache.lucene.codecs.simpletext;
  */
 
 import java.io.IOException;
-import java.util.Comparator;
 
+import org.apache.lucene.codecs.DocValuesConsumer;
+import org.apache.lucene.codecs.DocValuesProducer;
 import org.apache.lucene.codecs.NormsFormat;
-import org.apache.lucene.codecs.PerDocConsumer;
-import org.apache.lucene.codecs.PerDocProducer;
-import org.apache.lucene.index.AtomicReader;
-import org.apache.lucene.index.DocValues;
-import org.apache.lucene.index.DocValues.Type;
-import org.apache.lucene.index.FieldInfo;
-import org.apache.lucene.index.FieldInfos;
-import org.apache.lucene.index.PerDocWriteState;
 import org.apache.lucene.index.SegmentReadState;
-import org.apache.lucene.util.BytesRef;
+import org.apache.lucene.index.SegmentWriteState;
 
 /**
  * plain-text norms format.
@@ -40,17 +33,16 @@ import org.apache.lucene.util.BytesRef;
  * @lucene.experimental
  */
 public class SimpleTextNormsFormat extends NormsFormat {
-  private static final String NORMS_SEG_SUFFIX = "len";
+  private static final String NORMS_SEG_EXTENSION = "len";
   
   @Override
-  public PerDocConsumer docsConsumer(PerDocWriteState state) throws IOException {
-    return new SimpleTextNormsPerDocConsumer(state);
+  public DocValuesConsumer normsConsumer(SegmentWriteState state) throws IOException {
+    return new SimpleTextNormsConsumer(state);
   }
   
   @Override
-  public PerDocProducer docsProducer(SegmentReadState state) throws IOException {
-    return new SimpleTextNormsPerDocProducer(state,
-        BytesRef.getUTF8SortedAsUnicodeComparator());
+  public DocValuesProducer normsProducer(SegmentReadState state) throws IOException {
+    return new SimpleTextNormsProducer(state);
   }
   
   /**
@@ -60,29 +52,12 @@ public class SimpleTextNormsFormat extends NormsFormat {
    * 
    * @lucene.experimental
    */
-  public static class SimpleTextNormsPerDocProducer extends
-      SimpleTextPerDocProducer {
-    
-    public SimpleTextNormsPerDocProducer(SegmentReadState state,
-        Comparator<BytesRef> comp) throws IOException {
-      super(state, comp, NORMS_SEG_SUFFIX);
+  public static class SimpleTextNormsProducer extends SimpleTextDocValuesReader {
+    public SimpleTextNormsProducer(SegmentReadState state) throws IOException {
+      // All we do is change the extension from .dat -> .len;
+      // otherwise this is a normal simple doc values file:
+      super(state, NORMS_SEG_EXTENSION);
     }
-    
-    @Override
-    protected boolean canLoad(FieldInfo info) {
-      return info.hasNorms();
-    }
-    
-    @Override
-    protected Type getDocValuesType(FieldInfo info) {
-      return info.getNormType();
-    }
-    
-    @Override
-    protected boolean anyDocValuesFields(FieldInfos infos) {
-      return infos.hasNorms();
-    }
-    
   }
   
   /**
@@ -92,33 +67,11 @@ public class SimpleTextNormsFormat extends NormsFormat {
    * 
    * @lucene.experimental
    */
-  public static class SimpleTextNormsPerDocConsumer extends
-      SimpleTextPerDocConsumer {
-    
-    public SimpleTextNormsPerDocConsumer(PerDocWriteState state) {
-      super(state, NORMS_SEG_SUFFIX);
-    }
-    
-    @Override
-    protected DocValues getDocValuesForMerge(AtomicReader reader, FieldInfo info)
-        throws IOException {
-      return reader.normValues(info.name);
-    }
-    
-    @Override
-    protected boolean canMerge(FieldInfo info) {
-      return info.hasNorms();
-    }
-    
-    @Override
-    protected Type getDocValuesType(FieldInfo info) {
-      return info.getNormType();
-    }
-    
-    @Override
-    public void abort() {
-      // We don't have to remove files here: IndexFileDeleter
-      // will do so
+  public static class SimpleTextNormsConsumer extends SimpleTextDocValuesWriter {
+    public SimpleTextNormsConsumer(SegmentWriteState state) throws IOException {
+      // All we do is change the extension from .dat -> .len;
+      // otherwise this is a normal simple doc values file:
+      super(state, NORMS_SEG_EXTENSION);
     }
   }
 }

@@ -142,7 +142,7 @@ class ElevationComparatorSource extends FieldComparatorSource {
   public FieldComparator<Integer> newComparator(final String fieldname, final int numHits, int sortPos, boolean reversed) throws IOException {
    return new FieldComparator<Integer>() {
 
-     FieldCache.DocTermsIndex idIndex;
+     SortedDocValues idIndex;
      private final int[] values = new int[numHits];
      private final BytesRef tempBR = new BytesRef();
      int bottomVal;
@@ -159,11 +159,11 @@ class ElevationComparatorSource extends FieldComparatorSource {
 
      private int docVal(int doc) {
        int ord = idIndex.getOrd(doc);
-       if (ord == 0) {
+       if (ord == -1) {
          return 0;
        } else {
-         BytesRef id = idIndex.lookup(ord, tempBR);
-         Integer prio = priority.get(id);
+         idIndex.lookupOrd(ord, tempBR);
+         Integer prio = priority.get(tempBR);
          return prio == null ? 0 : prio.intValue();
        }
      }

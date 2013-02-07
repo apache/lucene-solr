@@ -68,7 +68,7 @@ class SimpleTextFieldsReader extends FieldsProducer {
 
   public SimpleTextFieldsReader(SegmentReadState state) throws IOException {
     fieldInfos = state.fieldInfos;
-    in = state.dir.openInput(SimpleTextPostingsFormat.getPostingsFileName(state.segmentInfo.name, state.segmentSuffix), state.context);
+    in = state.directory.openInput(SimpleTextPostingsFormat.getPostingsFileName(state.segmentInfo.name, state.segmentSuffix), state.context);
     boolean success = false;
     try {
       fields = readFields(in.clone());

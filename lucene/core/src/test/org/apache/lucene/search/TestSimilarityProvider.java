@@ -24,7 +24,7 @@ import org.apache.lucene.index.AtomicReader;
 import org.apache.lucene.index.DirectoryReader;
 import org.apache.lucene.index.FieldInvertState;
 import org.apache.lucene.index.IndexWriterConfig;
-import org.apache.lucene.index.Norm;
+import org.apache.lucene.index.NumericDocValues;
 import org.apache.lucene.index.RandomIndexWriter;
 import org.apache.lucene.index.SlowCompositeReaderWrapper;
 import org.apache.lucene.index.Term;
@@ -77,10 +77,10 @@ public class TestSimilarityProvider extends LuceneTestCase {
     // sanity check of norms writer
     // TODO: generalize
     AtomicReader slow = new SlowCompositeReaderWrapper(reader);
-    byte fooNorms[] = (byte[]) slow.normValues("foo").getSource().getArray();
-    byte barNorms[] = (byte[]) slow.normValues("bar").getSource().getArray();
-    for (int i = 0; i < fooNorms.length; i++) {
-      assertFalse(fooNorms[i] == barNorms[i]);
+    NumericDocValues fooNorms = slow.getNormValues("foo");
+    NumericDocValues barNorms = slow.getNormValues("bar");
+    for (int i = 0; i < slow.maxDoc(); i++) {
+      assertFalse(fooNorms.get(i) == barNorms.get(i));
     }
     
     // sanity check of searching

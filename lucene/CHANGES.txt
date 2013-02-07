@@ -43,6 +43,19 @@ Changes in backwards compatibility policy
   PathPolicy was removed, you should extend FacetFields and DrillDownStream
   to control which categories are added as drill-down terms. (Shai Erera)
 
+* LUCENE-4547: DocValues improvements:
+  - Simplified codec API: codecs are now only responsible for encoding and
+    decoding docvalues, they do not need to do buffering or RAM accounting.
+  - Per-Field support: added PerFieldDocValuesFormat, which allows you to
+    use a different DocValuesFormat per field (like postings).
+  - Unified with FieldCache api: DocValues can be accessed via FieldCache API,
+    so it works automatically with grouping/join/sort/function queries, etc.
+  - Simplified types: There are only 3 types (NUMERIC, BINARY, SORTED), so its
+    not necessary to specify for example that all of your binary values have
+    the same length. Instead its easy for the Codec API to optimize encoding
+    based on any properties of the content.
+   (Simon Willnauer, Adrien Grand, Mike McCandless, Robert Muir)
+
 Optimizations
 
 * LUCENE-4687: BloomFilterPostingsFormat now lazily initializes delegate
@@ -73,6 +86,12 @@ Optimizations
   TermVectorsFormat (Lucene42TermVectorsFormat) based on
   CompressingTermVectorsFormat. (Adrien Grand)
 
+* LUCENE-3729: The default Lucene 4.2 codec now uses a more compact
+  DocValuesFormat (Lucene42DocValuesFormat). Sorted values are stored in an
+  FST, Numerics and Ordinals use a number of strategies (delta-compression, 
+  table-compression, etc), and memory addresses use MonotonicBlockPackedWriter.
+  (Simon Willnauer, Adrien Grand, Mike McCandless, Robert Muir)
+
 New Features
 
 * LUCENE-4686: New specialized DGapVInt8IntEncoder for facets (now the 
@@ -99,6 +118,26 @@ New Features
   discarding the query entirely. WeightedSpanTermExtractor now builds a
   MemoryIndex only once even if multiple fields are highlighted.
   (Simon Willnauer)
+
+* LUCENE-4035: Added ICUCollationDocValuesField, more efficient
+  support for Locale-sensitive sort and range queries for
+  single-valued fields.  (Robert Muir)
+
+* LUCENE-4547: Added MonotonicBlockPacked(Reader/Writer), which provide 
+  efficient random access to large amounts of monotonically increasing 
+  positive values (e.g. file offsets). Each block stores the minimum value
+  and the average gap, and values are encoded as signed deviations from
+  the expected value.  (Adrien Grand)
+  
+* LUCENE-4547: Added AppendingLongBuffer, an append-only buffer that packs
+  signed long values in memory and provides an efficient iterator API.
+  (Adrien Grand) 
+
+* LUCENE-4540: It is now possible for a codec to represent norms with
+  less than 8 bits per value. For performance reasons this is not done
+  by default, but you can customize your codec (e.g. pass PackedInts.DEFAULT
+  to Lucene42DocValuesConsumer) if you want to make this tradeoff.
+  (Adrien Grand, Robert Muir)
 
 API Changes
 
@@ -138,6 +177,15 @@ Bug Fixes
 
 * LUCENE-4739: Fixed bugs that prevented FSTs more than ~1.1GB from
   being saved and loaded (Adrien Grand, Mike McCandless)
+
+* LUCENE-4717: Fixed bug where Lucene40DocValuesFormat would sometimes write 
+  an extra unused ordinal for sorted types. The bug is detected and corrected
+  on-the-fly for old indexes.  (Robert Muir)
+
+* LUCENE-4547: Fixed bug where Lucene40DocValuesFormat was unable to encode
+  segments that would exceed 2GB total data. This could happen in some surprising
+  cases, for example if you had an index with more than 260M documents and a 
+  VAR_INT field.  (Simon Willnauer, Adrien Grand, Mike McCandless, Robert Muir)
 
 Documentation
 

@@ -20,19 +20,19 @@ package org.apache.lucene.codecs.lucene41;
 import java.io.IOException;
 
 import org.apache.lucene.codecs.Codec;
-import org.apache.lucene.codecs.DocValuesFormat;
 import org.apache.lucene.codecs.FieldInfosFormat;
 import org.apache.lucene.codecs.FilterCodec;
 import org.apache.lucene.codecs.LiveDocsFormat;
-import org.apache.lucene.codecs.NormsFormat;
 import org.apache.lucene.codecs.PostingsFormat;
 import org.apache.lucene.codecs.SegmentInfoFormat;
+import org.apache.lucene.codecs.DocValuesFormat;
+import org.apache.lucene.codecs.NormsFormat;
 import org.apache.lucene.codecs.StoredFieldsFormat;
 import org.apache.lucene.codecs.StoredFieldsWriter;
 import org.apache.lucene.codecs.TermVectorsFormat;
-import org.apache.lucene.codecs.lucene40.Lucene40DocValuesFormat;
 import org.apache.lucene.codecs.compressing.CompressingStoredFieldsFormat;
 import org.apache.lucene.codecs.compressing.CompressionMode;
+import org.apache.lucene.codecs.lucene40.Lucene40DocValuesFormat;
 import org.apache.lucene.codecs.lucene40.Lucene40FieldInfosFormat;
 import org.apache.lucene.codecs.lucene40.Lucene40LiveDocsFormat;
 import org.apache.lucene.codecs.lucene40.Lucene40NormsFormat;
@@ -64,9 +64,7 @@ public class Lucene41Codec extends Codec {
   };
   private final TermVectorsFormat vectorsFormat = new Lucene40TermVectorsFormat();
   private final FieldInfosFormat fieldInfosFormat = new Lucene40FieldInfosFormat();
-  private final DocValuesFormat docValuesFormat = new Lucene40DocValuesFormat();
   private final SegmentInfoFormat infosFormat = new Lucene40SegmentInfoFormat();
-  private final NormsFormat normsFormat = new Lucene40NormsFormat();
   private final LiveDocsFormat liveDocsFormat = new Lucene40LiveDocsFormat();
   
   private final PostingsFormat postingsFormat = new PerFieldPostingsFormat() {
@@ -93,28 +91,18 @@ public class Lucene41Codec extends Codec {
   }
 
   @Override
-  public final DocValuesFormat docValuesFormat() {
-    return docValuesFormat;
-  }
-
-  @Override
   public final PostingsFormat postingsFormat() {
     return postingsFormat;
   }
   
   @Override
-  public final FieldInfosFormat fieldInfosFormat() {
+  public FieldInfosFormat fieldInfosFormat() {
     return fieldInfosFormat;
   }
   
   @Override
   public final SegmentInfoFormat segmentInfoFormat() {
     return infosFormat;
-  }
-
-  @Override
-  public final NormsFormat normsFormat() {
-    return normsFormat;
   }
   
   @Override
@@ -131,5 +119,17 @@ public class Lucene41Codec extends Codec {
     return defaultFormat;
   }
   
+  @Override
+  public DocValuesFormat docValuesFormat() {
+    return dvFormat;
+  }
+
   private final PostingsFormat defaultFormat = PostingsFormat.forName("Lucene41");
+  private final DocValuesFormat dvFormat = new Lucene40DocValuesFormat();
+  private final NormsFormat normsFormat = new Lucene40NormsFormat();
+
+  @Override
+  public NormsFormat normsFormat() {
+    return normsFormat;
+  }
 }

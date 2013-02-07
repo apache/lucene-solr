@@ -3,8 +3,7 @@ package org.apache.lucene.facet.associations;
 import java.io.IOException;
 
 import org.apache.lucene.index.AtomicReaderContext;
-import org.apache.lucene.index.DocValues;
-import org.apache.lucene.index.DocValues.Source;
+import org.apache.lucene.index.BinaryDocValues;
 import org.apache.lucene.store.ByteArrayDataInput;
 import org.apache.lucene.util.BytesRef;
 
@@ -34,25 +33,19 @@ public abstract class AssociationsIterator<T extends CategoryAssociation> {
 
   private final T association;
   private final String dvField;
-  private final boolean useDirectSource;
   private final BytesRef bytes = new BytesRef(32);
   
-  private DocValues.Source current;
+  private BinaryDocValues current;
   
   /**
    * Construct a new associations iterator. The given
    * {@link CategoryAssociation} is used to deserialize the association values.
    * It is assumed that all association values can be deserialized with the
    * given {@link CategoryAssociation}.
-   * 
-   * <p>
-   * <b>NOTE:</b> if {@code useDirectSource} is {@code false}, then a
-   * {@link DocValues#getSource()} is used, which is an in-memory {@link Source}.
    */
-  public AssociationsIterator(String field, T association, boolean useDirectSource) throws IOException {
+  public AssociationsIterator(String field, T association) throws IOException {
     this.association = association;
     this.dvField = field + association.getCategoryListID();
-    this.useDirectSource = useDirectSource;
   }
 
   /**
@@ -61,14 +54,8 @@ public abstract class AssociationsIterator<T extends CategoryAssociation> {
    * of the documents belonging to the association given to the constructor.
    */
   public final boolean setNextReader(AtomicReaderContext context) throws IOException {
-    DocValues dv = context.reader().docValues(dvField);
-    if (dv == null) {
-      current = null;
-      return false;
-    }
-    
-    current = useDirectSource ? dv.getDirectSource() : dv.getSource();
-    return true;
+    current = context.reader().getBinaryDocValues(dvField);
+    return current != null;
   }
   
   /**
@@ -78,7 +65,7 @@ public abstract class AssociationsIterator<T extends CategoryAssociation> {
    * extending classes.
    */
   protected final boolean setNextDoc(int docID) throws IOException {
-    current.getBytes(docID, bytes);
+    current.get(docID, bytes);
     if (bytes.length == 0) {
       return false; // no associations for the requested document
     }

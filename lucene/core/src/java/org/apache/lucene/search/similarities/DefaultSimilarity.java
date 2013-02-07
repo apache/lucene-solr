@@ -18,7 +18,6 @@ package org.apache.lucene.search.similarities;
  */
 
 import org.apache.lucene.index.FieldInvertState;
-import org.apache.lucene.index.Norm;
 import org.apache.lucene.util.BytesRef;
 
 /** Expert: Default scoring implementation. */

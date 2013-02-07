@@ -187,7 +187,7 @@ public class TestMultipleCategoryLists extends FacetTestCase {
   private void assertOrdinalsExist(String field, IndexReader ir) throws IOException {
     for (AtomicReaderContext context : ir.leaves()) {
       AtomicReader r = context.reader();
-      if (r.docValues(field) != null) {
+      if (r.getBinaryDocValues(field) != null) {
         return; // not all segments must have this DocValues
       }
     }

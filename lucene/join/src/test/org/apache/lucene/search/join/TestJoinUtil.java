@@ -17,6 +17,9 @@ package org.apache.lucene.search.join;
  * limitations under the License.
  */
 
+import java.io.IOException;
+import java.util.*;
+
 import org.apache.lucene.analysis.MockAnalyzer;
 import org.apache.lucene.analysis.MockTokenizer;
 import org.apache.lucene.document.Document;
@@ -24,6 +27,7 @@ import org.apache.lucene.document.Field;
 import org.apache.lucene.document.TextField;
 import org.apache.lucene.index.AtomicReader;
 import org.apache.lucene.index.AtomicReaderContext;
+import org.apache.lucene.index.BinaryDocValues;
 import org.apache.lucene.index.DocTermOrds;
 import org.apache.lucene.index.DocsEnum;
 import org.apache.lucene.index.IndexReader;
@@ -49,13 +53,10 @@ import org.apache.lucene.search.TopScoreDocCollector;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.FixedBitSet;
+import org.apache.lucene.util.LuceneTestCase.Slow;
 import org.apache.lucene.util.LuceneTestCase;
 import org.apache.lucene.util._TestUtil;
-import org.apache.lucene.util.LuceneTestCase.Slow;
 import org.junit.Test;
-
-import java.io.IOException;
-import java.util.*;
 
 public class TestJoinUtil extends LuceneTestCase {
 
@@ -523,13 +524,14 @@ public class TestJoinUtil extends LuceneTestCase {
         fromSearcher.search(new TermQuery(new Term("value", uniqueRandomValue)), new Collector() {
 
           private Scorer scorer;
-          private FieldCache.DocTerms terms;
+          private BinaryDocValues terms;
           private final BytesRef spare = new BytesRef();
 
           @Override
           public void collect(int doc) throws IOException {
-            BytesRef joinValue = terms.getTerm(doc, spare);
-            if (joinValue == null) {
+            terms.get(doc, spare);
+            BytesRef joinValue = spare;
+            if (joinValue.bytes == BinaryDocValues.MISSING) {
               return;
             }
 
@@ -641,13 +643,14 @@ public class TestJoinUtil extends LuceneTestCase {
       } else {
         toSearcher.search(new MatchAllDocsQuery(), new Collector() {
 
-          private FieldCache.DocTerms terms;
+          private BinaryDocValues terms;
           private int docBase;
           private final BytesRef spare = new BytesRef();
 
           @Override
           public void collect(int doc) {
-            JoinScore joinScore = joinValueToJoinScores.get(terms.getTerm(doc, spare));
+            terms.get(doc, spare);
+            JoinScore joinScore = joinValueToJoinScores.get(spare);
             if (joinScore == null) {
               return;
             }

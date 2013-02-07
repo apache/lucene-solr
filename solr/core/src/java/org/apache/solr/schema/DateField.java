@@ -498,21 +498,22 @@ class DateFieldSource extends FieldCacheSource {
       @Override
       public String strVal(int doc) {
         int ord=termsIndex.getOrd(doc);
-        if (ord == 0) {
+        if (ord == -1) {
           return null;
         } else {
-          final BytesRef br = termsIndex.lookup(ord, spare);
-          return ft.indexedToReadable(br, spareChars).toString();
+          termsIndex.lookupOrd(ord, spare);
+          return ft.indexedToReadable(spare, spareChars).toString();
         }
       }
 
       @Override
       public Object objectVal(int doc) {
         int ord=termsIndex.getOrd(doc);
-        if (ord == 0) {
+        if (ord == -1) {
           return null;
         } else {
-          final BytesRef br = termsIndex.lookup(ord, new BytesRef());
+          final BytesRef br = new BytesRef();
+          termsIndex.lookupOrd(ord, br);
           return ft.toObject(null, br);
         }
       }

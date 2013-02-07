@@ -27,11 +27,10 @@ import org.apache.lucene.facet.index.params.CategoryListParams;
 import org.apache.lucene.facet.index.params.FacetIndexingParams;
 import org.apache.lucene.index.AtomicReader;
 import org.apache.lucene.index.AtomicReaderContext;
+import org.apache.lucene.index.BinaryDocValues;
 import org.apache.lucene.index.DirectoryReader;
-import org.apache.lucene.index.DocValues;
-import org.apache.lucene.index.DocValues.Source;
-import org.apache.lucene.index.DocValues.Type;
 import org.apache.lucene.index.DocsAndPositionsEnum;
+import org.apache.lucene.index.FieldInfo.DocValuesType;
 import org.apache.lucene.index.FieldInfo;
 import org.apache.lucene.index.FieldInfos;
 import org.apache.lucene.index.Fields;
@@ -45,9 +44,9 @@ import org.apache.lucene.util.BytesRef;
 
 /**
  * A {@link FilterAtomicReader} for migrating a facets index which encodes
- * category ordinals in a payload to {@link DocValues}. To migrate the index,
+ * category ordinals in a payload to {@link BinaryDocValues}. To migrate the index,
  * you should build a mapping from a field (String) to term ({@link Term}),
- * which denotes under which DocValues field to put the data encoded in the
+ * which denotes under which BinaryDocValues field to put the data encoded in the
  * matching term's payload. You can follow the code example below to migrate an
  * existing index:
  * 
@@ -76,39 +75,37 @@ import org.apache.lucene.util.BytesRef;
  */
 public class FacetsPayloadMigrationReader extends FilterAtomicReader {  
 
-  private class PayloadMigratingDocValues extends DocValues {
+  private class PayloadMigratingBinaryDocValues extends BinaryDocValues {
 
-    private final DocsAndPositionsEnum dpe;
+    private Fields fields;
+    private Term term;
+    private DocsAndPositionsEnum dpe;
+    private int curDocID = -1;
+    private int lastRequestedDocID;
+
+    private DocsAndPositionsEnum getDPE() {
+      try {
+        DocsAndPositionsEnum dpe = null;
+        if (fields != null) {
+          Terms terms = fields.terms(term.field());
+          if (terms != null) {
+            TermsEnum te = terms.iterator(null); // no use for reusing
+            if (te.seekExact(term.bytes(), true)) {
+              // we're not expected to be called for deleted documents
+              dpe = te.docsAndPositions(null, null, DocsAndPositionsEnum.FLAG_PAYLOADS);
+            }
+          }
+        }
+        return dpe;
+      } catch (IOException ioe) {
+        throw new RuntimeException(ioe);
+      }
+    }
     
-    public PayloadMigratingDocValues(DocsAndPositionsEnum dpe) {
-      this.dpe = dpe;
-    }
-
-    @Override
-    protected Source loadDirectSource() throws IOException {
-      return new PayloadMigratingSource(getType(), dpe);
-    }
-
-    @Override
-    protected Source loadSource() throws IOException {
-      throw new UnsupportedOperationException("in-memory Source is not supported by this reader");
-    }
-
-    @Override
-    public Type getType() {
-      return Type.BYTES_VAR_STRAIGHT;
-    }
-    
-  }
-  
-  private class PayloadMigratingSource extends Source {
-
-    private final DocsAndPositionsEnum dpe;
-    private int curDocID;
-    
-    protected PayloadMigratingSource(Type type, DocsAndPositionsEnum dpe) {
-      super(type);
-      this.dpe = dpe;
+    protected PayloadMigratingBinaryDocValues(Fields fields, Term term) {
+      this.fields = fields;
+      this.term = term;
+      this.dpe = getDPE();
       if (dpe == null) {
         curDocID = DocIdSetIterator.NO_MORE_DOCS;
       } else {
@@ -121,31 +118,41 @@ public class FacetsPayloadMigrationReader extends FilterAtomicReader {
     }
     
     @Override
-    public BytesRef getBytes(int docID, BytesRef ref) {
-      if (curDocID > docID) {
-        // document does not exist
-        ref.length = 0;
-        return ref;
-      }
-      
+    public void get(int docID, BytesRef result) {
       try {
+        // If caller is moving backwards (eg, during merge,
+        // the consuming DV format is free to iterate over
+        // our values as many times as it wants), we must
+        // re-init the dpe:
+        if (docID <= lastRequestedDocID) {
+          dpe = getDPE();
+          if (dpe == null) {
+            curDocID = DocIdSetIterator.NO_MORE_DOCS;
+          } else{
+            curDocID = dpe.nextDoc();
+          }
+        }
+        lastRequestedDocID = docID;
+        if (curDocID > docID) {
+          // document does not exist
+          result.length = 0;
+          return;
+        }
+      
         if (curDocID < docID) {
           curDocID = dpe.advance(docID);
           if (curDocID != docID) { // requested document does not have a payload
-            ref.length = 0;
-            return ref;
+            result.length = 0;
+            return;
           }
         }
         
-        // we're on the document
         dpe.nextPosition();
-        ref.copyBytes(dpe.getPayload());
-        return ref;
+        result.copyBytes(dpe.getPayload());
       } catch (IOException e) {
         throw new RuntimeException(e);
       }
     }
-    
   }
   
   /** The {@link Term} text of the ordinals payload. */
@@ -195,7 +202,7 @@ public class FacetsPayloadMigrationReader extends FilterAtomicReader {
   private final Map<String,Term> fieldTerms;
   
   /**
-   * Wraps an {@link AtomicReader} and migrates the payload to {@link DocValues}
+   * Wraps an {@link AtomicReader} and migrates the payload to {@link BinaryDocValues}
    * fields by using the given mapping.
    */
   public FacetsPayloadMigrationReader(AtomicReader in, Map<String,Term> fieldTerms) {
@@ -204,26 +211,14 @@ public class FacetsPayloadMigrationReader extends FilterAtomicReader {
   }
   
   @Override
-  public DocValues docValues(String field) throws IOException {
+  public BinaryDocValues getBinaryDocValues(String field) throws IOException {
     Term term = fieldTerms.get(field);
     if (term == null) {
-      return super.docValues(field);
+      return super.getBinaryDocValues(field);
     } else {
-      DocsAndPositionsEnum dpe = null;
-      Fields fields = fields();
-      if (fields != null) {
-        Terms terms = fields.terms(term.field());
-        if (terms != null) {
-          TermsEnum te = terms.iterator(null); // no use for reusing
-          if (te.seekExact(term.bytes(), true)) {
-            // we're not expected to be called for deleted documents
-            dpe = te.docsAndPositions(null, null, DocsAndPositionsEnum.FLAG_PAYLOADS);
-          }
-        }
-      }
       // we shouldn't return null, even if the term does not exist or has no
       // payloads, since we already marked the field as having DocValues.
-      return new PayloadMigratingDocValues(dpe);
+      return new PayloadMigratingBinaryDocValues(fields(), term);
     }
   }
 
@@ -240,7 +235,7 @@ public class FacetsPayloadMigrationReader extends FilterAtomicReader {
         // mark this field as having a DocValues
         infos.add(new FieldInfo(info.name, true, info.number,
             info.hasVectors(), info.omitsNorms(), info.hasPayloads(),
-            info.getIndexOptions(), Type.BYTES_VAR_STRAIGHT,
+            info.getIndexOptions(), DocValuesType.BINARY,
             info.getNormType(), info.attributes()));
         leftoverFields.remove(info.name);
       } else {
@@ -250,9 +245,8 @@ public class FacetsPayloadMigrationReader extends FilterAtomicReader {
     }
     for (String field : leftoverFields) {
       infos.add(new FieldInfo(field, false, ++number, false, false, false,
-          null, Type.BYTES_VAR_STRAIGHT, null, null));
+          null, DocValuesType.BINARY, null, null));
     }
     return new FieldInfos(infos.toArray(new FieldInfo[infos.size()]));
   }
-  
 }

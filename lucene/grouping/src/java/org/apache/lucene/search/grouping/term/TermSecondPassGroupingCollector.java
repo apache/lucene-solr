@@ -17,20 +17,21 @@ package org.apache.lucene.search.grouping.term;
  * limitations under the License.
  */
 
+import java.io.IOException;
+import java.util.Collection;
+
 import org.apache.lucene.index.AtomicReaderContext;
+import org.apache.lucene.index.SortedDocValues;
 import org.apache.lucene.search.FieldCache;
 import org.apache.lucene.search.Sort;
 import org.apache.lucene.search.grouping.AbstractSecondPassGroupingCollector;
 import org.apache.lucene.search.grouping.SearchGroup;
-import org.apache.lucene.util.SentinelIntSet;
 import org.apache.lucene.util.BytesRef;
-
-import java.io.IOException;
-import java.util.Collection;
+import org.apache.lucene.util.SentinelIntSet;
 
 /**
  * Concrete implementation of {@link org.apache.lucene.search.grouping.AbstractSecondPassGroupingCollector} that groups based on
- * field values and more specifically uses {@link org.apache.lucene.search.FieldCache.DocTermsIndex}
+ * field values and more specifically uses {@link org.apache.lucene.index.SortedDocValues}
  * to collect grouped docs.
  *
  * @lucene.experimental
@@ -38,8 +39,7 @@ import java.util.Collection;
 public class TermSecondPassGroupingCollector extends AbstractSecondPassGroupingCollector<BytesRef> {
 
   private final SentinelIntSet ordSet;
-  private FieldCache.DocTermsIndex index;
-  private final BytesRef spareBytesRef = new BytesRef();
+  private SortedDocValues index;
   private final String groupField;
 
   @SuppressWarnings({"unchecked", "rawtypes"})
@@ -47,7 +47,7 @@ public class TermSecondPassGroupingCollector extends AbstractSecondPassGroupingC
                                          int maxDocsPerGroup, boolean getScores, boolean getMaxScores, boolean fillSortFields)
       throws IOException {
     super(groups, groupSort, withinGroupSort, maxDocsPerGroup, getScores, getMaxScores, fillSortFields);
-    ordSet = new SentinelIntSet(groupMap.size(), -1);
+    ordSet = new SentinelIntSet(groupMap.size(), -2);
     this.groupField = groupField;
     groupDocs = (SearchGroupDocs<BytesRef>[]) new SearchGroupDocs[ordSet.keys.length];
   }
@@ -61,8 +61,8 @@ public class TermSecondPassGroupingCollector extends AbstractSecondPassGroupingC
     ordSet.clear();
     for (SearchGroupDocs<BytesRef> group : groupMap.values()) {
 //      System.out.println("  group=" + (group.groupValue == null ? "null" : group.groupValue.utf8ToString()));
-      int ord = group.groupValue == null ? 0 : index.binarySearchLookup(group.groupValue, spareBytesRef);
-      if (ord >= 0) {
+      int ord = group.groupValue == null ? -1 : index.lookupTerm(group.groupValue);
+      if (group.groupValue == null || ord >= 0) {
         groupDocs[ordSet.put(ord)] = group;
       }
     }

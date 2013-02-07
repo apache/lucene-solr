@@ -64,12 +64,12 @@ public abstract class FieldsConsumer implements Closeable {
    *  implementation to do its own merging. */
   public void merge(MergeState mergeState, Fields fields) throws IOException {
     for (String field : fields) {
-      mergeState.fieldInfo = mergeState.fieldInfos.fieldInfo(field);
-      assert mergeState.fieldInfo != null : "FieldInfo for field is null: "+ field;
+      FieldInfo info = mergeState.fieldInfos.fieldInfo(field);
+      assert info != null : "FieldInfo for field is null: "+ field;
       Terms terms = fields.terms(field);
       if (terms != null) {
-        final TermsConsumer termsConsumer = addField(mergeState.fieldInfo);
-        termsConsumer.merge(mergeState, terms.iterator(null));
+        final TermsConsumer termsConsumer = addField(info);
+        termsConsumer.merge(mergeState, info.getIndexOptions(), terms.iterator(null));
       }
     }
   }

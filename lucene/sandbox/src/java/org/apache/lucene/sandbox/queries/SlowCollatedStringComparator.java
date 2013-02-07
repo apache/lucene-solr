@@ -21,8 +21,8 @@ import java.io.IOException;
 import java.text.Collator;
 
 import org.apache.lucene.index.AtomicReaderContext;
+import org.apache.lucene.index.BinaryDocValues;
 import org.apache.lucene.search.FieldCache;
-import org.apache.lucene.search.FieldCache.DocTerms;
 import org.apache.lucene.search.FieldComparator;
 import org.apache.lucene.util.BytesRef;
 
@@ -38,7 +38,7 @@ import org.apache.lucene.util.BytesRef;
 public final class SlowCollatedStringComparator extends FieldComparator<String> {
 
   private final String[] values;
-  private DocTerms currentDocTerms;
+  private BinaryDocValues currentDocTerms;
   private final String field;
   final Collator collator;
   private String bottom;
@@ -67,7 +67,8 @@ public final class SlowCollatedStringComparator extends FieldComparator<String> 
 
   @Override
   public int compareBottom(int doc) {
-    final String val2 = currentDocTerms.getTerm(doc, tempBR).utf8ToString();
+    currentDocTerms.get(doc, tempBR);
+    final String val2 = tempBR.bytes == BinaryDocValues.MISSING ? null : tempBR.utf8ToString();
     if (bottom == null) {
       if (val2 == null) {
         return 0;
@@ -81,11 +82,11 @@ public final class SlowCollatedStringComparator extends FieldComparator<String> 
 
   @Override
   public void copy(int slot, int doc) {
-    final BytesRef br = currentDocTerms.getTerm(doc, tempBR);
-    if (br == null) {
+    currentDocTerms.get(doc, tempBR);
+    if (tempBR.bytes == BinaryDocValues.MISSING) {
       values[slot] = null;
     } else {
-      values[slot] = br.utf8ToString();
+      values[slot] = tempBR.utf8ToString();
     }
   }
 
@@ -121,12 +122,12 @@ public final class SlowCollatedStringComparator extends FieldComparator<String> 
 
   @Override
   public int compareDocToValue(int doc, String value) {
-    final BytesRef br = currentDocTerms.getTerm(doc, tempBR);
+    currentDocTerms.get(doc, tempBR);
     final String docValue;
-    if (br == null) {
+    if (tempBR.bytes == BinaryDocValues.MISSING) {
       docValue = null;
     } else {
-      docValue = br.utf8ToString();
+      docValue = tempBR.utf8ToString();
     }
     return compareValues(docValue, value);
   }

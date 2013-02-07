@@ -8,10 +8,10 @@ import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
 
+import org.apache.lucene.document.BinaryDocValuesField;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
 import org.apache.lucene.document.FieldType;
-import org.apache.lucene.document.StraightBytesDocValuesField;
 import org.apache.lucene.document.TextField;
 import org.apache.lucene.facet.index.params.CategoryListParams;
 import org.apache.lucene.facet.index.params.FacetIndexingParams;
@@ -154,7 +154,7 @@ public class FacetFields {
    */
   protected void addCountingListData(Document doc, Map<String,BytesRef> categoriesData, String field) {
     for (Entry<String,BytesRef> entry : categoriesData.entrySet()) {
-      doc.add(new StraightBytesDocValuesField(field + entry.getKey(), entry.getValue()));
+      doc.add(new BinaryDocValuesField(field + entry.getKey(), entry.getValue()));
     }
   }
   

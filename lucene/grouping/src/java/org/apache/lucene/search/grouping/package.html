@@ -80,8 +80,8 @@ field fall into a single group.</p>
 <p>Known limitations:</p>
 <ul>
   <li> For the two-pass grouping search, the group field must be a
-    single-valued indexed field.
-    {@link org.apache.lucene.search.FieldCache} is used to load the {@link org.apache.lucene.search.FieldCache.DocTermsIndex} for this field.
+    single-valued indexed field (or indexed as a {@link org.apache.lucene.document.SortedDocValuesField}).
+    {@link org.apache.lucene.search.FieldCache} is used to load the {@link org.apache.lucene.index.SortedDocValues} for this field.
   <li> Although Solr support grouping by function and this module has abstraction of what a group is, there are currently only
     implementations for grouping based on terms.
   <li> Sharding is not directly supported, though is not too
@@ -195,26 +195,6 @@ fields, <code>FieldCache</code>, etc.).
    <code>org.apache.lucene.search.grouping.function</code> package, but can also be used with the
   <code>GroupingSearch</code> convenience utility
 </p>
-
-<p>
-  There are also DocValues based implementations available for the group collectors. There are factory methods
-  available for creating dv based instances. A typical example using dv based grouping with the
-  <code>GroupingSearch</code> convenience utility:
-</p>
-
-<pre class="prettyprint">
-  boolean diskResident = true; // Whether values should fetched directly from disk by passing the Java heap space.
-  DocValues.Type docValuesType = DocValues.Type.BYTES_VAR_SORTED;
-  GroupingSearch groupingSearch = new GroupingSearch("author", docValuesType, diskResident);
-  groupingSearch.setGroupSort(groupSort);
-  groupingSearch.setFillSortFields(fillFields);
-
-  TermQuery query = new TermQuery(new Term("content", searchTerm));
-  // The docValuesType variable decides the generic type. When float is used this Double and in case of int this is Long
-  TopGroups&lt;BytesRef&gt; result = groupingSearch.search(indexSearcher, query, groupOffset, groupLimit);
-
-  // Render groupsResult...
-</pre>
 
 </body>
 </html>

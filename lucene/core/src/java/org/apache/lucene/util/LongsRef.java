@@ -49,13 +49,10 @@ public final class LongsRef implements Comparable<LongsRef>, Cloneable {
   /** This instance will directly reference longs w/o making a copy.
    * longs should not be null */
   public LongsRef(long[] longs, int offset, int length) {
-    assert longs != null;
-    assert offset >= 0;
-    assert length >= 0;
-    assert longs.length >= offset + length;
     this.longs = longs;
     this.offset = offset;
     this.length = length;
+    assert isValid();
   }
 
   @Override
@@ -174,5 +171,34 @@ public final class LongsRef implements Comparable<LongsRef>, Cloneable {
     LongsRef clone = new LongsRef();
     clone.copyLongs(other);
     return clone;
+  }
+  
+  /** 
+   * Performs internal consistency checks.
+   * Always returns true (or throws IllegalStateException) 
+   */
+  public boolean isValid() {
+    if (longs == null) {
+      throw new IllegalStateException("longs is null");
+    }
+    if (length < 0) {
+      throw new IllegalStateException("length is negative: " + length);
+    }
+    if (length > longs.length) {
+      throw new IllegalStateException("length is out of bounds: " + length + ",longs.length=" + longs.length);
+    }
+    if (offset < 0) {
+      throw new IllegalStateException("offset is negative: " + offset);
+    }
+    if (offset > longs.length) {
+      throw new IllegalStateException("offset out of bounds: " + offset + ",longs.length=" + longs.length);
+    }
+    if (offset + length < 0) {
+      throw new IllegalStateException("offset+length is negative: offset=" + offset + ",length=" + length);
+    }
+    if (offset + length > longs.length) {
+      throw new IllegalStateException("offset+length out of bounds: offset=" + offset + ",length=" + length + ",longs.length=" + longs.length);
+    }
+    return true;
   }
 }

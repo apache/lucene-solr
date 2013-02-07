@@ -37,9 +37,9 @@ import org.apache.lucene.store.RAMDirectory;
 import org.apache.lucene.util.LongsRef;
 import org.apache.lucene.util.LuceneTestCase;
 import org.apache.lucene.util.LuceneTestCase.Slow;
+import org.apache.lucene.util.RamUsageEstimator;
 import org.apache.lucene.util._TestUtil;
 import org.apache.lucene.util.packed.PackedInts.Reader;
-
 import org.junit.Ignore;
 
 import com.carrotsearch.randomizedtesting.generators.RandomInts;
@@ -103,7 +103,11 @@ public class TestPackedInts extends LuceneTestCase {
         final int actualValueCount = random().nextBoolean() ? valueCount : _TestUtil.nextInt(random(), 0, valueCount);
         final long[] values = new long[valueCount];
         for(int i=0;i<actualValueCount;i++) {
-          values[i] = _TestUtil.nextLong(random(), 0, maxValue);
+          if (nbits == 64) {
+            values[i] = random().nextLong();
+          } else {
+            values[i] = _TestUtil.nextLong(random(), 0, maxValue);
+          }
           w.add(values[i]);
         }
         w.finish();
@@ -135,6 +139,11 @@ public class TestPackedInts extends LuceneTestCase {
                     + r.getClass().getSimpleName(), values[i], r.get(i));
           }
           in.close();
+
+          final long expectedBytesUsed = RamUsageEstimator.sizeOf(r);
+          final long computedBytesUsed = r.ramBytesUsed();
+          assertEquals(r.getClass() + "expected " + expectedBytesUsed + ", got: " + computedBytesUsed,
+              expectedBytesUsed, computedBytesUsed);
         }
 
         { // test reader iterator next
@@ -795,6 +804,46 @@ public class TestPackedInts extends LuceneTestCase {
     return true;
   }
 
+  public void testAppendingLongBuffer() {
+    final long[] arr = new long[RandomInts.randomIntBetween(random(), 1, 2000000)];
+    for (int bpv : new int[] {0, 1, 63, 64, RandomInts.randomIntBetween(random(), 2, 61)}) {
+      if (bpv == 0) {
+        Arrays.fill(arr, random().nextLong());
+      } else if (bpv == 64) {
+        for (int i = 0; i < arr.length; ++i) {
+          arr[i] = random().nextLong();
+        }
+      } else {
+        final long minValue = _TestUtil.nextLong(random(), Long.MIN_VALUE, Long.MAX_VALUE - PackedInts.maxValue(bpv));
+        for (int i = 0; i < arr.length; ++i) {
+          arr[i] = minValue + random().nextLong() & PackedInts.maxValue(bpv); // _TestUtil.nextLong is too slow
+        }
+      }
+      AppendingLongBuffer buf = new AppendingLongBuffer();
+      for (int i = 0; i < arr.length; ++i) {
+        buf.add(arr[i]);
+      }
+      assertEquals(arr.length, buf.size());
+      final AppendingLongBuffer.Iterator it = buf.iterator();
+      for (int i = 0; i < arr.length; ++i) {
+        if (random().nextBoolean()) {
+          assertTrue(it.hasNext());
+        }
+        assertEquals(arr[i], it.next());
+      }
+      assertFalse(it.hasNext());
+      
+      for (int i = 0; i < arr.length; ++i) {
+        assertEquals(arr[i], buf.get(i));
+      }
+
+      final long expectedBytesUsed = RamUsageEstimator.sizeOf(buf);
+      final long computedBytesUsed = buf.ramBytesUsed();
+      assertEquals("got " + computedBytesUsed + ", expected: " + expectedBytesUsed,
+          expectedBytesUsed, computedBytesUsed);
+    }
+  }
+
   public void testPackedInputOutput() throws IOException {
     final long[] longs = new long[random().nextInt(8192)];
     final int[] bitsPerValues = new int[longs.length];
@@ -841,7 +890,7 @@ public class TestPackedInts extends LuceneTestCase {
   public void testBlockPackedReaderWriter() throws IOException {
     final int iters = atLeast(2);
     for (int iter = 0; iter < iters; ++iter) {
-      final int blockSize = 64 * _TestUtil.nextInt(random(), 1, 1 << 12);
+      final int blockSize = 1 << _TestUtil.nextInt(random(), 6, 18);
       final int valueCount = random().nextInt(1 << 18);
       final long[] values = new long[valueCount];
       long minValue = 0;
@@ -873,30 +922,29 @@ public class TestPackedInts extends LuceneTestCase {
       final long fp = out.getFilePointer();
       out.close();
 
-      DataInput in = dir.openInput("out.bin", IOContext.DEFAULT);
-      if (random().nextBoolean()) {
-        byte[] buf = new byte[(int) fp];
-        in.readBytes(buf, 0, (int) fp);
-        ((IndexInput) in).close();
-        in = new ByteArrayDataInput(buf);
-      }
-      final BlockPackedReader reader = new BlockPackedReader(in, PackedInts.VERSION_CURRENT, blockSize, valueCount);
+      IndexInput in1 = dir.openInput("out.bin", IOContext.DEFAULT);
+      byte[] buf = new byte[(int) fp];
+      in1.readBytes(buf, 0, (int) fp);
+      in1.seek(0L);
+      ByteArrayDataInput in2 = new ByteArrayDataInput(buf);
+      final DataInput in = random().nextBoolean() ? in1 : in2;
+      final BlockPackedReaderIterator it = new BlockPackedReaderIterator(in, PackedInts.VERSION_CURRENT, blockSize, valueCount);
       for (int i = 0; i < valueCount; ) {
         if (random().nextBoolean()) {
-          assertEquals("" + i, values[i], reader.next());
+          assertEquals("" + i, values[i], it.next());
           ++i;
         } else {
-          final LongsRef nextValues = reader.next(_TestUtil.nextInt(random(), 1, 1024));
+          final LongsRef nextValues = it.next(_TestUtil.nextInt(random(), 1, 1024));
           for (int j = 0; j < nextValues.length; ++j) {
             assertEquals("" + (i + j), values[i + j], nextValues.longs[nextValues.offset + j]);
           }
           i += nextValues.length;
         }
-        assertEquals(i, reader.ord());
+        assertEquals(i, it.ord());
       }
       assertEquals(fp, in instanceof ByteArrayDataInput ? ((ByteArrayDataInput) in).getPosition() : ((IndexInput) in).getFilePointer());
       try {
-        reader.next();
+        it.next();
         assertTrue(false);
       } catch (IOException e) {
         // OK
@@ -907,33 +955,121 @@ public class TestPackedInts extends LuceneTestCase {
       } else {
         ((IndexInput) in).seek(0L);
       }
-      final BlockPackedReader reader2 = new BlockPackedReader(in, PackedInts.VERSION_CURRENT, blockSize, valueCount);
+      final BlockPackedReaderIterator it2 = new BlockPackedReaderIterator(in, PackedInts.VERSION_CURRENT, blockSize, valueCount);
       int i = 0;
       while (true) {
         final int skip = _TestUtil.nextInt(random(), 0, valueCount - i);
-        reader2.skip(skip);
+        it2.skip(skip);
         i += skip;
-        assertEquals(i, reader2.ord());
+        assertEquals(i, it2.ord());
         if (i == valueCount) {
           break;
         } else {
-          assertEquals(values[i], reader2.next());
+          assertEquals(values[i], it2.next());
           ++i;
         }
       }
       assertEquals(fp, in instanceof ByteArrayDataInput ? ((ByteArrayDataInput) in).getPosition() : ((IndexInput) in).getFilePointer());
       try {
-        reader2.skip(1);
+        it2.skip(1);
         assertTrue(false);
       } catch (IOException e) {
         // OK
       }
 
-      if (in instanceof IndexInput) {
-        ((IndexInput) in).close();
+      in1.seek(0L);
+      final BlockPackedReader reader = new BlockPackedReader(in1, PackedInts.VERSION_CURRENT, blockSize, valueCount, random().nextBoolean());
+      assertEquals(in1.getFilePointer(), in1.length());
+      for (i = 0; i < valueCount; ++i) {
+        assertEquals("i=" + i, values[i], reader.get(i));
       }
+      in1.close();
       dir.close();
     }
+  }
+
+  public void testMonotonicBlockPackedReaderWriter() throws IOException {
+    final int iters = atLeast(2);
+    for (int iter = 0; iter < iters; ++iter) {
+      final int blockSize = 1 << _TestUtil.nextInt(random(), 6, 18);
+      final int valueCount = random().nextInt(1 << 18);
+      final long[] values = new long[valueCount];
+      if (valueCount > 0) {
+        values[0] = random().nextBoolean() ? random().nextInt(10) : random().nextInt(Integer.MAX_VALUE);
+        int maxDelta = random().nextInt(64);
+        for (int i = 1; i < valueCount; ++i) {
+          if (random().nextDouble() < 0.1d) {
+            maxDelta = random().nextInt(64);
+          }
+          values[i] = Math.max(0, values[i-1] + _TestUtil.nextInt(random(), -16, maxDelta));
+        }
+      }
+
+      final Directory dir = newDirectory();
+      final IndexOutput out = dir.createOutput("out.bin", IOContext.DEFAULT);
+      final MonotonicBlockPackedWriter writer = new MonotonicBlockPackedWriter(out, blockSize);
+      for (int i = 0; i < valueCount; ++i) {
+        assertEquals(i, writer.ord());
+        writer.add(values[i]);
+      }
+      assertEquals(valueCount, writer.ord());
+      writer.finish();
+      assertEquals(valueCount, writer.ord());
+      final long fp = out.getFilePointer();
+      out.close();
+
+      final IndexInput in = dir.openInput("out.bin", IOContext.DEFAULT);
+      final MonotonicBlockPackedReader reader = new MonotonicBlockPackedReader(in, PackedInts.VERSION_CURRENT, blockSize, valueCount, random().nextBoolean());
+      assertEquals(fp, in.getFilePointer());
+      for (int i = 0; i < valueCount; ++i) {
+        assertEquals("i=" +i, values[i], reader.get(i));
+      }
+      in.close();
+      dir.close();
+    }
+  }
+
+  @Nightly
+  public void testBlockReaderOverflow() throws IOException {
+    final long valueCount = _TestUtil.nextLong(random(), 1L + Integer.MAX_VALUE, (long) Integer.MAX_VALUE * 2);
+    final int blockSize = 1 << _TestUtil.nextInt(random(), 20, 22);
+    final Directory dir = newDirectory();
+    final IndexOutput out = dir.createOutput("out.bin", IOContext.DEFAULT);
+    final BlockPackedWriter writer = new BlockPackedWriter(out, blockSize);
+    long value = random().nextInt() & 0xFFFFFFFFL;
+    long valueOffset = _TestUtil.nextLong(random(), 0, valueCount - 1);
+    for (long i = 0; i < valueCount; ) {
+      assertEquals(i, writer.ord());
+      if ((i & (blockSize - 1)) == 0 && (i + blockSize < valueOffset || i > valueOffset && i + blockSize < valueCount)) {
+        writer.addBlockOfZeros();
+        i += blockSize;
+      } else if (i == valueOffset) {
+        writer.add(value);
+        ++i;
+      } else {
+        writer.add(0);
+        ++i;
+      }
+    }
+    writer.finish();
+    out.close();
+    final IndexInput in = dir.openInput("out.bin", IOContext.DEFAULT);
+    final BlockPackedReaderIterator it = new BlockPackedReaderIterator(in, PackedInts.VERSION_CURRENT, blockSize, valueCount);
+    it.skip(valueOffset);
+    assertEquals(value, it.next());
+    in.seek(0L);
+    final BlockPackedReader reader = new BlockPackedReader(in, PackedInts.VERSION_CURRENT, blockSize, valueCount, random().nextBoolean());
+    assertEquals(value, reader.get(valueOffset));
+    for (int i = 0; i < 5; ++i) {
+      final long offset = _TestUtil.nextLong(random(), 0, valueCount - 1);
+      if (offset == valueOffset) {
+        assertEquals(value, reader.get(offset));
+      } else {
+        assertEquals(0, reader.get(offset));
+      }
+    }
+    in.close();
+    dir.close();
   }
 
 }

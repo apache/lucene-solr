@@ -41,8 +41,8 @@ import org.apache.lucene.spatial.query.SpatialArgs;
  *   <li>What types of query shapes can be used?</li>
  *   <li>What types of query operations are supported?
  *   This might vary per shape.</li>
- *   <li>Does it use the {@link org.apache.lucene.search.FieldCache}, {@link
- *   org.apache.lucene.index.DocValues} or some other type of cache?  When?
+ *   <li>Does it use the {@link org.apache.lucene.search.FieldCache},
+ *   or some other type of cache?  When?
  * </ul>
  * If a strategy only supports certain shapes at index or query time, then in
  * general it will throw an exception if given an incompatible one.  It will not

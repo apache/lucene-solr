@@ -25,16 +25,10 @@ import java.util.HashSet;
 import java.util.Map;
 
 import org.apache.lucene.codecs.Codec;
-import org.apache.lucene.codecs.DocValuesConsumer;
 import org.apache.lucene.codecs.FieldInfosWriter;
-import org.apache.lucene.codecs.PerDocConsumer;
-import org.apache.lucene.document.FieldType;
-import org.apache.lucene.index.DocumentsWriterPerThread.DocState;
-import org.apache.lucene.index.TypePromoter.TypeCompatibility;
 import org.apache.lucene.store.IOContext;
 import org.apache.lucene.util.ArrayUtil;
-import org.apache.lucene.util.IOUtils;
-
+import org.apache.lucene.util.Counter;
 
 /**
  * This is a DocConsumer that gathers all fields under the
@@ -47,7 +41,7 @@ import org.apache.lucene.util.IOUtils;
 final class DocFieldProcessor extends DocConsumer {
 
   final DocFieldConsumer consumer;
-  final StoredFieldsConsumer fieldsWriter;
+  final StoredFieldsConsumer storedConsumer;
   final Codec codec;
 
   // Holds all fields seen in current doc
@@ -62,11 +56,14 @@ final class DocFieldProcessor extends DocConsumer {
   int fieldGen;
   final DocumentsWriterPerThread.DocState docState;
 
-  public DocFieldProcessor(DocumentsWriterPerThread docWriter, DocFieldConsumer consumer) {
+  final Counter bytesUsed;
+
+  public DocFieldProcessor(DocumentsWriterPerThread docWriter, DocFieldConsumer consumer, StoredFieldsConsumer storedConsumer) {
     this.docState = docWriter.docState;
     this.codec = docWriter.codec;
+    this.bytesUsed = docWriter.bytesUsed;
     this.consumer = consumer;
-    fieldsWriter = new StoredFieldsConsumer(docWriter);
+    this.storedConsumer = storedConsumer;
   }
 
   @Override
@@ -78,15 +75,10 @@ final class DocFieldProcessor extends DocConsumer {
       childFields.put(f.getFieldInfo().name, f);
     }
 
-    fieldsWriter.flush(state);
-    consumer.flush(childFields, state);
+    assert fields.size() == totalFieldCount;
 
-    for (DocValuesConsumerHolder consumer : docValues.values()) {
-      consumer.docValuesConsumer.finish(state.segmentInfo.getDocCount());
-    }
-    
-    // close perDocConsumer during flush to ensure all files are flushed due to PerCodec CFS
-    IOUtils.close(perDocConsumer);
+    storedConsumer.flush(state);
+    consumer.flush(childFields, state);
 
     // Important to save after asking consumer to flush so
     // consumer can alter the FieldInfo* if necessary.  EG,
@@ -113,11 +105,9 @@ final class DocFieldProcessor extends DocConsumer {
         field = next;
       }
     }
-    IOUtils.closeWhileHandlingException(perDocConsumer);
-    // TODO add abort to PerDocConsumer!
     
     try {
-      fieldsWriter.abort();
+      storedConsumer.abort();
     } catch (Throwable t) {
       if (th == null) {
         th = t;
@@ -132,16 +122,6 @@ final class DocFieldProcessor extends DocConsumer {
       }
     }
     
-    try {
-      if (perDocConsumer != null) {
-        perDocConsumer.abort();  
-      }
-    } catch (Throwable t) {
-      if (th == null) {
-        th = t;
-      }
-    }
-    
     // If any errors occured, throw it.
     if (th != null) {
       if (th instanceof RuntimeException) throw (RuntimeException) th;
@@ -149,11 +129,6 @@ final class DocFieldProcessor extends DocConsumer {
       // defensive code - we should not hit unchecked exceptions
       throw new RuntimeException(th);
     }
-  }
-
-  @Override
-  public boolean freeRAM() {
-    return consumer.freeRAM();
   }
 
   public Collection<DocFieldConsumerPerField> fields() {
@@ -176,8 +151,6 @@ final class DocFieldProcessor extends DocConsumer {
     fieldHash = new DocFieldProcessorPerField[2];
     hashMask = 1;
     totalFieldCount = 0;
-    perDocConsumer = null;
-    docValues.clear();
   }
 
   private void rehash() {
@@ -207,7 +180,7 @@ final class DocFieldProcessor extends DocConsumer {
   public void processDocument(FieldInfos.Builder fieldInfos) throws IOException {
 
     consumer.startDocument();
-    fieldsWriter.startDocument();
+    storedConsumer.startDocument();
 
     fieldCount = 0;
 
@@ -226,38 +199,12 @@ final class DocFieldProcessor extends DocConsumer {
 
       fp.addField(field);
     }
+
     for (StorableField field: docState.doc.storableFields()) {
       final String fieldName = field.name();
       IndexableFieldType ft = field.fieldType();
-
-      DocFieldProcessorPerField fp = processField(fieldInfos, thisFieldGen, fieldName, ft);
-      if (ft.stored()) {
-        fieldsWriter.addField(field, fp.fieldInfo);
-      }
-      
-      final DocValues.Type dvType = ft.docValueType();
-      if (dvType != null) {
-        DocValuesConsumerHolder docValuesConsumer = docValuesConsumer(dvType,
-            docState, fp.fieldInfo);
-        DocValuesConsumer consumer = docValuesConsumer.docValuesConsumer;
-        if (docValuesConsumer.compatibility == null) {
-          consumer.add(docState.docID, field);
-          docValuesConsumer.compatibility = new TypeCompatibility(dvType,
-              consumer.getValueSize());
-        } else if (docValuesConsumer.compatibility.isCompatible(dvType,
-            TypePromoter.getValueSize(dvType, field.binaryValue()))) {
-          consumer.add(docState.docID, field);
-        } else {
-          docValuesConsumer.compatibility.isCompatible(dvType,
-              TypePromoter.getValueSize(dvType, field.binaryValue()));
-          TypeCompatibility compatibility = docValuesConsumer.compatibility;
-          throw new IllegalArgumentException("Incompatible DocValues type: "
-              + dvType.name() + " size: "
-              + TypePromoter.getValueSize(dvType, field.binaryValue())
-              + " expected: " + " type: " + compatibility.getBaseType()
-              + " size: " + compatibility.getBaseSize());
-        }
-      }
+      FieldInfo fieldInfo = fieldInfos.addOrUpdate(fieldName, ft);
+      storedConsumer.addField(docState.docID, field, fieldInfo);
     }
 
     // If we are writing vectors then we must visit
@@ -280,6 +227,7 @@ final class DocFieldProcessor extends DocConsumer {
 
   private DocFieldProcessorPerField processField(FieldInfos.Builder fieldInfos,
       final int thisFieldGen, final String fieldName, IndexableFieldType ft) {
+
     // Make sure we have a PerField allocated
     final int hashPos = fieldName.hashCode() & hashMask;
     DocFieldProcessorPerField fp = fieldHash[hashPos];
@@ -305,7 +253,7 @@ final class DocFieldProcessor extends DocConsumer {
         rehash();
       }
     } else {
-      fieldInfos.addOrUpdate(fp.fieldInfo.name, ft);
+      fp.fieldInfo.update(ft);
     }
 
     if (thisFieldGen != fp.lastGen) {
@@ -336,54 +284,9 @@ final class DocFieldProcessor extends DocConsumer {
   @Override
   void finishDocument() throws IOException {
     try {
-      fieldsWriter.finishDocument();
+      storedConsumer.finishDocument();
     } finally {
       consumer.finishDocument();
     }
   }
-
-  private static class DocValuesConsumerHolder {
-    // Only used to enforce that same DV field name is never
-    // added more than once per doc:
-    int docID;
-    final DocValuesConsumer docValuesConsumer;
-    TypeCompatibility compatibility;
-
-    public DocValuesConsumerHolder(DocValuesConsumer docValuesConsumer) {
-      this.docValuesConsumer = docValuesConsumer;
-    }
-  }
-
-  final private Map<String, DocValuesConsumerHolder> docValues = new HashMap<String, DocValuesConsumerHolder>();
-  private PerDocConsumer perDocConsumer;
-
-  DocValuesConsumerHolder docValuesConsumer(DocValues.Type valueType, DocState docState, FieldInfo fieldInfo) 
-      throws IOException {
-    DocValuesConsumerHolder docValuesConsumerAndDocID = docValues.get(fieldInfo.name);
-    if (docValuesConsumerAndDocID != null) {
-      if (docState.docID == docValuesConsumerAndDocID.docID) {
-        throw new IllegalArgumentException("DocValuesField \"" + fieldInfo.name + "\" appears more than once in this document (only one value is allowed, per field)");
-      }
-      assert docValuesConsumerAndDocID.docID < docState.docID;
-      docValuesConsumerAndDocID.docID = docState.docID;
-      return docValuesConsumerAndDocID;
-    }
-
-    if (perDocConsumer == null) {
-      PerDocWriteState perDocWriteState = docState.docWriter.newPerDocWriteState("");
-      perDocConsumer = docState.docWriter.codec.docValuesFormat().docsConsumer(perDocWriteState);
-      if (perDocConsumer == null) {
-        throw new IllegalStateException("codec=" +  docState.docWriter.codec + " does not support docValues: from docValuesFormat().docsConsumer(...) returned null; field=" + fieldInfo.name);
-      }
-    }
-    DocValuesConsumer docValuesConsumer = perDocConsumer.addValuesField(valueType, fieldInfo);
-    assert fieldInfo.getDocValuesType() == null || fieldInfo.getDocValuesType() == valueType;
-    fieldInfo.setDocValuesType(valueType);
-
-    docValuesConsumerAndDocID = new DocValuesConsumerHolder(docValuesConsumer);
-    docValuesConsumerAndDocID.docID = docState.docID;
-    docValues.put(fieldInfo.name, docValuesConsumerAndDocID);
-    return docValuesConsumerAndDocID;
-  }
-  
 }

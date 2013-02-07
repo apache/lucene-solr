@@ -143,7 +143,7 @@ its numbering.</p>
    what files it uses, 
 </li>
 <li>
-{@link org.apache.lucene.codecs.lucene40.Lucene40FieldInfosFormat Field names}. 
+{@link org.apache.lucene.codecs.lucene42.Lucene42FieldInfosFormat Field names}. 
    This contains the set of field names used in the index.
 </li>
 <li>
@@ -173,7 +173,7 @@ term occurs in each document. Note that this will not exist if all fields in
 all documents omit position data.
 </li>
 <li>
-{@link org.apache.lucene.codecs.lucene40.Lucene40NormsFormat Normalization factors}. 
+{@link org.apache.lucene.codecs.lucene42.Lucene42NormsFormat Normalization factors}. 
 For each field in each document, a value is stored
 that is multiplied into the score for hits on that field.
 </li>
@@ -185,7 +185,7 @@ term frequency. To add Term Vectors to your index see the
 {@link org.apache.lucene.document.Field Field} constructors
 </li>
 <li>
-{@link org.apache.lucene.codecs.lucene40.Lucene40DocValuesFormat Per-document values}. 
+{@link org.apache.lucene.codecs.lucene42.Lucene42DocValuesFormat Per-document values}. 
 Like stored values, these are also keyed by document
 number, but are generally intended to be loaded into main memory for fast
 access. Whereas stored values are generally intended for summary results from
@@ -249,7 +249,7 @@ file.</td>
 systems that frequently run out of file handles.</td>
 </tr>
 <tr>
-<td>{@link org.apache.lucene.codecs.lucene40.Lucene40FieldInfosFormat Fields}</td>
+<td>{@link org.apache.lucene.codecs.lucene42.Lucene42FieldInfosFormat Fields}</td>
 <td>.fnm</td>
 <td>Stores information about the fields</td>
 </tr>
@@ -289,13 +289,13 @@ systems that frequently run out of file handles.</td>
 <td>Stores additional per-position metadata information such as character offsets and user payloads</td>
 </tr>
 <tr>
-<td>{@link org.apache.lucene.codecs.lucene40.Lucene40NormsFormat Norms}</td>
-<td>.nrm.cfs, .nrm.cfe</td>
+<td>{@link org.apache.lucene.codecs.lucene42.Lucene42NormsFormat Norms}</td>
+<td>.nvd, .nvm</td>
 <td>Encodes length and boost factors for docs and fields</td>
 </tr>
 <tr>
-<td>{@link org.apache.lucene.codecs.lucene40.Lucene40DocValuesFormat Per-Document Values}</td>
-<td>.dv.cfs, .dv.cfe</td>
+<td>{@link org.apache.lucene.codecs.lucene42.Lucene42DocValuesFormat Per-Document Values}</td>
+<td>.dvd, .dvm</td>
 <td>Encodes additional scoring factors or other per-document information.</td>
 </tr>
 <tr>
@@ -368,11 +368,11 @@ file, previously they were stored in text format only.</li>
 frequencies.</li>
 <li>In version 4.0, the format of the inverted index became extensible via
 the {@link org.apache.lucene.codecs.Codec Codec} api. Fast per-document storage
-({@link org.apache.lucene.index.DocValues DocValues}) was introduced. Normalization
-factors need no longer be a single byte, they can be any DocValues 
-{@link org.apache.lucene.index.DocValues.Type type}. Terms need not be unicode
-strings, they can be any byte sequence. Term offsets can optionally be indexed 
-into the postings lists. Payloads can be stored in the term vectors.</li>
+({@code DocValues}) was introduced. Normalization factors need no longer be a 
+single byte, they can be any {@link org.apache.lucene.index.NumericDocValues NumericDocValues}. 
+Terms need not be unicode strings, they can be any byte sequence. Term offsets 
+can optionally be indexed into the postings lists. Payloads can be stored in the 
+term vectors.</li>
 <li>In version 4.1, the format of the postings list changed to use either
 of FOR compression or variable-byte encoding, depending upon the frequency
 of the term.</li>

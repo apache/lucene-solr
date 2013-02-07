@@ -31,7 +31,6 @@ import org.apache.lucene.util.LuceneTestCase;
 import org.apache.lucene.util._TestUtil;
 import org.apache.lucene.util.packed.PackedInts;
 
-
 public class TestSegmentMerger extends LuceneTestCase {
   //The variables for the new merged segment
   private Directory mergedDir;

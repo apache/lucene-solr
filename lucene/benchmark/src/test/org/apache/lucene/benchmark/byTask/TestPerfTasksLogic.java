@@ -53,10 +53,10 @@ import org.apache.lucene.index.MultiFields;
 import org.apache.lucene.index.SegmentInfos;
 import org.apache.lucene.index.SerialMergeScheduler;
 import org.apache.lucene.index.SlowCompositeReaderWrapper;
+import org.apache.lucene.index.SortedDocValues;
 import org.apache.lucene.index.Terms;
 import org.apache.lucene.index.TermsEnum;
 import org.apache.lucene.search.DocIdSetIterator;
-import org.apache.lucene.search.FieldCache.DocTermsIndex;
 import org.apache.lucene.search.FieldCache;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.util.BytesRef;
@@ -342,12 +342,11 @@ public class TestPerfTasksLogic extends BenchmarkTestCase {
     Benchmark benchmark = execBenchmark(algLines);
 
     DirectoryReader r = DirectoryReader.open(benchmark.getRunData().getDirectory());
-    DocTermsIndex idx = FieldCache.DEFAULT.getTermsIndex(new SlowCompositeReaderWrapper(r), "country");
+    SortedDocValues idx = FieldCache.DEFAULT.getTermsIndex(new SlowCompositeReaderWrapper(r), "country");
     final int maxDoc = r.maxDoc();
     assertEquals(1000, maxDoc);
-    BytesRef br = new BytesRef();
     for(int i=0;i<1000;i++) {
-      assertNotNull("doc " + i + " has null country", idx.getTerm(i, br));
+      assertTrue("doc " + i + " has null country", idx.getOrd(i) != -1);
     }
     r.close();
   }

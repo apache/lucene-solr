@@ -150,6 +150,7 @@ public final class RunListenerPrintReproduceInfo extends RunListener {
     // Codec, postings, directories.
     if (!TEST_CODEC.equals("random")) addVmOpt(b, "tests.codec", TEST_CODEC);
     if (!TEST_POSTINGSFORMAT.equals("random")) addVmOpt(b, "tests.postingsformat", TEST_POSTINGSFORMAT);
+    if (!TEST_DOCVALUESFORMAT.equals("random")) addVmOpt(b, "tests.docvaluesformat", TEST_DOCVALUESFORMAT);
     if (!TEST_DIRECTORY.equals("random")) addVmOpt(b, "tests.directory", TEST_DIRECTORY);
 
     // Environment.

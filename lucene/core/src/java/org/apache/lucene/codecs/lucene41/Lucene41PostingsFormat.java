@@ -427,14 +427,14 @@ public final class Lucene41PostingsFormat extends PostingsFormat {
 
   @Override
   public FieldsProducer fieldsProducer(SegmentReadState state) throws IOException {
-    PostingsReaderBase postingsReader = new Lucene41PostingsReader(state.dir,
+    PostingsReaderBase postingsReader = new Lucene41PostingsReader(state.directory,
                                                                 state.fieldInfos,
                                                                 state.segmentInfo,
                                                                 state.context,
                                                                 state.segmentSuffix);
     boolean success = false;
     try {
-      FieldsProducer ret = new BlockTreeTermsReader(state.dir,
+      FieldsProducer ret = new BlockTreeTermsReader(state.directory,
                                                     state.fieldInfos,
                                                     state.segmentInfo,
                                                     postingsReader,

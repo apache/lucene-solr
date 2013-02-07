@@ -13,17 +13,16 @@ import org.apache.lucene.facet.index.params.CategoryListParams;
 import org.apache.lucene.facet.index.params.CategoryListParams.OrdinalPolicy;
 import org.apache.lucene.facet.index.params.FacetIndexingParams;
 import org.apache.lucene.facet.search.params.CountFacetRequest;
-import org.apache.lucene.facet.search.params.FacetRequest;
 import org.apache.lucene.facet.search.params.FacetRequest.SortBy;
 import org.apache.lucene.facet.search.params.FacetRequest.SortOrder;
+import org.apache.lucene.facet.search.params.FacetRequest;
 import org.apache.lucene.facet.search.params.FacetSearchParams;
 import org.apache.lucene.facet.search.results.FacetResult;
 import org.apache.lucene.facet.search.results.FacetResultNode;
 import org.apache.lucene.facet.taxonomy.TaxonomyReader;
 import org.apache.lucene.facet.taxonomy.directory.ParallelTaxonomyArrays;
 import org.apache.lucene.index.AtomicReaderContext;
-import org.apache.lucene.index.DocValues;
-import org.apache.lucene.index.DocValues.Source;
+import org.apache.lucene.index.BinaryDocValues;
 import org.apache.lucene.search.Collector;
 import org.apache.lucene.search.Scorer;
 import org.apache.lucene.util.BytesRef;
@@ -66,12 +65,9 @@ import org.apache.lucene.util.encoding.DGapVInt8IntDecoder;
  * </ul>
  * 
  * <p>
- * <b>NOTE:</b> this colletro uses {@link DocValues#getSource()} by default,
+ * <b>NOTE:</b> this collector uses {@link BinaryDocValues} by default,
  * which pre-loads the values into memory. If your application cannot afford the
- * RAM, you should use
- * {@link #CountingFacetsCollector(FacetSearchParams, TaxonomyReader, FacetArrays, boolean)}
- * and specify to use a direct source (corresponds to
- * {@link DocValues#getDirectSource()}).
+ * RAM, you should pick a codec which keeps the values (or parts of them) on disk.
  * 
  * <p>
  * <b>NOTE:</b> this collector supports category lists that were indexed with
@@ -91,18 +87,16 @@ public class CountingFacetsCollector extends FacetsCollector {
   private final FacetArrays facetArrays;
   private final int[] counts;
   private final String facetsField;
-  private final boolean useDirectSource;
-  private final HashMap<Source,FixedBitSet> matchingDocs = new HashMap<Source,FixedBitSet>();
+  private final HashMap<BinaryDocValues,FixedBitSet> matchingDocs = new HashMap<BinaryDocValues,FixedBitSet>();
   
-  private DocValues facetsValues;
+  private BinaryDocValues facetsValues;
   private FixedBitSet bits;
   
   public CountingFacetsCollector(FacetSearchParams fsp, TaxonomyReader taxoReader) {
-    this(fsp, taxoReader, new FacetArrays(taxoReader.getSize()), false);
+    this(fsp, taxoReader, new FacetArrays(taxoReader.getSize()));
   }
   
-  public CountingFacetsCollector(FacetSearchParams fsp, TaxonomyReader taxoReader, FacetArrays facetArrays, 
-      boolean useDirectSource) {
+  public CountingFacetsCollector(FacetSearchParams fsp, TaxonomyReader taxoReader, FacetArrays facetArrays) {
     assert facetArrays.arrayLength >= taxoReader.getSize() : "too small facet array";
     assert assertParams(fsp) == null : assertParams(fsp);
     
@@ -112,7 +106,6 @@ public class CountingFacetsCollector extends FacetsCollector {
     this.taxoReader = taxoReader;
     this.facetArrays = facetArrays;
     this.counts = facetArrays.getIntArray();
-    this.useDirectSource = useDirectSource;
   }
   
   /**
@@ -169,11 +162,10 @@ public class CountingFacetsCollector extends FacetsCollector {
   
   @Override
   public void setNextReader(AtomicReaderContext context) throws IOException {
-    facetsValues = context.reader().docValues(facetsField);
+    facetsValues = context.reader().getBinaryDocValues(facetsField);
     if (facetsValues != null) {
-      Source facetSource = useDirectSource ? facetsValues.getDirectSource() : facetsValues.getSource();
       bits = new FixedBitSet(context.reader().maxDoc());
-      matchingDocs.put(facetSource, bits);
+      matchingDocs.put(facetsValues, bits);
     }
   }
   
@@ -187,13 +179,13 @@ public class CountingFacetsCollector extends FacetsCollector {
   }
   
   private void countFacets() {
-    for (Entry<Source,FixedBitSet> entry : matchingDocs.entrySet()) {
-      Source facetsSource = entry.getKey();
+    for (Entry<BinaryDocValues,FixedBitSet> entry : matchingDocs.entrySet()) {
+      BinaryDocValues facetsSource = entry.getKey();
       FixedBitSet bits = entry.getValue();
       int doc = 0;
       int length = bits.length();
       while (doc < length && (doc = bits.nextSetBit(doc)) != -1) {
-        facetsSource .getBytes(doc, buf);
+        facetsSource.get(doc, buf);
         if (buf.length > 0) {
           // this document has facets
           int upto = buf.offset + buf.length;

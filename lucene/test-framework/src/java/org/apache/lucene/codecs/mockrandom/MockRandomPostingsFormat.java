@@ -288,7 +288,7 @@ public final class MockRandomPostingsFormat extends PostingsFormat {
   public FieldsProducer fieldsProducer(SegmentReadState state) throws IOException {
 
     final String seedFileName = IndexFileNames.segmentFileName(state.segmentInfo.name, state.segmentSuffix, SEED_EXT);
-    final IndexInput in = state.dir.openInput(seedFileName, state.context);
+    final IndexInput in = state.directory.openInput(seedFileName, state.context);
     final long seed = in.readLong();
     if (LuceneTestCase.VERBOSE) {
       System.out.println("MockRandomCodec: reading from seg=" + state.segmentInfo.name + " formatID=" + state.segmentSuffix + " seed=" + seed);
@@ -308,13 +308,13 @@ public final class MockRandomPostingsFormat extends PostingsFormat {
       if (LuceneTestCase.VERBOSE) {
         System.out.println("MockRandomCodec: reading Sep postings");
       }
-      postingsReader = new SepPostingsReader(state.dir, state.fieldInfos, state.segmentInfo,
+      postingsReader = new SepPostingsReader(state.directory, state.fieldInfos, state.segmentInfo,
                                              state.context, new MockIntStreamFactory(random), state.segmentSuffix);
     } else {
       if (LuceneTestCase.VERBOSE) {
         System.out.println("MockRandomCodec: reading Standard postings");
       }
-      postingsReader = new Lucene41PostingsReader(state.dir, state.fieldInfos, state.segmentInfo, state.context, state.segmentSuffix);
+      postingsReader = new Lucene41PostingsReader(state.directory, state.fieldInfos, state.segmentInfo, state.context, state.segmentSuffix);
     }
 
     if (random.nextBoolean()) {
@@ -335,7 +335,7 @@ public final class MockRandomPostingsFormat extends PostingsFormat {
 
       boolean success = false;
       try {
-        fields = new BlockTreeTermsReader(state.dir,
+        fields = new BlockTreeTermsReader(state.directory,
                                           state.fieldInfos,
                                           state.segmentInfo,
                                           postingsReader,
@@ -369,7 +369,7 @@ public final class MockRandomPostingsFormat extends PostingsFormat {
           if (LuceneTestCase.VERBOSE) {
             System.out.println("MockRandomCodec: fixed-gap terms index (divisor=" + state.termsIndexDivisor + ")");
           }
-          indexReader = new FixedGapTermsIndexReader(state.dir,
+          indexReader = new FixedGapTermsIndexReader(state.directory,
                                                      state.fieldInfos,
                                                      state.segmentInfo.name,
                                                      state.termsIndexDivisor,
@@ -385,7 +385,7 @@ public final class MockRandomPostingsFormat extends PostingsFormat {
           if (LuceneTestCase.VERBOSE) {
             System.out.println("MockRandomCodec: variable-gap terms index (divisor=" + state.termsIndexDivisor + ")");
           }
-          indexReader = new VariableGapTermsIndexReader(state.dir,
+          indexReader = new VariableGapTermsIndexReader(state.directory,
                                                         state.fieldInfos,
                                                         state.segmentInfo.name,
                                                         state.termsIndexDivisor,
@@ -405,7 +405,7 @@ public final class MockRandomPostingsFormat extends PostingsFormat {
       success = false;
       try {
         fields = new BlockTermsReader(indexReader,
-                                      state.dir,
+                                      state.directory,
                                       state.fieldInfos,
                                       state.segmentInfo,
                                       postingsReader,

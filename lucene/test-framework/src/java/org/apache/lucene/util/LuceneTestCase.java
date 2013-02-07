@@ -253,6 +253,9 @@ public abstract class LuceneTestCase extends Assert {
 
   /** Gets the postingsFormat to run tests with. */
   public static final String TEST_POSTINGSFORMAT = System.getProperty("tests.postingsformat", "random");
+  
+  /** Gets the docValuesFormat to run tests with */
+  public static final String TEST_DOCVALUESFORMAT = System.getProperty("tests.docvaluesformat", "random");
 
   /** Gets the directory to run tests with */
   public static final String TEST_DIRECTORY = System.getProperty("tests.directory", "random");
@@ -1242,6 +1245,9 @@ public abstract class LuceneTestCase extends Assert {
     if (usually()) {
       if (maybeWrap) {
         r = maybeWrapReader(r);
+      }
+      if (r instanceof AtomicReader) {
+        _TestUtil.checkReader((AtomicReader)r);
       }
       IndexSearcher ret = random.nextBoolean() ? new AssertingIndexSearcher(random, r) : new AssertingIndexSearcher(random, r.getContext());
       ret.setSimilarity(classEnvRule.similarity);

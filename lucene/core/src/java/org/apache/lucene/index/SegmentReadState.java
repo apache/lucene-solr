@@ -28,7 +28,7 @@ import org.apache.lucene.store.IOContext;
  */
 public class SegmentReadState {
   /** {@link Directory} where this segment is read from. */ 
-  public final Directory dir;
+  public final Directory directory;
 
   /** {@link SegmentInfo} describing this segment. */
   public final SegmentInfo segmentInfo;
@@ -73,7 +73,7 @@ public class SegmentReadState {
                           IOContext context,
                           int termsIndexDivisor,
                           String segmentSuffix) {
-    this.dir = dir;
+    this.directory = dir;
     this.segmentInfo = info;
     this.fieldInfos = fieldInfos;
     this.context = context;
@@ -84,7 +84,7 @@ public class SegmentReadState {
   /** Create a {@code SegmentReadState}. */
   public SegmentReadState(SegmentReadState other,
                           String newSegmentSuffix) {
-    this.dir = other.dir;
+    this.directory = other.directory;
     this.segmentInfo = other.segmentInfo;
     this.fieldInfos = other.fieldInfos;
     this.context = other.context;

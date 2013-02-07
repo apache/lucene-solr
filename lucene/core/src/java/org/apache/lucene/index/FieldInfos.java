@@ -25,6 +25,7 @@ import java.util.Map;
 import java.util.SortedMap;
 import java.util.TreeMap;
 
+import org.apache.lucene.index.FieldInfo.DocValuesType;
 import org.apache.lucene.index.FieldInfo.IndexOptions;
 
 /** 
@@ -162,11 +163,20 @@ public class FieldInfos implements Iterable<FieldInfo> {
     
     private final Map<Integer,String> numberToName;
     private final Map<String,Integer> nameToNumber;
+    // We use this to enforce that a given field never
+    // changes DV type, even across segments / IndexWriter
+    // sessions:
+    private final Map<String,DocValuesType> docValuesType;
+
+    // TODO: we should similarly catch an attempt to turn
+    // norms back on after they were already ommitted; today
+    // we silently discard the norm but this is badly trappy
     private int lowestUnassignedFieldNumber = -1;
     
     FieldNumbers() {
       this.nameToNumber = new HashMap<String, Integer>();
       this.numberToName = new HashMap<Integer, String>();
+      this.docValuesType = new HashMap<String,DocValuesType>();
     }
     
     /**
@@ -175,7 +185,15 @@ public class FieldInfos implements Iterable<FieldInfo> {
      * number assigned if possible otherwise the first unassigned field number
      * is used as the field number.
      */
-    synchronized int addOrGet(String fieldName, int preferredFieldNumber) {
+    synchronized int addOrGet(String fieldName, int preferredFieldNumber, DocValuesType dvType) {
+      if (dvType != null) {
+        DocValuesType currentDVType = docValuesType.get(fieldName);
+        if (currentDVType == null) {
+          docValuesType.put(fieldName, dvType);
+        } else if (currentDVType != null && currentDVType != dvType) {
+          throw new IllegalArgumentException("cannot change DocValues type from " + currentDVType + " to " + dvType + " for field \"" + fieldName + "\"");
+        }
+      }
       Integer fieldNumber = nameToNumber.get(fieldName);
       if (fieldNumber == null) {
         final Integer preferredBoxed = Integer.valueOf(preferredFieldNumber);
@@ -198,24 +216,17 @@ public class FieldInfos implements Iterable<FieldInfo> {
       return fieldNumber.intValue();
     }
 
-    /**
-     * Sets the given field number and name if not yet set. 
-     */
-    synchronized void setIfNotSet(int fieldNumber, String fieldName) {
-      final Integer boxedFieldNumber = Integer.valueOf(fieldNumber);
-      if (!numberToName.containsKey(boxedFieldNumber)
-          && !nameToNumber.containsKey(fieldName)) {
-        numberToName.put(boxedFieldNumber, fieldName);
-        nameToNumber.put(fieldName, boxedFieldNumber);
-      } else {
-        assert containsConsistent(boxedFieldNumber, fieldName);
-      }
-    }
-    
     // used by assert
-    synchronized boolean containsConsistent(Integer number, String name) {
+    synchronized boolean containsConsistent(Integer number, String name, DocValuesType dvType) {
       return name.equals(numberToName.get(number))
-          && number.equals(nameToNumber.get(name));
+          && number.equals(nameToNumber.get(name)) &&
+        (dvType == null || docValuesType.get(name) == null || dvType == docValuesType.get(name));
+    }
+
+    synchronized void clear() {
+      numberToName.clear();
+      nameToNumber.clear();
+      docValuesType.clear();
     }
   }
   
@@ -241,35 +252,6 @@ public class FieldInfos implements Iterable<FieldInfo> {
       }
     }
    
-    /**
-     * adds the given field to this FieldInfos name / number mapping. The given FI
-     * must be present in the global field number mapping before this method it
-     * called
-     */
-    private void putInternal(FieldInfo fi) {
-      assert !byName.containsKey(fi.name);
-      assert globalFieldNumbers.containsConsistent(Integer.valueOf(fi.number), fi.name);
-      byName.put(fi.name, fi);
-    }
-    
-    /** If the field is not yet known, adds it. If it is known, checks to make
-     *  sure that the isIndexed flag is the same as was given previously for this
-     *  field. If not - marks it as being indexed.  Same goes for the TermVector
-     * parameters.
-     *
-     * @param name The name of the field
-     * @param isIndexed true if the field is indexed
-     * @param storeTermVector true if the term vector should be stored
-     * @param omitNorms true if the norms for the indexed field should be omitted
-     * @param storePayloads true if payloads should be stored for this field
-     * @param indexOptions if term freqs should be omitted for this field
-     */
-    // TODO: fix testCodecs to do this another way, its the only user of this
-    FieldInfo addOrUpdate(String name, boolean isIndexed, boolean storeTermVector,
-                         boolean omitNorms, boolean storePayloads, IndexOptions indexOptions, DocValues.Type docValues, DocValues.Type normType) {
-      return addOrUpdateInternal(name, -1, isIndexed, storeTermVector, omitNorms, storePayloads, indexOptions, docValues, normType);
-    }
-
     /** NOTE: this method does not carry over termVector
      *  booleans nor docValuesType; the indexer chain
      *  (TermVectorsConsumerPerField, DocFieldProcessor) must
@@ -283,22 +265,31 @@ public class FieldInfos implements Iterable<FieldInfo> {
       // be updated by maybe FreqProxTermsWriterPerField:
       return addOrUpdateInternal(name, -1, fieldType.indexed(), false,
                                  fieldType.omitNorms(), false,
-                                 fieldType.indexOptions(), null, null);
+                                 fieldType.indexOptions(), fieldType.docValueType(), null);
     }
 
     private FieldInfo addOrUpdateInternal(String name, int preferredFieldNumber, boolean isIndexed,
         boolean storeTermVector,
-        boolean omitNorms, boolean storePayloads, IndexOptions indexOptions, DocValues.Type docValues, DocValues.Type normType) {
+        boolean omitNorms, boolean storePayloads, IndexOptions indexOptions, DocValuesType docValues, DocValuesType normType) {
       FieldInfo fi = fieldInfo(name);
       if (fi == null) {
-        // get a global number for this field
-        final int fieldNumber = globalFieldNumbers.addOrGet(name, preferredFieldNumber);
-        fi = addInternal(name, fieldNumber, isIndexed, storeTermVector, omitNorms, storePayloads, indexOptions, docValues, normType);
+        // This field wasn't yet added to this in-RAM
+        // segment's FieldInfo, so now we get a global
+        // number for this field.  If the field was seen
+        // before then we'll get the same name and number,
+        // else we'll allocate a new one:
+        final int fieldNumber = globalFieldNumbers.addOrGet(name, preferredFieldNumber, docValues);
+        fi = new FieldInfo(name, isIndexed, fieldNumber, storeTermVector, omitNorms, storePayloads, indexOptions, docValues, normType, null);
+        assert !byName.containsKey(fi.name);
+        assert globalFieldNumbers.containsConsistent(Integer.valueOf(fi.number), fi.name, fi.getDocValuesType());
+        byName.put(fi.name, fi);
       } else {
         fi.update(isIndexed, storeTermVector, omitNorms, storePayloads, indexOptions);
+
         if (docValues != null) {
           fi.setDocValuesType(docValues);
         }
+
         if (!fi.omitsNorms() && normType != null) {
           fi.setNormValueType(normType);
         }
@@ -313,15 +304,6 @@ public class FieldInfos implements Iterable<FieldInfo> {
                  fi.getIndexOptions(), fi.getDocValuesType(), fi.getNormType());
     }
     
-    private FieldInfo addInternal(String name, int fieldNumber, boolean isIndexed,
-                                  boolean storeTermVector, boolean omitNorms, boolean storePayloads,
-                                  IndexOptions indexOptions, DocValues.Type docValuesType, DocValues.Type normType) {
-      globalFieldNumbers.setIfNotSet(fieldNumber, name);
-      final FieldInfo fi = new FieldInfo(name, isIndexed, fieldNumber, storeTermVector, omitNorms, storePayloads, indexOptions, docValuesType, normType, null);
-      putInternal(fi);
-      return fi;
-    }
-
     public FieldInfo fieldInfo(String fieldName) {
       return byName.get(fieldName);
     }

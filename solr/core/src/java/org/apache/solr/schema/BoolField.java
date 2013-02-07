@@ -17,29 +17,30 @@
 
 package org.apache.solr.schema;
 
+import java.io.IOException;
+import java.io.Reader;
+import java.util.Map;
+
+import org.apache.lucene.analysis.Analyzer;
+import org.apache.lucene.analysis.Tokenizer;
+import org.apache.lucene.analysis.tokenattributes.CharTermAttribute;
 import org.apache.lucene.index.AtomicReaderContext;
 import org.apache.lucene.index.GeneralField;
+import org.apache.lucene.index.SortedDocValues;
 import org.apache.lucene.index.StorableField;
-import org.apache.lucene.search.FieldCache;
-import org.apache.lucene.search.SortField;
-import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.queries.function.FunctionValues;
 import org.apache.lucene.queries.function.ValueSource;
 import org.apache.lucene.queries.function.docvalues.BoolDocValues;
 import org.apache.lucene.queries.function.valuesource.OrdFieldSource;
+import org.apache.lucene.search.FieldCache;
+import org.apache.lucene.search.SortField;
+import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.CharsRef;
 import org.apache.lucene.util.mutable.MutableValue;
 import org.apache.lucene.util.mutable.MutableValueBool;
-import org.apache.solr.search.QParser;
-import org.apache.lucene.analysis.Analyzer;
-import org.apache.lucene.analysis.Tokenizer;
-import org.apache.lucene.analysis.tokenattributes.CharTermAttribute;
-import org.apache.solr.response.TextResponseWriter;
 import org.apache.solr.analysis.SolrAnalyzer;
-
-import java.util.Map;
-import java.io.Reader;
-import java.io.IOException;
+import org.apache.solr.response.TextResponseWriter;
+import org.apache.solr.search.QParser;
 /**
  *
  */
@@ -167,14 +168,14 @@ class BoolFieldSource extends ValueSource {
 
   @Override
   public FunctionValues getValues(Map context, AtomicReaderContext readerContext) throws IOException {
-    final FieldCache.DocTermsIndex sindex = FieldCache.DEFAULT.getTermsIndex(readerContext.reader(), field);
+    final SortedDocValues sindex = FieldCache.DEFAULT.getTermsIndex(readerContext.reader(), field);
 
     // figure out what ord maps to true
-    int nord = sindex.numOrd();
+    int nord = sindex.getValueCount();
     BytesRef br = new BytesRef();
     int tord = -1;
-    for (int i=1; i<nord; i++) {
-      sindex.lookup(i, br);
+    for (int i=0; i<nord; i++) {
+      sindex.lookupOrd(i, br);
       if (br.length==1 && br.bytes[br.offset]=='T') {
         tord = i;
         break;
@@ -191,7 +192,7 @@ class BoolFieldSource extends ValueSource {
 
       @Override
       public boolean exists(int doc) {
-        return sindex.getOrd(doc) != 0;
+        return sindex.getOrd(doc) != -1;
       }
 
       @Override
@@ -208,7 +209,7 @@ class BoolFieldSource extends ValueSource {
           public void fillValue(int doc) {
             int ord = sindex.getOrd(doc);
             mval.value = (ord == trueOrd);
-            mval.exists = (ord != 0);
+            mval.exists = (ord != -1);
           }
         };
       }

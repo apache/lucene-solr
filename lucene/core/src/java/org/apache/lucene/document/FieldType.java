@@ -18,7 +18,7 @@ package org.apache.lucene.document;
  */
 
 import org.apache.lucene.analysis.Analyzer; // javadocs
-import org.apache.lucene.index.DocValues;
+import org.apache.lucene.index.FieldInfo.DocValuesType;
 import org.apache.lucene.index.FieldInfo.IndexOptions;
 import org.apache.lucene.index.IndexableFieldType;
 import org.apache.lucene.search.NumericRangeQuery; // javadocs
@@ -55,7 +55,7 @@ public class FieldType implements IndexableFieldType  {
   private NumericType numericType;
   private boolean frozen;
   private int numericPrecisionStep = NumericUtils.PRECISION_STEP_DEFAULT;
-  private DocValues.Type docValueType;
+  private DocValuesType docValueType;
 
   /**
    * Create a new mutable FieldType with all of the properties from <code>ref</code>
@@ -416,21 +416,21 @@ public class FieldType implements IndexableFieldType  {
    * {@inheritDoc}
    * <p>
    * The default is <code>null</code> (no docValues) 
-   * @see #setDocValueType(DocValues.Type)
+   * @see #setDocValueType(org.apache.lucene.index.FieldInfo.DocValuesType)
    */
   @Override
-  public DocValues.Type docValueType() {
+  public DocValuesType docValueType() {
     return docValueType;
   }
 
   /**
-   * Set's the field's DocValues.Type
+   * Set's the field's DocValuesType
    * @param type DocValues type, or null if no DocValues should be stored.
    * @throws IllegalStateException if this FieldType is frozen against
    *         future modifications.
    * @see #docValueType()
    */
-  public void setDocValueType(DocValues.Type type) {
+  public void setDocValueType(DocValuesType type) {
     checkIfFrozen();
     docValueType = type;
   }

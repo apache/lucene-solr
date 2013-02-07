@@ -21,6 +21,7 @@ import java.io.IOException;
 import java.util.Map;
 
 import org.apache.lucene.index.AtomicReaderContext;
+import org.apache.lucene.index.BinaryDocValues;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.MultiFields;
 import org.apache.lucene.index.ReaderUtil;
@@ -28,7 +29,6 @@ import org.apache.lucene.index.Terms;
 import org.apache.lucene.index.TermsEnum;
 import org.apache.lucene.queries.function.FunctionValues;
 import org.apache.lucene.queries.function.docvalues.IntDocValues;
-import org.apache.lucene.search.FieldCache.DocTerms;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.packed.PackedInts;
 
@@ -56,7 +56,7 @@ public class JoinDocFreqValueSource extends FieldCacheSource {
   @Override
   public FunctionValues getValues(Map context, AtomicReaderContext readerContext) throws IOException
   {
-    final DocTerms terms = cache.getTerms(readerContext.reader(), field, PackedInts.FAST);
+    final BinaryDocValues terms = cache.getTerms(readerContext.reader(), field, PackedInts.FAST);
     final IndexReader top = ReaderUtil.getTopLevelContext(readerContext).reader();
     Terms t = MultiFields.getTerms(top, qfield);
     final TermsEnum termsEnum = t == null ? TermsEnum.EMPTY : t.iterator(null);
@@ -68,7 +68,7 @@ public class JoinDocFreqValueSource extends FieldCacheSource {
       public int intVal(int doc) 
       {
         try {
-          terms.getTerm(doc, ref);
+          terms.get(doc, ref);
           if (termsEnum.seekExact(ref, true)) {
             return termsEnum.docFreq();
           } else {

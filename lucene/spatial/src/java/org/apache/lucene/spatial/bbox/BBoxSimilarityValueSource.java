@@ -64,10 +64,10 @@ public class BBoxSimilarityValueSource extends ValueSource {
   @Override
   public FunctionValues getValues(Map context, AtomicReaderContext readerContext) throws IOException {
     AtomicReader reader = readerContext.reader();
-    final double[] minX = FieldCache.DEFAULT.getDoubles(reader, strategy.field_minX, true);
-    final double[] minY = FieldCache.DEFAULT.getDoubles(reader, strategy.field_minY, true);
-    final double[] maxX = FieldCache.DEFAULT.getDoubles(reader, strategy.field_maxX, true);
-    final double[] maxY = FieldCache.DEFAULT.getDoubles(reader, strategy.field_maxY, true);
+    final FieldCache.Doubles minX = FieldCache.DEFAULT.getDoubles(reader, strategy.field_minX, true);
+    final FieldCache.Doubles minY = FieldCache.DEFAULT.getDoubles(reader, strategy.field_minY, true);
+    final FieldCache.Doubles maxX = FieldCache.DEFAULT.getDoubles(reader, strategy.field_maxX, true);
+    final FieldCache.Doubles maxY = FieldCache.DEFAULT.getDoubles(reader, strategy.field_maxY, true);
 
     final Bits validMinX = FieldCache.DEFAULT.getDocsWithField(reader, strategy.field_minX);
     final Bits validMaxX = FieldCache.DEFAULT.getDocsWithField(reader, strategy.field_maxX);
@@ -81,8 +81,8 @@ public class BBoxSimilarityValueSource extends ValueSource {
         // make sure it has minX and area
         if (validMinX.get(doc) && validMaxX.get(doc)) {
           rect.reset(
-              minX[doc], maxX[doc],
-              minY[doc], maxY[doc]);
+              minX.get(doc), maxX.get(doc),
+              minY.get(doc), maxY.get(doc));
           return (float) similarity.score(rect, null);
         } else {
           return (float) similarity.score(null, null);
@@ -94,8 +94,8 @@ public class BBoxSimilarityValueSource extends ValueSource {
         // make sure it has minX and area
         if (validMinX.get(doc) && validMaxX.get(doc)) {
           rect.reset(
-              minX[doc], maxX[doc],
-              minY[doc], maxY[doc]);
+              minX.get(doc), maxX.get(doc),
+              minY.get(doc), maxY.get(doc));
           Explanation exp = new Explanation();
           similarity.score(rect, exp);
           return exp;

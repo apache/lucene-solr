@@ -25,7 +25,7 @@ import java.util.Iterator;
 import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.analysis.TokenStream;
 import org.apache.lucene.document.Field;
-import org.apache.lucene.index.DocValues.Type;
+import org.apache.lucene.index.FieldInfo.DocValuesType;
 import org.apache.lucene.search.BooleanClause;
 import org.apache.lucene.search.BooleanQuery;
 import org.apache.lucene.search.DocIdSetIterator;
@@ -89,7 +89,7 @@ public class TestIndexableField extends LuceneTestCase {
       }
 
       @Override
-      public Type docValueType() {
+      public DocValuesType docValueType() {
         return null;
       }
     };

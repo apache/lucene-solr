@@ -20,9 +20,8 @@ package org.apache.lucene.search.similarities;
 import java.io.IOException;
 
 import org.apache.lucene.index.AtomicReaderContext;
-import org.apache.lucene.index.DocValues;
 import org.apache.lucene.index.FieldInvertState;
-import org.apache.lucene.index.Norm;
+import org.apache.lucene.index.NumericDocValues;
 import org.apache.lucene.search.CollectionStatistics;
 import org.apache.lucene.search.Explanation;
 import org.apache.lucene.search.TermStatistics;
@@ -199,12 +198,12 @@ public abstract class SimilarityBase extends Similarity {
       ExactSimScorer subScorers[] = new ExactSimScorer[subStats.length];
       for (int i = 0; i < subScorers.length; i++) {
         BasicStats basicstats = (BasicStats) subStats[i];
-        subScorers[i] = new BasicExactDocScorer(basicstats, context.reader().normValues(basicstats.field));
+        subScorers[i] = new BasicExactDocScorer(basicstats, context.reader().getNormValues(basicstats.field));
       }
       return new MultiSimilarity.MultiExactDocScorer(subScorers);
     } else {
       BasicStats basicstats = (BasicStats) stats;
-      return new BasicExactDocScorer(basicstats, context.reader().normValues(basicstats.field));
+      return new BasicExactDocScorer(basicstats, context.reader().getNormValues(basicstats.field));
     }
   }
   
@@ -217,12 +216,12 @@ public abstract class SimilarityBase extends Similarity {
       SloppySimScorer subScorers[] = new SloppySimScorer[subStats.length];
       for (int i = 0; i < subScorers.length; i++) {
         BasicStats basicstats = (BasicStats) subStats[i];
-        subScorers[i] = new BasicSloppyDocScorer(basicstats, context.reader().normValues(basicstats.field));
+        subScorers[i] = new BasicSloppyDocScorer(basicstats, context.reader().getNormValues(basicstats.field));
       }
       return new MultiSimilarity.MultiSloppyDocScorer(subScorers);
     } else {
       BasicStats basicstats = (BasicStats) stats;
-      return new BasicSloppyDocScorer(basicstats, context.reader().normValues(basicstats.field));
+      return new BasicSloppyDocScorer(basicstats, context.reader().getNormValues(basicstats.field));
     }
   }
   
@@ -247,13 +246,13 @@ public abstract class SimilarityBase extends Similarity {
 
   /** Encodes the document length in the same way as {@link TFIDFSimilarity}. */
   @Override
-  public void computeNorm(FieldInvertState state, Norm norm) {
+  public long computeNorm(FieldInvertState state) {
     final float numTerms;
     if (discountOverlaps)
       numTerms = state.getLength() - state.getNumOverlap();
     else
       numTerms = state.getLength() / state.getBoost();
-    norm.setByte(encodeNormValue(state.getBoost(), numTerms));
+    return encodeNormValue(state.getBoost(), numTerms);
   }
   
   /** Decodes a normalization factor (document length) stored in an index.
@@ -286,24 +285,24 @@ public abstract class SimilarityBase extends Similarity {
    */
   private class BasicExactDocScorer extends ExactSimScorer {
     private final BasicStats stats;
-    private final byte[] norms;
+    private final NumericDocValues norms;
     
-    BasicExactDocScorer(BasicStats stats, DocValues norms) throws IOException {
+    BasicExactDocScorer(BasicStats stats, NumericDocValues norms) throws IOException {
       this.stats = stats;
-      this.norms = norms == null ? null : (byte[])norms.getSource().getArray();
+      this.norms = norms;
     }
     
     @Override
     public float score(int doc, int freq) {
       // We have to supply something in case norms are omitted
       return SimilarityBase.this.score(stats, freq,
-          norms == null ? 1F : decodeNormValue(norms[doc]));
+          norms == null ? 1F : decodeNormValue((byte)norms.get(doc)));
     }
     
     @Override
     public Explanation explain(int doc, Explanation freq) {
       return SimilarityBase.this.explain(stats, doc, freq,
-          norms == null ? 1F : decodeNormValue(norms[doc]));
+          norms == null ? 1F : decodeNormValue((byte)norms.get(doc)));
     }
   }
   
@@ -315,23 +314,23 @@ public abstract class SimilarityBase extends Similarity {
    */
   private class BasicSloppyDocScorer extends SloppySimScorer {
     private final BasicStats stats;
-    private final byte[] norms;
+    private final NumericDocValues norms;
     
-    BasicSloppyDocScorer(BasicStats stats, DocValues norms) throws IOException {
+    BasicSloppyDocScorer(BasicStats stats, NumericDocValues norms) throws IOException {
       this.stats = stats;
-      this.norms = norms == null ? null : (byte[])norms.getSource().getArray();
+      this.norms = norms;
     }
     
     @Override
     public float score(int doc, float freq) {
       // We have to supply something in case norms are omitted
       return SimilarityBase.this.score(stats, freq,
-          norms == null ? 1F : decodeNormValue(norms[doc]));
+          norms == null ? 1F : decodeNormValue((byte)norms.get(doc)));
     }
     @Override
     public Explanation explain(int doc, Explanation freq) {
       return SimilarityBase.this.explain(stats, doc, freq,
-          norms == null ? 1F : decodeNormValue(norms[doc]));
+          norms == null ? 1F : decodeNormValue((byte)norms.get(doc)));
     }
 
     @Override
