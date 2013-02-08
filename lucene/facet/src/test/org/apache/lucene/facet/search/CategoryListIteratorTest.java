@@ -8,17 +8,17 @@ import org.apache.lucene.analysis.MockTokenizer;
 import org.apache.lucene.document.BinaryDocValuesField;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.facet.FacetTestCase;
+import org.apache.lucene.facet.encoding.DGapIntEncoder;
+import org.apache.lucene.facet.encoding.IntEncoder;
+import org.apache.lucene.facet.encoding.SortingIntEncoder;
+import org.apache.lucene.facet.encoding.UniqueValuesIntEncoder;
+import org.apache.lucene.facet.encoding.VInt8IntEncoder;
 import org.apache.lucene.index.AtomicReaderContext;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.RandomIndexWriter;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.IntsRef;
-import org.apache.lucene.util.encoding.DGapIntEncoder;
-import org.apache.lucene.util.encoding.IntEncoder;
-import org.apache.lucene.util.encoding.SortingIntEncoder;
-import org.apache.lucene.util.encoding.UniqueValuesIntEncoder;
-import org.apache.lucene.util.encoding.VInt8IntEncoder;
 import org.junit.Test;
 
 /*

@@ -4,17 +4,14 @@ import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
 
-import org.apache.lucene.facet.partitions.search.IntermediateFacetResult;
-import org.apache.lucene.facet.partitions.search.PartitionsFacetResultsHandler;
-import org.apache.lucene.facet.search.params.FacetRequest;
-import org.apache.lucene.facet.search.params.FacetRequest.SortOrder;
-import org.apache.lucene.facet.search.results.FacetResult;
-import org.apache.lucene.facet.search.results.FacetResultNode;
+import org.apache.lucene.facet.collections.IntIterator;
+import org.apache.lucene.facet.collections.IntToObjectMap;
+import org.apache.lucene.facet.partitions.IntermediateFacetResult;
+import org.apache.lucene.facet.partitions.PartitionsFacetResultsHandler;
+import org.apache.lucene.facet.search.FacetRequest.SortOrder;
 import org.apache.lucene.facet.taxonomy.TaxonomyReader;
 import org.apache.lucene.facet.taxonomy.directory.ParallelTaxonomyArrays;
 import org.apache.lucene.util.PriorityQueue;
-import org.apache.lucene.util.collections.IntIterator;
-import org.apache.lucene.util.collections.IntToObjectMap;
 
 /*
  * Licensed to the Apache Software Foundation (ASF) under one or more

@@ -1,6 +1,6 @@
 package org.apache.lucene.facet.util;
 
-import org.apache.lucene.facet.index.params.FacetIndexingParams;
+import org.apache.lucene.facet.params.FacetIndexingParams;
 import org.apache.lucene.facet.taxonomy.TaxonomyReader;
 
 /*

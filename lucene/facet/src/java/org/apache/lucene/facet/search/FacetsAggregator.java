@@ -2,8 +2,8 @@ package org.apache.lucene.facet.search;
 
 import java.io.IOException;
 
-import org.apache.lucene.facet.index.params.CategoryListParams;
-import org.apache.lucene.facet.index.params.CategoryListParams.OrdinalPolicy;
+import org.apache.lucene.facet.params.CategoryListParams;
+import org.apache.lucene.facet.params.CategoryListParams.OrdinalPolicy;
 import org.apache.lucene.facet.search.FacetsCollector.MatchingDocs;
 
 /*
@@ -41,7 +41,7 @@ public interface FacetsAggregator {
    * ordinal is the requested category, and you should use the children and
    * siblings arrays to traverse its sub-tree.
    */
-  public void rollupValues(int ordinal, int[] children, int[] siblings, FacetArrays facetArrays);
+  public void rollupValues(FacetRequest fr, int ordinal, int[] children, int[] siblings, FacetArrays facetArrays);
   
   /** Returns {@code true} if this aggregator requires document scores. */
   public boolean requiresDocScores();

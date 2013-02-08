@@ -6,10 +6,10 @@ import java.util.Comparator;
 
 import org.apache.lucene.util.PriorityQueue;
 
+import org.apache.lucene.facet.search.FacetRequest;
+import org.apache.lucene.facet.search.FacetResultNode;
 import org.apache.lucene.facet.search.Heap;
-import org.apache.lucene.facet.search.params.FacetRequest;
-import org.apache.lucene.facet.search.params.FacetRequest.SortOrder;
-import org.apache.lucene.facet.search.results.FacetResultNode;
+import org.apache.lucene.facet.search.FacetRequest.SortOrder;
 
 /*
  * Licensed to the Apache Software Foundation (ASF) under one or more

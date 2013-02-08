@@ -4,11 +4,11 @@ import java.util.List;
 
 import org.apache.lucene.demo.facet.ExampleUtils;
 import org.apache.lucene.demo.facet.simple.SimpleUtils;
+import org.apache.lucene.facet.params.FacetSearchParams;
 import org.apache.lucene.facet.search.AdaptiveFacetsAccumulator;
+import org.apache.lucene.facet.search.CountFacetRequest;
+import org.apache.lucene.facet.search.FacetResult;
 import org.apache.lucene.facet.search.FacetsCollector;
-import org.apache.lucene.facet.search.params.CountFacetRequest;
-import org.apache.lucene.facet.search.params.FacetSearchParams;
-import org.apache.lucene.facet.search.results.FacetResult;
 import org.apache.lucene.facet.taxonomy.CategoryPath;
 import org.apache.lucene.facet.taxonomy.TaxonomyReader;
 import org.apache.lucene.facet.taxonomy.directory.DirectoryTaxonomyReader;

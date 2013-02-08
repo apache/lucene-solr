@@ -2,15 +2,14 @@ package org.apache.lucene.facet.search;
 
 import java.io.IOException;
 
-import org.apache.lucene.facet.index.params.CategoryListParams;
+import org.apache.lucene.facet.encoding.DGapVInt8IntDecoder;
+import org.apache.lucene.facet.encoding.DGapVInt8IntEncoder;
+import org.apache.lucene.facet.params.CategoryListParams;
+import org.apache.lucene.facet.params.FacetSearchParams;
 import org.apache.lucene.facet.search.FacetsCollector.MatchingDocs;
-import org.apache.lucene.facet.search.params.FacetRequest;
-import org.apache.lucene.facet.search.params.FacetSearchParams;
 import org.apache.lucene.facet.taxonomy.TaxonomyReader;
 import org.apache.lucene.index.BinaryDocValues;
 import org.apache.lucene.util.BytesRef;
-import org.apache.lucene.util.encoding.DGapVInt8IntDecoder;
-import org.apache.lucene.util.encoding.DGapVInt8IntEncoder;
 
 /*
  * Licensed to the Apache Software Foundation (ASF) under one or more
@@ -109,7 +108,7 @@ public final class FastCountingFacetsAggregator implements FacetsAggregator {
   }
 
   @Override
-  public final void rollupValues(int ordinal, int[] children, int[] siblings, FacetArrays facetArrays) {
+  public final void rollupValues(FacetRequest fr, int ordinal, int[] children, int[] siblings, FacetArrays facetArrays) {
     final int[] counts = facetArrays.getIntArray();
     counts[ordinal] += rollupCounts(children[ordinal], children, siblings, counts);
   }

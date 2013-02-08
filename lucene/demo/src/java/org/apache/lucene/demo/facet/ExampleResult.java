@@ -2,7 +2,7 @@ package org.apache.lucene.demo.facet;
 
 import java.util.List;
 
-import org.apache.lucene.facet.search.results.FacetResult;
+import org.apache.lucene.facet.search.FacetResult;
 
 /*
  * Licensed to the Apache Software Foundation (ASF) under one or more

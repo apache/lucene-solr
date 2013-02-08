@@ -2,7 +2,7 @@ package org.apache.lucene.facet.associations;
 
 import java.io.IOException;
 
-import org.apache.lucene.util.collections.IntToFloatMap;
+import org.apache.lucene.facet.collections.IntToFloatMap;
 
 /*
  * Licensed to the Apache Software Foundation (ASF) under one or more

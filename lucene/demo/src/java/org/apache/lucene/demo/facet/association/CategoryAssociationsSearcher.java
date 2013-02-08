@@ -7,9 +7,9 @@ import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.store.Directory;
 
 import org.apache.lucene.demo.facet.simple.SimpleSearcher;
-import org.apache.lucene.facet.search.params.associations.AssociationFloatSumFacetRequest;
-import org.apache.lucene.facet.search.params.associations.AssociationIntSumFacetRequest;
-import org.apache.lucene.facet.search.results.FacetResult;
+import org.apache.lucene.facet.associations.AssociationFloatSumFacetRequest;
+import org.apache.lucene.facet.associations.AssociationIntSumFacetRequest;
+import org.apache.lucene.facet.search.FacetResult;
 import org.apache.lucene.facet.taxonomy.CategoryPath;
 import org.apache.lucene.facet.taxonomy.TaxonomyReader;
 import org.apache.lucene.facet.taxonomy.directory.DirectoryTaxonomyReader;

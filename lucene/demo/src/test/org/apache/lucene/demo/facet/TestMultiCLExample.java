@@ -9,8 +9,8 @@ import org.apache.lucene.util.LuceneTestCase;
 import org.apache.lucene.util.LuceneTestCase.SuppressCodecs;
 import org.apache.lucene.demo.facet.ExampleResult;
 import org.apache.lucene.demo.facet.multiCL.MultiCLMain;
-import org.apache.lucene.facet.search.results.FacetResult;
-import org.apache.lucene.facet.search.results.FacetResultNode;
+import org.apache.lucene.facet.search.FacetResult;
+import org.apache.lucene.facet.search.FacetResultNode;
 
 /*
  * Licensed to the Apache Software Foundation (ASF) under one or more

@@ -10,7 +10,7 @@ import org.apache.lucene.demo.facet.ExampleUtils;
 import org.apache.lucene.demo.facet.simple.SimpleIndexer;
 import org.apache.lucene.demo.facet.simple.SimpleSearcher;
 import org.apache.lucene.facet.search.AdaptiveFacetsAccumulator;
-import org.apache.lucene.facet.search.results.FacetResult;
+import org.apache.lucene.facet.search.FacetResult;
 
 /*
  * Licensed to the Apache Software Foundation (ASF) under one or more
