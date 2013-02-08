@@ -146,6 +146,9 @@ Other Changes
 
 * SOLR-4384: Make post.jar report timing information (Upayavira via janhoy)
 
+* SOLR-4421: On CoreContainer shutdown, all SolrCores should publish their 
+  state as DOWN. (Mark Miller)
+
 ==================  4.1.0 ==================
 
 Versions of Major Components
