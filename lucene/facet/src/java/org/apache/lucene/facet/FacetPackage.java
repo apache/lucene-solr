@@ -17,8 +17,13 @@ package org.apache.lucene.facet;
  * limitations under the License.
  */
 
-/** ignore me: I workaround bugs in oracle's javadoc */
-public class Dummy {
-  // TODO: better way to workaround this?
-  private Dummy() {}
+/**
+ * Required so that userguide files are copied as part of javadocs generation.
+ * Otherwise, if the root facet package contains no classes, doc-files aren't
+ * copied.
+ */
+public final class FacetPackage {
+  
+  private FacetPackage() {}
+
 }
