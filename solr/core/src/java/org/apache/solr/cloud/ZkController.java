@@ -24,6 +24,8 @@ import java.net.InetAddress;
 import java.net.NetworkInterface;
 import java.net.URLEncoder;
 import java.net.UnknownHostException;
+import java.util.ArrayList;
+import java.util.Collection;
 import java.util.Collections;
 import java.util.Enumeration;
 import java.util.HashMap;
@@ -31,6 +33,7 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.Properties;
+import java.util.Set;
 import java.util.concurrent.Future;
 import java.util.concurrent.TimeoutException;
 import java.util.regex.Matcher;
@@ -48,6 +51,8 @@ import org.apache.solr.common.cloud.DocCollection;
 import org.apache.solr.common.cloud.DocRouter;
 import org.apache.solr.common.cloud.ImplicitDocRouter;
 import org.apache.solr.common.cloud.OnReconnect;
+import org.apache.solr.common.cloud.Replica;
+import org.apache.solr.common.cloud.Slice;
 import org.apache.solr.common.cloud.SolrZkClient;
 import org.apache.solr.common.cloud.ZkCmdExecutor;
 import org.apache.solr.common.cloud.ZkCoreNodeProps;
@@ -475,9 +480,10 @@ public final class ZkController {
   }
 
   private void init(CurrentCoreDescriptorProvider registerOnReconnect) {
-    registerAllCoresAsDown(registerOnReconnect, true);
-    
+    boolean alreadyCreatedZkReader = false;
     try {
+      alreadyCreatedZkReader = publishAndWaitForDownStates(alreadyCreatedZkReader);
+      
       // makes nodes zkNode
       cmdExecutor.ensureExists(ZkStateReader.LIVE_NODES_ZKNODE, zkClient);
       
@@ -494,7 +500,10 @@ public final class ZkController {
       ElectionContext context = new OverseerElectionContext(zkClient, overseer, getNodeName());
       overseerElector.setup(context);
       overseerElector.joinElection(context, false);
-      zkStateReader.createClusterStateWatchersAndUpdate();
+      
+      if (!alreadyCreatedZkReader) {
+        zkStateReader.createClusterStateWatchersAndUpdate();
+      }
       
     } catch (IOException e) {
       log.error("", e);
@@ -512,6 +521,78 @@ public final class ZkController {
           "", e);
     }
 
+  }
+
+  private boolean publishAndWaitForDownStates(boolean alreadyCreatedZkReader)
+      throws KeeperException, InterruptedException {
+    if (zkClient.exists(ZkStateReader.LIVE_NODES_ZKNODE, true)) {
+      alreadyCreatedZkReader = true;
+      // try and publish anyone from our node as down
+      zkStateReader.createClusterStateWatchersAndUpdate();
+      ClusterState clusterState = zkStateReader.getClusterState();
+      Set<String> collections = clusterState.getCollections();
+      List<String> updatedNodes = new ArrayList<String>();
+      for (String collectionName : collections) {
+        DocCollection collection = clusterState.getCollection(collectionName);
+        Collection<Slice> slices = collection.getSlices();
+        for (Slice slice : slices) {
+          Collection<Replica> replicas = slice.getReplicas();
+          for (Replica replica : replicas) {
+            if (replica.getNodeName().equals(getNodeName())
+                && !(replica.getStr(ZkStateReader.STATE_PROP)
+                    .equals(ZkStateReader.DOWN))) {
+              ZkNodeProps m = new ZkNodeProps(Overseer.QUEUE_OPERATION,
+                  "state", ZkStateReader.STATE_PROP, ZkStateReader.DOWN,
+                  ZkStateReader.BASE_URL_PROP, getBaseUrl(),
+                  ZkStateReader.CORE_NAME_PROP, replica.getStr(ZkStateReader.CORE_NAME_PROP),
+                  ZkStateReader.ROLES_PROP,
+                  replica.getStr(ZkStateReader.ROLES_PROP),
+                  ZkStateReader.NODE_NAME_PROP, getNodeName(),
+                  ZkStateReader.SHARD_ID_PROP,
+                  replica.getStr(ZkStateReader.SHARD_ID_PROP),
+                  ZkStateReader.COLLECTION_PROP,
+                  replica.getStr(ZkStateReader.COLLECTION_PROP));
+              updatedNodes.add(replica.getStr(ZkStateReader.CORE_NAME_PROP));
+              overseerJobQueue.offer(ZkStateReader.toJSON(m));
+            }
+          }
+        }
+      }
+      
+      // now wait till the updates are in our state
+      long now = System.currentTimeMillis();
+      long timeout = now + 1000 * 300;
+      boolean foundStates = false;
+      while (System.currentTimeMillis() < timeout) {
+        clusterState = zkStateReader.getClusterState();
+        collections = clusterState.getCollections();
+        for (String collectionName : collections) {
+          DocCollection collection = clusterState
+              .getCollection(collectionName);
+          Collection<Slice> slices = collection.getSlices();
+          for (Slice slice : slices) {
+            Collection<Replica> replicas = slice.getReplicas();
+            for (Replica replica : replicas) {
+              if (replica.getStr(ZkStateReader.STATE_PROP).equals(
+                  ZkStateReader.DOWN)) {
+                updatedNodes.remove(replica
+                    .getStr(ZkStateReader.CORE_NAME_PROP));
+                
+              }
+            }
+          }
+        }
+        
+        if (updatedNodes.size() == 0) {
+          foundStates = true;
+          break;
+        }
+      }
+      if (!foundStates) {
+        log.warn("Timed out waiting to see all nodes published as DOWN in our cluster state.");
+      }
+    }
+    return alreadyCreatedZkReader;
   }
 
   /**
@@ -903,7 +984,7 @@ public final class ZkController {
         ZkStateReader.NODE_NAME_PROP, getNodeName(),
         ZkStateReader.SHARD_ID_PROP, cd.getCloudDescriptor().getShardId(),
         ZkStateReader.COLLECTION_PROP, cd.getCloudDescriptor()
-            .getCollectionName(), ZkStateReader.STATE_PROP, state,
+            .getCollectionName(),
         ZkStateReader.NUM_SHARDS_PROP, numShards != null ? numShards.toString()
             : null);
     cd.getCloudDescriptor().lastPublished = state;

@@ -110,6 +110,9 @@ Bug Fixes
 
 * SOLR-4400: Deadlock can occur in a rare race between committing and
   closing a SolrIndexWriter. (Erick Erickson, Mark Miller)
+  
+* SOLR-3655: A restarted node can briefly appear live and active before it really
+  is in some cases. (Mark Miller)
 
 Optimizations
 ----------------------

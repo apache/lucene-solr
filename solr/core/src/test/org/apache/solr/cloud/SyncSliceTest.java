@@ -19,6 +19,7 @@ package org.apache.solr.cloud;
 
 import java.io.IOException;
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
@@ -31,6 +32,11 @@ import org.apache.solr.client.solrj.impl.HttpSolrServer;
 import org.apache.solr.client.solrj.request.QueryRequest;
 import org.apache.solr.client.solrj.request.UpdateRequest;
 import org.apache.solr.common.SolrInputDocument;
+import org.apache.solr.common.cloud.ClusterState;
+import org.apache.solr.common.cloud.DocCollection;
+import org.apache.solr.common.cloud.Replica;
+import org.apache.solr.common.cloud.Slice;
+import org.apache.solr.common.cloud.ZkStateReader;
 import org.apache.solr.common.params.CollectionParams.CollectionAction;
 import org.apache.solr.common.params.ModifiableSolrParams;
 import org.junit.After;
@@ -180,16 +186,7 @@ public class SyncSliceTest extends AbstractFullDistribZkTestBase {
     // bring back dead node
     ChaosMonkey.start(deadJetty.jetty); // he is not the leader anymore
     
-    // give a moment to be sure it has started recovering
-    Thread.sleep(2000);
-    
-    waitForThingsToLevelOut(15);
-    waitForRecoveriesToFinish(false);
-    
-    Thread.sleep(3000);
-    
-    waitForThingsToLevelOut(15);
-    waitForRecoveriesToFinish(false);
+    waitTillRecovered();
     
     skipServers = getRandomOtherJetty(leaderJetty, null);
     skipServers.addAll( getRandomOtherJetty(leaderJetty, null));
@@ -239,6 +236,32 @@ public class SyncSliceTest extends AbstractFullDistribZkTestBase {
 
     checkShardConsistency(true, true);
     
+  }
+
+  private void waitTillRecovered() throws Exception {
+    for (int i = 0; i < 30; i++) { 
+      Thread.sleep(1000);
+      ZkStateReader zkStateReader = cloudClient.getZkStateReader();
+      zkStateReader.updateClusterState(true);
+      ClusterState clusterState = zkStateReader.getClusterState();
+      DocCollection collection1 = clusterState.getCollection("collection1");
+      Slice slice = collection1.getSlice("shard1");
+      Collection<Replica> replicas = slice.getReplicas();
+      boolean allActive = true;
+      for (Replica replica : replicas) {
+        if (!clusterState.liveNodesContain(replica.getNodeName())
+            || !replica.get(ZkStateReader.STATE_PROP).equals(
+                ZkStateReader.ACTIVE)) {
+          allActive = false;
+          break;
+        }
+      }
+      if (allActive) {
+        return;
+      }
+    }
+    printLayout();
+    fail("timeout waiting to see recovered node");
   }
 
   private String waitTillInconsistent() throws Exception, InterruptedException {
