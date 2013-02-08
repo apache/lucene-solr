@@ -18,6 +18,8 @@ package org.apache.solr.update;
  */
 
 import java.io.IOException;
+import java.util.concurrent.locks.Lock;
+import java.util.concurrent.locks.ReentrantLock;
 
 import org.apache.lucene.index.IndexWriter;
 import org.apache.lucene.store.AlreadyClosedException;
@@ -52,6 +54,8 @@ public final class DefaultSolrCoreState extends SolrCoreState implements Recover
   private boolean pauseWriter;
   private boolean writerFree = true;
   
+  protected final ReentrantLock commitLock = new ReentrantLock();
+
   public DefaultSolrCoreState(DirectoryFactory directoryFactory) {
     this.directoryFactory = directoryFactory;
   }
@@ -135,13 +139,26 @@ public final class DefaultSolrCoreState extends SolrCoreState implements Recover
       pauseWriter = true;
       // then lets wait until its out of use
       log.info("Waiting until IndexWriter is unused... core=" + coreName);
-      while (!writerFree) {
-        try {
-          writerPauseLock.wait(100);
-        } catch (InterruptedException e) {}
+      
+      boolean yieldedCommitLock = false;
+      try {
+        if (commitLock.isHeldByCurrentThread()) {
+          yieldedCommitLock = true;
+          commitLock.unlock();
+        }
         
-        if (closed) {
-          throw new RuntimeException("SolrCoreState already closed");
+        while (!writerFree) {
+          try {
+            writerPauseLock.wait(100);
+          } catch (InterruptedException e) {}
+          
+          if (closed) {
+            throw new RuntimeException("SolrCoreState already closed");
+          }
+        }
+      } finally {
+        if (yieldedCommitLock) {
+          commitLock.lock();
         }
       }
 
@@ -270,6 +287,11 @@ public final class DefaultSolrCoreState extends SolrCoreState implements Recover
     closed = true;
     cancelRecovery();
     closeIndexWriter(closer);
+  }
+  
+  @Override
+  public Lock getCommitLock() {
+    return commitLock;
   }
   
 }

@@ -18,6 +18,7 @@ package org.apache.solr.update;
  */
 
 import java.io.IOException;
+import java.util.concurrent.locks.Lock;
 
 import org.apache.lucene.index.IndexWriter;
 import org.apache.solr.core.CoreContainer;
@@ -36,6 +37,8 @@ public abstract class SolrCoreState {
   public Object getUpdateLock() {
     return deleteLock;
   }
+  
+  public abstract Lock getCommitLock();
   
   /**
    * Force the creation of a new IndexWriter using the settings from the given
