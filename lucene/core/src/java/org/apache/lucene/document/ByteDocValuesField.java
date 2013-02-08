@@ -17,7 +17,7 @@ package org.apache.lucene.document;
  * limitations under the License.
  */
 
-import org.apache.lucene.index.DocValues;
+import org.apache.lucene.index.NumericDocValues;
 
 /**
  * <p>
@@ -32,19 +32,12 @@ import org.apache.lucene.index.DocValues;
  * If you also need to store the value, you should add a
  * separate {@link StoredField} instance.
  * 
- * @see DocValues
+ * @see NumericDocValues
+ * @deprecated use {@link NumericDocValuesField} instead.
  * */
 
-public class ByteDocValuesField extends Field {
-
-  /**
-   * Type for 8-bit byte DocValues.
-   */
-  public static final FieldType TYPE = new FieldType();
-  static {
-    TYPE.setDocValueType(DocValues.Type.FIXED_INTS_8);
-    TYPE.freeze();
-  }
+@Deprecated
+public class ByteDocValuesField extends NumericDocValuesField {
 
   /** 
    * Creates a new DocValues field with the specified 8-bit byte value 
@@ -53,7 +46,11 @@ public class ByteDocValuesField extends Field {
    * @throws IllegalArgumentException if the field name is null.
    */
   public ByteDocValuesField(String name, byte value) {
-    super(name, TYPE);
-    fieldsData = Byte.valueOf(value);
+    super(name, value);
+  }
+
+  @Override
+  public void setByteValue(byte value) {
+    setLongValue(value);
   }
 }

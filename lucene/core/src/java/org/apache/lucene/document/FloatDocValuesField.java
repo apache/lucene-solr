@@ -17,33 +17,21 @@ package org.apache.lucene.document;
  * limitations under the License.
  */
 
-import org.apache.lucene.index.DocValues;
+import org.apache.lucene.index.AtomicReader; // javadocs
+import org.apache.lucene.search.FieldCache; // javadocs
 
 /**
+ * Syntactic sugar for encoding floats as NumericDocValues
+ * via {@link Float#floatToRawIntBits(float)}.
  * <p>
- * Field that stores a per-document <code>float</code> value for scoring, 
- * sorting or value retrieval. Here's an example usage:
- * 
- * <pre class="prettyprint">
- *   document.add(new FloatDocValuesField(name, 22f));
- * </pre>
- * 
+ * Per-document floating point values can be retrieved via
+ * {@link FieldCache#getFloats(AtomicReader, String, boolean)}.
  * <p>
- * If you also need to store the value, you should add a
- * separate {@link StoredField} instance.
- * @see DocValues
- * */
-
-public class FloatDocValuesField extends Field {
-
-  /**
-   * Type for 32-bit float DocValues.
-   */
-  public static final FieldType TYPE = new FieldType();
-  static {
-    TYPE.setDocValueType(DocValues.Type.FLOAT_32);
-    TYPE.freeze();
-  }
+ * <b>NOTE</b>: In most all cases this will be rather inefficient,
+ * requiring four bytes per document. Consider encoding floating
+ * point values yourself with only as much precision as you require.
+ */
+public class FloatDocValuesField extends NumericDocValuesField {
 
   /** 
    * Creates a new DocValues field with the specified 32-bit float value 
@@ -52,7 +40,16 @@ public class FloatDocValuesField extends Field {
    * @throws IllegalArgumentException if the field name is null
    */
   public FloatDocValuesField(String name, float value) {
-    super(name, TYPE);
-    fieldsData = Float.valueOf(value);
+    super(name, Float.floatToRawIntBits(value));
+  }
+
+  @Override
+  public void setFloatValue(float value) {
+    super.setLongValue(Float.floatToRawIntBits(value));
+  }
+  
+  @Override
+  public void setLongValue(long value) {
+    throw new IllegalArgumentException("cannot change value type from Float to Long");
   }
 }

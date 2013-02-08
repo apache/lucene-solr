@@ -298,7 +298,7 @@ public class TestPostingsOffsets extends LuceneTestCase {
       DocsEnum docs = null;
       DocsAndPositionsEnum docsAndPositions = null;
       DocsAndPositionsEnum docsAndPositionsAndOffsets = null;
-      final int docIDToID[] = FieldCache.DEFAULT.getInts(sub, "id", false);
+      final FieldCache.Ints docIDToID = FieldCache.DEFAULT.getInts(sub, "id", false);
       for(String term : terms) {
         //System.out.println("  term=" + term);
         if (termsEnum.seekExact(new BytesRef(term), random().nextBoolean())) {
@@ -307,8 +307,8 @@ public class TestPostingsOffsets extends LuceneTestCase {
           int doc;
           //System.out.println("    doc/freq");
           while((doc = docs.nextDoc()) != DocIdSetIterator.NO_MORE_DOCS) {
-            final List<Token> expected = actualTokens.get(term).get(docIDToID[doc]);
-            //System.out.println("      doc=" + docIDToID[doc] + " docID=" + doc + " " + expected.size() + " freq");
+            final List<Token> expected = actualTokens.get(term).get(docIDToID.get(doc));
+            //System.out.println("      doc=" + docIDToID.get(doc) + " docID=" + doc + " " + expected.size() + " freq");
             assertNotNull(expected);
             assertEquals(expected.size(), docs.freq());
           }
@@ -318,8 +318,8 @@ public class TestPostingsOffsets extends LuceneTestCase {
           assertNotNull(docsAndPositions);
           //System.out.println("    doc/freq/pos");
           while((doc = docsAndPositions.nextDoc()) != DocIdSetIterator.NO_MORE_DOCS) {
-            final List<Token> expected = actualTokens.get(term).get(docIDToID[doc]);
-            //System.out.println("      doc=" + docIDToID[doc] + " " + expected.size() + " freq");
+            final List<Token> expected = actualTokens.get(term).get(docIDToID.get(doc));
+            //System.out.println("      doc=" + docIDToID.get(doc) + " " + expected.size() + " freq");
             assertNotNull(expected);
             assertEquals(expected.size(), docsAndPositions.freq());
             for(Token token : expected) {
@@ -333,8 +333,8 @@ public class TestPostingsOffsets extends LuceneTestCase {
           assertNotNull(docsAndPositionsAndOffsets);
           //System.out.println("    doc/freq/pos/offs");
           while((doc = docsAndPositionsAndOffsets.nextDoc()) != DocIdSetIterator.NO_MORE_DOCS) {
-            final List<Token> expected = actualTokens.get(term).get(docIDToID[doc]);
-            //System.out.println("      doc=" + docIDToID[doc] + " " + expected.size() + " freq");
+            final List<Token> expected = actualTokens.get(term).get(docIDToID.get(doc));
+            //System.out.println("      doc=" + docIDToID.get(doc) + " " + expected.size() + " freq");
             assertNotNull(expected);
             assertEquals(expected.size(), docsAndPositionsAndOffsets.freq());
             for(Token token : expected) {

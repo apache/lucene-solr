@@ -17,13 +17,19 @@ package org.apache.lucene.codecs.appending;
  * limitations under the License.
  */
 
+import org.apache.lucene.codecs.FilterCodec;
 import org.apache.lucene.codecs.PostingsFormat;
+import org.apache.lucene.codecs.lucene40.Lucene40RWCodec;
 
 /**
  * Read-write version of AppendingCodec for testing
  */
-public class AppendingRWCodec extends AppendingCodec {
+public class AppendingRWCodec extends FilterCodec {
 
+  public AppendingRWCodec() {
+    super("Appending", new Lucene40RWCodec());
+  }
+  
   private final PostingsFormat rw = new AppendingRWPostingsFormat();
 
   @Override

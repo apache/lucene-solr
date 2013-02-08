@@ -39,7 +39,6 @@ import org.apache.lucene.index.IndexWriterConfig.OpenMode;
 import org.apache.lucene.search.DocIdSetIterator;
 import org.apache.lucene.search.FieldCache;
 import org.apache.lucene.store.Directory;
-import org.apache.lucene.store.MockDirectoryWrapper;
 import org.apache.lucene.store.NoSuchDirectoryException;
 import org.apache.lucene.util.Bits;
 import org.apache.lucene.util.BytesRef;
@@ -368,57 +367,57 @@ void assertTermDocsCount(String msg,
 
   
   public void testBinaryFields() throws IOException {
-      Directory dir = newDirectory();
-      byte[] bin = new byte[]{0, 1, 2, 3, 4, 5, 6, 7, 8, 9};
+    Directory dir = newDirectory();
+    byte[] bin = new byte[]{0, 1, 2, 3, 4, 5, 6, 7, 8, 9};
       
-      IndexWriter writer = new IndexWriter(dir, newIndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer(random())).setMergePolicy(newLogMergePolicy()));
+    IndexWriter writer = new IndexWriter(dir, newIndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer(random())).setMergePolicy(newLogMergePolicy()));
       
-      for (int i = 0; i < 10; i++) {
-        addDoc(writer, "document number " + (i + 1));
-        addDocumentWithFields(writer);
-        addDocumentWithDifferentFields(writer);
-        addDocumentWithTermVectorFields(writer);
-      }
-      writer.close();
-      writer = new IndexWriter(dir, newIndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer(random())).setOpenMode(OpenMode.APPEND).setMergePolicy(newLogMergePolicy()));
-      Document doc = new Document();
-      doc.add(new StoredField("bin1", bin));
-      doc.add(new TextField("junk", "junk text", Field.Store.NO));
-      writer.addDocument(doc);
-      writer.close();
-      DirectoryReader reader = DirectoryReader.open(dir);
-      Document doc2 = reader.document(reader.maxDoc() - 1);
-      IndexableField[] fields = doc2.getFields("bin1");
-      assertNotNull(fields);
-      assertEquals(1, fields.length);
-      IndexableField b1 = fields[0];
-      assertTrue(b1.binaryValue() != null);
-      BytesRef bytesRef = b1.binaryValue();
-      assertEquals(bin.length, bytesRef.length);
-      for (int i = 0; i < bin.length; i++) {
-        assertEquals(bin[i], bytesRef.bytes[i + bytesRef.offset]);
-      }
-      reader.close();
-      // force merge
+    for (int i = 0; i < 10; i++) {
+      addDoc(writer, "document number " + (i + 1));
+      addDocumentWithFields(writer);
+      addDocumentWithDifferentFields(writer);
+      addDocumentWithTermVectorFields(writer);
+    }
+    writer.close();
+    writer = new IndexWriter(dir, newIndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer(random())).setOpenMode(OpenMode.APPEND).setMergePolicy(newLogMergePolicy()));
+    Document doc = new Document();
+    doc.add(new StoredField("bin1", bin));
+    doc.add(new TextField("junk", "junk text", Field.Store.NO));
+    writer.addDocument(doc);
+    writer.close();
+    DirectoryReader reader = DirectoryReader.open(dir);
+    Document doc2 = reader.document(reader.maxDoc() - 1);
+    IndexableField[] fields = doc2.getFields("bin1");
+    assertNotNull(fields);
+    assertEquals(1, fields.length);
+    IndexableField b1 = fields[0];
+    assertTrue(b1.binaryValue() != null);
+    BytesRef bytesRef = b1.binaryValue();
+    assertEquals(bin.length, bytesRef.length);
+    for (int i = 0; i < bin.length; i++) {
+      assertEquals(bin[i], bytesRef.bytes[i + bytesRef.offset]);
+    }
+    reader.close();
+    // force merge
 
 
-      writer = new IndexWriter(dir, newIndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer(random())).setOpenMode(OpenMode.APPEND).setMergePolicy(newLogMergePolicy()));
-      writer.forceMerge(1);
-      writer.close();
-      reader = DirectoryReader.open(dir);
-      doc2 = reader.document(reader.maxDoc() - 1);
-      fields = doc2.getFields("bin1");
-      assertNotNull(fields);
-      assertEquals(1, fields.length);
-      b1 = fields[0];
-      assertTrue(b1.binaryValue() != null);
-      bytesRef = b1.binaryValue();
-      assertEquals(bin.length, bytesRef.length);
-      for (int i = 0; i < bin.length; i++) {
-        assertEquals(bin[i], bytesRef.bytes[i + bytesRef.offset]);
-      }
-      reader.close();
-      dir.close();
+    writer = new IndexWriter(dir, newIndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer(random())).setOpenMode(OpenMode.APPEND).setMergePolicy(newLogMergePolicy()));
+    writer.forceMerge(1);
+    writer.close();
+    reader = DirectoryReader.open(dir);
+    doc2 = reader.document(reader.maxDoc() - 1);
+    fields = doc2.getFields("bin1");
+    assertNotNull(fields);
+    assertEquals(1, fields.length);
+    b1 = fields[0];
+    assertTrue(b1.binaryValue() != null);
+    bytesRef = b1.binaryValue();
+    assertEquals(bin.length, bytesRef.length);
+    for (int i = 0; i < bin.length; i++) {
+      assertEquals(bin[i], bytesRef.bytes[i + bytesRef.offset]);
+    }
+    reader.close();
+    dir.close();
   }
 
   /* ??? public void testOpenEmptyDirectory() throws IOException{
@@ -551,7 +550,7 @@ public void testFilesOpenClose() throws IOException {
     assertEquals("IndexReaders have different values for maxDoc.", index1.maxDoc(), index2.maxDoc());
     assertEquals("Only one IndexReader has deletions.", index1.hasDeletions(), index2.hasDeletions());
     assertEquals("Single segment test differs.", index1.leaves().size() == 1, index2.leaves().size() == 1);
-    
+
     // check field names
     FieldInfos fieldInfos1 = MultiFields.getMergedFieldInfos(index1);
     FieldInfos fieldInfos2 = MultiFields.getMergedFieldInfos(index2);
@@ -566,21 +565,16 @@ public void testFilesOpenClose() throws IOException {
     // check norms
     for(FieldInfo fieldInfo : fieldInfos1) {
       String curField = fieldInfo.name;
-      DocValues norms1 = MultiDocValues.getNormDocValues(index1, curField);
-      DocValues norms2 = MultiDocValues.getNormDocValues(index2, curField);
-      if (norms1 != null && norms2 != null)
-      {
+      NumericDocValues norms1 = MultiDocValues.getNormValues(index1, curField);
+      NumericDocValues norms2 = MultiDocValues.getNormValues(index2, curField);
+      if (norms1 != null && norms2 != null) {
         // todo: generalize this (like TestDuelingCodecs assert)
-        byte[] b1 = (byte[]) norms1.getSource().getArray();
-        byte[] b2 = (byte[]) norms2.getSource().getArray();
-        assertEquals(b1.length, b2.length);
-        for (int i = 0; i < b1.length; i++) {
-          assertEquals("Norm different for doc " + i + " and field '" + curField + "'.", b1[i], b2[i]);
+        for (int i = 0; i < index1.maxDoc(); i++) {
+          assertEquals("Norm different for doc " + i + " and field '" + curField + "'.", norms1.get(i), norms2.get(i));
         }
-      }
-      else
-      {
-        assertSame(norms1, norms2);
+      } else {
+        assertNull(norms1);
+        assertNull(norms2);
       }
     }
     
@@ -776,9 +770,8 @@ public void testFilesOpenClose() throws IOException {
     // Open reader1
     DirectoryReader r = DirectoryReader.open(dir);
     AtomicReader r1 = getOnlySegmentReader(r);
-    final int[] ints = FieldCache.DEFAULT.getInts(r1, "number", false);
-    assertEquals(1, ints.length);
-    assertEquals(17, ints[0]);
+    final FieldCache.Ints ints = FieldCache.DEFAULT.getInts(r1, "number", false);
+    assertEquals(17, ints.get(0));
   
     // Add new segment
     writer.addDocument(doc);
@@ -789,7 +782,7 @@ public void testFilesOpenClose() throws IOException {
     assertNotNull(r2);
     r.close();
     AtomicReader sub0 = r2.leaves().get(0).reader();
-    final int[] ints2 = FieldCache.DEFAULT.getInts(sub0, "number", false);
+    final FieldCache.Ints ints2 = FieldCache.DEFAULT.getInts(sub0, "number", false);
     r2.close();
     assertTrue(ints == ints2);
   

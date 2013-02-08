@@ -23,22 +23,23 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
+import org.apache.lucene.index.SortedDocValues;
 import org.apache.lucene.search.FieldCache;
 import org.apache.lucene.util.BytesRef;
 import org.apache.solr.common.SolrException;
+import org.apache.solr.common.params.ShardParams;
 import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.common.params.StatsParams;
-import org.apache.solr.common.params.ShardParams;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.common.util.SimpleOrderedMap;
 import org.apache.solr.request.SolrQueryRequest;
+import org.apache.solr.request.UnInvertedField;
 import org.apache.solr.schema.FieldType;
 import org.apache.solr.schema.SchemaField;
 import org.apache.solr.schema.TrieField;
 import org.apache.solr.search.DocIterator;
 import org.apache.solr.search.DocSet;
 import org.apache.solr.search.SolrIndexSearcher;
-import org.apache.solr.request.UnInvertedField;
 
 /**
  * Stats component calculates simple statistics on numeric field values
@@ -240,7 +241,7 @@ class SimpleStats {
   public NamedList<?> getFieldCacheStats(String fieldName, String[] facet ) {
     SchemaField sf = searcher.getSchema().getField(fieldName);
     
-    FieldCache.DocTermsIndex si;
+    SortedDocValues si;
     try {
       si = FieldCache.DEFAULT.getTermsIndex(searcher.getAtomicReader(), fieldName);
     } 
@@ -248,12 +249,12 @@ class SimpleStats {
       throw new RuntimeException( "failed to open field cache for: "+fieldName, e );
     }
     StatsValues allstats = StatsValuesFactory.createStatsValues(sf);
-    final int nTerms = si.numOrd();
+    final int nTerms = si.getValueCount();
     if ( nTerms <= 0 || docs.size() <= 0 ) return allstats.getStatsValues();
 
     // don't worry about faceting if no documents match...
     List<FieldFacetStats> facetStats = new ArrayList<FieldFacetStats>();
-    FieldCache.DocTermsIndex facetTermsIndex;
+    SortedDocValues facetTermsIndex;
     for( String facetField : facet ) {
       SchemaField fsf = searcher.getSchema().getField(facetField);
 
@@ -261,7 +262,7 @@ class SimpleStats {
         throw new SolrException(SolrException.ErrorCode.BAD_REQUEST,
           "Stats can only facet on single-valued fields, not: " + facetField );
       }
-
+      
       try {
         facetTermsIndex = FieldCache.DEFAULT.getTermsIndex(searcher.getAtomicReader(), facetField);
       }
@@ -276,11 +277,20 @@ class SimpleStats {
     DocIterator iter = docs.iterator();
     while (iter.hasNext()) {
       int docID = iter.nextDoc();
-      BytesRef raw = si.lookup(si.getOrd(docID), tempBR);
-      if( raw.length > 0 ) {
-        allstats.accumulate(raw);
-      } else {
+      int docOrd = si.getOrd(docID);
+      BytesRef raw;
+      if (docOrd == -1) {
         allstats.missing();
+        tempBR.length = 0;
+        raw = tempBR;
+      } else {
+        raw = tempBR;
+        si.lookupOrd(docOrd, tempBR);
+        if( tempBR.length > 0 ) {
+          allstats.accumulate(tempBR);
+        } else {
+          allstats.missing();
+        }
       }
 
       // now update the facets

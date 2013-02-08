@@ -289,6 +289,9 @@ public final class IndexWriterConfig extends LiveIndexWriterConfig implements Cl
    * Only takes effect when IndexWriter is first created.
    */
   public IndexWriterConfig setCodec(Codec codec) {
+    if (codec == null) {
+      throw new NullPointerException();
+    }
     this.codec = codec;
     return this;
   }

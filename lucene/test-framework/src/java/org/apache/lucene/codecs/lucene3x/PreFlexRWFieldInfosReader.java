@@ -20,7 +20,7 @@ import java.util.Set;
 
 import org.apache.lucene.codecs.FieldInfosReader;
 import org.apache.lucene.index.CorruptIndexException;
-import org.apache.lucene.index.DocValues.Type;
+import org.apache.lucene.index.FieldInfo.DocValuesType;
 import org.apache.lucene.index.FieldInfo;
 import org.apache.lucene.index.FieldInfos;
 import org.apache.lucene.index.IndexFileNames;
@@ -87,10 +87,10 @@ class PreFlexRWFieldInfosReader extends FieldInfosReader {
           storePayloads = false;
         }
         
-        Type normType = isIndexed && !omitNorms ? Type.FIXED_INTS_8 : null;
+        DocValuesType normType = isIndexed && !omitNorms ? DocValuesType.NUMERIC : null;
         if (format == PreFlexRWFieldInfosWriter.FORMAT_PREFLEX_RW && normType != null) {
           // RW can have norms but doesn't write them
-          normType = input.readByte() != 0 ? Type.FIXED_INTS_8 : null;
+          normType = input.readByte() != 0 ? DocValuesType.NUMERIC : null;
         }
         
         infos[i] = new FieldInfo(name, isIndexed, fieldNumber, storeTermVector, 

@@ -48,11 +48,12 @@ import org.junit.BeforeClass;
 
 public class TestFieldsReader extends LuceneTestCase {
   private static Directory dir;
-  private static Document testDoc = new Document();
+  private static Document testDoc;
   private static FieldInfos.Builder fieldInfos = null;
 
   @BeforeClass
   public static void beforeClass() throws Exception {
+    testDoc = new Document();
     fieldInfos = new FieldInfos.Builder();
     DocHelper.setupDoc(testDoc);
     for (IndexableField field : testDoc) {
@@ -291,12 +292,12 @@ public class TestFieldsReader extends LuceneTestCase {
 
     for(AtomicReaderContext ctx : r.leaves()) {
       final AtomicReader sub = ctx.reader();
-      final int[] ids = FieldCache.DEFAULT.getInts(sub, "id", false);
+      final FieldCache.Ints ids = FieldCache.DEFAULT.getInts(sub, "id", false);
       for(int docID=0;docID<sub.numDocs();docID++) {
         final Document doc = sub.document(docID);
         final Field f = (Field) doc.getField("nf");
         assertTrue("got f=" + f, f instanceof StoredField);
-        assertEquals(answers[ids[docID]], f.numericValue());
+        assertEquals(answers[ids.get(docID)], f.numericValue());
       }
     }
     r.close();

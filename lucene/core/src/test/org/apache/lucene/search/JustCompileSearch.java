@@ -20,7 +20,6 @@ package org.apache.lucene.search;
 import java.io.IOException;
 
 import org.apache.lucene.index.AtomicReaderContext;
-import org.apache.lucene.index.Norm;
 import org.apache.lucene.index.Terms;
 import org.apache.lucene.index.TermsEnum;
 import org.apache.lucene.search.similarities.Similarity;
@@ -267,7 +266,7 @@ final class JustCompileSearch {
     }
 
     @Override
-    public void computeNorm(FieldInvertState state, Norm norm) {
+    public long computeNorm(FieldInvertState state) {
       throw new UnsupportedOperationException(UNSUPPORTED_MSG);
     }
   }

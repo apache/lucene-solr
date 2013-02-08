@@ -21,7 +21,6 @@ import java.io.IOException;
 
 import org.apache.lucene.index.AtomicReaderContext;
 import org.apache.lucene.index.FieldInvertState;
-import org.apache.lucene.index.Norm;
 import org.apache.lucene.search.CollectionStatistics;
 import org.apache.lucene.search.TermStatistics;
 
@@ -42,8 +41,8 @@ public abstract class PerFieldSimilarityWrapper extends Similarity {
   public PerFieldSimilarityWrapper() {}
 
   @Override
-  public final void computeNorm(FieldInvertState state, Norm norm) {
-    get(state.getName()).computeNorm(state, norm);
+  public final long computeNorm(FieldInvertState state) {
+    return get(state.getName()).computeNorm(state);
   }
 
   @Override

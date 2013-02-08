@@ -225,7 +225,7 @@ public class TestTermsEnum extends LuceneTestCase {
     w.close();
 
     // NOTE: intentional insanity!!
-    final int[] docIDToID = FieldCache.DEFAULT.getInts(SlowCompositeReaderWrapper.wrap(r), "id", false);
+    final FieldCache.Ints docIDToID = FieldCache.DEFAULT.getInts(SlowCompositeReaderWrapper.wrap(r), "id", false);
 
     for(int iter=0;iter<10*RANDOM_MULTIPLIER;iter++) {
 
@@ -335,7 +335,7 @@ public class TestTermsEnum extends LuceneTestCase {
           docsEnum = _TestUtil.docs(random(), te, null, docsEnum, DocsEnum.FLAG_NONE);
           final int docID = docsEnum.nextDoc();
           assertTrue(docID != DocIdSetIterator.NO_MORE_DOCS);
-          assertEquals(docIDToID[docID], termToID.get(expected).intValue());
+          assertEquals(docIDToID.get(docID), termToID.get(expected).intValue());
           do {
             loc++;
           } while (loc < termsArray.length && !acceptTermsSet.contains(termsArray[loc]));

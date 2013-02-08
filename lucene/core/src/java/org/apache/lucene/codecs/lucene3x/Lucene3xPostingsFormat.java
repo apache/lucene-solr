@@ -59,6 +59,6 @@ class Lucene3xPostingsFormat extends PostingsFormat {
 
   @Override
   public FieldsProducer fieldsProducer(SegmentReadState state) throws IOException {
-    return new Lucene3xFields(state.dir, state.fieldInfos, state.segmentInfo, state.context, state.termsIndexDivisor);
+    return new Lucene3xFields(state.directory, state.fieldInfos, state.segmentInfo, state.context, state.termsIndexDivisor);
   }
 }

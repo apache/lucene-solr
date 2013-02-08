@@ -17,16 +17,18 @@ package org.apache.lucene.search.grouping.term;
  * limitations under the License.
  */
 
+import java.io.IOException;
+import java.util.ArrayList;
+import java.util.List;
+
 import org.apache.lucene.index.AtomicReaderContext;
 import org.apache.lucene.index.DocTermOrds;
+import org.apache.lucene.index.SortedDocValues;
+import org.apache.lucene.index.SortedDocValuesTermsEnum;
 import org.apache.lucene.index.TermsEnum;
 import org.apache.lucene.search.FieldCache;
 import org.apache.lucene.search.grouping.AbstractGroupFacetCollector;
 import org.apache.lucene.util.*;
-
-import java.io.IOException;
-import java.util.ArrayList;
-import java.util.List;
 
 /**
  * An implementation of {@link AbstractGroupFacetCollector} that computes grouped facets based on the indexed terms
@@ -38,9 +40,8 @@ public abstract class TermGroupFacetCollector extends AbstractGroupFacetCollecto
 
   final List<GroupedFacetHit> groupedFacetHits;
   final SentinelIntSet segmentGroupedFacetHits;
-  final BytesRef spare = new BytesRef();
 
-  FieldCache.DocTermsIndex groupFieldTermsIndex;
+  SortedDocValues groupFieldTermsIndex;
 
   /**
    * Factory method for creating the right implementation based on the fact whether the facet field contains
@@ -70,13 +71,13 @@ public abstract class TermGroupFacetCollector extends AbstractGroupFacetCollecto
   TermGroupFacetCollector(String groupField, String facetField, BytesRef facetPrefix, int initialSize) {
     super(groupField, facetField, facetPrefix);
     groupedFacetHits = new ArrayList<GroupedFacetHit>(initialSize);
-    segmentGroupedFacetHits = new SentinelIntSet(initialSize, -1);
+    segmentGroupedFacetHits = new SentinelIntSet(initialSize, Integer.MIN_VALUE);
   }
 
   // Implementation for single valued facet fields.
   static class SV extends TermGroupFacetCollector {
 
-    private FieldCache.DocTermsIndex facetFieldTermsIndex;
+    private SortedDocValues facetFieldTermsIndex;
 
     SV(String groupField, String facetField, BytesRef facetPrefix, int initialSize) {
       super(groupField, facetField, facetPrefix, initialSize);
@@ -90,21 +91,33 @@ public abstract class TermGroupFacetCollector extends AbstractGroupFacetCollecto
       }
 
       int groupOrd = groupFieldTermsIndex.getOrd(doc);
-      int segmentGroupedFacetsIndex = (groupOrd * facetFieldTermsIndex.numOrd()) + facetOrd;
+      int segmentGroupedFacetsIndex = groupOrd * (facetFieldTermsIndex.getValueCount()+1) + facetOrd;
       if (segmentGroupedFacetHits.exists(segmentGroupedFacetsIndex)) {
         return;
       }
 
       segmentTotalCount++;
-      segmentFacetCounts[facetOrd]++;
+      segmentFacetCounts[facetOrd+1]++;
 
       segmentGroupedFacetHits.put(segmentGroupedFacetsIndex);
-      groupedFacetHits.add(
-          new GroupedFacetHit(
-              groupOrd == 0 ? null : groupFieldTermsIndex.lookup(groupOrd, new BytesRef()),
-              facetOrd == 0 ? null : facetFieldTermsIndex.lookup(facetOrd, new BytesRef())
-          )
-      );
+
+      BytesRef groupKey;
+      if (groupOrd == -1) {
+        groupKey = null;
+      } else {
+        groupKey = new BytesRef();
+        groupFieldTermsIndex.lookupOrd(groupOrd, groupKey);
+      }
+
+      BytesRef facetKey;
+      if (facetOrd == -1) {
+        facetKey = null;
+      } else {
+        facetKey = new BytesRef();
+        facetFieldTermsIndex.lookupOrd(facetOrd, facetKey);
+      }
+
+      groupedFacetHits.add(new GroupedFacetHit(groupKey, facetKey));
     }
 
     @Override
@@ -115,44 +128,47 @@ public abstract class TermGroupFacetCollector extends AbstractGroupFacetCollecto
 
       groupFieldTermsIndex = FieldCache.DEFAULT.getTermsIndex(context.reader(), groupField);
       facetFieldTermsIndex = FieldCache.DEFAULT.getTermsIndex(context.reader(), facetField);
-      segmentFacetCounts = new int[facetFieldTermsIndex.numOrd()];
+
+      // 1+ to allow for the -1 "not set":
+      segmentFacetCounts = new int[facetFieldTermsIndex.getValueCount()+1];
       segmentTotalCount = 0;
 
       segmentGroupedFacetHits.clear();
       for (GroupedFacetHit groupedFacetHit : groupedFacetHits) {
-        int facetOrd = facetFieldTermsIndex.binarySearchLookup(groupedFacetHit.facetValue, spare);
-        if (facetOrd < 0) {
+        int facetOrd = groupedFacetHit.facetValue == null ? -1 : facetFieldTermsIndex.lookupTerm(groupedFacetHit.facetValue);
+        if (groupedFacetHit.facetValue != null && facetOrd < 0) {
           continue;
         }
 
-        int groupOrd = groupFieldTermsIndex.binarySearchLookup(groupedFacetHit.groupValue, spare);
-        if (groupOrd < 0) {
+        int groupOrd = groupedFacetHit.groupValue == null ? -1 : groupFieldTermsIndex.lookupTerm(groupedFacetHit.groupValue);
+        if (groupedFacetHit.groupValue != null && groupOrd < 0) {
           continue;
         }
 
-        int segmentGroupedFacetsIndex = (groupOrd * facetFieldTermsIndex.numOrd()) + facetOrd;
+        int segmentGroupedFacetsIndex = groupOrd * (facetFieldTermsIndex.getValueCount()+1) + facetOrd;
         segmentGroupedFacetHits.put(segmentGroupedFacetsIndex);
       }
 
       if (facetPrefix != null) {
-        startFacetOrd = facetFieldTermsIndex.binarySearchLookup(facetPrefix, spare);
+        startFacetOrd = facetFieldTermsIndex.lookupTerm(facetPrefix);
         if (startFacetOrd < 0) {
           // Points to the ord one higher than facetPrefix
           startFacetOrd = -startFacetOrd - 1;
         }
         BytesRef facetEndPrefix = BytesRef.deepCopyOf(facetPrefix);
         facetEndPrefix.append(UnicodeUtil.BIG_TERM);
-        endFacetOrd = facetFieldTermsIndex.binarySearchLookup(facetEndPrefix, spare);
+        endFacetOrd = facetFieldTermsIndex.lookupTerm(facetEndPrefix);
+        assert endFacetOrd < 0;
         endFacetOrd = -endFacetOrd - 1; // Points to the ord one higher than facetEndPrefix
       } else {
-        startFacetOrd = 0;
-        endFacetOrd = facetFieldTermsIndex.numOrd();
+        startFacetOrd = -1;
+        endFacetOrd = facetFieldTermsIndex.getValueCount();
       }
     }
 
     @Override
     protected SegmentResult createSegmentResult() throws IOException {
-      return new SegmentResult(segmentFacetCounts, segmentTotalCount, facetFieldTermsIndex.getTermsEnum(), startFacetOrd, endFacetOrd);
+      return new SegmentResult(segmentFacetCounts, segmentTotalCount, new SortedDocValuesTermsEnum(facetFieldTermsIndex), startFacetOrd, endFacetOrd);
     }
 
     private static class SegmentResult extends AbstractGroupFacetCollector.SegmentResult {
@@ -160,11 +176,12 @@ public abstract class TermGroupFacetCollector extends AbstractGroupFacetCollecto
       final TermsEnum tenum;
 
       SegmentResult(int[] counts, int total, TermsEnum tenum, int startFacetOrd, int endFacetOrd) throws IOException {
-        super(counts, total - counts[0], counts[0], endFacetOrd);
+        super(counts, total - counts[0], counts[0], endFacetOrd+1);
         this.tenum = tenum;
-        this.mergePos = startFacetOrd == 0 ? 1 : startFacetOrd;
+        this.mergePos = startFacetOrd == -1 ? 1 : startFacetOrd+1;
         if (mergePos < maxTermPos) {
-          tenum.seekExact(mergePos);
+          assert tenum != null;
+          tenum.seekExact(startFacetOrd == -1 ? 0 : startFacetOrd);
           mergeTerm = tenum.term();
         }
       }
@@ -173,9 +190,7 @@ public abstract class TermGroupFacetCollector extends AbstractGroupFacetCollecto
       protected void nextTerm() throws IOException {
         mergeTerm = tenum.next();
       }
-
     }
-
   }
 
   // Implementation for multi valued facet fields.
@@ -202,9 +217,14 @@ public abstract class TermGroupFacetCollector extends AbstractGroupFacetCollecto
         segmentFacetCounts[facetFieldDocTermOrds.numTerms()]++;
 
         segmentGroupedFacetHits.put(segmentGroupedFacetsIndex);
-        groupedFacetHits.add(
-            new GroupedFacetHit(groupOrd == 0 ? null : groupFieldTermsIndex.lookup(groupOrd, new BytesRef()), null)
-        );
+        BytesRef groupKey;
+        if (groupOrd == -1) {
+          groupKey = null;
+        } else {
+          groupKey = new BytesRef();
+          groupFieldTermsIndex.lookupOrd(groupOrd, groupKey);
+        }
+        groupedFacetHits.add(new GroupedFacetHit(groupKey, null));
         return;
       }
 
@@ -228,7 +248,7 @@ public abstract class TermGroupFacetCollector extends AbstractGroupFacetCollecto
             continue;
           }
 
-          int segmentGroupedFacetsIndex = (groupOrd * (facetFieldDocTermOrds.numTerms() + 1)) + facetOrd;
+          int segmentGroupedFacetsIndex = groupOrd * (facetFieldDocTermOrds.numTerms() + 1) + facetOrd;
           if (segmentGroupedFacetHits.exists(segmentGroupedFacetsIndex)) {
             continue;
           }
@@ -237,9 +257,17 @@ public abstract class TermGroupFacetCollector extends AbstractGroupFacetCollecto
           segmentFacetCounts[facetOrd]++;
 
           segmentGroupedFacetHits.put(segmentGroupedFacetsIndex);
+
+          BytesRef groupKey;
+          if (groupOrd == -1) {
+            groupKey = null;
+          } else {
+            groupKey = new BytesRef();
+            groupFieldTermsIndex.lookupOrd(groupOrd, groupKey);
+          }
+
           groupedFacetHits.add(
-              new GroupedFacetHit(
-                  groupOrd == 0 ? null : groupFieldTermsIndex.lookup(groupOrd, new BytesRef()),
+              new GroupedFacetHit(groupKey,
                   facetOrd == facetFieldDocTermOrds.numTerms() ? null : BytesRef.deepCopyOf(facetFieldDocTermOrds.lookupTerm(facetOrdTermsEnum, facetOrd))
               )
           );
@@ -263,8 +291,8 @@ public abstract class TermGroupFacetCollector extends AbstractGroupFacetCollecto
 
       segmentGroupedFacetHits.clear();
       for (GroupedFacetHit groupedFacetHit : groupedFacetHits) {
-        int groupOrd = groupFieldTermsIndex.binarySearchLookup(groupedFacetHit.groupValue, spare);
-        if (groupOrd < 0) {
+        int groupOrd = groupedFacetHit.groupValue == null ? -1 : groupFieldTermsIndex.lookupTerm(groupedFacetHit.groupValue);
+        if (groupedFacetHit.groupValue != null && groupOrd < 0) {
           continue;
         }
 
@@ -279,7 +307,7 @@ public abstract class TermGroupFacetCollector extends AbstractGroupFacetCollecto
         }
 
         // (facetFieldDocTermOrds.numTerms() + 1) for all possible facet values and docs not containing facet field
-        int segmentGroupedFacetsIndex = (groupOrd * (facetFieldDocTermOrds.numTerms() + 1)) + facetOrd;
+        int segmentGroupedFacetsIndex = groupOrd * (facetFieldDocTermOrds.numTerms() + 1) + facetOrd;
         segmentGroupedFacetHits.put(segmentGroupedFacetsIndex);
       }
 
@@ -337,10 +365,8 @@ public abstract class TermGroupFacetCollector extends AbstractGroupFacetCollecto
       protected void nextTerm() throws IOException {
         mergeTerm = tenum.next();
       }
-
     }
   }
-
 }
 
 class GroupedFacetHit {

@@ -25,18 +25,12 @@ import java.util.Random;
 import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.analysis.MockAnalyzer;
 import org.apache.lucene.codecs.Codec;
-import org.apache.lucene.document.ByteDocValuesField; 
-import org.apache.lucene.document.DerefBytesDocValuesField; 
+import org.apache.lucene.document.BinaryDocValuesField;
 import org.apache.lucene.document.Document;
-import org.apache.lucene.document.DoubleDocValuesField; 
 import org.apache.lucene.document.Field;
-import org.apache.lucene.document.FloatDocValuesField; 
-import org.apache.lucene.document.IntDocValuesField; 
-import org.apache.lucene.document.LongDocValuesField; 
-import org.apache.lucene.document.PackedLongDocValuesField; 
-import org.apache.lucene.document.ShortDocValuesField; 
-import org.apache.lucene.document.SortedBytesDocValuesField; 
-import org.apache.lucene.document.StraightBytesDocValuesField; 
+import org.apache.lucene.document.NumericDocValuesField; 
+import org.apache.lucene.document.SortedDocValuesField; 
+import org.apache.lucene.index.FieldInfo.DocValuesType;
 import org.apache.lucene.index.IndexWriter; // javadoc
 import org.apache.lucene.search.Query;
 import org.apache.lucene.store.Directory;
@@ -59,9 +53,6 @@ public class RandomIndexWriter implements Closeable {
   int flushAt;
   private double flushAtFactor = 1.0;
   private boolean getReaderCalled;
-  private final int fixedBytesLength;
-  private final long docValuesFieldPrefix;
-  private volatile boolean doDocValues;
   private final Codec codec; // sugar
 
   // Randomly calls Thread.yield so we mixup thread scheduling
@@ -109,48 +100,11 @@ public class RandomIndexWriter implements Closeable {
       System.out.println("RIW dir=" + dir + " config=" + w.getConfig());
       System.out.println("codec default=" + codec.getName());
     }
-    /* TODO: find some way to make this random...
-     * This must be fixed across all fixed bytes 
-     * fields in one index. so if you open another writer
-     * this might change if I use r.nextInt(x)
-     * maybe we can peek at the existing files here? 
-     */
-    fixedBytesLength = 17; 
-
-    // NOTE: this means up to 13 * 5 unique fields (we have
-    // 13 different DV types):
-    docValuesFieldPrefix = r.nextInt(5);
-    switchDoDocValues();
 
     // Make sure we sometimes test indices that don't get
     // any forced merges:
     doRandomForceMerge = r.nextBoolean();
   } 
-  
-  private boolean addDocValuesFields = true;
-  
-  /**
-   * set to false if you don't want RandomIndexWriter
-   * adding docvalues fields.
-   */
-  public void setAddDocValuesFields(boolean v) {
-    addDocValuesFields = v;
-    switchDoDocValues();
-  }
-
-  private void switchDoDocValues() {
-    if (addDocValuesFields == false) {
-      doDocValues = false;
-      return;
-    }
-    // randomly enable / disable docValues 
-    doDocValues = LuceneTestCase.rarely(r);
-    if (LuceneTestCase.VERBOSE) {
-      if (doDocValues) {
-        System.out.println("NOTE: RIW: turning on random DocValues fields");
-      }
-    }
-  }
   
   /**
    * Adds a Document.
@@ -161,9 +115,6 @@ public class RandomIndexWriter implements Closeable {
   }
 
   public <T extends IndexableField> void addDocument(final Iterable<T> doc, Analyzer a) throws IOException {
-    if (doDocValues && doc instanceof Document) {
-      randomPerDocFieldValues((Document) doc);
-    }
     if (r.nextInt(5) == 3) {
       // TODO: maybe, we should simply buffer up added docs
       // (but we need to clone them), and only when
@@ -204,75 +155,6 @@ public class RandomIndexWriter implements Closeable {
     maybeCommit();
   }
 
-  private BytesRef getFixedRandomBytes() {
-    final String randomUnicodeString = _TestUtil.randomFixedByteLengthUnicodeString(r, fixedBytesLength);
-    BytesRef fixedRef = new BytesRef(randomUnicodeString);
-    if (fixedRef.length > fixedBytesLength) {
-      fixedRef = new BytesRef(fixedRef.bytes, 0, fixedBytesLength);
-    } else {
-      fixedRef.grow(fixedBytesLength);
-      fixedRef.length = fixedBytesLength;
-    }
-    return fixedRef;
-  }
-  
-  private void randomPerDocFieldValues(Document doc) {
-    
-    DocValues.Type[] values = DocValues.Type.values();
-    DocValues.Type type = values[r.nextInt(values.length)];
-    String name = "random_" + type.name() + "" + docValuesFieldPrefix;
-    if ("Lucene3x".equals(codec.getName()) || doc.getField(name) != null) {
-      return;
-    }
-    final Field f;
-    switch (type) {
-    case BYTES_FIXED_DEREF:
-      f = new DerefBytesDocValuesField(name, getFixedRandomBytes(), true);
-      break;
-    case BYTES_VAR_DEREF:
-      f = new DerefBytesDocValuesField(name, new BytesRef(_TestUtil.randomUnicodeString(r, 20)), false);
-      break;
-    case BYTES_FIXED_STRAIGHT:
-      f = new StraightBytesDocValuesField(name, getFixedRandomBytes(), true);
-      break;
-    case BYTES_VAR_STRAIGHT:
-      f = new StraightBytesDocValuesField(name, new BytesRef(_TestUtil.randomUnicodeString(r, 20)), false);
-      break;
-    case BYTES_FIXED_SORTED:
-      f = new SortedBytesDocValuesField(name, getFixedRandomBytes(), true);
-      break;
-    case BYTES_VAR_SORTED:
-      f = new SortedBytesDocValuesField(name, new BytesRef(_TestUtil.randomUnicodeString(r, 20)), false);
-      break;
-    case FLOAT_32:
-      f = new FloatDocValuesField(name, r.nextFloat());
-      break;
-    case FLOAT_64:
-      f = new DoubleDocValuesField(name, r.nextDouble());
-      break;
-    case VAR_INTS:
-      f = new PackedLongDocValuesField(name, r.nextLong());
-      break;
-    case FIXED_INTS_16:
-      // TODO: we should test negatives too?
-      f = new ShortDocValuesField(name, (short) r.nextInt(Short.MAX_VALUE));
-      break;
-    case FIXED_INTS_32:
-      f = new IntDocValuesField(name, r.nextInt());
-      break;
-    case FIXED_INTS_64:
-      f = new LongDocValuesField(name, r.nextLong());
-      break;
-    case FIXED_INTS_8:  
-      // TODO: we should test negatives too?
-      f = new ByteDocValuesField(name, (byte) r.nextInt(128));
-      break;
-    default:
-      throw new IllegalArgumentException("no such type: " + type);
-    }
-    doc.add(f);
-  }
-
   private void maybeCommit() throws IOException {
     if (docCount++ == flushAt) {
       if (LuceneTestCase.VERBOSE) {
@@ -284,7 +166,6 @@ public class RandomIndexWriter implements Closeable {
         // gradually but exponentially increase time b/w flushes
         flushAtFactor *= 1.05;
       }
-      switchDoDocValues();
     }
   }
   
@@ -303,9 +184,6 @@ public class RandomIndexWriter implements Closeable {
    * @see IndexWriter#updateDocument(Term, Iterable)
    */
   public <T extends IndexableField> void updateDocument(Term t, final Iterable<T> doc) throws IOException {
-    if (doDocValues) {
-      randomPerDocFieldValues((Document) doc);
-    }
     if (r.nextInt(5) == 3) {
       w.updateDocuments(t, new Iterable<Iterable<T>>() {
 
@@ -359,7 +237,6 @@ public class RandomIndexWriter implements Closeable {
   
   public void commit() throws IOException {
     w.commit();
-    switchDoDocValues();
   }
   
   public int numDocs() {
@@ -416,7 +293,6 @@ public class RandomIndexWriter implements Closeable {
         assert !doRandomForceMergeAssert || w.getSegmentCount() <= limit: "limit=" + limit + " actual=" + w.getSegmentCount();
       }
     }
-    switchDoDocValues();
   }
 
   public DirectoryReader getReader(boolean applyDeletions) throws IOException {
@@ -440,7 +316,6 @@ public class RandomIndexWriter implements Closeable {
         System.out.println("RIW.getReader: open new reader");
       }
       w.commit();
-      switchDoDocValues();
       if (r.nextBoolean()) {
         return DirectoryReader.open(w.getDirectory(), _TestUtil.nextInt(r, 1, 10));
       } else {

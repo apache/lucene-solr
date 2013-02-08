@@ -83,13 +83,13 @@ public final class MockSepPostingsFormat extends PostingsFormat {
   @Override
   public FieldsProducer fieldsProducer(SegmentReadState state) throws IOException {
 
-    PostingsReaderBase postingsReader = new SepPostingsReader(state.dir, state.fieldInfos, state.segmentInfo,
+    PostingsReaderBase postingsReader = new SepPostingsReader(state.directory, state.fieldInfos, state.segmentInfo,
         state.context, new MockSingleIntFactory(), state.segmentSuffix);
 
     TermsIndexReaderBase indexReader;
     boolean success = false;
     try {
-      indexReader = new FixedGapTermsIndexReader(state.dir,
+      indexReader = new FixedGapTermsIndexReader(state.directory,
                                                        state.fieldInfos,
                                                        state.segmentInfo.name,
                                                        state.termsIndexDivisor,
@@ -105,7 +105,7 @@ public final class MockSepPostingsFormat extends PostingsFormat {
     success = false;
     try {
       FieldsProducer ret = new BlockTermsReader(indexReader,
-                                                state.dir,
+                                                state.directory,
                                                 state.fieldInfos,
                                                 state.segmentInfo,
                                                 postingsReader,

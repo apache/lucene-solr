@@ -29,7 +29,6 @@ import org.apache.lucene.document.FieldType.NumericType;
 import org.apache.lucene.index.IndexWriter; // javadocs
 import org.apache.lucene.index.IndexableField;
 import org.apache.lucene.index.IndexableFieldType;
-import org.apache.lucene.index.Norm; // javadocs
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.index.FieldInvertState; // javadocs
 
@@ -37,13 +36,8 @@ import org.apache.lucene.index.FieldInvertState; // javadocs
  * Expert: directly create a field for a document.  Most
  * users should use one of the sugar subclasses: {@link
  * IntField}, {@link LongField}, {@link FloatField}, {@link
- * DoubleField}, {@link ByteDocValuesField}, {@link
- * ShortDocValuesField}, {@link IntDocValuesField}, {@link
- * LongDocValuesField}, {@link PackedLongDocValuesField},
- * {@link FloatDocValuesField}, {@link
- * DoubleDocValuesField}, {@link SortedBytesDocValuesField},
- * {@link DerefBytesDocValuesField}, {@link
- * StraightBytesDocValuesField}, {@link
+ * DoubleField}, {@link BinaryDocValuesField}, {@link
+ * NumericDocValuesField}, {@link SortedDocValuesField}, {@link
  * StringField}, {@link TextField}, {@link StoredField}.
  *
  * <p/> A field is a section of a Document. Each field has three

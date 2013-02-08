@@ -17,19 +17,20 @@
 
 package org.apache.lucene.queries.function.valuesource;
 
+import java.io.IOException;
+import java.util.Map;
+
 import org.apache.lucene.index.AtomicReader;
 import org.apache.lucene.index.AtomicReaderContext;
 import org.apache.lucene.index.CompositeReader;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.ReaderUtil;
 import org.apache.lucene.index.SlowCompositeReaderWrapper;
+import org.apache.lucene.index.SortedDocValues;
 import org.apache.lucene.queries.function.FunctionValues;
 import org.apache.lucene.queries.function.ValueSource;
 import org.apache.lucene.queries.function.docvalues.IntDocValues;
 import org.apache.lucene.search.FieldCache;
-
-import java.io.IOException;
-import java.util.Map;
 
 /**
  * Obtains the ordinal of the field value from the default Lucene {@link org.apache.lucene.search.FieldCache} using getTermsIndex()
@@ -73,13 +74,13 @@ public class ReverseOrdFieldSource extends ValueSource {
         : (AtomicReader) topReader;
     final int off = readerContext.docBase;
 
-    final FieldCache.DocTermsIndex sindex = FieldCache.DEFAULT.getTermsIndex(r, field);
-    final int end = sindex.numOrd();
+    final SortedDocValues sindex = FieldCache.DEFAULT.getTermsIndex(r, field);
+    final int end = sindex.getValueCount();
 
     return new IntDocValues(this) {
      @Override
       public int intVal(int doc) {
-        return (end - sindex.getOrd(doc+off));
+        return (end - sindex.getOrd(doc+off) - 1);
       }
     };
   }

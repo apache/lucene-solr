@@ -44,12 +44,12 @@ class AppendingPostingsFormat extends PostingsFormat {
 
   @Override
   public FieldsProducer fieldsProducer(SegmentReadState state) throws IOException {
-    PostingsReaderBase postings = new Lucene40PostingsReader(state.dir, state.fieldInfos, state.segmentInfo, state.context, state.segmentSuffix);
+    PostingsReaderBase postings = new Lucene40PostingsReader(state.directory, state.fieldInfos, state.segmentInfo, state.context, state.segmentSuffix);
     
     boolean success = false;
     try {
       FieldsProducer ret = new AppendingTermsReader(
-                                                    state.dir,
+                                                    state.directory,
                                                     state.fieldInfos,
                                                     state.segmentInfo,
                                                     postings,

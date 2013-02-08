@@ -18,6 +18,7 @@ package org.apache.lucene.index;
  */
 
 import org.apache.lucene.analysis.Analyzer; // javadocs
+import org.apache.lucene.index.FieldInfo.DocValuesType;
 import org.apache.lucene.index.FieldInfo.IndexOptions;
 
 /** 
@@ -92,8 +93,8 @@ public interface IndexableFieldType {
   public IndexOptions indexOptions();
 
   /** 
-   * DocValues {@link DocValues.Type}: if non-null then the field's value
+   * DocValues {@link DocValuesType}: if non-null then the field's value
    * will be indexed into docValues.
    */
-  public DocValues.Type docValueType();
+  public DocValuesType docValueType();  
 }

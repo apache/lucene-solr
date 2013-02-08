@@ -52,13 +52,10 @@ public final class BytesRef implements Comparable<BytesRef>,Cloneable {
    * bytes should not be null.
    */
   public BytesRef(byte[] bytes, int offset, int length) {
-    assert bytes != null;
-    assert offset >= 0;
-    assert length >= 0;
-    assert bytes.length >= offset + length;
     this.bytes = bytes;
     this.offset = offset;
     this.length = length;
+    assert isValid();
   }
 
   /** This instance will directly reference bytes w/o making a copy.
@@ -339,5 +336,34 @@ public final class BytesRef implements Comparable<BytesRef>,Cloneable {
     BytesRef copy = new BytesRef();
     copy.copyBytes(other);
     return copy;
+  }
+  
+  /** 
+   * Performs internal consistency checks.
+   * Always returns true (or throws IllegalStateException) 
+   */
+  public boolean isValid() {
+    if (bytes == null) {
+      throw new IllegalStateException("bytes is null");
+    }
+    if (length < 0) {
+      throw new IllegalStateException("length is negative: " + length);
+    }
+    if (length > bytes.length) {
+      throw new IllegalStateException("length is out of bounds: " + length + ",bytes.length=" + bytes.length);
+    }
+    if (offset < 0) {
+      throw new IllegalStateException("offset is negative: " + offset);
+    }
+    if (offset > bytes.length) {
+      throw new IllegalStateException("offset out of bounds: " + offset + ",bytes.length=" + bytes.length);
+    }
+    if (offset + length < 0) {
+      throw new IllegalStateException("offset+length is negative: offset=" + offset + ",length=" + length);
+    }
+    if (offset + length > bytes.length) {
+      throw new IllegalStateException("offset+length out of bounds: offset=" + offset + ",length=" + length + ",bytes.length=" + bytes.length);
+    }
+    return true;
   }
 }

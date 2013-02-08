@@ -30,24 +30,18 @@ import java.util.Map;
 import java.util.Random;
 
 import org.apache.lucene.analysis.MockAnalyzer;
-import org.apache.lucene.document.ByteDocValuesField;
-import org.apache.lucene.document.DerefBytesDocValuesField;
+import org.apache.lucene.document.BinaryDocValuesField;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.DoubleDocValuesField;
 import org.apache.lucene.document.Field;
 import org.apache.lucene.document.FieldType;
 import org.apache.lucene.document.FloatDocValuesField;
-import org.apache.lucene.document.IntDocValuesField;
 import org.apache.lucene.document.IntField;
-import org.apache.lucene.document.LongDocValuesField;
 import org.apache.lucene.document.LongField;
-import org.apache.lucene.document.PackedLongDocValuesField;
-import org.apache.lucene.document.ShortDocValuesField;
-import org.apache.lucene.document.SortedBytesDocValuesField;
-import org.apache.lucene.document.StraightBytesDocValuesField;
+import org.apache.lucene.document.NumericDocValuesField;
+import org.apache.lucene.document.SortedDocValuesField;
 import org.apache.lucene.document.StringField;
 import org.apache.lucene.document.TextField;
-import org.apache.lucene.index.DocValues.Source;
 import org.apache.lucene.index.FieldInfo.IndexOptions;
 import org.apache.lucene.index.IndexWriterConfig.OpenMode;
 import org.apache.lucene.search.DocIdSetIterator;
@@ -408,23 +402,23 @@ public class TestBackwardsCompatibility3x extends LuceneTestCase {
     
     if (is40Index) {
       // check docvalues fields
-      Source dvByte = MultiDocValues.getDocValues(reader, "dvByte").getSource();
-      Source dvBytesDerefFixed = MultiDocValues.getDocValues(reader, "dvBytesDerefFixed").getSource();
-      Source dvBytesDerefVar = MultiDocValues.getDocValues(reader, "dvBytesDerefVar").getSource();
-      Source dvBytesSortedFixed = MultiDocValues.getDocValues(reader, "dvBytesSortedFixed").getSource();
-      Source dvBytesSortedVar = MultiDocValues.getDocValues(reader, "dvBytesSortedVar").getSource();
-      Source dvBytesStraightFixed = MultiDocValues.getDocValues(reader, "dvBytesStraightFixed").getSource();
-      Source dvBytesStraightVar = MultiDocValues.getDocValues(reader, "dvBytesStraightVar").getSource();
-      Source dvDouble = MultiDocValues.getDocValues(reader, "dvDouble").getSource();
-      Source dvFloat = MultiDocValues.getDocValues(reader, "dvFloat").getSource();
-      Source dvInt = MultiDocValues.getDocValues(reader, "dvInt").getSource();
-      Source dvLong = MultiDocValues.getDocValues(reader, "dvLong").getSource();
-      Source dvPacked = MultiDocValues.getDocValues(reader, "dvPacked").getSource();
-      Source dvShort = MultiDocValues.getDocValues(reader, "dvShort").getSource();
+      NumericDocValues dvByte = MultiDocValues.getNumericValues(reader, "dvByte");
+      BinaryDocValues dvBytesDerefFixed = MultiDocValues.getBinaryValues(reader, "dvBytesDerefFixed");
+      BinaryDocValues dvBytesDerefVar = MultiDocValues.getBinaryValues(reader, "dvBytesDerefVar");
+      SortedDocValues dvBytesSortedFixed = MultiDocValues.getSortedValues(reader, "dvBytesSortedFixed");
+      SortedDocValues dvBytesSortedVar = MultiDocValues.getSortedValues(reader, "dvBytesSortedVar");
+      BinaryDocValues dvBytesStraightFixed = MultiDocValues.getBinaryValues(reader, "dvBytesStraightFixed");
+      BinaryDocValues dvBytesStraightVar = MultiDocValues.getBinaryValues(reader, "dvBytesStraightVar");
+      NumericDocValues dvDouble = MultiDocValues.getNumericValues(reader, "dvDouble");
+      NumericDocValues dvFloat = MultiDocValues.getNumericValues(reader, "dvFloat");
+      NumericDocValues dvInt = MultiDocValues.getNumericValues(reader, "dvInt");
+      NumericDocValues dvLong = MultiDocValues.getNumericValues(reader, "dvLong");
+      NumericDocValues dvPacked = MultiDocValues.getNumericValues(reader, "dvPacked");
+      NumericDocValues dvShort = MultiDocValues.getNumericValues(reader, "dvShort");
       
       for (int i=0;i<35;i++) {
         int id = Integer.parseInt(reader.document(i).get("id"));
-        assertEquals((byte)id, dvByte.getInt(i));
+        assertEquals(id, dvByte.get(i));
         
         byte bytes[] = new byte[] {
             (byte)(id >>> 24), (byte)(id >>> 16),(byte)(id >>> 8),(byte)id
@@ -432,19 +426,25 @@ public class TestBackwardsCompatibility3x extends LuceneTestCase {
         BytesRef expectedRef = new BytesRef(bytes);
         BytesRef scratch = new BytesRef();
         
-        assertEquals(expectedRef, dvBytesDerefFixed.getBytes(i, scratch));
-        assertEquals(expectedRef, dvBytesDerefVar.getBytes(i, scratch));
-        assertEquals(expectedRef, dvBytesSortedFixed.getBytes(i, scratch));
-        assertEquals(expectedRef, dvBytesSortedVar.getBytes(i, scratch));
-        assertEquals(expectedRef, dvBytesStraightFixed.getBytes(i, scratch));
-        assertEquals(expectedRef, dvBytesStraightVar.getBytes(i, scratch));
+        dvBytesDerefFixed.get(i, scratch);
+        assertEquals(expectedRef, scratch);
+        dvBytesDerefVar.get(i, scratch);
+        assertEquals(expectedRef, scratch);
+        dvBytesSortedFixed.get(i, scratch);
+        assertEquals(expectedRef, scratch);
+        dvBytesSortedVar.get(i, scratch);
+        assertEquals(expectedRef, scratch);
+        dvBytesStraightFixed.get(i, scratch);
+        assertEquals(expectedRef, scratch);
+        dvBytesStraightVar.get(i, scratch);
+        assertEquals(expectedRef, scratch);
         
-        assertEquals((double)id, dvDouble.getFloat(i), 0D);
-        assertEquals((float)id, dvFloat.getFloat(i), 0F);
-        assertEquals(id, dvInt.getInt(i));
-        assertEquals(id, dvLong.getInt(i));
-        assertEquals(id, dvPacked.getInt(i));
-        assertEquals(id, dvShort.getInt(i));
+        assertEquals((double)id, Double.longBitsToDouble(dvDouble.get(i)), 0D);
+        assertEquals((float)id, Float.intBitsToFloat((int)dvFloat.get(i)), 0F);
+        assertEquals(id, dvInt.get(i));
+        assertEquals(id, dvLong.get(i));
+        assertEquals(id, dvPacked.get(i));
+        assertEquals(id, dvShort.get(i));
       }
     }
     
@@ -692,23 +692,23 @@ public class TestBackwardsCompatibility3x extends LuceneTestCase {
     doc.add(new IntField("trieInt", id, Field.Store.NO));
     doc.add(new LongField("trieLong", (long) id, Field.Store.NO));
     // add docvalues fields
-    doc.add(new ByteDocValuesField("dvByte", (byte) id));
+    doc.add(new NumericDocValuesField("dvByte", (byte) id));
     byte bytes[] = new byte[] {
       (byte)(id >>> 24), (byte)(id >>> 16),(byte)(id >>> 8),(byte)id
     };
     BytesRef ref = new BytesRef(bytes);
-    doc.add(new DerefBytesDocValuesField("dvBytesDerefFixed", ref, true));
-    doc.add(new DerefBytesDocValuesField("dvBytesDerefVar", ref, false));
-    doc.add(new SortedBytesDocValuesField("dvBytesSortedFixed", ref, true));
-    doc.add(new SortedBytesDocValuesField("dvBytesSortedVar", ref, false));
-    doc.add(new StraightBytesDocValuesField("dvBytesStraightFixed", ref, true));
-    doc.add(new StraightBytesDocValuesField("dvBytesStraightVar", ref, false));
+    doc.add(new BinaryDocValuesField("dvBytesDerefFixed", ref));
+    doc.add(new BinaryDocValuesField("dvBytesDerefVar", ref));
+    doc.add(new SortedDocValuesField("dvBytesSortedFixed", ref));
+    doc.add(new SortedDocValuesField("dvBytesSortedVar", ref));
+    doc.add(new BinaryDocValuesField("dvBytesStraightFixed", ref));
+    doc.add(new BinaryDocValuesField("dvBytesStraightVar", ref));
     doc.add(new DoubleDocValuesField("dvDouble", (double)id));
     doc.add(new FloatDocValuesField("dvFloat", (float)id));
-    doc.add(new IntDocValuesField("dvInt", id));
-    doc.add(new LongDocValuesField("dvLong", id));
-    doc.add(new PackedLongDocValuesField("dvPacked", id));
-    doc.add(new ShortDocValuesField("dvShort", (short)id));
+    doc.add(new NumericDocValuesField("dvInt", id));
+    doc.add(new NumericDocValuesField("dvLong", id));
+    doc.add(new NumericDocValuesField("dvPacked", id));
+    doc.add(new NumericDocValuesField("dvShort", (short)id));
     // a field with both offsets and term vectors for a cross-check
     FieldType customType3 = new FieldType(TextField.TYPE_STORED);
     customType3.setStoreTermVectors(true);
@@ -855,13 +855,16 @@ public class TestBackwardsCompatibility3x extends LuceneTestCase {
       assertEquals("wrong number of hits", 34, hits.length);
       
       // check decoding into field cache
-      int[] fci = FieldCache.DEFAULT.getInts(SlowCompositeReaderWrapper.wrap(searcher.getIndexReader()), "trieInt", false);
-      for (int val : fci) {
+      FieldCache.Ints fci = FieldCache.DEFAULT.getInts(SlowCompositeReaderWrapper.wrap(searcher.getIndexReader()), "trieInt", false);
+      int maxDoc = searcher.getIndexReader().maxDoc();
+      for(int doc=0;doc<maxDoc;doc++) {
+        int val = fci.get(doc);
         assertTrue("value in id bounds", val >= 0 && val < 35);
       }
       
-      long[] fcl = FieldCache.DEFAULT.getLongs(SlowCompositeReaderWrapper.wrap(searcher.getIndexReader()), "trieLong", false);
-      for (long val : fcl) {
+      FieldCache.Longs fcl = FieldCache.DEFAULT.getLongs(SlowCompositeReaderWrapper.wrap(searcher.getIndexReader()), "trieLong", false);
+      for(int doc=0;doc<maxDoc;doc++) {
+        long val = fcl.get(doc);
         assertTrue("value in id bounds", val >= 0L && val < 35L);
       }
       

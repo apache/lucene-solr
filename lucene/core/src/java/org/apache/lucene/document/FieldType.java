@@ -18,7 +18,7 @@ package org.apache.lucene.document;
  */
 
 import org.apache.lucene.analysis.Analyzer; // javadocs
-import org.apache.lucene.index.DocValues;
+import org.apache.lucene.index.FieldInfo.DocValuesType;
 import org.apache.lucene.index.FieldInfo.IndexOptions;
 import org.apache.lucene.index.IndexableFieldType;
 import org.apache.lucene.search.NumericRangeQuery; // javadocs
@@ -52,10 +52,10 @@ public class FieldType implements IndexableFieldType {
   private boolean storeTermVectorPayloads;
   private boolean omitNorms;
   private IndexOptions indexOptions = IndexOptions.DOCS_AND_FREQS_AND_POSITIONS;
-  private DocValues.Type docValueType;
   private NumericType numericType;
   private boolean frozen;
   private int numericPrecisionStep = NumericUtils.PRECISION_STEP_DEFAULT;
+  private DocValuesType docValueType;
 
   /**
    * Create a new mutable FieldType with all of the properties from <code>ref</code>
@@ -309,29 +309,6 @@ public class FieldType implements IndexableFieldType {
   }
 
   /**
-   * Set's the field's DocValues.Type
-   * @param type DocValues type, or null if no DocValues should be stored.
-   * @throws IllegalStateException if this FieldType is frozen against
-   *         future modifications.
-   * @see #docValueType()
-   */
-  public void setDocValueType(DocValues.Type type) {
-    checkIfFrozen();
-    docValueType = type;
-  }
-  
-  /**
-   * {@inheritDoc}
-   * <p>
-   * The default is <code>null</code> (no docValues) 
-   * @see #setDocValueType(DocValues.Type)
-   */
-  @Override
-  public DocValues.Type docValueType() {
-    return docValueType;
-  }
-
-  /**
    * Specifies the field's numeric type.
    * @param type numeric type, or null if the field has no numeric type.
    * @throws IllegalStateException if this FieldType is frozen against
@@ -431,5 +408,28 @@ public class FieldType implements IndexableFieldType {
     }
     
     return result.toString();
+  }
+  
+  /**
+   * {@inheritDoc}
+   * <p>
+   * The default is <code>null</code> (no docValues) 
+   * @see #setDocValueType(org.apache.lucene.index.FieldInfo.DocValuesType)
+   */
+  @Override
+  public DocValuesType docValueType() {
+    return docValueType;
+  }
+
+  /**
+   * Set's the field's DocValuesType
+   * @param type DocValues type, or null if no DocValues should be stored.
+   * @throws IllegalStateException if this FieldType is frozen against
+   *         future modifications.
+   * @see #docValueType()
+   */
+  public void setDocValueType(DocValuesType type) {
+    checkIfFrozen();
+    docValueType = type;
   }
 }

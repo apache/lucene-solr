@@ -3,8 +3,7 @@ package org.apache.lucene.facet.search;
 import java.io.IOException;
 
 import org.apache.lucene.index.AtomicReaderContext;
-import org.apache.lucene.index.DocValues;
-import org.apache.lucene.index.DocValues.Source;
+import org.apache.lucene.index.BinaryDocValues;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.IntsRef;
 import org.apache.lucene.util.encoding.IntDecoder;
@@ -26,35 +25,23 @@ import org.apache.lucene.util.encoding.IntDecoder;
  * limitations under the License.
  */
 
-/** A {@link CategoryListIterator} which reads the ordinals from a {@link DocValues}. */
+/** A {@link CategoryListIterator} which reads the ordinals from a {@link BinaryDocValues}. */
 public class DocValuesCategoryListIterator implements CategoryListIterator {
   
   private final IntDecoder decoder;
   private final String field;
   private final int hashCode;
-  private final boolean useDirectSource;
   private final BytesRef bytes = new BytesRef(32);
   
-  private DocValues.Source current;
+  private BinaryDocValues current;
   
   /**
-   * Constructs a new {@link DocValuesCategoryListIterator} which uses an
-   * in-memory {@link Source}.
+   * Constructs a new {@link DocValuesCategoryListIterator}.
    */
   public DocValuesCategoryListIterator(String field, IntDecoder decoder) {
-    this(field, decoder, false);
-  }
-  
-  /**
-   * Constructs a new {@link DocValuesCategoryListIterator} which uses either a
-   * {@link DocValues#getDirectSource() direct source} or
-   * {@link DocValues#getSource() in-memory} one.
-   */
-  public DocValuesCategoryListIterator(String field, IntDecoder decoder, boolean useDirectSource) {
     this.field = field;
     this.decoder = decoder;
     this.hashCode = field.hashCode();
-    this.useDirectSource = useDirectSource;
   }
   
   @Override
@@ -78,19 +65,13 @@ public class DocValuesCategoryListIterator implements CategoryListIterator {
   
   @Override
   public boolean setNextReader(AtomicReaderContext context) throws IOException {
-    DocValues dv = context.reader().docValues(field);
-    if (dv == null) {
-      current = null;
-      return false;
-    }
-    
-    current = useDirectSource ? dv.getDirectSource() : dv.getSource();
-    return true;
+    current = context.reader().getBinaryDocValues(field);
+    return current != null;
   }
   
   @Override
   public void getOrdinals(int docID, IntsRef ints) throws IOException {
-    current.getBytes(docID, bytes);
+    current.get(docID, bytes);
     ints.length = 0;
     if (bytes.length > 0) {
       decoder.decode(bytes, ints);

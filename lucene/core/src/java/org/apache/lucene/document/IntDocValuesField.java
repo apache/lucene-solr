@@ -17,7 +17,7 @@ package org.apache.lucene.document;
  * limitations under the License.
  */
 
-import org.apache.lucene.index.DocValues;
+import org.apache.lucene.index.NumericDocValues;
 
 /**
  * <p>
@@ -31,19 +31,11 @@ import org.apache.lucene.index.DocValues;
  * <p>
  * If you also need to store the value, you should add a
  * separate {@link StoredField} instance.
- * @see DocValues
+ * @see NumericDocValues
+ * @deprecated use {@link NumericDocValuesField} instead.
  * */
-
-public class IntDocValuesField extends Field {
-
-  /**
-   * Type for 32-bit integer DocValues.
-   */
-  public static final FieldType TYPE = new FieldType();
-  static {
-    TYPE.setDocValueType(DocValues.Type.FIXED_INTS_32);
-    TYPE.freeze();
-  }
+@Deprecated
+public class IntDocValuesField extends NumericDocValuesField {
 
   /** 
    * Creates a new DocValues field with the specified 32-bit integer value 
@@ -52,7 +44,11 @@ public class IntDocValuesField extends Field {
    * @throws IllegalArgumentException if the field name is null
    */
   public IntDocValuesField(String name, int value) {
-    super(name, TYPE);
-    fieldsData = Integer.valueOf(value);
+    super(name, value);
+  }
+
+  @Override
+  public void setIntValue(int value) {
+    setLongValue(value);
   }
 }

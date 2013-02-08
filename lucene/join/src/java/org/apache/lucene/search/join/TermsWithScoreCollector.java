@@ -17,7 +17,10 @@ package org.apache.lucene.search.join;
  * limitations under the License.
  */
 
+import java.io.IOException;
+
 import org.apache.lucene.index.AtomicReaderContext;
+import org.apache.lucene.index.BinaryDocValues;
 import org.apache.lucene.index.DocTermOrds;
 import org.apache.lucene.index.TermsEnum;
 import org.apache.lucene.search.Collector;
@@ -26,8 +29,6 @@ import org.apache.lucene.search.Scorer;
 import org.apache.lucene.util.ArrayUtil;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.BytesRefHash;
-
-import java.io.IOException;
 
 abstract class TermsWithScoreCollector extends Collector {
 
@@ -92,7 +93,7 @@ abstract class TermsWithScoreCollector extends Collector {
   static class SV extends TermsWithScoreCollector {
 
     final BytesRef spare = new BytesRef();
-    FieldCache.DocTerms fromDocTerms;
+    BinaryDocValues fromDocTerms;
 
     SV(String field, ScoreMode scoreMode) {
       super(field, scoreMode);
@@ -100,7 +101,8 @@ abstract class TermsWithScoreCollector extends Collector {
 
     @Override
     public void collect(int doc) throws IOException {
-      int ord = collectedTerms.add(fromDocTerms.getTerm(doc, spare));
+      fromDocTerms.get(doc, spare);
+      int ord = collectedTerms.add(spare);
       if (ord < 0) {
         ord = -ord - 1;
       } else {
@@ -141,7 +143,8 @@ abstract class TermsWithScoreCollector extends Collector {
 
       @Override
       public void collect(int doc) throws IOException {
-        int ord = collectedTerms.add(fromDocTerms.getTerm(doc, spare));
+        fromDocTerms.get(doc, spare);
+        int ord = collectedTerms.add(spare);
         if (ord < 0) {
           ord = -ord - 1;
         } else {

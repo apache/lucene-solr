@@ -17,7 +17,9 @@ package org.apache.lucene.codecs.asserting;
  * limitations under the License.
  */
 
+import org.apache.lucene.codecs.DocValuesFormat;
 import org.apache.lucene.codecs.FilterCodec;
+import org.apache.lucene.codecs.NormsFormat;
 import org.apache.lucene.codecs.PostingsFormat;
 import org.apache.lucene.codecs.StoredFieldsFormat;
 import org.apache.lucene.codecs.TermVectorsFormat;
@@ -31,6 +33,8 @@ public final class AssertingCodec extends FilterCodec {
   private final PostingsFormat postings = new AssertingPostingsFormat();
   private final TermVectorsFormat vectors = new AssertingTermVectorsFormat();
   private final StoredFieldsFormat storedFields = new AssertingStoredFieldsFormat();
+  private final DocValuesFormat docValues = new AssertingDocValuesFormat();
+  private final NormsFormat norms = new AssertingNormsFormat();
 
   public AssertingCodec() {
     super("Asserting", new Lucene42Codec());
@@ -49,5 +53,15 @@ public final class AssertingCodec extends FilterCodec {
   @Override
   public StoredFieldsFormat storedFieldsFormat() {
     return storedFields;
+  }
+
+  @Override
+  public DocValuesFormat docValuesFormat() {
+    return docValues;
+  }
+
+  @Override
+  public NormsFormat normsFormat() {
+    return norms;
   }
 }

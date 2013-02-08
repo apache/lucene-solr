@@ -638,7 +638,6 @@ public abstract class ThreadedIndexingAndSearchingTestCase extends LuceneTestCas
     int hitCount = s.search(q, null, 10, new Sort(new SortField("title", SortField.Type.STRING))).totalHits;
     if (defaultCodecSupportsDocValues()) {
       final Sort dvSort = new Sort(new SortField("title", SortField.Type.STRING));
-      dvSort.getSort()[0].setUseIndexValues(true);
       int hitCount2 = s.search(q, null, 10, dvSort).totalHits;
       assertEquals(hitCount, hitCount2);
     }

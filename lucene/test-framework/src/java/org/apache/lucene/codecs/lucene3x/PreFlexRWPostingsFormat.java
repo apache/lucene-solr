@@ -48,7 +48,7 @@ class PreFlexRWPostingsFormat extends Lucene3xPostingsFormat {
     // Whenever IW opens readers, eg for merging, we have to
     // keep terms order in UTF16:
 
-    return new Lucene3xFields(state.dir, state.fieldInfos, state.segmentInfo, state.context, state.termsIndexDivisor) {
+    return new Lucene3xFields(state.directory, state.fieldInfos, state.segmentInfo, state.context, state.termsIndexDivisor) {
       @Override
       protected boolean sortTermsByUnicode() {
         // We carefully peek into stack track above us: if

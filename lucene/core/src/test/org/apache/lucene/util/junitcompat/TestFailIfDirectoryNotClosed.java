@@ -30,7 +30,7 @@ public class TestFailIfDirectoryNotClosed extends WithNestedTests {
   }
   
   public static class Nested1 extends WithNestedTests.AbstractNestedTest {
-    public void testDummy() {
+    public void testDummy() throws Exception {
       Directory dir = newDirectory();
       System.out.println(dir.toString());
     }

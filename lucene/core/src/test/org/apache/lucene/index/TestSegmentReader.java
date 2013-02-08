@@ -29,6 +29,7 @@ import org.apache.lucene.store.IOContext;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.LuceneTestCase;
 import org.apache.lucene.util._TestUtil;
+import org.junit.Assume;
 
 public class TestSegmentReader extends LuceneTestCase {
   private Directory dir;
@@ -173,15 +174,15 @@ public class TestSegmentReader extends LuceneTestCase {
   }
 
   public static void checkNorms(AtomicReader reader) throws IOException {
-        // test omit norms
+    // test omit norms
     for (int i=0; i<DocHelper.fields.length; i++) {
       IndexableField f = DocHelper.fields[i];
       if (f.fieldType().indexed()) {
-        assertEquals(reader.normValues(f.name()) != null, !f.fieldType().omitNorms());
-        assertEquals(reader.normValues(f.name()) != null, !DocHelper.noNorms.containsKey(f.name()));
-        if (reader.normValues(f.name()) == null) {
+        assertEquals(reader.getNormValues(f.name()) != null, !f.fieldType().omitNorms());
+        assertEquals(reader.getNormValues(f.name()) != null, !DocHelper.noNorms.containsKey(f.name()));
+        if (reader.getNormValues(f.name()) == null) {
           // test for norms of null
-          DocValues norms = MultiDocValues.getNormDocValues(reader, f.name());
+          NumericDocValues norms = MultiDocValues.getNormValues(reader, f.name());
           assertNull(norms);
         }
       }

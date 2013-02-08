@@ -2,8 +2,6 @@ package org.apache.lucene.facet.associations;
 
 import java.io.IOException;
 
-import org.apache.lucene.index.DocValues;
-import org.apache.lucene.index.DocValues.Source;
 import org.apache.lucene.util.collections.IntToIntMap;
 
 /*
@@ -33,20 +31,10 @@ public class IntAssociationsIterator extends AssociationsIterator<CategoryIntAss
   private final IntToIntMap ordinalAssociations = new IntToIntMap();
 
   /**
-   * Constructs a new {@link IntAssociationsIterator} which uses an
-   * in-memory {@link DocValues#getSource() DocValues source}.
+   * Constructs a new {@link IntAssociationsIterator}.
    */
   public IntAssociationsIterator(String field, CategoryIntAssociation association) throws IOException {
-    this(field, association, false);
-  }
-
-  /**
-   * Constructs a new {@link IntAssociationsIterator} which uses a
-   * {@link DocValues} {@link Source} per {@code useDirectSource}.
-   */
-  public IntAssociationsIterator(String field, CategoryIntAssociation association, boolean useDirectSource)
-      throws IOException {
-    super(field, association, useDirectSource);
+    super(field, association);
   }
 
   @Override

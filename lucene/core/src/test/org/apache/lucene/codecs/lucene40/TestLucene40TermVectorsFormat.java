@@ -24,7 +24,7 @@ public class TestLucene40TermVectorsFormat extends BaseTermVectorsFormatTestCase
 
   @Override
   protected Codec getCodec() {
-    return new Lucene40Codec();
+    return new Lucene40RWCodec();
   }
   
 }

@@ -22,6 +22,8 @@ import java.util.Comparator;
 
 import org.apache.lucene.index.AtomicReaderContext;
 import org.apache.lucene.index.IndexReader;
+import org.apache.lucene.index.SortedDocValues;
+import org.apache.lucene.index.SortedDocValuesTermsEnum;
 import org.apache.lucene.index.Terms;
 import org.apache.lucene.index.TermsEnum;
 import org.apache.lucene.util.Bits;
@@ -88,9 +90,9 @@ public final class FieldCacheRewriteMethod extends MultiTermQuery.RewriteMethod 
      */
     @Override
     public DocIdSet getDocIdSet(AtomicReaderContext context, final Bits acceptDocs) throws IOException {
-      final FieldCache.DocTermsIndex fcsi = FieldCache.DEFAULT.getTermsIndex(context.reader(), query.field);
+      final SortedDocValues fcsi = FieldCache.DEFAULT.getTermsIndex(context.reader(), query.field);
       // Cannot use FixedBitSet because we require long index (ord):
-      final OpenBitSet termSet = new OpenBitSet(fcsi.numOrd());
+      final OpenBitSet termSet = new OpenBitSet(fcsi.getValueCount());
       TermsEnum termsEnum = query.getTermsEnum(new Terms() {
         
         @Override
@@ -100,7 +102,7 @@ public final class FieldCacheRewriteMethod extends MultiTermQuery.RewriteMethod 
         
         @Override
         public TermsEnum iterator(TermsEnum reuse) {
-          return fcsi.getTermsEnum();
+          return new SortedDocValuesTermsEnum(fcsi);
         }
 
         @Override
@@ -144,7 +146,7 @@ public final class FieldCacheRewriteMethod extends MultiTermQuery.RewriteMethod 
         // fill into a OpenBitSet
         do {
           long ord = termsEnum.ord();
-          if (ord > 0) {
+          if (ord >= 0) {
             termSet.set(ord);
           }
         } while (termsEnum.next() != null);
@@ -155,7 +157,11 @@ public final class FieldCacheRewriteMethod extends MultiTermQuery.RewriteMethod 
       return new FieldCacheDocIdSet(context.reader().maxDoc(), acceptDocs) {
         @Override
         protected final boolean matchDoc(int doc) throws ArrayIndexOutOfBoundsException {
-          return termSet.get(fcsi.getOrd(doc));
+          int ord = fcsi.getOrd(doc);
+          if (ord == -1) {
+            return false;
+          }
+          return termSet.get(ord);
         }
       };
     }

@@ -73,12 +73,11 @@ public abstract class PostingsConsumer {
 
   /** Default merge impl: append documents, mapping around
    *  deletes */
-  public TermStats merge(final MergeState mergeState, final DocsEnum postings, final FixedBitSet visitedDocs) throws IOException {
+  public TermStats merge(final MergeState mergeState, IndexOptions indexOptions, final DocsEnum postings, final FixedBitSet visitedDocs) throws IOException {
 
     int df = 0;
     long totTF = 0;
 
-    IndexOptions indexOptions = mergeState.fieldInfo.getIndexOptions();
     if (indexOptions == IndexOptions.DOCS_ONLY) {
       while(true) {
         final int doc = postings.nextDoc();

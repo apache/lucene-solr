@@ -21,10 +21,9 @@ import org.apache.lucene.analysis.MockAnalyzer;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
 import org.apache.lucene.document.FieldType;
-import org.apache.lucene.document.SortedBytesDocValuesField;
+import org.apache.lucene.document.SortedDocValuesField;
 import org.apache.lucene.document.StringField;
 import org.apache.lucene.document.TextField;
-import org.apache.lucene.index.DocValues;
 import org.apache.lucene.index.RandomIndexWriter;
 import org.apache.lucene.index.Term;
 import org.apache.lucene.queries.function.ValueSource;
@@ -177,7 +176,7 @@ public class GroupingSearchTest extends LuceneTestCase {
   private void addGroupField(Document doc, String groupField, String value, boolean canUseIDV) {
     doc.add(new TextField(groupField, value, Field.Store.YES));
     if (canUseIDV) {
-      doc.add(new SortedBytesDocValuesField(groupField, new BytesRef(value)));
+      doc.add(new SortedDocValuesField(groupField, new BytesRef(value)));
     }
   }
 
@@ -210,12 +209,7 @@ public class GroupingSearchTest extends LuceneTestCase {
       ValueSource vs = new BytesRefFieldSource(groupField);
       groupingSearch = new GroupingSearch(vs, new HashMap<Object, Object>());
     } else {
-      if (canUseIDV && random().nextBoolean()) {
-        boolean diskResident = random().nextBoolean();
-        groupingSearch = new GroupingSearch(groupField, DocValues.Type.BYTES_VAR_SORTED, diskResident);
-      } else {
-        groupingSearch = new GroupingSearch(groupField);  
-      }
+      groupingSearch = new GroupingSearch(groupField);
     }
 
     groupingSearch.setGroupSort(groupSort);

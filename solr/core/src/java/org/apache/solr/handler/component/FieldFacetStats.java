@@ -16,15 +16,16 @@ package org.apache.solr.handler.component;
  * limitations under the License.
  */
 
-import org.apache.lucene.search.FieldCache;
-import org.apache.lucene.util.BytesRef;
-import org.apache.solr.schema.FieldType;
-import org.apache.solr.schema.SchemaField;
-
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+
+import org.apache.lucene.index.SortedDocValues;
+import org.apache.lucene.search.FieldCache;
+import org.apache.lucene.util.BytesRef;
+import org.apache.solr.schema.FieldType;
+import org.apache.solr.schema.SchemaField;
 
 
 /**
@@ -39,7 +40,7 @@ import java.util.Map;
 
 public class FieldFacetStats {
   public final String name;
-  final FieldCache.DocTermsIndex si;
+  final SortedDocValues si;
   final SchemaField facet_sf;
   final SchemaField field_sf;
 
@@ -55,15 +56,15 @@ public class FieldFacetStats {
 
   private final BytesRef tempBR = new BytesRef();
 
-  public FieldFacetStats(String name, FieldCache.DocTermsIndex si, SchemaField field_sf, SchemaField facet_sf, int numStatsTerms) {
+  public FieldFacetStats(String name, SortedDocValues si, SchemaField field_sf, SchemaField facet_sf, int numStatsTerms) {
     this.name = name;
     this.si = si;
     this.field_sf = field_sf;
     this.facet_sf = facet_sf;
     this.numStatsTerms = numStatsTerms;
 
-    startTermIndex = 1;
-    endTermIndex = si.numOrd();
+    startTermIndex = 0;
+    endTermIndex = si.getValueCount();
     nTerms = endTermIndex - startTermIndex;
 
     facetStatsValues = new HashMap<String, StatsValues>();
@@ -79,10 +80,11 @@ public class FieldFacetStats {
 
   BytesRef getTermText(int docID, BytesRef ret) {
     final int ord = si.getOrd(docID);
-    if (ord == 0) {
+    if (ord == -1) {
       return null;
     } else {
-      return si.lookup(ord, ret);
+      si.lookupOrd(ord, ret);
+      return ret;
     }
   }
 
@@ -90,7 +92,14 @@ public class FieldFacetStats {
     int term = si.getOrd(docID);
     int arrIdx = term - startTermIndex;
     if (arrIdx >= 0 && arrIdx < nTerms) {
-      final BytesRef br = si.lookup(term, tempBR);
+      
+      final BytesRef br;
+      if (term == -1) {
+        br = null;
+      } else {
+        br = tempBR;
+        si.lookupOrd(term, tempBR);
+      }
       String key = (br == null)?null:facet_sf.getType().indexedToReadable(br.utf8ToString());
       StatsValues stats = facetStatsValues.get(key);
       if (stats == null) {
@@ -117,7 +126,13 @@ public class FieldFacetStats {
     int term = si.getOrd(docID);
     int arrIdx = term - startTermIndex;
     if (arrIdx >= 0 && arrIdx < nTerms) {
-      final BytesRef br = si.lookup(term, tempBR);
+      final BytesRef br;
+      if (term == -1) {
+        br = null;
+      } else {
+        br = tempBR;
+        si.lookupOrd(term, tempBR);
+      }
       String key = br == null ? null : br.utf8ToString();
       HashMap<String, Integer> statsTermCounts = facetStatsTerms.get(statsTermNum);
       Integer statsTermCount = statsTermCounts.get(key);

@@ -18,11 +18,13 @@ package org.apache.lucene.search;
 import java.io.IOException;
 import java.util.concurrent.atomic.AtomicInteger;
 
+import org.apache.lucene.analysis.MockAnalyzer;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.TextField;
 import org.apache.lucene.index.AtomicReaderContext;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.RandomIndexWriter;
+import org.apache.lucene.index.SerialMergeScheduler;
 import org.apache.lucene.index.Term;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.util.FixedBitSet;
@@ -160,7 +162,7 @@ public class TestBooleanOr extends LuceneTestCase {
 
   public void testBooleanScorerMax() throws IOException {
     Directory dir = newDirectory();
-    RandomIndexWriter riw = new RandomIndexWriter(random(), dir);
+    RandomIndexWriter riw = new RandomIndexWriter(random(), dir, newIndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer(random())));
 
     int docCount = atLeast(10000);
 

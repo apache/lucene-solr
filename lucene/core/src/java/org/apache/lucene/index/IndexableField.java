@@ -51,7 +51,7 @@ public interface IndexableField {
    * a "document boost", then you must pre-multiply it across all the
    * relevant fields yourself. 
    * <p>The boost is used to compute the norm factor for the field.  By
-   * default, in the {@link Similarity#computeNorm(FieldInvertState, Norm)} method, 
+   * default, in the {@link Similarity#computeNorm(FieldInvertState)} method, 
    * the boost value is multiplied by the length normalization factor and then
    * rounded by {@link DefaultSimilarity#encodeNormValue(float)} before it is stored in the
    * index.  One should attempt to ensure that this product does not overflow
@@ -61,7 +61,7 @@ public interface IndexableField {
    * indexed ({@link IndexableFieldType#indexed()} is false) or omits normalization values
    * ({@link IndexableFieldType#omitNorms()} returns true).
    *
-   * @see Similarity#computeNorm(FieldInvertState, Norm)
+   * @see Similarity#computeNorm(FieldInvertState)
    * @see DefaultSimilarity#encodeNormValue(float)
    */
   public float boost();

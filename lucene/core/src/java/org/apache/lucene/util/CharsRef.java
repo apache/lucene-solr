@@ -55,13 +55,10 @@ public final class CharsRef implements Comparable<CharsRef>, CharSequence, Clone
    * length
    */
   public CharsRef(char[] chars, int offset, int length) {
-    assert chars != null;
-    assert offset >= 0;
-    assert length >= 0;
-    assert chars.length >= offset + length;
     this.chars = chars;
     this.offset = offset;
     this.length = length;
+    assert isValid();
   }
 
   /**
@@ -291,5 +288,34 @@ public final class CharsRef implements Comparable<CharsRef>, CharSequence, Clone
     CharsRef clone = new CharsRef();
     clone.copyChars(other);
     return clone;
+  }
+  
+  /** 
+   * Performs internal consistency checks.
+   * Always returns true (or throws IllegalStateException) 
+   */
+  public boolean isValid() {
+    if (chars == null) {
+      throw new IllegalStateException("chars is null");
+    }
+    if (length < 0) {
+      throw new IllegalStateException("length is negative: " + length);
+    }
+    if (length > chars.length) {
+      throw new IllegalStateException("length is out of bounds: " + length + ",chars.length=" + chars.length);
+    }
+    if (offset < 0) {
+      throw new IllegalStateException("offset is negative: " + offset);
+    }
+    if (offset > chars.length) {
+      throw new IllegalStateException("offset out of bounds: " + offset + ",chars.length=" + chars.length);
+    }
+    if (offset + length < 0) {
+      throw new IllegalStateException("offset+length is negative: offset=" + offset + ",length=" + length);
+    }
+    if (offset + length > chars.length) {
+      throw new IllegalStateException("offset+length out of bounds: offset=" + offset + ",length=" + length + ",chars.length=" + chars.length);
+    }
+    return true;
   }
 }

@@ -27,8 +27,8 @@ import org.apache.lucene.index.CorruptIndexException;
 import org.apache.lucene.index.FieldInfo;
 import org.apache.lucene.index.FieldInfos;
 import org.apache.lucene.index.IndexFileNames;
+import org.apache.lucene.index.FieldInfo.DocValuesType;
 import org.apache.lucene.index.FieldInfo.IndexOptions;
-import org.apache.lucene.index.DocValues;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.IOContext;
 import org.apache.lucene.store.IndexInput;
@@ -39,8 +39,10 @@ import org.apache.lucene.util.IOUtils;
  * 
  * @lucene.experimental
  * @see Lucene40FieldInfosFormat
+ * @deprecated Only for reading old 4.0 and 4.1 segments
  */
-public class Lucene40FieldInfosReader extends FieldInfosReader {
+@Deprecated
+class Lucene40FieldInfosReader extends FieldInfosReader {
 
   /** Sole constructor. */
   public Lucene40FieldInfosReader() {
@@ -48,14 +50,14 @@ public class Lucene40FieldInfosReader extends FieldInfosReader {
 
   @Override
   public FieldInfos read(Directory directory, String segmentName, IOContext iocontext) throws IOException {
-    final String fileName = IndexFileNames.segmentFileName(segmentName, "", Lucene40FieldInfosWriter.FIELD_INFOS_EXTENSION);
+    final String fileName = IndexFileNames.segmentFileName(segmentName, "", Lucene40FieldInfosFormat.FIELD_INFOS_EXTENSION);
     IndexInput input = directory.openInput(fileName, iocontext);
     
     boolean success = false;
     try {
-      CodecUtil.checkHeader(input, Lucene40FieldInfosWriter.CODEC_NAME, 
-                                   Lucene40FieldInfosWriter.FORMAT_START, 
-                                   Lucene40FieldInfosWriter.FORMAT_CURRENT);
+      CodecUtil.checkHeader(input, Lucene40FieldInfosFormat.CODEC_NAME, 
+                                   Lucene40FieldInfosFormat.FORMAT_START, 
+                                   Lucene40FieldInfosFormat.FORMAT_CURRENT);
 
       final int size = input.readVInt(); //read in the size
       FieldInfo infos[] = new FieldInfo[size];
@@ -64,18 +66,18 @@ public class Lucene40FieldInfosReader extends FieldInfosReader {
         String name = input.readString();
         final int fieldNumber = input.readVInt();
         byte bits = input.readByte();
-        boolean isIndexed = (bits & Lucene40FieldInfosWriter.IS_INDEXED) != 0;
-        boolean storeTermVector = (bits & Lucene40FieldInfosWriter.STORE_TERMVECTOR) != 0;
-        boolean omitNorms = (bits & Lucene40FieldInfosWriter.OMIT_NORMS) != 0;
-        boolean storePayloads = (bits & Lucene40FieldInfosWriter.STORE_PAYLOADS) != 0;
+        boolean isIndexed = (bits & Lucene40FieldInfosFormat.IS_INDEXED) != 0;
+        boolean storeTermVector = (bits & Lucene40FieldInfosFormat.STORE_TERMVECTOR) != 0;
+        boolean omitNorms = (bits & Lucene40FieldInfosFormat.OMIT_NORMS) != 0;
+        boolean storePayloads = (bits & Lucene40FieldInfosFormat.STORE_PAYLOADS) != 0;
         final IndexOptions indexOptions;
         if (!isIndexed) {
           indexOptions = null;
-        } else if ((bits & Lucene40FieldInfosWriter.OMIT_TERM_FREQ_AND_POSITIONS) != 0) {
+        } else if ((bits & Lucene40FieldInfosFormat.OMIT_TERM_FREQ_AND_POSITIONS) != 0) {
           indexOptions = IndexOptions.DOCS_ONLY;
-        } else if ((bits & Lucene40FieldInfosWriter.OMIT_POSITIONS) != 0) {
+        } else if ((bits & Lucene40FieldInfosFormat.OMIT_POSITIONS) != 0) {
           indexOptions = IndexOptions.DOCS_AND_FREQS;
-        } else if ((bits & Lucene40FieldInfosWriter.STORE_OFFSETS_IN_POSTINGS) != 0) {
+        } else if ((bits & Lucene40FieldInfosFormat.STORE_OFFSETS_IN_POSTINGS) != 0) {
           indexOptions = IndexOptions.DOCS_AND_FREQS_AND_POSITIONS_AND_OFFSETS;
         } else {
           indexOptions = IndexOptions.DOCS_AND_FREQS_AND_POSITIONS;
@@ -89,11 +91,20 @@ public class Lucene40FieldInfosReader extends FieldInfosReader {
         }
         // DV Types are packed in one byte
         byte val = input.readByte();
-        final DocValues.Type docValuesType = getDocValuesType((byte) (val & 0x0F));
-        final DocValues.Type normsType = getDocValuesType((byte) ((val >>> 4) & 0x0F));
-        final Map<String,String> attributes = input.readStringStringMap();
+        final LegacyDocValuesType oldValuesType = getDocValuesType((byte) (val & 0x0F));
+        final LegacyDocValuesType oldNormsType = getDocValuesType((byte) ((val >>> 4) & 0x0F));
+        final Map<String,String> attributes = input.readStringStringMap();;
+        if (oldValuesType.mapping != null) {
+          attributes.put(LEGACY_DV_TYPE_KEY, oldValuesType.name());
+        }
+        if (oldNormsType.mapping != null) {
+          if (oldNormsType.mapping != DocValuesType.NUMERIC) {
+            throw new CorruptIndexException("invalid norm type: " + oldNormsType);
+          }
+          attributes.put(LEGACY_NORM_TYPE_KEY, oldNormsType.name());
+        }
         infos[i] = new FieldInfo(name, isIndexed, fieldNumber, storeTermVector, 
-          omitNorms, storePayloads, indexOptions, docValuesType, normsType, Collections.unmodifiableMap(attributes));
+          omitNorms, storePayloads, indexOptions, oldValuesType.mapping, oldNormsType.mapping, Collections.unmodifiableMap(attributes));
       }
 
       if (input.getFilePointer() != input.length()) {
@@ -110,39 +121,35 @@ public class Lucene40FieldInfosReader extends FieldInfosReader {
       }
     }
   }
-
-  private static DocValues.Type getDocValuesType(final byte b) {
-    switch(b) {
-      case 0:
-        return null;
-      case 1:
-        return DocValues.Type.VAR_INTS;
-      case 2:
-        return DocValues.Type.FLOAT_32;
-      case 3:
-        return DocValues.Type.FLOAT_64;
-      case 4:
-        return DocValues.Type.BYTES_FIXED_STRAIGHT;
-      case 5:
-        return DocValues.Type.BYTES_FIXED_DEREF;
-      case 6:
-        return DocValues.Type.BYTES_VAR_STRAIGHT;
-      case 7:
-        return DocValues.Type.BYTES_VAR_DEREF;
-      case 8:
-        return DocValues.Type.FIXED_INTS_16;
-      case 9:
-        return DocValues.Type.FIXED_INTS_32;
-      case 10:
-        return DocValues.Type.FIXED_INTS_64;
-      case 11:
-        return DocValues.Type.FIXED_INTS_8;
-      case 12:
-        return DocValues.Type.BYTES_FIXED_SORTED;
-      case 13:
-        return DocValues.Type.BYTES_VAR_SORTED;
-      default:
-        throw new IllegalStateException("unhandled indexValues type " + b);
+  
+  static final String LEGACY_DV_TYPE_KEY = Lucene40FieldInfosReader.class.getSimpleName() + ".dvtype";
+  static final String LEGACY_NORM_TYPE_KEY = Lucene40FieldInfosReader.class.getSimpleName() + ".normtype";
+  
+  // mapping of 4.0 types -> 4.2 types
+  static enum LegacyDocValuesType {
+    NONE(null),
+    VAR_INTS(DocValuesType.NUMERIC),
+    FLOAT_32(DocValuesType.NUMERIC),
+    FLOAT_64(DocValuesType.NUMERIC),
+    BYTES_FIXED_STRAIGHT(DocValuesType.BINARY),
+    BYTES_FIXED_DEREF(DocValuesType.BINARY),
+    BYTES_VAR_STRAIGHT(DocValuesType.BINARY),
+    BYTES_VAR_DEREF(DocValuesType.BINARY),
+    FIXED_INTS_16(DocValuesType.NUMERIC),
+    FIXED_INTS_32(DocValuesType.NUMERIC),
+    FIXED_INTS_64(DocValuesType.NUMERIC),
+    FIXED_INTS_8(DocValuesType.NUMERIC),
+    BYTES_FIXED_SORTED(DocValuesType.SORTED),
+    BYTES_VAR_SORTED(DocValuesType.SORTED);
+    
+    final DocValuesType mapping;
+    LegacyDocValuesType(DocValuesType mapping) {
+      this.mapping = mapping;
     }
+  }
+  
+  // decodes a 4.0 type
+  private static LegacyDocValuesType getDocValuesType(byte b) {
+    return LegacyDocValuesType.values()[b];
   }
 }

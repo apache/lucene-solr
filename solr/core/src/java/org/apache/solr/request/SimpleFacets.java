@@ -478,7 +478,9 @@ public class SimpleFacets {
     FieldType ft = searcher.getSchema().getFieldType(fieldName);
     NamedList<Integer> res = new NamedList<Integer>();
 
-    FieldCache.DocTermsIndex si = FieldCache.DEFAULT.getTermsIndex(searcher.getAtomicReader(), fieldName);
+    SortedDocValues si = FieldCache.DEFAULT.getTermsIndex(searcher.getAtomicReader(), fieldName);
+
+    final BytesRef br = new BytesRef();
 
     final BytesRef prefixRef;
     if (prefix == null) {
@@ -490,19 +492,17 @@ public class SimpleFacets {
       prefixRef = new BytesRef(prefix);
     }
 
-    final BytesRef br = new BytesRef();
-
     int startTermIndex, endTermIndex;
     if (prefix!=null) {
-      startTermIndex = si.binarySearchLookup(prefixRef, br);
+      startTermIndex = si.lookupTerm(prefixRef);
       if (startTermIndex<0) startTermIndex=-startTermIndex-1;
       prefixRef.append(UnicodeUtil.BIG_TERM);
-      endTermIndex = si.binarySearchLookup(prefixRef, br);
+      endTermIndex = si.lookupTerm(prefixRef);
       assert endTermIndex < 0;
       endTermIndex = -endTermIndex-1;
     } else {
-      startTermIndex=0;
-      endTermIndex=si.numOrd();
+      startTermIndex=-1;
+      endTermIndex=si.getValueCount();
     }
 
     final int nTerms=endTermIndex-startTermIndex;
@@ -516,62 +516,13 @@ public class SimpleFacets {
 
       DocIterator iter = docs.iterator();
 
-      PackedInts.Reader ordReader = si.getDocToOrd();
-      final Object arr;
-      if (ordReader.hasArray()) {
-        arr = ordReader.getArray();
-      } else {
-        arr = null;
+      while (iter.hasNext()) {
+        int term = si.getOrd(iter.nextDoc());
+        int arrIdx = term-startTermIndex;
+        if (arrIdx>=0 && arrIdx<nTerms) counts[arrIdx]++;
       }
 
-      if (arr instanceof int[]) {
-        int[] ords = (int[]) arr;
-        if (prefix==null) {
-          while (iter.hasNext()) {
-            counts[ords[iter.nextDoc()]]++;
-          }
-        } else {
-          while (iter.hasNext()) {
-            int term = ords[iter.nextDoc()];
-            int arrIdx = term-startTermIndex;
-            if (arrIdx>=0 && arrIdx<nTerms) counts[arrIdx]++;
-          }
-        }
-      } else if (arr instanceof short[]) {
-        short[] ords = (short[]) arr;
-        if (prefix==null) {
-          while (iter.hasNext()) {
-            counts[ords[iter.nextDoc()] & 0xffff]++;
-          }
-        } else {
-          while (iter.hasNext()) {
-            int term = ords[iter.nextDoc()] & 0xffff;
-            int arrIdx = term-startTermIndex;
-            if (arrIdx>=0 && arrIdx<nTerms) counts[arrIdx]++;
-          }
-        }
-      } else if (arr instanceof byte[]) {
-        byte[] ords = (byte[]) arr;
-        if (prefix==null) {
-          while (iter.hasNext()) {
-            counts[ords[iter.nextDoc()] & 0xff]++;
-          }
-        } else {
-          while (iter.hasNext()) {
-            int term = ords[iter.nextDoc()] & 0xff;
-            int arrIdx = term-startTermIndex;
-            if (arrIdx>=0 && arrIdx<nTerms) counts[arrIdx]++;
-          }
-        }
-      } else {
-        while (iter.hasNext()) {
-          int term = si.getOrd(iter.nextDoc());
-          int arrIdx = term-startTermIndex;
-          if (arrIdx>=0 && arrIdx<nTerms) counts[arrIdx]++;
-        }
-      }
-
-      if (startTermIndex == 0) {
+      if (startTermIndex == -1) {
         missingCount = counts[0];
       }
 
@@ -587,7 +538,7 @@ public class SimpleFacets {
         LongPriorityQueue queue = new LongPriorityQueue(Math.min(maxsize,1000), maxsize, Long.MIN_VALUE);
 
         int min=mincount-1;  // the smallest value in the top 'N' values
-        for (int i=(startTermIndex==0)?1:0; i<nTerms; i++) {
+        for (int i=(startTermIndex==-1)?1:0; i<nTerms; i++) {
           int c = counts[i];
           if (c>min) {
             // NOTE: we use c>min rather than c>=min as an optimization because we are going in
@@ -614,13 +565,14 @@ public class SimpleFacets {
           long pair = sorted[i];
           int c = (int)(pair >>> 32);
           int tnum = Integer.MAX_VALUE - (int)pair;
-          ft.indexedToReadable(si.lookup(startTermIndex+tnum, br), charsRef);
+          si.lookupOrd(startTermIndex+tnum, br);
+          ft.indexedToReadable(br, charsRef);
           res.add(charsRef.toString(), c);
         }
       
       } else {
         // add results in index order
-        int i=(startTermIndex==0)?1:0;
+        int i=(startTermIndex==-1)?1:0;
         if (mincount<=0) {
           // if mincount<=0, then we won't discard any terms and we know exactly
           // where to start.
@@ -632,7 +584,8 @@ public class SimpleFacets {
           int c = counts[i];
           if (c<mincount || --off>=0) continue;
           if (--lim<0) break;
-          ft.indexedToReadable(si.lookup(startTermIndex+i, br), charsRef);
+          si.lookupOrd(startTermIndex+i, br);
+          ft.indexedToReadable(br, charsRef);
           res.add(charsRef.toString(), c);
         }
       }

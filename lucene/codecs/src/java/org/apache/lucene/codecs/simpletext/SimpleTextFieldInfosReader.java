@@ -25,10 +25,10 @@ import java.util.Map;
 import org.apache.lucene.codecs.FieldInfosReader;
 import org.apache.lucene.index.CorruptIndexException;
 import org.apache.lucene.index.FieldInfo;
+import org.apache.lucene.index.FieldInfo.DocValuesType;
 import org.apache.lucene.index.FieldInfos;
 import org.apache.lucene.index.IndexFileNames;
 import org.apache.lucene.index.FieldInfo.IndexOptions;
-import org.apache.lucene.index.DocValues;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.IOContext;
 import org.apache.lucene.store.IndexInput;
@@ -97,12 +97,12 @@ public class SimpleTextFieldInfosReader extends FieldInfosReader {
         SimpleTextUtil.readLine(input, scratch);
         assert StringHelper.startsWith(scratch, NORMS_TYPE);
         String nrmType = readString(NORMS_TYPE.length, scratch);
-        final DocValues.Type normsType = docValuesType(nrmType);
+        final DocValuesType normsType = docValuesType(nrmType);
         
         SimpleTextUtil.readLine(input, scratch);
         assert StringHelper.startsWith(scratch, DOCVALUES);
         String dvType = readString(DOCVALUES.length, scratch);
-        final DocValues.Type docValuesType = docValuesType(dvType);
+        final DocValuesType docValuesType = docValuesType(dvType);
         
         SimpleTextUtil.readLine(input, scratch);
         assert StringHelper.startsWith(scratch, NUM_ATTS);
@@ -140,11 +140,11 @@ public class SimpleTextFieldInfosReader extends FieldInfosReader {
     }
   }
 
-  public DocValues.Type docValuesType(String dvType) {
+  public DocValuesType docValuesType(String dvType) {
     if ("false".equals(dvType)) {
       return null;
     } else {
-      return DocValues.Type.valueOf(dvType);
+      return DocValuesType.valueOf(dvType);
     }
   }
   

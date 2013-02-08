@@ -22,25 +22,21 @@ import java.util.HashSet;
 import java.util.Set;
 
 import org.apache.lucene.codecs.Codec;
+import org.apache.lucene.codecs.DocValuesConsumer;
 import org.apache.lucene.codecs.DocValuesFormat;
+import org.apache.lucene.codecs.DocValuesProducer;
 import org.apache.lucene.codecs.FieldInfosFormat;
 import org.apache.lucene.codecs.LiveDocsFormat;
 import org.apache.lucene.codecs.NormsFormat;
-import org.apache.lucene.codecs.PerDocConsumer;
-import org.apache.lucene.codecs.PerDocProducer;
 import org.apache.lucene.codecs.PostingsFormat;
 import org.apache.lucene.codecs.SegmentInfoFormat;
 import org.apache.lucene.codecs.StoredFieldsFormat;
 import org.apache.lucene.codecs.TermVectorsFormat;
 import org.apache.lucene.codecs.lucene40.Lucene40LiveDocsFormat;
 import org.apache.lucene.index.IndexFileNames;
-import org.apache.lucene.index.PerDocWriteState;
 import org.apache.lucene.index.SegmentInfo;
-import org.apache.lucene.index.SegmentInfoPerCommit;
 import org.apache.lucene.index.SegmentReadState;
-import org.apache.lucene.store.Directory;
-import org.apache.lucene.store.IOContext;
-import org.apache.lucene.util.MutableBits;
+import org.apache.lucene.index.SegmentWriteState;
 
 /**
  * Supports the Lucene 3.x index format (readonly)
@@ -71,15 +67,15 @@ public class Lucene3xCodec extends Codec {
   private final LiveDocsFormat liveDocsFormat = new Lucene40LiveDocsFormat();
   
   // 3.x doesn't support docvalues
-  private final DocValuesFormat docValuesFormat = new DocValuesFormat() {
+  private final DocValuesFormat docValuesFormat = new DocValuesFormat("Lucene3x") {
     @Override
-    public PerDocConsumer docsConsumer(PerDocWriteState state) throws IOException {
-      return null;
+    public DocValuesConsumer fieldsConsumer(SegmentWriteState state) throws IOException {
+      throw new UnsupportedOperationException("this codec cannot write docvalues");
     }
 
     @Override
-    public PerDocProducer docsProducer(SegmentReadState state) throws IOException {
-      return null;
+    public DocValuesProducer fieldsProducer(SegmentReadState state) throws IOException {
+      return null; // we have no docvalues, ever
     }
   };
   

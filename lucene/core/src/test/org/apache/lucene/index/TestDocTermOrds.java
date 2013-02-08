@@ -32,7 +32,6 @@ import org.apache.lucene.document.IntField;
 import org.apache.lucene.index.DocTermOrds.TermOrdsIterator;
 import org.apache.lucene.search.FieldCache;
 import org.apache.lucene.store.Directory;
-import org.apache.lucene.store.MockDirectoryWrapper;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.LuceneTestCase;
 import org.apache.lucene.util.StringHelper;
@@ -303,7 +302,7 @@ public class TestDocTermOrds extends LuceneTestCase {
                                             _TestUtil.nextInt(random(), 2, 10));
                                             
 
-    final int[] docIDToID = FieldCache.DEFAULT.getInts(r, "id", false);
+    final FieldCache.Ints docIDToID = FieldCache.DEFAULT.getInts(r, "id", false);
     /*
       for(int docID=0;docID<subR.maxDoc();docID++) {
       System.out.println("  docID=" + docID + " id=" + docIDToID[docID]);
@@ -357,10 +356,10 @@ public class TestDocTermOrds extends LuceneTestCase {
     final int[] buffer = new int[5];
     for(int docID=0;docID<r.maxDoc();docID++) {
       if (VERBOSE) {
-        System.out.println("TEST: docID=" + docID + " of " + r.maxDoc() + " (id=" + docIDToID[docID] + ")");
+        System.out.println("TEST: docID=" + docID + " of " + r.maxDoc() + " (id=" + docIDToID.get(docID) + ")");
       }
       iter = dto.lookup(docID, iter);
-      final int[] answers = idToOrds[docIDToID[docID]];
+      final int[] answers = idToOrds[docIDToID.get(docID)];
       int upto = 0;
       while(true) {
         final int chunk = iter.read(buffer);

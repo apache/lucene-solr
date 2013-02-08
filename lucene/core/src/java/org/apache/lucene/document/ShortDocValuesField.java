@@ -17,7 +17,7 @@ package org.apache.lucene.document;
  * limitations under the License.
  */
 
-import org.apache.lucene.index.DocValues;
+import org.apache.lucene.index.NumericDocValues;
 
 /**
  * <p>
@@ -32,19 +32,11 @@ import org.apache.lucene.index.DocValues;
  * If you also need to store the value, you should add a
  * separate {@link StoredField} instance.
  * 
- * @see DocValues
+ * @see NumericDocValues
+ * @deprecated use {@link NumericDocValuesField} instead.
  * */
-
-public class ShortDocValuesField extends Field {
-
-  /**
-   * Type for 16-bit short DocValues.
-   */
-  public static final FieldType TYPE = new FieldType();
-  static {
-    TYPE.setDocValueType(DocValues.Type.FIXED_INTS_16);
-    TYPE.freeze();
-  }
+@Deprecated
+public class ShortDocValuesField extends NumericDocValuesField {
 
   /** 
    * Creates a new DocValues field with the specified 16-bit short value 
@@ -53,7 +45,11 @@ public class ShortDocValuesField extends Field {
    * @throws IllegalArgumentException if the field name is null
    */
   public ShortDocValuesField(String name, short value) {
-    super(name, TYPE);
-    fieldsData = Short.valueOf(value);
+    super(name, value);
+  }
+
+  @Override
+  public void setShortValue(short value) {
+    setLongValue(value);
   }
 }

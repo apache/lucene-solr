@@ -19,11 +19,11 @@ package org.apache.lucene.codecs.lucene3x;
 
 import java.io.IOException;
 
+import org.apache.lucene.codecs.DocValuesConsumer;
+import org.apache.lucene.codecs.DocValuesProducer;
 import org.apache.lucene.codecs.NormsFormat;
-import org.apache.lucene.codecs.PerDocConsumer;
-import org.apache.lucene.codecs.PerDocProducer;
-import org.apache.lucene.index.PerDocWriteState;
 import org.apache.lucene.index.SegmentReadState;
+import org.apache.lucene.index.SegmentWriteState;
 
 /**
  * Lucene3x ReadOnly NormsFormat implementation
@@ -35,12 +35,12 @@ import org.apache.lucene.index.SegmentReadState;
 class Lucene3xNormsFormat extends NormsFormat {
 
   @Override
-  public PerDocConsumer docsConsumer(PerDocWriteState state) throws IOException {
+  public DocValuesConsumer normsConsumer(SegmentWriteState state) throws IOException {
     throw new UnsupportedOperationException("this codec can only be used for reading");
   }
 
   @Override
-  public PerDocProducer docsProducer(SegmentReadState state) throws IOException {
-    return new Lucene3xNormsProducer(state.dir, state.segmentInfo, state.fieldInfos, state.context);
+  public DocValuesProducer normsProducer(SegmentReadState state) throws IOException {
+    return new Lucene3xNormsProducer(state.directory, state.segmentInfo, state.fieldInfos, state.context);
   }
 }

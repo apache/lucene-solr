@@ -17,34 +17,21 @@ package org.apache.lucene.document;
  * limitations under the License.
  */
 
-import org.apache.lucene.index.DocValues;
+import org.apache.lucene.index.AtomicReader; // javadocs
+import org.apache.lucene.search.FieldCache; // javadocs
 
 /**
+ * Syntactic sugar for encoding doubles as NumericDocValues
+ * via {@link Double#doubleToRawLongBits(double)}.
  * <p>
- * Field that stores a per-document <code>double</code> value for scoring, 
- * sorting or value retrieval. Here's an example usage:
- * 
- * <pre class="prettyprint">
- *   document.add(new DoubleDocValuesField(name, 22.0));
- * </pre>
- * 
+ * Per-document double values can be retrieved via
+ * {@link FieldCache#getDoubles(AtomicReader, String, boolean)}.
  * <p>
- * If you also need to store the value, you should add a
- * separate {@link StoredField} instance.
- * 
- * @see DocValues
- * */
-
-public class DoubleDocValuesField extends Field {
-
-  /**
-   * Type for 64-bit double DocValues.
-   */
-  public static final FieldType TYPE = new FieldType();
-  static {
-    TYPE.setDocValueType(DocValues.Type.FLOAT_64);
-    TYPE.freeze();
-  }
+ * <b>NOTE</b>: In most all cases this will be rather inefficient,
+ * requiring eight bytes per document. Consider encoding double
+ * values yourself with only as much precision as you require.
+ */
+public class DoubleDocValuesField extends NumericDocValuesField {
 
   /** 
    * Creates a new DocValues field with the specified 64-bit double value 
@@ -53,7 +40,16 @@ public class DoubleDocValuesField extends Field {
    * @throws IllegalArgumentException if the field name is null
    */
   public DoubleDocValuesField(String name, double value) {
-    super(name, TYPE);
-    fieldsData = Double.valueOf(value);
+    super(name, Double.doubleToRawLongBits(value));
+  }
+
+  @Override
+  public void setDoubleValue(double value) {
+    super.setLongValue(Double.doubleToRawLongBits(value));
+  }
+  
+  @Override
+  public void setLongValue(long value) {
+    throw new IllegalArgumentException("cannot change value type from Double to Long");
   }
 }

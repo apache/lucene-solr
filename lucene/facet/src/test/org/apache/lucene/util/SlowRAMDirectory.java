@@ -33,7 +33,7 @@ public class SlowRAMDirectory extends RAMDirectory {
 
   private static final int IO_SLEEP_THRESHOLD = 50;
   
-  private Random random;
+  Random random;
   private int sleepMillis;
 
   public void setSleepMillis(int sleepMillis) {
@@ -62,7 +62,7 @@ public class SlowRAMDirectory extends RAMDirectory {
     return super.openInput(name, context);
   }
 
-  void doSleep(int length) {
+  void doSleep(Random random, int length) {
     int sTime = length<10 ? sleepMillis : (int) (sleepMillis * Math.log(length));
     if (random!=null) {
       sTime = random.nextInt(sTime);
@@ -74,6 +74,14 @@ public class SlowRAMDirectory extends RAMDirectory {
     }
   }
 
+  /** Make a private random. */
+  Random forkRandom() {
+    if (random == null) {
+      return null;
+    }
+    return new Random(random.nextLong());
+  }
+
   /**
    * Delegate class to wrap an IndexInput and delay reading bytes by some
    * specified time.
@@ -81,16 +89,18 @@ public class SlowRAMDirectory extends RAMDirectory {
   private class SlowIndexInput extends IndexInput {
     private IndexInput ii;
     private int numRead = 0;
+    private Random random;
     
     public SlowIndexInput(IndexInput ii) {
       super("SlowIndexInput(" + ii + ")");
+      this.random = forkRandom();
       this.ii = ii;
     }
     
     @Override
     public byte readByte() throws IOException {
       if (numRead >= IO_SLEEP_THRESHOLD) {
-        doSleep(0);
+        doSleep(random, 0);
         numRead = 0;
       }
       ++numRead;
@@ -100,7 +110,7 @@ public class SlowRAMDirectory extends RAMDirectory {
     @Override
     public void readBytes(byte[] b, int offset, int len) throws IOException {
       if (numRead >= IO_SLEEP_THRESHOLD) {
-        doSleep(len);
+        doSleep(random, len);
         numRead = 0;
       }
       numRead += len;
@@ -125,15 +135,17 @@ public class SlowRAMDirectory extends RAMDirectory {
     
     private IndexOutput io;
     private int numWrote;
+    private final Random random;
     
     public SlowIndexOutput(IndexOutput io) {
       this.io = io;
+      this.random = forkRandom();
     }
     
     @Override
     public void writeByte(byte b) throws IOException {
       if (numWrote >= IO_SLEEP_THRESHOLD) {
-        doSleep(0);
+        doSleep(random, 0);
         numWrote = 0;
       }
       ++numWrote;
@@ -143,7 +155,7 @@ public class SlowRAMDirectory extends RAMDirectory {
     @Override
     public void writeBytes(byte[] b, int offset, int length) throws IOException {
       if (numWrote >= IO_SLEEP_THRESHOLD) {
-        doSleep(length);
+        doSleep(random, length);
         numWrote = 0;
       }
       numWrote += length;

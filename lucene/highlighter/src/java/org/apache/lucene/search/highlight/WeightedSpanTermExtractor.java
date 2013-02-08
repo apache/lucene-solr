@@ -31,11 +31,13 @@ import org.apache.lucene.analysis.CachingTokenFilter;
 import org.apache.lucene.analysis.TokenStream;
 import org.apache.lucene.index.AtomicReader;
 import org.apache.lucene.index.AtomicReaderContext;
-import org.apache.lucene.index.DocValues;
+import org.apache.lucene.index.BinaryDocValues;
 import org.apache.lucene.index.FieldInfos;
 import org.apache.lucene.index.Fields;
 import org.apache.lucene.index.FilterAtomicReader;
 import org.apache.lucene.index.IndexReader;
+import org.apache.lucene.index.NumericDocValues;
+import org.apache.lucene.index.SortedDocValues;
 import org.apache.lucene.index.Term;
 import org.apache.lucene.index.TermContext;
 import org.apache.lucene.index.Terms;
@@ -402,13 +404,23 @@ public class WeightedSpanTermExtractor {
     }
 
     @Override
-    public DocValues docValues(String field) throws IOException {
-      return super.docValues(FIELD_NAME);
+    public NumericDocValues getNumericDocValues(String field) throws IOException {
+      return super.getNumericDocValues(FIELD_NAME);
     }
-
+    
     @Override
-    public DocValues normValues(String field) throws IOException {
-      return super.normValues(FIELD_NAME);
+    public BinaryDocValues getBinaryDocValues(String field) throws IOException {
+      return super.getBinaryDocValues(FIELD_NAME);
+    }
+    
+    @Override
+    public SortedDocValues getSortedDocValues(String field) throws IOException {
+      return super.getSortedDocValues(FIELD_NAME);
+    }
+    
+    @Override
+    public NumericDocValues getNormValues(String field) throws IOException {
+      return super.getNormValues(FIELD_NAME);
     }
   }
 

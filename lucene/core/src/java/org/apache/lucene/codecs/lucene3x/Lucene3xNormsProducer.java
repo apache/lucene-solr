@@ -24,18 +24,17 @@ import java.util.IdentityHashMap;
 import java.util.Map;
 import java.util.Set;
 
-import org.apache.lucene.codecs.PerDocProducer;
-import org.apache.lucene.index.DocValues;
-import org.apache.lucene.index.DocValues.Source;
-import org.apache.lucene.index.DocValues.Type;
+import org.apache.lucene.codecs.DocValuesProducer;
+import org.apache.lucene.index.BinaryDocValues;
 import org.apache.lucene.index.FieldInfo;
 import org.apache.lucene.index.FieldInfos;
 import org.apache.lucene.index.IndexFileNames;
+import org.apache.lucene.index.NumericDocValues;
 import org.apache.lucene.index.SegmentInfo;
+import org.apache.lucene.index.SortedDocValues;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.IOContext;
 import org.apache.lucene.store.IndexInput;
-import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.IOUtils;
 import org.apache.lucene.util.StringHelper;
 
@@ -45,7 +44,7 @@ import org.apache.lucene.util.StringHelper;
  * @deprecated Only for reading existing 3.x indexes
  */
 @Deprecated
-class Lucene3xNormsProducer extends PerDocProducer {
+class Lucene3xNormsProducer extends DocValuesProducer {
   
   /** norms header placeholder */
   static final byte[] NORMS_HEADER = new byte[]{'N','R','M',-1};
@@ -126,11 +125,6 @@ class Lucene3xNormsProducer extends PerDocProducer {
   }
   
   @Override
-  public DocValues docValues(String field) throws IOException {
-    return norms.get(field);
-  }
-  
-  @Override
   public void close() throws IOException {
     try {
       IOUtils.close(openFiles);
@@ -159,65 +153,22 @@ class Lucene3xNormsProducer extends PerDocProducer {
       return true;
     }
   }
-  
-  static final class NormSource extends Source {
-    protected NormSource(byte[] bytes) {
-      super(Type.FIXED_INTS_8);
-      this.bytes = bytes;
-    }
 
-    final byte bytes[];
-    
-    @Override
-    public BytesRef getBytes(int docID, BytesRef ref) {
-      ref.bytes = bytes;
-      ref.offset = docID;
-      ref.length = 1;
-      return ref;
-    }
-
-    @Override
-    public long getInt(int docID) {
-      return bytes[docID];
-    }
-
-    @Override
-    public boolean hasArray() {
-      return true;
-    }
-
-    @Override
-    public Object getArray() {
-      return bytes;
-    }
-    
-  }
-
-  private class NormsDocValues extends DocValues {
+  // holds a file+offset pointing to a norms, and lazy-loads it
+  // to a singleton NumericDocValues instance
+  private class NormsDocValues {
     private final IndexInput file;
     private final long offset;
+    private NumericDocValues instance;
+    
     public NormsDocValues(IndexInput normInput, long normSeek) {
       this.file = normInput;
       this.offset = normSeek;
     }
-
-    @Override
-    protected Source loadSource() throws IOException {
-      return new NormSource(bytes());
-    }
-
-    @Override
-    protected Source loadDirectSource() throws IOException {
-      return getSource();
-    }
-
-    @Override
-    public Type getType() {
-      return Type.FIXED_INTS_8;
-    }
     
-    byte[] bytes() throws IOException {
-        byte[] bytes = new byte[maxdoc];
+    synchronized NumericDocValues getInstance() throws IOException {
+      if (instance == null) {
+        final byte[] bytes = new byte[maxdoc];
         // some norms share fds
         synchronized(file) {
           file.seek(offset);
@@ -228,13 +179,31 @@ class Lucene3xNormsProducer extends PerDocProducer {
           openFiles.remove(file);
           file.close();
         }
-      return bytes;
-    }
+        instance = new NumericDocValues() {
+          @Override
+          public long get(int docID) {
+            return bytes[docID];
+          }
+        };
+      }
+      return instance;
+    }    
+  }
 
-    @Override
-    public int getValueSize() {
-      return 1;
-    }
-    
+  @Override
+  public NumericDocValues getNumeric(FieldInfo field) throws IOException {
+    NormsDocValues dv = norms.get(field.name);
+    assert dv != null;
+    return dv.getInstance();
+  }
+
+  @Override
+  public BinaryDocValues getBinary(FieldInfo field) throws IOException {
+    throw new AssertionError();
+  }
+
+  @Override
+  public SortedDocValues getSorted(FieldInfo field) throws IOException {
+    throw new AssertionError();
   }
 }

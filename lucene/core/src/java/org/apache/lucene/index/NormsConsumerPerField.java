@@ -18,7 +18,6 @@ package org.apache.lucene.index;
 import java.io.IOException;
 
 import org.apache.lucene.codecs.DocValuesConsumer;
-import org.apache.lucene.index.DocValues.Type;
 import org.apache.lucene.search.similarities.Similarity;
 
 final class NormsConsumerPerField extends InvertedDocEndConsumerPerField implements Comparable<NormsConsumerPerField> {
@@ -26,18 +25,13 @@ final class NormsConsumerPerField extends InvertedDocEndConsumerPerField impleme
   private final DocumentsWriterPerThread.DocState docState;
   private final Similarity similarity;
   private final FieldInvertState fieldState;
-  private DocValuesConsumer consumer;
-  private final Norm norm;
-  private final NormsConsumer parent;
-  private Type initType;
+  private NumericDocValuesWriter consumer;
   
   public NormsConsumerPerField(final DocInverterPerField docInverterPerField, final FieldInfo fieldInfo, NormsConsumer parent) {
     this.fieldInfo = fieldInfo;
-    this.parent = parent;
     docState = docInverterPerField.docState;
     fieldState = docInverterPerField.fieldState;
     similarity = docState.similarity;
-    norm = new Norm();
   }
 
   @Override
@@ -48,45 +42,31 @@ final class NormsConsumerPerField extends InvertedDocEndConsumerPerField impleme
   @Override
   void finish() throws IOException {
     if (fieldInfo.isIndexed() && !fieldInfo.omitsNorms()) {
-      similarity.computeNorm(fieldState, norm);
-      
-      if (norm.type() != null) {
-        IndexableField field = norm.field();
-        // some similarity might not compute any norms
-        DocValuesConsumer consumer = getConsumer(norm.type());
-        consumer.add(docState.docID, field);
+      if (consumer == null) {
+        fieldInfo.setNormValueType(FieldInfo.DocValuesType.NUMERIC);
+        consumer = new NumericDocValuesWriter(fieldInfo, docState.docWriter.bytesUsed);
       }
-    }    
+      consumer.addValue(docState.docID, similarity.computeNorm(fieldState));
+    }
   }
   
-  Type flush(int docCount) throws IOException {
-    if (!initialized()) {
-      return null; // null type - not omitted but not written
+  void flush(SegmentWriteState state, DocValuesConsumer normsWriter) throws IOException {
+    int docCount = state.segmentInfo.getDocCount();
+    if (consumer == null) {
+      return; // null type - not omitted but not written -
+              // meaning the only docs that had
+              // norms hit exceptions (but indexed=true is set...)
     }
     consumer.finish(docCount);
-    return initType;
+    consumer.flush(state, normsWriter);
   }
   
-  private DocValuesConsumer getConsumer(Type type) throws IOException {
-    if (consumer == null) {
-      assert fieldInfo.getNormType() == null || fieldInfo.getNormType() == type;
-      fieldInfo.setNormValueType(type);
-      consumer = parent.newConsumer(docState.docWriter.newPerDocWriteState(""), fieldInfo, type);
-      this.initType = type;
-    }
-    if (initType != type) {
-      throw new IllegalArgumentException("NormTypes for field: " + fieldInfo.name + " doesn't match " + initType + " != " + type);
-    }
-    return consumer;
-  }
-  
-  boolean initialized() {
-    return consumer != null;
+  boolean isEmpty() {
+    return consumer == null;
   }
 
   @Override
   void abort() {
     //
   }
-
 }

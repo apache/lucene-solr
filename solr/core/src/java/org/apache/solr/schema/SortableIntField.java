@@ -143,7 +143,12 @@ class SortableIntFieldSource extends FieldCacheSource {
       @Override
       public int intVal(int doc) {
         int ord=termsIndex.getOrd(doc);
-        return ord==0 ? def  : NumberUtils.SortableStr2int(termsIndex.lookup(ord, spare),0,3);
+        if (ord==-1) {
+          return def;
+        } else {
+          termsIndex.lookupOrd(ord, spare);
+          return NumberUtils.SortableStr2int(spare,0,3);
+        }
       }
 
       @Override
@@ -169,7 +174,12 @@ class SortableIntFieldSource extends FieldCacheSource {
       @Override
       public Object objectVal(int doc) {
         int ord=termsIndex.getOrd(doc);
-        return ord==0 ? null  : NumberUtils.SortableStr2int(termsIndex.lookup(ord, spare));
+        if (ord==-1) {
+          return null;
+        } else {
+          termsIndex.lookupOrd(ord, spare);
+          return NumberUtils.SortableStr2int(spare);
+        }
       }
 
       @Override
@@ -185,11 +195,12 @@ class SortableIntFieldSource extends FieldCacheSource {
           @Override
           public void fillValue(int doc) {
             int ord=termsIndex.getOrd(doc);
-            if (ord == 0) {
+            if (ord == -1) {
               mval.value = def;
               mval.exists = false;
             } else {
-              mval.value = NumberUtils.SortableStr2int(termsIndex.lookup(ord, spare),0,3);
+              termsIndex.lookupOrd(ord, spare);
+              mval.value = NumberUtils.SortableStr2int(spare,0,3);
               mval.exists = true;
             }
           }

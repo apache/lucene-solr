@@ -314,7 +314,7 @@ public class TestOmitTf extends LuceneTestCase {
                       public final void collect(int doc) throws IOException {
                         //System.out.println("Q1: Doc=" + doc + " score=" + score);
                         float score = scorer.score();
-                        assertTrue(score==1.0f);
+                        assertTrue("got score=" + score, score==1.0f);
                         super.collect(doc);
                       }
                     });

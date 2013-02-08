@@ -19,8 +19,8 @@ package org.apache.lucene.codecs.lucene3x;
 
 import java.io.IOException;
 
-import org.apache.lucene.codecs.PerDocConsumer;
-import org.apache.lucene.index.PerDocWriteState;
+import org.apache.lucene.codecs.DocValuesConsumer;
+import org.apache.lucene.index.SegmentWriteState;
 
 /**
  * @lucene.internal
@@ -29,7 +29,7 @@ import org.apache.lucene.index.PerDocWriteState;
 class PreFlexRWNormsFormat extends Lucene3xNormsFormat {
 
   @Override
-  public PerDocConsumer docsConsumer(PerDocWriteState state) throws IOException {
+  public DocValuesConsumer normsConsumer(SegmentWriteState state) throws IOException {
     return new PreFlexRWNormsConsumer(state.directory, state.segmentInfo.name, state.context);
   }
 }
