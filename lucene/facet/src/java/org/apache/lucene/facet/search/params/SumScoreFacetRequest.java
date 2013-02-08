@@ -24,14 +24,15 @@ import org.apache.lucene.facet.taxonomy.TaxonomyReader;
  */
 
 /**
- * Facet request for weighting facets according to document scores.
+ * A {@link FacetRequest} for weighting facets by summing the scores of matching
+ * documents.
  * 
  * @lucene.experimental
  */
-public class ScoreFacetRequest extends FacetRequest {
+public class SumScoreFacetRequest extends FacetRequest {
 
   /** Create a score facet request for a given node in the taxonomy. */
-  public ScoreFacetRequest(CategoryPath path, int num) {
+  public SumScoreFacetRequest(CategoryPath path, int num) {
     super(path, num);
   }
 
@@ -47,13 +48,8 @@ public class ScoreFacetRequest extends FacetRequest {
   }
 
   @Override
-  public boolean supportsComplements() {
-    return false;
+  public FacetArraysSource getFacetArraysSource() {
+    return FacetArraysSource.FLOAT;
   }
-  
-  @Override
-  public boolean requireDocumentScore() {
-    return true;
-  }
-  
+
 }

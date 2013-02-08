@@ -58,13 +58,8 @@ public class AssociationFloatSumFacetRequest extends FacetRequest {
   }
 
   @Override
-  public boolean supportsComplements() {
-    return false;
-  }
-  
-  @Override
-  public boolean requireDocumentScore() {
-    return false;
+  public FacetArraysSource getFacetArraysSource() {
+    return FacetArraysSource.FLOAT;
   }
   
 }

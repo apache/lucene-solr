@@ -7,9 +7,8 @@ import org.apache.lucene.document.Document;
 import org.apache.lucene.facet.FacetTestCase;
 import org.apache.lucene.facet.index.FacetFields;
 import org.apache.lucene.facet.index.params.FacetIndexingParams;
-import org.apache.lucene.facet.search.FacetsAccumulator;
 import org.apache.lucene.facet.search.FacetsCollector;
-import org.apache.lucene.facet.search.StandardFacetsCollector;
+import org.apache.lucene.facet.search.StandardFacetsAccumulator;
 import org.apache.lucene.facet.search.params.CountFacetRequest;
 import org.apache.lucene.facet.search.params.FacetRequest;
 import org.apache.lucene.facet.search.params.FacetRequest.ResultMode;
@@ -112,14 +111,9 @@ public class OversampleWithDepthTest extends FacetTestCase {
   private FacetResult searchWithFacets(IndexReader r, TaxonomyReader tr, FacetSearchParams fsp, 
       final SamplingParams params) throws IOException {
     // a FacetsCollector with a sampling accumulator
-    FacetsCollector fcWithSampling = new StandardFacetsCollector(fsp, r, tr) {
-      @Override
-      protected FacetsAccumulator initFacetsAccumulator(FacetSearchParams facetSearchParams, IndexReader indexReader,
-          TaxonomyReader taxonomyReader) {
-        Sampler sampler = new RandomSampler(params, random());
-        return new SamplingAccumulator(sampler, facetSearchParams, indexReader, taxonomyReader);
-      }
-    };
+    Sampler sampler = new RandomSampler(params, random());
+    StandardFacetsAccumulator sfa = new SamplingAccumulator(sampler, fsp, r, tr);
+    FacetsCollector fcWithSampling = FacetsCollector.create(sfa);
     
     IndexSearcher s = new IndexSearcher(r);
     s.search(new MatchAllDocsQuery(), fcWithSampling);

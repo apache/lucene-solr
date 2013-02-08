@@ -4,8 +4,6 @@ import java.io.IOException;
 
 import org.apache.lucene.facet.search.FacetArrays;
 import org.apache.lucene.facet.search.FacetResultsHandler;
-import org.apache.lucene.facet.search.TopKFacetResultsHandler;
-import org.apache.lucene.facet.search.TopKInEachNodeHandler;
 import org.apache.lucene.facet.search.aggregator.Aggregator;
 import org.apache.lucene.facet.taxonomy.CategoryPath;
 import org.apache.lucene.facet.taxonomy.TaxonomyReader;
@@ -40,28 +38,67 @@ import org.apache.lucene.facet.taxonomy.TaxonomyReader;
  * 
  * @lucene.experimental
  */
-public abstract class FacetRequest implements Cloneable {
+public abstract class FacetRequest {
+
+  /**
+   * Result structure manner of applying request's limits such as
+   * {@link FacetRequest#getNumLabel()} and {@link FacetRequest#numResults}.
+   * Only relevant when {@link FacetRequest#getDepth()} is &gt; 1.
+   */
+  public enum ResultMode { 
+    /** Limits are applied per node, and the result has a full tree structure. */
+    PER_NODE_IN_TREE, 
+
+    /** Limits are applied globally, on total number of results, and the result has a flat structure. */
+    GLOBAL_FLAT
+  }
+  
+  /**
+   * Specifies which array of {@link FacetArrays} should be used to resolve
+   * values. When set to {@link #INT} or {@link #FLOAT}, allows creating an
+   * optimized {@link FacetResultsHandler}, which does not call
+   * {@link FacetRequest#getValueOf(FacetArrays, int)} for every ordinals.
+   * <p>
+   * If set to {@link #BOTH}, the {@link FacetResultsHandler} will use
+   * {@link FacetRequest#getValueOf(FacetArrays, int)} to resolve ordinal
+   * values, although it is recommended that you consider writing a specialized
+   * {@link FacetResultsHandler}.
+   */
+  public enum FacetArraysSource { INT, FLOAT, BOTH }
+
+  /** Sort options for facet results. */
+  public enum SortBy { 
+    /** sort by category ordinal with the taxonomy */
+    ORDINAL, 
+
+    /** sort by computed category value */ 
+    VALUE 
+  }
+
+  /** Requested sort order for the results. */
+  public enum SortOrder { ASCENDING, DESCENDING }
 
   /**
    * Default depth for facets accumulation.
    * @see #getDepth()
    */
   public static final int DEFAULT_DEPTH = 1;
-
+  
   /**
    * Default sort mode.
    * @see #getSortBy()
    */
   public static final SortBy DEFAULT_SORT_BY = SortBy.VALUE;
-
+  
   /**
    * Default result mode
    * @see #getResultMode()
    */
   public static final ResultMode DEFAULT_RESULT_MODE = ResultMode.PER_NODE_IN_TREE;
-
+  
   public final CategoryPath categoryPath;
-  private final int numResults;
+  public final int numResults;
+  
   private int numLabel;
   private int depth;
   private SortOrder sortOrder;
@@ -72,7 +109,7 @@ public abstract class FacetRequest implements Cloneable {
    * {@link CategoryPath} and <code>numResults</code>
    */
   private final int hashCode;
-  
+
   private ResultMode resultMode = DEFAULT_RESULT_MODE;
 
   /**
@@ -107,26 +144,35 @@ public abstract class FacetRequest implements Cloneable {
     hashCode = categoryPath.hashCode() ^ this.numResults;
   }
 
+  /**
+   * Create an aggregator for this facet request. Aggregator action depends on
+   * request definition. For a count request, it will usually increment the
+   * count for that facet.
+   * 
+   * @param useComplements
+   *          whether the complements optimization is being used for current
+   *          computation.
+   * @param arrays
+   *          provider for facet arrays in use for current computation.
+   * @param taxonomy
+   *          reader of taxonomy in effect.
+   * @throws IOException If there is a low-level I/O error.
+   */
+  public abstract Aggregator createAggregator(boolean useComplements, FacetArrays arrays, TaxonomyReader taxonomy) 
+      throws IOException;
+
   @Override
-  public FacetRequest clone() throws CloneNotSupportedException {
-    // Overridden to make it public
-    return (FacetRequest)super.clone();
-  }
-  
-  public void setNumLabel(int numLabel) {
-    this.numLabel = numLabel;
-  }
-
-  public void setDepth(int depth) {
-    this.depth = depth;
-  }
-
-  public void setSortOrder(SortOrder sortOrder) {
-    this.sortOrder = sortOrder;
-  }
-
-  public void setSortBy(SortBy sortBy) {
-    this.sortBy = sortBy;
+  public boolean equals(Object o) {
+    if (o instanceof FacetRequest) {
+      FacetRequest that = (FacetRequest)o;
+      return that.hashCode == this.hashCode &&
+          that.categoryPath.equals(this.categoryPath) &&
+          that.numResults == this.numResults &&
+          that.depth == this.depth &&
+          that.resultMode == this.resultMode &&
+          that.numLabel == this.numLabel;
+    }
+    return false;
   }
 
   /**
@@ -134,12 +180,18 @@ public abstract class FacetRequest implements Cloneable {
    * only the category itself is counted. If the depth is 1, its immediate
    * children are also counted, and so on. If the depth is Integer.MAX_VALUE,
    * all the category's descendants are counted.<br>
-   * TODO (Facet): add AUTO_EXPAND option  
    */
   public final int getDepth() {
+    // TODO add AUTO_EXPAND option  
     return depth;
   }
-
+  
+  /**
+   * Returns the {@link FacetArraysSource} this {@link FacetRequest} uses in
+   * {@link #getValueOf(FacetArrays, int)}.
+   */
+  public abstract FacetArraysSource getFacetArraysSource();
+  
   /**
    * If getNumLabel() &lt; getNumResults(), only the first getNumLabel() results
    * will have their category paths calculated, and the rest will only be
@@ -167,34 +219,9 @@ public abstract class FacetRequest implements Cloneable {
     return numLabel;
   }
 
-  /**
-   * The number of sub-categories to return (at most). If the sub-categories are
-   * returned.
-   * <p>
-   * If Integer.MAX_VALUE is specified, all sub-categories are returned.
-   * <p>
-   * Depending on the {@link #getResultMode() LimitsMode}, this limit is applied
-   * globally or per results node. In the global mode, if this limit is 3, only
-   * 3 top results would be computed. In the per-node mode, if this limit is 3,
-   * 3 top children of {@link #categoryPath the target category} would be
-   * returned, as well as 3 top children of each of them, and so forth, until
-   * the depth defined by {@link #getDepth()}.
-   * 
-   * @see #getResultMode()
-   */
-  public final int getNumResults() {
-    return numResults;
-  }
-
-  /**
-   * Sort options for facet results.
-   */
-  public enum SortBy { 
-    /** sort by category ordinal with the taxonomy */
-    ORDINAL, 
-
-    /** sort by computed category value */ 
-    VALUE 
+  /** Return the requested result mode. */
+  public final ResultMode getResultMode() {
+    return resultMode;
   }
 
   /** Specify how should results be sorted. */
@@ -202,103 +229,10 @@ public abstract class FacetRequest implements Cloneable {
     return sortBy;
   }
 
-  /** Requested sort order for the results. */
-  public enum SortOrder { ASCENDING, DESCENDING }
-
   /** Return the requested order of results. */
   public final SortOrder getSortOrder() {
     return sortOrder;
   }
-
-  @Override
-  public String toString() {
-    return categoryPath.toString()+" nRes="+numResults+" nLbl="+numLabel;
-  }
-
-  /**
-   * Creates a new {@link FacetResultsHandler} that matches the request logic
-   * and current settings, such as {@link #getDepth() depth},
-   * {@link #getResultMode() limits-mode}, etc, as well as the passed in
-   * {@link TaxonomyReader}.
-   * 
-   * @param taxonomyReader taxonomy reader is needed e.g. for knowing the
-   *        taxonomy size.
-   */
-  public FacetResultsHandler createFacetResultsHandler(TaxonomyReader taxonomyReader) {
-    try {
-      if (resultMode == ResultMode.PER_NODE_IN_TREE) {
-        return new TopKInEachNodeHandler(taxonomyReader, clone());
-      } 
-      return new TopKFacetResultsHandler(taxonomyReader, clone());
-    } catch (CloneNotSupportedException e) {
-      // Shouldn't happen since we implement Cloneable. If it does happen, it is
-      // probably because the class was changed to not implement Cloneable
-      // anymore.
-      throw new RuntimeException(e);
-    }
-  }
-
-  /**
-   * Result structure manner of applying request's limits such as 
-   * {@link #getNumLabel()} and
-   * {@link #getNumResults()}.
-   */
-  public enum ResultMode { 
-    /** Limits are applied per node, and the result has a full tree structure. */
-    PER_NODE_IN_TREE, 
-
-    /** Limits are applied globally, on total number of results, and the result has a flat structure. */
-    GLOBAL_FLAT
-  }
-
-  /** Return the requested result mode. */
-  public final ResultMode getResultMode() {
-    return resultMode;
-  }
-
-  /**
-   * @param resultMode the resultMode to set
-   * @see #getResultMode()
-   */
-  public void setResultMode(ResultMode resultMode) {
-    this.resultMode = resultMode;
-  }
-
-  @Override
-  public int hashCode() {
-    return hashCode; 
-  }
-  
-  @Override
-  public boolean equals(Object o) {
-    if (o instanceof FacetRequest) {
-      FacetRequest that = (FacetRequest)o;
-      return that.hashCode == this.hashCode &&
-          that.categoryPath.equals(this.categoryPath) &&
-          that.numResults == this.numResults &&
-          that.depth == this.depth &&
-          that.resultMode == this.resultMode &&
-          that.numLabel == this.numLabel;
-    }
-    return false;
-  }
-
-  /**
-   * Create an aggregator for this facet request. Aggregator action depends on
-   * request definition. For a count request, it will usually increment the
-   * count for that facet.
-   * 
-   * @param useComplements
-   *          whether the complements optimization is being used for current
-   *          computation.
-   * @param arrays
-   *          provider for facet arrays in use for current computation.
-   * @param taxonomy
-   *          reader of taxonomy in effect.
-   * @throws IOException If there is a low-level I/O error.
-   */
-  public abstract Aggregator createAggregator(boolean useComplements, FacetArrays arrays, TaxonomyReader taxonomy) 
-      throws IOException;
 
   /**
    * Return the value of a category used for facets computations for this
@@ -319,16 +253,44 @@ public abstract class FacetRequest implements Cloneable {
    *          <code>getValueOf</code> would be invoked with <code>idx</code>
    *          being <i>n</i> % <i>partitionSize</i>.
    */
+  // TODO perhaps instead of getValueOf we can have a postProcess(FacetArrays)
+  // That, together with getFacetArraysSource should allow ResultHandlers to
+  // efficiently obtain the values from the arrays directly
   public abstract double getValueOf(FacetArrays arrays, int idx);
-  
-  /**
-   * Indicates whether this facet request is eligible for applying the complements optimization.
-   */
-  public boolean supportsComplements() {
-    return false; // by default: no
+
+  @Override
+  public int hashCode() {
+    return hashCode; 
   }
 
-  /** Indicates whether the results of this request depends on each result document's score */
-  public abstract boolean requireDocumentScore();
+  public void setDepth(int depth) {
+    this.depth = depth;
+  }
+
+  public void setNumLabel(int numLabel) {
+    this.numLabel = numLabel;
+  }
+  
+  /**
+   * @param resultMode the resultMode to set
+   * @see #getResultMode()
+   */
+  public void setResultMode(ResultMode resultMode) {
+    this.resultMode = resultMode;
+  }
+
+  public void setSortBy(SortBy sortBy) {
+    this.sortBy = sortBy;
+  }
+
+  public void setSortOrder(SortOrder sortOrder) {
+    this.sortOrder = sortOrder;
+  }
+  
+  @Override
+  public String toString() {
+    return categoryPath.toString()+" nRes="+numResults+" nLbl="+numLabel;
+  }
 
 }
+  

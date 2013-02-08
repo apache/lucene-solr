@@ -12,19 +12,13 @@ import org.apache.lucene.document.StringField;
 import org.apache.lucene.facet.FacetTestCase;
 import org.apache.lucene.facet.search.ScoredDocIDs;
 import org.apache.lucene.facet.search.ScoredDocIDsIterator;
-import org.apache.lucene.facet.search.ScoredDocIdCollector;
 import org.apache.lucene.index.DirectoryReader;
 import org.apache.lucene.index.IndexReader;
-import org.apache.lucene.index.MultiFields;
 import org.apache.lucene.index.RandomIndexWriter;
 import org.apache.lucene.index.Term;
 import org.apache.lucene.search.DocIdSet;
 import org.apache.lucene.search.DocIdSetIterator;
-import org.apache.lucene.search.IndexSearcher;
-import org.apache.lucene.search.Query;
-import org.apache.lucene.search.TermQuery;
 import org.apache.lucene.store.Directory;
-import org.apache.lucene.util.Bits;
 import org.apache.lucene.util.FixedBitSet;
 import org.junit.Test;
 
@@ -101,79 +95,6 @@ public class TestScoredDocIDsUtils extends FacetTestCase {
     }
   }
   
-  @Test
-  public void testWithDeletions() throws Exception {
-    int N_DOCS = 100;
-
-    DocumentFactory docFactory = new DocumentFactory(N_DOCS) {
-      @Override
-      public boolean markedDeleted(int docNum) {
-        return (docNum % 3 == 0 ||        // every 3rd documents, including first 
-            docNum == numDocs - 1 ||     // last document
-            docNum == numDocs / 2 ||     // 3 consecutive documents in the middle
-            docNum == 1 + numDocs / 2 ||
-            docNum == 2 + numDocs / 2);
-      }
-      
-      // every 6th document (starting from the 2nd) would contain 'alpha'
-      @Override
-      public boolean haveAlpha(int docNum) {
-        return (docNum % 6 == 1);
-      }
-    };
-    
-    Directory dir = newDirectory();
-    IndexReader reader = createReaderWithNDocs(random(), N_DOCS, docFactory, dir);
-    try {
-      ScoredDocIDs allDocs = ScoredDocIdsUtils.createAllDocsScoredDocIDs(reader);
-      ScoredDocIDsIterator it = allDocs.iterator();
-      int numIteratedDocs = 0;
-      while (it.next()) {
-        numIteratedDocs++;
-        int docNum = it.getDocID();
-        assertNull(
-            "Deleted docs must not appear in the allDocsScoredDocIds set: " + docNum, 
-            reader.document(docNum).getField("del"));
-      }
-
-      assertEquals("Wrong number of (live) documents", allDocs.size(), numIteratedDocs);
-
-      // Get all 'alpha' documents
-      ScoredDocIdCollector collector = ScoredDocIdCollector.create(reader.maxDoc(), false);
-      Query q = new TermQuery(new Term(DocumentFactory.field, DocumentFactory.alphaTxt));
-      IndexSearcher searcher = newSearcher(reader);
-      searcher.search(q, collector);
-
-      ScoredDocIDs scoredDocIds = collector.getScoredDocIDs();
-      FixedBitSet resultSet = (FixedBitSet) scoredDocIds.getDocIDs();
-      
-      // Getting the complement set of the query result
-      ScoredDocIDs complementSet = ScoredDocIdsUtils.getComplementSet(scoredDocIds, reader);
-
-      assertEquals("Number of documents in complement set mismatch",
-          reader.numDocs() - scoredDocIds.size(), complementSet.size());
-
-      // now make sure the documents in the complement set are not deleted
-      // and not in the original result set
-      ScoredDocIDsIterator compIterator = complementSet.iterator();
-      Bits live = MultiFields.getLiveDocs(reader);
-      while (compIterator.next()) {
-        int docNum = compIterator.getDocID();
-        assertFalse(
-            "Complement-Set must not contain deleted documents (doc="+docNum+")",
-            live != null && !live.get(docNum));
-        assertNull("Complement-Set must not contain docs from the original set (doc="+ docNum+")", 
-            reader.document(docNum).getField("del"));
-        assertFalse(
-            "Complement-Set must not contain docs from the original set (doc="+docNum+")",
-            resultSet.get(docNum));
-      }
-    } finally {
-      reader.close();
-      dir.close();
-    }
-  }
-  
   /**
    * Creates an index with n documents, this method is meant for testing purposes ONLY
    */
@@ -189,10 +110,7 @@ public class TestScoredDocIDsUtils extends FacetTestCase {
     private final static Field deletionMark = new StringField(field, delTxt, Field.Store.NO);
     private final static Field alphaContent = new StringField(field, alphaTxt, Field.Store.NO);
     
-    protected final int numDocs;
-    
     public DocumentFactory(int totalNumDocs) {
-      this.numDocs = totalNumDocs;
     }
     
     public boolean markedDeleted(int docNum) {

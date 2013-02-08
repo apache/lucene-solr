@@ -41,7 +41,7 @@ public class ResultSortUtils {
    * @throws IllegalArgumentException is provided facet request is not supported 
    */
   public static Heap<FacetResultNode> createSuitableHeap(FacetRequest facetRequest) {
-    int nresults = facetRequest.getNumResults();
+    int nresults = facetRequest.numResults;
     boolean accending = (facetRequest.getSortOrder() == SortOrder.ASCENDING);
 
     if (nresults == Integer.MAX_VALUE) {

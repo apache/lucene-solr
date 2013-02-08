@@ -54,18 +54,13 @@ public class AssociationIntSumFacetRequest extends FacetRequest {
   }
 
   @Override
+  public FacetArraysSource getFacetArraysSource() {
+    return FacetArraysSource.INT;
+  }
+
+  @Override
   public double getValueOf(FacetArrays arrays, int ordinal) {
     return arrays.getIntArray()[ordinal];
   }
 
-  @Override
-  public boolean supportsComplements() {
-    return false;
-  }
-  
-  @Override
-  public boolean requireDocumentScore() {
-    return false;
-  }
-  
 }

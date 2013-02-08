@@ -47,7 +47,7 @@ public class FacetResultNode {
    * <p>
    * <b>NOTE:</b> by default, all nodes are labeled. Only when
    * {@link FacetRequest#getNumLabel()} &lt;
-   * {@link FacetRequest#getNumResults()} there will be unlabeled nodes.
+   * {@link FacetRequest#numResults} there will be unlabeled nodes.
    */
   public CategoryPath label;
   

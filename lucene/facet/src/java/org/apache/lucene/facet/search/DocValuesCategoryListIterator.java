@@ -71,6 +71,7 @@ public class DocValuesCategoryListIterator implements CategoryListIterator {
   
   @Override
   public void getOrdinals(int docID, IntsRef ints) throws IOException {
+    assert current != null : "don't call this if setNextReader returned false";
     current.get(docID, bytes);
     ints.length = 0;
     if (bytes.length > 0) {

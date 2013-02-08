@@ -234,7 +234,7 @@ public abstract class FacetTestBase extends FacetTestCase {
    * test with different faceted search params.
    */
   protected FacetSearchParams getFacetSearchParams(List<FacetRequest> facetRequests, FacetIndexingParams iParams) {
-    return new FacetSearchParams(facetRequests, iParams);
+    return new FacetSearchParams(iParams, facetRequests);
   }
 
   /**
@@ -329,7 +329,7 @@ public abstract class FacetTestBase extends FacetTestCase {
       if (VERBOSE) {
         System.out.println(freq.categoryPath.toString()+ "\t\t" + topResNode);
       }
-      assertCountsAndCardinality(facetCountsTruth, topResNode, freq.getNumResults());
+      assertCountsAndCardinality(facetCountsTruth, topResNode, freq.numResults);
     }
   }
     

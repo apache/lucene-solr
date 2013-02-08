@@ -20,11 +20,7 @@ import org.apache.lucene.facet.index.params.CategoryListParams.OrdinalPolicy;
 import org.apache.lucene.facet.index.params.FacetIndexingParams;
 import org.apache.lucene.facet.index.params.PerDimensionOrdinalPolicy;
 import org.apache.lucene.facet.search.params.CountFacetRequest;
-import org.apache.lucene.facet.search.params.FacetRequest;
-import org.apache.lucene.facet.search.params.FacetRequest.SortBy;
-import org.apache.lucene.facet.search.params.FacetRequest.SortOrder;
 import org.apache.lucene.facet.search.params.FacetSearchParams;
-import org.apache.lucene.facet.search.params.ScoreFacetRequest;
 import org.apache.lucene.facet.search.results.FacetResult;
 import org.apache.lucene.facet.search.results.FacetResultNode;
 import org.apache.lucene.facet.taxonomy.CategoryPath;
@@ -33,6 +29,7 @@ import org.apache.lucene.facet.taxonomy.TaxonomyWriter;
 import org.apache.lucene.facet.taxonomy.directory.DirectoryTaxonomyReader;
 import org.apache.lucene.facet.taxonomy.directory.DirectoryTaxonomyWriter;
 import org.apache.lucene.index.DirectoryReader;
+import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.IndexWriter;
 import org.apache.lucene.index.IndexWriterConfig;
 import org.apache.lucene.index.NoMergePolicy;
@@ -43,8 +40,6 @@ import org.apache.lucene.search.TermQuery;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.util.IOUtils;
 import org.apache.lucene.util.collections.ObjectToIntMap;
-import org.apache.lucene.util.encoding.IntEncoder;
-import org.apache.lucene.util.encoding.VInt8IntEncoder;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.junit.Test;
@@ -66,7 +61,7 @@ import org.junit.Test;
  * limitations under the License.
  */
 
-public class CountingFacetsCollectorTest extends FacetTestCase {
+public class CountingFacetsAggregatorTest extends FacetTestCase {
   
   private static final Term A = new Term("f", "a");
   private static final CategoryPath CP_A = new CategoryPath("A"), CP_B = new CategoryPath("B");
@@ -104,7 +99,7 @@ public class CountingFacetsCollectorTest extends FacetTestCase {
   private static FacetIndexingParams fip;
 
   @AfterClass
-  public static void afterClassCountingFacetsCollectorTest() throws Exception {
+  public static void afterClassCountingFacetsAggregatorTest() throws Exception {
     IOUtils.close(indexDir, taxoDir); 
   }
   
@@ -237,7 +232,7 @@ public class CountingFacetsCollectorTest extends FacetTestCase {
   }
   
   @BeforeClass
-  public static void beforeClassCountingFacetsCollectorTest() throws Exception {
+  public static void beforeClassCountingFacetsAggregatorTest() throws Exception {
     indexDir = newDirectory();
     taxoDir = newDirectory();
     
@@ -277,72 +272,16 @@ public class CountingFacetsCollectorTest extends FacetTestCase {
     IOUtils.close(indexWriter, taxoWriter);
   }
   
-  @Test
-  public void testInvalidParams() throws Exception {
-    final CategoryPath dummyCP = new CategoryPath("a");
-    final FacetRequest dummyFR = new CountFacetRequest(dummyCP, 10);
-
-    // only CountFacetRequests are allowed
-    assertNotNull("only CountFacetRequests should be allowed", 
-        CountingFacetsCollector.assertParams(new FacetSearchParams(new ScoreFacetRequest(dummyCP, 10))));
-
-    // only depth=1
-    FacetRequest cfr = new CountFacetRequest(dummyCP, 10);
-    cfr.setDepth(2);
-    assertNotNull("only depth 1 should be allowed", CountingFacetsCollector.assertParams(new FacetSearchParams(cfr)));
-
-    // only SortOrder.DESCENDING
-    cfr = new CountFacetRequest(dummyCP, 10);
-    cfr.setSortOrder(SortOrder.ASCENDING);
-    assertNotNull("only SortOrder.DESCENDING should be allowed", CountingFacetsCollector.assertParams(new FacetSearchParams(cfr)));
-    
-    // only SortBy.VALUE
-    cfr = new CountFacetRequest(dummyCP, 10);
-    cfr.setSortBy(SortBy.ORDINAL);
-    assertNotNull("only SortBy.VALUE should be allowed", CountingFacetsCollector.assertParams(new FacetSearchParams(cfr)));
-
-    // no numToLabel
-    cfr = new CountFacetRequest(dummyCP, 10);
-    cfr.setNumLabel(2);
-    assertNotNull("numToLabel should not be allowed", CountingFacetsCollector.assertParams(new FacetSearchParams(cfr)));
-    
-    FacetIndexingParams fip = new FacetIndexingParams() {
+  private FacetsAccumulator randomAccumulator(FacetSearchParams fsp, IndexReader indexReader, TaxonomyReader taxoReader) {
+    final FacetsAggregator aggregator = random().nextBoolean() ? new CountingFacetsAggregator() : new FastCountingFacetsAggregator();
+    return new FacetsAccumulator(fsp, indexReader, taxoReader) {
       @Override
-      public CategoryListParams getCategoryListParams(CategoryPath category) {
-        return new CategoryListParams();
+      public FacetsAggregator getAggregator() {
+        return aggregator;
       }
     };
-    assertNotNull("only one CLP should be allowed", CountingFacetsCollector.assertParams(new FacetSearchParams(fip, dummyFR, 
-        new CountFacetRequest(new CategoryPath("moo"), 10))));
-    
-    fip = new FacetIndexingParams(new CategoryListParams("moo")) {
-      final CategoryListParams clp = new CategoryListParams() {
-        @Override
-        public IntEncoder createEncoder() {
-          return new VInt8IntEncoder();
-        }
-      };
-      @Override
-      public List<CategoryListParams> getAllCategoryListParams() {
-        return Collections.singletonList(clp);
-      }
-      
-      @Override
-      public CategoryListParams getCategoryListParams(CategoryPath category) {
-        return clp;
-      }
-    };
-    assertNotNull("only DGapVIntEncoder should be allowed", CountingFacetsCollector.assertParams(new FacetSearchParams(fip, dummyFR)));
-
-    fip = new FacetIndexingParams(new CategoryListParams("moo")) {
-      @Override
-      public int getPartitionSize() {
-        return 2;
-      }
-    };
-    assertNotNull("partitions should be allowed", CountingFacetsCollector.assertParams(new FacetSearchParams(fip, dummyFR)));
   }
-
+  
   @Test
   public void testDifferentNumResults() throws Exception {
     // test the collector w/ FacetRequests and different numResults
@@ -352,7 +291,7 @@ public class CountingFacetsCollectorTest extends FacetTestCase {
     
     FacetSearchParams fsp = new FacetSearchParams(new CountFacetRequest(CP_A, NUM_CHILDREN_CP_A), 
         new CountFacetRequest(CP_B, NUM_CHILDREN_CP_B));
-    FacetsCollector fc = new CountingFacetsCollector(fsp , taxoReader);
+    FacetsCollector fc = FacetsCollector.create(randomAccumulator(fsp, indexReader, taxoReader));
     TermQuery q = new TermQuery(A);
     searcher.search(q, fc);
     
@@ -377,7 +316,7 @@ public class CountingFacetsCollectorTest extends FacetTestCase {
     
     FacetSearchParams fsp = new FacetSearchParams(new CountFacetRequest(CP_A, NUM_CHILDREN_CP_A), 
         new CountFacetRequest(CP_B, NUM_CHILDREN_CP_B));
-    FacetsCollector fc = new CountingFacetsCollector(fsp , taxoReader);
+    FacetsCollector fc = FacetsCollector.create(randomAccumulator(fsp, indexReader, taxoReader));
     searcher.search(new MatchAllDocsQuery(), fc);
     
     List<FacetResult> facetResults = fc.getFacetResults();
@@ -409,7 +348,7 @@ public class CountingFacetsCollectorTest extends FacetTestCase {
     
     FacetSearchParams fsp = new FacetSearchParams(new CountFacetRequest(CP_A, Integer.MAX_VALUE), 
         new CountFacetRequest(CP_B, Integer.MAX_VALUE));
-    FacetsCollector fc = new CountingFacetsCollector(fsp , taxoReader);
+    FacetsCollector fc = FacetsCollector.create(randomAccumulator(fsp, indexReader, taxoReader));
     searcher.search(new MatchAllDocsQuery(), fc);
     
     List<FacetResult> facetResults = fc.getFacetResults();
@@ -426,37 +365,13 @@ public class CountingFacetsCollectorTest extends FacetTestCase {
   }
   
   @Test
-  public void testDirectSource() throws Exception {
-    DirectoryReader indexReader = DirectoryReader.open(indexDir);
-    TaxonomyReader taxoReader = new DirectoryTaxonomyReader(taxoDir);
-    IndexSearcher searcher = new IndexSearcher(indexReader);
-    
-    FacetSearchParams fsp = new FacetSearchParams(new CountFacetRequest(CP_A, NUM_CHILDREN_CP_A), 
-        new CountFacetRequest(CP_B, NUM_CHILDREN_CP_B));
-    FacetsCollector fc = new CountingFacetsCollector(fsp , taxoReader, new FacetArrays(taxoReader.getSize()));
-    searcher.search(new MatchAllDocsQuery(), fc);
-    
-    List<FacetResult> facetResults = fc.getFacetResults();
-    assertEquals("invalid number of facet results", 2, facetResults.size());
-    for (FacetResult res : facetResults) {
-      FacetResultNode root = res.getFacetResultNode();
-      assertEquals("wrong count for " + root.label, allExpectedCounts.get(root.label), (int) root.value);
-      for (FacetResultNode child : root.subResults) {
-        assertEquals("wrong count for " + child.label, allExpectedCounts.get(child.label), (int) child.value);
-      }
-    }
-    
-    IOUtils.close(indexReader, taxoReader);
-  }
-
-  @Test
   public void testNoParents() throws Exception {
     DirectoryReader indexReader = DirectoryReader.open(indexDir);
     TaxonomyReader taxoReader = new DirectoryTaxonomyReader(taxoDir);
     IndexSearcher searcher = new IndexSearcher(indexReader);
     FacetSearchParams fsp = new FacetSearchParams(fip, new CountFacetRequest(CP_C, NUM_CHILDREN_CP_C), 
         new CountFacetRequest(CP_D, NUM_CHILDREN_CP_D));
-    FacetsCollector fc = new CountingFacetsCollector(fsp , taxoReader);
+    FacetsCollector fc = FacetsCollector.create(randomAccumulator(fsp, indexReader, taxoReader));
     searcher.search(new MatchAllDocsQuery(), fc);
     
     List<FacetResult> facetResults = fc.getFacetResults();

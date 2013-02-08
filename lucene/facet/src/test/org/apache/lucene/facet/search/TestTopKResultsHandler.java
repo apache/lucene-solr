@@ -13,8 +13,6 @@ import org.apache.lucene.facet.search.params.FacetSearchParams;
 import org.apache.lucene.facet.search.results.FacetResult;
 import org.apache.lucene.facet.search.results.FacetResultNode;
 import org.apache.lucene.facet.taxonomy.CategoryPath;
-import org.apache.lucene.facet.taxonomy.TaxonomyReader;
-import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.search.MatchAllDocsQuery;
 import org.junit.Test;
 
@@ -92,15 +90,7 @@ public class TestTopKResultsHandler extends BaseTestTopK {
       
       // do different facet counts and compare to control
       FacetSearchParams sParams = getFacetSearchParams(facetRequests, fip);
-      
-      FacetsCollector fc = new StandardFacetsCollector(sParams, indexReader, taxoReader) {
-        @Override
-        protected FacetsAccumulator initFacetsAccumulator(FacetSearchParams facetSearchParams, IndexReader indexReader, TaxonomyReader taxonomyReader) {
-          FacetsAccumulator fa = new StandardFacetsAccumulator(facetSearchParams, indexReader, taxonomyReader);
-          fa.setComplementThreshold(FacetsAccumulator.DISABLE_COMPLEMENT);
-          return fa;
-        }
-      };
+      FacetsCollector fc = FacetsCollector.create(sParams, indexReader, taxoReader);
       
       searcher.search(new MatchAllDocsQuery(), fc);
       List<FacetResult> facetResults = fc.getFacetResults();
@@ -169,15 +159,7 @@ public class TestTopKResultsHandler extends BaseTestTopK {
       // do different facet counts and compare to control
       CategoryPath path = new CategoryPath("a", "b");
       FacetSearchParams sParams = getFacetSearchParams(fip, new CountFacetRequest(path, Integer.MAX_VALUE));
-
-      FacetsCollector fc = new StandardFacetsCollector(sParams, indexReader, taxoReader) {
-        @Override
-        protected FacetsAccumulator initFacetsAccumulator(FacetSearchParams facetSearchParams, IndexReader indexReader, TaxonomyReader taxonomyReader) {
-          FacetsAccumulator fa = new StandardFacetsAccumulator(facetSearchParams, indexReader, taxonomyReader);
-          fa.setComplementThreshold(FacetsAccumulator.DISABLE_COMPLEMENT);
-          return fa;
-        }
-      };
+      FacetsCollector fc = FacetsCollector.create(sParams, indexReader, taxoReader);
       
       searcher.search(new MatchAllDocsQuery(), fc);
       List<FacetResult> results = fc.getFacetResults();
@@ -187,17 +169,8 @@ public class TestTopKResultsHandler extends BaseTestTopK {
       assertEquals(path + " should only have 4 desendants", 4, res.getNumValidDescendants());
 
       // As a control base results, ask for top-1000 results
-      FacetSearchParams sParams2 = getFacetSearchParams(
-          fip, new CountFacetRequest(path, Integer.MAX_VALUE));
-
-      FacetsCollector fc2 = new StandardFacetsCollector(sParams2, indexReader, taxoReader) {
-        @Override
-        protected FacetsAccumulator initFacetsAccumulator(FacetSearchParams facetSearchParams, IndexReader indexReader, TaxonomyReader taxonomyReader) {
-          FacetsAccumulator fa = new StandardFacetsAccumulator(facetSearchParams, indexReader, taxonomyReader);
-          fa.setComplementThreshold(FacetsAccumulator.DISABLE_COMPLEMENT);
-          return fa;
-        }
-      };
+      FacetSearchParams sParams2 = getFacetSearchParams(fip, new CountFacetRequest(path, Integer.MAX_VALUE));
+      FacetsCollector fc2 = FacetsCollector.create(sParams2, indexReader, taxoReader);
       
       searcher.search(new MatchAllDocsQuery(), fc2);
       List<FacetResult> baseResults = fc2.getFacetResults();

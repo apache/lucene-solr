@@ -8,8 +8,6 @@ import org.apache.lucene.facet.index.params.FacetIndexingParams;
 import org.apache.lucene.facet.search.params.FacetSearchParams;
 import org.apache.lucene.facet.search.results.FacetResult;
 import org.apache.lucene.facet.search.results.FacetResultNode;
-import org.apache.lucene.facet.taxonomy.TaxonomyReader;
-import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.search.MatchAllDocsQuery;
 import org.apache.lucene.search.Query;
 import org.junit.Test;
@@ -37,17 +35,9 @@ public class TestTopKResultsHandlerRandom extends BaseTestTopK {
       throws IOException {
     Query q = new MatchAllDocsQuery();
     FacetSearchParams facetSearchParams = searchParamsWithRequests(numResults, fip);
-    FacetsCollector fc = new StandardFacetsCollector(facetSearchParams, indexReader, taxoReader) {
-      @Override
-      protected FacetsAccumulator initFacetsAccumulator(
-          FacetSearchParams facetSearchParams, IndexReader indexReader,
-          TaxonomyReader taxonomyReader) {
-        FacetsAccumulator accumulator = new StandardFacetsAccumulator(facetSearchParams, indexReader, taxonomyReader);
-        double complement = doComplement ? FacetsAccumulator.FORCE_COMPLEMENT : FacetsAccumulator.DISABLE_COMPLEMENT;
-        accumulator.setComplementThreshold(complement);
-        return accumulator;
-      }
-    };
+    StandardFacetsAccumulator sfa = new StandardFacetsAccumulator(facetSearchParams, indexReader, taxoReader);
+    sfa.setComplementThreshold(doComplement ? StandardFacetsAccumulator.FORCE_COMPLEMENT : StandardFacetsAccumulator.DISABLE_COMPLEMENT);
+    FacetsCollector fc = FacetsCollector.create(sfa);
     searcher.search(q, fc);
     List<FacetResult> facetResults = fc.getFacetResults();
     return facetResults;

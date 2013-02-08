@@ -1,14 +1,26 @@
 package org.apache.lucene.facet.search;
 
 import java.io.IOException;
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Set;
 
-import org.apache.lucene.index.IndexReader;
-
-import org.apache.lucene.facet.search.params.FacetSearchParams;
+import org.apache.lucene.facet.index.params.CategoryListParams;
+import org.apache.lucene.facet.index.params.CategoryListParams.OrdinalPolicy;
+import org.apache.lucene.facet.search.FacetsCollector.MatchingDocs;
 import org.apache.lucene.facet.search.params.FacetRequest;
+import org.apache.lucene.facet.search.params.FacetSearchParams;
+import org.apache.lucene.facet.search.params.FacetRequest.FacetArraysSource;
+import org.apache.lucene.facet.search.params.FacetRequest.ResultMode;
+import org.apache.lucene.facet.search.params.FacetRequest.SortBy;
+import org.apache.lucene.facet.search.params.FacetRequest.SortOrder;
 import org.apache.lucene.facet.search.results.FacetResult;
 import org.apache.lucene.facet.taxonomy.TaxonomyReader;
+import org.apache.lucene.facet.taxonomy.directory.ParallelTaxonomyArrays;
+import org.apache.lucene.index.IndexReader;
+import org.apache.lucene.util.encoding.DGapVInt8IntDecoder;
 
 /*
  * Licensed to the Apache Software Foundation (ASF) under one or more
@@ -33,116 +45,130 @@ import org.apache.lucene.facet.taxonomy.TaxonomyReader;
  * 
  * @lucene.experimental
  */
-public abstract class FacetsAccumulator {
-
-  /**
-   * Default threshold for using the complements optimization.
-   * If accumulating facets for a document set larger than this ratio of the index size than 
-   * perform the complement optimization.
-   * @see #setComplementThreshold(double) for more info on the complements optimization.  
-   */
-  public static final double DEFAULT_COMPLEMENT_THRESHOLD = 0.6;
-
-  /**
-   * Passing this to {@link #setComplementThreshold(double)} will disable using complement optimization.
-   */
-  public static final double DISABLE_COMPLEMENT = Double.POSITIVE_INFINITY; // > 1 actually
-
-  /**
-   * Passing this to {@link #setComplementThreshold(double)} will force using complement optimization.
-   */
-  public static final double FORCE_COMPLEMENT = 0; // <=0  
-
-  private double complementThreshold = DEFAULT_COMPLEMENT_THRESHOLD;  
+public class FacetsAccumulator {
 
   protected final TaxonomyReader taxonomyReader;
   protected final IndexReader indexReader;
+  protected final FacetArrays facetArrays;
   protected FacetSearchParams searchParams;
 
-  private boolean allowLabeling = true;
-
-  public FacetsAccumulator(FacetSearchParams searchParams,
-                            IndexReader indexReader,
-                            TaxonomyReader taxonomyReader) {
+  /**
+   * Initializes the accumulator with the given search params, index reader and
+   * taxonomy reader. This constructor creates the default {@link FacetArrays},
+   * which do not support reuse. If you want to use {@link ReusingFacetArrays},
+   * you should use the
+   * {@link #FacetsAccumulator(FacetSearchParams, IndexReader, TaxonomyReader, FacetArrays)}
+   * constructor.
+   */
+  public FacetsAccumulator(FacetSearchParams searchParams, IndexReader indexReader, TaxonomyReader taxonomyReader) {
+    this(searchParams, indexReader, taxonomyReader, null);
+  }
+  
+  /**
+   * Initializes the accumulator with the given parameters as well as
+   * {@link FacetArrays}. Note that the accumulator doesn't call
+   * {@link FacetArrays#free()}. If you require that (only makes sense if you
+   * use {@link ReusingFacetArrays}, you should do it after you've finished with
+   * the accumulator.
+   */
+  public FacetsAccumulator(FacetSearchParams searchParams, IndexReader indexReader, TaxonomyReader taxonomyReader, 
+      FacetArrays facetArrays) {
+    if (facetArrays == null) {
+      facetArrays = new FacetArrays(taxonomyReader.getSize());
+    }
+    this.facetArrays = facetArrays;
     this.indexReader = indexReader;
     this.taxonomyReader = taxonomyReader;
     this.searchParams = searchParams;
   }
-
+  
   /**
-   * Accumulate facets over given documents, according to facet requests in effect.
-   * @param docids documents (and their scores) for which facets are Accumulated.
-   * @return Accumulated facets.  
-   * @throws IOException on error.
+   * Returns the {@link FacetsAggregator} to use for aggregating the categories
+   * found in the result documents. The default implementation returns
+   * {@link CountingFacetsAggregator}, or {@link FastCountingFacetsAggregator}
+   * if all categories can be decoded with {@link DGapVInt8IntDecoder}.
    */
-  // internal API note: it was considered to move the docids into the constructor as well, 
-  // but this prevents nice extension capabilities, especially in the way that 
-  // Sampling Accumulator works with the (any) delegated accumulator.
-  public abstract List<FacetResult> accumulate(ScoredDocIDs docids) throws IOException;
-
-  /**
-   * Returns the complement threshold.
-   * @see #setComplementThreshold(double)
-   */
-  public double getComplementThreshold() {
-    return complementThreshold;
+  public FacetsAggregator getAggregator() {
+    if (FastCountingFacetsAggregator.verifySearchParams(searchParams)) {
+      return new FastCountingFacetsAggregator();
+    } else {
+      return new CountingFacetsAggregator();
+    }
   }
-
+  
   /**
-   * Set the complement threshold.
-   * This threshold will dictate whether the complements optimization is applied.
-   * The optimization is to count for less documents. It is useful when the same 
-   * FacetSearchParams are used for varying sets of documents. The first time 
-   * complements is used the "total counts" are computed - counting for all the 
-   * documents in the collection. Then, only the complementing set of documents
-   * is considered, and used to decrement from the overall counts, thereby 
-   * walking through less documents, which is faster.
-   * <p>
-   * For the default settings see {@link #DEFAULT_COMPLEMENT_THRESHOLD}.
-   * <p>
-   * To forcing complements in all cases pass {@link #FORCE_COMPLEMENT}.
-   * This is mostly useful for testing purposes, as forcing complements when only 
-   * tiny fraction of available documents match the query does not make sense and 
-   * would incur performance degradations.
-   * <p>
-   * To disable complements pass {@link #DISABLE_COMPLEMENT}.
-   * @param complementThreshold the complement threshold to set
-   * @see #getComplementThreshold()
+   * Creates a {@link FacetResultsHandler} that matches the given
+   * {@link FacetRequest}.
    */
-  public void setComplementThreshold(double complementThreshold) {
-    this.complementThreshold = complementThreshold;
-  }
-
-  /**
-   * Check if labeling is allowed for this accumulator.
-   * <p>
-   * By default labeling is allowed.
-   * This allows one accumulator to invoke other accumulators for accumulation
-   * but keep to itself the responsibility of labeling.
-   * This might br handy since labeling is a costly operation. 
-   * @return true of labeling is allowed for this accumulator
-   * @see #setAllowLabeling(boolean)
-   */
-  protected boolean isAllowLabeling() {
-    return allowLabeling;
-  }
-
-  /**
-   * Set whether labeling is allowed for this accumulator.
-   * @param allowLabeling new setting for allow labeling
-   * @see #isAllowLabeling()
-   */
-  protected void setAllowLabeling(boolean allowLabeling) {
-    this.allowLabeling = allowLabeling;
-  }
-
-  /** check if all requests are complementable */
-  protected boolean mayComplement() {
-    for (FacetRequest freq:searchParams.facetRequests) {
-      if (!freq.supportsComplements()) {
-        return false;
+  protected FacetResultsHandler createFacetResultsHandler(FacetRequest fr) {
+    if (fr.getDepth() == 1 && fr.getSortOrder() == SortOrder.DESCENDING && fr.getSortBy() == SortBy.VALUE) {
+      FacetArraysSource fas = fr.getFacetArraysSource();
+      if (fas == FacetArraysSource.INT) {
+        return new IntFacetResultsHandler(taxonomyReader, fr, facetArrays);
+      }
+      
+      if (fas == FacetArraysSource.FLOAT) {
+        return new FloatFacetResultsHandler(taxonomyReader, fr, facetArrays);
       }
     }
-    return true;
+
+    if (fr.getResultMode() == ResultMode.PER_NODE_IN_TREE) {
+      return new TopKInEachNodeHandler(taxonomyReader, fr, facetArrays);
+    } 
+    return new TopKFacetResultsHandler(taxonomyReader, fr, facetArrays);
   }
+
+  protected Set<CategoryListParams> getCategoryLists() {
+    if (searchParams.indexingParams.getAllCategoryListParams().size() == 1) {
+      return Collections.singleton(searchParams.indexingParams.getCategoryListParams(null));
+    }
+    
+    HashSet<CategoryListParams> clps = new HashSet<CategoryListParams>();
+    for (FacetRequest fr : searchParams.facetRequests) {
+      clps.add(searchParams.indexingParams.getCategoryListParams(fr.categoryPath));
+    }
+    return clps;
+  }
+
+  /**
+   * Used by {@link FacetsCollector} to build the list of {@link FacetResult
+   * facet results} that match the {@link FacetRequest facet requests} that were
+   * given in the constructor.
+   * 
+   * @param matchingDocs
+   *          the documents that matched the query, per-segment.
+   */
+  public List<FacetResult> accumulate(List<MatchingDocs> matchingDocs) throws IOException {
+    // aggregate facets per category list (usually onle one category list)
+    FacetsAggregator aggregator = getAggregator();
+    for (CategoryListParams clp : getCategoryLists()) {
+      for (MatchingDocs md : matchingDocs) {
+        aggregator.aggregate(md, clp, facetArrays);
+      }
+    }
+    
+    ParallelTaxonomyArrays arrays = taxonomyReader.getParallelTaxonomyArrays();
+    
+    // compute top-K
+    final int[] children = arrays.children();
+    final int[] siblings = arrays.siblings();
+    List<FacetResult> res = new ArrayList<FacetResult>();
+    for (FacetRequest fr : searchParams.facetRequests) {
+      int rootOrd = taxonomyReader.getOrdinal(fr.categoryPath);
+      if (rootOrd == TaxonomyReader.INVALID_ORDINAL) { // category does not exist
+        continue;
+      }
+      CategoryListParams clp = searchParams.indexingParams.getCategoryListParams(fr.categoryPath);
+      OrdinalPolicy ordinalPolicy = clp .getOrdinalPolicy(fr.categoryPath.components[0]);
+      if (ordinalPolicy == OrdinalPolicy.NO_PARENTS) {
+        // rollup values
+        aggregator.rollupValues(rootOrd, children, siblings, facetArrays);
+      }
+      
+      FacetResultsHandler frh = createFacetResultsHandler(fr);
+      res.add(frh.compute());
+    }
+    return res;
+  }
+
 }

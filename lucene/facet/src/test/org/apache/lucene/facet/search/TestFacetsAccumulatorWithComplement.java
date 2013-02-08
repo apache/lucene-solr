@@ -3,27 +3,21 @@ package org.apache.lucene.facet.search;
 import java.io.IOException;
 import java.util.List;
 
-import org.apache.lucene.index.IndexReader;
-import org.apache.lucene.index.MultiReader;
-import org.apache.lucene.index.ParallelAtomicReader;
-import org.apache.lucene.index.SlowCompositeReaderWrapper;
-import org.apache.lucene.search.MatchAllDocsQuery;
-import org.apache.lucene.search.Query;
-import org.junit.After;
-import org.junit.Before;
-import org.junit.Test;
-
 import org.apache.lucene.facet.FacetTestBase;
 import org.apache.lucene.facet.index.params.FacetIndexingParams;
-import org.apache.lucene.facet.search.FacetsAccumulator;
-import org.apache.lucene.facet.search.ScoredDocIDs;
-import org.apache.lucene.facet.search.ScoredDocIdCollector;
-import org.apache.lucene.facet.search.StandardFacetsAccumulator;
 import org.apache.lucene.facet.search.params.CountFacetRequest;
 import org.apache.lucene.facet.search.params.FacetSearchParams;
 import org.apache.lucene.facet.search.results.FacetResult;
 import org.apache.lucene.facet.search.results.FacetResultNode;
 import org.apache.lucene.facet.taxonomy.CategoryPath;
+import org.apache.lucene.index.IndexReader;
+import org.apache.lucene.index.MultiReader;
+import org.apache.lucene.index.ParallelAtomicReader;
+import org.apache.lucene.index.SlowCompositeReaderWrapper;
+import org.apache.lucene.search.MatchAllDocsQuery;
+import org.junit.After;
+import org.junit.Before;
+import org.junit.Test;
 
 /*
  * Licensed to the Apache Software Foundation (ASF) under one or more
@@ -104,17 +98,9 @@ public class TestFacetsAccumulatorWithComplement extends FacetTestBase {
   }
   
   private void doTestComplements() throws Exception {
-    Query q = new MatchAllDocsQuery(); //new TermQuery(new Term(TEXT,"white"));
-    if (VERBOSE) {
-      System.out.println("Query: "+q);
-    }
-    ScoredDocIdCollector dCollector = 
-      ScoredDocIdCollector.create(indexReader.maxDoc(),false); // scoring is disabled
-    searcher.search(q, dCollector);
-    
     // verify by facet values
-    List<FacetResult> countResWithComplement = findFacets(dCollector.getScoredDocIDs(), true);
-    List<FacetResult> countResNoComplement = findFacets(dCollector.getScoredDocIDs(), false);
+    List<FacetResult> countResWithComplement = findFacets(true);
+    List<FacetResult> countResNoComplement = findFacets(false);
     
     assertEquals("Wrong number of facet count results with complement!",1,countResWithComplement.size());
     assertEquals("Wrong number of facet count results no complement!",1,countResNoComplement.size());
@@ -124,20 +110,17 @@ public class TestFacetsAccumulatorWithComplement extends FacetTestBase {
     
     assertEquals("Wrong number of top count aggregated categories with complement!",3,parentResWithComp.subResults.size());
     assertEquals("Wrong number of top count aggregated categories no complement!",3,parentResNoComp.subResults.size());
-    
   }
   
   /** compute facets with certain facet requests and docs */
-  private List<FacetResult> findFacets(ScoredDocIDs sDocids, boolean withComplement) throws IOException {
+  private List<FacetResult> findFacets(boolean withComplement) throws IOException {
     FacetSearchParams fsp = new FacetSearchParams(fip, new CountFacetRequest(new CategoryPath("root","a"), 10));
-    FacetsAccumulator fAccumulator = new StandardFacetsAccumulator(fsp, indexReader, taxoReader);
+    StandardFacetsAccumulator sfa = new StandardFacetsAccumulator(fsp, indexReader, taxoReader);
+    sfa.setComplementThreshold(withComplement ? StandardFacetsAccumulator.FORCE_COMPLEMENT : StandardFacetsAccumulator.DISABLE_COMPLEMENT);
+    FacetsCollector fc = FacetsCollector.create(sfa);
+    searcher.search(new MatchAllDocsQuery(), fc);
     
-    fAccumulator.setComplementThreshold(
-        withComplement ? 
-            FacetsAccumulator.FORCE_COMPLEMENT: 
-              FacetsAccumulator.DISABLE_COMPLEMENT);
-    
-    List<FacetResult> res = fAccumulator.accumulate(sDocids);
+    List<FacetResult> res = fc.getFacetResults();
     
     // Results are ready, printing them...
     int i = 0;
@@ -147,7 +130,7 @@ public class TestFacetsAccumulatorWithComplement extends FacetTestBase {
       }
     }
     
-    assertEquals(withComplement, ((StandardFacetsAccumulator) fAccumulator).isUsingComplements);
+    assertEquals(withComplement, sfa.isUsingComplements);
     
     return res;
   }
