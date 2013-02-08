@@ -11,10 +11,8 @@ import org.apache.lucene.util._TestUtil;
 
 import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.facet.FacetTestBase;
-import org.apache.lucene.facet.index.params.FacetIndexingParams;
-import org.apache.lucene.facet.search.params.CountFacetRequest;
-import org.apache.lucene.facet.search.params.FacetRequest;
-import org.apache.lucene.facet.search.params.FacetSearchParams;
+import org.apache.lucene.facet.params.FacetIndexingParams;
+import org.apache.lucene.facet.params.FacetSearchParams;
 import org.apache.lucene.facet.taxonomy.CategoryPath;
 import org.apache.lucene.facet.taxonomy.TaxonomyWriter;
 

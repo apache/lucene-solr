@@ -2,11 +2,11 @@ package org.apache.lucene.facet.search;
 
 import java.io.IOException;
 
+import org.apache.lucene.facet.encoding.IntDecoder;
 import org.apache.lucene.index.AtomicReaderContext;
 import org.apache.lucene.index.BinaryDocValues;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.IntsRef;
-import org.apache.lucene.util.encoding.IntDecoder;
 
 /*
  * Licensed to the Apache Software Foundation (ASF) under one or more

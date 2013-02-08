@@ -3,8 +3,6 @@ package org.apache.lucene.facet.search;
 import java.io.IOException;
 import java.util.ArrayList;
 
-import org.apache.lucene.facet.search.params.FacetRequest;
-import org.apache.lucene.facet.search.results.FacetResultNode;
 import org.apache.lucene.facet.taxonomy.TaxonomyReader;
 import org.apache.lucene.util.PriorityQueue;
 

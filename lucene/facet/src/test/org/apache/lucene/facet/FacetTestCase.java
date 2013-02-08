@@ -2,17 +2,17 @@ package org.apache.lucene.facet;
 
 import java.util.Random;
 
-import org.apache.lucene.facet.index.params.CategoryListParams;
+import org.apache.lucene.facet.encoding.DGapIntEncoder;
+import org.apache.lucene.facet.encoding.DGapVInt8IntEncoder;
+import org.apache.lucene.facet.encoding.EightFlagsIntEncoder;
+import org.apache.lucene.facet.encoding.FourFlagsIntEncoder;
+import org.apache.lucene.facet.encoding.IntEncoder;
+import org.apache.lucene.facet.encoding.NOnesIntEncoder;
+import org.apache.lucene.facet.encoding.SortingIntEncoder;
+import org.apache.lucene.facet.encoding.UniqueValuesIntEncoder;
+import org.apache.lucene.facet.encoding.VInt8IntEncoder;
+import org.apache.lucene.facet.params.CategoryListParams;
 import org.apache.lucene.util.LuceneTestCase;
-import org.apache.lucene.util.encoding.DGapIntEncoder;
-import org.apache.lucene.util.encoding.DGapVInt8IntEncoder;
-import org.apache.lucene.util.encoding.EightFlagsIntEncoder;
-import org.apache.lucene.util.encoding.FourFlagsIntEncoder;
-import org.apache.lucene.util.encoding.IntEncoder;
-import org.apache.lucene.util.encoding.NOnesIntEncoder;
-import org.apache.lucene.util.encoding.SortingIntEncoder;
-import org.apache.lucene.util.encoding.UniqueValuesIntEncoder;
-import org.apache.lucene.util.encoding.VInt8IntEncoder;
 
 /*
  * Licensed to the Apache Software Foundation (ASF) under one or more

@@ -3,8 +3,7 @@ package org.apache.lucene.facet.util;
 import java.io.IOException;
 import java.util.List;
 
-import org.apache.lucene.facet.index.OrdinalMappingAtomicReader;
-import org.apache.lucene.facet.index.params.FacetIndexingParams;
+import org.apache.lucene.facet.params.FacetIndexingParams;
 import org.apache.lucene.facet.taxonomy.directory.DirectoryTaxonomyWriter;
 import org.apache.lucene.facet.taxonomy.directory.DirectoryTaxonomyWriter.OrdinalMap;
 import org.apache.lucene.index.AtomicReader;

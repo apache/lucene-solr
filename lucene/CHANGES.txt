@@ -63,6 +63,9 @@ Changes in backwards compatibility policy
   FacetsAggregator. You can still use StandardFacetsAccumulator, which works
   with the old API (for now). (Shai Erera) 
 
+* LUCENE-4761: Facet packages reorganized. Should be easy to fix your import
+  statements, if you use an IDE such as Eclipse. (Shai Erera)
+
 Optimizations
 
 * LUCENE-4687: BloomFilterPostingsFormat now lazily initializes delegate

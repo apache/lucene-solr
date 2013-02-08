@@ -7,15 +7,15 @@ import java.util.Iterator;
 import java.util.Map;
 import java.util.Map.Entry;
 
-import org.apache.lucene.facet.index.params.CategoryListParams;
-import org.apache.lucene.facet.index.params.CategoryListParams.OrdinalPolicy;
-import org.apache.lucene.facet.index.params.FacetIndexingParams;
+import org.apache.lucene.facet.encoding.IntEncoder;
+import org.apache.lucene.facet.params.CategoryListParams;
+import org.apache.lucene.facet.params.FacetIndexingParams;
+import org.apache.lucene.facet.params.CategoryListParams.OrdinalPolicy;
 import org.apache.lucene.facet.taxonomy.CategoryPath;
 import org.apache.lucene.facet.taxonomy.TaxonomyWriter;
 import org.apache.lucene.facet.util.PartitionsUtils;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.IntsRef;
-import org.apache.lucene.util.encoding.IntEncoder;
 
 /*
  * Licensed to the Apache Software Foundation (ASF) under one or more

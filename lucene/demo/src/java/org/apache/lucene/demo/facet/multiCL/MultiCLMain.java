@@ -7,7 +7,7 @@ import org.apache.lucene.store.RAMDirectory;
 
 import org.apache.lucene.demo.facet.ExampleResult;
 import org.apache.lucene.demo.facet.ExampleUtils;
-import org.apache.lucene.facet.search.results.FacetResult;
+import org.apache.lucene.facet.search.FacetResult;
 
 /*
  * Licensed to the Apache Software Foundation (ASF) under one or more

@@ -3,9 +3,9 @@ package org.apache.lucene.facet.search;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.util.LuceneTestCase.Slow;
 
-import org.apache.lucene.facet.search.params.FacetSearchParams;
-import org.apache.lucene.facet.search.sampling.BaseSampleTestTopK;
-import org.apache.lucene.facet.search.sampling.Sampler;
+import org.apache.lucene.facet.params.FacetSearchParams;
+import org.apache.lucene.facet.sampling.BaseSampleTestTopK;
+import org.apache.lucene.facet.sampling.Sampler;
 import org.apache.lucene.facet.taxonomy.TaxonomyReader;
 
 /*

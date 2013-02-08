@@ -3,11 +3,8 @@ package org.apache.lucene.facet.search;
 import java.io.IOException;
 import java.util.ArrayList;
 
-import org.apache.lucene.facet.partitions.search.IntermediateFacetResult;
-import org.apache.lucene.facet.partitions.search.PartitionsFacetResultsHandler;
-import org.apache.lucene.facet.search.params.FacetRequest;
-import org.apache.lucene.facet.search.results.FacetResult;
-import org.apache.lucene.facet.search.results.FacetResultNode;
+import org.apache.lucene.facet.partitions.IntermediateFacetResult;
+import org.apache.lucene.facet.partitions.PartitionsFacetResultsHandler;
 import org.apache.lucene.facet.taxonomy.TaxonomyReader;
 import org.apache.lucene.facet.taxonomy.directory.ParallelTaxonomyArrays;
 import org.apache.lucene.facet.util.ResultSortUtils;

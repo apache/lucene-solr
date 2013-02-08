@@ -3,11 +3,10 @@ package org.apache.lucene.facet.search;
 import java.io.IOException;
 import java.util.List;
 
-import org.apache.lucene.facet.search.params.FacetSearchParams;
-import org.apache.lucene.facet.search.results.FacetResult;
-import org.apache.lucene.facet.search.sampling.RandomSampler;
-import org.apache.lucene.facet.search.sampling.Sampler;
-import org.apache.lucene.facet.search.sampling.SamplingAccumulator;
+import org.apache.lucene.facet.params.FacetSearchParams;
+import org.apache.lucene.facet.sampling.RandomSampler;
+import org.apache.lucene.facet.sampling.Sampler;
+import org.apache.lucene.facet.sampling.SamplingAccumulator;
 import org.apache.lucene.facet.taxonomy.TaxonomyReader;
 import org.apache.lucene.index.IndexReader;
 

@@ -1,6 +1,5 @@
 package org.apache.lucene.facet.search;
 
-import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
@@ -13,14 +12,10 @@ import org.apache.lucene.document.Field.Store;
 import org.apache.lucene.document.StringField;
 import org.apache.lucene.facet.FacetTestCase;
 import org.apache.lucene.facet.index.FacetFields;
-import org.apache.lucene.facet.index.params.CategoryListParams;
-import org.apache.lucene.facet.index.params.FacetIndexingParams;
-import org.apache.lucene.facet.index.params.PerDimensionIndexingParams;
-import org.apache.lucene.facet.search.FacetsCollector.MatchingDocs;
-import org.apache.lucene.facet.search.params.CountFacetRequest;
-import org.apache.lucene.facet.search.params.FacetSearchParams;
-import org.apache.lucene.facet.search.params.SumScoreFacetRequest;
-import org.apache.lucene.facet.search.results.FacetResult;
+import org.apache.lucene.facet.params.CategoryListParams;
+import org.apache.lucene.facet.params.FacetIndexingParams;
+import org.apache.lucene.facet.params.FacetSearchParams;
+import org.apache.lucene.facet.params.PerDimensionIndexingParams;
 import org.apache.lucene.facet.taxonomy.CategoryPath;
 import org.apache.lucene.facet.taxonomy.TaxonomyWriter;
 import org.apache.lucene.facet.taxonomy.directory.DirectoryTaxonomyReader;
@@ -164,34 +159,14 @@ public class TestFacetsCollector extends FacetTestCase {
         new CountFacetRequest(new CategoryPath("a"), 10), 
         new SumScoreFacetRequest(new CategoryPath("b"), 10));
     
-    final Map<CategoryListParams,FacetsAggregator> clpAggregator = new HashMap<CategoryListParams,FacetsAggregator>();
-    clpAggregator.put(fip.getCategoryListParams(new CategoryPath("a")), new FastCountingFacetsAggregator());
-    clpAggregator.put(fip.getCategoryListParams(new CategoryPath("b")), new SumScoreFacetsAggregator());
+    Map<CategoryListParams,FacetsAggregator> aggregators = new HashMap<CategoryListParams,FacetsAggregator>();
+    aggregators.put(fip.getCategoryListParams(new CategoryPath("a")), new FastCountingFacetsAggregator());
+    aggregators.put(fip.getCategoryListParams(new CategoryPath("b")), new SumScoreFacetsAggregator());
+    final FacetsAggregator aggregator = new PerCategoryListAggregator(aggregators, fip);
     FacetsAccumulator fa = new FacetsAccumulator(sParams, r, taxo) {
       @Override
       public FacetsAggregator getAggregator() {
-        return new FacetsAggregator() {
-          
-          @Override
-          public void rollupValues(int ordinal, int[] children, int[] siblings, FacetArrays facetArrays) {
-            throw new UnsupportedOperationException("not supported yet");
-          }
-          
-          @Override
-          public boolean requiresDocScores() {
-            for (FacetsAggregator aggregator : clpAggregator.values()) {
-              if (aggregator.requiresDocScores()) {
-                return true;
-              }
-            }
-            return false;
-          }
-          
-          @Override
-          public void aggregate(MatchingDocs matchingDocs, CategoryListParams clp, FacetArrays facetArrays) throws IOException {
-            clpAggregator.get(clp).aggregate(matchingDocs, clp, facetArrays);
-          }
-        };
+        return aggregator;
       }
     };
     

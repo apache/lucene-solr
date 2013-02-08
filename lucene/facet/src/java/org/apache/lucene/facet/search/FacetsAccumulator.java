@@ -7,20 +7,18 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 
-import org.apache.lucene.facet.index.params.CategoryListParams;
-import org.apache.lucene.facet.index.params.CategoryListParams.OrdinalPolicy;
+import org.apache.lucene.facet.encoding.DGapVInt8IntDecoder;
+import org.apache.lucene.facet.params.CategoryListParams;
+import org.apache.lucene.facet.params.FacetSearchParams;
+import org.apache.lucene.facet.params.CategoryListParams.OrdinalPolicy;
+import org.apache.lucene.facet.search.FacetRequest.FacetArraysSource;
+import org.apache.lucene.facet.search.FacetRequest.ResultMode;
+import org.apache.lucene.facet.search.FacetRequest.SortBy;
+import org.apache.lucene.facet.search.FacetRequest.SortOrder;
 import org.apache.lucene.facet.search.FacetsCollector.MatchingDocs;
-import org.apache.lucene.facet.search.params.FacetRequest;
-import org.apache.lucene.facet.search.params.FacetSearchParams;
-import org.apache.lucene.facet.search.params.FacetRequest.FacetArraysSource;
-import org.apache.lucene.facet.search.params.FacetRequest.ResultMode;
-import org.apache.lucene.facet.search.params.FacetRequest.SortBy;
-import org.apache.lucene.facet.search.params.FacetRequest.SortOrder;
-import org.apache.lucene.facet.search.results.FacetResult;
 import org.apache.lucene.facet.taxonomy.TaxonomyReader;
 import org.apache.lucene.facet.taxonomy.directory.ParallelTaxonomyArrays;
 import org.apache.lucene.index.IndexReader;
-import org.apache.lucene.util.encoding.DGapVInt8IntDecoder;
 
 /*
  * Licensed to the Apache Software Foundation (ASF) under one or more
@@ -47,10 +45,10 @@ import org.apache.lucene.util.encoding.DGapVInt8IntDecoder;
  */
 public class FacetsAccumulator {
 
-  protected final TaxonomyReader taxonomyReader;
-  protected final IndexReader indexReader;
-  protected final FacetArrays facetArrays;
-  protected FacetSearchParams searchParams;
+  public final TaxonomyReader taxonomyReader;
+  public final IndexReader indexReader;
+  public final FacetArrays facetArrays;
+  public FacetSearchParams searchParams;
 
   /**
    * Initializes the accumulator with the given search params, index reader and
@@ -162,7 +160,7 @@ public class FacetsAccumulator {
       OrdinalPolicy ordinalPolicy = clp .getOrdinalPolicy(fr.categoryPath.components[0]);
       if (ordinalPolicy == OrdinalPolicy.NO_PARENTS) {
         // rollup values
-        aggregator.rollupValues(rootOrd, children, siblings, facetArrays);
+        aggregator.rollupValues(fr, rootOrd, children, siblings, facetArrays);
       }
       
       FacetResultsHandler frh = createFacetResultsHandler(fr);

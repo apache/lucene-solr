@@ -2,7 +2,7 @@ package org.apache.lucene.facet.search;
 
 import java.io.IOException;
 
-import org.apache.lucene.facet.index.params.CategoryListParams;
+import org.apache.lucene.facet.params.CategoryListParams;
 import org.apache.lucene.facet.search.FacetsCollector.MatchingDocs;
 import org.apache.lucene.facet.taxonomy.TaxonomyReader;
 import org.apache.lucene.util.IntsRef;
@@ -65,7 +65,7 @@ public class SumScoreFacetsAggregator implements FacetsAggregator {
   }
 
   @Override
-  public void rollupValues(int ordinal, int[] children, int[] siblings, FacetArrays facetArrays) {
+  public void rollupValues(FacetRequest fr, int ordinal, int[] children, int[] siblings, FacetArrays facetArrays) {
     float[] scores = facetArrays.getFloatArray();
     scores[ordinal] += rollupScores(children[ordinal], children, siblings, scores);
   }

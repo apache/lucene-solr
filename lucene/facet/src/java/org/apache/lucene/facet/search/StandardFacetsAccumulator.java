@@ -10,16 +10,14 @@ import java.util.Map.Entry;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
-import org.apache.lucene.facet.index.params.FacetIndexingParams;
-import org.apache.lucene.facet.partitions.search.PartitionsFacetResultsHandler;
+import org.apache.lucene.facet.complements.TotalFacetCounts;
+import org.apache.lucene.facet.complements.TotalFacetCountsCache;
+import org.apache.lucene.facet.params.FacetIndexingParams;
+import org.apache.lucene.facet.params.FacetSearchParams;
+import org.apache.lucene.facet.partitions.IntermediateFacetResult;
+import org.apache.lucene.facet.partitions.PartitionsFacetResultsHandler;
+import org.apache.lucene.facet.search.FacetRequest.ResultMode;
 import org.apache.lucene.facet.search.FacetsCollector.MatchingDocs;
-import org.apache.lucene.facet.search.aggregator.Aggregator;
-import org.apache.lucene.facet.search.params.CountFacetRequest;
-import org.apache.lucene.facet.search.params.FacetRequest;
-import org.apache.lucene.facet.search.params.FacetRequest.ResultMode;
-import org.apache.lucene.facet.search.params.FacetSearchParams;
-import org.apache.lucene.facet.search.results.FacetResult;
-import org.apache.lucene.facet.partitions.search.IntermediateFacetResult;
 import org.apache.lucene.facet.taxonomy.TaxonomyReader;
 import org.apache.lucene.facet.util.PartitionsUtils;
 import org.apache.lucene.facet.util.ScoredDocIdsUtils;
@@ -409,6 +407,11 @@ public class StandardFacetsAccumulator extends FacetsAccumulator {
    */
   public void setComplementThreshold(double complementThreshold) {
     this.complementThreshold = complementThreshold;
+  }
+
+  /** Returns true if complements are enabled. */
+  public boolean isUsingComplements() {
+    return isUsingComplements;
   }
   
 }

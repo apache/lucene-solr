@@ -5,7 +5,7 @@ import java.util.Iterator;
 
 import org.apache.lucene.analysis.TokenStream;
 import org.apache.lucene.analysis.tokenattributes.CharTermAttribute;
-import org.apache.lucene.facet.index.params.FacetIndexingParams;
+import org.apache.lucene.facet.params.FacetIndexingParams;
 import org.apache.lucene.facet.taxonomy.CategoryPath;
 
 /*
