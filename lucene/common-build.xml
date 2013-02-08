@@ -268,6 +268,23 @@
     </condition>
   </fail>
 
+  <!-- 
+    the propery "ant.java.version" is not always correct, depending on used ANT version.
+    E.g. Java 8 is only detected in ANT 1.8.3+.
+    Add newer Java version checks at beginning,
+    because ANT will nevert override existing properties!
+   -->
+  <condition property="build.java.runtime" value="1.8">
+    <hasmethod classname="java.util.Collections" method="emptySortedSet"/>
+  </condition>
+  <condition property="build.java.runtime" value="1.7">
+    <hasmethod classname="java.lang.Throwable" method="getSuppressed"/>
+  </condition>
+  <condition property="build.java.runtime" value="1.6">
+    <hasmethod classname="java.lang.String" method="isEmpty"/>
+  </condition>
+  <fail message="Minimum supported Java version is 1.6." unless="build.java.runtime"/>
+
   <condition property="documentation-lint.supported">
     <and>
       <or>
@@ -276,8 +293,9 @@
         <contains string="${java.vm.name}" substring="jrockit" casesensitive="false"/>
       </or>
       <or>
-        <equals arg1="${ant.java.version}" arg2="1.7"/>
-        <equals arg1="${ant.java.version}" arg2="1.8"/>
+        <equals arg1="${build.java.runtime}" arg2="1.7"/>
+        <!-- TODO: Current Java 8 JDKs have broken Javadocs -->
+        <!--<equals arg1="${build.java.runtime}" arg2="1.8"/>-->
       </or>
       <!-- TODO: Fix this! For now only run this on 64bit, because jTIDY OOMs with default heap size: -->
       <contains string="${os.arch}" substring="64"/>
@@ -285,7 +303,12 @@
   </condition>
 
   <target name="-documentation-lint-unsupported" unless="documentation-lint.supported">
-    <echo level="warning" message="WARN: Linting documentation HTML is not supported on this Java version (${ant.java.version}) / JVM (${java.vm.name}). NOTHING DONE!"/>
+    <fail message="Linting documentation HTML is not supported on this Java version (${build.java.runtime}) / JVM (${java.vm.name}).">
+      <condition>
+        <not><isset property="is.jenkins.build"/></not>
+      </condition>
+    </fail>
+    <echo level="warning" message="WARN: Linting documentation HTML is not supported on this Java version (${build.java.runtime}) / JVM (${java.vm.name}). NOTHING DONE!"/>
   </target>
 
   <!-- Import custom ANT tasks. -->
@@ -1648,7 +1671,7 @@ ${tests-output}/junit4-*.suites     - per-JVM executed suites
           linksource="@{linksource}"
           use="true"
           failonerror="true"
-          source="${ant.java.version}"
+          source="${javac.source}"
           locale="en_US"
           windowtitle="${Name} ${version} API"
           doctitle="@{title}"

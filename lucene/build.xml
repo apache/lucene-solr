@@ -238,11 +238,14 @@
   <target name="javadoc" depends="javadocs"/>
   <target name="javadocs" description="Generate javadoc" depends="javadocs-lucene-core, javadocs-modules, javadocs-test-framework"/>
 
-  <target name="documentation-lint" depends="-ecj-javadoc-lint,-documentation-lint,-documentation-lint-unsupported"
-          description="Validates the generated documentation (HTML errors, broken links,...)"/>
+  <target name="documentation-lint" depends="-ecj-javadoc-lint,-documentation-lint-unsupported" if="documentation-lint.supported"
+          description="Validates the generated documentation (HTML errors, broken links,...)">
+    <!-- we use antcall here, otherwise ANT will run all dependent targets: -->
+    <antcall target="-documentation-lint"/>
+  </target>
 
   <!-- we check for broken links across all documentation -->
-  <target name="-documentation-lint" if="documentation-lint.supported" depends="documentation">
+  <target name="-documentation-lint" depends="documentation">
     <echo message="checking for broken html..."/>
     <jtidy-macro>
        <!-- NOTE: must currently exclude deprecated-list due to a javadocs bug (as of 1.7.0_09)
@@ -293,7 +296,7 @@
     <check-missing-javadocs dir="build/docs/core/org/apache/lucene/codecs" level="method"/>
   </target>
   
-  <target name="-ecj-javadoc-lint" depends="documentation,compile-test-framework,-ecj-resolve">
+  <target name="-ecj-javadoc-lint" depends="compile,compile-test,-ecj-resolve">
     <subant target="-ecj-javadoc-lint" failonerror="true" inheritall="false">
       <propertyset refid="uptodate.and.compiled.properties"/>
       <fileset dir="core" includes="build.xml"/>
