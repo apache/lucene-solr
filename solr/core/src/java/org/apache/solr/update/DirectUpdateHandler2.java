@@ -29,8 +29,6 @@ import java.util.Map;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Future;
 import java.util.concurrent.atomic.AtomicLong;
-import java.util.concurrent.locks.Lock;
-import java.util.concurrent.locks.ReentrantLock;
 
 import org.apache.lucene.document.Document;
 import org.apache.lucene.index.IndexReader;
@@ -70,7 +68,6 @@ import org.apache.solr.util.RefCounted;
  */
 public class DirectUpdateHandler2 extends UpdateHandler implements SolrCoreState.IndexWriterCloser {
   protected final SolrCoreState solrCoreState;
-  protected final Lock commitLock = new ReentrantLock();
 
   // stats
   AtomicLong addCommands = new AtomicLong();
@@ -502,7 +499,7 @@ public class DirectUpdateHandler2 extends UpdateHandler implements SolrCoreState
     try {
       // only allow one hard commit to proceed at once
       if (!cmd.softCommit) {
-        commitLock.lock();
+        solrCoreState.getCommitLock().lock();
       }
 
       log.info("start "+cmd);
@@ -596,7 +593,7 @@ public class DirectUpdateHandler2 extends UpdateHandler implements SolrCoreState
     }
     finally {
       if (!cmd.softCommit) {
-        commitLock.unlock();
+        solrCoreState.getCommitLock().unlock();
       }
 
       addCommands.set(0);
@@ -680,7 +677,7 @@ public class DirectUpdateHandler2 extends UpdateHandler implements SolrCoreState
   @Override
   public void closeWriter(IndexWriter writer) throws IOException {
     boolean clearRequestInfo = false;
-    commitLock.lock();
+    solrCoreState.getCommitLock().lock();
     try {
       SolrQueryRequest req = new LocalSolrQueryRequest(core, new ModifiableSolrParams());
       SolrQueryResponse rsp = new SolrQueryResponse();
@@ -745,7 +742,7 @@ public class DirectUpdateHandler2 extends UpdateHandler implements SolrCoreState
       if (writer != null) writer.close();
 
     } finally {
-      commitLock.unlock();
+      solrCoreState.getCommitLock().unlock();
       if (clearRequestInfo) SolrRequestInfo.clearRequestInfo();
     }
   }

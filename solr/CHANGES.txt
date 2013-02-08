@@ -108,6 +108,9 @@ Bug Fixes
 * SOLR-4380: Replicate after startup option would not replicate until the
   IndexWriter was lazily opened. (Mark Miller, Gregg Donovan)
 
+* SOLR-4400: Deadlock can occur in a rare race between committing and
+  closing a SolrIndexWriter. (Erick Erickson, Mark Miller)
+
 Optimizations
 ----------------------
 
