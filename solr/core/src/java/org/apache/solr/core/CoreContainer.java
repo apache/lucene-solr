@@ -743,6 +743,7 @@ public class CoreContainer
     isShutDown = true;
     
     if (isZooKeeperAware()) {
+      publishCoresAsDown();
       cancelCoreRecoveries();
     }
     try {
@@ -780,6 +781,20 @@ public class CoreContainer
         zkServer.stop();
       }
       
+    }
+  }
+
+  private void publishCoresAsDown() {
+    synchronized (cores) {
+      for (SolrCore core : cores.values()) {
+        try {
+          zkController.publish(core.getCoreDescriptor(), ZkStateReader.DOWN);
+        } catch (KeeperException e) {
+          log.error("", e);
+        } catch (InterruptedException e) {
+          log.error("", e);
+        }
+      }
     }
   }
 
