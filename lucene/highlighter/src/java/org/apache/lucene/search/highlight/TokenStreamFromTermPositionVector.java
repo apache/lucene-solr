@@ -27,7 +27,7 @@ import org.apache.lucene.analysis.TokenStream;
 import org.apache.lucene.analysis.tokenattributes.CharTermAttribute;
 import org.apache.lucene.analysis.tokenattributes.OffsetAttribute;
 import org.apache.lucene.analysis.tokenattributes.PositionIncrementAttribute;
-import org.apache.lucene.index.DocsAndPositionsEnum;
+import org.apache.lucene.index.DocsEnum;
 import org.apache.lucene.index.Terms;
 import org.apache.lucene.index.TermsEnum;
 import org.apache.lucene.util.BytesRef;
@@ -62,7 +62,7 @@ public final class TokenStreamFromTermPositionVector extends TokenStream {
     final boolean hasOffsets = vector.hasOffsets();
     final TermsEnum termsEnum = vector.iterator(null);
     BytesRef text;
-    DocsAndPositionsEnum dpEnum = null;
+    DocsEnum dpEnum = null;
     while((text = termsEnum.next()) != null) {
       dpEnum = termsEnum.docsAndPositions(null, dpEnum);
       assert dpEnum != null; // presumably checked by TokenSources.hasPositions earlier

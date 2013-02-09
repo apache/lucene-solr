@@ -17,19 +17,10 @@ package org.apache.lucene.codecs.simpletext;
  * limitations under the License.
  */
 
-import java.io.IOException;
-import java.util.Collections;
-import java.util.Comparator;
-import java.util.HashMap;
-import java.util.Iterator;
-import java.util.Map;
-import java.util.TreeMap;
-
 import org.apache.lucene.codecs.FieldsProducer;
-import org.apache.lucene.index.DocsAndPositionsEnum;
 import org.apache.lucene.index.DocsEnum;
-import org.apache.lucene.index.FieldInfo.IndexOptions;
 import org.apache.lucene.index.FieldInfo;
+import org.apache.lucene.index.FieldInfo.IndexOptions;
 import org.apache.lucene.index.FieldInfos;
 import org.apache.lucene.index.SegmentReadState;
 import org.apache.lucene.index.Terms;
@@ -50,6 +41,14 @@ import org.apache.lucene.util.fst.FST;
 import org.apache.lucene.util.fst.PairOutputs;
 import org.apache.lucene.util.fst.PositiveIntOutputs;
 import org.apache.lucene.util.fst.Util;
+
+import java.io.IOException;
+import java.util.Collections;
+import java.util.Comparator;
+import java.util.HashMap;
+import java.util.Iterator;
+import java.util.Map;
+import java.util.TreeMap;
 
 class SimpleTextFieldsReader extends FieldsProducer {
   private final TreeMap<String,Long> fields;
@@ -203,7 +202,7 @@ class SimpleTextFieldsReader extends FieldsProducer {
     }
 
     @Override
-    public DocsAndPositionsEnum docsAndPositions(Bits liveDocs, DocsAndPositionsEnum reuse, int flags) throws IOException {
+    public DocsEnum docsAndPositions(Bits liveDocs, DocsEnum reuse, int flags) throws IOException {
 
       if (indexOptions.compareTo(IndexOptions.DOCS_AND_FREQS_AND_POSITIONS) < 0) {
         // Positions were not indexed
@@ -318,7 +317,7 @@ class SimpleTextFieldsReader extends FieldsProducer {
     }
   }
 
-  private class SimpleTextDocsAndPositionsEnum extends DocsAndPositionsEnum {
+  private class SimpleTextDocsAndPositionsEnum extends DocsEnum {
     private final IndexInput inStart;
     private final IndexInput in;
     private int docID = -1;
@@ -334,6 +333,7 @@ class SimpleTextFieldsReader extends FieldsProducer {
     private boolean readPositions;
     private int startOffset;
     private int endOffset;
+    private int posPending;
 
     public SimpleTextDocsAndPositionsEnum() {
       this.inStart = SimpleTextFieldsReader.this.in;
@@ -385,10 +385,12 @@ class SimpleTextFieldsReader extends FieldsProducer {
           UnicodeUtil.UTF8toUTF16(scratch.bytes, scratch.offset+DOC.length, scratch.length-DOC.length, scratchUTF16);
           docID = ArrayUtil.parseInt(scratchUTF16.chars, 0, scratchUTF16.length);
           tf = 0;
+          posPending = 0;
           first = false;
         } else if (StringHelper.startsWith(scratch, FREQ)) {
           UnicodeUtil.UTF8toUTF16(scratch.bytes, scratch.offset+FREQ.length, scratch.length-FREQ.length, scratchUTF16);
           tf = ArrayUtil.parseInt(scratchUTF16.chars, 0, scratchUTF16.length);
+          posPending = tf;
           posStart = in.getFilePointer();
         } else if (StringHelper.startsWith(scratch, POS)) {
           // skip
@@ -420,6 +422,9 @@ class SimpleTextFieldsReader extends FieldsProducer {
     @Override
     public int nextPosition() throws IOException {
       final int pos;
+      if (posPending == 0)
+        return NO_MORE_POSITIONS;
+
       if (readPositions) {
         SimpleTextUtil.readLine(in, scratch);
         assert StringHelper.startsWith(scratch, POS): "got line=" + scratch.utf8ToString();
@@ -454,6 +459,7 @@ class SimpleTextFieldsReader extends FieldsProducer {
         payload = null;
         in.seek(fp);
       }
+      posPending--;
       return pos;
     }
 

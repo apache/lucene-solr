@@ -17,16 +17,15 @@ package org.apache.lucene.search;
  * limitations under the License.
  */
 
-import java.io.IOException;
-
-import org.apache.lucene.index.AtomicReader; // javadocs
+import org.apache.lucene.index.AtomicReader;
 import org.apache.lucene.index.AtomicReaderContext;
-import org.apache.lucene.index.DocsAndPositionsEnum;
 import org.apache.lucene.index.DocsEnum;
-import org.apache.lucene.index.IndexReaderContext; // javadocs
+import org.apache.lucene.index.IndexReaderContext;
 import org.apache.lucene.index.TermsEnum;
 import org.apache.lucene.search.similarities.Similarity;
 import org.apache.lucene.util.Bits;
+
+import java.io.IOException;
 
 /**
  * Expert: Calculate query weights and build query scorers.
@@ -142,12 +141,12 @@ public abstract class Weight {
     /**Document IDs, Term Frequencies and Positions are required for document collection and scoring*/
     POSITIONS(DocsEnum.FLAG_FREQS, 0),
     /**Document IDs, Term Frequencies, Positions and Payloads are required for document collection and scoring*/
-    POSITIONS_AND_PAYLOADS(DocsEnum.FLAG_FREQS, DocsAndPositionsEnum.FLAG_PAYLOADS),
+    POSITIONS_AND_PAYLOADS(DocsEnum.FLAG_FREQS, DocsEnum.FLAG_PAYLOADS),
     /**Document IDs, Term Frequencies, Positions and Offsets are required for document collection and scoring*/
-    OFFSETS(DocsEnum.FLAG_FREQS, DocsAndPositionsEnum.FLAG_OFFSETS),
+    OFFSETS(DocsEnum.FLAG_FREQS, DocsEnum.FLAG_OFFSETS),
     /**Document IDs, Term Frequencies, Positions, Offsets and Payloads are required for document collection and scoring*/
-    OFFSETS_AND_PAYLOADS(DocsEnum.FLAG_FREQS, DocsAndPositionsEnum.FLAG_OFFSETS
-            | DocsAndPositionsEnum.FLAG_PAYLOADS);
+    OFFSETS_AND_PAYLOADS(DocsEnum.FLAG_FREQS, DocsEnum.FLAG_OFFSETS
+            | DocsEnum.FLAG_PAYLOADS);
     
     private final int docsAndPositionsFlags;
     private final int docFlags;
@@ -158,11 +157,11 @@ public abstract class Weight {
     }
     
     /**
-     * Returns the flags for {@link DocsAndPositionsEnum}. This value should be
+     * Returns the flags for {@link DocsEnum}. This value should be
      * passed to
-     * {@link TermsEnum#docsAndPositions(Bits, DocsAndPositionsEnum, int)}
+     * {@link TermsEnum#docsAndPositions(Bits, DocsEnum, int)}
      * 
-     * @return {@link DocsAndPositionsEnum} flags
+     * @return {@link DocsEnum} flags
      */
     public int docsAndPositionsFlags() {
       return docsAndPositionsFlags;

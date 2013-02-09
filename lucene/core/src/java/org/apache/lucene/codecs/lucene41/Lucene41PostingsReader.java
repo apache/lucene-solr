@@ -17,17 +17,9 @@ package org.apache.lucene.codecs.lucene41;
  * limitations under the License.
  */
 
-import static org.apache.lucene.codecs.lucene41.Lucene41PostingsFormat.BLOCK_SIZE;
-import static org.apache.lucene.codecs.lucene41.ForUtil.MAX_DATA_SIZE;
-import static org.apache.lucene.codecs.lucene41.ForUtil.MAX_ENCODED_SIZE;
-
-import java.io.IOException;
-import java.util.Arrays;
-
 import org.apache.lucene.codecs.BlockTermState;
 import org.apache.lucene.codecs.CodecUtil;
 import org.apache.lucene.codecs.PostingsReaderBase;
-import org.apache.lucene.index.DocsAndPositionsEnum;
 import org.apache.lucene.index.DocsEnum;
 import org.apache.lucene.index.FieldInfo;
 import org.apache.lucene.index.FieldInfo.IndexOptions;
@@ -44,6 +36,13 @@ import org.apache.lucene.util.ArrayUtil;
 import org.apache.lucene.util.Bits;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.IOUtils;
+
+import java.io.IOException;
+import java.util.Arrays;
+
+import static org.apache.lucene.codecs.lucene41.ForUtil.MAX_DATA_SIZE;
+import static org.apache.lucene.codecs.lucene41.ForUtil.MAX_ENCODED_SIZE;
+import static org.apache.lucene.codecs.lucene41.Lucene41PostingsFormat.BLOCK_SIZE;
 
 /**
  * Concrete class that reads docId(maybe frq,pos,offset,payloads) list
@@ -296,15 +295,15 @@ public final class Lucene41PostingsReader extends PostingsReaderBase {
   // TODO: specialize to liveDocs vs not
   
   @Override
-  public DocsAndPositionsEnum docsAndPositions(FieldInfo fieldInfo, BlockTermState termState, Bits liveDocs,
-                                               DocsAndPositionsEnum reuse, int flags)
+  public DocsEnum docsAndPositions(FieldInfo fieldInfo, BlockTermState termState, Bits liveDocs,
+                                               DocsEnum reuse, int flags)
     throws IOException {
 
     boolean indexHasOffsets = fieldInfo.getIndexOptions().compareTo(IndexOptions.DOCS_AND_FREQS_AND_POSITIONS_AND_OFFSETS) >= 0;
     boolean indexHasPayloads = fieldInfo.hasPayloads();
 
-    if ((!indexHasOffsets || (flags & DocsAndPositionsEnum.FLAG_OFFSETS) == 0) &&
-        (!indexHasPayloads || (flags & DocsAndPositionsEnum.FLAG_PAYLOADS) == 0)) {
+    if ((!indexHasOffsets || (flags & DocsEnum.FLAG_OFFSETS) == 0) &&
+        (!indexHasPayloads || (flags & DocsEnum.FLAG_PAYLOADS) == 0)) {
       BlockDocsAndPositionsEnum docsAndPositionsEnum;
       if (reuse instanceof BlockDocsAndPositionsEnum) {
         docsAndPositionsEnum = (BlockDocsAndPositionsEnum) reuse;
@@ -602,7 +601,7 @@ public final class Lucene41PostingsReader extends PostingsReaderBase {
   }
 
 
-  final class BlockDocsAndPositionsEnum extends DocsAndPositionsEnum {
+  final class BlockDocsAndPositionsEnum extends DocsEnum {
     
     private final byte[] encoded;
 
@@ -680,7 +679,7 @@ public final class Lucene41PostingsReader extends PostingsReaderBase {
         indexHasPayloads == fieldInfo.hasPayloads();
     }
     
-    public DocsAndPositionsEnum reset(Bits liveDocs, IntBlockTermState termState) throws IOException {
+    public DocsEnum reset(Bits liveDocs, IntBlockTermState termState) throws IOException {
       this.liveDocs = liveDocs;
       // if (DEBUG) {
       //   System.out.println("  FPR.reset: termState=" + termState);
@@ -968,6 +967,9 @@ public final class Lucene41PostingsReader extends PostingsReaderBase {
       // if (DEBUG) {
       //   System.out.println("    FPR.nextPosition posPendingCount=" + posPendingCount + " posBufferUpto=" + posBufferUpto);
       // }
+      if (posPendingCount == 0)
+        return NO_MORE_POSITIONS;
+
       if (posPendingFP != -1) {
         // if (DEBUG) {
         //   System.out.println("      seek to pendingFP=" + posPendingFP);
@@ -1013,7 +1015,7 @@ public final class Lucene41PostingsReader extends PostingsReaderBase {
   }
 
   // Also handles payloads + offsets
-  final class EverythingEnum extends DocsAndPositionsEnum {
+  final class EverythingEnum extends DocsEnum {
     
     private final byte[] encoded;
 
@@ -1162,8 +1164,8 @@ public final class Lucene41PostingsReader extends PostingsReaderBase {
         lastPosBlockFP = posTermStartFP + termState.lastPosBlockOffset;
       }
 
-      this.needsOffsets = (flags & DocsAndPositionsEnum.FLAG_OFFSETS) != 0;
-      this.needsPayloads = (flags & DocsAndPositionsEnum.FLAG_PAYLOADS) != 0;
+      this.needsOffsets = (flags & DocsEnum.FLAG_OFFSETS) != 0;
+      this.needsPayloads = (flags & DocsEnum.FLAG_PAYLOADS) != 0;
 
       doc = -1;
       accum = 0;
@@ -1515,6 +1517,9 @@ public final class Lucene41PostingsReader extends PostingsReaderBase {
       // if (DEBUG) {
       //   System.out.println("    FPR.nextPosition posPendingCount=" + posPendingCount + " posBufferUpto=" + posBufferUpto + " payloadByteUpto=" + payloadByteUpto)// ;
       // }
+      if (posPendingCount == 0)
+        return NO_MORE_POSITIONS;
+
       if (posPendingFP != -1) {
         // if (DEBUG) {
         //   System.out.println("      seek pos to pendingFP=" + posPendingFP);

@@ -319,8 +319,8 @@ public class TestDuelingCodecs extends LuceneTestCase {
   public void assertTermsEnum(TermsEnum leftTermsEnum, TermsEnum rightTermsEnum, boolean deep) throws Exception {
     BytesRef term;
     Bits randomBits = new RandomBits(leftReader.maxDoc(), random().nextDouble(), random());
-    DocsAndPositionsEnum leftPositions = null;
-    DocsAndPositionsEnum rightPositions = null;
+    DocsEnum leftPositions = null;
+    DocsEnum rightPositions = null;
     DocsEnum leftDocs = null;
     DocsEnum rightDocs = null;
     
@@ -393,7 +393,7 @@ public class TestDuelingCodecs extends LuceneTestCase {
   /**
    * checks docs + freqs + positions + payloads, sequentially
    */
-  public void assertDocsAndPositionsEnum(DocsAndPositionsEnum leftDocs, DocsAndPositionsEnum rightDocs) throws Exception {
+  public void assertDocsAndPositionsEnum(DocsEnum leftDocs, DocsEnum rightDocs) throws Exception {
     if (leftDocs == null || rightDocs == null) {
       assertNull(leftDocs);
       assertNull(rightDocs);
@@ -472,7 +472,7 @@ public class TestDuelingCodecs extends LuceneTestCase {
   /**
    * checks advancing docs + positions
    */
-  public void assertPositionsSkipping(int docFreq, DocsAndPositionsEnum leftDocs, DocsAndPositionsEnum rightDocs) throws Exception {
+  public void assertPositionsSkipping(int docFreq, DocsEnum leftDocs, DocsEnum rightDocs) throws Exception {
     if (leftDocs == null || rightDocs == null) {
       assertNull(leftDocs);
       assertNull(rightDocs);

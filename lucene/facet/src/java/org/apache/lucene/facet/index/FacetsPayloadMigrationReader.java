@@ -31,7 +31,7 @@ import org.apache.lucene.index.DirectoryReader;
 import org.apache.lucene.index.DocValues;
 import org.apache.lucene.index.DocValues.Source;
 import org.apache.lucene.index.DocValues.Type;
-import org.apache.lucene.index.DocsAndPositionsEnum;
+import org.apache.lucene.index.DocsEnum;
 import org.apache.lucene.index.FieldInfo;
 import org.apache.lucene.index.FieldInfos;
 import org.apache.lucene.index.Fields;
@@ -78,9 +78,9 @@ public class FacetsPayloadMigrationReader extends FilterAtomicReader {
 
   private class PayloadMigratingDocValues extends DocValues {
 
-    private final DocsAndPositionsEnum dpe;
+    private final DocsEnum dpe;
     
-    public PayloadMigratingDocValues(DocsAndPositionsEnum dpe) {
+    public PayloadMigratingDocValues(DocsEnum dpe) {
       this.dpe = dpe;
     }
 
@@ -103,10 +103,10 @@ public class FacetsPayloadMigrationReader extends FilterAtomicReader {
   
   private class PayloadMigratingSource extends Source {
 
-    private final DocsAndPositionsEnum dpe;
+    private final DocsEnum dpe;
     private int curDocID;
     
-    protected PayloadMigratingSource(Type type, DocsAndPositionsEnum dpe) {
+    protected PayloadMigratingSource(Type type, DocsEnum dpe) {
       super(type);
       this.dpe = dpe;
       if (dpe == null) {
@@ -209,7 +209,7 @@ public class FacetsPayloadMigrationReader extends FilterAtomicReader {
     if (term == null) {
       return super.docValues(field);
     } else {
-      DocsAndPositionsEnum dpe = null;
+      DocsEnum dpe = null;
       Fields fields = fields();
       if (fields != null) {
         Terms terms = fields.terms(term.field());
@@ -217,7 +217,7 @@ public class FacetsPayloadMigrationReader extends FilterAtomicReader {
           TermsEnum te = terms.iterator(null); // no use for reusing
           if (te.seekExact(term.bytes(), true)) {
             // we're not expected to be called for deleted documents
-            dpe = te.docsAndPositions(null, null, DocsAndPositionsEnum.FLAG_PAYLOADS);
+            dpe = te.docsAndPositions(null, null, DocsEnum.FLAG_PAYLOADS);
           }
         }
       }

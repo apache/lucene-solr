@@ -714,7 +714,7 @@ public class CheckIndex {
     
     DocsEnum docs = null;
     DocsEnum docsAndFreqs = null;
-    DocsAndPositionsEnum postings = null;
+    DocsEnum postings = null;
     
     String lastField = null;
     for (String field : fields) {
@@ -1372,11 +1372,11 @@ public class CheckIndex {
       }
 
       DocsEnum docs = null;
-      DocsAndPositionsEnum postings = null;
+      DocsEnum postings = null;
 
       // Only used if crossCheckTermVectors is true:
       DocsEnum postingsDocs = null;
-      DocsAndPositionsEnum postingsPostings = null;
+      DocsEnum postingsPostings = null;
 
       final Bits liveDocs = reader.getLiveDocs();
 

@@ -21,6 +21,7 @@ import org.apache.lucene.index.DocsEnum;
 import org.apache.lucene.index.MergeState;
 import org.apache.lucene.index.MultiDocsEnum;
 import org.apache.lucene.index.MultiDocsEnum.EnumWithSlice;
+import org.apache.lucene.util.BytesRef;
 
 import java.io.IOException;
 
@@ -83,6 +84,26 @@ public final class MappingMultiDocsEnum extends DocsEnum {
   @Override
   public int advance(int target) {
     throw new UnsupportedOperationException();
+  }
+  
+  @Override
+  public int nextPosition() throws IOException {
+    return current.nextPosition();
+  }
+
+  @Override
+  public int startOffset() throws IOException {
+    return current.startOffset();
+  }
+  
+  @Override
+  public int endOffset() throws IOException {
+    return current.endOffset();
+  }
+  
+  @Override
+  public BytesRef getPayload() throws IOException {
+    return current.getPayload();
   }
 
   @Override

@@ -184,7 +184,7 @@ public class TestPayloads extends LuceneTestCase {
 
         byte[] verifyPayloadData = new byte[payloadDataLength];
         offset = 0;
-        DocsAndPositionsEnum[] tps = new DocsAndPositionsEnum[numTerms];
+        DocsEnum[] tps = new DocsEnum[numTerms];
         for (int i = 0; i < numTerms; i++) {
           tps[i] = MultiFields.getTermPositionsEnum(reader,
                                                     MultiFields.getLiveDocs(reader),
@@ -215,7 +215,7 @@ public class TestPayloads extends LuceneTestCase {
         /*
          *  test lazy skipping
          */        
-        DocsAndPositionsEnum tp = MultiFields.getTermPositionsEnum(reader,
+        DocsEnum tp = MultiFields.getTermPositionsEnum(reader,
                                                                    MultiFields.getLiveDocs(reader),
                                                                    terms[0].field(),
                                                                    new BytesRef(terms[0].text()));
@@ -482,7 +482,7 @@ public class TestPayloads extends LuceneTestCase {
         IndexReader reader = DirectoryReader.open(dir);
         TermsEnum terms = MultiFields.getFields(reader).terms(field).iterator(null);
         Bits liveDocs = MultiFields.getLiveDocs(reader);
-        DocsAndPositionsEnum tp = null;
+        DocsEnum tp = null;
         while (terms.next() != null) {
           String termText = terms.term().utf8ToString();
           tp = terms.docsAndPositions(liveDocs, tp);
@@ -605,7 +605,7 @@ public class TestPayloads extends LuceneTestCase {
     writer.addDocument(doc);
     DirectoryReader reader = writer.getReader();
     AtomicReader sr = SlowCompositeReaderWrapper.wrap(reader);
-    DocsAndPositionsEnum de = sr.termPositionsEnum(new Term("field", "withPayload"));
+    DocsEnum de = sr.termPositionsEnum(new Term("field", "withPayload"));
     de.nextDoc();
     de.nextPosition();
     assertEquals(new BytesRef("test"), de.getPayload());
@@ -639,7 +639,7 @@ public class TestPayloads extends LuceneTestCase {
     writer.addDocument(doc);
     DirectoryReader reader = writer.getReader();
     SegmentReader sr = getOnlySegmentReader(reader);
-    DocsAndPositionsEnum de = sr.termPositionsEnum(new Term("field", "withPayload"));
+    DocsEnum de = sr.termPositionsEnum(new Term("field", "withPayload"));
     de.nextDoc();
     de.nextPosition();
     assertEquals(new BytesRef("test"), de.getPayload());

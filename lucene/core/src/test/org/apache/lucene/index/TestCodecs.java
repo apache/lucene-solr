@@ -430,7 +430,7 @@ public class TestCodecs extends LuceneTestCase {
         assertTrue(doc != DocIdSetIterator.NO_MORE_DOCS);
         assertEquals(docs[i], doc);
         if (doPos) {
-          this.verifyPositions(positions[i], ((DocsAndPositionsEnum) docsEnum));
+          this.verifyPositions(positions[i], docsEnum);
         }
       }
       assertEquals(DocIdSetIterator.NO_MORE_DOCS, docsEnum.nextDoc());
@@ -438,7 +438,7 @@ public class TestCodecs extends LuceneTestCase {
 
     byte[] data = new byte[10];
 
-    private void verifyPositions(final PositionData[] positions, final DocsAndPositionsEnum posEnum) throws Throwable {
+    private void verifyPositions(final PositionData[] positions, final DocsEnum posEnum) throws Throwable {
       for(int i=0;i<positions.length;i++) {
         final int pos = posEnum.nextPosition();
         assertEquals(positions[i].pos, pos);
@@ -551,7 +551,7 @@ public class TestCodecs extends LuceneTestCase {
           if (random().nextInt(3) == 1) {
             final DocsEnum docs;
             final DocsEnum docsAndFreqs;
-            final DocsAndPositionsEnum postings;
+            final DocsEnum postings;
             if (!field.omitTF) {
               postings = termsEnum.docsAndPositions(null, null);
               if (postings != null) {

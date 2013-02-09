@@ -61,7 +61,6 @@ import org.apache.lucene.document.StraightBytesDocValuesField;
 import org.apache.lucene.index.CheckIndex;
 import org.apache.lucene.index.ConcurrentMergeScheduler;
 import org.apache.lucene.index.DocValues;
-import org.apache.lucene.index.DocsAndPositionsEnum;
 import org.apache.lucene.index.DocsEnum;
 import org.apache.lucene.index.FieldInfos;
 import org.apache.lucene.index.IndexFileNames;
@@ -901,13 +900,13 @@ public class _TestUtil {
       if (random.nextBoolean()) {
         final int posFlags;
         switch (random.nextInt(4)) {
-          case 0: posFlags = 0; break;
-          case 1: posFlags = DocsAndPositionsEnum.FLAG_OFFSETS; break;
-          case 2: posFlags = DocsAndPositionsEnum.FLAG_PAYLOADS; break;
-          default: posFlags = DocsAndPositionsEnum.FLAG_OFFSETS | DocsAndPositionsEnum.FLAG_PAYLOADS; break;
+          case 0: posFlags = DocsEnum.FLAG_NONE; break;
+          case 1: posFlags = DocsEnum.FLAG_OFFSETS; break;
+          case 2: posFlags = DocsEnum.FLAG_PAYLOADS; break;
+          default: posFlags = DocsEnum.FLAG_OFFSETS | DocsEnum.FLAG_PAYLOADS; break;
         }
         // TODO: cast to DocsAndPositionsEnum?
-        DocsAndPositionsEnum docsAndPositions = termsEnum.docsAndPositions(liveDocs, null, posFlags);
+        DocsEnum docsAndPositions = termsEnum.docsAndPositions(liveDocs, null, posFlags);
         if (docsAndPositions != null) {
           return docsAndPositions;
         }

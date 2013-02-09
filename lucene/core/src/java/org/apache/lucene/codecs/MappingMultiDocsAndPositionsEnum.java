@@ -18,10 +18,10 @@ package org.apache.lucene.codecs;
  */
 
 import org.apache.lucene.util.BytesRef;
-import org.apache.lucene.index.DocsAndPositionsEnum;
+import org.apache.lucene.index.DocsEnum;
 import org.apache.lucene.index.MergeState;
-import org.apache.lucene.index.MultiDocsAndPositionsEnum;
-import org.apache.lucene.index.MultiDocsAndPositionsEnum.EnumWithSlice;
+import org.apache.lucene.index.MultiDocsEnum;
+import org.apache.lucene.index.MultiDocsEnum.EnumWithSlice;
 
 import java.io.IOException;
 
@@ -32,12 +32,12 @@ import java.io.IOException;
  * @lucene.experimental
  */
 
-public final class MappingMultiDocsAndPositionsEnum extends DocsAndPositionsEnum {
-  private MultiDocsAndPositionsEnum.EnumWithSlice[] subs;
+public final class MappingMultiDocsAndPositionsEnum extends DocsEnum {
+  private MultiDocsEnum.EnumWithSlice[] subs;
   int numSubs;
   int upto;
   MergeState.DocMap currentMap;
-  DocsAndPositionsEnum current;
+  DocsEnum current;
   int currentBase;
   int doc = -1;
   private MergeState mergeState;
@@ -46,7 +46,7 @@ public final class MappingMultiDocsAndPositionsEnum extends DocsAndPositionsEnum
   public MappingMultiDocsAndPositionsEnum() {
   }
 
-  MappingMultiDocsAndPositionsEnum reset(MultiDocsAndPositionsEnum postingsEnum) {
+  MappingMultiDocsAndPositionsEnum reset(MultiDocsEnum postingsEnum) {
     this.numSubs = postingsEnum.getNumSubs();
     this.subs = postingsEnum.getSubs();
     upto = -1;
@@ -95,7 +95,7 @@ public final class MappingMultiDocsAndPositionsEnum extends DocsAndPositionsEnum
         } else {
           upto++;
           final int reader = subs[upto].slice.readerIndex;
-          current = subs[upto].docsAndPositionsEnum;
+          current = subs[upto].docsEnum;
           currentBase = mergeState.docBase[reader];
           currentMap = mergeState.docMaps[reader];
         }

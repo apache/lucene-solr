@@ -124,7 +124,7 @@ public class AssertingAtomicReader extends FilterAtomicReader {
     }
 
     @Override
-    public DocsAndPositionsEnum docsAndPositions(Bits liveDocs, DocsAndPositionsEnum reuse, int flags) throws IOException {
+    public DocsEnum docsAndPositions(Bits liveDocs, DocsEnum reuse, int flags) throws IOException {
       assert state == State.POSITIONED: "docsAndPositions(...) called on unpositioned TermsEnum";
 
       // TODO: should we give this thing a random to be super-evil,
@@ -132,7 +132,7 @@ public class AssertingAtomicReader extends FilterAtomicReader {
       if (reuse instanceof AssertingDocsAndPositionsEnum) {
         reuse = ((AssertingDocsAndPositionsEnum) reuse).in;
       }
-      DocsAndPositionsEnum docs = super.docsAndPositions(liveDocs, reuse, flags);
+      DocsEnum docs = super.docsAndPositions(liveDocs, reuse, flags);
       return docs == null ? null : new AssertingDocsAndPositionsEnum(docs);
     }
 
@@ -269,12 +269,12 @@ public class AssertingAtomicReader extends FilterAtomicReader {
     }
   }
   
-  static class AssertingDocsAndPositionsEnum extends FilterDocsAndPositionsEnum {
+  static class AssertingDocsAndPositionsEnum extends FilterDocsEnum {
     private DocsEnumState state = DocsEnumState.START;
     private int positionMax = 0;
     private int positionCount = 0;
 
-    public AssertingDocsAndPositionsEnum(DocsAndPositionsEnum in) {
+    public AssertingDocsAndPositionsEnum(DocsEnum in) {
       super(in);
       int docid = in.docID();
       assert docid == -1 || docid == DocIdSetIterator.NO_MORE_DOCS : "invalid initial doc id: " + docid;

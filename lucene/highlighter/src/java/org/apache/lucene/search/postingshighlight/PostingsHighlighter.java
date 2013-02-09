@@ -17,6 +17,26 @@ package org.apache.lucene.search.postingshighlight;
  * limitations under the License.
  */
 
+import org.apache.lucene.index.AtomicReader;
+import org.apache.lucene.index.AtomicReaderContext;
+import org.apache.lucene.index.DocsEnum;
+import org.apache.lucene.index.FieldInfo;
+import org.apache.lucene.index.FieldInfo.IndexOptions;
+import org.apache.lucene.index.IndexReader;
+import org.apache.lucene.index.IndexReaderContext;
+import org.apache.lucene.index.MultiReader;
+import org.apache.lucene.index.ReaderUtil;
+import org.apache.lucene.index.StoredFieldVisitor;
+import org.apache.lucene.index.Term;
+import org.apache.lucene.index.Terms;
+import org.apache.lucene.index.TermsEnum;
+import org.apache.lucene.search.IndexSearcher;
+import org.apache.lucene.search.Query;
+import org.apache.lucene.search.ScoreDoc;
+import org.apache.lucene.search.TopDocs;
+import org.apache.lucene.util.BytesRef;
+import org.apache.lucene.util.UnicodeUtil;
+
 import java.io.IOException;
 import java.text.BreakIterator;
 import java.util.Arrays;
@@ -28,26 +48,6 @@ import java.util.Map;
 import java.util.PriorityQueue;
 import java.util.SortedSet;
 import java.util.TreeSet;
-
-import org.apache.lucene.index.AtomicReader;
-import org.apache.lucene.index.AtomicReaderContext;
-import org.apache.lucene.index.DocsAndPositionsEnum;
-import org.apache.lucene.index.FieldInfo;
-import org.apache.lucene.index.IndexReader;
-import org.apache.lucene.index.IndexReaderContext;
-import org.apache.lucene.index.MultiReader;
-import org.apache.lucene.index.ReaderUtil;
-import org.apache.lucene.index.StoredFieldVisitor;
-import org.apache.lucene.index.Term;
-import org.apache.lucene.index.Terms;
-import org.apache.lucene.index.TermsEnum;
-import org.apache.lucene.index.FieldInfo.IndexOptions;
-import org.apache.lucene.search.IndexSearcher;
-import org.apache.lucene.search.Query;
-import org.apache.lucene.search.ScoreDoc;
-import org.apache.lucene.search.TopDocs;
-import org.apache.lucene.util.BytesRef;
-import org.apache.lucene.util.UnicodeUtil;
 
 /**
  * Simple highlighter that does not analyze fields nor use
@@ -285,7 +285,7 @@ public final class PostingsHighlighter {
     Map<Integer,String> highlights = new HashMap<Integer,String>();
     
     // reuse in the real sense... for docs in same segment we just advance our old enum
-    DocsAndPositionsEnum postings[] = null;
+    DocsEnum postings[] = null;
     TermsEnum termsEnum = null;
     int lastLeaf = -1;
     
@@ -305,7 +305,7 @@ public final class PostingsHighlighter {
       }
       if (leaf != lastLeaf) {
         termsEnum = t.iterator(null);
-        postings = new DocsAndPositionsEnum[terms.length];
+        postings = new DocsEnum[terms.length];
       }
       Passage passages[] = highlightDoc(field, terms, content.length(), bi, doc - subContext.docBase, termsEnum, postings, maxPassages);
       if (passages.length > 0) {
@@ -322,12 +322,12 @@ public final class PostingsHighlighter {
   // we can intersect these with the postings lists via BreakIterator.preceding(offset),s
   // score each sentence as norm(sentenceStartOffset) * sum(weight * tf(freq))
   private Passage[] highlightDoc(String field, Term terms[], int contentLength, BreakIterator bi, int doc, 
-      TermsEnum termsEnum, DocsAndPositionsEnum[] postings, int n) throws IOException {
+      TermsEnum termsEnum, DocsEnum[] postings, int n) throws IOException {
     PriorityQueue<OffsetsEnum> pq = new PriorityQueue<OffsetsEnum>();
     float weights[] = new float[terms.length];
     // initialize postings
     for (int i = 0; i < terms.length; i++) {
-      DocsAndPositionsEnum de = postings[i];
+      DocsEnum de = postings[i];
       int pDoc;
       if (de == EMPTY) {
         continue;
@@ -336,7 +336,7 @@ public final class PostingsHighlighter {
         if (!termsEnum.seekExact(terms[i].bytes(), true)) {
           continue; // term not found
         }
-        de = postings[i] = termsEnum.docsAndPositions(null, null, DocsAndPositionsEnum.FLAG_OFFSETS);
+        de = postings[i] = termsEnum.docsAndPositions(null, null, DocsEnum.FLAG_OFFSETS);
         if (de == null) {
           // no positions available
           throw new IllegalArgumentException("field '" + field + "' was indexed without offsets, cannot highlight");
@@ -372,7 +372,7 @@ public final class PostingsHighlighter {
     
     OffsetsEnum off;
     while ((off = pq.poll()) != null) {
-      final DocsAndPositionsEnum dp = off.dp;
+      final DocsEnum dp = off.dp;
       int start = dp.startOffset();
       if (start == -1) {
         throw new IllegalArgumentException("field '" + field + "' was indexed without offsets, cannot highlight");
@@ -436,11 +436,11 @@ public final class PostingsHighlighter {
   }
   
   private static class OffsetsEnum implements Comparable<OffsetsEnum> {
-    DocsAndPositionsEnum dp;
+    DocsEnum dp;
     int pos;
     int id;
     
-    OffsetsEnum(DocsAndPositionsEnum dp, int id) throws IOException {
+    OffsetsEnum(DocsEnum dp, int id) throws IOException {
       this.dp = dp;
       this.id = id;
       this.pos = 1;
@@ -462,10 +462,10 @@ public final class PostingsHighlighter {
     }
   }
   
-  private static final DocsAndPositionsEnum EMPTY = new DocsAndPositionsEnum() {
+  private static final DocsEnum EMPTY = new DocsEnum() {
 
     @Override
-    public int nextPosition() throws IOException { return 0; }
+    public int nextPosition() throws IOException { return NO_MORE_POSITIONS; }
 
     @Override
     public int startOffset() throws IOException { return Integer.MAX_VALUE; }

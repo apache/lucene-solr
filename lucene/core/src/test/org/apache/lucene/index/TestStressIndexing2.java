@@ -398,7 +398,7 @@ public class TestStressIndexing2 extends LuceneTestCase {
         Fields tv1 = r1.getTermVectors(id1);
         System.out.println("  d1=" + tv1);
         if (tv1 != null) {
-          DocsAndPositionsEnum dpEnum = null;
+          DocsEnum dpEnum = null;
           DocsEnum dEnum = null;
           for (String field : tv1) {
             System.out.println("    " + field + ":");
@@ -430,7 +430,7 @@ public class TestStressIndexing2 extends LuceneTestCase {
         Fields tv2 = r2.getTermVectors(id2);
         System.out.println("  d2=" + tv2);
         if (tv2 != null) {
-          DocsAndPositionsEnum dpEnum = null;
+          DocsEnum dpEnum = null;
           DocsEnum dEnum = null;
           for (String field : tv2) {
             System.out.println("    " + field + ":");
@@ -618,8 +618,8 @@ public class TestStressIndexing2 extends LuceneTestCase {
       assertNotNull(terms2);
       TermsEnum termsEnum2 = terms2.iterator(null);
 
-      DocsAndPositionsEnum dpEnum1 = null;
-      DocsAndPositionsEnum dpEnum2 = null;
+      DocsEnum dpEnum1 = null;
+      DocsEnum dpEnum2 = null;
       DocsEnum dEnum1 = null;
       DocsEnum dEnum2 = null;
       

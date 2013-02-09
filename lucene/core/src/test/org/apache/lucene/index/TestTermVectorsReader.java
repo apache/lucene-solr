@@ -245,7 +245,7 @@ public class TestTermVectorsReader extends LuceneTestCase {
     assertNotNull(vector);
     assertEquals(testTerms.length, vector.size());
     TermsEnum termsEnum = vector.iterator(null);
-    DocsAndPositionsEnum dpEnum = null;
+    DocsEnum dpEnum = null;
     for (int i = 0; i < testTerms.length; i++) {
       final BytesRef text = termsEnum.next();
       assertNotNull(text);
@@ -300,7 +300,7 @@ public class TestTermVectorsReader extends LuceneTestCase {
     TermsEnum termsEnum = vector.iterator(null);
     assertNotNull(termsEnum);
     assertEquals(testTerms.length, vector.size());
-    DocsAndPositionsEnum dpEnum = null;
+    DocsEnum dpEnum = null;
     for (int i = 0; i < testTerms.length; i++) {
       final BytesRef text = termsEnum.next();
       assertNotNull(text);

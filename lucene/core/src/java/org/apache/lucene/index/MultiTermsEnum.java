@@ -38,7 +38,6 @@ public final class MultiTermsEnum extends TermsEnum {
   private final TermsEnumWithSlice[] currentSubs; // current subs that have at least one term for this field
   private final TermsEnumWithSlice[] top;
   private final MultiDocsEnum.EnumWithSlice[] subDocs;
-  private final MultiDocsAndPositionsEnum.EnumWithSlice[] subDocsAndPositions;
 
   private BytesRef lastSeek;
   private boolean lastSeekExact;
@@ -79,13 +78,10 @@ public final class MultiTermsEnum extends TermsEnum {
     top = new TermsEnumWithSlice[slices.length];
     subs = new TermsEnumWithSlice[slices.length];
     subDocs = new MultiDocsEnum.EnumWithSlice[slices.length];
-    subDocsAndPositions = new MultiDocsAndPositionsEnum.EnumWithSlice[slices.length];
     for(int i=0;i<slices.length;i++) {
       subs[i] = new TermsEnumWithSlice(i, slices[i]);
       subDocs[i] = new MultiDocsEnum.EnumWithSlice();
       subDocs[i].slice = slices[i];
-      subDocsAndPositions[i] = new MultiDocsAndPositionsEnum.EnumWithSlice();
-      subDocsAndPositions[i].slice = slices[i];
     }
     currentSubs = new TermsEnumWithSlice[slices.length];
   }
@@ -351,6 +347,15 @@ public final class MultiTermsEnum extends TermsEnum {
 
   @Override
   public DocsEnum docs(Bits liveDocs, DocsEnum reuse, int flags) throws IOException {
+    return getEnum(liveDocs, reuse, flags, false);
+  }
+  
+  @Override
+  public DocsEnum docsAndPositions(Bits liveDocs, DocsEnum reuse, int flags) throws IOException {
+    return getEnum(liveDocs, reuse, flags, true);
+  }
+  
+  private MultiDocsEnum getEnum(Bits liveDocs, DocsEnum reuse, int flags, boolean positions) throws IOException {
     MultiDocsEnum docsEnum;
     // Can only reuse if incoming enum is also a MultiDocsEnum
     if (reuse != null && reuse instanceof MultiDocsEnum) {
@@ -363,6 +368,7 @@ public final class MultiTermsEnum extends TermsEnum {
       docsEnum = new MultiDocsEnum(this, subs.length);
     }
     
+
     final MultiBits multiLiveDocs;
     if (liveDocs instanceof MultiBits) {
       multiLiveDocs = (MultiBits) liveDocs;
@@ -400,15 +406,24 @@ public final class MultiTermsEnum extends TermsEnum {
       }
 
       assert entry.index < docsEnum.subDocsEnum.length: entry.index + " vs " + docsEnum.subDocsEnum.length + "; " + subs.length;
-      final DocsEnum subDocsEnum = entry.terms.docs(b, docsEnum.subDocsEnum[entry.index], flags);
+      final DocsEnum subDocsEnum =  positions ? entry.terms.docsAndPositions(b, docsEnum.subDocsEnum[entry.index], flags) : entry.terms.docs(b, docsEnum.subDocsEnum[entry.index], flags);
       if (subDocsEnum != null) {
         docsEnum.subDocsEnum[entry.index] = subDocsEnum;
         subDocs[upto].docsEnum = subDocsEnum;
         subDocs[upto].slice = entry.subSlice;
         upto++;
       } else {
-        // should this be an error?
-        assert false : "One of our subs cannot provide a docsenum";
+        if (positions) {
+          if (entry.terms.docs(b, null, DocsEnum.FLAG_NONE) != null) {
+            // At least one of our subs does not store
+            // offsets or positions -- we can't correctly
+            // produce a MultiDocsAndPositions enum
+            return null;
+          }
+        } else {
+          // should this be an error?
+          assert false : "One of our subs cannot provide a docsenum";
+        }
       }
     }
 
@@ -416,82 +431,6 @@ public final class MultiTermsEnum extends TermsEnum {
       return null;
     } else {
       return docsEnum.reset(subDocs, upto);
-    }
-  }
-
-  @Override
-  public DocsAndPositionsEnum docsAndPositions(Bits liveDocs, DocsAndPositionsEnum reuse, int flags) throws IOException {
-    MultiDocsAndPositionsEnum docsAndPositionsEnum;
-    // Can only reuse if incoming enum is also a MultiDocsAndPositionsEnum
-    if (reuse != null && reuse instanceof MultiDocsAndPositionsEnum) {
-      docsAndPositionsEnum = (MultiDocsAndPositionsEnum) reuse;
-      // ... and was previously created w/ this MultiTermsEnum:
-      if (!docsAndPositionsEnum.canReuse(this)) {
-        docsAndPositionsEnum = new MultiDocsAndPositionsEnum(this, subs.length);
-      }
-    } else {
-      docsAndPositionsEnum = new MultiDocsAndPositionsEnum(this, subs.length);
-    }
-    
-    final MultiBits multiLiveDocs;
-    if (liveDocs instanceof MultiBits) {
-      multiLiveDocs = (MultiBits) liveDocs;
-    } else {
-      multiLiveDocs = null;
-    }
-
-    int upto = 0;
-
-    for(int i=0;i<numTop;i++) {
-
-      final TermsEnumWithSlice entry = top[i];
-
-      final Bits b;
-
-      if (multiLiveDocs != null) {
-        // Optimize for common case: requested skip docs is a
-        // congruent sub-slice of MultiBits: in this case, we
-        // just pull the liveDocs from the sub reader, rather
-        // than making the inefficient
-        // Slice(Multi(sub-readers)):
-        final MultiBits.SubResult sub = multiLiveDocs.getMatchingSub(top[i].subSlice);
-        if (sub.matches) {
-          b = sub.result;
-        } else {
-          // custom case: requested skip docs is foreign:
-          // must slice it on every access (very
-          // inefficient)
-          b = new BitsSlice(liveDocs, top[i].subSlice);
-        }
-      } else if (liveDocs != null) {
-        b = new BitsSlice(liveDocs, top[i].subSlice);
-      } else {
-        // no deletions
-        b = null;
-      }
-
-      assert entry.index < docsAndPositionsEnum.subDocsAndPositionsEnum.length: entry.index + " vs " + docsAndPositionsEnum.subDocsAndPositionsEnum.length + "; " + subs.length;
-      final DocsAndPositionsEnum subPostings = entry.terms.docsAndPositions(b, docsAndPositionsEnum.subDocsAndPositionsEnum[entry.index], flags);
-
-      if (subPostings != null) {
-        docsAndPositionsEnum.subDocsAndPositionsEnum[entry.index] = subPostings;
-        subDocsAndPositions[upto].docsAndPositionsEnum = subPostings;
-        subDocsAndPositions[upto].slice = entry.subSlice;
-        upto++;
-      } else {
-        if (entry.terms.docs(b, null, DocsEnum.FLAG_NONE) != null) {
-          // At least one of our subs does not store
-          // offsets or positions -- we can't correctly
-          // produce a MultiDocsAndPositions enum
-          return null;
-        }
-      }
-    }
-
-    if (upto == 0) {
-      return null;
-    } else {
-      return docsAndPositionsEnum.reset(subDocsAndPositions, upto);
     }
   }
 

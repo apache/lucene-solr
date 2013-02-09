@@ -27,7 +27,7 @@ import java.util.Map;
 import java.util.WeakHashMap;
 
 import org.apache.lucene.index.DocTermOrds;
-import org.apache.lucene.index.DocsAndPositionsEnum;
+import org.apache.lucene.index.DocsEnum;
 import org.apache.lucene.index.DocsEnum;
 import org.apache.lucene.index.AtomicReader;
 import org.apache.lucene.index.IndexReader;
@@ -1064,7 +1064,7 @@ class FieldCacheImpl implements FieldCache {
       }
 
       @Override
-      public DocsAndPositionsEnum docsAndPositions(Bits liveDocs, DocsAndPositionsEnum reuse, int flags) throws IOException {
+      public DocsEnum docsAndPositions(Bits liveDocs, DocsEnum reuse, int flags) throws IOException {
         throw new UnsupportedOperationException();
       }
 

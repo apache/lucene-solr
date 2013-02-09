@@ -17,13 +17,12 @@ package org.apache.lucene.search;
  * limitations under the License.
  */
 
-import java.io.IOException;
-
-import org.apache.lucene.index.DocsAndPositionsEnum;
 import org.apache.lucene.index.DocsEnum;
 import org.apache.lucene.search.intervals.IntervalIterator;
 import org.apache.lucene.search.intervals.TermIntervalIterator;
 import org.apache.lucene.search.similarities.Similarity;
+
+import java.io.IOException;
 
 /** Expert: A <code>Scorer</code> for documents matching a <code>Term</code>.
  */
@@ -98,8 +97,7 @@ final class TermScorer extends Scorer {
   
   @Override
   public IntervalIterator intervals(boolean collectIntervals) throws IOException {
-    assert docsEnum instanceof DocsAndPositionsEnum;
-    return new TermIntervalIterator(this, (DocsAndPositionsEnum) docsEnum, false, collectIntervals);
+    return new TermIntervalIterator(this, docsEnum, false, collectIntervals);
   }
   // TODO: benchmark if the specialized conjunction really benefits
   // from this, or if instead its from sorting by docFreq, or both

@@ -21,7 +21,7 @@ import java.io.Closeable;
 import java.io.IOException;
 
 import org.apache.lucene.analysis.tokenattributes.OffsetAttribute; // javadocs
-import org.apache.lucene.index.DocsAndPositionsEnum; // javadocs
+import org.apache.lucene.index.DocsEnum; // javadocs
 import org.apache.lucene.index.Fields;
 
 /**
@@ -39,7 +39,7 @@ public abstract class TermVectorsReader implements Cloneable, Closeable {
   /** Returns term vectors for this document, or null if
    *  term vectors were not indexed. If offsets are
    *  available they are in an {@link OffsetAttribute}
-   *  available from the {@link DocsAndPositionsEnum}. */
+   *  available from the {@link DocsEnum}. */
   public abstract Fields get(int doc) throws IOException;
 
   /** Create a clone that one caller at a time may use to

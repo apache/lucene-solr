@@ -17,6 +17,27 @@ package org.apache.lucene.codecs.ramonly;
  * limitations under the License.
  */
 
+import org.apache.lucene.codecs.CodecUtil;
+import org.apache.lucene.codecs.FieldsConsumer;
+import org.apache.lucene.codecs.FieldsProducer;
+import org.apache.lucene.codecs.PostingsConsumer;
+import org.apache.lucene.codecs.PostingsFormat;
+import org.apache.lucene.codecs.TermStats;
+import org.apache.lucene.codecs.TermsConsumer;
+import org.apache.lucene.index.DocsEnum;
+import org.apache.lucene.index.FieldInfo;
+import org.apache.lucene.index.FieldInfo.IndexOptions;
+import org.apache.lucene.index.IndexFileNames;
+import org.apache.lucene.index.SegmentReadState;
+import org.apache.lucene.index.SegmentWriteState;
+import org.apache.lucene.index.Terms;
+import org.apache.lucene.index.TermsEnum;
+import org.apache.lucene.store.IndexInput;
+import org.apache.lucene.store.IndexOutput;
+import org.apache.lucene.util.Bits;
+import org.apache.lucene.util.BytesRef;
+import org.apache.lucene.util.IOUtils;
+
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Collections;
@@ -28,28 +49,6 @@ import java.util.Map;
 import java.util.SortedMap;
 import java.util.TreeMap;
 import java.util.concurrent.atomic.AtomicInteger;
-
-import org.apache.lucene.codecs.CodecUtil;
-import org.apache.lucene.codecs.FieldsConsumer;
-import org.apache.lucene.codecs.FieldsProducer;
-import org.apache.lucene.codecs.PostingsConsumer;
-import org.apache.lucene.codecs.PostingsFormat;
-import org.apache.lucene.codecs.TermStats;
-import org.apache.lucene.codecs.TermsConsumer;
-import org.apache.lucene.index.DocsAndPositionsEnum;
-import org.apache.lucene.index.DocsEnum;
-import org.apache.lucene.index.FieldInfo.IndexOptions;
-import org.apache.lucene.index.FieldInfo;
-import org.apache.lucene.index.IndexFileNames;
-import org.apache.lucene.index.SegmentReadState;
-import org.apache.lucene.index.SegmentWriteState;
-import org.apache.lucene.index.Terms;
-import org.apache.lucene.index.TermsEnum;
-import org.apache.lucene.store.IndexInput;
-import org.apache.lucene.store.IndexOutput;
-import org.apache.lucene.util.Bits;
-import org.apache.lucene.util.BytesRef;
-import org.apache.lucene.util.IOUtils;
 
 /** Stores all postings data in RAM, but writes a small
  *  token (header + single int) to identify which "slot" the
@@ -382,7 +381,7 @@ public final class RAMOnlyPostingsFormat extends PostingsFormat {
     }
 
     @Override
-    public DocsAndPositionsEnum docsAndPositions(Bits liveDocs, DocsAndPositionsEnum reuse, int flags) {
+    public DocsEnum docsAndPositions(Bits liveDocs, DocsEnum reuse, int flags) {
       return new RAMDocsAndPositionsEnum(ramField.termToDocs.get(current), liveDocs);
     }
   }
@@ -435,7 +434,7 @@ public final class RAMOnlyPostingsFormat extends PostingsFormat {
     }
   }
 
-  private static class RAMDocsAndPositionsEnum extends DocsAndPositionsEnum {
+  private static class RAMDocsAndPositionsEnum extends DocsEnum {
     private final RAMTerm ramTerm;
     private final Bits liveDocs;
     private RAMDoc current;
@@ -484,6 +483,8 @@ public final class RAMOnlyPostingsFormat extends PostingsFormat {
 
     @Override
     public int nextPosition() {
+      if (posUpto >= current.positions.length)
+        return NO_MORE_POSITIONS;
       return current.positions[posUpto++];
     }
 

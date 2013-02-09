@@ -17,21 +17,6 @@ package org.apache.lucene.index;
  * limitations under the License.
  */
 
-import java.io.File;
-import java.io.IOException;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Collections;
-import java.util.EnumSet;
-import java.util.HashSet;
-import java.util.Iterator;
-import java.util.List;
-import java.util.Map;
-import java.util.NoSuchElementException;
-import java.util.Random;
-import java.util.Set;
-import java.util.TreeMap;
-
 import org.apache.lucene.codecs.Codec;
 import org.apache.lucene.codecs.FieldsConsumer;
 import org.apache.lucene.codecs.FieldsProducer;
@@ -50,6 +35,21 @@ import org.apache.lucene.util.LuceneTestCase;
 import org.apache.lucene.util._TestUtil;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
+
+import java.io.File;
+import java.io.IOException;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Collections;
+import java.util.EnumSet;
+import java.util.HashSet;
+import java.util.Iterator;
+import java.util.List;
+import java.util.Map;
+import java.util.NoSuchElementException;
+import java.util.Random;
+import java.util.Set;
+import java.util.TreeMap;
 
 /**
  * Abstract class to do basic tests for a postings format.
@@ -113,7 +113,7 @@ public abstract class BasePostingsFormatTestCase extends LuceneTestCase {
 
   /** Given the same random seed this always enumerates the
    *  same random postings */
-  private static class SeedPostings extends DocsAndPositionsEnum {
+  private static class SeedPostings extends DocsEnum {
     // Used only to generate docIDs; this way if you pull w/
     // or w/o positions you get the same docID sequence:
     private final Random docRandom;
@@ -223,7 +223,9 @@ public abstract class BasePostingsFormatTestCase extends LuceneTestCase {
         posUpto = freq;
         return 0;
       }
-      assert posUpto < freq;
+      //assert posUpto < freq;
+      if (posUpto >= freq)
+        return NO_MORE_POSITIONS;
 
       if (posUpto == 0 && random.nextBoolean()) {
         // Sometimes index pos = 0
@@ -574,7 +576,6 @@ public abstract class BasePostingsFormatTestCase extends LuceneTestCase {
   private static class ThreadState {
     // Only used with REUSE option:
     public DocsEnum reuseDocsEnum;
-    public DocsAndPositionsEnum reuseDocsAndPositionsEnum;
   }
 
   private void verifyEnum(ThreadState threadState,
@@ -635,31 +636,29 @@ public abstract class BasePostingsFormatTestCase extends LuceneTestCase {
     DocsEnum prevDocsEnum = null;
 
     DocsEnum docsEnum;
-    DocsAndPositionsEnum docsAndPositionsEnum;
 
     if (!doCheckPositions) {
       if (allowPositions && random().nextInt(10) == 7) {
         // 10% of the time, even though we will not check positions, pull a DocsAndPositions enum
         
         if (options.contains(Option.REUSE_ENUMS) && random().nextInt(10) < 9) {
-          prevDocsEnum = threadState.reuseDocsAndPositionsEnum;
+          prevDocsEnum = threadState.reuseDocsEnum;
         }
 
-        int flags = 0;
+        int flags = DocsEnum.FLAG_NONE;
         if (alwaysTestMax || random().nextBoolean()) {
-          flags |= DocsAndPositionsEnum.FLAG_OFFSETS;
+          flags |= DocsEnum.FLAG_OFFSETS;
         }
         if (alwaysTestMax || random().nextBoolean()) {
-          flags |= DocsAndPositionsEnum.FLAG_PAYLOADS;
+          flags |= DocsEnum.FLAG_PAYLOADS;
         }
 
         if (VERBOSE) {
-          System.out.println("  get DocsAndPositionsEnum (but we won't check positions) flags=" + flags);
+          System.out.println("  get DocsEnum (but we won't check positions) flags=" + flags);
         }
 
-        threadState.reuseDocsAndPositionsEnum = termsEnum.docsAndPositions(liveDocs, (DocsAndPositionsEnum) prevDocsEnum, flags);
-        docsEnum = threadState.reuseDocsAndPositionsEnum;
-        docsAndPositionsEnum = threadState.reuseDocsAndPositionsEnum;
+        threadState.reuseDocsEnum = termsEnum.docsAndPositions(liveDocs, prevDocsEnum, flags);
+        docsEnum = threadState.reuseDocsEnum;
       } else {
         if (VERBOSE) {
           System.out.println("  get DocsEnum");
@@ -669,28 +668,26 @@ public abstract class BasePostingsFormatTestCase extends LuceneTestCase {
         }
         threadState.reuseDocsEnum = termsEnum.docs(liveDocs, prevDocsEnum, doCheckFreqs ? DocsEnum.FLAG_FREQS : DocsEnum.FLAG_NONE);
         docsEnum = threadState.reuseDocsEnum;
-        docsAndPositionsEnum = null;
       }
     } else {
       if (options.contains(Option.REUSE_ENUMS) && random().nextInt(10) < 9) {
-        prevDocsEnum = threadState.reuseDocsAndPositionsEnum;
+        prevDocsEnum = threadState.reuseDocsEnum;
       }
 
-      int flags = 0;
+      int flags = DocsEnum.FLAG_NONE;
       if (alwaysTestMax || doCheckOffsets || random().nextInt(3) == 1) {
-        flags |= DocsAndPositionsEnum.FLAG_OFFSETS;
+        flags |= DocsEnum.FLAG_OFFSETS;
       }
       if (alwaysTestMax || doCheckPayloads|| random().nextInt(3) == 1) {
-        flags |= DocsAndPositionsEnum.FLAG_PAYLOADS;
+        flags |= DocsEnum.FLAG_PAYLOADS;
       }
 
       if (VERBOSE) {
-        System.out.println("  get DocsAndPositionsEnum flags=" + flags);
+        System.out.println("  get DocsEnum flags=" + flags);
       }
 
-      threadState.reuseDocsAndPositionsEnum = termsEnum.docsAndPositions(liveDocs, (DocsAndPositionsEnum) prevDocsEnum, flags);
-      docsEnum = threadState.reuseDocsAndPositionsEnum;
-      docsAndPositionsEnum = threadState.reuseDocsAndPositionsEnum;
+      threadState.reuseDocsEnum = termsEnum.docsAndPositions(liveDocs, prevDocsEnum, flags);
+      docsEnum = threadState.reuseDocsEnum;
     }
 
     assertNotNull("null DocsEnum", docsEnum);
@@ -832,7 +829,7 @@ public abstract class BasePostingsFormatTestCase extends LuceneTestCase {
           if (VERBOSE) {
             System.out.println("    now nextPosition to " + pos);
           }
-          assertEquals("position is wrong", pos, docsAndPositionsEnum.nextPosition());
+          assertEquals("position is wrong", pos, docsEnum.nextPosition());
 
           if (doCheckPayloads) {
             BytesRef expectedPayload = expected.getPayload();
@@ -841,9 +838,9 @@ public abstract class BasePostingsFormatTestCase extends LuceneTestCase {
                 System.out.println("      now check expectedPayload length=" + (expectedPayload == null ? 0 : expectedPayload.length));
               }
               if (expectedPayload == null || expectedPayload.length == 0) {
-                assertNull("should not have payload", docsAndPositionsEnum.getPayload());
+                assertNull("should not have payload", docsEnum.getPayload());
               } else {
-                BytesRef payload = docsAndPositionsEnum.getPayload();
+                BytesRef payload = docsEnum.getPayload();
                 assertNotNull("should have payload but doesn't", payload);
 
                 assertEquals("payload length is wrong", expectedPayload.length, payload.length);
@@ -855,7 +852,7 @@ public abstract class BasePostingsFormatTestCase extends LuceneTestCase {
                 
                 // make a deep copy
                 payload = BytesRef.deepCopyOf(payload);
-                assertEquals("2nd call to getPayload returns something different!", payload, docsAndPositionsEnum.getPayload());
+                assertEquals("2nd call to getPayload returns something different!", payload, docsEnum.getPayload());
               }
             } else {
               if (VERBOSE) {
@@ -869,8 +866,8 @@ public abstract class BasePostingsFormatTestCase extends LuceneTestCase {
               if (VERBOSE) {
                 System.out.println("      now check offsets: startOff=" + expected.startOffset() + " endOffset=" + expected.endOffset());
               }
-              assertEquals("startOffset is wrong", expected.startOffset(), docsAndPositionsEnum.startOffset());
-              assertEquals("endOffset is wrong", expected.endOffset(), docsAndPositionsEnum.endOffset());
+              assertEquals("startOffset is wrong", expected.startOffset(), docsEnum.startOffset());
+              assertEquals("endOffset is wrong", expected.endOffset(), docsEnum.endOffset());
             } else {
               if (VERBOSE) {
                 System.out.println("      skip check offsets");
@@ -880,8 +877,8 @@ public abstract class BasePostingsFormatTestCase extends LuceneTestCase {
             if (VERBOSE) {
               System.out.println("      now check offsets are -1");
             }
-            assertEquals("startOffset isn't -1", -1, docsAndPositionsEnum.startOffset());
-            assertEquals("endOffset isn't -1", -1, docsAndPositionsEnum.endOffset());
+            assertEquals("startOffset isn't -1", -1, docsEnum.startOffset());
+            assertEquals("endOffset isn't -1", -1, docsEnum.endOffset());
           }
         }
       }

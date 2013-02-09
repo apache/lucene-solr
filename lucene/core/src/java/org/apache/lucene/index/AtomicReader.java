@@ -137,11 +137,11 @@ public abstract class AtomicReader extends IndexReader {
     return null;
   }
 
-  /** Returns {@link DocsAndPositionsEnum} for the specified
+  /** Returns {@link DocsEnum} for the specified
    *  term.  This will return null if the
    *  field or term does not exist or positions weren't indexed. 
-   *  @see TermsEnum#docsAndPositions(Bits, DocsAndPositionsEnum) */
-  public final DocsAndPositionsEnum termPositionsEnum(Term term) throws IOException {
+   *  @see TermsEnum#docsAndPositions(Bits, DocsEnum) */
+  public final DocsEnum termPositionsEnum(Term term) throws IOException {
     assert term.field() != null;
     assert term.bytes() != null;
     final Fields fields = fields();

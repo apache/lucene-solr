@@ -34,7 +34,6 @@ import org.apache.lucene.codecs.PostingsFormat;
 import org.apache.lucene.codecs.TermStats;
 import org.apache.lucene.codecs.TermsConsumer;
 import org.apache.lucene.codecs.bloom.FuzzySet.ContainsResult;
-import org.apache.lucene.index.DocsAndPositionsEnum;
 import org.apache.lucene.index.DocsEnum;
 import org.apache.lucene.index.FieldInfo;
 import org.apache.lucene.index.IndexFileNames;
@@ -374,11 +373,10 @@ public final class BloomFilteringPostingsFormat extends PostingsFormat {
       public final long totalTermFreq() throws IOException {
         return delegate().totalTermFreq();
       }
-      
 
       @Override
-      public DocsAndPositionsEnum docsAndPositions(Bits liveDocs,
-          DocsAndPositionsEnum reuse, int flags) throws IOException {
+      public DocsEnum docsAndPositions(Bits liveDocs,
+          DocsEnum reuse, int flags) throws IOException {
         return delegate().docsAndPositions(liveDocs, reuse, flags);
       }
 
@@ -387,7 +385,6 @@ public final class BloomFilteringPostingsFormat extends PostingsFormat {
           throws IOException {
         return delegate().docs(liveDocs, reuse, flags);
       }
-      
       
     }
     

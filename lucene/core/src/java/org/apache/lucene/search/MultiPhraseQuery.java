@@ -17,20 +17,8 @@ package org.apache.lucene.search;
  * limitations under the License.
  */
 
-import org.apache.lucene.index.*;
-import org.apache.lucene.search.PhraseQuery.TermDocsEnumFactory;
-import org.apache.lucene.search.Weight.PostingFeatures;
-import org.apache.lucene.search.similarities.Similarity;
-import org.apache.lucene.search.similarities.Similarity.SloppySimScorer;
-import org.apache.lucene.util.*;
-import org.apache.lucene.util.PriorityQueue;
-
-import java.io.IOException;
-import java.util.*;
-
-import org.apache.lucene.index.AtomicReaderContext;
-import org.apache.lucene.index.DocsAndPositionsEnum;
 import org.apache.lucene.index.AtomicReader;
+import org.apache.lucene.index.AtomicReaderContext;
 import org.apache.lucene.index.DocsEnum;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.IndexReaderContext;
@@ -39,13 +27,28 @@ import org.apache.lucene.index.TermContext;
 import org.apache.lucene.index.TermState;
 import org.apache.lucene.index.Terms;
 import org.apache.lucene.index.TermsEnum;
-import org.apache.lucene.search.similarities.Similarity.SloppySimScorer;
+import org.apache.lucene.search.PhraseQuery.TermDocsEnumFactory;
+import org.apache.lucene.search.Weight.PostingFeatures;
 import org.apache.lucene.search.similarities.Similarity;
+import org.apache.lucene.search.similarities.Similarity.SloppySimScorer;
 import org.apache.lucene.util.ArrayUtil;
 import org.apache.lucene.util.Bits;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.PriorityQueue;
+import org.apache.lucene.util.SorterTemplate;
 import org.apache.lucene.util.ToStringUtils;
+
+import java.io.IOException;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Collections;
+import java.util.HashMap;
+import java.util.Iterator;
+import java.util.LinkedList;
+import java.util.List;
+import java.util.ListIterator;
+import java.util.Map;
+import java.util.Set;
 
 /**
  * MultiPhraseQuery is a generalized version of PhraseQuery, with an added
@@ -201,7 +204,7 @@ public class MultiPhraseQuery extends Query {
       for (int pos=0; pos<postingsFreqs.length; pos++) {
         Term[] terms = termArrays.get(pos);
 
-        final DocsAndPositionsEnum postingsEnum;
+        final DocsEnum postingsEnum;
         int docFreq;
         TermDocsEnumFactory factory;
         if (terms.length > 1) {
@@ -427,7 +430,7 @@ public class MultiPhraseQuery extends Query {
     }
 
     @Override
-    public DocsAndPositionsEnum docsAndPositionsEnum() throws IOException {
+    public DocsEnum docsAndPositionsEnum() throws IOException {
       return new UnionDocsAndPositionsEnum(liveDocs, context, terms, termContexts, termsEnum, flags);
     }
 
@@ -439,15 +442,15 @@ public class MultiPhraseQuery extends Query {
  */
 
 // TODO: if ever we allow subclassing of the *PhraseScorer
-class UnionDocsAndPositionsEnum extends DocsAndPositionsEnum {
+class UnionDocsAndPositionsEnum extends DocsEnum {
 
-  private static final class DocsQueue extends PriorityQueue<DocsAndPositionsEnum> {
-    DocsQueue(List<DocsAndPositionsEnum> docsEnums) throws IOException {
+  private static final class DocsQueue extends PriorityQueue<DocsEnum> {
+    DocsQueue(List<DocsEnum> docsEnums) throws IOException {
       super(docsEnums.size());
 
-      Iterator<DocsAndPositionsEnum> i = docsEnums.iterator();
+      Iterator<DocsEnum> i = docsEnums.iterator();
       while (i.hasNext()) {
-        DocsAndPositionsEnum postings = i.next();
+        DocsEnum postings = i.next();
         if (postings.nextDoc() != DocIdSetIterator.NO_MORE_DOCS) {
           add(postings);
         }
@@ -455,7 +458,7 @@ class UnionDocsAndPositionsEnum extends DocsAndPositionsEnum {
     }
 
     @Override
-    public final boolean lessThan(DocsAndPositionsEnum a, DocsAndPositionsEnum b) {
+    public final boolean lessThan(DocsEnum a, DocsEnum b) {
       return a.docID() < b.docID();
     }
   }
@@ -550,6 +553,7 @@ class UnionDocsAndPositionsEnum extends DocsAndPositionsEnum {
   private int _freq;
   private DocsQueue _queue;
   private PositionQueue _posList;
+  private int posPending;
 
   public UnionDocsAndPositionsEnum(Bits liveDocs, AtomicReaderContext context, Term[] terms,
                                    Map<Term,TermContext> termContexts, TermsEnum termsEnum) throws IOException {
@@ -558,7 +562,7 @@ class UnionDocsAndPositionsEnum extends DocsAndPositionsEnum {
 
   public UnionDocsAndPositionsEnum(Bits liveDocs, AtomicReaderContext context, Term[] terms,
                                      Map<Term,TermContext> termContexts, TermsEnum termsEnum, PostingFeatures flags) throws IOException {
-    List<DocsAndPositionsEnum> docsEnums = new LinkedList<DocsAndPositionsEnum>();
+    List<DocsEnum> docsEnums = new LinkedList<DocsEnum>();
     for (int i = 0; i < terms.length; i++) {
       final Term term = terms[i];
       TermState termState = termContexts.get(term).get(context.ord);
@@ -567,7 +571,7 @@ class UnionDocsAndPositionsEnum extends DocsAndPositionsEnum {
         continue;
       }
       termsEnum.seekExact(term.bytes(), termState);
-      DocsAndPositionsEnum postings = termsEnum.docsAndPositions(liveDocs, null, DocsEnum.FLAG_NONE);
+      DocsEnum postings = termsEnum.docsAndPositions(liveDocs, null, DocsEnum.FLAG_NONE);
       if (postings == null) {
         // term does exist, but has no positions
         throw new IllegalStateException("field \"" + term.field() + "\" was indexed without position data; cannot run PhraseQuery (term=" + term.text() + ")");
@@ -592,7 +596,7 @@ class UnionDocsAndPositionsEnum extends DocsAndPositionsEnum {
     _doc = _queue.top().docID();
 
     // merge sort all positions together
-    DocsAndPositionsEnum postings;
+    DocsEnum postings;
     do {
       postings = _queue.top();
 
@@ -610,12 +614,16 @@ class UnionDocsAndPositionsEnum extends DocsAndPositionsEnum {
 
     _posList.sort();
     _freq = _posList.size();
+    posPending = _freq;
 
     return _doc;
   }
 
   @Override
   public int nextPosition() {
+    if (posPending == 0)
+      return NO_MORE_POSITIONS;
+    posPending--;
     return _posList.next();
   }
 
@@ -637,7 +645,7 @@ class UnionDocsAndPositionsEnum extends DocsAndPositionsEnum {
   @Override
   public final int advance(int target) throws IOException {
     while (_queue.top() != null && target > _queue.top().docID()) {
-      DocsAndPositionsEnum postings = _queue.pop();
+      DocsEnum postings = _queue.pop();
       if (postings.advance(target) != NO_MORE_DOCS) {
         _queue.add(postings);
       }

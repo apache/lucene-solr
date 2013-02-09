@@ -23,7 +23,7 @@ import java.util.Comparator;
 import java.util.Iterator;
 
 import org.apache.lucene.index.AtomicReader;
-import org.apache.lucene.index.DocsAndPositionsEnum;
+import org.apache.lucene.index.DocsEnum;
 import org.apache.lucene.index.FieldInfo;
 import org.apache.lucene.index.FieldInfos;
 import org.apache.lucene.index.Fields;
@@ -224,7 +224,7 @@ public abstract class TermVectorsWriter implements Closeable {
     String lastFieldName = null;
     
     TermsEnum termsEnum = null;
-    DocsAndPositionsEnum docsAndPositionsEnum = null;
+    DocsEnum docsAndPositionsEnum = null;
     
     int fieldCount = 0;
     for(String fieldName : vectors) {
@@ -281,7 +281,7 @@ public abstract class TermVectorsWriter implements Closeable {
             
             final BytesRef payload = docsAndPositionsEnum.getPayload();
 
-            assert !hasPositions || pos >= 0;
+            assert !hasPositions || pos >= 0 ;
             addPosition(pos, startOffset, endOffset, payload);
           }
         }

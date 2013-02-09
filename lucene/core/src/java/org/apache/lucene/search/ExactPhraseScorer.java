@@ -17,7 +17,7 @@ package org.apache.lucene.search;
  * limitations under the License.
  */
 
-import org.apache.lucene.index.DocsAndPositionsEnum;
+import org.apache.lucene.index.DocsEnum;
 import org.apache.lucene.search.PhraseQuery.TermDocsEnumFactory;
 import org.apache.lucene.search.intervals.BlockIntervalIterator;
 import org.apache.lucene.search.intervals.IntervalIterator;
@@ -40,7 +40,7 @@ final class ExactPhraseScorer extends Scorer {
   
   private final static class ChunkState {
     final TermDocsEnumFactory factory;
-    final DocsAndPositionsEnum posEnum;
+    final DocsEnum posEnum;
     final int offset;
     final boolean useAdvance;
     int posUpto;
@@ -48,7 +48,7 @@ final class ExactPhraseScorer extends Scorer {
     int pos;
     int lastPos;
     
-    public ChunkState(TermDocsEnumFactory factory, DocsAndPositionsEnum posEnum, int offset,
+    public ChunkState(TermDocsEnumFactory factory, DocsEnum posEnum, int offset,
         boolean useAdvance) throws IOException {
       this.factory = factory;
       this.posEnum = posEnum;
@@ -329,7 +329,7 @@ final class ExactPhraseScorer extends Scorer {
   @Override
   public IntervalIterator intervals(boolean collectIntervals) throws IOException {
     TermIntervalIterator[] posIters = new TermIntervalIterator[chunkStates.length];
-    DocsAndPositionsEnum[] enums = new DocsAndPositionsEnum[chunkStates.length];
+    DocsEnum[] enums = new DocsEnum[chunkStates.length];
     for (int i = 0; i < chunkStates.length; i++) {
       posIters[i] = new TermIntervalIterator(this, enums[i] = chunkStates[i].factory.docsAndPositionsEnum(), false, collectIntervals);
     }

@@ -17,15 +17,12 @@ package org.apache.lucene.codecs.sep;
  * limitations under the License.
  */
 
-import java.io.IOException;
-
 import org.apache.lucene.codecs.BlockTermState;
 import org.apache.lucene.codecs.CodecUtil;
 import org.apache.lucene.codecs.PostingsReaderBase;
-import org.apache.lucene.index.DocsAndPositionsEnum;
 import org.apache.lucene.index.DocsEnum;
-import org.apache.lucene.index.FieldInfo.IndexOptions;
 import org.apache.lucene.index.FieldInfo;
+import org.apache.lucene.index.FieldInfo.IndexOptions;
 import org.apache.lucene.index.FieldInfos;
 import org.apache.lucene.index.IndexFileNames;
 import org.apache.lucene.index.SegmentInfo;
@@ -38,6 +35,8 @@ import org.apache.lucene.util.ArrayUtil;
 import org.apache.lucene.util.Bits;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.IOUtils;
+
+import java.io.IOException;
 
 /** Concrete class that reads the current doc/freq/skip
  *  postings format.    
@@ -255,8 +254,8 @@ public class SepPostingsReader extends PostingsReaderBase {
   }
 
   @Override
-  public DocsAndPositionsEnum docsAndPositions(FieldInfo fieldInfo, BlockTermState _termState, Bits liveDocs,
-                                               DocsAndPositionsEnum reuse, int flags)
+  public DocsEnum docsAndPositions(FieldInfo fieldInfo, BlockTermState _termState, Bits liveDocs,
+                                               DocsEnum reuse, int flags)
     throws IOException {
 
     assert fieldInfo.getIndexOptions() == IndexOptions.DOCS_AND_FREQS_AND_POSITIONS;
@@ -443,7 +442,7 @@ public class SepPostingsReader extends PostingsReaderBase {
     }
   }
 
-  class SepDocsAndPositionsEnum extends DocsAndPositionsEnum {
+  class SepDocsAndPositionsEnum extends DocsEnum {
     int docFreq;
     int doc = -1;
     int accum;
@@ -637,6 +636,11 @@ public class SepPostingsReader extends PostingsReaderBase {
 
     @Override
     public int nextPosition() throws IOException {
+
+      //nocommit, not sure about this one
+      if (pendingPosCount == 0)
+        return NO_MORE_POSITIONS;
+
       if (posSeekPending) {
         posIndex.seek(posReader);
         payloadIn.seek(payloadFP);

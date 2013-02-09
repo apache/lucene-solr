@@ -17,6 +17,48 @@ package org.apache.lucene.index.memory;
  * limitations under the License.
  */
 
+import org.apache.lucene.analysis.Analyzer;
+import org.apache.lucene.analysis.TokenStream;
+import org.apache.lucene.analysis.tokenattributes.CharTermAttribute;
+import org.apache.lucene.analysis.tokenattributes.OffsetAttribute;
+import org.apache.lucene.analysis.tokenattributes.PositionIncrementAttribute;
+import org.apache.lucene.analysis.tokenattributes.TermToBytesRefAttribute;
+import org.apache.lucene.index.AtomicReader;
+import org.apache.lucene.index.AtomicReaderContext;
+import org.apache.lucene.index.DocValues;
+import org.apache.lucene.index.DocsEnum;
+import org.apache.lucene.index.FieldInfo;
+import org.apache.lucene.index.FieldInfo.IndexOptions;
+import org.apache.lucene.index.FieldInfos;
+import org.apache.lucene.index.FieldInvertState;
+import org.apache.lucene.index.Fields;
+import org.apache.lucene.index.Norm;
+import org.apache.lucene.index.OrdTermState;
+import org.apache.lucene.index.StoredFieldVisitor;
+import org.apache.lucene.index.TermState;
+import org.apache.lucene.index.Terms;
+import org.apache.lucene.index.TermsEnum;
+import org.apache.lucene.index.memory.MemoryIndexNormDocValues.SingleValueSource;
+import org.apache.lucene.search.Collector;
+import org.apache.lucene.search.IndexSearcher;
+import org.apache.lucene.search.Query;
+import org.apache.lucene.search.Scorer;
+import org.apache.lucene.search.similarities.Similarity;
+import org.apache.lucene.store.RAMDirectory;
+import org.apache.lucene.util.ArrayUtil;
+import org.apache.lucene.util.Bits;
+import org.apache.lucene.util.ByteBlockPool;
+import org.apache.lucene.util.BytesRef;
+import org.apache.lucene.util.BytesRefHash;
+import org.apache.lucene.util.BytesRefHash.DirectBytesStartArray;
+import org.apache.lucene.util.Counter;
+import org.apache.lucene.util.IntBlockPool;
+import org.apache.lucene.util.IntBlockPool.SliceReader;
+import org.apache.lucene.util.IntBlockPool.SliceWriter;
+import org.apache.lucene.util.RamUsageEstimator;
+import org.apache.lucene.util.RecyclingByteBlockAllocator;
+import org.apache.lucene.util.RecyclingIntBlockAllocator;
+
 import java.io.IOException;
 import java.io.StringReader;
 import java.util.Arrays;
@@ -26,50 +68,6 @@ import java.util.HashMap;
 import java.util.Iterator;
 import java.util.Map;
 import java.util.NoSuchElementException;
-
-import org.apache.lucene.analysis.Analyzer;
-import org.apache.lucene.analysis.TokenStream;
-import org.apache.lucene.analysis.tokenattributes.CharTermAttribute;
-import org.apache.lucene.analysis.tokenattributes.OffsetAttribute;
-import org.apache.lucene.analysis.tokenattributes.PositionIncrementAttribute;
-import org.apache.lucene.analysis.tokenattributes.TermToBytesRefAttribute;
-import org.apache.lucene.index.AtomicReader;
-import org.apache.lucene.index.AtomicReaderContext;
-import org.apache.lucene.index.FieldInfo;
-import org.apache.lucene.index.Norm;
-import org.apache.lucene.index.DocValues;
-import org.apache.lucene.index.DocsAndPositionsEnum;
-import org.apache.lucene.index.DocsEnum;
-import org.apache.lucene.index.FieldInfos;
-import org.apache.lucene.index.FieldInvertState;
-import org.apache.lucene.index.Fields;
-import org.apache.lucene.index.OrdTermState;
-import org.apache.lucene.index.StoredFieldVisitor;
-import org.apache.lucene.index.TermState;
-import org.apache.lucene.index.Terms;
-import org.apache.lucene.index.TermsEnum;
-import org.apache.lucene.index.FieldInfo.IndexOptions;
-import org.apache.lucene.index.memory.MemoryIndexNormDocValues.SingleValueSource;
-import org.apache.lucene.search.Collector;
-import org.apache.lucene.search.IndexSearcher;
-import org.apache.lucene.search.Query;
-import org.apache.lucene.search.Scorer;
-import org.apache.lucene.search.similarities.Similarity;
-import org.apache.lucene.store.RAMDirectory; // for javadocs
-import org.apache.lucene.util.ArrayUtil;
-import org.apache.lucene.util.Bits;
-import org.apache.lucene.util.ByteBlockPool;
-import org.apache.lucene.util.BytesRef;
-import org.apache.lucene.util.BytesRefHash;
-import org.apache.lucene.util.Counter;
-import org.apache.lucene.util.IntBlockPool;
-import org.apache.lucene.util.BytesRefHash.DirectBytesStartArray;
-import org.apache.lucene.util.IntBlockPool.SliceReader;
-import org.apache.lucene.util.IntBlockPool.SliceWriter;
-import org.apache.lucene.util.Constants; // for javadocs
-import org.apache.lucene.util.RamUsageEstimator;
-import org.apache.lucene.util.RecyclingByteBlockAllocator;
-import org.apache.lucene.util.RecyclingIntBlockAllocator;
 
 
 /**
@@ -933,7 +931,7 @@ public class MemoryIndex {
       }
 
       @Override
-      public DocsAndPositionsEnum docsAndPositions(Bits liveDocs, DocsAndPositionsEnum reuse, int flags) {
+      public DocsEnum docsAndPositions(Bits liveDocs, DocsEnum reuse, int flags) {
         if (reuse == null || !(reuse instanceof MemoryDocsAndPositionsEnum)) {
           reuse = new MemoryDocsAndPositionsEnum();
         }
@@ -1000,7 +998,7 @@ public class MemoryIndex {
       }
     }
     
-    private class MemoryDocsAndPositionsEnum extends DocsAndPositionsEnum {
+    private class MemoryDocsAndPositionsEnum extends DocsEnum {
       private int posUpto; // for assert
       private boolean hasNext;
       private Bits liveDocs;
@@ -1014,7 +1012,7 @@ public class MemoryIndex {
         this.sliceReader = new SliceReader(intBlockPool);
       }
 
-      public DocsAndPositionsEnum reset(Bits liveDocs, int start, int end, int freq) {
+      public DocsEnum reset(Bits liveDocs, int start, int end, int freq) {
         this.liveDocs = liveDocs;
         this.sliceReader.reset(start, end);
         posUpto = 0; // for assert
@@ -1052,7 +1050,9 @@ public class MemoryIndex {
 
       @Override
       public int nextPosition() {
-        assert posUpto++ < freq;
+        //assert posUpto++ < freq;
+        if (posUpto++ >= freq)
+          return NO_MORE_POSITIONS;
         assert !sliceReader.endOfSlice() : " stores offsets : " + startOffset;
         if (storeOffsets) {
           int pos = sliceReader.readInt();

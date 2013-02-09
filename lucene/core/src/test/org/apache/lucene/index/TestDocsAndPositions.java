@@ -42,7 +42,7 @@ public class TestDocsAndPositions extends LuceneTestCase {
   }
 
   /**
-   * Simple testcase for {@link DocsAndPositionsEnum}
+   * Simple testcase for {@link DocsEnum}
    */
   public void testPositionsSimple() throws IOException {
     Directory directory = newDirectory();
@@ -65,7 +65,7 @@ public class TestDocsAndPositions extends LuceneTestCase {
       BytesRef bytes = new BytesRef("1");
       IndexReaderContext topReaderContext = reader.getContext();
       for (AtomicReaderContext atomicReaderContext : topReaderContext.leaves()) {
-        DocsAndPositionsEnum docsAndPosEnum = getDocsAndPositions(
+        DocsEnum docsAndPosEnum = getDocsAndPositions(
             atomicReaderContext.reader(), bytes, null);
         assertNotNull(docsAndPosEnum);
         if (atomicReaderContext.reader().maxDoc() == 0) {
@@ -90,7 +90,7 @@ public class TestDocsAndPositions extends LuceneTestCase {
     directory.close();
   }
 
-  public DocsAndPositionsEnum getDocsAndPositions(AtomicReader reader,
+  public DocsEnum getDocsAndPositions(AtomicReader reader,
       BytesRef bytes, Bits liveDocs) throws IOException {
     Terms terms = reader.terms(fieldName);
     if (terms != null) {
@@ -147,7 +147,7 @@ public class TestDocsAndPositions extends LuceneTestCase {
       BytesRef bytes = new BytesRef("" + term);
       IndexReaderContext topReaderContext = reader.getContext();
       for (AtomicReaderContext atomicReaderContext : topReaderContext.leaves()) {
-        DocsAndPositionsEnum docsAndPosEnum = getDocsAndPositions(
+        DocsEnum docsAndPosEnum = getDocsAndPositions(
             atomicReaderContext.reader(), bytes, null);
         assertNotNull(docsAndPosEnum);
         int initDoc = 0;
@@ -301,7 +301,7 @@ public class TestDocsAndPositions extends LuceneTestCase {
 
       IndexReaderContext topReaderContext = reader.getContext();
       for (AtomicReaderContext atomicReaderContext : topReaderContext.leaves()) {
-        DocsAndPositionsEnum docsAndPosEnum = getDocsAndPositions(
+        DocsEnum docsAndPosEnum = getDocsAndPositions(
             atomicReaderContext.reader(), bytes, null);
         assertNotNull(docsAndPosEnum);
 
@@ -359,7 +359,7 @@ public class TestDocsAndPositions extends LuceneTestCase {
     writer.addDocument(doc);
     DirectoryReader reader = writer.getReader();
     AtomicReader r = getOnlySegmentReader(reader);
-    DocsAndPositionsEnum disi = r.termPositionsEnum(new Term("foo", "bar"));
+    DocsEnum disi = r.termPositionsEnum(new Term("foo", "bar"));
     int docid = disi.docID();
     assertTrue(docid == -1 || docid == DocIdSetIterator.NO_MORE_DOCS);
     assertTrue(disi.nextDoc() != DocIdSetIterator.NO_MORE_DOCS);

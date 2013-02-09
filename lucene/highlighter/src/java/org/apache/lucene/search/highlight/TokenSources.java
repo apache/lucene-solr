@@ -26,7 +26,7 @@ import org.apache.lucene.analysis.TokenStream;
 import org.apache.lucene.analysis.tokenattributes.CharTermAttribute;
 import org.apache.lucene.analysis.tokenattributes.OffsetAttribute;
 import org.apache.lucene.analysis.tokenattributes.PositionIncrementAttribute;
-import org.apache.lucene.index.DocsAndPositionsEnum;
+import org.apache.lucene.index.DocsEnum;
 import org.apache.lucene.index.Fields;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.StoredDocument;
@@ -203,7 +203,7 @@ public class TokenSources {
     ArrayList<Token> unsortedTokens = null;
     termsEnum = tpv.iterator(null);
     BytesRef text;
-    DocsAndPositionsEnum dpEnum = null;
+    DocsEnum dpEnum = null;
     while ((text = termsEnum.next()) != null) {
 
       dpEnum = termsEnum.docsAndPositions(null, dpEnum);

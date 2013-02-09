@@ -16,6 +16,7 @@ package org.apache.lucene.search;
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.analysis.MockAnalyzer;
 import org.apache.lucene.analysis.MockTokenFilter;
@@ -23,7 +24,7 @@ import org.apache.lucene.analysis.MockTokenizer;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.TextField;
 import org.apache.lucene.index.AtomicReaderContext;
-import org.apache.lucene.index.DocsAndPositionsEnum;
+import org.apache.lucene.index.DocsEnum;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.IndexReaderContext;
 import org.apache.lucene.index.MultiFields;
@@ -70,7 +71,7 @@ public class TestTermQuery extends LuceneTestCase {
     TermsEnum te = MultiFields.getTerms(reader,
         fieldName).iterator(null);
     te.seekExact(new BytesRef("1"), false);
-    DocsAndPositionsEnum docsAndPositions = te.docsAndPositions(null, null, DocsAndPositionsEnum.FLAG_PAYLOADS);
+    DocsEnum docsAndPositions = te.docsAndPositions(null, null, DocsEnum.FLAG_PAYLOADS);
     assertEquals(39, reader.docFreq(new Term(fieldName, "1")));
     docsAndPositions.nextDoc();
     docsAndPositions.nextPosition();

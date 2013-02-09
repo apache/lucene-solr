@@ -21,7 +21,7 @@ import java.util.Collections;
 import java.util.LinkedList;
 import java.util.Set;
 
-import org.apache.lucene.index.DocsAndPositionsEnum;
+import org.apache.lucene.index.DocsEnum;
 import org.apache.lucene.index.Fields;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.Term;
@@ -93,7 +93,7 @@ public class FieldTermStack {
 
     final CharsRef spare = new CharsRef();
     final TermsEnum termsEnum = vector.iterator(null);
-    DocsAndPositionsEnum dpEnum = null;
+    DocsEnum dpEnum = null;
     BytesRef text;
     
     int numDocs = reader.maxDoc();

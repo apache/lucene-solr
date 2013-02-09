@@ -21,6 +21,8 @@ package org.apache.lucene.index;
 import java.io.IOException;
 import java.util.Arrays;
 
+import org.apache.lucene.util.BytesRef;
+
 /**
  * Exposes {@link DocsEnum}, merged from {@link DocsEnum}
  * API of sub-segments.
@@ -86,6 +88,26 @@ public final class MultiDocsEnum extends DocsEnum {
   @Override
   public int docID() {
     return doc;
+  }
+  
+  @Override
+  public int nextPosition() throws IOException {
+    return current.nextPosition();
+  }
+
+  @Override
+  public int startOffset() throws IOException {
+    return current.startOffset();
+  }
+
+  @Override
+  public int endOffset() throws IOException {
+    return current.endOffset();
+  }
+
+  @Override
+  public BytesRef getPayload() throws IOException {
+    return current.getPayload();
   }
 
   @Override

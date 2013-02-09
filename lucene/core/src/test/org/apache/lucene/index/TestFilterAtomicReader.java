@@ -75,14 +75,14 @@ public class TestFilterAtomicReader extends LuceneTestCase {
       }
 
       @Override
-      public DocsAndPositionsEnum docsAndPositions(Bits liveDocs, DocsAndPositionsEnum reuse, int flags) throws IOException {
-        return new TestPositions(super.docsAndPositions(liveDocs, reuse == null ? null : ((FilterDocsAndPositionsEnum) reuse).in, flags));
+      public DocsEnum docsAndPositions(Bits liveDocs, DocsEnum reuse, int flags) throws IOException {
+        return new TestPositions(super.docsAndPositions(liveDocs, reuse == null ? null : ((FilterDocsEnum) reuse).in, flags));
       }
     }
 
     /** Filter that only returns odd numbered documents. */
-    private static class TestPositions extends FilterDocsAndPositionsEnum {
-      public TestPositions(DocsAndPositionsEnum in) {
+    private static class TestPositions extends FilterDocsEnum {
+      public TestPositions(DocsEnum in) {
         super(in);
       }
 
@@ -150,7 +150,7 @@ public class TestFilterAtomicReader extends LuceneTestCase {
     
     assertEquals(TermsEnum.SeekStatus.FOUND, terms.seekCeil(new BytesRef("one")));
     
-    DocsAndPositionsEnum positions = terms.docsAndPositions(MultiFields.getLiveDocs(reader), null);
+    DocsEnum positions = terms.docsAndPositions(MultiFields.getLiveDocs(reader), null);
     while (positions.nextDoc() != DocIdSetIterator.NO_MORE_DOCS) {
       assertTrue((positions.docID() % 2) == 1);
     }
@@ -182,7 +182,6 @@ public class TestFilterAtomicReader extends LuceneTestCase {
     checkOverrideMethods(FilterAtomicReader.FilterTerms.class);
     checkOverrideMethods(FilterAtomicReader.FilterTermsEnum.class);
     checkOverrideMethods(FilterAtomicReader.FilterDocsEnum.class);
-    checkOverrideMethods(FilterAtomicReader.FilterDocsAndPositionsEnum.class);
   }
 
 }

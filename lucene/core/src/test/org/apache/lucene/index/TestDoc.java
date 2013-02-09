@@ -260,7 +260,7 @@ public class TestDoc extends LuceneTestCase {
           out.print("  term=" + field + ":" + tis.term());
           out.println("    DF=" + tis.docFreq());
 
-          DocsAndPositionsEnum positions = tis.docsAndPositions(reader.getLiveDocs(), null);
+          DocsEnum positions = tis.docsAndPositions(reader.getLiveDocs(), null);
 
           while (positions.nextDoc() != DocIdSetIterator.NO_MORE_DOCS) {
             out.print(" doc=" + positions.docID());

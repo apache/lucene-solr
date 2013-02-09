@@ -17,23 +17,15 @@ package org.apache.lucene.codecs.memory;
  * limitations under the License.
  */
 
-import java.io.IOException;
-import java.util.Collections;
-import java.util.Comparator;
-import java.util.Iterator;
-import java.util.SortedMap;
-import java.util.TreeMap;
-
 import org.apache.lucene.codecs.FieldsConsumer;
 import org.apache.lucene.codecs.FieldsProducer;
 import org.apache.lucene.codecs.PostingsConsumer;
 import org.apache.lucene.codecs.PostingsFormat;
 import org.apache.lucene.codecs.TermStats;
 import org.apache.lucene.codecs.TermsConsumer;
-import org.apache.lucene.index.DocsAndPositionsEnum;
 import org.apache.lucene.index.DocsEnum;
-import org.apache.lucene.index.FieldInfo.IndexOptions;
 import org.apache.lucene.index.FieldInfo;
+import org.apache.lucene.index.FieldInfo.IndexOptions;
 import org.apache.lucene.index.FieldInfos;
 import org.apache.lucene.index.IndexFileNames;
 import org.apache.lucene.index.SegmentReadState;
@@ -55,6 +47,13 @@ import org.apache.lucene.util.fst.BytesRefFSTEnum;
 import org.apache.lucene.util.fst.FST;
 import org.apache.lucene.util.fst.Util;
 import org.apache.lucene.util.packed.PackedInts;
+
+import java.io.IOException;
+import java.util.Collections;
+import java.util.Comparator;
+import java.util.Iterator;
+import java.util.SortedMap;
+import java.util.TreeMap;
 
 // TODO: would be nice to somehow allow this to act like
 // InstantiatedIndex, by never writing to disk; ie you write
@@ -433,7 +432,7 @@ public final class MemoryPostingsFormat extends PostingsFormat {
     }
   }
 
-  private final static class FSTDocsAndPositionsEnum extends DocsAndPositionsEnum {
+  private final static class FSTDocsAndPositionsEnum extends DocsEnum {
     private final boolean storePayloads;
     private byte[] buffer = new byte[16];
     private final ByteArrayDataInput in = new ByteArrayDataInput(buffer);
@@ -547,7 +546,8 @@ public final class MemoryPostingsFormat extends PostingsFormat {
     @Override
     public int nextPosition() {
       //System.out.println("    nextPos storePayloads=" + storePayloads + " this=" + this);
-      assert posPending > 0;
+      if (posPending == 0)
+        return NO_MORE_POSITIONS;
       posPending--;
       if (!storePayloads) {
         pos += in.readVInt();
@@ -700,7 +700,7 @@ public final class MemoryPostingsFormat extends PostingsFormat {
     }
 
     @Override
-    public DocsAndPositionsEnum docsAndPositions(Bits liveDocs, DocsAndPositionsEnum reuse, int flags) {
+    public DocsEnum docsAndPositions(Bits liveDocs, DocsEnum reuse, int flags) {
 
       boolean hasOffsets = field.getIndexOptions().compareTo(IndexOptions.DOCS_AND_FREQS_AND_POSITIONS_AND_OFFSETS) >= 0;
       if (field.getIndexOptions().compareTo(IndexOptions.DOCS_AND_FREQS_AND_POSITIONS) < 0) {

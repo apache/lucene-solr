@@ -17,21 +17,13 @@ package org.apache.lucene.codecs.memory;
  * limitations under the License.
  */
 
-import java.io.IOException;
-import java.util.Collections;
-import java.util.Comparator;
-import java.util.Iterator;
-import java.util.Map;
-import java.util.TreeMap;
-
 import org.apache.lucene.codecs.FieldsConsumer;
 import org.apache.lucene.codecs.FieldsProducer;
 import org.apache.lucene.codecs.PostingsFormat;
-import org.apache.lucene.codecs.lucene41.Lucene41PostingsFormat; // javadocs
-import org.apache.lucene.index.DocsAndPositionsEnum;
+import org.apache.lucene.codecs.lucene41.Lucene41PostingsFormat;
 import org.apache.lucene.index.DocsEnum;
-import org.apache.lucene.index.FieldInfo.IndexOptions;
 import org.apache.lucene.index.FieldInfo;
+import org.apache.lucene.index.FieldInfo.IndexOptions;
 import org.apache.lucene.index.Fields;
 import org.apache.lucene.index.OrdTermState;
 import org.apache.lucene.index.SegmentReadState;
@@ -47,6 +39,13 @@ import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.automaton.CompiledAutomaton;
 import org.apache.lucene.util.automaton.RunAutomaton;
 import org.apache.lucene.util.automaton.Transition;
+
+import java.io.IOException;
+import java.util.Collections;
+import java.util.Comparator;
+import java.util.Iterator;
+import java.util.Map;
+import java.util.TreeMap;
 
 // TODO: 
 //   - build depth-N prefix hash?
@@ -252,7 +251,7 @@ public final class DirectPostingsFormat extends PostingsFormat {
 
       BytesRef term;
       DocsEnum docsEnum = null;
-      DocsAndPositionsEnum docsAndPositionsEnum = null;
+      DocsEnum docsAndPositionsEnum = null;
       final TermsEnum termsEnum = termsIn.iterator(null);
       int termOffset = 0;
 
@@ -837,7 +836,7 @@ public final class DirectPostingsFormat extends PostingsFormat {
       }
 
       @Override
-      public DocsAndPositionsEnum docsAndPositions(Bits liveDocs, DocsAndPositionsEnum reuse, int flags) {
+      public DocsEnum docsAndPositions(Bits liveDocs, DocsEnum reuse, int flags) {
         if (!hasPos) {
           return null;
         }
@@ -1393,7 +1392,7 @@ public final class DirectPostingsFormat extends PostingsFormat {
       }
 
       @Override
-      public DocsAndPositionsEnum docsAndPositions(Bits liveDocs, DocsAndPositionsEnum reuse, int flags) {
+      public DocsEnum docsAndPositions(Bits liveDocs, DocsEnum reuse, int flags) {
         if (!hasPos) {
           return null;
         }
@@ -1636,7 +1635,7 @@ public final class DirectPostingsFormat extends PostingsFormat {
     }
   }
 
-  private final static class LowFreqDocsAndPositionsEnum extends DocsAndPositionsEnum {
+  private final static class LowFreqDocsAndPositionsEnum extends DocsEnum {
     private int[] postings;
     private final Bits liveDocs;
     private final int posMult;
@@ -1671,7 +1670,7 @@ public final class DirectPostingsFormat extends PostingsFormat {
       }
     }
 
-    public DocsAndPositionsEnum reset(int[] postings, byte[] payloadBytes) {
+    public DocsEnum reset(int[] postings, byte[] payloadBytes) {
       this.postings = postings;
       upto = 0;
       skipPositions = 0;
@@ -1741,7 +1740,9 @@ public final class DirectPostingsFormat extends PostingsFormat {
 
     @Override
     public int nextPosition() {
-      assert skipPositions > 0;
+      //assert skipPositions > 0;
+      if (skipPositions == 0)
+        return NO_MORE_POSITIONS;
       skipPositions--;
       final int pos = postings[upto++];
       if (hasOffsets) {
@@ -1962,7 +1963,7 @@ public final class DirectPostingsFormat extends PostingsFormat {
   }
 
   // TODO: specialize offsets and not
-  private final static class HighFreqDocsAndPositionsEnum extends DocsAndPositionsEnum {
+  private final static class HighFreqDocsAndPositionsEnum extends DocsEnum {
     private int[] docIDs;
     private int[] freqs;
     private int[][] positions;
@@ -1997,7 +1998,7 @@ public final class DirectPostingsFormat extends PostingsFormat {
       return liveDocs;
     }
 
-    public DocsAndPositionsEnum reset(int[] docIDs, int[] freqs, int[][] positions, byte[][][] payloads) {
+    public DocsEnum reset(int[] docIDs, int[] freqs, int[][] positions, byte[][][] payloads) {
       this.docIDs = docIDs;
       this.freqs = freqs;
       this.positions = positions;
@@ -2041,6 +2042,8 @@ public final class DirectPostingsFormat extends PostingsFormat {
 
     @Override
     public int nextPosition() {
+      if (posUpto >= curPositions.length)
+        return NO_MORE_POSITIONS;
       posUpto += posJump;
       return curPositions[posUpto];
     }

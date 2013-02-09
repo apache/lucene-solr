@@ -21,13 +21,11 @@ import java.io.IOException;
 import java.util.Comparator;
 
 import org.apache.lucene.index.FieldInfo; // javadocs
-import org.apache.lucene.index.DocsAndPositionsEnum;
 import org.apache.lucene.index.FieldInfo.IndexOptions;
 import org.apache.lucene.index.DocsEnum;
 import org.apache.lucene.index.MergeState;
 import org.apache.lucene.index.TermsEnum;
 import org.apache.lucene.index.MultiDocsEnum;
-import org.apache.lucene.index.MultiDocsAndPositionsEnum;
 
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.FixedBitSet;
@@ -153,11 +151,11 @@ public abstract class TermsConsumer {
         postingsEnum = new MappingMultiDocsAndPositionsEnum();
       }
       postingsEnum.setMergeState(mergeState);
-      MultiDocsAndPositionsEnum postingsEnumIn = null;
+      MultiDocsEnum postingsEnumIn = null;
       while((term = termsEnum.next()) != null) {
         // We can pass null for liveDocs, because the
         // mapping enum will skip the non-live docs:
-        postingsEnumIn = (MultiDocsAndPositionsEnum) termsEnum.docsAndPositions(null, postingsEnumIn, DocsAndPositionsEnum.FLAG_PAYLOADS);
+        postingsEnumIn = (MultiDocsEnum) termsEnum.docsAndPositions(null, postingsEnumIn);
         assert postingsEnumIn != null;
         postingsEnum.reset(postingsEnumIn);
 
@@ -180,11 +178,11 @@ public abstract class TermsConsumer {
         postingsEnum = new MappingMultiDocsAndPositionsEnum();
       }
       postingsEnum.setMergeState(mergeState);
-      MultiDocsAndPositionsEnum postingsEnumIn = null;
+      MultiDocsEnum postingsEnumIn = null;
       while((term = termsEnum.next()) != null) {
         // We can pass null for liveDocs, because the
         // mapping enum will skip the non-live docs:
-        postingsEnumIn = (MultiDocsAndPositionsEnum) termsEnum.docsAndPositions(null, postingsEnumIn);
+        postingsEnumIn = (MultiDocsEnum) termsEnum.docsAndPositions(null, postingsEnumIn);
         assert postingsEnumIn != null;
         postingsEnum.reset(postingsEnumIn);
 

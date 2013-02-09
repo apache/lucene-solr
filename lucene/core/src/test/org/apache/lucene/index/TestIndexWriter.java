@@ -944,7 +944,7 @@ public class TestIndexWriter extends LuceneTestCase {
     Terms tpv = r.getTermVectors(0).terms("field");
     TermsEnum termsEnum = tpv.iterator(null);
     assertNotNull(termsEnum.next());
-    DocsAndPositionsEnum dpEnum = termsEnum.docsAndPositions(null, null);
+    DocsEnum dpEnum = termsEnum.docsAndPositions(null, null);
     assertNotNull(dpEnum);
     assertTrue(dpEnum.nextDoc() != DocIdSetIterator.NO_MORE_DOCS);
     assertEquals(1, dpEnum.freq());
@@ -1647,7 +1647,7 @@ public class TestIndexWriter extends LuceneTestCase {
 
     // Make sure position is still incremented when
     // massive term is skipped:
-    DocsAndPositionsEnum tps = MultiFields.getTermPositionsEnum(reader, null, "content", new BytesRef("another"));
+    DocsEnum tps = MultiFields.getTermPositionsEnum(reader, null, "content", new BytesRef("another"));
     assertEquals(0, tps.nextDoc());
     assertEquals(1, tps.freq());
     assertEquals(3, tps.nextPosition());

@@ -17,18 +17,9 @@ package org.apache.lucene.codecs.lucene40;
  * limitations under the License.
  */
 
-import java.io.Closeable;
-import java.io.IOException;
-import java.util.Arrays;
-import java.util.Comparator;
-import java.util.HashMap;
-import java.util.Iterator;
-import java.util.Map;
-import java.util.NoSuchElementException;
-
 import org.apache.lucene.codecs.CodecUtil;
 import org.apache.lucene.codecs.TermVectorsReader;
-import org.apache.lucene.index.DocsAndPositionsEnum;
+import org.apache.lucene.index.DocsEnum;
 import org.apache.lucene.index.DocsEnum;
 import org.apache.lucene.index.FieldInfo;
 import org.apache.lucene.index.FieldInfos;
@@ -43,6 +34,15 @@ import org.apache.lucene.store.IndexInput;
 import org.apache.lucene.util.Bits;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.IOUtils;
+
+import java.io.Closeable;
+import java.io.IOException;
+import java.util.Arrays;
+import java.util.Comparator;
+import java.util.HashMap;
+import java.util.Iterator;
+import java.util.Map;
+import java.util.NoSuchElementException;
 
 /**
  * Lucene 4.0 Term Vectors reader.
@@ -542,7 +542,7 @@ public class Lucene40TermVectorsReader extends TermVectorsReader implements Clos
     }
 
     @Override
-    public DocsEnum docs(Bits liveDocs, DocsEnum reuse, int flags /* ignored */) throws IOException {
+    public DocsEnum docs(Bits liveDocs, DocsEnum reuse, int flags) throws IOException {
       TVDocsEnum docsEnum;
       if (reuse != null && reuse instanceof TVDocsEnum) {
         docsEnum = (TVDocsEnum) reuse;
@@ -554,7 +554,7 @@ public class Lucene40TermVectorsReader extends TermVectorsReader implements Clos
     }
 
     @Override
-    public DocsAndPositionsEnum docsAndPositions(Bits liveDocs, DocsAndPositionsEnum reuse, int flags) throws IOException {
+    public DocsEnum docsAndPositions(Bits liveDocs, DocsEnum reuse, int flags) throws IOException {
 
       if (!storePositions && !storeOffsets) {
         return null;
@@ -621,7 +621,7 @@ public class Lucene40TermVectorsReader extends TermVectorsReader implements Clos
     }
   }
 
-  private static class TVDocsAndPositionsEnum extends DocsAndPositionsEnum {
+  private static class TVDocsAndPositionsEnum extends DocsEnum {
     private boolean didNext;
     private int doc = -1;
     private int nextPos;
@@ -698,8 +698,10 @@ public class Lucene40TermVectorsReader extends TermVectorsReader implements Clos
 
     @Override
     public int nextPosition() {
-      assert (positions != null && nextPos < positions.length) ||
-        startOffsets != null && nextPos < startOffsets.length;
+      //assert (positions != null && nextPos < positions.length) ||
+      //  startOffsets != null && nextPos < startOffsets.length;
+      if (positions != null && nextPos >= positions.length)
+        return NO_MORE_POSITIONS;
 
       if (positions != null) {
         return positions[nextPos++];

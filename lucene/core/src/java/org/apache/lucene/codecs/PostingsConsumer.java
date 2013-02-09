@@ -19,7 +19,6 @@ package org.apache.lucene.codecs;
 
 import java.io.IOException;
 
-import org.apache.lucene.index.DocsAndPositionsEnum;
 import org.apache.lucene.index.DocsEnum;
 import org.apache.lucene.index.MergeState;
 import org.apache.lucene.index.FieldInfo.IndexOptions;
@@ -105,7 +104,7 @@ public abstract class PostingsConsumer {
         totTF += freq;
       }
     } else if (indexOptions == IndexOptions.DOCS_AND_FREQS_AND_POSITIONS) {
-      final DocsAndPositionsEnum postingsEnum = (DocsAndPositionsEnum) postings;
+      final DocsEnum postingsEnum = postings;
       while(true) {
         final int doc = postingsEnum.nextDoc();
         if (doc == DocIdSetIterator.NO_MORE_DOCS) {
@@ -125,7 +124,7 @@ public abstract class PostingsConsumer {
       }
     } else {
       assert indexOptions == IndexOptions.DOCS_AND_FREQS_AND_POSITIONS_AND_OFFSETS;
-      final DocsAndPositionsEnum postingsEnum = (DocsAndPositionsEnum) postings;
+      final DocsEnum postingsEnum = postings;
       while(true) {
         final int doc = postingsEnum.nextDoc();
         if (doc == DocIdSetIterator.NO_MORE_DOCS) {

@@ -29,7 +29,7 @@ import org.apache.lucene.document.TextField;
 import org.apache.lucene.index.AtomicReader;
 import org.apache.lucene.index.CheckIndex;
 import org.apache.lucene.index.DirectoryReader;
-import org.apache.lucene.index.DocsAndPositionsEnum;
+import org.apache.lucene.index.DocsEnum;
 import org.apache.lucene.index.DocsEnum;
 import org.apache.lucene.index.RandomIndexWriter;
 import org.apache.lucene.index.TermsEnum;
@@ -67,7 +67,7 @@ public class TestPulsingReuse extends LuceneTestCase {
     assertEquals(2, allEnums.size());
     
     allEnums.clear();
-    DocsAndPositionsEnum posReuse = null;
+    DocsEnum posReuse = null;
     te = segment.terms("foo").iterator(null);
     while (te.next() != null) {
       posReuse = te.docsAndPositions(null, posReuse);
@@ -108,7 +108,7 @@ public class TestPulsingReuse extends LuceneTestCase {
     assertEquals(4, allEnums.size());
     
     allEnums.clear();
-    DocsAndPositionsEnum posReuse = null;
+    DocsEnum posReuse = null;
     te = segment.terms("foo").iterator(null);
     while (te.next() != null) {
       posReuse = te.docsAndPositions(null, posReuse);

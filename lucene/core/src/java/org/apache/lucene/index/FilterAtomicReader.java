@@ -189,7 +189,7 @@ public class FilterAtomicReader extends AtomicReader {
     }
 
     @Override
-    public DocsAndPositionsEnum docsAndPositions(Bits liveDocs, DocsAndPositionsEnum reuse, int flags) throws IOException {
+    public DocsEnum docsAndPositions(Bits liveDocs, DocsEnum reuse, int flags) throws IOException {
       return in.docsAndPositions(liveDocs, reuse, flags);
     }
 
@@ -246,49 +246,20 @@ public class FilterAtomicReader extends AtomicReader {
     public int advance(int target) throws IOException {
       return in.advance(target);
     }
-    
-    @Override
-    public AttributeSource attributes() {
-      return in.attributes();
-    }
-  }
-
-  /** Base class for filtering {@link DocsAndPositionsEnum} implementations. */
-  public static class FilterDocsAndPositionsEnum extends DocsAndPositionsEnum {
-    /** The underlying DocsAndPositionsEnum instance. */
-    protected final DocsAndPositionsEnum in;
-
-    /**
-     * Create a new FilterDocsAndPositionsEnum
-     * @param in the underlying DocsAndPositionsEnum instance.
-     */
-    public FilterDocsAndPositionsEnum(DocsAndPositionsEnum in) {
-      this.in = in;
-    }
-
-    @Override
-    public int docID() {
-      return in.docID();
-    }
-
-    @Override
-    public int freq() throws IOException {
-      return in.freq();
-    }
-
-    @Override
-    public int nextDoc() throws IOException {
-      return in.nextDoc();
-    }
-
-    @Override
-    public int advance(int target) throws IOException {
-      return in.advance(target);
-    }
 
     @Override
     public int nextPosition() throws IOException {
       return in.nextPosition();
+    }
+
+    @Override
+    public int startPosition() throws IOException {
+      return in.startPosition();
+    }
+
+    @Override
+    public int endPosition() throws IOException {
+      return in.endPosition();
     }
 
     @Override

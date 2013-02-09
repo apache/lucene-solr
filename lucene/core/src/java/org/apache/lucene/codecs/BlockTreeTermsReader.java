@@ -28,7 +28,7 @@ import java.util.Locale;
 import java.util.TreeMap;
 
 import org.apache.lucene.index.CorruptIndexException;
-import org.apache.lucene.index.DocsAndPositionsEnum;
+import org.apache.lucene.index.DocsEnum;
 import org.apache.lucene.index.DocsEnum;
 import org.apache.lucene.index.FieldInfo.IndexOptions;
 import org.apache.lucene.index.FieldInfo;
@@ -963,7 +963,7 @@ public class BlockTreeTermsReader extends FieldsProducer {
       }
 
       @Override
-      public DocsAndPositionsEnum docsAndPositions(Bits skipDocs, DocsAndPositionsEnum reuse, int flags) throws IOException {
+      public DocsEnum docsAndPositions(Bits skipDocs, DocsEnum reuse, int flags) throws IOException {
         if (fieldInfo.getIndexOptions().compareTo(IndexOptions.DOCS_AND_FREQS_AND_POSITIONS) < 0) {
           // Positions were not indexed:
           return null;
@@ -2189,13 +2189,11 @@ public class BlockTreeTermsReader extends FieldsProducer {
       }
 
       @Override
-      public DocsAndPositionsEnum docsAndPositions(Bits skipDocs, DocsAndPositionsEnum reuse, int flags) throws IOException {
+      public DocsEnum docsAndPositions(Bits skipDocs, DocsEnum reuse, int flags) throws IOException {
         if (fieldInfo.getIndexOptions().compareTo(IndexOptions.DOCS_AND_FREQS_AND_POSITIONS) < 0) {
           // Positions were not indexed:
           return null;
         }
-
-        assert !eof;
         currentFrame.decodeMetaData();
         return postingsReader.docsAndPositions(fieldInfo, currentFrame.state, skipDocs, reuse, flags);
       }

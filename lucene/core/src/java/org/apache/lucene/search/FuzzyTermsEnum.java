@@ -22,7 +22,7 @@ import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.List;
 
-import org.apache.lucene.index.DocsAndPositionsEnum;
+import org.apache.lucene.index.DocsEnum;
 import org.apache.lucene.index.DocsEnum;
 import org.apache.lucene.index.Term;
 import org.apache.lucene.index.TermState;
@@ -277,8 +277,8 @@ public class FuzzyTermsEnum extends TermsEnum {
   }
   
   @Override
-  public DocsAndPositionsEnum docsAndPositions(Bits liveDocs,
-                                               DocsAndPositionsEnum reuse, int flags) throws IOException {
+  public DocsEnum docsAndPositions(Bits liveDocs,
+                                               DocsEnum reuse, int flags) throws IOException {
     return actualEnum.docsAndPositions(liveDocs, reuse, flags);
   }
   

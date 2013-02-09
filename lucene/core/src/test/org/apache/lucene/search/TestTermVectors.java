@@ -130,7 +130,7 @@ public class TestTermVectors extends LuceneTestCase {
       assertEquals(expectedFields[i], fieldsEnum.next());
       assertEquals(3, v.terms(expectedFields[i]).size());
 
-      DocsAndPositionsEnum dpEnum = null;
+      DocsEnum dpEnum = null;
       Terms terms = v.terms(expectedFields[i]);
       assertNotNull(terms);
       TermsEnum termsEnum = terms.iterator(null);
@@ -163,7 +163,7 @@ public class TestTermVectors extends LuceneTestCase {
     ScoreDoc[] hits = searcher.search(query, null, 1000).scoreDocs;
     assertEquals(1, hits.length);
 
-    DocsAndPositionsEnum dpEnum = null;
+    DocsEnum dpEnum = null;
     for (int i = 0; i < hits.length; i++) {
       Fields vectors = searcher.reader.getTermVectors(hits[i].doc);
       assertNotNull(vectors);
@@ -427,7 +427,7 @@ public class TestTermVectors extends LuceneTestCase {
     assertNotNull(termsEnum.next());
     assertEquals("one", termsEnum.term().utf8ToString());
     assertEquals(5, termsEnum.totalTermFreq());
-    DocsAndPositionsEnum dpEnum = termsEnum.docsAndPositions(null, null);
+    DocsEnum dpEnum = termsEnum.docsAndPositions(null, null);
     assertNotNull(dpEnum);
     assertTrue(dpEnum.nextDoc() != DocIdSetIterator.NO_MORE_DOCS);
     assertEquals(5, dpEnum.freq());

@@ -187,7 +187,7 @@ public abstract class FilteredTermsEnum extends TermsEnum {
   }
     
   @Override
-  public DocsAndPositionsEnum docsAndPositions(Bits bits, DocsAndPositionsEnum reuse, int flags) throws IOException {
+  public DocsEnum docsAndPositions(Bits bits, DocsEnum reuse, int flags) throws IOException {
     return tenum.docsAndPositions(bits, reuse, flags);
   }
   

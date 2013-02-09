@@ -17,14 +17,10 @@ package org.apache.lucene.codecs.pulsing;
  * limitations under the License.
  */
 
-import java.io.IOException;
-import java.util.IdentityHashMap;
-import java.util.Map;
-
 import org.apache.lucene.codecs.BlockTermState;
 import org.apache.lucene.codecs.CodecUtil;
 import org.apache.lucene.codecs.PostingsReaderBase;
-import org.apache.lucene.index.DocsAndPositionsEnum;
+import org.apache.lucene.index.DocsEnum;
 import org.apache.lucene.index.DocsEnum;
 import org.apache.lucene.index.FieldInfo;
 import org.apache.lucene.index.FieldInfo.IndexOptions;
@@ -37,6 +33,10 @@ import org.apache.lucene.util.AttributeImpl;
 import org.apache.lucene.util.AttributeSource;
 import org.apache.lucene.util.Bits;
 import org.apache.lucene.util.BytesRef;
+
+import java.io.IOException;
+import java.util.IdentityHashMap;
+import java.util.Map;
 
 /** Concrete class that reads the current doc/freq/skip
  *  postings format 
@@ -212,7 +212,7 @@ public class PulsingPostingsReader extends PostingsReaderBase {
   }
 
   @Override
-  public DocsAndPositionsEnum docsAndPositions(FieldInfo field, BlockTermState _termState, Bits liveDocs, DocsAndPositionsEnum reuse,
+  public DocsEnum docsAndPositions(FieldInfo field, BlockTermState _termState, Bits liveDocs, DocsEnum reuse,
                                                int flags) throws IOException {
 
     final PulsingTermState termState = (PulsingTermState) _termState;
@@ -239,7 +239,7 @@ public class PulsingPostingsReader extends PostingsReaderBase {
       return postings.reset(liveDocs, termState);
     } else {
       if (reuse instanceof PulsingDocsAndPositionsEnum) {
-        DocsAndPositionsEnum wrapped = wrappedPostingsReader.docsAndPositions(field, termState.wrappedTermState, liveDocs, (DocsAndPositionsEnum) getOther(reuse),
+        DocsEnum wrapped = wrappedPostingsReader.docsAndPositions(field, termState.wrappedTermState, liveDocs, getOther(reuse),
                                                                               flags);
         setOther(wrapped, reuse); // wrapped.other = reuse
         return wrapped;
@@ -369,7 +369,7 @@ public class PulsingPostingsReader extends PostingsReaderBase {
     }
   }
 
-  private static class PulsingDocsAndPositionsEnum extends DocsAndPositionsEnum {
+  private static class PulsingDocsAndPositionsEnum extends DocsEnum {
     private byte[] postingsBytes;
     private final ByteArrayDataInput postings = new ByteArrayDataInput();
     private final boolean storePayloads;
@@ -478,7 +478,9 @@ public class PulsingPostingsReader extends PostingsReaderBase {
     public int nextPosition() throws IOException {
       //System.out.println("PR d&p nextPosition posPending=" + posPending + " vs freq=" + freq);
       
-      assert posPending > 0;
+      //assert posPending > 0;
+      if (posPending == 0)
+        return NO_MORE_POSITIONS;
       posPending--;
 
       if (storePayloads) {

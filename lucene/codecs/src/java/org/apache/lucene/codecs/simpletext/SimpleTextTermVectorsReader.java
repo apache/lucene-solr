@@ -17,16 +17,8 @@ package org.apache.lucene.codecs.simpletext;
  * limitations under the License.
  */
 
-import java.io.IOException;
-import java.util.Collections;
-import java.util.Comparator;
-import java.util.Iterator;
-import java.util.Map;
-import java.util.SortedMap;
-import java.util.TreeMap;
-
 import org.apache.lucene.codecs.TermVectorsReader;
-import org.apache.lucene.index.DocsAndPositionsEnum;
+import org.apache.lucene.index.DocsEnum;
 import org.apache.lucene.index.DocsEnum;
 import org.apache.lucene.index.Fields;
 import org.apache.lucene.index.IndexFileNames;
@@ -44,7 +36,31 @@ import org.apache.lucene.util.CharsRef;
 import org.apache.lucene.util.IOUtils;
 import org.apache.lucene.util.StringHelper;
 import org.apache.lucene.util.UnicodeUtil;
-import static org.apache.lucene.codecs.simpletext.SimpleTextTermVectorsWriter.*;
+
+import java.io.IOException;
+import java.util.Collections;
+import java.util.Comparator;
+import java.util.Iterator;
+import java.util.Map;
+import java.util.SortedMap;
+import java.util.TreeMap;
+
+import static org.apache.lucene.codecs.simpletext.SimpleTextTermVectorsWriter.DOC;
+import static org.apache.lucene.codecs.simpletext.SimpleTextTermVectorsWriter.END;
+import static org.apache.lucene.codecs.simpletext.SimpleTextTermVectorsWriter.ENDOFFSET;
+import static org.apache.lucene.codecs.simpletext.SimpleTextTermVectorsWriter.FIELD;
+import static org.apache.lucene.codecs.simpletext.SimpleTextTermVectorsWriter.FIELDNAME;
+import static org.apache.lucene.codecs.simpletext.SimpleTextTermVectorsWriter.FIELDOFFSETS;
+import static org.apache.lucene.codecs.simpletext.SimpleTextTermVectorsWriter.FIELDPAYLOADS;
+import static org.apache.lucene.codecs.simpletext.SimpleTextTermVectorsWriter.FIELDPOSITIONS;
+import static org.apache.lucene.codecs.simpletext.SimpleTextTermVectorsWriter.FIELDTERMCOUNT;
+import static org.apache.lucene.codecs.simpletext.SimpleTextTermVectorsWriter.NUMFIELDS;
+import static org.apache.lucene.codecs.simpletext.SimpleTextTermVectorsWriter.PAYLOAD;
+import static org.apache.lucene.codecs.simpletext.SimpleTextTermVectorsWriter.POSITION;
+import static org.apache.lucene.codecs.simpletext.SimpleTextTermVectorsWriter.STARTOFFSET;
+import static org.apache.lucene.codecs.simpletext.SimpleTextTermVectorsWriter.TERMFREQ;
+import static org.apache.lucene.codecs.simpletext.SimpleTextTermVectorsWriter.TERMTEXT;
+import static org.apache.lucene.codecs.simpletext.SimpleTextTermVectorsWriter.VECTORS_EXTENSION;
 
 /**
  * Reads plain-text term vectors.
@@ -384,7 +400,7 @@ public class SimpleTextTermVectorsReader extends TermVectorsReader {
     }
 
     @Override
-    public DocsAndPositionsEnum docsAndPositions(Bits liveDocs, DocsAndPositionsEnum reuse, int flags) throws IOException {
+    public DocsEnum docsAndPositions(Bits liveDocs, DocsEnum reuse, int flags) throws IOException {
       SimpleTVPostings postings = current.getValue();
       if (postings.positions == null && postings.startOffsets == null) {
         return null;
@@ -446,7 +462,7 @@ public class SimpleTextTermVectorsReader extends TermVectorsReader {
     }
   }
   
-  private static class SimpleTVDocsAndPositionsEnum extends DocsAndPositionsEnum {
+  private static class SimpleTVDocsAndPositionsEnum extends DocsEnum {
     private boolean didNext;
     private int doc = -1;
     private int nextPos;
@@ -508,9 +524,11 @@ public class SimpleTextTermVectorsReader extends TermVectorsReader {
 
     @Override
     public int nextPosition() {
-      assert (positions != null && nextPos < positions.length) ||
-        startOffsets != null && nextPos < startOffsets.length;
+      //assert (positions != null && nextPos < positions.length) ||
+      //  startOffsets != null && nextPos < startOffsets.length;
       if (positions != null) {
+        if (nextPos >= positions.length)
+          return NO_MORE_POSITIONS;
         return positions[nextPos++];
       } else {
         nextPos++;

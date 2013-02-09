@@ -17,7 +17,6 @@ package org.apache.lucene.search;
  * limitations under the License.
  */
 
-import org.apache.lucene.index.DocsAndPositionsEnum;
 import org.apache.lucene.index.DocsEnum;
 import org.apache.lucene.search.intervals.ConjunctionIntervalIterator;
 import org.apache.lucene.search.intervals.IntervalIterator;
@@ -147,8 +146,7 @@ class ConjunctionTermScorer extends Scorer {
     TermIntervalIterator[] positionIters = new TermIntervalIterator[origDocsAndFreqs.length];
     for (int i = 0; i < positionIters.length; i++) {
       DocsAndFreqs d = origDocsAndFreqs[i];
-      assert d.docs instanceof DocsAndPositionsEnum;
-      positionIters[i] = new TermIntervalIterator(this, (DocsAndPositionsEnum)d.docs, false, collectIntervals);
+      positionIters[i] = new TermIntervalIterator(this, d.docs, false, collectIntervals);
     }
     return new ConjunctionIntervalIterator(this, collectIntervals, positionIters);
   }

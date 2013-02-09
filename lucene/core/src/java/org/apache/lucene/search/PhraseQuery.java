@@ -19,7 +19,6 @@ package org.apache.lucene.search;
 
 import org.apache.lucene.index.AtomicReader;
 import org.apache.lucene.index.AtomicReaderContext;
-import org.apache.lucene.index.DocsAndPositionsEnum;
 import org.apache.lucene.index.DocsEnum;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.IndexReaderContext;
@@ -136,13 +135,13 @@ public class PhraseQuery extends Query {
 
   static class PostingsAndFreq implements Comparable<PostingsAndFreq> {
     final TermDocsEnumFactory factory;
-    final DocsAndPositionsEnum postings;
+    final DocsEnum postings;
     final int docFreq;
     final int position;
     final Term[] terms;
     final int nTerms; // for faster comparisons
 
-    public PostingsAndFreq(DocsAndPositionsEnum postings, TermDocsEnumFactory factory, int docFreq, int position, Term... terms) throws IOException {
+    public PostingsAndFreq(DocsEnum postings, TermDocsEnumFactory factory, int docFreq, int position, Term... terms) throws IOException {
       this.factory = factory;
       this.postings = postings;
       this.docFreq = docFreq;
@@ -267,7 +266,7 @@ public class PhraseQuery extends Query {
           return null;
         }
         te.seekExact(t.bytes(), state);
-        DocsAndPositionsEnum postingsEnum = te.docsAndPositions(liveDocs, null, DocsEnum.FLAG_NONE);
+        DocsEnum postingsEnum = te.docsAndPositions(liveDocs, null, DocsEnum.FLAG_NONE);
 
         // PhraseQuery on a field that did not index
         // positions.
@@ -424,7 +423,7 @@ public class PhraseQuery extends Query {
     }
     
     
-    public DocsAndPositionsEnum docsAndPositionsEnum()
+    public DocsEnum docsAndPositionsEnum()
         throws IOException {
       assert term != null;
       termsEnum.seekExact(term, termState);

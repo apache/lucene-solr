@@ -16,6 +16,10 @@ package org.apache.lucene.search.intervals;
  * limitations under the License.
  */
 
+import org.apache.lucene.search.Scorer;
+
+import java.io.IOException;
+
 /**
  * Represents a section of a document that matches a query
  */
@@ -172,4 +176,10 @@ public class Interval implements Cloneable {
         + end + "(" + offsetEnd + ")]";
   }
 
+  public void update(Scorer scorer) throws IOException {
+    offsetBegin = scorer.startOffset();
+    offsetEnd = scorer.endOffset();
+    begin = scorer.startPosition();
+    end = scorer.endPosition();
+  }
 }

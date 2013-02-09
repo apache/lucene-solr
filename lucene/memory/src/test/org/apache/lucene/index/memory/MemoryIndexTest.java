@@ -38,7 +38,7 @@ import org.apache.lucene.index.CompositeReader;
 import org.apache.lucene.index.DirectoryReader;
 import org.apache.lucene.index.DocValues;
 import org.apache.lucene.index.DocValues.Source;
-import org.apache.lucene.index.DocsAndPositionsEnum;
+import org.apache.lucene.index.DocsEnum;
 import org.apache.lucene.index.DocsEnum;
 import org.apache.lucene.index.Fields;
 import org.apache.lucene.index.IndexReader;
@@ -198,9 +198,9 @@ public class MemoryIndexTest extends BaseTokenStreamTestCase {
           while(iwTermsIter.next() != null) {
             assertNotNull(memTermsIter.next());
             assertEquals(iwTermsIter.term(), memTermsIter.term());
-            DocsAndPositionsEnum iwDocsAndPos = iwTermsIter.docsAndPositions(null, null);
-            DocsAndPositionsEnum memDocsAndPos = memTermsIter.docsAndPositions(null, null);
-            while(iwDocsAndPos.nextDoc() != DocsAndPositionsEnum.NO_MORE_DOCS) {
+            DocsEnum iwDocsAndPos = iwTermsIter.docsAndPositions(null, null);
+            DocsEnum memDocsAndPos = memTermsIter.docsAndPositions(null, null);
+            while(iwDocsAndPos.nextDoc() != DocsEnum.NO_MORE_DOCS) {
               assertEquals(iwDocsAndPos.docID(), memDocsAndPos.nextDoc());
               assertEquals(iwDocsAndPos.freq(), memDocsAndPos.freq());
               for (int i = 0; i < iwDocsAndPos.freq(); i++) {
@@ -219,7 +219,7 @@ public class MemoryIndexTest extends BaseTokenStreamTestCase {
             assertEquals(iwTermsIter.term(), memTermsIter.term());
             DocsEnum iwDocsAndPos = iwTermsIter.docs(null, null);
             DocsEnum memDocsAndPos = memTermsIter.docs(null, null);
-            while(iwDocsAndPos.nextDoc() != DocsAndPositionsEnum.NO_MORE_DOCS) {
+            while(iwDocsAndPos.nextDoc() != DocsEnum.NO_MORE_DOCS) {
               assertEquals(iwDocsAndPos.docID(), memDocsAndPos.nextDoc());
               assertEquals(iwDocsAndPos.freq(), memDocsAndPos.freq());
             }
@@ -317,7 +317,7 @@ public class MemoryIndexTest extends BaseTokenStreamTestCase {
       memory.addField("foo", "bar", analyzer);
       AtomicReader reader = (AtomicReader) memory.createSearcher().getIndexReader();
       assertEquals(1, reader.terms("foo").getSumTotalTermFreq());
-      DocsAndPositionsEnum disi = reader.termPositionsEnum(new Term("foo", "bar"));
+      DocsEnum disi = reader.termPositionsEnum(new Term("foo", "bar"));
       int docid = disi.docID();
       assertTrue(docid == -1 || docid == DocIdSetIterator.NO_MORE_DOCS);
       assertTrue(disi.nextDoc() != DocIdSetIterator.NO_MORE_DOCS);

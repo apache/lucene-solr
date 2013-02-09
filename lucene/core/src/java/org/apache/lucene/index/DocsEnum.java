@@ -17,12 +17,13 @@ package org.apache.lucene.index;
  * limitations under the License.
  */
 
-import java.io.IOException;
-
 import org.apache.lucene.index.FieldInfo.IndexOptions;
 import org.apache.lucene.search.DocIdSetIterator;
 import org.apache.lucene.util.AttributeSource;
-import org.apache.lucene.util.Bits; // javadocs
+import org.apache.lucene.util.Bits;
+import org.apache.lucene.util.BytesRef;
+
+import java.io.IOException;
 
 /** Iterates through the documents and term freqs.
  *  NOTE: you must first call {@link #nextDoc} before using
@@ -31,15 +32,23 @@ public abstract class DocsEnum extends DocIdSetIterator {
   
   /**
    * Flag to pass to {@link TermsEnum#docs(Bits,DocsEnum,int)} if you don't
-   * require term frequencies in the returned enum. When passed to
-   * {@link TermsEnum#docsAndPositions(Bits,DocsAndPositionsEnum,int)} means
-   * that no offsets and payloads will be returned.
+   * require term frequencies in the returned enum.
    */
   public static final int FLAG_NONE = 0x0;
 
   /** Flag to pass to {@link TermsEnum#docs(Bits,DocsEnum,int)}
    *  if you require term frequencies in the returned enum. */
   public static final int FLAG_FREQS = 0x1;
+  
+  /** Flag to pass to {@link TermsEnum#docs(Bits,DocsEnum,int)}
+   *  if you require offsets in the returned enum. */
+  public static final int FLAG_OFFSETS = 0x1;
+
+  /** Flag to pass to  {@link TermsEnum#docs(Bits,DocsEnum,int)}
+   *  if you require payloads in the returned enum. */
+  public static final int FLAG_PAYLOADS = 0x2;
+
+  public static final int NO_MORE_POSITIONS = Integer.MAX_VALUE;
 
   private AttributeSource atts = null;
 
@@ -64,5 +73,43 @@ public abstract class DocsEnum extends DocIdSetIterator {
   public AttributeSource attributes() {
     if (atts == null) atts = new AttributeSource();
     return atts;
+  }
+
+  /** Returns the next position.  You should only call this
+   *  up to {@link DocsEnum#freq()} times else
+   *  the behavior is not defined.  If positions were not
+   *  indexed this will return -1; this only happens if
+   *  offsets were indexed and you passed needsOffset=true
+   *  when pulling the enum.  */
+  public int nextPosition() throws IOException {
+     return -1;
+  }
+
+  public int startPosition() throws IOException {
+    return -1;
+  }
+
+  public int endPosition() throws IOException {
+    return -1;
+  }
+
+  /** Returns start offset for the current position, or -1
+   *  if offsets were not indexed. */
+  public int startOffset() throws IOException {
+    return -1;
+  }
+
+  /** Returns end offset for the current position, or -1 if
+   *  offsets were not indexed. */
+  public int endOffset() throws IOException {
+    return -1;
+  }
+
+  /** Returns the payload at this position, or null if no
+   *  payload was indexed. You should not modify anything 
+   *  (neither members of the returned BytesRef nor bytes 
+   *  in the byte[]). */
+  public BytesRef getPayload() throws IOException {
+    return null;
   }
 }
