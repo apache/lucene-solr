@@ -37,8 +37,16 @@ import java.util.*;
 /**
  * LBHttpSolrServer or "LoadBalanced HttpSolrServer" is a load balancing wrapper around
  * {@link org.apache.solr.client.solrj.impl.HttpSolrServer}. This is useful when you
- * have multiple SolrServers and the requests need to be Load Balanced among them. This should <b>NOT</b> be used for
- * indexing. Also see the <a href="http://wiki.apache.org/solr/LBHttpSolrServer">wiki</a> page.
+ * have multiple SolrServers and the requests need to be Load Balanced among them.
+ *
+ * Do <b>NOT</b> use this class for indexing in master/slave scenarios since documents must be sent to the
+ * correct master; no inter-node routing is done.
+ *
+ * In SolrCloud (leader/replica) scenarios, this class may be used for updates since updates will be forwarded
+ * to the appropriate leader.
+ *
+ * Also see the <a href="http://wiki.apache.org/solr/LBHttpSolrServer">wiki</a> page.
+ *
  * <p/>
  * It offers automatic failover when a server goes down and it detects when the server comes back up.
  * <p/>
@@ -46,7 +54,7 @@ import java.util.*;
  * <p/>
  * If a request to a server fails by an IOException due to a connection timeout or read timeout then the host is taken
  * off the list of live servers and moved to a 'dead server list' and the request is resent to the next live server.
- * This process is continued till it tries all the live servers. If atleast one server is alive, the request succeeds,
+ * This process is continued till it tries all the live servers. If at least one server is alive, the request succeeds,
  * and if not it fails.
  * <blockquote><pre>
  * SolrServer lbHttpSolrServer = new LBHttpSolrServer("http://host1:8080/solr/","http://host2:8080/solr","http://host2:8080/solr");
