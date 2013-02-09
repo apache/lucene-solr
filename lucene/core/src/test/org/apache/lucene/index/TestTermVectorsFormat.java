@@ -17,6 +17,9 @@ package org.apache.lucene.index;
  * limitations under the License.
  */
 
+import java.util.EnumSet;
+import java.util.Set;
+
 import org.apache.lucene.codecs.Codec;
 
 /**
@@ -29,5 +32,15 @@ public class TestTermVectorsFormat extends BaseTermVectorsFormatTestCase {
   @Override
   protected Codec getCodec() {
     return Codec.getDefault();
+  }
+
+  @Override
+  protected Set<Options> validOptions() {
+    if (PREFLEX_IMPERSONATION_IS_ACTIVE) {
+      // payloads are not supported on vectors in 3.x indexes
+      return EnumSet.range(Options.NONE, Options.POSITIONS_AND_OFFSETS);
+    } else {
+      return super.validOptions();
+    }
   }
 }
