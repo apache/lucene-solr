@@ -1,8 +1,6 @@
 package org.apache.lucene.demo.facet;
 
-import java.util.List;
-
-import org.apache.lucene.facet.search.FacetResult;
+import org.apache.lucene.util.Version;
 
 /*
  * Licensed to the Apache Software Foundation (ASF) under one or more
@@ -22,31 +20,13 @@ import org.apache.lucene.facet.search.FacetResult;
  */
 
 /**
- * Result of running an example program.
- * This is a general object for allowing to write a test 
- * that runs an example and verifies its results.
+ * Hold various constants used by facet examples.
  * 
  * @lucene.experimental
  */
-public class ExampleResult {
+public interface FacetExamples {
   
-  /** Sole constructor. */
-  public ExampleResult() {}
-
-  private List<FacetResult> facetResults;
-
-  /**
-   * Returns the facet results
-   */
-  public List<FacetResult> getFacetResults() {
-    return facetResults;
-  }
-
-  /**
-   * Sets the facet results
-   */
-  public void setFacetResults(List<FacetResult> facetResults) {
-    this.facetResults = facetResults;
-  }
+  /** The Lucene {@link Version} used by the example code. */
+  public static final Version EXAMPLES_VER = Version.LUCENE_50;
 
 }

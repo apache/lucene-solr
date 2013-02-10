@@ -1,11 +1,11 @@
 package org.apache.lucene.demo.facet;
 
-import org.junit.Test;
+import java.util.List;
 
-import org.apache.lucene.util.LuceneTestCase;
-import org.apache.lucene.demo.facet.ExampleResult;
-import org.apache.lucene.demo.facet.association.CategoryAssociationsMain;
+import org.apache.lucene.facet.search.FacetResult;
 import org.apache.lucene.facet.search.FacetResultNode;
+import org.apache.lucene.util.LuceneTestCase;
+import org.junit.Test;
 
 /*
  * Licensed to the Apache Software Foundation (ASF) under one or more
@@ -24,28 +24,23 @@ import org.apache.lucene.facet.search.FacetResultNode;
  * limitations under the License.
  */
 
-/**
- * Test that the association example works as expected. This test helps to
- * verify that examples code is alive!
- */
-public class TestAssociationExample extends LuceneTestCase {
+public class TestAssociationsFacetsExample extends LuceneTestCase {
   
   private static final double[] EXPECTED_INT_SUM_RESULTS = { 4, 2};
   private static final double[] EXPECTED_FLOAT_SUM_RESULTS = { 1.62, 0.34};
 
   @Test
-  public void testAssociationExamples() throws Exception {
-    assertExampleResult(new CategoryAssociationsMain().runSumIntAssociationSample(), EXPECTED_INT_SUM_RESULTS);
-    assertExampleResult(new CategoryAssociationsMain().runSumFloatAssociationSample(), EXPECTED_FLOAT_SUM_RESULTS);
+  public void testExamples() throws Exception {
+    assertExampleResult(new AssociationsFacetsExample().runSumIntAssociations(), EXPECTED_INT_SUM_RESULTS);
+    assertExampleResult(new AssociationsFacetsExample().runSumFloatAssociations(), EXPECTED_FLOAT_SUM_RESULTS);
   }
 
-  private void assertExampleResult(ExampleResult res, double[] expectedResults) {
+  private void assertExampleResult(List<FacetResult> res, double[] expectedResults) {
     assertNotNull("Null result!", res);
-    assertNotNull("Null facet result!", res.getFacetResults());
-    assertEquals("Wrong number of results!", 1, res.getFacetResults().size());
-    assertEquals("Wrong number of facets!", 2, res.getFacetResults().get(0).getNumValidDescendants());
+    assertEquals("Wrong number of results!", 1, res.size());
+    assertEquals("Wrong number of facets!", 2, res.get(0).getNumValidDescendants());
     
-    Iterable<? extends FacetResultNode> it = res.getFacetResults().get(0).getFacetResultNode().subResults;
+    Iterable<? extends FacetResultNode> it = res.get(0).getFacetResultNode().subResults;
     int i = 0;
     for (FacetResultNode fResNode : it) {
       assertEquals("Wrong result for facet "+fResNode.label, expectedResults[i++], fResNode.value, 1E-5);
