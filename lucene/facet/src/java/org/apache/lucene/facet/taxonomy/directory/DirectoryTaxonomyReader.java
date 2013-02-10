@@ -5,10 +5,10 @@ import java.util.Map;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
+import org.apache.lucene.document.Document;
 import org.apache.lucene.facet.collections.LRUHashMap;
 import org.apache.lucene.facet.taxonomy.CategoryPath;
 import org.apache.lucene.facet.taxonomy.TaxonomyReader;
-import org.apache.lucene.facet.taxonomy.directory.Consts.LoadFullPathOnly;
 import org.apache.lucene.index.CorruptIndexException;
 import org.apache.lucene.index.DirectoryReader;
 import org.apache.lucene.index.DocsEnum;
@@ -320,9 +320,8 @@ public class DirectoryTaxonomyReader extends TaxonomyReader {
       }
     }
     
-    final LoadFullPathOnly loader = new LoadFullPathOnly();
-    indexReader.document(ordinal, loader);
-    CategoryPath ret = new CategoryPath(loader.getFullPath(), delimiter);
+    Document doc = indexReader.document(ordinal);
+    CategoryPath ret = new CategoryPath(doc.get(Consts.FULL), delimiter);
     synchronized (categoryCache) {
       categoryCache.put(catIDInteger, ret);
     }

@@ -1,7 +1,5 @@
 package org.apache.lucene.facet.taxonomy.directory;
 
-import org.apache.lucene.index.FieldInfo;
-import org.apache.lucene.index.StoredFieldVisitor;
 import org.apache.lucene.util.BytesRef;
 
 /*
@@ -30,30 +28,6 @@ abstract class Consts {
   static final String FIELD_PAYLOADS = "$payloads$";
   static final String PAYLOAD_PARENT = "p";
   static final BytesRef PAYLOAD_PARENT_BYTES_REF = new BytesRef(PAYLOAD_PARENT);
-  static final char[] PAYLOAD_PARENT_CHARS = PAYLOAD_PARENT.toCharArray();
-
-  /**
-   * The following is a "stored field visitor", an object
-   * which tells Lucene to extract only a single field
-   * rather than a whole document.
-   */
-  public static final class LoadFullPathOnly extends StoredFieldVisitor {
-    private String fullPath;
-
-    @Override
-    public void stringField(FieldInfo fieldInfo, String value) {
-      fullPath = value;
-    }
-
-    @Override
-    public Status needsField(FieldInfo fieldInfo) {
-      return fullPath == null ? Status.YES : Status.STOP;
-    }
-
-    public String getFullPath() {
-      return fullPath;
-    }
-  }
 
   /**
    * Delimiter used for creating the full path of a category from the list of
