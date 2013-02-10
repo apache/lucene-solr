@@ -63,15 +63,6 @@ public abstract class FacetRequest {
    */
   public enum FacetArraysSource { INT, FLOAT, BOTH }
 
-  /** Sort options for facet results. */
-  public enum SortBy { 
-    /** sort by category ordinal with the taxonomy */
-    ORDINAL, 
-
-    /** sort by computed category value */ 
-    VALUE 
-  }
-
   /** Requested sort order for the results. */
   public enum SortOrder { ASCENDING, DESCENDING }
 
@@ -80,12 +71,6 @@ public abstract class FacetRequest {
    * @see #getDepth()
    */
   public static final int DEFAULT_DEPTH = 1;
-  
-  /**
-   * Default sort mode.
-   * @see #getSortBy()
-   */
-  public static final SortBy DEFAULT_SORT_BY = SortBy.VALUE;
   
   /**
    * Default result mode
@@ -99,7 +84,6 @@ public abstract class FacetRequest {
   private int numLabel;
   private int depth;
   private SortOrder sortOrder;
-  private SortBy sortBy;
 
   /**
    * Computed at construction, this hashCode is based on two final members
@@ -135,7 +119,6 @@ public abstract class FacetRequest {
     this.numResults = numResults;
     numLabel = numResults;
     depth = DEFAULT_DEPTH;
-    sortBy = DEFAULT_SORT_BY;
     sortOrder = SortOrder.DESCENDING;
     
     hashCode = categoryPath.hashCode() ^ this.numResults;
@@ -221,11 +204,6 @@ public abstract class FacetRequest {
     return resultMode;
   }
 
-  /** Specify how should results be sorted. */
-  public final SortBy getSortBy() {
-    return sortBy;
-  }
-
   /** Return the requested order of results. */
   public final SortOrder getSortOrder() {
     return sortOrder;
@@ -274,10 +252,6 @@ public abstract class FacetRequest {
    */
   public void setResultMode(ResultMode resultMode) {
     this.resultMode = resultMode;
-  }
-
-  public void setSortBy(SortBy sortBy) {
-    this.sortBy = sortBy;
   }
 
   public void setSortOrder(SortOrder sortOrder) {

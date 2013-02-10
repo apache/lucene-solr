@@ -49,21 +49,10 @@ public class ResultSortUtils {
     }
 
     if (accending) {
-      switch (facetRequest.getSortBy()) {
-        case VALUE:
-          return new MaxValueHeap(nresults);
-        case ORDINAL:
-          return new MaxOrdinalHeap(nresults);
-      }
+      return new MaxValueHeap(nresults);
     } else {
-      switch (facetRequest.getSortBy()) {
-        case VALUE:
-          return new MinValueHeap(nresults);
-        case ORDINAL:
-          return new MinOrdinalHeap(nresults);
-      }
+      return new MinValueHeap(nresults);
     }
-    throw new IllegalArgumentException("none supported facet request: "+facetRequest);
   }
 
   private static class MinValueHeap extends PriorityQueue<FacetResultNode> implements Heap<FacetResultNode> {
@@ -103,30 +92,6 @@ public class ResultSortUtils {
 
       return valueCompare > 0;
     }
-  }
-
-  private static class MinOrdinalHeap extends PriorityQueue<FacetResultNode> implements Heap<FacetResultNode> {
-    public MinOrdinalHeap(int size) {
-      super(size);
-    }
-
-    @Override
-    protected boolean lessThan(FacetResultNode arg0, FacetResultNode arg1) {
-      return arg0.ordinal < arg1.ordinal;
-    }
-
-  }
-
-  private static class MaxOrdinalHeap extends PriorityQueue<FacetResultNode> implements Heap<FacetResultNode> {
-    public MaxOrdinalHeap(int size) {
-      super(size);
-    }
-
-    @Override
-    protected boolean lessThan(FacetResultNode arg0, FacetResultNode arg1) {
-      return arg0.ordinal > arg1.ordinal;
-    }
-
   }
 
   /**
