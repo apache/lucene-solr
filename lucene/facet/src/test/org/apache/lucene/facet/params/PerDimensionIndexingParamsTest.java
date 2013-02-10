@@ -6,7 +6,7 @@ import org.apache.lucene.facet.FacetTestCase;
 import org.apache.lucene.facet.params.CategoryListParams;
 import org.apache.lucene.facet.params.FacetIndexingParams;
 import org.apache.lucene.facet.params.PerDimensionIndexingParams;
-import org.apache.lucene.facet.search.DrillDown;
+import org.apache.lucene.facet.search.DrillDownQuery;
 import org.apache.lucene.facet.taxonomy.CategoryPath;
 import org.apache.lucene.facet.util.PartitionsUtils;
 import org.apache.lucene.index.Term;
@@ -38,7 +38,7 @@ public class PerDimensionIndexingParamsTest extends FacetTestCase {
     assertEquals("Expected default category list field is $facets", "$facets", ifip.getCategoryListParams(null).field);
     String expectedDDText = "a" + ifip.getFacetDelimChar() + "b";
     CategoryPath cp = new CategoryPath("a", "b");
-    assertEquals("wrong drill-down term", new Term("$facets", expectedDDText), DrillDown.term(ifip,cp));
+    assertEquals("wrong drill-down term", new Term("$facets", expectedDDText), DrillDownQuery.term(ifip,cp));
     char[] buf = new char[20];
     int numchars = ifip.drillDownTermText(cp, buf);
     assertEquals("3 characters should be written", 3, numchars);

@@ -66,6 +66,9 @@ Changes in backwards compatibility policy
 * LUCENE-4761: Facet packages reorganized. Should be easy to fix your import
   statements, if you use an IDE such as Eclipse. (Shai Erera)
 
+* LUCENE-4750: Convert DrillDown to DrillDownQuery, so you can initialize it
+  and add drill-down categories to it. (Michael McCandless, Shai Erera)
+
 Optimizations
 
 * LUCENE-4687: BloomFilterPostingsFormat now lazily initializes delegate

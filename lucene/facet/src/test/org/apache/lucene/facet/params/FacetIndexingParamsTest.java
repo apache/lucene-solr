@@ -3,7 +3,7 @@ package org.apache.lucene.facet.params;
 import org.apache.lucene.facet.FacetTestCase;
 import org.apache.lucene.facet.params.CategoryListParams;
 import org.apache.lucene.facet.params.FacetIndexingParams;
-import org.apache.lucene.facet.search.DrillDown;
+import org.apache.lucene.facet.search.DrillDownQuery;
 import org.apache.lucene.facet.taxonomy.CategoryPath;
 import org.apache.lucene.facet.util.PartitionsUtils;
 import org.apache.lucene.index.Term;
@@ -39,7 +39,7 @@ public class FacetIndexingParamsTest extends FacetTestCase {
         + dfip.getFacetDelimChar() + "b";
     CategoryPath cp = new CategoryPath("a", "b");
     assertEquals("wrong drill-down term", new Term("$facets",
-        expectedDDText), DrillDown.term(dfip,cp));
+        expectedDDText), DrillDownQuery.term(dfip,cp));
     char[] buf = new char[20];
     int numchars = dfip.drillDownTermText(cp, buf);
     assertEquals("3 characters should be written", 3, numchars);
