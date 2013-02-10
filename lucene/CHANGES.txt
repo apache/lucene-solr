@@ -69,6 +69,9 @@ Changes in backwards compatibility policy
 * LUCENE-4750: Convert DrillDown to DrillDownQuery, so you can initialize it
   and add drill-down categories to it. (Michael McCandless, Shai Erera)
 
+* LUCENE-4759: remove FacetRequest.SortBy; result categories are always 
+  sorted by value, while ties are broken by category ordinal. (Shai Erera)
+
 Optimizations
 
 * LUCENE-4687: BloomFilterPostingsFormat now lazily initializes delegate

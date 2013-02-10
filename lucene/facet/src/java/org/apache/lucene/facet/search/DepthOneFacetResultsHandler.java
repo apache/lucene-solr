@@ -6,7 +6,6 @@ import java.util.Arrays;
 import java.util.Collections;
 import java.util.Comparator;
 
-import org.apache.lucene.facet.search.FacetRequest.SortBy;
 import org.apache.lucene.facet.search.FacetRequest.SortOrder;
 import org.apache.lucene.facet.taxonomy.TaxonomyReader;
 import org.apache.lucene.facet.taxonomy.directory.ParallelTaxonomyArrays;
@@ -65,7 +64,6 @@ public abstract class DepthOneFacetResultsHandler extends FacetResultsHandler {
     assert facetRequest.getDepth() == 1 : "this handler only computes the top-K facets at depth 1";
     assert facetRequest.numResults == facetRequest.getNumLabel() : "this handler always labels all top-K results";
     assert facetRequest.getSortOrder() == SortOrder.DESCENDING : "this handler always sorts results in descending order";
-    assert facetRequest.getSortBy() == SortBy.VALUE : "this handler always sorts results by value";
   }
 
   /** Returnt the value of the requested ordinal. Called once for the result root. */

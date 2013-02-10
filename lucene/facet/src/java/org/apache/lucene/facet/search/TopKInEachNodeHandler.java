@@ -38,12 +38,8 @@ import org.apache.lucene.util.PriorityQueue;
  * {@link FacetRequest#categoryPath}, and the enumerated children,
  * {@link FacetResultNode#subResults}, of each node in that {@link FacetResult}
  * are the top K ( = {@link FacetRequest#numResults}) among its children in the
- * taxonomy. Top in the sense {@link FacetRequest#getSortBy()}, which can be by
- * the values aggregated in the count arrays, or by ordinal numbers; also
- * specified is the sort order, {@link FacetRequest#getSortOrder()}, ascending
- * or descending, of these values or ordinals before their top K are selected.
- * The depth (number of levels excluding the root) of the {@link FacetResult}
- * tree is specified by {@link FacetRequest#getDepth()}.
+ * taxonomy. The depth (number of levels excluding the root) of the
+ * {@link FacetResult} tree is specified by {@link FacetRequest#getDepth()}.
  * <p>
  * Because the number of selected children of each node is restricted, and not
  * the overall number of nodes in the {@link FacetResult}, facets not selected
@@ -536,21 +532,10 @@ public class TopKInEachNodeHandler extends PartitionsFacetResultsHandler {
 
   private ACComparator getSuitableACComparator() {
     if (facetRequest.getSortOrder() == SortOrder.ASCENDING) {
-      switch (facetRequest.getSortBy()) {
-        case VALUE:
-          return new AscValueACComparator();
-        case ORDINAL:
-          return new AscOrdACComparator();
-      }
+      return new AscValueACComparator();
     } else {
-      switch (facetRequest.getSortBy()) {
-        case VALUE:
-          return new DescValueACComparator();
-        case ORDINAL:
-          return new DescOrdACComparator();
-      }
+      return new DescValueACComparator();
     }
-    return null;
   }
 
   /**
@@ -581,26 +566,6 @@ public class TopKInEachNodeHandler extends PartitionsFacetResultsHandler {
     @Override
     protected boolean leftGoesNow (int ord1, double val1, int ord2, double val2) {
       return (val1 == val2) ? (ord1 > ord2) : (val1 > val2);
-    }
-  }
-
-  private static final class AscOrdACComparator extends ACComparator {
-    
-    AscOrdACComparator() { }
-    
-    @Override
-    protected boolean leftGoesNow (int ord1, double val1, int ord2, double val2) {
-      return (ord1 < ord2);
-    }
-  }
-
-  private static final class DescOrdACComparator extends ACComparator {
-    
-    DescOrdACComparator() { }
-    
-    @Override
-    protected boolean leftGoesNow (int ord1, double val1, int ord2, double val2) {
-      return (ord1 > ord2);
     }
   }
 

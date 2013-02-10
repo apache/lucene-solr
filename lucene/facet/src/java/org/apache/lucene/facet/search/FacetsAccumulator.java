@@ -13,7 +13,6 @@ import org.apache.lucene.facet.params.FacetSearchParams;
 import org.apache.lucene.facet.params.CategoryListParams.OrdinalPolicy;
 import org.apache.lucene.facet.search.FacetRequest.FacetArraysSource;
 import org.apache.lucene.facet.search.FacetRequest.ResultMode;
-import org.apache.lucene.facet.search.FacetRequest.SortBy;
 import org.apache.lucene.facet.search.FacetRequest.SortOrder;
 import org.apache.lucene.facet.search.FacetsCollector.MatchingDocs;
 import org.apache.lucene.facet.taxonomy.TaxonomyReader;
@@ -99,7 +98,7 @@ public class FacetsAccumulator {
    * {@link FacetRequest}.
    */
   protected FacetResultsHandler createFacetResultsHandler(FacetRequest fr) {
-    if (fr.getDepth() == 1 && fr.getSortOrder() == SortOrder.DESCENDING && fr.getSortBy() == SortBy.VALUE) {
+    if (fr.getDepth() == 1 && fr.getSortOrder() == SortOrder.DESCENDING) {
       FacetArraysSource fas = fr.getFacetArraysSource();
       if (fas == FacetArraysSource.INT) {
         return new IntFacetResultsHandler(taxonomyReader, fr, facetArrays);

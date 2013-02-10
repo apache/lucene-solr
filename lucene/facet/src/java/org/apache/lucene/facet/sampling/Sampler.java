@@ -222,7 +222,6 @@ public abstract class Sampler {
       setDepth(orig.getDepth());
       setNumLabel(orig.getNumLabel());
       setResultMode(orig.getResultMode());
-      setSortBy(orig.getSortBy());
       setSortOrder(orig.getSortOrder());
     }
     
