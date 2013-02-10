@@ -97,7 +97,7 @@ public class SyncSliceTest extends AbstractFullDistribZkTestBase {
     waitForThingsToLevelOut(15);
 
     del("*:*");
-    List<String> skipServers = new ArrayList<String>();
+    List<CloudJettyRunner> skipServers = new ArrayList<CloudJettyRunner>();
     int docId = 0;
     indexDoc(skipServers, id, docId++, i1, 50, tlong, 50, t1,
         "to come to the aid of their country.");
@@ -105,12 +105,12 @@ public class SyncSliceTest extends AbstractFullDistribZkTestBase {
     indexDoc(skipServers, id, docId++, i1, 50, tlong, 50, t1,
         "old haven was blue.");
     
-    skipServers.add(shardToJetty.get("shard1").get(1).url + "/");
+    skipServers.add(shardToJetty.get("shard1").get(1));
     
     indexDoc(skipServers, id, docId++, i1, 50, tlong, 50, t1,
         "but the song was fancy.");
     
-    skipServers.add(shardToJetty.get("shard1").get(2).url + "/");
+    skipServers.add(shardToJetty.get("shard1").get(2));
     
     indexDoc(skipServers, id,docId++, i1, 50, tlong, 50, t1,
         "under the moon and over the lake");
@@ -189,7 +189,7 @@ public class SyncSliceTest extends AbstractFullDistribZkTestBase {
     waitTillRecovered();
     
     skipServers = getRandomOtherJetty(leaderJetty, null);
-    skipServers.addAll( getRandomOtherJetty(leaderJetty, null));
+    skipServers.addAll( getRandomOtherJetty(leaderJetty, skipServers.get(0)));
     // skip list should be 
     
     //System.out.println("leader:" + leaderJetty.url);
@@ -290,13 +290,9 @@ public class SyncSliceTest extends AbstractFullDistribZkTestBase {
     }
     return shardFailMessage;
   }
-
-  private List<String> getRandomJetty() {
-    return getRandomOtherJetty(null, null);
-  }
   
-  private List<String> getRandomOtherJetty(CloudJettyRunner leader, CloudJettyRunner down) {
-    List<String> skipServers = new ArrayList<String>();
+  private List<CloudJettyRunner> getRandomOtherJetty(CloudJettyRunner leader, CloudJettyRunner down) {
+    List<CloudJettyRunner> skipServers = new ArrayList<CloudJettyRunner>();
     List<CloudJettyRunner> candidates = new ArrayList<CloudJettyRunner>();
     candidates.addAll(shardToJetty.get("shard1"));
 
@@ -309,11 +305,11 @@ public class SyncSliceTest extends AbstractFullDistribZkTestBase {
     }
     
     CloudJettyRunner cjetty = candidates.get(random().nextInt(candidates.size()));
-    skipServers.add(cjetty.url + "/");
+    skipServers.add(cjetty);
     return skipServers;
   }
   
-  protected void indexDoc(List<String> skipServers, Object... fields) throws IOException,
+  protected void indexDoc(List<CloudJettyRunner> skipServers, Object... fields) throws IOException,
       SolrServerException {
     SolrInputDocument doc = new SolrInputDocument();
     
@@ -325,8 +321,8 @@ public class SyncSliceTest extends AbstractFullDistribZkTestBase {
     UpdateRequest ureq = new UpdateRequest();
     ureq.add(doc);
     ModifiableSolrParams params = new ModifiableSolrParams();
-    for (String skip : skipServers) {
-      params.add("test.distrib.skip.servers", skip);
+    for (CloudJettyRunner skip : skipServers) {
+      params.add("test.distrib.skip.servers", skip.url + "/");
     }
     ureq.setParams(params);
     ureq.process(cloudClient);
