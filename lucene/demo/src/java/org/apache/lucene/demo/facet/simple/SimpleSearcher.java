@@ -7,7 +7,7 @@ import org.apache.lucene.demo.facet.ExampleUtils;
 import org.apache.lucene.facet.params.FacetIndexingParams;
 import org.apache.lucene.facet.params.FacetSearchParams;
 import org.apache.lucene.facet.search.CountFacetRequest;
-import org.apache.lucene.facet.search.DrillDown;
+import org.apache.lucene.facet.search.DrillDownQuery;
 import org.apache.lucene.facet.search.FacetRequest;
 import org.apache.lucene.facet.search.FacetResult;
 import org.apache.lucene.facet.search.FacetResultNode;
@@ -16,7 +16,6 @@ import org.apache.lucene.facet.taxonomy.CategoryPath;
 import org.apache.lucene.facet.taxonomy.TaxonomyReader;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.Term;
-import org.apache.lucene.search.BooleanClause.Occur;
 import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.search.MultiCollector;
 import org.apache.lucene.search.Query;
@@ -156,7 +155,8 @@ public class SimpleSearcher {
     CategoryPath categoryOfInterest = resIterator.next().label;
     
     // drill-down preparation: turn the base query into a drill-down query for the category of interest
-    Query q2 = DrillDown.query(indexingParams, baseQuery, Occur.MUST, categoryOfInterest);
+    DrillDownQuery q2 = new DrillDownQuery(indexingParams, baseQuery);
+    q2.add(categoryOfInterest);
     
     // that's it - search with the new query and we're done!
     // only documents both matching the base query AND containing the 

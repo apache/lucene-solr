@@ -1,9 +1,44 @@
 package org.apache.lucene.facet.search;
 
+/*
+ * Licensed to the Apache Software Foundation (ASF) under one or more
+ * contributor license agreements.  See the NOTICE file distributed with
+ * this work for additional information regarding copyright ownership.
+ * The ASF licenses this file to You under the Apache License, Version 2.0
+ * (the "License"); you may not use this file except in compliance with
+ * the License.  You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
+/*
+ * Licensed to the Apache Software Foundation (ASF) under one or more
+ * contributor license agreements.  See the NOTICE file distributed with
+ * this work for additional information regarding copyright ownership.
+ * The ASF licenses this file to You under the Apache License, Version 2.0
+ * (the "License"); you may not use this file except in compliance with
+ * the License.  You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.Random;
 
 import org.apache.lucene.analysis.MockAnalyzer;
 import org.apache.lucene.analysis.MockTokenizer;
@@ -23,12 +58,13 @@ import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.RandomIndexWriter;
 import org.apache.lucene.index.Term;
 import org.apache.lucene.search.IndexSearcher;
+import org.apache.lucene.search.MatchAllDocsQuery;
 import org.apache.lucene.search.Query;
 import org.apache.lucene.search.ScoreDoc;
 import org.apache.lucene.search.TermQuery;
 import org.apache.lucene.search.TopDocs;
-import org.apache.lucene.search.BooleanClause.Occur;
 import org.apache.lucene.store.Directory;
+import org.apache.lucene.util.IOUtils;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.junit.Test;
@@ -50,28 +86,27 @@ import org.junit.Test;
  * limitations under the License.
  */
 
-public class DrillDownTest extends FacetTestCase {
+public class DrillDownQueryTest extends FacetTestCase {
   
-  private FacetIndexingParams defaultParams;
-  private PerDimensionIndexingParams nonDefaultParams;
   private static IndexReader reader;
   private static DirectoryTaxonomyReader taxo;
   private static Directory dir;
   private static Directory taxoDir;
   
-  public DrillDownTest() {
-    Map<CategoryPath,CategoryListParams> paramsMap = new HashMap<CategoryPath,CategoryListParams>();
-    paramsMap.put(new CategoryPath("a"), randomCategoryListParams("testing_facets_a"));
-    paramsMap.put(new CategoryPath("b"), randomCategoryListParams("testing_facets_b"));
-    nonDefaultParams = new PerDimensionIndexingParams(paramsMap);
-    defaultParams = new FacetIndexingParams(randomCategoryListParams(CategoryListParams.DEFAULT_FIELD));
+  private FacetIndexingParams defaultParams;
+  private PerDimensionIndexingParams nonDefaultParams;
+
+  @AfterClass
+  public static void afterClassDrillDownQueryTest() throws Exception {
+    IOUtils.close(reader, taxo, dir, taxoDir);
   }
 
   @BeforeClass
-  public static void createIndexes() throws IOException {
+  public static void beforeClassDrillDownQueryTest() throws Exception {
     dir = newDirectory();
-    RandomIndexWriter writer = new RandomIndexWriter(random(), dir, 
-        newIndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer(random(), MockTokenizer.KEYWORD, false)));
+    Random r = random();
+    RandomIndexWriter writer = new RandomIndexWriter(r, dir, 
+        newIndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer(r, MockTokenizer.KEYWORD, false)));
     
     taxoDir = newDirectory();
     TaxonomyWriter taxoWriter = new DirectoryTaxonomyWriter(taxoDir);
@@ -86,7 +121,11 @@ public class DrillDownTest extends FacetTestCase {
         doc.add(new TextField("content", "bar", Field.Store.NO));
       }
       if (i % 4 == 0) { // 25
-        paths.add(new CategoryPath("a"));
+        if (r.nextBoolean()) {
+          paths.add(new CategoryPath("a/1", '/'));
+        } else {
+          paths.add(new CategoryPath("a/2", '/'));
+        }
       }
       if (i % 5 == 0) { // 20
         paths.add(new CategoryPath("b"));
@@ -105,24 +144,35 @@ public class DrillDownTest extends FacetTestCase {
     taxo = new DirectoryTaxonomyReader(taxoDir);
   }
   
-  @Test
-  public void testTermNonDefault() {
-    Term termA = DrillDown.term(nonDefaultParams, new CategoryPath("a"));
-    assertEquals(new Term("testing_facets_a", "a"), termA);
-    
-    Term termB = DrillDown.term(nonDefaultParams, new CategoryPath("b"));
-    assertEquals(new Term("testing_facets_b", "b"), termB);
+  public DrillDownQueryTest() {
+    Map<CategoryPath,CategoryListParams> paramsMap = new HashMap<CategoryPath,CategoryListParams>();
+    paramsMap.put(new CategoryPath("a"), randomCategoryListParams("testing_facets_a"));
+    paramsMap.put(new CategoryPath("b"), randomCategoryListParams("testing_facets_b"));
+    nonDefaultParams = new PerDimensionIndexingParams(paramsMap);
+    defaultParams = new FacetIndexingParams(randomCategoryListParams(CategoryListParams.DEFAULT_FIELD));
   }
   
   @Test
   public void testDefaultField() {
     String defaultField = CategoryListParams.DEFAULT_FIELD;
     
-    Term termA = DrillDown.term(defaultParams, new CategoryPath("a"));
+    Term termA = DrillDownQuery.term(defaultParams, new CategoryPath("a"));
     assertEquals(new Term(defaultField, "a"), termA);
     
-    Term termB = DrillDown.term(defaultParams, new CategoryPath("b"));
+    Term termB = DrillDownQuery.term(defaultParams, new CategoryPath("b"));
     assertEquals(new Term(defaultField, "b"), termB);
+  }
+  
+  @Test
+  public void testAndOrs() throws Exception {
+    IndexSearcher searcher = newSearcher(reader);
+
+    // test (a/1 OR a/2) AND b
+    DrillDownQuery q = new DrillDownQuery(defaultParams);
+    q.add(new CategoryPath("a/1", '/'), new CategoryPath("a/2", '/'));
+    q.add(new CategoryPath("b"));
+    TopDocs docs = searcher.search(q, 100);
+    assertEquals(5, docs.totalHits);
   }
   
   @Test
@@ -130,25 +180,30 @@ public class DrillDownTest extends FacetTestCase {
     IndexSearcher searcher = newSearcher(reader);
 
     // Making sure the query yields 25 documents with the facet "a"
-    Query q = DrillDown.query(defaultParams, null, Occur.MUST, new CategoryPath("a"));
+    DrillDownQuery q = new DrillDownQuery(defaultParams);
+    q.add(new CategoryPath("a"));
     TopDocs docs = searcher.search(q, 100);
     assertEquals(25, docs.totalHits);
     
     // Making sure the query yields 5 documents with the facet "b" and the
     // previous (facet "a") query as a base query
-    Query q2 = DrillDown.query(defaultParams, q, Occur.MUST, new CategoryPath("b"));
+    DrillDownQuery q2 = new DrillDownQuery(defaultParams, q);
+    q2.add(new CategoryPath("b"));
     docs = searcher.search(q2, 100);
     assertEquals(5, docs.totalHits);
 
     // Making sure that a query of both facet "a" and facet "b" yields 5 results
-    Query q3 = DrillDown.query(defaultParams, null, Occur.MUST, new CategoryPath("a"), new CategoryPath("b"));
+    DrillDownQuery q3 = new DrillDownQuery(defaultParams);
+    q3.add(new CategoryPath("a"));
+    q3.add(new CategoryPath("b"));
     docs = searcher.search(q3, 100);
-    assertEquals(5, docs.totalHits);
     
+    assertEquals(5, docs.totalHits);
     // Check that content:foo (which yields 50% results) and facet/b (which yields 20%)
     // would gather together 10 results (10%..) 
     Query fooQuery = new TermQuery(new Term("content", "foo"));
-    Query q4 = DrillDown.query(defaultParams, fooQuery, Occur.MUST, new CategoryPath("b"));
+    DrillDownQuery q4 = new DrillDownQuery(defaultParams, fooQuery);
+    q4.add(new CategoryPath("b"));
     docs = searcher.search(q4, 100);
     assertEquals(10, docs.totalHits);
   }
@@ -158,36 +213,23 @@ public class DrillDownTest extends FacetTestCase {
     IndexSearcher searcher = newSearcher(reader);
 
     // Create the base query to start with
-    Query q = DrillDown.query(defaultParams, null, Occur.MUST, new CategoryPath("a"));
+    DrillDownQuery q = new DrillDownQuery(defaultParams);
+    q.add(new CategoryPath("a"));
     
     // Making sure the query yields 5 documents with the facet "b" and the
     // previous (facet "a") query as a base query
-    Query q2 = DrillDown.query(defaultParams, q, Occur.MUST, new CategoryPath("b"));
+    DrillDownQuery q2 = new DrillDownQuery(defaultParams, q);
+    q2.add(new CategoryPath("b"));
     TopDocs docs = searcher.search(q2, 100);
     assertEquals(5, docs.totalHits);
 
     // Check that content:foo (which yields 50% results) and facet/b (which yields 20%)
     // would gather together 10 results (10%..) 
     Query fooQuery = new TermQuery(new Term("content", "foo"));
-    Query q4 = DrillDown.query(defaultParams, fooQuery, Occur.MUST, new CategoryPath("b"));
+    DrillDownQuery q4 = new DrillDownQuery(defaultParams, fooQuery);
+    q4.add(new CategoryPath("b"));
     docs = searcher.search(q4, 100);
     assertEquals(10, docs.totalHits);
-  }
-  
-  @AfterClass
-  public static void closeIndexes() throws IOException {
-    if (reader != null) {
-      reader.close();
-      reader = null;
-    }
-    
-    if (taxo != null) {
-      taxo.close();
-      taxo = null;
-    }
-    
-    dir.close();
-    taxoDir.close();
   }
   
   @Test
@@ -204,8 +246,9 @@ public class DrillDownTest extends FacetTestCase {
     }
     
     // create a drill-down query with category "a", scores should not change
-    q = DrillDown.query(defaultParams, q, Occur.MUST, new CategoryPath("a"));
-    docs = searcher.search(q, reader.maxDoc()); // fetch all available docs to this query
+    DrillDownQuery q2 = new DrillDownQuery(defaultParams, q);
+    q2.add(new CategoryPath("a"));
+    docs = searcher.search(q2, reader.maxDoc()); // fetch all available docs to this query
     for (ScoreDoc sd : docs.scoreDocs) {
       assertEquals("score of doc=" + sd.doc + " modified", scores[sd.doc], sd.score, 0f);
     }
@@ -216,7 +259,8 @@ public class DrillDownTest extends FacetTestCase {
     // verify that drill-down queries (with no base query) returns 0.0 score
     IndexSearcher searcher = newSearcher(reader);
     
-    Query q = DrillDown.query(defaultParams, null, Occur.MUST, new CategoryPath("a"));
+    DrillDownQuery q = new DrillDownQuery(defaultParams);
+    q.add(new CategoryPath("a"));
     TopDocs docs = searcher.search(q, reader.maxDoc()); // fetch all available docs to this query
     for (ScoreDoc sd : docs.scoreDocs) {
       assertEquals(0f, sd.score, 0f);
@@ -224,13 +268,36 @@ public class DrillDownTest extends FacetTestCase {
   }
   
   @Test
-  public void testOrQuery() throws Exception {
-    IndexSearcher searcher = newSearcher(reader);
-
-    // Making sure that a query of facet "a" or facet "b" yields 0 results
-    Query q = DrillDown.query(defaultParams, null, Occur.SHOULD, new CategoryPath("a"), new CategoryPath("b"));
-    TopDocs docs = searcher.search(q, 100);
-    assertEquals(40, docs.totalHits);
-  }
+  public void testTermNonDefault() {
+    Term termA = DrillDownQuery.term(nonDefaultParams, new CategoryPath("a"));
+    assertEquals(new Term("testing_facets_a", "a"), termA);
     
+    Term termB = DrillDownQuery.term(nonDefaultParams, new CategoryPath("b"));
+    assertEquals(new Term("testing_facets_b", "b"), termB);
+  }
+
+  @Test
+  public void testClone() throws Exception {
+    DrillDownQuery q = new DrillDownQuery(defaultParams, new MatchAllDocsQuery());
+    q.add(new CategoryPath("a"));
+    
+    DrillDownQuery clone = q.clone();
+    clone.add(new CategoryPath("b"));
+    
+    assertFalse("query wasn't cloned: source=" + q + " clone=" + clone, q.toString().equals(clone.toString()));
+  }
+  
+  @Test(expected=IllegalStateException.class)
+  public void testNoBaseNorDrillDown() throws Exception {
+    DrillDownQuery q = new DrillDownQuery(defaultParams);
+    q.rewrite(reader);
+  }
+  
+  public void testNoDrillDown() throws Exception {
+    Query base = new MatchAllDocsQuery();
+    DrillDownQuery q = new DrillDownQuery(defaultParams, base);
+    Query rewrite = q.rewrite(reader).rewrite(reader);
+    assertSame(base, rewrite);
+  }
+  
 }

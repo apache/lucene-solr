@@ -10,7 +10,7 @@ import org.apache.lucene.search.DocIdSetIterator;
 import org.apache.lucene.util.Bits;
 
 import org.apache.lucene.facet.params.FacetSearchParams;
-import org.apache.lucene.facet.search.DrillDown;
+import org.apache.lucene.facet.search.DrillDownQuery;
 import org.apache.lucene.facet.search.FacetResult;
 import org.apache.lucene.facet.search.FacetResultNode;
 import org.apache.lucene.facet.search.ScoredDocIDs;
@@ -105,7 +105,7 @@ class TakmiSampleFixer implements SampleFixer {
     }
     CategoryPath catPath = fresNode.label;
 
-    Term drillDownTerm = DrillDown.term(searchParams, catPath);
+    Term drillDownTerm = DrillDownQuery.term(searchParams.indexingParams, catPath);
     // TODO (Facet): avoid Multi*?
     Bits liveDocs = MultiFields.getLiveDocs(indexReader);
     int updatedCount = countIntersection(MultiFields.getTermDocsEnum(indexReader, liveDocs,
