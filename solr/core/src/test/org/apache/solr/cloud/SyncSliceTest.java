@@ -214,7 +214,8 @@ public class SyncSliceTest extends AbstractFullDistribZkTestBase {
     shardFailMessage = waitTillInconsistent();
     
     assertNotNull(
-        "Test Setup Failure: shard1 should have just been set up to be inconsistent - but it's still consistent",
+        "Test Setup Failure: shard1 should have just been set up to be inconsistent - but it's still consistent. Leader:" + leaderJetty.url +
+        "skip list:" + skipServers,
         shardFailMessage); 
     
     jetties = new HashSet<CloudJettyRunner>();
@@ -240,7 +241,7 @@ public class SyncSliceTest extends AbstractFullDistribZkTestBase {
 
   private void waitTillRecovered() throws Exception {
     for (int i = 0; i < 30; i++) { 
-      Thread.sleep(1000);
+      Thread.sleep(3000);
       ZkStateReader zkStateReader = cloudClient.getZkStateReader();
       zkStateReader.updateClusterState(true);
       ClusterState clusterState = zkStateReader.getClusterState();
