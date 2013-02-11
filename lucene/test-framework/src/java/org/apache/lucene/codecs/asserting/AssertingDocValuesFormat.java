@@ -130,12 +130,53 @@ public class AssertingDocValuesFormat extends DocValuesFormat {
     
     @Override
     public void addSortedSetField(FieldInfo field, Iterable<BytesRef> values, Iterable<Number> docToOrdCount, Iterable<Number> ords) throws IOException {
-      // nocommit: add checks
+      long valueCount = 0;
+      BytesRef lastValue = null;
+      for (BytesRef b : values) {
+        assert b != null;
+        assert b.isValid();
+        if (valueCount > 0) {
+          assert b.compareTo(lastValue) > 0;
+        }
+        lastValue = BytesRef.deepCopyOf(b);
+        valueCount++;
+      }
+      
+      int docCount = 0;
+      long ordCount = 0;
+      // nocommit
+      FixedBitSet seenOrds = new FixedBitSet((int)valueCount);
+      Iterator<Number> ordIterator = ords.iterator();
+      for (Number v : docToOrdCount) {
+        assert v != null;
+        int count = v.intValue();
+        assert count >= 0;
+        docCount++;
+        ordCount += count;
+        
+        long lastOrd = -1;
+        for (int i = 0; i < count; i++) {
+          Number o = ordIterator.next();
+          assert o != null;
+          long ord = o.longValue();
+          assert ord >= 0 && ord < valueCount;
+          assert ord > lastOrd : "ord=" + ord + ",lastOrd=" + lastOrd;
+          seenOrds.set((int)ord); // nocommit
+          lastOrd = ord;
+        }
+      }
+      assert ordIterator.hasNext() == false;
+      
+      assert docCount == maxDoc;
+      assert seenOrds.cardinality() == valueCount;
+      checkIterator(values.iterator(), valueCount);
+      checkIterator(docToOrdCount.iterator(), maxDoc);
+      checkIterator(ords.iterator(), ordCount);
       in.addSortedSetField(field, values, docToOrdCount, ords);
     }
 
-    private <T> void checkIterator(Iterator<T> iterator, int expectedSize) {
-      for (int i = 0; i < expectedSize; i++) {
+    private <T> void checkIterator(Iterator<T> iterator, long expectedSize) {
+      for (long i = 0; i < expectedSize; i++) {
         boolean hasNext = iterator.hasNext();
         assert hasNext;
         T v = iterator.next();

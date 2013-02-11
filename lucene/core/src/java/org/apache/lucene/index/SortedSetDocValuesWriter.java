@@ -46,6 +46,7 @@ class SortedSetDocValuesWriter extends DocValuesWriter {
   private int currentDoc;
   private int currentValues[] = new int[8];
   private int currentUpto = 0;
+  private int maxCount = 0;
 
   public SortedSetDocValuesWriter(FieldInfo fieldInfo, Counter iwBytesUsed) {
     this.fieldInfo = fieldInfo;
@@ -83,7 +84,7 @@ class SortedSetDocValuesWriter extends DocValuesWriter {
     updateBytesUsed();
   }
   
-  // finalize currentDoc
+  // finalize currentDoc: this deduplicates the current term ids
   private void finishCurrentDoc() {
     Arrays.sort(currentValues, 0, currentUpto);
     int lastValue = -1;
@@ -99,6 +100,7 @@ class SortedSetDocValuesWriter extends DocValuesWriter {
     }
     // record the number of unique ords for this doc
     pendingCounts.add(count);
+    maxCount = Math.max(maxCount, count);
     currentUpto = 0;
     currentDoc++;
   }
@@ -127,7 +129,9 @@ class SortedSetDocValuesWriter extends DocValuesWriter {
     
     if (currentUpto == currentValues.length) {
       currentValues = ArrayUtil.grow(currentValues, currentValues.length+1);
-      iwBytesUsed.addAndGet((currentValues.length - currentUpto) * RamUsageEstimator.NUM_BYTES_INT);
+      // reserve additional space for max # values per-doc
+      // when flushing, we need an int[] to sort the mapped-ords within the doc
+      iwBytesUsed.addAndGet((currentValues.length - currentUpto) * 2 * RamUsageEstimator.NUM_BYTES_INT);
     }
     
     currentValues[currentUpto] = ord;
@@ -143,7 +147,7 @@ class SortedSetDocValuesWriter extends DocValuesWriter {
   @Override
   public void flush(SegmentWriteState state, DocValuesConsumer dvConsumer) throws IOException {
     final int maxDoc = state.segmentInfo.getDocCount();
-
+    final int maxCountPerDoc = maxCount;
     assert pendingCounts.size() == maxDoc;
     final int valueCount = hash.size();
 
@@ -176,7 +180,7 @@ class SortedSetDocValuesWriter extends DocValuesWriter {
                               new Iterable<Number>() {
                                 @Override
                                 public Iterator<Number> iterator() {
-                                  return new OrdsIterator(ordMap);
+                                  return new OrdsIterator(ordMap, maxCountPerDoc);
                                 }
                               });
   }
@@ -221,11 +225,17 @@ class SortedSetDocValuesWriter extends DocValuesWriter {
   // iterates over the ords for each doc we have in ram
   private class OrdsIterator implements Iterator<Number> {
     final AppendingLongBuffer.Iterator iter = pending.iterator();
+    final AppendingLongBuffer.Iterator counts = pendingCounts.iterator();
     final int ordMap[];
     final long numOrds;
     long ordUpto;
     
-    OrdsIterator(int ordMap[]) {
+    final int currentDoc[];
+    int currentUpto;
+    int currentLength;
+    
+    OrdsIterator(int ordMap[], int maxCount) {
+      this.currentDoc = new int[maxCount];
       this.ordMap = ordMap;
       this.numOrds = pending.size();
     }
@@ -240,10 +250,20 @@ class SortedSetDocValuesWriter extends DocValuesWriter {
       if (!hasNext()) {
         throw new NoSuchElementException();
       }
-      int ord = (int) iter.next();
+      if (currentUpto == currentLength) {
+        // refill next doc, and sort remapped ords within the doc.
+        currentUpto = 0;
+        currentLength = (int) counts.next();
+        for (int i = 0; i < currentLength; i++) {
+          currentDoc[i] = ordMap[(int) iter.next()];
+        }
+        Arrays.sort(currentDoc, 0, currentLength);
+      }
+      int ord = currentDoc[currentUpto];
+      currentUpto++;
       ordUpto++;
       // TODO: make reusable Number
-      return ordMap[ord];
+      return ord;
     }
 
     @Override
