@@ -850,7 +850,11 @@ public class DocTermOrds {
   
   /** Returns a SortedSetDocValues view of this instance */
   public SortedSetDocValues iterator(TermsEnum termsEnum) throws IOException {
-    return new Iterator(termsEnum);
+    if (isEmpty()) {
+      return SortedSetDocValues.EMPTY;
+    } else {
+      return new Iterator(termsEnum);
+    }
   }
   
   // nocommit: make private (just public to enable hack to cutover gradually)
