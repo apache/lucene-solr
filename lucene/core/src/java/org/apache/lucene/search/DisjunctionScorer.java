@@ -17,6 +17,7 @@ package org.apache.lucene.search;
  * limitations under the License.
  */
 
+import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Collection;
 
@@ -27,11 +28,13 @@ import java.util.Collection;
 abstract class DisjunctionScorer extends Scorer {
   protected final Scorer subScorers[];
   protected int numScorers;
+  protected PositionQueue posQueue;
   
   protected DisjunctionScorer(Weight weight, Scorer subScorers[], int numScorers) {
     super(weight);
     this.subScorers = subScorers;
     this.numScorers = numScorers;
+    this.posQueue = new PositionQueue(subScorers);
     heapify();
   }
   
@@ -104,5 +107,30 @@ abstract class DisjunctionScorer extends Scorer {
       children.add(new ChildScorer(subScorers[i], "SHOULD"));
     }
     return children;
+  }
+
+  @Override
+  public int nextPosition() throws IOException {
+    return posQueue.nextPosition();
+  }
+
+  @Override
+  public int startPosition() throws IOException {
+    return posQueue.startPosition();
+  }
+
+  @Override
+  public int endPosition() throws IOException {
+    return posQueue.endPosition();
+  }
+
+  @Override
+  public int startOffset() throws IOException {
+    return posQueue.startOffset();
+  }
+
+  @Override
+  public int endOffset() throws IOException {
+    return posQueue.endOffset();
   }
 }

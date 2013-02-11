@@ -49,7 +49,34 @@ public class TestBasicIntervals extends IntervalTestBase {
       "u2 xx u1 u2",//8
       "u1 u2 xx u2",//9
       "u2 u1 xx u2",//10
-      "t1 t2 t1 t3 t2 t3"};//11
+      "t1 t2 t1 t3 t2 t3",//11
+      "v1 v2 v3",//12
+      "v1 v3 v2 v3 v4",//13
+      "v4 v2 v2 v4",//14
+      "v3 v4 v3"};//15
+
+  public void testSimpleTerm() throws IOException {
+    Query q = makeTermQuery("u2");
+    checkIntervals(q, searcher, new int[][]{
+        { 4, 0, 0, 1, 1 },
+        { 5, 0, 0, 2, 2 },
+        { 6, 0, 0, 1, 1 },
+        { 7, 0, 0, 2, 2 },
+        { 8, 0, 0, 3, 3 },
+        { 9, 1, 1, 3, 3 },
+        { 10, 0, 0, 3, 3 }
+    });
+  }
+
+  public void testBasicDisjunction() throws IOException {
+    Query q = makeOrQuery(makeTermQuery("v3"), makeTermQuery("v2"));
+    checkIntervals(q, searcher, new int[][]{
+        { 12, 1, 1, 2, 2 },
+        { 13, 1, 1, 2, 2, 3, 3 },
+        { 14, 1, 1, 2, 2 },
+        { 15, 0, 0, 2, 2 }
+    });
+  }
 
   /*
 

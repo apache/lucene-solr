@@ -342,7 +342,10 @@ public class BooleanQuery extends Query implements Iterable<BooleanClause> {
       // return BooleanScorer for topScorer):
 
       // Check if we can return a BooleanScorer
-      if (!scoreDocsInOrder && flags == PostingFeatures.DOCS_AND_FREQS && topScorer && required.size() == 0) {
+      // nocommit - we need to somehow detect if we need to iterate positions
+      // for now, always return BS2
+      boolean needsPositions = true;
+      if (!needsPositions && !scoreDocsInOrder && flags == PostingFeatures.DOCS_AND_FREQS && topScorer && required.size() == 0) {
         return new BooleanScorer(this, disableCoord, minNrShouldMatch, optional, prohibited, maxCoord);
       }
       

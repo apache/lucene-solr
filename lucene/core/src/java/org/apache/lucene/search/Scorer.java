@@ -152,6 +152,15 @@ public abstract class Scorer extends DocsEnum {
   public int nextPosition() throws IOException {
     throw new UnsupportedOperationException("nextPosition() is not implemented on " + this.getClass());
   }
+
+  @Override
+  public String toString() {
+    try {
+      return String.format("%d:%d(%d)->%d(%d)", docID(), startPosition(), startOffset(), endPosition(), endOffset());
+    } catch (IOException e) {
+      return String.format("Cannot retrieve position due to IOException");
+    }
+  }
   
   /** Returns child sub-scorers
    * @lucene.experimental */

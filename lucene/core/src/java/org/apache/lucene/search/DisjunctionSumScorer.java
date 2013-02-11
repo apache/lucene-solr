@@ -17,12 +17,12 @@ package org.apache.lucene.search;
  * limitations under the License.
  */
 
-import java.util.List;
-import java.io.IOException;
-
 import org.apache.lucene.search.intervals.ConjunctionIntervalIterator;
 import org.apache.lucene.search.intervals.DisjunctionIntervalIterator;
 import org.apache.lucene.search.intervals.IntervalIterator;
+
+import java.io.IOException;
+import java.util.List;
 
 /** A Scorer for OR like queries, counterpart of <code>ConjunctionScorer</code>.
  * This Scorer implements {@link Scorer#advance(int)} and uses advance() on the given Scorers. 
@@ -89,7 +89,7 @@ class DisjunctionSumScorer extends DisjunctionScorer {
         break;
       }
     }
-    
+    posQueue.advanceTo(doc);
     return doc;
   }
   
@@ -163,6 +163,7 @@ class DisjunctionSumScorer extends DisjunctionScorer {
     }
     
     afterNext();
+    posQueue.advanceTo(doc);
 
     if (nrMatchers >= minimumNrMatchers) {
       return doc;

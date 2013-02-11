@@ -17,15 +17,14 @@ package org.apache.lucene.search;
  * limitations under the License.
  */
 
+import org.apache.lucene.search.BooleanQuery.BooleanWeight;
+import org.apache.lucene.search.intervals.IntervalIterator;
+import org.apache.lucene.search.similarities.Similarity;
+
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
-
-import org.apache.lucene.search.BooleanClause.Occur;
-import org.apache.lucene.search.BooleanQuery.BooleanWeight;
-import org.apache.lucene.search.intervals.IntervalIterator;
-import org.apache.lucene.search.similarities.Similarity;
 
 /* See the description in BooleanScorer.java, comparing
  * BooleanScorer & BooleanScorer2 */
@@ -331,6 +330,31 @@ class BooleanScorer2 extends Scorer {
   @Override
   public IntervalIterator intervals(boolean collectIntervals) throws IOException {
     return countingSumScorer.intervals(collectIntervals);
+  }
+
+  @Override
+  public int nextPosition() throws IOException {
+    return countingSumScorer.nextPosition();
+  }
+
+  @Override
+  public int startPosition() throws IOException {
+    return countingSumScorer.startPosition();
+  }
+
+  @Override
+  public int endPosition() throws IOException {
+    return countingSumScorer.endPosition();
+  }
+
+  @Override
+  public int startOffset() throws IOException {
+    return countingSumScorer.startOffset();
+  }
+
+  @Override
+  public int endOffset() throws IOException {
+    return countingSumScorer.endOffset();
   }
 
   @Override

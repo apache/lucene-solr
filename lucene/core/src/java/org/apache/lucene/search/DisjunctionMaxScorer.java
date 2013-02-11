@@ -70,8 +70,9 @@ class DisjunctionMaxScorer extends DisjunctionScorer {
         }
       }
     }
-    
-    return doc = subScorers[0].docID();
+    doc = subScorers[0].docID();
+    posQueue.advanceTo(doc);
+    return doc;
   }
 
   @Override
@@ -134,7 +135,9 @@ class DisjunctionMaxScorer extends DisjunctionScorer {
         }
       }
     }
-    return doc = subScorers[0].docID();
+    doc = subScorers[0].docID();
+    posQueue.advanceTo(doc);
+    return doc;
   }
   
   @Override
