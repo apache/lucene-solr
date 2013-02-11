@@ -573,6 +573,7 @@ public abstract class DocValuesConsumer implements Closeable {
                       nextIsSet = true;
                       return true;
                     } else {
+                     // nocommit: nulling is a hack to prevent calling next() after NO_MORE was already returned...
                       iterator = null;
                       docIDUpto++;
                     }
