@@ -505,7 +505,9 @@ public class TestJoinUtil extends LuceneTestCase {
 
           @Override
           public void setNextReader(AtomicReaderContext context) throws IOException {
-            docTermOrds = FieldCache.DEFAULT.getDocTermOrds(context.reader(), fromField);
+            // nocommit: cut over
+            DocTermOrds.Iterator iterator = (DocTermOrds.Iterator) FieldCache.DEFAULT.getDocTermOrds(context.reader(), fromField);
+            docTermOrds = iterator.getParent();
             docTermsEnum = docTermOrds.getOrdTermsEnum(context.reader());
             reuse = null;
           }
@@ -629,7 +631,8 @@ public class TestJoinUtil extends LuceneTestCase {
             @Override
             public void setNextReader(AtomicReaderContext context) throws IOException {
               docBase = context.docBase;
-              docTermOrds = FieldCache.DEFAULT.getDocTermOrds(context.reader(), toField);
+              DocTermOrds.Iterator iterator = (DocTermOrds.Iterator) FieldCache.DEFAULT.getDocTermOrds(context.reader(), toField);
+              docTermOrds = iterator.getParent();
               docTermsEnum = docTermOrds.getOrdTermsEnum(context.reader());
               reuse = null;
             }

@@ -100,7 +100,9 @@ abstract class TermsCollector extends Collector {
 
     @Override
     public void setNextReader(AtomicReaderContext context) throws IOException {
-      docTermOrds = FieldCache.DEFAULT.getDocTermOrds(context.reader(), field);
+      // nocommit: cut over
+      DocTermOrds.Iterator iterator = (DocTermOrds.Iterator) FieldCache.DEFAULT.getDocTermOrds(context.reader(), field);
+      docTermOrds = iterator.getParent();
       docTermsEnum = docTermOrds.getOrdTermsEnum(context.reader());
       reuse = null; // LUCENE-3377 needs to be fixed first then this statement can be removed...
     }

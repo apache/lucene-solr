@@ -283,7 +283,9 @@ public abstract class TermGroupFacetCollector extends AbstractGroupFacetCollecto
 
       reuse = null;
       groupFieldTermsIndex = FieldCache.DEFAULT.getTermsIndex(context.reader(), groupField);
-      facetFieldDocTermOrds = FieldCache.DEFAULT.getDocTermOrds(context.reader(), facetField);
+      // nocommit: cut over
+      DocTermOrds.Iterator iterator = (DocTermOrds.Iterator) FieldCache.DEFAULT.getDocTermOrds(context.reader(), facetField);
+      facetFieldDocTermOrds = iterator.getParent();
       facetOrdTermsEnum = facetFieldDocTermOrds.getOrdTermsEnum(context.reader());
       // [facetFieldDocTermOrds.numTerms() + 1] for all possible facet values and docs not containing facet field
       segmentFacetCounts = new int[facetFieldDocTermOrds.numTerms() + 1];

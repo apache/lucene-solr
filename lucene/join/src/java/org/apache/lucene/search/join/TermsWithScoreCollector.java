@@ -234,7 +234,9 @@ abstract class TermsWithScoreCollector extends Collector {
 
     @Override
     public void setNextReader(AtomicReaderContext context) throws IOException {
-      fromDocTermOrds = FieldCache.DEFAULT.getDocTermOrds(context.reader(), field);
+      // nocommit: cut over
+      DocTermOrds.Iterator iterator = (DocTermOrds.Iterator) FieldCache.DEFAULT.getDocTermOrds(context.reader(), field);
+      fromDocTermOrds = iterator.getParent();
       docTermsEnum = fromDocTermOrds.getOrdTermsEnum(context.reader());
       reuse = null; // LUCENE-3377 needs to be fixed first then this statement can be removed...
     }

@@ -847,4 +847,67 @@ public class DocTermOrds {
     termsEnum.seekExact(ord);
     return termsEnum.term();
   }
+  
+  /** Returns a SortedSetDocValues view of this instance */
+  public SortedSetDocValues iterator(TermsEnum termsEnum) throws IOException {
+    return new Iterator(termsEnum);
+  }
+  
+  // nocommit: make private (just public to enable hack to cutover gradually)
+  public class Iterator extends SortedSetDocValues {
+    final TermsEnum te;
+    final TermOrdsIterator in = new TermOrdsIterator(); // nocommit: don't wrap this other iterator
+    final int buffer[] = new int[5];
+    int bufferUpto;
+    int bufferLength;
+    
+    Iterator(TermsEnum te) {
+      this.te = te;
+    }
+    
+    @Override
+    public long nextOrd() {
+      while (bufferUpto == bufferLength) {
+        if (bufferLength < buffer.length) {
+          return NO_MORE_ORDS;
+        } else {
+          bufferLength = in.read(buffer);
+          bufferUpto = 0;
+        }
+      }
+      int next = buffer[bufferUpto];
+      bufferUpto++;
+      return next;
+    }
+
+    @Override
+    public void setDocument(int docID) {
+      in.reset(docID);
+      bufferUpto = 0;
+      bufferLength = in.read(buffer);
+    }
+
+    @Override
+    public void lookupOrd(long ord, BytesRef result) {
+      BytesRef ref = null;
+      try {
+        ref = DocTermOrds.this.lookupTerm(te, (int) ord);
+      } catch (IOException e) {
+        throw new RuntimeException(e);
+      }
+      result.bytes = ref.bytes;
+      result.offset = ref.offset;
+      result.length = ref.length;
+    }
+
+    @Override
+    public long getValueCount() {
+      return numTerms();
+    }
+    
+    // nocommit: just a hack for gradual cutover
+    public DocTermOrds getParent() {
+      return DocTermOrds.this;
+    }
+  }
 }

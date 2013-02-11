@@ -34,6 +34,7 @@ import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.NumericDocValues;
 import org.apache.lucene.index.SegmentReader;
 import org.apache.lucene.index.SortedDocValues;
+import org.apache.lucene.index.SortedSetDocValues;
 import org.apache.lucene.index.Terms;
 import org.apache.lucene.index.TermsEnum;
 import org.apache.lucene.util.ArrayUtil;
@@ -1303,8 +1304,17 @@ class FieldCacheImpl implements FieldCache {
     }
   }
 
-  public DocTermOrds getDocTermOrds(AtomicReader reader, String field) throws IOException {
-    return (DocTermOrds) caches.get(DocTermOrds.class).get(reader, new CacheKey(field, null), false);
+  public SortedSetDocValues getDocTermOrds(AtomicReader reader, String field) throws IOException {
+    SortedSetDocValues dv = reader.getSortedSetDocValues(field);
+    if (dv != null) {
+      return dv;
+    }
+    
+    // nocommit: actually if they have a SortedDV (either indexed as DV or cached), we should return an impl
+    // over that: its like a specialized single-value case of this thing...
+    
+    DocTermOrds dto = (DocTermOrds) caches.get(DocTermOrds.class).get(reader, new CacheKey(field, null), false);
+    return dto.iterator(dto.getOrdTermsEnum(reader));
   }
 
   static final class DocTermOrdsCache extends Cache {

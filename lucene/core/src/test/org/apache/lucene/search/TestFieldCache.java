@@ -253,44 +253,29 @@ public class TestFieldCache extends LuceneTestCase {
     terms = cache.getTerms(reader, "bogusfield");
 
     // getDocTermOrds
-    DocTermOrds termOrds = cache.getDocTermOrds(reader, "theRandomUnicodeMultiValuedField");
-    TermsEnum termsEnum = termOrds.getOrdTermsEnum(reader);
-    assertSame("Second request to cache return same DocTermOrds", termOrds, cache.getDocTermOrds(reader, "theRandomUnicodeMultiValuedField"));
-    DocTermOrds.TermOrdsIterator reuse = null;
+    SortedSetDocValues termOrds = cache.getDocTermOrds(reader, "theRandomUnicodeMultiValuedField");
+    // nocommit: test this with reflection or something, that its really from the same DTO
+    // assertSame("Second request to cache return same DocTermOrds", termOrds, cache.getDocTermOrds(reader, "theRandomUnicodeMultiValuedField"));
     for (int i = 0; i < NUM_DOCS; i++) {
-      reuse = termOrds.lookup(i, reuse);
-      final int[] buffer = new int[5];
+      termOrds.setDocument(i);
       // This will remove identical terms. A DocTermOrds doesn't return duplicate ords for a docId
       List<BytesRef> values = new ArrayList<BytesRef>(new LinkedHashSet<BytesRef>(Arrays.asList(multiValued[i])));
-      for (;;) {
-        int chunk = reuse.read(buffer);
-        if (chunk == 0) {
-          for (int ord = 0; ord < values.size(); ord++) {
-            BytesRef term = values.get(ord);
-            assertNull(String.format(Locale.ROOT, "Document[%d] misses field must be null. Has value %s for ord %d", i, term, ord), term);
-          }
+      for (BytesRef v : values) {
+        if (v == null) {
+          // why does this test use null values... instead of an empty list: confusing
           break;
         }
-
-        for(int idx=0; idx < chunk; idx++) {
-          int key = buffer[idx];
-          termsEnum.seekExact((long) key);
-          String actual = termsEnum.term().utf8ToString();
-          String expected = values.get(idx).utf8ToString();
-          if (!expected.equals(actual)) {
-              reuse = termOrds.lookup(i, reuse);
-              reuse.read(buffer);
-          }
-          assertTrue(String.format(Locale.ROOT, "Expected value %s for doc %d and ord %d, but was %s", expected, i, idx, actual), expected.equals(actual));
-        }
-
-        if (chunk <= buffer.length) {
-          break;
-        }
+        long ord = termOrds.nextOrd();
+        assert ord != SortedSetDocValues.NO_MORE_ORDS;
+        BytesRef scratch = new BytesRef();
+        termOrds.lookupOrd(ord, scratch);
+        assertEquals(v, scratch);
       }
+      assertEquals(SortedSetDocValues.NO_MORE_ORDS, termOrds.nextOrd());
     }
 
     // test bad field
+    // nocommit: what exactly does this test?
     termOrds = cache.getDocTermOrds(reader, "bogusfield");
 
     FieldCache.DEFAULT.purge(reader);
