@@ -57,6 +57,8 @@ final class DocValuesProcessor extends StoredFieldsConsumer {
         addBinaryField(fieldInfo, docID, field.binaryValue());
       } else if (dvType == DocValuesType.SORTED) {
         addSortedField(fieldInfo, docID, field.binaryValue());
+      } else if (dvType == DocValuesType.SORTED_SET) {
+        addSortedSetField(fieldInfo, docID, field.binaryValue());
       } else if (dvType == DocValuesType.NUMERIC) {
         if (!(field.numericValue() instanceof Long)) {
           throw new IllegalArgumentException("illegal type " + field.numericValue().getClass() + ": DocValues types must be Long");
@@ -121,6 +123,20 @@ final class DocValuesProcessor extends StoredFieldsConsumer {
       sortedWriter = (SortedDocValuesWriter) writer;
     }
     sortedWriter.addValue(docID, value);
+  }
+  
+  void addSortedSetField(FieldInfo fieldInfo, int docID, BytesRef value) {
+    DocValuesWriter writer = writers.get(fieldInfo.name);
+    SortedSetDocValuesWriter sortedSetWriter;
+    if (writer == null) {
+      sortedSetWriter = new SortedSetDocValuesWriter(fieldInfo, bytesUsed);
+      writers.put(fieldInfo.name, sortedSetWriter);
+    } else if (!(writer instanceof SortedSetDocValuesWriter)) {
+      throw new IllegalArgumentException("Incompatible DocValues type: field \"" + fieldInfo.name + "\" changed from " + getTypeDesc(writer) + " to sorted");
+    } else {
+      sortedSetWriter = (SortedSetDocValuesWriter) writer;
+    }
+    sortedSetWriter.addValue(docID, value);
   }
 
   void addNumericField(FieldInfo fieldInfo, int docID, long value) {

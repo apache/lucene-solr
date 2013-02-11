@@ -33,6 +33,7 @@ import org.apache.lucene.codecs.Codec;
 import org.apache.lucene.codecs.PostingsFormat; // javadocs
 import org.apache.lucene.document.FieldType; // for javadocs
 import org.apache.lucene.index.FieldInfo.IndexOptions;
+import org.apache.lucene.index.SortedSetDocValues.OrdIterator;
 import org.apache.lucene.search.DocIdSetIterator;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.FSDirectory;
@@ -1333,6 +1334,50 @@ public class CheckIndex {
     }
   }
   
+  private static void checkSortedSetDocValues(String fieldName, AtomicReader reader, SortedSetDocValues dv) {
+    final long maxOrd = dv.getValueCount()-1;
+    // nocommit
+    FixedBitSet seenOrds = new FixedBitSet((int)dv.getValueCount());
+    long maxOrd2 = -1;
+    OrdIterator iterator = null;
+    for (int i = 0; i < reader.maxDoc(); i++) {
+      iterator = dv.getOrds(i, iterator);
+      long lastOrd = -1;
+      long ord;
+      while ((ord = iterator.nextOrd()) != OrdIterator.NO_MORE_ORDS) {
+        if (ord <= lastOrd) {
+          throw new RuntimeException("ords out of order: " + ord + " <= " + lastOrd + " for doc: " + i);
+        }
+        if (ord < 0 || ord > maxOrd) {
+          throw new RuntimeException("ord out of bounds: " + ord);
+        }
+        lastOrd = ord;
+        maxOrd2 = Math.max(maxOrd2, ord);
+        // nocommit
+        seenOrds.set((int)ord);
+      }
+    }
+    if (maxOrd != maxOrd2) {
+      throw new RuntimeException("dv for field: " + fieldName + " reports wrong maxOrd=" + maxOrd + " but this is not the case: " + maxOrd2);
+    }
+    if (seenOrds.cardinality() != dv.getValueCount()) {
+      throw new RuntimeException("dv for field: " + fieldName + " has holes in its ords, valueCount=" + dv.getValueCount() + " but only used: " + seenOrds.cardinality());
+    }
+    
+    BytesRef lastValue = null;
+    BytesRef scratch = new BytesRef();
+    for (long i = 0; i <= maxOrd; i++) {
+      dv.lookupOrd(i, scratch);
+      assert scratch.isValid();
+      if (lastValue != null) {
+        if (scratch.compareTo(lastValue) <= 0) {
+          throw new RuntimeException("dv for field: " + fieldName + " has ords out of order: " + lastValue + " >=" + scratch);
+        }
+      }
+      lastValue = BytesRef.deepCopyOf(scratch);
+    }
+  }
+
   private static void checkNumericDocValues(String fieldName, AtomicReader reader, NumericDocValues ndv) {
     for (int i = 0; i < reader.maxDoc(); i++) {
       ndv.get(i);
@@ -1343,6 +1388,9 @@ public class CheckIndex {
     switch(fi.getDocValuesType()) {
       case SORTED:
         checkSortedDocValues(fi.name, reader, reader.getSortedDocValues(fi.name));
+        break;
+      case SORTED_SET:
+        checkSortedSetDocValues(fi.name, reader, reader.getSortedSetDocValues(fi.name));
         break;
       case BINARY:
         checkBinaryDocValues(fi.name, reader, reader.getBinaryDocValues(fi.name));

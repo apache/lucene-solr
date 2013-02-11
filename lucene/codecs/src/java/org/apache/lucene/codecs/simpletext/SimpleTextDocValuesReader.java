@@ -36,6 +36,7 @@ import org.apache.lucene.index.NumericDocValues;
 import org.apache.lucene.index.SegmentReadState;
 import org.apache.lucene.index.SortedDocValues;
 import org.apache.lucene.index.FieldInfo.DocValuesType;
+import org.apache.lucene.index.SortedSetDocValues;
 import org.apache.lucene.store.IndexInput;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.StringHelper;
@@ -282,6 +283,11 @@ class SimpleTextDocValuesReader extends DocValuesProducer {
         return field.numValues;
       }
     };
+  }
+
+  @Override
+  public SortedSetDocValues getSortedSet(FieldInfo field) throws IOException {
+    throw new UnsupportedOperationException(); // nocommit
   }
 
   @Override

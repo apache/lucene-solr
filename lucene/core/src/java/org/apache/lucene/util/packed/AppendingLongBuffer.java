@@ -61,11 +61,11 @@ public class AppendingLongBuffer {
    *  <p>
    *  <b>NOTE</b>: This class is not really designed for random access!
    *  You will likely get better performance by using packed ints in another way! */
-  public long get(int index) {
-    assert index < size(); // TODO: do a better check, and throw IndexOutOfBoundsException?
+  public long get(long index) {
+    assert index < size() : "index=" + index + ",size=" + size(); // TODO: do a better check, and throw IndexOutOfBoundsException?
                            // This class is currently only used by the indexer.
-    int block = index >> BLOCK_BITS;
-    int element = index & BLOCK_MASK;
+    int block = (int) (index >> BLOCK_BITS);
+    int element = (int) (index & BLOCK_MASK);
     if (block == valuesOff) {
       return pending[element];
     } else if (values[block] == null) {
@@ -115,8 +115,8 @@ public class AppendingLongBuffer {
   }
 
   /** Get the number of values that have been added to the buffer. */
-  public int size() {
-    return valuesOff * MAX_PENDING_COUNT + pendingOff;
+  public long size() {
+    return valuesOff * (long)MAX_PENDING_COUNT + pendingOff;
   }
 
   /** Return an iterator over the values of this buffer. */

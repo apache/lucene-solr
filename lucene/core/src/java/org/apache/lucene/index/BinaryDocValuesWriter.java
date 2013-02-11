@@ -91,7 +91,7 @@ class BinaryDocValuesWriter extends DocValuesWriter {
   private class BytesIterator implements Iterator<BytesRef> {
     final BytesRef value = new BytesRef();
     final AppendingLongBuffer.Iterator lengthsIterator = lengths.iterator();
-    final int size = lengths.size();
+    final int size = (int) lengths.size();
     final int maxDoc;
     int upto;
     long byteOffset;

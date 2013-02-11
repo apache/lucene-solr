@@ -18,6 +18,7 @@ package org.apache.lucene.index;
  */
 
 import java.io.IOException;
+import java.util.Arrays;
 import java.util.List;
 
 import org.apache.lucene.index.MultiTermsEnum.TermsEnumIndex;
@@ -214,14 +215,62 @@ public class MultiDocValues {
     if (!anyReal) {
       return null;
     } else {
-      OrdinalMap mapping = new OrdinalMap(r.getCoreCacheKey(), values);
+      TermsEnum enums[] = new TermsEnum[values.length];
+      for (int i = 0; i < values.length; i++) {
+        enums[i] = new SortedDocValuesTermsEnum(values[i]);
+      }
+      OrdinalMap mapping = new OrdinalMap(r.getCoreCacheKey(), enums);
       return new MultiSortedDocValues(values, starts, mapping);
     }
   }
   
+  /** Returns a SortedSetDocValues for a reader's docvalues (potentially doing extremely slow things).
+   * <p>
+   * This is an extremely slow way to access sorted values. Instead, access them per-segment
+   * with {@link AtomicReader#getSortedSetDocValues(String)}
+   * </p>  
+   */
+  public static SortedSetDocValues getSortedSetValues(final IndexReader r, final String field) throws IOException {
+    final List<AtomicReaderContext> leaves = r.leaves();
+    final int size = leaves.size();
+    
+    if (size == 0) {
+      return null;
+    } else if (size == 1) {
+      return leaves.get(0).reader().getSortedSetDocValues(field);
+    }
+    
+    boolean anyReal = false;
+    final SortedSetDocValues[] values = new SortedSetDocValues[size];
+    final int[] starts = new int[size+1];
+    for (int i = 0; i < size; i++) {
+      AtomicReaderContext context = leaves.get(i);
+      SortedSetDocValues v = context.reader().getSortedSetDocValues(field);
+      if (v == null) {
+        v = SortedSetDocValues.EMPTY;
+      } else {
+        anyReal = true;
+      }
+      values[i] = v;
+      starts[i] = context.docBase;
+    }
+    starts[size] = r.maxDoc();
+    
+    if (!anyReal) {
+      return null;
+    } else {
+      TermsEnum enums[] = new TermsEnum[values.length];
+      for (int i = 0; i < values.length; i++) {
+        enums[i] = new SortedSetDocValuesTermsEnum(values[i]);
+      }
+      OrdinalMap mapping = new OrdinalMap(r.getCoreCacheKey(), enums);
+      return new MultiSortedSetDocValues(values, starts, mapping);
+    }
+  }
+  
   /** maps per-segment ordinals to/from global ordinal space */
-  // TODO: use more efficient packed ints structures (these are all positive values!)
-  static class OrdinalMap {
+  // TODO: use more efficient packed ints structures?
+  public static class OrdinalMap {
     // cache key of whoever asked for this aweful thing
     final Object owner;
     // globalOrd -> (globalOrd - segmentOrd)
@@ -231,7 +280,7 @@ public class MultiDocValues {
     // segmentOrd -> (globalOrd - segmentOrd)
     final AppendingLongBuffer ordDeltas[];
     
-    OrdinalMap(Object owner, SortedDocValues subs[]) throws IOException {
+    public OrdinalMap(Object owner, TermsEnum subs[]) throws IOException {
       // create the ordinal mappings by pulling a termsenum over each sub's 
       // unique terms, and walking a multitermsenum over those
       this.owner = owner;
@@ -241,33 +290,51 @@ public class MultiDocValues {
       for (int i = 0; i < ordDeltas.length; i++) {
         ordDeltas[i] = new AppendingLongBuffer();
       }
-      int segmentOrds[] = new int[subs.length];
+      long segmentOrds[] = new long[subs.length];
       ReaderSlice slices[] = new ReaderSlice[subs.length];
       TermsEnumIndex indexes[] = new TermsEnumIndex[slices.length];
       for (int i = 0; i < slices.length; i++) {
         slices[i] = new ReaderSlice(0, 0, i);
-        indexes[i] = new TermsEnumIndex(new SortedDocValuesTermsEnum(subs[i]), i);
+        indexes[i] = new TermsEnumIndex(subs[i], i);
       }
       MultiTermsEnum mte = new MultiTermsEnum(slices);
       mte.reset(indexes);
-      int globalOrd = 0;
+      long globalOrd = 0;
       while (mte.next() != null) {        
         TermsEnumWithSlice matches[] = mte.getMatchArray();
         for (int i = 0; i < mte.getMatchCount(); i++) {
           int subIndex = matches[i].index;
-          int delta = globalOrd - segmentOrds[subIndex];
-          assert delta >= 0;
+          long segmentOrd = matches[i].terms.ord();
+          long delta = globalOrd - segmentOrd;
           // for each unique term, just mark the first subindex/delta where it occurs
           if (i == 0) {
             subIndexes.add(subIndex);
             globalOrdDeltas.add(delta);
           }
           // for each per-segment ord, map it back to the global term.
-          ordDeltas[subIndex].add(delta);
-          segmentOrds[subIndex]++;
+          while (segmentOrds[subIndex] <= segmentOrd) {
+            ordDeltas[subIndex].add(delta);
+            segmentOrds[subIndex]++;
+          }
         }
         globalOrd++;
       }
+    }
+    
+    public long getGlobalOrd(int subIndex, long segmentOrd) {
+      return segmentOrd + ordDeltas[subIndex].get(segmentOrd);
+    }
+
+    public long getSegmentOrd(int subIndex, long globalOrd) {
+      return globalOrd - globalOrdDeltas.get(globalOrd);
+    }
+    
+    public int getSegmentNumber(long globalOrd) {
+      return (int) subIndexes.get(globalOrd);
+    }
+    
+    public long getValueCount() {
+      return globalOrdDeltas.size();
     }
   }
   
@@ -289,19 +356,78 @@ public class MultiDocValues {
     public int getOrd(int docID) {
       int subIndex = ReaderUtil.subIndex(docID, docStarts);
       int segmentOrd = values[subIndex].getOrd(docID - docStarts[subIndex]);
-      return (int) (segmentOrd + mapping.ordDeltas[subIndex].get(segmentOrd));
+      return (int) mapping.getGlobalOrd(subIndex, segmentOrd);
     }
  
     @Override
     public void lookupOrd(int ord, BytesRef result) {
-      int subIndex = (int) mapping.subIndexes.get(ord);
-      int segmentOrd = (int) (ord - mapping.globalOrdDeltas.get(ord));
+      int subIndex = mapping.getSegmentNumber(ord);
+      int segmentOrd = (int) mapping.getSegmentOrd(subIndex, ord);
       values[subIndex].lookupOrd(segmentOrd, result);
     }
  
     @Override
     public int getValueCount() {
-      return mapping.globalOrdDeltas.size();
+      return (int) mapping.getValueCount();
+    }
+  }
+  
+  /** implements MultiSortedDocValues over n subs, using an OrdinalMap */
+  static class MultiSortedSetDocValues extends SortedSetDocValues {
+    final int docStarts[];
+    final SortedSetDocValues values[];
+    final OrdinalMap mapping;
+    
+    MultiSortedSetDocValues(SortedSetDocValues values[], int docStarts[], OrdinalMap mapping) throws IOException {
+      assert values.length == mapping.ordDeltas.length;
+      assert docStarts.length == values.length + 1;
+      this.values = values;
+      this.docStarts = docStarts;
+      this.mapping = mapping;
+    }
+       
+    @Override
+    public OrdIterator getOrds(int docID, OrdIterator reuse) {
+      MultiOrdIterator iterator;
+      if (reuse instanceof MultiOrdIterator) {
+        iterator = (MultiOrdIterator) reuse;
+      } else {
+        iterator = new MultiOrdIterator();
+      }
+      iterator.reset(docID);
+      return iterator;
+    }
+ 
+    @Override
+    public void lookupOrd(long ord, BytesRef result) {
+      int subIndex = mapping.getSegmentNumber(ord);
+      long segmentOrd = mapping.getSegmentOrd(subIndex, ord);
+      values[subIndex].lookupOrd(segmentOrd, result);
+    }
+ 
+    @Override
+    public long getValueCount() {
+      return mapping.getValueCount();
+    }
+    
+    class MultiOrdIterator extends OrdIterator {
+      private OrdIterator inner;
+      private int subIndex;
+
+      @Override
+      public long nextOrd() {
+        long segmentOrd = inner.nextOrd();
+        if (segmentOrd == NO_MORE_ORDS) {
+          return NO_MORE_ORDS;
+        } else {
+          return mapping.getGlobalOrd(subIndex, segmentOrd);
+        }
+      }
+      
+      void reset(int docID) {
+        subIndex = ReaderUtil.subIndex(docID, docStarts);
+        inner = values[subIndex].getOrds(docID - docStarts[subIndex], inner);
+      }
     }
   }
 }

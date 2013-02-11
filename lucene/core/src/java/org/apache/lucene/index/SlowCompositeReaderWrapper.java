@@ -25,6 +25,7 @@ import org.apache.lucene.util.Bits;
 
 import org.apache.lucene.index.DirectoryReader; // javadoc
 import org.apache.lucene.index.MultiDocValues.MultiSortedDocValues;
+import org.apache.lucene.index.MultiDocValues.MultiSortedSetDocValues;
 import org.apache.lucene.index.MultiDocValues.OrdinalMap;
 import org.apache.lucene.index.MultiReader; // javadoc
 
@@ -129,6 +130,42 @@ public final class SlowCompositeReaderWrapper extends AtomicReader {
     }
     starts[size] = maxDoc();
     return new MultiSortedDocValues(values, starts, map);
+  }
+  
+  @Override
+  public SortedSetDocValues getSortedSetDocValues(String field) throws IOException {
+    ensureOpen();
+    OrdinalMap map = null;
+    synchronized (cachedOrdMaps) {
+      map = cachedOrdMaps.get(field);
+      if (map == null) {
+        // uncached, or not a multi dv
+        SortedSetDocValues dv = MultiDocValues.getSortedSetValues(in, field);
+        if (dv instanceof MultiSortedSetDocValues) {
+          map = ((MultiSortedSetDocValues)dv).mapping;
+          if (map.owner == getCoreCacheKey()) {
+            cachedOrdMaps.put(field, map);
+          }
+        }
+        return dv;
+      }
+    }
+    // cached multi dv
+    assert map != null;
+    int size = in.leaves().size();
+    final SortedSetDocValues[] values = new SortedSetDocValues[size];
+    final int[] starts = new int[size+1];
+    for (int i = 0; i < size; i++) {
+      AtomicReaderContext context = in.leaves().get(i);
+      SortedSetDocValues v = context.reader().getSortedSetDocValues(field);
+      if (v == null) {
+        v = SortedSetDocValues.EMPTY;
+      }
+      values[i] = v;
+      starts[i] = context.docBase;
+    }
+    starts[size] = maxDoc();
+    return new MultiSortedSetDocValues(values, starts, map);
   }
   
   // TODO: this could really be a weak map somewhere else on the coreCacheKey,

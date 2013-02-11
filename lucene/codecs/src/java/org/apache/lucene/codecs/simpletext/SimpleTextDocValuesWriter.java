@@ -250,6 +250,11 @@ class SimpleTextDocValuesWriter extends DocValuesConsumer {
     }
   }
 
+  @Override
+  public void addSortedSetField(FieldInfo field, Iterable<BytesRef> values, Iterable<Number> docToOrdCount, Iterable<Number> ords) throws IOException {
+    throw new UnsupportedOperationException(); // nocommit
+  }
+
   /** write the header for this field */
   private void writeFieldEntry(FieldInfo field, FieldInfo.DocValuesType type) throws IOException {
     SimpleTextUtil.write(data, FIELD);

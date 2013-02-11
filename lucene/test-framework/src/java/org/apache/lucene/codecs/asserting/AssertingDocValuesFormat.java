@@ -32,6 +32,7 @@ import org.apache.lucene.index.NumericDocValues;
 import org.apache.lucene.index.SegmentReadState;
 import org.apache.lucene.index.SegmentWriteState;
 import org.apache.lucene.index.SortedDocValues;
+import org.apache.lucene.index.SortedSetDocValues;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.FixedBitSet;
 
@@ -127,6 +128,12 @@ public class AssertingDocValuesFormat extends DocValuesFormat {
       in.addSortedField(field, values, docToOrd);
     }
     
+    @Override
+    public void addSortedSetField(FieldInfo field, Iterable<BytesRef> values, Iterable<Number> docToOrdCount, Iterable<Number> ords) throws IOException {
+      // nocommit: add checks
+      in.addSortedSetField(field, values, docToOrdCount, ords);
+    }
+
     private <T> void checkIterator(Iterator<T> iterator, int expectedSize) {
       for (int i = 0; i < expectedSize; i++) {
         boolean hasNext = iterator.hasNext();
@@ -189,6 +196,14 @@ public class AssertingDocValuesFormat extends DocValuesFormat {
       return new AssertingAtomicReader.AssertingSortedDocValues(values, maxDoc);
     }
     
+    @Override
+    public SortedSetDocValues getSortedSet(FieldInfo field) throws IOException {
+      assert field.getDocValuesType() == FieldInfo.DocValuesType.SORTED_SET;
+      SortedSetDocValues values = in.getSortedSet(field);
+      assert values != null;
+      return new AssertingAtomicReader.AssertingSortedSetDocValues(values, maxDoc);
+    }
+
     @Override
     public void close() throws IOException {
       in.close();

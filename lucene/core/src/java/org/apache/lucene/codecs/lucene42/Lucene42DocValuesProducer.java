@@ -31,6 +31,9 @@ import org.apache.lucene.index.IndexFileNames;
 import org.apache.lucene.index.NumericDocValues;
 import org.apache.lucene.index.SegmentReadState;
 import org.apache.lucene.index.SortedDocValues;
+import org.apache.lucene.index.SortedSetDocValues;
+import org.apache.lucene.index.SortedSetDocValues.OrdIterator;
+import org.apache.lucene.store.ByteArrayDataInput;
 import org.apache.lucene.store.IndexInput;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.IOUtils;
@@ -123,7 +126,7 @@ class Lucene42DocValuesProducer extends DocValuesProducer {
       } else if (fieldType == Lucene42DocValuesConsumer.FST) {
         FSTEntry entry = new FSTEntry();
         entry.offset = meta.readLong();
-        entry.numOrds = meta.readVInt();
+        entry.numOrds = meta.readVLong();
         fsts.put(fieldNumber, entry);
       } else {
         throw new CorruptIndexException("invalid entry type: " + fieldType + ", input=" + meta);
@@ -281,11 +284,111 @@ class Lucene42DocValuesProducer extends DocValuesProducer {
 
       @Override
       public int getValueCount() {
+        return (int)entry.numOrds;
+      }
+    };
+  }
+  
+  @Override
+  public SortedSetDocValues getSortedSet(FieldInfo field) throws IOException {
+    final FSTEntry entry = fsts.get(field.number);
+    FST<Long> instance;
+    synchronized(this) {
+      instance = fstInstances.get(field.number);
+      if (instance == null) {
+        data.seek(entry.offset);
+        instance = new FST<Long>(data, PositiveIntOutputs.getSingleton(true));
+        fstInstances.put(field.number, instance);
+      }
+    }
+    final BinaryDocValues docToOrds = getBinary(field);
+    final FST<Long> fst = instance;
+    
+    // per-thread resources
+    final BytesReader in = fst.getBytesReader();
+    final Arc<Long> firstArc = new Arc<Long>();
+    final Arc<Long> scratchArc = new Arc<Long>();
+    final IntsRef scratchInts = new IntsRef();
+    final BytesRefFSTEnum<Long> fstEnum = new BytesRefFSTEnum<Long>(fst); 
+    return new SortedSetDocValues() {
+
+      @Override
+      public OrdIterator getOrds(int docID, OrdIterator reuse) {
+        final Lucene42OrdsIterator iterator;
+        if (reuse instanceof Lucene42OrdsIterator) {
+          iterator = (Lucene42OrdsIterator) reuse;
+        } else {
+          iterator = new Lucene42OrdsIterator(docToOrds);
+        }
+        iterator.reset(docID);
+        return iterator;
+      }
+
+      @Override
+      public void lookupOrd(long ord, BytesRef result) {
+        try {
+          in.setPosition(0);
+          fst.getFirstArc(firstArc);
+          IntsRef output = Util.getByOutput(fst, ord, in, firstArc, scratchArc, scratchInts);
+          result.bytes = new byte[output.length];
+          result.offset = 0;
+          result.length = 0;
+          Util.toBytesRef(output, result);
+        } catch (IOException bogus) {
+          throw new RuntimeException(bogus);
+        }
+      }
+
+      @Override
+      public long lookupTerm(BytesRef key) {
+        try {
+          InputOutput<Long> o = fstEnum.seekCeil(key);
+          if (o == null) {
+            return -getValueCount()-1;
+          } else if (o.input.equals(key)) {
+            return o.output.intValue();
+          } else {
+            return -o.output-1;
+          }
+        } catch (IOException bogus) {
+          throw new RuntimeException(bogus);
+        }
+      }
+
+      @Override
+      public long getValueCount() {
         return entry.numOrds;
       }
     };
   }
   
+  static class Lucene42OrdsIterator extends OrdIterator {
+    final BinaryDocValues data;
+    final BytesRef ref = new BytesRef();
+    final ByteArrayDataInput input = new ByteArrayDataInput();
+    long currentOrd;
+    
+    Lucene42OrdsIterator(BinaryDocValues data) {
+      this.data = data;
+    }
+    
+    @Override
+    public long nextOrd() {
+      if (input.eof()) {
+        return NO_MORE_ORDS;
+      } else {
+        currentOrd += input.readVLong();
+        return currentOrd;
+      }
+    }
+    
+    void reset(int docid) {
+      data.get(docid, ref);
+      input.reset(ref.bytes, ref.offset, ref.length);
+      currentOrd = 0;
+    }
+  }
+
   @Override
   public void close() throws IOException {
     data.close();
@@ -308,6 +411,6 @@ class Lucene42DocValuesProducer extends DocValuesProducer {
   
   static class FSTEntry {
     long offset;
-    int numOrds;
+    long numOrds;
   }
 }

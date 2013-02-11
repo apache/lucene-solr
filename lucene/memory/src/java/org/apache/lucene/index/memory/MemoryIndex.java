@@ -46,6 +46,7 @@ import org.apache.lucene.index.Fields;
 import org.apache.lucene.index.NumericDocValues;
 import org.apache.lucene.index.OrdTermState;
 import org.apache.lucene.index.SortedDocValues;
+import org.apache.lucene.index.SortedSetDocValues;
 import org.apache.lucene.index.StoredFieldVisitor;
 import org.apache.lucene.index.TermState;
 import org.apache.lucene.index.Terms;
@@ -750,6 +751,11 @@ public class MemoryIndex {
 
     @Override
     public SortedDocValues getSortedDocValues(String field) {
+      return null;
+    }
+    
+    @Override
+    public SortedSetDocValues getSortedSetDocValues(String field) {
       return null;
     }
 
