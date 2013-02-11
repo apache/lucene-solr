@@ -37,10 +37,8 @@ import org.apache.lucene.index.AtomicReaderContext;
 import org.apache.lucene.index.DirectoryReader;
 import org.apache.lucene.index.IndexWriterConfig;
 import org.apache.lucene.index.RandomIndexWriter;
-import org.apache.lucene.index.SerialMergeScheduler;
 import org.apache.lucene.index.SortedSetDocValues;
 import org.apache.lucene.index.Term;
-import org.apache.lucene.index.SortedSetDocValues.OrdIterator;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.LuceneTestCase;
@@ -85,9 +83,9 @@ public class TestDemoDocValue extends LuceneTestCase {
     // Now search the index:
     DirectoryReader ireader = DirectoryReader.open(directory); // read-only=true
     SortedSetDocValues dv = getOnlySegmentReader(ireader).getSortedSetDocValues("field");
-    OrdIterator oi = dv.getOrds(0, null);
-    assertEquals(0, oi.nextOrd());
-    assertEquals(OrdIterator.NO_MORE_ORDS, oi.nextOrd());
+    dv.setDocument(0);
+    assertEquals(0, dv.nextOrd());
+    assertEquals(SortedSetDocValues.NO_MORE_ORDS, dv.nextOrd());
     
     BytesRef bytes = new BytesRef();
     dv.lookupOrd(0, bytes);
@@ -120,17 +118,17 @@ public class TestDemoDocValue extends LuceneTestCase {
     // Now search the index:
     DirectoryReader ireader = DirectoryReader.open(directory); // read-only=true
     SortedSetDocValues dv = getOnlySegmentReader(ireader).getSortedSetDocValues("field");
-    OrdIterator oi = dv.getOrds(0, null);
-    assertEquals(0, oi.nextOrd());
-    assertEquals(OrdIterator.NO_MORE_ORDS, oi.nextOrd());
+    dv.setDocument(0);
+    assertEquals(0, dv.nextOrd());
+    assertEquals(SortedSetDocValues.NO_MORE_ORDS, dv.nextOrd());
     
     BytesRef bytes = new BytesRef();
     dv.lookupOrd(0, bytes);
     assertEquals(new BytesRef("hello"), bytes);
     
-    oi = dv.getOrds(1, oi);
-    assertEquals(1, oi.nextOrd());
-    assertEquals(OrdIterator.NO_MORE_ORDS, oi.nextOrd());
+    dv.setDocument(1);
+    assertEquals(1, dv.nextOrd());
+    assertEquals(SortedSetDocValues.NO_MORE_ORDS, dv.nextOrd());
     
     dv.lookupOrd(1, bytes);
     assertEquals(new BytesRef("world"), bytes);
@@ -158,10 +156,10 @@ public class TestDemoDocValue extends LuceneTestCase {
     // Now search the index:
     DirectoryReader ireader = DirectoryReader.open(directory); // read-only=true
     SortedSetDocValues dv = getOnlySegmentReader(ireader).getSortedSetDocValues("field");
-    OrdIterator oi = dv.getOrds(0, null);
-    assertEquals(0, oi.nextOrd());
-    assertEquals(1, oi.nextOrd());
-    assertEquals(OrdIterator.NO_MORE_ORDS, oi.nextOrd());
+    dv.setDocument(0);
+    assertEquals(0, dv.nextOrd());
+    assertEquals(1, dv.nextOrd());
+    assertEquals(SortedSetDocValues.NO_MORE_ORDS, dv.nextOrd());
     
     BytesRef bytes = new BytesRef();
     dv.lookupOrd(0, bytes);
@@ -191,10 +189,10 @@ public class TestDemoDocValue extends LuceneTestCase {
     // Now search the index:
     DirectoryReader ireader = DirectoryReader.open(directory); // read-only=true
     SortedSetDocValues dv = getOnlySegmentReader(ireader).getSortedSetDocValues("field");
-    OrdIterator oi = dv.getOrds(0, null);
-    assertEquals(0, oi.nextOrd());
-    assertEquals(1, oi.nextOrd());
-    assertEquals(OrdIterator.NO_MORE_ORDS, oi.nextOrd());
+    dv.setDocument(0);
+    assertEquals(0, dv.nextOrd());
+    assertEquals(1, dv.nextOrd());
+    assertEquals(SortedSetDocValues.NO_MORE_ORDS, dv.nextOrd());
     
     BytesRef bytes = new BytesRef();
     dv.lookupOrd(0, bytes);
@@ -234,15 +232,15 @@ public class TestDemoDocValue extends LuceneTestCase {
     SortedSetDocValues dv = getOnlySegmentReader(ireader).getSortedSetDocValues("field");
     assertEquals(3, dv.getValueCount());
     
-    OrdIterator oi = dv.getOrds(0, null);
-    assertEquals(1, oi.nextOrd());
-    assertEquals(2, oi.nextOrd());
-    assertEquals(OrdIterator.NO_MORE_ORDS, oi.nextOrd());
+    dv.setDocument(0);
+    assertEquals(1, dv.nextOrd());
+    assertEquals(2, dv.nextOrd());
+    assertEquals(SortedSetDocValues.NO_MORE_ORDS, dv.nextOrd());
     
-    oi = dv.getOrds(1, null);
-    assertEquals(0, oi.nextOrd());
-    assertEquals(1, oi.nextOrd());
-    assertEquals(OrdIterator.NO_MORE_ORDS, oi.nextOrd());
+    dv.setDocument(1);
+    assertEquals(0, dv.nextOrd());
+    assertEquals(1, dv.nextOrd());
+    assertEquals(SortedSetDocValues.NO_MORE_ORDS, dv.nextOrd());
     
     BytesRef bytes = new BytesRef();
     dv.lookupOrd(0, bytes);
@@ -279,9 +277,9 @@ public class TestDemoDocValue extends LuceneTestCase {
     // Now search the index:
     DirectoryReader ireader = DirectoryReader.open(directory); // read-only=true
     SortedSetDocValues dv = getOnlySegmentReader(ireader).getSortedSetDocValues("field");
-    OrdIterator oi = dv.getOrds(0, null);
-    assertEquals(0, oi.nextOrd());
-    assertEquals(OrdIterator.NO_MORE_ORDS, oi.nextOrd());
+    dv.setDocument(0);
+    assertEquals(0, dv.nextOrd());
+    assertEquals(SortedSetDocValues.NO_MORE_ORDS, dv.nextOrd());
     
     BytesRef bytes = new BytesRef();
     dv.lookupOrd(0, bytes);
@@ -315,9 +313,9 @@ public class TestDemoDocValue extends LuceneTestCase {
     // Now search the index:
     DirectoryReader ireader = DirectoryReader.open(directory); // read-only=true
     SortedSetDocValues dv = getOnlySegmentReader(ireader).getSortedSetDocValues("field");
-    OrdIterator oi = dv.getOrds(0, null);
-    assertEquals(0, oi.nextOrd());
-    assertEquals(OrdIterator.NO_MORE_ORDS, oi.nextOrd());
+    dv.setDocument(0);
+    assertEquals(0, dv.nextOrd());
+    assertEquals(SortedSetDocValues.NO_MORE_ORDS, dv.nextOrd());
     
     BytesRef bytes = new BytesRef();
     dv.lookupOrd(0, bytes);
@@ -350,9 +348,9 @@ public class TestDemoDocValue extends LuceneTestCase {
     // Now search the index:
     DirectoryReader ireader = DirectoryReader.open(directory); // read-only=true
     SortedSetDocValues dv = getOnlySegmentReader(ireader).getSortedSetDocValues("field");
-    OrdIterator oi = dv.getOrds(1, null);
-    assertEquals(0, oi.nextOrd());
-    assertEquals(OrdIterator.NO_MORE_ORDS, oi.nextOrd());
+    dv.setDocument(1);
+    assertEquals(0, dv.nextOrd());
+    assertEquals(SortedSetDocValues.NO_MORE_ORDS, dv.nextOrd());
     
     BytesRef bytes = new BytesRef();
     dv.lookupOrd(0, bytes);
@@ -386,9 +384,9 @@ public class TestDemoDocValue extends LuceneTestCase {
     // Now search the index:
     DirectoryReader ireader = DirectoryReader.open(directory); // read-only=true
     SortedSetDocValues dv = getOnlySegmentReader(ireader).getSortedSetDocValues("field");
-    OrdIterator oi = dv.getOrds(1, null);
-    assertEquals(0, oi.nextOrd());
-    assertEquals(OrdIterator.NO_MORE_ORDS, oi.nextOrd());
+    dv.setDocument(1);
+    assertEquals(0, dv.nextOrd());
+    assertEquals(SortedSetDocValues.NO_MORE_ORDS, dv.nextOrd());
     
     BytesRef bytes = new BytesRef();
     dv.lookupOrd(0, bytes);
@@ -456,18 +454,19 @@ public class TestDemoDocValue extends LuceneTestCase {
     for (AtomicReaderContext context : ir.leaves()) {
       AtomicReader r = context.reader();
       SortedSetDocValues docValues = r.getSortedSetDocValues("dv");
-      OrdIterator ords = null;
       BytesRef scratch = new BytesRef();
       for (int i = 0; i < r.maxDoc(); i++) {
         String stringValues[] = r.document(i).getValues("stored");
-        ords = docValues.getOrds(i, ords);
+        if (docValues != null) {
+          docValues.setDocument(i);
+        }
         for (int j = 0; j < stringValues.length; j++) {
-          long ord = ords.nextOrd();
-          assert ord != OrdIterator.NO_MORE_ORDS;
+          long ord = docValues.nextOrd();
+          assert ord != SortedSetDocValues.NO_MORE_ORDS;
           docValues.lookupOrd(ord, scratch);
           assertEquals(stringValues[j], scratch.utf8ToString());
         }
-        assert ords.nextOrd() == OrdIterator.NO_MORE_ORDS;
+        assert docValues == null || docValues.nextOrd() == SortedSetDocValues.NO_MORE_ORDS;
       }
     }
     ir.close();

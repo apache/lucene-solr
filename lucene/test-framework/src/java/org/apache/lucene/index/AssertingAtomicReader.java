@@ -3,7 +3,6 @@ package org.apache.lucene.index;
 import java.io.IOException;
 import java.util.Iterator;
 
-import org.apache.lucene.index.SortedSetDocValues.OrdIterator;
 import org.apache.lucene.search.DocIdSetIterator;
 import org.apache.lucene.util.Bits;
 import org.apache.lucene.util.BytesRef;
@@ -460,6 +459,7 @@ public class AssertingAtomicReader extends FilterAtomicReader {
     private final SortedSetDocValues in;
     private final int maxDoc;
     private final long valueCount;
+    long lastOrd = NO_MORE_ORDS;
     
     public AssertingSortedSetDocValues(SortedSetDocValues in, int maxDoc) {
       this.in = in;
@@ -467,16 +467,22 @@ public class AssertingAtomicReader extends FilterAtomicReader {
       this.valueCount = in.getValueCount();
       assert valueCount >= 0;
     }
+    
+    @Override
+    public long nextOrd() {
+      assert lastOrd != NO_MORE_ORDS;
+      long ord = in.nextOrd();
+      assert ord == NO_MORE_ORDS || ord < valueCount;
+      assert ord > lastOrd;
+      lastOrd = ord;
+      return ord;
+    }
 
     @Override
-    public OrdIterator getOrds(int docID, OrdIterator reuse) {
+    public void setDocument(int docID) {
       assert docID >= 0 && docID < maxDoc : "docid=" + docID + ",maxDoc=" + maxDoc;
-      if (reuse instanceof AssertingOrdIterator) {
-        reuse = ((AssertingOrdIterator) reuse).in;
-      }
-      OrdIterator iterator = in.getOrds(docID, reuse);
-      assert iterator != null;
-      return new AssertingOrdIterator(iterator, valueCount);
+      in.setDocument(docID);
+      lastOrd = -1;
     }
 
     @Override
@@ -501,29 +507,6 @@ public class AssertingAtomicReader extends FilterAtomicReader {
       assert result < valueCount;
       assert key.isValid();
       return result;
-    }
-  }
-  
-  /** Wraps a OrdIterator but with additional asserts */
-  public static class AssertingOrdIterator extends OrdIterator {
-    final OrdIterator in;
-    final long valueCount;
-    long lastOrd = Long.MIN_VALUE;
-    
-    AssertingOrdIterator(OrdIterator in, long valueCount) {
-      this.in = in;
-      this.valueCount = valueCount;
-      assert lastOrd != NO_MORE_ORDS;
-    }
-    
-    @Override
-    public long nextOrd() {
-      assert lastOrd != NO_MORE_ORDS;
-      long ord = in.nextOrd();
-      assert ord == NO_MORE_ORDS || ord < valueCount;
-      assert ord > lastOrd;
-      lastOrd = ord;
-      return ord;
     }
   }
 

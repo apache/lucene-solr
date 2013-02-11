@@ -33,19 +33,27 @@ public abstract class SortedSetDocValues {
    * constructors, typically implicit.) */
   protected SortedSetDocValues() {}
 
-  /**
-   * Returns an iterator over the ordinals for the specified docID.
-   * @param  docID document ID to lookup
-   * @return iterator over ordinals for the document: these are dense, 
-   *         start at 0, then increment by 1 for the next value in sorted order. 
+  public static final long NO_MORE_ORDS = Long.MAX_VALUE;
+
+  /** 
+   * Returns the next ordinal for the current document (previously
+   * set by {@link #setDocument(int)}.
+   * @return next ordinal for the document, or {@link #NO_MORE_ORDS}. 
+   *         ordinals are dense, start at 0, then increment by 1 for 
+   *         the next value in sorted order. 
    */
-  // nocommit: can we think of a better api? this asks for reuse bugs etc.
-  public abstract OrdIterator getOrds(int docID, OrdIterator reuse);
+  public abstract long nextOrd();
+  
+  /** 
+   * Sets iteration to the specified docID 
+   * @param docID document ID 
+   */
+  public abstract void setDocument(int docID);
 
   /** Retrieves the value for the specified ordinal.
    * @param ord ordinal to lookup
    * @param result will be populated with the ordinal's value
-   * @see #getOrds
+   * @see #nextOrd
    */
   public abstract void lookupOrd(long ord, BytesRef result);
 
@@ -57,12 +65,16 @@ public abstract class SortedSetDocValues {
   public abstract long getValueCount();
 
 
-  /** An empty SortedDocValues which returns {@link OrdIterator#EMPTY} for every document */
+  /** An empty SortedDocValues which returns {@link #NO_MORE_ORDS} for every document */
   public static final SortedSetDocValues EMPTY = new SortedSetDocValues() {
+
     @Override
-    public OrdIterator getOrds(int docID, OrdIterator reuse) {
-      return OrdIterator.EMPTY;
+    public long nextOrd() {
+      return NO_MORE_ORDS;
     }
+
+    @Override
+    public void setDocument(int docID) {}
 
     @Override
     public void lookupOrd(long ord, BytesRef result) {
@@ -101,21 +113,5 @@ public abstract class SortedSetDocValues {
     }
 
     return -(low + 1);  // key not found.
-  }
-  
-  /** An iterator over the ordinals in a document (in increasing order) */
-  public static abstract class OrdIterator {
-    /** Indicates enumeration has ended: no more ordinals for this document */
-    public static final long NO_MORE_ORDS = Long.MAX_VALUE;
-    /** An iterator that always returns {@link #NO_MORE_ORDS} */
-    public static final OrdIterator EMPTY = new OrdIterator() {
-      @Override
-      public long nextOrd() {
-        return NO_MORE_ORDS;
-      }
-    };
-    
-    /** Returns next ordinal, or {@link #NO_MORE_ORDS} */
-    public abstract long nextOrd();
   }
 }

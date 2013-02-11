@@ -34,9 +34,9 @@ import org.apache.lucene.index.SegmentWriteState;
 import org.apache.lucene.index.SortedDocValues;
 import org.apache.lucene.index.SortedDocValuesTermsEnum;
 import org.apache.lucene.index.SortedSetDocValues;
-import org.apache.lucene.index.SortedSetDocValues.OrdIterator;
 import org.apache.lucene.index.SortedSetDocValuesTermsEnum;
 import org.apache.lucene.index.TermsEnum;
+import org.apache.lucene.util.ArrayUtil;
 import org.apache.lucene.util.Bits;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.FixedBitSet;
@@ -408,12 +408,11 @@ public abstract class DocValuesConsumer implements Closeable {
           throw new UnsupportedOperationException();
         }
         FixedBitSet bitset = new FixedBitSet((int)dv.getValueCount());
-        OrdIterator iterator = null;
         for (int i = 0; i < reader.maxDoc(); i++) {
           if (liveDocs.get(i)) {
-            iterator = dv.getOrds(i, iterator);
+            dv.setDocument(i);
             long ord;
-            while ((ord = iterator.nextOrd()) != OrdIterator.NO_MORE_ORDS) {
+            while ((ord = dv.nextOrd()) != SortedSetDocValues.NO_MORE_ORDS) {
               bitset.set((int)ord); // nocommit
             }
           }
@@ -468,7 +467,6 @@ public abstract class DocValuesConsumer implements Closeable {
               int docIDUpto;
               int nextValue;
               AtomicReader currentReader;
-              OrdIterator iterator;
               Bits currentLiveDocs;
               boolean nextIsSet;
 
@@ -511,9 +509,10 @@ public abstract class DocValuesConsumer implements Closeable {
 
                   if (currentLiveDocs == null || currentLiveDocs.get(docIDUpto)) {
                     nextIsSet = true;
-                    iterator = dvs[readerUpto].getOrds(docIDUpto, iterator);
+                    SortedSetDocValues dv = dvs[readerUpto];
+                    dv.setDocument(docIDUpto);
                     nextValue = 0;
-                    while (iterator.nextOrd() != OrdIterator.NO_MORE_ORDS) {
+                    while (dv.nextOrd() != SortedSetDocValues.NO_MORE_ORDS) {
                       nextValue++;
                     }
                     docIDUpto++;
@@ -535,9 +534,11 @@ public abstract class DocValuesConsumer implements Closeable {
               int docIDUpto;
               long nextValue;
               AtomicReader currentReader;
-              OrdIterator iterator;
               Bits currentLiveDocs;
               boolean nextIsSet;
+              long ords[] = new long[8];
+              int ordUpto;
+              int ordLength;
 
               @Override
               public boolean hasNext() {
@@ -566,17 +567,11 @@ public abstract class DocValuesConsumer implements Closeable {
                     return false;
                   }
                   
-                  if (iterator != null) {
-                    final long segmentOrd = iterator.nextOrd();
-                    if (segmentOrd != OrdIterator.NO_MORE_ORDS) {
-                      nextValue = map.getGlobalOrd(readerUpto, segmentOrd);
-                      nextIsSet = true;
-                      return true;
-                    } else {
-                     // nocommit: nulling is a hack to prevent calling next() after NO_MORE was already returned...
-                      iterator = null;
-                      docIDUpto++;
-                    }
+                  if (ordUpto < ordLength) {
+                    nextValue = ords[ordUpto];
+                    ordUpto++;
+                    nextIsSet = true;
+                    return true;
                   }
 
                   if (currentReader == null || docIDUpto == currentReader.maxDoc()) {
@@ -586,13 +581,23 @@ public abstract class DocValuesConsumer implements Closeable {
                       currentLiveDocs = currentReader.getLiveDocs();
                     }
                     docIDUpto = 0;
-                    iterator = null;
                     continue;
                   }
                   
                   if (currentLiveDocs == null || currentLiveDocs.get(docIDUpto)) {
                     assert docIDUpto < currentReader.maxDoc();
-                    iterator = dvs[readerUpto].getOrds(docIDUpto, iterator);
+                    SortedSetDocValues dv = dvs[readerUpto];
+                    dv.setDocument(docIDUpto);
+                    ordUpto = ordLength = 0;
+                    long ord;
+                    while ((ord = dv.nextOrd()) != SortedSetDocValues.NO_MORE_ORDS) {
+                      if (ordLength == ords.length) {
+                        ords = ArrayUtil.grow(ords, ordLength+1);
+                      }
+                      ords[ordLength] = map.getGlobalOrd(readerUpto, ord);
+                      ordLength++;
+                    }
+                    docIDUpto++;
                     continue;
                   }
 

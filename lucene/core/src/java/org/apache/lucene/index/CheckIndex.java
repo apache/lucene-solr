@@ -33,7 +33,6 @@ import org.apache.lucene.codecs.Codec;
 import org.apache.lucene.codecs.PostingsFormat; // javadocs
 import org.apache.lucene.document.FieldType; // for javadocs
 import org.apache.lucene.index.FieldInfo.IndexOptions;
-import org.apache.lucene.index.SortedSetDocValues.OrdIterator;
 import org.apache.lucene.search.DocIdSetIterator;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.FSDirectory;
@@ -1339,12 +1338,11 @@ public class CheckIndex {
     // nocommit
     FixedBitSet seenOrds = new FixedBitSet((int)dv.getValueCount());
     long maxOrd2 = -1;
-    OrdIterator iterator = null;
     for (int i = 0; i < reader.maxDoc(); i++) {
-      iterator = dv.getOrds(i, iterator);
+      dv.setDocument(i);
       long lastOrd = -1;
       long ord;
-      while ((ord = iterator.nextOrd()) != OrdIterator.NO_MORE_ORDS) {
+      while ((ord = dv.nextOrd()) != SortedSetDocValues.NO_MORE_ORDS) {
         if (ord <= lastOrd) {
           throw new RuntimeException("ords out of order: " + ord + " <= " + lastOrd + " for doc: " + i);
         }

@@ -32,7 +32,6 @@ import org.apache.lucene.index.NumericDocValues;
 import org.apache.lucene.index.SegmentReadState;
 import org.apache.lucene.index.SortedDocValues;
 import org.apache.lucene.index.SortedSetDocValues;
-import org.apache.lucene.index.SortedSetDocValues.OrdIterator;
 import org.apache.lucene.store.ByteArrayDataInput;
 import org.apache.lucene.store.IndexInput;
 import org.apache.lucene.util.BytesRef;
@@ -310,18 +309,26 @@ class Lucene42DocValuesProducer extends DocValuesProducer {
     final Arc<Long> scratchArc = new Arc<Long>();
     final IntsRef scratchInts = new IntsRef();
     final BytesRefFSTEnum<Long> fstEnum = new BytesRefFSTEnum<Long>(fst); 
+    final BytesRef ref = new BytesRef();
+    final ByteArrayDataInput input = new ByteArrayDataInput();
     return new SortedSetDocValues() {
+      long currentOrd;
 
       @Override
-      public OrdIterator getOrds(int docID, OrdIterator reuse) {
-        final Lucene42OrdsIterator iterator;
-        if (reuse instanceof Lucene42OrdsIterator) {
-          iterator = (Lucene42OrdsIterator) reuse;
+      public long nextOrd() {
+        if (input.eof()) {
+          return NO_MORE_ORDS;
         } else {
-          iterator = new Lucene42OrdsIterator(docToOrds);
+          currentOrd += input.readVLong();
+          return currentOrd;
         }
-        iterator.reset(docToOrds, docID);
-        return iterator;
+      }
+      
+      @Override
+      public void setDocument(int docID) {
+        docToOrds.get(docID, ref);
+        input.reset(ref.bytes, ref.offset, ref.length);
+        currentOrd = 0;
       }
 
       @Override
@@ -360,34 +367,6 @@ class Lucene42DocValuesProducer extends DocValuesProducer {
         return entry.numOrds;
       }
     };
-  }
-  
-  static class Lucene42OrdsIterator extends OrdIterator {
-    BinaryDocValues data;
-    final BytesRef ref = new BytesRef();
-    final ByteArrayDataInput input = new ByteArrayDataInput();
-    long currentOrd;
-    
-    Lucene42OrdsIterator(BinaryDocValues data) {
-      this.data = data;
-    }
-    
-    @Override
-    public long nextOrd() {
-      if (input.eof()) {
-        return NO_MORE_ORDS;
-      } else {
-        currentOrd += input.readVLong();
-        return currentOrd;
-      }
-    }
-    
-    void reset(BinaryDocValues data, int docid) {
-      this.data = data;
-      data.get(docid, ref);
-      input.reset(ref.bytes, ref.offset, ref.length);
-      currentOrd = 0;
-    }
   }
 
   @Override

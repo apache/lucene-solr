@@ -18,7 +18,6 @@ package org.apache.lucene.index;
  */
 
 import java.io.IOException;
-import java.util.Arrays;
 import java.util.List;
 
 import org.apache.lucene.index.MultiTermsEnum.TermsEnumIndex;
@@ -377,6 +376,7 @@ public class MultiDocValues {
     final int docStarts[];
     final SortedSetDocValues values[];
     final OrdinalMap mapping;
+    int currentSubIndex;
     
     MultiSortedSetDocValues(SortedSetDocValues values[], int docStarts[], OrdinalMap mapping) throws IOException {
       assert values.length == mapping.ordDeltas.length;
@@ -385,17 +385,21 @@ public class MultiDocValues {
       this.docStarts = docStarts;
       this.mapping = mapping;
     }
-       
+    
     @Override
-    public OrdIterator getOrds(int docID, OrdIterator reuse) {
-      MultiOrdIterator iterator;
-      if (reuse instanceof MultiOrdIterator) {
-        iterator = (MultiOrdIterator) reuse;
+    public long nextOrd() {
+      long segmentOrd = values[currentSubIndex].nextOrd();
+      if (segmentOrd == NO_MORE_ORDS) {
+        return segmentOrd;
       } else {
-        iterator = new MultiOrdIterator();
+        return mapping.getGlobalOrd(currentSubIndex, segmentOrd);
       }
-      iterator.reset(docID);
-      return iterator;
+    }
+
+    @Override
+    public void setDocument(int docID) {
+      currentSubIndex = ReaderUtil.subIndex(docID, docStarts);
+      values[currentSubIndex].setDocument(docID - docStarts[currentSubIndex]);
     }
  
     @Override
@@ -408,26 +412,6 @@ public class MultiDocValues {
     @Override
     public long getValueCount() {
       return mapping.getValueCount();
-    }
-    
-    class MultiOrdIterator extends OrdIterator {
-      private OrdIterator inner;
-      private int subIndex;
-
-      @Override
-      public long nextOrd() {
-        long segmentOrd = inner.nextOrd();
-        if (segmentOrd == NO_MORE_ORDS) {
-          return NO_MORE_ORDS;
-        } else {
-          return mapping.getGlobalOrd(subIndex, segmentOrd);
-        }
-      }
-      
-      void reset(int docID) {
-        subIndex = ReaderUtil.subIndex(docID, docStarts);
-        inner = values[subIndex].getOrds(docID - docStarts[subIndex], inner);
-      }
     }
   }
 }
