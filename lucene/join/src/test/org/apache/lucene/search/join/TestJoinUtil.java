@@ -35,6 +35,7 @@ import org.apache.lucene.index.MultiFields;
 import org.apache.lucene.index.RandomIndexWriter;
 import org.apache.lucene.index.ReaderUtil;
 import org.apache.lucene.index.SlowCompositeReaderWrapper;
+import org.apache.lucene.index.SortedSetDocValues;
 import org.apache.lucene.index.Term;
 import org.apache.lucene.index.Terms;
 import org.apache.lucene.index.TermsEnum;
@@ -466,50 +467,26 @@ public class TestJoinUtil extends LuceneTestCase {
         fromSearcher.search(new TermQuery(new Term("value", uniqueRandomValue)), new Collector() {
 
           private Scorer scorer;
-          private DocTermOrds docTermOrds;
-          private TermsEnum docTermsEnum;
-          private DocTermOrds.TermOrdsIterator reuse;
+          private SortedSetDocValues docTermOrds;
+          final BytesRef joinValue = new BytesRef();
 
           @Override
           public void collect(int doc) throws IOException {
-            if (docTermOrds.isEmpty()) {
-              return;
+            docTermOrds.setDocument(doc);
+            long ord;
+            while ((ord = docTermOrds.nextOrd()) != SortedSetDocValues.NO_MORE_ORDS) {
+              docTermOrds.lookupOrd(ord, joinValue);
+              JoinScore joinScore = joinValueToJoinScores.get(joinValue);
+              if (joinScore == null) {
+                joinValueToJoinScores.put(BytesRef.deepCopyOf(joinValue), joinScore = new JoinScore());
+              }
+              joinScore.addScore(scorer.score());
             }
-
-            reuse = docTermOrds.lookup(doc, reuse);
-            int[] buffer = new int[5];
-
-            int chunk;
-            do {
-              chunk = reuse.read(buffer);
-              if (chunk == 0) {
-                return;
-              }
-
-              for (int idx = 0; idx < chunk; idx++) {
-                int key = buffer[idx];
-                docTermsEnum.seekExact((long) key);
-                BytesRef joinValue = docTermsEnum.term();
-                if (joinValue == null) {
-                  continue;
-                }
-
-                JoinScore joinScore = joinValueToJoinScores.get(joinValue);
-                if (joinScore == null) {
-                  joinValueToJoinScores.put(BytesRef.deepCopyOf(joinValue), joinScore = new JoinScore());
-                }
-                joinScore.addScore(scorer.score());
-              }
-            } while (chunk >= buffer.length);
           }
 
           @Override
           public void setNextReader(AtomicReaderContext context) throws IOException {
-            // nocommit: cut over
-            DocTermOrds.Iterator iterator = (DocTermOrds.Iterator) FieldCache.DEFAULT.getDocTermOrds(context.reader(), fromField);
-            docTermOrds = iterator.getParent();
-            docTermsEnum = docTermOrds.getOrdTermsEnum(context.reader());
-            reuse = null;
+            docTermOrds = FieldCache.DEFAULT.getDocTermOrds(context.reader(), fromField);
           }
 
           @Override
