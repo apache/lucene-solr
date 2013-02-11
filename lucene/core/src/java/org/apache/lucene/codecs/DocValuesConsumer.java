@@ -573,6 +573,7 @@ public abstract class DocValuesConsumer implements Closeable {
                       nextIsSet = true;
                       return true;
                     } else {
+                      iterator = null;
                       docIDUpto++;
                     }
                   }

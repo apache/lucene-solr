@@ -39,6 +39,7 @@ public abstract class SortedSetDocValues {
    * @return iterator over ordinals for the document: these are dense, 
    *         start at 0, then increment by 1 for the next value in sorted order. 
    */
+  // nocommit: can we think of a better api? this asks for reuse bugs etc.
   public abstract OrdIterator getOrds(int docID, OrdIterator reuse);
 
   /** Retrieves the value for the specified ordinal.

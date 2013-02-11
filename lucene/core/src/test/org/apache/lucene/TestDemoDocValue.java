@@ -18,17 +18,28 @@ package org.apache.lucene;
  */
 
 import java.io.IOException;
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.Set;
+import java.util.TreeSet;
 
 import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.analysis.MockAnalyzer;
 import org.apache.lucene.codecs.Codec;
 import org.apache.lucene.codecs.DocValuesFormat;
 import org.apache.lucene.document.Document;
+import org.apache.lucene.document.Field;
 import org.apache.lucene.document.SortedSetDocValuesField;
+import org.apache.lucene.document.StoredField;
+import org.apache.lucene.document.StringField;
+import org.apache.lucene.index.AtomicReader;
+import org.apache.lucene.index.AtomicReaderContext;
 import org.apache.lucene.index.DirectoryReader;
 import org.apache.lucene.index.IndexWriterConfig;
 import org.apache.lucene.index.RandomIndexWriter;
+import org.apache.lucene.index.SerialMergeScheduler;
 import org.apache.lucene.index.SortedSetDocValues;
+import org.apache.lucene.index.Term;
 import org.apache.lucene.index.SortedSetDocValues.OrdIterator;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.util.BytesRef;
@@ -387,5 +398,94 @@ public class TestDemoDocValue extends LuceneTestCase {
 
     ireader.close();
     directory.close();
+  }
+  
+  
+  private void doTestSortedSetVsStoredFields(int minLength, int maxLength) throws Exception {
+    Directory dir = newDirectory();
+    IndexWriterConfig conf = new IndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer(random()));
+    RandomIndexWriter writer = new RandomIndexWriter(random(), dir, conf);
+    
+    // index some docs
+    int numDocs = atLeast(1000);
+    for (int i = 0; i < numDocs; i++) {
+      Document doc = new Document();
+      Field idField = new StringField("id", Integer.toString(i), Field.Store.NO);
+      doc.add(idField);
+      final int length;
+      if (minLength == maxLength) {
+        length = minLength; // fixed length
+      } else {
+        length = _TestUtil.nextInt(random(), minLength, maxLength);
+      }
+      int numValues = random().nextInt(17);
+      // create a random set of strings
+      Set<String> values = new TreeSet<String>();
+      for (int v = 0; v < numValues; v++) {
+        values.add(_TestUtil.randomSimpleString(random(), length));
+      }
+      
+      // add ordered to the stored field
+      for (String v : values) {
+        doc.add(new StoredField("stored", v));
+      }
+
+      // add in any order to the dv field
+      ArrayList<String> unordered = new ArrayList<String>(values);
+      Collections.shuffle(unordered, random());
+      for (String v : unordered) {
+        doc.add(new SortedSetDocValuesField("dv", new BytesRef(v)));
+      }
+
+      writer.addDocument(doc);
+      if (random().nextInt(31) == 0) {
+        writer.commit();
+      }
+    }
+    
+    // delete some docs
+    int numDeletions = random().nextInt(numDocs/10);
+    for (int i = 0; i < numDeletions; i++) {
+      int id = random().nextInt(numDocs);
+      writer.deleteDocuments(new Term("id", Integer.toString(id)));
+    }
+    writer.close();
+    
+    // compare
+    DirectoryReader ir = DirectoryReader.open(dir);
+    for (AtomicReaderContext context : ir.leaves()) {
+      AtomicReader r = context.reader();
+      SortedSetDocValues docValues = r.getSortedSetDocValues("dv");
+      OrdIterator ords = null;
+      BytesRef scratch = new BytesRef();
+      for (int i = 0; i < r.maxDoc(); i++) {
+        String stringValues[] = r.document(i).getValues("stored");
+        ords = docValues.getOrds(i, ords);
+        for (int j = 0; j < stringValues.length; j++) {
+          long ord = ords.nextOrd();
+          assert ord != OrdIterator.NO_MORE_ORDS;
+          docValues.lookupOrd(ord, scratch);
+          assertEquals(stringValues[j], scratch.utf8ToString());
+        }
+        assert ords.nextOrd() == OrdIterator.NO_MORE_ORDS;
+      }
+    }
+    ir.close();
+    dir.close();
+  }
+  
+  public void testSortedSetFixedLengthVsStoredFields() throws Exception {
+    int numIterations = atLeast(1);
+    for (int i = 0; i < numIterations; i++) {
+      int fixedLength = _TestUtil.nextInt(random(), 1, 10);
+      doTestSortedSetVsStoredFields(fixedLength, fixedLength);
+    }
+  }
+  
+  public void testSortedSetVariableLengthVsStoredFields() throws Exception {
+    int numIterations = atLeast(1);
+    for (int i = 0; i < numIterations; i++) {
+      doTestSortedSetVsStoredFields(1, 10);
+    }
   }
 }

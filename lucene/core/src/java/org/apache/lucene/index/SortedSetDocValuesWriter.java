@@ -250,7 +250,7 @@ class SortedSetDocValuesWriter extends DocValuesWriter {
       if (!hasNext()) {
         throw new NoSuchElementException();
       }
-      if (currentUpto == currentLength) {
+      while (currentUpto == currentLength) {
         // refill next doc, and sort remapped ords within the doc.
         currentUpto = 0;
         currentLength = (int) counts.next();

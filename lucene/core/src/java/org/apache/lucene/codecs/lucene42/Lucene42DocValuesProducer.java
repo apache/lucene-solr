@@ -320,7 +320,7 @@ class Lucene42DocValuesProducer extends DocValuesProducer {
         } else {
           iterator = new Lucene42OrdsIterator(docToOrds);
         }
-        iterator.reset(docID);
+        iterator.reset(docToOrds, docID);
         return iterator;
       }
 
@@ -363,7 +363,7 @@ class Lucene42DocValuesProducer extends DocValuesProducer {
   }
   
   static class Lucene42OrdsIterator extends OrdIterator {
-    final BinaryDocValues data;
+    BinaryDocValues data;
     final BytesRef ref = new BytesRef();
     final ByteArrayDataInput input = new ByteArrayDataInput();
     long currentOrd;
@@ -382,7 +382,8 @@ class Lucene42DocValuesProducer extends DocValuesProducer {
       }
     }
     
-    void reset(int docid) {
+    void reset(BinaryDocValues data, int docid) {
+      this.data = data;
       data.get(docid, ref);
       input.reset(ref.bytes, ref.offset, ref.length);
       currentOrd = 0;
