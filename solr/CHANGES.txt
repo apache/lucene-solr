@@ -114,6 +114,9 @@ Bug Fixes
 * SOLR-3655: A restarted node can briefly appear live and active before it really
   is in some cases. (Mark Miller)
 
+* SOLR-4426: NRTCachingDirectoryFactory does not initialize maxCachedMB and maxMergeSizeMB
+  if <directoryFactory> is not present in solrconfig.xml (Jack Krupansky via shalin)
+
 Optimizations
 ----------------------
 

@@ -31,18 +31,20 @@ import org.apache.solr.core.DirectoryFactory.DirContext;
  * Factory to instantiate {@link org.apache.lucene.store.NRTCachingDirectory}
  */
 public class NRTCachingDirectoryFactory extends StandardDirectoryFactory {
-  private double maxMergeSizeMB;
-  private double maxCachedMB;
+  public static final int DEFAULT_MAX_MERGE_SIZE_MB = 4;
+  private double maxMergeSizeMB = DEFAULT_MAX_MERGE_SIZE_MB;
+  public static final int DEFAULT_MAX_CACHED_MB = 48;
+  private double maxCachedMB = DEFAULT_MAX_CACHED_MB;
 
   @Override
   public void init(NamedList args) {
     super.init(args);
     SolrParams params = SolrParams.toSolrParams(args);
-    maxMergeSizeMB = params.getDouble("maxMergeSizeMB", 4);
+    maxMergeSizeMB = params.getDouble("maxMergeSizeMB", DEFAULT_MAX_MERGE_SIZE_MB);
     if (maxMergeSizeMB <= 0){
       throw new IllegalArgumentException("maxMergeSizeMB must be greater than 0");
     }
-    maxCachedMB = params.getDouble("maxCachedMB", 48);
+    maxCachedMB = params.getDouble("maxCachedMB", DEFAULT_MAX_CACHED_MB);
     if (maxCachedMB <= 0){
       throw new IllegalArgumentException("maxCachedMB must be greater than 0");
     }
