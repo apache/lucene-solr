@@ -44,6 +44,8 @@ import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.LuceneTestCase;
 import org.apache.lucene.util._TestUtil;
 
+import static org.apache.lucene.index.SortedSetDocValues.NO_MORE_ORDS;
+
 /**
  * A very simple demo used in the API documentation (src/java/overview.html).
  *
@@ -68,24 +70,21 @@ public class TestDemoDocValue extends LuceneTestCase {
   }
 
   public void testOneValue() throws IOException {
-    Analyzer analyzer = new MockAnalyzer(random());
-
-    // Store the index in memory:
     Directory directory = newDirectory();
-    // To store an index on disk, use this instead:
-    // Directory directory = FSDirectory.open(new File("/tmp/testindex"));
-    RandomIndexWriter iwriter = new RandomIndexWriter(random(), directory, analyzer);
+    RandomIndexWriter iwriter = new RandomIndexWriter(random(), directory);
+    
     Document doc = new Document();
     doc.add(new SortedSetDocValuesField("field", new BytesRef("hello")));
     iwriter.addDocument(doc);
+    
+    DirectoryReader ireader = iwriter.getReader();
     iwriter.close();
     
-    // Now search the index:
-    DirectoryReader ireader = DirectoryReader.open(directory); // read-only=true
     SortedSetDocValues dv = getOnlySegmentReader(ireader).getSortedSetDocValues("field");
+    
     dv.setDocument(0);
     assertEquals(0, dv.nextOrd());
-    assertEquals(SortedSetDocValues.NO_MORE_ORDS, dv.nextOrd());
+    assertEquals(NO_MORE_ORDS, dv.nextOrd());
     
     BytesRef bytes = new BytesRef();
     dv.lookupOrd(0, bytes);
@@ -96,31 +95,31 @@ public class TestDemoDocValue extends LuceneTestCase {
   }
   
   public void testTwoDocumentsMerged() throws IOException {
-    Analyzer analyzer = new MockAnalyzer(random());
-
-    // Store the index in memory:
     Directory directory = newDirectory();
-    // To store an index on disk, use this instead:
-    // Directory directory = FSDirectory.open(new File("/tmp/testindex"));
+    Analyzer analyzer = new MockAnalyzer(random());
     IndexWriterConfig iwconfig = newIndexWriterConfig(TEST_VERSION_CURRENT, analyzer);
     iwconfig.setMergePolicy(newLogMergePolicy());
     RandomIndexWriter iwriter = new RandomIndexWriter(random(), directory, iwconfig);
+  
     Document doc = new Document();
     doc.add(new SortedSetDocValuesField("field", new BytesRef("hello")));
     iwriter.addDocument(doc);
     iwriter.commit();
+    
     doc = new Document();
     doc.add(new SortedSetDocValuesField("field", new BytesRef("world")));
     iwriter.addDocument(doc);
     iwriter.forceMerge(1);
-    iwriter.close();
     
-    // Now search the index:
-    DirectoryReader ireader = DirectoryReader.open(directory); // read-only=true
+    DirectoryReader ireader = iwriter.getReader();
+    iwriter.close();
+
     SortedSetDocValues dv = getOnlySegmentReader(ireader).getSortedSetDocValues("field");
+    assertEquals(2, dv.getValueCount());
+    
     dv.setDocument(0);
     assertEquals(0, dv.nextOrd());
-    assertEquals(SortedSetDocValues.NO_MORE_ORDS, dv.nextOrd());
+    assertEquals(NO_MORE_ORDS, dv.nextOrd());
     
     BytesRef bytes = new BytesRef();
     dv.lookupOrd(0, bytes);
@@ -128,38 +127,33 @@ public class TestDemoDocValue extends LuceneTestCase {
     
     dv.setDocument(1);
     assertEquals(1, dv.nextOrd());
-    assertEquals(SortedSetDocValues.NO_MORE_ORDS, dv.nextOrd());
+    assertEquals(NO_MORE_ORDS, dv.nextOrd());
     
     dv.lookupOrd(1, bytes);
-    assertEquals(new BytesRef("world"), bytes);
-    
-    assertEquals(2, dv.getValueCount());
+    assertEquals(new BytesRef("world"), bytes);   
 
     ireader.close();
     directory.close();
   }
   
   public void testTwoValues() throws IOException {
-    Analyzer analyzer = new MockAnalyzer(random());
-
-    // Store the index in memory:
     Directory directory = newDirectory();
-    // To store an index on disk, use this instead:
-    // Directory directory = FSDirectory.open(new File("/tmp/testindex"));
-    RandomIndexWriter iwriter = new RandomIndexWriter(random(), directory, analyzer);
+    RandomIndexWriter iwriter = new RandomIndexWriter(random(), directory);
+    
     Document doc = new Document();
     doc.add(new SortedSetDocValuesField("field", new BytesRef("hello")));
     doc.add(new SortedSetDocValuesField("field", new BytesRef("world")));
     iwriter.addDocument(doc);
+    
+    DirectoryReader ireader = iwriter.getReader();
     iwriter.close();
     
-    // Now search the index:
-    DirectoryReader ireader = DirectoryReader.open(directory); // read-only=true
     SortedSetDocValues dv = getOnlySegmentReader(ireader).getSortedSetDocValues("field");
+    
     dv.setDocument(0);
     assertEquals(0, dv.nextOrd());
     assertEquals(1, dv.nextOrd());
-    assertEquals(SortedSetDocValues.NO_MORE_ORDS, dv.nextOrd());
+    assertEquals(NO_MORE_ORDS, dv.nextOrd());
     
     BytesRef bytes = new BytesRef();
     dv.lookupOrd(0, bytes);
@@ -173,26 +167,23 @@ public class TestDemoDocValue extends LuceneTestCase {
   }
   
   public void testTwoValuesUnordered() throws IOException {
-    Analyzer analyzer = new MockAnalyzer(random());
-
-    // Store the index in memory:
     Directory directory = newDirectory();
-    // To store an index on disk, use this instead:
-    // Directory directory = FSDirectory.open(new File("/tmp/testindex"));
-    RandomIndexWriter iwriter = new RandomIndexWriter(random(), directory, analyzer);
+    RandomIndexWriter iwriter = new RandomIndexWriter(random(), directory);
+    
     Document doc = new Document();
     doc.add(new SortedSetDocValuesField("field", new BytesRef("world")));
     doc.add(new SortedSetDocValuesField("field", new BytesRef("hello")));
     iwriter.addDocument(doc);
+    
+    DirectoryReader ireader = iwriter.getReader();
     iwriter.close();
     
-    // Now search the index:
-    DirectoryReader ireader = DirectoryReader.open(directory); // read-only=true
     SortedSetDocValues dv = getOnlySegmentReader(ireader).getSortedSetDocValues("field");
+    
     dv.setDocument(0);
     assertEquals(0, dv.nextOrd());
     assertEquals(1, dv.nextOrd());
-    assertEquals(SortedSetDocValues.NO_MORE_ORDS, dv.nextOrd());
+    assertEquals(NO_MORE_ORDS, dv.nextOrd());
     
     BytesRef bytes = new BytesRef();
     dv.lookupOrd(0, bytes);
@@ -206,41 +197,39 @@ public class TestDemoDocValue extends LuceneTestCase {
   }
   
   public void testThreeValuesTwoDocs() throws IOException {
-    Analyzer analyzer = new MockAnalyzer(random());
-
-    // Store the index in memory:
     Directory directory = newDirectory();
-    // To store an index on disk, use this instead:
-    // Directory directory = FSDirectory.open(new File("/tmp/testindex"));
+    Analyzer analyzer = new MockAnalyzer(random());
     IndexWriterConfig iwconfig = newIndexWriterConfig(TEST_VERSION_CURRENT, analyzer);
     iwconfig.setMergePolicy(newLogMergePolicy());
     RandomIndexWriter iwriter = new RandomIndexWriter(random(), directory, iwconfig);
+    
     Document doc = new Document();
     doc.add(new SortedSetDocValuesField("field", new BytesRef("hello")));
     doc.add(new SortedSetDocValuesField("field", new BytesRef("world")));
     iwriter.addDocument(doc);
     iwriter.commit();
+    
     doc = new Document();
     doc.add(new SortedSetDocValuesField("field", new BytesRef("hello")));
     doc.add(new SortedSetDocValuesField("field", new BytesRef("beer")));
     iwriter.addDocument(doc);
     iwriter.forceMerge(1);
-    iwriter.close();
     
-    // Now search the index:
-    DirectoryReader ireader = DirectoryReader.open(directory); // read-only=true
+    DirectoryReader ireader = iwriter.getReader();
+    iwriter.close();
+
     SortedSetDocValues dv = getOnlySegmentReader(ireader).getSortedSetDocValues("field");
     assertEquals(3, dv.getValueCount());
     
     dv.setDocument(0);
     assertEquals(1, dv.nextOrd());
     assertEquals(2, dv.nextOrd());
-    assertEquals(SortedSetDocValues.NO_MORE_ORDS, dv.nextOrd());
+    assertEquals(NO_MORE_ORDS, dv.nextOrd());
     
     dv.setDocument(1);
     assertEquals(0, dv.nextOrd());
     assertEquals(1, dv.nextOrd());
-    assertEquals(SortedSetDocValues.NO_MORE_ORDS, dv.nextOrd());
+    assertEquals(NO_MORE_ORDS, dv.nextOrd());
     
     BytesRef bytes = new BytesRef();
     dv.lookupOrd(0, bytes);
@@ -257,143 +246,134 @@ public class TestDemoDocValue extends LuceneTestCase {
   }
   
   public void testTwoDocumentsLastMissing() throws IOException {
-    Analyzer analyzer = new MockAnalyzer(random());
-
-    // Store the index in memory:
     Directory directory = newDirectory();
-    // To store an index on disk, use this instead:
-    // Directory directory = FSDirectory.open(new File("/tmp/testindex"));
+    Analyzer analyzer = new MockAnalyzer(random());
     IndexWriterConfig iwconfig = newIndexWriterConfig(TEST_VERSION_CURRENT, analyzer);
     iwconfig.setMergePolicy(newLogMergePolicy());
     RandomIndexWriter iwriter = new RandomIndexWriter(random(), directory, iwconfig);
+    
     Document doc = new Document();
     doc.add(new SortedSetDocValuesField("field", new BytesRef("hello")));
     iwriter.addDocument(doc);
+    
     doc = new Document();
     iwriter.addDocument(doc);
     iwriter.forceMerge(1);
+    DirectoryReader ireader = iwriter.getReader();
     iwriter.close();
     
-    // Now search the index:
-    DirectoryReader ireader = DirectoryReader.open(directory); // read-only=true
     SortedSetDocValues dv = getOnlySegmentReader(ireader).getSortedSetDocValues("field");
+    assertEquals(1, dv.getValueCount());
+    
     dv.setDocument(0);
     assertEquals(0, dv.nextOrd());
-    assertEquals(SortedSetDocValues.NO_MORE_ORDS, dv.nextOrd());
+    assertEquals(NO_MORE_ORDS, dv.nextOrd());
     
     BytesRef bytes = new BytesRef();
     dv.lookupOrd(0, bytes);
     assertEquals(new BytesRef("hello"), bytes);
     
-    assertEquals(1, dv.getValueCount());
-
     ireader.close();
     directory.close();
   }
   
   public void testTwoDocumentsLastMissingMerge() throws IOException {
-    Analyzer analyzer = new MockAnalyzer(random());
-
-    // Store the index in memory:
     Directory directory = newDirectory();
-    // To store an index on disk, use this instead:
-    // Directory directory = FSDirectory.open(new File("/tmp/testindex"));
+    Analyzer analyzer = new MockAnalyzer(random());
     IndexWriterConfig iwconfig = newIndexWriterConfig(TEST_VERSION_CURRENT, analyzer);
     iwconfig.setMergePolicy(newLogMergePolicy());
     RandomIndexWriter iwriter = new RandomIndexWriter(random(), directory, iwconfig);
+    
     Document doc = new Document();
     doc.add(new SortedSetDocValuesField("field", new BytesRef("hello")));
     iwriter.addDocument(doc);
     iwriter.commit();
+    
     doc = new Document();
     iwriter.addDocument(doc);
     iwriter.forceMerge(1);
+   
+    DirectoryReader ireader = iwriter.getReader();
     iwriter.close();
     
-    // Now search the index:
-    DirectoryReader ireader = DirectoryReader.open(directory); // read-only=true
     SortedSetDocValues dv = getOnlySegmentReader(ireader).getSortedSetDocValues("field");
+    assertEquals(1, dv.getValueCount());
+
     dv.setDocument(0);
     assertEquals(0, dv.nextOrd());
-    assertEquals(SortedSetDocValues.NO_MORE_ORDS, dv.nextOrd());
+    assertEquals(NO_MORE_ORDS, dv.nextOrd());
     
     BytesRef bytes = new BytesRef();
     dv.lookupOrd(0, bytes);
     assertEquals(new BytesRef("hello"), bytes);
     
-    assertEquals(1, dv.getValueCount());
-
     ireader.close();
     directory.close();
   }
   
   public void testTwoDocumentsFirstMissing() throws IOException {
-    Analyzer analyzer = new MockAnalyzer(random());
-
-    // Store the index in memory:
     Directory directory = newDirectory();
-    // To store an index on disk, use this instead:
-    // Directory directory = FSDirectory.open(new File("/tmp/testindex"));
+    Analyzer analyzer = new MockAnalyzer(random());
     IndexWriterConfig iwconfig = newIndexWriterConfig(TEST_VERSION_CURRENT, analyzer);
     iwconfig.setMergePolicy(newLogMergePolicy());
     RandomIndexWriter iwriter = new RandomIndexWriter(random(), directory, iwconfig);
+    
     Document doc = new Document();
     iwriter.addDocument(doc);
+    
     doc = new Document();
     doc.add(new SortedSetDocValuesField("field", new BytesRef("hello")));
     iwriter.addDocument(doc);
+    
     iwriter.forceMerge(1);
+    DirectoryReader ireader = iwriter.getReader();
     iwriter.close();
     
-    // Now search the index:
-    DirectoryReader ireader = DirectoryReader.open(directory); // read-only=true
     SortedSetDocValues dv = getOnlySegmentReader(ireader).getSortedSetDocValues("field");
+    assertEquals(1, dv.getValueCount());
+
     dv.setDocument(1);
     assertEquals(0, dv.nextOrd());
-    assertEquals(SortedSetDocValues.NO_MORE_ORDS, dv.nextOrd());
+    assertEquals(NO_MORE_ORDS, dv.nextOrd());
     
     BytesRef bytes = new BytesRef();
     dv.lookupOrd(0, bytes);
     assertEquals(new BytesRef("hello"), bytes);
     
-    assertEquals(1, dv.getValueCount());
-
     ireader.close();
     directory.close();
   }
   
   public void testTwoDocumentsFirstMissingMerge() throws IOException {
-    Analyzer analyzer = new MockAnalyzer(random());
-
-    // Store the index in memory:
     Directory directory = newDirectory();
-    // To store an index on disk, use this instead:
-    // Directory directory = FSDirectory.open(new File("/tmp/testindex"));
+    Analyzer analyzer = new MockAnalyzer(random());
     IndexWriterConfig iwconfig = newIndexWriterConfig(TEST_VERSION_CURRENT, analyzer);
     iwconfig.setMergePolicy(newLogMergePolicy());
     RandomIndexWriter iwriter = new RandomIndexWriter(random(), directory, iwconfig);
+    
     Document doc = new Document();
     iwriter.addDocument(doc);
     iwriter.commit();
+    
     doc = new Document();
     doc.add(new SortedSetDocValuesField("field", new BytesRef("hello")));
     iwriter.addDocument(doc);
     iwriter.forceMerge(1);
+    
+    DirectoryReader ireader = iwriter.getReader();
     iwriter.close();
     
-    // Now search the index:
-    DirectoryReader ireader = DirectoryReader.open(directory); // read-only=true
     SortedSetDocValues dv = getOnlySegmentReader(ireader).getSortedSetDocValues("field");
+    assertEquals(1, dv.getValueCount());
+
     dv.setDocument(1);
     assertEquals(0, dv.nextOrd());
-    assertEquals(SortedSetDocValues.NO_MORE_ORDS, dv.nextOrd());
+    assertEquals(NO_MORE_ORDS, dv.nextOrd());
     
     BytesRef bytes = new BytesRef();
     dv.lookupOrd(0, bytes);
     assertEquals(new BytesRef("hello"), bytes);
     
-    assertEquals(1, dv.getValueCount());
-
     ireader.close();
     directory.close();
   }
@@ -461,12 +441,13 @@ public class TestDemoDocValue extends LuceneTestCase {
           docValues.setDocument(i);
         }
         for (int j = 0; j < stringValues.length; j++) {
+          assert docValues != null;
           long ord = docValues.nextOrd();
-          assert ord != SortedSetDocValues.NO_MORE_ORDS;
+          assert ord != NO_MORE_ORDS;
           docValues.lookupOrd(ord, scratch);
           assertEquals(stringValues[j], scratch.utf8ToString());
         }
-        assert docValues == null || docValues.nextOrd() == SortedSetDocValues.NO_MORE_ORDS;
+        assert docValues == null || docValues.nextOrd() == NO_MORE_ORDS;
       }
     }
     ir.close();
