@@ -857,8 +857,7 @@ public class DocTermOrds {
     }
   }
   
-  // nocommit: make private (just public to enable hack to cutover gradually)
-  public class Iterator extends SortedSetDocValues {
+  private class Iterator extends SortedSetDocValues {
     final TermsEnum te;
     final TermOrdsIterator in = new TermOrdsIterator(); // nocommit: don't wrap this other iterator
     final int buffer[] = new int[5];
@@ -907,11 +906,6 @@ public class DocTermOrds {
     @Override
     public long getValueCount() {
       return numTerms();
-    }
-    
-    // nocommit: just a hack for gradual cutover
-    public DocTermOrds getParent() {
-      return DocTermOrds.this;
     }
   }
 }

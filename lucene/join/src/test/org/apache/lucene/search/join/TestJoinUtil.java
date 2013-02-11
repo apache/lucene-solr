@@ -567,51 +567,33 @@ public class TestJoinUtil extends LuceneTestCase {
         } else {
           toSearcher.search(new MatchAllDocsQuery(), new Collector() {
 
-            private DocTermOrds docTermOrds;
-            private TermsEnum docTermsEnum;
-            private DocTermOrds.TermOrdsIterator reuse;
+            private SortedSetDocValues docTermOrds;
+            private final BytesRef scratch = new BytesRef();
             private int docBase;
 
             @Override
             public void collect(int doc) throws IOException {
-              if (docTermOrds.isEmpty()) {
-                return;
+              docTermOrds.setDocument(doc);
+              long ord;
+              while ((ord = docTermOrds.nextOrd()) != SortedSetDocValues.NO_MORE_ORDS) {
+                docTermOrds.lookupOrd(ord, scratch);
+                JoinScore joinScore = joinValueToJoinScores.get(scratch);
+                if (joinScore == null) {
+                  continue;
+                }
+                Integer basedDoc = docBase + doc;
+                // First encountered join value determines the score.
+                // Something to keep in mind for many-to-many relations.
+                if (!docToJoinScore.containsKey(basedDoc)) {
+                  docToJoinScore.put(basedDoc, joinScore);
+                }
               }
-
-              reuse = docTermOrds.lookup(doc, reuse);
-              int[] buffer = new int[5];
-
-              int chunk;
-              do {
-                chunk = reuse.read(buffer);
-                if (chunk == 0) {
-                  return;
-                }
-
-                for (int idx = 0; idx < chunk; idx++) {
-                  int key = buffer[idx];
-                  docTermsEnum.seekExact((long) key);
-                  JoinScore joinScore = joinValueToJoinScores.get(docTermsEnum.term());
-                  if (joinScore == null) {
-                    continue;
-                  }
-                  Integer basedDoc = docBase + doc;
-                  // First encountered join value determines the score.
-                  // Something to keep in mind for many-to-many relations.
-                  if (!docToJoinScore.containsKey(basedDoc)) {
-                    docToJoinScore.put(basedDoc, joinScore);
-                  }
-                }
-              } while (chunk >= buffer.length);
             }
 
             @Override
             public void setNextReader(AtomicReaderContext context) throws IOException {
               docBase = context.docBase;
-              DocTermOrds.Iterator iterator = (DocTermOrds.Iterator) FieldCache.DEFAULT.getDocTermOrds(context.reader(), toField);
-              docTermOrds = iterator.getParent();
-              docTermsEnum = docTermOrds.getOrdTermsEnum(context.reader());
-              reuse = null;
+              docTermOrds = FieldCache.DEFAULT.getDocTermOrds(context.reader(), toField);
             }
 
             @Override
