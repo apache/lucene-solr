@@ -280,6 +280,7 @@ public final class Lucene41PostingsReader extends PostingsReaderBase {
     
   @Override
   public DocsEnum docs(FieldInfo fieldInfo, BlockTermState termState, Bits liveDocs, DocsEnum reuse, int flags) throws IOException {
+    /*
     BlockDocsEnum docsEnum;
     if (reuse instanceof BlockDocsEnum) {
       docsEnum = (BlockDocsEnum) reuse;
@@ -290,6 +291,8 @@ public final class Lucene41PostingsReader extends PostingsReaderBase {
       docsEnum = new BlockDocsEnum(fieldInfo);
     }
     return docsEnum.reset(liveDocs, (IntBlockTermState) termState, flags);
+    */
+    return docsAndPositions(fieldInfo, termState, liveDocs, reuse, flags);
   }
 
   // TODO: specialize to liveDocs vs not
@@ -999,6 +1002,16 @@ public final class Lucene41PostingsReader extends PostingsReaderBase {
     }
 
     @Override
+    public int startPosition() {
+      return position;
+    }
+
+    @Override
+    public int endPosition() {
+      return position;
+    }
+
+    @Override
     public int startOffset() {
       return -1;
     }
@@ -1569,6 +1582,16 @@ public final class Lucene41PostingsReader extends PostingsReaderBase {
       // if (DEBUG) {
       //   System.out.println("      return pos=" + position);
       // }
+      return position;
+    }
+
+    @Override
+    public int startPosition() {
+      return position;
+    }
+
+    @Override
+    public int endPosition() {
       return position;
     }
 

@@ -2,7 +2,6 @@ package org.apache.lucene.search.intervals;
 
 import org.apache.lucene.analysis.MockAnalyzer;
 import org.apache.lucene.codecs.Codec;
-import org.apache.lucene.index.AtomicReaderContext;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.IndexWriterConfig;
 import org.apache.lucene.index.RandomIndexWriter;
@@ -10,13 +9,11 @@ import org.apache.lucene.index.Term;
 import org.apache.lucene.search.BooleanClause;
 import org.apache.lucene.search.BooleanQuery;
 import org.apache.lucene.search.CheckHits;
-import org.apache.lucene.search.Collector;
 import org.apache.lucene.search.IndexSearcher;
+import org.apache.lucene.search.PositionsCollector;
 import org.apache.lucene.search.Query;
-import org.apache.lucene.search.Scorer;
 import org.apache.lucene.search.TermQuery;
 import org.apache.lucene.search.TopDocs;
-import org.apache.lucene.search.Weight;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.util.LuceneTestCase;
 import org.junit.After;
@@ -24,10 +21,7 @@ import org.junit.Assert;
 import org.junit.Before;
 
 import java.io.IOException;
-import java.util.Arrays;
 import java.util.Iterator;
-import java.util.Set;
-import java.util.TreeSet;
 
 /**
  * Copyright (c) 2012 Lemur Consulting Ltd.
@@ -56,32 +50,34 @@ public abstract class IntervalTestBase extends LuceneTestCase {
    * the expected results.
    * @param q the query
    * @param searcher the searcher
-   * @param expectedResults and int[][] detailing the expected results, in the format
+   * @param expectedResults an int[][] detailing the expected results, in the format
    *                        { { docid1, startoffset1, endoffset1, startoffset2, endoffset2, ... },
    *                          { docid2, startoffset1, endoffset1, startoffset2, endoffset2, ...}, ... }
    * @throws IOException
    */
   public static void checkIntervalOffsets(Query q, IndexSearcher searcher, int[][] expectedResults) throws IOException {
 
-    MatchCollector m = new MatchCollector();
-    searcher.search(q, m);
+    //MatchCollector m = new MatchCollector();
+    PositionsCollector c = new PositionsCollector(expectedResults.length + 1);
+    searcher.search(q, c);
 
-    Assert.assertEquals("Incorrect number of hits", expectedResults.length, m.getHitCount());
-    Iterator<Match> matchIt = m.getMatches().iterator();
+    PositionsCollector.DocPositions[] matches = c.getPositions();
+    Assert.assertEquals("Incorrect number of hits", expectedResults.length, matches.length);
     for (int i = 0; i < expectedResults.length; i++) {
-      int docMatches[] = expectedResults[i];
-      int docid = docMatches[0];
-      for (int j = 1; j < docMatches.length; j += 2) {
-        String expectation = "Expected match at docid " + docid + ", position " + docMatches[j];
+      int expectedDocMatches[] = expectedResults[i];
+      int docid = expectedDocMatches[0];
+      Iterator<Interval> matchIt = matches[i].positions.iterator();
+      for (int j = 1; j < expectedDocMatches.length; j += 2) {
+        String expectation = "Expected match at docid " + docid + ", position " + expectedDocMatches[j];
         Assert.assertTrue(expectation, matchIt.hasNext());
-        Match match = matchIt.next();
+        Interval match = matchIt.next();
         System.err.println(match);
-        Assert.assertEquals("Incorrect docid", match.docid, docid);
-        Assert.assertEquals("Incorrect match offset", docMatches[j], match.startOffset);
-        Assert.assertEquals("Incorrect match end offset", docMatches[j + 1], match.endOffset);
+        Assert.assertEquals("Incorrect docid", matches[i].doc, docid);
+        Assert.assertEquals("Incorrect match offset", expectedDocMatches[j], match.offsetBegin);
+        Assert.assertEquals("Incorrect match end offset", expectedDocMatches[j + 1], match.offsetEnd);
       }
+      Assert.assertFalse("Unexpected matches!", matchIt.hasNext());
     }
-    Assert.assertFalse("Unexpected matches!", matchIt.hasNext());
 
   }
 
@@ -90,41 +86,33 @@ public abstract class IntervalTestBase extends LuceneTestCase {
    * the expected results.
    * @param q the query
    * @param searcher the searcher
-   * @param expectedResults and int[][] detailing the expected results, in the format
+   * @param expectedResults an int[][] detailing the expected results, in the format
    *                        { { docid1, startpos1, endpos1, startpos2, endpos2, ... },
    *                          { docid2, startpos1, endpos1, startpos2, endpos2, ...}, ... }
    * @throws IOException
    */
   public static void checkIntervals(Query q, IndexSearcher searcher, int[][] expectedResults) throws IOException {
 
-    MatchCollector m = new MatchCollector();
-    searcher.search(q, m);
-    Assert.assertEquals("Incorrect number of hits in collecting query", expectedResults.length, m.getHitCount());
+    PositionsCollector c = new PositionsCollector(expectedResults.length + 1);
+    searcher.search(q, c);
 
-    TopDocs td = searcher.search(q, expectedResults.length + 1); // + 1 because you can't pass 0 to search(q, n)
-    Assert.assertEquals("Incorrect number of hits in non-collecting query", expectedResults.length, td.totalHits);
-    int[] topdocsids = new int[td.scoreDocs.length];
-    for (int i = 0; i < topdocsids.length; i++) {
-      topdocsids[i] = td.scoreDocs[i].doc;
-    }
-    Arrays.sort(topdocsids);
-
-    Iterator<Match> matchIt = m.getMatches().iterator();
+    PositionsCollector.DocPositions[] matches = c.getPositions();
+    Assert.assertEquals("Incorrect number of hits", expectedResults.length, c.getNumDocs());
     for (int i = 0; i < expectedResults.length; i++) {
-      int docMatches[] = expectedResults[i];
-      int docid = docMatches[0];
-      Assert.assertEquals("Didn't get a match in document " + docid, docid, topdocsids[i]);
-      for (int j = 1; j < docMatches.length; j += 2) {
-        String expectation = "Expected match at docid " + docid + ", position " + docMatches[j];
+      int expectedDocMatches[] = expectedResults[i];
+      int docid = expectedDocMatches[0];
+      Iterator<Interval> matchIt = matches[i].positions.iterator();
+      for (int j = 1; j < expectedDocMatches.length; j += 2) {
+        String expectation = "Expected match at docid " + docid + ", position " + expectedDocMatches[j];
         Assert.assertTrue(expectation, matchIt.hasNext());
-        Match match = matchIt.next();
-        System.out.println(match);
-        Assert.assertEquals("Incorrect docid", docid, match.docid);
-        Assert.assertEquals("Incorrect match start position", docMatches[j], match.start);
-        Assert.assertEquals("Incorrect match end position", docMatches[j + 1], match.end);
+        Interval match = matchIt.next();
+        System.err.println(match);
+        Assert.assertEquals("Incorrect docid", matches[i].doc, docid);
+        Assert.assertEquals("Incorrect match start position", expectedDocMatches[j], match.begin);
+        Assert.assertEquals("Incorrect match end position", expectedDocMatches[j + 1], match.end);
       }
+      Assert.assertFalse("Unexpected matches!", matchIt.hasNext());
     }
-    Assert.assertFalse("Unexpected matches!", matchIt.hasNext());
 
   }
 
@@ -206,58 +194,5 @@ public abstract class IntervalTestBase extends LuceneTestCase {
     }
   }
 
-  public static class MatchCollector extends Collector implements IntervalCollector {
 
-    private IntervalIterator intervals;
-    private Interval current;
-    private Set<Match> matches = new TreeSet<Match>();
-    private int hitCount;
-
-    @Override
-    public void setScorer(Scorer scorer) throws IOException {
-      this.intervals = scorer.intervals(true);
-    }
-
-    @Override
-    public void collect(int doc) throws IOException {
-      hitCount++;
-      intervals.scorerAdvanced(doc);
-      while ((current = intervals.next()) != null) {
-        //System.out.println(doc + ":" + current);
-        intervals.collect(this);
-      }
-    }
-
-    @Override
-    public void setNextReader(AtomicReaderContext context) throws IOException {
-    }
-
-    @Override
-    public boolean acceptsDocsOutOfOrder() {
-      return false;
-    }
-
-    @Override
-    public void collectLeafPosition(Scorer scorer, Interval interval, int docID) {
-      matches.add(new Match(docID, interval, false));
-    }
-
-    @Override
-    public void collectComposite(Scorer scorer, Interval interval, int docID) {
-      matches.add(new Match(docID, interval, true));
-    }
-
-    @Override
-    public Weight.PostingFeatures postingFeatures() {
-      return Weight.PostingFeatures.OFFSETS;
-    }
-
-    public Set<Match> getMatches() {
-      return matches;
-    }
-
-    public int getHitCount() {
-      return hitCount;
-    }
-  }
 }

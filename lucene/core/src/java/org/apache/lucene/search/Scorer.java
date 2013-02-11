@@ -17,13 +17,12 @@ package org.apache.lucene.search;
  * limitations under the License.
  */
 
+import org.apache.lucene.index.DocsEnum;
 import org.apache.lucene.search.intervals.IntervalIterator;
 
 import java.io.IOException;
 import java.util.Collection;
 import java.util.Collections;
-
-import org.apache.lucene.index.DocsEnum;
 
 /**
  * Expert: Common scoring functionality for different types of queries.
@@ -147,6 +146,11 @@ public abstract class Scorer extends DocsEnum {
    */
   public Weight getWeight() {
     return weight;
+  }
+
+  @Override
+  public int nextPosition() throws IOException {
+    throw new UnsupportedOperationException("nextPosition() is not implemented on " + this.getClass());
   }
   
   /** Returns child sub-scorers

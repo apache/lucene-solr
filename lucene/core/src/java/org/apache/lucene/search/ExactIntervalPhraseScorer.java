@@ -23,12 +23,14 @@ import java.io.IOException;
  * limitations under the License.
  */
 
-public class ExactIntervalPhraseScorer extends Scorer {
+public class ExactIntervalPhraseScorer extends ConjunctionTermScorer {
 
-  private final Similarity.ExactSimScorer docScorer;
-  private final ChildScorer[] children;
+  private final TermScorer[] children;
   private final Interval[] intervals;
+  private final Similarity.ExactSimScorer docScorer;
   private final boolean matchOnly;
+
+  private boolean cached;
 
   /**
    * Constructs a Scorer
@@ -36,16 +38,23 @@ public class ExactIntervalPhraseScorer extends Scorer {
    * @param weight The scorers <code>Weight</code>.
    */
   protected ExactIntervalPhraseScorer(Weight weight, Similarity.ExactSimScorer docScorer,
-                                      boolean matchOnly, Scorer... children) {
-    super(weight);
-    this.docScorer = docScorer;
-    this.children = new ChildScorer[children.length];
+                                      boolean matchOnly, TermScorer... children) {
+    super(weight, 1, wrapChildScorers(children));
+    this.children = children;
     this.intervals = new Interval[children.length];
     for (int i = 0; i < children.length; i++) {
-      this.children[i] = new ChildScorer(children[i], "subphrase");
       this.intervals[i] = new Interval();
     }
     this.matchOnly = matchOnly;
+    this.docScorer = docScorer;
+  }
+
+  private static DocsAndFreqs[] wrapChildScorers(TermScorer... children) {
+    DocsAndFreqs[] docsAndFreqs = new DocsAndFreqs[children.length];
+    for (int i = 0; i < children.length; i++) {
+      docsAndFreqs[i] = new DocsAndFreqs(children[i]);
+    }
+    return docsAndFreqs;
   }
 
   @Override
@@ -55,51 +64,74 @@ public class ExactIntervalPhraseScorer extends Scorer {
 
   @Override
   public float score() throws IOException {
-    return 0;  //To change body of implemented methods use File | Settings | File Templates.
+    return docScorer.score(docID(), freq());
   }
 
   @Override
   public int freq() throws IOException {
-    return 0;  //To change body of implemented methods use File | Settings | File Templates.
+    if (matchOnly)
+      return 1;
+    int freq = 0;
+    while (nextPosition() != NO_MORE_POSITIONS) //nocommit, should we try cacheing here?
+      freq++;
+    return freq;
   }
 
   @Override
   public int docID() {
-    return 0;  //To change body of implemented methods use File | Settings | File Templates.
+    return children[0].docID();
   }
 
   @Override
   public int nextDoc() throws IOException {
-    return 0;  //To change body of implemented methods use File | Settings | File Templates.
+    int doc;
+    resetIntervals();
+    while ((doc = super.nextDoc()) != NO_MORE_DOCS
+        && nextPosition() == NO_MORE_POSITIONS) {
+      resetIntervals();
+    }
+    cached = true;
+    return doc;
   }
 
   @Override
   public int advance(int target) throws IOException {
-    return 0;  //To change body of implemented methods use File | Settings | File Templates.
+    int doc = super.advance(target);
+    resetIntervals();
+    while (doc != NO_MORE_DOCS && nextPosition() == NO_MORE_POSITIONS) {
+      doc = super.nextDoc();
+      resetIntervals();
+    }
+    cached = true;
+    return doc;
   }
 
   public int nextPosition() throws IOException {
-    if (children[0].child.nextPosition() == NO_MORE_POSITIONS)
+    if (cached == true) {
+      cached = false;
+      return children[0].startPosition();
+    }
+    if (children[0].nextPosition() == NO_MORE_POSITIONS)
       return NO_MORE_POSITIONS;
-    intervals[0].update(children[0].child);
+    intervals[0].update(children[0]);
     int i = 1;
     while (i < children.length) {
       while (intervals[i].begin <= intervals[i - 1].end) {
-        if (children[i].child.nextPosition() == NO_MORE_POSITIONS)
+        if (children[i].nextPosition() == NO_MORE_POSITIONS)
           return NO_MORE_POSITIONS;
-        intervals[i].update(children[i].child);
+        intervals[i].update(children[i]);
       }
       if (intervals[i].begin == intervals[i - 1].end) {
         i++;
       }
       else {
-        if (children[0].child.nextPosition() == NO_MORE_POSITIONS)
+        if (children[0].nextPosition() == NO_MORE_POSITIONS)
           return NO_MORE_POSITIONS;
-        intervals[0].update(children[0].child);
+        intervals[0].update(children[0]);
         i = 1;
       }
     }
-    return children[0].child.startPosition();
+    return children[0].startPosition();
   }
 
   private void resetIntervals() {

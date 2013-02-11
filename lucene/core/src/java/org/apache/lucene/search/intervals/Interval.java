@@ -16,6 +16,7 @@ package org.apache.lucene.search.intervals;
  * limitations under the License.
  */
 
+import org.apache.lucene.index.DocsEnum;
 import org.apache.lucene.search.Scorer;
 
 import java.io.IOException;
@@ -60,6 +61,13 @@ public class Interval implements Cloneable {
    */
   public Interval() {
     this(Integer.MIN_VALUE, Integer.MIN_VALUE, -1, -1);
+  }
+
+  public Interval(DocsEnum docsEnum) throws IOException {
+    this.begin = docsEnum.startPosition();
+    this.end = docsEnum.endPosition();
+    this.offsetBegin = docsEnum.startOffset();
+    this.offsetEnd = docsEnum.endOffset();
   }
 
   /**

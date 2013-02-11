@@ -108,7 +108,7 @@ class ConjunctionTermScorer extends Scorer {
   }
   
   @Override
-  public int freq() {
+  public int freq() throws IOException {
     return docsAndFreqs.length;
   }
 

@@ -20,8 +20,6 @@ package org.apache.lucene.search.intervals;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.TextField;
 import org.apache.lucene.index.RandomIndexWriter;
-import org.apache.lucene.search.BooleanClause.Occur;
-import org.apache.lucene.search.BooleanQuery;
 import org.apache.lucene.search.Query;
 
 import java.io.IOException;
@@ -52,6 +50,8 @@ public class TestBasicIntervals extends IntervalTestBase {
       "u1 u2 xx u2",//9
       "u2 u1 xx u2",//10
       "t1 t2 t1 t3 t2 t3"};//11
+
+  /*
 
   public void testNearOrdered01() throws Exception {
     Query q = new OrderedNearQuery(0, false, makeTermQuery("w1"), makeTermQuery("w2"), makeTermQuery("w3"));
@@ -192,6 +192,8 @@ public class TestBasicIntervals extends IntervalTestBase {
       "t1 t2 t1 t3 t2 t3"};//11
    */
 
+  /*
+
   // ((u1 near u2) near xx)
   public void testNestedNear() throws Exception {
 
@@ -207,7 +209,7 @@ public class TestBasicIntervals extends IntervalTestBase {
         { 10, 0, 2, 0, 1, 2, 2 }
     });
 
-  }
+  } */
   
   public void testOrSingle() throws Exception {
     Query q = makeOrQuery(makeTermQuery("w5"));
