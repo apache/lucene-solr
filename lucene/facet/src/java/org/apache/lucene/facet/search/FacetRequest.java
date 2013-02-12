@@ -36,7 +36,7 @@ import org.apache.lucene.facet.taxonomy.TaxonomyReader;
  * @lucene.experimental
  */
 public abstract class FacetRequest {
-
+  
   /**
    * Result structure manner of applying request's limits such as
    * {@link FacetRequest#getNumLabel()} and {@link FacetRequest#numResults}.
@@ -45,7 +45,7 @@ public abstract class FacetRequest {
   public enum ResultMode { 
     /** Limits are applied per node, and the result has a full tree structure. */
     PER_NODE_IN_TREE, 
-
+    
     /** Limits are applied globally, on total number of results, and the result has a flat structure. */
     GLOBAL_FLAT
   }
@@ -62,10 +62,10 @@ public abstract class FacetRequest {
    * {@link FacetResultsHandler}.
    */
   public enum FacetArraysSource { INT, FLOAT, BOTH }
-
+  
   /** Requested sort order for the results. */
   public enum SortOrder { ASCENDING, DESCENDING }
-
+  
   /**
    * Default depth for facets accumulation.
    * @see #getDepth()
@@ -84,15 +84,15 @@ public abstract class FacetRequest {
   private int numLabel;
   private int depth;
   private SortOrder sortOrder;
-
+  
   /**
    * Computed at construction, this hashCode is based on two final members
    * {@link CategoryPath} and <code>numResults</code>
    */
   private final int hashCode;
-
+  
   private ResultMode resultMode = DEFAULT_RESULT_MODE;
-
+  
   /**
    * Initialize the request with a given path, and a requested number of facets
    * results. By default, all returned results would be labeled - to alter this
@@ -123,7 +123,7 @@ public abstract class FacetRequest {
     
     hashCode = categoryPath.hashCode() ^ this.numResults;
   }
-
+  
   /**
    * Create an aggregator for this facet request. Aggregator action depends on
    * request definition. For a count request, it will usually increment the
@@ -138,9 +138,12 @@ public abstract class FacetRequest {
    *          reader of taxonomy in effect.
    * @throws IOException If there is a low-level I/O error.
    */
-  public abstract Aggregator createAggregator(boolean useComplements, FacetArrays arrays, TaxonomyReader taxonomy) 
-      throws IOException;
-
+  public Aggregator createAggregator(boolean useComplements, FacetArrays arrays, TaxonomyReader taxonomy) 
+      throws IOException {
+    throw new UnsupportedOperationException("this FacetRequest does not support this type of Aggregator anymore; " +
+        "you should override FacetsAccumulator to return the proper FacetsAggregator");
+  }
+  
   @Override
   public boolean equals(Object o) {
     if (o instanceof FacetRequest) {
@@ -154,7 +157,7 @@ public abstract class FacetRequest {
     }
     return false;
   }
-
+  
   /**
    * How deeply to look under the given category. If the depth is 0,
    * only the category itself is counted. If the depth is 1, its immediate
@@ -198,17 +201,17 @@ public abstract class FacetRequest {
   public final int getNumLabel() {
     return numLabel;
   }
-
+  
   /** Return the requested result mode. */
   public final ResultMode getResultMode() {
     return resultMode;
   }
-
+  
   /** Return the requested order of results. */
   public final SortOrder getSortOrder() {
     return sortOrder;
   }
-
+  
   /**
    * Return the value of a category used for facets computations for this
    * request. For a count request this would be the count for that facet, i.e.
@@ -232,16 +235,16 @@ public abstract class FacetRequest {
   // That, together with getFacetArraysSource should allow ResultHandlers to
   // efficiently obtain the values from the arrays directly
   public abstract double getValueOf(FacetArrays arrays, int idx);
-
+  
   @Override
   public int hashCode() {
     return hashCode; 
   }
-
+  
   public void setDepth(int depth) {
     this.depth = depth;
   }
-
+  
   public void setNumLabel(int numLabel) {
     this.numLabel = numLabel;
   }
@@ -253,7 +256,7 @@ public abstract class FacetRequest {
   public void setResultMode(ResultMode resultMode) {
     this.resultMode = resultMode;
   }
-
+  
   public void setSortOrder(SortOrder sortOrder) {
     this.sortOrder = sortOrder;
   }
@@ -262,6 +265,5 @@ public abstract class FacetRequest {
   public String toString() {
     return categoryPath.toString()+" nRes="+numResults+" nLbl="+numLabel;
   }
-
-}
   
+}

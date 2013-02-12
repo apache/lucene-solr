@@ -1,19 +1,17 @@
 package org.apache.lucene.facet.associations;
 
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 import org.apache.lucene.analysis.MockAnalyzer;
 import org.apache.lucene.analysis.MockTokenizer;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.facet.FacetTestCase;
-import org.apache.lucene.facet.associations.AssociationFloatSumFacetRequest;
-import org.apache.lucene.facet.associations.AssociationIntSumFacetRequest;
-import org.apache.lucene.facet.associations.AssociationsFacetFields;
-import org.apache.lucene.facet.associations.CategoryAssociationsContainer;
-import org.apache.lucene.facet.associations.CategoryFloatAssociation;
-import org.apache.lucene.facet.associations.CategoryIntAssociation;
 import org.apache.lucene.facet.params.FacetSearchParams;
 import org.apache.lucene.facet.search.FacetResult;
+import org.apache.lucene.facet.search.FacetsAccumulator;
+import org.apache.lucene.facet.search.FacetsAggregator;
 import org.apache.lucene.facet.search.FacetsCollector;
 import org.apache.lucene.facet.taxonomy.CategoryPath;
 import org.apache.lucene.facet.taxonomy.TaxonomyWriter;
@@ -48,7 +46,7 @@ import org.junit.Test;
 
 /** Test for associations */
 public class AssociationsFacetRequestTest extends FacetTestCase {
-
+  
   private static Directory dir;
   private static IndexReader reader;
   private static Directory taxoDir;
@@ -102,15 +100,22 @@ public class AssociationsFacetRequestTest extends FacetTestCase {
   @Test
   public void testIntSumAssociation() throws Exception {
     DirectoryTaxonomyReader taxo = new DirectoryTaxonomyReader(taxoDir);
-
+    
     // facet requests for two facets
     FacetSearchParams fsp = new FacetSearchParams(
         new AssociationIntSumFacetRequest(aint, 10),
         new AssociationIntSumFacetRequest(bint, 10));
     
     Query q = new MatchAllDocsQuery();
-
-    FacetsCollector fc = FacetsCollector.create(fsp, reader, taxo);
+    
+    FacetsAccumulator fa = new FacetsAccumulator(fsp, reader, taxo) {
+      @Override
+      public FacetsAggregator getAggregator() {
+        return new SumIntAssociationFacetsAggregator();
+      }
+    };
+    
+    FacetsCollector fc = FacetsCollector.create(fa);
     
     IndexSearcher searcher = newSearcher(reader);
     searcher.search(q, fc);
@@ -127,35 +132,39 @@ public class AssociationsFacetRequestTest extends FacetTestCase {
   @Test
   public void testFloatSumAssociation() throws Exception {
     DirectoryTaxonomyReader taxo = new DirectoryTaxonomyReader(taxoDir);
-
+    
     // facet requests for two facets
     FacetSearchParams fsp = new FacetSearchParams(
         new AssociationFloatSumFacetRequest(afloat, 10),
         new AssociationFloatSumFacetRequest(bfloat, 10));
     
     Query q = new MatchAllDocsQuery();
-
-    FacetsCollector fc = FacetsCollector.create(fsp, reader, taxo);
+    
+    FacetsAccumulator fa = new FacetsAccumulator(fsp, reader, taxo) {
+      @Override
+      public FacetsAggregator getAggregator() {
+        return new SumFloatAssociationFacetsAggregator();
+      }
+    };
+    
+    FacetsCollector fc = FacetsCollector.create(fa);
     
     IndexSearcher searcher = newSearcher(reader);
     searcher.search(q, fc);
     List<FacetResult> res = fc.getFacetResults();
     
     assertNotNull("No results!",res);
-    assertEquals("Wrong number of results!",2, res.size());
+    assertEquals("Wrong number of results!", 2, res.size());
     assertEquals("Wrong count for category 'a'!",50f, (float) res.get(0).getFacetResultNode().value, 0.00001);
     assertEquals("Wrong count for category 'b'!",10f, (float) res.get(1).getFacetResultNode().value, 0.00001);
     
     taxo.close();
   }  
-    
+  
   @Test
   public void testDifferentAggregatorsSameCategoryList() throws Exception {
-    // Same category list cannot be aggregated by two different aggregators. If
-    // you want to do that, you need to separate the categories into two
-    // category list (you'll still have one association list).
     DirectoryTaxonomyReader taxo = new DirectoryTaxonomyReader(taxoDir);
-
+    
     // facet requests for two facets
     FacetSearchParams fsp = new FacetSearchParams(
         new AssociationIntSumFacetRequest(aint, 10),
@@ -164,18 +173,33 @@ public class AssociationsFacetRequestTest extends FacetTestCase {
         new AssociationFloatSumFacetRequest(bfloat, 10));
     
     Query q = new MatchAllDocsQuery();
-
-    FacetsCollector fc = FacetsCollector.create(fsp, reader, taxo);
+    
+    final SumIntAssociationFacetsAggregator sumInt = new SumIntAssociationFacetsAggregator();
+    final SumFloatAssociationFacetsAggregator sumFloat = new SumFloatAssociationFacetsAggregator();
+    final Map<CategoryPath,FacetsAggregator> aggregators = new HashMap<CategoryPath,FacetsAggregator>();
+    aggregators.put(aint, sumInt);
+    aggregators.put(bint, sumInt);
+    aggregators.put(afloat, sumFloat);
+    aggregators.put(bfloat, sumFloat);
+    FacetsAccumulator fa = new FacetsAccumulator(fsp, reader, taxo) {
+      @Override
+      public FacetsAggregator getAggregator() {
+        return new MultiAssociationsFacetsAggregator(aggregators);
+      }
+    };
+    FacetsCollector fc = FacetsCollector.create(fa);
     
     IndexSearcher searcher = newSearcher(reader);
     searcher.search(q, fc);
-    try {
-      fc.getFacetResults();
-      fail("different aggregators for same category list should not be supported");
-    } catch (RuntimeException e) {
-      // ok - expected
-    }
+    List<FacetResult> res = fc.getFacetResults();
+    
+    assertEquals("Wrong number of results!", 4, res.size());
+    assertEquals("Wrong count for category 'a'!", 200, (int) res.get(0).getFacetResultNode().value);
+    assertEquals("Wrong count for category 'b'!", 150, (int) res.get(1).getFacetResultNode().value);
+    assertEquals("Wrong count for category 'a'!",50f, (float) res.get(2).getFacetResultNode().value, 0.00001);
+    assertEquals("Wrong count for category 'b'!",10f, (float) res.get(3).getFacetResultNode().value, 0.00001);
+    
     taxo.close();
   }  
-
+  
 }
