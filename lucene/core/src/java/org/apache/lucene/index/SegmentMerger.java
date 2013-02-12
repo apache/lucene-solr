@@ -161,95 +161,90 @@ final class SegmentMerger {
   }
 
   private void mergeDocValues(SegmentWriteState segmentWriteState) throws IOException {
-
-    if (codec.docValuesFormat() != null) {
-      DocValuesConsumer consumer = codec.docValuesFormat().fieldsConsumer(segmentWriteState);
-      boolean success = false;
-      try {
-        for (FieldInfo field : mergeState.fieldInfos) {
-          DocValuesType type = field.getDocValuesType();
-          if (type != null) {
-            if (type == DocValuesType.NUMERIC) {
-              List<NumericDocValues> toMerge = new ArrayList<NumericDocValues>();
-              for (AtomicReader reader : mergeState.readers) {
-                NumericDocValues values = reader.getNumericDocValues(field.name);
-                if (values == null) {
-                  values = NumericDocValues.EMPTY;
-                }
-                toMerge.add(values);
+    DocValuesConsumer consumer = codec.docValuesFormat().fieldsConsumer(segmentWriteState);
+    boolean success = false;
+    try {
+      for (FieldInfo field : mergeState.fieldInfos) {
+        DocValuesType type = field.getDocValuesType();
+        if (type != null) {
+          if (type == DocValuesType.NUMERIC) {
+            List<NumericDocValues> toMerge = new ArrayList<NumericDocValues>();
+            for (AtomicReader reader : mergeState.readers) {
+              NumericDocValues values = reader.getNumericDocValues(field.name);
+              if (values == null) {
+                values = NumericDocValues.EMPTY;
               }
-              consumer.mergeNumericField(field, mergeState, toMerge);
-            } else if (type == DocValuesType.BINARY) {
-              List<BinaryDocValues> toMerge = new ArrayList<BinaryDocValues>();
-              for (AtomicReader reader : mergeState.readers) {
-                BinaryDocValues values = reader.getBinaryDocValues(field.name);
-                if (values == null) {
-                  values = BinaryDocValues.EMPTY;
-                }
-                toMerge.add(values);
-              }
-              consumer.mergeBinaryField(field, mergeState, toMerge);
-            } else if (type == DocValuesType.SORTED) {
-              List<SortedDocValues> toMerge = new ArrayList<SortedDocValues>();
-              for (AtomicReader reader : mergeState.readers) {
-                SortedDocValues values = reader.getSortedDocValues(field.name);
-                if (values == null) {
-                  values = SortedDocValues.EMPTY;
-                }
-                toMerge.add(values);
-              }
-              consumer.mergeSortedField(field, mergeState, toMerge);
-            } else if (type == DocValuesType.SORTED_SET) {
-              List<SortedSetDocValues> toMerge = new ArrayList<SortedSetDocValues>();
-              for (AtomicReader reader : mergeState.readers) {
-                SortedSetDocValues values = reader.getSortedSetDocValues(field.name);
-                if (values == null) {
-                  values = SortedSetDocValues.EMPTY;
-                }
-                toMerge.add(values);
-              }
-              consumer.mergeSortedSetField(field, mergeState, toMerge);
-            } else {
-              throw new AssertionError("type=" + type);
+              toMerge.add(values);
             }
+            consumer.mergeNumericField(field, mergeState, toMerge);
+          } else if (type == DocValuesType.BINARY) {
+            List<BinaryDocValues> toMerge = new ArrayList<BinaryDocValues>();
+            for (AtomicReader reader : mergeState.readers) {
+              BinaryDocValues values = reader.getBinaryDocValues(field.name);
+              if (values == null) {
+                values = BinaryDocValues.EMPTY;
+              }
+              toMerge.add(values);
+            }
+            consumer.mergeBinaryField(field, mergeState, toMerge);
+          } else if (type == DocValuesType.SORTED) {
+            List<SortedDocValues> toMerge = new ArrayList<SortedDocValues>();
+            for (AtomicReader reader : mergeState.readers) {
+              SortedDocValues values = reader.getSortedDocValues(field.name);
+              if (values == null) {
+                values = SortedDocValues.EMPTY;
+              }
+              toMerge.add(values);
+            }
+            consumer.mergeSortedField(field, mergeState, toMerge);
+          } else if (type == DocValuesType.SORTED_SET) {
+            List<SortedSetDocValues> toMerge = new ArrayList<SortedSetDocValues>();
+            for (AtomicReader reader : mergeState.readers) {
+              SortedSetDocValues values = reader.getSortedSetDocValues(field.name);
+              if (values == null) {
+                values = SortedSetDocValues.EMPTY;
+              }
+              toMerge.add(values);
+            }
+            consumer.mergeSortedSetField(field, mergeState, toMerge);
+          } else {
+            throw new AssertionError("type=" + type);
           }
         }
-        success = true;
-      } finally {
-        if (success) {
-          IOUtils.close(consumer);
-        } else {
-          IOUtils.closeWhileHandlingException(consumer);            
-        }
+      }
+      success = true;
+    } finally {
+      if (success) {
+        IOUtils.close(consumer);
+      } else {
+        IOUtils.closeWhileHandlingException(consumer);            
       }
     }
   }
 
   private void mergeNorms(SegmentWriteState segmentWriteState) throws IOException {
-    if (codec.normsFormat() != null) {
-      DocValuesConsumer consumer = codec.normsFormat().normsConsumer(segmentWriteState);
-      boolean success = false;
-      try {
-        for (FieldInfo field : mergeState.fieldInfos) {
-          if (field.hasNorms()) {
-            List<NumericDocValues> toMerge = new ArrayList<NumericDocValues>();
-            for (AtomicReader reader : mergeState.readers) {
-              NumericDocValues norms = reader.getNormValues(field.name);
-              if (norms == null) {
-                norms = NumericDocValues.EMPTY;
-              }
-              toMerge.add(norms);
+    DocValuesConsumer consumer = codec.normsFormat().normsConsumer(segmentWriteState);
+    boolean success = false;
+    try {
+      for (FieldInfo field : mergeState.fieldInfos) {
+        if (field.hasNorms()) {
+          List<NumericDocValues> toMerge = new ArrayList<NumericDocValues>();
+          for (AtomicReader reader : mergeState.readers) {
+            NumericDocValues norms = reader.getNormValues(field.name);
+            if (norms == null) {
+              norms = NumericDocValues.EMPTY;
             }
-            consumer.mergeNumericField(field, mergeState, toMerge);
+            toMerge.add(norms);
           }
+          consumer.mergeNumericField(field, mergeState, toMerge);
         }
-        success = true;
-      } finally {
-        if (success) {
-          IOUtils.close(consumer);
-        } else {
-          IOUtils.closeWhileHandlingException(consumer);            
-        }
+      }
+      success = true;
+    } finally {
+      if (success) {
+        IOUtils.close(consumer);
+      } else {
+        IOUtils.closeWhileHandlingException(consumer);            
       }
     }
   }
