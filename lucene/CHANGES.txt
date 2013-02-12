@@ -159,6 +159,10 @@ New Features
   to Lucene42DocValuesConsumer) if you want to make this tradeoff.
   (Adrien Grand, Robert Muir)
 
+* LUCENE-4764: A new Facet42Codec and Facet42DocValuesFormat provide
+  faster but more RAM-consuming facet performance.  (Shai Erera, Mike
+  McCandless) 
+
 * LUCENE-4769: Added OrdinalsCache and CachedOrdsCountingFacetsAggregator
   which uses the cache to obtain a document's ordinals. This aggregator
   is faster than others, however consumes much more RAM.
