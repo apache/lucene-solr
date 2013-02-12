@@ -36,6 +36,7 @@ class ConjunctionTermScorer extends Scorer {
   protected final DocsAndFreqs[] docsAndFreqs;
   private final DocsAndFreqs lead;
   private DocsAndFreqs[] origDocsAndFreqs;
+  final PositionQueue posQueue;
 
   ConjunctionTermScorer(Weight weight, float coord, DocsAndFreqs[] docsAndFreqs) {
     super(weight);
@@ -51,8 +52,16 @@ class ConjunctionTermScorer extends Scorer {
         return o1.docFreq - o2.docFreq;
       }
     });
-
+    posQueue = new PositionQueue(makeDocsEnumArray(docsAndFreqs));
     lead = docsAndFreqs[0]; // least frequent DocsEnum leads the intersection
+  }
+
+  private DocsEnum[] makeDocsEnumArray(DocsAndFreqs[] docsAndFreqs) {
+    DocsEnum[] docsEnums = new DocsEnum[docsAndFreqs.length];
+    for (int i = 0; i < docsAndFreqs.length; i++) {
+      docsEnums[i] = docsAndFreqs[i].docs;
+    }
+    return docsEnums;
   }
 
   private int doNext(int doc) throws IOException {
@@ -71,6 +80,7 @@ class ConjunctionTermScorer extends Scorer {
           }
         }
         // success - all DocsEnums are on the same doc
+        posQueue.advanceTo(doc);
         return doc;
       } while (true);
       // advance head for next iteration
@@ -110,6 +120,31 @@ class ConjunctionTermScorer extends Scorer {
   @Override
   public int freq() throws IOException {
     return docsAndFreqs.length;
+  }
+
+  @Override
+  public int nextPosition() throws IOException {
+    return posQueue.nextPosition();
+  }
+
+  @Override
+  public int startPosition() throws IOException {
+    return posQueue.startPosition();
+  }
+
+  @Override
+  public int endPosition() throws IOException {
+    return posQueue.endPosition();
+  }
+
+  @Override
+  public int startOffset() throws IOException {
+    return posQueue.startOffset();
+  }
+
+  @Override
+  public int endOffset() throws IOException {
+    return posQueue.endOffset();
   }
 
   @Override

@@ -17,7 +17,6 @@ package org.apache.lucene.search.intervals;
  */
 
 import org.apache.lucene.index.DocsEnum;
-import org.apache.lucene.search.Scorer;
 
 import java.io.IOException;
 
@@ -187,11 +186,11 @@ public class Interval implements Cloneable {
         + end + "(" + offsetEnd + ")]";
   }
 
-  public void update(Scorer scorer) throws IOException {
-    offsetBegin = scorer.startOffset();
-    offsetEnd = scorer.endOffset();
-    begin = scorer.startPosition();
-    end = scorer.endPosition();
+  public void update(DocsEnum docsEnum) throws IOException {
+    offsetBegin = docsEnum.startOffset();
+    offsetEnd = docsEnum.endOffset();
+    begin = docsEnum.startPosition();
+    end = docsEnum.endPosition();
   }
 
   public void update(Interval interval) {

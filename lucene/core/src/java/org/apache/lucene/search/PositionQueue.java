@@ -21,23 +21,23 @@ import java.io.IOException;
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-public class PositionQueue extends PriorityQueue<PositionQueue.ScorerRef> {
+public class PositionQueue extends PriorityQueue<PositionQueue.DocsEnumRef> {
 
-  class ScorerRef {
+  class DocsEnumRef {
 
-    public final Scorer scorer;
+    public final DocsEnum docsEnum;
     public Interval interval = new Interval();
 
-    public ScorerRef(Scorer scorer) {
-      this.scorer = scorer;
+    public DocsEnumRef(DocsEnum docsEnum) {
+      this.docsEnum = docsEnum;
     }
 
     public int nextPosition() throws IOException {
-      if (scorer.docID() == DocsEnum.NO_MORE_DOCS || scorer.docID() != docId
-            || scorer.nextPosition() == DocsEnum.NO_MORE_POSITIONS)
+      if (docsEnum.docID() == DocsEnum.NO_MORE_DOCS || docsEnum.docID() != docId
+            || docsEnum.nextPosition() == DocsEnum.NO_MORE_POSITIONS)
         interval.update(Interval.EXHAUSTED_INTERVAL);
       else
-        interval.update(this.scorer);
+        interval.update(this.docsEnum);
       return interval.begin;
     }
 
@@ -47,10 +47,10 @@ public class PositionQueue extends PriorityQueue<PositionQueue.ScorerRef> {
   Interval current = new Interval();
   int docId = -1;
 
-  public PositionQueue(Scorer[] subScorers) {
-    super(subScorers.length);
-    for (int i = 0; i < subScorers.length; i++) {
-      add(new ScorerRef(subScorers[i]));
+  public PositionQueue(DocsEnum[] subDocsEnums) {
+    super(subDocsEnums.length);
+    for (int i = 0; i < subDocsEnums.length; i++) {
+      add(new DocsEnumRef(subDocsEnums[i]));
     }
   }
 
@@ -58,7 +58,7 @@ public class PositionQueue extends PriorityQueue<PositionQueue.ScorerRef> {
     if (!positioned) {
       for (Object scorerRef : getHeapArray()) {
         if (scorerRef != null)
-          ((ScorerRef) scorerRef).nextPosition();
+          ((DocsEnumRef) scorerRef).nextPosition();
       }
       positioned = true;
       updateTop();
@@ -74,10 +74,10 @@ public class PositionQueue extends PriorityQueue<PositionQueue.ScorerRef> {
   }
 
   @Override
-  protected boolean lessThan(ScorerRef a, ScorerRef b) {
-    if (a.scorer.docID() < b.scorer.docID())
+  protected boolean lessThan(DocsEnumRef a, DocsEnumRef b) {
+    if (a.docsEnum.docID() < b.docsEnum.docID())
       return true;
-    if (a.scorer.docID() > b.scorer.docID())
+    if (a.docsEnum.docID() > b.docsEnum.docID())
       return false;
     return a.interval.begin < b.interval.begin;
   }

@@ -55,6 +55,25 @@ public class TestBasicIntervals extends IntervalTestBase {
       "v4 v2 v2 v4",//14
       "v3 v4 v3"};//15
 
+  public void testSimpleConjunction() throws IOException {
+    Query q = makeAndQuery(makeTermQuery("v2"), makeTermQuery("v4"));
+    checkIntervals(q, searcher, new int[][]{
+        { 13, 2, 2, 4, 4 },
+        { 14, 0, 0, 1, 1, 2, 2, 3, 3 }
+    });
+  }
+
+  /*
+  public void testNestedConjunctions() throws IOException {
+    Query q = makeAndQuery(makeTermQuery("v2"), makeOrQuery(makeTermQuery("v3"), makeTermQuery("v4")));
+    checkIntervals(q, searcher, new int[][]{
+        { 12, 1, 1, 2, 2 },
+        { 13, 1, 1, 2, 2, 3, 3, 4, 4 },
+        { 14, 0, 0, 1, 1, 2, 2, 3, 3 }
+    });
+  }
+  */
+
   public void testSimpleTerm() throws IOException {
     Query q = makeTermQuery("u2");
     checkIntervals(q, searcher, new int[][]{

@@ -160,6 +160,14 @@ public abstract class IntervalTestBase extends LuceneTestCase {
     return q;
   }
 
+  protected Query makeAndQuery(Query... queries) {
+    BooleanQuery q = new BooleanQuery();
+    for (Query subquery : queries) {
+      q.add(subquery, BooleanClause.Occur.MUST);
+    }
+    return q;
+  }
+
   public static class Match implements Comparable<TestDisjunctionIntervalIterator.Match> {
 
     public final int docid;
