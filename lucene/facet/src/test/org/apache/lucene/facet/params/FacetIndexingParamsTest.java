@@ -30,7 +30,7 @@ public class FacetIndexingParamsTest extends FacetTestCase {
 
   @Test
   public void testDefaultSettings() {
-    FacetIndexingParams dfip = FacetIndexingParams.ALL_PARENTS;
+    FacetIndexingParams dfip = FacetIndexingParams.DEFAULT;
     assertNotNull("Missing default category list", dfip.getAllCategoryListParams());
     assertEquals("all categories have the same CategoryListParams by default",
         dfip.getCategoryListParams(null), dfip.getCategoryListParams(new CategoryPath("a")));

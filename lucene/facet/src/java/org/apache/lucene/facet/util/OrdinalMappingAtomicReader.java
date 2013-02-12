@@ -74,7 +74,7 @@ public class OrdinalMappingAtomicReader extends FilterAtomicReader {
    * OrdinalMappingAtomicReader(in, ordinalMap, new DefaultFacetIndexingParams())}
    */
   public OrdinalMappingAtomicReader(AtomicReader in, int[] ordinalMap) {
-    this(in, ordinalMap, FacetIndexingParams.ALL_PARENTS);
+    this(in, ordinalMap, FacetIndexingParams.DEFAULT);
   }
   
   /**
