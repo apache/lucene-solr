@@ -177,6 +177,7 @@ public class TestSort extends LuceneTestCase {
               break;
             default:
               throw new IllegalStateException("unknown type " + stringDVType);
+            }
           }
         } else {
           if (supportsDocValues) {
@@ -189,7 +190,6 @@ public class TestSort extends LuceneTestCase {
                 break;
               default:
                 throw new IllegalStateException("unknown type " + stringDVType);
-              }
             }
           }
         }
@@ -1327,7 +1327,7 @@ public class TestSort extends LuceneTestCase {
     }
     
     // up to this point, all of the searches should have "sane" 
-    // FieldCache behavior, and should have reused hte cache in several cases
+    // FieldCache behavior, and should have reused the cache in several cases
     assertSaneFieldCaches(getTestName() + " various");
     // next we'll check Locale based (String[]) for 'string', so purge first
     FieldCache.DEFAULT.purgeAllCaches();
