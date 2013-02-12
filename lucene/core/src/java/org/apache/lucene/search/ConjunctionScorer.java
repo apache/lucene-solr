@@ -17,14 +17,14 @@ package org.apache.lucene.search;
  * limitations under the License.
  */
 
+import org.apache.lucene.search.intervals.ConjunctionIntervalIterator;
+import org.apache.lucene.search.intervals.IntervalIterator;
+import org.apache.lucene.util.ArrayUtil;
+
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Comparator;
-
-import org.apache.lucene.search.intervals.ConjunctionIntervalIterator;
-import org.apache.lucene.search.intervals.IntervalIterator;
-import org.apache.lucene.util.ArrayUtil;
 
 /** Scorer for conjunctions, sets of queries, all of which are required. */
 class ConjunctionScorer extends Scorer {
@@ -32,6 +32,7 @@ class ConjunctionScorer extends Scorer {
   private final Scorer[] scorersOrdered;
   private final Scorer[] scorers;
   private int lastDoc = -1;
+  final PositionQueue posQueue;
 
   public ConjunctionScorer(Weight weight, Collection<Scorer> scorers) throws IOException {
     this(weight, scorers.toArray(new Scorer[scorers.size()]));
@@ -42,6 +43,7 @@ class ConjunctionScorer extends Scorer {
     scorersOrdered = new Scorer[scorers.length];
     System.arraycopy(scorers, 0, scorersOrdered, 0, scorers.length);
     this.scorers = scorers;
+    posQueue = new PositionQueue(scorers);
     
     for (int i = 0; i < scorers.length; i++) {
       if (scorers[i].nextDoc() == NO_MORE_DOCS) {
@@ -105,6 +107,7 @@ class ConjunctionScorer extends Scorer {
       doc = firstScorer.advance(doc);
       first = first == scorers.length - 1 ? 0 : first + 1;
     }
+    posQueue.advanceTo(doc);
     return doc;
   }
   
@@ -157,6 +160,31 @@ class ConjunctionScorer extends Scorer {
   @Override
   public int freq() throws IOException {
     return scorers.length;
+  }
+
+  @Override
+  public int nextPosition() throws IOException {
+    return posQueue.nextPosition();
+  }
+
+  @Override
+  public int startPosition() throws IOException {
+    return posQueue.startPosition();
+  }
+
+  @Override
+  public int endPosition() throws IOException {
+    return posQueue.endPosition();
+  }
+
+  @Override
+  public int startOffset() throws IOException {
+    return posQueue.startOffset();
+  }
+
+  @Override
+  public int endOffset() throws IOException {
+    return posQueue.endOffset();
   }
 
   @Override

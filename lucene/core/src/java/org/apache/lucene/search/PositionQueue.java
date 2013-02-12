@@ -47,7 +47,7 @@ public class PositionQueue extends PriorityQueue<PositionQueue.DocsEnumRef> {
   Interval current = new Interval();
   int docId = -1;
 
-  public PositionQueue(DocsEnum[] subDocsEnums) {
+  public PositionQueue(DocsEnum... subDocsEnums) {
     super(subDocsEnums.length);
     for (int i = 0; i < subDocsEnums.length; i++) {
       add(new DocsEnumRef(subDocsEnums[i]));

@@ -34,6 +34,7 @@ class ReqOptSumScorer extends Scorer {
    */
   private Scorer reqScorer;
   private Scorer optScorer;
+  private PositionQueue posQueue;
 
   /** Construct a <code>ReqOptScorer</code>.
    * @param reqScorer The required scorer. This must match.
@@ -48,16 +49,21 @@ class ReqOptSumScorer extends Scorer {
     assert optScorer != null;
     this.reqScorer = reqScorer;
     this.optScorer = optScorer;
+    posQueue = new PositionQueue(reqScorer, optScorer);
   }
 
   @Override
   public int nextDoc() throws IOException {
-    return reqScorer.nextDoc();
+    int doc = reqScorer.nextDoc();
+    posQueue.advanceTo(doc);
+    return doc;
   }
   
   @Override
   public int advance(int target) throws IOException {
-    return reqScorer.advance(target);
+    int doc = reqScorer.advance(target);
+    posQueue.advanceTo(doc);
+    return doc;
   }
   
   @Override
@@ -98,6 +104,34 @@ class ReqOptSumScorer extends Scorer {
     // we might have deferred advance()
     score();
     return (optScorer != null && optScorer.docID() == reqScorer.docID()) ? 2 : 1;
+  }
+
+  @Override
+  public int nextPosition() throws IOException {
+    int optDoc = optScorer.docID();
+    if (optDoc < reqScorer.docID())
+      optScorer.advance(reqScorer.docID());
+    return posQueue.nextPosition();
+  }
+
+  @Override
+  public int startPosition() throws IOException {
+    return posQueue.startPosition();
+  }
+
+  @Override
+  public int endPosition() throws IOException {
+    return posQueue.endPosition();
+  }
+
+  @Override
+  public int startOffset() throws IOException {
+    return posQueue.startOffset();
+  }
+
+  @Override
+  public int endOffset() throws IOException {
+    return posQueue.endOffset();
   }
 
   @Override

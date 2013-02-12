@@ -20,6 +20,7 @@ package org.apache.lucene.search.intervals;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.TextField;
 import org.apache.lucene.index.RandomIndexWriter;
+import org.apache.lucene.search.BooleanClause;
 import org.apache.lucene.search.Query;
 
 import java.io.IOException;
@@ -63,7 +64,6 @@ public class TestBasicIntervals extends IntervalTestBase {
     });
   }
 
-  /*
   public void testNestedConjunctions() throws IOException {
     Query q = makeAndQuery(makeTermQuery("v2"), makeOrQuery(makeTermQuery("v3"), makeTermQuery("v4")));
     checkIntervals(q, searcher, new int[][]{
@@ -72,7 +72,17 @@ public class TestBasicIntervals extends IntervalTestBase {
         { 14, 0, 0, 1, 1, 2, 2, 3, 3 }
     });
   }
-  */
+
+  public void testSingleRequiredManyOptional() throws IOException {
+    Query q = makeBooleanQuery(makeBooleanClause("v2", BooleanClause.Occur.MUST),
+                               makeBooleanClause("v3", BooleanClause.Occur.SHOULD),
+                               makeBooleanClause("v4", BooleanClause.Occur.SHOULD));
+    checkIntervals(q, searcher, new int[][]{
+        { 12, 1, 1, 2, 2 },
+        { 13, 1, 1, 2, 2, 3, 3, 4, 4 },
+        { 14, 0, 0, 1, 1, 2, 2, 3, 3 }
+    });
+  }
 
   public void testSimpleTerm() throws IOException {
     Query q = makeTermQuery("u2");

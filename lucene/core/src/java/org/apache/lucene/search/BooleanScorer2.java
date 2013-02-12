@@ -152,6 +152,31 @@ class BooleanScorer2 extends Scorer {
     public IntervalIterator intervals(boolean collectIntervals) throws IOException {
       return scorer.intervals(collectIntervals);
     }
+
+    @Override
+    public int nextPosition() throws IOException {
+      return scorer.nextPosition();
+    }
+
+    @Override
+    public int startPosition() throws IOException {
+      return scorer.startPosition();
+    }
+
+    @Override
+    public int endPosition() throws IOException {
+      return scorer.endPosition();
+    }
+
+    @Override
+    public int startOffset() throws IOException {
+      return scorer.startOffset();
+    }
+
+    @Override
+    public int endOffset() throws IOException {
+      return scorer.endOffset();
+    }
   }
 
   private Scorer countingDisjunctionSumScorer(final List<Scorer> scorers,

@@ -106,7 +106,7 @@ public abstract class IntervalTestBase extends LuceneTestCase {
         String expectation = "Expected match at docid " + docid + ", position " + expectedDocMatches[j];
         Assert.assertTrue(expectation, matchIt.hasNext());
         Interval match = matchIt.next();
-        System.err.println(match);
+        System.err.println(docid + ":" + match);
         Assert.assertEquals("Incorrect docid", matches[i].doc, docid);
         Assert.assertEquals("Incorrect match start position", expectedDocMatches[j], match.begin);
         Assert.assertEquals("Incorrect match end position", expectedDocMatches[j + 1], match.end);
@@ -166,6 +166,18 @@ public abstract class IntervalTestBase extends LuceneTestCase {
       q.add(subquery, BooleanClause.Occur.MUST);
     }
     return q;
+  }
+
+  protected Query makeBooleanQuery(BooleanClause... clauses) {
+    BooleanQuery q = new BooleanQuery();
+    for (BooleanClause clause : clauses) {
+      q.add(clause);
+    }
+    return q;
+  }
+
+  protected BooleanClause makeBooleanClause(String text, BooleanClause.Occur occur) {
+    return new BooleanClause(makeTermQuery(text), occur);
   }
 
   public static class Match implements Comparable<TestDisjunctionIntervalIterator.Match> {
