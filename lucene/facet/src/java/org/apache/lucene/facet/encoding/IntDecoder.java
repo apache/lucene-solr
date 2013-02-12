@@ -29,7 +29,8 @@ public abstract class IntDecoder {
   
   /**
    * Decodes the values from the buffer into the given {@link IntsRef}. Note
-   * that {@code values.offset} and {@code values.length} are set to 0.
+   * that {@code values.offset} is set to 0, and {@code values.length} is
+   * updated to denote the number of decoded values.
    */
   public abstract void decode(BytesRef buf, IntsRef values);
 

@@ -4,7 +4,7 @@ import java.io.IOException;
 
 import org.apache.lucene.facet.params.CategoryListParams;
 import org.apache.lucene.facet.search.FacetsCollector.MatchingDocs;
-import org.apache.lucene.util.IntsRef;
+import org.apache.lucene.facet.search.OrdinalsCache.CachedOrds;
 
 /*
  * Licensed to the Apache Software Foundation (ASF) under one or more
@@ -24,33 +24,28 @@ import org.apache.lucene.util.IntsRef;
  */
 
 /**
- * A {@link FacetsAggregator} which counts the number of times each category
- * appears in the given set of documents. This aggregator uses the
- * {@link CategoryListIterator} to read the encoded categories. If you used the
- * default settings while idnexing, you can use
- * {@link FastCountingFacetsAggregator} for better performance.
+ * A {@link FacetsAggregator} which updates categories values by counting their
+ * occurrences in matching documents. Uses {@link OrdinalsCache} to obtain the
+ * category ordinals of each segment.
  * 
  * @lucene.experimental
  */
-public class CountingFacetsAggregator extends IntRollupFacetsAggregator {
-  
-  private final IntsRef ordinals = new IntsRef(32);
+public class CachedOrdsCountingFacetsAggregator extends IntRollupFacetsAggregator {
   
   @Override
   public void aggregate(MatchingDocs matchingDocs, CategoryListParams clp, FacetArrays facetArrays) throws IOException {
-    final CategoryListIterator cli = clp.createCategoryListIterator(0);
-    if (!cli.setNextReader(matchingDocs.context)) {
-      return;
+    final CachedOrds ords = OrdinalsCache.getCachedOrds(matchingDocs.context, clp);
+    if (ords == null) {
+      return; // this segment has no ordinals for the given category list
     }
-    
-    final int length = matchingDocs.bits.length();
     final int[] counts = facetArrays.getIntArray();
     int doc = 0;
+    int length = matchingDocs.bits.length();
     while (doc < length && (doc = matchingDocs.bits.nextSetBit(doc)) != -1) {
-      cli.getOrdinals(doc, ordinals);
-      final int upto = ordinals.offset + ordinals.length;
-      for (int i = ordinals.offset; i < upto; i++) {
-        ++counts[ordinals.ints[i]];
+      int start = ords.offsets[doc];
+      int end = ords.offsets[doc + 1];
+      for (int i = start; i < end; i++) {
+        ++counts[ords.ordinals[i]];
       }
       ++doc;
     }
