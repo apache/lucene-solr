@@ -54,7 +54,7 @@ public class AssociationsFacetFields extends FacetFields {
   }
   
   /**
-   * Constructs a new instance with the {@link FacetIndexingParams#ALL_PARENTS
+   * Constructs a new instance with the {@link FacetIndexingParams#DEFAULT
    * default} facet indexing params.
    * 
    * @param taxonomyWriter

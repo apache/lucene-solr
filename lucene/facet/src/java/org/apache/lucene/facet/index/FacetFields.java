@@ -74,14 +74,14 @@ public class FacetFields {
   protected final FacetIndexingParams indexingParams;
 
   /**
-   * Constructs a new instance with the {@link FacetIndexingParams#ALL_PARENTS
+   * Constructs a new instance with the {@link FacetIndexingParams#DEFAULT
    * default} facet indexing params.
    * 
    * @param taxonomyWriter
    *          used to resolve given categories to ordinals
    */
   public FacetFields(TaxonomyWriter taxonomyWriter) {
-    this(taxonomyWriter, FacetIndexingParams.ALL_PARENTS);
+    this(taxonomyWriter, FacetIndexingParams.DEFAULT);
   }
 
   /**

@@ -3,7 +3,6 @@ package org.apache.lucene.facet.params;
 import java.util.Collections;
 import java.util.List;
 
-import org.apache.lucene.facet.params.CategoryListParams.OrdinalPolicy;
 import org.apache.lucene.facet.search.FacetArrays;
 import org.apache.lucene.facet.taxonomy.CategoryPath;
 
@@ -47,9 +46,10 @@ public class FacetIndexingParams {
 
   /**
    * A {@link FacetIndexingParams} which fixes a single
-   * {@link CategoryListParams} with {@link OrdinalPolicy#ALL_PARENTS}.
+   * {@link CategoryListParams} with
+   * {@link CategoryListParams#DEFAULT_ORDINAL_POLICY}.
    */
-  public static final FacetIndexingParams ALL_PARENTS = new FacetIndexingParams();
+  public static final FacetIndexingParams DEFAULT = new FacetIndexingParams();
   
   /**
    * The default delimiter with which {@link CategoryPath#components} are
@@ -67,7 +67,7 @@ public class FacetIndexingParams {
   /**
    * Initializes new default params. You should use this constructor only if you
    * intend to override any of the getters, otherwise you can use
-   * {@link #ALL_PARENTS} to save unnecessary object allocations.
+   * {@link #DEFAULT} to save unnecessary object allocations.
    */
   public FacetIndexingParams() {
     this(DEFAULT_CATEGORY_LIST_PARAMS);

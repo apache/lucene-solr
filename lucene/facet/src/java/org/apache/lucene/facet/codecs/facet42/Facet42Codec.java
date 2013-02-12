@@ -49,9 +49,9 @@ public class Facet42Codec extends Lucene42Codec {
   private final DocValuesFormat lucene42DVFormat = DocValuesFormat.forName("Lucene42");
 
   // must have that for SPI purposes
-  /** Default constructor, uses {@link FacetIndexingParams#ALL_PARENTS}. */
+  /** Default constructor, uses {@link FacetIndexingParams#DEFAULT}. */
   public Facet42Codec() {
-    this(FacetIndexingParams.ALL_PARENTS);
+    this(FacetIndexingParams.DEFAULT);
   }
 
   /**
