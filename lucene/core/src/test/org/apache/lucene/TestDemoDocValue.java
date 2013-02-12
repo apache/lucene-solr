@@ -378,6 +378,33 @@ public class TestDemoDocValue extends LuceneTestCase {
     directory.close();
   }
   
+  public void testMergeAwayAllValues() throws IOException {
+    Directory directory = newDirectory();
+    Analyzer analyzer = new MockAnalyzer(random());
+    IndexWriterConfig iwconfig = newIndexWriterConfig(TEST_VERSION_CURRENT, analyzer);
+    iwconfig.setMergePolicy(newLogMergePolicy());
+    RandomIndexWriter iwriter = new RandomIndexWriter(random(), directory, iwconfig);
+    
+    Document doc = new Document();
+    doc.add(new StringField("id", "0", Field.Store.NO));
+    iwriter.addDocument(doc);    
+    doc = new Document();
+    doc.add(new StringField("id", "1", Field.Store.NO));
+    doc.add(new SortedSetDocValuesField("field", new BytesRef("hello")));
+    iwriter.addDocument(doc);
+    iwriter.commit();
+    iwriter.deleteDocuments(new Term("id", "1"));
+    iwriter.forceMerge(1);
+    
+    DirectoryReader ireader = iwriter.getReader();
+    iwriter.close();
+    
+    SortedSetDocValues dv = getOnlySegmentReader(ireader).getSortedSetDocValues("field");
+    assertEquals(0, dv.getValueCount());
+    
+    ireader.close();
+    directory.close();
+  }
   
   private void doTestSortedSetVsStoredFields(int minLength, int maxLength) throws Exception {
     Directory dir = newDirectory();

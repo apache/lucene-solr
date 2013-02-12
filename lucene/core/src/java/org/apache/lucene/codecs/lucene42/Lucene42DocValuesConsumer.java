@@ -213,7 +213,9 @@ class Lucene42DocValuesConsumer extends DocValuesConsumer {
       ord++;
     }
     FST<Long> fst = builder.finish();
-    fst.save(data);
+    if (fst != null) {
+      fst.save(data);
+    }
     meta.writeVLong(ord);
   }
 

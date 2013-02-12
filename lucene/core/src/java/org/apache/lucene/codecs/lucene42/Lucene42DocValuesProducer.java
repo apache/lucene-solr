@@ -291,6 +291,9 @@ class Lucene42DocValuesProducer extends DocValuesProducer {
   @Override
   public SortedSetDocValues getSortedSet(FieldInfo field) throws IOException {
     final FSTEntry entry = fsts.get(field.number);
+    if (entry.numOrds == 0) {
+      return SortedSetDocValues.EMPTY; // empty FST!
+    }
     FST<Long> instance;
     synchronized(this) {
       instance = fstInstances.get(field.number);
