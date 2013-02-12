@@ -72,6 +72,10 @@ Changes in backwards compatibility policy
 * LUCENE-4759: remove FacetRequest.SortBy; result categories are always 
   sorted by value, while ties are broken by category ordinal. (Shai Erera)
 
+* LUCENE-4772: Facet associations moved to new FacetsAggregator API. You
+  should override FacetsAccumualtor and return the relevant aggregator,
+  for aggregating the association values. (Shai Erera)
+  
 Optimizations
 
 * LUCENE-4687: BloomFilterPostingsFormat now lazily initializes delegate

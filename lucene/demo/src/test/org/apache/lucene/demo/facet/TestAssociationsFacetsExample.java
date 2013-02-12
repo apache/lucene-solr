@@ -31,19 +31,24 @@ public class TestAssociationsFacetsExample extends LuceneTestCase {
 
   @Test
   public void testExamples() throws Exception {
-    assertExampleResult(new AssociationsFacetsExample().runSumIntAssociations(), EXPECTED_INT_SUM_RESULTS);
-    assertExampleResult(new AssociationsFacetsExample().runSumFloatAssociations(), EXPECTED_FLOAT_SUM_RESULTS);
-  }
-
-  private void assertExampleResult(List<FacetResult> res, double[] expectedResults) {
-    assertNotNull("Null result!", res);
-    assertEquals("Wrong number of results!", 1, res.size());
-    assertEquals("Wrong number of facets!", 2, res.get(0).getNumValidDescendants());
+    List<FacetResult> res = new AssociationsFacetsExample().runSumAssociations();
+   
+    assertEquals("Wrong number of results", 2, res.size());
+    
+    for (FacetResult fres : res) {
+      assertEquals("Wrong number of facets", 2, fres.getNumValidDescendants());
+    }
     
     Iterable<? extends FacetResultNode> it = res.get(0).getFacetResultNode().subResults;
     int i = 0;
     for (FacetResultNode fResNode : it) {
-      assertEquals("Wrong result for facet "+fResNode.label, expectedResults[i++], fResNode.value, 1E-5);
+      assertEquals("Wrong result for facet " + fResNode.label, EXPECTED_INT_SUM_RESULTS[i++], fResNode.value, 1E-5);
+    }
+    
+    it = res.get(1).getFacetResultNode().subResults;
+    i = 0;
+    for (FacetResultNode fResNode : it) {
+      assertEquals("Wrong result for facet " + fResNode.label, EXPECTED_FLOAT_SUM_RESULTS[i++], fResNode.value, 1E-5);
     }
   }
   
