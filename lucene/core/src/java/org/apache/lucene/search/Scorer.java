@@ -87,7 +87,9 @@ public abstract class Scorer extends DocsEnum {
    *
    * @lucene.experimental
    */
-  public abstract IntervalIterator intervals(boolean collectIntervals) throws IOException;
+  public IntervalIterator intervals(boolean collectIntervals) throws IOException {
+    return null;
+  };
 
   /**
    * Get the IntervalIterators from a list of scorers

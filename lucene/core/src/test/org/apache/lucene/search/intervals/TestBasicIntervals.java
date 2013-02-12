@@ -64,6 +64,24 @@ public class TestBasicIntervals extends IntervalTestBase {
     });
   }
 
+  public void testExclusion() throws IOException {
+    Query q = makeBooleanQuery(makeBooleanClause("v2", BooleanClause.Occur.MUST),
+                               makeBooleanClause("v3", BooleanClause.Occur.MUST_NOT));
+    checkIntervals(q, searcher, new int[][]{
+        { 14, 1, 1, 2, 2 }
+    });
+  }
+
+  public void testOptExclusion() throws IOException {
+    Query q = makeBooleanQuery(makeBooleanClause("w2", BooleanClause.Occur.SHOULD),
+                               makeBooleanClause("w3", BooleanClause.Occur.SHOULD),
+                               makeBooleanClause("xx", BooleanClause.Occur.MUST_NOT));
+    checkIntervals(q, searcher, new int[][]{
+        { 0, 1, 1, 2, 2 },
+        { 1, 1, 1, 2, 2, 3, 3 }
+    });
+  }
+
   public void testNestedConjunctions() throws IOException {
     Query q = makeAndQuery(makeTermQuery("v2"), makeOrQuery(makeTermQuery("v3"), makeTermQuery("v4")));
     checkIntervals(q, searcher, new int[][]{
@@ -107,17 +125,15 @@ public class TestBasicIntervals extends IntervalTestBase {
     });
   }
 
-  /*
-
   public void testNearOrdered01() throws Exception {
-    Query q = new OrderedNearQuery(0, false, makeTermQuery("w1"), makeTermQuery("w2"), makeTermQuery("w3"));
+    Query q = new OrderedNearQuery(0, makeTermQuery("w1"), makeTermQuery("w2"), makeTermQuery("w3"));
     checkIntervals(q, searcher, new int[][]{
         { 0, 0, 2 }
     });
   }
   
   public void testNearOrdered02() throws Exception {
-    Query q = new OrderedNearQuery(1, false, makeTermQuery("w1"), makeTermQuery("w2"), makeTermQuery("w3"));
+    Query q = new OrderedNearQuery(1, makeTermQuery("w1"), makeTermQuery("w2"), makeTermQuery("w3"));
     checkIntervals(q, searcher, new int[][]{
         { 0, 0, 2 },
         { 1, 0, 3 }
@@ -125,7 +141,7 @@ public class TestBasicIntervals extends IntervalTestBase {
   }
   
   public void testNearOrdered03() throws Exception {
-    Query q = new OrderedNearQuery(2, false, makeTermQuery("w1"), makeTermQuery("w2"), makeTermQuery("w3"));
+    Query q = new OrderedNearQuery(2, makeTermQuery("w1"), makeTermQuery("w2"), makeTermQuery("w3"));
     checkIntervals(q, searcher, new int[][]{
         { 0, 0, 2 },
         { 1, 0, 3 },
@@ -134,7 +150,7 @@ public class TestBasicIntervals extends IntervalTestBase {
   }
   
   public void testNearOrdered04() throws Exception {
-    Query q = new OrderedNearQuery(3, false, makeTermQuery("w1"), makeTermQuery("w2"), makeTermQuery("w3"));
+    Query q = new OrderedNearQuery(3, makeTermQuery("w1"), makeTermQuery("w2"), makeTermQuery("w3"));
     checkIntervals(q, searcher, new int[][]{
         { 0, 0, 2 },
         { 1, 0, 3 },
@@ -144,7 +160,7 @@ public class TestBasicIntervals extends IntervalTestBase {
   }
   
   public void testNearOrdered05() throws Exception {
-    Query q = new OrderedNearQuery(4, false, makeTermQuery("w1"), makeTermQuery("w2"), makeTermQuery("w3"));
+    Query q = new OrderedNearQuery(4, makeTermQuery("w1"), makeTermQuery("w2"), makeTermQuery("w3"));
     checkIntervals(q, searcher, new int[][]{
         { 0, 0, 2 },
         { 1, 0, 3 },
@@ -154,26 +170,26 @@ public class TestBasicIntervals extends IntervalTestBase {
   }
   
   public void testNearOrderedEqual01() throws Exception {
-    Query q = new OrderedNearQuery(0, false, makeTermQuery("w1"), makeTermQuery("w3"), makeTermQuery("w3"));
+    Query q = new OrderedNearQuery(0, makeTermQuery("w1"), makeTermQuery("w3"), makeTermQuery("w3"));
     checkIntervals(q, searcher, new int[][]{});
   }
   
   public void testNearOrderedEqual02() throws Exception {
-    Query q = new OrderedNearQuery(1, false, makeTermQuery("w1"), makeTermQuery("w3"), makeTermQuery("w3"));
+    Query q = new OrderedNearQuery(1, makeTermQuery("w1"), makeTermQuery("w3"), makeTermQuery("w3"));
     checkIntervals(q, searcher, new int[][]{
         { 1, 0, 3 }
     });
   }
   
   public void testNearOrderedEqual03() throws Exception {
-    Query q = new OrderedNearQuery(2, false, makeTermQuery("w1"), makeTermQuery("w3"), makeTermQuery("w3"));
+    Query q = new OrderedNearQuery(2, makeTermQuery("w1"), makeTermQuery("w3"), makeTermQuery("w3"));
     checkIntervals(q, searcher, new int[][]{
         { 1, 0, 3 }
     });
   }
   
   public void testNearOrderedEqual04() throws Exception {
-    Query q = new OrderedNearQuery(3, false, makeTermQuery("w1"), makeTermQuery("w3"), makeTermQuery("w3"));
+    Query q = new OrderedNearQuery(3, makeTermQuery("w1"), makeTermQuery("w3"), makeTermQuery("w3"));
     checkIntervals(q, searcher, new int[][]{
         { 1, 0, 3 },
         { 3, 0, 5 }
@@ -181,14 +197,14 @@ public class TestBasicIntervals extends IntervalTestBase {
   }
   
   public void testNearOrderedEqual11() throws Exception {
-    Query q = new OrderedNearQuery(0, false, makeTermQuery("u2"), makeTermQuery("u2"), makeTermQuery("u1"));
+    Query q = new OrderedNearQuery(0, makeTermQuery("u2"), makeTermQuery("u2"), makeTermQuery("u1"));
     checkIntervals(q, searcher, new int[][]{
         { 4, 0, 2 }
     });
   }
   
   public void testNearOrderedEqual13() throws Exception {
-    Query q = new OrderedNearQuery(1, false, makeTermQuery("u2"), makeTermQuery("u2"), makeTermQuery("u1"));
+    Query q = new OrderedNearQuery(1, makeTermQuery("u2"), makeTermQuery("u2"), makeTermQuery("u1"));
     checkIntervals(q, searcher, new int[][]{
         { 4, 0, 2 },
         { 5, 0, 3 },
@@ -197,7 +213,7 @@ public class TestBasicIntervals extends IntervalTestBase {
   }
   
   public void testNearOrderedEqual14() throws Exception {
-    Query q = new OrderedNearQuery(2, false, makeTermQuery("u2"), makeTermQuery("u2"), makeTermQuery("u1"));
+    Query q = new OrderedNearQuery(2, makeTermQuery("u2"), makeTermQuery("u2"), makeTermQuery("u1"));
     checkIntervals(q, searcher, new int[][]{
         { 4, 0, 2 },
         { 5, 0, 3 },
@@ -207,7 +223,7 @@ public class TestBasicIntervals extends IntervalTestBase {
   }
   
   public void testNearOrderedEqual15() throws Exception {
-    Query q = new OrderedNearQuery(3, false, makeTermQuery("u2"), makeTermQuery("u2"), makeTermQuery("u1"));
+    Query q = new OrderedNearQuery(3, makeTermQuery("u2"), makeTermQuery("u2"), makeTermQuery("u1"));
     checkIntervals(q, searcher, new int[][]{
         { 4, 0, 2 },
         { 5, 0, 3 },
@@ -217,11 +233,13 @@ public class TestBasicIntervals extends IntervalTestBase {
   }
 
   public void testNearOrderedOverlap() throws Exception {
-    Query q = new OrderedNearQuery(3, false, makeTermQuery("t1"), makeTermQuery("t2"), makeTermQuery("t3"));
+    Query q = new OrderedNearQuery(3, makeTermQuery("t1"), makeTermQuery("t2"), makeTermQuery("t3"));
     checkIntervals(q, searcher, new int[][]{
         { 11, 0, 3, 2, 5 }
     });
   }
+
+  /*
   
   public void testNearUnordered() throws Exception {
     Query q = new UnorderedNearQuery(0, false, makeTermQuery("u1"), makeTermQuery("u2"));

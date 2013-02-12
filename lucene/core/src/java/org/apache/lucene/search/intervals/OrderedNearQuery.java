@@ -17,9 +17,12 @@ package org.apache.lucene.search.intervals;
  * limitations under the License.
  */
 
-import org.apache.lucene.search.BooleanClause;
-import org.apache.lucene.search.BooleanQuery;
+import org.apache.lucene.search.PositionFilteredScorer;
 import org.apache.lucene.search.Query;
+import org.apache.lucene.search.Scorer;
+import org.apache.lucene.search.ScorerFilterQuery;
+
+import java.io.IOException;
 
 /**
  * A query that matches if a set of subqueries also match, and are within
@@ -35,17 +38,7 @@ import org.apache.lucene.search.Query;
  * @lucene.experimental
  */
 
-public class OrderedNearQuery extends IntervalFilterQuery {
-
-  /**
-   * Constructs an OrderedNearQuery
-   * @param slop the maximum distance between the subquery matches
-   * @param collectLeaves false if only the master interval should be collected
-   * @param subqueries the subqueries to match.
-   */
-  public OrderedNearQuery(int slop, boolean collectLeaves, Query... subqueries) {
-    super(buildBooleanQuery(subqueries), new WithinOrderedFilter(slop, collectLeaves));
-  }
+public class OrderedNearQuery extends ScorerFilterQuery {
 
   /**
    * Constructs an OrderedNearQuery
@@ -53,15 +46,102 @@ public class OrderedNearQuery extends IntervalFilterQuery {
    * @param subqueries the subqueries to match.
    */
   public OrderedNearQuery(int slop, Query... subqueries) {
-    super(buildBooleanQuery(subqueries), new WithinOrderedFilter(slop, true));
+    super(buildBooleanQuery(subqueries), new OrderedNearScorerFactory(slop));
   }
 
-  private static BooleanQuery buildBooleanQuery(Query... queries) {
-    BooleanQuery bq = new BooleanQuery();
-    for (Query q : queries) {
-      bq.add(q, BooleanClause.Occur.MUST);
+  private static class OrderedNearScorerFactory implements ScorerFilterFactory {
+
+    private final int slop;
+
+    public OrderedNearScorerFactory(int slop) {
+      this.slop = slop;
     }
-    return bq;
+
+    @Override
+    public Scorer scorer(Scorer filteredScorer) {
+      return new OrderedNearScorer(filteredScorer, slop);
+    }
+
+    @Override
+    public String getName() {
+      return "OrderedNear/" + slop;
+    }
   }
 
+  private static class OrderedNearScorer extends PositionFilteredScorer {
+
+    private final int lastiter;
+    private final int slop;
+
+    private int index = 1;
+    private Interval[] intervals;
+
+    public OrderedNearScorer(Scorer filteredScorer, int slop) {
+      super(filteredScorer);
+      intervals = new Interval[subScorers.length];
+      for (int i = 0; i < subScorers.length; i++) {
+        intervals[i] = new Interval();
+      }
+      lastiter = intervals.length - 1;
+      this.slop = slop;
+    }
+
+    @Override
+    protected boolean passesFilter() {
+      return matchDistance <= slop;
+    }
+
+    @Override
+    public int freq() throws IOException {
+      return 1; // nocommit
+    }
+
+    @Override
+    protected void reset(int doc) throws IOException {
+      for (int i = 0; i < subScorers.length; i++) {
+        assert subScorers[i].docID() == doc;
+        intervals[i].update(Interval.INFINITE_INTERVAL);
+      }
+      if (subScorers[0].nextPosition() == NO_MORE_POSITIONS)
+        intervals[0].setMaximum();
+      else
+        intervals[0].update(subScorers[0]);
+      index = 1;
+    }
+
+    @Override
+    protected int doNextPosition() throws IOException {
+      if (intervals[0].begin == NO_MORE_POSITIONS)
+        return NO_MORE_POSITIONS;
+      current.setMaximum();
+      int b = Integer.MAX_VALUE;
+      while (true) {
+        while (true) {
+          final Interval previous = intervals[index - 1];
+          if (previous.end >= b) {
+            return current.begin;
+          }
+          if (index == intervals.length || intervals[index].begin > previous.end)
+            break;
+          Interval scratch = intervals[index];
+          do {
+            if (scratch.end >= b || subScorers[index].nextPosition() == NO_MORE_POSITIONS)
+              return current.begin;
+            intervals[index].update(subScorers[index]);
+            scratch = intervals[index];
+          } while (scratch.begin <= previous.end);
+          index++;
+        }
+        current.update(intervals[0], intervals[lastiter]);
+        matchDistance = (intervals[lastiter].begin - lastiter) - intervals[0].end;
+        b = intervals[lastiter].begin;
+        index = 1;
+        if (subScorers[0].nextPosition() == NO_MORE_POSITIONS) {
+          intervals[0].setMaximum();
+          return current.begin;
+        }
+        intervals[0].update(subScorers[0]);
+      }
+    }
+  }
 }

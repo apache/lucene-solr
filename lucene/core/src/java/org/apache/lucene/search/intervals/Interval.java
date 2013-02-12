@@ -40,10 +40,7 @@ public class Interval implements Cloneable {
   /** An interval that will always compare as less than any other interval */
   public static final Interval INFINITE_INTERVAL = new Interval();
 
-  /** An interval that will always compare as more than any other interval */
-  public static final Interval EXHAUSTED_INTERVAL = new Interval(Integer.MAX_VALUE, Integer.MAX_VALUE, -1, -1);
-
-  /**
+   /**
    * Constructs a new Interval
    * @param begin the start position
    * @param end the end position

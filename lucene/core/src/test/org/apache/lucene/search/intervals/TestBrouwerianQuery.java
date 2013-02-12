@@ -47,7 +47,7 @@ public class TestBrouwerianQuery extends IntervalTestBase {
   
   public void testBrouwerianBooleanQuery() throws IOException {
 
-    Query query = new OrderedNearQuery(2, false, makeTermQuery("the"),
+    Query query = new OrderedNearQuery(2, makeTermQuery("the"),
                                         makeTermQuery("quick"), makeTermQuery("jumps"));
     Query sub = makeTermQuery("fox");
     NonOverlappingQuery q = new NonOverlappingQuery(query, sub);
@@ -59,7 +59,7 @@ public class TestBrouwerianQuery extends IntervalTestBase {
 
   public void testBrouwerianBooleanQueryExcludedDoesNotExist() throws IOException {
 
-    Query query = new OrderedNearQuery(2, false, makeTermQuery("the"),
+    Query query = new OrderedNearQuery(2, makeTermQuery("the"),
         makeTermQuery("quick"), makeTermQuery("jumps"));
     Query sub = makeTermQuery("blox");
     NonOverlappingQuery q = new NonOverlappingQuery(query, sub);

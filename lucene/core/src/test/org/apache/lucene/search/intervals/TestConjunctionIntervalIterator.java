@@ -61,7 +61,7 @@ public class TestConjunctionIntervalIterator extends IntervalTestBase {
   }
 
   public void testConjunctionOrderedQuery() throws IOException {
-    Query q = new OrderedNearQuery(0, false, makeTermQuery("pease"),
+    Query q = new OrderedNearQuery(0, makeTermQuery("pease"),
                                     makeTermQuery("porridge"), makeTermQuery("hot!"));
     checkIntervals(q, searcher, new int[][]{
         { 0, 0, 2, 31, 33 },

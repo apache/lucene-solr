@@ -35,7 +35,7 @@ public class PositionQueue extends PriorityQueue<PositionQueue.DocsEnumRef> {
     public int nextPosition() throws IOException {
       if (docsEnum.docID() == DocsEnum.NO_MORE_DOCS || docsEnum.docID() != docId
             || docsEnum.nextPosition() == DocsEnum.NO_MORE_POSITIONS)
-        interval.update(Interval.EXHAUSTED_INTERVAL);
+        interval.setMaximum();
       else
         interval.update(this.docsEnum);
       return interval.begin;
