@@ -159,6 +159,11 @@ New Features
   to Lucene42DocValuesConsumer) if you want to make this tradeoff.
   (Adrien Grand, Robert Muir)
 
+* LUCENE-4769: Added OrdinalsCache and CachedOrdsCountingFacetsAggregator
+  which uses the cache to obtain a document's ordinals. This aggregator
+  is faster than others, however consumes much more RAM.
+  (Michael McCandless, Shai Erera)
+  
 API Changes
 
 * LUCENE-4709: FacetResultNode no longer has a residue field. (Shai Erera)

@@ -7,7 +7,6 @@ import org.apache.lucene.facet.encoding.DGapVInt8IntEncoder;
 import org.apache.lucene.facet.params.CategoryListParams;
 import org.apache.lucene.facet.params.FacetSearchParams;
 import org.apache.lucene.facet.search.FacetsCollector.MatchingDocs;
-import org.apache.lucene.facet.taxonomy.TaxonomyReader;
 import org.apache.lucene.index.BinaryDocValues;
 import org.apache.lucene.util.BytesRef;
 
@@ -37,7 +36,7 @@ import org.apache.lucene.util.BytesRef;
  * 
  * @lucene.experimental
  */
-public final class FastCountingFacetsAggregator implements FacetsAggregator {
+public final class FastCountingFacetsAggregator extends IntRollupFacetsAggregator {
   
   private final BytesRef buf = new BytesRef(32);
   
@@ -93,29 +92,6 @@ public final class FastCountingFacetsAggregator implements FacetsAggregator {
       }
       ++doc;
     }
-  }
-  
-  private int rollupCounts(int ordinal, int[] children, int[] siblings, int[] counts) {
-    int count = 0;
-    while (ordinal != TaxonomyReader.INVALID_ORDINAL) {
-      int childCount = counts[ordinal];
-      childCount += rollupCounts(children[ordinal], children, siblings, counts);
-      counts[ordinal] = childCount;
-      count += childCount;
-      ordinal = siblings[ordinal];
-    }
-    return count;
-  }
-
-  @Override
-  public final void rollupValues(FacetRequest fr, int ordinal, int[] children, int[] siblings, FacetArrays facetArrays) {
-    final int[] counts = facetArrays.getIntArray();
-    counts[ordinal] += rollupCounts(children[ordinal], children, siblings, counts);
-  }
-
-  @Override
-  public final boolean requiresDocScores() {
-    return false;
   }
   
 }
