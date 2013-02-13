@@ -143,9 +143,9 @@ public class TestFieldCacheSanityChecker extends LuceneTestCase {
     FieldCache cache = FieldCache.DEFAULT;
     cache.purgeAllCaches();
 
-    cache.getTerms(readerA, "theString");
-    cache.getTerms(readerB, "theString");
-    cache.getTerms(readerX, "theString");
+    cache.getTerms(readerA, "theInt");
+    cache.getTerms(readerB, "theInt");
+    cache.getTerms(readerX, "theInt");
 
     cache.getBytes(readerX, "theByte", false);
 
