@@ -37,9 +37,15 @@ import org.apache.lucene.document.IntField;
 import org.apache.lucene.document.NumericDocValuesField;
 import org.apache.lucene.document.SortedDocValuesField;
 import org.apache.lucene.document.SortedSetDocValuesField;
+import org.apache.lucene.document.StoredField;
 import org.apache.lucene.document.StringField;
 import org.apache.lucene.index.*;
+import org.apache.lucene.search.FieldCache.Bytes;
+import org.apache.lucene.search.FieldCache.Doubles;
+import org.apache.lucene.search.FieldCache.Floats;
 import org.apache.lucene.search.FieldCache.Ints;
+import org.apache.lucene.search.FieldCache.Longs;
+import org.apache.lucene.search.FieldCache.Shorts;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.util.Bits;
 import org.apache.lucene.util.BytesRef;
@@ -431,7 +437,7 @@ public class TestFieldCache extends LuceneTestCase {
     IndexWriterConfig iwc = newIndexWriterConfig(TEST_VERSION_CURRENT, null);
     // nocommit
     iwc.setCodec(_TestUtil.alwaysDocValuesFormat(DocValuesFormat.forName("Asserting"))); 
-    RandomIndexWriter iw = new RandomIndexWriter(random(), dir);
+    RandomIndexWriter iw = new RandomIndexWriter(random(), dir, iwc);
     Document doc = new Document();
     doc.add(new BinaryDocValuesField("binary", new BytesRef("binary value")));
     doc.add(new SortedDocValuesField("sorted", new BytesRef("sorted value")));
@@ -542,6 +548,117 @@ public class TestFieldCache extends LuceneTestCase {
     bits = FieldCache.DEFAULT.getDocsWithField(ar, "sortedset");
     assertTrue(bits instanceof Bits.MatchAllBits);
     
+    ir.close();
+    dir.close();
+  }
+  
+  public void testNonexistantFields() throws Exception {
+    Directory dir = newDirectory();
+    RandomIndexWriter iw = new RandomIndexWriter(random(), dir);
+    Document doc = new Document();
+    iw.addDocument(doc);
+    DirectoryReader ir = iw.getReader();
+    iw.close();
+    
+    AtomicReader ar = getOnlySegmentReader(ir);
+    
+    final FieldCache cache = FieldCache.DEFAULT;
+    cache.purgeAllCaches();
+    assertEquals(0, cache.getCacheEntries().length);
+    
+    Bytes bytes = cache.getBytes(ar, "bogusbytes", true);
+    assertEquals(0, bytes.get(0));
+
+    Shorts shorts = cache.getShorts(ar, "bogusshorts", true);
+    assertEquals(0, shorts.get(0));
+    
+    Ints ints = cache.getInts(ar, "bogusints", true);
+    assertEquals(0, ints.get(0));
+    
+    Longs longs = cache.getLongs(ar, "boguslongs", true);
+    assertEquals(0, longs.get(0));
+    
+    Floats floats = cache.getFloats(ar, "bogusfloats", true);
+    assertEquals(0, floats.get(0), 0.0f);
+    
+    Doubles doubles = cache.getDoubles(ar, "bogusdoubles", true);
+    assertEquals(0, doubles.get(0), 0.0D);
+    
+    BytesRef scratch = new BytesRef();
+    BinaryDocValues binaries = cache.getTerms(ar, "bogusterms");
+    binaries.get(0, scratch);
+    assertTrue(scratch.bytes == BinaryDocValues.MISSING);
+    
+    SortedDocValues sorted = cache.getTermsIndex(ar, "bogustermsindex");
+    assertEquals(-1, sorted.getOrd(0));
+    sorted.get(0, scratch);
+    assertTrue(scratch.bytes == BinaryDocValues.MISSING);
+    
+    Bits bits = cache.getDocsWithField(ar, "bogusbits");
+    assertFalse(bits.get(0));
+    
+    // check that we cached nothing
+    assertEquals(0, cache.getCacheEntries().length);
+    ir.close();
+    dir.close();
+  }
+  
+  public void testNonIndexedFields() throws Exception {
+    Directory dir = newDirectory();
+    RandomIndexWriter iw = new RandomIndexWriter(random(), dir);
+    Document doc = new Document();
+    doc.add(new StoredField("bogusbytes", "bogus"));
+    doc.add(new StoredField("bogusshorts", "bogus"));
+    doc.add(new StoredField("bogusints", "bogus"));
+    doc.add(new StoredField("boguslongs", "bogus"));
+    doc.add(new StoredField("bogusfloats", "bogus"));
+    doc.add(new StoredField("bogusdoubles", "bogus"));
+    doc.add(new StoredField("bogusterms", "bogus"));
+    doc.add(new StoredField("bogustermsindex", "bogus"));
+    doc.add(new StoredField("bogusbits", "bogus"));
+    iw.addDocument(doc);
+    DirectoryReader ir = iw.getReader();
+    iw.close();
+    
+    AtomicReader ar = getOnlySegmentReader(ir);
+    
+    final FieldCache cache = FieldCache.DEFAULT;
+    cache.purgeAllCaches();
+    assertEquals(0, cache.getCacheEntries().length);
+    
+    Bytes bytes = cache.getBytes(ar, "bogusbytes", true);
+    assertEquals(0, bytes.get(0));
+
+    Shorts shorts = cache.getShorts(ar, "bogusshorts", true);
+    assertEquals(0, shorts.get(0));
+    
+    Ints ints = cache.getInts(ar, "bogusints", true);
+    assertEquals(0, ints.get(0));
+    
+    Longs longs = cache.getLongs(ar, "boguslongs", true);
+    assertEquals(0, longs.get(0));
+    
+    Floats floats = cache.getFloats(ar, "bogusfloats", true);
+    assertEquals(0, floats.get(0), 0.0f);
+    
+    Doubles doubles = cache.getDoubles(ar, "bogusdoubles", true);
+    assertEquals(0, doubles.get(0), 0.0D);
+    
+    BytesRef scratch = new BytesRef();
+    BinaryDocValues binaries = cache.getTerms(ar, "bogusterms");
+    binaries.get(0, scratch);
+    assertTrue(scratch.bytes == BinaryDocValues.MISSING);
+    
+    SortedDocValues sorted = cache.getTermsIndex(ar, "bogustermsindex");
+    assertEquals(-1, sorted.getOrd(0));
+    sorted.get(0, scratch);
+    assertTrue(scratch.bytes == BinaryDocValues.MISSING);
+    
+    Bits bits = cache.getDocsWithField(ar, "bogusbits");
+    assertFalse(bits.get(0));
+    
+    // check that we cached nothing
+    assertEquals(0, cache.getCacheEntries().length);
     ir.close();
     dir.close();
   }

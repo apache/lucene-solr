@@ -375,8 +375,12 @@ class FieldCacheImpl implements FieldCache {
       };
     } else {
       final FieldInfo info = reader.getFieldInfos().fieldInfo(field);
-      if (info != null && info.hasDocValues()) {
+      if (info == null) {
+        return Bytes.EMPTY;
+      } else if (info.hasDocValues()) {
         throw new IllegalStateException("Type mismatch: " + field + " was indexed as " + info.getDocValuesType());
+      } else if (!info.isIndexed()) {
+        return Bytes.EMPTY;
       }
       return (Bytes) caches.get(Byte.TYPE).get(reader, new CacheKey(field, parser), setDocsWithField);
     }
@@ -465,8 +469,12 @@ class FieldCacheImpl implements FieldCache {
       };
     } else {
       final FieldInfo info = reader.getFieldInfos().fieldInfo(field);
-      if (info != null && info.hasDocValues()) {
+      if (info == null) {
+        return Shorts.EMPTY;
+      } else if (info.hasDocValues()) {
         throw new IllegalStateException("Type mismatch: " + field + " was indexed as " + info.getDocValuesType());
+      } else if (!info.isIndexed()) {
+        return Shorts.EMPTY;
       }
       return (Shorts) caches.get(Short.TYPE).get(reader, new CacheKey(field, parser), setDocsWithField);
     }
@@ -553,8 +561,12 @@ class FieldCacheImpl implements FieldCache {
       };
     } else {
       final FieldInfo info = reader.getFieldInfos().fieldInfo(field);
-      if (info != null && info.hasDocValues()) {
+      if (info == null) {
+        return Ints.EMPTY;
+      } else if (info.hasDocValues()) {
         throw new IllegalStateException("Type mismatch: " + field + " was indexed as " + info.getDocValuesType());
+      } else if (!info.isIndexed()) {
+        return Ints.EMPTY;
       }
       return (Ints) caches.get(Integer.TYPE).get(reader, new CacheKey(field, parser), setDocsWithField);
     }
@@ -651,8 +663,17 @@ class FieldCacheImpl implements FieldCache {
     }
   }
 
-  public Bits getDocsWithField(AtomicReader reader, String field)
-      throws IOException {
+  public Bits getDocsWithField(AtomicReader reader, String field) throws IOException {
+    final FieldInfo fieldInfo = reader.getFieldInfos().fieldInfo(field);
+    if (fieldInfo == null) {
+      // field does not exist or has no value
+      return new Bits.MatchNoBits(reader.maxDoc());
+    } else if (fieldInfo.hasDocValues()) {
+      // doc values are dense
+      return new Bits.MatchAllBits(reader.maxDoc());
+    } else if (!fieldInfo.isIndexed()) {
+      return new Bits.MatchNoBits(reader.maxDoc());
+    }
     return (Bits) caches.get(DocsWithFieldCache.class).get(reader, new CacheKey(field, null), false);
   }
 
@@ -665,16 +686,7 @@ class FieldCacheImpl implements FieldCache {
     protected Object createValue(AtomicReader reader, CacheKey key, boolean setDocsWithField /* ignored */)
     throws IOException {
       final String field = key.field;
-      final FieldInfo fieldInfo = reader.getFieldInfos().fieldInfo(field);
       final int maxDoc = reader.maxDoc();
-
-      if (fieldInfo == null) {
-        // field does not exist or has no value
-        return new Bits.MatchNoBits(maxDoc);
-      } else if (fieldInfo.hasDocValues()) {
-        // doc values are dense
-        return new Bits.MatchAllBits(maxDoc);
-      }
 
       // Visit all docs that have terms for this field
       FixedBitSet res = null;
@@ -743,8 +755,12 @@ class FieldCacheImpl implements FieldCache {
       };
     } else {
       final FieldInfo info = reader.getFieldInfos().fieldInfo(field);
-      if (info != null && info.hasDocValues()) {
+      if (info == null) {
+        return Floats.EMPTY;
+      } else if (info.hasDocValues()) {
         throw new IllegalStateException("Type mismatch: " + field + " was indexed as " + info.getDocValuesType());
+      } else if (!info.isIndexed()) {
+        return Floats.EMPTY;
       }
       return (Floats) caches.get(Float.TYPE).get(reader, new CacheKey(field, parser), setDocsWithField);
     }
@@ -850,8 +866,12 @@ class FieldCacheImpl implements FieldCache {
       };
     } else {
       final FieldInfo info = reader.getFieldInfos().fieldInfo(field);
-      if (info != null && info.hasDocValues()) {
+      if (info == null) {
+        return Longs.EMPTY;
+      } else if (info.hasDocValues()) {
         throw new IllegalStateException("Type mismatch: " + field + " was indexed as " + info.getDocValuesType());
+      } else if (!info.isIndexed()) {
+        return Longs.EMPTY;
       }
       return (Longs) caches.get(Long.TYPE).get(reader, new CacheKey(field, parser), setDocsWithField);
     }
@@ -957,8 +977,12 @@ class FieldCacheImpl implements FieldCache {
       };
     } else {
       final FieldInfo info = reader.getFieldInfos().fieldInfo(field);
-      if (info != null && info.hasDocValues()) {
+      if (info == null) {
+        return Doubles.EMPTY;
+      } else if (info.hasDocValues()) {
         throw new IllegalStateException("Type mismatch: " + field + " was indexed as " + info.getDocValuesType());
+      } else if (!info.isIndexed()) {
+        return Doubles.EMPTY;
       }
       return (Doubles) caches.get(Double.TYPE).get(reader, new CacheKey(field, parser), setDocsWithField);
     }
@@ -1090,14 +1114,14 @@ class FieldCacheImpl implements FieldCache {
       return valuesIn;
     } else {
       final FieldInfo info = reader.getFieldInfos().fieldInfo(field);
-      if (info != null && info.hasDocValues()) {
+      if (info == null) {
+        return EMPTY_TERMSINDEX;
+      } else if (info.hasDocValues()) {
         // we don't try to build a sorted instance from numeric/binary doc
         // values because dedup can be very costly
         throw new IllegalStateException("Type mismatch: " + field + " was indexed as " + info.getDocValuesType());
-      }
-      if (info != null && !info.isIndexed()) {
-        throw new IllegalArgumentException("Cannot get terms index for \"" + field
-            + "\": it isn't indexed and doesn't have sorted doc values");
+      } else if (!info.isIndexed()) {
+        return EMPTY_TERMSINDEX;
       }
       return (SortedDocValues) caches.get(SortedDocValues.class).get(reader, new CacheKey(field, acceptableOverheadRatio), false);
     }
@@ -1250,8 +1274,12 @@ class FieldCacheImpl implements FieldCache {
     }
 
     final FieldInfo info = reader.getFieldInfos().fieldInfo(field);
-    if (info != null && info.hasDocValues()) {
+    if (info == null) {
+      return BinaryDocValues.EMPTY;
+    } else if (info.hasDocValues()) {
       throw new IllegalStateException("Type mismatch: " + field + " was indexed as " + info.getDocValuesType());
+    } else if (!info.isIndexed()) {
+      return BinaryDocValues.EMPTY;
     }
 
     return (BinaryDocValues) caches.get(BinaryDocValues.class).get(reader, new CacheKey(field, acceptableOverheadRatio), false);
