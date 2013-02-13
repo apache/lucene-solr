@@ -544,7 +544,6 @@ public class TestFieldCache extends LuceneTestCase {
     assertEquals(SortedSetDocValues.NO_MORE_ORDS, sortedSet.nextOrd());
     assertEquals(2, sortedSet.getValueCount());
     
-    // nocommit: not right
     bits = FieldCache.DEFAULT.getDocsWithField(ar, "sortedset");
     assertTrue(bits instanceof Bits.MatchAllBits);
     
@@ -594,6 +593,10 @@ public class TestFieldCache extends LuceneTestCase {
     sorted.get(0, scratch);
     assertTrue(scratch.bytes == BinaryDocValues.MISSING);
     
+    SortedSetDocValues sortedSet = cache.getDocTermOrds(ar, "bogusmultivalued");
+    sortedSet.setDocument(0);
+    assertEquals(SortedSetDocValues.NO_MORE_ORDS, sortedSet.nextOrd());
+    
     Bits bits = cache.getDocsWithField(ar, "bogusbits");
     assertFalse(bits.get(0));
     
@@ -615,6 +618,7 @@ public class TestFieldCache extends LuceneTestCase {
     doc.add(new StoredField("bogusdoubles", "bogus"));
     doc.add(new StoredField("bogusterms", "bogus"));
     doc.add(new StoredField("bogustermsindex", "bogus"));
+    doc.add(new StoredField("bogusmultivalued", "bogus"));
     doc.add(new StoredField("bogusbits", "bogus"));
     iw.addDocument(doc);
     DirectoryReader ir = iw.getReader();
@@ -653,6 +657,10 @@ public class TestFieldCache extends LuceneTestCase {
     assertEquals(-1, sorted.getOrd(0));
     sorted.get(0, scratch);
     assertTrue(scratch.bytes == BinaryDocValues.MISSING);
+    
+    SortedSetDocValues sortedSet = cache.getDocTermOrds(ar, "bogusmultivalued");
+    sortedSet.setDocument(0);
+    assertEquals(SortedSetDocValues.NO_MORE_ORDS, sortedSet.nextOrd());
     
     Bits bits = cache.getDocsWithField(ar, "bogusbits");
     assertFalse(bits.get(0));

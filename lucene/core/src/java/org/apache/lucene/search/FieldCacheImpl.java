@@ -1379,8 +1379,12 @@ class FieldCacheImpl implements FieldCache {
     }
     
     final FieldInfo info = reader.getFieldInfos().fieldInfo(field);
-    if (info != null && info.hasDocValues()) {
+    if (info == null) {
+      return SortedSetDocValues.EMPTY;
+    } else if (info.hasDocValues()) {
       throw new IllegalStateException("Type mismatch: " + field + " was indexed as " + info.getDocValuesType());
+    } else if (!info.isIndexed()) {
+      return SortedSetDocValues.EMPTY;
     }
     
     DocTermOrds dto = (DocTermOrds) caches.get(DocTermOrds.class).get(reader, new CacheKey(field, null), false);
