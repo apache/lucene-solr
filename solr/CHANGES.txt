@@ -41,6 +41,8 @@ Detailed Change List
 Other Changes
 ----------------------
 
+* SOLR-4394: Tests and example configs demonstrating SSL with both server 
+  and client certs (hossman)
 
 ==================  4.2.0 ==================
 
