@@ -1,7 +1,9 @@
 package org.apache.lucene.demo.facet;
 
 import java.io.IOException;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 import org.apache.lucene.analysis.core.WhitespaceAnalyzer;
 import org.apache.lucene.document.Document;
@@ -12,12 +14,15 @@ import org.apache.lucene.facet.associations.CategoryAssociation;
 import org.apache.lucene.facet.associations.CategoryAssociationsContainer;
 import org.apache.lucene.facet.associations.CategoryFloatAssociation;
 import org.apache.lucene.facet.associations.CategoryIntAssociation;
+import org.apache.lucene.facet.associations.MultiAssociationsFacetsAggregator;
+import org.apache.lucene.facet.associations.SumFloatAssociationFacetsAggregator;
+import org.apache.lucene.facet.associations.SumIntAssociationFacetsAggregator;
 import org.apache.lucene.facet.index.FacetFields;
 import org.apache.lucene.facet.params.FacetSearchParams;
 import org.apache.lucene.facet.search.FacetResult;
 import org.apache.lucene.facet.search.FacetsAccumulator;
+import org.apache.lucene.facet.search.FacetsAggregator;
 import org.apache.lucene.facet.search.FacetsCollector;
-import org.apache.lucene.facet.search.StandardFacetsAccumulator;
 import org.apache.lucene.facet.taxonomy.CategoryPath;
 import org.apache.lucene.facet.taxonomy.TaxonomyReader;
 import org.apache.lucene.facet.taxonomy.directory.DirectoryTaxonomyReader;
@@ -122,43 +127,29 @@ public class AssociationsFacetsExample {
     taxoWriter.close();
   }
 
-  /** User runs a query and aggregates facets by summing their int associations. */
-  private List<FacetResult> sumIntAssociations() throws IOException {
+  /** User runs a query and aggregates facets by summing their association values. */
+  private List<FacetResult> sumAssociations() throws IOException {
     DirectoryReader indexReader = DirectoryReader.open(indexDir);
     IndexSearcher searcher = new IndexSearcher(indexReader);
     TaxonomyReader taxoReader = new DirectoryTaxonomyReader(taxoDir);
-
-    // sum the 'tags' dimension
-    FacetSearchParams fsp = new FacetSearchParams(new AssociationIntSumFacetRequest(new CategoryPath("tags"), 10));
-
-    FacetsAccumulator fa = new StandardFacetsAccumulator(fsp, indexReader, taxoReader);
-    FacetsCollector fc = FacetsCollector.create(fa);
-
-    // MatchAllDocsQuery is for "browsing" (counts facets
-    // for all non-deleted docs in the index); normally
-    // you'd use a "normal" query, and use MultiCollector to
-    // wrap collecting the "normal" hits and also facets:
-    searcher.search(new MatchAllDocsQuery(), fc);
-
-    // Retrieve results
-    List<FacetResult> facetResults = fc.getFacetResults();
     
-    indexReader.close();
-    taxoReader.close();
-    
-    return facetResults;
-  }
+    CategoryPath tags = new CategoryPath("tags");
+    CategoryPath genre = new CategoryPath("genre");
+    FacetSearchParams fsp = new FacetSearchParams(
+        new AssociationIntSumFacetRequest(tags, 10), 
+        new AssociationFloatSumFacetRequest(genre, 10));
   
-  /** User runs a query and aggregates facets by summing their float associations. */
-  private List<FacetResult> sumFloatAssociations() throws IOException {
-    DirectoryReader indexReader = DirectoryReader.open(indexDir);
-    IndexSearcher searcher = new IndexSearcher(indexReader);
-    TaxonomyReader taxoReader = new DirectoryTaxonomyReader(taxoDir);
-    
-    // sum the 'tags' dimension
-    FacetSearchParams fsp = new FacetSearchParams(new AssociationFloatSumFacetRequest(new CategoryPath("genre"), 10));
-    
-    FacetsAccumulator fa = new StandardFacetsAccumulator(fsp, indexReader, taxoReader);
+    // every category has a different type of association, so use chain their
+    // respective aggregators.
+    final Map<CategoryPath,FacetsAggregator> aggregators = new HashMap<CategoryPath,FacetsAggregator>();
+    aggregators.put(tags, new SumIntAssociationFacetsAggregator());
+    aggregators.put(genre, new SumFloatAssociationFacetsAggregator());
+    FacetsAccumulator fa = new FacetsAccumulator(fsp, indexReader, taxoReader) {
+      @Override
+      public FacetsAggregator getAggregator() {
+        return new MultiAssociationsFacetsAggregator(aggregators);
+      }
+    };
     FacetsCollector fc = FacetsCollector.create(fa);
     
     // MatchAllDocsQuery is for "browsing" (counts facets
@@ -176,31 +167,17 @@ public class AssociationsFacetsExample {
     return facetResults;
   }
   
-  /** Runs summing int association example. */
-  public List<FacetResult> runSumIntAssociations() throws IOException {
+  /** Runs summing association example. */
+  public List<FacetResult> runSumAssociations() throws IOException {
     index();
-    return sumIntAssociations();
+    return sumAssociations();
   }
   
-  /** Runs summing float association example. */
-  public List<FacetResult> runSumFloatAssociations() throws IOException {
-    index();
-    return sumFloatAssociations();
-  }
-
   /** Runs the sum int/float associations examples and prints the results. */
   public static void main(String[] args) throws Exception {
-    System.out.println("Sum int-associations example:");
-    System.out.println("-----------------------------");
-    List<FacetResult> results = new AssociationsFacetsExample().runSumIntAssociations();
-    for (FacetResult res : results) {
-      System.out.println(res);
-    }
-
-    System.out.println("\n");
-    System.out.println("Sum float-associations example:");
-    System.out.println("-------------------------------");
-    results = new AssociationsFacetsExample().runSumFloatAssociations();
+    System.out.println("Sum associations example:");
+    System.out.println("-------------------------");
+    List<FacetResult> results = new AssociationsFacetsExample().runSumAssociations();
     for (FacetResult res : results) {
       System.out.println(res);
     }

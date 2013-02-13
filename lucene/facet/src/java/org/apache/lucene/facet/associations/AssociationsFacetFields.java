@@ -7,7 +7,6 @@ import java.util.Map;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.FieldType;
 import org.apache.lucene.document.TextField;
-import org.apache.lucene.facet.index.CountingListBuilder;
 import org.apache.lucene.facet.index.DrillDownStream;
 import org.apache.lucene.facet.index.FacetFields;
 import org.apache.lucene.facet.params.CategoryListParams;
@@ -55,7 +54,7 @@ public class AssociationsFacetFields extends FacetFields {
   }
   
   /**
-   * Constructs a new instance with the {@link FacetIndexingParams#ALL_PARENTS
+   * Constructs a new instance with the {@link FacetIndexingParams#DEFAULT
    * default} facet indexing params.
    * 
    * @param taxonomyWriter
@@ -100,12 +99,7 @@ public class AssociationsFacetFields extends FacetFields {
   protected Map<String,BytesRef> getCategoryListData(CategoryListParams categoryListParams, IntsRef ordinals,
       Iterable<CategoryPath> categories) throws IOException {
     AssociationsListBuilder associations = new AssociationsListBuilder((CategoryAssociationsContainer) categories);
-    CountingListBuilder counting = new CountingListBuilder(categoryListParams, indexingParams, taxonomyWriter);
-    // CountingListBuilder modifies the ordinals array, by e.g. adding parent ordinals, sorting etc.
-    // Therefore first build the associations list and only afterwards the counting list.
-    final Map<String,BytesRef> res = associations.build(ordinals, categories);
-    res.putAll(counting.build(ordinals, categories));
-    return res;
+    return associations.build(ordinals, categories);
   }
   
   @Override

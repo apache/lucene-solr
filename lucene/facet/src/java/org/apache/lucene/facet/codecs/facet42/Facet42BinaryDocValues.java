@@ -1,8 +1,4 @@
-package org.apache.lucene.facet.associations;
-
-import org.apache.lucene.facet.search.FacetArrays;
-import org.apache.lucene.facet.search.FacetRequest;
-import org.apache.lucene.facet.taxonomy.CategoryPath;
+package org.apache.lucene.facet.codecs.facet42;
 
 /*
  * Licensed to the Apache Software Foundation (ASF) under one or more
@@ -21,30 +17,31 @@ import org.apache.lucene.facet.taxonomy.CategoryPath;
  * limitations under the License.
  */
 
-/**
- * A {@link FacetRequest} for weighting facets according to their integer
- * association by summing the association values.
- * 
- * @lucene.experimental
- */
-public class AssociationIntSumFacetRequest extends FacetRequest {
+import java.io.IOException;
 
-  /**
-   * Create an integer association facet request for a given node in the
-   * taxonomy.
-   */
-  public AssociationIntSumFacetRequest(CategoryPath path, int num) {
-    super(path, num);
+import org.apache.lucene.index.BinaryDocValues;
+import org.apache.lucene.store.DataInput;
+import org.apache.lucene.util.BytesRef;
+import org.apache.lucene.util.packed.PackedInts;
+
+class Facet42BinaryDocValues extends BinaryDocValues {
+  
+  private final byte[] bytes;
+  private final PackedInts.Reader addresses;
+  
+  Facet42BinaryDocValues(DataInput in) throws IOException {
+    int totBytes = in.readVInt();
+    bytes = new byte[totBytes];
+    in.readBytes(bytes, 0, totBytes);
+    addresses = PackedInts.getReader(in);
   }
 
   @Override
-  public FacetArraysSource getFacetArraysSource() {
-    return FacetArraysSource.INT;
+  public void get(int docID, BytesRef ret) {
+    int start = (int) addresses.get(docID);
+    ret.bytes = bytes;
+    ret.offset = start;
+    ret.length = (int) (addresses.get(docID+1)-start);
   }
-
-  @Override
-  public double getValueOf(FacetArrays arrays, int ordinal) {
-    return arrays.getIntArray()[ordinal];
-  }
-
+  
 }

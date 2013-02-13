@@ -270,7 +270,15 @@ public class CountingFacetsAggregatorTest extends FacetTestCase {
   }
   
   private FacetsAccumulator randomAccumulator(FacetSearchParams fsp, IndexReader indexReader, TaxonomyReader taxoReader) {
-    final FacetsAggregator aggregator = random().nextBoolean() ? new CountingFacetsAggregator() : new FastCountingFacetsAggregator();
+    final FacetsAggregator aggregator;
+    double val = random().nextDouble();
+    if (val < 0.6) {
+      aggregator = new FastCountingFacetsAggregator(); // it's the default, so give it the highest chance
+    } else if (val < 0.8) {
+      aggregator = new CountingFacetsAggregator();
+    } else {
+      aggregator = new CachedOrdsCountingFacetsAggregator();
+    }
     return new FacetsAccumulator(fsp, indexReader, taxoReader) {
       @Override
       public FacetsAggregator getAggregator() {

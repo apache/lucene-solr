@@ -72,6 +72,10 @@ Changes in backwards compatibility policy
 * LUCENE-4759: remove FacetRequest.SortBy; result categories are always 
   sorted by value, while ties are broken by category ordinal. (Shai Erera)
 
+* LUCENE-4772: Facet associations moved to new FacetsAggregator API. You
+  should override FacetsAccumualtor and return the relevant aggregator,
+  for aggregating the association values. (Shai Erera)
+  
 Optimizations
 
 * LUCENE-4687: BloomFilterPostingsFormat now lazily initializes delegate
@@ -155,6 +159,15 @@ New Features
   to Lucene42DocValuesConsumer) if you want to make this tradeoff.
   (Adrien Grand, Robert Muir)
 
+* LUCENE-4764: A new Facet42Codec and Facet42DocValuesFormat provide
+  faster but more RAM-consuming facet performance.  (Shai Erera, Mike
+  McCandless) 
+
+* LUCENE-4769: Added OrdinalsCache and CachedOrdsCountingFacetsAggregator
+  which uses the cache to obtain a document's ordinals. This aggregator
+  is faster than others, however consumes much more RAM.
+  (Michael McCandless, Shai Erera)
+  
 API Changes
 
 * LUCENE-4709: FacetResultNode no longer has a residue field. (Shai Erera)

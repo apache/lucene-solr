@@ -1,12 +1,8 @@
 package org.apache.lucene.facet.associations;
 
-import java.io.IOException;
-
-import org.apache.lucene.facet.search.Aggregator;
 import org.apache.lucene.facet.search.FacetArrays;
 import org.apache.lucene.facet.search.FacetRequest;
 import org.apache.lucene.facet.taxonomy.CategoryPath;
-import org.apache.lucene.facet.taxonomy.TaxonomyReader;
 
 /*
  * Licensed to the Apache Software Foundation (ASF) under one or more
@@ -27,10 +23,7 @@ import org.apache.lucene.facet.taxonomy.TaxonomyReader;
 
 /**
  * A {@link FacetRequest} for weighting facets according to their float
- * association by summing the association values. Note that this class caches
- * the associations data in-memory by default. You can override
- * {@link #createAggregator(boolean, FacetArrays, TaxonomyReader)} to return an
- * {@link AssociationFloatSumAggregator} which does otherwise.
+ * association by summing the association values.
  * 
  * @lucene.experimental
  */
@@ -42,13 +35,6 @@ public class AssociationFloatSumFacetRequest extends FacetRequest {
    */
   public AssociationFloatSumFacetRequest(CategoryPath path, int num) {
     super(path, num);
-  }
-
-  @Override
-  public Aggregator createAggregator(boolean useComplements, FacetArrays arrays, TaxonomyReader taxonomy) 
-      throws IOException {
-    assert !useComplements : "complements are not supported by this FacetRequest";
-    return new AssociationFloatSumAggregator(arrays.getFloatArray());
   }
 
   @Override

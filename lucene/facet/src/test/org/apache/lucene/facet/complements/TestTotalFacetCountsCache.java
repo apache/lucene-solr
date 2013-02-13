@@ -187,7 +187,7 @@ public class TestTotalFacetCountsCache extends FacetTestCase {
 
     Multi[] multis = new Multi[numThreads];
     for (int i = 0; i < numThreads; i++) {
-      multis[i] = new Multi(slowIndexReader, slowTaxoReader, FacetIndexingParams.ALL_PARENTS);
+      multis[i] = new Multi(slowIndexReader, slowTaxoReader, FacetIndexingParams.DEFAULT);
     }
 
     for (Multi m : multis) {
@@ -234,7 +234,7 @@ public class TestTotalFacetCountsCache extends FacetTestCase {
     // Create our index/taxonomy writers
     IndexWriter indexWriter = new IndexWriter(indexDir, newIndexWriterConfig(TEST_VERSION_CURRENT, null));
     TaxonomyWriter taxoWriter = new DirectoryTaxonomyWriter(taxoDir);
-    FacetIndexingParams iParams = FacetIndexingParams.ALL_PARENTS;
+    FacetIndexingParams iParams = FacetIndexingParams.DEFAULT;
 
     // Add a facet to the index
     addFacets(iParams, indexWriter, taxoWriter, "a", "b");
@@ -385,7 +385,7 @@ public class TestTotalFacetCountsCache extends FacetTestCase {
     IndexWriter w = new IndexWriter(indexDir, new IndexWriterConfig(
         TEST_VERSION_CURRENT, new MockAnalyzer(random(), MockTokenizer.WHITESPACE, false)));
     DirectoryTaxonomyWriter tw = new DirectoryTaxonomyWriter(taxoDir);
-    FacetIndexingParams iParams = FacetIndexingParams.ALL_PARENTS;
+    FacetIndexingParams iParams = FacetIndexingParams.DEFAULT;
     // Add documents and facets
     for (int i = 0; i < 1000; i++) {
       addFacets(iParams, w, tw, "facet", Integer.toString(i));
@@ -440,7 +440,7 @@ public class TestTotalFacetCountsCache extends FacetTestCase {
     IndexWriter indexWriter2 = new IndexWriter(indexDir2, newIndexWriterConfig(TEST_VERSION_CURRENT, null));
     TaxonomyWriter taxoWriter1 = new DirectoryTaxonomyWriter(taxoDir1);
     TaxonomyWriter taxoWriter2 = new DirectoryTaxonomyWriter(taxoDir2);
-    FacetIndexingParams iParams = FacetIndexingParams.ALL_PARENTS;
+    FacetIndexingParams iParams = FacetIndexingParams.DEFAULT;
 
     // Add a facet to the index
     addFacets(iParams, indexWriter1, taxoWriter1, "a", "b");

@@ -40,22 +40,22 @@ public class FacetSearchParams {
   
   /**
    * Initializes with the given {@link FacetRequest requests} and default
-   * {@link FacetIndexingParams#ALL_PARENTS}. If you used a different
+   * {@link FacetIndexingParams#DEFAULT}. If you used a different
    * {@link FacetIndexingParams}, you should use
    * {@link #FacetSearchParams(FacetIndexingParams, List)}.
    */
   public FacetSearchParams(FacetRequest... facetRequests) {
-    this(FacetIndexingParams.ALL_PARENTS, Arrays.asList(facetRequests));
+    this(FacetIndexingParams.DEFAULT, Arrays.asList(facetRequests));
   }
   
   /**
    * Initializes with the given {@link FacetRequest requests} and default
-   * {@link FacetIndexingParams#ALL_PARENTS}. If you used a different
+   * {@link FacetIndexingParams#DEFAULT}. If you used a different
    * {@link FacetIndexingParams}, you should use
    * {@link #FacetSearchParams(FacetIndexingParams, List)}.
    */
   public FacetSearchParams(List<FacetRequest> facetRequests) {
-    this(FacetIndexingParams.ALL_PARENTS, facetRequests);
+    this(FacetIndexingParams.DEFAULT, facetRequests);
   }
   
   /**
