@@ -19,7 +19,6 @@ package org.apache.lucene.index;
 
 import java.io.IOException;
 import java.util.ArrayList;
-import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 
@@ -74,7 +73,11 @@ public abstract class MergePolicy implements java.io.Closeable, Cloneable {
     int maxNumSegments = -1;        // used by IndexWriter
 
     /** Estimated size in bytes of the merged segment. */
-    public long estimatedMergeBytes;       // used by IndexWriter
+    public volatile long estimatedMergeBytes;       // used by IndexWriter
+
+    // Sum of sizeInBytes of all SegmentInfos; set by IW.mergeInit
+    volatile long totalMergeBytes;
+
     List<SegmentReader> readers;        // used by IndexWriter
 
     /** Segments to be merged. */
@@ -187,14 +190,12 @@ public abstract class MergePolicy implements java.io.Closeable, Cloneable {
     
     /**
      * Returns the total size in bytes of this merge. Note that this does not
-     * indicate the size of the merged segment, but the input total size.
-     * */
+     * indicate the size of the merged segment, but the
+     * input total size. This is only set once the merge is
+     * initialized by IndexWriter.
+     */
     public long totalBytesSize() throws IOException {
-      long total = 0;
-      for (SegmentInfoPerCommit info : segments) {
-        total += info.info.sizeInBytes();
-      }
-      return total;
+      return totalMergeBytes;
     }
 
     /**

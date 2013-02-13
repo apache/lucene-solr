@@ -18,7 +18,6 @@ package org.apache.lucene.index;
  */
 
 
-import java.io.IOException;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
@@ -57,8 +56,6 @@ public final class SegmentInfo {
   public final Directory dir;
 
   private boolean isCompoundFile;
-
-  private volatile long sizeInBytes = -1;         // total byte size of all files (computed on demand)
 
   private Codec codec;
 
@@ -99,25 +96,6 @@ public final class SegmentInfo {
     this.codec = codec;
     this.diagnostics = diagnostics;
     this.attributes = attributes;
-  }
-
-  /**
-   * Returns total size in bytes of all of files used by
-   * this segment.  Note that this will not include any live
-   * docs for the segment; to include that use {@link
-   * SegmentInfoPerCommit#sizeInBytes()} instead.
-   * <p><b>NOTE:</b> This value is not correct for 3.0 segments
-   * that have shared docstores. To get the correct value, upgrade!
-   */
-  public long sizeInBytes() throws IOException {
-    if (sizeInBytes == -1) {
-      long sum = 0;
-      for (final String fileName : files()) {
-        sum += dir.fileLength(fileName);
-      }
-      sizeInBytes = sum;
-    }
-    return sizeInBytes;
   }
 
   /**
@@ -265,7 +243,6 @@ public final class SegmentInfo {
   public void setFiles(Set<String> files) {
     checkFileNames(files);
     setFiles = files;
-    sizeInBytes = -1;
   }
 
   /** Add these files to the set of files written for this
@@ -273,7 +250,6 @@ public final class SegmentInfo {
   public void addFiles(Collection<String> files) {
     checkFileNames(files);
     setFiles.addAll(files);
-    sizeInBytes = -1;
   }
 
   /** Add this file to the set of files written for this
@@ -281,7 +257,6 @@ public final class SegmentInfo {
   public void addFile(String file) {
     checkFileNames(Collections.singleton(file));
     setFiles.add(file);
-    sizeInBytes = -1;
   }
   
   private void checkFileNames(Collection<String> files) {
