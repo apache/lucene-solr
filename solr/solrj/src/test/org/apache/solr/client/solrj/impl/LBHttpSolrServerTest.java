@@ -7,7 +7,6 @@ import static org.junit.Assert.*;
 
 import java.net.MalformedURLException;
 
-import org.apache.http.impl.client.DefaultHttpClient;
 import org.apache.solr.client.solrj.ResponseParser;
 import org.junit.Test;
 
@@ -28,6 +27,8 @@ import org.junit.Test;
  * limitations under the License.
  */
 
+import org.apache.solr.common.params.ModifiableSolrParams;
+
 /**
  * Test the LBHttpSolrServer.
  */
@@ -42,12 +43,12 @@ public class LBHttpSolrServerTest {
    */
   @Test
   public void testLBHttpSolrServerHttpClientResponseParserStringArray() throws MalformedURLException {
-    LBHttpSolrServer testServer = new LBHttpSolrServer(new DefaultHttpClient(), (ResponseParser) null);
+    LBHttpSolrServer testServer = new LBHttpSolrServer(HttpClientUtil.createClient(new ModifiableSolrParams()), (ResponseParser) null);
     HttpSolrServer httpServer = testServer.makeServer("http://127.0.0.1:8080");
     assertNull("Generated server should have null parser.", httpServer.getParser());
 
     ResponseParser parser = new BinaryResponseParser();
-    testServer = new LBHttpSolrServer(new DefaultHttpClient(), parser);
+    testServer = new LBHttpSolrServer(HttpClientUtil.createClient(new ModifiableSolrParams()), parser);
     httpServer = testServer.makeServer("http://127.0.0.1:8080");
     assertEquals("Invalid parser passed to generated server.", parser, httpServer.getParser());
   }

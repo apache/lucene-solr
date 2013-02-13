@@ -35,8 +35,10 @@ import org.apache.http.client.HttpClient;
 import org.apache.http.client.params.ClientParamBean;
 import org.apache.http.entity.HttpEntityWrapper;
 import org.apache.http.impl.client.DefaultHttpClient;
+import org.apache.http.impl.client.SystemDefaultHttpClient;
 import org.apache.http.impl.client.DefaultHttpRequestRetryHandler;
-import org.apache.http.impl.conn.tsccm.ThreadSafeClientConnManager;
+import org.apache.http.impl.conn.tsccm.ThreadSafeClientConnManager; // jdoc
+import org.apache.http.impl.conn.PoolingClientConnectionManager;
 import org.apache.http.params.HttpConnectionParams;
 import org.apache.http.protocol.HttpContext;
 import org.apache.solr.common.params.ModifiableSolrParams;
@@ -94,14 +96,12 @@ public class HttpClientUtil {
    * 
    * @param params
    *          http client configuration, if null a client with default
-   *          configuration (no additional configuration) is created that uses
-   *          ThreadSafeClientConnManager.
+   *          configuration (no additional configuration) is created. 
    */
   public static HttpClient createClient(final SolrParams params) {
     final ModifiableSolrParams config = new ModifiableSolrParams(params);
     logger.info("Creating new http client, config:" + config);
-    final ThreadSafeClientConnManager mgr = new ThreadSafeClientConnManager();
-    final DefaultHttpClient httpClient = new DefaultHttpClient(mgr);
+    final DefaultHttpClient httpClient = new SystemDefaultHttpClient();
     configureClient(httpClient, config);
     return httpClient;
   }
@@ -153,24 +153,34 @@ public class HttpClientUtil {
 
   /**
    * Set max connections allowed per host. This call will only work when
-   * {@link ThreadSafeClientConnManager} is used.
+   * {@link ThreadSafeClientConnManager} or
+   * {@link PoolingClientConnectionManager} is used.
    */
   public static void setMaxConnectionsPerHost(HttpClient httpClient,
       int max) {
-    if(httpClient.getConnectionManager() instanceof ThreadSafeClientConnManager) {
+    // would have been nice if there was a common interface
+    if (httpClient.getConnectionManager() instanceof ThreadSafeClientConnManager) {
       ThreadSafeClientConnManager mgr = (ThreadSafeClientConnManager)httpClient.getConnectionManager();
+      mgr.setDefaultMaxPerRoute(max);
+    } else if (httpClient.getConnectionManager() instanceof PoolingClientConnectionManager) {
+      PoolingClientConnectionManager mgr = (PoolingClientConnectionManager)httpClient.getConnectionManager();
       mgr.setDefaultMaxPerRoute(max);
     }
   }
 
   /**
    * Set max total connections allowed. This call will only work when
-   * {@link ThreadSafeClientConnManager} is used.
+   * {@link ThreadSafeClientConnManager} or
+   * {@link PoolingClientConnectionManager} is used.
    */
   public static void setMaxConnections(final HttpClient httpClient,
       int max) {
-    if(httpClient.getConnectionManager() instanceof ThreadSafeClientConnManager) {
+    // would have been nice if there was a common interface
+    if (httpClient.getConnectionManager() instanceof ThreadSafeClientConnManager) {
       ThreadSafeClientConnManager mgr = (ThreadSafeClientConnManager)httpClient.getConnectionManager();
+      mgr.setMaxTotal(max);
+    } else if (httpClient.getConnectionManager() instanceof PoolingClientConnectionManager) {
+      PoolingClientConnectionManager mgr = (PoolingClientConnectionManager)httpClient.getConnectionManager();
       mgr.setMaxTotal(max);
     }
   }
