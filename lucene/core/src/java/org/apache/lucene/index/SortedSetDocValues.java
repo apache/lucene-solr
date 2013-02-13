@@ -33,7 +33,7 @@ public abstract class SortedSetDocValues {
    * constructors, typically implicit.) */
   protected SortedSetDocValues() {}
 
-  public static final long NO_MORE_ORDS = Long.MAX_VALUE;
+  public static final long NO_MORE_ORDS = -1;
 
   /** 
    * Returns the next ordinal for the current document (previously

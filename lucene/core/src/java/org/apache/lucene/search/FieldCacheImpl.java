@@ -33,6 +33,7 @@ import org.apache.lucene.index.FieldInfo;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.NumericDocValues;
 import org.apache.lucene.index.SegmentReader;
+import org.apache.lucene.index.SingletonSortedSetDocValues;
 import org.apache.lucene.index.SortedDocValues;
 import org.apache.lucene.index.SortedSetDocValues;
 import org.apache.lucene.index.Terms;
@@ -1304,14 +1305,18 @@ class FieldCacheImpl implements FieldCache {
     }
   }
 
+  // TODO: this if DocTermsIndex was already created, we
+  // should share it...
   public SortedSetDocValues getDocTermOrds(AtomicReader reader, String field) throws IOException {
     SortedSetDocValues dv = reader.getSortedSetDocValues(field);
     if (dv != null) {
       return dv;
     }
     
-    // nocommit: actually if they have a SortedDV (either indexed as DV or cached), we should return an impl
-    // over that: its like a specialized single-value case of this thing...
+    SortedDocValues sdv = reader.getSortedDocValues(field);
+    if (sdv != null) {
+      return new SingletonSortedSetDocValues(sdv);
+    }
     
     DocTermOrds dto = (DocTermOrds) caches.get(DocTermOrds.class).get(reader, new CacheKey(field, null), false);
     return dto.iterator(dto.getOrdTermsEnum(reader));
@@ -1325,7 +1330,6 @@ class FieldCacheImpl implements FieldCache {
     @Override
     protected Object createValue(AtomicReader reader, CacheKey key, boolean setDocsWithField /* ignored */)
         throws IOException {
-      // No DocValues impl yet (DocValues are single valued...):
       return new DocTermOrds(reader, key.field);
     }
   }

@@ -472,8 +472,8 @@ public class AssertingAtomicReader extends FilterAtomicReader {
     public long nextOrd() {
       assert lastOrd != NO_MORE_ORDS;
       long ord = in.nextOrd();
-      assert ord == NO_MORE_ORDS || ord < valueCount;
-      assert ord > lastOrd;
+      assert ord < valueCount;
+      assert ord == NO_MORE_ORDS || ord > lastOrd;
       lastOrd = ord;
       return ord;
     }
@@ -482,7 +482,7 @@ public class AssertingAtomicReader extends FilterAtomicReader {
     public void setDocument(int docID) {
       assert docID >= 0 && docID < maxDoc : "docid=" + docID + ",maxDoc=" + maxDoc;
       in.setDocument(docID);
-      lastOrd = -1;
+      lastOrd = -2;
     }
 
     @Override

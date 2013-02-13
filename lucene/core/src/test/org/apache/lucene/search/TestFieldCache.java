@@ -254,8 +254,11 @@ public class TestFieldCache extends LuceneTestCase {
 
     // getDocTermOrds
     SortedSetDocValues termOrds = cache.getDocTermOrds(reader, "theRandomUnicodeMultiValuedField");
-    // nocommit: test this with reflection or something, that its really from the same DTO
-    // assertSame("Second request to cache return same DocTermOrds", termOrds, cache.getDocTermOrds(reader, "theRandomUnicodeMultiValuedField"));
+    int numEntries = cache.getCacheEntries().length;
+    // ask for it again, and check that we didnt create any additional entries:
+    termOrds = cache.getDocTermOrds(reader, "theRandomUnicodeMultiValuedField");
+    assertEquals(numEntries, cache.getCacheEntries().length);
+
     for (int i = 0; i < NUM_DOCS; i++) {
       termOrds.setDocument(i);
       // This will remove identical terms. A DocTermOrds doesn't return duplicate ords for a docId
@@ -275,8 +278,8 @@ public class TestFieldCache extends LuceneTestCase {
     }
 
     // test bad field
-    // nocommit: what exactly does this test?
     termOrds = cache.getDocTermOrds(reader, "bogusfield");
+    assertTrue(termOrds.getValueCount() == 0);
 
     FieldCache.DEFAULT.purge(reader);
   }
