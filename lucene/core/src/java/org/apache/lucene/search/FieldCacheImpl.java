@@ -372,6 +372,10 @@ class FieldCacheImpl implements FieldCache {
         }
       };
     } else {
+      final FieldInfo info = reader.getFieldInfos().fieldInfo(field);
+      if (info != null && info.hasDocValues()) {
+        throw new IllegalStateException("Type mismatch: " + field + " was indexed as " + info.getDocValuesType());
+      }
       return (Bytes) caches.get(Byte.TYPE).get(reader, new CacheKey(field, parser), setDocsWithField);
     }
   }
@@ -458,6 +462,10 @@ class FieldCacheImpl implements FieldCache {
         }
       };
     } else {
+      final FieldInfo info = reader.getFieldInfos().fieldInfo(field);
+      if (info != null && info.hasDocValues()) {
+        throw new IllegalStateException("Type mismatch: " + field + " was indexed as " + info.getDocValuesType());
+      }
       return (Shorts) caches.get(Short.TYPE).get(reader, new CacheKey(field, parser), setDocsWithField);
     }
   }
@@ -542,6 +550,10 @@ class FieldCacheImpl implements FieldCache {
         }
       };
     } else {
+      final FieldInfo info = reader.getFieldInfos().fieldInfo(field);
+      if (info != null && info.hasDocValues()) {
+        throw new IllegalStateException("Type mismatch: " + field + " was indexed as " + info.getDocValuesType());
+      }
       return (Ints) caches.get(Integer.TYPE).get(reader, new CacheKey(field, parser), setDocsWithField);
     }
   }
@@ -728,6 +740,10 @@ class FieldCacheImpl implements FieldCache {
         }
       };
     } else {
+      final FieldInfo info = reader.getFieldInfos().fieldInfo(field);
+      if (info != null && info.hasDocValues()) {
+        throw new IllegalStateException("Type mismatch: " + field + " was indexed as " + info.getDocValuesType());
+      }
       return (Floats) caches.get(Float.TYPE).get(reader, new CacheKey(field, parser), setDocsWithField);
     }
   }
@@ -831,6 +847,10 @@ class FieldCacheImpl implements FieldCache {
         }
       };
     } else {
+      final FieldInfo info = reader.getFieldInfos().fieldInfo(field);
+      if (info != null && info.hasDocValues()) {
+        throw new IllegalStateException("Type mismatch: " + field + " was indexed as " + info.getDocValuesType());
+      }
       return (Longs) caches.get(Long.TYPE).get(reader, new CacheKey(field, parser), setDocsWithField);
     }
   }
@@ -934,6 +954,10 @@ class FieldCacheImpl implements FieldCache {
         }
       };
     } else {
+      final FieldInfo info = reader.getFieldInfos().fieldInfo(field);
+      if (info != null && info.hasDocValues()) {
+        throw new IllegalStateException("Type mismatch: " + field + " was indexed as " + info.getDocValuesType());
+      }
       return (Doubles) caches.get(Double.TYPE).get(reader, new CacheKey(field, parser), setDocsWithField);
     }
   }
@@ -1064,9 +1088,12 @@ class FieldCacheImpl implements FieldCache {
       return valuesIn;
     } else {
       final FieldInfo info = reader.getFieldInfos().fieldInfo(field);
-      if (info != null && !info.isIndexed() && info.hasDocValues()) {
+      if (info != null && info.hasDocValues()) {
         // we don't try to build a sorted instance from numeric/binary doc
         // values because dedup can be very costly
+        throw new IllegalStateException("Type mismatch: " + field + " was indexed as " + info.getDocValuesType());
+      }
+      if (info != null && !info.isIndexed()) {
         throw new IllegalArgumentException("Cannot get terms index for \"" + field
             + "\": it isn't indexed and doesn't have sorted doc values");
       }
@@ -1218,6 +1245,11 @@ class FieldCacheImpl implements FieldCache {
       // Not cached here by FieldCacheImpl (cached instead
       // per-thread by SegmentReader):
       return valuesIn;
+    }
+
+    final FieldInfo info = reader.getFieldInfos().fieldInfo(field);
+    if (info != null && info.hasDocValues()) {
+      throw new IllegalStateException("Type mismatch: " + field + " was indexed as " + info.getDocValuesType());
     }
 
     return (BinaryDocValues) caches.get(BinaryDocValues.class).get(reader, new CacheKey(field, acceptableOverheadRatio), false);
