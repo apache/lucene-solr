@@ -71,6 +71,10 @@ New Features
 * SOLR-4370: Allow configuring commitWithin to do hard commits. 
   (Mark Miller, Senthuran Sivananthan)
 
+* SOLR-4451: SolrJ, and SolrCloud internals, now use SystemDefaultHttpClient 
+  under the covers -- allowing many HTTP connection related properties to be
+  controlled via 'standard' java system properties.  (hossman)
+
 Bug Fixes
 ----------------------
 
