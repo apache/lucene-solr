@@ -29,6 +29,7 @@ import org.apache.lucene.util.BytesRef;
 public class SingletonSortedSetDocValues extends SortedSetDocValues {
   private final SortedDocValues in;
   private int docID;
+  private boolean set;
   
   /** Creates a multi-valued view over the provided SortedDocValues */
   public SingletonSortedSetDocValues(SortedDocValues in) {
@@ -38,12 +39,18 @@ public class SingletonSortedSetDocValues extends SortedSetDocValues {
 
   @Override
   public long nextOrd() {
-    return in.getOrd(docID);
+    if (set) {
+      return NO_MORE_ORDS;
+    } else {
+      set = true;
+      return in.getOrd(docID);
+    }
   }
 
   @Override
   public void setDocument(int docID) {
     this.docID = docID;
+    set = false;
   }
 
   @Override

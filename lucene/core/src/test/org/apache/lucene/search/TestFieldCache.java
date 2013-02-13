@@ -29,11 +29,17 @@ import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 
 import org.apache.lucene.analysis.MockAnalyzer;
+import org.apache.lucene.codecs.DocValuesFormat;
+import org.apache.lucene.document.BinaryDocValuesField;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
 import org.apache.lucene.document.IntField;
+import org.apache.lucene.document.NumericDocValuesField;
+import org.apache.lucene.document.SortedDocValuesField;
+import org.apache.lucene.document.SortedSetDocValuesField;
 import org.apache.lucene.document.StringField;
 import org.apache.lucene.index.*;
+import org.apache.lucene.search.FieldCache.Ints;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.util.Bits;
 import org.apache.lucene.util.BytesRef;
@@ -418,5 +424,125 @@ public class TestFieldCache extends LuceneTestCase {
       threads[threadIDX].join();
     }
     assertFalse(failed.get());
+  }
+  
+  public void testDocValuesIntegration() throws Exception {
+    Directory dir = newDirectory();
+    IndexWriterConfig iwc = newIndexWriterConfig(TEST_VERSION_CURRENT, null);
+    // nocommit
+    iwc.setCodec(_TestUtil.alwaysDocValuesFormat(DocValuesFormat.forName("Asserting"))); 
+    RandomIndexWriter iw = new RandomIndexWriter(random(), dir);
+    Document doc = new Document();
+    doc.add(new BinaryDocValuesField("binary", new BytesRef("binary value")));
+    doc.add(new SortedDocValuesField("sorted", new BytesRef("sorted value")));
+    doc.add(new NumericDocValuesField("numeric", 42));
+    doc.add(new SortedSetDocValuesField("sortedset", new BytesRef("sortedset value1")));
+    doc.add(new SortedSetDocValuesField("sortedset", new BytesRef("sortedset value2")));
+    iw.addDocument(doc);
+    DirectoryReader ir = iw.getReader();
+    iw.close();
+    AtomicReader ar = getOnlySegmentReader(ir);
+    
+    BytesRef scratch = new BytesRef();
+    
+    // Binary type: can be retrieved via getTerms()
+    try {
+      FieldCache.DEFAULT.getInts(ar, "binary", false);
+      fail();
+    } catch (IllegalStateException expected) {}
+    
+    BinaryDocValues binary = FieldCache.DEFAULT.getTerms(ar, "binary");
+    binary.get(0, scratch);
+    assertEquals("binary value", scratch.utf8ToString());
+    
+    try {
+      FieldCache.DEFAULT.getTermsIndex(ar, "binary");
+      fail();
+    } catch (IllegalStateException expected) {}
+    
+    try {
+      FieldCache.DEFAULT.getDocTermOrds(ar, "binary");
+      fail();
+    } catch (IllegalStateException expected) {}
+    
+    Bits bits = FieldCache.DEFAULT.getDocsWithField(ar, "binary");
+    assertTrue(bits instanceof Bits.MatchAllBits);
+    
+    // Sorted type: can be retrieved via getTerms(), getTermsIndex(), getDocTermOrds()
+    try {
+      FieldCache.DEFAULT.getInts(ar, "sorted", false);
+      fail();
+    } catch (IllegalStateException expected) {}
+    
+    binary = FieldCache.DEFAULT.getTerms(ar, "sorted");
+    binary.get(0, scratch);
+    assertEquals("sorted value", scratch.utf8ToString());
+    
+    SortedDocValues sorted = FieldCache.DEFAULT.getTermsIndex(ar, "sorted");
+    assertEquals(0, sorted.getOrd(0));
+    assertEquals(1, sorted.getValueCount());
+    sorted.get(0, scratch);
+    assertEquals("sorted value", scratch.utf8ToString());
+    
+    SortedSetDocValues sortedSet = FieldCache.DEFAULT.getDocTermOrds(ar, "sorted");
+    sortedSet.setDocument(0);
+    assertEquals(0, sortedSet.nextOrd());
+    assertEquals(SortedSetDocValues.NO_MORE_ORDS, sortedSet.nextOrd());
+    assertEquals(1, sortedSet.getValueCount());
+    
+    bits = FieldCache.DEFAULT.getDocsWithField(ar, "sorted");
+    assertTrue(bits instanceof Bits.MatchAllBits);
+    
+    // Numeric type: can be retrieved via getInts() and so on
+    Ints numeric = FieldCache.DEFAULT.getInts(ar, "numeric", false);
+    assertEquals(42, numeric.get(0));
+    
+    try {
+      FieldCache.DEFAULT.getTerms(ar, "numeric");
+      fail();
+    } catch (IllegalStateException expected) {}
+    
+    try {
+      FieldCache.DEFAULT.getTermsIndex(ar, "numeric");
+      fail();
+    } catch (IllegalStateException expected) {}
+    
+    try {
+      FieldCache.DEFAULT.getDocTermOrds(ar, "numeric");
+      fail();
+    } catch (IllegalStateException expected) {}
+    
+    bits = FieldCache.DEFAULT.getDocsWithField(ar, "numeric");
+    assertTrue(bits instanceof Bits.MatchAllBits);
+    
+    // SortedSet type: can be retrieved via getDocTermOrds() 
+    try {
+      FieldCache.DEFAULT.getInts(ar, "sortedset", false);
+      fail();
+    } catch (IllegalStateException expected) {}
+    
+    try {
+      FieldCache.DEFAULT.getTerms(ar, "sortedset");
+      fail();
+    } catch (IllegalStateException expected) {}
+    
+    try {
+      FieldCache.DEFAULT.getTermsIndex(ar, "sortedset");
+      fail();
+    } catch (IllegalStateException expected) {}
+    
+    sortedSet = FieldCache.DEFAULT.getDocTermOrds(ar, "sortedset");
+    sortedSet.setDocument(0);
+    assertEquals(0, sortedSet.nextOrd());
+    assertEquals(1, sortedSet.nextOrd());
+    assertEquals(SortedSetDocValues.NO_MORE_ORDS, sortedSet.nextOrd());
+    assertEquals(2, sortedSet.getValueCount());
+    
+    // nocommit: not right
+    bits = FieldCache.DEFAULT.getDocsWithField(ar, "sortedset");
+    assertTrue(bits instanceof Bits.MatchAllBits);
+    
+    ir.close();
+    dir.close();
   }
 }
