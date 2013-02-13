@@ -2301,7 +2301,7 @@ public class IndexWriter implements Closeable, TwoPhaseCommit {
               infoStream.message("IW", "addIndexes: process segment origName=" + info.info.name + " newName=" + newSegName + " info=" + info);
             }
 
-            IOContext context = new IOContext(new MergeInfo(info.info.getDocCount(), info.info.sizeInBytes(), true, -1));
+            IOContext context = new IOContext(new MergeInfo(info.info.getDocCount(), info.sizeInBytes(), true, -1));
 
             for(FieldInfo fi : getFieldInfos(info.info)) {
               globalFieldNumberMap.addOrGet(fi.name, fi.number, fi.getDocValuesType());
@@ -3458,7 +3458,8 @@ public class IndexWriter implements Closeable, TwoPhaseCommit {
         final int delCount = numDeletedDocs(info);
         assert delCount <= info.info.getDocCount();
         final double delRatio = ((double) delCount)/info.info.getDocCount();
-        merge.estimatedMergeBytes += info.info.sizeInBytes() * (1.0 - delRatio);
+        merge.estimatedMergeBytes += info.sizeInBytes() * (1.0 - delRatio);
+        merge.totalMergeBytes += info.sizeInBytes();
       }
     }
   }
@@ -3759,7 +3760,7 @@ public class IndexWriter implements Closeable, TwoPhaseCommit {
       // lost... 
 
       if (infoStream.isEnabled("IW")) {
-        infoStream.message("IW", String.format(Locale.ROOT, "merged segment size=%.3f MB vs estimate=%.3f MB", merge.info.info.sizeInBytes()/1024./1024., merge.estimatedMergeBytes/1024/1024.));
+        infoStream.message("IW", String.format(Locale.ROOT, "merged segment size=%.3f MB vs estimate=%.3f MB", merge.info.sizeInBytes()/1024./1024., merge.estimatedMergeBytes/1024/1024.));
       }
 
       final IndexReaderWarmer mergedSegmentWarmer = config.getMergedSegmentWarmer();

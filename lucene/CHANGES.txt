@@ -216,6 +216,10 @@ Bug Fixes
   cases, for example if you had an index with more than 260M documents and a 
   VAR_INT field.  (Simon Willnauer, Adrien Grand, Mike McCandless, Robert Muir)
 
+* LUCENE-4775: Remove SegmentInfo.sizeInBytes() and make
+  MergePolicy.OneMerge.totalBytesSize thread safe (Josh Bronson via
+  Robert Muir, Mike McCandless)
+
 Documentation
 
 * LUCENE-4718: Fixed documentation of oal.queryparser.classic.
