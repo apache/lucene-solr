@@ -52,37 +52,105 @@ public interface FieldCache {
   public static abstract class Bytes {
     /** Return a single Byte representation of this field's value. */
     public abstract byte get(int docID);
+    
+    /** Zero value for every document */
+    public static final Bytes EMPTY = new Bytes() {
+      @Override
+      public byte get(int docID) {
+        return 0;
+      }
+    };
   }
 
   /** Field values as 16-bit signed shorts */
   public static abstract class Shorts {
     /** Return a short representation of this field's value. */
     public abstract short get(int docID);
+    
+    /** Zero value for every document */
+    public static final Shorts EMPTY = new Shorts() {
+      @Override
+      public short get(int docID) {
+        return 0;
+      }
+    };
   }
 
   /** Field values as 32-bit signed integers */
   public static abstract class Ints {
     /** Return an integer representation of this field's value. */
     public abstract int get(int docID);
+    
+    /** Zero value for every document */
+    public static final Ints EMPTY = new Ints() {
+      @Override
+      public int get(int docID) {
+        return 0;
+      }
+    };
   }
 
   /** Field values as 32-bit signed long integers */
   public static abstract class Longs {
     /** Return an long representation of this field's value. */
     public abstract long get(int docID);
+    
+    /** Zero value for every document */
+    public static final Longs EMPTY = new Longs() {
+      @Override
+      public long get(int docID) {
+        return 0;
+      }
+    };
   }
 
   /** Field values as 32-bit floats */
   public static abstract class Floats {
     /** Return an float representation of this field's value. */
     public abstract float get(int docID);
+    
+    /** Zero value for every document */
+    public static final Floats EMPTY = new Floats() {
+      @Override
+      public float get(int docID) {
+        return 0;
+      }
+    };
   }
 
   /** Field values as 64-bit doubles */
   public static abstract class Doubles {
     /** Return an double representation of this field's value. */
     public abstract double get(int docID);
+    
+    /** Zero value for every document */
+    public static final Doubles EMPTY = new Doubles() {
+      @Override
+      public double get(int docID) {
+        return 0;
+      }
+    };
   }
+  
+  /** Returns MISSING/-1 ordinal for every document */
+  public static final SortedDocValues EMPTY_TERMSINDEX = new SortedDocValues() {
+    @Override
+    public int getOrd(int docID) {
+      return -1;
+    }
+
+    @Override
+    public void lookupOrd(int ord, BytesRef result) {
+      result.bytes = MISSING;
+      result.offset = 0;
+      result.length = 0;
+    }
+
+    @Override
+    public int getValueCount() {
+      return 0;
+    }
+  };
 
   /**
    * Placeholder indicating creation of this cache is currently in-progress.
