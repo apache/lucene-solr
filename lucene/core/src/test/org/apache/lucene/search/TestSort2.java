@@ -75,26 +75,6 @@ public class TestSort2 extends LuceneTestCase {
     dir.close();
   }
   
-  public void testCountingCollector() throws Exception {
-    Directory indexStore = newDirectory();
-    RandomIndexWriter writer = new RandomIndexWriter(random(), indexStore);
-    for(int i=0; i<5; i++) {
-      Document doc = new Document();
-      doc.add(new StringField("string", "a"+i, Field.Store.NO));
-      doc.add(new StringField("string", "b"+i, Field.Store.NO));
-      writer.addDocument(doc);
-    }
-    IndexReader reader = writer.getReader();
-    writer.close();
-
-    IndexSearcher searcher = newSearcher(reader);
-    TotalHitCountCollector c = new TotalHitCountCollector();
-    searcher.search(new MatchAllDocsQuery(), null, c);
-    assertEquals(5, c.getTotalHits());
-    reader.close();
-    indexStore.close();
-  }
-  
   public void testEmptyStringVsNullStringSort() throws Exception {
     Directory dir = newDirectory();
     IndexWriter w = new IndexWriter(dir, newIndexWriterConfig(
