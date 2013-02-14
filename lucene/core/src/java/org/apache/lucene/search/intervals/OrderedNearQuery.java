@@ -21,6 +21,7 @@ import org.apache.lucene.search.PositionFilteredScorer;
 import org.apache.lucene.search.Query;
 import org.apache.lucene.search.Scorer;
 import org.apache.lucene.search.ScorerFilterQuery;
+import org.apache.lucene.search.WithinFilteredScorer;
 
 import java.io.IOException;
 
@@ -59,7 +60,7 @@ public class OrderedNearQuery extends ScorerFilterQuery {
 
     @Override
     public Scorer scorer(Scorer filteredScorer) {
-      return new OrderedNearScorer(filteredScorer, slop);
+      return new WithinFilteredScorer(new OrderedNearScorer(filteredScorer), slop);
     }
 
     @Override
@@ -71,24 +72,17 @@ public class OrderedNearQuery extends ScorerFilterQuery {
   private static class OrderedNearScorer extends PositionFilteredScorer {
 
     private final int lastiter;
-    private final int slop;
 
     private int index = 1;
     private Interval[] intervals;
 
-    public OrderedNearScorer(Scorer filteredScorer, int slop) {
+    public OrderedNearScorer(Scorer filteredScorer) {
       super(filteredScorer);
       intervals = new Interval[subScorers.length];
       for (int i = 0; i < subScorers.length; i++) {
         intervals[i] = new Interval();
       }
       lastiter = intervals.length - 1;
-      this.slop = slop;
-    }
-
-    @Override
-    protected boolean passesFilter() {
-      return matchDistance <= slop;
     }
 
     @Override

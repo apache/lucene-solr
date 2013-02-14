@@ -16,9 +16,15 @@ package org.apache.lucene.search.intervals;
  * limitations under the License.
  */
 
-import org.apache.lucene.search.BooleanClause;
-import org.apache.lucene.search.BooleanQuery;
+import org.apache.lucene.index.DocsEnum;
+import org.apache.lucene.search.PositionFilteredScorer;
+import org.apache.lucene.search.PositionQueue;
 import org.apache.lucene.search.Query;
+import org.apache.lucene.search.Scorer;
+import org.apache.lucene.search.ScorerFilterQuery;
+import org.apache.lucene.search.WithinFilteredScorer;
+
+import java.io.IOException;
 
 /**
  * A query that matches if a set of subqueries also match, and are within
@@ -34,20 +40,7 @@ import org.apache.lucene.search.Query;
  * @lucene.experimental
  */
 
-public class UnorderedNearQuery extends IntervalFilterQuery {
-
-  private final int slop;
-
-  /**
-   * Constructs an OrderedNearQuery
-   * @param slop the maximum distance between the subquery matches
-   * @param collectLeaves false if only the parent interval should be collected
-   * @param subqueries the subqueries to match.
-   */
-  public UnorderedNearQuery(int slop, boolean collectLeaves, Query... subqueries) {
-    super(buildBooleanQuery(subqueries), new WithinIntervalFilter(slop + subqueries.length - 2, collectLeaves));
-    this.slop = slop;
-  }
+public class UnorderedNearQuery extends ScorerFilterQuery {
 
   /**
    * Constructs an OrderedNearQuery
@@ -55,21 +48,141 @@ public class UnorderedNearQuery extends IntervalFilterQuery {
    * @param subqueries the subqueries to match.
    */
   public UnorderedNearQuery(int slop, Query... subqueries) {
-    this(slop, true, subqueries);
+    super(buildBooleanQuery(subqueries), new UnorderedNearScorerFactory(slop));
   }
 
-  private static BooleanQuery buildBooleanQuery(Query... queries) {
-    BooleanQuery bq = new BooleanQuery();
-    for (Query q : queries) {
-      bq.add(q, BooleanClause.Occur.MUST);
+  private static class UnorderedNearScorerFactory implements ScorerFilterFactory {
+
+    private final int slop;
+
+    UnorderedNearScorerFactory(int slop) {
+      this.slop = slop;
     }
-    return bq;
+
+    @Override
+    public Scorer scorer(Scorer filteredScorer) {
+      return new WithinFilteredScorer(new UnorderedNearScorer(filteredScorer), slop);
+    }
+
+    @Override
+    public String getName() {
+      return "UnorderedNear/" + slop;
+    }
   }
 
-  @Override
-  public String toString() {
-    return "UnorderedNear/" + slop + ":" + super.toString("");
+  private static class UnorderedNearScorer extends PositionFilteredScorer {
+
+    SpanningPositionQueue posQueue;
+
+    public UnorderedNearScorer(Scorer filteredScorer) {
+      super(filteredScorer);
+      posQueue = new SpanningPositionQueue(subScorers);
+    }
+
+    @Override
+    protected int doNextPosition() throws IOException {
+      while (posQueue.isFull() && posQueue.span.begin == current.begin) {
+        posQueue.nextPosition();
+      }
+      if (!posQueue.isFull())
+        return NO_MORE_POSITIONS;
+      do {
+        //current.update(posQueue.top().interval, posQueue.span);
+        posQueue.updateCurrent(current);
+        if (current.equals(posQueue.top().interval))
+          return current.begin;
+        matchDistance = posQueue.getMatchDistance();
+        posQueue.nextPosition();
+      } while (posQueue.isFull() && current.end == posQueue.span.end);
+      return current.begin;
+    }
+
+    @Override
+    protected void reset(int doc) throws IOException {
+      current.reset();
+      posQueue.advanceTo(doc);
+    }
+
   }
+
+  private static class SpanningPositionQueue extends PositionQueue {
+
+    Interval span = new Interval();
+    int scorerCount;
+    int firstIntervalEnd;
+    int lastIntervalBegin;
+
+    public SpanningPositionQueue(Scorer[] subScorers) {
+      super(subScorers);
+      scorerCount = subScorers.length;
+    }
+
+    public int getMatchDistance() {
+      return lastIntervalBegin - firstIntervalEnd - 1;
+    }
+
+    public boolean isFull() {
+      return queuesize == scorerCount;
+    }
+
+    public void updateCurrent(Interval current) {
+      final Interval top = this.top().interval;
+      current.update(top, span);
+      this.firstIntervalEnd = top.end;
+    }
+
+    private void updateRightExtreme(Interval newRight) {
+      if (span.end <= newRight.end) {
+        span.update(span, newRight);
+        this.lastIntervalBegin = newRight.begin;
+      }
+    }
+
+    protected void updateInternalIntervals() {
+      updateRightExtreme(top().interval);
+    }
+
+    @Override
+    public int nextPosition() throws IOException {
+      int position;
+      if ((position = super.nextPosition()) == DocsEnum.NO_MORE_POSITIONS) {
+        return DocsEnum.NO_MORE_POSITIONS;
+      }
+      span.update(top().interval, span);
+      return position;
+    }
+
+    @Override
+    protected void init() throws IOException {
+      super.init();
+      span.reset();
+      firstIntervalEnd = lastIntervalBegin = span.begin;
+      for (Object docsEnumRef : getHeapArray()) {
+        if (docsEnumRef != null) {
+          final Interval i = ((DocsEnumRef) docsEnumRef).interval;
+          updateRightExtreme(i);
+        }
+      }
+    }
+
+    @Override
+    public void advanceTo(int doc) {
+      super.advanceTo(doc);
+    }
+
+    @Override
+    protected boolean lessThan(DocsEnumRef left, DocsEnumRef right) {
+      final Interval a = left.interval;
+      final Interval b = right.interval;
+      return a.begin < b.begin || (a.begin == b.begin && a.end > b.end);
+    }
+
+    @Override
+    public String toString() {
+      return top().interval.toString();
+    }
+  }
+
 
 }
 

@@ -72,7 +72,7 @@ public class TestBrouwerianQuery extends IntervalTestBase {
 
   public void testBrouwerianOverlapQuery() throws IOException {
     // We want to find 'jumps NOT WITHIN 2 positions of fox'
-    Query sub = new UnorderedNearQuery(2, false, makeTermQuery("jumps"), makeTermQuery("fox"));
+    Query sub = new UnorderedNearQuery(2, makeTermQuery("jumps"), makeTermQuery("fox"));
     Query query = makeTermQuery("jumps");
     NonOverlappingQuery q = new NonOverlappingQuery(query, sub);
 
@@ -82,7 +82,7 @@ public class TestBrouwerianQuery extends IntervalTestBase {
   }
 
   public void testBrouwerianNonExistentOverlapQuery() throws IOException {
-    Query sub = new UnorderedNearQuery(2, false, makeTermQuery("dog"), makeTermQuery("over"));
+    Query sub = new UnorderedNearQuery(2, makeTermQuery("dog"), makeTermQuery("over"));
     Query query = makeTermQuery("dog");
     NonOverlappingQuery q = new NonOverlappingQuery(query, sub);
 
@@ -90,7 +90,7 @@ public class TestBrouwerianQuery extends IntervalTestBase {
   }
 
   public void testBrouwerianExistentOverlapQuery() throws IOException {
-    Query sub = new UnorderedNearQuery(1, false, makeTermQuery("dog"), makeTermQuery("over"));
+    Query sub = new UnorderedNearQuery(1, makeTermQuery("dog"), makeTermQuery("over"));
     Query query = makeTermQuery("dog");
     NonOverlappingQuery q = new NonOverlappingQuery(query, sub);
 

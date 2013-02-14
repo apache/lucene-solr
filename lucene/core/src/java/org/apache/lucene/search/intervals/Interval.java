@@ -196,4 +196,5 @@ public class Interval implements Cloneable {
     this.offsetBegin = interval.offsetBegin;
     this.offsetEnd = interval.offsetEnd;
   }
+
 }

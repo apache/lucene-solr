@@ -239,10 +239,8 @@ public class TestBasicIntervals extends IntervalTestBase {
     });
   }
 
-  /*
-  
   public void testNearUnordered() throws Exception {
-    Query q = new UnorderedNearQuery(0, false, makeTermQuery("u1"), makeTermQuery("u2"));
+    Query q = new UnorderedNearQuery(0, makeTermQuery("u1"), makeTermQuery("u2"));
     checkIntervals(q, searcher, new int[][]{
         { 4, 1, 2 },
         { 5, 2, 3 },

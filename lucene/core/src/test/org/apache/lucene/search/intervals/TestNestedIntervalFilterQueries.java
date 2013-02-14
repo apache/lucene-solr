@@ -85,8 +85,8 @@ public class TestNestedIntervalFilterQueries extends IntervalTestBase {
 
   // or(w2 within/2 w1, w10 within/3 w1)
   public void testUnorderedNearNearQuery() throws IOException {
-    Query near1 = new UnorderedNearQuery(2, false, makeTermQuery("w2"), makeTermQuery("w1"));
-    Query near2 = new UnorderedNearQuery(3, false, makeTermQuery("w10"), makeTermQuery("w1"));
+    Query near1 = new UnorderedNearQuery(2, makeTermQuery("w2"), makeTermQuery("w1"));
+    Query near2 = new UnorderedNearQuery(3, makeTermQuery("w10"), makeTermQuery("w1"));
     BooleanQuery bq = new BooleanQuery();
     bq.add(near1, BooleanClause.Occur.SHOULD);
     bq.add(near2, BooleanClause.Occur.SHOULD);

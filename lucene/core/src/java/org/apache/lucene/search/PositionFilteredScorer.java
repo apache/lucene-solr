@@ -42,12 +42,17 @@ public abstract class PositionFilteredScorer extends Scorer {
 
   @Override
   public float score() throws IOException {
-    return child.score();
+    return child.score(); // nocommit
   }
 
   @Override
   public int docID() {
     return child.docID();
+  }
+
+  @Override
+  public int freq() throws IOException {
+    return 1; //nocommit
   }
 
   @Override
@@ -82,21 +87,14 @@ public abstract class PositionFilteredScorer extends Scorer {
       buffered = false;
       return current.begin;
     }
-    while (doNextPosition() != NO_MORE_POSITIONS) {
-      if (passesFilter()) {
-        return current.begin;
-      }
-    }
-    return NO_MORE_POSITIONS;
+    return doNextPosition();
   }
 
   protected abstract int doNextPosition() throws IOException;
 
-  protected boolean passesFilter() {
-    return true;
-  }
-
-  protected abstract void reset(int doc) throws IOException;
+  protected void reset(int doc) throws IOException {
+    // empty default
+  };
 
   public int getMatchDistance() {
     return matchDistance;
