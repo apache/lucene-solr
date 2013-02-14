@@ -351,11 +351,6 @@ public class TestSort extends LuceneTestCase {
     return getIndex(false, true);
   }
 
-  private IndexSearcher getEmptyIndex()
-  throws IOException {
-    return getIndex(false, false);
-  }
-
   // Set to true if the DV "string" field is indexed as a
   // sorted source:
   private boolean dvStringSorted;
@@ -708,42 +703,6 @@ public class TestSort extends LuceneTestCase {
     assertMatches (full, queryA, sort, "JIHGFEDCBA");
     assertSaneFieldCaches(getTestName() + " ShortParser");
     fc.purgeAllCaches();
-  }
-
-  // test sorts when there's nothing in the index
-  public void testEmptyIndex() throws Exception {
-    IndexSearcher empty = getEmptyIndex();
-
-    sort = new Sort();
-    assertMatches(empty, queryX, sort, "");
-
-    sort.setSort(SortField.FIELD_DOC);
-    assertMatches(empty, queryX, sort, "");
-
-    sort.setSort(new SortField("int", SortField.Type.INT), SortField.FIELD_DOC);
-    assertMatches(empty, queryX, sort, "");
-    
-    sort.setSort(new SortField("int_dv", SortField.Type.INT), SortField.FIELD_DOC);
-    assertMatches(empty, queryX, sort, "");
-
-    sort.setSort(new SortField("string", SortField.Type.STRING, true), SortField.FIELD_DOC);
-    assertMatches(empty, queryX, sort, "");
-
-    sort.setSort(new SortField("float", SortField.Type.FLOAT), new SortField("string", SortField.Type.STRING));
-    assertMatches(empty, queryX, sort, "");
-    
-    sort.setSort(new SortField("float_dv", SortField.Type.FLOAT), new SortField("string", SortField.Type.STRING));
-    assertMatches(empty, queryX, sort, "");
-
-    sort.setSort(new SortField("string_dv", getDVStringSortType(false), true), SortField.FIELD_DOC);
-    assertMatches(empty, queryX, sort, "");
-
-    sort.setSort(new SortField("float_dv", SortField.Type.FLOAT),
-                  new SortField("string_dv", getDVStringSortType(false)));
-    assertMatches(empty, queryX, sort, "");
-    
-    sort.setSort(new SortField("float_dv", SortField.Type.FLOAT), new SortField("string_dv", getDVStringSortType(false)));
-    assertMatches(empty, queryX, sort, "");
   }
 
   static class MyFieldComparator extends FieldComparator<Integer> {

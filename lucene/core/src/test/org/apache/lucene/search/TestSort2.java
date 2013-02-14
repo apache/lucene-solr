@@ -27,6 +27,7 @@ import org.apache.lucene.index.DirectoryReader;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.IndexWriter;
 import org.apache.lucene.index.IndexWriterConfig;
+import org.apache.lucene.index.MultiReader;
 import org.apache.lucene.index.RandomIndexWriter;
 import org.apache.lucene.index.Term;
 import org.apache.lucene.store.Directory;
@@ -156,5 +157,35 @@ public class TestSort2 extends LuceneTestCase {
     assertEquals(maxScore, s.search(q, null, 3, new Sort(new SortField[] {new SortField("id", SortField.Type.INT, true)}), random().nextBoolean(), true).getMaxScore(), 0.0);
     r.close();
     d.close();
+  }
+  
+  // test sorts when there's nothing in the index
+  public void testEmptyIndex() throws Exception {
+    IndexSearcher empty = new IndexSearcher(new MultiReader());
+    Query query = new TermQuery(new Term("contents", "foo"));
+  
+    Sort sort = new Sort();
+    TopDocs td = empty.search(query, null, 10, sort, true, true);
+    assertEquals(0, td.totalHits);
+
+    sort.setSort(SortField.FIELD_DOC);
+    td = empty.search(query, null, 10, sort, true, true);
+    assertEquals(0, td.totalHits);
+
+    sort.setSort(new SortField("int", SortField.Type.INT), SortField.FIELD_DOC);
+    td = empty.search(query, null, 10, sort, true, true);
+    assertEquals(0, td.totalHits);
+    
+    sort.setSort(new SortField("string", SortField.Type.STRING, true), SortField.FIELD_DOC);
+    td = empty.search(query, null, 10, sort, true, true);
+    assertEquals(0, td.totalHits);
+    
+    sort.setSort(new SortField("string_val", SortField.Type.STRING_VAL, true), SortField.FIELD_DOC);
+    td = empty.search(query, null, 10, sort, true, true);
+    assertEquals(0, td.totalHits);
+
+    sort.setSort(new SortField("float", SortField.Type.FLOAT), new SortField("string", SortField.Type.STRING));
+    td = empty.search(query, null, 10, sort, true, true);
+    assertEquals(0, td.totalHits);
   }
 }
