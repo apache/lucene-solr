@@ -26,6 +26,7 @@ import org.apache.lucene.document.StringField;
 import org.apache.lucene.index.DirectoryReader;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.IndexWriter;
+import org.apache.lucene.index.IndexWriterConfig;
 import org.apache.lucene.index.RandomIndexWriter;
 import org.apache.lucene.index.Term;
 import org.apache.lucene.store.Directory;
@@ -121,5 +122,39 @@ public class TestSort2 extends LuceneTestCase {
     searcher.search(new MatchAllDocsQuery(), null, 500, sort);
     reader.close();
     indexStore.close();
+  }
+  
+  public void testMaxScore() throws Exception {
+    Directory d = newDirectory();
+    // Not RIW because we need exactly 2 segs:
+    IndexWriter w = new IndexWriter(d, new IndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer(random())));
+    int id = 0;
+    for(int seg=0;seg<2;seg++) {
+      for(int docIDX=0;docIDX<10;docIDX++) {
+        Document doc = new Document();
+        doc.add(newStringField("id", ""+docIDX, Field.Store.YES));
+        StringBuilder sb = new StringBuilder();
+        for(int i=0;i<id;i++) {
+          sb.append(' ');
+          sb.append("text");
+        }
+        doc.add(newTextField("body", sb.toString(), Field.Store.NO));
+        w.addDocument(doc);
+        id++;
+      }
+      w.commit();
+    }
+
+    IndexReader r = DirectoryReader.open(w, true);
+    w.close();
+    Query q = new TermQuery(new Term("body", "text"));
+    IndexSearcher s = newSearcher(r);
+    float maxScore = s.search(q , 10).getMaxScore();
+    assertEquals(maxScore, s.search(q, null, 3, Sort.INDEXORDER, random().nextBoolean(), true).getMaxScore(), 0.0);
+    assertEquals(maxScore, s.search(q, null, 3, Sort.RELEVANCE, random().nextBoolean(), true).getMaxScore(), 0.0);
+    assertEquals(maxScore, s.search(q, null, 3, new Sort(new SortField[] {new SortField("id", SortField.Type.INT, false)}), random().nextBoolean(), true).getMaxScore(), 0.0);
+    assertEquals(maxScore, s.search(q, null, 3, new Sort(new SortField[] {new SortField("id", SortField.Type.INT, true)}), random().nextBoolean(), true).getMaxScore(), 0.0);
+    r.close();
+    d.close();
   }
 }
