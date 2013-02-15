@@ -82,6 +82,35 @@ public class TestSort2 extends LuceneTestCase {
     dir.close();
   }
   
+  /** Tests sorting on type string with a missing value */
+  public void testStringMissing() throws IOException {
+    Directory dir = newDirectory();
+    RandomIndexWriter writer = new RandomIndexWriter(random(), dir);
+    Document doc = new Document();
+    writer.addDocument(doc);
+    doc = new Document();
+    doc.add(newStringField("value", "foo", Field.Store.YES));
+    writer.addDocument(doc);
+    doc = new Document();
+    doc.add(newStringField("value", "bar", Field.Store.YES));
+    writer.addDocument(doc);
+    IndexReader ir = writer.getReader();
+    writer.close();
+    
+    IndexSearcher searcher = new IndexSearcher(ir);
+    Sort sort = new Sort(new SortField("value", SortField.Type.STRING));
+
+    TopDocs td = searcher.search(new MatchAllDocsQuery(), 10, sort);
+    assertEquals(3, td.totalHits);
+    // null comes first
+    assertNull(searcher.doc(td.scoreDocs[0].doc).get("value"));
+    assertEquals("bar", searcher.doc(td.scoreDocs[1].doc).get("value"));
+    assertEquals("foo", searcher.doc(td.scoreDocs[2].doc).get("value"));
+
+    ir.close();
+    dir.close();
+  }
+  
   /** Tests reverse sorting on type string */
   public void testStringReverse() throws IOException {
     Directory dir = newDirectory();
@@ -129,6 +158,35 @@ public class TestSort2 extends LuceneTestCase {
     // 'bar' comes before 'foo'
     assertEquals("bar", searcher.doc(td.scoreDocs[0].doc).get("value"));
     assertEquals("foo", searcher.doc(td.scoreDocs[1].doc).get("value"));
+
+    ir.close();
+    dir.close();
+  }
+  
+  /** Tests sorting on type string_val with a missing value */
+  public void testStringValMissing() throws IOException {
+    Directory dir = newDirectory();
+    RandomIndexWriter writer = new RandomIndexWriter(random(), dir);
+    Document doc = new Document();
+    writer.addDocument(doc);
+    doc = new Document();
+    doc.add(newStringField("value", "foo", Field.Store.YES));
+    writer.addDocument(doc);
+    doc = new Document();
+    doc.add(newStringField("value", "bar", Field.Store.YES));
+    writer.addDocument(doc);
+    IndexReader ir = writer.getReader();
+    writer.close();
+    
+    IndexSearcher searcher = new IndexSearcher(ir);
+    Sort sort = new Sort(new SortField("value", SortField.Type.STRING_VAL));
+
+    TopDocs td = searcher.search(new MatchAllDocsQuery(), 10, sort);
+    assertEquals(3, td.totalHits);
+    // null comes first
+    assertNull(searcher.doc(td.scoreDocs[0].doc).get("value"));
+    assertEquals("bar", searcher.doc(td.scoreDocs[1].doc).get("value"));
+    assertEquals("foo", searcher.doc(td.scoreDocs[2].doc).get("value"));
 
     ir.close();
     dir.close();
@@ -1379,6 +1437,81 @@ public class TestSort2 extends LuceneTestCase {
     for (int i = 0; i < letters.size(); i++) {
       assertEquals(letters.get(i), searcher.doc(td.scoreDocs[i].doc).get("parser"));
     }
+
+    ir.close();
+    dir.close();
+  }
+  
+  /** Tests sorting a single document */
+  public void testSortOneDocument() throws Exception {
+    Directory dir = newDirectory();
+    RandomIndexWriter writer = new RandomIndexWriter(random(), dir);
+    Document doc = new Document();
+    doc.add(newStringField("value", "foo", Field.Store.YES));
+    writer.addDocument(doc);
+    IndexReader ir = writer.getReader();
+    writer.close();
+    
+    IndexSearcher searcher = new IndexSearcher(ir);
+    Sort sort = new Sort(new SortField("value", SortField.Type.STRING));
+
+    TopDocs td = searcher.search(new MatchAllDocsQuery(), 10, sort);
+    assertEquals(1, td.totalHits);
+    assertEquals("foo", searcher.doc(td.scoreDocs[0].doc).get("value"));
+
+    ir.close();
+    dir.close();
+  }
+  
+  /** Tests sorting a single document with scores */
+  public void testSortOneDocumentWithScores() throws Exception {
+    Directory dir = newDirectory();
+    RandomIndexWriter writer = new RandomIndexWriter(random(), dir);
+    Document doc = new Document();
+    doc.add(newStringField("value", "foo", Field.Store.YES));
+    writer.addDocument(doc);
+    IndexReader ir = writer.getReader();
+    writer.close();
+    
+    IndexSearcher searcher = new IndexSearcher(ir);
+    Sort sort = new Sort(new SortField("value", SortField.Type.STRING));
+
+    TopDocs expected = searcher.search(new TermQuery(new Term("value", "foo")), 10);
+    assertEquals(1, expected.totalHits);
+    TopDocs actual = searcher.search(new TermQuery(new Term("value", "foo")), null, 10, sort, true, true);
+    
+    assertEquals(expected.totalHits, actual.totalHits);
+    assertEquals(expected.scoreDocs[0].score, actual.scoreDocs[0].score, 0F);
+
+    ir.close();
+    dir.close();
+  }
+  
+  /** Tests sorting with two fields */
+  public void testSortTwoFields() throws Exception {
+    Directory dir = newDirectory();
+    RandomIndexWriter writer = new RandomIndexWriter(random(), dir);
+    Document doc = new Document();
+    doc.add(newStringField("tievalue", "tied", Field.Store.NO));
+    doc.add(newStringField("value", "foo", Field.Store.YES));
+    writer.addDocument(doc);
+    doc = new Document();
+    doc.add(newStringField("tievalue", "tied", Field.Store.NO));
+    doc.add(newStringField("value", "bar", Field.Store.YES));
+    writer.addDocument(doc);
+    IndexReader ir = writer.getReader();
+    writer.close();
+    
+    IndexSearcher searcher = new IndexSearcher(ir);
+    // tievalue, then value
+    Sort sort = new Sort(new SortField("tievalue", SortField.Type.STRING),
+                         new SortField("value", SortField.Type.STRING));
+
+    TopDocs td = searcher.search(new MatchAllDocsQuery(), 10, sort);
+    assertEquals(2, td.totalHits);
+    // 'bar' comes before 'foo'
+    assertEquals("bar", searcher.doc(td.scoreDocs[0].doc).get("value"));
+    assertEquals("foo", searcher.doc(td.scoreDocs[1].doc).get("value"));
 
     ir.close();
     dir.close();
