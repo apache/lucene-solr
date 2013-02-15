@@ -378,64 +378,6 @@ public class TestSort extends LuceneTestCase {
     super.tearDown();
   }
 
-  // test the sorts by score and document number
-  public void testBuiltInSorts() throws Exception {
-    sort = new Sort();
-    assertMatches(full, queryX, sort, "ACEGI");
-    assertMatches(full, queryY, sort, "BDFHJ");
-
-    sort.setSort(SortField.FIELD_DOC);
-    assertMatches(full, queryX, sort, "ACEGI");
-    assertMatches(full, queryY, sort, "BDFHJ");
-  }
-
-  // test sorts where the type of field is specified
-  public void testTypedSort() throws Exception {
-    sort.setSort(new SortField("int", SortField.Type.INT), SortField.FIELD_DOC);
-    assertMatches(full, queryX, sort, "IGAEC");
-    assertMatches(full, queryY, sort, "DHFJB");
-    
-    sort.setSort(new SortField("float", SortField.Type.FLOAT), SortField.FIELD_DOC);
-    assertMatches(full, queryX, sort, "GCIEA");
-    assertMatches(full, queryY, sort, "DHJFB");
-
-    sort.setSort(new SortField("long", SortField.Type.LONG), SortField.FIELD_DOC);
-    assertMatches(full, queryX, sort, "EACGI");
-    assertMatches(full, queryY, sort, "FBJHD");
-
-    sort.setSort(new SortField("double", SortField.Type.DOUBLE), SortField.FIELD_DOC);
-    assertMatches(full, queryX, sort, "AGICE");
-    assertMatches(full, queryY, sort, "DJHBF");
-    
-    sort.setSort(new SortField("byte", SortField.Type.BYTE), SortField.FIELD_DOC);
-    assertMatches(full, queryX, sort, "CIGAE");
-    assertMatches(full, queryY, sort, "DHFBJ");
-
-    sort.setSort(new SortField("short", SortField.Type.SHORT), SortField.FIELD_DOC);
-    assertMatches(full, queryX, sort, "IAGCE");
-    assertMatches(full, queryY, sort, "DFHBJ");
-
-    sort.setSort(new SortField("string", SortField.Type.STRING), SortField.FIELD_DOC);
-    assertMatches(full, queryX, sort, "AIGEC");
-    assertMatches(full, queryY, sort, "DJHFB");
-    
-    sort.setSort(new SortField("int_dv", SortField.Type.INT), SortField.FIELD_DOC);
-    assertMatches(full, queryX, sort, "IGAEC");
-    assertMatches(full, queryY, sort, "DHFJB");
-
-    sort.setSort(new SortField("float_dv", SortField.Type.FLOAT), SortField.FIELD_DOC);
-    assertMatches(full, queryX, sort, "GCIEA");
-    assertMatches(full, queryY, sort, "DHJFB");
-
-    sort.setSort(new SortField("double_dv", SortField.Type.DOUBLE), SortField.FIELD_DOC);
-    assertMatches(full, queryX, sort, "AGICE");
-    assertMatches(full, queryY, sort, "DJHBF");
-
-    sort.setSort(new SortField("string_dv", getDVStringSortType()), SortField.FIELD_DOC);
-    assertMatches(full, queryX, sort, "AIGEC");
-    assertMatches(full, queryY, sort, "DJHFB");
-  }
-
   private SortField.Type getDVStringSortType() {
     return getDVStringSortType(true);
   }
@@ -770,41 +712,6 @@ public class TestSort extends LuceneTestCase {
   public void testNewCustomFieldParserSort() throws Exception {
     sort.setSort(new SortField("parser", new MyFieldComparatorSource()));
     assertMatches(full, queryA, sort, "JIHGFEDCBA");
-  }
-
-  // test sorts in reverse
-  public void testReverseSort() throws Exception {
-    sort.setSort(new SortField(null, SortField.Type.SCORE, true), SortField.FIELD_DOC);
-    assertMatches(full, queryX, sort, "IEGCA");
-    assertMatches(full, queryY, sort, "JFHDB");
-
-    sort.setSort(new SortField(null, SortField.Type.DOC, true));
-    assertMatches(full, queryX, sort, "IGECA");
-    assertMatches(full, queryY, sort, "JHFDB");
-
-    sort.setSort(new SortField("int", SortField.Type.INT, true));
-    assertMatches(full, queryX, sort, "CAEGI");
-    assertMatches(full, queryY, sort, "BJFHD");
-
-    sort.setSort(new SortField("float", SortField.Type.FLOAT, true));
-    assertMatches(full, queryX, sort, "AECIG");
-    assertMatches(full, queryY, sort, "BFJHD");
-    
-    sort.setSort(new SortField("string", SortField.Type.STRING, true));
-    assertMatches(full, queryX, sort, "CEGIA");
-    assertMatches(full, queryY, sort, "BFHJD");
-    
-    sort.setSort(new SortField("int_dv", SortField.Type.INT, true));
-    assertMatches(full, queryX, sort, "CAEGI");
-    assertMatches(full, queryY, sort, "BJFHD");
-    
-    sort.setSort(new SortField("float_dv", SortField.Type.FLOAT, true));
-    assertMatches(full, queryX, sort, "AECIG");
-    assertMatches(full, queryY, sort, "BFJHD");
-
-    sort.setSort(new SortField("string_dv", getDVStringSortType(), true));
-    assertMatches(full, queryX, sort, "CEGIA");
-    assertMatches(full, queryY, sort, "BFHJD");
   }
 
   // test sorting when the sort field is empty (undefined) for some of the documents
