@@ -69,12 +69,10 @@ public class TestSort extends LuceneTestCase {
   private IndexSearcher searchX;
   private IndexSearcher searchY;
   private Query queryX;
-  private Query queryY;
   private Query queryA;
   private Query queryE;
   private Query queryF;
   private Query queryG;
-  private Query queryM;
   private Sort sort;
 
   @BeforeClass
@@ -355,12 +353,10 @@ public class TestSort extends LuceneTestCase {
     searchX = getXIndex();
     searchY = getYIndex();
     queryX = new TermQuery(new Term("contents", "x"));
-    queryY = new TermQuery(new Term("contents", "y"));
     queryA = new TermQuery(new Term("contents", "a"));
     queryE = new TermQuery(new Term("contents", "e"));
     queryF = new TermQuery(new Term("contents", "f"));
     queryG = new TermQuery(new Term("contents", "g"));
-    queryM = new TermQuery(new Term("contents", "m"));
     sort = new Sort();
     
   }
@@ -389,66 +385,6 @@ public class TestSort extends LuceneTestCase {
       return random().nextBoolean() ? SortField.Type.STRING : SortField.Type.STRING_VAL;
     } else {
       return SortField.Type.STRING_VAL;
-    }
-  }
-  
-  private static class SortMissingLastTestHelper {
-    final SortField sortField;
-    final Object min;
-    final Object max;
-    
-    SortMissingLastTestHelper(SortField sortField, Object min, Object max) {
-      this.sortField = sortField;
-      this.min = min;
-      this.max = max;
-    }
-  }
-
-  // test sorts where the type of field is specified
-  public void testSortMissingLast() throws Exception {
-    
-    @SuppressWarnings("boxing")
-    SortMissingLastTestHelper[] ascendTesters = new SortMissingLastTestHelper[] {
-        new SortMissingLastTestHelper( new SortField(   "byte",   SortField.Type.BYTE ), Byte.MIN_VALUE,    Byte.MAX_VALUE ),
-        new SortMissingLastTestHelper( new SortField(  "short",  SortField.Type.SHORT ), Short.MIN_VALUE,   Short.MAX_VALUE ),
-        new SortMissingLastTestHelper( new SortField(    "int",    SortField.Type.INT ), Integer.MIN_VALUE, Integer.MAX_VALUE ),
-        new SortMissingLastTestHelper( new SortField(   "long",   SortField.Type.LONG ), Long.MIN_VALUE,    Long.MAX_VALUE ),
-        new SortMissingLastTestHelper( new SortField(  "float",  SortField.Type.FLOAT ), Float.MIN_VALUE,   Float.MAX_VALUE ),
-        new SortMissingLastTestHelper( new SortField( "double", SortField.Type.DOUBLE ), Double.MIN_VALUE,  Double.MAX_VALUE ),
-    };
-    
-    @SuppressWarnings("boxing")
-    SortMissingLastTestHelper[] descendTesters = new SortMissingLastTestHelper[] {
-      new SortMissingLastTestHelper( new SortField(   "byte",   SortField.Type.BYTE, true ), Byte.MIN_VALUE,    Byte.MAX_VALUE ),
-      new SortMissingLastTestHelper( new SortField(  "short",  SortField.Type.SHORT, true ), Short.MIN_VALUE,   Short.MAX_VALUE ),
-      new SortMissingLastTestHelper( new SortField(    "int",    SortField.Type.INT, true ), Integer.MIN_VALUE, Integer.MAX_VALUE ),
-      new SortMissingLastTestHelper( new SortField(   "long",   SortField.Type.LONG, true ), Long.MIN_VALUE,    Long.MAX_VALUE ),
-      new SortMissingLastTestHelper( new SortField(  "float",  SortField.Type.FLOAT, true ), Float.MIN_VALUE,   Float.MAX_VALUE ),
-      new SortMissingLastTestHelper( new SortField( "double", SortField.Type.DOUBLE, true ), Double.MIN_VALUE,  Double.MAX_VALUE ),
-    };
-    
-    // Default order: ascending
-    for(SortMissingLastTestHelper t : ascendTesters) {
-      sort.setSort(t.sortField, SortField.FIELD_DOC);
-      assertMatches("sortField:"+t.sortField, full, queryM, sort, "adbc");
-
-      sort.setSort(t.sortField.setMissingValue(t.max), SortField.FIELD_DOC);
-      assertMatches("sortField:"+t.sortField, full, queryM, sort, "bcad");
-
-      sort.setSort(t.sortField.setMissingValue(t.min), SortField.FIELD_DOC);
-      assertMatches("sortField:"+t.sortField, full, queryM, sort, "adbc");
-    }
-    
-    // Reverse order: descending (Note: Order for un-valued documents remains the same due to tie breaker: a,d)
-    for(SortMissingLastTestHelper t : descendTesters) {
-      sort.setSort(t.sortField, SortField.FIELD_DOC);
-      assertMatches("sortField:"+t.sortField, full, queryM, sort, "cbad");
-      
-      sort.setSort(t.sortField.setMissingValue( t.max ), SortField.FIELD_DOC);
-      assertMatches("sortField:"+t.sortField, full, queryM, sort, "adcb");
-      
-      sort.setSort(t.sortField.setMissingValue( t.min ), SortField.FIELD_DOC);
-      assertMatches("sortField:"+t.sortField, full, queryM, sort, "cbad");
     }
   }
 
