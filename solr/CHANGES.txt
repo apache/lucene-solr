@@ -123,6 +123,8 @@ Bug Fixes
 * SOLR-4426: NRTCachingDirectoryFactory does not initialize maxCachedMB and maxMergeSizeMB
   if <directoryFactory> is not present in solrconfig.xml (Jack Krupansky via shalin)
 
+* SOLR-4463: Fix SolrCoreState reference counting. (Mark Miller)
+
 Optimizations
 ----------------------
 
