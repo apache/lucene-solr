@@ -168,6 +168,9 @@ New Features
   is faster than others, however consumes much more RAM.
   (Michael McCandless, Shai Erera)
   
+* LUCENE-4778: Add a getter for the delegate in RateLimitedDirectoryWrapper.
+  (Mark Miller)
+ 
 API Changes
 
 * LUCENE-4709: FacetResultNode no longer has a residue field. (Shai Erera)
