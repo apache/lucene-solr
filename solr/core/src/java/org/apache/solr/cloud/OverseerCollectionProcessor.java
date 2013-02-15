@@ -185,7 +185,7 @@ public class OverseerCollectionProcessor implements Runnable, ClosableThread {
     } catch (SolrException ex) {
       SolrException.log(log, "Collection " + operation + " of " + operation
           + " failed");
-      results.add("Operation " + operation + " cause exception:", ex);
+      results.add("Operation " + operation + " caused exception:", ex);
     } finally {
       return new OverseerSolrResponse(results);
     }
