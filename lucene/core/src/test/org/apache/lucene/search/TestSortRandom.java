@@ -32,6 +32,7 @@ import org.apache.lucene.document.SortedDocValuesField;
 import org.apache.lucene.index.AtomicReaderContext;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.RandomIndexWriter;
+import org.apache.lucene.search.BooleanClause.Occur;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.util.Bits;
 import org.apache.lucene.util.BytesRef;
@@ -109,18 +110,31 @@ public class TestSortRandom extends LuceneTestCase {
       } else {
         sf = new SortField("string", SortField.Type.STRING, reverse);
       }
-      final Sort sort = new Sort(sf);
+      final Sort sort;
+      if (random.nextBoolean()) {
+        sort = new Sort(sf);
+      } else {
+        sort = new Sort(sf, SortField.FIELD_DOC);
+      }
       final int hitCount = _TestUtil.nextInt(random, 1, r.maxDoc() + 20);
       final RandomFilter f = new RandomFilter(random, random.nextFloat(), docValues);
-      if (random.nextBoolean()) {
+      int queryType = random.nextInt(3);
+      if (queryType == 0) {
+        // force out of order
+        BooleanQuery bq = new BooleanQuery();
+        // Add a Query with SHOULD, since bw.scorer() returns BooleanScorer2
+        // which delegates to BS if there are no mandatory clauses.
+        bq.add(new MatchAllDocsQuery(), Occur.SHOULD);
+        // Set minNrShouldMatch to 1 so that BQ will not optimize rewrite to return
+        // the clause instead of BQ.
+        bq.setMinimumNumberShouldMatch(1);
+        hits = s.search(bq, f, hitCount, sort, random.nextBoolean(), random.nextBoolean());
+      } else if (queryType == 1) {
         hits = s.search(new ConstantScoreQuery(f),
-                        hitCount,
-                        sort);
+                        null, hitCount, sort, random.nextBoolean(), random.nextBoolean());
       } else {
         hits = s.search(new MatchAllDocsQuery(),
-                        f,
-                        hitCount,
-                        sort);
+                        f, hitCount, sort, random.nextBoolean(), random.nextBoolean());
       }
 
       if (VERBOSE) {
