@@ -18,6 +18,9 @@ package org.apache.lucene.search;
  */
 
 import java.io.IOException;
+import java.util.Arrays;
+import java.util.Collections;
+import java.util.List;
 
 import org.apache.lucene.analysis.MockAnalyzer;
 import org.apache.lucene.document.Document;
@@ -30,7 +33,10 @@ import org.apache.lucene.index.IndexWriterConfig;
 import org.apache.lucene.index.MultiReader;
 import org.apache.lucene.index.RandomIndexWriter;
 import org.apache.lucene.index.Term;
+import org.apache.lucene.index.Terms;
+import org.apache.lucene.index.TermsEnum;
 import org.apache.lucene.store.Directory;
+import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.LuceneTestCase;
 
 /*
@@ -743,5 +749,269 @@ public class TestSort2 extends LuceneTestCase {
     sort.setSort(new SortField("float", SortField.Type.FLOAT), new SortField("string", SortField.Type.STRING));
     td = empty.search(query, null, 10, sort, true, true);
     assertEquals(0, td.totalHits);
+  }
+  
+  /** 
+   * test sorts for a custom int parser that uses a simple char encoding 
+   */
+  public void testCustomIntParser() throws Exception {
+    List<String> letters = Arrays.asList(new String[] { "A", "B", "C", "D", "E", "F", "G", "H", "I", "J" });
+    Collections.shuffle(letters, random());
+
+    Directory dir = newDirectory();
+    RandomIndexWriter iw = new RandomIndexWriter(random(), dir);
+    for (String letter : letters) {
+      Document doc = new Document();
+      doc.add(newStringField("parser", letter, Field.Store.YES));
+      iw.addDocument(doc);
+    }
+    
+    IndexReader ir = iw.getReader();
+    iw.close();
+    
+    IndexSearcher searcher = newSearcher(ir);
+    Sort sort = new Sort(new SortField("parser", new FieldCache.IntParser() {
+      @Override
+      public int parseInt(BytesRef term) {
+        return (term.bytes[term.offset]-'A') * 123456;
+      }
+      
+      @Override
+      public TermsEnum termsEnum(Terms terms) throws IOException {
+        return terms.iterator(null);
+      }
+    }), SortField.FIELD_DOC );
+    
+    TopDocs td = searcher.search(new MatchAllDocsQuery(), 10, sort);
+
+    // results should be in alphabetical order
+    assertEquals(10, td.totalHits);
+    Collections.sort(letters);
+    for (int i = 0; i < letters.size(); i++) {
+      assertEquals(letters.get(i), searcher.doc(td.scoreDocs[i].doc).get("parser"));
+    }
+
+    ir.close();
+    dir.close();
+  }
+  
+  /** 
+   * test sorts for a custom byte parser that uses a simple char encoding 
+   */
+  public void testCustomByteParser() throws Exception {
+    List<String> letters = Arrays.asList(new String[] { "A", "B", "C", "D", "E", "F", "G", "H", "I", "J" });
+    Collections.shuffle(letters, random());
+
+    Directory dir = newDirectory();
+    RandomIndexWriter iw = new RandomIndexWriter(random(), dir);
+    for (String letter : letters) {
+      Document doc = new Document();
+      doc.add(newStringField("parser", letter, Field.Store.YES));
+      iw.addDocument(doc);
+    }
+    
+    IndexReader ir = iw.getReader();
+    iw.close();
+    
+    IndexSearcher searcher = newSearcher(ir);
+    Sort sort = new Sort(new SortField("parser", new FieldCache.ByteParser() {
+      @Override
+      public byte parseByte(BytesRef term) {
+        return (byte) (term.bytes[term.offset]-'A');
+      }
+      
+      @Override
+      public TermsEnum termsEnum(Terms terms) throws IOException {
+        return terms.iterator(null);
+      }
+    }), SortField.FIELD_DOC );
+    
+    TopDocs td = searcher.search(new MatchAllDocsQuery(), 10, sort);
+
+    // results should be in alphabetical order
+    assertEquals(10, td.totalHits);
+    Collections.sort(letters);
+    for (int i = 0; i < letters.size(); i++) {
+      assertEquals(letters.get(i), searcher.doc(td.scoreDocs[i].doc).get("parser"));
+    }
+
+    ir.close();
+    dir.close();
+  }
+  
+  /** 
+   * test sorts for a custom short parser that uses a simple char encoding 
+   */
+  public void testCustomShortParser() throws Exception {
+    List<String> letters = Arrays.asList(new String[] { "A", "B", "C", "D", "E", "F", "G", "H", "I", "J" });
+    Collections.shuffle(letters, random());
+
+    Directory dir = newDirectory();
+    RandomIndexWriter iw = new RandomIndexWriter(random(), dir);
+    for (String letter : letters) {
+      Document doc = new Document();
+      doc.add(newStringField("parser", letter, Field.Store.YES));
+      iw.addDocument(doc);
+    }
+    
+    IndexReader ir = iw.getReader();
+    iw.close();
+    
+    IndexSearcher searcher = newSearcher(ir);
+    Sort sort = new Sort(new SortField("parser", new FieldCache.ShortParser() {
+      @Override
+      public short parseShort(BytesRef term) {
+        return (short) (term.bytes[term.offset]-'A');
+      }
+      
+      @Override
+      public TermsEnum termsEnum(Terms terms) throws IOException {
+        return terms.iterator(null);
+      }
+    }), SortField.FIELD_DOC );
+    
+    TopDocs td = searcher.search(new MatchAllDocsQuery(), 10, sort);
+
+    // results should be in alphabetical order
+    assertEquals(10, td.totalHits);
+    Collections.sort(letters);
+    for (int i = 0; i < letters.size(); i++) {
+      assertEquals(letters.get(i), searcher.doc(td.scoreDocs[i].doc).get("parser"));
+    }
+
+    ir.close();
+    dir.close();
+  }
+  
+  /** 
+   * test sorts for a custom long parser that uses a simple char encoding 
+   */
+  public void testCustomLongParser() throws Exception {
+    List<String> letters = Arrays.asList(new String[] { "A", "B", "C", "D", "E", "F", "G", "H", "I", "J" });
+    Collections.shuffle(letters, random());
+
+    Directory dir = newDirectory();
+    RandomIndexWriter iw = new RandomIndexWriter(random(), dir);
+    for (String letter : letters) {
+      Document doc = new Document();
+      doc.add(newStringField("parser", letter, Field.Store.YES));
+      iw.addDocument(doc);
+    }
+    
+    IndexReader ir = iw.getReader();
+    iw.close();
+    
+    IndexSearcher searcher = newSearcher(ir);
+    Sort sort = new Sort(new SortField("parser", new FieldCache.LongParser() {
+      @Override
+      public long parseLong(BytesRef term) {
+        return (term.bytes[term.offset]-'A') * 1234567890L;
+      }
+      
+      @Override
+      public TermsEnum termsEnum(Terms terms) throws IOException {
+        return terms.iterator(null);
+      }
+    }), SortField.FIELD_DOC );
+    
+    TopDocs td = searcher.search(new MatchAllDocsQuery(), 10, sort);
+
+    // results should be in alphabetical order
+    assertEquals(10, td.totalHits);
+    Collections.sort(letters);
+    for (int i = 0; i < letters.size(); i++) {
+      assertEquals(letters.get(i), searcher.doc(td.scoreDocs[i].doc).get("parser"));
+    }
+
+    ir.close();
+    dir.close();
+  }
+  
+  /** 
+   * test sorts for a custom float parser that uses a simple char encoding 
+   */
+  public void testCustomFloatParser() throws Exception {
+    List<String> letters = Arrays.asList(new String[] { "A", "B", "C", "D", "E", "F", "G", "H", "I", "J" });
+    Collections.shuffle(letters, random());
+
+    Directory dir = newDirectory();
+    RandomIndexWriter iw = new RandomIndexWriter(random(), dir);
+    for (String letter : letters) {
+      Document doc = new Document();
+      doc.add(newStringField("parser", letter, Field.Store.YES));
+      iw.addDocument(doc);
+    }
+    
+    IndexReader ir = iw.getReader();
+    iw.close();
+    
+    IndexSearcher searcher = newSearcher(ir);
+    Sort sort = new Sort(new SortField("parser", new FieldCache.FloatParser() {
+      @Override
+      public float parseFloat(BytesRef term) {
+        return (float) Math.sqrt(term.bytes[term.offset]);
+      }
+      
+      @Override
+      public TermsEnum termsEnum(Terms terms) throws IOException {
+        return terms.iterator(null);
+      }
+    }), SortField.FIELD_DOC );
+    
+    TopDocs td = searcher.search(new MatchAllDocsQuery(), 10, sort);
+
+    // results should be in alphabetical order
+    assertEquals(10, td.totalHits);
+    Collections.sort(letters);
+    for (int i = 0; i < letters.size(); i++) {
+      assertEquals(letters.get(i), searcher.doc(td.scoreDocs[i].doc).get("parser"));
+    }
+
+    ir.close();
+    dir.close();
+  }
+  
+  /** 
+   * test sorts for a custom double parser that uses a simple char encoding 
+   */
+  public void testCustomDoubleParser() throws Exception {
+    List<String> letters = Arrays.asList(new String[] { "A", "B", "C", "D", "E", "F", "G", "H", "I", "J" });
+    Collections.shuffle(letters, random());
+
+    Directory dir = newDirectory();
+    RandomIndexWriter iw = new RandomIndexWriter(random(), dir);
+    for (String letter : letters) {
+      Document doc = new Document();
+      doc.add(newStringField("parser", letter, Field.Store.YES));
+      iw.addDocument(doc);
+    }
+    
+    IndexReader ir = iw.getReader();
+    iw.close();
+    
+    IndexSearcher searcher = newSearcher(ir);
+    Sort sort = new Sort(new SortField("parser", new FieldCache.DoubleParser() {
+      @Override
+      public double parseDouble(BytesRef term) {
+        return Math.pow(term.bytes[term.offset], (term.bytes[term.offset]-'A'));
+      }
+      
+      @Override
+      public TermsEnum termsEnum(Terms terms) throws IOException {
+        return terms.iterator(null);
+      }
+    }), SortField.FIELD_DOC );
+    
+    TopDocs td = searcher.search(new MatchAllDocsQuery(), 10, sort);
+
+    // results should be in alphabetical order
+    assertEquals(10, td.totalHits);
+    Collections.sort(letters);
+    for (int i = 0; i < letters.size(); i++) {
+      assertEquals(letters.get(i), searcher.doc(td.scoreDocs[i].doc).get("parser"));
+    }
+
+    ir.close();
+    dir.close();
   }
 }
