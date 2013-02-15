@@ -18,14 +18,24 @@
 package org.apache.lucene.spatial.prefix.tree;
 
 import com.spatial4j.core.context.SpatialContext;
+import com.spatial4j.core.shape.Point;
 import com.spatial4j.core.shape.Rectangle;
 import com.spatial4j.core.shape.Shape;
-
-import org.apache.lucene.util.LuceneTestCase;
+import org.apache.lucene.document.Document;
+import org.apache.lucene.document.Field;
+import org.apache.lucene.document.Field.Store;
+import org.apache.lucene.document.TextField;
+import org.apache.lucene.search.Query;
+import org.apache.lucene.search.ScoreDoc;
+import org.apache.lucene.search.TopDocs;
+import org.apache.lucene.spatial.SpatialTestCase;
+import org.apache.lucene.spatial.prefix.TermQueryPrefixTreeStrategy;
+import org.apache.lucene.spatial.query.SpatialArgs;
+import org.apache.lucene.spatial.query.SpatialOperation;
 import org.junit.Before;
 import org.junit.Test;
 
-public class SpatialPrefixTreeTest extends LuceneTestCase {
+public class SpatialPrefixTreeTest extends SpatialTestCase {
 
   //TODO plug in others and test them
   private SpatialContext ctx;
@@ -36,11 +46,12 @@ public class SpatialPrefixTreeTest extends LuceneTestCase {
   public void setUp() throws Exception {
     super.setUp();
     ctx = SpatialContext.GEO;
-    trie = new GeohashPrefixTree(ctx,4);
   }
 
   @Test
   public void testNodeTraverse() {
+    trie = new GeohashPrefixTree(ctx,4);
+
     Node prevN = null;
     Node n = trie.getWorldNode();
     assertEquals(0,n.getLevel());
@@ -57,4 +68,40 @@ public class SpatialPrefixTreeTest extends LuceneTestCase {
       assertTrue(prevNShape.getHeight() > sbox.getHeight());
     }
   }
+  /**
+   * A PrefixTree pruning optimization gone bad.
+   * See <a href="https://issues.apache.org/jira/browse/LUCENE-4770>LUCENE-4770</a>.
+   */
+  @Test
+  public void testBadPrefixTreePrune() throws Exception {
+
+    trie = new QuadPrefixTree(ctx, 12);
+    TermQueryPrefixTreeStrategy strategy = new TermQueryPrefixTreeStrategy(trie, "geo");
+    Document doc = new Document();
+    doc.add(new TextField("id", "1", Store.YES));
+
+    Shape area = ctx.makeRectangle(-122.82, -122.78, 48.54, 48.56);
+
+    Field[] fields = strategy.createIndexableFields(area, 0.025);
+    for (Field field : fields) {
+      doc.add(field);
+    }
+    addDocument(doc);
+
+    Point upperleft = ctx.makePoint(-122.88, 48.54);
+    Point lowerright = ctx.makePoint(-122.82, 48.62);
+
+    Query query = strategy.makeQuery(new SpatialArgs(SpatialOperation.Intersects, ctx.makeRectangle(upperleft, lowerright)));
+
+    commit();
+
+    TopDocs search = indexSearcher.search(query, 10);
+    ScoreDoc[] scoreDocs = search.scoreDocs;
+    for (ScoreDoc scoreDoc : scoreDocs) {
+      System.out.println(indexSearcher.doc(scoreDoc.doc));
+    }
+
+    assertEquals(1, search.totalHits);
+  }
+
 }

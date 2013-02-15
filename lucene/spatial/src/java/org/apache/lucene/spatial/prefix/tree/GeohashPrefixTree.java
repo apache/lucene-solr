@@ -93,12 +93,6 @@ public class GeohashPrefixTree extends SpatialPrefixTree {
     return new GhCell(bytes, offset, len);
   }
 
-  @Override
-  public List<Node> getNodes(Shape shape, int detailLevel, boolean inclParents) {
-    return shape instanceof Point ? super.getNodesAltPoint((Point) shape, detailLevel, inclParents) :
-        super.getNodes(shape, detailLevel, inclParents);
-  }
-
   class GhCell extends Node {
     GhCell(String token) {
       super(token);

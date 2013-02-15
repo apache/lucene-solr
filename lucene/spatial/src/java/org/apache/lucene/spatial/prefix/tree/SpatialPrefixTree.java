@@ -116,88 +116,86 @@ public abstract class SpatialPrefixTree {
   }
 
   /**
-   * Gets the intersecting & including cells for the specified shape, without exceeding detail level.
-   * The result is a set of cells (no dups), sorted. Unmodifiable.
+   * Gets the intersecting cells for the specified shape, without exceeding
+   * detail level. If a cell is within the query shape then it's marked as a
+   * leaf and none of its children are added.
    * <p/>
-   * This implementation checks if shape is a Point and if so uses an implementation that
-   * recursively calls {@link Node#getSubCell(com.spatial4j.core.shape.Point)}. Cell subclasses
-   * ideally implement that method with a quick implementation, otherwise, subclasses should
-   * override this method to invoke {@link #getNodesAltPoint(com.spatial4j.core.shape.Point, int, boolean)}.
-   * TODO consider another approach returning an iterator -- won't build up all cells in memory.
+   * This implementation checks if shape is a Point and if so returns {@link
+   * #getNodes(com.spatial4j.core.shape.Point, int, boolean)}.
+   *
+   * @param shape       the shape; non-null
+   * @param detailLevel the maximum detail level to get cells for
+   * @param inclParents if true then all parent cells of leaves are returned
+   *                    too. The top world cell is never returned.
+   * @param simplify    for non-point shapes, this will simply/aggregate sets of
+   *                    complete leaves in a cell to its parent, resulting in
+   *                    ~20-25% fewer cells.
+   * @return a set of cells (no dups), sorted, immutable, non-null
    */
-  public List<Node> getNodes(Shape shape, int detailLevel, boolean inclParents) {
+  public List<Node> getNodes(Shape shape, int detailLevel, boolean inclParents,
+                             boolean simplify) {
+    //TODO consider an on-demand iterator -- it won't build up all cells in memory.
     if (detailLevel > maxLevels) {
       throw new IllegalArgumentException("detailLevel > maxLevels");
     }
-
-    List<Node> cells;
     if (shape instanceof Point) {
-      //optimized point algorithm
-      final int initialCapacity = inclParents ? 1 + detailLevel : 1;
-      cells = new ArrayList<Node>(initialCapacity);
-      recursiveGetNodes(getWorldNode(), (Point) shape, detailLevel, true, cells);
-      assert cells.size() == initialCapacity;
-    } else {
-      cells = new ArrayList<Node>(inclParents ? 1024 : 512);
-      recursiveGetNodes(getWorldNode(), shape, detailLevel, inclParents, cells);
+      return getNodes((Point) shape, detailLevel, inclParents);
     }
-    if (inclParents) {
-      Node c = cells.remove(0);//remove getWorldNode()
-      assert c.getLevel() == 0;
-    }
+    List<Node> cells = new ArrayList<Node>(inclParents ? 4096 : 2048);
+    recursiveGetNodes(getWorldNode(), shape, detailLevel, inclParents, simplify, cells);
     return cells;
   }
 
-  private void recursiveGetNodes(Node node, Shape shape, int detailLevel, boolean inclParents,
-                                 Collection<Node> result) {
-    if (node.isLeaf()) {//cell is within shape
+  /**
+   * Returns true if node was added as a leaf. If it wasn't it recursively
+   * descends.
+   */
+  private boolean recursiveGetNodes(Node node, Shape shape, int detailLevel,
+                                    boolean inclParents, boolean simplify,
+                                    List<Node> result) {
+    if (node.getLevel() == detailLevel) {
+      node.setLeaf();//FYI might already be a leaf
+    }
+    if (node.isLeaf()) {
       result.add(node);
-      return;
+      return true;
     }
-    final Collection<Node> subCells = node.getSubCells(shape);
-    if (node.getLevel() == detailLevel - 1) {
-      if (subCells.size() < node.getSubCellsSize() || node.getLevel() == 0) {
-        if (inclParents)
-          result.add(node);
-        for (Node subCell : subCells) {
-          subCell.setLeaf();
-        }
-        result.addAll(subCells);
-      } else {//a bottom level (i.e. detail level) optimization where all boxes intersect, so use parent cell.
-        node.setLeaf();//the cell may not be strictly within but its close
-        result.add(node);
-      }
-    } else {
-      if (inclParents) {
-        result.add(node);
-      }
-      for (Node subCell : subCells) {
-        recursiveGetNodes(subCell, shape, detailLevel, inclParents, result);//tail call
-      }
-    }
-  }
+    if (inclParents && node.getLevel() != 0)
+      result.add(node);
 
-  private void recursiveGetNodes(Node node, Point point, int detailLevel, boolean inclParents,
-                                 Collection<Node> result) {
-    if (inclParents) {
-      result.add(node);
+    Collection<Node> subCells = node.getSubCells(shape);
+    int leaves = 0;
+    for (Node subCell : subCells) {
+      if (recursiveGetNodes(subCell, shape, detailLevel, inclParents, simplify, result))
+        leaves++;
     }
-    final Node pCell = node.getSubCell(point);
-    if (node.getLevel() == detailLevel - 1) {
-      pCell.setLeaf();
-      result.add(pCell);
-    } else {
-      recursiveGetNodes(pCell, point, detailLevel, inclParents, result);//tail call
+    //can we simplify?
+    if (simplify && leaves == node.getSubCellsSize() && node.getLevel() != 0) {
+      //Optimization: substitute the parent as a leaf instead of adding all
+      // children as leaves
+
+      //remove the leaves
+      do {
+        result.remove(result.size() - 1);//remove last
+      } while (--leaves > 0);
+      //add node as the leaf
+      node.setLeaf();
+      if (!inclParents) // otherwise it was already added up above
+        result.add(node);
+      return true;
     }
+    return false;
   }
 
   /**
-   * Subclasses might override {@link #getNodes(com.spatial4j.core.shape.Shape, int, boolean)}
-   * and check if the argument is a shape and if so, delegate
-   * to this implementation, which calls {@link #getNode(com.spatial4j.core.shape.Point, int)} and
-   * then calls {@link #getNode(String)} repeatedly if inclParents is true.
+   * A Point-optimized implementation of
+   * {@link #getNodes(com.spatial4j.core.shape.Shape, int, boolean, boolean)}. That
+   * method in facts calls this for points.
+   * <p/>
+   * This implementation depends on {@link #getNode(String)} being fast, as its
+   * called repeatedly when incPlarents is true.
    */
-  protected final List<Node> getNodesAltPoint(Point p, int detailLevel, boolean inclParents) {
+  public List<Node> getNodes(Point p, int detailLevel, boolean inclParents) {
     Node cell = getNode(p, detailLevel);
     if (!inclParents) {
       return Collections.singletonList(cell);
