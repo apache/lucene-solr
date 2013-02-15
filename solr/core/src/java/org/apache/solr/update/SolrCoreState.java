@@ -25,6 +25,8 @@ import org.apache.solr.core.CoreContainer;
 import org.apache.solr.core.DirectoryFactory;
 import org.apache.solr.core.SolrCore;
 import org.apache.solr.util.RefCounted;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  * The state in this class can be easily shared between SolrCores across
@@ -32,10 +34,44 @@ import org.apache.solr.util.RefCounted;
  * 
  */
 public abstract class SolrCoreState {
+  public static Logger log = LoggerFactory.getLogger(SolrCoreState.class);
+  
   private final Object deleteLock = new Object();
   
   public Object getUpdateLock() {
     return deleteLock;
+  }
+  
+  private int solrCoreStateRefCnt = 1;
+  
+  public synchronized int getSolrCoreStateRefCnt() {
+    return solrCoreStateRefCnt;
+  }
+
+  public void increfSolrCoreState() {
+    synchronized (this) {
+      if (solrCoreStateRefCnt == 0) {
+        throw new IllegalStateException("IndexWriter has been closed");
+      }
+      solrCoreStateRefCnt++;
+    }
+  }
+  
+  public void decrefSolrCoreState(IndexWriterCloser closer) {
+    synchronized (this) {
+      
+      solrCoreStateRefCnt--;
+      if (solrCoreStateRefCnt == 0) {
+
+        try {
+          log.info("Closing SolrCoreState");
+          close(closer);
+        } catch (Throwable t) {
+          log.error("Error closing SolrCoreState", t);
+        }
+        
+      }
+    }
   }
   
   public abstract Lock getCommitLock();

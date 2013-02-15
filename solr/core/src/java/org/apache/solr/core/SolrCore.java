@@ -44,7 +44,6 @@ import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
-import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.locks.ReentrantLock;
@@ -150,7 +149,6 @@ public final class SolrCore implements SolrInfoMBean {
   private final String dataDir;
   private final UpdateHandler updateHandler;
   private final SolrCoreState solrCoreState;
-  private int solrCoreStateRefCnt = 1;
   
   private final long startTime;
   private final RequestHandlers reqHandlers;
@@ -396,7 +394,7 @@ public final class SolrCore implements SolrInfoMBean {
     IndexSchema schema = new IndexSchema(config,
         getSchema().getResourceName(), null);
     
-    increfSolrCoreState();
+    solrCoreState.increfSolrCoreState();
     
     SolrCore core = new SolrCore(getName(), getDataDir(), config,
         schema, coreDescriptor, updateHandler, prev);
@@ -867,32 +865,6 @@ public final class SolrCore implements SolrInfoMBean {
   public SolrCoreState getSolrCoreState() {
     return solrCoreState;
   }  
-  
-  private void increfSolrCoreState() {
-    synchronized (solrCoreState) {
-      if (solrCoreStateRefCnt == 0) {
-        throw new IllegalStateException("IndexWriter has been closed");
-      }
-      solrCoreStateRefCnt++;
-    }
-  }
-  
-  private void decrefSolrCoreState(IndexWriterCloser closer) {
-    synchronized (solrCoreState) {
-      
-      solrCoreStateRefCnt--;
-      if (solrCoreStateRefCnt == 0) {
-
-        try {
-          log.info("Closing SolrCoreState");
-          solrCoreState.close(closer);
-        } catch (Throwable t) {
-          log.error("Error closing SolrCoreState", t);
-        }
-        
-      }
-    }
-  }
 
   /**
    * @return an update processor registered to the given name.  Throw an exception if this chain is undefined
@@ -976,10 +948,12 @@ public final class SolrCore implements SolrInfoMBean {
     }
     
     try {
-      if (updateHandler instanceof IndexWriterCloser) {
-        decrefSolrCoreState((IndexWriterCloser) updateHandler);
-      } else {
-        decrefSolrCoreState(null);
+      if (solrCoreState != null) {
+        if (updateHandler instanceof IndexWriterCloser) {
+          solrCoreState.decrefSolrCoreState((IndexWriterCloser) updateHandler);
+        } else {
+          solrCoreState.decrefSolrCoreState(null);
+        }
       }
     } catch (Throwable e) {
       SolrException.log(log, e);
@@ -1005,15 +979,14 @@ public final class SolrCore implements SolrInfoMBean {
     }
     
     if (solrCoreState != null) { // bad startup case
-      synchronized (solrCoreState) {
-        if (solrCoreStateRefCnt == 0) {
-          try {
-            directoryFactory.close();
-          } catch (Throwable t) {
-            SolrException.log(log, t);
-          }
+      if (solrCoreState.getSolrCoreStateRefCnt() == 0) {
+        try {
+          directoryFactory.close();
+        } catch (Throwable t) {
+          SolrException.log(log, t);
         }
       }
+      
     }
 
     
