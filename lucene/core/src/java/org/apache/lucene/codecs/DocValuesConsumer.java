@@ -39,7 +39,7 @@ import org.apache.lucene.index.TermsEnum;
 import org.apache.lucene.util.ArrayUtil;
 import org.apache.lucene.util.Bits;
 import org.apache.lucene.util.BytesRef;
-import org.apache.lucene.util.FixedBitSet;
+import org.apache.lucene.util.OpenBitSet;
 
 /** 
  * Abstract API that consumes numeric, binary and
@@ -271,7 +271,7 @@ public abstract class DocValuesConsumer implements Closeable {
       if (liveDocs == null) {
         liveTerms[sub] = new SortedDocValuesTermsEnum(dv);
       } else {
-        FixedBitSet bitset = new FixedBitSet(dv.getValueCount());
+        OpenBitSet bitset = new OpenBitSet(dv.getValueCount());
         for (int i = 0; i < reader.maxDoc(); i++) {
           if (liveDocs.get(i)) {
             bitset.set(dv.getOrd(i));
@@ -403,17 +403,13 @@ public abstract class DocValuesConsumer implements Closeable {
       if (liveDocs == null) {
         liveTerms[sub] = new SortedSetDocValuesTermsEnum(dv);
       } else {
-        // nocommit: need a "pagedbits"
-        if (dv.getValueCount() > Integer.MAX_VALUE) {
-          throw new UnsupportedOperationException();
-        }
-        FixedBitSet bitset = new FixedBitSet((int)dv.getValueCount());
+        OpenBitSet bitset = new OpenBitSet(dv.getValueCount());
         for (int i = 0; i < reader.maxDoc(); i++) {
           if (liveDocs.get(i)) {
             dv.setDocument(i);
             long ord;
             while ((ord = dv.nextOrd()) != SortedSetDocValues.NO_MORE_ORDS) {
-              bitset.set((int)ord); // nocommit
+              bitset.set(ord);
             }
           }
         }
@@ -610,19 +606,19 @@ public abstract class DocValuesConsumer implements Closeable {
      );
   }
   
-  // nocommit: need a "pagedbits"
+  // TODO: seek-by-ord to nextSetBit
   static class BitsFilteredTermsEnum extends FilteredTermsEnum {
-    final Bits liveTerms;
+    final OpenBitSet liveTerms;
     
-    BitsFilteredTermsEnum(TermsEnum in, Bits liveTerms) {
+    BitsFilteredTermsEnum(TermsEnum in, OpenBitSet liveTerms) {
       super(in, false); // <-- not passing false here wasted about 3 hours of my time!!!!!!!!!!!!!
       assert liveTerms != null;
       this.liveTerms = liveTerms;
     }
-    
+
     @Override
     protected AcceptStatus accept(BytesRef term) throws IOException {
-      if (liveTerms.get((int) ord())) {
+      if (liveTerms.get(ord())) {
         return AcceptStatus.YES;
       } else {
         return AcceptStatus.NO;
