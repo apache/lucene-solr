@@ -40,6 +40,10 @@ public final class RateLimitedDirectoryWrapper extends Directory {
     this.delegate = wrapped;
   }
   
+  public Directory getDelegate() {
+    return delegate;
+  }
+  
   @Override
   public String[] listAll() throws IOException {
     ensureOpen();
