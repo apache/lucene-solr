@@ -269,6 +269,7 @@ public class MultiDocValues {
   
   /** maps per-segment ordinals to/from global ordinal space */
   // TODO: use more efficient packed ints structures?
+  // TODO: pull this out? its pretty generic (maps between N ord()-enabled TermsEnums) 
   public static class OrdinalMap {
     // cache key of whoever asked for this aweful thing
     final Object owner;
@@ -279,6 +280,14 @@ public class MultiDocValues {
     // segmentOrd -> (globalOrd - segmentOrd)
     final AppendingLongBuffer ordDeltas[];
     
+    /** 
+     * Creates an ordinal map that allows mapping ords to/from a merged
+     * space from <code>subs</code>.
+     * @param owner a cache key
+     * @param subs TermsEnums that support {@link TermsEnum#ord()}. They need
+     *             not be dense (e.g. can be FilteredTermsEnums}.
+     * @throws IOException if an I/O error occurred.
+     */
     public OrdinalMap(Object owner, TermsEnum subs[]) throws IOException {
       // create the ordinal mappings by pulling a termsenum over each sub's 
       // unique terms, and walking a multitermsenum over those
@@ -320,18 +329,33 @@ public class MultiDocValues {
       }
     }
     
+    /** 
+     * Given a segment number and segment ordinal, returns
+     * the corresponding global ordinal.
+     */
     public long getGlobalOrd(int subIndex, long segmentOrd) {
       return segmentOrd + ordDeltas[subIndex].get(segmentOrd);
     }
 
+    /**
+     * Given a segment number and global ordinal, returns
+     * the corresponding segment ordinal.
+     */
     public long getSegmentOrd(int subIndex, long globalOrd) {
       return globalOrd - globalOrdDeltas.get(globalOrd);
     }
     
+    /** 
+     * Given a global ordinal, returns the index of the first
+     * sub that contains this term.
+     */
     public int getSegmentNumber(long globalOrd) {
       return (int) subIndexes.get(globalOrd);
     }
     
+    /**
+     * Returns the total number of unique terms in global ord space.
+     */
     public long getValueCount() {
       return globalOrdDeltas.size();
     }

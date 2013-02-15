@@ -33,6 +33,9 @@ public abstract class SortedSetDocValues {
    * constructors, typically implicit.) */
   protected SortedSetDocValues() {}
 
+  /** When returned by {@link #nextOrd()} it means there are no more 
+   * ordinals for the document.
+   */
   public static final long NO_MORE_ORDS = -1;
 
   /** 

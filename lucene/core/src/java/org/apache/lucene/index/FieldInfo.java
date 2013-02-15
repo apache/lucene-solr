@@ -103,7 +103,7 @@ public final class FieldInfo {
      */
     SORTED,
     /** 
-     * A pre-sorted Set<byte[]>. Fields with this type only store distinct byte values 
+     * A pre-sorted Set&lt;byte[]&gt;. Fields with this type only store distinct byte values 
      * and store additional offset pointers per document to dereference the shared 
      * byte[]s. The stored byte[] is presorted and allows access via document id, 
      * ordinal and by-value.
