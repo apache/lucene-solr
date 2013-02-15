@@ -22,6 +22,8 @@ import java.io.File;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.OutputStreamWriter;
+import java.util.ArrayList;
+import java.util.List;
 
 import javax.xml.parsers.ParserConfigurationException;
 import javax.xml.xpath.XPathExpressionException;
@@ -76,6 +78,33 @@ public class TestCoreContainer extends SolrTestCaseJ4 {
       cores.shutdown();
       System.clearProperty("shareSchema");
     }
+  }
+  
+  @Test
+  public void testReload() throws Exception {
+    final CoreContainer cc = h.getCoreContainer();
+    
+    class TestThread extends Thread {
+      @Override
+      public void run() {
+        cc.reload("collection1");
+      }
+    }
+    
+    List<Thread> threads = new ArrayList<Thread>();
+    int numThreads = 4;
+    for (int i = 0; i < numThreads; i++) {
+      threads.add(new TestThread());
+    }
+    
+    for (Thread thread : threads) {
+      thread.start();
+    }
+    
+    for (Thread thread : threads) {
+      thread.join();
+    }
+
   }
 
   @Test

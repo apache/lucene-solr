@@ -324,4 +324,40 @@ public class TestConcurrentMergeScheduler extends LuceneTestCase {
     w.close(false);
     dir.close();
   }
+
+
+  private static class TrackingCMS extends ConcurrentMergeScheduler {
+    long totMergedBytes;
+
+    public TrackingCMS() {
+      setMaxMergeCount(5);
+      setMaxThreadCount(5);
+    }
+
+    @Override
+    public void doMerge(MergePolicy.OneMerge merge) throws IOException {
+      totMergedBytes += merge.totalBytesSize();
+      super.doMerge(merge);
+    }
+  }
+
+  public void testTotalBytesSize() throws Exception {
+    Directory d = newDirectory();
+    IndexWriterConfig iwc = newIndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer(random()));
+    iwc.setMaxBufferedDocs(5);
+    iwc.setMergeScheduler(new TrackingCMS());
+    RandomIndexWriter w = new RandomIndexWriter(random(), d);
+    for(int i=0;i<100000;i++) {
+      Document doc = new Document();
+      doc.add(newStringField("id", ""+i, Field.Store.NO));
+      doc.add(newTextField("field", "here is some text", Field.Store.NO));
+      w.addDocument(doc);
+
+      if (random().nextBoolean()) {
+        w.deleteDocuments(new Term("id", ""+random().nextInt(i+1)));
+      }
+    }
+    w.close();
+    d.close();
+  }
 }

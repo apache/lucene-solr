@@ -67,4 +67,7 @@ grant {
   permission java.security.SecurityPermission "getProperty.networkaddress.cache.ttl";
   permission java.security.SecurityPermission "getProperty.networkaddress.cache.negative.ttl";
 
+  // SSL related properties for Solr tests
+  permission java.security.SecurityPermission "getProperty.ssl.*";
+
 };

@@ -41,6 +41,8 @@ Detailed Change List
 Other Changes
 ----------------------
 
+* SOLR-4394: Tests and example configs demonstrating SSL with both server 
+  and client certs (hossman)
 
 ==================  4.2.0 ==================
 
@@ -70,6 +72,10 @@ New Features
 
 * SOLR-4370: Allow configuring commitWithin to do hard commits. 
   (Mark Miller, Senthuran Sivananthan)
+
+* SOLR-4451: SolrJ, and SolrCloud internals, now use SystemDefaultHttpClient 
+  under the covers -- allowing many HTTP connection related properties to be
+  controlled via 'standard' java system properties.  (hossman)
 
 Bug Fixes
 ----------------------
@@ -116,6 +122,8 @@ Bug Fixes
 
 * SOLR-4426: NRTCachingDirectoryFactory does not initialize maxCachedMB and maxMergeSizeMB
   if <directoryFactory> is not present in solrconfig.xml (Jack Krupansky via shalin)
+
+* SOLR-4463: Fix SolrCoreState reference counting. (Mark Miller)
 
 Optimizations
 ----------------------

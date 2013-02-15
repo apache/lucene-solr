@@ -32,7 +32,7 @@ import java.util.List;
 /**
  * A basic implementation of {@link PrefixTreeStrategy} using a large {@link
  * TermsFilter} of all the nodes from {@link SpatialPrefixTree#getNodes(com.spatial4j.core.shape.Shape,
- * int, boolean)}. It only supports the search of indexed Point shapes.
+ * int, boolean, boolean)}. It only supports the search of indexed Point shapes.
  * <p/>
  * The precision of query shapes (distErrPct) is an important factor in using
  * this Strategy. If the precision is too precise then it will result in many
@@ -43,7 +43,8 @@ import java.util.List;
 public class TermQueryPrefixTreeStrategy extends PrefixTreeStrategy {
 
   public TermQueryPrefixTreeStrategy(SpatialPrefixTree grid, String fieldName) {
-    super(grid, fieldName);
+    super(grid, fieldName,
+        false);//do not simplify indexed cells
   }
 
   @Override
@@ -54,7 +55,9 @@ public class TermQueryPrefixTreeStrategy extends PrefixTreeStrategy {
 
     Shape shape = args.getShape();
     int detailLevel = grid.getLevelForDistance(args.resolveDistErr(ctx, distErrPct));
-    List<Node> cells = grid.getNodes(shape, detailLevel, false);
+    List<Node> cells = grid.getNodes(shape, detailLevel,
+        false,//no parents
+        true);//simplify
     BytesRef[] terms = new BytesRef[cells.size()];
     int i = 0;
     for (Node cell : cells) {

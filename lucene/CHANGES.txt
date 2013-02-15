@@ -168,6 +168,9 @@ New Features
   is faster than others, however consumes much more RAM.
   (Michael McCandless, Shai Erera)
   
+* LUCENE-4778: Add a getter for the delegate in RateLimitedDirectoryWrapper.
+  (Mark Miller)
+ 
 API Changes
 
 * LUCENE-4709: FacetResultNode no longer has a residue field. (Shai Erera)
@@ -215,6 +218,19 @@ Bug Fixes
   segments that would exceed 2GB total data. This could happen in some surprising
   cases, for example if you had an index with more than 260M documents and a 
   VAR_INT field.  (Simon Willnauer, Adrien Grand, Mike McCandless, Robert Muir)
+
+* LUCENE-4775: Remove SegmentInfo.sizeInBytes() and make
+  MergePolicy.OneMerge.totalBytesSize thread safe (Josh Bronson via
+  Robert Muir, Mike McCandless)
+
+* LUCENE-4770: If spatial's TermQueryPrefixTreeStrategy was used to search
+  indexed non-point shapes, then there was an edge case where a query should
+  find a shape but it didn't. The fix is the removal of an optimization that
+  simplifies some leaf cells into a parent. The index data for such a field is
+  now ~20% larger. This optimization is still done for the query shape, and for
+  indexed data for RecursivePrefixTreeStrategy. Furthermore, this optimization
+  is enhanced to roll up beyond the bottom cell level. (David Smiley,
+  Florian Schilling)
 
 Documentation
 

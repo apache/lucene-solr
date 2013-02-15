@@ -91,7 +91,7 @@ public interface FieldCache {
     };
   }
 
-  /** Field values as 32-bit signed long integers */
+  /** Field values as 64-bit signed long integers */
   public static abstract class Longs {
     /** Return an long representation of this field's value. */
     public abstract long get(int docID);

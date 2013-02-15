@@ -520,7 +520,7 @@ class DocumentsWriterPerThread {
       }
 
       if (infoStream.isEnabled("DWPT")) {
-        final double newSegmentSize = segmentInfo.sizeInBytes()/1024./1024.;
+        final double newSegmentSize = segmentInfoPerCommit.sizeInBytes()/1024./1024.;
         infoStream.message("DWPT", "flushed: segment=" + segmentInfo.name + 
                 " ramUsed=" + nf.format(startMBUsed) + " MB" +
                 " newFlushedSize(includes docstores)=" + nf.format(newSegmentSize) + " MB" +
@@ -557,7 +557,7 @@ class DocumentsWriterPerThread {
 
     IndexWriter.setDiagnostics(newSegment.info, "flush");
     
-    IOContext context = new IOContext(new FlushInfo(newSegment.info.getDocCount(), newSegment.info.sizeInBytes()));
+    IOContext context = new IOContext(new FlushInfo(newSegment.info.getDocCount(), newSegment.sizeInBytes()));
 
     boolean success = false;
     try {
