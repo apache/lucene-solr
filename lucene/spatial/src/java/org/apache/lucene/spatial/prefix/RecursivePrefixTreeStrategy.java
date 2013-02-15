@@ -38,7 +38,8 @@ public class RecursivePrefixTreeStrategy extends PrefixTreeStrategy {
   private int prefixGridScanLevel;
 
   public RecursivePrefixTreeStrategy(SpatialPrefixTree grid, String fieldName) {
-    super(grid, fieldName);
+    super(grid, fieldName,
+        true);//simplify indexed cells
     prefixGridScanLevel = grid.getMaxLevels() - 4;//TODO this default constant is dependent on the prefix grid size
   }
 

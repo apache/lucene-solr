@@ -79,12 +79,14 @@ import java.util.concurrent.ConcurrentHashMap;
 public abstract class PrefixTreeStrategy extends SpatialStrategy {
   protected final SpatialPrefixTree grid;
   private final Map<String, PointPrefixTreeFieldCacheProvider> provider = new ConcurrentHashMap<String, PointPrefixTreeFieldCacheProvider>();
+  protected final boolean simplifyIndexedCells;
   protected int defaultFieldValuesArrayLen = 2;
   protected double distErrPct = SpatialArgs.DEFAULT_DISTERRPCT;// [ 0 TO 0.5 ]
 
-  public PrefixTreeStrategy(SpatialPrefixTree grid, String fieldName) {
+  public PrefixTreeStrategy(SpatialPrefixTree grid, String fieldName, boolean simplifyIndexedCells) {
     super(grid.getSpatialContext(), fieldName);
     this.grid = grid;
+    this.simplifyIndexedCells = simplifyIndexedCells;
   }
 
   /**
@@ -124,7 +126,7 @@ public abstract class PrefixTreeStrategy extends SpatialStrategy {
 
   public Field[] createIndexableFields(Shape shape, double distErr) {
     int detailLevel = grid.getLevelForDistance(distErr);
-    List<Node> cells = grid.getNodes(shape, detailLevel, true);//true=intermediates cells
+    List<Node> cells = grid.getNodes(shape, detailLevel, true, simplifyIndexedCells);//intermediates cells
 
     //TODO is CellTokenStream supposed to be re-used somehow? see Uwe's comments:
     //  http://code.google.com/p/lucene-spatial-playground/issues/detail?id=4
