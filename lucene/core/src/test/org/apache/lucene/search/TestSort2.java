@@ -39,7 +39,7 @@ import org.apache.lucene.util.LuceneTestCase;
  * THE RULES:
  * 1. keywords like 'abstract' and 'static' should not appear in this file.
  * 2. each test method should be self-contained and understandable. 
- * 3. no test methods should not share code with other test methods.
+ * 3. no test methods should share code with other test methods.
  * 4. no testing of things unrelated to sorting.
  * 5. no tracers.
  * 6. keyword 'class' should appear only once in this file, here ----
@@ -50,16 +50,15 @@ import org.apache.lucene.util.LuceneTestCase;
  */
 public class TestSort2 extends LuceneTestCase {
 
-  public void testDemo() throws IOException {
+  /** Tests sorting on type string */
+  public void testString() throws IOException {
     Directory dir = newDirectory();
     RandomIndexWriter writer = new RandomIndexWriter(random(), dir);
     Document doc = new Document();
-    doc.add(newStringField("id", "1", Field.Store.YES));
-    doc.add(newStringField("value", "foo", Field.Store.NO));
+    doc.add(newStringField("value", "foo", Field.Store.YES));
     writer.addDocument(doc);
     doc = new Document();
-    doc.add(newStringField("id", "2", Field.Store.YES));
-    doc.add(newStringField("value", "bar", Field.Store.NO));
+    doc.add(newStringField("value", "bar", Field.Store.YES));
     writer.addDocument(doc);
     IndexReader ir = writer.getReader();
     writer.close();
@@ -70,8 +69,248 @@ public class TestSort2 extends LuceneTestCase {
     TopDocs td = searcher.search(new MatchAllDocsQuery(), 10, sort);
     assertEquals(2, td.totalHits);
     // 'bar' comes before 'foo'
-    assertEquals("2", searcher.doc(td.scoreDocs[0].doc).get("id"));
-    assertEquals("1", searcher.doc(td.scoreDocs[1].doc).get("id"));
+    assertEquals("bar", searcher.doc(td.scoreDocs[0].doc).get("value"));
+    assertEquals("foo", searcher.doc(td.scoreDocs[1].doc).get("value"));
+
+    ir.close();
+    dir.close();
+  }
+  
+  /** Tests sorting on internal docid order */
+  public void testFieldDoc() throws Exception {
+    Directory dir = newDirectory();
+    RandomIndexWriter writer = new RandomIndexWriter(random(), dir);
+    Document doc = new Document();
+    doc.add(newStringField("value", "foo", Field.Store.NO));
+    writer.addDocument(doc);
+    doc = new Document();
+    doc.add(newStringField("value", "bar", Field.Store.NO));
+    writer.addDocument(doc);
+    IndexReader ir = writer.getReader();
+    writer.close();
+    
+    IndexSearcher searcher = new IndexSearcher(ir);
+    Sort sort = new Sort(SortField.FIELD_DOC);
+
+    TopDocs td = searcher.search(new MatchAllDocsQuery(), 10, sort);
+    assertEquals(2, td.totalHits);
+    // docid 0, then docid 1
+    assertEquals(0, td.scoreDocs[0].doc);
+    assertEquals(1, td.scoreDocs[1].doc);
+
+    ir.close();
+    dir.close();
+  }
+  
+  /** Tests default sort (by score) */
+  public void testFieldScore() throws Exception {
+    Directory dir = newDirectory();
+    RandomIndexWriter writer = new RandomIndexWriter(random(), dir);
+    Document doc = new Document();
+    doc.add(newTextField("value", "foo bar bar bar bar", Field.Store.NO));
+    writer.addDocument(doc);
+    doc = new Document();
+    doc.add(newTextField("value", "foo foo foo foo foo", Field.Store.NO));
+    writer.addDocument(doc);
+    IndexReader ir = writer.getReader();
+    writer.close();
+    
+    IndexSearcher searcher = new IndexSearcher(ir);
+    Sort sort = new Sort();
+
+    TopDocs actual = searcher.search(new TermQuery(new Term("value", "foo")), 10, sort);
+    assertEquals(2, actual.totalHits);
+
+    TopDocs expected = searcher.search(new TermQuery(new Term("value", "foo")), 10);
+    // the two topdocs should be the same
+    assertEquals(expected.totalHits, actual.totalHits);
+    for (int i = 0; i < actual.scoreDocs.length; i++) {
+      assertEquals(actual.scoreDocs[i].doc, expected.scoreDocs[i].doc);
+    }
+
+    ir.close();
+    dir.close();
+  }
+  
+  /** Tests sorting on type byte */
+  public void testByte() throws IOException {
+    Directory dir = newDirectory();
+    RandomIndexWriter writer = new RandomIndexWriter(random(), dir);
+    Document doc = new Document();
+    doc.add(newStringField("value", "23", Field.Store.YES));
+    writer.addDocument(doc);
+    doc = new Document();
+    doc.add(newStringField("value", "-1", Field.Store.YES));
+    writer.addDocument(doc);
+    doc = new Document();
+    doc.add(newStringField("value", "4", Field.Store.YES));
+    writer.addDocument(doc);
+    IndexReader ir = writer.getReader();
+    writer.close();
+    
+    IndexSearcher searcher = new IndexSearcher(ir);
+    Sort sort = new Sort(new SortField("value", SortField.Type.BYTE));
+
+    TopDocs td = searcher.search(new MatchAllDocsQuery(), 10, sort);
+    assertEquals(3, td.totalHits);
+    // numeric order
+    assertEquals("-1", searcher.doc(td.scoreDocs[0].doc).get("value"));
+    assertEquals("4", searcher.doc(td.scoreDocs[1].doc).get("value"));
+    assertEquals("23", searcher.doc(td.scoreDocs[2].doc).get("value"));
+
+    ir.close();
+    dir.close();
+  }
+  
+  /** Tests sorting on type short */
+  public void testShort() throws IOException {
+    Directory dir = newDirectory();
+    RandomIndexWriter writer = new RandomIndexWriter(random(), dir);
+    Document doc = new Document();
+    doc.add(newStringField("value", "300", Field.Store.YES));
+    writer.addDocument(doc);
+    doc = new Document();
+    doc.add(newStringField("value", "-1", Field.Store.YES));
+    writer.addDocument(doc);
+    doc = new Document();
+    doc.add(newStringField("value", "4", Field.Store.YES));
+    writer.addDocument(doc);
+    IndexReader ir = writer.getReader();
+    writer.close();
+    
+    IndexSearcher searcher = new IndexSearcher(ir);
+    Sort sort = new Sort(new SortField("value", SortField.Type.SHORT));
+
+    TopDocs td = searcher.search(new MatchAllDocsQuery(), 10, sort);
+    assertEquals(3, td.totalHits);
+    // numeric order
+    assertEquals("-1", searcher.doc(td.scoreDocs[0].doc).get("value"));
+    assertEquals("4", searcher.doc(td.scoreDocs[1].doc).get("value"));
+    assertEquals("300", searcher.doc(td.scoreDocs[2].doc).get("value"));
+
+    ir.close();
+    dir.close();
+  }
+  
+  /** Tests sorting on type int */
+  public void testInt() throws IOException {
+    Directory dir = newDirectory();
+    RandomIndexWriter writer = new RandomIndexWriter(random(), dir);
+    Document doc = new Document();
+    doc.add(newStringField("value", "300000", Field.Store.YES));
+    writer.addDocument(doc);
+    doc = new Document();
+    doc.add(newStringField("value", "-1", Field.Store.YES));
+    writer.addDocument(doc);
+    doc = new Document();
+    doc.add(newStringField("value", "4", Field.Store.YES));
+    writer.addDocument(doc);
+    IndexReader ir = writer.getReader();
+    writer.close();
+    
+    IndexSearcher searcher = new IndexSearcher(ir);
+    Sort sort = new Sort(new SortField("value", SortField.Type.INT));
+
+    TopDocs td = searcher.search(new MatchAllDocsQuery(), 10, sort);
+    assertEquals(3, td.totalHits);
+    // numeric order
+    assertEquals("-1", searcher.doc(td.scoreDocs[0].doc).get("value"));
+    assertEquals("4", searcher.doc(td.scoreDocs[1].doc).get("value"));
+    assertEquals("300000", searcher.doc(td.scoreDocs[2].doc).get("value"));
+
+    ir.close();
+    dir.close();
+  }
+  
+  /** Tests sorting on type long */
+  public void testLong() throws IOException {
+    Directory dir = newDirectory();
+    RandomIndexWriter writer = new RandomIndexWriter(random(), dir);
+    Document doc = new Document();
+    doc.add(newStringField("value", "3000000000", Field.Store.YES));
+    writer.addDocument(doc);
+    doc = new Document();
+    doc.add(newStringField("value", "-1", Field.Store.YES));
+    writer.addDocument(doc);
+    doc = new Document();
+    doc.add(newStringField("value", "4", Field.Store.YES));
+    writer.addDocument(doc);
+    IndexReader ir = writer.getReader();
+    writer.close();
+    
+    IndexSearcher searcher = new IndexSearcher(ir);
+    Sort sort = new Sort(new SortField("value", SortField.Type.LONG));
+
+    TopDocs td = searcher.search(new MatchAllDocsQuery(), 10, sort);
+    assertEquals(3, td.totalHits);
+    // numeric order
+    assertEquals("-1", searcher.doc(td.scoreDocs[0].doc).get("value"));
+    assertEquals("4", searcher.doc(td.scoreDocs[1].doc).get("value"));
+    assertEquals("3000000000", searcher.doc(td.scoreDocs[2].doc).get("value"));
+
+    ir.close();
+    dir.close();
+  }
+  
+  /** Tests sorting on type float */
+  public void testFloat() throws IOException {
+    Directory dir = newDirectory();
+    RandomIndexWriter writer = new RandomIndexWriter(random(), dir);
+    Document doc = new Document();
+    doc.add(newStringField("value", "30.1", Field.Store.YES));
+    writer.addDocument(doc);
+    doc = new Document();
+    doc.add(newStringField("value", "-1.3", Field.Store.YES));
+    writer.addDocument(doc);
+    doc = new Document();
+    doc.add(newStringField("value", "4.2", Field.Store.YES));
+    writer.addDocument(doc);
+    IndexReader ir = writer.getReader();
+    writer.close();
+    
+    IndexSearcher searcher = new IndexSearcher(ir);
+    Sort sort = new Sort(new SortField("value", SortField.Type.FLOAT));
+
+    TopDocs td = searcher.search(new MatchAllDocsQuery(), 10, sort);
+    assertEquals(3, td.totalHits);
+    // numeric order
+    assertEquals("-1.3", searcher.doc(td.scoreDocs[0].doc).get("value"));
+    assertEquals("4.2", searcher.doc(td.scoreDocs[1].doc).get("value"));
+    assertEquals("30.1", searcher.doc(td.scoreDocs[2].doc).get("value"));
+
+    ir.close();
+    dir.close();
+  }
+  
+  /** Tests sorting on type double */
+  public void testDouble() throws IOException {
+    Directory dir = newDirectory();
+    RandomIndexWriter writer = new RandomIndexWriter(random(), dir);
+    Document doc = new Document();
+    doc.add(newStringField("value", "30.1", Field.Store.YES));
+    writer.addDocument(doc);
+    doc = new Document();
+    doc.add(newStringField("value", "-1.3", Field.Store.YES));
+    writer.addDocument(doc);
+    doc = new Document();
+    doc.add(newStringField("value", "4.2333333333333", Field.Store.YES));
+    writer.addDocument(doc);
+    doc = new Document();
+    doc.add(newStringField("value", "4.2333333333332", Field.Store.YES));
+    writer.addDocument(doc);
+    IndexReader ir = writer.getReader();
+    writer.close();
+    
+    IndexSearcher searcher = new IndexSearcher(ir);
+    Sort sort = new Sort(new SortField("value", SortField.Type.DOUBLE));
+
+    TopDocs td = searcher.search(new MatchAllDocsQuery(), 10, sort);
+    assertEquals(4, td.totalHits);
+    // numeric order
+    assertEquals("-1.3", searcher.doc(td.scoreDocs[0].doc).get("value"));
+    assertEquals("4.2333333333332", searcher.doc(td.scoreDocs[1].doc).get("value"));
+    assertEquals("4.2333333333333", searcher.doc(td.scoreDocs[2].doc).get("value"));
+    assertEquals("30.1", searcher.doc(td.scoreDocs[3].doc).get("value"));
 
     ir.close();
     dir.close();
@@ -159,7 +398,7 @@ public class TestSort2 extends LuceneTestCase {
     d.close();
   }
   
-  // test sorts when there's nothing in the index
+  /** test sorts when there's nothing in the index */
   public void testEmptyIndex() throws Exception {
     IndexSearcher empty = new IndexSearcher(new MultiReader());
     Query query = new TermQuery(new Term("contents", "foo"));
