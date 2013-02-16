@@ -103,6 +103,10 @@ public abstract class DirectoryFactory implements NamedListInitializedPlugin,
   /**
    * Override for more efficient moves.
    * 
+   * Intended for use with replication - use
+   * carefully - some Directory wrappers will
+   * cache files for example.
+   * 
    * @throws IOException If there is a low-level I/O error.
    */
   public void move(Directory fromDir, Directory toDir, String fileName, IOContext ioContext) throws IOException {
