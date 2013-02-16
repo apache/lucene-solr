@@ -29,7 +29,6 @@ import org.apache.lucene.codecs.PostingsFormat;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
 import org.apache.lucene.document.IntField;
-import org.apache.lucene.index.DocTermOrds.TermOrdsIterator;
 import org.apache.lucene.search.FieldCache;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.util.BytesRef;
@@ -63,25 +62,26 @@ public class TestDocTermOrds extends LuceneTestCase {
     final IndexReader r = w.getReader();
     w.close();
 
-    final DocTermOrds dto = new DocTermOrds(SlowCompositeReaderWrapper.wrap(r), "field");
+    final AtomicReader ar = SlowCompositeReaderWrapper.wrap(r);
+    final DocTermOrds dto = new DocTermOrds(ar, "field");
+    SortedSetDocValues iter = dto.iterator(ar.terms("field").iterator(null));
+    
+    iter.setDocument(0);
+    assertEquals(0, iter.nextOrd());
+    assertEquals(1, iter.nextOrd());
+    assertEquals(2, iter.nextOrd());
+    assertEquals(SortedSetDocValues.NO_MORE_ORDS, iter.nextOrd());
+    
+    iter.setDocument(1);
+    assertEquals(3, iter.nextOrd());
+    assertEquals(4, iter.nextOrd());
+    assertEquals(5, iter.nextOrd());
+    assertEquals(SortedSetDocValues.NO_MORE_ORDS, iter.nextOrd());
 
-    TermOrdsIterator iter = dto.lookup(0, null);
-    final int[] buffer = new int[5];
-    assertEquals(3, iter.read(buffer));
-    assertEquals(0, buffer[0]);
-    assertEquals(1, buffer[1]);
-    assertEquals(2, buffer[2]);
-
-    iter = dto.lookup(1, iter);
-    assertEquals(3, iter.read(buffer));
-    assertEquals(3, buffer[0]);
-    assertEquals(4, buffer[1]);
-    assertEquals(5, buffer[2]);
-
-    iter = dto.lookup(2, iter);
-    assertEquals(2, iter.read(buffer));
-    assertEquals(0, buffer[0]);
-    assertEquals(5, buffer[1]);
+    iter.setDocument(2);
+    assertEquals(0, iter.nextOrd());
+    assertEquals(5, iter.nextOrd());
+    assertEquals(SortedSetDocValues.NO_MORE_ORDS, iter.nextOrd());
 
     r.close();
     dir.close();
@@ -352,31 +352,24 @@ public class TestDocTermOrds extends LuceneTestCase {
       }
     }
 
-    TermOrdsIterator iter = null;
-    final int[] buffer = new int[5];
+    SortedSetDocValues iter = dto.iterator(te);
     for(int docID=0;docID<r.maxDoc();docID++) {
       if (VERBOSE) {
         System.out.println("TEST: docID=" + docID + " of " + r.maxDoc() + " (id=" + docIDToID.get(docID) + ")");
       }
-      iter = dto.lookup(docID, iter);
+      iter.setDocument(docID);
       final int[] answers = idToOrds[docIDToID.get(docID)];
       int upto = 0;
-      while(true) {
-        final int chunk = iter.read(buffer);
-        for(int idx=0;idx<chunk;idx++) {
-          te.seekExact((long) buffer[idx]);
-          final BytesRef expected = termsArray[answers[upto++]];
-          if (VERBOSE) {
-            System.out.println("  exp=" + expected.utf8ToString() + " actual=" + te.term().utf8ToString());
-          }
-          assertEquals("expected=" + expected.utf8ToString() + " actual=" + te.term().utf8ToString() + " ord=" + buffer[idx], expected, te.term());
+      long ord;
+      while ((ord = iter.nextOrd()) != SortedSetDocValues.NO_MORE_ORDS) {
+        te.seekExact(ord);
+        final BytesRef expected = termsArray[answers[upto++]];
+        if (VERBOSE) {
+          System.out.println("  exp=" + expected.utf8ToString() + " actual=" + te.term().utf8ToString());
         }
-        
-        if (chunk < buffer.length) {
-          assertEquals(answers.length, upto);
-          break;
-        }
+        assertEquals("expected=" + expected.utf8ToString() + " actual=" + te.term().utf8ToString() + " ord=" + ord, expected, te.term());
       }
+      assertEquals(answers.length, upto);
     }
   }
 }

@@ -597,7 +597,7 @@ public class DocTermOrds {
   }
 
   /** Iterates over the ords for a single document. */
-  public class TermOrdsIterator {
+  private class TermOrdsIterator {
     private int tnum;
     private int upto;
     private byte[] arr;
