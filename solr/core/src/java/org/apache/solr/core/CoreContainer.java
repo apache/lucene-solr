@@ -740,12 +740,24 @@ public class CoreContainer
   public void shutdown() {
     log.info("Shutting down CoreContainer instance="
         + System.identityHashCode(this));
+    
+    if (isZooKeeperAware()) {
+      try {
+        zkController.publishAndWaitForDownStates();
+      } catch (KeeperException e) {
+        log.error("", e);
+      } catch (InterruptedException e) {
+        Thread.currentThread().interrupt();
+        log.warn("", e);
+      }
+    }
+    
     isShutDown = true;
     
     if (isZooKeeperAware()) {
-      publishCoresAsDown();
       cancelCoreRecoveries();
     }
+    
     try {
       synchronized (cores) {
 
@@ -781,20 +793,6 @@ public class CoreContainer
         zkServer.stop();
       }
       
-    }
-  }
-
-  private void publishCoresAsDown() {
-    synchronized (cores) {
-      for (SolrCore core : cores.values()) {
-        try {
-          zkController.publish(core.getCoreDescriptor(), ZkStateReader.DOWN);
-        } catch (KeeperException e) {
-          log.error("", e);
-        } catch (InterruptedException e) {
-          log.error("", e);
-        }
-      }
     }
   }
 

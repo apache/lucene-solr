@@ -480,9 +480,14 @@ public final class ZkController {
   }
 
   private void init(CurrentCoreDescriptorProvider registerOnReconnect) {
-    boolean alreadyCreatedZkReader = false;
+
     try {
-      alreadyCreatedZkReader = publishAndWaitForDownStates(alreadyCreatedZkReader);
+      boolean createdWatchesAndUpdated = false;
+      if (zkClient.exists(ZkStateReader.LIVE_NODES_ZKNODE, true)) {
+        zkStateReader.createClusterStateWatchersAndUpdate();
+        createdWatchesAndUpdated = true;
+        publishAndWaitForDownStates();
+      }
       
       // makes nodes zkNode
       cmdExecutor.ensureExists(ZkStateReader.LIVE_NODES_ZKNODE, zkClient);
@@ -501,7 +506,7 @@ public final class ZkController {
       overseerElector.setup(context);
       overseerElector.joinElection(context, false);
       
-      if (!alreadyCreatedZkReader) {
+      if (!createdWatchesAndUpdated) {
         zkStateReader.createClusterStateWatchersAndUpdate();
       }
       
@@ -523,100 +528,98 @@ public final class ZkController {
 
   }
 
-  private boolean publishAndWaitForDownStates(boolean alreadyCreatedZkReader)
-      throws KeeperException, InterruptedException {
-    if (zkClient.exists(ZkStateReader.LIVE_NODES_ZKNODE, true)) {
-      alreadyCreatedZkReader = true;
-      // try and publish anyone from our node as down
-      zkStateReader.createClusterStateWatchersAndUpdate();
-      ClusterState clusterState = zkStateReader.getClusterState();
-      Set<String> collections = clusterState.getCollections();
-      List<String> updatedNodes = new ArrayList<String>();
+  public void publishAndWaitForDownStates() throws KeeperException,
+      InterruptedException {
+    
+    ClusterState clusterState = zkStateReader.getClusterState();
+    Set<String> collections = clusterState.getCollections();
+    List<String> updatedNodes = new ArrayList<String>();
+    for (String collectionName : collections) {
+      DocCollection collection = clusterState.getCollection(collectionName);
+      Collection<Slice> slices = collection.getSlices();
+      for (Slice slice : slices) {
+        Collection<Replica> replicas = slice.getReplicas();
+        for (Replica replica : replicas) {
+          if (replica.getNodeName().equals(getNodeName())
+              && !(replica.getStr(ZkStateReader.STATE_PROP)
+                  .equals(ZkStateReader.DOWN))) {
+            ZkNodeProps m = new ZkNodeProps(Overseer.QUEUE_OPERATION, "state",
+                ZkStateReader.STATE_PROP, ZkStateReader.DOWN,
+                ZkStateReader.BASE_URL_PROP, getBaseUrl(),
+                ZkStateReader.CORE_NAME_PROP,
+                replica.getStr(ZkStateReader.CORE_NAME_PROP),
+                ZkStateReader.ROLES_PROP,
+                replica.getStr(ZkStateReader.ROLES_PROP),
+                ZkStateReader.NODE_NAME_PROP, getNodeName(),
+                ZkStateReader.SHARD_ID_PROP,
+                replica.getStr(ZkStateReader.SHARD_ID_PROP),
+                ZkStateReader.COLLECTION_PROP,
+                replica.getStr(ZkStateReader.COLLECTION_PROP));
+            updatedNodes.add(replica.getStr(ZkStateReader.CORE_NAME_PROP));
+            overseerJobQueue.offer(ZkStateReader.toJSON(m));
+          }
+        }
+      }
+    }
+    
+    // now wait till the updates are in our state
+    long now = System.currentTimeMillis();
+    long timeout = now + 1000 * 300;
+    boolean foundStates = false;
+    while (System.currentTimeMillis() < timeout) {
+      clusterState = zkStateReader.getClusterState();
+      collections = clusterState.getCollections();
       for (String collectionName : collections) {
         DocCollection collection = clusterState.getCollection(collectionName);
         Collection<Slice> slices = collection.getSlices();
         for (Slice slice : slices) {
           Collection<Replica> replicas = slice.getReplicas();
           for (Replica replica : replicas) {
-            if (replica.getNodeName().equals(getNodeName())
-                && !(replica.getStr(ZkStateReader.STATE_PROP)
-                    .equals(ZkStateReader.DOWN))) {
-              ZkNodeProps m = new ZkNodeProps(Overseer.QUEUE_OPERATION,
-                  "state", ZkStateReader.STATE_PROP, ZkStateReader.DOWN,
-                  ZkStateReader.BASE_URL_PROP, getBaseUrl(),
-                  ZkStateReader.CORE_NAME_PROP, replica.getStr(ZkStateReader.CORE_NAME_PROP),
-                  ZkStateReader.ROLES_PROP,
-                  replica.getStr(ZkStateReader.ROLES_PROP),
-                  ZkStateReader.NODE_NAME_PROP, getNodeName(),
-                  ZkStateReader.SHARD_ID_PROP,
-                  replica.getStr(ZkStateReader.SHARD_ID_PROP),
-                  ZkStateReader.COLLECTION_PROP,
-                  replica.getStr(ZkStateReader.COLLECTION_PROP));
-              updatedNodes.add(replica.getStr(ZkStateReader.CORE_NAME_PROP));
-              overseerJobQueue.offer(ZkStateReader.toJSON(m));
+            if (replica.getStr(ZkStateReader.STATE_PROP).equals(
+                ZkStateReader.DOWN)) {
+              updatedNodes.remove(replica.getStr(ZkStateReader.CORE_NAME_PROP));
+              
             }
           }
         }
       }
       
-      // now wait till the updates are in our state
-      long now = System.currentTimeMillis();
-      long timeout = now + 1000 * 300;
-      boolean foundStates = false;
-      while (System.currentTimeMillis() < timeout) {
-        clusterState = zkStateReader.getClusterState();
-        collections = clusterState.getCollections();
-        for (String collectionName : collections) {
-          DocCollection collection = clusterState
-              .getCollection(collectionName);
-          Collection<Slice> slices = collection.getSlices();
-          for (Slice slice : slices) {
-            Collection<Replica> replicas = slice.getReplicas();
-            for (Replica replica : replicas) {
-              if (replica.getStr(ZkStateReader.STATE_PROP).equals(
-                  ZkStateReader.DOWN)) {
-                updatedNodes.remove(replica
-                    .getStr(ZkStateReader.CORE_NAME_PROP));
-                
-              }
-            }
-          }
-        }
-        
-        if (updatedNodes.size() == 0) {
-          foundStates = true;
-          break;
-        }
-      }
-      if (!foundStates) {
-        log.warn("Timed out waiting to see all nodes published as DOWN in our cluster state.");
+      if (updatedNodes.size() == 0) {
+        foundStates = true;
+        break;
       }
     }
-    return alreadyCreatedZkReader;
+    if (!foundStates) {
+      log.warn("Timed out waiting to see all nodes published as DOWN in our cluster state.");
+    }
+    
   }
-
+  
   /**
-   * Validates if the chroot exists in zk (or if it is successfully created). Optionally, if create is set to true this method will create the path
-   * in case it doesn't exist
-   * @return true if the path exists or is created
-   * false if the path doesn't exist and 'create' = false
+   * Validates if the chroot exists in zk (or if it is successfully created).
+   * Optionally, if create is set to true this method will create the path in
+   * case it doesn't exist
+   * 
+   * @return true if the path exists or is created false if the path doesn't
+   *         exist and 'create' = false
    */
-  public static boolean checkChrootPath(String zkHost, boolean create) throws KeeperException, InterruptedException {
-    if(!containsChroot(zkHost)) {
+  public static boolean checkChrootPath(String zkHost, boolean create)
+      throws KeeperException, InterruptedException {
+    if (!containsChroot(zkHost)) {
       return true;
     }
     log.info("zkHost includes chroot");
     String chrootPath = zkHost.substring(zkHost.indexOf("/"), zkHost.length());
-    SolrZkClient tmpClient = new SolrZkClient(zkHost.substring(0, zkHost.indexOf("/")), 60*1000);
+    SolrZkClient tmpClient = new SolrZkClient(zkHost.substring(0,
+        zkHost.indexOf("/")), 60 * 1000);
     boolean exists = tmpClient.exists(chrootPath, true);
-    if(!exists && create) {
+    if (!exists && create) {
       tmpClient.makePath(chrootPath, false, true);
       exists = true;
     }
     tmpClient.close();
     return exists;
   }
-
 
   /**
    * Validates if zkHost contains a chroot. See http://zookeeper.apache.org/doc/r3.2.2/zookeeperProgrammers.html#ch_zkSessions
