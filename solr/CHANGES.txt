@@ -134,6 +134,9 @@ Bug Fixes
 * SOLR-4421,SOLR-4165: On CoreContainer shutdown, all SolrCores should publish their 
   state as DOWN. (Mark Miller, Markus Jelsma)
 
+* SOLR-4467: Ephemeral directory implementations may not recover correctly 
+  because the code to clear the tlog files on startup is off. (Mark Miller)
+
 Optimizations
 ----------------------
 
