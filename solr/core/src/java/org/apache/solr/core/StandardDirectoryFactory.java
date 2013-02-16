@@ -23,6 +23,8 @@ import org.apache.commons.io.FileUtils;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.FSDirectory;
 import org.apache.lucene.store.IOContext;
+import org.apache.lucene.store.NRTCachingDirectory;
+import org.apache.lucene.store.RateLimitedDirectoryWrapper;
 
 /**
  * Directory provider which mimics original Solr 
@@ -69,15 +71,29 @@ public class StandardDirectoryFactory extends CachingDirectoryFactory {
   /**
    * Override for more efficient moves.
    * 
+   * Intended for use with replication - use
+   * carefully - some Directory wrappers will
+   * cache files for example.
+   * 
+   * This implementation works with two wrappers:
+   * NRTCachingDirectory and RateLimitedDirectoryWrapper.
+   * 
+   * You should first {@link Directory#sync(java.util.Collection)} any file that will be 
+   * moved or avoid cached files through settings.
+   * 
    * @throws IOException
    *           If there is a low-level I/O error.
    */
   @Override
   public void move(Directory fromDir, Directory toDir, String fileName, IOContext ioContext)
       throws IOException {
-    if (fromDir instanceof FSDirectory && toDir instanceof FSDirectory) {
-      File dir1 = ((FSDirectory) fromDir).getDirectory();
-      File dir2 = ((FSDirectory) toDir).getDirectory();
+    
+    Directory baseFromDir = getBaseDir(fromDir);
+    Directory baseToDir = getBaseDir(fromDir);
+    
+    if (baseFromDir instanceof FSDirectory && baseToDir instanceof FSDirectory) {
+      File dir1 = ((FSDirectory) baseFromDir).getDirectory();
+      File dir2 = ((FSDirectory) baseToDir).getDirectory();
       File indexFileInTmpDir = new File(dir1, fileName);
       File indexFileInIndex = new File(dir2, fileName);
       boolean success = indexFileInTmpDir.renameTo(indexFileInIndex);
@@ -87,6 +103,20 @@ public class StandardDirectoryFactory extends CachingDirectoryFactory {
     }
 
     super.move(fromDir, toDir, fileName, ioContext);
+  }
+
+  // special hack to work with NRTCachingDirectory and RateLimitedDirectoryWrapper
+  private Directory getBaseDir(Directory dir) {
+    Directory baseDir;
+    if (dir instanceof NRTCachingDirectory) {
+      baseDir = ((NRTCachingDirectory)dir).getDelegate();
+    } else if (dir instanceof RateLimitedDirectoryWrapper) {
+      baseDir = ((RateLimitedDirectoryWrapper)dir).getDelegate();
+    } else {
+      baseDir = dir;
+    }
+    
+    return baseDir;
   }
 
 }
