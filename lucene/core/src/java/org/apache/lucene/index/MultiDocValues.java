@@ -24,6 +24,7 @@ import org.apache.lucene.index.MultiTermsEnum.TermsEnumIndex;
 import org.apache.lucene.index.MultiTermsEnum.TermsEnumWithSlice;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.packed.AppendingLongBuffer;
+import org.apache.lucene.util.packed.MonotonicAppendingLongBuffer;
 
 /**
  * A wrapper for CompositeIndexReader providing access to DocValues.
@@ -274,11 +275,11 @@ public class MultiDocValues {
     // cache key of whoever asked for this aweful thing
     final Object owner;
     // globalOrd -> (globalOrd - segmentOrd)
-    final AppendingLongBuffer globalOrdDeltas;
+    final MonotonicAppendingLongBuffer globalOrdDeltas;
     // globalOrd -> sub index
     final AppendingLongBuffer subIndexes;
     // segmentOrd -> (globalOrd - segmentOrd)
-    final AppendingLongBuffer ordDeltas[];
+    final MonotonicAppendingLongBuffer ordDeltas[];
     
     /** 
      * Creates an ordinal map that allows mapping ords to/from a merged
@@ -292,11 +293,11 @@ public class MultiDocValues {
       // create the ordinal mappings by pulling a termsenum over each sub's 
       // unique terms, and walking a multitermsenum over those
       this.owner = owner;
-      globalOrdDeltas = new AppendingLongBuffer();
+      globalOrdDeltas = new MonotonicAppendingLongBuffer();
       subIndexes = new AppendingLongBuffer();
-      ordDeltas = new AppendingLongBuffer[subs.length];
+      ordDeltas = new MonotonicAppendingLongBuffer[subs.length];
       for (int i = 0; i < ordDeltas.length; i++) {
-        ordDeltas[i] = new AppendingLongBuffer();
+        ordDeltas[i] = new MonotonicAppendingLongBuffer();
       }
       long segmentOrds[] = new long[subs.length];
       ReaderSlice slices[] = new ReaderSlice[subs.length];
