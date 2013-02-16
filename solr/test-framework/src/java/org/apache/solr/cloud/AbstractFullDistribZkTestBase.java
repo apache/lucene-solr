@@ -1140,21 +1140,34 @@ public abstract class AbstractFullDistribZkTestBase extends AbstractDistribZkTes
     protected final List<Integer> deletes = new ArrayList<Integer>();
     protected final AtomicInteger fails = new AtomicInteger();
     protected boolean doDeletes;
+    private int numCycles;
     
     public StopableIndexingThread(int startI, boolean doDeletes) {
+      this(startI, doDeletes, -1);
+    }
+    
+    public StopableIndexingThread(int startI, boolean doDeletes, int numCycles) {
       super("StopableIndexingThread");
       this.startI = startI;
       this.doDeletes = doDeletes;
+      this.numCycles = numCycles;
       setDaemon(true);
     }
     
     @Override
     public void run() {
       int i = startI;
+      int numDone = 0;
       int numDeletes = 0;
       int numAdds = 0;
       
       while (true && !stop) {
+        if (numCycles != -1) {
+          if (numDone > numCycles) {
+            break;
+          }
+        }
+        ++numDone;
         ++i;
         boolean addFailed = false;
         
@@ -1202,6 +1215,7 @@ public abstract class AbstractFullDistribZkTestBase extends AbstractDistribZkTes
     
     @Override
     public void safeStop() {
+      System.out.println("safe stop:");
       stop = true;
     }
     

@@ -18,9 +18,20 @@
 -->
 
 <config>
+  <jmx />
+
   <luceneMatchVersion>${tests.luceneMatchVersion:LUCENE_CURRENT}</luceneMatchVersion>
-  <directoryFactory name="DirectoryFactory" class="${solr.directoryFactory:solr.RAMDirectoryFactory}"/>
+  
+  <directoryFactory name="DirectoryFactory" class="${solr.directoryFactory:solr.RAMDirectoryFactory}">
+    <!-- used to keep RAM reqs down for HdfsDirectoryFactory -->
+    <int name="solr.hdfs.blockcache.blocksperbank">${solr.hdfs.blockcache.blocksperbank:1024}</int>
+  </directoryFactory>
+  
   <dataDir>${solr.data.dir:}</dataDir>
+
+  <indexConfig>
+    <lockType>${solr.lock.type:native}</lockType>
+  </indexConfig>
 
   <!-- an update processor the explicitly excludes distrib to test
        clean errors when people attempt atomic updates w/o it
@@ -38,12 +49,14 @@
       <str name="omitHeader">true</str>
     </lst>
   </requestHandler>
+  
+  <requestHandler name="/replication" class="solr.ReplicationHandler" startup="lazy" /> 
 
   <requestHandler name="/update" class="solr.UpdateRequestHandler"  />
 
   <updateHandler class="solr.DirectUpdateHandler2">
     <updateLog>
-      <!-- <str name="dir">/tmp/solr/</str> -->
+      <str name="dir">${solr.ulog.dir:}</str>
     </updateLog>
   </updateHandler>
 
@@ -71,5 +84,36 @@
   </updateRequestProcessorChain>
 
   <requestHandler name="/admin/" class="org.apache.solr.handler.admin.AdminHandlers" />
+
+  <updateRequestProcessorChain name="distrib-dup-test-chain-explicit">
+    <!-- explicit test using processors before and after distrib -->
+    <processor class="solr.RegexReplaceProcessorFactory">
+      <str name="fieldName">regex_dup_A_s</str>
+      <str name="pattern">x</str>
+      <str name="replacement">x_x</str>
+    </processor>
+    <processor class="solr.DistributedUpdateProcessorFactory" />
+    <processor class="solr.RegexReplaceProcessorFactory">
+      <str name="fieldName">regex_dup_B_s</str>
+      <str name="pattern">x</str>
+      <str name="replacement">x_x</str>
+    </processor>
+    <processor class="solr.RunUpdateProcessorFactory" />
+  </updateRequestProcessorChain>  
+
+  <updateRequestProcessorChain name="distrib-dup-test-chain-implicit">
+    <!-- implicit test w/o distrib declared-->
+    <processor class="solr.RegexReplaceProcessorFactory">
+      <str name="fieldName">regex_dup_A_s</str>
+      <str name="pattern">x</str>
+      <str name="replacement">x_x</str>
+    </processor>
+    <processor class="solr.RegexReplaceProcessorFactory">
+      <str name="fieldName">regex_dup_B_s</str>
+      <str name="pattern">x</str>
+      <str name="replacement">x_x</str>
+    </processor>
+    <processor class="solr.RunUpdateProcessorFactory" />
+  </updateRequestProcessorChain>  
 
 </config>
