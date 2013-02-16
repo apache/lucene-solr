@@ -20,6 +20,7 @@ package org.apache.lucene;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Collections;
+import java.util.List;
 import java.util.Set;
 import java.util.TreeSet;
 
@@ -37,6 +38,7 @@ import org.apache.lucene.index.IndexWriterConfig;
 import org.apache.lucene.index.RandomIndexWriter;
 import org.apache.lucene.index.SortedSetDocValues;
 import org.apache.lucene.index.Term;
+import org.apache.lucene.search.FieldCache;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.LuceneTestCase;
@@ -480,6 +482,127 @@ public class TestDemoDocValue extends LuceneTestCase {
     int numIterations = atLeast(1);
     for (int i = 0; i < numIterations; i++) {
       doTestSortedSetVsStoredFields(1, 10);
+    }
+  }
+  
+  private void assertEquals(int maxDoc, SortedSetDocValues expected, SortedSetDocValues actual) throws Exception {
+    // can be null for the segment if no docs actually had any SortedDocValues
+    // in this case FC.getDocTermsOrds returns EMPTY
+    if (actual == null) {
+      assertEquals(SortedSetDocValues.EMPTY, expected);
+      return;
+    }
+    assertEquals(expected.getValueCount(), actual.getValueCount());
+    // compare ord lists
+    for (int i = 0; i < maxDoc; i++) {
+      expected.setDocument(i);
+      actual.setDocument(i);
+      long expectedOrd;
+      while ((expectedOrd = expected.nextOrd()) != NO_MORE_ORDS) {
+        assertEquals(expectedOrd, actual.nextOrd());
+      }
+      assertEquals(NO_MORE_ORDS, actual.nextOrd());
+    }
+    
+    // compare ord dictionary
+    BytesRef expectedBytes = new BytesRef();
+    BytesRef actualBytes = new BytesRef();
+    for (long i = 0; i < expected.getValueCount(); i++) {
+      expected.lookupTerm(expectedBytes);
+      actual.lookupTerm(actualBytes);
+      assertEquals(expectedBytes, actualBytes);
+    }
+  }
+  
+  private void doTestSortedSetVsUninvertedField(int minLength, int maxLength) throws Exception {
+    Directory dir = newDirectory();
+    IndexWriterConfig conf = new IndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer(random()));
+    RandomIndexWriter writer = new RandomIndexWriter(random(), dir, conf);
+    
+    // index some docs
+    int numDocs = atLeast(1000);
+    for (int i = 0; i < numDocs; i++) {
+      Document doc = new Document();
+      Field idField = new StringField("id", Integer.toString(i), Field.Store.NO);
+      doc.add(idField);
+      final int length;
+      if (minLength == maxLength) {
+        length = minLength; // fixed length
+      } else {
+        length = _TestUtil.nextInt(random(), minLength, maxLength);
+      }
+      int numValues = random().nextInt(17);
+      // create a random list of strings
+      List<String> values = new ArrayList<String>();
+      for (int v = 0; v < numValues; v++) {
+        values.add(_TestUtil.randomSimpleString(random(), length));
+      }
+      
+      // add in any order to the indexed field
+      ArrayList<String> unordered = new ArrayList<String>(values);
+      Collections.shuffle(unordered, random());
+      for (String v : values) {
+        doc.add(newStringField("indexed", v, Field.Store.NO));
+      }
+
+      // add in any order to the dv field
+      ArrayList<String> unordered2 = new ArrayList<String>(values);
+      Collections.shuffle(unordered2, random());
+      for (String v : unordered2) {
+        doc.add(new SortedSetDocValuesField("dv", new BytesRef(v)));
+      }
+
+      writer.addDocument(doc);
+      if (random().nextInt(31) == 0) {
+        writer.commit();
+      }
+    }
+    
+    // compare per-segment
+    // NOTE: we must do this before deleting, because FC.getDocTermsOrds/UninvertedField
+    // "bakes in" the deletes at the time it was first called.
+    DirectoryReader ir = writer.getReader();
+    for (AtomicReaderContext context : ir.leaves()) {
+      AtomicReader r = context.reader();
+      SortedSetDocValues expected = FieldCache.DEFAULT.getDocTermOrds(r, "indexed");
+      SortedSetDocValues actual = r.getSortedSetDocValues("dv");
+      assertEquals(r.maxDoc(), expected, actual);
+    }
+    ir.close();
+    
+    // delete some docs
+    int numDeletions = random().nextInt(numDocs/10);
+    for (int i = 0; i < numDeletions; i++) {
+      int id = random().nextInt(numDocs);
+      writer.deleteDocuments(new Term("id", Integer.toString(id)));
+    }
+    
+    writer.forceMerge(1);
+    
+    // now compare again after the merge
+    ir = writer.getReader();
+    AtomicReader ar = getOnlySegmentReader(ir);
+    SortedSetDocValues expected = FieldCache.DEFAULT.getDocTermOrds(ar, "indexed");
+    SortedSetDocValues actual = ar.getSortedSetDocValues("dv");
+    assertEquals(ir.maxDoc(), expected, actual);
+    ir.close();
+    
+    writer.close();
+    dir.close();
+  }
+  
+  public void testSortedSetFixedLengthVsUninvertedField() throws Exception {
+    int numIterations = atLeast(1);
+    for (int i = 0; i < numIterations; i++) {
+      int fixedLength = _TestUtil.nextInt(random(), 1, 10);
+      doTestSortedSetVsUninvertedField(fixedLength, fixedLength);
+    }
+  }
+  
+  public void testSortedSetVariableLengthVsUninvertedField() throws Exception {
+    int numIterations = atLeast(1);
+    for (int i = 0; i < numIterations; i++) {
+      doTestSortedSetVsUninvertedField(1, 10);
     }
   }
 }

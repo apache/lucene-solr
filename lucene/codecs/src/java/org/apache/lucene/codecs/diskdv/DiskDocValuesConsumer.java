@@ -130,6 +130,7 @@ public class DiskDocValuesConsumer extends DocValuesConsumer {
     // write the ord -> byte[] as a binary field
     addBinaryField(field, values);
     // write the stream of ords as a numeric field
+    // NOTE: we could return an iterator that delta-encodes these within a doc
     addNumericField(field, ords);
     
     // write the doc -> ord count as a absolute index to the stream

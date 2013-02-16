@@ -628,6 +628,7 @@ public class TestDuelingCodecs extends LuceneTestCase {
     Set<String> rightFields = getDVFields(rightReader);
     assertEquals(info, leftFields, rightFields);
 
+    // nocommit: SortedSet too
     for (String field : leftFields) {
       // TODO: clean this up... very messy
       {
