@@ -23,6 +23,7 @@ import org.junit.BeforeClass;
 import org.junit.Ignore;
 import org.junit.Test;
 
+import java.util.List;
 import java.util.Random;
 import java.util.Set;
 
@@ -71,18 +72,18 @@ public class CurrencyFieldTest extends SolrTestCaseJ4 {
     FieldType tmp = amount.getType();
     assertTrue(tmp instanceof CurrencyField);
     String currencyValue = "1.50,EUR";
-    StorableField[] fields = amount.createFields(currencyValue, 2);
-    assertEquals(fields.length, 3);
+    List<StorableField> fields = amount.createFields(currencyValue, 2);
+    assertEquals(fields.size(), 3);
 
     // First field is currency code, second is value, third is stored.
     for (int i = 0; i < 3; i++) {
-      boolean hasValue = fields[i].readerValue() != null
-              || fields[i].numericValue() != null
-              || fields[i].stringValue() != null;
-      assertTrue("Doesn't have a value: " + fields[i], hasValue);
+      boolean hasValue = fields.get(i).readerValue() != null
+              || fields.get(i).numericValue() != null
+              || fields.get(i).stringValue() != null;
+      assertTrue("Doesn't have a value: " + fields.get(i), hasValue);
     }
 
-    assertEquals(schema.getFieldTypeByName("string").toExternal(fields[2]), "1.50,EUR");
+    assertEquals(schema.getFieldTypeByName("string").toExternal(fields.get(2)), "1.50,EUR");
     
     // A few tests on the provider directly
     ExchangeRateProvider p = ((CurrencyField) tmp).getProvider();

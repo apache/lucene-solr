@@ -17,7 +17,10 @@
 package org.apache.solr.schema;
 
 import java.io.IOException;
+import java.util.ArrayList;
+import java.util.Collections;
 import java.util.Date;
+import java.util.List;
 import java.util.Locale;
 import java.util.Map;
 
@@ -29,13 +32,17 @@ import org.apache.lucene.document.FieldType.NumericType;
 import org.apache.lucene.document.FloatField;
 import org.apache.lucene.document.IntField;
 import org.apache.lucene.document.LongField;
+import org.apache.lucene.document.NumericDocValuesField;
 import org.apache.lucene.index.StorableField;
 import org.apache.lucene.queries.function.ValueSource;
 import org.apache.lucene.queries.function.valuesource.DoubleFieldSource;
 import org.apache.lucene.queries.function.valuesource.FloatFieldSource;
 import org.apache.lucene.queries.function.valuesource.IntFieldSource;
 import org.apache.lucene.queries.function.valuesource.LongFieldSource;
-import org.apache.lucene.search.*;
+import org.apache.lucene.search.FieldCache;
+import org.apache.lucene.search.NumericRangeQuery;
+import org.apache.lucene.search.Query;
+import org.apache.lucene.search.SortField;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.CharsRef;
 import org.apache.lucene.util.NumericUtils;
@@ -101,8 +108,7 @@ public class TrieField extends PrimitiveFieldType {
                 "Invalid type specified in schema.xml for field: " + args.get("name"), e);
       }
     }
-  
-    
+
     CharFilterFactory[] filterFactories = new CharFilterFactory[0];
     TokenFilterFactory[] tokenFilterFactories = new TokenFilterFactory[0];
     analyzer = new TokenizerChain(filterFactories, new TrieTokenizerFactory(type, precisionStep), tokenFilterFactories);
@@ -234,6 +240,23 @@ public class TrieField extends PrimitiveFieldType {
    */
   public TrieTypes getType() {
     return type;
+  }
+
+  @Override
+  public NumericType getNumericType() {
+    switch (type) {
+      case INTEGER:
+        return NumericType.INT;
+      case LONG:
+      case DATE:
+        return NumericType.LONG;
+      case FLOAT:
+        return NumericType.FLOAT;
+      case DOUBLE:
+        return NumericType.DOUBLE;
+      default:
+        throw new AssertionError();
+    }
   }
 
   @Override
@@ -473,8 +496,9 @@ public class TrieField extends PrimitiveFieldType {
   public StorableField createField(SchemaField field, Object value, float boost) {
     boolean indexed = field.indexed();
     boolean stored = field.stored();
+    boolean docValues = field.hasDocValues();
 
-    if (!indexed && !stored) {
+    if (!indexed && !stored && !docValues) {
       if (log.isTraceEnabled())
         log.trace("Ignoring unindexed/unstored field: " + field);
       return null;
@@ -549,6 +573,28 @@ public class TrieField extends PrimitiveFieldType {
     return f;
   }
 
+  @Override
+  public List<StorableField> createFields(SchemaField sf, Object value, float boost) {
+    if (sf.hasDocValues()) {
+      List<StorableField> fields = new ArrayList<StorableField>();
+      final StorableField field = createField(sf, value, boost);
+      fields.add(field);
+      final long bits;
+      if (field.numericValue() instanceof Integer || field.numericValue() instanceof Long) {
+        bits = field.numericValue().longValue();
+      } else if (field.numericValue() instanceof Float) {
+        bits = Float.floatToIntBits(field.numericValue().floatValue());
+      } else {
+        assert field.numericValue() instanceof Double;
+        bits = Double.doubleToLongBits(field.numericValue().doubleValue());
+      }
+      fields.add(new NumericDocValuesField(sf.getName(), bits));
+      return fields;
+    } else {
+      return Collections.singletonList(createField(sf, value, boost));
+    }
+  }
+
   public enum TrieTypes {
     INTEGER,
     LONG,
@@ -586,6 +632,13 @@ public class TrieField extends PrimitiveFieldType {
     }
     return null;
   }
+
+  @Override
+  public void checkSchemaField(final SchemaField field) {
+    if (field.hasDocValues() && !(field.isRequired() || field.getDefaultValue() != null)) {
+      throw new IllegalStateException("Field " + this + " has doc values enabled, but has no default value and is not required");
+    }
+  }
 }
 
 class TrieDateFieldSource extends LongFieldSource {
@@ -605,14 +658,20 @@ class TrieDateFieldSource extends LongFieldSource {
   }
 
   @Override
-  public Object longToObject(long val) {
+  public Date longToObject(long val) {
     return new Date(val);
+  }
+
+  @Override
+  public String longToString(long val) {
+    return TrieField.dateField.toExternal(longToObject(val));
   }
 
   @Override
   public long externalToLong(String extVal) {
     return TrieField.dateField.parseMath(null, extVal).getTime();
   }
+
 }
 
 

@@ -50,6 +50,7 @@ public abstract class FieldProperties {
   protected final static int OMIT_POSITIONS      = 0x00002000;
 
   protected final static int STORE_OFFSETS       = 0x00004000;
+  protected final static int DOC_VALUES          = 0x00008000;
 
   static final String[] propertyNames = {
           "indexed", "tokenized", "stored",
@@ -57,7 +58,7 @@ public abstract class FieldProperties {
           "termVectors", "termPositions", "termOffsets",
           "multiValued",
           "sortMissingFirst","sortMissingLast","required", "omitPositions",
-          "storeOffsetsWithPositions"
+          "storeOffsetsWithPositions", "docValues"
   };
 
   static final Map<String,Integer> propertyMap = new HashMap<String,Integer>();

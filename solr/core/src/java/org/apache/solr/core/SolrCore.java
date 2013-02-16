@@ -834,6 +834,11 @@ public final class SolrCore implements SolrInfoMBean {
           log.error(msg);
           throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, msg);
         }
+        if (null != ft.getDocValuesFormat()) {
+          String msg = "FieldType '" + ft.getTypeName() + "' is configured with a docValues format, but the codec does not support it: " + factory.getClass();
+          log.error(msg);
+          throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, msg);
+        }
       }
     }
     return factory.getCodec();

@@ -77,6 +77,8 @@ New Features
   under the covers -- allowing many HTTP connection related properties to be
   controlled via 'standard' java system properties.  (hossman)
 
+* SOLR-3855: Doc values support. (Adrien Grand)
+
 Bug Fixes
 ----------------------
 
