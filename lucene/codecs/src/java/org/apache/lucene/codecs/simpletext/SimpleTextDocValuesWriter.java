@@ -22,6 +22,7 @@ import java.math.BigInteger;
 import java.text.DecimalFormat;
 import java.text.DecimalFormatSymbols;
 import java.util.HashSet;
+import java.util.Iterator;
 import java.util.Locale;
 import java.util.Set;
 
@@ -252,7 +253,111 @@ class SimpleTextDocValuesWriter extends DocValuesConsumer {
 
   @Override
   public void addSortedSetField(FieldInfo field, Iterable<BytesRef> values, Iterable<Number> docToOrdCount, Iterable<Number> ords) throws IOException {
-    throw new UnsupportedOperationException(); // nocommit
+    assert fieldSeen(field.name);
+    assert field.getDocValuesType() == DocValuesType.SORTED_SET;
+    writeFieldEntry(field, FieldInfo.DocValuesType.SORTED_SET);
+
+    long valueCount = 0;
+    int maxLength = 0;
+    for(BytesRef value : values) {
+      maxLength = Math.max(maxLength, value.length);
+      valueCount++;
+    }
+
+    // write numValues
+    SimpleTextUtil.write(data, NUMVALUES);
+    SimpleTextUtil.write(data, Long.toString(valueCount), scratch);
+    SimpleTextUtil.writeNewline(data);
+    
+    // write maxLength
+    SimpleTextUtil.write(data, MAXLENGTH);
+    SimpleTextUtil.write(data, Integer.toString(maxLength), scratch);
+    SimpleTextUtil.writeNewline(data);
+    
+    int maxBytesLength = Integer.toString(maxLength).length();
+    StringBuilder sb = new StringBuilder();
+    for (int i = 0; i < maxBytesLength; i++) {
+      sb.append('0');
+    }
+    
+    // write our pattern for encoding lengths
+    SimpleTextUtil.write(data, PATTERN);
+    SimpleTextUtil.write(data, sb.toString(), scratch);
+    SimpleTextUtil.writeNewline(data);
+    final DecimalFormat encoder = new DecimalFormat(sb.toString(), new DecimalFormatSymbols(Locale.ROOT));
+    
+    // compute ord pattern: this is funny, we encode all values for all docs to find the maximum length
+    int maxOrdListLength = 0;
+    StringBuilder sb2 = new StringBuilder();
+    Iterator<Number> ordStream = ords.iterator();
+    for (Number n : docToOrdCount) {
+      sb2.setLength(0);
+      int count = n.intValue();
+      for (int i = 0; i < count; i++) {
+        long ord = ordStream.next().longValue();
+        if (sb2.length() > 0) {
+          sb2.append(",");
+        }
+        sb2.append(Long.toString(ord));
+      }
+      maxOrdListLength = Math.max(maxOrdListLength, sb2.length());
+    }
+     
+    sb2.setLength(0);
+    for (int i = 0; i < maxOrdListLength; i++) {
+      sb2.append('X');
+    }
+    
+    // write our pattern for ord lists
+    SimpleTextUtil.write(data, ORDPATTERN);
+    SimpleTextUtil.write(data, sb2.toString(), scratch);
+    SimpleTextUtil.writeNewline(data);
+    
+    // for asserts:
+    long valuesSeen = 0;
+
+    for(BytesRef value : values) {
+      // write length
+      SimpleTextUtil.write(data, LENGTH);
+      SimpleTextUtil.write(data, encoder.format(value.length), scratch);
+      SimpleTextUtil.writeNewline(data);
+        
+      // write bytes -- don't use SimpleText.write
+      // because it escapes:
+      data.writeBytes(value.bytes, value.offset, value.length);
+
+      // pad to fit
+      for (int i = value.length; i < maxLength; i++) {
+        data.writeByte((byte)' ');
+      }
+      SimpleTextUtil.writeNewline(data);
+      valuesSeen++;
+      assert valuesSeen <= valueCount;
+    }
+
+    assert valuesSeen == valueCount;
+
+    ordStream = ords.iterator();
+    
+    // write the ords for each doc comma-separated
+    for(Number n : docToOrdCount) {
+      sb2.setLength(0);
+      int count = n.intValue();
+      for (int i = 0; i < count; i++) {
+        long ord = ordStream.next().longValue();
+        if (sb2.length() > 0) {
+          sb2.append(",");
+        }
+        sb2.append(Long.toString(ord));
+      }
+      // now pad to fit: these are numbers so spaces work well. reader calls trim()
+      int numPadding = maxOrdListLength - sb2.length();
+      for (int i = 0; i < numPadding; i++) {
+        sb2.append(' ');
+      }
+      SimpleTextUtil.write(data, sb2.toString(), scratch);
+      SimpleTextUtil.writeNewline(data);
+    }
   }
 
   /** write the header for this field */

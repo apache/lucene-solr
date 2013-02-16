@@ -60,7 +60,7 @@ class SimpleTextDocValuesReader extends DocValuesProducer {
     int maxLength;
     boolean fixedLength;
     long minValue;
-    int numValues;
+    long numValues;
   };
 
   final int maxDoc;
@@ -110,10 +110,10 @@ class SimpleTextDocValuesReader extends DocValuesProducer {
         field.pattern = stripPrefix(PATTERN);
         field.dataStartFilePointer = data.getFilePointer();
         data.seek(data.getFilePointer() + (9+field.pattern.length()+field.maxLength) * maxDoc);
-      } else if (dvType == DocValuesType.SORTED) {
+      } else if (dvType == DocValuesType.SORTED || dvType == DocValuesType.SORTED_SET) {
         readLine();
         assert startsWith(NUMVALUES);
-        field.numValues = Integer.parseInt(stripPrefix(NUMVALUES));
+        field.numValues = Long.parseLong(stripPrefix(NUMVALUES));
         readLine();
         assert startsWith(MAXLENGTH);
         field.maxLength = Integer.parseInt(stripPrefix(MAXLENGTH));
@@ -280,14 +280,87 @@ class SimpleTextDocValuesReader extends DocValuesProducer {
 
       @Override
       public int getValueCount() {
-        return field.numValues;
+        return (int)field.numValues;
       }
     };
   }
 
   @Override
-  public SortedSetDocValues getSortedSet(FieldInfo field) throws IOException {
-    throw new UnsupportedOperationException(); // nocommit
+  public SortedSetDocValues getSortedSet(FieldInfo fieldInfo) throws IOException {
+    final OneField field = fields.get(fieldInfo.name);
+
+    // SegmentCoreReaders already verifies this field is
+    // valid:
+    assert field != null;
+
+    final IndexInput in = data.clone();
+    final BytesRef scratch = new BytesRef();
+    final DecimalFormat decoder = new DecimalFormat(field.pattern, new DecimalFormatSymbols(Locale.ROOT));
+    
+    return new SortedSetDocValues() {
+      String[] currentOrds = new String[0];
+      int currentIndex = 0;
+      
+      @Override
+      public long nextOrd() {
+        if (currentIndex == currentOrds.length) {
+          return NO_MORE_ORDS;
+        } else {
+          return Long.parseLong(currentOrds[currentIndex++]);
+        }
+      }
+
+      @Override
+      public void setDocument(int docID) {
+        if (docID < 0 || docID >= maxDoc) {
+          throw new IndexOutOfBoundsException("docID must be 0 .. " + (maxDoc-1) + "; got " + docID);
+        }
+        try {
+          in.seek(field.dataStartFilePointer + field.numValues * (9 + field.pattern.length() + field.maxLength) + docID * (1 + field.ordPattern.length()));
+          SimpleTextUtil.readLine(in, scratch);
+          String ordList = scratch.utf8ToString().trim();
+          if (ordList.isEmpty()) {
+            currentOrds = new String[0];
+          } else {
+            currentOrds = ordList.split(",");
+          }
+          currentIndex = 0;
+        } catch (IOException ioe) {
+          throw new RuntimeException(ioe);
+        }
+      }
+
+      @Override
+      public void lookupOrd(long ord, BytesRef result) {
+        try {
+          if (ord < 0 || ord >= field.numValues) {
+            throw new IndexOutOfBoundsException("ord must be 0 .. " + (field.numValues-1) + "; got " + ord);
+          }
+          in.seek(field.dataStartFilePointer + ord * (9 + field.pattern.length() + field.maxLength));
+          SimpleTextUtil.readLine(in, scratch);
+          assert StringHelper.startsWith(scratch, LENGTH): "got " + scratch.utf8ToString() + " in=" + in;
+          int len;
+          try {
+            len = decoder.parse(new String(scratch.bytes, scratch.offset + LENGTH.length, scratch.length - LENGTH.length, "UTF-8")).intValue();
+          } catch (ParseException pe) {
+            CorruptIndexException e = new CorruptIndexException("failed to parse int length");
+            e.initCause(pe);
+            throw e;
+          }
+          result.bytes = new byte[len];
+          result.offset = 0;
+          result.length = len;
+          in.readBytes(result.bytes, 0, len);
+        } catch (IOException ioe) {
+          throw new RuntimeException(ioe);
+        }
+      }
+
+      @Override
+      public long getValueCount() {
+        return field.numValues;
+      }
+    };
   }
 
   @Override

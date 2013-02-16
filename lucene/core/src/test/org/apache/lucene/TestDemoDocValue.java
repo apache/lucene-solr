@@ -55,7 +55,7 @@ import static org.apache.lucene.index.SortedSetDocValues.NO_MORE_ORDS;
  */
 // nocommit: should only be Lucene40 and Lucene41
 // nocommit: move to BaseDocValuesTestCase, but allow these to be assume()d (for 4.0 and 4.1)
-@SuppressCodecs({ "Lucene40", "Lucene41", "SimpleText" })
+@SuppressCodecs({ "Lucene40", "Lucene41" })
 public class TestDemoDocValue extends LuceneTestCase {
   
   public void testSortedSetOneValue() throws IOException {
