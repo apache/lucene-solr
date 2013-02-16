@@ -129,6 +129,9 @@ Bug Fixes
   kick in when using NRTCachingDirectory or the rate limiting feature.
   (Mark Miller)
 
+* SOLR-4421,SOLR-4165: On CoreContainer shutdown, all SolrCores should publish their 
+  state as DOWN. (Mark Miller, Markus Jelsma)
+
 Optimizations
 ----------------------
 
@@ -160,9 +163,6 @@ Other Changes
 * SOLR-4353: Renamed example jetty context file to reduce confusion (hossman)
 
 * SOLR-4384: Make post.jar report timing information (Upayavira via janhoy)
-
-* SOLR-4421: On CoreContainer shutdown, all SolrCores should publish their 
-  state as DOWN. (Mark Miller)
 
 ==================  4.1.0 ==================
 

@@ -207,7 +207,6 @@ public abstract class AbstractDistribZkTestBase extends BaseDistributedSearchTes
     if (DEBUG) {
       printLayout();
     }
-    zkServer.shutdown();
     System.clearProperty("zkHost");
     System.clearProperty("collection");
     System.clearProperty("enable.update.log");
@@ -217,6 +216,7 @@ public abstract class AbstractDistribZkTestBase extends BaseDistributedSearchTes
     System.clearProperty("solr.test.sys.prop2");
     resetExceptionIgnores();
     super.tearDown();
+    zkServer.shutdown();
   }
   
   protected void printLayout() throws Exception {
