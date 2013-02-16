@@ -596,93 +596,6 @@ public class DocTermOrds {
     return pos;
   }
 
-  /** Iterates over the ords for a single document. */
-  private class TermOrdsIterator {
-    private int tnum;
-    private int upto;
-    private byte[] arr;
-
-    TermOrdsIterator() {
-    }
-
-    /** Buffer must be at least 5 ints long.  Returns number
-     *  of term ords placed into buffer; if this count is
-     *  less than buffer.length then that is the end. */
-    public int read(int[] buffer) {
-      int bufferUpto = 0;
-      if (arr == null) {
-        // code is inlined into upto
-        //System.out.println("inlined");
-        int code = upto;
-        int delta = 0;
-        for (;;) {
-          delta = (delta << 7) | (code & 0x7f);
-          if ((code & 0x80)==0) {
-            if (delta==0) break;
-            tnum += delta - TNUM_OFFSET;
-            buffer[bufferUpto++] = ordBase+tnum;
-            //System.out.println("  tnum=" + tnum);
-            delta = 0;
-          }
-          code >>>= 8;
-        }
-      } else {
-        // code is a pointer
-        for(;;) {
-          int delta = 0;
-          for(;;) {
-            byte b = arr[upto++];
-            delta = (delta << 7) | (b & 0x7f);
-            //System.out.println("    cycle: upto=" + upto + " delta=" + delta + " b=" + b);
-            if ((b & 0x80) == 0) break;
-          }
-          //System.out.println("  delta=" + delta);
-          if (delta == 0) break;
-          tnum += delta - TNUM_OFFSET;
-          //System.out.println("  tnum=" + tnum);
-          buffer[bufferUpto++] = ordBase+tnum;
-          if (bufferUpto == buffer.length) {
-            break;
-          }
-        }
-      }
-
-      return bufferUpto;
-    }
-
-    /** Reset the iterator on a new document. */
-    public TermOrdsIterator reset(int docID) {
-      //System.out.println("  reset docID=" + docID);
-      tnum = 0;
-      final int code = index[docID];
-      if ((code & 0xff)==1) {
-        // a pointer
-        upto = code>>>8;
-        //System.out.println("    pointer!  upto=" + upto);
-        int whichArray = (docID >>> 16) & 0xff;
-        arr = tnums[whichArray];
-      } else {
-        //System.out.println("    inline!");
-        arr = null;
-        upto = code;
-      }
-      return this;
-    }
-  }
-
-  /** Returns an iterator to step through the term ords for
-   *  this document.  It's also possible to subclass this
-   *  class and directly access members. */
-  public TermOrdsIterator lookup(int doc, TermOrdsIterator reuse) {
-    final TermOrdsIterator ret;
-    if (reuse != null) {
-      ret = reuse;
-    } else {
-      ret = new TermOrdsIterator();
-    }
-    return ret.reset(doc);
-  }
-
   /* Only used if original IndexReader doesn't implement
    * ord; in this case we "wrap" our own terms index
    * around it. */
@@ -859,10 +772,14 @@ public class DocTermOrds {
   
   private class Iterator extends SortedSetDocValues {
     final TermsEnum te;
-    final TermOrdsIterator in = new TermOrdsIterator(); // nocommit: don't wrap this other iterator
+    // currently we read 5 at a time (using the logic of the old iterator)
     final int buffer[] = new int[5];
     int bufferUpto;
     int bufferLength;
+    
+    private int tnum;
+    private int upto;
+    private byte[] arr;
     
     Iterator(TermsEnum te) {
       this.te = te;
@@ -874,20 +791,75 @@ public class DocTermOrds {
         if (bufferLength < buffer.length) {
           return NO_MORE_ORDS;
         } else {
-          bufferLength = in.read(buffer);
+          bufferLength = read(buffer);
           bufferUpto = 0;
         }
       }
-      int next = buffer[bufferUpto];
-      bufferUpto++;
-      return next;
+      return buffer[bufferUpto++];
+    }
+    
+    /** Buffer must be at least 5 ints long.  Returns number
+     *  of term ords placed into buffer; if this count is
+     *  less than buffer.length then that is the end. */
+    int read(int[] buffer) {
+      int bufferUpto = 0;
+      if (arr == null) {
+        // code is inlined into upto
+        //System.out.println("inlined");
+        int code = upto;
+        int delta = 0;
+        for (;;) {
+          delta = (delta << 7) | (code & 0x7f);
+          if ((code & 0x80)==0) {
+            if (delta==0) break;
+            tnum += delta - TNUM_OFFSET;
+            buffer[bufferUpto++] = ordBase+tnum;
+            //System.out.println("  tnum=" + tnum);
+            delta = 0;
+          }
+          code >>>= 8;
+        }
+      } else {
+        // code is a pointer
+        for(;;) {
+          int delta = 0;
+          for(;;) {
+            byte b = arr[upto++];
+            delta = (delta << 7) | (b & 0x7f);
+            //System.out.println("    cycle: upto=" + upto + " delta=" + delta + " b=" + b);
+            if ((b & 0x80) == 0) break;
+          }
+          //System.out.println("  delta=" + delta);
+          if (delta == 0) break;
+          tnum += delta - TNUM_OFFSET;
+          //System.out.println("  tnum=" + tnum);
+          buffer[bufferUpto++] = ordBase+tnum;
+          if (bufferUpto == buffer.length) {
+            break;
+          }
+        }
+      }
+
+      return bufferUpto;
     }
 
     @Override
     public void setDocument(int docID) {
-      in.reset(docID);
+      tnum = 0;
+      final int code = index[docID];
+      if ((code & 0xff)==1) {
+        // a pointer
+        upto = code>>>8;
+        //System.out.println("    pointer!  upto=" + upto);
+        int whichArray = (docID >>> 16) & 0xff;
+        arr = tnums[whichArray];
+      } else {
+        //System.out.println("    inline!");
+        arr = null;
+        upto = code;
+      }
       bufferUpto = 0;
-      bufferLength = in.read(buffer);
+      bufferLength = read(buffer);
     }
 
     @Override
