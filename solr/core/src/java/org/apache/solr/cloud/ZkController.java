@@ -564,7 +564,7 @@ public final class ZkController {
     
     // now wait till the updates are in our state
     long now = System.currentTimeMillis();
-    long timeout = now + 1000 * 300;
+    long timeout = now + 1000 * 30;
     boolean foundStates = false;
     while (System.currentTimeMillis() < timeout) {
       clusterState = zkStateReader.getClusterState();
@@ -586,8 +586,10 @@ public final class ZkController {
       
       if (updatedNodes.size() == 0) {
         foundStates = true;
+        Thread.sleep(1000);
         break;
       }
+      Thread.sleep(1000);
     }
     if (!foundStates) {
       log.warn("Timed out waiting to see all nodes published as DOWN in our cluster state.");
