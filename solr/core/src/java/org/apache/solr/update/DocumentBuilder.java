@@ -22,12 +22,14 @@ import java.util.HashMap;
 import java.util.List;
 
 import org.apache.lucene.document.Document;
+import org.apache.lucene.document.Field;
 import org.apache.lucene.index.IndexableField;
-import org.apache.solr.common.SolrDocument;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.SolrInputDocument;
 import org.apache.solr.common.SolrInputField;
-import org.apache.solr.schema.*;
+import org.apache.solr.schema.CopyField;
+import org.apache.solr.schema.IndexSchema;
+import org.apache.solr.schema.SchemaField;
 
 /**
  *
@@ -55,33 +57,19 @@ public class DocumentBuilder {
     // we don't check for a null val ourselves because a solr.FieldType
     // might actually want to map it to something.  If createField()
     // returns null, then we don't store the field.
-    if (sfield.isPolyField()) {
-      IndexableField[] fields = sfield.createFields(val, boost);
-      if (fields.length > 0) {
-        if (!sfield.multiValued()) {
-          String oldValue = map.put(sfield.getName(), val);
-          if (oldValue != null) {
-            throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, "ERROR: multiple values encountered for non multiValued field " + sfield.getName()
-                    + ": first='" + oldValue + "' second='" + val + "'");
-          }
-        }
-        // Add each field
-        for (IndexableField field : fields) {
-          doc.add(field);
+    List<IndexableField> fields = sfield.createFields(val, boost);
+    if (!fields.isEmpty()) {
+      if (!sfield.multiValued()) {
+        String oldValue = map.put(sfield.getName(), val);
+        if (oldValue != null) {
+          throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, "ERROR: multiple values encountered for non multiValued field " + sfield.getName()
+                  + ": first='" + oldValue + "' second='" + val + "'");
         }
       }
-    } else {
-      IndexableField field = sfield.createField(val, boost);
-      if (field != null) {
-        if (!sfield.multiValued()) {
-          String oldValue = map.put(sfield.getName(), val);
-          if (oldValue != null) {
-            throw new SolrException( SolrException.ErrorCode.BAD_REQUEST,"ERROR: multiple values encountered for non multiValued field " + sfield.getName()
-                    + ": first='" + oldValue + "' second='" + val + "'");
-          }
-        }
+      // Add each field
+      for (IndexableField field : fields) {
+        doc.add((Field) field);
       }
-      doc.add(field);
     }
 
   }
@@ -189,14 +177,8 @@ public class DocumentBuilder {
 
 
   private static void addField(Document doc, SchemaField field, Object val, float boost) {
-    if (field.isPolyField()) {
-      IndexableField[] farr = field.getType().createFields(field, val, boost);
-      for (IndexableField f : farr) {
-        if (f != null) doc.add(f); // null fields are not added
-      }
-    } else {
-      IndexableField f = field.createField(val, boost);
-      if (f != null) doc.add(f);  // null fields are not added
+    for (IndexableField f : field.getType().createFields(field, val, boost)) {
+      if (f != null) doc.add((Field) f); // null fields are not added
     }
   }
   

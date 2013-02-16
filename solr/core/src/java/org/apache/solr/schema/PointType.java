@@ -69,7 +69,7 @@ public class PointType extends CoordinateFieldType implements SpatialQueryable {
   }
 
   @Override
-  public IndexableField[] createFields(SchemaField field, Object value, float boost) {
+  public List<IndexableField> createFields(SchemaField field, Object value, float boost) {
     String externalVal = value.toString();
     String[] point = new String[0];
     try {
@@ -79,12 +79,12 @@ public class PointType extends CoordinateFieldType implements SpatialQueryable {
     }
 
     // TODO: this doesn't currently support polyFields as sub-field types
-    IndexableField[] f = new IndexableField[ (field.indexed() ? dimension : 0) + (field.stored() ? 1 : 0) ];
+    List<IndexableField> f = new ArrayList<IndexableField>(dimension+1);
 
     if (field.indexed()) {
       for (int i=0; i<dimension; i++) {
         SchemaField sf = subField(field, i);
-        f[i] = sf.createField(point[i], sf.indexed() && !sf.omitNorms() ? boost : 1f);
+        f.add(sf.createField(point[i], sf.indexed() && !sf.omitNorms() ? boost : 1f));
       }
     }
 
@@ -92,7 +92,7 @@ public class PointType extends CoordinateFieldType implements SpatialQueryable {
       String storedVal = externalVal;  // normalize or not?
       FieldType customType = new FieldType();
       customType.setStored(true);
-      f[f.length - 1] = createField(field.getName(), storedVal, customType, 1f);
+      f.add(createField(field.getName(), storedVal, customType, 1f));
     }
     
     return f;

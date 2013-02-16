@@ -17,16 +17,14 @@
 
 package org.apache.solr.schema;
 
-import org.apache.lucene.document.Field;
+import java.util.Date;
+import java.util.Locale;
+import java.util.TimeZone;
+
 import org.apache.lucene.index.IndexableField;
 import org.apache.lucene.util.LuceneTestCase;
 import org.apache.solr.util.DateMathParser;
-
 import org.junit.Ignore;
-
-import java.util.Date;
-import java.util.TimeZone;
-import java.util.Locale;
 
 public class DateFieldTest extends LuceneTestCase {
   public static TimeZone UTC = TimeZone.getTimeZone("UTC");

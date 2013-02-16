@@ -141,6 +141,11 @@ class SortableIntFieldSource extends FieldCacheSource {
       }
 
       @Override
+      public boolean exists(int doc) {
+        return termsIndex.getOrd(doc) >= 0;
+      }
+
+      @Override
       public int intVal(int doc) {
         int ord=termsIndex.getOrd(doc);
         if (ord==-1) {
@@ -173,13 +178,7 @@ class SortableIntFieldSource extends FieldCacheSource {
 
       @Override
       public Object objectVal(int doc) {
-        int ord=termsIndex.getOrd(doc);
-        if (ord==-1) {
-          return null;
-        } else {
-          termsIndex.lookupOrd(ord, spare);
-          return NumberUtils.SortableStr2int(spare);
-        }
+        return exists(doc) ? intVal(doc) : null;
       }
 
       @Override

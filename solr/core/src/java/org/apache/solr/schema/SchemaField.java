@@ -24,6 +24,7 @@ import org.apache.solr.search.QParser;
 
 import org.apache.solr.response.TextResponseWriter;
 
+import java.util.List;
 import java.util.Map;
 import java.io.IOException;
 
@@ -78,6 +79,7 @@ public final class SchemaField extends FieldProperties {
 
   public boolean indexed() { return (properties & INDEXED)!=0; }
   public boolean stored() { return (properties & STORED)!=0; }
+  public boolean hasDocValues() { return (properties & DOC_VALUES) != 0; }
   public boolean storeTermVector() { return (properties & STORE_TERMVECTORS)!=0; }
   public boolean storeTermPositions() { return (properties & STORE_TERMPOSITIONS)!=0; }
   public boolean storeTermOffsets() { return (properties & STORE_TERMOFFSETS)!=0; }
@@ -103,8 +105,8 @@ public final class SchemaField extends FieldProperties {
   public IndexableField createField(Object val, float boost) {
     return type.createField(this,val,boost);
   }
-  
-  public IndexableField[] createFields(Object val, float boost) {
+
+  public List<IndexableField> createFields(Object val, float boost) {
     return type.createFields(this,val,boost);
   }
 
@@ -147,9 +149,9 @@ public final class SchemaField extends FieldProperties {
    * @see FieldType#getSortField
    */
   public void checkSortability() throws SolrException {
-    if (! indexed() ) {
+    if (! (indexed() || hasDocValues()) ) {
       throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, 
-                              "can not sort on unindexed field: " 
+                              "can not sort on a field which is neither indexed nor has doc values: " 
                               + getName());
     }
     if ( multiValued() ) {
@@ -168,9 +170,9 @@ public final class SchemaField extends FieldProperties {
    * @see FieldType#getValueSource
    */
   public void checkFieldCacheSource(QParser parser) throws SolrException {
-    if (! indexed() ) {
+    if (! (indexed() || hasDocValues()) ) {
       throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, 
-                              "can not use FieldCache on unindexed field: " 
+                              "can not use FieldCache on a field which is neither indexed nor has doc values: " 
                               + getName());
     }
     if ( multiValued() ) {

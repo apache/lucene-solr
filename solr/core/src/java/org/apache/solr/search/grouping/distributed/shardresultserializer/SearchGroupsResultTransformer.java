@@ -17,6 +17,13 @@ package org.apache.solr.search.grouping.distributed.shardresultserializer;
  * limitations under the License.
  */
 
+import java.io.IOException;
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+
 import org.apache.lucene.search.Sort;
 import org.apache.lucene.search.grouping.SearchGroup;
 import org.apache.lucene.util.BytesRef;
@@ -29,9 +36,6 @@ import org.apache.solr.search.SolrIndexSearcher;
 import org.apache.solr.search.grouping.Command;
 import org.apache.solr.search.grouping.distributed.command.Pair;
 import org.apache.solr.search.grouping.distributed.command.SearchGroupsFieldCommand;
-
-import java.io.IOException;
-import java.util.*;
 
 /**
  * Implementation for transforming {@link SearchGroup} into a {@link NamedList} structure and visa versa.

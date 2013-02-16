@@ -17,17 +17,15 @@ package org.apache.solr.schema;
  * limitations under the License.
  */
 
-import com.google.common.base.Throwables;
-import com.google.common.cache.Cache;
-import com.google.common.cache.CacheBuilder;
-import com.spatial4j.core.context.SpatialContext;
-import com.spatial4j.core.context.SpatialContextFactory;
-import com.spatial4j.core.distance.DistanceUtils;
-import com.spatial4j.core.exception.InvalidShapeException;
-import com.spatial4j.core.io.ParseUtils;
-import com.spatial4j.core.shape.Point;
-import com.spatial4j.core.shape.Rectangle;
-import com.spatial4j.core.shape.Shape;
+import java.io.IOException;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Collections;
+import java.util.List;
+import java.util.Map;
+import java.util.concurrent.Callable;
+import java.util.concurrent.ExecutionException;
+
 import org.apache.lucene.document.Field;
 import org.apache.lucene.document.StoredField;
 import org.apache.lucene.index.IndexableField;
@@ -50,10 +48,17 @@ import org.apache.solr.util.MapListener;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.io.IOException;
-import java.util.Map;
-import java.util.concurrent.Callable;
-import java.util.concurrent.ExecutionException;
+import com.google.common.base.Throwables;
+import com.google.common.cache.Cache;
+import com.google.common.cache.CacheBuilder;
+import com.spatial4j.core.context.SpatialContext;
+import com.spatial4j.core.context.SpatialContextFactory;
+import com.spatial4j.core.distance.DistanceUtils;
+import com.spatial4j.core.exception.InvalidShapeException;
+import com.spatial4j.core.io.ParseUtils;
+import com.spatial4j.core.shape.Point;
+import com.spatial4j.core.shape.Rectangle;
+import com.spatial4j.core.shape.Shape;
 
 /**
  * Abstract base class for Solr FieldTypes based on a Lucene 4 {@link SpatialStrategy}.
@@ -103,7 +108,7 @@ public abstract class AbstractSpatialFieldType<T extends SpatialStrategy> extend
   }
 
   @Override
-  public Field[] createFields(SchemaField field, Object val, float boost) {
+  public List<IndexableField> createFields(SchemaField field, Object val, float boost) {
     String shapeStr = null;
     Shape shape = null;
     if (val instanceof Shape) {
@@ -114,34 +119,22 @@ public abstract class AbstractSpatialFieldType<T extends SpatialStrategy> extend
     }
     if (shape == null) {
       log.debug("Field {}: null shape for input: {}", field, val);
-      return null;
+      return Collections.emptyList();
     }
 
-    Field[] indexableFields = null;
+    List<IndexableField> result = new ArrayList<IndexableField>();
     if (field.indexed()) {
       T strategy = getStrategy(field.getName());
-      indexableFields = strategy.createIndexableFields(shape);
+      result.addAll(Arrays.asList(strategy.createIndexableFields(shape)));
     }
 
-    StoredField storedField = null;
     if (field.stored()) {
       if (shapeStr == null)
         shapeStr = shapeToString(shape);
-      storedField = new StoredField(field.getName(), shapeStr);
+      result.add(new StoredField(field.getName(), shapeStr));
     }
 
-    if (indexableFields == null) {
-      if (storedField == null)
-        return null;
-      return new Field[]{storedField};
-    } else {
-      if (storedField == null)
-        return indexableFields;
-      Field[] result = new Field[indexableFields.length+1];
-      System.arraycopy(indexableFields,0,result,0,indexableFields.length);
-      result[result.length-1] = storedField;
-      return result;
-    }
+    return result;
   }
 
   protected Shape parseShape(String shapeStr) {

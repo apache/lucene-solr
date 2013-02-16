@@ -17,19 +17,21 @@
 
 package org.apache.solr.schema;
 
-import org.apache.lucene.queries.function.ValueSource;
-import org.apache.solr.search.QParser;
-import org.apache.solr.response.TextResponseWriter;
+import java.io.IOException;
+import java.util.Date;
+import java.util.List;
+import java.util.Map;
+
+import org.apache.lucene.document.FieldType.NumericType;
 import org.apache.lucene.index.IndexableField;
-import org.apache.lucene.search.SortField;
-import org.apache.lucene.search.Query;
+import org.apache.lucene.queries.function.ValueSource;
 import org.apache.lucene.search.NumericRangeQuery;
+import org.apache.lucene.search.Query;
+import org.apache.lucene.search.SortField;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.CharsRef;
-
-import java.util.Map;
-import java.util.Date;
-import java.io.IOException;
+import org.apache.solr.response.TextResponseWriter;
+import org.apache.solr.search.QParser;
 
 public class TrieDateField extends DateField {
 
@@ -71,6 +73,10 @@ public class TrieDateField extends DateField {
     return wrappedField.getPrecisionStep();
   }
 
+  @Override
+  public NumericType getNumericType() {
+    return wrappedField.getNumericType();
+  }
 
   @Override
   public void write(TextResponseWriter writer, String name, IndexableField f) throws IOException {
@@ -128,6 +134,11 @@ public class TrieDateField extends DateField {
   }
 
   @Override
+  public List<IndexableField> createFields(SchemaField field, Object value, float boost) {
+    return wrappedField.createFields(field, value, boost);
+  }
+
+  @Override
   public Query getRangeQuery(QParser parser, SchemaField field, String min, String max, boolean minInclusive, boolean maxInclusive) {
     return wrappedField.getRangeQuery(parser, field, min, max, minInclusive, maxInclusive);
   }
@@ -139,4 +150,10 @@ public class TrieDateField extends DateField {
               max == null ? null : max.getTime(),
               minInclusive, maxInclusive);
   }
+
+  @Override
+  public void checkSchemaField(SchemaField field) {
+    wrappedField.checkSchemaField(field);
+  }
+
 }

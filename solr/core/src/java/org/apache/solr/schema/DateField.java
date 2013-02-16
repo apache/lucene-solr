@@ -432,7 +432,7 @@ public class DateField extends PrimitiveFieldType {
   @Override
   public ValueSource getValueSource(SchemaField field, QParser parser) {
     field.checkFieldCacheSource(parser);
-    return new DateFieldSource(field.getName(), field.getType());
+    return new DateFieldSource(field.getName(), field);
   }
 
   /** DateField specific range query */
@@ -450,11 +450,13 @@ public class DateField extends PrimitiveFieldType {
 
 class DateFieldSource extends FieldCacheSource {
   // NOTE: this is bad for serialization... but we currently need the fieldType for toInternal()
+  SchemaField sf;
   FieldType ft;
 
-  public DateFieldSource(String name, FieldType ft) {
+  public DateFieldSource(String name, SchemaField sf) {
     super(name);
-    this.ft = ft;
+    this.sf = sf;
+    this.ft = sf.getType();
   }
 
   @Override
@@ -469,6 +471,11 @@ class DateFieldSource extends FieldCacheSource {
       protected String toTerm(String readableValue) {
         // needed for frange queries to work properly
         return ft.toInternal(readableValue);
+      }
+
+      @Override
+      public boolean exists(int doc) {
+        return termsIndex.getOrd(doc) >= 0;
       }
 
       @Override
@@ -511,7 +518,7 @@ class DateFieldSource extends FieldCacheSource {
         } else {
           final BytesRef br = new BytesRef();
           termsIndex.lookupOrd(ord, br);
-          return ft.toObject(null, br);
+          return ft.toObject(sf, br);
         }
       }
 

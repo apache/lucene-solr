@@ -16,30 +16,42 @@ package org.apache.solr.schema;
  * limitations under the License.
  */
 
-import org.apache.lucene.document.FieldType;
-import org.apache.lucene.index.IndexableField;
-import org.apache.lucene.index.IndexReader;
-import org.apache.lucene.index.AtomicReaderContext;
-import org.apache.lucene.queries.function.FunctionValues;
-import org.apache.lucene.queries.function.ValueSource;
-import org.apache.lucene.queries.function.valuesource.VectorValueSource;
-import org.apache.lucene.search.*;
-import com.spatial4j.core.io.ParseUtils;
-import com.spatial4j.core.context.SpatialContext;
-import com.spatial4j.core.distance.DistanceUtils;
-import com.spatial4j.core.exception.InvalidShapeException;
-import com.spatial4j.core.shape.Rectangle;
-import org.apache.lucene.util.Bits;
-import org.apache.solr.common.SolrException;
-import org.apache.solr.response.TextResponseWriter;
-import org.apache.solr.search.*;
-import org.apache.solr.search.function.distance.HaversineConstFunction;
-
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+
+import org.apache.lucene.document.FieldType;
+import org.apache.lucene.index.IndexableField;
+import org.apache.lucene.index.AtomicReaderContext;
+import org.apache.lucene.index.IndexReader;
+import org.apache.lucene.queries.function.FunctionValues;
+import org.apache.lucene.queries.function.ValueSource;
+import org.apache.lucene.queries.function.valuesource.VectorValueSource;
+import org.apache.lucene.search.BooleanClause;
+import org.apache.lucene.search.BooleanQuery;
+import org.apache.lucene.search.ComplexExplanation;
+import org.apache.lucene.search.Explanation;
+import org.apache.lucene.search.IndexSearcher;
+import org.apache.lucene.search.Query;
+import org.apache.lucene.search.Scorer;
+import org.apache.lucene.search.SortField;
+import org.apache.lucene.search.Weight;
+import org.apache.lucene.util.Bits;
+import org.apache.solr.common.SolrException;
+import org.apache.solr.response.TextResponseWriter;
+import org.apache.solr.search.DelegatingCollector;
+import org.apache.solr.search.ExtendedQueryBase;
+import org.apache.solr.search.PostFilter;
+import org.apache.solr.search.QParser;
+import org.apache.solr.search.SpatialOptions;
+
+import com.spatial4j.core.context.SpatialContext;
+import com.spatial4j.core.distance.DistanceUtils;
+import com.spatial4j.core.exception.InvalidShapeException;
+import com.spatial4j.core.io.ParseUtils;
+import com.spatial4j.core.shape.Rectangle;
 
 
 /**
@@ -57,10 +69,10 @@ public class LatLonType extends AbstractSubTypeFieldType implements SpatialQuery
   }
 
   @Override
-  public IndexableField[] createFields(SchemaField field, Object value, float boost) {
+  public List<IndexableField> createFields(SchemaField field, Object value, float boost) {
     String externalVal = value.toString();
     //we could have tileDiff + 3 fields (two for the lat/lon, one for storage)
-    IndexableField[] f = new IndexableField[(field.indexed() ? 2 : 0) + (field.stored() ? 1 : 0)];
+    List<IndexableField> f = new ArrayList<IndexableField>(3);
     if (field.indexed()) {
       int i = 0;
       double[] latLon;
@@ -71,18 +83,18 @@ public class LatLonType extends AbstractSubTypeFieldType implements SpatialQuery
       }
       //latitude
       SchemaField lat = subField(field, i);
-      f[i] = lat.createField(String.valueOf(latLon[LAT]), lat.indexed() && !lat.omitNorms() ? boost : 1f);
+      f.add(lat.createField(String.valueOf(latLon[LAT]), lat.indexed() && !lat.omitNorms() ? boost : 1f));
       i++;
       //longitude
       SchemaField lon = subField(field, i);
-      f[i] = lon.createField(String.valueOf(latLon[LON]), lon.indexed() && !lon.omitNorms() ? boost : 1f);
+      f.add(lon.createField(String.valueOf(latLon[LON]), lon.indexed() && !lon.omitNorms() ? boost : 1f));
 
     }
 
     if (field.stored()) {
       FieldType customType = new FieldType();
       customType.setStored(true);
-      f[f.length - 1] = createField(field.getName(), externalVal, customType, 1f);
+      f.add(createField(field.getName(), externalVal, customType, 1f));
     }
     return f;
   }

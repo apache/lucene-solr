@@ -16,14 +16,16 @@ package org.apache.solr.schema;
  * limitations under the License.
  */
 
-import org.apache.lucene.queries.function.ValueSource;
+import java.util.List;
+
 import org.apache.lucene.index.IndexableField;
+import org.apache.lucene.queries.function.ValueSource;
 import org.apache.lucene.search.BooleanClause;
 import org.apache.lucene.search.BooleanQuery;
 import org.apache.lucene.search.Query;
 import org.apache.solr.SolrTestCaseJ4;
-import org.apache.solr.core.SolrCore;
 import org.apache.solr.common.SolrException;
+import org.apache.solr.core.SolrCore;
 import org.junit.BeforeClass;
 import org.junit.Test;
 
@@ -83,14 +85,14 @@ public class PolyFieldTest extends SolrTestCaseJ4 {
     assertEquals(pt.getDimension(), 2);
     double[] xy = new double[]{35.0, -79.34};
     String point = xy[0] + "," + xy[1];
-    IndexableField[] fields = home.createFields(point, 2);
-    assertEquals(fields.length, 3);//should be 3, we have a stored field
+    List<IndexableField> fields = home.createFields(point, 2);
+    assertEquals(fields.size(), 3);//should be 3, we have a stored field
     //first two fields contain the values, third is just stored and contains the original
     for (int i = 0; i < 3; i++) {
-      boolean hasValue = fields[i].binaryValue() != null
-          || fields[i].stringValue() != null
-          || fields[i].numericValue() != null;
-      assertTrue("Doesn't have a value: " + fields[i], hasValue);
+      boolean hasValue = fields.get(i).binaryValue() != null
+          || fields.get(i).stringValue() != null
+          || fields.get(i).numericValue() != null;
+      assertTrue("Doesn't have a value: " + fields.get(i), hasValue);
     }
     /*assertTrue("first field " + fields[0].tokenStreamValue() +  " is not 35.0", pt.getSubType().toExternal(fields[0]).equals(String.valueOf(xy[0])));
     assertTrue("second field is not -79.34", pt.getSubType().toExternal(fields[1]).equals(String.valueOf(xy[1])));
@@ -100,7 +102,7 @@ public class PolyFieldTest extends SolrTestCaseJ4 {
     home = schema.getField("home_ns");
     assertNotNull(home);
     fields = home.createFields(point, 2);
-    assertEquals(fields.length, 2);//should be 2, since we aren't storing
+    assertEquals(fields.size(), 2);//should be 2, since we aren't storing
 
     home = schema.getField("home_ns");
     assertNotNull(home);
