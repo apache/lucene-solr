@@ -304,6 +304,7 @@ class DiskDocValuesProducer extends DocValuesProducer {
         IndexInput data = this.data.clone();
         data.seek(entry.offset);
         ordIndexInstance = new MonotonicBlockPackedReader(data, entry.packedIntsVersion, entry.blockSize, entry.count, false);
+        ordIndexInstances.put(field.number, ordIndexInstance);
       }
       ordIndex = ordIndexInstance;
     }

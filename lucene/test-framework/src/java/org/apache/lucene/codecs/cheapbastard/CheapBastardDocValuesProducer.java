@@ -41,6 +41,7 @@ import org.apache.lucene.util.packed.MonotonicBlockPackedReader;
 class CheapBastardDocValuesProducer extends DocValuesProducer {
   private final Map<Integer,NumericEntry> numerics;
   private final Map<Integer,NumericEntry> ords;
+  private final Map<Integer,NumericEntry> ordIndexes;
   private final Map<Integer,BinaryEntry> binaries;
   private final IndexInput data;
   
@@ -55,6 +56,7 @@ class CheapBastardDocValuesProducer extends DocValuesProducer {
                                 DiskDocValuesFormat.VERSION_START);
       numerics = new HashMap<Integer,NumericEntry>();
       ords = new HashMap<Integer,NumericEntry>();
+      ordIndexes = new HashMap<Integer,NumericEntry>();
       binaries = new HashMap<Integer,BinaryEntry>();
       readFields(in);
       success = true;
@@ -101,6 +103,36 @@ class CheapBastardDocValuesProducer extends DocValuesProducer {
         }
         NumericEntry n = readNumericEntry(meta);
         ords.put(fieldNumber, n);
+      } else if (type == DiskDocValuesFormat.SORTED_SET) {
+        // sortedset = binary + numeric + ordIndex
+        if (meta.readVInt() != fieldNumber) {
+          throw new CorruptIndexException("sortedset entry for field: " + fieldNumber + " is corrupt");
+        }
+        if (meta.readByte() != DiskDocValuesFormat.BINARY) {
+          throw new CorruptIndexException("sortedset entry for field: " + fieldNumber + " is corrupt");
+        }
+        BinaryEntry b = readBinaryEntry(meta);
+        binaries.put(fieldNumber, b);
+        
+        if (meta.readVInt() != fieldNumber) {
+          throw new CorruptIndexException("sortedset entry for field: " + fieldNumber + " is corrupt");
+        }
+        if (meta.readByte() != DiskDocValuesFormat.NUMERIC) {
+          throw new CorruptIndexException("sortedset entry for field: " + fieldNumber + " is corrupt");
+        }
+        NumericEntry n1 = readNumericEntry(meta);
+        ords.put(fieldNumber, n1);
+        
+        if (meta.readVInt() != fieldNumber) {
+          throw new CorruptIndexException("sortedset entry for field: " + fieldNumber + " is corrupt");
+        }
+        if (meta.readByte() != DiskDocValuesFormat.NUMERIC) {
+          throw new CorruptIndexException("sortedset entry for field: " + fieldNumber + " is corrupt");
+        }
+        NumericEntry n2 = readNumericEntry(meta);
+        ordIndexes.put(fieldNumber, n2);
+      } else {
+        throw new CorruptIndexException("invalid type: " + type + ", resource=" + meta);
       }
       fieldNumber = meta.readVInt();
     }
@@ -135,15 +167,15 @@ class CheapBastardDocValuesProducer extends DocValuesProducer {
     return getNumeric(field, entry);
   }
   
-  private NumericDocValues getNumeric(FieldInfo field, final NumericEntry entry) throws IOException {
+  private LongNumericDocValues getNumeric(FieldInfo field, final NumericEntry entry) throws IOException {
     final IndexInput data = this.data.clone();
     data.seek(entry.offset);
 
     final BlockPackedReader reader = new BlockPackedReader(data, entry.packedIntsVersion, entry.blockSize, entry.count, true);
-    return new NumericDocValues() {
+    return new LongNumericDocValues() {
       @Override
-      public long get(int docID) {
-        return reader.get(docID);
+      public long get(long id) {
+        return reader.get(id);
       }
     };
   }
@@ -161,10 +193,10 @@ class CheapBastardDocValuesProducer extends DocValuesProducer {
   private BinaryDocValues getFixedBinary(FieldInfo field, final BinaryEntry bytes) {
     final IndexInput data = this.data.clone();
 
-    return new BinaryDocValues() {
+    return new LongBinaryDocValues() {
       @Override
-      public void get(int docID, BytesRef result) {
-        long address = bytes.offset + docID * (long)bytes.maxLength;
+      public void get(long id, BytesRef result) {
+        long address = bytes.offset + id * bytes.maxLength;
         try {
           data.seek(address);
           // NOTE: we could have one buffer, but various consumers (e.g. FieldComparatorSource) 
@@ -186,11 +218,11 @@ class CheapBastardDocValuesProducer extends DocValuesProducer {
     data.seek(bytes.addressesOffset);
 
     final MonotonicBlockPackedReader addresses = new MonotonicBlockPackedReader(data, bytes.packedIntsVersion, bytes.blockSize, bytes.count, true);
-    return new BinaryDocValues() {
+    return new LongBinaryDocValues() {
       @Override
-      public void get(int docID, BytesRef result) {
-        long startAddress = bytes.offset + (docID == 0 ? 0 : + addresses.get(docID-1));
-        long endAddress = bytes.offset + addresses.get(docID);
+      public void get(long id, BytesRef result) {
+        long startAddress = bytes.offset + (id == 0 ? 0 : + addresses.get(id-1));
+        long endAddress = bytes.offset + addresses.get(id);
         int length = (int) (endAddress - startAddress);
         try {
           data.seek(startAddress);
@@ -234,7 +266,45 @@ class CheapBastardDocValuesProducer extends DocValuesProducer {
 
   @Override
   public SortedSetDocValues getSortedSet(FieldInfo field) throws IOException {
-    throw new UnsupportedOperationException(); // nocommit
+    final long valueCount = binaries.get(field.number).count;
+    final LongBinaryDocValues binary = (LongBinaryDocValues) getBinary(field);
+    final LongNumericDocValues ordinals = getNumeric(field, ords.get(field.number));
+    NumericEntry entry = ordIndexes.get(field.number);
+    IndexInput data = this.data.clone();
+    data.seek(entry.offset);
+    final MonotonicBlockPackedReader ordIndex = new MonotonicBlockPackedReader(data, entry.packedIntsVersion, entry.blockSize, entry.count, true);
+    
+    return new SortedSetDocValues() {
+      long offset;
+      long endOffset;
+      
+      @Override
+      public long nextOrd() {
+        if (offset == endOffset) {
+          return NO_MORE_ORDS;
+        } else {
+          long ord = ordinals.get(offset);
+          offset++;
+          return ord;
+        }
+      }
+
+      @Override
+      public void setDocument(int docID) {
+        offset = (docID == 0 ? 0 : ordIndex.get(docID-1));
+        endOffset = ordIndex.get(docID);
+      }
+
+      @Override
+      public void lookupOrd(long ord, BytesRef result) {
+        binary.get(ord, result);
+      }
+
+      @Override
+      public long getValueCount() {
+        return valueCount;
+      }
+    };
   }
 
   @Override
@@ -259,5 +329,24 @@ class CheapBastardDocValuesProducer extends DocValuesProducer {
     long addressesOffset;
     int packedIntsVersion;
     int blockSize;
+  }
+  
+  // internally we compose complex dv (sorted/sortedset) from other ones
+  static abstract class LongNumericDocValues extends NumericDocValues {
+    @Override
+    public final long get(int docID) {
+      return get((long) docID);
+    }
+    
+    abstract long get(long id);
+  }
+  
+  static abstract class LongBinaryDocValues extends BinaryDocValues {
+    @Override
+    public final void get(int docID, BytesRef result) {
+      get((long)docID, result);
+    }
+    
+    abstract void get(long id, BytesRef Result);
   }
 }

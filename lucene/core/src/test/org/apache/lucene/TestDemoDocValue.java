@@ -52,10 +52,11 @@ import static org.apache.lucene.index.SortedSetDocValues.NO_MORE_ORDS;
  * to this class.
  */
 // nocommit: should only be Lucene40 and Lucene41
-@SuppressCodecs({ "Lucene40", "Lucene41", "SimpleText", "CheapBastard" })
+// nocommit: move to BaseDocValuesTestCase, but allow these to be assume()d (for 4.0 and 4.1)
+@SuppressCodecs({ "Lucene40", "Lucene41", "SimpleText" })
 public class TestDemoDocValue extends LuceneTestCase {
   
-  public void testOneValue() throws IOException {
+  public void testSortedSetOneValue() throws IOException {
     Directory directory = newDirectory();
     RandomIndexWriter iwriter = new RandomIndexWriter(random(), directory);
     
@@ -80,7 +81,7 @@ public class TestDemoDocValue extends LuceneTestCase {
     directory.close();
   }
   
-  public void testTwoDocumentsMerged() throws IOException {
+  public void testSortedSetTwoDocumentsMerged() throws IOException {
     Directory directory = newDirectory();
     Analyzer analyzer = new MockAnalyzer(random());
     IndexWriterConfig iwconfig = newIndexWriterConfig(TEST_VERSION_CURRENT, analyzer);
@@ -122,7 +123,7 @@ public class TestDemoDocValue extends LuceneTestCase {
     directory.close();
   }
   
-  public void testTwoValues() throws IOException {
+  public void testSortedSetTwoValues() throws IOException {
     Directory directory = newDirectory();
     RandomIndexWriter iwriter = new RandomIndexWriter(random(), directory);
     
@@ -152,7 +153,7 @@ public class TestDemoDocValue extends LuceneTestCase {
     directory.close();
   }
   
-  public void testTwoValuesUnordered() throws IOException {
+  public void testSortedSetTwoValuesUnordered() throws IOException {
     Directory directory = newDirectory();
     RandomIndexWriter iwriter = new RandomIndexWriter(random(), directory);
     
@@ -182,7 +183,7 @@ public class TestDemoDocValue extends LuceneTestCase {
     directory.close();
   }
   
-  public void testThreeValuesTwoDocs() throws IOException {
+  public void testSortedSetThreeValuesTwoDocs() throws IOException {
     Directory directory = newDirectory();
     Analyzer analyzer = new MockAnalyzer(random());
     IndexWriterConfig iwconfig = newIndexWriterConfig(TEST_VERSION_CURRENT, analyzer);
@@ -231,7 +232,7 @@ public class TestDemoDocValue extends LuceneTestCase {
     directory.close();
   }
   
-  public void testTwoDocumentsLastMissing() throws IOException {
+  public void testSortedSetTwoDocumentsLastMissing() throws IOException {
     Directory directory = newDirectory();
     Analyzer analyzer = new MockAnalyzer(random());
     IndexWriterConfig iwconfig = newIndexWriterConfig(TEST_VERSION_CURRENT, analyzer);
@@ -263,7 +264,7 @@ public class TestDemoDocValue extends LuceneTestCase {
     directory.close();
   }
   
-  public void testTwoDocumentsLastMissingMerge() throws IOException {
+  public void testSortedSetTwoDocumentsLastMissingMerge() throws IOException {
     Directory directory = newDirectory();
     Analyzer analyzer = new MockAnalyzer(random());
     IndexWriterConfig iwconfig = newIndexWriterConfig(TEST_VERSION_CURRENT, analyzer);
@@ -297,7 +298,7 @@ public class TestDemoDocValue extends LuceneTestCase {
     directory.close();
   }
   
-  public void testTwoDocumentsFirstMissing() throws IOException {
+  public void testSortedSetTwoDocumentsFirstMissing() throws IOException {
     Directory directory = newDirectory();
     Analyzer analyzer = new MockAnalyzer(random());
     IndexWriterConfig iwconfig = newIndexWriterConfig(TEST_VERSION_CURRENT, analyzer);
@@ -330,7 +331,7 @@ public class TestDemoDocValue extends LuceneTestCase {
     directory.close();
   }
   
-  public void testTwoDocumentsFirstMissingMerge() throws IOException {
+  public void testSortedSetTwoDocumentsFirstMissingMerge() throws IOException {
     Directory directory = newDirectory();
     Analyzer analyzer = new MockAnalyzer(random());
     IndexWriterConfig iwconfig = newIndexWriterConfig(TEST_VERSION_CURRENT, analyzer);
@@ -364,7 +365,7 @@ public class TestDemoDocValue extends LuceneTestCase {
     directory.close();
   }
   
-  public void testMergeAwayAllValues() throws IOException {
+  public void testSortedSetMergeAwayAllValues() throws IOException {
     Directory directory = newDirectory();
     Analyzer analyzer = new MockAnalyzer(random());
     IndexWriterConfig iwconfig = newIndexWriterConfig(TEST_VERSION_CURRENT, analyzer);
