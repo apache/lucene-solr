@@ -42,11 +42,13 @@ class DiskDocValuesProducer extends DocValuesProducer {
   private final Map<Integer,NumericEntry> numerics;
   private final Map<Integer,BinaryEntry> binaries;
   private final Map<Integer,NumericEntry> ords;
+  private final Map<Integer,NumericEntry> ordIndexes;
   private final IndexInput data;
 
   // memory-resident structures
   private final Map<Integer,BlockPackedReader> ordinalInstances = new HashMap<Integer,BlockPackedReader>();
   private final Map<Integer,MonotonicBlockPackedReader> addressInstances = new HashMap<Integer,MonotonicBlockPackedReader>();
+  private final Map<Integer,MonotonicBlockPackedReader> ordIndexInstances = new HashMap<Integer,MonotonicBlockPackedReader>();
   
   DiskDocValuesProducer(SegmentReadState state, String dataCodec, String dataExtension, String metaCodec, String metaExtension) throws IOException {
     String metaName = IndexFileNames.segmentFileName(state.segmentInfo.name, state.segmentSuffix, metaExtension);
@@ -59,6 +61,7 @@ class DiskDocValuesProducer extends DocValuesProducer {
                                 DiskDocValuesFormat.VERSION_START);
       numerics = new HashMap<Integer,NumericEntry>();
       ords = new HashMap<Integer,NumericEntry>();
+      ordIndexes = new HashMap<Integer,NumericEntry>();
       binaries = new HashMap<Integer,BinaryEntry>();
       readFields(in, state.fieldInfos);
       success = true;
@@ -105,6 +108,36 @@ class DiskDocValuesProducer extends DocValuesProducer {
         }
         NumericEntry n = readNumericEntry(meta);
         ords.put(fieldNumber, n);
+      } else if (type == DiskDocValuesFormat.SORTED_SET) {
+        // sortedset = binary + numeric + ordIndex
+        if (meta.readVInt() != fieldNumber) {
+          throw new CorruptIndexException("sortedset entry for field: " + fieldNumber + " is corrupt");
+        }
+        if (meta.readByte() != DiskDocValuesFormat.BINARY) {
+          throw new CorruptIndexException("sortedset entry for field: " + fieldNumber + " is corrupt");
+        }
+        BinaryEntry b = readBinaryEntry(meta);
+        binaries.put(fieldNumber, b);
+        
+        if (meta.readVInt() != fieldNumber) {
+          throw new CorruptIndexException("sortedset entry for field: " + fieldNumber + " is corrupt");
+        }
+        if (meta.readByte() != DiskDocValuesFormat.NUMERIC) {
+          throw new CorruptIndexException("sortedset entry for field: " + fieldNumber + " is corrupt");
+        }
+        NumericEntry n1 = readNumericEntry(meta);
+        ords.put(fieldNumber, n1);
+        
+        if (meta.readVInt() != fieldNumber) {
+          throw new CorruptIndexException("sortedset entry for field: " + fieldNumber + " is corrupt");
+        }
+        if (meta.readByte() != DiskDocValuesFormat.NUMERIC) {
+          throw new CorruptIndexException("sortedset entry for field: " + fieldNumber + " is corrupt");
+        }
+        NumericEntry n2 = readNumericEntry(meta);
+        ordIndexes.put(fieldNumber, n2);
+      } else {
+        throw new CorruptIndexException("invalid type: " + type + ", resource=" + meta);
       }
       fieldNumber = meta.readVInt();
     }
@@ -114,7 +147,7 @@ class DiskDocValuesProducer extends DocValuesProducer {
     NumericEntry entry = new NumericEntry();
     entry.packedIntsVersion = meta.readVInt();
     entry.offset = meta.readLong();
-    entry.count = meta.readVInt();
+    entry.count = meta.readVLong();
     entry.blockSize = meta.readVInt();
     return entry;
   }
@@ -123,7 +156,7 @@ class DiskDocValuesProducer extends DocValuesProducer {
     BinaryEntry entry = new BinaryEntry();
     entry.minLength = meta.readVInt();
     entry.maxLength = meta.readVInt();
-    entry.count = meta.readVInt();
+    entry.count = meta.readVLong();
     entry.offset = meta.readLong();
     if (entry.minLength != entry.maxLength) {
       entry.addressesOffset = meta.readLong();
@@ -136,14 +169,18 @@ class DiskDocValuesProducer extends DocValuesProducer {
   @Override
   public NumericDocValues getNumeric(FieldInfo field) throws IOException {
     NumericEntry entry = numerics.get(field.number);
+    return getNumeric(entry);
+  }
+  
+  LongNumericDocValues getNumeric(NumericEntry entry) throws IOException {
     final IndexInput data = this.data.clone();
     data.seek(entry.offset);
 
     final BlockPackedReader reader = new BlockPackedReader(data, entry.packedIntsVersion, entry.blockSize, entry.count, true);
-    return new NumericDocValues() {
+    return new LongNumericDocValues() {
       @Override
-      public long get(int docID) {
-        return reader.get(docID);
+      public long get(long id) {
+        return reader.get(id);
       }
     };
   }
@@ -161,10 +198,10 @@ class DiskDocValuesProducer extends DocValuesProducer {
   private BinaryDocValues getFixedBinary(FieldInfo field, final BinaryEntry bytes) {
     final IndexInput data = this.data.clone();
 
-    return new BinaryDocValues() {
+    return new LongBinaryDocValues() {
       @Override
-      public void get(int docID, BytesRef result) {
-        long address = bytes.offset + docID * (long)bytes.maxLength;
+      public void get(long id, BytesRef result) {
+        long address = bytes.offset + id * bytes.maxLength;
         try {
           data.seek(address);
           // NOTE: we could have one buffer, but various consumers (e.g. FieldComparatorSource) 
@@ -195,11 +232,11 @@ class DiskDocValuesProducer extends DocValuesProducer {
       addresses = addrInstance;
     }
 
-    return new BinaryDocValues() {
+    return new LongBinaryDocValues() {
       @Override
-      public void get(int docID, BytesRef result) {
-        long startAddress = bytes.offset + (docID == 0 ? 0 : + addresses.get(docID-1));
-        long endAddress = bytes.offset + addresses.get(docID);
+      public void get(long id, BytesRef result) {
+        long startAddress = bytes.offset + (id == 0 ? 0 : addresses.get(id-1));
+        long endAddress = bytes.offset + addresses.get(id);
         int length = (int) (endAddress - startAddress);
         try {
           data.seek(startAddress);
@@ -219,7 +256,7 @@ class DiskDocValuesProducer extends DocValuesProducer {
 
   @Override
   public SortedDocValues getSorted(FieldInfo field) throws IOException {
-    final int valueCount = binaries.get(field.number).count;
+    final int valueCount = (int) binaries.get(field.number).count;
     final BinaryDocValues binary = getBinary(field);
     final BlockPackedReader ordinals;
     synchronized (ordinalInstances) {
@@ -254,7 +291,54 @@ class DiskDocValuesProducer extends DocValuesProducer {
 
   @Override
   public SortedSetDocValues getSortedSet(FieldInfo field) throws IOException {
-    throw new UnsupportedOperationException(); // nocommit
+    final long valueCount = binaries.get(field.number).count;
+    // we keep the byte[]s and list of ords on disk, these could be large
+    final LongBinaryDocValues binary = (LongBinaryDocValues) getBinary(field);
+    final LongNumericDocValues ordinals = getNumeric(ords.get(field.number));
+    // but the addresses to the ord stream are in RAM
+    final MonotonicBlockPackedReader ordIndex;
+    synchronized (ordIndexInstances) {
+      MonotonicBlockPackedReader ordIndexInstance = ordIndexInstances.get(field.number);
+      if (ordIndexInstance == null) {
+        NumericEntry entry = ordIndexes.get(field.number);
+        IndexInput data = this.data.clone();
+        data.seek(entry.offset);
+        ordIndexInstance = new MonotonicBlockPackedReader(data, entry.packedIntsVersion, entry.blockSize, entry.count, false);
+      }
+      ordIndex = ordIndexInstance;
+    }
+    
+    return new SortedSetDocValues() {
+      long offset;
+      long endOffset;
+      
+      @Override
+      public long nextOrd() {
+        if (offset == endOffset) {
+          return NO_MORE_ORDS;
+        } else {
+          long ord = ordinals.get(offset);
+          offset++;
+          return ord;
+        }
+      }
+
+      @Override
+      public void setDocument(int docID) {
+        offset = (docID == 0 ? 0 : ordIndex.get(docID-1));
+        endOffset = ordIndex.get(docID);
+      }
+
+      @Override
+      public void lookupOrd(long ord, BytesRef result) {
+        binary.get(ord, result);
+      }
+
+      @Override
+      public long getValueCount() {
+        return valueCount;
+      }
+    };
   }
 
   @Override
@@ -266,18 +350,37 @@ class DiskDocValuesProducer extends DocValuesProducer {
     long offset;
 
     int packedIntsVersion;
-    int count;
+    long count;
     int blockSize;
   }
   
   static class BinaryEntry {
     long offset;
 
-    int count;
+    long count;
     int minLength;
     int maxLength;
     long addressesOffset;
     int packedIntsVersion;
     int blockSize;
+  }
+  
+  // internally we compose complex dv (sorted/sortedset) from other ones
+  static abstract class LongNumericDocValues extends NumericDocValues {
+    @Override
+    public final long get(int docID) {
+      return get((long) docID);
+    }
+    
+    abstract long get(long id);
+  }
+  
+  static abstract class LongBinaryDocValues extends BinaryDocValues {
+    @Override
+    public final void get(int docID, BytesRef result) {
+      get((long)docID, result);
+    }
+    
+    abstract void get(long id, BytesRef Result);
   }
 }

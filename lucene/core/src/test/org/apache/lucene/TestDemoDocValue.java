@@ -25,8 +25,6 @@ import java.util.TreeSet;
 
 import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.analysis.MockAnalyzer;
-import org.apache.lucene.codecs.Codec;
-import org.apache.lucene.codecs.DocValuesFormat;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
 import org.apache.lucene.document.SortedSetDocValuesField;
@@ -42,6 +40,7 @@ import org.apache.lucene.index.Term;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.LuceneTestCase;
+import org.apache.lucene.util.LuceneTestCase.SuppressCodecs;
 import org.apache.lucene.util._TestUtil;
 
 import static org.apache.lucene.index.SortedSetDocValues.NO_MORE_ORDS;
@@ -52,23 +51,10 @@ import static org.apache.lucene.index.SortedSetDocValues.NO_MORE_ORDS;
  * Please try to keep src/java/overview.html up-to-date when making changes
  * to this class.
  */
+// nocommit: should only be Lucene40 and Lucene41
+@SuppressCodecs({ "Lucene40", "Lucene41", "SimpleText", "CheapBastard" })
 public class TestDemoDocValue extends LuceneTestCase {
   
-  // nocommit: only Lucene42/Asserting implemented right now
-  private Codec saved;
-  @Override
-  public void setUp() throws Exception {
-    super.setUp();
-    saved = Codec.getDefault();
-    Codec.setDefault(_TestUtil.alwaysDocValuesFormat(DocValuesFormat.forName("Asserting")));
-  }
-
-  @Override
-  public void tearDown() throws Exception {
-    Codec.setDefault(saved);
-    super.tearDown();
-  }
-
   public void testOneValue() throws IOException {
     Directory directory = newDirectory();
     RandomIndexWriter iwriter = new RandomIndexWriter(random(), directory);

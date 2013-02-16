@@ -110,7 +110,7 @@ class CheapBastardDocValuesProducer extends DocValuesProducer {
     NumericEntry entry = new NumericEntry();
     entry.packedIntsVersion = meta.readVInt();
     entry.offset = meta.readLong();
-    entry.count = meta.readVInt();
+    entry.count = meta.readVLong();
     entry.blockSize = meta.readVInt();
     return entry;
   }
@@ -119,7 +119,7 @@ class CheapBastardDocValuesProducer extends DocValuesProducer {
     BinaryEntry entry = new BinaryEntry();
     entry.minLength = meta.readVInt();
     entry.maxLength = meta.readVInt();
-    entry.count = meta.readVInt();
+    entry.count = meta.readVLong();
     entry.offset = meta.readLong();
     if (entry.minLength != entry.maxLength) {
       entry.addressesOffset = meta.readLong();
@@ -210,7 +210,7 @@ class CheapBastardDocValuesProducer extends DocValuesProducer {
 
   @Override
   public SortedDocValues getSorted(FieldInfo field) throws IOException {
-    final int valueCount = binaries.get(field.number).count;
+    final int valueCount = (int) binaries.get(field.number).count;
     final BinaryDocValues binary = getBinary(field);
     final NumericDocValues ordinals = getNumeric(field, ords.get(field.number));
     return new SortedDocValues() {
@@ -246,14 +246,14 @@ class CheapBastardDocValuesProducer extends DocValuesProducer {
     long offset;
 
     int packedIntsVersion;
-    int count;
+    long count;
     int blockSize;
   }
   
   static class BinaryEntry {
     long offset;
 
-    int count;
+    long count;
     int minLength;
     int maxLength;
     long addressesOffset;
