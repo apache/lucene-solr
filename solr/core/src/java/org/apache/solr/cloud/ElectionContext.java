@@ -294,7 +294,7 @@ final class ShardLeaderElectionContext extends ShardLeaderElectionContextBase {
     
     Slice slices = zkController.getClusterState().getSlice(collection, shardId);
     int cnt = 0;
-    while (true && !isClosed) {
+    while (true && !isClosed && !cc.isShutDown()) {
       // wait for everyone to be up
       if (slices != null) {
         int found = 0;

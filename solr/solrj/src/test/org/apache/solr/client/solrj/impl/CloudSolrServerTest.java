@@ -52,6 +52,10 @@ public class CloudSolrServerTest extends AbstractFullDistribZkTestBase {
     
   }
   
+  protected String getCloudSolrConfig() {
+    return "solrconfig.xml";
+  }
+  
   @Override
   public String getSolrHome() {
     return SOLR_HOME;

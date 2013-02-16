@@ -20,7 +20,6 @@ package org.apache.solr.cloud;
 import java.util.ArrayList;
 import java.util.List;
 
-import org.apache.lucene.util.LuceneTestCase.BadApple;
 import org.apache.lucene.util.LuceneTestCase.Slow;
 import org.apache.solr.client.solrj.SolrQuery;
 import org.apache.solr.common.SolrInputDocument;
@@ -37,8 +36,7 @@ import org.junit.BeforeClass;
 @Slow
 public class ChaosMonkeySafeLeaderTest extends AbstractFullDistribZkTestBase {
   
-  private static final int BASE_RUN_LENGTH = 120000;
-  private static final int RUN_LENGTH = Integer.parseInt(System.getProperty("solr.tests.cloud.cm.runlength", Integer.toString(BASE_RUN_LENGTH)));
+  private static final Integer RUN_LENGTH = Integer.parseInt(System.getProperty("solr.tests.cloud.cm.runlength", "-1"));
 
   @BeforeClass
   public static void beforeSuperClass() {
@@ -104,7 +102,14 @@ public class ChaosMonkeySafeLeaderTest extends AbstractFullDistribZkTestBase {
     }
     
     chaosMonkey.startTheMonkey(false, 500);
-    int runLength = RUN_LENGTH;
+    long runLength;
+    if (RUN_LENGTH != -1) {
+      runLength = RUN_LENGTH;
+    } else {
+      int[] runTimes = new int[] {5000,6000,10000,15000,15000,30000,30000,45000,90000,120000};
+      runLength = runTimes[random().nextInt(runTimes.length - 1)];
+    }
+
     Thread.sleep(runLength);
     
     chaosMonkey.stopTheMonkey();

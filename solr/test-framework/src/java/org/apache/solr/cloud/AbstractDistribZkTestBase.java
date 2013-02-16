@@ -67,11 +67,15 @@ public abstract class AbstractDistribZkTestBase extends BaseDistributedSearchTes
 
     String schema = getSchemaFile();
     if (schema == null) schema = "schema.xml";
-    AbstractZkTestCase.buildZooKeeper(zkServer.getZkHost(), zkServer.getZkAddress(), "solrconfig.xml", schema);
+    AbstractZkTestCase.buildZooKeeper(zkServer.getZkHost(), zkServer.getZkAddress(), getCloudSolrConfig(), schema);
 
     // set some system properties for use by tests
     System.setProperty("solr.test.sys.prop1", "propone");
     System.setProperty("solr.test.sys.prop2", "proptwo");
+  }
+  
+  protected String getCloudSolrConfig() {
+    return "solrconfig-tlog.xml";
   }
   
   @Override
