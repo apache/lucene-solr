@@ -25,6 +25,7 @@ import org.apache.lucene.search.similarities.Similarity;
 import org.apache.lucene.util.Bits;
 
 import java.io.IOException;
+import java.util.Set;
 import java.util.TreeSet;
 
 public class ScorerFilterQuery extends Query {
@@ -43,6 +44,11 @@ public class ScorerFilterQuery extends Query {
       bq.add(q, BooleanClause.Occur.MUST);
     }
     return bq;
+  }
+
+  @Override
+  public void extractTerms(Set<Term> terms) {
+    innerQuery.extractTerms(terms);
   }
 
   @Override
