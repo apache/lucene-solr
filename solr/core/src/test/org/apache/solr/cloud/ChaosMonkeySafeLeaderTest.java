@@ -109,10 +109,11 @@ public class ChaosMonkeySafeLeaderTest extends AbstractFullDistribZkTestBase {
       int[] runTimes = new int[] {5000,6000,10000,15000,15000,30000,30000,45000,90000,120000};
       runLength = runTimes[random().nextInt(runTimes.length - 1)];
     }
-
-    Thread.sleep(runLength);
-    
-    chaosMonkey.stopTheMonkey();
+    try {
+      Thread.sleep(runLength);
+    } finally {
+      chaosMonkey.stopTheMonkey();
+    }
     
     for (StopableIndexingThread indexThread : threads) {
       indexThread.safeStop();
