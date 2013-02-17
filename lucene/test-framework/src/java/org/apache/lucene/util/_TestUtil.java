@@ -53,6 +53,7 @@ import org.apache.lucene.document.Field;
 import org.apache.lucene.document.NumericDocValuesField;
 import org.apache.lucene.document.SortedDocValuesField;
 import org.apache.lucene.index.AtomicReader;
+import org.apache.lucene.index.AtomicReaderContext;
 import org.apache.lucene.index.CheckIndex;
 import org.apache.lucene.index.CheckIndex.Status.DocValuesStatus;
 import org.apache.lucene.index.CheckIndex.Status.FieldNormStatus;
@@ -228,8 +229,10 @@ public class _TestUtil {
   
   /** This runs the CheckIndex tool on the Reader.  If any
    *  issues are hit, a RuntimeException is thrown */
-  public static void checkReader(AtomicReader reader) throws IOException {
-    checkReader(reader, true);
+  public static void checkReader(IndexReader reader) throws IOException {
+    for (AtomicReaderContext context : reader.leaves()) {
+      checkReader(context.reader(), true);
+    }
   }
   
   public static void checkReader(AtomicReader reader, boolean crossCheckTermVectors) throws IOException {
