@@ -139,6 +139,13 @@ Bug Fixes
 * SOLR-4467: Ephemeral directory implementations may not recover correctly 
   because the code to clear the tlog files on startup is off. (Mark Miller)
 
+* SOLR-4413: Fix SolrCore#getIndexDir() to return the current index directory.
+  (Gregg Donovan, Mark Miller)
+  
+* SOLR-4469: A new IndexWriter must be opened on SolrCore reload when the index
+  directory has changed and the previous SolrCore's state should not be 
+  propagated. (Mark Miller, Gregg Donovan)
+
 Optimizations
 ----------------------
 
