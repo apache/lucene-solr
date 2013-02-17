@@ -375,7 +375,8 @@ can optionally be indexed into the postings lists. Payloads can be stored in the
 term vectors.</li>
 <li>In version 4.1, the format of the postings list changed to use either
 of FOR compression or variable-byte encoding, depending upon the frequency
-of the term.</li>
+of the term. Terms appearing only once were changed to inline directly into
+the term dictionary. Stored fields are compressed by default. </li>
 </ul>
 <a name="Limitations" id="Limitations"></a>
 <h2>Limitations</h2>
