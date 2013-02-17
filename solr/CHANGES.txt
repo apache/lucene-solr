@@ -79,6 +79,8 @@ New Features
 
 * SOLR-3855: Doc values support. (Adrien Grand)
 
+* SOLR-4417: Reopen the IndexWriter on SolrCore reload. (Mark Miller)
+
 Bug Fixes
 ----------------------
 
