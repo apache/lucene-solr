@@ -386,7 +386,6 @@ public final class SolrCore implements SolrInfoMBean {
   
   public SolrCore reload(SolrResourceLoader resourceLoader, SolrCore prev) throws IOException,
       ParserConfigurationException, SAXException {
-    // TODO - what if indexwriter settings have changed
     
     SolrConfig config = new SolrConfig(resourceLoader,
         getSolrConfig().getName(), null);
@@ -399,6 +398,11 @@ public final class SolrCore implements SolrInfoMBean {
     SolrCore core = new SolrCore(getName(), getDataDir(), config,
         schema, coreDescriptor, updateHandler, prev);
     core.solrDelPolicy = this.solrDelPolicy;
+    
+    core.getUpdateHandler().getSolrCoreState().newIndexWriter(core, false, false);
+    
+    core.getSearcher(true, false, null, true);
+    
     return core;
   }
 
