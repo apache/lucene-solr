@@ -119,7 +119,7 @@ public class UnorderedNearQuery extends ScorerFilterQuery {
     }
 
     public int getMatchDistance() {
-      return lastIntervalBegin - firstIntervalEnd - 1;
+      return lastIntervalBegin - firstIntervalEnd - scorerCount + 1;
     }
 
     public boolean isFull() {

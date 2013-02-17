@@ -62,13 +62,13 @@ public abstract class IntervalTestBase extends LuceneTestCase {
     searcher.search(q, c);
 
     PositionsCollector.DocPositions[] matches = c.getPositions();
-    Assert.assertEquals("Incorrect number of hits", expectedResults.length, matches.length);
+    Assert.assertEquals("Incorrect number of hits", expectedResults.length, c.getNumDocs());
     for (int i = 0; i < expectedResults.length; i++) {
       int expectedDocMatches[] = expectedResults[i];
       int docid = expectedDocMatches[0];
       Iterator<Interval> matchIt = matches[i].positions.iterator();
       for (int j = 1; j < expectedDocMatches.length; j += 2) {
-        String expectation = "Expected match at docid " + docid + ", position " + expectedDocMatches[j];
+        String expectation = "Expected match at docid " + docid + ", offset " + expectedDocMatches[j];
         Assert.assertTrue(expectation, matchIt.hasNext());
         Interval match = matchIt.next();
         System.err.println(match);
