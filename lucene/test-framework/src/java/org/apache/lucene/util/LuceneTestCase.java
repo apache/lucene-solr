@@ -1246,8 +1246,10 @@ public abstract class LuceneTestCase extends Assert {
       if (maybeWrap) {
         r = maybeWrapReader(r);
       }
-      if (r instanceof AtomicReader) {
-        _TestUtil.checkReader((AtomicReader)r);
+      if (rarely() && r instanceof AtomicReader) {
+        // TODO: not useful to check DirectoryReader (redundant with checkindex)
+        // but maybe sometimes run this on the other crazy readers maybeWrapReader creates?
+        _TestUtil.checkReader(r);
       }
       IndexSearcher ret = random.nextBoolean() ? new AssertingIndexSearcher(random, r) : new AssertingIndexSearcher(random, r.getContext());
       ret.setSimilarity(classEnvRule.similarity);
