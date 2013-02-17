@@ -28,6 +28,7 @@ import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
 import org.apache.lucene.document.NumericDocValuesField;
 import org.apache.lucene.document.SortedDocValuesField;
+import org.apache.lucene.document.SortedSetDocValuesField;
 import org.apache.lucene.document.TextField;
 import org.apache.lucene.search.FieldCache;
 import org.apache.lucene.store.Directory;
@@ -363,6 +364,30 @@ public class TestDocValuesIndexing extends LuceneTestCase {
     BytesRef b = new BytesRef(bytes);
     random().nextBytes(bytes);
     doc.add(new SortedDocValuesField("dv", b));
+    try {
+      iwriter.addDocument(doc);
+      fail("did not get expected exception");
+    } catch (IllegalArgumentException expected) {
+      // expected
+    }
+    iwriter.close();
+    directory.close();
+  }
+  
+  public void testTooLargeTermSortedSetBytes() throws IOException {
+    assumeTrue("codec does not support SORTED_SET", defaultCodecSupportsSortedSet());
+    Analyzer analyzer = new MockAnalyzer(random());
+
+    Directory directory = newDirectory();
+    // we don't use RandomIndexWriter because it might add more docvalues than we expect !!!!1
+    IndexWriterConfig iwc = newIndexWriterConfig(TEST_VERSION_CURRENT, analyzer);
+    iwc.setMergePolicy(newLogMergePolicy());
+    IndexWriter iwriter = new IndexWriter(directory, iwc);
+    Document doc = new Document();
+    byte bytes[] = new byte[100000];
+    BytesRef b = new BytesRef(bytes);
+    random().nextBytes(bytes);
+    doc.add(new SortedSetDocValuesField("dv", b));
     try {
       iwriter.addDocument(doc);
       fail("did not get expected exception");
