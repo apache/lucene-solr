@@ -17,20 +17,43 @@
 
 package org.apache.solr.schema;
 
+import java.io.IOException;
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.List;
+import java.util.Map;
+
+import org.apache.lucene.document.Field;
+import org.apache.lucene.document.SortedDocValuesField;
+import org.apache.lucene.index.StorableField;
 import org.apache.lucene.queries.function.ValueSource;
 import org.apache.lucene.search.SortField;
-import org.apache.lucene.index.GeneralField;
-import org.apache.lucene.index.IndexableField;
-import org.apache.lucene.index.StorableField;
 import org.apache.lucene.util.BytesRef;
 import org.apache.solr.response.TextResponseWriter;
 import org.apache.solr.search.QParser;
 
-import java.io.IOException;
-/**
- *
- */
 public class StrField extends PrimitiveFieldType {
+
+  @Override
+  protected void init(IndexSchema schema, Map<String,String> args) {
+    super.init(schema, args);
+  }
+
+  @Override
+  public List<StorableField> createFields(SchemaField field, Object value,
+      float boost) {
+    if (field.hasDocValues()) {
+      List<StorableField> fields = new ArrayList<StorableField>();
+      fields.add(createField(field, value, boost));
+      final BytesRef bytes = new BytesRef(value.toString());
+      final Field docValuesField = new SortedDocValuesField(field.getName(), bytes);
+      fields.add(docValuesField);
+      return fields;
+    } else {
+      return Collections.singletonList(createField(field, value, boost));
+    }
+  }
+
   @Override
   public SortField getSortField(SchemaField field,boolean reverse) {
     return getStringSort(field,reverse);
@@ -50,6 +73,14 @@ public class StrField extends PrimitiveFieldType {
   @Override
   public Object toObject(SchemaField sf, BytesRef term) {
     return term.utf8ToString();
+  }
+
+  @Override
+  public void checkSchemaField(SchemaField field) {
+    // change me when multi-valued doc values are supported
+    if (field.hasDocValues() && !(field.isRequired() || field.getDefaultValue() != null)) {
+      throw new IllegalStateException("Field " + this + " has doc values enabled, but has no default value and is not required");
+    }
   }
 }
 

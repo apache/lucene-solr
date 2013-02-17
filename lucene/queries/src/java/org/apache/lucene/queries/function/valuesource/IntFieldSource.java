@@ -85,7 +85,7 @@ public class IntFieldSource extends FieldCacheSource {
 
       @Override
       public String strVal(int doc) {
-        return Float.toString(arr.get(doc));
+        return Integer.toString(arr.get(doc));
       }
 
       @Override

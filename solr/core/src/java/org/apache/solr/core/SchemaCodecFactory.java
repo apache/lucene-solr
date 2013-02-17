@@ -1,6 +1,7 @@
 package org.apache.solr.core;
 
 import org.apache.lucene.codecs.Codec;
+import org.apache.lucene.codecs.DocValuesFormat;
 import org.apache.lucene.codecs.PostingsFormat;
 import org.apache.lucene.codecs.lucene42.Lucene42Codec;
 import org.apache.solr.schema.IndexSchema;
@@ -55,7 +56,18 @@ public class SchemaCodecFactory extends CodecFactory implements SchemaAware {
         }
         return super.getPostingsFormatForField(field);
       }
-      // TODO: when dv support is added to solr, add it here too
+      @Override
+      public DocValuesFormat getDocValuesFormatForField(String field) {
+        final SchemaField fieldOrNull = schema.getFieldOrNull(field);
+        if (fieldOrNull == null) {
+          throw new IllegalArgumentException("no such field " + field);
+        }
+        String docValuesFormatName = fieldOrNull.getType().getDocValuesFormat();
+        if (docValuesFormatName != null) {
+          return DocValuesFormat.forName(docValuesFormatName);
+        }
+        return super.getDocValuesFormatForField(field);
+      }
     };
   }
 

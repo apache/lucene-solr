@@ -77,6 +77,8 @@ New Features
   under the covers -- allowing many HTTP connection related properties to be
   controlled via 'standard' java system properties.  (hossman)
 
+* SOLR-3855: Doc values support. (Adrien Grand)
+
 Bug Fixes
 ----------------------
 
@@ -107,7 +109,7 @@ Bug Fixes
 * SOLR-3926: Solr should support better way of finding active sorts (Eirik Lygre via
   Erick Erickson)
 
-* SOLR-4342: Fix DataImportHandler stats to be a prper Map (hossman)
+* SOLR-4342: Fix DataImportHandler stats to be a proper Map (hossman)
 
 * SOLR-3967: langid.enforceSchema option checks source field instead of target field (janhoy)
 
@@ -124,6 +126,16 @@ Bug Fixes
   if <directoryFactory> is not present in solrconfig.xml (Jack Krupansky via shalin)
 
 * SOLR-4463: Fix SolrCoreState reference counting. (Mark Miller)
+
+* SOLR-4459: The Replication 'index move' rather than copy optimization doesn't
+  kick in when using NRTCachingDirectory or the rate limiting feature.
+  (Mark Miller)
+
+* SOLR-4421,SOLR-4165: On CoreContainer shutdown, all SolrCores should publish their 
+  state as DOWN. (Mark Miller, Markus Jelsma)
+
+* SOLR-4467: Ephemeral directory implementations may not recover correctly 
+  because the code to clear the tlog files on startup is off. (Mark Miller)
 
 Optimizations
 ----------------------
@@ -156,9 +168,6 @@ Other Changes
 * SOLR-4353: Renamed example jetty context file to reduce confusion (hossman)
 
 * SOLR-4384: Make post.jar report timing information (Upayavira via janhoy)
-
-* SOLR-4421: On CoreContainer shutdown, all SolrCores should publish their 
-  state as DOWN. (Mark Miller)
 
 ==================  4.1.0 ==================
 

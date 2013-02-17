@@ -136,6 +136,11 @@ class SortableLongFieldSource extends FieldCacheSource {
       }
 
       @Override
+      public boolean exists(int doc) {
+        return termsIndex.getOrd(doc) >= 0;
+      }
+
+      @Override
       public float floatVal(int doc) {
         return (float)longVal(doc);
       }
@@ -168,13 +173,7 @@ class SortableLongFieldSource extends FieldCacheSource {
 
       @Override
       public Object objectVal(int doc) {
-        int ord=termsIndex.getOrd(doc);
-        if (ord==-1) {
-          return null;
-        } else {
-          termsIndex.lookupOrd(ord, spare);
-          return NumberUtils.SortableStr2long(spare);
-        }
+        return exists(doc) ? longVal(doc) : null;
       }
 
       @Override

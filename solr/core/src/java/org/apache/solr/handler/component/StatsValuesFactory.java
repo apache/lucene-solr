@@ -17,10 +17,15 @@
 
 package org.apache.solr.handler.component;
 
+import java.io.IOException;
+import java.util.Collections;
 import java.util.Date;
 import java.util.Map;
 import java.util.HashMap;
 
+import org.apache.lucene.index.AtomicReaderContext;
+import org.apache.lucene.queries.function.FunctionValues;
+import org.apache.lucene.queries.function.ValueSource;
 import org.apache.lucene.util.BytesRef;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.util.NamedList;
@@ -39,6 +44,7 @@ public class StatsValuesFactory {
    * @return Instance of StatsValues that will create statistics from values from a field of the given type
    */
   public static StatsValues createStatsValues(SchemaField sf) {
+    // TODO: allow for custom field types
     FieldType fieldType = sf.getType();
     if (DoubleField.class.isInstance(fieldType) ||
         IntField.class.isInstance(fieldType) ||
@@ -77,6 +83,8 @@ abstract class AbstractStatsValues<T> implements StatsValues {
   protected T min;
   protected long missing;
   protected long count;
+  private ValueSource valueSource;
+  protected FunctionValues values;
   
   // facetField   facetValue
   protected Map<String, Map<String, StatsValues>> facets = new HashMap<String, Map<String, StatsValues>>();
@@ -121,29 +129,22 @@ abstract class AbstractStatsValues<T> implements StatsValues {
       }
     }
   }
-  
-  /**
-   * {@inheritDoc}
-   */
-  @Override
-  public void accumulate(BytesRef value) {
-    count++;
-    T typedValue = (T)ft.toObject(sf, value);
-    updateMinMax(typedValue, typedValue);
-    updateTypeSpecificStats(typedValue);
-  }
 
   /**
    * {@inheritDoc}
    */
   @Override
   public void accumulate(BytesRef value, int count) {
-    this.count += count;
     T typedValue = (T)ft.toObject(sf, value);
-    updateMinMax(typedValue, typedValue);
-    updateTypeSpecificStats(typedValue, count);
+    accumulate(typedValue, count);
   }
-  
+
+  public void accumulate(T value, int count) {
+    this.count += count;
+    updateMinMax(value, value);
+    updateTypeSpecificStats(value, count);
+  }
+
   /**
    * {@inheritDoc}
    */
@@ -194,6 +195,13 @@ abstract class AbstractStatsValues<T> implements StatsValues {
     return res;
   }
 
+  public void setNextReader(AtomicReaderContext ctx) throws IOException {
+    if (valueSource == null) {
+      valueSource = ft.getValueSource(sf, null);
+    }
+    values = valueSource.getValues(Collections.emptyMap(), ctx);
+  }
+
   /**
    * Updates the minimum and maximum statistics based on the given values
    *
@@ -201,13 +209,6 @@ abstract class AbstractStatsValues<T> implements StatsValues {
    * @param max Value that the current maximum should be updated against
    */
   protected abstract void updateMinMax(T min, T max);
-
-  /**
-   * Updates the type specific statistics based on the given value
-   *
-   * @param value Value the statistics should be updated against
-   */
-  protected abstract void updateTypeSpecificStats(T value);
 
   /**
    * Updates the type specific statistics based on the given value
@@ -246,6 +247,15 @@ class NumericStatsValues extends AbstractStatsValues<Number> {
     max = Double.NEGATIVE_INFINITY;
   }
 
+  @Override
+  public void accumulate(int docID) {
+    if (values.exists(docID)) {
+      accumulate((Number) values.objectVal(docID), 1);
+    } else {
+      missing();
+    }
+  }
+
   /**
    * {@inheritDoc}
    */
@@ -253,16 +263,6 @@ class NumericStatsValues extends AbstractStatsValues<Number> {
   public void updateTypeSpecificStats(NamedList stv) {
     sum += ((Number)stv.get("sum")).doubleValue();
     sumOfSquares += ((Number)stv.get("sumOfSquares")).doubleValue();
-  }
-
-  /**
-   * {@inheritDoc}
-   */
-  @Override
-  public void updateTypeSpecificStats(Number v) {
-    double value = v.doubleValue();
-    sumOfSquares += (value * value); // for std deviation
-    sum += value;
   }
 
   /**
@@ -323,6 +323,15 @@ class DateStatsValues extends AbstractStatsValues<Date> {
     super(sf);
   }
 
+  @Override
+  public void accumulate(int docID) {
+    if (values.exists(docID)) {
+      accumulate((Date) values.objectVal(docID), 1);
+    } else {
+      missing();
+    }
+  }
+
   /**
    * {@inheritDoc}
    */
@@ -330,16 +339,6 @@ class DateStatsValues extends AbstractStatsValues<Date> {
   protected void updateTypeSpecificStats(NamedList stv) {
     sum += ((Date) stv.get("sum")).getTime();
     sumOfSquares += ((Number)stv.get("sumOfSquares")).doubleValue();
-  }
-
-  /**
-   * {@inheritDoc}
-   */
-  @Override
-  public void updateTypeSpecificStats(Date v) {
-    long value = v.getTime();
-    sumOfSquares += (value * value); // for std deviation
-    sum += value;
   }
 
   /**
@@ -407,19 +406,20 @@ class StringStatsValues extends AbstractStatsValues<String> {
     super(sf);
   }
 
-  /**
-   * {@inheritDoc}
-   */
   @Override
-  protected void updateTypeSpecificStats(NamedList stv) {
-    // No type specific stats
+  public void accumulate(int docID) {
+    if (values.exists(docID)) {
+      accumulate(values.strVal(docID), 1);
+    } else {
+      missing();
+    }
   }
 
   /**
    * {@inheritDoc}
    */
   @Override
-  protected void updateTypeSpecificStats(String value) {
+  protected void updateTypeSpecificStats(NamedList stv) {
     // No type specific stats
   }
 

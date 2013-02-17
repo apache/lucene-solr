@@ -67,11 +67,15 @@ public abstract class AbstractDistribZkTestBase extends BaseDistributedSearchTes
 
     String schema = getSchemaFile();
     if (schema == null) schema = "schema.xml";
-    AbstractZkTestCase.buildZooKeeper(zkServer.getZkHost(), zkServer.getZkAddress(), "solrconfig.xml", schema);
+    AbstractZkTestCase.buildZooKeeper(zkServer.getZkHost(), zkServer.getZkAddress(), getCloudSolrConfig(), schema);
 
     // set some system properties for use by tests
     System.setProperty("solr.test.sys.prop1", "propone");
     System.setProperty("solr.test.sys.prop2", "proptwo");
+  }
+  
+  protected String getCloudSolrConfig() {
+    return "solrconfig-tlog.xml";
   }
   
   @Override
@@ -207,7 +211,6 @@ public abstract class AbstractDistribZkTestBase extends BaseDistributedSearchTes
     if (DEBUG) {
       printLayout();
     }
-    zkServer.shutdown();
     System.clearProperty("zkHost");
     System.clearProperty("collection");
     System.clearProperty("enable.update.log");
@@ -217,6 +220,7 @@ public abstract class AbstractDistribZkTestBase extends BaseDistributedSearchTes
     System.clearProperty("solr.test.sys.prop2");
     resetExceptionIgnores();
     super.tearDown();
+    zkServer.shutdown();
   }
   
   protected void printLayout() throws Exception {

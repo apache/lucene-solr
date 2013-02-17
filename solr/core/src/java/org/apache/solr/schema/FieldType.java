@@ -17,14 +17,20 @@
 
 package org.apache.solr.schema;
 
+import java.io.IOException;
+import java.io.Reader;
+import java.util.Collections;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+
 import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.analysis.Tokenizer;
 import org.apache.lucene.analysis.tokenattributes.CharTermAttribute;
 import org.apache.lucene.analysis.tokenattributes.OffsetAttribute;
 import org.apache.lucene.document.Field;
+import org.apache.lucene.index.FieldInfo.DocValuesType;
 import org.apache.lucene.index.FieldInfo.IndexOptions;
-import org.apache.lucene.index.GeneralField;
-import org.apache.lucene.index.IndexableField;
 import org.apache.lucene.index.StorableField;
 import org.apache.lucene.index.Term;
 import org.apache.lucene.queries.function.ValueSource;
@@ -44,11 +50,6 @@ import org.apache.solr.search.QParser;
 import org.apache.solr.search.Sorting;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-
-import java.io.IOException;
-import java.io.Reader;
-import java.util.HashMap;
-import java.util.Map;
 
 /**
  * Base class for all field types used by an index schema.
@@ -120,14 +121,6 @@ public abstract class FieldType extends FieldProperties {
 
   }
 
-  protected String getArg(String n, Map<String,String> args) {
-    String s = args.remove(n);
-    if (s == null) {
-      throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, "Missing parameter '"+n+"' for FieldType=" + typeName +args);
-    }
-    return s;
-  }
-
   // Handle additional arguments...
   void setArgs(IndexSchema schema, Map<String,String> args) {
     // default to STORED, INDEXED, OMIT_TF_POSITIONS and MULTIVALUED depending on schema version
@@ -169,11 +162,8 @@ public abstract class FieldType extends FieldProperties {
       initArgs.remove("positionIncrementGap");
     }
 
-    final String postingsFormat = initArgs.get("postingsFormat");
-    if (postingsFormat != null) {
-      this.postingsFormat = postingsFormat;
-      initArgs.remove("postingsFormat");
-    }
+    this.postingsFormat = initArgs.remove("postingsFormat");
+    this.docValuesFormat = initArgs.remove("docValuesFormat");
 
     if (initArgs.size() > 0) {
       throw new RuntimeException("schema fieldtype " + typeName
@@ -261,7 +251,7 @@ public abstract class FieldType extends FieldProperties {
     newType.setStoreTermVectors(field.storeTermVector());
     newType.setStoreTermVectorOffsets(field.storeTermOffsets());
     newType.setStoreTermVectorPositions(field.storeTermPositions());
-    
+
     return createField(field.getName(), val, newType, boost);
   }
 
@@ -290,9 +280,15 @@ public abstract class FieldType extends FieldProperties {
    * @see #createField(SchemaField, Object, float)
    * @see #isPolyField()
    */
-  public StorableField[] createFields(SchemaField field, Object value, float boost) {
+  public List<StorableField> createFields(SchemaField field, Object value, float boost) {
     StorableField f = createField( field, value, boost);
-    return f==null ? new StorableField[]{} : new StorableField[]{f};
+    if (field.hasDocValues() && f.fieldType().docValueType() == null) {
+      // field types that support doc values should either override createField
+      // to return a field with doc values or extend createFields if this can't
+      // be done in a single field instance (see StrField for example)
+      throw new UnsupportedOperationException("This field type does not support doc values: " + this);
+    }
+    return f==null ? Collections.<StorableField>emptyList() : Collections.singletonList(f);
   }
 
   protected IndexOptions getIndexOptions(SchemaField field, String internalVal) {
@@ -513,7 +509,13 @@ public abstract class FieldType extends FieldProperties {
   public Similarity getSimilarity() {
     return similarity;
   }
-  
+
+  /** Return the numeric type of this field, or null if this field is not a
+   *  numeric field. */
+  public org.apache.lucene.document.FieldType.NumericType getNumericType() {
+    return null;
+  }
+
   /**
    * Sets the Similarity used when scoring fields of this type
    * @lucene.internal
@@ -530,7 +532,16 @@ public abstract class FieldType extends FieldProperties {
   public String getPostingsFormat() {
     return postingsFormat;
   }
-  
+
+  /**
+   * The docvalues format used for this field type
+   */
+  protected String docValuesFormat;
+
+  public final String getDocValuesFormat() {
+    return docValuesFormat;
+  }
+
   /**
    * calls back to TextResponseWriter to write the field value
    */
@@ -561,7 +572,6 @@ public abstract class FieldType extends FieldProperties {
     field.checkFieldCacheSource(parser);
     return new StrFieldSource(field.name);
   }
-
 
   /**
    * Returns a Query instance for doing range searches on this field type. {@link org.apache.solr.search.SolrQueryParser}
@@ -615,7 +625,11 @@ public abstract class FieldType extends FieldProperties {
    * if invariants are violated by the <code>SchemaField.</code>
    * </p>
    */
-  public void checkSchemaField(final SchemaField field) throws SolrException {
-    // :NOOP:
+  public void checkSchemaField(final SchemaField field) {
+    // override if your field type supports doc values
+    if (field.hasDocValues()) {
+      throw new SolrException(ErrorCode.SERVER_ERROR, "Field type " + this + " does not support doc values");
+    }
   }
+
 }

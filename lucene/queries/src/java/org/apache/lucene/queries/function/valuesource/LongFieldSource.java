@@ -64,6 +64,10 @@ public class LongFieldSource extends FieldCacheSource {
     return val;
   }
 
+  public String longToString(long val) {
+    return longToObject(val).toString();
+  }
+
   @Override
   public FunctionValues getValues(Map context, AtomicReaderContext readerContext) throws IOException {
     final FieldCache.Longs arr = cache.getLongs(readerContext.reader(), field, parser, true);
@@ -83,6 +87,11 @@ public class LongFieldSource extends FieldCacheSource {
       @Override
       public Object objectVal(int doc) {
         return valid.get(doc) ? longToObject(arr.get(doc)) : null;
+      }
+
+      @Override
+      public String strVal(int doc) {
+        return valid.get(doc) ? longToString(arr.get(doc)) : null;
       }
 
       @Override
