@@ -116,27 +116,17 @@ public class SolrIndexSearcher extends IndexSearcher implements Closeable,SolrIn
   private Collection<String> storedHighlightFieldNames;
   private DirectoryFactory directoryFactory;
   
-  private final AtomicReader atomicReader; 
+  private final AtomicReader atomicReader;
+  private String path; 
 
   public SolrIndexSearcher(SolrCore core, String path, IndexSchema schema, SolrIndexConfig config, String name, boolean enableCache, DirectoryFactory directoryFactory) throws IOException {
     // we don't need to reserve the directory because we get it from the factory
-    this(core, schema,name, core.getIndexReaderFactory().newReader(directoryFactory.get(path, DirContext.DEFAULT, config.lockType), core), true, enableCache, false, directoryFactory);
+    this(core, path, schema,name, core.getIndexReaderFactory().newReader(directoryFactory.get(path, DirContext.DEFAULT, config.lockType), core), true, enableCache, false, directoryFactory);
   }
 
-  private static String getIndexDir(Directory dir) {
-    if (dir instanceof FSDirectory) {
-      return ((FSDirectory)dir).getDirectory().getAbsolutePath();
-    } else if (dir instanceof NRTCachingDirectory) {
-      // recurse on the delegate
-      return getIndexDir(((NRTCachingDirectory) dir).getDelegate());
-    } else {
-      log.warn("WARNING: Directory impl does not support setting indexDir: " + dir.getClass().getName());
-      return null;
-    }
-  }
-
-  public SolrIndexSearcher(SolrCore core, IndexSchema schema, String name, DirectoryReader r, boolean closeReader, boolean enableCache, boolean reserveDirectory, DirectoryFactory directoryFactory) throws IOException {
+  public SolrIndexSearcher(SolrCore core, String path, IndexSchema schema, String name, DirectoryReader r, boolean closeReader, boolean enableCache, boolean reserveDirectory, DirectoryFactory directoryFactory) throws IOException {
     super(r);
+    this.path = path;
     this.directoryFactory = directoryFactory;
     this.reader = r;
     this.atomicReader = SlowCompositeReaderWrapper.wrap(r);
@@ -209,6 +199,10 @@ public class SolrIndexSearcher extends IndexSearcher implements Closeable,SolrIn
 
     // do this at the end since an exception in the constructor means we won't close    
     numOpens.incrementAndGet();
+  }
+  
+  public String getPath() {
+    return path;
   }
 
   @Override
