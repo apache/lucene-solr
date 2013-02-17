@@ -435,15 +435,15 @@ public class TestFieldCache extends LuceneTestCase {
   public void testDocValuesIntegration() throws Exception {
     Directory dir = newDirectory();
     IndexWriterConfig iwc = newIndexWriterConfig(TEST_VERSION_CURRENT, null);
-    // nocommit
-    iwc.setCodec(_TestUtil.alwaysDocValuesFormat(DocValuesFormat.forName("Asserting"))); 
     RandomIndexWriter iw = new RandomIndexWriter(random(), dir, iwc);
     Document doc = new Document();
     doc.add(new BinaryDocValuesField("binary", new BytesRef("binary value")));
     doc.add(new SortedDocValuesField("sorted", new BytesRef("sorted value")));
     doc.add(new NumericDocValuesField("numeric", 42));
-    doc.add(new SortedSetDocValuesField("sortedset", new BytesRef("sortedset value1")));
-    doc.add(new SortedSetDocValuesField("sortedset", new BytesRef("sortedset value2")));
+    if (defaultCodecSupportsSortedSet()) {
+      doc.add(new SortedSetDocValuesField("sortedset", new BytesRef("sortedset value1")));
+      doc.add(new SortedSetDocValuesField("sortedset", new BytesRef("sortedset value2")));
+    }
     iw.addDocument(doc);
     DirectoryReader ir = iw.getReader();
     iw.close();
@@ -471,12 +471,22 @@ public class TestFieldCache extends LuceneTestCase {
       fail();
     } catch (IllegalStateException expected) {}
     
+    try {
+      new DocTermOrds(ar, "binary");
+      fail();
+    } catch (IllegalStateException expected) {}
+    
     Bits bits = FieldCache.DEFAULT.getDocsWithField(ar, "binary");
     assertTrue(bits instanceof Bits.MatchAllBits);
     
     // Sorted type: can be retrieved via getTerms(), getTermsIndex(), getDocTermOrds()
     try {
       FieldCache.DEFAULT.getInts(ar, "sorted", false);
+      fail();
+    } catch (IllegalStateException expected) {}
+    
+    try {
+      new DocTermOrds(ar, "sorted");
       fail();
     } catch (IllegalStateException expected) {}
     
@@ -518,34 +528,46 @@ public class TestFieldCache extends LuceneTestCase {
       fail();
     } catch (IllegalStateException expected) {}
     
+    try {
+      new DocTermOrds(ar, "numeric");
+      fail();
+    } catch (IllegalStateException expected) {}
+    
     bits = FieldCache.DEFAULT.getDocsWithField(ar, "numeric");
     assertTrue(bits instanceof Bits.MatchAllBits);
     
     // SortedSet type: can be retrieved via getDocTermOrds() 
-    try {
-      FieldCache.DEFAULT.getInts(ar, "sortedset", false);
-      fail();
-    } catch (IllegalStateException expected) {}
+    if (defaultCodecSupportsSortedSet()) {
+      try {
+        FieldCache.DEFAULT.getInts(ar, "sortedset", false);
+        fail();
+      } catch (IllegalStateException expected) {}
     
-    try {
-      FieldCache.DEFAULT.getTerms(ar, "sortedset");
-      fail();
-    } catch (IllegalStateException expected) {}
+      try {
+        FieldCache.DEFAULT.getTerms(ar, "sortedset");
+        fail();
+      } catch (IllegalStateException expected) {}
     
-    try {
-      FieldCache.DEFAULT.getTermsIndex(ar, "sortedset");
-      fail();
-    } catch (IllegalStateException expected) {}
+      try {
+        FieldCache.DEFAULT.getTermsIndex(ar, "sortedset");
+        fail();
+      } catch (IllegalStateException expected) {}
+      
+      try {
+        new DocTermOrds(ar, "sortedset");
+        fail();
+      } catch (IllegalStateException expected) {}
     
-    sortedSet = FieldCache.DEFAULT.getDocTermOrds(ar, "sortedset");
-    sortedSet.setDocument(0);
-    assertEquals(0, sortedSet.nextOrd());
-    assertEquals(1, sortedSet.nextOrd());
-    assertEquals(SortedSetDocValues.NO_MORE_ORDS, sortedSet.nextOrd());
-    assertEquals(2, sortedSet.getValueCount());
+      sortedSet = FieldCache.DEFAULT.getDocTermOrds(ar, "sortedset");
+      sortedSet.setDocument(0);
+      assertEquals(0, sortedSet.nextOrd());
+      assertEquals(1, sortedSet.nextOrd());
+      assertEquals(SortedSetDocValues.NO_MORE_ORDS, sortedSet.nextOrd());
+      assertEquals(2, sortedSet.getValueCount());
     
-    bits = FieldCache.DEFAULT.getDocsWithField(ar, "sortedset");
-    assertTrue(bits instanceof Bits.MatchAllBits);
+      bits = FieldCache.DEFAULT.getDocsWithField(ar, "sortedset");
+      assertTrue(bits instanceof Bits.MatchAllBits);
+    }
     
     ir.close();
     dir.close();

@@ -265,6 +265,10 @@ public class DocTermOrds {
 
   /** Call this only once (if you subclass!) */
   protected void uninvert(final AtomicReader reader, final BytesRef termPrefix) throws IOException {
+    final FieldInfo info = reader.getFieldInfos().fieldInfo(field);
+    if (info != null && info.hasDocValues()) {
+      throw new IllegalStateException("Type mismatch: " + field + " was indexed as " + info.getDocValuesType());
+    }
     //System.out.println("DTO uninvert field=" + field + " prefix=" + termPrefix);
     final long startTime = System.currentTimeMillis();
     prefix = termPrefix == null ? null : BytesRef.deepCopyOf(termPrefix);

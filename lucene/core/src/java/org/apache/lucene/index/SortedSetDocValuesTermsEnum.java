@@ -26,8 +26,6 @@ import org.apache.lucene.util.BytesRef;
 /** Implements a {@link TermsEnum} wrapping a provided
  * {@link SortedSetDocValues}. */
 
-// nocommit: if we are ok with ords being 'long' for SortedDocValues,
-// then we don't need this...
 public class SortedSetDocValuesTermsEnum extends TermsEnum {
   private final SortedSetDocValues values;
   private long currentOrd = -1;
