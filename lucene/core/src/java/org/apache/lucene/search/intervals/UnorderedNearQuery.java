@@ -99,6 +99,7 @@ public class UnorderedNearQuery extends ScorerFilterQuery {
 
     @Override
     protected void reset(int doc) throws IOException {
+      super.reset(doc);
       current.reset();
       posQueue.advanceTo(doc);
     }
@@ -155,8 +156,6 @@ public class UnorderedNearQuery extends ScorerFilterQuery {
     @Override
     protected void init() throws IOException {
       super.init();
-      span.reset();
-      firstIntervalEnd = lastIntervalBegin = span.begin;
       for (Object docsEnumRef : getHeapArray()) {
         if (docsEnumRef != null) {
           final Interval i = ((DocsEnumRef) docsEnumRef).interval;
@@ -168,6 +167,8 @@ public class UnorderedNearQuery extends ScorerFilterQuery {
     @Override
     public void advanceTo(int doc) {
       super.advanceTo(doc);
+      span.reset();
+      firstIntervalEnd = lastIntervalBegin = span.begin;
     }
 
     @Override

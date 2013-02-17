@@ -93,7 +93,7 @@ public abstract class PositionFilteredScorer extends Scorer {
   protected abstract int doNextPosition() throws IOException;
 
   protected void reset(int doc) throws IOException {
-    // empty default
+    buffered = false;
   };
 
   public int getMatchDistance() {

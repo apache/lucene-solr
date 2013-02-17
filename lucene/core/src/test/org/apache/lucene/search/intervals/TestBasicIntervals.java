@@ -21,6 +21,7 @@ import org.apache.lucene.document.Document;
 import org.apache.lucene.document.TextField;
 import org.apache.lucene.index.RandomIndexWriter;
 import org.apache.lucene.search.BooleanClause;
+import org.apache.lucene.search.BooleanQuery;
 import org.apache.lucene.search.Query;
 
 import java.io.IOException;
@@ -264,24 +265,22 @@ public class TestBasicIntervals extends IntervalTestBase {
       "t1 t2 t1 t3 t2 t3"};//11
    */
 
-  /*
-
-  // ((u1 near u2) near xx)
+  // ((u1 near u2) and xx)
   public void testNestedNear() throws Exception {
 
-    Query q = new UnorderedNearQuery(0, false, makeTermQuery("u1"), makeTermQuery("u2"));
+    Query q = new UnorderedNearQuery(0, makeTermQuery("u1"), makeTermQuery("u2"));
     BooleanQuery topq = new BooleanQuery();
-    topq.add(q, Occur.MUST);
-    topq.add(makeTermQuery("xx"), Occur.MUST);
+    topq.add(q, BooleanClause.Occur.MUST);
+    topq.add(makeTermQuery("xx"), BooleanClause.Occur.MUST);
 
     checkIntervals(topq, searcher, new int[][]{
-        { 5, 1, 3, 1, 1, 2, 3 },
-        { 8, 1, 3, 1, 1, 2, 3 },
-        { 9, 0, 2, 0, 1, 2, 2 },
-        { 10, 0, 2, 0, 1, 2, 2 }
+        { 5, 1, 1, 2, 3 },
+        { 8, 1, 1, 2, 3 },
+        { 9, 0, 1, 2, 2 },
+        { 10, 0, 1, 2, 2 }
     });
 
-  } */
+  }
   
   public void testOrSingle() throws Exception {
     Query q = makeOrQuery(makeTermQuery("w5"));
