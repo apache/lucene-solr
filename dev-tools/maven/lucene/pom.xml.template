@@ -66,7 +66,7 @@
         <artifactId>forbiddenapis</artifactId>
         <executions>
           <execution>
-            <id>lucene-check-forbidden-executors-and-jdk-unsafe-deprecated-and-system-out</id>
+            <id>lucene-shared-check-forbidden-apis</id>
             <configuration>
               <!-- disallow undocumented classes like sun.misc.Unsafe: -->
               <internalRuntimeForbidden>true</internalRuntimeForbidden>
@@ -84,14 +84,17 @@
             </goals>
           </execution>
           <execution>
-            <id>lucene-test-check-forbidden-test-apis-and-jdk-unsafe-and-deprecated</id>
+            <id>lucene-shared-test-check-forbidden-apis</id>
             <configuration>
+              <!-- disallow undocumented classes like sun.misc.Unsafe: -->
+              <internalRuntimeForbidden>true</internalRuntimeForbidden>
               <bundledSignatures>
                 <bundledSignature>jdk-unsafe</bundledSignature>
                 <bundledSignature>jdk-deprecated</bundledSignature>
               </bundledSignatures>
               <signaturesFiles>
                 <signaturesFile>${top-level}/lucene/tools/forbiddenApis/tests.txt</signaturesFile>
+                <signaturesFile>${top-level}/lucene/tools/forbiddenApis/executors.txt</signaturesFile>
               </signaturesFiles>
             </configuration>
             <goals>

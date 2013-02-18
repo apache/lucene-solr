@@ -109,25 +109,27 @@
         <artifactId>forbiddenapis</artifactId>
         <executions>
           <execution>
-            <id>solr-check-forbidden-executors-and-jdk-unsafe-and-deprecated</id>
+            <id>solr-shared-check-forbidden-apis</id>
             <phase>none</phase> <!-- Block inherited execution -->
           </execution>
           <execution>
-            <id>solr-test-check-forbidden-test-apis-and-jdk-unsafe-and-deprecated</id>
+            <id>solr-shared-test-check-forbidden-apis</id>
             <phase>none</phase> <!-- Block inherited execution -->
           </execution>
           <execution>
-            <id>check-forbidden-test-apis-and-servlet-api-and-jdk-unsafe-and-deprecated</id>
+            <id>check-forbidden-apis</id>
             <configuration>
               <!-- disallow undocumented classes like sun.misc.Unsafe: -->
               <internalRuntimeForbidden>true</internalRuntimeForbidden>
               <bundledSignatures>
                 <bundledSignature>jdk-unsafe</bundledSignature>
                 <bundledSignature>jdk-deprecated</bundledSignature>
+                <bundledSignature>commons-io-unsafe-${commons-io.version}</bundledSignature>
               </bundledSignatures>
               <signaturesFiles>
                 <signaturesFile>${top-level}/lucene/tools/forbiddenApis/servlet-api.txt</signaturesFile>
                 <signaturesFile>${top-level}/lucene/tools/forbiddenApis/tests.txt</signaturesFile>
+                <signaturesFile>${top-level}/lucene/tools/forbiddenApis/executors.txt</signaturesFile>
               </signaturesFiles>
             </configuration>
             <goals>

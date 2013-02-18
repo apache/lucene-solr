@@ -221,15 +221,15 @@
         <artifactId>forbiddenapis</artifactId>
         <executions>
           <execution>
-            <id>solr-check-forbidden-executors-and-jdk-unsafe-and-deprecated</id>
+            <id>solr-shared-check-forbidden-apis</id>
             <phase>none</phase> <!-- Block inherited execution -->
           </execution>
           <execution>
-            <id>solr-test-check-forbidden-test-apis-and-jdk-unsafe-and-deprecated</id>
+            <id>solr-shared-test-check-forbidden-apis</id>
             <phase>none</phase> <!-- Block inherited execution -->
           </execution>
           <execution>
-            <id>check-forbidden-executors-and-servlet-api-and-jdk-unsafe-and-deprecated-and-commons-io-unsafe</id>
+            <id>check-forbidden-apis</id>
             <configuration>
               <!-- disallow undocumented classes like sun.misc.Unsafe: -->
               <internalRuntimeForbidden>true</internalRuntimeForbidden>

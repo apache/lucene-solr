@@ -74,7 +74,7 @@
         <artifactId>forbiddenapis</artifactId>
         <executions>
           <execution>
-            <id>lucene-check-forbidden-executors-and-jdk-unsafe-deprecated-and-system-out</id>
+            <id>lucene-shared-check-forbidden-apis</id>
             <phase>none</phase> <!-- Block inherited execution -->
           </execution>
         </executions>
