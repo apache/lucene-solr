@@ -104,6 +104,10 @@ public class TestDuelingCodecs extends LuceneTestCase {
     rightReader = maybeWrapReader(rightWriter.getReader());
     rightWriter.close();
     
+    // check that our readers are valid
+    _TestUtil.checkReader(leftReader);
+    _TestUtil.checkReader(rightReader);
+    
     info = "left: " + leftCodec.toString() + " / right: " + rightCodec.toString();
   }
   

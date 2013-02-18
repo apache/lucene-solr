@@ -1276,7 +1276,8 @@ public class CheckIndex {
         } else {
           if (reader.getBinaryDocValues(fieldInfo.name) != null ||
               reader.getNumericDocValues(fieldInfo.name) != null ||
-              reader.getSortedDocValues(fieldInfo.name) != null) {
+              reader.getSortedDocValues(fieldInfo.name) != null || 
+              reader.getSortedSetDocValues(fieldInfo.name) != null) {
             throw new RuntimeException("field: " + fieldInfo.name + " has docvalues but should omit them!");
           }
         }
@@ -1385,15 +1386,35 @@ public class CheckIndex {
     switch(fi.getDocValuesType()) {
       case SORTED:
         checkSortedDocValues(fi.name, reader, reader.getSortedDocValues(fi.name));
+        if (reader.getBinaryDocValues(fi.name) != null ||
+            reader.getNumericDocValues(fi.name) != null ||
+            reader.getSortedSetDocValues(fi.name) != null) {
+          throw new RuntimeException(fi.name + " returns multiple docvalues types!");
+        }
         break;
       case SORTED_SET:
         checkSortedSetDocValues(fi.name, reader, reader.getSortedSetDocValues(fi.name));
+        if (reader.getBinaryDocValues(fi.name) != null ||
+            reader.getNumericDocValues(fi.name) != null ||
+            reader.getSortedDocValues(fi.name) != null) {
+          throw new RuntimeException(fi.name + " returns multiple docvalues types!");
+        }
         break;
       case BINARY:
         checkBinaryDocValues(fi.name, reader, reader.getBinaryDocValues(fi.name));
+        if (reader.getNumericDocValues(fi.name) != null ||
+            reader.getSortedDocValues(fi.name) != null ||
+            reader.getSortedSetDocValues(fi.name) != null) {
+          throw new RuntimeException(fi.name + " returns multiple docvalues types!");
+        }
         break;
       case NUMERIC:
         checkNumericDocValues(fi.name, reader, reader.getNumericDocValues(fi.name));
+        if (reader.getBinaryDocValues(fi.name) != null ||
+            reader.getSortedDocValues(fi.name) != null ||
+            reader.getSortedSetDocValues(fi.name) != null) {
+          throw new RuntimeException(fi.name + " returns multiple docvalues types!");
+        }
         break;
       default:
         throw new AssertionError();
