@@ -119,11 +119,11 @@
         <artifactId>forbiddenapis</artifactId>
         <executions>
           <execution>
-            <id>solr-check-forbidden-executors-and-jdk-unsafe-and-deprecated</id>
+            <id>solr-shared-check-forbidden-apis</id>
             <phase>none</phase> <!-- Block inherited execution -->
           </execution>
           <execution>
-            <id>solr-test-check-forbidden-test-apis-and-jdk-unsafe-and-deprecated</id>
+            <id>solr-shared-test-check-forbidden-apis</id>
             <phase>none</phase> <!-- Block inherited execution -->
           </execution>
         </executions>

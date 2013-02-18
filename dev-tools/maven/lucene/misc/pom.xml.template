@@ -72,11 +72,11 @@
         <artifactId>forbiddenapis</artifactId>
         <executions>
           <execution>
-            <id>lucene-check-forbidden-executors-and-jdk-unsafe-deprecated-and-system-out</id>
+            <id>lucene-shared-check-forbidden-apis</id>
             <phase>none</phase> <!-- Block inherited execution -->
           </execution>
           <execution>
-            <id>check-forbidden-executors-and-jdk-unsafe-and-deprecated</id>
+            <id>check-forbidden-apis</id>
             <configuration>
               <!-- disallow undocumented classes like sun.misc.Unsafe: -->
               <internalRuntimeForbidden>true</internalRuntimeForbidden>
