@@ -216,54 +216,6 @@ public class CoreAdminHandler extends RequestHandlerBase {
     rsp.setHttpCaching(false);
   }
 
-  /** Creates a new core and registers it. The returned core will have it's reference count incremented an extra time and close() should be called when finished. */
-  private SolrCore createCore(SolrCore current, int ord, DocRouter.Range newRange) throws IOException, SAXException, ParserConfigurationException {
-    CoreDescriptor currCoreD = current.getCoreDescriptor();
-    CloudDescriptor currCloudD = currCoreD.getCloudDescriptor();
-
-    String currName = currCoreD.getName();
-
-    // TODO: nicer way to come up with core names?
-    String name = currName + "_" + ord;
-
-    String instanceDir = name;
-
-
-    // TODO: do this via a clone / constructor?
-    CoreDescriptor dcore = new CoreDescriptor(coreContainer, name, instanceDir);
-    dcore.setConfigName( currCoreD.getConfigName() );
-    dcore.setSchemaName(currCoreD.getSchemaName());
-    // default dcore.setDataDir()
-
-    // TODO: for this to work in non-cloud mode, we will either need to make a copy of the conf directory, or
-    // develop named configs like we have in cloud mode.
-
-
-    CloudDescriptor cd = null;
-    if (currCloudD != null) {
-      cd = new CloudDescriptor();
-
-      // TODO: should we copy these?  any params that are core specific?
-      cd.setParams( currCloudD.getParams() );
-      cd.setCollectionName( currCloudD.getCollectionName() );
-      cd.setRoles( currCloudD.getRoles() );
-
-      // TODO: we must be careful that an unrelated node starting up does not try
-      // to become the new shard leader!  How do we designate ourselves as the
-      // leader but prevent new shards from trying to replicate from us before we are ready (i.e. have the split index)?
-      String shardId = currCloudD.getShardId() + "_" + ord;
-      cd.setShardId( shardId );
-
-      dcore.setCloudDescriptor(cd);
-    }
-
-    SolrCore core = coreContainer.create(dcore);
-    core.open();  // inc ref count before registering to ensure no one can close the core before we are done with it
-    coreContainer.register(name, core, false);
-    return core;
-  }
-
-
   protected boolean handleSplitAction(SolrQueryRequest adminReq, SolrQueryResponse rsp) throws IOException {
     SolrParams params = adminReq.getParams();
      // partitions=N    (split into N partitions, leaving it up to solr what the ranges are and where to put them)
@@ -275,6 +227,7 @@ public class CoreAdminHandler extends RequestHandlerBase {
 
     String[] pathsArr = params.getParams("path");
     String rangesStr = params.get("ranges");    // ranges=a-b,c-d,e-f
+    String[] newCoreNames = params.getParams("targetCore");
 
     String cname = params.get(CoreAdminParams.CORE, "");
     SolrCore core = coreContainer.getCore(cname);
@@ -298,11 +251,14 @@ public class CoreAdminHandler extends RequestHandlerBase {
 
       if (pathsArr == null) {
         newCores = new ArrayList<SolrCore>(partitions);
-        for (int i=0; i<partitions; i++) {
-          SolrCore newCore = createCore(core, i, ranges.get(i));
-          newCores.add(newCore);
+        for (String newCoreName : newCoreNames) {
+          SolrCore newcore = coreContainer.getCore(newCoreName);
+          if (newcore != null) {
+            newCores.add(newcore);
+          } else {
+            throw new SolrException(ErrorCode.BAD_REQUEST, "Core with core name " + newCoreName + " expected but doesn't exist.");
+          }
         }
-
         // TODO (cloud): cores should be registered, should be in recovery / buffering-updates mode, and the shard
         // leader should be forwarding updates to the new shards *before* we split the current shard
         // into the new shards.
