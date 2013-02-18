@@ -20,12 +20,12 @@ package org.apache.lucene.search.intervals;
 import org.apache.lucene.index.AtomicReaderContext;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.Term;
-import org.apache.lucene.search.Explanation;
 import org.apache.lucene.search.IndexSearcher;
+import org.apache.lucene.search.PositionFilteredScorer;
 import org.apache.lucene.search.Query;
 import org.apache.lucene.search.Scorer;
+import org.apache.lucene.search.ScorerFilterQuery;
 import org.apache.lucene.search.Weight;
-import org.apache.lucene.search.Weight.PostingFeatures;
 import org.apache.lucene.util.Bits;
 
 import java.io.IOException;
@@ -62,9 +62,8 @@ import java.util.Set;
  * @lucene.experimental
  * @see BrouwerianIntervalIterator
  */
-public final class NonOverlappingQuery extends Query implements Cloneable {
-  
-  private Query minuend;
+public final class NonOverlappingQuery extends ScorerFilterQuery {
+
   private Query subtrahend;
 
   /**
@@ -74,266 +73,116 @@ public final class NonOverlappingQuery extends Query implements Cloneable {
    * @param subtrahend the subtrahend Query
    */
   public NonOverlappingQuery(Query minuend, Query subtrahend) {
-    this.minuend = minuend;
+    super(minuend, new BrouwerianScorerFactory(subtrahend));
     this.subtrahend = subtrahend;
   }
 
   @Override
   public void extractTerms(Set<Term> terms) {
-    minuend.extractTerms(terms);
+    super.extractTerms(terms);
     subtrahend.extractTerms(terms);
   }
 
   @Override
   public Query rewrite(IndexReader reader) throws IOException {
-    NonOverlappingQuery clone = null;
+    Query rewrittenMinuend = innerQuery.rewrite(reader);
+    Query rewrittenSubtrahend = subtrahend.rewrite(reader);
+    if (rewrittenMinuend != innerQuery || rewrittenSubtrahend != subtrahend) {
+      return new NonOverlappingQuery(rewrittenMinuend, rewrittenSubtrahend);
+    }
+    return this;
+  }
 
-    Query rewritten =  minuend.rewrite(reader);
-    Query subRewritten =  subtrahend.rewrite(reader);
-    if (rewritten != minuend || subRewritten != subtrahend) {
-      clone = (NonOverlappingQuery) this.clone();
-      clone.minuend = rewritten;
-      clone.subtrahend = subRewritten;
+  private static class BrouwerianScorerFactory implements ScorerFilterFactory {
+
+    private final Query subtrahend;
+
+    BrouwerianScorerFactory(Query subtrahend) {
+      this.subtrahend = subtrahend;
     }
 
-    if (clone != null) {
-      return clone; // some clauses rewrote
-    } else {
-      return this; // no clauses rewrote
+    @Override
+    public Scorer scorer(Scorer filteredScorer) {
+      throw new UnsupportedOperationException();
+    }
+
+    @Override
+    public String getName() {
+      return "NonOverlapping[" + subtrahend.toString() + "]/";
     }
   }
 
   @Override
   public Weight createWeight(IndexSearcher searcher) throws IOException {
-    return new BrouwerianQueryWeight(minuend.createWeight(searcher), subtrahend.createWeight(searcher));
+    return new BrouwerianWeight(innerQuery.createWeight(searcher),
+                                subtrahend.createWeight(searcher), searcher);
   }
 
-  class BrouwerianQueryWeight extends Weight {
+  class BrouwerianWeight extends ScorerFilterWeight {
 
-    private final Weight minuted;
-    private final Weight subtracted;
+    private final Weight subtrahendWeight;
 
-    public BrouwerianQueryWeight(Weight minuted, Weight subtracted) {
-      this.minuted = minuted;
-      this.subtracted = subtracted;
-    }
-
-    @Override
-    public Explanation explain(AtomicReaderContext context, int doc)
+    public BrouwerianWeight(Weight minuendWeight, Weight subtrahendWeight, IndexSearcher searcher)
         throws IOException {
-      return minuted.explain(context, doc);
+      super(minuendWeight, searcher);
+      this.subtrahendWeight = subtrahendWeight;
     }
 
     @Override
-    public Scorer scorer(AtomicReaderContext context, boolean scoreDocsInOrder,
-        boolean topScorer, PostingFeatures flags, Bits acceptDocs) throws IOException {
-      flags = flags == PostingFeatures.DOCS_AND_FREQS ? PostingFeatures.POSITIONS : flags;
-      ScorerFactory factory = new ScorerFactory(minuted, subtracted, context, topScorer, flags, acceptDocs);
-      final Scorer scorer = factory.minutedScorer();
-      final Scorer subScorer = factory.subtractedScorer();
-      if (subScorer == null) {
-        return scorer;
-      }
-      return scorer == null ? null : new BrouwerianScorer(this, scorer, subScorer, factory);
-    }
-    
-    @Override
-    public Query getQuery() {
-      return NonOverlappingQuery.this;
-    }
-    
-    @Override
-    public float getValueForNormalization() throws IOException {
-      return minuted.getValueForNormalization();
-    }
-
-    @Override
-    public void normalize(float norm, float topLevelBoost) {
-      minuted.normalize(norm, topLevelBoost);
+    public Scorer scorer(AtomicReaderContext context, boolean scoreDocsInOrder, boolean topScorer,
+                         PostingFeatures flags, Bits acceptDocs) throws IOException {
+      return new BrouwerianScorer(innerWeight.scorer(context, scoreDocsInOrder, topScorer, flags, acceptDocs),
+                                  subtrahendWeight.scorer(context, scoreDocsInOrder, topScorer, flags, acceptDocs));
     }
   }
-  
-  static class ScorerFactory {
-    final Weight minuted;
-    final Weight subtracted;
-    final AtomicReaderContext context;
-    final boolean topScorer;
-    final PostingFeatures flags;
-    final Bits acceptDocs;
-    ScorerFactory(Weight minuted, Weight subtracted,
-        AtomicReaderContext context, boolean topScorer, PostingFeatures flags,
-        Bits acceptDocs) {
-      this.minuted = minuted;
-      this.subtracted = subtracted;
-      this.context = context;
-      this.topScorer = topScorer;
-      this.flags = flags;
-      this.acceptDocs = acceptDocs;
-    }
-    
-    public Scorer minutedScorer() throws IOException {
-      return minuted.scorer(context, true, topScorer, flags, acceptDocs);
-    }
-    
-    public Scorer subtractedScorer() throws IOException {
-      return subtracted.scorer(context, true, topScorer, flags, acceptDocs);
-    }
-    
-  }
-  
-  final class BrouwerianScorer extends Scorer {
 
-    private final Scorer minuend;
-    private IntervalIterator filter;
-    private final Scorer subtracted;
-    Interval current;
-    private final ScorerFactory factory;
+  static class BrouwerianScorer extends PositionFilteredScorer {
 
-    public BrouwerianScorer(Weight weight, Scorer minuend, Scorer subtracted, ScorerFactory factory) throws IOException {
-      super(weight);
-      this.minuend = minuend;
-      this.subtracted = subtracted;
-      this.filter = new BrouwerianIntervalIterator(minuend, false, minuend.intervals(false), subtracted.intervals(false));
-      this.factory = factory;
+    private final Scorer subtrahend;
+    private Interval subtInterval = new Interval();
+    private int subtPosition = -1;
+
+    BrouwerianScorer(Scorer minuend, Scorer subtrahend) {
+      super(minuend);
+      this.subtrahend = subtrahend;
     }
 
     @Override
-    public float score() throws IOException {
-      return minuend.score();
+    protected void reset(int doc) throws IOException {
+      super.reset(doc);
+      if (this.subtrahend == null || this.subtrahend.advance(doc) != doc)
+        subtPosition = NO_MORE_POSITIONS;
+      else
+        subtPosition = -1;
+      this.subtInterval.reset();
     }
 
     @Override
-    public IntervalIterator intervals(boolean collectIntervals) throws IOException {
-      if (collectIntervals) {
-        final Scorer minuted  = factory.minutedScorer();
-        final Scorer subtracted = factory.subtractedScorer();
-        final BrouwerianIntervalIterator brouwerianIntervalIterator = new BrouwerianIntervalIterator(subtracted, true, minuted.intervals(true), subtracted.intervals(true));
-        return new IntervalIterator(this, collectIntervals) {
-
-          @Override
-          public int scorerAdvanced(int docId) throws IOException {
-            int mId = minuted.advance(docId);
-            subtracted.advance(docId);
-            if (mId <= docId)
-              return brouwerianIntervalIterator.scorerAdvanced(docId);
-            return mId;
-          }
-
-          @Override
-          public Interval next() throws IOException {
-            return brouwerianIntervalIterator.next();
-          }
-
-          @Override
-          public void collect(IntervalCollector collector) {
-            brouwerianIntervalIterator.collect(collector);
-          }
-
-          @Override
-          public IntervalIterator[] subs(boolean inOrder) {
-            return brouwerianIntervalIterator.subs(inOrder);
-          }
-
-          @Override
-          public int matchDistance() {
-            return brouwerianIntervalIterator.matchDistance();
-          }
-          
-        };
+    protected int doNextPosition() throws IOException {
+      if (subtPosition == NO_MORE_POSITIONS) {
+        int pos = child.nextPosition();
+        if (pos != NO_MORE_POSITIONS)
+          current.update(child);
+        return pos;
       }
-      
-
-      
-      return new IntervalIterator(this, false) {
-        private boolean buffered = true;
-        @Override
-        public int scorerAdvanced(int docId) throws IOException {
-          buffered = true;
-          assert docId == filter.docID();
-          return docId;
+      while (child.nextPosition() != NO_MORE_POSITIONS) {
+        current.update(child);
+        while (subtInterval.lessThanExclusive(current) &&
+                  (subtPosition = subtrahend.nextPosition()) != NO_MORE_POSITIONS) {
+          subtInterval.update(subtrahend);
         }
-
-        @Override
-        public Interval next() throws IOException {
-          if (buffered) {
-            buffered = false;
-            return current;
-          }
-          else if (current != null) {
-            return current = filter.next();
-          }
-          return null;
-        }
-
-        @Override
-        public void collect(IntervalCollector collector) {
-          filter.collect(collector);
-        }
-
-        @Override
-        public IntervalIterator[] subs(boolean inOrder) {
-          return filter.subs(inOrder);
-        }
-
-        @Override
-        public int matchDistance() {
-          return filter.matchDistance();
-        }
-        
-      };
-    }
-
-    @Override
-    public int docID() {
-      return minuend.docID();
-    }
-
-    @Override
-    public int nextDoc() throws IOException {
-      int docId = -1;
-      while ((docId = minuend.nextDoc()) != Scorer.NO_MORE_DOCS) {
-        subtracted.advance(docId);
-        filter.scorerAdvanced(docId);
-        if ((current = filter.next()) != null) { // just check if there is a position that matches!
-          return minuend.docID();
-        }
+        if (subtPosition == NO_MORE_POSITIONS || !current.overlaps(subtInterval))
+          return current.begin;
       }
-      return Scorer.NO_MORE_DOCS;
+      return NO_MORE_POSITIONS;
     }
-
-    @Override
-    public int advance(int target) throws IOException {
-      int docId = minuend.advance(target);
-      subtracted.advance(docId);
-      if (docId == Scorer.NO_MORE_DOCS) {
-        return NO_MORE_DOCS;
-      }
-      do {
-        filter.scorerAdvanced(docId);
-        if ((current = filter.next()) != null) {
-          return minuend.docID();
-        }
-      } while ((docId = minuend.nextDoc()) != Scorer.NO_MORE_DOCS);
-      return NO_MORE_DOCS;
-    }
-
-    @Override
-    public int freq() throws IOException {
-      return minuend.freq();
-    }
-
-  }
-
-  @Override
-  public String toString(String field) {
-    return "NonOverlappingQuery[" + minuend + ", " + subtrahend + "]";
   }
 
   @Override
   public int hashCode() {
     final int prime = 31;
     int result = super.hashCode();
-    result = prime * result + ((minuend == null) ? 0 : minuend.hashCode());
+    result = prime * result + ((innerQuery == null) ? 0 : innerQuery.hashCode());
     result = prime * result
         + ((subtrahend == null) ? 0 : subtrahend.hashCode());
     return result;
@@ -345,9 +194,9 @@ public final class NonOverlappingQuery extends Query implements Cloneable {
     if (!super.equals(obj)) return false;
     if (getClass() != obj.getClass()) return false;
     NonOverlappingQuery other = (NonOverlappingQuery) obj;
-    if (minuend == null) {
-      if (other.minuend != null) return false;
-    } else if (!minuend.equals(other.minuend)) return false;
+    if (innerQuery == null) {
+      if (other.innerQuery != null) return false;
+    } else if (!innerQuery.equals(other.innerQuery)) return false;
     if (subtrahend == null) {
       if (other.subtrahend != null) return false;
     } else if (!subtrahend.equals(other.subtrahend)) return false;

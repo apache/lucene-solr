@@ -72,7 +72,7 @@ public class ScorerFilterQuery extends Query {
 
   public class ScorerFilterWeight extends Weight {
 
-    private final Weight innerWeight;
+    protected final Weight innerWeight;
     private final Similarity similarity;
     private final Similarity.SimWeight stats;
 
