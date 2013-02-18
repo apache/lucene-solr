@@ -178,7 +178,7 @@ Other Changes
 
 * SOLR-4384: Make post.jar report timing information (Upayavira via janhoy)
 
-* SOLR-4414: Add 'state' to shards (default to 'active') and read/write them to
+* SOLR-4415: Add 'state' to shards (default to 'active') and read/write them to
   ZooKeeper (Anshum Gupta via shalin)
 
 ==================  4.1.0 ==================
