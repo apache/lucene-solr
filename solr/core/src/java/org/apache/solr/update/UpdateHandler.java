@@ -96,7 +96,8 @@ public abstract class UpdateHandler implements SolrInfoMBean {
         File f = new File(tlogDir, file);
         boolean s = f.delete();
         if (!s) {
-          throw new SolrException(ErrorCode.SERVER_ERROR, "Could not remove tlog file:" + f.getAbsolutePath());
+          log.error("Could not remove tlog file:" + f.getAbsolutePath());
+          //throw new SolrException(ErrorCode.SERVER_ERROR, "Could not remove tlog file:" + f.getAbsolutePath());
         }
       }
     }
