@@ -35,7 +35,7 @@ import org.junit.BeforeClass;
  * limitations under the License.
  */
 
-public class FacetTestCase extends LuceneTestCase {
+public abstract class FacetTestCase extends LuceneTestCase {
   
   private static final IntEncoder[] ENCODERS = new IntEncoder[] {
     new SortingIntEncoder(new UniqueValuesIntEncoder(new VInt8IntEncoder())),
