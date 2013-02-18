@@ -610,13 +610,17 @@ public class CoreAdminHandler extends RequestHandlerBase {
       }
       if (params.getBool(CoreAdminParams.DELETE_INDEX, false)) {
         core.addCloseHook(new CloseHook() {
+          private String indexDir;
+          
           @Override
-          public void preClose(SolrCore core) {}
+          public void preClose(SolrCore core) {
+            indexDir = core.getIndexDir();
+          }
           
           @Override
           public void postClose(SolrCore core) {
             try {
-              core.getDirectoryFactory().remove(core.getIndexDir());
+              core.getDirectoryFactory().remove(indexDir);
             } catch (IOException e) {
               throw new RuntimeException(e);
             }
@@ -1026,11 +1030,8 @@ public class CoreAdminHandler extends RequestHandlerBase {
     Directory dir;
     long size = 0;
     try {
-      if (!core.getDirectoryFactory().exists(core.getIndexDir())) {
-        dir = core.getDirectoryFactory().get(core.getNewIndexDir(), DirContext.DEFAULT, core.getSolrConfig().indexConfig.lockType);
-      } else {
-        dir = core.getDirectoryFactory().get(core.getIndexDir(), DirContext.DEFAULT, core.getSolrConfig().indexConfig.lockType); 
-      }
+
+      dir = core.getDirectoryFactory().get(core.getIndexDir(), DirContext.DEFAULT, core.getSolrConfig().indexConfig.lockType); 
 
       try {
         size = DirectoryFactory.sizeOfDirectory(dir);

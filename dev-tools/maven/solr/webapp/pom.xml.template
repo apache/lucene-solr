@@ -33,8 +33,8 @@
   <description>Apache Solr Search Server</description>
   <properties>
     <module-directory>solr/webapp</module-directory>
-    <top-level>../../..</top-level>
-    <module-path>${top-level}/${module-directory}</module-path>
+    <relative-top-level>../../..</relative-top-level>
+    <module-path>${relative-top-level}/${module-directory}</module-path>
   </properties>
   <scm>
     <connection>scm:svn:${vc-anonymous-base-url}/${module-directory}</connection>
@@ -113,6 +113,20 @@
             </systemProperty>
           </systemProperties>
         </configuration>
+      </plugin>
+      <plugin>
+        <groupId>de.thetaphi</groupId>
+        <artifactId>forbiddenapis</artifactId>
+        <executions>
+          <execution>
+            <id>solr-check-forbidden-executors-and-jdk-unsafe-and-deprecated</id>
+            <phase>none</phase> <!-- Block inherited execution -->
+          </execution>
+          <execution>
+            <id>solr-test-check-forbidden-test-apis-and-jdk-unsafe-and-deprecated</id>
+            <phase>none</phase> <!-- Block inherited execution -->
+          </execution>
+        </executions>
       </plugin>
     </plugins>
   </build>

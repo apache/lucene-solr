@@ -33,8 +33,8 @@
   <description>Apache Solr Core</description>
   <properties>
     <module-directory>solr/core</module-directory>
-    <top-level>../../../../..</top-level>
-    <module-path>${top-level}/${module-directory}/src/java</module-path>
+    <relative-top-level>../../../../..</relative-top-level>
+    <module-path>${relative-top-level}/${module-directory}/src/java</module-path>
   </properties>
   <scm>
     <connection>scm:svn:${vc-anonymous-base-url}/${module-directory}</connection>
@@ -215,6 +215,39 @@
         <configuration>
           <skip>true</skip> <!-- This skips test compilation - tests are run from solr-core-tests module -->
         </configuration>
+      </plugin>
+      <plugin>
+        <groupId>de.thetaphi</groupId>
+        <artifactId>forbiddenapis</artifactId>
+        <executions>
+          <execution>
+            <id>solr-check-forbidden-executors-and-jdk-unsafe-and-deprecated</id>
+            <phase>none</phase> <!-- Block inherited execution -->
+          </execution>
+          <execution>
+            <id>solr-test-check-forbidden-test-apis-and-jdk-unsafe-and-deprecated</id>
+            <phase>none</phase> <!-- Block inherited execution -->
+          </execution>
+          <execution>
+            <id>check-forbidden-executors-and-servlet-api-and-jdk-unsafe-and-deprecated-and-commons-io-unsafe</id>
+            <configuration>
+              <!-- disallow undocumented classes like sun.misc.Unsafe: -->
+              <internalRuntimeForbidden>true</internalRuntimeForbidden>
+              <bundledSignatures>
+                <bundledSignature>jdk-unsafe</bundledSignature>
+                <bundledSignature>jdk-deprecated</bundledSignature>
+                <bundledSignature>commons-io-unsafe-${commons-io.version}</bundledSignature>
+              </bundledSignatures>
+              <signaturesFiles>
+                <signaturesFile>${top-level}/lucene/tools/forbiddenApis/executors.txt</signaturesFile>
+                <signaturesFile>${top-level}/lucene/tools/forbiddenApis/servlet-api.txt</signaturesFile>
+              </signaturesFiles>
+            </configuration>
+            <goals>
+              <goal>check</goal>
+            </goals>
+          </execution>
+        </executions>
       </plugin>
     </plugins>
   </build>

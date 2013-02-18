@@ -84,7 +84,7 @@ public class TestReplicationHandler extends SolrTestCaseJ4 {
 
 
   @Before
-  public void setup() throws Exception {
+  public void setUp() throws Exception {
     super.setUp();
     // For manual testing only
     // useFactory(null); // force an FS factory

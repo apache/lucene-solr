@@ -100,7 +100,7 @@ public abstract class BaseDistributedSearchTestCase extends SolrTestCaseJ4 {
         hostContext.append("_");
       }
       hostContext.append(_TestUtil.randomSimpleString(random(), 3));
-      if ( ! "/".equals(hostContext)) {
+      if ( ! "/".equals(hostContext.toString())) {
         // if our random string is empty, this might add a trailing slash, 
         // but our code should be ok with that
         hostContext.append("/").append(_TestUtil.randomSimpleString(random(), 2));

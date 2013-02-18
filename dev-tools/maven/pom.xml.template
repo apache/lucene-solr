@@ -38,7 +38,6 @@
     <module>solr</module>
   </modules>
   <properties>
-    <top-level>..</top-level>
     <vc-anonymous-base-url>http://svn.apache.org/repos/asf/lucene/dev/trunk</vc-anonymous-base-url>
     <vc-dev-base-url>https://svn.apache.org/repos/asf/lucene/dev/trunk</vc-dev-base-url>
     <vc-browse-base-url>http://svn.apache.org/viewvc/lucene/dev/trunk</vc-browse-base-url>
@@ -49,6 +48,7 @@
     <slf4j.version>1.6.4</slf4j.version>
     <tika.version>1.2</tika.version>
     <httpcomponents.version>4.2.3</httpcomponents.version>
+    <commons-io.version>2.1</commons-io.version>
 
     <!-- RandomizedTesting library system properties -->
     <tests.iters>1</tests.iters>
@@ -178,7 +178,7 @@
       <dependency>
         <groupId>commons-io</groupId>
         <artifactId>commons-io</artifactId>
-        <version>2.1</version>
+        <version>${commons-io.version}</version>
       </dependency>
       <dependency>
         <groupId>org.apache.httpcomponents</groupId>
@@ -459,6 +459,19 @@
     <pluginManagement>
       <plugins>
         <plugin>
+          <groupId>de.thetaphi</groupId>
+          <artifactId>forbiddenapis</artifactId>
+          <version>1.2</version>
+          <configuration>
+            <!--
+              This is the default setting, we don't support Java 8 at the moment.
+              The checker simply passes by default and only prints a warning.
+             -->
+            <failOnUnsupportedJava>false</failOnUnsupportedJava>
+            <targetVersion>${java.compat.version}</targetVersion>
+          </configuration>
+        </plugin>
+        <plugin>
           <groupId>org.apache.maven.plugins</groupId>
           <artifactId>maven-antrun-plugin</artifactId>
           <version>1.7</version>
@@ -626,7 +639,7 @@
         <artifactId>gmaven-plugin</artifactId>
         <executions>
           <execution>
-            <id>generate-timestamps</id>
+            <id>generate-timestamps-and-get-top-level-basedir</id>
             <phase>validate</phase>
             <goals>
               <goal>execute</goal>
@@ -636,6 +649,7 @@
                 project.properties['now.timestamp'] = "${maven.build.timestamp}"
                 project.properties['now.version'] = ("${maven.build.timestamp}" =~ /[- :]/).replaceAll(".")
                 project.properties['now.year'] = "${maven.build.timestamp}".substring(0, 4)
+                project.properties['top-level'] = (project.basedir.getAbsolutePath() =~ /[\\\\\/]maven-build.*/).replaceAll("")
               </source>
             </configuration>
           </execution>
@@ -680,8 +694,8 @@
                   <message>Maven 2.2.1+ is required.</message>
                   <version>[2.2.1,)</version>
                 </requireMavenVersion>
-                <requirePluginVersions/>           
-              </rules>    
+                <requirePluginVersions/>
+              </rules>
             </configuration>
           </execution>
         </executions>

@@ -24,8 +24,10 @@ import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 
 import org.apache.lucene.analysis.MockAnalyzer;
+import org.apache.lucene.codecs.lucene41.Lucene41PostingsFormat;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
+import org.apache.lucene.document.StringField;
 import org.apache.lucene.document.TextField;
 import org.apache.lucene.index.IndexWriterConfig.OpenMode;
 import org.apache.lucene.store.Directory;
@@ -343,14 +345,20 @@ public class TestConcurrentMergeScheduler extends LuceneTestCase {
 
   public void testTotalBytesSize() throws Exception {
     Directory d = newDirectory();
+    if (d instanceof MockDirectoryWrapper) {
+      ((MockDirectoryWrapper)d).setThrottling(MockDirectoryWrapper.Throttling.NEVER);
+    }
     IndexWriterConfig iwc = newIndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer(random()));
     iwc.setMaxBufferedDocs(5);
     iwc.setMergeScheduler(new TrackingCMS());
-    RandomIndexWriter w = new RandomIndexWriter(random(), d);
-    for(int i=0;i<100000;i++) {
+    if (_TestUtil.getPostingsFormat("id").equals("SimpleText")) {
+      // no
+      iwc.setCodec(_TestUtil.alwaysPostingsFormat(new Lucene41PostingsFormat()));
+    }
+    RandomIndexWriter w = new RandomIndexWriter(random(), d, iwc);
+    for(int i=0;i<1000;i++) {
       Document doc = new Document();
-      doc.add(newStringField("id", ""+i, Field.Store.NO));
-      doc.add(newTextField("field", "here is some text", Field.Store.NO));
+      doc.add(new StringField("id", ""+i, Field.Store.NO));
       w.addDocument(doc);
 
       if (random().nextBoolean()) {
