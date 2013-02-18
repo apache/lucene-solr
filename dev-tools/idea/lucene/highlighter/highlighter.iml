@@ -14,6 +14,7 @@
     <orderEntry type="module" scope="TEST" module-name="lucene-test-framework" />
     <orderEntry type="module" module-name="memory" />
     <orderEntry type="module" module-name="misc" />
+    <orderEntry type="module" module-name="queries" />
     <orderEntry type="module" module-name="lucene-core" />
   </component>
 </module>
