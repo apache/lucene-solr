@@ -19,7 +19,7 @@ package org.apache.lucene.search.highlight.positions;
 
 import java.io.IOException;
 
-import org.apache.lucene.search.intervals.Interval;
+import org.apache.lucene.search.posfilter.Interval;
 import org.apache.lucene.search.intervals.IntervalCollector;
 import org.apache.lucene.search.intervals.IntervalIterator;
 

@@ -1,4 +1,4 @@
-package org.apache.lucene.search.intervals;
+package org.apache.lucene.search.posfilter;
 /**
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
@@ -20,6 +20,9 @@ import org.apache.lucene.document.Document;
 import org.apache.lucene.document.TextField;
 import org.apache.lucene.index.RandomIndexWriter;
 import org.apache.lucene.search.Query;
+import org.apache.lucene.search.posfilter.NonOverlappingQuery;
+import org.apache.lucene.search.posfilter.OrderedNearQuery;
+import org.apache.lucene.search.posfilter.UnorderedNearQuery;
 
 import java.io.IOException;
 

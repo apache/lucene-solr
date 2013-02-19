@@ -2,7 +2,7 @@ package org.apache.lucene.search;
 
 import org.apache.lucene.index.AtomicReaderContext;
 import org.apache.lucene.index.DocsEnum;
-import org.apache.lucene.search.intervals.Interval;
+import org.apache.lucene.search.posfilter.Interval;
 
 import java.io.IOException;
 import java.util.ArrayList;

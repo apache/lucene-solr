@@ -1,4 +1,4 @@
-package org.apache.lucene.search.intervals;
+package org.apache.lucene.search.posfilter;
 
 /*
  * Licensed to the Apache Software Foundation (ASF) under one or more
@@ -17,11 +17,8 @@ package org.apache.lucene.search.intervals;
  * limitations under the License.
  */
 
-import org.apache.lucene.search.PositionFilteredScorer;
 import org.apache.lucene.search.Query;
 import org.apache.lucene.search.Scorer;
-import org.apache.lucene.search.ScorerFilterQuery;
-import org.apache.lucene.search.WithinFilteredScorer;
 
 import java.io.IOException;
 
@@ -39,7 +36,7 @@ import java.io.IOException;
  * @lucene.experimental
  */
 
-public class OrderedNearQuery extends ScorerFilterQuery {
+public class OrderedNearQuery extends PositionFilterQuery {
 
   /**
    * Constructs an OrderedNearQuery

@@ -17,11 +17,12 @@ package org.apache.lucene.search.intervals;
  * limitations under the License.
  */
 import org.apache.lucene.search.Scorer;
+import org.apache.lucene.search.posfilter.Interval;
 
 import java.io.IOException;
 
 /**
- * Iterator over the matching {@link Interval}s of a {@link Scorer}
+ * Iterator over the matching {@link org.apache.lucene.search.posfilter.Interval}s of a {@link Scorer}
  *
  * @lucene.experimental
  */

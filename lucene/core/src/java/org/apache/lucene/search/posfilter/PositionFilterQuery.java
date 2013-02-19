@@ -1,4 +1,4 @@
-package org.apache.lucene.search;
+package org.apache.lucene.search.posfilter;
 
 /*
  * Licensed to the Apache Software Foundation (ASF) under one or more
@@ -21,6 +21,15 @@ import org.apache.lucene.index.AtomicReaderContext;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.Term;
 import org.apache.lucene.index.TermContext;
+import org.apache.lucene.search.BooleanClause;
+import org.apache.lucene.search.BooleanQuery;
+import org.apache.lucene.search.ComplexExplanation;
+import org.apache.lucene.search.Explanation;
+import org.apache.lucene.search.IndexSearcher;
+import org.apache.lucene.search.Query;
+import org.apache.lucene.search.Scorer;
+import org.apache.lucene.search.TermStatistics;
+import org.apache.lucene.search.Weight;
 import org.apache.lucene.search.similarities.Similarity;
 import org.apache.lucene.util.Bits;
 
@@ -28,12 +37,12 @@ import java.io.IOException;
 import java.util.Set;
 import java.util.TreeSet;
 
-public class ScorerFilterQuery extends Query {
+public class PositionFilterQuery extends Query {
 
   protected final Query innerQuery;
   protected final ScorerFilterFactory scorerFilterFactory;
 
-  public ScorerFilterQuery(Query innerQuery, ScorerFilterFactory scorerFilterFactory) {
+  public PositionFilterQuery(Query innerQuery, ScorerFilterFactory scorerFilterFactory) {
     this.innerQuery = innerQuery;
     this.scorerFilterFactory = scorerFilterFactory;
   }
@@ -55,7 +64,7 @@ public class ScorerFilterQuery extends Query {
   public Query rewrite(IndexReader reader) throws IOException {
     Query rewritten =  innerQuery.rewrite(reader);
     if (rewritten != innerQuery) {
-      return new ScorerFilterQuery(rewritten, scorerFilterFactory);
+      return new PositionFilterQuery(rewritten, scorerFilterFactory);
     }
     return this;
   }
@@ -123,7 +132,7 @@ public class ScorerFilterQuery extends Query {
 
     @Override
     public Query getQuery() {
-      return ScorerFilterQuery.this;
+      return PositionFilterQuery.this;
     }
 
     @Override

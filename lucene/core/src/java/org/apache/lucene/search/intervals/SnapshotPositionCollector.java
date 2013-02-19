@@ -18,6 +18,7 @@ package org.apache.lucene.search.intervals;
  */
 
 import org.apache.lucene.search.Scorer;
+import org.apache.lucene.search.posfilter.Interval;
 import org.apache.lucene.util.ArrayUtil;
 import org.apache.lucene.util.RamUsageEstimator;
 

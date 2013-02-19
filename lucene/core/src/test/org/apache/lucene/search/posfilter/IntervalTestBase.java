@@ -1,4 +1,4 @@
-package org.apache.lucene.search.intervals;
+package org.apache.lucene.search.posfilter;
 
 import org.apache.lucene.analysis.MockAnalyzer;
 import org.apache.lucene.codecs.Codec;
@@ -14,6 +14,7 @@ import org.apache.lucene.search.PositionsCollector;
 import org.apache.lucene.search.Query;
 import org.apache.lucene.search.TermQuery;
 import org.apache.lucene.search.TopDocs;
+import org.apache.lucene.search.posfilter.Interval;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.util.LuceneTestCase;
 import org.junit.After;

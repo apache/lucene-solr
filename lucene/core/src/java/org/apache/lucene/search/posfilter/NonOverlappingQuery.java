@@ -1,4 +1,4 @@
-package org.apache.lucene.search.intervals;
+package org.apache.lucene.search.posfilter;
 
 /*
  * Licensed to the Apache Software Foundation (ASF) under one or more
@@ -21,10 +21,8 @@ import org.apache.lucene.index.AtomicReaderContext;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.Term;
 import org.apache.lucene.search.IndexSearcher;
-import org.apache.lucene.search.PositionFilteredScorer;
 import org.apache.lucene.search.Query;
 import org.apache.lucene.search.Scorer;
-import org.apache.lucene.search.ScorerFilterQuery;
 import org.apache.lucene.search.Weight;
 import org.apache.lucene.util.Bits;
 
@@ -60,9 +58,9 @@ import java.util.Set;
  * >"Efficient Optimally Lazy Algorithms for Minimal-Interval Semantics"</a>
  *
  * @lucene.experimental
- * @see BrouwerianIntervalIterator
+ * @see org.apache.lucene.search.intervals.BrouwerianIntervalIterator
  */
-public final class NonOverlappingQuery extends ScorerFilterQuery {
+public final class NonOverlappingQuery extends PositionFilterQuery {
 
   private Query subtrahend;
 

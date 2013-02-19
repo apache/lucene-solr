@@ -1,4 +1,4 @@
-package org.apache.lucene.search.intervals;
+package org.apache.lucene.search.posfilter;
 
 /*
  * Licensed to the Apache Software Foundation (ASF) under one or more
@@ -23,6 +23,8 @@ import org.apache.lucene.index.RandomIndexWriter;
 import org.apache.lucene.search.BooleanClause;
 import org.apache.lucene.search.BooleanQuery;
 import org.apache.lucene.search.Query;
+import org.apache.lucene.search.posfilter.OrderedNearQuery;
+import org.apache.lucene.search.posfilter.UnorderedNearQuery;
 
 import java.io.IOException;
 

@@ -1,9 +1,7 @@
-package org.apache.lucene.search.intervals;
+package org.apache.lucene.search.posfilter;
 
-import org.apache.lucene.search.PositionFilteredScorer;
 import org.apache.lucene.search.Query;
 import org.apache.lucene.search.Scorer;
-import org.apache.lucene.search.ScorerFilterQuery;
 
 import java.io.IOException;
 
@@ -23,7 +21,7 @@ import java.io.IOException;
  * limitations under the License.
  */
 
-public class RangeFilterQuery extends ScorerFilterQuery {
+public class RangeFilterQuery extends PositionFilterQuery {
 
   public RangeFilterQuery(int start, int end, Query innerQuery) {
     super(innerQuery, new RangeFilterScorerFactory(start, end));

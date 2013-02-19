@@ -1,4 +1,4 @@
-package org.apache.lucene.search.intervals;
+package org.apache.lucene.search.posfilter;
 
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.TextField;

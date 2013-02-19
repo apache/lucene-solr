@@ -1,4 +1,4 @@
-package org.apache.lucene.search;
+package org.apache.lucene.search.posfilter;
 
 /*
  * Licensed to the Apache Software Foundation (ASF) under one or more
@@ -17,7 +17,8 @@ package org.apache.lucene.search;
  * limitations under the License.
  */
 
-import org.apache.lucene.search.intervals.Interval;
+import org.apache.lucene.search.Scorer;
+import org.apache.lucene.search.posfilter.Interval;
 
 import java.io.IOException;
 

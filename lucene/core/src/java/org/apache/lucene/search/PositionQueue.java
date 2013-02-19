@@ -1,7 +1,7 @@
 package org.apache.lucene.search;
 
 import org.apache.lucene.index.DocsEnum;
-import org.apache.lucene.search.intervals.Interval;
+import org.apache.lucene.search.posfilter.Interval;
 import org.apache.lucene.util.PriorityQueue;
 
 import java.io.IOException;

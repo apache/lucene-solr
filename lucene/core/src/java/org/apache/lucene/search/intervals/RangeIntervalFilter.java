@@ -16,6 +16,8 @@ package org.apache.lucene.search.intervals;
  * limitations under the License.
  */
 
+import org.apache.lucene.search.posfilter.Interval;
+
 import java.io.IOException;
 
 /**

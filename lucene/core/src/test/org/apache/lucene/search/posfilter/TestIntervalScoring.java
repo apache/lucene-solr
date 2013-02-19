@@ -1,4 +1,4 @@
-package org.apache.lucene.search.intervals;
+package org.apache.lucene.search.posfilter;
 
 /*
  * Licensed to the Apache Software Foundation (ASF) under one or more
@@ -23,6 +23,7 @@ import org.apache.lucene.index.RandomIndexWriter;
 import org.apache.lucene.index.Term;
 import org.apache.lucene.search.RegexpQuery;
 import org.apache.lucene.search.TopDocs;
+import org.apache.lucene.search.posfilter.OrderedNearQuery;
 import org.junit.Assert;
 
 import java.io.IOException;
@@ -55,7 +56,7 @@ public class TestIntervalScoring extends IntervalTestBase {
     OrderedNearQuery q = new OrderedNearQuery(10, new RegexpQuery(new Term("field", "bar.*")),
                                                   new RegexpQuery(new Term("field", "foo.*")));
     TopDocs docs = searcher.search(q, 10);
-    Assert.assertEquals(docs.totalHits, 0);
+    assertEquals(docs.totalHits, 0);
   }
 
 

@@ -32,7 +32,7 @@ import org.apache.lucene.index.RandomIndexWriter;
 import org.apache.lucene.index.Term;
 import org.apache.lucene.index.TermsEnum;
 import org.apache.lucene.search.Weight.PostingFeatures;
-import org.apache.lucene.search.intervals.Interval;
+import org.apache.lucene.search.posfilter.Interval;
 import org.apache.lucene.search.intervals.IntervalIterator;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.util.BytesRef;

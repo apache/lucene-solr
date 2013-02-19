@@ -17,6 +17,7 @@ package org.apache.lucene.search.intervals;
  * limitations under the License.
  */
 import org.apache.lucene.search.intervals.IntervalQueue.IntervalRef;
+import org.apache.lucene.search.posfilter.Interval;
 import org.apache.lucene.util.PriorityQueue;
 
 /**

@@ -22,7 +22,7 @@ import org.apache.lucene.index.AtomicReaderContext;
 import org.apache.lucene.search.Collector;
 import org.apache.lucene.search.Scorer;
 import org.apache.lucene.search.Weight.PostingFeatures;
-import org.apache.lucene.search.intervals.Interval;
+import org.apache.lucene.search.posfilter.Interval;
 import org.apache.lucene.search.intervals.IntervalCollector;
 import org.apache.lucene.search.intervals.IntervalIterator;
 

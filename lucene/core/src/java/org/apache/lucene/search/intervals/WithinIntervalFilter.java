@@ -15,6 +15,8 @@ package org.apache.lucene.search.intervals;
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+import org.apache.lucene.search.posfilter.Interval;
+
 import java.io.IOException;
 
 

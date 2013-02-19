@@ -16,6 +16,8 @@ package org.apache.lucene.search.intervals;
  * limitations under the License.
  */
 
+import org.apache.lucene.search.posfilter.Interval;
+
 /**
  * Queue class for calculating minimal spanning conjunction intervals
  * @lucene.experimental

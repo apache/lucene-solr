@@ -29,6 +29,7 @@ import org.apache.lucene.search.Scorer;
 import org.apache.lucene.search.TermStatistics;
 import org.apache.lucene.search.Weight;
 import org.apache.lucene.search.Weight.PostingFeatures;
+import org.apache.lucene.search.posfilter.Interval;
 import org.apache.lucene.search.similarities.Similarity;
 import org.apache.lucene.util.Bits;
 
@@ -40,9 +41,9 @@ import java.util.TreeSet;
  * A Query that filters the results of an inner {@link Query} using an
  * {@link IntervalFilter}.
  *
- * @see OrderedNearQuery
- * @see UnorderedNearQuery
- * @see NonOverlappingQuery
+ * @see org.apache.lucene.search.posfilter.OrderedNearQuery
+ * @see org.apache.lucene.search.posfilter.UnorderedNearQuery
+ * @see org.apache.lucene.search.posfilter.NonOverlappingQuery
  *
  * @lucene.experimental
  */

@@ -18,9 +18,10 @@ package org.apache.lucene.search.intervals;
  */
 
 import org.apache.lucene.search.Scorer;
+import org.apache.lucene.search.posfilter.Interval;
 
 /**
- * Used for collecting matching {@link Interval}s from a search
+ * Used for collecting matching {@link org.apache.lucene.search.posfilter.Interval}s from a search
  */
 public interface IntervalCollector {
 

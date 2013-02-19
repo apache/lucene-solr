@@ -1,4 +1,4 @@
-package org.apache.lucene.search.intervals;
+package org.apache.lucene.search.posfilter;
 
 /**
  * Copyright (c) 2012 Lemur Consulting Ltd.
@@ -17,12 +17,9 @@ package org.apache.lucene.search.intervals;
  */
 
 import org.apache.lucene.index.DocsEnum;
-import org.apache.lucene.search.PositionFilteredScorer;
 import org.apache.lucene.search.PositionQueue;
 import org.apache.lucene.search.Query;
 import org.apache.lucene.search.Scorer;
-import org.apache.lucene.search.ScorerFilterQuery;
-import org.apache.lucene.search.WithinFilteredScorer;
 
 import java.io.IOException;
 
@@ -40,7 +37,7 @@ import java.io.IOException;
  * @lucene.experimental
  */
 
-public class UnorderedNearQuery extends ScorerFilterQuery {
+public class UnorderedNearQuery extends PositionFilterQuery {
 
   /**
    * Constructs an OrderedNearQuery
