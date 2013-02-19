@@ -150,7 +150,7 @@ class ConjunctionTermScorer extends Scorer {
   @Override
   public Collection<ChildScorer> getChildren() {
     ArrayList<ChildScorer> children = new ArrayList<ChildScorer>(docsAndFreqs.length);
-    for (DocsAndFreqs docs : docsAndFreqs) {
+    for (DocsAndFreqs docs : origDocsAndFreqs) {
       children.add(new ChildScorer(docs.scorer, "MUST"));
     }
     return children;

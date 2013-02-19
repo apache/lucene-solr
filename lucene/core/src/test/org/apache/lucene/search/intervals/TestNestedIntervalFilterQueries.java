@@ -103,7 +103,7 @@ public class TestNestedIntervalFilterQueries extends IntervalTestBase {
     Query near2 = new OrderedNearQuery(2, makeTermQuery("w10"), makeTermQuery("w12"));
     Query near3 = new OrderedNearQuery(6, near1, near2);
     checkIntervals(near3, searcher, new int[][]{
-        { 0, 0, 11, 0, 3, 9, 11 }
+        { 0, 0, 11 }
     });
   }
 

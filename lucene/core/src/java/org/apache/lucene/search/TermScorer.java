@@ -124,7 +124,9 @@ final class TermScorer extends Scorer {
 
   /** Returns a string representation of this <code>TermScorer</code>. */
   @Override
-  public String toString() { return "scorer(" + weight + ")[" + super.toString() + "]"; }
+  public String toString() {
+    return "scorer(" + weight + ")[" + super.toString() + "]";
+  }
   
   @Override
   public IntervalIterator intervals(boolean collectIntervals) throws IOException {
