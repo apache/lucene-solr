@@ -36,7 +36,7 @@ public class SolrExampleXMLTest extends SolrExampleTests {
   @Override
   public SolrServer createNewSolrServer() {
     try {
-      String url = "http://127.0.0.1:" + port + context;
+      String url = jetty.getBaseUrl().toString();
       HttpSolrServer s = new HttpSolrServer(url);
       s.setConnectionTimeout(DEFAULT_CONNECTION_TIMEOUT);
       s.setDefaultMaxConnectionsPerHost(100);

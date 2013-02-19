@@ -157,6 +157,10 @@ Other Changes
 * SOLR-4415: Add 'state' to shards (default to 'active') and read/write them to
   ZooKeeper (Anshum Gupta via shalin)
 
+* SOLR-4394: Tests and example configs demonstrating SSL with both server 
+  and client certs (hossman)
+
+
 ==================  4.1.0 ==================
 
 Versions of Major Components

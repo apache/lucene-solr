@@ -61,6 +61,8 @@ import org.apache.solr.common.params.AnalysisParams;
 import org.apache.solr.common.params.CommonParams;
 import org.apache.solr.common.params.FacetParams;
 import org.junit.Test;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  * This should include tests against the example solr config
@@ -72,6 +74,8 @@ import org.junit.Test;
  */
 abstract public class SolrExampleTests extends SolrJettyTestBase
 {
+  private static Logger log = LoggerFactory.getLogger(SolrExampleTests.class);
+
   static {
     ignoreException("uniqueKey");
   }
