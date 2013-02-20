@@ -29,6 +29,7 @@ import org.apache.lucene.search.BooleanQuery;
 import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.search.TermQuery;
 import org.apache.lucene.search.TotalHitCountCollector;
+import org.apache.lucene.search.WildcardQuery;
 import org.apache.lucene.util.BytesRef;
 
 import java.io.IOException;
@@ -69,7 +70,18 @@ public class SimpleNaiveBayesClassifier implements Classifier<BytesRef> {
     this.textFieldName = textFieldName;
     this.classFieldName = classFieldName;
     this.analyzer = analyzer;
-    this.docsWithClassSize = MultiFields.getTerms(this.atomicReader, this.classFieldName).getDocCount();
+    this.docsWithClassSize = countDocsWithClass();
+  }
+
+  private int countDocsWithClass() throws IOException {
+    int docCount = MultiFields.getTerms(this.atomicReader, this.classFieldName).getDocCount();
+    if (docCount == -1) { // in case codec doesn't support getDocCount
+      TotalHitCountCollector totalHitCountCollector = new TotalHitCountCollector();
+      indexSearcher.search(new WildcardQuery(new Term(classFieldName, String.valueOf(WildcardQuery.WILDCARD_STRING))),
+          totalHitCountCollector);
+      docCount = totalHitCountCollector.getTotalHits();
+    }
+    return docCount;
   }
 
   private String[] tokenizeDoc(String doc) throws IOException {
