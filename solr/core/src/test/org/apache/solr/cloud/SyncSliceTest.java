@@ -188,8 +188,8 @@ public class SyncSliceTest extends AbstractFullDistribZkTestBase {
     
     waitTillRecovered();
     
-    skipServers = getRandomOtherJetty(leaderJetty, null);
-    skipServers.addAll( getRandomOtherJetty(leaderJetty, skipServers.get(0)));
+    skipServers = getRandomOtherJetty(leaderJetty, deadJetty);
+    skipServers.addAll( getRandomOtherJetty(leaderJetty, deadJetty));
     // skip list should be 
     
     //System.out.println("leader:" + leaderJetty.url);
