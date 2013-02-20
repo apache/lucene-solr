@@ -62,15 +62,15 @@ public class DataSplitterTest extends LuceneTestCase {
     ft.setStoreTermVectorOffsets(true);
     ft.setStoreTermVectorPositions(true);
 
-    Analyzer analyzer = new MockAnalyzer(new Random());
+    Analyzer analyzer = new MockAnalyzer(random());
 
     Document doc;
     for (int i = 0; i < 100; i++) {
       doc = new Document();
-      doc.add(new Field(idFieldName, new Random().toString(), ft));
-      doc.add(new Field(textFieldName, new StringBuilder(new Random().toString()).append(new Random().toString()).append(
-          new Random().toString()).toString(), ft));
-      doc.add(new Field(classFieldName, new Random().toString(), ft));
+      doc.add(new Field(idFieldName, random().toString(), ft));
+      doc.add(new Field(textFieldName, new StringBuilder(random().toString()).append(random().toString()).append(
+          random().toString()).toString(), ft));
+      doc.add(new Field(classFieldName, random().toString(), ft));
       indexWriter.addDocument(doc, analyzer);
     }
 
@@ -108,7 +108,7 @@ public class DataSplitterTest extends LuceneTestCase {
 
     try {
       DatasetSplitter datasetSplitter = new DatasetSplitter(testRatio, crossValidationRatio);
-      datasetSplitter.split(originalIndex, trainingIndex, testIndex, crossValidationIndex, new MockAnalyzer(new Random()), fieldNames);
+      datasetSplitter.split(originalIndex, trainingIndex, testIndex, crossValidationIndex, new MockAnalyzer(random()), fieldNames);
 
       assertNotNull(trainingIndex);
       assertNotNull(testIndex);
