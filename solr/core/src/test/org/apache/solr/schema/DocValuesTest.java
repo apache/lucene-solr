@@ -226,5 +226,92 @@ public class DocValuesTest extends SolrTestCaseJ4 {
         "//lst[@name='datedv']/lst[@name='1904-12-31T23:59:59.999Z']/long[@name='count'][.='8']",
         "//lst[@name='datedv']/lst[@name='1905-12-31T23:59:59.999Z']/long[@name='count'][.='8']");
   }
-
+  
+  /** Tests the ability to do basic queries (without scoring, just match-only) on
+   *  docvalues fields that are not inverted (indexed "forward" only)
+   */
+  public void testDocValuesMatch() throws Exception {
+    assertU(adoc("id", "1", "floatdv", "2", "intdv", "3", "doubledv", "4", "longdv", "5", "datedv", "1995-12-31T23:59:59.999Z", "stringdv", "b"));
+    assertU(adoc("id", "2", "floatdv", "5", "intdv", "4", "doubledv", "3", "longdv", "2", "datedv", "1997-12-31T23:59:59.999Z", "stringdv", "a"));
+    assertU(adoc("id", "3", "floatdv", "3", "intdv", "1", "doubledv", "2", "longdv", "1", "datedv", "1996-12-31T23:59:59.999Z", "stringdv", "c"));
+    assertU(adoc("id", "4", "floatdv", "3", "intdv", "1", "doubledv", "2", "longdv", "1", "datedv", "1996-12-31T23:59:59.999Z", "stringdv", "car"));
+    assertU(commit());
+    
+    // string: termquery
+    assertQ(req("q", "stringdv:car", "sort", "id asc"),
+        "//*[@numFound='1']",
+        "//result/doc[1]/str[@name='id'][.=4]"
+    );
+    
+    // string: range query
+    assertQ(req("q", "stringdv:[b TO d]", "sort", "id asc"),
+        "//*[@numFound='3']",
+        "//result/doc[1]/str[@name='id'][.=1]",
+        "//result/doc[2]/str[@name='id'][.=3]",
+        "//result/doc[3]/str[@name='id'][.=4]"
+    );
+    
+    // string: prefix query
+    assertQ(req("q", "stringdv:c*", "sort", "id asc"),
+        "//*[@numFound='2']",
+        "//result/doc[1]/str[@name='id'][.=3]",
+        "//result/doc[2]/str[@name='id'][.=4]"
+    );
+    
+    // string: wildcard query
+    assertQ(req("q", "stringdv:c?r", "sort", "id asc"),
+        "//*[@numFound='1']",
+        "//result/doc[1]/str[@name='id'][.=4]"
+    );
+    
+    // string: regexp query
+    assertQ(req("q", "stringdv:/c[a-b]r/", "sort", "id asc"),
+        "//*[@numFound='1']",
+        "//result/doc[1]/str[@name='id'][.=4]"
+    );
+    
+    // float: termquery
+    assertQ(req("q", "floatdv:3", "sort", "id asc"),
+        "//*[@numFound='2']",
+        "//result/doc[1]/str[@name='id'][.=3]",
+        "//result/doc[2]/str[@name='id'][.=4]"
+    );
+    
+    // float: rangequery
+    assertQ(req("q", "floatdv:[2 TO 3]", "sort", "id asc"),
+        "//*[@numFound='3']",
+        "//result/doc[1]/str[@name='id'][.=1]",
+        "//result/doc[2]/str[@name='id'][.=3]",
+        "//result/doc[3]/str[@name='id'][.=4]"
+    );
+    
+    // int: termquery
+    assertQ(req("q", "intdv:1", "sort", "id asc"),
+        "//*[@numFound='2']",
+        "//result/doc[1]/str[@name='id'][.=3]",
+        "//result/doc[2]/str[@name='id'][.=4]"
+    );
+    
+    // int: rangequery
+    assertQ(req("q", "intdv:[3 TO 4]", "sort", "id asc"),
+        "//*[@numFound='2']",
+        "//result/doc[1]/str[@name='id'][.=1]",
+        "//result/doc[2]/str[@name='id'][.=2]"
+    );
+    
+    // long: termquery
+    assertQ(req("q", "longdv:1", "sort", "id asc"),
+        "//*[@numFound='2']",
+        "//result/doc[1]/str[@name='id'][.=3]",
+        "//result/doc[2]/str[@name='id'][.=4]"
+    );
+    
+    // long: rangequery
+    assertQ(req("q", "longdv:[1 TO 2]", "sort", "id asc"),
+        "//*[@numFound='3']",
+        "//result/doc[1]/str[@name='id'][.=2]",
+        "//result/doc[2]/str[@name='id'][.=3]",
+        "//result/doc[3]/str[@name='id'][.=4]"
+    );
+  }
 }

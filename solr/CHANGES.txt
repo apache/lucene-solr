@@ -75,6 +75,9 @@ New Features
 
 * SOLR-4417: Reopen the IndexWriter on SolrCore reload. (Mark Miller)
 
+* SOLR-4477: Add support for queries (match-only) against docvalues fields. 
+  (Robert Muir)
+
 Bug Fixes
 ----------------------
 

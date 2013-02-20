@@ -626,7 +626,8 @@ public abstract class SolrQueryParserBase {
    */
   protected Query newPrefixQuery(Term prefix){
     PrefixQuery query = new PrefixQuery(prefix);
-    query.setRewriteMethod(multiTermRewriteMethod);
+    SchemaField sf = schema.getField(prefix.field());
+    query.setRewriteMethod(sf.getType().getRewriteMethod(parser, sf));
     return query;
   }
 
@@ -637,7 +638,8 @@ public abstract class SolrQueryParserBase {
    */
   protected Query newRegexpQuery(Term regexp) {
     RegexpQuery query = new RegexpQuery(regexp);
-    query.setRewriteMethod(multiTermRewriteMethod);
+    SchemaField sf = schema.getField(regexp.field());
+    query.setRewriteMethod(sf.getType().getRewriteMethod(parser, sf));
     return query;
   }
 
@@ -671,7 +673,8 @@ public abstract class SolrQueryParserBase {
    */
   protected Query newWildcardQuery(Term t) {
     WildcardQuery query = new WildcardQuery(t);
-    query.setRewriteMethod(multiTermRewriteMethod);
+    SchemaField sf = schema.getField(t.field());
+    query.setRewriteMethod(sf.getType().getRewriteMethod(parser, sf));
     return query;
   }
 
@@ -934,7 +937,7 @@ public abstract class SolrQueryParserBase {
     if (sf != null) {
       FieldType ft = sf.getType();
       // delegate to type for everything except tokenized fields
-      if (ft.isTokenized()) {
+      if (ft.isTokenized() && sf.indexed()) {
         return newFieldQuery(analyzer, field, queryText, quoted || (ft instanceof TextField && ((TextField)ft).getAutoGeneratePhraseQueries()));
       } else {
         return sf.getType().getFieldQuery(parser, sf, queryText);

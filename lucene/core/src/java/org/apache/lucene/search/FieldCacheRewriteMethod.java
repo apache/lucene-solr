@@ -33,11 +33,7 @@ import org.apache.lucene.util.OpenBitSet;
 /**
  * Rewrites MultiTermQueries into a filter, using the FieldCache for term enumeration.
  * <p>
- * WARNING: This is only appropriate for single-valued unanalyzed fields. Additionally, for 
- * most queries this method is actually SLOWER than using the default CONSTANT_SCORE_AUTO 
- * in MultiTermQuery. This method is only faster than other methods for certain queries,
- * such as ones that enumerate many terms.
- * 
+ * This can be used to perform these queries against an unindexed docvalues field.
  * @lucene.experimental
  */
 public final class FieldCacheRewriteMethod extends MultiTermQuery.RewriteMethod {

@@ -34,6 +34,11 @@ import org.apache.lucene.index.FieldInfo.IndexOptions;
 import org.apache.lucene.index.StorableField;
 import org.apache.lucene.index.Term;
 import org.apache.lucene.queries.function.ValueSource;
+import org.apache.lucene.search.ConstantScoreQuery;
+import org.apache.lucene.search.FieldCacheRangeFilter;
+import org.apache.lucene.search.FieldCacheRewriteMethod;
+import org.apache.lucene.search.FieldCacheTermsFilter;
+import org.apache.lucene.search.MultiTermQuery;
 import org.apache.lucene.search.Query;
 import org.apache.lucene.search.SortField;
 import org.apache.lucene.search.TermQuery;
@@ -592,11 +597,21 @@ public abstract class FieldType extends FieldProperties {
    */
   public Query getRangeQuery(QParser parser, SchemaField field, String part1, String part2, boolean minInclusive, boolean maxInclusive) {
     // constant score mode is now enabled per default
-    return TermRangeQuery.newStringRange(
+    if (field.hasDocValues() && !field.indexed()) {
+      return new ConstantScoreQuery(FieldCacheRangeFilter.newStringRange(
+            field.getName(), 
+            part1 == null ? null : toInternal(part1),
+            part2 == null ? null : toInternal(part2),
+            minInclusive, maxInclusive));
+    } else {
+      MultiTermQuery rangeQuery = TermRangeQuery.newStringRange(
             field.getName(),
             part1 == null ? null : toInternal(part1),
             part2 == null ? null : toInternal(part2),
             minInclusive, maxInclusive);
+      rangeQuery.setRewriteMethod(getRewriteMethod(parser, field));
+      return rangeQuery;
+    }
   }
 
   /**
@@ -610,7 +625,26 @@ public abstract class FieldType extends FieldProperties {
   public Query getFieldQuery(QParser parser, SchemaField field, String externalVal) {
     BytesRef br = new BytesRef();
     readableToIndexed(externalVal, br);
-    return new TermQuery(new Term(field.getName(), br));
+    if (field.hasDocValues() && !field.indexed()) {
+      // match-only
+      return new ConstantScoreQuery(new FieldCacheTermsFilter(field.getName(), br));
+    } else {
+      return new TermQuery(new Term(field.getName(), br));
+    }
+  }
+  
+  /**
+   * Expert: Returns the rewrite method for multiterm queries such as wildcards.
+   * @param parser The {@link org.apache.solr.search.QParser} calling the method
+   * @param field The {@link org.apache.solr.schema.SchemaField} of the field to search
+   * @return A suitable rewrite method for rewriting multi-term queries to primitive queries.
+   */
+  public MultiTermQuery.RewriteMethod getRewriteMethod(QParser parser, SchemaField field) {
+    if (!field.indexed() && field.hasDocValues()) {
+      return new FieldCacheRewriteMethod();
+    } else {
+      return MultiTermQuery.CONSTANT_SCORE_AUTO_REWRITE_DEFAULT;
+    }
   }
 
   /**
