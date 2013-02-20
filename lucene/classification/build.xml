@@ -39,7 +39,6 @@
     <path refid="test.base.classpath"/>
   </path>
 
-  <target name="dist-maven" depends="dist-maven-src-java"/>
   <target name="compile-core" depends="jar-queries,jar-analyzers-common,common.compile-core" />
 
   <target name="jar-core" depends="common.jar-core" />
