@@ -113,14 +113,14 @@ public class UnloadDistributedZkTest extends BasicDistributedZkTest {
     
     // there should be only one shard
     Slice shard2 = getCommonCloudSolrServer().getZkStateReader().getClusterState().getSlice(collection, "shard2");
-    long timeoutAt = System.currentTimeMillis() + 30000;
+    long timeoutAt = System.currentTimeMillis() + 45000;
     while (shard2 != null) {
       if (System.currentTimeMillis() > timeoutAt) {
         printLayout();
         fail("Still found shard");
       }
       
-      Thread.sleep(50);
+      Thread.sleep(1000);
       shard2 = getCommonCloudSolrServer().getZkStateReader().getClusterState().getSlice(collection, "shard2");
     }
 
