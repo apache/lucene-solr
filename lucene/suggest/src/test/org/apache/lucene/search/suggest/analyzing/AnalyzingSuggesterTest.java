@@ -430,7 +430,7 @@ public class AnalyzingSuggesterTest extends LuceneTestCase {
     }
   }
   
-  // Holds surface form seperately:
+  // Holds surface form separately:
   private static class TermFreq2 implements Comparable<TermFreq2> {
     public final String surfaceForm;
     public final String analyzedForm;

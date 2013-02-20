@@ -562,7 +562,7 @@ public final class LengthFilter extends FilteringTokenFilter {
   CharTermAttribute, the length of the term can be determined and tokens that
   are either too short or too long are skipped.  Note how
   <code>accept()</code> can efficiently access the instance variable; no 
-  attribute lookup is neccessary. The same is true for the consumer, which can
+  attribute lookup is necessary. The same is true for the consumer, which can
   simply use local references to the Attributes.
 </p>
 <p>
@@ -791,7 +791,7 @@ API: Noun
 </pre>
 Each word is now followed by its assigned PartOfSpeech tag. Of course this is a naive 
 part-of-speech tagging. The word 'This' should not even be tagged as noun; it is only spelled capitalized because it
-is the first word of a sentence. Actually this is a good opportunity for an excerise. To practice the usage of the new
+is the first word of a sentence. Actually this is a good opportunity for an exercise. To practice the usage of the new
 API the reader could now write an Attribute and TokenFilter that can specify for each word if it was the first token
 of a sentence or not. Then the PartOfSpeechTaggingFilter can make use of this knowledge and only tag capitalized words
 as nouns if not the first word of a sentence (we know, this is still not a correct behavior, but hey, it's a good exercise). 

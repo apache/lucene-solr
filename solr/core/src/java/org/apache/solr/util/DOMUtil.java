@@ -42,7 +42,7 @@ public class DOMUtil {
     outer: for (int j=0; j<attrs.getLength(); j++) {
       Node attr = attrs.item(j);
 
-      // automaticly exclude things in the xml namespace, ie: xml:base
+      // automatically exclude things in the xml namespace, ie: xml:base
       if (XML_RESERVED_PREFIX.equals(attr.getPrefix())) continue outer;
 
       String attrName = attr.getNodeName();
@@ -234,7 +234,7 @@ public class DOMUtil {
          according to the DOM Level-3 Core documentation - which
          specifies that the Attr's children should have their
          textContent concated (Attr's can have a single child which
-         is either Text node or an EntityRefrence).  In practice,
+         is either Text node or an EntityReference).  In practice,
          DOM implementations do not seem to use child nodes of
          Attributes, storing the "text" directly as the nodeValue.
          Fortunately, the DOM Spec indicates that when Attr.nodeValue

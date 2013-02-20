@@ -96,7 +96,7 @@ public abstract class LogMergePolicy extends MergePolicy {
    *  will never be merged. */
   protected int maxMergeDocs = DEFAULT_MAX_MERGE_DOCS;
 
-  /** If the size of the merge segment exceesd this ratio of
+  /** If the size of the merge segment exceeds this ratio of
    *  the total index size then it will remain in
    *  non-compound format even if {@link
    *  #setUseCompoundFile} is {@code true}. */
@@ -421,7 +421,7 @@ public abstract class LogMergePolicy extends MergePolicy {
     }
 
     // If the segments are already merged (e.g. there's only 1 segment), or
-    // there are <maxNumSegements:.
+    // there are <maxNumSegments:.
     if (isMerged(infos, maxNumSegments, segmentsToMerge)) {
       if (verbose()) {
         message("already merged; skip");

@@ -1180,7 +1180,7 @@ public class DistributedUpdateProcessor extends UpdateRequestProcessor {
   }
 
   /**
-   * Returns a boolean indicating wether or not the caller should behave as 
+   * Returns a boolean indicating whether or not the caller should behave as
    * if this is the "leader" even when ZooKeeper is not enabled.  
    * (Even in non zk mode, tests may simulate updates to/from a leader)
    */

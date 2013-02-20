@@ -323,7 +323,7 @@
                    commit before automatically triggering a new commit.
 
          maxTime - Maximum amount of time in ms that is allowed to pass
-                   since a document was added before automaticly
+                   since a document was added before automatically
                    triggering a new commit. 
          openSearcher - if false, the commit causes recent index changes
            to be flushed to stable storage, but does not cause a new
@@ -1123,7 +1123,7 @@
 
        http://wiki.apache.org/solr/SolrReplication 
 
-       It is also neccessary for SolrCloud to function (in Cloud mode, the 
+       It is also necessary for SolrCloud to function (in Cloud mode, the
        replication handler is used to bulk transfer segments when nodes 
        are added or need to recover).
 
@@ -1132,7 +1132,7 @@
   <requestHandler name="/replication" class="solr.ReplicationHandler" > 
     <!--
        To enable simple master/slave replication, uncomment one of the 
-       sections below, depending on wether this solr instance should be 
+       sections below, depending on whether this solr instance should be
        the "master" or a "slave".  If this instance is a "slave" you will 
        also need to fill in the masterUrl to point to a real machine.
     -->
