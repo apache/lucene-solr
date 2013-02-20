@@ -176,6 +176,28 @@
     </ant>
     <property name="queries-javadocs.uptodate" value="true"/>
   </target>
+
+  <property name="classification.jar" value="${common.dir}/build/classification/lucene-classification-${version}.jar"/>
+  <target name="check-classification-uptodate" unless="classification.uptodate">
+    <module-uptodate name="classification" jarfile="${classification.jar}" property="classification.uptodate"/>
+  </target>
+  <target name="jar-classification" unless="classification.uptodate" depends="check-classification-uptodate">
+    <ant dir="${common.dir}/classification" target="jar-core" inheritAll="false">
+      <propertyset refid="uptodate.and.compiled.properties"/>
+    </ant>
+    <property name="classification.uptodate" value="true"/>
+  </target>
+
+  <property name="classification-javadoc.jar" value="${common.dir}/build/classification/lucene-classification-${version}-javadoc.jar"/>
+  <target name="check-classification-javadocs-uptodate" unless="classification-javadocs.uptodate">
+    <module-uptodate name="classification" jarfile="${classification-javadoc.jar}" property="classification-javadocs.uptodate"/>
+  </target>
+  <target name="javadocs-classification" unless="classification-javadocs.uptodate" depends="check-classification-javadocs-uptodate">
+    <ant dir="${common.dir}/classification" target="javadocs" inheritAll="false">
+      <propertyset refid="uptodate.and.compiled.properties"/>
+    </ant>
+    <property name="classification-javadocs.uptodate" value="true"/>
+  </target>
   
   <property name="facet.jar" value="${common.dir}/build/facet/lucene-facet-${version}.jar"/>
   <target name="check-facet-uptodate" unless="facet.uptodate">

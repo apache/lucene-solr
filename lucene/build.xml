@@ -293,6 +293,7 @@
     <check-missing-javadocs dir="build/docs/core/org/apache/lucene/search/similarities" level="method"/>
     <check-missing-javadocs dir="build/docs/core/org/apache/lucene/index" level="method"/>
     <check-missing-javadocs dir="build/docs/core/org/apache/lucene/codecs" level="method"/>
+    <check-missing-javadocs dir="build/docs/classification" level="method"/>
   </target>
   
   <target name="-ecj-javadoc-lint" depends="compile,compile-test,-ecj-resolve">

@@ -18,6 +18,7 @@
       <module filepath="$PROJECT_DIR$/lucene/analysis/uima/analysis-uima.iml" />
       <module filepath="$PROJECT_DIR$/lucene/benchmark/src/benchmark.iml" />
       <module filepath="$PROJECT_DIR$/lucene/benchmark/conf/benchmark-conf.iml" />
+      <module filepath="$PROJECT_DIR$/lucene/classification/classification.iml" />
       <module filepath="$PROJECT_DIR$/lucene/codecs/src/java/codecs.iml" />
       <module filepath="$PROJECT_DIR$/lucene/codecs/src/test/codecs-tests.iml" />
       <module filepath="$PROJECT_DIR$/lucene/codecs/src/resources/codecs-resources.iml" />
