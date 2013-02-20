@@ -39,7 +39,9 @@ import org.apache.lucene.queries.function.valuesource.DoubleFieldSource;
 import org.apache.lucene.queries.function.valuesource.FloatFieldSource;
 import org.apache.lucene.queries.function.valuesource.IntFieldSource;
 import org.apache.lucene.queries.function.valuesource.LongFieldSource;
+import org.apache.lucene.search.ConstantScoreQuery;
 import org.apache.lucene.search.FieldCache;
+import org.apache.lucene.search.FieldCacheRangeFilter;
 import org.apache.lucene.search.NumericRangeQuery;
 import org.apache.lucene.search.Query;
 import org.apache.lucene.search.SortField;
@@ -263,42 +265,88 @@ public class TrieField extends PrimitiveFieldType {
   public Query getRangeQuery(QParser parser, SchemaField field, String min, String max, boolean minInclusive, boolean maxInclusive) {
     int ps = precisionStep;
     Query query = null;
+    final boolean matchOnly = field.hasDocValues() && !field.indexed();
     switch (type) {
       case INTEGER:
-        query = NumericRangeQuery.newIntRange(field.getName(), ps,
+        if (matchOnly) {
+          query = new ConstantScoreQuery(FieldCacheRangeFilter.newIntRange(field.getName(),
+                min == null ? null : Integer.parseInt(min),
+                max == null ? null : Integer.parseInt(max),
+                minInclusive, maxInclusive));
+        } else {
+          query = NumericRangeQuery.newIntRange(field.getName(), ps,
                 min == null ? null : Integer.parseInt(min),
                 max == null ? null : Integer.parseInt(max),
                 minInclusive, maxInclusive);
+        }
         break;
       case FLOAT:
-        query = NumericRangeQuery.newFloatRange(field.getName(), ps,
+        if (matchOnly) {
+          query = new ConstantScoreQuery(FieldCacheRangeFilter.newFloatRange(field.getName(),
+                min == null ? null : Float.parseFloat(min),
+                max == null ? null : Float.parseFloat(max),
+                minInclusive, maxInclusive));
+        } else {
+          query = NumericRangeQuery.newFloatRange(field.getName(), ps,
                 min == null ? null : Float.parseFloat(min),
                 max == null ? null : Float.parseFloat(max),
                 minInclusive, maxInclusive);
+        }
         break;
       case LONG:
-        query = NumericRangeQuery.newLongRange(field.getName(), ps,
+        if (matchOnly) {
+          query = new ConstantScoreQuery(FieldCacheRangeFilter.newLongRange(field.getName(),
+                min == null ? null : Long.parseLong(min),
+                max == null ? null : Long.parseLong(max),
+                minInclusive, maxInclusive));
+        } else {
+          query = NumericRangeQuery.newLongRange(field.getName(), ps,
                 min == null ? null : Long.parseLong(min),
                 max == null ? null : Long.parseLong(max),
                 minInclusive, maxInclusive);
+        }
         break;
       case DOUBLE:
-        query = NumericRangeQuery.newDoubleRange(field.getName(), ps,
+        if (matchOnly) {
+          query = new ConstantScoreQuery(FieldCacheRangeFilter.newDoubleRange(field.getName(),
+                min == null ? null : Double.parseDouble(min),
+                max == null ? null : Double.parseDouble(max),
+                minInclusive, maxInclusive));
+        } else {
+          query = NumericRangeQuery.newDoubleRange(field.getName(), ps,
                 min == null ? null : Double.parseDouble(min),
                 max == null ? null : Double.parseDouble(max),
                 minInclusive, maxInclusive);
+        }
         break;
       case DATE:
-        query = NumericRangeQuery.newLongRange(field.getName(), ps,
+        if (matchOnly) {
+          query = new ConstantScoreQuery(FieldCacheRangeFilter.newLongRange(field.getName(),
+                min == null ? null : dateField.parseMath(null, min).getTime(),
+                max == null ? null : dateField.parseMath(null, max).getTime(),
+                minInclusive, maxInclusive));
+        } else {
+          query = NumericRangeQuery.newLongRange(field.getName(), ps,
                 min == null ? null : dateField.parseMath(null, min).getTime(),
                 max == null ? null : dateField.parseMath(null, max).getTime(),
                 minInclusive, maxInclusive);
+        }
         break;
       default:
         throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, "Unknown type for trie field");
     }
 
     return query;
+  }
+  
+  @Override
+  public Query getFieldQuery(QParser parser, SchemaField field, String externalVal) {
+    if (!field.indexed() && field.hasDocValues()) {
+      // currently implemented as singleton range
+      return getRangeQuery(parser, field, externalVal, externalVal, true, true);
+    } else {
+      return super.getFieldQuery(parser, field, externalVal);
+    }
   }
 
   @Deprecated
