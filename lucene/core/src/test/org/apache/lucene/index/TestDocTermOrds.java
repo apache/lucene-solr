@@ -63,7 +63,7 @@ public class TestDocTermOrds extends LuceneTestCase {
     w.close();
 
     final AtomicReader ar = SlowCompositeReaderWrapper.wrap(r);
-    final DocTermOrds dto = new DocTermOrds(ar, "field");
+    final DocTermOrds dto = new DocTermOrds(ar, ar.getLiveDocs(), "field");
     SortedSetDocValues iter = dto.iterator(ar.terms("field").iterator(null));
     
     iter.setDocument(0);
@@ -295,7 +295,7 @@ public class TestDocTermOrds extends LuceneTestCase {
 
   private void verify(AtomicReader r, int[][] idToOrds, BytesRef[] termsArray, BytesRef prefixRef) throws Exception {
 
-    final DocTermOrds dto = new DocTermOrds(r,
+    final DocTermOrds dto = new DocTermOrds(r, r.getLiveDocs(),
                                             "field",
                                             prefixRef,
                                             Integer.MAX_VALUE,
@@ -371,5 +371,35 @@ public class TestDocTermOrds extends LuceneTestCase {
       }
       assertEquals(answers.length, upto);
     }
+  }
+  
+  public void testBackToTheFuture() throws Exception {
+    Directory dir = newDirectory();
+    IndexWriter iw = new IndexWriter(dir, newIndexWriterConfig(TEST_VERSION_CURRENT, null));
+    
+    Document doc = new Document();
+    doc.add(newStringField("foo", "bar", Field.Store.NO));
+    iw.addDocument(doc);
+    
+    doc = new Document();
+    doc.add(newStringField("foo", "baz", Field.Store.NO));
+    iw.addDocument(doc);
+    
+    DirectoryReader r1 = DirectoryReader.open(iw, true);
+    
+    iw.deleteDocuments(new Term("foo", "baz"));
+    DirectoryReader r2 = DirectoryReader.open(iw, true);
+    
+    FieldCache.DEFAULT.getDocTermOrds(getOnlySegmentReader(r2), "foo");
+    
+    SortedSetDocValues v = FieldCache.DEFAULT.getDocTermOrds(getOnlySegmentReader(r1), "foo");
+    assertEquals(2, v.getValueCount());
+    v.setDocument(1);
+    assertEquals(1, v.nextOrd());
+    
+    iw.close();
+    r1.close();
+    r2.close();
+    dir.close();
   }
 }

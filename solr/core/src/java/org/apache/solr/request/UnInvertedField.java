@@ -23,6 +23,7 @@ import java.util.LinkedHashMap;
 import java.util.Map;
 import java.util.concurrent.atomic.AtomicLong;
 
+import org.apache.lucene.index.AtomicReader;
 import org.apache.lucene.index.DocTermOrds;
 import org.apache.lucene.index.SortedDocValues;
 import org.apache.lucene.index.Term;
@@ -174,7 +175,8 @@ public class UnInvertedField extends DocTermOrds {
     final String prefix = TrieField.getMainValuePrefix(searcher.getSchema().getFieldType(field));
     this.searcher = searcher;
     try {
-      uninvert(searcher.getAtomicReader(), prefix == null ? null : new BytesRef(prefix));
+      AtomicReader r = searcher.getAtomicReader();
+      uninvert(r, r.getLiveDocs(), prefix == null ? null : new BytesRef(prefix));
     } catch (IllegalStateException ise) {
       throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, ise.getMessage());
     }

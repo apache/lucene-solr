@@ -173,30 +173,29 @@ public class DocTermOrds {
   }
 
   /** Inverts all terms */
-  public DocTermOrds(AtomicReader reader, String field) throws IOException {
-    this(reader, field, null, Integer.MAX_VALUE);
+  public DocTermOrds(AtomicReader reader, Bits liveDocs, String field) throws IOException {
+    this(reader, liveDocs, field, null, Integer.MAX_VALUE);
   }
 
   /** Inverts only terms starting w/ prefix */
-  public DocTermOrds(AtomicReader reader, String field, BytesRef termPrefix) throws IOException {
-    this(reader, field, termPrefix, Integer.MAX_VALUE);
+  public DocTermOrds(AtomicReader reader, Bits liveDocs, String field, BytesRef termPrefix) throws IOException {
+    this(reader, liveDocs, field, termPrefix, Integer.MAX_VALUE);
   }
 
   /** Inverts only terms starting w/ prefix, and only terms
    *  whose docFreq (not taking deletions into account) is
    *  <=  maxTermDocFreq */
-  public DocTermOrds(AtomicReader reader, String field, BytesRef termPrefix, int maxTermDocFreq) throws IOException {
-    this(reader, field, termPrefix, maxTermDocFreq, DEFAULT_INDEX_INTERVAL_BITS);
-    uninvert(reader, termPrefix);
+  public DocTermOrds(AtomicReader reader, Bits liveDocs, String field, BytesRef termPrefix, int maxTermDocFreq) throws IOException {
+    this(reader, liveDocs, field, termPrefix, maxTermDocFreq, DEFAULT_INDEX_INTERVAL_BITS);
   }
 
   /** Inverts only terms starting w/ prefix, and only terms
    *  whose docFreq (not taking deletions into account) is
    *  <=  maxTermDocFreq, with a custom indexing interval
    *  (default is every 128nd term). */
-  public DocTermOrds(AtomicReader reader, String field, BytesRef termPrefix, int maxTermDocFreq, int indexIntervalBits) throws IOException {
+  public DocTermOrds(AtomicReader reader, Bits liveDocs, String field, BytesRef termPrefix, int maxTermDocFreq, int indexIntervalBits) throws IOException {
     this(field, maxTermDocFreq, indexIntervalBits);
-    uninvert(reader, termPrefix);
+    uninvert(reader, liveDocs, termPrefix);
   }
 
   /** Subclass inits w/ this, but be sure you then call
@@ -257,14 +256,14 @@ public class DocTermOrds {
   protected void visitTerm(TermsEnum te, int termNum) throws IOException {
   }
 
-  /** Invoked during {@link #uninvert(AtomicReader,BytesRef)}
+  /** Invoked during {@link #uninvert(AtomicReader,Bits,BytesRef)}
    *  to record the document frequency for each uninverted
    *  term. */
   protected void setActualDocFreq(int termNum, int df) throws IOException {
   }
 
   /** Call this only once (if you subclass!) */
-  protected void uninvert(final AtomicReader reader, final BytesRef termPrefix) throws IOException {
+  protected void uninvert(final AtomicReader reader, Bits liveDocs, final BytesRef termPrefix) throws IOException {
     final FieldInfo info = reader.getFieldInfos().fieldInfo(field);
     if (info != null && info.hasDocValues()) {
       throw new IllegalStateException("Type mismatch: " + field + " was indexed as " + info.getDocValuesType());
@@ -303,8 +302,6 @@ public class DocTermOrds {
     PagedBytes indexedTermsBytes = null;
 
     boolean testedOrd = false;
-
-    final Bits liveDocs = reader.getLiveDocs();
 
     // we need a minimum of 9 bytes, but round up to 12 since the space would
     // be wasted with most allocators anyway.
