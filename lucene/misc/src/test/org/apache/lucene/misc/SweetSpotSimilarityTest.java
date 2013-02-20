@@ -83,7 +83,7 @@ public class SweetSpotSimilarityTest extends LuceneTestCase {
     }
 
 
-    // seperate sweet spot for certain fields
+    // separate sweet spot for certain fields
 
     final SweetSpotSimilarity ssBar = new SweetSpotSimilarity();
     ssBar.setLengthNormFactors(8,13, 0.5f, false);

@@ -48,7 +48,7 @@ grant {
   permission java.lang.reflect.ReflectPermission "*";
   permission java.lang.RuntimePermission "*";
 
-  // These two *have* to be spelled out a seperate
+  // These two *have* to be spelled out a separate
   permission java.lang.management.ManagementPermission "control";
   permission java.lang.management.ManagementPermission "monitor";
 

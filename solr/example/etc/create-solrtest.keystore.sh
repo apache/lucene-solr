@@ -20,8 +20,8 @@
 # This script shows how the solrtest.keystore file used for solr tests 
 # and these example configs was generated.
 #
-# Running this script should only be neccessary if the keystore file
-# needs to be replaced, which shouldn't be required until sometime arround
+# Running this script should only be necessary if the keystore file
+# needs to be replaced, which shouldn't be required until sometime around
 # the year 4751.
 #
 # NOTE: the "-ext" option used in the "keytool" command requires that you have

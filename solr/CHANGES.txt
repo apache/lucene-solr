@@ -990,7 +990,7 @@ Bug Fixes
   or SolrIndexWriter initialization. (hossman)
 
 * SOLR-3518: Include final 'hits' in log information when aggregating a 
-  distibuted request (Markus Jelsma via hossman)
+  distributed request (Markus Jelsma via hossman)
 
 * SOLR-3628: SolrInputField and SolrInputDocument are now consistently backed 
   by Collections passed in to setValue/setField, and defensively copy values 
@@ -1083,7 +1083,7 @@ Bug Fixes
   (James Dyer)
 
 * SOLR-3087: Fixed DOMUtil so that code doing attribute validation will 
-  automaticly ignore nodes in the resserved "xml" prefix - in particular this 
+  automatically ignore nodes in the reserved "xml" prefix - in particular this
   fixes some bugs related to xinclude and fieldTypes.
   (Amit Nithian, hossman)
 
@@ -1114,7 +1114,7 @@ Bug Fixes
 Other Changes
 ----------------------
 
-* SOLR-3690: Fixed binary release packages to include dependencie needed for 
+* SOLR-3690: Fixed binary release packages to include dependencies needed for
   the solr-test-framework (hossman)
 
 * SOLR-2857: The /update/json and /update/csv URLs were restored to aid
@@ -1145,7 +1145,7 @@ Other Changes
   replicas before running the leader process - or if they all do not come up, 
   N amount of time. (Jan Høydahl, Per Steffensen, Mark Miller)
 
-* SOLR-3750: Optionaly, on session expiration, we can explicitly wait some time before 
+* SOLR-3750: Optionally, on session expiration, we can explicitly wait some time before
   running the leader sync process so that we are sure every node participates.
   (Per Steffensen, Mark Miller)
 
@@ -1329,7 +1329,7 @@ Bug Fixes
   For the example configuration, this means /browse now works with SolrCloud.
   (janhoy, ehatcher)
 
-* SOLR-3677: Fixed missleading error message in web ui to distinguish between 
+* SOLR-3677: Fixed misleading error message in web ui to distinguish between
   no SolrCores loaded vs. no /admin/ handler available.
   (hossman, steffkes)
   
@@ -1547,7 +1547,7 @@ New Features
   
 * SOLR-1298: Return FunctionQuery as pseudo field.  The solr 'fl' param
   now supports functions.  For example:  fl=id,sum(x,y) -- NOTE: only
-  functions with fast random access are reccomended. (yonik, ryan)
+  functions with fast random access are recommended. (yonik, ryan)
   
 * SOLR-705: Optionally return shard info with each document in distributed
   search.  Use fl=id,[shard]  to return the shard url.  (ryan)  
@@ -1657,7 +1657,7 @@ New Features
   chain. Serialization format is pluggable, and defaults to JSON. (ab)
 
 * SOLR-3363: Consolidated Exceptions in Analysis Factories so they only throw 
-  InitalizationExceptions (Chris Male)
+  InitializationExceptions (Chris Male)
 
 * SOLR-2690: New support for a "TZ" request param which overrides the TimeZone 
   used when rounding Dates in DateMath expressions for the entire request 
@@ -1851,7 +1851,7 @@ Bug Fixes
   (James Dyer, Tomás Fernández Löbbe)
 
 * SOLR-2605: fixed tracking of the 'defaultCoreName' in CoreContainer so that
-  CoreAdminHandler could return consistent information regardless of wether
+  CoreAdminHandler could return consistent information regardless of whether
   there is a a default core name or not. (steffkes, hossman)
 
 * SOLR-3370: fixed CSVResponseWriter to respect globs in the 'fl' param
@@ -1881,7 +1881,7 @@ Bug Fixes
 
 * SOLR-3522: fixed parsing of the 'literal()' function (hossman)
 
-* SOLR-3548: Fixed a bug in the cachability of queries using the {!join} 
+* SOLR-3548: Fixed a bug in the cachability of queries using the {!join}
   parser or the strdist() function, as well as some minor improvements to 
   the hashCode implementation of {!bbox} and {!geofilt} queries.
   (hossman)
@@ -1917,7 +1917,7 @@ Other Changes
   more spread out (Erick Erickson via hossman)
 
 * SOLR-2288: Small tweaks to eliminate compiler warnings.  primarily
-  using Generics where applicable in method/object declatations, and
+  using Generics where applicable in method/object declarations, and
   adding @SuppressWarnings("unchecked") when appropriate (hossman)
 
 * SOLR-2375: Suggester Lookup implementations now store trie data
@@ -1990,7 +1990,7 @@ Other Changes
   (ehatcher)
   
 * SOLR-3032: logOnce from SolrException logOnce and all the supporting
-  structure is gone. abortOnConfugrationError is also gone as it is no longer referenced.
+  structure is gone. abortOnConfigurationError is also gone as it is no longer referenced.
   Errors should be caught and logged at the top-most level or logged and NOT propagated up the 
   chain. (Erick Erickson)
 

@@ -275,7 +275,7 @@ public class DocumentBuilder {
 
             // we can't copy any boost unless the dest field is 
             // indexed & !omitNorms, but which boost we copy depends
-            // on wether the dest field already contains values (we 
+            // on whether the dest field already contains values (we
             // don't want to apply the compounded docBoost more then once)
             final float destBoost = 
               (destinationField.indexed() && !destinationField.omitNorms()) ?

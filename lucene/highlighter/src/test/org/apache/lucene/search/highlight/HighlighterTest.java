@@ -1197,7 +1197,7 @@ public class HighlighterTest extends BaseTokenStreamTestCase implements Formatte
 
         Highlighter highlighter = getHighlighter(query, null, HighlighterTest.this);
 
-        // Get 3 best fragments and seperate with a "..."
+        // Get 3 best fragments and separate with a "..."
         TokenStream tokenStream = analyzer.tokenStream(null, new StringReader(s));
 
         String result = highlighter.getBestFragments(tokenStream, s, 3, "...");

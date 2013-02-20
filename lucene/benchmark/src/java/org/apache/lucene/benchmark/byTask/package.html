@@ -53,7 +53,7 @@ Contained packages:
  </tr>
  <tr>
    <td><a href="programmatic/package-summary.html">programmatic</a></td>
-   <td>Sample performance test written programatically.</td>
+   <td>Sample performance test written programmatically.</td>
  </tr>
 </table>
 
@@ -102,7 +102,7 @@ Easiest way to run a benchmarks is using the predefined ant task:
  </li>
  <li>java org.apache.lucene.benchmark.byTask.programmatic.Sample
      <br>- would run a performance test programmatically - without using an alg
-     file. This is less readable, and less convinient, but possible.
+     file. This is less readable, and less convenient, but possible.
  </li>
 </ul>
 </p>
@@ -118,7 +118,7 @@ Each benchmark run has a DocMaker and a QueryMaker. These two should usually
 match, so that "meaningful" queries are used for a certain collection.
 Properties set at the header of the alg file define which "makers" should be
 used. You can also specify your own makers, extending DocMaker and implementing
-QureyMaker.
+QueryMaker.
 	<blockquote>
 		<b>Note:</b> since 2.9, DocMaker is a concrete class which accepts a 
 		ContentSource. In most cases, you can use the DocMaker class to create 
@@ -228,7 +228,7 @@ The following is an informal description of the supported syntax.
  a number to repeat exhaustively.
  This is sometimes useful, for adding as many files as a doc maker can create,
  without iterating over the same file again, especially when the exact
- number of documents is not known in advance. For insance, TREC files extracted
+ number of documents is not known in advance. For instance, TREC files extracted
  from a zip file. Note: when using this, you must also set
  <font color="#FF0066">doc.maker.forever</font> to false.
  <br>Example -  <font color="#FF0066">{ AddDoc } : *</font>  - would add docs
@@ -271,7 +271,7 @@ The following is an informal description of the supported syntax.
  which is faster, adding
  many smaller documents, or few larger documents.
  Next candidates for supporting a parameter may be the Search tasks,
- for controlling the qurey size.
+ for controlling the query size.
  </li>
  <li>
  <b>Statistic recording elimination</b>: - a sequence can also end with
@@ -294,7 +294,7 @@ The following is an informal description of the supported syntax.
  This would specify repetition of N with rate of R operations/sec.
  Use '<font color="#FF0066">R/sec</font>' or
  '<font color="#FF0066">R/min</font>'
- to explicitely specify that the rate is per second or per minute.
+ to explicitly specify that the rate is per second or per minute.
  The default is per second,
  <br>Example -  <font color="#FF0066">[ AddDoc ] : 400 : 3</font> - would do 400
  addDoc in parallel, starting up to 3 threads per second.
@@ -412,7 +412,7 @@ regular index/search work tasks, report tasks, and control tasks.
      or makeQuery() creates the next document or query
      that it "knows" to create.
      If that pool is "exhausted", the "maker" start over again.
-     The resetInpus command
+     The ResetInputs command
      therefore allows to make the rounds comparable.
      It is therefore useful to invoke ResetInputs together with NewRound.
      </li>
@@ -475,7 +475,7 @@ regular index/search work tasks, report tasks, and control tasks.
 	 <li>
 	 <font color="#FF0066">WriteLineDoc</font> prepares a 'line'
 	 file where each line holds a document with <i>title</i>, 
-	 <i>date</i> and <i>body</i> elements, seperated by [TAB].
+	 <i>date</i> and <i>body</i> elements, separated by [TAB].
 	 A line file is useful if one wants to measure pure indexing
 	 performance, without the overhead of parsing the data.<br>
 	 You can use LineDocSource as a ContentSource over a 'line'

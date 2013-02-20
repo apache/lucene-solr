@@ -63,7 +63,7 @@ import java.util.List;
 
 /**
  * The MultiTrie is a Trie of Tries. It stores words and their associated patch
- * commands. The MultiTrie handles patch commmands individually (each command by
+ * commands. The MultiTrie handles patch commands individually (each command by
  * itself).
  */
 public class MultiTrie extends Trie {
