@@ -472,7 +472,7 @@ public class TestFieldCache extends LuceneTestCase {
     } catch (IllegalStateException expected) {}
     
     try {
-      new DocTermOrds(ar, "binary");
+      new DocTermOrds(ar, null, "binary");
       fail();
     } catch (IllegalStateException expected) {}
     
@@ -486,7 +486,7 @@ public class TestFieldCache extends LuceneTestCase {
     } catch (IllegalStateException expected) {}
     
     try {
-      new DocTermOrds(ar, "sorted");
+      new DocTermOrds(ar, null, "sorted");
       fail();
     } catch (IllegalStateException expected) {}
     
@@ -529,7 +529,7 @@ public class TestFieldCache extends LuceneTestCase {
     } catch (IllegalStateException expected) {}
     
     try {
-      new DocTermOrds(ar, "numeric");
+      new DocTermOrds(ar, null, "numeric");
       fail();
     } catch (IllegalStateException expected) {}
     
@@ -554,7 +554,7 @@ public class TestFieldCache extends LuceneTestCase {
       } catch (IllegalStateException expected) {}
       
       try {
-        new DocTermOrds(ar, "sortedset");
+        new DocTermOrds(ar, null, "sortedset");
         fail();
       } catch (IllegalStateException expected) {}
     

@@ -1399,7 +1399,7 @@ class FieldCacheImpl implements FieldCache {
     @Override
     protected Object createValue(AtomicReader reader, CacheKey key, boolean setDocsWithField /* ignored */)
         throws IOException {
-      return new DocTermOrds(reader, key.field);
+      return new DocTermOrds(reader, null, key.field);
     }
   }
 

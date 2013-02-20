@@ -238,6 +238,10 @@ Bug Fixes
   is enhanced to roll up beyond the bottom cell level. (David Smiley,
   Florian Schilling)
 
+* LUCENE-4790: Fix FieldCacheImpl.getDocTermOrds to not bake deletes into the
+  cached datastructure. Otherwise this can cause inconsistencies with readers
+  at different points in time.  (Robert Muir)
+
 Documentation
 
 * LUCENE-4718: Fixed documentation of oal.queryparser.classic.
