@@ -114,6 +114,8 @@ final class Lucene42FieldInfosReader extends FieldInfosReader {
       return DocValuesType.BINARY;
     } else if (b == 3) {
       return DocValuesType.SORTED;
+    } else if (b == 4) {
+      return DocValuesType.SORTED_SET;
     } else {
       throw new CorruptIndexException("invalid docvalues byte: " + b + " (resource=" + input + ")");
     }

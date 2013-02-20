@@ -1303,4 +1303,16 @@ public abstract class LuceneTestCase extends Assert {
       throw new IOException("Cannot find resource: " + name);
     }
   }
+  
+  /** Returns true if the default codec supports SORTED_SET docvalues */ 
+  public static boolean defaultCodecSupportsSortedSet() {
+    if (!defaultCodecSupportsDocValues()) {
+      return false;
+    }
+    String name = Codec.getDefault().getName();
+    if (name.equals("Lucene40") || name.equals("Lucene41") || name.equals("Appending")) {
+      return false;
+    }
+    return true;
+  }
 }

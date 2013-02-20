@@ -805,42 +805,55 @@ public class TestPackedInts extends LuceneTestCase {
   }
 
   public void testAppendingLongBuffer() {
-    final long[] arr = new long[RandomInts.randomIntBetween(random(), 1, 2000000)];
-    for (int bpv : new int[] {0, 1, 63, 64, RandomInts.randomIntBetween(random(), 2, 61)}) {
-      if (bpv == 0) {
-        Arrays.fill(arr, random().nextLong());
-      } else if (bpv == 64) {
+    final long[] arr = new long[RandomInts.randomIntBetween(random(), 1, 1000000)];
+    for (int bpv : new int[] {0, 1, 63, 64, RandomInts.randomIntBetween(random(), 2, 62)}) {
+      for (boolean monotonic : new boolean[] {true, false}) {
+        AbstractAppendingLongBuffer buf;
+        final int inc;
+        if (monotonic) {
+          buf = new MonotonicAppendingLongBuffer();
+          inc = _TestUtil.nextInt(random(), -1000, 1000);
+        } else {
+          buf = new AppendingLongBuffer();
+          inc = 0;
+        }
+        if (bpv == 0) {
+          arr[0] = random().nextLong();
+          for (int i = 1; i < arr.length; ++i) {
+            arr[i] = arr[i-1] + inc;
+          }
+        } else if (bpv == 64) {
+          for (int i = 0; i < arr.length; ++i) {
+            arr[i] = random().nextLong();
+          }
+        } else {
+          final long minValue = _TestUtil.nextLong(random(), Long.MIN_VALUE, Long.MAX_VALUE - PackedInts.maxValue(bpv));
+          for (int i = 0; i < arr.length; ++i) {
+            arr[i] = minValue + inc * i + random().nextLong() & PackedInts.maxValue(bpv); // _TestUtil.nextLong is too slow
+          }
+        }
         for (int i = 0; i < arr.length; ++i) {
-          arr[i] = random().nextLong();
+          buf.add(arr[i]);
         }
-      } else {
-        final long minValue = _TestUtil.nextLong(random(), Long.MIN_VALUE, Long.MAX_VALUE - PackedInts.maxValue(bpv));
+        assertEquals(arr.length, buf.size());
+        final AbstractAppendingLongBuffer.Iterator it = buf.iterator();
         for (int i = 0; i < arr.length; ++i) {
-          arr[i] = minValue + random().nextLong() & PackedInts.maxValue(bpv); // _TestUtil.nextLong is too slow
+          if (random().nextBoolean()) {
+            assertTrue(it.hasNext());
+          }
+          assertEquals(arr[i], it.next());
         }
-      }
-      AppendingLongBuffer buf = new AppendingLongBuffer();
-      for (int i = 0; i < arr.length; ++i) {
-        buf.add(arr[i]);
-      }
-      assertEquals(arr.length, buf.size());
-      final AppendingLongBuffer.Iterator it = buf.iterator();
-      for (int i = 0; i < arr.length; ++i) {
-        if (random().nextBoolean()) {
-          assertTrue(it.hasNext());
+        assertFalse(it.hasNext());
+        
+        for (int i = 0; i < arr.length; ++i) {
+          assertEquals(arr[i], buf.get(i));
         }
-        assertEquals(arr[i], it.next());
+  
+        final long expectedBytesUsed = RamUsageEstimator.sizeOf(buf);
+        final long computedBytesUsed = buf.ramBytesUsed();
+        assertEquals("got " + computedBytesUsed + ", expected: " + expectedBytesUsed,
+            expectedBytesUsed, computedBytesUsed);
       }
-      assertFalse(it.hasNext());
-      
-      for (int i = 0; i < arr.length; ++i) {
-        assertEquals(arr[i], buf.get(i));
-      }
-
-      final long expectedBytesUsed = RamUsageEstimator.sizeOf(buf);
-      final long computedBytesUsed = buf.ramBytesUsed();
-      assertEquals("got " + computedBytesUsed + ", expected: " + expectedBytesUsed,
-          expectedBytesUsed, computedBytesUsed);
     }
   }
 

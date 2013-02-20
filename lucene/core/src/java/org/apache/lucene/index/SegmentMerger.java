@@ -197,6 +197,16 @@ final class SegmentMerger {
               toMerge.add(values);
             }
             consumer.mergeSortedField(field, mergeState, toMerge);
+          } else if (type == DocValuesType.SORTED_SET) {
+            List<SortedSetDocValues> toMerge = new ArrayList<SortedSetDocValues>();
+            for (AtomicReader reader : mergeState.readers) {
+              SortedSetDocValues values = reader.getSortedSetDocValues(field.name);
+              if (values == null) {
+                values = SortedSetDocValues.EMPTY;
+              }
+              toMerge.add(values);
+            }
+            consumer.mergeSortedSetField(field, mergeState, toMerge);
           } else {
             throw new AssertionError("type=" + type);
           }

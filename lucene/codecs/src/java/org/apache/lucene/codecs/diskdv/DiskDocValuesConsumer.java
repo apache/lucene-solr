@@ -59,7 +59,7 @@ public class DiskDocValuesConsumer extends DocValuesConsumer {
   
   @Override
   public void addNumericField(FieldInfo field, Iterable<Number> values) throws IOException {
-    int count = 0;
+    long count = 0;
     for (@SuppressWarnings("unused") Number nv : values) {
       ++count;
     }
@@ -68,7 +68,7 @@ public class DiskDocValuesConsumer extends DocValuesConsumer {
     meta.writeByte(DiskDocValuesFormat.NUMERIC);
     meta.writeVInt(PackedInts.VERSION_CURRENT);
     meta.writeLong(data.getFilePointer());
-    meta.writeVInt(count);
+    meta.writeVLong(count);
     meta.writeVInt(BLOCK_SIZE);
 
     final BlockPackedWriter writer = new BlockPackedWriter(data, BLOCK_SIZE);
@@ -86,7 +86,7 @@ public class DiskDocValuesConsumer extends DocValuesConsumer {
     int minLength = Integer.MAX_VALUE;
     int maxLength = Integer.MIN_VALUE;
     final long startFP = data.getFilePointer();
-    int count = 0;
+    long count = 0;
     for(BytesRef v : values) {
       minLength = Math.min(minLength, v.length);
       maxLength = Math.max(maxLength, v.length);
@@ -95,7 +95,7 @@ public class DiskDocValuesConsumer extends DocValuesConsumer {
     }
     meta.writeVInt(minLength);
     meta.writeVInt(maxLength);
-    meta.writeVInt(count);
+    meta.writeVLong(count);
     meta.writeLong(startFP);
     
     // if minLength == maxLength, its a fixed-length byte[], we are done (the addresses are implicit)
@@ -123,6 +123,33 @@ public class DiskDocValuesConsumer extends DocValuesConsumer {
     addNumericField(field, docToOrd);
   }
   
+  @Override
+  public void addSortedSetField(FieldInfo field, Iterable<BytesRef> values, Iterable<Number> docToOrdCount, Iterable<Number> ords) throws IOException {
+    meta.writeVInt(field.number);
+    meta.writeByte(DiskDocValuesFormat.SORTED_SET);
+    // write the ord -> byte[] as a binary field
+    addBinaryField(field, values);
+    // write the stream of ords as a numeric field
+    // NOTE: we could return an iterator that delta-encodes these within a doc
+    addNumericField(field, ords);
+    
+    // write the doc -> ord count as a absolute index to the stream
+    meta.writeVInt(field.number);
+    meta.writeByte(DiskDocValuesFormat.NUMERIC);
+    meta.writeVInt(PackedInts.VERSION_CURRENT);
+    meta.writeLong(data.getFilePointer());
+    meta.writeVLong(maxDoc);
+    meta.writeVInt(BLOCK_SIZE);
+
+    final MonotonicBlockPackedWriter writer = new MonotonicBlockPackedWriter(data, BLOCK_SIZE);
+    long addr = 0;
+    for (Number v : docToOrdCount) {
+      addr += v.longValue();
+      writer.add(addr);
+    }
+    writer.finish();
+  }
+
   @Override
   public void close() throws IOException {
     boolean success = false;

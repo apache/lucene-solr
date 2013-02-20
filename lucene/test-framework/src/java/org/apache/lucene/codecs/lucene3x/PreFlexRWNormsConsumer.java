@@ -90,4 +90,9 @@ class PreFlexRWNormsConsumer extends DocValuesConsumer {
   public void addSortedField(FieldInfo field, Iterable<BytesRef> values, Iterable<Number> docToOrd) throws IOException {
     throw new AssertionError();
   }
+
+  @Override
+  public void addSortedSetField(FieldInfo field, Iterable<BytesRef> values, Iterable<Number> docToOrdCount, Iterable<Number> ords) throws IOException {
+    throw new AssertionError();
+  }
 }

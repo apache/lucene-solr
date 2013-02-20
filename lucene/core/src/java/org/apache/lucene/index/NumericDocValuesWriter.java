@@ -50,7 +50,7 @@ class NumericDocValuesWriter extends DocValuesWriter {
     }
 
     // Fill in any holes:
-    for (int i = pending.size(); i < docID; ++i) {
+    for (int i = (int)pending.size(); i < docID; ++i) {
       pending.add(MISSING);
     }
 
@@ -90,7 +90,7 @@ class NumericDocValuesWriter extends DocValuesWriter {
   // iterates over the values we have in ram
   private class NumericIterator implements Iterator<Number> {
     final AppendingLongBuffer.Iterator iter = pending.iterator();
-    final int size = pending.size();
+    final int size = (int)pending.size();
     final int maxDoc;
     int upto;
     

@@ -154,8 +154,12 @@ public class RandomCodec extends Lucene42Codec {
     Collections.shuffle(dvFormats, random);
 
     // Avoid too many open files:
-    formats = formats.subList(0, 4);
-    dvFormats = dvFormats.subList(0, 4);
+    if (formats.size() > 4) {
+      formats = formats.subList(0, 4);
+    }
+    if (dvFormats.size() > 4) {
+      dvFormats = dvFormats.subList(0, 4);
+    }
   }
 
   public RandomCodec(Random random) {

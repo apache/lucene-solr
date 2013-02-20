@@ -101,7 +101,14 @@ public final class FieldInfo {
      * byte[]. The stored byte[] is presorted and allows access via document id, 
      * ordinal and by-value.
      */
-    SORTED
+    SORTED,
+    /** 
+     * A pre-sorted Set&lt;byte[]&gt;. Fields with this type only store distinct byte values 
+     * and store additional offset pointers per document to dereference the shared 
+     * byte[]s. The stored byte[] is presorted and allows access via document id, 
+     * ordinal and by-value.
+     */
+    SORTED_SET
   };
 
   /**
