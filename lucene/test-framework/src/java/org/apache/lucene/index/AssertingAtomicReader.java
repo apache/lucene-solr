@@ -453,6 +453,62 @@ public class AssertingAtomicReader extends FilterAtomicReader {
       return result;
     }
   }
+  
+  /** Wraps a SortedSetDocValues but with additional asserts */
+  public static class AssertingSortedSetDocValues extends SortedSetDocValues {
+    private final SortedSetDocValues in;
+    private final int maxDoc;
+    private final long valueCount;
+    long lastOrd = NO_MORE_ORDS;
+    
+    public AssertingSortedSetDocValues(SortedSetDocValues in, int maxDoc) {
+      this.in = in;
+      this.maxDoc = maxDoc;
+      this.valueCount = in.getValueCount();
+      assert valueCount >= 0;
+    }
+    
+    @Override
+    public long nextOrd() {
+      assert lastOrd != NO_MORE_ORDS;
+      long ord = in.nextOrd();
+      assert ord < valueCount;
+      assert ord == NO_MORE_ORDS || ord > lastOrd;
+      lastOrd = ord;
+      return ord;
+    }
+
+    @Override
+    public void setDocument(int docID) {
+      assert docID >= 0 && docID < maxDoc : "docid=" + docID + ",maxDoc=" + maxDoc;
+      in.setDocument(docID);
+      lastOrd = -2;
+    }
+
+    @Override
+    public void lookupOrd(long ord, BytesRef result) {
+      assert ord >= 0 && ord < valueCount;
+      assert result.isValid();
+      in.lookupOrd(ord, result);
+      assert result.isValid();
+    }
+
+    @Override
+    public long getValueCount() {
+      long valueCount = in.getValueCount();
+      assert valueCount == this.valueCount; // should not change
+      return valueCount;
+    }
+
+    @Override
+    public long lookupTerm(BytesRef key) {
+      assert key.isValid();
+      long result = in.lookupTerm(key);
+      assert result < valueCount;
+      assert key.isValid();
+      return result;
+    }
+  }
 
   @Override
   public NumericDocValues getNumericDocValues(String field) throws IOException {
@@ -492,6 +548,20 @@ public class AssertingAtomicReader extends FilterAtomicReader {
       return new AssertingSortedDocValues(dv, maxDoc());
     } else {
       assert fi == null || fi.getDocValuesType() != FieldInfo.DocValuesType.SORTED;
+      return null;
+    }
+  }
+
+  @Override
+  public SortedSetDocValues getSortedSetDocValues(String field) throws IOException {
+    SortedSetDocValues dv = super.getSortedSetDocValues(field);
+    FieldInfo fi = getFieldInfos().fieldInfo(field);
+    if (dv != null) {
+      assert fi != null;
+      assert fi.getDocValuesType() == FieldInfo.DocValuesType.SORTED_SET;
+      return new AssertingSortedSetDocValues(dv, maxDoc());
+    } else {
+      assert fi == null || fi.getDocValuesType() != FieldInfo.DocValuesType.SORTED_SET;
       return null;
     }
   }

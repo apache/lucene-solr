@@ -30,6 +30,8 @@ import java.util.TreeSet;
 import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.analysis.MockAnalyzer;
 import org.apache.lucene.codecs.Codec;
+import org.apache.lucene.document.Document;
+import org.apache.lucene.document.SortedSetDocValuesField;
 import org.apache.lucene.index.TermsEnum.SeekStatus;
 import org.apache.lucene.search.DocIdSetIterator;
 import org.apache.lucene.store.Directory;
@@ -102,6 +104,10 @@ public class TestDuelingCodecs extends LuceneTestCase {
     rightReader = maybeWrapReader(rightWriter.getReader());
     rightWriter.close();
     
+    // check that our readers are valid
+    _TestUtil.checkReader(leftReader);
+    _TestUtil.checkReader(rightReader);
+    
     info = "left: " + leftCodec.toString() + " / right: " + rightCodec.toString();
   }
   
@@ -135,7 +141,14 @@ public class TestDuelingCodecs extends LuceneTestCase {
     // TODO: we should add other fields that use things like docs&freqs but omit positions,
     // because linefiledocs doesn't cover all the possibilities.
     for (int i = 0; i < numdocs; i++) {
-      writer.addDocument(lineFileDocs.nextDoc());
+      Document document = lineFileDocs.nextDoc();
+      // grab the title and add some SortedSet instances for fun
+      String title = document.get("titleTokenized");
+      String split[] = title.split("\\s+");
+      for (String trash : split) {
+        document.add(new SortedSetDocValuesField("sortedset", new BytesRef(trash)));
+      }
+      writer.addDocument(document);
     }
     
     lineFileDocs.close();
@@ -677,6 +690,36 @@ public class TestDuelingCodecs extends LuceneTestCase {
             leftValues.get(docID, scratchLeft);
             rightValues.get(docID, scratchRight);
             assertEquals(info, scratchLeft, scratchRight);
+          }
+        } else {
+          assertNull(info, leftValues);
+          assertNull(info, rightValues);
+        }
+      }
+      
+      {
+        SortedSetDocValues leftValues = MultiDocValues.getSortedSetValues(leftReader, field);
+        SortedSetDocValues rightValues = MultiDocValues.getSortedSetValues(rightReader, field);
+        if (leftValues != null && rightValues != null) {
+          // numOrds
+          assertEquals(info, leftValues.getValueCount(), rightValues.getValueCount());
+          // ords
+          BytesRef scratchLeft = new BytesRef();
+          BytesRef scratchRight = new BytesRef();
+          for (int i = 0; i < leftValues.getValueCount(); i++) {
+            leftValues.lookupOrd(i, scratchLeft);
+            rightValues.lookupOrd(i, scratchRight);
+            assertEquals(info, scratchLeft, scratchRight);
+          }
+          // ord lists
+          for(int docID=0;docID<leftReader.maxDoc();docID++) {
+            leftValues.setDocument(docID);
+            rightValues.setDocument(docID);
+            long ord;
+            while ((ord = leftValues.nextOrd()) != SortedSetDocValues.NO_MORE_ORDS) {
+              assertEquals(info, ord, rightValues.nextOrd());
+            }
+            assertEquals(info, SortedSetDocValues.NO_MORE_ORDS, rightValues.nextOrd());
           }
         } else {
           assertNull(info, leftValues);

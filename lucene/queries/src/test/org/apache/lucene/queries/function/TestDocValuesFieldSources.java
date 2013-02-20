@@ -145,7 +145,9 @@ public class TestDocValuesFieldSources extends LuceneTestCase {
 
   public void test() throws IOException {
     for (DocValuesType type : DocValuesType.values()) {
-      test(type);
+      if (type != DocValuesType.SORTED_SET) {
+        test(type);
+      }
     }
   }
 

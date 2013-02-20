@@ -170,6 +170,12 @@ New Features
   
 * LUCENE-4778: Add a getter for the delegate in RateLimitedDirectoryWrapper.
   (Mark Miller)
+
+* LUCENE-4765: Add a multi-valued docvalues type (SORTED_SET). This is equivalent
+  to building a FieldCache.getDocTermOrds at index-time.  (Robert Muir)
+
+* LUCENE-4780: Add MonotonicAppendingLongBuffer: an append-only buffer for
+  monotonically increasing values.  (Adrien Grand)
  
 API Changes
 

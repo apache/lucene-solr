@@ -248,6 +248,12 @@ public final class SegmentReader extends AtomicReader {
   }
 
   @Override
+  public SortedSetDocValues getSortedSetDocValues(String field) throws IOException {
+    ensureOpen();
+    return core.getSortedSetDocValues(field);
+  }
+
+  @Override
   public NumericDocValues getNormValues(String field) throws IOException {
     ensureOpen();
     return core.getNormValues(field);

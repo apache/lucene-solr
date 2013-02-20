@@ -58,4 +58,5 @@ public final class DiskDocValuesFormat extends DocValuesFormat {
   public static final byte NUMERIC = 0;
   public static final byte BINARY = 1;
   public static final byte SORTED = 2;
+  public static final byte SORTED_SET = 3;
 }

@@ -33,7 +33,9 @@ import org.apache.lucene.index.FieldInfo;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.NumericDocValues;
 import org.apache.lucene.index.SegmentReader;
+import org.apache.lucene.index.SingletonSortedSetDocValues;
 import org.apache.lucene.index.SortedDocValues;
+import org.apache.lucene.index.SortedSetDocValues;
 import org.apache.lucene.index.Terms;
 import org.apache.lucene.index.TermsEnum;
 import org.apache.lucene.util.ArrayUtil;
@@ -1363,8 +1365,30 @@ class FieldCacheImpl implements FieldCache {
     }
   }
 
-  public DocTermOrds getDocTermOrds(AtomicReader reader, String field) throws IOException {
-    return (DocTermOrds) caches.get(DocTermOrds.class).get(reader, new CacheKey(field, null), false);
+  // TODO: this if DocTermsIndex was already created, we
+  // should share it...
+  public SortedSetDocValues getDocTermOrds(AtomicReader reader, String field) throws IOException {
+    SortedSetDocValues dv = reader.getSortedSetDocValues(field);
+    if (dv != null) {
+      return dv;
+    }
+    
+    SortedDocValues sdv = reader.getSortedDocValues(field);
+    if (sdv != null) {
+      return new SingletonSortedSetDocValues(sdv);
+    }
+    
+    final FieldInfo info = reader.getFieldInfos().fieldInfo(field);
+    if (info == null) {
+      return SortedSetDocValues.EMPTY;
+    } else if (info.hasDocValues()) {
+      throw new IllegalStateException("Type mismatch: " + field + " was indexed as " + info.getDocValuesType());
+    } else if (!info.isIndexed()) {
+      return SortedSetDocValues.EMPTY;
+    }
+    
+    DocTermOrds dto = (DocTermOrds) caches.get(DocTermOrds.class).get(reader, new CacheKey(field, null), false);
+    return dto.iterator(dto.getOrdTermsEnum(reader));
   }
 
   static final class DocTermOrdsCache extends Cache {
@@ -1375,7 +1399,6 @@ class FieldCacheImpl implements FieldCache {
     @Override
     protected Object createValue(AtomicReader reader, CacheKey key, boolean setDocsWithField /* ignored */)
         throws IOException {
-      // No DocValues impl yet (DocValues are single valued...):
       return new DocTermOrds(reader, key.field);
     }
   }

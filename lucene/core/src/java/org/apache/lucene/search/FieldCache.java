@@ -29,6 +29,7 @@ import org.apache.lucene.index.AtomicReader;
 import org.apache.lucene.index.BinaryDocValues;
 import org.apache.lucene.index.DocTermOrds;
 import org.apache.lucene.index.SortedDocValues;
+import org.apache.lucene.index.SortedSetDocValues;
 import org.apache.lucene.index.Terms;
 import org.apache.lucene.index.TermsEnum;
 import org.apache.lucene.util.Bits;
@@ -670,7 +671,7 @@ public interface FieldCache {
    * @return a {@link DocTermOrds} instance
    * @throws IOException  If any error occurs.
    */
-  public DocTermOrds getDocTermOrds(AtomicReader reader, String field) throws IOException;
+  public SortedSetDocValues getDocTermOrds(AtomicReader reader, String field) throws IOException;
 
   /**
    * EXPERT: A unique Identifier/Description for each item in the FieldCache. 

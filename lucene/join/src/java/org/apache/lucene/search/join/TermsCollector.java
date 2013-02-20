@@ -21,8 +21,7 @@ import java.io.IOException;
 
 import org.apache.lucene.index.AtomicReaderContext;
 import org.apache.lucene.index.BinaryDocValues;
-import org.apache.lucene.index.DocTermOrds;
-import org.apache.lucene.index.TermsEnum;
+import org.apache.lucene.index.SortedSetDocValues;
 import org.apache.lucene.search.Collector;
 import org.apache.lucene.search.FieldCache;
 import org.apache.lucene.search.Scorer;
@@ -69,10 +68,8 @@ abstract class TermsCollector extends Collector {
 
   // impl that works with multiple values per document
   static class MV extends TermsCollector {
-
-    private DocTermOrds docTermOrds;
-    private TermsEnum docTermsEnum;
-    private DocTermOrds.TermOrdsIterator reuse;
+    final BytesRef scratch = new BytesRef();
+    private SortedSetDocValues docTermOrds;
 
     MV(String field) {
       super(field);
@@ -80,29 +77,17 @@ abstract class TermsCollector extends Collector {
 
     @Override
     public void collect(int doc) throws IOException {
-      reuse = docTermOrds.lookup(doc, reuse);
-      int[] buffer = new int[5];
-
-      int chunk;
-      do {
-        chunk = reuse.read(buffer);
-        if (chunk == 0) {
-          return;
-        }
-
-        for (int idx = 0; idx < chunk; idx++) {
-          int key = buffer[idx];
-          docTermsEnum.seekExact((long) key);
-          collectorTerms.add(docTermsEnum.term());
-        }
-      } while (chunk >= buffer.length);
+      docTermOrds.setDocument(doc);
+      long ord;
+      while ((ord = docTermOrds.nextOrd()) != SortedSetDocValues.NO_MORE_ORDS) {
+        docTermOrds.lookupOrd(ord, scratch);
+        collectorTerms.add(scratch);
+      }
     }
 
     @Override
     public void setNextReader(AtomicReaderContext context) throws IOException {
       docTermOrds = FieldCache.DEFAULT.getDocTermOrds(context.reader(), field);
-      docTermsEnum = docTermOrds.getOrdTermsEnum(context.reader());
-      reuse = null; // LUCENE-3377 needs to be fixed first then this statement can be removed...
     }
   }
 

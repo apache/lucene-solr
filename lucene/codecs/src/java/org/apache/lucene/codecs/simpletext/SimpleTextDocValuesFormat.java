@@ -82,6 +82,31 @@ import org.apache.lucene.index.SegmentWriteState;
  *  so the "ord section" begins at startOffset + (9+pattern.length+maxlength)*numValues.
  *  a document's ord can be retrieved by seeking to "ord section" + (1+ordpattern.length())*docid
  *  an ord's value can be retrieved by seeking to startOffset + (9+pattern.length+maxlength)*ord
+ *  
+ *  for sorted set this is a fixed-width file very similar to the SORTED case, for example:
+ *  <pre>
+ *  field myField
+ *    type SORTED_SET
+ *    numvalues 10
+ *    maxLength 8
+ *    pattern 0
+ *    ordpattern XXXXX
+ *  length 6
+ *  foobar[space][space]
+ *  length 3
+ *  baz[space][space][space][space][space]
+ *  ...
+ *  0,3,5   
+ *  1,2
+ *  
+ *  10
+ *  ...
+ *  </pre>
+ *  so the "ord section" begins at startOffset + (9+pattern.length+maxlength)*numValues.
+ *  a document's ord list can be retrieved by seeking to "ord section" + (1+ordpattern.length())*docid
+ *  this is a comma-separated list, and its padded with spaces to be fixed width. so trim() and split() it.
+ *  and beware the empty string!
+ *  an ord's value can be retrieved by seeking to startOffset + (9+pattern.length+maxlength)*ord
  *   
  *  the reader can just scan this file when it opens, skipping over the data blocks
  *  and saving the offset/etc for each field. 

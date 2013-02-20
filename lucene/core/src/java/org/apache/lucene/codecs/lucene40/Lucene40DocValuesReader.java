@@ -31,6 +31,7 @@ import org.apache.lucene.index.IndexFileNames;
 import org.apache.lucene.index.NumericDocValues;
 import org.apache.lucene.index.SegmentReadState;
 import org.apache.lucene.index.SortedDocValues;
+import org.apache.lucene.index.SortedSetDocValues;
 import org.apache.lucene.store.CompoundFileDirectory;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.IndexInput;
@@ -614,6 +615,11 @@ final class Lucene40DocValuesReader extends DocValuesProducer {
     };
   }
   
+  @Override
+  public SortedSetDocValues getSortedSet(FieldInfo field) throws IOException {
+    throw new IllegalStateException("Lucene 4.0 does not support SortedSet: how did you pull this off?");
+  }
+
   @Override
   public void close() throws IOException {
     dir.close();

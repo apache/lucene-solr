@@ -40,6 +40,7 @@ import org.apache.lucene.document.Field;
 import org.apache.lucene.document.FieldType;
 import org.apache.lucene.document.NumericDocValuesField;
 import org.apache.lucene.document.SortedDocValuesField;
+import org.apache.lucene.document.SortedSetDocValuesField;
 import org.apache.lucene.document.StoredField;
 import org.apache.lucene.document.StringField;
 import org.apache.lucene.document.TextField;
@@ -1023,6 +1024,10 @@ public class TestIndexWriter extends LuceneTestCase {
       doc.add(new BinaryDocValuesField("binarydv", new BytesRef("500")));
       doc.add(new NumericDocValuesField("numericdv", 500));
       doc.add(new SortedDocValuesField("sorteddv", new BytesRef("500")));
+      if (defaultCodecSupportsSortedSet()) {
+        doc.add(new SortedSetDocValuesField("sortedsetdv", new BytesRef("one")));
+        doc.add(new SortedSetDocValuesField("sortedsetdv", new BytesRef("two")));
+      }
       w.addDocument(doc);
       doc = new Document();
       doc.add(newStringField(random, "id", "501", Field.Store.NO));
@@ -1030,6 +1035,10 @@ public class TestIndexWriter extends LuceneTestCase {
       doc.add(new BinaryDocValuesField("binarydv", new BytesRef("501")));
       doc.add(new NumericDocValuesField("numericdv", 501));
       doc.add(new SortedDocValuesField("sorteddv", new BytesRef("501")));
+      if (defaultCodecSupportsSortedSet()) {
+        doc.add(new SortedSetDocValuesField("sortedsetdv", new BytesRef("two")));
+        doc.add(new SortedSetDocValuesField("sortedsetdv", new BytesRef("three")));
+      }
       w.addDocument(doc);
       w.deleteDocuments(new Term("id", "500"));
       w.close();
@@ -1057,16 +1066,21 @@ public class TestIndexWriter extends LuceneTestCase {
             Field binaryDVField = new BinaryDocValuesField("binarydv", new BytesRef());
             Field numericDVField = new NumericDocValuesField("numericdv", 0);
             Field sortedDVField = new SortedDocValuesField("sorteddv", new BytesRef());
+            Field sortedSetDVField = new SortedSetDocValuesField("sortedsetdv", new BytesRef());
             doc.add(idField);
             doc.add(newField(random, "field", "some text contents", storedTextType));
             doc.add(binaryDVField);
             doc.add(numericDVField);
             doc.add(sortedDVField);
+            if (defaultCodecSupportsSortedSet()) {
+              doc.add(sortedSetDVField);
+            }
             for(int i=0;i<100;i++) {
               idField.setStringValue(Integer.toString(i));
               binaryDVField.setBytesValue(new BytesRef(idField.stringValue()));
               numericDVField.setLongValue(i);
               sortedDVField.setBytesValue(new BytesRef(idField.stringValue()));
+              sortedSetDVField.setBytesValue(new BytesRef(idField.stringValue()));
               int action = random.nextInt(100);
               if (action == 17) {
                 w.addIndexes(adder);

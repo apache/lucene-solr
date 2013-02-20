@@ -98,6 +98,11 @@ public class Facet42DocValuesConsumer extends DocValuesConsumer {
   }
   
   @Override
+  public void addSortedSetField(FieldInfo field, Iterable<BytesRef> values, Iterable<Number> docToOrdCount, Iterable<Number> ords) throws IOException {
+    throw new UnsupportedOperationException("FacetsDocValues can only handle binary fields");
+  }
+
+  @Override
   public void close() throws IOException {
     boolean success = false;
     try {

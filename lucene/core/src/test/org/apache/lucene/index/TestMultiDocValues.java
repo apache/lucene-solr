@@ -17,11 +17,14 @@ package org.apache.lucene.index;
  * limitations under the License.
  */
 
+import java.util.ArrayList;
+
 import org.apache.lucene.document.BinaryDocValuesField;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
 import org.apache.lucene.document.NumericDocValuesField;
 import org.apache.lucene.document.SortedDocValuesField;
+import org.apache.lucene.document.SortedSetDocValuesField;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.LuceneTestCase;
@@ -185,6 +188,135 @@ public class TestMultiDocValues extends LuceneTestCase {
       multi.get(i, actual);
       assertEquals(expected, actual);
     }
+    ir.close();
+    ir2.close();
+    dir.close();
+  }
+  
+  public void testSortedSet() throws Exception {
+    assumeTrue("codec does not support SORTED_SET", defaultCodecSupportsSortedSet());
+    Directory dir = newDirectory();
+    
+    IndexWriterConfig iwc = newIndexWriterConfig(random(), TEST_VERSION_CURRENT, null);
+    iwc.setMergePolicy(newLogMergePolicy());
+    RandomIndexWriter iw = new RandomIndexWriter(random(), dir, iwc);
+
+    int numDocs = atLeast(500);
+    for (int i = 0; i < numDocs; i++) {
+      Document doc = new Document();
+      int numValues = random().nextInt(5);
+      for (int j = 0; j < numValues; j++) {
+        doc.add(new SortedSetDocValuesField("bytes", new BytesRef(_TestUtil.randomUnicodeString(random()))));
+      }
+      iw.addDocument(doc);
+      if (random().nextInt(17) == 0) {
+        iw.commit();
+      }
+    }
+    DirectoryReader ir = iw.getReader();
+    iw.forceMerge(1);
+    DirectoryReader ir2 = iw.getReader();
+    AtomicReader merged = getOnlySegmentReader(ir2);
+    iw.close();
+    
+    SortedSetDocValues multi = MultiDocValues.getSortedSetValues(ir, "bytes");
+    SortedSetDocValues single = merged.getSortedSetDocValues("bytes");
+    if (multi == null) {
+      assertNull(single);
+    } else {
+      assertEquals(single.getValueCount(), multi.getValueCount());
+      BytesRef actual = new BytesRef();
+      BytesRef expected = new BytesRef();
+      // check values
+      for (long i = 0; i < single.getValueCount(); i++) {
+        single.lookupOrd(i, expected);
+        multi.lookupOrd(i, actual);
+        assertEquals(expected, actual);
+      }
+      // check ord list
+      for (int i = 0; i < numDocs; i++) {
+        single.setDocument(i);
+        ArrayList<Long> expectedList = new ArrayList<Long>();
+        long ord;
+        while ((ord = single.nextOrd()) != SortedSetDocValues.NO_MORE_ORDS) {
+          expectedList.add(ord);
+        }
+        
+        multi.setDocument(i);
+        int upto = 0;
+        while ((ord = multi.nextOrd()) != SortedSetDocValues.NO_MORE_ORDS) {
+          assertEquals(expectedList.get(upto).longValue(), ord);
+          upto++;
+        }
+        assertEquals(expectedList.size(), upto);
+      }
+    }
+    
+    ir.close();
+    ir2.close();
+    dir.close();
+  }
+  
+  // tries to make more dups than testSortedSet
+  public void testSortedSetWithDups() throws Exception {
+    assumeTrue("codec does not support SORTED_SET", defaultCodecSupportsSortedSet());
+    Directory dir = newDirectory();
+    
+    IndexWriterConfig iwc = newIndexWriterConfig(random(), TEST_VERSION_CURRENT, null);
+    iwc.setMergePolicy(newLogMergePolicy());
+    RandomIndexWriter iw = new RandomIndexWriter(random(), dir, iwc);
+
+    int numDocs = atLeast(500);
+    for (int i = 0; i < numDocs; i++) {
+      Document doc = new Document();
+      int numValues = random().nextInt(5);
+      for (int j = 0; j < numValues; j++) {
+        doc.add(new SortedSetDocValuesField("bytes", new BytesRef(_TestUtil.randomSimpleString(random(), 2))));
+      }
+      iw.addDocument(doc);
+      if (random().nextInt(17) == 0) {
+        iw.commit();
+      }
+    }
+    DirectoryReader ir = iw.getReader();
+    iw.forceMerge(1);
+    DirectoryReader ir2 = iw.getReader();
+    AtomicReader merged = getOnlySegmentReader(ir2);
+    iw.close();
+    
+    SortedSetDocValues multi = MultiDocValues.getSortedSetValues(ir, "bytes");
+    SortedSetDocValues single = merged.getSortedSetDocValues("bytes");
+    if (multi == null) {
+      assertNull(single);
+    } else {
+      assertEquals(single.getValueCount(), multi.getValueCount());
+      BytesRef actual = new BytesRef();
+      BytesRef expected = new BytesRef();
+      // check values
+      for (long i = 0; i < single.getValueCount(); i++) {
+        single.lookupOrd(i, expected);
+        multi.lookupOrd(i, actual);
+        assertEquals(expected, actual);
+      }
+      // check ord list
+      for (int i = 0; i < numDocs; i++) {
+        single.setDocument(i);
+        ArrayList<Long> expectedList = new ArrayList<Long>();
+        long ord;
+        while ((ord = single.nextOrd()) != SortedSetDocValues.NO_MORE_ORDS) {
+          expectedList.add(ord);
+        }
+        
+        multi.setDocument(i);
+        int upto = 0;
+        while ((ord = multi.nextOrd()) != SortedSetDocValues.NO_MORE_ORDS) {
+          assertEquals(expectedList.get(upto).longValue(), ord);
+          upto++;
+        }
+        assertEquals(expectedList.size(), upto);
+      }
+    }
+    
     ir.close();
     ir2.close();
     dir.close();

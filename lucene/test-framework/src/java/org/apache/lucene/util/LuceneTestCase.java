@@ -26,6 +26,7 @@ import java.util.concurrent.*;
 import java.util.logging.Logger;
 
 import org.apache.lucene.analysis.Analyzer;
+import org.apache.lucene.codecs.Codec;
 import org.apache.lucene.document.Field.Store;
 import org.apache.lucene.document.Field;
 import org.apache.lucene.document.FieldType;
@@ -1297,5 +1298,14 @@ public abstract class LuceneTestCase extends Assert {
     } catch (Exception e) {
       throw new IOException("Cannot find resource: " + name);
     }
+  }
+  
+  /** Returns true if the default codec supports SORTED_SET docvalues */ 
+  public static boolean defaultCodecSupportsSortedSet() {
+    String name = Codec.getDefault().getName();
+    if (name.equals("Lucene40") || name.equals("Lucene41")) {
+      return false;
+    }
+    return true;
   }
 }

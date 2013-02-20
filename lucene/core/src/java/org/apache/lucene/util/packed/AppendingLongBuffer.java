@@ -19,71 +19,32 @@ package org.apache.lucene.util.packed;
 
 import java.util.Arrays;
 
-import org.apache.lucene.util.ArrayUtil;
-import org.apache.lucene.util.RamUsageEstimator;
-
 /**
  * Utility class to buffer a list of signed longs in memory. This class only
- * supports appending.
+ * supports appending and is optimized for the case where values are close to
+ * each other.
  * @lucene.internal
  */
-public class AppendingLongBuffer {
-
-  private static final int BLOCK_BITS = 10;
-  private static final int MAX_PENDING_COUNT = 1 << BLOCK_BITS;
-  private static final int BLOCK_MASK = MAX_PENDING_COUNT - 1;
-
-  private long[] minValues;
-  private PackedInts.Reader[] values;
-  private long valuesBytes;
-  private int valuesOff;
-  private long[] pending;
-  private int pendingOff;
+public final class AppendingLongBuffer extends AbstractAppendingLongBuffer {
 
   /** Sole constructor. */
   public AppendingLongBuffer() {
-    minValues = new long[16];
-    values = new PackedInts.Reader[16];
-    pending = new long[MAX_PENDING_COUNT];
-    valuesOff = 0;
-    pendingOff = 0;
+    super(16);
   }
 
-  /** Append a value to this buffer. */
-  public void add(long l) {
-    if (pendingOff == MAX_PENDING_COUNT) {
-      packPendingValues();
-    }
-    pending[pendingOff++] = l;
-  }
-  
-  /** Get a value from this buffer. 
-   *  <p>
-   *  <b>NOTE</b>: This class is not really designed for random access!
-   *  You will likely get better performance by using packed ints in another way! */
-  public long get(int index) {
-    assert index < size(); // TODO: do a better check, and throw IndexOutOfBoundsException?
-                           // This class is currently only used by the indexer.
-    int block = index >> BLOCK_BITS;
-    int element = index & BLOCK_MASK;
+  @Override
+  long get(int block, int element) {
     if (block == valuesOff) {
       return pending[element];
-    } else if (values[block] == null) {
+    } else if (deltas[block] == null) {
       return minValues[block];
     } else {
-      return minValues[block] + values[block].get(element);
+      return minValues[block] + deltas[block].get(element);
     }
   }
 
-  private void packPendingValues() {
+  void packPendingValues() {
     assert pendingOff == MAX_PENDING_COUNT;
-
-    // check size
-    if (values.length == valuesOff) {
-      final int newLength = ArrayUtil.oversize(valuesOff + 1, 8);
-      minValues = Arrays.copyOf(minValues, newLength);
-      values = Arrays.copyOf(values, newLength);
-    }
 
     // compute max delta
     long minValue = pending[0];
@@ -105,18 +66,8 @@ public class AppendingLongBuffer {
       for (int i = 0; i < pendingOff; ) {
         i += mutable.set(i, pending, i, pendingOff - i);
       }
-      values[valuesOff] = mutable;
-      valuesBytes += mutable.ramBytesUsed();
+      deltas[valuesOff] = mutable;
     }
-    ++valuesOff;
-
-    // reset pending buffer
-    pendingOff = 0;
-  }
-
-  /** Get the number of values that have been added to the buffer. */
-  public int size() {
-    return valuesOff * MAX_PENDING_COUNT + pendingOff;
   }
 
   /** Return an iterator over the values of this buffer. */
@@ -125,29 +76,20 @@ public class AppendingLongBuffer {
   }
 
   /** A long iterator. */
-  public class Iterator {
-
-    long[] currentValues;
-    int vOff, pOff;
+  public final class Iterator extends AbstractAppendingLongBuffer.Iterator {
 
     private Iterator() {
-      vOff = pOff = 0;
-      if (valuesOff == 0) {
-        currentValues = pending;
-      } else {
-        currentValues = new long[MAX_PENDING_COUNT];
-        fillValues();
-      }
+      super();
     }
 
-    private void fillValues() {
+    void fillValues() {
       if (vOff == valuesOff) {
         currentValues = pending;
-      } else if (values[vOff] == null) {
+      } else if (deltas[vOff] == null) {
         Arrays.fill(currentValues, minValues[vOff]);
       } else {
         for (int k = 0; k < MAX_PENDING_COUNT; ) {
-          k += values[vOff].get(k, currentValues, k, MAX_PENDING_COUNT - k);
+          k += deltas[vOff].get(k, currentValues, k, MAX_PENDING_COUNT - k);
         }
         for (int k = 0; k < MAX_PENDING_COUNT; ++k) {
           currentValues[k] += minValues[vOff];
@@ -155,42 +97,6 @@ public class AppendingLongBuffer {
       }
     }
 
-    /** Whether or not there are remaining values. */
-    public boolean hasNext() {
-      return vOff < valuesOff || (vOff == valuesOff && pOff < pendingOff);
-    }
-
-    /** Return the next long in the buffer. */
-    public long next() {
-      assert hasNext();
-      long result = currentValues[pOff++];
-      if (pOff == MAX_PENDING_COUNT) {
-        vOff += 1;
-        pOff = 0;
-        if (vOff <= valuesOff) {
-          fillValues();
-        }
-      }
-      return result;
-    }
-
-  }
-
-  /**
-   * Return the number of bytes used by this instance.
-   */
-  public long ramBytesUsed() {
-    // TODO: this is called per-doc-per-norms/dv-field, can we optimize this?
-    long bytesUsed = RamUsageEstimator.alignObjectSize(
-        RamUsageEstimator.NUM_BYTES_OBJECT_HEADER
-        + 3 * RamUsageEstimator.NUM_BYTES_OBJECT_REF // the 3 arrays
-        + 2 * RamUsageEstimator.NUM_BYTES_INT) // the 2 offsets
-        + RamUsageEstimator.NUM_BYTES_LONG // valuesBytes
-        + RamUsageEstimator.sizeOf(pending)
-        + RamUsageEstimator.sizeOf(minValues)
-        + RamUsageEstimator.alignObjectSize(RamUsageEstimator.NUM_BYTES_ARRAY_HEADER + (long) RamUsageEstimator.NUM_BYTES_OBJECT_REF * values.length); // values
-
-    return bytesUsed + valuesBytes;
   }
 
 }
