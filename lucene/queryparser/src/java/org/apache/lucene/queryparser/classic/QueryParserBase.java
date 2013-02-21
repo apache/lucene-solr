@@ -32,6 +32,7 @@ import org.apache.lucene.index.Term;
 import org.apache.lucene.queryparser.classic.QueryParser.Operator;
 import org.apache.lucene.queryparser.flexible.standard.CommonQueryParserConfiguration;
 import org.apache.lucene.search.*;
+import org.apache.lucene.search.BooleanQuery.TooManyClauses;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.Version;
 
@@ -310,11 +311,11 @@ public abstract class QueryParserBase implements CommonQueryParserConfiguration 
 
   /**
    * By default QueryParser uses {@link org.apache.lucene.search.MultiTermQuery#CONSTANT_SCORE_AUTO_REWRITE_DEFAULT}
-   * when creating a PrefixQuery, WildcardQuery or RangeQuery. This implementation is generally preferable because it
+   * when creating a {@link PrefixQuery}, {@link WildcardQuery} or {@link TermRangeQuery}. This implementation is generally preferable because it
    * a) Runs faster b) Does not have the scarcity of terms unduly influence score
-   * c) avoids any "TooManyBooleanClauses" exception.
+   * c) avoids any {@link TooManyClauses} exception.
    * However, if your application really needs to use the
-   * old-fashioned BooleanQuery expansion rewriting and the above
+   * old-fashioned {@link BooleanQuery} expansion rewriting and the above
    * points are not relevant then use this to change
    * the rewrite method.
    */
@@ -416,9 +417,9 @@ public abstract class QueryParserBase implements CommonQueryParserConfiguration 
   }
 
   /**
-   * Set whether or not to analyze range terms when constructing RangeQuerys.
+   * Set whether or not to analyze range terms when constructing {@link TermRangeQuery}s.
    * For example, setting this to true can enable analyzing terms into 
-   * collation keys for locale-sensitive RangeQuery.
+   * collation keys for locale-sensitive {@link TermRangeQuery}.
    * 
    * @param analyzeRangeTerms whether or not terms should be analyzed for RangeQuerys
    */
@@ -427,7 +428,7 @@ public abstract class QueryParserBase implements CommonQueryParserConfiguration 
   }
 
   /**
-   * @return whether or not to analyze range terms when constructing RangeQuerys.
+   * @return whether or not to analyze range terms when constructing {@link TermRangeQuery}s.
    */
   public boolean getAnalyzeRangeTerms() {
     return analyzeRangeTerms;
@@ -844,13 +845,13 @@ public abstract class QueryParserBase implements CommonQueryParserConfiguration 
   }
 
   /**
-   * Builds a new TermRangeQuery instance
+   * Builds a new {@link TermRangeQuery} instance
    * @param field Field
    * @param part1 min
    * @param part2 max
    * @param startInclusive true if the start of the range is inclusive
    * @param endInclusive true if the end of the range is inclusive
-   * @return new TermRangeQuery instance
+   * @return new {@link TermRangeQuery} instance
    */
   protected Query newRangeQuery(String field, String part1, String part2, boolean startInclusive, boolean endInclusive) {
     final BytesRef start;

@@ -26,6 +26,8 @@ import java.util.Arrays;
 import org.apache.lucene.index.AtomicReaderContext;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.Term;
+import org.apache.lucene.queries.function.FunctionQuery;
+import org.apache.lucene.queries.function.ValueSource;
 import org.apache.lucene.search.ComplexExplanation;
 import org.apache.lucene.search.Explanation;
 import org.apache.lucene.search.Query;
@@ -39,7 +41,7 @@ import org.apache.lucene.util.ToStringUtils;
  * Query that sets document score as a programmatic function of several (sub) scores:
  * <ol>
  *    <li>the score of its subQuery (any query)</li>
- *    <li>(optional) the score of its ValueSourceQuery (or queries).</li>
+ *    <li>(optional) the score of its {@link FunctionQuery} (or queries).</li>
  * </ol>
  * Subclasses can modify the computation by overriding {@link #getCustomScoreProvider}.
  * 
@@ -355,12 +357,12 @@ public class CustomScoreQuery extends Query {
 
   /**
    * Checks if this is strict custom scoring.
-   * In strict custom scoring, the ValueSource part does not participate in weight normalization.
+   * In strict custom scoring, the {@link ValueSource} part does not participate in weight normalization.
    * This may be useful when one wants full control over how scores are modified, and does 
-   * not care about normalizing by the ValueSource part.
+   * not care about normalizing by the {@link ValueSource} part.
    * One particular case where this is useful if for testing this query.   
    * <P>
-   * Note: only has effect when the ValueSource part is not null.
+   * Note: only has effect when the {@link ValueSource} part is not null.
    */
   public boolean isStrict() {
     return strict;

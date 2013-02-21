@@ -247,6 +247,9 @@ Documentation
 * LUCENE-4718: Fixed documentation of oal.queryparser.classic.
   (Hayden Muhl via Adrien Grand)
 
+* LUCENE-4784, LUCENE-4785, LUCENE-4786: Fixed references to deprecated classes
+  SinkTokenizer, ValueSourceQuery and RangeQuery. (Hao Zhong via Adrien Grand) 
+
 Build
 
 * LUCENE-4636: Upgrade ivy to 2.3.0 (Shawn Heisey via Robert Muir)

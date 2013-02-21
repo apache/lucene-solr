@@ -21,6 +21,7 @@ import java.io.IOException;
 
 import org.apache.lucene.index.AtomicReaderContext;
 import org.apache.lucene.index.IndexReader; // for javadocs
+import org.apache.lucene.queries.function.FunctionQuery;
 import org.apache.lucene.search.Explanation;
 import org.apache.lucene.search.FieldCache; // for javadocs
 
@@ -55,7 +56,7 @@ public class CustomScoreProvider {
    * <p>
    * If your custom scoring is different than the default herein you 
    * should override at least one of the two customScore() methods.
-   * If the number of ValueSourceQueries is always &lt; 2 it is 
+   * If the number of {@link FunctionQuery function queries} is always &lt; 2 it is 
    * sufficient to override the other 
    * {@link #customScore(int, float, float) customScore()} 
    * method, which is simpler. 
@@ -67,7 +68,7 @@ public class CustomScoreProvider {
    * 
    * @param doc id of scored doc. 
    * @param subQueryScore score of that doc by the subQuery.
-   * @param valSrcScores scores of that doc by the ValueSourceQuery.
+   * @param valSrcScores scores of that doc by the {@link FunctionQuery}.
    * @return custom score.
    */
   public float customScore(int doc, float subQueryScore, float valSrcScores[]) throws IOException {
@@ -85,13 +86,13 @@ public class CustomScoreProvider {
   }
 
   /**
-   * Compute a custom score by the subQuery score and the ValueSourceQuery score.
+   * Compute a custom score by the subQuery score and the {@link FunctionQuery} score.
    * <p> 
    * Subclasses can override this method to modify the custom score.
    * <p>
    * If your custom scoring is different than the default herein you 
    * should override at least one of the two customScore() methods.
-   * If the number of ValueSourceQueries is always &lt; 2 it is 
+   * If the number of {@link FunctionQuery function queries} is always &lt; 2 it is 
    * sufficient to override this customScore() method, which is simpler. 
    * <p>
    * The default computation herein is a multiplication of the two scores:
@@ -101,7 +102,7 @@ public class CustomScoreProvider {
    *
    * @param doc id of scored doc. 
    * @param subQueryScore score of that doc by the subQuery.
-   * @param valSrcScore score of that doc by the ValueSourceQuery.
+   * @param valSrcScore score of that doc by the {@link FunctionQuery}.
    * @return custom score.
    */
   public float customScore(int doc, float subQueryScore, float valSrcScore) throws IOException {
