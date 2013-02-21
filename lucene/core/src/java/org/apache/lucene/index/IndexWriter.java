@@ -3363,6 +3363,18 @@ public class IndexWriter implements Closeable, TwoPhaseCommit {
       mergingSegments.add(info);
     }
 
+    assert merge.estimatedMergeBytes == 0;
+    assert merge.totalMergeBytes == 0;
+    for(SegmentInfoPerCommit info : merge.segments) {
+      if (info.info.getDocCount() > 0) {
+        final int delCount = numDeletedDocs(info);
+        assert delCount <= info.info.getDocCount();
+        final double delRatio = ((double) delCount)/info.info.getDocCount();
+        merge.estimatedMergeBytes += info.sizeInBytes() * (1.0 - delRatio);
+        merge.totalMergeBytes += info.sizeInBytes();
+      }
+    }
+
     // Merge is now registered
     merge.registerDone = true;
 
@@ -3450,17 +3462,6 @@ public class IndexWriter implements Closeable, TwoPhaseCommit {
 
     if (infoStream.isEnabled("IW")) {
       infoStream.message("IW", "merge seg=" + merge.info.info.name + " " + segString(merge.segments));
-    }
-
-    assert merge.estimatedMergeBytes == 0;
-    for(SegmentInfoPerCommit info : merge.segments) {
-      if (info.info.getDocCount() > 0) {
-        final int delCount = numDeletedDocs(info);
-        assert delCount <= info.info.getDocCount();
-        final double delRatio = ((double) delCount)/info.info.getDocCount();
-        merge.estimatedMergeBytes += info.sizeInBytes() * (1.0 - delRatio);
-        merge.totalMergeBytes += info.sizeInBytes();
-      }
     }
   }
 

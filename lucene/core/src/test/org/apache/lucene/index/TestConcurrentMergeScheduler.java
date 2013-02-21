@@ -365,6 +365,7 @@ public class TestConcurrentMergeScheduler extends LuceneTestCase {
         w.deleteDocuments(new Term("id", ""+random().nextInt(i+1)));
       }
     }
+    assertTrue(((TrackingCMS) iwc.getMergeScheduler()).totMergedBytes != 0);
     w.close();
     d.close();
   }
