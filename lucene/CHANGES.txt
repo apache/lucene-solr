@@ -112,6 +112,9 @@ Optimizations
   table-compression, etc), and memory addresses use MonotonicBlockPackedWriter.
   (Simon Willnauer, Adrien Grand, Mike McCandless, Robert Muir)
 
+* LUCENE-4792: Reduction of the memory required to build the doc ID maps used
+  when merging segments. (Adrien Grand)
+
 New Features
 
 * LUCENE-4686: New specialized DGapVInt8IntEncoder for facets (now the 
