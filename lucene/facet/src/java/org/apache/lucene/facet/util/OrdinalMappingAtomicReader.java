@@ -44,7 +44,8 @@ import org.apache.lucene.util.IntsRef;
  * 
  * <pre class="prettyprint">
  * // merge the old taxonomy with the new one.
- * OrdinalMap map = DirectoryTaxonomyWriter.addTaxonomies();
+ * OrdinalMap map = new MemoryOrdinalMap();
+ * DirectoryTaxonomyWriter.addTaxonomy(srcTaxoDir, map);
  * int[] ordmap = map.getMap();
  * 
  * // Add the index and re-map ordinals on the go
