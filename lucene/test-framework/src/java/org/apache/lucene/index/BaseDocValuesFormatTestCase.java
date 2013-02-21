@@ -1823,9 +1823,14 @@ public abstract class BaseDocValuesFormatTestCase extends LuceneTestCase {
       }
     }
     
+    // delete some docs
+    int numDeletions = random().nextInt(numDocs/10);
+    for (int i = 0; i < numDeletions; i++) {
+      int id = random().nextInt(numDocs);
+      writer.deleteDocuments(new Term("id", Integer.toString(id)));
+    }
+    
     // compare per-segment
-    // NOTE: we must do this before deleting, because FC.getDocTermsOrds/UninvertedField
-    // "bakes in" the deletes at the time it was first called.
     DirectoryReader ir = writer.getReader();
     for (AtomicReaderContext context : ir.leaves()) {
       AtomicReader r = context.reader();
@@ -1834,13 +1839,6 @@ public abstract class BaseDocValuesFormatTestCase extends LuceneTestCase {
       assertEquals(r.maxDoc(), expected, actual);
     }
     ir.close();
-    
-    // delete some docs
-    int numDeletions = random().nextInt(numDocs/10);
-    for (int i = 0; i < numDeletions; i++) {
-      int id = random().nextInt(numDocs);
-      writer.deleteDocuments(new Term("id", Integer.toString(id)));
-    }
     
     writer.forceMerge(1);
     
