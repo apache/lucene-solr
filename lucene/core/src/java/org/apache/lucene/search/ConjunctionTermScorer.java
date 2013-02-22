@@ -50,26 +50,32 @@ class ConjunctionTermScorer extends Scorer {
   }
 
   private int doNext(int doc) throws IOException {
-    do {
-      if (lead.doc == DocIdSetIterator.NO_MORE_DOCS) {
-        return NO_MORE_DOCS;
-      }
-      advanceHead: do {
+    for(;;) {
+      // doc may already be NO_MORE_DOCS here, but we don't check explicitly
+      // since all scorers should advance to NO_MORE_DOCS, match, then
+      // return that value.
+      advanceHead: for(;;) {
         for (int i = 1; i < docsAndFreqs.length; i++) {
+          // invariant: docsAndFreqs[i].doc <= doc at this point.
+
+          // docsAndFreqs[i].doc may already be equal to doc if we "broke advanceHead"
+          // on the previous iteration and the advance on the lead scorer exactly matched.
           if (docsAndFreqs[i].doc < doc) {
             docsAndFreqs[i].doc = docsAndFreqs[i].docs.advance(doc);
-          }
-          if (docsAndFreqs[i].doc > doc) {
-            // DocsEnum beyond the current doc - break and advance lead
-            break advanceHead;
+
+            if (docsAndFreqs[i].doc > doc) {
+              // DocsEnum beyond the current doc - break and advance lead to the new highest doc.
+              doc = docsAndFreqs[i].doc;
+              break advanceHead;
+            }
           }
         }
         // success - all DocsEnums are on the same doc
         return doc;
-      } while (true);
+      }
       // advance head for next iteration
-      doc = lead.doc = lead.docs.nextDoc();  
-    } while (true);
+      doc = lead.doc = lead.docs.advance(doc);
+    }
   }
 
   @Override
