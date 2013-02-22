@@ -84,19 +84,8 @@
     </requestHandler>
 
   <requestHandler name="/update" class="solr.UpdateRequestHandler"  />
-  
-  <!--
-     <queryResponseWriter name="xml" 
-                          default="true"
-                          class="solr.XMLResponseWriter" />
-     <queryResponseWriter name="json" class="solr.JSONResponseWriter"/>
-     <queryResponseWriter name="python" class="solr.PythonResponseWriter"/>
-     <queryResponseWriter name="ruby" class="solr.RubyResponseWriter"/>
-     <queryResponseWriter name="php" class="solr.PHPResponseWriter"/>
-     <queryResponseWriter name="phps" class="solr.PHPSerializedResponseWriter"/>
-     <queryResponseWriter name="velocity" class="solr.VelocityResponseWriter"/>
-     <queryResponseWriter name="csv" class="solr.CSVResponseWriter"/>
-    -->
+
+  <queryResponseWriter name="velocity" class="solr.VelocityResponseWriter"/>
 
   <!-- Legacy config for the admin interface -->
   <admin>
