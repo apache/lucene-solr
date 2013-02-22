@@ -37,6 +37,7 @@ import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.response.TextResponseWriter;
 import org.apache.solr.search.QParser;
 import org.apache.solr.util.DateMathParser;
+import org.apache.solr.update.processor.TimestampUpdateProcessorFactory; //jdoc
 
 import java.io.IOException;
 import java.text.*;
@@ -85,6 +86,13 @@ import java.util.*;
  * ie: "NOW+1YEAR", "NOW/DAY", "1995-12-31T23:59:59.999Z+5MINUTES", etc...
  * -- see {@link DateMathParser} for more examples.
  * </p>
+ * <p>
+ * <b>NOTE:</b> Allthough it is possible to configure a <code>DateField</code> 
+ * instance with a default value of "<code>NOW</code>" to compute a timestamp 
+ * of when the document was indexed, this is not advisable when using SolrCloud 
+ * since each replica of the document may compute a slightly different value. 
+ * {@link TimestampUpdateProcessorFactory} is recomended instead.
+ * </p>
  *
  * <p>
  * Explanation of "UTC"...
@@ -101,7 +109,7 @@ import java.util.*;
  *
  *
  * @see <a href="http://www.w3.org/TR/xmlschema-2/#dateTime">XML schema part 2</a>
- *
+ * @deprecated {@link TrieDateField} is recomended for all new schemas
  */
 public class DateField extends PrimitiveFieldType {
 
