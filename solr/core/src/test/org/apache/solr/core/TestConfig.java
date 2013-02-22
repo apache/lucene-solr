@@ -109,8 +109,8 @@ public class TestConfig extends SolrTestCaseJ4 {
     assertTrue("file handler should have been automatically registered", handler != null);
 
     //System.out.println( handler.getHiddenFiles() );
-    // should not contain: <gettableFiles>solrconfig.xml scheam.xml admin-extra.html</gettableFiles>
-    assertFalse(handler.getHiddenFiles().contains("scheam.xml".toUpperCase(Locale.ROOT)));
+    // should not contain: <gettableFiles>solrconfig.xml schema.xml admin-extra.html</gettableFiles>
+    assertFalse(handler.getHiddenFiles().contains("schema.xml".toUpperCase(Locale.ROOT)));
     assertTrue(handler.getHiddenFiles().contains("PROTWORDS.TXT"));
   }
 

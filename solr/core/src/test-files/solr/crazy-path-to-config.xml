@@ -57,7 +57,7 @@
 
   <admin>
     <defaultQuery>solr</defaultQuery>
-    <gettableFiles>solrconfig.xml scheam.xml</gettableFiles>
+    <gettableFiles>solrconfig.xml schema.xml</gettableFiles>
   </admin>
 
 
