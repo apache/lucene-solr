@@ -646,26 +646,20 @@ public class SnapPuller {
     solrCore.getUpdateHandler().newIndexWriter(isFullCopyNeeded, false);
     
     try {
-      // first try to open an NRT searcher so that the new 
+      // first try to open an NRT searcher so that the new
       // IndexWriter is registered with the reader
       Future[] waitSearcher = new Future[1];
       solrCore.getSearcher(true, false, waitSearcher, true);
       if (waitSearcher[0] != null) {
         try {
-         waitSearcher[0].get();
-       } catch (InterruptedException e) {
-         SolrException.log(LOG,e);
-       } catch (ExecutionException e) {
-         SolrException.log(LOG,e);
-       }
-     }
-
-      // update our commit point to the right dir
-      CommitUpdateCommand cuc = new CommitUpdateCommand(req, false);
-      cuc.waitSearcher = false;
-      cuc.openSearcher = false;
-      solrCore.getUpdateHandler().commit(cuc);
-
+          waitSearcher[0].get();
+        } catch (InterruptedException e) {
+          SolrException.log(LOG, e);
+        } catch (ExecutionException e) {
+          SolrException.log(LOG, e);
+        }
+      }
+      
     } finally {
       req.close();
     }
@@ -741,7 +735,7 @@ public class SnapPuller {
           dirFileFetcher.fetchFile();
           filesDownloaded.add(new HashMap<String,Object>(file));
         } else {
-          LOG.info("Skipping download for " + file.get(NAME));
+          LOG.info("Skipping download for " + file.get(NAME) + " because it already exists");
         }
       }
     } finally {
@@ -776,6 +770,7 @@ public class SnapPuller {
     boolean success = false;
     try {
       if (indexDir.fileExists(fname)) {
+        LOG.info("Skipping move file - it already exists:" + fname);
         return true;
       }
     } catch (IOException e) {

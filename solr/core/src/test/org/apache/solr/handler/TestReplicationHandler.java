@@ -26,7 +26,9 @@ import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.io.OutputStreamWriter;
 import java.io.Writer;
+import java.net.MalformedURLException;
 import java.net.URL;
+import java.util.ArrayList;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
@@ -530,15 +532,17 @@ public class TestReplicationHandler extends SolrTestCaseJ4 {
       index(masterClient, "id", i, "name", "name = " + i);
 
     // make sure prepareCommit doesn't mess up commit  (SOLR-3938)
+    
     // todo: make SolrJ easier to pass arbitrary params to
+    // TODO: precommit WILL screw with the rest of this test
     String masterUrl = "http://127.0.0.1:" + masterJetty.getLocalPort() + "/solr/update?prepareCommit=true";
     URL url = new URL(masterUrl);
-    InputStream stream = url.openStream();
-    try {
-      stream.close();
-    } catch (IOException e) {
-      //e.printStackTrace();
-    }
+//    InputStream stream = url.openStream();
+//    try {
+//      stream.close();
+//    } catch (IOException e) {
+//      //e.printStackTrace();
+//    }
 
     masterClient.commit();
 
@@ -550,7 +554,7 @@ public class TestReplicationHandler extends SolrTestCaseJ4 {
     masterUrl = "http://127.0.0.1:" + slaveJetty.getLocalPort() + "/solr/replication?command=fetchindex&masterUrl=";
     masterUrl += "http://127.0.0.1:" + masterJetty.getLocalPort() + "/solr/replication";
     url = new URL(masterUrl);
-    stream = url.openStream();
+    InputStream stream = url.openStream();
     try {
       stream.close();
     } catch (IOException e) {
@@ -565,7 +569,6 @@ public class TestReplicationHandler extends SolrTestCaseJ4 {
     String cmp = BaseDistributedSearchTestCase.compare(masterQueryResult, slaveQueryResult, 0, null);
     assertEquals(null, cmp);
 
-    System.out.println("replicate slave to master");
     // snappull from the slave to the master
     
     for (int i = 0; i < 3; i++)
@@ -573,6 +576,106 @@ public class TestReplicationHandler extends SolrTestCaseJ4 {
 
     slaveClient.commit();
     
+    pullFromSlaveToMaster();
+    
+    //get docs from slave and check if number is equal to master
+    slaveQueryRsp = rQuery(nDocs, "*:*", slaveClient);
+    slaveQueryResult = (SolrDocumentList) slaveQueryRsp.get("response");
+    assertEquals(nDocs, slaveQueryResult.getNumFound());
+    //compare results
+    masterQueryRsp = rQuery(nDocs, "*:*", masterClient);
+    masterQueryResult = (SolrDocumentList) masterQueryRsp.get("response");
+    cmp = BaseDistributedSearchTestCase.compare(masterQueryResult, slaveQueryResult, 0, null);
+    assertEquals(null, cmp);
+
+    // get the details
+    // just ensures we don't get an exception
+    assertVersions();
+    
+    pullFromSlaveToMaster();
+    
+    //get docs from slave and check if number is equal to master
+    slaveQueryRsp = rQuery(nDocs, "*:*", slaveClient);
+    slaveQueryResult = (SolrDocumentList) slaveQueryRsp.get("response");
+    assertEquals(nDocs, slaveQueryResult.getNumFound());
+    //compare results
+    masterQueryRsp = rQuery(nDocs, "*:*", masterClient);
+    masterQueryResult = (SolrDocumentList) masterQueryRsp.get("response");
+    cmp = BaseDistributedSearchTestCase.compare(masterQueryResult, slaveQueryResult, 0, null);
+    assertEquals(null, cmp);
+    
+    assertVersions();
+    
+    // now force a new index directory
+    for (int i = 0; i < 3; i++)
+      index(masterClient, "id", i, "name", "name = " + i);
+    
+    masterClient.commit();
+    
+    pullFromSlaveToMaster();
+    
+    //get docs from slave and check if number is equal to master
+    slaveQueryRsp = rQuery(nDocs, "*:*", slaveClient);
+    slaveQueryResult = (SolrDocumentList) slaveQueryRsp.get("response");
+    assertEquals(nDocs, slaveQueryResult.getNumFound());
+    //compare results
+    masterQueryRsp = rQuery(nDocs, "*:*", masterClient);
+    masterQueryResult = (SolrDocumentList) masterQueryRsp.get("response");
+    cmp = BaseDistributedSearchTestCase.compare(masterQueryResult, slaveQueryResult, 0, null);
+    assertEquals(null, cmp);
+    
+    assertVersions();
+    pullFromSlaveToMaster();
+    
+    //get docs from slave and check if number is equal to master
+    slaveQueryRsp = rQuery(nDocs, "*:*", slaveClient);
+    slaveQueryResult = (SolrDocumentList) slaveQueryRsp.get("response");
+    assertEquals(nDocs, slaveQueryResult.getNumFound());
+    //compare results
+    masterQueryRsp = rQuery(nDocs, "*:*", masterClient);
+    masterQueryResult = (SolrDocumentList) masterQueryRsp.get("response");
+    cmp = BaseDistributedSearchTestCase.compare(masterQueryResult, slaveQueryResult, 0, null);
+    assertEquals(null, cmp);
+    
+    assertVersions();
+    
+    NamedList<Object> details = getDetails(masterClient);
+   
+    details = getDetails(slaveClient);
+
+    // NOTE: at this point, the slave is not polling any more
+    // restore it.
+    slave.copyConfigFile(CONF_DIR + "solrconfig-slave.xml", "solrconfig.xml");
+    slaveJetty.stop();
+    slaveJetty = createJetty(slave);
+    slaveClient = createNewSolrServer(slaveJetty.getLocalPort());
+  }
+
+  private void assertVersions() throws Exception {
+    NamedList<Object> details = getDetails(masterClient);
+    ArrayList<NamedList<Object>> commits = (ArrayList<NamedList<Object>>) details.get("commits");
+    Long maxVersionMaster = 0L;
+    for(NamedList<Object> commit : commits) {
+      Long version = (Long) commit.get("indexVersion");
+      maxVersionMaster = Math.max(version, maxVersionMaster);
+    }
+    
+    details = getDetails(slaveClient);
+    commits = (ArrayList<NamedList<Object>>) details.get("commits");
+    Long maxVersionSlave= 0L;
+    for(NamedList<Object> commit : commits) {
+      Long version = (Long) commit.get("indexVersion");
+      maxVersionSlave = Math.max(version, maxVersionSlave);
+    }
+    
+    assertEquals(maxVersionMaster, maxVersionSlave);
+  }
+
+  private void pullFromSlaveToMaster() throws MalformedURLException,
+      IOException {
+    String masterUrl;
+    URL url;
+    InputStream stream;
     masterUrl = "http://127.0.0.1:" + masterJetty.getLocalPort() + "/solr/replication?command=fetchindex&masterUrl=";
     masterUrl += "http://127.0.0.1:" + slaveJetty.getLocalPort() + "/solr/replication";
     url = new URL(masterUrl);
@@ -582,18 +685,6 @@ public class TestReplicationHandler extends SolrTestCaseJ4 {
     } catch (IOException e) {
       //e.printStackTrace();
     }
-
-    // get the details
-    // just ensures we don't get an exception
-    NamedList<Object> details = getDetails(masterClient);
-    //System.out.println("details:" + details);
-    
-    // NOTE: at this point, the slave is not polling any more
-    // restore it.
-    slave.copyConfigFile(CONF_DIR + "solrconfig-slave.xml", "solrconfig.xml");
-    slaveJetty.stop();
-    slaveJetty = createJetty(slave);
-    slaveClient = createNewSolrServer(slaveJetty.getLocalPort());
   }
 
 
@@ -660,8 +751,6 @@ public class TestReplicationHandler extends SolrTestCaseJ4 {
   }
   
   private void doTestReplicateAfterStartupWithNoActivity() throws Exception {
-    String factory = System.getProperty("solr.directoryFactory");
-    System.out.println("factory:" + factory);
     useFactory(null);
     try {
     
