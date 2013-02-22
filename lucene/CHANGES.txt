@@ -245,6 +245,12 @@ Bug Fixes
   cached datastructure. Otherwise this can cause inconsistencies with readers
   at different points in time.  (Robert Muir)
 
+* LUCENE-4791: A conjunction of terms (ConjunctionTermScorer) scanned on
+  the lowest frequency term instead of skipping, leading to potentially
+  large performance impacts for many non-random or non-uniform
+  term distributions.  (John Wang, yonik)
+
+
 Documentation
 
 * LUCENE-4718: Fixed documentation of oal.queryparser.classic.
