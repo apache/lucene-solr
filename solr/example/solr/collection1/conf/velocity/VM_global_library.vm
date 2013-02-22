@@ -26,7 +26,9 @@
 
 #macro(group)#if($request.params.getBool("group") == true)&group=true#end#if($request.params.get("group.field"))#foreach($grp in $request.params.getParams('group.field'))&group.field=$grp#end#end#end
 
-#macro(lensNoQ)?#if($request.params.getParams('fq') and $list.size($request.params.getParams('fq')) > 0)&#fqs($request.params.getParams('fq'))#end#debug#boostPrice#annotate#spatial#qOpts#group#end
+#macro(sort $p)#if($p)#foreach($s in $p)&sort=$esc.url($s)#end#end#end
+
+#macro(lensNoQ)?#if($request.params.getParams('fq') and $list.size($request.params.getParams('fq')) > 0)&#fqs($request.params.getParams('fq'))#end#sort($request.params.getParams('sort'))#debug#boostPrice#annotate#spatial#qOpts#group#end
 #macro(lens)#lensNoQ#q#end
         
 
