@@ -152,6 +152,9 @@ Bug Fixes
 * SOLR-4484: ReplicationHandler#loadReplicationProperties still uses Files 
   rather than the Directory to try and read the replication properties files.
   (Mark Miller) 
+  
+* SOLR-4352: /browse pagination now supports and preserves sort context
+  (Eric Spiegelberg, Erik Hatcher)
 
 Optimizations
 ----------------------
