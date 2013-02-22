@@ -1,4 +1,3 @@
-
 package org.apache.solr.search;
 
 /*
@@ -45,7 +44,7 @@ public class TestSurroundQueryParser extends AbstractSolrTestCase {
   
   public void testQueryParser() {
     String v = "a b c d e a b c f g h i j k l m l k j z z z";
-    assertU(adoc("id","1", "text",v,  "text_np",v));
+    assertU(adoc("id","1", "text",v,  "text_np",v, "name",v));
     
     v="abc abxy cde efg ef e  ";
     assertU(adoc("id","2", "text",v,  "text_np",v));
@@ -84,6 +83,26 @@ public class TestSurroundQueryParser extends AbstractSolrTestCase {
     t1 = localP + "(1003 2n 1001) 3N 1006";
     assertQ(req("q", t1, "indent","true")
         ,"//*[@numFound='1']");
+
+    // test highlighted response with ordered query and hl.usePhraseHighlighter=true
+    assertQ(req("q", "{!surround df=name}k w l", 
+                "hl", "true", 
+                "hl.fl", "name", 
+                "hl.usePhraseHighlighter", "true")
+        ,"//*[@numFound='1']"
+        ,"//lst[@name='highlighting']/lst[@name='1']"
+        ,"//lst[@name='1']/arr[@name='name']/str[.='a b c d e a b c f g h i j <em>k</em> <em>l</em> m l k j z z z']");
+
+    // test highlighted response with ordered query and hl.usePhraseHighlighter=false
+    assertQ(req("q", "{!surround df=name}k w l", 
+                "hl", "true", 
+                "hl.fl", "name", 
+                "hl.usePhraseHighlighter", "false")
+        ,"//*[@numFound='1']"
+        ,"//lst[@name='highlighting']/lst[@name='1']"
+        ,"//lst[@name='1']/arr[@name='name']/str[.='a b c d e a b c f g h i j <em>k</em> <em>l</em> m <em>l</em> <em>k</em> j z z z']");
   }
+
+
   
 }

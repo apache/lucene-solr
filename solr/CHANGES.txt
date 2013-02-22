@@ -181,6 +181,8 @@ Other Changes
 * SOLR-4394: Tests and example configs demonstrating SSL with both server 
   and client certs (hossman)
 
+* SOLR-3060: SurroundQParserPlugin highlighting tests 
+  (Ahmet Arslan via hossman)
 
 ==================  4.1.0 ==================
 
