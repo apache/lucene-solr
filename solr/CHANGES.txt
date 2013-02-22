@@ -197,6 +197,8 @@ Other Changes
 * SOLR-3060: SurroundQParserPlugin highlighting tests 
   (Ahmet Arslan via hossman)
 
+* SOLR-2470: Added more tests for VelocityResponseWriter
+
 ==================  4.1.0 ==================
 
 Versions of Major Components
