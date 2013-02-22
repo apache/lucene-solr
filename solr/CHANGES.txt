@@ -78,6 +78,9 @@ New Features
 * SOLR-4477: Add support for queries (match-only) against docvalues fields. 
   (Robert Muir)
 
+* SOLR-4488: Return slave replication details for a master if the master has
+  also acted like a slave. (Mark Miller)
+
 Bug Fixes
 ----------------------
 
@@ -142,6 +145,13 @@ Bug Fixes
 * SOLR-4469: A new IndexWriter must be opened on SolrCore reload when the index
   directory has changed and the previous SolrCore's state should not be 
   propagated. (Mark Miller, Gregg Donovan)
+
+* SOLR-4471: Replication occurs even when a slave is already up to date.
+  (Mark Miller, Andre Charton)
+  
+* SOLR-4484: ReplicationHandler#loadReplicationProperties still uses Files 
+  rather than the Directory to try and read the replication properties files.
+  (Mark Miller) 
 
 Optimizations
 ----------------------

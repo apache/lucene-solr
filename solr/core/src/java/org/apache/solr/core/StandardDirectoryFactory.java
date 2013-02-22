@@ -89,7 +89,7 @@ public class StandardDirectoryFactory extends CachingDirectoryFactory {
       throws IOException {
     
     Directory baseFromDir = getBaseDir(fromDir);
-    Directory baseToDir = getBaseDir(fromDir);
+    Directory baseToDir = getBaseDir(toDir);
     
     if (baseFromDir instanceof FSDirectory && baseToDir instanceof FSDirectory) {
       File dir1 = ((FSDirectory) baseFromDir).getDirectory();
