@@ -19,6 +19,7 @@ package org.apache.lucene.classification;
 import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.analysis.MockAnalyzer;
 import org.apache.lucene.analysis.ngram.EdgeNGramTokenizer;
+import org.apache.lucene.util.LuceneTestCase;
 import org.junit.Test;
 
 import java.io.Reader;
@@ -26,6 +27,8 @@ import java.io.Reader;
 /**
  * Testcase for {@link SimpleNaiveBayesClassifier}
  */
+// TODO : eventually remove this if / when fallback methods exist for all un-supportable codec methods (see LUCENE-4872)
+@LuceneTestCase.SuppressCodecs("Lucene3x")
 public class SimpleNaiveBayesClassifierTest extends ClassificationTestBase {
 
   @Test
