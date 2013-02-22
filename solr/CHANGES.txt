@@ -199,6 +199,9 @@ Other Changes
 
 * SOLR-2470: Added more tests for VelocityResponseWriter
 
+* SOLR-4471: Improve and clean up TestReplicationHandler. 
+  (Amit Nithian via Mark Miller)
+
 ==================  4.1.0 ==================
 
 Versions of Major Components
