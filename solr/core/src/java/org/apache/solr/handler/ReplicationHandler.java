@@ -26,6 +26,7 @@ import java.nio.channels.FileChannel;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
+import java.util.Collections;
 import java.util.Date;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -232,7 +233,10 @@ public class ReplicationHandler extends RequestHandlerBase implements SolrCoreAw
         NamedList<Object> nl = new NamedList<Object>();
         nl.add("indexVersion", IndexDeletionPolicyWrapper.getCommitTimestamp(c));
         nl.add(GENERATION, c.getGeneration());
-        nl.add(CMD_GET_FILE_LIST, c.getFileNames());
+        List<String> commitList = new ArrayList<String>(c.getFileNames().size());
+        commitList.addAll(c.getFileNames());
+        Collections.sort(commitList);
+        nl.add(CMD_GET_FILE_LIST, commitList);
         l.add(nl);
       } catch (IOException e) {
         LOG.warn("Exception while reading files for commit " + c, e);
