@@ -32,7 +32,26 @@ import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.CharsRef;
 import org.apache.solr.response.TextResponseWriter;
 import org.apache.solr.search.QParser;
+import org.apache.solr.update.processor.TimestampUpdateProcessorFactory; //jdoc
 
+/**
+ * <p>
+ * An extension of {@link DateField} that supports the same values and 
+ * syntax, but indexes the value more efficiently using a numeric 
+ * {@link TrieField} under the covers.  See the description of 
+ * {@link DateField} for more details of the supported usage.
+ * </p>
+ * <p>
+ * <b>NOTE:</b> Allthough it is possible to configure a <code>TrieDateField</code> 
+ * instance with a default value of "<code>NOW</code>" to compute a timestamp 
+ * of when the document was indexed, this is not advisable when using SolrCloud 
+ * since each replica of the document may compute a slightly different value. 
+ * {@link TimestampUpdateProcessorFactory} is recomended instead.
+ * </p>
+ *
+ * @see DateField
+ * @see TrieField
+ */
 public class TrieDateField extends DateField {
 
   final TrieField wrappedField = new TrieField() {{
