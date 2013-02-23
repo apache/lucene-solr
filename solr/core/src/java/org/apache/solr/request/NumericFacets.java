@@ -40,10 +40,12 @@ import org.apache.lucene.util.Bits;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.CharsRef;
 import org.apache.lucene.util.PriorityQueue;
+import org.apache.lucene.util.StringHelper;
 import org.apache.solr.common.params.FacetParams;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.schema.FieldType;
 import org.apache.solr.schema.SchemaField;
+import org.apache.solr.schema.TrieField;
 import org.apache.solr.search.DocIterator;
 import org.apache.solr.search.DocSet;
 import org.apache.solr.search.SolrIndexSearcher;
@@ -266,10 +268,28 @@ final class NumericFacets {
         }
         final Terms terms = searcher.getAtomicReader().terms(fieldName);
         if (terms != null) {
+          final String prefixStr = TrieField.getMainValuePrefix(ft);
+          final BytesRef prefix;
+          if (prefixStr != null) {
+            prefix = new BytesRef(prefixStr);
+          } else {
+            prefix = new BytesRef();
+          }
           final TermsEnum termsEnum = terms.iterator(null);
-          BytesRef term = termsEnum.next();
+          BytesRef term;
+          switch (termsEnum.seekCeil(prefix)) {
+            case FOUND:
+            case NOT_FOUND:
+              term = termsEnum.term();
+              break;
+            case END:
+              term = null;
+              break;
+            default:
+              throw new AssertionError();
+          }
           final CharsRef spare = new CharsRef();
-          for (int skipped = hashTable.size; skipped < offset && term != null; ) {
+          for (int skipped = hashTable.size; skipped < offset && term != null && StringHelper.startsWith(term, prefix); ) {
             ft.indexedToReadable(term, spare);
             final String termStr = spare.toString();
             if (!alreadySeen.contains(termStr)) {
@@ -277,7 +297,7 @@ final class NumericFacets {
             }
             term = termsEnum.next();
           }
-          for ( ; term != null && (limit < 0 || result.size() < limit); term = termsEnum.next()) {
+          for ( ; term != null && StringHelper.startsWith(term, prefix) && (limit < 0 || result.size() < limit); term = termsEnum.next()) {
             ft.indexedToReadable(term, spare);
             final String termStr = spare.toString();
             if (!alreadySeen.contains(termStr)) {
@@ -301,13 +321,31 @@ final class NumericFacets {
       }
       final Terms terms = searcher.getAtomicReader().terms(fieldName);
       if (terms != null) {
+        final String prefixStr = TrieField.getMainValuePrefix(ft);
+        final BytesRef prefix;
+        if (prefixStr != null) {
+          prefix = new BytesRef(prefixStr);
+        } else {
+          prefix = new BytesRef();
+        }
         final TermsEnum termsEnum = terms.iterator(null);
+        BytesRef term;
+        switch (termsEnum.seekCeil(prefix)) {
+          case FOUND:
+          case NOT_FOUND:
+            term = termsEnum.term();
+            break;
+          case END:
+            term = null;
+            break;
+          default:
+            throw new AssertionError();
+        }
         final CharsRef spare = new CharsRef();
-        BytesRef term = termsEnum.next();
-        for (int i = 0; i < offset && term != null; ++i) {
+        for (int i = 0; i < offset && term != null && StringHelper.startsWith(term, prefix); ++i) {
           term = termsEnum.next();
         }
-        for ( ; term != null && (limit < 0 || result.size() < limit); term = termsEnum.next()) {
+        for ( ; term != null && StringHelper.startsWith(term, prefix) && (limit < 0 || result.size() < limit); term = termsEnum.next()) {
           ft.indexedToReadable(term, spare);
           final String termStr = spare.toString();
           Integer count = counts.get(termStr);

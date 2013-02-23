@@ -17,6 +17,8 @@
 
 package org.apache.solr.request;
 
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Locale;
 import java.util.Random;
 
@@ -25,6 +27,7 @@ import org.apache.lucene.index.Term;
 import org.apache.lucene.index.TermsEnum;
 import org.apache.lucene.util.BytesRef;
 import org.apache.solr.SolrTestCaseJ4;
+import org.apache.solr.common.params.FacetParams;
 import org.junit.After;
 import org.junit.BeforeClass;
 import org.junit.Test;
@@ -263,5 +266,32 @@ public class TestFaceting extends SolrTestCaseJ4 {
             );
   }
 
+  @Test
+  public void testTrieFields() {
+    // make sure that terms are correctly filtered even for trie fields that index several
+    // terms for a single value
+    List<String> fields = new ArrayList<String>();
+    fields.add("id");
+    fields.add("7");
+    final String[] suffixes = new String[] {"ti", "tis", "tf", "tfs", "tl", "tls", "td", "tds"};
+    for (String suffix : suffixes) {
+      fields.add("f_" + suffix);
+      fields.add("42");
+    }
+    assertU(adoc(fields.toArray(new String[0])));
+    assertU(commit());
+    for (String suffix : suffixes) {
+      for (String facetMethod : new String[] {FacetParams.FACET_METHOD_enum, FacetParams.FACET_METHOD_fc, FacetParams.FACET_METHOD_fcs}) {
+        for (String facetSort : new String[] {FacetParams.FACET_SORT_COUNT, FacetParams.FACET_SORT_INDEX}) {
+          for (String value : new String[] {"42", "43"}) { // match or not
+            final String field = "f_" + suffix;
+            assertQ("field=" + field + ",method=" + facetMethod + ",sort=" + facetSort,
+                req("q", field + ":" + value, FacetParams.FACET, "true", FacetParams.FACET_FIELD, field, FacetParams.FACET_MINCOUNT, "0", FacetParams.FACET_SORT, facetSort, FacetParams.FACET_METHOD, facetMethod),
+                "*[count(//lst[@name='" + field + "']/int)=1]"); // exactly 1 facet count
+          }
+        }
+      }
+    }
+  }
 
 }
