@@ -447,7 +447,12 @@ public class TestReplicationHandler extends SolrTestCaseJ4 {
 
     assertTrue(slaveXsltDir.isDirectory());
     assertTrue(slaveXsl.exists());
-
+    
+    // revert the schema
+    master.copyConfigFile(CONF_DIR + "schema-replication1.xml", "schema.xml");
+    masterJetty.stop();
+    masterJetty = createJetty(master);
+    masterClient = createNewSolrServer(masterJetty.getLocalPort());
   }
 
   @Test
@@ -674,8 +679,8 @@ public class TestReplicationHandler extends SolrTestCaseJ4 {
     }
   }
 
-
-  private void doTestReplicateAfterStartup() throws Exception {
+  @Test
+  public void doTestReplicateAfterStartup() throws Exception {
     //stop slave
     slaveJetty.stop();
 
@@ -737,7 +742,8 @@ public class TestReplicationHandler extends SolrTestCaseJ4 {
     slaveClient = createNewSolrServer(slaveJetty.getLocalPort());
   }
   
-  private void doTestReplicateAfterStartupWithNoActivity() throws Exception {
+  @Test
+  public void doTestReplicateAfterStartupWithNoActivity() throws Exception {
     useFactory(null);
     try {
     
@@ -961,6 +967,18 @@ public class TestReplicationHandler extends SolrTestCaseJ4 {
     slaveQueryRsp = rQuery(1, "*:*", slaveClient);
     SolrDocument d = ((SolrDocumentList) slaveQueryRsp.get("response")).get(0);
     assertEquals("newname = 2001", (String) d.getFieldValue("newname"));
+    
+    // revert configs
+    //change solrconfig on master
+    master.copyConfigFile(CONF_DIR + "solrconfig-master1.xml", 
+                          "solrconfig.xml");
+    //change schema on master
+    master.copyConfigFile(CONF_DIR + "schema-replication1.xml", 
+                          "schema.xml");
+    masterJetty.stop();
+
+    masterJetty = createJetty(master);
+    masterClient = createNewSolrServer(masterJetty.getLocalPort());
   }
 
 
