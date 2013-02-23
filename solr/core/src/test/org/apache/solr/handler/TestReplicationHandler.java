@@ -453,6 +453,11 @@ public class TestReplicationHandler extends SolrTestCaseJ4 {
     masterJetty.stop();
     masterJetty = createJetty(master);
     masterClient = createNewSolrServer(masterJetty.getLocalPort());
+    
+    slave.copyConfigFile(CONF_DIR + "schema-replication1.xml", "schema.xml");
+    slaveJetty.stop();
+    slaveJetty = createJetty(slave);
+    slaveClient = createNewSolrServer(slaveJetty.getLocalPort());
   }
 
   @Test
@@ -969,16 +974,19 @@ public class TestReplicationHandler extends SolrTestCaseJ4 {
     assertEquals("newname = 2001", (String) d.getFieldValue("newname"));
     
     // revert configs
-    //change solrconfig on master
     master.copyConfigFile(CONF_DIR + "solrconfig-master1.xml", 
                           "solrconfig.xml");
-    //change schema on master
     master.copyConfigFile(CONF_DIR + "schema-replication1.xml", 
                           "schema.xml");
     masterJetty.stop();
 
     masterJetty = createJetty(master);
     masterClient = createNewSolrServer(masterJetty.getLocalPort());
+    
+    slave.copyConfigFile(CONF_DIR + "schema-replication1.xml", "schema.xml");
+    slaveJetty.stop();
+    slaveJetty = createJetty(slave);
+    slaveClient = createNewSolrServer(slaveJetty.getLocalPort());
   }
 
 
