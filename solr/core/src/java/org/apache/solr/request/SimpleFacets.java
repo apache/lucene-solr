@@ -320,6 +320,10 @@ public class SimpleFacets {
     return collector.getGroupCount();
   }
 
+  enum FacetMethod {
+    ENUM, FC, FCS;
+  }
+
   public NamedList<Integer> getTermCounts(String field) throws IOException {
     int offset = params.getFieldInt(field, FacetParams.FACET_OFFSET, 0);
     int limit = params.getFieldInt(field, FacetParams.FACET_LIMIT, 100);
@@ -342,57 +346,84 @@ public class SimpleFacets {
     FieldType ft = sf.getType();
 
     // determine what type of faceting method to use
-    String method = params.getFieldParam(field, FacetParams.FACET_METHOD);
-    boolean enumMethod = FacetParams.FACET_METHOD_enum.equals(method);
+    final String methodStr = params.getFieldParam(field, FacetParams.FACET_METHOD);
+    FacetMethod method = null;
+    if (FacetParams.FACET_METHOD_enum.equals(methodStr)) {
+      method = FacetMethod.ENUM;
+    } else if (FacetParams.FACET_METHOD_fcs.equals(methodStr)) {
+      method = FacetMethod.FCS;
+    } else if (FacetParams.FACET_METHOD_fc.equals(methodStr)) {
+      method = FacetMethod.FC;
+    }
 
-    // TODO: default to per-segment or not?
-    boolean per_segment = FacetParams.FACET_METHOD_fcs.equals(method) // explicit
-        || (ft.getNumericType() != null && sf.hasDocValues()); // numeric doc values are per-segment by default
+    if (method == FacetMethod.ENUM && TrieField.getMainValuePrefix(ft) != null) {
+      // enum can't deal with trie fields that index several terms per value
+      method = sf.multiValued() ? FacetMethod.FC : FacetMethod.FCS;
+    }
 
     if (method == null && ft instanceof BoolField) {
       // Always use filters for booleans... we know the number of values is very small.
-      enumMethod = true;
+      method = FacetMethod.ENUM;
     }
-    boolean multiToken = sf.multiValued() || ft.multiValuedFieldCache();
 
-    if (TrieField.getMainValuePrefix(ft) != null) {
-      // A TrieField with multiple parts indexed per value... currently only
-      // UnInvertedField can handle this case, so force it's use.
-      enumMethod = false;
-      multiToken = true;
+    final boolean multiToken = sf.multiValued() || ft.multiValuedFieldCache();
+    
+    if (method == null && ft.getNumericType() != null && !sf.multiValued()) {
+      // the per-segment approach is optimal for numeric field types since there
+      // are no global ords to merge and no need to create an expensive
+      // top-level reader
+      method = FacetMethod.FCS;
+    }
+
+    if (ft.getNumericType() != null && sf.hasDocValues()) {
+      // only fcs is able to leverage the numeric field caches
+      method = FacetMethod.FCS;
+    }
+
+    if (method == null) {
+      // TODO: default to per-segment or not?
+      method = FacetMethod.FC;
+    }
+
+    if (method == FacetMethod.FCS && multiToken) {
+      // only fc knows how to deal with multi-token fields
+      method = FacetMethod.FC;
     }
 
     if (params.getFieldBool(field, GroupParams.GROUP_FACET, false)) {
       counts = getGroupedCounts(searcher, docs, field, multiToken, offset,limit, mincount, missing, sort, prefix);
     } else {
-      // unless the enum method is explicitly specified, use a counting method.
-      if (enumMethod) {
-        counts = getFacetTermEnumCounts(searcher, docs, field, offset, limit, mincount,missing,sort,prefix);
-      } else {
-        if (multiToken) {
-          UnInvertedField uif = UnInvertedField.getUnInvertedField(field, searcher);
-          counts = uif.getCounts(searcher, docs, offset, limit, mincount,missing,sort,prefix);
-        } else {
-          // TODO: future logic could use filters instead of the fieldcache if
-          // the number of terms in the field is small enough.
-          if (per_segment) {
-            if (ft.getNumericType() != null && !sf.multiValued()) {
-              // force numeric faceting
-              if (prefix != null && !prefix.isEmpty()) {
-                throw new SolrException(ErrorCode.BAD_REQUEST, FacetParams.FACET_PREFIX + " is not supported on numeric types");
-              }
-              counts = NumericFacets.getCounts(searcher, docs, field, offset, limit, mincount, missing, sort);
-            } else {
-              PerSegmentSingleValuedFaceting ps = new PerSegmentSingleValuedFaceting(searcher, docs, field, offset,limit, mincount, missing, sort, prefix);
-              Executor executor = threads == 0 ? directExecutor : facetExecutor;
-              ps.setNumThreads(threads);
-              counts = ps.getFacetCounts(executor);
+      assert method != null;
+      switch (method) {
+        case ENUM:
+          assert TrieField.getMainValuePrefix(ft) == null;
+          counts = getFacetTermEnumCounts(searcher, docs, field, offset, limit, mincount,missing,sort,prefix);
+          break;
+        case FCS:
+          assert !multiToken;
+          if (ft.getNumericType() != null && !sf.multiValued()) {
+            // force numeric faceting
+            if (prefix != null && !prefix.isEmpty()) {
+              throw new SolrException(ErrorCode.BAD_REQUEST, FacetParams.FACET_PREFIX + " is not supported on numeric types");
             }
+            counts = NumericFacets.getCounts(searcher, docs, field, offset, limit, mincount, missing, sort);
+          } else {
+            PerSegmentSingleValuedFaceting ps = new PerSegmentSingleValuedFaceting(searcher, docs, field, offset,limit, mincount, missing, sort, prefix);
+            Executor executor = threads == 0 ? directExecutor : facetExecutor;
+            ps.setNumThreads(threads);
+            counts = ps.getFacetCounts(executor);
+          }
+          break;
+        case FC:
+          if (multiToken || TrieField.getMainValuePrefix(ft) != null) {
+            UnInvertedField uif = UnInvertedField.getUnInvertedField(field, searcher);
+            counts = uif.getCounts(searcher, docs, offset, limit, mincount,missing,sort,prefix);
           } else {
             counts = getFieldCacheCounts(searcher, docs, field, offset,limit, mincount, missing, sort, prefix);
           }
-
-        }
+          break;
+        default:
+          throw new AssertionError();
       }
     }
 
