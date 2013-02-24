@@ -19,12 +19,6 @@ import org.apache.lucene.document.Document;
 import org.apache.lucene.document.TextField;
 import org.apache.lucene.index.RandomIndexWriter;
 import org.apache.lucene.index.Term;
-import org.apache.lucene.search.BooleanClause;
-import org.apache.lucene.search.BooleanClause.Occur;
-import org.apache.lucene.search.BooleanQuery;
-import org.apache.lucene.search.TermQuery;
-import org.apache.lucene.search.intervals.BlockIntervalFilter;
-import org.apache.lucene.search.intervals.IntervalFilterQuery;
 
 import java.io.IOException;
 
@@ -58,6 +52,19 @@ public class TestExactPhraseQuery extends IntervalTestBase {
           TextField.TYPE_STORED));
       writer.addDocument(doc);
     }
+  }
+
+  public void testMultiPhrases() throws IOException {
+
+    ExactMultiPhraseQuery q = new ExactMultiPhraseQuery();
+    q.add(new Term("field", "pease"));
+    q.add(new Term("field", "porridge"));
+    q.add(new Term("field", "hot!"), new Term("field", "cold!"));
+
+    checkIntervals(q, searcher, new int[][]{
+        { 0, 0, 2, 3, 5, 31, 33, 34, 36 },
+        { 1, 0, 2, 3, 5, 31, 33, 34, 36 }
+    });
   }
 
   public void testOverlaps() throws IOException {
@@ -106,16 +113,11 @@ public class TestExactPhraseQuery extends IntervalTestBase {
 
   public void testNonMatching() throws IOException {
 
-    BooleanQuery query = new BooleanQuery();
-    query.add(new BooleanClause(new TermQuery(new Term("field", "pease")), Occur.MUST));
-    query.add(new BooleanClause(new TermQuery(new Term("field", "hot!")), Occur.MUST));
-    IntervalFilterQuery filterQuery = new IntervalFilterQuery(query, new BlockIntervalFilter());
-
     ExactPhraseQuery q = new ExactPhraseQuery();
     q.add(new Term("field", "pease"));
     q.add(new Term("field", "hot!"));
 
-    checkIntervals(filterQuery, searcher, new int[][]{});
+    checkIntervals(q, searcher, new int[][]{});
 
   }
 
