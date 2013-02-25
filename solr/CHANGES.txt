@@ -84,6 +84,10 @@ New Features
 * SOLR-4498: Add list command to ZkCLI that prints out the contents of 
   ZooKeeper. (Roman Shaposhnik via Mark Miller)
 
+* SOLR-4481: SwitchQParserPlugin registered by default as 'switch' using  
+  syntax: {!switch case=XXX case.foo=YYY case.bar=ZZZ default=QQQ}foo
+  (hossman)
+
 Bug Fixes
 ----------------------
 
