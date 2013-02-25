@@ -565,6 +565,7 @@ public class TestReplicationHandler extends SolrTestCaseJ4 {
     slaveClient.commit();
     
     pullFromSlaveToMaster();
+    rQuery(3, "*:*", slaveClient);
     
     //get docs from slave and check if number is equal to master
     slaveQueryRsp = rQuery(nDocs, "*:*", slaveClient);
