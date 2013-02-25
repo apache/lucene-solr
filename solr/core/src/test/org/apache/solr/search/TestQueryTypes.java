@@ -16,6 +16,7 @@
  */
 package org.apache.solr.search;
 
+import org.apache.solr.common.SolrException;
 import org.apache.solr.common.params.CommonParams;
 import org.apache.solr.util.AbstractSolrTestCase;
 import org.junit.BeforeClass;
@@ -336,6 +337,63 @@ public class TestQueryTypes extends AbstractSolrTestCase {
             ,"//doc[./float[@name='v_f']='1.5' and ./float[@name='score']='2.25']"
     );
 
+    // switch queries
+    assertQ("test matching switch query",
+            req("df", "v_t",
+                "q", "{!switch case.x=Dude case.z=Yonik} x ")
+            ,"//result[@numFound='1']"
+            ,"//*[@name='id'][.='1.0']");
+    assertQ("test empty matching switch query",
+            req("df", "v_t",
+                "q", "{!switch case.x=Dude case=Yonik}  ")
+            ,"//result[@numFound='1']"
+            ,"//*[@name='id'][.='2.0']");
+    assertQ("test empty matching switch query",
+            req("df", "v_t",
+                "q", "{!switch case.x=Dude case=Yonik v=''}")
+            ,"//result[@numFound='1']"
+            ,"//*[@name='id'][.='2.0']");
+    assertQ("test empty matching switch query",
+            req("df", "v_t",
+                "q", "{!switch case.x=Dude case=Yonik v=$qq}")
+            ,"//result[@numFound='1']"
+            ,"//*[@name='id'][.='2.0']");
+    assertQ("test matching switch query w/deref",
+            req("q", "{!switch case.x=$d case.z=Yonik} x ",
+                "df", "v_t",
+                "d", "Dude")
+            ,"//result[@numFound='1']"
+            ,"//*[@name='id'][.='1.0']");
+    assertQ("test default switch query",
+            req("q", "{!switch default=$d case.x=$d case.z=Yonik}asdf",
+                "df", "v_t",
+                "d", "Dude")
+            ,"//result[@numFound='1']"
+            ,"//*[@name='id'][.='1.0']");
+    assertQ("test empty default switch query",
+            req("q", "{!switch default=$d case.x=$d case.z=Yonik v=$qq}",
+                "df", "v_t",
+                "d", "Dude")
+            ,"//result[@numFound='1']"
+            ,"//*[@name='id'][.='1.0']");
+
+    try {
+      ignoreException("No\\ default\\, and no switch case");
+      assertQ("no match and no default",
+              req("q", "{!switch case.x=Dude case.z=Yonik}asdf")
+              ,"//result[@numFound='BOGUS']");
+      fail("Should have gotten an error w/o default");
+    } catch (RuntimeException exp) {
+      assertTrue("exp cause is wrong", 
+                 exp.getCause() instanceof SolrException);
+      SolrException e = (SolrException) exp.getCause();
+      assertEquals("error isn't user error", 400, e.code());
+      assertTrue("Error doesn't include bad switch case: " + e.getMessage(),
+                 e.getMessage().contains("asdf"));
+    } finally {
+      resetExceptionIgnores();
+    }
+                
 
     // dismax query from std request handler
     assertQ("test dismax query",
