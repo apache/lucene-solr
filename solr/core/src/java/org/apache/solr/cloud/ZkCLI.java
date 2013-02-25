@@ -58,6 +58,7 @@ public class ZkCLI {
   private static final String UPCONFIG = "upconfig";
   private static final String COLLECTION = "collection";
   private static final String CLEAR = "clear";
+  private static final String LIST = "list";
   private static final String CMD = "cmd";
   
   /**
@@ -85,7 +86,7 @@ public class ZkCLI {
         .hasArg(true)
         .withDescription(
             "cmd to run: " + BOOTSTRAP + ", " + UPCONFIG + ", " + DOWNCONFIG
-                + ", " + LINKCONFIG + ", " + MAKEPATH + ", "+ CLEAR).create(CMD));
+                + ", " + LINKCONFIG + ", " + MAKEPATH + ", "+ LIST + ", " +CLEAR).create(CMD));
 
     Option zkHostOption = new Option("z", ZKHOST, true,
         "ZooKeeper host address");
@@ -129,6 +130,7 @@ public class ZkCLI {
         System.out.println("zkcli.sh -zkhost localhost:9983 -cmd " + LINKCONFIG + " -" + COLLECTION + " collection1" + " -" + CONFNAME + " myconf");
         System.out.println("zkcli.sh -zkhost localhost:9983 -cmd " + MAKEPATH + " /apache/solr");
         System.out.println("zkcli.sh -zkhost localhost:9983 -cmd " + CLEAR + " /solr");
+        System.out.println("zkcli.sh -zkhost localhost:9983 -cmd " + LIST);
         return;
       }
       
@@ -216,6 +218,8 @@ public class ZkCLI {
           String confName = line.getOptionValue(CONFNAME);
           
           ZkController.linkConfSet(zkClient, collection, confName);
+        } else if (line.getOptionValue(CMD).equals(LIST)) {
+          zkClient.printLayoutToStdOut();
         } else if (line.getOptionValue(CMD).equals(CLEAR)) {
           List arglist = line.getArgList();
           if (arglist.size() != 1) {

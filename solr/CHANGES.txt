@@ -81,6 +81,9 @@ New Features
 * SOLR-4488: Return slave replication details for a master if the master has
   also acted like a slave. (Mark Miller)
 
+* SOLR-4498: Add list command to ZkCLI that prints out the contents of 
+  ZooKeeper. (Roman Shaposhnik via Mark Miller)
+
 Bug Fixes
 ----------------------
 
