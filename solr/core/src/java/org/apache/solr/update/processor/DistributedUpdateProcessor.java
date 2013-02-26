@@ -193,7 +193,6 @@ public class DistributedUpdateProcessor extends UpdateRequestProcessor {
       }
 
       String coreName = req.getCore().getName();
-      String coreNodeName = zkController.getNodeName() + "_" + coreName;
 
       ClusterState cstate = zkController.getClusterState();
       numNodes = cstate.getLiveNodes().size();
@@ -217,12 +216,11 @@ public class DistributedUpdateProcessor extends UpdateRequestProcessor {
       try {
         // Not equivalent to getLeaderProps, which does retries to find a leader.
         // Replica leader = slice.getLeader();
-
-        ZkCoreNodeProps leaderProps = new ZkCoreNodeProps(zkController.getZkStateReader().getLeaderRetry(
-            collection, shardId));
-
-        String leaderNodeName = leaderProps.getCoreNodeName();
-        isLeader = coreNodeName.equals(leaderNodeName);
+        Replica leaderReplica = zkController.getZkStateReader().getLeaderRetry(
+            collection, shardId);
+        ZkCoreNodeProps leaderProps = new ZkCoreNodeProps(leaderReplica);
+        String coreNodeName = zkController.getCoreNodeName(req.getCore().getCoreDescriptor());
+        isLeader = coreNodeName.equals(leaderReplica.getName());
 
         DistribPhase phase =
             DistribPhase.parseParam(req.getParams().get(DISTRIB_UPDATE_PARAM));
@@ -238,7 +236,7 @@ public class DistributedUpdateProcessor extends UpdateRequestProcessor {
           // so get the replicas...
           forwardToLeader = false;
           List<ZkCoreNodeProps> replicaProps = zkController.getZkStateReader()
-              .getReplicaProps(collection, shardId, zkController.getNodeName(),
+              .getReplicaProps(collection, shardId, coreNodeName,
                   coreName, null, ZkStateReader.DOWN);
           if (replicaProps != null) {
             nodes = new ArrayList<Node>(replicaProps.size());
@@ -303,21 +301,19 @@ public class DistributedUpdateProcessor extends UpdateRequestProcessor {
     String shardId = cloudDesc.getShardId();
 
     try {
+      Replica leaderReplica = zkController.getZkStateReader().getLeaderRetry(
+          collection, shardId);
+      String leaderCoreNodeName = leaderReplica.getName();
 
-      ZkCoreNodeProps leaderProps = new ZkCoreNodeProps(zkController.getZkStateReader().getLeaderRetry(
-          collection, shardId));
-
-      String leaderNodeName = leaderProps.getCoreNodeName();
-      String coreName = req.getCore().getName();
-      String coreNodeName = zkController.getNodeName() + "_" + coreName;
-      isLeader = coreNodeName.equals(leaderNodeName);
+      String coreNodeName = zkController.getCoreNodeName(req.getCore().getCoreDescriptor());
+      isLeader = coreNodeName.equals(leaderCoreNodeName);
 
       // TODO: what if we are no longer the leader?
 
       forwardToLeader = false;
       List<ZkCoreNodeProps> replicaProps = zkController.getZkStateReader()
-          .getReplicaProps(collection, shardId, zkController.getNodeName(),
-              coreName);
+          .getReplicaProps(collection, shardId, coreNodeName,
+              req.getCore().getName());
       if (replicaProps != null) {
         nodes = new ArrayList<Node>(replicaProps.size());
         for (ZkCoreNodeProps props : replicaProps) {
@@ -812,10 +808,9 @@ public class DistributedUpdateProcessor extends UpdateRequestProcessor {
 
         // Am I the leader for this slice?
         ZkCoreNodeProps coreLeaderProps = new ZkCoreNodeProps(leader);
-        String leaderNodeName = coreLeaderProps.getCoreNodeName();
-        String coreName = req.getCore().getName();
-        String coreNodeName = zkController.getNodeName() + "_" + coreName;
-        isLeader = coreNodeName.equals(leaderNodeName);
+        String leaderCoreNodeName = leader.getName();
+        String coreNodeName = zkController.getCoreNodeName(req.getCore().getCoreDescriptor());
+        isLeader = coreNodeName.equals(leaderCoreNodeName);
 
         if (isLeader) {
           // don't forward to ourself
@@ -1074,11 +1069,9 @@ public class DistributedUpdateProcessor extends UpdateRequestProcessor {
       if (!req.getParams().getBool(COMMIT_END_POINT, false)) {
         params.set(COMMIT_END_POINT, true);
 
-        String nodeName = req.getCore().getCoreDescriptor().getCoreContainer()
-            .getZkController().getNodeName();
-        String shardZkNodeName = nodeName + "_" + req.getCore().getName();
+        String coreNodeName = zkController.getCoreNodeName(req.getCore().getCoreDescriptor());
         List<Node> nodes = getCollectionUrls(req, req.getCore().getCoreDescriptor()
-            .getCloudDescriptor().getCollectionName(), shardZkNodeName);
+            .getCloudDescriptor().getCollectionName(), coreNodeName);
 
         if (nodes != null) {
           cmdDistrib.distribCommit(cmd, nodes, params);
@@ -1097,7 +1090,7 @@ public class DistributedUpdateProcessor extends UpdateRequestProcessor {
  
 
   
-  private List<Node> getCollectionUrls(SolrQueryRequest req, String collection, String shardZkNodeName) {
+  private List<Node> getCollectionUrls(SolrQueryRequest req, String collection, String coreNodeName) {
     ClusterState clusterState = req.getCore().getCoreDescriptor()
         .getCoreContainer().getZkController().getClusterState();
     List<Node> urls = new ArrayList<Node>();
@@ -1113,7 +1106,8 @@ public class DistributedUpdateProcessor extends UpdateRequestProcessor {
       
       for (Entry<String,Replica> entry : shardMap.entrySet()) {
         ZkCoreNodeProps nodeProps = new ZkCoreNodeProps(entry.getValue());
-        if (clusterState.liveNodesContain(nodeProps.getNodeName()) && !entry.getKey().equals(shardZkNodeName)) {
+        System.out.println("Key:" + entry.getKey() + " cnn:" + coreNodeName);
+        if (clusterState.liveNodesContain(nodeProps.getNodeName()) && !entry.getKey().equals(coreNodeName)) {
           urls.add(new StdNode(nodeProps));
         }
       }

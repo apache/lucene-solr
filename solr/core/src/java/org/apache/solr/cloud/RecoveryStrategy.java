@@ -83,15 +83,15 @@ public class RecoveryStrategy extends Thread implements ClosableThread {
   private boolean recoveringAfterStartup;
   private CoreContainer cc;
   
-  public RecoveryStrategy(CoreContainer cc, String name, RecoveryListener recoveryListener) {
+  public RecoveryStrategy(CoreContainer cc, CoreDescriptor cd, RecoveryListener recoveryListener) {
     this.cc = cc;
-    this.coreName = name;
+    this.coreName = cd.getName();
     this.recoveryListener = recoveryListener;
     setName("RecoveryThread");
     zkController = cc.getZkController();
     zkStateReader = zkController.getZkStateReader();
     baseUrl = zkController.getBaseUrl();
-    coreZkNodeName = zkController.getNodeName() + "_" + coreName;
+    coreZkNodeName = zkController.getCoreNodeName(cd);
   }
 
   public void setRecoveringAfterStartup(boolean recoveringAfterStartup) {

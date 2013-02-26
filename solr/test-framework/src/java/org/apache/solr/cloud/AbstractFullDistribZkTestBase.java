@@ -199,6 +199,8 @@ public abstract class AbstractFullDistribZkTestBase extends AbstractDistribZkTes
     // TODO: for now, turn off stress because it uses regular clients, and we
     // need the cloud client because we kill servers
     stress = 0;
+    
+    useExplicitNodeNames = random().nextBoolean();
   }
   
   protected void initCloud() throws Exception {
@@ -412,18 +414,6 @@ public abstract class AbstractFullDistribZkTestBase extends AbstractDistribZkTes
     return cnt;
   }
   
-  public JettySolrRunner createJetty(String dataDir, String shardList,
-      String solrConfigOverride) throws Exception {
-    
-    JettySolrRunner jetty = new JettySolrRunner(getSolrHome(), context, 0,
-        solrConfigOverride, null, false);
-    jetty.setShards(shardList);
-    jetty.setDataDir(dataDir);
-    jetty.start();
-    
-    return jetty;
-  }
-  
   protected void updateMappingsFromZk(List<JettySolrRunner> jettys,
       List<SolrServer> clients) throws Exception {
     ZkStateReader zkStateReader = cloudClient.getZkStateReader();
@@ -444,7 +434,7 @@ public abstract class AbstractFullDistribZkTestBase extends AbstractDistribZkTes
           int port = new URI(((HttpSolrServer) client).getBaseURL())
               .getPort();
           
-          if (replica.getName().contains(":" + port + "_")) {
+          if (replica.getNodeName().contains(":" + port + "_")) {
             CloudSolrServerClient csc = new CloudSolrServerClient();
             csc.solrClient = client;
             csc.port = port;
@@ -468,7 +458,7 @@ public abstract class AbstractFullDistribZkTestBase extends AbstractDistribZkTes
       nextJetty:
       for (Slice slice : coll.getSlices()) {
         for (Replica replica : slice.getReplicas()) {
-          if (replica.getName().contains(":" + port + "_")) {
+          if (replica.getNodeName().contains(":" + port + "_")) {
             List<CloudJettyRunner> list = shardToJetty.get(slice.getName());
             if (list == null) {
               list = new ArrayList<CloudJettyRunner>();
@@ -501,7 +491,7 @@ public abstract class AbstractFullDistribZkTestBase extends AbstractDistribZkTes
       List<CloudJettyRunner> jetties = shardToJetty.get(slice.getName());
       assertNotNull("Test setup problem: We found no jetties for shard: " + slice.getName()
           + " just:" + shardToJetty.keySet(), jetties);
-      assertEquals(slice.getReplicas().size(), jetties.size());
+      assertEquals("slice:" + slice.getName(), slice.getReplicas().size(), jetties.size());
     }
   }
   
@@ -511,7 +501,7 @@ public abstract class AbstractFullDistribZkTestBase extends AbstractDistribZkTes
         return client;
       }
     }
-    throw new IllegalArgumentException("Client with the give port does not exist:" + port);
+    throw new IllegalArgumentException("Client with the given port does not exist:" + port);
   }
 
   @Override

@@ -167,7 +167,7 @@ public class ClusterState implements JSONWriter.Writable {
    * @param coreNodeName in the form of nodeName_coreName (the name of the replica)
    */
   public String getShardId(String coreNodeName) {
-     // System.out.println("###### getShardId("+coreNodeName+") in " + collectionStates);
+      System.out.println("###### getShardId("+coreNodeName+") in " + collectionStates);
     for (DocCollection coll : collectionStates.values()) {
       for (Slice slice : coll.getSlices()) {
         if (slice.getReplicasMap().containsKey(coreNodeName)) return slice.getName();

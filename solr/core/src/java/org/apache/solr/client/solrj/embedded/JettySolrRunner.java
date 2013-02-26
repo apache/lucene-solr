@@ -85,6 +85,8 @@ public class JettySolrRunner {
 
   private boolean stopAtShutdown;
 
+  private String coreNodeName;
+
   public static class DebugFilter implements Filter {
     public int requestsToKeep = 10;
     private AtomicLong nRequests = new AtomicLong();
@@ -333,6 +335,9 @@ public class JettySolrRunner {
     if(shards != null) {
       System.setProperty("shard", shards);
     }
+    if (coreNodeName != null) {
+      System.setProperty("coreNodeName", coreNodeName);
+    }
     
     if (!server.isRunning()) {
       server.start();
@@ -349,6 +354,7 @@ public class JettySolrRunner {
     
     System.clearProperty("shard");
     System.clearProperty("solr.data.dir");
+    System.clearProperty("coreNodeName");
   }
 
   public void stop() throws Exception {
@@ -451,6 +457,10 @@ public class JettySolrRunner {
 
   public void setDataDir(String dataDir) {
     this.dataDir = dataDir;
+  }
+
+  public void setCoreNodeName(String coreNodeName) {
+    this.coreNodeName = coreNodeName;
   }
 }
 

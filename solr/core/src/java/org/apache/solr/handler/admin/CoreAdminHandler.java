@@ -456,6 +456,10 @@ public class CoreAdminHandler extends RequestHandlerBase {
         if (opts != null)
           cd.setRoles(opts);
         
+        opts = params.get(CoreAdminParams.CORE_NODE_NAME);
+        if (opts != null)
+          cd.setCoreNodeName(opts);
+        
         Integer numShards = params.getInt(ZkStateReader.NUM_SHARDS_PROP);
         if (numShards != null)
           cd.setNumShards(numShards);
@@ -551,7 +555,7 @@ public class CoreAdminHandler extends RequestHandlerBase {
           log.info("Unregistering core " + core.getName() + " from cloudstate.");
           try {
             coreContainer.getZkController().unregister(cname,
-                core.getCoreDescriptor().getCloudDescriptor());
+                core.getCoreDescriptor());
           } catch (InterruptedException e) {
             Thread.currentThread().interrupt();
             throw new SolrException(SolrException.ErrorCode.SERVER_ERROR,
@@ -761,7 +765,7 @@ public class CoreAdminHandler extends RequestHandlerBase {
               SolrException.log(log, "", t);
             }
             
-            core.getUpdateHandler().getSolrCoreState().doRecovery(coreContainer, cname);
+            core.getUpdateHandler().getSolrCoreState().doRecovery(coreContainer, core.getCoreDescriptor());
           } else {
             SolrException.log(log, "Cound not find core to call recovery:" + cname);
           }
