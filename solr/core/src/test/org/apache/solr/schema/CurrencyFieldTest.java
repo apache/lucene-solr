@@ -109,9 +109,28 @@ public class CurrencyFieldTest extends SolrTestCaseJ4 {
 
   @Test
   public void testCurrencyRangeSearch() throws Exception {
+    clearIndex();
+    final int emptyDocs = atLeast(50); // times 2
+    final int negDocs = atLeast(5);
+    
+    assertU(adoc("id", "0", "amount", "0,USD")); // 0
+    // lots of docs w/o values
+    for (int i = 100; i <= 100 + emptyDocs; i++) {
+      assertU(adoc("id", "" + i));
+    }
+    // docs with values in ranges we'll query
     for (int i = 1; i <= 10; i++) {
       assertU(adoc("id", "" + i, "amount", i + ",USD"));
     }
+    // more docs w/o values
+    for (int i = 500; i <= 500 + emptyDocs; i++) {
+      assertU(adoc("id", "" + i));
+    }
+    // some negative values
+    for (int i = -100; i > -100 - negDocs; i--) {
+      assertU(adoc("id", "" + i, "amount", i + ",USD"));
+    }
+    assertU(adoc("id", "40", "amount", "0,USD")); // 0
 
     assertU(commit());
 
@@ -145,22 +164,22 @@ public class CurrencyFieldTest extends SolrTestCaseJ4 {
     // Open ended ranges without currency
     assertQ(req("fl", "*,score", "q",
             "amount:[* TO *]"),
-            "//*[@numFound='10']");
+            "//*[@numFound='" + (2 + 10 + negDocs) + "']");
     
     // Open ended ranges with currency
     assertQ(req("fl", "*,score", "q",
             "amount:[*,EUR TO *,EUR]"),
-            "//*[@numFound='10']");
+            "//*[@numFound='" + (2 + 10 + negDocs) + "']");
 
     // Open ended start range without currency
     assertQ(req("fl", "*,score", "q",
             "amount:[* TO 5,USD]"),
-            "//*[@numFound='5']");
+            "//*[@numFound='" + (2 + 5 + negDocs) + "']");
 
     // Open ended start range with currency (currency for the * won't matter)
     assertQ(req("fl", "*,score", "q",
             "amount:[*,USD TO 5,USD]"),
-            "//*[@numFound='5']");
+            "//*[@numFound='" + (2 + 5 + negDocs) + "']");
 
     // Open ended end range
     assertQ(req("fl", "*,score", "q",
@@ -170,6 +189,7 @@ public class CurrencyFieldTest extends SolrTestCaseJ4 {
 
   @Test
   public void testCurrencyPointQuery() throws Exception {
+    clearIndex();
     assertU(adoc("id", "" + 1, "amount", "10.00,USD"));
     assertU(adoc("id", "" + 2, "amount", "15.00,EUR"));
     assertU(commit());
@@ -184,6 +204,8 @@ public class CurrencyFieldTest extends SolrTestCaseJ4 {
 
   @Ignore
   public void testPerformance() throws Exception {
+    clearIndex();
+
     Random r = random();
     int initDocs = 200000;
 
@@ -225,6 +247,8 @@ public class CurrencyFieldTest extends SolrTestCaseJ4 {
 
   @Test
   public void testCurrencySort() throws Exception {
+    clearIndex();
+
     assertU(adoc("id", "" + 1, "amount", "10.00,USD"));
     assertU(adoc("id", "" + 2, "amount", "15.00,EUR"));
     assertU(adoc("id", "" + 3, "amount", "7.00,EUR"));
@@ -238,6 +262,8 @@ public class CurrencyFieldTest extends SolrTestCaseJ4 {
 
   @Test
   public void testMockFieldType() throws Exception {
+    clearIndex();
+
     assertU(adoc("id", "1", "mock_amount", "1.00,USD"));
     assertU(adoc("id", "2", "mock_amount", "1.00,EUR"));
     assertU(adoc("id", "3", "mock_amount", "1.00,NOK"));

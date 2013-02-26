@@ -24,6 +24,9 @@ import org.apache.lucene.queries.function.FunctionValues;
 import org.apache.lucene.queries.function.ValueSource;
 import org.apache.lucene.search.Query;
 import org.apache.lucene.search.SortField;
+import org.apache.lucene.search.Filter;
+import org.apache.lucene.search.FieldValueFilter;
+import org.apache.lucene.queries.ChainedFilter;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.SolrException.ErrorCode;
 import org.apache.solr.response.TextResponseWriter;
@@ -240,10 +243,19 @@ public class CurrencyField extends FieldType implements SchemaAware, ResourceLoa
   public Query getRangeQuery(QParser parser, SchemaField field, final CurrencyValue p1, final CurrencyValue p2, final boolean minInclusive, final boolean maxInclusive) {
     String currencyCode = (p1 != null) ? p1.getCurrencyCode() :
                           (p2 != null) ? p2.getCurrencyCode() : defaultCurrency;
-    final CurrencyValueSource vs = new CurrencyValueSource(field, currencyCode, parser);
 
-    return new SolrConstantScoreQuery(new ValueSourceRangeFilter(vs,
-            p1 == null ? null : p1.getAmount() + "" , p2 == null ? null : p2.getAmount() + "", minInclusive, maxInclusive));
+    // ValueSourceRangeFilter doesn't check exists(), so we have to
+    final Filter docsWithValues = new FieldValueFilter(getAmountField(field).getName());
+    final Filter vsRangeFilter = new ValueSourceRangeFilter
+      (new CurrencyValueSource(field, currencyCode, parser),
+       p1 == null ? null : p1.getAmount() + "", 
+       p2 == null ? null : p2.getAmount() + "",
+       minInclusive, maxInclusive);
+    final Filter docsInRange = new ChainedFilter
+      (new Filter [] { docsWithValues, vsRangeFilter }, ChainedFilter.AND);
+
+    return new SolrConstantScoreQuery(docsInRange);
+    
   }
 
   @Override
@@ -316,7 +328,20 @@ public class CurrencyField extends FieldType implements SchemaAware, ResourceLoa
         }
 
         @Override
+        public boolean exists(int doc) {
+          return amounts.exists(doc);
+        }
+        
+        @Override
         public long longVal(int doc) {
+          long amount = amounts.longVal(doc);
+          // bail fast using whatever ammounts defaults to if no value
+          // (if we don't do this early, currencyOrd may be < 0, 
+          // causing index bounds exception
+          if ( ! exists(doc) ) {
+            return amount;
+          }
+
           if (!initializedCache) {
             for (int i = 0; i < fractionDigitCache.length; i++) {
               fractionDigitCache[i] = -1;
@@ -325,7 +350,6 @@ public class CurrencyField extends FieldType implements SchemaAware, ResourceLoa
             initializedCache = true;
           }
 
-          long amount = amounts.longVal(doc);
           int currencyOrd = currencies.ordVal(doc);
 
           if (currencyOrd == targetCurrencyOrd) {

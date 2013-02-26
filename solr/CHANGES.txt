@@ -173,6 +173,9 @@ Bug Fixes
   AnalysisSPILoader when doing concurrent core loads in multicore
   Solr configs.  (Uwe Schindler, Hossman)
 
+* SOLR-4504: Fixed CurrencyField range queries to correctly exclude 
+  documents w/o values (hossman)
+
 Optimizations
 ----------------------
 
