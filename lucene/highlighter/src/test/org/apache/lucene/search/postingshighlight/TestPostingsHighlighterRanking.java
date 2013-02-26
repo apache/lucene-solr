@@ -172,6 +172,8 @@ public class TestPostingsHighlighterRanking extends LuceneTestCase {
           assertEquals("body", term.field());
           int matchStart = p.getMatchStarts()[i];
           assertTrue(matchStart >= 0);
+          // must at least start within the passage
+          assertTrue(matchStart < p.getEndOffset());
           int matchEnd = p.getMatchEnds()[i];
           assertTrue(matchEnd >= 0);
           // always moving forward
