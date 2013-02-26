@@ -66,9 +66,10 @@ final class AnalysisSPILoader<S extends AbstractAnalysisFactory> {
    * <p><em>This method is expensive and should only be called for discovery
    * of new service providers on the given classpath/classloader!</em>
    */
-  public void reload(ClassLoader classloader) {
+  public synchronized void reload(ClassLoader classloader) {
+    final LinkedHashMap<String,Class<? extends S>> services =
+      new LinkedHashMap<String,Class<? extends S>>(this.services);
     final SPIClassIterator<S> loader = SPIClassIterator.get(clazz, classloader);
-    final LinkedHashMap<String,Class<? extends S>> services = new LinkedHashMap<String,Class<? extends S>>();
     while (loader.hasNext()) {
       final Class<? extends S> service = loader.next();
       final String clazzName = service.getSimpleName();
