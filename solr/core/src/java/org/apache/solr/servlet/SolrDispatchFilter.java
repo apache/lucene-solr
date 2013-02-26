@@ -395,10 +395,9 @@ public class SolrDispatchFilter implements Filter
         con.disconnect();
       }
     } catch (IOException e) {
-      // return exception
-      resp.getWriter().println(e.getStackTrace().toString());
-      throw new SolrException(SolrException.ErrorCode.BAD_REQUEST,
-          "This node forword query failed: " + coreUrl);
+      sendError(null, solrReq, req, resp, new SolrException(
+          SolrException.ErrorCode.SERVER_ERROR,
+          "Error trying to proxy request for url: " + coreUrl, e));
     }
     
   }
