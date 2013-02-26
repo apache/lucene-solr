@@ -33,6 +33,7 @@ import org.apache.lucene.document.FloatField;
 import org.apache.lucene.document.IntField;
 import org.apache.lucene.document.LongField;
 import org.apache.lucene.document.NumericDocValuesField;
+import org.apache.lucene.document.SortedSetDocValuesField;
 import org.apache.lucene.index.StorableField;
 import org.apache.lucene.queries.function.ValueSource;
 import org.apache.lucene.queries.function.valuesource.DoubleFieldSource;
@@ -263,6 +264,10 @@ public class TrieField extends PrimitiveFieldType {
 
   @Override
   public Query getRangeQuery(QParser parser, SchemaField field, String min, String max, boolean minInclusive, boolean maxInclusive) {
+    if (field.multiValued() && field.hasDocValues() && !field.indexed()) {
+      // for the multi-valued dv-case, the default rangeimpl over toInternal is correct
+      return super.getRangeQuery(parser, field, min, max, minInclusive, maxInclusive);
+    }
     int ps = precisionStep;
     Query query = null;
     final boolean matchOnly = field.hasDocValues() && !field.indexed();
@@ -627,16 +632,24 @@ public class TrieField extends PrimitiveFieldType {
       List<StorableField> fields = new ArrayList<StorableField>();
       final StorableField field = createField(sf, value, boost);
       fields.add(field);
-      final long bits;
-      if (field.numericValue() instanceof Integer || field.numericValue() instanceof Long) {
-        bits = field.numericValue().longValue();
-      } else if (field.numericValue() instanceof Float) {
-        bits = Float.floatToIntBits(field.numericValue().floatValue());
+      
+      if (sf.multiValued()) {
+        BytesRef bytes = new BytesRef();
+        readableToIndexed(value.toString(), bytes);
+        fields.add(new SortedSetDocValuesField(sf.getName(), bytes));
       } else {
-        assert field.numericValue() instanceof Double;
-        bits = Double.doubleToLongBits(field.numericValue().doubleValue());
+        final long bits;
+        if (field.numericValue() instanceof Integer || field.numericValue() instanceof Long) {
+          bits = field.numericValue().longValue();
+        } else if (field.numericValue() instanceof Float) {
+          bits = Float.floatToIntBits(field.numericValue().floatValue());
+        } else {
+          assert field.numericValue() instanceof Double;
+          bits = Double.doubleToLongBits(field.numericValue().doubleValue());
+        }
+        fields.add(new NumericDocValuesField(sf.getName(), bits));
       }
-      fields.add(new NumericDocValuesField(sf.getName(), bits));
+      
       return fields;
     } else {
       return Collections.singletonList(createField(sf, value, boost));
@@ -683,8 +696,8 @@ public class TrieField extends PrimitiveFieldType {
 
   @Override
   public void checkSchemaField(final SchemaField field) {
-    if (field.hasDocValues() && !(field.isRequired() || field.getDefaultValue() != null)) {
-      throw new IllegalStateException("Field " + this + " has doc values enabled, but has no default value and is not required");
+    if (field.hasDocValues() && !field.multiValued() && !(field.isRequired() || field.getDefaultValue() != null)) {
+      throw new IllegalStateException("Field " + this + " has single-valued doc values enabled, but has no default value and is not required");
     }
   }
 }

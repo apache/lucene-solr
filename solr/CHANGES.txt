@@ -71,7 +71,7 @@ New Features
   under the covers -- allowing many HTTP connection related properties to be
   controlled via 'standard' java system properties.  (hossman)
 
-* SOLR-3855: Doc values support. (Adrien Grand)
+* SOLR-3855, SOLR-4490: Doc values support. (Adrien Grand, Robert Muir)
 
 * SOLR-4417: Reopen the IndexWriter on SolrCore reload. (Mark Miller)
 

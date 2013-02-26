@@ -35,9 +35,10 @@ import org.apache.lucene.index.StorableField;
 import org.apache.lucene.index.Term;
 import org.apache.lucene.queries.function.ValueSource;
 import org.apache.lucene.search.ConstantScoreQuery;
+import org.apache.lucene.search.DocTermOrdsRangeFilter;
+import org.apache.lucene.search.DocTermOrdsRewriteMethod;
 import org.apache.lucene.search.FieldCacheRangeFilter;
 import org.apache.lucene.search.FieldCacheRewriteMethod;
-import org.apache.lucene.search.FieldCacheTermsFilter;
 import org.apache.lucene.search.MultiTermQuery;
 import org.apache.lucene.search.Query;
 import org.apache.lucene.search.SortField;
@@ -596,13 +597,21 @@ public abstract class FieldType extends FieldProperties {
    *
    */
   public Query getRangeQuery(QParser parser, SchemaField field, String part1, String part2, boolean minInclusive, boolean maxInclusive) {
-    // constant score mode is now enabled per default
+    // TODO: change these all to use readableToIndexed/bytes instead (e.g. for unicode collation)
     if (field.hasDocValues() && !field.indexed()) {
-      return new ConstantScoreQuery(FieldCacheRangeFilter.newStringRange(
+      if (field.multiValued()) {
+        return new ConstantScoreQuery(DocTermOrdsRangeFilter.newBytesRefRange(
+            field.getName(),
+            part1 == null ? null : new BytesRef(toInternal(part1)),
+            part2 == null ? null : new BytesRef(toInternal(part2)),
+            minInclusive, maxInclusive));
+      } else {
+        return new ConstantScoreQuery(FieldCacheRangeFilter.newStringRange(
             field.getName(), 
             part1 == null ? null : toInternal(part1),
             part2 == null ? null : toInternal(part2),
             minInclusive, maxInclusive));
+      }
     } else {
       MultiTermQuery rangeQuery = TermRangeQuery.newStringRange(
             field.getName(),
@@ -627,7 +636,7 @@ public abstract class FieldType extends FieldProperties {
     readableToIndexed(externalVal, br);
     if (field.hasDocValues() && !field.indexed()) {
       // match-only
-      return new ConstantScoreQuery(new FieldCacheTermsFilter(field.getName(), br));
+      return getRangeQuery(parser, field, externalVal, externalVal, true, true);
     } else {
       return new TermQuery(new Term(field.getName(), br));
     }
@@ -641,7 +650,7 @@ public abstract class FieldType extends FieldProperties {
    */
   public MultiTermQuery.RewriteMethod getRewriteMethod(QParser parser, SchemaField field) {
     if (!field.indexed() && field.hasDocValues()) {
-      return new FieldCacheRewriteMethod();
+      return field.multiValued() ? new DocTermOrdsRewriteMethod() : new FieldCacheRewriteMethod();
     } else {
       return MultiTermQuery.CONSTANT_SCORE_AUTO_REWRITE_DEFAULT;
     }

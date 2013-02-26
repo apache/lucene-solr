@@ -389,6 +389,11 @@ public class SimpleFacets {
       // only fc knows how to deal with multi-token fields
       method = FacetMethod.FC;
     }
+    
+    if (method == FacetMethod.ENUM && sf.hasDocValues()) {
+      // only fc can handle docvalues types
+      method = FacetMethod.FC;
+    }
 
     if (params.getFieldBool(field, GroupParams.GROUP_FACET, false)) {
       counts = getGroupedCounts(searcher, docs, field, multiToken, offset,limit, mincount, missing, sort, prefix);
@@ -415,7 +420,9 @@ public class SimpleFacets {
           }
           break;
         case FC:
-          if (multiToken || TrieField.getMainValuePrefix(ft) != null) {
+          if (sf.hasDocValues()) {
+            counts = DocValuesFacets.getCounts(searcher, docs, field, offset,limit, mincount, missing, sort, prefix);
+          } else if (multiToken || TrieField.getMainValuePrefix(ft) != null) {
             UnInvertedField uif = UnInvertedField.getUnInvertedField(field, searcher);
             counts = uif.getCounts(searcher, docs, offset, limit, mincount,missing,sort,prefix);
           } else {
@@ -536,9 +543,9 @@ public class SimpleFacets {
    */
   public static int getFieldMissingCount(SolrIndexSearcher searcher, DocSet docs, String fieldName)
     throws IOException {
-
+    SchemaField sf = searcher.getSchema().getField(fieldName);
     DocSet hasVal = searcher.getDocSet
-      (new TermRangeQuery(fieldName, null, null, false, false));
+      (sf.getType().getRangeQuery(null, sf, null, null, false, false));
     return docs.andNotSize(hasVal);
   }
 
