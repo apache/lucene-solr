@@ -267,6 +267,10 @@ Bug Fixes
 * LUCENE-4798: PostingsHighlighter's formatter sometimes didn't highlight 
   matched terms.  (Robert Muir)
 
+* LUCENE-4796, SOLR-4373: Fix concurrency issue in NamedSPILoader and
+  AnalysisSPILoader when doing reload (e.g. from Solr).
+  (Uwe Schindler, Hossman)
+
 Documentation
 
 * LUCENE-4718: Fixed documentation of oal.queryparser.classic.

@@ -169,6 +169,10 @@ Bug Fixes
 * SOLR-4352: /browse pagination now supports and preserves sort context
   (Eric Spiegelberg, Erik Hatcher)
 
+* LUCENE-4796, SOLR-4373: Fix concurrency issue in NamedSPILoader and
+  AnalysisSPILoader when doing concurrent core loads in multicore
+  Solr configs.  (Uwe Schindler, Hossman)
+
 Optimizations
 ----------------------
 
