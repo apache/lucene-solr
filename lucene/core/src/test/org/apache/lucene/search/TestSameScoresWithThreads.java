@@ -115,9 +115,8 @@ public class TestSameScoresWithThreads extends LuceneTestCase {
       for(Thread thread : threads) {
         thread.join();
       }
-      r.close();
     }
-
+    r.close();
     dir.close();
   }
 }
