@@ -22,7 +22,7 @@ import org.apache.lucene.index.Term;
 
 import java.io.IOException;
 
-public class TestExactPhraseQuery extends IntervalTestBase {
+public class TestPhraseQuery2 extends IntervalTestBase {
   
   protected void addDocs(RandomIndexWriter writer) throws IOException {
     {
@@ -54,12 +54,44 @@ public class TestExactPhraseQuery extends IntervalTestBase {
     }
   }
 
+  public void testSloppyPhraseQuery() throws IOException {
+    PhraseQuery2 query = new PhraseQuery2(1);
+    query.add(new Term("field", "pease"));
+    query.add(new Term("field", "hot!"));
+    checkIntervals(query, searcher, new int[][]{
+        { 0, 0, 2, 31, 33 },
+        { 1, 3, 5, 34, 36 }
+    });
+  }
+
+  public void testManyTermSloppyPhraseQuery() throws IOException {
+    PhraseQuery2 query = new PhraseQuery2(2);
+    query.add(new Term("field", "pease"));
+    query.add(new Term("field", "porridge"));
+    query.add(new Term("field", "pot"));
+    checkIntervals(query, searcher, new int[][]{
+        { 0, 6, 10 },
+        { 1, 6, 10 }
+    });
+  }
+
+  public void testOutOfOrderSloppyPhraseQuery() throws IOException {
+    PhraseQuery2 query = new PhraseQuery2(1);
+    query.add(new Term("field", "pease"));
+    query.add(new Term("field", "cold!"));
+    query.add(new Term("field", "porridge"));
+    checkIntervals(query, searcher, new int[][]{
+        { 0, 3, 5, 34, 36 },
+        { 1, 0, 2, 31, 33 }
+    });
+  }
+
   public void testMultiPhrases() throws IOException {
 
-    ExactMultiPhraseQuery q = new ExactMultiPhraseQuery();
+    PhraseQuery2 q = new PhraseQuery2();
     q.add(new Term("field", "pease"));
     q.add(new Term("field", "porridge"));
-    q.add(new Term("field", "hot!"), new Term("field", "cold!"));
+    q.addMultiTerm(new Term("field", "hot!"), new Term("field", "cold!"));
 
     checkIntervals(q, searcher, new int[][]{
         { 0, 0, 2, 3, 5, 31, 33, 34, 36 },
@@ -68,7 +100,7 @@ public class TestExactPhraseQuery extends IntervalTestBase {
   }
 
   public void testOverlaps() throws IOException {
-    ExactPhraseQuery q = new ExactPhraseQuery();
+    PhraseQuery2 q = new PhraseQuery2();
     q.add(new Term("field", "some"));
     q.add(new Term("field", "like"));
     q.add(new Term("field", "it"));
@@ -76,14 +108,14 @@ public class TestExactPhraseQuery extends IntervalTestBase {
     q.add(new Term("field", "some"));
     q.add(new Term("field", "like"));
     checkIntervals(q, searcher, new int[][]{
-        { 0, 18, 23 },
-        { 1, 14, 19 }
+        {0, 18, 23},
+        {1, 14, 19}
     });
   }
 
   public void testMatching() throws IOException {
 
-    ExactPhraseQuery q = new ExactPhraseQuery();
+    PhraseQuery2 q = new PhraseQuery2();
     q.add(new Term("field", "pease"));
     q.add(new Term("field", "porridge"));
     q.add(new Term("field", "hot!"));
@@ -97,7 +129,7 @@ public class TestExactPhraseQuery extends IntervalTestBase {
 
   public void testPartialMatching() throws IOException {
 
-    ExactPhraseQuery q = new ExactPhraseQuery();
+    PhraseQuery2 q = new PhraseQuery2();
     q.add(new Term("field", "pease"));
     q.add(new Term("field", "porridge"));
     q.add(new Term("field", "hot!"));
@@ -113,7 +145,7 @@ public class TestExactPhraseQuery extends IntervalTestBase {
 
   public void testNonMatching() throws IOException {
 
-    ExactPhraseQuery q = new ExactPhraseQuery();
+    PhraseQuery2 q = new PhraseQuery2();
     q.add(new Term("field", "pease"));
     q.add(new Term("field", "hot!"));
 

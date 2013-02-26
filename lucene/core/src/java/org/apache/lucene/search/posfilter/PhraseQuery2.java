@@ -23,20 +23,30 @@ import org.apache.lucene.search.TermQuery;
  * limitations under the License.
  */
 
-public class ExactMultiPhraseQuery extends PositionFilterQuery {
+public class PhraseQuery2 extends PositionFilterQuery {
 
   private final BooleanQuery innerBQ;
+  private final int slop;
 
-  public ExactMultiPhraseQuery() {
-    super(new BooleanQuery(), new ExactMultiPhraseScorerFactory());
+  public PhraseQuery2(int slop) {
+    super(new BooleanQuery(), new ExactPhraseScorerFactory(slop));
     this.innerBQ = (BooleanQuery) innerQuery;
+    this.slop = slop;
+  }
+
+  public PhraseQuery2() {
+    this(0);
+  }
+
+  public int getSlop() {
+    return slop;
   }
 
   public void add(Term term) {
     innerBQ.add(new TermQuery(term), BooleanClause.Occur.MUST);
   }
 
-  public void add(Term... terms) {
+  public void addMultiTerm(Term... terms) {
     BooleanQuery disj = new BooleanQuery();
     for (Term term : terms) {
       disj.add(new TermQuery(term), BooleanClause.Occur.SHOULD);
@@ -44,16 +54,25 @@ public class ExactMultiPhraseQuery extends PositionFilterQuery {
     innerBQ.add(disj, BooleanClause.Occur.MUST);
   }
 
-  private static class ExactMultiPhraseScorerFactory implements ScorerFilterFactory {
+  private static class ExactPhraseScorerFactory implements ScorerFilterFactory {
+
+    private final int slop;
+
+    ExactPhraseScorerFactory(int slop) {
+      this.slop = slop;
+    }
 
     @Override
     public Scorer scorer(Scorer filteredScorer) {
-      return new BlockPhraseScorer(filteredScorer);
+      if (slop == 0)
+        return new BlockPhraseScorer(filteredScorer);
+      else
+        return new PartiallyOrderedNearScorer(filteredScorer, slop);
     }
 
     @Override
     public String getName() {
-      return "ExactMultiPhrase";
+      return slop == 0 ? "ExactPhrase" : "SloppyPhrase/" + slop;
     }
   }
 

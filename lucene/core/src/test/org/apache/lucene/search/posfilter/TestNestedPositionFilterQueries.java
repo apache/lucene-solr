@@ -23,12 +23,10 @@ import org.apache.lucene.index.RandomIndexWriter;
 import org.apache.lucene.search.BooleanClause;
 import org.apache.lucene.search.BooleanQuery;
 import org.apache.lucene.search.Query;
-import org.apache.lucene.search.posfilter.OrderedNearQuery;
-import org.apache.lucene.search.posfilter.UnorderedNearQuery;
 
 import java.io.IOException;
 
-public class TestNestedIntervalFilterQueries extends IntervalTestBase {
+public class TestNestedPositionFilterQueries extends IntervalTestBase {
 
   @Override
   protected void addDocs(RandomIndexWriter writer) throws IOException {

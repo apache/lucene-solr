@@ -26,10 +26,12 @@ public class PositionQueue extends PriorityQueue<PositionQueue.DocsEnumRef> {
   public class DocsEnumRef {
 
     public final DocsEnum docsEnum;
+    public final int ord;
     public Interval interval = new Interval();
 
-    public DocsEnumRef(DocsEnum docsEnum) {
+    public DocsEnumRef(DocsEnum docsEnum, int ord) {
       this.docsEnum = docsEnum;
+      this.ord = ord;
     }
 
     public int nextPosition() throws IOException {
@@ -51,7 +53,7 @@ public class PositionQueue extends PriorityQueue<PositionQueue.DocsEnumRef> {
   public PositionQueue(DocsEnum... subDocsEnums) {
     super(subDocsEnums.length);
     for (int i = 0; i < subDocsEnums.length; i++) {
-      add(new DocsEnumRef(subDocsEnums[i]));
+      add(new DocsEnumRef(subDocsEnums[i], i));
     }
     queuesize = subDocsEnums.length;
   }
