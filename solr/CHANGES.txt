@@ -91,6 +91,9 @@ New Features
 * SOLR-4078: Allow custom naming of SolrCloud nodes so that a new host:port 
   combination can take over for a previous shard. (Mark Miller)
 
+* SOLR-4210: Requests to a Collection that does not exist on the receiving node
+  should be proxied to a suitable node. (Mark Miller, Po Rui)
+
 Bug Fixes
 ----------------------
 
