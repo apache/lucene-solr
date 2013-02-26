@@ -117,6 +117,7 @@ public class CoreContainer
   private static final String CORE_SHARD = "shard";
   private static final String CORE_COLLECTION = "collection";
   private static final String CORE_ROLES = "roles";
+  private static final String CORE_NODE_NAME = "coreNodeName";
   private static final String CORE_PROPERTIES = "properties";
   private static final String CORE_LOADONSTARTUP = "loadOnStartup";
   private static final String CORE_TRANSIENT = "transient";
@@ -594,6 +595,10 @@ public class CoreContainer
             opt = DOMUtil.getAttr(node, CORE_ROLES, null);
             if (opt != null) {
               p.getCloudDescriptor().setRoles(opt);
+            }
+            opt = DOMUtil.getAttr(node, CORE_NODE_NAME, null);
+            if (opt != null && opt.length() > 0) {
+              p.getCloudDescriptor().setCoreNodeName(opt);
             }
           }
           opt = DOMUtil.getAttr(node, CORE_PROPERTIES, null);

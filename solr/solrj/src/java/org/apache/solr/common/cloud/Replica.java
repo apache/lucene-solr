@@ -30,7 +30,6 @@ public class Replica extends ZkNodeProps {
     super(propMap);
     this.name = name;
     nodeName = (String)propMap.get(ZkStateReader.NODE_NAME_PROP);
-    assert nodeName == null || name.startsWith(nodeName);
   }
 
   public String getName() {

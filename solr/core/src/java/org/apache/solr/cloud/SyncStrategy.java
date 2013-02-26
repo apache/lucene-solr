@@ -37,6 +37,7 @@ import org.apache.solr.common.params.CoreAdminParams.CoreAdminAction;
 import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.common.util.ExecutorUtil;
 import org.apache.solr.common.util.NamedList;
+import org.apache.solr.core.CoreDescriptor;
 import org.apache.solr.core.SolrCore;
 import org.apache.solr.handler.component.HttpShardHandlerFactory;
 import org.apache.solr.handler.component.ShardHandler;
@@ -142,7 +143,7 @@ public class SyncStrategy {
       if (success) {
         log.info("Sync Success - now sync replicas to me");
         
-        syncToMe(zkController, collection, shardId, leaderProps);
+        syncToMe(zkController, collection, shardId, leaderProps, core.getCoreDescriptor());
         
       } else {
         SolrException.log(log, "Sync Failed");
@@ -160,7 +161,7 @@ public class SyncStrategy {
       ZkNodeProps props, String collection, String shardId) {
     List<ZkCoreNodeProps> nodes = zkController.getZkStateReader()
         .getReplicaProps(collection, shardId,
-            props.getStr(ZkStateReader.NODE_NAME_PROP),
+            zkController.getCoreNodeName(core.getCoreDescriptor()),
             props.getStr(ZkStateReader.CORE_NAME_PROP));
     
     if (nodes == null) {
@@ -181,14 +182,14 @@ public class SyncStrategy {
   }
   
   private void syncToMe(ZkController zkController, String collection,
-      String shardId, ZkNodeProps leaderProps) {
+      String shardId, ZkNodeProps leaderProps, CoreDescriptor cd) {
     
     // sync everyone else
     // TODO: we should do this in parallel at least
     List<ZkCoreNodeProps> nodes = zkController
         .getZkStateReader()
         .getReplicaProps(collection, shardId,
-            leaderProps.getStr(ZkStateReader.NODE_NAME_PROP),
+            zkController.getCoreNodeName(cd),
             leaderProps.getStr(ZkStateReader.CORE_NAME_PROP));
     if (nodes == null) {
       log.info(ZkCoreNodeProps.getCoreUrl(leaderProps) + " has no replicas");

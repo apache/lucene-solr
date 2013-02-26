@@ -26,6 +26,7 @@ import org.apache.lucene.store.AlreadyClosedException;
 import org.apache.solr.cloud.RecoveryStrategy;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.core.CoreContainer;
+import org.apache.solr.core.CoreDescriptor;
 import org.apache.solr.core.DirectoryFactory;
 import org.apache.solr.core.SolrCore;
 import org.apache.solr.util.RefCounted;
@@ -211,7 +212,7 @@ public final class DefaultSolrCoreState extends SolrCoreState implements Recover
   }
 
   @Override
-  public void doRecovery(CoreContainer cc, String name) {
+  public void doRecovery(CoreContainer cc, CoreDescriptor cd) {
     if (SKIP_AUTO_RECOVERY) {
       log.warn("Skipping recovery according to sys prop solrcloud.skip.autorecovery");
       return;
@@ -243,7 +244,7 @@ public final class DefaultSolrCoreState extends SolrCoreState implements Recover
       // if true, we are recovering after startup and shouldn't have (or be receiving) additional updates (except for local tlog recovery)
       boolean recoveringAfterStartup = recoveryStrat == null;
 
-      recoveryStrat = new RecoveryStrategy(cc, name, this);
+      recoveryStrat = new RecoveryStrategy(cc, cd, this);
       recoveryStrat.setRecoveringAfterStartup(recoveringAfterStartup);
       recoveryStrat.start();
       recoveryRunning = true;

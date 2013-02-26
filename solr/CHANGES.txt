@@ -87,6 +87,9 @@ New Features
 * SOLR-4481: SwitchQParserPlugin registered by default as 'switch' using  
   syntax: {!switch case=XXX case.foo=YYY case.bar=ZZZ default=QQQ}foo
   (hossman)
+  
+* SOLR-4078: Allow custom naming of SolrCloud nodes so that a new host:port 
+  combination can take over for a previous shard. (Mark Miller)
 
 Bug Fixes
 ----------------------

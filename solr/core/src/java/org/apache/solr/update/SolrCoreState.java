@@ -22,6 +22,7 @@ import java.util.concurrent.locks.Lock;
 
 import org.apache.lucene.index.IndexWriter;
 import org.apache.solr.core.CoreContainer;
+import org.apache.solr.core.CoreDescriptor;
 import org.apache.solr.core.DirectoryFactory;
 import org.apache.solr.core.SolrCore;
 import org.apache.solr.util.RefCounted;
@@ -111,7 +112,7 @@ public abstract class SolrCoreState {
     public void closeWriter(IndexWriter writer) throws IOException;
   }
 
-  public abstract void doRecovery(CoreContainer cc, String name);
+  public abstract void doRecovery(CoreContainer cc, CoreDescriptor cd);
   
   public abstract void cancelRecovery();
 

@@ -76,6 +76,8 @@ public interface CoreAdminParams
   
   public static final String ROLES = "roles";
   
+  public static final String CORE_NODE_NAME = "coreNodeName";
+  
   /** Prefix for core property name=value pair **/
   public final static String PROPERTY_PREFIX = "property.";
 

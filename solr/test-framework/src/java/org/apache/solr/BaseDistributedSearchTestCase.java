@@ -29,6 +29,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Random;
 import java.util.Set;
+import java.util.concurrent.atomic.AtomicInteger;
 
 import junit.framework.Assert;
 
@@ -64,7 +65,10 @@ import org.slf4j.LoggerFactory;
 public abstract class BaseDistributedSearchTestCase extends SolrTestCaseJ4 {
   // TODO: this shouldn't be static. get the random when you need it to avoid sharing.
   public static Random r;
-
+  
+  private AtomicInteger nodeCnt = new AtomicInteger(0);
+  protected boolean useExplicitNodeNames;
+  
   @BeforeClass
   public static void initialize() {
     assumeFalse("SOLR-4147: ibm 64bit has jvm bugs!", Constants.JRE_IS_64BIT && Constants.JAVA_VENDOR.startsWith("IBM"));
@@ -353,10 +357,17 @@ public abstract class BaseDistributedSearchTestCase extends SolrTestCaseJ4 {
   }
   
   public JettySolrRunner createJetty(File solrHome, String dataDir, String shardList, String solrConfigOverride, String schemaOverride) throws Exception {
+    return createJetty(solrHome, dataDir, shardList, solrConfigOverride, schemaOverride, useExplicitNodeNames);
+  }
+  
+  public JettySolrRunner createJetty(File solrHome, String dataDir, String shardList, String solrConfigOverride, String schemaOverride, boolean explicitCoreNodeName) throws Exception {
 
     JettySolrRunner jetty = new JettySolrRunner(solrHome.getAbsolutePath(), context, 0, solrConfigOverride, schemaOverride);
     jetty.setShards(shardList);
     jetty.setDataDir(dataDir);
+    if (explicitCoreNodeName) {
+      jetty.setCoreNodeName(Integer.toString(nodeCnt.incrementAndGet()));
+    }
     jetty.start();
 
     return jetty;
