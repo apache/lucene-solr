@@ -362,12 +362,19 @@ public class MultiDocValues {
     }
   }
   
-  /** implements SortedDocValues over n subs, using an OrdinalMap */
-  static class MultiSortedDocValues extends SortedDocValues {
-    final int docStarts[];
-    final SortedDocValues values[];
-    final OrdinalMap mapping;
+  /** 
+   * Implements SortedDocValues over n subs, using an OrdinalMap
+   * @lucene.internal
+   */
+  public static class MultiSortedDocValues extends SortedDocValues {
+    /** docbase for each leaf: parallel with {@link #values} */
+    public final int docStarts[];
+    /** leaf values */
+    public final SortedDocValues values[];
+    /** ordinal map mapping ords from <code>values</code> to global ord space */
+    public final OrdinalMap mapping;
   
+    /** Creates a new MultiSortedDocValues over <code>values</code> */
     MultiSortedDocValues(SortedDocValues values[], int docStarts[], OrdinalMap mapping) throws IOException {
       assert values.length == mapping.ordDeltas.length;
       assert docStarts.length == values.length + 1;
@@ -396,13 +403,20 @@ public class MultiDocValues {
     }
   }
   
-  /** implements MultiSortedDocValues over n subs, using an OrdinalMap */
-  static class MultiSortedSetDocValues extends SortedSetDocValues {
-    final int docStarts[];
-    final SortedSetDocValues values[];
-    final OrdinalMap mapping;
+  /** 
+   * Implements MultiSortedSetDocValues over n subs, using an OrdinalMap 
+   * @lucene.internal
+   */
+  public static class MultiSortedSetDocValues extends SortedSetDocValues {
+    /** docbase for each leaf: parallel with {@link #values} */
+    public final int docStarts[];
+    /** leaf values */
+    public final SortedSetDocValues values[];
+    /** ordinal map mapping ords from <code>values</code> to global ord space */
+    public final OrdinalMap mapping;
     int currentSubIndex;
     
+    /** Creates a new MultiSortedSetDocValues over <code>values</code> */
     MultiSortedSetDocValues(SortedSetDocValues values[], int docStarts[], OrdinalMap mapping) throws IOException {
       assert values.length == mapping.ordDeltas.length;
       assert docStarts.length == values.length + 1;
