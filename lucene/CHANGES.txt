@@ -271,6 +271,8 @@ Bug Fixes
   AnalysisSPILoader when doing reload (e.g. from Solr).
   (Uwe Schindler, Hossman)
 
+* LUCENE-4802: Don't compute norms for drill-down facet fields. (Mike McCandless)
+
 Documentation
 
 * LUCENE-4718: Fixed documentation of oal.queryparser.classic.

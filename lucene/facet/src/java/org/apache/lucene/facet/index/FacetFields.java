@@ -5,8 +5,8 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
-import java.util.Map;
 import java.util.Map.Entry;
+import java.util.Map;
 
 import org.apache.lucene.document.BinaryDocValuesField;
 import org.apache.lucene.document.Document;
@@ -66,6 +66,7 @@ public class FacetFields {
   private static final FieldType DRILL_DOWN_TYPE = new FieldType(TextField.TYPE_NOT_STORED);
   static {
     DRILL_DOWN_TYPE.setIndexOptions(IndexOptions.DOCS_ONLY);
+    DRILL_DOWN_TYPE.setOmitNorms(true);
     DRILL_DOWN_TYPE.freeze();
   }
   

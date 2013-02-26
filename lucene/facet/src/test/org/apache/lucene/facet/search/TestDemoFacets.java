@@ -21,15 +21,19 @@ import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.PrintStream;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 
+import org.apache.lucene.analysis.MockAnalyzer;
 import org.apache.lucene.document.Document;
+import org.apache.lucene.document.Field;
 import org.apache.lucene.facet.FacetTestCase;
 import org.apache.lucene.facet.FacetTestUtils;
 import org.apache.lucene.facet.index.FacetFields;
 import org.apache.lucene.facet.params.FacetSearchParams;
 import org.apache.lucene.facet.taxonomy.CategoryPath;
 import org.apache.lucene.facet.taxonomy.TaxonomyReader;
+import org.apache.lucene.facet.taxonomy.TaxonomyWriter;
 import org.apache.lucene.facet.taxonomy.directory.DirectoryTaxonomyReader;
 import org.apache.lucene.facet.taxonomy.directory.DirectoryTaxonomyWriter;
 import org.apache.lucene.facet.util.PrintTaxonomyStats;
@@ -37,6 +41,9 @@ import org.apache.lucene.index.IndexWriterConfig;
 import org.apache.lucene.index.RandomIndexWriter;
 import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.search.MatchAllDocsQuery;
+import org.apache.lucene.search.similarities.DefaultSimilarity;
+import org.apache.lucene.search.similarities.PerFieldSimilarityWrapper;
+import org.apache.lucene.search.similarities.Similarity;
 import org.apache.lucene.store.Directory;
 
 public class TestDemoFacets extends FacetTestCase {
@@ -134,4 +141,30 @@ public class TestDemoFacets extends FacetTestCase {
     taxoDir.close();
   }
 
+  public void testReallyNoNormsForDrillDown() throws Exception {
+    Directory dir = newDirectory();
+    Directory taxoDir = newDirectory();
+    IndexWriterConfig iwc = newIndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer(random()));
+    iwc.setSimilarity(new PerFieldSimilarityWrapper() {
+        final Similarity sim = new DefaultSimilarity();
+
+        @Override
+        public Similarity get(String name) {
+          assertEquals("field", name);
+          return sim;
+        }
+      });
+    RandomIndexWriter writer = new RandomIndexWriter(random(), dir, iwc);
+    TaxonomyWriter taxoWriter = new DirectoryTaxonomyWriter(taxoDir, IndexWriterConfig.OpenMode.CREATE);
+    FacetFields facetFields = new FacetFields(taxoWriter);      
+
+    Document doc = new Document();
+    doc.add(newTextField("field", "text", Field.Store.NO));
+    facetFields.addFields(doc, Collections.singletonList(new CategoryPath("a/path", '/')));
+    writer.addDocument(doc);
+    writer.close();
+    taxoWriter.close();
+    dir.close();
+    taxoDir.close();
+  }
 }
