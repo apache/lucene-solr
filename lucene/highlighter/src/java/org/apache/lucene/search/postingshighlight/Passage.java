@@ -20,6 +20,7 @@ package org.apache.lucene.search.postingshighlight;
 import org.apache.lucene.index.Term;
 import org.apache.lucene.util.ArrayUtil;
 import org.apache.lucene.util.RamUsageEstimator;
+import org.apache.lucene.util.SorterTemplate;
 
 /**
  * Represents a passage (typically a sentence of the document). 
@@ -51,6 +52,45 @@ public final class Passage {
     matchEnds[numMatches] = endOffset;
     matchTerms[numMatches] = term;
     numMatches++;
+  }
+  
+  void sort() {
+    final int starts[] = matchStarts;
+    final int ends[] = matchEnds;
+    final Term terms[] = matchTerms;
+    new SorterTemplate() {
+      @Override
+      protected void swap(int i, int j) {
+        int temp = starts[i];
+        starts[i] = starts[j];
+        starts[j] = temp;
+        
+        temp = ends[i];
+        ends[i] = ends[j];
+        ends[j] = temp;
+        
+        Term tempTerm = terms[i];
+        terms[i] = terms[j];
+        terms[j] = tempTerm;
+      }
+
+      @Override
+      protected int compare(int i, int j) {
+        return Integer.compare(starts[i], starts[j]);
+      }
+
+      @Override
+      protected void setPivot(int i) {
+        pivot = starts[i];
+      }
+
+      @Override
+      protected int comparePivot(int j) {
+        return Integer.compare(pivot, starts[j]);
+      }
+      
+      int pivot;
+    }.mergeSort(0, numMatches-1);
   }
   
   void reset() {
