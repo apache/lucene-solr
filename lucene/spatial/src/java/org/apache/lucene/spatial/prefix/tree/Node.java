@@ -1,3 +1,5 @@
+package org.apache.lucene.spatial.prefix.tree;
+
 /*
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
@@ -15,8 +17,6 @@
  * limitations under the License.
  */
 
-package org.apache.lucene.spatial.prefix.tree;
-
 import com.spatial4j.core.shape.Point;
 import com.spatial4j.core.shape.Shape;
 import com.spatial4j.core.shape.SpatialRelation;
@@ -27,7 +27,8 @@ import java.util.Collections;
 import java.util.List;
 
 /**
- * Represents a grid cell. These are not necessarily thread-safe, although new Cell("") (world cell) must be.
+ * Represents a grid cell. These are not necessarily thread-safe, although new
+ * Cell("") (world cell) must be.
  *
  * @lucene.experimental
  */
@@ -44,12 +45,18 @@ public abstract class Node implements Comparable<Node> {
 
   private String token;//this is the only part of equality
 
-  /** When set via getSubCells(filter), it is the relationship between this
-   * cell and the given shape filter.  If set via setLeaf() (to WITHIN), it is
-   * meant to indicate no further sub-cells are going to be provided because
-   * maxLevels or a detailLevel is hit. It's always null for points.
+  /**
+   * When set via getSubCells(filter), it is the relationship between this cell
+   * and the given shape filter.
    */
   protected SpatialRelation shapeRel;
+
+  /**
+   * Always false for points. Otherwise, indicate no further sub-cells are going
+   * to be provided because shapeRel is WITHIN or maxLevels or a detailLevel is
+   * hit.
+   */
+  protected boolean leaf;
 
   protected Node(String token) {
     this.token = token;
@@ -96,12 +103,13 @@ public abstract class Node implements Comparable<Node> {
    * further cells with this prefix for the shape (always true at maxLevels).
    */
   public boolean isLeaf() {
-    return shapeRel == SpatialRelation.WITHIN;
+    return leaf;
   }
 
+  /** Note: not supported at level 0. */
   public void setLeaf() {
     assert getLevel() != 0;
-    shapeRel = SpatialRelation.WITHIN;
+    leaf = true;
   }
 
   /**
@@ -139,12 +147,11 @@ public abstract class Node implements Comparable<Node> {
 
   /**
    * Like {@link #getSubCells()} but with the results filtered by a shape. If
-   * that shape is a {@link com.spatial4j.core.shape.Point} then it
-   * must call {@link #getSubCell(com.spatial4j.core.shape.Point)}.
-   * The returned cells should have their {@link Node#shapeRel} set to their
-   * relation with {@code shapeFilter} for non-point. As such,
-   * {@link org.apache.lucene.spatial.prefix.tree.Node#isLeaf()} should be
-   * accurate.
+   * that shape is a {@link com.spatial4j.core.shape.Point} then it must call
+   * {@link #getSubCell(com.spatial4j.core.shape.Point)}. The returned cells
+   * should have {@link Node#getShapeRel()} set to their relation with {@code
+   * shapeFilter}. In addition, {@link org.apache.lucene.spatial.prefix.tree.Node#isLeaf()}
+   * must be true when that relation is WITHIN.
    * <p/>
    * Precondition: Never called when getLevel() == maxLevel.
    *
@@ -154,29 +161,35 @@ public abstract class Node implements Comparable<Node> {
   public Collection<Node> getSubCells(Shape shapeFilter) {
     //Note: Higher-performing subclasses might override to consider the shape filter to generate fewer cells.
     if (shapeFilter instanceof Point) {
-      return Collections.singleton(getSubCell((Point) shapeFilter));
+      Node subCell = getSubCell((Point) shapeFilter);
+      subCell.shapeRel = SpatialRelation.CONTAINS;
+      return Collections.singletonList(subCell);
     }
     Collection<Node> cells = getSubCells();
 
     if (shapeFilter == null) {
       return cells;
     }
-    List<Node> copy = new ArrayList<Node>(cells.size());//copy since cells contractually isn't modifiable
+
+    //TODO change API to return a filtering iterator
+    List<Node> copy = new ArrayList<Node>(cells.size());
     for (Node cell : cells) {
       SpatialRelation rel = cell.getShape().relate(shapeFilter);
       if (rel == SpatialRelation.DISJOINT)
         continue;
       cell.shapeRel = rel;
+      if (rel == SpatialRelation.WITHIN)
+        cell.setLeaf();
       copy.add(cell);
     }
-    cells = copy;
-    return cells;
+    return copy;
   }
 
   /**
-   * Performant implementations are expected to implement this efficiently by considering the current
-   * cell's boundary.
-   * Precondition: Never called when getLevel() == maxLevel.
+   * Performant implementations are expected to implement this efficiently by
+   * considering the current cell's boundary. Precondition: Never called when
+   * getLevel() == maxLevel.
+   * <p/>
    * Precondition: this.getShape().relate(p) != DISJOINT.
    */
   public abstract Node getSubCell(Point p);
@@ -187,7 +200,7 @@ public abstract class Node implements Comparable<Node> {
    * Gets the cells at the next grid cell level that cover this cell.
    * Precondition: Never called when getLevel() == maxLevel.
    *
-   * @return A set of cells (no dups), sorted. Not Modifiable.
+   * @return A set of cells (no dups), sorted, modifiable, not empty, not null.
    */
   protected abstract Collection<Node> getSubCells();
 

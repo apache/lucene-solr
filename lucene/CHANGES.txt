@@ -118,6 +118,10 @@ Optimizations
 * LUCENE-4792: Reduction of the memory required to build the doc ID maps used
   when merging segments. (Adrien Grand)
 
+* LUCENE-4794: Spatial RecursivePrefixTreeStrategy's search filter: Skip calls
+  to termsEnum.seek() when the next term is known to follow the current cell.
+  (David Smiley)
+
 New Features
 
 * LUCENE-4686: New specialized DGapVInt8IntEncoder for facets (now the 
@@ -198,6 +202,9 @@ API Changes
   a boolean indicating whether a new reference was in fact opened, and
   a new beforeRefresh method notifies you when a refresh attempt is
   starting.  (Robert Muir, Mike McCandless)
+
+* LUCENE-4794: Spatial RecursivePrefixTreeFilter replaced by
+  IntersectsPrefixTreeFilter and some extensible base classes. (David Smiley)
   
 Bug Fixes
 

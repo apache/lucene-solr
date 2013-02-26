@@ -25,7 +25,7 @@ import org.apache.lucene.spatial.query.SpatialOperation;
 import org.apache.lucene.spatial.query.UnsupportedSpatialOperation;
 
 /**
- * A {@link PrefixTreeStrategy} which uses {@link RecursivePrefixTreeFilter}.
+ * A {@link PrefixTreeStrategy} which uses {@link AbstractVisitingPrefixTreeFilter}.
  * This strategy has support for searching non-point shapes (note: not tested).
  * Even a query shape with distErrPct=0 (fully precise to the grid) should have
  * good performance for typical data, unless there is a lot of indexed data
@@ -70,8 +70,9 @@ public class RecursivePrefixTreeStrategy extends PrefixTreeStrategy {
 
     int detailLevel = grid.getLevelForDistance(args.resolveDistErr(ctx, distErrPct));
 
-    return new RecursivePrefixTreeFilter(
-        getFieldName(), grid, shape, prefixGridScanLevel, detailLevel);
+    return new IntersectsPrefixTreeFilter(
+        shape, getFieldName(), grid, detailLevel, prefixGridScanLevel,
+        true);//hasIndexedLeaves
   }
 }
 
