@@ -31,7 +31,7 @@ import org.apache.lucene.util.SmallFloat;
 /**
  * BM25 Similarity. Introduced in Stephen E. Robertson, Steve Walker,
  * Susan Jones, Micheline Hancock-Beaulieu, and Mike Gatford. Okapi at TREC-3.
- * In Proceedings of the Third Text REtrieval Conference (TREC 1994).
+ * In Proceedings of the Third <b>T</b>ext <b>RE</b>trieval <b>C</b>onference (TREC 1994).
  * Gaithersburg, USA, November 1994.
  * @lucene.experimental
  */
