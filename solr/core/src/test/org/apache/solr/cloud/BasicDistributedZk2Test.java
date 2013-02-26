@@ -34,6 +34,7 @@ import org.apache.solr.client.solrj.SolrServer;
 import org.apache.solr.client.solrj.SolrServerException;
 import org.apache.solr.client.solrj.embedded.JettySolrRunner;
 import org.apache.solr.client.solrj.impl.HttpSolrServer;
+import org.apache.solr.client.solrj.request.CoreAdminRequest.Create;
 import org.apache.solr.client.solrj.request.QueryRequest;
 import org.apache.solr.client.solrj.request.UpdateRequest;
 import org.apache.solr.client.solrj.response.QueryResponse;
@@ -55,6 +56,8 @@ import org.junit.BeforeClass;
  * work as expected.
  */
 public class BasicDistributedZk2Test extends AbstractFullDistribZkTestBase {
+  private static final String ONE_NODE_COLLECTION = "onenodecollection";
+
   @BeforeClass
   public static void beforeThisClass2() throws Exception {
     // TODO: we use an fs based dir because something
@@ -79,6 +82,8 @@ public class BasicDistributedZk2Test extends AbstractFullDistribZkTestBase {
       handle.put("QTime", SKIPVAL);
       handle.put("timestamp", SKIPVAL);
       
+      testNodeWithoutCollectionForwarding();
+     
       indexr(id, 1, i1, 100, tlong, 100, t1,
           "now is the time for all good men", "foo_f", 1.414f, "foo_b", "true",
           "foo_d", 1.414d);
@@ -152,6 +157,52 @@ public class BasicDistributedZk2Test extends AbstractFullDistribZkTestBase {
       }
     }
     
+  }
+  
+  private void testNodeWithoutCollectionForwarding() throws Exception,
+      SolrServerException, IOException {
+    try {
+      final String baseUrl = ((HttpSolrServer) clients.get(0)).getBaseURL().substring(
+          0,
+          ((HttpSolrServer) clients.get(0)).getBaseURL().length()
+              - DEFAULT_COLLECTION.length() - 1);
+      HttpSolrServer server = new HttpSolrServer(baseUrl);
+      server.setConnectionTimeout(15000);
+      server.setSoTimeout(30000);
+      Create createCmd = new Create();
+      createCmd.setRoles("none");
+      createCmd.setCoreName(ONE_NODE_COLLECTION + "core");
+      createCmd.setCollection(ONE_NODE_COLLECTION);
+      createCmd.setNumShards(1);
+      createCmd.setDataDir(dataDir.getAbsolutePath() + File.separator
+          + ONE_NODE_COLLECTION);
+      server.request(createCmd);
+    } catch (Exception e) {
+      e.printStackTrace();
+      //fail
+    }
+    
+    waitForRecoveriesToFinish(ONE_NODE_COLLECTION, cloudClient.getZkStateReader(), false);
+    
+    final String baseUrl2 = ((HttpSolrServer) clients.get(1)).getBaseURL().substring(
+        0,
+        ((HttpSolrServer) clients.get(1)).getBaseURL().length()
+            - DEFAULT_COLLECTION.length() - 1);
+    HttpSolrServer qclient = new HttpSolrServer(baseUrl2 + "/onenodecollection" + "core");
+    
+    // add a doc
+    SolrInputDocument doc = new SolrInputDocument();
+    doc.addField("id", "1");
+    qclient.add(doc);
+    qclient.commit();
+    
+    SolrQuery query = new SolrQuery("*:*");
+    QueryResponse results = qclient.query(query);
+    assertEquals(1, results.getResults().getNumFound());
+    
+    qclient = new HttpSolrServer(baseUrl2 + "/onenodecollection");
+    results = qclient.query(query);
+    assertEquals(1, results.getResults().getNumFound());
   }
   
   private long testUpdateAndDelete() throws Exception {
