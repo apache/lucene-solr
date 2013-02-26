@@ -60,6 +60,26 @@ public class FacetsAccumulator {
   public FacetsAccumulator(FacetSearchParams searchParams, IndexReader indexReader, TaxonomyReader taxonomyReader) {
     this(searchParams, indexReader, taxonomyReader, null);
   }
+
+  /**
+   * Creates an appropriate {@link FacetsAccumulator},
+   * returning {@link FacetsAccumulator} when all requests
+   * are {@link CountFacetRequest} and only one partition is
+   * in use, otherwise {@link StandardFacetsAccumulator}.
+   */
+  public static FacetsAccumulator create(FacetSearchParams fsp, IndexReader indexReader, TaxonomyReader taxoReader) {
+    if (fsp.indexingParams.getPartitionSize() != Integer.MAX_VALUE) {
+      return new StandardFacetsAccumulator(fsp, indexReader, taxoReader);
+    }
+    
+    for (FacetRequest fr : fsp.facetRequests) {
+      if (!(fr instanceof CountFacetRequest)) {
+        return new StandardFacetsAccumulator(fsp, indexReader, taxoReader);
+      }
+    }
+    
+    return new FacetsAccumulator(fsp, indexReader, taxoReader);
+  }
   
   /**
    * Initializes the accumulator with the given parameters as well as
@@ -153,6 +173,12 @@ public class FacetsAccumulator {
     for (FacetRequest fr : searchParams.facetRequests) {
       int rootOrd = taxonomyReader.getOrdinal(fr.categoryPath);
       if (rootOrd == TaxonomyReader.INVALID_ORDINAL) { // category does not exist
+        // Add empty FacetResult:
+        FacetResultNode root = new FacetResultNode();
+        root.ordinal = TaxonomyReader.INVALID_ORDINAL;
+        root.label = fr.categoryPath;
+        root.value = 0;
+        res.add(new FacetResult(fr, root, 0));
         continue;
       }
       CategoryListParams clp = searchParams.indexingParams.getCategoryListParams(fr.categoryPath);

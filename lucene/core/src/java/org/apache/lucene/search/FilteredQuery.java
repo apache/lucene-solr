@@ -516,7 +516,7 @@ public class FilteredQuery extends Query {
       }
       
       final Bits filterAcceptDocs = docIdSet.bits();
-        // force if RA is requested
+      // force if RA is requested
       final boolean useRandomAccess = (filterAcceptDocs != null && (useRandomAccess(filterAcceptDocs, firstFilterDoc)));
       if (useRandomAccess) {
         // if we are using random access, we return the inner scorer, just with other acceptDocs

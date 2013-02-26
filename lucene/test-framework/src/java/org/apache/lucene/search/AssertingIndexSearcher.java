@@ -98,6 +98,9 @@ public class AssertingIndexSearcher extends IndexSearcher {
 
       @Override
       public boolean scoresDocsOutOfOrder() {
+        // TODO: if this returns false, we should wrap
+        // Scorer with AssertingScorer that confirms docIDs
+        // are in order?
         return w.scoresDocsOutOfOrder();
       }
     };
