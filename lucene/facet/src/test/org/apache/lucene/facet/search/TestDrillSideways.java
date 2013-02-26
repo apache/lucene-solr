@@ -628,6 +628,14 @@ public class TestDrillSideways extends FacetTestCase {
       }
       
       verifyEquals(dimValues, s, expected, actual, scores);
+
+      // Make sure drill down doesn't change score:
+      TopDocs ddqHits = s.search(ddq, filter, numDocs);
+      assertEquals(expected.hits.size(), ddqHits.totalHits);
+      for(int i=0;i<expected.hits.size();i++) {
+        // Score should be IDENTICAL:
+        assertEquals(scores.get(expected.hits.get(i).id), ddqHits.scoreDocs[i].score, 0.0f);
+      }
     }
 
     tr.close();
