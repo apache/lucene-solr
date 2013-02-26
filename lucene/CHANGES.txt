@@ -273,6 +273,9 @@ Bug Fixes
 
 * LUCENE-4802: Don't compute norms for drill-down facet fields. (Mike McCandless)
 
+* LUCENE-4804: PostingsHighlighter sometimes applied terms to the wrong passage,
+  if they started exactly on a passage boundary.  (Robert Muir)
+
 Documentation
 
 * LUCENE-4718: Fixed documentation of oal.queryparser.classic.

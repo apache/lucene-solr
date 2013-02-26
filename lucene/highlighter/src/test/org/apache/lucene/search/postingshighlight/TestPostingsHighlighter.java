@@ -310,4 +310,34 @@ public class TestPostingsHighlighter extends LuceneTestCase {
     ir.close();
     dir.close();
   }
+  
+  public void testCuriousGeorge() throws Exception {
+    String text = "It’s the formula for success for preschoolers—Curious George and fire trucks! " + 
+                  "Curious George and the Firefighters is a story based on H. A. and Margret Rey’s " +
+                  "popular primate and painted in the original watercolor and charcoal style. " + 
+                  "Firefighters are a famously brave lot, but can they withstand a visit from one curious monkey?";
+    Directory dir = newDirectory();
+    Analyzer analyzer = new MockAnalyzer(random(), MockTokenizer.SIMPLE, true);
+    RandomIndexWriter iw = new RandomIndexWriter(random(), dir, analyzer);
+    FieldType positionsType = new FieldType(TextField.TYPE_STORED);
+    positionsType.setIndexOptions(IndexOptions.DOCS_AND_FREQS_AND_POSITIONS_AND_OFFSETS);
+    Field body = new Field("body", text, positionsType);
+    Document document = new Document();
+    document.add(body);
+    iw.addDocument(document);
+    IndexReader ir = iw.getReader();
+    iw.close();
+    IndexSearcher searcher = newSearcher(ir);
+    PhraseQuery query = new PhraseQuery();
+    query.add(new Term("body", "curious"));
+    query.add(new Term("body", "george"));
+    TopDocs topDocs = searcher.search(query, 10);
+    assertEquals(1, topDocs.totalHits);
+    PostingsHighlighter highlighter = new PostingsHighlighter();
+    String snippets[] = highlighter.highlight("body", query, searcher, topDocs, 2);
+    assertEquals(1, snippets.length);
+    assertFalse(snippets[0].contains("<b>Curious</b>Curious"));
+    ir.close();
+    dir.close();
+  }
 }
