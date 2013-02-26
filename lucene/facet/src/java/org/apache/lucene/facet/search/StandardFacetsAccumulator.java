@@ -197,7 +197,13 @@ public class StandardFacetsAccumulator extends FacetsAccumulator {
         PartitionsFacetResultsHandler frHndlr = createFacetResultsHandler(fr);
         IntermediateFacetResult tmpResult = fr2tmpRes.get(fr);
         if (tmpResult == null) {
-          continue; // do not add a null to the list.
+          // Add empty FacetResult:
+          FacetResultNode root = new FacetResultNode();
+          root.ordinal = TaxonomyReader.INVALID_ORDINAL;
+          root.label = fr.categoryPath;
+          root.value = 0;
+          res.add(new FacetResult(fr, root, 0));
+          continue;
         }
         FacetResult facetRes = frHndlr.renderFacetResult(tmpResult);
         // final labeling if allowed (because labeling is a costly operation)

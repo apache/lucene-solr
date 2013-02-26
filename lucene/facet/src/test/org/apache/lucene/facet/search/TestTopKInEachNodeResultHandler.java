@@ -259,18 +259,30 @@ public class TestTopKInEachNodeResultHandler extends FacetTestCase {
         assertEquals(0, node.subResults.size());
       }
       
-      fr = facetResults.get(6); // a/b, depth=0, K=2
+      fr = facetResults.get(6); // Doctor, depth=0, K=2
       hasDoctor |= "Doctor".equals(fr.getFacetRequest().categoryPath.components[0]);
       assertEquals(0, fr.getNumValidDescendants()); // 0 descendants but rootnode
       parentRes = fr.getFacetResultNode();
-      assertEquals(8.0, parentRes.value, Double.MIN_VALUE);
+      assertEquals(0.0, parentRes.value, Double.MIN_VALUE);
       assertEquals(0, parentRes.subResults.size());
       hasDoctor |= "Doctor".equals(fr.getFacetRequest().categoryPath.components[0]);
 
       // doctor, depth=1, K=2
-      assertFalse("Shouldn't have found anything for a FacetRequest " +
-          "of a facet that doesn't exist in the index.", hasDoctor);
-      assertEquals("Shouldn't have found more than seven request.", 7, facetResults.size());
+      assertTrue("Should have found an empty FacetResult " +
+          "for a facet that doesn't exist in the index.", hasDoctor);
+      assertEquals("Shouldn't have found more than 8 request.", 8, facetResults.size());
+
+      fr = facetResults.get(7); // a/b, depth=0, K=2
+      assertEquals(0, fr.getNumValidDescendants());
+      parentRes = fr.getFacetResultNode();
+      assertEquals(8.0, parentRes.value, Double.MIN_VALUE);
+      assertEquals(0, parentRes.subResults.size());
+      i = 0;
+      for (FacetResultNode node : parentRes.subResults) {
+        assertEquals(expectedValues3[i++], node.value, Double.MIN_VALUE);
+        assertEquals(0, node.subResults.size());
+      }
+
       ir.close();
       tr.close();
       iDir.close();

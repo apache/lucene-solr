@@ -76,6 +76,9 @@ Changes in backwards compatibility policy
   should override FacetsAccumualtor and return the relevant aggregator,
   for aggregating the association values. (Shai Erera)
   
+* LUCENE-4748: A FacetRequest on a non-existent field now returns an
+  empty FacetResult instead of skipping it.  (Shai Erera, Mike McCandless)
+
 Optimizations
 
 * LUCENE-4687: BloomFilterPostingsFormat now lazily initializes delegate
@@ -179,6 +182,10 @@ New Features
 
 * LUCENE-4780: Add MonotonicAppendingLongBuffer: an append-only buffer for
   monotonically increasing values.  (Adrien Grand)
+
+* LUCENE-4748: Added DrillSideways utility class for computing both
+  drill-down and drill-sideways counts for a DrillDownQuery.  (Mike
+  McCandless)
  
 API Changes
 

@@ -163,21 +163,11 @@ public abstract class FacetsCollector extends Collector {
   }
   
   /**
-   * Creates a {@link FacetsCollector} with the default
-   * {@link FacetsAccumulator}.
+   * Creates a {@link FacetsCollector} using the {@link
+   * FacetsAccumulator} from {@link FacetsAccumulator#create}.
    */
   public static FacetsCollector create(FacetSearchParams fsp, IndexReader indexReader, TaxonomyReader taxoReader) {
-    if (fsp.indexingParams.getPartitionSize() != Integer.MAX_VALUE) {
-      return create(new StandardFacetsAccumulator(fsp, indexReader, taxoReader));
-    }
-    
-    for (FacetRequest fr : fsp.facetRequests) {
-      if (!(fr instanceof CountFacetRequest)) {
-        return create(new StandardFacetsAccumulator(fsp, indexReader, taxoReader));
-      }
-    }
-    
-    return create(new FacetsAccumulator(fsp, indexReader, taxoReader));
+    return create(FacetsAccumulator.create(fsp, indexReader, taxoReader));
   }
 
   /**

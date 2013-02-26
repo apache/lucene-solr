@@ -203,8 +203,8 @@ public class TestTopKResultsHandler extends BaseTestTopK {
       List<FacetResult> facetResults = fc.getFacetResults();
       
       assertEquals("Shouldn't have found anything for a FacetRequest "
-          + "of a facet that doesn't exist in the index.", 0, facetResults.size());
-
+          + "of a facet that doesn't exist in the index.", 1, facetResults.size());
+      assertEquals("Miau Hattulla", facetResults.get(0).getFacetResultNode().label.components[0]);
       closeAll();
     }
   }

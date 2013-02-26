@@ -118,7 +118,7 @@ public final class FixedBitSet extends DocIdSet implements Bits {
   }
 
   public void set(int index) {
-    assert index >= 0 && index < numBits;
+    assert index >= 0 && index < numBits: "index=" + index + " numBits=" + numBits;
     int wordNum = index >> 6;      // div 64
     int bit = index & 0x3f;     // mod 64
     long bitmask = 1L << bit;
