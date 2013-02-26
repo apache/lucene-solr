@@ -277,13 +277,13 @@ public class TestPostingsHighlighter extends LuceneTestCase {
   
   public void testBuddhism() throws Exception {
     String text = "This eight-volume set brings together seminal papers in Buddhist studies from a vast " +
-    		          "range of academic disciplines published over the last forty years. With a new introduction " + 
+                  "range of academic disciplines published over the last forty years. With a new introduction " + 
                   "by the editor, this collection is a unique and unrivalled research resource for both " + 
-    		          "student and scholar. Coverage includes: - Buddhist origins; early history of Buddhism in " + 
+                  "student and scholar. Coverage includes: - Buddhist origins; early history of Buddhism in " + 
                   "South and Southeast Asia - early Buddhist Schools and Doctrinal History; Theravada Doctrine " + 
-    		          "- the Origins and nature of Mahayana Buddhism; some Mahayana religious topics - Abhidharma " + 
+                  "- the Origins and nature of Mahayana Buddhism; some Mahayana religious topics - Abhidharma " + 
                   "and Madhyamaka - Yogacara, the Epistemological tradition, and Tathagatagarbha - Tantric " + 
-    		          "Buddhism (Including China and Japan); Buddhism in Nepal and Tibet - Buddhism in South and " + 
+                  "Buddhism (Including China and Japan); Buddhism in Nepal and Tibet - Buddhism in South and " + 
                   "Southeast Asia, and - Buddhism in China, East Asia, and Japan.";
     Directory dir = newDirectory();
     Analyzer analyzer = new MockAnalyzer(random(), MockTokenizer.SIMPLE, true);
