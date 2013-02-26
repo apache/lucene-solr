@@ -166,6 +166,7 @@ public class TestPostingsHighlighterRanking extends LuceneTestCase {
         assertTrue(p.getStartOffset() >= 0);
         assertTrue(p.getStartOffset() <= content.length());
         // we use a very simple analyzer. so we can assert the matches are correct
+        int lastMatchStart = -1;
         for (int i = 0; i < p.getNumMatches(); i++) {
           Term term = p.getMatchTerms()[i];
           assertEquals("body", term.field());
@@ -173,6 +174,9 @@ public class TestPostingsHighlighterRanking extends LuceneTestCase {
           assertTrue(matchStart >= 0);
           int matchEnd = p.getMatchEnds()[i];
           assertTrue(matchEnd >= 0);
+          // always moving forward
+          assertTrue(matchStart >= lastMatchStart);
+          lastMatchStart = matchStart;
           // single character terms
           assertEquals(matchStart+1, matchEnd);
           // and the offsets must be correct...

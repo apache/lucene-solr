@@ -399,6 +399,9 @@ public final class PostingsHighlighter {
         if (start >= contentLength) {
           Passage passages[] = new Passage[passageQueue.size()];
           passageQueue.toArray(passages);
+          for (Passage p : passages) {
+            p.sort();
+          }
           // sort in ascending order
           Arrays.sort(passages, new Comparator<Passage>() {
             @Override

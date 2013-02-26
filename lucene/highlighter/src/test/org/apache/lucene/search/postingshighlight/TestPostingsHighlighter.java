@@ -19,6 +19,7 @@ package org.apache.lucene.search.postingshighlight;
 
 import java.util.Map;
 
+import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.analysis.MockAnalyzer;
 import org.apache.lucene.analysis.MockTokenizer;
 import org.apache.lucene.document.Document;
@@ -34,6 +35,7 @@ import org.apache.lucene.index.Term;
 import org.apache.lucene.search.BooleanClause;
 import org.apache.lucene.search.BooleanQuery;
 import org.apache.lucene.search.IndexSearcher;
+import org.apache.lucene.search.PhraseQuery;
 import org.apache.lucene.search.Query;
 import org.apache.lucene.search.Sort;
 import org.apache.lucene.search.TermQuery;
@@ -269,6 +271,42 @@ public class TestPostingsHighlighter extends LuceneTestCase {
     } catch (IllegalArgumentException iae) {
       // expected
     }
+    ir.close();
+    dir.close();
+  }
+  
+  public void testBuddhism() throws Exception {
+    String text = "This eight-volume set brings together seminal papers in Buddhist studies from a vast " +
+    		          "range of academic disciplines published over the last forty years. With a new introduction " + 
+                  "by the editor, this collection is a unique and unrivalled research resource for both " + 
+    		          "student and scholar. Coverage includes: - Buddhist origins; early history of Buddhism in " + 
+                  "South and Southeast Asia - early Buddhist Schools and Doctrinal History; Theravada Doctrine " + 
+    		          "- the Origins and nature of Mahayana Buddhism; some Mahayana religious topics - Abhidharma " + 
+                  "and Madhyamaka - Yogacara, the Epistemological tradition, and Tathagatagarbha - Tantric " + 
+    		          "Buddhism (Including China and Japan); Buddhism in Nepal and Tibet - Buddhism in South and " + 
+                  "Southeast Asia, and - Buddhism in China, East Asia, and Japan.";
+    Directory dir = newDirectory();
+    Analyzer analyzer = new MockAnalyzer(random(), MockTokenizer.SIMPLE, true);
+    RandomIndexWriter iw = new RandomIndexWriter(random(), dir, analyzer);
+    
+    FieldType positionsType = new FieldType(TextField.TYPE_STORED);
+    positionsType.setIndexOptions(IndexOptions.DOCS_AND_FREQS_AND_POSITIONS_AND_OFFSETS);
+    Field body = new Field("body", text, positionsType);
+    Document document = new Document();
+    document.add(body);
+    iw.addDocument(document);
+    IndexReader ir = iw.getReader();
+    iw.close();
+    IndexSearcher searcher = newSearcher(ir);
+    PhraseQuery query = new PhraseQuery();
+    query.add(new Term("body", "buddhist"));
+    query.add(new Term("body", "origins"));
+    TopDocs topDocs = searcher.search(query, 10);
+    assertEquals(1, topDocs.totalHits);
+    PostingsHighlighter highlighter = new PostingsHighlighter();
+    String snippets[] = highlighter.highlight("body", query, searcher, topDocs, 2);
+    assertEquals(1, snippets.length);
+    assertTrue(snippets[0].contains("<b>Buddhist</b> <b>origins</b>"));
     ir.close();
     dir.close();
   }
