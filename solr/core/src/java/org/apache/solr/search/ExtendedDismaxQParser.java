@@ -697,7 +697,7 @@ public class ExtendedDismaxQParser extends QParser {
       
       start = pos;      
       
-      if (ch=='+' || ch=='-') {
+      if ((ch=='+' || ch=='-') && (pos+1)<end) {
         clause.must = ch;
         pos++;
       }

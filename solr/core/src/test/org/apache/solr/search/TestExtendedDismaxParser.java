@@ -18,6 +18,7 @@
 package org.apache.solr.search;
 
 import java.util.HashSet;
+import java.util.Random;
 import java.util.Set;
 
 import org.apache.lucene.search.BooleanClause;
@@ -26,6 +27,7 @@ import org.apache.lucene.search.DisjunctionMaxQuery;
 import org.apache.lucene.search.FuzzyQuery;
 import org.apache.lucene.search.Query;
 import org.apache.lucene.search.TermQuery;
+import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.common.params.SolrParams;
@@ -35,20 +37,15 @@ import org.apache.solr.util.SolrPluginUtils;
 import org.junit.BeforeClass;
 import org.junit.Test;
 
-public class TestExtendedDismaxParser extends AbstractSolrTestCase {
+public class TestExtendedDismaxParser extends SolrTestCaseJ4 {
 
   @BeforeClass
   public static void beforeClass() throws Exception {
     initCore("solrconfig.xml", "schema12.xml");
+    index();
   }
   
-  // public String getCoreName() { return "collection1"; }
-
-  @Override
-  public void setUp() throws Exception {
-    // if you override setUp or tearDown, you better call
-    // the super classes version
-    super.setUp();
+   public static void index() throws Exception {
     assertU(adoc("id", "42", "trait_ss", "Tool", "trait_ss", "Obnoxious",
             "name", "Zapp Brannigan"));
     assertU(adoc("id", "43" ,
@@ -82,13 +79,48 @@ public class TestExtendedDismaxParser extends AbstractSolrTestCase {
     assertU(adoc("id", "61", "text_sw", "bazaaa")); // synonyms in an expansion group
     assertU(commit());
   }
-  @Override
-  public void tearDown() throws Exception {
-    // if you override setUp or tearDown, you better call
-    // the super classes version
-    super.tearDown();
+
+
+  public void testTrailingOperators() throws Exception {
+    // really just test that exceptions aren't thrown by
+    // single + -
+
+    assertJQ(req("defType","edismax", "q","-")
+        ,"/response==");
+
+    assertJQ(req("defType","edismax", "q","+")
+        ,"/response==");
+
+    assertJQ(req("defType","edismax", "q","+ - +")
+        ,"/response==");
+
+    assertJQ(req("defType","edismax", "q","- + -")
+        ,"/response==");
+
+    assertJQ(req("defType","edismax", "q","id:47 +")
+        ,"/response/numFound==1");
+
+    assertJQ(req("defType","edismax", "q","id:47 -")
+        ,"/response/numFound==1");
+
+    Random r = random();
+    for (int i=0; i<100; i++) {
+      StringBuilder sb = new StringBuilder();
+      for (int j=0; j<r.nextInt(10); j++) {
+        switch (r.nextInt(3)) {
+          case 0: sb.append(' '); break;
+          case 1: sb.append('+'); break;
+          case 2: sb.append('-'); break;
+          case 3: sb.append((char)r.nextInt(127)); break;
+        }
+      }
+
+      String q = sb.toString();
+      assertJQ(req("defType","edismax", "q",q)
+          ,"/response==");
+    }
   }
-  
+
 
   public void testLowercaseOperators() {
     assertQ("Upper case operator",
@@ -637,10 +669,10 @@ public class TestExtendedDismaxParser extends AbstractSolrTestCase {
     assertU(commit());
 
     assertQ("default order assumption wrong",
-        req("q",   "foo bar", 
-            "qf",  "phrase_sw",
-            "bf",  "boost_d",
-            "fl",  "score,*",
+        req("q", "foo bar",
+            "qf", "phrase_sw",
+            "bf", "boost_d",
+            "fl", "score,*",
             "defType", "edismax"),
         "//doc[1]/str[@name='id'][.='s3']",
         "//doc[2]/str[@name='id'][.='s2']",
@@ -648,13 +680,13 @@ public class TestExtendedDismaxParser extends AbstractSolrTestCase {
         "//doc[4]/str[@name='id'][.='s0']"); 
 
     assertQ("pf not working",
-          req("q",   "foo bar", 
-              "qf",  "phrase_sw",
-              "pf",  "phrase_sw^10",
-              "bf",  "boost_d",
-              "fl",  "score,*",
-              "defType", "edismax"),
-          "//doc[1]/str[@name='id'][.='s0']");
+        req("q", "foo bar",
+            "qf", "phrase_sw",
+            "pf", "phrase_sw^10",
+            "bf", "boost_d",
+            "fl", "score,*",
+            "defType", "edismax"),
+        "//doc[1]/str[@name='id'][.='s0']");
     
     assertQ("pf2 not working",
         req("q",   "foo bar", 
