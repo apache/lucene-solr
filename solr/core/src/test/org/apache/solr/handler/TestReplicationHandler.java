@@ -515,6 +515,8 @@ public class TestReplicationHandler extends SolrTestCaseJ4 {
     slaveClient = createNewSolrServer(slaveJetty.getLocalPort());
 
     masterClient.deleteByQuery("*:*");
+    slaveClient.deleteByQuery("*:*");
+    slaveClient.commit();
     nDocs--;
     for (int i = 0; i < nDocs; i++)
       index(masterClient, "id", i, "name", "name = " + i);
@@ -565,7 +567,7 @@ public class TestReplicationHandler extends SolrTestCaseJ4 {
     slaveClient.commit();
     
     pullFromSlaveToMaster();
-    rQuery(3, "*:*", slaveClient);
+    rQuery(nDocs, "*:*", masterClient);
     
     //get docs from slave and check if number is equal to master
     slaveQueryRsp = rQuery(nDocs, "*:*", slaveClient);
@@ -596,12 +598,13 @@ public class TestReplicationHandler extends SolrTestCaseJ4 {
     assertVersions();
     
     // now force a new index directory
-    for (int i = 0; i < 3; i++)
+    for (int i = 0; i < 4; i++)
       index(masterClient, "id", i, "name", "name = " + i);
     
     masterClient.commit();
     
     pullFromSlaveToMaster();
+    rQuery((int) slaveQueryResult.getNumFound(), "*:*", masterClient);
     
     //get docs from slave and check if number is equal to master
     slaveQueryRsp = rQuery(nDocs, "*:*", slaveClient);
