@@ -1251,7 +1251,6 @@ public final class ZkController {
   
   public String getCoreNodeName(CoreDescriptor descriptor){
     String coreNodeName = descriptor.getCloudDescriptor().getCoreNodeName();
-    System.out.println("coreNodeName:" + coreNodeName);
     if (coreNodeName == null) {
       // it's the default
       return getNodeName() + "_" + descriptor.getName();
