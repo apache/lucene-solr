@@ -76,6 +76,8 @@ public class SystemInfoHandler extends RequestHandlerBase
   public void handleRequestBody(SolrQueryRequest req, SolrQueryResponse rsp) throws Exception
   {
     rsp.add( "core", getCoreInfo( req.getCore() ) );
+    boolean solrCloudMode = req.getCore().getCoreDescriptor().getCoreContainer().isZooKeeperAware();
+    rsp.add( "mode", solrCloudMode ? "solrcloud" : "std");
     rsp.add( "lucene", getLuceneInfo() );
     rsp.add( "jvm", getJvmInfo() );
     rsp.add( "system", getSystemInfo() );

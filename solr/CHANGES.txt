@@ -183,6 +183,8 @@ Bug Fixes
 * SOLR-4480: A trailing + or - caused the edismax parser to throw
   an exception.  (Fiona Tay, Jan Høydahl, yonik)
 
+* SOLR-4507: The Cloud tab does not show up in the Admin UI if you
+  set zkHost in solr.xml. (Alfonso Presa, Mark Miller)
 
 Optimizations
 ----------------------
