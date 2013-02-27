@@ -1106,7 +1106,6 @@ public class DistributedUpdateProcessor extends UpdateRequestProcessor {
       
       for (Entry<String,Replica> entry : shardMap.entrySet()) {
         ZkCoreNodeProps nodeProps = new ZkCoreNodeProps(entry.getValue());
-        System.out.println("Key:" + entry.getKey() + " cnn:" + coreNodeName);
         if (clusterState.liveNodesContain(nodeProps.getNodeName()) && !entry.getKey().equals(coreNodeName)) {
           urls.add(new StdNode(nodeProps));
         }
