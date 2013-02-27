@@ -39,7 +39,7 @@ import org.junit.Test;
  * to the indexed facet results as if it were just another faceting method.
  */
 @Slow
-@SuppressCodecs({"Lucene3x", "Lucene40", "Lucene41"})
+@SuppressCodecs({"Appending", "Lucene3x", "Lucene40", "Lucene41"})
 public class TestRandomDVFaceting extends SolrTestCaseJ4 {
 
   @BeforeClass

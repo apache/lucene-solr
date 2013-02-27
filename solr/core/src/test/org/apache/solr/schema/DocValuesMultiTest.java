@@ -30,7 +30,7 @@ import org.apache.solr.search.SolrIndexSearcher;
 import org.apache.solr.util.RefCounted;
 import org.junit.BeforeClass;
 
-@SuppressCodecs({"Lucene3x", "Lucene40", "Lucene41"})
+@SuppressCodecs({"Appending", "Lucene3x", "Lucene40", "Lucene41"})
 public class DocValuesMultiTest extends SolrTestCaseJ4 {
 
   @BeforeClass
