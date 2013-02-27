@@ -94,6 +94,10 @@ New Features
 * SOLR-4210: Requests to a Collection that does not exist on the receiving node
   should be proxied to a suitable node. (Mark Miller, Po Rui)
 
+* SOLR-1365: New SweetSpotSimilarityFactory allows customizable TF/IDF based
+  Similarity when you know the optimal "Sweet Spot" of values for the field 
+  length and TF scoring factors.  (hossman)
+
 Bug Fixes
 ----------------------
 
