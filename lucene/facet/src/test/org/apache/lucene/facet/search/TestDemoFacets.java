@@ -30,6 +30,8 @@ import org.apache.lucene.document.Field;
 import org.apache.lucene.facet.FacetTestCase;
 import org.apache.lucene.facet.FacetTestUtils;
 import org.apache.lucene.facet.index.FacetFields;
+import org.apache.lucene.facet.params.CategoryListParams;
+import org.apache.lucene.facet.params.FacetIndexingParams;
 import org.apache.lucene.facet.params.FacetSearchParams;
 import org.apache.lucene.facet.taxonomy.CategoryPath;
 import org.apache.lucene.facet.taxonomy.TaxonomyReader;
@@ -164,6 +166,56 @@ public class TestDemoFacets extends FacetTestCase {
     writer.addDocument(doc);
     writer.close();
     taxoWriter.close();
+    dir.close();
+    taxoDir.close();
+  }
+
+  public void testAllParents() throws Exception {
+    Directory dir = newDirectory();
+    Directory taxoDir = newDirectory();
+    RandomIndexWriter writer = new RandomIndexWriter(random(), dir);
+    DirectoryTaxonomyWriter taxoWriter = new DirectoryTaxonomyWriter(taxoDir, IndexWriterConfig.OpenMode.CREATE);
+
+    CategoryListParams clp = new CategoryListParams("$facets") {
+        @Override
+        public OrdinalPolicy getOrdinalPolicy(String fieldName) {
+          return OrdinalPolicy.ALL_PARENTS;
+        }
+      };
+    FacetIndexingParams fip = new FacetIndexingParams(clp);
+
+    FacetFields facetFields = new FacetFields(taxoWriter, fip);
+
+    Document doc = new Document();
+    doc.add(newTextField("field", "text", Field.Store.NO));
+    facetFields.addFields(doc, Collections.singletonList(new CategoryPath("a/path", '/')));
+    writer.addDocument(doc);
+
+    // NRT open
+    IndexSearcher searcher = newSearcher(writer.getReader());
+    writer.close();
+
+    // NRT open
+    TaxonomyReader taxoReader = new DirectoryTaxonomyReader(taxoWriter);
+    taxoWriter.close();
+    
+    FacetSearchParams fsp = new FacetSearchParams(fip,
+                                                  new CountFacetRequest(new CategoryPath("a", '/'), 10));
+
+    // Aggregatses the facet counts:
+    FacetsCollector c = FacetsCollector.create(fsp, searcher.getIndexReader(), taxoReader);
+
+    // MatchAllDocsQuery is for "browsing" (counts facets
+    // for all non-deleted docs in the index); normally
+    // you'd use a "normal" query, and use MultiCollector to
+    // wrap collecting the "normal" hits and also facets:
+    searcher.search(new MatchAllDocsQuery(), c);
+    List<FacetResult> results = c.getFacetResults();
+    assertEquals(1, results.size());
+    assertEquals(1, (int) results.get(0).getFacetResultNode().value);
+
+    searcher.getIndexReader().close();
+    taxoReader.close();
     dir.close();
     taxoDir.close();
   }
