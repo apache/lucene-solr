@@ -413,6 +413,10 @@ public class SolrDispatchFilter implements Filter
         slices.addAll(clusterState.getSlices(collection));
       }
     }
+    
+    if (slices == null || slices.size() == 0) {
+      return null;
+    }
 
     Set<String> liveNodes = clusterState.getLiveNodes();
     Iterator<Slice> it = slices.iterator();
