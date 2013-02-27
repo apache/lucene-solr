@@ -89,4 +89,14 @@ public class BadIndexSchemaTest extends AbstractBadConfigTestBase {
     doTest("bad-schema-unsupported-docValues.xml", "does not support doc values");
   }
 
+  public void testSweetSpotSimBadConfig() throws Exception {
+    doTest("bad-schema-sweetspot-both-tf.xml", "Can not mix");
+    doTest("bad-schema-sweetspot-partial-baseline.xml", 
+           "Overriding default baselineTf");
+    doTest("bad-schema-sweetspot-partial-hyperbolic.xml", 
+           "Overriding default hyperbolicTf");
+    doTest("bad-schema-sweetspot-partial-norms.xml", 
+           "Overriding default lengthNorm");
+  }
+
 }
