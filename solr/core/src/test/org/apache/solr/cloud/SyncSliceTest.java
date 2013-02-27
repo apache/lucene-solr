@@ -53,10 +53,6 @@ public class SyncSliceTest extends AbstractFullDistribZkTestBase {
   
   @BeforeClass
   public static void beforeSuperClass() throws Exception {
-    // TODO: we use an fs based dir because something
-    // like a ram dir will not recovery correctly right now
-    // due to tran log persisting across restarts
-    useFactory(null);
   }
   
   @AfterClass
@@ -271,7 +267,7 @@ public class SyncSliceTest extends AbstractFullDistribZkTestBase {
     shardFailMessage = pollConsistency(shardFailMessage, 0);
     shardFailMessage = pollConsistency(shardFailMessage, 3000);
     shardFailMessage = pollConsistency(shardFailMessage, 5000);
-    shardFailMessage = pollConsistency(shardFailMessage, 8000);
+    shardFailMessage = pollConsistency(shardFailMessage, 15000);
     
     return shardFailMessage;
   }

@@ -133,6 +133,10 @@ public abstract class AbstractFullDistribZkTestBase extends AbstractDistribZkTes
       } else if (!url.equals(other.url)) return false;
       return true;
     }
+    @Override
+    public String toString() {
+      return "CloudJettyRunner [url=" + url + "]";
+    }
   }
   
   static class CloudSolrServerClient {
