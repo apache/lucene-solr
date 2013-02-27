@@ -408,9 +408,13 @@ var solr_admin = function( app_config )
                   var command_line_args = response.jvm.jmx.commandLineArgs.join( ' | ' );
 
                   environment_args = command_line_args.match( /-Dsolr.environment=((dev|test|prod)?[\w\d]*)/i );
-                  cloud_args = command_line_args.match( /-Dzk/i );
                 }
 
+                if( response.mode )
+                {
+                  cloud_args = response.mode.match( /solrcloud/i );
+                }
+                
                 // title
 
                 $( 'title', document )
