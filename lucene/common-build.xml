@@ -311,6 +311,11 @@
     <echo level="warning" message="WARN: Linting documentation HTML is not supported on this Java version (${build.java.runtime}) / JVM (${java.vm.name}). NOTHING DONE!"/>
   </target>
 
+  <!-- for now disable doclint on JDK 8: -->
+  <condition property="javadoc.args" value="-Xdoclint:none" else="">
+    <equals arg1="${build.java.runtime}" arg2="1.8"/>
+  </condition>
+
   <!-- Import custom ANT tasks. -->
   <import file="${common.dir}/tools/custom-tasks.xml" />
 
@@ -1677,10 +1682,10 @@ ${tests-output}/junit4-*.suites     - per-JVM executed suites
           doctitle="@{title}"
           maxmemory="${javadoc.maxmemory}">
         <tag name="lucene.experimental" 
-      	description="WARNING: This API is experimental and might change in incompatible ways in the next release."/>
+          description="WARNING: This API is experimental and might change in incompatible ways in the next release."/>
         <tag name="lucene.internal"
         description="NOTE: This API is for internal purposes only and might change in incompatible ways in the next release."/>
-      	<link offline="true" packagelistLoc="${javadoc.dir}"/>
+          <link offline="true" packagelistLoc="${javadoc.dir}"/>
         <link offline="true" href="${javadoc.link}" packagelistLoc="${javadoc.packagelist.dir}/java6"/>
         <bottom><![CDATA[
           <i>Copyright &copy; ${year} Apache Software Foundation.  All Rights Reserved.</i>
@@ -1703,6 +1708,7 @@ ${tests-output}/junit4-*.suites     - per-JVM executed suites
       	<sources />
       	      	
         <classpath refid="javadoc.classpath"/>
+        <arg line="${javadoc.args}"/>
       </javadoc>
       <record name="@{destdir}/log_javadoc.txt" action="stop"/>
       
