@@ -33,6 +33,7 @@ import java.util.concurrent.atomic.AtomicInteger;
 
 import junit.framework.Assert;
 
+import org.apache.commons.io.FileUtils;
 import org.apache.lucene.search.FieldCache;
 import org.apache.lucene.util. _TestUtil;
 import org.apache.lucene.util.Constants;
@@ -855,6 +856,18 @@ public abstract class BaseDistributedSearchTestCase extends SolrTestCaseJ4 {
       long v = r.nextLong();
       Date d = new Date(v);
       return df.toExternal(d);
+    }
+  }
+  
+  protected String getSolrXml() {
+    return null;
+  }
+  
+  protected void setupJettySolrHome(File jettyHome) throws IOException {
+    FileUtils.copyDirectory(new File(getSolrHome()), jettyHome);
+    String solrxml = getSolrXml();
+    if (solrxml != null) {
+      FileUtils.copyFile(new File(getSolrHome(), solrxml), new File(jettyHome, "solr.xml"));
     }
   }
 }

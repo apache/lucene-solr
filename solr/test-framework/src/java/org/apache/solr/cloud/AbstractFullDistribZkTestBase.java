@@ -107,6 +107,7 @@ public abstract class AbstractFullDistribZkTestBase extends AbstractDistribZkTes
   
   protected Map<String,CloudJettyRunner> shardToLeaderJetty = new HashMap<String,CloudJettyRunner>();
   private boolean cloudInit;
+  protected boolean checkCreatedVsState;
   
   public static class CloudJettyRunner {
     public JettySolrRunner jetty;
@@ -247,7 +248,7 @@ public abstract class AbstractFullDistribZkTestBase extends AbstractDistribZkTes
 
     File controlJettyDir = new File(TEMP_DIR,
             getClass().getName() + "-controljetty-" + System.currentTimeMillis());
-    org.apache.commons.io.FileUtils.copyDirectory(new File(getSolrHome()), controlJettyDir);
+    setupJettySolrHome(controlJettyDir);
 
     controlJetty = createJetty(controlJettyDir, testDir + "/control/data");  // don't pass shard name... let it default to "shard1"
     System.clearProperty("collection");
@@ -272,9 +273,13 @@ public abstract class AbstractFullDistribZkTestBase extends AbstractDistribZkTes
 
     initCloud();
     
-    createJettys(numServers, true);
+    createJettys(numServers, checkCreatedVsState).size();
+    
+    int cnt = getTotalReplicas(DEFAULT_COLLECTION);
+    if (cnt > 0) {
+      waitForCollection(cloudClient.getZkStateReader(), DEFAULT_COLLECTION, sliceCount);
+    }
 
-    waitForCollection(cloudClient.getZkStateReader(), DEFAULT_COLLECTION, sliceCount);
   }
 
 
@@ -319,7 +324,7 @@ public abstract class AbstractFullDistribZkTestBase extends AbstractDistribZkTes
       File jettyDir = new File(TEMP_DIR,
           getClass().getName() + "-jetty" + cnt + "-" + System.currentTimeMillis());
       jettyDir.mkdirs();
-      org.apache.commons.io.FileUtils.copyDirectory(new File(getSolrHome()), jettyDir);
+      setupJettySolrHome(jettyDir);
       JettySolrRunner j = createJetty(jettyDir, testDir + "/jetty"
           + cnt, null, "solrconfig.xml", null);
       jettys.add(j);
@@ -330,10 +335,10 @@ public abstract class AbstractFullDistribZkTestBase extends AbstractDistribZkTes
     this.jettys.addAll(jettys);
     this.clients.addAll(clients);
     
+    int numShards = getTotalReplicas(DEFAULT_COLLECTION);
     if (checkCreatedVsState) {
       // now wait until we see that the number of shards in the cluster state
       // matches what we expect
-      int numShards = getTotalReplicas(DEFAULT_COLLECTION);
       int retries = 0;
       while (numShards != shardCount) {
         numShards = getTotalReplicas(DEFAULT_COLLECTION);
@@ -353,7 +358,9 @@ public abstract class AbstractFullDistribZkTestBase extends AbstractDistribZkTes
       }
     }
 
-    updateMappingsFromZk(this.jettys, this.clients);
+    if (numShards > 0) {
+      updateMappingsFromZk(this.jettys, this.clients);
+    }
     
     // build the shard string
     for (int i = 1; i <= numJettys / 2; i++) {
