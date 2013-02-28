@@ -47,6 +47,7 @@ import org.apache.lucene.search.similarities.DefaultSimilarity;
 import org.apache.lucene.search.similarities.PerFieldSimilarityWrapper;
 import org.apache.lucene.search.similarities.Similarity;
 import org.apache.lucene.store.Directory;
+import org.apache.lucene.util.BytesRef;
 
 public class TestDemoFacets extends FacetTestCase {
 
@@ -216,6 +217,29 @@ public class TestDemoFacets extends FacetTestCase {
 
     searcher.getIndexReader().close();
     taxoReader.close();
+    dir.close();
+    taxoDir.close();
+  }
+
+  public void testLabelWithDelimiter() throws Exception {
+    Directory dir = newDirectory();
+    Directory taxoDir = newDirectory();
+    RandomIndexWriter writer = new RandomIndexWriter(random(), dir);
+    DirectoryTaxonomyWriter taxoWriter = new DirectoryTaxonomyWriter(taxoDir, IndexWriterConfig.OpenMode.CREATE);
+
+    FacetFields facetFields = new FacetFields(taxoWriter);
+
+    Document doc = new Document();
+    doc.add(newTextField("field", "text", Field.Store.NO));
+    BytesRef br = new BytesRef(new byte[] {(byte) 0xee, (byte) 0x92, (byte) 0xaa, (byte) 0xef, (byte) 0x9d, (byte) 0x89});
+    facetFields.addFields(doc, Collections.singletonList(new CategoryPath("dim/" + br.utf8ToString(), '/')));
+    try {
+      writer.addDocument(doc);
+    } catch (IllegalArgumentException iae) {
+      // expected
+    }
+    writer.close();
+    taxoWriter.close();
     dir.close();
     taxoDir.close();
   }

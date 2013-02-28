@@ -33,6 +33,7 @@ import org.apache.lucene.document.Field;
 import org.apache.lucene.document.StringField;
 import org.apache.lucene.facet.FacetTestCase;
 import org.apache.lucene.facet.index.FacetFields;
+import org.apache.lucene.facet.params.FacetIndexingParams;
 import org.apache.lucene.facet.params.FacetSearchParams;
 import org.apache.lucene.facet.search.DrillSideways.DrillSidewaysResult;
 import org.apache.lucene.facet.taxonomy.CategoryPath;
@@ -58,6 +59,7 @@ import org.apache.lucene.search.TermQuery;
 import org.apache.lucene.search.TopDocs;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.util.Bits;
+import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.FixedBitSet;
 import org.apache.lucene.util.InfoStream;
 import org.apache.lucene.util._TestUtil;
@@ -374,7 +376,15 @@ public class TestDrillSideways extends FacetTestCase {
     for(int dim=0;dim<numDims;dim++) {
       Set<String> values = new HashSet<String>();
       while (values.size() < valueCount) {
-        String s = _TestUtil.randomRealisticUnicodeString(random());
+        String s;
+        while (true) {
+          s = _TestUtil.randomRealisticUnicodeString(random());
+          // We cannot include this character else the label
+          // is silently truncated:
+          if (s.indexOf(FacetIndexingParams.DEFAULT_FACET_DELIM_CHAR) == -1) {
+            break;
+          }
+        }
         //String s = _TestUtil.randomSimpleString(random());
         if (s.length() > 0) {
           values.add(s);
@@ -443,7 +453,7 @@ public class TestDrillSideways extends FacetTestCase {
           paths.add(new CategoryPath("dim" + dim, dimValues[dim][dimValue]));
           doc.add(new StringField("dim" + dim, dimValues[dim][dimValue], Field.Store.YES));
           if (VERBOSE) {
-            System.out.println("    dim" + dim + "=" + dimValues[dim][dimValue]);
+            System.out.println("    dim" + dim + "=" + new BytesRef(dimValues[dim][dimValue]));
           }
         }
         int dimValue2 = rawDoc.dims2[dim];
@@ -451,7 +461,7 @@ public class TestDrillSideways extends FacetTestCase {
           paths.add(new CategoryPath("dim" + dim, dimValues[dim][dimValue2]));
           doc.add(new StringField("dim" + dim, dimValues[dim][dimValue2], Field.Store.YES));
           if (VERBOSE) {
-            System.out.println("      dim" + dim + "=" + dimValues[dim][dimValue2]);
+            System.out.println("      dim" + dim + "=" + new BytesRef(dimValues[dim][dimValue2]));
           }
         }
       }
@@ -541,7 +551,11 @@ public class TestDrillSideways extends FacetTestCase {
             }
           }
           if (VERBOSE) {
-            System.out.println("  dim" + dim + "=" + Arrays.toString(drillDowns[dim]));
+            BytesRef[] values = new BytesRef[drillDowns[dim].length];
+            for(int i=0;i<values.length;i++) {
+              values[i] = new BytesRef(drillDowns[dim][i]);
+            }
+            System.out.println("  dim" + dim + "=" + Arrays.toString(values));
           }
           count++;
         }
@@ -792,7 +806,7 @@ public class TestDrillSideways extends FacetTestCase {
       for(FacetResultNode childNode : fr.getFacetResultNode().subResults) {
         actualValues.put(childNode.label.components[1], (int) childNode.value);
         if (VERBOSE) {
-          System.out.println("        " + childNode.label.components[1] + ": " + (int) childNode.value);
+          System.out.println("        " + new BytesRef(childNode.label.components[1]) + ": " + (int) childNode.value);
         }
       }
 
@@ -805,7 +819,7 @@ public class TestDrillSideways extends FacetTestCase {
         String value = dimValues[dim][i];
         if (expected.counts[dim][i] != 0) {
           if (VERBOSE) {
-            System.out.println("        " + value + ": " + expected.counts[dim][i]);
+            System.out.println("        " + new BytesRef(value) + ": " + expected.counts[dim][i]);
           } 
           assertTrue(actualValues.containsKey(value));
           assertEquals(expected.counts[dim][i], actualValues.get(value).intValue());

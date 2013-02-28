@@ -121,6 +121,14 @@ public class CategoryPath implements Comparable<CategoryPath> {
     return length - other.length;
   }
 
+  private void noDelimiter(char[] buf, int offset, int len, char delimiter) {
+    for(int idx=0;idx<len;idx++) {
+      if (buf[offset+idx] == delimiter) {
+        throw new IllegalArgumentException("delimiter character U+" + Integer.toHexString(delimiter) + " appears in path");
+      }
+    }
+  }
+
   /**
    * Copies the path components to the given {@code char[]}, starting at index
    * {@code start}. {@code delimiter} is copied between the path components.
@@ -141,10 +149,12 @@ public class CategoryPath implements Comparable<CategoryPath> {
     for (int i = 0; i < upto; i++) {
       int len = components[i].length();
       components[i].getChars(0, len, buf, idx);
+      noDelimiter(buf, idx, len, delimiter);
       idx += len;
       buf[idx++] = delimiter;
     }
     components[upto].getChars(0, components[upto].length(), buf, idx);
+    noDelimiter(buf, idx, components[upto].length(), delimiter);
     
     return idx + components[upto].length() - start;
   }
