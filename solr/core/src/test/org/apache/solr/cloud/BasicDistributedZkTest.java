@@ -322,6 +322,7 @@ public class BasicDistributedZkTest extends AbstractFullDistribZkTestBase {
     testMultipleCollections();
     testANewCollectionInOneInstance();
     testSearchByCollectionName();
+    testUpdateByCollectionName();
     testANewCollectionInOneInstanceWithManualShardAssignement();
     testNumberOfCommitsWithCommitAfterAdd();
 
@@ -680,6 +681,21 @@ public class BasicDistributedZkTest extends AbstractFullDistribZkTestBase {
     SolrQuery query = new SolrQuery("*:*");
     long oneDocs = client1.query(query).getResults().getNumFound();
     assertEquals(3, oneDocs);
+  }
+  
+  private void testUpdateByCollectionName() throws SolrServerException, IOException {
+    log.info("### STARTING testUpdateByCollectionName");
+    SolrServer client = clients.get(0);
+    final String baseUrl = ((HttpSolrServer) client).getBaseURL().substring(
+        0,
+        ((HttpSolrServer) client).getBaseURL().length()
+            - DEFAULT_COLLECTION.length() - 1);
+    
+    // the cores each have different names, but if we add the collection name to the url
+    // we should get mapped to the right core
+    // test hitting an update url
+    SolrServer client1 = createNewSolrServer(oneInstanceCollection, baseUrl);
+    client1.commit();
   }
 
   private void testANewCollectionInOneInstance() throws Exception {
