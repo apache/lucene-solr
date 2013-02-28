@@ -83,6 +83,7 @@ public abstract class AbstractDistribZkTestBase extends BaseDistributedSearchTes
     // give everyone there own solrhome
     File controlHome = new File(new File(getSolrHome()).getParentFile(), "control" + homeCount.incrementAndGet());
     FileUtils.copyDirectory(new File(getSolrHome()), controlHome);
+    setupJettySolrHome(controlHome);
     
     System.setProperty("collection", "control_collection");
     String numShardsS = System.getProperty(ZkStateReader.NUM_SHARDS_PROP);
@@ -102,7 +103,7 @@ public abstract class AbstractDistribZkTestBase extends BaseDistributedSearchTes
       if (sb.length() > 0) sb.append(',');
       // give everyone there own solrhome
       File jettyHome = new File(new File(getSolrHome()).getParentFile(), "jetty" + homeCount.incrementAndGet());
-      FileUtils.copyDirectory(new File(getSolrHome()), jettyHome);
+      setupJettySolrHome(jettyHome);
       JettySolrRunner j = createJetty(jettyHome, null, "shard" + (i + 2));
       jettys.add(j);
       clients.add(createNewSolrServer(j.getLocalPort()));

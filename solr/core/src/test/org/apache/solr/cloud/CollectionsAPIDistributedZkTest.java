@@ -104,6 +104,10 @@ public class CollectionsAPIDistributedZkTest extends AbstractFullDistribZkTestBa
     System.setProperty("numShards", Integer.toString(sliceCount));
     System.setProperty("solr.xml.persist", "true");
   }
+  
+  protected String getSolrXml() {
+    return "solr-no-core.xml";
+  }
 
   
   public CollectionsAPIDistributedZkTest() {
@@ -113,6 +117,7 @@ public class CollectionsAPIDistributedZkTest extends AbstractFullDistribZkTestBa
     shardCount = 4;
     completionService = new ExecutorCompletionService<Request>(executor);
     pending = new HashSet<Future<Request>>();
+    checkCreatedVsState = false;
     
   }
   
@@ -135,25 +140,10 @@ public class CollectionsAPIDistributedZkTest extends AbstractFullDistribZkTestBa
   
   @Override
   public void doTest() throws Exception {
-    // setLoggingLevel(null);
 
-    ZkStateReader zkStateReader = cloudClient.getZkStateReader();
-    // make sure we have leaders for each shard
-    for (int j = 1; j < sliceCount; j++) {
-      zkStateReader.getLeaderRetry(DEFAULT_COLLECTION, "shard" + j, 10000);
-    }      // make sure we again have leaders for each shard
-    
-    waitForRecoveriesToFinish(false);
-    
-    del("*:*");
-
-    // would be better if these where all separate tests - but much, much
-    // slower
-    
     testNodesUsedByCreate();
     testCollectionsAPI();
 
-    // Thread.sleep(10000000000L);
     if (DEBUG) {
       super.printLayout();
     }
