@@ -59,9 +59,13 @@ public class UnloadDistributedZkTest extends BasicDistributedZkTest {
     super.setUp();
   }
 
+  protected String getSolrXml() {
+    return "solr-no-core.xml";
+  }
   
   public UnloadDistributedZkTest() {
     super();
+    checkCreatedVsState = false;
   }
   
   @Override
