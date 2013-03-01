@@ -122,7 +122,7 @@ public class ReplicationHandler extends RequestHandlerBase implements SolrCoreAw
 
   private Integer reserveCommitDuration = SnapPuller.readInterval("00:00:10");
 
-  private volatile IndexCommit indexCommitPoint;
+  volatile IndexCommit indexCommitPoint;
 
   volatile NamedList<Object> snapShootDetails;
 

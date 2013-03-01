@@ -463,7 +463,7 @@ public class SnapPuller {
             // may be closed
             core.getDirectoryFactory().doneWithDirectory(oldDirectory);
           }
-          doCommit(isFullCopyNeeded);
+          openNewWriterAndSearcher(isFullCopyNeeded);
         }
         
         replicationStartTime = 0;
@@ -639,17 +639,19 @@ public class SnapPuller {
     return sb;
   }
 
-  private void doCommit(boolean isFullCopyNeeded) throws IOException {
+  private void openNewWriterAndSearcher(boolean isFullCopyNeeded) throws IOException {
     SolrQueryRequest req = new LocalSolrQueryRequest(solrCore,
         new ModifiableSolrParams());
     // reboot the writer on the new index and get a new searcher
     solrCore.getUpdateHandler().newIndexWriter(isFullCopyNeeded, false);
     
+    RefCounted<SolrIndexSearcher> searcher = null;
+    IndexCommit commitPoint;
     try {
       // first try to open an NRT searcher so that the new
       // IndexWriter is registered with the reader
       Future[] waitSearcher = new Future[1];
-      solrCore.getSearcher(true, false, waitSearcher, true);
+      searcher = solrCore.getSearcher(true, true, waitSearcher, true);
       if (waitSearcher[0] != null) {
         try {
           waitSearcher[0].get();
@@ -659,10 +661,17 @@ public class SnapPuller {
           SolrException.log(LOG, e);
         }
       }
-      
+      commitPoint = searcher.get().getIndexReader().getIndexCommit();
     } finally {
       req.close();
+      if (searcher != null) {
+        searcher.decref();
+      }
     }
+
+    // update the commit point in replication handler
+    replicationHandler.indexCommitPoint = commitPoint;
+    
   }
 
 
