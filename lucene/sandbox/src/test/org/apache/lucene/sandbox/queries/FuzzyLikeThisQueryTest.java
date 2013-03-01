@@ -107,6 +107,25 @@ public class FuzzyLikeThisQueryTest extends LuceneTestCase {
     Document doc = searcher.doc(sd[0].doc);
     assertEquals("Should match most similar when using 2 words", "2", doc.get("id"));
   }
+  
+  // LUCENE-4809
+  public void testNonExistingField() throws Throwable {
+    FuzzyLikeThisQuery flt = new FuzzyLikeThisQuery(10, analyzer);
+    flt.addTerms("jonathin smoth", "name", 0.3f, 1);
+    flt.addTerms("jonathin smoth", "this field does not exist", 0.3f, 1);
+    // don't fail here just because the field doesn't exits
+    Query q = flt.rewrite(searcher.getIndexReader());
+    HashSet<Term> queryTerms = new HashSet<Term>();
+    q.extractTerms(queryTerms);
+    assertTrue("Should have variant jonathan", queryTerms.contains(new Term("name", "jonathan")));
+    assertTrue("Should have variant smith", queryTerms.contains(new Term("name", "smith")));
+    TopDocs topDocs = searcher.search(flt, 1);
+    ScoreDoc[] sd = topDocs.scoreDocs;
+    assertTrue("score docs must match 1 doc", (sd != null) && (sd.length > 0));
+    Document doc = searcher.doc(sd[0].doc);
+    assertEquals("Should match most similar when using 2 words", "2", doc.get("id"));
+  }
+
 
   //Test bug found when first query word does not match anything
   public void testNoMatchFirstWordBug() throws Throwable {
