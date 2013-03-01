@@ -79,6 +79,11 @@ Changes in backwards compatibility policy
 * LUCENE-4748: A FacetRequest on a non-existent field now returns an
   empty FacetResult instead of skipping it.  (Shai Erera, Mike McCandless)
 
+* LUCENE-4806: The default category delimiter character was changed
+  from U+F749 to U+001F, since the latter uses 1 byte vs 3 bytes for
+  the former.  Existing facet indices must be reindexed.  (Robert
+  Muir, Shai Erera, Mike McCandless)
+
 Optimizations
 
 * LUCENE-4687: BloomFilterPostingsFormat now lazily initializes delegate

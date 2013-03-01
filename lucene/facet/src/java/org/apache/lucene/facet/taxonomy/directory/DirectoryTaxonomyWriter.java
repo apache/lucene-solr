@@ -802,7 +802,7 @@ public class DirectoryTaxonomyWriter implements TaxonomyWriter {
         te = terms.iterator(te);
         while (te.next() != null) {
           String value = te.term().utf8ToString();
-          CategoryPath cp = new CategoryPath(value, Consts.DEFAULT_DELIMITER);
+          CategoryPath cp = new CategoryPath(value, delimiter);
           final int ordinal = addCategory(cp);
           docs = te.docs(null, docs, DocsEnum.FLAG_NONE);
           ordinalMap.addMapping(docs.nextDoc() + base, ordinal);

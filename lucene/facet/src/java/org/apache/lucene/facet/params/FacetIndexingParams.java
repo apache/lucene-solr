@@ -58,7 +58,7 @@ public class FacetIndexingParams {
    * make sure that you return a character that's not found in any path
    * component.
    */
-  public static final char DEFAULT_FACET_DELIM_CHAR = '\uF749';
+  public static final char DEFAULT_FACET_DELIM_CHAR = '\u001F';
   
   private final int partitionSize = Integer.MAX_VALUE;
 
