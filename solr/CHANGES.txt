@@ -186,6 +186,9 @@ Bug Fixes
 * SOLR-4507: The Cloud tab does not show up in the Admin UI if you
   set zkHost in solr.xml. (Alfonso Presa, Mark Miller)
 
+* SOLR-4505: Possible deadlock around SolrCoreState update lock.
+  (Erick Erickson, Mark Miller)
+
 Optimizations
 ----------------------
 
