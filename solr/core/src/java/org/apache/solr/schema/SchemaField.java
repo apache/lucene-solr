@@ -75,7 +75,7 @@ public final class SchemaField extends FieldProperties {
 
   public String getName() { return name; }
   public FieldType getType() { return type; }
-  int getProperties() { return properties; }
+  public int getProperties() { return properties; }
 
   public boolean indexed() { return (properties & INDEXED)!=0; }
   public boolean stored() { return (properties & STORED)!=0; }
