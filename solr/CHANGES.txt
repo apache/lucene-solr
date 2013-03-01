@@ -188,6 +188,12 @@ Bug Fixes
 
 * SOLR-4505: Possible deadlock around SolrCoreState update lock.
   (Erick Erickson, Mark Miller)
+  
+* SOLR-4511: When a new index is replicated into place, we need
+  to update the most recent replicatable index point without 
+  doing a commit. This is important for repeater use cases, as
+  well as when nodes may switch master/slave roles.
+  (Mark Miller, Raúl Grande)
 
 Optimizations
 ----------------------
@@ -237,6 +243,8 @@ Other Changes
 
 * SOLR-3843: Include lucene codecs jar and enable per-field postings and docvalues
   support in the schema.xml (Robert Muir, Steve Rowe)
+
+* SOLR-4511: Add new test for 'repeater' replication node. (Mark Miller)
 
 ==================  4.1.0 ==================
 
