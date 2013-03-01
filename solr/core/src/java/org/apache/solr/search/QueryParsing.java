@@ -46,6 +46,7 @@ import java.io.IOException;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
+import java.util.Locale;
 import java.util.Map;
 
 /**
@@ -788,7 +789,7 @@ public class QueryParsing {
     }
 
     /**
-     * Sort direction or null if current position does not inidcate a 
+     * Sort direction or null if current position does not indicate a 
      * sort direction. (True is desc, False is asc).  
      * Position is advanced to after the comma (or end) when result is non null 
      */
@@ -799,9 +800,10 @@ public class QueryParsing {
       Boolean top = null;
 
       if (null != order) {
-        if ("desc".equals(order) || "top".equals(order)) {
+        final String orderLowerCase = order.toLowerCase(Locale.ROOT);
+        if ("desc".equals(orderLowerCase) || "top".equals(orderLowerCase)) {
           top = true;
-        } else if ("asc".equals(order) || "bottom".equals(order)) {
+        } else if ("asc".equals(orderLowerCase) || "bottom".equals(orderLowerCase)) {
           top = false;
         }
 

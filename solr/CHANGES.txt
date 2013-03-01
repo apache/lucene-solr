@@ -250,6 +250,9 @@ Other Changes
 
 * SOLR-4511: Add new test for 'repeater' replication node. (Mark Miller)
 
+* SOLR-4458: Sort directions (asc, desc) are now case insensitive
+  (Shawn Heisey via hossman)
+
 ==================  4.1.0 ==================
 
 Versions of Major Components

@@ -79,17 +79,18 @@ public class QueryParsingTest extends SolrTestCaseJ4 {
     sort = QueryParsing.parseSort("score desc", req);
     assertNull("sort", sort);//only 1 thing in the list, no Sort specified
 
-    sort = QueryParsing.parseSort("score asc", req);
+    // SOLR-4458 - using different case variations of asc and desc
+    sort = QueryParsing.parseSort("score aSc", req);
     SortField[] flds = sort.getSort();
     assertEquals(flds[0].getType(), SortField.Type.SCORE);
     assertTrue(flds[0].getReverse());
 
-    sort = QueryParsing.parseSort("weight desc", req);
+    sort = QueryParsing.parseSort("weight dEsC", req);
     flds = sort.getSort();
     assertEquals(flds[0].getType(), SortField.Type.FLOAT);
     assertEquals(flds[0].getField(), "weight");
     assertEquals(flds[0].getReverse(), true);
-    sort = QueryParsing.parseSort("weight desc,bday asc", req);
+    sort = QueryParsing.parseSort("weight desc,bday ASC", req);
     flds = sort.getSort();
     assertEquals(flds[0].getType(), SortField.Type.FLOAT);
     assertEquals(flds[0].getField(), "weight");
@@ -116,7 +117,7 @@ public class QueryParsingTest extends SolrTestCaseJ4 {
     assertEquals(flds[1].getReverse(), false);
 
     //test weird spacing
-    sort = QueryParsing.parseSort("weight         desc,            bday         asc", req);
+    sort = QueryParsing.parseSort("weight         DESC,            bday         asc", req);
     flds = sort.getSort();
     assertEquals(flds[0].getType(), SortField.Type.FLOAT);
     assertEquals(flds[0].getField(), "weight");
