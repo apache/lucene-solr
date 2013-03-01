@@ -232,6 +232,9 @@ Other Changes
 * SOLR-4471: Improve and clean up TestReplicationHandler. 
   (Amit Nithian via Mark Miller)
 
+* SOLR-3843: Include lucene codecs jar and enable per-field postings and docvalues
+  support in the schema.xml (Robert Muir, Steve Rowe)
+
 ==================  4.1.0 ==================
 
 Versions of Major Components
