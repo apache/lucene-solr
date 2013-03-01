@@ -398,7 +398,7 @@
   <!-- Currency type -->
   <fieldType name="currency" class="solr.CurrencyField" currencyConfig="currency.xml" multiValued="false" />
   <fieldType name="mock_currency" class="solr.CurrencyField" providerClass="solr.MockExchangeRateProvider" foo="bar" multiValued="false" />
-  <fieldType name="openexchangeratesorg_currency" 
+  <fieldType name="oer_currency" 
              class="solr.CurrencyField" 
              multiValued="false"
              providerClass="solr.OpenExchangeRatesOrgProvider"
@@ -481,6 +481,7 @@
    <!-- Test currency -->
    <field name="amount" type="currency" indexed="true" stored="true" multiValued="false"/>
    <field name="mock_amount" type="mock_currency" indexed="true" stored="true"/>
+   <field name="oer_amount" type="oer_currency" indexed="true" stored="true"/>
 
    <!-- test different combinations of indexed and stored -->
    <field name="bind" type="boolean" indexed="true" stored="false"/>

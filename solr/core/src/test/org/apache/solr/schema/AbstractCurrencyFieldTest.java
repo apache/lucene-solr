@@ -22,25 +22,51 @@ import org.apache.solr.core.SolrCore;
 import org.junit.BeforeClass;
 import org.junit.Ignore;
 import org.junit.Test;
+import org.junit.Assume;
 
 import java.util.List;
 import java.util.Random;
 import java.util.Set;
+import java.util.Currency;
 
 /**
  * Tests currency field type.
+ * @see #field
  */
-public class CurrencyFieldTest extends SolrTestCaseJ4 {
+@Ignore("Abstract base class with test methods")
+public abstract class AbstractCurrencyFieldTest extends SolrTestCaseJ4 {
+
+  /**
+   * "Assumes" that the specified list of currency codes are
+   * supported in this JVM
+   */
+  public static void assumeCurrencySupport(String... codes) {
+    try {
+      // each JDK might have a diff list of supported currencies,
+      // these are the ones needed for this test to work.
+      for (String code : codes) {
+        Currency obj = Currency.getInstance(code);
+        assertNotNull(code, obj);
+      }
+    } catch (IllegalArgumentException e) {
+      Assume.assumeNoException(e);
+    }
+
+  }
   @BeforeClass
   public static void beforeClass() throws Exception {
+    assumeCurrencySupport("USD", "EUR", "MXN", "GBP", "JPY", "NOK");
     initCore("solrconfig.xml", "schema.xml");
   }
+
+  /** The field name to use in all tests */
+  public abstract String field();
 
   @Test
   public void testCurrencySchema() throws Exception {
     IndexSchema schema = h.getCore().getSchema();
 
-    SchemaField amount = schema.getField("amount");
+    SchemaField amount = schema.getField(field());
     assertNotNull(amount);
     assertTrue(amount.isPolyField());
 
@@ -66,9 +92,9 @@ public class CurrencyFieldTest extends SolrTestCaseJ4 {
   public void testCurrencyFieldType() throws Exception {
     SolrCore core = h.getCore();
     IndexSchema schema = core.getSchema();
-    SchemaField amount = schema.getField("amount");
+    SchemaField amount = schema.getField(field());
     assertNotNull(amount);
-    assertTrue("amount is not a poly field", amount.isPolyField());
+    assertTrue(field() + " is not a poly field", amount.isPolyField());
     FieldType tmp = amount.getType();
     assertTrue(tmp instanceof CurrencyField);
     String currencyValue = "1.50,EUR";
@@ -88,7 +114,7 @@ public class CurrencyFieldTest extends SolrTestCaseJ4 {
     // A few tests on the provider directly
     ExchangeRateProvider p = ((CurrencyField) tmp).getProvider();
     Set<String> availableCurrencies = p.listAvailableCurrencies();
-    assert(availableCurrencies.size() == 4);
+    assertEquals(5, availableCurrencies.size());
     assert(p.reload() == true);
     assert(p.getExchangeRate("USD", "EUR") == 2.5);
   }
@@ -113,14 +139,14 @@ public class CurrencyFieldTest extends SolrTestCaseJ4 {
     final int emptyDocs = atLeast(50); // times 2
     final int negDocs = atLeast(5);
     
-    assertU(adoc("id", "0", "amount", "0,USD")); // 0
+    assertU(adoc("id", "0", field(), "0,USD")); // 0
     // lots of docs w/o values
     for (int i = 100; i <= 100 + emptyDocs; i++) {
       assertU(adoc("id", "" + i));
     }
     // docs with values in ranges we'll query
     for (int i = 1; i <= 10; i++) {
-      assertU(adoc("id", "" + i, "amount", i + ",USD"));
+      assertU(adoc("id", "" + i, field(), i + ",USD"));
     }
     // more docs w/o values
     for (int i = 500; i <= 500 + emptyDocs; i++) {
@@ -128,78 +154,78 @@ public class CurrencyFieldTest extends SolrTestCaseJ4 {
     }
     // some negative values
     for (int i = -100; i > -100 - negDocs; i--) {
-      assertU(adoc("id", "" + i, "amount", i + ",USD"));
+      assertU(adoc("id", "" + i, field(), i + ",USD"));
     }
-    assertU(adoc("id", "40", "amount", "0,USD")); // 0
+    assertU(adoc("id", "40", field(), "0,USD")); // 0
 
     assertU(commit());
 
     assertQ(req("fl", "*,score", "q",
-            "amount:[2.00,USD TO 5.00,USD]"),
+            field()+":[2.00,USD TO 5.00,USD]"),
             "//*[@numFound='4']");
 
     assertQ(req("fl", "*,score", "q",
-            "amount:[0.50,USD TO 1.00,USD]"),
+            field()+":[0.50,USD TO 1.00,USD]"),
             "//*[@numFound='1']");
 
     assertQ(req("fl", "*,score", "q",
-            "amount:[24.00,USD TO 25.00,USD]"),
+            field()+":[24.00,USD TO 25.00,USD]"),
             "//*[@numFound='0']");
 
     // "GBP" currency code is 1/2 of a USD dollar, for testing.
     assertQ(req("fl", "*,score", "q",
-            "amount:[0.50,GBP TO 1.00,GBP]"),
+            field()+":[0.50,GBP TO 1.00,GBP]"),
             "//*[@numFound='2']");
 
     // "EUR" currency code is 2.5X of a USD dollar, for testing.
     assertQ(req("fl", "*,score", "q",
-            "amount:[24.00,EUR TO 25.00,EUR]"),
+            field()+":[24.00,EUR TO 25.00,EUR]"),
             "//*[@numFound='1']");
 
     // Slight asymmetric rate should work.
     assertQ(req("fl", "*,score", "q",
-            "amount:[24.99,EUR TO 25.01,EUR]"),
+            field()+":[24.99,EUR TO 25.01,EUR]"),
             "//*[@numFound='1']");
     
     // Open ended ranges without currency
     assertQ(req("fl", "*,score", "q",
-            "amount:[* TO *]"),
+            field()+":[* TO *]"),
             "//*[@numFound='" + (2 + 10 + negDocs) + "']");
     
     // Open ended ranges with currency
     assertQ(req("fl", "*,score", "q",
-            "amount:[*,EUR TO *,EUR]"),
+            field()+":[*,EUR TO *,EUR]"),
             "//*[@numFound='" + (2 + 10 + negDocs) + "']");
 
     // Open ended start range without currency
     assertQ(req("fl", "*,score", "q",
-            "amount:[* TO 5,USD]"),
+            field()+":[* TO 5,USD]"),
             "//*[@numFound='" + (2 + 5 + negDocs) + "']");
 
     // Open ended start range with currency (currency for the * won't matter)
     assertQ(req("fl", "*,score", "q",
-            "amount:[*,USD TO 5,USD]"),
+            field()+":[*,USD TO 5,USD]"),
             "//*[@numFound='" + (2 + 5 + negDocs) + "']");
 
     // Open ended end range
     assertQ(req("fl", "*,score", "q",
-            "amount:[3 TO *]"),
+            field()+":[3 TO *]"),
             "//*[@numFound='8']");
 }
 
   @Test
   public void testCurrencyPointQuery() throws Exception {
     clearIndex();
-    assertU(adoc("id", "" + 1, "amount", "10.00,USD"));
-    assertU(adoc("id", "" + 2, "amount", "15.00,EUR"));
+    assertU(adoc("id", "" + 1, field(), "10.00,USD"));
+    assertU(adoc("id", "" + 2, field(), "15.00,MXN"));
     assertU(commit());
-    assertQ(req("fl", "*,score", "q", "amount:10.00,USD"), "//int[@name='id']='1'");
-    assertQ(req("fl", "*,score", "q", "amount:9.99,USD"), "//*[@numFound='0']");
-    assertQ(req("fl", "*,score", "q", "amount:10.01,USD"), "//*[@numFound='0']");
-    assertQ(req("fl", "*,score", "q", "amount:15.00,EUR"), "//int[@name='id']='2'");
-    assertQ(req("fl", "*,score", "q", "amount:7.50,USD"), "//int[@name='id']='2'");
-    assertQ(req("fl", "*,score", "q", "amount:7.49,USD"), "//*[@numFound='0']");
-    assertQ(req("fl", "*,score", "q", "amount:7.51,USD"), "//*[@numFound='0']");
+    assertQ(req("fl", "*,score", "q", field()+":10.00,USD"), "//int[@name='id']='1'");
+    assertQ(req("fl", "*,score", "q", field()+":9.99,USD"), "//*[@numFound='0']");
+    assertQ(req("fl", "*,score", "q", field()+":10.01,USD"), "//*[@numFound='0']");
+    assertQ(req("fl", "*,score", "q", field()+":15.00,MXN"), "//int[@name='id']='2'");
+    assertQ(req("fl", "*,score", "q", field()+":7.50,USD"), "//int[@name='id']='2'");
+    assertQ(req("fl", "*,score", "q", field()+":7.49,USD"), "//*[@numFound='0']");
+    assertQ(req("fl", "*,score", "q", field()+":7.51,USD"), "//*[@numFound='0']");
   }
 
   @Ignore
@@ -210,7 +236,7 @@ public class CurrencyFieldTest extends SolrTestCaseJ4 {
     int initDocs = 200000;
 
     for (int i = 1; i <= initDocs; i++) {
-      assertU(adoc("id", "" + i, "amount", (r.nextInt(10) + 1.00) + ",USD"));
+      assertU(adoc("id", "" + i, field(), (r.nextInt(10) + 1.00) + ",USD"));
       if (i % 1000 == 0)
         System.out.println(i);
     }
@@ -218,15 +244,15 @@ public class CurrencyFieldTest extends SolrTestCaseJ4 {
     assertU(commit());
     for (int i = 0; i < 1000; i++) {
       double lower = r.nextInt(10) + 1.00;
-      assertQ(req("fl", "*,score", "q", "amount:[" +  lower + ",USD TO " + (lower + 10.00) + ",USD]"), "//*");
-      assertQ(req("fl", "*,score", "q", "amount:[" +  lower + ",EUR TO " + (lower + 10.00) + ",EUR]"), "//*");
+      assertQ(req("fl", "*,score", "q", field()+":[" +  lower + ",USD TO " + (lower + 10.00) + ",USD]"), "//*");
+      assertQ(req("fl", "*,score", "q", field()+":[" +  lower + ",EUR TO " + (lower + 10.00) + ",EUR]"), "//*");
     }
 
     for (int j = 0; j < 3; j++) {
       long t1 = System.currentTimeMillis();
       for (int i = 0; i < 1000; i++) {
         double lower = r.nextInt(10) + 1.00;
-        assertQ(req("fl", "*,score", "q", "amount:[" +  lower + ",USD TO " + (lower + (9.99 - (j * 0.01))) + ",USD]"), "//*");
+        assertQ(req("fl", "*,score", "q", field()+":[" +  lower + ",USD TO " + (lower + (9.99 - (j * 0.01))) + ",USD]"), "//*");
       }
 
       System.out.println(System.currentTimeMillis() - t1);
@@ -238,7 +264,7 @@ public class CurrencyFieldTest extends SolrTestCaseJ4 {
       long t1 = System.currentTimeMillis();
       for (int i = 0; i < 1000; i++) {
         double lower = r.nextInt(10) + 1.00;
-        assertQ(req("fl", "*,score", "q", "amount:[" +  lower + ",EUR TO " + (lower + (9.99 - (j * 0.01))) + ",EUR]"), "//*");
+        assertQ(req("fl", "*,score", "q", field()+":[" +  lower + ",EUR TO " + (lower + (9.99 - (j * 0.01))) + ",EUR]"), "//*");
       }
 
       System.out.println(System.currentTimeMillis() - t1);
@@ -249,15 +275,15 @@ public class CurrencyFieldTest extends SolrTestCaseJ4 {
   public void testCurrencySort() throws Exception {
     clearIndex();
 
-    assertU(adoc("id", "" + 1, "amount", "10.00,USD"));
-    assertU(adoc("id", "" + 2, "amount", "15.00,EUR"));
-    assertU(adoc("id", "" + 3, "amount", "7.00,EUR"));
-    assertU(adoc("id", "" + 4, "amount", "6.00,GBP"));
-    assertU(adoc("id", "" + 5, "amount", "2.00,GBP"));
+    assertU(adoc("id", "" + 1, field(), "10.00,USD"));
+    assertU(adoc("id", "" + 2, field(), "15.00,EUR"));
+    assertU(adoc("id", "" + 3, field(), "7.00,EUR"));
+    assertU(adoc("id", "" + 4, field(), "6.00,GBP"));
+    assertU(adoc("id", "" + 5, field(), "2.00,GBP"));
     assertU(commit());
 
-    assertQ(req("fl", "*,score", "q", "*:*", "sort", "amount desc", "limit", "1"), "//int[@name='id']='4'");
-    assertQ(req("fl", "*,score", "q", "*:*", "sort", "amount asc", "limit", "1"), "//int[@name='id']='3'");
+    assertQ(req("fl", "*,score", "q", "*:*", "sort", field()+" desc", "limit", "1"), "//int[@name='id']='4'");
+    assertQ(req("fl", "*,score", "q", "*:*", "sort", field()+" asc", "limit", "1"), "//int[@name='id']='3'");
   }
 
   @Test

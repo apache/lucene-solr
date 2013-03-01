@@ -38,6 +38,9 @@ public class OpenExchangeRatesOrgProviderTest extends SolrTestCaseJ4 {
   @Override
   @Before
   public void setUp() throws Exception {
+    AbstractCurrencyFieldTest.assumeCurrencySupport
+      ("USD", "EUR", "MXN", "GBP", "JPY");
+
     super.setUp();
     mockParams = new HashMap<String,String>();;
     mockParams.put(OpenExchangeRatesOrgProvider.PARAM_RATES_FILE_LOCATION, "open-exchange-rates.json");  
@@ -63,14 +66,14 @@ public class OpenExchangeRatesOrgProviderTest extends SolrTestCaseJ4 {
   public void testList() {
     oerp.init(mockParams);
     oerp.inform(loader);
-    assertEquals(159,     oerp.listAvailableCurrencies().size());
+    assertEquals(5, oerp.listAvailableCurrencies().size());
   }
 
   @Test
   public void testGetExchangeRate() {
     oerp.init(mockParams);
     oerp.inform(loader);
-    assertTrue(5.73163 == oerp.getExchangeRate("USD", "NOK"));    
+    assertEquals(81.29D, oerp.getExchangeRate("USD", "JPY"), 0.0D);    
   }
 
   @Test
