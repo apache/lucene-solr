@@ -61,7 +61,7 @@ public final class DefaultSolrCoreState extends SolrCoreState implements Recover
     this.directoryFactory = directoryFactory;
   }
   
-  private synchronized void closeIndexWriter(IndexWriterCloser closer) {
+  private void closeIndexWriter(IndexWriterCloser closer) {
     try {
       log.info("SolrCoreState ref count has reached 0 - closing IndexWriter");
       if (closer != null) {
@@ -77,7 +77,7 @@ public final class DefaultSolrCoreState extends SolrCoreState implements Recover
   }
   
   @Override
-  public synchronized RefCounted<IndexWriter> getIndexWriter(SolrCore core)
+  public RefCounted<IndexWriter> getIndexWriter(SolrCore core)
       throws IOException {
     
     if (closed) {
@@ -141,25 +141,13 @@ public final class DefaultSolrCoreState extends SolrCoreState implements Recover
       // then lets wait until its out of use
       log.info("Waiting until IndexWriter is unused... core=" + coreName);
       
-      boolean yieldedCommitLock = false;
-      try {
-        if (commitLock.isHeldByCurrentThread()) {
-          yieldedCommitLock = true;
-          commitLock.unlock();
-        }
+      while (!writerFree) {
+        try {
+          writerPauseLock.wait(100);
+        } catch (InterruptedException e) {}
         
-        while (!writerFree) {
-          try {
-            writerPauseLock.wait(100);
-          } catch (InterruptedException e) {}
-          
-          if (closed) {
-            throw new RuntimeException("SolrCoreState already closed");
-          }
-        }
-      } finally {
-        if (yieldedCommitLock) {
-          commitLock.lock();
+        if (closed) {
+          throw new RuntimeException("SolrCoreState already closed");
         }
       }
 

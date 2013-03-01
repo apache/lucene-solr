@@ -59,18 +59,20 @@ public abstract class SolrCoreState {
   }
   
   public void decrefSolrCoreState(IndexWriterCloser closer) {
+    boolean close = false;
     synchronized (this) {
-      
       solrCoreStateRefCnt--;
       if (solrCoreStateRefCnt == 0) {
-
-        try {
-          log.info("Closing SolrCoreState");
-          close(closer);
-        } catch (Throwable t) {
-          log.error("Error closing SolrCoreState", t);
-        }
-        
+        close = true;
+      }
+    }
+    
+    if (close) {
+      try {
+        log.info("Closing SolrCoreState");
+        close(closer);
+      } catch (Throwable t) {
+        log.error("Error closing SolrCoreState", t);
       }
     }
   }
