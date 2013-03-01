@@ -131,7 +131,9 @@ final class TestRuleSetupAndRestoreClassEnv extends AbstractBeforeAfterRule {
 
     Class<?> targetClass = RandomizedContext.current().getTargetClass();
     avoidCodecs = new HashSet<String>();
-    if (targetClass.isAnnotationPresent(SuppressCodecs.class)) {
+    // TODO: Fix below code to use c.isAnnotationPresent(). It was changed
+    // to the null check to work around a bug in JDK 8 b78 (see LUCENE-4808).
+    if (targetClass.getAnnotation(SuppressCodecs.class) != null) {
       SuppressCodecs a = targetClass.getAnnotation(SuppressCodecs.class);
       avoidCodecs.addAll(Arrays.asList(a.value()));
     }
