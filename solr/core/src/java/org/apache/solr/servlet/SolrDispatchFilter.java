@@ -340,7 +340,7 @@ public class SolrDispatchFilter implements Filter
       URL url = new URL(urlstr);
       HttpURLConnection con = (HttpURLConnection) url.openConnection();
       con.setRequestMethod(req.getMethod());
-      con.setUseCaches(true);
+      con.setUseCaches(false);
       
       con.setDoOutput(true);
       con.setDoInput(true);
