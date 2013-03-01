@@ -217,6 +217,10 @@ Optimizations
 
 * SOLR-4364: Admin UI - Locale based number formatting (steffkes)
 
+* SOLR-4521: Stop using the 'force' option for recovery replication. This
+  will keep some less common unnecessary replications from happening.
+  (Mark Miller, Simon Scofield)
+
 Other Changes
 ----------------------
 

@@ -150,7 +150,7 @@ public class RecoveryStrategy extends Thread implements ClosableThread {
       solrParams.set(ReplicationHandler.MASTER_URL, leaderUrl);
       
       if (isClosed()) retries = INTERRUPTED;
-      boolean success = replicationHandler.doFetch(solrParams, true); // TODO: look into making force=true not download files we already have?
+      boolean success = replicationHandler.doFetch(solrParams, false);
 
       if (!success) {
         throw new SolrException(ErrorCode.SERVER_ERROR, "Replication for recovery failed.");
