@@ -126,4 +126,19 @@ public class TestDocTermOrdsRewriteMethod extends LuceneTestCase {
 
     CheckHits.checkEqual(inverted, invertedDocs.scoreDocs, docValuesDocs.scoreDocs);
   }
+  
+  public void testEquals() throws Exception {
+    RegexpQuery a1 = new RegexpQuery(new Term(fieldName, "[aA]"), RegExp.NONE);
+    RegexpQuery a2 = new RegexpQuery(new Term(fieldName, "[aA]"), RegExp.NONE);
+    RegexpQuery b = new RegexpQuery(new Term(fieldName, "[bB]"), RegExp.NONE);
+    assertEquals(a1, a2);
+    assertFalse(a1.equals(b));
+    
+    a1.setRewriteMethod(new DocTermOrdsRewriteMethod());
+    a2.setRewriteMethod(new DocTermOrdsRewriteMethod());
+    b.setRewriteMethod(new DocTermOrdsRewriteMethod());
+    assertEquals(a1, a2);
+    assertFalse(a1.equals(b));
+    QueryUtils.check(a1);
+  }
 }
