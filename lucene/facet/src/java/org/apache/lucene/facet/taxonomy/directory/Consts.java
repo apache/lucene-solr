@@ -36,9 +36,10 @@ abstract class Consts {
    * <P>
    * Originally, we used \uFFFE, officially a "unicode noncharacter" (invalid
    * unicode character) for this purpose. Recently, we switched to the
-   * "private-use" character \uF749.
+   * "private-use" character \uF749.  Even more recently, we
+   * switched to \U001F (INFORMATION_SEPARATOR).
    */
   //static final char DEFAULT_DELIMITER = '\uFFFE';
-  static final char DEFAULT_DELIMITER = '\uF749';
-  
+  //static final char DEFAULT_DELIMITER = '\uF749';
+  static final char DEFAULT_DELIMITER = '\u001F';
 }
