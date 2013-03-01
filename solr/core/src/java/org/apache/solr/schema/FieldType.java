@@ -80,7 +80,7 @@ public abstract class FieldType extends FieldProperties {
   protected int trueProperties;
   /** properties explicitly set to false */
   protected int falseProperties;
-  int properties;
+  protected int properties;
 
 
   /** Returns true if fields of this type should be tokenized */
@@ -127,7 +127,7 @@ public abstract class FieldType extends FieldProperties {
   }
 
   // Handle additional arguments...
-  void setArgs(IndexSchema schema, Map<String,String> args) {
+  protected void setArgs(IndexSchema schema, Map<String,String> args) {
     // default to STORED, INDEXED, OMIT_TF_POSITIONS and MULTIVALUED depending on schema version
     properties = (STORED | INDEXED);
     float schemaVersion = schema.getVersion();
