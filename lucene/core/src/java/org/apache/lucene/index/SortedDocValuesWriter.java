@@ -24,7 +24,6 @@ import java.util.Iterator;
 import java.util.NoSuchElementException;
 
 import org.apache.lucene.codecs.DocValuesConsumer;
-import org.apache.lucene.util.ArrayUtil;
 import org.apache.lucene.util.ByteBlockPool;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.BytesRefHash.DirectBytesStartArray;
@@ -32,7 +31,6 @@ import org.apache.lucene.util.BytesRefHash;
 import org.apache.lucene.util.Counter;
 import org.apache.lucene.util.RamUsageEstimator;
 import org.apache.lucene.util.packed.AppendingLongBuffer;
-
 
 /** Buffers up pending byte[] per doc, deref and sorting via
  *  int ord, then flushes when segment flushes. */
@@ -85,9 +83,9 @@ class SortedDocValuesWriter extends DocValuesWriter {
   }
 
   private void addOneValue(BytesRef value) {
-    int ord = hash.add(value);
-    if (ord < 0) {
-      ord = -ord-1;
+    int termID = hash.add(value);
+    if (termID < 0) {
+      termID = -termID-1;
     } else {
       // reserve additional space for each unique value:
       // 1. when indexing, when hash is 50% full, rehash() suddenly needs 2*size ints.
@@ -96,7 +94,7 @@ class SortedDocValuesWriter extends DocValuesWriter {
       iwBytesUsed.addAndGet(2 * RamUsageEstimator.NUM_BYTES_INT);
     }
     
-    pending.add(ord);
+    pending.add(termID);
     updateBytesUsed();
   }
   
@@ -110,7 +108,6 @@ class SortedDocValuesWriter extends DocValuesWriter {
   public void flush(SegmentWriteState state, DocValuesConsumer dvConsumer) throws IOException {
     final int maxDoc = state.segmentInfo.getDocCount();
 
-    final int emptyOrd;
     assert pending.size() == maxDoc;
     final int valueCount = hash.size();
 
