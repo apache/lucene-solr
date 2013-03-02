@@ -195,6 +195,10 @@ Bug Fixes
   well as when nodes may switch master/slave roles.
   (Mark Miller, Raúl Grande)
 
+* SOLR-4515: CurrencyField's OpenExchangeRatesOrgProvider now requires
+  a ratesFileLocation init param, since the previous global default
+  no longer works (hossman)
+
 Optimizations
 ----------------------
 

@@ -73,6 +73,11 @@ public class BadIndexSchemaTest extends AbstractBadConfigTestBase {
            "Fields can not be multiValued: *_c");
   }
 
+  public void testCurrencyOERNoRates() throws Exception {
+    doTest("bad-schema-currency-ft-oer-norates.xml", 
+           "ratesFileLocation");
+  }
+
   public void testPerFieldtypeSimButNoSchemaSimFactory() throws Exception {
     doTest("bad-schema-sim-global-vs-ft-mismatch.xml", "global similarity does not support it");
   }
