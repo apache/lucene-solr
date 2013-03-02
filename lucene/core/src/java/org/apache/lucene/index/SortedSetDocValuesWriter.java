@@ -38,8 +38,8 @@ import org.apache.lucene.util.packed.AppendingLongBuffer;
  *  int ord, then flushes when segment flushes. */
 class SortedSetDocValuesWriter extends DocValuesWriter {
   final BytesRefHash hash;
-  private AppendingLongBuffer pending; // stream of all ords
-  private AppendingLongBuffer pendingCounts; // ords per doc
+  private AppendingLongBuffer pending; // stream of all termIDs
+  private AppendingLongBuffer pendingCounts; // termIDs per doc
   private final Counter iwBytesUsed;
   private long bytesUsed; // this only tracks differences in 'pending' and 'pendingCounts'
   private final FieldInfo fieldInfo;
@@ -90,15 +90,15 @@ class SortedSetDocValuesWriter extends DocValuesWriter {
     int lastValue = -1;
     int count = 0;
     for (int i = 0; i < currentUpto; i++) {
-      int v = currentValues[i];
+      int termID = currentValues[i];
       // if its not a duplicate
-      if (v != lastValue) {
-        pending.add(v); // record the ord
+      if (termID != lastValue) {
+        pending.add(termID); // record the term id
         count++;
       }
-      lastValue = v;
+      lastValue = termID;
     }
-    // record the number of unique ords for this doc
+    // record the number of unique term ids for this doc
     pendingCounts.add(count);
     maxCount = Math.max(maxCount, count);
     currentUpto = 0;
@@ -116,9 +116,9 @@ class SortedSetDocValuesWriter extends DocValuesWriter {
   }
 
   private void addOneValue(BytesRef value) {
-    int ord = hash.add(value);
-    if (ord < 0) {
-      ord = -ord-1;
+    int termID = hash.add(value);
+    if (termID < 0) {
+      termID = -termID-1;
     } else {
       // reserve additional space for each unique value:
       // 1. when indexing, when hash is 50% full, rehash() suddenly needs 2*size ints.
@@ -134,7 +134,7 @@ class SortedSetDocValuesWriter extends DocValuesWriter {
       iwBytesUsed.addAndGet((currentValues.length - currentUpto) * 2 * RamUsageEstimator.NUM_BYTES_INT);
     }
     
-    currentValues[currentUpto] = ord;
+    currentValues[currentUpto] = termID;
     currentUpto++;
   }
   
