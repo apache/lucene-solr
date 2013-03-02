@@ -92,4 +92,19 @@ public class TestSolrQueryParser extends SolrTestCaseJ4 {
         ,"/response/numFound==1"
     );
   }
+
+  @Test
+  public void testSyntax() throws Exception {
+    // a bare * should be treated as *:*
+    assertJQ(req("q","*", "df","doesnotexist_s")
+        ,"/response/docs/[0]=="   // make sure we get something...
+    );
+    assertJQ(req("q","doesnotexist_s:*")
+        ,"/response/numFound==0"   // nothing should be found
+    );
+    assertJQ(req("q","doesnotexist_s:( * * * )")
+        ,"/response/numFound==0"   // nothing should be found
+    );
+  }
+
 }

@@ -257,6 +257,11 @@ Other Changes
 * SOLR-4458: Sort directions (asc, desc) are now case insensitive
   (Shawn Heisey via hossman)
 
+* SOLR-2996: A bare * without a field specification is treated as *:*
+  by the lucene and edismax query paesers.
+  (hossman, Jan Høydahl, Alan Woodward, yonik)
+
+
 ==================  4.1.0 ==================
 
 Versions of Major Components

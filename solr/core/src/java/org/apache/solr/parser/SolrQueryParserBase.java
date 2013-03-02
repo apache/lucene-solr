@@ -179,9 +179,18 @@ public abstract class SolrQueryParserBase {
     return this.defaultField;
   }
 
+  protected String explicitField;
   /** Handles the default field if null is passed */
   public String getField(String fieldName) {
+    explicitField = fieldName;
     return fieldName != null ? fieldName : this.defaultField;
+  }
+
+  /** For a fielded query, returns the actual field specified (i.e. null if default is being used)
+   * myfield:A or myfield:(A B C) will both return "myfield"
+   */
+  public String getExplicitField() {
+    return explicitField;
   }
 
   /**
@@ -725,7 +734,6 @@ public abstract class SolrQueryParserBase {
   Query handleBareTokenQuery(String qfield, Token term, Token fuzzySlop, boolean prefix, boolean wildcard, boolean fuzzy, boolean regexp) throws SyntaxError {
     Query q;
 
-    String termImage=discardEscapeChar(term.image);
     if (wildcard) {
       q = getWildcardQuery(qfield, term.image);
     } else if (prefix) {
@@ -744,8 +752,10 @@ public abstract class SolrQueryParserBase {
       } else if (fms >= 1.0f && fms != (int) fms) {
         throw new SyntaxError("Fractional edit distances are not allowed!");
       }
+      String termImage=discardEscapeChar(term.image);
       q = getFuzzyQuery(qfield, termImage, fms);
     } else {
+      String termImage=discardEscapeChar(term.image);
       q = getFieldQuery(qfield, termImage, false);
     }
     return q;
@@ -970,9 +980,12 @@ public abstract class SolrQueryParserBase {
   protected Query getWildcardQuery(String field, String termStr) throws SyntaxError {
     checkNullField(field);
     // *:* -> MatchAllDocsQuery
-    if ("*".equals(field) && "*".equals(termStr)) {
-      return newMatchAllDocsQuery();
+    if ("*".equals(termStr)) {
+      if ("*".equals(field) || getExplicitField() == null) {
+        return newMatchAllDocsQuery();
+      }
     }
+
     FieldType fieldType = schema.getFieldType(field);
     termStr = analyzeIfMultitermTermText(field, termStr, fieldType);
     // can we use reversed wildcards in this field?
