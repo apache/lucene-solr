@@ -42,7 +42,7 @@ import org.slf4j.LoggerFactory;
  * </p>
  * <ul>
  *  <li><code>ratesFileLocation</code> - A file path or absolute URL specifying the JSON data to load (mandatory)</li>
- *  <li><coderefreshInterval></code> - How frequently (in minutes) to reload the exchange rate data (default: 1440)</li>
+ *  <li><code>refreshInterval></code> - How frequently (in minutes) to reload the exchange rate data (default: 1440)</li>
  * </ul>
  * <p>
  * <b>Disclaimer:</b> This data is collected from various providers and provided free of charge
