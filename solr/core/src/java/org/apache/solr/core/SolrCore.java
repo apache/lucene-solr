@@ -657,12 +657,15 @@ public final class SolrCore implements SolrInfoMBean {
     this.setName( name );
     resourceLoader = config.getResourceLoader();
     if (dataDir == null){
-      if(cd.usingDefaultDataDir()) dataDir = config.getDataDir();
-      if(dataDir == null) dataDir = cd.getDataDir();
+      if(cd.usingDefaultDataDir()) {
+        dataDir = config.getDataDir();
+      }
+      if(dataDir == null) {
+        dataDir = cd.getDataDir();
+      }
     }
 
     dataDir = SolrResourceLoader.normalizeDir(dataDir);
-
     log.info(logid+"Opening new SolrCore at " + resourceLoader.getInstanceDir() + ", dataDir="+dataDir);
 
     if (schema==null) {
@@ -1316,7 +1319,7 @@ public final class SolrCore implements SolrInfoMBean {
    *
    * This method acquires openSearcherLock - do not call with searckLock held!
    */
-  public RefCounted<SolrIndexSearcher> openNewSearcher(boolean updateHandlerReopens, boolean realtime) {
+  public RefCounted<SolrIndexSearcher>  openNewSearcher(boolean updateHandlerReopens, boolean realtime) {
     SolrIndexSearcher tmp;
     RefCounted<SolrIndexSearcher> newestSearcher = null;
     boolean nrt = solrConfig.reopenReaders && updateHandlerReopens;

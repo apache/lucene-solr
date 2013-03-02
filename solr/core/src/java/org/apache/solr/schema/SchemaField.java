@@ -58,7 +58,7 @@ public final class SchemaField extends FieldProperties {
  /** Create a new SchemaField with the given name and type,
    * and with the specified properties.  Properties are *not*
    * inherited from the type in this case, so users of this
-   * constructor should derive the properties from type.getProperties()
+   * constructor should derive the properties from type.getSolrProperties()
    *  using all the default properties from the type.
    */
   public SchemaField(String name, FieldType type, int properties, String defaultValue ) {

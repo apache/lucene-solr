@@ -1,7 +1,9 @@
 package org.apache.solr.cloud;
 
 import java.io.File;
+import java.io.FileInputStream;
 import java.io.IOException;
+import java.io.InputStream;
 import java.util.List;
 import java.util.concurrent.TimeoutException;
 
@@ -17,10 +19,11 @@ import org.apache.commons.cli.ParseException;
 import org.apache.commons.cli.PosixParser;
 import org.apache.solr.common.cloud.OnReconnect;
 import org.apache.solr.common.cloud.SolrZkClient;
-import org.apache.solr.core.Config;
+import org.apache.solr.core.ConfigSolr;
+import org.apache.solr.core.ConfigSolrXmlBackCompat;
+import org.apache.solr.core.SolrProperties;
 import org.apache.solr.core.SolrResourceLoader;
 import org.apache.zookeeper.KeeperException;
-import org.xml.sax.InputSource;
 import org.xml.sax.SAXException;
 
 /*
@@ -171,12 +174,26 @@ public class ZkCLI {
           }
           SolrResourceLoader loader = new SolrResourceLoader(solrHome);
           solrHome = loader.getInstanceDir();
-          
-          InputSource cfgis = new InputSource(new File(solrHome, SOLR_XML)
-              .toURI().toASCIIString());
-          Config cfg = new Config(loader, null, cfgis, null, false);
-          
-          if(!ZkController.checkChrootPath(zkServerAddress, true)) {
+
+          File configFile = new File(solrHome, SOLR_XML);
+          boolean isXml = true;
+          if (! configFile.exists()) {
+            configFile = new File(solrHome, SolrProperties.SOLR_PROPERTIES_FILE);
+            isXml = false;
+          }
+          InputStream is = new FileInputStream(configFile);
+
+          //ConfigSolrXmlThunk cfg = new ConfigSolrXmlThunk(null, loader, is, false, true);
+
+          ConfigSolr cfg;
+            if (isXml) {
+              cfg = new ConfigSolrXmlBackCompat(loader, null, is, null, false);
+            } else {
+              cfg = new SolrProperties(null, is, null);
+            }
+
+
+            if(!ZkController.checkChrootPath(zkServerAddress, true)) {
             System.out.println("A chroot was specified in zkHost but the znode doesn't exist. ");
             System.exit(1);
           }
