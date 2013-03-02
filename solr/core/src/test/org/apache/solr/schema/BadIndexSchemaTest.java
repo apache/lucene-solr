@@ -78,6 +78,13 @@ public class BadIndexSchemaTest extends AbstractBadConfigTestBase {
            "ratesFileLocation");
   }
 
+  public void testCurrencyBogusCode() throws Exception {
+    doTest("bad-schema-currency-ft-bogus-default-code.xml", 
+           "HOSS");
+    doTest("bad-schema-currency-ft-bogus-code-in-xml.xml", 
+           "HOSS");
+  }
+
   public void testPerFieldtypeSimButNoSchemaSimFactory() throws Exception {
     doTest("bad-schema-sim-global-vs-ft-mismatch.xml", "global similarity does not support it");
   }

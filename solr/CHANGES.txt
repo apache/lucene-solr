@@ -199,6 +199,9 @@ Bug Fixes
   a ratesFileLocation init param, since the previous global default
   no longer works (hossman)
 
+* SOLR-4518: Improved CurrencyField error messages when attempting to
+  use a Currency that is not supported by the current JVM. (hossman)
+
 Optimizations
 ----------------------
 

@@ -211,7 +211,18 @@ public abstract class AbstractCurrencyFieldTest extends SolrTestCaseJ4 {
     assertQ(req("fl", "*,score", "q",
             field()+":[3 TO *]"),
             "//*[@numFound='8']");
-}
+  }
+
+  @Test
+  public void testBogusCurrency() throws Exception {
+    ignoreException("HOSS");
+
+    // bogus currency
+    assertQEx("Expected exception for invalid currency",
+              req("fl", "*,score", "q",
+                  field()+":[3,HOSS TO *]"),
+              400);
+  }
 
   @Test
   public void testCurrencyPointQuery() throws Exception {

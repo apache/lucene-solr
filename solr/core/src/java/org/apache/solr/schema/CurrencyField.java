@@ -80,6 +80,22 @@ public class CurrencyField extends FieldType implements SchemaAware, ResourceLoa
   private ExchangeRateProvider provider;
   public static Logger log = LoggerFactory.getLogger(CurrencyField.class);
 
+  /**
+   * A wrapper arround <code>Currency.getInstance</code> that returns null
+   * instead of throwing <code>IllegalArgumentException</code>
+   * if the specified Currency does not exist in this JVM.
+   *
+   * @see Currency#getInstance(String)
+   */
+  public static Currency getCurrency(final String code) {
+    try {
+      return Currency.getInstance(code);
+    } catch (IllegalArgumentException e) {
+      /* :NOOP: */
+    }
+    return null;
+  }
+
   @Override
   protected void init(IndexSchema schema, Map<String, String> args) {
     super.init(schema, args);
@@ -100,8 +116,8 @@ public class CurrencyField extends FieldType implements SchemaAware, ResourceLoa
       this.exchangeRateProviderClass = DEFAULT_RATE_PROVIDER_CLASS;
     }
 
-    if (java.util.Currency.getInstance(this.defaultCurrency) == null) {
-      throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, "Invalid currency code " + this.defaultCurrency);
+    if (null == getCurrency(this.defaultCurrency)) {
+      throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, "Default currency code is not supported by this JVM: " + this.defaultCurrency);
     }
 
     String precisionStepString = args.get(PARAM_PRECISION_STEP);
@@ -275,14 +291,17 @@ public class CurrencyField extends FieldType implements SchemaAware, ResourceLoa
 
   class CurrencyValueSource extends ValueSource {
     private static final long serialVersionUID = 1L;
-    private String targetCurrencyCode;
+    private Currency targetCurrency;
     private ValueSource currencyValues;
     private ValueSource amountValues;
     private final SchemaField sf;
 
     public CurrencyValueSource(SchemaField sfield, String targetCurrencyCode, QParser parser) {
       this.sf = sfield;
-      this.targetCurrencyCode = targetCurrencyCode;
+      this.targetCurrency = getCurrency(targetCurrencyCode);
+      if (null == targetCurrency) {
+        throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, "Currency code not supported by this JVM: " + targetCurrencyCode);
+      }
 
       SchemaField amountField = schema.getField(sf.getName() + POLY_FIELD_SEPARATOR + FIELD_SUFFIX_AMOUNT_RAW);
       SchemaField currencyField = schema.getField(sf.getName() + POLY_FIELD_SEPARATOR + FIELD_SUFFIX_CURRENCY);
@@ -317,7 +336,8 @@ public class CurrencyField extends FieldType implements SchemaAware, ResourceLoa
               currency = defaultCurrency;
             }
 
-            if (targetCurrencyOrd == -1 && currency.equals(targetCurrencyCode)) {
+            if (targetCurrencyOrd == -1 && 
+                currency.equals(targetCurrency.getCurrencyCode() )) {
               targetCurrencyOrd = currencyOrd;
             }
 
@@ -325,6 +345,17 @@ public class CurrencyField extends FieldType implements SchemaAware, ResourceLoa
           } else {
             return currencies.strVal(doc);
           }
+        }
+        /** throws a (Server Error) SolrException if the code is not valid */
+        private Currency getDocCurrency(int doc, int currencyOrd) {
+          String code = getDocCurrencyCode(doc, currencyOrd);
+          Currency c = getCurrency(code);
+          if (null == c) {
+            throw new SolrException
+              (SolrException.ErrorCode.SERVER_ERROR, 
+               "Currency code of document is not supported by this JVM: "+code);
+          }
+          return c;
         }
 
         @Override
@@ -360,7 +391,7 @@ public class CurrencyField extends FieldType implements SchemaAware, ResourceLoa
           int sourceFractionDigits;
 
           if (targetFractionDigits == -1) {
-            targetFractionDigits = Currency.getInstance(targetCurrencyCode).getDefaultFractionDigits();
+            targetFractionDigits = targetCurrency.getDefaultFractionDigits();
           }
 
           if (currencyOrd < MAX_CURRENCIES_TO_CACHE) {
@@ -368,19 +399,18 @@ public class CurrencyField extends FieldType implements SchemaAware, ResourceLoa
 
             if (exchangeRate <= 0.0) {
               String sourceCurrencyCode = getDocCurrencyCode(doc, currencyOrd);
-              exchangeRate = exchangeRateCache[currencyOrd] = provider.getExchangeRate(sourceCurrencyCode, targetCurrencyCode);
+              exchangeRate = exchangeRateCache[currencyOrd] = provider.getExchangeRate(sourceCurrencyCode, targetCurrency.getCurrencyCode());
             }
 
             sourceFractionDigits = fractionDigitCache[currencyOrd];
 
             if (sourceFractionDigits == -1) {
-              String sourceCurrencyCode = getDocCurrencyCode(doc, currencyOrd);
-              sourceFractionDigits = fractionDigitCache[currencyOrd] = Currency.getInstance(sourceCurrencyCode).getDefaultFractionDigits();
+              sourceFractionDigits = fractionDigitCache[currencyOrd] = getDocCurrency(doc, currencyOrd).getDefaultFractionDigits();
             }
           } else {
-            String sourceCurrencyCode = getDocCurrencyCode(doc, currencyOrd);
-            exchangeRate = provider.getExchangeRate(sourceCurrencyCode, targetCurrencyCode);
-            sourceFractionDigits = Currency.getInstance(sourceCurrencyCode).getDefaultFractionDigits();
+            Currency source = getDocCurrency(doc, currencyOrd);
+            exchangeRate = provider.getExchangeRate(source.getCurrencyCode(), targetCurrency.getCurrencyCode());
+            sourceFractionDigits = source.getDefaultFractionDigits();
           }
 
           return CurrencyValue.convertAmount(exchangeRate, sourceFractionDigits, amount, targetFractionDigits);
@@ -431,13 +461,13 @@ public class CurrencyField extends FieldType implements SchemaAware, ResourceLoa
 
       return !(amountValues != null ? !amountValues.equals(that.amountValues) : that.amountValues != null) &&
               !(currencyValues != null ? !currencyValues.equals(that.currencyValues) : that.currencyValues != null) &&
-              !(targetCurrencyCode != null ? !targetCurrencyCode.equals(that.targetCurrencyCode) : that.targetCurrencyCode != null);
+              !(targetCurrency != null ? !targetCurrency.equals(that.targetCurrency) : that.targetCurrency != null);
 
     }
 
     @Override
     public int hashCode() {
-      int result = targetCurrencyCode != null ? targetCurrencyCode.hashCode() : 0;
+      int result = targetCurrency != null ? targetCurrency.hashCode() : 0;
       result = 31 * result + (currencyValues != null ? currencyValues.hashCode() : 0);
       result = 31 * result + (amountValues != null ? amountValues.hashCode() : 0);
       return result;
@@ -593,37 +623,39 @@ class FileExchangeRateProvider implements ExchangeRateProvider {
           Node rate = attributes.getNamedItem("rate");
           
           if (from == null || to == null || rate == null) {
-            throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, "Exchange rate missing attributes (required: from, to, rate) " + rateNode);
+            throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, "Exchange rate missing attributes (required: from, to, rate) " + rateNode);
           }
           
           String fromCurrency = from.getNodeValue();
           String toCurrency = to.getNodeValue();
           Double exchangeRate;
           
-          if (java.util.Currency.getInstance(fromCurrency) == null ||
-              java.util.Currency.getInstance(toCurrency) == null) {
-            throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, "Could not find from currency specified in exchange rate: " + rateNode);
+          if (null == CurrencyField.getCurrency(fromCurrency)) {
+            throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, "Specified 'from' currency not supported in this JVM: " + fromCurrency);
+          }
+          if (null == CurrencyField.getCurrency(toCurrency)) {
+            throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, "Specified 'to' currency not supported in this JVM: " + toCurrency);
           }
           
           try {
             exchangeRate = Double.parseDouble(rate.getNodeValue());
           } catch (NumberFormatException e) {
-            throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, "Could not parse exchange rate: " + rateNode, e);
+            throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, "Could not parse exchange rate: " + rateNode, e);
           }
           
           addRate(tmpRates, fromCurrency, toCurrency, exchangeRate);
         }
       } catch (SAXException e) {
-        throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, "Error parsing currency config.", e);
+        throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, "Error parsing currency config.", e);
       } catch (IOException e) {
-        throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, "Error parsing currency config.", e);
+        throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, "Error parsing currency config.", e);
       } catch (ParserConfigurationException e) {
-        throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, "Error parsing currency config.", e);
+        throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, "Error parsing currency config.", e);
       } catch (XPathExpressionException e) {
-        throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, "Error parsing currency config.", e);
+        throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, "Error parsing currency config.", e);
       }
     } catch (IOException e) {
-      throw new SolrException(ErrorCode.BAD_REQUEST, "Error while opening Currency configuration file "+currencyConfigFile, e);
+      throw new SolrException(ErrorCode.SERVER_ERROR, "Error while opening Currency configuration file "+currencyConfigFile, e);
     } finally {
       try {
         if (is != null) {
@@ -652,7 +684,7 @@ class FileExchangeRateProvider implements ExchangeRateProvider {
   @Override
   public void inform(ResourceLoader loader) throws SolrException {
     if(loader == null) {
-      throw new SolrException(ErrorCode.BAD_REQUEST, "Needs ResourceLoader in order to load config file");
+      throw new SolrException(ErrorCode.SERVER_ERROR, "Needs ResourceLoader in order to load config file");
     }
     this.loader = loader;
     reload();
@@ -706,10 +738,10 @@ class CurrencyValue {
       return null;
     }
     
-    Currency currency = java.util.Currency.getInstance(code);
+    Currency currency = CurrencyField.getCurrency(code);
 
     if (currency == null) {
-      throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, "Invalid currency code " + code);
+      throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, "Currency code not supported by this JVM: " + code);
     }
 
     try {
