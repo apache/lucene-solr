@@ -80,6 +80,23 @@ public class TestExtendedDismaxParser extends SolrTestCaseJ4 {
     assertU(commit());
   }
 
+  @Test
+  public void testSyntax() throws Exception {
+    // a bare * should be treated as *:*
+    assertJQ(req("defType","edismax", "q","*", "df","doesnotexist_s")
+        ,"/response/docs/[0]=="   // make sure we get something...
+    );
+    assertJQ(req("defType","edismax", "q","doesnotexist_s:*")
+        ,"/response/numFound==0"   // nothing should be found
+    );
+    assertJQ(req("defType","edismax","q","doesnotexist_s:*")
+        ,"/response/numFound==0"   // nothing should be found
+    );
+    assertJQ(req("defType","edismax","q","doesnotexist_s:( * * * )")
+        ,"/response/numFound==0"   // nothing should be found
+    );
+  }
+
 
   public void testTrailingOperators() throws Exception {
     // really just test that exceptions aren't thrown by
