@@ -49,6 +49,7 @@ import java.util.concurrent.ThreadPoolExecutor;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 
+import org.apache.commons.io.IOUtils;
 import org.apache.commons.lang.StringUtils;
 import org.apache.solr.cloud.CloudDescriptor;
 import org.apache.solr.cloud.CurrentCoreDescriptorProvider;
@@ -339,7 +340,12 @@ public class CoreContainer
    */
   public void load(String dir, File configFile) throws FileNotFoundException {
     this.configFile = configFile;
-    this.load(dir, new FileInputStream(configFile), configFile.getName().endsWith(".xml"),  configFile.getName());
+    InputStream in = new FileInputStream(configFile);
+    try {
+      this.load(dir, in, configFile.getName().endsWith(".xml"),  configFile.getName());
+    } finally {
+      IOUtils.closeQuietly(in);
+    }
   } 
 
   /**
