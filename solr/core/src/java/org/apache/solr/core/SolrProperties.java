@@ -452,7 +452,7 @@ public class SolrProperties implements ConfigSolr {
 
         if (props.getProperty(CoreDescriptor.CORE_NAME) == null) {
           // Should default to this directory
-          props.setProperty(CoreDescriptor.CORE_NAME, file.getName());
+          props.setProperty(CoreDescriptor.CORE_NAME, childFile.getName());
         }
         CoreDescriptor desc = new CoreDescriptor(container, props);
         CoreDescriptorPlus plus = new CoreDescriptorPlus(propFile.getAbsolutePath(), desc, propsOrig);
