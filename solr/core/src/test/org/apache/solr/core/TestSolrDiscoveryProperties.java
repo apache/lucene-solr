@@ -26,7 +26,7 @@ import org.junit.Test;
 
 import java.io.File;
 import java.io.FileInputStream;
-import java.io.FileWriter;
+import java.io.FileOutputStream;
 import java.io.StringReader;
 import java.util.Properties;
 import java.util.Set;
@@ -57,9 +57,9 @@ public class TestSolrDiscoveryProperties extends SolrTestCaseJ4 {
       String[] parts = extra.split("=");
       props.put(parts[0], parts[1]);
     }
-    FileWriter writer = new FileWriter(solrProps.getAbsolutePath());
-    props.store(writer, null);
-    writer.close();
+    FileOutputStream out = new FileOutputStream(solrProps.getAbsolutePath());
+    props.store(out, null);
+    out.close();
   }
 
   private void addSolrXml() throws Exception {
@@ -91,9 +91,9 @@ public class TestSolrDiscoveryProperties extends SolrTestCaseJ4 {
     File parent = propFile.getParentFile();
     assertTrue("Failed to mkdirs for " + parent.getAbsolutePath(), parent.mkdirs());
 
-    FileWriter writer = new FileWriter(propFile);
-    stockProps.store(writer, null);
-    writer.close();
+    FileOutputStream out = new FileOutputStream(propFile);
+    stockProps.store(out, null);
+    out.close();
 
     addConfFiles(new File(parent, "conf"));
   }
