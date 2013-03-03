@@ -20,6 +20,8 @@ package org.apache.solr.servlet;
 import java.io.BufferedInputStream;
 import java.io.BufferedOutputStream;
 import java.io.IOException;
+import java.io.InputStream;
+import java.io.OutputStream;
 import java.io.OutputStreamWriter;
 import java.io.PrintWriter;
 import java.io.StringWriter;
@@ -350,22 +352,14 @@ public class SolrDispatchFilter implements Filter
       }
       try {
         con.connect();
-        
-        int theByte;
-        if (req.getMethod().equals("POST")) {
-          BufferedInputStream bis = new BufferedInputStream(
-              req.getInputStream());
-          BufferedOutputStream os = new BufferedOutputStream(
-              con.getOutputStream());
-          try {
-            while ((theByte = bis.read()) != -1) {
-              os.write(theByte);
-            }
-            os.flush();
-          } finally {
-            IOUtils.closeQuietly(os);
-            IOUtils.closeQuietly(bis);
-          }
+
+        InputStream is = req.getInputStream();
+        OutputStream os = con.getOutputStream();
+        try {
+          IOUtils.copyLarge(is, os);
+        } finally {
+          IOUtils.closeQuietly(os);
+          IOUtils.closeQuietly(is);  // TODO: I thought we weren't supposed to explicitly close servlet streams
         }
         
         resp.setStatus(con.getResponseCode());
@@ -380,16 +374,13 @@ public class SolrDispatchFilter implements Filter
         resp.setCharacterEncoding(con.getContentEncoding());
         resp.setContentType(con.getContentType());
         
-        BufferedInputStream bis = new BufferedInputStream(con.getInputStream());
-        ServletOutputStream os = resp.getOutputStream();
+        is = con.getInputStream();
+        os = resp.getOutputStream();
         try {
-          while ((theByte = bis.read()) != -1) {
-            os.write(theByte);
-          }
-          os.flush();
+          IOUtils.copyLarge(is, os);
         } finally {
-          IOUtils.closeQuietly(os);
-          IOUtils.closeQuietly(bis);
+          IOUtils.closeQuietly(os);   // TODO: I thought we weren't supposed to explicitly close servlet streams
+          IOUtils.closeQuietly(is);
         }
       } finally {
         con.disconnect();
