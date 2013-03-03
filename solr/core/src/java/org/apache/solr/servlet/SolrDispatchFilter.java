@@ -405,8 +405,10 @@ public class SolrDispatchFilter implements Filter
   private String getRemotCoreUrl(CoreContainer cores, String collectionName) {
     ClusterState clusterState = cores.getZkController().getClusterState();
     Collection<Slice> slices = clusterState.getSlices(collectionName);
-    
+    boolean byCoreName = false;
     if (slices == null) {
+      // look by core name
+      byCoreName = true;
       Set<String> collections = clusterState.getCollections();
       for (String collection : collections) {
         slices = new ArrayList<Slice>();
@@ -417,7 +419,7 @@ public class SolrDispatchFilter implements Filter
     if (slices == null || slices.size() == 0) {
       return null;
     }
-
+    
     Set<String> liveNodes = clusterState.getLiveNodes();
     Iterator<Slice> it = slices.iterator();
     while (it.hasNext()) {
@@ -427,14 +429,19 @@ public class SolrDispatchFilter implements Filter
         ZkCoreNodeProps coreNodeProps = new ZkCoreNodeProps(nodeProps);
         if (liveNodes.contains(coreNodeProps.getNodeName())
             && coreNodeProps.getState().equals(ZkStateReader.ACTIVE)) {
+          if (byCoreName && !collectionName.equals(coreNodeProps.getCoreName())) {
+            // if it's by core name, make sure they match
+            continue;
+          }
+          if (coreNodeProps.getBaseUrl().equals(cores.getZkController().getBaseUrl())) {
+            // don't count a local core
+            continue;
+          }
           String coreUrl = coreNodeProps.getCoreUrl();
           if (coreUrl.endsWith("/")) {
             coreUrl = coreUrl.substring(0, coreUrl.length() - 1);
           }
-          if (coreNodeProps.getBaseUrl().equals(cores.getZkController().getBaseUrl())) {
-            // don't count a local core
-            return null;
-          }
+
           return coreUrl;
         }
       }
