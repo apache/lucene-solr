@@ -12,7 +12,7 @@ package org.apache.solr.core;
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS F ANY KIND, either express or implied.
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
@@ -26,7 +26,7 @@ import org.junit.Test;
 
 import java.io.File;
 import java.io.FileInputStream;
-import java.io.FileOutputStream;
+import java.io.FileWriter;
 import java.io.StringReader;
 import java.util.Properties;
 import java.util.Set;
@@ -39,7 +39,7 @@ public class TestSolrDiscoveryProperties extends SolrTestCaseJ4 {
     initCore();
   }
 
-  private final File solrHomeDirectory = new File(TEMP_DIR, "org.apache.solr.core.TestSolrProperties" + File.separator + "solrHome");
+  private final File solrHomeDirectory = new File(TEMP_DIR, "org.apache.solr.core.TestSolrDiscoveryProperties" + File.separator + "solrHome");
 
   private void setMeUp() throws Exception {
     if (solrHomeDirectory.exists()) {
@@ -57,7 +57,9 @@ public class TestSolrDiscoveryProperties extends SolrTestCaseJ4 {
       String[] parts = extra.split("=");
       props.put(parts[0], parts[1]);
     }
-    props.store(new FileOutputStream(solrProps.getAbsolutePath()), null);
+    FileWriter writer = new FileWriter(solrProps.getAbsolutePath());
+    props.store(writer, null);
+    writer.close();
   }
 
   private void addSolrXml() throws Exception {
@@ -88,7 +90,11 @@ public class TestSolrDiscoveryProperties extends SolrTestCaseJ4 {
         stockProps.getProperty(CoreDescriptor.CORE_NAME) + File.separator + SolrProperties.CORE_PROP_FILE);
     File parent = propFile.getParentFile();
     assertTrue("Failed to mkdirs for " + parent.getAbsolutePath(), parent.mkdirs());
-    stockProps.store(new FileOutputStream(propFile), null);
+
+    FileWriter writer = new FileWriter(propFile);
+    stockProps.store(writer, null);
+    writer.close();
+
     addConfFiles(new File(parent, "conf"));
   }
 
