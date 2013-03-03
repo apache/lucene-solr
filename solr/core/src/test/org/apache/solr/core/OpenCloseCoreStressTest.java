@@ -76,13 +76,17 @@ public class OpenCloseCoreStressTest extends SolrTestCaseJ4 {
   List<HttpSolrServer> queryServers = new ArrayList<HttpSolrServer>(queryThreads);
 
   static String savedFactory;
+  static String verbose = "false"; // EOE remove me.
 
   //  Keep the indexes from being randomly generated.
   @BeforeClass
   public static void beforeClass() {
     savedFactory = System.getProperty("solr.DirectoryFactory");
+    verbose = System.getProperty("tests.verbose", "false");
     System.setProperty("solr.directoryFactory", "org.apache.solr.core.MockFSDirectoryFactory");
+    System.setProperty("tests.verbose", "true");
   }
+
   @AfterClass
   public static void afterClass() {
     if (savedFactory == null) {
@@ -90,6 +94,7 @@ public class OpenCloseCoreStressTest extends SolrTestCaseJ4 {
     } else {
       System.setProperty("solr.directoryFactory", savedFactory);
     }
+    System.setProperty("tests.verbose", verbose);
   }
 
   @Before
@@ -227,13 +232,13 @@ public class OpenCloseCoreStressTest extends SolrTestCaseJ4 {
     // create directories in groups of 100 until you have enough.
     for (int idx = 0; idx < numCores; ++idx) {
       String coreName = String.format(Locale.ROOT, "%05d_core", idx);
-      makeCore(new File(home, coreName), testSrcRoot, coreName);
+      makeCore(new File(home, coreName), testSrcRoot, oldStyle);
       coreCounts.put(coreName, 0L);
       coreNames.add(coreName);
     }
   }
 
-  private void makeCore(File coreDir, File testSrcRoot, String coreName) throws IOException {
+  private void makeCore(File coreDir, File testSrcRoot, boolean oldStyle) throws IOException {
     File conf = new File(coreDir, "conf");
     conf.mkdirs();
 
@@ -243,7 +248,10 @@ public class OpenCloseCoreStressTest extends SolrTestCaseJ4 {
 
     FileUtils.copyFile(new File(testConf, "solrconfig-minimal.xml"), new File(conf, "solrconfig-minimal.xml"));
 
-    FileUtils.copyFile(new File(testSrcRoot, "conf/core.properties"), new File(coreDir, "core.properties"));
+    if (!oldStyle) {
+      FileUtils.copyFile(new File(testSrcRoot, "conf/core.properties"), new File(coreDir, "core.properties"));
+    }
+
   }
 
 
@@ -406,27 +414,28 @@ class OneIndexer extends Thread {
         UpdateRequest update = new UpdateRequest();
         update.add(doc);
 
+        UpdateResponse response = new UpdateResponse(); // Just to keep a possible NPE from happening
         try {
           server.setBaseURL(baseUrl + core);
-          UpdateResponse response = server.add(doc, OpenCloseCoreStressTest.COMMIT_WITHIN);
+          response = server.add(doc, OpenCloseCoreStressTest.COMMIT_WITHIN);
           if (response.getStatus() != 0) {
             verbose("Failed to index a document with status " + response.getStatus());
           } else {
             Indexer.qTimesAccum.addAndGet(response.getQTime());
             Indexer.updateCounts.incrementAndGet();
           }
-          server.commit(true, true);
           Thread.sleep(100L); // Let's not go crazy here.
           break; // try loop.
         } catch (Exception e) {
           if (e instanceof InterruptedException) return;
           Indexer.errors.incrementAndGet();
           if (idx == 2) {
-            fail("Could not reach server while querying for three tries, quitting " + e.getMessage());
+            fail("Could not reach server while indexing for three tries, quitting " + e.getMessage() + " " + response.toString());
           } else {
-            verbose("Indexing thread " + Thread.currentThread().getId() + " swallowed one exception " + e.getMessage());
+            verbose("Indexing thread " + Thread.currentThread().getId() + " swallowed one exception " + e.getMessage()
+                + " " + response.toString());
             try {
-              Thread.sleep(100);
+              Thread.sleep(500);
             } catch (InterruptedException tex) {
               return;
             }
@@ -503,23 +512,23 @@ class OneQuery extends Thread {
         params.set("qt", "/select");
         params.set("q", "*:*");
 
+        QueryResponse response = new QueryResponse(); // so we can use toString below with impunity
         try {
           // sleep between 250ms and 10000 ms
           Thread.sleep(100L); // Let's not go crazy here.
           server.setBaseURL(baseUrl + core);
-          QueryResponse response = server.query(params);
-          long numFound = response.getResults().getNumFound();
+          response = server.query(params);
           // Perhaps collect some stats here in future.
           break; // retry loop
         } catch (Exception e) {
           if (e instanceof InterruptedException) return;
           Queries._errors.incrementAndGet();
           if (idx == 2) {
-            fail("Could not reach server while indexing for three tries, quitting " + e.getMessage());
+            fail("Could not reach server while indexing for three tries, quitting " + e.getMessage() + " " + response.toString());
           } else {
-            verbose("Querying thread: " + Thread.currentThread().getId() + " swallowed exception: " + e.getMessage());
+            verbose("Querying thread: " + Thread.currentThread().getId() + " swallowed exception: " + e.getMessage() + " " + response.toString());
             try {
-              Thread.sleep(250L);
+              Thread.sleep(500L);
             } catch (InterruptedException tex) {
               return;
             }
