@@ -146,7 +146,7 @@ public class SyncStrategy {
         syncToMe(zkController, collection, shardId, leaderProps, core.getCoreDescriptor());
         
       } else {
-        SolrException.log(log, "Sync Failed");
+        log.info("Leader's attempt to sync with shard failed, moving to the next canidate");
         // lets see who seems ahead...
       }
       
