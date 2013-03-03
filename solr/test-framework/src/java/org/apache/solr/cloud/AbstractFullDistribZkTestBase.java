@@ -1208,6 +1208,11 @@ public abstract class AbstractFullDistribZkTestBase extends AbstractDistribZkTes
           deletes.add(i);
         }
         
+        try {
+          Thread.currentThread().sleep(random().nextInt(100));
+        } catch (InterruptedException e) {
+          Thread.currentThread().interrupt();
+        }
       }
       
       System.err.println("added docs:" + numAdds + " with " + fails + " fails"

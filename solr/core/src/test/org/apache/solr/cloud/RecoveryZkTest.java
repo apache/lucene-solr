@@ -62,7 +62,7 @@ public class RecoveryZkTest extends AbstractFullDistribZkTestBase {
     indexThread2.start();
 
     // give some time to index...
-    int[] waitTimes = new int[] {2000, 3000, 5000};
+    int[] waitTimes = new int[] {200, 2000, 3000};
     Thread.sleep(waitTimes[random().nextInt(waitTimes.length - 1)]);
      
     // bring shard replica down
@@ -78,9 +78,6 @@ public class RecoveryZkTest extends AbstractFullDistribZkTestBase {
     // make sure replication can start
     Thread.sleep(3000);
     ZkStateReader zkStateReader = cloudClient.getZkStateReader();
-    
-    // give some time for replication to complete
-    Thread.sleep(5000);
     
     // stop indexing threads
     indexThread.safeStop();
