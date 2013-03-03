@@ -22,13 +22,15 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.LinkedList;
 import java.util.List;
+import java.util.Random;
 
 public class TestCollectionUtil extends LuceneTestCase {
 
   private List<Integer> createRandomList(int maxSize) {
-    final Integer[] a = new Integer[random().nextInt(maxSize) + 1];
+    final Random rnd = random();
+    final Integer[] a = new Integer[rnd.nextInt(maxSize) + 1];
     for (int i = 0; i < a.length; i++) {
-      a[i] = Integer.valueOf(random().nextInt(a.length));
+      a[i] = Integer.valueOf(rnd.nextInt(a.length));
     }
     return Arrays.asList(a);
   }
