@@ -145,9 +145,6 @@ public abstract class FSDirectory extends Directory {
       throw new NoSuchDirectoryException("file '" + directory + "' exists but is not a directory");
 
     setLockFactory(lockFactory);
-    if (path.getName().indexOf("index")  != -1) {
-      int eoe = 32;
-    }
 
   }
 
