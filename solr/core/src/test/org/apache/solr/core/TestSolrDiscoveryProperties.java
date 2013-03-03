@@ -58,8 +58,11 @@ public class TestSolrDiscoveryProperties extends SolrTestCaseJ4 {
       props.put(parts[0], parts[1]);
     }
     FileOutputStream out = new FileOutputStream(solrProps.getAbsolutePath());
-    props.store(out, null);
-    out.close();
+    try {
+      props.store(out, null);
+    } finally {
+      out.close();
+    }
   }
 
   private void addSolrXml() throws Exception {
@@ -92,8 +95,11 @@ public class TestSolrDiscoveryProperties extends SolrTestCaseJ4 {
     assertTrue("Failed to mkdirs for " + parent.getAbsolutePath(), parent.mkdirs());
 
     FileOutputStream out = new FileOutputStream(propFile);
-    stockProps.store(out, null);
-    out.close();
+    try {
+      stockProps.store(out, null);
+    } finally {
+      out.close();
+    }
 
     addConfFiles(new File(parent, "conf"));
   }
@@ -304,7 +310,12 @@ public class TestSolrDiscoveryProperties extends SolrTestCaseJ4 {
     Properties curr = cc.getContainerProperties();
 
     Properties persisted = new Properties();
-    persisted.load(new FileInputStream(new File(solrHomeDirectory, SolrProperties.SOLR_PROPERTIES_FILE)));
+    FileInputStream in = new FileInputStream(new File(solrHomeDirectory, SolrProperties.SOLR_PROPERTIES_FILE));
+    try {
+      persisted.load(in);
+    } finally {
+      in.close();
+    }
 
     assertEquals("Persisted and original should be the same size", orig.size(), persisted.size());
 
@@ -332,7 +343,12 @@ public class TestSolrDiscoveryProperties extends SolrTestCaseJ4 {
     // Read the persisted file.
     Properties props = new Properties();
     File propParent = new File(solrHomeDirectory, orig.getProperty(CoreDescriptor.CORE_NAME));
-    props.load(new FileInputStream(new File(propParent, SolrProperties.CORE_PROP_FILE)));
+    FileInputStream in = new FileInputStream(new File(propParent, SolrProperties.CORE_PROP_FILE));
+    try {
+      props.load(in);
+    } finally {
+      in.close();
+    }
     Set<String> propSet = props.stringPropertyNames();
 
     assertEquals("Persisted properties should NOT contain extra properties", propSet.size(), orig.size());

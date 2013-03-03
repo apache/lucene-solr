@@ -38,6 +38,7 @@ import java.io.FileInputStream;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
+import java.io.OutputStream;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
@@ -332,10 +333,14 @@ public class SolrProperties implements ConfigSolr {
       }
     }
 
+    OutputStream os = null;
     try {
-      outProps.store(new FileOutputStream(plus.getFilePath()), null);
+      os = new FileOutputStream(plus.getFilePath());
+      outProps.store(os, null);
     } catch (IOException e) {
       log.error("Failed to persist core {}, filepath {}", coreName, plus.getFilePath());
+    } finally {
+      IOUtils.closeQuietly(os);
     }
 
   }
@@ -381,10 +386,14 @@ public class SolrProperties implements ConfigSolr {
         propsOut.put(prop, toTest);
       }
     }
+    OutputStream os = null;
     try {
-      propsOut.store(new FileOutputStream(props), null);
+      os = new FileOutputStream(props);
+      propsOut.store(os, null);
     } catch (IOException e) {
       log.error("Failed to persist file " + props.getAbsolutePath(), e);
+    } finally {
+      IOUtils.closeQuietly(os);
     }
   }
 
@@ -439,7 +448,12 @@ public class SolrProperties implements ConfigSolr {
       if (propFile.exists()) { // Stop looking after processing this file!
         log.info("Discovered properties file {}, adding to cores", propFile.getAbsolutePath());
         Properties propsOrig = new Properties();
-        propsOrig.load(new FileInputStream(propFile));
+        InputStream is = new FileInputStream(propFile);
+        try {
+          propsOrig.load(is);
+        } finally {
+          IOUtils.closeQuietly(is);
+        }
 
         Properties props = new Properties();
         for (String prop : propsOrig.stringPropertyNames()) {
