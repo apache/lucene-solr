@@ -17,6 +17,7 @@ import org.apache.commons.cli.OptionBuilder;
 import org.apache.commons.cli.Options;
 import org.apache.commons.cli.ParseException;
 import org.apache.commons.cli.PosixParser;
+import org.apache.commons.io.IOUtils;
 import org.apache.solr.common.cloud.OnReconnect;
 import org.apache.solr.common.cloud.SolrZkClient;
 import org.apache.solr.core.ConfigSolr;
@@ -183,21 +184,24 @@ public class ZkCLI {
           }
           InputStream is = new FileInputStream(configFile);
 
-          //ConfigSolrXmlThunk cfg = new ConfigSolrXmlThunk(null, loader, is, false, true);
-
           ConfigSolr cfg;
+
+          try {
             if (isXml) {
               cfg = new ConfigSolrXmlBackCompat(loader, null, is, null, false);
             } else {
               cfg = new SolrProperties(null, is, null);
             }
+          } finally {
+            IOUtils.closeQuietly(is);
+          }
 
 
-            if(!ZkController.checkChrootPath(zkServerAddress, true)) {
+          if(!ZkController.checkChrootPath(zkServerAddress, true)) {
             System.out.println("A chroot was specified in zkHost but the znode doesn't exist. ");
             System.exit(1);
           }
-          
+
           ZkController.bootstrapConf(zkClient, cfg, solrHome);
           
         } else if (line.getOptionValue(CMD).equals(UPCONFIG)) {
