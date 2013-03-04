@@ -16,6 +16,7 @@
 /.project
 /.classpath
 /.settings
+/.caches
 /prj.el
 /bin
 /bin.*
