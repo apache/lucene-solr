@@ -37,7 +37,7 @@ import org.apache.lucene.util.BytesRef;
  * 
  * */
 
-public class SortedSetDocValuesField extends StoredField {
+public class SortedSetDocValuesField extends Field {
 
   /**
    * Type for sorted bytes DocValues

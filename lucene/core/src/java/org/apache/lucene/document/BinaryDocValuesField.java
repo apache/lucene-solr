@@ -39,7 +39,7 @@ import org.apache.lucene.util.BytesRef;
  * 
  * @see BinaryDocValues
  * */
-public class BinaryDocValuesField extends StoredField {
+public class BinaryDocValuesField extends Field {
   
   /**
    * Type for straight bytes DocValues.

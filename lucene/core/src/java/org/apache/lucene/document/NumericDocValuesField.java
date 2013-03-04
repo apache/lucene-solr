@@ -33,7 +33,7 @@ import org.apache.lucene.index.FieldInfo;
  * separate {@link StoredField} instance.
  * */
 
-public class NumericDocValuesField extends StoredField {
+public class NumericDocValuesField extends Field {
 
   /**
    * Type for numeric DocValues.
