@@ -257,13 +257,13 @@ public class CurrencyField extends FieldType implements SchemaAware, ResourceLoa
    * default fractional digits for <code>USD</code> is "<code>2</code>".  
    * So for a document whose indexed value was currently equivilent to 
    * "<code>5.43,USD</code>" using the the exchange provider for this field, 
-   * this ValueSource would return a value of "<code>543<code>"
+   * this ValueSource would return a value of "<code>543</code>"
    * </p>
    *
    * @see #PARAM_DEFAULT_CURRENCY
    * @see #DEFAULT_DEFAULT_CURRENCY
    * @see Currency#getDefaultFractionDigits
-   * @see getConvertedValueSource
+   * @see #getConvertedValueSource
    */
   public RawCurrencyValueSource getValueSource(SchemaField field, 
                                                QParser parser) {
@@ -285,14 +285,14 @@ public class CurrencyField extends FieldType implements SchemaAware, ResourceLoa
    * document's raw value to <code>USD</code>.  So for a document whose 
    * indexed value was currently equivilent to "<code>5.43,USD</code>" 
    * using the the exchange provider for this field, this ValueSource would 
-   * return a value of "<code>5.43<code>"
+   * return a value of "<code>5.43</code>"
    * </p>
    *
    * @param targetCurrencyCode The target currency for the resulting value source, if null the defaultCurrency for this field type will be used
    * @param source the raw ValueSource to wrap
    * @see #PARAM_DEFAULT_CURRENCY
    * @see #DEFAULT_DEFAULT_CURRENCY
-   * @see getValueSource
+   * @see #getValueSource
    */
   public ValueSource getConvertedValueSource(String targetCurrencyCode, 
                                              RawCurrencyValueSource source) {
@@ -462,7 +462,7 @@ public class CurrencyField extends FieldType implements SchemaAware, ResourceLoa
    * (ie: <code>$n * 100</code>) since the number of defalt fractional 
    * digits for <code>USD</code> is "<code>2</code>")
    * </p>
-   * @see ConvertedCurrencValueSource
+   * @see ConvertedCurrencyValueSource
    */
   class RawCurrencyValueSource extends ValueSource {
     private static final long serialVersionUID = 1L;
