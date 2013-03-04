@@ -45,13 +45,16 @@ import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;
 
+import static org.apache.solr.core.SolrCore.log;
 import static org.apache.solr.core.SolrCore.verbose;
 import static org.junit.Assert.fail;
 
 /**
- * Incorporate the open/close stress tests into junit.
+ * Incorporate the open/close stress tests into unit tests.
  */
 public class OpenCloseCoreStressTest extends SolrTestCaseJ4 {
+
+  private final Object locker = new Object();
 
   private int numCores = 20;
   private Map<String, Long> coreCounts;
@@ -107,7 +110,6 @@ public class OpenCloseCoreStressTest extends SolrTestCaseJ4 {
     FileUtils.deleteDirectory(solrHomeDirectory); // Insure that a failed test didn't leave something lying around.
 
     jetty = new JettySolrRunner(solrHomeDirectory.getAbsolutePath(), "/solr", 0);
-
   }
 
   @After
@@ -178,7 +180,6 @@ public class OpenCloseCoreStressTest extends SolrTestCaseJ4 {
 
   // Unless things go _really_ well, stop after you have the directories set up.
   private void doStress(int secondsToRun, boolean oldStyle) throws Exception {
-
     makeCores(solrHomeDirectory, oldStyle);
 
     //MUST start the server after the cores are made.
@@ -240,7 +241,8 @@ public class OpenCloseCoreStressTest extends SolrTestCaseJ4 {
 
   private void makeCore(File coreDir, File testSrcRoot, boolean oldStyle) throws IOException {
     File conf = new File(coreDir, "conf");
-    conf.mkdirs();
+
+    if (!conf.mkdirs()) log.info("mkdirs returned false in makeCore... ignoring");
 
     File testConf = new File(testSrcRoot, "collection1/conf");
 
@@ -317,7 +319,7 @@ public class OpenCloseCoreStressTest extends SolrTestCaseJ4 {
   }
 
   void incrementCoreCount(String core) {
-    synchronized (coreCounts) {
+    synchronized (locker) {
       coreCounts.put(core, coreCounts.get(core) + 1);
     }
   }
@@ -387,7 +389,6 @@ class OneIndexer extends Thread {
   private final OpenCloseCoreStressTest OCCST;
   private final HttpSolrServer server;
   private final String baseUrl;
-  private OpenCloseCoreStressTest OCSST;
 
   OneIndexer(OpenCloseCoreStressTest OCCST, String url, HttpSolrServer server) {
     this.OCCST = OCCST;
@@ -399,12 +400,10 @@ class OneIndexer extends Thread {
   public void run() {
     verbose(String.format(Locale.ROOT, "Starting indexing thread: " + getId()));
 
-    String core = OCCST.getRandomCore();
-
     while (Indexer.stopTime > System.currentTimeMillis()) {
       int myId = Indexer.idUnique.incrementAndGet();
       Indexer.docsThisCycle.incrementAndGet();
-      core = OCCST.getRandomCore();
+      String core = OCCST.getRandomCore();
       OCCST.incrementCoreCount(core);
       Indexer.progress(myId, core);
       for (int idx = 0; idx < 3; ++idx) {
@@ -414,10 +413,9 @@ class OneIndexer extends Thread {
         UpdateRequest update = new UpdateRequest();
         update.add(doc);
 
-        UpdateResponse response = new UpdateResponse(); // Just to keep a possible NPE from happening
         try {
           server.setBaseURL(baseUrl + core);
-          response = server.add(doc, OpenCloseCoreStressTest.COMMIT_WITHIN);
+          UpdateResponse response = server.add(doc, OpenCloseCoreStressTest.COMMIT_WITHIN);
           if (response.getStatus() != 0) {
             verbose("Failed to index a document with status " + response.getStatus());
           } else {
@@ -429,11 +427,11 @@ class OneIndexer extends Thread {
         } catch (Exception e) {
           if (e instanceof InterruptedException) return;
           Indexer.errors.incrementAndGet();
+          log.error("EOE dumping stack (indexer)", e);
           if (idx == 2) {
-            fail("Could not reach server while indexing for three tries, quitting " + e.getMessage() + " " + response.toString());
+            fail("Could not reach server while indexing for three tries, quitting " + e.getMessage());
           } else {
-            verbose("Indexing thread " + Thread.currentThread().getId() + " swallowed one exception " + e.getMessage()
-                + " " + response.toString());
+            verbose("Indexing thread " + Thread.currentThread().getId() + " swallowed one exception " + e.getMessage());
             try {
               Thread.sleep(500);
             } catch (InterruptedException tex) {
@@ -452,9 +450,10 @@ class Queries {
 
   List<Thread> _threads = new ArrayList<Thread>();
   static AtomicInteger _errors = new AtomicInteger(0);
-  static volatile boolean _verbose = false;
+  String baseUrl;
 
   public Queries(OpenCloseCoreStressTest OCCST, String url, List<HttpSolrServer> servers, int numThreads) {
+    baseUrl = url;
     for (int idx = 0; idx < numThreads; ++idx) {
       Thread one = new OneQuery(OCCST, url, servers.get(idx));
       _threads.add(one);
@@ -469,7 +468,7 @@ class Queries {
       try {
         thread.join();
       } catch (InterruptedException e) {
-        e.printStackTrace();  //To change body of catch statement use File | Settings | File Templates.
+        e.printStackTrace();
       }
     }
   }
@@ -479,6 +478,7 @@ class Queries {
     params.set("qt", "/select");
     params.set("q", "*:*");
     long numFound = 0;
+    server.setBaseURL(baseUrl + core);
     try {
       QueryResponse response = server.query(params);
       numFound = response.getResults().getNumFound();
@@ -503,30 +503,32 @@ class OneQuery extends Thread {
   @Override
   public void run() {
     verbose(String.format(Locale.ROOT, "Starting query thread: " + getId()));
-    String core = OCCST.getRandomCore();
-    int repeated = 0;
     while (Queries._keepon.get()) {
-      core = OCCST.getRandomCore();
+      String core = OCCST.getRandomCore();
       for (int idx = 0; idx < 3; ++idx) {
         ModifiableSolrParams params = new ModifiableSolrParams();
         params.set("qt", "/select");
         params.set("q", "*:*");
 
-        QueryResponse response = new QueryResponse(); // so we can use toString below with impunity
         try {
           // sleep between 250ms and 10000 ms
           Thread.sleep(100L); // Let's not go crazy here.
           server.setBaseURL(baseUrl + core);
-          response = server.query(params);
-          // Perhaps collect some stats here in future.
+          QueryResponse response = server.query(params);
+
+          if (response.getStatus() != 0) {
+            verbose("Failed to index a document with status " + response.getStatus());
+          }
+            // Perhaps collect some stats here in future.
           break; // retry loop
         } catch (Exception e) {
           if (e instanceof InterruptedException) return;
+          log.error("EOE dumping stack (query)", e);
           Queries._errors.incrementAndGet();
           if (idx == 2) {
-            fail("Could not reach server while indexing for three tries, quitting " + e.getMessage() + " " + response.toString());
+            fail("Could not reach server while indexing for three tries, quitting " + e.getMessage());
           } else {
-            verbose("Querying thread: " + Thread.currentThread().getId() + " swallowed exception: " + e.getMessage() + " " + response.toString());
+            verbose("Querying thread: " + Thread.currentThread().getId() + " swallowed exception: " + e.getMessage());
             try {
               Thread.sleep(500L);
             } catch (InterruptedException tex) {
