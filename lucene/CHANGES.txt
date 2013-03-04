@@ -291,6 +291,9 @@ Documentation
 
 Build
 
+* LUCENE-4654: Test duration statistics from multiple test runs should be 
+  reused. (Dawid Weiss)
+
 * LUCENE-4636: Upgrade ivy to 2.3.0 (Shawn Heisey via Robert Muir)
 
 * LUCENE-4570: Use the Policeman Forbidden API checker, released separately
