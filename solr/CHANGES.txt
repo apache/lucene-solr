@@ -24,7 +24,7 @@ $Id$
 
 Versions of Major Components
 ---------------------
-Apache Tika 1.2
+Apache Tika 1.3
 Carrot2 3.6.2
 Velocity 1.7 and Velocity Tools 2.0
 Apache UIMA 2.3.1
@@ -42,7 +42,7 @@ Detailed Change List
 
 Versions of Major Components
 ---------------------
-Apache Tika 1.2
+Apache Tika 1.3
 Carrot2 3.6.2
 Velocity 1.7 and Velocity Tools 2.0
 Apache UIMA 2.3.1
@@ -275,6 +275,7 @@ Other Changes
   by the lucene and edismax query paesers.
   (hossman, Jan Høydahl, Alan Woodward, yonik)
 
+* SOLR-4416: Upgrade to Tika 1.3. (Markus Jelsma via Mark Miller)
 
 ==================  4.1.0 ==================
 
