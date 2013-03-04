@@ -98,6 +98,14 @@ New Features
   Similarity when you know the optimal "Sweet Spot" of values for the field 
   length and TF scoring factors.  (hossman)
 
+* SOLR-4138: CurrencyField fields can now be used in a ValueSources to
+  get the "raw" value (using the default number of fractional digits) in 
+  the default currency of the field type.  There is also a new 
+  currency(field,[CODE]) function for generating a ValueSource of the 
+  "natural" value, converted to an optionally specified currency to 
+  override the default for the field type.
+  (hossman)
+
 Bug Fixes
 ----------------------
 

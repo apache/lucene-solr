@@ -45,6 +45,7 @@
     <fieldType name="tfloat" class="solr.TrieFloatField" precisionStep="8" positionIncrementGap="0"/>
     <fieldType name="tlong" class="solr.TrieLongField" precisionStep="8" positionIncrementGap="0"/>
     <fieldType name="tdouble" class="solr.TrieDoubleField" precisionStep="8" positionIncrementGap="0"/>
+    <fieldType name="currency" class="solr.CurrencyField" currencyConfig="currency.xml" multiValued="false" />
 
     <!-- numeric field types that manipulate the value into
        a string value that isn't human readable in it's internal form,
@@ -518,6 +519,7 @@
    <field name="pointD" type="xyd" indexed="true" stored="true" multiValued="false"/>
    <field name="point_hash" type="geohash" indexed="true" stored="true" multiValued="false"/>
    <field name="store" type="location" indexed="true" stored="true"/>
+   <field name="amount" type="currency" indexed="true" stored="true" multiValued="false"/>
    
    <!-- to test uniq fields -->   
    <field name="uniq" type="string" indexed="true" stored="true" multiValued="true"/>

@@ -242,6 +242,67 @@ public class CurrencyField extends FieldType implements SchemaAware, ResourceLoa
     return getRangeQuery(parser, field, valueDefault, valueDefault, true, true);
   }
 
+  /**
+   * <p>
+   * Returns a ValueSource over this field in which the numeric value for 
+   * each document represents the indexed value as converted to the default 
+   * currency for the field, normalized to it's most granular form based 
+   * on the default fractional digits.
+   * </p>
+   * <p>
+   * For example: If the default Currency specified for a field is 
+   * <code>USD</code>, then the values returned by this value source would 
+   * represent the equivilent number of "cents" (ie: value in dollars * 100) 
+   * after converting each document's native currency to USD -- because the 
+   * default fractional digits for <code>USD</code> is "<code>2</code>".  
+   * So for a document whose indexed value was currently equivilent to 
+   * "<code>5.43,USD</code>" using the the exchange provider for this field, 
+   * this ValueSource would return a value of "<code>543<code>"
+   * </p>
+   *
+   * @see #PARAM_DEFAULT_CURRENCY
+   * @see #DEFAULT_DEFAULT_CURRENCY
+   * @see Currency#getDefaultFractionDigits
+   * @see getConvertedValueSource
+   */
+  public RawCurrencyValueSource getValueSource(SchemaField field, 
+                                               QParser parser) {
+    field.checkFieldCacheSource(parser);
+    return new RawCurrencyValueSource(field, defaultCurrency, parser);
+  }
+
+  /**
+   * <p>
+   * Returns a ValueSource over this field in which the numeric value for 
+   * each document represents the value from the underlying 
+   * <code>RawCurrencyValueSource</code> as converted to the specified target 
+   * Currency.
+   * </p>
+   * <p>
+   * For example: If the <code>targetCurrencyCode</code> param is set to
+   * <code>USD</code>, then the values returned by this value source would 
+   * represent the equivilent number of dollars after converting each 
+   * document's raw value to <code>USD</code>.  So for a document whose 
+   * indexed value was currently equivilent to "<code>5.43,USD</code>" 
+   * using the the exchange provider for this field, this ValueSource would 
+   * return a value of "<code>5.43<code>"
+   * </p>
+   *
+   * @param targetCurrencyCode The target currency for the resulting value source, if null the defaultCurrency for this field type will be used
+   * @param source the raw ValueSource to wrap
+   * @see #PARAM_DEFAULT_CURRENCY
+   * @see #DEFAULT_DEFAULT_CURRENCY
+   * @see getValueSource
+   */
+  public ValueSource getConvertedValueSource(String targetCurrencyCode, 
+                                             RawCurrencyValueSource source) {
+    if (null == targetCurrencyCode) { 
+      targetCurrencyCode = defaultCurrency; 
+    }
+    return new ConvertedCurrencyValueSource(targetCurrencyCode, 
+                                            source);
+  }
+
   @Override
   public Query getRangeQuery(QParser parser, SchemaField field, String part1, String part2, final boolean minInclusive, final boolean maxInclusive) {
       final CurrencyValue p1 = CurrencyValue.parse(part1, defaultCurrency);
@@ -263,7 +324,7 @@ public class CurrencyField extends FieldType implements SchemaAware, ResourceLoa
     // ValueSourceRangeFilter doesn't check exists(), so we have to
     final Filter docsWithValues = new FieldValueFilter(getAmountField(field).getName());
     final Filter vsRangeFilter = new ValueSourceRangeFilter
-      (new CurrencyValueSource(field, currencyCode, parser),
+      (new RawCurrencyValueSource(field, currencyCode, parser),
        p1 == null ? null : p1.getAmount() + "", 
        p2 == null ? null : p2.getAmount() + "",
        minInclusive, maxInclusive);
@@ -277,7 +338,7 @@ public class CurrencyField extends FieldType implements SchemaAware, ResourceLoa
   @Override
   public SortField getSortField(SchemaField field, boolean reverse) {
     // Convert all values to default currency for sorting.
-    return (new CurrencyValueSource(field, defaultCurrency, null)).getSortField(reverse);
+    return (new RawCurrencyValueSource(field, defaultCurrency, null)).getSortField(reverse);
   }
 
   @Override
@@ -289,14 +350,128 @@ public class CurrencyField extends FieldType implements SchemaAware, ResourceLoa
     return provider;
   }
 
-  class CurrencyValueSource extends ValueSource {
+  /**
+   * <p>
+   * A value source whose values represent the "normal" values
+   * in the specified target currency.
+   * </p>
+   * @see RawCurrencyValueSource
+   */
+  class ConvertedCurrencyValueSource extends ValueSource {
+    private final Currency targetCurrency;
+    private final RawCurrencyValueSource source;
+    private final double rate;
+    public ConvertedCurrencyValueSource(String targetCurrencyCode, 
+                                        RawCurrencyValueSource source) {
+      this.source = source;
+      this.targetCurrency = getCurrency(targetCurrencyCode);
+      if (null == targetCurrency) {
+        throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, "Currency code not supported by this JVM: " + targetCurrencyCode);
+      }
+      // the target digits & currency of our source, 
+      // become the source digits & currency of ourselves
+      this.rate = provider.getExchangeRate
+        (source.getTargetCurrency().getCurrencyCode(), 
+         targetCurrency.getCurrencyCode());
+    }
+
+    @Override
+    public FunctionValues getValues(Map context, AtomicReaderContext reader) 
+      throws IOException {
+      final FunctionValues amounts = source.getValues(context, reader);
+      // the target digits & currency of our source, 
+      // become the source digits & currency of ourselves
+      final String sourceCurrencyCode = source.getTargetCurrency().getCurrencyCode();
+      final int sourceFractionDigits = source.getTargetCurrency().getDefaultFractionDigits();
+      final double divisor = Math.pow(10D, targetCurrency.getDefaultFractionDigits());
+      return new FunctionValues() {
+        @Override
+        public boolean exists(int doc) {
+          return amounts.exists(doc);
+        }
+        @Override
+        public long longVal(int doc) {
+          return (long) doubleVal(doc);
+        }
+        @Override
+        public int intVal(int doc) {
+          return (int) doubleVal(doc);
+        }
+
+        @Override
+        public double doubleVal(int doc) {
+          return CurrencyValue.convertAmount(rate, sourceCurrencyCode, amounts.longVal(doc), targetCurrency.getCurrencyCode()) / divisor;
+        }
+
+        @Override
+        public float floatVal(int doc) {
+          return CurrencyValue.convertAmount(rate, sourceCurrencyCode, amounts.longVal(doc), targetCurrency.getCurrencyCode()) / ((float)divisor);
+        }
+
+        @Override
+        public String strVal(int doc) {
+          return Double.toString(doubleVal(doc));
+        }
+
+        @Override
+        public String toString(int doc) {
+          return name() + '(' + strVal(doc) + ')';
+        }
+      };
+    }
+    public String name() {
+      return "currency";
+    }
+
+    @Override
+    public String description() {
+      return name() + "(" + source.getField().getName() + "," + targetCurrency.getCurrencyCode()+")";
+    }
+
+    @Override
+    public boolean equals(Object o) {
+      if (this == o) return true;
+      if (o == null || getClass() != o.getClass()) return false;
+
+      ConvertedCurrencyValueSource that = (ConvertedCurrencyValueSource) o;
+
+      return !(source != null ? !source.equals(that.source) : that.source != null) &&
+        (rate == that.rate) && 
+        !(targetCurrency != null ? !targetCurrency.equals(that.targetCurrency) : that.targetCurrency != null);
+
+    }
+
+    @Override
+    public int hashCode() {
+      int result = targetCurrency != null ? targetCurrency.hashCode() : 0;
+      result = 31 * result + (source != null ? source.hashCode() : 0);
+      result = 31 * (int) Double.doubleToLongBits(rate);
+      return result;
+    }
+  }
+
+  /**
+   * <p>
+   * A value source whose values represent the "raw" (ie: normalized using 
+   * the number of default fractional digits) values in the specified 
+   * target currency).
+   * </p>
+   * <p>
+   * For example: if the specified target currency is "<code>USD</code>" 
+   * then the numeric values are the number of pennies in the value 
+   * (ie: <code>$n * 100</code>) since the number of defalt fractional 
+   * digits for <code>USD</code> is "<code>2</code>")
+   * </p>
+   * @see ConvertedCurrencValueSource
+   */
+  class RawCurrencyValueSource extends ValueSource {
     private static final long serialVersionUID = 1L;
-    private Currency targetCurrency;
+    private final Currency targetCurrency;
     private ValueSource currencyValues;
     private ValueSource amountValues;
     private final SchemaField sf;
 
-    public CurrencyValueSource(SchemaField sfield, String targetCurrencyCode, QParser parser) {
+    public RawCurrencyValueSource(SchemaField sfield, String targetCurrencyCode, QParser parser) {
       this.sf = sfield;
       this.targetCurrency = getCurrency(targetCurrencyCode);
       if (null == targetCurrency) {
@@ -309,6 +484,9 @@ public class CurrencyField extends FieldType implements SchemaAware, ResourceLoa
       currencyValues = currencyField.getType().getValueSource(currencyField, parser);
       amountValues = amountField.getType().getValueSource(amountField, parser);
     }
+    
+    public SchemaField getField() { return sf; }
+    public Currency getTargetCurrency() { return targetCurrency; }
 
     @Override
     public FunctionValues getValues(Map context, AtomicReaderContext reader) throws IOException {
@@ -444,12 +622,13 @@ public class CurrencyField extends FieldType implements SchemaAware, ResourceLoa
     }
 
     public String name() {
-      return "currency";
+      return "rawcurrency";
     }
 
     @Override
     public String description() {
-      return name() + "(" + sf.getName() + ")";
+      return name() + "(" + sf.getName() + 
+        ",target="+targetCurrency.getCurrencyCode()+")";
     }
 
     @Override
@@ -457,7 +636,7 @@ public class CurrencyField extends FieldType implements SchemaAware, ResourceLoa
       if (this == o) return true;
       if (o == null || getClass() != o.getClass()) return false;
 
-      CurrencyValueSource that = (CurrencyValueSource) o;
+      RawCurrencyValueSource that = (RawCurrencyValueSource) o;
 
       return !(amountValues != null ? !amountValues.equals(that.amountValues) : that.amountValues != null) &&
               !(currencyValues != null ? !currencyValues.equals(that.currencyValues) : that.currencyValues != null) &&
