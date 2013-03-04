@@ -297,6 +297,118 @@ public abstract class AbstractCurrencyFieldTest extends SolrTestCaseJ4 {
     assertQ(req("fl", "*,score", "q", "*:*", "sort", field()+" asc", "limit", "1"), "//int[@name='id']='3'");
   }
 
+  public void testFunctionUsage() throws Exception {
+    clearIndex();
+    for (int i = 1; i <= 8; i++) {
+      // "GBP" currency code is 1/2 of a USD dollar, for testing.
+      assertU(adoc("id", "" + i, field(), (((float)i)/2) + ",GBP"));
+    }
+    for (int i = 9; i <= 11; i++) {
+      assertU(adoc("id", "" + i, field(), i + ",USD"));
+    }
+
+    assertU(commit());
+
+    // direct value source usage, gets "raw" form od default curency
+    // default==USD, so raw==penies
+    assertQ(req("fl", "id,func:field($f)",
+                "f", field(),
+                "q", "id:5"),
+            "//*[@numFound='1']",
+            "//doc/float[@name='func' and .=500]");
+    assertQ(req("fl", "id,func:field($f)",
+                "f", field(),
+                "q", "id:10"),
+            "//*[@numFound='1']",
+            "//doc/float[@name='func' and .=1000]");
+    assertQ(req("fl", "id,score,"+field(), 
+                "q", "{!frange u=500}"+field())
+            ,"//*[@numFound='5']"
+            ,"//int[@name='id']='1'"
+            ,"//int[@name='id']='2'"
+            ,"//int[@name='id']='3'"
+            ,"//int[@name='id']='4'"
+            ,"//int[@name='id']='5'"
+            );
+    assertQ(req("fl", "id,score,"+field(), 
+                "q", "{!frange l=500 u=1000}"+field())
+            ,"//*[@numFound='6']"
+            ,"//int[@name='id']='5'"
+            ,"//int[@name='id']='6'"
+            ,"//int[@name='id']='7'"
+            ,"//int[@name='id']='8'"
+            ,"//int[@name='id']='9'"
+            ,"//int[@name='id']='10'"
+            );
+
+    // use the currency function to convert to default (USD)
+    assertQ(req("fl", "id,func:currency($f)",
+                "f", field(),
+                "q", "id:10"),
+            "//*[@numFound='1']",
+            "//doc/float[@name='func' and .=10]");
+    assertQ(req("fl", "id,func:currency($f)",
+                "f", field(),
+                "q", "id:5"),
+            "//*[@numFound='1']",
+            "//doc/float[@name='func' and .=5]");
+    assertQ(req("fl", "id,score"+field(), 
+                "f", field(),
+                "q", "{!frange u=5}currency($f)")
+            ,"//*[@numFound='5']"
+            ,"//int[@name='id']='1'"
+            ,"//int[@name='id']='2'"
+            ,"//int[@name='id']='3'"
+            ,"//int[@name='id']='4'"
+            ,"//int[@name='id']='5'"
+            );
+    assertQ(req("fl", "id,score"+field(), 
+                "f", field(),
+                "q", "{!frange l=5 u=10}currency($f)")
+            ,"//*[@numFound='6']"
+            ,"//int[@name='id']='5'"
+            ,"//int[@name='id']='6'"
+            ,"//int[@name='id']='7'"
+            ,"//int[@name='id']='8'"
+            ,"//int[@name='id']='9'"
+            ,"//int[@name='id']='10'"
+            );
+    
+    // use the currency function to convert to MXN
+    assertQ(req("fl", "id,func:currency($f,MXN)",
+                "f", field(),
+                "q", "id:5"),
+            "//*[@numFound='1']",
+            "//doc/float[@name='func' and .=10]");
+    assertQ(req("fl", "id,func:currency($f,MXN)",
+                "f", field(),
+                "q", "id:10"),
+            "//*[@numFound='1']",
+            "//doc/float[@name='func' and .=20]");
+    assertQ(req("fl", "*,score,"+field(), 
+                "f", field(),
+                "q", "{!frange u=10}currency($f,MXN)")
+            ,"//*[@numFound='5']"
+            ,"//int[@name='id']='1'"
+            ,"//int[@name='id']='2'"
+            ,"//int[@name='id']='3'"
+            ,"//int[@name='id']='4'"
+            ,"//int[@name='id']='5'"
+            );
+    assertQ(req("fl", "*,score,"+field(), 
+                "f", field(),
+                "q", "{!frange l=10 u=20}currency($f,MXN)")
+            ,"//*[@numFound='6']"
+            ,"//int[@name='id']='5'"
+            ,"//int[@name='id']='6'"
+            ,"//int[@name='id']='7'"
+            ,"//int[@name='id']='8'"
+            ,"//int[@name='id']='9'"
+            ,"//int[@name='id']='10'"
+            );
+
+  }
+
   @Test
   public void testMockFieldType() throws Exception {
     clearIndex();
