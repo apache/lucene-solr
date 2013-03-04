@@ -231,6 +231,9 @@ Optimizations
 Other Changes
 ----------------------
 
+* SOLR-4259: Carrot2 dependency should be declared on the mini version, not the core.
+  (Dawid Weiss).
+
 * SOLR-4348: Make the lock type configurable by system property by default.
   (Mark Miller)
 

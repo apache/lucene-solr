@@ -64,48 +64,8 @@
     </dependency>
     <dependency>
       <groupId>org.carrot2</groupId>
-      <artifactId>carrot2-core</artifactId>
+      <artifactId>carrot2-mini</artifactId>
       <exclusions>
-        <exclusion>
-          <groupId>org.apache.lucene</groupId>
-          <artifactId>lucene-core</artifactId>
-        </exclusion>
-        <exclusion>
-          <groupId>org.apache.lucene</groupId>
-          <artifactId>lucene-analyzers</artifactId>
-        </exclusion>
-        <exclusion>
-          <groupId>org.apache.lucene</groupId>
-          <artifactId>lucene-highlighter</artifactId>
-        </exclusion>
-        <exclusion>
-          <groupId>org.apache.lucene</groupId>
-          <artifactId>lucene-snowball</artifactId>
-        </exclusion>
-        <exclusion>
-          <groupId>org.apache.lucene</groupId>
-          <artifactId>lucene-smartcn</artifactId>
-        </exclusion>
-        <exclusion>
-          <groupId>net.java.dev.rome</groupId>
-          <artifactId>rome</artifactId>
-        </exclusion>
-        <exclusion>
-          <groupId>net.java.dev.rome</groupId>
-          <artifactId>rome-fetcher</artifactId>
-        </exclusion>
-        <exclusion>
-          <groupId>org.jdom</groupId>
-          <artifactId>jdom</artifactId>
-        </exclusion>
-        <exclusion>
-          <groupId>net.sf.ehcache</groupId>
-          <artifactId>ehcache-core</artifactId>
-        </exclusion>
-        <exclusion>
-          <groupId>org.carrot2</groupId>
-          <artifactId>morfologik-stemming</artifactId>
-        </exclusion>
         <exclusion>
           <groupId>jfree</groupId>
           <artifactId>jcommon</artifactId>
