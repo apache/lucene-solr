@@ -236,6 +236,9 @@ Optimizations
   will keep some less common unnecessary replications from happening.
   (Mark Miller, Simon Scofield)
 
+* SOLR-4529: Improve Admin UI Dashboard legibility (Felix Buenemann via 
+  steffkes)
+
 Other Changes
 ----------------------
 
