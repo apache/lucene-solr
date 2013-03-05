@@ -239,6 +239,9 @@ Optimizations
 * SOLR-4529: Improve Admin UI Dashboard legibility (Felix Buenemann via 
   steffkes)
 
+* SOLR-4526: Admin UI depends on optional system info (Felix Buenemann via
+  steffkes)
+
 Other Changes
 ----------------------
 
