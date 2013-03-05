@@ -98,11 +98,6 @@
   padding-bottom: 3px;
 }
 
-#content #index .data li.odd
-{
-  color: #c0c0c0;
-}
-
 #content #index .data li dt
 {
   float: left;
