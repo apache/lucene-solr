@@ -56,6 +56,7 @@ public class TextField extends FieldType {
    * @see #setMultiTermAnalyzer
    */
   protected Analyzer multiTermAnalyzer=null;
+  private boolean isExplicitMultiTermAnalyzer = false;
 
   @Override
   protected void init(IndexSchema schema, Map<String,String> args) {
@@ -329,4 +330,11 @@ public class TextField extends FieldType {
 
   }
 
+  public void setIsExplicitMultiTermAnalyzer(boolean isExplicitMultiTermAnalyzer) {
+    this.isExplicitMultiTermAnalyzer = isExplicitMultiTermAnalyzer;
+  }
+
+  public boolean isExplicitMultiTermAnalyzer() {
+    return isExplicitMultiTermAnalyzer;
+  }
 }

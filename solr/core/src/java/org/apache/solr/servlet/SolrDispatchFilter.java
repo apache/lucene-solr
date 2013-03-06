@@ -23,8 +23,6 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
 import java.io.OutputStreamWriter;
-import java.io.PrintWriter;
-import java.io.StringWriter;
 import java.io.Writer;
 import java.net.HttpURLConnection;
 import java.net.URL;
@@ -248,6 +246,20 @@ public class SolrDispatchFilter implements Filter
             parsers.put(config, parser );
           }
 
+          // Handle /schema/* paths via Restlet
+          if( path.startsWith("/schema") ) {
+            solrReq = parser.parse(core, path, req);
+            SolrRequestInfo.setRequestInfo(new SolrRequestInfo(solrReq, new SolrQueryResponse()));
+            if( path.equals(req.getServletPath()) ) {
+              // avoid endless loop - pass through to Restlet via webapp
+              chain.doFilter(request, response);
+            } else {
+              // forward rewritten URI (without path prefix and core/collection name) to Restlet
+              req.getRequestDispatcher(path).forward(request, response);
+            }
+            return;
+          }
+
           // Determine the handler from the url path if not set
           // (we might already have selected the cores handler)
           if( handler == null && path.length() > 1 ) { // don't match "" or "/" as valid path
@@ -353,13 +365,17 @@ public class SolrDispatchFilter implements Filter
       try {
         con.connect();
 
-        InputStream is = req.getInputStream();
-        OutputStream os = con.getOutputStream();
-        try {
-          IOUtils.copyLarge(is, os);
-        } finally {
-          IOUtils.closeQuietly(os);
-          IOUtils.closeQuietly(is);  // TODO: I thought we weren't supposed to explicitly close servlet streams
+        InputStream is;
+        OutputStream os;
+        if ("POST".equals(req.getMethod())) {
+          is = req.getInputStream();
+          os = con.getOutputStream(); // side effect: method is switched to POST
+          try {
+            IOUtils.copyLarge(is, os);
+          } finally {
+            IOUtils.closeQuietly(os);
+            IOUtils.closeQuietly(is);  // TODO: I thought we weren't supposed to explicitly close servlet streams
+          }
         }
         
         resp.setStatus(con.getResponseCode());
@@ -491,19 +507,11 @@ public class SolrDispatchFilter implements Filter
   private void handleAdminRequest(HttpServletRequest req, ServletResponse response, SolrRequestHandler handler,
                                   SolrQueryRequest solrReq) throws IOException {
     SolrQueryResponse solrResp = new SolrQueryResponse();
-    final NamedList<Object> responseHeader = new SimpleOrderedMap<Object>();
-    solrResp.add("responseHeader", responseHeader);
-    NamedList toLog = solrResp.getToLog();
-    toLog.add("webapp", req.getContextPath());
-    toLog.add("path", solrReq.getContext().get("path"));
-    toLog.add("params", "{" + solrReq.getParamString() + "}");
+    SolrCore.preDecorateResponse(solrReq, solrResp);
     handler.handleRequest(solrReq, solrResp);
-    SolrCore.setResponseHeaderValues(handler, solrReq, solrResp);
-    StringBuilder sb = new StringBuilder();
-    for (int i = 0; i < toLog.size(); i++) {
-      String name = toLog.getName(i);
-      Object val = toLog.getVal(i);
-      sb.append(name).append("=").append(val).append(" ");
+    SolrCore.postDecorateResponse(handler, solrReq, solrResp);
+    if (log.isInfoEnabled() && solrResp.getToLog().size() > 0) {
+      log.info(solrResp.getToLogAsString("[admin] "));
     }
     QueryResponseWriter respWriter = SolrCore.DEFAULT_RESPONSE_WRITERS.get(solrReq.getParams().get(CommonParams.WT));
     if (respWriter == null) respWriter = SolrCore.DEFAULT_RESPONSE_WRITERS.get("standard");
@@ -521,7 +529,7 @@ public class SolrDispatchFilter implements Filter
 
     if (solrRsp.getException() != null) {
       NamedList info = new SimpleOrderedMap();
-      int code = getErrorInfo(solrRsp.getException(),info);
+      int code = ResponseUtils.getErrorInfo(solrRsp.getException(), info, log);
       solrRsp.add("error", info);
       ((HttpServletResponse) response).setStatus(code);
     }
@@ -543,38 +551,6 @@ public class SolrDispatchFilter implements Filter
     //else http HEAD request, nothing to write out, waited this long just to get ContentType
   }
   
-  protected int getErrorInfo(Throwable ex, NamedList info) {
-    int code=500;
-    if( ex instanceof SolrException ) {
-      code = ((SolrException)ex).code();
-    }
-
-    String msg = null;
-    for (Throwable th = ex; th != null; th = th.getCause()) {
-      msg = th.getMessage();
-      if (msg != null) break;
-    }
-    if(msg != null) {
-      info.add("msg", msg);
-    }
-    
-    // For any regular code, don't include the stack trace
-    if( code == 500 || code < 100 ) {
-      StringWriter sw = new StringWriter();
-      ex.printStackTrace(new PrintWriter(sw));
-      SolrException.log(log, null, ex);
-      info.add("trace", sw.toString());
-
-      // non standard codes have undefined results with various servers
-      if( code < 100 ) {
-        log.warn( "invalid return code: "+code );
-        code = 500;
-      }
-    }
-    info.add("code", new Integer(code));
-    return code;
-  }
-
   protected void execute( HttpServletRequest req, SolrRequestHandler handler, SolrQueryRequest sreq, SolrQueryResponse rsp) {
     // a custom filter could add more stuff to the request before passing it on.
     // for example: sreq.getContext().put( "HttpServletRequest", req );
@@ -615,7 +591,7 @@ public class SolrDispatchFilter implements Filter
     }
     catch( Throwable t ) { // This error really does not matter
       SimpleOrderedMap info = new SimpleOrderedMap();
-      int code=getErrorInfo(ex, info);
+      int code = ResponseUtils.getErrorInfo(ex, info, log);
       response.sendError( code, info.toString() );
     }
   }

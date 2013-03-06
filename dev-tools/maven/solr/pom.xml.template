@@ -76,6 +76,13 @@
     </mailingList>
   </mailingLists>
   <inceptionYear>2006</inceptionYear>
+  <repositories>
+    <repository>
+      <id>maven-restlet</id>
+      <name>Public online Restlet repository</name>
+      <url>http://maven.restlet.org</url>
+    </repository>
+  </repositories>
   <dependencies>
     <dependency>
       <groupId>org.slf4j</groupId>
