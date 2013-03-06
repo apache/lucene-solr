@@ -20,10 +20,14 @@ package org.apache.solr.schema;
 import org.apache.solr.common.SolrException;
 import org.apache.lucene.index.StorableField;
 import org.apache.lucene.search.SortField;
+import org.apache.solr.common.util.SimpleOrderedMap;
+import org.apache.solr.common.util.StrUtils;
 import org.apache.solr.search.QParser;
 
 import org.apache.solr.response.TextResponseWriter;
 
+import java.util.Collections;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.io.IOException;
@@ -34,11 +38,18 @@ import java.io.IOException;
  *
  */
 public final class SchemaField extends FieldProperties {
+  private static final String FIELD_NAME = "name";
+  private static final String TYPE_NAME = "type";
+  private static final String DEFAULT_VALUE = "default";
+
   final String name;
   final FieldType type;
   final int properties;
   final String defaultValue;
   boolean required = false;  // this can't be final since it may be changed dynamically
+  
+  /** Declared field property overrides */
+  Map<String,String> args = Collections.emptyMap();
 
 
   /** Create a new SchemaField with the given name and type,
@@ -52,7 +63,8 @@ public final class SchemaField extends FieldProperties {
    * of the properties of the prototype except the field name.
    */
   public SchemaField(SchemaField prototype, String name) {
-    this(name, prototype.type, prototype.properties, prototype.defaultValue );
+    this(name, prototype.type, prototype.properties, prototype.defaultValue);
+    args = prototype.args;
   }
 
  /** Create a new SchemaField with the given name and type,
@@ -186,10 +198,12 @@ public final class SchemaField extends FieldProperties {
   static SchemaField create(String name, FieldType ft, Map<String,String> props) {
 
     String defaultValue = null;
-    if( props.containsKey( "default" ) ) {
-      defaultValue = props.get( "default" );
+    if (props.containsKey(DEFAULT_VALUE)) {
+      defaultValue = props.get(DEFAULT_VALUE);
     }
-    return new SchemaField(name, ft, calcProps(name, ft, props), defaultValue );
+    SchemaField field = new SchemaField(name, ft, calcProps(name, ft, props), defaultValue);
+    field.args = new HashMap<String,String>(props);
+    return field;
   }
 
   /**
@@ -285,10 +299,51 @@ public final class SchemaField extends FieldProperties {
   public boolean equals(Object obj) {
     return(obj instanceof SchemaField) && name.equals(((SchemaField)obj).name);
   }
+
+  /**
+   * Get a map of property name -> value for this field.  If showDefaults is true,
+   * include default properties (those inherited from the declared property type and
+   * not overridden in the field declaration).
+   */
+  public SimpleOrderedMap<Object> getNamedPropertyValues(boolean showDefaults) {
+    SimpleOrderedMap<Object> properties = new SimpleOrderedMap<Object>();
+    properties.add(FIELD_NAME, getName());
+    properties.add(TYPE_NAME, getType().getTypeName());
+    if (showDefaults) {
+      if (null != getDefaultValue()) {
+        properties.add(DEFAULT_VALUE, getDefaultValue());
+      }
+      properties.add(getPropertyName(INDEXED), indexed());
+      properties.add(getPropertyName(STORED), stored());
+      properties.add(getPropertyName(DOC_VALUES), hasDocValues());
+      properties.add(getPropertyName(STORE_TERMVECTORS), storeTermVector());
+      properties.add(getPropertyName(STORE_TERMPOSITIONS), storeTermPositions());
+      properties.add(getPropertyName(STORE_TERMOFFSETS), storeTermOffsets());
+      properties.add(getPropertyName(OMIT_NORMS), omitNorms());
+      properties.add(getPropertyName(OMIT_TF_POSITIONS), omitTermFreqAndPositions());
+      properties.add(getPropertyName(OMIT_POSITIONS), omitPositions());
+      properties.add(getPropertyName(STORE_OFFSETS), storeOffsetsWithPositions());
+      properties.add(getPropertyName(MULTIVALUED), multiValued());
+      if (sortMissingFirst()) {
+        properties.add(getPropertyName(SORT_MISSING_FIRST), sortMissingFirst());
+      } else if (sortMissingLast()) {
+        properties.add(getPropertyName(SORT_MISSING_LAST), sortMissingLast());
+      }
+      properties.add(getPropertyName(REQUIRED), isRequired());
+      properties.add(getPropertyName(TOKENIZED), isTokenized());
+      // The BINARY property is always false
+      // properties.add(getPropertyName(BINARY), isBinary());
+    } else {
+      for (Map.Entry<String,String> arg : args.entrySet()) {
+        String key = arg.getKey();
+        String value = arg.getValue();
+        if (key.equals(DEFAULT_VALUE)) {
+          properties.add(key, value);
+        } else {
+          properties.add(key, StrUtils.parseBool(value, false));
+        }
+      }
+    }
+    return properties;
+  }
 }
-
-
-
-
-
-

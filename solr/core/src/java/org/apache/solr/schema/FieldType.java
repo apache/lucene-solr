@@ -19,17 +19,23 @@ package org.apache.solr.schema;
 
 import java.io.IOException;
 import java.io.Reader;
+import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
+import java.util.HashSet;
+import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 
 import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.analysis.Tokenizer;
 import org.apache.lucene.analysis.tokenattributes.CharTermAttribute;
 import org.apache.lucene.analysis.tokenattributes.OffsetAttribute;
+import org.apache.lucene.analysis.util.CharFilterFactory;
+import org.apache.lucene.analysis.util.TokenFilterFactory;
+import org.apache.lucene.analysis.util.TokenizerFactory;
 import org.apache.lucene.document.Field;
-import org.apache.lucene.index.FieldInfo.DocValuesType;
 import org.apache.lucene.index.FieldInfo.IndexOptions;
 import org.apache.lucene.index.StorableField;
 import org.apache.lucene.index.Term;
@@ -49,8 +55,12 @@ import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.CharsRef;
 import org.apache.lucene.util.UnicodeUtil;
 import org.apache.solr.analysis.SolrAnalyzer;
+import org.apache.solr.analysis.TokenizerChain;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.SolrException.ErrorCode;
+import org.apache.solr.common.params.SolrParams;
+import org.apache.solr.common.util.SimpleOrderedMap;
+import org.apache.solr.common.util.StrUtils;
 import org.apache.solr.response.TextResponseWriter;
 import org.apache.solr.search.QParser;
 import org.apache.solr.search.Sorting;
@@ -82,6 +92,8 @@ public abstract class FieldType extends FieldProperties {
   /** properties explicitly set to false */
   protected int falseProperties;
   protected int properties;
+  private boolean isExplicitQueryAnalyzer;
+  private boolean isExplicitAnalyzer;
 
 
   /** Returns true if fields of this type should be tokenized */
@@ -138,7 +150,7 @@ public abstract class FieldType extends FieldProperties {
       args.remove("compressThreshold");
     }
 
-    this.args=args;
+    this.args = Collections.unmodifiableMap(args);
     Map<String,String> initArgs = new HashMap<String,String>(args);
 
     trueProperties = FieldProperties.parseProperties(initArgs,true);
@@ -151,25 +163,25 @@ public abstract class FieldType extends FieldProperties {
 
     init(schema, initArgs);
 
-    String positionInc = initArgs.get("positionIncrementGap");
+    String positionInc = initArgs.get(POSITION_INCREMENT_GAP);
     if (positionInc != null) {
       Analyzer analyzer = getAnalyzer();
       if (analyzer instanceof SolrAnalyzer) {
         ((SolrAnalyzer)analyzer).setPositionIncrementGap(Integer.parseInt(positionInc));
       } else {
-        throw new RuntimeException("Can't set positionIncrementGap on custom analyzer " + analyzer.getClass());
+        throw new RuntimeException("Can't set " + POSITION_INCREMENT_GAP + " on custom analyzer " + analyzer.getClass());
       }
       analyzer = getQueryAnalyzer();
       if (analyzer instanceof SolrAnalyzer) {
         ((SolrAnalyzer)analyzer).setPositionIncrementGap(Integer.parseInt(positionInc));
       } else {
-        throw new RuntimeException("Can't set positionIncrementGap on custom analyzer " + analyzer.getClass());
+        throw new RuntimeException("Can't set " + POSITION_INCREMENT_GAP + " on custom analyzer " + analyzer.getClass());
       }
-      initArgs.remove("positionIncrementGap");
+      initArgs.remove(POSITION_INCREMENT_GAP);
     }
 
-    this.postingsFormat = initArgs.remove("postingsFormat");
-    this.docValuesFormat = initArgs.remove("docValuesFormat");
+    this.postingsFormat = initArgs.remove(POSTINGS_FORMAT);
+    this.docValuesFormat = initArgs.remove(DOC_VALUES_FORMAT);
 
     if (initArgs.size() > 0) {
       throw new RuntimeException("schema fieldtype " + typeName
@@ -385,7 +397,23 @@ public abstract class FieldType extends FieldProperties {
     UnicodeUtil.UTF16toUTF8(internal, 0, internal.length(), result);
   }
 
-  /**
+  public void setIsExplicitQueryAnalyzer(boolean isExplicitQueryAnalyzer) {
+    this.isExplicitQueryAnalyzer = isExplicitQueryAnalyzer;
+  }
+
+  public boolean isExplicitQueryAnalyzer() {
+    return isExplicitQueryAnalyzer;
+  }
+
+  public void setIsExplicitAnalyzer(boolean explicitAnalyzer) {
+    isExplicitAnalyzer = explicitAnalyzer;
+  }
+
+  public boolean isExplicitAnalyzer() {
+    return isExplicitAnalyzer;
+  }
+
+    /**
    * Default analyzer for types that only produce 1 verbatim token...
    * A maximum size of chars to be read must be specified
    */
@@ -500,8 +528,11 @@ public abstract class FieldType extends FieldProperties {
   }
 
   /** @lucene.internal */
+  protected SimilarityFactory similarityFactory;
+
+  /** @lucene.internal */
   protected Similarity similarity;
-  
+
   /**
    * Gets the Similarity used when scoring fields of this type
    * 
@@ -516,6 +547,21 @@ public abstract class FieldType extends FieldProperties {
     return similarity;
   }
 
+  /**
+   * Gets the factory for the Similarity used when scoring fields of this type
+   *
+   * <p>
+   * The default implementation returns null, which means this type
+   * has no custom similarity factory associated with it.
+   * </p>
+   *
+   * @lucene.internal
+   */
+  public SimilarityFactory getSimilarityFactory() {
+    return similarityFactory;
+  }
+
+
   /** Return the numeric type of this field, or null if this field is not a
    *  numeric field. */
   public org.apache.lucene.document.FieldType.NumericType getNumericType() {
@@ -526,8 +572,9 @@ public abstract class FieldType extends FieldProperties {
    * Sets the Similarity used when scoring fields of this type
    * @lucene.internal
    */
-  public void setSimilarity(Similarity similarity) {
-    this.similarity = similarity;
+  public void setSimilarity(SimilarityFactory similarityFactory) {
+    this.similarityFactory = similarityFactory;
+    this.similarity = similarityFactory.getSimilarity();
   }
   
   /**
@@ -675,4 +722,188 @@ public abstract class FieldType extends FieldProperties {
     }
   }
 
+  private static final String TYPE_NAME = "name";
+  private static final String CLASS_NAME = "class";
+  private static final String ANALYZER = "analyzer";
+  private static final String INDEX_ANALYZER = "indexAnalyzer";
+  private static final String QUERY_ANALYZER = "queryAnalyzer";
+  private static final String MULTI_TERM_ANALYZER = "multiTermAnalyzer";
+  private static final String SIMILARITY = "similarity";
+  private static final String POSTINGS_FORMAT = "postingsFormat";
+  private static final String DOC_VALUES_FORMAT = "docValuesFormat";
+  private static final String AUTO_GENERATE_PHRASE_QUERIES = "autoGeneratePhraseQueries";
+  private static final String ARGS = "args";
+  private static final String CHAR_FILTERS = "charFilters";
+  private static final String TOKENIZER = "tokenizer";
+  private static final String FILTERS = "filters";
+  private static final String POSITION_INCREMENT_GAP = "positionIncrementGap";
+
+  /**
+   * Get a map of property name -> value for this field type. 
+   * @param showDefaults if true, include default properties.
+   */
+  public SimpleOrderedMap<Object> getNamedPropertyValues(boolean showDefaults) {
+    SimpleOrderedMap<Object> namedPropertyValues = new SimpleOrderedMap<Object>();
+    namedPropertyValues.add(TYPE_NAME, getTypeName());
+    namedPropertyValues.add(CLASS_NAME, normalizeSPIname(getClass().getName()));
+    if (showDefaults) {
+      Map<String,String> fieldTypeArgs = getNonFieldPropertyArgs();
+      if (null != fieldTypeArgs) {
+        for (String key : fieldTypeArgs.keySet()) {
+          namedPropertyValues.add(key, fieldTypeArgs.get(key));
+        }
+      }
+      if (this instanceof TextField) {
+        namedPropertyValues.add(AUTO_GENERATE_PHRASE_QUERIES, ((TextField) this).getAutoGeneratePhraseQueries());
+      }
+      namedPropertyValues.add(getPropertyName(INDEXED), hasProperty(INDEXED));
+      namedPropertyValues.add(getPropertyName(STORED), hasProperty(STORED));
+      namedPropertyValues.add(getPropertyName(DOC_VALUES), hasProperty(DOC_VALUES));
+      namedPropertyValues.add(getPropertyName(STORE_TERMVECTORS), hasProperty(STORE_TERMVECTORS));
+      namedPropertyValues.add(getPropertyName(STORE_TERMPOSITIONS), hasProperty(STORE_TERMPOSITIONS));
+      namedPropertyValues.add(getPropertyName(STORE_TERMOFFSETS), hasProperty(STORE_TERMOFFSETS));
+      namedPropertyValues.add(getPropertyName(OMIT_NORMS), hasProperty(OMIT_NORMS));
+      namedPropertyValues.add(getPropertyName(OMIT_TF_POSITIONS), hasProperty(OMIT_TF_POSITIONS));
+      namedPropertyValues.add(getPropertyName(OMIT_POSITIONS), hasProperty(OMIT_POSITIONS));
+      namedPropertyValues.add(getPropertyName(STORE_OFFSETS), hasProperty(STORE_OFFSETS));
+      namedPropertyValues.add(getPropertyName(MULTIVALUED), hasProperty(MULTIVALUED));
+      if (hasProperty(SORT_MISSING_FIRST)) {
+        namedPropertyValues.add(getPropertyName(SORT_MISSING_FIRST), true);
+      } else if (hasProperty(SORT_MISSING_LAST)) {
+        namedPropertyValues.add(getPropertyName(SORT_MISSING_LAST), true);
+      }
+      namedPropertyValues.add(getPropertyName(TOKENIZED), isTokenized());
+      // The BINARY property is always false
+      // namedPropertyValues.add(getPropertyName(BINARY), hasProperty(BINARY));
+    } else { // Don't show defaults
+      Set<String> fieldProperties = new HashSet<String>();
+      for (String propertyName : FieldProperties.propertyNames) {
+        fieldProperties.add(propertyName);
+      }
+      for (String key : args.keySet()) {
+        if (fieldProperties.contains(key)) {
+          namedPropertyValues.add(key, StrUtils.parseBool(args.get(key)));
+        } else {
+          namedPropertyValues.add(key, args.get(key));
+        }
+      }
+    }
+    
+    if (isExplicitAnalyzer()) {
+      String analyzerProperty = isExplicitQueryAnalyzer() ? INDEX_ANALYZER : ANALYZER;
+      namedPropertyValues.add(analyzerProperty, getAnalyzerProperties(getAnalyzer()));
+    } 
+    if (isExplicitQueryAnalyzer()) {
+      String analyzerProperty = isExplicitAnalyzer() ? QUERY_ANALYZER : ANALYZER;
+      namedPropertyValues.add(analyzerProperty, getAnalyzerProperties(getQueryAnalyzer()));
+    }
+    if (this instanceof TextField) {
+      if (((TextField)this).isExplicitMultiTermAnalyzer()) {
+        namedPropertyValues.add(MULTI_TERM_ANALYZER, getAnalyzerProperties(((TextField) this).getMultiTermAnalyzer()));
+      }
+    }
+    if (null != getSimilarity()) {
+      namedPropertyValues.add(SIMILARITY, getSimilarityProperties());
+    }
+    if (null != getPostingsFormat()) {
+      namedPropertyValues.add(POSTINGS_FORMAT, getPostingsFormat());
+    }
+    if (null != getDocValuesFormat()) {
+      namedPropertyValues.add(DOC_VALUES_FORMAT, getDocValuesFormat());
+    }
+    return namedPropertyValues;
+  }
+
+  /** Returns args to this field type that aren't standard field properties */
+  protected Map<String,String> getNonFieldPropertyArgs() {
+    Map<String,String> initArgs =  new HashMap<String,String>(args);
+    for (String prop : FieldProperties.propertyNames) {
+      initArgs.remove(prop);
+    }
+    return initArgs;
+  }
+
+  /** 
+   * Returns a description of the given analyzer, by either reporting the Analyzer name
+   * if it's not a TokenizerChain, or if it is, querying each analysis factory for its
+   * name and args.
+   */
+  protected static SimpleOrderedMap<Object> getAnalyzerProperties(Analyzer analyzer) {
+    SimpleOrderedMap<Object> analyzerProps = new SimpleOrderedMap<Object>();
+    analyzerProps.add(CLASS_NAME, normalizeSPIname(analyzer.getClass().getName()));
+    
+    if (analyzer instanceof TokenizerChain) {
+      Map<String,String> factoryArgs;
+      TokenizerChain tokenizerChain = (TokenizerChain)analyzer;
+      CharFilterFactory[] charFilterFactories = tokenizerChain.getCharFilterFactories();
+      if (null != charFilterFactories && charFilterFactories.length > 0) {
+        List<SimpleOrderedMap<Object>> charFilterProps = new ArrayList<SimpleOrderedMap<Object>>();
+        for (CharFilterFactory charFilterFactory : charFilterFactories) {
+          SimpleOrderedMap<Object> props = new SimpleOrderedMap<Object>();
+          props.add(CLASS_NAME, normalizeSPIname(charFilterFactory.getClass().getName()));
+          factoryArgs = charFilterFactory.getOriginalArgs();
+          if (null != factoryArgs) {
+            for (String key : factoryArgs.keySet()) {
+              props.add(key, factoryArgs.get(key));
+            }
+          }
+          charFilterProps.add(props);
+        }
+        analyzerProps.add(CHAR_FILTERS, charFilterProps);
+      }
+
+      SimpleOrderedMap<Object> tokenizerProps = new SimpleOrderedMap<Object>();
+      TokenizerFactory tokenizerFactory = tokenizerChain.getTokenizerFactory();
+      tokenizerProps.add(CLASS_NAME, normalizeSPIname(tokenizerFactory.getClass().getName()));
+      factoryArgs = tokenizerFactory.getOriginalArgs();
+      if (null != factoryArgs) {
+        for (String key : factoryArgs.keySet()) {
+          tokenizerProps.add(key, factoryArgs.get(key));
+        }
+      }
+      analyzerProps.add(TOKENIZER, tokenizerProps);
+
+      TokenFilterFactory[] filterFactories = tokenizerChain.getTokenFilterFactories();
+      if (null != filterFactories && filterFactories.length > 0) {
+        List<SimpleOrderedMap<Object>> filterProps = new ArrayList<SimpleOrderedMap<Object>>();
+        for (TokenFilterFactory filterFactory : filterFactories) {
+          SimpleOrderedMap<Object> props = new SimpleOrderedMap<Object>();
+          props.add(CLASS_NAME, normalizeSPIname(filterFactory.getClass().getName()));
+          factoryArgs = filterFactory.getOriginalArgs();
+          if (null != factoryArgs) {
+            for (String key : factoryArgs.keySet()) {
+              props.add(key, factoryArgs.get(key));
+            }
+          }
+          filterProps.add(props);
+        }
+        analyzerProps.add(FILTERS, filterProps);
+      }
+    }
+    return analyzerProps;
+  }
+
+  private static String normalizeSPIname(String fullyQualifiedName) {
+    if (fullyQualifiedName.startsWith("org.apache.lucene.") || fullyQualifiedName.startsWith("org.apache.solr.")) {
+      return "solr" + fullyQualifiedName.substring(fullyQualifiedName.lastIndexOf('.')); 
+    }
+    return fullyQualifiedName;
+  }
+
+  /** Returns a description of this field's similarity, if any */
+  protected SimpleOrderedMap<Object> getSimilarityProperties() {
+    SimpleOrderedMap<Object> props = new SimpleOrderedMap<Object>();
+    if (similarity != null) {
+      props.add(CLASS_NAME, normalizeSPIname(similarity.getClass().getName()));
+      SolrParams factoryParams = similarityFactory.getParams();
+      if (null != factoryParams) {
+        Iterator<String> iter = factoryParams.getParameterNamesIterator();
+        while (iter.hasNext()) {
+          String key = iter.next();
+          props.add(key, factoryParams.get(key));
+        }
+      }
+    }
+    return props;
+  }
 }

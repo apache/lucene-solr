@@ -29,6 +29,7 @@ import java.nio.charset.CharsetDecoder;
 import java.nio.charset.CodingErrorAction;
 import java.util.ArrayList;
 import java.util.Collections;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.regex.Pattern;
@@ -49,6 +50,9 @@ import java.util.regex.PatternSyntaxException;
  */
 public abstract class AbstractAnalysisFactory {
 
+  /** The original args, before init() processes them */
+  private Map<String,String> originalArgs;
+  
   /** The init args */
   protected Map<String,String> args;
 
@@ -59,11 +63,16 @@ public abstract class AbstractAnalysisFactory {
    * Initialize this factory via a set of key-value pairs.
    */
   public void init(Map<String,String> args) {
-    this.args = args;
+    originalArgs = Collections.unmodifiableMap(args);
+    this.args = new HashMap<String,String>(args);
   }
 
   public Map<String,String> getArgs() {
     return args;
+  }
+  
+  public Map<String,String> getOriginalArgs() {
+    return originalArgs;
   }
 
    /** this method can be called in the {@link org.apache.lucene.analysis.util.TokenizerFactory#create(java.io.Reader)}

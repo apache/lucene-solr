@@ -191,8 +191,7 @@ public class LukeRequestHandlerTest extends AbstractSolrTestCase {
        field("text") + "/arr[@name='copySources']/str[.='subject']",
        field("title") + "/arr[@name='copyDests']/str[.='text']",
        field("title") + "/arr[@name='copyDests']/str[.='title_stemmed']",
-       // :TODO: SOLR-3798
-       //dynfield("bar_copydest_*") + "/arr[@name='copySource']/str[.='foo_copysource_*']",
+       dynfield("bar_copydest_*") + "/arr[@name='copySources']/str[.='foo_copysource_*']",
        dynfield("foo_copysource_*") + "/arr[@name='copyDests']/str[.='bar_copydest_*']");
     assertEquals(xml, null, r);
   }

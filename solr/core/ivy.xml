@@ -30,6 +30,8 @@
       <dependency org="org.objenesis" name="objenesis" rev="1.2" transitive="false"/>
       <dependency org="com.spatial4j" name="spatial4j" rev="0.3" transitive="false"/>
       <dependency org="javax.servlet" name="javax.servlet-api" rev="3.0.1" transitive="false"/>
-      <exclude org="*" ext="*" matcher="regexp" type="${ivy.exclude.types}"/> 
+      <dependency org="org.restlet.jee" name="org.restlet" rev="2.1.1" transitive="false"/>
+      <dependency org="org.restlet.jee" name="org.restlet.ext.servlet" rev="2.1.1" transitive="false"/>
+      <exclude org="*" ext="*" matcher="regexp" type="${ivy.exclude.types}"/>
     </dependencies>
 </ivy-module>

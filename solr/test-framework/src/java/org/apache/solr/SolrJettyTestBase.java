@@ -24,11 +24,18 @@ import org.apache.solr.client.solrj.impl.HttpSolrServer;
 import org.apache.solr.util.ExternalPaths;
 
 import java.io.File;
+import java.util.Collections;
 import java.util.Map;
 import java.util.HashMap;
+import java.util.SortedMap;
+import java.util.TreeMap;
 
+import org.apache.solr.util.RESTfulServerProvider;
+import org.apache.solr.util.RestTestHarness;
+import org.eclipse.jetty.servlet.ServletHolder;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
+import org.restlet.ext.servlet.ServerServlet;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -92,7 +99,9 @@ abstract public class SolrJettyTestBase extends SolrTestCaseJ4
   public static SolrServer server = null;
   public static String context;
 
-  public static JettySolrRunner createJetty(String solrHome, String configFile, String context) throws Exception {
+  public static JettySolrRunner createJetty(String solrHome, String configFile, String schemaFile, String context,
+                                            boolean stopAtShutdown, SortedMap<ServletHolder,String> extraServlets) 
+      throws Exception { 
     // creates the data dir
     initCore(null, null, solrHome);
 
@@ -103,12 +112,16 @@ abstract public class SolrJettyTestBase extends SolrTestCaseJ4
 
     context = context==null ? "/solr" : context;
     SolrJettyTestBase.context = context;
-    jetty = new JettySolrRunner(solrHome, context, 0, configFile, null);
+    jetty = new JettySolrRunner(solrHome, context, 0, configFile, schemaFile, stopAtShutdown, extraServlets);
 
     jetty.start();
     port = jetty.getLocalPort();
     log.info("Jetty Assigned Port#" + port);
     return jetty;
+  }
+
+  public static JettySolrRunner createJetty(String solrHome, String configFile, String context) throws Exception {
+    return createJetty(solrHome, configFile, null, context, true, null);
   }
 
 

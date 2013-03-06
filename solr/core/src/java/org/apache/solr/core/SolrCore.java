@@ -1781,7 +1781,6 @@ public final class SolrCore implements SolrInfoMBean {
     }
   }
 
-
   public void execute(SolrRequestHandler handler, SolrQueryRequest req, SolrQueryResponse rsp) {
     if (handler==null) {
       String msg = "Null Request Handler '" +
@@ -1791,45 +1790,40 @@ public final class SolrCore implements SolrInfoMBean {
       
       throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, msg);
     }
-    // setup response header and handle request
-    final NamedList<Object> responseHeader = new SimpleOrderedMap<Object>();
-    rsp.add("responseHeader", responseHeader);
 
-    // toLog is a local ref to the same NamedList used by the request
-    NamedList<Object> toLog = rsp.getToLog();
-    // for back compat, we set these now just in case other code
-    // are expecting them during handleRequest
-
-    toLog.add("webapp", req.getContext().get("webapp"));
-    toLog.add("path", req.getContext().get("path"));
-    toLog.add("params", "{" + req.getParamString() + "}");
+    preDecorateResponse(req, rsp);
 
     // TODO: this doesn't seem to be working correctly and causes problems with the example server and distrib (for example /spell)
     // if (req.getParams().getBool(ShardParams.IS_SHARD,false) && !(handler instanceof SearchHandler))
     //   throw new SolrException(SolrException.ErrorCode.BAD_REQUEST,"isShard is only acceptable with search handlers");
 
     handler.handleRequest(req,rsp);
-    setResponseHeaderValues(handler,req,rsp);
 
-    if (log.isInfoEnabled() && toLog.size() > 0) {
-      StringBuilder sb = new StringBuilder(logid);
-      for (int i=0; i<toLog.size(); i++) {
-        String name = toLog.getName(i);
-        Object val = toLog.getVal(i);
-        if (name != null) {
-          sb.append(name).append('=');
-        }
-        sb.append(val).append(' ');
-      }
+    postDecorateResponse(handler, req, rsp);
 
-      log.info(sb.toString());
+    if (log.isInfoEnabled() && rsp.getToLog().size() > 0) {
+      log.info(rsp.getToLogAsString(logid));
     }
-
   }
 
+  public static void preDecorateResponse(SolrQueryRequest req, SolrQueryResponse rsp) {
+    // setup response header
+    final NamedList<Object> responseHeader = new SimpleOrderedMap<Object>();
+    rsp.add("responseHeader", responseHeader);
 
-  
-  public static void setResponseHeaderValues(SolrRequestHandler handler, SolrQueryRequest req, SolrQueryResponse rsp) {
+    // toLog is a local ref to the same NamedList used by the response
+    NamedList<Object> toLog = rsp.getToLog();
+
+    // for back compat, we set these now just in case other code
+    // are expecting them during handleRequest
+    toLog.add("webapp", req.getContext().get("webapp"));
+    toLog.add("path", req.getContext().get("path"));
+    toLog.add("params", "{" + req.getParamString() + "}");
+  }
+
+  /** Put status, QTime, and possibly request handler and params, in the response header */
+  public static void postDecorateResponse
+      (SolrRequestHandler handler, SolrQueryRequest req, SolrQueryResponse rsp) {
     // TODO should check that responseHeader has not been replaced by handler
     NamedList<Object> responseHeader = rsp.getResponseHeader();
     final int qtime=(int)(rsp.getEndTime() - req.getStartTime());
@@ -1850,7 +1844,7 @@ public final class SolrCore implements SolrInfoMBean {
     }
 
     SolrParams params = req.getParams();
-    if( params.getBool(CommonParams.HEADER_ECHO_HANDLER, false) ) {
+    if( null != handler && params.getBool(CommonParams.HEADER_ECHO_HANDLER, false) ) {
       responseHeader.add("handler", handler.getName() );
     }
 
@@ -1869,7 +1863,6 @@ public final class SolrCore implements SolrInfoMBean {
       }
     }
   }
-
 
   final public static void log(Throwable e) {
     SolrException.log(log,null,e);

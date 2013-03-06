@@ -18,9 +18,13 @@
 package org.apache.solr.client.solrj.embedded;
 
 import java.io.IOException;
+import java.util.Collections;
 import java.util.EnumSet;
 import java.util.LinkedList;
+import java.util.Map;
 import java.util.Random;
+import java.util.SortedMap;
+import java.util.TreeMap;
 import java.util.concurrent.atomic.AtomicLong;
 
 import java.net.URL;
@@ -39,8 +43,10 @@ import javax.servlet.http.HttpServletResponse;
 
 import org.apache.solr.servlet.SolrDispatchFilter;
 import org.eclipse.jetty.server.Connector;
+import org.eclipse.jetty.server.Handler;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.server.bio.SocketConnector;
+import org.eclipse.jetty.server.handler.ContextHandlerCollection;
 import org.eclipse.jetty.server.nio.SelectChannelConnector;
 import org.eclipse.jetty.server.ssl.SslConnector;
 import org.eclipse.jetty.server.ssl.SslSocketConnector;
@@ -49,6 +55,7 @@ import org.eclipse.jetty.server.handler.GzipHandler;
 import org.eclipse.jetty.server.session.HashSessionIdManager;
 import org.eclipse.jetty.servlet.FilterHolder;
 import org.eclipse.jetty.servlet.ServletContextHandler;
+import org.eclipse.jetty.servlet.ServletHolder;
 import org.eclipse.jetty.util.component.LifeCycle;
 import org.eclipse.jetty.util.log.Logger;
 import org.eclipse.jetty.util.thread.QueuedThreadPool;
@@ -86,6 +93,9 @@ public class JettySolrRunner {
   private boolean stopAtShutdown;
 
   private String coreNodeName;
+
+  /** Maps servlet holders (i.e. factories: class + init params) to path specs */
+  private SortedMap<ServletHolder,String> extraServlets = new TreeMap<ServletHolder,String>();
 
   public static class DebugFilter implements Filter {
     public int requestsToKeep = 10;
@@ -146,6 +156,19 @@ public class JettySolrRunner {
   
   public JettySolrRunner(String solrHome, String context, int port,
       String solrConfigFilename, String schemaFileName, boolean stopAtShutdown) {
+    this.init(solrHome, context, port, stopAtShutdown);
+    this.solrConfigFilename = solrConfigFilename;
+    this.schemaFilename = schemaFileName;
+  }
+
+  /**
+   * Constructor taking an ordered list of additional (servlet holder -> path spec) mappings
+   * to add to the servlet context
+   */
+  public JettySolrRunner(String solrHome, String context, int port,
+      String solrConfigFilename, String schemaFileName, boolean stopAtShutdown,
+      SortedMap<ServletHolder,String> extraServlets) {
+    if (null != extraServlets) { this.extraServlets.putAll(extraServlets); }
     this.init(solrHome, context, port, stopAtShutdown);
     this.solrConfigFilename = solrConfigFilename;
     this.schemaFilename = schemaFileName;
@@ -285,6 +308,10 @@ public class JettySolrRunner {
 //        FilterHolder fh = new FilterHolder(filter);
         debugFilter = root.addFilter(DebugFilter.class, "*", EnumSet.of(DispatcherType.REQUEST) );
         dispatchFilter = root.addFilter(SolrDispatchFilter.class, "*", EnumSet.of(DispatcherType.REQUEST) );
+        for (ServletHolder servletHolder : extraServlets.keySet()) {
+          String pathSpec = extraServlets.get(servletHolder);
+          root.addServlet(servletHolder, pathSpec);
+        }
         if (solrConfigFilename != null) System.clearProperty("solrconfig");
         if (schemaFilename != null) System.clearProperty("schema");
         System.clearProperty("solr.solr.home");

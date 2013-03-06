@@ -24,8 +24,8 @@ import org.apache.lucene.index.StorableField;
 import org.apache.lucene.index.StoredDocument;
 import org.apache.lucene.search.similarities.Similarity;
 import org.apache.lucene.util.Version;
-import org.apache.lucene.analysis.util.ResourceLoader;
 import org.apache.solr.common.SolrException;
+import org.apache.solr.common.SolrException.ErrorCode;
 import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.util.DOMUtil;
 import org.apache.solr.util.SystemIdResolver;
@@ -34,13 +34,17 @@ import org.apache.solr.core.Config;
 import org.apache.solr.core.SolrResourceLoader;
 import org.apache.solr.search.similarities.DefaultSimilarityFactory;
 import org.apache.solr.util.plugin.SolrCoreAware;
-import org.w3c.dom.*;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import org.w3c.dom.Document;
+import org.w3c.dom.Element;
+import org.w3c.dom.NamedNodeMap;
+import org.w3c.dom.Node;
+import org.w3c.dom.NodeList;
 import org.xml.sax.InputSource;
 
 import javax.xml.xpath.XPath;
 import javax.xml.xpath.XPathConstants;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
 import java.util.ArrayList;
@@ -77,6 +81,7 @@ public final class IndexSchema {
   private final List<SchemaField> fieldsWithDefaultValue = new ArrayList<SchemaField>();
   private final Collection<SchemaField> requiredFields = new HashSet<SchemaField>();
   private DynamicField[] dynamicFields;
+  public DynamicField[] getDynamicFields() { return dynamicFields; }
 
   private Analyzer analyzer;
   private Analyzer queryAnalyzer;
@@ -86,13 +91,16 @@ public final class IndexSchema {
 
 
   private final Map<String, List<CopyField>> copyFieldsMap = new HashMap<String, List<CopyField>>();
+  public Map<String,List<CopyField>> getCopyFieldsMap() { return Collections.unmodifiableMap(copyFieldsMap); }
+  
   private DynamicCopy[] dynamicCopyFields;
+  public DynamicCopy[] getDynamicCopyFields() { return dynamicCopyFields; }
+
   /**
    * keys are all fields copied to, count is num of copyField
    * directives that target them.
    */
-  private Map<SchemaField, Integer> copyFieldTargetCounts
-    = new HashMap<SchemaField, Integer>();
+  private Map<SchemaField, Integer> copyFieldTargetCounts = new HashMap<SchemaField, Integer>();
 
     /**
    * Constructs a schema using the specified resource name and stream.
@@ -122,8 +130,7 @@ public final class IndexSchema {
   /**
    * @since solr 1.4
    */
-  public SolrResourceLoader getResourceLoader()
-  {
+  public SolrResourceLoader getResourceLoader() {
     return loader;
   }
   
@@ -209,8 +216,6 @@ public final class IndexSchema {
    */
   public Analyzer getAnalyzer() { return analyzer; }
 
-
-
   /**
    * Returns the Analyzer used when searching this index
    *
@@ -287,8 +292,7 @@ public final class IndexSchema {
    * 
    * @since solr 1.3
    */
-  public void refreshAnalyzers()
-  {
+  public void refreshAnalyzers() {
     analyzer = new SolrIndexAnalyzer();
     queryAnalyzer = new SolrQueryAnalyzer();
   }
@@ -389,7 +393,7 @@ public final class IndexSchema {
 
         FieldType ft = fieldTypes.get(type);
         if (ft==null) {
-          throw new SolrException( SolrException.ErrorCode.BAD_REQUEST,"Unknown fieldtype '" + type + "' specified on field " + name);
+          throw new SolrException(ErrorCode.BAD_REQUEST,"Unknown fieldtype '" + type + "' specified on field " + name);
         }
 
         Map<String,String> args = DOMUtil.toMapExcept(attrs, "name", "type");
@@ -404,7 +408,7 @@ public final class IndexSchema {
           if( old != null ) {
             String msg = "[schema.xml] Duplicate field definition for '"
               + f.getName() + "' [[["+old.toString()+"]]] and [[["+f.toString()+"]]]";
-            throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, msg );
+            throw new SolrException(ErrorCode.SERVER_ERROR, msg );
           }
           log.debug("field defined: " + f);
           if( f.getDefaultValue() != null ) {
@@ -416,8 +420,14 @@ public final class IndexSchema {
             requiredFields.add(f);
           }
         } else if (node.getNodeName().equals("dynamicField")) {
-          // make sure nothing else has the same path
-          addDynamicField(dFields, f);
+          if (isValidDynamicFieldName(name)) {
+            // make sure nothing else has the same path
+            addDynamicField(dFields, f);
+          } else {
+            String msg = "Dynamic field name '" + name 
+                + "' should have either a leading or a trailing asterisk, and no others.";
+            throw new SolrException(ErrorCode.SERVER_ERROR, msg);
+          }
         } else {
           // we should never get here
           throw new RuntimeException("Unknown field type");
@@ -454,7 +464,7 @@ public final class IndexSchema {
         if (null != ft.getSimilarity()) {
           String msg = "FieldType '" + ft.getTypeName() + "' is configured with a similarity, but the global similarity does not support it: " + simFactory.getClass();
           log.error(msg);
-          throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, msg);
+          throw new SolrException(ErrorCode.SERVER_ERROR, msg);
         }
       }
     }
@@ -470,7 +480,7 @@ public final class IndexSchema {
         SchemaField defaultSearchField = getFields().get(defaultSearchFieldName);
         if ((defaultSearchField == null) || !defaultSearchField.indexed()) {
           String msg =  "default search field '" + defaultSearchFieldName + "' not defined or not indexed" ;
-          throw new SolrException( SolrException.ErrorCode.SERVER_ERROR, msg );
+          throw new SolrException(ErrorCode.SERVER_ERROR, msg);
         }
       }
       log.info("default search field in schema is "+defaultSearchFieldName);
@@ -494,7 +504,7 @@ public final class IndexSchema {
           ") can not be configured with a default value ("+
           uniqueKeyField.getDefaultValue()+")";
         log.error(msg);
-        throw new SolrException( SolrException.ErrorCode.SERVER_ERROR, msg );
+        throw new SolrException(ErrorCode.SERVER_ERROR, msg);
       }
 
       if (!uniqueKeyField.stored()) {
@@ -504,7 +514,7 @@ public final class IndexSchema {
         String msg = "uniqueKey field ("+uniqueKeyFieldName+
           ") can not be configured to be multivalued";
         log.error(msg);
-        throw new SolrException( SolrException.ErrorCode.SERVER_ERROR, msg );
+        throw new SolrException(ErrorCode.SERVER_ERROR, msg);
       }
       uniqueKeyFieldName=uniqueKeyField.getName();
       uniqueKeyFieldType=uniqueKeyField.getType();
@@ -546,7 +556,7 @@ public final class IndexSchema {
           String msg = "uniqueKey field ("+uniqueKeyFieldName+
             ") can not be the dest of a copyField (src="+source+")";
           log.error(msg);
-          throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, msg);
+          throw new SolrException(ErrorCode.SERVER_ERROR, msg);
           
         }
 
@@ -570,38 +580,44 @@ public final class IndexSchema {
       throw e;
     } catch(Exception e) {
       // unexpected exception...
-      throw new SolrException( SolrException.ErrorCode.SERVER_ERROR,"Schema Parsing Failed: " + e.getMessage(), e);
+      throw new SolrException(ErrorCode.SERVER_ERROR, "Schema Parsing Failed: " + e.getMessage(), e);
     }
 
     // create the field analyzers
     refreshAnalyzers();
-
   }
 
+  /** Returns true if the given name has exactly one asterisk either at the start or end of the name */
+  private boolean isValidDynamicFieldName(String name) {
+    if (name.startsWith("*") || name.endsWith("*")) {
+      int count = 0;
+      for (int pos = 0 ; pos < name.length() && -1 != (pos = name.indexOf('*', pos)) ; ++pos) ++count;
+      if (1 == count) return true;
+    }
+    return false;
+  }
+  
   private void addDynamicField(List<DynamicField> dFields, SchemaField f) {
-    boolean dup = isDuplicateDynField(dFields, f);
-    if( !dup ) {
-      addDynamicFieldNoDupCheck(dFields, f);
+    if (isDuplicateDynField(dFields, f)) {
+      String msg = "[schema.xml] Duplicate DynamicField definition for '" + f.getName() + "'";
+      throw new SolrException(ErrorCode.SERVER_ERROR, msg);
     } else {
-      String msg = "[schema.xml] Duplicate DynamicField definition for '"
-              + f.getName() + "'";
-
-      throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, msg);
+      addDynamicFieldNoDupCheck(dFields, f);
     }
   }
 
   /**
-   * Register one or more new Dynamic Field with the Schema.
-   * @param f The {@link org.apache.solr.schema.SchemaField}
+   * Register one or more new Dynamic Fields with the Schema.
+   * @param fields The sequence of {@link org.apache.solr.schema.SchemaField}
    */
-  public void registerDynamicField(SchemaField ... f) {
+  public void registerDynamicFields(SchemaField... fields) {
     List<DynamicField> dynFields = new ArrayList<DynamicField>(Arrays.asList(dynamicFields));
-    for (SchemaField field : f) {
-      if (isDuplicateDynField(dynFields, field) == false) {
+    for (SchemaField field : fields) {
+      if (isDuplicateDynField(dynFields, field)) {
+        log.debug("dynamic field already exists: dynamic field: [" + field.getName() + "]");
+      } else {
         log.debug("dynamic field creation for schema field: " + field.getName());
         addDynamicFieldNoDupCheck(dynFields, field);
-      } else {
-        log.debug("dynamic field already exists: dynamic field: [" + field.getName() + "]");
       }
     }
     Collections.sort(dynFields);
@@ -614,14 +630,13 @@ public final class IndexSchema {
   }
 
   private boolean isDuplicateDynField(List<DynamicField> dFields, SchemaField f) {
-    for( DynamicField df : dFields ) {
-      if( df.regex.equals( f.name ) ) return true;
+    for (DynamicField df : dFields) {
+      if (df.getRegex().equals(f.name)) return true;
     }
     return false;
   }
 
-  public void registerCopyField( String source, String dest )
-  {
+  public void registerCopyField( String source, String dest ) {
     registerCopyField(source, dest, CopyField.UNLIMITED);
   }
 
@@ -634,56 +649,87 @@ public final class IndexSchema {
    * 
    * @see SolrCoreAware
    */
-  public void registerCopyField( String source, String dest, int maxChars )
-  {
-    boolean sourceIsPattern = isWildCard(source);
-    boolean destIsPattern   = isWildCard(dest);
+  public void registerCopyField(String source, String dest, int maxChars) {
+    log.debug("copyField source='" + source + "' dest='" + dest + "' maxChars=" + maxChars);
 
-    log.debug("copyField source='"+source+"' dest='"+dest+"' maxChars='"+maxChars);
-    SchemaField d = getFieldOrNull(dest);
-    if(d == null){
-      throw new SolrException( SolrException.ErrorCode.SERVER_ERROR, "copyField destination :'"+dest+"' does not exist" );
-    }
-
-    if(sourceIsPattern) {
-      if( destIsPattern ) {
-        DynamicField df = null;
-        for( DynamicField dd : dynamicFields ) {
-          if( dd.regex.equals( dest ) ) {
-            df = dd;
-            break;
+    DynamicField destDynamicField = null;
+    SchemaField destSchemaField = fields.get(dest);
+    SchemaField sourceSchemaField = fields.get(source);
+    
+    DynamicField sourceDynamicBase = null;
+    DynamicField destDynamicBase = null;
+    
+    boolean sourceIsDynamicFieldReference = false;
+    
+    if (null == destSchemaField || null == sourceSchemaField) {
+      // Go through dynamicFields array only once, collecting info for both source and dest fields, if needed
+      for (DynamicField dynamicField : dynamicFields) {
+        if (null == sourceSchemaField && ! sourceIsDynamicFieldReference) {
+          if (dynamicField.matches(source)) {
+            sourceIsDynamicFieldReference = true;
+            if ( ! source.equals(dynamicField.getRegex())) {
+              sourceDynamicBase = dynamicField;
+            }
           }
         }
-        if( df == null ) {
-          throw new SolrException( SolrException.ErrorCode.SERVER_ERROR, "copyField dynamic destination must match a dynamicField." );
+        if (null == destSchemaField) {
+          if (dest.equals(dynamicField.getRegex())) {
+            destDynamicField = dynamicField;
+            destSchemaField = dynamicField.prototype;
+          } else if (dynamicField.matches(dest)) {
+            destSchemaField = dynamicField.makeSchemaField(dest);
+            destDynamicField = new DynamicField(destSchemaField);
+            destDynamicBase = dynamicField;
+          }
         }
-        registerDynamicCopyField(new DynamicDestCopy(source, df, maxChars ));
+        if (null != destSchemaField && (null != sourceSchemaField || sourceIsDynamicFieldReference)) break;
       }
-      else {
-        registerDynamicCopyField(new DynamicCopy(source, d, maxChars));
-      }
-    } 
-    else if( destIsPattern ) {
-      String msg =  "copyField only supports a dynamic destination if the source is also dynamic" ;
-      throw new SolrException( SolrException.ErrorCode.SERVER_ERROR, msg );
     }
-    else {
-      // retrieve the field to force an exception if it doesn't exist
-      SchemaField f = getField(source);
-
-      List<CopyField> copyFieldList = copyFieldsMap.get(source);
-      if (copyFieldList == null) {
-        copyFieldList = new ArrayList<CopyField>();
-        copyFieldsMap.put(source, copyFieldList);
+    if (null == sourceSchemaField && ! sourceIsDynamicFieldReference) {
+      String msg = "copyField source :'" + source + "' is not an explicit field and doesn't match a dynamicField.";
+      throw new SolrException(ErrorCode.SERVER_ERROR, msg);
+    }
+    if (null == destSchemaField) {
+      String msg = "copyField dest :'" + dest + "' is not an explicit field and doesn't match a dynamicField.";
+      throw new SolrException(ErrorCode.SERVER_ERROR, msg);
+    }
+    if (sourceIsDynamicFieldReference) {
+      if (null != destDynamicField) { // source & dest: dynamic field references
+        registerDynamicCopyField(new DynamicCopy(source, destDynamicField, maxChars, sourceDynamicBase, destDynamicBase));
+        incrementCopyFieldTargetCount(destSchemaField);
+      } else {                        // source: dynamic field reference; dest: explicit field
+        destDynamicField = new DynamicField(destSchemaField);
+        registerDynamicCopyField(new DynamicCopy(source, destDynamicField, maxChars, sourceDynamicBase, null));
+        incrementCopyFieldTargetCount(destSchemaField);
       }
-      copyFieldList.add(new CopyField(f, d, maxChars));
-
-      copyFieldTargetCounts.put(d, (copyFieldTargetCounts.containsKey(d) ? copyFieldTargetCounts.get(d) + 1 : 1));
+    } else {                          
+      if (null != destDynamicField) { // source: explicit field; dest: dynamic field reference
+        if (destDynamicField.pattern instanceof DynamicReplacement.DynamicPattern.NameEquals) {
+          // Dynamic dest with no asterisk is acceptable
+          registerDynamicCopyField(new DynamicCopy(source, destDynamicField, maxChars, sourceDynamicBase, destDynamicBase));
+          incrementCopyFieldTargetCount(destSchemaField);
+        } else {
+          String msg = "copyField only supports a dynamic destination with an asterisk "
+                     + "if the source is also dynamic with an asterisk";
+          throw new SolrException(ErrorCode.SERVER_ERROR, msg);
+        }
+      } else {                        // source & dest: explicit fields 
+        List<CopyField> copyFieldList = copyFieldsMap.get(source);
+        if (copyFieldList == null) {
+          copyFieldList = new ArrayList<CopyField>();
+          copyFieldsMap.put(source, copyFieldList);
+        }
+        copyFieldList.add(new CopyField(sourceSchemaField, destSchemaField, maxChars));
+        incrementCopyFieldTargetCount(destSchemaField);
+      }
     }
   }
   
-  private void registerDynamicCopyField( DynamicCopy dcopy )
-  {
+  private void incrementCopyFieldTargetCount(SchemaField dest) {
+    copyFieldTargetCounts.put(dest, copyFieldTargetCounts.containsKey(dest) ? copyFieldTargetCounts.get(dest) + 1 : 1);
+  }
+  
+  private void registerDynamicCopyField( DynamicCopy dcopy ) {
     if( dynamicCopyFields == null ) {
       dynamicCopyFields = new DynamicCopy[] {dcopy};
     }
@@ -693,14 +739,7 @@ public final class IndexSchema {
       temp[temp.length -1] = dcopy;
       dynamicCopyFields = temp;
     }
-    log.trace("Dynamic Copy Field:" + dcopy );
-  }
-
-  private static Object[] append(Object[] orig, Object item) {
-    Object[] newArr = (Object[])java.lang.reflect.Array.newInstance(orig.getClass().getComponentType(), orig.length+1);
-    System.arraycopy(orig, 0, newArr, 0, orig.length);
-    newArr[orig.length] = item;
-    return newArr;
+    log.trace("Dynamic Copy Field:" + dcopy);
   }
 
   static SimilarityFactory readSimilarity(SolrResourceLoader loader, Node node) {
@@ -728,34 +767,58 @@ public final class IndexSchema {
   }
 
 
-  static abstract class DynamicReplacement implements Comparable<DynamicReplacement> {
-    final static int STARTS_WITH=1;
-    final static int ENDS_WITH=2;
+  public static abstract class DynamicReplacement implements Comparable<DynamicReplacement> {
+    abstract protected static class DynamicPattern {
+      protected final String regex;
+      protected final String fixedStr;
 
-    final String regex;
-    final int type;
+      protected DynamicPattern(String regex, String fixedStr) { this.regex = regex; this.fixedStr = fixedStr; }
 
-    final String str;
-
-    protected DynamicReplacement(String regex) {
-      this.regex = regex;
-      if (regex.startsWith("*")) {
-        type=ENDS_WITH;
-        str=regex.substring(1);
+      static DynamicPattern createPattern(String regex) {
+        if (regex.startsWith("*")) { return new NameEndsWith(regex); }
+        else if (regex.endsWith("*")) { return new NameStartsWith(regex); }
+        else { return new NameEquals(regex);
+        }
       }
-      else if (regex.endsWith("*")) {
-        type=STARTS_WITH;
-        str=regex.substring(0,regex.length()-1);
+      
+      /** Returns true if the given name matches this pattern */
+      abstract boolean matches(String name);
+
+      /** Returns the remainder of the given name after removing this pattern's fixed string component */
+      abstract String remainder(String name);
+
+      /** Returns the result of combining this pattern's fixed string component with the given replacement */
+      abstract String subst(String replacement);
+      
+      /** Returns the length of the original regex, including the asterisk, if any. */
+      public int length() { return regex.length(); }
+
+      private static class NameStartsWith extends DynamicPattern {
+        NameStartsWith(String regex) { super(regex, regex.substring(0, regex.length() - 1)); }
+        boolean matches(String name) { return name.startsWith(fixedStr); }
+        String remainder(String name) { return name.substring(fixedStr.length()); }
+        String subst(String replacement) { return fixedStr + replacement; }
       }
-      else {
-        throw new RuntimeException("dynamic field name must start or end with *");
+      private static class NameEndsWith extends DynamicPattern {
+        NameEndsWith(String regex) { super(regex, regex.substring(1)); }
+        boolean matches(String name) { return name.endsWith(fixedStr); }
+        String remainder(String name) { return name.substring(0, name.length() - fixedStr.length()); }
+        String subst(String replacement) { return replacement + fixedStr; }
+      }
+      private static class NameEquals extends DynamicPattern {
+        NameEquals(String regex) { super(regex, regex); }
+        boolean matches(String name) { return regex.equals(name); }
+        String remainder(String name) { return ""; }
+        String subst(String replacement) { return fixedStr; }
       }
     }
 
-    public boolean matches(String name) {
-      if (type==STARTS_WITH && name.startsWith(str)) return true;
-      else if (type==ENDS_WITH && name.endsWith(str)) return true;
-      else return false;
+    protected DynamicPattern pattern;
+
+    public boolean matches(String name) { return pattern.matches(name); }
+
+    protected DynamicReplacement(String regex) {
+      pattern = DynamicPattern.createPattern(regex);
     }
 
     /**
@@ -767,18 +830,17 @@ public final class IndexSchema {
      */
     @Override
     public int compareTo(DynamicReplacement other) {
-      return other.regex.length() - regex.length();
+      return other.pattern.length() - pattern.length();
+    }
+    
+    /** Returns the regex used to create this instance's pattern */
+    public String getRegex() {
+      return pattern.regex;
     }
   }
 
 
-  //
-  // Instead of storing a type, this could be implemented as a hierarchy
-  // with a virtual matches().
-  // Given how often a search will be done, however, speed is the overriding
-  // concern and I'm not sure which is faster.
-  //
-  final static class DynamicField extends DynamicReplacement {
+  public final static class DynamicField extends DynamicReplacement {
     final SchemaField prototype;
 
     DynamicField(SchemaField prototype) {
@@ -801,77 +863,46 @@ public final class IndexSchema {
     }
   }
 
-  static class DynamicCopy extends DynamicReplacement {
-    final SchemaField targetField;
-    final int maxChars;
+  public static class DynamicCopy extends DynamicReplacement {
+    private final DynamicField destination;
+    
+    private final int maxChars;
+    public int getMaxChars() { return maxChars; }
 
-    DynamicCopy(String regex, SchemaField targetField) {
-      this(regex, targetField, CopyField.UNLIMITED);
-    }
+    final DynamicField sourceDynamicBase;
+    public DynamicField getSourceDynamicBase() { return sourceDynamicBase; }
 
-    DynamicCopy(String regex, SchemaField targetField, int maxChars) {
-      super(regex);
-      this.targetField = targetField;
+    final DynamicField destDynamicBase;
+    public DynamicField getDestDynamicBase() { return destDynamicBase; }
+
+    DynamicCopy(String sourceRegex, DynamicField destination, int maxChars, 
+                DynamicField sourceDynamicBase, DynamicField destDynamicBase) {
+      super(sourceRegex);
+      this.destination = destination;
       this.maxChars = maxChars;
-    }
-    
-    public SchemaField getTargetField( String sourceField )
-    {
-      return targetField;
+      this.sourceDynamicBase = sourceDynamicBase;
+      this.destDynamicBase = destDynamicBase;
     }
 
+    public String getDestFieldName() { return destination.getRegex(); }
+
+    /**
+     *  Generates a destination field name based on this source pattern,
+     *  by substituting the remainder of this source pattern into the
+     *  the given destination pattern.
+     */
+    public SchemaField getTargetField(String sourceField) {
+      String remainder = pattern.remainder(sourceField);
+      String targetFieldName = destination.pattern.subst(remainder);
+      return destination.makeSchemaField(targetFieldName);
+    }
+
+    
     @Override
     public String toString() {
-      return targetField.toString();
+      return destination.prototype.toString();
     }
   }
-
-  static class DynamicDestCopy extends DynamicCopy 
-  {
-    final DynamicField dynamic;
-    
-    final int dtype;
-    final String dstr;
-    
-    DynamicDestCopy(String source, DynamicField dynamic) {
-      this(source, dynamic, CopyField.UNLIMITED);
-    }
-      
-    DynamicDestCopy(String source, DynamicField dynamic, int maxChars) {
-      super(source, dynamic.prototype, maxChars);
-      this.dynamic = dynamic;
-      
-      String dest = dynamic.regex;
-      if (dest.startsWith("*")) {
-        dtype=ENDS_WITH;
-        dstr=dest.substring(1);
-      }
-      else if (dest.endsWith("*")) {
-        dtype=STARTS_WITH;
-        dstr=dest.substring(0,dest.length()-1);
-      }
-      else {
-        throw new RuntimeException("dynamic copyField destination name must start or end with *");
-      }
-    }
-    
-    @Override
-    public SchemaField getTargetField( String sourceField )
-    {
-      String dyn = ( type==STARTS_WITH ) 
-        ? sourceField.substring( str.length() )
-        : sourceField.substring( 0, sourceField.length()-str.length() );
-      
-      String name = (dtype==STARTS_WITH) ? (dstr+dyn) : (dyn+dstr);
-      return dynamic.makeSchemaField( name );
-    }
-
-    @Override
-    public String toString() {
-      return targetField.toString();
-    }
-  }
-
 
   public SchemaField[] getDynamicFieldPrototypes() {
     SchemaField[] df = new SchemaField[dynamicFields.length];
@@ -883,25 +914,24 @@ public final class IndexSchema {
 
   public String getDynamicPattern(String fieldName) {
    for (DynamicField df : dynamicFields) {
-     if (df.matches(fieldName)) return df.regex;
+     if (df.matches(fieldName)) return df.getRegex();
    }
    return  null; 
   }
   
   /**
-   * Does the schema have the specified field defined explicitly, i.e.
-   * not as a result of a copyField declaration with a wildcard?  We
-   * consider it explicitly defined if it matches a field or dynamicField
-   * declaration.
+   * Does the schema explicitly define the specified field, i.e. not as a result
+   * of a copyField declaration?  We consider it explicitly defined if it matches
+   * a field name or a dynamicField name.
    * @return true if explicitly declared in the schema.
    */
   public boolean hasExplicitField(String fieldName) {
-    if(fields.containsKey(fieldName)) {
+    if (fields.containsKey(fieldName)) {
       return true;
     }
 
     for (DynamicField df : dynamicFields) {
-      if (df.matches(fieldName)) return true;
+      if (fieldName.equals(df.getRegex())) return true;
     }
 
     return false;
@@ -964,7 +994,7 @@ public final class IndexSchema {
     /***  REMOVED -YCS
     if (defaultFieldType != null) return new SchemaField(fieldName,defaultFieldType);
     ***/
-    throw new SolrException( SolrException.ErrorCode.BAD_REQUEST,"undefined field: \""+fieldName+"\"");
+    throw new SolrException(ErrorCode.BAD_REQUEST,"undefined field: \""+fieldName+"\"");
   }
 
   /**
@@ -976,7 +1006,7 @@ public final class IndexSchema {
    * </p>
    *
    * @param fieldName may be an explicitly created field, or a name that
-   * excercies a dynamic field.
+   *  excercises a dynamic field.
    * @throws SolrException if no such field exists
    * @see #getField(String)
    * @see #getFieldTypeNoEx
@@ -1007,7 +1037,7 @@ public final class IndexSchema {
    * </p>
    *
    * @param fieldName may be an explicitly created field, or a name that
-   * excercies a dynamic field.
+   * exercises a dynamic field.
    * @return null if field is not defined.
    * @see #getField(String)
    * @see #getFieldTypeNoEx
@@ -1024,7 +1054,7 @@ public final class IndexSchema {
    * the specified field name
    *
    * @param fieldName may be an explicitly created field, or a name that
-   * excercies a dynamic field.
+   * exercises a dynamic field.
    * @throws SolrException if no such field exists
    * @see #getField(String)
    * @see #getFieldTypeNoEx
@@ -1033,7 +1063,7 @@ public final class IndexSchema {
      for (DynamicField df : dynamicFields) {
       if (df.matches(fieldName)) return df.prototype.getType();
     }
-    throw new SolrException( SolrException.ErrorCode.BAD_REQUEST,"undefined field "+fieldName);
+    throw new SolrException(ErrorCode.BAD_REQUEST,"undefined field "+fieldName);
   }
 
   private FieldType dynFieldType(String fieldName) {
@@ -1062,6 +1092,11 @@ public final class IndexSchema {
         }
       }
     }
+    for (DynamicCopy dynamicCopy : dynamicCopyFields) {
+      if (dynamicCopy.getDestFieldName().equals(destField)) {
+        sf.add(getField(dynamicCopy.getRegex()));
+      }
+    }
     return sf.toArray(new SchemaField[sf.size()]);
   }
 
@@ -1080,8 +1115,7 @@ public final class IndexSchema {
       }
     }
     List<CopyField> fixedCopyFields = copyFieldsMap.get(sourceField);
-    if (fixedCopyFields != null)
-    {
+    if (null != fixedCopyFields) {
       result.addAll(fixedCopyFields);
     }
 
@@ -1093,17 +1127,7 @@ public final class IndexSchema {
    * 
    * @since solr 1.3
    */
-  public boolean isCopyFieldTarget( SchemaField f )
-  {
+  public boolean isCopyFieldTarget( SchemaField f ) {
     return copyFieldTargetCounts.containsKey( f );
   }
-
-  /**
-   * Is the given field name a wildcard?  I.e. does it begin or end with *?
-   * @return true/false
-   */
-  private static boolean isWildCard(String name) {
-    return  name.startsWith("*") || name.endsWith("*");
-  }
-
 }

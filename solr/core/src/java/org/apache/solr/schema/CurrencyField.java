@@ -205,7 +205,7 @@ public class CurrencyField extends FieldType implements SchemaAware, ResourceLoa
     props.put("multiValued", "false");
     props.put("omitNorms", "true");
     int p = SchemaField.calcProps(name, type, props);
-    schema.registerDynamicField(SchemaField.create(name, type, p, null));
+    schema.registerDynamicFields(SchemaField.create(name, type, p, null));
   }
 
   /**

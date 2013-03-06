@@ -30,6 +30,7 @@
 
   <resolvers>
     <ibiblio name="sonatype-releases" root="http://oss.sonatype.org/content/repositories/releases" m2compatible="true" />
+    <ibiblio name="maven.restlet.org" root="http://maven.restlet.org" m2compatible="true" />
 
     <!-- you might need to tweak this from china so it works -->
     <ibiblio name="working-chinese-mirror" root="http://mirror.netcologne.de/maven2" m2compatible="true" />
@@ -48,6 +49,7 @@
       <!-- <resolver ref="local-maven-2" /> -->
       <resolver ref="main"/>
       <resolver ref="sonatype-releases" />
+      <resolver ref="maven.restlet.org" />
       <resolver ref="working-chinese-mirror" />
     </chain>
   </resolvers>

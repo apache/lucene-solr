@@ -105,6 +105,10 @@ New Features
   "natural" value, converted to an optionally specified currency to 
   override the default for the field type.
   (hossman)
+  
+* SOLR-4503: Add REST API methods, via Restlet integration, for reading schema
+  elements, at /schema/fields/, /schema/dynamicfields/, /schema/fieldtypes/,
+  and /schema/copyfields/.  (Steve Rowe)
 
 Bug Fixes
 ----------------------
@@ -209,6 +213,10 @@ Bug Fixes
 
 * SOLR-4518: Improved CurrencyField error messages when attempting to
   use a Currency that is not supported by the current JVM. (hossman)
+  
+* SOLR-3798: Fix copyField implementation in IndexSchema to handle
+  dynamic field references that aren't string-equal to the name of
+  the referenced dynamic field. (Steve Rowe)
 
 Optimizations
 ----------------------
