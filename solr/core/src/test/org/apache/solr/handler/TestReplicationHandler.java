@@ -256,6 +256,7 @@ public class TestReplicationHandler extends SolrTestCaseJ4 {
 
   @Test
   public void doTestDetails() throws Exception {
+    clearIndexWithReplication();
     { 
       NamedList<Object> details = getDetails(masterClient);
       
@@ -266,7 +267,9 @@ public class TestReplicationHandler extends SolrTestCaseJ4 {
       assertNotNull("master has master section", 
                     details.get("master"));
     }
-    {
+
+    // check details on the slave a couple of times before & after fetching
+    for (int i = 0; i < 3; i++) {
       NamedList<Object> details = getDetails(slaveClient);
       
       assertEquals("slave isMaster?", 
@@ -275,6 +278,17 @@ public class TestReplicationHandler extends SolrTestCaseJ4 {
                    "true", details.get("isSlave"));
       assertNotNull("slave has slave section", 
                     details.get("slave"));
+      // SOLR-2677: assert not false negatives
+      Object timesFailed = ((NamedList)details.get("slave")).get(SnapPuller.TIMES_FAILED);
+      assertEquals("slave has fetch error count",
+                   null, timesFailed);
+
+      if (3 != i) {
+        // index & fetch
+        index(masterClient, "id", i, "name", "name = " + i);
+        masterClient.commit();
+        pullFromTo(masterJetty, slaveJetty);
+      }
     }
 
     SolrInstance repeater = null;
