@@ -18,6 +18,7 @@
 package org.apache.solr.util;
 
 import org.apache.solr.request.SolrRequestInfo;
+import org.apache.solr.common.params.CommonParams; //jdoc
 
 import java.util.Date;
 import java.util.Calendar;
@@ -59,23 +60,37 @@ import java.util.regex.Pattern;
  * </pre>
  *
  * <p>
+ * (Multiple aliases exist for the various units of time (ie:
+ * <code>MINUTE</code> and <code>MINUTES</code>; <code>MILLI</code>,
+ * <code>MILLIS</code>, <code>MILLISECOND</code>, and
+ * <code>MILLISECONDS</code>.)  The complete list can be found by
+ * inspecting the keySet of {@link #CALENDAR_UNITS})
+ * </p>
+ *
+ * <p>
  * All commands are relative to a "now" which is fixed in an instance of
  * DateMathParser such that
  * <code>p.parseMath("+0MILLISECOND").equals(p.parseMath("+0MILLISECOND"))</code>
  * no matter how many wall clock milliseconds elapse between the two
  * distinct calls to parse (Assuming no other thread calls
- * "<code>setNow</code>" in the interim)
+ * "<code>setNow</code>" in the interim).  The default value of 'now' is 
+ * the time at the moment the <code>DateMathParser</code> instance is 
+ * constructed, unless overridden by the {@link CommonParams#NOW NOW}
+ * request param.
  * </p>
  *
  * <p>
- * Multiple aliases exist for the various units of time (ie:
- * <code>MINUTE</code> and <code>MINUTES</code>; <code>MILLI</code>,
- * <code>MILLIS</code>, <code>MILLISECOND</code>, and
- * <code>MILLISECONDS</code>.)  The complete list can be found by
- * inspecting the keySet of <code>CALENDAR_UNITS</code>.
+ * All commands are also affected to the rules of a specified {@link TimeZone}
+ * (including the start/end of DST if any) which determine when each arbitrary 
+ * day starts.  This not only impacts rounding/adding of DAYs, but also 
+ * cascades to rounding of HOUR, MIN, MONTH, YEAR as well.  The default 
+ * <code>TimeZone</code> used is <code>UTC</code> unless  overridden by the 
+ * {@link CommonParams#TZ TZ}
+ * request param.
  * </p>
  *
- *
+ * @see SolrRequestInfo#getClientTimeZone
+ * @see SolrRequestInfo#getNOW
  */
 public class DateMathParser  {
   
@@ -207,7 +222,7 @@ public class DateMathParser  {
    * Default constructor that assumes UTC should be used for rounding unless 
    * otherwise specified in the SolrRequestInfo
    * 
-   * @see #DEFAULT_MATH_TZ
+   * @see SolrRequestInfo#getClientTimeZone
    * @see #DEFAULT_MATH_LOCALE
    */
   public DateMathParser() {
