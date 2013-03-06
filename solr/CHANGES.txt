@@ -291,6 +291,9 @@ Other Changes
 
 * SOLR-4416: Upgrade to Tika 1.3. (Markus Jelsma via Mark Miller)
 
+* SOLR-4200: Reduce INFO level logging from CachingDirectoryFactory
+  (Shawn Heisey via hossman)
+
 ==================  4.1.0 ==================
 
 Versions of Major Components

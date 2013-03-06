@@ -137,7 +137,7 @@ public abstract class CachingDirectoryFactory extends DirectoryFactory {
           }
           
           assert val.refCnt == 0 : val.refCnt;
-          log.info("Closing directory when closing factory:" + val.path);
+          log.info("Closing directory when closing factory: " + val.path);
           closeDirectory(val);
         } catch (Throwable t) {
           SolrException.log(log, "Error closing directory", t);
@@ -158,12 +158,11 @@ public abstract class CachingDirectoryFactory extends DirectoryFactory {
         throw new IllegalArgumentException("Unknown directory: " + directory
             + " " + byDirectoryCache);
       }
-      log.info("Releasing directory:" + cacheValue.path);
+      log.debug("Releasing directory: " + cacheValue.path);
 
       cacheValue.refCnt--;
 
       if (cacheValue.refCnt == 0 && cacheValue.doneWithDir) {
-        log.info("Closing directory:" + cacheValue.path);
         closeDirectory(cacheValue);
         
         byDirectoryCache.remove(directory);
@@ -184,7 +183,7 @@ public abstract class CachingDirectoryFactory extends DirectoryFactory {
       }
     }
     try {
-      log.info("Closing directory:" + cacheValue.path);
+      log.info("Closing directory: " + cacheValue.path);
       cacheValue.directory.close();
     } catch (Throwable t) {
       SolrException.log(log, "Error closing directory", t);
@@ -276,7 +275,7 @@ public abstract class CachingDirectoryFactory extends DirectoryFactory {
         
         byDirectoryCache.put(directory, newCacheValue);
         byPathCache.put(fullPath, newCacheValue);
-        log.info("return new directory for " + fullPath + " forceNew:" + forceNew);
+        log.info("return new directory for " + fullPath + " forceNew: " + forceNew);
       } else {
         cacheValue.refCnt++;
       }
