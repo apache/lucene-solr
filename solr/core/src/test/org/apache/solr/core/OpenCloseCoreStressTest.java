@@ -45,7 +45,6 @@ import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;
 
-import static org.apache.solr.core.SolrCore.log;
 import static org.apache.solr.core.SolrCore.verbose;
 import static org.junit.Assert.fail;
 
@@ -79,15 +78,12 @@ public class OpenCloseCoreStressTest extends SolrTestCaseJ4 {
   List<HttpSolrServer> queryServers = new ArrayList<HttpSolrServer>(queryThreads);
 
   static String savedFactory;
-  static String verbose = "false"; // EOE remove me.
 
   //  Keep the indexes from being randomly generated.
   @BeforeClass
   public static void beforeClass() {
     savedFactory = System.getProperty("solr.DirectoryFactory");
-    verbose = System.getProperty("tests.verbose", "false");
     System.setProperty("solr.directoryFactory", "org.apache.solr.core.MockFSDirectoryFactory");
-    System.setProperty("tests.verbose", "true");
   }
 
   @AfterClass
@@ -97,7 +93,6 @@ public class OpenCloseCoreStressTest extends SolrTestCaseJ4 {
     } else {
       System.setProperty("solr.directoryFactory", savedFactory);
     }
-    System.setProperty("tests.verbose", verbose);
   }
 
   @Before
@@ -427,7 +422,6 @@ class OneIndexer extends Thread {
         } catch (Exception e) {
           if (e instanceof InterruptedException) return;
           Indexer.errors.incrementAndGet();
-          log.error("EOE dumping stack (indexer)", e);
           if (idx == 2) {
             fail("Could not reach server while indexing for three tries, quitting " + e.getMessage());
           } else {
@@ -523,7 +517,6 @@ class OneQuery extends Thread {
           break; // retry loop
         } catch (Exception e) {
           if (e instanceof InterruptedException) return;
-          log.error("EOE dumping stack (query)", e);
           Queries._errors.incrementAndGet();
           if (idx == 2) {
             fail("Could not reach server while indexing for three tries, quitting " + e.getMessage());
