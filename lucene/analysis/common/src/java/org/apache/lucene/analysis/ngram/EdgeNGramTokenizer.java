@@ -17,13 +17,14 @@ package org.apache.lucene.analysis.ngram;
  * limitations under the License.
  */
 
+import java.io.IOException;
+import java.io.Reader;
+
 import org.apache.lucene.analysis.Tokenizer;
 import org.apache.lucene.analysis.tokenattributes.CharTermAttribute;
 import org.apache.lucene.analysis.tokenattributes.OffsetAttribute;
+import org.apache.lucene.analysis.tokenattributes.PositionIncrementAttribute;
 import org.apache.lucene.util.AttributeSource;
-
-import java.io.IOException;
-import java.io.Reader;
 
 /**
  * Tokenizes the input from an edge into n-grams of given size(s).
@@ -39,6 +40,7 @@ public final class EdgeNGramTokenizer extends Tokenizer {
   
   private final CharTermAttribute termAtt = addAttribute(CharTermAttribute.class);
   private final OffsetAttribute offsetAtt = addAttribute(OffsetAttribute.class);
+  private final PositionIncrementAttribute posIncrAtt = addAttribute(PositionIncrementAttribute.class);
 
   /** Specifies which side of the input the n-gram should be generated from */
   public static enum Side {
@@ -214,6 +216,9 @@ public final class EdgeNGramTokenizer extends Tokenizer {
       if (inLen == 0) {
         return false;
       }
+      posIncrAtt.setPositionIncrement(1);
+    } else {
+      posIncrAtt.setPositionIncrement(0);
     }
 
     // if the remaining input is too short, we can't generate any n-grams
