@@ -24,14 +24,14 @@ public class FacetTestUtils {
 
   public static String toSimpleString(FacetResult fr) {
     StringBuilder sb = new StringBuilder();
-    toSimpleString(0, sb, fr.getFacetResultNode(), "");
+    toSimpleString(fr.getFacetRequest().categoryPath.length, 0, sb, fr.getFacetResultNode(), "");
     return sb.toString();
   }
   
-  private static void toSimpleString(int depth, StringBuilder sb, FacetResultNode node, String indent) {
-    sb.append(indent + node.label.components[depth] + " (" + (int) node.value + ")\n");
+  private static void toSimpleString(int startLength, int depth, StringBuilder sb, FacetResultNode node, String indent) {
+    sb.append(indent + node.label.components[startLength+depth-1] + " (" + (int) node.value + ")\n");
     for (FacetResultNode childNode : node.subResults) {
-      toSimpleString(depth + 1, sb, childNode, indent + "  ");
+      toSimpleString(startLength, depth + 1, sb, childNode, indent + "  ");
     }
   }
 

@@ -75,6 +75,7 @@ public class DrillSideways {
    * Search, collecting hits with a {@link Collector}, and
    * computing drill down and sideways counts.
    */
+  @SuppressWarnings({"rawtypes","unchecked"})
   public DrillSidewaysResult search(DrillDownQuery query,
                                     Collector hitCollector, FacetSearchParams fsp) throws IOException {
 
@@ -131,29 +132,29 @@ public class DrillSideways {
 
     int idx = 0;
     for(String dim : drillDownDims.keySet()) {
-      FacetRequest drillSidewaysRequest = null;
+      List<FacetRequest> requests = new ArrayList<FacetRequest>();
       for(FacetRequest fr : fsp.facetRequests) {
         assert fr.categoryPath.length > 0;
         if (fr.categoryPath.components[0].equals(dim)) {
-          if (drillSidewaysRequest != null) {
-            throw new IllegalArgumentException("multiple FacetRequests for drill-sideways dimension \"" + dim + "\"");
-          }
-          drillSidewaysRequest = fr;
+          requests.add(fr);
         }
       }
-      if (drillSidewaysRequest == null) {
+      if (requests.isEmpty()) {
         throw new IllegalArgumentException("could not find FacetRequest for drill-sideways dimension \"" + dim + "\"");
       }
-      drillSidewaysCollectors[idx++] = FacetsCollector.create(getDrillSidewaysAccumulator(dim, new FacetSearchParams(fsp.indexingParams, drillSidewaysRequest)));
+      drillSidewaysCollectors[idx++] = FacetsCollector.create(getDrillSidewaysAccumulator(dim, new FacetSearchParams(fsp.indexingParams, requests)));
     }
 
     DrillSidewaysQuery dsq = new DrillSidewaysQuery(baseQuery, drillDownCollector, drillSidewaysCollectors, drillDownTerms);
 
     searcher.search(dsq, hitCollector);
 
-    List<FacetResult> drillDownResults = drillDownCollector.getFacetResults();
+    int numDims = drillDownDims.size();
+    List<FacetResult>[] drillSidewaysResults = (List<FacetResult>[]) new List[numDims];
+    List<FacetResult> drillDownResults = null;
 
     List<FacetResult> mergedResults = new ArrayList<FacetResult>();
+    int[] requestUpto = new int[drillDownDims.size()];
     for(int i=0;i<fsp.facetRequests.size();i++) {
       FacetRequest fr = fsp.facetRequests.get(i);
       assert fr.categoryPath.length > 0;
@@ -161,13 +162,24 @@ public class DrillSideways {
       if (dimIndex == null) {
         // Pure drill down dim (the current query didn't
         // drill down on this dim):
+        if (drillDownResults == null) {
+          // Lazy init, in case all requests were against
+          // drill-sideways dims:
+          drillDownResults = drillDownCollector.getFacetResults();
+        }
         mergedResults.add(drillDownResults.get(i));
       } else {
         // Drill sideways dim:
-        List<FacetResult> sidewaysResult = drillSidewaysCollectors[dimIndex.intValue()].getFacetResults();
-
-        assert sidewaysResult.size() == 1: "size=" + sidewaysResult.size();
-        mergedResults.add(sidewaysResult.get(0));
+        int dim = dimIndex.intValue();
+        List<FacetResult> sidewaysResult = drillSidewaysResults[dim];
+        if (sidewaysResult == null) {
+          // Lazy init, in case no facet request is against
+          // a given drill down dim:
+          sidewaysResult = drillSidewaysCollectors[dim].getFacetResults();
+          drillSidewaysResults[dim] = sidewaysResult;
+        }
+        mergedResults.add(sidewaysResult.get(requestUpto[dim]));
+        requestUpto[dim]++;
       }
     }
 
