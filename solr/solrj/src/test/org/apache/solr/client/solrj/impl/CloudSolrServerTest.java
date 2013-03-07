@@ -149,10 +149,4 @@ public class CloudSolrServerTest extends AbstractFullDistribZkTestBase {
     indexDoc(doc);
   }
 
-  SolrInputDocument getDoc(Object... fields) throws Exception {
-    SolrInputDocument doc = new SolrInputDocument();
-    addFields(doc, fields);
-    return doc;
-  }
-
 }

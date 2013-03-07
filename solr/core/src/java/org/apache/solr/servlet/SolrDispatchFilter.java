@@ -17,8 +17,6 @@
 
 package org.apache.solr.servlet;
 
-import java.io.BufferedInputStream;
-import java.io.BufferedOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
@@ -31,6 +29,7 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.Enumeration;
+import java.util.HashSet;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
@@ -42,7 +41,6 @@ import javax.servlet.Filter;
 import javax.servlet.FilterChain;
 import javax.servlet.FilterConfig;
 import javax.servlet.ServletException;
-import javax.servlet.ServletOutputStream;
 import javax.servlet.ServletRequest;
 import javax.servlet.ServletResponse;
 import javax.servlet.http.HttpServletRequest;
@@ -50,6 +48,7 @@ import javax.servlet.http.HttpServletResponse;
 
 import org.apache.commons.io.IOUtils;
 import org.apache.solr.common.SolrException;
+import org.apache.solr.common.cloud.Aliases;
 import org.apache.solr.common.cloud.ClusterState;
 import org.apache.solr.common.cloud.Replica;
 import org.apache.solr.common.cloud.Slice;
@@ -58,10 +57,12 @@ import org.apache.solr.common.cloud.ZkNodeProps;
 import org.apache.solr.common.cloud.ZkStateReader;
 import org.apache.solr.common.params.CommonParams;
 import org.apache.solr.common.params.MapSolrParams;
+import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.common.util.ContentStreamBase;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.common.util.SimpleOrderedMap;
+import org.apache.solr.common.util.StrUtils;
 import org.apache.solr.core.CoreContainer;
 import org.apache.solr.core.SolrConfig;
 import org.apache.solr.core.SolrCore;
@@ -134,9 +135,13 @@ public class SolrDispatchFilter implements Filter
       cores = null;
     }    
   }
-
+  
   @Override
   public void doFilter(ServletRequest request, ServletResponse response, FilterChain chain) throws IOException, ServletException {
+    doFilter(request, response, chain, false);
+  }
+  
+  public void doFilter(ServletRequest request, ServletResponse response, FilterChain chain, boolean retry) throws IOException, ServletException {
     if( abortErrorMessage != null ) {
       ((HttpServletResponse)response).sendError( 500, abortErrorMessage );
       return;
@@ -149,12 +154,14 @@ public class SolrDispatchFilter implements Filter
     CoreContainer cores = this.cores;
     SolrCore core = null;
     SolrQueryRequest solrReq = null;
+    Aliases aliases = null;
     
     if( request instanceof HttpServletRequest) {
       HttpServletRequest req = (HttpServletRequest)request;
       HttpServletResponse resp = (HttpServletResponse)response;
       SolrRequestHandler handler = null;
       String corename = "";
+      String origCorename = null;
       try {
         // put the core container in request attribute
         req.setAttribute("org.apache.solr.CoreContainer", cores);
@@ -185,6 +192,8 @@ public class SolrDispatchFilter implements Filter
           handleAdminRequest(req, response, handler, solrReq);
           return;
         }
+        boolean usingAliases = false;
+        List<String> collectionsList = null;
         // Check for the core admin collections url
         if( path.equals( "/admin/collections" ) ) {
           handler = cores.getCollectionsHandler();
@@ -198,7 +207,24 @@ public class SolrDispatchFilter implements Filter
           if( idx > 1 ) {
             // try to get the corename as a request parameter first
             corename = path.substring( 1, idx );
+            
+            // look at aliases
+            if (cores.isZooKeeperAware()) {
+              origCorename = corename;
+              ZkStateReader reader = cores.getZkController().getZkStateReader();
+              aliases = reader.getAliases();
+              if (aliases != null && aliases.collectionAliasSize() > 0) {
+                usingAliases = true;
+                String alias = aliases.getCollectionAlias(corename);
+                if (alias != null) {
+                  collectionsList = StrUtils.splitSmart(alias, ",", true);
+                  corename = collectionsList.get(0);
+                }
+              }
+            }
+            
             core = cores.getCore(corename);
+
             if (core != null) {
               path = path.substring( idx );
             }
@@ -221,11 +247,19 @@ public class SolrDispatchFilter implements Filter
           
           // if we couldn't find it locally, look on other nodes
           if (core == null && idx > 0) {
-            String coreUrl = getRemotCoreUrl(cores, corename);
+            String coreUrl = getRemotCoreUrl(cores, corename, origCorename);
             if (coreUrl != null) {
               path = path.substring( idx );
               remoteQuery(coreUrl + path, req, solrReq, resp);
               return;
+            } else {
+              if (!retry) {
+                // we couldn't find a core to work with, try reloading aliases
+                ZkStateReader reader = cores.getZkController()
+                    .getZkStateReader();
+                reader.updateAliases();
+                doFilter(request, response, chain, true);
+              }
             }
           }
           
@@ -289,6 +323,10 @@ public class SolrDispatchFilter implements Filter
               solrReq = parser.parse( core, path, req );
             }
 
+            if (usingAliases) {
+              processAliases(solrReq, aliases, collectionsList);
+            }
+            
             final Method reqMethod = Method.getMethod(req.getMethod());
             HttpCacheHeaderUtil.setCacheControlHeader(config, resp, reqMethod);
             // unless we have been explicitly told not to, do cache validation
@@ -341,9 +379,44 @@ public class SolrDispatchFilter implements Filter
     chain.doFilter(request, response);
   }
   
+  private void processAliases(SolrQueryRequest solrReq, Aliases aliases,
+      List<String> collectionsList) {
+    String collection = solrReq.getParams().get("collection");
+    if (collection != null) {
+      collectionsList = StrUtils.splitSmart(collection, ",", true);
+    }
+    if (collectionsList != null) {
+      Set<String> newCollectionsList = new HashSet<String>(
+          collectionsList.size());
+      for (String col : collectionsList) {
+        String al = aliases.getCollectionAlias(col);
+        if (al != null) {
+          List<String> aliasList = StrUtils.splitSmart(al, ",", true);
+          newCollectionsList.addAll(aliasList);
+        } else {
+          newCollectionsList.add(col);
+        }
+      }
+      if (newCollectionsList.size() > 0) {
+        StringBuilder collectionString = new StringBuilder();
+        Iterator<String> it = newCollectionsList.iterator();
+        int sz = newCollectionsList.size();
+        for (int i = 0; i < sz; i++) {
+          collectionString.append(it.next());
+          if (i < newCollectionsList.size() - 1) {
+            collectionString.append(",");
+          }
+        }
+        ModifiableSolrParams params = new ModifiableSolrParams(
+            solrReq.getParams());
+        params.set("collection", collectionString.toString());
+        solrReq.setParams(params);
+      }
+    }
+  }
+  
   private void remoteQuery(String coreUrl, HttpServletRequest req,
       SolrQueryRequest solrReq, HttpServletResponse resp) throws IOException {
-    
     try {
       String urlstr = coreUrl;
       
@@ -409,7 +482,7 @@ public class SolrDispatchFilter implements Filter
     
   }
   
-  private String getRemotCoreUrl(CoreContainer cores, String collectionName) {
+  private String getRemotCoreUrl(CoreContainer cores, String collectionName, String origCorename) {
     ClusterState clusterState = cores.getZkController().getClusterState();
     Collection<Slice> slices = clusterState.getSlices(collectionName);
     boolean byCoreName = false;
@@ -444,9 +517,14 @@ public class SolrDispatchFilter implements Filter
             // don't count a local core
             continue;
           }
-          String coreUrl = coreNodeProps.getCoreUrl();
-          if (coreUrl.endsWith("/")) {
-            coreUrl = coreUrl.substring(0, coreUrl.length() - 1);
+          String coreUrl;
+          if (origCorename != null) {
+            coreUrl = coreNodeProps.getBaseUrl() + "/" + origCorename;
+          } else {
+            coreUrl = coreNodeProps.getCoreUrl();
+            if (coreUrl.endsWith("/")) {
+              coreUrl = coreUrl.substring(0, coreUrl.length() - 1);
+            }
           }
 
           return coreUrl;

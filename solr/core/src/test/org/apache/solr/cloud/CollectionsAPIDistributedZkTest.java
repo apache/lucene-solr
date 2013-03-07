@@ -44,8 +44,6 @@ import javax.management.ObjectName;
 import org.apache.lucene.util.LuceneTestCase.Slow;
 import org.apache.lucene.util._TestUtil;
 import org.apache.solr.client.solrj.SolrQuery;
-import org.apache.solr.client.solrj.SolrRequest;
-import org.apache.solr.client.solrj.SolrServer;
 import org.apache.solr.client.solrj.SolrServerException;
 import org.apache.solr.client.solrj.impl.CloudSolrServer;
 import org.apache.solr.client.solrj.impl.HttpSolrServer;
@@ -149,10 +147,7 @@ public class CollectionsAPIDistributedZkTest extends AbstractFullDistribZkTestBa
 
   private void testNodesUsedByCreate() throws Exception {
     // we can use this client because we just want base url
-    final String baseUrl = ((HttpSolrServer) clients.get(0)).getBaseURL().substring(
-        0,
-        ((HttpSolrServer) clients.get(0)).getBaseURL().length()
-            - DEFAULT_COLLECTION.length() - 1);
+    final String baseUrl = getBaseUrl((HttpSolrServer) clients.get(0));
     
     ModifiableSolrParams params = new ModifiableSolrParams();
     params.set("action", CollectionAction.CREATE.toString());
@@ -297,10 +292,7 @@ public class CollectionsAPIDistributedZkTest extends AbstractFullDistribZkTestBa
     request.setPath("/admin/collections");
     
     // we can use this client because we just want base url
-    final String baseUrl = ((HttpSolrServer) clients.get(0)).getBaseURL().substring(
-        0,
-        ((HttpSolrServer) clients.get(0)).getBaseURL().length()
-            - DEFAULT_COLLECTION.length() - 1);
+    final String baseUrl = getBaseUrl((HttpSolrServer) clients.get(0));
     
     createNewSolrServer("", baseUrl).request(request);
 
@@ -407,38 +399,6 @@ public class CollectionsAPIDistributedZkTest extends AbstractFullDistribZkTestBa
     checkForCollection(collectionInfos.keySet().iterator().next(), collectionInfos.entrySet().iterator().next().getValue(), createNodeList);
     
     checkNoTwoShardsUseTheSameIndexDir();
-  }
-
-
-  protected void createCollection(Map<String,List<Integer>> collectionInfos,
-      String collectionName, int numShards, int numReplicas, int maxShardsPerNode, SolrServer client, String createNodeSetStr) throws SolrServerException, IOException {
-    ModifiableSolrParams params = new ModifiableSolrParams();
-    params.set("action", CollectionAction.CREATE.toString());
-
-    params.set(OverseerCollectionProcessor.NUM_SLICES, numShards);
-    params.set(OverseerCollectionProcessor.REPLICATION_FACTOR, numReplicas);
-    params.set(OverseerCollectionProcessor.MAX_SHARDS_PER_NODE, maxShardsPerNode);
-    if (createNodeSetStr != null) params.set(OverseerCollectionProcessor.CREATE_NODE_SET, createNodeSetStr);
-
-    int clientIndex = random().nextInt(2);
-    List<Integer> list = new ArrayList<Integer>();
-    list.add(numShards);
-    list.add(numReplicas);
-    collectionInfos.put(collectionName, list);
-    params.set("name", collectionName);
-    SolrRequest request = new QueryRequest(params);
-    request.setPath("/admin/collections");
-  
-    if (client == null) {
-      final String baseUrl = ((HttpSolrServer) clients.get(clientIndex)).getBaseURL().substring(
-          0,
-          ((HttpSolrServer) clients.get(clientIndex)).getBaseURL().length()
-              - DEFAULT_COLLECTION.length() - 1);
-      
-      createNewSolrServer("", baseUrl).request(request);
-    } else {
-      client.request(request);
-    }
   }
 
   private boolean waitForReloads(String collectionName, Map<String,Long> urlToTimeBefore) throws SolrServerException, IOException {
@@ -549,60 +509,6 @@ public class CollectionsAPIDistributedZkTest extends AbstractFullDistribZkTestBa
     fail("Could not find the new collection - " + exp.code() + " : " + collectionClient.getBaseURL());
   }
 
-  private String checkCollectionExpectations(String collectionName, List<Integer> numShardsNumReplicaList, List<String> nodesAllowedToRunShards) {
-    ClusterState clusterState = getCommonCloudSolrServer().getZkStateReader().getClusterState();
-    
-    int expectedSlices = numShardsNumReplicaList.get(0);
-    // The Math.min thing is here, because we expect replication-factor to be reduced to if there are not enough live nodes to spread all shards of a collection over different nodes
-    int expectedShardsPerSlice = numShardsNumReplicaList.get(1);
-    int expectedTotalShards = expectedSlices * expectedShardsPerSlice;
-    
-      Map<String,DocCollection> collections = clusterState
-          .getCollectionStates();
-      if (collections.containsKey(collectionName)) {
-        Map<String,Slice> slices = collections.get(collectionName).getSlicesMap();
-        // did we find expectedSlices slices/shards?
-      if (slices.size() != expectedSlices) {
-        return "Found new collection " + collectionName + ", but mismatch on number of slices. Expected: " + expectedSlices + ", actual: " + slices.size();
-      }
-      int totalShards = 0;
-      for (String sliceName : slices.keySet()) {
-        for (Replica replica : slices.get(sliceName).getReplicas()) {
-          if (nodesAllowedToRunShards != null && !nodesAllowedToRunShards.contains(replica.getStr(ZkStateReader.NODE_NAME_PROP))) {
-            return "Shard " + replica.getName() + " created on node " + replica.getStr(ZkStateReader.NODE_NAME_PROP) + " not allowed to run shards for the created collection " + collectionName;
-          }
-        }
-        totalShards += slices.get(sliceName).getReplicas().size();
-      }
-      if (totalShards != expectedTotalShards) {
-        return "Found new collection " + collectionName + " with correct number of slices, but mismatch on number of shards. Expected: " + expectedTotalShards + ", actual: " + totalShards; 
-        }
-      return null;
-    } else {
-      return "Could not find new collection " + collectionName;
-    }
-  }
-  
-  private void checkForCollection(String collectionName, List<Integer> numShardsNumReplicaList, List<String> nodesAllowedToRunShards)
-      throws Exception {
-    // check for an expectedSlices new collection - we poll the state
-    long timeoutAt = System.currentTimeMillis() + 120000;
-    boolean success = false;
-    String checkResult = "Didnt get to perform a single check";
-    while (System.currentTimeMillis() < timeoutAt) {
-      checkResult = checkCollectionExpectations(collectionName, numShardsNumReplicaList, nodesAllowedToRunShards);
-      if (checkResult == null) {
-        success = true;
-        break;
-      }
-      Thread.sleep(500);
-    }
-    if (!success) {
-      super.printLayout();
-      fail(checkResult);
-      }
-    }
-
   private void checkCollectionIsNotCreated(String collectionName)
     throws Exception {
     // TODO: REMOVE THIS SLEEP WHEN WE HAVE COLLECTION API RESPONSES
@@ -678,42 +584,6 @@ public class CollectionsAPIDistributedZkTest extends AbstractFullDistribZkTestBa
     }
 
   }
-  
-  protected SolrInputDocument getDoc(Object... fields) throws Exception {
-    SolrInputDocument doc = new SolrInputDocument();
-    addFields(doc, fields);
-    return doc;
-  }
-  
-  protected SolrServer createNewSolrServer(String collection, String baseUrl) {
-    try {
-      // setup the server...
-      HttpSolrServer s = new HttpSolrServer(baseUrl + "/" + collection);
-      s.setConnectionTimeout(DEFAULT_CONNECTION_TIMEOUT);
-      s.setDefaultMaxConnectionsPerHost(100);
-      s.setMaxTotalConnections(100);
-      return s;
-    }
-    catch (Exception ex) {
-      throw new RuntimeException(ex);
-    }
-  }
-
-  volatile CloudSolrServer commondCloudSolrServer;
-  private CloudSolrServer getCommonCloudSolrServer() {
-    if (commondCloudSolrServer == null) {
-      synchronized(this) {
-        try {
-          commondCloudSolrServer = new CloudSolrServer(zkServer.getZkAddress());
-          commondCloudSolrServer.setDefaultCollection(DEFAULT_COLLECTION);
-          commondCloudSolrServer.connect();
-        } catch (MalformedURLException e) {
-          throw new RuntimeException(e);
-        }
-      }
-    }
-    return commondCloudSolrServer;
-  }
 
   @Override
   protected QueryResponse queryServer(ModifiableSolrParams params) throws SolrServerException {
@@ -731,9 +601,6 @@ public class CollectionsAPIDistributedZkTest extends AbstractFullDistribZkTestBa
   @Override
   public void tearDown() throws Exception {
     super.tearDown();
-    if (commondCloudSolrServer != null) {
-      commondCloudSolrServer.shutdown();
-    }
     System.clearProperty("numShards");
     System.clearProperty("zkHost");
     System.clearProperty("solr.xml.persist");

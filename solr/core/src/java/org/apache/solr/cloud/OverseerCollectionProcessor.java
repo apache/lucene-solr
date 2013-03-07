@@ -19,6 +19,7 @@ package org.apache.solr.cloud;
 
 import java.util.ArrayList;
 import java.util.Collections;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -27,6 +28,7 @@ import org.apache.solr.client.solrj.SolrResponse;
 import org.apache.solr.cloud.DistributedQueue.QueueEvent;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.SolrException.ErrorCode;
+import org.apache.solr.common.cloud.Aliases;
 import org.apache.solr.common.cloud.ClosableThread;
 import org.apache.solr.common.cloud.ClusterState;
 import org.apache.solr.common.cloud.DocCollection;
@@ -63,10 +65,12 @@ public class OverseerCollectionProcessor implements Runnable, ClosableThread {
 
   public static final String RELOADCOLLECTION = "reloadcollection";
   
+  public static final String CREATEALIAS = "createalias";
+  
+  public static final String DELETEALIAS = "deletealias";
+  
   // TODO: use from Overseer?
   private static final String QUEUE_OPERATION = "operation";
-
-
   
   private static Logger log = LoggerFactory
       .getLogger(OverseerCollectionProcessor.class);
@@ -162,6 +166,10 @@ public class OverseerCollectionProcessor implements Runnable, ClosableThread {
         ModifiableSolrParams params = new ModifiableSolrParams();
         params.set(CoreAdminParams.ACTION, CoreAdminAction.RELOAD.toString());
         collectionCmd(zkStateReader.getClusterState(), message, params);
+      } else if (CREATEALIAS.equals(operation)) {
+        createAlias(zkStateReader.getAliases(), message);
+      } else if (DELETEALIAS.equals(operation)) {
+        deleteAlias(zkStateReader.getAliases(), message);
       } else {
         throw new SolrException(ErrorCode.BAD_REQUEST, "Unknow the operation:"
             + operation);
@@ -182,15 +190,116 @@ public class OverseerCollectionProcessor implements Runnable, ClosableThread {
           }
         }
       } while (srsp != null);
-    } catch (SolrException ex) {
+    } catch (Exception ex) {
       SolrException.log(log, "Collection " + operation + " of " + operation
-          + " failed");
+          + " failed", ex);
       results.add("Operation " + operation + " caused exception:", ex);
     } finally {
       return new OverseerSolrResponse(results);
     }
   }
 
+  private void createAlias(Aliases aliases, ZkNodeProps message) {
+    String aliasName = message.getStr("name");
+    String collections = message.getStr("collections");
+    
+    Map<String,Map<String,String>> newAliasesMap = new HashMap<String,Map<String,String>>();
+    Map<String,String> newCollectionAliasesMap = new HashMap<String,String>();
+    Map<String,String> prevColAliases = aliases.getCollectionAliasMap();
+    if (prevColAliases != null) {
+      newCollectionAliasesMap.putAll(prevColAliases);
+    }
+    newCollectionAliasesMap.put(aliasName, collections);
+    newAliasesMap.put("collection", newCollectionAliasesMap);
+    Aliases newAliases = new Aliases(newAliasesMap);
+    byte[] jsonBytes = null;
+    if (newAliases.collectionAliasSize() > 0) { // only sub map right now
+      jsonBytes  = ZkStateReader.toJSON(newAliases.getAliasMap());
+    }
+    try {
+      zkStateReader.getZkClient().setData(ZkStateReader.ALIASES,
+          jsonBytes, true);
+      
+      checkForAlias(aliasName, collections);
+      // some fudge for other nodes
+      Thread.sleep(100);
+    } catch (KeeperException e) {
+      log.error("", e);
+      throw new SolrException(ErrorCode.SERVER_ERROR, e);
+    } catch (InterruptedException e) {
+      log.warn("", e);
+      throw new SolrException(ErrorCode.SERVER_ERROR, e);
+    }
+
+  }
+  
+  private void checkForAlias(String name, String value) {
+
+    long now = System.currentTimeMillis();
+    long timeout = now + 30000;
+    boolean success = false;
+    Aliases aliases = null;
+    while (System.currentTimeMillis() < timeout) {
+      aliases = zkStateReader.getAliases();
+      String collections = aliases.getCollectionAlias(name);
+      if (collections != null && collections.equals(value)) {
+        success = true;
+        break;
+      }
+    }
+    if (!success) {
+      log.warn("Timeout waiting to be notified of Alias change...");
+    }
+  }
+  
+  private void checkForAliasAbsence(String name) {
+
+    long now = System.currentTimeMillis();
+    long timeout = now + 30000;
+    boolean success = false;
+    Aliases aliases = null;
+    while (System.currentTimeMillis() < timeout) {
+      aliases = zkStateReader.getAliases();
+      String collections = aliases.getCollectionAlias(name);
+      if (collections == null) {
+        success = true;
+        break;
+      }
+    }
+    if (!success) {
+      log.warn("Timeout waiting to be notified of Alias change...");
+    }
+  }
+
+  private void deleteAlias(Aliases aliases, ZkNodeProps message) {
+    String aliasName = message.getStr("name");
+
+    Map<String,Map<String,String>> newAliasesMap = new HashMap<String,Map<String,String>>();
+    Map<String,String> newCollectionAliasesMap = new HashMap<String,String>();
+    newCollectionAliasesMap.putAll(aliases.getCollectionAliasMap());
+    newCollectionAliasesMap.remove(aliasName);
+    newAliasesMap.put("collection", newCollectionAliasesMap);
+    Aliases newAliases = new Aliases(newAliasesMap);
+    byte[] jsonBytes = null;
+    if (newAliases.collectionAliasSize() > 0) { // only sub map right now
+      jsonBytes  = ZkStateReader.toJSON(newAliases.getAliasMap());
+    }
+    try {
+      zkStateReader.getZkClient().setData(ZkStateReader.ALIASES,
+          jsonBytes, true);
+      checkForAliasAbsence(aliasName);
+      // some fudge for other nodes
+      Thread.sleep(100);
+    } catch (KeeperException e) {
+      log.error("", e);
+      throw new SolrException(ErrorCode.SERVER_ERROR, e);
+    } catch (InterruptedException e) {
+      log.warn("", e);
+      throw new SolrException(ErrorCode.SERVER_ERROR, e);
+    }
+    
+  }
+  
   private boolean createCollection(ClusterState clusterState, ZkNodeProps message) {
     String collectionName = message.getStr("name");
     if (clusterState.getCollections().contains(collectionName)) {
