@@ -105,6 +105,33 @@ public class EdgeNGramTokenFilterTest extends BaseTokenStreamTestCase {
                               null,
                               false);
   }
+
+  public void testFilterPositions() throws Exception {
+    TokenStream ts = new MockTokenizer(new StringReader("abcde vwxyz"), MockTokenizer.WHITESPACE, false);
+    EdgeNGramTokenFilter tokenizer = new EdgeNGramTokenFilter(ts, EdgeNGramTokenFilter.Side.FRONT, 1, 3);
+    assertTokenStreamContents(tokenizer,
+                              new String[]{"a","ab","abc","v","vw","vwx"},
+                              new int[]{0,0,0,6,6,6},
+                              new int[]{1,2,3,7,8,9},
+                              null,
+                              new int[]{1,0,0,1,0,0},
+                              null,
+                              null,
+                              false);
+  }
+
+  public void testTokenizerPositions() throws Exception {
+    EdgeNGramTokenizer tokenizer = new EdgeNGramTokenizer(new StringReader("abcde"), EdgeNGramTokenizer.Side.FRONT, 1, 3);
+    assertTokenStreamContents(tokenizer,
+                              new String[]{"a","ab","abc"},
+                              new int[]{0,0,0},
+                              new int[]{1,2,3},
+                              null,
+                              new int[]{1,0,0},
+                              null,
+                              null,
+                              false);
+  }
   
   public void testSmallTokenInStream() throws Exception {
     input = new MockTokenizer(new StringReader("abc de fgh"), MockTokenizer.WHITESPACE, false);

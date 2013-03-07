@@ -21,6 +21,7 @@ import org.apache.lucene.analysis.TokenFilter;
 import org.apache.lucene.analysis.TokenStream;
 import org.apache.lucene.analysis.tokenattributes.OffsetAttribute;
 import org.apache.lucene.analysis.tokenattributes.CharTermAttribute;
+import org.apache.lucene.analysis.tokenattributes.PositionIncrementAttribute;
 
 import java.io.IOException;
 
@@ -73,9 +74,11 @@ public final class EdgeNGramTokenFilter extends TokenFilter {
   private int tokStart;
   private int tokEnd; // only used if the length changed before this filter
   private boolean hasIllegalOffsets; // only if the length changed before this filter
+  private int savePosIncr;
   
   private final CharTermAttribute termAtt = addAttribute(CharTermAttribute.class);
   private final OffsetAttribute offsetAtt = addAttribute(OffsetAttribute.class);
+  private final PositionIncrementAttribute posIncrAtt = addAttribute(PositionIncrementAttribute.class);
 
   /**
    * Creates EdgeNGramTokenFilter that can generate n-grams in the sizes of the given range
@@ -132,6 +135,7 @@ public final class EdgeNGramTokenFilter extends TokenFilter {
           // if length by start + end offsets doesn't match the term text then assume
           // this is a synonym and don't adjust the offsets.
           hasIllegalOffsets = (tokStart + curTermLength) != tokEnd;
+          savePosIncr = posIncrAtt.getPositionIncrement();
         }
       }
       if (curGramSize <= maxGram) {
@@ -145,6 +149,12 @@ public final class EdgeNGramTokenFilter extends TokenFilter {
             offsetAtt.setOffset(tokStart, tokEnd);
           } else {
             offsetAtt.setOffset(tokStart + start, tokStart + end);
+          }
+          // first ngram gets increment, others don't
+          if (curGramSize == minGram) {
+            posIncrAtt.setPositionIncrement(savePosIncr);
+          } else {
+            posIncrAtt.setPositionIncrement(0);
           }
           termAtt.copyBuffer(curTermBuffer, start, curGramSize);
           curGramSize++;

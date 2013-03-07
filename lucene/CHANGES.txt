@@ -19,6 +19,14 @@ Changes in backwards compatibility policy
   (Nikola Tanković, Uwe Schindler, Chris Male, Mike McCandless,
   Robert Muir)
 
+======================= Lucene 4.3.0 =======================
+
+Changes in backwards compatibility policy
+
+* LUCENE-4810: EdgeNGramTokenFilter no longer increments position for
+  multiple ngrams derived from the same input token. (Walter Underwood
+  via Mike McCandless)
+
 ======================= Lucene 4.2.0 =======================
 
 Changes in backwards compatibility policy
