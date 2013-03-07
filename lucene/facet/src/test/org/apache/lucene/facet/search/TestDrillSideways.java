@@ -32,6 +32,7 @@ import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
 import org.apache.lucene.document.StringField;
 import org.apache.lucene.facet.FacetTestCase;
+import org.apache.lucene.facet.FacetTestUtils;
 import org.apache.lucene.facet.index.FacetFields;
 import org.apache.lucene.facet.params.FacetIndexingParams;
 import org.apache.lucene.facet.params.FacetSearchParams;
@@ -341,6 +342,61 @@ public class TestDrillSideways extends FacetTestCase {
         return "c";
       }
     }
+  }
+
+  public void testMultipleRequestsPerDim() throws Exception {
+    Directory dir = newDirectory();
+    Directory taxoDir = newDirectory();
+    writer = new RandomIndexWriter(random(), dir);
+
+    // Writes facet ords to a separate directory from the
+    // main index:
+    taxoWriter = new DirectoryTaxonomyWriter(taxoDir, IndexWriterConfig.OpenMode.CREATE);
+
+    // Reused across documents, to add the necessary facet
+    // fields:
+    facetFields = new FacetFields(taxoWriter);
+
+    add("dim/a/x");
+    add("dim/a/y");
+    add("dim/a/z");
+    add("dim/b");
+    add("dim/c");
+    add("dim/d");
+
+    // NRT open
+    IndexSearcher searcher = newSearcher(writer.getReader());
+    writer.close();
+
+    //System.out.println("searcher=" + searcher);
+
+    // NRT open
+    TaxonomyReader taxoReader = new DirectoryTaxonomyReader(taxoWriter);
+    taxoWriter.close();
+
+    // Two requests against the same dim:
+    FacetSearchParams fsp = new FacetSearchParams(
+        new CountFacetRequest(new CategoryPath("dim"), 10), 
+        new CountFacetRequest(new CategoryPath("dim", "a"), 10));
+
+    DrillDownQuery ddq = new DrillDownQuery(fsp.indexingParams, new MatchAllDocsQuery());
+    ddq.add(new CategoryPath("dim", "a"));
+    DrillSidewaysResult r = new DrillSideways(searcher, taxoReader).search(null, ddq, 10, fsp);
+
+    assertEquals(3, r.hits.totalHits);
+    assertEquals(2, r.facetResults.size());
+    // Publish Date is only drill-down, and Lisa published
+    // one in 2012 and one in 2010:
+    assertEquals("dim: a=3 d=1 c=1 b=1", toString(r.facetResults.get(0)));
+    // Author is drill-sideways + drill-down: Lisa
+    // (drill-down) published twice, and Frank/Susan/Bob
+    // published once:
+    assertEquals("a (3)\n  z (1)\n  y (1)\n  x (1)\n", FacetTestUtils.toSimpleString(r.facetResults.get(1)));
+
+    searcher.getIndexReader().close();
+    taxoReader.close();
+    dir.close();
+    taxoDir.close();
   }
 
   public void testRandom() throws Exception {
