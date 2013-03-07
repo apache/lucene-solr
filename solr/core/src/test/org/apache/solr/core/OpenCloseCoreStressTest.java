@@ -45,9 +45,6 @@ import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;
 
-import static org.apache.solr.core.SolrCore.verbose;
-import static org.junit.Assert.fail;
-
 /**
  * Incorporate the open/close stress tests into unit tests.
  */
@@ -182,14 +179,14 @@ public class OpenCloseCoreStressTest extends SolrTestCaseJ4 {
 
     try {
 
-      verbose("Starting indexing and querying");
+      log.info("Starting indexing and querying");
 
       int secondsRun = 0;
       int secondsRemaining = secondsToRun;
       do {
 
         int cycleSeconds = Math.min(resetInterval, secondsRemaining);
-        verbose(String.format(Locale.ROOT, "\n\n\n\n\nStarting a %,d second cycle, seconds left: %,d. Seconds run so far: %,d.",
+        log.info(String.format(Locale.ROOT, "\n\n\n\n\nStarting a %,d second cycle, seconds left: %,d. Seconds run so far: %,d.",
             cycleSeconds, secondsRemaining, secondsRun));
 
         Indexer idxer = new Indexer(this, url, indexingServers, indexingThreads, cycleSeconds);
@@ -237,7 +234,7 @@ public class OpenCloseCoreStressTest extends SolrTestCaseJ4 {
   private void makeCore(File coreDir, File testSrcRoot, boolean oldStyle) throws IOException {
     File conf = new File(coreDir, "conf");
 
-    if (!conf.mkdirs()) log.info("mkdirs returned false in makeCore... ignoring");
+    if (!conf.mkdirs()) log.warn("mkdirs returned false in makeCore... ignoring");
 
     File testConf = new File(testSrcRoot, "collection1/conf");
 
@@ -253,7 +250,7 @@ public class OpenCloseCoreStressTest extends SolrTestCaseJ4 {
 
 
   void deleteAllDocuments(HttpSolrServer server, Queries queries) {
-    verbose("Deleting data from last cycle, this may take a few minutes.");
+    log.info("Deleting data from last cycle, this may take a few minutes.");
 
     for (String core : coreNames) {
       try {
@@ -266,7 +263,7 @@ public class OpenCloseCoreStressTest extends SolrTestCaseJ4 {
     }
 
     // We're testing, after all. Let's be really sure things are as we expect.
-    verbose("Insuring all cores empty");
+    log.info("Insuring all cores empty");
     long foundDocs = 0;
     for (String core : coreNames) {
       try {
@@ -279,7 +276,7 @@ public class OpenCloseCoreStressTest extends SolrTestCaseJ4 {
     }
 
     if (foundDocs > 0) {
-      verbose("Found docs after purging done, this is bad.");
+      log.warn("Found docs after purging done, this is bad.");
     }
     // Reset counters for another go-round
     coreCounts.clear();
@@ -289,21 +286,25 @@ public class OpenCloseCoreStressTest extends SolrTestCaseJ4 {
   }
 
   private void checkResults(HttpSolrServer server, Queries queries, Indexer idxer) throws InterruptedException {
-    verbose("Checking if indexes have all the documents they should...");
+    log.info("Checking if indexes have all the documents they should...");
     long totalDocsFound = 0;
     for (Map.Entry<String, Long> ent : coreCounts.entrySet()) {
       server.setBaseURL(url + ent.getKey());
-      try {
-        server.commit(true, true);
-      } catch (Exception e) {
-        fail("Exception when committing core " + ent.getKey() + " " + e.getMessage());
+      for (int idx = 0; idx < 3; ++idx) {
+        try {
+          server.commit(true, true);
+          break; // retry loop
+        } catch (Exception e) {
+          log.warn("Exception when committing core " + ent.getKey() + " " + e.getMessage());
+          Thread.sleep(100L);
+        }
       }
       long numFound = queries.getCount(server, ent.getKey());
       totalDocsFound += numFound;
       assertEquals(String.format(Locale.ROOT, "Core %s bad!", ent.getKey()), (long) ent.getValue(), numFound);
     }
 
-    verbose(String.format(Locale.ROOT, "\n\nDocs indexed (cumulative, all cycles): %,d, total docs: %,d: Cycle stats: updates: %,d: qtimes: %,d",
+    log.info(String.format(Locale.ROOT, "\n\nDocs indexed (cumulative, all cycles): %,d, total docs: %,d: Cycle stats: updates: %,d: qtimes: %,d",
         Indexer.idUnique.get(), totalDocsFound, idxer.getAccumUpdates(), idxer.getAccumQtimes()));
 
     cumulativeDocs += totalDocsFound;
@@ -371,7 +372,7 @@ class Indexer {
 
   synchronized static void progress(int myId, String core) {
     if (nextTime - System.currentTimeMillis() <= 0) {
-      verbose(String.format(Locale.ROOT, " s indexed: [run %,8d] [cycle %,8d] [last minute %,8d] Last core updated: %s. Seconds left in cycle %,4d",
+      SolrTestCaseJ4.log.info(String.format(Locale.ROOT, " s indexed: [run %,8d] [cycle %,8d] [last minute %,8d] Last core updated: %s. Seconds left in cycle %,4d",
           myId, docsThisCycle.get(), myId - lastCount, core, stopTime - (System.currentTimeMillis() / 1000)));
       lastCount = myId;
       nextTime += (System.currentTimeMillis() / 1000) * 60;
@@ -393,7 +394,7 @@ class OneIndexer extends Thread {
 
   @Override
   public void run() {
-    verbose(String.format(Locale.ROOT, "Starting indexing thread: " + getId()));
+    SolrTestCaseJ4.log.info(String.format(Locale.ROOT, "Starting indexing thread: " + getId()));
 
     while (Indexer.stopTime > System.currentTimeMillis()) {
       int myId = Indexer.idUnique.incrementAndGet();
@@ -412,20 +413,20 @@ class OneIndexer extends Thread {
           server.setBaseURL(baseUrl + core);
           UpdateResponse response = server.add(doc, OpenCloseCoreStressTest.COMMIT_WITHIN);
           if (response.getStatus() != 0) {
-            verbose("Failed to index a document with status " + response.getStatus());
+            SolrTestCaseJ4.log.warn("Failed to index a document to core " + core + " with status " + response.getStatus());
           } else {
             Indexer.qTimesAccum.addAndGet(response.getQTime());
             Indexer.updateCounts.incrementAndGet();
+            break; // retry loop.
           }
           Thread.sleep(100L); // Let's not go crazy here.
-          break; // try loop.
         } catch (Exception e) {
           if (e instanceof InterruptedException) return;
           Indexer.errors.incrementAndGet();
           if (idx == 2) {
-            fail("Could not reach server while indexing for three tries, quitting " + e.getMessage());
+            SolrTestCaseJ4.log.warn("Could not reach server while indexing for three tries, quitting " + e.getMessage());
           } else {
-            verbose("Indexing thread " + Thread.currentThread().getId() + " swallowed one exception " + e.getMessage());
+            SolrTestCaseJ4.log.info("Indexing thread " + Thread.currentThread().getId() + " swallowed one exception " + e.getMessage());
             try {
               Thread.sleep(500);
             } catch (InterruptedException tex) {
@@ -435,7 +436,7 @@ class OneIndexer extends Thread {
         }
       }
     }
-    verbose("Leaving indexing thread " + getId());
+    SolrTestCaseJ4.log.info("Leaving indexing thread " + getId());
   }
 }
 
@@ -496,7 +497,7 @@ class OneQuery extends Thread {
 
   @Override
   public void run() {
-    verbose(String.format(Locale.ROOT, "Starting query thread: " + getId()));
+    SolrTestCaseJ4.log.info(String.format(Locale.ROOT, "Starting query thread: " + getId()));
     while (Queries._keepon.get()) {
       String core = OCCST.getRandomCore();
       for (int idx = 0; idx < 3; ++idx) {
@@ -511,7 +512,7 @@ class OneQuery extends Thread {
           QueryResponse response = server.query(params);
 
           if (response.getStatus() != 0) {
-            verbose("Failed to index a document with status " + response.getStatus());
+            SolrTestCaseJ4.log.warn("Failed to query core " + core + " with status " + response.getStatus());
           }
             // Perhaps collect some stats here in future.
           break; // retry loop
@@ -519,9 +520,9 @@ class OneQuery extends Thread {
           if (e instanceof InterruptedException) return;
           Queries._errors.incrementAndGet();
           if (idx == 2) {
-            fail("Could not reach server while indexing for three tries, quitting " + e.getMessage());
+            SolrTestCaseJ4.log.warn("Could not reach server while indexing for three tries, quitting " + e.getMessage());
           } else {
-            verbose("Querying thread: " + Thread.currentThread().getId() + " swallowed exception: " + e.getMessage());
+            SolrTestCaseJ4.log.info("Querying thread: " + Thread.currentThread().getId() + " swallowed exception: " + e.getMessage());
             try {
               Thread.sleep(500L);
             } catch (InterruptedException tex) {
@@ -531,7 +532,7 @@ class OneQuery extends Thread {
         }
       }
     }
-    verbose(String.format(Locale.ROOT, "Leaving query thread: " + getId()));
+    SolrTestCaseJ4.log.info(String.format(Locale.ROOT, "Leaving query thread: " + getId()));
   }
 
 }
