@@ -38,6 +38,35 @@ TBD...
 Detailed Change List
 ----------------------
 
+==================  4.3.0 ==================
+
+Versions of Major Components
+---------------------
+Apache Tika 1.3
+Carrot2 3.6.2
+Velocity 1.7 and Velocity Tools 2.0
+Apache UIMA 2.3.1
+Apache ZooKeeper 3.4.5
+
+Upgrading from Solr 4.2.0
+----------------------
+
+(No upgrade instructions yet)
+
+Detailed Change List
+----------------------
+
+New Features
+----------------------
+
+Bug Fixes
+----------------------
+
+Other Changes
+----------------------
+
+* SOLR-4537: Clean up schema information REST API. (Steve Rowe)
+
 ==================  4.2.0 ==================
 
 Versions of Major Components

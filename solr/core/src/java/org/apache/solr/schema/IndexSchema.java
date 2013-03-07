@@ -841,7 +841,8 @@ public final class IndexSchema {
 
 
   public final static class DynamicField extends DynamicReplacement {
-    final SchemaField prototype;
+    private final SchemaField prototype;
+    public SchemaField getPrototype() { return prototype; }
 
     DynamicField(SchemaField prototype) {
       super(prototype.name);
