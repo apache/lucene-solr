@@ -68,11 +68,10 @@ public class FieldResource extends BaseFieldResource implements GETable {
         final String message = "Field name is missing";
         throw new SolrException(ErrorCode.BAD_REQUEST, message);
       } else {
-        SchemaField field;
+        final SchemaField field;
         if (includeDynamic) {
           field = getSchema().getFieldOrNull(fieldName);
         } else {
-          // Don't look for matches among dynamic fields
           field = getSchema().getFields().get(fieldName);
         }
         if (null == field) {
