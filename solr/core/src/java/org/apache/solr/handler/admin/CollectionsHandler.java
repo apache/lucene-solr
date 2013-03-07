@@ -120,7 +120,14 @@ public class CollectionsHandler extends RequestHandlerBase {
           this.handleSyncShardAction(req, rsp);
           break;
         }
-        
+        case CREATEALIAS: {
+          this.handleCreateAliasAction(req, rsp);
+          break;
+        }
+        case DELETEALIAS: {
+          this.handleDeleteAliasAction(req, rsp);
+          break;
+        }
         default: {
           throw new RuntimeException("Unknown action: " + action);
         }
@@ -187,7 +194,30 @@ public class CollectionsHandler extends RequestHandlerBase {
     reqSyncShard.setCoreName(nodeProps.getCoreName());
     server.request(reqSyncShard);
   }
-
+  
+  private void handleCreateAliasAction(SolrQueryRequest req,
+      SolrQueryResponse rsp) throws Exception {
+    log.info("Create alias action : " + req.getParamString());
+    String name = req.getParams().required().get("name");
+    String collections = req.getParams().required().get("collections");
+    
+    ZkNodeProps m = new ZkNodeProps(Overseer.QUEUE_OPERATION,
+        OverseerCollectionProcessor.CREATEALIAS, "name", name, "collections",
+        collections);
+    
+    handleResponse(OverseerCollectionProcessor.CREATEALIAS, m, rsp);
+  }
+  
+  private void handleDeleteAliasAction(SolrQueryRequest req,
+      SolrQueryResponse rsp) throws Exception {
+    log.info("Delete alias action : " + req.getParamString());
+    String name = req.getParams().required().get("name");
+    
+    ZkNodeProps m = new ZkNodeProps(Overseer.QUEUE_OPERATION,
+        OverseerCollectionProcessor.DELETEALIAS, "name", name);
+    
+    handleResponse(OverseerCollectionProcessor.CREATEALIAS, m, rsp);
+  }
 
   private void handleDeleteAction(SolrQueryRequest req, SolrQueryResponse rsp) throws KeeperException, InterruptedException {
     log.info("Deleting Collection : " + req.getParamString());
@@ -199,7 +229,6 @@ public class CollectionsHandler extends RequestHandlerBase {
 
     handleResponse(OverseerCollectionProcessor.DELETECOLLECTION, m, rsp);
   }
-
 
   // very simple currently, you can pass a template collection, and the new collection is created on
   // every node the template collection is on

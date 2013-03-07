@@ -62,6 +62,7 @@ public class ZkStateReader {
   
   public static final String COLLECTIONS_ZKNODE = "/collections";
   public static final String LIVE_NODES_ZKNODE = "/live_nodes";
+  public static final String ALIASES = "/aliases.json";
   public static final String CLUSTER_STATE = "/clusterstate.json";
   
   public static final String RECOVERING = "recovering";
@@ -129,7 +130,9 @@ public class ZkStateReader {
   private boolean closeClient = false;
 
   private ZkCmdExecutor cmdExecutor;
-  
+
+  private Aliases aliases = new Aliases();
+
   public ZkStateReader(SolrZkClient zkClient) {
     this.zkClient = zkClient;
     initZkCmdExecutor(zkClient.getZkClientTimeout());
@@ -177,12 +180,17 @@ public class ZkStateReader {
     updateClusterState(true, true);
   }
   
+  public Aliases getAliases() {
+    return aliases;
+  }
+  
   public synchronized void createClusterStateWatchersAndUpdate() throws KeeperException,
       InterruptedException {
     // We need to fetch the current cluster state and the set of live nodes
     
     synchronized (getUpdateLock()) {
       cmdExecutor.ensureExists(CLUSTER_STATE, zkClient);
+      cmdExecutor.ensureExists(ALIASES, zkClient);
       
       log.info("Updating cluster state from ZooKeeper... ");
       
@@ -286,6 +294,49 @@ public class ZkStateReader {
       liveNodeSet.addAll(liveNodes);
       ClusterState clusterState = ClusterState.load(zkClient, liveNodeSet);
       this.clusterState = clusterState;
+      
+      zkClient.exists(ALIASES,
+          new Watcher() {
+            
+            @Override
+            public void process(WatchedEvent event) {
+              // session events are not change events,
+              // and do not remove the watcher
+              if (EventType.None.equals(event.getType())) {
+                return;
+              }
+              try {
+                synchronized (ZkStateReader.this.getUpdateLock()) {
+                  log.info("Updating aliases... ");
+
+                  // remake watch
+                  final Watcher thisWatch = this;
+                  Stat stat = new Stat();
+                  byte[] data = zkClient.getData(ALIASES, thisWatch, stat ,
+                      true);
+
+                  Aliases aliases = ClusterState.load(data);
+
+                  ZkStateReader.this.aliases = aliases;
+                }
+              } catch (KeeperException e) {
+                if (e.code() == KeeperException.Code.SESSIONEXPIRED
+                    || e.code() == KeeperException.Code.CONNECTIONLOSS) {
+                  log.warn("ZooKeeper watch triggered, but Solr cannot talk to ZK");
+                  return;
+                }
+                log.error("", e);
+                throw new ZooKeeperException(
+                    SolrException.ErrorCode.SERVER_ERROR, "", e);
+              } catch (InterruptedException e) {
+                // Restore the interrupted status
+                Thread.currentThread().interrupt();
+                log.warn("", e);
+                return;
+              }
+            }
+            
+          }, true);
     }
   }
   
@@ -492,6 +543,14 @@ public class ZkStateReader {
 
   public SolrZkClient getZkClient() {
     return zkClient;
+  }
+
+  public void updateAliases() throws KeeperException, InterruptedException {
+    byte[] data = zkClient.getData(ALIASES, null, null, true);
+
+    Aliases aliases = ClusterState.load(data);
+
+    ZkStateReader.this.aliases = aliases;
   }
   
 }

@@ -102,7 +102,9 @@ public interface CoreAdminParams
     SPLIT,
     PREPRECOVERY,
     REQUESTRECOVERY, 
-    REQUESTSYNCSHARD;
+    REQUESTSYNCSHARD,
+    CREATEALIAS,
+    DELETEALIAS;
     
     public static CoreAdminAction get( String p )
     {
