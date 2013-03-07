@@ -27,6 +27,11 @@ Changes in backwards compatibility policy
   multiple ngrams derived from the same input token. (Walter Underwood
   via Mike McCandless)
 
+New Features
+
+* LUCENE-4815: DrillSideways now allows more than one FacetRequest per
+  dimension (Mike McCandless)
+
 ======================= Lucene 4.2.0 =======================
 
 Changes in backwards compatibility policy
