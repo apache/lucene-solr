@@ -32,6 +32,10 @@ New Features
 * LUCENE-4815: DrillSideways now allows more than one FacetRequest per
   dimension (Mike McCandless)
 
+* LUCENE-4817: Added KeywordRepeatFilter that allows to emit a token twice
+  once as a keyword and once as an ordinary token allow stemmers to emit
+  a stemmed version along with the un-stemmed version. (Simon Willnauer)
+
 ======================= Lucene 4.2.0 =======================
 
 Changes in backwards compatibility policy
