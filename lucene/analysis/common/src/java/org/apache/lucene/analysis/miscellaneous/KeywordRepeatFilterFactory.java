@@ -22,13 +22,10 @@ import org.apache.lucene.analysis.util.TokenFilterFactory;
 
 /**
  * Factory for {@link KeywordRepeatFilter}.
- * <pre class="prettyprint" >
- * &lt;fieldType name="text_keyword" class="solr.TextField" positionIncrementGap="100"&gt;
- *   &lt;analyzer&gt;
- *     &lt;tokenizer class="solr.WhitespaceTokenizerFactory"/&gt;
- *     &lt;filter class="solr.KeywordRepeatFilter"/&gt;
- *   &lt;/analyzer&gt;
- * &lt;/fieldType&gt;</pre>
+ *
+ * Since {@link KeywordRepeatFilter} emits two tokens for every input token, and any tokens that aren't transformed
+ * later in the analysis chain will be in the document twice. Therefore, consider adding
+ * {@link RemoveDuplicatesTokenFilterFactory} later in the analysis chain.
  */
 public final class KeywordRepeatFilterFactory extends TokenFilterFactory {
   @Override

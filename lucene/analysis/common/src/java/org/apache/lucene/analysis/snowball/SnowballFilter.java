@@ -37,6 +37,18 @@ import org.tartarus.snowball.SnowballProgram;
  *  <li>For other languages, see {@link LowerCaseFilter}.
  * </ul>
  * </p>
+ *
+ * <p>
+ * Note: This filter is aware of the {@link KeywordAttribute}. To prevent
+ * certain terms from being passed to the stemmer
+ * {@link KeywordAttribute#isKeyword()} should be set to <code>true</code>
+ * in a previous {@link TokenStream}.
+ *
+ * Note: For including the original term as well as the stemmed version, see
+ * {@link org.apache.lucene.analysis.miscellaneous.KeywordRepeatFilterFactory}
+ * </p>
+ *
+ *
  */
 public final class SnowballFilter extends TokenFilter {
 
