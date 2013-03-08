@@ -34,7 +34,7 @@ import org.junit.Before;
 import org.junit.BeforeClass;
 
 @Slow
-public class ChaosMonkeySafeLeaderTest extends AbstractFullDistribZkTestBase {
+public class  ChaosMonkeySafeLeaderTest extends AbstractFullDistribZkTestBase {
   
   private static final Integer RUN_LENGTH = Integer.parseInt(System.getProperty("solr.tests.cloud.cm.runlength", "-1"));
 

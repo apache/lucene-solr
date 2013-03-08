@@ -32,6 +32,7 @@ import java.util.Properties;
 import javax.xml.parsers.ParserConfigurationException;
 
 import org.apache.commons.io.FileUtils;
+import org.apache.commons.lang.StringUtils;
 import org.apache.lucene.index.DirectoryReader;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.util.IOUtils;
@@ -661,7 +662,7 @@ public class CoreAdminHandler extends RequestHandlerBase {
     try {
       if (cname == null) {
         rsp.add("defaultCoreName", coreContainer.getDefaultCoreName());
-        for (String name : coreContainer.getCoreNames()) {
+        for (String name : coreContainer.getAllCoreNames()) {
           status.add(name, getCoreStatus(coreContainer, name, isIndexInfoNeeded));
         }
         rsp.add("initFailures", allFailures);
@@ -954,38 +955,65 @@ public class CoreAdminHandler extends RequestHandlerBase {
     
   }
 
-  protected NamedList<Object> getCoreStatus(CoreContainer cores, String cname, boolean isIndexInfoNeeded) throws IOException {
+  /**
+   * Returns the core status for a particular core.
+   * @param cores - the enclosing core container
+   * @param cname - the core to return
+   * @param isIndexInfoNeeded - add what may be expensive index information. NOT returned if the core is not loaded
+   * @return - a named list of key/value pairs from the core.
+   * @throws IOException - LukeRequestHandler can throw an I/O exception
+   */
+  protected NamedList<Object> getCoreStatus(CoreContainer cores, String cname, boolean isIndexInfoNeeded)  throws IOException {
     NamedList<Object> info = new SimpleOrderedMap<Object>();
-    SolrCore core = cores.getCore(cname);
-    if (core != null) {
-      try {
-        info.add("name", core.getName());
-        info.add("isDefaultCore", core.getName().equals(cores.getDefaultCoreName()));
-        info.add("instanceDir", normalizePath(core.getResourceLoader().getInstanceDir()));
-        info.add("dataDir", normalizePath(core.getDataDir()));
-        info.add("config", core.getConfigResource());
-        info.add("schema", core.getSchemaResource());
-        info.add("startTime", new Date(core.getStartTime()));
-        info.add("uptime", System.currentTimeMillis() - core.getStartTime());
-        if (isIndexInfoNeeded) {
-          RefCounted<SolrIndexSearcher> searcher = core.getSearcher();
-          try {
-            SimpleOrderedMap<Object> indexInfo = LukeRequestHandler.getIndexInfo(searcher.get().getIndexReader());
-            long size = getIndexSize(core);
-            indexInfo.add("sizeInBytes", size);
-            indexInfo.add("size", NumberUtils.readableSize(size));
-            info.add("index", indexInfo);
-          } finally {
-            searcher.decref();
+
+    if (!cores.isLoaded(cname)) { // Lazily-loaded core, fill in what we can.
+      // It would be a real mistake to load the cores just to get the status
+      CoreDescriptor desc = cores.getUnloadedCoreDescriptor(cname);
+      if (desc != null) {
+        info.add("name", desc.getName());
+        info.add("isDefaultCore", desc.getName().equals(cores.getDefaultCoreName()));
+        info.add("instanceDir", desc.getInstanceDir());
+        // None of the following are guaranteed to be present in a not-yet-loaded core.
+        String tmp = desc.getDataDir();
+        if (StringUtils.isNotBlank(tmp)) info.add("dataDir", tmp);
+        tmp = desc.getConfigName();
+        if (StringUtils.isNotBlank(tmp)) info.add("config", tmp);
+        tmp = desc.getSchemaName();
+        if (StringUtils.isNotBlank(tmp)) info.add("schema", tmp);
+        info.add("isLoaded", "false");
+      }
+    } else {
+      SolrCore core = cores.getCore(cname);
+      if (core != null) {
+        try {
+          info.add("name", core.getName());
+          info.add("isDefaultCore", core.getName().equals(cores.getDefaultCoreName()));
+          info.add("instanceDir", normalizePath(core.getResourceLoader().getInstanceDir()));
+          info.add("dataDir", normalizePath(core.getDataDir()));
+          info.add("config", core.getConfigResource());
+          info.add("schema", core.getSchemaResource());
+          info.add("startTime", new Date(core.getStartTime()));
+          info.add("uptime", System.currentTimeMillis() - core.getStartTime());
+          if (isIndexInfoNeeded) {
+            RefCounted<SolrIndexSearcher> searcher = core.getSearcher();
+            try {
+              SimpleOrderedMap<Object> indexInfo = LukeRequestHandler.getIndexInfo(searcher.get().getIndexReader());
+              long size = getIndexSize(core);
+              indexInfo.add("sizeInBytes", size);
+              indexInfo.add("size", NumberUtils.readableSize(size));
+              info.add("index", indexInfo);
+            } finally {
+              searcher.decref();
+            }
           }
+        } finally {
+          core.close();
         }
-      } finally {
-        core.close();
       }
     }
     return info;
   }
-  
+
   private long getIndexSize(SolrCore core) {
     Directory dir;
     long size = 0;

@@ -145,6 +145,7 @@ public abstract class FSDirectory extends Directory {
       throw new NoSuchDirectoryException("file '" + directory + "' exists but is not a directory");
 
     setLockFactory(lockFactory);
+
   }
 
   /** Creates an FSDirectory instance, trying to pick the
