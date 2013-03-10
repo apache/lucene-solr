@@ -451,6 +451,7 @@ public class LeaderElectionTest extends SolrTestCaseJ4 {
   @Override
   public void tearDown() throws Exception {
     zkClient.close();
+    zkStateReader.close();
     server.shutdown();
     super.tearDown();
   }

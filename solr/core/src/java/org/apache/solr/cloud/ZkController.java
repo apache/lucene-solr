@@ -349,6 +349,12 @@ public final class ZkController {
     }
     
     try {
+      zkStateReader.close();
+    } catch(Throwable t) {
+      log.error("Error closing zkStateReader", t);
+    } 
+    
+    try {
       zkClient.close();;
     } catch(Throwable t) {
       log.error("Error closing zkClient", t);
