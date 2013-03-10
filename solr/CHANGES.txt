@@ -62,6 +62,12 @@ New Features
 Bug Fixes
 ----------------------
 
+* SOLR-4475: Fix various places that still assume File based paths even when 
+  not using a file based DirectoryFactory. (Mark Miller)
+  
+* SOLR-4551: CachingDirectoryFactory needs to create CacheEntry's with the 
+  fullpath not path. (Mark Miller)
+
 Other Changes
 ----------------------
 

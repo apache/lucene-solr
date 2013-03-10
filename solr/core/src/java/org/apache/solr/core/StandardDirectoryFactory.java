@@ -43,11 +43,19 @@ public class StandardDirectoryFactory extends CachingDirectoryFactory {
   
   @Override
   public String normalize(String path) throws IOException {
-    return new File(path).getCanonicalPath();
+    String cpath = new File(path).getCanonicalPath();
+    
+    return stripTrailingSlash(cpath);
   }
   
   public boolean isPersistent() {
     return true;
+  }
+  
+  @Override
+  public boolean isAbsolute(String path) {
+    // back compat
+    return new File(path).isAbsolute();
   }
   
   @Override
@@ -59,11 +67,10 @@ public class StandardDirectoryFactory extends CachingDirectoryFactory {
     File dirFile = new File(val.path);
     FileUtils.deleteDirectory(dirFile);
   }
-  
 
   @Override
   public void remove(String path) throws IOException {
-    String fullPath = new File(path).getAbsolutePath();
+    String fullPath = normalize(path);
     File dirFile = new File(fullPath);
     FileUtils.deleteDirectory(dirFile);
   }

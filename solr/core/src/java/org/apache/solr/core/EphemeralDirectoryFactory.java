@@ -16,7 +16,6 @@ package org.apache.solr.core;
  * limitations under the License.
  */
 
-import java.io.File;
 import java.io.IOException;
 
 import org.apache.lucene.store.Directory;
@@ -28,8 +27,8 @@ import org.apache.lucene.store.Directory;
 public abstract class EphemeralDirectoryFactory extends CachingDirectoryFactory {
   
   @Override
-  public boolean exists(String path) {
-    String fullPath = new File(path).getAbsolutePath();
+  public boolean exists(String path) throws IOException {
+    String fullPath = normalize(path);
     synchronized (this) {
       CacheValue cacheValue = byPathCache.get(fullPath);
       Directory directory = null;
@@ -49,6 +48,12 @@ public abstract class EphemeralDirectoryFactory extends CachingDirectoryFactory 
   }
   
   @Override
+  public boolean isAbsolute(String path) {
+    return true;
+  }
+  
+  
+  @Override
   public void remove(Directory dir) throws IOException {
     // ram dir does not persist its dir anywhere
   }
@@ -60,6 +65,7 @@ public abstract class EphemeralDirectoryFactory extends CachingDirectoryFactory 
   
   @Override
   public String normalize(String path) throws IOException {
+    path = stripTrailingSlash(path);
     return path;
   }
 }

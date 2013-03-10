@@ -439,8 +439,12 @@ public class SnapPuller {
             @Override
             public void preClose() {
               LOG.info("removing old index files " + freezeIndexDir);
-              if (core.getDirectoryFactory().exists(freezeIndexDirPath)) {
-                DirectoryFactory.empty(freezeIndexDir);
+              try {
+                if (core.getDirectoryFactory().exists(freezeIndexDirPath)) {
+                  DirectoryFactory.empty(freezeIndexDir);
+                }
+              } catch (IOException e) {
+                SolrException.log(LOG, null, e);
               }
             }
             
@@ -674,13 +678,14 @@ public class SnapPuller {
     
   }
 
-
   /**
    * All the files are copied to a temp dir first
    */
   private String createTempindexDir(SolrCore core, String tmpIdxDirName) {
-    File tmpIdxDir = new File(core.getDataDir(), tmpIdxDirName);
-    return tmpIdxDir.toString();
+    // TODO: there should probably be a DirectoryFactory#concatPath(parent, name)
+    // or something
+    String tmpIdxDir = core.getDataDir() + tmpIdxDirName;
+    return tmpIdxDir;
   }
 
   private void reloadCore() {

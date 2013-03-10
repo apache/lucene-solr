@@ -166,19 +166,8 @@ public class CoreDescriptor {
 
   public String getDataDir() {
     String dataDir = coreProperties.getProperty(CORE_DATADIR);
-    if (dataDir == null) {
-      dataDir = getDefaultDataDir();
-    }
-    if (new File(dataDir).isAbsolute()) {
-      return dataDir;
-    } else {
-      if (new File(getInstanceDir()).isAbsolute()) {
-        return SolrResourceLoader.normalizeDir(SolrResourceLoader.normalizeDir(getInstanceDir()) + dataDir);
-      } else  {
-        return SolrResourceLoader.normalizeDir(coreContainer.getSolrHome() +
-                SolrResourceLoader.normalizeDir(getRawInstanceDir()) + dataDir);
-      }
-    }
+    if (dataDir == null) dataDir = getDefaultDataDir();
+    return dataDir;
   }
 
   public void setDataDir(String s) {

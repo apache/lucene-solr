@@ -43,4 +43,11 @@ public class MockFSDirectoryFactory extends StandardDirectoryFactory {
     }
     return dir;
   }
+  
+  @Override
+  public boolean isAbsolute(String path) {
+    // TODO: kind of a hack - we don't know what the delegate is, so
+    // we treat it as file based since this works on most ephem impls
+    return new File(path).isAbsolute();
+  }
 }

@@ -204,7 +204,7 @@ public abstract class CachingDirectoryFactory extends DirectoryFactory {
   protected abstract Directory create(String path, DirContext dirContext) throws IOException;
   
   @Override
-  public boolean exists(String path) {
+  public boolean exists(String path) throws IOException {
     // back compat behavior
     File dirFile = new File(path);
     return dirFile.canRead() && dirFile.list().length > 0;
@@ -231,7 +231,7 @@ public abstract class CachingDirectoryFactory extends DirectoryFactory {
   @Override
   public final Directory get(String path,  DirContext dirContext, String rawLockType, boolean forceNew)
       throws IOException {
-    String fullPath = new File(path).getAbsolutePath();
+    String fullPath = normalize(path);
     synchronized (this) {
       if (closed) {
         throw new RuntimeException("Already closed");
@@ -271,7 +271,7 @@ public abstract class CachingDirectoryFactory extends DirectoryFactory {
         newCacheValue.directory = directory;
         newCacheValue.path = fullPath;
         
-        injectLockFactory(directory, path, rawLockType);
+        injectLockFactory(directory, fullPath, rawLockType);
         
         byDirectoryCache.put(directory, newCacheValue);
         byPathCache.put(fullPath, newCacheValue);
@@ -371,5 +371,12 @@ public abstract class CachingDirectoryFactory extends DirectoryFactory {
           "Unrecognized lockType: " + rawLockType);
     }
     return dir;
+  }
+  
+  protected String stripTrailingSlash(String path) {
+    if (path.endsWith("/")) {
+      path = path.substring(0, path.length() - 1);
+    }
+    return path;
   }
 }
