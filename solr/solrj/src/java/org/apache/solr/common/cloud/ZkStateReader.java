@@ -133,6 +133,8 @@ public class ZkStateReader {
 
   private Aliases aliases = new Aliases();
 
+  private volatile boolean closed = false;
+
   public ZkStateReader(SolrZkClient zkClient) {
     this.zkClient = zkClient;
     initZkCmdExecutor(zkClient.getZkClientTimeout());
@@ -437,6 +439,7 @@ public class ZkStateReader {
   }
 
   public void close() {
+    this.closed  = true;
     if (closeClient) {
       zkClient.close();
     }
@@ -469,7 +472,7 @@ public class ZkStateReader {
    */
   public Replica getLeaderRetry(String collection, String shard, int timeout) throws InterruptedException {
     long timeoutAt = System.currentTimeMillis() + timeout;
-    while (System.currentTimeMillis() < timeoutAt) {
+    while (System.currentTimeMillis() < timeoutAt && !closed) {
       if (clusterState != null) {    
         Replica replica = clusterState.getLeader(collection, shard);
         if (replica != null && getClusterState().liveNodesContain(replica.getNodeName())) {
