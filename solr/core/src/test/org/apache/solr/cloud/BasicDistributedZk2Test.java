@@ -68,7 +68,7 @@ public class BasicDistributedZk2Test extends AbstractFullDistribZkTestBase {
     fixShardCount = true;
     
     sliceCount = 2;
-    shardCount = 3;
+    shardCount = 4;
   }
   
   /*
@@ -253,7 +253,7 @@ public class BasicDistributedZk2Test extends AbstractFullDistribZkTestBase {
     
     int oldLiveNodes = cloudClient.getZkStateReader().getZkClient().getChildren(ZkStateReader.LIVE_NODES_ZKNODE, null, true).size();
     
-    assertEquals(4, oldLiveNodes);
+    assertEquals(5, oldLiveNodes);
     
     // kill a shard
     CloudJettyRunner deadShard = chaosMonkey.stopShard(SHARD1, 0);
@@ -288,7 +288,7 @@ public class BasicDistributedZk2Test extends AbstractFullDistribZkTestBase {
   
     long numFound1 = cloudClient.query(new SolrQuery("*:*")).getResults().getNumFound();
     
-    cloudClient.getZkStateReader().getLeaderRetry(DEFAULT_COLLECTION, SHARD1, 30000);
+    cloudClient.getZkStateReader().getLeaderRetry(DEFAULT_COLLECTION, SHARD1, 45000);
     index_specific(shardToJetty.get(SHARD1).get(1).client.solrClient, id, 1000, i1, 108, t1,
         "specific doc!");
     
