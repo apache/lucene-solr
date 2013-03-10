@@ -126,9 +126,11 @@
   <!-- ========================================================================= -->
   <!-- ========================== BUILD/TEST TASKS ============================= -->
   <!-- ========================================================================= -->
-  
+
+  <!-- solr/test-framework is excluded from compilation -->
   <target name="compile" description="Compile the source code."
           depends="compile-core, compile-contrib"/>
+
   <target name="test" description="Validate, then run core, solrj, and contrib unit tests."
           depends="test-core, test-contrib"/>
   <!-- "-clover.load" is *not* a useless dependency. do not remove -->
@@ -136,7 +138,7 @@
           depends="-clover.load, test-solr-core, test-solrj"/>
   <target name="pitest" description="Validate, then run core, solrj, and contrib unit tests."
           depends="pitest-core, pitest-contrib"/>
-  <target name="compile-test" description="Compile unit tests."
+  <target name="compile-test" description="Compile core, solrj, and contrib unit tests, and solr-test-framework."
           depends="compile-solr-test-framework, compile-test-solr-core, compile-test-solrj, compile-test-contrib"/>
   <target name="javadocs" description="Calls javadocs-all, javadocs-solrj, and javadocs-test-framework"
           depends="define-lucene-javadoc-url,javadocs-solr-core,javadocs-solrj,javadocs-test-framework,javadocs-contrib"/>
@@ -173,9 +175,18 @@
     </copy>
   </target>
 
+  <target name="jar" depends="jar-core,jar-solrj,jar-solr-test-framework,jar-contrib"
+          description="Jar solr core, solrj, solr-test-framework, and all contribs"/>
+
   <!-- Solr core targets -->
   <target name="test-solr-core" description="Test solr core">
     <ant dir="core" target="test" inheritAll="false">
+      <propertyset refid="uptodate.and.compiled.properties"/>
+    </ant>
+  </target>
+
+  <target name="jar-core">
+    <ant dir="${common-solr.dir}/core" target="jar-core" inheritAll="false">
       <propertyset refid="uptodate.and.compiled.properties"/>
     </ant>
   </target>
@@ -236,27 +247,39 @@
     </license-check-macro>
   </target>
   
-  <target name="check-forbidden-apis" depends="compile-tools,compile-test,load-custom-tasks,-check-forbidden-java-apis,-check-forbidden-test-apis" 
+  <target name="check-forbidden-apis" depends="compile-tools,compile-test,install-forbidden-apis,-forbidden-apis-classpath,-check-forbidden-java-apis,-check-forbidden-test-apis" 
           description="Check forbidden API calls in compiled class files."/>
 
+  <!-- TODO: Make the forbidden API checks per module! Also remove failOnMissingClasses="false" below!!! -->
+  <target name="-forbidden-apis-classpath">
+    <path id="forbidden-apis.classpath">
+      <fileset dir="${basedir}" includes="**/lib/*.jar"/>
+      <dirset dir="${basedir}/build" includes="**/classes/*"/>
+      <path refid="solr.lucene.libs"/>
+      <path refid="classpath"/>
+      <path refid="test.classpath"/>
+    </path>
+  </target>
+
   <target name="-check-forbidden-java-apis">
-    <forbidden-apis>
-      <classpath refid="additional.dependencies"/>
-      <apiFileSet dir="${custom-tasks.dir}/forbiddenApis">
-        <include name="jdk.txt" />
-        <include name="jdk-deprecated.txt" />
-        <include name="commons-io.txt" />
+    <forbidden-apis internalRuntimeForbidden="true" classpathref="forbidden-apis.classpath" failOnMissingClasses="false">
+      <bundledSignatures name="jdk-unsafe-${javac.target}"/>
+      <bundledSignatures name="jdk-deprecated-${javac.target}"/>
+      <bundledSignatures name="commons-io-unsafe-${commons-io.version}"/>
+      <signaturesFileSet dir="${common.dir}/tools/forbiddenApis">
         <include name="executors.txt" />
-      </apiFileSet>
+        <include name="servlet-api.txt" />
+      </signaturesFileSet>
       <fileset dir="${basedir}/build">
         <include name="**/*.class" />        
+        <!-- violates the servlet-api restrictions, but it is safe to do so in this test: -->
+        <exclude name="solr-solrj/classes/test/org/apache/solr/client/solrj/impl/BasicHttpSolrServerTest$DebugServlet.class"/>
       </fileset>
     </forbidden-apis>
   </target>
 
   <target name="-check-forbidden-test-apis">
-    <forbidden-apis apiFile="${custom-tasks.dir}/forbiddenApis/tests.txt"> 
-      <classpath refid="junit-path"/>
+    <forbidden-apis signaturesFile="${common.dir}/tools/forbiddenApis/tests.txt" classpathref="forbidden-apis.classpath" failOnMissingClasses="false">
       <fileset dir="${basedir}/build">
         <include name="**/classes/test/**/*.class"/>
         <include name="solr-test-framework/**/*.class"/>
@@ -361,7 +384,20 @@
   <target name="prepare-release" depends="prepare-release-no-sign, sign-artifacts"/>
  
   <!-- make a distribution -->
-  <target name="package" depends="package-src-tgz,create-package"/>
+  <target name="package" depends="package-src-tgz,create-package,-dist-changes,-dist-keys"/>
+
+  <!-- copy changes/ to the release folder -->
+  <target name="-dist-changes">
+   <copy todir="${package.dir}/changes">
+     <fileset dir="build/docs/changes"/>
+   </copy>
+  </target>
+
+  <!-- copy KEYS to the release folder -->
+  <target name="-dist-keys">
+   <get src="http://people.apache.org/keys/group/lucene.asc" 
+        dest="${package.dir}/KEYS"/>
+  </target>
  
   <!-- Makes a tarball from running "svn export" at the root level.    -->
   <!-- Copies NOTICE.txt and LICENSE.txt from solr/ to the root level. -->
@@ -529,12 +565,15 @@
     </sequential>
   </target>
 
-  <target name="documentation-lint" depends="-ecj-javadoc-lint,-documentation-lint,-documentation-lint-unsupported"
-          description="Validates the generated documentation (HTML errors, broken links,...)"/>
-  
+  <target name="documentation-lint" depends="-ecj-javadoc-lint,-documentation-lint-unsupported" if="documentation-lint.supported"
+          description="Validates the generated documentation (HTML errors, broken links,...)">
+    <!-- we use antcall here, otherwise ANT will run all dependent targets: -->
+    <antcall target="-documentation-lint"/>
+  </target>
+
   <!-- TODO: does solr have any other docs we should check? -->
   <!-- TODO: also integrate checkJavaDocs.py, which does more checks -->
-  <target name="-documentation-lint" if="documentation-lint.supported" depends="documentation">
+  <target name="-documentation-lint" depends="documentation">
     <jtidy-macro>
        <!-- NOTE: must currently exclude deprecated-list due to a javadocs bug (as of 1.7.0_09)
             javadocs generates invalid XML if you deprecate a method that takes a parameter
@@ -544,20 +583,11 @@
     <echo message="Checking for broken links..."/>
     <check-broken-links dir="${javadoc.dir}"/>
     <echo message="Checking for malformed docs..."/>
-    <!-- TODO: add missing package.htmls and bump this to level=package -->
-    <check-missing-javadocs dir="${javadoc.dir}" level="none"/>
-    <!-- prevent the modules without problems from getting worse -->
-    <check-missing-javadocs dir="${javadoc.dir}/solr-analysis-extras" level="package"/>
-    <check-missing-javadocs dir="${javadoc.dir}/solr-cell" level="package"/>
-    <check-missing-javadocs dir="${javadoc.dir}/solr-clustering" level="package"/>
-    <!-- solr-core: problems: -->
-    <check-missing-javadocs dir="${javadoc.dir}/solr-dataimporthandler" level="package"/>
-    <check-missing-javadocs dir="${javadoc.dir}/solr-dataimporthandler-extras" level="package"/>
-    <check-missing-javadocs dir="${javadoc.dir}/solr-solrj" level="package"/>
-    <check-missing-javadocs dir="${javadoc.dir}/solr-test-framework" level="package"/>
+    <!-- TODO: add missing docs for all classes and bump this to level=class -->
+    <check-missing-javadocs dir="${javadoc.dir}" level="package"/>
   </target>
  
-  <target name="-ecj-javadoc-lint" depends="documentation,compile-solr-test-framework,-ecj-resolve">
+  <target name="-ecj-javadoc-lint" depends="compile,compile-test,jar-test-framework,-ecj-resolve">
     <subant target="-ecj-javadoc-lint" failonerror="true" inheritall="false">
       <propertyset refid="uptodate.and.compiled.properties"/>
       <fileset dir="core" includes="build.xml"/>
@@ -567,8 +597,8 @@
     <contrib-crawl target="-ecj-javadoc-lint"/>
   </target>
 
-  <!-- install-maven-tasks is *not* a useless dependency. do not remove -->
-  <target name="generate-maven-artifacts" depends="install-maven-tasks">
+  <!-- install-maven-tasks and define-lucene-javadoc-url are *not* a useless dependencies. Do not remove! -->
+  <target name="generate-maven-artifacts" depends="install-maven-tasks,define-lucene-javadoc-url">
     <sequential>
       <subant target="dist-maven" inheritall="false" >
         <propertyset refid="uptodate.and.compiled.properties"/>

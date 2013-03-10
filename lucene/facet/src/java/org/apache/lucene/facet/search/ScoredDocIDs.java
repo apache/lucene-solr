@@ -25,7 +25,7 @@ import org.apache.lucene.search.DocIdSet;
  * Document IDs with scores for each, driving facets accumulation. Document
  * scores are optionally used in the process of facets scoring.
  * 
- * @see FacetsAccumulator#accumulate(ScoredDocIDs)
+ * @see StandardFacetsAccumulator#accumulate(ScoredDocIDs)
  * @lucene.experimental
  */
 public interface ScoredDocIDs {

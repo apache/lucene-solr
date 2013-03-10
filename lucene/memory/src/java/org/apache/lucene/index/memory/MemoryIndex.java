@@ -35,21 +35,22 @@ import org.apache.lucene.analysis.tokenattributes.PositionIncrementAttribute;
 import org.apache.lucene.analysis.tokenattributes.TermToBytesRefAttribute;
 import org.apache.lucene.index.AtomicReader;
 import org.apache.lucene.index.AtomicReaderContext;
-import org.apache.lucene.index.FieldInfo;
-import org.apache.lucene.index.Norm;
-import org.apache.lucene.index.DocValues;
+import org.apache.lucene.index.BinaryDocValues;
 import org.apache.lucene.index.DocsAndPositionsEnum;
 import org.apache.lucene.index.DocsEnum;
+import org.apache.lucene.index.FieldInfo.IndexOptions;
+import org.apache.lucene.index.FieldInfo;
 import org.apache.lucene.index.FieldInfos;
 import org.apache.lucene.index.FieldInvertState;
 import org.apache.lucene.index.Fields;
+import org.apache.lucene.index.NumericDocValues;
 import org.apache.lucene.index.OrdTermState;
+import org.apache.lucene.index.SortedDocValues;
+import org.apache.lucene.index.SortedSetDocValues;
 import org.apache.lucene.index.StoredFieldVisitor;
 import org.apache.lucene.index.TermState;
 import org.apache.lucene.index.Terms;
 import org.apache.lucene.index.TermsEnum;
-import org.apache.lucene.index.FieldInfo.IndexOptions;
-import org.apache.lucene.index.memory.MemoryIndexNormDocValues.SingleValueSource;
 import org.apache.lucene.search.Collector;
 import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.search.Query;
@@ -60,13 +61,13 @@ import org.apache.lucene.util.ArrayUtil;
 import org.apache.lucene.util.Bits;
 import org.apache.lucene.util.ByteBlockPool;
 import org.apache.lucene.util.BytesRef;
-import org.apache.lucene.util.BytesRefHash;
-import org.apache.lucene.util.Counter;
-import org.apache.lucene.util.IntBlockPool;
 import org.apache.lucene.util.BytesRefHash.DirectBytesStartArray;
+import org.apache.lucene.util.BytesRefHash;
+import org.apache.lucene.util.Constants; // for javadocs
+import org.apache.lucene.util.Counter;
 import org.apache.lucene.util.IntBlockPool.SliceReader;
 import org.apache.lucene.util.IntBlockPool.SliceWriter;
-import org.apache.lucene.util.Constants; // for javadocs
+import org.apache.lucene.util.IntBlockPool;
 import org.apache.lucene.util.RamUsageEstimator;
 import org.apache.lucene.util.RecyclingByteBlockAllocator;
 import org.apache.lucene.util.RecyclingIntBlockAllocator;
@@ -253,8 +254,7 @@ public class MemoryIndex {
   }
   
   /**
-   * Expert: This constructor accepts a byte and int block allocator that is used internally to allocate 
-   * int & byte blocks for term and posting storage.  
+   * Expert: This constructor accepts an upper limit for the number of bytes that should be reused if this instance is {@link #reset()}.
    * @param storeOffsets <code>true</code> if offsets should be stored
    * @param maxReusedBytes the number of bytes that should remain in the internal memory pools after {@link #reset()} is called
    */
@@ -466,7 +466,9 @@ public class MemoryIndex {
       throw new RuntimeException(e);
     } finally {
       try {
-        if (stream != null) stream.close();
+        if (stream != null) {
+          stream.close();
+        }
       } catch (IOException e2) {
         throw new RuntimeException(e2);
       }
@@ -735,6 +737,26 @@ public class MemoryIndex {
     @Override
     public FieldInfos getFieldInfos() {
       return new FieldInfos(fieldInfos.values().toArray(new FieldInfo[fieldInfos.size()]));
+    }
+
+    @Override
+    public NumericDocValues getNumericDocValues(String field) {
+      return null;
+    }
+
+    @Override
+    public BinaryDocValues getBinaryDocValues(String field) {
+      return null;
+    }
+
+    @Override
+    public SortedDocValues getSortedDocValues(String field) {
+      return null;
+    }
+    
+    @Override
+    public SortedSetDocValues getSortedSetDocValues(String field) {
+      return null;
     }
 
     private class MemoryFields extends Fields {
@@ -1126,22 +1148,18 @@ public class MemoryIndex {
     protected void doClose() {
       if (DEBUG) System.err.println("MemoryIndexReader.doClose");
     }
-
-    @Override
-    public DocValues docValues(String field) {
-      return null;
-    }
     
     /** performance hack: cache norms to avoid repeated expensive calculations */
-    private DocValues cachedNormValues;
+    private NumericDocValues cachedNormValues;
     private String cachedFieldName;
     private Similarity cachedSimilarity;
     
     @Override
-    public DocValues normValues(String field) {
-      if (fieldInfos.get(field).omitsNorms())
+    public NumericDocValues getNormValues(String field) {
+      FieldInfo fieldInfo = fieldInfos.get(field);
+      if (fieldInfo == null || fieldInfo.omitsNorms())
         return null;
-      DocValues norms = cachedNormValues;
+      NumericDocValues norms = cachedNormValues;
       Similarity sim = getSimilarity();
       if (!field.equals(cachedFieldName) || sim != cachedSimilarity) { // not cached?
         Info info = getInfo(field);
@@ -1149,15 +1167,13 @@ public class MemoryIndex {
         int numOverlapTokens = info != null ? info.numOverlapTokens : 0;
         float boost = info != null ? info.getBoost() : 1.0f; 
         FieldInvertState invertState = new FieldInvertState(field, 0, numTokens, numOverlapTokens, 0, boost);
-        Norm norm = new Norm();
-        sim.computeNorm(invertState, norm);
-        SingleValueSource singleByteSource = new SingleValueSource(norm);
-        norms = new MemoryIndexNormDocValues(singleByteSource);
+        long value = sim.computeNorm(invertState);
+        norms = new MemoryIndexNormDocValues(value);
         // cache it for future reuse
         cachedNormValues = norms;
         cachedFieldName = field;
         cachedSimilarity = sim;
-        if (DEBUG) System.err.println("MemoryIndexReader.norms: " + field + ":" + norm + ":" + numTokens);
+        if (DEBUG) System.err.println("MemoryIndexReader.norms: " + field + ":" + value + ":" + numTokens);
       }
       return norms;
     }

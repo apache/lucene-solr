@@ -1,6 +1,10 @@
 package org.apache.solr.handler.dataimport;
 
 import java.io.File;
+import java.sql.Connection;
+import java.sql.ResultSet;
+import java.sql.SQLException;
+import java.sql.Statement;
 import java.text.SimpleDateFormat;
 import java.util.Calendar;
 import java.util.Date;
@@ -95,14 +99,40 @@ public class TestSimplePropertiesWriter extends AbstractDIHJdbcTestCase {
       props = spw.readIndexerProperties();
       Date entityDate = df.parse((String) props.get("SomeDates.last_index_time"));
       Date docDate= df.parse((String) props.get("last_index_time"));
-      Calendar c = new GregorianCalendar(TimeZone.getTimeZone("GMT"), Locale.ROOT);
-      c.setTime(docDate);
-      int year = c.get(Calendar.YEAR);
+      int year = currentYearFromDatabase();
       
       Assert.assertTrue("This date: " + errMsgFormat.format(oneSecondAgo) + " should be prior to the document date: " + errMsgFormat.format(docDate), docDate.getTime() - oneSecondAgo.getTime() > 0);
       Assert.assertTrue("This date: " + errMsgFormat.format(oneSecondAgo) + " should be prior to the entity date: " + errMsgFormat.format(entityDate), entityDate.getTime() - oneSecondAgo.getTime() > 0);   
       assertQ(req("*:*"), "//*[@numFound='1']", "//doc/str[@name=\"ayear_s\"]=\"" + year + "\"");    
     }
+  }
+  
+  private int currentYearFromDatabase() throws Exception {
+    Connection conn = null;
+    Statement s = null;
+    ResultSet rs = null;
+    try {
+      conn = newConnection();
+      s = conn.createStatement();
+      rs = s.executeQuery("select year(current_timestamp) from sysibm.sysdummy1");
+      if (rs.next()) {
+        return rs.getInt(1);
+      }
+      Assert.fail("We should have gotten a row from the db.");
+    } catch (SQLException e) {
+      throw e;
+    } finally {
+      try {
+        rs.close();
+      } catch (Exception ex) {}
+      try {
+        s.close();
+      } catch (Exception ex) {}
+      try {
+        conn.close();
+      } catch (Exception ex) {}
+    }
+    return 0;
   }
   
   @Override

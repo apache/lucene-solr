@@ -113,15 +113,27 @@ public final class FieldFilterAtomicReader extends FilterAtomicReader {
     final Fields f = super.fields();
     return (f == null) ? null : new FieldFilterFields(f);
   }
+  
+  
 
   @Override
-  public DocValues docValues(String field) throws IOException {
-    return hasField(field) ? super.docValues(field) : null;
+  public NumericDocValues getNumericDocValues(String field) throws IOException {
+    return hasField(field) ? super.getNumericDocValues(field) : null;
   }
 
   @Override
-  public DocValues normValues(String field) throws IOException {
-    return hasField(field) ? super.normValues(field) : null;
+  public BinaryDocValues getBinaryDocValues(String field) throws IOException {
+    return hasField(field) ? super.getBinaryDocValues(field) : null;
+  }
+
+  @Override
+  public SortedDocValues getSortedDocValues(String field) throws IOException {
+    return hasField(field) ? super.getSortedDocValues(field) : null;
+  }
+
+  @Override
+  public NumericDocValues getNormValues(String field) throws IOException {
+    return hasField(field) ? super.getNormValues(field) : null;
   }
 
   @Override

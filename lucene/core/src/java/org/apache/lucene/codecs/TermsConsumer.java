@@ -83,7 +83,7 @@ public abstract class TermsConsumer {
   private MappingMultiDocsAndPositionsEnum postingsEnum;
 
   /** Default merge impl */
-  public void merge(MergeState mergeState, TermsEnum termsEnum) throws IOException {
+  public void merge(MergeState mergeState, IndexOptions indexOptions, TermsEnum termsEnum) throws IOException {
 
     BytesRef term;
     assert termsEnum != null;
@@ -92,7 +92,6 @@ public abstract class TermsConsumer {
     long sumDFsinceLastAbortCheck = 0;
     FixedBitSet visitedDocs = new FixedBitSet(mergeState.segmentInfo.getDocCount());
 
-    IndexOptions indexOptions = mergeState.fieldInfo.getIndexOptions();
     if (indexOptions == IndexOptions.DOCS_ONLY) {
       if (docsEnum == null) {
         docsEnum = new MappingMultiDocsEnum();
@@ -108,7 +107,7 @@ public abstract class TermsConsumer {
         if (docsEnumIn != null) {
           docsEnum.reset(docsEnumIn);
           final PostingsConsumer postingsConsumer = startTerm(term);
-          final TermStats stats = postingsConsumer.merge(mergeState, docsEnum, visitedDocs);
+          final TermStats stats = postingsConsumer.merge(mergeState, indexOptions, docsEnum, visitedDocs);
           if (stats.docFreq > 0) {
             finishTerm(term, stats);
             sumTotalTermFreq += stats.docFreq;
@@ -136,7 +135,7 @@ public abstract class TermsConsumer {
         assert docsAndFreqsEnumIn != null;
         docsAndFreqsEnum.reset(docsAndFreqsEnumIn);
         final PostingsConsumer postingsConsumer = startTerm(term);
-        final TermStats stats = postingsConsumer.merge(mergeState, docsAndFreqsEnum, visitedDocs);
+        final TermStats stats = postingsConsumer.merge(mergeState, indexOptions, docsAndFreqsEnum, visitedDocs);
         if (stats.docFreq > 0) {
           finishTerm(term, stats);
           sumTotalTermFreq += stats.totalTermFreq;
@@ -162,7 +161,7 @@ public abstract class TermsConsumer {
         postingsEnum.reset(postingsEnumIn);
 
         final PostingsConsumer postingsConsumer = startTerm(term);
-        final TermStats stats = postingsConsumer.merge(mergeState, postingsEnum, visitedDocs);
+        final TermStats stats = postingsConsumer.merge(mergeState, indexOptions, postingsEnum, visitedDocs);
         if (stats.docFreq > 0) {
           finishTerm(term, stats);
           sumTotalTermFreq += stats.totalTermFreq;
@@ -189,7 +188,7 @@ public abstract class TermsConsumer {
         postingsEnum.reset(postingsEnumIn);
 
         final PostingsConsumer postingsConsumer = startTerm(term);
-        final TermStats stats = postingsConsumer.merge(mergeState, postingsEnum, visitedDocs);
+        final TermStats stats = postingsConsumer.merge(mergeState, indexOptions, postingsEnum, visitedDocs);
         if (stats.docFreq > 0) {
           finishTerm(term, stats);
           sumTotalTermFreq += stats.totalTermFreq;

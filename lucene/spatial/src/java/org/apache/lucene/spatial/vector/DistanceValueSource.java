@@ -63,8 +63,8 @@ public class DistanceValueSource extends ValueSource {
   public FunctionValues getValues(Map context, AtomicReaderContext readerContext) throws IOException {
     AtomicReader reader = readerContext.reader();
 
-    final double[] ptX = FieldCache.DEFAULT.getDoubles(reader, strategy.getFieldNameX(), true);
-    final double[] ptY = FieldCache.DEFAULT.getDoubles(reader, strategy.getFieldNameY(), true);
+    final FieldCache.Doubles ptX = FieldCache.DEFAULT.getDoubles(reader, strategy.getFieldNameX(), true);
+    final FieldCache.Doubles ptY = FieldCache.DEFAULT.getDoubles(reader, strategy.getFieldNameY(), true);
     final Bits validX =  FieldCache.DEFAULT.getDocsWithField(reader, strategy.getFieldNameX());
     final Bits validY =  FieldCache.DEFAULT.getDocsWithField(reader, strategy.getFieldNameY());
 
@@ -84,7 +84,7 @@ public class DistanceValueSource extends ValueSource {
         // make sure it has minX and area
         if (validX.get(doc)) {
           assert validY.get(doc);
-          return calculator.distance(from, ptX[doc], ptY[doc]);
+          return calculator.distance(from, ptX.get(doc), ptY.get(doc));
         }
         return nullValue;
       }

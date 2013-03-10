@@ -16,15 +16,22 @@ package org.apache.solr.handler.component;
  * limitations under the License.
  */
 
-import org.apache.lucene.search.FieldCache;
-import org.apache.lucene.util.BytesRef;
-import org.apache.solr.schema.FieldType;
-import org.apache.solr.schema.SchemaField;
-
+import java.io.IOException;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+
+import org.apache.lucene.index.AtomicReader;
+import org.apache.lucene.index.AtomicReaderContext;
+import org.apache.lucene.index.SortedDocValues;
+import org.apache.lucene.queries.function.FunctionValues;
+import org.apache.lucene.queries.function.ValueSource;
+import org.apache.lucene.search.FieldCache;
+import org.apache.lucene.util.BytesRef;
+import org.apache.solr.schema.SchemaField;
+import org.apache.solr.search.SolrIndexSearcher;
 
 
 /**
@@ -39,87 +46,76 @@ import java.util.Map;
 
 public class FieldFacetStats {
   public final String name;
-  final FieldCache.DocTermsIndex si;
   final SchemaField facet_sf;
   final SchemaField field_sf;
 
-  final int startTermIndex;
-  final int endTermIndex;
-  final int nTerms;
-
-  final int numStatsTerms;
-
   public final Map<String, StatsValues> facetStatsValues;
 
-  final List<HashMap<String, Integer>> facetStatsTerms;
+  List<HashMap<String, Integer>> facetStatsTerms;
+
+  final AtomicReader topLevelReader;
+  AtomicReaderContext leave;
+  final ValueSource valueSource;
+  AtomicReaderContext context;
+  FunctionValues values;
+
+  SortedDocValues topLevelSortedValues = null;
 
   private final BytesRef tempBR = new BytesRef();
 
-  public FieldFacetStats(String name, FieldCache.DocTermsIndex si, SchemaField field_sf, SchemaField facet_sf, int numStatsTerms) {
+  public FieldFacetStats(SolrIndexSearcher searcher, String name, SchemaField field_sf, SchemaField facet_sf) {
     this.name = name;
-    this.si = si;
     this.field_sf = field_sf;
     this.facet_sf = facet_sf;
-    this.numStatsTerms = numStatsTerms;
 
-    startTermIndex = 1;
-    endTermIndex = si.numOrd();
-    nTerms = endTermIndex - startTermIndex;
+    topLevelReader = searcher.getAtomicReader();
+    valueSource = facet_sf.getType().getValueSource(facet_sf, null);
 
     facetStatsValues = new HashMap<String, StatsValues>();
-
-    // for mv stats field, we'll want to keep track of terms
     facetStatsTerms = new ArrayList<HashMap<String, Integer>>();
-    if (numStatsTerms == 0) return;
-    int i = 0;
-    for (; i < numStatsTerms; i++) {
-      facetStatsTerms.add(new HashMap<String, Integer>());
-    }
   }
 
-  BytesRef getTermText(int docID, BytesRef ret) {
-    final int ord = si.getOrd(docID);
-    if (ord == 0) {
-      return null;
-    } else {
-      return si.lookup(ord, ret);
+  private StatsValues getStatsValues(String key) throws IOException {
+    StatsValues stats = facetStatsValues.get(key);
+    if (stats == null) {
+      stats = StatsValuesFactory.createStatsValues(field_sf);
+      facetStatsValues.put(key, stats);
+      stats.setNextReader(context);
     }
+    return stats;
   }
 
-  public boolean facet(int docID, BytesRef v) {
-    int term = si.getOrd(docID);
-    int arrIdx = term - startTermIndex;
-    if (arrIdx >= 0 && arrIdx < nTerms) {
-      final BytesRef br = si.lookup(term, tempBR);
-      String key = (br == null)?null:facet_sf.getType().indexedToReadable(br.utf8ToString());
-      StatsValues stats = facetStatsValues.get(key);
-      if (stats == null) {
-        stats = StatsValuesFactory.createStatsValues(field_sf);
-        facetStatsValues.put(key, stats);
-      }
-
-      if (v != null && v.length>0) {
-        stats.accumulate(v);
-      } else {
-        stats.missing();
-        return false;
-      }
-      return true;
-    }
-    return false;
+  // docID is relative to the context
+  public void facet(int docID) throws IOException {
+    final String key = values.exists(docID)
+        ? values.strVal(docID)
+        : null;
+    final StatsValues stats = getStatsValues(key);
+    stats.accumulate(docID);
   }
-
 
   // Function to keep track of facet counts for term number.
   // Currently only used by UnInvertedField stats
-  public boolean facetTermNum(int docID, int statsTermNum) {
-
-    int term = si.getOrd(docID);
-    int arrIdx = term - startTermIndex;
-    if (arrIdx >= 0 && arrIdx < nTerms) {
-      final BytesRef br = si.lookup(term, tempBR);
+  public boolean facetTermNum(int docID, int statsTermNum) throws IOException {
+    if (topLevelSortedValues == null) {
+      topLevelSortedValues = FieldCache.DEFAULT.getTermsIndex(topLevelReader, name);
+    }
+    
+    int term = topLevelSortedValues.getOrd(docID);
+    int arrIdx = term;
+    if (arrIdx >= 0 && arrIdx < topLevelSortedValues.getValueCount()) {
+      final BytesRef br;
+      if (term == -1) {
+        br = null;
+      } else {
+        br = tempBR;
+        topLevelSortedValues.lookupOrd(term, tempBR);
+      }
       String key = br == null ? null : br.utf8ToString();
-      HashMap<String, Integer> statsTermCounts = facetStatsTerms.get(statsTermNum);
+      while (facetStatsTerms.size() <= statsTermNum) {
+        facetStatsTerms.add(new HashMap<String, Integer>());
+      }
+      final Map<String, Integer> statsTermCounts = facetStatsTerms.get(statsTermNum);
       Integer statsTermCount = statsTermCounts.get(key);
       if (statsTermCount == null) {
         statsTermCounts.put(key, 1);
@@ -133,8 +129,11 @@ public class FieldFacetStats {
 
 
   //function to accumulate counts for statsTermNum to specified value
-  public boolean accumulateTermNum(int statsTermNum, BytesRef value) {
+  public boolean accumulateTermNum(int statsTermNum, BytesRef value) throws IOException {
     if (value == null) return false;
+    while (facetStatsTerms.size() <= statsTermNum) {
+      facetStatsTerms.add(new HashMap<String, Integer>());
+    }
     for (Map.Entry<String, Integer> stringIntegerEntry : facetStatsTerms.get(statsTermNum).entrySet()) {
       Map.Entry pairs = (Map.Entry) stringIntegerEntry;
       String key = (String) pairs.getKey();
@@ -149,6 +148,14 @@ public class FieldFacetStats {
       }
     }
     return true;
+  }
+
+  public void setNextReader(AtomicReaderContext ctx) throws IOException {
+    this.context = ctx;
+    values = valueSource.getValues(Collections.emptyMap(), ctx);
+    for (StatsValues stats : facetStatsValues.values()) {
+      stats.setNextReader(ctx);
+    }
   }
 
 }

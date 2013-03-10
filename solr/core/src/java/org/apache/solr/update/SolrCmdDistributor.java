@@ -40,6 +40,7 @@ import org.apache.solr.common.SolrException.ErrorCode;
 import org.apache.solr.common.cloud.ZkCoreNodeProps;
 import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.common.util.NamedList;
+import org.apache.solr.core.Diagnostics;
 import org.apache.solr.core.SolrCore;
 import org.apache.solr.util.AdjustableSemaphore;
 import org.slf4j.Logger;
@@ -359,6 +360,8 @@ public class SolrCmdDistributor {
     
   }
 
+  public static Diagnostics.Callable testing_errorHook;  // called on error when forwarding request.  Currently data=[this, Request]
+
   void checkResponses(boolean block) {
 
     while (pending != null && pending.size() > 0) {
@@ -372,7 +375,9 @@ public class SolrCmdDistributor {
           Request sreq = future.get();
           if (sreq.rspCode != 0) {
             // error during request
-            
+
+            if (testing_errorHook != null) Diagnostics.call(testing_errorHook, this, sreq);
+
             // if there is a retry url, we want to retry...
             boolean isRetry = sreq.node.checkRetry();
             boolean doRetry = false;
@@ -402,7 +407,6 @@ public class SolrCmdDistributor {
               SolrException.log(SolrCmdDistributor.log, "forwarding update to " + sreq.node.getUrl() + " failed - retrying ... ");
               Thread.sleep(500);
               submit(sreq);
-              checkResponses(block);
             } else {
               Exception e = sreq.exception;
               Error error = new Error();
@@ -451,26 +455,20 @@ public class SolrCmdDistributor {
   }
 
   public static class StdNode extends Node {
-    protected String url;
-    protected String baseUrl;
-    protected String coreName;
-    private ZkCoreNodeProps nodeProps;
+    protected ZkCoreNodeProps nodeProps;
 
     public StdNode(ZkCoreNodeProps nodeProps) {
-      this.url = nodeProps.getCoreUrl();
-      this.baseUrl = nodeProps.getBaseUrl();
-      this.coreName = nodeProps.getCoreName();
       this.nodeProps = nodeProps;
     }
     
     @Override
     public String getUrl() {
-      return url;
+      return nodeProps.getCoreUrl();
     }
     
     @Override
     public String toString() {
-      return this.getClass().getSimpleName() + ": " + url;
+      return this.getClass().getSimpleName() + ": " + nodeProps.getCoreUrl();
     }
 
     @Override
@@ -480,18 +478,21 @@ public class SolrCmdDistributor {
 
     @Override
     public String getBaseUrl() {
-      return baseUrl;
+      return nodeProps.getBaseUrl();
     }
 
     @Override
     public String getCoreName() {
-      return coreName;
+      return nodeProps.getCoreName();
     }
 
     @Override
     public int hashCode() {
       final int prime = 31;
       int result = 1;
+      String baseUrl = nodeProps.getBaseUrl();
+      String coreName = nodeProps.getCoreName();
+      String url = nodeProps.getCoreUrl();
       result = prime * result + ((baseUrl == null) ? 0 : baseUrl.hashCode());
       result = prime * result + ((coreName == null) ? 0 : coreName.hashCode());
       result = prime * result + ((url == null) ? 0 : url.hashCode());
@@ -504,15 +505,18 @@ public class SolrCmdDistributor {
       if (obj == null) return false;
       if (getClass() != obj.getClass()) return false;
       StdNode other = (StdNode) obj;
+      String baseUrl = nodeProps.getBaseUrl();
+      String coreName = nodeProps.getCoreName();
+      String url = nodeProps.getCoreUrl();
       if (baseUrl == null) {
-        if (other.baseUrl != null) return false;
-      } else if (!baseUrl.equals(other.baseUrl)) return false;
+        if (other.nodeProps.getBaseUrl() != null) return false;
+      } else if (!baseUrl.equals(other.nodeProps.getBaseUrl())) return false;
       if (coreName == null) {
-        if (other.coreName != null) return false;
-      } else if (!coreName.equals(other.coreName)) return false;
+        if (other.nodeProps.getCoreName() != null) return false;
+      } else if (!coreName.equals(other.nodeProps.getCoreName())) return false;
       if (url == null) {
-        if (other.url != null) return false;
-      } else if (!url.equals(other.url)) return false;
+        if (other.nodeProps.getCoreUrl() != null) return false;
+      } else if (!url.equals(other.nodeProps.getCoreUrl())) return false;
       return true;
     }
 

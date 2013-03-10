@@ -22,7 +22,7 @@ import java.util.List;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.util.Bits;
 import org.apache.lucene.util.InfoStream;
-import org.apache.lucene.util.packed.PackedInts;
+import org.apache.lucene.util.packed.MonotonicAppendingLongBuffer;
 
 /** Holds common state used during segment merging.
  *
@@ -33,70 +33,11 @@ public class MergeState {
    * Remaps docids around deletes during merge
    */
   public static abstract class DocMap {
-    private final Bits liveDocs;
 
-    /** Sole constructor. (For invocation by subclass 
-     *  constructors, typically implicit.) */
-    protected DocMap(Bits liveDocs) {
-      this.liveDocs = liveDocs;
-    }
-
-    /** Creates a {@link DocMap} instance appropriate for
-     *  this reader. */
-    public static DocMap build(AtomicReader reader) {
-      final int maxDoc = reader.maxDoc();
-      final int numDeletes = reader.numDeletedDocs();
-      final int numDocs = maxDoc - numDeletes;
-      assert reader.getLiveDocs() != null || numDeletes == 0;
-      if (numDeletes == 0) {
-        return new NoDelDocMap(maxDoc);
-      } else if (numDeletes < numDocs) {
-        return buildDelCountDocmap(maxDoc, numDeletes, reader.getLiveDocs(), PackedInts.COMPACT);
-      } else {
-        return buildDirectDocMap(maxDoc, numDocs, reader.getLiveDocs(), PackedInts.COMPACT);
-      }
-    }
-
-    static DocMap buildDelCountDocmap(int maxDoc, int numDeletes, Bits liveDocs, float acceptableOverheadRatio) {
-      PackedInts.Mutable numDeletesSoFar = PackedInts.getMutable(maxDoc,
-          PackedInts.bitsRequired(numDeletes), acceptableOverheadRatio);
-      int del = 0;
-      for (int i = 0; i < maxDoc; ++i) {
-        if (!liveDocs.get(i)) {
-          ++del;
-        }
-        numDeletesSoFar.set(i, del);
-      }
-      assert del == numDeletes : "del=" + del + ", numdeletes=" + numDeletes;
-      return new DelCountDocMap(liveDocs, numDeletesSoFar);
-    }
-
-    static DocMap buildDirectDocMap(int maxDoc, int numDocs, Bits liveDocs, float acceptableOverheadRatio) {
-      PackedInts.Mutable docIds = PackedInts.getMutable(maxDoc,
-          PackedInts.bitsRequired(Math.max(0, numDocs - 1)), acceptableOverheadRatio);
-      int del = 0;
-      for (int i = 0; i < maxDoc; ++i) {
-        if (liveDocs.get(i)) {
-          docIds.set(i, i - del);
-        } else {
-          ++del;
-        }
-      }
-      assert numDocs + del == maxDoc : "maxDoc=" + maxDoc + ", del=" + del + ", numDocs=" + numDocs;
-      return new DirectDocMap(liveDocs, docIds, del);
-    }
+    DocMap() {}
 
     /** Returns the mapped docID corresponding to the provided one. */
-    public int get(int docId) {
-      if (liveDocs == null || liveDocs.get(docId)) {
-        return remap(docId);
-      } else {
-        return -1;
-      }
-    }
-
-    /** Returns the mapped docID corresponding to the provided one. */
-    public abstract int remap(int docId);
+    public abstract int get(int docID);
 
     /** Returns the total number of documents, ignoring
      *  deletions. */
@@ -115,6 +56,52 @@ public class MergeState {
       return numDeletedDocs() > 0;
     }
 
+    /** Creates a {@link DocMap} instance appropriate for
+     *  this reader. */
+    public static DocMap build(AtomicReader reader) {
+      final int maxDoc = reader.maxDoc();
+      if (!reader.hasDeletions()) {
+        return new NoDelDocMap(maxDoc);
+      }
+      final Bits liveDocs = reader.getLiveDocs();
+      return build(maxDoc, liveDocs);
+    }
+
+    static DocMap build(final int maxDoc, final Bits liveDocs) {
+      assert liveDocs != null;
+      final MonotonicAppendingLongBuffer docMap = new MonotonicAppendingLongBuffer();
+      int del = 0;
+      for (int i = 0; i < maxDoc; ++i) {
+        docMap.add(i - del);
+        if (!liveDocs.get(i)) {
+          ++del;
+        }
+      }
+      final int numDeletedDocs = del;
+      assert docMap.size() == maxDoc;
+      return new DocMap() {
+
+        @Override
+        public int get(int docID) {
+          if (!liveDocs.get(docID)) {
+            return -1;
+          }
+          return (int) docMap.get(docID);
+        }
+
+        @Override
+        public int maxDoc() {
+          return maxDoc;
+        }
+
+        @Override
+        public int numDeletedDocs() {
+          return numDeletedDocs;
+        }
+
+      };
+    }
+
   }
 
   private static class NoDelDocMap extends DocMap {
@@ -122,13 +109,12 @@ public class MergeState {
     private final int maxDoc;
 
     private NoDelDocMap(int maxDoc) {
-      super(null);
       this.maxDoc = maxDoc;
     }
 
     @Override
-    public int remap(int docId) {
-      return docId;
+    public int get(int docID) {
+      return docID;
     }
 
     @Override
@@ -139,59 +125,6 @@ public class MergeState {
     @Override
     public int numDeletedDocs() {
       return 0;
-    }
-  }
-
-  private static class DirectDocMap extends DocMap {
-
-    private final PackedInts.Mutable docIds;
-    private final int numDeletedDocs;
-
-    private DirectDocMap(Bits liveDocs, PackedInts.Mutable docIds, int numDeletedDocs) {
-      super(liveDocs);
-      this.docIds = docIds;
-      this.numDeletedDocs = numDeletedDocs;
-    }
-
-    @Override
-    public int remap(int docId) {
-      return (int) docIds.get(docId);
-    }
-
-    @Override
-    public int maxDoc() {
-      return docIds.size();
-    }
-
-    @Override
-    public int numDeletedDocs() {
-      return numDeletedDocs;
-    }
-  }
-
-  private static class DelCountDocMap extends DocMap {
-
-    private final PackedInts.Mutable numDeletesSoFar;
-
-    private DelCountDocMap(Bits liveDocs, PackedInts.Mutable numDeletesSoFar) {
-      super(liveDocs);
-      this.numDeletesSoFar = numDeletesSoFar;
-    }
-
-    @Override
-    public int remap(int docId) {
-      return docId - (int) numDeletesSoFar.get(docId);
-    }
-
-    @Override
-    public int maxDoc() {
-      return numDeletesSoFar.size();
-    }
-
-    @Override
-    public int numDeletedDocs() {
-      final int maxDoc = maxDoc();
-      return (int) numDeletesSoFar.get(maxDoc - 1);
     }
   }
 
@@ -213,16 +146,13 @@ public class MergeState {
   /** Holds the CheckAbort instance, which is invoked
    *  periodically to see if the merge has been aborted. */
   public CheckAbort checkAbort;
-  
+
   /** InfoStream for debugging messages. */
   public InfoStream infoStream;
 
-  /** Current field being merged. */
-  public FieldInfo fieldInfo;
-  
   // TODO: get rid of this? it tells you which segments are 'aligned' (e.g. for bulk merging)
   // but is this really so expensive to compute again in different components, versus once in SM?
-  
+
   /** {@link SegmentReader}s that have identical field
    * name/number mapping, so their stored fields and term
    * vectors may be bulk merged. */
@@ -234,7 +164,7 @@ public class MergeState {
   /** Sole constructor. */
   MergeState() {
   }
-  
+
   /**
    * Class for recording units of work when merging segments.
    */
@@ -264,7 +194,7 @@ public class MergeState {
         workCount = 0;
       }
     }
-    
+
     /** If you use this: IW.close(false) cannot abort your merge!
      * @lucene.internal */
     static final MergeState.CheckAbort NONE = new MergeState.CheckAbort(null, null) {

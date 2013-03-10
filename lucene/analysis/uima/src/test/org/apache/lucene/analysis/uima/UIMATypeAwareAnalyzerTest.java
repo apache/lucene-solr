@@ -37,7 +37,7 @@ public class UIMATypeAwareAnalyzerTest extends BaseTokenStreamTestCase {
   public void setUp() throws Exception {
     super.setUp();
     analyzer = new UIMATypeAwareAnalyzer("/uima/AggregateSentenceAE.xml",
-        "org.apache.uima.TokenAnnotation", "posTag");
+        "org.apache.uima.TokenAnnotation", "posTag", null);
   }
 
   @Override
@@ -63,7 +63,7 @@ public class UIMATypeAwareAnalyzerTest extends BaseTokenStreamTestCase {
   @Test
   public void testRandomStrings() throws Exception {
     checkRandomData(random(), new UIMATypeAwareAnalyzer("/uima/TestAggregateSentenceAE.xml",
-        "org.apache.lucene.uima.ts.TokenAnnotation", "pos"), 100 * RANDOM_MULTIPLIER);
+        "org.apache.lucene.uima.ts.TokenAnnotation", "pos", null), 100 * RANDOM_MULTIPLIER);
   }
 
 }

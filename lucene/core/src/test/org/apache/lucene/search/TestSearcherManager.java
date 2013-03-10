@@ -331,8 +331,13 @@ public class TestSearcherManager extends ThreadedIndexingAndSearchingTestCase {
     SearcherManager sm = new SearcherManager(iw, false, new SearcherFactory());
     sm.addListener(new ReferenceManager.RefreshListener() {
       @Override
-      public void afterRefresh() {
-        afterRefreshCalled.set(true);
+      public void beforeRefresh() {
+      }
+      @Override
+      public void afterRefresh(boolean didRefresh) {
+        if (didRefresh) {
+          afterRefreshCalled.set(true);
+        }
       }
     });
     iw.addDocument(new Document());

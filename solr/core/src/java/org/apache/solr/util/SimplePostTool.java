@@ -28,7 +28,9 @@ import java.io.ByteArrayInputStream;
 import java.io.InputStreamReader;
 import java.io.OutputStream;
 import java.io.UnsupportedEncodingException;
+import java.text.SimpleDateFormat;
 import java.util.ArrayList;
+import java.util.Date;
 import java.util.HashMap;
 import java.util.LinkedHashSet;
 import java.util.List;
@@ -36,6 +38,7 @@ import java.util.Locale;
 import java.util.Map;
 import java.util.Set;
 import java.util.HashSet;
+import java.util.TimeZone;
 import java.util.regex.Pattern;
 import java.util.regex.PatternSyntaxException;
 import java.util.zip.GZIPInputStream;
@@ -165,6 +168,7 @@ public class SimplePostTool {
    * This method delegates to the correct mode method.
    */
   public void execute() {
+    final long startTime = System.currentTimeMillis();
     if (DATA_MODE_FILES.equals(mode) && args.length > 0) {
       doFilesMode();
     } else if(DATA_MODE_ARGS.equals(mode) && args.length > 0) {
@@ -180,8 +184,20 @@ public class SimplePostTool {
     
     if (commit)   commit();
     if (optimize) optimize();
+    final long endTime = System.currentTimeMillis();
+    displayTiming(endTime - startTime);
   }
   
+  /**
+   * Pretty prints the number of milliseconds taken to post the content to Solr
+   * @param millis the time in milliseconds
+   */
+  private void displayTiming(long millis) {
+    SimpleDateFormat df = new SimpleDateFormat("H:mm:ss.SSS", Locale.getDefault());
+    df.setTimeZone(TimeZone.getTimeZone("UTC"));
+    System.out.println("Time spent: "+df.format(new Date(millis)));
+  }
+
   /**
    * Parses incoming arguments and system params and initializes the tool
    * @param args the incoming cmd line args
@@ -196,7 +212,8 @@ public class SimplePostTool {
         fatal("System Property 'data' is not valid for this tool: " + mode);
       }
       String params = System.getProperty("params", "");
-      urlStr = System.getProperty("url", SimplePostTool.appendParam(DEFAULT_POST_URL, params));
+      urlStr = System.getProperty("url", DEFAULT_POST_URL);
+      urlStr = SimplePostTool.appendParam(urlStr, params);
       URL url = new URL(urlStr);
       boolean auto = isOn(System.getProperty("auto", DEFAULT_AUTO));
       String type = System.getProperty("type");
@@ -800,7 +817,7 @@ public class SimplePostTool {
             " " + urlc.getResponseMessage() + " for url "+url);
       }
     } catch (IOException e) {
-      warn("An error occured posting data to "+url+". Please check that Solr is running.");
+      warn("An error occurred posting data to "+url+". Please check that Solr is running.");
     }
   }
 

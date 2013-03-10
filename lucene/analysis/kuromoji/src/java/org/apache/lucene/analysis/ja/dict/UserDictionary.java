@@ -139,7 +139,7 @@ public final class UserDictionary implements Dictionary {
     TreeMap<Integer, int[]> result = new TreeMap<Integer, int[]>(); // index, [length, length...]
     boolean found = false; // true if we found any results
 
-    final FST.BytesReader fstReader = fst.getBytesReader(0);
+    final FST.BytesReader fstReader = fst.getBytesReader();
 
     FST.Arc<Long> arc = new FST.Arc<Long>();
     int end = off + len;

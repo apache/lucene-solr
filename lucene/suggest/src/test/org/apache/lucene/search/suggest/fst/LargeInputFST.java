@@ -19,6 +19,7 @@ package org.apache.lucene.search.suggest.fst;
 
 import java.io.*;
 
+import org.apache.lucene.search.suggest.Sort;
 import org.apache.lucene.util.BytesRef;
 
 /**

@@ -102,10 +102,25 @@
     </subant>
   </target>
 
+  <!-- lucene/test-framework and solr/test-framework are excluded from compilation -->
   <target name="compile" description="Compile Lucene and Solr">
     <subant target="compile" inheritall="false" failonerror="true">
       <fileset dir="lucene" includes="build.xml" />
       <fileset dir="solr" includes="build.xml" />
+    </subant>
+  </target>
+
+  <target name="compile-test" description="Compile Lucene and Solr tests and test-frameworks">
+    <subant target="compile-test" inheritAll="false" failonerror="true">
+      <fileset dir="lucene" includes="build.xml" />
+      <fileset dir="solr" includes="build.xml" />
+    </subant>
+  </target>
+
+  <target name="jar" description="Build Lucene and Solr Jar files">
+    <subant target="jar" inheritall="false" failonerror="true">
+      <fileset dir="lucene" includes="build.xml"/>
+      <fileset dir="solr" includes="build.xml"/>
     </subant>
   </target>
 
@@ -281,21 +296,14 @@
    <copy todir="${fakeRelease}/lucene">
      <fileset dir="lucene/dist"/>
    </copy>
-   <copy todir="${fakeRelease}/lucene/changes">
-     <fileset dir="lucene/build/docs/changes"/>
-   </copy>
-   <get src="http://people.apache.org/keys/group/lucene.asc" 
-        dest="${fakeRelease}/lucene/KEYS"/>
    <copy todir="${fakeRelease}/solr">
      <fileset dir="solr/package"/>
-   </copy>
-   <copy file="${fakeRelease}/lucene/KEYS" todir="${fakeRelease}/solr"/>
-   <copy todir="${fakeRelease}/solr/changes">
-     <fileset dir="solr/build/docs/changes"/>
    </copy>
    <makeurl file="${fakeRelease}" validate="false" property="fakeRelease.uri"/>
    <exec executable="${python32.exe}" failonerror="true">
      <arg value="-u"/>
+     <!-- Tell Python not to write any bytecode cache into the filesystem: -->
+     <arg value="-B"/>
      <arg file="dev-tools/scripts/smokeTestRelease.py"/>
      <arg value="${fakeRelease.uri}"/>
      <arg value="${fakeReleaseVersion}"/>
@@ -367,28 +375,44 @@
   </target>
 
   <!-- Jenkins tasks -->
-  <target name="jenkins-hourly" depends="clean,test-with-heapdumps,validate,documentation-lint,jar-checksums,check-svn-working-copy"/>
+  <target name="-jenkins-base" depends="clean,test-with-heapdumps,validate,documentation-lint,jar-checksums,check-svn-working-copy"/>
+  
+  <target name="jenkins-hourly">
+    <antcall>
+      <param name="is.jenkins.build" value="true"/>
+      <target name="-jenkins-base"/>
+    </antcall>
+  </target>
   
   <target name="jenkins-nightly">
     <antcall>
+      <param name="is.jenkins.build" value="true"/>
       <param name="tests.nightly" value="true"/>
-      <target name="jenkins-hourly"/>
+      <target name="-jenkins-base"/>
     </antcall>
   </target>
   
   <target name="jenkins-maven-nightly" depends="clean,clean-maven-build">
     <!-- step 1: build, install, deploy, and validate ANT-generated maven artifacts: -->
     <antcall>
+      <param name="is.jenkins.build" value="true"/>
       <target name="remove-maven-artifacts"/>
       <!-- this implicitely publishes the maven artifacts: -->
       <target name="validate-maven-dependencies"/>
     </antcall>
     <!-- step 2: run the maven build to check that the pom templates also work to drive "mvn": -->
     <antcall>
+      <param name="is.jenkins.build" value="true"/>
       <target name="remove-maven-artifacts"/>
       <target name="run-maven-build"/>
     </antcall>
   </target>
   
-  <target name="jenkins-clover" depends="run-clover"/>
+  <target name="jenkins-clover">
+    <antcall>
+      <param name="is.jenkins.build" value="true"/>
+      <target name="run-clover"/>
+    </antcall>
+  </target>
+  
 </project>

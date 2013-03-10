@@ -20,15 +20,55 @@ package org.apache.lucene.analysis.miscellaneous;
 import java.io.IOException;
 
 import org.apache.lucene.util.LuceneTestCase;
+import org.apache.lucene.analysis.tokenattributes.TermToBytesRefAttribute;
+import org.apache.lucene.analysis.BaseTokenStreamTestCase;
 import org.apache.lucene.analysis.TokenStream;
+import org.apache.lucene.document.Document;
+import org.apache.lucene.document.Field;
+import org.apache.lucene.document.StringField;
+import org.apache.lucene.document.TextField;
+import org.apache.lucene.index.IndexWriter;
+import org.apache.lucene.index.IndexWriterConfig;
+import org.apache.lucene.store.Directory;
 
-public class TestEmptyTokenStream extends LuceneTestCase {
+public class TestEmptyTokenStream extends BaseTokenStreamTestCase {
 
-  public void test() throws IOException {
+  public void testConsume() throws IOException {
     TokenStream ts = new EmptyTokenStream();
-    assertFalse(ts.incrementToken());
     ts.reset();
     assertFalse(ts.incrementToken());
+    ts.end();
+    ts.close();
+    // try again with reuse:
+    ts.reset();
+    assertFalse(ts.incrementToken());
+    ts.end();
+    ts.close();
+  }
+  
+  public void testConsume2() throws IOException {
+    BaseTokenStreamTestCase.assertTokenStreamContents(new EmptyTokenStream(), new String[0]);
+  }
+
+  public void testIndexWriter_LUCENE4656() throws IOException {
+    Directory directory = newDirectory();
+    IndexWriter writer = new IndexWriter(directory, newIndexWriterConfig(
+        TEST_VERSION_CURRENT, null));
+
+    TokenStream ts = new EmptyTokenStream();
+    assertFalse(ts.hasAttribute(TermToBytesRefAttribute.class));
+
+    Document doc = new Document();
+    doc.add(new StringField("id", "0", Field.Store.YES));
+    doc.add(new TextField("description", ts));
+    
+    // this should not fail because we have no TermToBytesRefAttribute
+    writer.addDocument(doc);
+    
+    assertEquals(1, writer.numDocs());
+
+    writer.close();
+    directory.close();
   }
 
 }

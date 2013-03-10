@@ -22,6 +22,8 @@ import java.io.File;
 import java.io.IOException;
 import java.util.Vector;
 
+import org.apache.solr.common.SolrException;
+import org.apache.solr.common.SolrException.ErrorCode;
 import org.apache.solr.core.PluginInfo;
 import org.apache.solr.core.SolrCore;
 import org.apache.solr.core.SolrEventListener;
@@ -87,13 +89,15 @@ public abstract class UpdateHandler implements SolrInfoMBean {
   private void clearLog(PluginInfo ulogPluginInfo) {
     if (ulogPluginInfo == null) return;
     File tlogDir = UpdateLog.getTlogDir(core, ulogPluginInfo);
+    log.info("Clearing tlog files, tlogDir=" + tlogDir);
     if (tlogDir.exists()) {
       String[] files = UpdateLog.getLogList(tlogDir);
       for (String file : files) {
-        File f = new File(file);
+        File f = new File(tlogDir, file);
         boolean s = f.delete();
         if (!s) {
-          log.error("Could not remove tlog file:" + f);
+          log.error("Could not remove tlog file:" + f.getAbsolutePath());
+          //throw new SolrException(ErrorCode.SERVER_ERROR, "Could not remove tlog file:" + f.getAbsolutePath());
         }
       }
     }

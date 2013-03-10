@@ -30,7 +30,7 @@ import org.apache.lucene.util.LuceneTestCase;
 public class MockFSDirectoryFactory extends StandardDirectoryFactory {
 
   @Override
-  public Directory create(String path) throws IOException {
+  public Directory create(String path, DirContext dirContext) throws IOException {
     Directory dir = LuceneTestCase.newFSDirectory(new File(path));
     // we can't currently do this check because of how
     // Solr has to reboot a new Directory sometimes when replicating

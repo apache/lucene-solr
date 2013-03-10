@@ -87,7 +87,7 @@ public class FilterAtomicReader extends AtomicReader {
     }
 
     @Override
-    public Comparator<BytesRef> getComparator() throws IOException {
+    public Comparator<BytesRef> getComparator() {
       return in.getComparator();
     }
 
@@ -406,14 +406,32 @@ public class FilterAtomicReader extends AtomicReader {
   }
 
   @Override
-  public DocValues docValues(String field) throws IOException {
+  public NumericDocValues getNumericDocValues(String field) throws IOException {
     ensureOpen();
-    return in.docValues(field);
+    return in.getNumericDocValues(field);
   }
   
   @Override
-  public DocValues normValues(String field) throws IOException {
+  public BinaryDocValues getBinaryDocValues(String field) throws IOException {
     ensureOpen();
-    return in.normValues(field);
+    return in.getBinaryDocValues(field);
+  }
+
+  @Override
+  public SortedDocValues getSortedDocValues(String field) throws IOException {
+    ensureOpen();
+    return in.getSortedDocValues(field);
+  }
+
+  @Override
+  public SortedSetDocValues getSortedSetDocValues(String field) throws IOException {
+    ensureOpen();
+    return in.getSortedSetDocValues(field);
+  }
+
+  @Override
+  public NumericDocValues getNormValues(String field) throws IOException {
+    ensureOpen();
+    return in.getNormValues(field);
   }
 }

@@ -22,6 +22,8 @@ import java.io.File;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.OutputStreamWriter;
+import java.util.ArrayList;
+import java.util.List;
 
 import javax.xml.parsers.ParserConfigurationException;
 import javax.xml.xpath.XPathExpressionException;
@@ -77,6 +79,33 @@ public class TestCoreContainer extends SolrTestCaseJ4 {
       System.clearProperty("shareSchema");
     }
   }
+  
+  @Test
+  public void testReload() throws Exception {
+    final CoreContainer cc = h.getCoreContainer();
+    
+    class TestThread extends Thread {
+      @Override
+      public void run() {
+        cc.reload("collection1");
+      }
+    }
+    
+    List<Thread> threads = new ArrayList<Thread>();
+    int numThreads = 4;
+    for (int i = 0; i < numThreads; i++) {
+      threads.add(new TestThread());
+    }
+    
+    for (Thread thread : threads) {
+      thread.start();
+    }
+    
+    for (Thread thread : threads) {
+      thread.join();
+    }
+
+  }
 
   @Test
   public void testPersist() throws Exception {
@@ -110,9 +139,9 @@ public class TestCoreContainer extends SolrTestCaseJ4 {
     cores.persistFile(oneXml);
 
     assertXmlFile(oneXml, "/solr[@persistent='true']",
-        "/solr/cores[@defaultCoreName='collection1' and not(@swappableCacheSize)]",
+        "/solr/cores[@defaultCoreName='collection1' and not(@transientCacheSize)]",
         "/solr/cores/core[@name='collection1' and @instanceDir='" + instDir +
-        "' and @swappable='false' and @loadOnStartup='true' ]", "1=count(/solr/cores/core)");
+        "' and @transient='false' and @loadOnStartup='true' ]", "1=count(/solr/cores/core)");
 
     // create some new cores and sanity check the persistence
     
@@ -142,12 +171,12 @@ public class TestCoreContainer extends SolrTestCaseJ4 {
       assertEquals("cores not added?", 3, cores.getCoreNames().size());
       
       final File twoXml = new File(workDir, "2.solr.xml");
-      cores.swappableCacheSize = 32;
+      cores.transientCacheSize = 32;
 
       cores.persistFile(twoXml);
 
       assertXmlFile(twoXml, "/solr[@persistent='true']",
-          "/solr/cores[@defaultCoreName='collection1' and @swappableCacheSize='32']",
+          "/solr/cores[@defaultCoreName='collection1' and @transientCacheSize='32']",
           "/solr/cores/core[@name='collection1' and @instanceDir='" + instDir
               + "']", "/solr/cores/core[@name='X' and @instanceDir='" + instDir
               + "' and @dataDir='" + dataX + "']",

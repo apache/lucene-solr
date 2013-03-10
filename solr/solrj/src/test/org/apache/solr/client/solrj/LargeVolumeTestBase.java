@@ -25,6 +25,8 @@ import org.apache.solr.client.solrj.response.QueryResponse;
 import org.apache.solr.client.solrj.response.UpdateResponse;
 import org.apache.solr.common.SolrInputDocument;
 import org.junit.Test;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  *
@@ -32,6 +34,7 @@ import org.junit.Test;
  */
 public abstract class LargeVolumeTestBase extends SolrJettyTestBase
 {
+  private static Logger log = LoggerFactory.getLogger(LargeVolumeTestBase.class);
 
   // for real load testing, make these numbers bigger
   static final int numdocs = 100; //1000 * 1000;

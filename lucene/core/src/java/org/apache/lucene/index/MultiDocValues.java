@@ -16,593 +16,441 @@ package org.apache.lucene.index;
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 import java.io.IOException;
-import java.lang.reflect.Array;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Comparator;
 import java.util.List;
 
-import org.apache.lucene.index.SortedBytesMergeUtils.MergeContext;
-import org.apache.lucene.index.SortedBytesMergeUtils.SortedSourceSlice;
-import org.apache.lucene.util.ArrayUtil;
+import org.apache.lucene.index.MultiTermsEnum.TermsEnumIndex;
+import org.apache.lucene.index.MultiTermsEnum.TermsEnumWithSlice;
 import org.apache.lucene.util.BytesRef;
-import org.apache.lucene.util.PagedBytes;
-import org.apache.lucene.util.packed.PackedInts.Reader;
+import org.apache.lucene.util.packed.AppendingLongBuffer;
+import org.apache.lucene.util.packed.MonotonicAppendingLongBuffer;
 
 /**
- * A wrapper for CompositeIndexReader providing access to per segment
- * {@link DocValues}
+ * A wrapper for CompositeIndexReader providing access to DocValues.
  * 
  * <p><b>NOTE</b>: for multi readers, you'll get better
  * performance by gathering the sub readers using
  * {@link IndexReader#getContext()} to get the
  * atomic leaves and then operate per-AtomicReader,
  * instead of using this class.
+ * 
+ * <p><b>NOTE</b>: This is very costly.
  *
  * @lucene.experimental
  * @lucene.internal
  */
-class MultiDocValues extends DocValues {
+public class MultiDocValues {
   
-  private static DocValuesPuller DEFAULT_PULLER = new DocValuesPuller();
-  private static final DocValuesPuller NORMS_PULLER = new DocValuesPuller() {
-    @Override
-    public DocValues pull(AtomicReader reader, String field) throws IOException {
-      return reader.normValues(field);
-    }
-    
-    @Override
-    public boolean stopLoadingOnNull(AtomicReader reader, String field) {
-      // for norms we drop all norms if one leaf reader has no norms and the field is present
-      FieldInfos fieldInfos = reader.getFieldInfos();
-      FieldInfo fieldInfo = fieldInfos.fieldInfo(field);
-      return fieldInfo != null && fieldInfo.omitsNorms();
-    }
-  };
-
-  public static class DocValuesSlice {
-    public final static DocValuesSlice[] EMPTY_ARRAY = new DocValuesSlice[0];
-    final int start;
-    final int length;
-    DocValues docValues;
-
-    public DocValuesSlice(DocValues docValues, int start, int length) {
-      this.docValues = docValues;
-      this.start = start;
-      this.length = length;
-    }
-  }
+  /** No instantiation */
+  private MultiDocValues() {}
   
-  private static class DocValuesPuller {
-    public DocValuesPuller() {}
-
-    public DocValues pull(AtomicReader reader, String field) throws IOException {
-      return reader.docValues(field);
-    }
-    
-    public boolean stopLoadingOnNull(AtomicReader reader, String field) {
-      return false;
-    }
-  }
-
-  private DocValuesSlice[] slices;
-  private int[] starts;
-  private Type type;
-  private int valueSize;
-
-  private MultiDocValues(DocValuesSlice[] slices, int[] starts, TypePromoter promotedType) {
-    this.starts = starts;
-    this.slices = slices;
-    this.type = promotedType.type();
-    this.valueSize = promotedType.getValueSize();
-  }
-  /**
-   * Returns a single {@link DocValues} instance for this field, merging
-   * their values on the fly.
-   * 
+  /** Returns a NumericDocValues for a reader's norms (potentially merging on-the-fly).
    * <p>
-   * <b>NOTE</b>: this is a slow way to access DocValues.
-   * It's better to get the sub-readers and iterate through them
-   * yourself.
+   * This is a slow way to access normalization values. Instead, access them per-segment
+   * with {@link AtomicReader#getNormValues(String)}
+   * </p> 
    */
-  public static DocValues getDocValues(IndexReader r, final String field) throws IOException {
-    return getDocValues(r, field, DEFAULT_PULLER);
-  }
-  
-  /**
-   * Returns a single {@link DocValues} instance for this norms field, merging
-   * their values on the fly.
-   * 
-   * <p>
-   * <b>NOTE</b>: this is a slow way to access DocValues.
-   * It's better to get the sub-readers and iterate through them
-   * yourself.
-   */
-  public static DocValues getNormDocValues(IndexReader r, final String field) throws IOException {
-    return getDocValues(r, field, NORMS_PULLER);
-  }
-  
- 
-  private static DocValues getDocValues(IndexReader reader, final String field, final DocValuesPuller puller) throws IOException {
-    if (reader instanceof AtomicReader) {
-      // already an atomic reader
-      return puller.pull((AtomicReader) reader, field);
+  public static NumericDocValues getNormValues(final IndexReader r, final String field) throws IOException {
+    final List<AtomicReaderContext> leaves = r.leaves();
+    final int size = leaves.size();
+    if (size == 0) {
+      return null;
+    } else if (size == 1) {
+      return leaves.get(0).reader().getNormValues(field);
     }
-    assert reader instanceof CompositeReader;
-    final List<AtomicReaderContext> leaves = reader.leaves();
-    switch (leaves.size()) {
-      case 0:
-        // no fields
-        return null;
-      case 1:
-        // already an atomic reader / reader with one leave
-        return getDocValues(leaves.get(0).reader(), field, puller);
-      default:
-        final List<DocValuesSlice> slices = new ArrayList<DocValuesSlice>();
-        
-        TypePromoter promotedType =  TypePromoter.getIdentityPromoter();
-        
-        // gather all docvalues fields, accumulating a promoted type across 
-        // potentially incompatible types
-        for (final AtomicReaderContext ctx : leaves) {
-          final AtomicReader r = ctx.reader();
-          final DocValues d = puller.pull(r, field);
-          if (d != null) {
-            TypePromoter incoming = TypePromoter.create(d.getType(), d.getValueSize());
-            promotedType = promotedType.promote(incoming);
-          } else if (puller.stopLoadingOnNull(r, field)){
-            return null;
-          }
-          slices.add(new DocValuesSlice(d, ctx.docBase, r.maxDoc()));
-        }
-        
-        // return null if no docvalues encountered anywhere
-        if (promotedType == TypePromoter.getIdentityPromoter()) {
-          return null;
-        }
-             
-        // populate starts and fill gaps with empty docvalues 
-        int starts[] = new int[slices.size()];
-        for (int i = 0; i < slices.size(); i++) {
-          DocValuesSlice slice = slices.get(i);
-          starts[i] = slice.start;
-          if (slice.docValues == null) {
-            Type promoted = promotedType.type();
-            switch(promoted) {
-              case BYTES_FIXED_DEREF:
-              case BYTES_FIXED_STRAIGHT:
-              case BYTES_FIXED_SORTED:
-                assert promotedType.getValueSize() >= 0;
-                slice.docValues = new EmptyFixedDocValues(slice.length, promoted, promotedType.getValueSize());
-                break;
-              default:
-                slice.docValues = new EmptyDocValues(slice.length, promoted);
-            }
-          }
-        }
-        
-        return new MultiDocValues(slices.toArray(new DocValuesSlice[slices.size()]), starts, promotedType);
-    }
-  }
-
-  @Override
-  protected Source loadSource() throws IOException {
-    return new MultiSource(slices, starts, false, type);
-  }
-
-  public static class EmptyDocValues extends DocValues {
-    final int maxDoc;
-    final Source emptySource;
-
-    public EmptyDocValues(int maxDoc, Type type) {
-      this.maxDoc = maxDoc;
-      this.emptySource = new EmptySource(type);
+    FieldInfo fi = MultiFields.getMergedFieldInfos(r).fieldInfo(field);
+    if (fi == null || fi.hasNorms() == false) {
+      return null;
     }
 
-    @Override
-    protected Source loadSource() throws IOException {
-      return emptySource;
-    }
-
-    @Override
-    public Type getType() {
-      return emptySource.getType();
-    }
-
-    @Override
-    protected Source loadDirectSource() throws IOException {
-      return emptySource;
-    }
-  }
-  
-  public static class EmptyFixedDocValues extends DocValues {
-    final int maxDoc;
-    final Source emptyFixedSource;
-    final int valueSize;
-
-    public EmptyFixedDocValues(int maxDoc, Type type, int valueSize) {
-      this.maxDoc = maxDoc;
-      this.emptyFixedSource = new EmptyFixedSource(type, valueSize);
-      this.valueSize = valueSize;
-    }
-
-    @Override
-    protected Source loadSource() throws IOException {
-      return emptyFixedSource;
-    }
-
-    @Override
-    public Type getType() {
-      return emptyFixedSource.getType();
-    }
-
-    @Override
-    public int getValueSize() {
-      return valueSize;
-    }
-
-    @Override
-    protected Source loadDirectSource() throws IOException {
-      return emptyFixedSource;
-    }
-  }
-
-  private static class MultiSource extends Source {
-    private int numDocs = 0;
-    private int start = 0;
-    private Source current;
-    private final int[] starts;
-    private final DocValuesSlice[] slices;
-    private boolean direct;
-    private Object cachedArray; // cached array if supported
-
-    public MultiSource(DocValuesSlice[] slices, int[] starts, boolean direct, Type type) {
-      super(type);
-      this.slices = slices;
-      this.starts = starts;
-      assert slices.length != 0;
-      this.direct = direct;
-    }
-
-    @Override
-    public long getInt(int docID) {
-      final int doc = ensureSource(docID);
-      return current.getInt(doc);
-    }
-
-    private final int ensureSource(int docID) {
-      if (docID >= start && docID < start+numDocs) {
-        return docID - start;
+    boolean anyReal = false;
+    final NumericDocValues[] values = new NumericDocValues[size];
+    final int[] starts = new int[size+1];
+    for (int i = 0; i < size; i++) {
+      AtomicReaderContext context = leaves.get(i);
+      NumericDocValues v = context.reader().getNormValues(field);
+      if (v == null) {
+        v = NumericDocValues.EMPTY;
       } else {
-        final int idx = ReaderUtil.subIndex(docID, starts);
-        assert idx >= 0 && idx < slices.length : "idx was " + idx
-            + " for doc id: " + docID + " slices : " + Arrays.toString(starts);
-        assert slices[idx] != null;
-        try {
-          if (direct) {
-            current = slices[idx].docValues.getDirectSource();
-          } else {
-            current = slices[idx].docValues.getSource();
-          }
-        } catch (IOException e) {
-          throw new RuntimeException("load failed", e); // TODO how should we
-          // handle this
-        }
-
-        start = slices[idx].start;
-        numDocs = slices[idx].length;
-        return docID - start;
+        anyReal = true;
       }
+      values[i] = v;
+      starts[i] = context.docBase;
     }
-
-    @Override
-    public double getFloat(int docID) {
-      final int doc = ensureSource(docID);
-      return current.getFloat(doc);
-    }
-
-    @Override
-    public BytesRef getBytes(int docID, BytesRef bytesRef) {
-      final int doc = ensureSource(docID);
-      return current.getBytes(doc, bytesRef);
-    }
-
-    @Override
-    public SortedSource asSortedSource() {
-      try {
-        if (type == Type.BYTES_FIXED_SORTED || type == Type.BYTES_VAR_SORTED) {
-          DocValues[] values = new DocValues[slices.length];
-          Comparator<BytesRef> comp = null;
-          for (int i = 0; i < values.length; i++) {
-            values[i] = slices[i].docValues;
-            if (!(values[i] instanceof EmptyDocValues)) {
-              Comparator<BytesRef> comparator = values[i].getDirectSource()
-                  .asSortedSource().getComparator();
-              assert comp == null || comp == comparator;
-              comp = comparator;
-            }
-          }
-          assert comp != null;
-          final int globalNumDocs = globalNumDocs();
-          final MergeContext ctx = SortedBytesMergeUtils.init(type, values,
-              comp, globalNumDocs);
-          List<SortedSourceSlice> slices = SortedBytesMergeUtils.buildSlices(
-              docBases(), new MergeState.DocMap[values.length], values, ctx);
-          RecordingBytesRefConsumer consumer = new RecordingBytesRefConsumer(
-              type);
-          final int maxOrd = SortedBytesMergeUtils.mergeRecords(ctx, consumer,
-              slices);
-          final int[] docToOrd = new int[globalNumDocs];
-          for (SortedSourceSlice slice : slices) {
-            slice.toAbsolutOrds(docToOrd);
-          }
-          return new MultiSortedSource(type, comp, consumer.pagedBytes,
-              ctx.sizePerValues, maxOrd, docToOrd, consumer.ordToOffset);
-        }
-      } catch (IOException e) {
-        throw new RuntimeException("load failed", e);
-      }
-      return super.asSortedSource();
-    }
+    starts[size] = r.maxDoc();
     
-    private int globalNumDocs() {
-      int docs = 0;
-      for (int i = 0; i < slices.length; i++) {
-        docs += slices[i].length;
-      }
-      return docs;
-    }
-    
-    private int[] docBases() {
-      int[] docBases = new int[slices.length];
-      for (int i = 0; i < slices.length; i++) {
-        docBases[i] = slices[i].start;
-      }
-      return docBases;
-    }
-    
-    @Override
-    public boolean hasArray() {
-      boolean oneRealSource = false;
-      for (DocValuesSlice slice : slices) {
-        try {
-          Source source = slice.docValues.getSource();
-          if (source instanceof EmptySource) {
-            /*
-             * empty source marks a gap in the array skip if we encounter one
-             */
-            continue;
-          }
-          oneRealSource = true;
-          if (!source.hasArray()) {
-            return false;
-          }
-        } catch (IOException e) {
-          throw new RuntimeException("load failed", e);
-        }
-      }
-      return oneRealSource;
-    }
+    assert anyReal;
 
-    @Override
-    public Object getArray() {
-      if (!hasArray()) {
-        return null;
+    return new NumericDocValues() {
+      @Override
+      public long get(int docID) {
+        int subIndex = ReaderUtil.subIndex(docID, starts);
+        return values[subIndex].get(docID - starts[subIndex]);
       }
-      try {
-        Class<?> componentType = null;
-        Object[] arrays = new Object[slices.length];
-        int numDocs = 0;
-        for (int i = 0; i < slices.length; i++) {
-          DocValuesSlice slice = slices[i];
-          Source source = slice.docValues.getSource();
-          Object array = null;
-          if (!(source instanceof EmptySource)) {
-            // EmptySource is skipped - marks a gap in the array
-            array = source.getArray();
-          }
-          numDocs += slice.length;
-          if (array != null) {
-            if (componentType == null) {
-              componentType = array.getClass().getComponentType();
-            }
-            assert componentType == array.getClass().getComponentType();
-          }
-          arrays[i] = array;
-        }
-        assert componentType != null;
-        synchronized (this) {
-          if (cachedArray != null) {
-            return cachedArray;
-          }
-          final Object globalArray = Array.newInstance(componentType, numDocs);
-
-          for (int i = 0; i < slices.length; i++) {
-            DocValuesSlice slice = slices[i];
-            if (arrays[i] != null) {
-              assert slice.length == Array.getLength(arrays[i]);
-              System.arraycopy(arrays[i], 0, globalArray, slice.start,
-                  slice.length);
-            }
-          }
-          return cachedArray = globalArray;
-        }
-      } catch (IOException e) {
-        throw new RuntimeException("load failed", e);
-      }
-    }
+    };
   }
-  
-  private static final class RecordingBytesRefConsumer implements SortedBytesMergeUtils.BytesRefConsumer {
-    private final static int PAGED_BYTES_BITS = 15;
-    final PagedBytes pagedBytes = new PagedBytes(PAGED_BYTES_BITS);
-    long[] ordToOffset;
-    
-    public RecordingBytesRefConsumer(Type type) {
-      ordToOffset = type == Type.BYTES_VAR_SORTED ? new long[2] : null;
-    }
-    @Override
-    public void consume(BytesRef ref, int ord, long offset) {
-      pagedBytes.copy(ref);
-      if (ordToOffset != null) {
-        if (ord+1 >= ordToOffset.length) {
-          ordToOffset = ArrayUtil.grow(ordToOffset, ord + 2);
-        }
-        ordToOffset[ord+1] = offset;
-      }
-    }
-    
-  }
-  
-  private static final class MultiSortedSource extends SortedSource {
-    private final PagedBytes.Reader data;
-    private final int[] docToOrd;
-    private final long[] ordToOffset;
-    private int size;
-    private int valueCount;
-    public MultiSortedSource(Type type, Comparator<BytesRef> comparator, PagedBytes pagedBytes, int size, int numValues, int[] docToOrd, long[] ordToOffset) {
-      super(type, comparator);
-      data = pagedBytes.freeze(true);
-      this.size = size;
-      this.valueCount = numValues;
-      this.docToOrd = docToOrd;
-      this.ordToOffset = ordToOffset;
-    }
 
-    @Override
-    public int ord(int docID) {
-      return docToOrd[docID];
-    }
-
-    @Override
-    public BytesRef getByOrd(int ord, BytesRef bytesRef) {
-      int size = this.size;
-      long offset = (ord*size);
-      if (ordToOffset != null) {
-        offset =  ordToOffset[ord];
-        size = (int) (ordToOffset[1 + ord] - offset);
-      }
-      assert size >=0;
-      return data.fillSlice(bytesRef, offset, size);
-     }
-
-    @Override
-    public Reader getDocToOrd() {
+  /** Returns a NumericDocValues for a reader's docvalues (potentially merging on-the-fly) 
+   * <p>
+   * This is a slow way to access numeric values. Instead, access them per-segment
+   * with {@link AtomicReader#getNumericDocValues(String)}
+   * </p> 
+   * */
+  public static NumericDocValues getNumericValues(final IndexReader r, final String field) throws IOException {
+    final List<AtomicReaderContext> leaves = r.leaves();
+    final int size = leaves.size();
+    if (size == 0) {
       return null;
+    } else if (size == 1) {
+      return leaves.get(0).reader().getNumericDocValues(field);
     }
 
+    boolean anyReal = false;
+    final NumericDocValues[] values = new NumericDocValues[size];
+    final int[] starts = new int[size+1];
+    for (int i = 0; i < size; i++) {
+      AtomicReaderContext context = leaves.get(i);
+      NumericDocValues v = context.reader().getNumericDocValues(field);
+      if (v == null) {
+        v = NumericDocValues.EMPTY;
+      } else {
+        anyReal = true;
+      }
+      values[i] = v;
+      starts[i] = context.docBase;
+    }
+    starts[size] = r.maxDoc();
+
+    if (!anyReal) {
+      return null;
+    } else {
+      return new NumericDocValues() {
+        @Override
+        public long get(int docID) {
+          int subIndex = ReaderUtil.subIndex(docID, starts);
+          return values[subIndex].get(docID - starts[subIndex]);
+        }
+      };
+    }
+  }
+
+  /** Returns a BinaryDocValues for a reader's docvalues (potentially merging on-the-fly)
+   * <p>
+   * This is a slow way to access binary values. Instead, access them per-segment
+   * with {@link AtomicReader#getBinaryDocValues(String)}
+   * </p>  
+   */
+  public static BinaryDocValues getBinaryValues(final IndexReader r, final String field) throws IOException {
+    final List<AtomicReaderContext> leaves = r.leaves();
+    final int size = leaves.size();
+    
+    if (size == 0) {
+      return null;
+    } else if (size == 1) {
+      return leaves.get(0).reader().getBinaryDocValues(field);
+    }
+    
+    boolean anyReal = false;
+    final BinaryDocValues[] values = new BinaryDocValues[size];
+    final int[] starts = new int[size+1];
+    for (int i = 0; i < size; i++) {
+      AtomicReaderContext context = leaves.get(i);
+      BinaryDocValues v = context.reader().getBinaryDocValues(field);
+      if (v == null) {
+        v = BinaryDocValues.EMPTY;
+      } else {
+        anyReal = true;
+      }
+      values[i] = v;
+      starts[i] = context.docBase;
+    }
+    starts[size] = r.maxDoc();
+    
+    if (!anyReal) {
+      return null;
+    } else {
+      return new BinaryDocValues() {
+        @Override
+        public void get(int docID, BytesRef result) {
+          int subIndex = ReaderUtil.subIndex(docID, starts);
+          values[subIndex].get(docID - starts[subIndex], result);
+        }
+      };
+    }
+  }
+  
+  /** Returns a SortedDocValues for a reader's docvalues (potentially doing extremely slow things).
+   * <p>
+   * This is an extremely slow way to access sorted values. Instead, access them per-segment
+   * with {@link AtomicReader#getSortedDocValues(String)}
+   * </p>  
+   */
+  public static SortedDocValues getSortedValues(final IndexReader r, final String field) throws IOException {
+    final List<AtomicReaderContext> leaves = r.leaves();
+    final int size = leaves.size();
+    
+    if (size == 0) {
+      return null;
+    } else if (size == 1) {
+      return leaves.get(0).reader().getSortedDocValues(field);
+    }
+    
+    boolean anyReal = false;
+    final SortedDocValues[] values = new SortedDocValues[size];
+    final int[] starts = new int[size+1];
+    for (int i = 0; i < size; i++) {
+      AtomicReaderContext context = leaves.get(i);
+      SortedDocValues v = context.reader().getSortedDocValues(field);
+      if (v == null) {
+        v = SortedDocValues.EMPTY;
+      } else {
+        anyReal = true;
+      }
+      values[i] = v;
+      starts[i] = context.docBase;
+    }
+    starts[size] = r.maxDoc();
+    
+    if (!anyReal) {
+      return null;
+    } else {
+      TermsEnum enums[] = new TermsEnum[values.length];
+      for (int i = 0; i < values.length; i++) {
+        enums[i] = new SortedDocValuesTermsEnum(values[i]);
+      }
+      OrdinalMap mapping = new OrdinalMap(r.getCoreCacheKey(), enums);
+      return new MultiSortedDocValues(values, starts, mapping);
+    }
+  }
+  
+  /** Returns a SortedSetDocValues for a reader's docvalues (potentially doing extremely slow things).
+   * <p>
+   * This is an extremely slow way to access sorted values. Instead, access them per-segment
+   * with {@link AtomicReader#getSortedSetDocValues(String)}
+   * </p>  
+   */
+  public static SortedSetDocValues getSortedSetValues(final IndexReader r, final String field) throws IOException {
+    final List<AtomicReaderContext> leaves = r.leaves();
+    final int size = leaves.size();
+    
+    if (size == 0) {
+      return null;
+    } else if (size == 1) {
+      return leaves.get(0).reader().getSortedSetDocValues(field);
+    }
+    
+    boolean anyReal = false;
+    final SortedSetDocValues[] values = new SortedSetDocValues[size];
+    final int[] starts = new int[size+1];
+    for (int i = 0; i < size; i++) {
+      AtomicReaderContext context = leaves.get(i);
+      SortedSetDocValues v = context.reader().getSortedSetDocValues(field);
+      if (v == null) {
+        v = SortedSetDocValues.EMPTY;
+      } else {
+        anyReal = true;
+      }
+      values[i] = v;
+      starts[i] = context.docBase;
+    }
+    starts[size] = r.maxDoc();
+    
+    if (!anyReal) {
+      return null;
+    } else {
+      TermsEnum enums[] = new TermsEnum[values.length];
+      for (int i = 0; i < values.length; i++) {
+        enums[i] = new SortedSetDocValuesTermsEnum(values[i]);
+      }
+      OrdinalMap mapping = new OrdinalMap(r.getCoreCacheKey(), enums);
+      return new MultiSortedSetDocValues(values, starts, mapping);
+    }
+  }
+  
+  /** maps per-segment ordinals to/from global ordinal space */
+  // TODO: use more efficient packed ints structures?
+  // TODO: pull this out? its pretty generic (maps between N ord()-enabled TermsEnums) 
+  public static class OrdinalMap {
+    // cache key of whoever asked for this aweful thing
+    final Object owner;
+    // globalOrd -> (globalOrd - segmentOrd)
+    final MonotonicAppendingLongBuffer globalOrdDeltas;
+    // globalOrd -> sub index
+    final AppendingLongBuffer subIndexes;
+    // segmentOrd -> (globalOrd - segmentOrd)
+    final MonotonicAppendingLongBuffer ordDeltas[];
+    
+    /** 
+     * Creates an ordinal map that allows mapping ords to/from a merged
+     * space from <code>subs</code>.
+     * @param owner a cache key
+     * @param subs TermsEnums that support {@link TermsEnum#ord()}. They need
+     *             not be dense (e.g. can be FilteredTermsEnums}.
+     * @throws IOException if an I/O error occurred.
+     */
+    public OrdinalMap(Object owner, TermsEnum subs[]) throws IOException {
+      // create the ordinal mappings by pulling a termsenum over each sub's 
+      // unique terms, and walking a multitermsenum over those
+      this.owner = owner;
+      globalOrdDeltas = new MonotonicAppendingLongBuffer();
+      subIndexes = new AppendingLongBuffer();
+      ordDeltas = new MonotonicAppendingLongBuffer[subs.length];
+      for (int i = 0; i < ordDeltas.length; i++) {
+        ordDeltas[i] = new MonotonicAppendingLongBuffer();
+      }
+      long segmentOrds[] = new long[subs.length];
+      ReaderSlice slices[] = new ReaderSlice[subs.length];
+      TermsEnumIndex indexes[] = new TermsEnumIndex[slices.length];
+      for (int i = 0; i < slices.length; i++) {
+        slices[i] = new ReaderSlice(0, 0, i);
+        indexes[i] = new TermsEnumIndex(subs[i], i);
+      }
+      MultiTermsEnum mte = new MultiTermsEnum(slices);
+      mte.reset(indexes);
+      long globalOrd = 0;
+      while (mte.next() != null) {        
+        TermsEnumWithSlice matches[] = mte.getMatchArray();
+        for (int i = 0; i < mte.getMatchCount(); i++) {
+          int subIndex = matches[i].index;
+          long segmentOrd = matches[i].terms.ord();
+          long delta = globalOrd - segmentOrd;
+          // for each unique term, just mark the first subindex/delta where it occurs
+          if (i == 0) {
+            subIndexes.add(subIndex);
+            globalOrdDeltas.add(delta);
+          }
+          // for each per-segment ord, map it back to the global term.
+          while (segmentOrds[subIndex] <= segmentOrd) {
+            ordDeltas[subIndex].add(delta);
+            segmentOrds[subIndex]++;
+          }
+        }
+        globalOrd++;
+      }
+    }
+    
+    /** 
+     * Given a segment number and segment ordinal, returns
+     * the corresponding global ordinal.
+     */
+    public long getGlobalOrd(int subIndex, long segmentOrd) {
+      return segmentOrd + ordDeltas[subIndex].get(segmentOrd);
+    }
+
+    /**
+     * Given a segment number and global ordinal, returns
+     * the corresponding segment ordinal.
+     */
+    public long getSegmentOrd(int subIndex, long globalOrd) {
+      return globalOrd - globalOrdDeltas.get(globalOrd);
+    }
+    
+    /** 
+     * Given a global ordinal, returns the index of the first
+     * sub that contains this term.
+     */
+    public int getSegmentNumber(long globalOrd) {
+      return (int) subIndexes.get(globalOrd);
+    }
+    
+    /**
+     * Returns the total number of unique terms in global ord space.
+     */
+    public long getValueCount() {
+      return globalOrdDeltas.size();
+    }
+  }
+  
+  /** 
+   * Implements SortedDocValues over n subs, using an OrdinalMap
+   * @lucene.internal
+   */
+  public static class MultiSortedDocValues extends SortedDocValues {
+    /** docbase for each leaf: parallel with {@link #values} */
+    public final int docStarts[];
+    /** leaf values */
+    public final SortedDocValues values[];
+    /** ordinal map mapping ords from <code>values</code> to global ord space */
+    public final OrdinalMap mapping;
+  
+    /** Creates a new MultiSortedDocValues over <code>values</code> */
+    MultiSortedDocValues(SortedDocValues values[], int docStarts[], OrdinalMap mapping) throws IOException {
+      assert values.length == mapping.ordDeltas.length;
+      assert docStarts.length == values.length + 1;
+      this.values = values;
+      this.docStarts = docStarts;
+      this.mapping = mapping;
+    }
+       
+    @Override
+    public int getOrd(int docID) {
+      int subIndex = ReaderUtil.subIndex(docID, docStarts);
+      int segmentOrd = values[subIndex].getOrd(docID - docStarts[subIndex]);
+      return (int) mapping.getGlobalOrd(subIndex, segmentOrd);
+    }
+ 
+    @Override
+    public void lookupOrd(int ord, BytesRef result) {
+      int subIndex = mapping.getSegmentNumber(ord);
+      int segmentOrd = (int) mapping.getSegmentOrd(subIndex, ord);
+      values[subIndex].lookupOrd(segmentOrd, result);
+    }
+ 
     @Override
     public int getValueCount() {
-      return valueCount;
+      return (int) mapping.getValueCount();
     }
   }
-
-  // TODO: this is dup of DocValues.getDefaultSource()?
-  private static class EmptySource extends SortedSource {
-
-    public EmptySource(Type type) {
-      super(type, BytesRef.getUTF8SortedAsUnicodeComparator());
+  
+  /** 
+   * Implements MultiSortedSetDocValues over n subs, using an OrdinalMap 
+   * @lucene.internal
+   */
+  public static class MultiSortedSetDocValues extends SortedSetDocValues {
+    /** docbase for each leaf: parallel with {@link #values} */
+    public final int docStarts[];
+    /** leaf values */
+    public final SortedSetDocValues values[];
+    /** ordinal map mapping ords from <code>values</code> to global ord space */
+    public final OrdinalMap mapping;
+    int currentSubIndex;
+    
+    /** Creates a new MultiSortedSetDocValues over <code>values</code> */
+    MultiSortedSetDocValues(SortedSetDocValues values[], int docStarts[], OrdinalMap mapping) throws IOException {
+      assert values.length == mapping.ordDeltas.length;
+      assert docStarts.length == values.length + 1;
+      this.values = values;
+      this.docStarts = docStarts;
+      this.mapping = mapping;
     }
-
+    
     @Override
-    public BytesRef getBytes(int docID, BytesRef ref) {
-      ref.length = 0;
-      return ref;
-    }
-
-    @Override
-    public double getFloat(int docID) {
-      return 0d;
-    }
-
-    @Override
-    public long getInt(int docID) {
-      return 0;
-    }
-
-    @Override
-    public SortedSource asSortedSource() {
-      if (getType() == Type.BYTES_FIXED_SORTED || getType() == Type.BYTES_VAR_SORTED) {
-        
+    public long nextOrd() {
+      long segmentOrd = values[currentSubIndex].nextOrd();
+      if (segmentOrd == NO_MORE_ORDS) {
+        return segmentOrd;
+      } else {
+        return mapping.getGlobalOrd(currentSubIndex, segmentOrd);
       }
-      return super.asSortedSource();
     }
 
     @Override
-    public int ord(int docID) {
-      return 0;
+    public void setDocument(int docID) {
+      currentSubIndex = ReaderUtil.subIndex(docID, docStarts);
+      values[currentSubIndex].setDocument(docID - docStarts[currentSubIndex]);
     }
-
+ 
     @Override
-    public BytesRef getByOrd(int ord, BytesRef bytesRef) {
-      bytesRef.length = 0;
-      bytesRef.offset = 0;
-      return bytesRef;
+    public void lookupOrd(long ord, BytesRef result) {
+      int subIndex = mapping.getSegmentNumber(ord);
+      long segmentOrd = mapping.getSegmentOrd(subIndex, ord);
+      values[subIndex].lookupOrd(segmentOrd, result);
     }
-
+ 
     @Override
-    public Reader getDocToOrd() {
-      return null;
-    }
-
-    @Override
-    public int getValueCount() {
-      return 1;
-    }
-    
-  }
-  
-  private static class EmptyFixedSource extends EmptySource {
-    private final int valueSize;
-    private final byte[] valueArray;
-    public EmptyFixedSource(Type type, int valueSize) {
-      super(type);
-      this.valueSize = valueSize;
-      valueArray = new byte[valueSize];
-    }
-
-    @Override
-    public BytesRef getBytes(int docID, BytesRef ref) {
-      ref.grow(valueSize);
-      ref.length = valueSize;
-      Arrays.fill(ref.bytes, ref.offset, ref.offset+valueSize, (byte)0);
-      return ref;
-    }
-
-    @Override
-    public double getFloat(int docID) {
-      return 0d;
-    }
-
-    @Override
-    public long getInt(int docID) {
-      return 0;
-    }
-    
-    @Override
-    public BytesRef getByOrd(int ord, BytesRef bytesRef) {
-      bytesRef.bytes = valueArray;
-      bytesRef.length = valueSize;
-      bytesRef.offset = 0;
-      return bytesRef;
+    public long getValueCount() {
+      return mapping.getValueCount();
     }
   }
-
-  @Override
-  public Type getType() {
-    return type;
-  }
-
-  @Override
-  public int getValueSize() {
-    return valueSize;
-  }
-
-  @Override
-  protected Source loadDirectSource() throws IOException {
-    return new MultiSource(slices, starts, true, type);
-  }
-  
-  
 }

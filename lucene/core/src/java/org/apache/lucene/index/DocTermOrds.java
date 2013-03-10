@@ -173,30 +173,29 @@ public class DocTermOrds {
   }
 
   /** Inverts all terms */
-  public DocTermOrds(AtomicReader reader, String field) throws IOException {
-    this(reader, field, null, Integer.MAX_VALUE);
+  public DocTermOrds(AtomicReader reader, Bits liveDocs, String field) throws IOException {
+    this(reader, liveDocs, field, null, Integer.MAX_VALUE);
   }
 
   /** Inverts only terms starting w/ prefix */
-  public DocTermOrds(AtomicReader reader, String field, BytesRef termPrefix) throws IOException {
-    this(reader, field, termPrefix, Integer.MAX_VALUE);
+  public DocTermOrds(AtomicReader reader, Bits liveDocs, String field, BytesRef termPrefix) throws IOException {
+    this(reader, liveDocs, field, termPrefix, Integer.MAX_VALUE);
   }
 
   /** Inverts only terms starting w/ prefix, and only terms
    *  whose docFreq (not taking deletions into account) is
    *  <=  maxTermDocFreq */
-  public DocTermOrds(AtomicReader reader, String field, BytesRef termPrefix, int maxTermDocFreq) throws IOException {
-    this(reader, field, termPrefix, maxTermDocFreq, DEFAULT_INDEX_INTERVAL_BITS);
-    uninvert(reader, termPrefix);
+  public DocTermOrds(AtomicReader reader, Bits liveDocs, String field, BytesRef termPrefix, int maxTermDocFreq) throws IOException {
+    this(reader, liveDocs, field, termPrefix, maxTermDocFreq, DEFAULT_INDEX_INTERVAL_BITS);
   }
 
   /** Inverts only terms starting w/ prefix, and only terms
    *  whose docFreq (not taking deletions into account) is
    *  <=  maxTermDocFreq, with a custom indexing interval
    *  (default is every 128nd term). */
-  public DocTermOrds(AtomicReader reader, String field, BytesRef termPrefix, int maxTermDocFreq, int indexIntervalBits) throws IOException {
+  public DocTermOrds(AtomicReader reader, Bits liveDocs, String field, BytesRef termPrefix, int maxTermDocFreq, int indexIntervalBits) throws IOException {
     this(field, maxTermDocFreq, indexIntervalBits);
-    uninvert(reader, termPrefix);
+    uninvert(reader, liveDocs, termPrefix);
   }
 
   /** Subclass inits w/ this, but be sure you then call
@@ -257,14 +256,18 @@ public class DocTermOrds {
   protected void visitTerm(TermsEnum te, int termNum) throws IOException {
   }
 
-  /** Invoked during {@link #uninvert(AtomicReader,BytesRef)}
+  /** Invoked during {@link #uninvert(AtomicReader,Bits,BytesRef)}
    *  to record the document frequency for each uninverted
    *  term. */
   protected void setActualDocFreq(int termNum, int df) throws IOException {
   }
 
   /** Call this only once (if you subclass!) */
-  protected void uninvert(final AtomicReader reader, final BytesRef termPrefix) throws IOException {
+  protected void uninvert(final AtomicReader reader, Bits liveDocs, final BytesRef termPrefix) throws IOException {
+    final FieldInfo info = reader.getFieldInfos().fieldInfo(field);
+    if (info != null && info.hasDocValues()) {
+      throw new IllegalStateException("Type mismatch: " + field + " was indexed as " + info.getDocValuesType());
+    }
     //System.out.println("DTO uninvert field=" + field + " prefix=" + termPrefix);
     final long startTime = System.currentTimeMillis();
     prefix = termPrefix == null ? null : BytesRef.deepCopyOf(termPrefix);
@@ -299,8 +302,6 @@ public class DocTermOrds {
     PagedBytes indexedTermsBytes = null;
 
     boolean testedOrd = false;
-
-    final Bits liveDocs = reader.getLiveDocs();
 
     // we need a minimum of 9 bytes, but round up to 12 since the space would
     // be wasted with most allocators anyway.
@@ -596,93 +597,6 @@ public class DocTermOrds {
     return pos;
   }
 
-  /** Iterates over the ords for a single document. */
-  public class TermOrdsIterator {
-    private int tnum;
-    private int upto;
-    private byte[] arr;
-
-    TermOrdsIterator() {
-    }
-
-    /** Buffer must be at least 5 ints long.  Returns number
-     *  of term ords placed into buffer; if this count is
-     *  less than buffer.length then that is the end. */
-    public int read(int[] buffer) {
-      int bufferUpto = 0;
-      if (arr == null) {
-        // code is inlined into upto
-        //System.out.println("inlined");
-        int code = upto;
-        int delta = 0;
-        for (;;) {
-          delta = (delta << 7) | (code & 0x7f);
-          if ((code & 0x80)==0) {
-            if (delta==0) break;
-            tnum += delta - TNUM_OFFSET;
-            buffer[bufferUpto++] = ordBase+tnum;
-            //System.out.println("  tnum=" + tnum);
-            delta = 0;
-          }
-          code >>>= 8;
-        }
-      } else {
-        // code is a pointer
-        for(;;) {
-          int delta = 0;
-          for(;;) {
-            byte b = arr[upto++];
-            delta = (delta << 7) | (b & 0x7f);
-            //System.out.println("    cycle: upto=" + upto + " delta=" + delta + " b=" + b);
-            if ((b & 0x80) == 0) break;
-          }
-          //System.out.println("  delta=" + delta);
-          if (delta == 0) break;
-          tnum += delta - TNUM_OFFSET;
-          //System.out.println("  tnum=" + tnum);
-          buffer[bufferUpto++] = ordBase+tnum;
-          if (bufferUpto == buffer.length) {
-            break;
-          }
-        }
-      }
-
-      return bufferUpto;
-    }
-
-    /** Reset the iterator on a new document. */
-    public TermOrdsIterator reset(int docID) {
-      //System.out.println("  reset docID=" + docID);
-      tnum = 0;
-      final int code = index[docID];
-      if ((code & 0xff)==1) {
-        // a pointer
-        upto = code>>>8;
-        //System.out.println("    pointer!  upto=" + upto);
-        int whichArray = (docID >>> 16) & 0xff;
-        arr = tnums[whichArray];
-      } else {
-        //System.out.println("    inline!");
-        arr = null;
-        upto = code;
-      }
-      return this;
-    }
-  }
-
-  /** Returns an iterator to step through the term ords for
-   *  this document.  It's also possible to subclass this
-   *  class and directly access members. */
-  public TermOrdsIterator lookup(int doc, TermOrdsIterator reuse) {
-    final TermOrdsIterator ret;
-    if (reuse != null) {
-      ret = reuse;
-    } else {
-      ret = new TermOrdsIterator();
-    }
-    return ret.reset(doc);
-  }
-
   /* Only used if original IndexReader doesn't implement
    * ord; in this case we "wrap" our own terms index
    * around it. */
@@ -846,5 +760,125 @@ public class DocTermOrds {
   public BytesRef lookupTerm(TermsEnum termsEnum, int ord) throws IOException {
     termsEnum.seekExact(ord);
     return termsEnum.term();
+  }
+  
+  /** Returns a SortedSetDocValues view of this instance */
+  public SortedSetDocValues iterator(TermsEnum termsEnum) throws IOException {
+    if (isEmpty()) {
+      return SortedSetDocValues.EMPTY;
+    } else {
+      return new Iterator(termsEnum);
+    }
+  }
+  
+  private class Iterator extends SortedSetDocValues {
+    final TermsEnum te;
+    // currently we read 5 at a time (using the logic of the old iterator)
+    final int buffer[] = new int[5];
+    int bufferUpto;
+    int bufferLength;
+    
+    private int tnum;
+    private int upto;
+    private byte[] arr;
+    
+    Iterator(TermsEnum te) {
+      this.te = te;
+    }
+    
+    @Override
+    public long nextOrd() {
+      while (bufferUpto == bufferLength) {
+        if (bufferLength < buffer.length) {
+          return NO_MORE_ORDS;
+        } else {
+          bufferLength = read(buffer);
+          bufferUpto = 0;
+        }
+      }
+      return buffer[bufferUpto++];
+    }
+    
+    /** Buffer must be at least 5 ints long.  Returns number
+     *  of term ords placed into buffer; if this count is
+     *  less than buffer.length then that is the end. */
+    int read(int[] buffer) {
+      int bufferUpto = 0;
+      if (arr == null) {
+        // code is inlined into upto
+        //System.out.println("inlined");
+        int code = upto;
+        int delta = 0;
+        for (;;) {
+          delta = (delta << 7) | (code & 0x7f);
+          if ((code & 0x80)==0) {
+            if (delta==0) break;
+            tnum += delta - TNUM_OFFSET;
+            buffer[bufferUpto++] = ordBase+tnum;
+            //System.out.println("  tnum=" + tnum);
+            delta = 0;
+          }
+          code >>>= 8;
+        }
+      } else {
+        // code is a pointer
+        for(;;) {
+          int delta = 0;
+          for(;;) {
+            byte b = arr[upto++];
+            delta = (delta << 7) | (b & 0x7f);
+            //System.out.println("    cycle: upto=" + upto + " delta=" + delta + " b=" + b);
+            if ((b & 0x80) == 0) break;
+          }
+          //System.out.println("  delta=" + delta);
+          if (delta == 0) break;
+          tnum += delta - TNUM_OFFSET;
+          //System.out.println("  tnum=" + tnum);
+          buffer[bufferUpto++] = ordBase+tnum;
+          if (bufferUpto == buffer.length) {
+            break;
+          }
+        }
+      }
+
+      return bufferUpto;
+    }
+
+    @Override
+    public void setDocument(int docID) {
+      tnum = 0;
+      final int code = index[docID];
+      if ((code & 0xff)==1) {
+        // a pointer
+        upto = code>>>8;
+        //System.out.println("    pointer!  upto=" + upto);
+        int whichArray = (docID >>> 16) & 0xff;
+        arr = tnums[whichArray];
+      } else {
+        //System.out.println("    inline!");
+        arr = null;
+        upto = code;
+      }
+      bufferUpto = 0;
+      bufferLength = read(buffer);
+    }
+
+    @Override
+    public void lookupOrd(long ord, BytesRef result) {
+      BytesRef ref = null;
+      try {
+        ref = DocTermOrds.this.lookupTerm(te, (int) ord);
+      } catch (IOException e) {
+        throw new RuntimeException(e);
+      }
+      result.bytes = ref.bytes;
+      result.offset = ref.offset;
+      result.length = ref.length;
+    }
+
+    @Override
+    public long getValueCount() {
+      return numTerms();
+    }
   }
 }

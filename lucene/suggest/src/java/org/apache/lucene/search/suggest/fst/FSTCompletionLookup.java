@@ -26,8 +26,9 @@ import java.util.List;
 
 import org.apache.lucene.search.spell.TermFreqIterator;
 import org.apache.lucene.search.suggest.Lookup;
+import org.apache.lucene.search.suggest.Sort;
+import org.apache.lucene.search.suggest.Sort.SortInfo;
 import org.apache.lucene.search.suggest.fst.FSTCompletion.Completion;
-import org.apache.lucene.search.suggest.fst.Sort.SortInfo;
 import org.apache.lucene.search.suggest.tst.TSTLookup;
 import org.apache.lucene.store.ByteArrayDataInput;
 import org.apache.lucene.store.ByteArrayDataOutput;

@@ -38,6 +38,7 @@ import org.apache.lucene.codecs.FieldsProducer;
 import org.apache.lucene.codecs.PostingsConsumer;
 import org.apache.lucene.codecs.TermStats;
 import org.apache.lucene.codecs.TermsConsumer;
+import org.apache.lucene.index.FieldInfo.DocValuesType;
 import org.apache.lucene.index.FieldInfo.IndexOptions;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.FlushInfo;
@@ -345,7 +346,7 @@ public abstract class BasePostingsFormatTestCase extends LuceneTestCase {
 
       fieldInfoArray[fieldUpto] = new FieldInfo(field, true, fieldUpto, false, false, true,
                                                 IndexOptions.DOCS_AND_FREQS_AND_POSITIONS_AND_OFFSETS,
-                                                null, DocValues.Type.FIXED_INTS_8, null);
+                                                null, DocValuesType.NUMERIC, null);
       fieldUpto++;
 
       Map<BytesRef,Long> postings = new TreeMap<BytesRef,Long>();
@@ -470,7 +471,7 @@ public abstract class BasePostingsFormatTestCase extends LuceneTestCase {
                                                    doPayloads,
                                                    indexOptions,
                                                    null,
-                                                   DocValues.Type.FIXED_INTS_8,
+                                                   DocValuesType.NUMERIC,
                                                    null);
     }
 

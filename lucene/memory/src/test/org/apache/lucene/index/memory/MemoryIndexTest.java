@@ -36,8 +36,6 @@ import org.apache.lucene.document.Field;
 import org.apache.lucene.index.AtomicReader;
 import org.apache.lucene.index.CompositeReader;
 import org.apache.lucene.index.DirectoryReader;
-import org.apache.lucene.index.DocValues;
-import org.apache.lucene.index.DocValues.Source;
 import org.apache.lucene.index.DocsAndPositionsEnum;
 import org.apache.lucene.index.DocsEnum;
 import org.apache.lucene.index.Fields;
@@ -46,6 +44,7 @@ import org.apache.lucene.index.IndexWriter;
 import org.apache.lucene.index.IndexWriterConfig;
 import org.apache.lucene.index.IndexableField;
 import org.apache.lucene.index.MultiFields;
+import org.apache.lucene.index.NumericDocValues;
 import org.apache.lucene.index.SlowCompositeReaderWrapper;
 import org.apache.lucene.index.Term;
 import org.apache.lucene.index.Terms;
@@ -178,12 +177,12 @@ public class MemoryIndexTest extends BaseTokenStreamTestCase {
       if (iwTerms == null) {
         assertNull(memTerms);
       } else {
-        DocValues normValues = competitor.normValues(field);
-        DocValues memNormValues = memIndexReader.normValues(field);
+        NumericDocValues normValues = competitor.getNormValues(field);
+        NumericDocValues memNormValues = memIndexReader.getNormValues(field);
         if (normValues != null) {
           // mem idx always computes norms on the fly
           assertNotNull(memNormValues);
-          assertEquals(normValues.getDirectSource().getInt(0), memNormValues.getDirectSource().getInt(0), 0.01);
+          assertEquals(normValues.get(0), memNormValues.get(0));
         }
           
         assertNotNull(memTerms);
@@ -381,6 +380,17 @@ public class MemoryIndexTest extends BaseTokenStreamTestCase {
     assertTrue("posGap" + mockAnalyzer.getPositionIncrementGap("field") , mindex.search(query) > 0.0001);
   }
   
+  public void testNonExistingsField() throws IOException {
+    MemoryIndex mindex = new MemoryIndex(random().nextBoolean(),  random().nextInt(50) * 1024 * 1024);
+    MockAnalyzer mockAnalyzer = new MockAnalyzer(random());
+    mindex.addField("field", "the quick brown fox", mockAnalyzer);
+    AtomicReader reader = (AtomicReader) mindex.createSearcher().getIndexReader();
+    assertNull(reader.getNumericDocValues("not-in-index"));
+    assertNull(reader.getNormValues("not-in-index"));
+    assertNull(reader.termDocsEnum(new Term("not-in-index", "foo")));
+    assertNull(reader.termPositionsEnum(new Term("not-in-index", "foo")));
+    assertNull(reader.terms("not-in-index"));
+  }
   
   public void testDuellMemIndex() throws IOException {
     LineFileDocs lineFileDocs = new LineFileDocs(random());

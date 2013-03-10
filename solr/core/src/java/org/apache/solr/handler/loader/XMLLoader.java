@@ -381,7 +381,7 @@ public class XMLLoader extends ContentStreamLoader {
     float boost = 1.0f;
     boolean isNull = false;
     String update = null;
-    Map<String, Map<String, List<Object>>> updateMap = null;
+    Map<String, Map<String, Object>> updateMap = null;
     boolean complete = false;
     while (!complete) {
       int event = parser.next();
@@ -400,18 +400,27 @@ public class XMLLoader extends ContentStreamLoader {
           } else if ("field".equals(parser.getLocalName())) {
             Object v = isNull ? null : text.toString();
             if (update != null) {
-              if (updateMap == null) updateMap = new HashMap<String, Map<String, List<Object>>>();
-              Map<String, List<Object>> extendedValues = updateMap.get(name);
+              if (updateMap == null) updateMap = new HashMap<String, Map<String, Object>>();
+              Map<String, Object> extendedValues = updateMap.get(name);
               if (extendedValues == null) {
-                extendedValues = new HashMap<String, List<Object>>(1);
+                extendedValues = new HashMap<String, Object>(1);
                 updateMap.put(name, extendedValues);
               }
-              List<Object> values = extendedValues.get(update);
-              if (values == null) {
-                values = new ArrayList<Object>();
-                extendedValues.put(update, values);
+              Object val = extendedValues.get(update);
+              if (val == null) {
+                extendedValues.put(update, v);
+              } else {
+                // multiple val are present
+                if (val instanceof List) {
+                  List list = (List) val;
+                  list.add(v);
+                } else {
+                  List<Object> values = new ArrayList<Object>();
+                  values.add(val);
+                  values.add(v);
+                  extendedValues.put(update, values);
+                }
               }
-              values.add(v);
               break;
             }
             doc.addField(name, v, boost);
@@ -450,9 +459,9 @@ public class XMLLoader extends ContentStreamLoader {
     }
 
     if (updateMap != null)  {
-      for (Map.Entry<String, Map<String, List<Object>>> entry : updateMap.entrySet()) {
+      for (Map.Entry<String, Map<String, Object>> entry : updateMap.entrySet()) {
         name = entry.getKey();
-        Map<String, List<Object>> value = entry.getValue();
+        Map<String, Object> value = entry.getValue();
         doc.addField(name, value, 1.0f);
       }
     }

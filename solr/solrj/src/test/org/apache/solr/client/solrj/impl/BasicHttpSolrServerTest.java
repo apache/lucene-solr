@@ -124,26 +124,31 @@ public class BasicHttpSolrServerTest extends SolrJettyTestBase {
         .addServletWithMapping(DebugServlet.class, "/debug/*");
   }
   
+  // what is this actually testing? this test WILL randomly fail.
+  // not a good unit test!
   @Test
   public void testConnectionRefused() throws MalformedURLException {
     int unusedPort = findUnusedPort(); // XXX even if fwe found an unused port
                                        // it might not be unused anymore
     HttpSolrServer server = new HttpSolrServer("http://127.0.0.1:" + unusedPort
         + "/solr");
+    server.setConnectionTimeout(500);
     SolrQuery q = new SolrQuery("*:*");
     try {
       QueryResponse response = server.query(q);
       fail("Should have thrown an exception.");
     } catch (SolrServerException e) {
+      assumeFalse("blackholed!", e.getMessage().contains("IOException occured when talking to server"));
       assertTrue(e.getMessage().contains("refused"));
+    } finally {
+      server.shutdown();
     }
-    server.shutdown();
   }
   
   @Test
   public void testTimeout() throws Exception {
-    HttpSolrServer server = new HttpSolrServer("http://127.0.0.1:"
-        + jetty.getLocalPort() + "/solr/slow/foo");
+    HttpSolrServer server = new HttpSolrServer(jetty.getBaseUrl().toString() +
+                                               "/slow/foo");
     SolrQuery q = new SolrQuery("*:*");
     server.setSoTimeout(2000);
     try {
@@ -158,8 +163,8 @@ public class BasicHttpSolrServerTest extends SolrJettyTestBase {
   @Test
   public void testQuery(){
     DebugServlet.clear();
-    HttpSolrServer server = new HttpSolrServer("http://127.0.0.1:"
-        + jetty.getLocalPort() + "/solr/debug/foo");
+    HttpSolrServer server = new HttpSolrServer(jetty.getBaseUrl().toString() +
+                                               "/debug/foo");
     SolrQuery q = new SolrQuery("foo");
     q.setParam("a", "\u1234");
     try {
@@ -245,8 +250,8 @@ public class BasicHttpSolrServerTest extends SolrJettyTestBase {
   @Test
   public void testDelete(){
     DebugServlet.clear();
-    HttpSolrServer server = new HttpSolrServer("http://127.0.0.1:"
-        + jetty.getLocalPort() + "/solr/debug/foo");
+    HttpSolrServer server = new HttpSolrServer(jetty.getBaseUrl().toString() +
+                                               "/debug/foo");
     try {
       server.deleteById("id");
     } catch (Throwable t) {}
@@ -286,8 +291,8 @@ public class BasicHttpSolrServerTest extends SolrJettyTestBase {
   @Test
   public void testUpdate(){
     DebugServlet.clear();
-    HttpSolrServer server = new HttpSolrServer("http://127.0.0.1:"
-        + jetty.getLocalPort() + "/solr/debug/foo");
+    HttpSolrServer server = new HttpSolrServer(jetty.getBaseUrl().toString() + 
+                                               "/debug/foo");
     UpdateRequest req = new UpdateRequest();
     req.add(new SolrInputDocument());
     req.setParam("a", "\u1234");
@@ -347,8 +352,8 @@ public class BasicHttpSolrServerTest extends SolrJettyTestBase {
   
   @Test
   public void testRedirect() throws Exception {
-    HttpSolrServer server = new HttpSolrServer("http://127.0.0.1:"
-        + jetty.getLocalPort() + "/solr/redirect/foo");
+    HttpSolrServer server = new HttpSolrServer(jetty.getBaseUrl().toString() +
+                                               "/redirect/foo");
     SolrQuery q = new SolrQuery("*:*");
     // default = false
     try {
@@ -368,8 +373,8 @@ public class BasicHttpSolrServerTest extends SolrJettyTestBase {
   
   @Test
   public void testCompression() throws Exception {
-    HttpSolrServer server = new HttpSolrServer("http://127.0.0.1:"
-        + jetty.getLocalPort() + "/solr/debug/foo");
+    HttpSolrServer server = new HttpSolrServer(jetty.getBaseUrl().toString() +
+                                               "/debug/foo");
     SolrQuery q = new SolrQuery("*:*");
     
     // verify request header gets set
@@ -390,8 +395,8 @@ public class BasicHttpSolrServerTest extends SolrJettyTestBase {
     assertNull(DebugServlet.headers.get("Accept-Encoding"));
     
     // verify server compresses output
-    HttpGet get = new HttpGet("http://127.0.0.1:" + jetty.getLocalPort()
-        + "/solr/select?q=foo&wt=xml");
+    HttpGet get = new HttpGet(jetty.getBaseUrl().toString() + 
+                              "/select?q=foo&wt=xml");
     get.setHeader("Accept-Encoding", "gzip");
     HttpClient client = HttpClientUtil.createClient(null);
     HttpEntity entity = null;
@@ -409,8 +414,7 @@ public class BasicHttpSolrServerTest extends SolrJettyTestBase {
     }
     
     // verify compressed response can be handled
-    server = new HttpSolrServer("http://127.0.0.1:" + jetty.getLocalPort()
-        + "/solr");
+    server = new HttpSolrServer(jetty.getBaseUrl().toString());
     server.setAllowCompression(true);
     q = new SolrQuery("foo");
     QueryResponse response = server.query(q);
@@ -421,7 +425,8 @@ public class BasicHttpSolrServerTest extends SolrJettyTestBase {
   @Test
   public void testSetParametersExternalClient(){
     HttpClient client = HttpClientUtil.createClient(null);
-    HttpSolrServer server = new HttpSolrServer("http://127.0.0.1/", client);
+    HttpSolrServer server = new HttpSolrServer(jetty.getBaseUrl().toString(), 
+                                               client);
     try {
       server.setMaxTotalConnections(1);
       fail("Operation should not succeed.");
@@ -436,7 +441,8 @@ public class BasicHttpSolrServerTest extends SolrJettyTestBase {
   @Test
   public void testGetRawStream() throws SolrServerException, IOException{
     HttpClient client = HttpClientUtil.createClient(null);
-    HttpSolrServer server = new HttpSolrServer("http://127.0.0.1:" + jetty.getLocalPort() + "/solr", client, null);
+    HttpSolrServer server = new HttpSolrServer(jetty.getBaseUrl().toString(), 
+                                               client, null);
     QueryRequest req = new QueryRequest();
     NamedList response = server.request(req);
     InputStream stream = (InputStream)response.get("stream");

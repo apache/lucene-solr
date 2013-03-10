@@ -71,7 +71,7 @@ public class VersionInfo {
     if ( sf.multiValued() ) {
       throw new SolrException
         (SolrException.ErrorCode.SERVER_ERROR, 
-         errPrefix + " (" + VERSION_FIELD + " is not multiValued");
+         errPrefix + " (" + VERSION_FIELD + " is multiValued");
     }
     
     return sf;

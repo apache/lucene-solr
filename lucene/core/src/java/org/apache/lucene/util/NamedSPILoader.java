@@ -53,7 +53,7 @@ public final class NamedSPILoader<S extends NamedSPILoader.NamedSPI> implements 
    * <p><em>This method is expensive and should only be called for discovery
    * of new service providers on the given classpath/classloader!</em>
    */
-  public void reload(ClassLoader classloader) {
+  public synchronized void reload(ClassLoader classloader) {
     final LinkedHashMap<String,S> services = new LinkedHashMap<String,S>(this.services);
     final SPIClassIterator<S> loader = SPIClassIterator.get(clazz, classloader);
     while (loader.hasNext()) {

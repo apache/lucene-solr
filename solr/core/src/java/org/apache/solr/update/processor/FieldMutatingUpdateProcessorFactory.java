@@ -91,8 +91,7 @@ import org.apache.solr.util.plugin.SolrCoreAware;
  *   &lt;lst name="exclude"&gt;
  *     &lt;str name="typeClass"&gt;solr.DateField&lt;/str&gt;
  *   &lt;/lst&gt;
- * &lt;/processor&gt;
- * </pre>
+ * &lt;/processor&gt;</pre>
  * 
  * <p>
  * Subclasses define the default selection behavior to be applied if no 
@@ -243,7 +242,7 @@ public abstract class FieldMutatingUpdateProcessorFactory
 
   /**
    * Removes all instance of the key from NamedList, returning the Set of 
-   * Strings that key refered to.  Throws an error if the key didn't refer 
+   * Strings that key referred to.  Throws an error if the key didn't refer
    * to one or more strings (or arrays of strings)
    * @exception SolrException invalid arr/str structure.
    */

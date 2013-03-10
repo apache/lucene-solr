@@ -17,29 +17,29 @@
 package org.apache.lucene.classification;
 
 /**
- * The result of a call to {@link Classifier#assignClass(String)} holding an assigned class and a score.
+ * The result of a call to {@link Classifier#assignClass(String)} holding an assigned class of type <code>T</code> and a score.
  * @lucene.experimental
  */
-public class ClassificationResult {
+public class ClassificationResult<T> {
 
-  private String assignedClass;
+  private T assignedClass;
   private double score;
 
   /**
    * Constructor
-   * @param assignedClass the class <code>String</code> assigned by a {@link Classifier}
+   * @param assignedClass the class <code>T</code> assigned by a {@link Classifier}
    * @param score the score for the assignedClass as a <code>double</code>
    */
-  public ClassificationResult(String assignedClass, double score) {
+  public ClassificationResult(T assignedClass, double score) {
     this.assignedClass = assignedClass;
     this.score = score;
   }
 
   /**
    * retrieve the result class
-   * @return a <code>String</code> representing an assigned class
+   * @return a <code>T</code> representing an assigned class
    */
-  public String getAssignedClass() {
+  public T getAssignedClass() {
     return assignedClass;
   }
 

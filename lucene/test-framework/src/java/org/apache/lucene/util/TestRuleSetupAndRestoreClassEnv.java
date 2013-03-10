@@ -28,12 +28,17 @@ import java.util.Set;
 import java.util.TimeZone;
 
 import org.apache.lucene.codecs.Codec;
+import org.apache.lucene.codecs.DocValuesFormat;
 import org.apache.lucene.codecs.PostingsFormat;
 import org.apache.lucene.codecs.asserting.AssertingCodec;
+import org.apache.lucene.codecs.cheapbastard.CheapBastardCodec;
 import org.apache.lucene.codecs.compressing.CompressingCodec;
 import org.apache.lucene.codecs.lucene40.Lucene40Codec;
+import org.apache.lucene.codecs.lucene40.Lucene40RWCodec;
 import org.apache.lucene.codecs.lucene40.Lucene40RWPostingsFormat;
 import org.apache.lucene.codecs.lucene41.Lucene41Codec;
+import org.apache.lucene.codecs.lucene41.Lucene41RWCodec;
+import org.apache.lucene.codecs.lucene42.Lucene42Codec;
 import org.apache.lucene.codecs.mockrandom.MockRandomPostingsFormat;
 import org.apache.lucene.codecs.simpletext.SimpleTextCodec;
 import org.apache.lucene.index.RandomCodec;
@@ -126,40 +131,71 @@ final class TestRuleSetupAndRestoreClassEnv extends AbstractBeforeAfterRule {
 
     Class<?> targetClass = RandomizedContext.current().getTargetClass();
     avoidCodecs = new HashSet<String>();
-    if (targetClass.isAnnotationPresent(SuppressCodecs.class)) {
+    // TODO: Fix below code to use c.isAnnotationPresent(). It was changed
+    // to the null check to work around a bug in JDK 8 b78 (see LUCENE-4808).
+    if (targetClass.getAnnotation(SuppressCodecs.class) != null) {
       SuppressCodecs a = targetClass.getAnnotation(SuppressCodecs.class);
       avoidCodecs.addAll(Arrays.asList(a.value()));
     }
     
     savedCodec = Codec.getDefault();
     int randomVal = random.nextInt(10);
-
     if ("Lucene40".equals(TEST_CODEC) || ("random".equals(TEST_CODEC) &&
                                           "random".equals(TEST_POSTINGSFORMAT) &&
-                                          randomVal < 2 &&
+                                          "random".equals(TEST_DOCVALUESFORMAT) &&
+                                          randomVal == 0 &&
                                           !shouldAvoidCodec("Lucene40"))) {
       codec = Codec.forName("Lucene40");
+      assert codec instanceof Lucene40RWCodec : "fix your classpath to have tests-framework.jar before lucene-core.jar";
       assert (PostingsFormat.forName("Lucene40") instanceof Lucene40RWPostingsFormat) : "fix your classpath to have tests-framework.jar before lucene-core.jar";
-    } else if (!"random".equals(TEST_POSTINGSFORMAT)) {
+    } else if ("Lucene41".equals(TEST_CODEC) || ("random".equals(TEST_CODEC) &&
+                                                 "random".equals(TEST_POSTINGSFORMAT) &&
+                                                 "random".equals(TEST_DOCVALUESFORMAT) &&
+                                                 randomVal == 1 &&
+                                                 !shouldAvoidCodec("Lucene41"))) { 
+      codec = Codec.forName("Lucene41");
+      assert codec instanceof Lucene41RWCodec : "fix your classpath to have tests-framework.jar before lucene-core.jar";
+    } else if (("random".equals(TEST_POSTINGSFORMAT) == false) || ("random".equals(TEST_DOCVALUESFORMAT) == false)) {
+      // the user wired postings or DV: this is messy
+      // refactor into RandomCodec....
+      
       final PostingsFormat format;
-      if ("MockRandom".equals(TEST_POSTINGSFORMAT)) {
-        format = new MockRandomPostingsFormat(random);
+      if ("random".equals(TEST_POSTINGSFORMAT)) {
+        format = PostingsFormat.forName("Lucene41");
       } else {
         format = PostingsFormat.forName(TEST_POSTINGSFORMAT);
       }
-      codec = new Lucene41Codec() {       
+      
+      final DocValuesFormat dvFormat;
+      if ("random".equals(TEST_DOCVALUESFORMAT)) {
+        // pick one from SPI
+        String formats[] = DocValuesFormat.availableDocValuesFormats().toArray(new String[0]);
+        dvFormat = DocValuesFormat.forName(formats[random.nextInt(formats.length)]);
+      } else {
+        dvFormat = DocValuesFormat.forName(TEST_DOCVALUESFORMAT);
+      }
+      
+      codec = new Lucene42Codec() {       
         @Override
         public PostingsFormat getPostingsFormatForField(String field) {
           return format;
         }
 
         @Override
+        public DocValuesFormat getDocValuesFormatForField(String field) {
+          return dvFormat;
+        }
+
+        @Override
         public String toString() {
-          return super.toString() + ": " + format.toString();
+          return super.toString() + ": " + format.toString() + ", " + dvFormat.toString();
         }
       };
     } else if ("SimpleText".equals(TEST_CODEC) || ("random".equals(TEST_CODEC) && randomVal == 9 && !shouldAvoidCodec("SimpleText"))) {
       codec = new SimpleTextCodec();
+    } else if ("CheapBastard".equals(TEST_CODEC) || ("random".equals(TEST_CODEC) && randomVal == 8 && !shouldAvoidCodec("CheapBastard") && !shouldAvoidCodec("Lucene41"))) {
+      // we also avoid this codec if Lucene41 is avoided, since thats the postings format it uses.
+      codec = new CheapBastardCodec();
     } else if ("Asserting".equals(TEST_CODEC) || ("random".equals(TEST_CODEC) && randomVal == 7 && !shouldAvoidCodec("Asserting"))) {
       codec = new AssertingCodec();
     } else if ("Compressing".equals(TEST_CODEC) || ("random".equals(TEST_CODEC) && randomVal == 6 && !shouldAvoidCodec("Compressing"))) {

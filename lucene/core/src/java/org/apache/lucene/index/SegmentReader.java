@@ -22,7 +22,6 @@ import java.util.HashMap;
 import java.util.Map;
 
 import org.apache.lucene.codecs.FieldsProducer;
-import org.apache.lucene.codecs.PerDocProducer;
 import org.apache.lucene.codecs.StoredFieldsReader;
 import org.apache.lucene.codecs.TermVectorsReader;
 import org.apache.lucene.search.FieldCache;
@@ -427,46 +426,36 @@ public final class SegmentReader extends AtomicReader {
   public int getTermInfosIndexDivisor() {
     return core.termsIndexDivisor;
   }
-  
+
   @Override
-  public DocValues docValues(String field) throws IOException {
+  public NumericDocValues getNumericDocValues(String field) throws IOException {
+    return core.getNumericDocValues(field);
+  }
+
+  @Override
+  public BinaryDocValues getBinaryDocValues(String field) throws IOException {
     ensureOpen();
-    DocValues docValues = internalGetDocValues(core.perDocProducer, field);
-    if (updates != null) {
-      // if no norms for core, try using the first producer available in updates
-      for (int i = 0; docValues == null && i < updates.length; i++) {
-        if (updates[i] != null) {
-          docValues = internalGetDocValues(updates[i].perDocProducer, field);
-        }
-      }
-    }
-    return docValues;
+    return core.getBinaryDocValues(field);
   }
   
   @Override
-  public DocValues normValues(String field) throws IOException {
+  public SortedDocValues getSortedDocValues(String field) throws IOException {
     ensureOpen();
-    DocValues normValues = internalGetDocValues(core.norms, field);
-    if (updates != null) {
-      // if no norms for core, try using the first norms available in updates
-      for (int i = 0; normValues == null && i < updates.length; i++) {
-        if (updates[i] != null) {
-          normValues = internalGetDocValues(updates[i].norms, field);
-        }
-      }
-    }
-    return normValues;
+    return core.getSortedDocValues(field);
   }
-  
-  private DocValues internalGetDocValues(PerDocProducer perDoc, String field)
-      throws IOException {
-    if (perDoc == null) {
-      return null;
-    }
-    final DocValues docValues = perDoc.docValues(field);
-    return docValues;
+
+  @Override
+  public SortedSetDocValues getSortedSetDocValues(String field) throws IOException {
+    ensureOpen();
+    return core.getSortedSetDocValues(field);
   }
-  
+
+  @Override
+  public NumericDocValues getNormValues(String field) throws IOException {
+    ensureOpen();
+    return core.getNormValues(field);
+  }
+
   /**
    * Called when the shared core for this SegmentReader is closed.
    * <p>

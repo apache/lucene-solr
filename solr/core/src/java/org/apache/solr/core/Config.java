@@ -34,15 +34,13 @@ import javax.xml.namespace.QName;
 import javax.xml.parsers.DocumentBuilder;
 import javax.xml.parsers.DocumentBuilderFactory;
 import javax.xml.parsers.ParserConfigurationException;
+import javax.xml.transform.TransformerException;
 import javax.xml.xpath.XPath;
 import javax.xml.xpath.XPathConstants;
 import javax.xml.xpath.XPathExpressionException;
 import javax.xml.xpath.XPathFactory;
 import java.io.IOException;
-import java.io.InputStream;
 import java.util.Arrays;
-import java.util.List;
-import java.util.Locale;
 import java.util.concurrent.atomic.AtomicBoolean;
 
 /**
@@ -67,7 +65,18 @@ public class Config {
     this( loader, name, null, null );
   }
 
-  
+  /**
+   * For the transition from using solr.xml to solr.properties, see SOLR-4196. Remove
+   * for 5.0, thus it's already deprecated
+   * @param loader - Solr resource loader
+   * @param cfg    - SolrConfig, for backwards compatability with solr.xml layer.
+   * @throws TransformerException if the XML file is mal-formed
+   */
+  @Deprecated
+  public Config(SolrResourceLoader loader, Config cfg) throws TransformerException {
+    this(loader, null, ConfigSolrXmlBackCompat.copyDoc(cfg.getDocument()));
+  }
+
   public Config(SolrResourceLoader loader, String name, InputSource is, String prefix) throws ParserConfigurationException, IOException, SAXException 
   {
     this(loader, name, is, prefix, true);

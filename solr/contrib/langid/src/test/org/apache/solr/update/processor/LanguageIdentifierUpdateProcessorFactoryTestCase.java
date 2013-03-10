@@ -93,7 +93,7 @@ public abstract class LanguageIdentifierUpdateProcessorFactoryTestCase extends S
     parameters = new ModifiableSolrParams();
     parameters.add("langid.fl", "name");
     parameters.add("langid.map.lcmap", "jp:s zh:cjk ko:cjk");
-    parameters.add("langid.enforceSchema", "true");
+    parameters.set("langid.enforceSchema", "false");
     liProcessor = createLangIdProcessor(parameters);
     
     assertEquals("test_no", liProcessor.getMappedField("test", "no"));
@@ -102,13 +102,17 @@ public abstract class LanguageIdentifierUpdateProcessorFactoryTestCase extends S
     assertEquals("test_cjk", liProcessor.getMappedField("test", "zh"));
     assertEquals("test_cjk", liProcessor.getMappedField("test", "ko"));
 
-    // Prove support for other mapping regex
-    parameters.add("langid.map.pattern", "text_(.*?)_field");
-    parameters.add("langid.map.replace", "$1_{lang}Text");
+    // Test that enforceSchema correctly catches illegal field and returns null
+    parameters.set("langid.enforceSchema", "true");
     liProcessor = createLangIdProcessor(parameters);
+    assertEquals(null, liProcessor.getMappedField("inputfield", "sv"));
 
-    assertEquals("title_noText", liProcessor.getMappedField("text_title_field", "no"));
-    assertEquals("body_svText", liProcessor.getMappedField("text_body_field", "sv"));
+    // Prove support for other mapping regex, still with enforceSchema=true
+    parameters.add("langid.map.pattern", "text_(.*?)_field");
+    parameters.add("langid.map.replace", "$1_{lang}_s");
+    liProcessor = createLangIdProcessor(parameters);
+    assertEquals("title_no_s", liProcessor.getMappedField("text_title_field", "no"));
+    assertEquals("body_sv_s", liProcessor.getMappedField("text_body_field", "sv"));
   }
 
   @Test

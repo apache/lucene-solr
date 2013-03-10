@@ -140,6 +140,8 @@ public class DistributedUpdateProcessor extends UpdateRequestProcessor {
 
   private int numNodes;
 
+  private UpdateCommand updateCommand;  // the current command this processor is working on.
+
   
   public DistributedUpdateProcessor(SolrQueryRequest req,
       SolrQueryResponse rsp, UpdateRequestProcessor next) {
@@ -184,8 +186,13 @@ public class DistributedUpdateProcessor extends UpdateRequestProcessor {
     // if we are in zk mode...
     if (zkEnabled) {
 
+      if ((updateCommand.getFlags() & (UpdateCommand.REPLAY | UpdateCommand.PEER_SYNC)) != 0) {
+        isLeader = false;     // we actually might be the leader, but we don't want leader-logic for these types of updates anyway.
+        forwardToLeader = false;
+        return nodes;
+      }
+
       String coreName = req.getCore().getName();
-      String coreNodeName = zkController.getNodeName() + "_" + coreName;
 
       ClusterState cstate = zkController.getClusterState();
       numNodes = cstate.getLiveNodes().size();
@@ -209,17 +216,16 @@ public class DistributedUpdateProcessor extends UpdateRequestProcessor {
       try {
         // Not equivalent to getLeaderProps, which does retries to find a leader.
         // Replica leader = slice.getLeader();
-
-        ZkCoreNodeProps leaderProps = new ZkCoreNodeProps(zkController.getZkStateReader().getLeaderRetry(
-            collection, shardId));
-
-        String leaderNodeName = leaderProps.getCoreNodeName();
-        isLeader = coreNodeName.equals(leaderNodeName);
+        Replica leaderReplica = zkController.getZkStateReader().getLeaderRetry(
+            collection, shardId);
+        ZkCoreNodeProps leaderProps = new ZkCoreNodeProps(leaderReplica);
+        String coreNodeName = zkController.getCoreNodeName(req.getCore().getCoreDescriptor());
+        isLeader = coreNodeName.equals(leaderReplica.getName());
 
         DistribPhase phase =
             DistribPhase.parseParam(req.getParams().get(DISTRIB_UPDATE_PARAM));
 
-        doDefensiveChecks(shardId, phase);
+        doDefensiveChecks(phase);
 
 
         if (DistribPhase.FROMLEADER == phase) {
@@ -230,7 +236,7 @@ public class DistributedUpdateProcessor extends UpdateRequestProcessor {
           // so get the replicas...
           forwardToLeader = false;
           List<ZkCoreNodeProps> replicaProps = zkController.getZkStateReader()
-              .getReplicaProps(collection, shardId, zkController.getNodeName(),
+              .getReplicaProps(collection, shardId, coreNodeName,
                   coreName, null, ZkStateReader.DOWN);
           if (replicaProps != null) {
             nodes = new ArrayList<Node>(replicaProps.size());
@@ -271,11 +277,13 @@ public class DistributedUpdateProcessor extends UpdateRequestProcessor {
   }
 
 
-  private void doDefensiveChecks(String shardId, DistribPhase phase) {
+  private void doDefensiveChecks(DistribPhase phase) {
+    boolean isReplayOrPeersync = (updateCommand.getFlags() & (UpdateCommand.REPLAY | UpdateCommand.REPLAY)) != 0;
+    if (isReplayOrPeersync) return;
+
     String from = req.getParams().get("distrib.from");
-    boolean logReplay = req.getParams().getBool(LOG_REPLAY, false);
     boolean localIsLeader = req.getCore().getCoreDescriptor().getCloudDescriptor().isLeader();
-    if (!logReplay && DistribPhase.FROMLEADER == phase && localIsLeader && from != null) { // from will be null on log replay
+    if (DistribPhase.FROMLEADER == phase && localIsLeader && from != null) { // from will be null on log replay
       log.error("Request says it is coming from leader, but we are the leader: " + req.getParamString());
       throw new SolrException(ErrorCode.SERVICE_UNAVAILABLE, "Request says it is coming from leader, but we are the leader");
     }
@@ -293,21 +301,19 @@ public class DistributedUpdateProcessor extends UpdateRequestProcessor {
     String shardId = cloudDesc.getShardId();
 
     try {
+      Replica leaderReplica = zkController.getZkStateReader().getLeaderRetry(
+          collection, shardId);
+      String leaderCoreNodeName = leaderReplica.getName();
 
-      ZkCoreNodeProps leaderProps = new ZkCoreNodeProps(zkController.getZkStateReader().getLeaderRetry(
-          collection, shardId));
-
-      String leaderNodeName = leaderProps.getCoreNodeName();
-      String coreName = req.getCore().getName();
-      String coreNodeName = zkController.getNodeName() + "_" + coreName;
-      isLeader = coreNodeName.equals(leaderNodeName);
+      String coreNodeName = zkController.getCoreNodeName(req.getCore().getCoreDescriptor());
+      isLeader = coreNodeName.equals(leaderCoreNodeName);
 
       // TODO: what if we are no longer the leader?
 
       forwardToLeader = false;
       List<ZkCoreNodeProps> replicaProps = zkController.getZkStateReader()
-          .getReplicaProps(collection, shardId, zkController.getNodeName(),
-              coreName);
+          .getReplicaProps(collection, shardId, coreNodeName,
+              req.getCore().getName());
       if (replicaProps != null) {
         nodes = new ArrayList<Node>(replicaProps.size());
         for (ZkCoreNodeProps props : replicaProps) {
@@ -326,6 +332,8 @@ public class DistributedUpdateProcessor extends UpdateRequestProcessor {
 
   @Override
   public void processAdd(AddUpdateCommand cmd) throws IOException {
+    updateCommand = cmd;
+
     if (zkEnabled) {
       zkCheck();
       nodes = setupRequest(cmd.getHashableId(), cmd.getSolrInputDocument());
@@ -407,11 +415,9 @@ public class DistributedUpdateProcessor extends UpdateRequestProcessor {
 
     // TODO: we should do this in the background it would seem
     for (SolrCmdDistributor.Error error : response.errors) {
-      if (error.node instanceof RetryNode || error.e instanceof SolrException) {
+      if (error.node instanceof RetryNode) {
         // we don't try to force a leader to recover
         // when we cannot forward to it
-        // and we assume SolrException means
-        // the node went down
         continue;
       }
       // TODO: we should force their state to recovering ??
@@ -424,8 +430,8 @@ public class DistributedUpdateProcessor extends UpdateRequestProcessor {
       log.info("try and ask " + recoveryUrl + " to recover");
       try {
         server = new HttpSolrServer(recoveryUrl);
-        server.setSoTimeout(5000);
-        server.setConnectionTimeout(5000);
+        server.setSoTimeout(15000);
+        server.setConnectionTimeout(15000);
         
         RequestRecovery recoverRequestCmd = new RequestRecovery();
         recoverRequestCmd.setAction(CoreAdminAction.REQUESTRECOVERY);
@@ -495,8 +501,8 @@ public class DistributedUpdateProcessor extends UpdateRequestProcessor {
       }
     }
 
-    boolean isReplay = (cmd.getFlags() & UpdateCommand.REPLAY) != 0;
-    boolean leaderLogic = isLeader && !isReplay;
+    boolean isReplayOrPeersync = (cmd.getFlags() & (UpdateCommand.REPLAY | UpdateCommand.REPLAY)) != 0;
+    boolean leaderLogic = isLeader && !isReplayOrPeersync;
 
 
     VersionBucket bucket = vinfo.bucket(bucketHash);
@@ -692,6 +698,8 @@ public class DistributedUpdateProcessor extends UpdateRequestProcessor {
   
   @Override
   public void processDelete(DeleteUpdateCommand cmd) throws IOException {
+    updateCommand = cmd;
+
     if (!cmd.isDeleteById()) {
       doDeleteByQuery(cmd);
       return;
@@ -800,10 +808,9 @@ public class DistributedUpdateProcessor extends UpdateRequestProcessor {
 
         // Am I the leader for this slice?
         ZkCoreNodeProps coreLeaderProps = new ZkCoreNodeProps(leader);
-        String leaderNodeName = coreLeaderProps.getCoreNodeName();
-        String coreName = req.getCore().getName();
-        String coreNodeName = zkController.getNodeName() + "_" + coreName;
-        isLeader = coreNodeName.equals(leaderNodeName);
+        String leaderCoreNodeName = leader.getName();
+        String coreNodeName = zkController.getCoreNodeName(req.getCore().getCoreDescriptor());
+        isLeader = coreNodeName.equals(leaderCoreNodeName);
 
         if (isLeader) {
           // don't forward to ourself
@@ -850,8 +857,8 @@ public class DistributedUpdateProcessor extends UpdateRequestProcessor {
     }
     versionOnUpdate = Math.abs(versionOnUpdate);  // normalize to positive version
 
-    boolean isReplay = (cmd.getFlags() & UpdateCommand.REPLAY) != 0;
-    boolean leaderLogic = isLeader && !isReplay;
+    boolean isReplayOrPeersync = (cmd.getFlags() & (UpdateCommand.REPLAY | UpdateCommand.REPLAY)) != 0;
+    boolean leaderLogic = isLeader && !isReplayOrPeersync;
 
     if (!leaderLogic && versionOnUpdate==0) {
       throw new SolrException(ErrorCode.BAD_REQUEST, "missing _version_ on update from leader");
@@ -914,6 +921,11 @@ public class DistributedUpdateProcessor extends UpdateRequestProcessor {
 
 
   private void zkCheck() {
+    if ((updateCommand.getFlags() & (UpdateCommand.REPLAY | UpdateCommand.PEER_SYNC)) != 0) {
+      // for log reply or peer sync, we don't need to be connected to ZK
+      return;
+    }
+
     if (zkController.isConnected()) {
       return;
     }
@@ -957,8 +969,8 @@ public class DistributedUpdateProcessor extends UpdateRequestProcessor {
     long signedVersionOnUpdate = versionOnUpdate;
     versionOnUpdate = Math.abs(versionOnUpdate);  // normalize to positive version
 
-    boolean isReplay = (cmd.getFlags() & UpdateCommand.REPLAY) != 0;
-    boolean leaderLogic = isLeader && !isReplay;
+    boolean isReplayOrPeersync = (cmd.getFlags() & (UpdateCommand.REPLAY | UpdateCommand.REPLAY)) != 0;
+    boolean leaderLogic = isLeader && !isReplayOrPeersync;
 
     if (!leaderLogic && versionOnUpdate==0) {
       throw new SolrException(ErrorCode.BAD_REQUEST, "missing _version_ on update from leader");
@@ -1028,6 +1040,8 @@ public class DistributedUpdateProcessor extends UpdateRequestProcessor {
 
   @Override
   public void processCommit(CommitUpdateCommand cmd) throws IOException {
+    updateCommand = cmd;
+
     if (zkEnabled) {
       zkCheck();
     }
@@ -1055,11 +1069,9 @@ public class DistributedUpdateProcessor extends UpdateRequestProcessor {
       if (!req.getParams().getBool(COMMIT_END_POINT, false)) {
         params.set(COMMIT_END_POINT, true);
 
-        String nodeName = req.getCore().getCoreDescriptor().getCoreContainer()
-            .getZkController().getNodeName();
-        String shardZkNodeName = nodeName + "_" + req.getCore().getName();
+        String coreNodeName = zkController.getCoreNodeName(req.getCore().getCoreDescriptor());
         List<Node> nodes = getCollectionUrls(req, req.getCore().getCoreDescriptor()
-            .getCloudDescriptor().getCollectionName(), shardZkNodeName);
+            .getCloudDescriptor().getCollectionName(), coreNodeName);
 
         if (nodes != null) {
           cmdDistrib.distribCommit(cmd, nodes, params);
@@ -1078,7 +1090,7 @@ public class DistributedUpdateProcessor extends UpdateRequestProcessor {
  
 
   
-  private List<Node> getCollectionUrls(SolrQueryRequest req, String collection, String shardZkNodeName) {
+  private List<Node> getCollectionUrls(SolrQueryRequest req, String collection, String coreNodeName) {
     ClusterState clusterState = req.getCore().getCoreDescriptor()
         .getCoreContainer().getZkController().getClusterState();
     List<Node> urls = new ArrayList<Node>();
@@ -1094,7 +1106,7 @@ public class DistributedUpdateProcessor extends UpdateRequestProcessor {
       
       for (Entry<String,Replica> entry : shardMap.entrySet()) {
         ZkCoreNodeProps nodeProps = new ZkCoreNodeProps(entry.getValue());
-        if (clusterState.liveNodesContain(nodeProps.getNodeName()) && !entry.getKey().equals(shardZkNodeName)) {
+        if (clusterState.liveNodesContain(nodeProps.getNodeName()) && !entry.getKey().equals(coreNodeName)) {
           urls.add(new StdNode(nodeProps));
         }
       }
@@ -1119,11 +1131,6 @@ public class DistributedUpdateProcessor extends UpdateRequestProcessor {
       this.collection = collection;
       this.shardId = shardId;
     }
-    
-    @Override
-    public String toString() {
-      return url;
-    }
 
     @Override
     public boolean checkRetry() {
@@ -1136,7 +1143,7 @@ public class DistributedUpdateProcessor extends UpdateRequestProcessor {
         return false;
       }
       
-      this.url = leaderProps.getCoreUrl();
+      this.nodeProps = leaderProps;
 
       return true;
     }
@@ -1157,16 +1164,16 @@ public class DistributedUpdateProcessor extends UpdateRequestProcessor {
       if (!super.equals(obj)) return false;
       if (getClass() != obj.getClass()) return false;
       RetryNode other = (RetryNode) obj;
-      if (url == null) {
-        if (other.url != null) return false;
-      } else if (!url.equals(other.url)) return false;
+      if (nodeProps.getCoreUrl() == null) {
+        if (other.nodeProps.getCoreUrl() != null) return false;
+      } else if (!nodeProps.getCoreUrl().equals(other.nodeProps.getCoreUrl())) return false;
 
       return true;
     }
   }
 
   /**
-   * Returns a boolean indicating wether or not the caller should behave as 
+   * Returns a boolean indicating whether or not the caller should behave as
    * if this is the "leader" even when ZooKeeper is not enabled.  
    * (Even in non zk mode, tests may simulate updates to/from a leader)
    */

@@ -17,37 +17,37 @@
 
 package org.apache.solr.request;
 
-import org.apache.lucene.search.FieldCache;
+import java.io.IOException;
+import java.util.HashMap;
+import java.util.LinkedHashMap;
+import java.util.Map;
+import java.util.concurrent.atomic.AtomicLong;
+
+import org.apache.lucene.index.AtomicReader;
 import org.apache.lucene.index.DocTermOrds;
+import org.apache.lucene.index.SortedDocValues;
 import org.apache.lucene.index.Term;
 import org.apache.lucene.index.TermsEnum;
+import org.apache.lucene.search.FieldCache;
 import org.apache.lucene.search.TermQuery;
 import org.apache.lucene.search.TermRangeQuery;
+import org.apache.lucene.util.BytesRef;
+import org.apache.lucene.util.CharsRef;
+import org.apache.lucene.util.OpenBitSet;
+import org.apache.lucene.util.UnicodeUtil;
+import org.apache.solr.common.SolrException;
 import org.apache.solr.common.params.FacetParams;
 import org.apache.solr.common.util.NamedList;
-import org.apache.solr.common.SolrException;
 import org.apache.solr.core.SolrCore;
-
+import org.apache.solr.handler.component.FieldFacetStats;
+import org.apache.solr.handler.component.StatsValues;
+import org.apache.solr.handler.component.StatsValuesFactory;
 import org.apache.solr.schema.FieldType;
 import org.apache.solr.schema.SchemaField;
 import org.apache.solr.schema.TrieField;
 import org.apache.solr.search.*;
 import org.apache.solr.util.LongPriorityQueue;
 import org.apache.solr.util.PrimUtils;
-import org.apache.solr.handler.component.StatsValues;
-import org.apache.solr.handler.component.StatsValuesFactory;
-import org.apache.solr.handler.component.FieldFacetStats;
-import org.apache.lucene.util.CharsRef;
-import org.apache.lucene.util.OpenBitSet;
-import org.apache.lucene.util.BytesRef;
-import org.apache.lucene.util.UnicodeUtil;
-
-import java.io.IOException;
-import java.util.HashMap;
-import java.util.LinkedHashMap;
-import java.util.Map;
-
-import java.util.concurrent.atomic.AtomicLong;
 
 /**
  *
@@ -175,7 +175,8 @@ public class UnInvertedField extends DocTermOrds {
     final String prefix = TrieField.getMainValuePrefix(searcher.getSchema().getFieldType(field));
     this.searcher = searcher;
     try {
-      uninvert(searcher.getAtomicReader(), prefix == null ? null : new BytesRef(prefix));
+      AtomicReader r = searcher.getAtomicReader();
+      uninvert(r, r.getLiveDocs(), prefix == null ? null : new BytesRef(prefix));
     } catch (IllegalStateException ise) {
       throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, ise.getMessage());
     }
@@ -481,16 +482,10 @@ public class UnInvertedField extends DocTermOrds {
     int i = 0;
     final FieldFacetStats[] finfo = new FieldFacetStats[facet.length];
     //Initialize facetstats, if facets have been passed in
-    FieldCache.DocTermsIndex si;
+    SortedDocValues si;
     for (String f : facet) {
       SchemaField facet_sf = searcher.getSchema().getField(f);
-      try {
-        si = FieldCache.DEFAULT.getTermsIndex(searcher.getAtomicReader(), f);
-      }
-      catch (IOException e) {
-        throw new RuntimeException("failed to open field cache for: " + f, e);
-      }
-      finfo[i] = new FieldFacetStats(f, si, sf, facet_sf, numTermsInField);
+      finfo[i] = new FieldFacetStats(searcher, f, sf, facet_sf);
       i++;
     }
 

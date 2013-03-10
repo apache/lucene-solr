@@ -113,7 +113,7 @@ public class SpatialOpRecursivePrefixTreeTest extends StrategyTestCase {
     double distErrPct = ((PrefixTreeStrategy) strategy).getDistErrPct();
     double distErr = SpatialArgs.calcDistanceFromErrPct(snapMe, distErrPct, ctx);
     int detailLevel = grid.getLevelForDistance(distErr);
-    List<Node> cells = grid.getNodes(snapMe, detailLevel, false);
+    List<Node> cells = grid.getNodes(snapMe, detailLevel, false, true);
 
     //calc bounding box of cells.
     double minX = Double.POSITIVE_INFINITY, maxX = Double.NEGATIVE_INFINITY;

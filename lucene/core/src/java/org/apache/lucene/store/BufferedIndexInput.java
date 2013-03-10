@@ -318,7 +318,7 @@ public abstract class BufferedIndexInput extends IndexInput {
   }
 
   /**
-   * Flushes the in-memory bufer to the given output, copying at most
+   * Flushes the in-memory buffer to the given output, copying at most
    * <code>numBytes</code>.
    * <p>
    * <b>NOTE:</b> this method does not refill the buffer, however it does

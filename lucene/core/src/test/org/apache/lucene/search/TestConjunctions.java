@@ -29,7 +29,6 @@ import org.apache.lucene.index.AtomicReaderContext;
 import org.apache.lucene.index.FieldInvertState;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.IndexWriterConfig;
-import org.apache.lucene.index.Norm;
 import org.apache.lucene.index.RandomIndexWriter;
 import org.apache.lucene.index.Term;
 import org.apache.lucene.search.similarities.Similarity;
@@ -90,8 +89,8 @@ public class TestConjunctions extends LuceneTestCase {
   private static class TFSimilarity extends Similarity {
 
     @Override
-    public void computeNorm(FieldInvertState state, Norm norm) {
-      norm.setByte((byte)1); // we dont care
+    public long computeNorm(FieldInvertState state) {
+      return 1; // we dont care
     }
 
     @Override

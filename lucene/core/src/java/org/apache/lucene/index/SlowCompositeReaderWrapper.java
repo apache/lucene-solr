@@ -24,6 +24,10 @@ import java.util.Map;
 import org.apache.lucene.util.Bits;
 
 import org.apache.lucene.index.DirectoryReader; // javadoc
+import org.apache.lucene.index.FieldInfo.DocValuesType;
+import org.apache.lucene.index.MultiDocValues.MultiSortedDocValues;
+import org.apache.lucene.index.MultiDocValues.MultiSortedSetDocValues;
+import org.apache.lucene.index.MultiDocValues.OrdinalMap;
 import org.apache.lucene.index.MultiReader; // javadoc
 
 /**
@@ -44,7 +48,6 @@ import org.apache.lucene.index.MultiReader; // javadoc
 public final class SlowCompositeReaderWrapper extends AtomicReader {
 
   private final CompositeReader in;
-  private final Map<String, DocValues> normsCache = new HashMap<String, DocValues>();
   private final Fields fields;
   private final Bits liveDocs;
   
@@ -83,25 +86,106 @@ public final class SlowCompositeReaderWrapper extends AtomicReader {
   }
 
   @Override
-  public DocValues docValues(String field) throws IOException {
+  public NumericDocValues getNumericDocValues(String field) throws IOException {
     ensureOpen();
-    return MultiDocValues.getDocValues(in, field);
+    return MultiDocValues.getNumericValues(in, field);
   }
-  
+
   @Override
-  public synchronized DocValues normValues(String field) throws IOException {
+  public BinaryDocValues getBinaryDocValues(String field) throws IOException {
     ensureOpen();
-    DocValues values = normsCache.get(field);
-    if (values == null) {
-      values = MultiDocValues.getNormDocValues(in, field);
-      normsCache.put(field, values);
+    return MultiDocValues.getBinaryValues(in, field);
+  }
+
+  @Override
+  public SortedDocValues getSortedDocValues(String field) throws IOException {
+    ensureOpen();
+    OrdinalMap map = null;
+    synchronized (cachedOrdMaps) {
+      map = cachedOrdMaps.get(field);
+      if (map == null) {
+        // uncached, or not a multi dv
+        SortedDocValues dv = MultiDocValues.getSortedValues(in, field);
+        if (dv instanceof MultiSortedDocValues) {
+          map = ((MultiSortedDocValues)dv).mapping;
+          if (map.owner == getCoreCacheKey()) {
+            cachedOrdMaps.put(field, map);
+          }
+        }
+        return dv;
+      }
     }
-    return values;
+    // cached ordinal map
+    if (getFieldInfos().fieldInfo(field).getDocValuesType() != DocValuesType.SORTED) {
+      return null;
+    }
+    int size = in.leaves().size();
+    final SortedDocValues[] values = new SortedDocValues[size];
+    final int[] starts = new int[size+1];
+    for (int i = 0; i < size; i++) {
+      AtomicReaderContext context = in.leaves().get(i);
+      SortedDocValues v = context.reader().getSortedDocValues(field);
+      if (v == null) {
+        v = SortedDocValues.EMPTY;
+      }
+      values[i] = v;
+      starts[i] = context.docBase;
+    }
+    starts[size] = maxDoc();
+    return new MultiSortedDocValues(values, starts, map);
   }
   
   @Override
-  public Fields getTermVectors(int docID)
-          throws IOException {
+  public SortedSetDocValues getSortedSetDocValues(String field) throws IOException {
+    ensureOpen();
+    OrdinalMap map = null;
+    synchronized (cachedOrdMaps) {
+      map = cachedOrdMaps.get(field);
+      if (map == null) {
+        // uncached, or not a multi dv
+        SortedSetDocValues dv = MultiDocValues.getSortedSetValues(in, field);
+        if (dv instanceof MultiSortedSetDocValues) {
+          map = ((MultiSortedSetDocValues)dv).mapping;
+          if (map.owner == getCoreCacheKey()) {
+            cachedOrdMaps.put(field, map);
+          }
+        }
+        return dv;
+      }
+    }
+    // cached ordinal map
+    if (getFieldInfos().fieldInfo(field).getDocValuesType() != DocValuesType.SORTED_SET) {
+      return null;
+    }
+    assert map != null;
+    int size = in.leaves().size();
+    final SortedSetDocValues[] values = new SortedSetDocValues[size];
+    final int[] starts = new int[size+1];
+    for (int i = 0; i < size; i++) {
+      AtomicReaderContext context = in.leaves().get(i);
+      SortedSetDocValues v = context.reader().getSortedSetDocValues(field);
+      if (v == null) {
+        v = SortedSetDocValues.EMPTY;
+      }
+      values[i] = v;
+      starts[i] = context.docBase;
+    }
+    starts[size] = maxDoc();
+    return new MultiSortedSetDocValues(values, starts, map);
+  }
+  
+  // TODO: this could really be a weak map somewhere else on the coreCacheKey,
+  // but do we really need to optimize slow-wrapper any more?
+  private final Map<String,OrdinalMap> cachedOrdMaps = new HashMap<String,OrdinalMap>();
+
+  @Override
+  public NumericDocValues getNormValues(String field) throws IOException {
+    ensureOpen();
+    return MultiDocValues.getNormValues(in, field);
+  }
+  
+  @Override
+  public Fields getTermVectors(int docID) throws IOException {
     ensureOpen();
     return in.getTermVectors(docID);
   }

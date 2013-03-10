@@ -23,9 +23,6 @@
      kitchen sink thrown in. See example/solr/conf/schema.xml for a 
      more concise example.
 
-     $Id$
-     $Source: /cvs/main/searching/solr-configs/test/WEB-INF/classes/schema.xml,v $
-     $Name:  $
   -->
 
 <schema name="test" version="1.4">
@@ -597,6 +594,7 @@
    <!-- unused, for testing luke copyFields -->
    <dynamicField name="foo_copysource_*" type="ignored" multiValued="true"/>
    <dynamicField name="bar_copydest_*" type="ignored" multiValued="true"/>
+   <dynamicField name="*_es"  type="text"    indexed="true"  stored="true"/>
 
  </fields>
 

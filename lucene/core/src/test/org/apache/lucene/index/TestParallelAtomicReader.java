@@ -27,6 +27,7 @@ import org.apache.lucene.search.BooleanClause.Occur;
 import org.apache.lucene.search.*;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.util.LuceneTestCase;
+import org.apache.lucene.util._TestUtil;
 
 public class TestParallelAtomicReader extends LuceneTestCase {
 
@@ -262,6 +263,7 @@ public class TestParallelAtomicReader extends LuceneTestCase {
     ParallelAtomicReader pr = new ParallelAtomicReader(
         SlowCompositeReaderWrapper.wrap(DirectoryReader.open(dir1)),
         SlowCompositeReaderWrapper.wrap(DirectoryReader.open(dir2)));
+    _TestUtil.checkReader(pr);
     return newSearcher(pr);
   }
 

@@ -637,7 +637,6 @@ public abstract class ThreadedIndexingAndSearchingTestCase extends LuceneTestCas
     s.search(q, 10);
     int hitCount = s.search(q, null, 10, new Sort(new SortField("title", SortField.Type.STRING))).totalHits;
     final Sort dvSort = new Sort(new SortField("title", SortField.Type.STRING));
-    dvSort.getSort()[0].setUseIndexValues(true);
     int hitCount2 = s.search(q, null, 10, dvSort).totalHits;
     assertEquals(hitCount, hitCount2);
     return hitCount;

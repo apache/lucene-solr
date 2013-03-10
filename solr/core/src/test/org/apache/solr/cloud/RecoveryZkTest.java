@@ -50,30 +50,34 @@ public class RecoveryZkTest extends AbstractFullDistribZkTestBase {
     
     // start a couple indexing threads
     
-    indexThread = new StopableIndexingThread(0, true);
+    int[] maxDocList = new int[] {300, 700, 1200, 1350, 5000, 15000};
+    
+    int maxDoc = maxDocList[random().nextInt(maxDocList.length - 1)];
+    
+    indexThread = new StopableIndexingThread(0, true, maxDoc);
     indexThread.start();
     
-    indexThread2 = new StopableIndexingThread(10000, true);
+    indexThread2 = new StopableIndexingThread(10000, true, maxDoc);
     
     indexThread2.start();
 
     // give some time to index...
-    Thread.sleep(atLeast(2000));   
-    
+    int[] waitTimes = new int[] {200, 2000, 3000};
+    Thread.sleep(waitTimes[random().nextInt(waitTimes.length - 1)]);
+     
     // bring shard replica down
     JettySolrRunner replica = chaosMonkey.stopShard("shard1", 1).jetty;
 
     
     // wait a moment - lets allow some docs to be indexed so replication time is non 0
-    Thread.sleep(atLeast(2000));
+    Thread.sleep(waitTimes[random().nextInt(waitTimes.length - 1)]);
     
     // bring shard replica up
     replica.start();
     
     // make sure replication can start
-    Thread.sleep(1500);
+    Thread.sleep(3000);
     ZkStateReader zkStateReader = cloudClient.getZkStateReader();
-    waitForRecoveriesToFinish(DEFAULT_COLLECTION, zkStateReader, false, true);
     
     // stop indexing threads
     indexThread.safeStop();
@@ -86,11 +90,9 @@ public class RecoveryZkTest extends AbstractFullDistribZkTestBase {
   
     waitForThingsToLevelOut(30);
     
-    Thread.sleep(1000);
+    Thread.sleep(2000);
     
     waitForThingsToLevelOut(30);
-    
-    Thread.sleep(1000);
     
     waitForRecoveriesToFinish(DEFAULT_COLLECTION, zkStateReader, false, true);
 

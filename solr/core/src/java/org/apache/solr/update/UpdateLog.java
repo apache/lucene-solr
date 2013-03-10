@@ -820,8 +820,8 @@ public class UpdateLog implements PluginInfoInitialized {
   public void close(boolean committed, boolean deleteOnClose) {
     synchronized (this) {
       try {
-        ExecutorUtil.shutdownAndAwaitTermination(recoveryExecutor);
-      } catch (Exception e) {
+        ExecutorUtil.shutdownNowAndAwaitTermination(recoveryExecutor);
+      } catch (Throwable e) {
         SolrException.log(log, e);
       }
 
@@ -917,10 +917,11 @@ public class UpdateLog implements PluginInfoInitialized {
           reader = oldLog.getReverseReader();
 
           while (numUpdates < numRecordsToKeep) {
-            Object o = reader.next();
-            if (o==null) break;
+            Object o = null;
             try {
-
+              o = reader.next();
+              if (o==null) break;
+              
               // should currently be a List<Oper,Ver,Doc/Id>
               List entry = (List)o;
 
@@ -1397,16 +1398,16 @@ public class UpdateLog implements PluginInfoInitialized {
   
   public static File getTlogDir(SolrCore core, PluginInfo info) {
     String dataDir = (String) info.initArgs.get("dir");
-    if (dataDir == null) {
-      String ulogDir = core.getCoreDescriptor().getUlogDir();
-      if (ulogDir != null) {
-        dataDir = ulogDir;
-      }
-      
-      if (dataDir == null || dataDir.length() == 0) {
-        dataDir = core.getDataDir();
-      }
+    
+    String ulogDir = core.getCoreDescriptor().getUlogDir();
+    if (ulogDir != null) {
+      dataDir = ulogDir;
     }
+    
+    if (dataDir == null || dataDir.length() == 0) {
+      dataDir = core.getDataDir();
+    }
+    
     return new File(dataDir, TLOG_NAME);
   }
   

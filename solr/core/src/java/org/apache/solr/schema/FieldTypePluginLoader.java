@@ -98,20 +98,35 @@ public final class FieldTypePluginLoader
     expression = "./similarity";
     anode = (Node)xpath.evaluate(expression, node, XPathConstants.NODE);
     SimilarityFactory simFactory = IndexSchema.readSimilarity(loader, anode);
-    
-    if (queryAnalyzer==null) queryAnalyzer=analyzer;
-    if (analyzer==null) analyzer=queryAnalyzer;
-    if (multiAnalyzer == null) {
-      multiAnalyzer = constructMultiTermAnalyzer(queryAnalyzer);
+    if (null != simFactory) {
+      ft.setSimilarity(simFactory);
     }
-    if (analyzer!=null) {
+    
+    if (null == queryAnalyzer) {
+      queryAnalyzer = analyzer;
+      ft.setIsExplicitQueryAnalyzer(false);
+    } else {
+      ft.setIsExplicitQueryAnalyzer(true);
+    }
+    if (null == analyzer) {
+      analyzer = queryAnalyzer;
+      ft.setIsExplicitAnalyzer(false);
+    } else {
+      ft.setIsExplicitAnalyzer(true);
+    }
+
+    if (null != analyzer) {
       ft.setAnalyzer(analyzer);
       ft.setQueryAnalyzer(queryAnalyzer);
-      if (ft instanceof TextField)
+      if (ft instanceof TextField) {
+        if (null == multiAnalyzer) {
+          multiAnalyzer = constructMultiTermAnalyzer(queryAnalyzer);
+          ((TextField)ft).setIsExplicitMultiTermAnalyzer(false);
+        } else {
+          ((TextField)ft).setIsExplicitMultiTermAnalyzer(true);
+        }
         ((TextField)ft).setMultiTermAnalyzer(multiAnalyzer);
-    }
-    if (simFactory!=null) {
-      ft.setSimilarity(simFactory.getSimilarity());
+      }
     }
     if (ft instanceof SchemaAware){
       schemaAware.add((SchemaAware) ft);

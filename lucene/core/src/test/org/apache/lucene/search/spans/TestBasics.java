@@ -96,18 +96,18 @@ public class TestBasics extends LuceneTestCase {
     }
   }
   
-  static Analyzer simplePayloadAnalyzer = new Analyzer() {
+  static Analyzer simplePayloadAnalyzer;
 
-    @Override
-    public TokenStreamComponents createComponents(String fieldName, Reader reader) {
-      Tokenizer tokenizer = new MockTokenizer(reader, MockTokenizer.SIMPLE, true);
-      return new TokenStreamComponents(tokenizer, new SimplePayloadFilter(tokenizer));
-    }
-    
-  };
-  
   @BeforeClass
   public static void beforeClass() throws Exception {
+    simplePayloadAnalyzer = new Analyzer() {
+        @Override
+        public TokenStreamComponents createComponents(String fieldName, Reader reader) {
+          Tokenizer tokenizer = new MockTokenizer(reader, MockTokenizer.SIMPLE, true);
+          return new TokenStreamComponents(tokenizer, new SimplePayloadFilter(tokenizer));
+        }
+    };
+  
     directory = newDirectory();
     RandomIndexWriter writer = new RandomIndexWriter(random(), directory,
         newIndexWriterConfig(TEST_VERSION_CURRENT, simplePayloadAnalyzer)

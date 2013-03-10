@@ -44,7 +44,19 @@ public abstract class UpdateCommand implements Cloneable {
 
   @Override
   public String toString() {
-    return name() + "{flags="+flags+",_version_="+version;
+    StringBuilder sb  = new StringBuilder(50);
+    sb.append(name());
+    sb.append('{');
+    boolean needComma = false;
+    if (flags != 0) {
+      sb.append("flags=").append(Integer.toHexString(flags));
+      needComma = true;
+    }
+    if (version != 0) {
+      if (needComma) sb.append(',');
+      sb.append("_version_=").append(version);
+    }
+    return sb.toString();
   }
 
   public long getVersion() {

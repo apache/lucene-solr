@@ -20,8 +20,6 @@ package org.apache.lucene.index;
 import java.util.HashMap;
 import java.util.Map;
 
-import org.apache.lucene.index.DocValues.Type;
-
 /**
  *  Access to the Field Info file that describes document fields and whether or
  *  not they are indexed. Each segment has a separate Field Info file. Objects
@@ -37,12 +35,12 @@ public final class FieldInfo {
   public final int number;
 
   private boolean indexed;
-  private DocValues.Type docValueType;
+  private DocValuesType docValueType;
 
   // True if any document indexed term vectors
   private boolean storeTermVector;
 
-  private DocValues.Type normType;
+  private DocValuesType normType;
   private boolean omitNorms; // omit norms associated with indexed fields  
   private IndexOptions indexOptions;
   private boolean storePayloads; // whether this field stores payloads together with term positions
@@ -82,6 +80,36 @@ public final class FieldInfo {
      */
     DOCS_AND_FREQS_AND_POSITIONS_AND_OFFSETS,
   };
+  
+  /**
+   * DocValues types.
+   * Note that DocValues is strongly typed, so a field cannot have different types
+   * across different documents.
+   */
+  public static enum DocValuesType {
+    /** 
+     * A per-document Number
+     */
+    NUMERIC,
+    /**
+     * A per-document byte[].
+     */
+    BINARY,
+    /** 
+     * A pre-sorted byte[]. Fields with this type only store distinct byte values 
+     * and store an additional offset pointer per document to dereference the shared 
+     * byte[]. The stored byte[] is presorted and allows access via document id, 
+     * ordinal and by-value.
+     */
+    SORTED,
+    /** 
+     * A pre-sorted Set&lt;byte[]&gt;. Fields with this type only store distinct byte values 
+     * and store additional offset pointers per document to dereference the shared 
+     * byte[]s. The stored byte[] is presorted and allows access via document id, 
+     * ordinal and by-value.
+     */
+    SORTED_SET
+  };
 
   /**
    * Sole Constructor.
@@ -89,7 +117,7 @@ public final class FieldInfo {
    * @lucene.experimental
    */
   public FieldInfo(String name, boolean indexed, int number, boolean storeTermVector, 
-            boolean omitNorms, boolean storePayloads, IndexOptions indexOptions, DocValues.Type docValues, DocValues.Type normsType, Map<String,String> attributes) {
+            boolean omitNorms, boolean storePayloads, IndexOptions indexOptions, DocValuesType docValues, DocValuesType normsType, Map<String,String> attributes) {
     this.name = name;
     this.indexed = indexed;
     this.number = number;
@@ -130,9 +158,13 @@ public final class FieldInfo {
     return true;
   }
 
+  void update(IndexableFieldType ft) {
+    update(ft.indexed(), false, ft.omitNorms(), false, ft.indexOptions());
+  }
+
   // should only be called by FieldInfos#addOrUpdate
   void update(boolean indexed, boolean storeTermVector, boolean omitNorms, boolean storePayloads, IndexOptions indexOptions) {
-
+    //System.out.println("FI.update field=" + name + " indexed=" + indexed + " omitNorms=" + omitNorms + " this.omitNorms=" + this.omitNorms);
     if (this.indexed != indexed) {
       this.indexed = true;                      // once indexed, always index
     }
@@ -163,7 +195,10 @@ public final class FieldInfo {
     assert checkConsistency();
   }
 
-  void setDocValuesType(DocValues.Type type) {
+  void setDocValuesType(DocValuesType type) {
+    if (docValueType != null && docValueType != type) {
+      throw new IllegalArgumentException("cannot change DocValues type from " + docValueType + " to " + type + " for field \"" + name + "\"");
+    }
     docValueType = type;
     assert checkConsistency();
   }
@@ -181,16 +216,16 @@ public final class FieldInfo {
   }
 
   /**
-   * Returns {@link DocValues.Type} of the docValues. this may be null if the field has no docvalues.
+   * Returns {@link DocValuesType} of the docValues. this may be null if the field has no docvalues.
    */
-  public DocValues.Type getDocValuesType() {
+  public DocValuesType getDocValuesType() {
     return docValueType;
   }
   
   /**
-   * Returns {@link DocValues.Type} of the norm. this may be null if the field has no norms.
+   * Returns {@link DocValuesType} of the norm. this may be null if the field has no norms.
    */
-  public DocValues.Type getNormType() {
+  public DocValuesType getNormType() {
     return normType;
   }
 
@@ -206,7 +241,10 @@ public final class FieldInfo {
     assert checkConsistency();
   }
 
-  void setNormValueType(Type type) {
+  void setNormValueType(DocValuesType type) {
+    if (normType != null && normType != type) {
+      throw new IllegalArgumentException("cannot change Norm type from " + normType + " to " + type + " for field \"" + name + "\"");
+    }
     normType = type;
     assert checkConsistency();
   }

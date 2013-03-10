@@ -43,6 +43,10 @@ public class SegmentInfoPerCommit {
   // Generation number of updates (-1 if there are no updates yet):
   private long updateGen;
   
+  // Normally 1+delGen, unless an exception was hit on last
+  // attempt to write:
+  private long nextWriteDelGen;
+
   private volatile long sizeInBytes = -1;
 
   /** Sole constructor.
@@ -56,14 +60,17 @@ public class SegmentInfoPerCommit {
     this.delCount = delCount;
     this.delGen = delGen;
     this.updateGen = updateGen;
+    if (delGen == -1) {
+      nextWriteDelGen = 1;
+    } else {
+      nextWriteDelGen = delGen+1;
+    }
   }
 
+  /** Called when we succeed in writing deletes */
   void advanceDelGen() {
-    if (delGen == -1) {
-      delGen = 1;
-    } else {
-      delGen++;
-    }
+    delGen = nextWriteDelGen;
+    nextWriteDelGen = delGen+1;
     sizeInBytes = -1;
   }
 
@@ -76,6 +83,13 @@ public class SegmentInfoPerCommit {
     sizeInBytes = -1;
   }
   
+  /** Called if there was an exception while writing
+   *  deletes, so that we don't try to write to the same
+   *  file more than once. */
+  void advanceNextWriteDelGen() {
+    nextWriteDelGen++;
+  }
+
   /** Returns total size in bytes of all files for this
    *  segment. */
   public long sizeInBytes() throws IOException {
@@ -143,11 +157,7 @@ public class SegmentInfoPerCommit {
     * of the live docs file.
     */
   public long getNextDelGen() {
-    if (delGen == -1) {
-      return 1;
-    } else {
-      return delGen + 1;
-    }
+    return nextWriteDelGen;
   }
 
   /**
@@ -189,7 +199,13 @@ public class SegmentInfoPerCommit {
 
   @Override
   public SegmentInfoPerCommit clone() {
-    return new SegmentInfoPerCommit(info, delCount, delGen, updateGen);
+    SegmentInfoPerCommit other = new SegmentInfoPerCommit(info, delCount, delGen, updateGen);
+    // Not clear that we need to carry over nextWriteDelGen
+    // (i.e. do we ever clone after a failed write and
+    // before the next successful write?), but just do it to
+    // be safe:
+    other.nextWriteDelGen = nextWriteDelGen;
+    return other;
   }
 
   public void setUpdateGen(long updateGen) {

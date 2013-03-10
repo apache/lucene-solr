@@ -19,12 +19,16 @@ package org.apache.solr.cloud;
 
 import java.util.ArrayList;
 import java.util.Collections;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
+import org.apache.solr.client.solrj.SolrResponse;
+import org.apache.solr.cloud.DistributedQueue.QueueEvent;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.SolrException.ErrorCode;
+import org.apache.solr.common.cloud.Aliases;
 import org.apache.solr.common.cloud.ClosableThread;
 import org.apache.solr.common.cloud.ClusterState;
 import org.apache.solr.common.cloud.DocCollection;
@@ -36,6 +40,7 @@ import org.apache.solr.common.cloud.ZooKeeperException;
 import org.apache.solr.common.params.CoreAdminParams;
 import org.apache.solr.common.params.CoreAdminParams.CoreAdminAction;
 import org.apache.solr.common.params.ModifiableSolrParams;
+import org.apache.solr.common.util.NamedList;
 import org.apache.solr.common.util.StrUtils;
 import org.apache.solr.handler.component.ShardHandler;
 import org.apache.solr.handler.component.ShardRequest;
@@ -60,10 +65,12 @@ public class OverseerCollectionProcessor implements Runnable, ClosableThread {
 
   public static final String RELOADCOLLECTION = "reloadcollection";
   
+  public static final String CREATEALIAS = "createalias";
+  
+  public static final String DELETEALIAS = "deletealias";
+  
   // TODO: use from Overseer?
   private static final String QUEUE_OPERATION = "operation";
-
-
   
   private static Logger log = LoggerFactory
       .getLogger(OverseerCollectionProcessor.class);
@@ -94,47 +101,33 @@ public class OverseerCollectionProcessor implements Runnable, ClosableThread {
   
   @Override
   public void run() {
-    log.info("Process current queue of collection messages");
-    while (amILeader() && !isClosed) {
-      try {
-        byte[] head = workQueue.peek(true);
-        
-        //if (head != null) {    // should not happen since we block above
-          final ZkNodeProps message = ZkNodeProps.load(head);
-          final String operation = message.getStr(QUEUE_OPERATION);
-        try {
-          boolean success = processMessage(message, operation);
-          if (!success) {
-            // TODO: what to do on failure / partial failure
-            // if we fail, do we clean up then ?
-            SolrException.log(log,
-                "Collection " + operation + " of " + message.getStr("name")
-                    + " failed");
-          }
-        } catch(Throwable t) {
-          SolrException.log(log,
-              "Collection " + operation + " of " + message.getStr("name")
-                  + " failed", t);
-        }
-        //}
-        
-        
-        workQueue.poll();
-       
-      } catch (KeeperException e) {
-        if (e.code() == KeeperException.Code.SESSIONEXPIRED
-            || e.code() == KeeperException.Code.CONNECTIONLOSS) {
-          log.warn("Overseer cannot talk to ZK");
-          return;
-        }
-        SolrException.log(log, "", e);
-        throw new ZooKeeperException(SolrException.ErrorCode.SERVER_ERROR, "",
-            e);
-      } catch (InterruptedException e) {
-        Thread.currentThread().interrupt();
-        return;
-      }
-    }
+       log.info("Process current queue of collection creations");
+       while (amILeader() && !isClosed) {
+         try {
+           QueueEvent head = workQueue.peek(true);
+           final ZkNodeProps message = ZkNodeProps.load(head.getBytes());
+           log.info("Overseer Collection Processor: Get the message id:" + head.getId() + " message:" + message.toString());
+           final String operation = message.getStr(QUEUE_OPERATION);
+           SolrResponse response = processMessage(message, operation);
+           head.setBytes(SolrResponse.serializable(response));
+           workQueue.remove(head);
+          log.info("Overseer Collection Processor: Message id:" + head.getId() + " complete, response:"+ response.getResponse().toString());
+        } catch (KeeperException e) {
+          if (e.code() == KeeperException.Code.SESSIONEXPIRED
+              || e.code() == KeeperException.Code.CONNECTIONLOSS) {
+             log.warn("Overseer cannot talk to ZK");
+             return;
+           }
+           SolrException.log(log, "", e);
+           throw new ZooKeeperException(
+               SolrException.ErrorCode.SERVER_ERROR, "", e);
+         } catch (InterruptedException e) {
+           Thread.currentThread().interrupt();
+           return;
+         } catch (Throwable e) {
+           SolrException.log(log, "", e);
+         }
+       }
   }
   
   public void close() {
@@ -157,23 +150,156 @@ public class OverseerCollectionProcessor implements Runnable, ClosableThread {
     return false;
   }
   
-  protected boolean processMessage(ZkNodeProps message, String operation) {
-    if (CREATECOLLECTION.equals(operation)) {
-      return createCollection(zkStateReader.getClusterState(), message);
-    } else if (DELETECOLLECTION.equals(operation)) {
-      ModifiableSolrParams params = new ModifiableSolrParams();
-      params.set(CoreAdminParams.ACTION, CoreAdminAction.UNLOAD.toString());
-      params.set(CoreAdminParams.DELETE_INSTANCE_DIR, true);
-      return collectionCmd(zkStateReader.getClusterState(), message, params);
-    } else if (RELOADCOLLECTION.equals(operation)) {
-      ModifiableSolrParams params = new ModifiableSolrParams();
-      params.set(CoreAdminParams.ACTION, CoreAdminAction.RELOAD.toString());
-      return collectionCmd(zkStateReader.getClusterState(), message, params);
+  
+  protected SolrResponse processMessage(ZkNodeProps message, String operation) {
+    
+    NamedList results = new NamedList();
+    try {
+      if (CREATECOLLECTION.equals(operation)) {
+        createCollection(zkStateReader.getClusterState(), message);
+      } else if (DELETECOLLECTION.equals(operation)) {
+        ModifiableSolrParams params = new ModifiableSolrParams();
+        params.set(CoreAdminParams.ACTION, CoreAdminAction.UNLOAD.toString());
+        params.set(CoreAdminParams.DELETE_INSTANCE_DIR, true);
+        collectionCmd(zkStateReader.getClusterState(), message, params);
+      } else if (RELOADCOLLECTION.equals(operation)) {
+        ModifiableSolrParams params = new ModifiableSolrParams();
+        params.set(CoreAdminParams.ACTION, CoreAdminAction.RELOAD.toString());
+        collectionCmd(zkStateReader.getClusterState(), message, params);
+      } else if (CREATEALIAS.equals(operation)) {
+        createAlias(zkStateReader.getAliases(), message);
+      } else if (DELETEALIAS.equals(operation)) {
+        deleteAlias(zkStateReader.getAliases(), message);
+      } else {
+        throw new SolrException(ErrorCode.BAD_REQUEST, "Unknow the operation:"
+            + operation);
+      }
+      int failed = 0;
+      ShardResponse srsp;
+      
+      do {
+        srsp = shardHandler.takeCompletedIncludingErrors();
+        if (srsp != null) {
+          Throwable e = srsp.getException();
+          if (e != null) {
+            failed++;
+            log.error("Error talking to shard: " + srsp.getShard(), e);
+            results.add(srsp.getShard(), e);
+          } else {
+            results.add(srsp.getShard(), srsp.getSolrResponse().getResponse());
+          }
+        }
+      } while (srsp != null);
+    } catch (Exception ex) {
+      SolrException.log(log, "Collection " + operation + " of " + operation
+          + " failed", ex);
+      results.add("Operation " + operation + " caused exception:", ex);
+    } finally {
+      return new OverseerSolrResponse(results);
     }
-    // unknown command, toss it from our queue
-    return true;
   }
 
+  private void createAlias(Aliases aliases, ZkNodeProps message) {
+    String aliasName = message.getStr("name");
+    String collections = message.getStr("collections");
+    
+    Map<String,Map<String,String>> newAliasesMap = new HashMap<String,Map<String,String>>();
+    Map<String,String> newCollectionAliasesMap = new HashMap<String,String>();
+    Map<String,String> prevColAliases = aliases.getCollectionAliasMap();
+    if (prevColAliases != null) {
+      newCollectionAliasesMap.putAll(prevColAliases);
+    }
+    newCollectionAliasesMap.put(aliasName, collections);
+    newAliasesMap.put("collection", newCollectionAliasesMap);
+    Aliases newAliases = new Aliases(newAliasesMap);
+    byte[] jsonBytes = null;
+    if (newAliases.collectionAliasSize() > 0) { // only sub map right now
+      jsonBytes  = ZkStateReader.toJSON(newAliases.getAliasMap());
+    }
+    try {
+      zkStateReader.getZkClient().setData(ZkStateReader.ALIASES,
+          jsonBytes, true);
+      
+      checkForAlias(aliasName, collections);
+      // some fudge for other nodes
+      Thread.sleep(100);
+    } catch (KeeperException e) {
+      log.error("", e);
+      throw new SolrException(ErrorCode.SERVER_ERROR, e);
+    } catch (InterruptedException e) {
+      log.warn("", e);
+      throw new SolrException(ErrorCode.SERVER_ERROR, e);
+    }
+
+  }
+  
+  private void checkForAlias(String name, String value) {
+
+    long now = System.currentTimeMillis();
+    long timeout = now + 30000;
+    boolean success = false;
+    Aliases aliases = null;
+    while (System.currentTimeMillis() < timeout) {
+      aliases = zkStateReader.getAliases();
+      String collections = aliases.getCollectionAlias(name);
+      if (collections != null && collections.equals(value)) {
+        success = true;
+        break;
+      }
+    }
+    if (!success) {
+      log.warn("Timeout waiting to be notified of Alias change...");
+    }
+  }
+  
+  private void checkForAliasAbsence(String name) {
+
+    long now = System.currentTimeMillis();
+    long timeout = now + 30000;
+    boolean success = false;
+    Aliases aliases = null;
+    while (System.currentTimeMillis() < timeout) {
+      aliases = zkStateReader.getAliases();
+      String collections = aliases.getCollectionAlias(name);
+      if (collections == null) {
+        success = true;
+        break;
+      }
+    }
+    if (!success) {
+      log.warn("Timeout waiting to be notified of Alias change...");
+    }
+  }
+
+  private void deleteAlias(Aliases aliases, ZkNodeProps message) {
+    String aliasName = message.getStr("name");
+
+    Map<String,Map<String,String>> newAliasesMap = new HashMap<String,Map<String,String>>();
+    Map<String,String> newCollectionAliasesMap = new HashMap<String,String>();
+    newCollectionAliasesMap.putAll(aliases.getCollectionAliasMap());
+    newCollectionAliasesMap.remove(aliasName);
+    newAliasesMap.put("collection", newCollectionAliasesMap);
+    Aliases newAliases = new Aliases(newAliasesMap);
+    byte[] jsonBytes = null;
+    if (newAliases.collectionAliasSize() > 0) { // only sub map right now
+      jsonBytes  = ZkStateReader.toJSON(newAliases.getAliasMap());
+    }
+    try {
+      zkStateReader.getZkClient().setData(ZkStateReader.ALIASES,
+          jsonBytes, true);
+      checkForAliasAbsence(aliasName);
+      // some fudge for other nodes
+      Thread.sleep(100);
+    } catch (KeeperException e) {
+      log.error("", e);
+      throw new SolrException(ErrorCode.SERVER_ERROR, e);
+    } catch (InterruptedException e) {
+      log.warn("", e);
+      throw new SolrException(ErrorCode.SERVER_ERROR, e);
+    }
+    
+  }
+  
   private boolean createCollection(ClusterState clusterState, ZkNodeProps message) {
     String collectionName = message.getStr("name");
     if (clusterState.getCollections().contains(collectionName)) {
@@ -250,7 +376,7 @@ public class OverseerCollectionProcessor implements Runnable, ClosableThread {
       
       for (int i = 1; i <= numSlices; i++) {
         for (int j = 1; j <= repFactor; j++) {
-          String nodeName = nodeList.get(((i - 1) + (j - 1)) % nodeList.size());
+          String nodeName = nodeList.get((repFactor * (i - 1) + (j - 1)) % nodeList.size());
           String sliceName = "shard" + i;
           String shardName = collectionName + "_" + sliceName + "_replica" + j;
           log.info("Creating shard " + shardName + " as part of slice "

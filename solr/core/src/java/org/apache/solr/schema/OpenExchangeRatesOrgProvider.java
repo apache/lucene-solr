@@ -33,19 +33,29 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 /**
- * Exchange Rates Provider for {@link CurrencyField} implementing the freely available
- * exchange rates from openexchangerates.org
+ * <p>
+ * Exchange Rates Provider for {@link CurrencyField} capable of fetching &amp; 
+ * parsing the freely available exchange rates from openexchangerates.org
+ * </p>
+ * <p>
+ * Configuration Options:
+ * </p>
+ * <ul>
+ *  <li><code>ratesFileLocation</code> - A file path or absolute URL specifying the JSON data to load (mandatory)</li>
+ *  <li><code>refreshInterval</code> - How frequently (in minutes) to reload the exchange rate data (default: 1440)</li>
+ * </ul>
  * <p>
  * <b>Disclaimer:</b> This data is collected from various providers and provided free of charge
  * for informational purposes only, with no guarantee whatsoever of accuracy, validity,
  * availability or fitness for any purpose; use at your own risk. Other than that - have
  * fun, and please share/watch/fork if you think data like this should be free!
+ * </p>
+ * @see <a href="https://openexchangerates.org/documentation">openexchangerates.org JSON Data Format</a>
  */
 public class OpenExchangeRatesOrgProvider implements ExchangeRateProvider {
   public static Logger log = LoggerFactory.getLogger(OpenExchangeRatesOrgProvider.class);
   protected static final String PARAM_RATES_FILE_LOCATION   = "ratesFileLocation";
   protected static final String PARAM_REFRESH_INTERVAL      = "refreshInterval";
-  protected static final String DEFAULT_RATES_FILE_LOCATION = "http://openexchangerates.org/latest.json";
   protected static final String DEFAULT_REFRESH_INTERVAL    = "1440";
   
   protected String ratesFileLocation;
@@ -145,7 +155,10 @@ public class OpenExchangeRatesOrgProvider implements ExchangeRateProvider {
   @Override
   public void init(Map<String,String> params) throws SolrException {
     try {
-      ratesFileLocation = getParam(params.get(PARAM_RATES_FILE_LOCATION), DEFAULT_RATES_FILE_LOCATION);
+      ratesFileLocation = params.get(PARAM_RATES_FILE_LOCATION);
+      if (null == ratesFileLocation) {
+        throw new SolrException(ErrorCode.SERVER_ERROR, "Init param must be specified: " + PARAM_RATES_FILE_LOCATION);
+      }
       refreshInterval = Integer.parseInt(getParam(params.get(PARAM_REFRESH_INTERVAL), DEFAULT_REFRESH_INTERVAL));
       // Force a refresh interval of minimum one hour, since the API does not offer better resolution
       if (refreshInterval < 60) {
@@ -153,8 +166,11 @@ public class OpenExchangeRatesOrgProvider implements ExchangeRateProvider {
         log.warn("Specified refreshInterval was too small. Setting to 60 minutes which is the update rate of openexchangerates.org");
       }
       log.info("Initialized with rates="+ratesFileLocation+", refreshInterval="+refreshInterval+".");
-    } catch (Exception e) {
-      throw new SolrException(ErrorCode.BAD_REQUEST, "Error initializing", e);
+    } catch (SolrException e1) {
+      throw e1;
+    } catch (Exception e2) {
+      throw new SolrException(ErrorCode.SERVER_ERROR, "Error initializing: " + 
+                              e2.getMessage(), e2);
     } finally {
       // Removing config params custom to us
       params.remove(PARAM_RATES_FILE_LOCATION);

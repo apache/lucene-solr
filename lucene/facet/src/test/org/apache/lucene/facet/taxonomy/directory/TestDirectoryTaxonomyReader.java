@@ -3,20 +3,20 @@ package org.apache.lucene.facet.taxonomy.directory;
 import java.io.IOException;
 import java.util.Random;
 
-import org.apache.lucene.analysis.core.KeywordAnalyzer;
+import org.apache.lucene.analysis.MockAnalyzer;
+import org.apache.lucene.facet.FacetTestCase;
 import org.apache.lucene.facet.taxonomy.CategoryPath;
 import org.apache.lucene.facet.taxonomy.TaxonomyReader;
 import org.apache.lucene.facet.taxonomy.TaxonomyWriter;
 import org.apache.lucene.index.IndexWriter;
 import org.apache.lucene.index.IndexWriterConfig;
-import org.apache.lucene.index.LogByteSizeMergePolicy;
 import org.apache.lucene.index.IndexWriterConfig.OpenMode;
+import org.apache.lucene.index.LogByteSizeMergePolicy;
 import org.apache.lucene.index.LogMergePolicy;
 import org.apache.lucene.store.AlreadyClosedException;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.RAMDirectory;
 import org.apache.lucene.util.IOUtils;
-import org.apache.lucene.util.LuceneTestCase;
 import org.junit.Test;
 
 /*
@@ -36,7 +36,7 @@ import org.junit.Test;
  * limitations under the License.
  */
 
-public class TestDirectoryTaxonomyReader extends LuceneTestCase {
+public class TestDirectoryTaxonomyReader extends FacetTestCase {
 
   @Test
   public void testCloseAfterIncRef() throws Exception {
@@ -154,8 +154,8 @@ public class TestDirectoryTaxonomyReader extends LuceneTestCase {
       for (int i=0; i<n; i++) {
         int k = random.nextInt(n);
         tw = new DirectoryTaxonomyWriter(dir, OpenMode.CREATE);
-        for (int j=0; j<=k; j++) {
-          tw.addCategory(new CategoryPath(cp[j]));
+        for (int j = 0; j <= k; j++) {
+          tw.addCategory(cp[j]);
         }
         tw.close();
         if (closeReader) {
@@ -256,7 +256,7 @@ public class TestDirectoryTaxonomyReader extends LuceneTestCase {
     // hold onto IW to forceMerge
     // note how we don't close it, since DTW will close it.
     final IndexWriter iw = new IndexWriter(dir,
-        new IndexWriterConfig(TEST_VERSION_CURRENT, new KeywordAnalyzer())
+        new IndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer(random()))
             .setMergePolicy(new LogByteSizeMergePolicy()));
     DirectoryTaxonomyWriter writer = new DirectoryTaxonomyWriter(dir) {
       @Override
@@ -299,7 +299,7 @@ public class TestDirectoryTaxonomyReader extends LuceneTestCase {
     // hold onto IW to forceMerge
     // note how we don't close it, since DTW will close it.
     final IndexWriter iw = new IndexWriter(dir,
-        new IndexWriterConfig(TEST_VERSION_CURRENT, new KeywordAnalyzer())
+        new IndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer(random()))
             .setMergePolicy(new LogByteSizeMergePolicy()));
     DirectoryTaxonomyWriter writer = new DirectoryTaxonomyWriter(dir) {
       @Override

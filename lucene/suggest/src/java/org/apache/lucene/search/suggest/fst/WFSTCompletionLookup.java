@@ -28,7 +28,7 @@ import java.util.List;
 import org.apache.lucene.search.spell.TermFreqIterator;
 import org.apache.lucene.search.suggest.Lookup;
 import org.apache.lucene.search.suggest.SortedTermFreqIteratorWrapper;
-import org.apache.lucene.search.suggest.fst.Sort.ByteSequencesWriter;
+import org.apache.lucene.search.suggest.Sort.ByteSequencesWriter;
 import org.apache.lucene.store.ByteArrayDataInput;
 import org.apache.lucene.store.ByteArrayDataOutput;
 import org.apache.lucene.store.InputStreamDataInput;
@@ -200,7 +200,7 @@ public class WFSTCompletionLookup extends Lookup {
   private Long lookupPrefix(BytesRef scratch, Arc<Long> arc) throws /*Bogus*/IOException {
     assert 0 == fst.outputs.getNoOutput().longValue();
     long output = 0;
-    BytesReader bytesReader = fst.getBytesReader(0);
+    BytesReader bytesReader = fst.getBytesReader();
     
     fst.getFirstArc(arc);
     

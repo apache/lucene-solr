@@ -19,6 +19,7 @@ package org.apache.solr.handler;
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.IOException;
+import java.io.InputStream;
 import java.io.OutputStream;
 import java.io.Writer;
 import java.nio.ByteBuffer;
@@ -26,6 +27,7 @@ import java.nio.channels.FileChannel;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
+import java.util.Collections;
 import java.util.Date;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -42,6 +44,7 @@ import org.apache.commons.io.IOUtils;
 import org.apache.lucene.index.IndexCommit;
 import org.apache.lucene.index.IndexDeletionPolicy;
 import org.apache.lucene.index.DirectoryReader;
+import org.apache.lucene.index.IndexWriter;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.IOContext;
 import org.apache.lucene.store.IndexInput;
@@ -60,12 +63,14 @@ import org.apache.solr.core.IndexDeletionPolicyWrapper;
 import org.apache.solr.core.SolrCore;
 import org.apache.solr.core.SolrDeletionPolicy;
 import org.apache.solr.core.SolrEventListener;
+import org.apache.solr.core.DirectoryFactory.DirContext;
 import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.response.BinaryQueryResponseWriter;
 import org.apache.solr.response.SolrQueryResponse;
 import org.apache.solr.search.SolrIndexSearcher;
 import org.apache.solr.update.SolrIndexWriter;
 import org.apache.solr.util.NumberUtils;
+import org.apache.solr.util.PropertiesInputStream;
 import org.apache.solr.util.RefCounted;
 import org.apache.solr.util.plugin.SolrCoreAware;
 import org.slf4j.Logger;
@@ -117,7 +122,7 @@ public class ReplicationHandler extends RequestHandlerBase implements SolrCoreAw
 
   private Integer reserveCommitDuration = SnapPuller.readInterval("00:00:10");
 
-  private volatile IndexCommit indexCommitPoint;
+  volatile IndexCommit indexCommitPoint;
 
   volatile NamedList<Object> snapShootDetails;
 
@@ -230,7 +235,10 @@ public class ReplicationHandler extends RequestHandlerBase implements SolrCoreAw
         NamedList<Object> nl = new NamedList<Object>();
         nl.add("indexVersion", IndexDeletionPolicyWrapper.getCommitTimestamp(c));
         nl.add(GENERATION, c.getGeneration());
-        nl.add(CMD_GET_FILE_LIST, c.getFileNames());
+        List<String> commitList = new ArrayList<String>(c.getFileNames().size());
+        commitList.addAll(c.getFileNames());
+        Collections.sort(commitList);
+        nl.add(CMD_GET_FILE_LIST, commitList);
         l.add(nl);
       } catch (IOException e) {
         LOG.warn("Exception while reading files for commit " + c, e);
@@ -361,7 +369,7 @@ public class ReplicationHandler extends RequestHandlerBase implements SolrCoreAw
       // use a set to workaround possible Lucene bug which returns same file
       // name multiple times
       Collection<String> files = new HashSet<String>(commit.getFileNames());
-      dir = core.getDirectoryFactory().get(core.getNewIndexDir(), core.getSolrConfig().indexConfig.lockType);
+      dir = core.getDirectoryFactory().get(core.getNewIndexDir(), DirContext.DEFAULT, core.getSolrConfig().indexConfig.lockType);
       try {
         
         for (String fileName : files) {
@@ -467,7 +475,7 @@ public class ReplicationHandler extends RequestHandlerBase implements SolrCoreAw
     Directory dir;
     long size = 0;
     try {
-      dir = core.getDirectoryFactory().get(core.getNewIndexDir(), core.getSolrConfig().indexConfig.lockType);
+      dir = core.getDirectoryFactory().get(core.getIndexDir(), DirContext.DEFAULT, core.getSolrConfig().indexConfig.lockType);
       try {
         size = DirectoryFactory.sizeOfDirectory(dir);
       } finally {
@@ -587,14 +595,18 @@ public class ReplicationHandler extends RequestHandlerBase implements SolrCoreAw
     }
 
     SnapPuller snapPuller = tempSnapPuller;
-    if (showSlaveDetails && snapPuller != null) {
+    if (snapPuller != null) {
       Properties props = loadReplicationProperties();
-      try {
-        NamedList nl = snapPuller.getDetails();
-        slave.add("masterDetails", nl.get(CMD_DETAILS));
-      } catch (Exception e) {
-        LOG.warn("Exception while invoking 'details' method for replication on master ", e);
-        slave.add(ERR_STATUS, "invalid_master");
+      if (showSlaveDetails) {
+        try {
+          NamedList nl = snapPuller.getDetails();
+          slave.add("masterDetails", nl.get(CMD_DETAILS));
+        } catch (Exception e) {
+          LOG.warn(
+              "Exception while invoking 'details' method for replication on master ",
+              e);
+          slave.add(ERR_STATUS, "invalid_master");
+        }
       }
       slave.add(MASTER_URL, snapPuller.getMasterUrl());
       if (snapPuller.getPollInterval() != null) {
@@ -703,7 +715,7 @@ public class ReplicationHandler extends RequestHandlerBase implements SolrCoreAw
 
     if (isMaster)
       details.add("master", master);
-    if (isSlave && showSlaveDetails)
+    if (slave.size() > 0)
       details.add("slave", slave);
     
     NamedList snapshotStats = snapShootDetails;
@@ -753,20 +765,32 @@ public class ReplicationHandler extends RequestHandlerBase implements SolrCoreAw
   }
 
   Properties loadReplicationProperties() {
-    FileInputStream inFile = null;
-    Properties props = new Properties();
+    Directory dir = null;
     try {
-      File f = new File(core.getDataDir(), SnapPuller.REPLICATION_PROPERTIES);
-      if (f.exists()) {
-        inFile = new FileInputStream(f);
-        props.load(inFile);
+      try {
+        dir = core.getDirectoryFactory().get(core.getDataDir(),
+            DirContext.META_DATA, core.getSolrConfig().indexConfig.lockType);
+        if (!dir.fileExists(SnapPuller.REPLICATION_PROPERTIES)) {
+          return new Properties();
+        }
+        final IndexInput input = dir.openInput(
+            SnapPuller.REPLICATION_PROPERTIES, IOContext.DEFAULT);
+        try {
+          final InputStream is = new PropertiesInputStream(input);
+          Properties props = new Properties();
+          props.load(is);
+          return props;
+        } finally {
+          input.close();
+        }
+      } finally {
+        if (dir != null) {
+          core.getDirectoryFactory().release(dir);
+        }
       }
-    } catch (Exception e) {
-      LOG.warn("Exception while reading " + SnapPuller.REPLICATION_PROPERTIES);
-    } finally {
-      IOUtils.closeQuietly(inFile);
+    } catch (IOException e) {
+      throw new SolrException(ErrorCode.SERVER_ERROR, e);
     }
-    return props;
   }
 
 
@@ -876,9 +900,9 @@ public class ReplicationHandler extends RequestHandlerBase implements SolrCoreAw
             }
           }
 
-          // reboot the writer on the new index
-          // TODO: perhaps this is no longer necessary then?
-         // core.getUpdateHandler().newIndexWriter(true);
+          // ensure the writer is init'd so that we have a list of commit points
+          RefCounted<IndexWriter> iw = core.getUpdateHandler().getSolrCoreState().getIndexWriter(core);
+          iw.decref();
 
         } catch (IOException e) {
           LOG.warn("Unable to get IndexCommit on startup", e);

@@ -17,6 +17,8 @@
 
 package org.apache.solr.servlet;
 
+import java.net.URLEncoder;
+
 import org.apache.solr.common.params.CommonParams;
 import org.apache.solr.util.AbstractSolrTestCase;
 import org.junit.BeforeClass;
@@ -74,7 +76,7 @@ public class DirectSolrConnectionTest extends AbstractSolrTestCase
     
     // Test using the Stream body parameter
     for( String cmd : cmds ) {
-      direct.request( "/update?"+CommonParams.STREAM_BODY+"="+cmd, null );
+      direct.request( "/update?"+CommonParams.STREAM_BODY+"="+URLEncoder.encode(cmd, "UTF-8"), null );
     }
     String got = direct.request( getIt, null );
     assertTrue( got.indexOf( value ) > 0 );

@@ -58,12 +58,12 @@ public class DoubleFieldSource extends FieldCacheSource {
 
   @Override
   public FunctionValues getValues(Map context, AtomicReaderContext readerContext) throws IOException {
-    final double[] arr = cache.getDoubles(readerContext.reader(), field, parser, true);
+    final FieldCache.Doubles arr = cache.getDoubles(readerContext.reader(), field, parser, true);
     final Bits valid = cache.getDocsWithField(readerContext.reader(), field);
     return new DoubleDocValues(this) {
       @Override
       public double doubleVal(int doc) {
-        return arr[doc];
+        return arr.get(doc);
       }
 
       @Override
@@ -132,7 +132,6 @@ public class DoubleFieldSource extends FieldCacheSource {
       @Override
       public ValueFiller getValueFiller() {
         return new ValueFiller() {
-          private final double[] doubleArr = arr;
           private final MutableValueDouble mval = new MutableValueDouble();
 
           @Override
@@ -142,7 +141,7 @@ public class DoubleFieldSource extends FieldCacheSource {
 
           @Override
           public void fillValue(int doc) {
-            mval.value = doubleArr[doc];
+            mval.value = arr.get(doc);
             mval.exists = valid.get(doc);
           }
         };

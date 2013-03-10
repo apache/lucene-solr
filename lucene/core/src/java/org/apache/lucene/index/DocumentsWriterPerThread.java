@@ -63,18 +63,21 @@ class DocumentsWriterPerThread {
       This is the current indexing chain:
 
       DocConsumer / DocConsumerPerThread
-        --> code: DocFieldProcessor / DocFieldProcessorPerThread
-          --> DocFieldConsumer / DocFieldConsumerPerThread / DocFieldConsumerPerField
-            --> code: DocFieldConsumers / DocFieldConsumersPerThread / DocFieldConsumersPerField
-              --> code: DocInverter / DocInverterPerThread / DocInverterPerField
-                --> InvertedDocConsumer / InvertedDocConsumerPerThread / InvertedDocConsumerPerField
-                  --> code: TermsHash / TermsHashPerThread / TermsHashPerField
-                    --> TermsHashConsumer / TermsHashConsumerPerThread / TermsHashConsumerPerField
-                      --> code: FreqProxTermsWriter / FreqProxTermsWriterPerThread / FreqProxTermsWriterPerField
-                      --> code: TermVectorsTermsWriter / TermVectorsTermsWriterPerThread / TermVectorsTermsWriterPerField
-                --> InvertedDocEndConsumer / InvertedDocConsumerPerThread / InvertedDocConsumerPerField
-                  --> code: NormsWriter / NormsWriterPerThread / NormsWriterPerField
-              --> code: StoredFieldsWriter / StoredFieldsWriterPerThread / StoredFieldsWriterPerField
+        --> code: DocFieldProcessor
+          --> DocFieldConsumer / DocFieldConsumerPerField
+            --> code: DocFieldConsumers / DocFieldConsumersPerField
+              --> code: DocInverter / DocInverterPerField
+                --> InvertedDocConsumer / InvertedDocConsumerPerField
+                  --> code: TermsHash / TermsHashPerField
+                    --> TermsHashConsumer / TermsHashConsumerPerField
+                      --> code: FreqProxTermsWriter / FreqProxTermsWriterPerField
+                      --> code: TermVectorsTermsWriter / TermVectorsTermsWriterPerField
+                --> InvertedDocEndConsumer / InvertedDocConsumerPerField
+                  --> code: NormsConsumer / NormsConsumerPerField
+          --> StoredFieldsConsumer
+            --> TwoStoredFieldConsumers
+              -> code: StoredFieldsProcessor
+              -> code: DocValuesProcessor
     */
 
     // Build up indexing chain:
@@ -82,11 +85,14 @@ class DocumentsWriterPerThread {
       final TermsHashConsumer termVectorsWriter = new TermVectorsConsumer(documentsWriterPerThread);
       final TermsHashConsumer freqProxWriter = new FreqProxTermsWriter();
 
-      final InvertedDocConsumer  termsHash = new TermsHash(documentsWriterPerThread, freqProxWriter, true,
-                                                           new TermsHash(documentsWriterPerThread, termVectorsWriter, false, null));
-      final NormsConsumer normsWriter = new NormsConsumer(documentsWriterPerThread);
+      final InvertedDocConsumer termsHash = new TermsHash(documentsWriterPerThread, freqProxWriter, true,
+                                                          new TermsHash(documentsWriterPerThread, termVectorsWriter, false, null));
+      final NormsConsumer normsWriter = new NormsConsumer();
       final DocInverter docInverter = new DocInverter(documentsWriterPerThread.docState, termsHash, normsWriter);
-      return new DocFieldProcessor(documentsWriterPerThread, docInverter);
+      final StoredFieldsConsumer storedFields = new TwoStoredFieldsConsumers(
+                                                      new StoredFieldsProcessor(documentsWriterPerThread),
+                                                      new DocValuesProcessor(documentsWriterPerThread.bytesUsed));
+      return new DocFieldProcessor(documentsWriterPerThread, docInverter, storedFields);
     }
   };
 
@@ -544,7 +550,7 @@ class DocumentsWriterPerThread {
       }
 
       if (infoStream.isEnabled("DWPT")) {
-        final double newSegmentSize = segmentInfo.sizeInBytes()/1024./1024.;
+        final double newSegmentSize = segmentInfoPerCommit.sizeInBytes()/1024./1024.;
         infoStream.message("DWPT", "flushed: segment=" + segmentInfo.name + 
                 " ramUsed=" + nf.format(startMBUsed) + " MB" +
                 " newFlushedSize(includes docstores)=" + nf.format(newSegmentSize) + " MB" +
@@ -582,7 +588,7 @@ class DocumentsWriterPerThread {
 
     IndexWriter.setDiagnostics(newSegment.info, "flush");
     
-    IOContext context = new IOContext(new FlushInfo(newSegment.info.getDocCount(), newSegment.info.sizeInBytes()));
+    IOContext context = new IOContext(new FlushInfo(newSegment.info.getDocCount(), newSegment.sizeInBytes()));
 
     boolean success = false;
     try {
@@ -685,10 +691,6 @@ class DocumentsWriterPerThread {
       bytesUsed.addAndGet(-(length * (IntBlockPool.INT_BLOCK_SIZE * RamUsageEstimator.NUM_BYTES_INT)));
     }
     
-  }
-  PerDocWriteState newPerDocWriteState() {
-    assert segmentInfo != null;
-    return new PerDocWriteState(infoStream, directory, segmentInfo, bytesUsed, "", IOContext.DEFAULT);
   }
   
   @Override

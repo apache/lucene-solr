@@ -107,43 +107,67 @@ public class TestBuiltInEvaluators extends AbstractDataImportHandlerTestCase {
     org.junit.Assert.assertEquals("c\\:t", s);
     
   }
-
+  
+  private Date twoDaysAgo(Locale l, TimeZone tz) {
+    Calendar calendar = Calendar.getInstance(tz, l);
+    calendar.add(Calendar.DAY_OF_YEAR, -2);
+    return calendar.getTime();
+  }
   
   @Test
   public void testDateFormatEvaluator() {
     Evaluator dateFormatEval = new DateFormatEvaluator();
     ContextImpl context = new ContextImpl(null, resolver, null,
         Context.FULL_DUMP, Collections.<String,Object> emptyMap(), null, null);
-    String currentLocale = Locale.getDefault().toString();
+    
+    Locale rootLocale = Locale.ROOT;
+    Locale defaultLocale = Locale.getDefault();
+    TimeZone defaultTz = TimeZone.getDefault();
+    
     {
-      Calendar calendar = new GregorianCalendar(TimeZone.getTimeZone("GMT"),
-          Locale.ROOT);
-      calendar.add(Calendar.DAY_OF_YEAR, -2);
-      Date d = calendar.getTime();
-      {
-        String sdf = new SimpleDateFormat("yyyy-MM-dd HH:mm", Locale.ROOT).format(d);
-        String dfe = dateFormatEval.evaluate("'NOW-2DAYS','yyyy-MM-dd HH:mm'", context);
-        assertEquals(sdf,dfe);
-      }
-      {
-        String sdf = new SimpleDateFormat("yyyy-MM-dd HH:mm", Locale.getDefault()).format(d);
-        String dfe = dateFormatEval.evaluate("'NOW-2DAYS','yyyy-MM-dd HH:mm','"+ currentLocale + "'", context);
-        assertEquals(sdf,dfe);
+      SimpleDateFormat sdfDate = new SimpleDateFormat("yyyy-MM-dd HH", rootLocale);
+      String sdf = sdfDate.format(twoDaysAgo(rootLocale, defaultTz));
+      String dfe = dateFormatEval.evaluate("'NOW-2DAYS','yyyy-MM-dd HH'", context);
+      assertEquals(sdf,dfe);
+    }
+    {
+      SimpleDateFormat sdfDate = new SimpleDateFormat("yyyy-MM-dd HH", defaultLocale);
+      String sdf = sdfDate.format(twoDaysAgo(defaultLocale, TimeZone.getDefault()));
+      String dfe = dateFormatEval.evaluate(
+          "'NOW-2DAYS','yyyy-MM-dd HH','" + defaultLocale + "'", context);
+      assertEquals(sdf,dfe);
+      for(String tzStr : TimeZone.getAvailableIDs()) {  
+        TimeZone tz = TimeZone.getTimeZone(tzStr);
+        sdfDate.setTimeZone(tz);
+        sdf = sdfDate.format(twoDaysAgo(defaultLocale, tz));
+        dfe = dateFormatEval.evaluate(
+            "'NOW-2DAYS','yyyy-MM-dd HH','" + defaultLocale + "','" + tzStr + "'", context);
+        assertEquals(sdf,dfe);          
       }
     }
-    Date d = new Date();
-    
+   
+    Date d = new Date();    
     Map<String,Object> map = new HashMap<String,Object>();
     map.put("key", d);
     resolver.addNamespace("A", map);
-    
+        
     assertEquals(
-        new SimpleDateFormat("yyyy-MM-dd HH:mm", Locale.ROOT).format(d),
+        new SimpleDateFormat("yyyy-MM-dd HH:mm", rootLocale).format(d),
         dateFormatEval.evaluate("A.key, 'yyyy-MM-dd HH:mm'", context));
     assertEquals(
-        new SimpleDateFormat("yyyy-MM-dd HH:mm", Locale.getDefault()).format(d),
-        dateFormatEval.evaluate("A.key, 'yyyy-MM-dd HH:mm','" + currentLocale
-            + "'", context));
+        new SimpleDateFormat("yyyy-MM-dd HH:mm", defaultLocale).format(d),
+        dateFormatEval.evaluate("A.key, 'yyyy-MM-dd HH:mm','" + defaultLocale + "'", context));
+    SimpleDateFormat sdf = new SimpleDateFormat("yyyy-MM-dd HH:mm", defaultLocale);
+    for(String tzStr : TimeZone.getAvailableIDs()) {
+      TimeZone tz = TimeZone.getTimeZone(tzStr);
+      sdf.setTimeZone(tz);
+      assertEquals(
+          sdf.format(d),
+          dateFormatEval.evaluate(
+              "A.key, 'yyyy-MM-dd HH:mm','" + defaultLocale + "', '" + tzStr + "'", context));     
+      
+    }
+    
     
   }
 

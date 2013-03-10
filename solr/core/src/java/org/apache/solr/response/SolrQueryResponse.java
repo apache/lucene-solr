@@ -20,6 +20,7 @@ package org.apache.solr.response;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.common.util.SimpleOrderedMap;
 import org.apache.solr.search.ReturnFields;
+import org.apache.solr.search.SolrReturnFields;
 
 import java.util.*;
 
@@ -123,7 +124,7 @@ public class SolrQueryResponse {
    */
   public ReturnFields getReturnFields() {
     if( returnFields == null ) {
-      returnFields = new ReturnFields(); // by default return everything
+      returnFields = new SolrReturnFields(); // by default return everything
     }
     return returnFields;
   }
@@ -213,6 +214,20 @@ public class SolrQueryResponse {
    */
   public NamedList<Object> getToLog() {
     return toLog;
+  }
+
+  /** Returns a string of the form "logid name1=value1 name2=value2 ..." */
+  public String getToLogAsString(String logid) {
+    StringBuilder sb = new StringBuilder(logid);
+    for (int i=0; i<toLog.size(); i++) {
+      String name = toLog.getName(i);
+      Object val = toLog.getVal(i);
+      if (name != null) {
+        sb.append(name).append('=');
+      }
+      sb.append(val).append(' ');
+    }
+    return sb.toString();
   }
   
   /**

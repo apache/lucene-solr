@@ -17,13 +17,11 @@ package org.apache.solr.common.cloud;
  * limitations under the License.
  */
 
-import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.LinkedHashMap;
-import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Set;
@@ -31,7 +29,6 @@ import java.util.Set;
 import org.apache.noggit.JSONWriter;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.SolrException.ErrorCode;
-import org.apache.solr.common.cloud.DocRouter.Range;
 import org.apache.zookeeper.KeeperException;
 import org.apache.zookeeper.data.Stat;
 import org.slf4j.Logger;
@@ -117,6 +114,12 @@ public class ClusterState implements JSONWriter.Writable {
     if (coll == null) return null;
     return coll.getSlicesMap();
   }
+  
+  public Map<String, Slice> getAllSlicesMap(String collection) {
+    DocCollection coll = collectionStates.get(collection);
+    if (coll == null) return null;
+    return coll.getAllSlicesMap();
+  }
 
   public Collection<Slice> getSlices(String collection) {
     DocCollection coll = collectionStates.get(collection);
@@ -161,7 +164,7 @@ public class ClusterState implements JSONWriter.Writable {
    * @param coreNodeName in the form of nodeName_coreName (the name of the replica)
    */
   public String getShardId(String coreNodeName) {
-     // System.out.println("###### getShardId("+coreNodeName+") in " + collectionStates);
+    //  System.out.println("###### getShardId("+coreNodeName+") in " + collectionStates);
     for (DocCollection coll : collectionStates.values()) {
       for (Slice slice : coll.getSlices()) {
         if (slice.getReplicasMap().containsKey(coreNodeName)) return slice.getName();
@@ -222,6 +225,15 @@ public class ClusterState implements JSONWriter.Writable {
 
     // System.out.println("######## ClusterState.load result:" + collections);
     return new ClusterState(version, liveNodes, collections);
+  }
+  
+  public static Aliases load(byte[] bytes) {
+    if (bytes == null || bytes.length == 0) {
+      return new Aliases();
+    }
+    Map<String,Map<String,String>> aliasMap = (Map<String,Map<String,String>>) ZkStateReader.fromJSON(bytes);
+
+    return new Aliases(aliasMap);
   }
 
   private static DocCollection collectionFromObjects(String name, Map<String,Object> objs) {

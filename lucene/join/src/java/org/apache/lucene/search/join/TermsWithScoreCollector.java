@@ -17,17 +17,17 @@ package org.apache.lucene.search.join;
  * limitations under the License.
  */
 
+import java.io.IOException;
+
 import org.apache.lucene.index.AtomicReaderContext;
-import org.apache.lucene.index.DocTermOrds;
-import org.apache.lucene.index.TermsEnum;
+import org.apache.lucene.index.BinaryDocValues;
+import org.apache.lucene.index.SortedSetDocValues;
 import org.apache.lucene.search.Collector;
 import org.apache.lucene.search.FieldCache;
 import org.apache.lucene.search.Scorer;
 import org.apache.lucene.util.ArrayUtil;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.BytesRefHash;
-
-import java.io.IOException;
 
 abstract class TermsWithScoreCollector extends Collector {
 
@@ -92,7 +92,7 @@ abstract class TermsWithScoreCollector extends Collector {
   static class SV extends TermsWithScoreCollector {
 
     final BytesRef spare = new BytesRef();
-    FieldCache.DocTerms fromDocTerms;
+    BinaryDocValues fromDocTerms;
 
     SV(String field, ScoreMode scoreMode) {
       super(field, scoreMode);
@@ -100,7 +100,8 @@ abstract class TermsWithScoreCollector extends Collector {
 
     @Override
     public void collect(int doc) throws IOException {
-      int ord = collectedTerms.add(fromDocTerms.getTerm(doc, spare));
+      fromDocTerms.get(doc, spare);
+      int ord = collectedTerms.add(spare);
       if (ord < 0) {
         ord = -ord - 1;
       } else {
@@ -141,7 +142,8 @@ abstract class TermsWithScoreCollector extends Collector {
 
       @Override
       public void collect(int doc) throws IOException {
-        int ord = collectedTerms.add(fromDocTerms.getTerm(doc, spare));
+        fromDocTerms.get(doc, spare);
+        int ord = collectedTerms.add(spare);
         if (ord < 0) {
           ord = -ord - 1;
         } else {
@@ -178,9 +180,8 @@ abstract class TermsWithScoreCollector extends Collector {
   // impl that works with multiple values per document
   static class MV extends TermsWithScoreCollector {
 
-    DocTermOrds fromDocTermOrds;
-    TermsEnum docTermsEnum;
-    DocTermOrds.TermOrdsIterator reuse;
+    SortedSetDocValues fromDocTermOrds;
+    final BytesRef scratch = new BytesRef();
 
     MV(String field, ScoreMode scoreMode) {
       super(field, scoreMode);
@@ -188,52 +189,33 @@ abstract class TermsWithScoreCollector extends Collector {
 
     @Override
     public void collect(int doc) throws IOException {
-      reuse = fromDocTermOrds.lookup(doc, reuse);
-      int[] buffer = new int[5];
-
-      int chunk;
-      do {
-        chunk = reuse.read(buffer);
-        if (chunk == 0) {
-          return;
-        }
-
-        for (int idx = 0; idx < chunk; idx++) {
-          int key = buffer[idx];
-          docTermsEnum.seekExact((long) key);
-          int ord = collectedTerms.add(docTermsEnum.term());
-          if (ord < 0) {
-            ord = -ord - 1;
-          } else {
-            if (ord >= scoreSums.length) {
-              scoreSums = ArrayUtil.grow(scoreSums);
-            }
-          }
-
-          final float current = scorer.score();
-          final float existing = scoreSums[ord];
-          if (Float.compare(existing, 0.0f) == 0) {
-            scoreSums[ord] = current;
-          } else {
-            switch (scoreMode) {
-              case Total:
-                scoreSums[ord] = existing + current;
-                break;
-              case Max:
-                if (current > existing) {
-                  scoreSums[ord] = current;
-                }
-            }
+      fromDocTermOrds.setDocument(doc);
+      long ord;
+      while ((ord = fromDocTermOrds.nextOrd()) != SortedSetDocValues.NO_MORE_ORDS) {
+        fromDocTermOrds.lookupOrd(ord, scratch);
+        
+        int termID = collectedTerms.add(scratch);
+        if (termID < 0) {
+          termID = -termID - 1;
+        } else {
+          if (termID >= scoreSums.length) {
+            scoreSums = ArrayUtil.grow(scoreSums);
           }
         }
-      } while (chunk >= buffer.length);
+        
+        switch (scoreMode) {
+          case Total:
+            scoreSums[termID] += scorer.score();
+            break;
+          case Max:
+            scoreSums[termID] = Math.max(scoreSums[termID], scorer.score());
+        }
+      }
     }
 
     @Override
     public void setNextReader(AtomicReaderContext context) throws IOException {
       fromDocTermOrds = FieldCache.DEFAULT.getDocTermOrds(context.reader(), field);
-      docTermsEnum = fromDocTermOrds.getOrdTermsEnum(context.reader());
-      reuse = null; // LUCENE-3377 needs to be fixed first then this statement can be removed...
     }
 
     static class Avg extends MV {
@@ -246,40 +228,23 @@ abstract class TermsWithScoreCollector extends Collector {
 
       @Override
       public void collect(int doc) throws IOException {
-        reuse = fromDocTermOrds.lookup(doc, reuse);
-        int[] buffer = new int[5];
-
-        int chunk;
-        do {
-          chunk = reuse.read(buffer);
-          if (chunk == 0) {
-            return;
-          }
-
-          for (int idx = 0; idx < chunk; idx++) {
-            int key = buffer[idx];
-            docTermsEnum.seekExact((long) key);
-            int ord = collectedTerms.add(docTermsEnum.term());
-            if (ord < 0) {
-              ord = -ord - 1;
-            } else {
-              if (ord >= scoreSums.length) {
-                scoreSums = ArrayUtil.grow(scoreSums);
-                scoreCounts = ArrayUtil.grow(scoreCounts);
-              }
-            }
-
-            float current = scorer.score();
-            float existing = scoreSums[ord];
-            if (Float.compare(existing, 0.0f) == 0) {
-              scoreSums[ord] = current;
-              scoreCounts[ord] = 1;
-            } else {
-              scoreSums[ord] = scoreSums[ord] + current;
-              scoreCounts[ord]++;
+        fromDocTermOrds.setDocument(doc);
+        long ord;
+        while ((ord = fromDocTermOrds.nextOrd()) != SortedSetDocValues.NO_MORE_ORDS) {
+          fromDocTermOrds.lookupOrd(ord, scratch);
+          
+          int termID = collectedTerms.add(scratch);
+          if (termID < 0) {
+            termID = -termID - 1;
+          } else {
+            if (termID >= scoreSums.length) {
+              scoreSums = ArrayUtil.grow(scoreSums);
             }
           }
-        } while (chunk >= buffer.length);
+          
+          scoreSums[termID] += scorer.score();
+          scoreCounts[termID]++;
+        }
       }
 
       @Override

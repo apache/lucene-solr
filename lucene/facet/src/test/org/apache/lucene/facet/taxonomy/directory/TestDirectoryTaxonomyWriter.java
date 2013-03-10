@@ -7,6 +7,7 @@ import java.util.Random;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicInteger;
 
+import org.apache.lucene.facet.FacetTestCase;
 import org.apache.lucene.facet.taxonomy.CategoryPath;
 import org.apache.lucene.facet.taxonomy.TaxonomyReader;
 import org.apache.lucene.facet.taxonomy.directory.DirectoryTaxonomyWriter.MemoryOrdinalMap;
@@ -21,7 +22,6 @@ import org.apache.lucene.index.IndexWriterConfig.OpenMode;
 import org.apache.lucene.index.SegmentInfos;
 import org.apache.lucene.store.AlreadyClosedException;
 import org.apache.lucene.store.Directory;
-import org.apache.lucene.util.LuceneTestCase;
 import org.junit.Test;
 
 /*
@@ -41,7 +41,7 @@ import org.junit.Test;
  * limitations under the License.
  */
 
-public class TestDirectoryTaxonomyWriter extends LuceneTestCase {
+public class TestDirectoryTaxonomyWriter extends FacetTestCase {
 
   // A No-Op TaxonomyWriterCache which always discards all given categories, and
   // always returns true in put(), to indicate some cache entries were cleared.
@@ -52,11 +52,7 @@ public class TestDirectoryTaxonomyWriter extends LuceneTestCase {
     @Override
     public int get(CategoryPath categoryPath) { return -1; }
     @Override
-    public int get(CategoryPath categoryPath, int length) { return -1; }
-    @Override
     public boolean put(CategoryPath categoryPath, int ordinal) { return true; }
-    @Override
-    public boolean put(CategoryPath categoryPath, int prefixLen, int ordinal) { return true; }
     @Override
     public boolean isFull() { return true; }
     @Override
@@ -266,10 +262,10 @@ public class TestDirectoryTaxonomyWriter extends LuceneTestCase {
                   Integer.toString(value / 100000), Integer.toString(value));
               int ord = tw.addCategory(cp);
               assertTrue("invalid parent for ordinal " + ord + ", category " + cp, tw.getParent(ord) != -1);
-              String l1 = cp.toString('/', 1);
-              String l2 = cp.toString('/', 2);
-              String l3 = cp.toString('/', 3);
-              String l4 = cp.toString('/', 4);
+              String l1 = cp.subpath(1).toString('/');
+              String l2 = cp.subpath(2).toString('/');
+              String l3 = cp.subpath(3).toString('/');
+              String l4 = cp.subpath(4).toString('/');
               values.put(l1, l1);
               values.put(l2, l2);
               values.put(l3, l3);
@@ -292,11 +288,11 @@ public class TestDirectoryTaxonomyWriter extends LuceneTestCase {
     for (String cat : values.keySet()) {
       CategoryPath cp = new CategoryPath(cat, '/');
       assertTrue("category not found " + cp, dtr.getOrdinal(cp) > 0);
-      int level = cp.length();
+      int level = cp.length;
       int parentOrd = 0; // for root, parent is always virtual ROOT (ord=0)
-      CategoryPath path = new CategoryPath();
+      CategoryPath path = CategoryPath.EMPTY;
       for (int i = 0; i < level; i++) {
-        path.add(cp.getComponent(i));
+        path = cp.subpath(i + 1);
         int ord = dtr.getOrdinal(path);
         assertEquals("invalid parent for cp=" + path, parentOrd, parents[ord]);
         parentOrd = ord; // next level should have this parent

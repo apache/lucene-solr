@@ -1,5 +1,6 @@
 package org.apache.lucene.util.packed;
 
+
 /*
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
@@ -23,9 +24,12 @@ package org.apache.lucene.util.packed;
 class BulkOperationPacked extends BulkOperation {
 
   private final int bitsPerValue;
-  private final int blockCount;
-  private final int valueCount;
+  private final int longBlockCount;
+  private final int longValueCount;
+  private final int byteBlockCount;
+  private final int byteValueCount;
   private final long mask;
+  private final int intMask;
 
   public BulkOperationPacked(int bitsPerValue) {
     this.bitsPerValue = bitsPerValue;
@@ -34,31 +38,50 @@ class BulkOperationPacked extends BulkOperation {
     while ((blocks & 1) == 0) {
       blocks >>>= 1;
     }
-    this.blockCount = blocks;
-    this.valueCount = 64 * blockCount / bitsPerValue;
+    this.longBlockCount = blocks;
+    this.longValueCount = 64 * longBlockCount / bitsPerValue;
+    int byteBlockCount = 8 * longBlockCount;
+    int byteValueCount = longValueCount;
+    while ((byteBlockCount & 1) == 0 && (byteValueCount & 1) == 0) {
+      byteBlockCount >>>= 1;
+      byteValueCount >>>= 1;
+    }
+    this.byteBlockCount = byteBlockCount;
+    this.byteValueCount = byteValueCount;
     if (bitsPerValue == 64) {
       this.mask = ~0L;
     } else {
       this.mask = (1L << bitsPerValue) - 1;
     }
-    assert valueCount * bitsPerValue == 64 * blockCount;
+    this.intMask = (int) mask;
+    assert longValueCount * bitsPerValue == 64 * longBlockCount;
   }
 
   @Override
-  public int blockCount() {
-    return blockCount;
+  public int longBlockCount() {
+    return longBlockCount;
   }
 
   @Override
-  public int valueCount() {
-    return valueCount;
+  public int longValueCount() {
+    return longValueCount;
+  }
+
+  @Override
+  public int byteBlockCount() {
+    return byteBlockCount;
+  }
+
+  @Override
+  public int byteValueCount() {
+    return byteValueCount;
   }
 
   @Override
   public void decode(long[] blocks, int blocksOffset, long[] values,
       int valuesOffset, int iterations) {
     int bitsLeft = 64;
-    for (int i = 0; i < valueCount * iterations; ++i) {
+    for (int i = 0; i < longValueCount * iterations; ++i) {
       bitsLeft -= bitsPerValue;
       if (bitsLeft < 0) {
         values[valuesOffset++] =
@@ -74,22 +97,28 @@ class BulkOperationPacked extends BulkOperation {
   @Override
   public void decode(byte[] blocks, int blocksOffset, long[] values,
       int valuesOffset, int iterations) {
-    int blockBitsLeft = 8;
-    int valueBitsLeft = bitsPerValue;
-    long nextValue = 0;
-    for (int end = valuesOffset + iterations * valueCount; valuesOffset < end; ) {
-      if (valueBitsLeft > blockBitsLeft) {
-        nextValue |= (blocks[blocksOffset++] & ((1L << blockBitsLeft) - 1)) << (valueBitsLeft - blockBitsLeft);
-        valueBitsLeft -= blockBitsLeft;
-        blockBitsLeft = 8;
+    long nextValue = 0L;
+    int bitsLeft = bitsPerValue;
+    for (int i = 0; i < iterations * byteBlockCount; ++i) {
+      final long bytes = blocks[blocksOffset++] & 0xFFL;
+      if (bitsLeft > 8) {
+        // just buffer
+        bitsLeft -= 8;
+        nextValue |= bytes << bitsLeft;
       } else {
-        nextValue |= ((blocks[blocksOffset] & 0xFFL) >>> (blockBitsLeft - valueBitsLeft)) & ((1L << valueBitsLeft) - 1);
-        values[valuesOffset++] = nextValue;
-        nextValue = 0;
-        blockBitsLeft -= valueBitsLeft;
-        valueBitsLeft = bitsPerValue;
+        // flush
+        int bits = 8 - bitsLeft;
+        values[valuesOffset++] = nextValue | (bytes >>> bits);
+        while (bits >= bitsPerValue) {
+          bits -= bitsPerValue;
+          values[valuesOffset++] = (bytes >>> bits) & mask;
+        }
+        // then buffer
+        bitsLeft = bitsPerValue - bits;
+        nextValue = (bytes & ((1L << bits) - 1)) << bitsLeft;
       }
     }
+    assert bitsLeft == bitsPerValue;
   }
 
   @Override
@@ -99,7 +128,7 @@ class BulkOperationPacked extends BulkOperation {
       throw new UnsupportedOperationException("Cannot decode " + bitsPerValue + "-bits values into an int[]");
     }
     int bitsLeft = 64;
-    for (int i = 0; i < valueCount * iterations; ++i) {
+    for (int i = 0; i < longValueCount * iterations; ++i) {
       bitsLeft -= bitsPerValue;
       if (bitsLeft < 0) {
         values[valuesOffset++] = (int)
@@ -115,25 +144,28 @@ class BulkOperationPacked extends BulkOperation {
   @Override
   public void decode(byte[] blocks, int blocksOffset, int[] values,
       int valuesOffset, int iterations) {
-    if (bitsPerValue > 32) {
-      throw new UnsupportedOperationException("Cannot decode " + bitsPerValue + "-bits values into an int[]");
-    }
-    int blockBitsLeft = 8;
-    int valueBitsLeft = bitsPerValue;
     int nextValue = 0;
-    for (int end = valuesOffset + iterations * valueCount; valuesOffset < end; ) {
-      if (valueBitsLeft > blockBitsLeft) {
-        nextValue |= (blocks[blocksOffset++] & ((1L << blockBitsLeft) - 1)) << (valueBitsLeft - blockBitsLeft);
-        valueBitsLeft -= blockBitsLeft;
-        blockBitsLeft = 8;
+    int bitsLeft = bitsPerValue;
+    for (int i = 0; i < iterations * byteBlockCount; ++i) {
+      final int bytes = blocks[blocksOffset++] & 0xFF;
+      if (bitsLeft > 8) {
+        // just buffer
+        bitsLeft -= 8;
+        nextValue |= bytes << bitsLeft;
       } else {
-        nextValue |= ((blocks[blocksOffset] & 0xFFL) >>> (blockBitsLeft - valueBitsLeft)) & ((1L << valueBitsLeft) - 1);
-        values[valuesOffset++] = nextValue;
-        nextValue = 0;
-        blockBitsLeft -= valueBitsLeft;
-        valueBitsLeft = bitsPerValue;
+        // flush
+        int bits = 8 - bitsLeft;
+        values[valuesOffset++] = nextValue | (bytes >>> bits);
+        while (bits >= bitsPerValue) {
+          bits -= bitsPerValue;
+          values[valuesOffset++] = (bytes >>> bits) & intMask;
+        }
+        // then buffer
+        bitsLeft = bitsPerValue - bits;
+        nextValue = (bytes & ((1 << bits) - 1)) << bitsLeft;
       }
     }
+    assert bitsLeft == bitsPerValue;
   }
 
   @Override
@@ -141,7 +173,7 @@ class BulkOperationPacked extends BulkOperation {
       int blocksOffset, int iterations) {
     long nextBlock = 0;
     int bitsLeft = 64;
-    for (int i = 0; i < valueCount * iterations; ++i) {
+    for (int i = 0; i < longValueCount * iterations; ++i) {
       bitsLeft -= bitsPerValue;
       if (bitsLeft > 0) {
         nextBlock |= values[valuesOffset++] << bitsLeft;
@@ -164,7 +196,7 @@ class BulkOperationPacked extends BulkOperation {
       int blocksOffset, int iterations) {
     long nextBlock = 0;
     int bitsLeft = 64;
-    for (int i = 0; i < valueCount * iterations; ++i) {
+    for (int i = 0; i < longValueCount * iterations; ++i) {
       bitsLeft -= bitsPerValue;
       if (bitsLeft > 0) {
         nextBlock |= (values[valuesOffset++] & 0xFFFFFFFFL) << bitsLeft;
@@ -185,47 +217,57 @@ class BulkOperationPacked extends BulkOperation {
   @Override
   public void encode(long[] values, int valuesOffset, byte[] blocks,
       int blocksOffset, int iterations) {
-    long nextBlock = 0;
-    int bitsLeft = 64;
-    for (int i = 0; i < valueCount * iterations; ++i) {
-      bitsLeft -= bitsPerValue;
-      if (bitsLeft > 0) {
-        nextBlock |= values[valuesOffset++] << bitsLeft;
-      } else if (bitsLeft == 0) {
-        nextBlock |= values[valuesOffset++];
-        blocksOffset = writeLong(nextBlock, blocks, blocksOffset);
-        nextBlock = 0;
-        bitsLeft = 64;
-      } else { // bitsLeft < 0
-        nextBlock |= values[valuesOffset] >>> -bitsLeft;
-        blocksOffset = writeLong(nextBlock, blocks, blocksOffset);
-        nextBlock = (values[valuesOffset++] & ((1L << -bitsLeft) - 1)) << (64 + bitsLeft);
-        bitsLeft += 64;
+    int nextBlock = 0;
+    int bitsLeft = 8;
+    for (int i = 0; i < byteValueCount * iterations; ++i) {
+      final long v = values[valuesOffset++];
+      assert bitsPerValue == 64 || PackedInts.bitsRequired(v) <= bitsPerValue;
+      if (bitsPerValue < bitsLeft) {
+        // just buffer
+        nextBlock |= v << (bitsLeft - bitsPerValue);
+        bitsLeft -= bitsPerValue;
+      } else {
+        // flush as many blocks as possible
+        int bits = bitsPerValue - bitsLeft;
+        blocks[blocksOffset++] = (byte) (nextBlock | (v >>> bits));
+        while (bits >= 8) {
+          bits -= 8;
+          blocks[blocksOffset++] = (byte) (v >>> bits);
+        }
+        // then buffer
+        bitsLeft = 8 - bits;
+        nextBlock = (int) ((v & ((1L << bits) - 1)) << bitsLeft);
       }
     }
+    assert bitsLeft == 8;
   }
 
   @Override
   public void encode(int[] values, int valuesOffset, byte[] blocks,
       int blocksOffset, int iterations) {
-    long nextBlock = 0;
-    int bitsLeft = 64;
-    for (int i = 0; i < valueCount * iterations; ++i) {
-      bitsLeft -= bitsPerValue;
-      if (bitsLeft > 0) {
-        nextBlock |= (values[valuesOffset++] & 0xFFFFFFFFL) << bitsLeft;
-      } else if (bitsLeft == 0) {
-        nextBlock |= (values[valuesOffset++] & 0xFFFFFFFFL);
-        blocksOffset = writeLong(nextBlock, blocks, blocksOffset);
-        nextBlock = 0;
-        bitsLeft = 64;
-      } else { // bitsLeft < 0
-        nextBlock |= (values[valuesOffset] & 0xFFFFFFFFL) >>> -bitsLeft;
-        blocksOffset = writeLong(nextBlock, blocks, blocksOffset);
-        nextBlock = (values[valuesOffset++] & ((1L << -bitsLeft) - 1)) << (64 + bitsLeft);
-        bitsLeft += 64;
+    int nextBlock = 0;
+    int bitsLeft = 8;
+    for (int i = 0; i < byteValueCount * iterations; ++i) {
+      final int v = values[valuesOffset++];
+      assert PackedInts.bitsRequired(v & 0xFFFFFFFFL) <= bitsPerValue;
+      if (bitsPerValue < bitsLeft) {
+        // just buffer
+        nextBlock |= v << (bitsLeft - bitsPerValue);
+        bitsLeft -= bitsPerValue;
+      } else {
+        // flush as many blocks as possible
+        int bits = bitsPerValue - bitsLeft;
+        blocks[blocksOffset++] = (byte) (nextBlock | (v >>> bits));
+        while (bits >= 8) {
+          bits -= 8;
+          blocks[blocksOffset++] = (byte) (v >>> bits);
+        }
+        // then buffer
+        bitsLeft = 8 - bits;
+        nextBlock = (v & ((1 << bits) - 1)) << bitsLeft;
       }
     }
+    assert bitsLeft == 8;
   }
 
 }

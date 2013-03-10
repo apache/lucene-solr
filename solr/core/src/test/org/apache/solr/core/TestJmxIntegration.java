@@ -16,17 +16,19 @@
  */
 package org.apache.solr.core;
 
+import java.lang.management.ManagementFactory;
+import java.util.*;
+import javax.management.*;
+
+import org.apache.lucene.util.Constants;
 import org.apache.solr.core.JmxMonitoredMap.SolrDynamicMBean;
 import org.apache.solr.util.AbstractSolrTestCase;
 import org.junit.After;
+import org.junit.Assume;
 import org.junit.Before;
 import org.junit.BeforeClass;
 import org.junit.Ignore;
 import org.junit.Test;
-
-import javax.management.*;
-import java.lang.management.ManagementFactory;
-import java.util.*;
 
 /**
  * Test for JMX Integration
@@ -80,6 +82,11 @@ public class TestJmxIntegration extends AbstractSolrTestCase {
 
   @Test
   public void testJmxUpdate() throws Exception {
+
+    // Workaround for SOLR-4418 (this test fails with "No
+    // mbean found for SolrIndexSearcher" on IBM J9 6.0 and 7.0):
+    Assume.assumeTrue(!"IBM Corporation".equals(Constants.JVM_VENDOR));
+
     List<MBeanServer> servers = MBeanServerFactory.findMBeanServer(null);
     log.info("Servers in testJmxUpdate: " + servers);
     log.info(h.getCore().getInfoRegistry().toString());

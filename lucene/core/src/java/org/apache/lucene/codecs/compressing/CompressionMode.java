@@ -45,7 +45,7 @@ public abstract class CompressionMode {
 
     @Override
     public Compressor newCompressor() {
-      return LZ4_FAST_COMPRESSOR;
+      return new LZ4FastCompressor();
     }
 
     @Override
@@ -95,7 +95,7 @@ public abstract class CompressionMode {
 
     @Override
     public Compressor newCompressor() {
-      return LZ4_HIGH_COMPRESSOR;
+      return new LZ4HighCompressor();
     }
 
     @Override
@@ -141,39 +141,43 @@ public abstract class CompressionMode {
     }
 
     @Override
-    public void copyCompressedData(DataInput in, int originalLength, DataOutput out) throws IOException {
-      final int copied = LZ4.copyCompressedData(in, originalLength, out);
-      if (copied != originalLength) {
-        throw new CorruptIndexException("Currupted compressed stream: expected " + originalLength + " bytes, but got at least" + copied);
-      }
-    }
-
-    @Override
     public Decompressor clone() {
       return this;
     }
 
   };
 
-  private static final Compressor LZ4_FAST_COMPRESSOR = new Compressor() {
+  private static final class LZ4FastCompressor extends Compressor {
+
+    private final LZ4.HashTable ht;
+
+    LZ4FastCompressor() {
+      ht = new LZ4.HashTable();
+    }
 
     @Override
     public void compress(byte[] bytes, int off, int len, DataOutput out)
         throws IOException {
-      LZ4.compress(bytes, off, len, out);
+      LZ4.compress(bytes, off, len, out, ht);
     }
 
-  };
+  }
 
-  private static final Compressor LZ4_HIGH_COMPRESSOR = new Compressor() {
+  private static final class LZ4HighCompressor extends Compressor {
+
+    private final LZ4.HCHashTable ht;
+
+    LZ4HighCompressor() {
+      ht = new LZ4.HCHashTable();
+    }
 
     @Override
     public void compress(byte[] bytes, int off, int len, DataOutput out)
         throws IOException {
-      LZ4.compressHC(bytes, off, len, out);
+      LZ4.compressHC(bytes, off, len, out, ht);
     }
 
-  };
+  }
 
   private static final class DeflateDecompressor extends Decompressor {
 
@@ -222,13 +226,6 @@ public abstract class CompressionMode {
       }
       bytes.offset = offset;
       bytes.length = length;
-    }
-
-    @Override
-    public void copyCompressedData(DataInput in, int originalLength, DataOutput out) throws IOException {
-      final int compressedLength = in.readVInt();
-      out.writeVInt(compressedLength);
-      out.copyBytes(in, compressedLength);
     }
 
     @Override

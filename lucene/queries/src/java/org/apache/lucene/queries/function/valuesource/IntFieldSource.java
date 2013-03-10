@@ -57,7 +57,7 @@ public class IntFieldSource extends FieldCacheSource {
 
   @Override
   public FunctionValues getValues(Map context, AtomicReaderContext readerContext) throws IOException {
-    final int[] arr = cache.getInts(readerContext.reader(), field, parser, true);
+    final FieldCache.Ints arr = cache.getInts(readerContext.reader(), field, parser, true);
     final Bits valid = cache.getDocsWithField(readerContext.reader(), field);
     
     return new IntDocValues(this) {
@@ -65,32 +65,32 @@ public class IntFieldSource extends FieldCacheSource {
       
       @Override
       public float floatVal(int doc) {
-        return (float)arr[doc];
+        return (float)arr.get(doc);
       }
 
       @Override
       public int intVal(int doc) {
-        return arr[doc];
+        return arr.get(doc);
       }
 
       @Override
       public long longVal(int doc) {
-        return (long)arr[doc];
+        return (long)arr.get(doc);
       }
 
       @Override
       public double doubleVal(int doc) {
-        return (double)arr[doc];
+        return (double)arr.get(doc);
       }
 
       @Override
       public String strVal(int doc) {
-        return Float.toString(arr[doc]);
+        return Integer.toString(arr.get(doc));
       }
 
       @Override
       public Object objectVal(int doc) {
-        return valid.get(doc) ? arr[doc] : null;
+        return valid.get(doc) ? arr.get(doc) : null;
       }
 
       @Override
@@ -129,7 +129,7 @@ public class IntFieldSource extends FieldCacheSource {
         return new ValueSourceScorer(reader, this) {
           @Override
           public boolean matchesValue(int doc) {
-            int val = arr[doc];
+            int val = arr.get(doc);
             // only check for deleted if it's the default value
             // if (val==0 && reader.isDeleted(doc)) return false;
             return val >= ll && val <= uu;
@@ -140,7 +140,6 @@ public class IntFieldSource extends FieldCacheSource {
       @Override
       public ValueFiller getValueFiller() {
         return new ValueFiller() {
-          private final int[] intArr = arr;
           private final MutableValueInt mval = new MutableValueInt();
 
           @Override
@@ -150,7 +149,7 @@ public class IntFieldSource extends FieldCacheSource {
 
           @Override
           public void fillValue(int doc) {
-            mval.value = intArr[doc];
+            mval.value = arr.get(doc);
             mval.exists = valid.get(doc);
           }
         };

@@ -20,15 +20,20 @@ package org.apache.lucene.util.junitcompat;
 import java.io.ByteArrayOutputStream;
 import java.io.PrintStream;
 import java.io.UnsupportedEncodingException;
+import java.util.List;
 
 import org.apache.lucene.util.LuceneTestCase;
 import org.apache.lucene.util.TestRuleIgnoreTestSuites;
+import org.apache.lucene.util.TestRuleMarkFailure;
 import org.junit.After;
 import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Rule;
+import org.junit.rules.RuleChain;
+import org.junit.rules.TestRule;
 
 import com.carrotsearch.randomizedtesting.rules.SystemPropertiesRestoreRule;
+import com.carrotsearch.randomizedtesting.rules.TestRuleAdapter;
 
 /**
  * An abstract test class that prepares nested test classes to run.
@@ -43,7 +48,6 @@ import com.carrotsearch.randomizedtesting.rules.SystemPropertiesRestoreRule;
  * cause havoc (static fields).
  */
 public abstract class WithNestedTests {
-
   public static abstract class AbstractNestedTest extends LuceneTestCase 
     implements TestRuleIgnoreTestSuites.NestedTestSuite {
     protected static boolean isRunningNested() {
@@ -66,8 +70,23 @@ public abstract class WithNestedTests {
    * Restore properties after test.
    */
   @Rule
-  public SystemPropertiesRestoreRule restoreProperties = new SystemPropertiesRestoreRule();
-  
+  public final TestRule rules;
+  {
+    final TestRuleMarkFailure marker = new TestRuleMarkFailure();
+    rules = RuleChain
+      .outerRule(new SystemPropertiesRestoreRule())
+      .around(new TestRuleAdapter() {
+        @Override
+        protected void afterAlways(List<Throwable> errors) throws Throwable {
+          if (marker.hadFailures() && suppressOutputStreams) {
+            System.out.println("sysout from nested test: " + getSysOut() + "\n");
+            System.out.println("syserr from nested test: " + getSysErr());
+          }
+        }
+      })
+      .around(marker);
+  }
+      
   @Before
   public final void before() {
     if (suppressOutputStreams) {

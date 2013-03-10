@@ -52,8 +52,7 @@ import org.slf4j.LoggerFactory;
  *   &lt;str name="fieldName"&gt;title&lt;/str&gt;
  *   &lt;str name="pattern"&gt;\s+&lt;/str&gt;
  *   &lt;str name="replacement"&gt; &lt;/str&gt;
- * &lt;/processor&gt;
- * </pre>
+ * &lt;/processor&gt;</pre>
  * 
  * @see java.util.regex.Pattern
  */

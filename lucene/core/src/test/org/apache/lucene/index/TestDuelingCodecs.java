@@ -31,6 +31,7 @@ import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.analysis.MockAnalyzer;
 import org.apache.lucene.codecs.Codec;
 import org.apache.lucene.document.Document;
+import org.apache.lucene.document.SortedSetDocValuesField;
 import org.apache.lucene.index.TermsEnum.SeekStatus;
 import org.apache.lucene.search.DocIdSetIterator;
 import org.apache.lucene.store.Directory;
@@ -39,6 +40,7 @@ import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.FixedBitSet;
 import org.apache.lucene.util.LineFileDocs;
 import org.apache.lucene.util.LuceneTestCase;
+import org.apache.lucene.util._TestUtil;
 import org.apache.lucene.util.automaton.AutomatonTestUtil;
 import org.apache.lucene.util.automaton.CompiledAutomaton;
 import org.apache.lucene.util.automaton.RegExp;
@@ -61,16 +63,13 @@ public class TestDuelingCodecs extends LuceneTestCase {
   public void setUp() throws Exception {
     super.setUp();
 
-    // for now its SimpleText vs Lucene41(random postings format)
+    // for now its SimpleText vs Lucene42(random postings format)
     // as this gives the best overall coverage. when we have more
     // codecs we should probably pick 2 from Codec.availableCodecs()
     
-    // TODO: it would also be nice to support preflex, but it doesn't
-    // support a lot of the current feature set (docvalues, statistics)
-    // so this would make assertEquals complicated.
-
     leftCodec = Codec.forName("SimpleText");
     rightCodec = new RandomCodec(random());
+
     leftDir = newDirectory();
     rightDir = newDirectory();
 
@@ -105,15 +104,28 @@ public class TestDuelingCodecs extends LuceneTestCase {
     rightReader = maybeWrapReader(rightWriter.getReader());
     rightWriter.close();
     
+    // check that our readers are valid
+    _TestUtil.checkReader(leftReader);
+    _TestUtil.checkReader(rightReader);
+    
     info = "left: " + leftCodec.toString() + " / right: " + rightCodec.toString();
   }
   
   @Override
   public void tearDown() throws Exception {
-    leftReader.close();
-    rightReader.close();   
-    leftDir.close();
-    rightDir.close();
+    if (leftReader != null) {
+      leftReader.close();
+    }
+    if (rightReader != null) {
+      rightReader.close();   
+    }
+
+    if (leftDir != null) {
+      leftDir.close();
+    }
+    if (rightDir != null) {
+      rightDir.close();
+    }
     
     super.tearDown();
   }
@@ -129,7 +141,14 @@ public class TestDuelingCodecs extends LuceneTestCase {
     // TODO: we should add other fields that use things like docs&freqs but omit positions,
     // because linefiledocs doesn't cover all the possibilities.
     for (int i = 0; i < numdocs; i++) {
-      writer.addDocument(lineFileDocs.nextDoc());
+      Document document = lineFileDocs.nextDoc();
+      // grab the title and add some SortedSet instances for fun
+      String title = document.get("titleTokenized");
+      String split[] = title.split("\\s+");
+      for (String trash : split) {
+        document.add(new SortedSetDocValuesField("sortedset", new BytesRef(trash)));
+      }
+      writer.addDocument(document);
     }
     
     lineFileDocs.close();
@@ -231,11 +250,11 @@ public class TestDuelingCodecs extends LuceneTestCase {
   private void assertTermsSeeking(Terms leftTerms, Terms rightTerms) throws Exception {
     TermsEnum leftEnum = null;
     TermsEnum rightEnum = null;
-    
+
     // just an upper bound
     int numTests = atLeast(20);
     Random random = random();
-    
+
     // collect this number of terms from the left side
     HashSet<BytesRef> tests = new HashSet<BytesRef>();
     int numPasses = 0;
@@ -259,36 +278,50 @@ public class TestDuelingCodecs extends LuceneTestCase {
           byte newbytes[] = new byte[term.length+5];
           System.arraycopy(term.bytes, term.offset, newbytes, 5, term.length);
           tests.add(new BytesRef(newbytes, 5, term.length));
+        } else if (code == 3) {
+          switch (random().nextInt(3)) {
+            case 0:
+              tests.add(new BytesRef()); // before the first term
+              break;
+            case 1:
+              tests.add(new BytesRef(new byte[] {(byte) 0xFF, (byte) 0xFF})); // past the last term
+              break;
+            case 2:
+              tests.add(new BytesRef(_TestUtil.randomSimpleString(random()))); // random term
+              break;
+            default:
+              throw new AssertionError();
+          }
         }
       }
       numPasses++;
     }
-    
+
+    rightEnum = rightTerms.iterator(rightEnum);
+
     ArrayList<BytesRef> shuffledTests = new ArrayList<BytesRef>(tests);
     Collections.shuffle(shuffledTests, random);
-    
+
     for (BytesRef b : shuffledTests) {
-      leftEnum = leftTerms.iterator(leftEnum);
-      rightEnum = rightTerms.iterator(rightEnum);
-      
-      assertEquals(info, leftEnum.seekExact(b, false), rightEnum.seekExact(b, false));
-      assertEquals(info, leftEnum.seekExact(b, true), rightEnum.seekExact(b, true));
-      
-      SeekStatus leftStatus;
-      SeekStatus rightStatus;
-      
-      leftStatus = leftEnum.seekCeil(b, false);
-      rightStatus = rightEnum.seekCeil(b, false);
-      assertEquals(info, leftStatus, rightStatus);
-      if (leftStatus != SeekStatus.END) {
-        assertEquals(info, leftEnum.term(), rightEnum.term());
+      if (rarely()) {
+        // reuse the enums
+        leftEnum = leftTerms.iterator(leftEnum);
+        rightEnum = rightTerms.iterator(rightEnum);
       }
-      
-      leftStatus = leftEnum.seekCeil(b, true);
-      rightStatus = rightEnum.seekCeil(b, true);
-      assertEquals(info, leftStatus, rightStatus);
-      if (leftStatus != SeekStatus.END) {
-        assertEquals(info, leftEnum.term(), rightEnum.term());
+
+      final boolean useCache = random().nextBoolean();
+      final boolean seekExact = random().nextBoolean();
+
+      if (seekExact) {
+        assertEquals(info, leftEnum.seekExact(b, useCache), rightEnum.seekExact(b, useCache));
+      } else {
+        SeekStatus leftStatus = leftEnum.seekCeil(b, useCache);
+        SeekStatus rightStatus = rightEnum.seekCeil(b, useCache);
+        assertEquals(info, leftStatus, rightStatus);
+        if (leftStatus != SeekStatus.END) {
+          assertEquals(info, leftEnum.term(), rightEnum.term());
+          assertTermStats(leftEnum, rightEnum);
+        }
       }
     }
   }
@@ -522,13 +555,13 @@ public class TestDuelingCodecs extends LuceneTestCase {
     }
     
     for (String field : leftFields) {
-      DocValues leftNorms = MultiDocValues.getNormDocValues(leftReader, field);
-      DocValues rightNorms = MultiDocValues.getNormDocValues(rightReader, field);
+      NumericDocValues leftNorms = MultiDocValues.getNormValues(leftReader, field);
+      NumericDocValues rightNorms = MultiDocValues.getNormValues(rightReader, field);
       if (leftNorms != null && rightNorms != null) {
-        assertDocValues(leftNorms, rightNorms);
+        assertDocValues(leftReader.maxDoc(), leftNorms, rightNorms);
       } else {
-        assertNull(leftNorms);
-        assertNull(rightNorms);
+        assertNull(info, leftNorms);
+        assertNull(info, rightNorms);
       }
     }
   }
@@ -604,68 +637,104 @@ public class TestDuelingCodecs extends LuceneTestCase {
    * checks that docvalues across all fields are equivalent
    */
   public void assertDocValues(IndexReader leftReader, IndexReader rightReader) throws Exception {
-    Set<String> leftValues = getDVFields(leftReader);
-    Set<String> rightValues = getDVFields(rightReader);
-    assertEquals(info, leftValues, rightValues);
+    Set<String> leftFields = getDVFields(leftReader);
+    Set<String> rightFields = getDVFields(rightReader);
+    assertEquals(info, leftFields, rightFields);
 
-    for (String field : leftValues) {
-      DocValues leftDocValues = MultiDocValues.getDocValues(leftReader, field);
-      DocValues rightDocValues = MultiDocValues.getDocValues(rightReader, field);
-      if (leftDocValues != null && rightDocValues != null) {
-        assertDocValues(leftDocValues, rightDocValues);
-      } else {
-        assertNull(leftDocValues);
-        assertNull(rightDocValues);
+    for (String field : leftFields) {
+      // TODO: clean this up... very messy
+      {
+        NumericDocValues leftValues = MultiDocValues.getNumericValues(leftReader, field);
+        NumericDocValues rightValues = MultiDocValues.getNumericValues(rightReader, field);
+        if (leftValues != null && rightValues != null) {
+          assertDocValues(leftReader.maxDoc(), leftValues, rightValues);
+        } else {
+          assertNull(info, leftValues);
+          assertNull(info, rightValues);
+        }
+      }
+
+      {
+        BinaryDocValues leftValues = MultiDocValues.getBinaryValues(leftReader, field);
+        BinaryDocValues rightValues = MultiDocValues.getBinaryValues(rightReader, field);
+        if (leftValues != null && rightValues != null) {
+          BytesRef scratchLeft = new BytesRef();
+          BytesRef scratchRight = new BytesRef();
+          for(int docID=0;docID<leftReader.maxDoc();docID++) {
+            leftValues.get(docID, scratchLeft);
+            rightValues.get(docID, scratchRight);
+            assertEquals(info, scratchLeft, scratchRight);
+          }
+        } else {
+          assertNull(info, leftValues);
+          assertNull(info, rightValues);
+        }
+      }
+      
+      {
+        SortedDocValues leftValues = MultiDocValues.getSortedValues(leftReader, field);
+        SortedDocValues rightValues = MultiDocValues.getSortedValues(rightReader, field);
+        if (leftValues != null && rightValues != null) {
+          // numOrds
+          assertEquals(info, leftValues.getValueCount(), rightValues.getValueCount());
+          // ords
+          BytesRef scratchLeft = new BytesRef();
+          BytesRef scratchRight = new BytesRef();
+          for (int i = 0; i < leftValues.getValueCount(); i++) {
+            leftValues.lookupOrd(i, scratchLeft);
+            rightValues.lookupOrd(i, scratchRight);
+            assertEquals(info, scratchLeft, scratchRight);
+          }
+          // bytes
+          for(int docID=0;docID<leftReader.maxDoc();docID++) {
+            leftValues.get(docID, scratchLeft);
+            rightValues.get(docID, scratchRight);
+            assertEquals(info, scratchLeft, scratchRight);
+          }
+        } else {
+          assertNull(info, leftValues);
+          assertNull(info, rightValues);
+        }
+      }
+      
+      {
+        SortedSetDocValues leftValues = MultiDocValues.getSortedSetValues(leftReader, field);
+        SortedSetDocValues rightValues = MultiDocValues.getSortedSetValues(rightReader, field);
+        if (leftValues != null && rightValues != null) {
+          // numOrds
+          assertEquals(info, leftValues.getValueCount(), rightValues.getValueCount());
+          // ords
+          BytesRef scratchLeft = new BytesRef();
+          BytesRef scratchRight = new BytesRef();
+          for (int i = 0; i < leftValues.getValueCount(); i++) {
+            leftValues.lookupOrd(i, scratchLeft);
+            rightValues.lookupOrd(i, scratchRight);
+            assertEquals(info, scratchLeft, scratchRight);
+          }
+          // ord lists
+          for(int docID=0;docID<leftReader.maxDoc();docID++) {
+            leftValues.setDocument(docID);
+            rightValues.setDocument(docID);
+            long ord;
+            while ((ord = leftValues.nextOrd()) != SortedSetDocValues.NO_MORE_ORDS) {
+              assertEquals(info, ord, rightValues.nextOrd());
+            }
+            assertEquals(info, SortedSetDocValues.NO_MORE_ORDS, rightValues.nextOrd());
+          }
+        } else {
+          assertNull(info, leftValues);
+          assertNull(info, rightValues);
+        }
       }
     }
   }
   
-  public void assertDocValues(DocValues leftDocValues, DocValues rightDocValues) throws Exception {
+  public void assertDocValues(int num, NumericDocValues leftDocValues, NumericDocValues rightDocValues) throws Exception {
     assertNotNull(info, leftDocValues);
     assertNotNull(info, rightDocValues);
-    assertEquals(info, leftDocValues.getType(), rightDocValues.getType());
-    assertEquals(info, leftDocValues.getValueSize(), rightDocValues.getValueSize());
-    assertDocValuesSource(leftDocValues.getDirectSource(), rightDocValues.getDirectSource());
-    assertDocValuesSource(leftDocValues.getSource(), rightDocValues.getSource());
-  }
-  
-  /**
-   * checks source API
-   */
-  public void assertDocValuesSource(DocValues.Source left, DocValues.Source right) throws Exception {
-    DocValues.Type leftType = left.getType();
-    assertEquals(info, leftType, right.getType());
-    switch(leftType) {
-      case VAR_INTS:
-      case FIXED_INTS_8:
-      case FIXED_INTS_16:
-      case FIXED_INTS_32:
-      case FIXED_INTS_64:
-        for (int i = 0; i < leftReader.maxDoc(); i++) {
-          assertEquals(info, left.getInt(i), right.getInt(i));
-        }
-        break;
-      case FLOAT_32:
-      case FLOAT_64:
-        for (int i = 0; i < leftReader.maxDoc(); i++) {
-          assertEquals(info, left.getFloat(i), right.getFloat(i), 0F);
-        }
-        break;
-      case BYTES_FIXED_STRAIGHT:
-      case BYTES_FIXED_DEREF:
-      case BYTES_VAR_STRAIGHT:
-      case BYTES_VAR_DEREF:
-        BytesRef b1 = new BytesRef();
-        BytesRef b2 = new BytesRef();
-        for (int i = 0; i < leftReader.maxDoc(); i++) {
-          left.getBytes(i, b1);
-          right.getBytes(i, b2);
-          assertEquals(info, b1, b2);
-        }
-        break;
-      // TODO: can we test these?
-      case BYTES_VAR_SORTED:
-      case BYTES_FIXED_SORTED:
+    for(int docID=0;docID<num;docID++) {
+      assertEquals(leftDocValues.get(docID),
+                   rightDocValues.get(docID));
     }
   }
   

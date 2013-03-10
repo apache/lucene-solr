@@ -34,7 +34,7 @@ import org.apache.lucene.analysis.TokenStream;
 import org.apache.lucene.analysis.TokenStreamToAutomaton;
 import org.apache.lucene.search.spell.TermFreqIterator;
 import org.apache.lucene.search.suggest.Lookup;
-import org.apache.lucene.search.suggest.fst.Sort;
+import org.apache.lucene.search.suggest.Sort;
 import org.apache.lucene.store.ByteArrayDataInput;
 import org.apache.lucene.store.ByteArrayDataOutput;
 import org.apache.lucene.store.DataInput;
@@ -587,7 +587,7 @@ public class AnalyzingSuggester extends Lookup {
 
       //System.out.println("  prefixPaths: " + prefixPaths.size());
 
-      BytesReader bytesReader = fst.getBytesReader(0);
+      BytesReader bytesReader = fst.getBytesReader();
 
       FST.Arc<Pair<Long,BytesRef>> scratchArc = new FST.Arc<Pair<Long,BytesRef>>();
 

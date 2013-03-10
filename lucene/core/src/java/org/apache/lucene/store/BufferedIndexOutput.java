@@ -21,33 +21,56 @@ import java.io.IOException;
 
 /** Base implementation class for buffered {@link IndexOutput}. */
 public abstract class BufferedIndexOutput extends IndexOutput {
-  static final int BUFFER_SIZE = 16384;
+  /** The default buffer size in bytes ({@value #DEFAULT_BUFFER_SIZE}). */
+  public static final int DEFAULT_BUFFER_SIZE = 16384;
 
-  private final byte[] buffer = new byte[BUFFER_SIZE];
+  private final int bufferSize;
+  private final byte[] buffer;
   private long bufferStart = 0;           // position in file of buffer
   private int bufferPosition = 0;         // position in buffer
 
+  /**
+   * Creates a new {@link BufferedIndexOutput} with the default buffer size
+   * ({@value #DEFAULT_BUFFER_SIZE} bytes see {@link #DEFAULT_BUFFER_SIZE})
+   */
+  public BufferedIndexOutput() {
+    this(DEFAULT_BUFFER_SIZE);
+  }
+  
+  /**
+   * Creates a new {@link BufferedIndexOutput} with the given buffer size. 
+   * @param bufferSize the buffer size in bytes used to buffer writes internally.
+   * @throws IllegalArgumentException if the given buffer size is less or equal to <tt>0</tt>
+   */
+  public BufferedIndexOutput(int bufferSize) {
+    if (bufferSize <= 0) {
+      throw new IllegalArgumentException("bufferSize must be greater than 0 (got " + bufferSize + ")");
+    }
+    this.bufferSize = bufferSize;
+    buffer = new byte[bufferSize];
+  }
+
   @Override
   public void writeByte(byte b) throws IOException {
-    if (bufferPosition >= BUFFER_SIZE)
+    if (bufferPosition >= bufferSize)
       flush();
     buffer[bufferPosition++] = b;
   }
 
   @Override
   public void writeBytes(byte[] b, int offset, int length) throws IOException {
-    int bytesLeft = BUFFER_SIZE - bufferPosition;
+    int bytesLeft = bufferSize - bufferPosition;
     // is there enough space in the buffer?
     if (bytesLeft >= length) {
       // we add the data to the end of the buffer
       System.arraycopy(b, offset, buffer, bufferPosition, length);
       bufferPosition += length;
       // if the buffer is full, flush it
-      if (BUFFER_SIZE - bufferPosition == 0)
+      if (bufferSize - bufferPosition == 0)
         flush();
     } else {
       // is data larger then buffer?
-      if (length > BUFFER_SIZE) {
+      if (length > bufferSize) {
         // we flush the buffer
         if (bufferPosition > 0)
           flush();
@@ -64,10 +87,10 @@ public abstract class BufferedIndexOutput extends IndexOutput {
           pos += pieceLength;
           bufferPosition += pieceLength;
           // if the buffer is full, flush it
-          bytesLeft = BUFFER_SIZE - bufferPosition;
+          bytesLeft = bufferSize - bufferPosition;
           if (bytesLeft == 0) {
             flush();
-            bytesLeft = BUFFER_SIZE;
+            bytesLeft = bufferSize;
           }
         }
       }

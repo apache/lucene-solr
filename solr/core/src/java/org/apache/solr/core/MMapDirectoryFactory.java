@@ -22,6 +22,7 @@ import org.apache.lucene.store.LockFactory; // javadocs
 import org.apache.lucene.store.MMapDirectory;
 import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.common.util.NamedList;
+import org.apache.solr.core.DirectoryFactory.DirContext;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -56,7 +57,7 @@ public class MMapDirectoryFactory extends StandardDirectoryFactory {
   }
 
   @Override
-  protected Directory create(String path) throws IOException {
+  protected Directory create(String path, DirContext dirContext) throws IOException {
     MMapDirectory mapDirectory = new MMapDirectory(new File(path), null, maxChunk);
     try {
       mapDirectory.setUseUnmap(unmapHack);

@@ -12,12 +12,6 @@
 
 <Configure id="Server" class="org.eclipse.jetty.server.Server">
 
-    <!-- Increase the maximum POST size to 1 MB to be able to handle large shard requests -->
-    <Call name="setAttribute">
-      <Arg>org.eclipse.jetty.server.Request.maxFormContentSize</Arg>
-      <Arg>200000</Arg>
-    </Call>
-
     <!-- =========================================================== -->
     <!-- Server Thread Pool                                          -->
     <!-- =========================================================== -->
@@ -66,6 +60,43 @@
       </Arg>
     </Call>
 
+    <!-- if the connector below is uncommented, then jetty will also accept SSL
+         connections on port 8984, using a self signed certificate and can 
+         optionally require the client to authenticate with a certificate. 
+         (which can be the same as the server certificate_
+         
+         # Run solr example with SSL on port 8984
+         java -jar start.jar
+         # 
+         # Run post.jar so that it trusts the server cert...
+         java -Djavax.net.ssl.trustStore=../etc/solrtest.keystore -Durl=https://localhost:8984/solr/update -jar post.jar *.xml
+
+         # Run solr example with SSL requiring client certs on port 8984
+         java -Djetty.ssl.clientAuth=true -jar start.jar
+         #
+         # Run post.jar so that it trusts the server cert, 
+         # and authenticates with a client cert
+         java -Djavax.net.ssl.keyStorePassword=secret -Djavax.net.ssl.keyStore=../etc/solrtest.keystore -Djavax.net.ssl.trustStore=../etc/solrtest.keystore -Durl=https://localhost:8984/solr/update -jar post.jar *.xml
+
+    -->
+    <!--
+    <Call name="addConnector">
+      <Arg>
+        <New class="org.eclipse.jetty.server.ssl.SslSelectChannelConnector">
+          <Arg>
+            <New class="org.eclipse.jetty.http.ssl.SslContextFactory">
+              <Set name="keyStore"><SystemProperty name="jetty.home" default="."/>/etc/solrtest.keystore</Set>
+              <Set name="keyStorePassword">secret</Set>
+              <Set name="needClientAuth"><SystemProperty name="jetty.ssl.clientAuth" default="false"/></Set>
+            </New>
+          </Arg>
+          <Set name="port"><SystemProperty name="jetty.ssl.port" default="8984"/></Set>
+          <Set name="maxIdleTime">30000</Set>
+        </New>
+      </Arg>
+    </Call>
+    -->
+
     <!-- =========================================================== -->
     <!-- Set handler Collection Structure                            --> 
     <!-- =========================================================== -->
@@ -100,7 +131,7 @@
                 <Set name="filename">
                    logs/request.yyyy_mm_dd.log
                 </Set>
-                <Set name="filenameDateFormat">yyyy_mm_dd</Set>
+                <Set name="filenameDateFormat">yyyy_MM_dd</Set>
                 <Set name="retainDays">90</Set>
                 <Set name="append">true</Set>
                 <Set name="extended">false</Set>

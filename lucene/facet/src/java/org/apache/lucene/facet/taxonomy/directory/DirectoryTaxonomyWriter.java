@@ -14,7 +14,6 @@ import java.util.Map;
 import java.util.concurrent.atomic.AtomicInteger;
 
 import org.apache.lucene.analysis.TokenStream;
-import org.apache.lucene.analysis.core.KeywordAnalyzer;
 import org.apache.lucene.analysis.tokenattributes.CharTermAttribute;
 import org.apache.lucene.analysis.tokenattributes.PositionIncrementAttribute;
 import org.apache.lucene.document.Document;
@@ -30,7 +29,7 @@ import org.apache.lucene.facet.taxonomy.writercache.cl2o.Cl2oTaxonomyWriterCache
 import org.apache.lucene.facet.taxonomy.writercache.lru.LruTaxonomyWriterCache;
 import org.apache.lucene.index.AtomicReader;
 import org.apache.lucene.index.AtomicReaderContext;
-import org.apache.lucene.index.CorruptIndexException; // javadocs
+import org.apache.lucene.index.CorruptIndexException;
 import org.apache.lucene.index.DirectoryReader;
 import org.apache.lucene.index.DocsEnum;
 import org.apache.lucene.index.IndexReader;
@@ -45,7 +44,7 @@ import org.apache.lucene.index.TermsEnum;
 import org.apache.lucene.index.TieredMergePolicy;
 import org.apache.lucene.store.AlreadyClosedException;
 import org.apache.lucene.store.Directory;
-import org.apache.lucene.store.LockObtainFailedException; // javadocs
+import org.apache.lucene.store.LockObtainFailedException;
 import org.apache.lucene.store.NativeFSLockFactory;
 import org.apache.lucene.store.SimpleFSLockFactory;
 import org.apache.lucene.util.BytesRef;
@@ -249,7 +248,7 @@ public class DirectoryTaxonomyWriter implements TaxonomyWriter {
       cacheIsComplete = true;
       // Make sure that the taxonomy always contain the root category
       // with category id 0.
-      addCategory(new CategoryPath());
+      addCategory(CategoryPath.EMPTY);
     } else {
       // There are some categories on the disk, which we have not yet
       // read into the cache, and therefore the cache is incomplete.
@@ -303,8 +302,7 @@ public class DirectoryTaxonomyWriter implements TaxonomyWriter {
  
     // Make sure we use a MergePolicy which always merges adjacent segments and thus
     // keeps the doc IDs ordered as well (this is crucial for the taxonomy index).
-    return new IndexWriterConfig(Version.LUCENE_50,
-        new KeywordAnalyzer()).setOpenMode(openMode).setMergePolicy(
+    return new IndexWriterConfig(Version.LUCENE_50, null).setOpenMode(openMode).setMergePolicy(
         new LogByteSizeMergePolicy());
   }
   
@@ -449,56 +447,6 @@ public class DirectoryTaxonomyWriter implements TaxonomyWriter {
     return doc;
   }
 
-  /**
-   * Look up the given prefix of the given category in the cache and/or the
-   * on-disk storage, returning that prefix's ordinal, or a negative number in
-   * case the category does not yet exist in the taxonomy.
-   */
-  private int findCategory(CategoryPath categoryPath, int prefixLen)
-      throws IOException {
-    int res = cache.get(categoryPath, prefixLen);
-    if (res >= 0 || cacheIsComplete) {
-      return res;
-    }
-    
-    cacheMisses.incrementAndGet();
-    perhapsFillCache();
-    res = cache.get(categoryPath, prefixLen);
-    if (res >= 0 || cacheIsComplete) {
-      return res;
-    }
-
-    initReaderManager();
-    
-    int doc = -1;
-    DirectoryReader reader = readerManager.acquire();
-    try {
-      TermsEnum termsEnum = null; // reuse
-      DocsEnum docs = null; // reuse
-      final BytesRef catTerm = new BytesRef(categoryPath.toString(delimiter, prefixLen));
-      for (AtomicReaderContext ctx : reader.leaves()) {
-        Terms terms = ctx.reader().terms(Consts.FULL);
-        if (terms != null) {
-          termsEnum = terms.iterator(termsEnum);
-          if (termsEnum.seekExact(catTerm, true)) {
-            // liveDocs=null because the taxonomy has no deletes
-            docs = termsEnum.docs(null, docs, 0 /* freqs not required */);
-            // if the term was found, we know it has exactly one document.
-            doc = docs.nextDoc() + ctx.docBase;
-            break;
-          }
-        }
-      }
-    } finally {
-      readerManager.release(reader);
-    }
-    
-    if (doc > 0) {
-      addToCache(categoryPath, prefixLen, doc);
-    }
-    return doc;
-  }
-
   @Override
   public int addCategory(CategoryPath categoryPath) throws IOException {
     ensureOpen();
@@ -516,7 +464,7 @@ public class DirectoryTaxonomyWriter implements TaxonomyWriter {
           // (while keeping the invariant that a parent is always added to
           // the taxonomy before its child). internalAddCategory() does all
           // this recursively
-          res = internalAddCategory(categoryPath, categoryPath.length());
+          res = internalAddCategory(categoryPath);
         }
       }
     }
@@ -532,25 +480,24 @@ public class DirectoryTaxonomyWriter implements TaxonomyWriter {
    * parent is always added to the taxonomy before its child). We do this by
    * recursion.
    */
-  private int internalAddCategory(CategoryPath categoryPath, int length)
-      throws IOException {
-
+  private int internalAddCategory(CategoryPath cp) throws IOException {
     // Find our parent's ordinal (recursively adding the parent category
     // to the taxonomy if it's not already there). Then add the parent
     // ordinal as payloads (rather than a stored field; payloads can be
     // more efficiently read into memory in bulk by LuceneTaxonomyReader)
     int parent;
-    if (length > 1) {
-      parent = findCategory(categoryPath, length - 1);
+    if (cp.length > 1) {
+      CategoryPath parentPath = cp.subpath(cp.length - 1);
+      parent = findCategory(parentPath);
       if (parent < 0) {
-        parent = internalAddCategory(categoryPath, length - 1);
+        parent = internalAddCategory(parentPath);
       }
-    } else if (length == 1) {
+    } else if (cp.length == 1) {
       parent = TaxonomyReader.ROOT_ORDINAL;
     } else {
       parent = TaxonomyReader.INVALID_ORDINAL;
     }
-    int id = addCategoryDocument(categoryPath, length, parent);
+    int id = addCategoryDocument(cp, parent);
 
     return id;
   }
@@ -569,8 +516,7 @@ public class DirectoryTaxonomyWriter implements TaxonomyWriter {
    * Note that the methods calling addCategoryDocument() are synchornized, so
    * this method is effectively synchronized as well.
    */
-  private int addCategoryDocument(CategoryPath categoryPath, int length,
-      int parent) throws IOException {
+  private int addCategoryDocument(CategoryPath categoryPath, int parent) throws IOException {
     // Before Lucene 2.9, position increments >=0 were supported, so we
     // added 1 to parent to allow the parent -1 (the parent of the root).
     // Unfortunately, starting with Lucene 2.9, after LUCENE-1542, this is
@@ -580,11 +526,11 @@ public class DirectoryTaxonomyWriter implements TaxonomyWriter {
     // we write here (e.g., to write parent+2), and need to do a workaround
     // in the reader (which knows that anyway only category 0 has a parent
     // -1).    
-    parentStream.set(Math.max(parent+1, 1));
+    parentStream.set(Math.max(parent + 1, 1));
     Document d = new Document();
     d.add(parentStreamField);
 
-    fullPathField.setStringValue(categoryPath.toString(delimiter, length));
+    fullPathField.setStringValue(categoryPath.toString(delimiter));
     d.add(fullPathField);
 
     // Note that we do no pass an Analyzer here because the fields that are
@@ -601,7 +547,7 @@ public class DirectoryTaxonomyWriter implements TaxonomyWriter {
 
     // NOTE: this line must be executed last, or else the cache gets updated
     // before the parents array (LUCENE-4596)
-    addToCache(categoryPath, length, id);
+    addToCache(categoryPath, id);
 
     return id;
   }
@@ -648,14 +594,6 @@ public class DirectoryTaxonomyWriter implements TaxonomyWriter {
       // possible that a relatively-new category that isn't yet visible
       // to our 'reader' was evicted, and therefore we must now refresh 
       // the reader.
-      refreshReaderManager();
-      cacheIsComplete = false;
-    }
-  }
-
-  private void addToCache(CategoryPath categoryPath, int prefixLen, int id)
-      throws IOException {
-    if (cache.put(categoryPath, prefixLen, id)) {
       refreshReaderManager();
       cacheIsComplete = false;
     }
@@ -760,7 +698,6 @@ public class DirectoryTaxonomyWriter implements TaxonomyWriter {
     boolean aborted = false;
     DirectoryReader reader = readerManager.acquire();
     try {
-      CategoryPath cp = new CategoryPath();
       TermsEnum termsEnum = null;
       DocsEnum docsEnum = null;
       for (AtomicReaderContext ctx : reader.leaves()) {
@@ -775,8 +712,7 @@ public class DirectoryTaxonomyWriter implements TaxonomyWriter {
               // hence documents), there are no deletions in the index. Therefore, it
               // is sufficient to call next(), and then doc(), exactly once with no
               // 'validation' checks.
-              cp.clear();
-              cp.add(t.utf8ToString(), delimiter);
+              CategoryPath cp = new CategoryPath(t.utf8ToString(), delimiter);
               docsEnum = termsEnum.docs(null, docsEnum, DocsEnum.FLAG_NONE);
               boolean res = cache.put(cp, docsEnum.nextDoc() + ctx.docBase);
               assert !res : "entries should not have been evicted from the cache";
@@ -857,7 +793,6 @@ public class DirectoryTaxonomyWriter implements TaxonomyWriter {
       final int size = r.numDocs();
       final OrdinalMap ordinalMap = map;
       ordinalMap.setSize(size);
-      CategoryPath cp = new CategoryPath();
       int base = 0;
       TermsEnum te = null;
       DocsEnum docs = null;
@@ -867,8 +802,7 @@ public class DirectoryTaxonomyWriter implements TaxonomyWriter {
         te = terms.iterator(te);
         while (te.next() != null) {
           String value = te.term().utf8ToString();
-          cp.clear();
-          cp.add(value, Consts.DEFAULT_DELIMITER);
+          CategoryPath cp = new CategoryPath(value, delimiter);
           final int ordinal = addCategory(cp);
           docs = te.docs(null, docs, DocsEnum.FLAG_NONE);
           ordinalMap.addMapping(docs.nextDoc() + base, ordinal);

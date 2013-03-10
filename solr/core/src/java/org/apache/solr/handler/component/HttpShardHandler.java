@@ -302,7 +302,7 @@ public class HttpShardHandler extends ShardHandler {
         String collections = params.get("collection");
         if (collections != null) {
           // If there were one or more collections specified in the query, split
-          // each parameter and store as a seperate member of a List.
+          // each parameter and store as a separate member of a List.
           List<String> collectionList = StrUtils.splitSmart(collections, ",",
               true);
           // In turn, retrieve the slices that cover each collection from the

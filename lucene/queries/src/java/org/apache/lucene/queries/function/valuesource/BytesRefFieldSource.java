@@ -17,12 +17,18 @@ package org.apache.lucene.queries.function.valuesource;
  * limitations under the License.
  */
 
-import org.apache.lucene.index.AtomicReaderContext;
-import org.apache.lucene.queries.function.FunctionValues;
-import org.apache.lucene.queries.function.docvalues.DocTermsIndexDocValues;
-
 import java.io.IOException;
 import java.util.Map;
+
+import org.apache.lucene.index.AtomicReaderContext;
+import org.apache.lucene.index.BinaryDocValues;
+import org.apache.lucene.index.FieldInfo;
+import org.apache.lucene.index.FieldInfo.DocValuesType;
+import org.apache.lucene.queries.function.FunctionValues;
+import org.apache.lucene.queries.function.docvalues.DocTermsIndexDocValues;
+import org.apache.lucene.search.FieldCache;
+import org.apache.lucene.util.Bits;
+import org.apache.lucene.util.BytesRef;
 
 /**
  * An implementation for retrieving {@link FunctionValues} instances for string based fields.
@@ -35,23 +41,59 @@ public class BytesRefFieldSource extends FieldCacheSource {
 
   @Override
   public FunctionValues getValues(Map context, AtomicReaderContext readerContext) throws IOException {
-    return new DocTermsIndexDocValues(this, readerContext, field) {
+    final FieldInfo fieldInfo = readerContext.reader().getFieldInfos().fieldInfo(field);
+    // To be sorted or not to be sorted, that is the question
+    // TODO: do it cleaner?
+    if (fieldInfo != null && fieldInfo.getDocValuesType() == DocValuesType.BINARY) {
+      final BinaryDocValues binaryValues = FieldCache.DEFAULT.getTerms(readerContext.reader(), field);
+      return new FunctionValues() {
 
-      @Override
-      protected String toTerm(String readableValue) {
-        return readableValue;
-      }
+        @Override
+        public boolean exists(int doc) {
+          return true; // doc values are dense
+        }
 
-      @Override
-      public Object objectVal(int doc) {
-        return strVal(doc);
-      }
+        @Override
+        public boolean bytesVal(int doc, BytesRef target) {
+          binaryValues.get(doc, target);
+          return target.length > 0;
+        }
 
-      @Override
-      public String toString(int doc) {
-        return description() + '=' + strVal(doc);
-      }
+        public String strVal(int doc) {
+          final BytesRef bytes = new BytesRef();
+          return bytesVal(doc, bytes)
+              ? bytes.utf8ToString()
+              : null;
+        }
 
-    };
+        @Override
+        public Object objectVal(int doc) {
+          return strVal(doc);
+        }
+
+        @Override
+        public String toString(int doc) {
+          return description() + '=' + strVal(doc);
+        }
+      };
+    } else {
+      return new DocTermsIndexDocValues(this, readerContext, field) {
+
+        @Override
+        protected String toTerm(String readableValue) {
+          return readableValue;
+        }
+
+        @Override
+        public Object objectVal(int doc) {
+          return strVal(doc);
+        }
+
+        @Override
+        public String toString(int doc) {
+          return description() + '=' + strVal(doc);
+        }
+      };
+    }
   }
 }

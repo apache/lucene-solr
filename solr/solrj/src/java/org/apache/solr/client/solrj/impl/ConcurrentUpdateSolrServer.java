@@ -79,8 +79,7 @@ public class ConcurrentUpdateSolrServer extends SolrServer {
   final int threadCount;
 
   /**
-   * Uses an internal ThreadSafeClientConnManager to manage http
-   * connections.
+   * Uses an internaly managed HttpClient instance.
    * 
    * @param solrServerUrl
    *          The Solr server URL
@@ -95,9 +94,7 @@ public class ConcurrentUpdateSolrServer extends SolrServer {
   }
 
   /**
-   * Uses the supplied HttpClient to send documents to the Solr server, the
-   * HttpClient should be instantiated using a 
-   * ThreadSafeClientConnManager.
+   * Uses the supplied HttpClient to send documents to the Solr server.
    */
   public ConcurrentUpdateSolrServer(String solrServerUrl,
       HttpClient client, int queueSize, int threadCount) {

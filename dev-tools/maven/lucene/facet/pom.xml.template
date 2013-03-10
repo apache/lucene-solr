@@ -35,8 +35,8 @@
   </description>
   <properties>
     <module-directory>lucene/facet</module-directory>
-    <top-level>../../..</top-level>
-    <module-path>${top-level}/${module-directory}</module-path>
+    <relative-top-level>../../..</relative-top-level>
+    <module-path>${relative-top-level}/${module-directory}</module-path>
   </properties>
   <scm>
     <connection>scm:svn:${vc-anonymous-base-url}/${module-directory}</connection>
@@ -65,6 +65,11 @@
   <build>
     <sourceDirectory>${module-path}/src/java</sourceDirectory>
     <testSourceDirectory>${module-path}/src/test</testSourceDirectory>
+    <resources>
+      <resource>
+        <directory>${module-path}/src/resources</directory>
+      </resource>
+    </resources>
     <testResources>
       <testResource>
         <directory>${project.build.testSourceDirectory}</directory>
@@ -75,20 +80,44 @@
     </testResources>
     <plugins>
       <plugin>
-        <groupId>org.codehaus.mojo</groupId>
-        <artifactId>build-helper-maven-plugin</artifactId>
+        <groupId>de.thetaphi</groupId>
+        <artifactId>forbiddenapis</artifactId>
         <executions>
           <execution>
-            <id>add-source</id>
-            <phase>generate-sources</phase>
-            <goals>
-              <goal>add-source</goal>
-            </goals>
+            <id>lucene-shared-check-forbidden-apis</id>
+            <phase>none</phase> <!-- Block inherited execution -->
+          </execution>
+          <execution>
+            <id>check-forbidden-apis</id>
             <configuration>
-              <sources>
-                <source>${module-path}/src/examples</source>
-              </sources>
+              <!-- disallow undocumented classes like sun.misc.Unsafe: -->
+              <internalRuntimeForbidden>true</internalRuntimeForbidden>
+              <bundledSignatures>
+                <bundledSignature>jdk-unsafe</bundledSignature>
+                <bundledSignature>jdk-deprecated</bundledSignature>
+              </bundledSignatures>
+              <signaturesFiles>
+                <signaturesFile>${top-level}/lucene/tools/forbiddenApis/executors.txt</signaturesFile>
+              </signaturesFiles>
             </configuration>
+            <goals>
+              <goal>check</goal>
+            </goals>
+          </execution>
+          <execution>
+            <id>check-system-out</id> <!-- separate execution to specify excludes -->
+            <configuration>
+              <bundledSignatures>
+                <bundledSignature>jdk-system-out</bundledSignature>
+              </bundledSignatures>
+              <excludes>
+                <!-- exclude command line tools -->
+                <exclude>org/apache/lucene/facet/util/PrintTaxonomyStats.class</exclude>
+              </excludes>
+            </configuration>
+            <goals>
+              <goal>check</goal>
+            </goals>
           </execution>
         </executions>
       </plugin>

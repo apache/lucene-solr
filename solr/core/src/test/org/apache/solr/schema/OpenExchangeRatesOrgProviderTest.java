@@ -32,45 +32,50 @@ import java.util.Map;
 public class OpenExchangeRatesOrgProviderTest extends SolrTestCaseJ4 {
   OpenExchangeRatesOrgProvider oerp;
   ResourceLoader loader;
-  private final Map<String,String> emptyParams = new HashMap<String,String>();
-  private Map<String,String> mockParams;
+  private final Map<String,String> mockParams = new HashMap<String,String>();
 
   @Override
   @Before
   public void setUp() throws Exception {
+    AbstractCurrencyFieldTest.assumeCurrencySupport
+      ("USD", "EUR", "MXN", "GBP", "JPY");
+
     super.setUp();
-    mockParams = new HashMap<String,String>();;
-    mockParams.put(OpenExchangeRatesOrgProvider.PARAM_RATES_FILE_LOCATION, "open-exchange-rates.json");  
+    mockParams.put(OpenExchangeRatesOrgProvider.PARAM_RATES_FILE_LOCATION, 
+                   "open-exchange-rates.json");  
     oerp = new OpenExchangeRatesOrgProvider();
     loader = new SolrResourceLoader("solr/collection1");
   }
   
   @Test
   public void testInit() throws Exception {
-    oerp.init(emptyParams);
-    assertTrue("Wrong default url", oerp.ratesFileLocation.toString().equals("http://openexchangerates.org/latest.json"));
-    assertTrue("Wrong default interval", oerp.refreshInterval == 1440);
+    oerp.init(mockParams);
+    assertEquals("Wrong url", 
+                 "open-exchange-rates.json", oerp.ratesFileLocation);
+    assertEquals("Wrong default interval", 1440, oerp.refreshInterval);
 
     Map<String,String> params = new HashMap<String,String>();
-    params.put(OpenExchangeRatesOrgProvider.PARAM_RATES_FILE_LOCATION, "http://foo.bar/baz");
+    params.put(OpenExchangeRatesOrgProvider.PARAM_RATES_FILE_LOCATION, 
+               "http://foo.bar/baz");
     params.put(OpenExchangeRatesOrgProvider.PARAM_REFRESH_INTERVAL, "100");
     oerp.init(params);
-    assertTrue("Wrong param set url", oerp.ratesFileLocation.equals("http://foo.bar/baz"));
-    assertTrue("Wrong param interval", oerp.refreshInterval == 100);
+    assertEquals("Wrong param set url", 
+                 "http://foo.bar/baz", oerp.ratesFileLocation);
+    assertEquals("Wrong param interval", 100, oerp.refreshInterval);
   }
 
   @Test
   public void testList() {
     oerp.init(mockParams);
     oerp.inform(loader);
-    assertEquals(159,     oerp.listAvailableCurrencies().size());
+    assertEquals(5, oerp.listAvailableCurrencies().size());
   }
 
   @Test
   public void testGetExchangeRate() {
     oerp.init(mockParams);
     oerp.inform(loader);
-    assertTrue(5.73163 == oerp.getExchangeRate("USD", "NOK"));    
+    assertEquals(81.29D, oerp.getExchangeRate("USD", "JPY"), 0.0D);    
   }
 
   @Test

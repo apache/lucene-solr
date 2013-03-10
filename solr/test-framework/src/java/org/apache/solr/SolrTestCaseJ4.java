@@ -116,7 +116,7 @@ public abstract class SolrTestCaseJ4 extends LuceneTestCase {
     changedFactory = true;
   }
 
-  private static void resetFactory() throws Exception {
+  public static void resetFactory() throws Exception {
     if (!changedFactory) return;
     changedFactory = false;
     if (savedFactory != null) {
@@ -544,7 +544,7 @@ public abstract class SolrTestCaseJ4 extends LuceneTestCase {
   }
 
   /**
-   * Validates a query matches some JSON test expressions using the default double delta tollerance.
+   * Validates a query matches some JSON test expressions using the default double delta tolerance.
    * @see JSONTestUtil#DEFAULT_DELTA
    * @see #assertJQ(SolrQueryRequest,double,String...)
    */
@@ -698,7 +698,7 @@ public abstract class SolrTestCaseJ4 extends LuceneTestCase {
     try {
       StringWriter r = new StringWriter();
 
-      // this is anoying
+      // this is annoying
       if (null == args || 0 == args.length) {
         r.write("<add>");
         r.write(doc.xml);
@@ -795,7 +795,7 @@ public abstract class SolrTestCaseJ4 extends LuceneTestCase {
     return new LocalSolrQueryRequest(h.getCore(), mp);
   }
 
-  /** Neccessary to make method signatures un-ambiguous */
+  /** Necessary to make method signatures un-ambiguous */
   public static class XmlDoc {
     public String xml;
     @Override

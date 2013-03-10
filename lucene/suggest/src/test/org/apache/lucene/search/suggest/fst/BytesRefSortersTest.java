@@ -17,6 +17,8 @@ package org.apache.lucene.search.suggest.fst;
  * limitations under the License.
  */
 
+import org.apache.lucene.search.suggest.InMemorySorter;
+import org.apache.lucene.search.suggest.Sort;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.BytesRefIterator;
 import org.apache.lucene.util.LuceneTestCase;

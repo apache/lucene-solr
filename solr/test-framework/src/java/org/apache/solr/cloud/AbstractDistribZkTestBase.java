@@ -29,6 +29,7 @@ import org.apache.solr.common.cloud.Replica;
 import org.apache.solr.common.cloud.Slice;
 import org.apache.solr.common.cloud.SolrZkClient;
 import org.apache.solr.common.cloud.ZkStateReader;
+import org.apache.solr.core.Diagnostics;
 import org.apache.solr.servlet.SolrDispatchFilter;
 import org.apache.zookeeper.KeeperException;
 import org.junit.After;
@@ -66,11 +67,15 @@ public abstract class AbstractDistribZkTestBase extends BaseDistributedSearchTes
 
     String schema = getSchemaFile();
     if (schema == null) schema = "schema.xml";
-    AbstractZkTestCase.buildZooKeeper(zkServer.getZkHost(), zkServer.getZkAddress(), "solrconfig.xml", schema);
+    AbstractZkTestCase.buildZooKeeper(zkServer.getZkHost(), zkServer.getZkAddress(), getCloudSolrConfig(), schema);
 
     // set some system properties for use by tests
     System.setProperty("solr.test.sys.prop1", "propone");
     System.setProperty("solr.test.sys.prop2", "proptwo");
+  }
+  
+  protected String getCloudSolrConfig() {
+    return "solrconfig-tlog.xml";
   }
   
   @Override
@@ -78,6 +83,7 @@ public abstract class AbstractDistribZkTestBase extends BaseDistributedSearchTes
     // give everyone there own solrhome
     File controlHome = new File(new File(getSolrHome()).getParentFile(), "control" + homeCount.incrementAndGet());
     FileUtils.copyDirectory(new File(getSolrHome()), controlHome);
+    setupJettySolrHome(controlHome);
     
     System.setProperty("collection", "control_collection");
     String numShardsS = System.getProperty(ZkStateReader.NUM_SHARDS_PROP);
@@ -97,7 +103,7 @@ public abstract class AbstractDistribZkTestBase extends BaseDistributedSearchTes
       if (sb.length() > 0) sb.append(',');
       // give everyone there own solrhome
       File jettyHome = new File(new File(getSolrHome()).getParentFile(), "jetty" + homeCount.incrementAndGet());
-      FileUtils.copyDirectory(new File(getSolrHome()), jettyHome);
+      setupJettySolrHome(jettyHome);
       JettySolrRunner j = createJetty(jettyHome, null, "shard" + (i + 2));
       jettys.add(j);
       clients.add(createNewSolrServer(j.getLocalPort()));
@@ -160,17 +166,9 @@ public abstract class AbstractDistribZkTestBase extends BaseDistributedSearchTes
         if (!sawLiveRecovering) {
           if (verbose) System.out.println("no one is recoverying");
         } else {
-          if (verbose) System.out
-          .println("Gave up waiting for recovery to finish..");
+          if (verbose) System.out.println("Gave up waiting for recovery to finish..");
           if (failOnTimeout) {
-            Map<Thread,StackTraceElement[]> stackTraces = Thread.getAllStackTraces();
-            for (Map.Entry<Thread,StackTraceElement[]>  entry : stackTraces.entrySet()) {
-              System.out.println("");
-              System.out.println(entry.getKey().toString());
-              for (StackTraceElement st : entry.getValue()) {
-                System.out.println(st);
-              }
-            }
+            Diagnostics.logThreadDumps("Gave up waiting for recovery to finish.  THREAD DUMP:");
             printLayout();
             fail("There are still nodes recoverying - waited for " + timeoutSeconds + " seconds");
             // won't get here
@@ -214,7 +212,6 @@ public abstract class AbstractDistribZkTestBase extends BaseDistributedSearchTes
     if (DEBUG) {
       printLayout();
     }
-    zkServer.shutdown();
     System.clearProperty("zkHost");
     System.clearProperty("collection");
     System.clearProperty("enable.update.log");
@@ -224,6 +221,7 @@ public abstract class AbstractDistribZkTestBase extends BaseDistributedSearchTes
     System.clearProperty("solr.test.sys.prop2");
     resetExceptionIgnores();
     super.tearDown();
+    zkServer.shutdown();
   }
   
   protected void printLayout() throws Exception {

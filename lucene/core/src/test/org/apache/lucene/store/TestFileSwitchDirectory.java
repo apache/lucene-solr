@@ -17,6 +17,7 @@ package org.apache.lucene.store;
  * limitations under the License.
  */
 
+import java.io.File;
 import java.io.IOException;
 import java.util.Arrays;
 import java.util.Collections;
@@ -84,15 +85,25 @@ public class TestFileSwitchDirectory extends LuceneTestCase {
   }
   
   private Directory newFSSwitchDirectory(Set<String> primaryExtensions) throws IOException {
-    Directory a = new SimpleFSDirectory(_TestUtil.getTempDir("foo"));
-    Directory b = new SimpleFSDirectory(_TestUtil.getTempDir("bar"));
+    File primDir = _TestUtil.getTempDir("foo");
+    File secondDir = _TestUtil.getTempDir("bar");
+    return newFSSwitchDirectory(primDir, secondDir, primaryExtensions);
+  }
+
+  private Directory newFSSwitchDirectory(File aDir, File bDir, Set<String> primaryExtensions) throws IOException {
+    Directory a = new SimpleFSDirectory(aDir);
+    Directory b = new SimpleFSDirectory(bDir);
     FileSwitchDirectory switchDir = new FileSwitchDirectory(primaryExtensions, a, b, true);
     return new MockDirectoryWrapper(random(), switchDir);
   }
   
   // LUCENE-3380 -- make sure we get exception if the directory really does not exist.
   public void testNoDir() throws Throwable {
-    Directory dir = newFSSwitchDirectory(Collections.<String>emptySet());
+    File primDir = _TestUtil.getTempDir("foo");
+    File secondDir = _TestUtil.getTempDir("bar");
+    _TestUtil.rmDir(primDir);
+    _TestUtil.rmDir(secondDir);
+    Directory dir = newFSSwitchDirectory(primDir, secondDir, Collections.<String>emptySet());
     try {
       DirectoryReader.open(dir);
       fail("did not hit expected exception");

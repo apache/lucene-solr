@@ -37,7 +37,7 @@ import org.apache.lucene.index.Terms;
 import org.apache.lucene.util.IOUtils;
 
 /**
- * Enables per field format support.
+ * Enables per field postings support.
  * <p>
  * Note, when extending this class, the name ({@link #getName}) is 
  * written into the index. In order for the field to be read, the

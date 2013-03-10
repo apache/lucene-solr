@@ -20,10 +20,54 @@ package org.apache.lucene.codecs.compressing;
 import java.io.Closeable;
 import java.io.IOException;
 
+import org.apache.lucene.codecs.Codec;
+import org.apache.lucene.codecs.CodecUtil;
+import org.apache.lucene.store.DataOutput;
 import org.apache.lucene.store.IndexOutput;
 import org.apache.lucene.util.packed.PackedInts;
 
-class CompressingStoredFieldsIndexWriter implements Closeable {
+/**
+ * Efficient index format for block-based {@link Codec}s.
+ * <p> This writer generates a file which can be loaded into memory using
+ * memory-efficient data structures to quickly locate the block that contains
+ * any document.
+ * <p>In order to have a compact in-memory representation, for every block of
+ * 1024 chunks, this index computes the average number of bytes per
+ * chunk and for every chunk, only stores the difference between<ul>
+ * <li>${chunk number} * ${average length of a chunk}</li>
+ * <li>and the actual start offset of the chunk</li></ul></p>
+ * <p>Data is written as follows:</p>
+ * <ul>
+ * <li>PackedIntsVersion, &lt;Block&gt;<sup>BlockCount</sup>, BlocksEndMarker</li>
+ * <li>PackedIntsVersion --&gt; {@link PackedInts#VERSION_CURRENT} as a {@link DataOutput#writeVInt VInt}</li>
+ * <li>BlocksEndMarker --&gt; <tt>0</tt> as a {@link DataOutput#writeVInt VInt}, this marks the end of blocks since blocks are not allowed to start with <tt>0</tt></li>
+ * <li>Block --&gt; BlockChunks, &lt;DocBases&gt;, &lt;StartPointers&gt;</li>
+ * <li>BlockChunks --&gt; a {@link DataOutput#writeVInt VInt} which is the number of chunks encoded in the block</li>
+ * <li>DocBases --&gt; DocBase, AvgChunkDocs, BitsPerDocBaseDelta, DocBaseDeltas</li>
+ * <li>DocBase --&gt; first document ID of the block of chunks, as a {@link DataOutput#writeVInt VInt}</li>
+ * <li>AvgChunkDocs --&gt; average number of documents in a single chunk, as a {@link DataOutput#writeVInt VInt}</li>
+ * <li>BitsPerDocBaseDelta --&gt; number of bits required to represent a delta from the average using <a href="https://developers.google.com/protocol-buffers/docs/encoding#types">ZigZag encoding</a></li>
+ * <li>DocBaseDeltas --&gt; {@link PackedInts packed} array of BlockChunks elements of BitsPerDocBaseDelta bits each, representing the deltas from the average doc base using <a href="https://developers.google.com/protocol-buffers/docs/encoding#types">ZigZag encoding</a>.</li>
+ * <li>StartPointers --&gt; StartPointerBase, AvgChunkSize, BitsPerStartPointerDelta, StartPointerDeltas</li>
+ * <li>StartPointerBase --&gt; the first start pointer of the block, as a {@link DataOutput#writeVLong VLong}</li>
+ * <li>AvgChunkSize --&gt; the average size of a chunk of compressed documents, as a {@link DataOutput#writeVLong VLong}</li>
+ * <li>BitsPerStartPointerDelta --&gt; number of bits required to represent a delta from the average using <a href="https://developers.google.com/protocol-buffers/docs/encoding#types">ZigZag encoding</a></li>
+ * <li>StartPointerDeltas --&gt; {@link PackedInts packed} array of BlockChunks elements of BitsPerStartPointerDelta bits each, representing the deltas from the average start pointer using <a href="https://developers.google.com/protocol-buffers/docs/encoding#types">ZigZag encoding</a></li>
+ * </ul>
+ * <p>Notes</p>
+ * <ul>
+ * <li>For any block, the doc base of the n-th chunk can be restored with
+ * <code>DocBase + AvgChunkDocs * n + DocBaseDeltas[n]</code>.</li>
+ * <li>For any block, the start pointer of the n-th chunk can be restored with
+ * <code>StartPointerBase + AvgChunkSize * n + StartPointerDeltas[n]</code>.</li>
+ * <li>Once data is loaded into memory, you can lookup the start pointer of any
+ * document by performing two binary searches: a first one based on the values
+ * of DocBase in order to find the right block, and then inside the block based
+ * on DocBaseDeltas (by reconstructing the doc bases for every chunk).</li>
+ * </ul>
+ * @lucene.internal
+ */
+public final class CompressingStoredFieldsIndexWriter implements Closeable {
   
   static final int BLOCK_SIZE = 1024; // number of chunks to serialize at once
 

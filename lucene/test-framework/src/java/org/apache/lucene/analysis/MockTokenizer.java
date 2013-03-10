@@ -53,7 +53,7 @@ public class MockTokenizer extends Tokenizer {
   /** Acts like LetterTokenizer. */
   // the ugly regex below is incomplete Unicode 5.2 [:Letter:]
   public static final CharacterRunAutomaton SIMPLE =
-    new CharacterRunAutomaton(new RegExp("[A-Za-zªµºÀ-ÖØ-öø-Ｚ]+").toAutomaton());
+    new CharacterRunAutomaton(new RegExp("[A-Za-zªµºÀ-ÖØ-öø-ˁ一-鿌]+").toAutomaton());
 
   private final CharacterRunAutomaton runAutomaton;
   private final boolean lowerCase;

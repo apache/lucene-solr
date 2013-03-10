@@ -43,26 +43,27 @@ import java.util.zip.ZipEntry;
 import java.util.zip.ZipFile;
 
 import org.apache.lucene.codecs.Codec;
+import org.apache.lucene.codecs.DocValuesFormat;
 import org.apache.lucene.codecs.PostingsFormat;
-import org.apache.lucene.codecs.lucene41.Lucene41Codec;
+import org.apache.lucene.codecs.lucene42.Lucene42Codec;
 import org.apache.lucene.codecs.perfield.PerFieldPostingsFormat;
-import org.apache.lucene.document.ByteDocValuesField;
-import org.apache.lucene.document.DerefBytesDocValuesField;
+import org.apache.lucene.document.BinaryDocValuesField;
 import org.apache.lucene.document.Document;
-import org.apache.lucene.document.DoubleDocValuesField;
 import org.apache.lucene.document.Field;
-import org.apache.lucene.document.FloatDocValuesField;
-import org.apache.lucene.document.IntDocValuesField;
-import org.apache.lucene.document.LongDocValuesField;
-import org.apache.lucene.document.PackedLongDocValuesField;
-import org.apache.lucene.document.ShortDocValuesField;
-import org.apache.lucene.document.SortedBytesDocValuesField;
-import org.apache.lucene.document.StraightBytesDocValuesField;
+import org.apache.lucene.document.NumericDocValuesField;
+import org.apache.lucene.document.SortedDocValuesField;
+import org.apache.lucene.index.AtomicReader;
+import org.apache.lucene.index.AtomicReaderContext;
 import org.apache.lucene.index.CheckIndex;
+import org.apache.lucene.index.CheckIndex.Status.DocValuesStatus;
+import org.apache.lucene.index.CheckIndex.Status.FieldNormStatus;
+import org.apache.lucene.index.CheckIndex.Status.StoredFieldStatus;
+import org.apache.lucene.index.CheckIndex.Status.TermIndexStatus;
+import org.apache.lucene.index.CheckIndex.Status.TermVectorStatus;
 import org.apache.lucene.index.ConcurrentMergeScheduler;
-import org.apache.lucene.index.DocValues;
 import org.apache.lucene.index.DocsAndPositionsEnum;
 import org.apache.lucene.index.DocsEnum;
+import org.apache.lucene.index.FieldInfo.DocValuesType;
 import org.apache.lucene.index.FieldInfos;
 import org.apache.lucene.index.IndexFileNames;
 import org.apache.lucene.index.IndexReader;
@@ -77,15 +78,14 @@ import org.apache.lucene.index.Terms;
 import org.apache.lucene.index.TermsEnum;
 import org.apache.lucene.index.TieredMergePolicy;
 import org.apache.lucene.search.FieldDoc;
-import org.apache.lucene.search.FilteredQuery;
 import org.apache.lucene.search.FilteredQuery.FilterStrategy;
+import org.apache.lucene.search.FilteredQuery;
 import org.apache.lucene.search.ScoreDoc;
 import org.apache.lucene.search.TopDocs;
 import org.apache.lucene.store.CompoundFileDirectory;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.IOContext;
 import org.junit.Assert;
-
 import com.carrotsearch.randomizedtesting.RandomizedContext;
 import com.carrotsearch.randomizedtesting.generators.RandomInts;
 import com.carrotsearch.randomizedtesting.generators.RandomPicks;
@@ -95,17 +95,35 @@ import com.carrotsearch.randomizedtesting.generators.RandomPicks;
  */
 public class _TestUtil {
 
-  /** Returns temp dir, based on String arg in its name;
-   *  does not create the directory. */
+  // the max number of retries we're going to do in getTempDir
+  private static final int GET_TEMP_DIR_RETRY_THRESHOLD = 1000;
+  
+  /**
+   * Returns a temp directory, based on the given description. Creates the
+   * directory.
+   */
   public static File getTempDir(String desc) {
-    try {
-      File f = createTempFile(desc, "tmp", LuceneTestCase.TEMP_DIR);
-      f.delete();
-      LuceneTestCase.closeAfterSuite(new CloseableFile(f, LuceneTestCase.suiteFailureMarker));
-      return f;
-    } catch (IOException e) {
-      throw new RuntimeException(e);
+    if (desc.length() < 3) {
+      throw new IllegalArgumentException("description must be at least 3 characters");
     }
+    // always pull a long from master random. that way, the randomness of the test
+    // is not affected by whether it initialized the counter (in genTempFile) or not.
+    // note that the Random used by genTempFile is *not* the master Random, and therefore
+    // does not affect the randomness of the test.
+    final Random random = new Random(RandomizedContext.current().getRandom().nextLong());
+    int attempt = 0;
+    File f;
+    do {
+      f = genTempFile(random, desc, "tmp", LuceneTestCase.TEMP_DIR);
+    } while (!f.mkdir() && (attempt++) < GET_TEMP_DIR_RETRY_THRESHOLD);
+    
+    if (attempt > GET_TEMP_DIR_RETRY_THRESHOLD) {
+      throw new RuntimeException(
+          "failed to get a temporary dir too many times. check your temp directory and consider manually cleaning it.");
+    }
+    
+    LuceneTestCase.closeAfterSuite(new CloseableFile(f, LuceneTestCase.suiteFailureMarker));
+    return f;
   }
 
   /**
@@ -208,6 +226,39 @@ public class _TestUtil {
       return indexStatus;
     }
   }
+  
+  /** This runs the CheckIndex tool on the Reader.  If any
+   *  issues are hit, a RuntimeException is thrown */
+  public static void checkReader(IndexReader reader) throws IOException {
+    for (AtomicReaderContext context : reader.leaves()) {
+      checkReader(context.reader(), true);
+    }
+  }
+  
+  public static void checkReader(AtomicReader reader, boolean crossCheckTermVectors) throws IOException {
+    ByteArrayOutputStream bos = new ByteArrayOutputStream(1024);
+    PrintStream infoStream = new PrintStream(bos, false, "UTF-8");
+
+    FieldNormStatus fieldNormStatus = CheckIndex.testFieldNorms(reader, infoStream);
+    TermIndexStatus termIndexStatus = CheckIndex.testPostings(reader, infoStream);
+    StoredFieldStatus storedFieldStatus = CheckIndex.testStoredFields(reader, infoStream);
+    TermVectorStatus termVectorStatus = CheckIndex.testTermVectors(reader, infoStream, false, crossCheckTermVectors);
+    DocValuesStatus docValuesStatus = CheckIndex.testDocValues(reader, infoStream);
+    
+    if (fieldNormStatus.error != null || 
+      termIndexStatus.error != null ||
+      storedFieldStatus.error != null ||
+      termVectorStatus.error != null ||
+      docValuesStatus.error != null) {
+      System.out.println("CheckReader failed");
+      System.out.println(bos.toString("UTF-8"));
+      throw new RuntimeException("CheckReader failed");
+    } else {
+      if (LuceneTestCase.INFOSTREAM) {
+        System.out.println(bos.toString("UTF-8"));
+      }
+    }
+  }
 
   // NOTE: only works for TMP and LMP!!
   public static void setUseCompoundFile(MergePolicy mp, boolean v) {
@@ -215,6 +266,8 @@ public class _TestUtil {
       ((TieredMergePolicy) mp).setUseCompoundFile(v);
     } else if (mp instanceof LogMergePolicy) {
       ((LogMergePolicy) mp).setUseCompoundFile(v);
+    } else {
+      throw new IllegalArgumentException("cannot set compound file for MergePolicy " + mp);
     }
   }
 
@@ -651,9 +704,27 @@ public class _TestUtil {
     if (LuceneTestCase.VERBOSE) {
       System.out.println("forcing postings format to:" + format);
     }
-    return new Lucene41Codec() {
+    return new Lucene42Codec() {
       @Override
       public PostingsFormat getPostingsFormatForField(String field) {
+        return format;
+      }
+    };
+  }
+  
+  /** Return a Codec that can read any of the
+   *  default codecs and formats, but always writes in the specified
+   *  format. */
+  public static Codec alwaysDocValuesFormat(final DocValuesFormat format) {
+    // TODO: we really need for docvalues impls etc to announce themselves
+    // (and maybe their params, too) to infostream on flush and merge.
+    // otherwise in a real debugging situation we won't know whats going on!
+    if (LuceneTestCase.VERBOSE) {
+      System.out.println("forcing docvalues format to:" + format);
+    }
+    return new Lucene42Codec() {
+      @Override
+      public DocValuesFormat getDocValuesFormatForField(String field) {
         return format;
       }
     };
@@ -738,43 +809,38 @@ public class _TestUtil {
    */
   public static File createTempFile(String prefix, String suffix, File directory)
       throws IOException {
-    // Force a prefix null check first
     if (prefix.length() < 3) {
-      throw new IllegalArgumentException("prefix must be 3");
+      throw new IllegalArgumentException("prefix must be at least 3 characters");
     }
     String newSuffix = suffix == null ? ".tmp" : suffix;
-    File result;
-    // just pull one long always: we don't want to rely upon what may or may not
-    // already exist. otherwise tests might not reproduce, depending on when you last
-    // ran 'ant clean'
+    // always pull a long from master random. that way, the randomness of the test
+    // is not affected by whether it initialized the counter (in genTempFile) or not.
+    // note that the Random used by genTempFile is *not* the master Random, and therefore
+    // does not affect the randomness of the test.
     final Random random = new Random(RandomizedContext.current().getRandom().nextLong());
+    File result;
     do {
       result = genTempFile(random, prefix, newSuffix, directory);
     } while (!result.createNewFile());
     return result;
   }
 
-  /* Temp file counter */
-  private static int counter = 0;
-
   /* identify for differnt VM processes */
-  private static int counterBase = 0;
-
-  private static class TempFileLocker {};
-  private static TempFileLocker tempFileLocker = new TempFileLocker();
+  private static String counterBase;
+  
+  /* Temp file counter */
+  private static int counter;
+  private static final Object counterLock = new Object();
 
   private static File genTempFile(Random random, String prefix, String suffix, File directory) {
-    int identify = 0;
-
-    synchronized (tempFileLocker) {
-      if (counter == 0) {
-        int newInt = random.nextInt();
-        counter = ((newInt / 65535) & 0xFFFF) + 0x2710;
-        counterBase = counter;
+    final int identify;
+    synchronized (counterLock) {
+      if (counterBase == null) { // init once
+        counter = random.nextInt() & 0xFFFF; // up to five digits number
+        counterBase = Integer.toString(counter);
       }
       identify = counter++;
     }
-
     StringBuilder newName = new StringBuilder();
     newName.append(prefix);
     newName.append(counterBase);
@@ -812,50 +878,20 @@ public class _TestUtil {
     for(IndexableField f : doc1.getFields()) {
       final Field field1 = (Field) f;
       final Field field2;
-      final DocValues.Type dvType = field1.fieldType().docValueType();
+      final DocValuesType dvType = field1.fieldType().docValueType();
       if (dvType != null) {
         switch(dvType) {
-        case VAR_INTS:
-          field2 = new PackedLongDocValuesField(field1.name(), field1.numericValue().longValue());
+          case NUMERIC:
+            field2 = new NumericDocValuesField(field1.name(), field1.numericValue().longValue());
+            break;
+          case BINARY:
+            field2 = new BinaryDocValuesField(field1.name(), field1.binaryValue());
           break;
-        case FIXED_INTS_8:
-          field2 = new ByteDocValuesField(field1.name(), field1.numericValue().byteValue());
-          break;
-        case FIXED_INTS_16:
-          field2 = new ShortDocValuesField(field1.name(), field1.numericValue().shortValue());
-          break;
-        case FIXED_INTS_32:
-          field2 = new IntDocValuesField(field1.name(), field1.numericValue().intValue());
-          break;
-        case FIXED_INTS_64:
-          field2 = new LongDocValuesField(field1.name(), field1.numericValue().longValue());
-          break;
-        case FLOAT_32:
-          field2 = new FloatDocValuesField(field1.name(), field1.numericValue().floatValue());
-          break;
-        case FLOAT_64:
-          field2 = new DoubleDocValuesField(field1.name(), field1.numericValue().doubleValue());
-          break;
-        case BYTES_FIXED_STRAIGHT:
-          field2 = new StraightBytesDocValuesField(field1.name(), field1.binaryValue(), true);
-          break;
-        case BYTES_VAR_STRAIGHT:
-          field2 = new StraightBytesDocValuesField(field1.name(), field1.binaryValue(), false);
-          break;
-        case BYTES_FIXED_DEREF:
-          field2 = new DerefBytesDocValuesField(field1.name(), field1.binaryValue(), true);
-          break;
-        case BYTES_VAR_DEREF:
-          field2 = new DerefBytesDocValuesField(field1.name(), field1.binaryValue(), false);
-          break;
-        case BYTES_FIXED_SORTED:
-          field2 = new SortedBytesDocValuesField(field1.name(), field1.binaryValue(), true);
-          break;
-        case BYTES_VAR_SORTED:
-          field2 = new SortedBytesDocValuesField(field1.name(), field1.binaryValue(), false);
-          break;
-        default:
-          throw new IllegalStateException("unknown Type: " + dvType);
+          case SORTED:
+            field2 = new SortedDocValuesField(field1.name(), field1.binaryValue());
+            break;
+          default:
+            throw new IllegalStateException("unknown Type: " + dvType);
         }
       } else {
         field2 = new Field(field1.name(), field1.stringValue(), field1.fieldType());

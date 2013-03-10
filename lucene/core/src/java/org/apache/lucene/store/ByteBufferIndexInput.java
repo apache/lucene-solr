@@ -51,14 +51,15 @@ abstract class ByteBufferIndexInput extends IndexInput {
   private ByteBuffer curBuf; // redundant for speed: buffers[curBufIndex]
 
   private boolean isClone = false;
-  private final WeakIdentityMap<ByteBufferIndexInput,Boolean> clones = WeakIdentityMap.newConcurrentHashMap();
+  private final WeakIdentityMap<ByteBufferIndexInput,Boolean> clones;
   
-  ByteBufferIndexInput(String resourceDescription, ByteBuffer[] buffers, long length, int chunkSizePower) throws IOException {
+  ByteBufferIndexInput(String resourceDescription, ByteBuffer[] buffers, long length, int chunkSizePower, boolean trackClones) throws IOException {
     super(resourceDescription);
     this.buffers = buffers;
     this.length = length;
     this.chunkSizePower = chunkSizePower;
     this.chunkSizeMask = (1L << chunkSizePower) - 1L;
+    this.clones = trackClones ? WeakIdentityMap.<ByteBufferIndexInput,Boolean>newConcurrentHashMap() : null;
     
     assert chunkSizePower >= 0 && chunkSizePower <= 30;   
     assert (length >>> chunkSizePower) < Integer.MAX_VALUE;
@@ -231,7 +232,9 @@ abstract class ByteBufferIndexInput extends IndexInput {
     clone.length = length;
 
     // register the new clone in our clone list to clean it up on closing:
-    this.clones.put(clone, Boolean.TRUE);
+    if (clones != null) {
+      this.clones.put(clone, Boolean.TRUE);
+    }
     
     return clone;
   }
@@ -272,16 +275,21 @@ abstract class ByteBufferIndexInput extends IndexInput {
       // make local copy, then un-set early
       final ByteBuffer[] bufs = buffers;
       unsetBuffers();
+      if (clones != null) {
+        clones.remove(this);
+      }
       
       if (isClone) return;
       
       // for extra safety unset also all clones' buffers:
-      for (Iterator<ByteBufferIndexInput> it = this.clones.keyIterator(); it.hasNext();) {
-        final ByteBufferIndexInput clone = it.next();
-        assert clone.isClone;
-        clone.unsetBuffers();
+      if (clones != null) {
+        for (Iterator<ByteBufferIndexInput> it = this.clones.keyIterator(); it.hasNext();) {
+          final ByteBufferIndexInput clone = it.next();
+          assert clone.isClone;
+          clone.unsetBuffers();
+        }
+        this.clones.clear();
       }
-      this.clones.clear();
       
       for (final ByteBuffer b : bufs) {
         freeBuffer(b);

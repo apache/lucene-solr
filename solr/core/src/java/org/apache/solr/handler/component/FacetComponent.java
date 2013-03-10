@@ -416,10 +416,10 @@ public class FacetComponent extends SearchComponent
 
     for (DistribFieldFacet dff : fi.facets.values()) {
        // no need to check these facets for refinement
-      if (dff.initialLimit <= 0 && dff.initialMincount == 0) continue;
+      if (dff.initialLimit <= 0 && dff.initialMincount <= 1) continue;
 
       // only other case where index-sort doesn't need refinement is if minCount==0
-      if (dff.minCount == 0 && dff.sort.equals(FacetParams.FACET_SORT_INDEX)) continue;
+      if (dff.minCount <= 1 && dff.sort.equals(FacetParams.FACET_SORT_INDEX)) continue;
 
       @SuppressWarnings("unchecked") // generic array's are annoying
       List<String>[] tmp = (List<String>[]) new List[rb.shards.length];

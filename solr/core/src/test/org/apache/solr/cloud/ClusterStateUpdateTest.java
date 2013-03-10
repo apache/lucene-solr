@@ -254,7 +254,7 @@ public class ClusterStateUpdateTest extends SolrTestCaseJ4  {
     System.clearProperty("solrcloud.update.delay");
   }
   
-  private void printLayout(String zkHost) throws Exception {
+  static void printLayout(String zkHost) throws Exception {
     SolrZkClient zkClient = new SolrZkClient(
         zkHost, AbstractZkTestCase.TIMEOUT);
     zkClient.printLayoutToStdOut();

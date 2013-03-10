@@ -19,8 +19,6 @@ package org.apache.lucene.index;
 
 import java.io.IOException;
 
-import org.apache.lucene.util.LuceneTestCase;
-import org.apache.lucene.util._TestUtil;
 import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.analysis.MockAnalyzer;
 import org.apache.lucene.document.Document;
@@ -28,6 +26,8 @@ import org.apache.lucene.document.Field;
 import org.apache.lucene.document.FieldType;
 import org.apache.lucene.document.TextField;
 import org.apache.lucene.store.Directory;
+import org.apache.lucene.util.LuceneTestCase;
+import org.apache.lucene.util._TestUtil;
 
 public class TestOmitNorms extends LuceneTestCase {
   // Tests whether the DocumentWriter correctly enable the
@@ -265,7 +265,7 @@ public class TestOmitNorms extends LuceneTestCase {
    * Indexes at least 1 document with f1, and at least 1 document with f2.
    * returns the norms for "field".
    */
-  byte[] getNorms(String field, Field f1, Field f2) throws IOException {
+  NumericDocValues getNorms(String field, Field f1, Field f2) throws IOException {
     Directory dir = newDirectory();
     IndexWriterConfig iwc = newIndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer(random())).setMergePolicy(newLogMergePolicy());
     RandomIndexWriter riw = new RandomIndexWriter(random(), dir, iwc);
@@ -290,16 +290,20 @@ public class TestOmitNorms extends LuceneTestCase {
 
     IndexReader ir1 = riw.getReader();
     // todo: generalize
-    DocValues dv1 = MultiDocValues.getNormDocValues(ir1, field);
-    byte[] norms1 = dv1 == null ? null : (byte[]) dv1.getSource().getArray();
+    NumericDocValues norms1 = MultiDocValues.getNormValues(ir1, field);
     
     // fully merge and validate MultiNorms against single segment.
     riw.forceMerge(1);
     DirectoryReader ir2 = riw.getReader();
-    DocValues dv2 = getOnlySegmentReader(ir2).normValues(field);
-    byte[] norms2 = dv2 == null ? null : (byte[]) dv2.getSource().getArray();
-    
-    assertArrayEquals(norms1, norms2);
+    NumericDocValues norms2 = getOnlySegmentReader(ir2).getNormValues(field);
+
+    if (norms1 == null) {
+      assertNull(norms2);
+    } else {
+      for(int docID=0;docID<ir1.maxDoc();docID++) {
+        assertEquals(norms1.get(docID), norms2.get(docID));
+      }
+    }
     ir1.close();
     ir2.close();
     riw.close();

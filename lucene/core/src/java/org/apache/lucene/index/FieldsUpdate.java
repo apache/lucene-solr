@@ -24,7 +24,7 @@ public class FieldsUpdate implements Comparable<FieldsUpdate> {
   /**
    * Specifies the operation to perform when updating fields.
    */
-  enum Operation {
+  public enum Operation {
     /**
      * Add the given fields to all existing documents matching the update
      * criterion.
@@ -38,10 +38,10 @@ public class FieldsUpdate implements Comparable<FieldsUpdate> {
     REPLACE_FIELDS
   }
   
-  final Operation operation;
-  final IndexDocument fields;
-  final Analyzer analyzer;
-  final int docIDUpto;
+  public final Operation operation;
+  public final IndexDocument fields;
+  public final Analyzer analyzer;
+  public final int docIDUpto;
   
   /**
    * An update of fields which is not assigned to a specific live segment.

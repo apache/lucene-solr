@@ -78,6 +78,7 @@ final class TermVectorsConsumer extends TermsHashConsumer {
   void fill(int docID) throws IOException {
     while(lastDocID < docID) {
       writer.startDocument(0);
+      writer.finishDocument();
       lastDocID++;
     }
   }
@@ -108,6 +109,7 @@ final class TermVectorsConsumer extends TermsHashConsumer {
     for (int i = 0; i < numVectorFields; i++) {
       perFields[i].finishDocument();
     }
+    writer.finishDocument();
 
     assert lastDocID == docState.docID: "lastDocID=" + lastDocID + " docState.docID=" + docState.docID;
 

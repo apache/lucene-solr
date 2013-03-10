@@ -22,21 +22,24 @@ import java.util.Arrays;
 import java.util.List;
 import java.util.Random;
 
+import org.apache.lucene.index.AtomicReader;
+import org.apache.lucene.index.AtomicReaderContext;
+import org.apache.lucene.index.BinaryDocValues;
 import org.apache.lucene.index.FieldInfo;
 import org.apache.lucene.index.FieldInfos;
-import org.apache.lucene.index.DocValues;
-import org.apache.lucene.index.StoredFieldVisitor;
 import org.apache.lucene.index.Fields;
-import org.apache.lucene.index.AtomicReader;
 import org.apache.lucene.index.IndexReader;
-import org.apache.lucene.index.AtomicReaderContext;
-import org.apache.lucene.index.MultiReader;
 import org.apache.lucene.index.IndexReaderContext;
+import org.apache.lucene.index.MultiReader;
+import org.apache.lucene.index.NumericDocValues;
+import org.apache.lucene.index.SortedDocValues;
+import org.apache.lucene.index.SortedSetDocValues;
+import org.apache.lucene.index.StoredFieldVisitor;
 import org.apache.lucene.search.DocIdSet;
 import org.apache.lucene.search.DocIdSetIterator;
 import org.apache.lucene.search.Filter;
-import org.apache.lucene.util.LuceneTestCase;
 import org.apache.lucene.util.Bits;
+import org.apache.lucene.util.LuceneTestCase;
 import org.apache.lucene.util.OpenBitSet;
 import org.apache.lucene.util.OpenBitSetIterator;
 
@@ -386,12 +389,27 @@ public class TestDocSet extends LuceneTestCase {
       }
 
       @Override
-      public DocValues normValues(String field) {
+      public NumericDocValues getNumericDocValues(String field) {
         return null;
       }
 
       @Override
-      public DocValues docValues(String field) {
+      public BinaryDocValues getBinaryDocValues(String field) {
+        return null;
+      }
+
+      @Override
+      public SortedDocValues getSortedDocValues(String field) {
+        return null;
+      }
+      
+      @Override
+      public SortedSetDocValues getSortedSetDocValues(String field) {
+        return null;
+      }
+
+      @Override
+      public NumericDocValues getNormValues(String field) {
         return null;
       }
 

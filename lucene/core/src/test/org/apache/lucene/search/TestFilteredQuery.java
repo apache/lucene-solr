@@ -31,6 +31,7 @@ import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.RandomIndexWriter;
 import org.apache.lucene.index.Term;
 import org.apache.lucene.search.BooleanClause.Occur;
+import org.apache.lucene.search.FilteredQuery.FilterStrategy;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.util.Bits;
 import org.apache.lucene.util.DocIdBitSet;
@@ -341,10 +342,15 @@ public class TestFilteredQuery extends LuceneTestCase {
     }
   }
   
+  private FilterStrategy randomFilterStrategy() {
+    return randomFilterStrategy(random(), true);
+  }
+  
   private void assertRewrite(FilteredQuery fq, Class<? extends Query> clazz) throws Exception {
     // assign crazy boost to FQ
     final float boost = random().nextFloat() * 100.f;
     fq.setBoost(boost);
+    
     
     // assign crazy boost to inner
     final float innerBoost = random().nextFloat() * 100.f;
@@ -356,6 +362,7 @@ public class TestFilteredQuery extends LuceneTestCase {
     if (rewritten instanceof FilteredQuery) {
       assertEquals(boost, rewritten.getBoost(), 1.E-5f);
       assertEquals(innerBoost, ((FilteredQuery) rewritten).getQuery().getBoost(), 1.E-5f);
+      assertEquals(fq.getFilterStrategy(), ((FilteredQuery) rewritten).getFilterStrategy());
     } else {
       assertEquals(boost * innerBoost, rewritten.getBoost(), 1.E-5f);
     }
@@ -366,8 +373,15 @@ public class TestFilteredQuery extends LuceneTestCase {
   }
 
   public void testRewrite() throws Exception {
-    assertRewrite(new FilteredQuery(new TermQuery(new Term("field", "one")), new PrefixFilter(new Term("field", "o"))), FilteredQuery.class);
-    assertRewrite(new FilteredQuery(new MatchAllDocsQuery(), new PrefixFilter(new Term("field", "o"))), ConstantScoreQuery.class);
+    assertRewrite(new FilteredQuery(new TermQuery(new Term("field", "one")), new PrefixFilter(new Term("field", "o")), randomFilterStrategy()), FilteredQuery.class);
+    assertRewrite(new FilteredQuery(new PrefixQuery(new Term("field", "one")), new PrefixFilter(new Term("field", "o")), randomFilterStrategy()), FilteredQuery.class);
+    assertRewrite(new FilteredQuery(new MatchAllDocsQuery(), new PrefixFilter(new Term("field", "o")), randomFilterStrategy()), ConstantScoreQuery.class);
+  }
+  
+  public void testGetFilterStrategy() {
+    FilterStrategy randomFilterStrategy = randomFilterStrategy();
+    FilteredQuery filteredQuery = new FilteredQuery(new TermQuery(new Term("field", "one")), new PrefixFilter(new Term("field", "o")), randomFilterStrategy);
+    assertSame(randomFilterStrategy, filteredQuery.getFilterStrategy());
   }
   
   private static FilteredQuery.FilterStrategy randomFilterStrategy(Random random, final boolean useRandomAccess) {

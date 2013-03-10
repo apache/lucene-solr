@@ -89,7 +89,7 @@ public abstract class AbstractSubTypeFieldType extends FieldType implements Sche
     int p = SchemaField.calcProps(name, type, props);
     SchemaField proto = SchemaField.create(name,
             type, p, null);
-    schema.registerDynamicField(proto);
+    schema.registerDynamicFields(proto);
     return proto;
   }
 

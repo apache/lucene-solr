@@ -23,9 +23,6 @@
      kitchen sink thrown in. See example/solr/conf/schema.xml for a
      more concise example.
 
-     $Id: schema.xml 382610 2006-03-03 01:43:03Z yonik $
-     $Source: /cvs/main/searching/solr-configs/test/WEB-INF/classes/schema.xml,v $
-     $Name:  $
   -->
 
 <schema name="test" version="1.0">
@@ -401,7 +398,7 @@
   <!-- Currency type -->
   <fieldType name="currency" class="solr.CurrencyField" currencyConfig="currency.xml" multiValued="false" />
   <fieldType name="mock_currency" class="solr.CurrencyField" providerClass="solr.MockExchangeRateProvider" foo="bar" multiValued="false" />
-  <fieldType name="openexchangeratesorg_currency" 
+  <fieldType name="oer_currency" 
              class="solr.CurrencyField" 
              multiValued="false"
              providerClass="solr.OpenExchangeRatesOrgProvider"
@@ -484,6 +481,7 @@
    <!-- Test currency -->
    <field name="amount" type="currency" indexed="true" stored="true" multiValued="false"/>
    <field name="mock_amount" type="mock_currency" indexed="true" stored="true"/>
+   <field name="oer_amount" type="oer_currency" indexed="true" stored="true"/>
 
    <!-- test different combinations of indexed and stored -->
    <field name="bind" type="boolean" indexed="true" stored="false"/>
@@ -570,7 +568,7 @@
 
    <field name="textgap" type="textgap" indexed="true" stored="true"/>
 
-   <field name="timestamp" type="date" indexed="true" stored="true" default="NOW" multiValued="false"/>
+   <field name="timestamp" type="date" indexed="true" stored="true" docValues="true" default="NOW" multiValued="false"/>
    <field name="multiDefault" type="string" indexed="true" stored="true" default="muLti-Default" multiValued="true"/>
    <field name="intDefault" type="int" indexed="true" stored="true" default="42" multiValued="false"/>
 

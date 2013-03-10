@@ -21,6 +21,7 @@ import java.io.IOException;
 import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.Iterator;
+import java.util.Locale;
 
 import org.apache.lucene.analysis.MockAnalyzer;
 import org.apache.lucene.document.Document;
@@ -71,7 +72,7 @@ public class TestFieldReplacements extends LuceneTestCase {
       final String[] allTokens = loremIpsum.split("\\s");
       for (int index = random().nextInt(2 + i); index < allTokens.length; index += 1 + random()
           .nextInt(2 + i)) {
-        tokens.add(allTokens[index].toLowerCase());
+        tokens.add(allTokens[index].toLowerCase(Locale.ROOT));
       }
       fieldTokens[i] = tokens.toArray(new String[tokens.size()]);
     }

@@ -42,6 +42,7 @@ public abstract class QParserPlugin implements NamedListInitializedPlugin {
     SpatialBoxQParserPlugin.NAME, SpatialBoxQParserPlugin.class,
     JoinQParserPlugin.NAME, JoinQParserPlugin.class,
     SurroundQParserPlugin.NAME, SurroundQParserPlugin.class,
+    SwitchQParserPlugin.NAME, SwitchQParserPlugin.class,
   };
 
   /** return a {@link QParser} */

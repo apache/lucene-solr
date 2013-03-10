@@ -18,7 +18,7 @@ package org.apache.lucene.search.highlight;
  */
 import java.io.IOException;
 import java.util.ArrayList;
-import java.util.Collection;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Iterator;
@@ -29,11 +29,20 @@ import java.util.TreeSet;
 
 import org.apache.lucene.analysis.CachingTokenFilter;
 import org.apache.lucene.analysis.TokenStream;
+import org.apache.lucene.index.AtomicReader;
 import org.apache.lucene.index.AtomicReaderContext;
+import org.apache.lucene.index.BinaryDocValues;
+import org.apache.lucene.index.FieldInfos;
+import org.apache.lucene.index.Fields;
+import org.apache.lucene.index.FilterAtomicReader;
 import org.apache.lucene.index.IndexReader;
+import org.apache.lucene.index.NumericDocValues;
+import org.apache.lucene.index.SortedDocValues;
 import org.apache.lucene.index.Term;
 import org.apache.lucene.index.TermContext;
+import org.apache.lucene.index.Terms;
 import org.apache.lucene.index.memory.MemoryIndex;
+import org.apache.lucene.queries.CommonTermsQuery;
 import org.apache.lucene.search.*;
 import org.apache.lucene.search.spans.FieldMaskingSpanQuery;
 import org.apache.lucene.search.spans.SpanFirstQuery;
@@ -44,6 +53,8 @@ import org.apache.lucene.search.spans.SpanQuery;
 import org.apache.lucene.search.spans.SpanTermQuery;
 import org.apache.lucene.search.spans.Spans;
 import org.apache.lucene.util.Bits;
+import org.apache.lucene.util.IOUtils;
+
 
 /**
  * Class used to extract {@link WeightedSpanTerm}s from a {@link Query} based on whether 
@@ -53,12 +64,13 @@ public class WeightedSpanTermExtractor {
 
   private String fieldName;
   private TokenStream tokenStream;
-  private Map<String,AtomicReaderContext> readers = new HashMap<String,AtomicReaderContext>(10); 
   private String defaultField;
   private boolean expandMultiTermQuery;
   private boolean cachedTokenStream;
   private boolean wrapToCaching = true;
   private int maxDocCharsToAnalyze;
+  private AtomicReader reader = null;
+
 
   public WeightedSpanTermExtractor() {
   }
@@ -66,18 +78,6 @@ public class WeightedSpanTermExtractor {
   public WeightedSpanTermExtractor(String defaultField) {
     if (defaultField != null) {
       this.defaultField = defaultField;
-    }
-  }
-
-  private void closeReaders() {
-    Collection<AtomicReaderContext> ctxSet = readers.values();
-
-    for (final AtomicReaderContext ctx : ctxSet) {
-      try {
-        ctx.reader().close();
-      } catch (IOException e) {
-        // alert?
-      }
     }
   }
 
@@ -146,20 +146,13 @@ public class WeightedSpanTermExtractor {
       if (q != null) {
         extract(q, terms);
       }
+    } else if (query instanceof CommonTermsQuery) {
+      // specialized since rewriting would change the result query 
+      // this query is TermContext sensitive.
+      extractWeightedTerms(terms, query);
     } else if (query instanceof DisjunctionMaxQuery) {
       for (Iterator<Query> iterator = ((DisjunctionMaxQuery) query).iterator(); iterator.hasNext();) {
         extract(iterator.next(), terms);
-      }
-    } else if (query instanceof MultiTermQuery && expandMultiTermQuery) {
-      MultiTermQuery mtq = ((MultiTermQuery)query);
-      if(mtq.getRewriteMethod() != MultiTermQuery.SCORING_BOOLEAN_QUERY_REWRITE) {
-        mtq = (MultiTermQuery) mtq.clone();
-        mtq.setRewriteMethod(MultiTermQuery.SCORING_BOOLEAN_QUERY_REWRITE);
-        query = mtq;
-      }
-      if (mtq.getField() != null) {
-        IndexReader ir = getLeafContextForField(mtq.getField()).reader();
-        extract(query.rewrite(ir), terms);
       }
     } else if (query instanceof MultiPhraseQuery) {
       final MultiPhraseQuery mpq = (MultiPhraseQuery) query;
@@ -210,12 +203,30 @@ public class WeightedSpanTermExtractor {
         sp.setBoost(query.getBoost());
         extractWeightedSpanTerms(terms, sp);
       }
+    } else {
+      Query origQuery = query;
+      if (query instanceof MultiTermQuery) {
+        if (!expandMultiTermQuery) {
+          return;
+        }
+        MultiTermQuery copy = (MultiTermQuery) query.clone();
+        copy.setRewriteMethod(MultiTermQuery.SCORING_BOOLEAN_QUERY_REWRITE);
+        origQuery = copy;
+      }
+      final IndexReader reader = getLeafContext().reader();
+      Query rewritten = origQuery.rewrite(reader);
+      if (rewritten != origQuery) {
+        // only rewrite once and then flatten again - the rewritten query could have a speacial treatment
+        // if this method is overwritten in a subclass or above in the next recursion
+        extract(rewritten, terms);
+      } 
     }
     extractUnknownQuery(query, terms);
   }
 
   protected void extractUnknownQuery(Query query,
       Map<String, WeightedSpanTerm> terms) throws IOException {
+    
     // for sub-classing to extract custom queries
   }
 
@@ -249,7 +260,7 @@ public class WeightedSpanTermExtractor {
     final boolean mustRewriteQuery = mustRewriteQuery(spanQuery);
     if (mustRewriteQuery) {
       for (final String field : fieldNames) {
-        final SpanQuery rewrittenQuery = (SpanQuery) spanQuery.rewrite(getLeafContextForField(field).reader());
+        final SpanQuery rewrittenQuery = (SpanQuery) spanQuery.rewrite(getLeafContext().reader());
         queries.put(field, rewrittenQuery);
         rewrittenQuery.extractTerms(nonWeightedTerms);
       }
@@ -266,7 +277,7 @@ public class WeightedSpanTermExtractor {
       } else {
         q = spanQuery;
       }
-      AtomicReaderContext context = getLeafContextForField(field);
+      AtomicReaderContext context = getLeafContext();
       Map<Term,TermContext> termContexts = new HashMap<Term,TermContext>();
       TreeSet<Term> extractedTerms = new TreeSet<Term>();
       q.extractTerms(extractedTerms);
@@ -338,23 +349,79 @@ public class WeightedSpanTermExtractor {
     return rv;
   }
 
-  protected AtomicReaderContext getLeafContextForField(String field) throws IOException {
-    if(wrapToCaching && !cachedTokenStream && !(tokenStream instanceof CachingTokenFilter)) {
-      tokenStream = new CachingTokenFilter(new OffsetLimitTokenFilter(tokenStream, maxDocCharsToAnalyze));
-      cachedTokenStream = true;
-    }
-    AtomicReaderContext context = readers.get(field);
-    if (context == null) {
-      MemoryIndex indexer = new MemoryIndex();
-      indexer.addField(field, new OffsetLimitTokenFilter(tokenStream, maxDocCharsToAnalyze));
+  protected AtomicReaderContext getLeafContext() throws IOException {
+    if (reader == null) {
+      if(wrapToCaching && !(tokenStream instanceof CachingTokenFilter)) {
+        assert !cachedTokenStream;
+        tokenStream = new CachingTokenFilter(new OffsetLimitTokenFilter(tokenStream, maxDocCharsToAnalyze));
+        cachedTokenStream = true;
+      }
+      final MemoryIndex indexer = new MemoryIndex(true);
+      indexer.addField(DelegatingAtomicReader.FIELD_NAME, tokenStream);
       tokenStream.reset();
-      IndexSearcher searcher = indexer.createSearcher();
+      final IndexSearcher searcher = indexer.createSearcher();
       // MEM index has only atomic ctx
-      context = (AtomicReaderContext) searcher.getTopReaderContext();
-      readers.put(field, context);
+      reader = new DelegatingAtomicReader(((AtomicReaderContext)searcher.getTopReaderContext()).reader());
+    }
+    return reader.getContext();
+  }
+  
+  /*
+   * This reader will just delegate every call to a single field in the wrapped
+   * AtomicReader. This way we only need to build this field once rather than
+   * N-Times
+   */
+  static final class DelegatingAtomicReader extends FilterAtomicReader {
+    private static final String FIELD_NAME = "shadowed_field";
+
+    DelegatingAtomicReader(AtomicReader in) {
+      super(in);
+    }
+    
+    @Override
+    public FieldInfos getFieldInfos() {
+      throw new UnsupportedOperationException();
     }
 
-    return context;
+    @Override
+    public Fields fields() throws IOException {
+      return new FilterFields(super.fields()) {
+        @Override
+        public Terms terms(String field) throws IOException {
+          return super.terms(DelegatingAtomicReader.FIELD_NAME);
+        }
+
+        @Override
+        public Iterator<String> iterator() {
+          return Collections.singletonList(DelegatingAtomicReader.FIELD_NAME).iterator();
+        }
+
+        @Override
+        public int size() {
+          return 1;
+        }
+      };
+    }
+
+    @Override
+    public NumericDocValues getNumericDocValues(String field) throws IOException {
+      return super.getNumericDocValues(FIELD_NAME);
+    }
+    
+    @Override
+    public BinaryDocValues getBinaryDocValues(String field) throws IOException {
+      return super.getBinaryDocValues(FIELD_NAME);
+    }
+    
+    @Override
+    public SortedDocValues getSortedDocValues(String field) throws IOException {
+      return super.getSortedDocValues(FIELD_NAME);
+    }
+    
+    @Override
+    public NumericDocValues getNormValues(String field) throws IOException {
+      return super.getNormValues(FIELD_NAME);
+    }
   }
 
   /**
@@ -401,7 +468,7 @@ public class WeightedSpanTermExtractor {
     try {
       extract(query, terms);
     } finally {
-      closeReaders();
+      IOUtils.close(reader);
     }
 
     return terms;
@@ -449,8 +516,7 @@ public class WeightedSpanTermExtractor {
         weightedSpanTerm.weight *= idf;
       }
     } finally {
-
-      closeReaders();
+      IOUtils.close(reader);
     }
 
     return terms;

@@ -17,11 +17,6 @@
  limitations under the License.
 -->
 
-<!-- $Id: solrconfig.xml 382610 2006-03-03 01:43:03Z yonik $
-     $Source$
-     $Name$
-  -->
-
 <config>
   <luceneMatchVersion>${tests.luceneMatchVersion:LUCENE_CURRENT}</luceneMatchVersion>
   <directoryFactory name="DirectoryFactory" class="${solr.directoryFactory:solr.RAMDirectoryFactory}"/>

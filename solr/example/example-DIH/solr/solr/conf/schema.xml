@@ -293,12 +293,6 @@
         results by manufacturer.  copied from "manu" via copyField -->
    <field name="manu_exact" type="string" indexed="true" stored="false"/>
 
-   <!-- Here, default is used to create a "timestamp" field indicating
-        When each document was indexed.
-     -->
-   <field name="timestamp" type="date" indexed="true" stored="true" default="NOW" multiValued="false"/>
-   
-
    <!-- Dynamic field definitions.  If a field name is not found, dynamicFields
         will be used if the name matches any of the patterns.
         RESTRICTION: the glob-like pattern in the name attribute must have

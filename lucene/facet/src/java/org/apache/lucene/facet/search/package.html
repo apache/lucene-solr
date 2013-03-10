@@ -15,44 +15,10 @@
  limitations under the License.
 -->
 <html>
-  <head>
-    <title>Faceted Search API</title>
-  </head>
-  <body>
-    <h1>Faceted Search API</h1>
-    
-    API for faceted search has several interfaces - simple, top level ones, adequate for most users,
-    and advanced, more complicated ones, for the more advanced users. 
-    
-    <p>
-    
-    We now describe the simpler interfaces.
-    There are mainly 3 interfaces for faceted search:
-    <ol>
-      <li>{@link org.apache.lucene.facet.search.params.FacetRequest Facets Request}
-          defines requirements:
-          <ul> 
-              <li>which facets are required, e.g. depth</li>
-              <li>what is computed for each facet - e.g. count, score.</li>
-          </ul>
-      </li>
-      <li>{@link org.apache.lucene.facet.search.FacetsAccumulator Facets Extractor}
-          Controls how facets are extracted, with variations of:
-          <ul> 
-              <li>default (partitioned, like all extractors). </li>
-              <li>sampled - inspects only a fraction of the documents.</li>
-          </ul>
-      </li>
-      <li>{@link org.apache.lucene.facet.search.FacetResultsHandler Facet Results Handler }
-          Controls how results are further processed and merged (also between partitions):
-          <ul> 
-              <li>Top K.</li>
-              <li>Tree.</li>
-              <li>Tree with top K at each level</li>
-              <li>...</li>
-          </ul>
-      </li>
-    </ol>
-
-  </body>
+<head>
+<title>Facets search code</title>
+</head>
+<body>
+Facets search code.
+</body>
 </html>

@@ -22,6 +22,8 @@ import org.apache.lucene.document.DoubleField; // javadocs
 import org.apache.lucene.document.FloatField; // javadocs
 import org.apache.lucene.document.IntField; // javadocs
 import org.apache.lucene.document.LongField; // javadocs
+import org.apache.lucene.index.FilteredTermsEnum;
+import org.apache.lucene.index.TermsEnum;
 import org.apache.lucene.search.NumericRangeFilter;
 import org.apache.lucene.search.NumericRangeQuery; // for javadocs
 
@@ -82,7 +84,7 @@ public final class NumericUtils {
   /**
    * The maximum term length (used for <code>byte[]</code> buffer size)
    * for encoding <code>long</code> values.
-   * @see #longToPrefixCoded(long,int,BytesRef)
+   * @see #longToPrefixCodedBytes
    */
   public static final int BUF_SIZE_LONG = 63/7 + 2;
 
@@ -95,7 +97,7 @@ public final class NumericUtils {
   /**
    * The maximum term length (used for <code>byte[]</code> buffer size)
    * for encoding <code>int</code> values.
-   * @see #intToPrefixCoded(int,int,BytesRef)
+   * @see #intToPrefixCodedBytes
    */
   public static final int BUF_SIZE_INT = 31/7 + 2;
 
@@ -109,15 +111,42 @@ public final class NumericUtils {
    * @return the hash code for indexing (TermsHash)
    */
   public static int longToPrefixCoded(final long val, final int shift, final BytesRef bytes) {
-    if (shift>63 || shift<0)
+    longToPrefixCodedBytes(val, shift, bytes);
+    return bytes.hashCode();
+  }
+
+  /**
+   * Returns prefix coded bits after reducing the precision by <code>shift</code> bits.
+   * This is method is used by {@link NumericTokenStream}.
+   * After encoding, {@code bytes.offset} will always be 0.
+   * @param val the numeric value
+   * @param shift how many bits to strip from the right
+   * @param bytes will contain the encoded value
+   * @return the hash code for indexing (TermsHash)
+   */
+  public static int intToPrefixCoded(final int val, final int shift, final BytesRef bytes) {
+    intToPrefixCodedBytes(val, shift, bytes);
+    return bytes.hashCode();
+  }
+
+  /**
+   * Returns prefix coded bits after reducing the precision by <code>shift</code> bits.
+   * This is method is used by {@link NumericTokenStream}.
+   * After encoding, {@code bytes.offset} will always be 0.
+   * @param val the numeric value
+   * @param shift how many bits to strip from the right
+   * @param bytes will contain the encoded value
+   */
+  public static void longToPrefixCodedBytes(final long val, final int shift, final BytesRef bytes) {
+    if ((shift & ~0x3f) != 0)  // ensure shift is 0..63
       throw new IllegalArgumentException("Illegal shift value, must be 0..63");
-    int hash, nChars = (63-shift)/7 + 1;
+    int nChars = (((63-shift)*37)>>8) + 1;    // i/7 is the same as (i*37)>>8 for i in 0..63
     bytes.offset = 0;
-    bytes.length = nChars+1;
+    bytes.length = nChars+1;   // one extra for the byte that contains the shift info
     if (bytes.bytes.length < bytes.length) {
-      bytes.grow(NumericUtils.BUF_SIZE_LONG);
+      bytes.bytes = new byte[NumericUtils.BUF_SIZE_LONG];  // use the max
     }
-    bytes.bytes[0] = (byte) (hash = (SHIFT_START_LONG + shift));
+    bytes.bytes[0] = (byte)(SHIFT_START_LONG + shift);
     long sortableBits = val ^ 0x8000000000000000L;
     sortableBits >>>= shift;
     while (nChars > 0) {
@@ -126,12 +155,8 @@ public final class NumericUtils {
       bytes.bytes[nChars--] = (byte)(sortableBits & 0x7f);
       sortableBits >>>= 7;
     }
-    // calculate hash
-    for (int i = 1; i < bytes.length; i++) {
-      hash = 31*hash + bytes.bytes[i];
-    }
-    return hash;
   }
+
 
   /**
    * Returns prefix coded bits after reducing the precision by <code>shift</code> bits.
@@ -140,18 +165,17 @@ public final class NumericUtils {
    * @param val the numeric value
    * @param shift how many bits to strip from the right
    * @param bytes will contain the encoded value
-   * @return the hash code for indexing (TermsHash)
    */
-  public static int intToPrefixCoded(final int val, final int shift, final BytesRef bytes) {
-    if (shift>31 || shift<0)
+  public static void intToPrefixCodedBytes(final int val, final int shift, final BytesRef bytes) {
+    if ((shift & ~0x1f) != 0)  // ensure shift is 0..31
       throw new IllegalArgumentException("Illegal shift value, must be 0..31");
-    int hash, nChars = (31-shift)/7 + 1;
+    int nChars = (((31-shift)*37)>>8) + 1;    // i/7 is the same as (i*37)>>8 for i in 0..63
     bytes.offset = 0;
-    bytes.length = nChars+1;
+    bytes.length = nChars+1;   // one extra for the byte that contains the shift info
     if (bytes.bytes.length < bytes.length) {
-      bytes.grow(NumericUtils.BUF_SIZE_INT);
+      bytes.bytes = new byte[NumericUtils.BUF_SIZE_LONG];  // use the max
     }
-    bytes.bytes[0] = (byte) (hash = (SHIFT_START_INT + shift));
+    bytes.bytes[0] = (byte)(SHIFT_START_INT + shift);
     int sortableBits = val ^ 0x80000000;
     sortableBits >>>= shift;
     while (nChars > 0) {
@@ -160,12 +184,8 @@ public final class NumericUtils {
       bytes.bytes[nChars--] = (byte)(sortableBits & 0x7f);
       sortableBits >>>= 7;
     }
-    // calculate hash
-    for (int i = 1; i < bytes.length; i++) {
-      hash = 31*hash + bytes.bytes[i];
-    }
-    return hash;
   }
+
 
   /**
    * Returns the shift value from a prefix encoded {@code long}.
@@ -197,7 +217,7 @@ public final class NumericUtils {
    * This method can be used to decode a term's value.
    * @throws NumberFormatException if the supplied {@link BytesRef} is
    * not correctly prefix encoded.
-   * @see #longToPrefixCoded(long,int,BytesRef)
+   * @see #longToPrefixCodedBytes
    */
   public static long prefixCodedToLong(final BytesRef val) {
     long sortableBits = 0L;
@@ -221,7 +241,7 @@ public final class NumericUtils {
    * This method can be used to decode a term's value.
    * @throws NumberFormatException if the supplied {@link BytesRef} is
    * not correctly prefix encoded.
-   * @see #intToPrefixCoded(int,int,BytesRef)
+   * @see #intToPrefixCodedBytes
    */
   public static int prefixCodedToInt(final BytesRef val) {
     int sortableBits = 0;
@@ -402,8 +422,8 @@ public final class NumericUtils {
      */
     public void addRange(final long min, final long max, final int shift) {
       final BytesRef minBytes = new BytesRef(BUF_SIZE_LONG), maxBytes = new BytesRef(BUF_SIZE_LONG);
-      longToPrefixCoded(min, shift, minBytes);
-      longToPrefixCoded(max, shift, maxBytes);
+      longToPrefixCodedBytes(min, shift, minBytes);
+      longToPrefixCodedBytes(max, shift, maxBytes);
       addRange(minBytes, maxBytes);
     }
   
@@ -431,11 +451,48 @@ public final class NumericUtils {
      */
     public void addRange(final int min, final int max, final int shift) {
       final BytesRef minBytes = new BytesRef(BUF_SIZE_INT), maxBytes = new BytesRef(BUF_SIZE_INT);
-      intToPrefixCoded(min, shift, minBytes);
-      intToPrefixCoded(max, shift, maxBytes);
+      intToPrefixCodedBytes(min, shift, minBytes);
+      intToPrefixCodedBytes(max, shift, maxBytes);
       addRange(minBytes, maxBytes);
     }
   
+  }
+  
+  /**
+   * Filters the given {@link TermsEnum} by accepting only prefix coded 64 bit
+   * terms with a shift value of <tt>0</tt>.
+   * 
+   * @param termsEnum
+   *          the terms enum to filter
+   * @return a filtered {@link TermsEnum} that only returns prefix coded 64 bit
+   *         terms with a shift value of <tt>0</tt>.
+   */
+  public static TermsEnum filterPrefixCodedLongs(TermsEnum termsEnum) {
+    return new FilteredTermsEnum(termsEnum, false) {
+      @Override
+      protected AcceptStatus accept(BytesRef term) {
+        return NumericUtils.getPrefixCodedLongShift(term) == 0 ? AcceptStatus.YES : AcceptStatus.END;
+      }
+    };
+  }
+  
+  /**
+   * Filters the given {@link TermsEnum} by accepting only prefix coded 32 bit
+   * terms with a shift value of <tt>0</tt>.
+   * 
+   * @param termsEnum
+   *          the terms enum to filter
+   * @return a filtered {@link TermsEnum} that only returns prefix coded 32 bit
+   *         terms with a shift value of <tt>0</tt>.
+   */
+  public static TermsEnum filterPrefixCodedInts(TermsEnum termsEnum) {
+    return new FilteredTermsEnum(termsEnum, false) {
+      
+      @Override
+      protected AcceptStatus accept(BytesRef term) {
+        return NumericUtils.getPrefixCodedIntShift(term) == 0 ? AcceptStatus.YES : AcceptStatus.END;
+      }
+    };
   }
   
 }

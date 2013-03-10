@@ -126,11 +126,6 @@ final class TermsHash extends InvertedDocConsumer {
   }
 
   @Override
-  public boolean freeRAM() {
-    return false;
-  }
-
-  @Override
   void finishDocument() throws IOException {
     consumer.finishDocument(this);
     if (nextTermsHash != null) {

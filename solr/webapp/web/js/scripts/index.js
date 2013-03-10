@@ -36,15 +36,13 @@ var generate_bar = function( bar_container, bar_data, convert_label_values )
   $( '.bar-max.val', bar_holder ).text( bar_data['max'] );
     
   bar_level++;
-  var total_width = Math.round( ( bar_data['total'] * max_width ) / bar_data['max'] );
-  $( '.bar-total.bar', bar_holder ).width( Math.max( total_width, 1 ) );
+  $( '.bar-total.bar', bar_holder ).width( new String( (bar_data['total']/bar_data['max'])*100 ) + '%' );
   $( '.bar-total.val', bar_holder ).text( bar_data['total'] );
 
   if( bar_data['used'] )
   {
     bar_level++;
-    var used_width = Math.round( ( bar_data['used'] * max_width ) / bar_data['max'] );
-    $( '.bar-used.bar', bar_holder ).width( Math.min( used_width, total_width - 1 ) );
+    $( '.bar-used.bar', bar_holder ).width( new String( (bar_data['used']/bar_data['total'])*100 ) + '%' );
     $( '.bar-used.val', bar_holder ).text( bar_data['used'] );
   }
 
@@ -99,8 +97,8 @@ var system_info = function( element, system_data )
 {
   // -- usage
 
-  var load_average = ( system_data['system']['uptime'] || '' ).match( /load average: (.+)/ );
-  if( load_average && load_average[1] )
+  var load_average = ( system_data['system']['uptime'] || '' ).match( /load averages?: (\d+[.,]\d\d),? (\d+[.,]\d\d),? (\d+[.,]\d\d)/ );
+  if( load_average )
   {
     var hl = $( '#system h2', element );
 
@@ -108,20 +106,20 @@ var system_info = function( element, system_data )
       .remove();
 
     hl
-      .append( ' <small class="bar-desc">' + load_average[1].split( ', ' ).join( '  ' ).esc() + '</small>' );
+      .append( ' <small class="bar-desc">' + load_average.slice( 1 ).join( '  ' ).replace( /,/g, '.' ).esc() + '</small>' );
   }
 
   // -- physical-memory-bar
     
   var bar_holder = $( '#physical-memory-bar', element );
-  if( !system_data['system']['totalPhysicalMemorySize'] )
+  if( system_data['system']['totalPhysicalMemorySize'] === undefined || system_data['system']['freePhysicalMemorySize'] === undefined )
   {
     bar_holder.hide();
   }
   else
   {
     bar_holder.show();
-    
+
     var bar_data = {
       'max' : parse_memory_value( system_data['system']['totalPhysicalMemorySize'] ),
       'total' : parse_memory_value( system_data['system']['totalPhysicalMemorySize'] - system_data['system']['freePhysicalMemorySize'] )
@@ -133,7 +131,7 @@ var system_info = function( element, system_data )
   // -- swap-space-bar
     
   var bar_holder = $( '#swap-space-bar', element );
-  if( !system_data['system']['totalSwapSpaceSize'] )
+  if( system_data['system']['totalSwapSpaceSize'] === undefined || system_data['system']['freeSwapSpaceSize'] === undefined )
   {
     bar_holder.hide();
   }
@@ -149,10 +147,10 @@ var system_info = function( element, system_data )
     generate_bar( bar_holder, bar_data, true );
   }
 
-  // -- swap-space-bar
+  // -- file-descriptor-bar
     
   var bar_holder = $( '#file-descriptor-bar', element );
-  if( !system_data['system']['maxFileDescriptorCount'] )
+  if( system_data['system']['maxFileDescriptorCount'] === undefined || system_data['system']['openFileDescriptorCount'] === undefined )
   {
     bar_holder.hide();
   }
@@ -174,32 +172,42 @@ var system_info = function( element, system_data )
 
   // -- memory-bar
 
-  var jvm_memory = $.extend
-  (
-    {
-      'free' : null,
-      'total' : null,
-      'max' : null,
-      'used' : null,
-      'raw' : {
+  var bar_holder = $( '#jvm-memory-bar', element );
+  if( system_data['jvm']['memory'] === undefined )
+  {
+    bar_holder.hide();
+  }
+  else
+  {
+    bar_holder.show();
+
+    var jvm_memory = $.extend
+    (
+      {
         'free' : null,
         'total' : null,
         'max' : null,
         'used' : null,
-        'used%' : null
-      }
-    },
-    system_data['jvm']['memory']
-  );
-    
-  var bar_holder = $( '#jvm-memory-bar', element );
-  var bar_data = {
-    'max' : parse_memory_value( jvm_memory['raw']['max'] || jvm_memory['max'] ),
-    'total' : parse_memory_value( jvm_memory['raw']['total'] || jvm_memory['total'] ),
-    'used' : parse_memory_value( jvm_memory['raw']['used'] || jvm_memory['used'] )
-  };
+        'raw' : {
+          'free' : null,
+          'total' : null,
+          'max' : null,
+          'used' : null,
+          'used%' : null
+        }
+      },
+      system_data['jvm']['memory']
+    );
 
-  generate_bar( bar_holder, bar_data, true );
+    var bar_data = {
+      'max' : parse_memory_value( jvm_memory['raw']['max'] || jvm_memory['max'] ),
+      'total' : parse_memory_value( jvm_memory['raw']['total'] || jvm_memory['total'] ),
+      'used' : parse_memory_value( jvm_memory['raw']['used'] || jvm_memory['used'] )
+    };
+
+    generate_bar( bar_holder, bar_data, true );
+  }
+
 }
 
 // #/
@@ -209,9 +217,6 @@ sammy.get
   function( context )
   {
     var content_element = $( '#content' );
-
-    $( '#menu-wrapper #index' )
-      .addClass( 'active' );
 
     content_element
       .html( '<div id="index"></div>' );

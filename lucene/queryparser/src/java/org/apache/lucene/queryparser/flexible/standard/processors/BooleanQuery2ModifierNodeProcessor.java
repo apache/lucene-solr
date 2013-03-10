@@ -55,7 +55,7 @@ import org.apache.lucene.queryparser.flexible.standard.parser.StandardSyntaxPars
  * {@link Operator#AND}, if it is, the same operation when an
  * {@link AndQueryNode} is found is applied to it. Each {@link BooleanQueryNode}
  * which direct parent is also a {@link BooleanQueryNode} is removed (to ignore
- * the rules of precidence).
+ * the rules of precedence).
  * </p>
  * 
  * @see ConfigurationKeys#DEFAULT_OPERATOR

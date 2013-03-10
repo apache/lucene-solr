@@ -17,18 +17,19 @@ package org.apache.solr.cloud;
  * the License.
  */
 
+import java.util.ArrayList;
 import java.util.Collection;
 import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.NoSuchElementException;
+import java.util.Map.Entry;
+import java.util.Set;
 
 import org.apache.solr.common.SolrException;
-import org.apache.solr.common.cloud.ClusterState;
 import org.apache.solr.common.cloud.ClosableThread;
+import org.apache.solr.common.cloud.ClusterState;
 import org.apache.solr.common.cloud.DocCollection;
-import org.apache.solr.common.cloud.DocRouter;
 import org.apache.solr.common.cloud.DocRouter;
 import org.apache.solr.common.cloud.ImplicitDocRouter;
 import org.apache.solr.common.cloud.Replica;
@@ -37,7 +38,6 @@ import org.apache.solr.common.cloud.SolrZkClient;
 import org.apache.solr.common.cloud.ZkCoreNodeProps;
 import org.apache.solr.common.cloud.ZkNodeProps;
 import org.apache.solr.common.cloud.ZkStateReader;
-import org.apache.solr.common.cloud.ZooKeeperException;
 import org.apache.solr.handler.component.ShardHandler;
 import org.apache.zookeeper.CreateMode;
 import org.apache.zookeeper.KeeperException;
@@ -50,7 +50,7 @@ import org.slf4j.LoggerFactory;
 public class Overseer {
   public static final String QUEUE_OPERATION = "operation";
 
-  private static final int STATE_UPDATE_DELAY = 500;  // delay between cloud state updates
+  private static final int STATE_UPDATE_DELAY = 1500;  // delay between cloud state updates
 
   private static Logger log = LoggerFactory.getLogger(Overseer.class);
   
@@ -78,46 +78,48 @@ public class Overseer {
     @Override
     public void run() {
         
-      if(!this.isClosed && amILeader()) {
+      if (!this.isClosed && amILeader()) {
         // see if there's something left from the previous Overseer and re
         // process all events that were not persisted into cloud state
-          synchronized (reader.getUpdateLock()) { //XXX this only protects against edits inside single node
-            try {
-              byte[] head = workQueue.peek();
+        synchronized (reader.getUpdateLock()) { // XXX this only protects
+                                                // against edits inside single
+                                                // node
+          try {
+            byte[] head = workQueue.peek();
+            
+            if (head != null) {
+              reader.updateClusterState(true);
+              ClusterState clusterState = reader.getClusterState();
+              log.info("Replaying operations from work queue.");
               
-              if (head != null) {
-                reader.updateClusterState(true);
-                ClusterState clusterState = reader.getClusterState();
-                log.info("Replaying operations from work queue.");
+              while (head != null && amILeader()) {
+                final ZkNodeProps message = ZkNodeProps.load(head);
+                final String operation = message.getStr(QUEUE_OPERATION);
+                clusterState = processMessage(clusterState, message, operation);
+                zkClient.setData(ZkStateReader.CLUSTER_STATE,
+                    ZkStateReader.toJSON(clusterState), true);
                 
-                while (head != null && amILeader()) {
-                  final ZkNodeProps message = ZkNodeProps.load(head);
-                  final String operation = message
-                      .getStr(QUEUE_OPERATION);
-                  clusterState = processMessage(clusterState, message, operation);
-                  zkClient.setData(ZkStateReader.CLUSTER_STATE,
-                      ZkStateReader.toJSON(clusterState), true);
-                  
-                  workQueue.poll();
-                  
-                  head = workQueue.peek();
-                }
+                workQueue.poll();
+                
+                head = workQueue.peek();
               }
-            } catch (KeeperException e) {
-              if (e.code() == KeeperException.Code.SESSIONEXPIRED
-                  || e.code() == KeeperException.Code.CONNECTIONLOSS) {
-                log.warn("Solr cannot talk to ZK");
-                return;
-              }
-              SolrException.log(log, "", e);
-              throw new ZooKeeperException(SolrException.ErrorCode.SERVER_ERROR,
-                  "", e);
-            } catch (InterruptedException e) {
-              Thread.currentThread().interrupt();
+            }
+          } catch (KeeperException e) {
+            if (e.code() == KeeperException.Code.SESSIONEXPIRED) {
+              log.warn("Solr cannot talk to ZK, exiting Overseer work queue loop", e);
               return;
             }
+            log.error("Exception in Overseer work queue loop", e);
+          } catch (InterruptedException e) {
+            Thread.currentThread().interrupt();
+            return;
+            
+          } catch (Exception e) {
+            log.error("Exception in Overseer work queue loop", e);
           }
         }
+        
+      }
       
       log.info("Starting to work on the main queue");
       while (!this.isClosed && amILeader()) {
@@ -146,17 +148,17 @@ public class Overseer {
             while (workQueue.poll() != null);
             
           } catch (KeeperException e) {
-            if (e.code() == KeeperException.Code.SESSIONEXPIRED
-                || e.code() == KeeperException.Code.CONNECTIONLOSS) {
-              log.warn("Overseer cannot talk to ZK");
+            if (e.code() == KeeperException.Code.SESSIONEXPIRED) {
+              log.warn("Solr cannot talk to ZK, exiting Overseer main queue loop", e);
               return;
             }
-            SolrException.log(log, "", e);
-            throw new ZooKeeperException(SolrException.ErrorCode.SERVER_ERROR,
-                "", e);
+            log.error("Exception in Overseer main queue loop", e);
           } catch (InterruptedException e) {
             Thread.currentThread().interrupt();
             return;
+            
+          } catch (Exception e) {
+            log.error("Exception in Overseer main queue loop", e);
           }
         }
         
@@ -214,7 +216,11 @@ public class Overseer {
        */
       private ClusterState updateState(ClusterState state, final ZkNodeProps message) {
         final String collection = message.getStr(ZkStateReader.COLLECTION_PROP);
-        final String zkCoreNodeName = message.getStr(ZkStateReader.NODE_NAME_PROP) + "_" + message.getStr(ZkStateReader.CORE_NAME_PROP);
+        String coreNodeName = message.getStr(ZkStateReader.CORE_NODE_NAME_PROP);
+        if (coreNodeName == null) {
+          // it must be the default then
+          coreNodeName = message.getStr(ZkStateReader.NODE_NAME_PROP) + "_" + message.getStr(ZkStateReader.CORE_NAME_PROP);
+        }
         Integer numShards = message.getStr(ZkStateReader.NUM_SHARDS_PROP)!=null?Integer.parseInt(message.getStr(ZkStateReader.NUM_SHARDS_PROP)):null;
         log.info("Update state numShards={} message={}", numShards, message);
         //collection does not yet exist, create placeholders if num shards is specified
@@ -226,9 +232,9 @@ public class Overseer {
         // use the provided non null shardId
         String sliceName = message.getStr(ZkStateReader.SHARD_ID_PROP);
         if (sliceName == null) {
-          String nodeName = message.getStr(ZkStateReader.NODE_NAME_PROP);
+          //String nodeName = message.getStr(ZkStateReader.NODE_NAME_PROP);
           //get shardId from ClusterState
-          sliceName = getAssignedId(state, nodeName, message);
+          sliceName = getAssignedId(state, coreNodeName, message);
           if (sliceName != null) {
             log.info("shard=" + sliceName + " is already registered");
           }
@@ -250,7 +256,7 @@ public class Overseer {
         replicaProps.putAll(message.getProperties());
         // System.out.println("########## UPDATE MESSAGE: " + JSONUtil.toJSON(message));
         if (slice != null) {
-          Replica oldReplica = slice.getReplicasMap().get(zkCoreNodeName);
+          Replica oldReplica = slice.getReplicasMap().get(coreNodeName);
           if (oldReplica != null && oldReplica.containsKey(ZkStateReader.LEADER_PROP)) {
             replicaProps.put(ZkStateReader.LEADER_PROP, oldReplica.get(ZkStateReader.LEADER_PROP));
           }
@@ -259,9 +265,22 @@ public class Overseer {
         // we don't put num_shards in the clusterstate
           replicaProps.remove(ZkStateReader.NUM_SHARDS_PROP);
           replicaProps.remove(QUEUE_OPERATION);
+          
+          // remove any props with null values
+          Set<Entry<String,Object>> entrySet = replicaProps.entrySet();
+          List<String> removeKeys = new ArrayList<String>();
+          for (Entry<String,Object> entry : entrySet) {
+            if (entry.getValue() == null) {
+              removeKeys.add(entry.getKey());
+            }
+          }
+          for (String removeKey : removeKeys) {
+            replicaProps.remove(removeKey);
+          }
+          replicaProps.remove(ZkStateReader.CORE_NODE_NAME_PROP);
 
 
-          Replica replica = new Replica(zkCoreNodeName, replicaProps);
+          Replica replica = new Replica(coreNodeName, replicaProps);
 
          // TODO: where do we get slice properties in this message?  or should there be a separate create-slice message if we want that?
 
@@ -323,11 +342,10 @@ public class Overseer {
        */
       private String getAssignedId(final ClusterState state, final String nodeName,
           final ZkNodeProps coreState) {
-        final String key = coreState.getStr(ZkStateReader.NODE_NAME_PROP) + "_" +  coreState.getStr(ZkStateReader.CORE_NAME_PROP);
         Collection<Slice> slices = state.getSlices(coreState.getStr(ZkStateReader.COLLECTION_PROP));
         if (slices != null) {
           for (Slice slice : slices) {
-            if (slice.getReplicasMap().get(key) != null) {
+            if (slice.getReplicasMap().get(nodeName) != null) {
               return slice.getName();
             }
           }
@@ -425,7 +443,12 @@ public class Overseer {
        */
       private ClusterState removeCore(final ClusterState clusterState, ZkNodeProps message) {
         
-        final String coreNodeName = message.getStr(ZkStateReader.NODE_NAME_PROP) + "_" + message.getStr(ZkStateReader.CORE_NAME_PROP);
+        String cnn = message.getStr(ZkStateReader.CORE_NODE_NAME_PROP);
+        if (cnn == null) {
+          // it must be the default then
+          cnn = message.getStr(ZkStateReader.NODE_NAME_PROP) + "_" + message.getStr(ZkStateReader.CORE_NAME_PROP);
+        }
+
         final String collection = message.getStr(ZkStateReader.COLLECTION_PROP);
 
         final Map<String, DocCollection> newCollections = new LinkedHashMap<String,DocCollection>(clusterState.getCollectionStates()); // shallow copy
@@ -437,10 +460,10 @@ public class Overseer {
 
         Map<String, Slice> newSlices = new LinkedHashMap<String, Slice>();
         for (Slice slice : coll.getSlices()) {
-          Replica replica = slice.getReplica(coreNodeName);
+          Replica replica = slice.getReplica(cnn);
           if (replica != null) {
             Map<String, Replica> newReplicas = slice.getReplicasCopy();
-            newReplicas.remove(coreNodeName);
+            newReplicas.remove(cnn);
             // TODO TODO TODO!!! if there are no replicas left for the slice, and the slice has no hash range, remove it
             // if (newReplicas.size() == 0 && slice.getRange() == null) {
             // if there are no replicas left for the slice remove it

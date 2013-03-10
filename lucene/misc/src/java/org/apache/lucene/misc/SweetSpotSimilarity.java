@@ -19,23 +19,18 @@ package org.apache.lucene.misc;
 
 import org.apache.lucene.search.similarities.DefaultSimilarity;
 import org.apache.lucene.index.FieldInvertState;
-import org.apache.lucene.index.Norm;
 
 /**
+ * <p>
  * A similarity with a lengthNorm that provides for a "plateau" of
  * equally good lengths, and tf helper functions.
- *
+ * </p>
  * <p>
- * For lengthNorm, A global min/max can be specified to define the
+ * For lengthNorm, A min/max can be specified to define the
  * plateau of lengths that should all have a norm of 1.0.
  * Below the min, and above the max the lengthNorm drops off in a
  * sqrt function.
  * </p>
- * <p>
- * A per field min/max can be specified if different fields have
- * different sweet spots.
- * </p>
- *
  * <p>
  * For tf, baselineTf and hyperbolicTf functions are provided, which
  * subclasses can choose between.
@@ -106,7 +101,8 @@ public class SweetSpotSimilarity extends DefaultSimilarity {
    * computeLengthNorm(numTokens) </code> where
    * numTokens does not count overlap tokens if
    * discountOverlaps is true by default or true for this
-   * specific field. */
+   * specific field. 
+   */
   @Override
   public float lengthNorm(FieldInvertState state) {
     final int numTokens;

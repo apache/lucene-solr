@@ -20,7 +20,6 @@ package org.apache.solr.core;
 import org.apache.commons.io.FileUtils;
 import org.apache.lucene.util.IOUtils;
 import org.apache.solr.SolrTestCaseJ4;
-import org.apache.solr.common.SolrInputDocument;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.request.LocalSolrQueryRequest;
 import org.apache.solr.request.SolrQueryRequest;
@@ -29,59 +28,59 @@ import org.apache.solr.update.AddUpdateCommand;
 import org.apache.solr.update.CommitUpdateCommand;
 import org.apache.solr.update.UpdateHandler;
 import org.apache.solr.util.RefCounted;
+import org.junit.After;
 import org.junit.BeforeClass;
 import org.junit.Test;
 
 import java.io.File;
 import java.io.IOException;
+import java.util.ArrayList;
 import java.util.Collection;
 import java.util.HashMap;
+import java.util.List;
 
 public class TestLazyCores extends SolrTestCaseJ4 {
 
   @BeforeClass
   public static void beforeClass() throws Exception {
-    initCore("solrconfig.xml", "schema.xml");
+    initCore("solrconfig-minimal.xml", "schema-tiny.xml");
   }
 
-  private final File _solrHomeDirectory = new File(TEMP_DIR, "org.apache.solr.core.TestLazyCores_testlazy");
-
-  private static String[] _necessaryConfs = {"schema.xml", "solrconfig.xml", "stopwords.txt", "synonyms.txt",
-      "protwords.txt", "old_synonyms.txt", "currency.xml", "open-exchange-rates.json", "mapping-ISOLatin1Accent.txt"};
+  private final File solrHomeDirectory = new File(TEMP_DIR, "org.apache.solr.core.TestLazyCores_testlazy");
 
   private void copyConfFiles(File home, String subdir) throws IOException {
 
     File subHome = new File(new File(home, subdir), "conf");
     assertTrue("Failed to make subdirectory ", subHome.mkdirs());
     String top = SolrTestCaseJ4.TEST_HOME() + "/collection1/conf";
-    for (String file : _necessaryConfs) {
-      FileUtils.copyFile(new File(top, file), new File(subHome, file));
-    }
+    FileUtils.copyFile(new File(top, "schema-tiny.xml"), new File(subHome, "schema-tiny.xml"));
+    FileUtils.copyFile(new File(top, "solrconfig-minimal.xml"), new File(subHome, "solrconfig-minimal.xml"));
   }
 
   private CoreContainer init() throws Exception {
 
-    if (_solrHomeDirectory.exists()) {
-      FileUtils.deleteDirectory(_solrHomeDirectory);
+    if (solrHomeDirectory.exists()) {
+      FileUtils.deleteDirectory(solrHomeDirectory);
     }
-    assertTrue("Failed to mkdirs workDir", _solrHomeDirectory.mkdirs());
+    assertTrue("Failed to mkdirs workDir", solrHomeDirectory.mkdirs());
     for (int idx = 1; idx < 10; ++idx) {
-      copyConfFiles(_solrHomeDirectory, "collection" + idx);
+      copyConfFiles(solrHomeDirectory, "collection" + idx);
     }
 
-    File solrXml = new File(_solrHomeDirectory, "solr.xml");
+    File solrXml = new File(solrHomeDirectory, "solr.xml");
     FileUtils.write(solrXml, LOTS_SOLR_XML, IOUtils.CHARSET_UTF_8.toString());
-    final CoreContainer cores = new CoreContainer(_solrHomeDirectory.getAbsolutePath());
-    cores.load(_solrHomeDirectory.getAbsolutePath(), solrXml);
-    //  h.getCoreContainer().load(_solrHomeDirectory.getAbsolutePath(), new File(_solrHomeDirectory, "solr.xml"));
+    final CoreContainer cores = new CoreContainer(solrHomeDirectory.getAbsolutePath());
+    cores.load(solrHomeDirectory.getAbsolutePath(), solrXml);
+    //  h.getCoreContainer().load(solrHomeDirectory.getAbsolutePath(), new File(solrHomeDirectory, "solr.xml"));
 
     cores.setPersistent(false);
     return cores;
   }
 
+  @After
   public void after() throws Exception {
-    if (_solrHomeDirectory.exists()) {
-      FileUtils.deleteDirectory(_solrHomeDirectory);
+    if (solrHomeDirectory.exists()) {
+      FileUtils.deleteDirectory(solrHomeDirectory);
     }
   }
 
@@ -96,24 +95,24 @@ public class TestLazyCores extends SolrTestCaseJ4 {
           "collectionLazy8", "collectionLazy9");
 
       SolrCore core1 = cc.getCore("collection1");
-      assertFalse("core1 should not be swappable", core1.getCoreDescriptor().isSwappable());
+      assertFalse("core1 should not be transient", core1.getCoreDescriptor().isTransient());
       assertTrue("core1 should  be loadable", core1.getCoreDescriptor().isLoadOnStartup());
       assertNotNull(core1.getSolrConfig());
 
       SolrCore core2 = cc.getCore("collectionLazy2");
-      assertTrue("core2 should not be swappable", core2.getCoreDescriptor().isSwappable());
+      assertTrue("core2 should not be transient", core2.getCoreDescriptor().isTransient());
       assertTrue("core2 should be loadable", core2.getCoreDescriptor().isLoadOnStartup());
 
       SolrCore core3 = cc.getCore("collectionLazy3");
-      assertTrue("core3 should not be swappable", core3.getCoreDescriptor().isSwappable());
+      assertTrue("core3 should not be transient", core3.getCoreDescriptor().isTransient());
       assertFalse("core3 should not be loadable", core3.getCoreDescriptor().isLoadOnStartup());
 
       SolrCore core4 = cc.getCore("collectionLazy4");
-      assertFalse("core4 should not be swappable", core4.getCoreDescriptor().isSwappable());
+      assertFalse("core4 should not be transient", core4.getCoreDescriptor().isTransient());
       assertFalse("core4 should not be loadable", core4.getCoreDescriptor().isLoadOnStartup());
 
       SolrCore core5 = cc.getCore("collectionLazy5");
-      assertFalse("core5 should not be swappable", core5.getCoreDescriptor().isSwappable());
+      assertFalse("core5 should not be transient", core5.getCoreDescriptor().isTransient());
       assertTrue("core5 should  be loadable", core5.getCoreDescriptor().isLoadOnStartup());
 
       core1.close();
@@ -153,29 +152,29 @@ public class TestLazyCores extends SolrTestCaseJ4 {
 
       // Just get a couple of searches to work!
       assertQ("test prefix query",
-          makeReq(core4, "q", "{!prefix f=v_t}hel")
+          makeReq(core4, "q", "{!prefix f=v_t}hel", "wt", "xml")
           , "//result[@numFound='2']"
       );
 
       assertQ("test raw query",
-          makeReq(core4, "q", "{!raw f=v_t}hello")
+          makeReq(core4, "q", "{!raw f=v_t}hello", "wt", "xml")
           , "//result[@numFound='2']"
       );
 
       // Now just insure that the normal searching on "collection1" finds _0_ on the same query that found _2_ above.
       // Use of makeReq above and req below is tricky, very tricky.
       assertQ("test raw query",
-          req("q", "{!raw f=v_t}hello")
+          req("q", "{!raw f=v_t}hello", "wt", "xml")
           , "//result[@numFound='0']"
       );
 
       // no analysis is done, so these should match nothing
       assertQ("test raw query",
-          makeReq(core4, "q", "{!raw f=v_t}Hello")
+          makeReq(core4, "q", "{!raw f=v_t}Hello", "wt", "xml")
           , "//result[@numFound='0']"
       );
       assertQ("test raw query",
-          makeReq(core4, "q", "{!raw f=v_f}1.5")
+          makeReq(core4, "q", "{!raw f=v_f}1.5", "wt", "xml")
           , "//result[@numFound='0']"
       );
 
@@ -194,8 +193,8 @@ public class TestLazyCores extends SolrTestCaseJ4 {
     try {
       // First check that all the cores that should be loaded at startup actually are.
 
-      checkInCores(cc, "collection1",  "collectionLazy2", "collectionLazy5");
-      checkNotInCores(cc,"collectionLazy3", "collectionLazy4", "collectionLazy6",
+      checkInCores(cc, "collection1", "collectionLazy2", "collectionLazy5");
+      checkNotInCores(cc, "collectionLazy3", "collectionLazy4", "collectionLazy6",
           "collectionLazy7", "collectionLazy8", "collectionLazy9");
 
       // By putting these in non-alpha order, we're also checking that we're  not just seeing an artifact.
@@ -246,33 +245,59 @@ public class TestLazyCores extends SolrTestCaseJ4 {
     }
   }
 
-  private void checkNotInCores(CoreContainer cc, String... nameCheck) {
+  // Test case for SOLR-4300
+  @Test
+  public void testRace() throws Exception {
+    final List<SolrCore> theCores = new ArrayList<SolrCore>();
+    final CoreContainer cc = init();
+    try {
+
+      Thread[] threads = new Thread[15];
+      for (int idx = 0; idx < threads.length; idx++) {
+        threads[idx] = new Thread() {
+          @Override
+          public void run() {
+            SolrCore core = cc.getCore("collectionLazy3");
+            synchronized (theCores) {
+              theCores.add(core);
+            }
+          }
+        };
+        threads[idx].start();
+      }
+      for (Thread thread : threads) {
+        thread.join();
+      }
+      for (int idx = 0; idx < theCores.size() - 1; ++idx) {
+        assertEquals("Cores should be the same!", theCores.get(idx), theCores.get(idx + 1));
+      }
+      for (SolrCore core : theCores) {
+        core.close();
+      }
+
+    } finally {
+      cc.shutdown();
+    }
+  }
+
+  public static void checkNotInCores(CoreContainer cc, String... nameCheck) {
     Collection<String> names = cc.getCoreNames();
     for (String name : nameCheck) {
       assertFalse("core " + name + " was found in the list of cores", names.contains(name));
     }
   }
 
-  private void checkInCores(CoreContainer cc, String... nameCheck) {
+  public static void checkInCores(CoreContainer cc, String... nameCheck) {
     Collection<String> names = cc.getCoreNames();
     for (String name : nameCheck) {
       assertTrue("core " + name + " was not found in the list of cores", names.contains(name));
     }
   }
 
-
   private void addLazy(SolrCore core, String... fieldValues) throws IOException {
     UpdateHandler updater = core.getUpdateHandler();
-    SolrQueryRequest req = makeReq(core);
-    AddUpdateCommand cmd = new AddUpdateCommand(req);
-    if ((fieldValues.length % 2) != 0) {
-      throw new RuntimeException("The length of the string array (query arguments) needs to be even");
-    }
-    cmd.solrDoc = new SolrInputDocument();
-    for (int idx = 0; idx < fieldValues.length; idx += 2) {
-      cmd.solrDoc.addField(fieldValues[idx], fieldValues[idx + 1]);
-    }
-
+    AddUpdateCommand cmd = new AddUpdateCommand(makeReq(core));
+    cmd.solrDoc = sdoc(fieldValues);
     updater.addDoc(cmd);
   }
 
@@ -292,16 +317,33 @@ public class TestLazyCores extends SolrTestCaseJ4 {
   }
 
   private final static String LOTS_SOLR_XML = " <solr persistent=\"false\"> " +
-      "<cores adminPath=\"/admin/cores\" defaultCoreName=\"collectionLazy2\" swappableCacheSize=\"4\">  " +
-      "<core name=\"collection1\" instanceDir=\"collection1\" /> " +
-      "<core name=\"collectionLazy2\" instanceDir=\"collection2\" swappable=\"true\" loadOnStartup=\"true\"  /> " +
-      "<core name=\"collectionLazy3\" instanceDir=\"collection3\" swappable=\"on\" loadOnStartup=\"false\"/> " +
-      "<core name=\"collectionLazy4\" instanceDir=\"collection4\" swappable=\"false\" loadOnStartup=\"false\"/> " +
-      "<core name=\"collectionLazy5\" instanceDir=\"collection5\" swappable=\"false\" loadOnStartup=\"true\"/> " +
-      "<core name=\"collectionLazy6\" instanceDir=\"collection6\" swappable=\"true\" loadOnStartup=\"false\" /> " +
-      "<core name=\"collectionLazy7\" instanceDir=\"collection7\" swappable=\"true\" loadOnStartup=\"false\" /> " +
-      "<core name=\"collectionLazy8\" instanceDir=\"collection8\" swappable=\"true\" loadOnStartup=\"false\" /> " +
-      "<core name=\"collectionLazy9\" instanceDir=\"collection9\" swappable=\"true\" loadOnStartup=\"false\" /> " +
+      "<cores adminPath=\"/admin/cores\" defaultCoreName=\"collectionLazy2\" transientCacheSize=\"4\">  " +
+      "<core name=\"collection1\" instanceDir=\"collection1\" config=\"solrconfig-minimal.xml\" schema=\"schema-tiny.xml\" /> " +
+
+      "<core name=\"collectionLazy2\" instanceDir=\"collection2\" transient=\"true\" loadOnStartup=\"true\"  " +
+      " config=\"solrconfig-minimal.xml\" schema=\"schema-tiny.xml\" /> " +
+
+      "<core name=\"collectionLazy3\" instanceDir=\"collection3\" transient=\"on\" loadOnStartup=\"false\" " +
+      "config=\"solrconfig-minimal.xml\" schema=\"schema-tiny.xml\"  /> " +
+
+      "<core name=\"collectionLazy4\" instanceDir=\"collection4\" transient=\"false\" loadOnStartup=\"false\" " +
+      "config=\"solrconfig-minimal.xml\" schema=\"schema-tiny.xml\"  /> " +
+
+      "<core name=\"collectionLazy5\" instanceDir=\"collection5\" transient=\"false\" loadOnStartup=\"true\" " +
+      "config=\"solrconfig-minimal.xml\" schema=\"schema-tiny.xml\"  /> " +
+
+      "<core name=\"collectionLazy6\" instanceDir=\"collection6\" transient=\"true\" loadOnStartup=\"false\" " +
+      "config=\"solrconfig-minimal.xml\" schema=\"schema-tiny.xml\"  /> " +
+
+      "<core name=\"collectionLazy7\" instanceDir=\"collection7\" transient=\"true\" loadOnStartup=\"false\" " +
+      "config=\"solrconfig-minimal.xml\" schema=\"schema-tiny.xml\"  /> " +
+
+      "<core name=\"collectionLazy8\" instanceDir=\"collection8\" transient=\"true\" loadOnStartup=\"false\" " +
+      "config=\"solrconfig-minimal.xml\" schema=\"schema-tiny.xml\"  /> " +
+
+      "<core name=\"collectionLazy9\" instanceDir=\"collection9\" transient=\"true\" loadOnStartup=\"false\" " +
+      "config=\"solrconfig-minimal.xml\" schema=\"schema-tiny.xml\"  /> " +
+
       "</cores> " +
       "</solr>";
 }

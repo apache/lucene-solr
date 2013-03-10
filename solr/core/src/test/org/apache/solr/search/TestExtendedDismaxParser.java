@@ -17,25 +17,35 @@
 
 package org.apache.solr.search;
 
+import java.util.HashSet;
+import java.util.Random;
+import java.util.Set;
+
+import org.apache.lucene.search.BooleanClause;
+import org.apache.lucene.search.BooleanQuery;
+import org.apache.lucene.search.DisjunctionMaxQuery;
+import org.apache.lucene.search.FuzzyQuery;
+import org.apache.lucene.search.Query;
+import org.apache.lucene.search.TermQuery;
+import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.common.SolrException;
+import org.apache.solr.common.params.ModifiableSolrParams;
+import org.apache.solr.common.params.SolrParams;
+import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.util.AbstractSolrTestCase;
+import org.apache.solr.util.SolrPluginUtils;
 import org.junit.BeforeClass;
 import org.junit.Test;
 
-public class TestExtendedDismaxParser extends AbstractSolrTestCase {
+public class TestExtendedDismaxParser extends SolrTestCaseJ4 {
 
   @BeforeClass
   public static void beforeClass() throws Exception {
     initCore("solrconfig.xml", "schema12.xml");
+    index();
   }
   
-  // public String getCoreName() { return "collection1"; }
-
-  @Override
-  public void setUp() throws Exception {
-    // if you override setUp or tearDown, you better call
-    // the super classes version
-    super.setUp();
+   public static void index() throws Exception {
     assertU(adoc("id", "42", "trait_ss", "Tool", "trait_ss", "Obnoxious",
             "name", "Zapp Brannigan"));
     assertU(adoc("id", "43" ,
@@ -69,13 +79,65 @@ public class TestExtendedDismaxParser extends AbstractSolrTestCase {
     assertU(adoc("id", "61", "text_sw", "bazaaa")); // synonyms in an expansion group
     assertU(commit());
   }
-  @Override
-  public void tearDown() throws Exception {
-    // if you override setUp or tearDown, you better call
-    // the super classes version
-    super.tearDown();
+
+  @Test
+  public void testSyntax() throws Exception {
+    // a bare * should be treated as *:*
+    assertJQ(req("defType","edismax", "q","*", "df","doesnotexist_s")
+        ,"/response/docs/[0]=="   // make sure we get something...
+    );
+    assertJQ(req("defType","edismax", "q","doesnotexist_s:*")
+        ,"/response/numFound==0"   // nothing should be found
+    );
+    assertJQ(req("defType","edismax","q","doesnotexist_s:*")
+        ,"/response/numFound==0"   // nothing should be found
+    );
+    assertJQ(req("defType","edismax","q","doesnotexist_s:( * * * )")
+        ,"/response/numFound==0"   // nothing should be found
+    );
   }
-  
+
+
+  public void testTrailingOperators() throws Exception {
+    // really just test that exceptions aren't thrown by
+    // single + -
+
+    assertJQ(req("defType","edismax", "q","-")
+        ,"/response==");
+
+    assertJQ(req("defType","edismax", "q","+")
+        ,"/response==");
+
+    assertJQ(req("defType","edismax", "q","+ - +")
+        ,"/response==");
+
+    assertJQ(req("defType","edismax", "q","- + -")
+        ,"/response==");
+
+    assertJQ(req("defType","edismax", "q","id:47 +")
+        ,"/response/numFound==1");
+
+    assertJQ(req("defType","edismax", "q","id:47 -")
+        ,"/response/numFound==1");
+
+    Random r = random();
+    for (int i=0; i<100; i++) {
+      StringBuilder sb = new StringBuilder();
+      for (int j=0; j<r.nextInt(10); j++) {
+        switch (r.nextInt(3)) {
+          case 0: sb.append(' '); break;
+          case 1: sb.append('+'); break;
+          case 2: sb.append('-'); break;
+          case 3: sb.append((char)r.nextInt(127)); break;
+        }
+      }
+
+      String q = sb.toString();
+      assertJQ(req("defType","edismax", "q",q)
+          ,"/response==");
+    }
+  }
+
 
   public void testLowercaseOperators() {
     assertQ("Upper case operator",
@@ -510,37 +572,42 @@ public class TestExtendedDismaxParser extends AbstractSolrTestCase {
   
   public void testCyclicAliasing() throws Exception {
     try {
-      h.query(req("defType","edismax", "q","ignore_exception", "qf","who", "f.who.qf","name","f.name.qf","who"));
-      fail("Simple cyclic alising");
-    } catch (SolrException e) {
-      assertTrue(e.getCause().getMessage().contains("Field aliases lead to a cycle"));
-    }
-    
-    try {
-      h.query(req("defType","edismax", "q","ignore_exception", "qf","who", "f.who.qf","name","f.name.qf","myalias", "f.myalias.qf","who"));
-      fail();
-    } catch (SolrException e) {
-      assertTrue(e.getCause().getMessage().contains("Field aliases lead to a cycle"));
-    }
-    
-    try {
-      h.query(req("defType","edismax", "q","ignore_exception", "qf","field1", "f.field1.qf","field2 field3","f.field2.qf","field4 field5", "f.field4.qf","field5", "f.field5.qf","field6", "f.field3.qf","field6"));
-    } catch (SolrException e) {
-      fail("This is not cyclic alising");
-    }
-    
-    try {
-      h.query(req("defType","edismax", "q","ignore_exception", "qf","field1", "f.field1.qf","field2 field3", "f.field2.qf","field4 field5", "f.field4.qf","field5", "f.field5.qf","field4"));
-      fail();
-    } catch (SolrException e) {
-      assertTrue(e.getCause().getMessage().contains("Field aliases lead to a cycle"));
-    }
-    
-    try {
-      h.query(req("defType","edismax", "q","who:(Zapp Pig) ignore_exception", "qf","field1", "f.who.qf","name","f.name.qf","myalias", "f.myalias.qf","who"));
-      fail();
-    } catch (SolrException e) {
-      assertTrue(e.getCause().getMessage().contains("Field aliases lead to a cycle"));
+      ignoreException(".*Field aliases lead to a cycle.*");
+      try {
+        h.query(req("defType","edismax", "q","blarg", "qf","who", "f.who.qf","name","f.name.qf","who"));
+        fail("Simple cyclic alising not detected");
+      } catch (SolrException e) {
+        assertTrue(e.getCause().getMessage().contains("Field aliases lead to a cycle"));
+      }
+      
+      try {
+        h.query(req("defType","edismax", "q","blarg", "qf","who", "f.who.qf","name","f.name.qf","myalias", "f.myalias.qf","who"));
+        fail("Cyclic alising not detected");
+      } catch (SolrException e) {
+        assertTrue(e.getCause().getMessage().contains("Field aliases lead to a cycle"));
+      }
+      
+      try {
+        h.query(req("defType","edismax", "q","blarg", "qf","field1", "f.field1.qf","field2 field3","f.field2.qf","field4 field5", "f.field4.qf","field5", "f.field5.qf","field6", "f.field3.qf","field6"));
+      } catch (SolrException e) {
+        fail("This is not cyclic alising");
+      }
+      
+      try {
+        h.query(req("defType","edismax", "q","blarg", "qf","field1", "f.field1.qf","field2 field3", "f.field2.qf","field4 field5", "f.field4.qf","field5", "f.field5.qf","field4"));
+        fail("Cyclic alising not detected");
+      } catch (SolrException e) {
+        assertTrue(e.getCause().getMessage().contains("Field aliases lead to a cycle"));
+      }
+      
+      try {
+        h.query(req("defType","edismax", "q","who:(Zapp Pig)", "qf","field1", "f.who.qf","name","f.name.qf","myalias", "f.myalias.qf","who"));
+        fail("Cyclic alising not detected");
+      } catch (SolrException e) {
+        assertTrue(e.getCause().getMessage().contains("Field aliases lead to a cycle"));
+      }
+    } finally {
+      resetExceptionIgnores();
     }
   }
 
@@ -619,10 +686,10 @@ public class TestExtendedDismaxParser extends AbstractSolrTestCase {
     assertU(commit());
 
     assertQ("default order assumption wrong",
-        req("q",   "foo bar", 
-            "qf",  "phrase_sw",
-            "bf",  "boost_d",
-            "fl",  "score,*",
+        req("q", "foo bar",
+            "qf", "phrase_sw",
+            "bf", "boost_d",
+            "fl", "score,*",
             "defType", "edismax"),
         "//doc[1]/str[@name='id'][.='s3']",
         "//doc[2]/str[@name='id'][.='s2']",
@@ -630,13 +697,13 @@ public class TestExtendedDismaxParser extends AbstractSolrTestCase {
         "//doc[4]/str[@name='id'][.='s0']"); 
 
     assertQ("pf not working",
-          req("q",   "foo bar", 
-              "qf",  "phrase_sw",
-              "pf",  "phrase_sw^10",
-              "bf",  "boost_d",
-              "fl",  "score,*",
-              "defType", "edismax"),
-          "//doc[1]/str[@name='id'][.='s0']");
+        req("q", "foo bar",
+            "qf", "phrase_sw",
+            "pf", "phrase_sw^10",
+            "bf", "boost_d",
+            "fl", "score,*",
+            "defType", "edismax"),
+        "//doc[1]/str[@name='id'][.='s0']");
     
     assertQ("pf2 not working",
         req("q",   "foo bar", 
@@ -929,5 +996,158 @@ public class TestExtendedDismaxParser extends AbstractSolrTestCase {
             "mm", "100%",
             "defType", "edismax")
         , "*[count(//doc)=1]");
+  }
+  
+  public void testEdismaxSimpleExtension() throws SyntaxError {
+    ModifiableSolrParams params = new ModifiableSolrParams();
+    params.set("q", "foo bar");
+    params.set("qf", "subject title^5");
+    params.set("qf_fr", "subject_fr title_fr^5");
+    params.set("qf_en", "subject_en title_en^5");
+    params.set("qf_es", "subject_es title_es^5");
+    
+    MultilanguageQueryParser parser = new MultilanguageQueryParser("foo bar", new ModifiableSolrParams(), params, req(params));
+    Query query = parser.parse();
+    assertNotNull(query);
+    assertTrue(containsClause(query, "title", "foo", 5, false));
+    assertTrue(containsClause(query, "title", "bar", 5, false));
+    assertTrue(containsClause(query, "subject", "foo", 1, false));
+    assertTrue(containsClause(query, "subject", "bar", 1, false));
+    
+    params.set("language", "es");
+    parser = new MultilanguageQueryParser("foo bar", new ModifiableSolrParams(), params, req(params));
+    query = parser.parse();
+    assertNotNull(query);
+    assertTrue(containsClause(query, "title_es", "foo", 5, false));
+    assertTrue(containsClause(query, "title_es", "bar", 5, false));
+    assertTrue(containsClause(query, "subject_es", "foo", 1, false));
+    assertTrue(containsClause(query, "subject_es", "bar", 1, false));
+    
+    FuzzyDismaxQParser parser2 = new FuzzyDismaxQParser("foo bar absence", new ModifiableSolrParams(), params, req(params));
+    query = parser2.parse();
+    assertNotNull(query);
+    assertTrue(containsClause(query, "title", "foo", 5, false));
+    assertTrue(containsClause(query, "title", "bar", 5, false));
+    assertTrue(containsClause(query, "title", "absence", 5, true));
+    
+  }
+
+  private boolean containsClause(Query query, String field, String value,
+      int boost, boolean fuzzy) {
+    
+    if(query instanceof BooleanQuery) {
+      return containsClause((BooleanQuery)query, field, value, boost, fuzzy);
+    }
+    if(query instanceof DisjunctionMaxQuery) {
+      return containsClause((DisjunctionMaxQuery)query, field, value, boost, fuzzy);
+    }
+    if(query instanceof TermQuery && !fuzzy) {
+      return containsClause((TermQuery)query, field, value, boost);
+    }
+    if(query instanceof FuzzyQuery && fuzzy) {
+      return containsClause((FuzzyQuery)query, field, value, boost);
+    }
+    return false;
+  }
+
+  private boolean containsClause(FuzzyQuery query, String field, String value,
+      int boost) {
+    if(query.getTerm().field().equals(field) && 
+       query.getTerm().bytes().utf8ToString().equals(value) && 
+       query.getBoost() == boost) {
+      return true;
+    }
+    return false;
+  }
+
+  private boolean containsClause(BooleanQuery query, String field, String value, int boost, boolean fuzzy) {
+    for(BooleanClause clause:query.getClauses()) {
+      if(containsClause(clause.getQuery(), field, value, boost, fuzzy)) {
+        return true;
+      }
+    }
+    return false;
+  }
+  
+  private boolean containsClause(TermQuery query, String field, String value, int boost) {
+    if(query.getTerm().field().equals(field) && 
+       query.getTerm().bytes().utf8ToString().equals(value) && 
+       query.getBoost() == boost) {
+      return true;
+    }
+    return false;
+  }
+  
+  private boolean containsClause(DisjunctionMaxQuery query, String field, String value, int boost, boolean fuzzy) {
+    for(Query disjunct:query.getDisjuncts()) {
+      if(containsClause(disjunct, field, value, boost, fuzzy)) {
+        return true;
+      }
+    }
+    return false;
+  }
+
+  class MultilanguageQueryParser extends ExtendedDismaxQParser {
+
+    public MultilanguageQueryParser(String qstr, SolrParams localParams,
+        SolrParams params, SolrQueryRequest req) {
+      super(qstr, localParams, params, req);
+    }
+    
+    @Override
+    protected ExtendedDismaxConfiguration createConfiguration(String qstr,
+        SolrParams localParams, SolrParams params, SolrQueryRequest req) {
+      return new MultilanguageDismaxConfiguration(localParams, params, req);
+    }
+    
+    class MultilanguageDismaxConfiguration extends ExtendedDismaxConfiguration {
+
+      public MultilanguageDismaxConfiguration(SolrParams localParams,
+          SolrParams params, SolrQueryRequest req) {
+        super(localParams, params, req);
+        String language = params.get("language");
+        if(language != null) {
+          super.queryFields = SolrPluginUtils.parseFieldBoosts(solrParams.getParams("qf_" + language)); 
+        }
+      }
+      
+    }
+    
+  }
+  
+  
+  
+  class FuzzyDismaxQParser extends ExtendedDismaxQParser {
+
+    public FuzzyDismaxQParser(String qstr, SolrParams localParams,
+        SolrParams params, SolrQueryRequest req) {
+      super(qstr, localParams, params, req);
+    }
+    
+    @Override
+    protected ExtendedSolrQueryParser createEdismaxQueryParser(QParser qParser,
+        String field) {
+      return new FuzzyQueryParser(qParser, field);
+    }
+    
+    class FuzzyQueryParser extends ExtendedSolrQueryParser{
+      
+      private Set<String> frequentlyMisspelledWords;
+
+      public FuzzyQueryParser(QParser parser, String defaultField) {
+        super(parser, defaultField);
+        frequentlyMisspelledWords = new HashSet<String>();
+        frequentlyMisspelledWords.add("absence");
+      }
+      
+      @Override
+      protected Query getFieldQuery(String field,
+          String val, boolean quoted) throws SyntaxError {
+        if(frequentlyMisspelledWords.contains(val)) {
+          return getFuzzyQuery(field, val, 0.75F);
+        }
+        return super.getFieldQuery(field, val, quoted);
+      }
+    }
   }
 }

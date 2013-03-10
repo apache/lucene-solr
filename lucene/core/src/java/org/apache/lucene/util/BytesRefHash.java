@@ -69,7 +69,7 @@ public final class BytesRefHash {
   public BytesRefHash() { 
     this(new ByteBlockPool(new DirectAllocator()));
   }
-
+  
   /**
    * Creates a new {@link BytesRefHash}
    */
@@ -118,7 +118,8 @@ public final class BytesRefHash {
   public BytesRef get(int ord, BytesRef ref) {
     assert bytesStart != null : "bytesStart is null - not initialized";
     assert ord < bytesStart.length: "ord exceeds byteStart len: " + bytesStart.length;
-    return pool.setBytesRef(ref, bytesStart[ord]);
+    pool.setBytesRef(ref, bytesStart[ord]);
+    return ref;
   }
 
   /**
@@ -129,7 +130,7 @@ public final class BytesRefHash {
    * order to reuse this {@link BytesRefHash} instance.
    * </p>
    */
-  public int[] compact() {
+  int[] compact() {
     assert bytesStart != null : "Bytesstart is null - not initialized";
     int upto = 0;
     for (int i = 0; i < hashSize; i++) {
@@ -171,8 +172,9 @@ public final class BytesRefHash {
       protected int compare(int i, int j) {
         final int ord1 = compact[i], ord2 = compact[j];
         assert bytesStart.length > ord1 && bytesStart.length > ord2;
-        return comp.compare(pool.setBytesRef(scratch1, bytesStart[ord1]),
-          pool.setBytesRef(scratch2, bytesStart[ord2]));
+        pool.setBytesRef(scratch1, bytesStart[ord1]);
+        pool.setBytesRef(scratch2, bytesStart[ord2]);
+        return comp.compare(scratch1, scratch2);
       }
 
       @Override
@@ -186,8 +188,8 @@ public final class BytesRefHash {
       protected int comparePivot(int j) {
         final int ord = compact[j];
         assert bytesStart.length > ord;
-        return comp.compare(pivot,
-          pool.setBytesRef(scratch2, bytesStart[ord]));
+        pool.setBytesRef(scratch2, bytesStart[ord]);
+        return comp.compare(pivot, scratch2);
       }
       
       private final BytesRef pivot = new BytesRef(),
@@ -197,7 +199,8 @@ public final class BytesRefHash {
   }
 
   private boolean equals(int ord, BytesRef b) {
-    return pool.setBytesRef(scratch1, bytesStart[ord]).bytesEquals(b);
+    pool.setBytesRef(scratch1, bytesStart[ord]);
+    return scratch1.bytesEquals(b);
   }
 
   private boolean shrink(int targetSize) {
@@ -208,8 +211,7 @@ public final class BytesRefHash {
       newSize /= 2;
     }
     if (newSize != hashSize) {
-      bytesUsed.addAndGet(RamUsageEstimator.NUM_BYTES_INT
-          * -(hashSize - newSize));
+      bytesUsed.addAndGet(RamUsageEstimator.NUM_BYTES_INT * -(hashSize - newSize));
       hashSize = newSize;
       ords = new int[hashSize];
       Arrays.fill(ords, -1);
@@ -248,8 +250,7 @@ public final class BytesRefHash {
   public void close() {
     clear(true);
     ords = null;
-    bytesUsed.addAndGet(RamUsageEstimator.NUM_BYTES_INT
-        * -hashSize);
+    bytesUsed.addAndGet(RamUsageEstimator.NUM_BYTES_INT * -hashSize);
   }
 
   /**
@@ -533,50 +534,6 @@ public final class BytesRefHash {
      */
     public abstract Counter bytesUsed();
   }
-  
-  /** A simple {@link BytesStartArray} that tracks all
-   *  memory allocation using a shared {@link Counter}
-   *  instance.  */
-  public static class TrackingDirectBytesStartArray extends BytesStartArray {
-    protected final int initSize;
-    private int[] bytesStart;
-    protected final Counter bytesUsed;
-    
-    public TrackingDirectBytesStartArray(int initSize, Counter bytesUsed) {
-      this.initSize = initSize;
-      this.bytesUsed = bytesUsed;
-    }
-
-    @Override
-    public int[] clear() {
-      if (bytesStart != null) {
-        bytesUsed.addAndGet(-bytesStart.length * RamUsageEstimator.NUM_BYTES_INT);
-      }
-      return bytesStart = null;
-    }
-
-    @Override
-    public int[] grow() {
-      assert bytesStart != null;
-      final int oldSize = bytesStart.length;
-      bytesStart = ArrayUtil.grow(bytesStart, bytesStart.length + 1);
-      bytesUsed.addAndGet((bytesStart.length - oldSize) * RamUsageEstimator.NUM_BYTES_INT);
-      return bytesStart;
-    }
-
-    @Override
-    public int[] init() {
-      bytesStart = new int[ArrayUtil.oversize(initSize,
-          RamUsageEstimator.NUM_BYTES_INT)];
-      bytesUsed.addAndGet((bytesStart.length) * RamUsageEstimator.NUM_BYTES_INT);
-      return bytesStart;
-    }
-
-    @Override
-    public Counter bytesUsed() {
-      return bytesUsed;
-    }
-  }
 
   /** A simple {@link BytesStartArray} that tracks
    *  memory allocation using a private {@link AtomicLong}
@@ -590,9 +547,13 @@ public final class BytesRefHash {
     private int[] bytesStart;
     private final Counter bytesUsed;
     
+    public DirectBytesStartArray(int initSize, Counter counter) {
+      this.bytesUsed = counter;
+      this.initSize = initSize;      
+    }
+    
     public DirectBytesStartArray(int initSize) {
-      this.bytesUsed = Counter.newCounter();
-      this.initSize = initSize;
+      this(initSize, Counter.newCounter());
     }
 
     @Override

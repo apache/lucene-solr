@@ -289,6 +289,8 @@ public class TestTermVectorsReader extends LuceneTestCase {
       String term = text.utf8ToString();
       //System.out.println("Term: " + term);
       assertEquals(testTerms[i], term);
+      assertNotNull(termsEnum.docs(null, null));
+      assertNull(termsEnum.docsAndPositions(null, null)); // no pos
     }
     reader.close();
   }

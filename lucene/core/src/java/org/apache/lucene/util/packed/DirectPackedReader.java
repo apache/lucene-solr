@@ -26,19 +26,9 @@ class DirectPackedReader extends PackedInts.ReaderImpl {
   private final IndexInput in;
   private final long startPointer;
 
-  // masks[n-1] masks for bottom n bits
-  private final long[] masks;
-
   public DirectPackedReader(int bitsPerValue, int valueCount, IndexInput in) {
     super(valueCount, bitsPerValue);
     this.in = in;
-
-    long v = 1;
-    masks = new long[bitsPerValue];
-    for (int i = 0; i < bitsPerValue; i++) {
-      v *= 2;
-      masks[i] = v - 1;
-    }
 
     startPointer = in.getFilePointer();
   }

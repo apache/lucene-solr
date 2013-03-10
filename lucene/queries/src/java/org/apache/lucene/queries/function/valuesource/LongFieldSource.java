@@ -64,15 +64,19 @@ public class LongFieldSource extends FieldCacheSource {
     return val;
   }
 
+  public String longToString(long val) {
+    return longToObject(val).toString();
+  }
+
   @Override
   public FunctionValues getValues(Map context, AtomicReaderContext readerContext) throws IOException {
-    final long[] arr = cache.getLongs(readerContext.reader(), field, parser, true);
+    final FieldCache.Longs arr = cache.getLongs(readerContext.reader(), field, parser, true);
     final Bits valid = cache.getDocsWithField(readerContext.reader(), field);
     
     return new LongDocValues(this) {
       @Override
       public long longVal(int doc) {
-        return arr[doc];
+        return arr.get(doc);
       }
 
       @Override
@@ -82,7 +86,12 @@ public class LongFieldSource extends FieldCacheSource {
 
       @Override
       public Object objectVal(int doc) {
-        return valid.get(doc) ? longToObject(arr[doc]) : null;
+        return valid.get(doc) ? longToObject(arr.get(doc)) : null;
+      }
+
+      @Override
+      public String strVal(int doc) {
+        return valid.get(doc) ? longToString(arr.get(doc)) : null;
       }
 
       @Override
@@ -111,7 +120,7 @@ public class LongFieldSource extends FieldCacheSource {
         return new ValueSourceScorer(reader, this) {
           @Override
           public boolean matchesValue(int doc) {
-            long val = arr[doc];
+            long val = arr.get(doc);
             // only check for deleted if it's the default value
             // if (val==0 && reader.isDeleted(doc)) return false;
             return val >= ll && val <= uu;
@@ -122,7 +131,6 @@ public class LongFieldSource extends FieldCacheSource {
       @Override
       public ValueFiller getValueFiller() {
         return new ValueFiller() {
-          private final long[] longArr = arr;
           private final MutableValueLong mval = newMutableValueLong();
 
           @Override
@@ -132,7 +140,7 @@ public class LongFieldSource extends FieldCacheSource {
 
           @Override
           public void fillValue(int doc) {
-            mval.value = longArr[doc];
+            mval.value = arr.get(doc);
             mval.exists = valid.get(doc);
           }
         };

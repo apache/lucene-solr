@@ -3,6 +3,7 @@
   <component name="CompilerConfiguration">
     <wildcardResourcePatterns>
       <entry name="!*.(cpp|java|jflex|jflex-macro|jj|js|pl|py)"/>
+      <entry name="test-files:*"/>
     </wildcardResourcePatterns>
   </component>
   <component name="JavacSettings">

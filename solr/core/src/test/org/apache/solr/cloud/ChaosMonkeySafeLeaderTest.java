@@ -20,30 +20,41 @@ package org.apache.solr.cloud;
 import java.util.ArrayList;
 import java.util.List;
 
+import org.apache.lucene.util.LuceneTestCase.Slow;
 import org.apache.solr.client.solrj.SolrQuery;
 import org.apache.solr.common.SolrInputDocument;
+import org.apache.solr.core.Diagnostics;
 import org.apache.solr.core.SolrCore;
 import org.apache.solr.servlet.SolrDispatchFilter;
 import org.apache.solr.update.DirectUpdateHandler2;
+import org.apache.solr.update.SolrCmdDistributor;
 import org.junit.After;
 import org.junit.AfterClass;
 import org.junit.Before;
 import org.junit.BeforeClass;
-import org.junit.Ignore;
 
-@Ignore("SOLR-3126")
-public class ChaosMonkeySafeLeaderTest extends AbstractFullDistribZkTestBase {
+@Slow
+public class  ChaosMonkeySafeLeaderTest extends AbstractFullDistribZkTestBase {
   
-  private static final int BASE_RUN_LENGTH = 120000;
+  private static final Integer RUN_LENGTH = Integer.parseInt(System.getProperty("solr.tests.cloud.cm.runlength", "-1"));
 
   @BeforeClass
   public static void beforeSuperClass() {
-
+    SolrCmdDistributor.testing_errorHook = new Diagnostics.Callable() {
+      @Override
+      public void call(Object... data) {
+        SolrCmdDistributor.Request sreq = (SolrCmdDistributor.Request)data[1];
+        if (sreq.exception == null) return;
+        if (sreq.exception.getMessage().contains("Timeout")) {
+          Diagnostics.logThreadDumps("REQUESTING THREAD DUMP DUE TO TIMEOUT: " + sreq.exception.getMessage());
+        }
+      }
+    };
   }
   
   @AfterClass
   public static void afterSuperClass() {
-    
+    SolrCmdDistributor.testing_errorHook = null;
   }
   
   @Before
@@ -66,8 +77,8 @@ public class ChaosMonkeySafeLeaderTest extends AbstractFullDistribZkTestBase {
   
   public ChaosMonkeySafeLeaderTest() {
     super();
-    sliceCount = 3;//atLeast(2);
-    shardCount = 12;//atLeast(sliceCount*2);
+    sliceCount = Integer.parseInt(System.getProperty("solr.tests.cloud.cm.slicecount", "3"));
+    shardCount = Integer.parseInt(System.getProperty("solr.tests.cloud.cm.shardcount", "12"));
   }
   
   @Override
@@ -85,16 +96,24 @@ public class ChaosMonkeySafeLeaderTest extends AbstractFullDistribZkTestBase {
     List<StopableIndexingThread> threads = new ArrayList<StopableIndexingThread>();
     int threadCount = 2;
     for (int i = 0; i < threadCount; i++) {
-      StopableIndexingThread indexThread = new StopableIndexingThread(i * 50000, true);
+      StopableIndexingThread indexThread = new StopableIndexingThread(10000 + i*50000, true);
       threads.add(indexThread);
       indexThread.start();
     }
     
     chaosMonkey.startTheMonkey(false, 500);
-    int runLength = atLeast(BASE_RUN_LENGTH);
-    Thread.sleep(runLength);
-    
-    chaosMonkey.stopTheMonkey();
+    long runLength;
+    if (RUN_LENGTH != -1) {
+      runLength = RUN_LENGTH;
+    } else {
+      int[] runTimes = new int[] {5000,6000,10000,15000,15000,30000,30000,45000,90000,120000};
+      runLength = runTimes[random().nextInt(runTimes.length - 1)];
+    }
+    try {
+      Thread.sleep(runLength);
+    } finally {
+      chaosMonkey.stopTheMonkey();
+    }
     
     for (StopableIndexingThread indexThread : threads) {
       indexThread.safeStop();
@@ -113,7 +132,7 @@ public class ChaosMonkeySafeLeaderTest extends AbstractFullDistribZkTestBase {
 
     Thread.sleep(2000);
 
-    waitForThingsToLevelOut(Integer.MAX_VALUE); //Math.round((runLength / 1000.0f / 3.0f)));
+    waitForThingsToLevelOut(180000);
 
     checkShardConsistency(true, true);
     

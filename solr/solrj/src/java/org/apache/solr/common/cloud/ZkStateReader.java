@@ -51,6 +51,7 @@ public class ZkStateReader {
   
   public static final String BASE_URL_PROP = "base_url";
   public static final String NODE_NAME_PROP = "node_name";
+  public static final String CORE_NODE_NAME_PROP = "core_node_name";
   public static final String ROLES_PROP = "roles";
   public static final String STATE_PROP = "state";
   public static final String CORE_NAME_PROP = "core";
@@ -61,6 +62,7 @@ public class ZkStateReader {
   
   public static final String COLLECTIONS_ZKNODE = "/collections";
   public static final String LIVE_NODES_ZKNODE = "/live_nodes";
+  public static final String ALIASES = "/aliases.json";
   public static final String CLUSTER_STATE = "/clusterstate.json";
   
   public static final String RECOVERING = "recovering";
@@ -128,7 +130,9 @@ public class ZkStateReader {
   private boolean closeClient = false;
 
   private ZkCmdExecutor cmdExecutor;
-  
+
+  private Aliases aliases = new Aliases();
+
   public ZkStateReader(SolrZkClient zkClient) {
     this.zkClient = zkClient;
     initZkCmdExecutor(zkClient.getZkClientTimeout());
@@ -176,12 +180,17 @@ public class ZkStateReader {
     updateClusterState(true, true);
   }
   
+  public Aliases getAliases() {
+    return aliases;
+  }
+  
   public synchronized void createClusterStateWatchersAndUpdate() throws KeeperException,
       InterruptedException {
     // We need to fetch the current cluster state and the set of live nodes
     
     synchronized (getUpdateLock()) {
       cmdExecutor.ensureExists(CLUSTER_STATE, zkClient);
+      cmdExecutor.ensureExists(ALIASES, zkClient);
       
       log.info("Updating cluster state from ZooKeeper... ");
       
@@ -285,6 +294,49 @@ public class ZkStateReader {
       liveNodeSet.addAll(liveNodes);
       ClusterState clusterState = ClusterState.load(zkClient, liveNodeSet);
       this.clusterState = clusterState;
+      
+      zkClient.exists(ALIASES,
+          new Watcher() {
+            
+            @Override
+            public void process(WatchedEvent event) {
+              // session events are not change events,
+              // and do not remove the watcher
+              if (EventType.None.equals(event.getType())) {
+                return;
+              }
+              try {
+                synchronized (ZkStateReader.this.getUpdateLock()) {
+                  log.info("Updating aliases... ");
+
+                  // remake watch
+                  final Watcher thisWatch = this;
+                  Stat stat = new Stat();
+                  byte[] data = zkClient.getData(ALIASES, thisWatch, stat ,
+                      true);
+
+                  Aliases aliases = ClusterState.load(data);
+
+                  ZkStateReader.this.aliases = aliases;
+                }
+              } catch (KeeperException e) {
+                if (e.code() == KeeperException.Code.SESSIONEXPIRED
+                    || e.code() == KeeperException.Code.CONNECTIONLOSS) {
+                  log.warn("ZooKeeper watch triggered, but Solr cannot talk to ZK");
+                  return;
+                }
+                log.error("", e);
+                throw new ZooKeeperException(
+                    SolrException.ErrorCode.SERVER_ERROR, "", e);
+              } catch (InterruptedException e) {
+                // Restore the interrupted status
+                Thread.currentThread().interrupt();
+                log.warn("", e);
+                return;
+              }
+            }
+            
+          }, true);
     }
   }
   
@@ -438,26 +490,18 @@ public class ZkStateReader {
         : "");
   }
 
-  /**
-   * Get CoreNodeName for a core. This name is unique across the collection.  
-   * @param nodeName in form: 127.0.0.1:54065_solr
-   */
-  public static String getCoreNodeName(String nodeName, String coreName) {
-    return nodeName + "_" + coreName;
-  }
-
   public List<ZkCoreNodeProps> getReplicaProps(String collection,
-      String shardId, String thisNodeName, String coreName) {
-    return getReplicaProps(collection, shardId, thisNodeName, coreName, null);
+      String shardId, String thisCoreNodeName, String coreName) {
+    return getReplicaProps(collection, shardId, thisCoreNodeName, coreName, null);
   }
   
   public List<ZkCoreNodeProps> getReplicaProps(String collection,
-      String shardId, String thisNodeName, String coreName, String mustMatchStateFilter) {
-    return getReplicaProps(collection, shardId, thisNodeName, coreName, mustMatchStateFilter, null);
+      String shardId, String thisCoreNodeName, String coreName, String mustMatchStateFilter) {
+    return getReplicaProps(collection, shardId, thisCoreNodeName, coreName, mustMatchStateFilter, null);
   }
   
   public List<ZkCoreNodeProps> getReplicaProps(String collection,
-      String shardId, String thisNodeName, String coreName, String mustMatchStateFilter, String mustNotMatchStateFilter) {
+      String shardId, String thisCoreNodeName, String coreName, String mustMatchStateFilter, String mustNotMatchStateFilter) {
     ClusterState clusterState = this.clusterState;
     if (clusterState == null) {
       return null;
@@ -476,11 +520,12 @@ public class ZkStateReader {
     
     Map<String,Replica> shardMap = replicas.getReplicasMap();
     List<ZkCoreNodeProps> nodes = new ArrayList<ZkCoreNodeProps>(shardMap.size());
-    String filterNodeName = thisNodeName + "_" + coreName;
     for (Entry<String,Replica> entry : shardMap.entrySet()) {
       ZkCoreNodeProps nodeProps = new ZkCoreNodeProps(entry.getValue());
-      String coreNodeName = nodeProps.getNodeName() + "_" + nodeProps.getCoreName();
-      if (clusterState.liveNodesContain(nodeProps.getNodeName()) && !coreNodeName.equals(filterNodeName)) {
+      
+      String coreNodeName = entry.getValue().getName();
+      
+      if (clusterState.liveNodesContain(nodeProps.getNodeName()) && !coreNodeName.equals(thisCoreNodeName)) {
         if (mustMatchStateFilter == null || mustMatchStateFilter.equals(nodeProps.getState())) {
           if (mustNotMatchStateFilter == null || !mustNotMatchStateFilter.equals(nodeProps.getState())) {
             nodes.add(nodeProps);
@@ -498,6 +543,14 @@ public class ZkStateReader {
 
   public SolrZkClient getZkClient() {
     return zkClient;
+  }
+
+  public void updateAliases() throws KeeperException, InterruptedException {
+    byte[] data = zkClient.getData(ALIASES, null, null, true);
+
+    Aliases aliases = ClusterState.load(data);
+
+    ZkStateReader.this.aliases = aliases;
   }
   
 }

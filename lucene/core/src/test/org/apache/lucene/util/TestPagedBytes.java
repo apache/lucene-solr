@@ -20,10 +20,12 @@ package org.apache.lucene.util;
 import java.io.IOException;
 import java.util.*;
 
+import org.apache.lucene.store.BaseDirectoryWrapper;
 import org.apache.lucene.store.DataInput;
-import org.apache.lucene.store.DataOutput;
-import org.apache.lucene.util.PagedBytes.PagedBytesDataInput;
-import org.apache.lucene.util.PagedBytes.PagedBytesDataOutput;
+import org.apache.lucene.store.IOContext;
+import org.apache.lucene.store.IndexInput;
+import org.apache.lucene.store.IndexOutput;
+import org.apache.lucene.store.MockDirectoryWrapper;
 import org.junit.Ignore;
 
 public class TestPagedBytes extends LuceneTestCase {
@@ -31,10 +33,14 @@ public class TestPagedBytes extends LuceneTestCase {
   public void testDataInputOutput() throws Exception {
     Random random = random();
     for(int iter=0;iter<5*RANDOM_MULTIPLIER;iter++) {
+      BaseDirectoryWrapper dir = newFSDirectory(_TestUtil.getTempDir("testOverflow"));
+      if (dir instanceof MockDirectoryWrapper) {
+        ((MockDirectoryWrapper)dir).setThrottling(MockDirectoryWrapper.Throttling.NEVER);
+      }
       final int blockBits = _TestUtil.nextInt(random, 1, 20);
       final int blockSize = 1 << blockBits;
       final PagedBytes p = new PagedBytes(blockBits);
-      final DataOutput out = p.getDataOutput();
+      final IndexOutput out = dir.createOutput("foo", IOContext.DEFAULT);
       final int numBytes = _TestUtil.nextInt(random(), 2, 10000000);
 
       final byte[] answer = new byte[numBytes];
@@ -49,10 +55,13 @@ public class TestPagedBytes extends LuceneTestCase {
           written += chunk;
         }
       }
-
+      
+      out.close();
+      final IndexInput input = dir.openInput("foo", IOContext.DEFAULT);
+      final DataInput in = input.clone();
+      
+      p.copy(input, input.length());
       final PagedBytes.Reader reader = p.freeze(random.nextBoolean());
-
-      final DataInput in = p.getDataInput();
 
       final byte[] verify = new byte[numBytes];
       int read = 0;
@@ -76,68 +85,17 @@ public class TestPagedBytes extends LuceneTestCase {
           assertEquals(answer[pos + byteUpto], slice.bytes[slice.offset + byteUpto]);
         }
       }
-    }
-  }
-
-  public void testLengthPrefix() throws Exception {
-    Random random = random();
-    for(int iter=0;iter<5*RANDOM_MULTIPLIER;iter++) {
-      final int blockBits = _TestUtil.nextInt(random, 2, 20);
-      final int blockSize = 1 << blockBits;
-      final PagedBytes p = new PagedBytes(blockBits);
-      final List<Integer> addresses = new ArrayList<Integer>();
-      final List<BytesRef> answers = new ArrayList<BytesRef>();
-      int totBytes = 0;
-      while(totBytes < 10000000 && answers.size() < 100000) {
-        final int len = random.nextInt(Math.min(blockSize-2, 32768));
-        final BytesRef b = new BytesRef();
-        b.bytes = new byte[len];
-        b.length = len;
-        b.offset = 0;
-        random.nextBytes(b.bytes);
-        answers.add(b);
-        addresses.add((int) p.copyUsingLengthPrefix(b));
-
-        totBytes += len;
-      }
-
-      final PagedBytes.Reader reader = p.freeze(random.nextBoolean());
-
-      final BytesRef slice = new BytesRef();
-
-      for(int idx=0;idx<answers.size();idx++) {
-        reader.fillSliceWithPrefix(slice, addresses.get(idx));
-        assertEquals(answers.get(idx), slice);
-      }
-    }
-  }
-
-  // LUCENE-3841: even though
-  // copyUsingLengthPrefix will never span two blocks, make
-  // sure if caller writes their own prefix followed by the
-  // bytes, it still works:
-  public void testLengthPrefixAcrossTwoBlocks() throws Exception {
-    Random random = random();
-    final PagedBytes p = new PagedBytes(10);
-    final DataOutput out = p.getDataOutput();
-    final byte[] bytes1 = new byte[1000];
-    random.nextBytes(bytes1);
-    out.writeBytes(bytes1, 0, bytes1.length);
-    out.writeByte((byte) 40);
-    final byte[] bytes2 = new byte[40];
-    random.nextBytes(bytes2);
-    out.writeBytes(bytes2, 0, bytes2.length);
-
-    final PagedBytes.Reader reader = p.freeze(random.nextBoolean());
-    BytesRef answer = reader.fillSliceWithPrefix(new BytesRef(), 1000);
-    assertEquals(40, answer.length);
-    for(int i=0;i<40;i++) {
-      assertEquals(bytes2[i], answer.bytes[answer.offset + i]);
+      input.close();
+      dir.close();
     }
   }
 
   @Ignore // memory hole
   public void testOverflow() throws IOException {
+    BaseDirectoryWrapper dir = newFSDirectory(_TestUtil.getTempDir("testOverflow"));
+    if (dir instanceof MockDirectoryWrapper) {
+      ((MockDirectoryWrapper)dir).setThrottling(MockDirectoryWrapper.Throttling.NEVER);
+    }
     final int blockBits = _TestUtil.nextInt(random(), 14, 28);
     final int blockSize = 1 << blockBits;
     byte[] arr = new byte[_TestUtil.nextInt(random(), blockSize / 2, blockSize * 2)];
@@ -146,23 +104,26 @@ public class TestPagedBytes extends LuceneTestCase {
     }
     final long numBytes = (1L << 31) + _TestUtil.nextInt(random(), 1, blockSize * 3);
     final PagedBytes p = new PagedBytes(blockBits);
-    final PagedBytesDataOutput out = p.getDataOutput();
+    final IndexOutput out = dir.createOutput("foo", IOContext.DEFAULT);
     for (long i = 0; i < numBytes; ) {
-      assertEquals(i, out.getPosition());
+      assertEquals(i, out.getFilePointer());
       final int len = (int) Math.min(arr.length, numBytes - i);
       out.writeBytes(arr, len);
       i += len;
     }
-    assertEquals(numBytes, out.getPosition());
-    p.freeze(random().nextBoolean());
-    final PagedBytesDataInput in = p.getDataInput();
+    assertEquals(numBytes, out.getFilePointer());
+    out.close();
+    final IndexInput in = dir.openInput("foo", IOContext.DEFAULT);
+    p.copy(in, numBytes);
+    final PagedBytes.Reader reader = p.freeze(random().nextBoolean());
 
     for (long offset : new long[] {0L, Integer.MAX_VALUE, numBytes - 1,
         _TestUtil.nextLong(random(), 1, numBytes - 2)}) {
-      in.setPosition(offset);
-      assertEquals(offset, in.getPosition());
-      assertEquals(arr[(int) (offset % arr.length)], in.readByte());
-      assertEquals(offset+1, in.getPosition());
+      BytesRef b = new BytesRef();
+      reader.fillSlice(b, offset, 1);
+      assertEquals(arr[(int) (offset % arr.length)], b.bytes[b.offset]);
     }
+    in.close();
+    dir.close();
   }
 }

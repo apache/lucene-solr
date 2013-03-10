@@ -58,12 +58,17 @@
 
   <property name="common.classpath.excludes" value="**/*.txt,**/*.template,**/*.sha1" />
 
-  <property name="ivy.bootstrap.version" value="2.2.0" />
+  <property name="ivy.bootstrap.version" value="2.3.0" />
   <property name="ivy.default.configuration" value="*"/>
   <property name="ivy.sync" value="true"/>
 
   <property name="junit.jar" value="junit-4.10.jar"/>
   <property name="junit-location.jar" location="${common.dir}/test-framework/lib/${junit.jar}"/>
+
+  <property name="local.caches" location="${common.dir}/../.caches" />
+  <property name="tests.cachedir"  location="${local.caches}/test-stats" />
+  <property name="tests.cachefile" location="${common.dir}/tools/junit4/cached-timehints.txt" />
+  <property name="tests.cachefilehistory" value="10" />
 
   <path id="junit-path">
     <fileset dir="${common.dir}/test-framework/lib">
@@ -88,6 +93,7 @@
   <property name="tests.multiplier" value="1" />
   <property name="tests.codec" value="random" />
   <property name="tests.postingsformat" value="random" />
+  <property name="tests.docvaluesformat" value="random" />
   <property name="tests.locale" value="random" />
   <property name="tests.timezone" value="random" />
   <property name="tests.directory" value="random" />
@@ -113,10 +119,7 @@
 
   <property name="tests.heapdump.args" value=""/>
 
-  <property name="tests.tempDir" location="${build.dir}/test"/>
-
-  <property name="tests.cachefile" location="${common.dir}/tools/junit4/cached-timehints.txt" />
-  <property name="tests.cachefilehistory" value="20" />
+  <property name="tests.workDir" location="${build.dir}/test"/>
 
   <!-- Override these in your local properties to your desire. -->
   <!-- Show simple class names (no package) in test suites. -->
@@ -267,6 +270,23 @@
     </condition>
   </fail>
 
+  <!-- 
+    the propery "ant.java.version" is not always correct, depending on used ANT version.
+    E.g. Java 8 is only detected in ANT 1.8.3+.
+    Add newer Java version checks at beginning,
+    because ANT will nevert override existing properties!
+   -->
+  <condition property="build.java.runtime" value="1.8">
+    <hasmethod classname="java.util.Collections" method="emptySortedSet"/>
+  </condition>
+  <condition property="build.java.runtime" value="1.7">
+    <hasmethod classname="java.lang.Throwable" method="getSuppressed"/>
+  </condition>
+  <condition property="build.java.runtime" value="1.6">
+    <hasmethod classname="java.lang.String" method="isEmpty"/>
+  </condition>
+  <fail message="Minimum supported Java version is 1.6." unless="build.java.runtime"/>
+
   <condition property="documentation-lint.supported">
     <and>
       <or>
@@ -275,8 +295,9 @@
         <contains string="${java.vm.name}" substring="jrockit" casesensitive="false"/>
       </or>
       <or>
-        <equals arg1="${ant.java.version}" arg2="1.7"/>
-        <equals arg1="${ant.java.version}" arg2="1.8"/>
+        <equals arg1="${build.java.runtime}" arg2="1.7"/>
+        <!-- TODO: Current Java 8 JDKs have broken Javadocs -->
+        <!--<equals arg1="${build.java.runtime}" arg2="1.8"/>-->
       </or>
       <!-- TODO: Fix this! For now only run this on 64bit, because jTIDY OOMs with default heap size: -->
       <contains string="${os.arch}" substring="64"/>
@@ -284,8 +305,18 @@
   </condition>
 
   <target name="-documentation-lint-unsupported" unless="documentation-lint.supported">
-    <echo level="warning" message="WARN: Linting documentation HTML is not supported on this Java version (${ant.java.version}) / JVM (${java.vm.name}). NOTHING DONE!"/>
+    <fail message="Linting documentation HTML is not supported on this Java version (${build.java.runtime}) / JVM (${java.vm.name}).">
+      <condition>
+        <not><isset property="is.jenkins.build"/></not>
+      </condition>
+    </fail>
+    <echo level="warning" message="WARN: Linting documentation HTML is not supported on this Java version (${build.java.runtime}) / JVM (${java.vm.name}). NOTHING DONE!"/>
   </target>
+
+  <!-- for now disable doclint on JDK 8: -->
+  <condition property="javadoc.args" value="-Xdoclint:none" else="">
+    <equals arg1="${build.java.runtime}" arg2="1.8"/>
+  </condition>
 
   <!-- Import custom ANT tasks. -->
   <import file="${common.dir}/tools/custom-tasks.xml" />
@@ -321,7 +352,7 @@
   <property name="ivy_bootstrap_url1" value="http://repo1.maven.org/maven2"/>
   <!-- you might need to tweak this from china so it works -->
   <property name="ivy_bootstrap_url2" value="http://mirror.netcologne.de/maven2"/>
-  <property name="ivy_checksum_sha1" value="f9d1e83e82fc085093510f7d2e77d81d52bc2081"/>
+  <property name="ivy_checksum_sha1" value="c5ebf1c253ad4959a29f4acfe696ee48cdd9f473"/>
 
   <target name="ivy-availability-check" unless="ivy.available">
     <condition property="ivy.available">
@@ -722,9 +753,8 @@
       <resources>
         <!-- The order is important. Include previous stats first, then append new stats. -->
         <file file="${tests.cachefile}" />
-        <fileset dir="${common.dir}/..">
-          <include name="**/tests-timehints.txt" />
-          <exclude name="lucene/tools/junit4/**" />
+        <fileset dir="${tests.cachedir}">
+          <include name="**/*.txt" />
         </fileset>
       </resources>
     </junit4:mergehints>
@@ -760,7 +790,7 @@
     <attribute name="junit.output.dir" default="${junit.output.dir}"/>
     <attribute name="junit.classpath" default="junit.classpath"/>
     <attribute name="testsDir" default="${build.dir}/classes/test"/>
-    <attribute name="tempDir" default="${tests.tempDir}"/>
+    <attribute name="workDir" default="${tests.workDir}"/>
     <attribute name="threadNum" default="1"/>
     <attribute name="tests.nightly" default="${tests.nightly}"/>
     <attribute name="tests.weekly" default="${tests.weekly}"/>
@@ -816,12 +846,19 @@
             <value>UTF-16BE</value>
             -->
         </junit4:pickfromlist>
-        
-        <mkdir dir="@{tempDir}/temp" />
-        
+
+        <!-- junit4 does not create this directory. TODO: is this a bug / inconsistency with dir="..."? -->
+        <mkdir dir="@{workDir}/temp" />
+
+        <!-- Local test execution statistics from defaults or local caches, if present. -->
+        <local name="tests.caches" />
+        <available file="${tests.cachedir}/${name}" type="dir" property="tests.caches" value="${tests.cachedir}/${name}" />
+        <property name="tests.caches" location="${common.dir}/tools/junit4" /> <!-- defaults -->
+        <mkdir dir="${tests.cachedir}/${name}" />
+
         <junit4:junit4
-            dir="@{tempDir}"
-            tempdir="@{tempDir}/temp"
+            dir="@{workDir}"
+            tempdir="@{workDir}/temp"
             maxmemory="${tests.heapsize}" 
             
             parallelism="@{threadNum}"
@@ -863,6 +900,8 @@
             <sysproperty key="tests.codec" value="${tests.codec}"/>
             <!-- set the postingsformat tests should run with -->
             <sysproperty key="tests.postingsformat" value="${tests.postingsformat}"/>
+            <!-- set the docvaluesformat tests should run with -->
+            <sysproperty key="tests.docvaluesformat" value="${tests.docvaluesformat}"/>
             <!-- set the locale tests should run with -->
             <sysproperty key="tests.locale" value="${tests.locale}"/>
             <!-- set the timezone tests should run with -->
@@ -895,7 +934,7 @@
             <sysproperty key="java.io.tmpdir" value="." />
 
             <!-- Restrict access to certain Java features and install security manager: -->
-            <sysproperty key="junit4.tempDir" file="@{tempDir}/temp" />
+            <sysproperty key="junit4.tempDir" file="@{workDir}/temp" />
             <sysproperty key="clover.db.dir" file="${clover.db.dir}" />
             <sysproperty key="java.security.manager" value="org.apache.lucene.util.TestSecurityManager" />
             <sysproperty key="java.security.policy" file="${common.dir}/tools/junit4/tests.policy" />
@@ -924,10 +963,10 @@
                 <mapper type="glob" from="tests.*" to="*" />
             </syspropertyset>
 
-            <!-- Use static cached test balancing statistcs. -->
+            <!-- Use static cached test balancing statistics. -->
             <balancers>
                 <junit4:execution-times>
-                    <fileset dir="${common.dir}/tools/junit4" includes="**/*.txt" />
+                    <fileset dir="${tests.caches}"  includes="**/*.txt" />
                 </junit4:execution-times>
             </balancers>            
 
@@ -987,7 +1026,7 @@
                 
                 <!-- Emit the information about tests timings (could be used to determine
                      the slowest tests or for reuse in balancing). -->
-                <junit4:report-execution-times file="@{junit.output.dir}/tests-timehints.txt" historyLength="5" />
+                <junit4:report-execution-times file="${tests.cachedir}/${name}/timehints.txt" historyLength="20" />
 
                 <!-- ANT-compatible XMLs for jenkins records etc. -->
                 <junit4:report-ant-xml dir="@{junit.output.dir}" outputStreams="no" />
@@ -1011,7 +1050,7 @@
         <!-- Report the 5 slowest tests from this run to the console. -->
         <echo>5 slowest tests:</echo>
         <junit4:tophints max="5">
-          <file file="@{junit.output.dir}/tests-timehints.txt" />
+          <file file="${tests.cachedir}/${name}/timehints.txt" />
         </junit4:tophints>
     </sequential>
   </macrodef>
@@ -1020,7 +1059,7 @@
     <property name="max" value="10" />
     <echo>Showing ${max} slowest tests according to local stats. (change with -Dmax=...).</echo>
     <junit4:tophints max="${max}">
-      <fileset dir="${basedir}" includes="**/tests-timehints.txt" />
+      <fileset dir="${tests.cachedir}" includes="**/*.txt" />
     </junit4:tophints>
 
     <echo>Showing ${max} slowest tests in cached stats. (change with -Dmax=...).</echo>
@@ -1151,7 +1190,6 @@ ant -Dtests.leaveTemporary=true
 # Output test files and reports.
 ${tests-output}/tests-report.txt    - full ASCII tests report
 ${tests-output}/tests-failures.txt  - failures only (if any)
-${tests-output}/tests-timehints.txt - execution times (see above)
 ${tests-output}/tests-report-*      - HTML5 report with results
 ${tests-output}/junit4-*.suites     - per-JVM executed suites
                                       (important if job stealing).
@@ -1348,10 +1386,11 @@ ${tests-output}/junit4-*.suites     - per-JVM executed suites
       </m2-deploy>
     </sequential>
   </target>
-
-  <target name="-validate-maven-dependencies">
+  
+  <target name="-validate-maven-dependencies.init">
+    <!-- find the correct pom.xml path and assigns it to property pom.xml -->
     <property name="top.level.dir" location="${common.dir}/.."/>
-    <pathconvert property="pom.xml">
+    <pathconvert property="maven.pom.xml">
       <mapper>
         <chainedmapper>
           <globmapper from="${top.level.dir}*" to="${filtered.pom.templates.dir}*"/>
@@ -1360,9 +1399,23 @@ ${tests-output}/junit4-*.suites     - per-JVM executed suites
       </mapper>
       <path location="${ant.file}"/>
     </pathconvert>
-    <m2-validate-dependencies pom.xml="${pom.xml}" licenseDirectory="${license.dir}">
+    
+    <!-- convert ${version} to be a glob pattern, so snapshot versions are allowed: -->
+    <loadresource property="maven.version.glob">
+      <propertyresource name="version"/>
+      <filterchain>
+        <tokenfilter>
+          <filetokenizer/>
+          <replacestring from="-SNAPSHOT" to="-*"/>
+        </tokenfilter>
+      </filterchain>
+    </loadresource>
+  </target>
+  
+  <target name="-validate-maven-dependencies" depends="-validate-maven-dependencies.init">
+    <m2-validate-dependencies pom.xml="${maven.pom.xml}" licenseDirectory="${license.dir}">
       <excludes>
-        <rsel:name name="**/lucene-*.jar" handledirsep="true"/>
+        <rsel:name name="**/lucene-*-${maven.version.glob}.jar" handledirsep="true"/>
       </excludes>
     </m2-validate-dependencies>
   </target>
@@ -1629,16 +1682,16 @@ ${tests-output}/junit4-*.suites     - per-JVM executed suites
           linksource="@{linksource}"
           use="true"
           failonerror="true"
-          source="${ant.java.version}"
+          source="${javac.source}"
           locale="en_US"
           windowtitle="${Name} ${version} API"
           doctitle="@{title}"
           maxmemory="${javadoc.maxmemory}">
         <tag name="lucene.experimental" 
-      	description="WARNING: This API is experimental and might change in incompatible ways in the next release."/>
+          description="WARNING: This API is experimental and might change in incompatible ways in the next release."/>
         <tag name="lucene.internal"
         description="NOTE: This API is for internal purposes only and might change in incompatible ways in the next release."/>
-      	<link offline="true" packagelistLoc="${javadoc.dir}"/>
+          <link offline="true" packagelistLoc="${javadoc.dir}"/>
         <link offline="true" href="${javadoc.link}" packagelistLoc="${javadoc.packagelist.dir}/java6"/>
         <bottom><![CDATA[
           <i>Copyright &copy; ${year} Apache Software Foundation.  All Rights Reserved.</i>
@@ -1661,6 +1714,7 @@ ${tests-output}/junit4-*.suites     - per-JVM executed suites
       	<sources />
       	      	
         <classpath refid="javadoc.classpath"/>
+        <arg line="${javadoc.args}"/>
       </javadoc>
       <record name="@{destdir}/log_javadoc.txt" action="stop"/>
       
@@ -1886,6 +1940,14 @@ ${tests-output}/junit4-*.suites     - per-JVM executed suites
     <property name="groovy.loaded" value="true"/>
   </target>
   
+  <!-- Forbidden API Task -->
+  <target name="install-forbidden-apis" unless="forbidden-apis.loaded" depends="ivy-availability-check,ivy-configure">
+    <ivy:cachepath organisation="de.thetaphi" module="forbiddenapis" revision="1.2"
+      inline="true" conf="default" transitive="true" pathid="forbidden-apis.classpath"/>
+    <taskdef name="forbidden-apis" classname="de.thetaphi.forbiddenapis.AntTask" classpathref="forbidden-apis.classpath"/>
+    <property name="forbidden-apis.loaded" value="true"/>
+  </target>
+  
   <!-- PEGDOWN macro: Before using depend on the target "resolve-pegdown" -->
   
   <target name="resolve-pegdown" unless="pegdown.loaded" depends="ivy-availability-check,ivy-configure">
@@ -1943,6 +2005,8 @@ ${tests-output}/junit4-*.suites     - per-JVM executed suites
        <attribute name="dir"/>
      <sequential>
        <exec dir="." executable="${python32.exe}" failonerror="true">
+	 <!-- Tell Python not to write any bytecode cache into the filesystem: -->
+	 <arg value="-B"/>
          <arg value="${dev-tools.dir}/scripts/checkJavadocLinks.py"/>
          <arg value="@{dir}"/>
        </exec>
@@ -1954,6 +2018,8 @@ ${tests-output}/junit4-*.suites     - per-JVM executed suites
        <attribute name="level" default="class"/>
      <sequential>
        <exec dir="." executable="${python32.exe}" failonerror="true">
+	 <!-- Tell Python not to write any bytecode cache into the filesystem: -->
+	 <arg value="-B"/>
          <arg value="${dev-tools.dir}/scripts/checkJavaDocs.py"/>
          <arg value="@{dir}"/>
          <arg value="@{level}"/>
@@ -2043,7 +2109,7 @@ The following arguments can be provided to ant to alter its behaviour and target
 
         <junit4:pickseed property="pitest.seed" />
 
-        <property name="pitest.sysprops" value="-Dlucene.version=${dev.version},-Dtest.seed=${pitest.seed},-Djava.security.manager=org.apache.lucene.util.TestSecurityManager,-Djava.security.policy=${common.dir}/tools/junit4/tests.policy,-Djava.io.tmpdir=${tests.tempDir},-Djunit4.childvm.cwd=${tests.tempDir},-Djunit4.tempDir=${tests.tempDir}" />
+        <property name="pitest.sysprops" value="-Dlucene.version=${dev.version},-Dtest.seed=${pitest.seed},-Djava.security.manager=org.apache.lucene.util.TestSecurityManager,-Djava.security.policy=${common.dir}/tools/junit4/tests.policy,-Djava.io.tmpdir=${tests.workDir},-Djunit4.childvm.cwd=${tests.workDir},-Djunit4.tempDir=${tests.workDir}" />
 
         <pitest
             classPath="pitest.classpath"

@@ -392,6 +392,21 @@ public abstract class ValueSourceParser implements NamedListInitializedPlugin {
         return f.getType().getValueSource(f, fp);
       }
     });
+    addParser("currency", new ValueSourceParser() {
+      @Override
+      public ValueSource parse(FunctionQParser fp) throws SyntaxError {
+
+        String fieldName = fp.parseArg();
+        SchemaField f = fp.getReq().getSchema().getField(fieldName);
+        if (! (f.getType() instanceof CurrencyField)) {
+          throw new SolrException(SolrException.ErrorCode.BAD_REQUEST,
+                                  "Currency function input must be the name of a CurrencyField: " + fieldName);
+        }
+        CurrencyField ft = (CurrencyField) f.getType();
+        String code = fp.hasMoreArguments() ? fp.parseArg() : null;
+        return ft.getConvertedValueSource(code, ft.getValueSource(f, fp));
+      }
+    });
 
     addParser(new DoubleParser("rad") {
       @Override

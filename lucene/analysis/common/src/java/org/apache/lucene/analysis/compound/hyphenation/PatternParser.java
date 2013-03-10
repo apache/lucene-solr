@@ -98,7 +98,7 @@ public class PatternParser extends DefaultHandler {
    * @throws IOException In case of an exception while parsing
    */
   public void parse(File file) throws IOException {
-    InputSource src = new InputSource(file.toURL().toExternalForm());
+    InputSource src = new InputSource(file.toURI().toASCIIString());
     parse(src);
   }
 

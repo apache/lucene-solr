@@ -18,12 +18,15 @@ package org.apache.solr.update;
  */
 
 import java.io.IOException;
+import java.util.concurrent.locks.Lock;
+import java.util.concurrent.locks.ReentrantLock;
 
 import org.apache.lucene.index.IndexWriter;
 import org.apache.lucene.store.AlreadyClosedException;
 import org.apache.solr.cloud.RecoveryStrategy;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.core.CoreContainer;
+import org.apache.solr.core.CoreDescriptor;
 import org.apache.solr.core.DirectoryFactory;
 import org.apache.solr.core.SolrCore;
 import org.apache.solr.util.RefCounted;
@@ -52,11 +55,13 @@ public final class DefaultSolrCoreState extends SolrCoreState implements Recover
   private boolean pauseWriter;
   private boolean writerFree = true;
   
+  protected final ReentrantLock commitLock = new ReentrantLock();
+
   public DefaultSolrCoreState(DirectoryFactory directoryFactory) {
     this.directoryFactory = directoryFactory;
   }
   
-  private synchronized void closeIndexWriter(IndexWriterCloser closer) {
+  private void closeIndexWriter(IndexWriterCloser closer) {
     try {
       log.info("SolrCoreState ref count has reached 0 - closing IndexWriter");
       if (closer != null) {
@@ -72,7 +77,7 @@ public final class DefaultSolrCoreState extends SolrCoreState implements Recover
   }
   
   @Override
-  public synchronized RefCounted<IndexWriter> getIndexWriter(SolrCore core)
+  public RefCounted<IndexWriter> getIndexWriter(SolrCore core)
       throws IOException {
     
     if (closed) {
@@ -135,6 +140,7 @@ public final class DefaultSolrCoreState extends SolrCoreState implements Recover
       pauseWriter = true;
       // then lets wait until its out of use
       log.info("Waiting until IndexWriter is unused... core=" + coreName);
+      
       while (!writerFree) {
         try {
           writerPauseLock.wait(100);
@@ -194,7 +200,7 @@ public final class DefaultSolrCoreState extends SolrCoreState implements Recover
   }
 
   @Override
-  public void doRecovery(CoreContainer cc, String name) {
+  public void doRecovery(CoreContainer cc, CoreDescriptor cd) {
     if (SKIP_AUTO_RECOVERY) {
       log.warn("Skipping recovery according to sys prop solrcloud.skip.autorecovery");
       return;
@@ -226,7 +232,7 @@ public final class DefaultSolrCoreState extends SolrCoreState implements Recover
       // if true, we are recovering after startup and shouldn't have (or be receiving) additional updates (except for local tlog recovery)
       boolean recoveringAfterStartup = recoveryStrat == null;
 
-      recoveryStrat = new RecoveryStrategy(cc, name, this);
+      recoveryStrat = new RecoveryStrategy(cc, cd, this);
       recoveryStrat.setRecoveringAfterStartup(recoveringAfterStartup);
       recoveryStrat.start();
       recoveryRunning = true;
@@ -270,6 +276,11 @@ public final class DefaultSolrCoreState extends SolrCoreState implements Recover
     closed = true;
     cancelRecovery();
     closeIndexWriter(closer);
+  }
+  
+  @Override
+  public Lock getCommitLock() {
+    return commitLock;
   }
   
 }

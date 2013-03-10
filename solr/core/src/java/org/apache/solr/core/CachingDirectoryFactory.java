@@ -40,7 +40,7 @@ import org.slf4j.LoggerFactory;
 /**
  * A {@link DirectoryFactory} impl base class for caching Directory instances
  * per path. Most DirectoryFactory implementations will want to extend this
- * class and simply implement {@link DirectoryFactory#create(String)}.
+ * class and simply implement {@link DirectoryFactory#create(String, DirContext)}.
  * 
  */
 public abstract class CachingDirectoryFactory extends DirectoryFactory {
@@ -137,7 +137,7 @@ public abstract class CachingDirectoryFactory extends DirectoryFactory {
           }
           
           assert val.refCnt == 0 : val.refCnt;
-          log.info("Closing directory when closing factory:" + val.path);
+          log.info("Closing directory when closing factory: " + val.path);
           closeDirectory(val);
         } catch (Throwable t) {
           SolrException.log(log, "Error closing directory", t);
@@ -158,12 +158,11 @@ public abstract class CachingDirectoryFactory extends DirectoryFactory {
         throw new IllegalArgumentException("Unknown directory: " + directory
             + " " + byDirectoryCache);
       }
-      log.info("Releasing directory:" + cacheValue.path);
+      log.debug("Releasing directory: " + cacheValue.path);
 
       cacheValue.refCnt--;
 
       if (cacheValue.refCnt == 0 && cacheValue.doneWithDir) {
-        log.info("Closing directory:" + cacheValue.path);
         closeDirectory(cacheValue);
         
         byDirectoryCache.remove(directory);
@@ -184,7 +183,7 @@ public abstract class CachingDirectoryFactory extends DirectoryFactory {
       }
     }
     try {
-      log.info("Closing directory:" + cacheValue.path);
+      log.info("Closing directory: " + cacheValue.path);
       cacheValue.directory.close();
     } catch (Throwable t) {
       SolrException.log(log, "Error closing directory", t);
@@ -202,7 +201,7 @@ public abstract class CachingDirectoryFactory extends DirectoryFactory {
   }
   
   @Override
-  protected abstract Directory create(String path) throws IOException;
+  protected abstract Directory create(String path, DirContext dirContext) throws IOException;
   
   @Override
   public boolean exists(String path) {
@@ -218,9 +217,9 @@ public abstract class CachingDirectoryFactory extends DirectoryFactory {
    * java.lang.String)
    */
   @Override
-  public final Directory get(String path, String rawLockType)
+  public final Directory get(String path,  DirContext dirContext, String rawLockType)
       throws IOException {
-    return get(path, rawLockType, false);
+    return get(path, dirContext, rawLockType, false);
   }
   
   /*
@@ -230,7 +229,7 @@ public abstract class CachingDirectoryFactory extends DirectoryFactory {
    * java.lang.String, boolean)
    */
   @Override
-  public final Directory get(String path, String rawLockType, boolean forceNew)
+  public final Directory get(String path,  DirContext dirContext, String rawLockType, boolean forceNew)
       throws IOException {
     String fullPath = new File(path).getAbsolutePath();
     synchronized (this) {
@@ -264,7 +263,7 @@ public abstract class CachingDirectoryFactory extends DirectoryFactory {
       }
       
       if (directory == null || forceNew) { 
-        directory = create(fullPath);
+        directory = create(fullPath, dirContext);
         
         directory = rateLimit(directory);
         
@@ -276,7 +275,7 @@ public abstract class CachingDirectoryFactory extends DirectoryFactory {
         
         byDirectoryCache.put(directory, newCacheValue);
         byPathCache.put(fullPath, newCacheValue);
-        log.info("return new directory for " + fullPath + " forceNew:" + forceNew);
+        log.info("return new directory for " + fullPath + " forceNew: " + forceNew);
       } else {
         cacheValue.refCnt++;
       }

@@ -141,4 +141,5 @@ public class TestPayloadsOnVectors extends LuceneTestCase {
     writer.close();
     dir.close();
   }
+
 }

@@ -17,7 +17,6 @@ package org.apache.lucene.index;
  * limitations under the License.
  */
 
-import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.Reader;
 import java.io.StringReader;
@@ -35,9 +34,13 @@ import org.apache.lucene.analysis.tokenattributes.CharTermAttribute;
 import org.apache.lucene.analysis.tokenattributes.PositionIncrementAttribute;
 import org.apache.lucene.codecs.Codec;
 import org.apache.lucene.codecs.simpletext.SimpleTextCodec;
+import org.apache.lucene.document.BinaryDocValuesField;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
 import org.apache.lucene.document.FieldType;
+import org.apache.lucene.document.NumericDocValuesField;
+import org.apache.lucene.document.SortedDocValuesField;
+import org.apache.lucene.document.SortedSetDocValuesField;
 import org.apache.lucene.document.StoredField;
 import org.apache.lucene.document.StringField;
 import org.apache.lucene.document.TextField;
@@ -1004,11 +1007,47 @@ public class TestIndexWriter extends LuceneTestCase {
     volatile boolean finish;
 
     volatile boolean allowInterrupt = false;
+    final Random random;
+    final Directory adder;
+    
+    IndexerThreadInterrupt() throws IOException {
+      this.random = new Random(random().nextLong());
+      // make a little directory for addIndexes
+      // LUCENE-2239: won't work with NIOFS/MMAP
+      adder = new MockDirectoryWrapper(random, new RAMDirectory());
+      IndexWriterConfig conf = newIndexWriterConfig(random,
+          TEST_VERSION_CURRENT, new MockAnalyzer(random));
+      IndexWriter w = new IndexWriter(adder, conf);
+      Document doc = new Document();
+      doc.add(newStringField(random, "id", "500", Field.Store.NO));
+      doc.add(newField(random, "field", "some prepackaged text contents", storedTextType));
+      doc.add(new BinaryDocValuesField("binarydv", new BytesRef("500")));
+      doc.add(new NumericDocValuesField("numericdv", 500));
+      doc.add(new SortedDocValuesField("sorteddv", new BytesRef("500")));
+      if (defaultCodecSupportsSortedSet()) {
+        doc.add(new SortedSetDocValuesField("sortedsetdv", new BytesRef("one")));
+        doc.add(new SortedSetDocValuesField("sortedsetdv", new BytesRef("two")));
+      }
+      w.addDocument(doc);
+      doc = new Document();
+      doc.add(newStringField(random, "id", "501", Field.Store.NO));
+      doc.add(newField(random, "field", "some more contents", storedTextType));
+      doc.add(new BinaryDocValuesField("binarydv", new BytesRef("501")));
+      doc.add(new NumericDocValuesField("numericdv", 501));
+      doc.add(new SortedDocValuesField("sorteddv", new BytesRef("501")));
+      if (defaultCodecSupportsSortedSet()) {
+        doc.add(new SortedSetDocValuesField("sortedsetdv", new BytesRef("two")));
+        doc.add(new SortedSetDocValuesField("sortedsetdv", new BytesRef("three")));
+      }
+      w.addDocument(doc);
+      w.deleteDocuments(new Term("id", "500"));
+      w.close();
+    }
 
     @Override
     public void run() {
       // LUCENE-2239: won't work with NIOFS/MMAP
-      Directory dir = new MockDirectoryWrapper(random(), new RAMDirectory());
+      Directory dir = new MockDirectoryWrapper(random, new RAMDirectory());
       IndexWriter w = null;
       while(!finish) {
         try {
@@ -1018,16 +1057,57 @@ public class TestIndexWriter extends LuceneTestCase {
               w.close();
               w = null;
             }
-            IndexWriterConfig conf = newIndexWriterConfig(
-                                                          TEST_VERSION_CURRENT, new MockAnalyzer(random())).setMaxBufferedDocs(2);
+            IndexWriterConfig conf = newIndexWriterConfig(random,
+                                                          TEST_VERSION_CURRENT, new MockAnalyzer(random)).setMaxBufferedDocs(2);
             w = new IndexWriter(dir, conf);
 
             Document doc = new Document();
-            doc.add(newField("field", "some text contents", storedTextType));
+            Field idField = newStringField(random, "id", "", Field.Store.NO);
+            Field binaryDVField = new BinaryDocValuesField("binarydv", new BytesRef());
+            Field numericDVField = new NumericDocValuesField("numericdv", 0);
+            Field sortedDVField = new SortedDocValuesField("sorteddv", new BytesRef());
+            Field sortedSetDVField = new SortedSetDocValuesField("sortedsetdv", new BytesRef());
+            doc.add(idField);
+            doc.add(newField(random, "field", "some text contents", storedTextType));
+            doc.add(binaryDVField);
+            doc.add(numericDVField);
+            doc.add(sortedDVField);
+            if (defaultCodecSupportsSortedSet()) {
+              doc.add(sortedSetDVField);
+            }
             for(int i=0;i<100;i++) {
-              w.addDocument(doc);
+              idField.setStringValue(Integer.toString(i));
+              binaryDVField.setBytesValue(new BytesRef(idField.stringValue()));
+              numericDVField.setLongValue(i);
+              sortedDVField.setBytesValue(new BytesRef(idField.stringValue()));
+              sortedSetDVField.setBytesValue(new BytesRef(idField.stringValue()));
+              int action = random.nextInt(100);
+              if (action == 17) {
+                w.addIndexes(adder);
+              } else if (action%30 == 0) {
+                w.deleteAll();
+              } else if (action%2 == 0) {
+                w.updateDocument(new Term("id", idField.stringValue()), doc);
+              } else {
+                w.addDocument(doc);
+              }
+              if (random.nextInt(3) == 0) {
+                IndexReader r = null;
+                try {
+                  r = DirectoryReader.open(w, random.nextBoolean());
+                  if (random.nextBoolean() && r.maxDoc() > 0) {
+                    int docid = random.nextInt(r.maxDoc());
+                    w.tryDeleteDocument(r, docid);
+                  }
+                } finally {
+                  IOUtils.closeWhileHandlingException(r);
+                }
+              }
               if (i%10 == 0) {
                 w.commit();
+              }
+              if (random.nextInt(50) == 0) {
+                w.forceMerge(1);
               }
             }
             w.close();
@@ -1046,10 +1126,12 @@ public class TestIndexWriter extends LuceneTestCase {
             allowInterrupt = true;
           }
         } catch (ThreadInterruptedException re) {
-          if (true || VERBOSE) {
-            System.out.println("TEST: got interrupt");
-            re.printStackTrace(System.out);
-          }
+          // NOTE: important to leave this verbosity/noise
+          // on!!  This test doesn't repro easily so when
+          // Jenkins hits a fail we need to study where the
+          // interrupts struck!
+          System.out.println("TEST: got interrupt");
+          re.printStackTrace(System.out);
           Throwable e = re.getCause();
           assertTrue(e instanceof InterruptedException);
           if (finish) {
@@ -1092,7 +1174,7 @@ public class TestIndexWriter extends LuceneTestCase {
         }
       }
       try {
-        dir.close();
+        IOUtils.close(dir, adder);
       } catch (IOException e) {
         throw new RuntimeException(e);
       }
@@ -1110,9 +1192,12 @@ public class TestIndexWriter extends LuceneTestCase {
     // init this class (in servicing a first interrupt):
     assertTrue(new ThreadInterruptedException(new InterruptedException()).getCause() instanceof InterruptedException);
 
-    // issue 100 interrupts to child thread
+    // issue 300 interrupts to child thread
+    final int numInterrupts = atLeast(300);
     int i = 0;
-    while(i < 100) {
+    while(i < numInterrupts) {
+      // TODO: would be nice to also sometimes interrupt the
+      // CMS merge threads too ...
       Thread.sleep(10);
       if (t.allowInterrupt) {
         i++;
@@ -1237,7 +1322,6 @@ public class TestIndexWriter extends LuceneTestCase {
     Directory dir = newDirectory();
     IndexWriter writer = new IndexWriter(dir, newIndexWriterConfig(
         TEST_VERSION_CURRENT, new MockAnalyzer(random())));
-    ByteArrayOutputStream bos = new ByteArrayOutputStream(1024);
     writer.addDocument(new Document());
     writer.close();
 
@@ -1430,7 +1514,15 @@ public class TestIndexWriter extends LuceneTestCase {
     doc.add(newField("c", "val", customType));
     writer.addDocument(doc);
     // Adding just one document does not call flush yet.
-    assertEquals("only the stored and term vector files should exist in the directory", 5 + extraFileCount, dir.listAll().length);
+    int computedExtraFileCount = 0;
+    for (String file : dir.listAll()) {
+      if (file.lastIndexOf('.') < 0
+          // don't count stored fields and term vectors in
+          || !Arrays.asList("fdx", "fdt", "tvx", "tvd", "tvf").contains(file.substring(file.lastIndexOf('.') + 1))) {
+        ++computedExtraFileCount;
+      }
+    }
+    assertEquals("only the stored and term vector files should exist in the directory", extraFileCount, computedExtraFileCount);
 
     doc = new Document();
     doc.add(newField("c", "val", customType));
@@ -1634,10 +1726,11 @@ public class TestIndexWriter extends LuceneTestCase {
     w.close();
     assertEquals(1, reader.docFreq(new Term("content", bigTerm)));
 
-    FieldCache.DocTermsIndex dti = FieldCache.DEFAULT.getTermsIndex(SlowCompositeReaderWrapper.wrap(reader), "content", random().nextFloat() * PackedInts.FAST);
-    assertEquals(5, dti.numOrd());                // +1 for null ord
-    assertEquals(4, dti.size());
-    assertEquals(bigTermBytesRef, dti.lookup(3, new BytesRef()));
+    SortedDocValues dti = FieldCache.DEFAULT.getTermsIndex(SlowCompositeReaderWrapper.wrap(reader), "content", random().nextFloat() * PackedInts.FAST);
+    assertEquals(4, dti.getValueCount());
+    BytesRef br = new BytesRef();
+    dti.lookupOrd(2, br);
+    assertEquals(bigTermBytesRef, br);
     reader.close();
     dir.close();
   }

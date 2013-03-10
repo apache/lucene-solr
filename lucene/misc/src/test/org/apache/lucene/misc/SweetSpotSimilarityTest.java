@@ -23,7 +23,6 @@ import org.apache.lucene.search.similarities.PerFieldSimilarityWrapper;
 import org.apache.lucene.search.similarities.Similarity;
 import org.apache.lucene.search.similarities.TFIDFSimilarity;
 import org.apache.lucene.util.LuceneTestCase;
-import org.apache.lucene.index.Norm;
 import org.apache.lucene.index.FieldInvertState;
 
 
@@ -37,9 +36,7 @@ public class SweetSpotSimilarityTest extends LuceneTestCase {
   }
   
   public static byte computeAndGetNorm(Similarity s, FieldInvertState state) {
-    Norm norm = new Norm();
-    s.computeNorm(state, norm);
-    return norm.field().numericValue().byteValue();
+    return (byte) s.computeNorm(state);
   }
 
   public void testSweetSpotComputeNorm() {
@@ -56,10 +53,6 @@ public class SweetSpotSimilarityTest extends LuceneTestCase {
     invertState.setBoost(1.0f);
     for (int i = 1; i < 1000; i++) {
       invertState.setLength(i);
-      Norm lNorm = new Norm();
-      Norm rNorm = new Norm();
-      d.computeNorm(invertState, lNorm);
-      s.computeNorm(invertState, rNorm);
       assertEquals("base case: i="+i,
                    computeAndGetNorm(d, invertState),
                    computeAndGetNorm(s, invertState),
@@ -90,7 +83,7 @@ public class SweetSpotSimilarityTest extends LuceneTestCase {
     }
 
 
-    // seperate sweet spot for certain fields
+    // separate sweet spot for certain fields
 
     final SweetSpotSimilarity ssBar = new SweetSpotSimilarity();
     ssBar.setLengthNormFactors(8,13, 0.5f, false);

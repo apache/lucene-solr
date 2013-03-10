@@ -21,7 +21,6 @@ import java.io.IOException;
 
 import org.apache.lucene.index.AtomicReaderContext;
 import org.apache.lucene.index.FieldInvertState;
-import org.apache.lucene.index.Norm;
 import org.apache.lucene.search.CollectionStatistics;
 import org.apache.lucene.search.Explanation;
 import org.apache.lucene.search.TermStatistics;
@@ -44,8 +43,8 @@ public class MultiSimilarity extends Similarity {
   }
   
   @Override
-  public void computeNorm(FieldInvertState state, Norm norm) {
-    sims[0].computeNorm(state, norm);
+  public long computeNorm(FieldInvertState state) {
+    return sims[0].computeNorm(state);
   }
 
   @Override

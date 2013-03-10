@@ -51,42 +51,42 @@ public class ByteFieldSource extends FieldCacheSource {
 
   @Override
   public FunctionValues getValues(Map context, AtomicReaderContext readerContext) throws IOException {
-    final byte[] arr = cache.getBytes(readerContext.reader(), field, parser, false);
+    final FieldCache.Bytes arr = cache.getBytes(readerContext.reader(), field, parser, false);
     
     return new FunctionValues() {
       @Override
       public byte byteVal(int doc) {
-        return arr[doc];
+        return arr.get(doc);
       }
 
       @Override
       public short shortVal(int doc) {
-        return (short) arr[doc];
+        return (short) arr.get(doc);
       }
 
       @Override
       public float floatVal(int doc) {
-        return (float) arr[doc];
+        return (float) arr.get(doc);
       }
 
       @Override
       public int intVal(int doc) {
-        return (int) arr[doc];
+        return (int) arr.get(doc);
       }
 
       @Override
       public long longVal(int doc) {
-        return (long) arr[doc];
+        return (long) arr.get(doc);
       }
 
       @Override
       public double doubleVal(int doc) {
-        return (double) arr[doc];
+        return (double) arr.get(doc);
       }
 
       @Override
       public String strVal(int doc) {
-        return Byte.toString(arr[doc]);
+        return Byte.toString(arr.get(doc));
       }
 
       @Override
@@ -96,7 +96,7 @@ public class ByteFieldSource extends FieldCacheSource {
 
       @Override
       public Object objectVal(int doc) {
-        return arr[doc];  // TODO: valid?
+        return arr.get(doc);  // TODO: valid?
       }
 
     };

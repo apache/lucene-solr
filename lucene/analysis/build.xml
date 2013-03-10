@@ -104,6 +104,10 @@
   <target name="test">
     <forall-analyzers target="test"/>
   </target>
+  <target name="jar">
+    <forall-analyzers target="jar-core"/>
+  </target>
+  <target name="jar-core" depends="jar"/>
 
   <target name="build-artifacts-and-tests" depends="default,compile-test" />
 

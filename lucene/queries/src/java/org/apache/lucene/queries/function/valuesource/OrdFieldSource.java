@@ -17,21 +17,22 @@
 
 package org.apache.lucene.queries.function.valuesource;
 
+import java.io.IOException;
+import java.util.Map;
+
 import org.apache.lucene.index.AtomicReader;
 import org.apache.lucene.index.AtomicReaderContext;
 import org.apache.lucene.index.CompositeReader;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.ReaderUtil;
 import org.apache.lucene.index.SlowCompositeReaderWrapper;
+import org.apache.lucene.index.SortedDocValues;
 import org.apache.lucene.queries.function.FunctionValues;
 import org.apache.lucene.queries.function.ValueSource;
 import org.apache.lucene.queries.function.docvalues.IntDocValues;
 import org.apache.lucene.search.FieldCache;
 import org.apache.lucene.util.mutable.MutableValue;
 import org.apache.lucene.util.mutable.MutableValueInt;
-
-import java.io.IOException;
-import java.util.Map;
 
 /**
  * Obtains the ordinal of the field value from the default Lucene {@link org.apache.lucene.search.FieldCache} using getStringIndex().
@@ -72,7 +73,7 @@ public class OrdFieldSource extends ValueSource {
     final AtomicReader r = topReader instanceof CompositeReader 
         ? new SlowCompositeReaderWrapper((CompositeReader)topReader) 
         : (AtomicReader) topReader;
-    final FieldCache.DocTermsIndex sindex = FieldCache.DEFAULT.getTermsIndex(r, field);
+    final SortedDocValues sindex = FieldCache.DEFAULT.getTermsIndex(r, field);
     return new IntDocValues(this) {
       protected String toTerm(String readableValue) {
         return readableValue;
@@ -87,7 +88,7 @@ public class OrdFieldSource extends ValueSource {
       }
       @Override
       public int numOrd() {
-        return sindex.numOrd();
+        return sindex.getValueCount();
       }
 
       @Override

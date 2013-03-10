@@ -19,7 +19,7 @@ package org.apache.lucene;
 
 import org.apache.lucene.analysis.*;
 import org.apache.lucene.codecs.*;
-import org.apache.lucene.codecs.lucene41.Lucene41Codec;
+import org.apache.lucene.codecs.lucene42.Lucene42Codec;
 import org.apache.lucene.document.*;
 import org.apache.lucene.index.*;
 import org.apache.lucene.search.*;
@@ -31,7 +31,7 @@ import org.apache.lucene.util.*;
 
 public class TestExternalCodecs extends LuceneTestCase {
 
-  private static final class CustomPerFieldCodec extends Lucene41Codec {
+  private static final class CustomPerFieldCodec extends Lucene42Codec {
     
     private final PostingsFormat ramFormat = PostingsFormat.forName("RAMOnly");
     private final PostingsFormat defaultFormat = PostingsFormat.forName("Lucene41");

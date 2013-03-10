@@ -4,15 +4,11 @@ import java.io.IOException;
 import java.util.HashMap;
 import java.util.List;
 
-import org.apache.lucene.index.IndexReader;
+import org.apache.lucene.facet.params.FacetIndexingParams;
+import org.apache.lucene.facet.params.FacetSearchParams;
 import org.apache.lucene.search.MatchAllDocsQuery;
 import org.apache.lucene.search.Query;
 import org.junit.Test;
-
-import org.apache.lucene.facet.search.params.FacetSearchParams;
-import org.apache.lucene.facet.search.results.FacetResult;
-import org.apache.lucene.facet.search.results.FacetResultNode;
-import org.apache.lucene.facet.taxonomy.TaxonomyReader;
 
 /*
  * Licensed to the Apache Software Foundation (ASF) under one or more
@@ -33,21 +29,13 @@ import org.apache.lucene.facet.taxonomy.TaxonomyReader;
 
 public class TestTopKResultsHandlerRandom extends BaseTestTopK {
   
-  private List<FacetResult> countFacets(int partitionSize, int numResults, final boolean doComplement)
+  private List<FacetResult> countFacets(FacetIndexingParams fip, int numResults, final boolean doComplement)
       throws IOException {
     Query q = new MatchAllDocsQuery();
-    FacetSearchParams facetSearchParams = searchParamsWithRequests(numResults, partitionSize);
-    FacetsCollector fc = new FacetsCollector(facetSearchParams, indexReader, taxoReader) {
-      @Override
-      protected FacetsAccumulator initFacetsAccumulator(
-          FacetSearchParams facetSearchParams, IndexReader indexReader,
-          TaxonomyReader taxonomyReader) {
-        FacetsAccumulator accumulator = new StandardFacetsAccumulator(facetSearchParams, indexReader, taxonomyReader);
-        double complement = doComplement ? FacetsAccumulator.FORCE_COMPLEMENT : FacetsAccumulator.DISABLE_COMPLEMENT;
-        accumulator.setComplementThreshold(complement);
-        return accumulator;
-      }
-    };
+    FacetSearchParams facetSearchParams = searchParamsWithRequests(numResults, fip);
+    StandardFacetsAccumulator sfa = new StandardFacetsAccumulator(facetSearchParams, indexReader, taxoReader);
+    sfa.setComplementThreshold(doComplement ? StandardFacetsAccumulator.FORCE_COMPLEMENT : StandardFacetsAccumulator.DISABLE_COMPLEMENT);
+    FacetsCollector fc = FacetsCollector.create(sfa);
     searcher.search(q, fc);
     List<FacetResult> facetResults = fc.getFacetResults();
     return facetResults;
@@ -60,7 +48,8 @@ public class TestTopKResultsHandlerRandom extends BaseTestTopK {
   @Test
   public void testTopCountsOrder() throws Exception {
     for (int partitionSize : partitionSizes) {
-      initIndex(partitionSize);
+      FacetIndexingParams fip = getFacetIndexingParams(partitionSize);
+      initIndex(fip);
       
       /*
        * Try out faceted search in it's most basic form (no sampling nor complement
@@ -68,7 +57,7 @@ public class TestTopKResultsHandlerRandom extends BaseTestTopK {
        * being indexed, and later on an "over-all" faceted search is performed. The
        * results are checked against the DF of each facet by itself
        */
-      List<FacetResult> facetResults = countFacets(partitionSize, 100000, false);
+      List<FacetResult> facetResults = countFacets(fip, 100000, false);
       assertCountsAndCardinality(facetCountsTruth(), facetResults);
       
       /*
@@ -78,25 +67,25 @@ public class TestTopKResultsHandlerRandom extends BaseTestTopK {
        * place in here. The results are checked against the a regular (a.k.a
        * no-complement, no-sampling) faceted search with the same parameters.
        */
-      facetResults = countFacets(partitionSize, 100000, true);
+      facetResults = countFacets(fip, 100000, true);
       assertCountsAndCardinality(facetCountsTruth(), facetResults);
       
-      List<FacetResult> allFacetResults = countFacets(partitionSize, 100000, false);
+      List<FacetResult> allFacetResults = countFacets(fip, 100000, false);
       
       HashMap<String,Integer> all = new HashMap<String,Integer>();
       int maxNumNodes = 0;
       int k = 0;
       for (FacetResult fr : allFacetResults) {
         FacetResultNode topResNode = fr.getFacetResultNode();
-        maxNumNodes = Math.max(maxNumNodes, topResNode.getNumSubResults());
+        maxNumNodes = Math.max(maxNumNodes, topResNode.subResults.size());
         int prevCount = Integer.MAX_VALUE;
         int pos = 0;
-        for (FacetResultNode frn: topResNode.getSubResults()) {
-          assertTrue("wrong counts order: prev="+prevCount+" curr="+frn.getValue(), prevCount>=frn.getValue());
-          prevCount = (int) frn.getValue();
-          String key = k+"--"+frn.getLabel()+"=="+frn.getValue();
+        for (FacetResultNode frn: topResNode.subResults) {
+          assertTrue("wrong counts order: prev="+prevCount+" curr="+frn.value, prevCount>=frn.value);
+          prevCount = (int) frn.value;
+          String key = k+"--"+frn.label+"=="+frn.value;
           if (VERBOSE) {
-            System.out.println(frn.getLabel() + " - " + frn.getValue() + "  "+key+"  "+pos);
+            System.out.println(frn.label + " - " + frn.value + "  "+key+"  "+pos);
           }
           all.put(key, pos++); // will use this later to verify order of sub-results
         }
@@ -109,16 +98,16 @@ public class TestTopKResultsHandlerRandom extends BaseTestTopK {
         if (VERBOSE) {
           System.out.println("-------  verify for "+n+" top results");
         }
-        List<FacetResult> someResults = countFacets(partitionSize, n, false);
+        List<FacetResult> someResults = countFacets(fip, n, false);
         k = 0;
         for (FacetResult fr : someResults) {
           FacetResultNode topResNode = fr.getFacetResultNode();
-          assertTrue("too many results: n="+n+" but got "+topResNode.getNumSubResults(), n>=topResNode.getNumSubResults());
+          assertTrue("too many results: n="+n+" but got "+topResNode.subResults.size(), n>=topResNode.subResults.size());
           int pos = 0;
-          for (FacetResultNode frn: topResNode.getSubResults()) {
-            String key = k+"--"+frn.getLabel()+"=="+frn.getValue();
+          for (FacetResultNode frn: topResNode.subResults) {
+            String key = k+"--"+frn.label+"=="+frn.value;
             if (VERBOSE) {
-              System.out.println(frn.getLabel() + " - " + frn.getValue() + "  "+key+"  "+pos);
+              System.out.println(frn.label + " - " + frn.value + "  "+key+"  "+pos);
             }
             Integer origPos = all.get(key);
             assertNotNull("missing in all results: "+frn,origPos);

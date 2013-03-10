@@ -20,6 +20,7 @@ package org.apache.solr.core;
 import java.util.Map;
 
 import org.apache.lucene.codecs.Codec;
+import org.apache.lucene.codecs.perfield.PerFieldDocValuesFormat;
 import org.apache.lucene.codecs.perfield.PerFieldPostingsFormat;
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.schema.SchemaField;
@@ -47,7 +48,21 @@ public class TestCodecSupport extends SolrTestCaseJ4 {
     assertEquals("Lucene41", format.getPostingsFormatForField(schemaField.getName()).getName());
   }
 
-  public void testDynamicFields() {
+  public void testDocValuesFormats() {
+    Codec codec = h.getCore().getCodec();
+    Map<String, SchemaField> fields = h.getCore().getSchema().getFields();
+    SchemaField schemaField = fields.get("string_disk_f");
+    PerFieldDocValuesFormat format = (PerFieldDocValuesFormat) codec.docValuesFormat();
+    assertEquals("Disk", format.getDocValuesFormatForField(schemaField.getName()).getName());
+    schemaField = fields.get("string_memory_f");
+    assertEquals("Lucene42",
+        format.getDocValuesFormatForField(schemaField.getName()).getName());
+    schemaField = fields.get("string_f");
+    assertEquals("Lucene42",
+        format.getDocValuesFormatForField(schemaField.getName()).getName());
+  }
+
+  public void testDynamicFieldsPostingsFormats() {
     Codec codec = h.getCore().getCodec();
     PerFieldPostingsFormat format = (PerFieldPostingsFormat) codec.postingsFormat();
 
@@ -57,6 +72,16 @@ public class TestCodecSupport extends SolrTestCaseJ4 {
     assertEquals("Pulsing41", format.getPostingsFormatForField("bar_pulsing").getName());
     assertEquals("Lucene41", format.getPostingsFormatForField("foo_standard").getName());
     assertEquals("Lucene41", format.getPostingsFormatForField("bar_standard").getName());
+  }
+
+  public void testDynamicFieldsDocValuesFormats() {
+    Codec codec = h.getCore().getCodec();
+    PerFieldDocValuesFormat format = (PerFieldDocValuesFormat) codec.docValuesFormat();
+
+    assertEquals("Disk", format.getDocValuesFormatForField("foo_disk").getName());
+    assertEquals("Disk", format.getDocValuesFormatForField("bar_disk").getName());
+    assertEquals("Lucene42", format.getDocValuesFormatForField("foo_memory").getName());
+    assertEquals("Lucene42", format.getDocValuesFormatForField("bar_memory").getName());
   }
 
   public void testUnknownField() {

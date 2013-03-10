@@ -30,6 +30,7 @@ import org.apache.lucene.analysis.tokenattributes.CharTermAttribute;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.MultiFields;
 import org.apache.lucene.index.Term;
+import org.apache.lucene.index.Terms;
 import org.apache.lucene.search.*;
 import org.apache.lucene.search.similarities.TFIDFSimilarity;
 import org.apache.lucene.search.similarities.DefaultSimilarity;
@@ -196,6 +197,10 @@ public class FuzzyLikeThisQuery extends Query
     int corpusNumDocs = reader.numDocs();
     HashSet<String> processedTerms = new HashSet<String>();
     ts.reset();
+    final Terms terms = MultiFields.getTerms(reader, f.fieldName);
+    if (terms == null) {
+      return;
+    }
     while (ts.incrementToken()) {
       String term = termAtt.toString();
       if (!processedTerms.contains(term)) {
@@ -206,7 +211,7 @@ public class FuzzyLikeThisQuery extends Query
         AttributeSource atts = new AttributeSource();
         MaxNonCompetitiveBoostAttribute maxBoostAtt =
             atts.addAttribute(MaxNonCompetitiveBoostAttribute.class);
-        SlowFuzzyTermsEnum fe = new SlowFuzzyTermsEnum(MultiFields.getTerms(reader, startTerm.field()), atts, startTerm, f.minSimilarity, f.prefixLength);
+        SlowFuzzyTermsEnum fe = new SlowFuzzyTermsEnum(terms, atts, startTerm, f.minSimilarity, f.prefixLength);
         //store the df so all variants use same idf
         int df = reader.docFreq(startTerm);
         int numVariants = 0;

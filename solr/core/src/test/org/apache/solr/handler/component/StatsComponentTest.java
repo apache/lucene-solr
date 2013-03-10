@@ -75,6 +75,7 @@ public class StatsComponentTest extends AbstractSolrTestCase {
   public void doTestFieldStatisticsResult(String f) throws Exception {
     assertU(adoc("id", "1", f, "-10"));
     assertU(adoc("id", "2", f, "-20"));
+    assertU(commit());
     assertU(adoc("id", "3", f, "-30"));
     assertU(adoc("id", "4", f, "-40"));
     assertU(commit());
@@ -205,6 +206,7 @@ public class StatsComponentTest extends AbstractSolrTestCase {
   public void doTestFieldStatisticsMissingResult(String f) throws Exception {
     assertU(adoc("id", "1", f, "-10"));
     assertU(adoc("id", "2", f, "-20"));
+    assertU(commit());
     assertU(adoc("id", "3"));
     assertU(adoc("id", "4", f, "-40"));
     assertU(commit());
@@ -224,6 +226,7 @@ public class StatsComponentTest extends AbstractSolrTestCase {
   public void doTestFacetStatisticsResult(String f) throws Exception {
     assertU(adoc("id", "1", f, "10", "active_s", "true",  "other_s", "foo"));
     assertU(adoc("id", "2", f, "20", "active_s", "true",  "other_s", "bar"));
+    assertU(commit());
     assertU(adoc("id", "3", f, "30", "active_s", "false", "other_s", "foo"));
     assertU(adoc("id", "4", f, "40", "active_s", "false", "other_s", "foo"));
     assertU(commit());
@@ -257,6 +260,7 @@ public class StatsComponentTest extends AbstractSolrTestCase {
   public void doTestFacetStatisticsMissingResult(String f) throws Exception {
       assertU(adoc("id", "1", f, "10", "active_s", "true"));
       assertU(adoc("id", "2", f, "20", "active_s", "true"));
+      assertU(commit());
       assertU(adoc("id", "3", "active_s", "false"));
       assertU(adoc("id", "4", f, "40", "active_s", "false"));
       assertU(commit());
@@ -288,6 +292,7 @@ public class StatsComponentTest extends AbstractSolrTestCase {
     SolrCore core = h.getCore();
     assertU(adoc("id", "1"));
     assertU(adoc("id", "2"));
+    assertU(commit());
     assertU(adoc("id", "3"));
     assertU(adoc("id", "4"));
     assertU(commit());
@@ -307,6 +312,7 @@ public class StatsComponentTest extends AbstractSolrTestCase {
     SolrCore core = h.getCore();
     assertU(adoc("id", "1"));
     assertU(adoc("id", "2"));
+    assertU(commit());
     assertU(adoc("id", "3"));
     assertU(adoc("id", "4"));
     assertU(commit());
@@ -328,6 +334,7 @@ public class StatsComponentTest extends AbstractSolrTestCase {
 
     assertU(adoc("id", "1"));
     assertU(adoc("id", "2"));
+    assertU(commit());
     assertU(adoc("id", "3"));
     assertU(commit());
 
@@ -347,6 +354,7 @@ public class StatsComponentTest extends AbstractSolrTestCase {
     SchemaField foo_ss = core.getSchema().getField("foo_ss");
 
     assertU(adoc("id", "1", "active_i", "1", "foo_ss", "aa" ));
+    assertU(commit());
     assertU(adoc("id", "2", "active_i", "1", "foo_ss", "bb" ));
     assertU(adoc("id", "3", "active_i", "5", "foo_ss", "aa" ));
     assertU(commit());

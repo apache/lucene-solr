@@ -38,7 +38,7 @@ import org.apache.solr.schema.SimilarityFactory;
  * @lucene.experimental
  */
 public class DefaultSimilarityFactory extends SimilarityFactory {
-  private boolean discountOverlaps;
+  protected boolean discountOverlaps;
 
   @Override
   public void init(SolrParams params) {

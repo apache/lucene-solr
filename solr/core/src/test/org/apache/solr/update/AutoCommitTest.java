@@ -286,7 +286,7 @@ public class AutoCommitTest extends AbstractSolrTestCase {
     
     MapSolrParams params = new MapSolrParams( new HashMap<String, String>() );
     
-    // Add a single document with commitWithin == 1 second
+    // Add a single document with commitWithin == 2 second
     SolrQueryResponse rsp = new SolrQueryResponse();
     SolrQueryRequestBase req = new SolrQueryRequestBase( core, params ) {};
     req.setContentStreams( toContentStreams(

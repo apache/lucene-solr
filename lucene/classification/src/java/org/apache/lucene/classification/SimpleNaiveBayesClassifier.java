@@ -29,6 +29,7 @@ import org.apache.lucene.search.BooleanQuery;
 import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.search.TermQuery;
 import org.apache.lucene.search.TotalHitCountCollector;
+import org.apache.lucene.search.WildcardQuery;
 import org.apache.lucene.util.BytesRef;
 
 import java.io.IOException;
@@ -41,7 +42,7 @@ import java.util.LinkedList;
  *
  * @lucene.experimental
  */
-public class SimpleNaiveBayesClassifier implements Classifier {
+public class SimpleNaiveBayesClassifier implements Classifier<BytesRef> {
 
   private AtomicReader atomicReader;
   private String textFieldName;
@@ -69,7 +70,18 @@ public class SimpleNaiveBayesClassifier implements Classifier {
     this.textFieldName = textFieldName;
     this.classFieldName = classFieldName;
     this.analyzer = analyzer;
-    this.docsWithClassSize = MultiFields.getTerms(this.atomicReader, this.classFieldName).getDocCount();
+    this.docsWithClassSize = countDocsWithClass();
+  }
+
+  private int countDocsWithClass() throws IOException {
+    int docCount = MultiFields.getTerms(this.atomicReader, this.classFieldName).getDocCount();
+    if (docCount == -1) { // in case codec doesn't support getDocCount
+      TotalHitCountCollector totalHitCountCollector = new TotalHitCountCollector();
+      indexSearcher.search(new WildcardQuery(new Term(classFieldName, String.valueOf(WildcardQuery.WILDCARD_STRING))),
+          totalHitCountCollector);
+      docCount = totalHitCountCollector.getTotalHits();
+    }
+    return docCount;
   }
 
   private String[] tokenizeDoc(String doc) throws IOException {
@@ -89,12 +101,12 @@ public class SimpleNaiveBayesClassifier implements Classifier {
    * {@inheritDoc}
    */
   @Override
-  public ClassificationResult assignClass(String inputDocument) throws IOException {
+  public ClassificationResult<BytesRef> assignClass(String inputDocument) throws IOException {
     if (atomicReader == null) {
       throw new RuntimeException("need to train the classifier first");
     }
     double max = 0d;
-    String foundClass = null;
+    BytesRef foundClass = new BytesRef();
 
     Terms terms = MultiFields.getTerms(atomicReader, classFieldName);
     TermsEnum termsEnum = terms.iterator(null);
@@ -105,10 +117,10 @@ public class SimpleNaiveBayesClassifier implements Classifier {
       double clVal = calculatePrior(next) * calculateLikelihood(tokenizedDoc, next);
       if (clVal > max) {
         max = clVal;
-        foundClass = next.utf8ToString();
+        foundClass = next.clone();
       }
     }
-    return new ClassificationResult(foundClass, max);
+    return new ClassificationResult<BytesRef>(foundClass, max);
   }
 
 

@@ -22,9 +22,10 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Comparator;
 
-import org.apache.lucene.search.suggest.fst.Sort.BufferSize;
-import org.apache.lucene.search.suggest.fst.Sort.ByteSequencesWriter;
-import org.apache.lucene.search.suggest.fst.Sort.SortInfo;
+import org.apache.lucene.search.suggest.Sort;
+import org.apache.lucene.search.suggest.Sort.BufferSize;
+import org.apache.lucene.search.suggest.Sort.ByteSequencesWriter;
+import org.apache.lucene.search.suggest.Sort.SortInfo;
 import org.apache.lucene.util.*;
 import org.junit.*;
 

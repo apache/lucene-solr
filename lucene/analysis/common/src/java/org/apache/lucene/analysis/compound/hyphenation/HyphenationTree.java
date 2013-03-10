@@ -111,7 +111,7 @@ public class HyphenationTree extends TernaryTree implements PatternConsumer {
    * @throws IOException In case the parsing fails
    */
   public void loadPatterns(File f) throws IOException {
-    InputSource src = new InputSource(f.toURL().toExternalForm());
+    InputSource src = new InputSource(f.toURI().toASCIIString());
     loadPatterns(src);
   }
 

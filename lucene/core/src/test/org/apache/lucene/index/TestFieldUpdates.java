@@ -117,7 +117,7 @@ public class TestFieldUpdates extends LuceneTestCase {
     // omitNorms is true
     for (FieldInfo fi : reader.getFieldInfos()) {
       if (fi.isIndexed()) {
-        assertTrue(fi.omitsNorms() == (reader.normValues(fi.name) == null));
+        assertTrue("omitNorms=" + fi.omitsNorms() + " normsValue=" + reader.getNormValues(fi.name), fi.omitsNorms() == (reader.getNormValues(fi.name) == null));
       }
     }
     reader.close();

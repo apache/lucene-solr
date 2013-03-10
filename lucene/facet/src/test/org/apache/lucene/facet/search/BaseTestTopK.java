@@ -11,10 +11,8 @@ import org.apache.lucene.util._TestUtil;
 
 import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.facet.FacetTestBase;
-import org.apache.lucene.facet.index.params.FacetIndexingParams;
-import org.apache.lucene.facet.search.params.CountFacetRequest;
-import org.apache.lucene.facet.search.params.FacetRequest;
-import org.apache.lucene.facet.search.params.FacetSearchParams;
+import org.apache.lucene.facet.params.FacetIndexingParams;
+import org.apache.lucene.facet.params.FacetSearchParams;
 import org.apache.lucene.facet.taxonomy.CategoryPath;
 import org.apache.lucene.facet.taxonomy.TaxonomyWriter;
 
@@ -51,10 +49,9 @@ public abstract class BaseTestTopK extends FacetTestBase {
   private int nextInt;
 
   @Override
-  protected void populateIndex(RandomIndexWriter iw, TaxonomyWriter taxo,
-      FacetIndexingParams iParams) throws IOException {
+  protected void populateIndex(RandomIndexWriter iw, TaxonomyWriter taxo, FacetIndexingParams fip) throws IOException {
     currDoc = -1;
-    super.populateIndex(iw, taxo, iParams);
+    super.populateIndex(iw, taxo, fip);
   }
   
   /** prepare the next random int */
@@ -94,17 +91,13 @@ public abstract class BaseTestTopK extends FacetTestBase {
     return Arrays.asList(cp);
   }
 
-  protected FacetSearchParams searchParamsWithRequests(int numResults) {
-    return searchParamsWithRequests(numResults, Integer.MAX_VALUE);
-  }
-  
-  protected FacetSearchParams searchParamsWithRequests(int numResults, int partitionSize) {
+  protected FacetSearchParams searchParamsWithRequests(int numResults, FacetIndexingParams fip) {
     List<FacetRequest> facetRequests = new ArrayList<FacetRequest>();
     facetRequests.add(new CountFacetRequest(new CategoryPath("a"), numResults));
     facetRequests.add(new CountFacetRequest(new CategoryPath("a", "1"), numResults));
     facetRequests.add(new CountFacetRequest(new CategoryPath("a", "1", "10"), numResults));
     facetRequests.add(new CountFacetRequest(new CategoryPath("a", "2",  "26", "267"), numResults));
-    return getFacetSearchParams(facetRequests, getFacetIndexingParams(partitionSize));
+    return getFacetSearchParams(facetRequests, fip);
   }
 
   @Override

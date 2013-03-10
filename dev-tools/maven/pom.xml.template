@@ -23,7 +23,7 @@
   <parent>
     <groupId>org.apache</groupId>
     <artifactId>apache</artifactId>
-    <version>10</version>
+    <version>13</version>
     <relativePath/>
   </parent>
   <groupId>org.apache.lucene</groupId>
@@ -38,7 +38,6 @@
     <module>solr</module>
   </modules>
   <properties>
-    <top-level>..</top-level>
     <vc-anonymous-base-url>http://svn.apache.org/repos/asf/lucene/dev/trunk</vc-anonymous-base-url>
     <vc-dev-base-url>https://svn.apache.org/repos/asf/lucene/dev/trunk</vc-dev-base-url>
     <vc-browse-base-url>http://svn.apache.org/viewvc/lucene/dev/trunk</vc-browse-base-url>
@@ -47,8 +46,10 @@
     <java.compat.version>1.6</java.compat.version>
     <jetty.version>8.1.8.v20121106</jetty.version>
     <slf4j.version>1.6.4</slf4j.version>
-    <tika.version>1.2</tika.version>
-    <httpcomponents.version>4.1.3</httpcomponents.version>
+    <tika.version>1.3</tika.version>
+    <httpcomponents.version>4.2.3</httpcomponents.version>
+    <commons-io.version>2.1</commons-io.version>
+    <restlet.version>2.1.1</restlet.version>
 
     <!-- RandomizedTesting library system properties -->
     <tests.iters>1</tests.iters>
@@ -150,11 +151,6 @@
         <version>13.0.1</version>
       </dependency>
       <dependency>
-        <groupId>com.yammer.metrics</groupId>
-        <artifactId>metrics-core</artifactId>
-        <version>2.1.2</version>
-      </dependency>
-      <dependency>
         <groupId>commons-codec</groupId>
         <artifactId>commons-codec</artifactId>
         <version>1.7</version>
@@ -183,7 +179,7 @@
       <dependency>
         <groupId>commons-io</groupId>
         <artifactId>commons-io</artifactId>
-        <version>2.1</version>
+        <version>${commons-io.version}</version>
       </dependency>
       <dependency>
         <groupId>org.apache.httpcomponents</groupId>
@@ -289,6 +285,10 @@
         <version>${tika.version}</version>
         <exclusions>
           <exclusion>
+            <groupId>com.adobe.xmp</groupId>
+            <artifactId>xmpcore</artifactId>
+          </exclusion>
+          <exclusion>
             <groupId>commons-logging</groupId>
             <artifactId>commons-logging</artifactId>
           </exclusion>
@@ -338,7 +338,7 @@
       <dependency>
         <groupId>org.apache.velocity</groupId>
         <artifactId>velocity</artifactId>
-        <version>1.6.4</version>
+        <version>1.7</version>
       </dependency>
       <dependency>
         <groupId>org.apache.velocity</groupId>
@@ -352,13 +352,13 @@
       </dependency>
       <dependency>
         <groupId>org.carrot2</groupId>
-        <artifactId>carrot2-core</artifactId>
-        <version>3.5.0</version>
+        <artifactId>carrot2-mini</artifactId>
+        <version>3.6.2</version>
       </dependency>
       <dependency>
         <groupId>org.carrot2</groupId>
         <artifactId>morfologik-polish</artifactId>
-        <version>1.5.3</version>
+        <version>1.5.5</version>
       </dependency>
       <dependency>
         <groupId>org.codehaus.woodstox</groupId>
@@ -392,13 +392,18 @@
         <version>${jetty.version}</version>
       </dependency>
       <dependency>
-        <groupId>org.slf4j</groupId>
-        <artifactId>jcl-over-slf4j</artifactId>
-        <version>${slf4j.version}</version>
+        <groupId>org.restlet.jee</groupId>
+        <artifactId>org.restlet</artifactId>
+        <version>${restlet.version}</version>
+      </dependency>
+      <dependency>
+        <groupId>org.restlet.jee</groupId>
+        <artifactId>org.restlet.ext.servlet</artifactId>
+        <version>${restlet.version}</version>
       </dependency>
       <dependency>
         <groupId>org.slf4j</groupId>
-        <artifactId>log4j-over-slf4j</artifactId>
+        <artifactId>jcl-over-slf4j</artifactId>
         <version>${slf4j.version}</version>
       </dependency>
       <dependency>
@@ -445,7 +450,7 @@
       <dependency>
         <groupId>com.carrotsearch.randomizedtesting</groupId>
         <artifactId>randomizedtesting-runner</artifactId>
-        <version>2.0.7</version>
+        <version>2.0.8</version>
       </dependency>
     </dependencies>
   </dependencyManagement>
@@ -469,6 +474,19 @@
     <pluginManagement>
       <plugins>
         <plugin>
+          <groupId>de.thetaphi</groupId>
+          <artifactId>forbiddenapis</artifactId>
+          <version>1.2</version>
+          <configuration>
+            <!--
+              This is the default setting, we don't support Java 8 at the moment.
+              The checker simply passes by default and only prints a warning.
+             -->
+            <failOnUnsupportedJava>false</failOnUnsupportedJava>
+            <targetVersion>${java.compat.version}</targetVersion>
+          </configuration>
+        </plugin>
+        <plugin>
           <groupId>org.apache.maven.plugins</groupId>
           <artifactId>maven-antrun-plugin</artifactId>
           <version>1.7</version>
@@ -476,12 +494,12 @@
         <plugin>
           <groupId>org.apache.maven.plugins</groupId>
           <artifactId>maven-clean-plugin</artifactId>
-          <version>2.4.1</version>
+          <version>2.5</version>
         </plugin>
         <plugin>
           <groupId>org.apache.maven.plugins</groupId>
           <artifactId>maven-compiler-plugin</artifactId>
-          <version>2.3.2</version>
+          <version>3.0</version>
           <configuration>
             <source>${java.compat.version}</source>
             <target>${java.compat.version}</target>
@@ -490,7 +508,7 @@
         <plugin>
           <groupId>org.apache.maven.plugins</groupId>
           <artifactId>maven-dependency-plugin</artifactId>
-          <version>2.4</version>
+          <version>2.6</version>
         </plugin>
         <plugin>
           <groupId>org.apache.maven.plugins</groupId>
@@ -500,7 +518,7 @@
         <plugin>
           <groupId>org.apache.maven.plugins</groupId>
           <artifactId>maven-enforcer-plugin</artifactId>
-          <version>1.0.1</version>
+          <version>1.2</version>
         </plugin>
         <plugin>
           <groupId>org.apache.maven.plugins</groupId>
@@ -536,17 +554,17 @@
         <plugin>
           <groupId>org.apache.maven.plugins</groupId>
           <artifactId>maven-javadoc-plugin</artifactId>
-          <version>2.8.1</version>
+          <version>2.9</version>
         </plugin>
         <plugin>
           <groupId>org.apache.maven.plugins</groupId>
           <artifactId>maven-resources-plugin</artifactId>
-          <version>2.5</version>
+          <version>2.6</version>
         </plugin>
         <plugin>
           <groupId>org.apache.maven.plugins</groupId>
           <artifactId>maven-surefire-plugin</artifactId>
-          <version>2.12.4</version>
+          <version>2.13</version>
           <configuration>
             <runOrder>random</runOrder>
             <reportFormat>plain</reportFormat>
@@ -585,7 +603,7 @@
         <plugin>
           <groupId>org.apache.maven.plugins</groupId>
           <artifactId>maven-war-plugin</artifactId>
-          <version>2.2</version>
+          <version>2.3</version>
           <configuration>
             <archive>
               <!-- This section should be *exactly* the same under -->
@@ -616,7 +634,7 @@
         <plugin>
           <groupId>org.codehaus.mojo</groupId>
           <artifactId>buildnumber-maven-plugin</artifactId>
-          <version>1.0</version>
+          <version>1.2</version>
         </plugin>
         <plugin>
           <groupId>org.mortbay.jetty</groupId>
@@ -626,7 +644,7 @@
         <plugin>
           <groupId>org.codehaus.gmaven</groupId>
           <artifactId>gmaven-plugin</artifactId>
-          <version>1.4</version>
+          <version>1.5</version>
         </plugin>
       </plugins>
     </pluginManagement>
@@ -636,7 +654,7 @@
         <artifactId>gmaven-plugin</artifactId>
         <executions>
           <execution>
-            <id>generate-timestamps</id>
+            <id>generate-timestamps-and-get-top-level-basedir</id>
             <phase>validate</phase>
             <goals>
               <goal>execute</goal>
@@ -646,6 +664,7 @@
                 project.properties['now.timestamp'] = "${maven.build.timestamp}"
                 project.properties['now.version'] = ("${maven.build.timestamp}" =~ /[- :]/).replaceAll(".")
                 project.properties['now.year'] = "${maven.build.timestamp}".substring(0, 4)
+                project.properties['top-level'] = (project.basedir.getAbsolutePath() =~ /[\\\\\/]maven-build.*/).replaceAll("")
               </source>
             </configuration>
           </execution>
@@ -690,8 +709,8 @@
                   <message>Maven 2.2.1+ is required.</message>
                   <version>[2.2.1,)</version>
                 </requireMavenVersion>
-                <requirePluginVersions/>           
-              </rules>    
+                <requirePluginVersions/>
+              </rules>
             </configuration>
           </execution>
         </executions>

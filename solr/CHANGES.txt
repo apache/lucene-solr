@@ -22,22 +22,323 @@ $Id$
 
 ==================  5.0.0 ==================
 
-(No changes)
+Versions of Major Components
+---------------------
+Apache Tika 1.3
+Carrot2 3.6.2
+Velocity 1.7 and Velocity Tools 2.0
+Apache UIMA 2.3.1
+Apache ZooKeeper 3.4.5
+
+Upgrading from Solr 4.x
+----------------------
+
+TBD...
+
+Detailed Change List
+----------------------
+
+==================  4.3.0 ==================
+
+Versions of Major Components
+---------------------
+Apache Tika 1.3
+Carrot2 3.6.2
+Velocity 1.7 and Velocity Tools 2.0
+Apache UIMA 2.3.1
+Apache ZooKeeper 3.4.5
+
+Upgrading from Solr 4.2.0
+----------------------
+
+(No upgrade instructions yet)
+
+Detailed Change List
+----------------------
+
+New Features
+----------------------
+
+Bug Fixes
+----------------------
+
+Other Changes
+----------------------
+
+* SOLR-4537: Clean up schema information REST API. (Steve Rowe)
+
+==================  4.2.0 ==================
+
+Versions of Major Components
+---------------------
+Apache Tika 1.3
+Carrot2 3.6.2
+Velocity 1.7 and Velocity Tools 2.0
+Apache UIMA 2.3.1
+Apache ZooKeeper 3.4.5
+
+Upgrading from Solr 4.1.0
+----------------------
+
+(No upgrade instructions yet)
+
+Detailed Change List
+----------------------
+
+New Features
+----------------------
+
+* SOLR-4043: Add ability to get success/failure responses from Collections API.
+  (Raintung Li, Mark Miller)
+
+* SOLR-2827: RegexpBoost Update Processor (janhoy)
+
+* SOLR-4370: Allow configuring commitWithin to do hard commits. 
+  (Mark Miller, Senthuran Sivananthan)
+
+* SOLR-4451: SolrJ, and SolrCloud internals, now use SystemDefaultHttpClient 
+  under the covers -- allowing many HTTP connection related properties to be
+  controlled via 'standard' java system properties.  (hossman)
+
+* SOLR-3855, SOLR-4490: Doc values support. (Adrien Grand, Robert Muir)
+
+* SOLR-4417: Reopen the IndexWriter on SolrCore reload. (Mark Miller)
+
+* SOLR-4477: Add support for queries (match-only) against docvalues fields. 
+  (Robert Muir)
+
+* SOLR-4488: Return slave replication details for a master if the master has
+  also acted like a slave. (Mark Miller)
+
+* SOLR-4498: Add list command to ZkCLI that prints out the contents of 
+  ZooKeeper. (Roman Shaposhnik via Mark Miller)
+
+* SOLR-4481: SwitchQParserPlugin registered by default as 'switch' using  
+  syntax: {!switch case=XXX case.foo=YYY case.bar=ZZZ default=QQQ}foo
+  (hossman)
+  
+* SOLR-4078: Allow custom naming of SolrCloud nodes so that a new host:port 
+  combination can take over for a previous shard. (Mark Miller)
+
+* SOLR-4210: Requests to a Collection that does not exist on the receiving node
+  should be proxied to a suitable node. (Mark Miller, Po Rui, yonik)
+
+* SOLR-1365: New SweetSpotSimilarityFactory allows customizable TF/IDF based
+  Similarity when you know the optimal "Sweet Spot" of values for the field 
+  length and TF scoring factors.  (hossman)
+
+* SOLR-4138: CurrencyField fields can now be used in a ValueSources to
+  get the "raw" value (using the default number of fractional digits) in 
+  the default currency of the field type.  There is also a new 
+  currency(field,[CODE]) function for generating a ValueSource of the 
+  "natural" value, converted to an optionally specified currency to 
+  override the default for the field type.
+  (hossman)
+  
+* SOLR-4503: Add REST API methods, via Restlet integration, for reading schema
+  elements, at /schema/fields/, /schema/dynamicfields/, /schema/fieldtypes/,
+  and /schema/copyfields/.  (Steve Rowe)
+
+Bug Fixes
+----------------------
+
+* SOLR-2850: Do not refine facets when minCount == 1
+  (Matt Smith, lundgren via Adrien Grand)
+
+* SOLR-4309: /browse: Improve JQuery autosuggest behavior (janhoy)
+
+* SOLR-4330: group.sort is ignored when using group.truncate and ex/tag
+  local params together (koji)
+  
+* SOLR-4321: Collections API will sometimes use a node more than once, even
+  when more unused nodes are available. 
+  (Eric Falcao, Brett Hoerner, Mark Miller)
+
+* SOLR-4345 : Solr Admin UI dosent work in IE 10 (steffkes)
+
+* SOLR-4349 : Admin UI - Query Interface does not work in IE
+  (steffkes)
+
+* SOLR-4359: The RecentUpdates#update method should treat a problem reading the
+  next record the same as a problem parsing the record - log the exception and
+  break. (Mark Miller)
+
+* SOLR-4225: Term info page under schema browser shows incorrect count of terms
+  (steffkes)
+  
+* SOLR-3926: Solr should support better way of finding active sorts (Eirik Lygre via
+  Erick Erickson)
+
+* SOLR-4342: Fix DataImportHandler stats to be a proper Map (hossman)
+
+* SOLR-3967: langid.enforceSchema option checks source field instead of target field (janhoy)
+
+* SOLR-4380: Replicate after startup option would not replicate until the
+  IndexWriter was lazily opened. (Mark Miller, Gregg Donovan)
+
+* SOLR-4400: Deadlock can occur in a rare race between committing and
+  closing a SolrIndexWriter. (Erick Erickson, Mark Miller)
+  
+* SOLR-3655: A restarted node can briefly appear live and active before it really
+  is in some cases. (Mark Miller)
+
+* SOLR-4426: NRTCachingDirectoryFactory does not initialize maxCachedMB and maxMergeSizeMB
+  if <directoryFactory> is not present in solrconfig.xml (Jack Krupansky via shalin)
+
+* SOLR-4463: Fix SolrCoreState reference counting. (Mark Miller)
+
+* SOLR-4459: The Replication 'index move' rather than copy optimization doesn't
+  kick in when using NRTCachingDirectory or the rate limiting feature.
+  (Mark Miller)
+
+* SOLR-4421,SOLR-4165: On CoreContainer shutdown, all SolrCores should publish their 
+  state as DOWN. (Mark Miller, Markus Jelsma)
+
+* SOLR-4467: Ephemeral directory implementations may not recover correctly 
+  because the code to clear the tlog files on startup is off. (Mark Miller)
+
+* SOLR-4413: Fix SolrCore#getIndexDir() to return the current index directory.
+  (Gregg Donovan, Mark Miller)
+  
+* SOLR-4469: A new IndexWriter must be opened on SolrCore reload when the index
+  directory has changed and the previous SolrCore's state should not be 
+  propagated. (Mark Miller, Gregg Donovan)
+
+* SOLR-4471: Replication occurs even when a slave is already up to date.
+  (Mark Miller, Andre Charton)
+  
+* SOLR-4484: ReplicationHandler#loadReplicationProperties still uses Files 
+  rather than the Directory to try and read the replication properties files.
+  (Mark Miller) 
+  
+* SOLR-4352: /browse pagination now supports and preserves sort context
+  (Eric Spiegelberg, Erik Hatcher)
+
+* LUCENE-4796, SOLR-4373: Fix concurrency issue in NamedSPILoader and
+  AnalysisSPILoader when doing concurrent core loads in multicore
+  Solr configs.  (Uwe Schindler, Hossman)
+
+* SOLR-4504: Fixed CurrencyField range queries to correctly exclude 
+  documents w/o values (hossman)
+
+* SOLR-4480: A trailing + or - caused the edismax parser to throw
+  an exception.  (Fiona Tay, Jan Høydahl, yonik)
+
+* SOLR-4507: The Cloud tab does not show up in the Admin UI if you
+  set zkHost in solr.xml. (Alfonso Presa, Mark Miller)
+
+* SOLR-4505: Possible deadlock around SolrCoreState update lock.
+  (Erick Erickson, Mark Miller)
+  
+* SOLR-4511: When a new index is replicated into place, we need
+  to update the most recent replicatable index point without 
+  doing a commit. This is important for repeater use cases, as
+  well as when nodes may switch master/slave roles.
+  (Mark Miller, Raúl Grande)
+
+* SOLR-4515: CurrencyField's OpenExchangeRatesOrgProvider now requires
+  a ratesFileLocation init param, since the previous global default
+  no longer works (hossman)
+
+* SOLR-4518: Improved CurrencyField error messages when attempting to
+  use a Currency that is not supported by the current JVM. (hossman)
+  
+* SOLR-3798: Fix copyField implementation in IndexSchema to handle
+  dynamic field references that aren't string-equal to the name of
+  the referenced dynamic field. (Steve Rowe)
+
+* SOLR-4497: Collection Aliasing. (Mark Miller)
+
+Optimizations
+----------------------
+
+* SOLR-4339: Admin UI - Display Field-Flags on Schema-Browser
+  (steffkes)
+
+* SOLR-4340: Admin UI - Analysis's Button Spinner goes wild
+  (steffkes)
+
+* SOLR-4341: Admin UI - Plugins/Stats Page contains loooong
+  Values which result in horizontal Scrollbar (steffkes)
+
+* SOLR-3915: Color Legend for Cloud UI (steffkes)
+
+* SOLR-4306: Utilize indexInfo=false when gathering core names in UI
+  (steffkes)
+
+* SOLR-4284: Admin UI - make core list scrollable separate from the rest of
+  the UI (steffkes)
+
+* SOLR-4364: Admin UI - Locale based number formatting (steffkes)
+
+* SOLR-4521: Stop using the 'force' option for recovery replication. This
+  will keep some less common unnecessary replications from happening.
+  (Mark Miller, Simon Scofield)
+
+* SOLR-4529: Improve Admin UI Dashboard legibility (Felix Buenemann via 
+  steffkes)
+
+* SOLR-4526: Admin UI depends on optional system info (Felix Buenemann via
+  steffkes)
+
+Other Changes
+----------------------
+
+* SOLR-4259: Carrot2 dependency should be declared on the mini version, not the core.
+  (Dawid Weiss).
+
+* SOLR-4348: Make the lock type configurable by system property by default.
+  (Mark Miller)
+
+* SOLR-4353: Renamed example jetty context file to reduce confusion (hossman)
+
+* SOLR-4384: Make post.jar report timing information (Upayavira via janhoy)
+
+* SOLR-4415: Add 'state' to shards (default to 'active') and read/write them to
+  ZooKeeper (Anshum Gupta via shalin)
+
+* SOLR-4394: Tests and example configs demonstrating SSL with both server 
+  and client certs (hossman)
+
+* SOLR-3060: SurroundQParserPlugin highlighting tests 
+  (Ahmet Arslan via hossman)
+
+* SOLR-2470: Added more tests for VelocityResponseWriter
+
+* SOLR-4471: Improve and clean up TestReplicationHandler. 
+  (Amit Nithian via Mark Miller)
+
+* SOLR-3843: Include lucene codecs jar and enable per-field postings and docvalues
+  support in the schema.xml (Robert Muir, Steve Rowe)
+
+* SOLR-4511: Add new test for 'repeater' replication node. (Mark Miller)
+
+* SOLR-4458: Sort directions (asc, desc) are now case insensitive
+  (Shawn Heisey via hossman)
+
+* SOLR-2996: A bare * without a field specification is treated as *:*
+  by the lucene and edismax query paesers.
+  (hossman, Jan Høydahl, Alan Woodward, yonik)
+
+* SOLR-4416: Upgrade to Tika 1.3. (Markus Jelsma via Mark Miller)
+
+* SOLR-4200: Reduce INFO level logging from CachingDirectoryFactory
+  (Shawn Heisey via hossman)
 
 ==================  4.1.0 ==================
 
 Versions of Major Components
 ---------------------
 Apache Tika 1.2
-Carrot2 3.5.0
-Velocity 1.6.4 and Velocity Tools 2.0
+Carrot2 3.6.2
+Velocity 1.7 and Velocity Tools 2.0
 Apache UIMA 2.3.1
 Apache ZooKeeper 3.4.5
 
 Upgrading from Solr 4.0.0
 ----------------------
 
-Custom java parsing plugins need to migrade from throwing the internal
+Custom java parsing plugins need to migrate from throwing the internal
 ParseException to throwing SyntaxError.
 
 BaseDistributedSearchTestCase now randomizes the servlet context it uses when 
@@ -83,10 +384,6 @@ New Features
   - SOLR-4144: Replication using too much RAM. (yonik, Markus Jelsma)
   - SOLR-4187: NPE on Directory release (Mark Miller, Markus Jelsma)
     
-* SOLR-1972: Add extra statistics to RequestHandlers - 5 & 15-minute reqs/sec
-  rolling averages; median, 75th, 95th, 99th, 99.9th percentile request times
-  (Alan Woodward, Shawn Heisey, Adrien Grand)
-  
 * SOLR-4051: Add <propertyWriter /> element to DIH's data-config.xml file,  
   allowing the user to specify the location, filename and Locale for
   the "data-config.properties" file.  Alternatively, users can specify their
@@ -134,7 +431,7 @@ New Features
   CoreAdmin API the same way as the data directory. (Mark Miller)
   
 * SOLR-4028: When using ZK chroot, it would be nice if Solr would create the 
-  initial path when it doesn't exist. (Tomas Fernandez Lobbe via Mark Miller)
+  initial path when it doesn't exist. (Tomás Fernández Löbbe via Mark Miller)
 
 * SOLR-3948: Calculate/display deleted documents in admin interface.
   (Shawn Heisey via Mark Miller)
@@ -156,6 +453,69 @@ New Features
 
 * SOLR-4110: Configurable Content-Type headers for PHPResponseWriters and 
   PHPSerializedResponseWriter. (Dominik Siebel via Mark Miller)
+  
+* SOLR-1028: The ability to specify "transient" and "loadOnStartup" as a new properties of
+  <core> tags in solr.xml. Can specify "transientCacheSize" in the <cores> tag. Together
+  these allow cores to be loaded only when needed and only transientCacheSize transient
+  cores will be loaded at a time, the rest aged out on an LRU basis.
+
+* SOLR-4246: When update.distrib is set to skip update processors before
+  the distributed update processor, always include the log update processor
+  so forwarded updates will still be logged. (yonik)
+
+* SOLR-4230: The new Solr 4 spatial fields now work with the {!geofilt} and
+  {!bbox} query parsers. The score local-param works too. (David Smiley)
+
+* SOLR-1972: Add extra statistics to RequestHandlers - 5 & 15-minute reqs/sec
+  rolling averages; median, 75th, 95th, 99th, 99.9th percentile request times
+  (Alan Woodward, Shawn Heisey, Adrien Grand, Uwe Schindler)
+
+* SOLR-4271: Add support for PostingsHighlighter.  (Robert Muir)
+
+* SOLR-4255: The new Solr 4 spatial fields now have a 'filter' boolean local-param
+  that can be set to false to not filter. Its useful when there is already a spatial
+  filter query but you also need to sort or boost by distance. (David Smiley)
+
+* SOLR-4265, SOLR-4283: Solr now parses request parameters (in URL or sent with POST
+  using content-type application/x-www-form-urlencoded) in its dispatcher code. It no
+  longer relies on special configuration settings in Tomcat or other web containers
+  to enable UTF-8 encoding, which is mandatory for correct Solr behaviour. Query
+  strings passed in via the URL need to be properly-%-escaped, UTF-8 encoded
+  bytes, otherwise Solr refuses to handle the request. The maximum length of
+  x-www-form-urlencoded POST parameters can now be configured through the
+  requestDispatcher/requestParsers/@formdataUploadLimitInKB setting in
+  solrconfig.xml (defaults to 2 MiB). Solr now works out of the box with
+  e.g. Tomcat, JBoss,...  (Uwe Schindler, Dawid Weiss, Alex Rocher)
+
+* SOLR-2201: DIH's "formatDate" function now supports a timezone as an optional
+  fourth parameter (James Dyer, Mark Waddle)
+
+* SOLR-4302: New parameter 'indexInfo' (defaults to true) in CoreAdmin STATUS
+  command can be used to omit index specific information (Shahar Davidson via shalin)
+
+* SOLR-2592: Collection specific document routing.  The "compositeId"
+  router is the default for collections with hash based routing (i.e. when
+  numShards=N is specified on collection creation).  Documents with ids sharing
+  the same domain (prefix) will be routed to the same shard, allowing for
+  efficient querying.
+
+  Example:
+    The following two documents will be indexed to the same shard
+    since they share the same domain "customerB!". 
+    <code>
+       {"id" : "customerB!doc1" [...] }
+       {"id" : "customerB!doc2" [...] }
+    </code>
+    At query time, one can specify a "shard.keys" parameter that lists what
+    shards the query should cover.
+       http://.../query?q=my_query&shard.keys=customerB!
+
+  Collections that do not specify numShards at collection creation time
+  use custom sharding and default to the "implicit" router.  Document updates
+  received by a shard will be indexed to that shard, unless a "_shard_" parameter
+  or document field names a different shard.
+  (Michael Garski, Dan Rosher, yonik)
+
 
 Optimizations
 ----------------------
@@ -174,17 +534,39 @@ Optimizations
   dynamicField's (steffkes)
   
 * SOLR-3941: The "commitOnLeader" part of distributed recovery can use
-  openSearcher=false. (Tomas Fernandez Lobbe via Mark Miller)
+  openSearcher=false. (Tomás Fernández Löbbe via Mark Miller)
   
 * SOLR-4063: Allow CoreContainer to load multiple SolrCores in parallel rather
   than just serially. (Mark Miller)
   
-* SOLR-4199: When doing zk retries due to connectionloss, rather than just 
+* SOLR-4199: When doing zk retries due to connection loss, rather than just
   retrying for 2 minutes, retry in proportion to the session timeout.
   (Mark Miller)
 
+* SOLR-4262: Replication Icon on Dashboard does not reflect Master-/Slave-
+  State (steffkes)
+
+* SOLR-4264: Missing Error-Screen on UI's Cloud-Page (steffkes)
+
+* SOLR-4261: Percentage Infos on Dashboard have a fixed width (steffkes)
+
+* SOLR-3851: create a new core/delete an existing core should also update 
+  the main/left list of cores on the admin UI (steffkes)
+
+* SOLR-3840: XML query response display is unreadable in Solr Admin Query UI
+  (steffkes)
+
+* SOLR-3982: Admin UI: Various Dataimport Improvements (steffkes)
+
+* SOLR-4296: Admin UI: Improve Dataimport Auto-Refresh (steffkes)
+
+* SOLR-3458: Allow multiple Items to stay open on Plugins-Page (steffkes)
+
 Bug Fixes
 ----------------------
+
+* SOLR-4288: Improve logging for FileDataSource (basePath, relative 
+  resources). (Dawid Weiss)
 
 * SOLR-4007: Morfologik dictionaries not available in Solr field type
   due to class loader lookup problems. (Lance Norskog, Dawid Weiss)
@@ -276,7 +658,7 @@ Bug Fixes
 
 * SOLR-4064: When there is an unexpected exception while trying to run the new
   leader process, the SolrCore will not correctly rejoin the election.
-  (Po Rui Via Mark Miller)
+  (Po Rui via Mark Miller)
 
 * SOLR-3989: SolrZkClient constructor dropped exception cause when throwing
   a new RuntimeException. (Colin Bartolome, yonik)
@@ -295,7 +677,7 @@ Bug Fixes
 
 * SOLR-4081: QueryParsing.toString, used during debugQuery=true, did not
   correctly handle ExtendedQueries such as WrappedQuery
-  (used when cache=false), spatial queries, and frange queires.
+  (used when cache=false), spatial queries, and frange queries.
   (Eirik Lygre, yonik)
 
 * SOLR-3959: Ensure the internal comma separator of poly fields is escaped
@@ -336,7 +718,7 @@ Bug Fixes
 
 * SOLR-4162: ZkCli usage examples are not correct because the zkhost parameter 
   is not present and it is mandatory for all commands. 
-  (Tomas Fernandez Lobbe via Mark Miller)
+  (Tomás Fernández Löbbe via Mark Miller)
 
 * SOLR-4071: Validate that name is pass to Collections API create, and behave the
   same way as on startup when collection.configName is not explicitly passed.
@@ -378,8 +760,86 @@ Bug Fixes
 * SOLR-3972: Fix ShowFileRequestHandler to not log a warning in the 
   (expected) situation of a file not found.  (hossman)
 
+* SOLR-4133: Cannot "set" field to null with partial updates when using the
+  standard RequestWriter. (Will Butler, shalin)
+
+* SOLR-4223: "maxFormContentSize" in jetty.xml is not picked up by jetty 8
+  so set it via solr webapp context file. (shalin)
+  
+* SOLR-4175:SearchComponent chain can't contain two components of the
+  same class and use debugQuery. (Tomás Fernández Löbbe via ehatcher)
+
+* SOLR-4244: When coming back from session expiration we should not wait for
+  the leader to see us in the down state if we are the node that must become
+  the leader. (Mark Miller)
+
+* SOLR-4245: When a core is registering with ZooKeeper, the timeout to find the
+  leader in the cluster state is 30 seconds rather than leaderVoteWait + extra 
+  time. (Mark Miller)
+
+* SOLR-4238: Fix jetty example requestLog config (jm via hossman)
+
+* SOLR-4251: Fix SynonymFilterFactory when an optional tokenizerFactory is supplied.
+  (Chris Bleakley via rmuir)
+
+* SOLR-4253: Misleading resource loading warning from Carrot2 clustering 
+  component fixed (Stanisław Osiński)
+
+* SOLR-4257: PeerSync updates and Log Replay updates should not wait for
+  a ZooKeeper connection in order to proceed. (yonik)
+
+* SOLR-4045: SOLR admin page returns HTTP 404 on core names containing
+  a '.' (dot) (steffkes)
+
+* SOLR-4176: analysis ui: javascript not properly handling URL decoding
+  of input (steffkes)
+
+* SOLR-4079: Long core names break web gui appearance and functionality
+  (steffkes) 
+
+* SOLR-4263: Incorrect Link from Schema-Browser to Query From for Top-Terms
+  (steffkes)
+
+* SOLR-3829: Admin UI Logging events broken if schema.xml defines a catch-all
+  dynamicField with type ignored (steffkes)
+
+* SOLR-4275: Fix TrieTokenizer to no longer throw StringIndexOutOfBoundsException
+  in admin UI / AnalysisRequestHandler when you enter no number to tokenize.
+  (Uwe Schindler)
+
+* SOLR-4279: Wrong exception message if _version_ field is multivalued (shalin)
+
+* SOLR-4170: The 'backup' ReplicationHandler command can sometimes use a stale
+  index directory rather than the current one. (Mark Miller, Marcin Rzewucki)
+
+* SOLR-3876: Solr Admin UI is completely dysfunctional on IE 9 (steffkes)
+
+* SOLR-4112: Fixed DataImportHandler ZKAwarePropertiesWriter implementation so
+  import works fine with SolrCloud clusters (Deniz Durmus, James Dyer,
+  Erick Erickson, shalin)
+
+* SOLR-4291: Harden the Overseer work queue thread loop. (Mark Miller)
+
+* SOLR-3820: Solr Admin Query form is missing some edismax request parameters
+  (steffkes)
+
+* SOLR-4217: post.jar no longer ignores -Dparams when -Durl is used.
+  (Alexandre Rafalovitch, ehatcher)
+
+* SOLR-4303: On replication, if the generation of the master is lower than the
+  slave we need to force a full copy of the index. (Mark Miller, Gregg Donovan)
+  
+* SOLR-4266: HttpSolrServer does not release connection properly on exception
+  when no response parser is used. (Steve Molloy via Mark Miller)
+
+* SOLR-2298: Updated JavaDoc for SolrDocument.addField and SolrInputDocument.addField
+  to have more information on name and value parameters. (Siva Natarajan)
+
 Other Changes
 ----------------------
+
+* SOLR-4106: Javac/ ivy path warnings with morfologik fixed by
+  upgrading to Morfologik 1.5.5 (Robert Muir, Dawid Weiss)
 
 * SOLR-3899: SolrCore should not log at warning level when the index directory
   changes - it's an info event. (Tobias Bergman, Mark Miller)
@@ -437,6 +897,33 @@ Other Changes
   Also, change the warning to warn log level. (Shawn Heisey via Mark Miller)
 
 * SOLR-4163: README improvements (Shawn Heisey via hossman)
+
+* SOLR-4248: "ant eclipse" should declare .svn directories as derived.
+  (Shawn Heisey via Mark Miller)
+
+* SOLR-3279: Upgrade Carrot2 to 3.6.2 (Stanisław Osiński)
+
+* SOLR-4254: Harden the 'leader requests replica to recover' code path.
+  (Mark Miller, yonik)
+
+* SOLR-4226: Extract fl parsing code out of ReturnFields constructor.
+  (Ryan Ernst via Robert Muir)
+
+* SOLR-4208: ExtendedDismaxQParserPlugin has been refactored to make 
+  subclassing easier. (Tomás Fernández Löbbe, hossman)
+
+* SOLR-3735: Relocate the example mime-to-extension mapping, and
+  upgrade Velocity Engine to 1.7 (ehatcher)
+
+* SOLR-4287: Removed "apache-" prefix from Solr distribution and artifact
+  filenames. (Ryan Ernst, Robert Muir, Steve Rowe)
+
+* SOLR-4016: Deduplication does not work with atomic/partial updates so
+  disallow atomic update requests which change signature generating fields.
+  (Joel Nothman, yonik, shalin)
+
+* SOLR-4308: Remove the problematic and now unnecessary log4j-over-slf4j.
+  (Mark Miller)
 
 ==================  4.0.0 ==================
 
@@ -649,7 +1136,7 @@ Bug Fixes
   or SolrIndexWriter initialization. (hossman)
 
 * SOLR-3518: Include final 'hits' in log information when aggregating a 
-  distibuted request (Markus Jelsma via hossman)
+  distributed request (Markus Jelsma via hossman)
 
 * SOLR-3628: SolrInputField and SolrInputDocument are now consistently backed 
   by Collections passed in to setValue/setField, and defensively copy values 
@@ -720,7 +1207,7 @@ Bug Fixes
 
 * SOLR-3527: SolrCmdDistributor drops some of the important commit attributes
   (maxOptimizeSegments, softCommit, expungeDeletes) when sending a commit to
-  replicas. (Andy Laird, Tomas Fernandez Lobbe, Mark Miller)
+  replicas. (Andy Laird, Tomás Fernández Löbbe, Mark Miller)
 
 * SOLR-3844: SolrCore reload can fail because it tries to remove the index 
   write lock while already holding it. (Mark Miller)
@@ -742,7 +1229,7 @@ Bug Fixes
   (James Dyer)
 
 * SOLR-3087: Fixed DOMUtil so that code doing attribute validation will 
-  automaticly ignore nodes in the resserved "xml" prefix - in particular this 
+  automatically ignore nodes in the reserved "xml" prefix - in particular this
   fixes some bugs related to xinclude and fieldTypes.
   (Amit Nithian, hossman)
 
@@ -773,7 +1260,7 @@ Bug Fixes
 Other Changes
 ----------------------
 
-* SOLR-3690: Fixed binary release packages to include dependencie needed for 
+* SOLR-3690: Fixed binary release packages to include dependencies needed for
   the solr-test-framework (hossman)
 
 * SOLR-2857: The /update/json and /update/csv URLs were restored to aid
@@ -804,7 +1291,7 @@ Other Changes
   replicas before running the leader process - or if they all do not come up, 
   N amount of time. (Jan Høydahl, Per Steffensen, Mark Miller)
 
-* SOLR-3750: Optionaly, on session expiration, we can explicitly wait some time before 
+* SOLR-3750: Optionally, on session expiration, we can explicitly wait some time before
   running the leader sync process so that we are sure every node participates.
   (Per Steffensen, Mark Miller)
 
@@ -988,7 +1475,7 @@ Bug Fixes
   For the example configuration, this means /browse now works with SolrCloud.
   (janhoy, ehatcher)
 
-* SOLR-3677: Fixed missleading error message in web ui to distinguish between 
+* SOLR-3677: Fixed misleading error message in web ui to distinguish between
   no SolrCores loaded vs. no /admin/ handler available.
   (hossman, steffkes)
   
@@ -1131,7 +1618,7 @@ New Features
 * SOLR-571: The autowarmCount for LRUCaches (LRUCache and FastLRUCache) now 
   supports "percentages" which get evaluated  relative the current size of 
   the cache when warming happens. 
-  (Tomas Fernandez Lobbe and hossman)
+  (Tomás Fernández Löbbe and hossman)
 
 * SOLR-1932: New relevancy function queries: termfreq, tf, docfreq, idf
   norm, maxdoc, numdocs. (yonik)
@@ -1206,7 +1693,7 @@ New Features
   
 * SOLR-1298: Return FunctionQuery as pseudo field.  The solr 'fl' param
   now supports functions.  For example:  fl=id,sum(x,y) -- NOTE: only
-  functions with fast random access are reccomended. (yonik, ryan)
+  functions with fast random access are recommended. (yonik, ryan)
   
 * SOLR-705: Optionally return shard info with each document in distributed
   search.  Use fl=id,[shard]  to return the shard url.  (ryan)  
@@ -1316,7 +1803,7 @@ New Features
   chain. Serialization format is pluggable, and defaults to JSON. (ab)
 
 * SOLR-3363: Consolidated Exceptions in Analysis Factories so they only throw 
-  InitalizationExceptions (Chris Male)
+  InitializationExceptions (Chris Male)
 
 * SOLR-2690: New support for a "TZ" request param which overrides the TimeZone 
   used when rounding Dates in DateMath expressions for the entire request 
@@ -1502,15 +1989,15 @@ Bug Fixes
   down to it via acceptDocs since LUCENE-1536. (Mike Hugo, yonik)
   
 * SOLR-3214: If you use multiple fl entries rather than a comma separated list, all but the first
-  entry can be ignored if you are using distributed search. (Tomas Fernandez Lobbe via Mark Miller)
+  entry can be ignored if you are using distributed search. (Tomás Fernández Löbbe via Mark Miller)
  
 * SOLR-3352: eDismax: pf2 should kick in for a query with 2 terms (janhoy)
 
 * SOLR-3361: ReplicationHandler "maxNumberOfBackups" doesn't work if backups are triggered on commit
-  (James Dyer, Tomas Fernandez Lobbe)
+  (James Dyer, Tomás Fernández Löbbe)
 
 * SOLR-2605: fixed tracking of the 'defaultCoreName' in CoreContainer so that
-  CoreAdminHandler could return consistent information regardless of wether
+  CoreAdminHandler could return consistent information regardless of whether
   there is a a default core name or not. (steffkes, hossman)
 
 * SOLR-3370: fixed CSVResponseWriter to respect globs in the 'fl' param
@@ -1540,7 +2027,7 @@ Bug Fixes
 
 * SOLR-3522: fixed parsing of the 'literal()' function (hossman)
 
-* SOLR-3548: Fixed a bug in the cachability of queries using the {!join} 
+* SOLR-3548: Fixed a bug in the cachability of queries using the {!join}
   parser or the strdist() function, as well as some minor improvements to 
   the hashCode implementation of {!bbox} and {!geofilt} queries.
   (hossman)
@@ -1555,6 +2042,8 @@ Bug Fixes
 * SOLR-1958: When using the MailEntityProcessor, import would fail if 
   fetchMailsSince was not specified. (Max Lynch via James Dyer) 
 
+* SOLR-4289: Admin UI - JVM memory bar - dark grey "used" width is too small
+  (steffkes, elyograg)
 
 Other Changes
 ----------------------
@@ -1574,7 +2063,7 @@ Other Changes
   more spread out (Erick Erickson via hossman)
 
 * SOLR-2288: Small tweaks to eliminate compiler warnings.  primarily
-  using Generics where applicable in method/object declatations, and
+  using Generics where applicable in method/object declarations, and
   adding @SuppressWarnings("unchecked") when appropriate (hossman)
 
 * SOLR-2375: Suggester Lookup implementations now store trie data
@@ -1647,7 +2136,7 @@ Other Changes
   (ehatcher)
   
 * SOLR-3032: logOnce from SolrException logOnce and all the supporting
-  structure is gone. abortOnConfugrationError is also gone as it is no longer referenced.
+  structure is gone. abortOnConfigurationError is also gone as it is no longer referenced.
   Errors should be caught and logged at the top-most level or logged and NOT propagated up the 
   chain. (Erick Erickson)
 
@@ -1720,7 +2209,17 @@ Documentation
 
 * SOLR-2232: Improved README info on solr.solr.home in examples
   (Eric Pugh and hossman)
-  
+
+==================  3.6.2  ==================
+
+Bug Fixes
+----------------------
+* SOLR-3790: ConcurrentModificationException could be thrown when using hl.fl=*.
+  (yonik, koji)
+
+* SOLR-3589: Edismax parser does not honor mm parameter if analyzer splits a token.
+  (Tom Burton-West, Robert Muir)
+
 ==================  3.6.1  ==================
 More information about this release, including any errata related to the 
 release notes, upgrade instructions, or other changes may be found online at:
@@ -1733,7 +2232,7 @@ Bug Fixes
   (Uwe Schindler, Mike McCandless, Robert Muir)
   
 * SOLR-3361: ReplicationHandler "maxNumberOfBackups" doesn't work if backups are triggered on commit
-  (James Dyer, Tomas Fernandez Lobbe)
+  (James Dyer, Tomás Fernández Löbbe)
 
 * SOLR-3375: Fix charset problems with HttpSolrServer (Roger Håkansson, yonik, siren)
 

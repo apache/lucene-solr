@@ -45,11 +45,11 @@ example/
   Please see example/README.txt for information about running this
   example.
 
-dist/apache-solr-XX.war
+dist/solr-XX.war
   The Apache Solr Application.  Deploy this WAR file to any servlet
   container to run Apache Solr.
 
-dist/apache-solr-<component>-XX.jar
+dist/solr-<component>-XX.jar
   The Apache Solr libraries.  To compile Apache Solr Plugins,
   one or more of these will be required.  The core library is
   required at a minimum. (see http://wiki.apache.org/solr/SolrPlugins

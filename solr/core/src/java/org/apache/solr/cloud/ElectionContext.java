@@ -94,7 +94,7 @@ class ShardLeaderElectionContextBase extends ElectionContext {
     
     zkClient.makePath(leaderPath, ZkStateReader.toJSON(leaderProps),
         CreateMode.EPHEMERAL, true);
-    
+    assert shardId != null;
     ZkNodeProps m = ZkNodeProps.fromKeyVals(Overseer.QUEUE_OPERATION, "leader",
         ZkStateReader.SHARD_ID_PROP, shardId, ZkStateReader.COLLECTION_PROP,
         collection, ZkStateReader.BASE_URL_PROP, leaderProps.getProperties()
@@ -294,7 +294,7 @@ final class ShardLeaderElectionContext extends ShardLeaderElectionContextBase {
     
     Slice slices = zkController.getClusterState().getSlice(collection, shardId);
     int cnt = 0;
-    while (true && !isClosed) {
+    while (true && !isClosed && !cc.isShutDown()) {
       // wait for everyone to be up
       if (slices != null) {
         int found = 0;
@@ -343,7 +343,7 @@ final class ShardLeaderElectionContext extends ShardLeaderElectionContextBase {
     cancelElection();
     
     try {
-      core.getUpdateHandler().getSolrCoreState().doRecovery(cc, core.getName());
+      core.getUpdateHandler().getSolrCoreState().doRecovery(cc, core.getCoreDescriptor());
     } catch (Throwable t) {
       SolrException.log(log, "Error trying to start recovery", t);
     }

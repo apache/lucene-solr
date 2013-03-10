@@ -183,12 +183,12 @@ public class TestCustomScoreQuery extends FunctionTestSetup {
 
     @Override
     protected CustomScoreProvider getCustomScoreProvider(AtomicReaderContext context) throws IOException {
-      final int[] values = FieldCache.DEFAULT.getInts(context.reader(), INT_FIELD, false);
+      final FieldCache.Ints values = FieldCache.DEFAULT.getInts(context.reader(), INT_FIELD, false);
       return new CustomScoreProvider(context) {
         @Override
         public float customScore(int doc, float subScore, float valSrcScore) {
           assertTrue(doc <= context.reader().maxDoc());
-          return values[doc];
+          return values.get(doc);
         }
       };
     }

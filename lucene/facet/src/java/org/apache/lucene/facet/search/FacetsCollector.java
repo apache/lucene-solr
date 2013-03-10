@@ -1,17 +1,18 @@
 package org.apache.lucene.facet.search;
 
 import java.io.IOException;
+import java.util.ArrayList;
 import java.util.List;
 
+import org.apache.lucene.facet.params.FacetSearchParams;
+import org.apache.lucene.facet.taxonomy.CategoryPath;
+import org.apache.lucene.facet.taxonomy.TaxonomyReader;
 import org.apache.lucene.index.AtomicReaderContext;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.search.Collector;
 import org.apache.lucene.search.Scorer;
-
-import org.apache.lucene.facet.search.params.FacetRequest;
-import org.apache.lucene.facet.search.params.FacetSearchParams;
-import org.apache.lucene.facet.search.results.FacetResult;
-import org.apache.lucene.facet.taxonomy.TaxonomyReader;
+import org.apache.lucene.util.ArrayUtil;
+import org.apache.lucene.util.FixedBitSet;
 
 /*
  * Licensed to the Apache Software Foundation (ASF) under one or more
@@ -31,109 +32,198 @@ import org.apache.lucene.facet.taxonomy.TaxonomyReader;
  */
 
 /**
- * Collector for facet accumulation. *
+ * A {@link Collector} which executes faceted search and computes the weight of
+ * requested facets. To get the facet results you should call
+ * {@link #getFacetResults()}.
+ * {@link #create(FacetSearchParams, IndexReader, TaxonomyReader)} returns the
+ * most optimized {@link FacetsCollector} for the given parameters.
  * 
  * @lucene.experimental
  */
-public class FacetsCollector extends Collector {
+public abstract class FacetsCollector extends Collector {
 
-  protected final FacetsAccumulator facetsAccumulator;
-  private ScoredDocIdCollector scoreDocIdCollector;
-  private List<FacetResult> results;
-  private Object resultsGuard;
+  private static final class DocsAndScoresCollector extends FacetsCollector {
 
-  /**
-   * Create a collector for accumulating facets while collecting documents
-   * during search.
-   * 
-   * @param facetSearchParams
-   *          faceted search parameters defining which facets are required and
-   *          how.
-   * @param indexReader
-   *          searched index.
-   * @param taxonomyReader
-   *          taxonomy containing the facets.
-   */
-  public FacetsCollector(FacetSearchParams facetSearchParams,
-                          IndexReader indexReader, TaxonomyReader taxonomyReader) {
-    facetsAccumulator = initFacetsAccumulator(facetSearchParams, indexReader, taxonomyReader);
-    scoreDocIdCollector = initScoredDocCollector(facetSearchParams, indexReader, taxonomyReader);
-    resultsGuard = new Object();
-  }
-
-  /**
-   * Create a {@link ScoredDocIdCollector} to be used as the first phase of
-   * the facet collection. If all facetRequests are do not require the
-   * document score, a ScoredDocIdCollector which does not store the document
-   * scores would be returned. Otherwise a SDIC which does store the documents
-   * will be returned, having an initial allocated space for 1000 such
-   * documents' scores.
-   */
-  protected ScoredDocIdCollector initScoredDocCollector(
-      FacetSearchParams facetSearchParams, IndexReader indexReader,
-      TaxonomyReader taxonomyReader) {
-    boolean scoresNeeded = false;
-    for (FacetRequest frq : facetSearchParams.getFacetRequests()) {
-      if (frq.requireDocumentScore()) {
-        scoresNeeded = true;
-        break;
+    private AtomicReaderContext context;
+    private Scorer scorer;
+    private FixedBitSet bits;
+    private int totalHits;
+    private float[] scores;
+    
+    public DocsAndScoresCollector(FacetsAccumulator accumulator) {
+      super(accumulator);
+    }
+    
+    @Override
+    protected final void finish() {
+      if (bits != null) {
+        matchingDocs.add(new MatchingDocs(this.context, bits, totalHits, scores));
+        bits = null;
+        scores = null;
+        context = null;
       }
     }
-    return ScoredDocIdCollector.create(indexReader.maxDoc(), scoresNeeded);
-  }
+    
+    @Override
+    public final boolean acceptsDocsOutOfOrder() {
+      return false;
+    }
 
-  /**
-   * Create the {@link FacetsAccumulator} to be used. Default is 
-   * {@link StandardFacetsAccumulator}. Called once at the constructor of the collector.
-   * 
-   * @param facetSearchParams
-   *            The search params.
-   * @param indexReader
-   *            A reader to the index to search in.
-   * @param taxonomyReader
-   *            A reader to the active taxonomy.
-   * @return The {@link FacetsAccumulator} to use.
-   */
-  protected FacetsAccumulator initFacetsAccumulator(FacetSearchParams facetSearchParams,
-                                                    IndexReader indexReader,
-                                                    TaxonomyReader taxonomyReader) {
-    return new StandardFacetsAccumulator(facetSearchParams, indexReader, taxonomyReader);
-  }
-
-  /**
-   * Return accumulated facets results (according to faceted search parameters) 
-   * for collected documents.
-   * @throws IOException on error
-   */
-  public List<FacetResult> getFacetResults() throws IOException {
-    synchronized (resultsGuard) { // over protection 
-      if (results == null) {
-        // lazy creation but just once
-        results = facetsAccumulator.accumulate(scoreDocIdCollector.getScoredDocIDs());
-        scoreDocIdCollector = null;
+    @Override
+    public final void collect(int doc) throws IOException {
+      bits.set(doc);
+      if (totalHits >= scores.length) {
+        float[] newScores = new float[ArrayUtil.oversize(totalHits + 1, 4)];
+        System.arraycopy(scores, 0, newScores, 0, totalHits);
+        scores = newScores;
       }
-      return results;
+      scores[totalHits] = scorer.score();
+      totalHits++;
+    }
+
+    @Override
+    public final void setScorer(Scorer scorer) throws IOException {
+      this.scorer = scorer;
+    }
+    
+    @Override
+    public final void setNextReader(AtomicReaderContext context) throws IOException {
+      if (bits != null) {
+        matchingDocs.add(new MatchingDocs(this.context, bits, totalHits, scores));
+      }
+      bits = new FixedBitSet(context.reader().maxDoc());
+      totalHits = 0;
+      scores = new float[64]; // some initial size
+      this.context = context;
+    }
+
+  }
+
+  private final static class DocsOnlyCollector extends FacetsCollector {
+
+    private AtomicReaderContext context;
+    private FixedBitSet bits;
+    private int totalHits;
+
+    public DocsOnlyCollector(FacetsAccumulator accumulator) {
+      super(accumulator);
+    }
+    
+    @Override
+    protected final void finish() {
+      if (bits != null) {
+        matchingDocs.add(new MatchingDocs(this.context, bits, totalHits, null));
+        bits = null;
+        context = null;
+      }
+    }
+    
+    @Override
+    public final boolean acceptsDocsOutOfOrder() {
+      return true;
+    }
+
+    @Override
+    public final void collect(int doc) throws IOException {
+      totalHits++;
+      bits.set(doc);
+    }
+
+    @Override
+    public final void setScorer(Scorer scorer) throws IOException {}
+    
+    @Override
+    public final void setNextReader(AtomicReaderContext context) throws IOException {
+      if (bits != null) {
+        matchingDocs.add(new MatchingDocs(this.context, bits, totalHits, null));
+      }
+      bits = new FixedBitSet(context.reader().maxDoc());
+      totalHits = 0;
+      this.context = context;
+    }
+  }
+  
+  /**
+   * Holds the documents that were matched in the {@link AtomicReaderContext}.
+   * If scores were required, then {@code scores} is not null.
+   */
+  public final static class MatchingDocs {
+    
+    public final AtomicReaderContext context;
+    public final FixedBitSet bits;
+    public final float[] scores;
+    public final int totalHits;
+    
+    public MatchingDocs(AtomicReaderContext context, FixedBitSet bits, int totalHits, float[] scores) {
+      this.context = context;
+      this.bits = bits;
+      this.scores = scores;
+      this.totalHits = totalHits;
+    }
+  }
+  
+  /**
+   * Creates a {@link FacetsCollector} using the {@link
+   * FacetsAccumulator} from {@link FacetsAccumulator#create}.
+   */
+  public static FacetsCollector create(FacetSearchParams fsp, IndexReader indexReader, TaxonomyReader taxoReader) {
+    return create(FacetsAccumulator.create(fsp, indexReader, taxoReader));
+  }
+
+  /**
+   * Creates a {@link FacetsCollector} that satisfies the requirements of the
+   * given {@link FacetsAccumulator}.
+   */
+  public static FacetsCollector create(FacetsAccumulator accumulator) {
+    if (accumulator.getAggregator().requiresDocScores()) {
+      return new DocsAndScoresCollector(accumulator);
+    } else {
+      return new DocsOnlyCollector(accumulator);
     }
   }
 
-  @Override
-  public boolean acceptsDocsOutOfOrder() {
-    return false;
-  }
+  private final FacetsAccumulator accumulator;
+  
+  protected final List<MatchingDocs> matchingDocs = new ArrayList<MatchingDocs>();
 
-  @Override
-  public void collect(int doc) throws IOException {
-    scoreDocIdCollector.collect(doc);
+  protected FacetsCollector(FacetsAccumulator accumulator) {
+    this.accumulator = accumulator;
   }
-
-  @Override
-  public void setNextReader(AtomicReaderContext context) throws IOException {
-    scoreDocIdCollector.setNextReader(context);
+  
+  /**
+   * Called when the Collector has finished, so that the last
+   * {@link MatchingDocs} can be added.
+   */
+  protected abstract void finish();
+  
+  /**
+   * Returns a {@link FacetResult} per {@link FacetRequest} set in
+   * {@link FacetSearchParams}. Note that if one of the {@link FacetRequest
+   * requests} is for a {@link CategoryPath} that does not exist in the taxonomy,
+   * no matching {@link FacetResult} will be returned.
+   */
+  public final List<FacetResult> getFacetResults() throws IOException {
+    finish();
+    return accumulator.accumulate(matchingDocs);
   }
-
-  @Override
-  public void setScorer(Scorer scorer) throws IOException {
-    scoreDocIdCollector.setScorer(scorer);
+  
+  /**
+   * Returns the documents matched by the query, one {@link MatchingDocs} per
+   * visited segment.
+   */
+  public final List<MatchingDocs> getMatchingDocs() {
+    finish();
+    return matchingDocs;
+  }
+  
+  /**
+   * Allows to reuse the collector between search requests. This method simply
+   * clears all collected documents (and scores) information, and does not
+   * attempt to reuse allocated memory spaces.
+   */
+  public final void reset() {
+    finish();
+    matchingDocs.clear();
   }
 
 }

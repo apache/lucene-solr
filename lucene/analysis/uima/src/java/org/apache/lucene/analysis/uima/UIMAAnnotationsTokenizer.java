@@ -23,9 +23,11 @@ import org.apache.lucene.analysis.tokenattributes.OffsetAttribute;
 import org.apache.uima.analysis_engine.AnalysisEngineProcessException;
 import org.apache.uima.cas.Type;
 import org.apache.uima.cas.text.AnnotationFS;
+import org.apache.uima.resource.ResourceInitializationException;
 
 import java.io.IOException;
 import java.io.Reader;
+import java.util.Map;
 
 /**
  * a {@link Tokenizer} which creates tokens from UIMA Annotations
@@ -40,8 +42,8 @@ public final class UIMAAnnotationsTokenizer extends BaseUIMATokenizer {
 
   private int finalOffset = 0;
 
-  public UIMAAnnotationsTokenizer(String descriptorPath, String tokenType, Reader input) {
-    super(input, descriptorPath);
+  public UIMAAnnotationsTokenizer(String descriptorPath, String tokenType, Map<String, Object> configurationParameters, Reader input) {
+    super(input, descriptorPath, configurationParameters);
     this.tokenTypeString = tokenType;
     this.termAttr = addAttribute(CharTermAttribute.class);
     this.offsetAttr = addAttribute(OffsetAttribute.class);
@@ -52,6 +54,8 @@ public final class UIMAAnnotationsTokenizer extends BaseUIMATokenizer {
     try {
       analyzeInput();
     } catch (AnalysisEngineProcessException e) {
+      throw new IOException(e);
+    } catch (ResourceInitializationException e) {
       throw new IOException(e);
     }
     finalOffset = correctOffset(cas.getDocumentText().length());

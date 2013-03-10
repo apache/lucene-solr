@@ -55,7 +55,8 @@ public class SolrExampleStreamingTest extends SolrExampleTests {
   {
     try {
       // setup the server...
-      String url = "http://127.0.0.1:"+port+context;       // smaller queue size hits locks more often
+      String url = jetty.getBaseUrl().toString();
+      // smaller queue size hits locks more often
       ConcurrentUpdateSolrServer s = new ConcurrentUpdateSolrServer( url, 2, 5 ) {
         
         public Throwable lastError = null;
@@ -79,7 +80,7 @@ public class SolrExampleStreamingTest extends SolrExampleTests {
     // SOLR-3903
     final List<Throwable> failures = new ArrayList<Throwable>();
     ConcurrentUpdateSolrServer s = new ConcurrentUpdateSolrServer
-      ("http://127.0.0.1:"+port+context, 2, 2) {
+      (jetty.getBaseUrl().toString(), 2, 2) {
         @Override
         public void handleError(Throwable ex) {
           failures.add(ex);

@@ -32,6 +32,7 @@ import org.apache.lucene.analysis.*;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
 import org.apache.lucene.document.FieldType;
+import org.apache.lucene.document.NumericDocValuesField;
 import org.apache.lucene.document.StringField;
 import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.search.ScoreDoc;
@@ -389,6 +390,7 @@ public class TestIndexWriterDelete extends LuceneTestCase {
     doc.add(newTextField("content", "aaa", Field.Store.NO));
     doc.add(newStringField("id", String.valueOf(id), Field.Store.YES));
     doc.add(newStringField("value", String.valueOf(value), Field.Store.NO));
+    doc.add(new NumericDocValuesField("dv", value));
     modifier.updateDocument(new Term("id", String.valueOf(id)), doc);
   }
 
@@ -399,6 +401,7 @@ public class TestIndexWriterDelete extends LuceneTestCase {
     doc.add(newTextField("content", "aaa", Field.Store.NO));
     doc.add(newStringField("id", String.valueOf(id), Field.Store.YES));
     doc.add(newStringField("value", String.valueOf(value), Field.Store.NO));
+    doc.add(new NumericDocValuesField("dv", value));
     modifier.addDocument(doc);
   }
 
@@ -437,6 +440,7 @@ public class TestIndexWriterDelete extends LuceneTestCase {
       Document d = new Document();
       d.add(newStringField("id", Integer.toString(i), Field.Store.YES));
       d.add(newTextField("content", "aaa " + i, Field.Store.NO));
+      d.add(new NumericDocValuesField("dv", i));
       writer.addDocument(d);
     }
     writer.close();
@@ -515,6 +519,7 @@ public class TestIndexWriterDelete extends LuceneTestCase {
                 Document d = new Document();
                 d.add(newStringField("id", Integer.toString(i), Field.Store.YES));
                 d.add(newTextField("content", "bbb " + i, Field.Store.NO));
+                d.add(new NumericDocValuesField("dv", i));
                 modifier.updateDocument(new Term("id", Integer.toString(docId)), d);
               } else { // deletes
                 modifier.deleteDocuments(new Term("id", Integer.toString(docId)));

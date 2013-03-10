@@ -318,6 +318,14 @@ var load_logging_viewer = function()
         {
           var doc = docs[i];
 
+          if( 1 === doc.time.length )
+          {
+            for( var key in doc )
+            {
+              doc[key] = doc[key][0];
+            }
+          }
+
           if( !doc.trace )
           {
             var lines = doc.message.split( "\n" );
@@ -398,7 +406,7 @@ sammy.get
   /^#\/(~logging)$/,
   function( context )
   {
-    var core_basepath = $( 'li[data-basepath]', app.menu_element ).attr( 'data-basepath' );
+    var core_basepath = $( '[data-basepath]', app.menu_element ).attr( 'data-basepath' );
     loglevel_path = core_basepath + '/admin/logging';
     var content_element = $( '#content' );
 
@@ -484,7 +492,7 @@ sammy.get
   /^#\/(~logging)\/level$/,
   function( context )
   {
-    var core_basepath = $( 'li[data-basepath]', app.menu_element ).attr( 'data-basepath' );
+    var core_basepath = $( '[data-basepath]', app.menu_element ).attr( 'data-basepath' );
     loglevel_path = core_basepath + '/admin/logging';
     var content_element = $( '#content' );
 

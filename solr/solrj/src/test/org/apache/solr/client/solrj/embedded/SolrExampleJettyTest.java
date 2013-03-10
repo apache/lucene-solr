@@ -20,6 +20,7 @@ package org.apache.solr.client.solrj.embedded;
 import org.apache.solr.client.solrj.SolrExampleTests;
 import org.apache.solr.client.solrj.impl.HttpSolrServer;
 import org.apache.solr.util.ExternalPaths;
+
 import org.junit.Assert;
 import org.junit.BeforeClass;
 import org.junit.Test;

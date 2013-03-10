@@ -30,24 +30,18 @@ import java.util.Map;
 import java.util.Random;
 
 import org.apache.lucene.analysis.MockAnalyzer;
-import org.apache.lucene.document.ByteDocValuesField;
-import org.apache.lucene.document.DerefBytesDocValuesField;
+import org.apache.lucene.document.BinaryDocValuesField;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.DoubleDocValuesField;
 import org.apache.lucene.document.Field;
 import org.apache.lucene.document.FieldType;
 import org.apache.lucene.document.FloatDocValuesField;
-import org.apache.lucene.document.IntDocValuesField;
 import org.apache.lucene.document.IntField;
-import org.apache.lucene.document.LongDocValuesField;
+import org.apache.lucene.document.NumericDocValuesField;
 import org.apache.lucene.document.LongField;
-import org.apache.lucene.document.PackedLongDocValuesField;
-import org.apache.lucene.document.ShortDocValuesField;
-import org.apache.lucene.document.SortedBytesDocValuesField;
-import org.apache.lucene.document.StraightBytesDocValuesField;
+import org.apache.lucene.document.SortedDocValuesField;
 import org.apache.lucene.document.StringField;
 import org.apache.lucene.document.TextField;
-import org.apache.lucene.index.DocValues.Source;
 import org.apache.lucene.index.FieldInfo.IndexOptions;
 import org.apache.lucene.index.IndexWriterConfig.OpenMode;
 import org.apache.lucene.search.DocIdSetIterator;
@@ -58,17 +52,17 @@ import org.apache.lucene.search.ScoreDoc;
 import org.apache.lucene.search.TermQuery;
 import org.apache.lucene.store.BaseDirectoryWrapper;
 import org.apache.lucene.store.Directory;
-import org.apache.lucene.store.MockDirectoryWrapper;
 import org.apache.lucene.store.RAMDirectory;
 import org.apache.lucene.util.Bits;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.Constants;
+import org.apache.lucene.util.LuceneTestCase.SuppressCodecs;
 import org.apache.lucene.util.LuceneTestCase;
 import org.apache.lucene.util.StringHelper;
 import org.apache.lucene.util._TestUtil;
-import org.apache.lucene.util.LuceneTestCase.SuppressCodecs;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
+import org.junit.Ignore;
 
 /*
   Verify we can read the pre-5.0 file format, do searches
@@ -82,14 +76,22 @@ import org.junit.BeforeClass;
 @SuppressCodecs({"MockFixedIntBlock", "MockVariableIntBlock", "MockSep", "MockRandom"})
 public class TestBackwardsCompatibility extends LuceneTestCase {
 
-  // Uncomment these cases & run them on an older Lucene
-  // version, to generate an index to test backwards
-  // compatibility.  Then, cd to build/test/index.cfs and
-  // run "zip index.<VERSION>.cfs.zip *"; cd to
-  // build/test/index.nocfs and run "zip
-  // index.<VERSION>.nocfs.zip *".  Then move those 2 zip
-  // files to your trunk checkout and add them to the
-  // oldNames array.
+  // Uncomment these cases & run them on an older Lucene version,
+  // to generate indexes to test backwards compatibility.  These
+  // indexes will be created under directory /tmp/idx/.
+  //
+  // However, you must first disable the Lucene TestSecurityManager,
+  // which will otherwise disallow writing outside of the build/
+  // directory - to do this, comment out the "java.security.manager"
+  // <sysproperty> under the "test-macro" <macrodef>.
+  //
+  // Zip up the generated indexes:
+  //
+  //    cd /tmp/idx/index.cfs   ; zip index.<VERSION>.cfs.zip *
+  //    cd /tmp/idx/index.nocfs ; zip index.<VERSION>.nocfs.zip *
+  //
+  // Then move those 2 zip files to your trunk checkout and add them
+  // to the oldNames array.
 
   /*
   public void testCreateCFS() throws IOException {
@@ -100,7 +102,7 @@ public class TestBackwardsCompatibility extends LuceneTestCase {
     createIndex("index.nocfs", false, false);
   }
   */
-  
+
 /*
   // These are only needed for the special upgrade test to verify
   // that also single-segment indexes are correctly upgraded by IndexUpgrader.
@@ -116,8 +118,42 @@ public class TestBackwardsCompatibility extends LuceneTestCase {
   }
 
 */  
+
+  /*
+  public void testCreateMoreTermsIndex() throws Exception {
+    // we use a real directory name that is not cleaned up,
+    // because this method is only used to create backwards
+    // indexes:
+    File indexDir = new File("moreterms");
+    _TestUtil.rmDir(indexDir);
+    Directory dir = newFSDirectory(indexDir);
+
+    LogByteSizeMergePolicy mp = new LogByteSizeMergePolicy();
+    mp.setUseCompoundFile(false);
+    mp.setNoCFSRatio(1.0);
+    mp.setMaxCFSSegmentSizeMB(Double.POSITIVE_INFINITY);
+    // TODO: remove randomness
+    IndexWriterConfig conf = new IndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer(random()))
+      .setMergePolicy(mp);
+    conf.setCodec(Codec.forName("Lucene40"));
+    IndexWriter writer = new IndexWriter(dir, conf);
+    LineFileDocs docs = new LineFileDocs(null, true);
+    for(int i=0;i<50;i++) {
+      writer.addDocument(docs.nextDoc());
+    }
+    writer.close();
+    dir.close();
+
+    // Gives you time to copy the index out!: (there is also
+    // a test option to not remove temp dir...):
+    Thread.sleep(100000);
+  }
+  */
+  
   final static String[] oldNames = {"40.cfs",
-                             "40.nocfs",
+                                    "40.nocfs",
+                                    "41.cfs",
+                                    "41.nocfs",
   };
   
   final String[] unsupportedNames = {"19.cfs",
@@ -145,7 +181,7 @@ public class TestBackwardsCompatibility extends LuceneTestCase {
   };
   
   final static String[] oldSingleSegmentNames = {"40.optimized.cfs",
-                                          "40.optimized.nocfs",
+                                                 "40.optimized.nocfs",
   };
   
   static Map<String,Directory> oldIndexDirs;
@@ -362,26 +398,26 @@ public class TestBackwardsCompatibility extends LuceneTestCase {
         assertEquals(7, i);
       }
     }
-    
+
     if (is40Index) {
       // check docvalues fields
-      Source dvByte = MultiDocValues.getDocValues(reader, "dvByte").getSource();
-      Source dvBytesDerefFixed = MultiDocValues.getDocValues(reader, "dvBytesDerefFixed").getSource();
-      Source dvBytesDerefVar = MultiDocValues.getDocValues(reader, "dvBytesDerefVar").getSource();
-      Source dvBytesSortedFixed = MultiDocValues.getDocValues(reader, "dvBytesSortedFixed").getSource();
-      Source dvBytesSortedVar = MultiDocValues.getDocValues(reader, "dvBytesSortedVar").getSource();
-      Source dvBytesStraightFixed = MultiDocValues.getDocValues(reader, "dvBytesStraightFixed").getSource();
-      Source dvBytesStraightVar = MultiDocValues.getDocValues(reader, "dvBytesStraightVar").getSource();
-      Source dvDouble = MultiDocValues.getDocValues(reader, "dvDouble").getSource();
-      Source dvFloat = MultiDocValues.getDocValues(reader, "dvFloat").getSource();
-      Source dvInt = MultiDocValues.getDocValues(reader, "dvInt").getSource();
-      Source dvLong = MultiDocValues.getDocValues(reader, "dvLong").getSource();
-      Source dvPacked = MultiDocValues.getDocValues(reader, "dvPacked").getSource();
-      Source dvShort = MultiDocValues.getDocValues(reader, "dvShort").getSource();
+      NumericDocValues dvByte = MultiDocValues.getNumericValues(reader, "dvByte");
+      BinaryDocValues dvBytesDerefFixed = MultiDocValues.getBinaryValues(reader, "dvBytesDerefFixed");
+      BinaryDocValues dvBytesDerefVar = MultiDocValues.getBinaryValues(reader, "dvBytesDerefVar");
+      SortedDocValues dvBytesSortedFixed = MultiDocValues.getSortedValues(reader, "dvBytesSortedFixed");
+      SortedDocValues dvBytesSortedVar = MultiDocValues.getSortedValues(reader, "dvBytesSortedVar");
+      BinaryDocValues dvBytesStraightFixed = MultiDocValues.getBinaryValues(reader, "dvBytesStraightFixed");
+      BinaryDocValues dvBytesStraightVar = MultiDocValues.getBinaryValues(reader, "dvBytesStraightVar");
+      NumericDocValues dvDouble = MultiDocValues.getNumericValues(reader, "dvDouble");
+      NumericDocValues dvFloat = MultiDocValues.getNumericValues(reader, "dvFloat");
+      NumericDocValues dvInt = MultiDocValues.getNumericValues(reader, "dvInt");
+      NumericDocValues dvLong = MultiDocValues.getNumericValues(reader, "dvLong");
+      NumericDocValues dvPacked = MultiDocValues.getNumericValues(reader, "dvPacked");
+      NumericDocValues dvShort = MultiDocValues.getNumericValues(reader, "dvShort");
       
       for (int i=0;i<35;i++) {
         int id = Integer.parseInt(reader.document(i).get("id"));
-        assertEquals((byte)id, dvByte.getInt(i));
+        assertEquals(id, dvByte.get(i));
         
         byte bytes[] = new byte[] {
             (byte)(id >>> 24), (byte)(id >>> 16),(byte)(id >>> 8),(byte)id
@@ -389,19 +425,25 @@ public class TestBackwardsCompatibility extends LuceneTestCase {
         BytesRef expectedRef = new BytesRef(bytes);
         BytesRef scratch = new BytesRef();
         
-        assertEquals(expectedRef, dvBytesDerefFixed.getBytes(i, scratch));
-        assertEquals(expectedRef, dvBytesDerefVar.getBytes(i, scratch));
-        assertEquals(expectedRef, dvBytesSortedFixed.getBytes(i, scratch));
-        assertEquals(expectedRef, dvBytesSortedVar.getBytes(i, scratch));
-        assertEquals(expectedRef, dvBytesStraightFixed.getBytes(i, scratch));
-        assertEquals(expectedRef, dvBytesStraightVar.getBytes(i, scratch));
+        dvBytesDerefFixed.get(i, scratch);
+        assertEquals(expectedRef, scratch);
+        dvBytesDerefVar.get(i, scratch);
+        assertEquals(expectedRef, scratch);
+        dvBytesSortedFixed.get(i, scratch);
+        assertEquals(expectedRef, scratch);
+        dvBytesSortedVar.get(i, scratch);
+        assertEquals(expectedRef, scratch);
+        dvBytesStraightFixed.get(i, scratch);
+        assertEquals(expectedRef, scratch);
+        dvBytesStraightVar.get(i, scratch);
+        assertEquals(expectedRef, scratch);
         
-        assertEquals((double)id, dvDouble.getFloat(i), 0D);
-        assertEquals((float)id, dvFloat.getFloat(i), 0F);
-        assertEquals(id, dvInt.getInt(i));
-        assertEquals(id, dvLong.getInt(i));
-        assertEquals(id, dvPacked.getInt(i));
-        assertEquals(id, dvShort.getInt(i));
+        assertEquals((double)id, Double.longBitsToDouble(dvDouble.get(i)), 0D);
+        assertEquals((float)id, Float.intBitsToFloat((int)dvFloat.get(i)), 0F);
+        assertEquals(id, dvInt.get(i));
+        assertEquals(id, dvLong.get(i));
+        assertEquals(id, dvPacked.get(i));
+        assertEquals(id, dvShort.get(i));
       }
     }
     
@@ -506,7 +548,7 @@ public class TestBackwardsCompatibility extends LuceneTestCase {
 
   public File createIndex(String dirName, boolean doCFS, boolean fullyMerged) throws IOException {
     // we use a real directory name that is not cleaned up, because this method is only used to create backwards indexes:
-    File indexDir = new File("/tmp/4x", dirName);
+    File indexDir = new File("/tmp/idx", dirName);
     _TestUtil.rmDir(indexDir);
     Directory dir = newFSDirectory(indexDir);
     LogByteSizeMergePolicy mp = new LogByteSizeMergePolicy();
@@ -648,23 +690,23 @@ public class TestBackwardsCompatibility extends LuceneTestCase {
     doc.add(new IntField("trieInt", id, Field.Store.NO));
     doc.add(new LongField("trieLong", (long) id, Field.Store.NO));
     // add docvalues fields
-    doc.add(new ByteDocValuesField("dvByte", (byte) id));
+    doc.add(new NumericDocValuesField("dvByte", (byte) id));
     byte bytes[] = new byte[] {
       (byte)(id >>> 24), (byte)(id >>> 16),(byte)(id >>> 8),(byte)id
     };
     BytesRef ref = new BytesRef(bytes);
-    doc.add(new DerefBytesDocValuesField("dvBytesDerefFixed", ref, true));
-    doc.add(new DerefBytesDocValuesField("dvBytesDerefVar", ref, false));
-    doc.add(new SortedBytesDocValuesField("dvBytesSortedFixed", ref, true));
-    doc.add(new SortedBytesDocValuesField("dvBytesSortedVar", ref, false));
-    doc.add(new StraightBytesDocValuesField("dvBytesStraightFixed", ref, true));
-    doc.add(new StraightBytesDocValuesField("dvBytesStraightVar", ref, false));
+    doc.add(new BinaryDocValuesField("dvBytesDerefFixed", ref));
+    doc.add(new BinaryDocValuesField("dvBytesDerefVar", ref));
+    doc.add(new SortedDocValuesField("dvBytesSortedFixed", ref));
+    doc.add(new SortedDocValuesField("dvBytesSortedVar", ref));
+    doc.add(new BinaryDocValuesField("dvBytesStraightFixed", ref));
+    doc.add(new BinaryDocValuesField("dvBytesStraightVar", ref));
     doc.add(new DoubleDocValuesField("dvDouble", (double)id));
     doc.add(new FloatDocValuesField("dvFloat", (float)id));
-    doc.add(new IntDocValuesField("dvInt", id));
-    doc.add(new LongDocValuesField("dvLong", id));
-    doc.add(new PackedLongDocValuesField("dvPacked", id));
-    doc.add(new ShortDocValuesField("dvShort", (short)id));
+    doc.add(new NumericDocValuesField("dvInt", id));
+    doc.add(new NumericDocValuesField("dvLong", id));
+    doc.add(new NumericDocValuesField("dvPacked", id));
+    doc.add(new NumericDocValuesField("dvShort", (short)id));
     // a field with both offsets and term vectors for a cross-check
     FieldType customType3 = new FieldType(TextField.TYPE_STORED);
     customType3.setStoreTermVectors(true);
@@ -810,13 +852,16 @@ public class TestBackwardsCompatibility extends LuceneTestCase {
       assertEquals("wrong number of hits", 34, hits.length);
       
       // check decoding into field cache
-      int[] fci = FieldCache.DEFAULT.getInts(SlowCompositeReaderWrapper.wrap(searcher.getIndexReader()), "trieInt", false);
-      for (int val : fci) {
+      FieldCache.Ints fci = FieldCache.DEFAULT.getInts(SlowCompositeReaderWrapper.wrap(searcher.getIndexReader()), "trieInt", false);
+      int maxDoc = searcher.getIndexReader().maxDoc();
+      for(int doc=0;doc<maxDoc;doc++) {
+        int val = fci.get(doc);
         assertTrue("value in id bounds", val >= 0 && val < 35);
       }
       
-      long[] fcl = FieldCache.DEFAULT.getLongs(SlowCompositeReaderWrapper.wrap(searcher.getIndexReader()), "trieLong", false);
-      for (long val : fcl) {
+      FieldCache.Longs fcl = FieldCache.DEFAULT.getLongs(SlowCompositeReaderWrapper.wrap(searcher.getIndexReader()), "trieLong", false);
+      for(int doc=0;doc<maxDoc;doc++) {
+        long val = fcl.get(doc);
         assertTrue("value in id bounds", val >= 0L && val < 35L);
       }
       
@@ -907,5 +952,16 @@ public class TestBackwardsCompatibility extends LuceneTestCase {
       
       dir.close();
     }
+  }
+
+  public static final String moreTermsIndex = "moreterms.40.zip";
+
+  public void testMoreTerms() throws Exception {
+    File oldIndexDir = _TestUtil.getTempDir("moreterms");
+    _TestUtil.unzip(getDataFile(moreTermsIndex), oldIndexDir);
+    Directory dir = newFSDirectory(oldIndexDir);
+    // TODO: more tests
+    _TestUtil.checkIndex(dir);
+    dir.close();
   }
 }

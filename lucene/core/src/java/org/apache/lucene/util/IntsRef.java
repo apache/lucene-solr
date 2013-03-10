@@ -50,13 +50,10 @@ public final class IntsRef implements Comparable<IntsRef>, Cloneable {
    * ints should not be null.
    */
   public IntsRef(int[] ints, int offset, int length) {
-    assert ints != null;
-    assert offset >= 0;
-    assert length >= 0;
-    assert ints.length >= offset + length;
     this.ints = ints;
     this.offset = offset;
     this.length = length;
+    assert isValid();
   }
 
   @Override
@@ -175,5 +172,34 @@ public final class IntsRef implements Comparable<IntsRef>, Cloneable {
     IntsRef clone = new IntsRef();
     clone.copyInts(other);
     return clone;
+  }
+  
+  /** 
+   * Performs internal consistency checks.
+   * Always returns true (or throws IllegalStateException) 
+   */
+  public boolean isValid() {
+    if (ints == null) {
+      throw new IllegalStateException("ints is null");
+    }
+    if (length < 0) {
+      throw new IllegalStateException("length is negative: " + length);
+    }
+    if (length > ints.length) {
+      throw new IllegalStateException("length is out of bounds: " + length + ",ints.length=" + ints.length);
+    }
+    if (offset < 0) {
+      throw new IllegalStateException("offset is negative: " + offset);
+    }
+    if (offset > ints.length) {
+      throw new IllegalStateException("offset out of bounds: " + offset + ",ints.length=" + ints.length);
+    }
+    if (offset + length < 0) {
+      throw new IllegalStateException("offset+length is negative: offset=" + offset + ",length=" + length);
+    }
+    if (offset + length > ints.length) {
+      throw new IllegalStateException("offset+length out of bounds: offset=" + offset + ",length=" + length + ",ints.length=" + ints.length);
+    }
+    return true;
   }
 }

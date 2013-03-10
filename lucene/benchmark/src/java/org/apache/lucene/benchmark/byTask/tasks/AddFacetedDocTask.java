@@ -17,50 +17,56 @@ package org.apache.lucene.benchmark.byTask.tasks;
  * limitations under the License.
  */
 
+import java.util.ArrayList;
+import java.util.List;
+
 import org.apache.lucene.benchmark.byTask.PerfRunData;
 import org.apache.lucene.benchmark.byTask.feeds.FacetSource;
-import org.apache.lucene.facet.index.CategoryContainer;
-import org.apache.lucene.facet.index.CategoryDocumentBuilder;
+import org.apache.lucene.facet.index.FacetFields;
+import org.apache.lucene.facet.taxonomy.CategoryPath;
 
 /**
  * Add a faceted document.
  * <p>
  * Config properties:
  * <ul>
- *  <li><b>with.facets</b>=&lt;tells whether to actually add any facets to the document| Default: true&gt;
- *  <br>This config property allows to easily compare the performance of adding docs with and without facets.
- *  Note that facets are created even when this is false, just that they are not added to the document (nor to the taxonomy).
- * </ul> 
+ * <li><b>with.facets</b>=&lt;tells whether to actually add any facets to the
+ * document| Default: true&gt; <br>
+ * This config property allows to easily compare the performance of adding docs
+ * with and without facets. Note that facets are created even when this is
+ * false, just that they are not added to the document (nor to the taxonomy).
+ * </ul>
  * <p>
  * See {@link AddDocTask} for general document parameters and configuration.
  * <p>
- * Makes use of the {@link FacetSource} in effect - see {@link PerfRunData} for facet source settings.   
+ * Makes use of the {@link FacetSource} in effect - see {@link PerfRunData} for
+ * facet source settings.
  */
 public class AddFacetedDocTask extends AddDocTask {
 
+  private final List<CategoryPath> facets = new ArrayList<CategoryPath>();
+  private FacetFields facetFields;
+  
   public AddFacetedDocTask(PerfRunData runData) {
     super(runData);
   }
 
-  private CategoryContainer facets = null;
-  private CategoryDocumentBuilder categoryDocBuilder = null;
-  private boolean withFacets = true;
-  
   @Override
   public void setup() throws Exception {
     super.setup();
-    // create the facets even if they should not be added - allows to measure the effect of just adding facets 
-    facets = getRunData().getFacetSource().getNextFacets(facets);  
-    withFacets = getRunData().getConfig().get("with.facets", true);
-    if (withFacets) {
-      categoryDocBuilder = new CategoryDocumentBuilder(getRunData().getTaxonomyWriter());
-      categoryDocBuilder.setCategories(facets);
+    if (facetFields == null) {
+      boolean withFacets = getRunData().getConfig().get("with.facets", true);
+      if (withFacets) {
+        FacetSource facetsSource = getRunData().getFacetSource();
+        facetFields = withFacets ? new FacetFields(getRunData().getTaxonomyWriter()) : null;
+        facetsSource.getNextFacets(facets);
+      }
     }
   }
 
   @Override
   protected String getLogMessage(int recsCount) {
-    if (!withFacets) {
+    if (facetFields == null) {
       return super.getLogMessage(recsCount);
     }
     return super.getLogMessage(recsCount)+ " with facets";
@@ -68,8 +74,8 @@ public class AddFacetedDocTask extends AddDocTask {
   
   @Override
   public int doLogic() throws Exception {
-    if (withFacets) {
-      categoryDocBuilder.build(doc);
+    if (facetFields != null) {
+      facetFields.addFields(doc, facets);
     }
     return super.doLogic();
   }

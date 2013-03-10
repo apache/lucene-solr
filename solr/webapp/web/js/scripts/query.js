@@ -18,7 +18,7 @@
 // #/:core/query
 sammy.get
 (
-  /^#\/([\w\d-]+)\/(query)$/,
+  new RegExp( app.core_regex_base + '\\/(query)$' ),
   function( context )
   {
     var core_basepath = this.active_core.attr( 'data-basepath' );
@@ -36,7 +36,7 @@ sammy.get
         var query_form = $( '#form form', query_element );
         var url_element = $( '#url', query_element );
         var result_element = $( '#result', query_element );
-        var response_element = $( '#response iframe', result_element );
+        var response_element = $( '#response', result_element );
 
         url_element
           .die( 'change' )
@@ -45,40 +45,49 @@ sammy.get
             'change',
             function( event )
             {
-              var check_iframe_ready_state = function()
-              {
-                var iframe_element = response_element.get(0).contentWindow.document || response_element.get(0).document;
+              var wt = $( '[name="wt"]', query_form ).val();
 
-                if( !iframe_element )
+              var content_generator = {
+
+                _default : function( xhr )
                 {
-                  console.debug( 'no iframe_element found', response_element );
-                  return false;
+                  return xhr.responseText.esc();
+                },
+
+                json : function( xhr )
+                {
+                  return app.format_json( xhr.responseText );
                 }
 
-                url_element
-                  .addClass( 'loader' );
+              };
 
-                if( 'complete' === iframe_element.readyState )
+              $.ajax
+              (
                 {
-                  url_element
-                    .removeClass( 'loader' );
-                }
-                else
-                {
-                  window.setTimeout( check_iframe_ready_state, 100 );
-                }
-              }
-              check_iframe_ready_state();
+                  url : this.href,
+                  dataType : wt,
+                  context : response_element,
+                  beforeSend : function( xhr, settings )
+                  {
+                    this
+                     .html( '<div class="loader">Loading ...</div>' );
+                  },
+                  complete : function( xhr, text_status )
+                  {
+                    var code = $(
+                      '<pre class="syntax language-' + wt + '"><code>' +
+                      ( content_generator[wt] || content_generator['_default'] )( xhr ) +
+                      '</code></pre>'
+                    );
+                    this.html( code );
 
-              response_element
-                .attr( 'src', this.href );
-                            
-              if( !response_element.hasClass( 'resized' ) )
-              {
-                response_element
-                  .addClass( 'resized' )
-                  .css( 'height', $( '#main' ).height() - 60 );
-              }
+                    if( 'success' === text_status )
+                    {
+                      hljs.highlightBlock( code.get(0) );
+                    }
+                  }
+                }
+              );
             }
           )
 
@@ -104,27 +113,38 @@ sammy.get
             'submit',
             function( event )
             {
-              var form_map = {};
               var form_values = [];
-              var all_form_values = query_form.formToArray();
-
-              for( var i = 0; i < all_form_values.length; i++ )
+ 
+              var add_to_form_values = function add_to_form_values( fields )
               {
-                if( !all_form_values[i].value || 0 === all_form_values[i].value.length )
-                {
-                  continue;
-                }
+                 for( var i in fields )
+                 {
+                  if( !fields[i].value || 0 === fields[i].value.length )
+                  {
+                    continue;
+                  }
+ 
+                  form_values.push( fields[i] );
+                 }
+              };
+ 
+              var fieldsets = $( '> fieldset', query_form );
+ 
+              var fields = fieldsets.first().formToArray( true );
+              add_to_form_values( fields );
 
-                var name_parts = all_form_values[i].name.split( '.' );
-                if( 1 < name_parts.length && !form_map[name_parts[0]] )
-                {
-                  console.debug( 'skip "' + all_form_values[i].name + '", parent missing' );
-                  continue;
-                }
-
-                form_map[all_form_values[i].name] = all_form_values[i].value;
-                form_values.push( all_form_values[i] );
-              }
+              fieldsets.not( '.common' )
+                .each
+                (
+                  function( i, set )
+                  {
+                    if( $( 'legend input', set ).is( ':checked' ) )
+                    {
+                      var fields = $( set ).formToArray( true );
+                      add_to_form_values( fields );
+                    }
+                  }
+                );
 
               var handler_path = $( '#qt', query_form ).val();
               if( '/' !== handler_path[0] )
@@ -135,7 +155,13 @@ sammy.get
 
               var query_url = window.location.protocol + '//' + window.location.host
                             + core_basepath + handler_path + '?' + $.param( form_values );
-                            
+
+              var custom_parameters = $( '#custom_parameters', query_form ).val();
+              if( custom_parameters && 0 !== custom_parameters.length )
+              {
+                query_url += '&' + custom_parameters.replace( /^&/, '' ); 
+              }
+
               url_element
                 .attr( 'href', query_url )
                 .text( query_url )

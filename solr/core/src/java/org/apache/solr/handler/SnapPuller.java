@@ -73,7 +73,6 @@ import org.apache.lucene.index.IndexWriter;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.IndexInput;
 import org.apache.lucene.store.IndexOutput;
-import org.apache.solr.client.solrj.SolrServer;
 import org.apache.solr.client.solrj.SolrServerException;
 import org.apache.solr.client.solrj.impl.HttpClientUtil;
 import org.apache.solr.client.solrj.impl.HttpSolrServer;
@@ -87,6 +86,7 @@ import org.apache.solr.common.util.FastInputStream;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.core.CachingDirectoryFactory.CloseListener;
 import org.apache.solr.core.DirectoryFactory;
+import org.apache.solr.core.DirectoryFactory.DirContext;
 import org.apache.solr.core.IndexDeletionPolicyWrapper;
 import org.apache.solr.core.SolrCore;
 import org.apache.solr.handler.ReplicationHandler.FileInfo;
@@ -243,7 +243,9 @@ public class SnapPuller {
     params.set(CommonParams.WT, "javabin");
     params.set(CommonParams.QT, "/replication");
     QueryRequest req = new QueryRequest(params);
-    SolrServer server = new HttpSolrServer(masterUrl, myHttpClient); //XXX modify to use shardhandler
+    HttpSolrServer server = new HttpSolrServer(masterUrl, myHttpClient); //XXX modify to use shardhandler
+    server.setSoTimeout(60000);
+    server.setConnectionTimeout(15000);
     try {
       return server.request(req);
     } catch (SolrServerException e) {
@@ -261,7 +263,9 @@ public class SnapPuller {
     params.set(CommonParams.WT, "javabin");
     params.set(CommonParams.QT, "/replication");
     QueryRequest req = new QueryRequest(params);
-    SolrServer server = new HttpSolrServer(masterUrl, myHttpClient);  //XXX modify to use shardhandler
+    HttpSolrServer server = new HttpSolrServer(masterUrl, myHttpClient);  //XXX modify to use shardhandler
+    server.setSoTimeout(60000);
+    server.setConnectionTimeout(15000);
 
     try {
       NamedList response = server.request(req);
@@ -369,16 +373,18 @@ public class SnapPuller {
       filesDownloaded = Collections.synchronizedList(new ArrayList<Map<String, Object>>());
       // if the generateion of master is older than that of the slave , it means they are not compatible to be copied
       // then a new index direcory to be created and all the files need to be copied
-      boolean isFullCopyNeeded = IndexDeletionPolicyWrapper.getCommitTimestamp(commit) >= latestVersion || forceReplication;
-      
+      boolean isFullCopyNeeded = IndexDeletionPolicyWrapper
+          .getCommitTimestamp(commit) >= latestVersion
+          || commit.getGeneration() >= latestGeneration || forceReplication;
+
       String tmpIdxDirName = "index." + new SimpleDateFormat(SnapShooter.DATE_FMT, Locale.ROOT).format(new Date());
       tmpIndex = createTempindexDir(core, tmpIdxDirName);
 
-      tmpIndexDir = core.getDirectoryFactory().get(tmpIndex, core.getSolrConfig().indexConfig.lockType);
+      tmpIndexDir = core.getDirectoryFactory().get(tmpIndex, DirContext.DEFAULT, core.getSolrConfig().indexConfig.lockType);
       
       // make sure it's the newest known index dir...
       indexDirPath = core.getNewIndexDir();
-      indexDir = core.getDirectoryFactory().get(indexDirPath, core.getSolrConfig().indexConfig.lockType);
+      indexDir = core.getDirectoryFactory().get(indexDirPath, DirContext.DEFAULT, core.getSolrConfig().indexConfig.lockType);
       Directory oldDirectory = null;
 
       try {
@@ -457,7 +463,7 @@ public class SnapPuller {
             // may be closed
             core.getDirectoryFactory().doneWithDirectory(oldDirectory);
           }
-          doCommit(isFullCopyNeeded);
+          openNewWriterAndSearcher(isFullCopyNeeded);
         }
         
         replicationStartTime = 0;
@@ -542,7 +548,7 @@ public class SnapPuller {
     long replicationTimeTaken = (replicationTime - getReplicationStartTime()) / 1000;
     Directory dir = null;
     try {
-      dir = solrCore.getDirectoryFactory().get(solrCore.getDataDir(), solrCore.getSolrConfig().indexConfig.lockType);
+      dir = solrCore.getDirectoryFactory().get(solrCore.getDataDir(), DirContext.META_DATA, solrCore.getSolrConfig().indexConfig.lockType);
       
       int indexCount = 1, confFilesCount = 1;
       if (props.containsKey(TIMES_INDEX_REPLICATED)) {
@@ -633,36 +639,39 @@ public class SnapPuller {
     return sb;
   }
 
-  private void doCommit(boolean isFullCopyNeeded) throws IOException {
+  private void openNewWriterAndSearcher(boolean isFullCopyNeeded) throws IOException {
     SolrQueryRequest req = new LocalSolrQueryRequest(solrCore,
         new ModifiableSolrParams());
     // reboot the writer on the new index and get a new searcher
     solrCore.getUpdateHandler().newIndexWriter(isFullCopyNeeded, false);
     
+    RefCounted<SolrIndexSearcher> searcher = null;
+    IndexCommit commitPoint;
     try {
-      // first try to open an NRT searcher so that the new 
+      // first try to open an NRT searcher so that the new
       // IndexWriter is registered with the reader
       Future[] waitSearcher = new Future[1];
-      solrCore.getSearcher(true, false, waitSearcher, true);
+      searcher = solrCore.getSearcher(true, true, waitSearcher, true);
       if (waitSearcher[0] != null) {
         try {
-         waitSearcher[0].get();
-       } catch (InterruptedException e) {
-         SolrException.log(LOG,e);
-       } catch (ExecutionException e) {
-         SolrException.log(LOG,e);
-       }
-     }
-
-      // update our commit point to the right dir
-      CommitUpdateCommand cuc = new CommitUpdateCommand(req, false);
-      cuc.waitSearcher = false;
-      cuc.openSearcher = false;
-      solrCore.getUpdateHandler().commit(cuc);
-
+          waitSearcher[0].get();
+        } catch (InterruptedException e) {
+          SolrException.log(LOG, e);
+        } catch (ExecutionException e) {
+          SolrException.log(LOG, e);
+        }
+      }
+      commitPoint = searcher.get().getIndexReader().getIndexCommit();
     } finally {
       req.close();
+      if (searcher != null) {
+        searcher.decref();
+      }
     }
+
+    // update the commit point in replication handler
+    replicationHandler.indexCommitPoint = commitPoint;
+    
   }
 
 
@@ -725,7 +734,7 @@ public class SnapPuller {
     String indexDir = solrCore.getIndexDir();
     
     // it's okay to use null for lock factory since we know this dir will exist
-    Directory dir = solrCore.getDirectoryFactory().get(indexDir, solrCore.getSolrConfig().indexConfig.lockType);
+    Directory dir = solrCore.getDirectoryFactory().get(indexDir, DirContext.DEFAULT, solrCore.getSolrConfig().indexConfig.lockType);
     try {
       for (Map<String,Object> file : filesToDownload) {
         if (!dir.fileExists((String) file.get(NAME)) || downloadCompleteIndex) {
@@ -735,7 +744,7 @@ public class SnapPuller {
           dirFileFetcher.fetchFile();
           filesDownloaded.add(new HashMap<String,Object>(file));
         } else {
-          LOG.info("Skipping download for " + file.get(NAME));
+          LOG.info("Skipping download for " + file.get(NAME) + " because it already exists");
         }
       }
     } finally {
@@ -770,6 +779,7 @@ public class SnapPuller {
     boolean success = false;
     try {
       if (indexDir.fileExists(fname)) {
+        LOG.info("Skipping move file - it already exists:" + fname);
         return true;
       }
     } catch (IOException e) {
@@ -848,7 +858,7 @@ public class SnapPuller {
     Properties p = new Properties();
     Directory dir = null;
     try {
-      dir = solrCore.getDirectoryFactory().get(solrCore.getDataDir(), solrCore.getSolrConfig().indexConfig.lockType);
+      dir = solrCore.getDirectoryFactory().get(solrCore.getDataDir(), DirContext.META_DATA, solrCore.getSolrConfig().indexConfig.lockType);
       if (dir.fileExists(SnapPuller.INDEX_PROPERTIES)){
         final IndexInput input = dir.openInput(SnapPuller.INDEX_PROPERTIES, DirectoryFactory.IOCONTEXT_NO_CACHE);
   
@@ -1234,7 +1244,9 @@ public class SnapPuller {
      * Open a new stream using HttpClient
      */
     FastInputStream getStream() throws IOException {
-      SolrServer s = new HttpSolrServer(masterUrl, myHttpClient, null);  //XXX use shardhandler
+      HttpSolrServer s = new HttpSolrServer(masterUrl, myHttpClient, null);  //XXX use shardhandler
+      s.setSoTimeout(60000);
+      s.setConnectionTimeout(15000);
       ModifiableSolrParams params = new ModifiableSolrParams();
 
 //    //the method is command=filecontent
@@ -1493,7 +1505,9 @@ public class SnapPuller {
      * Open a new stream using HttpClient
      */
     FastInputStream getStream() throws IOException {
-      SolrServer s = new HttpSolrServer(masterUrl, myHttpClient, null);  //XXX use shardhandler
+      HttpSolrServer s = new HttpSolrServer(masterUrl, myHttpClient, null);  //XXX use shardhandler
+      s.setSoTimeout(60000);
+      s.setConnectionTimeout(15000);
       ModifiableSolrParams params = new ModifiableSolrParams();
 
 //    //the method is command=filecontent
@@ -1546,7 +1560,9 @@ public class SnapPuller {
     params.set(COMMAND, CMD_DETAILS);
     params.set("slave", false);
     params.set(CommonParams.QT, "/replication");
-    SolrServer server = new HttpSolrServer(masterUrl, myHttpClient); //XXX use shardhandler
+    HttpSolrServer server = new HttpSolrServer(masterUrl, myHttpClient); //XXX use shardhandler
+    server.setSoTimeout(60000);
+    server.setConnectionTimeout(15000);
     QueryRequest request = new QueryRequest(params);
     return server.request(request);
   }
@@ -1584,9 +1600,22 @@ public class SnapPuller {
   }
 
   public void destroy() {
-    if (executorService != null) executorService.shutdown();
-    abortPull();
-    if (executorService != null) ExecutorUtil.shutdownAndAwaitTermination(executorService);
+    try {
+      if (executorService != null) executorService.shutdown();
+    } catch (Throwable e) {
+      SolrException.log(LOG, e);
+    }
+    try {
+      abortPull();
+    } catch (Throwable e) {
+      SolrException.log(LOG, e);
+    }
+    try {
+      if (executorService != null) ExecutorUtil
+          .shutdownNowAndAwaitTermination(executorService);
+    } catch (Throwable e) {
+      SolrException.log(LOG, e);
+    }
   }
 
   String getMasterUrl() {

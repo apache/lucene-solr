@@ -175,6 +175,90 @@ public class CommonTermsQueryTest extends LuceneTestCase {
     }
   }
   
+  public void testMinShouldMatch() throws IOException {
+    Directory dir = newDirectory();
+    RandomIndexWriter w = new RandomIndexWriter(random(), dir);
+    String[] docs = new String[] {"this is the end of the world right",
+        "is this it or maybe not",
+        "this is the end of the universe as we know it",
+        "there is the famous restaurant at the end of the universe",};
+    for (int i = 0; i < docs.length; i++) {
+      Document doc = new Document();
+      doc.add(newStringField("id", "" + i, Field.Store.YES));
+      doc.add(newTextField("field", docs[i], Field.Store.NO));
+      w.addDocument(doc);
+    }
+    
+    IndexReader r = w.getReader();
+    IndexSearcher s = newSearcher(r);
+    {
+      CommonTermsQuery query = new CommonTermsQuery(Occur.SHOULD, Occur.SHOULD,
+          random().nextBoolean() ? 2.0f : 0.5f);
+      query.add(new Term("field", "is"));
+      query.add(new Term("field", "this"));
+      query.add(new Term("field", "end"));
+      query.add(new Term("field", "world"));
+      query.add(new Term("field", "universe"));
+      query.add(new Term("field", "right"));
+      query.setMinimumNumberShouldMatch(0.5f);
+      TopDocs search = s.search(query, 10);
+      assertEquals(search.totalHits, 1);
+      assertEquals("0", r.document(search.scoreDocs[0].doc).get("id"));
+    }
+    {
+      CommonTermsQuery query = new CommonTermsQuery(Occur.SHOULD, Occur.SHOULD,
+          random().nextBoolean() ? 2.0f : 0.5f);
+      query.add(new Term("field", "is"));
+      query.add(new Term("field", "this"));
+      query.add(new Term("field", "end"));
+      query.add(new Term("field", "world"));
+      query.add(new Term("field", "universe"));
+      query.add(new Term("field", "right"));
+      query.setMinimumNumberShouldMatch(2.0f);
+      TopDocs search = s.search(query, 10);
+      assertEquals(search.totalHits, 1);
+      assertEquals("0", r.document(search.scoreDocs[0].doc).get("id"));
+    }
+    
+    {
+      CommonTermsQuery query = new CommonTermsQuery(Occur.SHOULD, Occur.SHOULD,
+          random().nextBoolean() ? 2.0f : 0.5f);
+      query.add(new Term("field", "is"));
+      query.add(new Term("field", "this"));
+      query.add(new Term("field", "end"));
+      query.add(new Term("field", "world"));
+      query.add(new Term("field", "universe"));
+      query.add(new Term("field", "right"));
+      query.setMinimumNumberShouldMatch(0.49f);
+      TopDocs search = s.search(query, 10);
+      assertEquals(search.totalHits, 3);
+      assertEquals("0", r.document(search.scoreDocs[0].doc).get("id"));
+      assertEquals("2", r.document(search.scoreDocs[1].doc).get("id"));
+      assertEquals("3", r.document(search.scoreDocs[2].doc).get("id"));
+    }
+    
+    {
+      CommonTermsQuery query = new CommonTermsQuery(Occur.SHOULD, Occur.SHOULD,
+          random().nextBoolean() ? 2.0f : 0.5f);
+      query.add(new Term("field", "is"));
+      query.add(new Term("field", "this"));
+      query.add(new Term("field", "end"));
+      query.add(new Term("field", "world"));
+      query.add(new Term("field", "universe"));
+      query.add(new Term("field", "right"));
+      query.setMinimumNumberShouldMatch(1.0f);
+      TopDocs search = s.search(query, 10);
+      assertEquals(search.totalHits, 3);
+      assertEquals("0", r.document(search.scoreDocs[0].doc).get("id"));
+      assertEquals("2", r.document(search.scoreDocs[1].doc).get("id"));
+      assertEquals("3", r.document(search.scoreDocs[2].doc).get("id"));
+    }
+   
+    r.close();
+    w.close();
+    dir.close();
+  }
+  
   public void testIllegalOccur() {
     Random random = random();
     

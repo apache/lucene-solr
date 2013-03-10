@@ -42,6 +42,7 @@ public class CoreAdminRequest extends SolrRequest
 {
   protected String core = null;
   protected String other = null;
+  protected boolean isIndexInfoNeeded = true;
   protected CoreAdminParams.CoreAdminAction action = null;
   
   //a create core request
@@ -55,6 +56,7 @@ public class CoreAdminRequest extends SolrRequest
     private Integer numShards;
     private String shardId;
     private String roles;
+    private String coreNodeName;
 
     public Create() {
       action = CoreAdminAction.CREATE;
@@ -69,6 +71,7 @@ public class CoreAdminRequest extends SolrRequest
     public void setNumShards(int numShards) {this.numShards = numShards;}
     public void setShardId(String shardId) {this.shardId = shardId;}
     public void setRoles(String roles) {this.roles = roles;}
+    public void setCoreNodeName(String coreNodeName) {this.coreNodeName = coreNodeName;}
     
     public String getInstanceDir() { return instanceDir; }
     public String getSchemaName()  { return schemaName; }
@@ -78,6 +81,7 @@ public class CoreAdminRequest extends SolrRequest
     public String getCollection() { return collection; }
     public String getShardId() { return shardId; }
     public String getRoles() { return roles; }
+    public String getCoreNodeName() { return coreNodeName; }
     
     @Override
     public SolrParams getParams() {
@@ -115,6 +119,9 @@ public class CoreAdminRequest extends SolrRequest
       }
       if (roles != null) {
         params.set( CoreAdminParams.ROLES, roles);
+      }
+      if (coreNodeName != null) {
+        params.set( CoreAdminParams.CORE_NODE_NAME, coreNodeName);
       }
       return params;
     }
@@ -383,6 +390,10 @@ public class CoreAdminRequest extends SolrRequest
   {
     this.other = otherCoreName;
   }
+
+  public final void setIndexInfoNeeded(boolean isIndexInfoNeeded) {
+    this.isIndexInfoNeeded = isIndexInfoNeeded;
+  }
   
   //---------------------------------------------------------------------------------------
   //
@@ -406,6 +417,7 @@ public class CoreAdminRequest extends SolrRequest
     ModifiableSolrParams params = new ModifiableSolrParams();
     params.set( CoreAdminParams.ACTION, action.toString() );
     params.set( CoreAdminParams.CORE, core );
+    params.set(CoreAdminParams.INDEX_INFO, (isIndexInfoNeeded ? "true" : "false"));
     if (other != null) {
       params.set(CoreAdminParams.OTHER, other);
     }

@@ -84,12 +84,7 @@ public class SimplePropertiesWriter extends DIHProperties {
     } else {
       filename = "dataimport.properties";
     }
-    if(params.get(DIRECTORY) != null) {
-      configDir = params.get(DIRECTORY);
-    } else {
-      SolrCore core = dataImporter.getCore();
-      configDir = (core == null ? "." : core.getResourceLoader().getConfigDir());
-    }
+    findDirectory(dataImporter, params);
     if(params.get(LOCALE) != null) {
       String localeStr = params.get(LOCALE);
       for (Locale l : Locale.getAvailableLocales()) {
@@ -109,6 +104,14 @@ public class SimplePropertiesWriter extends DIHProperties {
     } else {
       dateFormat = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss", locale);
     }    
+  }  
+  protected void findDirectory(DataImporter dataImporter, Map<String, String> params) {
+    if(params.get(DIRECTORY) != null) {
+      configDir = params.get(DIRECTORY);
+    } else {
+      SolrCore core = dataImporter.getCore();
+      configDir = (core == null ? "." : core.getResourceLoader().getConfigDir());
+    }
   }
   
   private File getPersistFile() {

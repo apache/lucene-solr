@@ -32,6 +32,7 @@ import org.apache.lucene.index.IndexDocument;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.IndexWriter;
 import org.apache.lucene.index.IndexWriterConfig;
+import org.apache.lucene.index.NoMergePolicy;
 import org.apache.lucene.index.RandomIndexWriter;
 import org.apache.lucene.index.Term;
 import org.apache.lucene.index.ThreadedIndexingAndSearchingTestCase;
@@ -294,6 +295,7 @@ public class TestNRTManager extends ThreadedIndexingAndSearchingTestCase {
    */
   public void testThreadStarvationNoDeleteNRTReader() throws IOException, InterruptedException {
     IndexWriterConfig conf = newIndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer(random()));
+    conf.setMergePolicy(random().nextBoolean() ? NoMergePolicy.COMPOUND_FILES : NoMergePolicy.NO_COMPOUND_FILES);
     Directory d = newDirectory();
     final CountDownLatch latch = new CountDownLatch(1);
     final CountDownLatch signal = new CountDownLatch(1);
@@ -421,8 +423,13 @@ public class TestNRTManager extends ThreadedIndexingAndSearchingTestCase {
     NRTManager sm = new NRTManager(new NRTManager.TrackingIndexWriter(iw),new SearcherFactory());
     sm.addListener(new ReferenceManager.RefreshListener() {
       @Override
-      public void afterRefresh() {
-        afterRefreshCalled.set(true);
+      public void beforeRefresh() {
+      }
+      @Override
+      public void afterRefresh(boolean didRefresh) {
+        if (didRefresh) {
+          afterRefreshCalled.set(true);
+        }
       }
     });
     iw.addDocument(new Document());

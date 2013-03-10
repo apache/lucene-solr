@@ -28,6 +28,9 @@ public interface CoreAdminParams
   /** What Core are we talking about **/
   public final static String CORE = "core";
 
+  /** Should the STATUS request include index info **/
+  public final static String INDEX_INFO = "indexInfo";
+
   /** Persistent -- should it save the cores state? **/
   public final static String PERSISTENT = "persistent";
   
@@ -73,6 +76,8 @@ public interface CoreAdminParams
   
   public static final String ROLES = "roles";
   
+  public static final String CORE_NODE_NAME = "coreNodeName";
+  
   /** Prefix for core property name=value pair **/
   public final static String PROPERTY_PREFIX = "property.";
 
@@ -97,7 +102,9 @@ public interface CoreAdminParams
     SPLIT,
     PREPRECOVERY,
     REQUESTRECOVERY, 
-    REQUESTSYNCSHARD;
+    REQUESTSYNCSHARD,
+    CREATEALIAS,
+    DELETEALIAS;
     
     public static CoreAdminAction get( String p )
     {

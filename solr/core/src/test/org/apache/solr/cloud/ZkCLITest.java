@@ -122,6 +122,14 @@ public class ZkCLITest extends SolrTestCaseJ4 {
   }
   
   @Test
+  public void testList() throws Exception {
+    zkClient.makePath("/test", true);
+    String[] args = new String[] {"-zkhost", zkServer.getZkAddress(), "-cmd",
+        "list"};
+    ZkCLI.main(args);
+  }
+  
+  @Test
   public void testUpConfigLinkConfigClearZk() throws Exception {
     // test upconfig
     String confsetname = "confsetone";

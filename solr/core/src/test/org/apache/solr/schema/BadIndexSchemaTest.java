@@ -19,8 +19,6 @@ package org.apache.solr.schema;
 
 import org.apache.solr.core.AbstractBadConfigTestBase;
 
-import java.util.regex.Pattern;
-
 public class BadIndexSchemaTest extends AbstractBadConfigTestBase {
 
   private void doTest(final String schema, final String errString) 
@@ -75,6 +73,18 @@ public class BadIndexSchemaTest extends AbstractBadConfigTestBase {
            "Fields can not be multiValued: *_c");
   }
 
+  public void testCurrencyOERNoRates() throws Exception {
+    doTest("bad-schema-currency-ft-oer-norates.xml", 
+           "ratesFileLocation");
+  }
+
+  public void testCurrencyBogusCode() throws Exception {
+    doTest("bad-schema-currency-ft-bogus-default-code.xml", 
+           "HOSS");
+    doTest("bad-schema-currency-ft-bogus-code-in-xml.xml", 
+           "HOSS");
+  }
+
   public void testPerFieldtypeSimButNoSchemaSimFactory() throws Exception {
     doTest("bad-schema-sim-global-vs-ft-mismatch.xml", "global similarity does not support it");
   }
@@ -83,5 +93,22 @@ public class BadIndexSchemaTest extends AbstractBadConfigTestBase {
     doTest("bad-schema-codec-global-vs-ft-mismatch.xml", "codec does not support");
   }
 
+  public void testDocValuesNotRequiredNoDefault() throws Exception {
+    doTest("bad-schema-docValues-not-required-no-default.xml", "has no default value and is not required");
+  }
+
+  public void testDocValuesUnsupported() throws Exception {
+    doTest("bad-schema-unsupported-docValues.xml", "does not support doc values");
+  }
+
+  public void testSweetSpotSimBadConfig() throws Exception {
+    doTest("bad-schema-sweetspot-both-tf.xml", "Can not mix");
+    doTest("bad-schema-sweetspot-partial-baseline.xml", 
+           "Overriding default baselineTf");
+    doTest("bad-schema-sweetspot-partial-hyperbolic.xml", 
+           "Overriding default hyperbolicTf");
+    doTest("bad-schema-sweetspot-partial-norms.xml", 
+           "Overriding default lengthNorm");
+  }
 
 }

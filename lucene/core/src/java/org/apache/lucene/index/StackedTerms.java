@@ -62,7 +62,7 @@ public class StackedTerms extends Terms {
   }
   
   @Override
-  public Comparator<BytesRef> getComparator() throws IOException {
+  public Comparator<BytesRef> getComparator() {
     if (comparator == null) {
       for (int i = 0; i < subTerms.length; i++) {
         if (subTerms[i] != null) {

@@ -113,6 +113,31 @@ public class QueryEqualityTest extends SolrTestCaseJ4 {
     }
   }
 
+  public void testQuerySwitch() throws Exception {
+    SolrQueryRequest req = req("myXXX", "XXX", 
+                               "myField", "foo_s",
+                               "myQ", "{!prefix f=$myField}asdf");
+    try {
+      assertQueryEquals("switch", req, 
+                        "{!switch case.foo=XXX case.bar=zzz case.yak=qqq}foo",
+                        "{!switch case.foo=qqq case.bar=XXX case.yak=zzz} bar ",
+                        "{!switch case.foo=qqq case.bar=XXX case.yak=zzz v='  bar '}",
+                        "{!switch default=XXX case.foo=qqq case.bar=zzz}asdf",
+                        "{!switch default=$myXXX case.foo=qqq case.bar=zzz}asdf",
+                        "{!switch case=XXX case.bar=zzz case.yak=qqq v=''}",
+                        "{!switch case.bar=zzz case=XXX case.yak=qqq v=''}",
+                        "{!switch case=XXX case.bar=zzz case.yak=qqq}",
+                        "{!switch case=XXX case.bar=zzz case.yak=qqq}   ",
+                        "{!switch case=$myXXX case.bar=zzz case.yak=qqq}   ");
+
+      assertQueryEquals("switch", req, 
+                        "{!switch case.foo=$myQ case.bar=zzz case.yak=qqq}foo",
+                        "{!query v=$myQ}");
+    } finally {
+      req.close();
+    }
+  }
+
   public void testQueryDismax() throws Exception {
     for (final String type : new String[]{"dismax","edismax"}) {
       assertQueryEquals(type, "{!"+type+"}apache solr",
@@ -653,6 +678,13 @@ public class QueryEqualityTest extends SolrTestCaseJ4 {
     assertFuncEquals("field(\"foo_i\")", 
                      "field('foo_i\')", 
                      "foo_i");
+  }
+  public void testFuncCurrency() throws Exception {
+    assertFuncEquals("currency(\"amount\")", 
+                     "currency('amount\')",
+                     "currency(amount)",
+                     "currency(amount,USD)",
+                     "currency('amount',USD)");
   }
 
   public void testTestFuncs() throws Exception {

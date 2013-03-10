@@ -20,7 +20,8 @@ package org.apache.lucene.search.suggest.fst;
 import java.io.*;
 import java.util.Comparator;
 
-import org.apache.lucene.search.suggest.fst.Sort.ByteSequencesReader;
+import org.apache.lucene.search.suggest.Sort;
+import org.apache.lucene.search.suggest.Sort.ByteSequencesReader;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.BytesRefIterator;
 import org.apache.lucene.util.IOUtils;

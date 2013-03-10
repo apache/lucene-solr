@@ -182,11 +182,12 @@ final class TermVectorsConsumerPerField extends TermsHashConsumerPerField {
         }
         tv.addProx(freq, posReader, offReader);
       }
+      tv.finishTerm();
     }
+    tv.finishField();
 
     termsHashPerField.reset();
 
-    // commit the termVectors once successful - FI will otherwise reset them
     fieldInfo.setStoreTermVectors();
   }
 

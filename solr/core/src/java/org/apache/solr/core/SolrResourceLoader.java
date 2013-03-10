@@ -36,6 +36,7 @@ import org.apache.lucene.analysis.util.TokenFilterFactory;
 import org.apache.lucene.analysis.util.TokenizerFactory;
 import org.apache.lucene.codecs.Codec;
 import org.apache.lucene.codecs.PostingsFormat;
+import org.apache.lucene.codecs.DocValuesFormat;
 import org.apache.lucene.analysis.util.WordlistLoader;
 import org.apache.solr.common.ResourceLoader;
 import org.apache.solr.handler.admin.CoreAdminHandler;
@@ -82,6 +83,7 @@ public class SolrResourceLoader implements ResourceLoader
   private final List<ResourceLoaderAware> waitingForResources = Collections.synchronizedList(new ArrayList<ResourceLoaderAware>());
   private static final Charset UTF_8 = Charset.forName("UTF-8");
 
+  //TODO: Solr5. Remove this completely when you obsolete putting <core> tags in solr.xml (See Solr-4196)
   private final Properties coreProperties;
 
   private volatile boolean live;
@@ -104,7 +106,7 @@ public class SolrResourceLoader implements ResourceLoader
                this.instanceDir);
     } else{
       this.instanceDir = normalizeDir(instanceDir);
-      log.info("new SolrResourceLoader for directory: '{}'", 
+      log.info("new SolrResourceLoader for directory: '{}'",
                this.instanceDir);
     }
     
@@ -178,6 +180,7 @@ public class SolrResourceLoader implements ResourceLoader
   void reloadLuceneSPI() {
     // Codecs:
     PostingsFormat.reloadPostingsFormats(this.classLoader);
+    DocValuesFormat.reloadDocValuesFormats(this.classLoader);
     Codec.reloadCodecs(this.classLoader);
     // Analysis:
     CharFilterFactory.reloadCharFilters(this.classLoader);

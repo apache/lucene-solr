@@ -25,7 +25,8 @@ public class CloudDescriptor {
   private SolrParams params;
   private String roles = null;
   private Integer numShards;
-  
+  private String nodeName = null;
+
   volatile boolean isLeader = false;
   volatile String lastPublished;
   
@@ -77,6 +78,14 @@ public class CloudDescriptor {
   
   public void setNumShards(int numShards) {
     this.numShards = numShards;
+  }
+  
+  public String getCoreNodeName() {
+    return nodeName;
+  }
+
+  public void setCoreNodeName(String nodeName) {
+    this.nodeName = nodeName;
   }
 
 }

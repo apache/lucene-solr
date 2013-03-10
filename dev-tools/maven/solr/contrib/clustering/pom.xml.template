@@ -33,9 +33,8 @@
   <description>Apache Solr Clustering</description>
   <properties>
     <module-directory>solr/contrib/clustering</module-directory>
-    <top-level>../../../..</top-level>
-    <module-path>${top-level}/${module-directory}</module-path>
-    <surefire-solr-directory>${top-level}/../../solr</surefire-solr-directory>
+    <relative-top-level>../../../..</relative-top-level>
+    <module-path>${relative-top-level}/${module-directory}</module-path>
   </properties>
   <scm>
     <connection>scm:svn:${vc-anonymous-base-url}/${module-directory}</connection>
@@ -65,47 +64,23 @@
     </dependency>
     <dependency>
       <groupId>org.carrot2</groupId>
-      <artifactId>carrot2-core</artifactId>
+      <artifactId>carrot2-mini</artifactId>
       <exclusions>
         <exclusion>
-          <groupId>org.apache.lucene</groupId>
-          <artifactId>lucene-core</artifactId>
+          <groupId>jfree</groupId>
+          <artifactId>jcommon</artifactId>
         </exclusion>
         <exclusion>
-          <groupId>org.apache.lucene</groupId>
-          <artifactId>lucene-analyzers</artifactId>
+          <groupId>org.apache.commons</groupId>
+          <artifactId>commons-math</artifactId>
         </exclusion>
         <exclusion>
-          <groupId>org.apache.lucene</groupId>
-          <artifactId>lucene-highlighter</artifactId>
+          <groupId>org.uncommons.maths</groupId>
+          <artifactId>uncommons-maths</artifactId>
         </exclusion>
         <exclusion>
-          <groupId>org.apache.lucene</groupId>
-          <artifactId>lucene-snowball</artifactId>
-        </exclusion>
-        <exclusion>
-          <groupId>org.apache.lucene</groupId>
-          <artifactId>lucene-smartcn</artifactId>
-        </exclusion>
-        <exclusion>
-          <groupId>net.java.dev.rome</groupId>
-          <artifactId>rome</artifactId>
-        </exclusion>
-        <exclusion>
-          <groupId>net.java.dev.rome</groupId>
-          <artifactId>rome-fetcher</artifactId>
-        </exclusion>
-        <exclusion>
-          <groupId>org.jdom</groupId>
-          <artifactId>jdom</artifactId>
-        </exclusion>
-        <exclusion>
-          <groupId>net.sf.ehcache</groupId>
-          <artifactId>ehcache-core</artifactId>
-        </exclusion>
-        <exclusion>
-          <groupId>org.carrot2</groupId>
-          <artifactId>morfologik-stemming</artifactId>
+          <groupId>xpp3</groupId>
+          <artifactId>xpp3</artifactId>
         </exclusion>
       </exclusions>
     </dependency>
@@ -124,16 +99,5 @@
         </includes>
       </testResource>
     </testResources>
-    <plugins>
-      <plugin>
-        <groupId>org.apache.maven.plugins</groupId>
-        <artifactId>maven-surefire-plugin</artifactId>
-        <configuration>
-          <systemPropertyVariables>
-            <java.util.logging.config.file>${surefire-solr-directory}/testlogging.properties</java.util.logging.config.file>
-          </systemPropertyVariables>
-        </configuration>
-      </plugin>
-    </plugins>
   </build>
 </project>

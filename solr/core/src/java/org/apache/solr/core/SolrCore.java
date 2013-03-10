@@ -44,7 +44,6 @@ import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
-import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.locks.ReentrantLock;
@@ -66,8 +65,10 @@ import org.apache.solr.common.SolrException;
 import org.apache.solr.common.params.CommonParams;
 import org.apache.solr.common.params.CommonParams.EchoParamStyle;
 import org.apache.solr.common.params.SolrParams;
+import org.apache.solr.common.util.ExecutorUtil;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.common.util.SimpleOrderedMap;
+import org.apache.solr.core.DirectoryFactory.DirContext;
 import org.apache.solr.handler.SnapPuller;
 import org.apache.solr.handler.admin.ShowFileRequestHandler;
 import org.apache.solr.handler.component.DebugComponent;
@@ -148,7 +149,6 @@ public final class SolrCore implements SolrInfoMBean {
   private final String dataDir;
   private final UpdateHandler updateHandler;
   private final SolrCoreState solrCoreState;
-  private int solrCoreStateRefCnt = 1;
   
   private final long startTime;
   private final RequestHandlers reqHandlers;
@@ -218,8 +218,13 @@ public final class SolrCore implements SolrInfoMBean {
     return dataDir;
   }
 
-  public String getIndexDir() {  
-    return dataDir + "index/";
+  public String getIndexDir() {
+    synchronized (searcherLock) {
+      if (_searcher == null) return getNewIndexDir();
+      SolrIndexSearcher searcher = _searcher.get();
+      return searcher.getPath() == null ? dataDir + "index/" : searcher
+          .getPath();
+    }
   }
 
 
@@ -236,7 +241,7 @@ public final class SolrCore implements SolrInfoMBean {
     Properties p = new Properties();
     Directory dir = null;
     try {
-      dir = getDirectoryFactory().get(getDataDir(), getSolrConfig().indexConfig.lockType);
+      dir = getDirectoryFactory().get(getDataDir(), DirContext.META_DATA, getSolrConfig().indexConfig.lockType);
       if (dir.fileExists(SnapPuller.INDEX_PROPERTIES)){
         final IndexInput input = dir.openInput(SnapPuller.INDEX_PROPERTIES, IOContext.DEFAULT);
   
@@ -386,7 +391,6 @@ public final class SolrCore implements SolrInfoMBean {
   
   public SolrCore reload(SolrResourceLoader resourceLoader, SolrCore prev) throws IOException,
       ParserConfigurationException, SAXException {
-    // TODO - what if indexwriter settings have changed
     
     SolrConfig config = new SolrConfig(resourceLoader,
         getSolrConfig().getName(), null);
@@ -394,11 +398,21 @@ public final class SolrCore implements SolrInfoMBean {
     IndexSchema schema = new IndexSchema(config,
         getSchema().getResourceName(), null);
     
-    increfSolrCoreState();
+    solrCoreState.increfSolrCoreState();
+    
+    if (!getNewIndexDir().equals(getIndexDir())) {
+      // the directory is changing, don't pass on state
+      prev = null;
+    }
     
     SolrCore core = new SolrCore(getName(), getDataDir(), config,
         schema, coreDescriptor, updateHandler, prev);
     core.solrDelPolicy = this.solrDelPolicy;
+    
+    core.getUpdateHandler().getSolrCoreState().newIndexWriter(core, false, false);
+    
+    core.getSearcher(true, false, null, true);
+    
     return core;
   }
 
@@ -453,7 +467,7 @@ public final class SolrCore implements SolrInfoMBean {
 
       if (indexExists && firstTime && !reload) {
         
-        Directory dir = directoryFactory.get(indexDir,
+        Directory dir = directoryFactory.get(indexDir, DirContext.DEFAULT,
             getSolrConfig().indexConfig.lockType);
         try {
           if (IndexWriter.isLocked(dir)) {
@@ -565,6 +579,9 @@ public final class SolrCore implements SolrInfoMBean {
     } else if (o instanceof NamedListInitializedPlugin) {
       ((NamedListInitializedPlugin) o).init(info.initArgs);
     }
+    if(o instanceof SearchComponent) {
+      ((SearchComponent) o).setName(info.name);
+    }
     return o;
   }
 
@@ -640,12 +657,15 @@ public final class SolrCore implements SolrInfoMBean {
     this.setName( name );
     resourceLoader = config.getResourceLoader();
     if (dataDir == null){
-      if(cd.usingDefaultDataDir()) dataDir = config.getDataDir();
-      if(dataDir == null) dataDir = cd.getDataDir();
+      if(cd.usingDefaultDataDir()) {
+        dataDir = config.getDataDir();
+      }
+      if(dataDir == null) {
+        dataDir = cd.getDataDir();
+      }
     }
 
     dataDir = SolrResourceLoader.normalizeDir(dataDir);
-
     log.info(logid+"Opening new SolrCore at " + resourceLoader.getInstanceDir() + ", dataDir="+dataDir);
 
     if (schema==null) {
@@ -831,6 +851,11 @@ public final class SolrCore implements SolrInfoMBean {
           log.error(msg);
           throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, msg);
         }
+        if (null != ft.getDocValuesFormat()) {
+          String msg = "FieldType '" + ft.getTypeName() + "' is configured with a docValues format, but the codec does not support it: " + factory.getClass();
+          log.error(msg);
+          throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, msg);
+        }
       }
     }
     return factory.getCodec();
@@ -862,32 +887,6 @@ public final class SolrCore implements SolrInfoMBean {
   public SolrCoreState getSolrCoreState() {
     return solrCoreState;
   }  
-  
-  private void increfSolrCoreState() {
-    synchronized (solrCoreState) {
-      if (solrCoreStateRefCnt == 0) {
-        throw new IllegalStateException("IndexWriter has been closed");
-      }
-      solrCoreStateRefCnt++;
-    }
-  }
-  
-  private void decrefSolrCoreState(IndexWriterCloser closer) {
-    synchronized (solrCoreState) {
-      
-      solrCoreStateRefCnt--;
-      if (solrCoreStateRefCnt == 0) {
-
-        try {
-          log.info("Closing SolrCoreState");
-          solrCoreState.close(closer);
-        } catch (Throwable t) {
-          log.error("Error closing SolrCoreState", t);
-        }
-        
-      }
-    }
-  }
 
   /**
    * @return an update processor registered to the given name.  Throw an exception if this chain is undefined
@@ -958,7 +957,7 @@ public final class SolrCore implements SolrInfoMBean {
 
     try {
       infoRegistry.clear();
-    } catch (Exception e) {
+    } catch (Throwable e) {
       SolrException.log(log, e);
     }
 
@@ -971,32 +970,23 @@ public final class SolrCore implements SolrInfoMBean {
     }
     
     try {
-      if (updateHandler instanceof IndexWriterCloser) {
-        decrefSolrCoreState((IndexWriterCloser) updateHandler);
-      } else {
-        decrefSolrCoreState(null);
+      if (solrCoreState != null) {
+        if (updateHandler instanceof IndexWriterCloser) {
+          solrCoreState.decrefSolrCoreState((IndexWriterCloser) updateHandler);
+        } else {
+          solrCoreState.decrefSolrCoreState(null);
+        }
       }
     } catch (Throwable e) {
       SolrException.log(log, e);
     }
     
     try {
-      searcherExecutor.shutdown();
-      if (!searcherExecutor.awaitTermination(60, TimeUnit.SECONDS)) {
-        log.error("Timeout waiting for searchExecutor to terminate");
-      }
-    } catch (InterruptedException e) {
-      searcherExecutor.shutdownNow();
-      try {
-        if (!searcherExecutor.awaitTermination(30, TimeUnit.SECONDS)) {
-          log.error("Timeout waiting for searchExecutor to terminate");
-        }
-      } catch (InterruptedException e2) {
-        SolrException.log(log, e2);
-      }
-    } catch (Exception e) {
+      ExecutorUtil.shutdownAndAwaitTermination(searcherExecutor);
+    } catch (Throwable e) {
       SolrException.log(log, e);
     }
+
     try {
       // Since we waited for the searcherExecutor to shut down,
       // there should be no more searchers warming in the background
@@ -1011,15 +1001,14 @@ public final class SolrCore implements SolrInfoMBean {
     }
     
     if (solrCoreState != null) { // bad startup case
-      synchronized (solrCoreState) {
-        if (solrCoreStateRefCnt == 0) {
-          try {
-            directoryFactory.close();
-          } catch (Throwable t) {
-            SolrException.log(log, t);
-          }
+      if (solrCoreState.getSolrCoreStateRefCnt() == 0) {
+        try {
+          directoryFactory.close();
+        } catch (Throwable t) {
+          SolrException.log(log, t);
         }
       }
+      
     }
 
     
@@ -1170,7 +1159,10 @@ public final class SolrCore implements SolrInfoMBean {
     if(!registry.containsKey(name)){
       T searchComp = resourceLoader.newInstance(c.getName(), c);
       if (searchComp instanceof NamedListInitializedPlugin){
-        ((NamedListInitializedPlugin)searchComp).init( new NamedList() );
+        ((NamedListInitializedPlugin)searchComp).init( new NamedList<String>() );
+      }
+      if(searchComp instanceof SearchComponent) {
+        ((SearchComponent)searchComp).setName(name);
       }
       registry.put(name, searchComp);
       if (searchComp instanceof SolrInfoMBean){
@@ -1327,7 +1319,7 @@ public final class SolrCore implements SolrInfoMBean {
    *
    * This method acquires openSearcherLock - do not call with searckLock held!
    */
-  public RefCounted<SolrIndexSearcher> openNewSearcher(boolean updateHandlerReopens, boolean realtime) {
+  public RefCounted<SolrIndexSearcher>  openNewSearcher(boolean updateHandlerReopens, boolean realtime) {
     SolrIndexSearcher tmp;
     RefCounted<SolrIndexSearcher> newestSearcher = null;
     boolean nrt = solrConfig.reopenReaders && updateHandlerReopens;
@@ -1385,7 +1377,7 @@ public final class SolrCore implements SolrInfoMBean {
         }
 
        // for now, turn off caches if this is for a realtime reader (caches take a little while to instantiate)
-        tmp = new SolrIndexSearcher(this, schema, (realtime ? "realtime":"main"), newReader, true, !realtime, true, directoryFactory);
+        tmp = new SolrIndexSearcher(this, newIndexDir, schema, (realtime ? "realtime":"main"), newReader, true, !realtime, true, directoryFactory);
 
       } else {
         // newestSearcher == null at this point
@@ -1395,7 +1387,7 @@ public final class SolrCore implements SolrInfoMBean {
           // so that we pick up any uncommitted changes and so we don't go backwards
           // in time on a core reload
           DirectoryReader newReader = newReaderCreator.call();
-          tmp = new SolrIndexSearcher(this, schema, (realtime ? "realtime":"main"), newReader, true, !realtime, true, directoryFactory);
+          tmp = new SolrIndexSearcher(this, newIndexDir, schema, (realtime ? "realtime":"main"), newReader, true, !realtime, true, directoryFactory);
         } else {
          // normal open that happens at startup
         // verbose("non-reopen START:");
@@ -1789,7 +1781,6 @@ public final class SolrCore implements SolrInfoMBean {
     }
   }
 
-
   public void execute(SolrRequestHandler handler, SolrQueryRequest req, SolrQueryResponse rsp) {
     if (handler==null) {
       String msg = "Null Request Handler '" +
@@ -1799,45 +1790,40 @@ public final class SolrCore implements SolrInfoMBean {
       
       throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, msg);
     }
-    // setup response header and handle request
-    final NamedList<Object> responseHeader = new SimpleOrderedMap<Object>();
-    rsp.add("responseHeader", responseHeader);
 
-    // toLog is a local ref to the same NamedList used by the request
-    NamedList<Object> toLog = rsp.getToLog();
-    // for back compat, we set these now just in case other code
-    // are expecting them during handleRequest
-
-    toLog.add("webapp", req.getContext().get("webapp"));
-    toLog.add("path", req.getContext().get("path"));
-    toLog.add("params", "{" + req.getParamString() + "}");
+    preDecorateResponse(req, rsp);
 
     // TODO: this doesn't seem to be working correctly and causes problems with the example server and distrib (for example /spell)
     // if (req.getParams().getBool(ShardParams.IS_SHARD,false) && !(handler instanceof SearchHandler))
     //   throw new SolrException(SolrException.ErrorCode.BAD_REQUEST,"isShard is only acceptable with search handlers");
 
     handler.handleRequest(req,rsp);
-    setResponseHeaderValues(handler,req,rsp);
 
-    if (log.isInfoEnabled() && toLog.size() > 0) {
-      StringBuilder sb = new StringBuilder(logid);
-      for (int i=0; i<toLog.size(); i++) {
-        String name = toLog.getName(i);
-        Object val = toLog.getVal(i);
-        if (name != null) {
-          sb.append(name).append('=');
-        }
-        sb.append(val).append(' ');
-      }
+    postDecorateResponse(handler, req, rsp);
 
-      log.info(sb.toString());
+    if (log.isInfoEnabled() && rsp.getToLog().size() > 0) {
+      log.info(rsp.getToLogAsString(logid));
     }
-
   }
 
+  public static void preDecorateResponse(SolrQueryRequest req, SolrQueryResponse rsp) {
+    // setup response header
+    final NamedList<Object> responseHeader = new SimpleOrderedMap<Object>();
+    rsp.add("responseHeader", responseHeader);
 
-  
-  public static void setResponseHeaderValues(SolrRequestHandler handler, SolrQueryRequest req, SolrQueryResponse rsp) {
+    // toLog is a local ref to the same NamedList used by the response
+    NamedList<Object> toLog = rsp.getToLog();
+
+    // for back compat, we set these now just in case other code
+    // are expecting them during handleRequest
+    toLog.add("webapp", req.getContext().get("webapp"));
+    toLog.add("path", req.getContext().get("path"));
+    toLog.add("params", "{" + req.getParamString() + "}");
+  }
+
+  /** Put status, QTime, and possibly request handler and params, in the response header */
+  public static void postDecorateResponse
+      (SolrRequestHandler handler, SolrQueryRequest req, SolrQueryResponse rsp) {
     // TODO should check that responseHeader has not been replaced by handler
     NamedList<Object> responseHeader = rsp.getResponseHeader();
     final int qtime=(int)(rsp.getEndTime() - req.getStartTime());
@@ -1858,7 +1844,7 @@ public final class SolrCore implements SolrInfoMBean {
     }
 
     SolrParams params = req.getParams();
-    if( params.getBool(CommonParams.HEADER_ECHO_HANDLER, false) ) {
+    if( null != handler && params.getBool(CommonParams.HEADER_ECHO_HANDLER, false) ) {
       responseHeader.add("handler", handler.getName() );
     }
 
@@ -1877,7 +1863,6 @@ public final class SolrCore implements SolrInfoMBean {
       }
     }
   }
-
 
   final public static void log(Throwable e) {
     SolrException.log(log,null,e);

@@ -156,14 +156,6 @@ public class QuadPrefixTree extends SpatialPrefixTree {
     return new QuadCell(bytes, offset, len);
   }
 
-  @Override //for performance
-  public List<Node> getNodes(Shape shape, int detailLevel, boolean inclParents) {
-    if (shape instanceof Point)
-      return super.getNodesAltPoint((Point) shape, detailLevel, inclParents);
-    else
-      return super.getNodes(shape, detailLevel, inclParents);
-  }
-
   private void build(
       double x,
       double y,

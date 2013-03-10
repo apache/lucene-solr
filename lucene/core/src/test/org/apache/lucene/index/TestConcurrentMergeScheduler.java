@@ -24,8 +24,10 @@ import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 
 import org.apache.lucene.analysis.MockAnalyzer;
+import org.apache.lucene.codecs.lucene41.Lucene41PostingsFormat;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
+import org.apache.lucene.document.StringField;
 import org.apache.lucene.document.TextField;
 import org.apache.lucene.index.IndexWriterConfig.OpenMode;
 import org.apache.lucene.store.Directory;
@@ -323,5 +325,48 @@ public class TestConcurrentMergeScheduler extends LuceneTestCase {
     }
     w.close(false);
     dir.close();
+  }
+
+
+  private static class TrackingCMS extends ConcurrentMergeScheduler {
+    long totMergedBytes;
+
+    public TrackingCMS() {
+      setMaxMergeCount(5);
+      setMaxThreadCount(5);
+    }
+
+    @Override
+    public void doMerge(MergePolicy.OneMerge merge) throws IOException {
+      totMergedBytes += merge.totalBytesSize();
+      super.doMerge(merge);
+    }
+  }
+
+  public void testTotalBytesSize() throws Exception {
+    Directory d = newDirectory();
+    if (d instanceof MockDirectoryWrapper) {
+      ((MockDirectoryWrapper)d).setThrottling(MockDirectoryWrapper.Throttling.NEVER);
+    }
+    IndexWriterConfig iwc = newIndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer(random()));
+    iwc.setMaxBufferedDocs(5);
+    iwc.setMergeScheduler(new TrackingCMS());
+    if (_TestUtil.getPostingsFormat("id").equals("SimpleText")) {
+      // no
+      iwc.setCodec(_TestUtil.alwaysPostingsFormat(new Lucene41PostingsFormat()));
+    }
+    RandomIndexWriter w = new RandomIndexWriter(random(), d, iwc);
+    for(int i=0;i<1000;i++) {
+      Document doc = new Document();
+      doc.add(new StringField("id", ""+i, Field.Store.NO));
+      w.addDocument(doc);
+
+      if (random().nextBoolean()) {
+        w.deleteDocuments(new Term("id", ""+random().nextInt(i+1)));
+      }
+    }
+    assertTrue(((TrackingCMS) iwc.getMergeScheduler()).totMergedBytes != 0);
+    w.close();
+    d.close();
   }
 }

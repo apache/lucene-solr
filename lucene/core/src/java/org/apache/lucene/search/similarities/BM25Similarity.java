@@ -20,9 +20,8 @@ package org.apache.lucene.search.similarities;
 import java.io.IOException;
 
 import org.apache.lucene.index.AtomicReaderContext;
-import org.apache.lucene.index.DocValues;
 import org.apache.lucene.index.FieldInvertState;
-import org.apache.lucene.index.Norm;
+import org.apache.lucene.index.NumericDocValues;
 import org.apache.lucene.search.CollectionStatistics;
 import org.apache.lucene.search.Explanation;
 import org.apache.lucene.search.TermStatistics;
@@ -32,7 +31,7 @@ import org.apache.lucene.util.SmallFloat;
 /**
  * BM25 Similarity. Introduced in Stephen E. Robertson, Steve Walker,
  * Susan Jones, Micheline Hancock-Beaulieu, and Mike Gatford. Okapi at TREC-3.
- * In Proceedings of the Third Text REtrieval Conference (TREC 1994).
+ * In Proceedings of the Third <b>T</b>ext <b>RE</b>trieval <b>C</b>onference (TREC 1994).
  * Gaithersburg, USA, November 1994.
  * @lucene.experimental
  */
@@ -136,9 +135,9 @@ public class BM25Similarity extends Similarity {
 
 
   @Override
-  public final void computeNorm(FieldInvertState state, Norm norm) {
+  public final long computeNorm(FieldInvertState state) {
     final int numTerms = discountOverlaps ? state.getLength() - state.getNumOverlap() : state.getLength();
-    norm.setByte(encodeNormValue(state.getBoost(), numTerms));
+    return encodeNormValue(state.getBoost(), numTerms);
   }
 
   /**
@@ -215,7 +214,7 @@ public class BM25Similarity extends Similarity {
   @Override
   public final ExactSimScorer exactSimScorer(SimWeight stats, AtomicReaderContext context) throws IOException {
     BM25Stats bm25stats = (BM25Stats) stats;
-    final DocValues norms = context.reader().normValues(bm25stats.field);
+    final NumericDocValues norms = context.reader().getNormValues(bm25stats.field);
     return norms == null 
       ? new ExactBM25DocScorerNoNorms(bm25stats)
       : new ExactBM25DocScorer(bm25stats, norms);
@@ -224,26 +223,26 @@ public class BM25Similarity extends Similarity {
   @Override
   public final SloppySimScorer sloppySimScorer(SimWeight stats, AtomicReaderContext context) throws IOException {
     BM25Stats bm25stats = (BM25Stats) stats;
-    return new SloppyBM25DocScorer(bm25stats, context.reader().normValues(bm25stats.field));
+    return new SloppyBM25DocScorer(bm25stats, context.reader().getNormValues(bm25stats.field));
   }
   
   private class ExactBM25DocScorer extends ExactSimScorer {
     private final BM25Stats stats;
     private final float weightValue;
-    private final byte[] norms;
+    private final NumericDocValues norms;
     private final float[] cache;
     
-    ExactBM25DocScorer(BM25Stats stats, DocValues norms) throws IOException {
+    ExactBM25DocScorer(BM25Stats stats, NumericDocValues norms) throws IOException {
       assert norms != null;
       this.stats = stats;
       this.weightValue = stats.weight * (k1 + 1); // boost * idf * (k1 + 1)
       this.cache = stats.cache;
-      this.norms = (byte[])norms.getSource().getArray();
+      this.norms = norms;
     }
     
     @Override
     public float score(int doc, int freq) {
-      return weightValue * freq / (freq + cache[norms[doc] & 0xFF]);
+      return weightValue * freq / (freq + cache[(byte)norms.get(doc) & 0xFF]);
     }
     
     @Override
@@ -283,20 +282,20 @@ public class BM25Similarity extends Similarity {
   private class SloppyBM25DocScorer extends SloppySimScorer {
     private final BM25Stats stats;
     private final float weightValue; // boost * idf * (k1 + 1)
-    private final byte[] norms;
+    private final NumericDocValues norms;
     private final float[] cache;
     
-    SloppyBM25DocScorer(BM25Stats stats, DocValues norms) throws IOException {
+    SloppyBM25DocScorer(BM25Stats stats, NumericDocValues norms) throws IOException {
       this.stats = stats;
       this.weightValue = stats.weight * (k1 + 1);
       this.cache = stats.cache;
-      this.norms = norms == null ? null : (byte[])norms.getSource().getArray();
+      this.norms = norms;
     }
     
     @Override
     public float score(int doc, float freq) {
       // if there are no norms, we act as if b=0
-      float norm = norms == null ? k1 : cache[norms[doc] & 0xFF];
+      float norm = norms == null ? k1 : cache[(byte)norms.get(doc) & 0xFF];
       return weightValue * freq / (freq + norm);
     }
     
@@ -356,7 +355,7 @@ public class BM25Similarity extends Similarity {
     } 
   }
   
-  private Explanation explainScore(int doc, Explanation freq, BM25Stats stats, byte[] norms) {
+  private Explanation explainScore(int doc, Explanation freq, BM25Stats stats, NumericDocValues norms) {
     Explanation result = new Explanation();
     result.setDescription("score(doc="+doc+",freq="+freq+"), product of:");
     
@@ -374,7 +373,7 @@ public class BM25Similarity extends Similarity {
       tfNormExpl.addDetail(new Explanation(0, "parameter b (norms omitted for field)"));
       tfNormExpl.setValue((freq.getValue() * (k1 + 1)) / (freq.getValue() + k1));
     } else {
-      float doclen = decodeNormValue(norms[doc]);
+      float doclen = decodeNormValue((byte)norms.get(doc));
       tfNormExpl.addDetail(new Explanation(b, "parameter b"));
       tfNormExpl.addDetail(new Explanation(stats.avgdl, "avgFieldLength"));
       tfNormExpl.addDetail(new Explanation(doclen, "fieldLength"));

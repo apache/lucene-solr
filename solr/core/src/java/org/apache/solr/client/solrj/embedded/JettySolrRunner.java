@@ -18,10 +18,17 @@
 package org.apache.solr.client.solrj.embedded;
 
 import java.io.IOException;
+import java.util.Collections;
 import java.util.EnumSet;
 import java.util.LinkedList;
+import java.util.Map;
 import java.util.Random;
+import java.util.SortedMap;
+import java.util.TreeMap;
 import java.util.concurrent.atomic.AtomicLong;
+
+import java.net.URL;
+import java.net.MalformedURLException;
 
 import javax.servlet.DispatcherType;
 import javax.servlet.Filter;
@@ -36,17 +43,24 @@ import javax.servlet.http.HttpServletResponse;
 
 import org.apache.solr.servlet.SolrDispatchFilter;
 import org.eclipse.jetty.server.Connector;
+import org.eclipse.jetty.server.Handler;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.server.bio.SocketConnector;
-import org.eclipse.jetty.server.handler.GzipHandler;
+import org.eclipse.jetty.server.handler.ContextHandlerCollection;
 import org.eclipse.jetty.server.nio.SelectChannelConnector;
+import org.eclipse.jetty.server.ssl.SslConnector;
+import org.eclipse.jetty.server.ssl.SslSocketConnector;
+import org.eclipse.jetty.server.ssl.SslSelectChannelConnector;
+import org.eclipse.jetty.server.handler.GzipHandler;
 import org.eclipse.jetty.server.session.HashSessionIdManager;
 import org.eclipse.jetty.servlet.FilterHolder;
 import org.eclipse.jetty.servlet.ServletContextHandler;
+import org.eclipse.jetty.servlet.ServletHolder;
 import org.eclipse.jetty.util.component.LifeCycle;
 import org.eclipse.jetty.util.log.Logger;
 import org.eclipse.jetty.util.thread.QueuedThreadPool;
 import org.eclipse.jetty.util.thread.ThreadPool;
+import org.eclipse.jetty.util.ssl.SslContextFactory;
 
 /**
  * Run solr using jetty
@@ -77,6 +91,11 @@ public class JettySolrRunner {
   private String solrHome;
 
   private boolean stopAtShutdown;
+
+  private String coreNodeName;
+
+  /** Maps servlet holders (i.e. factories: class + init params) to path specs */
+  private SortedMap<ServletHolder,String> extraServlets = new TreeMap<ServletHolder,String>();
 
   public static class DebugFilter implements Filter {
     public int requestsToKeep = 10;
@@ -142,6 +161,19 @@ public class JettySolrRunner {
     this.schemaFilename = schemaFileName;
   }
 
+  /**
+   * Constructor taking an ordered list of additional (servlet holder -> path spec) mappings
+   * to add to the servlet context
+   */
+  public JettySolrRunner(String solrHome, String context, int port,
+      String solrConfigFilename, String schemaFileName, boolean stopAtShutdown,
+      SortedMap<ServletHolder,String> extraServlets) {
+    if (null != extraServlets) { this.extraServlets.putAll(extraServlets); }
+    this.init(solrHome, context, port, stopAtShutdown);
+    this.solrConfigFilename = solrConfigFilename;
+    this.schemaFilename = schemaFileName;
+  }
+
   private void init(String solrHome, String context, int port, boolean stopAtShutdown) {
     this.context = context;
     server = new Server(port);
@@ -155,22 +187,59 @@ public class JettySolrRunner {
     System.setProperty("solr.solr.home", solrHome);
     if (System.getProperty("jetty.testMode") != null) {
       final String connectorName = System.getProperty("tests.jettyConnector", "SelectChannel");
+
+      // if this property is true, then jetty will be configured to use SSL
+      // leveraging the same system properties as java to specify
+      // the keystore/truststore if they are set
+      //
+      // This means we will use the same truststore, keystore (and keys) for
+      // the server as well as any client actions taken by this JVM in
+      // talking to that server, but for the purposes of testing that should 
+      // be good enough
+      final boolean useSsl = Boolean.getBoolean("tests.jettySsl");
+      final SslContextFactory sslcontext = new SslContextFactory(false);
+
+      if (useSsl) {
+        if (null != System.getProperty("javax.net.ssl.keyStore")) {
+          sslcontext.setKeyStorePath
+            (System.getProperty("javax.net.ssl.keyStore"));
+        }
+        if (null != System.getProperty("javax.net.ssl.keyStorePassword")) {
+          sslcontext.setKeyStorePassword
+            (System.getProperty("javax.net.ssl.keyStorePassword"));
+        }
+        if (null != System.getProperty("javax.net.ssl.trustStore")) {
+          sslcontext.setTrustStore
+            (System.getProperty("javax.net.ssl.trustStore"));
+        }
+        if (null != System.getProperty("javax.net.ssl.trustStorePassword")) {
+          sslcontext.setTrustStorePassword
+            (System.getProperty("javax.net.ssl.trustStorePassword"));
+        }
+        sslcontext.setNeedClientAuth(Boolean.getBoolean("tests.jettySsl.clientAuth"));
+      }
+
       final Connector connector;
       final QueuedThreadPool threadPool;
       if ("SelectChannel".equals(connectorName)) {
-        final SelectChannelConnector c = new SelectChannelConnector();
+        final SelectChannelConnector c = useSsl
+          ? new SslSelectChannelConnector(sslcontext)
+          : new SelectChannelConnector();
         c.setReuseAddress(true);
         c.setLowResourcesMaxIdleTime(1500);
         connector = c;
         threadPool = (QueuedThreadPool) c.getThreadPool();
       } else if ("Socket".equals(connectorName)) {
-        final SocketConnector c = new SocketConnector();
+        final SocketConnector c = useSsl
+          ? new SslSocketConnector(sslcontext)
+          : new SocketConnector();
         c.setReuseAddress(true);
         connector = c;
         threadPool = (QueuedThreadPool) c.getThreadPool();
       } else {
         throw new IllegalArgumentException("Illegal value for system property 'tests.jettyConnector': " + connectorName);
       }
+
       connector.setPort(port);
       connector.setHost("127.0.0.1");
       if (threadPool != null) {
@@ -239,6 +308,10 @@ public class JettySolrRunner {
 //        FilterHolder fh = new FilterHolder(filter);
         debugFilter = root.addFilter(DebugFilter.class, "*", EnumSet.of(DispatcherType.REQUEST) );
         dispatchFilter = root.addFilter(SolrDispatchFilter.class, "*", EnumSet.of(DispatcherType.REQUEST) );
+        for (ServletHolder servletHolder : extraServlets.keySet()) {
+          String pathSpec = extraServlets.get(servletHolder);
+          root.addServlet(servletHolder, pathSpec);
+        }
         if (solrConfigFilename != null) System.clearProperty("solrconfig");
         if (schemaFilename != null) System.clearProperty("schema");
         System.clearProperty("solr.solr.home");
@@ -289,6 +362,9 @@ public class JettySolrRunner {
     if(shards != null) {
       System.setProperty("shard", shards);
     }
+    if (coreNodeName != null) {
+      System.setProperty("coreNodeName", coreNodeName);
+    }
     
     if (!server.isRunning()) {
       server.start();
@@ -305,6 +381,7 @@ public class JettySolrRunner {
     
     System.clearProperty("shard");
     System.clearProperty("solr.data.dir");
+    System.clearProperty("coreNodeName");
   }
 
   public void stop() throws Exception {
@@ -346,6 +423,31 @@ public class JettySolrRunner {
     return lastPort;
   }
 
+  /**
+   * Returns a base URL consisting of the protocal, host, and port for a 
+   * Connector in use by the Jetty Server contained in this runner.
+   */
+  public URL getBaseUrl() {
+    String protocol = null;
+    try {
+      Connector[] conns = server.getConnectors();
+      if (0 == conns.length) {
+        throw new IllegalStateException("Jetty Server has no Connectors");
+      }
+      Connector c = conns[0];
+      if (c.getLocalPort() < 0) {
+        throw new IllegalStateException("Jetty Connector is not open: " + 
+                                        c.getLocalPort());
+      }
+      protocol = (c instanceof SslConnector) ? "https" : "http";
+      return new URL(protocol, c.getHost(), c.getLocalPort(), context);
+
+    } catch (MalformedURLException e) {
+      throw new  IllegalStateException
+        ("Java could not make sense of protocol: " + protocol, e);
+    }
+  }
+
   public DebugFilter getDebugFilter() {
     return (DebugFilter)debugFilter.getFilter();
   }
@@ -382,6 +484,10 @@ public class JettySolrRunner {
 
   public void setDataDir(String dataDir) {
     this.dataDir = dataDir;
+  }
+
+  public void setCoreNodeName(String coreNodeName) {
+    this.coreNodeName = coreNodeName;
   }
 }
 

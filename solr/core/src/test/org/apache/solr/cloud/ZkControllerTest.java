@@ -242,7 +242,7 @@ public class ZkControllerTest extends SolrTestCaseJ4 {
   private CoreContainer getCoreContainer() {
     CoreContainer cc = new CoreContainer(TEMP_DIR.getAbsolutePath()) {
       {
-        initShardHandler(null);
+        initShardHandler();
       }
     };
     

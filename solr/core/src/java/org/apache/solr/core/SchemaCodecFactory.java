@@ -1,8 +1,9 @@
 package org.apache.solr.core;
 
 import org.apache.lucene.codecs.Codec;
+import org.apache.lucene.codecs.DocValuesFormat;
 import org.apache.lucene.codecs.PostingsFormat;
-import org.apache.lucene.codecs.lucene41.Lucene41Codec;
+import org.apache.lucene.codecs.lucene42.Lucene42Codec;
 import org.apache.solr.schema.IndexSchema;
 import org.apache.solr.schema.SchemaAware;
 import org.apache.solr.schema.SchemaField;
@@ -42,7 +43,7 @@ public class SchemaCodecFactory extends CodecFactory implements SchemaAware {
 
   @Override
   public void inform(final IndexSchema schema) {
-    codec = new Lucene41Codec() {
+    codec = new Lucene42Codec() {
       @Override
       public PostingsFormat getPostingsFormatForField(String field) {
         final SchemaField fieldOrNull = schema.getFieldOrNull(field);
@@ -54,6 +55,18 @@ public class SchemaCodecFactory extends CodecFactory implements SchemaAware {
           return PostingsFormat.forName(postingsFormatName);
         }
         return super.getPostingsFormatForField(field);
+      }
+      @Override
+      public DocValuesFormat getDocValuesFormatForField(String field) {
+        final SchemaField fieldOrNull = schema.getFieldOrNull(field);
+        if (fieldOrNull == null) {
+          throw new IllegalArgumentException("no such field " + field);
+        }
+        String docValuesFormatName = fieldOrNull.getType().getDocValuesFormat();
+        if (docValuesFormatName != null) {
+          return DocValuesFormat.forName(docValuesFormatName);
+        }
+        return super.getDocValuesFormatForField(field);
       }
     };
   }

@@ -26,16 +26,22 @@
   width: 100%;
 }
 
+#content #query #form input,
+#content #query #form textarea
+{
+  width: 98%;
+}
+
 #content #query #form #start
 {
   float: left;
-  margin-right: 2%;
-  width: 49%;
+  width: 45%;
 }
 
 #content #query #form #rows
 {
-  width: 49%;
+  float: right;
+  width: 45%;
 }
 
 #content #query #form .checkbox input

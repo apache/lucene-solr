@@ -344,7 +344,7 @@ public class FilteredQuery extends Query {
     
     if (queryRewritten != query) {
       // rewrite to a new FilteredQuery wrapping the rewritten query
-      final Query rewritten = new FilteredQuery(queryRewritten, filter);
+      final Query rewritten = new FilteredQuery(queryRewritten, filter, strategy);
       rewritten.setBoost(this.getBoost());
       return rewritten;
     } else {
@@ -361,6 +361,11 @@ public class FilteredQuery extends Query {
   /** Returns this FilteredQuery's filter */
   public final Filter getFilter() {
     return filter;
+  }
+  
+  /** Returns this FilteredQuery's {@link FilterStrategy} */
+  public FilterStrategy getFilterStrategy() {
+    return this.strategy;
   }
 
   // inherit javadoc
@@ -511,7 +516,7 @@ public class FilteredQuery extends Query {
       }
       
       final Bits filterAcceptDocs = docIdSet.bits();
-        // force if RA is requested
+      // force if RA is requested
       final boolean useRandomAccess = (filterAcceptDocs != null && (useRandomAccess(filterAcceptDocs, firstFilterDoc)));
       if (useRandomAccess) {
         // if we are using random access, we return the inner scorer, just with other acceptDocs

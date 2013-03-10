@@ -17,33 +17,43 @@ package org.apache.lucene.facet.search;
  * limitations under the License.
  */
 
+import java.io.ByteArrayOutputStream;
 import java.io.IOException;
+import java.io.PrintStream;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 
+import org.apache.lucene.analysis.MockAnalyzer;
 import org.apache.lucene.document.Document;
-import org.apache.lucene.facet.index.CategoryDocumentBuilder;
-import org.apache.lucene.facet.search.params.CountFacetRequest;
-import org.apache.lucene.facet.search.params.FacetSearchParams;
-import org.apache.lucene.facet.search.results.FacetResult;
-import org.apache.lucene.facet.search.results.FacetResultNode;
+import org.apache.lucene.document.Field;
+import org.apache.lucene.facet.FacetTestCase;
+import org.apache.lucene.facet.FacetTestUtils;
+import org.apache.lucene.facet.index.FacetFields;
+import org.apache.lucene.facet.params.CategoryListParams;
+import org.apache.lucene.facet.params.FacetIndexingParams;
+import org.apache.lucene.facet.params.FacetSearchParams;
 import org.apache.lucene.facet.taxonomy.CategoryPath;
 import org.apache.lucene.facet.taxonomy.TaxonomyReader;
+import org.apache.lucene.facet.taxonomy.TaxonomyWriter;
 import org.apache.lucene.facet.taxonomy.directory.DirectoryTaxonomyReader;
 import org.apache.lucene.facet.taxonomy.directory.DirectoryTaxonomyWriter;
+import org.apache.lucene.facet.util.PrintTaxonomyStats;
 import org.apache.lucene.index.IndexWriterConfig;
 import org.apache.lucene.index.RandomIndexWriter;
 import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.search.MatchAllDocsQuery;
-import org.apache.lucene.search.Query;
+import org.apache.lucene.search.similarities.DefaultSimilarity;
+import org.apache.lucene.search.similarities.PerFieldSimilarityWrapper;
+import org.apache.lucene.search.similarities.Similarity;
 import org.apache.lucene.store.Directory;
-import org.apache.lucene.util.LuceneTestCase;
+import org.apache.lucene.util.BytesRef;
 
-public class TestDemoFacets extends LuceneTestCase {
+public class TestDemoFacets extends FacetTestCase {
 
   private DirectoryTaxonomyWriter taxoWriter;
   private RandomIndexWriter writer;
-  private CategoryDocumentBuilder docBuilder;
+  private FacetFields facetFields;
 
   private void add(String ... categoryPaths) throws IOException {
     Document doc = new Document();
@@ -52,8 +62,7 @@ public class TestDemoFacets extends LuceneTestCase {
     for(String categoryPath : categoryPaths) {
       paths.add(new CategoryPath(categoryPath, '/'));
     }
-    docBuilder.setCategoryPaths(paths);
-    docBuilder.build(doc);
+    facetFields.addFields(doc, paths);
     writer.addDocument(doc);
   }
 
@@ -68,7 +77,7 @@ public class TestDemoFacets extends LuceneTestCase {
 
     // Reused across documents, to add the necessary facet
     // fields:
-    docBuilder = new CategoryDocumentBuilder(taxoWriter);
+    facetFields = new FacetFields(taxoWriter);
 
     add("Author/Bob", "Publish Date/2010/10/15");
     add("Author/Lisa", "Publish Date/2010/10/20");
@@ -90,7 +99,7 @@ public class TestDemoFacets extends LuceneTestCase {
         new CountFacetRequest(new CategoryPath("Author"), 10));
 
     // Aggregatses the facet counts:
-    FacetsCollector c = new FacetsCollector(fsp, searcher.getIndexReader(), taxoReader);
+    FacetsCollector c = FacetsCollector.create(fsp, searcher.getIndexReader(), taxoReader);
 
     // MatchAllDocsQuery is for "browsing" (counts facets
     // for all non-deleted docs in the index); normally
@@ -101,21 +110,33 @@ public class TestDemoFacets extends LuceneTestCase {
     // Retrieve & verify results:
     List<FacetResult> results = c.getFacetResults();
     assertEquals(2, results.size());
-    assertEquals("Publish Date (5)\n  2012 (2)\n  2010 (2)\n  1999 (1)\n",
-                 toSimpleString(results.get(0)));
-    assertEquals("Author (5)\n  Lisa (2)\n  Frank (1)\n  Susan (1)\n  Bob (1)\n",
-                 toSimpleString(results.get(1)));
+    assertEquals("Publish Date (0)\n  2012 (2)\n  2010 (2)\n  1999 (1)\n",
+        FacetTestUtils.toSimpleString(results.get(0)));
+    assertEquals("Author (0)\n  Lisa (2)\n  Frank (1)\n  Susan (1)\n  Bob (1)\n",
+        FacetTestUtils.toSimpleString(results.get(1)));
 
     
     // Now user drills down on Publish Date/2010:
     fsp = new FacetSearchParams(new CountFacetRequest(new CategoryPath("Author"), 10));
-    Query q2 = DrillDown.query(fsp, new MatchAllDocsQuery(), new CategoryPath("Publish Date/2010", '/'));
-    c = new FacetsCollector(fsp, searcher.getIndexReader(), taxoReader);
+    DrillDownQuery q2 = new DrillDownQuery(fsp.indexingParams, new MatchAllDocsQuery());
+    q2.add(new CategoryPath("Publish Date/2010", '/'));
+    c = FacetsCollector.create(fsp, searcher.getIndexReader(), taxoReader);
     searcher.search(q2, c);
     results = c.getFacetResults();
     assertEquals(1, results.size());
-    assertEquals("Author (2)\n  Lisa (1)\n  Bob (1)\n",
-                 toSimpleString(results.get(0)));
+    assertEquals("Author (0)\n  Lisa (1)\n  Bob (1)\n",
+        FacetTestUtils.toSimpleString(results.get(0)));
+
+    // Smoke test PrintTaxonomyStats:
+    ByteArrayOutputStream bos = new ByteArrayOutputStream();
+    PrintTaxonomyStats.printStats(taxoReader, new PrintStream(bos, false, "UTF-8"), true);
+    String result = bos.toString("UTF-8");
+    assertTrue(result.indexOf("/Author: 4 immediate children; 5 total categories") != -1);
+    assertTrue(result.indexOf("/Publish Date: 3 immediate children; 12 total categories") != -1);
+    // Make sure at least a few nodes of the tree came out:
+    assertTrue(result.indexOf("  /1999") != -1);
+    assertTrue(result.indexOf("  /2012") != -1);
+    assertTrue(result.indexOf("      /20") != -1);
 
     taxoReader.close();
     searcher.getIndexReader().close();
@@ -123,16 +144,103 @@ public class TestDemoFacets extends LuceneTestCase {
     taxoDir.close();
   }
 
-  private String toSimpleString(FacetResult fr) {
-    StringBuilder sb = new StringBuilder();
-    toSimpleString(0, sb, fr.getFacetResultNode(), "");
-    return sb.toString();
+  public void testReallyNoNormsForDrillDown() throws Exception {
+    Directory dir = newDirectory();
+    Directory taxoDir = newDirectory();
+    IndexWriterConfig iwc = newIndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer(random()));
+    iwc.setSimilarity(new PerFieldSimilarityWrapper() {
+        final Similarity sim = new DefaultSimilarity();
+
+        @Override
+        public Similarity get(String name) {
+          assertEquals("field", name);
+          return sim;
+        }
+      });
+    RandomIndexWriter writer = new RandomIndexWriter(random(), dir, iwc);
+    TaxonomyWriter taxoWriter = new DirectoryTaxonomyWriter(taxoDir, IndexWriterConfig.OpenMode.CREATE);
+    FacetFields facetFields = new FacetFields(taxoWriter);      
+
+    Document doc = new Document();
+    doc.add(newTextField("field", "text", Field.Store.NO));
+    facetFields.addFields(doc, Collections.singletonList(new CategoryPath("a/path", '/')));
+    writer.addDocument(doc);
+    writer.close();
+    taxoWriter.close();
+    dir.close();
+    taxoDir.close();
   }
 
-  private void toSimpleString(int depth, StringBuilder sb, FacetResultNode node, String indent) {
-    sb.append(indent + node.getLabel().getComponent(depth) + " (" + (int) node.getValue() + ")\n");
-    for(FacetResultNode childNode : node.getSubResults()) {
-      toSimpleString(depth+1, sb, childNode, indent + "  ");
+  public void testAllParents() throws Exception {
+    Directory dir = newDirectory();
+    Directory taxoDir = newDirectory();
+    RandomIndexWriter writer = new RandomIndexWriter(random(), dir);
+    DirectoryTaxonomyWriter taxoWriter = new DirectoryTaxonomyWriter(taxoDir, IndexWriterConfig.OpenMode.CREATE);
+
+    CategoryListParams clp = new CategoryListParams("$facets") {
+        @Override
+        public OrdinalPolicy getOrdinalPolicy(String fieldName) {
+          return OrdinalPolicy.ALL_PARENTS;
+        }
+      };
+    FacetIndexingParams fip = new FacetIndexingParams(clp);
+
+    FacetFields facetFields = new FacetFields(taxoWriter, fip);
+
+    Document doc = new Document();
+    doc.add(newTextField("field", "text", Field.Store.NO));
+    facetFields.addFields(doc, Collections.singletonList(new CategoryPath("a/path", '/')));
+    writer.addDocument(doc);
+
+    // NRT open
+    IndexSearcher searcher = newSearcher(writer.getReader());
+    writer.close();
+
+    // NRT open
+    TaxonomyReader taxoReader = new DirectoryTaxonomyReader(taxoWriter);
+    taxoWriter.close();
+    
+    FacetSearchParams fsp = new FacetSearchParams(fip,
+                                                  new CountFacetRequest(new CategoryPath("a", '/'), 10));
+
+    // Aggregatses the facet counts:
+    FacetsCollector c = FacetsCollector.create(fsp, searcher.getIndexReader(), taxoReader);
+
+    // MatchAllDocsQuery is for "browsing" (counts facets
+    // for all non-deleted docs in the index); normally
+    // you'd use a "normal" query, and use MultiCollector to
+    // wrap collecting the "normal" hits and also facets:
+    searcher.search(new MatchAllDocsQuery(), c);
+    List<FacetResult> results = c.getFacetResults();
+    assertEquals(1, results.size());
+    assertEquals(1, (int) results.get(0).getFacetResultNode().value);
+
+    searcher.getIndexReader().close();
+    taxoReader.close();
+    dir.close();
+    taxoDir.close();
+  }
+
+  public void testLabelWithDelimiter() throws Exception {
+    Directory dir = newDirectory();
+    Directory taxoDir = newDirectory();
+    RandomIndexWriter writer = new RandomIndexWriter(random(), dir);
+    DirectoryTaxonomyWriter taxoWriter = new DirectoryTaxonomyWriter(taxoDir, IndexWriterConfig.OpenMode.CREATE);
+
+    FacetFields facetFields = new FacetFields(taxoWriter);
+
+    Document doc = new Document();
+    doc.add(newTextField("field", "text", Field.Store.NO));
+    BytesRef br = new BytesRef(new byte[] {(byte) 0xee, (byte) 0x92, (byte) 0xaa, (byte) 0xef, (byte) 0x9d, (byte) 0x89});
+    facetFields.addFields(doc, Collections.singletonList(new CategoryPath("dim/" + br.utf8ToString(), '/')));
+    try {
+      writer.addDocument(doc);
+    } catch (IllegalArgumentException iae) {
+      // expected
     }
+    writer.close();
+    taxoWriter.close();
+    dir.close();
+    taxoDir.close();
   }
 }

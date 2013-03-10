@@ -17,6 +17,9 @@ package org.apache.lucene.search.join;
  * limitations under the License.
  */
 
+import java.io.IOException;
+import java.util.*;
+
 import org.apache.lucene.analysis.MockAnalyzer;
 import org.apache.lucene.analysis.MockTokenizer;
 import org.apache.lucene.document.Document;
@@ -24,6 +27,7 @@ import org.apache.lucene.document.Field;
 import org.apache.lucene.document.TextField;
 import org.apache.lucene.index.AtomicReader;
 import org.apache.lucene.index.AtomicReaderContext;
+import org.apache.lucene.index.BinaryDocValues;
 import org.apache.lucene.index.DocTermOrds;
 import org.apache.lucene.index.DocsEnum;
 import org.apache.lucene.index.IndexReader;
@@ -31,6 +35,7 @@ import org.apache.lucene.index.MultiFields;
 import org.apache.lucene.index.RandomIndexWriter;
 import org.apache.lucene.index.ReaderUtil;
 import org.apache.lucene.index.SlowCompositeReaderWrapper;
+import org.apache.lucene.index.SortedSetDocValues;
 import org.apache.lucene.index.Term;
 import org.apache.lucene.index.Terms;
 import org.apache.lucene.index.TermsEnum;
@@ -49,13 +54,10 @@ import org.apache.lucene.search.TopScoreDocCollector;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.FixedBitSet;
+import org.apache.lucene.util.LuceneTestCase.Slow;
 import org.apache.lucene.util.LuceneTestCase;
 import org.apache.lucene.util._TestUtil;
-import org.apache.lucene.util.LuceneTestCase.Slow;
 import org.junit.Test;
-
-import java.io.IOException;
-import java.util.*;
 
 public class TestJoinUtil extends LuceneTestCase {
 
@@ -465,48 +467,26 @@ public class TestJoinUtil extends LuceneTestCase {
         fromSearcher.search(new TermQuery(new Term("value", uniqueRandomValue)), new Collector() {
 
           private Scorer scorer;
-          private DocTermOrds docTermOrds;
-          private TermsEnum docTermsEnum;
-          private DocTermOrds.TermOrdsIterator reuse;
+          private SortedSetDocValues docTermOrds;
+          final BytesRef joinValue = new BytesRef();
 
           @Override
           public void collect(int doc) throws IOException {
-            if (docTermOrds.isEmpty()) {
-              return;
+            docTermOrds.setDocument(doc);
+            long ord;
+            while ((ord = docTermOrds.nextOrd()) != SortedSetDocValues.NO_MORE_ORDS) {
+              docTermOrds.lookupOrd(ord, joinValue);
+              JoinScore joinScore = joinValueToJoinScores.get(joinValue);
+              if (joinScore == null) {
+                joinValueToJoinScores.put(BytesRef.deepCopyOf(joinValue), joinScore = new JoinScore());
+              }
+              joinScore.addScore(scorer.score());
             }
-
-            reuse = docTermOrds.lookup(doc, reuse);
-            int[] buffer = new int[5];
-
-            int chunk;
-            do {
-              chunk = reuse.read(buffer);
-              if (chunk == 0) {
-                return;
-              }
-
-              for (int idx = 0; idx < chunk; idx++) {
-                int key = buffer[idx];
-                docTermsEnum.seekExact((long) key);
-                BytesRef joinValue = docTermsEnum.term();
-                if (joinValue == null) {
-                  continue;
-                }
-
-                JoinScore joinScore = joinValueToJoinScores.get(joinValue);
-                if (joinScore == null) {
-                  joinValueToJoinScores.put(BytesRef.deepCopyOf(joinValue), joinScore = new JoinScore());
-                }
-                joinScore.addScore(scorer.score());
-              }
-            } while (chunk >= buffer.length);
           }
 
           @Override
           public void setNextReader(AtomicReaderContext context) throws IOException {
             docTermOrds = FieldCache.DEFAULT.getDocTermOrds(context.reader(), fromField);
-            docTermsEnum = docTermOrds.getOrdTermsEnum(context.reader());
-            reuse = null;
           }
 
           @Override
@@ -523,13 +503,14 @@ public class TestJoinUtil extends LuceneTestCase {
         fromSearcher.search(new TermQuery(new Term("value", uniqueRandomValue)), new Collector() {
 
           private Scorer scorer;
-          private FieldCache.DocTerms terms;
+          private BinaryDocValues terms;
           private final BytesRef spare = new BytesRef();
 
           @Override
           public void collect(int doc) throws IOException {
-            BytesRef joinValue = terms.getTerm(doc, spare);
-            if (joinValue == null) {
+            terms.get(doc, spare);
+            BytesRef joinValue = spare;
+            if (joinValue.bytes == BinaryDocValues.MISSING) {
               return;
             }
 
@@ -586,50 +567,33 @@ public class TestJoinUtil extends LuceneTestCase {
         } else {
           toSearcher.search(new MatchAllDocsQuery(), new Collector() {
 
-            private DocTermOrds docTermOrds;
-            private TermsEnum docTermsEnum;
-            private DocTermOrds.TermOrdsIterator reuse;
+            private SortedSetDocValues docTermOrds;
+            private final BytesRef scratch = new BytesRef();
             private int docBase;
 
             @Override
             public void collect(int doc) throws IOException {
-              if (docTermOrds.isEmpty()) {
-                return;
+              docTermOrds.setDocument(doc);
+              long ord;
+              while ((ord = docTermOrds.nextOrd()) != SortedSetDocValues.NO_MORE_ORDS) {
+                docTermOrds.lookupOrd(ord, scratch);
+                JoinScore joinScore = joinValueToJoinScores.get(scratch);
+                if (joinScore == null) {
+                  continue;
+                }
+                Integer basedDoc = docBase + doc;
+                // First encountered join value determines the score.
+                // Something to keep in mind for many-to-many relations.
+                if (!docToJoinScore.containsKey(basedDoc)) {
+                  docToJoinScore.put(basedDoc, joinScore);
+                }
               }
-
-              reuse = docTermOrds.lookup(doc, reuse);
-              int[] buffer = new int[5];
-
-              int chunk;
-              do {
-                chunk = reuse.read(buffer);
-                if (chunk == 0) {
-                  return;
-                }
-
-                for (int idx = 0; idx < chunk; idx++) {
-                  int key = buffer[idx];
-                  docTermsEnum.seekExact((long) key);
-                  JoinScore joinScore = joinValueToJoinScores.get(docTermsEnum.term());
-                  if (joinScore == null) {
-                    continue;
-                  }
-                  Integer basedDoc = docBase + doc;
-                  // First encountered join value determines the score.
-                  // Something to keep in mind for many-to-many relations.
-                  if (!docToJoinScore.containsKey(basedDoc)) {
-                    docToJoinScore.put(basedDoc, joinScore);
-                  }
-                }
-              } while (chunk >= buffer.length);
             }
 
             @Override
             public void setNextReader(AtomicReaderContext context) throws IOException {
               docBase = context.docBase;
               docTermOrds = FieldCache.DEFAULT.getDocTermOrds(context.reader(), toField);
-              docTermsEnum = docTermOrds.getOrdTermsEnum(context.reader());
-              reuse = null;
             }
 
             @Override
@@ -641,13 +605,14 @@ public class TestJoinUtil extends LuceneTestCase {
       } else {
         toSearcher.search(new MatchAllDocsQuery(), new Collector() {
 
-          private FieldCache.DocTerms terms;
+          private BinaryDocValues terms;
           private int docBase;
           private final BytesRef spare = new BytesRef();
 
           @Override
           public void collect(int doc) {
-            JoinScore joinScore = joinValueToJoinScores.get(terms.getTerm(doc, spare));
+            terms.get(doc, spare);
+            JoinScore joinScore = joinValueToJoinScores.get(spare);
             if (joinScore == null) {
               return;
             }

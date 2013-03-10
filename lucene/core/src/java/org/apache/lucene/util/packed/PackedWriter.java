@@ -42,8 +42,8 @@ final class PackedWriter extends PackedInts.Writer {
     this.format = format;
     encoder = BulkOperation.of(format, bitsPerValue);
     iterations = encoder.computeIterations(valueCount, mem);
-    nextBlocks = new byte[8 * iterations * encoder.blockCount()];
-    nextValues = new long[iterations * encoder.valueCount()];
+    nextBlocks = new byte[iterations * encoder.byteBlockCount()];
+    nextValues = new long[iterations * encoder.byteValueCount()];
     off = 0;
     written = 0;
     finished = false;
@@ -56,7 +56,7 @@ final class PackedWriter extends PackedInts.Writer {
 
   @Override
   public void add(long v) throws IOException {
-    assert v >= 0 && v <= PackedInts.maxValue(bitsPerValue);
+    assert bitsPerValue == 64 || (v >= 0 && v <= PackedInts.maxValue(bitsPerValue)) : bitsPerValue;
     assert !finished;
     if (valueCount != -1 && written >= valueCount) {
       throw new EOFException("Writing past end of stream");
