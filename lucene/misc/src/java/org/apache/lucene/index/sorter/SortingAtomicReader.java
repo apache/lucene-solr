@@ -447,8 +447,8 @@ public class SortingAtomicReader extends FilterAtomicReader {
       int i = 0;
       while ((doc = in.nextDoc()) != DocIdSetIterator.NO_MORE_DOCS) {
         if (i == docs.length) {
-          docs = ArrayUtil.grow(docs, i + 1);
-          offsets = ArrayUtil.grow(offsets, i + 1);
+          docs = ArrayUtil.grow(docs, docs.length + 1);
+          offsets = ArrayUtil.grow(offsets, offsets.length + 1);
         }
         docs[i] = old2new[doc];
         offsets[i] = out.getFilePointer();
