@@ -46,6 +46,7 @@ import org.apache.lucene.store.Directory;
 import org.apache.lucene.util.Bits;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.LuceneTestCase;
+import org.apache.lucene.util.LuceneTestCase.SuppressCodecs;
 import org.apache.lucene.util._TestUtil;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
@@ -68,6 +69,7 @@ import org.junit.Test;
  * limitations under the License.
  */
 
+@SuppressCodecs("Lucene3x")
 public abstract class SorterTestBase extends LuceneTestCase {
 
   static final class NormsSimilarity extends Similarity {
