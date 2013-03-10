@@ -448,7 +448,11 @@ public class SortingAtomicReader extends FilterAtomicReader {
       while ((doc = in.nextDoc()) != DocIdSetIterator.NO_MORE_DOCS) {
         if (i == docs.length) {
           docs = ArrayUtil.grow(docs, docs.length + 1);
-          offsets = ArrayUtil.grow(offsets, offsets.length + 1);
+          // don't grow() offsets since growing pattern for long and int is not the same.
+          // since we want docs and offsets at the same length, just grow it manually.
+          long[] tmp = new long[docs.length];
+          System.arraycopy(offsets, 0, tmp, 0, offsets.length);
+          offsets = tmp;
         }
         docs[i] = old2new[doc];
         offsets[i] = out.getFilePointer();
