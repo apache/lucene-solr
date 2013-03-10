@@ -17,6 +17,7 @@ package org.apache.solr.core;
  * limitations under the License.
  */
 
+import java.io.File;
 import java.io.IOException;
 
 import org.apache.lucene.store.Directory;
@@ -53,6 +54,13 @@ public class MockDirectoryFactory extends EphemeralDirectoryFactory {
     }
     
     return dir;
+  }
+  
+  @Override
+  public boolean isAbsolute(String path) {
+    // TODO: kind of a hack - we don't know what the delegate is, so
+    // we treat it as file based since this works on most ephem impls
+    return new File(path).isAbsolute();
   }
 
 }

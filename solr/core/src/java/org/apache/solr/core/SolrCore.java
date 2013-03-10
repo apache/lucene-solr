@@ -459,7 +459,7 @@ public final class SolrCore implements SolrInfoMBean {
       boolean indexExists = getDirectoryFactory().exists(indexDir);
       boolean firstTime;
       synchronized (SolrCore.class) {
-        firstTime = dirs.add(new File(indexDir).getCanonicalPath());
+        firstTime = dirs.add(getDirectoryFactory().normalize(indexDir));
       }
       boolean removeLocks = solrConfig.unlockOnStartup;
 
@@ -656,12 +656,24 @@ public final class SolrCore implements SolrInfoMBean {
     coreDescriptor = cd;
     this.setName( name );
     resourceLoader = config.getResourceLoader();
-    if (dataDir == null){
-      if(cd.usingDefaultDataDir()) {
-        dataDir = config.getDataDir();
-      }
-      if(dataDir == null) {
+    this.solrConfig = config;
+    
+    if (updateHandler == null) {
+      initDirectoryFactory();
+    }
+    
+    if (dataDir == null) {
+      if (cd.usingDefaultDataDir()) dataDir = config.getDataDir();
+      if (dataDir == null) {
         dataDir = cd.getDataDir();
+        try {
+          if (!directoryFactory.isAbsolute(dataDir)) {
+            dataDir = directoryFactory.normalize(SolrResourceLoader
+                .normalizeDir(cd.getInstanceDir()) + dataDir);
+          }
+        } catch (IOException e) {
+          throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, null, e);
+        }
       }
     }
 
@@ -703,7 +715,6 @@ public final class SolrCore implements SolrInfoMBean {
 
     this.schema = schema;
     this.dataDir = dataDir;
-    this.solrConfig = config;
     this.startTime = System.currentTimeMillis();
     this.maxWarmingSearchers = config.maxWarmingSearchers;
 
