@@ -31,6 +31,11 @@ New Features
 
 * LUCENE-4815: DrillSideways now allows more than one FacetRequest per
   dimension (Mike McCandless)
+  
+* LUCENE-3918: IndexSorter has been ported to 4.3 API and now supports
+  sorting documents by a numeric DocValues field, or reverse the order of
+  the documents in the index. Additionally, apps can implement their own
+  sort criteria. (Anat Hashavit, Shai Erera)
 
 * LUCENE-4817: Added KeywordRepeatFilter that allows to emit a token twice
   once as a keyword and once as an ordinary token allow stemmers to emit
