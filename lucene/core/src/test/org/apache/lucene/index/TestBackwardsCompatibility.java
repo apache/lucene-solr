@@ -40,6 +40,7 @@ import org.apache.lucene.document.IntField;
 import org.apache.lucene.document.NumericDocValuesField;
 import org.apache.lucene.document.LongField;
 import org.apache.lucene.document.SortedDocValuesField;
+import org.apache.lucene.document.SortedSetDocValuesField;
 import org.apache.lucene.document.StringField;
 import org.apache.lucene.document.TextField;
 import org.apache.lucene.index.FieldInfo.IndexOptions;
@@ -73,7 +74,7 @@ import org.junit.Ignore;
 // we won't even be running the actual code, only the impostor
 // @SuppressCodecs("Lucene4x")
 // Sep codec cannot yet handle the offsets in our 4.x index!
-@SuppressCodecs({"MockFixedIntBlock", "MockVariableIntBlock", "MockSep", "MockRandom"})
+@SuppressCodecs({"MockFixedIntBlock", "MockVariableIntBlock", "MockSep", "MockRandom", "Lucene40", "Lucene41"})
 public class TestBackwardsCompatibility extends LuceneTestCase {
 
   // Uncomment these cases & run them on an older Lucene version,
@@ -84,6 +85,10 @@ public class TestBackwardsCompatibility extends LuceneTestCase {
   // which will otherwise disallow writing outside of the build/
   // directory - to do this, comment out the "java.security.manager"
   // <sysproperty> under the "test-macro" <macrodef>.
+  //
+  // Be sure to create the indexes with the actual format:
+  //  ant test -Dtestcase=TestBackwardsCompatibility -Dversion=x.y.z
+  //      -Dtests.codec=LuceneXY -Dtests.postingsformat=LuceneXY -Dtests.docvaluesformat=LuceneXY
   //
   // Zip up the generated indexes:
   //
@@ -154,6 +159,8 @@ public class TestBackwardsCompatibility extends LuceneTestCase {
                                     "40.nocfs",
                                     "41.cfs",
                                     "41.nocfs",
+                                    "42.cfs",
+                                    "42.nocfs"
   };
   
   final String[] unsupportedNames = {"19.cfs",
@@ -361,6 +368,9 @@ public class TestBackwardsCompatibility extends LuceneTestCase {
     
     // true if this is a 4.0+ index
     final boolean is40Index = MultiFields.getMergedFieldInfos(reader).fieldInfo("content5") != null;
+    // true if this is a 4.2+ index
+    final boolean is42Index = MultiFields.getMergedFieldInfos(reader).fieldInfo("dvSortedSet") != null;
+
     assert is40Index; // NOTE: currently we can only do this on trunk!
 
     final Bits liveDocs = MultiFields.getLiveDocs(reader);
@@ -414,6 +424,10 @@ public class TestBackwardsCompatibility extends LuceneTestCase {
       NumericDocValues dvLong = MultiDocValues.getNumericValues(reader, "dvLong");
       NumericDocValues dvPacked = MultiDocValues.getNumericValues(reader, "dvPacked");
       NumericDocValues dvShort = MultiDocValues.getNumericValues(reader, "dvShort");
+      SortedSetDocValues dvSortedSet = null;
+      if (is42Index) {
+        dvSortedSet = MultiDocValues.getSortedSetValues(reader, "dvSortedSet");
+      }
       
       for (int i=0;i<35;i++) {
         int id = Integer.parseInt(reader.document(i).get("id"));
@@ -444,6 +458,13 @@ public class TestBackwardsCompatibility extends LuceneTestCase {
         assertEquals(id, dvLong.get(i));
         assertEquals(id, dvPacked.get(i));
         assertEquals(id, dvShort.get(i));
+        if (is42Index) {
+          dvSortedSet.setDocument(i);
+          long ord = dvSortedSet.nextOrd();
+          assertEquals(SortedSetDocValues.NO_MORE_ORDS, dvSortedSet.nextOrd());
+          dvSortedSet.lookupOrd(ord, scratch);
+          assertEquals(expectedRef, scratch);
+        }
       }
     }
     
@@ -707,6 +728,7 @@ public class TestBackwardsCompatibility extends LuceneTestCase {
     doc.add(new NumericDocValuesField("dvLong", id));
     doc.add(new NumericDocValuesField("dvPacked", id));
     doc.add(new NumericDocValuesField("dvShort", (short)id));
+    doc.add(new SortedSetDocValuesField("dvSortedSet", ref));
     // a field with both offsets and term vectors for a cross-check
     FieldType customType3 = new FieldType(TextField.TYPE_STORED);
     customType3.setStoreTermVectors(true);
