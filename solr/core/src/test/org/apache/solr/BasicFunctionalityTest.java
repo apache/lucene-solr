@@ -781,7 +781,35 @@ public class BasicFunctionalityTest extends SolrTestCaseJ4 {
     assertU(adoc("id", "5",  "bday", "NOW+30MINUTES"));
     assertU(adoc("id", "6",  "bday", "NOW+2YEARS"));
     assertU(commit());
+    
+    // a ridiculoulsy long date math expression that's still equivilent to july4
+    final StringBuilder july4Long = new StringBuilder(july4);
+    final int iters = atLeast(10);
+    for (int i = 0; i < iters; i++) {
+      final String val = String.valueOf(atLeast(1));
+      july4Long.append("+" + val + "SECONDS-" + val + "SECONDS");
+    }
 
+    // term queries using date math (all of these should match doc#1)
+    for (String q : 
+           new String[] {
+             "bday:1976-07-04T12\\:08\\:56.45Z/SECOND+235MILLIS",
+             "bday:1976-07-04T12\\:08\\:56.123Z/MINUTE+56SECONDS+235MILLIS",
+             "bday:\"1976-07-04T12:08:56.45Z/SECOND+235MILLIS\"",
+             "bday:\"1976-07-04T12:08:56.123Z/MINUTE+56SECONDS+235MILLIS\"",
+             "{!term f=bday}1976-07-04T12:08:56.45Z/SECOND+235MILLIS",
+             "{!term f=bday}1976-07-04T12:08:56.123Z/MINUTE+56SECONDS+235MILLIS",             
+             "{!term f=bday}"+july4,
+             "{!term f=bday}"+july4Long,
+             "bday:\"" + july4Long + "\""
+           }) {
+      assertQ("check math on field query: " + q,
+              req("q", q),
+              "*[count(//doc)=1]",
+              "//int[@name='id'][.='1']");
+    }
+
+    // range queries using date math
     assertQ("check math on absolute date#1",
             req("q", "bday:[* TO "+july4+"/SECOND]"),
             "*[count(//doc)=0]");
