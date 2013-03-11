@@ -736,7 +736,6 @@ public class AnalyzingSuggester extends Lookup {
     // from each analyzed token, with byte 0 used as
     // separator between tokens:
     Automaton automaton = ts2a.toAutomaton(ts);
-    ts.end();
     ts.close();
 
     replaceSep(automaton);
@@ -758,7 +757,6 @@ public class AnalyzingSuggester extends Lookup {
     // Turn tokenstream into automaton:
     TokenStream ts = queryAnalyzer.tokenStream("", new StringReader(key.toString()));
     Automaton automaton = (getTokenStreamToAutomaton()).toAutomaton(ts);
-    ts.end();
     ts.close();
 
     // TODO: we could use the end offset to "guess"

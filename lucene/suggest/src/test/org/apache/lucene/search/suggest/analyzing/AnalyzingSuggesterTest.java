@@ -567,6 +567,7 @@ public class AnalyzingSuggesterTest extends LuceneTestCase {
       while(true) {
         key = "";
         analyzedKey = "";
+        boolean lastRemoved = false;
         for(int token=0;token < numTokens;token++) {
           String s;
           while (true) {
@@ -582,10 +583,12 @@ public class AnalyzingSuggesterTest extends LuceneTestCase {
               }
               key += s;
               if (s.length() == 1 && isStopChar(s.charAt(0), numStopChars)) {
+                lastRemoved = true;
                 if (preserveSep && preserveHoles) {
                   analyzedKey += SEP;
                 }
               } else {
+                lastRemoved = false;
                 analyzedKey += s;
               }
               break;
@@ -594,6 +597,10 @@ public class AnalyzingSuggesterTest extends LuceneTestCase {
         }
 
         analyzedKey = analyzedKey.replaceAll("(^|" + SEP + ")" + SEP + "$", "");
+
+        if (preserveSep && lastRemoved) {
+          analyzedKey += SEP;
+        }
 
         // Don't add same surface form more than once:
         if (!seen.contains(key)) {
@@ -642,6 +649,7 @@ public class AnalyzingSuggesterTest extends LuceneTestCase {
       // "Analyze" the key:
       String[] tokens = prefix.split(" ");
       StringBuilder builder = new StringBuilder();
+      boolean lastRemoved = false;
       for(int i=0;i<tokens.length;i++) {
         String token = tokens[i];
         if (preserveSep && builder.length() > 0 && !builder.toString().endsWith(""+SEP)) {
@@ -652,8 +660,10 @@ public class AnalyzingSuggesterTest extends LuceneTestCase {
           if (preserveSep && preserveHoles) {
             builder.append(SEP);
           }
+          lastRemoved = true;
         } else {
           builder.append(token);
+          lastRemoved = false;
         }
       }
 
@@ -674,6 +684,10 @@ public class AnalyzingSuggesterTest extends LuceneTestCase {
         // Currently suggester can't suggest from the empty
         // string!  You get no results, not all results...
         continue;
+      }
+
+      if (preserveSep && (prefix.endsWith(" ") || lastRemoved)) {
+        analyzedKey += SEP;
       }
 
       if (VERBOSE) {
@@ -1059,5 +1073,16 @@ public class AnalyzingSuggesterTest extends LuceneTestCase {
           new TermFreq("a b", 5),
         }));
     assertEquals("[a a/7, a c/6, a b/5]", suggester.lookup("a", false, 3).toString());
+  }
+
+  public void testEndingSpace() throws Exception {
+    Analyzer a = new MockAnalyzer(random());
+    AnalyzingSuggester suggester = new AnalyzingSuggester(a, a, AnalyzingSuggester.PRESERVE_SEP, 256, -1);
+    suggester.build(new TermFreqArrayIterator(new TermFreq[] {
+          new TermFreq("i love lucy", 7),
+          new TermFreq("isla de muerta", 8),
+        }));
+    assertEquals("[isla de muerta/8, i love lucy/7]", suggester.lookup("i", false, 3).toString());
+    assertEquals("[i love lucy/7]", suggester.lookup("i ", false, 3).toString());
   }
 }

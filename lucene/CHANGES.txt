@@ -50,6 +50,11 @@ New Features
 * LUCENE-4822: PatternKeywordTokenFilter can mark tokens as keywords based
   on regular expressions. (Simon Willnauer, Uwe Schindler)
 
+* LUCENE-4821: AnalyzingSuggester now uses the ending offset to
+  determine whether the last token was finished or not, so that a
+  query "i " will no longer suggest "Isla de Muerta" for example.
+  (Mike McCandless)
+
 ======================= Lucene 4.2.0 =======================
 
 Changes in backwards compatibility policy
