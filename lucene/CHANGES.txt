@@ -41,11 +41,6 @@ New Features
   once as a keyword and once as an ordinary token allow stemmers to emit
   a stemmed version along with the un-stemmed version. (Simon Willnauer)
 
-Optimizations
-
-* LUCENE-4819: Added Sorted[Set]DocValues.termsEnum(), and optimized the
-  default codec for improved enumeration performance.  (Robert Muir)
-
 ======================= Lucene 4.2.0 =======================
 
 Changes in backwards compatibility policy

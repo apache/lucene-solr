@@ -23,6 +23,7 @@ import java.util.concurrent.*;
 
 import org.apache.lucene.index.AtomicReaderContext;
 import org.apache.lucene.index.SortedDocValues;
+import org.apache.lucene.index.SortedDocValuesTermsEnum;
 import org.apache.lucene.index.TermsEnum;
 import org.apache.lucene.search.DocIdSet;
 import org.apache.lucene.search.DocIdSetIterator;
@@ -154,7 +155,7 @@ class PerSegmentSingleValuedFaceting {
           seg.pos = seg.startTermIndex;
         }
         if (seg.pos < seg.endTermIndex) {
-          seg.tenum = seg.si.termsEnum();
+          seg.tenum = new SortedDocValuesTermsEnum(seg.si);
           seg.tenum.seekExact(seg.pos);
           seg.tempBR = seg.tenum.term();
           queue.add(seg);

@@ -23,6 +23,7 @@ import java.util.Comparator;
 import org.apache.lucene.index.AtomicReaderContext;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.SortedSetDocValues;
+import org.apache.lucene.index.SortedSetDocValuesTermsEnum;
 import org.apache.lucene.index.Terms;
 import org.apache.lucene.index.TermsEnum;
 import org.apache.lucene.util.Bits;
@@ -97,7 +98,7 @@ public final class DocTermOrdsRewriteMethod extends MultiTermQuery.RewriteMethod
         
         @Override
         public TermsEnum iterator(TermsEnum reuse) {
-          return docTermOrds.termsEnum();
+          return new SortedSetDocValuesTermsEnum(docTermOrds);
         }
 
         @Override
