@@ -20,7 +20,7 @@ package org.apache.lucene.analysis.nl;
 import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.analysis.core.LowerCaseFilter;
 import org.apache.lucene.analysis.core.StopFilter;
-import org.apache.lucene.analysis.miscellaneous.KeywordMarkerFilter;
+import org.apache.lucene.analysis.miscellaneous.SetKeywordMarkerFilter;
 import org.apache.lucene.analysis.TokenStream;
 import org.apache.lucene.analysis.Tokenizer;
 import org.apache.lucene.analysis.miscellaneous.StemmerOverrideFilter;
@@ -129,7 +129,7 @@ public final class DutchAnalyzer extends Analyzer {
    *
    * @return A {@link TokenStream} built from a {@link StandardTokenizer}
    *   filtered with {@link StandardFilter}, {@link LowerCaseFilter}, 
-   *   {@link StopFilter}, {@link KeywordMarkerFilter} if a stem exclusion set is provided,
+   *   {@link StopFilter}, {@link SetKeywordMarkerFilter} if a stem exclusion set is provided,
    *   {@link StemmerOverrideFilter}, and {@link SnowballFilter}
    */
   @Override
@@ -140,7 +140,7 @@ public final class DutchAnalyzer extends Analyzer {
     result = new LowerCaseFilter(matchVersion, result);
     result = new StopFilter(matchVersion, result, stoptable);
     if (!excltable.isEmpty())
-      result = new KeywordMarkerFilter(result, excltable);
+      result = new SetKeywordMarkerFilter(result, excltable);
     if (!stemdict.isEmpty())
       result = new StemmerOverrideFilter(matchVersion, result, stemdict);
     result = new SnowballFilter(result, new org.tartarus.snowball.ext.DutchStemmer());

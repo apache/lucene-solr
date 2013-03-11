@@ -22,7 +22,7 @@ import java.io.Reader;
 
 import org.apache.lucene.analysis.core.LowerCaseFilter;
 import org.apache.lucene.analysis.core.StopFilter;
-import org.apache.lucene.analysis.miscellaneous.KeywordMarkerFilter;
+import org.apache.lucene.analysis.miscellaneous.SetKeywordMarkerFilter;
 import org.apache.lucene.analysis.TokenStream;
 import org.apache.lucene.analysis.Tokenizer;
 import org.apache.lucene.analysis.standard.StandardFilter;
@@ -87,7 +87,7 @@ public final class IndonesianAnalyzer extends StopwordAnalyzerBase {
 
   /**
    * Builds an analyzer with the given stop word. If a none-empty stem exclusion set is
-   * provided this analyzer will add a {@link KeywordMarkerFilter} before
+   * provided this analyzer will add a {@link SetKeywordMarkerFilter} before
    * {@link IndonesianStemFilter}.
    * 
    * @param matchVersion
@@ -111,7 +111,7 @@ public final class IndonesianAnalyzer extends StopwordAnalyzerBase {
    * @return {@link org.apache.lucene.analysis.Analyzer.TokenStreamComponents}
    *         built from an {@link StandardTokenizer} filtered with
    *         {@link StandardFilter}, {@link LowerCaseFilter},
-   *         {@link StopFilter}, {@link KeywordMarkerFilter}
+   *         {@link StopFilter}, {@link SetKeywordMarkerFilter}
    *         if a stem exclusion set is provided and {@link IndonesianStemFilter}.
    */
   @Override
@@ -122,7 +122,7 @@ public final class IndonesianAnalyzer extends StopwordAnalyzerBase {
     result = new LowerCaseFilter(matchVersion, result);
     result = new StopFilter(matchVersion, result, stopwords);
     if (!stemExclusionSet.isEmpty()) {
-      result = new KeywordMarkerFilter(result, stemExclusionSet);
+      result = new SetKeywordMarkerFilter(result, stemExclusionSet);
     }
     return new TokenStreamComponents(source, new IndonesianStemFilter(result));
   }

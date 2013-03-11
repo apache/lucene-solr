@@ -27,6 +27,12 @@ Changes in backwards compatibility policy
   multiple ngrams derived from the same input token. (Walter Underwood
   via Mike McCandless)
 
+
+* LUCENE-4822: KeywordTokenFilter is now an abstract class. Subclasses
+  need to implement #isKeyword() in order to mark terms as keywords. 
+  The existing functionality has been factored out into a new 
+  SetKeywordTokenFilter class. (Simon Willnauer, Uwe Schindler)
+
 New Features
 
 * LUCENE-4815: DrillSideways now allows more than one FacetRequest per
@@ -40,6 +46,9 @@ New Features
 * LUCENE-4817: Added KeywordRepeatFilter that allows to emit a token twice
   once as a keyword and once as an ordinary token allow stemmers to emit
   a stemmed version along with the un-stemmed version. (Simon Willnauer)
+
+* LUCENE-4822: PatternKeywordTokenFilter can mark tokens as keywords based
+  on regular expressions. (Simon Willnauer, Uwe Schindler)
 
 ======================= Lucene 4.2.0 =======================
 

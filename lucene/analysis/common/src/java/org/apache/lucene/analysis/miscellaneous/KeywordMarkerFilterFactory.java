@@ -18,6 +18,7 @@ package org.apache.lucene.analysis.miscellaneous;
  */
 
 import java.io.IOException;
+import java.util.regex.Pattern;
 
 import org.apache.lucene.analysis.miscellaneous.KeywordMarkerFilter;
 import org.apache.lucene.analysis.util.*;
@@ -29,23 +30,30 @@ import org.apache.lucene.analysis.TokenStream;
  * &lt;fieldType name="text_keyword" class="solr.TextField" positionIncrementGap="100"&gt;
  *   &lt;analyzer&gt;
  *     &lt;tokenizer class="solr.WhitespaceTokenizerFactory"/&gt;
- *     &lt;filter class="solr.KeywordMarkerFilterFactory" protected="protectedkeyword.txt" ignoreCase="false"/&gt;
+ *     &lt;filter class="solr.KeywordMarkerFilterFactory" protected="protectedkeyword.txt" pattern="^.+er$" ignoreCase="false"/&gt;
  *   &lt;/analyzer&gt;
  * &lt;/fieldType&gt;</pre> 
  *
  */
 public class KeywordMarkerFilterFactory extends TokenFilterFactory implements ResourceLoaderAware {
   public static final String PROTECTED_TOKENS = "protected";
+  public static final String PATTERN = "pattern";
   private CharArraySet protectedWords;
   private boolean ignoreCase;
+  private Pattern pattern;
   
   @Override
   public void inform(ResourceLoader loader) throws IOException {
     String wordFiles = args.get(PROTECTED_TOKENS);
+    String stringPattern = args.get(PATTERN);
     ignoreCase = getBoolean("ignoreCase", false);
     if (wordFiles != null) {  
       protectedWords = getWordSet(loader, wordFiles, ignoreCase);
     }
+    if (stringPattern != null) {
+      pattern = ignoreCase ? Pattern.compile(stringPattern, Pattern.CASE_INSENSITIVE | Pattern.UNICODE_CASE) : Pattern.compile(stringPattern);
+    }
+    
   }
   
   public boolean isIgnoreCase() {
@@ -54,6 +62,12 @@ public class KeywordMarkerFilterFactory extends TokenFilterFactory implements Re
 
   @Override
   public TokenStream create(TokenStream input) {
-    return protectedWords == null ? input : new KeywordMarkerFilter(input, protectedWords);
+    if (pattern != null) {
+      input = new PatternKeywordMarkerFilter(input, pattern);
+    }
+    if (protectedWords != null) {
+      input = new SetKeywordMarkerFilter(input, protectedWords);
+    }
+    return input;
   }
 }
