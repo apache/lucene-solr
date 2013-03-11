@@ -17,8 +17,6 @@
 
 package org.apache.lucene.util;
 
-import java.lang.annotation.Annotation;
-
 public class TestVersion extends LuceneTestCase {
 
   public void test() {
@@ -43,7 +41,7 @@ public class TestVersion extends LuceneTestCase {
         assertSame("Last constant must be LUCENE_CURRENT", Version.LUCENE_CURRENT, values[i]);
       }
       // TODO: Use isAnnotationPresent once bug in Java 8 is fixed (LUCENE-4808)
-      final Annotation ann = Version.class.getField(values[i].name()).getAnnotation(Deprecated.class);
+      final Deprecated ann = Version.class.getField(values[i].name()).getAnnotation(Deprecated.class);
       if (i + 2 != values.length) {
         assertNotNull(values[i].name() + " should be deprecated", ann);
       } else {
