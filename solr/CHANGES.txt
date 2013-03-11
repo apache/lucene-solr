@@ -70,6 +70,10 @@ Bug Fixes
   
 * SOLR-4555: When forceNew is used with CachingDirectoryFactory#get, the old
   CachValue should have it's path set to null. (Mark Miller)
+  
+* SOLR-4361: DataImportHandler would throw UnsupportedOperationException if
+  handler-level parameters were specified containing periods in the name
+  (James Dyer)
 
 Other Changes
 ----------------------
