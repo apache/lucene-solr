@@ -64,8 +64,10 @@ public class StandardDirectoryFactory extends CachingDirectoryFactory {
     if (val == null) {
       throw new IllegalArgumentException("Unknown directory " + dir);
     }
-    File dirFile = new File(val.path);
-    FileUtils.deleteDirectory(dirFile);
+    if (val.path != null) {
+      File dirFile = new File(val.path);
+      FileUtils.deleteDirectory(dirFile);
+    }
   }
 
   @Override
