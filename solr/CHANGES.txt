@@ -76,6 +76,8 @@ Other Changes
 
 * SOLR-4537: Clean up schema information REST API. (Steve Rowe)
 
+* SOLR-4317: SolrTestCaseJ4: Can't avoid "collection1" convention (Tricia Jenkins, via Erick Erickson)
+
 ==================  4.2.0 ==================
 
 Versions of Major Components

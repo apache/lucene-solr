@@ -87,6 +87,30 @@ public class TestHarness extends BaseTestHarness {
     return createConfig(solrHome, CoreContainer.DEFAULT_DEFAULT_CORE_NAME, confFile);
   }
 
+  /**
+   * @param coreName to initialize
+   * @param dataDirectory path for index data, will not be cleaned up
+   * @param solrConfig solronfig instance
+   * @param schemaFile schema filename
+   */
+     public TestHarness( String coreName,
+                         String dataDirectory,
+                         SolrConfig solrConfig,
+                         String schemaFile) {
+    this( coreName, dataDirectory, solrConfig, new IndexSchema(solrConfig, schemaFile, null));
+  } 
+  /**
+   * @param coreName to initialize
+   * @param dataDirectory path for index data, will not be cleaned up
+   * @param solrConfig solrconfig instance
+   * @param indexSchema schema instance
+   */
+    public TestHarness( String coreName,
+                        String dataDirectory,
+                        SolrConfig solrConfig,
+                        IndexSchema indexSchema) {
+        this(coreName, new Initializer(coreName, dataDirectory, solrConfig, indexSchema));
+    }
    /**
     * @param dataDirectory path for index data, will not be cleaned up
     * @param solrConfig solronfig instance
