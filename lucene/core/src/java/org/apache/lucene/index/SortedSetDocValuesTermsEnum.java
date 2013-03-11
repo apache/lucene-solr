@@ -26,7 +26,7 @@ import org.apache.lucene.util.BytesRef;
 /** Implements a {@link TermsEnum} wrapping a provided
  * {@link SortedSetDocValues}. */
 
-public class SortedSetDocValuesTermsEnum extends TermsEnum {
+class SortedSetDocValuesTermsEnum extends TermsEnum {
   private final SortedSetDocValues values;
   private long currentOrd = -1;
   private final BytesRef term = new BytesRef();
