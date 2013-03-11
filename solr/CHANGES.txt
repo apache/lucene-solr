@@ -75,6 +75,10 @@ Bug Fixes
   handler-level parameters were specified containing periods in the name
   (James Dyer)
 
+* SOLR-4538: Date Math expressions were being truncated to 32 characters
+  when used in field:value queries in the lucene QParser.  (hossman, yonik)
+
+
 Other Changes
 ----------------------
 

@@ -75,7 +75,20 @@ public class QueryEqualityTest extends SolrTestCaseJ4 {
   private static final Set<String> valParsersTested = new HashSet<String>();
 
 
+  public void testDateMathParsingEquality() throws Exception {
+    // regardless of parser, these should all be equivilent queries
+    assertQueryEquals
+      (null
+       ,"{!lucene}f_tdt:2013-09-11T00\\:00\\:00Z"
+       ,"{!lucene}f_tdt:2013-03-08T00\\:46\\:15Z/DAY+6MONTHS+3DAYS"
+       ,"{!lucene}f_tdt:\"2013-03-08T00:46:15Z/DAY+6MONTHS+3DAYS\""
+       ,"{!field f=f_tdt}2013-03-08T00:46:15Z/DAY+6MONTHS+3DAYS"
+       ,"{!field f=f_tdt}2013-09-11T00:00:00Z"
+       ,"{!term f=f_tdt}2013-03-08T00:46:15Z/DAY+6MONTHS+3DAYS"
+       ,"{!term f=f_tdt}2013-09-11T00:00:00Z"
+       );
 
+  }
   public void testQueryLucene() throws Exception {
     assertQueryEquals("lucene", "{!lucene}apache solr", 
                       "apache  solr", "apache solr ");
@@ -720,8 +733,8 @@ public class QueryEqualityTest extends SolrTestCaseJ4 {
   }
 
   /**
-   * NOTE: defType is not only used to pick the parser, but also to record 
-   * the parser being tested for coverage sanity checking
+   * NOTE: defType is not only used to pick the parser, but, if non-null it is 
+   * also to record the parser being tested for coverage sanity checking
    *
    * @see QueryUtils#check
    * @see QueryUtils#checkEqual
@@ -730,7 +743,8 @@ public class QueryEqualityTest extends SolrTestCaseJ4 {
   protected void assertQueryEquals(final String defType,
                                    final SolrQueryRequest req,
                                    final String... inputs) throws Exception {
-    qParsersTested.add(defType);
+
+    if (null != defType) qParsersTested.add(defType);
 
     final Query[] queries = new Query[inputs.length];
 

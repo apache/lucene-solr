@@ -17,6 +17,8 @@
 package org.apache.solr.analysis;
 
 import org.apache.lucene.analysis.NumericTokenStream;
+import org.apache.lucene.analysis.tokenattributes.CharTermAttribute;
+import org.apache.lucene.analysis.tokenattributes.CharTermAttributeImpl;
 import org.apache.lucene.analysis.tokenattributes.OffsetAttribute;
 import org.apache.lucene.analysis.Tokenizer;
 import org.apache.lucene.analysis.util.TokenizerFactory;
@@ -59,10 +61,11 @@ final class TrieTokenizer extends Tokenizer {
   protected final TrieTypes type;
   protected final NumericTokenStream ts;
   
+  // NumericTokenStream does not support CharTermAttribute so keep it local
+  private final CharTermAttribute termAtt = new CharTermAttributeImpl();
   protected final OffsetAttribute ofsAtt = addAttribute(OffsetAttribute.class);
   protected int startOfs, endOfs;
   protected boolean hasValue;
-  protected final char[] buf = new char[32];
 
   static NumericTokenStream getNumericTokenStream(int precisionStep) {
     return new NumericTokenStream(precisionStep);
@@ -73,22 +76,23 @@ final class TrieTokenizer extends Tokenizer {
     super(ts, input);
     this.type = type;
     this.ts = ts;
+    // dates tend to be longer, especially when math is involved
+    termAtt.resizeBuffer( type == TrieTypes.DATE ? 128 : 32 );
   }
 
   @Override
   public void reset() {
    try {
       int upto = 0;
-      while (upto < buf.length) {
-        final int length = input.read(buf, upto, buf.length - upto);
+      char[] buf = termAtt.buffer();
+      while (true) {
+        final int length = input.read(buf, upto, buf.length-upto);
         if (length == -1) break;
         upto += length;
+        if (upto == buf.length)
+          buf = termAtt.resizeBuffer(1+buf.length);
       }
-      // skip remaining data if buffer was too short:
-      if (upto == buf.length) {
-        input.skip(Long.MAX_VALUE);
-      }
-
+      termAtt.setLength(upto);
       this.startOfs = correctOffset(0);
       this.endOfs = correctOffset(upto);
       
