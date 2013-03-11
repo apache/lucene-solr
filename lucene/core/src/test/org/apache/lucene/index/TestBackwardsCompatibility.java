@@ -157,6 +157,8 @@ public class TestBackwardsCompatibility extends LuceneTestCase {
   
   final static String[] oldNames = {"40.cfs",
                                     "40.nocfs",
+                                    "41.cfs",
+                                    "41.nocfs",
                                     "42.cfs",
                                     "42.nocfs"
   };
