@@ -23,7 +23,7 @@ import java.io.Reader;
 import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.analysis.core.LowerCaseFilter;
 import org.apache.lucene.analysis.core.StopFilter;
-import org.apache.lucene.analysis.miscellaneous.KeywordMarkerFilter;
+import org.apache.lucene.analysis.miscellaneous.SetKeywordMarkerFilter;
 import org.apache.lucene.analysis.standard.StandardTokenizer;
 import org.apache.lucene.analysis.util.CharArraySet;
 import org.apache.lucene.analysis.util.StopwordAnalyzerBase;
@@ -107,7 +107,7 @@ public final class ArabicAnalyzer extends StopwordAnalyzerBase {
 
   /**
    * Builds an analyzer with the given stop word. If a none-empty stem exclusion set is
-   * provided this analyzer will add a {@link KeywordMarkerFilter} before
+   * provided this analyzer will add a {@link SetKeywordMarkerFilter} before
    * {@link ArabicStemFilter}.
    * 
    * @param matchVersion
@@ -131,7 +131,7 @@ public final class ArabicAnalyzer extends StopwordAnalyzerBase {
    * @return {@link org.apache.lucene.analysis.Analyzer.TokenStreamComponents}
    *         built from an {@link StandardTokenizer} filtered with
    *         {@link LowerCaseFilter}, {@link StopFilter},
-   *         {@link ArabicNormalizationFilter}, {@link KeywordMarkerFilter}
+   *         {@link ArabicNormalizationFilter}, {@link SetKeywordMarkerFilter}
    *         if a stem exclusion set is provided and {@link ArabicStemFilter}.
    */
   @Override
@@ -145,7 +145,7 @@ public final class ArabicAnalyzer extends StopwordAnalyzerBase {
     // TODO maybe we should make ArabicNormalization filter also KeywordAttribute aware?!
     result = new ArabicNormalizationFilter(result);
     if(!stemExclusionSet.isEmpty()) {
-      result = new KeywordMarkerFilter(result, stemExclusionSet);
+      result = new SetKeywordMarkerFilter(result, stemExclusionSet);
     }
     return new TokenStreamComponents(source, new ArabicStemFilter(result));
   }

@@ -3,6 +3,7 @@ package org.apache.lucene.analysis.miscellaneous;
 import java.io.IOException;
 import java.io.StringReader;
 import java.util.Locale;
+import java.util.regex.Pattern;
 
 import org.apache.lucene.analysis.BaseTokenStreamTestCase;
 import org.apache.lucene.analysis.MockTokenizer;
@@ -36,33 +37,67 @@ import org.junit.Test;
 public class TestKeywordMarkerFilter extends BaseTokenStreamTestCase {
 
   @Test
-  public void testIncrementToken() throws IOException {
+  public void testSetFilterIncrementToken() throws IOException {
     CharArraySet set = new CharArraySet(TEST_VERSION_CURRENT, 5, true);
     set.add("lucenefox");
     String[] output = new String[] { "the", "quick", "brown", "LuceneFox",
         "jumps" };
     assertTokenStreamContents(new LowerCaseFilterMock(
-        new KeywordMarkerFilter(new MockTokenizer(new StringReader(
+        new SetKeywordMarkerFilter(new MockTokenizer(new StringReader(
             "The quIck browN LuceneFox Jumps"), MockTokenizer.WHITESPACE, false), set)), output);
     CharArraySet mixedCaseSet = new CharArraySet(TEST_VERSION_CURRENT, asSet("LuceneFox"), false);
     assertTokenStreamContents(new LowerCaseFilterMock(
-        new KeywordMarkerFilter(new MockTokenizer(new StringReader(
+        new SetKeywordMarkerFilter(new MockTokenizer(new StringReader(
             "The quIck browN LuceneFox Jumps"), MockTokenizer.WHITESPACE, false), mixedCaseSet)), output);
     CharArraySet set2 = set;
     assertTokenStreamContents(new LowerCaseFilterMock(
-        new KeywordMarkerFilter(new MockTokenizer(new StringReader(
+        new SetKeywordMarkerFilter(new MockTokenizer(new StringReader(
             "The quIck browN LuceneFox Jumps"), MockTokenizer.WHITESPACE, false), set2)), output);
+  }
+  
+  @Test
+  public void testPatternFilterIncrementToken() throws IOException {
+    String[] output = new String[] { "the", "quick", "brown", "LuceneFox",
+        "jumps" };
+    assertTokenStreamContents(new LowerCaseFilterMock(
+        new PatternKeywordMarkerFilter(new MockTokenizer(new StringReader(
+            "The quIck browN LuceneFox Jumps"), MockTokenizer.WHITESPACE, false), Pattern.compile("[a-zA-Z]+[fF]ox"))), output);
+    
+    output = new String[] { "the", "quick", "brown", "lucenefox",
+    "jumps" };
+    
+    assertTokenStreamContents(new LowerCaseFilterMock(
+        new PatternKeywordMarkerFilter(new MockTokenizer(new StringReader(
+            "The quIck browN LuceneFox Jumps"), MockTokenizer.WHITESPACE, false), Pattern.compile("[a-zA-Z]+[f]ox"))), output);
   }
 
   // LUCENE-2901
   public void testComposition() throws Exception {   
     TokenStream ts = new LowerCaseFilterMock(
-                     new KeywordMarkerFilter(
-                     new KeywordMarkerFilter(
+                     new SetKeywordMarkerFilter(
+                     new SetKeywordMarkerFilter(
                      new MockTokenizer(new StringReader("Dogs Trees Birds Houses"), MockTokenizer.WHITESPACE, false),
                      new CharArraySet(TEST_VERSION_CURRENT, asSet("Birds", "Houses"), false)), 
                      new CharArraySet(TEST_VERSION_CURRENT, asSet("Dogs", "Trees"), false)));
     
+    assertTokenStreamContents(ts, new String[] { "Dogs", "Trees", "Birds", "Houses" });
+    
+    ts = new LowerCaseFilterMock(
+        new PatternKeywordMarkerFilter(
+        new PatternKeywordMarkerFilter(
+        new MockTokenizer(new StringReader("Dogs Trees Birds Houses"), MockTokenizer.WHITESPACE, false),
+        Pattern.compile("Birds|Houses")), 
+        Pattern.compile("Dogs|Trees")));
+
+    assertTokenStreamContents(ts, new String[] { "Dogs", "Trees", "Birds", "Houses" });
+    
+    ts = new LowerCaseFilterMock(
+        new SetKeywordMarkerFilter(
+        new PatternKeywordMarkerFilter(
+        new MockTokenizer(new StringReader("Dogs Trees Birds Houses"), MockTokenizer.WHITESPACE, false),
+        Pattern.compile("Birds|Houses")), 
+        new CharArraySet(TEST_VERSION_CURRENT, asSet("Dogs", "Trees"), false)));
+
     assertTokenStreamContents(ts, new String[] { "Dogs", "Trees", "Birds", "Houses" });
   }
   

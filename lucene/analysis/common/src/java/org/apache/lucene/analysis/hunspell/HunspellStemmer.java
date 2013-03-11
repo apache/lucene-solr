@@ -175,10 +175,7 @@ public class HunspellStemmer {
   @SuppressWarnings("unchecked")
   public List<Stem> applyAffix(char strippedWord[], int length, HunspellAffix affix, int recursionDepth) {
     if(dictionary.isIgnoreCase()) {
-      for(int i=0;i<strippedWord.length;){
-        i += Character.toChars(
-              Character.toLowerCase(charUtils.codePointAt(strippedWord, i)), strippedWord, i);
-      }
+      charUtils.toLowerCase(strippedWord, 0, strippedWord.length);
     }
     segment.setLength(0);
     segment.append(strippedWord, 0, length);

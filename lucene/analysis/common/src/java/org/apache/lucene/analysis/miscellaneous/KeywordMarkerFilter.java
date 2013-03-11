@@ -22,41 +22,28 @@ import java.io.IOException;
 import org.apache.lucene.analysis.TokenFilter;
 import org.apache.lucene.analysis.TokenStream;
 import org.apache.lucene.analysis.tokenattributes.KeywordAttribute;
-import org.apache.lucene.analysis.tokenattributes.CharTermAttribute;
-import org.apache.lucene.analysis.util.CharArraySet;
 
 /**
- * Marks terms as keywords via the {@link KeywordAttribute}. Each token
- * contained in the provided is marked as a keyword by setting
- * {@link KeywordAttribute#setKeyword(boolean)} to <code>true</code>.
+ * Marks terms as keywords via the {@link KeywordAttribute}.
  * 
  * @see KeywordAttribute
  */
-public final class KeywordMarkerFilter extends TokenFilter {
+public abstract class KeywordMarkerFilter extends TokenFilter {
 
   private final KeywordAttribute keywordAttr = addAttribute(KeywordAttribute.class);
-  private final CharTermAttribute termAtt = addAttribute(CharTermAttribute.class);
-  private final CharArraySet keywordSet;
 
   /**
-   * Create a new KeywordMarkerFilter, that marks the current token as a
-   * keyword if the tokens term buffer is contained in the given set via the
-   * {@link KeywordAttribute}.
-   * 
-   * @param in
-   *          TokenStream to filter
-   * @param keywordSet
-   *          the keywords set to lookup the current termbuffer
+   * Creates a new {@link KeywordMarkerFilter}
+   * @param in the input stream
    */
-  public KeywordMarkerFilter(final TokenStream in, final CharArraySet keywordSet) {
+  protected KeywordMarkerFilter(TokenStream in) {
     super(in);
-    this.keywordSet = keywordSet;
   }
 
   @Override
   public final boolean incrementToken() throws IOException {
     if (input.incrementToken()) {
-      if (keywordSet.contains(termAtt.buffer(), 0, termAtt.length())) { 
+      if (isKeyword()) { 
         keywordAttr.setKeyword(true);
       }
       return true;
@@ -64,4 +51,7 @@ public final class KeywordMarkerFilter extends TokenFilter {
       return false;
     }
   }
+  
+  protected abstract boolean isKeyword();
+  
 }

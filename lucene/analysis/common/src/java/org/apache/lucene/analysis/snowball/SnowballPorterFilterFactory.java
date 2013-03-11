@@ -20,7 +20,7 @@ package org.apache.lucene.analysis.snowball;
 import java.util.Map;
 import java.io.IOException;
 
-import org.apache.lucene.analysis.miscellaneous.KeywordMarkerFilter;
+import org.apache.lucene.analysis.miscellaneous.SetKeywordMarkerFilter;
 import org.apache.lucene.analysis.TokenFilter;
 import org.apache.lucene.analysis.TokenStream;
 import org.apache.lucene.analysis.snowball.SnowballFilter;
@@ -74,7 +74,7 @@ public class SnowballPorterFilterFactory extends TokenFilterFactory implements R
     }
 
     if (protectedWords != null)
-      input = new KeywordMarkerFilter(input, protectedWords);
+      input = new SetKeywordMarkerFilter(input, protectedWords);
     return new SnowballFilter(input, program);
   }
 }

@@ -30,7 +30,7 @@ import org.apache.lucene.analysis.util.StopwordAnalyzerBase;
 import org.apache.lucene.analysis.util.WordlistLoader;
 import org.apache.lucene.analysis.core.LowerCaseFilter;
 import org.apache.lucene.analysis.core.StopFilter;
-import org.apache.lucene.analysis.miscellaneous.KeywordMarkerFilter;
+import org.apache.lucene.analysis.miscellaneous.SetKeywordMarkerFilter;
 import org.apache.lucene.analysis.TokenStream;
 import org.apache.lucene.analysis.Tokenizer;
 import org.apache.lucene.util.IOUtils;
@@ -145,7 +145,7 @@ public final class RussianAnalyzer extends StopwordAnalyzerBase
    * @return {@link org.apache.lucene.analysis.Analyzer.TokenStreamComponents}
    *         built from a {@link StandardTokenizer} filtered with
    *         {@link StandardFilter}, {@link LowerCaseFilter}, {@link StopFilter}
-   *         , {@link KeywordMarkerFilter} if a stem exclusion set is
+   *         , {@link SetKeywordMarkerFilter} if a stem exclusion set is
    *         provided, and {@link SnowballFilter}
    */
     @Override
@@ -156,7 +156,7 @@ public final class RussianAnalyzer extends StopwordAnalyzerBase
         TokenStream result = new StandardFilter(matchVersion, source);
         result = new LowerCaseFilter(matchVersion, result);
         result = new StopFilter(matchVersion, result, stopwords);
-        if (!stemExclusionSet.isEmpty()) result = new KeywordMarkerFilter(
+        if (!stemExclusionSet.isEmpty()) result = new SetKeywordMarkerFilter(
             result, stemExclusionSet);
         result = new SnowballFilter(result, new org.tartarus.snowball.ext.RussianStemmer());
         return new TokenStreamComponents(source, result);
@@ -164,7 +164,7 @@ public final class RussianAnalyzer extends StopwordAnalyzerBase
         final Tokenizer source = new RussianLetterTokenizer(matchVersion, reader);
         TokenStream result = new LowerCaseFilter(matchVersion, source);
         result = new StopFilter(matchVersion, result, stopwords);
-        if (!stemExclusionSet.isEmpty()) result = new KeywordMarkerFilter(
+        if (!stemExclusionSet.isEmpty()) result = new SetKeywordMarkerFilter(
           result, stemExclusionSet);
         result = new SnowballFilter(result, new org.tartarus.snowball.ext.RussianStemmer());
         return new TokenStreamComponents(source, result);

@@ -24,7 +24,7 @@ import java.util.Arrays;
 import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.analysis.core.LowerCaseFilter;
 import org.apache.lucene.analysis.core.StopFilter;
-import org.apache.lucene.analysis.miscellaneous.KeywordMarkerFilter;
+import org.apache.lucene.analysis.miscellaneous.SetKeywordMarkerFilter;
 import org.apache.lucene.analysis.TokenStream;
 import org.apache.lucene.analysis.Tokenizer;
 import org.apache.lucene.analysis.snowball.SnowballFilter;
@@ -105,7 +105,7 @@ public final class CatalanAnalyzer extends StopwordAnalyzerBase {
 
   /**
    * Builds an analyzer with the given stop words. If a non-empty stem exclusion set is
-   * provided this analyzer will add a {@link KeywordMarkerFilter} before
+   * provided this analyzer will add a {@link SetKeywordMarkerFilter} before
    * stemming.
    * 
    * @param matchVersion lucene compatibility version
@@ -127,7 +127,7 @@ public final class CatalanAnalyzer extends StopwordAnalyzerBase {
    *         {@link org.apache.lucene.analysis.Analyzer.TokenStreamComponents}
    *         built from an {@link StandardTokenizer} filtered with
    *         {@link StandardFilter}, {@link ElisionFilter}, {@link LowerCaseFilter}, 
-   *         {@link StopFilter}, {@link KeywordMarkerFilter} if a stem exclusion set is
+   *         {@link StopFilter}, {@link SetKeywordMarkerFilter} if a stem exclusion set is
    *         provided and {@link SnowballFilter}.
    */
   @Override
@@ -141,7 +141,7 @@ public final class CatalanAnalyzer extends StopwordAnalyzerBase {
     result = new LowerCaseFilter(matchVersion, result);
     result = new StopFilter(matchVersion, result, stopwords);
     if(!stemExclusionSet.isEmpty())
-      result = new KeywordMarkerFilter(result, stemExclusionSet);
+      result = new SetKeywordMarkerFilter(result, stemExclusionSet);
     result = new SnowballFilter(result, new CatalanStemmer());
     return new TokenStreamComponents(source, result);
   }

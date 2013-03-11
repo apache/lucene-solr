@@ -1,5 +1,4 @@
-package org.apache.lucene.analysis.fi;
-
+package org.apache.lucene.analysis.miscellaneous;
 /*
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
@@ -16,43 +15,38 @@ package org.apache.lucene.analysis.fi;
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-
-import java.io.IOException;
-
-import org.apache.lucene.analysis.TokenFilter;
 import org.apache.lucene.analysis.TokenStream;
-import org.apache.lucene.analysis.miscellaneous.SetKeywordMarkerFilter;
 import org.apache.lucene.analysis.tokenattributes.CharTermAttribute;
 import org.apache.lucene.analysis.tokenattributes.KeywordAttribute;
+import org.apache.lucene.analysis.util.CharArraySet;
 
 /**
- * A {@link TokenFilter} that applies {@link FinnishLightStemmer} to stem Finnish
- * words.
- * <p>
- * To prevent terms from being stemmed use an instance of
- * {@link SetKeywordMarkerFilter} or a custom {@link TokenFilter} that sets
- * the {@link KeywordAttribute} before this {@link TokenStream}.
- * </p>
+ * Marks terms as keywords via the {@link KeywordAttribute}. Each token
+ * contained in the provided set is marked as a keyword by setting
+ * {@link KeywordAttribute#setKeyword(boolean)} to <code>true</code>.
  */
-public final class FinnishLightStemFilter extends TokenFilter {
-  private final FinnishLightStemmer stemmer = new FinnishLightStemmer();
+public final class SetKeywordMarkerFilter extends KeywordMarkerFilter {
   private final CharTermAttribute termAtt = addAttribute(CharTermAttribute.class);
-  private final KeywordAttribute keywordAttr = addAttribute(KeywordAttribute.class);
+  private final CharArraySet keywordSet;
 
-  public FinnishLightStemFilter(TokenStream input) {
-    super(input);
+  /**
+   * Create a new KeywordSetMarkerFilter, that marks the current token as a
+   * keyword if the tokens term buffer is contained in the given set via the
+   * {@link KeywordAttribute}.
+   * 
+   * @param in
+   *          TokenStream to filter
+   * @param keywordSet
+   *          the keywords set to lookup the current termbuffer
+   */
+  public SetKeywordMarkerFilter(final TokenStream in, final CharArraySet keywordSet) {
+    super(in);
+    this.keywordSet = keywordSet;
+  }
+
+  @Override
+  protected boolean isKeyword() {
+    return keywordSet.contains(termAtt.buffer(), 0, termAtt.length());
   }
   
-  @Override
-  public boolean incrementToken() throws IOException {
-    if (input.incrementToken()) {
-      if (!keywordAttr.isKeyword()) {
-        final int newlen = stemmer.stem(termAtt.buffer(), termAtt.length());
-        termAtt.setLength(newlen);
-      }
-      return true;
-    } else {
-      return false;
-    }
-  }
 }

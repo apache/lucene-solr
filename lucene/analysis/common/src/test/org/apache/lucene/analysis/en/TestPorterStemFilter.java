@@ -23,7 +23,7 @@ import java.io.StringReader;
 
 import org.apache.lucene.analysis.BaseTokenStreamTestCase;
 import org.apache.lucene.analysis.core.KeywordTokenizer;
-import org.apache.lucene.analysis.miscellaneous.KeywordMarkerFilter;
+import org.apache.lucene.analysis.miscellaneous.SetKeywordMarkerFilter;
 import org.apache.lucene.analysis.util.CharArraySet;
 import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.analysis.MockTokenizer;
@@ -57,7 +57,7 @@ public class TestPorterStemFilter extends BaseTokenStreamTestCase {
     CharArraySet set = new CharArraySet(TEST_VERSION_CURRENT, 1, true);
     set.add("yourselves");
     Tokenizer tokenizer = new MockTokenizer(new StringReader("yourselves yours"), MockTokenizer.WHITESPACE, false);
-    TokenStream filter = new PorterStemFilter(new KeywordMarkerFilter(tokenizer, set));   
+    TokenStream filter = new PorterStemFilter(new SetKeywordMarkerFilter(tokenizer, set));   
     assertTokenStreamContents(filter, new String[] {"yourselves", "your"});
   }
   

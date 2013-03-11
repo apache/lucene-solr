@@ -1,4 +1,4 @@
-package org.apache.lucene.analysis.fi;
+package org.apache.lucene.analysis.miscellaneous;
 
 /*
  * Licensed to the Apache Software Foundation (ASF) under one or more
@@ -16,43 +16,41 @@ package org.apache.lucene.analysis.fi;
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
-import java.io.IOException;
-
-import org.apache.lucene.analysis.TokenFilter;
 import org.apache.lucene.analysis.TokenStream;
-import org.apache.lucene.analysis.miscellaneous.SetKeywordMarkerFilter;
 import org.apache.lucene.analysis.tokenattributes.CharTermAttribute;
 import org.apache.lucene.analysis.tokenattributes.KeywordAttribute;
 
 /**
- * A {@link TokenFilter} that applies {@link FinnishLightStemmer} to stem Finnish
- * words.
- * <p>
- * To prevent terms from being stemmed use an instance of
- * {@link SetKeywordMarkerFilter} or a custom {@link TokenFilter} that sets
- * the {@link KeywordAttribute} before this {@link TokenStream}.
- * </p>
+ * Marks terms as keywords via the {@link KeywordAttribute}. Each token
+ * that matches the provided pattern is marked as a keyword by setting
+ * {@link KeywordAttribute#setKeyword(boolean)} to <code>true</code>.
  */
-public final class FinnishLightStemFilter extends TokenFilter {
-  private final FinnishLightStemmer stemmer = new FinnishLightStemmer();
+public final class PatternKeywordMarkerFilter extends KeywordMarkerFilter {
   private final CharTermAttribute termAtt = addAttribute(CharTermAttribute.class);
-  private final KeywordAttribute keywordAttr = addAttribute(KeywordAttribute.class);
-
-  public FinnishLightStemFilter(TokenStream input) {
-    super(input);
+  private final Matcher matcher;
+  
+  /**
+   * Create a new {@link PatternKeywordMarkerFilter}, that marks the current
+   * token as a keyword if the tokens term buffer matches the provided
+   * {@link Pattern} via the {@link KeywordAttribute}.
+   * 
+   * @param in
+   *          TokenStream to filter
+   * @param pattern
+   *          the pattern to apply to the incoming term buffer
+   **/
+  protected PatternKeywordMarkerFilter(TokenStream in, Pattern pattern) {
+    super(in);
+    this.matcher = pattern.matcher("");
   }
   
   @Override
-  public boolean incrementToken() throws IOException {
-    if (input.incrementToken()) {
-      if (!keywordAttr.isKeyword()) {
-        final int newlen = stemmer.stem(termAtt.buffer(), termAtt.length());
-        termAtt.setLength(newlen);
-      }
-      return true;
-    } else {
-      return false;
-    }
+  protected boolean isKeyword() {
+    matcher.reset(termAtt);
+    return matcher.matches();
   }
+  
 }

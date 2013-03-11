@@ -28,7 +28,7 @@ import org.apache.lucene.analysis.BaseTokenStreamTestCase;
 import org.apache.lucene.analysis.MockTokenizer;
 import org.apache.lucene.analysis.Tokenizer;
 import org.apache.lucene.analysis.core.KeywordTokenizer;
-import org.apache.lucene.analysis.miscellaneous.KeywordMarkerFilter;
+import org.apache.lucene.analysis.miscellaneous.SetKeywordMarkerFilter;
 import org.apache.lucene.analysis.util.CharArraySet;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
@@ -63,7 +63,7 @@ public class HunspellStemFilterTest  extends BaseTokenStreamTestCase {
     // assert with keywork marker
     tokenizer = new MockTokenizer(new StringReader("lucene is awesome"), MockTokenizer.WHITESPACE, true);
     CharArraySet set = new CharArraySet(TEST_VERSION_CURRENT, Arrays.asList("Lucene"), true);
-    filter = new HunspellStemFilter(new KeywordMarkerFilter(tokenizer, set), DICTIONARY);
+    filter = new HunspellStemFilter(new SetKeywordMarkerFilter(tokenizer, set), DICTIONARY);
     assertTokenStreamContents(filter, new String[]{"lucene", "is", "awesome"}, new int[] {1, 1, 1});
   }
   

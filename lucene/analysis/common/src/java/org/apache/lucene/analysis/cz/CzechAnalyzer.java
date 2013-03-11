@@ -20,7 +20,7 @@ package org.apache.lucene.analysis.cz;
 import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.analysis.core.LowerCaseFilter;
 import org.apache.lucene.analysis.core.StopFilter;
-import org.apache.lucene.analysis.miscellaneous.KeywordMarkerFilter;
+import org.apache.lucene.analysis.miscellaneous.SetKeywordMarkerFilter;
 import org.apache.lucene.analysis.TokenStream;
 import org.apache.lucene.analysis.Tokenizer;
 import org.apache.lucene.analysis.standard.StandardFilter;
@@ -129,7 +129,7 @@ public final class CzechAnalyzer extends StopwordAnalyzerBase {
    *         , and {@link CzechStemFilter} (only if version is >= LUCENE_31). If
    *         a version is >= LUCENE_31 and a stem exclusion set is provided via
    *         {@link #CzechAnalyzer(Version, CharArraySet, CharArraySet)} a
-   *         {@link KeywordMarkerFilter} is added before
+   *         {@link SetKeywordMarkerFilter} is added before
    *         {@link CzechStemFilter}.
    */
   @Override
@@ -141,7 +141,7 @@ public final class CzechAnalyzer extends StopwordAnalyzerBase {
     result = new StopFilter( matchVersion, result, stopwords);
     if (matchVersion.onOrAfter(Version.LUCENE_31)) {
       if(!this.stemExclusionTable.isEmpty())
-        result = new KeywordMarkerFilter(result, stemExclusionTable);
+        result = new SetKeywordMarkerFilter(result, stemExclusionTable);
       result = new CzechStemFilter(result);
     }
     return new TokenStreamComponents(source, result);

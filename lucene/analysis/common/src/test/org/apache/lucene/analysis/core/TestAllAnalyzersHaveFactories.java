@@ -40,6 +40,8 @@ import org.apache.lucene.analysis.TokenFilter;
 import org.apache.lucene.analysis.TokenStream;
 import org.apache.lucene.analysis.Tokenizer;
 import org.apache.lucene.analysis.ValidatingTokenFilter;
+import org.apache.lucene.analysis.miscellaneous.PatternKeywordMarkerFilter;
+import org.apache.lucene.analysis.miscellaneous.SetKeywordMarkerFilter;
 import org.apache.lucene.analysis.fr.FrenchStemFilter;
 import org.apache.lucene.analysis.in.IndicTokenizer;
 import org.apache.lucene.analysis.nl.DutchStemFilter;
@@ -103,7 +105,9 @@ public class TestAllAnalyzersHaveFactories extends LuceneTestCase {
   static {
     Collections.<Class<?>>addAll(oddlyNamedComponents,
       ReversePathHierarchyTokenizer.class, // this is supported via an option to PathHierarchyTokenizer's factory
-      SnowballFilter.class // this is called SnowballPorterFilterFactory
+      SnowballFilter.class, // this is called SnowballPorterFilterFactory
+      PatternKeywordMarkerFilter.class,
+      SetKeywordMarkerFilter.class
     );
   }
   

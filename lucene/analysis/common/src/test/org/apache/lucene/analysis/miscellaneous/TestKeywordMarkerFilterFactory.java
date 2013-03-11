@@ -35,6 +35,7 @@ import org.apache.lucene.analysis.util.StringMockResourceLoader;
  * Simple tests to ensure the keyword marker filter factory is working.
  */
 public class TestKeywordMarkerFilterFactory extends BaseTokenStreamTestCase {
+  
   public void testKeywords() throws IOException {
     Reader reader = new StringReader("dogs cats");
     Tokenizer tokenizer = new MockTokenizer(reader, MockTokenizer.WHITESPACE, false);
@@ -48,6 +49,36 @@ public class TestKeywordMarkerFilterFactory extends BaseTokenStreamTestCase {
     
     TokenStream ts = new PorterStemFilter(factory.create(tokenizer));
     assertTokenStreamContents(ts, new String[] { "dog", "cats" });
+    
+    
+    reader = new StringReader("dogs cats");
+    tokenizer = new MockTokenizer(reader, MockTokenizer.WHITESPACE, false);
+    factory = new KeywordMarkerFilterFactory();
+    args = new HashMap<String,String>();
+    
+    args.put("pattern", "cats|Dogs");
+    factory.setLuceneMatchVersion(TEST_VERSION_CURRENT);
+    factory.init(args);
+    factory.inform(null);
+    
+    ts = new PorterStemFilter(factory.create(tokenizer));
+    assertTokenStreamContents(ts, new String[] { "dog", "cats" });
+  }
+  
+  public void testKeywordsMixed() throws IOException {
+    Reader reader = new StringReader("dogs cats birds");
+    Tokenizer tokenizer = new MockTokenizer(reader, MockTokenizer.WHITESPACE, false);
+    KeywordMarkerFilterFactory factory = new KeywordMarkerFilterFactory();
+    Map<String,String> args = new HashMap<String,String>();
+    ResourceLoader loader = new StringMockResourceLoader("cats");
+    args.put("protected", "protwords.txt");
+    args.put("pattern", "birds|Dogs");
+    factory.setLuceneMatchVersion(TEST_VERSION_CURRENT);
+    factory.init(args);
+    factory.inform(loader);
+    
+    TokenStream ts = new PorterStemFilter(factory.create(tokenizer));
+    assertTokenStreamContents(ts, new String[] { "dog", "cats", "birds" });
   }
   
   public void testKeywordsCaseInsensitive() throws IOException {
@@ -64,5 +95,36 @@ public class TestKeywordMarkerFilterFactory extends BaseTokenStreamTestCase {
     
     TokenStream ts = new PorterStemFilter(factory.create(tokenizer));
     assertTokenStreamContents(ts, new String[] { "dog", "cats", "Cats" });
+    
+    reader = new StringReader("dogs cats Cats");
+    tokenizer = new MockTokenizer(reader, MockTokenizer.WHITESPACE, false);
+    factory = new KeywordMarkerFilterFactory();
+    args = new HashMap<String,String>();
+    
+    args.put("pattern", "Cats");
+    args.put("ignoreCase", "true");
+    factory.setLuceneMatchVersion(TEST_VERSION_CURRENT);
+    factory.init(args);
+    factory.inform(null);
+    
+    ts = new PorterStemFilter(factory.create(tokenizer));
+    assertTokenStreamContents(ts, new String[] { "dog", "cats", "Cats" });
+  }
+  
+  public void testKeywordsCaseInsensitiveMixed() throws IOException {
+    Reader reader = new StringReader("dogs cats Cats Birds birds");
+    Tokenizer tokenizer = new MockTokenizer(reader, MockTokenizer.WHITESPACE, false);
+    KeywordMarkerFilterFactory factory = new KeywordMarkerFilterFactory();
+    Map<String,String> args = new HashMap<String,String>();
+    ResourceLoader loader = new StringMockResourceLoader("cats");
+    args.put("protected", "protwords.txt");
+    args.put("pattern", "birds");
+    args.put("ignoreCase", "true");
+    factory.setLuceneMatchVersion(TEST_VERSION_CURRENT);
+    factory.init(args);
+    factory.inform(loader);
+    
+    TokenStream ts = new PorterStemFilter(factory.create(tokenizer));
+    assertTokenStreamContents(ts, new String[] { "dog", "cats", "Cats", "Birds", "birds" });
   }
 }

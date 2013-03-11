@@ -24,7 +24,7 @@ import org.apache.lucene.analysis.TokenStream;
 import org.apache.lucene.analysis.Tokenizer;
 import org.apache.lucene.analysis.core.LowerCaseFilter;
 import org.apache.lucene.analysis.core.StopFilter;
-import org.apache.lucene.analysis.miscellaneous.KeywordMarkerFilter;
+import org.apache.lucene.analysis.miscellaneous.SetKeywordMarkerFilter;
 import org.apache.lucene.analysis.standard.StandardAnalyzer;
 import org.apache.lucene.analysis.standard.StandardFilter;
 import org.apache.lucene.analysis.standard.StandardTokenizer;
@@ -73,7 +73,7 @@ public final class EnglishAnalyzer extends StopwordAnalyzerBase {
 
   /**
    * Builds an analyzer with the given stop words. If a non-empty stem exclusion set is
-   * provided this analyzer will add a {@link KeywordMarkerFilter} before
+   * provided this analyzer will add a {@link SetKeywordMarkerFilter} before
    * stemming.
    * 
    * @param matchVersion lucene compatibility version
@@ -96,7 +96,7 @@ public final class EnglishAnalyzer extends StopwordAnalyzerBase {
    *         built from an {@link StandardTokenizer} filtered with
    *         {@link StandardFilter}, {@link EnglishPossessiveFilter}, 
    *         {@link LowerCaseFilter}, {@link StopFilter}
-   *         , {@link KeywordMarkerFilter} if a stem exclusion set is
+   *         , {@link SetKeywordMarkerFilter} if a stem exclusion set is
    *         provided and {@link PorterStemFilter}.
    */
   @Override
@@ -110,7 +110,7 @@ public final class EnglishAnalyzer extends StopwordAnalyzerBase {
     result = new LowerCaseFilter(matchVersion, result);
     result = new StopFilter(matchVersion, result, stopwords);
     if(!stemExclusionSet.isEmpty())
-      result = new KeywordMarkerFilter(result, stemExclusionSet);
+      result = new SetKeywordMarkerFilter(result, stemExclusionSet);
     result = new PorterStemFilter(result);
     return new TokenStreamComponents(source, result);
   }

@@ -126,7 +126,25 @@ public abstract class CharacterUtils {
     }
     return new CharacterBuffer(new char[bufferSize], 0, 0);
   }
-
+  
+  
+  /**
+   * Converts each unicode codepoint to lowerCase via {@link Character#toLowerCase(int)} starting 
+   * at the given offset.
+   * @param buffer the char buffer to lowercase
+   * @param offset the offset to start at
+   * @param limit the max char in the buffer to lower case
+   */
+  public void toLowerCase(final char[] buffer, final int offset, final int limit) {
+    assert buffer.length >= limit;
+    assert offset <=0 && offset <= buffer.length;
+    for (int i = offset; i < limit;) {
+      i += Character.toChars(
+              Character.toLowerCase(
+                  codePointAt(buffer, i)), buffer, i);
+     }
+  }
+  
   /**
    * Fills the {@link CharacterBuffer} with characters read from the given
    * reader {@link Reader}. This method tries to read as many characters into

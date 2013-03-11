@@ -23,7 +23,7 @@ import java.io.StringReader;
 import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.analysis.BaseTokenStreamTestCase;
 import org.apache.lucene.analysis.core.LowerCaseTokenizer;
-import org.apache.lucene.analysis.miscellaneous.KeywordMarkerFilter;
+import org.apache.lucene.analysis.miscellaneous.SetKeywordMarkerFilter;
 import org.apache.lucene.analysis.util.CharArraySet;
 import org.apache.lucene.util.Version;
 
@@ -39,7 +39,7 @@ public class TestGermanAnalyzer extends BaseTokenStreamTestCase {
     CharArraySet set = new CharArraySet(TEST_VERSION_CURRENT, 1, true);
     set.add("fischen");
     GermanStemFilter filter = new GermanStemFilter(
-        new KeywordMarkerFilter(new LowerCaseTokenizer(TEST_VERSION_CURRENT, new StringReader( 
+        new SetKeywordMarkerFilter(new LowerCaseTokenizer(TEST_VERSION_CURRENT, new StringReader( 
             "Fischen Trinken")), set));
     assertTokenStreamContents(filter, new String[] { "fischen", "trink" });
   }
