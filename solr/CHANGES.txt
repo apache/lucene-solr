@@ -67,6 +67,9 @@ Bug Fixes
   
 * SOLR-4551: CachingDirectoryFactory needs to create CacheEntry's with the 
   fullpath not path. (Mark Miller)
+  
+* SOLR-4555: When forceNew is used with CachingDirectoryFactory#get, the old
+  CachValue should have it's path set to null. (Mark Miller)
 
 Other Changes
 ----------------------

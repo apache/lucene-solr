@@ -166,7 +166,9 @@ public abstract class CachingDirectoryFactory extends DirectoryFactory {
         closeDirectory(cacheValue);
         
         byDirectoryCache.remove(directory);
-        byPathCache.remove(cacheValue.path);
+        if (cacheValue.path != null) {
+          byPathCache.remove(cacheValue.path);
+        }
       }
     }
   }
@@ -258,6 +260,10 @@ public abstract class CachingDirectoryFactory extends DirectoryFactory {
               SolrException.log(log, "Error closing directory", e);
             }
           }
+          
+          // kill the path, it will be owned by the new dir
+          // we count on it being released by directory
+          cacheValue.path = null;
           
         }
       }
