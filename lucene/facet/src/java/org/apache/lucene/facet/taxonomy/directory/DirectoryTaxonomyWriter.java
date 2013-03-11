@@ -302,7 +302,7 @@ public class DirectoryTaxonomyWriter implements TaxonomyWriter {
  
     // Make sure we use a MergePolicy which always merges adjacent segments and thus
     // keeps the doc IDs ordered as well (this is crucial for the taxonomy index).
-    return new IndexWriterConfig(Version.LUCENE_42,
+    return new IndexWriterConfig(Version.LUCENE_43,
         null).setOpenMode(openMode).setMergePolicy(
         new LogByteSizeMergePolicy());
   }

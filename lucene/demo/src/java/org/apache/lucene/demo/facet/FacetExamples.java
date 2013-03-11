@@ -27,6 +27,6 @@ import org.apache.lucene.util.Version;
 public interface FacetExamples {
   
   /** The Lucene {@link Version} used by the example code. */
-  public static final Version EXAMPLES_VER = Version.LUCENE_42;
+  public static final Version EXAMPLES_VER = Version.LUCENE_43;
 
 }

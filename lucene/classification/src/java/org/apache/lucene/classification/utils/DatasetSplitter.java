@@ -71,9 +71,9 @@ public class DatasetSplitter {
     // TODO : check that the passed fields are stored in the original index
 
     // create IWs for train / test / cv IDXs
-    IndexWriter testWriter = new IndexWriter(testIndex, new IndexWriterConfig(Version.LUCENE_42, analyzer));
-    IndexWriter cvWriter = new IndexWriter(crossValidationIndex, new IndexWriterConfig(Version.LUCENE_42, analyzer));
-    IndexWriter trainingWriter = new IndexWriter(trainingIndex, new IndexWriterConfig(Version.LUCENE_42, analyzer));
+    IndexWriter testWriter = new IndexWriter(testIndex, new IndexWriterConfig(Version.LUCENE_43, analyzer));
+    IndexWriter cvWriter = new IndexWriter(crossValidationIndex, new IndexWriterConfig(Version.LUCENE_43, analyzer));
+    IndexWriter trainingWriter = new IndexWriter(trainingIndex, new IndexWriterConfig(Version.LUCENE_43, analyzer));
 
     try {
       int size = originalIndex.maxDoc();

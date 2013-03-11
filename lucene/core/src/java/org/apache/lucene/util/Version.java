@@ -103,6 +103,13 @@ public enum Version {
    */
   LUCENE_42,
 
+  /** Match settings and bugs in Lucene's 4.3 release.
+   *  <p>
+   *  Use this to get the latest &amp; greatest settings, bug
+   *  fixes, etc, for Lucene.
+   */
+  LUCENE_43,
+
   /* Add new constants for later versions **here** to respect order! */
 
   /**
