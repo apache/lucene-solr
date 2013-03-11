@@ -37,8 +37,8 @@ public class TestVersion extends LuceneTestCase {
     Version values[] = Version.values();
     // all but the latest version should be deprecated
     for (int i = 0; i < values.length-2; i++) {
-      assertTrue(values[i].name() + " should be deprecated", 
-          Version.class.getField(values[i].name()).isAnnotationPresent(Deprecated.class));
+      assertNotNull(values[i].name() + " should be deprecated", 
+          Version.class.getField(values[i].name()).getAnnotation(Deprecated.class));
     }
   }
 }
