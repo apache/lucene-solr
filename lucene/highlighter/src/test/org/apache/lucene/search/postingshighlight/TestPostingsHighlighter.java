@@ -17,6 +17,8 @@ package org.apache.lucene.search.postingshighlight;
  * limitations under the License.
  */
 
+import java.io.BufferedReader;
+import java.io.InputStreamReader;
 import java.util.Map;
 
 import org.apache.lucene.analysis.Analyzer;
@@ -41,8 +43,8 @@ import org.apache.lucene.search.Sort;
 import org.apache.lucene.search.TermQuery;
 import org.apache.lucene.search.TopDocs;
 import org.apache.lucene.store.Directory;
-import org.apache.lucene.util.LuceneTestCase;
 import org.apache.lucene.util.LuceneTestCase.SuppressCodecs;
+import org.apache.lucene.util.LuceneTestCase;
 
 @SuppressCodecs({"MockFixedIntBlock", "MockVariableIntBlock", "MockSep", "MockRandom"})
 public class TestPostingsHighlighter extends LuceneTestCase {
@@ -337,6 +339,70 @@ public class TestPostingsHighlighter extends LuceneTestCase {
     String snippets[] = highlighter.highlight("body", query, searcher, topDocs, 2);
     assertEquals(1, snippets.length);
     assertFalse(snippets[0].contains("<b>Curious</b>Curious"));
+    ir.close();
+    dir.close();
+  }
+
+  public void testCambridgeMA() throws Exception {
+    BufferedReader r = new BufferedReader(new InputStreamReader(
+                     this.getClass().getResourceAsStream("CambridgeMA.utf8"), "UTF-8"));
+    String text = r.readLine();
+    r.close();
+    Directory dir = newDirectory();
+    Analyzer analyzer = new MockAnalyzer(random(), MockTokenizer.SIMPLE, true);
+    RandomIndexWriter iw = new RandomIndexWriter(random(), dir, analyzer);
+    FieldType positionsType = new FieldType(TextField.TYPE_STORED);
+    positionsType.setIndexOptions(IndexOptions.DOCS_AND_FREQS_AND_POSITIONS_AND_OFFSETS);
+    Field body = new Field("body", text, positionsType);
+    Document document = new Document();
+    document.add(body);
+    iw.addDocument(document);
+    IndexReader ir = iw.getReader();
+    iw.close();
+    IndexSearcher searcher = newSearcher(ir);
+    BooleanQuery query = new BooleanQuery();
+    query.add(new TermQuery(new Term("body", "porter")), BooleanClause.Occur.SHOULD);
+    query.add(new TermQuery(new Term("body", "square")), BooleanClause.Occur.SHOULD);
+    query.add(new TermQuery(new Term("body", "massachusetts")), BooleanClause.Occur.SHOULD);
+    TopDocs topDocs = searcher.search(query, 10);
+    assertEquals(1, topDocs.totalHits);
+    PostingsHighlighter highlighter = new PostingsHighlighter(Integer.MAX_VALUE-1);
+    String snippets[] = highlighter.highlight("body", query, searcher, topDocs, 2);
+    assertEquals(1, snippets.length);
+    assertTrue(snippets[0].contains("<b>Square</b>"));
+    assertTrue(snippets[0].contains("<b>Porter</b>"));
+    //System.out.println("GOT: " + snippets.length + "; " + Arrays.toString(snippets));
+    ir.close();
+    dir.close();
+  }
+  
+  public void testPassageRanking() throws Exception {
+    Directory dir = newDirectory();
+    IndexWriterConfig iwc = newIndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer(random(), MockTokenizer.SIMPLE, true));
+    iwc.setMergePolicy(newLogMergePolicy());
+    RandomIndexWriter iw = new RandomIndexWriter(random(), dir, iwc);
+    
+    FieldType offsetsType = new FieldType(TextField.TYPE_STORED);
+    offsetsType.setIndexOptions(IndexOptions.DOCS_AND_FREQS_AND_POSITIONS_AND_OFFSETS);
+    Field body = new Field("body", "", offsetsType);
+    Document doc = new Document();
+    doc.add(body);
+    
+    body.setStringValue("This is a test.  Just highlighting from postings. This is also a much sillier test.  Feel free to test test test test test test test.");
+    iw.addDocument(doc);
+    
+    IndexReader ir = iw.getReader();
+    iw.close();
+    
+    IndexSearcher searcher = newSearcher(ir);
+    PostingsHighlighter highlighter = new PostingsHighlighter();
+    Query query = new TermQuery(new Term("body", "test"));
+    TopDocs topDocs = searcher.search(query, null, 10, Sort.INDEXORDER);
+    assertEquals(1, topDocs.totalHits);
+    String snippets[] = highlighter.highlight("body", query, searcher, topDocs, 2);
+    assertEquals(1, snippets.length);
+    assertEquals("This is a <b>test</b>.  ... Feel free to <b>test</b> <b>test</b> <b>test</b> <b>test</b> <b>test</b> <b>test</b> <b>test</b>.", snippets[0]);
+    
     ir.close();
     dir.close();
   }

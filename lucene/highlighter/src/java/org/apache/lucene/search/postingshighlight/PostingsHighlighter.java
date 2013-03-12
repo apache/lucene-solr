@@ -62,7 +62,7 @@ import org.apache.lucene.util.UnicodeUtil;
  * into a {@link Passage}, and then scores each Passage using a separate {@link PassageScorer}. 
  * Passages are finally formatted into highlighted snippets with a {@link PassageFormatter}.
  * <p>
- * <b>WARNING</b>: The code is very new and may still have some exciting bugs!
+ * <b>WARNING</b>: The code is very new and probably still has some exciting bugs!
  * <p>
  * Example usage:
  * <pre class="prettyprint">
@@ -361,10 +361,12 @@ public final class PostingsHighlighter {
     PriorityQueue<Passage> passageQueue = new PriorityQueue<Passage>(n, new Comparator<Passage>() {
       @Override
       public int compare(Passage left, Passage right) {
-        if (right.score == left.score) {
-          return right.startOffset - left.endOffset;
+        if (left.score < right.score) {
+          return -1;
+        } else if (left.score > right.score) {
+          return 1;
         } else {
-          return right.score > left.score ? 1 : -1;
+          return left.startOffset - right.startOffset;
         }
       }
     });

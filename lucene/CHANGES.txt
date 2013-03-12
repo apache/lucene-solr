@@ -71,6 +71,9 @@ Bug Fixes
 * LUCENE-4819: seekExact(BytesRef, boolean) did not work correctly with 
   Sorted[Set]DocValuesTermsEnum.  (Robert Muir)
 
+* LUCENE-4826: PostingsHighlighter was not returning the top N best
+  scoring passages. (Robert Muir, Mike McCandless)
+
 ======================= Lucene 4.2.0 =======================
 
 Changes in backwards compatibility policy
