@@ -55,6 +55,16 @@ New Features
   query "i " will no longer suggest "Isla de Muerta" for example.
   (Mike McCandless)
 
+Optimizations
+
+* LUCENE-4819: Added Sorted[Set]DocValues.termsEnum(), and optimized the
+  default codec for improved enumeration performance.  (Robert Muir)
+
+Bug Fixes
+
+* LUCENE-4819: seekExact(BytesRef, boolean) did not work correctly with 
+  Sorted[Set]DocValuesTermsEnum.  (Robert Muir)
+
 ======================= Lucene 4.2.0 =======================
 
 Changes in backwards compatibility policy

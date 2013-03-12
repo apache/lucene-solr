@@ -18,6 +18,7 @@ package org.apache.lucene.codecs.lucene42;
  */
 
 import java.io.IOException;
+import java.util.Comparator;
 import java.util.HashMap;
 import java.util.Map;
 
@@ -25,6 +26,8 @@ import org.apache.lucene.codecs.CodecUtil;
 import org.apache.lucene.codecs.DocValuesProducer;
 import org.apache.lucene.index.BinaryDocValues;
 import org.apache.lucene.index.CorruptIndexException;
+import org.apache.lucene.index.DocsAndPositionsEnum;
+import org.apache.lucene.index.DocsEnum;
 import org.apache.lucene.index.FieldInfo;
 import org.apache.lucene.index.FieldInfos;
 import org.apache.lucene.index.IndexFileNames;
@@ -32,8 +35,10 @@ import org.apache.lucene.index.NumericDocValues;
 import org.apache.lucene.index.SegmentReadState;
 import org.apache.lucene.index.SortedDocValues;
 import org.apache.lucene.index.SortedSetDocValues;
+import org.apache.lucene.index.TermsEnum;
 import org.apache.lucene.store.ByteArrayDataInput;
 import org.apache.lucene.store.IndexInput;
+import org.apache.lucene.util.Bits;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.IOUtils;
 import org.apache.lucene.util.IntsRef;
@@ -285,6 +290,11 @@ class Lucene42DocValuesProducer extends DocValuesProducer {
       public int getValueCount() {
         return (int)entry.numOrds;
       }
+
+      @Override
+      public TermsEnum termsEnum() {
+        return new FSTTermsEnum(fst);
+      }
     };
   }
   
@@ -369,6 +379,11 @@ class Lucene42DocValuesProducer extends DocValuesProducer {
       public long getValueCount() {
         return entry.numOrds;
       }
+
+      @Override
+      public TermsEnum termsEnum() {
+        return new FSTTermsEnum(fst);
+      }
     };
   }
 
@@ -395,5 +410,107 @@ class Lucene42DocValuesProducer extends DocValuesProducer {
   static class FSTEntry {
     long offset;
     long numOrds;
+  }
+  
+  // exposes FSTEnum directly as a TermsEnum: avoids binary-search next()
+  static class FSTTermsEnum extends TermsEnum {
+    final BytesRefFSTEnum<Long> in;
+    
+    // this is all for the complicated seek(ord)...
+    // maybe we should add a FSTEnum that supports this operation?
+    final FST<Long> fst;
+    final FST.BytesReader bytesReader;
+    final Arc<Long> firstArc = new Arc<Long>();
+    final Arc<Long> scratchArc = new Arc<Long>();
+    final IntsRef scratchInts = new IntsRef();
+    final BytesRef scratchBytes = new BytesRef();
+    
+    FSTTermsEnum(FST<Long> fst) {
+      this.fst = fst;
+      in = new BytesRefFSTEnum<Long>(fst);
+      bytesReader = fst.getBytesReader();
+    }
+
+    @Override
+    public BytesRef next() throws IOException {
+      InputOutput<Long> io = in.next();
+      if (io == null) {
+        return null;
+      } else {
+        return io.input;
+      }
+    }
+
+    @Override
+    public Comparator<BytesRef> getComparator() {
+      return BytesRef.getUTF8SortedAsUnicodeComparator();
+    }
+
+    @Override
+    public SeekStatus seekCeil(BytesRef text, boolean useCache) throws IOException {
+      if (in.seekCeil(text) == null) {
+        return SeekStatus.END;
+      } else if (term().equals(text)) {
+        // TODO: add SeekStatus to FSTEnum like in https://issues.apache.org/jira/browse/LUCENE-3729
+        // to remove this comparision?
+        return SeekStatus.FOUND;
+      } else {
+        return SeekStatus.NOT_FOUND;
+      }
+    }
+
+    @Override
+    public boolean seekExact(BytesRef text, boolean useCache) throws IOException {
+      if (in.seekExact(text) == null) {
+        return false;
+      } else {
+        return true;
+      }
+    }
+
+    @Override
+    public void seekExact(long ord) throws IOException {
+      // TODO: would be better to make this simpler and faster.
+      // but we dont want to introduce a bug that corrupts our enum state!
+      bytesReader.setPosition(0);
+      fst.getFirstArc(firstArc);
+      IntsRef output = Util.getByOutput(fst, ord, bytesReader, firstArc, scratchArc, scratchInts);
+      scratchBytes.bytes = new byte[output.length];
+      scratchBytes.offset = 0;
+      scratchBytes.length = 0;
+      Util.toBytesRef(output, scratchBytes);
+      // TODO: we could do this lazily, better to try to push into FSTEnum though?
+      in.seekExact(scratchBytes);
+    }
+
+    @Override
+    public BytesRef term() throws IOException {
+      return in.current().input;
+    }
+
+    @Override
+    public long ord() throws IOException {
+      return in.current().output;
+    }
+
+    @Override
+    public int docFreq() throws IOException {
+      throw new UnsupportedOperationException();
+    }
+
+    @Override
+    public long totalTermFreq() throws IOException {
+      throw new UnsupportedOperationException();
+    }
+
+    @Override
+    public DocsEnum docs(Bits liveDocs, DocsEnum reuse, int flags) throws IOException {
+      throw new UnsupportedOperationException();
+    }
+
+    @Override
+    public DocsAndPositionsEnum docsAndPositions(Bits liveDocs, DocsAndPositionsEnum reuse, int flags) throws IOException {
+      throw new UnsupportedOperationException();
+    }
   }
 }
