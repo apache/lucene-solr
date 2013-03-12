@@ -56,18 +56,6 @@ public final class NGramTokenizer extends Tokenizer {
 
   /**
    * Creates NGramTokenizer with given min and max n-grams.
-   * @param source {@link AttributeSource} to use
-   * @param input {@link Reader} holding the input to be tokenized
-   * @param minGram the smallest n-gram to generate
-   * @param maxGram the largest n-gram to generate
-   */
-  public NGramTokenizer(AttributeSource source, Reader input, int minGram, int maxGram) {
-    super(source, input);
-    init(minGram, maxGram);
-  }
-
-  /**
-   * Creates NGramTokenizer with given min and max n-grams.
    * @param factory {@link org.apache.lucene.util.AttributeSource.AttributeFactory} to use
    * @param input {@link Reader} holding the input to be tokenized
    * @param minGram the smallest n-gram to generate

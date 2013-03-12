@@ -27,11 +27,13 @@ Changes in backwards compatibility policy
   multiple ngrams derived from the same input token. (Walter Underwood
   via Mike McCandless)
 
-
 * LUCENE-4822: KeywordTokenFilter is now an abstract class. Subclasses
   need to implement #isKeyword() in order to mark terms as keywords. 
   The existing functionality has been factored out into a new 
   SetKeywordTokenFilter class. (Simon Willnauer, Uwe Schindler)
+  
+* LUCENE-4642: Remove Tokenizer's and subclasses' ctors taking
+  AttributeSource. (Renaud Delbru, Uwe Schindler, Steve Rowe)
 
 New Features
 
@@ -54,6 +56,10 @@ New Features
   determine whether the last token was finished or not, so that a
   query "i " will no longer suggest "Isla de Muerta" for example.
   (Mike McCandless)
+  
+* LUCENE-4642: Add create(AttributeFactory) to TokenizerFactory and
+  subclasses with ctors taking AttributeFactory. 
+  (Renaud Delbru, Uwe Schindler, Steve Rowe)
 
 Optimizations
 

@@ -17,9 +17,7 @@ package org.apache.lucene.analysis.uima;
  * limitations under the License.
  */
 
-import org.apache.lucene.analysis.Tokenizer;
 import org.apache.lucene.analysis.util.TokenizerFactory;
-import org.apache.lucene.analysis.uima.UIMAAnnotationsTokenizer;
 
 import java.io.Reader;
 import java.util.HashMap;
@@ -54,7 +52,7 @@ public class UIMAAnnotationsTokenizerFactory extends TokenizerFactory {
   }
 
   @Override
-  public Tokenizer create(Reader input) {
+  public UIMAAnnotationsTokenizer create(Reader input) {
     return new UIMAAnnotationsTokenizer(descriptorPath, tokenType, configurationParameters, input);
   }
 }

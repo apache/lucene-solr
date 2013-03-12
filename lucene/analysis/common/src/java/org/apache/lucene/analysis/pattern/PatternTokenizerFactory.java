@@ -91,7 +91,7 @@ public class PatternTokenizerFactory extends TokenizerFactory
    * Split the input using configured pattern
    */
   @Override
-  public Tokenizer create(final Reader in) {
+  public PatternTokenizer create(final Reader in) {
     try {
       return new PatternTokenizer(in, pattern, group);
     } catch( IOException ex ) {

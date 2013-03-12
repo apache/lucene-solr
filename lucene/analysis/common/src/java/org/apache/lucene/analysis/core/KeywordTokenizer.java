@@ -49,14 +49,6 @@ public final class KeywordTokenizer extends Tokenizer {
     termAtt.resizeBuffer(bufferSize);
   }
 
-  public KeywordTokenizer(AttributeSource source, Reader input, int bufferSize) {
-    super(source, input);
-    if (bufferSize <= 0) {
-      throw new IllegalArgumentException("bufferSize must be > 0");
-    }
-    termAtt.resizeBuffer(bufferSize);
-  }
-
   public KeywordTokenizer(AttributeFactory factory, Reader input, int bufferSize) {
     super(factory, input);
     if (bufferSize <= 0) {

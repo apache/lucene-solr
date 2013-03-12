@@ -17,10 +17,10 @@ package org.apache.lucene.analysis.core;
  * limitations under the License.
  */
 
-import org.apache.lucene.analysis.core.LowerCaseTokenizer;
 import org.apache.lucene.analysis.util.AbstractAnalysisFactory;
 import org.apache.lucene.analysis.util.MultiTermAwareComponent;
 import org.apache.lucene.analysis.util.TokenizerFactory;
+import org.apache.lucene.util.AttributeSource.AttributeFactory;
 
 import java.io.Reader;
 import java.util.Map;
@@ -45,6 +45,11 @@ public class LowerCaseTokenizerFactory extends TokenizerFactory implements Multi
   @Override
   public LowerCaseTokenizer create(Reader input) {
     return new LowerCaseTokenizer(luceneMatchVersion,input);
+  }
+
+  @Override
+  public LowerCaseTokenizer create(AttributeFactory factory, Reader input) {
+    return new LowerCaseTokenizer(luceneMatchVersion, factory, input);
   }
 
   @Override

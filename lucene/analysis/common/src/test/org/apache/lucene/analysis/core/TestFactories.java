@@ -146,7 +146,7 @@ public class TestFactories extends BaseTokenStreamTestCase {
   // some silly classes just so we can use checkRandomData
   private TokenizerFactory assertingTokenizer = new TokenizerFactory() {
     @Override
-    public Tokenizer create(Reader input) {
+    public MockTokenizer create(Reader input) {
       return new MockTokenizer(input);
     }
   };

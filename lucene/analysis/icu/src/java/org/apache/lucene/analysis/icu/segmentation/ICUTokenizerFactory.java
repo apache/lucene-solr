@@ -144,7 +144,7 @@ public class ICUTokenizerFactory extends TokenizerFactory implements ResourceLoa
   }
 
   @Override
-  public Tokenizer create(Reader input) {
+  public ICUTokenizer create(Reader input) {
     assert config != null : "inform must be called first!";
     return new ICUTokenizer(input, config);
   }

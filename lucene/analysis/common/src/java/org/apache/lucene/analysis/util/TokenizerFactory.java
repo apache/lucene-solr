@@ -18,6 +18,7 @@ package org.apache.lucene.analysis.util;
  */
 
 import org.apache.lucene.analysis.Tokenizer;
+import org.apache.lucene.util.AttributeSource.AttributeFactory;
 
 import java.io.Reader;
 import java.util.Set;
@@ -63,4 +64,9 @@ public abstract class TokenizerFactory extends AbstractAnalysisFactory {
 
   /** Creates a TokenStream of the specified input */
   public abstract Tokenizer create(Reader input);
+  
+  /** Creates a TokenStream of the specified input using the given AttributeFactory */
+  public Tokenizer create(AttributeFactory factory, Reader input) {
+    throw new UnsupportedOperationException();
+  }
 }

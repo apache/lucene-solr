@@ -52,10 +52,6 @@ public final class SentenceTokenizer extends Tokenizer {
     super(reader);
   }
 
-  public SentenceTokenizer(AttributeSource source, Reader reader) {
-    super(source, reader);
-  }
-
   public SentenceTokenizer(AttributeFactory factory, Reader reader) {
     super(factory, reader);
   }

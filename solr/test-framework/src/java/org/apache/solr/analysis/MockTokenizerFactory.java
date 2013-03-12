@@ -55,7 +55,7 @@ public class MockTokenizerFactory extends TokenizerFactory {
 
 
   @Override
-  public Tokenizer create(Reader input) {
+  public MockTokenizer create(Reader input) {
     MockTokenizer t = new MockTokenizer(input, pattern, false);
     t.setEnableChecks(enableChecks);
     return t;
