@@ -97,6 +97,7 @@ public abstract class SolrTestCaseJ4 extends LuceneTestCase {
     endTrackingSearchers();
     endTrackingZkClients();
     resetFactory();
+    coreName = CoreContainer.DEFAULT_DEFAULT_CORE_NAME;
     System.clearProperty("jetty.testMode");
   }
 
