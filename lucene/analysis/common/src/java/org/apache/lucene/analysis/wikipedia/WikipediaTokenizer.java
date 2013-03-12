@@ -160,19 +160,6 @@ public final class WikipediaTokenizer extends Tokenizer {
     init(tokenOutput, untokenizedTypes);
   }
 
-  /**
-   * Creates a new instance of the {@link org.apache.lucene.analysis.wikipedia.WikipediaTokenizer}.  Attaches the
-   * <code>input</code> to a the newly created JFlex scanner. Uses the given {@link AttributeSource}.
-   *
-   * @param input The input
-   * @param tokenOutput One of {@link #TOKENS_ONLY}, {@link #UNTOKENIZED_ONLY}, {@link #BOTH}
-   */
-  public WikipediaTokenizer(AttributeSource source, Reader input, int tokenOutput, Set<String> untokenizedTypes) {
-    super(source, input);
-    this.scanner = new WikipediaTokenizerImpl(null); // best effort NPE if you dont call reset
-    init(tokenOutput, untokenizedTypes);
-  }
-  
   private void init(int tokenOutput, Set<String> untokenizedTypes) {
     // TODO: cutover to enum
     if (tokenOutput != TOKENS_ONLY &&

@@ -21,7 +21,6 @@ import java.io.Reader;
 
 import org.apache.lucene.analysis.util.CharTokenizer;
 import org.apache.lucene.analysis.standard.StandardTokenizer; // javadocs
-import org.apache.lucene.util.AttributeSource;
 import org.apache.lucene.util.Version;
 
 /**
@@ -33,10 +32,6 @@ public final class IndicTokenizer extends CharTokenizer {
  
   public IndicTokenizer(Version matchVersion, AttributeFactory factory, Reader input) {
     super(matchVersion, factory, input);
-  }
-
-  public IndicTokenizer(Version matchVersion, AttributeSource source, Reader input) {
-    super(matchVersion, source, input);
   }
 
   public IndicTokenizer(Version matchVersion, Reader input) {

@@ -24,7 +24,6 @@ import org.apache.lucene.analysis.Tokenizer;
 import org.apache.lucene.analysis.tokenattributes.OffsetAttribute;
 import org.apache.lucene.analysis.tokenattributes.CharTermAttribute;
 import org.apache.lucene.analysis.tokenattributes.TypeAttribute;
-import org.apache.lucene.util.AttributeSource;
 
 /**
  * CJKTokenizer is designed for Chinese, Japanese, and Korean languages.
@@ -113,10 +112,6 @@ public final class CJKTokenizer extends Tokenizer {
      */
     public CJKTokenizer(Reader in) {
       super(in);
-    }
-
-    public CJKTokenizer(AttributeSource source, Reader in) {
-      super(source, in);
     }
 
     public CJKTokenizer(AttributeFactory factory, Reader in) {

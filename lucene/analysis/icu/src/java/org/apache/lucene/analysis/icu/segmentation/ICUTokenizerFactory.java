@@ -25,7 +25,6 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
-import org.apache.lucene.analysis.Tokenizer;
 import org.apache.lucene.analysis.util.AbstractAnalysisFactory; // javadocs
 import org.apache.lucene.analysis.util.ResourceLoader;
 import org.apache.lucene.analysis.util.ResourceLoaderAware;
@@ -144,7 +143,7 @@ public class ICUTokenizerFactory extends TokenizerFactory implements ResourceLoa
   }
 
   @Override
-  public Tokenizer create(Reader input) {
+  public ICUTokenizer create(Reader input) {
     assert config != null : "inform must be called first!";
     return new ICUTokenizer(input, config);
   }

@@ -47,13 +47,6 @@ public abstract class Tokenizer extends TokenStream {
     this.input = input;
   }
 
-  /** Construct a token stream processing the given input using the given AttributeSource. */
-  protected Tokenizer(AttributeSource source, Reader input) {
-    super(source);
-    assert input != null: "input must not be null";
-    this.input = input;
-  }
-  
   /**
    * {@inheritDoc}
    * <p>

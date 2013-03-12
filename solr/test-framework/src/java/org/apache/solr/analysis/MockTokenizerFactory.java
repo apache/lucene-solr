@@ -21,7 +21,6 @@ import java.io.Reader;
 import java.util.Map;
 
 import org.apache.lucene.analysis.MockTokenizer;
-import org.apache.lucene.analysis.Tokenizer;
 import org.apache.lucene.analysis.util.TokenizerFactory;
 import org.apache.lucene.util.automaton.CharacterRunAutomaton;
 
@@ -55,7 +54,7 @@ public class MockTokenizerFactory extends TokenizerFactory {
 
 
   @Override
-  public Tokenizer create(Reader input) {
+  public MockTokenizer create(Reader input) {
     MockTokenizer t = new MockTokenizer(input, pattern, false);
     t.setEnableChecks(enableChecks);
     return t;

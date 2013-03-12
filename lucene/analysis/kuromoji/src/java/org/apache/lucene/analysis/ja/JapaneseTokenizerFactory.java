@@ -27,8 +27,6 @@ import java.nio.charset.CodingErrorAction;
 import java.util.Locale;
 import java.util.Map;
 
-import org.apache.lucene.analysis.Tokenizer;
-import org.apache.lucene.analysis.ja.JapaneseTokenizer;
 import org.apache.lucene.analysis.ja.JapaneseTokenizer.Mode;
 import org.apache.lucene.analysis.ja.dict.UserDictionary;
 import org.apache.lucene.analysis.util.TokenizerFactory;
@@ -89,7 +87,7 @@ public class JapaneseTokenizerFactory extends TokenizerFactory implements Resour
   }
   
   @Override
-  public Tokenizer create(Reader input) {
+  public JapaneseTokenizer create(Reader input) {
     return new JapaneseTokenizer(input, userDictionary, discardPunctuation, mode);
   }
   

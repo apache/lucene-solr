@@ -17,10 +17,8 @@ package org.apache.lucene.analysis.standard;
  * limitations under the License.
  */
 
-import org.apache.lucene.analysis.Tokenizer;
-import org.apache.lucene.analysis.standard.ClassicTokenizer;
-import org.apache.lucene.analysis.standard.StandardAnalyzer;
 import org.apache.lucene.analysis.util.TokenizerFactory;
+import org.apache.lucene.util.AttributeSource.AttributeFactory;
 
 import java.io.Reader;
 import java.util.Map;
@@ -50,8 +48,15 @@ public class ClassicTokenizerFactory extends TokenizerFactory {
   }
 
   @Override
-  public Tokenizer create(Reader input) {
+  public ClassicTokenizer create(Reader input) {
     ClassicTokenizer tokenizer = new ClassicTokenizer(luceneMatchVersion, input); 
+    tokenizer.setMaxTokenLength(maxTokenLength);
+    return tokenizer;
+  }
+
+  @Override
+  public ClassicTokenizer create(AttributeFactory factory, Reader input) {
+    ClassicTokenizer tokenizer = new ClassicTokenizer(luceneMatchVersion, factory, input); 
     tokenizer.setMaxTokenLength(maxTokenLength);
     return tokenizer;
   }

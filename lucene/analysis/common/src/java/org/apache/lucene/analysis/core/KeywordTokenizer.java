@@ -23,7 +23,6 @@ import java.io.Reader;
 import org.apache.lucene.analysis.Tokenizer;
 import org.apache.lucene.analysis.tokenattributes.OffsetAttribute;
 import org.apache.lucene.analysis.tokenattributes.CharTermAttribute;
-import org.apache.lucene.util.AttributeSource;
 
 /**
  * Emits the entire input as a single token.
@@ -43,14 +42,6 @@ public final class KeywordTokenizer extends Tokenizer {
 
   public KeywordTokenizer(Reader input, int bufferSize) {
     super(input);
-    if (bufferSize <= 0) {
-      throw new IllegalArgumentException("bufferSize must be > 0");
-    }
-    termAtt.resizeBuffer(bufferSize);
-  }
-
-  public KeywordTokenizer(AttributeSource source, Reader input, int bufferSize) {
-    super(source, input);
     if (bufferSize <= 0) {
       throw new IllegalArgumentException("bufferSize must be > 0");
     }

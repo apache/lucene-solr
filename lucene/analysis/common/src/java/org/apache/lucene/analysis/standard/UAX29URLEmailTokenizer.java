@@ -28,7 +28,6 @@ import org.apache.lucene.analysis.tokenattributes.OffsetAttribute;
 import org.apache.lucene.analysis.tokenattributes.PositionIncrementAttribute;
 import org.apache.lucene.analysis.tokenattributes.CharTermAttribute;
 import org.apache.lucene.analysis.tokenattributes.TypeAttribute;
-import org.apache.lucene.util.AttributeSource;
 import org.apache.lucene.util.Version;
 
 /**
@@ -106,14 +105,6 @@ public final class UAX29URLEmailTokenizer extends Tokenizer {
    */
   public UAX29URLEmailTokenizer(Version matchVersion, Reader input) {
     super(input);
-    this.scanner = getScannerFor(matchVersion);
-  }
-
-  /**
-   * Creates a new UAX29URLEmailTokenizer with a given {@link AttributeSource}. 
-   */
-  public UAX29URLEmailTokenizer(Version matchVersion, AttributeSource source, Reader input) {
-    super(source, input);
     this.scanner = getScannerFor(matchVersion);
   }
 

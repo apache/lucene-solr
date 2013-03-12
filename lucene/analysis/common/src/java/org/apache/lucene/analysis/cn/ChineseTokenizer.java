@@ -25,7 +25,6 @@ import org.apache.lucene.analysis.standard.StandardTokenizer;
 import org.apache.lucene.analysis.Tokenizer;
 import org.apache.lucene.analysis.tokenattributes.CharTermAttribute;
 import org.apache.lucene.analysis.tokenattributes.OffsetAttribute;
-import org.apache.lucene.util.AttributeSource;
 
 
 /**
@@ -61,10 +60,6 @@ public final class ChineseTokenizer extends Tokenizer {
 
     public ChineseTokenizer(Reader in) {
       super(in);
-    }
-
-    public ChineseTokenizer(AttributeSource source, Reader in) {
-      super(source, in);
     }
 
     public ChineseTokenizer(AttributeFactory factory, Reader in) {

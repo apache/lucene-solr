@@ -22,8 +22,6 @@ import java.io.Reader;
 import java.util.Map;
 import java.util.regex.Pattern;
 
-import org.apache.lucene.analysis.Tokenizer;
-import org.apache.lucene.analysis.pattern.PatternTokenizer;
 import org.apache.lucene.analysis.util.TokenizerFactory;
 
 /**
@@ -91,7 +89,7 @@ public class PatternTokenizerFactory extends TokenizerFactory
    * Split the input using configured pattern
    */
   @Override
-  public Tokenizer create(final Reader in) {
+  public PatternTokenizer create(final Reader in) {
     try {
       return new PatternTokenizer(in, pattern, group);
     } catch( IOException ex ) {

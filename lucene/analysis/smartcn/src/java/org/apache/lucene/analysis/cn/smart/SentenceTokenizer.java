@@ -24,7 +24,6 @@ import org.apache.lucene.analysis.Tokenizer;
 import org.apache.lucene.analysis.tokenattributes.CharTermAttribute;
 import org.apache.lucene.analysis.tokenattributes.OffsetAttribute;
 import org.apache.lucene.analysis.tokenattributes.TypeAttribute;
-import org.apache.lucene.util.AttributeSource;
 
 /**
  * Tokenizes input text into sentences.
@@ -50,10 +49,6 @@ public final class SentenceTokenizer extends Tokenizer {
 
   public SentenceTokenizer(Reader reader) {
     super(reader);
-  }
-
-  public SentenceTokenizer(AttributeSource source, Reader reader) {
-    super(source, reader);
   }
 
   public SentenceTokenizer(AttributeFactory factory, Reader reader) {
