@@ -82,7 +82,7 @@ public class DistributedQueue {
       try {
         // Check format
         if (!childName.regionMatches(0, prefix, 0, prefix.length())) {
-          LOG.warn("Found child node with improper name: " + childName);
+          LOG.debug("Found child node with improper name: " + childName);
           continue;
         }
         String suffix = childName.substring(prefix.length());
