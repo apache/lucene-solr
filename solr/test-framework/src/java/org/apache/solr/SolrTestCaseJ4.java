@@ -97,6 +97,7 @@ public abstract class SolrTestCaseJ4 extends LuceneTestCase {
     endTrackingSearchers();
     endTrackingZkClients();
     resetFactory();
+    coreName = CoreContainer.DEFAULT_DEFAULT_CORE_NAME;
     System.clearProperty("jetty.testMode");
   }
 
@@ -384,7 +385,8 @@ public abstract class SolrTestCaseJ4 extends LuceneTestCase {
   public static void createCore() {
     assertNotNull(testSolrHome);
     solrConfig = TestHarness.createConfig(testSolrHome, coreName, getSolrConfigFile());
-    h = new TestHarness( dataDir.getAbsolutePath(),
+    h = new TestHarness( coreName,
+            dataDir.getAbsolutePath(),
             solrConfig,
             getSchemaFile());
     lrf = h.getRequestFactory
