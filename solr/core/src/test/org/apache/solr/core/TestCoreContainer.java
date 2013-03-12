@@ -32,6 +32,7 @@ import org.apache.commons.io.FileUtils;
 import org.apache.lucene.util.IOUtils;
 import org.apache.solr.SolrTestCaseJ4;
 import org.junit.BeforeClass;
+import org.junit.Ignore;
 import org.junit.Test;
 import org.xml.sax.SAXException;
 
@@ -42,24 +43,28 @@ public class TestCoreContainer extends SolrTestCaseJ4 {
     initCore("solrconfig.xml", "schema.xml");
   }
 
+  private File solrHomeDirectory;
 
-  public void testShareSchema() throws IOException, ParserConfigurationException, SAXException {
-    
-    final File solrHomeDirectory = new File(TEMP_DIR, this.getClass().getName()
-        + "_shareSchema");
+  private CoreContainer init(String dirName) throws Exception {
+
+    solrHomeDirectory = new File(TEMP_DIR, this.getClass().getName() + dirName);
 
     if (solrHomeDirectory.exists()) {
       FileUtils.deleteDirectory(solrHomeDirectory);
     }
     assertTrue("Failed to mkdirs workDir", solrHomeDirectory.mkdirs());
-    
-    FileUtils.copyDirectory(new File(SolrTestCaseJ4.TEST_HOME()), solrHomeDirectory);
-    
-    File fconf = new File(solrHomeDirectory, "solr.xml");
 
-    final CoreContainer cores = new CoreContainer(solrHomeDirectory.getAbsolutePath());
+    FileUtils.copyDirectory(new File(SolrTestCaseJ4.TEST_HOME()), solrHomeDirectory);
+
+    CoreContainer ret = new CoreContainer(solrHomeDirectory.getAbsolutePath());
+    ret.load(solrHomeDirectory.getAbsolutePath(), new File(solrHomeDirectory, "solr.xml"));
+    return ret;
+  }
+
+  @Test
+  public void testShareSchema() throws Exception {
     System.setProperty("shareSchema", "true");
-    cores.load(solrHomeDirectory.getAbsolutePath(), fconf);
+    final CoreContainer cores = init("_shareSchema");
     try {
       cores.setPersistent(false);
       assertTrue(cores.isShareSchema());
@@ -79,31 +84,47 @@ public class TestCoreContainer extends SolrTestCaseJ4 {
       System.clearProperty("shareSchema");
     }
   }
-  
+
   @Test
-  public void testReload() throws Exception {
-    final CoreContainer cc = h.getCoreContainer();
-    
-    class TestThread extends Thread {
-      @Override
-      public void run() {
-        cc.reload("collection1");
+  public void testReloadSequential() throws Exception {
+    final CoreContainer cc = init("_reloadSequential");
+    try {
+      cc.reload("collection1");
+      cc.reload("collection1");
+      cc.reload("collection1");
+      cc.reload("collection1");
+
+    } finally {
+      cc.shutdown();
+    }
+  }
+
+  @Test
+  public void testReloadThreaded() throws Exception {
+    final CoreContainer cc = init("_reloadThreaded");
+
+      class TestThread extends Thread {
+        @Override
+        public void run() {
+          cc.reload("collection1");
+        }
       }
+
+      List<Thread> threads = new ArrayList<Thread>();
+      int numThreads = 4;
+      for (int i = 0; i < numThreads; i++) {
+        threads.add(new TestThread());
+      }
+
+      for (Thread thread : threads) {
+        thread.start();
+      }
+
+      for (Thread thread : threads) {
+        thread.join();
     }
-    
-    List<Thread> threads = new ArrayList<Thread>();
-    int numThreads = 4;
-    for (int i = 0; i < numThreads; i++) {
-      threads.add(new TestThread());
-    }
-    
-    for (Thread thread : threads) {
-      thread.start();
-    }
-    
-    for (Thread thread : threads) {
-      thread.join();
-    }
+
+    cc.shutdown();
 
   }
 
@@ -117,6 +138,7 @@ public class TestCoreContainer extends SolrTestCaseJ4 {
     assertTrue("Failed to mkdirs workDir", workDir.mkdirs());
     
     final CoreContainer cores = h.getCoreContainer();
+
     cores.setPersistent(true); // is this needed since we make explicit calls?
 
     String instDir = null;
@@ -261,7 +283,7 @@ public class TestCoreContainer extends SolrTestCaseJ4 {
       fail("CoreContainer not created" + e.getMessage());
     }
     try {
-      //assert cero cores
+      //assert zero cores
       assertEquals("There should not be cores", 0, cores.getCores().size());
       
       FileUtils.copyDirectory(new File(SolrTestCaseJ4.TEST_HOME(), "collection1"), solrHomeDirectory);
