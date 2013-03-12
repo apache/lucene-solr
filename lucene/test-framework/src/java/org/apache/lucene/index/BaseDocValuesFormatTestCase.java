@@ -45,6 +45,7 @@ import org.apache.lucene.document.StoredField;
 import org.apache.lucene.document.StringField;
 import org.apache.lucene.document.TextField;
 import org.apache.lucene.index.FieldInfo.DocValuesType;
+import org.apache.lucene.index.TermsEnum.SeekStatus;
 import org.apache.lucene.search.BooleanClause;
 import org.apache.lucene.search.BooleanQuery;
 import org.apache.lucene.search.FieldCache;
@@ -698,6 +699,77 @@ public abstract class BaseDocValuesFormatTestCase extends LuceneTestCase {
     assertEquals(new BytesRef("hello world 2"), scratch);
     dv.lookupOrd(dv.getOrd(1), scratch);
     assertEquals(new BytesRef(""), scratch);
+    ireader.close();
+    directory.close();
+  }
+  
+  public void testSortedTermsEnum() throws IOException {
+    Directory directory = newDirectory();
+    Analyzer analyzer = new MockAnalyzer(random());
+    IndexWriterConfig iwconfig = newIndexWriterConfig(TEST_VERSION_CURRENT, analyzer);
+    iwconfig.setMergePolicy(newLogMergePolicy());
+    RandomIndexWriter iwriter = new RandomIndexWriter(random(), directory, iwconfig);
+    
+    Document doc = new Document();
+    doc.add(new SortedDocValuesField("field", new BytesRef("hello")));
+    iwriter.addDocument(doc);
+    
+    doc = new Document();
+    doc.add(new SortedDocValuesField("field", new BytesRef("world")));
+    iwriter.addDocument(doc);
+
+    doc = new Document();
+    doc.add(new SortedDocValuesField("field", new BytesRef("beer")));
+    iwriter.addDocument(doc);
+    iwriter.forceMerge(1);
+    
+    DirectoryReader ireader = iwriter.getReader();
+    iwriter.close();
+
+    SortedDocValues dv = getOnlySegmentReader(ireader).getSortedDocValues("field");
+    assertEquals(3, dv.getValueCount());
+    
+    TermsEnum termsEnum = dv.termsEnum();
+    
+    // next()
+    assertEquals("beer", termsEnum.next().utf8ToString());
+    assertEquals(0, termsEnum.ord());
+    assertEquals("hello", termsEnum.next().utf8ToString());
+    assertEquals(1, termsEnum.ord());
+    assertEquals("world", termsEnum.next().utf8ToString());
+    assertEquals(2, termsEnum.ord());
+    
+    // seekCeil()
+    assertEquals(SeekStatus.NOT_FOUND, termsEnum.seekCeil(new BytesRef("ha!")));
+    assertEquals("hello", termsEnum.term().utf8ToString());
+    assertEquals(1, termsEnum.ord());
+    assertEquals(SeekStatus.FOUND, termsEnum.seekCeil(new BytesRef("beer")));
+    assertEquals("beer", termsEnum.term().utf8ToString());
+    assertEquals(0, termsEnum.ord());
+    assertEquals(SeekStatus.END, termsEnum.seekCeil(new BytesRef("zzz")));
+    
+    // seekExact()
+    assertTrue(termsEnum.seekExact(new BytesRef("beer"), true));
+    assertEquals("beer", termsEnum.term().utf8ToString());
+    assertEquals(0, termsEnum.ord());
+    assertTrue(termsEnum.seekExact(new BytesRef("hello"), true));
+    assertEquals(Codec.getDefault().toString(), "hello", termsEnum.term().utf8ToString());
+    assertEquals(1, termsEnum.ord());
+    assertTrue(termsEnum.seekExact(new BytesRef("world"), true));
+    assertEquals("world", termsEnum.term().utf8ToString());
+    assertEquals(2, termsEnum.ord());
+    assertFalse(termsEnum.seekExact(new BytesRef("bogus"), true));
+
+    // seek(ord)
+    termsEnum.seekExact(0);
+    assertEquals("beer", termsEnum.term().utf8ToString());
+    assertEquals(0, termsEnum.ord());
+    termsEnum.seekExact(1);
+    assertEquals("hello", termsEnum.term().utf8ToString());
+    assertEquals(1, termsEnum.ord());
+    termsEnum.seekExact(2);
+    assertEquals("world", termsEnum.term().utf8ToString());
+    assertEquals(2, termsEnum.ord());
     ireader.close();
     directory.close();
   }
@@ -1654,6 +1726,71 @@ public abstract class BaseDocValuesFormatTestCase extends LuceneTestCase {
     SortedSetDocValues dv = getOnlySegmentReader(ireader).getSortedSetDocValues("field");
     assertEquals(0, dv.getValueCount());
     
+    ireader.close();
+    directory.close();
+  }
+  
+  public void testSortedSetTermsEnum() throws IOException {
+    assumeTrue("Codec does not support SORTED_SET", defaultCodecSupportsSortedSet());
+    Directory directory = newDirectory();
+    Analyzer analyzer = new MockAnalyzer(random());
+    IndexWriterConfig iwconfig = newIndexWriterConfig(TEST_VERSION_CURRENT, analyzer);
+    iwconfig.setMergePolicy(newLogMergePolicy());
+    RandomIndexWriter iwriter = new RandomIndexWriter(random(), directory, iwconfig);
+    
+    Document doc = new Document();
+    doc.add(new SortedSetDocValuesField("field", new BytesRef("hello")));
+    doc.add(new SortedSetDocValuesField("field", new BytesRef("world")));
+    doc.add(new SortedSetDocValuesField("field", new BytesRef("beer")));
+    iwriter.addDocument(doc);
+    
+    DirectoryReader ireader = iwriter.getReader();
+    iwriter.close();
+
+    SortedSetDocValues dv = getOnlySegmentReader(ireader).getSortedSetDocValues("field");
+    assertEquals(3, dv.getValueCount());
+    
+    TermsEnum termsEnum = dv.termsEnum();
+    
+    // next()
+    assertEquals("beer", termsEnum.next().utf8ToString());
+    assertEquals(0, termsEnum.ord());
+    assertEquals("hello", termsEnum.next().utf8ToString());
+    assertEquals(1, termsEnum.ord());
+    assertEquals("world", termsEnum.next().utf8ToString());
+    assertEquals(2, termsEnum.ord());
+    
+    // seekCeil()
+    assertEquals(SeekStatus.NOT_FOUND, termsEnum.seekCeil(new BytesRef("ha!")));
+    assertEquals("hello", termsEnum.term().utf8ToString());
+    assertEquals(1, termsEnum.ord());
+    assertEquals(SeekStatus.FOUND, termsEnum.seekCeil(new BytesRef("beer")));
+    assertEquals("beer", termsEnum.term().utf8ToString());
+    assertEquals(0, termsEnum.ord());
+    assertEquals(SeekStatus.END, termsEnum.seekCeil(new BytesRef("zzz")));
+    
+    // seekExact()
+    assertTrue(termsEnum.seekExact(new BytesRef("beer"), true));
+    assertEquals("beer", termsEnum.term().utf8ToString());
+    assertEquals(0, termsEnum.ord());
+    assertTrue(termsEnum.seekExact(new BytesRef("hello"), true));
+    assertEquals("hello", termsEnum.term().utf8ToString());
+    assertEquals(1, termsEnum.ord());
+    assertTrue(termsEnum.seekExact(new BytesRef("world"), true));
+    assertEquals("world", termsEnum.term().utf8ToString());
+    assertEquals(2, termsEnum.ord());
+    assertFalse(termsEnum.seekExact(new BytesRef("bogus"), true));
+
+    // seek(ord)
+    termsEnum.seekExact(0);
+    assertEquals("beer", termsEnum.term().utf8ToString());
+    assertEquals(0, termsEnum.ord());
+    termsEnum.seekExact(1);
+    assertEquals("hello", termsEnum.term().utf8ToString());
+    assertEquals(1, termsEnum.ord());
+    termsEnum.seekExact(2);
+    assertEquals("world", termsEnum.term().utf8ToString());
+    assertEquals(2, termsEnum.ord());
     ireader.close();
     directory.close();
   }
