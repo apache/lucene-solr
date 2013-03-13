@@ -118,7 +118,9 @@ public final class PostingsHighlighter {
   /**
    * Creates a new highlighter with custom parameters.
    * @param maxLength maximum content size to process.
-   * @param breakIterator used for finding passage boundaries.
+   * @param breakIterator used for finding passage
+   *        boundaries; pass null to highlight the entire
+   *        content as a single Passage.
    * @param scorer used for ranking passages.
    * @param formatter used for formatting passages into highlighted snippets.
    * @throws IllegalArgumentException if <code>maxLength</code> is negative or <code>Integer.MAX_VALUE</code>
@@ -129,7 +131,10 @@ public final class PostingsHighlighter {
       // our sentinel in the offsets queue uses this value to terminate.
       throw new IllegalArgumentException("maxLength must be < Integer.MAX_VALUE");
     }
-    if (breakIterator == null || scorer == null || formatter == null) {
+    if (breakIterator == null) {
+      breakIterator = new WholeBreakIterator();
+    }
+    if (scorer == null || formatter == null) {
       throw new NullPointerException();
     }
     this.maxLength = maxLength;
