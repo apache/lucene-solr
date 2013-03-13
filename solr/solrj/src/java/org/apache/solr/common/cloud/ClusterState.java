@@ -114,11 +114,17 @@ public class ClusterState implements JSONWriter.Writable {
     if (coll == null) return null;
     return coll.getSlicesMap();
   }
+  
+  public Map<String, Slice> getAllSlicesMap(String collection) {
+    DocCollection coll = collectionStates.get(collection);
+    if (coll == null) return null;
+    return coll.getAllSlicesMap();
+  }
 
   public Collection<Slice> getSlices(String collection) {
     DocCollection coll = collectionStates.get(collection);
     if (coll == null) return null;
-    return coll.getSlicesMap().values();
+    return coll.getSlices();
   }
 
   /**
