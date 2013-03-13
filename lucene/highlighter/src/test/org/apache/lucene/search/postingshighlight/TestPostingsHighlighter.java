@@ -406,4 +406,32 @@ public class TestPostingsHighlighter extends LuceneTestCase {
     ir.close();
     dir.close();
   }
+
+  public void testBooleanMustNot() throws Exception {
+    Directory dir = newDirectory();
+    Analyzer analyzer = new MockAnalyzer(random(), MockTokenizer.SIMPLE, true);
+    RandomIndexWriter iw = new RandomIndexWriter(random(), dir, analyzer);
+    FieldType positionsType = new FieldType(TextField.TYPE_STORED);
+    positionsType.setIndexOptions(IndexOptions.DOCS_AND_FREQS_AND_POSITIONS_AND_OFFSETS);
+    Field body = new Field("body", "This sentence has both terms.  This sentence has only terms.", positionsType);
+    Document document = new Document();
+    document.add(body);
+    iw.addDocument(document);
+    IndexReader ir = iw.getReader();
+    iw.close();
+    IndexSearcher searcher = newSearcher(ir);
+    BooleanQuery query = new BooleanQuery();
+    query.add(new TermQuery(new Term("body", "terms")), BooleanClause.Occur.SHOULD);
+    BooleanQuery query2 = new BooleanQuery();
+    query.add(query2, BooleanClause.Occur.SHOULD);
+    query2.add(new TermQuery(new Term("body", "both")), BooleanClause.Occur.MUST_NOT);
+    TopDocs topDocs = searcher.search(query, 10);
+    assertEquals(1, topDocs.totalHits);
+    PostingsHighlighter highlighter = new PostingsHighlighter(Integer.MAX_VALUE-1);
+    String snippets[] = highlighter.highlight("body", query, searcher, topDocs, 2);
+    assertEquals(1, snippets.length);
+    assertFalse(snippets[0].contains("<b>both</b>"));
+    ir.close();
+    dir.close();
+  }
 }

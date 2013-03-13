@@ -80,6 +80,9 @@ Bug Fixes
   codecs. The special case of a null context ClassLoader is now also
   supported.  (Christian Kohlschütter, Uwe Schindler)
 
+* LUCENE-4828: BooleanQuery no longer extracts terms from its MUST_NOT
+  clauses.  (Mike McCandless)
+
 ======================= Lucene 4.2.0 =======================
 
 Changes in backwards compatibility policy
