@@ -39,6 +39,11 @@ public final class NamedSPILoader<S extends NamedSPILoader.NamedSPI> implements 
   
   public NamedSPILoader(Class<S> clazz, ClassLoader classloader) {
     this.clazz = clazz;
+    // if clazz' classloader is not a parent of the given one, we scan clazz's classloader, too:
+    final ClassLoader clazzClassloader = clazz.getClassLoader();
+    if (clazzClassloader != null && !SPIClassIterator.isParentClassLoader(clazzClassloader, classloader)) {
+      reload(clazzClassloader);
+    }
     reload(classloader);
   }
   
