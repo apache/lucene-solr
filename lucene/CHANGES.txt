@@ -61,6 +61,9 @@ New Features
   subclasses with ctors taking AttributeFactory. 
   (Renaud Delbru, Uwe Schindler, Steve Rowe)
 
+* LUCENE-4820: Add payloads to Analyzing/FuzzySuggester, to record an
+  arbitrary byte[] per suggestion (Mike McCandless)
+
 Optimizations
 
 * LUCENE-4819: Added Sorted[Set]DocValues.termsEnum(), and optimized the

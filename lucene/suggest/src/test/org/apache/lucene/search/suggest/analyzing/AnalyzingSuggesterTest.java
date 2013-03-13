@@ -53,6 +53,8 @@ import org.apache.lucene.analysis.tokenattributes.TermToBytesRefAttribute;
 import org.apache.lucene.search.suggest.Lookup.LookupResult;
 import org.apache.lucene.search.suggest.TermFreq;
 import org.apache.lucene.search.suggest.TermFreqArrayIterator;
+import org.apache.lucene.search.suggest.TermFreqPayload;
+import org.apache.lucene.search.suggest.TermFreqPayloadArrayIterator;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.LuceneTestCase;
 import org.apache.lucene.util._TestUtil;
@@ -101,6 +103,56 @@ public class AnalyzingSuggesterTest extends LuceneTestCase {
     assertEquals(10, results.get(1).value, 0.01F);
     assertEquals("barbara", results.get(2).key.toString());
     assertEquals(6, results.get(2).value, 0.01F);
+  }
+  
+  public void testKeywordWithPayloads() throws Exception {
+    TermFreqPayload keys[] = new TermFreqPayload[] {
+      new TermFreqPayload("foo", 50, new BytesRef("hello")),
+      new TermFreqPayload("bar", 10, new BytesRef("goodbye")),
+      new TermFreqPayload("barbar", 12, new BytesRef("thank you")),
+      new TermFreqPayload("barbara", 6, new BytesRef("for all the fish"))
+    };
+    
+    AnalyzingSuggester suggester = new AnalyzingSuggester(new MockAnalyzer(random(), MockTokenizer.KEYWORD, false));
+    suggester.build(new TermFreqPayloadArrayIterator(keys));
+    
+    // top N of 2, but only foo is available
+    List<LookupResult> results = suggester.lookup(_TestUtil.stringToCharSequence("f", random()), false, 2);
+    assertEquals(1, results.size());
+    assertEquals("foo", results.get(0).key.toString());
+    assertEquals(50, results.get(0).value, 0.01F);
+    assertEquals(new BytesRef("hello"), results.get(0).payload);
+    
+    // top N of 1 for 'bar': we return this even though
+    // barbar is higher because exactFirst is enabled:
+    results = suggester.lookup(_TestUtil.stringToCharSequence("bar", random()), false, 1);
+    assertEquals(1, results.size());
+    assertEquals("bar", results.get(0).key.toString());
+    assertEquals(10, results.get(0).value, 0.01F);
+    assertEquals(new BytesRef("goodbye"), results.get(0).payload);
+    
+    // top N Of 2 for 'b'
+    results = suggester.lookup(_TestUtil.stringToCharSequence("b", random()), false, 2);
+    assertEquals(2, results.size());
+    assertEquals("barbar", results.get(0).key.toString());
+    assertEquals(12, results.get(0).value, 0.01F);
+    assertEquals(new BytesRef("thank you"), results.get(0).payload);
+    assertEquals("bar", results.get(1).key.toString());
+    assertEquals(10, results.get(1).value, 0.01F);
+    assertEquals(new BytesRef("goodbye"), results.get(1).payload);
+    
+    // top N of 3 for 'ba'
+    results = suggester.lookup(_TestUtil.stringToCharSequence("ba", random()), false, 3);
+    assertEquals(3, results.size());
+    assertEquals("barbar", results.get(0).key.toString());
+    assertEquals(12, results.get(0).value, 0.01F);
+    assertEquals(new BytesRef("thank you"), results.get(0).payload);
+    assertEquals("bar", results.get(1).key.toString());
+    assertEquals(10, results.get(1).value, 0.01F);
+    assertEquals(new BytesRef("goodbye"), results.get(1).payload);
+    assertEquals("barbara", results.get(2).key.toString());
+    assertEquals(6, results.get(2).value, 0.01F);
+    assertEquals(new BytesRef("for all the fish"), results.get(2).payload);
   }
   
   // TODO: more tests
@@ -435,11 +487,13 @@ public class AnalyzingSuggesterTest extends LuceneTestCase {
     public final String surfaceForm;
     public final String analyzedForm;
     public final long weight;
+    public final BytesRef payload;
 
-    public TermFreq2(String surfaceForm, String analyzedForm, long weight) {
+    public TermFreq2(String surfaceForm, String analyzedForm, long weight, BytesRef payload) {
       this.surfaceForm = surfaceForm;
       this.analyzedForm = analyzedForm;
       this.weight = weight;
+      this.payload = payload;
     }
 
     @Override
@@ -549,7 +603,15 @@ public class AnalyzingSuggesterTest extends LuceneTestCase {
     final TreeSet<String> allPrefixes = new TreeSet<String>();
     final Set<String> seen = new HashSet<String>();
     
-    TermFreq[] keys = new TermFreq[numQueries];
+    boolean doPayloads = random().nextBoolean();
+
+    TermFreq[] keys = null;
+    TermFreqPayload[] payloadKeys = null;
+    if (doPayloads) {
+      payloadKeys = new TermFreqPayload[numQueries];
+    } else {
+      keys = new TermFreq[numQueries];
+    }
 
     boolean preserveSep = random().nextBoolean();
 
@@ -614,9 +676,18 @@ public class AnalyzingSuggesterTest extends LuceneTestCase {
       }
       // we can probably do Integer.MAX_VALUE here, but why worry.
       int weight = random().nextInt(1<<24);
-      keys[i] = new TermFreq(key, weight);
+      BytesRef payload;
+      if (doPayloads) {
+        byte[] bytes = new byte[random().nextInt(10)];
+        random().nextBytes(bytes);
+        payload = new BytesRef(bytes);
+        payloadKeys[i] = new TermFreqPayload(key, weight, payload);
+      } else {
+        keys[i] = new TermFreq(key, weight);
+        payload = null;
+      }
 
-      slowCompletor.add(new TermFreq2(key, analyzedKey, weight));
+      slowCompletor.add(new TermFreq2(key, analyzedKey, weight, payload));
     }
 
     if (VERBOSE) {
@@ -632,7 +703,11 @@ public class AnalyzingSuggesterTest extends LuceneTestCase {
     Analyzer a = new MockTokenEatingAnalyzer(numStopChars, preserveHoles);
     AnalyzingSuggester suggester = new AnalyzingSuggester(a, a,
                                                           preserveSep ? AnalyzingSuggester.PRESERVE_SEP : 0, 256, -1);
-    suggester.build(new TermFreqArrayIterator(keys));
+    if (doPayloads) {
+      suggester.build(new TermFreqPayloadArrayIterator(payloadKeys));
+    } else {
+      suggester.build(new TermFreqArrayIterator(keys));
+    }
 
     for (String prefix : allPrefixes) {
 
@@ -739,6 +814,9 @@ public class AnalyzingSuggesterTest extends LuceneTestCase {
         //System.out.println("  check hit " + hit);
         assertEquals(matches.get(hit).surfaceForm.toString(), r.get(hit).key.toString());
         assertEquals(matches.get(hit).weight, r.get(hit).value, 0f);
+        if (doPayloads) {
+          assertEquals(matches.get(hit).payload, r.get(hit).payload);
+        }
       }
     }
   }
