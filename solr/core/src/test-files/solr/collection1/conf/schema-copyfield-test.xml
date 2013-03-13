@@ -460,7 +460,13 @@
    <copyField source="text_fr" dest="highlight" maxChars="25" />
    <copyField source="text_en" dest="highlight" maxChars="25" />
    <copyField source="text_*" dest="highlight" maxChars="25" />
-   
+
+   <!-- test source glob matching multiple explicit fields: sku1 and sku2 -->
+   <copyField source="sku*" dest="text"/>
+   <copyField source="sku*" dest="*_s"/>
+   <copyField source="sku*" dest="*_dest_sub_s"/>
+   <copyField source="sku*" dest="dest_sub_no_ast_s"/>
+     
  <!-- Similarity is the scoring routine for each document vs a query.
       A custom similarity may be specified here, but the default is fine
       for most applications.
