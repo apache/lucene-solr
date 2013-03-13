@@ -81,8 +81,6 @@ Bug Fixes
 * SOLR-4567: copyField source glob matching explicit field(s) stopped working
   in Solr 4.2. (Alexandre Rafalovitch, Steve Rowe)  
 
-* SOLR-4566: Fix DocCollection to return all shards not just active shards.
-  (Mark Miller)
 
 Other Changes
 ----------------------
