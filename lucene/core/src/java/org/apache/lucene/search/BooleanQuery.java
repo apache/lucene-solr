@@ -446,9 +446,11 @@ public class BooleanQuery extends Query implements Iterable<BooleanClause> {
   // inherit javadoc
   @Override
   public void extractTerms(Set<Term> terms) {
-      for (BooleanClause clause : clauses) {
-          clause.getQuery().extractTerms(terms);
-        }
+    for (BooleanClause clause : clauses) {
+      if (clause.getOccur() != Occur.MUST_NOT) {
+        clause.getQuery().extractTerms(terms);
+      }
+    }
   }
 
   @Override @SuppressWarnings("unchecked")
