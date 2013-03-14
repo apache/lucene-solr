@@ -163,6 +163,18 @@ public class TestSolrDiscoveryProperties extends SolrTestCaseJ4 {
       TestLazyCores.checkNotInCores(cc, "lazy1", "core2", "collection1");
 
       SolrCore core1 = cc.getCore("core1");
+
+      // Let's assert we did the right thing for implicit properties too.
+      CoreDescriptor desc = core1.getCoreDescriptor();
+      assertEquals("core1", desc.getProperty("solr.core.name"));
+
+      // This is too long and ugly to put in. Besides, it varies.
+      assertNotNull(desc.getProperty("solr.core.instanceDir"));
+
+      assertEquals("stuffandnonsense", desc.getProperty("solr.core.dataDir"));
+      assertEquals("solrconfig-minimal.xml", desc.getProperty("solr.core.configName"));
+      assertEquals("schema-tiny.xml", desc.getProperty("solr.core.schemaName"));
+
       SolrCore core2 = cc.getCore("core2");
       SolrCore lazy1 = cc.getCore("lazy1");
       TestLazyCores.checkInCores(cc, "core1", "core2", "lazy1");
@@ -386,6 +398,19 @@ public class TestSolrDiscoveryProperties extends SolrTestCaseJ4 {
       assertNull(props.getProperty("port")); // getProperty actually looks at original props.
       assertNull(props.getProperty("cores.hostContext"));
       assertNull(props.getProperty("cores.zkClientTimeout"));
+
+      SolrCore core1 = cc.getCore("collection1");
+      CoreDescriptor desc = core1.getCoreDescriptor();
+
+      assertEquals("collection1", desc.getProperty("solr.core.name"));
+
+      // This is too long and ugly to put in. Besides, it varies.
+      assertNotNull(desc.getProperty("solr.core.instanceDir"));
+
+      assertEquals("data/", desc.getProperty("solr.core.dataDir"));
+      assertEquals("solrconfig-minimal.xml", desc.getProperty("solr.core.configName"));
+      assertEquals("schema-tiny.xml", desc.getProperty("solr.core.schemaName"));
+      core1.close();
     } finally {
       cc.shutdown();
     }
