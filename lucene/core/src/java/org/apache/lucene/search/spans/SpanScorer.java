@@ -107,4 +107,9 @@ public class SpanScorer extends Scorer {
   public float sloppyFreq() throws IOException {
     return freq;
   }
+  
+  @Override
+  public long cost() {
+    return spans.cost();
+  }
 }

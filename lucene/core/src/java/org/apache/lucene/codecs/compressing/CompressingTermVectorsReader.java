@@ -1037,6 +1037,10 @@ public final class CompressingTermVectorsReader extends TermVectorsReader implem
       }
     }
 
+    @Override
+    public long cost() {
+      return 1;
+    }
   }
 
   private static int sum(int[] arr) {

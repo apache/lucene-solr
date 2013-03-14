@@ -781,6 +781,11 @@ public class IndexSearcher {
       public float score() {
         return score;
       }
+
+      @Override
+      public long cost() {
+        return 1;
+      }
     }
 
     private final FakeScorer fakeScorer = new FakeScorer();

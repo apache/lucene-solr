@@ -210,6 +210,11 @@ public class FilteredQuery extends Query {
     public Collection<ChildScorer> getChildren() {
       return Collections.singleton(new ChildScorer(scorer, "FILTERED"));
     }
+
+    @Override
+    public long cost() {
+      return scorer.cost();
+    }
   }
   
   /**
@@ -303,6 +308,11 @@ public class FilteredQuery extends Query {
     @Override
     public final Collection<ChildScorer> getChildren() {
       return Collections.singleton(new ChildScorer(scorer, "FILTERED"));
+    }
+
+    @Override
+    public long cost() {
+      return Math.min(primary.cost(), secondary.cost());
     }
   }
   

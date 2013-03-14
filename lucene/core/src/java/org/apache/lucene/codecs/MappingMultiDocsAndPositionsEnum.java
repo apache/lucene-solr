@@ -134,5 +134,14 @@ public final class MappingMultiDocsAndPositionsEnum extends DocsAndPositionsEnum
   public BytesRef getPayload() throws IOException {
     return current.getPayload();
   }
+
+  @Override
+  public long cost() {
+    long cost = 0;
+    for (EnumWithSlice enumWithSlice : subs) {
+      cost += enumWithSlice.docsAndPositionsEnum.cost();
+    }
+    return cost;
+  }
 }
 

@@ -49,6 +49,7 @@ final class SloppyPhraseScorer extends Scorer {
   private PhrasePositions[] rptStack; // temporary stack for switching colliding repeating pps 
   
   private int numMatches;
+  private final long cost;
   
   SloppyPhraseScorer(Weight weight, PhraseQuery.PostingsAndFreq[] postings,
       int slop, Similarity.SloppySimScorer docScorer) {
@@ -57,6 +58,8 @@ final class SloppyPhraseScorer extends Scorer {
     this.slop = slop;
     this.numPostings = postings==null ? 0 : postings.length;
     pq = new PhraseQueue(postings.length);
+    // min(cost)
+    cost = postings[0].postings.cost();
     // convert tps to a list of phrase positions.
     // note: phrase-position differs from term-position in that its position
     // reflects the phrase offset: pp.pos = tp.pos - offset.
@@ -589,6 +592,11 @@ final class SloppyPhraseScorer extends Scorer {
     return max.doc;
   }
   
+  @Override
+  public long cost() {
+    return cost;
+  }
+
   @Override
   public String toString() { return "scorer(" + weight + ")"; }
 }

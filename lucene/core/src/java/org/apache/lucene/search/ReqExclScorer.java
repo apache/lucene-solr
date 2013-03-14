@@ -128,4 +128,9 @@ class ReqExclScorer extends Scorer {
     }
     return doc = toNonExcluded();
   }
+
+  @Override
+  public long cost() {
+    return reqScorer.cost();
+  }
 }

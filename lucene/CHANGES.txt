@@ -76,6 +76,9 @@ New Features
 * LUCENE-4827: Add additional ctor to PostingsHighlighter PassageScorer
   to provide bm25 k1,b,avgdl parameters. (Robert Muir)
 
+* LUCENE-4607: Add DocIDSetIterator.cost() and Spans.cost() for optimizing
+  scoring.  (Simon Willnauer, Robert Muir)
+
 Optimizations
 
 * LUCENE-4819: Added Sorted[Set]DocValues.termsEnum(), and optimized the

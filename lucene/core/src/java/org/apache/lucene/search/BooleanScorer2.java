@@ -147,6 +147,11 @@ class BooleanScorer2 extends Scorer {
     public int advance(int target) throws IOException {
       return scorer.advance(target);
     }
+
+    @Override
+    public long cost() {
+      return scorer.cost();
+    }
   }
 
   private Scorer countingDisjunctionSumScorer(final List<Scorer> scorers,
@@ -175,7 +180,7 @@ class BooleanScorer2 extends Scorer {
                                               List<Scorer> requiredScorers) throws IOException {
     // each scorer from the list counted as a single matcher
     final int requiredNrMatchers = requiredScorers.size();
-    return new ConjunctionScorer(weight, requiredScorers) {
+    return new ConjunctionScorer(weight, requiredScorers.toArray(new Scorer[requiredScorers.size()])) {
       private int lastScoredDoc = -1;
       // Save the score of lastScoredDoc, so that we don't compute it more than
       // once in score().
@@ -200,7 +205,7 @@ class BooleanScorer2 extends Scorer {
 
   private Scorer dualConjunctionSumScorer(boolean disableCoord,
                                                 Scorer req1, Scorer req2) throws IOException { // non counting.
-    return new ConjunctionScorer(weight, req1, req2);
+    return new ConjunctionScorer(weight, new Scorer[] { req1, req2 });
     // All scorers match, so defaultSimilarity always has 1 as
     // the coordination factor.
     // Therefore the sum of the scores of two scorers
@@ -320,6 +325,11 @@ class BooleanScorer2 extends Scorer {
   @Override
   public int advance(int target) throws IOException {
     return doc = countingSumScorer.advance(target);
+  }
+  
+  @Override
+  public long cost() {
+    return countingSumScorer.cost();
   }
 
   @Override

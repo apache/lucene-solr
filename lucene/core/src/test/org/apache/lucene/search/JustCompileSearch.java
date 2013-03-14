@@ -88,6 +88,11 @@ final class JustCompileSearch {
     public int advance(int target) {
       throw new UnsupportedOperationException(UNSUPPORTED_MSG);
     }
+    
+    @Override
+    public long cost() {
+      throw new UnsupportedOperationException(UNSUPPORTED_MSG);
+    }
   }
   
   static final class JustCompileExtendedFieldCacheLongParser implements FieldCache.LongParser {
@@ -200,6 +205,10 @@ final class JustCompileSearch {
       throw new UnsupportedOperationException(UNSUPPORTED_MSG);
     }
     
+    @Override
+    public long cost() {
+      throw new UnsupportedOperationException(UNSUPPORTED_MSG);
+    }
   }
 
   static final class JustCompileQuery extends Query {
@@ -244,6 +253,11 @@ final class JustCompileSearch {
     
     @Override
     public int advance(int target) {
+      throw new UnsupportedOperationException(UNSUPPORTED_MSG);
+    }
+    
+    @Override
+    public long cost() {
       throw new UnsupportedOperationException(UNSUPPORTED_MSG);
     }
   }

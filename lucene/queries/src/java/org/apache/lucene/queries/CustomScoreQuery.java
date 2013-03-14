@@ -348,6 +348,11 @@ public class CustomScoreQuery extends Query {
       }
       return doc;
     }
+
+    @Override
+    public long cost() {
+      return subQueryScorer.cost();
+    }
   }
 
   @Override

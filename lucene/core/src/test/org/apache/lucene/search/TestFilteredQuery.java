@@ -536,6 +536,11 @@ public class TestFilteredQuery extends LuceneTestCase {
                 advanceCalled = true;
                 return termDocsEnum.advance(target);
               }
+              
+              @Override
+              public long cost() {
+                return termDocsEnum.cost();
+              } 
             };
           }
           

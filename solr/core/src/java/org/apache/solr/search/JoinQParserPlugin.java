@@ -546,6 +546,11 @@ class JoinQuery extends Query {
     public int advance(int target) throws IOException {
       return iter.advance(target);
     }
+
+    @Override
+    public long cost() {
+      return iter.cost();
+    }
   }
 
 

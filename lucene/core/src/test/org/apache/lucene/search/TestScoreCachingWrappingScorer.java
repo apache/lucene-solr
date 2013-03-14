@@ -59,6 +59,10 @@ public class TestScoreCachingWrappingScorer extends LuceneTestCase {
       return doc < scores.length ? doc : NO_MORE_DOCS;
     }
     
+    @Override
+    public long cost() {
+      return scores.length;
+    }
   }
   
   private static final class ScoreCachingCollector extends Collector {

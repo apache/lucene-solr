@@ -433,6 +433,11 @@ public final class RAMOnlyPostingsFormat extends PostingsFormat {
     public int docID() {
       return current.docID;
     }
+    
+    @Override
+    public long cost() {
+      return ramTerm.docs.size();
+    } 
   }
 
   private static class RAMDocsAndPositionsEnum extends DocsAndPositionsEnum {
@@ -505,6 +510,11 @@ public final class RAMOnlyPostingsFormat extends PostingsFormat {
         return null;
       }
     }
+    
+    @Override
+    public long cost() {
+      return ramTerm.docs.size();
+    } 
   }
 
   // Holds all indexes created, keyed by the ID assigned in fieldsConsumer

@@ -497,6 +497,9 @@ public final class PostingsHighlighter {
 
     @Override
     public int advance(int target) throws IOException { return NO_MORE_DOCS; }
+    
+    @Override
+    public long cost() { return 0; }
   };
   
   /** 

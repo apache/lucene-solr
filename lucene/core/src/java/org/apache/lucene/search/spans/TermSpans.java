@@ -99,6 +99,11 @@ public class TermSpans extends Spans {
     return position + 1;
   }
 
+  @Override
+  public long cost() {
+    return postings.cost();
+  }
+
   // TODO: Remove warning after API has been finalized
   @Override
   public Collection<byte[]> getPayload() throws IOException {
@@ -165,6 +170,11 @@ public class TermSpans extends Spans {
     @Override
     public boolean isPayloadAvailable() {
       return false;
+    }
+
+    @Override
+    public long cost() {
+      return 0;
     }
   }
 

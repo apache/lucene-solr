@@ -409,6 +409,10 @@ public class ToParentBlockJoinQuery extends Query {
       );
     }
 
+    @Override
+    public long cost() {
+      return childScorer.cost();
+    }
   }
 
   @Override

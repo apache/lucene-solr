@@ -117,6 +117,11 @@ public class BlockGroupingCollector extends Collector {
     public int nextDoc() {
       throw new UnsupportedOperationException();
     }
+
+    @Override
+    public long cost() {
+      return 1;
+    }
   }
 
   private static final class OneGroup {

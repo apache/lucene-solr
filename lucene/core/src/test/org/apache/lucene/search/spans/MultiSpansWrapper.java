@@ -167,4 +167,9 @@ public class MultiSpansWrapper extends Spans { // can't be package private due t
     return current.isPayloadAvailable();
   }
 
+  @Override
+  public long cost() {
+    return Integer.MAX_VALUE; // just for tests
+  }
+
 }

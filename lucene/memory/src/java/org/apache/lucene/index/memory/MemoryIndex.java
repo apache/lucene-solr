@@ -1020,6 +1020,11 @@ public class MemoryIndex {
       public int freq() throws IOException {
         return freq;
       }
+
+      @Override
+      public long cost() {
+        return 1;
+      }
     }
     
     private class MemoryDocsAndPositionsEnum extends DocsAndPositionsEnum {
@@ -1099,6 +1104,11 @@ public class MemoryIndex {
       @Override
       public BytesRef getPayload() {
         return null;
+      }
+      
+      @Override
+      public long cost() {
+        return 1;
       }
     }
     
