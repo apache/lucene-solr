@@ -40,6 +40,7 @@ import org.apache.solr.common.params.CoreAdminParams;
 import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.common.util.NamedList;
+import org.apache.solr.common.util.SimpleOrderedMap;
 import org.apache.solr.core.CoreContainer;
 import org.apache.solr.handler.RequestHandlerBase;
 import org.apache.solr.request.SolrQueryRequest;
@@ -102,35 +103,38 @@ public class CollectionsHandler extends RequestHandlerBase {
     if (a != null) {
       action = CollectionAction.get(a);
     }
-    if (action != null) {
-      switch (action) {
-        case CREATE: {
-          this.handleCreateAction(req, rsp);
-          break;
-        }
-        case DELETE: {
-          this.handleDeleteAction(req, rsp);
-          break;
-        }
-        case RELOAD: {
-          this.handleReloadAction(req, rsp);
-          break;
-        }
-        case SYNCSHARD: {
-          this.handleSyncShardAction(req, rsp);
-          break;
-        }
-        case CREATEALIAS: {
-          this.handleCreateAliasAction(req, rsp);
-          break;
-        }
-        case DELETEALIAS: {
-          this.handleDeleteAliasAction(req, rsp);
-          break;
-        }
-        default: {
-          throw new RuntimeException("Unknown action: " + action);
-        }
+    if (action == null) {
+      throw new SolrException(ErrorCode.BAD_REQUEST, "Unknown action: " + a);
+    }
+    
+    switch (action) {
+      case CREATE: {
+        this.handleCreateAction(req, rsp);
+        break;
+      }
+      case DELETE: {
+        this.handleDeleteAction(req, rsp);
+        break;
+      }
+      case RELOAD: {
+        this.handleReloadAction(req, rsp);
+        break;
+      }
+      case SYNCSHARD: {
+        this.handleSyncShardAction(req, rsp);
+        break;
+      }
+      case CREATEALIAS: {
+        this.handleCreateAliasAction(req, rsp);
+        break;
+      }
+      case DELETEALIAS: {
+        this.handleDeleteAliasAction(req, rsp);
+        break;
+      }
+      default: {
+        throw new SolrException(ErrorCode.BAD_REQUEST, "Unknown action: "
+            + action);
       }
     }
 
@@ -148,6 +152,11 @@ public class CollectionsHandler extends RequestHandlerBase {
     if (event.getBytes() != null) {
       SolrResponse response = SolrResponse.deserialize(event.getBytes());
       rsp.getValues().addAll(response.getResponse());
+      SimpleOrderedMap exp = (SimpleOrderedMap) response.getResponse().get("exception");
+      if (exp != null) {
+        Integer code = (Integer) exp.get("rspCode");
+        rsp.setException(new SolrException(code != null && code != -1 ? ErrorCode.getErrorCode(code) : ErrorCode.SERVER_ERROR, (String)exp.get("msg")));
+      }
     } else {
       if (System.currentTimeMillis() - time >= DEFAULT_ZK_TIMEOUT) {
         throw new SolrException(ErrorCode.SERVER_ERROR, operation

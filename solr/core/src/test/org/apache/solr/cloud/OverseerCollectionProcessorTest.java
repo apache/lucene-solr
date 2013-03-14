@@ -38,6 +38,7 @@ import java.util.Set;
 
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.client.solrj.SolrResponse;
+import org.apache.solr.client.solrj.response.QueryResponse;
 import org.apache.solr.cloud.DistributedQueue.QueueEvent;
 import org.apache.solr.common.cloud.ClusterState;
 import org.apache.solr.common.cloud.SolrZkClient;
@@ -46,7 +47,6 @@ import org.apache.solr.common.cloud.ZkStateReader;
 import org.apache.solr.common.params.CoreAdminParams;
 import org.apache.solr.common.params.CoreAdminParams.CoreAdminAction;
 import org.apache.solr.common.params.ModifiableSolrParams;
-import org.apache.solr.common.util.NamedList;
 import org.apache.solr.common.util.StrUtils;
 import org.apache.solr.handler.component.ShardHandler;
 import org.apache.solr.handler.component.ShardRequest;
@@ -248,6 +248,7 @@ public class OverseerCollectionProcessorTest extends SolrTestCaseJ4 {
       expectLastCall();
       submitCaptures.add(submitCapture);
       ShardResponse shardResponseWithoutException = new ShardResponse();
+      shardResponseWithoutException.setSolrResponse(new QueryResponse());
       expect(shardHandlerMock.takeCompletedOrError()).andReturn(
           shardResponseWithoutException);
     }
