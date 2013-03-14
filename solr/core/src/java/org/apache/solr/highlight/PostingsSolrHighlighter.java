@@ -55,6 +55,9 @@ import org.apache.solr.util.plugin.PluginInfoInitialized;
  *                      preTag="&amp;lt;em&amp;gt;"
  *                      postTag="&amp;lt;/em&amp;gt;"
  *                      ellipsis="... "
+ *                      k1="1.2"
+ *                      b="0.75"
+ *                      pivot="87"
  *                      maxLength=10000/&gt;
  *   &lt;/searchComponent&gt;
  * </pre>
@@ -78,7 +81,23 @@ public class PostingsSolrHighlighter extends SolrHighlighter implements PluginIn
   public void init(PluginInfo info) {
     Map<String,String> attributes = info.attributes;
     BreakIterator breakIterator = BreakIterator.getSentenceInstance(Locale.ROOT);
-    PassageScorer scorer = new PassageScorer();
+    
+    // scorer parameters: k1/b/pivot
+    String k1 = attributes.get("k1");
+    if (k1 == null) {
+      k1 = "1.2";
+    }
+    
+    String b = attributes.get("b");
+    if (b == null) {
+      b = "0.75";
+    }
+    
+    String pivot = attributes.get("pivot");
+    if (pivot == null) {
+      pivot = "87";
+    }
+    PassageScorer scorer = new PassageScorer(Float.parseFloat(k1), Float.parseFloat(b), Float.parseFloat(pivot));
     
     // formatter parameters: preTag/postTag/ellipsis
     String preTag = attributes.get("preTag");

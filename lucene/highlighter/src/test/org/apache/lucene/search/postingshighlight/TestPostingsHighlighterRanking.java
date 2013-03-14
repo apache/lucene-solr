@@ -31,6 +31,7 @@ import org.apache.lucene.document.FieldType;
 import org.apache.lucene.document.StringField;
 import org.apache.lucene.document.TextField;
 import org.apache.lucene.index.IndexReader;
+import org.apache.lucene.index.IndexWriterConfig;
 import org.apache.lucene.index.RandomIndexWriter;
 import org.apache.lucene.index.FieldInfo.IndexOptions;
 import org.apache.lucene.index.Term;
@@ -38,6 +39,7 @@ import org.apache.lucene.search.BooleanClause;
 import org.apache.lucene.search.BooleanQuery;
 import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.search.Query;
+import org.apache.lucene.search.Sort;
 import org.apache.lucene.search.TermQuery;
 import org.apache.lucene.search.TopDocs;
 import org.apache.lucene.store.Directory;
@@ -236,5 +238,80 @@ public class TestPostingsHighlighterRanking extends LuceneTestCase {
     public String toString() {
       return "Pair [start=" + start + ", end=" + end + "]";
     }
+  }
+  
+  /** sets b=0 to disable passage length normalization */
+  public void testCustomB() throws Exception {
+    Directory dir = newDirectory();
+    IndexWriterConfig iwc = newIndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer(random(), MockTokenizer.SIMPLE, true));
+    iwc.setMergePolicy(newLogMergePolicy());
+    RandomIndexWriter iw = new RandomIndexWriter(random(), dir, iwc);
+    
+    FieldType offsetsType = new FieldType(TextField.TYPE_STORED);
+    offsetsType.setIndexOptions(IndexOptions.DOCS_AND_FREQS_AND_POSITIONS_AND_OFFSETS);
+    Field body = new Field("body", "", offsetsType);
+    Document doc = new Document();
+    doc.add(body);
+    
+    body.setStringValue("This is a test.  This test is a better test but the sentence is excruiatingly long, " + 
+                        "you have no idea how painful it was for me to type this long sentence into my IDE.");
+    iw.addDocument(doc);
+    
+    IndexReader ir = iw.getReader();
+    iw.close();
+    
+    IndexSearcher searcher = newSearcher(ir);
+    PostingsHighlighter highlighter = new PostingsHighlighter(10000, 
+                                             BreakIterator.getSentenceInstance(Locale.ROOT), 
+                                             new PassageScorer(1.2f, 0, 87), 
+                                             new PassageFormatter());
+    Query query = new TermQuery(new Term("body", "test"));
+    TopDocs topDocs = searcher.search(query, null, 10, Sort.INDEXORDER);
+    assertEquals(1, topDocs.totalHits);
+    String snippets[] = highlighter.highlight("body", query, searcher, topDocs, 1);
+    assertEquals(1, snippets.length);
+    assertTrue(snippets[0].startsWith("This <b>test</b> is a better <b>test</b>"));
+    
+    ir.close();
+    dir.close();
+  }
+  
+  /** sets k1=0 for simple coordinate-level match (# of query terms present) */
+  public void testCustomK1() throws Exception {
+    Directory dir = newDirectory();
+    IndexWriterConfig iwc = newIndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer(random(), MockTokenizer.SIMPLE, true));
+    iwc.setMergePolicy(newLogMergePolicy());
+    RandomIndexWriter iw = new RandomIndexWriter(random(), dir, iwc);
+    
+    FieldType offsetsType = new FieldType(TextField.TYPE_STORED);
+    offsetsType.setIndexOptions(IndexOptions.DOCS_AND_FREQS_AND_POSITIONS_AND_OFFSETS);
+    Field body = new Field("body", "", offsetsType);
+    Document doc = new Document();
+    doc.add(body);
+    
+    body.setStringValue("This has only foo foo. " + 
+                        "On the other hand this sentence contains both foo and bar. " + 
+                        "This has only bar bar bar bar bar bar bar bar bar bar bar bar.");
+    iw.addDocument(doc);
+    
+    IndexReader ir = iw.getReader();
+    iw.close();
+    
+    IndexSearcher searcher = newSearcher(ir);
+    PostingsHighlighter highlighter = new PostingsHighlighter(10000, 
+                                             BreakIterator.getSentenceInstance(Locale.ROOT), 
+                                             new PassageScorer(0, 0.75f, 87), 
+                                             new PassageFormatter());
+    BooleanQuery query = new BooleanQuery();
+    query.add(new TermQuery(new Term("body", "foo")), BooleanClause.Occur.SHOULD);
+    query.add(new TermQuery(new Term("body", "bar")), BooleanClause.Occur.SHOULD);
+    TopDocs topDocs = searcher.search(query, null, 10, Sort.INDEXORDER);
+    assertEquals(1, topDocs.totalHits);
+    String snippets[] = highlighter.highlight("body", query, searcher, topDocs, 1);
+    assertEquals(1, snippets.length);
+    assertTrue(snippets[0].startsWith("On the other hand"));
+    
+    ir.close();
+    dir.close();
   }
 }

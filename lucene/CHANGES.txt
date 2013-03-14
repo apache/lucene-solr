@@ -73,6 +73,9 @@ New Features
   now highlights the entire content as a single Passage.  (Robert
   Muir, Mike McCandless)
 
+* LUCENE-4816: Add additional ctor to PostingsHighlighter PassageScorer
+  to provide bm25 k1,b,avgdl parameters. (Robert Muir)
+
 Optimizations
 
 * LUCENE-4819: Added Sorted[Set]DocValues.termsEnum(), and optimized the
