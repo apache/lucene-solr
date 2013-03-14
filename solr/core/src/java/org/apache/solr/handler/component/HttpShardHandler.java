@@ -137,6 +137,9 @@ public class HttpShardHandler extends ShardHandler {
       public ShardResponse call() throws Exception {
 
         ShardResponse srsp = new ShardResponse();
+        if (sreq.nodeName != null) {
+          srsp.setNodeName(sreq.nodeName);
+        }
         srsp.setShardRequest(sreq);
         srsp.setShard(shard);
         SimpleSolrResponse ssr = new SimpleSolrResponse();
