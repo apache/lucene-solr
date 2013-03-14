@@ -103,6 +103,9 @@ Bug Fixes
 * SOLR-4577: The collections API should return responses (success or failure)
   for each node it attempts to work with. (Mark Miller)
 
+* SOLR-4568: The lastPublished state check before becoming a leader is not 
+  working correctly. (Mark Miller)
+
 Other Changes
 ----------------------
 
