@@ -190,7 +190,7 @@ public class ZkCLI {
             if (isXml) {
               cfg = new ConfigSolrXmlBackCompat(loader, null, is, null, false);
             } else {
-              cfg = new SolrProperties(null, is, null);
+              cfg = new SolrProperties(null, loader, is, null);
             }
           } finally {
             IOUtils.closeQuietly(is);
