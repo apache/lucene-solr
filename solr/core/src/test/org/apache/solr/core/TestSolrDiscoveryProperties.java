@@ -407,7 +407,7 @@ public class TestSolrDiscoveryProperties extends SolrTestCaseJ4 {
       // This is too long and ugly to put in. Besides, it varies.
       assertNotNull(desc.getProperty("solr.core.instanceDir"));
 
-      assertEquals("data/", desc.getProperty("solr.core.dataDir"));
+      assertEquals("data" + File.separator, desc.getProperty("solr.core.dataDir"));
       assertEquals("solrconfig-minimal.xml", desc.getProperty("solr.core.configName"));
       assertEquals("schema-tiny.xml", desc.getProperty("solr.core.schemaName"));
       core1.close();
