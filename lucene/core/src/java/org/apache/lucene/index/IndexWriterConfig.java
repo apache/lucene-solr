@@ -23,7 +23,6 @@ import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.codecs.Codec;
 import org.apache.lucene.index.DocumentsWriterPerThread.IndexingChain;
 import org.apache.lucene.index.IndexWriter.IndexReaderWarmer;
-import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.search.similarities.Similarity;
 import org.apache.lucene.util.InfoStream;
 import org.apache.lucene.util.PrintStreamInfoStream;
@@ -166,6 +165,9 @@ public final class IndexWriterConfig extends LiveIndexWriterConfig implements Cl
    * 
    * <p>Only takes effect when IndexWriter is first created. */
   public IndexWriterConfig setOpenMode(OpenMode openMode) {
+    if (openMode == null) {
+      throw new IllegalArgumentException("openMode must not be null");
+    }
     this.openMode = openMode;
     return this;
   }
@@ -187,13 +189,15 @@ public final class IndexWriterConfig extends LiveIndexWriterConfig implements Cl
    * like NFS that do not support "delete on last close" semantics, which
    * Lucene's "point in time" search normally relies on.
    * <p>
-   * <b>NOTE:</b> the deletion policy cannot be null. If <code>null</code> is
-   * passed, the deletion policy will be set to the default.
+   * <b>NOTE:</b> the deletion policy cannot be null.
    *
    * <p>Only takes effect when IndexWriter is first created. 
    */
   public IndexWriterConfig setIndexDeletionPolicy(IndexDeletionPolicy delPolicy) {
-    this.delPolicy = delPolicy == null ? new KeepOnlyLastCommitDeletionPolicy() : delPolicy;
+    if (delPolicy == null) {
+      throw new IllegalArgumentException("indexDeletionPolicy must not be null");
+    }
+    this.delPolicy = delPolicy;
     return this;
   }
 
@@ -220,12 +224,14 @@ public final class IndexWriterConfig extends LiveIndexWriterConfig implements Cl
   /**
    * Expert: set the {@link Similarity} implementation used by this IndexWriter.
    * <p>
-   * <b>NOTE:</b> the similarity cannot be null. If <code>null</code> is passed,
-   * the similarity will be set to the default implementation (unspecified).
+   * <b>NOTE:</b> the similarity cannot be null.
    *
    * <p>Only takes effect when IndexWriter is first created. */
   public IndexWriterConfig setSimilarity(Similarity similarity) {
-    this.similarity = similarity == null ? IndexSearcher.getDefaultSimilarity() : similarity;
+    if (similarity == null) {
+      throw new IllegalArgumentException("similarity must not be null");
+    }
+    this.similarity = similarity;
     return this;
   }
 
@@ -238,12 +244,14 @@ public final class IndexWriterConfig extends LiveIndexWriterConfig implements Cl
    * Expert: sets the merge scheduler used by this writer. The default is
    * {@link ConcurrentMergeScheduler}.
    * <p>
-   * <b>NOTE:</b> the merge scheduler cannot be null. If <code>null</code> is
-   * passed, the merge scheduler will be set to the default.
+   * <b>NOTE:</b> the merge scheduler cannot be null.
    *
    * <p>Only takes effect when IndexWriter is first created. */
   public IndexWriterConfig setMergeScheduler(MergeScheduler mergeScheduler) {
-    this.mergeScheduler = mergeScheduler == null ? new ConcurrentMergeScheduler() : mergeScheduler;
+    if (mergeScheduler == null) {
+      throw new IllegalArgumentException("mergeScheduler must not be null");
+    }
+    this.mergeScheduler = mergeScheduler;
     return this;
   }
 
@@ -272,12 +280,14 @@ public final class IndexWriterConfig extends LiveIndexWriterConfig implements Cl
    * Expert: {@link MergePolicy} is invoked whenever there are changes to the
    * segments in the index. Its role is to select which merges to do, if any,
    * and return a {@link MergePolicy.MergeSpecification} describing the merges.
-   * It also selects merges to do for forceMerge. (The default is
-   * {@link LogByteSizeMergePolicy}.
+   * It also selects merges to do for forceMerge.
    *
    * <p>Only takes effect when IndexWriter is first created. */
   public IndexWriterConfig setMergePolicy(MergePolicy mergePolicy) {
-    this.mergePolicy = mergePolicy == null ? new LogByteSizeMergePolicy() : mergePolicy;
+    if (mergePolicy == null) {
+      throw new IllegalArgumentException("mergePolicy must not be null");
+    }
+    this.mergePolicy = mergePolicy;
     return this;
   }
 
@@ -289,7 +299,7 @@ public final class IndexWriterConfig extends LiveIndexWriterConfig implements Cl
    */
   public IndexWriterConfig setCodec(Codec codec) {
     if (codec == null) {
-      throw new NullPointerException();
+      throw new IllegalArgumentException("codec must not be null");
     }
     this.codec = codec;
     return this;
@@ -378,7 +388,10 @@ public final class IndexWriterConfig extends LiveIndexWriterConfig implements Cl
    *
    * <p>Only takes effect when IndexWriter is first created. */
   IndexWriterConfig setIndexingChain(IndexingChain indexingChain) {
-    this.indexingChain = indexingChain == null ? DocumentsWriterPerThread.defaultIndexingChain : indexingChain;
+    if (indexingChain == null) {
+      throw new IllegalArgumentException("indexingChain must not be null");
+    }
+    this.indexingChain = indexingChain;
     return this;
   }
 
@@ -396,6 +409,9 @@ public final class IndexWriterConfig extends LiveIndexWriterConfig implements Cl
    * @see #setRAMBufferSizeMB(double)
    */
   IndexWriterConfig setFlushPolicy(FlushPolicy flushPolicy) {
+    if (flushPolicy == null) {
+      throw new IllegalArgumentException("flushPolicy must not be null");
+    }
     this.flushPolicy = flushPolicy;
     return this;
   }
@@ -484,7 +500,10 @@ public final class IndexWriterConfig extends LiveIndexWriterConfig implements Cl
   
   /** Convenience method that uses {@link PrintStreamInfoStream} */
   public IndexWriterConfig setInfoStream(PrintStream printStream) {
-    return setInfoStream(printStream == null ? InfoStream.NO_OUTPUT : new PrintStreamInfoStream(printStream));
+    if (printStream == null) {
+      throw new IllegalArgumentException("printStream must not be null");
+    }
+    return setInfoStream(new PrintStreamInfoStream(printStream));
   }
   
   @Override

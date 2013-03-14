@@ -35,6 +35,11 @@ Changes in backwards compatibility policy
 * LUCENE-4642: Remove Tokenizer's and subclasses' ctors taking
   AttributeSource. (Renaud Delbru, Uwe Schindler, Steve Rowe)
 
+* LUCENE-4833: IndexWriterConfig used to use LogByteSizeMergePolicy when
+  calling setMergePolicy(null) although the default merge policy is
+  TieredMergePolicy. IndexWriterConfig setters now throw an exception when
+  passed null if null is not a valid value.
+
 New Features
 
 * LUCENE-4815: DrillSideways now allows more than one FacetRequest per
