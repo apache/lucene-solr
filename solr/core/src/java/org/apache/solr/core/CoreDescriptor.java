@@ -64,6 +64,8 @@ public class CoreDescriptor {
   // them individually.
   private Properties coreProperties = new Properties();
 
+  private boolean loadedImplicit = false;
+
   private final CoreContainer coreContainer;
 
   private CloudDescriptor cloudDesc;
@@ -133,11 +135,11 @@ public class CoreDescriptor {
 
   public Properties initImplicitProperties() {
     Properties implicitProperties = new Properties(coreContainer.getContainerProperties());
-    implicitProperties.setProperty(CORE_NAME, getName());
-    implicitProperties.setProperty(CORE_INSTDIR, getInstanceDir());
-    implicitProperties.setProperty(CORE_DATADIR, getDataDir());
-    implicitProperties.setProperty(CORE_CONFIG, getConfigName());
-    implicitProperties.setProperty(CORE_SCHEMA, getSchemaName());
+    implicitProperties.setProperty("solr.core.name", getName());
+    implicitProperties.setProperty("solr.core.instanceDir", getInstanceDir());
+    implicitProperties.setProperty("solr.core.dataDir", getDataDir());
+    implicitProperties.setProperty("solr.core.configName", getConfigName());
+    implicitProperties.setProperty("solr.core.schemaName", getSchemaName());
     return implicitProperties;
   }
 
@@ -251,13 +253,14 @@ public class CoreDescriptor {
    * Under any circumstance, the properties passed in will override any already present.Merge
    */
   public void setCoreProperties(Properties coreProperties) {
-    if (this.coreProperties == null) {
+    if (! loadedImplicit) {
+      loadedImplicit = true;
       Properties p = initImplicitProperties();
-      this.coreProperties = new Properties(p);
-    }
-    // The caller presumably wants whatever properties passed in to override the current core props, so just add them.
-    if(coreProperties != null) {
-      this.coreProperties.putAll(coreProperties);
+      this.coreProperties.putAll(p);
+      // The caller presumably wants whatever properties passed in to override the current core props, so just add them.
+      if (coreProperties != null) {
+        this.coreProperties.putAll(coreProperties);
+      }
     }
   }
 
