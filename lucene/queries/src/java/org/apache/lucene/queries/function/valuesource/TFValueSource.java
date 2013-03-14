@@ -97,6 +97,11 @@ public class TFValueSource extends TermFreqValueSource {
             public int advance(int target) {
               return DocIdSetIterator.NO_MORE_DOCS;
             }
+
+            @Override
+            public long cost() {
+              return 0;
+            }
           };
         }
         atDoc = -1;

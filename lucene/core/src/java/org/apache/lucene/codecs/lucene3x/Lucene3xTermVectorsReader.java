@@ -587,6 +587,11 @@ class Lucene3xTermVectorsReader extends TermVectorsReader {
       this.doc = -1;
       didNext = false;
     }
+
+    @Override
+    public long cost() {
+      return 1;
+    }
   }
 
   private static class TVDocsAndPositionsEnum extends DocsAndPositionsEnum {
@@ -676,6 +681,11 @@ class Lucene3xTermVectorsReader extends TermVectorsReader {
       } else {
         return -1;
       }
+    }
+    
+    @Override
+    public long cost() {
+      return 1;
     }
   }
 

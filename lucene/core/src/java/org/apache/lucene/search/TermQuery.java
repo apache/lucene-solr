@@ -32,7 +32,6 @@ import org.apache.lucene.index.TermsEnum;
 import org.apache.lucene.search.similarities.Similarity.ExactSimScorer;
 import org.apache.lucene.search.similarities.Similarity;
 import org.apache.lucene.util.Bits;
-import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.ToStringUtils;
 
 /** A Query that matches documents containing a term.
@@ -85,7 +84,7 @@ public class TermQuery extends Query {
       }
       DocsEnum docs = termsEnum.docs(acceptDocs, null);
       assert docs != null;
-      return new TermScorer(this, docs, similarity.exactSimScorer(stats, context), termsEnum.docFreq());
+      return new TermScorer(this, docs, similarity.exactSimScorer(stats, context));
     }
     
     /**

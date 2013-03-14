@@ -280,6 +280,11 @@ public abstract class BasePostingsFormatTestCase extends LuceneTestCase {
       }
       return docID;
     }
+    
+    @Override
+    public long cost() {
+      return docFreq;
+    } 
   }
   
   private static class FieldAndTerm {

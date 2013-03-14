@@ -441,6 +441,11 @@ public class SepPostingsReader extends PostingsReaderBase {
 
       return doc;
     }
+    
+    @Override
+    public long cost() {
+      return docFreq;
+    }
   }
 
   class SepDocsAndPositionsEnum extends DocsAndPositionsEnum {
@@ -716,6 +721,11 @@ public class SepPostingsReader extends PostingsReaderBase {
       payload.length = payloadLength;
       pendingPayloadBytes = 0;
       return payload;
+    }
+    
+    @Override
+    public long cost() {
+      return docFreq;
     }
   }
 }

@@ -206,6 +206,11 @@ public class ConstantScoreQuery extends Query {
       return docIdSetIterator.advance(target);
     }
     
+    @Override
+    public long cost() {
+      return docIdSetIterator.cost();
+    }
+
     private Collector wrapCollector(final Collector collector) {
       return new Collector() {
         @Override

@@ -196,6 +196,11 @@ public class SolrConstantScoreQuery extends ConstantScoreQuery implements Extend
     public int advance(int target) throws IOException {
       return docIdSetIterator.advance(target);
     }
+
+    @Override
+    public long cost() {
+      return docIdSetIterator.cost();
+    }
   }
 
   @Override

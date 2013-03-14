@@ -170,6 +170,15 @@ public final class MultiDocsAndPositionsEnum extends DocsAndPositionsEnum {
   }
   
   @Override
+  public long cost() {
+    long cost = 0;
+    for (int i = 0; i < numSubs; i++) {
+      cost += subs[i].docsAndPositionsEnum.cost();
+    }
+    return cost;
+  }
+  
+  @Override
   public String toString() {
     return "MultiDocsAndPositionsEnum(" + Arrays.toString(getSubs()) + ")";
   }

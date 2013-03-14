@@ -256,6 +256,11 @@ public class FilterAtomicReader extends AtomicReader {
     public AttributeSource attributes() {
       return in.attributes();
     }
+
+    @Override
+    public long cost() {
+      return in.cost();
+    }
   }
 
   /** Base class for filtering {@link DocsAndPositionsEnum} implementations. */
@@ -314,6 +319,11 @@ public class FilterAtomicReader extends AtomicReader {
     @Override
     public AttributeSource attributes() {
       return in.attributes();
+    }
+    
+    @Override
+    public long cost() {
+      return in.cost();
     }
   }
 

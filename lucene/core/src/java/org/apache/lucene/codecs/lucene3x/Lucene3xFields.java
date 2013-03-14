@@ -989,6 +989,11 @@ class Lucene3xFields extends FieldsProducer {
     public int docID() {
       return docID;
     }
+    
+    @Override
+    public long cost() {
+      return docs.df;
+    }
   }
 
   private final class PreDocsAndPositionsEnum extends DocsAndPositionsEnum {
@@ -1056,6 +1061,11 @@ class Lucene3xFields extends FieldsProducer {
     @Override
     public BytesRef getPayload() throws IOException {
       return pos.getPayload();
+    }
+    
+    @Override
+    public long cost() {
+      return pos.df;
     }
   }
 }

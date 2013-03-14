@@ -75,7 +75,11 @@ final class JustCompileSearchSpans {
     public boolean isPayloadAvailable() {
       throw new UnsupportedOperationException(UNSUPPORTED_MSG);
     }
-    
+
+    @Override
+    public long cost() {
+      throw new UnsupportedOperationException(UNSUPPORTED_MSG);
+    }
   }
 
   static final class JustCompileSpanQuery extends SpanQuery {
@@ -131,6 +135,11 @@ final class JustCompileSearchSpans {
 
     @Override
     public int start() {
+      throw new UnsupportedOperationException(UNSUPPORTED_MSG);
+    }
+
+    @Override
+    public long cost() {
       throw new UnsupportedOperationException(UNSUPPORTED_MSG);
     }
     

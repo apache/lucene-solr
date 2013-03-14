@@ -84,4 +84,12 @@ public abstract class Spans {
    */
   public abstract boolean isPayloadAvailable() throws IOException;
   
+  /**
+   * Returns the estimated cost of this spans.
+   * <p>
+   * This is generally an upper bound of the number of documents this iterator
+   * might match, but may be a rough heuristic, hardcoded value, or otherwise
+   * completely inaccurate.
+   */
+  public abstract long cost();
 }

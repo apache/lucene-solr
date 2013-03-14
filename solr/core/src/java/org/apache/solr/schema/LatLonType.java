@@ -498,6 +498,11 @@ class SpatialDistanceQuery extends ExtendedQueryBase implements PostFilter {
       return 1;
     }
 
+    @Override
+    public long cost() {
+      return maxDoc;
+    }
+
     public Explanation explain(int doc) throws IOException {
       advance(doc);
       boolean matched = this.doc == doc;
