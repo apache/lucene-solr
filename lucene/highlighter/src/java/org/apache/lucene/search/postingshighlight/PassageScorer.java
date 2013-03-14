@@ -30,15 +30,37 @@ public class PassageScorer {
   // TODO: this formula is completely made up. It might not provide relevant snippets!
   
   /** BM25 k1 parameter, controls term frequency normalization */
-  public static final float k1 = 1.2f;
+  final float k1;
   /** BM25 b parameter, controls length normalization. */
-  public static final float b = 0.75f;
+  final float b;
+  /** A pivot used for length normalization. */
+  final float pivot;
   
   /**
-   * A pivot used for length normalization.
-   * The default value is the typical average English sentence length.
+   * Creates PassageScorer with these default values:
+   * <ul>
+   *   <li>{@code k1 = 1.2},
+   *   <li>{@code b = 0.75}.
+   *   <li>{@code pivot = 87}
+   * </ul>
    */
-  public static final float pivot = 87f;
+  public PassageScorer() {
+    // 1.2 and 0.75 are well-known bm25 defaults (but maybe not the best here) ?
+    // 87 is typical average english sentence length.
+    this(1.2f, 0.75f, 87f);
+  }
+  
+  /**
+   * Creates PassageScorer with specified scoring parameters
+   * @param k1 Controls non-linear term frequency normalization (saturation).
+   * @param b Controls to what degree passage length normalizes tf values.
+   * @param pivot Pivot value for length normalization (some rough idea of average sentence length in characters).
+   */
+  public PassageScorer(float k1, float b, float pivot) {
+    this.k1 = k1;
+    this.b = b;
+    this.pivot = pivot;
+  }
     
   /**
    * Computes term importance, given its in-document statistics.
