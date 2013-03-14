@@ -162,4 +162,64 @@ public class CopyFieldTest extends SolrTestCaseJ4 {
       assertQ("dynamic source", req
               ,"//*[@numFound='0']");
     }
+
+  @Test
+  public void testExplicitSourceGlob()
+  {
+    SolrCore core = h.getCore();
+    IndexSchema schema = core.getSchema();
+    
+    assertTrue("schema should contain explicit field 'sku1'", schema.getFields().containsKey("sku1"));
+    assertTrue("schema should contain explicit field 'sku2'", schema.getFields().containsKey("sku2"));
+    assertNull("'sku*' should not be (or match) a dynamic field", schema.getDynamicPattern("sku*"));
+    
+    assertTrue("schema should contain dynamic field '*_s'", schema.getDynamicPattern("*_s").equals("*_s"));
+
+    final String subsetPattern = "*_dest_sub_s";
+    final String dynamicPattern1 = schema.getDynamicPattern(subsetPattern);
+    assertTrue("'" + subsetPattern + "' should match dynamic field '*_s', but instead matches '" + dynamicPattern1 + "'",
+               dynamicPattern1.equals("*_s"));
+    
+    final String dest_sub_no_ast_s = "dest_sub_no_ast_s";
+    assertFalse(schema.getFields().containsKey(dest_sub_no_ast_s)); // Should not be an explicit field
+    final String dynamicPattern2 = schema.getDynamicPattern(dest_sub_no_ast_s);
+    assertTrue("'" + dest_sub_no_ast_s + "' should match dynamic field '*_s', but instead matches '" + dynamicPattern2 + "'",
+               dynamicPattern2.equals("*_s"));
+    
+    assertU(adoc("id", "A5", "sku1", "10-1839ACX-93", "sku2", "AAM46"));
+    assertU(commit());
+
+    Map<String,String> args = new HashMap<String, String>();
+    args.put( CommonParams.Q, "text:AAM46" );
+    args.put( "indent", "true" );
+    SolrQueryRequest req = new LocalSolrQueryRequest( core, new MapSolrParams( args) );
+    assertQ("sku2 copied to text", req
+        ,"//*[@numFound='1']"
+        ,"//result/doc[1]/str[@name='id'][.='A5']"
+    );
+
+    args = new HashMap<String, String>();
+    args.put( CommonParams.Q, "1_s:10-1839ACX-93" );
+    args.put( "indent", "true" );
+    req = new LocalSolrQueryRequest( core, new MapSolrParams( args) );
+    assertQ("sku1 copied to dynamic dest *_s", req
+        ,"//*[@numFound='1']"
+        ,"//result/doc[1]/str[@name='id'][.='A5']"
+        ,"//result/doc[1]/arr[@name='sku1']/str[.='10-1839ACX-93']"
+    );
+
+    args = new HashMap<String, String>();
+    args.put( CommonParams.Q, "1_dest_sub_s:10-1839ACX-93" );
+    args.put( "indent", "true" );
+    req = new LocalSolrQueryRequest( core, new MapSolrParams( args) );
+    assertQ("sku1 copied to *_dest_sub_s (*_s subset pattern)", req
+        ,"//*[@numFound='1']");
+
+    args = new HashMap<String, String>();
+    args.put( CommonParams.Q, "dest_sub_no_ast_s:AAM46" );
+    args.put( "indent", "true" );
+    req = new LocalSolrQueryRequest( core, new MapSolrParams( args) );
+    assertQ("sku2 copied to dest_sub_no_ast_s (*_s subset pattern no asterisk)", req
+        ,"//*[@numFound='1']");
+  }
 }
