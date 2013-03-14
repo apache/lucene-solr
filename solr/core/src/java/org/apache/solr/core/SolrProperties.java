@@ -27,6 +27,7 @@ import org.apache.solr.handler.component.ShardHandlerFactory;
 import org.apache.solr.schema.IndexSchema;
 import org.apache.solr.util.PropertiesUtil;
 import org.apache.solr.util.SystemIdResolver;
+import org.apache.solr.util.plugin.PluginInfoInitialized;
 import org.apache.zookeeper.KeeperException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -104,13 +105,15 @@ public class SolrProperties implements ConfigSolr {
    * Create a SolrProperties object from an opened input stream, useful for creating defaults
    *
    * @param container - the container for this Solr instance. There should be one and only one...
+   * @param loader    - Solr resource loader
    * @param is        - Input stream for loading properties.
    * @param fileName  - the name for this properties object.
    * @throws IOException - It's possible to walk a very deep tree, if that process goes awry, or if reading any
    *                     of the files found doesn't work, you'll get an IO exception
    */
-  public SolrProperties(CoreContainer container, InputStream is, String fileName) throws IOException {
+  public SolrProperties(CoreContainer container, SolrResourceLoader loader, InputStream is, String fileName) throws IOException {
     origsolrprops.load(is);
+    this.loader = loader;
     this.container = container;
     init(fileName);
   }
@@ -241,29 +244,39 @@ public class SolrProperties implements ConfigSolr {
     boolean haveHandler = false;
     for (String s : solrProperties.stringPropertyNames()) {
       String val = solrProperties.getProperty(s);
-      if (s.indexOf(SHARD_HANDLER_FACTORY) != -1) {
+      int index = s.indexOf(SHARD_HANDLER_FACTORY);
+      if (index != -1) {
         haveHandler = true;
         if (SHARD_HANDLER_NAME.equals(s) || SHARD_HANDLER_CLASS.equals(s)) {
-          attrs.put(s, val);
+          // remove shardHandlerFactory. prefix
+          attrs.put(s.substring(SHARD_HANDLER_FACTORY.length()+1), val);
         } else {
-          args.add(s, val);
+          // remove shardHandlerFactory. prefix
+          args.add(s.substring(SHARD_HANDLER_FACTORY.length()+1), val);
         }
       }
     }
 
     if (haveHandler) {
-      //  public PluginInfo(String type, Map<String, String> attrs ,NamedList initArgs, List<PluginInfo> children) {
-
       info = new PluginInfo(SHARD_HANDLER_FACTORY, attrs, args, null);
     } else {
       Map m = new HashMap();
       m.put("class", HttpShardHandlerFactory.class.getName());
       info = new PluginInfo("shardHandlerFactory", m, null, Collections.<PluginInfo>emptyList());
     }
-    HttpShardHandlerFactory fac = new HttpShardHandlerFactory();
-    if (info != null) {
-      fac.init(info);
+
+    assert loader != null;
+    ShardHandlerFactory fac;
+    try {
+      fac = loader.findClass(info.className, ShardHandlerFactory.class).newInstance();
+    } catch (Exception e) {
+      throw new SolrException(SolrException.ErrorCode.SERVER_ERROR,
+                              "Error instantiating shardHandlerFactory class " + info.className);
     }
+    if (fac instanceof PluginInfoInitialized) {
+      ((PluginInfoInitialized) fac).init(info);
+    }
+
     return fac;
   }
 

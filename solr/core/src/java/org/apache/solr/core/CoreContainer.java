@@ -377,7 +377,7 @@ public class CoreContainer
         cfg = new ConfigSolrXmlBackCompat(loader, null, is, null, false);
         this.cfg = new ConfigSolrXmlBackCompat(loader, (ConfigSolrXmlBackCompat)cfg);
       } else {
-        cfg = new SolrProperties(this, is, fileName);
+        cfg = new SolrProperties(this, loader, is, fileName);
         this.cfg = new SolrProperties(this, loader, (SolrProperties)cfg);
       }
     } catch (Exception e) {

@@ -25,6 +25,7 @@ import org.apache.solr.schema.IndexSchema;
 import org.apache.solr.util.DOMUtil;
 import org.apache.solr.util.PropertiesUtil;
 import org.apache.solr.util.SystemIdResolver;
+import org.apache.solr.util.plugin.PluginInfoInitialized;
 import org.apache.zookeeper.KeeperException;
 import org.w3c.dom.Document;
 import org.w3c.dom.NamedNodeMap;
@@ -132,9 +133,16 @@ public class ConfigSolrXmlBackCompat extends Config implements ConfigSolr {
       m.put("class", HttpShardHandlerFactory.class.getName());
       info = new PluginInfo("shardHandlerFactory", m, null, Collections.<PluginInfo>emptyList());
     }
-    HttpShardHandlerFactory fac = new HttpShardHandlerFactory();
-    if (info != null) {
-      fac.init(info);
+
+    ShardHandlerFactory fac;
+    try {
+       fac = getResourceLoader().findClass(info.className, ShardHandlerFactory.class).newInstance();
+    } catch (Exception e) {
+      throw new SolrException(SolrException.ErrorCode.SERVER_ERROR,
+                              "Error instantiating shardHandlerFactory class " + info.className);
+    }
+    if (fac instanceof PluginInfoInitialized) {
+      ((PluginInfoInitialized) fac).init(info);
     }
     return fac;
   }
