@@ -121,10 +121,14 @@ public class CategoryPath implements Comparable<CategoryPath> {
     return length - other.length;
   }
 
+  private void hasDelimiter(String offender, char delimiter) {
+    throw new IllegalArgumentException("delimiter character '" + delimiter + "' (U+" + Integer.toHexString(delimiter) + ") appears in path component \"" + offender + "\"");
+  }
+
   private void noDelimiter(char[] buf, int offset, int len, char delimiter) {
     for(int idx=0;idx<len;idx++) {
       if (buf[offset+idx] == delimiter) {
-        throw new IllegalArgumentException("delimiter character U+" + Integer.toHexString(delimiter) + " appears in path");
+        hasDelimiter(new String(buf, offset, len), delimiter);
       }
     }
   }
@@ -237,6 +241,9 @@ public class CategoryPath implements Comparable<CategoryPath> {
     
     StringBuilder sb = new StringBuilder();
     for (int i = 0; i < length; i++) {
+      if (components[i].indexOf(delimiter) != -1) {
+        hasDelimiter(components[i], delimiter);
+      }
       sb.append(components[i]).append(delimiter);
     }
     sb.setLength(sb.length() - 1); // remove last delimiter
