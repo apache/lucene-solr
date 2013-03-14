@@ -84,6 +84,8 @@ Bug Fixes
 * SOLR-4297: Atomic update request containing null=true sets all subsequent
   fields to null (Ben Pennell, Rob, shalin)
 
+* SOLR-4543: setting shardHandlerFactory in solr.xml/solr.properties does not work.
+  (Ryan Ernst, Robert Muir via Erick Ericson)
 
 Other Changes
 ----------------------
