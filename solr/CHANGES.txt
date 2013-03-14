@@ -87,6 +87,8 @@ Bug Fixes
 * SOLR-4543: setting shardHandlerFactory in solr.xml/solr.properties does not work.
   (Ryan Ernst, Robert Muir via Erick Ericson)
 
+* SOLR-4371: Admin UI - Analysis Screen shows empty result (steffkes)
+
 Other Changes
 ----------------------
 
