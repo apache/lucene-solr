@@ -408,8 +408,8 @@ public class CoreAdminHandler extends RequestHandlerBase {
       //for now, do not allow creating new core with same name when in cloud mode
       //XXX perhaps it should just be unregistered from cloud before readding it?, 
       //XXX perhaps we should also check that cores are of same type before adding new core to collection?
-      if (coreContainer.getZkController() != null) {
-        if (coreContainer.getCore(name) != null) {
+      if (coreContainer.isZooKeeperAware()) {
+        if (coreContainer.getCoreNames().contains(name)) {
           log.info("Re-creating a core with existing name is not allowed in cloud mode");
           throw new SolrException(SolrException.ErrorCode.BAD_REQUEST,
               "Core with name '" + name + "' already exists.");
