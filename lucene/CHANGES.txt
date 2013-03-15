@@ -79,6 +79,14 @@ New Features
 * LUCENE-4607: Add DocIDSetIterator.cost() and Spans.cost() for optimizing
   scoring.  (Simon Willnauer, Robert Muir)
 
+* LUCENE-4795: Add SortedSetDocValuesFacetField and
+  SortedSetDocValuesAccumulator, to compute topK facet counts from a
+  field's SortedSetDocValues.  This method only supports flat
+  (dim/label) facets, is a bit (~25%) slower, has added cost
+  per-IndexReader-open to compute its ordinal map, but it requires no
+  taxonomy index and it tie-breaks facet labels in an understandable
+  (by Unicode sort order) way.  (Robert Muir, Mike McCandless)
+
 Optimizations
 
 * LUCENE-4819: Added Sorted[Set]DocValues.termsEnum(), and optimized the

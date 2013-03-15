@@ -1,7 +1,5 @@
 package org.apache.lucene.facet.taxonomy;
 
-import java.util.Arrays;
-
 /*
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
@@ -18,6 +16,9 @@ import java.util.Arrays;
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
+import java.util.Arrays;
+import java.util.regex.Pattern;
 
 /**
  * Holds a sequence of string components, specifying the hierarchical name of a
@@ -73,7 +74,7 @@ public class CategoryPath implements Comparable<CategoryPath> {
 
   /** Construct from a given path, separating path components with {@code delimiter}. */
   public CategoryPath(final String pathString, final char delimiter) {
-    String[] comps = pathString.split(Character.toString(delimiter));
+    String[] comps = pathString.split(Pattern.quote(Character.toString(delimiter)));
     if (comps.length == 1 && comps[0].isEmpty()) {
       components = null;
       length = 0;
