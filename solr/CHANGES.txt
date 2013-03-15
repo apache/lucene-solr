@@ -113,6 +113,8 @@ Other Changes
 
 * SOLR-4317: SolrTestCaseJ4: Can't avoid "collection1" convention (Tricia Jenkins, via Erick Erickson)
 
+* SOLR-4571: SolrZkClient#setData should return Stat object. (Mark Miller)
+
 ==================  4.2.0 ==================
 
 Versions of Major Components

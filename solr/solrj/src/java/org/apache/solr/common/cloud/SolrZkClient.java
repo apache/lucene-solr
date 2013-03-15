@@ -24,7 +24,6 @@ import java.io.StringWriter;
 import java.io.UnsupportedEncodingException;
 import java.net.URLDecoder;
 import java.util.List;
-import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.AtomicLong;
 
 import javax.xml.transform.OutputKeys;
@@ -40,10 +39,10 @@ import org.apache.solr.common.cloud.ZkClientConnectionStrategy.ZkUpdate;
 import org.apache.zookeeper.CreateMode;
 import org.apache.zookeeper.KeeperException;
 import org.apache.zookeeper.KeeperException.NoNodeException;
+import org.apache.zookeeper.KeeperException.NodeExistsException;
 import org.apache.zookeeper.Watcher;
 import org.apache.zookeeper.ZooDefs;
 import org.apache.zookeeper.ZooKeeper;
-import org.apache.zookeeper.KeeperException.NodeExistsException;
 import org.apache.zookeeper.data.ACL;
 import org.apache.zookeeper.data.Stat;
 import org.slf4j.Logger;
@@ -448,9 +447,9 @@ public class SolrZkClient {
   /**
    * Write data to ZooKeeper.
    */
-  public void setData(String path, byte[] data, boolean retryOnConnLoss) throws KeeperException,
+  public Stat setData(String path, byte[] data, boolean retryOnConnLoss) throws KeeperException,
       InterruptedException {
-    setData(path, data, -1, retryOnConnLoss);
+    return setData(path, data, -1, retryOnConnLoss);
   }
 
   /**
@@ -459,14 +458,14 @@ public class SolrZkClient {
    * @param path path to upload file to e.g. /solr/conf/solrconfig.xml
    * @param file path to file to be uploaded
    */
-  public void setData(String path, File file, boolean retryOnConnLoss) throws IOException,
+  public Stat setData(String path, File file, boolean retryOnConnLoss) throws IOException,
       KeeperException, InterruptedException {
     if (log.isInfoEnabled()) {
       log.info("Write to ZooKeepeer " + file.getAbsolutePath() + " to " + path);
     }
 
     String data = FileUtils.readFileToString(file);
-    setData(path, data.getBytes("UTF-8"), retryOnConnLoss);
+    return setData(path, data.getBytes("UTF-8"), retryOnConnLoss);
   }
 
   /**
