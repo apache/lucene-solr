@@ -316,17 +316,21 @@ public class OverseerCollectionProcessor implements Runnable, ClosableThread {
       // if it does not, find best nodes to create more cores
       
       int repFactor = msgStrToInt(message, REPLICATION_FACTOR, 1);
-      int numSlices = msgStrToInt(message, NUM_SLICES, 0);
+      Integer numSlices = msgStrToInt(message, NUM_SLICES, null);
+      
+      if (numSlices == null) {
+        throw new SolrException(ErrorCode.BAD_REQUEST, "collection already exists: " + collectionName);
+      }
+      
       int maxShardsPerNode = msgStrToInt(message, MAX_SHARDS_PER_NODE, 1);
       String createNodeSetStr; 
       List<String> createNodeList = ((createNodeSetStr = message.getStr(CREATE_NODE_SET)) == null)?null:StrUtils.splitSmart(createNodeSetStr, ",", true);
       
       if (repFactor <= 0) {
-        SolrException.log(log, REPLICATION_FACTOR + " must be > 0");
-        throw new SolrException(ErrorCode.BAD_REQUEST, "collection already exists: " + collectionName);
+        throw new SolrException(ErrorCode.BAD_REQUEST, NUM_SLICES + " is a required paramater");
       }
       
-      if (numSlices < 0) {
+      if (numSlices <= 0) {
         throw new SolrException(ErrorCode.BAD_REQUEST, NUM_SLICES + " must be > 0");
       }
       
