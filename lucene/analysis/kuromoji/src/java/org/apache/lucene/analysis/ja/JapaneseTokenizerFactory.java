@@ -30,6 +30,7 @@ import java.util.Map;
 import org.apache.lucene.analysis.ja.JapaneseTokenizer.Mode;
 import org.apache.lucene.analysis.ja.dict.UserDictionary;
 import org.apache.lucene.analysis.util.TokenizerFactory;
+import org.apache.lucene.util.AttributeSource.AttributeFactory;
 import org.apache.lucene.util.IOUtils;
 import org.apache.lucene.analysis.util.ResourceLoader;
 import org.apache.lucene.analysis.util.ResourceLoaderAware;
@@ -87,8 +88,8 @@ public class JapaneseTokenizerFactory extends TokenizerFactory implements Resour
   }
   
   @Override
-  public JapaneseTokenizer create(Reader input) {
-    return new JapaneseTokenizer(input, userDictionary, discardPunctuation, mode);
+  public JapaneseTokenizer create(AttributeFactory factory, Reader input) {
+    return new JapaneseTokenizer(factory, input, userDictionary, discardPunctuation, mode);
   }
   
   private Mode getMode(Map<String, String> args) {

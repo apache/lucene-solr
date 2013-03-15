@@ -41,11 +41,6 @@ public class WhitespaceTokenizerFactory extends TokenizerFactory {
   }
 
   @Override
-  public WhitespaceTokenizer create(Reader input) {
-    return new WhitespaceTokenizer(luceneMatchVersion,input);
-  }
-
-  @Override
   public WhitespaceTokenizer create(AttributeFactory factory, Reader input) {
     return new WhitespaceTokenizer(luceneMatchVersion, factory, input);
   }

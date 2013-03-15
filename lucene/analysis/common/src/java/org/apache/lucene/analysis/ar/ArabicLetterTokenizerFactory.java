@@ -17,8 +17,8 @@ package org.apache.lucene.analysis.ar;
  * limitations under the License.
  */
 
-import org.apache.lucene.analysis.ar.ArabicLetterTokenizer;
 import org.apache.lucene.analysis.util.TokenizerFactory;
+import org.apache.lucene.util.AttributeSource.AttributeFactory;
 
 import java.io.Reader;
 import java.util.Map;
@@ -37,7 +37,8 @@ public class ArabicLetterTokenizerFactory extends TokenizerFactory {
     assureMatchVersion();
   }
 
-  public ArabicLetterTokenizer create(Reader input) {
-    return new ArabicLetterTokenizer(luceneMatchVersion, input);
+  @Override
+  public ArabicLetterTokenizer create(AttributeFactory factory, Reader input) {
+    return new ArabicLetterTokenizer(luceneMatchVersion, factory, input);
   }
 }

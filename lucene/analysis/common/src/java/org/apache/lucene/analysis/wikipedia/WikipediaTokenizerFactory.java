@@ -36,11 +36,6 @@ import org.apache.lucene.util.AttributeSource.AttributeFactory;
 public class WikipediaTokenizerFactory extends TokenizerFactory {
   // TODO: add support for WikipediaTokenizer's advanced options.
   @Override
-  public WikipediaTokenizer create(Reader input) {
-    return new WikipediaTokenizer(input);
-  }
-
-  @Override
   public WikipediaTokenizer create(AttributeFactory factory, Reader input) {
     return new WikipediaTokenizer(factory, input, WikipediaTokenizer.TOKENS_ONLY, 
         Collections.<String>emptySet());

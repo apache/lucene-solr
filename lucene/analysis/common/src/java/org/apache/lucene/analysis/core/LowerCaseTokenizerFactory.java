@@ -43,11 +43,6 @@ public class LowerCaseTokenizerFactory extends TokenizerFactory implements Multi
   }
 
   @Override
-  public LowerCaseTokenizer create(Reader input) {
-    return new LowerCaseTokenizer(luceneMatchVersion,input);
-  }
-
-  @Override
   public LowerCaseTokenizer create(AttributeFactory factory, Reader input) {
     return new LowerCaseTokenizer(luceneMatchVersion, factory, input);
   }

@@ -18,6 +18,7 @@ package org.apache.lucene.analysis.uima;
  */
 
 import org.apache.lucene.analysis.util.TokenizerFactory;
+import org.apache.lucene.util.AttributeSource.AttributeFactory;
 
 import java.io.Reader;
 import java.util.HashMap;
@@ -54,7 +55,8 @@ public class UIMATypeAwareAnnotationsTokenizerFactory extends TokenizerFactory {
   }
 
   @Override
-  public UIMATypeAwareAnnotationsTokenizer create(Reader input) {
-    return new UIMATypeAwareAnnotationsTokenizer(descriptorPath, tokenType, featurePath, configurationParameters, input);
+  public UIMATypeAwareAnnotationsTokenizer create(AttributeFactory factory, Reader input) {
+    return new UIMATypeAwareAnnotationsTokenizer
+        (descriptorPath, tokenType, featurePath, configurationParameters, factory, input);
   }
 }

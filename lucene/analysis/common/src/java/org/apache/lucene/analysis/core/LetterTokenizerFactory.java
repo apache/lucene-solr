@@ -42,11 +42,6 @@ public class LetterTokenizerFactory extends TokenizerFactory {
   }
 
   @Override
-  public LetterTokenizer create(Reader input) {
-    return new LetterTokenizer(luceneMatchVersion, input);
-  }
-
-  @Override
   public LetterTokenizer create(AttributeFactory factory, Reader input) {
     return new LetterTokenizer(luceneMatchVersion, factory, input);
   }

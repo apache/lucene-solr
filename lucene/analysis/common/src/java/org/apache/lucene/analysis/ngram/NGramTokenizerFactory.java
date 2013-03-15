@@ -49,12 +49,7 @@ public class NGramTokenizerFactory extends TokenizerFactory {
     minGramSize = (minArg != null ? Integer.parseInt(minArg) : NGramTokenizer.DEFAULT_MIN_NGRAM_SIZE);
   }
   
-  /** Creates the {@link TokenStream} of n-grams from the given {@link Reader}. */
-  @Override
-  public NGramTokenizer create(Reader input) {
-    return new NGramTokenizer(input, minGramSize, maxGramSize);
-  }
-
+  /** Creates the {@link TokenStream} of n-grams from the given {@link Reader} and {@link AttributeFactory}. */
   @Override
   public NGramTokenizer create(AttributeFactory factory, Reader input) {
     return new NGramTokenizer(factory, input, minGramSize, maxGramSize);

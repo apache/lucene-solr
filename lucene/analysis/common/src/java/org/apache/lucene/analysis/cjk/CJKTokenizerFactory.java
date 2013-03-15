@@ -17,8 +17,8 @@ package org.apache.lucene.analysis.cjk;
  * limitations under the License.
  */
 
-import org.apache.lucene.analysis.cjk.CJKTokenizer;
 import org.apache.lucene.analysis.util.TokenizerFactory;
+import org.apache.lucene.util.AttributeSource.AttributeFactory;
 
 import java.io.Reader;
 
@@ -34,8 +34,9 @@ import java.io.Reader;
  */
 @Deprecated
 public class CJKTokenizerFactory extends TokenizerFactory {
-  public CJKTokenizer create(Reader in) {
-    return new CJKTokenizer(in);
+  @Override
+  public CJKTokenizer create(AttributeFactory factory, Reader in) {
+    return new CJKTokenizer(factory, in);
   }
 }
 
