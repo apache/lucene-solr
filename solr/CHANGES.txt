@@ -59,6 +59,19 @@ Detailed Change List
 New Features
 ----------------------
 
+* SOLR-4196 (and others). Solr.xml is being deprecated in favor of a simple
+  properties file. In the absence of a <solr_home>/solr.xml but the presence of
+  <solr_home>/solr.properties, two things will happen
+  1> The attributes that, in the solr.xml file, were in the <solr> and <cores> tags will
+      be read from the solr.properties
+  2> The <solr_home> will be walked and any cores fond will be discovered, which will
+     be inferred by the presence of a "core.properties" file which will contain the 
+     data formerly in the individual <core> tags. The implication here is that there will
+     be no individual core information in the solr.properties file.
+  See the discussion on the wiki page titled "Core Discovery (4.3 and beyond)" for
+  the formats of both solr.properties and the individual core.properties files
+  (Erick Erickson)
+
 Bug Fixes
 ----------------------
 
