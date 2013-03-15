@@ -54,7 +54,7 @@ public final class LoadAdminUiServlet extends HttpServlet {
         Writer out = new OutputStreamWriter(response.getOutputStream(), "UTF-8");
 
         String html = IOUtils.toString(in, "UTF-8");
-        Package package = SolrCore.class.getPackage();
+        Package pack = SolrCore.class.getPackage();
 
         String[] search = new String[] { 
             "${contextPath}", 
@@ -64,7 +64,7 @@ public final class LoadAdminUiServlet extends HttpServlet {
         String[] replace = new String[] {
             StringEscapeUtils.escapeJavaScript(request.getContextPath()),
             StringEscapeUtils.escapeJavaScript(cores.getAdminPath()),
-            StringEscapeUtils.escapeJavaScript(package.getSpecificationVersion())
+            StringEscapeUtils.escapeJavaScript(pack.getSpecificationVersion())
         };
         
         out.write( StringUtils.replaceEach(html, search, replace) );
