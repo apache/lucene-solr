@@ -204,7 +204,7 @@ public class DrillSideways {
                                                                       doDocScores,
                                                                       doMaxScore,
                                                                       true);
-      DrillSidewaysResult r = new DrillSideways(searcher, taxoReader).search(query, hitCollector, fsp);
+      DrillSidewaysResult r = search(query, hitCollector, fsp);
       r.hits = hitCollector.topDocs();
       return r;
     } else {
@@ -219,20 +219,20 @@ public class DrillSideways {
   public DrillSidewaysResult search(ScoreDoc after,
                                     DrillDownQuery query, int topN, FacetSearchParams fsp) throws IOException {
     TopScoreDocCollector hitCollector = TopScoreDocCollector.create(Math.min(topN, searcher.getIndexReader().maxDoc()), after, true);
-    DrillSidewaysResult r = new DrillSideways(searcher, taxoReader).search(query, hitCollector, fsp);
+    DrillSidewaysResult r = search(query, hitCollector, fsp);
     r.hits = hitCollector.topDocs();
     return r;
   }
 
   /** Override this to use a custom drill-down {@link
    *  FacetsAccumulator}. */
-  protected FacetsAccumulator getDrillDownAccumulator(FacetSearchParams fsp) {
+  protected FacetsAccumulator getDrillDownAccumulator(FacetSearchParams fsp) throws IOException {
     return FacetsAccumulator.create(fsp, searcher.getIndexReader(), taxoReader);
   }
 
   /** Override this to use a custom drill-sideways {@link
    *  FacetsAccumulator}. */
-  protected FacetsAccumulator getDrillSidewaysAccumulator(String dim, FacetSearchParams fsp) {
+  protected FacetsAccumulator getDrillSidewaysAccumulator(String dim, FacetSearchParams fsp) throws IOException {
     return FacetsAccumulator.create(fsp, searcher.getIndexReader(), taxoReader);
   }
 
