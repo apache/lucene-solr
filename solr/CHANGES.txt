@@ -129,6 +129,8 @@ Bug Fixes
 * SOLR-4585: The Collections API validates numShards with < 0 but should use 
   <= 0. (Mark Miller)
 
+* SOLR-4311: Admin UI - Optimize Caching Behaviour (steffkes)
+
 Optimizations
 ----------------------
 

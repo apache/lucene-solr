@@ -30,6 +30,7 @@ import org.apache.commons.io.IOUtils;
 import org.apache.commons.lang.StringUtils;
 import org.apache.commons.lang.StringEscapeUtils;
 import org.apache.solr.core.CoreContainer;
+import org.apache.solr.core.SolrCore;
 
 /**
  * A simple servlet to load the Solr Admin UI
@@ -53,14 +54,17 @@ public final class LoadAdminUiServlet extends HttpServlet {
         Writer out = new OutputStreamWriter(response.getOutputStream(), "UTF-8");
 
         String html = IOUtils.toString(in, "UTF-8");
+        Package package = SolrCore.class.getPackage();
 
         String[] search = new String[] { 
             "${contextPath}", 
-            "${adminPath}" 
+            "${adminPath}",
+            "${version}" 
         };
         String[] replace = new String[] {
             StringEscapeUtils.escapeJavaScript(request.getContextPath()),
-            StringEscapeUtils.escapeJavaScript(cores.getAdminPath())
+            StringEscapeUtils.escapeJavaScript(cores.getAdminPath()),
+            StringEscapeUtils.escapeJavaScript(package.getSpecificationVersion())
         };
         
         out.write( StringUtils.replaceEach(html, search, replace) );

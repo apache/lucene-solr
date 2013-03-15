@@ -585,4 +585,5 @@ var solr_admin = function( app_config )
 
 };
 
+$.ajaxSetup( { cache: false } );
 var app = new solr_admin( app_config );
