@@ -24,6 +24,7 @@ import org.apache.lucene.analysis.Tokenizer;
 import org.apache.lucene.analysis.util.TokenizerFactory;
 import org.apache.lucene.util.Attribute;
 import org.apache.lucene.util.AttributeImpl;
+import org.apache.lucene.util.AttributeSource.AttributeFactory;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.schema.DateField;
 import static org.apache.solr.schema.TrieField.TrieTypes;
@@ -54,8 +55,8 @@ public class TrieTokenizerFactory extends TokenizerFactory {
   }
 
   @Override
-  public TrieTokenizer create(Reader input) {
-    return new TrieTokenizer(input, type, TrieTokenizer.getNumericTokenStream(precisionStep));
+  public TrieTokenizer create(AttributeFactory factory, Reader input) {
+    return new TrieTokenizer(input, type, TrieTokenizer.getNumericTokenStream(factory, precisionStep));
   }
 }
 
@@ -70,8 +71,8 @@ final class TrieTokenizer extends Tokenizer {
   protected int startOfs, endOfs;
   protected boolean hasValue;
 
-  static NumericTokenStream getNumericTokenStream(int precisionStep) {
-    return new NumericTokenStream(precisionStep);
+  static NumericTokenStream getNumericTokenStream(AttributeFactory factory, int precisionStep) {
+    return new NumericTokenStream(factory, precisionStep);
   }
 
   public TrieTokenizer(Reader input, TrieTypes type, final NumericTokenStream ts) {

@@ -42,22 +42,12 @@ public class StandardTokenizerFactory extends TokenizerFactory {
   public void init(Map<String,String> args) {
     super.init(args);
     assureMatchVersion();
-    maxTokenLength = getInt("maxTokenLength", 
-                            StandardAnalyzer.DEFAULT_MAX_TOKEN_LENGTH);
-  }
-
-  @Override
-  public StandardTokenizer create(Reader input) {
-    StandardTokenizer tokenizer
-      = new StandardTokenizer(luceneMatchVersion, input); 
-    tokenizer.setMaxTokenLength(maxTokenLength);
-    return tokenizer;
+    maxTokenLength = getInt("maxTokenLength", StandardAnalyzer.DEFAULT_MAX_TOKEN_LENGTH);
   }
 
   @Override
   public StandardTokenizer create(AttributeFactory factory, Reader input) {
-    StandardTokenizer tokenizer
-      = new StandardTokenizer(luceneMatchVersion, factory, input); 
+    StandardTokenizer tokenizer = new StandardTokenizer(luceneMatchVersion, factory, input); 
     tokenizer.setMaxTokenLength(maxTokenLength);
     return tokenizer;
   }

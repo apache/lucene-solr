@@ -22,9 +22,8 @@ import java.io.Reader;
 import java.util.Map;
 import java.util.regex.Pattern;
 
-import org.apache.lucene.analysis.Tokenizer;
-import org.apache.lucene.analysis.pattern.PatternTokenizer;
 import org.apache.lucene.analysis.util.TokenizerFactory;
+import org.apache.lucene.util.AttributeSource.AttributeFactory;
 
 /**
  * Factory for {@link PatternTokenizer}.
@@ -91,9 +90,9 @@ public class PatternTokenizerFactory extends TokenizerFactory
    * Split the input using configured pattern
    */
   @Override
-  public PatternTokenizer create(final Reader in) {
+  public PatternTokenizer create(final AttributeFactory factory, final Reader in) {
     try {
-      return new PatternTokenizer(in, pattern, group);
+      return new PatternTokenizer(factory, in, pattern, group);
     } catch( IOException ex ) {
       throw new RuntimeException("IOException thrown creating PatternTokenizer instance", ex);
     }

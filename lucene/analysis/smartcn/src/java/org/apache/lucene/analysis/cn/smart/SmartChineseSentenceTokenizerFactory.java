@@ -28,11 +28,6 @@ import org.apache.lucene.util.AttributeSource.AttributeFactory;
  */
 public class SmartChineseSentenceTokenizerFactory extends TokenizerFactory {
   @Override
-  public SentenceTokenizer create(Reader input) {
-    return new SentenceTokenizer(input);
-  }
-
-  @Override
   public SentenceTokenizer create(AttributeFactory factory, Reader input) {
     return new SentenceTokenizer(factory, input);
   }

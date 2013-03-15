@@ -62,11 +62,11 @@ public abstract class TokenizerFactory extends AbstractAnalysisFactory {
     loader.reload(classloader);
   }
 
-  /** Creates a TokenStream of the specified input */
-  public abstract Tokenizer create(Reader input);
+  /** Creates a TokenStream of the specified input using the default attribute factory. */
+  public final Tokenizer create(Reader input) {
+    return create(AttributeFactory.DEFAULT_ATTRIBUTE_FACTORY, input);
+  }
   
   /** Creates a TokenStream of the specified input using the given AttributeFactory */
-  public Tokenizer create(AttributeFactory factory, Reader input) {
-    throw new UnsupportedOperationException();
-  }
+  abstract public Tokenizer create(AttributeFactory factory, Reader input);
 }

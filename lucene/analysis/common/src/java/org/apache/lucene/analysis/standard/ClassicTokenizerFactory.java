@@ -48,13 +48,6 @@ public class ClassicTokenizerFactory extends TokenizerFactory {
   }
 
   @Override
-  public ClassicTokenizer create(Reader input) {
-    ClassicTokenizer tokenizer = new ClassicTokenizer(luceneMatchVersion, input); 
-    tokenizer.setMaxTokenLength(maxTokenLength);
-    return tokenizer;
-  }
-
-  @Override
   public ClassicTokenizer create(AttributeFactory factory, Reader input) {
     ClassicTokenizer tokenizer = new ClassicTokenizer(luceneMatchVersion, factory, input); 
     tokenizer.setMaxTokenLength(maxTokenLength);

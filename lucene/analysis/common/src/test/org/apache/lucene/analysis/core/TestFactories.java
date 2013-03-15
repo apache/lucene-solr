@@ -33,6 +33,7 @@ import org.apache.lucene.analysis.util.ResourceLoaderAware;
 import org.apache.lucene.analysis.util.StringMockResourceLoader;
 import org.apache.lucene.analysis.util.TokenFilterFactory;
 import org.apache.lucene.analysis.util.TokenizerFactory;
+import org.apache.lucene.util.AttributeSource.AttributeFactory;
 
 /**
  * Sanity check some things about all factories,
@@ -146,8 +147,8 @@ public class TestFactories extends BaseTokenStreamTestCase {
   // some silly classes just so we can use checkRandomData
   private TokenizerFactory assertingTokenizer = new TokenizerFactory() {
     @Override
-    public MockTokenizer create(Reader input) {
-      return new MockTokenizer(input);
+    public MockTokenizer create(AttributeFactory factory, Reader input) {
+      return new MockTokenizer(factory, input);
     }
   };
   
