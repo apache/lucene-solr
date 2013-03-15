@@ -1,5 +1,22 @@
 package org.apache.lucene.index.sorter;
 
+/*
+ * Licensed to the Apache Software Foundation (ASF) under one or more
+ * contributor license agreements.  See the NOTICE file distributed with
+ * this work for additional information regarding copyright ownership.
+ * The ASF licenses this file to You under the Apache License, Version 2.0
+ * (the "License"); you may not use this file except in compliance with
+ * the License.  You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -38,6 +55,8 @@ import org.apache.lucene.index.SortedDocValues;
 import org.apache.lucene.index.SortedSetDocValues;
 import org.apache.lucene.index.Term;
 import org.apache.lucene.index.Terms;
+import org.apache.lucene.index.TermsEnum;
+import org.apache.lucene.index.TermsEnum.SeekStatus;
 import org.apache.lucene.search.CollectionStatistics;
 import org.apache.lucene.search.DocIdSetIterator;
 import org.apache.lucene.search.TermStatistics;
@@ -45,28 +64,12 @@ import org.apache.lucene.search.similarities.Similarity;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.util.Bits;
 import org.apache.lucene.util.BytesRef;
+import org.apache.lucene.util.FixedBitSet;
 import org.apache.lucene.util.LuceneTestCase;
 import org.apache.lucene.util._TestUtil;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.junit.Test;
-
-/*
- * Licensed to the Apache Software Foundation (ASF) under one or more
- * contributor license agreements.  See the NOTICE file distributed with
- * this work for additional information regarding copyright ownership.
- * The ASF licenses this file to You under the Apache License, Version 2.0
- * (the "License"); you may not use this file except in compliance with
- * the License.  You may obtain a copy of the License at
- *
- *     http://www.apache.org/licenses/LICENSE-2.0
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
- */
 
 public abstract class SorterTestBase extends LuceneTestCase {
 
@@ -231,7 +234,7 @@ public abstract class SorterTestBase extends LuceneTestCase {
     int numDocs = atLeast(20);
     createIndex(dir, numDocs, random());
     
-    reader = new SlowCompositeReaderWrapper(DirectoryReader.open(dir));
+    reader = SlowCompositeReaderWrapper.wrap(DirectoryReader.open(dir));
   }
   
   @AfterClass
@@ -286,34 +289,54 @@ public abstract class SorterTestBase extends LuceneTestCase {
       }
     }
   }
-  
+
+  Bits randomLiveDocs(int maxDoc) {
+    if (rarely()) {
+      if (random().nextBoolean()) {
+        return null;
+      } else {
+        return new Bits.MatchNoBits(maxDoc);
+      }
+    }
+    final FixedBitSet bits = new FixedBitSet(maxDoc);
+    final int bitsSet = _TestUtil.nextInt(random(), 1, maxDoc - 1);
+    for (int i = 0; i < bitsSet; ++i) {
+      while (true) {
+        final int index = random().nextInt(maxDoc);
+        if (!bits.get(index)) {
+          bits.set(index);
+          break;
+        }
+      }
+    }
+    return bits;
+  }
+
   @Test
   public void testDocsEnum() throws Exception {
-    Term term = new Term(DOCS_ENUM_FIELD, DOCS_ENUM_TERM);
-    DocsEnum docs = reader.termDocsEnum(term);
-    Bits mappedLiveDocs = reader.getLiveDocs();
+    Bits mappedLiveDocs = randomLiveDocs(reader.maxDoc());
+    TermsEnum termsEnum = reader.terms(DOCS_ENUM_FIELD).iterator(null);
+    assertEquals(SeekStatus.FOUND, termsEnum.seekCeil(new BytesRef(DOCS_ENUM_TERM)));
+    DocsEnum docs = termsEnum.docs(mappedLiveDocs, null);
+
     int doc;
     int prev = -1;
     while ((doc = docs.nextDoc()) != DocIdSetIterator.NO_MORE_DOCS) {
-      if (mappedLiveDocs != null) {
-        assertTrue("document " + doc + " marked as deleted", mappedLiveDocs.get(doc));
-      }
+      assertTrue("document " + doc + " marked as deleted", mappedLiveDocs == null || mappedLiveDocs.get(doc));
       assertEquals("incorrect value; doc " + doc, sortedValues[doc].intValue(), Integer.parseInt(reader.document(doc).get(ID_FIELD)));
       while (++prev < doc) {
-        assertFalse("document " + prev + " not marked as deleted", mappedLiveDocs.get(prev));
+        assertFalse("document " + prev + " not marked as deleted", mappedLiveDocs == null || mappedLiveDocs.get(prev));
       }
     }
     
-    docs = reader.termDocsEnum(term);
-    doc = 0;
+    docs = termsEnum.docs(mappedLiveDocs, docs);
+    doc = -1;
     prev = -1;
-    while ((doc = docs.advance(doc)) != DocIdSetIterator.NO_MORE_DOCS) {
-      if (mappedLiveDocs != null) {
-        assertTrue("document " + doc + " marked as deleted", mappedLiveDocs.get(doc));
-      }
+    while ((doc = docs.advance(doc + 1)) != DocIdSetIterator.NO_MORE_DOCS) {
+      assertTrue("document " + doc + " marked as deleted", mappedLiveDocs == null || mappedLiveDocs.get(doc));
       assertEquals("incorrect value; doc " + doc, sortedValues[doc].intValue(), Integer.parseInt(reader.document(doc).get(ID_FIELD)));
       while (++prev < doc) {
-        assertFalse("document " + prev + " not marked as deleted", mappedLiveDocs.get(prev));
+        assertFalse("document " + prev + " not marked as deleted", mappedLiveDocs == null || mappedLiveDocs.get(prev));
       }
     }
   }

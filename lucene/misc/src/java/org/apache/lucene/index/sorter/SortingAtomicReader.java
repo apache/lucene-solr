@@ -66,13 +66,11 @@ public class SortingAtomicReader extends FilterAtomicReader {
   private static class SortingFields extends FilterFields {
 
     private final Sorter.DocMap docMap;
-    private final Bits inLiveDocs;
     private final FieldInfos infos;
 
-    public SortingFields(final Fields in, final Bits inLiveDocs, FieldInfos infos, Sorter.DocMap docMap) {
+    public SortingFields(final Fields in, FieldInfos infos, Sorter.DocMap docMap) {
       super(in);
       this.docMap = docMap;
-      this.inLiveDocs = inLiveDocs;
       this.infos = infos;
     }
 
@@ -82,7 +80,7 @@ public class SortingAtomicReader extends FilterAtomicReader {
       if (terms == null) {
         return null;
       } else {
-        return new SortingTerms(terms, inLiveDocs, infos.fieldInfo(field).getIndexOptions(), docMap);
+        return new SortingTerms(terms, infos.fieldInfo(field).getIndexOptions(), docMap);
       }
     }
 
@@ -91,19 +89,17 @@ public class SortingAtomicReader extends FilterAtomicReader {
   private static class SortingTerms extends FilterTerms {
 
     private final Sorter.DocMap docMap;
-    private final Bits inLiveDocs;
     private final IndexOptions indexOptions;
     
-    public SortingTerms(final Terms in, final Bits inLiveDocs, IndexOptions indexOptions, final Sorter.DocMap docMap) {
+    public SortingTerms(final Terms in, IndexOptions indexOptions, final Sorter.DocMap docMap) {
       super(in);
       this.docMap = docMap;
-      this.inLiveDocs = inLiveDocs;
       this.indexOptions = indexOptions;
     }
 
     @Override
     public TermsEnum iterator(final TermsEnum reuse) throws IOException {
-      return new SortingTermsEnum(in.iterator(reuse), inLiveDocs, docMap, indexOptions);
+      return new SortingTermsEnum(in.iterator(reuse), docMap, indexOptions);
     }
 
   }
@@ -111,44 +107,53 @@ public class SortingAtomicReader extends FilterAtomicReader {
   private static class SortingTermsEnum extends FilterTermsEnum {
 
     private final Sorter.DocMap docMap;
-    private final Bits inLiveDocs;
     private final IndexOptions indexOptions;
     
-    public SortingTermsEnum(final TermsEnum in, final Bits inLiveDocs, Sorter.DocMap docMap, IndexOptions indexOptions) {
+    public SortingTermsEnum(final TermsEnum in, Sorter.DocMap docMap, IndexOptions indexOptions) {
       super(in);
       this.docMap = docMap;
-      this.inLiveDocs = inLiveDocs;
       this.indexOptions = indexOptions;
+    }
+
+    Bits newToOld(final Bits liveDocs) {
+      if (liveDocs == null) {
+        return null;
+      }
+      return new Bits() {
+
+        @Override
+        public boolean get(int index) {
+          return liveDocs.get(docMap.oldToNew(index));
+        }
+
+        @Override
+        public int length() {
+          return liveDocs.length();
+        }
+
+      };
     }
 
     @Override
     public DocsEnum docs(Bits liveDocs, DocsEnum reuse, final int flags) throws IOException {
-      if (liveDocs != null) {
-        liveDocs = inLiveDocs;
-      }
-      
       // if we're asked to reuse the given DocsEnum and it is Sorting, return
       // the wrapped one, since some Codecs expect it.
       if (reuse != null && reuse instanceof SortingDocsEnum) {
         reuse = ((SortingDocsEnum) reuse).getWrapped();
       }
       boolean withFreqs = indexOptions.compareTo(IndexOptions.DOCS_AND_FREQS) >=0 && (flags & DocsEnum.FLAG_FREQS) != 0;
-      return new SortingDocsEnum(in.docs(liveDocs, reuse, flags), withFreqs, docMap);
+      return new SortingDocsEnum(in.docs(newToOld(liveDocs), reuse, flags), withFreqs, docMap);
     }
 
     @Override
     public DocsAndPositionsEnum docsAndPositions(Bits liveDocs, DocsAndPositionsEnum reuse, final int flags) throws IOException {
-      if (liveDocs != null) {
-        liveDocs = inLiveDocs;
-      }
-      
       // if we're asked to reuse the given DocsAndPositionsEnum and it is
       // Sorting, return the wrapped one, since some Codecs expect it.
       if (reuse != null && reuse instanceof SortingDocsAndPositionsEnum) {
         reuse = ((SortingDocsAndPositionsEnum) reuse).getWrapped();
       }
       
-      final DocsAndPositionsEnum positions = in.docsAndPositions(liveDocs, reuse, flags);
+      final DocsAndPositionsEnum positions = in.docsAndPositions(newToOld(liveDocs), reuse, flags);
       if (positions == null) {
         return null;
       } else {
@@ -581,7 +586,7 @@ public class SortingAtomicReader extends FilterAtomicReader {
     if (fields == null) {
       return null;
     } else {
-      return new SortingFields(fields, in.getLiveDocs(), in.getFieldInfos(), docMap);
+      return new SortingFields(fields, in.getFieldInfos(), docMap);
     }
   }
   
