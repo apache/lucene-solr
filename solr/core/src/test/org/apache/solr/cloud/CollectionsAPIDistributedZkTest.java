@@ -207,6 +207,41 @@ public class CollectionsAPIDistributedZkTest extends AbstractFullDistribZkTestBa
     }
     assertTrue(gotExp);
     
+    // No numShards should fail
+    params = new ModifiableSolrParams();
+    params.set("action", CollectionAction.CREATE.toString());
+    collectionName = "acollection";
+    params.set("name", collectionName);
+    params.set(OverseerCollectionProcessor.REPLICATION_FACTOR, 10);
+    request = new QueryRequest(params);
+    request.setPath("/admin/collections");
+    gotExp = false;
+    resp = null;
+    try {
+      resp = createNewSolrServer("", baseUrl).request(request);
+    } catch (SolrException e) {
+      gotExp = true;
+    }
+    assertTrue(gotExp);
+    
+    // 0 numShards should fail
+    params = new ModifiableSolrParams();
+    params.set("action", CollectionAction.CREATE.toString());
+    collectionName = "acollection";
+    params.set("name", collectionName);
+    params.set(OverseerCollectionProcessor.REPLICATION_FACTOR, 10);
+    params.set("numShards", 0);
+    request = new QueryRequest(params);
+    request.setPath("/admin/collections");
+    gotExp = false;
+    resp = null;
+    try {
+      resp = createNewSolrServer("", baseUrl).request(request);
+    } catch (SolrException e) {
+      gotExp = true;
+    }
+    assertTrue(gotExp);
+    
     // Fail on one node
     
     // first we make a core with the core name the collections api
