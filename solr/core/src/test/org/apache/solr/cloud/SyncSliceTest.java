@@ -210,9 +210,8 @@ public class SyncSliceTest extends AbstractFullDistribZkTestBase {
     shardFailMessage = waitTillInconsistent();
     
     assertNotNull(
-        "Test Setup Failure: shard1 should have just been set up to be inconsistent - but it's still consistent. Leader:" + leaderJetty.url +
-        "skip list:" + skipServers,
-        shardFailMessage); 
+        "Test Setup Failure: shard1 should have just been set up to be inconsistent - but it's still consistent. Leader:"
+            + leaderJetty.url + " Dead Guy:" + deadJetty.url + "skip list:" + skipServers, shardFailMessage);
     
     jetties = new HashSet<CloudJettyRunner>();
     jetties.addAll(shardToJetty.get("shard1"));
