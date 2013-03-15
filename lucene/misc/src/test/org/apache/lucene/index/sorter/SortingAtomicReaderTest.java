@@ -19,7 +19,6 @@ package org.apache.lucene.index.sorter;
 
 import java.io.IOException;
 import java.util.Arrays;
-import java.util.Collections;
 
 import org.apache.lucene.index.AtomicReader;
 import org.apache.lucene.util.Bits;
@@ -33,28 +32,34 @@ public class SortingAtomicReaderTest extends SorterTestBase {
     // build the mapping from the reader, since we deleted documents, some of
     // them might have disappeared from the index (e.g. if an entire segment is
     // dropped b/c all its docs are deleted)
-    Integer[] values = new Integer[reader.maxDoc()];
-    int[] docs = new int[reader.maxDoc()];
+    final int[] values = new int[reader.maxDoc()];
     for (int i = 0; i < reader.maxDoc(); i++) {
-      docs[i] = i;
       values[i] = Integer.valueOf(reader.document(i).get(ID_FIELD));
     }
+    final Sorter.DocComparator comparator = new Sorter.DocComparator() {
+      @Override
+      public int compare(int docID1, int docID2) {
+        final int v1 = values[docID1];
+        final int v2 = values[docID2];
+        return v1 < v2 ? -1 : v1 == v2 ? 0 : 1;
+      }
+    };
 
-    final int[] oldToNew = Sorter.compute(docs, Collections.unmodifiableList(Arrays.asList(values)));
+    final Sorter.DocMap docMap = Sorter.sort(reader.maxDoc(), comparator);
     // Sorter.compute also sorts the values
     sortedValues = new Integer[reader.maxDoc()];
     for (int i = 0; i < reader.maxDoc(); ++i) {
-      sortedValues[oldToNew[i]] = values[i];
+      sortedValues[docMap.oldToNew(i)] = values[i];
     }
     if (VERBOSE) {
-      System.out.println("oldToNew: " + Arrays.toString(oldToNew));
+      System.out.println("docMap: " + docMap);
       System.out.println("sortedValues: " + Arrays.toString(sortedValues));
     }
     
-    reader = new SortingAtomicReader(reader, new Sorter() {
+    reader = SortingAtomicReader.sort(reader, new Sorter() {
       @Override
-      public int[] oldToNew(AtomicReader reader) throws IOException {
-        return oldToNew;
+      public Sorter.DocMap sort(AtomicReader reader) throws IOException {
+        return docMap;
       }
     });
     
