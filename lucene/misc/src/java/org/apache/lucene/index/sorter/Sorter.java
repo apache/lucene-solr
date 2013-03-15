@@ -79,9 +79,11 @@ public abstract class Sorter {
     public DocMap sort(final AtomicReader reader) throws IOException {
       final int maxDoc = reader.maxDoc();
       return new DocMap() {
+        @Override
         public int oldToNew(int docID) {
           return maxDoc - docID - 1;
         }
+        @Override
         public int newToOld(int docID) {
           return maxDoc - docID - 1;
         }
