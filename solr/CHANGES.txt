@@ -110,6 +110,12 @@ Bug Fixes
   should still wait to see the shard id in it's current ClusterState.
   (Mark Miller)
 
+Optimizations
+----------------------
+
+* SOLR-4569: waitForReplicasToComeUp should bail right away if it doesn't see the
+  expected slice in the clusterstate rather than waiting. (Mark Miller)
+
 Other Changes
 ----------------------
 
