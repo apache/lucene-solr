@@ -56,6 +56,7 @@ public class TestQueryTypes extends AbstractSolrTestCase {
     assertU(adoc("id","7", "v_f","1.5"));
     assertU(adoc("id","8", "v_ti","5"));
     assertU(adoc("id","9", "v_s","internal\"quote"));
+    assertU(adoc("id","10","text_no_analyzer","should just work"));
 
     Object[] arr = new Object[] {
     "id",999.0
@@ -423,6 +424,8 @@ public class TestQueryTypes extends AbstractSolrTestCase {
             req("q","_query_:\"{!query defType=query v=$q1}\"", "q1","{!v=$q2}","q2","{!prefix f=v_t v=$qqq}","qqq","hel")
             ,"//result[@numFound='2']"
             );
+    assertQ("Test text field with no analysis doesn't NPE with wildcards (SOLR-4318)",
+        req("q", "text_no_analyzer:should*"), "//result[@numFound='1']");
 
   }
 }
