@@ -38,7 +38,7 @@ import org.apache.lucene.facet.params.FacetIndexingParams;
 import org.apache.lucene.facet.params.FacetSearchParams;
 import org.apache.lucene.facet.search.DrillSideways.DrillSidewaysResult;
 import org.apache.lucene.facet.sortedset.SortedSetDocValuesAccumulator;
-import org.apache.lucene.facet.sortedset.SortedSetDocValuesFacetField;
+import org.apache.lucene.facet.sortedset.SortedSetDocValuesFacetFields;
 import org.apache.lucene.facet.sortedset.SortedSetDocValuesReaderState;
 import org.apache.lucene.facet.taxonomy.CategoryPath;
 import org.apache.lucene.facet.taxonomy.TaxonomyReader;
@@ -500,6 +500,7 @@ public class TestDrillSideways extends FacetTestCase {
     RandomIndexWriter w = new RandomIndexWriter(random(), d, iwc);
     DirectoryTaxonomyWriter tw = new DirectoryTaxonomyWriter(td, IndexWriterConfig.OpenMode.CREATE);
     facetFields = new FacetFields(tw);
+    SortedSetDocValuesFacetFields dvFacetFields = new SortedSetDocValuesFacetFields();
 
     for(Doc rawDoc : docs) {
       Document doc = new Document();
@@ -519,9 +520,6 @@ public class TestDrillSideways extends FacetTestCase {
           if (VERBOSE) {
             System.out.println("    dim" + dim + "=" + new BytesRef(dimValues[dim][dimValue]));
           }
-          if (canUseDV) {
-            doc.add(new SortedSetDocValuesFacetField(cp));
-          }
         }
         int dimValue2 = rawDoc.dims2[dim];
         if (dimValue2 != -1) {
@@ -531,13 +529,13 @@ public class TestDrillSideways extends FacetTestCase {
           if (VERBOSE) {
             System.out.println("      dim" + dim + "=" + new BytesRef(dimValues[dim][dimValue2]));
           }
-          if (canUseDV) {
-            doc.add(new SortedSetDocValuesFacetField(cp));
-          }
         }
       }
       if (!paths.isEmpty()) {
         facetFields.addFields(doc, paths);
+        if (canUseDV) {
+          dvFacetFields.addFields(doc, paths);
+        }
       }
 
       w.addDocument(doc);

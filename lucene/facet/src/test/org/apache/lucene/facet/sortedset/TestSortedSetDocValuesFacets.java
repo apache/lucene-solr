@@ -28,6 +28,7 @@ import org.apache.lucene.facet.params.CategoryListParams;
 import org.apache.lucene.facet.params.FacetIndexingParams;
 import org.apache.lucene.facet.params.FacetSearchParams;
 import org.apache.lucene.facet.search.CountFacetRequest;
+import org.apache.lucene.facet.search.DrillDownQuery;
 import org.apache.lucene.facet.search.FacetRequest;
 import org.apache.lucene.facet.search.FacetResult;
 import org.apache.lucene.facet.search.FacetsCollector;
@@ -35,6 +36,7 @@ import org.apache.lucene.facet.taxonomy.CategoryPath;
 import org.apache.lucene.index.RandomIndexWriter;
 import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.search.MatchAllDocsQuery;
+import org.apache.lucene.search.TopDocs;
 import org.apache.lucene.store.Directory;
 
 public class TestSortedSetDocValuesFacets extends FacetTestCase {
@@ -57,6 +59,8 @@ public class TestSortedSetDocValuesFacets extends FacetTestCase {
         }
       };
 
+    SortedSetDocValuesFacetFields dvFields = new SortedSetDocValuesFacetFields(fip);
+
     Document doc = new Document();
     // Mixup order we add these paths, to verify tie-break
     // order is by label (unicode sort) and has nothing to
@@ -67,22 +71,18 @@ public class TestSortedSetDocValuesFacets extends FacetTestCase {
     paths.add(new CategoryPath("a", "zoo"));
     Collections.shuffle(paths, random());
 
-    for(CategoryPath cp : paths) {
-      doc.add(new SortedSetDocValuesFacetField(fip, cp));
-    }
+    paths.add(new CategoryPath("b", "baz"));
+    paths.add(new CategoryPath("b" + FacetIndexingParams.DEFAULT_FACET_DELIM_CHAR, "bazfoo"));
 
-    doc.add(new SortedSetDocValuesFacetField(fip, new CategoryPath("b", "baz")));
-    // Make sure it's fine to use delim in the label (it's
-    // just not allowed in the dim):
-    doc.add(new SortedSetDocValuesFacetField(fip, new CategoryPath("b", "baz" + delim + "foo")));
-    doc.add(new SortedSetDocValuesFacetField(fip, new CategoryPath("b" + FacetIndexingParams.DEFAULT_FACET_DELIM_CHAR, "bazfoo")));
+    dvFields.addFields(doc, paths);
+
     writer.addDocument(doc);
     if (random().nextBoolean()) {
       writer.commit();
     }
 
     doc = new Document();
-    doc.add(new SortedSetDocValuesFacetField(fip, new CategoryPath("a", "foo")));
+    dvFields.addFields(doc, Collections.singletonList(new CategoryPath("a", "foo")));
     writer.addDocument(doc);
 
     // NRT open
@@ -123,11 +123,24 @@ public class TestSortedSetDocValuesFacets extends FacetTestCase {
     int dimCount = doDimCount ? 4 : 0;
     assertEquals("a (" + dimCount + ")\n  foo (2)\n  bar (1)\n  zoo (1)\n", FacetTestUtils.toSimpleString(results.get(0)));
 
-    dimCount = doDimCount ? 2 : 0;
-    assertEquals("b (" + dimCount + ")\n  baz (1)\n  baz" + delim + "foo (1)\n", FacetTestUtils.toSimpleString(results.get(1)));
+    dimCount = doDimCount ? 1 : 0;
+    assertEquals("b (" + dimCount + ")\n  baz (1)\n", FacetTestUtils.toSimpleString(results.get(1)));
 
     dimCount = doDimCount ? 1 : 0;
     assertEquals("b" + FacetIndexingParams.DEFAULT_FACET_DELIM_CHAR + " (" + dimCount + ")\n  bazfoo (1)\n", FacetTestUtils.toSimpleString(results.get(2)));
+
+    // DrillDown:
+
+    DrillDownQuery q = new DrillDownQuery(fip);
+    q.add(new CategoryPath("a", "foo"));
+    q.add(new CategoryPath("b", "baz"));
+    TopDocs hits = searcher.search(q, 1);
+    assertEquals(1, hits.totalHits);
+
+    q = new DrillDownQuery(fip);
+    q.add(new CategoryPath("a"));
+    hits = searcher.search(q, 1);
+    assertEquals(2, hits.totalHits);
 
     searcher.getIndexReader().close();
     dir.close();

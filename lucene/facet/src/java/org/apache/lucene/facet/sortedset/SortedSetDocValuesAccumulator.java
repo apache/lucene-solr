@@ -43,7 +43,7 @@ import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.PriorityQueue;
 
 /** A {@link FacetsAccumulator} that uses previously
- *  indexed {@link SortedSetDocValuesFacetField} to perform faceting,
+ *  indexed {@link SortedSetDocValuesFacetFields} to perform faceting,
  *  without require a separate taxonomy index.  Faceting is
  *  a bit slower (~25%), and there is added cost on every
  *  {@link IndexReader} open to create a new {@link
