@@ -147,8 +147,9 @@ public abstract class Sorter {
     }
     
     SorterTemplate sorter = new DocValueSorterTemplate(docs, comparator);
-    // TODO: use a stable sort instead?
-    sorter.quickSort(0, docs.length - 1); // docs is now the newToOld mapping
+    // It can be common to sort a reader, add docs, sort it again, ... and in
+    // that case timSort can save a lot of time
+    sorter.timSort(0, docs.length - 1); // docs is now the newToOld mapping
 
     // The reason why we use MonotonicAppendingLongBuffer here is that it
     // wastes very little memory if the index is in random order but can save

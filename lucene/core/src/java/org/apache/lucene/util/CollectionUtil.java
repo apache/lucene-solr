@@ -143,6 +143,32 @@ public final class CollectionUtil {
     getSorter(list).mergeSort(0, size-1);
   }
 
+  // timSorts:
+  
+  /**
+   * Sorts the given random access {@link List} using the {@link Comparator}.
+   * The list must implement {@link RandomAccess}. This method uses the TimSort
+   * algorithm, but falls back to binary sort for small lists.
+   * @throws IllegalArgumentException if list is e.g. a linked list without random access.
+   */
+  public static <T> void timSort(List<T> list, Comparator<? super T> comp) {
+    final int size = list.size();
+    if (size <= 1) return;
+    getSorter(list, comp).timSort(0, size-1);
+  }
+  
+  /**
+   * Sorts the given random access {@link List} in natural order.
+   * The list must implement {@link RandomAccess}. This method uses the TimSort
+   * algorithm, but falls back to binary sort for small lists.
+   * @throws IllegalArgumentException if list is e.g. a linked list without random access.
+   */
+  public static <T extends Comparable<? super T>> void timSort(List<T> list) {
+    final int size = list.size();
+    if (size <= 1) return;
+    getSorter(list).timSort(0, size-1);
+  }
+
   // insertionSorts:
   
   /**
@@ -168,5 +194,30 @@ public final class CollectionUtil {
     if (size <= 1) return;
     getSorter(list).insertionSort(0, size-1);
   }
+
+  // binarySorts:
   
+  /**
+   * Sorts the given random access {@link List} using the {@link Comparator}.
+   * The list must implement {@link RandomAccess}. This method uses the binary sort
+   * algorithm. It is only recommended to use this algorithm for small lists!
+   * @throws IllegalArgumentException if list is e.g. a linked list without random access.
+   */
+  public static <T> void binarySort(List<T> list, Comparator<? super T> comp) {
+    final int size = list.size();
+    if (size <= 1) return;
+    getSorter(list, comp).binarySort(0, size-1);
+  }
+  
+  /**
+   * Sorts the given random access {@link List} in natural order.
+   * The list must implement {@link RandomAccess}. This method uses the insertion sort
+   * algorithm. It is only recommended to use this algorithm for small lists!
+   * @throws IllegalArgumentException if list is e.g. a linked list without random access.
+   */
+  public static <T extends Comparable<? super T>> void binarySort(List<T> list) {
+    final int size = list.size();
+    if (size <= 1) return;
+    getSorter(list).binarySort(0, size-1);
+  }
 }

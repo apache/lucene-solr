@@ -1,5 +1,6 @@
 package org.apache.lucene.util;
 
+
 /*
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
@@ -29,8 +30,26 @@ package org.apache.lucene.util;
  */
 public abstract class SorterTemplate {
 
+  private static final int TIMSORT_MINRUN = 32;
+  private static final int TIMSORT_THRESHOLD = 64;
+  private static final int TIMSORT_STACKSIZE = 40; // change if you change TIMSORT_MINRUN
   private static final int MERGESORT_THRESHOLD = 12;
   private static final int QUICKSORT_THRESHOLD = 7;
+
+  static {
+    // check whether TIMSORT_STACKSIZE is large enough
+    // for a run length of TIMSORT_MINRUN and an array
+    // of 2B values when TimSort invariants are verified
+    final long[] lengths = new long[TIMSORT_STACKSIZE];
+    lengths[0] = TIMSORT_MINRUN;
+    lengths[1] = lengths[0] + 1;
+    for (int i = 2; i < TIMSORT_STACKSIZE; ++i) {
+      lengths[i] = lengths[i-2] + lengths[i-1] + 1;
+    }
+    if (lengths[TIMSORT_STACKSIZE - 1] < Integer.MAX_VALUE) {
+      throw new Error("TIMSORT_STACKSIZE is too small");
+    }
+  }
 
   /** Implement this method, that swaps slots {@code i} and {@code j} in your data */
   protected abstract void swap(int i, int j);
@@ -46,7 +65,7 @@ public abstract class SorterTemplate {
    * Should be implemented like <code>pivot.compareTo(<em>valueOf(j)</em>)</code> */
   protected abstract int comparePivot(int j);
   
-  /** Sorts via stable in-place InsertionSort algorithm
+  /** Sorts via stable in-place InsertionSort algorithm (O(n<sup>2</sup>))
    *(ideal for small collections which are mostly presorted). */
   public final void insertionSort(int lo, int hi) {
     for (int i = lo + 1 ; i <= hi; i++) {
@@ -56,6 +75,28 @@ public abstract class SorterTemplate {
         } else {
           break;
         }
+      }
+    }
+  }
+
+  /** Sorts via stable in-place BinarySort algorithm (O(n<sup>2</sup>))
+   * (ideal for small collections which are in random order). */
+  public final void binarySort(int lo, int hi) {
+    for (int i = lo + 1; i <= hi; ++i) {
+      int l = lo;
+      int h = i - 1;
+      setPivot(i);
+      while (l <= h) {
+        final int mid = (l + h) >>> 1;
+        final int cmp = comparePivot(mid);
+        if (cmp < 0) {
+          h = mid - 1;
+        } else {
+          l = mid + 1;
+        }
+      }
+      for (int j = i; j > l; --j) {
+        swap(j - 1, j);
       }
     }
   }
@@ -117,7 +158,175 @@ public abstract class SorterTemplate {
     quickSort(lo, left, maxDepth);
     quickSort(left + 1, hi, maxDepth);
   }
-  
+
+  /** TimSort implementation. The only difference with the spec is that this
+   *  impl reuses {@link SorterTemplate#merge(int, int, int, int, int)} to
+   *  merge runs (in place) instead of the original merging routine from
+   *  TimSort (which requires extra memory but might be slightly faster). */
+  private class TimSort {
+
+    final int hi;
+    final int minRun;
+    final int[] runEnds;
+    int stackSize;
+
+    TimSort(int lo, int hi) {
+      assert hi > lo;
+      // +1 because the first slot is reserved and always lo
+      runEnds = new int[TIMSORT_STACKSIZE + 1];
+      runEnds[0] = lo;
+      stackSize = 0;
+      this.hi = hi;
+      minRun = minRun(hi - lo + 1);
+    }
+
+    /** Minimum run length for an array of length <code>length</code>. */
+    int minRun(int length) {
+      assert length >= TIMSORT_MINRUN;
+      int n = length;
+      int r = 0;
+      while (n >= 64) {
+        r |= n & 1;
+        n >>>= 1;
+      }
+      final int minRun = n + r;
+      assert minRun >= TIMSORT_MINRUN && minRun <= 64;
+      return minRun;
+    }
+
+    int runLen(int i) {
+      final int off = stackSize - i;
+      return runEnds[off] - runEnds[off - 1];
+    }
+
+    int runBase(int i) {
+      return runEnds[stackSize - i - 1];
+    }
+
+    int runEnd(int i) {
+      return runEnds[stackSize - i];
+    }
+
+    void setRunEnd(int i, int runEnd) {
+      runEnds[stackSize - i] = runEnd;
+    }
+
+    void pushRunLen(int len) {
+      runEnds[stackSize + 1] = runEnds[stackSize] + len;
+      ++stackSize;
+    }
+
+    /** Merge run i with run i+1 */
+    void mergeAt(int i) {
+      assert stackSize > i + 1;
+      final int l = runBase(i+1);
+      final int pivot = runBase(i);
+      final int h = runEnd(i);
+      merge(l, pivot, h, pivot - l, h - pivot);
+      for (int j = 1; j <= i+1; ++j) {
+        setRunEnd(j, runEnd(j-1));
+      }
+      --stackSize;
+    }
+
+    /** Compute the length of the next run, make the run sorted and return its
+     *  length. */
+    int nextRun() {
+      final int runBase = runEnd(0);
+      if (runBase == hi) {
+        return 1;
+      }
+      int l = 1; // length of the run
+      if (compare(runBase, runBase+1) > 0) {
+        // run must be strictly descending
+        while (runBase + l <= hi && compare(runBase + l - 1, runBase + l) > 0) {
+          ++l;
+        }
+        if (l < minRun && runBase + l <= hi) {
+          l = Math.min(hi - runBase + 1, minRun);
+          binarySort(runBase, runBase + l - 1);
+        } else {
+          // revert
+          for (int i = 0, halfL = l >>> 1; i < halfL; ++i) {
+            swap(runBase + i, runBase + l - i - 1);
+          }
+        }
+      } else {
+        // run must be non-descending
+        while (runBase + l <= hi && compare(runBase + l - 1, runBase + l) <= 0) {
+          ++l;
+        }
+        if (l < minRun && runBase + l <= hi) {
+          l = Math.min(hi - runBase + 1, minRun);
+          binarySort(runBase, runBase + l - 1);
+        } // else nothing to do, the run is already sorted
+      }
+      return l;
+    }
+
+    void ensureInvariants() {
+      while (stackSize > 1) {
+        final int runLen0 = runLen(0);
+        final int runLen1 = runLen(1);
+
+        if (stackSize > 2) {
+          final int runLen2 = runLen(2);
+
+          if (runLen2 <= runLen1 + runLen0) {
+            // merge the smaller of 0 and 2 with 1
+            if (runLen2 < runLen0) {
+              mergeAt(1);
+            } else {
+              mergeAt(0);
+            }
+            continue;
+          }
+        }
+
+        if (runLen1 <= runLen0) {
+          mergeAt(0);
+          continue;
+        }
+
+        break;
+      }
+    }
+
+    void exhaustStack() {
+      while (stackSize > 1) {
+        mergeAt(0);
+      }
+    }
+
+    void sort() {
+      do {
+        ensureInvariants();
+
+        // Push a new run onto the stack
+        pushRunLen(nextRun());
+
+      } while (runEnd(0) <= hi);
+
+      exhaustStack();
+      assert runEnd(0) == hi + 1;
+    }
+
+  }
+
+  /** Sorts using TimSort, see http://svn.python.org/projects/python/trunk/Objects/listsort.txt
+   *  and http://svn.python.org/projects/python/trunk/Objects/listobject.c.
+   *  TimSort is a stable sorting algorithm based on MergeSort but known to
+   *  perform extremely well on partially-sorted inputs.
+   *  For small collections, falls back to {@link #binarySort(int, int)}. */
+  public final void timSort(int lo, int hi) {
+    if (hi - lo <= TIMSORT_THRESHOLD) {
+      binarySort(lo, hi);
+      return;
+    }
+
+    new TimSort(lo, hi).sort();
+  }
+
   /** Sorts via stable in-place MergeSort algorithm
    * For small collections falls back to {@link #insertionSort(int,int)}. */
   public final void mergeSort(int lo, int hi) {
