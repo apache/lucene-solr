@@ -193,8 +193,7 @@ public class SyncSliceTest extends AbstractFullDistribZkTestBase {
     
     // we are skipping  2 nodes
     assertEquals(2, skipServers.size());
-    assertTrue(skipServers.get(0) != skipServers.get(1));
-
+    
     // more docs than can peer sync
     for (int i = 0; i < 300; i++) {
       indexDoc(skipServers, id, docId++, i1, 50, tlong, 50, t1,
