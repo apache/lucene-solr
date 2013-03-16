@@ -73,6 +73,17 @@ public class CachingDirectoryFactoryTest extends SolrTestCaseJ4 {
       thread.join();
     }
     
+    Thread thread = new Thread() {
+      public void run() {
+        try {
+          df.close();
+        } catch (IOException e) {
+          throw new RuntimeException(e);
+        }
+      }
+    };
+    thread.start();
+    
     // do any remaining releases
     synchronized (dirs) {
       int sz = dirs.size();
@@ -98,7 +109,8 @@ public class CachingDirectoryFactoryTest extends SolrTestCaseJ4 {
       
     }
     
-    df.close();
+    thread.join();
+
   }
   
   private class ReleaseDirThread extends Thread {

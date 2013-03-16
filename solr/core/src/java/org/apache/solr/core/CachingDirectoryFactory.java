@@ -20,6 +20,7 @@ package org.apache.solr.core;
 import java.io.File;
 import java.io.IOException;
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Locale;
@@ -123,7 +124,9 @@ public abstract class CachingDirectoryFactory extends DirectoryFactory {
   public void close() throws IOException {
     synchronized (this) {
       this.closed = true;
-      for (CacheValue val : byDirectoryCache.values()) {
+      Collection<CacheValue> values = new ArrayList<CacheValue>();
+      values.addAll(byDirectoryCache.values());
+      for (CacheValue val : values) {
         try {
           // if there are still refs out, we have to wait for them
           int cnt = 0;
@@ -135,7 +138,15 @@ public abstract class CachingDirectoryFactory extends DirectoryFactory {
               break;
             }
           }
-          
+          assert val.refCnt == 0 : val.refCnt;
+        } catch (Throwable t) {
+          SolrException.log(log, "Error closing directory", t);
+        }
+      }
+      
+      values = byDirectoryCache.values();
+      for (CacheValue val : values) {
+        try {
           assert val.refCnt == 0 : val.refCnt;
           log.info("Closing directory when closing factory: " + val.path);
           closeDirectory(val);
@@ -143,6 +154,7 @@ public abstract class CachingDirectoryFactory extends DirectoryFactory {
           SolrException.log(log, "Error closing directory", t);
         }
       }
+      
       byDirectoryCache.clear();
       byPathCache.clear();
     }

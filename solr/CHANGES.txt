@@ -137,6 +137,9 @@ Bug Fixes
 * SOLR-4573: Accessing Admin UI files in SolrCloud mode logs warnings.
   (Mark Miller, Phil John)
 
+* SOLR-4595: CachingDirectoryFactory#close can throw a concurrent 
+  modification exception. (Mark Miller)
+
 Optimizations
 ----------------------
 
