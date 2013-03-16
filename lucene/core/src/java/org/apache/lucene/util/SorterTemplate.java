@@ -313,8 +313,8 @@ public abstract class SorterTemplate {
 
   }
 
-  /** Sorts using TimSort, see http://svn.python.org/projects/python/trunk/Objects/listsort.txt
-   *  and http://svn.python.org/projects/python/trunk/Objects/listobject.c.
+  /** Sorts using <a href="http://svn.python.org/projects/python/trunk/Objects/listsort.txt">TimSort</a>, see 
+   *  also <a href="http://svn.python.org/projects/python/trunk/Objects/listobject.c">source code</a>.
    *  TimSort is a stable sorting algorithm based on MergeSort but known to
    *  perform extremely well on partially-sorted inputs.
    *  For small collections, falls back to {@link #binarySort(int, int)}. */
@@ -343,7 +343,8 @@ public abstract class SorterTemplate {
     merge(lo, mid, hi, mid - lo, hi - mid);
   }
 
-  private void merge(int lo, int pivot, int hi, int len1, int len2) {
+  // pkg-protected for access from TimSort class
+  void merge(int lo, int pivot, int hi, int len1, int len2) {
     if (len1 == 0 || len2 == 0) {
       return;
     }
