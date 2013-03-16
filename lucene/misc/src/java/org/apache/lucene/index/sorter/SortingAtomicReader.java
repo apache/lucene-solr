@@ -307,9 +307,11 @@ public class SortingAtomicReader extends FilterAtomicReader {
         docs[i] = docs[j];
         docs[j] = tmpDoc;
         
-        int tmpFreq = freqs[i];
-        freqs[i] = freqs[j];
-        freqs[j] = tmpFreq;
+        if (freqs != null) {
+          int tmpFreq = freqs[i];
+          freqs[i] = freqs[j];
+          freqs[j] = tmpFreq;
+        }
       }
     }
     
@@ -335,8 +337,6 @@ public class SortingAtomicReader extends FilterAtomicReader {
           freqs[i] = in.freq();
           ++i;
         }
-        SorterTemplate sorter = new DocFreqSorterTemplate(docs, freqs);
-        sorter.quickSort(0, i - 1);
       } else {
         freqs = null;
         while ((doc = in.nextDoc()) != DocIdSetIterator.NO_MORE_DOCS){
@@ -345,8 +345,10 @@ public class SortingAtomicReader extends FilterAtomicReader {
           }
           docs[i++] = docMap.oldToNew(doc);
         }
-        Arrays.sort(docs, 0, i);
       }
+      // TimSort can save much time compared to other sorts in case of
+      // reverse sorting, or when sorting a concatenation of sorted readers
+      new DocFreqSorterTemplate(docs, freqs).timSort(0, i - 1);
       upto = i;
     }
     
@@ -451,12 +453,9 @@ public class SortingAtomicReader extends FilterAtomicReader {
       int i = 0;
       while ((doc = in.nextDoc()) != DocIdSetIterator.NO_MORE_DOCS) {
         if (i == docs.length) {
-          docs = ArrayUtil.grow(docs, docs.length + 1);
-          // don't grow() offsets since growing pattern for long and int is not the same.
-          // since we want docs and offsets at the same length, just grow it manually.
-          long[] tmp = new long[docs.length];
-          System.arraycopy(offsets, 0, tmp, 0, offsets.length);
-          offsets = tmp;
+          final int newLength = ArrayUtil.oversize(i + 1, 4);
+          docs = Arrays.copyOf(docs, newLength);
+          offsets = Arrays.copyOf(offsets, newLength);
         }
         docs[i] = docMap.oldToNew(doc);
         offsets[i] = out.getFilePointer();
@@ -464,8 +463,7 @@ public class SortingAtomicReader extends FilterAtomicReader {
         i++;
       }
       upto = i;
-      SorterTemplate sorter = new DocOffsetSorterTemplate(docs, offsets);
-      sorter.quickSort(0, upto - 1);
+      new DocOffsetSorterTemplate(docs, offsets).timSort(0, upto - 1);
       out.close();
       this.postingInput = new RAMInputStream("", file);
     }

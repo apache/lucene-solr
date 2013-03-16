@@ -187,7 +187,27 @@ public class TestArrayUtil extends LuceneTestCase {
       assertArrayEquals(a2, a1);
     }
   }
-  
+
+  public void testTimSort() {
+    int num = atLeast(65);
+    for (int i = 0; i < num; i++) {
+      Integer[] a1 = createRandomArray(1000), a2 = a1.clone();
+      ArrayUtil.timSort(a1);
+      Arrays.sort(a2);
+      assertArrayEquals(a2, a1);
+      
+      a1 = createRandomArray(1000);
+      a2 = a1.clone();
+      ArrayUtil.timSort(a1, Collections.reverseOrder());
+      Arrays.sort(a2, Collections.reverseOrder());
+      assertArrayEquals(a2, a1);
+      // reverse back, so we can test that completely backwards sorted array (worst case) is working:
+      ArrayUtil.timSort(a1);
+      Arrays.sort(a2);
+      assertArrayEquals(a2, a1);
+    }
+  }
+
   public void testInsertionSort() {
     for (int i = 0, c = atLeast(500); i < c; i++) {
       Integer[] a1 = createRandomArray(30), a2 = a1.clone();
@@ -202,6 +222,25 @@ public class TestArrayUtil extends LuceneTestCase {
       assertArrayEquals(a2, a1);
       // reverse back, so we can test that completely backwards sorted array (worst case) is working:
       ArrayUtil.insertionSort(a1);
+      Arrays.sort(a2);
+      assertArrayEquals(a2, a1);
+    }
+  }
+  
+  public void testBinarySort() {
+    for (int i = 0, c = atLeast(500); i < c; i++) {
+      Integer[] a1 = createRandomArray(30), a2 = a1.clone();
+      ArrayUtil.binarySort(a1);
+      Arrays.sort(a2);
+      assertArrayEquals(a2, a1);
+      
+      a1 = createRandomArray(30);
+      a2 = a1.clone();
+      ArrayUtil.binarySort(a1, Collections.reverseOrder());
+      Arrays.sort(a2, Collections.reverseOrder());
+      assertArrayEquals(a2, a1);
+      // reverse back, so we can test that completely backwards sorted array (worst case) is working:
+      ArrayUtil.binarySort(a1);
       Arrays.sort(a2);
       assertArrayEquals(a2, a1);
     }
@@ -254,16 +293,49 @@ public class TestArrayUtil extends LuceneTestCase {
       last = act;
     }
   }
-  
+
+  public void testTimSortStability() {
+    final Random rnd = random();
+    Item[] items = new Item[100];
+    for (int i = 0; i < items.length; i++) {
+      // half of the items have value but same order. The value of this items is sorted,
+      // so they should always be in order after sorting.
+      // The other half has defined order, but no (-1) value (they should appear after
+      // all above, when sorted).
+      final boolean equal = rnd.nextBoolean();
+      items[i] = new Item(equal ? (i+1) : -1, equal ? 0 : (rnd.nextInt(1000)+1));
+    }
+    
+    if (VERBOSE) System.out.println("Before: " + Arrays.toString(items));
+    // if you replace this with ArrayUtil.quickSort(), test should fail:
+    ArrayUtil.timSort(items);
+    if (VERBOSE) System.out.println("Sorted: " + Arrays.toString(items));
+    
+    Item last = items[0];
+    for (int i = 1; i < items.length; i++) {
+      final Item act = items[i];
+      if (act.order == 0) {
+        // order of "equal" items should be not mixed up
+        assertTrue(act.val > last.val);
+      }
+      assertTrue(act.order >= last.order);
+      last = act;
+    }
+  }
+
   // should produce no exceptions
   public void testEmptyArraySort() {
     Integer[] a = new Integer[0];
     ArrayUtil.quickSort(a);
     ArrayUtil.mergeSort(a);
     ArrayUtil.insertionSort(a);
+    ArrayUtil.binarySort(a);
+    ArrayUtil.timSort(a);
     ArrayUtil.quickSort(a, Collections.reverseOrder());
     ArrayUtil.mergeSort(a, Collections.reverseOrder());
+    ArrayUtil.timSort(a, Collections.reverseOrder());
     ArrayUtil.insertionSort(a, Collections.reverseOrder());
+    ArrayUtil.binarySort(a, Collections.reverseOrder());
   }
   
 }
