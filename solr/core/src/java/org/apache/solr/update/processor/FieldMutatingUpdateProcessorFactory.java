@@ -242,7 +242,7 @@ public abstract class FieldMutatingUpdateProcessorFactory
 
   /**
    * Removes all instance of the key from NamedList, returning the Set of 
-   * Strings that key refered to.  Throws an error if the key didn't refer 
+   * Strings that key referred to.  Throws an error if the key didn't refer 
    * to one or more strings (or arrays of strings)
    * @exception SolrException invalid arr/str structure.
    */
