@@ -622,7 +622,7 @@ public class SolrPluginUtils {
   private final static Pattern CONSECUTIVE_OP_PATTERN = Pattern.compile( "\\s+[+-](?:\\s*[+-]+)+" );
 
   /**
-   * Strips operators that are used illegally, otherwise reuturns it's
+   * Strips operators that are used illegally, otherwise returns its
    * input.  Some examples of illegal user queries are: "chocolate +-
    * chip", "chocolate - - chip", and "chocolate chip -".
    */
