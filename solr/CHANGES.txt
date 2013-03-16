@@ -134,6 +134,9 @@ Bug Fixes
 * SOLR-4592: DefaultSolrCoreState#doRecovery needs to check the CoreContainer
   shutdown flag inside the recoveryLock sync block. (Mark Miller)
 
+* SOLR-4573: Accessing Admin UI files in SolrCloud mode logs warnings.
+  (Mark Miller, Phil John)
+
 Optimizations
 ----------------------
 
