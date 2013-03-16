@@ -223,7 +223,7 @@ public abstract class SorterTemplate {
       final int pivot = runBase(i);
       final int h = runEnd(i);
       merge(l, pivot, h, pivot - l, h - pivot);
-      for (int j = 1; j <= i+1; ++j) {
+      for (int j = i + 1; j > 0; --j) {
         setRunEnd(j, runEnd(j-1));
       }
       --stackSize;
