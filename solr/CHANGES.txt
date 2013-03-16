@@ -131,6 +131,9 @@ Bug Fixes
 
 * SOLR-4311: Admin UI - Optimize Caching Behaviour (steffkes)
 
+* SOLR-4592: DefaultSolrCoreState#doRecovery needs to check the CoreContainer
+  shutdown flag inside the recoveryLock sync block. (Mark Miller)
+
 Optimizations
 ----------------------
 
