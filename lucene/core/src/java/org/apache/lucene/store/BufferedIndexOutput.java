@@ -139,6 +139,12 @@ public abstract class BufferedIndexOutput extends IndexOutput {
 
   @Override
   public abstract long length() throws IOException;
-
+  
+  /**
+   * Returns size of the used output buffer in bytes.
+   * */
+  public final int getBufferSize() {
+    return bufferSize;
+  }
 
 }
