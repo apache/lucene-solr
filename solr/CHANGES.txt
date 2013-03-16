@@ -140,6 +140,9 @@ Bug Fixes
 * SOLR-4595: CachingDirectoryFactory#close can throw a concurrent 
   modification exception. (Mark Miller)
 
+* SOLR-4594: StandardDirectoryFactory#remove accesses byDirectoryCache 
+  without a lock. (Mark Miller)
+
 Optimizations
 ----------------------
 
