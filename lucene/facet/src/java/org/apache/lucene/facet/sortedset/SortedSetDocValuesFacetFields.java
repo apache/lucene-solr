@@ -17,7 +17,16 @@ package org.apache.lucene.facet.sortedset;
  * limitations under the License.
  */
 
+import java.io.IOException;
+import java.util.Map.Entry;
+import java.util.Map;
+
+import org.apache.lucene.document.Document;
+import org.apache.lucene.document.Field;
 import org.apache.lucene.document.SortedSetDocValuesField;
+import org.apache.lucene.facet.index.DrillDownStream;
+import org.apache.lucene.facet.index.FacetFields;
+import org.apache.lucene.facet.params.CategoryListParams;
 import org.apache.lucene.facet.params.FacetIndexingParams;
 import org.apache.lucene.facet.taxonomy.CategoryPath;
 import org.apache.lucene.util.BytesRef;
@@ -29,39 +38,49 @@ import org.apache.lucene.util.BytesRef;
  *  this to your document, one per dimension + label, and
  *  it's fine if a given dimension is multi-valued. */
 
-public class SortedSetDocValuesFacetField extends SortedSetDocValuesField {
+public class SortedSetDocValuesFacetFields extends FacetFields {
 
   /** Create a {@code SortedSetDocValuesFacetField} with the
    *  provided {@link CategoryPath}. */
-  public SortedSetDocValuesFacetField(CategoryPath cp)  {
-    this(FacetIndexingParams.DEFAULT, cp);
+  public SortedSetDocValuesFacetFields()  {
+    this(FacetIndexingParams.DEFAULT);
   }
 
   /** Create a {@code SortedSetDocValuesFacetField} with the
    *  provided {@link CategoryPath}, and custom {@link
    *  FacetIndexingParams}. */
-  public SortedSetDocValuesFacetField(FacetIndexingParams fip, CategoryPath cp)  {
-    super(fip.getCategoryListParams(cp).field + SortedSetDocValuesReaderState.FACET_FIELD_EXTENSION, toBytesRef(fip, cp));
-  }
-
-  private static BytesRef toBytesRef(FacetIndexingParams fip, CategoryPath cp) {
+  public SortedSetDocValuesFacetFields(FacetIndexingParams fip)  {
+    super(null, fip);
     if (fip.getPartitionSize() != Integer.MAX_VALUE) {
       throw new IllegalArgumentException("partitions are not supported");
     }
-    if (cp.length != 2) {
-      throw new IllegalArgumentException("only flat facets (dimension + label) are currently supported");
-    }
-    String dimension = cp.components[0];
-    char delim = fip.getFacetDelimChar();
-    if (dimension.indexOf(delim) != -1) {
-      throw new IllegalArgumentException("facet dimension cannot contain FacetIndexingParams.getFacetDelimChar()=" + delim + " (U+" + Integer.toHexString(delim) + "); got dimension=\"" + dimension + "\"");
+  }
+
+  @Override
+  public void addFields(Document doc, Iterable<CategoryPath> categories) throws IOException {
+    if (categories == null) {
+      throw new IllegalArgumentException("categories should not be null");
     }
 
-    // We can't use cp.toString(delim) because that fails if
-    // cp.components[1] has the delim char, when in fact
-    // that is allowed here (but not when using taxonomy
-    // index):
-    return new BytesRef(dimension + delim + cp.components[1]);
+    final Map<CategoryListParams,Iterable<CategoryPath>> categoryLists = createCategoryListMapping(categories);
+    for (Entry<CategoryListParams, Iterable<CategoryPath>> e : categoryLists.entrySet()) {
+
+      CategoryListParams clp = e.getKey();
+      String dvField = clp.field + SortedSetDocValuesReaderState.FACET_FIELD_EXTENSION;
+
+      // Add sorted-set DV fields, one per value:
+      for(CategoryPath cp : e.getValue()) {
+        if (cp.length != 2) {
+          throw new IllegalArgumentException("only flat facets (dimension + label) are currently supported; got " + cp);
+        }
+        doc.add(new SortedSetDocValuesField(dvField, new BytesRef(cp.toString(indexingParams.getFacetDelimChar()))));
+      }
+
+      // add the drill-down field
+      DrillDownStream drillDownStream = getDrillDownStream(e.getValue());
+      Field drillDown = new Field(clp.field, drillDownStream, drillDownFieldType());
+      doc.add(drillDown);
+    }
   }
 }
 
