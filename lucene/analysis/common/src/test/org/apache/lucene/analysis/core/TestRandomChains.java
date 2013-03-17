@@ -54,6 +54,7 @@ import org.apache.lucene.analysis.MockTokenizer;
 import org.apache.lucene.analysis.TokenFilter;
 import org.apache.lucene.analysis.TokenStream;
 import org.apache.lucene.analysis.Tokenizer;
+import org.apache.lucene.analysis.miscellaneous.LimitTokenPositionFilter;
 import org.apache.lucene.analysis.wikipedia.WikipediaTokenizer;
 import org.apache.lucene.analysis.ValidatingTokenFilter;
 import org.apache.lucene.analysis.charfilter.NormalizeCharMap;
@@ -124,6 +125,18 @@ public class TestRandomChains extends BaseTokenStreamTestCase {
           ALWAYS);
       brokenConstructors.put(
           LimitTokenCountFilter.class.getConstructor(TokenStream.class, int.class, boolean.class),
+          new Predicate<Object[]>() {
+            @Override
+            public boolean apply(Object[] args) {
+              assert args.length == 3;
+              return !((Boolean) args[2]); // args are broken if consumeAllTokens is false
+            }
+          });
+      brokenConstructors.put(
+          LimitTokenPositionFilter.class.getConstructor(TokenStream.class, int.class),
+          ALWAYS);
+      brokenConstructors.put(
+          LimitTokenPositionFilter.class.getConstructor(TokenStream.class, int.class, boolean.class),
           new Predicate<Object[]>() {
             @Override
             public boolean apply(Object[] args) {
