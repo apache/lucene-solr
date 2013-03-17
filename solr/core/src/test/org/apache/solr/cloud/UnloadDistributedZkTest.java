@@ -121,7 +121,7 @@ public class UnloadDistributedZkTest extends BasicDistributedZkTest {
     while (shard2 != null) {
       if (System.currentTimeMillis() > timeoutAt) {
         printLayout();
-        fail("Still found shard");
+        fail("Still found shard2 in collection " + collection);
       }
       
       Thread.sleep(1000);

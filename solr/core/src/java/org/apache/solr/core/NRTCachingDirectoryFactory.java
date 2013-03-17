@@ -25,7 +25,6 @@ import org.apache.lucene.store.FSDirectory;
 import org.apache.lucene.store.NRTCachingDirectory;
 import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.common.util.NamedList;
-import org.apache.solr.core.DirectoryFactory.DirContext;
 
 /**
  * Factory to instantiate {@link org.apache.lucene.store.NRTCachingDirectory}
