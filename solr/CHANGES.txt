@@ -147,6 +147,13 @@ Bug Fixes
 * SOLR-4597: CachingDirectoryFactory#remove should not attempt to empty/remove 
   the index right away but flag for removal after close. (Mark Miller)
 
+* SOLR-4598: The Core Admin unload command's option 'deleteDataDir', should use 
+  the DirectoryFactory API to remove the data dir. (Mark Miller)
+
+* SOLR-4599: CachingDirectoryFactory calls close(Directory) on forceNew if the 
+  Directory has a refCnt of 0, but it should call closeDirectory(CacheValueValue).
+  (Mark Miller)
+
 Optimizations
 ----------------------
 

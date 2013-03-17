@@ -576,23 +576,13 @@ public class CoreAdminHandler extends RequestHandlerBase {
         }
       }
 
-      
       if (params.getBool(CoreAdminParams.DELETE_DATA_DIR, false)) {
-        core.addCloseHook(new CloseHook() {
-          @Override
-          public void preClose(SolrCore core) {}
-          
-          @Override
-          public void postClose(SolrCore core) {
-            File dataDir = new File(core.getDataDir());
-            try {
-              FileUtils.deleteDirectory(dataDir);
-            } catch (IOException e) {
-              SolrException.log(log, "Failed to delete data dir for core:"
-                  + core.getName() + " dir:" + dataDir.getAbsolutePath());
-            }
-          }
-        });
+        try {
+          core.getDirectoryFactory().remove(core.getDataDir());
+        } catch (Exception e) {
+          SolrException.log(log, "Failed to flag data dir for removal for core:"
+                  + core.getName() + " dir:" + core.getDataDir());
+        }
       }
       
       if (params.getBool(CoreAdminParams.DELETE_INSTANCE_DIR, false)) {
