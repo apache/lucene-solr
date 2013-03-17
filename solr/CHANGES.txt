@@ -82,7 +82,8 @@ Bug Fixes
   fullpath not path. (Mark Miller)
   
 * SOLR-4555: When forceNew is used with CachingDirectoryFactory#get, the old
-  CachValue should have it's path set to null. (Mark Miller)
+  CachValue should give up it's path as it will be used by a new Directory
+  instance. (Mark Miller)
   
 * SOLR-4361: DataImportHandler would throw UnsupportedOperationException if
   handler-level parameters were specified containing periods in the name

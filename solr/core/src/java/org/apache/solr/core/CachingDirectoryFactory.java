@@ -48,6 +48,7 @@ public abstract class CachingDirectoryFactory extends DirectoryFactory {
   protected class CacheValue {
     public Directory directory;
     public int refCnt = 1;
+    public boolean closed;
     public String path;
     public boolean doneWithDir = false;
     @Override
@@ -178,7 +179,10 @@ public abstract class CachingDirectoryFactory extends DirectoryFactory {
         closeDirectory(cacheValue);
         
         byDirectoryCache.remove(directory);
-        if (cacheValue.path != null) {
+        
+        // if it's been closed, it's path is now
+        // owned by another Directory instance
+        if (!cacheValue.closed) {
           byPathCache.remove(cacheValue.path);
         }
       }
@@ -273,9 +277,9 @@ public abstract class CachingDirectoryFactory extends DirectoryFactory {
             }
           }
           
-          // kill the path, it will be owned by the new dir
+          // close the entry, it will be owned by the new dir
           // we count on it being released by directory
-          cacheValue.path = null;
+          cacheValue.closed = true;
           
         }
       }
