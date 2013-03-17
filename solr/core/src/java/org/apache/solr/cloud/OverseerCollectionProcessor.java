@@ -361,7 +361,7 @@ public class OverseerCollectionProcessor implements Runnable, ClosableThread {
             + repFactor
             + " on collection "
             + collectionName
-            + " is higher than or equal to the number of Solr instances currently live ("
+            + " is higher than or equal to the number of Solr instances currently live or part of your " + CREATE_NODE_SET + "("
             + nodeList.size()
             + "). Its unusual to run two replica of the same slice on the same Solr-instance.");
       }
@@ -432,7 +432,7 @@ public class OverseerCollectionProcessor implements Runnable, ClosableThread {
     }
   }
   
-  private boolean collectionCmd(ClusterState clusterState, ZkNodeProps message, ModifiableSolrParams params, NamedList results) {
+  private void collectionCmd(ClusterState clusterState, ZkNodeProps message, ModifiableSolrParams params, NamedList results) {
     log.info("Executing Collection Cmd : " + params);
     String collectionName = message.getStr("name");
     
@@ -474,7 +474,6 @@ public class OverseerCollectionProcessor implements Runnable, ClosableThread {
       }
     }
     
-    int failed = 0;
     ShardResponse srsp;
     do {
       srsp = shardHandler.takeCompletedOrError();
@@ -483,12 +482,6 @@ public class OverseerCollectionProcessor implements Runnable, ClosableThread {
       }
     } while (srsp != null);
 
-    
-    // if all calls succeeded, return true
-    if (failed > 0) {
-      return false;
-    }
-    return true;
   }
 
   private void processResponse(NamedList results, ShardResponse srsp) {

@@ -141,14 +141,56 @@ public class CollectionsAPIDistributedZkTest extends AbstractFullDistribZkTestBa
   
   @Override
   public void doTest() throws Exception {
-
+    
     testNodesUsedByCreate();
     testCollectionsAPI();
+    deletePartiallyCreatedCollection();
     testErrorHandling();
 
     if (DEBUG) {
       super.printLayout();
     }
+  }
+  
+  private void deletePartiallyCreatedCollection() throws Exception {
+    final String baseUrl = getBaseUrl((HttpSolrServer) clients.get(0));
+    String collectionName = "halfdeletedcollection";
+    Create createCmd = new Create();
+    createCmd.setCoreName("halfdeletedcollection_shard1_replica1");
+    createCmd.setCollection(collectionName);
+    String dataDir = SolrTestCaseJ4.dataDir.getAbsolutePath() + File.separator
+        + System.currentTimeMillis() + "halfcollection" + "_hdn";
+    createCmd.setDataDir(dataDir);
+    createCmd.setNumShards(2);
+    createNewSolrServer("", baseUrl).request(createCmd);
+    
+    printLayout();
+    
+
+    ModifiableSolrParams params = new ModifiableSolrParams();
+    params.set("action", CollectionAction.DELETE.toString());
+    params.set("name", collectionName);
+    QueryRequest request = new QueryRequest(params);
+    request.setPath("/admin/collections");
+
+    NamedList<Object> resp = createNewSolrServer("", baseUrl).request(request);
+    
+    
+    Thread.sleep(5000);
+    
+    printLayout();
+    
+    
+    // now creating that collection should work
+    // try a bad action
+    params = new ModifiableSolrParams();
+    params.set("action", CollectionAction.CREATE.toString());
+    params.set("name", collectionName);
+    params.set("numShards", 2);
+    request = new QueryRequest(params);
+    request.setPath("/admin/collections");
+    resp = createNewSolrServer("", baseUrl).request(request);
+
   }
 
   private void testErrorHandling() throws Exception {
@@ -160,6 +202,7 @@ public class CollectionsAPIDistributedZkTest extends AbstractFullDistribZkTestBa
     params.set("action", "BADACTION");
     String collectionName = "badactioncollection";
     params.set("name", collectionName);
+    params.set("numShards", 2);
     QueryRequest request = new QueryRequest(params);
     request.setPath("/admin/collections");
     boolean gotExp = false;
@@ -175,6 +218,7 @@ public class CollectionsAPIDistributedZkTest extends AbstractFullDistribZkTestBa
     // leave out required param name
     params = new ModifiableSolrParams();
     params.set("action", CollectionAction.CREATE.toString());
+    params.set("numShards", 2);
     collectionName = "collection";
     // No Name
     // params.set("name", collectionName);

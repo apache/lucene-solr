@@ -157,6 +157,9 @@ Bug Fixes
 * SOLR-4602: ZkController#unregister should cancel it's election participation 
   before asking the Overseer to delete the SolrCore information. (Mark Miller)
 
+* SOLR-4601: A Collection that is only partially created and then deleted will 
+  leave pre allocated shard information in ZooKeeper. (Mark Miller)
+
 Optimizations
 ----------------------
 
