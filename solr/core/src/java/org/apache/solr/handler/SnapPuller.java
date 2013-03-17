@@ -481,13 +481,6 @@ public class SnapPuller {
         throw new InterruptedException("Index fetch interrupted");
       } catch (Exception e) {
         throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, "Index fetch failed : ", e);
-      } finally {
-        if (deleteTmpIdxDir) {
-          LOG.info("removing temporary index download directory files " + tmpIndexDir);
-          if (tmpIndex != null && core.getDirectoryFactory().exists(tmpIndex)) {
-            DirectoryFactory.empty(tmpIndexDir);
-          }
-        } 
       }
     } finally {
       try {
@@ -504,9 +497,6 @@ public class SnapPuller {
         stop = false;
         fsyncException = null;
       } finally {
-        if (tmpIndexDir != null) {
-          core.getDirectoryFactory().release(tmpIndexDir);
-        }
         if (deleteTmpIdxDir && tmpIndexDir != null) {
           try {
             core.getDirectoryFactory().remove(tmpIndexDir);
@@ -514,6 +504,11 @@ public class SnapPuller {
             SolrException.log(LOG, "Error removing directory " + tmpIndexDir, e);
           }
         }
+        
+        if (tmpIndexDir != null) {
+          core.getDirectoryFactory().release(tmpIndexDir);
+        }
+        
         if (indexDir != null) {
           core.getDirectoryFactory().release(indexDir);
         }

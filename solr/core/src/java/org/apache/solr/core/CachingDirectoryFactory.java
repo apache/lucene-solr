@@ -48,9 +48,10 @@ public abstract class CachingDirectoryFactory extends DirectoryFactory {
   protected class CacheValue {
     public Directory directory;
     public int refCnt = 1;
-    public boolean closed;
+    public boolean closed = false;
     public String path;
     public boolean doneWithDir = false;
+    public boolean deleteOnClose = false;
     @Override
     public String toString() {
       return "CachedDir<<" + directory.toString() + ";refCount=" + refCnt + ";path=" + path + ";done=" + doneWithDir + ">>";
@@ -207,6 +208,15 @@ public abstract class CachingDirectoryFactory extends DirectoryFactory {
       SolrException.log(log, "Error closing directory", t);
     }
     
+    if (cacheValue.deleteOnClose) {
+      try {
+        log.info("Removing directory: " + cacheValue.path);
+        removeDirectory(cacheValue);
+      } catch (Throwable t) {
+        SolrException.log(log, "Error closing directory", t);
+      }
+    }
+    
     if (listeners != null) {
       for (CloseListener listener : listeners) {
         try {
@@ -217,7 +227,7 @@ public abstract class CachingDirectoryFactory extends DirectoryFactory {
       }
     }
   }
-  
+
   @Override
   protected abstract Directory create(String path, DirContext dirContext) throws IOException;
   
@@ -367,6 +377,28 @@ public abstract class CachingDirectoryFactory extends DirectoryFactory {
     close(directory);
   }
   
+  @Override
+  public void remove(String path) throws IOException {
+    synchronized (this) {
+      CacheValue val = byPathCache.get(normalize(path));
+      if (val == null) {
+        throw new IllegalArgumentException("Unknown directory " + path);
+      }
+      val.deleteOnClose = true;
+    }
+  }
+  
+  @Override
+  public void remove(Directory dir) throws IOException {
+    synchronized (this) {
+      CacheValue val = byDirectoryCache.get(dir);
+      if (val == null) {
+        throw new IllegalArgumentException("Unknown directory " + dir);
+      }
+      val.deleteOnClose = true;
+    }
+  }
+  
   private static Directory injectLockFactory(Directory dir, String lockPath,
       String rawLockType) throws IOException {
     if (null == rawLockType) {
@@ -395,7 +427,17 @@ public abstract class CachingDirectoryFactory extends DirectoryFactory {
     return dir;
   }
   
-  protected String stripTrailingSlash(String path) {
+  protected void removeDirectory(CacheValue cacheValue) throws IOException {
+    empty(cacheValue.directory);
+  }
+  
+  @Override
+  public String normalize(String path) throws IOException {
+    path = stripTrailingSlash(path);
+    return path;
+  }
+  
+  private String stripTrailingSlash(String path) {
     if (path.endsWith("/")) {
       path = path.substring(0, path.length() - 1);
     }

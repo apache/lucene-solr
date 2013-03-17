@@ -144,6 +144,9 @@ Bug Fixes
 * SOLR-4594: StandardDirectoryFactory#remove accesses byDirectoryCache 
   without a lock. (Mark Miller)
 
+* SOLR-4597: CachingDirectoryFactory#remove should not attempt to empty/remove 
+  the index right away but flag for removal after close. (Mark Miller)
+
 Optimizations
 ----------------------
 

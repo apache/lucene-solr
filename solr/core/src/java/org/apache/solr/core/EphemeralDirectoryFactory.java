@@ -16,9 +16,12 @@ package org.apache.solr.core;
  * limitations under the License.
  */
 
+import java.io.File;
 import java.io.IOException;
 
+import org.apache.commons.io.FileUtils;
 import org.apache.lucene.store.Directory;
+import org.apache.solr.core.CachingDirectoryFactory.CacheValue;
 
 /**
  * Directory provider for implementations that do not persist over reboots.
@@ -50,22 +53,5 @@ public abstract class EphemeralDirectoryFactory extends CachingDirectoryFactory 
   @Override
   public boolean isAbsolute(String path) {
     return true;
-  }
-  
-  
-  @Override
-  public void remove(Directory dir) throws IOException {
-    // ram dir does not persist its dir anywhere
-  }
-  
-  @Override
-  public void remove(String path) throws IOException {
-    // ram dir does not persist its dir anywhere
-  }
-  
-  @Override
-  public String normalize(String path) throws IOException {
-    path = stripTrailingSlash(path);
-    return path;
   }
 }
