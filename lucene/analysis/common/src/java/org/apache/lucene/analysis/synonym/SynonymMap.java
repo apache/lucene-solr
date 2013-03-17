@@ -90,26 +90,21 @@ public class SynonymMap {
     public static CharsRef join(String[] words, CharsRef reuse) {
       int upto = 0;
       char[] buffer = reuse.chars;
-      for(String word : words) {
-        if (upto > 0) {
-          if (upto >= buffer.length) {
-            reuse.grow(upto);
-            buffer = reuse.chars;
-          }
-          buffer[upto++] = SynonymMap.WORD_SEPARATOR;
-        }
-
-        final int wordLen =  word.length();
-        final int needed = upto + wordLen;
+      for (String word : words) {
+        final int wordLen = word.length();
+        final int needed = (0 == upto ? wordLen : 1 + upto + wordLen); // Add 1 for WORD_SEPARATOR
         if (needed > buffer.length) {
           reuse.grow(needed);
           buffer = reuse.chars;
+        }
+        if (upto > 0) {
+          buffer[upto++] = SynonymMap.WORD_SEPARATOR;
         }
 
         word.getChars(0, wordLen, buffer, upto);
         upto += wordLen;
       }
-
+      reuse.length = upto;
       return reuse;
     }
     
