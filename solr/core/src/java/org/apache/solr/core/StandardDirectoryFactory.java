@@ -60,16 +60,15 @@ public class StandardDirectoryFactory extends CachingDirectoryFactory {
   
   @Override
   public void remove(Directory dir) throws IOException {
-    CacheValue val;
     synchronized (this) {
-      val = byDirectoryCache.get(dir);
-    }
-    if (val == null) {
-      throw new IllegalArgumentException("Unknown directory " + dir);
-    }
-    if (val.path != null) {
+      CacheValue val = byDirectoryCache.get(dir);
+      if (val == null) {
+        throw new IllegalArgumentException("Unknown directory " + dir);
+      }
+      
       File dirFile = new File(val.path);
       FileUtils.deleteDirectory(dirFile);
+
     }
   }
 
