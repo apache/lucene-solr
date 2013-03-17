@@ -86,6 +86,9 @@ New Features
   per-IndexReader-open to compute its ordinal map, but it requires no
   taxonomy index and it tie-breaks facet labels in an understandable
   (by Unicode sort order) way.  (Robert Muir, Mike McCandless)
+  
+* LUCENE-4843: Add LimitTokenPositionFilter: don't emit tokens with 
+  positions that exceed the configured limit.  (Steve Rowe)
 
 Optimizations
 
