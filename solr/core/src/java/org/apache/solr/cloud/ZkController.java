@@ -1021,17 +1021,17 @@ public final class ZkController {
 
   public void unregister(String coreName, CoreDescriptor cd)
       throws InterruptedException, KeeperException {
-    ZkNodeProps m = new ZkNodeProps(Overseer.QUEUE_OPERATION,
-        "deletecore", ZkStateReader.CORE_NAME_PROP, coreName,
-        ZkStateReader.NODE_NAME_PROP, getNodeName(),
-        ZkStateReader.COLLECTION_PROP, cd.getCloudDescriptor().getCollectionName());
-    overseerJobQueue.offer(ZkStateReader.toJSON(m));
-
     final String zkNodeName = getCoreNodeName(cd);
     ElectionContext context = electionContexts.remove(zkNodeName);
     if (context != null) {
       context.cancelElection();
     }
+    
+    ZkNodeProps m = new ZkNodeProps(Overseer.QUEUE_OPERATION,
+        "deletecore", ZkStateReader.CORE_NAME_PROP, coreName,
+        ZkStateReader.NODE_NAME_PROP, getNodeName(),
+        ZkStateReader.COLLECTION_PROP, cd.getCloudDescriptor().getCollectionName());
+    overseerJobQueue.offer(ZkStateReader.toJSON(m));
   }
   
   public void createCollection(String collection) throws KeeperException,
