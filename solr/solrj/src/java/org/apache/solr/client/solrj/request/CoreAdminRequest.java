@@ -349,6 +349,7 @@ public class CoreAdminRequest extends SolrRequest
 
   public static class Unload extends CoreAdminRequest {
     protected boolean deleteIndex;
+    private boolean deleteDataDir;
 
     public Unload(boolean deleteIndex) {
       action = CoreAdminAction.UNLOAD;
@@ -363,12 +364,18 @@ public class CoreAdminRequest extends SolrRequest
       this.deleteIndex = deleteIndex;
     }
 
+    public void setDeleteDataDir(boolean deleteDataDir) {
+     this.deleteDataDir = deleteDataDir; 
+    }
+
     @Override
     public SolrParams getParams() {
       ModifiableSolrParams params = (ModifiableSolrParams) super.getParams();
       params.set(CoreAdminParams.DELETE_INDEX, deleteIndex);
+      params.set(CoreAdminParams.DELETE_DATA_DIR, deleteDataDir);
       return params;
     }
+
   }
 
   public CoreAdminRequest()
