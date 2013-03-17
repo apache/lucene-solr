@@ -25,6 +25,9 @@ import org.apache.lucene.util.RamUsageEstimator;
 import org.apache.lucene.util.fst.FST.INPUT_TYPE; // javadoc
 import org.apache.lucene.util.packed.PackedInts;
 
+// TODO: could we somehow stream an FST to disk while we
+// build it?
+
 /**
  * Builds a minimal FST (maps an IntsRef term to an arbitrary
  * output) from pre-sorted terms with outputs.  The FST
