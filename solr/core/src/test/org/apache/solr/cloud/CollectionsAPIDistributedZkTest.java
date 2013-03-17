@@ -163,9 +163,6 @@ public class CollectionsAPIDistributedZkTest extends AbstractFullDistribZkTestBa
     createCmd.setDataDir(dataDir);
     createCmd.setNumShards(2);
     createNewSolrServer("", baseUrl).request(createCmd);
-    
-    printLayout();
-    
 
     ModifiableSolrParams params = new ModifiableSolrParams();
     params.set("action", CollectionAction.DELETE.toString());
@@ -175,14 +172,9 @@ public class CollectionsAPIDistributedZkTest extends AbstractFullDistribZkTestBa
 
     NamedList<Object> resp = createNewSolrServer("", baseUrl).request(request);
     
-    
-    Thread.sleep(5000);
-    
-    printLayout();
-    
+    checkForMissingCollection(collectionName);
     
     // now creating that collection should work
-    // try a bad action
     params = new ModifiableSolrParams();
     params.set("action", CollectionAction.CREATE.toString());
     params.set("name", collectionName);
