@@ -48,4 +48,4 @@ docs.dir=reuters-out
 
     NewRound
 } : 5
-RepSumByName
+RepSumByNameRound
