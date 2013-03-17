@@ -142,6 +142,12 @@ public class CachingDirectoryFactoryTest extends SolrTestCaseJ4 {
                 if (random.nextBoolean()) {
                   df.doneWithDirectory(tracker.dir);
                 }
+                if (random.nextBoolean()) {
+                  df.remove(tracker.dir);
+                }
+                if (random.nextBoolean()) {
+                  df.remove(tracker.path);
+                }
                 tracker.refCnt.decrementAndGet();
                 df.release(tracker.dir);
               }
