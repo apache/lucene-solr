@@ -153,6 +153,9 @@ Bug Fixes
 * SOLR-4599: CachingDirectoryFactory calls close(Directory) on forceNew if the 
   Directory has a refCnt of 0, but it should call closeDirectory(CacheValue).
   (Mark Miller)
+  
+* SOLR-4602: ZkController#unregister should cancel it's election participation 
+  before asking the Overseer to delete the SolrCore information. (Mark Miller)
 
 Optimizations
 ----------------------
