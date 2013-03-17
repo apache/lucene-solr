@@ -151,7 +151,7 @@ Bug Fixes
   the DirectoryFactory API to remove the data dir. (Mark Miller)
 
 * SOLR-4599: CachingDirectoryFactory calls close(Directory) on forceNew if the 
-  Directory has a refCnt of 0, but it should call closeDirectory(CacheValueValue).
+  Directory has a refCnt of 0, but it should call closeDirectory(CacheValue).
   (Mark Miller)
 
 Optimizations
