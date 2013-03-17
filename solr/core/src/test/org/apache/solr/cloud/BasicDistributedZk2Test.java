@@ -288,7 +288,7 @@ public class BasicDistributedZk2Test extends AbstractFullDistribZkTestBase {
   
     long numFound1 = cloudClient.query(new SolrQuery("*:*")).getResults().getNumFound();
     
-    cloudClient.getZkStateReader().getLeaderRetry(DEFAULT_COLLECTION, SHARD1, 45000);
+    cloudClient.getZkStateReader().getLeaderRetry(DEFAULT_COLLECTION, SHARD1, 60000);
     index_specific(shardToJetty.get(SHARD1).get(1).client.solrClient, id, 1000, i1, 108, t1,
         "specific doc!");
     
