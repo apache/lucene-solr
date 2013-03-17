@@ -435,6 +435,7 @@ public class TestDrillSideways extends FacetTestCase {
     }
     String[][] dimValues = new String[numDims][];
     int valueCount = 2;
+
     for(int dim=0;dim<numDims;dim++) {
       Set<String> values = new HashSet<String>();
       while (values.size() < valueCount) {
@@ -502,6 +503,8 @@ public class TestDrillSideways extends FacetTestCase {
     facetFields = new FacetFields(tw);
     SortedSetDocValuesFacetFields dvFacetFields = new SortedSetDocValuesFacetFields();
 
+    boolean doUseDV = canUseDV && random().nextBoolean();
+
     for(Doc rawDoc : docs) {
       Document doc = new Document();
       doc.add(newStringField("id", rawDoc.id, Field.Store.YES));
@@ -532,9 +535,10 @@ public class TestDrillSideways extends FacetTestCase {
         }
       }
       if (!paths.isEmpty()) {
-        facetFields.addFields(doc, paths);
-        if (canUseDV) {
+        if (doUseDV) {
           dvFacetFields.addFields(doc, paths);
+        } else {
+          facetFields.addFields(doc, paths);
         }
       }
 
@@ -571,7 +575,7 @@ public class TestDrillSideways extends FacetTestCase {
     w.close();
 
     final SortedSetDocValuesReaderState sortedSetDVState;
-    if (canUseDV) {
+    if (doUseDV) {
       sortedSetDVState = new SortedSetDocValuesReaderState(r);
     } else {
       sortedSetDVState = null;
@@ -599,9 +603,8 @@ public class TestDrillSideways extends FacetTestCase {
       String contentToken = random().nextInt(30) == 17 ? null : randomContentToken(true);
       int numDrillDown = _TestUtil.nextInt(random(), 1, Math.min(4, numDims));
       String[][] drillDowns = new String[numDims][];
-      boolean useSortedSetDV = canUseDV && random().nextBoolean();
       if (VERBOSE) {
-        System.out.println("\nTEST: iter=" + iter + " baseQuery=" + contentToken + " numDrillDown=" + numDrillDown + " useSortedSetDV=" + useSortedSetDV);
+        System.out.println("\nTEST: iter=" + iter + " baseQuery=" + contentToken + " numDrillDown=" + numDrillDown + " useSortedSetDV=" + doUseDV);
       }
 
       int count = 0;
@@ -716,7 +719,7 @@ public class TestDrillSideways extends FacetTestCase {
 
       Sort sort = new Sort(new SortField("id", SortField.Type.STRING));
       DrillSideways ds;
-      if (useSortedSetDV) {
+      if (doUseDV) {
         ds = new DrillSideways(s, null) {
             @Override
             protected FacetsAccumulator getDrillDownAccumulator(FacetSearchParams fsp) throws IOException {
@@ -739,7 +742,7 @@ public class TestDrillSideways extends FacetTestCase {
       for(ScoreDoc sd : hits.scoreDocs) {
         scores.put(s.doc(sd.doc).get("id"), sd.score);
       }
-      verifyEquals(dimValues, s, expected, actual, scores, -1, useSortedSetDV);
+      verifyEquals(dimValues, s, expected, actual, scores, -1, doUseDV);
 
       // Make sure topN works:
       int topN = _TestUtil.nextInt(random(), 1, 20);
@@ -750,7 +753,7 @@ public class TestDrillSideways extends FacetTestCase {
       }
       fsp = new FacetSearchParams(requests);
       actual = ds.search(ddq, filter, null, numDocs, sort, true, true, fsp);
-      verifyEquals(dimValues, s, expected, actual, scores, topN, useSortedSetDV);
+      verifyEquals(dimValues, s, expected, actual, scores, topN, doUseDV);
 
       // Make sure drill down doesn't change score:
       TopDocs ddqHits = s.search(ddq, filter, numDocs);
