@@ -17,7 +17,7 @@ package org.apache.solr.common.cloud;
  * limitations under the License.
  */
 
-import org.apache.noggit.JSONWriter;
+import org.noggit.JSONWriter;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.SolrInputDocument;
 import org.apache.solr.common.params.SolrParams;

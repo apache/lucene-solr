@@ -17,7 +17,7 @@
 
 package org.apache.solr;
 
-import org.apache.noggit.ObjectBuilder;
+import org.noggit.ObjectBuilder;
 import org.apache.solr.common.util.StrUtils;
 
 import java.util.*;
