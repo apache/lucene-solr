@@ -159,6 +159,8 @@ Bug Fixes
 
 * SOLR-4604: UpdateLog#init is over called on SolrCore#reload. (Mark Miller)
 
+* SOLR-4605: Rollback does not work correctly. (Mark S, Mark Miller)
+
 Optimizations
 ----------------------
 

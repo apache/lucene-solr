@@ -186,7 +186,7 @@ public final class DefaultSolrCoreState extends SolrCoreState implements Recover
 
   @Override
   public synchronized void rollbackIndexWriter(SolrCore core) throws IOException {
-    newIndexWriter(core, true, true);
+    newIndexWriter(core, true, false);
   }
   
   protected SolrIndexWriter createMainIndexWriter(SolrCore core, String name, boolean forceNewDirectory) throws IOException {
