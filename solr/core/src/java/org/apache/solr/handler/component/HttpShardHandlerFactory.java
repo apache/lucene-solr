@@ -124,6 +124,12 @@ public class HttpShardHandlerFactory extends ShardHandlerFactory implements org.
     this.keepAliveTime = getParameter(args, MAX_THREAD_IDLE_TIME, keepAliveTime);
     this.queueSize = getParameter(args, INIT_SIZE_OF_QUEUE, queueSize);
     this.accessPolicy = getParameter(args, INIT_FAIRNESS_POLICY, accessPolicy);
+    
+    // magic sysprop to make tests reproducible: set by SolrTestCaseJ4.
+    String v = System.getProperty("tests.shardhandler.randomSeed");
+    if (v != null) {
+      r.setSeed(Long.parseLong(v));
+    }
 
     BlockingQueue<Runnable> blockingQueue = (this.queueSize == -1) ?
         new SynchronousQueue<Runnable>(this.accessPolicy) :
