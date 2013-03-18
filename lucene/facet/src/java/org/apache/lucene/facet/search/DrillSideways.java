@@ -150,7 +150,7 @@ public class DrillSideways {
     searcher.search(dsq, hitCollector);
 
     int numDims = drillDownDims.size();
-    List<FacetResult>[] drillSidewaysResults = (List<FacetResult>[]) new List[numDims];
+    List<FacetResult>[] drillSidewaysResults = new List[numDims];
     List<FacetResult> drillDownResults = null;
 
     List<FacetResult> mergedResults = new ArrayList<FacetResult>();

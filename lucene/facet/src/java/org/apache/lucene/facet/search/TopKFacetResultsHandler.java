@@ -5,8 +5,8 @@ import java.util.ArrayList;
 
 import org.apache.lucene.facet.partitions.IntermediateFacetResult;
 import org.apache.lucene.facet.partitions.PartitionsFacetResultsHandler;
+import org.apache.lucene.facet.taxonomy.ParallelTaxonomyArrays;
 import org.apache.lucene.facet.taxonomy.TaxonomyReader;
-import org.apache.lucene.facet.taxonomy.directory.ParallelTaxonomyArrays;
 import org.apache.lucene.facet.util.ResultSortUtils;
 
 /*
