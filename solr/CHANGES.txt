@@ -157,6 +157,9 @@ Bug Fixes
 * SOLR-4601: A Collection that is only partially created and then deleted will 
   leave pre allocated shard information in ZooKeeper. (Mark Miller)
 
+* SOLR-4604: SolrCore is not using the UpdateHandler that is passed to it in 
+  SolrCore#reload. (Mark Miller)
+
 Optimizations
 ----------------------
 

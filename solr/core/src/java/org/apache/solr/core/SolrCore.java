@@ -804,9 +804,7 @@ public final class SolrCore implements SolrInfoMBean {
         this.updateHandler = createUpdateHandler(updateHandlerClass == null ? DirectUpdateHandler2.class
             .getName() : updateHandlerClass);
       } else {
-        this.updateHandler = createUpdateHandler(
-            updateHandlerClass == null ? DirectUpdateHandler2.class.getName()
-                : updateHandlerClass, updateHandler);
+        this.updateHandler = updateHandler;
       }
       infoRegistry.put("updateHandler", this.updateHandler);
       
