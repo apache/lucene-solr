@@ -161,6 +161,9 @@ Bug Fixes
 
 * SOLR-4605: Rollback does not work correctly. (Mark S, Mark Miller)
 
+* SOLR-4609: The Collections API should only send the reload command to ACTIVE 
+  cores. (Mark Miller)
+
 Optimizations
 ----------------------
 
