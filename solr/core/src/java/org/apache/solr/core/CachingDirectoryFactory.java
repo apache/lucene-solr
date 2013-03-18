@@ -47,6 +47,7 @@ public abstract class CachingDirectoryFactory extends DirectoryFactory {
   protected class CacheValue {
     public Directory directory;
     public int refCnt = 1;
+    public boolean closed;
     public String path;
     public boolean doneWithDir = false;
     @Override
@@ -166,7 +167,12 @@ public abstract class CachingDirectoryFactory extends DirectoryFactory {
         closeDirectory(cacheValue);
         
         byDirectoryCache.remove(directory);
-        byPathCache.remove(cacheValue.path);
+        
+        // if it's been closed, it's path is now
+        // owned by another Directory instance
+        if (!cacheValue.closed) {
+          byPathCache.remove(cacheValue.path);
+        }
       }
     }
   }
@@ -258,6 +264,10 @@ public abstract class CachingDirectoryFactory extends DirectoryFactory {
               SolrException.log(log, "Error closing directory", e);
             }
           }
+          
+          // close the entry, it will be owned by the new dir
+          // we count on it being released by directory
+          cacheValue.closed = true;
           
         }
       }
