@@ -44,7 +44,7 @@ public class TestSorterTemplate extends LuceneTestCase {
       // only compare the last 32 bits
       final long a = i & 0xFFFFFFFFL;
       final long b = j & 0xFFFFFFFFL;
-      return a < b ? -1 : a == b ? 0 : 1;
+      return Long.compare(a, b);
     }
 
     @Override

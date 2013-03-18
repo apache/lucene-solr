@@ -47,7 +47,7 @@ class ConjunctionScorer extends Scorer {
     ArrayUtil.mergeSort(docsAndFreqs, new Comparator<DocsAndFreqs>() {
       @Override
       public int compare(DocsAndFreqs o1, DocsAndFreqs o2) {
-        return Long.signum(o1.cost - o2.cost);
+        return Long.compare(o1.cost, o2.cost);
       }
     });
 

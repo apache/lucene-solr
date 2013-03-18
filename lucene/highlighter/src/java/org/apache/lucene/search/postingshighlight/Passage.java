@@ -76,8 +76,7 @@ public final class Passage {
 
       @Override
       protected int compare(int i, int j) {
-        // TODO: java7 use Integer.compare(starts[i], starts[j])
-        return Long.signum(((long)starts[i]) - starts[j]);
+        return Integer.compare(starts[i], starts[j]);
       }
 
       @Override
@@ -87,8 +86,7 @@ public final class Passage {
 
       @Override
       protected int comparePivot(int j) {
-        // TODO: java7 use Integer.compare(pivot, starts[j])
-        return Long.signum(((long)pivot) - starts[j]);
+        return Integer.compare(pivot, starts[j]);
       }
       
       int pivot;

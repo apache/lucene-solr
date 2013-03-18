@@ -134,14 +134,7 @@ class BufferedDeletesStream {
   private static final Comparator<SegmentInfoPerCommit> sortSegInfoByDelGen = new Comparator<SegmentInfoPerCommit>() {
     @Override
     public int compare(SegmentInfoPerCommit si1, SegmentInfoPerCommit si2) {
-      final long cmp = si1.getBufferedDeletesGen() - si2.getBufferedDeletesGen();
-      if (cmp > 0) {
-        return 1;
-      } else if (cmp < 0) {
-        return -1;
-      } else {
-        return 0;
-      }
+      return Long.compare(si1.getBufferedDeletesGen(), si2.getBufferedDeletesGen());
     }
   };
   

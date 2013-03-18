@@ -464,7 +464,7 @@ public final class PostingsHighlighter {
         if (off == otherOff) {
           return id - other.id;
         } else {
-          return Long.signum(((long)off) - otherOff);
+          return Integer.compare(off, otherOff);
         }
       } catch (IOException e) {
         throw new RuntimeException(e);
