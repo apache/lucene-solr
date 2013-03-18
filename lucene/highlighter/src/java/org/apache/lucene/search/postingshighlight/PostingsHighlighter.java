@@ -81,7 +81,7 @@ import org.apache.lucene.util.UnicodeUtil;
  * This is thread-safe, and can be used across different readers.
  * @lucene.experimental
  */
-public final class PostingsHighlighter {
+public class PostingsHighlighter {
   
   // TODO: maybe allow re-analysis for tiny fields? currently we require offsets,
   // but if the analyzer is really fast and the field is tiny, this might really be
@@ -257,15 +257,7 @@ public final class PostingsHighlighter {
     Arrays.sort(fields);
     
     // pull stored data:
-    LimitedStoredFieldVisitor visitor = new LimitedStoredFieldVisitor(fields, maxLength);
-    String contents[][] = new String[fields.length][docids.length];
-    for (int i = 0; i < docids.length; i++) {
-      searcher.doc(docids[i], visitor);
-      for (int j = 0; j < fields.length; j++) {
-        contents[j][i] = visitor.getValue(j).toString();
-      }
-      visitor.reset();
-    }
+    String[][] contents = loadFieldValues(searcher, fields, docids, maxLength);
     
     Map<String,String[]> highlights = new HashMap<String,String[]>();
     for (int i = 0; i < fields.length; i++) {
@@ -284,6 +276,25 @@ public final class PostingsHighlighter {
       highlights.put(field, result);
     }
     return highlights;
+  }
+
+  /** Loads the String values for each field X docID to be
+   *  highlighted.  By default this loads from stored
+   *  fields, but a subclass can change the source.  This
+   *  method should allocate the String[fields.length][docids.length]
+   *  and fill all values.  The returned Strings must be
+   *  identical to what was indexed. */
+  protected String[][] loadFieldValues(IndexSearcher searcher, String[] fields, int[] docids, int maxLength) throws IOException {
+    String contents[][] = new String[fields.length][docids.length];
+    LimitedStoredFieldVisitor visitor = new LimitedStoredFieldVisitor(fields, maxLength);
+    for (int i = 0; i < docids.length; i++) {
+      searcher.doc(docids[i], visitor);
+      for (int j = 0; j < fields.length; j++) {
+        contents[j][i] = visitor.getValue(j).toString();
+      }
+      visitor.reset();
+    }
+    return contents;
   }
     
   private Map<Integer,String> highlightField(String field, String contents[], BreakIterator bi, Term terms[], int[] docids, List<AtomicReaderContext> leaves, int maxPassages) throws IOException {  
