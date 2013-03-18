@@ -102,6 +102,10 @@ New Features
 * LUCENE-4832: Add ToParentBlockJoinCollector.getTopGroupsWithAllChildDocs, to retrieve
   all children in each group.  (Aleksey Aleev via Mike McCandless)
 
+* LUCENE-4846: PostingsHighlighter subclasses can override where the
+  String values come from (it still defaults to pulling from stored
+  fields).  (Robert Muir, Mike McCandless)
+
 API Changes
 
 * LUCENE-4844: removed TaxonomyReader.getParent(), you should use
