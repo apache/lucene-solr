@@ -363,16 +363,24 @@ public class ToParentBlockJoinCollector extends Collector {
     }
   }
 
-  /** Return the TopGroups for the specified
-   *  BlockJoinQuery.  The groupValue of each GroupDocs will
-   *  be the parent docID for that group.  Note that the
-   *  {@link GroupDocs#totalHits}, which would be the
-   *  total number of child documents matching that parent,
-   *  is not computed (will always be 0).  Returns null if
-   *  no groups matched. */
-  @SuppressWarnings("unchecked")
-  public TopGroups<Integer> getTopGroups(ToParentBlockJoinQuery query, Sort withinGroupSort, int offset, int maxDocsPerGroup, int withinGroupOffset, boolean fillSortFields) 
-
+  /** Returns the TopGroups for the specified
+   *  BlockJoinQuery. The groupValue of each GroupDocs will
+   *  be the parent docID for that group.
+   *  The number of documents within each group is calculated as minimum of <code>maxDocsPerGroup</code>
+   *  and number of matched child documents for that group.
+   *  Returns null if no groups matched.
+   *
+   * @param query Search query
+   * @param withinGroupSort Sort criteria within groups
+   * @param offset Parent docs offset
+   * @param maxDocsPerGroup Upper bound of documents per group number
+   * @param withinGroupOffset Offset within each group of child docs
+   * @param fillSortFields Specifies whether to add sort fields or not
+   * @return TopGroups for specified query
+   * @throws IOException if there is a low-level I/O error
+   */
+  public TopGroups<Integer> getTopGroups(ToParentBlockJoinQuery query, Sort withinGroupSort, int offset,
+                                         int maxDocsPerGroup, int withinGroupOffset, boolean fillSortFields)
     throws IOException {
 
     final Integer _slot = joinQueryID.get(query);
@@ -384,9 +392,6 @@ public class ToParentBlockJoinCollector extends Collector {
       }
     }
 
-    // unbox once
-    final int slot = _slot;
-
     if (sortedGroups == null) {
       if (offset >= queue.size()) {
         return null;
@@ -396,15 +401,35 @@ public class ToParentBlockJoinCollector extends Collector {
       return null;
     }
 
-    int totalGroupedHitCount = 0;
+    return accumulateGroups(_slot, offset, maxDocsPerGroup, withinGroupOffset, withinGroupSort, fillSortFields);
+  }
 
+  /**
+   *  Accumulates groups for the BlockJoinQuery specified by its slot.
+   *
+   * @param slot Search query's slot
+   * @param offset Parent docs offset
+   * @param maxDocsPerGroup Upper bound of documents per group number
+   * @param withinGroupOffset Offset within each group of child docs
+   * @param withinGroupSort Sort criteria within groups
+   * @param fillSortFields Specifies whether to add sort fields or not
+   * @return TopGroups for the query specified by slot
+   * @throws IOException if there is a low-level I/O error
+   */
+  @SuppressWarnings({"unchecked","rawtypes"})
+  private TopGroups<Integer> accumulateGroups(int slot, int offset, int maxDocsPerGroup,
+                                              int withinGroupOffset, Sort withinGroupSort, boolean fillSortFields) throws IOException {
+    final GroupDocs<Integer>[] groups = new GroupDocs[sortedGroups.length - offset];
     final FakeScorer fakeScorer = new FakeScorer();
 
-    @SuppressWarnings({"unchecked","rawtypes"})
-    final GroupDocs<Integer>[] groups = new GroupDocs[sortedGroups.length - offset];
+    int totalGroupedHitCount = 0;
 
     for(int groupIDX=offset;groupIDX<sortedGroups.length;groupIDX++) {
       final OneGroup og = sortedGroups[groupIDX];
+      final int numChildDocs = og.counts[slot];
+
+      // Number of documents in group should be bounded to prevent redundant memory allocation
+      final int numDocsInGroup = Math.min(numChildDocs, maxDocsPerGroup);
 
       // At this point we hold all docs w/ in each group,
       // unsorted; we now sort them:
@@ -414,15 +439,14 @@ public class ToParentBlockJoinCollector extends Collector {
         if (!trackScores) {
           throw new IllegalArgumentException("cannot sort by relevance within group: trackScores=false");
         }
-        collector = TopScoreDocCollector.create(maxDocsPerGroup, true);
+        collector = TopScoreDocCollector.create(numDocsInGroup, true);
       } else {
         // Sort by fields
-        collector = TopFieldCollector.create(withinGroupSort, maxDocsPerGroup, fillSortFields, trackScores, trackMaxScore, true);
+        collector = TopFieldCollector.create(withinGroupSort, numDocsInGroup, fillSortFields, trackScores, trackMaxScore, true);
       }
 
       collector.setScorer(fakeScorer);
       collector.setNextReader(og.readerContext);
-      final int numChildDocs = og.counts[slot];
       for(int docIDX=0;docIDX<numChildDocs;docIDX++) {
         final int doc = og.docs[slot][docIDX];
         fakeScorer.doc = doc;
@@ -444,11 +468,11 @@ public class ToParentBlockJoinCollector extends Collector {
         groupSortValues = null;
       }
 
-      final TopDocs topDocs = collector.topDocs(withinGroupOffset, maxDocsPerGroup);
+      final TopDocs topDocs = collector.topDocs(withinGroupOffset, numDocsInGroup);
 
       groups[groupIDX-offset] = new GroupDocs<Integer>(og.score,
                                                        topDocs.getMaxScore(),
-                                                       og.counts[slot],
+                                                       numChildDocs,
                                                        topDocs.scoreDocs,
                                                        og.doc,
                                                        groupSortValues);
@@ -458,6 +482,27 @@ public class ToParentBlockJoinCollector extends Collector {
                                                          withinGroupSort == null ? null : withinGroupSort.getSort(),
                                                          0, totalGroupedHitCount, groups, maxScore),
                                   totalHitCount);
+  }
+
+  /** Returns the TopGroups for the specified BlockJoinQuery.
+   *  The groupValue of each GroupDocs will be the parent docID for that group.
+   *  The number of documents within each group
+   *  equals to the total number of matched child documents for that group.
+   *  Returns null if no groups matched.
+   *
+   * @param query Search query
+   * @param withinGroupSort Sort criteria within groups
+   * @param offset Parent docs offset
+   * @param withinGroupOffset Offset within each group of child docs
+   * @param fillSortFields Specifies whether to add sort fields or not
+   * @return TopGroups for specified query
+   * @throws IOException if there is a low-level I/O error
+   */
+  public TopGroups<Integer> getTopGroupsWithAllChildDocs(ToParentBlockJoinQuery query, Sort withinGroupSort, int offset,
+                                                         int withinGroupOffset, boolean fillSortFields)
+    throws IOException {
+
+    return getTopGroups(query, withinGroupSort, offset, Integer.MAX_VALUE, withinGroupOffset, fillSortFields);
   }
   
   /**
