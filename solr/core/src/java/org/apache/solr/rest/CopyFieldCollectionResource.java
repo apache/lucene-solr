@@ -34,7 +34,10 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 import java.util.SortedMap;
+import java.util.SortedSet;
 import java.util.TreeMap;
+import java.util.TreeSet;
+import java.util.regex.Pattern;
 
 /**
  * This class responds to requests at /solr/(corename)/schema/copyfields
@@ -63,9 +66,10 @@ public class CopyFieldCollectionResource extends BaseFieldResource implements GE
   private static final String MAX_CHARS = "maxChars";
   private static final String SOURCE_DYNAMIC_BASE = "sourceDynamicBase";
   private static final String DESTINATION_DYNAMIC_BASE = "destDynamicBase";
+  private static final String SOURCE_EXPLICIT_FIELDS = "sourceExplicitFields";
 
-  private Set<String> sourceFields;
-  private Set<String> destinationFields;
+  private Set<String> requestedSourceFields;
+  private Set<String> requestedDestinationFields;
 
   public CopyFieldCollectionResource() {
     super();
@@ -79,16 +83,16 @@ public class CopyFieldCollectionResource extends BaseFieldResource implements GE
       if (null != sourceFieldListParam) {
         String[] fields = sourceFieldListParam.trim().split("[,\\s]+");
         if (fields.length > 0) {
-          sourceFields = new HashSet<String>(Arrays.asList(fields));
-          sourceFields.remove(""); // Remove empty values, if any
+          requestedSourceFields = new HashSet<String>(Arrays.asList(fields));
+          requestedSourceFields.remove(""); // Remove empty values, if any
         }
       }
       String destinationFieldListParam = getSolrRequest().getParams().get(DESTINATION_FIELD_LIST);
       if (null != destinationFieldListParam) {
         String[] fields = destinationFieldListParam.trim().split("[,\\s]+");
         if (fields.length > 0) {
-          destinationFields = new HashSet<String>(Arrays.asList(fields));
-          destinationFields.remove(""); // Remove empty values, if any
+          requestedDestinationFields = new HashSet<String>(Arrays.asList(fields));
+          requestedDestinationFields.remove(""); // Remove empty values, if any
         }
       }
     }
@@ -98,8 +102,7 @@ public class CopyFieldCollectionResource extends BaseFieldResource implements GE
   public Representation get() {
     try {
       final List<SimpleOrderedMap<Object>> props = new ArrayList<SimpleOrderedMap<Object>>();
-      SortedMap<String,List<CopyField>> sortedCopyFields
-          = new TreeMap<String, List<CopyField>>(getSchema().getCopyFieldsMap());
+      SortedMap<String,List<CopyField>> sortedCopyFields = new TreeMap<String, List<CopyField>>(getSchema().getCopyFieldsMap());
       for (List<CopyField> copyFields : sortedCopyFields.values()) {
         Collections.sort(copyFields, new Comparator<CopyField>() {
           @Override
@@ -111,8 +114,8 @@ public class CopyFieldCollectionResource extends BaseFieldResource implements GE
         for (CopyField copyField : copyFields) {
           final String source = copyField.getSource().getName();
           final String destination = copyField.getDestination().getName();
-          if (   (null == sourceFields      || sourceFields.contains(source))
-              && (null == destinationFields || destinationFields.contains(destination))) {
+          if (   (null == requestedSourceFields      || requestedSourceFields.contains(source))
+              && (null == requestedDestinationFields || requestedDestinationFields.contains(destination))) {
             SimpleOrderedMap<Object> copyFieldProps = new SimpleOrderedMap<Object>();
             copyFieldProps.add(SOURCE, source);
             copyFieldProps.add(DESTINATION, destination);
@@ -126,14 +129,26 @@ public class CopyFieldCollectionResource extends BaseFieldResource implements GE
       for (IndexSchema.DynamicCopy dynamicCopy : getSchema().getDynamicCopyFields()) {
         final String source = dynamicCopy.getRegex();
         final String destination = dynamicCopy.getDestFieldName();
-        if (   (null == sourceFields      || sourceFields.contains(source))
-            && (null == destinationFields || destinationFields.contains(destination))) {
+        if (   (null == requestedSourceFields      || requestedSourceFields.contains(source))
+            && (null == requestedDestinationFields || requestedDestinationFields.contains(destination))) {
           SimpleOrderedMap<Object> dynamicCopyProps = new SimpleOrderedMap<Object>();
-          
+
           dynamicCopyProps.add(SOURCE, dynamicCopy.getRegex());
           IndexSchema.DynamicField sourceDynamicBase = dynamicCopy.getSourceDynamicBase();
           if (null != sourceDynamicBase) {
             dynamicCopyProps.add(SOURCE_DYNAMIC_BASE, sourceDynamicBase.getRegex());
+          } else if (source.contains("*")) {
+            List<String> sourceExplicitFields = new ArrayList<String>();
+            Pattern pattern = Pattern.compile(source.replace("*", ".*"));   // glob->regex
+            for (String field : getSchema().getFields().keySet()) {
+              if (pattern.matcher(field).matches()) {
+                sourceExplicitFields.add(field);
+              }
+            }
+            if (sourceExplicitFields.size() > 0) {
+              Collections.sort(sourceExplicitFields);
+              dynamicCopyProps.add(SOURCE_EXPLICIT_FIELDS, sourceExplicitFields);
+            }
           }
           
           dynamicCopyProps.add(DESTINATION, dynamicCopy.getDestFieldName());

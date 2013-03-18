@@ -616,4 +616,11 @@
    <copyField source="src_sub_no_ast_i" dest="*_s"/>
    <copyField source="src_sub_no_ast_i" dest="*_dest_sub_s"/>
    <copyField source="src_sub_no_ast_i" dest="dest_sub_no_ast_s"/>
+
+   <!-- test source glob matching multiple explicit fields: title_stemmed and title_lettertok -->
+   <copyField source="title_*" dest="text"/>
+   <copyField source="title_*" dest="*_s"/>
+   <copyField source="title_*" dest="*_dest_sub_s"/>
+   <copyField source="title_*" dest="dest_sub_no_ast_s"/>
+
 </schema>

@@ -78,7 +78,27 @@ public class TestCopyFieldCollectionResource extends SchemaRestletTestBase {
             "/response/arr[@name='copyfields']/lst[    str[@name='source'][.='src_sub_no_ast_i']"
            +"                                      and str[@name='sourceDynamicBase'][.='*_i']"
            +"                                      and str[@name='dest'][.='dest_sub_no_ast_s']"
-           +"                                      and str[@name='destDynamicBase'][.='*_s']]");
+           +"                                      and str[@name='destDynamicBase'][.='*_s']]",
+
+            "/response/arr[@name='copyfields']/lst[    str[@name='source'][.='title_*']"
+           +"                                      and arr[@name='sourceExplicitFields']/str[.='title_stemmed']"
+           +"                                      and arr[@name='sourceExplicitFields']/str[.='title_lettertok']"
+           +"                                      and str[@name='dest'][.='text']]",
+
+            "/response/arr[@name='copyfields']/lst[    str[@name='source'][.='title_*']"
+           +"                                      and arr[@name='sourceExplicitFields']/str[.='title_stemmed']"
+           +"                                      and arr[@name='sourceExplicitFields']/str[.='title_lettertok']"
+           +"                                      and str[@name='dest'][.='*_s']]",
+
+            "/response/arr[@name='copyfields']/lst[    str[@name='source'][.='title_*']"
+           +"                                      and arr[@name='sourceExplicitFields']/str[.='title_stemmed']"
+           +"                                      and arr[@name='sourceExplicitFields']/str[.='title_lettertok']"
+           +"                                      and str[@name='dest'][.='*_dest_sub_s']]",
+
+            "/response/arr[@name='copyfields']/lst[    str[@name='source'][.='title_*']"
+           +"                                      and arr[@name='sourceExplicitFields']/str[.='title_stemmed']"
+           +"                                      and arr[@name='sourceExplicitFields']/str[.='title_lettertok']"
+           +"                                      and str[@name='dest'][.='dest_sub_no_ast_s']]");
   }
 
   @Test
@@ -116,11 +136,11 @@ public class TestCopyFieldCollectionResource extends SchemaRestletTestBase {
   @Test
   public void testRestrictDest() throws Exception {
     assertQ("/schema/copyfields/?indent=on&wt=xml&dest.fl=title,*_s,*_dest_sub_s,dest_sub_no_ast_s",
-            "count(/response/arr[@name='copyfields']/lst) = 13", // 3 + 3 + 3 + 4
+            "count(/response/arr[@name='copyfields']/lst) = 16", // 3 + 4 + 4 + 5
             "count(/response/arr[@name='copyfields']/lst/str[@name='dest'][.='title']) = 3",
-            "count(/response/arr[@name='copyfields']/lst/str[@name='dest'][.='*_s']) = 3",
-            "count(/response/arr[@name='copyfields']/lst/str[@name='dest'][.='*_dest_sub_s']) = 3",
-            "count(/response/arr[@name='copyfields']/lst/str[@name='dest'][.='dest_sub_no_ast_s']) = 4");
+            "count(/response/arr[@name='copyfields']/lst/str[@name='dest'][.='*_s']) = 4",
+            "count(/response/arr[@name='copyfields']/lst/str[@name='dest'][.='*_dest_sub_s']) = 4",
+            "count(/response/arr[@name='copyfields']/lst/str[@name='dest'][.='dest_sub_no_ast_s']) = 5");
   }
 
   @Test
