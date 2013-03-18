@@ -162,10 +162,7 @@ public class BasicDistributedZk2Test extends AbstractFullDistribZkTestBase {
   private void testNodeWithoutCollectionForwarding() throws Exception,
       SolrServerException, IOException {
     try {
-      final String baseUrl = ((HttpSolrServer) clients.get(0)).getBaseURL().substring(
-          0,
-          ((HttpSolrServer) clients.get(0)).getBaseURL().length()
-              - DEFAULT_COLLECTION.length() - 1);
+      final String baseUrl = getBaseUrl((HttpSolrServer) clients.get(0));
       HttpSolrServer server = new HttpSolrServer(baseUrl);
       server.setConnectionTimeout(15000);
       server.setSoTimeout(30000);
@@ -179,15 +176,14 @@ public class BasicDistributedZk2Test extends AbstractFullDistribZkTestBase {
       server.request(createCmd);
     } catch (Exception e) {
       e.printStackTrace();
-      //fail
+      fail(e.getMessage());
     }
     
     waitForRecoveriesToFinish(ONE_NODE_COLLECTION, cloudClient.getZkStateReader(), false);
     
-    final String baseUrl2 = ((HttpSolrServer) clients.get(1)).getBaseURL().substring(
-        0,
-        ((HttpSolrServer) clients.get(1)).getBaseURL().length()
-            - DEFAULT_COLLECTION.length() - 1);
+    cloudClient.getZkStateReader().getLeaderRetry(ONE_NODE_COLLECTION, "shard1", 30000);
+    
+    final String baseUrl2 = getBaseUrl((HttpSolrServer) clients.get(1));
     HttpSolrServer qclient = new HttpSolrServer(baseUrl2 + "/onenodecollection" + "core");
     
     // add a doc
