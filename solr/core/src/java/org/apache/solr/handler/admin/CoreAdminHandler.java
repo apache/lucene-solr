@@ -578,7 +578,7 @@ public class CoreAdminHandler extends RequestHandlerBase {
 
       if (params.getBool(CoreAdminParams.DELETE_DATA_DIR, false)) {
         try {
-          core.getDirectoryFactory().remove(core.getDataDir());
+          core.getDirectoryFactory().remove(core.getDataDir(), true);
         } catch (Exception e) {
           SolrException.log(log, "Failed to flag data dir for removal for core:"
                   + core.getName() + " dir:" + core.getDataDir());

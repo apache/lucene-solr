@@ -70,14 +70,16 @@ public abstract class CachingDirectoryFactory extends DirectoryFactory {
     // has close(Directory) been called on this?
     public boolean closeDirectoryCalled = false;
     public boolean doneWithDir = false;
+    private boolean deleteAfterCoreClose = false;
     public Set<CacheValue> removeEntries = new HashSet<CacheValue>();
     public Set<CacheValue> closeEntries = new HashSet<CacheValue>();
-    
-    public void setDeleteOnClose(boolean deleteOnClose) {
+
+    public void setDeleteOnClose(boolean deleteOnClose, boolean deleteAfterCoreClose) {
       if (deleteOnClose) {
         removeEntries.add(this);
       }
       this.deleteOnClose = deleteOnClose;
+      this.deleteAfterCoreClose = deleteAfterCoreClose;
     }
     
     @Override
@@ -94,6 +96,8 @@ public abstract class CachingDirectoryFactory extends DirectoryFactory {
   protected Map<Directory,CacheValue> byDirectoryCache = new IdentityHashMap<Directory,CacheValue>();
   
   protected Map<Directory,List<CloseListener>> closeListeners = new HashMap<Directory,List<CloseListener>>();
+  
+  protected Set<CacheValue> removeEntries = new HashSet<CacheValue>();
 
   private Double maxWriteMBPerSecFlush;
 
@@ -187,6 +191,11 @@ public abstract class CachingDirectoryFactory extends DirectoryFactory {
       
       byDirectoryCache.clear();
       byPathCache.clear();
+      
+      for (CacheValue val : removeEntries) {
+        log.info("Removing directory: " + val.path);
+        removeDirectory(val);
+      }
     }
   }
   
@@ -246,6 +255,9 @@ public abstract class CachingDirectoryFactory extends DirectoryFactory {
         // get a sub path to close us later
         if (otherCacheValue.path.startsWith(cacheValue.path) && !otherCacheValue.closeDirectoryCalled) {
           // we let the sub dir remove and close us
+          if (!otherCacheValue.deleteAfterCoreClose && cacheValue.deleteAfterCoreClose) {
+            otherCacheValue.deleteAfterCoreClose = true;
+          }
           otherCacheValue.removeEntries.addAll(cacheValue.removeEntries);
           otherCacheValue.closeEntries.addAll(cacheValue.closeEntries);
           cacheValue.closeEntries.clear();
@@ -255,12 +267,15 @@ public abstract class CachingDirectoryFactory extends DirectoryFactory {
     }
     
     for (CacheValue val : cacheValue.removeEntries) {
-      try {
-        log.info("Removing directory: " + val.path);
-        removeDirectory(val);
-        
-      } catch (Throwable t) {
-        SolrException.log(log, "Error removing directory", t);
+      if (!val.deleteAfterCoreClose) {
+        try {
+          log.info("Removing directory: " + val.path);
+          removeDirectory(val);
+        } catch (Throwable t) {
+          SolrException.log(log, "Error removing directory", t);
+        }
+      } else {
+        removeEntries.add(val);
       }
     }
     
@@ -426,23 +441,33 @@ public abstract class CachingDirectoryFactory extends DirectoryFactory {
   
   @Override
   public void remove(String path) throws IOException {
+    remove(path, false);
+  }
+  
+  @Override
+  public void remove(Directory dir) throws IOException {
+    remove(dir, false);
+  }
+  
+  @Override
+  public void remove(String path, boolean deleteAfterCoreClose) throws IOException {
     synchronized (this) {
       CacheValue val = byPathCache.get(normalize(path));
       if (val == null) {
         throw new IllegalArgumentException("Unknown directory " + path);
       }
-      val.setDeleteOnClose(true);
+      val.setDeleteOnClose(true, deleteAfterCoreClose);
     }
   }
   
   @Override
-  public void remove(Directory dir) throws IOException {
+  public void remove(Directory dir, boolean deleteAfterCoreClose) throws IOException {
     synchronized (this) {
       CacheValue val = byDirectoryCache.get(dir);
       if (val == null) {
         throw new IllegalArgumentException("Unknown directory " + dir);
       }
-      val.setDeleteOnClose(true);
+      val.setDeleteOnClose(true, deleteAfterCoreClose);
     }
   }
   
