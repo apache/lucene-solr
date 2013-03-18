@@ -55,7 +55,6 @@ public class XMLResponseParser extends ResponseParser
   static {
     factory = XMLInputFactory.newInstance();
     try {
-      // nocommit: still true for 1.7?
       // The java 1.6 bundled stax parser (sjsxp) does not currently have a thread-safe
       // XMLInputFactory, as that implementation tries to cache and reuse the
       // XMLStreamReader.  Setting the parser-specific "reuse-instance" property to false
