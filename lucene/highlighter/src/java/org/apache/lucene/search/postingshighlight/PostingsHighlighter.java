@@ -237,16 +237,39 @@ public class PostingsHighlighter {
    *         {@link IndexOptions#DOCS_AND_FREQS_AND_POSITIONS_AND_OFFSETS}
    */
   public Map<String,String[]> highlightFields(String fields[], Query query, IndexSearcher searcher, TopDocs topDocs, int maxPassages) throws IOException {
-    final IndexReader reader = searcher.getIndexReader();
     final ScoreDoc scoreDocs[] = topDocs.scoreDocs;
-    query = rewrite(query);
-    SortedSet<Term> queryTerms = new TreeSet<Term>();
-    query.extractTerms(queryTerms);
-
     int docids[] = new int[scoreDocs.length];
     for (int i = 0; i < docids.length; i++) {
       docids[i] = scoreDocs[i].doc;
     }
+
+    return highlightFields(fields, query, searcher, docids, maxPassages);
+  }
+    
+  /**
+   * Highlights the top-N passages from multiple fields,
+   * for the provided int[] docids.
+   * 
+   * @param fields field names to highlight. 
+   *        Must have a stored string value and also be indexed with offsets.
+   * @param query query to highlight.
+   * @param searcher searcher that was previously used to execute the query.
+   * @param docids containing the document IDs to highlight.
+   * @param maxPassages The maximum number of top-N ranked passages per-field used to 
+   *        form the highlighted snippets.
+   * @return Map keyed on field name, containing the array of formatted snippets 
+   *         corresponding to the documents in <code>topDocs</code>. 
+   *         If no highlights were found for a document, its value is <code>null</code>.
+   * @throws IOException if an I/O error occurred during processing
+   * @throws IllegalArgumentException if <code>field</code> was indexed without 
+   *         {@link IndexOptions#DOCS_AND_FREQS_AND_POSITIONS_AND_OFFSETS}
+   */
+  public Map<String,String[]> highlightFields(String fields[], Query query, IndexSearcher searcher, int[] docids, int maxPassages) throws IOException {
+    final IndexReader reader = searcher.getIndexReader();
+    query = rewrite(query);
+    SortedSet<Term> queryTerms = new TreeSet<Term>();
+    query.extractTerms(queryTerms);
+
     IndexReaderContext readerContext = reader.getContext();
     List<AtomicReaderContext> leaves = readerContext.leaves();
 
@@ -269,9 +292,9 @@ public class PostingsHighlighter {
       Term terms[] = fieldTerms.toArray(new Term[fieldTerms.size()]);
       Map<Integer,String> fieldHighlights = highlightField(field, contents[i], bi, terms, docids, leaves, maxPassages);
         
-      String[] result = new String[scoreDocs.length];
-      for (int j = 0; j < scoreDocs.length; j++) {
-        result[j] = fieldHighlights.get(scoreDocs[j].doc);
+      String[] result = new String[docids.length];
+      for (int j = 0; j < docids.length; j++) {
+        result[j] = fieldHighlights.get(docids[j]);
       }
       highlights.put(field, result);
     }

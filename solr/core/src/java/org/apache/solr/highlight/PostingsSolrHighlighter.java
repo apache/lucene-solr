@@ -26,8 +26,6 @@ import java.util.Set;
 
 import org.apache.lucene.index.StoredDocument;
 import org.apache.lucene.search.Query;
-import org.apache.lucene.search.ScoreDoc;
-import org.apache.lucene.search.TopDocs;
 import org.apache.lucene.search.postingshighlight.PassageFormatter;
 import org.apache.lucene.search.postingshighlight.PassageScorer;
 import org.apache.lucene.search.postingshighlight.PostingsHighlighter;
@@ -129,16 +127,16 @@ public class PostingsSolrHighlighter extends SolrHighlighter implements PluginIn
     // if highlighting isnt enabled, then why call doHighlighting?
     if (isHighlightingEnabled(params)) {
       SolrIndexSearcher searcher = req.getSearcher();
-      TopDocs topDocs = toTopDocs(docs);
+      int[] docIDs = toDocIDs(docs);
       
       // fetch the unique keys
-      String[] keys = getUniqueKeys(searcher, topDocs);
+      String[] keys = getUniqueKeys(searcher, docIDs);
       
       // query-time parameters
       String[] fieldNames = getHighlightFields(query, req, defaultFields);
       int numSnippets = params.getInt(HighlightParams.SNIPPETS, 1);
       
-      Map<String,String[]> snippets = highlighter.highlightFields(fieldNames, query, searcher, topDocs, numSnippets);
+      Map<String,String[]> snippets = highlighter.highlightFields(fieldNames, query, searcher, docIDs, numSnippets);
       return encodeSnippets(keys, fieldNames, snippets);
     } else {
       return null;
@@ -171,38 +169,38 @@ public class PostingsSolrHighlighter extends SolrHighlighter implements PluginIn
     return list;
   }
   
-  /** Converts solr's DocList to a lucene TopDocs */
-  protected TopDocs toTopDocs(DocList docs) {
-    ScoreDoc[] scoreDocs = new ScoreDoc[docs.size()];
+  /** Converts solr's DocList to the int[] docIDs */
+  protected int[] toDocIDs(DocList docs) {
+    int[] docIDs = new int[docs.size()];
     DocIterator iterator = docs.iterator();
-    for (int i = 0; i < scoreDocs.length; i++) {
+    for (int i = 0; i < docIDs.length; i++) {
       if (!iterator.hasNext()) {
         throw new AssertionError();
       }
-      scoreDocs[i] = new ScoreDoc(iterator.nextDoc(), Float.NaN);
+      docIDs[i] = iterator.nextDoc();
     }
     if (iterator.hasNext()) {
       throw new AssertionError();
     }
-    return new TopDocs(docs.matches(), scoreDocs, Float.NaN);
+    return docIDs;
   }
   
   /** Retrieves the unique keys for the topdocs to key the results */
-  protected String[] getUniqueKeys(SolrIndexSearcher searcher, TopDocs topDocs) throws IOException {
+  protected String[] getUniqueKeys(SolrIndexSearcher searcher, int[] docIDs) throws IOException {
     IndexSchema schema = searcher.getSchema();
     SchemaField keyField = schema.getUniqueKeyField();
     if (keyField != null) {
       Set<String> selector = Collections.singleton(keyField.getName());
-      String uniqueKeys[] = new String[topDocs.scoreDocs.length];
-      for (int i = 0; i < topDocs.scoreDocs.length; i++) {
-        int docid = topDocs.scoreDocs[i].doc;
+      String uniqueKeys[] = new String[docIDs.length];
+      for (int i = 0; i < docIDs.length; i++) {
+        int docid = docIDs[i];
         StoredDocument doc = searcher.doc(docid, selector);
         String id = schema.printableUniqueKey(doc);
         uniqueKeys[i] = id;
       }
       return uniqueKeys;
     } else {
-      return new String[topDocs.scoreDocs.length];
+      return new String[docIDs.length];
     }
   }
 }

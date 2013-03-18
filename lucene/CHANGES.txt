@@ -106,6 +106,10 @@ New Features
   String values come from (it still defaults to pulling from stored
   fields).  (Robert Muir, Mike McCandless)
 
+* LUCENE-4853: Add PostingsHighlighter.highlightFields method that
+  takes int[] docIDs instead of TopDocs.  (Robert Muir, Mike
+  McCandless)
+
 API Changes
 
 * LUCENE-4844: removed TaxonomyReader.getParent(), you should use

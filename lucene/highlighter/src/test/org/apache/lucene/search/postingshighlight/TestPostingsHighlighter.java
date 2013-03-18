@@ -40,6 +40,7 @@ import org.apache.lucene.search.BooleanQuery;
 import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.search.PhraseQuery;
 import org.apache.lucene.search.Query;
+import org.apache.lucene.search.ScoreDoc;
 import org.apache.lucene.search.Sort;
 import org.apache.lucene.search.TermQuery;
 import org.apache.lucene.search.TopDocs;
@@ -462,6 +463,44 @@ public class TestPostingsHighlighter extends LuceneTestCase {
     String snippets[] = highlighter.highlight("body", query, searcher, topDocs, 2);
     assertEquals(1, snippets.length);
     assertEquals("This is a <b>test</b>.  Just highlighting from postings. This is also a much sillier <b>test</b>.  Feel free to <b>test</b> <b>test</b> <b>test</b> <b>test</b> <b>test</b> <b>test</b> <b>test</b>.", snippets[0]);
+    
+    ir.close();
+    dir.close();
+  }
+
+  public void testSpecificDocIDs() throws Exception {
+    Directory dir = newDirectory();
+    IndexWriterConfig iwc = newIndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer(random()));
+    iwc.setMergePolicy(newLogMergePolicy());
+    RandomIndexWriter iw = new RandomIndexWriter(random(), dir, iwc);
+    
+    FieldType offsetsType = new FieldType(TextField.TYPE_STORED);
+    offsetsType.setIndexOptions(IndexOptions.DOCS_AND_FREQS_AND_POSITIONS_AND_OFFSETS);
+    Field body = new Field("body", "", offsetsType);
+    Document doc = new Document();
+    doc.add(body);
+    
+    body.setStringValue("This is a test. Just a test highlighting from postings. Feel free to ignore.");
+    iw.addDocument(doc);
+    body.setStringValue("Highlighting the first term. Hope it works.");
+    iw.addDocument(doc);
+    
+    IndexReader ir = iw.getReader();
+    iw.close();
+    
+    IndexSearcher searcher = newSearcher(ir);
+    PostingsHighlighter highlighter = new PostingsHighlighter();
+    Query query = new TermQuery(new Term("body", "highlighting"));
+    TopDocs topDocs = searcher.search(query, null, 10, Sort.INDEXORDER);
+    assertEquals(2, topDocs.totalHits);
+    ScoreDoc[] hits = topDocs.scoreDocs;
+    int[] docIDs = new int[2];
+    docIDs[0] = hits[0].doc;
+    docIDs[1] = hits[1].doc;
+    String snippets[] = highlighter.highlightFields(new String[] {"body"}, query, searcher, docIDs, 1).get("body");
+    assertEquals(2, snippets.length);
+    assertEquals("Just a test <b>highlighting</b> from postings. ", snippets[0]);
+    assertEquals("<b>Highlighting</b> the first term. ", snippets[1]);
     
     ir.close();
     dir.close();
