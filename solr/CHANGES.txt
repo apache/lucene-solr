@@ -92,9 +92,6 @@ Bug Fixes
 * SOLR-4538: Date Math expressions were being truncated to 32 characters
   when used in field:value queries in the lucene QParser.  (hossman, yonik)
   
-* SOLR-4567: copyField source glob matching explicit field(s) stopped working
-  in Solr 4.2. (Alexandre Rafalovitch, Steve Rowe)
-
 * SOLR-4297: Atomic update request containing null=true sets all subsequent
   fields to null (Ben Pennell, Rob, shalin)
 
@@ -188,6 +185,12 @@ Apache ZooKeeper 3.4.5
 
 Detailed Change List
 ----------------------
+
+Bug Fixes
+----------------------
+
+* SOLR-4567: copyField source glob matching explicit field(s) stopped working
+  in Solr 4.2. (Alexandre Rafalovitch, Steve Rowe)
 
 Other Changes
 ----------------------
