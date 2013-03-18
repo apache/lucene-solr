@@ -129,7 +129,7 @@ public class DirectoryTaxonomyWriter implements TaxonomyWriter {
    */
   private volatile boolean cacheIsComplete;
   private volatile boolean isClosed = false;
-  private volatile ParallelTaxonomyArrays taxoArrays;
+  private volatile TaxonomyIndexArrays taxoArrays;
   private volatile int nextID;
 
   /** Reads the commit data from a Directory. */
@@ -744,7 +744,7 @@ public class DirectoryTaxonomyWriter implements TaxonomyWriter {
     }
   }
 
-  private ParallelTaxonomyArrays getTaxoArrays() throws IOException {
+  private TaxonomyIndexArrays getTaxoArrays() throws IOException {
     if (taxoArrays == null) {
       synchronized (this) {
         if (taxoArrays == null) {
@@ -754,7 +754,7 @@ public class DirectoryTaxonomyWriter implements TaxonomyWriter {
             // according to Java Concurrency, this might perform better on some
             // JVMs, since the object initialization doesn't happen on the
             // volatile member.
-            ParallelTaxonomyArrays tmpArrays = new ParallelTaxonomyArrays(reader);
+            TaxonomyIndexArrays tmpArrays = new TaxonomyIndexArrays(reader);
             taxoArrays = tmpArrays;
           } finally {
             readerManager.release(reader);

@@ -9,8 +9,8 @@ import org.apache.lucene.facet.collections.IntToObjectMap;
 import org.apache.lucene.facet.partitions.IntermediateFacetResult;
 import org.apache.lucene.facet.partitions.PartitionsFacetResultsHandler;
 import org.apache.lucene.facet.search.FacetRequest.SortOrder;
+import org.apache.lucene.facet.taxonomy.ParallelTaxonomyArrays;
 import org.apache.lucene.facet.taxonomy.TaxonomyReader;
-import org.apache.lucene.facet.taxonomy.directory.ParallelTaxonomyArrays;
 import org.apache.lucene.util.PriorityQueue;
 
 /*

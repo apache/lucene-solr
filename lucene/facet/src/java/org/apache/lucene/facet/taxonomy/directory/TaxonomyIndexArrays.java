@@ -2,6 +2,7 @@ package org.apache.lucene.facet.taxonomy.directory;
 
 import java.io.IOException;
 
+import org.apache.lucene.facet.taxonomy.ParallelTaxonomyArrays;
 import org.apache.lucene.facet.taxonomy.TaxonomyReader;
 import org.apache.lucene.index.CorruptIndexException;
 import org.apache.lucene.index.DocsAndPositionsEnum;
@@ -28,30 +29,12 @@ import org.apache.lucene.util.ArrayUtil;
  */
 
 /**
- * Returns 3 arrays for traversing the taxonomy:
- * <ul>
- * <li>{@code parents}: {@code parents[i]} denotes the parent of category
- * ordinal {@code i}.</li>
- * <li>{@code children}: {@code children[i]} denotes the youngest child of
- * category ordinal {@code i}. The youngest child is defined as the category
- * that was added last to the taxonomy as an immediate child of {@code i}.</li>
- * <li>{@code siblings}: {@code siblings[i]} denotes the sibling of category
- * ordinal {@code i}. The sibling is defined as the previous youngest child of
- * {@code parents[i]}.</li>
- * </ul>
- * 
- * To traverse the taxonomy tree, you typically start with {@code children[0]}
- * (ordinal 0 is reserved for ROOT), and then depends if you want to do DFS or
- * BFS, you call {@code children[children[0]]} or {@code siblings[children[0]]}
- * and so forth, respectively.
- * 
- * <p>
- * <b>NOTE:</b> you are not expected to modify the values of the arrays, since
- * the arrays are shared with other threads.
+ * A {@link ParallelTaxonomyArrays} that are initialized from the taxonomy
+ * index.
  * 
  * @lucene.experimental
  */
-public class ParallelTaxonomyArrays {
+class TaxonomyIndexArrays extends ParallelTaxonomyArrays {
 
   private final int[] parents;
 
@@ -63,11 +46,11 @@ public class ParallelTaxonomyArrays {
   private int[] children, siblings;
   
   /** Used by {@link #add(int, int)} after the array grew. */
-  private ParallelTaxonomyArrays(int[] parents) {
+  private TaxonomyIndexArrays(int[] parents) {
     this.parents = parents;
   }
 
-  public ParallelTaxonomyArrays(IndexReader reader) throws IOException {
+  public TaxonomyIndexArrays(IndexReader reader) throws IOException {
     parents = new int[reader.maxDoc()];
     if (parents.length > 0) {
       initParents(reader, 0);
@@ -82,7 +65,7 @@ public class ParallelTaxonomyArrays {
     }
   }
   
-  public ParallelTaxonomyArrays(IndexReader reader, ParallelTaxonomyArrays copyFrom) throws IOException {
+  public TaxonomyIndexArrays(IndexReader reader, TaxonomyIndexArrays copyFrom) throws IOException {
     assert copyFrom != null;
 
     // note that copyParents.length may be equal to reader.maxDoc(). this is not a bug
@@ -99,7 +82,7 @@ public class ParallelTaxonomyArrays {
     }
   }
 
-  private final synchronized void initChildrenSiblings(ParallelTaxonomyArrays copyFrom) {
+  private final synchronized void initChildrenSiblings(TaxonomyIndexArrays copyFrom) {
     if (!initializedChildren) { // must do this check !
       children = new int[parents.length];
       siblings = new int[parents.length];
@@ -180,11 +163,11 @@ public class ParallelTaxonomyArrays {
    * <p>
    * <b>NOTE:</b> you should call this method from a thread-safe code.
    */
-  ParallelTaxonomyArrays add(int ordinal, int parentOrdinal) {
+  TaxonomyIndexArrays add(int ordinal, int parentOrdinal) {
     if (ordinal >= parents.length) {
       int[] newarray = ArrayUtil.grow(parents, ordinal + 1);
       newarray[ordinal] = parentOrdinal;
-      return new ParallelTaxonomyArrays(newarray);
+      return new TaxonomyIndexArrays(newarray);
     }
     parents[ordinal] = parentOrdinal;
     return this;
@@ -194,6 +177,7 @@ public class ParallelTaxonomyArrays {
    * Returns the parents array, where {@code parents[i]} denotes the parent of
    * category ordinal {@code i}.
    */
+  @Override
   public int[] parents() {
     return parents;
   }
@@ -204,6 +188,7 @@ public class ParallelTaxonomyArrays {
    * category that was added last to the taxonomy as an immediate child of
    * {@code i}.
    */
+  @Override
   public int[] children() {
     if (!initializedChildren) {
       initChildrenSiblings(null);
@@ -218,6 +203,7 @@ public class ParallelTaxonomyArrays {
    * of category ordinal {@code i}. The sibling is defined as the previous
    * youngest child of {@code parents[i]}.
    */
+  @Override
   public int[] siblings() {
     if (!initializedChildren) {
       initChildrenSiblings(null);

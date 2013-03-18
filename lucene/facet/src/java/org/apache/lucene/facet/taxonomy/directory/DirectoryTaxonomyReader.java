@@ -7,6 +7,7 @@ import java.util.logging.Logger;
 
 import org.apache.lucene.facet.collections.LRUHashMap;
 import org.apache.lucene.facet.taxonomy.CategoryPath;
+import org.apache.lucene.facet.taxonomy.ParallelTaxonomyArrays;
 import org.apache.lucene.facet.taxonomy.TaxonomyReader;
 import org.apache.lucene.index.CorruptIndexException;
 import org.apache.lucene.index.DirectoryReader;
@@ -62,7 +63,7 @@ public class DirectoryTaxonomyReader extends TaxonomyReader {
   private LRUHashMap<CategoryPath, Integer> ordinalCache;
   private LRUHashMap<Integer, CategoryPath> categoryCache;
 
-  private volatile ParallelTaxonomyArrays taxoArrays;
+  private volatile TaxonomyIndexArrays taxoArrays;
 
   private char delimiter = Consts.DEFAULT_DELIMITER;
 
@@ -73,7 +74,7 @@ public class DirectoryTaxonomyReader extends TaxonomyReader {
    */
   DirectoryTaxonomyReader(DirectoryReader indexReader, DirectoryTaxonomyWriter taxoWriter,
       LRUHashMap<CategoryPath,Integer> ordinalCache, LRUHashMap<Integer,CategoryPath> categoryCache,
-      ParallelTaxonomyArrays taxoArrays) throws IOException {
+      TaxonomyIndexArrays taxoArrays) throws IOException {
     this.indexReader = indexReader;
     this.taxoWriter = taxoWriter;
     this.taxoEpoch = taxoWriter == null ? -1 : taxoWriter.getTaxonomyEpoch();
@@ -82,7 +83,7 @@ public class DirectoryTaxonomyReader extends TaxonomyReader {
     this.ordinalCache = ordinalCache == null ? new LRUHashMap<CategoryPath,Integer>(DEFAULT_CACHE_VALUE) : ordinalCache;
     this.categoryCache = categoryCache == null ? new LRUHashMap<Integer,CategoryPath>(DEFAULT_CACHE_VALUE) : categoryCache;
     
-    this.taxoArrays = taxoArrays != null ? new ParallelTaxonomyArrays(indexReader, taxoArrays) : null;
+    this.taxoArrays = taxoArrays != null ? new TaxonomyIndexArrays(indexReader, taxoArrays) : null;
   }
   
   /**
@@ -130,7 +131,7 @@ public class DirectoryTaxonomyReader extends TaxonomyReader {
       // according to Java Concurrency in Practice, this might perform better on
       // some JVMs, because the array initialization doesn't happen on the
       // volatile member.
-      ParallelTaxonomyArrays tmpArrays = new ParallelTaxonomyArrays(indexReader);
+      TaxonomyIndexArrays tmpArrays = new TaxonomyIndexArrays(indexReader);
       taxoArrays = tmpArrays;
     }
   }

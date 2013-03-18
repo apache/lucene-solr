@@ -45,6 +45,10 @@ Changes in backwards compatibility policy
   TieredMergePolicy. IndexWriterConfig setters now throw an exception when
   passed null if null is not a valid value.
 
+* LUCENE-4849: Made ParallelTaxonomyArrays abstract with a concrete
+  implementation for DirectoryTaxonomyWriter/Reader. Also moved it under
+  o.a.l.facet.taxonomy. (Shai Erera)
+
 New Features
 
 * LUCENE-4815: DrillSideways now allows more than one FacetRequest per
