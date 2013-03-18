@@ -33,7 +33,10 @@ Apache ZooKeeper 3.4.5
 Detailed Change List
 ----------------------
 
-(No Changes)
+Other Changes
+----------------------
+
+* SOLR-4537: Clean up schema information REST API. (Steve Rowe)
 
 ==================  4.2.0 ==================
 

@@ -18,14 +18,10 @@ package org.apache.solr.rest;
 
 import org.apache.solr.common.params.CommonParams;
 import org.apache.solr.common.util.SimpleOrderedMap;
-import org.apache.solr.schema.CopyField;
-import org.apache.solr.schema.IndexSchema;
 import org.apache.solr.schema.SchemaField;
 import org.restlet.resource.ResourceException;
 
-import java.util.ArrayList;
-import java.util.LinkedHashMap;
-import java.util.List;
+import java.util.LinkedHashSet;
 
 
 /**
@@ -38,10 +34,10 @@ abstract class BaseFieldResource extends BaseSchemaResource {
   private static final String SHOW_DEFAULTS = "showDefaults";
 
 
-  private LinkedHashMap<String,SimpleOrderedMap<Object>> requestedFields;
+  private LinkedHashSet<String> requestedFields;
   private boolean showDefaults;
 
-  protected LinkedHashMap<String,SimpleOrderedMap<Object>> getRequestedFields() {
+  protected LinkedHashSet<String> getRequestedFields() {
     return requestedFields; 
   }
   
@@ -70,10 +66,10 @@ abstract class BaseFieldResource extends BaseSchemaResource {
       if (null != flParam) {
         String[] fields = flParam.trim().split("[,\\s]+");
         if (fields.length > 0) {
-          requestedFields = new LinkedHashMap<String,SimpleOrderedMap<Object>>();
+          requestedFields = new LinkedHashSet<String>();
           for (String field : fields) {
-            if ( ! field.isEmpty()) {
-              requestedFields.put(field, null);
+            if ( ! field.trim().isEmpty()) {
+              requestedFields.add(field.trim());
             }
           }
         }
@@ -93,9 +89,9 @@ abstract class BaseFieldResource extends BaseSchemaResource {
     SimpleOrderedMap<Object> properties = field.getNamedPropertyValues(showDefaults);
     if ( ! getSchema().getFields().containsKey(field.getName())) {
       String dynamicBase = getSchema().getDynamicPattern(field.getName());
+      // Add dynamicBase property if it's different from the field name. 
       if ( ! field.getName().equals(dynamicBase)) {
-        // Don't add dynamicBase property if it's identical to the field name. 
-        properties.add(DYNAMIC_BASE, getSchema().getDynamicPattern(field.getName()));
+        properties.add(DYNAMIC_BASE, dynamicBase);
       }
     }
     if (field == getSchema().getUniqueKeyField()) {

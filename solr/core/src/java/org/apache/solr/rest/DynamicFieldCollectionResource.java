@@ -21,6 +21,7 @@ import org.apache.solr.common.SolrException.ErrorCode;
 import org.apache.solr.common.params.CommonParams;
 import org.apache.solr.common.util.SimpleOrderedMap;
 import org.apache.solr.schema.FieldType;
+import org.apache.solr.schema.IndexSchema;
 import org.apache.solr.schema.SchemaField;
 import org.restlet.representation.Representation;
 import org.restlet.resource.ResourceException;
@@ -28,6 +29,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
@@ -55,32 +57,29 @@ public class DynamicFieldCollectionResource extends BaseFieldResource implements
   public Representation get() {
     
     try {
-      SchemaField[] dynamicFields = getSchema().getDynamicFieldPrototypes();
-      List<SimpleOrderedMap<Object>> props = new ArrayList<SimpleOrderedMap<Object>>(dynamicFields.length);
-      if (null != getRequestedFields()) {
+      List<SimpleOrderedMap<Object>> props = new ArrayList<SimpleOrderedMap<Object>>();
+      if (null == getRequestedFields()) {
+        for (IndexSchema.DynamicField dynamicField : getSchema().getDynamicFields()) {
+          if ( ! dynamicField.getRegex().startsWith(INTERNAL_POLY_FIELD_PREFIX)) { // omit internal polyfields
+            props.add(getFieldProperties(dynamicField.getPrototype()));
+          }
+        }
+      } else {
         if (0 == getRequestedFields().size()) {
           String message = "Empty " + CommonParams.FL + " parameter value";
           throw new SolrException(ErrorCode.BAD_REQUEST, message);
         }
-        for (SchemaField prototype : dynamicFields) {
-          if (getRequestedFields().containsKey(prototype.getName())) {
-            getRequestedFields().put(prototype.getName(), getFieldProperties(prototype));
-          }
+        Map<String,SchemaField> dynamicFieldsByName = new HashMap<String,SchemaField>();
+        for (IndexSchema.DynamicField dynamicField : getSchema().getDynamicFields()) {
+          dynamicFieldsByName.put(dynamicField.getRegex(), dynamicField.getPrototype());
         }
         // Use the same order as the fl parameter
-        for (Map.Entry<String,SimpleOrderedMap<Object>> requestedField : getRequestedFields().entrySet()) {
-          SimpleOrderedMap<Object> fieldProperties = requestedField.getValue();
-          // Should there be some form of error condition
-          // if one or more of the requested fields were not found?
-          if (null != fieldProperties) {
-            props.add(fieldProperties);
-          }
-        }
-      } else {
-        for (SchemaField prototype : dynamicFields) {
-          // omit internal polyfields
-          if ( ! prototype.getName().startsWith(INTERNAL_POLY_FIELD_PREFIX)) {
-            props.add(getFieldProperties(prototype));
+        for (String dynamicFieldName : getRequestedFields()) {
+          final SchemaField dynamicSchemaField = dynamicFieldsByName.get(dynamicFieldName);
+          if (null == dynamicSchemaField) {
+            log.info("Requested dynamic field '" + dynamicFieldName + "' not found.");
+          } else {
+            props.add(getFieldProperties(dynamicSchemaField));
           }
         }
       }
