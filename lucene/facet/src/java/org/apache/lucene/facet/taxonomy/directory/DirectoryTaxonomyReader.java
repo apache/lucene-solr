@@ -160,14 +160,8 @@ public class DirectoryTaxonomyReader extends TaxonomyReader {
   protected DirectoryTaxonomyReader doOpenIfChanged() throws IOException {
     ensureOpen();
     
-    final DirectoryReader r2;
-    if (taxoWriter == null) {
-      // not NRT
-      r2 = DirectoryReader.openIfChanged(indexReader);
-    } else {
-      // NRT
-      r2 = DirectoryReader.openIfChanged(indexReader, taxoWriter.getInternalIndexWriter(), false);
-    }
+    // This works for both NRT and non-NRT readers (i.e. an NRT reader remains NRT).
+    final DirectoryReader r2 = DirectoryReader.openIfChanged(indexReader);
     if (r2 == null) {
       return null; // no changes, nothing to do
     }
