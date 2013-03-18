@@ -35,7 +35,6 @@ import org.junit.Test;
  * limitations under the License.
  */
 
-// TODO: remove this suppress if we fix the TaxoWriter Codec to a non-default (see todo in DirTW)
 @SuppressCodecs("SimpleText")
 public class TestTaxonomyCombined extends FacetTestCase {
 
@@ -305,7 +304,7 @@ public class TestTaxonomyCombined extends FacetTestCase {
     TaxonomyReader tr = new DirectoryTaxonomyReader(indexDir);
     assertEquals(1, tr.getSize());
     assertEquals(0, tr.getPath(0).length);
-    assertEquals(TaxonomyReader.INVALID_ORDINAL, tr.getParent(0));
+    assertEquals(TaxonomyReader.INVALID_ORDINAL, tr.getParallelTaxonomyArrays().parents()[0]);
     assertEquals(0, tr.getOrdinal(CategoryPath.EMPTY));
     tr.close();
     indexDir.close();
@@ -324,7 +323,7 @@ public class TestTaxonomyCombined extends FacetTestCase {
     TaxonomyReader tr = new DirectoryTaxonomyReader(indexDir);
     assertEquals(1, tr.getSize());
     assertEquals(0, tr.getPath(0).length);
-    assertEquals(TaxonomyReader.INVALID_ORDINAL, tr.getParent(0));
+    assertEquals(TaxonomyReader.INVALID_ORDINAL, tr.getParallelTaxonomyArrays().parents()[0]);
     assertEquals(0, tr.getOrdinal(CategoryPath.EMPTY));
     tw.close();
     tr.close();
@@ -404,12 +403,13 @@ public class TestTaxonomyCombined extends FacetTestCase {
     TaxonomyReader tr = new DirectoryTaxonomyReader(indexDir);
 
     // check that the parent of the root ordinal is the invalid ordinal:
-    assertEquals(TaxonomyReader.INVALID_ORDINAL, tr.getParent(0));
+    int[] parents = tr.getParallelTaxonomyArrays().parents();
+    assertEquals(TaxonomyReader.INVALID_ORDINAL, parents[0]);
 
     // check parent of non-root ordinals:
     for (int ordinal=1; ordinal<tr.getSize(); ordinal++) {
       CategoryPath me = tr.getPath(ordinal);
-      int parentOrdinal = tr.getParent(ordinal);
+      int parentOrdinal = parents[ordinal];
       CategoryPath parent = tr.getPath(parentOrdinal);
       if (parent==null) {
         fail("Parent of "+ordinal+" is "+parentOrdinal+
@@ -421,26 +421,6 @@ public class TestTaxonomyCombined extends FacetTestCase {
             " but categories are "+showcat(parent)+" and "+showcat(me)+
             " respectively.");
       }
-    }
-
-    // check parent of of invalid ordinals:
-    try {
-      tr.getParent(-1);
-      fail("getParent for -1 should throw exception");
-    } catch (ArrayIndexOutOfBoundsException e) {
-      // ok
-    }
-    try {
-      tr.getParent(TaxonomyReader.INVALID_ORDINAL);
-      fail("getParent for INVALID_ORDINAL should throw exception");
-    } catch (ArrayIndexOutOfBoundsException e) {
-      // ok
-    }
-    try {
-      int parent = tr.getParent(tr.getSize());
-      fail("getParent for getSize() should throw exception, but returned "+parent);
-    } catch (ArrayIndexOutOfBoundsException e) {
-      // ok
     }
 
     tr.close();
@@ -535,26 +515,6 @@ public class TestTaxonomyCombined extends FacetTestCase {
     }
   }
 
-  /**  Tests TaxonomyReader's getParentArray() method. We do not test this
-    method directly, but rather just compare its results to those from
-    other methods (which we have already tested above).
-   */
-  @Test
-  public void testReaderParentArray() throws Exception {
-    Directory indexDir = newDirectory();
-    TaxonomyWriter tw = new DirectoryTaxonomyWriter(indexDir);
-    fillTaxonomy(tw);
-    tw.close();
-    TaxonomyReader tr = new DirectoryTaxonomyReader(indexDir);
-    int[] parents = tr.getParallelTaxonomyArrays().parents();
-    assertEquals(tr.getSize(), parents.length);
-    for (int i=0; i<tr.getSize(); i++) {
-      assertEquals(tr.getParent(i), parents[i]);
-    }
-    tr.close();
-    indexDir.close();
-  }
-  
   /**
    * Test TaxonomyReader's child browsing method, getChildrenArrays()
    * This only tests for correctness of the data on one example - we have
@@ -638,10 +598,11 @@ public class TestTaxonomyCombined extends FacetTestCase {
     assertEquals(tr.getSize(), olderSiblingArray.length);
         
     // test that the "youngest child" of every category is indeed a child:
+    int[] parents = tr.getParallelTaxonomyArrays().parents();
     for (int i=0; i<tr.getSize(); i++) {
       int youngestChild = children[i];
       if (youngestChild != TaxonomyReader.INVALID_ORDINAL) {
-        assertEquals(i, tr.getParent(youngestChild));
+        assertEquals(i, parents[youngestChild]);
       }
     }
         
@@ -658,7 +619,7 @@ public class TestTaxonomyCombined extends FacetTestCase {
       if (sibling == TaxonomyReader.INVALID_ORDINAL) {
         continue;
       }
-      assertEquals(tr.getParent(i), tr.getParent(sibling));
+      assertEquals(parents[i], parents[sibling]);
     }
     
     // And now for slightly more complex (and less "invariant-like"...)
@@ -670,7 +631,7 @@ public class TestTaxonomyCombined extends FacetTestCase {
       // Find the really youngest child:
       int j;
       for (j=tr.getSize()-1; j>i; j--) {
-        if (tr.getParent(j)==i) {
+        if (parents[j]==i) {
           break; // found youngest child
         }
       }
@@ -687,7 +648,7 @@ public class TestTaxonomyCombined extends FacetTestCase {
       // Find the youngest older sibling:
       int j;
       for (j=i-1; j>=0; j--) {
-        if (tr.getParent(j)==tr.getParent(i)) {
+        if (parents[j]==parents[i]) {
           break; // found youngest older sibling
         }
       }
@@ -879,47 +840,21 @@ public class TestTaxonomyCombined extends FacetTestCase {
     tw.commit();
     TaxonomyReader tr = new DirectoryTaxonomyReader(indexDir);
 
-    int author = 1;
-
-    // getParent() and getSize() test:
-    try {
-      tr.getParent(author);
-      fail("Initially, getParent for "+author+" should throw exception");
-    } catch (ArrayIndexOutOfBoundsException e) {
-      // ok
-    }
     assertEquals(1, tr.getSize()); // the empty taxonomy has size 1 (the root)
     tw.addCategory(new CategoryPath("Author"));
-    try {
-      tr.getParent(author);
-      fail("Before commit() and refresh(), getParent for "+author+" should still throw exception");
-    } catch (ArrayIndexOutOfBoundsException e) {
-      // ok
-    }
     assertEquals(1, tr.getSize()); // still root only...
     assertNull(TaxonomyReader.openIfChanged(tr)); // this is not enough, because tw.commit() hasn't been done yet
-    try {
-      tr.getParent(author);
-      fail("Before commit() and refresh(), getParent for "+author+" should still throw exception");
-    } catch (ArrayIndexOutOfBoundsException e) {
-      // ok
-    }
     assertEquals(1, tr.getSize()); // still root only...
     tw.commit();
-    try {
-      tr.getParent(author);
-      fail("Before refresh(), getParent for "+author+" should still throw exception");
-    } catch (ArrayIndexOutOfBoundsException e) {
-      // ok
-    }
     assertEquals(1, tr.getSize()); // still root only...
     TaxonomyReader newTaxoReader = TaxonomyReader.openIfChanged(tr);
     assertNotNull(newTaxoReader);
     tr.close();
     tr = newTaxoReader;
     
+    int author = 1;
     try {
-      assertEquals(TaxonomyReader.ROOT_ORDINAL, tr.getParent(author));
+      assertEquals(TaxonomyReader.ROOT_ORDINAL, tr.getParallelTaxonomyArrays().parents()[author]);
       // ok
     } catch (ArrayIndexOutOfBoundsException e) {
       fail("After category addition, commit() and refresh(), getParent for "+author+" should NOT throw exception");
@@ -937,9 +872,10 @@ public class TestTaxonomyCombined extends FacetTestCase {
     assertNotNull(newTaxoReader);
     tr.close();
     tr = newTaxoReader;
-    assertEquals(author, tr.getParent(dawkins));
-    assertEquals(TaxonomyReader.ROOT_ORDINAL, tr.getParent(author));
-    assertEquals(TaxonomyReader.INVALID_ORDINAL, tr.getParent(TaxonomyReader.ROOT_ORDINAL));
+    int[] parents = tr.getParallelTaxonomyArrays().parents();
+    assertEquals(author, parents[dawkins]);
+    assertEquals(TaxonomyReader.ROOT_ORDINAL, parents[author]);
+    assertEquals(TaxonomyReader.INVALID_ORDINAL, parents[TaxonomyReader.ROOT_ORDINAL]);
     assertEquals(3, tr.getSize()); 
     tw.close();
     tr.close();

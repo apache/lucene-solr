@@ -293,12 +293,6 @@ public class DirectoryTaxonomyReader extends TaxonomyReader {
   }
 
   @Override
-  public int getParent(int ordinal) throws IOException {
-    ensureOpen();
-    return getParallelTaxonomyArrays().parents()[ordinal];
-  }
-
-  @Override
   public CategoryPath getPath(int ordinal) throws IOException {
     ensureOpen();
     
