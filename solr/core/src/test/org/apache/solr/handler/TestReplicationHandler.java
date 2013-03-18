@@ -71,7 +71,7 @@ import org.junit.Test;
 public class TestReplicationHandler extends SolrTestCaseJ4 {
 
 
-  private static final String CONF_DIR = "." + File.separator + "solr"
+  private static final String CONF_DIR = "solr"
       + File.separator + "collection1" + File.separator + "conf"
       + File.separator;
 

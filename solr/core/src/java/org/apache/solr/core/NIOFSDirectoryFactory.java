@@ -16,12 +16,11 @@ package org.apache.solr.core;
  * limitations under the License.
  */
 
-import org.apache.lucene.store.Directory;
-import org.apache.lucene.store.NIOFSDirectory;
-import org.apache.solr.core.DirectoryFactory.DirContext;
-
 import java.io.File;
 import java.io.IOException;
+
+import org.apache.lucene.store.Directory;
+import org.apache.lucene.store.NIOFSDirectory;
 
 
 /**
@@ -33,6 +32,11 @@ public class NIOFSDirectoryFactory extends StandardDirectoryFactory {
   @Override
   protected Directory create(String path, DirContext dirContext) throws IOException {
     return new NIOFSDirectory(new File(path));
+  }
+  
+  @Override
+  public boolean isAbsolute(String path) {
+    return new File(path).isAbsolute();
   }
   
 }

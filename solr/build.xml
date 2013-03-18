@@ -70,7 +70,7 @@
     <java jar="${example}/start.jar" fork="true" dir="${example}" maxmemory="${example.heap.size}">
       <jvmarg line="${example.jvm.line}"/>
       <sysproperty key="solr.solr.home" file="${example.solr.home}"/>
-      <sysproperty key="solr.data.dir" file="${example.data.dir}"/>
+      <sysproperty key="solr.data.dir" value="${example.data.dir}"/>
       <sysproperty key="jetty.port" value="${example.jetty.port}"/>
     </java>
   </target>

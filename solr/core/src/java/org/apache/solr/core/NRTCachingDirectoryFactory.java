@@ -54,5 +54,10 @@ public class NRTCachingDirectoryFactory extends StandardDirectoryFactory {
   protected Directory create(String path, DirContext dirContext) throws IOException {
     return new NRTCachingDirectory(FSDirectory.open(new File(path)), maxMergeSizeMB, maxCachedMB);
   }
+  
+  @Override
+  public boolean isAbsolute(String path) {
+    return new File(path).isAbsolute();
+  }
 
 }
