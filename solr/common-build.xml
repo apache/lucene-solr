@@ -29,9 +29,9 @@
   <property name="fullnamever" value="${fullname}-${version}"/>
   <property name="final.name" value="${fullnamever}"/>
   
-  <!-- solr uses 1.6 -->
-  <property name="javac.source" value="1.6"/>
-  <property name="javac.target" value="1.6"/>
+  <!-- solr uses 1.7 -->
+  <property name="javac.source" value="1.7"/>
+  <property name="javac.target" value="1.7"/>
   <property name="javac.args" value=""/>
   
   <property name="dest" location="${common-solr.dir}/build" />

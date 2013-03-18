@@ -631,6 +631,7 @@ public class XPathRecordReader {
     EmptyEntityResolver.configureXMLInputFactory(factory);
     factory.setXMLReporter(XMLLOG);
     try {
+      // nocommit: still true for java7?
       // The java 1.6 bundled stax parser (sjsxp) does not currently have a thread-safe
       // XMLInputFactory, as that implementation tries to cache and reuse the
       // XMLStreamReader.  Setting the parser-specific "reuse-instance" property to false

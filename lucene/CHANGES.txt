@@ -19,6 +19,11 @@ Changes in backwards compatibility policy
   (Nikola Tanković, Uwe Schindler, Chris Male, Mike McCandless,
   Robert Muir)
 
+New Features
+
+* LUCENE-4747: Move to Java 7 as minimum Java version.
+  (Robert Muir, Uwe Schindler)
+
 ======================= Lucene 4.3.0 =======================
 
 Changes in backwards compatibility policy

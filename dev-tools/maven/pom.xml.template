@@ -43,7 +43,7 @@
     <vc-browse-base-url>http://svn.apache.org/viewvc/lucene/dev/trunk</vc-browse-base-url>
     <base.specification.version>5.0.0</base.specification.version>
     <maven.build.timestamp.format>yyyy-MM-dd HH:mm:ss</maven.build.timestamp.format>
-    <java.compat.version>1.6</java.compat.version>
+    <java.compat.version>1.7</java.compat.version>
     <jetty.version>8.1.8.v20121106</jetty.version>
     <slf4j.version>1.6.4</slf4j.version>
     <tika.version>1.3</tika.version>
