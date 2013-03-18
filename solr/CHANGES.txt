@@ -178,6 +178,21 @@ Other Changes
 * SOLR-4596: DistributedQueue should ensure its full path exists in the constructor.
   (Mark Miller)
 
+==================  4.2.1 ==================
+
+Versions of Major Components
+---------------------
+Apache Tika 1.3
+Carrot2 3.6.2
+Velocity 1.7 and Velocity Tools 2.0
+Apache UIMA 2.3.1
+Apache ZooKeeper 3.4.5
+
+Detailed Change List
+----------------------
+
+(No Changes)
+
 ==================  4.2.0 ==================
 
 Versions of Major Components
