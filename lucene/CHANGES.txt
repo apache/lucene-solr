@@ -99,6 +99,9 @@ New Features
 * LUCENE-4843: Add LimitTokenPositionFilter: don't emit tokens with 
   positions that exceed the configured limit.  (Steve Rowe)
 
+* LUCENE-4832: Add ToParentBlockJoinCollector.getTopGroupsWithAllChildDocs, to retrieve
+  all children in each group.  (Aleksey Aleev via Mike McCandless)
+
 API Changes
 
 * LUCENE-4844: removed TaxonomyReader.getParent(), you should use

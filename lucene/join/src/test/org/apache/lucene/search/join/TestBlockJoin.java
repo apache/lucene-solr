@@ -961,24 +961,21 @@ public class TestBlockJoin extends LuceneTestCase {
     s.search(fullQuery, c);
 
     // Examine "Job" children
-    boolean showNullPointerIssue=true;
-    if (showNullPointerIssue) {
-      TopGroups<Integer> jobResults = c.getTopGroups(childJobJoinQuery, null, 0, 10, 0, true);
+    TopGroups<Integer> jobResults = c.getTopGroups(childJobJoinQuery, null, 0, 10, 0, true);
 
-      //assertEquals(1, results.totalHitCount);
-      assertEquals(1, jobResults.totalGroupedHitCount);
-      assertEquals(1, jobResults.groups.length);
+    //assertEquals(1, results.totalHitCount);
+    assertEquals(1, jobResults.totalGroupedHitCount);
+    assertEquals(1, jobResults.groups.length);
 
-      final GroupDocs<Integer> group = jobResults.groups[0];
-      assertEquals(1, group.totalHits);
+    final GroupDocs<Integer> group = jobResults.groups[0];
+    assertEquals(1, group.totalHits);
 
-      StoredDocument childJobDoc = s.doc(group.scoreDocs[0].doc);
-      //System.out.println("  doc=" + group.scoreDocs[0].doc);
-      assertEquals("java", childJobDoc.get("skill"));
-      assertNotNull(group.groupValue);
-      StoredDocument parentDoc = s.doc(group.groupValue);
-      assertEquals("Lisa", parentDoc.get("name"));
-    }
+    StoredDocument childJobDoc = s.doc(group.scoreDocs[0].doc);
+    //System.out.println("  doc=" + group.scoreDocs[0].doc);
+    assertEquals("java", childJobDoc.get("skill"));
+    assertNotNull(group.groupValue);
+    StoredDocument parentDoc = s.doc(group.groupValue);
+    assertEquals("Lisa", parentDoc.get("name"));
 
     // Now Examine qualification children
     TopGroups<Integer> qualificationResults = c.getTopGroups(childQualificationJoinQuery, null, 0, 10, 0, true);
@@ -992,7 +989,7 @@ public class TestBlockJoin extends LuceneTestCase {
     StoredDocument childQualificationDoc = s.doc(qGroup.scoreDocs[0].doc);
     assertEquals("maths", childQualificationDoc.get("qualification"));
     assertNotNull(qGroup.groupValue);
-    StoredDocument parentDoc = s.doc(qGroup.groupValue);
+    parentDoc = s.doc(qGroup.groupValue);
     assertEquals("Lisa", parentDoc.get("name"));
 
 
@@ -1054,6 +1051,97 @@ public class TestBlockJoin extends LuceneTestCase {
     Weight weight = s.createNormalizedWeight(q);
     DocIdSetIterator disi = weight.scorer(s.getIndexReader().leaves().get(0), true, true, null);
     assertEquals(2, disi.advance(0));
+    r.close();
+    dir.close();
+  }
+
+  public void testGetTopGroups() throws Exception {
+
+    final Directory dir = newDirectory();
+    final RandomIndexWriter w = new RandomIndexWriter(random(), dir);
+
+    final List<Document> docs = new ArrayList<Document>();
+    docs.add(makeJob("ruby", 2005));
+    docs.add(makeJob("java", 2006));
+    docs.add(makeJob("java", 2010));
+    docs.add(makeJob("java", 2012));
+    Collections.shuffle(docs, random());
+    docs.add(makeResume("Frank", "United States"));
+
+    addSkillless(w);
+    w.addDocuments(docs);
+    addSkillless(w);
+
+    IndexReader r = w.getReader();
+    w.close();
+    IndexSearcher s = newSearcher(r);
+
+    // Create a filter that defines "parent" documents in the index - in this case resumes
+    Filter parentsFilter = new CachingWrapperFilter(new QueryWrapperFilter(new TermQuery(new Term("docType", "resume"))));
+
+    // Define child document criteria (finds an example of relevant work experience)
+    BooleanQuery childQuery = new BooleanQuery();
+    childQuery.add(new BooleanClause(new TermQuery(new Term("skill", "java")), Occur.MUST));
+    childQuery.add(new BooleanClause(NumericRangeQuery.newIntRange("year", 2006, 2011, true, true), Occur.MUST));
+
+    // Wrap the child document query to 'join' any matches
+    // up to corresponding parent:
+    ToParentBlockJoinQuery childJoinQuery = new ToParentBlockJoinQuery(childQuery, parentsFilter, ScoreMode.Avg);
+
+    ToParentBlockJoinCollector c = new ToParentBlockJoinCollector(Sort.RELEVANCE, 2, true, true);
+
+    s.search(childJoinQuery, c);
+
+    //Get all child documents within groups
+    @SuppressWarnings({"unchecked","rawtypes"})
+    TopGroups<Integer>[] getTopGroupsResults = new TopGroups[2];
+    getTopGroupsResults[0] = c.getTopGroups(childJoinQuery, null, 0, 10, 0, true);
+    getTopGroupsResults[1] = c.getTopGroupsWithAllChildDocs(childJoinQuery, null, 0, 0, true);
+
+    for (TopGroups<Integer> results : getTopGroupsResults) {
+      assertFalse(Float.isNaN(results.maxScore));
+      assertEquals(2, results.totalGroupedHitCount);
+      assertEquals(1, results.groups.length);
+
+      final GroupDocs<Integer> group = results.groups[0];
+      assertEquals(2, group.totalHits);
+      assertFalse(Float.isNaN(group.score));
+      assertNotNull(group.groupValue);
+      StoredDocument parentDoc = s.doc(group.groupValue);
+      assertEquals("Frank", parentDoc.get("name"));
+
+      assertEquals(2, group.scoreDocs.length); //all matched child documents collected
+
+      for (ScoreDoc scoreDoc : group.scoreDocs) {
+        StoredDocument childDoc = s.doc(scoreDoc.doc);
+        assertEquals("java", childDoc.get("skill"));
+        int year = Integer.parseInt(childDoc.get("year"));
+        assertTrue(year >= 2006 && year <= 2011);
+      }
+    }
+
+    //Get part of child documents
+    TopGroups<Integer> boundedResults = c.getTopGroups(childJoinQuery, null, 0, 1, 0, true);
+    assertFalse(Float.isNaN(boundedResults.maxScore));
+    assertEquals(2, boundedResults.totalGroupedHitCount);
+    assertEquals(1, boundedResults.groups.length);
+
+    final GroupDocs<Integer> group = boundedResults.groups[0];
+    assertEquals(2, group.totalHits);
+    assertFalse(Float.isNaN(group.score));
+    assertNotNull(group.groupValue);
+    StoredDocument parentDoc = s.doc(group.groupValue);
+    assertEquals("Frank", parentDoc.get("name"));
+
+    assertEquals(1, group.scoreDocs.length); //not all matched child documents collected
+
+    for (ScoreDoc scoreDoc : group.scoreDocs) {
+      StoredDocument childDoc = s.doc(scoreDoc.doc);
+      assertEquals("java", childDoc.get("skill"));
+      int year = Integer.parseInt(childDoc.get("year"));
+      assertTrue(year >= 2006 && year <= 2011);
+    }
+
     r.close();
     dir.close();
   }
