@@ -111,9 +111,11 @@ public class TestSorterTemplate extends LuceneTestCase {
   }
 
   int randomLength() {
-    return random().nextBoolean()
-        ? random().nextInt(SLOW_SORT_THRESHOLD)
-        : random().nextInt(100000);
+    return _TestUtil.nextInt(random(), 1, random().nextBoolean() ? SLOW_SORT_THRESHOLD : 100000);
+  }
+
+  public void testEmpty() {
+    testSort(new int[0]);
   }
 
   public void testAscending() {
