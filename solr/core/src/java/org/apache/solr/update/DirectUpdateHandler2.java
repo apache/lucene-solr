@@ -110,7 +110,7 @@ public class DirectUpdateHandler2 extends UpdateHandler implements SolrCoreState
   }
   
   public DirectUpdateHandler2(SolrCore core, UpdateHandler updateHandler) {
-    super(core);
+    super(core, updateHandler.getUpdateLog());
     solrCoreState = core.getSolrCoreState();
     
     UpdateHandlerInfo updateHandlerInfo = core.getSolrConfig()
