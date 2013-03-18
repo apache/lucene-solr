@@ -24,7 +24,7 @@
   <dirname file="${ant.file.common-solr}" property="common-solr.dir"/>
   
   <property name="Name" value="Solr" />
-  <property name="version" value="4.2-SNAPSHOT"/>
+  <property name="version" value="4.2.1-SNAPSHOT"/>
   <property name="fullname" value="${ant.project.name}"/>
   <property name="fullnamever" value="${fullname}-${version}"/>
   <property name="final.name" value="${fullnamever}"/>
@@ -67,7 +67,7 @@
        By default, this should be set to "X.Y.M.${dateversion}"
        where X.Y.M is the last version released (on this branch).
     -->
-  <property name="solr.spec.version" value="4.2.0.${dateversion}" />
+  <property name="solr.spec.version" value="4.2.1.${dateversion}" />
   
   <!-- defined here to be able to make the forbidden-api checker correctly
    reference it. 'ivy.xml' is also referencing this property. -->
