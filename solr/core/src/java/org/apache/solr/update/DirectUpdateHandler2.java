@@ -123,11 +123,6 @@ public class DirectUpdateHandler2 extends UpdateHandler implements SolrCoreState
     int softCommitTimeUpperBound = updateHandlerInfo.autoSoftCommmitMaxTime; // getInt("updateHandler/autoSoftCommit/maxTime", -1);
     softCommitTracker = new CommitTracker("Soft", core, softCommitDocsUpperBound, softCommitTimeUpperBound, updateHandlerInfo.openSearcher, true);
     
-    this.ulog = updateHandler.getUpdateLog();
-    if (this.ulog != null) {
-      this.ulog.init(this, core);
-    }
-    
     commitWithinSoftCommit = updateHandlerInfo.commitWithinSoftCommit;
   }
 
