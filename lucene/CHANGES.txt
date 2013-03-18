@@ -6,7 +6,13 @@ http://s.apache.org/luceneversions
 
 ======================= Lucene 4.2.1 =======================
 
-(No Changes)
+Bug Fixes
+
+* LUCENE-4713: The SPI components used to load custom codecs or analysis
+  components were fixed to also scan the Lucene ClassLoader in addition
+  to the context ClassLoader, so Lucene is always able to find its own
+  codecs. The special case of a null context ClassLoader is now also
+  supported.  (Christian Kohlschütter, Uwe Schindler)
 
 ======================= Lucene 4.2.0 =======================
 

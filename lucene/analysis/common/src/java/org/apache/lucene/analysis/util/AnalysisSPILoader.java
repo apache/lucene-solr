@@ -52,6 +52,11 @@ final class AnalysisSPILoader<S extends AbstractAnalysisFactory> {
   public AnalysisSPILoader(Class<S> clazz, String[] suffixes, ClassLoader classloader) {
     this.clazz = clazz;
     this.suffixes = suffixes;
+    // if clazz' classloader is not a parent of the given one, we scan clazz's classloader, too:
+    final ClassLoader clazzClassloader = clazz.getClassLoader();
+    if (clazzClassloader != null && !SPIClassIterator.isParentClassLoader(clazzClassloader, classloader)) {
+      reload(clazzClassloader);
+    }
     reload(classloader);
   }
   
