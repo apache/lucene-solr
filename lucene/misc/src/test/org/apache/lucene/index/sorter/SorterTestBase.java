@@ -47,6 +47,7 @@ import org.apache.lucene.index.DocsAndPositionsEnum;
 import org.apache.lucene.index.DocsEnum;
 import org.apache.lucene.index.FieldInfo.IndexOptions;
 import org.apache.lucene.index.FieldInvertState;
+import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.IndexWriterConfig;
 import org.apache.lucene.index.NumericDocValues;
 import org.apache.lucene.index.RandomIndexWriter;
@@ -57,6 +58,8 @@ import org.apache.lucene.index.Term;
 import org.apache.lucene.index.Terms;
 import org.apache.lucene.index.TermsEnum;
 import org.apache.lucene.index.TermsEnum.SeekStatus;
+import org.apache.lucene.index.sorter.SortingAtomicReader.SortingDocsAndPositionsEnum;
+import org.apache.lucene.index.sorter.SortingAtomicReader.SortingDocsEnum;
 import org.apache.lucene.search.CollectionStatistics;
 import org.apache.lucene.search.DocIdSetIterator;
 import org.apache.lucene.search.TermStatistics;
@@ -255,8 +258,9 @@ public abstract class SorterTestBase extends LuceneTestCase {
   
   @Test
   public void testDocsAndPositionsEnum() throws Exception {
-    Term term = new Term(DOC_POSITIONS_FIELD, DOC_POSITIONS_TERM);
-    DocsAndPositionsEnum sortedPositions = reader.termPositionsEnum(term);
+    TermsEnum termsEnum = reader.terms(DOC_POSITIONS_FIELD).iterator(null);
+    assertEquals(SeekStatus.FOUND, termsEnum.seekCeil(new BytesRef(DOC_POSITIONS_TERM)));
+    DocsAndPositionsEnum sortedPositions = termsEnum.docsAndPositions(null, null);
     int doc;
     
     // test nextDoc()
@@ -274,7 +278,11 @@ public abstract class SorterTestBase extends LuceneTestCase {
     }
     
     // test advance()
-    sortedPositions = reader.termPositionsEnum(term);
+    final DocsAndPositionsEnum reuse = sortedPositions;
+    sortedPositions = termsEnum.docsAndPositions(null, reuse);
+    if (sortedPositions instanceof SortingDocsAndPositionsEnum) {
+      assertTrue(((SortingDocsAndPositionsEnum) sortedPositions).reused(reuse)); // make sure reuse worked
+    }
     doc = 0;
     while ((doc = sortedPositions.advance(doc)) != DocIdSetIterator.NO_MORE_DOCS) {
       int freq = sortedPositions.freq();
@@ -328,8 +336,15 @@ public abstract class SorterTestBase extends LuceneTestCase {
         assertFalse("document " + prev + " not marked as deleted", mappedLiveDocs == null || mappedLiveDocs.get(prev));
       }
     }
-    
-    docs = termsEnum.docs(mappedLiveDocs, docs);
+    while (++prev < reader.maxDoc()) {
+      assertFalse("document " + prev + " not marked as deleted", mappedLiveDocs == null || mappedLiveDocs.get(prev));
+    }
+
+    DocsEnum reuse = docs;
+    docs = termsEnum.docs(mappedLiveDocs, reuse);
+    if (docs instanceof SortingDocsEnum) {
+      assertTrue(((SortingDocsEnum) docs).reused(reuse)); // make sure reuse worked
+    }
     doc = -1;
     prev = -1;
     while ((doc = docs.advance(doc + 1)) != DocIdSetIterator.NO_MORE_DOCS) {
@@ -338,6 +353,9 @@ public abstract class SorterTestBase extends LuceneTestCase {
       while (++prev < doc) {
         assertFalse("document " + prev + " not marked as deleted", mappedLiveDocs == null || mappedLiveDocs.get(prev));
       }
+    }
+    while (++prev < reader.maxDoc()) {
+      assertFalse("document " + prev + " not marked as deleted", mappedLiveDocs == null || mappedLiveDocs.get(prev));
     }
   }
   

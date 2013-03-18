@@ -136,34 +136,48 @@ public class SortingAtomicReader extends FilterAtomicReader {
 
     @Override
     public DocsEnum docs(Bits liveDocs, DocsEnum reuse, final int flags) throws IOException {
-      // if we're asked to reuse the given DocsEnum and it is Sorting, return
-      // the wrapped one, since some Codecs expect it.
+      final DocsEnum inReuse;
+      final SortingDocsEnum wrapReuse;
       if (reuse != null && reuse instanceof SortingDocsEnum) {
-        reuse = ((SortingDocsEnum) reuse).getWrapped();
+        // if we're asked to reuse the given DocsEnum and it is Sorting, return
+        // the wrapped one, since some Codecs expect it.
+        wrapReuse = (SortingDocsEnum) reuse;
+        inReuse = wrapReuse.getWrapped();
+      } else {
+        wrapReuse = null;
+        inReuse = reuse;
       }
-      boolean withFreqs = indexOptions.compareTo(IndexOptions.DOCS_AND_FREQS) >=0 && (flags & DocsEnum.FLAG_FREQS) != 0;
-      return new SortingDocsEnum(in.docs(newToOld(liveDocs), reuse, flags), withFreqs, docMap);
+
+      final DocsEnum inDocs = in.docs(newToOld(liveDocs), inReuse, flags);
+      final boolean withFreqs = indexOptions.compareTo(IndexOptions.DOCS_AND_FREQS) >=0 && (flags & DocsEnum.FLAG_FREQS) != 0;
+      return new SortingDocsEnum(wrapReuse, inDocs, withFreqs, docMap);
     }
 
     @Override
     public DocsAndPositionsEnum docsAndPositions(Bits liveDocs, DocsAndPositionsEnum reuse, final int flags) throws IOException {
-      // if we're asked to reuse the given DocsAndPositionsEnum and it is
-      // Sorting, return the wrapped one, since some Codecs expect it.
+      final DocsAndPositionsEnum inReuse;
+      final SortingDocsAndPositionsEnum wrapReuse;
       if (reuse != null && reuse instanceof SortingDocsAndPositionsEnum) {
-        reuse = ((SortingDocsAndPositionsEnum) reuse).getWrapped();
-      }
-      
-      final DocsAndPositionsEnum positions = in.docsAndPositions(newToOld(liveDocs), reuse, flags);
-      if (positions == null) {
-        return null;
+        // if we're asked to reuse the given DocsEnum and it is Sorting, return
+        // the wrapped one, since some Codecs expect it.
+        wrapReuse = (SortingDocsAndPositionsEnum) reuse;
+        inReuse = wrapReuse.getWrapped();
       } else {
-        // we ignore the fact that offsets may be stored but not asked for,
-        // since this code is expected to be used during addIndexes which will
-        // ask for everything. if that assumption changes in the future, we can
-        // factor in whether 'flags' says offsets are not required.
-        boolean storeOffsets = indexOptions.compareTo(IndexOptions.DOCS_AND_FREQS_AND_POSITIONS_AND_OFFSETS) >= 0;
-        return new SortingDocsAndPositionsEnum(positions, docMap, storeOffsets);
+        wrapReuse = null;
+        inReuse = reuse;
       }
+
+      final DocsAndPositionsEnum inDocsAndPositions = in.docsAndPositions(newToOld(liveDocs), inReuse, flags);
+      if (inDocsAndPositions == null) {
+        return null;
+      }
+
+      // we ignore the fact that offsets may be stored but not asked for,
+      // since this code is expected to be used during addIndexes which will
+      // ask for everything. if that assumption changes in the future, we can
+      // factor in whether 'flags' says offsets are not required.
+      final boolean storeOffsets = indexOptions.compareTo(IndexOptions.DOCS_AND_FREQS_AND_POSITIONS_AND_OFFSETS) >= 0;
+      return new SortingDocsAndPositionsEnum(wrapReuse, inDocsAndPositions, docMap, storeOffsets);
     }
 
   }
@@ -272,7 +286,7 @@ public class SortingAtomicReader extends FilterAtomicReader {
     }
   }
 
-  private static class SortingDocsEnum extends FilterDocsEnum {
+  static class SortingDocsEnum extends FilterDocsEnum {
     
     private static final class DocFreqSorterTemplate extends SorterTemplate {
       
@@ -315,19 +329,28 @@ public class SortingAtomicReader extends FilterAtomicReader {
       }
     }
     
-    private int[] docs = new int[64];
+    private int[] docs;
     private int[] freqs;
     private int docIt = -1;
     private final int upto;
     private final boolean withFreqs;
-    
-    public SortingDocsEnum(final DocsEnum in, boolean withFreqs, final Sorter.DocMap docMap) throws IOException {
+
+    SortingDocsEnum(SortingDocsEnum reuse, final DocsEnum in, boolean withFreqs, final Sorter.DocMap docMap) throws IOException {
       super(in);
       this.withFreqs = withFreqs;
+      if (reuse != null) {
+        docs = reuse.docs;
+        freqs = reuse.freqs; // maybe null
+      } else {
+        docs = new int[64];
+      }
+      docIt = -1;
       int i = 0;
       int doc;
       if (withFreqs) {
-        freqs = new int[docs.length];
+        if (freqs == null || freqs.length < docs.length) {
+          freqs = new int[docs.length];
+        }
         while ((doc = in.nextDoc()) != DocIdSetIterator.NO_MORE_DOCS){
           if (i >= docs.length) {
             docs = ArrayUtil.grow(docs, docs.length + 1);
@@ -351,7 +374,15 @@ public class SortingAtomicReader extends FilterAtomicReader {
       new DocFreqSorterTemplate(docs, freqs).timSort(0, i - 1);
       upto = i;
     }
-    
+
+    // for testing
+    boolean reused(DocsEnum other) {
+      if (other == null || !(other instanceof SortingDocsEnum)) {
+        return false;
+      }
+      return docs == ((SortingDocsEnum) other).docs;
+    }
+
     @Override
     public int advance(final int target) throws IOException {
       // need to support it for checkIndex, but in practice it won't be called, so
@@ -382,7 +413,7 @@ public class SortingAtomicReader extends FilterAtomicReader {
     }
   }
   
-  private static class SortingDocsAndPositionsEnum extends FilterDocsAndPositionsEnum {
+  static class SortingDocsAndPositionsEnum extends FilterDocsAndPositionsEnum {
     
     /**
      * A {@link SorterTemplate} which sorts two parallel arrays of doc IDs and
@@ -439,16 +470,26 @@ public class SortingAtomicReader extends FilterAtomicReader {
     private int pos;
     private int startOffset = -1;
     private int endOffset = -1;
-    private final BytesRef payload = new BytesRef(32);
+    private final BytesRef payload;
     private int currFreq;
-    
-    public SortingDocsAndPositionsEnum(final DocsAndPositionsEnum in, Sorter.DocMap docMap, boolean storeOffsets) throws IOException {
+
+    private final RAMFile file;
+
+    SortingDocsAndPositionsEnum(SortingDocsAndPositionsEnum reuse, final DocsAndPositionsEnum in, Sorter.DocMap docMap, boolean storeOffsets) throws IOException {
       super(in);
       this.storeOffsets = storeOffsets;
-      final RAMFile file = new RAMFile();
+      if (reuse != null) {
+        docs = reuse.docs;
+        offsets = reuse.offsets;
+        payload = reuse.payload;
+        file = reuse.file;
+      } else {
+        docs = new int[32];
+        offsets = new long[32];
+        payload = new BytesRef(32);
+        file = new RAMFile();
+      }
       final IndexOutput out = new RAMOutputStream(file);
-      docs = new int[32];
-      offsets = new long[32];
       int doc;
       int i = 0;
       while ((doc = in.nextDoc()) != DocIdSetIterator.NO_MORE_DOCS) {
@@ -467,7 +508,15 @@ public class SortingAtomicReader extends FilterAtomicReader {
       out.close();
       this.postingInput = new RAMInputStream("", file);
     }
-    
+
+    // for testing
+    boolean reused(DocsAndPositionsEnum other) {
+      if (other == null || !(other instanceof SortingDocsAndPositionsEnum)) {
+        return false;
+      }
+      return docs == ((SortingDocsAndPositionsEnum) other).docs;
+    }
+
     private void addPositions(final DocsAndPositionsEnum in, final IndexOutput out) throws IOException {
       int freq = in.freq();
       out.writeVInt(freq);
