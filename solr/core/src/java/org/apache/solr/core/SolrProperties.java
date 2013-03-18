@@ -270,8 +270,7 @@ public class SolrProperties implements ConfigSolr {
     try {
       fac = loader.findClass(info.className, ShardHandlerFactory.class).newInstance();
     } catch (Exception e) {
-      throw new SolrException(SolrException.ErrorCode.SERVER_ERROR,
-                              "Error instantiating shardHandlerFactory class " + info.className);
+      throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, e);
     }
     if (fac instanceof PluginInfoInitialized) {
       ((PluginInfoInitialized) fac).init(info);
