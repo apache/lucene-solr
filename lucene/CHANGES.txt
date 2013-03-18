@@ -108,12 +108,6 @@ Bug Fixes
 * LUCENE-4826: PostingsHighlighter was not returning the top N best
   scoring passages. (Robert Muir, Mike McCandless)
 
-* LUCENE-4713: The SPI components used to load custom codecs or analysis
-  components were fixed to also scan the Lucene ClassLoader in addition
-  to the context ClassLoader, so Lucene is always able to find its own
-  codecs. The special case of a null context ClassLoader is now also
-  supported.  (Christian Kohlschütter, Uwe Schindler)
-
 * LUCENE-4828: BooleanQuery no longer extracts terms from its MUST_NOT
   clauses.  (Mike McCandless)
 
@@ -128,7 +122,13 @@ Documentation
 
 ======================= Lucene 4.2.1 =======================
 
-(No Changes)
+Bug Fixes
+
+* LUCENE-4713: The SPI components used to load custom codecs or analysis
+  components were fixed to also scan the Lucene ClassLoader in addition
+  to the context ClassLoader, so Lucene is always able to find its own
+  codecs. The special case of a null context ClassLoader is now also
+  supported.  (Christian Kohlschütter, Uwe Schindler)
 
 ======================= Lucene 4.2.0 =======================
 
