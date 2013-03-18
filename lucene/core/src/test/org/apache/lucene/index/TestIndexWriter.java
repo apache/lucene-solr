@@ -896,36 +896,6 @@ public class TestIndexWriter extends LuceneTestCase {
     dir.close();
   }
 
-  // LUCENE-1219
-  public void testBinaryFieldOffsetLength() throws IOException {
-    Directory dir = newDirectory();
-    IndexWriter w = new IndexWriter(dir, newIndexWriterConfig( TEST_VERSION_CURRENT, new MockAnalyzer(random())));
-    byte[] b = new byte[50];
-    for(int i=0;i<50;i++)
-      b[i] = (byte) (i+77);
-
-    Document doc = new Document();
-    Field f = new StoredField("binary", b, 10, 17);
-    byte[] bx = f.binaryValue().bytes;
-    assertTrue(bx != null);
-    assertEquals(50, bx.length);
-    assertEquals(10, f.binaryValue().offset);
-    assertEquals(17, f.binaryValue().length);
-    doc.add(f);
-    w.addDocument(doc);
-    w.close();
-
-    IndexReader ir = DirectoryReader.open(dir);
-    StoredDocument doc2 = ir.document(0);
-    StorableField f2 = doc2.getField("binary");
-    b = f2.binaryValue().bytes;
-    assertTrue(b != null);
-    assertEquals(17, b.length, 17);
-    assertEquals(87, b[0]);
-    ir.close();
-    dir.close();
-  }
-
   // LUCENE-2529
   public void testPositionIncrementGapEmptyField() throws Exception {
     Directory dir = newDirectory();
@@ -1281,41 +1251,6 @@ public class TestIndexWriter extends LuceneTestCase {
     ir.close();
     dir.close();
 
-  }
-
-  // LUCENE-1727: make sure doc fields are stored in order
-  public void testStoredFieldsOrder() throws Throwable {
-    Directory d = newDirectory();
-    IndexWriter w = new IndexWriter(d, newIndexWriterConfig( TEST_VERSION_CURRENT, new MockAnalyzer(random())));
-    Document doc = new Document();
-
-    FieldType customType = new FieldType();
-    customType.setStored(true);
-    doc.add(newField("zzz", "a b c", customType));
-    doc.add(newField("aaa", "a b c", customType));
-    doc.add(newField("zzz", "1 2 3", customType));
-    w.addDocument(doc);
-    IndexReader r = w.getReader();
-    StoredDocument doc2 = r.document(0);
-    Iterator<StorableField> it = doc2.getFields().iterator();
-    assertTrue(it.hasNext());
-    Field f = (Field) it.next();
-    assertEquals(f.name(), "zzz");
-    assertEquals(f.stringValue(), "a b c");
-
-    assertTrue(it.hasNext());
-    f = (Field) it.next();
-    assertEquals(f.name(), "aaa");
-    assertEquals(f.stringValue(), "a b c");
-
-    assertTrue(it.hasNext());
-    f = (Field) it.next();
-    assertEquals(f.name(), "zzz");
-    assertEquals(f.stringValue(), "1 2 3");
-    assertFalse(it.hasNext());
-    r.close();
-    w.close();
-    d.close();
   }
 
   public void testNoDocsIndex() throws Throwable {
