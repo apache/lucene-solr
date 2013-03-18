@@ -198,6 +198,11 @@
         </exclusions>
       </dependency>
       <dependency>
+        <groupId>org.noggit</groupId>
+        <artifactId>noggit</artifactId>
+        <version>0.5</version>
+      </dependency>
+      <dependency>
         <groupId>commons-lang</groupId>
         <artifactId>commons-lang</artifactId>
         <version>2.6</version>

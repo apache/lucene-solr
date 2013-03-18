@@ -17,8 +17,8 @@ package org.apache.solr.common.cloud;
  * limitations under the License.
  */
 
-import org.apache.noggit.JSONUtil;
-import org.apache.noggit.JSONWriter;
+import org.noggit.JSONUtil;
+import org.noggit.JSONWriter;
 
 import java.util.Collections;
 import java.util.HashMap;

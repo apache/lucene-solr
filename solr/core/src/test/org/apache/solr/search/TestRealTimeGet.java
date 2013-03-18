@@ -18,7 +18,7 @@ package org.apache.solr.search;
 
 
 import org.apache.lucene.util.LuceneTestCase.Slow;
-import org.apache.noggit.ObjectBuilder;
+import org.noggit.ObjectBuilder;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.SolrInputDocument;
 import org.apache.solr.request.SolrQueryRequest;

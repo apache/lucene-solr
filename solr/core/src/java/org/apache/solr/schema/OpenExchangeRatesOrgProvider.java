@@ -24,7 +24,7 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.Set;
 
-import org.apache.noggit.JSONParser;
+import org.noggit.JSONParser;
 import org.apache.lucene.analysis.util.ResourceLoader;
 import org.apache.lucene.util.IOUtils;
 import org.apache.solr.common.SolrException;

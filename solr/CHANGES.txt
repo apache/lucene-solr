@@ -183,6 +183,8 @@ Other Changes
 * SOLR-4544: Refactor HttpShardHandlerFactory so load-balancing logic can be customized.
   (Ryan Ernst via Robert Muir)
 
+* SOLR-4607: Use noggit 0.5 release jar rather than a forked copy.  (Yonik Seeley, Robert Muir)
+
 ==================  4.2.1 ==================
 
 Versions of Major Components

@@ -86,6 +86,10 @@
       <artifactId>commons-io</artifactId>
     </dependency>
     <dependency>
+      <groupId>org.noggit</groupId>
+      <artifactId>noggit</artifactId>
+    </dependency>
+    <dependency>
       <groupId>org.apache.httpcomponents</groupId>
       <artifactId>httpclient</artifactId>
       <!-- HttpSolrServer requires this dependency. -->
