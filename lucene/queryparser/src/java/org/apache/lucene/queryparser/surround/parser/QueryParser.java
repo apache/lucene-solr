@@ -52,7 +52,7 @@ public class QueryParser implements QueryParserConstants {
   /* CHECKME: These should be the same as for the tokenizer. How? */
   final char truncator = '*';
   final char anyChar = '?';
-  final char quote = '\u005c"';
+  final char quote = '"';
   final char fieldOperator = ':';
   final char comma = ','; /* prefix list separator */
   final char carat = '^'; /* weight operator */
