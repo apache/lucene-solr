@@ -581,12 +581,26 @@ public class Overseer {
   public void close() {
     isClosed = true;
     if (updaterThread != null) {
-      updaterThread.close();
-      updaterThread.interrupt();
+      try {
+        updaterThread.close();
+        updaterThread.interrupt();
+      } catch (Throwable t) {
+        log.error("Error closing updaterThread", t);
+      }
     }
     if (ccThread != null) {
-      ccThread.close();
-      ccThread.interrupt();
+      try {
+        ccThread.close();
+        ccThread.interrupt();
+      } catch (Throwable t) {
+        log.error("Error closing ccThread", t);
+      }
+    }
+    
+    try {
+      reader.close();
+    } catch (Throwable t) {
+      log.error("Error closing zkStateReader", t);
     }
   }
 
