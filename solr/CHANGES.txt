@@ -178,6 +178,9 @@ Other Changes
 * SOLR-4603: CachingDirectoryFactory should use an IdentityHashMap for 
   byDirectoryCache. (Mark Miller)
 
+* SOLR-4544: Refactor HttpShardHandlerFactory so load-balancing logic can be customized.
+  (Ryan Ernst via Robert Muir)
+
 ==================  4.2.1 ==================
 
 Versions of Major Components

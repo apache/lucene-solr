@@ -18,7 +18,6 @@ package org.apache.solr.handler.component;
 
 import java.net.ConnectException;
 import java.util.Collection;
-import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
@@ -27,7 +26,6 @@ import java.util.Set;
 import java.util.concurrent.Callable;
 import java.util.concurrent.CompletionService;
 import java.util.concurrent.ExecutionException;
-import java.util.concurrent.ExecutorCompletionService;
 import java.util.concurrent.Future;
 
 import org.apache.http.client.HttpClient;
@@ -61,21 +59,20 @@ public class HttpShardHandler extends ShardHandler {
 
   private HttpShardHandlerFactory httpShardHandlerFactory;
   private CompletionService<ShardResponse> completionService;
-  private     Set<Future<ShardResponse>> pending;
+  private Set<Future<ShardResponse>> pending;
   private Map<String,List<String>> shardToURLs;
   private HttpClient httpClient;
-
 
 
   public HttpShardHandler(HttpShardHandlerFactory httpShardHandlerFactory, HttpClient httpClient) {
     this.httpClient = httpClient;
     this.httpShardHandlerFactory = httpShardHandlerFactory;
-    completionService = new ExecutorCompletionService<ShardResponse>(httpShardHandlerFactory.commExecutor);
+    completionService = httpShardHandlerFactory.newCompletionService();
     pending = new HashSet<Future<ShardResponse>>();
 
     // maps "localhost:8983|localhost:7574" to a shuffled List("http://localhost:8983","http://localhost:7574")
-      // This is primarily to keep track of what order we should use to query the replicas of a shard
-      // so that we use the same replica for all phases of a distributed request.
+    // This is primarily to keep track of what order we should use to query the replicas of a shard
+    // so that we use the same replica for all phases of a distributed request.
     shardToURLs = new HashMap<String,List<String>>();
 
   }
@@ -106,21 +103,8 @@ public class HttpShardHandler extends ShardHandler {
   // Don't modify the returned URL list.
   private List<String> getURLs(String shard) {
     List<String> urls = shardToURLs.get(shard);
-    if (urls==null) {
-      urls = StrUtils.splitSmart(shard, "|", true);
-
-      // convert shard to URL
-      for (int i=0; i<urls.size(); i++) {
-        urls.set(i, httpShardHandlerFactory.scheme + urls.get(i));
-      }
-
-      //
-      // Shuffle the list instead of use round-robin by default.
-      // This prevents accidental synchronization where multiple shards could get in sync
-      // and query the same replica at the same time.
-      //
-      if (urls.size() > 1)
-        Collections.shuffle(urls, httpShardHandlerFactory.r);
+    if (urls == null) {
+      urls = httpShardHandlerFactory.makeURLList(shard);
       shardToURLs.put(shard, urls);
     }
     return urls;
@@ -171,7 +155,7 @@ public class HttpShardHandler extends ShardHandler {
             SolrServer server = new HttpSolrServer(url, httpClient);
             ssr.nl = server.request(req);
           } else {
-            LBHttpSolrServer.Rsp rsp = httpShardHandlerFactory.loadbalancer.request(new LBHttpSolrServer.Req(req, urls));
+            LBHttpSolrServer.Rsp rsp = httpShardHandlerFactory.makeLoadBalancedRequest(req, urls);
             ssr.nl = rsp.getResponse();
             srsp.setShardAddress(rsp.getServer());
           }
