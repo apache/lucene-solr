@@ -23,6 +23,7 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.HashMap;
 import java.util.HashSet;
+import java.util.IdentityHashMap;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
@@ -90,7 +91,7 @@ public abstract class CachingDirectoryFactory extends DirectoryFactory {
   
   protected Map<String,CacheValue> byPathCache = new HashMap<String,CacheValue>();
   
-  protected Map<Directory,CacheValue> byDirectoryCache = new HashMap<Directory,CacheValue>();
+  protected Map<Directory,CacheValue> byDirectoryCache = new IdentityHashMap<Directory,CacheValue>();
   
   protected Map<Directory,List<CloseListener>> closeListeners = new HashMap<Directory,List<CloseListener>>();
 

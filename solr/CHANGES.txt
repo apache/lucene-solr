@@ -173,6 +173,9 @@ Other Changes
 * SOLR-4596: DistributedQueue should ensure its full path exists in the constructor.
   (Mark Miller)
 
+* SOLR-4603: CachingDirectoryFactory should use an IdentityHashMap for 
+  byDirectoryCache. (Mark Miller)
+
 ==================  4.2.1 ==================
 
 Versions of Major Components
