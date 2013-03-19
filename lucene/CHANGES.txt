@@ -145,10 +145,16 @@ Bug Fixes
 * LUCENE-4826: PostingsHighlighter was not returning the top N best
   scoring passages. (Robert Muir, Mike McCandless)
 
+* LUCENE-4854: Fix DocTermOrds.getOrdTermsEnum() to not return negative
+  ord on initial next().  (Robert Muir)
+
 Optimizations
 
 * LUCENE-4819: Added Sorted[Set]DocValues.termsEnum(), and optimized the
   default codec for improved enumeration performance.  (Robert Muir)
+
+* LUCENE-4854: Speed up TermsEnum of FieldCache.getDocTermOrds.
+  (Robert Muir)
 
 ======================= Lucene 4.2.0 =======================
 
