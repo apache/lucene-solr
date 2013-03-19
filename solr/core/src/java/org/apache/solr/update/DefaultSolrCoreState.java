@@ -207,12 +207,18 @@ public final class DefaultSolrCoreState extends SolrCoreState implements Recover
       return;
     }
     
+    // check before we grab the lock
     if (cc.isShutDown()) {
       log.warn("Skipping recovery because Solr is shutdown");
       return;
     }
     
     synchronized (recoveryLock) {
+      // to be air tight we must also check after lock
+      if (cc.isShutDown()) {
+        log.warn("Skipping recovery because Solr is shutdown");
+        return;
+      }
       log.info("Running recovery - first canceling any ongoing recovery");
       cancelRecovery();
       
