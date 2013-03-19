@@ -162,11 +162,11 @@ public class OverseerCollectionProcessor implements Runnable, ClosableThread {
         ModifiableSolrParams params = new ModifiableSolrParams();
         params.set(CoreAdminParams.ACTION, CoreAdminAction.UNLOAD.toString());
         params.set(CoreAdminParams.DELETE_INSTANCE_DIR, true);
-        collectionCmd(zkStateReader.getClusterState(), message, params, results);
+        collectionCmd(zkStateReader.getClusterState(), message, params, results, null);
       } else if (RELOADCOLLECTION.equals(operation)) {
         ModifiableSolrParams params = new ModifiableSolrParams();
         params.set(CoreAdminParams.ACTION, CoreAdminAction.RELOAD.toString());
-        collectionCmd(zkStateReader.getClusterState(), message, params, results);
+        collectionCmd(zkStateReader.getClusterState(), message, params, results, ZkStateReader.ACTIVE);
       } else if (CREATEALIAS.equals(operation)) {
         createAlias(zkStateReader.getAliases(), message);
       } else if (DELETEALIAS.equals(operation)) {
@@ -432,7 +432,7 @@ public class OverseerCollectionProcessor implements Runnable, ClosableThread {
     }
   }
   
-  private void collectionCmd(ClusterState clusterState, ZkNodeProps message, ModifiableSolrParams params, NamedList results) {
+  private void collectionCmd(ClusterState clusterState, ZkNodeProps message, ModifiableSolrParams params, NamedList results, String stateMatcher) {
     log.info("Executing Collection Cmd : " + params);
     String collectionName = message.getStr("name");
     
@@ -449,7 +449,7 @@ public class OverseerCollectionProcessor implements Runnable, ClosableThread {
       Set<Map.Entry<String,Replica>> shardEntries = shards.entrySet();
       for (Map.Entry<String,Replica> shardEntry : shardEntries) {
         final ZkNodeProps node = shardEntry.getValue();
-        if (clusterState.liveNodesContain(node.getStr(ZkStateReader.NODE_NAME_PROP))) {
+        if (clusterState.liveNodesContain(node.getStr(ZkStateReader.NODE_NAME_PROP)) && (stateMatcher != null ? node.getStr(ZkStateReader.STATE_PROP).equals(stateMatcher) : true)) {
           // For thread safety, only simple clone the ModifiableSolrParams
           ModifiableSolrParams cloneParams = new ModifiableSolrParams();
           cloneParams.add(params);
