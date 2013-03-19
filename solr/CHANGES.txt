@@ -89,9 +89,6 @@ Bug Fixes
   (Ryan Ernst, Robert Muir via Erick Erickson)
 
 * SOLR-4371: Admin UI - Analysis Screen shows empty result (steffkes)
-
-* SOLR-4568: The lastPublished state check before becoming a leader is not 
-  working correctly. (Mark Miller)
   
 * SOLR-4570: Even if an explicit shard id is used, ZkController#preRegister 
   should still wait to see the shard id in it's current ClusterState.
@@ -206,7 +203,10 @@ Bug Fixes
 
 * SOLR-4577: The collections API should return responses (success or failure)
   for each node it attempts to work with. (Mark Miller)
-  
+
+* SOLR-4568: The lastPublished state check before becoming a leader is not 
+  working correctly. (Mark Miller)
+    
 Other Changes
 ----------------------
 
