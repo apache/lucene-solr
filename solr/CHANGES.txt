@@ -108,6 +108,9 @@ Bug Fixes
 * SOLR-4609: The Collections API should only send the reload command to ACTIVE 
   cores. (Mark Miller)
 
+* SOLR-4297: Atomic update request containing null=true sets all subsequent
+  fields to null (Ben Pennell, Rob, shalin)
+
 Optimizations
 ----------------------
 
