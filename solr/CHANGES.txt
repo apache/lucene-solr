@@ -82,6 +82,9 @@ Bug Fixes
 * SOLR-4573: Accessing Admin UI files in SolrCloud mode logs warnings.
   (Mark Miller, Phil John)
 
+* SOLR-4594: StandardDirectoryFactory#remove accesses byDirectoryCache 
+  without a lock. (Mark Miller)
+
 Optimizations
 ----------------------
 
