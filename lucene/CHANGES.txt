@@ -23,6 +23,9 @@ Bug Fixes
 * LUCENE-4854: Fix DocTermOrds.getOrdTermsEnum() to not return negative
   ord on initial next().  (Robert Muir)
 
+* LUCENE-4836: Fix SimpleRateLimiter#pause to return the actual time spent
+  sleeping instead of the wakeup timestamp in nano seconds. (Simon Willnauer)
+
 Optimizations
 
 * LUCENE-4819: Added Sorted[Set]DocValues.termsEnum(), and optimized the
