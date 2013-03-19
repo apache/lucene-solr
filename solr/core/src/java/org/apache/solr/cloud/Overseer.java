@@ -459,6 +459,7 @@ public class Overseer {
         }
 
         Map<String, Slice> newSlices = new LinkedHashMap<String, Slice>();
+        boolean lastSlice = false;
         for (Slice slice : coll.getSlices()) {
           Replica replica = slice.getReplica(cnn);
           if (replica != null) {
@@ -469,6 +470,7 @@ public class Overseer {
             // if there are no replicas left for the slice remove it
             if (newReplicas.size() == 0) {
               slice = null;
+              lastSlice = true;
             } else {
               slice = new Slice(slice.getName(), newReplicas, slice.getProperties());
             }
@@ -476,6 +478,15 @@ public class Overseer {
 
           if (slice != null) {
             newSlices.put(slice.getName(), slice);
+          }
+        }
+        
+        if (lastSlice) {
+          // remove all empty pre allocated slices
+          for (Slice slice : coll.getSlices()) {
+            if (slice.getReplicas().size() == 0) {
+              newSlices.remove(slice.getName());
+            }
           }
         }
 
