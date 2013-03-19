@@ -29,8 +29,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.Properties;
 
-import javax.xml.parsers.ParserConfigurationException;
-
 import org.apache.commons.io.FileUtils;
 import org.apache.lucene.index.DirectoryReader;
 import org.apache.lucene.store.Directory;
@@ -72,7 +70,6 @@ import org.apache.solr.util.RefCounted;
 import org.apache.zookeeper.KeeperException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.xml.sax.SAXException;
 
 /**
  *
@@ -567,43 +564,24 @@ public class CoreAdminHandler extends RequestHandlerBase {
                     + e.getMessage(), e);
           }
         }
-      }
-      if (params.getBool(CoreAdminParams.DELETE_INDEX, false)) {
-        core.addCloseHook(new CloseHook() {
-          private String indexDir;
-          
-          @Override
-          public void preClose(SolrCore core) {
-            indexDir = core.getIndexDir();
+        
+        if (params.getBool(CoreAdminParams.DELETE_INDEX, false)) {
+          try {
+            core.getDirectoryFactory().remove(core.getIndexDir());
+          } catch (Exception e) {
+            SolrException.log(log, "Failed to flag index dir for removal for core:"
+                    + core.getName() + " dir:" + core.getIndexDir());
           }
-          
-          @Override
-          public void postClose(SolrCore core) {
-            try {
-              core.getDirectoryFactory().remove(indexDir);
-            } catch (IOException e) {
-              throw new RuntimeException(e);
-            }
-          }
-        });
+        }
       }
-      
+
       if (params.getBool(CoreAdminParams.DELETE_DATA_DIR, false)) {
-        core.addCloseHook(new CloseHook() {
-          @Override
-          public void preClose(SolrCore core) {}
-          
-          @Override
-          public void postClose(SolrCore core) {
-            File dataDir = new File(core.getDataDir());
-            try {
-              FileUtils.deleteDirectory(dataDir);
-            } catch (IOException e) {
-              SolrException.log(log, "Failed to delete data dir for core:"
-                  + core.getName() + " dir:" + dataDir.getAbsolutePath());
-            }
-          }
-        });
+        try {
+          core.getDirectoryFactory().remove(core.getDataDir(), true);
+        } catch (Exception e) {
+          SolrException.log(log, "Failed to flag data dir for removal for core:"
+                  + core.getName() + " dir:" + core.getDataDir());
+        }
       }
       
       if (params.getBool(CoreAdminParams.DELETE_INSTANCE_DIR, false)) {

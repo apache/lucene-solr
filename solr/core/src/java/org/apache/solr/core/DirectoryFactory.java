@@ -93,6 +93,26 @@ public abstract class DirectoryFactory implements NamedListInitializedPlugin,
   public abstract void remove(Directory dir) throws IOException;
   
   /**
+   * Removes the Directory's persistent storage.
+   * For example: A file system impl may remove the
+   * on disk directory.
+   * @throws IOException If there is a low-level I/O error.
+   * 
+   */
+  public abstract void remove(Directory dir, boolean afterCoreClose) throws IOException;
+  
+  /**
+   * This remove is special in that it may be called even after
+   * the factory has been closed. Remove only makes sense for
+   * persistent directory factories.
+   * 
+   * @param path to remove
+   * @param afterCoreClose whether to wait until after the core is closed.
+   * @throws IOException If there is a low-level I/O error.
+   */
+  public abstract void remove(String path, boolean afterCoreClose) throws IOException;
+  
+  /**
    * This remove is special in that it may be called even after
    * the factory has been closed. Remove only makes sense for
    * persistent directory factories.

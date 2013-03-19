@@ -22,9 +22,11 @@ import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
+import java.util.Set;
 
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.IOContext.Context;
@@ -43,14 +45,42 @@ import org.slf4j.LoggerFactory;
  * per path. Most DirectoryFactory implementations will want to extend this
  * class and simply implement {@link DirectoryFactory#create(String, DirContext)}.
  * 
+ * This is an expert class and these API's are subject to change.
+ * 
  */
 public abstract class CachingDirectoryFactory extends DirectoryFactory {
   protected class CacheValue {
-    public Directory directory;
+    final public String path;
+    final public Directory directory;
+    
+    // use the setter!
+    private boolean deleteOnClose = false;
+    
+    public CacheValue(String path, Directory directory) {
+      this.path = path;
+      this.directory = directory;
+      this.closeEntries.add(this);
+    }
     public int refCnt = 1;
-    public boolean closed;
-    public String path;
+    // if we are latestForPath, I'm currently using my path
+    // otherwise a new Directory instance is using my path
+    // and I must be manipulated by Directory
+    public boolean latestForPath = false;
+    // has close(Directory) been called on this?
+    public boolean closeDirectoryCalled = false;
     public boolean doneWithDir = false;
+    private boolean deleteAfterCoreClose = false;
+    public Set<CacheValue> removeEntries = new HashSet<CacheValue>();
+    public Set<CacheValue> closeEntries = new HashSet<CacheValue>();
+
+    public void setDeleteOnClose(boolean deleteOnClose, boolean deleteAfterCoreClose) {
+      if (deleteOnClose) {
+        removeEntries.add(this);
+      }
+      this.deleteOnClose = deleteOnClose;
+      this.deleteAfterCoreClose = deleteAfterCoreClose;
+    }
+    
     @Override
     public String toString() {
       return "CachedDir<<" + directory.toString() + ";refCount=" + refCnt + ";path=" + path + ";done=" + doneWithDir + ">>";
@@ -65,6 +95,8 @@ public abstract class CachingDirectoryFactory extends DirectoryFactory {
   protected Map<Directory,CacheValue> byDirectoryCache = new HashMap<Directory,CacheValue>();
   
   protected Map<Directory,List<CloseListener>> closeListeners = new HashMap<Directory,List<CloseListener>>();
+  
+  protected Set<CacheValue> removeEntries = new HashSet<CacheValue>();
 
   private Double maxWriteMBPerSecFlush;
 
@@ -158,6 +190,11 @@ public abstract class CachingDirectoryFactory extends DirectoryFactory {
       
       byDirectoryCache.clear();
       byPathCache.clear();
+      
+      for (CacheValue val : removeEntries) {
+        log.info("Removing directory: " + val.path);
+        removeDirectory(val);
+      }
     }
   }
   
@@ -182,8 +219,9 @@ public abstract class CachingDirectoryFactory extends DirectoryFactory {
         
         // if it's been closed, it's path is now
         // owned by another Directory instance
-        if (!cacheValue.closed) {
+        if (!cacheValue.latestForPath) {
           byPathCache.remove(cacheValue.path);
+          cacheValue.latestForPath = true;
         }
       }
     }
@@ -200,13 +238,56 @@ public abstract class CachingDirectoryFactory extends DirectoryFactory {
         }
       }
     }
-    try {
-      log.info("Closing directory: " + cacheValue.path);
-      cacheValue.directory.close();
-    } catch (Throwable t) {
-      SolrException.log(log, "Error closing directory", t);
+    
+    cacheValue.closeDirectoryCalled = true;
+    
+    if (cacheValue.deleteOnClose) {
+      
+      // see if we are a subpath
+      Collection<CacheValue> values = byPathCache.values();
+      
+      Collection<CacheValue> cacheValues = new ArrayList<CacheValue>();
+      cacheValues.addAll(values);
+      cacheValues.remove(cacheValue);
+      for (CacheValue otherCacheValue : cacheValues) {
+        // if we are a parent path and all our sub children are not already closed,
+        // get a sub path to close us later
+        if (otherCacheValue.path.startsWith(cacheValue.path) && !otherCacheValue.closeDirectoryCalled) {
+          // we let the sub dir remove and close us
+          if (!otherCacheValue.deleteAfterCoreClose && cacheValue.deleteAfterCoreClose) {
+            otherCacheValue.deleteAfterCoreClose = true;
+          }
+          otherCacheValue.removeEntries.addAll(cacheValue.removeEntries);
+          otherCacheValue.closeEntries.addAll(cacheValue.closeEntries);
+          cacheValue.closeEntries.clear();
+          break;
+        }
+      }
     }
     
+    for (CacheValue val : cacheValue.removeEntries) {
+      if (!val.deleteAfterCoreClose) {
+        try {
+          log.info("Removing directory: " + val.path);
+          removeDirectory(val);
+        } catch (Throwable t) {
+          SolrException.log(log, "Error removing directory", t);
+        }
+      } else {
+        removeEntries.add(val);
+      }
+    }
+    
+    for (CacheValue val : cacheValue.closeEntries) {
+      try {
+        log.info("Closing directory: " + val.path);
+        val.directory.close();
+      } catch (Throwable t) {
+        SolrException.log(log, "Error closing directory", t);
+      }
+      
+    }
+
     if (listeners != null) {
       for (CloseListener listener : listeners) {
         try {
@@ -217,7 +298,7 @@ public abstract class CachingDirectoryFactory extends DirectoryFactory {
       }
     }
   }
-  
+
   @Override
   protected abstract Directory create(String path, DirContext dirContext) throws IOException;
   
@@ -265,21 +346,13 @@ public abstract class CachingDirectoryFactory extends DirectoryFactory {
           // we make a quick close attempt,
           // otherwise this should be closed
           // when whatever is using it, releases it
-          
           if (cacheValue.refCnt == 0) {
-            try {
-              // the following will decref, so
-              // first incref
-              cacheValue.refCnt++;
-              close(cacheValue.directory);
-            } catch (IOException e) {
-              SolrException.log(log, "Error closing directory", e);
-            }
+            closeDirectory(cacheValue);
           }
           
           // close the entry, it will be owned by the new dir
           // we count on it being released by directory
-          cacheValue.closed = true;
+          cacheValue.latestForPath = true;
           
         }
       }
@@ -289,9 +362,7 @@ public abstract class CachingDirectoryFactory extends DirectoryFactory {
         
         directory = rateLimit(directory);
         
-        CacheValue newCacheValue = new CacheValue();
-        newCacheValue.directory = directory;
-        newCacheValue.path = fullPath;
+        CacheValue newCacheValue = new CacheValue(fullPath, directory);
         
         injectLockFactory(directory, fullPath, rawLockType);
         
@@ -367,6 +438,38 @@ public abstract class CachingDirectoryFactory extends DirectoryFactory {
     close(directory);
   }
   
+  @Override
+  public void remove(String path) throws IOException {
+    remove(path, false);
+  }
+  
+  @Override
+  public void remove(Directory dir) throws IOException {
+    remove(dir, false);
+  }
+  
+  @Override
+  public void remove(String path, boolean deleteAfterCoreClose) throws IOException {
+    synchronized (this) {
+      CacheValue val = byPathCache.get(normalize(path));
+      if (val == null) {
+        throw new IllegalArgumentException("Unknown directory " + path);
+      }
+      val.setDeleteOnClose(true, deleteAfterCoreClose);
+    }
+  }
+  
+  @Override
+  public void remove(Directory dir, boolean deleteAfterCoreClose) throws IOException {
+    synchronized (this) {
+      CacheValue val = byDirectoryCache.get(dir);
+      if (val == null) {
+        throw new IllegalArgumentException("Unknown directory " + dir);
+      }
+      val.setDeleteOnClose(true, deleteAfterCoreClose);
+    }
+  }
+  
   private static Directory injectLockFactory(Directory dir, String lockPath,
       String rawLockType) throws IOException {
     if (null == rawLockType) {
@@ -395,7 +498,17 @@ public abstract class CachingDirectoryFactory extends DirectoryFactory {
     return dir;
   }
   
-  protected String stripTrailingSlash(String path) {
+  protected void removeDirectory(CacheValue cacheValue) throws IOException {
+    empty(cacheValue.directory);
+  }
+  
+  @Override
+  public String normalize(String path) throws IOException {
+    path = stripTrailingSlash(path);
+    return path;
+  }
+  
+  private String stripTrailingSlash(String path) {
     if (path.endsWith("/")) {
       path = path.substring(0, path.length() - 1);
     }
