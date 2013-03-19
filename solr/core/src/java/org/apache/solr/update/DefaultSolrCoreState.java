@@ -25,6 +25,7 @@ import org.apache.lucene.index.IndexWriter;
 import org.apache.lucene.store.AlreadyClosedException;
 import org.apache.solr.cloud.RecoveryStrategy;
 import org.apache.solr.common.SolrException;
+import org.apache.solr.common.SolrException.ErrorCode;
 import org.apache.solr.core.CoreContainer;
 import org.apache.solr.core.CoreDescriptor;
 import org.apache.solr.core.DirectoryFactory;
@@ -81,7 +82,7 @@ public final class DefaultSolrCoreState extends SolrCoreState implements Recover
       throws IOException {
     
     if (closed) {
-      throw new RuntimeException("SolrCoreState already closed");
+      throw new SolrException(ErrorCode.SERVICE_UNAVAILABLE, "SolrCoreState already closed");
     }
     
     synchronized (writerPauseLock) {
@@ -98,7 +99,7 @@ public final class DefaultSolrCoreState extends SolrCoreState implements Recover
         } catch (InterruptedException e) {}
         
         if (closed) {
-          throw new RuntimeException("Already closed");
+          throw new SolrException(ErrorCode.SERVICE_UNAVAILABLE, "Already closed");
         }
       }
       
@@ -147,7 +148,7 @@ public final class DefaultSolrCoreState extends SolrCoreState implements Recover
         } catch (InterruptedException e) {}
         
         if (closed) {
-          throw new RuntimeException("SolrCoreState already closed");
+          throw new SolrException(ErrorCode.SERVICE_UNAVAILABLE, "SolrCoreState already closed");
         }
       }
 
