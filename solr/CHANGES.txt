@@ -96,6 +96,9 @@ Other Changes
 
 * SOLR-4537: Clean up schema information REST API. (Steve Rowe)
 
+* SOLR-4596: DistributedQueue should ensure its full path exists in the constructor.
+  (Mark Miller)
+
 ==================  4.2.0 ==================
 
 Versions of Major Components
