@@ -922,7 +922,8 @@ public abstract class SolrQueryParserBase {
   }
 
   protected String analyzeIfMultitermTermText(String field, String part, FieldType fieldType) {
-    if (part == null) return part;
+
+    if (part == null || ! (fieldType instanceof TextField) || ((TextField)fieldType).getMultiTermAnalyzer() == null) return part;
 
     SchemaField sf = schema.getFieldOrNull((field));
     if (sf == null || ! (fieldType instanceof TextField)) return part;
