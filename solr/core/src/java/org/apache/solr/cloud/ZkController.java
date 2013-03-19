@@ -1003,7 +1003,9 @@ public final class ZkController {
             : null,
         ZkStateReader.CORE_NODE_NAME_PROP, coreNodeName != null ? coreNodeName
             : null);
-    cd.getCloudDescriptor().lastPublished = state;
+    if (updateLastState) {
+      cd.getCloudDescriptor().lastPublished = state;
+    }
     overseerJobQueue.offer(ZkStateReader.toJSON(m));
   }
 
@@ -1202,11 +1204,10 @@ public final class ZkController {
   }
 
   private String doGetShardIdProcess(String coreName, CoreDescriptor descriptor) {
-    final String shardZkNodeName = getCoreNodeName(descriptor);
+    final String coreNodeName = getCoreNodeName(descriptor);
     int retryCount = 320;
     while (retryCount-- > 0) {
-      final String shardId = zkStateReader.getClusterState().getShardId(
-          shardZkNodeName);
+      final String shardId = zkStateReader.getClusterState().getShardId(coreNodeName);
       if (shardId != null) {
         return shardId;
       }
@@ -1218,7 +1219,7 @@ public final class ZkController {
     }
     
     throw new SolrException(ErrorCode.SERVER_ERROR,
-        "Could not get shard_id for core: " + coreName + " coreNodeName:" + shardZkNodeName);
+        "Could not get shard_id for core: " + coreName + " coreNodeName:" + coreNodeName);
   }
   
   public static void uploadToZK(SolrZkClient zkClient, File dir, String zkPath) throws IOException, KeeperException, InterruptedException {
@@ -1276,9 +1277,15 @@ public final class ZkController {
   public void preRegister(CoreDescriptor cd) throws KeeperException, InterruptedException {
     // before becoming available, make sure we are not live and active
     // this also gets us our assigned shard id if it was not specified
-    publish(cd, ZkStateReader.DOWN); 
-    String shardZkNodeName = getCoreNodeName(cd);
-    if (cd.getCloudDescriptor().getShardId() == null && needsToBeAssignedShardId(cd, zkStateReader.getClusterState(), shardZkNodeName)) {
+    publish(cd, ZkStateReader.DOWN, false);
+    String coreNodeName = getCoreNodeName(cd);
+    
+    // make sure the node name is set on the descriptor
+    if (cd.getCloudDescriptor().getCoreNodeName() == null) {
+      cd.getCloudDescriptor().setCoreNodeName(coreNodeName);
+    }
+    
+    if (cd.getCloudDescriptor().getShardId() == null && needsToBeAssignedShardId(cd, zkStateReader.getClusterState(), coreNodeName)) {
       String shardId;
       shardId = doGetShardIdProcess(cd.getName(), cd);
       cd.getCloudDescriptor().setShardId(shardId);
