@@ -49,6 +49,10 @@ Bug Fixes
   CachValue should give up it's path as it will be used by a new Directory
   instance. (Mark Miller)
 
+* SOLR-4578: CoreAdminHandler#handleCreateAction gets a SolrCore and does not
+  close it in SolrCloud mode when a core with the same name already exists.
+  (Mark Miller)
+
 Other Changes
 ----------------------
 
