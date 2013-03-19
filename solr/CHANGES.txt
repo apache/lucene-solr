@@ -90,10 +90,6 @@ Bug Fixes
 
 * SOLR-4371: Admin UI - Analysis Screen shows empty result (steffkes)
   
-* SOLR-4570: Even if an explicit shard id is used, ZkController#preRegister 
-  should still wait to see the shard id in it's current ClusterState.
-  (Mark Miller)
-  
 * SOLR-4318: NPE encountered with querying with wildcards on a field that uses
   the DefaultAnalyzer (i.e. no analysis chain defined). (Erick Erickson)
 
@@ -206,6 +202,10 @@ Bug Fixes
 
 * SOLR-4568: The lastPublished state check before becoming a leader is not 
   working correctly. (Mark Miller)
+    
+* SOLR-4570: Even if an explicit shard id is used, ZkController#preRegister 
+  should still wait to see the shard id in it's current ClusterState.
+  (Mark Miller)
     
 Other Changes
 ----------------------
