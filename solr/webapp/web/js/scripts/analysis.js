@@ -247,9 +247,12 @@ sammy.get
             'submit',
             function( event )
             {
-              var params = compute_analysis_params();
+              var params = $.param( compute_analysis_params() )
+                            .replace( /[\w\.]+=\+*(&)/g, '$1' ) // remove empty parameters
+                            .replace( /(&)+/, '$1' )            // reduce multiple ampersands
+                            .replace( /^&/, '' );               // remove leading ampersand
 
-              context.redirect( context.path.split( '?' ).shift() + '?' + $.param( params ) );
+              context.redirect( context.path.split( '?' ).shift() + '?' + params );
               return false;
             }
           )

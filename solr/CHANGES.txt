@@ -111,6 +111,8 @@ Bug Fixes
 * SOLR-4297: Atomic update request containing null=true sets all subsequent
   fields to null (Ben Pennell, Rob, shalin)
 
+* SOLR-4371: Admin UI - Analysis Screen shows empty result (steffkes)
+
 Optimizations
 ----------------------
 
