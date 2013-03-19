@@ -116,15 +116,15 @@ Bug Fixes
 
 * SOLR-4371: Admin UI - Analysis Screen shows empty result (steffkes)
 
+* SOLR-4361: DataImportHandler would throw UnsupportedOperationException if
+  handler-level parameters were specified containing periods in the name
+  (James Dyer)
+
 Optimizations
 ----------------------
 
 * SOLR-4569: waitForReplicasToComeUp should bail right away if it doesn't see the
   expected slice in the clusterstate rather than waiting. (Mark Miller)
-  
-* SOLR-4361: DataImportHandler would throw UnsupportedOperationException if
-  handler-level parameters were specified containing periods in the name
-  (James Dyer)
 
 Other Changes
 ----------------------
