@@ -130,7 +130,7 @@ public class DocBuilder {
         indexerNamespace.put(LAST_INDEX_TIME, EPOCH);
       }
       indexerNamespace.put(INDEX_START_TIME, dataImporter.getIndexStartTime());
-      indexerNamespace.put("request", reqParams.getRawParams());
+      indexerNamespace.put("request", new HashMap<String,Object>(reqParams.getRawParams()));
       for (Entity entity : dataImporter.getConfig().getEntities()) {
         String key = entity.getName() + "." + SolrWriter.LAST_INDEX_KEY;
         Object lastIndex = persistedProperties.get(key);
