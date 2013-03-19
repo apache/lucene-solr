@@ -95,13 +95,6 @@ Bug Fixes
 
 * SOLR-4311: Admin UI - Optimize Caching Behaviour (steffkes)
 
-* SOLR-4604: UpdateLog#init is over called on SolrCore#reload. (Mark Miller)
-
-* SOLR-4605: Rollback does not work correctly. (Mark S, Mark Miller)
-
-* SOLR-4609: The Collections API should only send the reload command to ACTIVE 
-  cores. (Mark Miller)
-
 Other Changes
 ----------------------
 
@@ -197,6 +190,13 @@ Bug Fixes
 
 * SOLR-4601: A Collection that is only partially created and then deleted will 
   leave pre allocated shard information in ZooKeeper. (Mark Miller)
+
+* SOLR-4604: UpdateLog#init is over called on SolrCore#reload. (Mark Miller)
+
+* SOLR-4605: Rollback does not work correctly. (Mark S, Mark Miller)
+
+* SOLR-4609: The Collections API should only send the reload command to ACTIVE 
+  cores. (Mark Miller)
         
 Optimizations
 ----------------------
