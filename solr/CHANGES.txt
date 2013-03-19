@@ -125,9 +125,6 @@ Other Changes
 
 * SOLR-4571: SolrZkClient#setData should return Stat object. (Mark Miller)
 
-* SOLR-4596: DistributedQueue should ensure its full path exists in the constructor.
-  (Mark Miller)
-
 * SOLR-4603: CachingDirectoryFactory should use an IdentityHashMap for 
   byDirectoryCache. (Mark Miller)
 
@@ -211,6 +208,9 @@ Other Changes
 ----------------------
 
 * SOLR-4537: Clean up schema information REST API. (Steve Rowe)
+
+* SOLR-4596: DistributedQueue should ensure its full path exists in the constructor.
+  (Mark Miller)
 
 ==================  4.2.0 ==================
 
