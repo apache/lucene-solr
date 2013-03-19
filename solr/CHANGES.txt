@@ -90,10 +90,6 @@ Bug Fixes
 
 * SOLR-4371: Admin UI - Analysis Screen shows empty result (steffkes)
 
-* SOLR-4578: CoreAdminHandler#handleCreateAction gets a SolrCore and does not
-  close it in SolrCloud mode when a core with the same name already exists.
-  (Mark Miller)
-
 * SOLR-4574: The Collections API will silently return success on an unknown
   ACTION parameter. (Mark Miller)
 
@@ -206,6 +202,10 @@ Bug Fixes
 * SOLR-4555: When forceNew is used with CachingDirectoryFactory#get, the old
   CachValue should give up it's path as it will be used by a new Directory
   instance. (Mark Miller)
+
+* SOLR-4578: CoreAdminHandler#handleCreateAction gets a SolrCore and does not
+  close it in SolrCloud mode when a core with the same name already exists.
+  (Mark Miller)
 
 Other Changes
 ----------------------
