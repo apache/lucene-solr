@@ -90,16 +90,6 @@ Bug Fixes
 
 * SOLR-4371: Admin UI - Analysis Screen shows empty result (steffkes)
 
-* SOLR-4574: The Collections API will silently return success on an unknown
-  ACTION parameter. (Mark Miller)
-
-* SOLR-4576: Collections API validation errors should cause an exception on
-  clients and otherwise act as validation errors with the Core Admin API.
-  (Mark Miller)
-
-* SOLR-4577: The collections API should return responses (success or failure)
-  for each node it attempts to work with. (Mark Miller)
-
 * SOLR-4568: The lastPublished state check before becoming a leader is not 
   working correctly. (Mark Miller)
   
@@ -207,6 +197,16 @@ Bug Fixes
   close it in SolrCloud mode when a core with the same name already exists.
   (Mark Miller)
 
+* SOLR-4574: The Collections API will silently return success on an unknown
+  ACTION parameter. (Mark Miller)
+
+* SOLR-4576: Collections API validation errors should cause an exception on
+  clients and otherwise act as validation errors with the Core Admin API.
+  (Mark Miller)
+
+* SOLR-4577: The collections API should return responses (success or failure)
+  for each node it attempts to work with. (Mark Miller)
+  
 Other Changes
 ----------------------
 
