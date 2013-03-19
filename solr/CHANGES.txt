@@ -95,9 +95,6 @@ Bug Fixes
 
 * SOLR-4311: Admin UI - Optimize Caching Behaviour (steffkes)
 
-* SOLR-4573: Accessing Admin UI files in SolrCloud mode logs warnings.
-  (Mark Miller, Phil John)
-
 * SOLR-4594: StandardDirectoryFactory#remove accesses byDirectoryCache 
   without a lock. (Mark Miller)
 
@@ -200,7 +197,10 @@ Bug Fixes
 
 * SOLR-4595: CachingDirectoryFactory#close can throw a concurrent 
   modification exception. (Mark Miller)
-  
+
+* SOLR-4573: Accessing Admin UI files in SolrCloud mode logs warnings.
+  (Mark Miller, Phil John)
+    
 Optimizations
 ----------------------
 
