@@ -93,9 +93,6 @@ Bug Fixes
 * SOLR-4318: NPE encountered with querying with wildcards on a field that uses
   the DefaultAnalyzer (i.e. no analysis chain defined). (Erick Erickson)
 
-* SOLR-4585: The Collections API validates numShards with < 0 but should use 
-  <= 0. (Mark Miller)
-
 * SOLR-4311: Admin UI - Optimize Caching Behaviour (steffkes)
 
 * SOLR-4592: DefaultSolrCoreState#doRecovery needs to check the CoreContainer
@@ -200,7 +197,10 @@ Bug Fixes
 * SOLR-4570: Even if an explicit shard id is used, ZkController#preRegister 
   should still wait to see the shard id in it's current ClusterState.
   (Mark Miller)
-    
+  
+* SOLR-4585: The Collections API validates numShards with < 0 but should use 
+  <= 0. (Mark Miller)
+      
 Optimizations
 ----------------------
 
