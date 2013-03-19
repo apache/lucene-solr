@@ -26,6 +26,9 @@ Bug Fixes
 * LUCENE-4836: Fix SimpleRateLimiter#pause to return the actual time spent
   sleeping instead of the wakeup timestamp in nano seconds. (Simon Willnauer)
 
+* LUCENE-4828: BooleanQuery no longer extracts terms from its MUST_NOT
+  clauses.  (Mike McCandless)
+
 Optimizations
 
 * LUCENE-4819: Added Sorted[Set]DocValues.termsEnum(), and optimized the
