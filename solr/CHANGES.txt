@@ -94,16 +94,6 @@ Bug Fixes
   the DefaultAnalyzer (i.e. no analysis chain defined). (Erick Erickson)
 
 * SOLR-4311: Admin UI - Optimize Caching Behaviour (steffkes)
-
-* SOLR-4597: CachingDirectoryFactory#remove should not attempt to empty/remove 
-  the index right away but flag for removal after close. (Mark Miller)
-
-* SOLR-4598: The Core Admin unload command's option 'deleteDataDir', should use 
-  the DirectoryFactory API to remove the data dir. (Mark Miller)
-
-* SOLR-4599: CachingDirectoryFactory calls close(Directory) on forceNew if the 
-  Directory has a refCnt of 0, but it should call closeDirectory(CacheValue).
-  (Mark Miller)
   
 * SOLR-4602: ZkController#unregister should cancel it's election participation 
   before asking the Overseer to delete the SolrCore information. (Mark Miller)
@@ -197,7 +187,17 @@ Bug Fixes
 
 * SOLR-4594: StandardDirectoryFactory#remove accesses byDirectoryCache 
   without a lock. (Mark Miller)
-      
+
+* SOLR-4597: CachingDirectoryFactory#remove should not attempt to empty/remove 
+  the index right away but flag for removal after close. (Mark Miller)
+
+* SOLR-4598: The Core Admin unload command's option 'deleteDataDir', should use 
+  the DirectoryFactory API to remove the data dir. (Mark Miller)
+
+* SOLR-4599: CachingDirectoryFactory calls close(Directory) on forceNew if the 
+  Directory has a refCnt of 0, but it should call closeDirectory(CacheValue).
+  (Mark Miller)
+        
 Optimizations
 ----------------------
 
