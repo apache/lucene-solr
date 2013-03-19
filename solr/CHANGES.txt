@@ -56,21 +56,12 @@ New Features
 
 Bug Fixes
 ----------------------
-  
-* SOLR-4361: DataImportHandler would throw UnsupportedOperationException if
-  handler-level parameters were specified containing periods in the name
-  (James Dyer)
-
-* SOLR-4538: Date Math expressions were being truncated to 32 characters
-  when used in field:value queries in the lucene QParser.  (hossman, yonik)
 
 * SOLR-4543: setting shardHandlerFactory in solr.xml/solr.properties does not work.
   (Ryan Ernst, Robert Muir via Erick Erickson)
 
-* SOLR-4371: Admin UI - Analysis Screen shows empty result (steffkes)
-  
-* SOLR-4318: NPE encountered with querying with wildcards on a field that uses
-  the DefaultAnalyzer (i.e. no analysis chain defined). (Erick Erickson)
+Optimizations
+----------------------
 
 * SOLR-4311: Admin UI - Optimize Caching Behaviour (steffkes)
 
@@ -179,6 +170,18 @@ Bug Fixes
            
 * SOLR-4297: Atomic update request containing null=true sets all subsequent
   fields to null (Ben Pennell, Rob, shalin)
+  
+* SOLR-4371: Admin UI - Analysis Screen shows empty result (steffkes)
+
+* SOLR-4318: NPE encountered with querying with wildcards on a field that uses
+  the DefaultAnalyzer (i.e. no analysis chain defined). (Erick Erickson)
+
+* SOLR-4361: DataImportHandler would throw UnsupportedOperationException if
+  handler-level parameters were specified containing periods in the name
+  (James Dyer)
+
+* SOLR-4538: Date Math expressions were being truncated to 32 characters
+  when used in field:value queries in the lucene QParser.  (hossman, yonik)
     
 Optimizations
 ----------------------
@@ -860,6 +863,9 @@ Bug Fixes
 
 * SOLR-4168: Ensure we are using the absolute latest index dir when getting
   list of files for replication. (Mark Miller)
+
+* SOLR-4171: CachingDirectoryFactory should not return any directories after it
+  has been closed. (Mark Miller)
 
 * SOLR-4102: Fix UI javascript error if canonical hostname can not be resolved
   (steffkes via hossman)
