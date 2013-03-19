@@ -81,8 +81,6 @@ Bug Fixes
 Optimizations
 ----------------------
 
-* SOLR-4311: Admin UI - Optimize Caching Behaviour (steffkes)
-
 Other Changes
 ----------------------
 
@@ -206,6 +204,8 @@ Optimizations
 
 * SOLR-4569: waitForReplicasToComeUp should bail right away if it doesn't see the
   expected slice in the clusterstate rather than waiting. (Mark Miller)
+
+* SOLR-4311: Admin UI - Optimize Caching Behaviour (steffkes)
       
 Other Changes
 ----------------------
