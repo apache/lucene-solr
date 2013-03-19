@@ -95,9 +95,6 @@ Bug Fixes
 
 * SOLR-4311: Admin UI - Optimize Caching Behaviour (steffkes)
 
-* SOLR-4592: DefaultSolrCoreState#doRecovery needs to check the CoreContainer
-  shutdown flag inside the recoveryLock sync block. (Mark Miller)
-
 * SOLR-4573: Accessing Admin UI files in SolrCloud mode logs warnings.
   (Mark Miller, Phil John)
 
@@ -200,6 +197,9 @@ Bug Fixes
   
 * SOLR-4585: The Collections API validates numShards with < 0 but should use 
   <= 0. (Mark Miller)
+  
+* SOLR-4592: DefaultSolrCoreState#doRecovery needs to check the CoreContainer
+  shutdown flag inside the recoveryLock sync block. (Mark Miller)
       
 Optimizations
 ----------------------
