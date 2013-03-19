@@ -120,9 +120,6 @@ Bug Fixes
 * LUCENE-4828: BooleanQuery no longer extracts terms from its MUST_NOT
   clauses.  (Mike McCandless)
 
-* LUCENE-4836: Fix SimpleRateLimiter#pause to return the actual time spent
-  sleeping instead of the wakeup timestamp in nano seconds. (Simon Willnauer)
-
 Documentation
 
 * LUCENE-4841: Added example SimpleSortedSetFacetsExample to show how
@@ -147,6 +144,9 @@ Bug Fixes
 
 * LUCENE-4854: Fix DocTermOrds.getOrdTermsEnum() to not return negative
   ord on initial next().  (Robert Muir)
+
+* LUCENE-4836: Fix SimpleRateLimiter#pause to return the actual time spent
+  sleeping instead of the wakeup timestamp in nano seconds. (Simon Willnauer)
 
 Optimizations
 
