@@ -250,6 +250,9 @@ public class BasicFunctionalityTest extends SolrTestCaseJ4 {
     assertQ(req("id:[100 TO 110]")
             ,"//*[@numFound='0']"
             );
+    
+    assertU(h.simpleTag("rollback"));
+    assertU(commit());
   }
 
 
