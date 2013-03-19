@@ -23,6 +23,9 @@ import org.apache.solr.SolrIgnoredThreadsFilter;
 import org.apache.solr.client.solrj.SolrServer;
 import org.apache.solr.client.solrj.embedded.AbstractEmbeddedSolrServerTestCase;
 import org.apache.solr.client.solrj.embedded.EmbeddedSolrServer;
+import org.apache.solr.common.SolrException;
+import org.apache.solr.common.params.ModifiableSolrParams;
+import org.apache.solr.common.util.NamedList;
 import org.apache.solr.core.SolrCore;
 import org.apache.commons.io.FileUtils;
 import org.junit.After;
@@ -92,6 +95,26 @@ public class TestCoreAdmin extends AbstractEmbeddedSolrServerTestCase {
     assertEquals(new File(dataDir, "ulog" + File.separator + "tlog").getAbsolutePath(), logDir.getAbsolutePath());
     server.shutdown();
     
+  }
+  
+  @Test
+  public void testErrorCases() throws Exception {
+    
+    ModifiableSolrParams params = new ModifiableSolrParams();
+    params.set("action", "BADACTION");
+    String collectionName = "badactioncollection";
+    params.set("name", collectionName);
+    QueryRequest request = new QueryRequest(params);
+    request.setPath("/admin/cores");
+    boolean gotExp = false;
+    NamedList<Object> resp = null;
+    try {
+      resp = getSolrAdmin().request(request);
+    } catch (SolrException e) {
+      gotExp = true;
+    }
+    
+    assertTrue(gotExp);
   }
   
   @BeforeClass
