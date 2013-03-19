@@ -74,21 +74,12 @@ New Features
 
 Bug Fixes
 ----------------------
-  
-* SOLR-4361: DataImportHandler would throw UnsupportedOperationException if
-  handler-level parameters were specified containing periods in the name
-  (James Dyer)
-
-* SOLR-4538: Date Math expressions were being truncated to 32 characters
-  when used in field:value queries in the lucene QParser.  (hossman, yonik)
 
 * SOLR-4543: setting shardHandlerFactory in solr.xml/solr.properties does not work.
   (Ryan Ernst, Robert Muir via Erick Erickson)
 
-* SOLR-4371: Admin UI - Analysis Screen shows empty result (steffkes)
-  
-* SOLR-4318: NPE encountered with querying with wildcards on a field that uses
-  the DefaultAnalyzer (i.e. no analysis chain defined). (Erick Erickson)
+Optimizations
+----------------------
 
 * SOLR-4311: Admin UI - Optimize Caching Behaviour (steffkes)
 
@@ -125,7 +116,7 @@ Bug Fixes
 
 * SOLR-4567: copyField source glob matching explicit field(s) stopped working
   in Solr 4.2. (Alexandre Rafalovitch, Steve Rowe)
-
+  
 * SOLR-4475: Fix various places that still assume File based paths even when 
   not using a file based DirectoryFactory. (Mark Miller)
 
@@ -149,17 +140,17 @@ Bug Fixes
 
 * SOLR-4577: The collections API should return responses (success or failure)
   for each node it attempts to work with. (Mark Miller)
-
+  
 * SOLR-4568: The lastPublished state check before becoming a leader is not 
   working correctly. (Mark Miller)
-    
+
 * SOLR-4570: Even if an explicit shard id is used, ZkController#preRegister 
   should still wait to see the shard id in it's current ClusterState.
   (Mark Miller)
-  
+
 * SOLR-4585: The Collections API validates numShards with < 0 but should use 
   <= 0. (Mark Miller)
-  
+
 * SOLR-4592: DefaultSolrCoreState#doRecovery needs to check the CoreContainer
   shutdown flag inside the recoveryLock sync block. (Mark Miller)
 
@@ -187,17 +178,29 @@ Bug Fixes
 
 * SOLR-4601: A Collection that is only partially created and then deleted will 
   leave pre allocated shard information in ZooKeeper. (Mark Miller)
-
+  
 * SOLR-4604: UpdateLog#init is over called on SolrCore#reload. (Mark Miller)
 
 * SOLR-4605: Rollback does not work correctly. (Mark S, Mark Miller)
 
 * SOLR-4609: The Collections API should only send the reload command to ACTIVE 
-  cores. (Mark Miller)
-
+  cores. (Mark Miller)     
+           
 * SOLR-4297: Atomic update request containing null=true sets all subsequent
   fields to null (Ben Pennell, Rob, shalin)
-        
+  
+* SOLR-4371: Admin UI - Analysis Screen shows empty result (steffkes)
+
+* SOLR-4318: NPE encountered with querying with wildcards on a field that uses
+  the DefaultAnalyzer (i.e. no analysis chain defined). (Erick Erickson)
+
+* SOLR-4361: DataImportHandler would throw UnsupportedOperationException if
+  handler-level parameters were specified containing periods in the name
+  (James Dyer)
+
+* SOLR-4538: Date Math expressions were being truncated to 32 characters
+  when used in field:value queries in the lucene QParser.  (hossman, yonik)
+    
 Optimizations
 ----------------------
 
@@ -211,7 +214,7 @@ Other Changes
 
 * SOLR-4596: DistributedQueue should ensure its full path exists in the constructor.
   (Mark Miller)
-
+  
 ==================  4.2.0 ==================
 
 Versions of Major Components
@@ -1056,7 +1059,7 @@ Other Changes
 
 * SOLR-4208: ExtendedDismaxQParserPlugin has been refactored to make 
   subclassing easier. (Tomás Fernández Löbbe, hossman)
-
+  
 * SOLR-3735: Relocate the example mime-to-extension mapping, and
   upgrade Velocity Engine to 1.7 (ehatcher)
 
