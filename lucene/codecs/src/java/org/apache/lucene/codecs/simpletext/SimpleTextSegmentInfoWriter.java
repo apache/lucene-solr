@@ -125,9 +125,10 @@ public class SimpleTextSegmentInfoWriter extends SegmentInfoWriter {
   }
   
   @Override
-  public void writeFilesList(Directory dir, SegmentInfo si, long generation, IOContext ioContext) throws IOException {
-    final String segFileName = IndexFileNames.fileNameFromGeneration(si.name,
-        Lucene40SegmentInfoFormat.SI_FILES_LIST_EXTENSION, generation, true);
+  public void writeUpdatedSegmentFiles(Directory dir, SegmentInfo si,
+      long generation, IOContext ioContext) throws IOException {
+    final String segFileName = IndexFileNames.segmentFileName(si.name, "", 
+        Lucene40SegmentInfoFormat.SI_FILES_LIST_EXTENSION);
     si.addFile(segFileName);
 
     boolean success = false;

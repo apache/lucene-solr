@@ -76,7 +76,7 @@ final class SegmentMerger {
     }
   }
 
-  void add(SegmentReader reader) {
+  void add(AtomicReader reader) {
     mergeState.readers.add(reader);
   }
 

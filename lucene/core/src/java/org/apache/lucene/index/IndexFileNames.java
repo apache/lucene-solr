@@ -180,8 +180,14 @@ public final class IndexFileNames {
 
   /** locates the boundary of the segment name, or -1 */
   private static int indexOfSegmentName(String filename) {
+    int offset = filename.startsWith("__") ? 2 : 1;
+    return indexOfSegmentName(filename, offset);
+  }
+  
+  /** locates the boundary of the segment name starting from given offset, or -1 */
+  private static int indexOfSegmentName(String filename, int offset) {
     // If it is a .del file, there's an '_' after the first character
-    int idx = filename.indexOf('_', 1);
+    int idx = filename.indexOf('_', offset);
     if (idx == -1) {
       // If it's not, strip everything that's before the '.'
       idx = filename.indexOf('.');
@@ -235,4 +241,8 @@ public final class IndexFileNames {
   // All files created by codecs much match this pattern (we
   // check this in SegmentInfo.java):
   static final Pattern CODEC_FILE_PATTERN = Pattern.compile("_[_]?[a-z0-9]+(_.*)?\\..*");
+
+  public static boolean isUpdatedSegmentFile(String file) {
+    return file.startsWith("__");
+  }
 }

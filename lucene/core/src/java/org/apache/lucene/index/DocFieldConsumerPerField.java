@@ -19,9 +19,11 @@ package org.apache.lucene.index;
 
 import java.io.IOException;
 
+import org.apache.lucene.store.Directory;
+
 abstract class DocFieldConsumerPerField {
   /** Processes all occurrences of a single field */
-  abstract void processFields(IndexableField[] fields, int count) throws IOException;
+  abstract void processFields(IndexableField[] fields, int count, SegmentInfo segmentInfo, Directory trackingDirectory) throws IOException;
   abstract void abort();
   abstract FieldInfo getFieldInfo();
 }

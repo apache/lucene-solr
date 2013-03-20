@@ -20,10 +20,12 @@ package org.apache.lucene.index;
 import java.io.IOException;
 import java.util.Map;
 
+import org.apache.lucene.store.Directory;
+
 abstract class TermsHashConsumer {
   abstract void flush(Map<String, TermsHashConsumerPerField> fieldsToFlush, final SegmentWriteState state) throws IOException;
   abstract void abort();
   abstract void startDocument() throws IOException;
-  abstract void finishDocument(TermsHash termsHash) throws IOException;
+  abstract void finishDocument(TermsHash termsHash, Directory directory, SegmentInfo info) throws IOException;
   abstract public TermsHashConsumerPerField addField(TermsHashPerField termsHashPerField, FieldInfo fieldInfo);
 }

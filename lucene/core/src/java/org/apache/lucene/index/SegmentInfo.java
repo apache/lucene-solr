@@ -101,7 +101,8 @@ public final class SegmentInfo {
     this.dir = info.dir;
     this.version = info.version;
     this.name = IndexFileNames.updatedSegmentFileNameFromGeneration(info.name, gen);
-    this.docCount = info.docCount;
+    //this.docCount = info.docCount;
+    this.docCount = -1;
     this.isCompoundFile = info.isCompoundFile;
     this.codec = info.codec;
     this.diagnostics = info.diagnostics;

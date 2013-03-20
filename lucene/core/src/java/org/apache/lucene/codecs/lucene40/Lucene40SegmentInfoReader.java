@@ -71,16 +71,7 @@ public class Lucene40SegmentInfoReader extends SegmentInfoReader {
                                              null, diagnostics, Collections.unmodifiableMap(attributes));
       si.setFiles(files);
 
-      int updatesIndex = 1;
-      while (updatesIndex > 0) {
-        files = readFilesList(dir, segment, updatesIndex, context);
-        if (files == null) {
-          updatesIndex = -1;
-        } else {
-          si.addFiles(files);
-          updatesIndex++;
-        }
-      }
+      addUpdateSegmentsFiles(si, dir, segment, context);
 
       success = true;
 
@@ -95,7 +86,7 @@ public class Lucene40SegmentInfoReader extends SegmentInfoReader {
     }
   }
 
-  private Set<String> readFilesList(Directory dir, String segment,
+  protected Set<String> readFilesList(Directory dir, String segment,
       long generation, IOContext context) throws IOException {
     final String fileName = IndexFileNames.fileNameFromGeneration(segment,
         Lucene40SegmentInfoFormat.SI_FILES_LIST_EXTENSION, generation, true);

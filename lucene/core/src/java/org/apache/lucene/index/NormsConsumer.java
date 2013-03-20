@@ -34,6 +34,8 @@ import org.apache.lucene.util.IOUtils;
 
 final class NormsConsumer extends InvertedDocEndConsumer {
 
+  public NormsConsumer(DocumentsWriterPerThread documentsWriterPerThread) {}
+
   @Override
   void abort() {}
   

@@ -53,7 +53,8 @@ public class SegmentInfoPerCommit {
    * @param info {@link SegmentInfo} that we wrap
    * @param delCount number of deleted documents in this segment
    * @param delGen deletion generation number (used to name
-             deletion files)
+   *              deletion files)
+   * @param updateGen update generation number
    **/
   public SegmentInfoPerCommit(SegmentInfo info, int delCount, long delGen, long updateGen) {
     this.info = info;

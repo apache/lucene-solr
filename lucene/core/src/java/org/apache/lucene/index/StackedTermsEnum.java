@@ -87,7 +87,7 @@ public class StackedTermsEnum extends TermsEnum {
   }
   
   private void init() throws IOException {
-    activeEnums = new TreeSet<InnerTermsEnum>();
+    activeEnums = new TreeSet<InnerTermsEnum>(new InnerTermsEnumFullComparator());
     for (int i = 0; i < subTerms.length; i++) {
       if (subTerms[i] != null) {
         final TermsEnum termsEnum = subTerms[i].iterator(null);
@@ -188,6 +188,14 @@ public class StackedTermsEnum extends TermsEnum {
       }
     }
     
+    if (activeMap.isEmpty()) {
+      return null;
+    }
+    
+    if (replacements == null && activeMap.size() == 1) {
+      return activeMap.keySet().iterator().next();
+    }
+
     return new StackedDocsEnum(activeMap, replacements);
   }
   
@@ -208,6 +216,10 @@ public class StackedTermsEnum extends TermsEnum {
       return null;
     }
     
+    if (replacements == null && activeMap.size() == 1) {
+      return (DocsAndPositionsEnum) activeMap.keySet().iterator().next();
+    }
+
     return new StackedDocsEnum(activeMap, replacements);
   }
   
@@ -238,9 +250,29 @@ public class StackedTermsEnum extends TermsEnum {
     
     @Override
     public int compareTo(InnerTermsEnum o) {
-      return comparator.compare(this.term, o.term);
+      int diff = comparator.compare(this.term, o.term);
+      if (diff != 0) {
+        return diff;
+      }
+      return this.index - o.index;
+
     }
     
   }
-  
+
+  /**
+   * A comparator which 
+   */
+  private class InnerTermsEnumFullComparator implements Comparator<InnerTermsEnum> {
+
+    @Override
+    public int compare(InnerTermsEnum arg0, InnerTermsEnum arg1) {
+      int diff = comparator.compare(arg0.term, arg1.term);
+      if (diff != 0) {
+        return diff;
+      }
+      return arg0.index - arg1.index;
+    }
+    
+  }
 }

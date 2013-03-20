@@ -181,6 +181,7 @@ class BufferedDeletesStream {
     int delIDX = deletes.size()-1;
 
     List<SegmentInfoPerCommit> allDeleted = null;
+    List<SegmentInfoPerCommit> advanced = null;
 
     while (infosIDX >= 0) {
       //System.out.println("BD: cycle delIDX=" + delIDX + " infoIDX=" + infosIDX);
@@ -257,9 +258,12 @@ class BufferedDeletesStream {
          */
         delIDX--;
         infosIDX--;
-        info.setBufferedDeletesGen(gen);
+        if (advanced == null) {
+          advanced = new ArrayList<SegmentInfoPerCommit>();
+        }
+        advanced.add(info);
 
-      } else {
+      } else if (packet != null && packet.anyDeletes()){
         //System.out.println("  gt");
 
         if (coalescedDeletes != null) {
@@ -291,9 +295,16 @@ class BufferedDeletesStream {
           if (infoStream.isEnabled("BD")) {
             infoStream.message("BD", "seg=" + info + " segGen=" + segGen + " coalesced deletes=[" + (coalescedDeletes == null ? "null" : coalescedDeletes) + "] newDelCount=" + delCount + (segAllDeletes ? " 100% deleted" : ""));
           }
+        if (advanced == null) {
+          advanced = new ArrayList<SegmentInfoPerCommit>();
         }
-        info.setBufferedDeletesGen(gen);
+        advanced.add(info);
+        }
 
+        infosIDX--;
+      } else if (packet != null) {
+        delIDX--;
+      } else {
         infosIDX--;
       }
     }
@@ -303,20 +314,31 @@ class BufferedDeletesStream {
       final long updateSegGen = updateInfo.getBufferedDeletesGen();
       
       for (FrozenBufferedDeletes updatePacket : deletes) {
-        if (updatePacket.anyUpdates() && updatePacket.delGen() <= updateSegGen) {
+        if (updatePacket.anyUpdates() && updateSegGen <= updatePacket.delGen()) {
           assert readerPool.infoIsLive(updateInfo);
           final ReadersAndLiveDocs rld = readerPool.get(updateInfo, true);
           final SegmentReader reader = rld.getReader(IOContext.READ);
           try {
-            anyNewDeletes |= applyTermUpdates(updatePacket.updateTerms, updatePacket.updateArrays, rld, reader);
+            anyNewDeletes |= applyTermUpdates(updatePacket.updateTerms,
+                updatePacket.updateArrays, rld, reader);
           } finally {
             rld.release(reader);
             readerPool.release(rld);
           }
         }
+        if (advanced == null) {
+          advanced = new ArrayList<SegmentInfoPerCommit>();
+        }
+        advanced.add(updateInfo);
       }
     }
 
+    if (advanced != null) {
+      for (SegmentInfoPerCommit info : advanced) {
+        info.setBufferedDeletesGen(gen);
+      }
+    }
+    
     assert checkDeleteStats();
     if (infoStream.isEnabled("BD")) {
       infoStream.message("BD", "applyDeletes took " + (System.currentTimeMillis()-t0) + " msec");

@@ -19,6 +19,8 @@ package org.apache.lucene.index;
 
 import java.io.IOException;
 
+import org.apache.lucene.store.Directory;
+
 /** Just switches between two {@link DocFieldConsumer}s. */
 
 class TwoStoredFieldsConsumers extends StoredFieldsConsumer {
@@ -61,8 +63,8 @@ class TwoStoredFieldsConsumers extends StoredFieldsConsumer {
   }
 
   @Override
-  void finishDocument() throws IOException {
-    first.finishDocument();
-    second.finishDocument();
+  void finishDocument(Directory directory, SegmentInfo info) throws IOException {
+    first.finishDocument(directory, info);
+    second.finishDocument(directory, info);
   }
 }

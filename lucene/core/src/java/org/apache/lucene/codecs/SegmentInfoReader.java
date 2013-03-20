@@ -18,6 +18,7 @@ package org.apache.lucene.codecs;
  */
 
 import java.io.IOException;
+import java.util.Set;
 
 import org.apache.lucene.index.SegmentInfo;
 import org.apache.lucene.store.Directory;
@@ -44,4 +45,47 @@ public abstract class SegmentInfoReader {
    * @throws IOException If an I/O error occurs
    */
   public abstract SegmentInfo read(Directory directory, String segmentName, IOContext context) throws IOException;
+  
+  /**
+   * Add files of update segments to the segment info.
+   * @param info The segment info to update
+   * @param dir The containing directory
+   * @param segmentName The name of the handled segment
+   * @param context The IOContext
+   * @throws IOException If error occurred when reading files lists
+   */
+  protected void addUpdateSegmentsFiles(final SegmentInfo info, Directory dir,
+      String segmentName, IOContext context)
+      throws IOException {
+    int generation = 1;
+    while (generation > 0) {
+      Set<String> files = readFilesList(dir, segmentName, generation, context);
+      if (files == null) {
+        generation = -1;
+      } else {
+        info.addFiles(files);
+        generation++;
+      }
+    }
+  }
+
+  /**
+   * Read list of files related to a certain generation in an updated segment
+   * 
+   * @param dir
+   *          The containing directory
+   * @param segmentName
+   *          The name of the handled segment
+   * @param generation
+   *          The update generation
+   * @param context
+   *          The IOContext
+   * @return A list of the files corresponding to the update generation.
+   * @throws IOException
+   *           If error occurred when reading files list
+   */
+  protected abstract Set<String> readFilesList(Directory dir,
+      String segmentName, long generation, IOContext context)
+      throws IOException;
+
 }

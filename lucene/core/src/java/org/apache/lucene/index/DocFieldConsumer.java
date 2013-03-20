@@ -20,9 +20,12 @@ package org.apache.lucene.index;
 import java.io.IOException;
 import java.util.Map;
 
+import org.apache.lucene.store.Directory;
+
 abstract class DocFieldConsumer {
   /** Called when DocumentsWriterPerThread decides to create a new
-   *  segment */
+   *  segment 
+   */
   abstract void flush(Map<String, DocFieldConsumerPerField> fieldsToFlush, SegmentWriteState state) throws IOException;
 
   /** Called when an aborting exception is hit */
@@ -32,5 +35,5 @@ abstract class DocFieldConsumer {
 
   abstract DocFieldConsumerPerField addField(FieldInfo fi);
 
-  abstract void finishDocument() throws IOException;
+  abstract void finishDocument(Directory directory, SegmentInfo info) throws IOException;
 }

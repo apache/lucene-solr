@@ -19,6 +19,7 @@ import java.io.IOException;
 
 import org.apache.lucene.codecs.DocValuesConsumer;
 import org.apache.lucene.search.similarities.Similarity;
+import org.apache.lucene.store.Directory;
 
 final class NormsConsumerPerField extends InvertedDocEndConsumerPerField implements Comparable<NormsConsumerPerField> {
   private final FieldInfo fieldInfo;
@@ -40,25 +41,25 @@ final class NormsConsumerPerField extends InvertedDocEndConsumerPerField impleme
   }
 
   @Override
-  void finish() throws IOException {
+  void finish(SegmentInfo segmentInfo, Directory trackingDirectory) throws IOException {
     if (fieldInfo.isIndexed() && !fieldInfo.omitsNorms()) {
-      if (consumer == null) {
-        fieldInfo.setNormValueType(FieldInfo.DocValuesType.NUMERIC);
-        consumer = new NumericDocValuesWriter(fieldInfo, docState.docWriter.bytesUsed);
+        if (consumer == null) {
+            fieldInfo.setNormValueType(FieldInfo.DocValuesType.NUMERIC);
+            consumer = new NumericDocValuesWriter(fieldInfo, docState.docWriter.bytesUsed);
       }
       consumer.addValue(docState.docID, similarity.computeNorm(fieldState));
-    }
+    }    
   }
   
   void flush(SegmentWriteState state, DocValuesConsumer normsWriter) throws IOException {
-    int docCount = state.segmentInfo.getDocCount();
-    if (consumer == null) {
-      return; // null type - not omitted but not written -
-              // meaning the only docs that had
-              // norms hit exceptions (but indexed=true is set...)
-    }
-    consumer.finish(docCount);
-    consumer.flush(state, normsWriter);
+	    int docCount = state.segmentInfo.getDocCount();
+	    if (consumer == null) {
+	      return; // null type - not omitted but not written -
+	              // meaning the only docs that had
+	              // norms hit exceptions (but indexed=true is set...)
+	    }
+	    consumer.finish(docCount);
+	    consumer.flush(state, normsWriter);
   }
   
   boolean isEmpty() {

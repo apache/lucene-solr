@@ -44,7 +44,8 @@ public abstract class SegmentInfoWriter {
    * @param ioContext IO context to use
    * @throws IOException If an I/O error occurs
    */
-  public abstract void write(Directory dir, SegmentInfo info, FieldInfos fis, IOContext ioContext) throws IOException;
+  public abstract void write(Directory dir, SegmentInfo info, FieldInfos fis,
+      IOContext ioContext) throws IOException;
   
   /**
    * Write the list of files belonging to an updates segment of the segment with
@@ -57,5 +58,7 @@ public abstract class SegmentInfoWriter {
    * @throws IOException
    *           If an I/O error occurs
    */
-  public abstract void writeFilesList(Directory dir, SegmentInfo info, long generation, IOContext ioContext) throws IOException;
+  public abstract void writeUpdatedSegmentFiles(Directory dir,
+      SegmentInfo info, long generation, IOContext ioContext)
+      throws IOException;
 }

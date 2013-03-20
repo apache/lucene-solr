@@ -24,6 +24,7 @@ import java.util.Map;
 import org.apache.lucene.codecs.DocValuesConsumer;
 import org.apache.lucene.codecs.DocValuesFormat;
 import org.apache.lucene.index.FieldInfo.DocValuesType;
+import org.apache.lucene.store.Directory;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.Counter;
 import org.apache.lucene.util.IOUtils;
@@ -45,7 +46,7 @@ final class DocValuesProcessor extends StoredFieldsConsumer {
   }
 
   @Override
-  void finishDocument() {
+  void finishDocument(Directory directory, SegmentInfo info) {
   }
 
   @Override

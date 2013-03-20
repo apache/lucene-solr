@@ -19,10 +19,12 @@ package org.apache.lucene.index;
 
 import java.io.IOException;
 
+import org.apache.lucene.store.Directory;
+
 abstract class StoredFieldsConsumer {
-  abstract void addField(int docID, StorableField field, FieldInfo fieldInfo) throws IOException;
-  abstract void flush(SegmentWriteState state) throws IOException;
-  abstract void abort() throws IOException;
-  abstract void startDocument() throws IOException;
-  abstract void finishDocument() throws IOException;
+	  abstract void addField(int docID, StorableField field, FieldInfo fieldInfo) throws IOException;
+	  abstract void flush(SegmentWriteState state) throws IOException;
+	  abstract void abort() throws IOException;
+	  abstract void startDocument() throws IOException;
+	  abstract void finishDocument(Directory directory, SegmentInfo info) throws IOException;
 }

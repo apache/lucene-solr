@@ -891,11 +891,6 @@ public class IndexWriter implements Closeable, TwoPhaseCommit {
    */
   public void close(boolean waitForMerges) throws IOException {
     
-    // commit pending updates
-    if (updatesPending) {
-      commitInternal();
-    }
-    
     // Ensure that only one thread actually gets to do the
     // closing, and make sure no commit is also in progress:
     synchronized (commitLock) {
@@ -948,8 +943,6 @@ public class IndexWriter implements Closeable, TwoPhaseCommit {
             + waitForMerges);
       }
       
-      docWriter.close();
-      
       try {
         // Only allow a new merge to be triggered if we are
         // going to wait for merges:
@@ -958,6 +951,8 @@ public class IndexWriter implements Closeable, TwoPhaseCommit {
         } else {
           docWriter.abort(); // already closed
         }
+        
+        docWriter.close();
         
       } finally {
         try {
@@ -1188,7 +1183,7 @@ public class IndexWriter implements Closeable, TwoPhaseCommit {
    */
   public void addDocument(IndexDocument doc, Analyzer analyzer)
       throws IOException {
-    updateDocument(null, doc, analyzer);
+    replaceDocument(null, doc, analyzer);
   }
   
   /**
@@ -1407,8 +1402,8 @@ public class IndexWriter implements Closeable, TwoPhaseCommit {
       boolean success = false;
       boolean anySegmentFlushed = false;
       try {
-        anySegmentFlushed = docWriter.updateFields(term, new FieldsUpdate(
-            operation, fields, analyzer));
+        anySegmentFlushed = docWriter.updateFields(term, operation, fields,
+            analyzer, globalFieldNumberMap);
         success = true;
         updatesPending = true;
       } finally {
@@ -2407,11 +2402,16 @@ public class IndexWriter implements Closeable, TwoPhaseCommit {
     deleter.checkpoint(segmentInfos, false);
   }
   
-  void writeSegmentUpdates(SegmentInfoPerCommit segment,
+  void writeSegmentUpdates(SegmentInfoPerCommit info,
       UpdatedSegmentData updates, IOContext context) throws IOException {
-    docWriter.writeUpdatedSegment(updates, segment, this.deleter);
-    
-    segment.advanceUpdateGen();
+    // add updates, single update per document in each round, until all updates
+    // were added
+    while (updates != null) {
+      updates = docWriter.writeUpdatedSegment(info, updates,
+          config.getTermIndexInterval(), globalFieldNumberMap, deleter);
+      info.advanceUpdateGen();
+    }
+    deleter.checkpoint(segmentInfos, false);
   }
   
   synchronized void publishFrozenDeletes(FrozenBufferedDeletes packet) {
@@ -2441,7 +2441,7 @@ public class IndexWriter implements Closeable, TwoPhaseCommit {
       // Publishing the segment must be synched on IW -> BDS to make the sure
       // that no merge prunes away the seg. private delete packet
       final long nextGen;
-      if (packet != null && (packet.anyDeletes())) {
+      if (packet != null && (packet.anyDeletes() || packet.anyUpdates())) {
         nextGen = bufferedDeletesStream.push(packet);
       } else {
         // Since we don't have a delete packet to apply we can get a new
@@ -2787,15 +2787,14 @@ public class IndexWriter implements Closeable, TwoPhaseCommit {
         segName, info.info.getDocCount(), info.info.getUseCompoundFile(),
         info.info.getCodec(), info.info.getDiagnostics(), attributes);
     SegmentInfoPerCommit newInfoPerCommit = new SegmentInfoPerCommit(newInfo,
-        info.getDelCount(), info.getDelGen(), -1L);
+        info.getDelCount(), info.getDelGen(), info.getUpdateGen());
     
     Set<String> segFiles = new HashSet<String>();
     
     // Build up new segment's file names. Must do this
     // before writing SegmentInfo:
     for (String file : info.files()) {
-      final String newFileName;
-      newFileName = segName + IndexFileNames.stripSegmentName(file);
+      final String newFileName = getNewFileName(file, segName);
       segFiles.add(newFileName);
     }
     newInfo.setFiles(segFiles);
@@ -2817,10 +2816,7 @@ public class IndexWriter implements Closeable, TwoPhaseCommit {
       
       // Copy the segment's files
       for (String file : info.files()) {
-        
-        final String newFileName = segName
-            + IndexFileNames.stripSegmentName(file);
-        
+        final String newFileName = getNewFileName(file, segName);
         if (siFiles.contains(newFileName)) {
           // We already rewrote this above
           continue;
@@ -2843,6 +2839,19 @@ public class IndexWriter implements Closeable, TwoPhaseCommit {
     }
     
     return newInfoPerCommit;
+  }
+
+  /**
+   * Get a new name for a given file to be located in given segment.
+   */
+  public String getNewFileName(String file, String segName) {
+    final String newFileName;
+    if (IndexFileNames.isUpdatedSegmentFile(file)) {
+      newFileName = "_" + segName + IndexFileNames.stripSegmentName(file);
+    } else {
+      newFileName = segName + IndexFileNames.stripSegmentName(file);
+    }
+    return newFileName;
   }
   
   /**
@@ -3964,7 +3973,7 @@ public class IndexWriter implements Closeable, TwoPhaseCommit {
           assert delCount > reader.numDeletedDocs(); // beware of zombies
           
           SegmentReader newReader = new SegmentReader(info, context,
-              reader.core, liveDocs, info.info.getDocCount() - delCount);
+              reader.core, reader.updates, liveDocs, info.info.getDocCount() - delCount);
           boolean released = false;
           try {
             rld.release(reader);
@@ -4552,6 +4561,23 @@ public class IndexWriter implements Closeable, TwoPhaseCommit {
   static final Collection<String> createCompoundFile(InfoStream infoStream,
       Directory directory, CheckAbort checkAbort, final SegmentInfo info,
       IOContext context, long updateGen) throws IOException {
+    return createCompoundFile(infoStream, directory, checkAbort, info, context,
+        updateGen, null);
+  }
+
+  /**
+   * NOTE: this method creates a compound file for all files returned by
+   * info.files(). While, generally, this may include separate norms and
+   * deletion files, this SegmentInfo must not reference such files when this
+   * method is called, because they are not allowed within a compound file. The
+   * value of updateGen for a base segment must be negative.
+   * This version allows excluding files given by file names from the compound
+   * file. 
+   */
+  static final Collection<String> createCompoundFile(InfoStream infoStream,
+      Directory directory, CheckAbort checkAbort, final SegmentInfo info,
+      IOContext context, long updateGen,
+      Set<String> excludedFiles) throws IOException {
     
     String fileName = IndexFileNames.fileNameFromGeneration(info.name,
         IndexFileNames.COMPOUND_FILE_EXTENSION, updateGen, true);
@@ -4579,8 +4605,16 @@ public class IndexWriter implements Closeable, TwoPhaseCommit {
         }
       }
     }
-    final String cfeFileName = IndexFileNames.segmentFileName(prefix, "",
-        IndexFileNames.COMPOUND_FILE_ENTRIES_EXTENSION);
+    if (excludedFiles != null) {
+      files = new HashSet<String>(files);
+      files.removeAll(excludedFiles);
+    }
+    String cfeFileName = IndexFileNames.fileNameFromGeneration(info.name,
+        IndexFileNames.COMPOUND_FILE_ENTRIES_EXTENSION, updateGen, true);
+    if (cfeFileName == null) {
+      cfeFileName = IndexFileNames.segmentFileName(prefix, "",
+          IndexFileNames.COMPOUND_FILE_ENTRIES_EXTENSION);
+    }
     CompoundFileDirectory cfsDir = new CompoundFileDirectory(directory,
         fileName, context, true);
     IOException prior = null;

@@ -17,13 +17,17 @@ package org.apache.lucene.index;
  * limitations under the License.
  */
 
+import java.io.File;
+import java.io.FileWriter;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.Iterator;
 import java.util.Locale;
+import java.util.Random;
 
 import org.apache.lucene.analysis.MockAnalyzer;
+import org.apache.lucene.codecs.simpletext.SimpleTextCodec;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field.Store;
 import org.apache.lucene.document.FieldType;
@@ -32,7 +36,10 @@ import org.apache.lucene.document.TextField;
 import org.apache.lucene.index.FieldsUpdate.Operation;
 import org.apache.lucene.search.DocIdSetIterator;
 import org.apache.lucene.store.Directory;
+import org.apache.lucene.store.FSDirectory;
+import org.apache.lucene.store.RAMDirectory;
 import org.apache.lucene.util.BytesRef;
+import org.apache.lucene.util.IndexData;
 import org.apache.lucene.util.LuceneTestCase;
 
 public class TestFieldReplacements extends LuceneTestCase {
@@ -61,6 +68,7 @@ public class TestFieldReplacements extends LuceneTestCase {
   public void setUp() throws Exception {
     super.setUp();
     dir = newDirectory();
+
     
     // init fields data structures
     int numFields = 4 + random().nextInt(4);
@@ -77,7 +85,7 @@ public class TestFieldReplacements extends LuceneTestCase {
       fieldTokens[i] = tokens.toArray(new String[tokens.size()]);
     }
   }
-  
+
   @Override
   public void tearDown() throws Exception {
     dir.close();
@@ -85,19 +93,21 @@ public class TestFieldReplacements extends LuceneTestCase {
   }
   
   public void testEmptyIndex() throws IOException {
-    // test performing fields addition and replace on an empty index
+    init(random());
+
+    // test performing fields addition and replacement on an empty index
     IndexWriter writer = new IndexWriter(dir, newIndexWriterConfig(
         TEST_VERSION_CURRENT, new MockAnalyzer(random())));
     
     HashSet<Term> usedTerms = new HashSet<Term>();
     
     Operation operation = Operation.REPLACE_FIELDS;
-    writer.updateFields(operation, getOperationTerm(usedTerms),
-        getFields(usedTerms));
+    writer.updateFields(operation, getOperationTerm(usedTerms, random()),
+        getFields(usedTerms, random()));
     
     operation = Operation.ADD_FIELDS;
-    writer.updateFields(operation, getOperationTerm(usedTerms),
-        getFields(usedTerms));
+    writer.updateFields(operation, getOperationTerm(usedTerms, random()),
+        getFields(usedTerms, random()));
     
     writer.close();
     
@@ -106,23 +116,39 @@ public class TestFieldReplacements extends LuceneTestCase {
     directoryReader.close();
   }
   
-  private void addDocuments() throws IOException {
-    
+  private static void init(Random localRandom) {
+    int numFields = 4 + localRandom.nextInt(4);
+    fieldNames = new String[numFields];
+    fieldTokens = new String[numFields][];
+    for (int i = 0; i < numFields; i++) {
+      fieldNames[i] = "f" + i;
+      ArrayList<String> tokens = new ArrayList<String>();
+      final String[] allTokens = loremIpsum.split("\\s");
+      for (int index = localRandom.nextInt(2 + i); index < allTokens.length; index += 1 + localRandom
+          .nextInt(2 + i)) {
+        tokens.add(allTokens[index].toLowerCase());
+      }
+      fieldTokens[i] = tokens.toArray(new String[tokens.size()]);
+    }
+  }
+
+  private static void addDocuments(Directory directory, Random localRandom, 
+      int maxDocs) throws IOException {
+    init(localRandom);
     HashSet<Term> usedTerms = new HashSet<Term>();
     
-    IndexWriter writer = new IndexWriter(dir, newIndexWriterConfig(
-        TEST_VERSION_CURRENT, new MockAnalyzer(random())));
+    IndexWriterConfig config = newIndexWriterConfig(TEST_VERSION_CURRENT, 
+        new MockAnalyzer(random()));
+    config.setCodec(new SimpleTextCodec());
+    IndexWriter writer = new IndexWriter(directory, config);
     
     // add random documents
-    int numDocs = 10 + random().nextInt(50);
+    int numOps = 10 + localRandom.nextInt(50);
     int nCommits = 0;
-    for (int i = 0; i < numDocs; i++) {
-      
-      // create fields
-      Document fields = getFields(usedTerms);
+    for (int i = 0; i < Math.min(maxDocs, numOps); i++) {
       
       // select operation
-      int opIndex = random().nextInt(10);
+      int opIndex = localRandom.nextInt(10);
       Operation operation;
       if (opIndex <= 1) {
         if (opIndex == 0) {
@@ -135,26 +161,29 @@ public class TestFieldReplacements extends LuceneTestCase {
         }
         
         // create term if needed
-        Term term = getOperationTerm(usedTerms);
+        Term term = getOperationTerm(usedTerms, localRandom);
         
-        writer.updateFields(operation, term, fields);
+        // create fields and update
+        writer.updateFields(operation, term, getFields(usedTerms, localRandom));
       } else {
         if (opIndex == 2) {
           if (VERBOSE_FIELD_REPLACEMENTS) {
             System.out.println("REPLACE_DOCUMENTS");
           }
-          Term term = getOperationTerm(usedTerms);
-          writer.replaceDocument(term, fields);
+          Term term = getOperationTerm(usedTerms, localRandom);
+          // create document and replace
+          writer.replaceDocument(term, getFields(usedTerms, localRandom));
         } else {
           if (VERBOSE_FIELD_REPLACEMENTS) {
             System.out.println("ADD_DOCUMENT");
           }
-          writer.addDocument(fields);
+          // create document and add
+          writer.addDocument(getFields(usedTerms, localRandom));
         }
       }
       
       // commit about once every 10 docs
-      int interCommit = random().nextInt(10);
+      int interCommit = localRandom.nextInt(10);
       if (interCommit == 0) {
         if (VERBOSE_FIELD_REPLACEMENTS) {
           System.out.println("commit " + (++nCommits));
@@ -168,16 +197,16 @@ public class TestFieldReplacements extends LuceneTestCase {
     writer.close();
   }
   
-  public Document getFields(HashSet<Term> usedTerms) {
+  public static Document getFields(HashSet<Term> usedTerms, Random loaclRandom) {
     Document fields = new Document();
     
-    int nFields = 1 + random().nextInt(5);
+    int nFields = 1 + loaclRandom.nextInt(5);
     for (int j = 0; j < nFields; j++) {
-      boolean indexed = random().nextInt(8) > 0;
-      int index = random().nextInt(fieldNames.length);
+      boolean indexed = loaclRandom.nextInt(8) > 0;
+      int index = loaclRandom.nextInt(fieldNames.length);
       String fieldName = fieldNames[index];
       String value = createFieldValue(fieldTokens[index], fieldName, indexed,
-          usedTerms);
+          usedTerms, loaclRandom);
       
       if (indexed) {
         fields.add(new TextField(fieldName, value, Store.NO));
@@ -197,20 +226,20 @@ public class TestFieldReplacements extends LuceneTestCase {
     return fields;
   }
   
-  public Term getOperationTerm(HashSet<Term> usedTerms) {
+  public static Term getOperationTerm(HashSet<Term> usedTerms, Random loaclRandom) {
     Term term = null;
-    boolean used = random().nextInt(5) < 4;
+    boolean used = loaclRandom.nextInt(5) < 4;
     if (used && !usedTerms.isEmpty()) {
       final Iterator<Term> iterator = usedTerms.iterator();
-      int usedIndex = random().nextInt(usedTerms.size());
+      int usedIndex = loaclRandom.nextInt(usedTerms.size());
       for (int j = 0; j < usedIndex; j++) {
         iterator.next();
       }
       term = iterator.next();
     } else {
       // select term
-      int fieldIndex = random().nextInt(fieldNames.length);
-      int textIndex = random().nextInt(fieldTokens[fieldIndex].length / 10);
+      int fieldIndex = loaclRandom.nextInt(fieldNames.length);
+      int textIndex = loaclRandom.nextInt(fieldTokens[fieldIndex].length / 10);
       term = new Term(fieldNames[fieldIndex],
           fieldTokens[fieldIndex][textIndex]);
     }
@@ -220,11 +249,11 @@ public class TestFieldReplacements extends LuceneTestCase {
     return term;
   }
   
-  private String createFieldValue(String[] tokens, String fieldName,
-      boolean indexed, HashSet<Term> usedTerms) {
+  private static String createFieldValue(String[] tokens, String fieldName,
+      boolean indexed, HashSet<Term> usedTerms, Random loaclRandom) {
     StringBuilder builder = new StringBuilder();
     
-    int index = random().nextInt(Math.min(10, tokens.length));
+    int index = loaclRandom.nextInt(Math.min(10, tokens.length));
     
     while (index < tokens.length) {
       builder.append(tokens[index]);
@@ -232,19 +261,217 @@ public class TestFieldReplacements extends LuceneTestCase {
       if (indexed) {
         usedTerms.add(new Term(fieldName, tokens[index]));
       }
-      index += 1 + random().nextInt(10);
+      index += 1 + loaclRandom.nextInt(10);
     }
     
     return builder.toString();
   }
   
   public void testRandomIndexGeneration() throws IOException {
-    addDocuments();
+    addDocuments(dir, random(), Integer.MAX_VALUE);
     DirectoryReader directoryReader = DirectoryReader.open(dir);
     directoryReader.close();
   }
   
-  public void testStatisticsAfterFieldUpdates() throws IOException {
+  public void testAddIndexes() throws IOException {
+    addDocuments(dir, random(), Integer.MAX_VALUE);
+    RAMDirectory addedDir = new RAMDirectory();
+    IndexWriter addedIndexWriter = new IndexWriter(addedDir,
+        newIndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer(random())));
+    addedIndexWriter.addIndexes(dir);
+    addedIndexWriter.close();
+    
+    DirectoryReader updatesReader = DirectoryReader.open(dir);
+    IndexData updatesIndexData = new IndexData(updatesReader);
+    updatesReader.close();
+    
+    DirectoryReader addedReader = DirectoryReader.open(addedDir);
+    IndexData addedIndexData = new IndexData(addedReader);
+    addedReader.close();
+    addedDir.close();
+    
+    assertEquals("Difference in addIndexes ", updatesIndexData, addedIndexData);
+  }
+  
+  
+  public void testIndexEquality() throws IOException {
+    // create index through updates
+    addDocuments(dir, new Random(3), Integer.MAX_VALUE);
+
+    DirectoryReader updatesReader = DirectoryReader.open(dir);
+    IndexData updatesIndexData = new IndexData(updatesReader);
+    System.out.println("Updates index data");
+    System.out.println(updatesIndexData.toString(true));
+    System.out.println();
+    updatesReader.close();
+
+    // create the same index directly
+    RAMDirectory directDir = new RAMDirectory();
+    IndexWriter directWriter = new IndexWriter(directDir,
+        newIndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer(random())));
+
+    Document doc = new Document();
+    doc.add(new StoredField("f0","elit, magna volutpat. tation ea dolor consequat, facilisis odio te soluta doming facer qui me consuetudium littera per nunc "));
+    doc.add(new TextField("f4","consectetuer tincidunt erat nostrud hendrerit dignissim claritatem me etiam quam claram, ", Store.NO));
+    doc.add(new TextField("f3","nibh iriure qui liber claritatem. claram, seacula videntur sollemnes ", Store.NO));
+    directWriter.addDocument(doc);
+    
+    doc = new Document();
+    doc.add(new TextField("f4","diam eum nulla nulla claritatem. mutationem claram, ", Store.NO));
+    doc.add(new TextField("f4","amet, erat eum delenit iis claritatem. claram, et fiant ", Store.NO));
+    doc.add(new StoredField("f0","dolore quis duis iriure illum accumsan blandit tempor nihil facer assum. qui lectores dynamicus, claram, quinta qui sollemnes "));
+    doc.add(new StoredField("f1","elit, dolore aliquip dolore et facilisi. nobis placerat demonstraverunt processus qui littera eodem clari, "));
+    doc.add(new TextField("f1","nonummy ad commodo at te eleifend congue doming in demonstraverunt consuetudium est eodem ", Store.NO));
+    doc.add(new TextField("f3","dolore volutpat. exerci nisl consequat, delenit liber nobis qui lectores saepius. et fiant ", Store.NO));
+    directWriter.addDocument(doc);
+    
+    doc = new Document();
+    doc.add(new TextField("f5","magna dolore luptatum claritatem investigationes quod per ", Store.NO));
+    doc.add(new TextField("f2","elit, sed dolore aliquip commodo eum dignissim feugait doming habent insitam; legunt est qui quarta parum ", Store.NO));
+    doc.add(new StoredField("f3","nibh volutpat. in facilisis accumsan luptatum mazim lectores sequitur anteposuerit sollemnes "));
+    doc.add(new TextField("f2","euismod suscipit eum dolor molestie at qui duis doming in lius qui notare nunc ", Store.NO));
+    directWriter.addDocument(doc);
+    
+    doc = new Document();
+    doc.add(new TextField("f4","tincidunt velit facilisis dignissim cum iis claram, ", Store.NO));
+    doc.add(new StoredField("f4","ullamcorper accumsan delenit dolore nihil claritatem. mutationem clari, "));
+    directWriter.addDocument(doc);
+    
+    doc = new Document();
+    doc.add(new TextField("f3","exerci ea esse consequat, facilisis praesent placerat dynamicus, seacula qui ", Store.NO));
+    doc.add(new TextField("f2","sed nonummy erat duis eum iriure dignissim duis nam assum. insitam; qui quam nunc futurum. ", Store.NO));
+    doc.add(new TextField("f5","velit luptatum augue placerat quam ", Store.NO));
+    doc.add(new TextField("f3","minim commodo facilisis qui imperdiet ii claritas seacula ", Store.NO));
+    directWriter.addDocument(doc);
+    
+    doc = new Document();
+    doc.add(new TextField("f2","tincidunt suscipit dolor eu dignissim delenit congue possim lius anteposuerit in ", Store.NO));
+    directWriter.addDocument(doc);
+    
+    doc = new Document();
+    doc.add(new TextField("f5","consectetuer illum eleifend processus fiant ", Store.NO));
+    directWriter.addDocument(doc);
+    
+    doc = new Document();
+    doc.add(new TextField("f1","volutpat. minim aliquip duis dolore zzril congue in saepius. dynamicus, qui est eodem qui futurum. ", Store.NO));
+    doc.add(new TextField("f0","ut quis duis eum hendrerit dolore odio feugait option doming mazim possim usus claritatem. legunt mirum litterarum qui sollemnes futurum. ", Store.NO));
+    directWriter.addDocument(doc);
+    
+    doc = new Document();
+    doc.add(new TextField("f0","nibh ut ut minim exerci ea duis esse et blandit luptatum facilisi. soluta doming quod typi usus quod dynamicus, consuetudium mirum quam quarta clari, in ", Store.NO));
+    doc.add(new TextField("f4","wisi facilisis claritatem iis lius mutationem qui ", Store.NO));
+    directWriter.addDocument(doc);
+    
+    doc = new Document();
+    doc.add(new StoredField("f4","nibh ullamcorper ea dignissim usus mutationem quarta "));
+    doc.add(new StoredField("f4","consectetuer wisi ea illum facilisis assum. mutationem quarta clari, "));
+    directWriter.addDocument(doc);
+    
+    doc = new Document();
+    doc.add(new TextField("f5","velit tempor processus putamus et typi, ", Store.NO));
+    doc.add(new TextField("f0","nibh dolore exerci eum esse feugiat facilisis iusto dolore cum quod non facit legunt quam claram, litterarum nunc ", Store.NO));
+    doc.add(new TextField("f4","consectetuer ullamcorper eum dignissim dolore assum. est littera in ", Store.NO));
+    doc.add(new TextField("f2","ipsum ad duis dolor eu at nam doming habent eorum me consuetudium decima futurum. ", Store.NO));
+    directWriter.addDocument(doc);
+    
+    doc = new Document();
+    doc.add(new TextField("f3","adipiscing wisi nisl consequat, dignissim nobis qui mirum fiant sollemnes ", Store.NO));
+    doc.add(new TextField("f0","euismod ut ad nisl dolor eu blandit te eleifend nihil typi qui lectores claritas consuetudium gothica, claram, decima sollemnes ", Store.NO));
+    doc.add(new TextField("f0","ut erat ut nisl ea dolor velit vel eros odio qui feugait facilisi. nihil assum. usus ii legunt littera decima nobis sollemnes ", Store.NO));
+    directWriter.addDocument(doc);
+    
+    doc = new Document();
+    doc.add(new TextField("f5","velit tempor legentis mirum fiant ", Store.NO));
+    doc.add(new TextField("f0","nibh dolore exerci eum esse feugiat facilisis iusto dolore cum quod non facit legunt quam claram, litterarum nunc ", Store.NO));
+    doc.add(new TextField("f4","consectetuer ullamcorper eum dignissim dolore assum. est littera in ", Store.NO));
+    directWriter.addDocument(doc);
+    
+    doc = new Document();
+    doc.add(new TextField("f2","dolore tation duis in eu delenit nam placerat in qui quarta ", Store.NO));
+    doc.add(new TextField("f2","ut suscipit duis at dignissim delenit soluta insitam; me quam qui futurum. ", Store.NO));
+    directWriter.addDocument(doc);
+    
+    doc = new Document();
+    doc.add(new TextField("f0","diam euismod quis autem consequat, eros iusto delenit feugait option quod habent claritatem claritatem. lectores consuetudium nunc per qui sollemnes ", Store.NO));
+    doc.add(new TextField("f4","nibh tincidunt hendrerit nulla usus est quam qui ", Store.NO));
+    doc.add(new TextField("f1","adipiscing diam nostrud duis at zzril te nobis congue est demonstraverunt lius consuetudium est claram, qui in ", Store.NO));
+    doc.add(new StoredField("f0","nibh euismod magna erat suscipit duis dolor esse et delenit tempor quod typi in legunt littera nunc decima. in "));
+    directWriter.addDocument(doc);
+    
+    doc = new Document();
+    doc.add(new TextField("f1","diam nonummy tincidunt lobortis dolor et luptatum liber cum doming quod assum. habent insitam; est ii littera per et qui ", Store.NO));
+    doc.add(new TextField("f4","diam ullamcorper dignissim assum. claritatem. me etiam qui clari, ", Store.NO));
+    doc.add(new TextField("f0","ipsum ut volutpat. minim autem dolor vulputate vel dolore odio blandit cum nobis mazim placerat facer possim est lectores sequitur consuetudium claram, modo qui in ", Store.NO));
+    doc.add(new TextField("f2","tincidunt nisl duis in zzril placerat habent qui parum litterarum qui ", Store.NO));
+    directWriter.addDocument(doc);
+    
+    doc = new Document();
+    doc.add(new StoredField("f3","nibh ea consequat, accumsan tempor est dynamicus, seacula typi, videntur sollemnes "));
+    directWriter.addDocument(doc);
+    
+    doc = new Document();
+    doc.add(new TextField("f1","volutpat. duis dolor esse at iusto delenit doming est facit est consuetudium humanitatis sollemnes ", Store.NO));
+    doc.add(new TextField("f2","ipsum ut nisl dolor dignissim nam placerat investigationes processus notare nunc in ", Store.NO));
+    doc.add(new TextField("f1","ipsum tincidunt nostrud lobortis in vel nulla dolore placerat facit ii quam littera formas nunc clari, ", Store.NO));
+    directWriter.addDocument(doc);
+    
+    doc = new Document();
+    doc.add(new TextField("f3","adipiscing ea consequat, qui nobis ii mirum et sollemnes ", Store.NO));
+    doc.add(new TextField("f5","velit te legere typi, ", Store.NO));
+    doc.add(new TextField("f3","nisl in dignissim delenit placerat est claritatem. notare anteposuerit et videntur ", Store.NO));
+    directWriter.addDocument(doc);
+    
+    doc = new Document();
+    doc.add(new TextField("f1","dolore nostrud suscipit lobortis duis vel et delenit liber cum habent usus claritatem. qui formas nobis sollemnes futurum. ", Store.NO));
+    doc.add(new TextField("f2","erat tation duis in molestie dignissim liber congue possim me qui litterarum eodem in ", Store.NO));
+    directWriter.addDocument(doc);
+    
+    doc = new Document();
+    doc.add(new TextField("f0","amet, elit, ut minim duis eum esse vel eu iusto blandit nam eleifend nihil typi usus facit legunt notare litterarum per decima clari, ", Store.NO));
+    directWriter.addDocument(doc);
+    
+    doc = new Document();
+    doc.add(new TextField("f2","euismod suscipit in velit delenit facer legunt quam formas parum ", Store.NO));
+    doc.add(new StoredField("f4","ullamcorper accumsan delenit insitam; lius mutationem quarta decima. "));
+    directWriter.addDocument(doc);
+    
+    doc = new Document();
+    doc.add(new StoredField("f3","ipsum adipiscing wisi nisl consequat, praesent placerat qui saepius. dynamicus, seacula videntur "));
+    directWriter.addDocument(doc);
+    
+    doc = new Document();
+    doc.add(new StoredField("f0","consectetuer erat minim suscipit ea esse consequat, feugiat accumsan duis cum nihil typi claritatem facit etiam quam claram, quinta modo futurum. "));
+    doc.add(new TextField("f4","tincidunt illum cum claritatem. mutationem litterarum ", Store.NO));
+    directWriter.addDocument(doc);
+    
+    doc = new Document();
+    doc.add(new TextField("f2","tincidunt erat ad aliquip duis velit dignissim delenit facer insitam; processus qui litterarum formas quarta ", Store.NO));
+    doc.add(new StoredField("f2","erat ut nisl duis at feugait congue in lius anteposuerit nunc "));
+    doc.add(new TextField("f3","adipiscing minim esse luptatum tempor imperdiet est saepius. seacula fiant ", Store.NO));
+    doc.add(new TextField("f0","ipsum elit, magna suscipit dolor eu iusto feugait eleifend quod assum. non est investigationes claritas nunc seacula videntur ", Store.NO));
+    doc.add(new TextField("f4","amet, nibh ullamcorper velit nulla dignissim quod insitam; lius decima. ", Store.NO));
+    directWriter.addDocument(doc);
+    
+    doc = new Document();
+    doc.add(new TextField("f5","quis dolore eleifend investigationes mirum per eodem typi, ", Store.NO));
+    directWriter.addDocument(doc);
+    
+    directWriter.close();
+    DirectoryReader directReader = DirectoryReader.open(directDir);
+    
+    IndexData directIndexData = new IndexData(directReader);
+    System.out.println("Direct index data");
+    System.out.println(directIndexData.toString(true));
+    System.out.println();
+    directReader.close();
+    directDir.close();
+    
+    boolean equalsNoOrder = IndexData.equalsNoOrder(directIndexData,
+        updatesIndexData);
+    assertTrue("indexes differ", equalsNoOrder);
+  }
+  
+  public void testReplaceAndAddAgain() throws IOException {
     IndexWriter writer = new IndexWriter(dir, newIndexWriterConfig(
         TEST_VERSION_CURRENT, new MockAnalyzer(random())));
     
@@ -264,13 +491,13 @@ public class TestFieldReplacements extends LuceneTestCase {
     doc1.add(new StoredField("f1", "c", fieldType));
     writer.addDocument(doc1);
     
-    Document doc2 = new Document();
-    doc2.add(new StoredField("f1", "b", fieldType));
-    writer.addDocument(doc2);
-    
     Document doc3 = new Document();
     doc3.add(new StoredField("f1", "d", fieldType));
     writer.updateFields(Operation.REPLACE_FIELDS, new Term("f1", "b"), doc3);
+    
+    Document doc2 = new Document();
+    doc2.add(new StoredField("f1", "b", fieldType));
+    writer.addDocument(doc2);
     
     writer.close();
     
@@ -288,6 +515,8 @@ public class TestFieldReplacements extends LuceneTestCase {
     
     final DocsAndPositionsEnum termPositionsB = atomicReader
         .termPositionsEnum(new Term("f1", "b"));
+    assertEquals("wrong doc id", 2, termPositionsB.nextDoc());
+    assertEquals("wrong position", 0, termPositionsB.nextPosition());
     assertEquals("wrong doc id", DocIdSetIterator.NO_MORE_DOCS,
         termPositionsB.nextDoc());
     
@@ -302,8 +531,6 @@ public class TestFieldReplacements extends LuceneTestCase {
         .termPositionsEnum(new Term("f1", "d"));
     assertEquals("wrong doc id", 0, termPositionsD.nextDoc());
     assertEquals("wrong position", 0, termPositionsD.nextPosition());
-    assertEquals("wrong doc id", 2, termPositionsD.nextDoc());
-    assertEquals("wrong position", 0, termPositionsD.nextPosition());
     assertEquals("wrong doc id", DocIdSetIterator.NO_MORE_DOCS,
         termPositionsD.nextDoc());
     
@@ -312,7 +539,7 @@ public class TestFieldReplacements extends LuceneTestCase {
     final StorableField[] f1_0 = stored0.getFields("f1");
     assertEquals("wrong numeber of stored fields", 1, f1_0.length);
     assertEquals("wrong field value", "d", f1_0[0].stringValue());
-
+    
     final StoredDocument stored1 = atomicReader.document(1);
     final StorableField[] f1_1 = stored1.getFields("f1");
     assertEquals("wrong numeber of stored fields", 2, f1_1.length);
@@ -322,8 +549,8 @@ public class TestFieldReplacements extends LuceneTestCase {
     final StoredDocument stored2 = atomicReader.document(2);
     final StorableField[] f1_2 = stored2.getFields("f1");
     assertEquals("wrong numeber of stored fields", 1, f1_2.length);
-    assertEquals("wrong field value", "d", f1_2[0].stringValue());
-
+    assertEquals("wrong field value", "b", f1_2[0].stringValue());
+    
     directoryReader.close();
     
   }
@@ -351,4 +578,31 @@ public class TestFieldReplacements extends LuceneTestCase {
       }
     }
   }
+  
+  public void testprintIndexes() throws IOException {
+    File outDir = new File("D:/temp/ifu/compare/scenario/c");
+    outDir.mkdirs();
+
+    for (int i = 0; i < 42; i++) {
+      //Directory directory = new RAMDirectory();
+      File fsDirFile = new File(outDir, "" + i);
+      fsDirFile.mkdirs();
+      Directory directory = FSDirectory.open(fsDirFile);
+      for (String filename : directory.listAll()) {
+        new File(fsDirFile, filename).delete();
+      }
+      addDocuments(directory, new Random(3), i);
+      DirectoryReader updatesReader = DirectoryReader.open(directory);
+      IndexData updatesIndexData = new IndexData(
+          updatesReader);
+      updatesReader.close();
+
+      File out = new File(outDir, (i < 10 ? "0" : "") + i + ".txt");
+      FileWriter fileWriter = new FileWriter(out);
+      fileWriter.append(updatesIndexData.toString());
+      fileWriter.close();
+    }
+  }
+  
+
 }

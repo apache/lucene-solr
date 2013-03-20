@@ -22,14 +22,18 @@ import java.text.NumberFormat;
 import java.util.Collection;
 import java.util.HashSet;
 import java.util.Locale;
+import java.util.Set;
 
 import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.codecs.Codec;
 import org.apache.lucene.index.DocumentsWriterDeleteQueue.DeleteSlice;
+import org.apache.lucene.index.FieldInfos.Builder;
+import org.apache.lucene.index.FieldInfos.FieldNumbers;
 import org.apache.lucene.search.similarities.Similarity;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.FlushInfo;
 import org.apache.lucene.store.IOContext;
+import org.apache.lucene.store.RAMDirectory;
 import org.apache.lucene.store.TrackingDirectoryWrapper;
 import org.apache.lucene.util.ByteBlockPool.Allocator;
 import org.apache.lucene.util.ByteBlockPool.DirectTrackingAllocator;
@@ -85,9 +89,9 @@ class DocumentsWriterPerThread {
       final TermsHashConsumer termVectorsWriter = new TermVectorsConsumer(documentsWriterPerThread);
       final TermsHashConsumer freqProxWriter = new FreqProxTermsWriter();
 
-      final InvertedDocConsumer termsHash = new TermsHash(documentsWriterPerThread, freqProxWriter, true,
-                                                          new TermsHash(documentsWriterPerThread, termVectorsWriter, false, null));
-      final NormsConsumer normsWriter = new NormsConsumer();
+      final InvertedDocConsumer  termsHash = new TermsHash(documentsWriterPerThread, freqProxWriter, true,
+                                                           new TermsHash(documentsWriterPerThread, termVectorsWriter, false, null));
+      final NormsConsumer normsWriter = new NormsConsumer(documentsWriterPerThread);
       final DocInverter docInverter = new DocInverter(documentsWriterPerThread.docState, termsHash, normsWriter);
       final StoredFieldsConsumer storedFields = new TwoStoredFieldsConsumers(
                                                       new StoredFieldsProcessor(documentsWriterPerThread),
@@ -127,7 +131,6 @@ class DocumentsWriterPerThread {
     final SegmentInfoPerCommit segmentInfo;
     final FieldInfos fieldInfos;
     final FrozenBufferedDeletes segmentDeletes;
-    final BufferedUpdates segmentUpdates;
     final MutableBits liveDocs;
     final UpdatedSegmentData liveUpdates;
     final int delCount;
@@ -138,8 +141,13 @@ class DocumentsWriterPerThread {
                            UpdatedSegmentData liveUpdates) {
       this.segmentInfo = segmentInfo;
       this.fieldInfos = fieldInfos;
-      this.segmentDeletes = segmentDeletes != null && segmentDeletes.any() ? new FrozenBufferedDeletes(segmentDeletes, segmentUpdates, true) : null;
-      this.segmentUpdates = segmentUpdates;
+      if ((segmentDeletes != null && segmentDeletes.any())
+          || (segmentUpdates != null && segmentUpdates.any())) {
+        this.segmentDeletes = new FrozenBufferedDeletes(segmentDeletes,
+            segmentUpdates, true);
+      } else {
+        this.segmentDeletes = null;
+      }
       this.liveDocs = liveDocs;
       this.liveUpdates = liveUpdates;
       this.delCount = delCount;
@@ -190,7 +198,6 @@ class DocumentsWriterPerThread {
   BufferedDeletes pendingDeletes;  
   BufferedUpdates pendingUpdates;  
   SegmentInfo segmentInfo;     // Current segment we are working on
-  SegmentInfo baseSegmentInfo; // name of the base segment for segmentInfo  
   boolean aborting = false;   // True if an abort is pending
   boolean hasAborted = false; // True if the last exception throws by #updateDocument was aborting
 
@@ -223,6 +230,9 @@ class DocumentsWriterPerThread {
     intBlockAllocator = new IntBlockAllocator(bytesUsed);
     initialize();
     this.indexingChain = indexingChain;
+    // this should be the last call in the ctor 
+    // it really sucks that we need to pull this within the ctor and pass this ref to the chain!
+    consumer = indexingChain.getChain(this);
   }
   
   public DocumentsWriterPerThread(DocumentsWriterPerThread other, FieldInfos.Builder fieldInfos) {
@@ -253,7 +263,7 @@ class DocumentsWriterPerThread {
     docState.analyzer = analyzer;
     docState.docID = numDocsInRAM;
     if (segmentInfo == null) {
-      initSegmentInfo(null, -1);
+      initSegmentInfo();
     }
     if (INFO_VERBOSE && infoStream.isEnabled("DWPT")) {
       infoStream.message("DWPT", Thread.currentThread().getName() + " update delTerm=" + delTerm + " docID=" + docState.docID + " seg=" + segmentInfo.name);
@@ -261,7 +271,7 @@ class DocumentsWriterPerThread {
     boolean success = false;
     try {
       try {
-        consumer.processDocument(fieldInfos);
+        consumer.processDocument(fieldInfos, segmentInfo, directory);
       } finally {
         docState.clear();
       }
@@ -279,7 +289,7 @@ class DocumentsWriterPerThread {
     }
     success = false;
     try {
-      consumer.finishDocument();
+      consumer.finishDocument(directory, segmentInfo);
       success = true;
     } finally {
       if (!success) {
@@ -289,24 +299,14 @@ class DocumentsWriterPerThread {
     finishDocument(delTerm, null);
   }
 
-  void initSegmentInfo(SegmentInfo info, long updateGen) {
-    if (info == null) {
-      String segment = writer.newSegmentName();
-      segmentInfo = new SegmentInfo(directoryOrig,
-          Constants.LUCENE_MAIN_VERSION, segment, -1, false, codec, null, null);
-      baseSegmentInfo = null;
-    } else {
-      baseSegmentInfo = info;
-      segmentInfo = new SegmentInfo(directoryOrig,
-          Constants.LUCENE_MAIN_VERSION, IndexFileNames.fileNameFromGeneration(
-              info.name, "", updateGen, true), -1, false, codec, null, null);
-    }
+  private void initSegmentInfo() {
+    String segment = writer.newSegmentName();
+    segmentInfo = new SegmentInfo(directoryOrig, Constants.LUCENE_MAIN_VERSION, segment, -1,
+                                  false, codec, null, null);
     assert numDocsInRAM == 0;
     if (INFO_VERBOSE && infoStream.isEnabled("DWPT")) {
-      infoStream.message("DWPT", Thread.currentThread().getName() + " init seg=" + segmentInfo.name + " delQueue=" + deleteQueue);  
+      infoStream.message("DWPT", Thread.currentThread().getName() + " init seg=" + segment + " delQueue=" + deleteQueue);  
     }
-    // reset consumer, may have previous segment name as inner state
-    consumer = indexingChain.getChain(this);
   }
   
   public int updateDocuments(Iterable<? extends IndexDocument> docs, Analyzer analyzer, Term delTerm) throws IOException {
@@ -314,7 +314,7 @@ class DocumentsWriterPerThread {
     assert deleteQueue != null;
     docState.analyzer = analyzer;
     if (segmentInfo == null) {
-      initSegmentInfo(null, -1);
+      initSegmentInfo();
     }
     if (INFO_VERBOSE && infoStream.isEnabled("DWPT")) {
       infoStream.message("DWPT", Thread.currentThread().getName() + " update delTerm=" + delTerm + " docID=" + docState.docID + " seg=" + segmentInfo.name);
@@ -330,7 +330,7 @@ class DocumentsWriterPerThread {
 
         boolean success = false;
         try {
-          consumer.processDocument(fieldInfos);
+          consumer.processDocument(fieldInfos, segmentInfo, directory);
           success = true;
         } finally {
           if (!success) {
@@ -346,7 +346,7 @@ class DocumentsWriterPerThread {
         }
         success = false;
         try {
-          consumer.finishDocument();
+          consumer.finishDocument(directory, segmentInfo);
           success = true;
         } finally {
           if (!success) {
@@ -413,6 +413,74 @@ class DocumentsWriterPerThread {
     }
   }
 
+  /**
+   * Create a directory and invert the given update fields into it, to be later
+   * used for adding field updates to stacked segments.
+   * 
+   * @param fieldsUpdate
+   *          Fields of the update.
+   * @param globalFieldNumbers
+   *          Field numbers to use.
+   * @throws IOException
+   *           If inversion goes wrong.
+   */
+  public void invertFieldsUpdate(FieldsUpdate fieldsUpdate,
+      FieldNumbers globalFieldNumbers) throws IOException {
+    assert writer.testPoint("DocumentsWriterPerThread addDocument start");
+    assert deleteQueue != null;
+    docState.doc = fieldsUpdate.fields;
+    docState.analyzer = fieldsUpdate.analyzer;
+    docState.docID = 0;
+    Directory updateDir = new RAMDirectory();
+    DocConsumer updateConsumer = indexingChain.getChain(this);
+    Builder updateFieldInfos = new FieldInfos.Builder(globalFieldNumbers);
+    if (INFO_VERBOSE && infoStream.isEnabled("DWPT")) {
+      infoStream.message("DWPT", Thread.currentThread().getName() + " getUpdateDirectory");
+    }
+    boolean success = false;
+    try {
+      try {
+        updateConsumer.processDocument(updateFieldInfos, new SegmentInfo(
+            updateDir, Constants.LUCENE_MAIN_VERSION, "_0", -1, false, codec,
+            null, null), updateDir);
+      } finally {
+        docState.clear();
+      }
+      success = true;
+    } finally {
+      if (!success) {
+        if (aborting) {
+          abort();
+        }
+      }
+    }
+    success = false;
+    try {
+      SegmentInfo updateSegment = new SegmentInfo(updateDir,
+          Constants.LUCENE_MAIN_VERSION, FIRST_SEGMENT_NAME, 1, false, codec,
+          null, null);
+      updateConsumer.finishDocument(updateDir, updateSegment);
+
+      SegmentWriteState updateFlushState = new SegmentWriteState(infoStream,
+          updateDir, updateSegment, 0, updateFieldInfos.finish(), writer
+              .getConfig().getTermIndexInterval(), null, null,
+          IOContext.DEFAULT);
+      
+      updateConsumer.flush(updateFlushState);
+      
+      fieldsUpdate.directory = updateDir;
+      fieldsUpdate.segmentInfo = updateSegment;
+      fieldsUpdate.fields = null;
+      //fieldsUpdate.docIDUpto = 
+      
+      success = true;
+    } finally {
+      if (!success) {
+        abort();
+      }
+    }
+  }
+
   // Buffer a specific docID for deletion.  Currently only
   // used when we hit a exception when adding a document
   void deleteDocID(int docIDUpto) {
@@ -447,9 +515,7 @@ class DocumentsWriterPerThread {
   /** Reset after a flush */
   private void doAfterFlush() {
     segmentInfo = null;
-    if (consumer != null) {
-      consumer.doAfterFlush();
-    }
+    consumer.doAfterFlush();
     directory.getCreatedFiles().clear();
     fieldInfos = new FieldInfos.Builder(fieldInfos.globalFieldNumbers);
     parent.subtractFlushedNumDocs(numDocsInRAM);
@@ -476,17 +542,16 @@ class DocumentsWriterPerThread {
   }
 
   /** Flush all pending docs to a new segment */
-  FlushedSegment flush(long updateGen) throws IOException {
+  FlushedSegment flush() throws IOException {
     assert numDocsInRAM > 0;
     assert deleteSlice == null : "all deletes must be applied in prepareFlush";
     if (segmentInfo == null) {
       return null;
     }
     segmentInfo.setDocCount(numDocsInRAM);
-    IOContext context = new IOContext(new FlushInfo(numDocsInRAM, bytesUsed()));
     flushState = new SegmentWriteState(infoStream, directory, segmentInfo, 0, fieldInfos.finish(),
         writer.getConfig().getTermIndexInterval(), 
-        pendingDeletes, pendingUpdates, context);
+        pendingDeletes, pendingUpdates, new IOContext(new FlushInfo(numDocsInRAM, bytesUsed())));
     final double startMBUsed = parent.flushControl.netBytes() / 1024. / 1024.;
 
     // Apply delete-by-docID now (delete-byDocID only
@@ -518,14 +583,9 @@ class DocumentsWriterPerThread {
     try {
       consumer.flush(flushState);
       pendingDeletes.terms.clear();
-      if (updateGen < 0) {
-        segmentInfo.setFiles(new HashSet<String>(directory.getCreatedFiles()));
-      } else {
-        segmentInfo = baseSegmentInfo;
-        segmentInfo.addFiles(new HashSet<String>(directory.getCreatedFiles()));
-      }
+      segmentInfo.setFiles(new HashSet<String>(directory.getCreatedFiles()));
       
-      final SegmentInfoPerCommit segmentInfoPerCommit = new SegmentInfoPerCommit(segmentInfo, 0, -1L, updateGen);
+      final SegmentInfoPerCommit segmentInfoPerCommit = new SegmentInfoPerCommit(segmentInfo, 0, -1L, -1L);
       if (infoStream.isEnabled("DWPT")) {
         infoStream.message("DWPT", "new segment has " + (flushState.liveDocs == null ? 0 : (flushState.segmentInfo.getDocCount() - flushState.delCountOnFlush)) + " deleted docs");
         infoStream.message("DWPT", "new segment has " +
@@ -562,7 +622,7 @@ class DocumentsWriterPerThread {
       FlushedSegment fs = new FlushedSegment(segmentInfoPerCommit, flushState.fieldInfos,
                                              segmentDeletes, flushState.liveDocs, flushState.delCountOnFlush, 
                                              pendingUpdates, flushState.liveUpdates);
-      sealFlushedSegment(fs, updateGen);
+      sealFlushedSegment(fs);
       doAfterFlush();
       success = true;
 
@@ -581,7 +641,7 @@ class DocumentsWriterPerThread {
    * Seals the {@link SegmentInfo} for the new flushed segment and persists
    * the deleted documents {@link MutableBits}.
    */
-  void sealFlushedSegment(FlushedSegment flushedSegment, long updateGen) throws IOException {
+  void sealFlushedSegment(FlushedSegment flushedSegment) throws IOException {
     assert flushedSegment != null;
 
     SegmentInfoPerCommit newSegment = flushedSegment.segmentInfo;
@@ -595,7 +655,9 @@ class DocumentsWriterPerThread {
       if (writer.useCompoundFile(newSegment)) {
 
         // Now build compound file
-        Collection<String> oldFiles = IndexWriter.createCompoundFile(infoStream, directory, MergeState.CheckAbort.NONE, newSegment.info, context, updateGen);
+        Collection<String> oldFiles = IndexWriter.createCompoundFile(
+            infoStream, directory, MergeState.CheckAbort.NONE, newSegment.info,
+            context, -1L);
         newSegment.info.setUseCompoundFile(true);
         writer.deleteNewFiles(oldFiles);
       }
@@ -604,11 +666,7 @@ class DocumentsWriterPerThread {
       // creating CFS so that 1) .si isn't slurped into CFS,
       // and 2) .si reflects useCompoundFile=true change
       // above:
-      if (updateGen < 0) {
-        codec.segmentInfoFormat().getSegmentInfoWriter().write(directory, newSegment.info, flushedSegment.fieldInfos, context);
-      } else {
-        codec.segmentInfoFormat().getSegmentInfoWriter().writeFilesList(directory, newSegment.info, updateGen, context);
-      }
+      codec.segmentInfoFormat().getSegmentInfoWriter().write(directory, newSegment.info, flushedSegment.fieldInfos, context);
 
       // TODO: ideally we would freeze newSegment here!!
       // because any changes after writing the .si will be
@@ -651,6 +709,40 @@ class DocumentsWriterPerThread {
     }
   }
 
+  void sealUpdatedSegment(SegmentInfo info, Directory directory,
+      long updateGen, Set<String> generationReplacementFilenames)
+      throws IOException {
+    assert updateGen > 0;
+    boolean success = false;
+    try {
+      // TODO : SY : size in bytes!
+      IOContext context = new IOContext(new FlushInfo(info.getDocCount(), 0));
+      if (info.getUseCompoundFile()) {
+        // Now build compound file
+        Collection<String> oldFiles = IndexWriter.createCompoundFile(
+            infoStream, directory, MergeState.CheckAbort.NONE, info, context,
+            -1L, generationReplacementFilenames);
+        writer.deleteNewFiles(oldFiles);
+      }
+      
+      // Have codec write files of updated segment. Must do this after creating
+      // CFS so that 1) .sif isn't slurped into CFS, and 2) .sif reflects
+      // useCompoundFile=true change above:
+      codec.segmentInfoFormat().getSegmentInfoWriter()
+          .writeUpdatedSegmentFiles(directory, info, updateGen, context);
+      
+      success = true;
+    } finally {
+      if (!success) {
+        if (infoStream.isEnabled("DWPT")) {
+          infoStream.message("DWPT", "hit exception "
+              + "writing compound file for updated segment " + info.name);
+        }
+        writer.flushFailed(info);
+      }
+    }
+  }
+
   /** Get current segment info we are writing. */
   SegmentInfo getSegmentInfo() {
     return segmentInfo;
@@ -667,7 +759,10 @@ class DocumentsWriterPerThread {
   /* if you increase this, you must fix field cache impl for
    * getTerms/getTermsIndex requires <= 32768 */
   final static int MAX_TERM_LENGTH_UTF8 = BYTE_BLOCK_SIZE-2;
-
+  
+  /* A segment name to be used when inverting field updates into temporary
+   * directories, using the convention in IndexWriter.newSegmentName(). */
+  final static String FIRST_SEGMENT_NAME = "_"  + Integer.toString(0, Character.MAX_RADIX);
 
   private static class IntBlockAllocator extends IntBlockPool.Allocator {
     private final Counter bytesUsed;

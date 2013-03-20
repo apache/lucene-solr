@@ -115,7 +115,8 @@ public class TestFieldUpdates extends LuceneTestCase {
     
     // test that the norms are not present in the segment if
     // omitNorms is true
-    for (FieldInfo fi : reader.getFieldInfos()) {
+    FieldInfos fieldInfos = reader.getFieldInfos();
+    for (FieldInfo fi : fieldInfos) {
       if (fi.isIndexed()) {
         assertTrue("omitNorms=" + fi.omitsNorms() + " normsValue=" + reader.getNormValues(fi.name), fi.omitsNorms() == (reader.getNormValues(fi.name) == null));
       }

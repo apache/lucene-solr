@@ -100,7 +100,7 @@ final class SegmentCoreReaders {
   private final Set<CoreClosedListener> coreClosedListeners = 
       Collections.synchronizedSet(new LinkedHashSet<CoreClosedListener>());
   
-  SegmentCoreReaders(SegmentReader owner, SegmentInfoPerCommit si, long updageGen, IOContext context, int termsIndexDivisor) throws IOException {
+  SegmentCoreReaders(SegmentReader owner, SegmentInfo si, long updageGen, IOContext context, int termsIndexDivisor) throws IOException {
     
     if (termsIndexDivisor == 0) {
       throw new IllegalArgumentException("indexDivisor must be < 0 (don't load terms index) or greater than 0 (got 0)");
@@ -109,11 +109,12 @@ final class SegmentCoreReaders {
     final SegmentInfo info;
     final String infoName;
     if (updageGen == -1) {
-      info = si.info;
+      info = si;
       infoName = info.name;
     } else {
-      info = new SegmentInfo(si.info, updageGen);
-      infoName = IndexFileNames.fileNameFromGeneration(si.info.name, "", updageGen, true);
+      info = new SegmentInfo(si, updageGen);
+      info.setDocCount(si.getDocCount());
+      infoName = IndexFileNames.fileNameFromGeneration(si.name, "", updageGen, true);
     }
     
     Directory dir = info.dir;

@@ -19,6 +19,7 @@ package org.apache.lucene.codecs;
 
 import java.io.IOException;
 import java.util.Collection;
+import java.util.Set;
 import java.util.regex.Pattern;
 
 import org.apache.lucene.index.FieldGenerationReplacements;
@@ -52,12 +53,24 @@ public abstract class GenerationReplacementsFormat {
    */
   public FieldGenerationReplacements readGenerationReplacements(String field,
       SegmentInfoPerCommit info, IOContext context) throws IOException {
-    String fileName = getLastGenerationFileName(field, info.info.dir, info);
-    if (fileName == null) {
-      return null;
-    }
+    FieldGenerationReplacements reps = null;
     
-    return internalReadGeneration(info.info.dir, fileName, context);
+    for (long gen = 1; gen <= info.getUpdateGen(); gen++) {
+      final String fileName = IndexFileNames.segmentFileName(
+          IndexFileNames.fileNameFromGeneration(info.info.name, "", gen, true),
+          field, FIELD_GENERATION_REPLACEMENT_EXTENSION);
+      if (info.info.dir.fileExists(fileName)) {
+        final FieldGenerationReplacements 
+        newGeneration = internalReadGeneration(info.info.dir, fileName, context);
+        if (reps == null) {
+          reps = newGeneration;
+        } else {
+          reps.merge(newGeneration);
+        }
+      }
+    }
+
+    return reps;
   }
   
   private FieldGenerationReplacements internalReadGeneration(Directory dir,
@@ -78,19 +91,6 @@ public abstract class GenerationReplacementsFormat {
     }
   }
   
-  private String getLastGenerationFileName(String field, Directory dir,
-      SegmentInfoPerCommit info) throws IOException {
-    for (long i = info.getUpdateGen(); i > 0; i--) {
-      final String fileName = IndexFileNames.segmentFileName(
-          IndexFileNames.fileNameFromGeneration(info.info.name, "", i, false),
-          field, FIELD_GENERATION_REPLACEMENT_EXTENSION);
-      if (dir.fileExists(fileName)) {
-        return fileName;
-      }
-    }
-    return null;
-  }
-  
   /**
    * Read persisted field generation replacements from a given input.
    */
@@ -104,24 +104,15 @@ public abstract class GenerationReplacementsFormat {
    */
   public void writeGenerationReplacement(String field,
       FieldGenerationReplacements reps, Directory dir,
-      SegmentInfoPerCommit info, IOContext context) throws IOException {
+      SegmentInfoPerCommit info, IOContext context,
+      Set<String> generationReplacementFilenames) throws IOException {
     if (reps == null) {
       // nothing new to write
       return;
     }
     
-    // load replacements from previous file
-    String prevFileName = getLastGenerationFileName(field, dir, info);
-    final FieldGenerationReplacements existing;
-    if (prevFileName != null) {
-      existing = internalReadGeneration(dir, prevFileName, context);
-      existing.merge(reps);
-    } else {
-      existing = reps;
-    }
-    
     final String nameWithGeneration = IndexFileNames.fileNameFromGeneration(
-        info.info.name, "", info.getNextUpdateGen(), false);
+        info.info.name, "", info.getNextUpdateGen(), true);
     final String fileName = IndexFileNames.segmentFileName(nameWithGeneration,
         field, FIELD_GENERATION_REPLACEMENT_EXTENSION);
     
@@ -133,13 +124,10 @@ public abstract class GenerationReplacementsFormat {
     } finally {
       if (!success) {
         IOUtils.closeWhileHandlingException(output);
-        info.info.dir.deleteFile(fileName);
+        dir.deleteFile(fileName);
       } else {
+        generationReplacementFilenames.add(fileName);
         output.close();
-        if (prevFileName != null) {
-          // remove previous file
-          info.info.dir.deleteFile(prevFileName);
-        }
       }
     }
   }

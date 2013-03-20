@@ -51,8 +51,8 @@ public final class SegmentReader extends AtomicReader {
   private final int numDocs;
   
   final SegmentCoreReaders core;
+  final SegmentCoreReaders[] updates;
   
-  private SegmentCoreReaders[] updates;
   private final IOContext context;
   private Fields fields;
   private FieldInfos fieldInfos;
@@ -73,8 +73,8 @@ public final class SegmentReader extends AtomicReader {
       IOContext context) throws IOException {
     this.si = si;
     this.context = context;
-    core = new SegmentCoreReaders(this, si, -1, context, termInfosIndexDivisor);
-    initUpdates(si, termInfosIndexDivisor, context);
+    core = new SegmentCoreReaders(this, si.info, -1, context, termInfosIndexDivisor);
+    updates = initUpdates(si, termInfosIndexDivisor, context);
     boolean success = false;
     try {
       if (si.hasDeletions()) {
@@ -109,8 +109,8 @@ public final class SegmentReader extends AtomicReader {
    * loading new live docs from a new deletes file. Used by openIfChanged.
    */
   SegmentReader(SegmentInfoPerCommit si, SegmentCoreReaders core,
-      IOContext context) throws IOException {
-    this(si, context, core, si.info.getCodec().liveDocsFormat()
+      SegmentCoreReaders[] updates, IOContext context) throws IOException {
+    this(si, context, core, updates, si.info.getCodec().liveDocsFormat()
         .readLiveDocs(si.info.dir, si, context), si.info.getDocCount()
         - si.getDelCount());
   }
@@ -121,12 +121,12 @@ public final class SegmentReader extends AtomicReader {
    * NRT reader
    */
   SegmentReader(SegmentInfoPerCommit si, IOContext context,
-      SegmentCoreReaders core, Bits liveDocs, int numDocs) {
+      SegmentCoreReaders core, SegmentCoreReaders[] updates, Bits liveDocs, int numDocs) {
     this.si = si;
     this.context = context;
     this.core = core;
     core.incRef();
-    this.updates = null;
+    this.updates = updates;
     // TODO : handle NRT updates, add field liveUpdates
     
     assert liveDocs != null;
@@ -135,17 +135,18 @@ public final class SegmentReader extends AtomicReader {
     this.numDocs = numDocs;
   }
   
-  private void initUpdates(SegmentInfoPerCommit si, int termInfosIndexDivisor,
+  private SegmentCoreReaders[] initUpdates(SegmentInfoPerCommit si, int termInfosIndexDivisor,
       IOContext context) throws IOException {
     if (si.hasUpdates()) {
-      updates = new SegmentCoreReaders[(int) si.getUpdateGen()];
-      for (int i = 0; i < updates.length; i++) {
-        updates[i] = new SegmentCoreReaders(this, si, i + 1, context,
+      SegmentCoreReaders[] newUpdates = new SegmentCoreReaders[(int) si
+          .getUpdateGen()];
+      for (int i = 0; i < newUpdates.length; i++) {
+        newUpdates[i] = new SegmentCoreReaders(this, si.info, i + 1, context,
             termInfosIndexDivisor);
       }
-      return;
+      return newUpdates;
     }
-    updates = null;
+    return null;
   }
   
   @Override
@@ -453,7 +454,16 @@ public final class SegmentReader extends AtomicReader {
   @Override
   public NumericDocValues getNormValues(String field) throws IOException {
     ensureOpen();
-    return core.getNormValues(field);
+    NumericDocValues normValues = core.getNormValues(field);
+    if (updates != null) {
+      for (final SegmentCoreReaders updateReader : updates) {
+        NumericDocValues updateNormValues = updateReader.getNormValues(field);
+        if (updateNormValues != null) {
+          normValues = updateNormValues;
+        }
+      }
+    }
+    return normValues;
   }
 
   /**

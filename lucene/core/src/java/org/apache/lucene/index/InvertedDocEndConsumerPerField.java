@@ -2,6 +2,8 @@ package org.apache.lucene.index;
 
 import java.io.IOException;
 
+import org.apache.lucene.store.Directory;
+
 /*
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
@@ -20,6 +22,6 @@ import java.io.IOException;
  */
 
 abstract class InvertedDocEndConsumerPerField {
-  abstract void finish() throws IOException;
+  abstract void finish(SegmentInfo segmentInfo, Directory trackingDirectory) throws IOException;
   abstract void abort();
 }

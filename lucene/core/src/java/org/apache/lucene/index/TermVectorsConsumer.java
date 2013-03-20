@@ -21,6 +21,7 @@ import java.io.IOException;
 import java.util.Map;
 
 import org.apache.lucene.codecs.TermVectorsWriter;
+import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.FlushInfo;
 import org.apache.lucene.store.IOContext;
 import org.apache.lucene.util.ArrayUtil;
@@ -83,16 +84,16 @@ final class TermVectorsConsumer extends TermsHashConsumer {
     }
   }
 
-  private final void initTermVectorsWriter() throws IOException {
+  private final void initTermVectorsWriter(Directory directory, SegmentInfo info) throws IOException {
     if (writer == null) {
       IOContext context = new IOContext(new FlushInfo(docWriter.getNumDocsInRAM(), docWriter.bytesUsed()));
-      writer = docWriter.codec.termVectorsFormat().vectorsWriter(docWriter.directory, docWriter.getSegmentInfo(), context);
+      writer = docWriter.codec.termVectorsFormat().vectorsWriter(directory, info, context);
       lastDocID = 0;
     }
   }
 
   @Override
-  void finishDocument(TermsHash termsHash) throws IOException {
+  void finishDocument(TermsHash termsHash, Directory directory, SegmentInfo info) throws IOException {
 
     assert docWriter.writer.testPoint("TermVectorsTermsWriter.finishDocument start");
 
@@ -100,7 +101,7 @@ final class TermVectorsConsumer extends TermsHashConsumer {
       return;
     }
 
-    initTermVectorsWriter();
+    initTermVectorsWriter(directory, info);
 
     fill(docState.docID);
 

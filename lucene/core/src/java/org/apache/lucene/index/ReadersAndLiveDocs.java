@@ -224,7 +224,9 @@ class ReadersAndLiveDocs {
     }
     shared = true;
     if (liveDocs != null) {
-      return new SegmentReader(reader.getSegmentInfo(), context, reader.core, liveDocs, info.info.getDocCount() - info.getDelCount() - pendingDeleteCount);
+      return new SegmentReader(reader.getSegmentInfo(), context, reader.core,
+          reader.updates, liveDocs, info.info.getDocCount()
+              - info.getDelCount() - pendingDeleteCount);
     } else {
       assert reader.getLiveDocs() == liveDocs;
       reader.incRef();

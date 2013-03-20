@@ -21,6 +21,8 @@ import java.io.IOException;
 import java.util.HashMap;
 import java.util.Map;
 
+import org.apache.lucene.store.Directory;
+
 /** This is a DocFieldConsumer that inverts each field,
  *  separately, from a Document, and accepts a
  *  InvertedTermsConsumer to process those terms. */
@@ -61,11 +63,11 @@ final class DocInverter extends DocFieldConsumer {
   }
 
   @Override
-  public void finishDocument() throws IOException {
+  public void finishDocument(Directory directory, SegmentInfo info) throws IOException {
     // TODO: allow endConsumer.finishDocument to also return
     // a DocWriter
     endConsumer.finishDocument();
-    consumer.finishDocument();
+    consumer.finishDocument(directory, info);
   }
 
   @Override

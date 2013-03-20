@@ -19,9 +19,11 @@ package org.apache.lucene.index;
 
 import java.io.IOException;
 
+import org.apache.lucene.store.Directory;
+
 abstract class DocConsumer {
-  abstract void processDocument(FieldInfos.Builder fieldInfos) throws IOException;
-  abstract void finishDocument() throws IOException;
+  abstract void processDocument(FieldInfos.Builder fieldInfos, SegmentInfo segmentInfo, Directory trackingDirectory) throws IOException;
+  abstract void finishDocument(Directory directory, SegmentInfo segmentInfo) throws IOException;
   abstract void flush(final SegmentWriteState state) throws IOException;
   abstract void abort();
   abstract void doAfterFlush();

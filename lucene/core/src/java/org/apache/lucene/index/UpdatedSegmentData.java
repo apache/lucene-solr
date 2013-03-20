@@ -1,20 +1,17 @@
 package org.apache.lucene.index;
 
 import java.io.IOException;
-import java.util.ArrayList;
-import java.util.Collections;
 import java.util.HashMap;
 import java.util.Iterator;
-import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
-import java.util.SortedSet;
+import java.util.PriorityQueue;
 import java.util.TreeMap;
-import java.util.TreeSet;
 
 import org.apache.lucene.analysis.Analyzer;
-import org.apache.lucene.document.StoredField;
-import org.apache.lucene.index.FieldsUpdate.Operation;
+import org.apache.lucene.store.Directory;
+import org.apache.lucene.store.IOContext;
+import org.apache.lucene.util.Bits;
 
 /*
  * Licensed to the Apache Software Foundation (ASF) under one or more
@@ -38,41 +35,56 @@ import org.apache.lucene.index.FieldsUpdate.Operation;
  */
 class UpdatedSegmentData {
   
+  static final FieldInfos EMPTY_FIELD_INFOS = new FieldInfos(new FieldInfo[0]);
+
   /** Updates mapped by doc ID, for each do sorted list of updates. */
-  private TreeMap<Integer,SortedSet<FieldsUpdate>> updatesMap;
+  private TreeMap<Integer,PriorityQueue<FieldsUpdate>> updatesMap;
   
-  public long generation;
+  /** */
+  private long generation;
   
-  private Map<String,FieldGenerationReplacements> fieldGenerationReplacments;
+  private Map<String,FieldGenerationReplacements> fieldGenerationReplacments = new HashMap<String,FieldGenerationReplacements>();
   
-  private Iterator<Entry<Integer,SortedSet<FieldsUpdate>>> updatesIterator;
+  private Iterator<Entry<Integer,PriorityQueue<FieldsUpdate>>> updatesIterator;
   private int currDocID;
   private int nextDocID;
   private int numDocs;
-  private SortedSet<FieldsUpdate> nextUpdate;
+  private PriorityQueue<FieldsUpdate> nextUpdate;
   private Analyzer analyzer;
   
+  private int termsIndexDivisor;
+  
   UpdatedSegmentData() {
-    updatesMap = new TreeMap<Integer,SortedSet<FieldsUpdate>>();
+    updatesMap = new TreeMap<Integer,PriorityQueue<FieldsUpdate>>();
   }
   
-  void addUpdate(int docID, FieldsUpdate update) {
-    SortedSet<FieldsUpdate> prevUpdates = updatesMap.get(docID);
-    if (prevUpdates == null) {
-      prevUpdates = new TreeSet<FieldsUpdate>();
-      updatesMap.put(docID, prevUpdates);
+  void addUpdate(int docID, FieldsUpdate fieldsUpdate) {
+    if (docID >= fieldsUpdate.docIDUpto) {
+      return;
     }
-    prevUpdates.add(update);
+    PriorityQueue<FieldsUpdate> prevUpdates = updatesMap.get(docID);
+    if (prevUpdates == null) {
+      prevUpdates = new PriorityQueue<FieldsUpdate>();
+      updatesMap.put(docID, prevUpdates);
+    } else {
+      System.out.println();
+    }
+    prevUpdates.add(fieldsUpdate);
   }
   
   void addUpdates(int docID, FieldsUpdate[] updatesArray) {
-    SortedSet<FieldsUpdate> prevUpdates = updatesMap.get(docID);
+    PriorityQueue<FieldsUpdate> prevUpdates = updatesMap.get(docID);
     if (prevUpdates == null) {
-      prevUpdates = new TreeSet<FieldsUpdate>();
-      updatesMap.put(docID, prevUpdates);
+      prevUpdates = new PriorityQueue<FieldsUpdate>();
     }
     for (int i = 0; i < updatesArray.length; i++) {
-      prevUpdates.add(updatesArray[i]);
+      FieldsUpdate fieldsUpdate = updatesArray[i];
+      if (docID < fieldsUpdate.docIDUpto) {
+        prevUpdates.add(fieldsUpdate);
+      }
+    }
+    if (!prevUpdates.isEmpty()) {
+      updatesMap.put(docID, prevUpdates);
     }
   }
   
@@ -87,12 +99,16 @@ class UpdatedSegmentData {
    *          The updates generation.
    * @param numDocs
    *          number of documents in the base segment
+   * @param termsIndexDivisor
+   *          Terms index divisor to use in temporary segments
    */
-  void startWriting(long generation, int numDocs) {
+  void startWriting(long generation, int numDocs, int termsIndexDivisor) {
     this.generation = generation;
     this.numDocs = numDocs;
+    this.termsIndexDivisor = termsIndexDivisor;
     updatesIterator = updatesMap.entrySet().iterator();
     currDocID = 0;
+    fieldGenerationReplacments.clear();
     // fetch the first actual updates document if exists
     nextDocUpdate();
   }
@@ -102,7 +118,7 @@ class UpdatedSegmentData {
    */
   private void nextDocUpdate() {
     if (updatesIterator.hasNext()) {
-      Entry<Integer,SortedSet<FieldsUpdate>> docUpdates = updatesIterator
+      Entry<Integer,PriorityQueue<FieldsUpdate>> docUpdates = updatesIterator
           .next();
       nextDocID = docUpdates.getKey();
       nextUpdate = docUpdates.getValue();
@@ -110,39 +126,6 @@ class UpdatedSegmentData {
       // no more updates
       nextDocID = numDocs;
     }
-  }
-  
-  /**
-   * Get the next document to put in the updates index, could be an empty
-   * document. Updates the analyzer.
-   * 
-   * @throws IOException
-   *           If different analyzers were assigned to field updates affecting
-   *           the next document.
-   */
-  IndexDocument nextDocument() throws IOException {
-    IndexDocument toReturn = null;
-    if (currDocID < nextDocID) {
-      // empty document required
-      if (currDocID == numDocs - 1) {
-        // add document with stored field for getting right size of segment when
-        // reading stored documents
-        toReturn = STORED_FIELD_DOCUMENT;
-      } else {
-        toReturn = EMPTY_DOCUMENT;
-      }
-    } else if (currDocID < numDocs) {
-      // return an actual updates document...
-      toReturn = new UpdatesIndexDocument(nextUpdate);
-      // ... and fetch the next one if exists
-      nextDocUpdate();
-    } else {
-      // no more documents required
-      return null;
-    }
-    
-    currDocID++;
-    return toReturn;
   }
   
   Analyzer getAnalyzer() {
@@ -153,136 +136,172 @@ class UpdatedSegmentData {
     return fieldGenerationReplacments;
   }
   
-  /**
-   * An {@link IndexDocument} containing all the updates to a certain document
-   * in a stacked segment, taking into account replacements.
-   * <p>
-   * Constructing an {@link UpdatesIndexDocument} also updates the containing
-   * {@link UpdatedSegmentData}'s analyzer and its
-   * {@link FieldGenerationReplacements} vectors for the relevant fields.
-   */
-  private class UpdatesIndexDocument implements IndexDocument {
-    
-    Map<String,List<IndexableField>> indexablesByField = new HashMap<String,List<IndexableField>>();
-    Map<String,List<StorableField>> storablesByField = new HashMap<String,List<StorableField>>();
-    
-    public UpdatesIndexDocument(SortedSet<FieldsUpdate> fieldsUpdates)
-        throws IOException {
-      boolean setAnalyzer = true;
-      analyzer = null;
-      for (FieldsUpdate fieldsUpdate : fieldsUpdates) {
-        // set analyzer and check for analyzer conflict
-        if (setAnalyzer) {
-          analyzer = fieldsUpdate.analyzer;
-          setAnalyzer = false;
-        } else if (analyzer != fieldsUpdate.analyzer) {
-          throw new IOException(
-              "two analyzers assigned to one updated document");
-        }
-        
-        if (fieldsUpdate.operation == Operation.REPLACE_FIELDS) {
-          // handle fields replacement
-          for (IndexableField field : fieldsUpdate.fields.indexableFields()) {
-            replaceField(field.name());
-          }
-          for (StorableField field : fieldsUpdate.fields.storableFields()) {
-            replaceField(field.name());
-          }
-        }
-        
-        // add new fields
-        for (IndexableField field : fieldsUpdate.fields.indexableFields()) {
-          List<IndexableField> fieldList = indexablesByField.get(field.name());
-          if (fieldList == null) {
-            fieldList = new ArrayList<IndexableField>();
-            indexablesByField.put(field.name(), fieldList);
-          }
-          fieldList.add(field);
-        }
-        for (StorableField field : fieldsUpdate.fields.storableFields()) {
-          List<StorableField> fieldList = storablesByField.get(field.name());
-          if (fieldList == null) {
-            fieldList = new ArrayList<StorableField>();
-            storablesByField.put(field.name(), fieldList);
-          }
-          fieldList.add(field);
-        }
-      }
-    }
-    
-    private void replaceField(String fieldName) {
-      // remove previous fields
-      indexablesByField.remove(fieldName);
-      storablesByField.remove(fieldName);
+  AtomicReader nextReader() throws IOException {
+    AtomicReader toReturn = null;
+    if (currDocID < nextDocID) {
+      // empty documents reader required
+      toReturn = new UpdateAtomicReader(nextDocID - currDocID);
+      currDocID = nextDocID;
+    } else if (currDocID < numDocs) {
+      // get the an actual updates reader...
+      FieldsUpdate update = nextUpdate.poll();
+      toReturn = new UpdateAtomicReader(update.directory, update.segmentInfo,
+          IOContext.DEFAULT);
       
-      // update field generation replacement vector
-      if (fieldGenerationReplacments == null) {
-        fieldGenerationReplacments = new HashMap<String,FieldGenerationReplacements>();
+      // ... and if done for this document remove from updates map
+      if (nextUpdate.isEmpty()) {
+        updatesIterator.remove();
       }
-      FieldGenerationReplacements fieldReplacement = fieldGenerationReplacments
-          .get(fieldName);
-      if (fieldReplacement == null) {
-        fieldReplacement = new FieldGenerationReplacements();
-        fieldGenerationReplacments.put(fieldName, fieldReplacement);
+      
+      // add generation replacements if exist
+      if (update.replacedFields != null) {
+        for (String fieldName : update.replacedFields) {
+          FieldGenerationReplacements fieldReplacement = fieldGenerationReplacments
+              .get(fieldName);
+          if (fieldReplacement == null) {
+            fieldReplacement = new FieldGenerationReplacements();
+            fieldGenerationReplacments.put(fieldName, fieldReplacement);
+          }
+          fieldReplacement.set(currDocID, generation);
+        }
       }
-      fieldReplacement.set(currDocID, generation);
+      // move to next doc id
+      nextDocUpdate();
+      currDocID++;
+    }
+    
+    return toReturn;
+  }
+  
+  private class UpdateAtomicReader extends AtomicReader {
+    
+    final private SegmentCoreReaders core;
+    final private int numDocs;
+    
+    /**
+     * Constructor with fields directory, for actual updates.
+     * 
+     * @param fieldsDir
+     *          Directory with inverted fields.
+     * @param segmentInfo
+     *          Info of the inverted fields segment.
+     * @param context
+     *          IOContext to use.
+     * @throws IOException
+     *           If cannot create the reader.
+     */
+    UpdateAtomicReader(Directory fieldsDir, SegmentInfo segmentInfo,
+        IOContext context) throws IOException {
+      core = new SegmentCoreReaders(null, segmentInfo, -1, context,
+          termsIndexDivisor);
+      numDocs = 1;
+    }
+    
+    /**
+     * Constructor with fields directory, for actual updates.
+     */
+    UpdateAtomicReader(int numDocs) {
+      core = null;
+      this.numDocs = numDocs;
     }
     
     @Override
-    public Iterable<IndexableField> indexableFields() {
-      List<IndexableField> indexableFields = new ArrayList<IndexableField>();
-      for (List<IndexableField> byField : indexablesByField.values()) {
-        indexableFields.addAll(byField);
+    public Fields fields() throws IOException {
+      if (core == null) {
+        return null;
       }
-      return indexableFields;
+      return core.fields;
     }
     
     @Override
-    public Iterable<StorableField> storableFields() {
-      List<StorableField> storableFields = new ArrayList<StorableField>();
-      for (List<StorableField> byField : storablesByField.values()) {
-        storableFields.addAll(byField);
+    public FieldInfos getFieldInfos() {
+      if (core == null) {
+        return EMPTY_FIELD_INFOS;
       }
-      return storableFields;
+      return core.fieldInfos;
+    }
+    
+    @Override
+    public Bits getLiveDocs() {
+      return null;
+    }
+    
+    @Override
+    public Fields getTermVectors(int docID) throws IOException {
+      if (core == null) {
+        return null;
+      }
+      return core.termVectorsLocal.get().get(docID);
+    }
+    
+    @Override
+    public int numDocs() {
+      return numDocs;
+    }
+    
+    @Override
+    public int maxDoc() {
+      return numDocs;
+    }
+    
+    @Override
+    public void document(int docID, StoredFieldVisitor visitor)
+        throws IOException {
+      if (core == null) {
+        return;
+      }
+      core.fieldsReaderLocal.get().visitDocument(docID, visitor, null);
+    }
+    
+    @Override
+    public boolean hasDeletions() {
+      return false;
+    }
+    
+    @Override
+    protected void doClose() throws IOException {}
+
+    @Override
+    public NumericDocValues getNumericDocValues(String field)
+        throws IOException {
+      if (core == null) {
+        return null;
+      }
+      return core.getNumericDocValues(field);
+    }
+
+    @Override
+    public BinaryDocValues getBinaryDocValues(String field) throws IOException {
+      if (core == null) {
+        return null;
+      }
+      return core.getBinaryDocValues(field);
+    }
+
+    @Override
+    public SortedDocValues getSortedDocValues(String field) throws IOException {
+      if (core == null) {
+        return null;
+      }
+      return core.getSortedDocValues(field);
+    }
+
+    @Override
+    public SortedSetDocValues getSortedSetDocValues(String field)
+        throws IOException {
+      if (core == null) {
+        return null;
+      }
+      return core.getSortedSetDocValues(field);
+    }
+
+    @Override
+    public NumericDocValues getNormValues(String field) throws IOException {
+      if (core == null) {
+        return null;
+      }
+      return core.getNormValues(field);
     }
     
   }
-  
-  /**
-   * An empty document to be used as filler to maintain doc IDs in stacked
-   * segments.
-   */
-  private static final IndexDocument EMPTY_DOCUMENT = new IndexDocument() {
-    @Override
-    public Iterable<StorableField> storableFields() {
-      return Collections.emptyList();
-    }
-    
-    @Override
-    public Iterable<IndexableField> indexableFields() {
-      return Collections.emptyList();
-    }
-  };
-  
-  private static final ArrayList<StorableField> STORED_FIELD_LIST = new ArrayList<StorableField>(
-      1);
-  static {
-    STORED_FIELD_LIST.add(new StoredField("dummy", ""));
-  }
-  
-  /**
-   * A document containing only one stored field to be used as the last document
-   * in stacked segments.
-   */
-  private static final IndexDocument STORED_FIELD_DOCUMENT = new IndexDocument() {
-    @Override
-    public Iterable<StorableField> storableFields() {
-      return STORED_FIELD_LIST;
-    }
-    
-    @Override
-    public Iterable<IndexableField> indexableFields() {
-      return Collections.emptyList();
-    }
-  };
 }

@@ -102,17 +102,8 @@ public class SimpleTextSegmentInfoReader extends SegmentInfoReader {
                                          isCompoundFile, null, diagnostics, Collections.unmodifiableMap(attributes));
       info.setFiles(files);
 
-      int updatesIndex = 1;
-      while (updatesIndex > 0) {
-        files = readFilesList(directory, segmentName, updatesIndex, context);
-        if (files == null) {
-          updatesIndex = -1;
-        } else {
-          info.addFiles(files);
-          updatesIndex++;
-        }
-      }
-      
+      addUpdateSegmentsFiles(info, directory, segmentName, context);
+
       success = true;
       return info;
     } finally {
@@ -124,8 +115,10 @@ public class SimpleTextSegmentInfoReader extends SegmentInfoReader {
     }
   }
 
-  private Set<String> readFilesList(Directory dir, String segment, long generation,  IOContext context) throws IOException {
-    final String segFileName = IndexFileNames.fileNameFromGeneration(segment, Lucene40SegmentInfoFormat.SI_FILES_LIST_EXTENSION, generation, true);
+  protected Set<String> readFilesList(Directory dir, String segment,
+      long generation, IOContext context) throws IOException {
+    final String segFileName = IndexFileNames.fileNameFromGeneration(segment,
+        Lucene40SegmentInfoFormat.SI_FILES_LIST_EXTENSION, generation, true);
     if (!dir.fileExists(segFileName)) {
       return null;
     }

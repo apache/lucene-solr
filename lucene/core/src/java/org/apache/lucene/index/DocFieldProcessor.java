@@ -26,6 +26,7 @@ import java.util.Map;
 
 import org.apache.lucene.codecs.Codec;
 import org.apache.lucene.codecs.FieldInfosWriter;
+import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.IOContext;
 import org.apache.lucene.util.ArrayUtil;
 import org.apache.lucene.util.Counter;
@@ -177,7 +178,7 @@ final class DocFieldProcessor extends DocConsumer {
   }
 
   @Override
-  public void processDocument(FieldInfos.Builder fieldInfos) throws IOException {
+  public void processDocument(FieldInfos.Builder fieldInfos, SegmentInfo segmentInfo, Directory trackingDirectory) throws IOException {
 
     consumer.startDocument();
     storedConsumer.startDocument();
@@ -216,7 +217,7 @@ final class DocFieldProcessor extends DocConsumer {
     ArrayUtil.quickSort(fields, 0, fieldCount, fieldsComp);
     for(int i=0;i<fieldCount;i++) {
       final DocFieldProcessorPerField perField = fields[i];
-      perField.consumer.processFields(perField.fields, perField.fieldCount);
+      perField.consumer.processFields(perField.fields, perField.fieldCount, segmentInfo, trackingDirectory);
     }
 
     if (docState.maxTermPrefix != null && docState.infoStream.isEnabled("IW")) {
@@ -227,7 +228,6 @@ final class DocFieldProcessor extends DocConsumer {
 
   private DocFieldProcessorPerField processField(FieldInfos.Builder fieldInfos,
       final int thisFieldGen, final String fieldName, IndexableFieldType ft) {
-
     // Make sure we have a PerField allocated
     final int hashPos = fieldName.hashCode() & hashMask;
     DocFieldProcessorPerField fp = fieldHash[hashPos];
@@ -253,7 +253,7 @@ final class DocFieldProcessor extends DocConsumer {
         rehash();
       }
     } else {
-      fp.fieldInfo.update(ft);
+      fieldInfos.addOrUpdate(fp.fieldInfo.name, ft);
     }
 
     if (thisFieldGen != fp.lastGen) {
@@ -282,11 +282,11 @@ final class DocFieldProcessor extends DocConsumer {
   };
   
   @Override
-  void finishDocument() throws IOException {
+  void finishDocument(Directory directory, SegmentInfo info) throws IOException {
     try {
-      storedConsumer.finishDocument();
+      storedConsumer.finishDocument(directory, info);
     } finally {
-      consumer.finishDocument();
+      consumer.finishDocument(directory, info);
     }
   }
 

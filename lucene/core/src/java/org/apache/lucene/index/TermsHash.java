@@ -21,6 +21,7 @@ import java.io.IOException;
 import java.util.HashMap;
 import java.util.Map;
 
+import org.apache.lucene.store.Directory;
 import org.apache.lucene.util.ByteBlockPool;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.Counter;
@@ -126,10 +127,10 @@ final class TermsHash extends InvertedDocConsumer {
   }
 
   @Override
-  void finishDocument() throws IOException {
-    consumer.finishDocument(this);
+  void finishDocument(Directory directory, SegmentInfo info) throws IOException {
+    consumer.finishDocument(this, directory, info);
     if (nextTermsHash != null) {
-      nextTermsHash.consumer.finishDocument(nextTermsHash);
+      nextTermsHash.consumer.finishDocument(nextTermsHash, directory, info);
     }
   }
 

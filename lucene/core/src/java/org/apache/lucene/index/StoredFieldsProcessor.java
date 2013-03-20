@@ -21,6 +21,7 @@ import java.io.IOException;
 
 import org.apache.lucene.codecs.Codec;
 import org.apache.lucene.codecs.StoredFieldsWriter;
+import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.IOContext;
 import org.apache.lucene.util.ArrayUtil;
 import org.apache.lucene.util.RamUsageEstimator;
@@ -66,7 +67,7 @@ final class StoredFieldsProcessor extends StoredFieldsConsumer {
       // It's possible that all documents seen in this segment
       // hit non-aborting exceptions, in which case we will
       // not have yet init'd the FieldsWriter:
-      initFieldsWriter(state.context);
+      initFieldsWriter(state.context, state.directory, state.segmentInfo);
       fill(numDocs);
     }
 
@@ -81,9 +82,9 @@ final class StoredFieldsProcessor extends StoredFieldsConsumer {
     }
   }
 
-  private synchronized void initFieldsWriter(IOContext context) throws IOException {
+  private synchronized void initFieldsWriter(IOContext context, Directory directory, SegmentInfo info) throws IOException {
     if (fieldsWriter == null) {
-      fieldsWriter = codec.storedFieldsFormat().fieldsWriter(docWriter.directory, docWriter.getSegmentInfo(), context);
+      fieldsWriter = codec.storedFieldsFormat().fieldsWriter(directory, info, context);
       lastDocID = 0;
     }
   }
@@ -113,10 +114,10 @@ final class StoredFieldsProcessor extends StoredFieldsConsumer {
   }
 
   @Override
-  void finishDocument() throws IOException {
+  void finishDocument(Directory directory, SegmentInfo info) throws IOException {
     assert docWriter.writer.testPoint("StoredFieldsWriter.finishDocument start");
 
-    initFieldsWriter(IOContext.DEFAULT);
+    initFieldsWriter(IOContext.DEFAULT, directory, info);
     fill(docState.docID);
 
     if (fieldsWriter != null && numStoredFields > 0) {

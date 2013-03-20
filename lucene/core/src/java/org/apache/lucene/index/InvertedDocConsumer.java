@@ -20,6 +20,8 @@ package org.apache.lucene.index;
 import java.io.IOException;
 import java.util.Map;
 
+import org.apache.lucene.store.Directory;
+
 abstract class InvertedDocConsumer {
 
   /** Abort (called after hitting AbortException) */
@@ -32,5 +34,5 @@ abstract class InvertedDocConsumer {
 
   abstract void startDocument() throws IOException;
 
-  abstract void finishDocument() throws IOException;
+  abstract void finishDocument(Directory directory, SegmentInfo info) throws IOException;
 }

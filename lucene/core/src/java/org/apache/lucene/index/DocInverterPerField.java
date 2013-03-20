@@ -23,6 +23,7 @@ import org.apache.lucene.analysis.TokenStream;
 import org.apache.lucene.analysis.tokenattributes.OffsetAttribute;
 import org.apache.lucene.analysis.tokenattributes.PositionIncrementAttribute;
 import org.apache.lucene.index.FieldInfo.IndexOptions;
+import org.apache.lucene.store.Directory;
 import org.apache.lucene.util.IOUtils;
 
 /**
@@ -60,8 +61,8 @@ final class DocInverterPerField extends DocFieldConsumerPerField {
   }
 
   @Override
-  public void processFields(final IndexableField[] fields,
-                            final int count) throws IOException {
+  public void processFields(final IndexableField[] fields, final int count,
+      SegmentInfo segmentInfo, Directory trackingDirectory) throws IOException {
 
     fieldState.reset();
 
@@ -196,7 +197,7 @@ final class DocInverterPerField extends DocFieldConsumerPerField {
     }
 
     consumer.finish();
-    endConsumer.finish();
+    endConsumer.finish(segmentInfo, trackingDirectory);
   }
 
   @Override

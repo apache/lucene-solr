@@ -19,24 +19,28 @@ package org.apache.lucene.index;
 
 import java.io.IOException;
 import java.util.Collection;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
+import java.util.Set;
 import java.util.concurrent.atomic.AtomicInteger;
 
 import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.codecs.Codec;
-import org.apache.lucene.codecs.GenerationReplacementsFormat;
 import org.apache.lucene.index.DocumentsWriterFlushQueue.SegmentFlushTicket;
 import org.apache.lucene.index.DocumentsWriterPerThread.FlushedSegment;
 import org.apache.lucene.index.DocumentsWriterPerThread.IndexingChain;
 import org.apache.lucene.index.DocumentsWriterPerThreadPool.ThreadState;
 import org.apache.lucene.index.FieldInfos.FieldNumbers;
+import org.apache.lucene.index.FieldsUpdate.Operation;
 import org.apache.lucene.search.Query;
 import org.apache.lucene.search.similarities.Similarity;
 import org.apache.lucene.store.AlreadyClosedException;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.IOContext;
+import org.apache.lucene.store.MergeInfo;
+import org.apache.lucene.store.TrackingDirectoryWrapper;
 import org.apache.lucene.util.InfoStream;
 
 /**
@@ -395,7 +399,8 @@ final class DocumentsWriter {
     return postUpdate(flushingDWPT, maybeMerge);
   }
   
-  boolean updateFields(Term term, FieldsUpdate fieldsUpdate) throws IOException {
+  boolean updateFields(Term term, Operation operation, IndexDocument fields,
+      Analyzer analyzer, FieldNumbers globalFieldNumberMap) throws IOException {
     boolean maybeMerge = preUpdate();
     
     final ThreadState perThread = flushControl.obtainAndLock();
@@ -412,13 +417,17 @@ final class DocumentsWriter {
       
       final DocumentsWriterPerThread dwpt = perThread.dwpt;
       try {
+        FieldsUpdate fieldsUpdate = new FieldsUpdate(operation, fields, 
+            analyzer, numDocsInRAM.get());
+        // invert the given fields and store in RAMDirectory
+        dwpt.invertFieldsUpdate(fieldsUpdate, globalFieldNumberMap);
         dwpt.updateFields(term, fieldsUpdate);
       } finally {
         if (dwpt.checkAndResetHasAborted()) {
           flushControl.doOnAbort(perThread);
         }
       }
-      final boolean isUpdate = term != null;
+     final boolean isUpdate = term != null;
       flushingDWPT = flushControl.doAfterDocument(perThread, isUpdate);
     } finally {
       perThread.unlock();
@@ -426,8 +435,27 @@ final class DocumentsWriter {
     return postUpdate(flushingDWPT, maybeMerge);
   }
   
-  void writeUpdatedSegment(UpdatedSegmentData liveUpdates,
-      SegmentInfoPerCommit info, IndexFileDeleter deleter) throws IOException {
+  /**
+   * Write updates to a segment.
+   * 
+   * @param infoPerCommit
+   *          The segment to which updates are being written
+   * @param updates
+   *          The updates to write
+   * @param interval
+   *          Term index interval to be used when merging
+   * @param globalFieldNumberMap
+   *          Map of field numbers for merging
+   * @param deleter
+   *          Used to delete files if merging fails.
+   * @return If all updates were added return {@code null}, otherwise return a
+   *         new {@link UpdatedSegmentData} with the remaining updates.
+   * @throws IOException
+   *           If writing failed.
+   */
+  UpdatedSegmentData writeUpdatedSegment(SegmentInfoPerCommit infoPerCommit,
+      UpdatedSegmentData updates, int interval,
+      FieldNumbers globalFieldNumberMap, IndexFileDeleter deleter) throws IOException {
     final ThreadState perThread = flushControl.obtainAndLock();
     
     try {
@@ -437,35 +465,71 @@ final class DocumentsWriter {
             "perThread is not active but we are still open");
       }
       
+      SegmentInfo info = new SegmentInfo(infoPerCommit.info,
+          infoPerCommit.getNextUpdateGen());
+
       final DocumentsWriterPerThread dwpt = perThread.dwpt;
       try {
-        // start new segment, with update generation in name
-        dwpt.initSegmentInfo(info.info, info.getNextUpdateGen());
+        final IOContext context = new IOContext(new MergeInfo(
+            -1, -1, true, -1));
         
-        // push documents, including empty ones where needed
-        liveUpdates.startWriting(info.getNextUpdateGen(),
-            info.info.getDocCount());
-        IndexDocument doc;
-        while ((doc = liveUpdates.nextDocument()) != null) {
-          dwpt.updateDocument(doc, liveUpdates.getAnalyzer(), null);
+        // TODO: somehow we should fix this merge so it's
+        // abortable so that IW.close(false) is able to stop it
+        TrackingDirectoryWrapper trackingDir = new TrackingDirectoryWrapper(
+            directory);
+        
+        SegmentMerger merger = new SegmentMerger(info, infoStream, trackingDir,
+            interval, MergeState.CheckAbort.NONE, globalFieldNumberMap, context);
+        
+        updates.startWriting(infoPerCommit.getNextUpdateGen(),
+            infoPerCommit.info.getDocCount(), indexWriter.getConfig()
+                .getReaderTermsIndexDivisor());
+
+        AtomicReader reader;
+        while ((reader = updates.nextReader()) != null) { // add new indexes
+          merger.add(reader);
         }
         
-        // add field generation replacements
-        final Map<String,FieldGenerationReplacements> generationReplacments = liveUpdates
-            .getFieldGenerationReplacments();
-        if (generationReplacments != null) {
-          for (Entry<String,FieldGenerationReplacements> field : generationReplacments
-              .entrySet()) {
-            final GenerationReplacementsFormat repsFormat = codec
-                .generationReplacementsFormat();
-            repsFormat.writeGenerationReplacement(field.getKey(),
-                field.getValue(), directory, info, IOContext.DEFAULT);
+        Set<String> generationReplacementFilenames = null;
+        boolean success = false;
+        try {
+          merger.merge(); // merge 'em
+
+          // write field generation replacements
+          final Map<String,FieldGenerationReplacements> generationReplacments = updates
+              .getFieldGenerationReplacments();
+          if (generationReplacments != null) {
+            generationReplacementFilenames = new HashSet<String>();
+            for (Entry<String,FieldGenerationReplacements> field : generationReplacments
+                .entrySet()) {
+              codec.generationReplacementsFormat().writeGenerationReplacement(
+                  field.getKey(), field.getValue(), trackingDir, infoPerCommit,
+                  IOContext.DEFAULT, generationReplacementFilenames);
+            }
+            if (generationReplacementFilenames.isEmpty()) {
+              generationReplacementFilenames = null;
+            }
+          }
+          
+          success = true;
+        } finally {
+          if (!success) {
+            synchronized (this) {
+              deleter.refresh(info.name);
+            }
           }
         }
-        
+
         // flush directly
         dwpt.clearDeleteSlice();
-        dwpt.flush(info.getNextUpdateGen());
+        info.setFiles(new HashSet<String>(trackingDir.getCreatedFiles()));
+        dwpt.sealUpdatedSegment(info, trackingDir,
+            infoPerCommit.getNextUpdateGen(), generationReplacementFilenames);
+
+        // add the final list of new files to infoPerCommit, must perform here
+        // since the list could change in sealUpdatedSegment
+        infoPerCommit.info.addFiles(info.files());
+
       } finally {
         if (dwpt.checkAndResetHasAborted()) {
           flushControl.doOnAbort(perThread);
@@ -474,6 +538,8 @@ final class DocumentsWriter {
     } finally {
       perThread.unlock();
     }
+    
+    return null;
   }
   
   private boolean doFlush(DocumentsWriterPerThread flushingDWPT)
@@ -510,7 +576,7 @@ final class DocumentsWriter {
           ticket = ticketQueue.addFlushTicket(flushingDWPT);
           
           // flush concurrently without locking
-          final FlushedSegment newSegment = flushingDWPT.flush(-1);
+          final FlushedSegment newSegment = flushingDWPT.flush();
           if (newSegment == null) {
             actualFlushes--;
           } else {
