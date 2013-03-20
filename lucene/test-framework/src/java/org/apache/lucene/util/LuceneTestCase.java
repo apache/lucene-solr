@@ -1248,7 +1248,9 @@ public abstract class LuceneTestCase extends Assert {
       if (maybeWrap) {
         r = maybeWrapReader(r);
       }
-      if (rarely() && r instanceof AtomicReader) {
+      // TODO: this whole check is a coverage hack, we should move it to tests for various filterreaders.
+      // ultimately whatever you do will be checkIndex'd at the end anyway. 
+      if (random.nextInt(500) == 0 && r instanceof AtomicReader) {
         // TODO: not useful to check DirectoryReader (redundant with checkindex)
         // but maybe sometimes run this on the other crazy readers maybeWrapReader creates?
         _TestUtil.checkReader(r);
