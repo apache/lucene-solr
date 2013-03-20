@@ -110,9 +110,6 @@ New Features
   takes int[] docIDs instead of TopDocs.  (Robert Muir, Mike
   McCandless)
 
-* LUCENE-4856: If there are no matches for a given field, return the
-  first maxPassages sentences (Robert Muir, Mike McCandless)
-
 API Changes
 
 * LUCENE-4844: removed TaxonomyReader.getParent(), you should use
