@@ -142,7 +142,7 @@ public final class DutchAnalyzer extends Analyzer {
     if (!excltable.isEmpty())
       result = new SetKeywordMarkerFilter(result, excltable);
     if (!stemdict.isEmpty())
-      result = new StemmerOverrideFilter(matchVersion, result, stemdict);
+      result = new StemmerOverrideFilter(result, stemdict);
     result = new SnowballFilter(result, new org.tartarus.snowball.ext.DutchStemmer());
     return new TokenStreamComponents(source, result);
   }

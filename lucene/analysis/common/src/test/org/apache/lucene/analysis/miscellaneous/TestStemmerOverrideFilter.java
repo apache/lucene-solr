@@ -36,7 +36,7 @@ public class TestStemmerOverrideFilter extends BaseTokenStreamTestCase {
     dictionary.put("booked", "books");
     Tokenizer tokenizer = new KeywordTokenizer(new StringReader("booked"));
     TokenStream stream = new PorterStemFilter(
-        new StemmerOverrideFilter(TEST_VERSION_CURRENT, tokenizer, dictionary));
+        new StemmerOverrideFilter(tokenizer, dictionary));
     assertTokenStreamContents(stream, new String[] { "books" });
   }
 }
