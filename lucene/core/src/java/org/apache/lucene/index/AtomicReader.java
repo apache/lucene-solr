@@ -120,6 +120,33 @@ public abstract class AtomicReader extends IndexReader {
       return 0;
     }
   }
+  
+  @Override
+  public final long getSumDocFreq(String field) throws IOException {
+    final Terms terms = terms(field);
+    if (terms == null) {
+      return 0;
+    }
+    return terms.getSumDocFreq();
+  }
+  
+  @Override
+  public final int getDocCount(String field) throws IOException {
+    final Terms terms = terms(field);
+    if (terms == null) {
+      return 0;
+    }
+    return terms.getDocCount();
+  }
+  
+  @Override
+  public final long getSumTotalTermFreq(String field) throws IOException {
+    final Terms terms = terms(field);
+    if (terms == null) {
+      return 0;
+    }
+    return terms.getSumTotalTermFreq();
+  }
 
   /** This may return null if the field does not exist.*/
   public final Terms terms(String field) throws IOException {

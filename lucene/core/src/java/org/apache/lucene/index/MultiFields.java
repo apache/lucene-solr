@@ -243,25 +243,6 @@ public final class MultiFields extends Fields {
     return -1;
   }
 
-  /** Returns the total number of occurrences of this term
-   *  across all documents (the sum of the freq() for each
-   *  doc that has this term).  This will be -1 if the
-   *  codec doesn't support this measure.  Note that, like
-   *  other term measures, this measure does not take
-   *  deleted documents into account.
-   * @see TermsEnum#totalTermFreq()
-   */
-  public static long totalTermFreq(IndexReader r, String field, BytesRef text) throws IOException {
-    final Terms terms = getTerms(r, field);
-    if (terms != null) {
-      final TermsEnum termsEnum = terms.iterator(null);
-      if (termsEnum.seekExact(text, true)) {
-        return termsEnum.totalTermFreq();
-      }
-    }
-    return 0;
-  }
-
   /** Call this to get the (merged) FieldInfos for a
    *  composite reader. 
    *  <p>

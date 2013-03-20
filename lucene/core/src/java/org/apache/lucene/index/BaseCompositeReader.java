@@ -145,7 +145,49 @@ public abstract class BaseCompositeReader<R extends IndexReader> extends Composi
     }
     return total;
   }
+  
+  @Override
+  public final long getSumDocFreq(String field) throws IOException {
+    ensureOpen();
+    long total = 0; // sum doc freqs in subreaders
+    for (R reader : subReaders) {
+      long sub = reader.getSumDocFreq(field);
+      if (sub == -1) {
+        return -1; // if any of the subs doesn't support it, return -1
+      }
+      total += sub;
+    }
+    return total;
+  }
+  
+  @Override
+  public final int getDocCount(String field) throws IOException {
+    ensureOpen();
+    int total = 0; // sum doc counts in subreaders
+    for (R reader : subReaders) {
+      int sub = reader.getDocCount(field);
+      if (sub == -1) {
+        return -1; // if any of the subs doesn't support it, return -1
+      }
+      total += sub;
+    }
+    return total;
+  }
 
+  @Override
+  public final long getSumTotalTermFreq(String field) throws IOException {
+    ensureOpen();
+    long total = 0; // sum doc total term freqs in subreaders
+    for (R reader : subReaders) {
+      long sub = reader.getSumTotalTermFreq(field);
+      if (sub == -1) {
+        return -1; // if any of the subs doesn't support it, return -1
+      }
+      total += sub;
+    }
+    return total;
+  }
+  
   /** Helper method for subclasses to get the corresponding reader for a doc ID */
   protected final int readerIndex(int docID) {
     if (docID < 0 || docID >= maxDoc) {
