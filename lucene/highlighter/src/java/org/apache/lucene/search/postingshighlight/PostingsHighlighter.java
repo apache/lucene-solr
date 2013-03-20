@@ -19,7 +19,6 @@ package org.apache.lucene.search.postingshighlight;
 
 import java.io.IOException;
 import java.text.BreakIterator;
-import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Comparator;
 import java.util.HashMap;
@@ -33,7 +32,6 @@ import java.util.TreeSet;
 import org.apache.lucene.index.AtomicReader;
 import org.apache.lucene.index.AtomicReaderContext;
 import org.apache.lucene.index.DocsAndPositionsEnum;
-import org.apache.lucene.index.FieldInfo.IndexOptions;
 import org.apache.lucene.index.FieldInfo;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.IndexReaderContext;
@@ -43,6 +41,7 @@ import org.apache.lucene.index.StoredFieldVisitor;
 import org.apache.lucene.index.Term;
 import org.apache.lucene.index.Terms;
 import org.apache.lucene.index.TermsEnum;
+import org.apache.lucene.index.FieldInfo.IndexOptions;
 import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.search.Query;
 import org.apache.lucene.search.ScoreDoc;
@@ -143,7 +142,7 @@ public class PostingsHighlighter {
     this.scorer = scorer;
     this.formatter = formatter;
   }
-
+  
   /**
    * Highlights the top passages from a single field.
    * 
@@ -153,8 +152,7 @@ public class PostingsHighlighter {
    * @param searcher searcher that was previously used to execute the query.
    * @param topDocs TopDocs containing the summary result documents to highlight.
    * @return Array of formatted snippets corresponding to the documents in <code>topDocs</code>. 
-   *         If no highlights were found for a document, the
-   *         first sentence for the field will be returned.
+   *         If no highlights were found for a document, its value is <code>null</code>.
    * @throws IOException if an I/O error occurred during processing
    * @throws IllegalArgumentException if <code>field</code> was indexed without 
    *         {@link IndexOptions#DOCS_AND_FREQS_AND_POSITIONS_AND_OFFSETS}
@@ -174,9 +172,7 @@ public class PostingsHighlighter {
    * @param maxPassages The maximum number of top-N ranked passages used to 
    *        form the highlighted snippets.
    * @return Array of formatted snippets corresponding to the documents in <code>topDocs</code>. 
-   *         If no highlights were found for a document, the
-   *         first {@code maxPassages} sentences from the
-   *         field will be returned.
+   *         If no highlights were found for a document, its value is <code>null</code>.
    * @throws IOException if an I/O error occurred during processing
    * @throws IllegalArgumentException if <code>field</code> was indexed without 
    *         {@link IndexOptions#DOCS_AND_FREQS_AND_POSITIONS_AND_OFFSETS}
@@ -205,8 +201,7 @@ public class PostingsHighlighter {
    * @param topDocs TopDocs containing the summary result documents to highlight.
    * @return Map keyed on field name, containing the array of formatted snippets 
    *         corresponding to the documents in <code>topDocs</code>. 
-   *         If no highlights were found for a document, the
-   *         first sentence from the field will be returned.
+   *         If no highlights were found for a document, its value is <code>null</code>.
    * @throws IOException if an I/O error occurred during processing
    * @throws IllegalArgumentException if <code>field</code> was indexed without 
    *         {@link IndexOptions#DOCS_AND_FREQS_AND_POSITIONS_AND_OFFSETS}
@@ -236,9 +231,7 @@ public class PostingsHighlighter {
    *        form the highlighted snippets.
    * @return Map keyed on field name, containing the array of formatted snippets 
    *         corresponding to the documents in <code>topDocs</code>. 
-   *         If no highlights were found for a document, the
-   *         first {@code maxPassages} sentences from the
-   *         field will be returned.
+   *         If no highlights were found for a document, its value is <code>null</code>.
    * @throws IOException if an I/O error occurred during processing
    * @throws IllegalArgumentException if <code>field</code> was indexed without 
    *         {@link IndexOptions#DOCS_AND_FREQS_AND_POSITIONS_AND_OFFSETS}
@@ -266,9 +259,7 @@ public class PostingsHighlighter {
    *        form the highlighted snippets.
    * @return Map keyed on field name, containing the array of formatted snippets 
    *         corresponding to the documents in <code>topDocs</code>. 
-   *         If no highlights were found for a document, the
-   *         first {@code maxPassages} from the field will
-   *         be returned.
+   *         If no highlights were found for a document, its value is <code>null</code>.
    * @throws IOException if an I/O error occurred during processing
    * @throws IllegalArgumentException if <code>field</code> was indexed without 
    *         {@link IndexOptions#DOCS_AND_FREQS_AND_POSITIONS_AND_OFFSETS}
@@ -336,7 +327,7 @@ public class PostingsHighlighter {
     DocsAndPositionsEnum postings[] = null;
     TermsEnum termsEnum = null;
     int lastLeaf = -1;
-
+    
     for (int i = 0; i < docids.length; i++) {
       String content = contents[i];
       if (content.length() == 0) {
@@ -356,12 +347,8 @@ public class PostingsHighlighter {
         postings = new DocsAndPositionsEnum[terms.length];
       }
       Passage passages[] = highlightDoc(field, terms, content.length(), bi, doc - subContext.docBase, termsEnum, postings, maxPassages);
-      if (passages.length == 0) {
-        passages = getEmptyHighlight(field, bi, maxPassages);
-      }
       if (passages.length > 0) {
-        // otherwise a null snippet (eg if field is missing
-        // entirely from the doc)
+        // otherwise a null snippet
         highlights.put(doc, formatter.format(passages, content));
       }
       lastLeaf = leaf;
@@ -489,35 +476,7 @@ public class PostingsHighlighter {
       }
       current.score += weights[off.id] * scorer.tf(tf, current.endOffset - current.startOffset);
     }
-
-    // Dead code but compiler disagrees:
-    assert false;
-    return null;
-  }
-
-  /** Called to summarize a document when no hits were
-   *  found.  By default this just returns the first
-   *  {@code maxPassages} sentences; subclasses can override
-   *  to customize. */
-  protected Passage[] getEmptyHighlight(String fieldName, BreakIterator bi, int maxPassages) {
-    // BreakIterator should be un-next'd:
-    List<Passage> passages = new ArrayList<Passage>();
-    int pos = bi.current();
-    assert pos == 0;
-    while (passages.size() < maxPassages) {
-      int next = bi.next();
-      if (next == BreakIterator.DONE) {
-        break;
-      }
-      Passage passage = new Passage();
-      passage.score = Float.NaN;
-      passage.startOffset = pos;
-      passage.endOffset = next;
-      passages.add(passage);
-      pos = next;
-    }
-
-    return passages.toArray(new Passage[passages.size()]);
+    return new Passage[0];
   }
   
   private static class OffsetsEnum implements Comparable<OffsetsEnum> {
