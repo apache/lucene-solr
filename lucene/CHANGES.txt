@@ -154,6 +154,9 @@ Optimizations
 * LUCENE-4854: Speed up TermsEnum of FieldCache.getDocTermOrds.
   (Robert Muir)
 
+* LUCENE-4857: Don't unnecessarily copy stem override map in
+  StemmerOverrideFilter. (Simon Willnauer)
+
 ======================= Lucene 4.2.0 =======================
 
 Changes in backwards compatibility policy
