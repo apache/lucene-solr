@@ -26,6 +26,7 @@ import java.util.Set;
 
 import org.apache.lucene.index.StoredDocument;
 import org.apache.lucene.search.Query;
+import org.apache.lucene.search.postingshighlight.Passage;
 import org.apache.lucene.search.postingshighlight.PassageFormatter;
 import org.apache.lucene.search.postingshighlight.PassageScorer;
 import org.apache.lucene.search.postingshighlight.PostingsHighlighter;
@@ -56,7 +57,8 @@ import org.apache.solr.util.plugin.PluginInfoInitialized;
  *                      k1="1.2"
  *                      b="0.75"
  *                      pivot="87"
- *                      maxLength=10000/&gt;
+ *                      maxLength=10000
+ *                      summarizeEmpty=true/&gt;
  *   &lt;/searchComponent&gt;
  * </pre>
  * <p>
@@ -111,13 +113,30 @@ public class PostingsSolrHighlighter extends SolrHighlighter implements PluginIn
       ellipsis = "... ";
     }
     PassageFormatter formatter = new PassageFormatter(preTag, postTag, ellipsis);
-    
+
+    String summarizeEmpty = attributes.get("summarizeEmpty");
+    final boolean summarizeEmptyBoolean;
+    if (summarizeEmpty == null) {
+      summarizeEmptyBoolean = true;
+    } else {
+      summarizeEmptyBoolean = Boolean.parseBoolean(summarizeEmpty);
+    }
+
     // maximum content size to process
     int maxLength = PostingsHighlighter.DEFAULT_MAX_LENGTH;
     if (attributes.containsKey("maxLength")) {
       maxLength = Integer.parseInt(attributes.get("maxLength"));
     }
-    highlighter = new PostingsHighlighter(maxLength, breakIterator, scorer, formatter);
+    highlighter = new PostingsHighlighter(maxLength, breakIterator, scorer, formatter) {
+        @Override
+        protected Passage[] getEmptyHighlight(String fieldName, BreakIterator bi, int maxPassages) {
+          if (summarizeEmptyBoolean) {
+            return super.getEmptyHighlight(fieldName, bi, maxPassages);
+          } else {
+            return new Passage[0];
+          }
+        }
+      };
   }
 
   @Override
