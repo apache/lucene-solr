@@ -146,6 +146,9 @@ Bug Fixes
 * LUCENE-4828: BooleanQuery no longer extracts terms from its MUST_NOT
   clauses.  (Mike McCandless)
 
+* SOLR-4589: Fixed CPU spikes and poor performance in lazy field loading 
+  of multivalued fields. (hossman)
+
 Optimizations
 
 * LUCENE-4819: Added Sorted[Set]DocValues.termsEnum(), and optimized the

@@ -203,6 +203,9 @@ Bug Fixes
   SolrCore through it's constructor rather than setting a field after.
   (Mark Miller)
     
+* SOLR-4589: Fixed CPU spikes and poor performance in lazy field loading 
+  of multivalued fields. (hossman)
+
 Optimizations
 ----------------------
 
