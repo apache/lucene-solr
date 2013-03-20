@@ -406,7 +406,7 @@ public final class SolrCore implements SolrInfoMBean {
     }
     
     SolrCore core = new SolrCore(getName(), getDataDir(), config,
-        schema, coreDescriptor, updateHandler, prev);
+        schema, coreDescriptor, updateHandler, this.solrDelPolicy, prev);
     core.solrDelPolicy = this.solrDelPolicy;
     
     core.getUpdateHandler().getSolrCoreState().newIndexWriter(core, false, false);
@@ -616,7 +616,7 @@ public final class SolrCore implements SolrInfoMBean {
    * @since solr 1.3
    */
   public SolrCore(String name, String dataDir, SolrConfig config, IndexSchema schema, CoreDescriptor cd) {
-    this(name, dataDir, config, schema, cd, null, null);
+    this(name, dataDir, config, schema, cd, null, null, null);
   }
 
 
@@ -652,7 +652,7 @@ public final class SolrCore implements SolrInfoMBean {
    *
    *@since solr 1.3
    */
-  public SolrCore(String name, String dataDir, SolrConfig config, IndexSchema schema, CoreDescriptor cd, UpdateHandler updateHandler, SolrCore prev) {
+  public SolrCore(String name, String dataDir, SolrConfig config, IndexSchema schema, CoreDescriptor cd, UpdateHandler updateHandler, IndexDeletionPolicyWrapper delPolicy, SolrCore prev) {
     coreDescriptor = cd;
     this.setName( name );
     resourceLoader = config.getResourceLoader();
@@ -726,8 +726,10 @@ public final class SolrCore implements SolrInfoMBean {
       
       initListeners();
       
-      if (updateHandler == null) {
+      if (delPolicy == null) {
         initDeletionPolicy();
+      } else {
+        this.solrDelPolicy = delPolicy;
       }
       
       this.codec = initCodec(solrConfig, schema);
