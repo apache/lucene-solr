@@ -56,7 +56,7 @@ public class SortingAtomicReaderTest extends SorterTestBase {
       System.out.println("sortedValues: " + Arrays.toString(sortedValues));
     }
     
-    reader = SortingAtomicReader.sort(reader, new Sorter() {
+    reader = SortingAtomicReader.wrap(reader, new Sorter() {
       @Override
       public Sorter.DocMap sort(AtomicReader reader) throws IOException {
         return docMap;
@@ -76,5 +76,5 @@ public class SortingAtomicReaderTest extends SorterTestBase {
     
     _TestUtil.checkReader(reader);
   }
-  
+
 }

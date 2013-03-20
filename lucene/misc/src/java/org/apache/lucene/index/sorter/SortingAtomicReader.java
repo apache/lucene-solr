@@ -393,7 +393,7 @@ public class SortingAtomicReader extends FilterAtomicReader {
     
     @Override
     public int docID() {
-      return docIt >= upto ? NO_MORE_DOCS : docs[docIt];
+      return docIt < 0 ? -1 : docIt >= upto ? NO_MORE_DOCS : docs[docIt];
     }
     
     @Override
@@ -605,7 +605,7 @@ public class SortingAtomicReader extends FilterAtomicReader {
   /** Return a sorted view of <code>reader</code> according to the order
    *  defined by <code>sorter</code>. If the reader is already sorted, this
    *  method might return the reader as-is. */
-  public static AtomicReader sort(AtomicReader reader, Sorter sorter) throws IOException {
+  public static AtomicReader wrap(AtomicReader reader, Sorter sorter) throws IOException {
     final Sorter.DocMap docMap = sorter.sort(reader);
     if (docMap == null) {
       // the reader is already sorter
