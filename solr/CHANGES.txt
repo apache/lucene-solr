@@ -198,6 +198,10 @@ Bug Fixes
 
 * SOLR-4538: Date Math expressions were being truncated to 32 characters
   when used in field:value queries in the lucene QParser.  (hossman, yonik)
+
+* SOLR-4617: SolrCore#reload needs to pass the deletion policy to the next 
+  SolrCore through it's constructor rather than setting a field after.
+  (Mark Miller)
     
 Optimizations
 ----------------------
