@@ -17,8 +17,8 @@ package org.apache.lucene.analysis.uima;
  * limitations under the License.
  */
 
-import org.apache.lucene.analysis.Tokenizer;
 import org.apache.lucene.analysis.util.TokenizerFactory;
+import org.apache.lucene.util.AttributeSource.AttributeFactory;
 
 import java.io.Reader;
 import java.util.HashMap;
@@ -55,7 +55,8 @@ public class UIMATypeAwareAnnotationsTokenizerFactory extends TokenizerFactory {
   }
 
   @Override
-  public Tokenizer create(Reader input) {
-    return new UIMATypeAwareAnnotationsTokenizer(descriptorPath, tokenType, featurePath, configurationParameters, input);
+  public UIMATypeAwareAnnotationsTokenizer create(AttributeFactory factory, Reader input) {
+    return new UIMATypeAwareAnnotationsTokenizer
+        (descriptorPath, tokenType, featurePath, configurationParameters, factory, input);
   }
 }

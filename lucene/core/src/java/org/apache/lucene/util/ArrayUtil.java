@@ -744,6 +744,46 @@ public final class ArrayUtil {
     mergeSort(a, 0, a.length);
   }
 
+  // timSorts:
+
+  /**
+   * Sorts the given array slice using the {@link Comparator}. This method uses the TimSort
+   * algorithm, but falls back to binary sort for small arrays.
+   * @param fromIndex start index (inclusive)
+   * @param toIndex end index (exclusive)
+   */
+  public static <T> void timSort(T[] a, int fromIndex, int toIndex, Comparator<? super T> comp) {
+    if (toIndex-fromIndex <= 1) return;
+    getSorter(a, comp).timSort(fromIndex, toIndex-1);
+  }
+  
+  /**
+   * Sorts the given array using the {@link Comparator}. This method uses the TimSort
+   * algorithm, but falls back to binary sort for small arrays.
+   */
+  public static <T> void timSort(T[] a, Comparator<? super T> comp) {
+    timSort(a, 0, a.length, comp);
+  }
+  
+  /**
+   * Sorts the given array slice in natural order. This method uses the TimSort
+   * algorithm, but falls back to binary sort for small arrays.
+   * @param fromIndex start index (inclusive)
+   * @param toIndex end index (exclusive)
+   */
+  public static <T extends Comparable<? super T>> void timSort(T[] a, int fromIndex, int toIndex) {
+    if (toIndex-fromIndex <= 1) return;
+    getSorter(a).timSort(fromIndex, toIndex-1);
+  }
+  
+  /**
+   * Sorts the given array in natural order. This method uses the TimSort
+   * algorithm, but falls back to binary sort for small arrays.
+   */
+  public static <T extends Comparable<? super T>> void timSort(T[] a) {
+    timSort(a, 0, a.length);
+  }
+
   // insertionSorts:
   
   /**
@@ -782,6 +822,46 @@ public final class ArrayUtil {
    */
   public static <T extends Comparable<? super T>> void insertionSort(T[] a) {
     insertionSort(a, 0, a.length);
+  }
+
+  // binarySorts:
+
+  /**
+   * Sorts the given array slice using the {@link Comparator}. This method uses the binary sort
+   * algorithm. It is only recommended to use this algorithm for small arrays!
+   * @param fromIndex start index (inclusive)
+   * @param toIndex end index (exclusive)
+   */
+  public static <T> void binarySort(T[] a, int fromIndex, int toIndex, Comparator<? super T> comp) {
+    if (toIndex-fromIndex <= 1) return;
+    getSorter(a, comp).binarySort(fromIndex, toIndex-1);
+  }
+  
+  /**
+   * Sorts the given array using the {@link Comparator}. This method uses the binary sort
+   * algorithm. It is only recommended to use this algorithm for small arrays!
+   */
+  public static <T> void binarySort(T[] a, Comparator<? super T> comp) {
+    binarySort(a, 0, a.length, comp);
+  }
+  
+  /**
+   * Sorts the given array slice in natural order. This method uses the binary sort
+   * algorithm. It is only recommended to use this algorithm for small arrays!
+   * @param fromIndex start index (inclusive)
+   * @param toIndex end index (exclusive)
+   */
+  public static <T extends Comparable<? super T>> void binarySort(T[] a, int fromIndex, int toIndex) {
+    if (toIndex-fromIndex <= 1) return;
+    getSorter(a).binarySort(fromIndex, toIndex-1);
+  }
+  
+  /**
+   * Sorts the given array in natural order. This method uses the binary sort
+   * algorithm. It is only recommended to use this algorithm for small arrays!
+   */
+  public static <T extends Comparable<? super T>> void binarySort(T[] a) {
+    binarySort(a, 0, a.length);
   }
 
 }

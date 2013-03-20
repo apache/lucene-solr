@@ -20,7 +20,6 @@ package org.apache.solr.analysis;
 import java.io.Reader;
 import java.util.Map;
 
-import org.apache.lucene.analysis.CharFilter;
 import org.apache.lucene.analysis.MockCharFilter;
 import org.apache.lucene.analysis.util.CharFilterFactory;
 
@@ -41,7 +40,7 @@ public class MockCharFilterFactory extends CharFilterFactory {
   }
 
   @Override
-  public CharFilter create(Reader input) {
+  public MockCharFilter create(Reader input) {
     return new MockCharFilter(input, remainder);
   }
 }

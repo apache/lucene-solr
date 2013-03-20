@@ -26,7 +26,7 @@ import org.apache.lucene.analysis.BaseTokenStreamTestCase;
 import org.apache.lucene.analysis.MockTokenizer;
 import org.apache.lucene.analysis.Tokenizer;
 import org.apache.lucene.analysis.core.KeywordTokenizer;
-import org.apache.lucene.analysis.miscellaneous.KeywordMarkerFilter;
+import org.apache.lucene.analysis.miscellaneous.SetKeywordMarkerFilter;
 import org.apache.lucene.analysis.util.CharArraySet;
 
 /**
@@ -124,7 +124,7 @@ public class TestArabicStemFilter extends BaseTokenStreamTestCase {
     set.add("ساهدهات");
     MockTokenizer tokenStream  = new MockTokenizer(new StringReader("ساهدهات"), MockTokenizer.WHITESPACE, false);
 
-    ArabicStemFilter filter = new ArabicStemFilter(new KeywordMarkerFilter(tokenStream, set));
+    ArabicStemFilter filter = new ArabicStemFilter(new SetKeywordMarkerFilter(tokenStream, set));
     assertTokenStreamContents(filter, new String[]{"ساهدهات"});
   }
 

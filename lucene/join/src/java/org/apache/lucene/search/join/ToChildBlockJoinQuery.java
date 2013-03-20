@@ -301,6 +301,11 @@ public class ToChildBlockJoinQuery extends Query {
       }
       return childDoc;
     }
+
+    @Override
+    public long cost() {
+      return parentScorer.cost();
+    }
   }
 
   @Override

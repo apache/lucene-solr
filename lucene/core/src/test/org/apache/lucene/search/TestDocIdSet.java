@@ -59,6 +59,11 @@ public class TestDocIdSet extends LuceneTestCase {
               while (nextDoc() < target) {}
               return docid;
             }
+            
+            @Override
+            public long cost() {
+              return 1;
+            } 
           };
         } 
       };

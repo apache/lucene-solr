@@ -1,7 +1,5 @@
 package org.apache.lucene.facet.taxonomy;
 
-import java.util.Arrays;
-
 /*
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
@@ -18,6 +16,9 @@ import java.util.Arrays;
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
+import java.util.Arrays;
+import java.util.regex.Pattern;
 
 /**
  * Holds a sequence of string components, specifying the hierarchical name of a
@@ -73,7 +74,7 @@ public class CategoryPath implements Comparable<CategoryPath> {
 
   /** Construct from a given path, separating path components with {@code delimiter}. */
   public CategoryPath(final String pathString, final char delimiter) {
-    String[] comps = pathString.split(Character.toString(delimiter));
+    String[] comps = pathString.split(Pattern.quote(Character.toString(delimiter)));
     if (comps.length == 1 && comps[0].isEmpty()) {
       components = null;
       length = 0;
@@ -121,10 +122,14 @@ public class CategoryPath implements Comparable<CategoryPath> {
     return length - other.length;
   }
 
+  private void hasDelimiter(String offender, char delimiter) {
+    throw new IllegalArgumentException("delimiter character '" + delimiter + "' (U+" + Integer.toHexString(delimiter) + ") appears in path component \"" + offender + "\"");
+  }
+
   private void noDelimiter(char[] buf, int offset, int len, char delimiter) {
     for(int idx=0;idx<len;idx++) {
       if (buf[offset+idx] == delimiter) {
-        throw new IllegalArgumentException("delimiter character U+" + Integer.toHexString(delimiter) + " appears in path");
+        hasDelimiter(new String(buf, offset, len), delimiter);
       }
     }
   }
@@ -237,6 +242,9 @@ public class CategoryPath implements Comparable<CategoryPath> {
     
     StringBuilder sb = new StringBuilder();
     for (int i = 0; i < length; i++) {
+      if (components[i].indexOf(delimiter) != -1) {
+        hasDelimiter(components[i], delimiter);
+      }
       sb.append(components[i]).append(delimiter);
     }
     sb.setLength(sb.length() - 1); // remove last delimiter

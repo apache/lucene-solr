@@ -66,7 +66,12 @@ public final class PatternTokenizer extends Tokenizer {
 
   /** creates a new PatternTokenizer returning tokens from group (-1 for split functionality) */
   public PatternTokenizer(Reader input, Pattern pattern, int group) throws IOException {
-    super(input);
+    this(AttributeFactory.DEFAULT_ATTRIBUTE_FACTORY, input, pattern, group);
+  }
+
+  /** creates a new PatternTokenizer returning tokens from group (-1 for split functionality) */
+  public PatternTokenizer(AttributeFactory factory, Reader input, Pattern pattern, int group) throws IOException {
+    super(factory, input);
     this.pattern = pattern;
     this.group = group;
 

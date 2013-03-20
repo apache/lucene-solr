@@ -99,5 +99,10 @@ class ReqOptSumScorer extends Scorer {
     children.add(new ChildScorer(optScorer, "SHOULD"));
     return children;
   }
+
+  @Override
+  public long cost() {
+    return reqScorer.cost();
+  }
 }
 

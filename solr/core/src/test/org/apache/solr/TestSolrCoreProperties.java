@@ -46,6 +46,7 @@ public class TestSolrCoreProperties extends LuceneTestCase {
     super.setUp();
     setUpMe();
     System.setProperty("solr.data.dir", getDataDir());
+    System.setProperty("tests.shardhandler.randomSeed", Long.toString(random().nextLong()));
     
     solrJetty = new JettySolrRunner(getHomeDir(), "/solr", 0);
 
@@ -58,6 +59,7 @@ public class TestSolrCoreProperties extends LuceneTestCase {
   @Override
   public void tearDown() throws Exception {
     solrJetty.stop();
+    System.clearProperty("tests.shardhandler.randomSeed");
     AbstractSolrTestCase.recurseDelete(homeDir);
     super.tearDown();
   }

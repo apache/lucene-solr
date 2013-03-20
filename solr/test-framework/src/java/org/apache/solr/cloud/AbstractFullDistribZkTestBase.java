@@ -1316,7 +1316,7 @@ public abstract class AbstractFullDistribZkTestBase extends AbstractDistribZkTes
         retry  = true;
       }
       cnt++;
-      if (cnt > 10) break;
+      if (cnt > 20) break;
       Thread.sleep(2000);
     } while (retry);
   }

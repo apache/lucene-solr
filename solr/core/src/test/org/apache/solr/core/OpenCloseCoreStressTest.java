@@ -55,7 +55,6 @@ public class OpenCloseCoreStressTest extends SolrTestCaseJ4 {
   private int numCores = 20;
   private Map<String, Long> coreCounts;
   private List<String> coreNames;
-  Random random = new Random(System.currentTimeMillis());
 
   static final int COMMIT_WITHIN = 5000;
 
@@ -189,9 +188,9 @@ public class OpenCloseCoreStressTest extends SolrTestCaseJ4 {
         log.info(String.format(Locale.ROOT, "\n\n\n\n\nStarting a %,d second cycle, seconds left: %,d. Seconds run so far: %,d.",
             cycleSeconds, secondsRemaining, secondsRun));
 
-        Indexer idxer = new Indexer(this, url, indexingServers, indexingThreads, cycleSeconds);
+        Indexer idxer = new Indexer(this, url, indexingServers, indexingThreads, cycleSeconds, random());
 
-        Queries queries = new Queries(this, url, queryServers, queryThreads);
+        Queries queries = new Queries(this, url, queryServers, queryThreads, random());
 
         idxer.waitOnThreads();
 
@@ -310,7 +309,7 @@ public class OpenCloseCoreStressTest extends SolrTestCaseJ4 {
     cumulativeDocs += totalDocsFound;
   }
 
-  String getRandomCore() {
+  String getRandomCore(Random random) {
     return coreNames.get(Math.abs(random.nextInt()) % coreNames.size());
   }
 
@@ -339,14 +338,14 @@ class Indexer {
 
   ArrayList<OneIndexer> _threads = new ArrayList<OneIndexer>();
 
-  public Indexer(OpenCloseCoreStressTest OCCST, String url, List<HttpSolrServer> servers, int numThreads, int secondsToRun) {
+  public Indexer(OpenCloseCoreStressTest OCCST, String url, List<HttpSolrServer> servers, int numThreads, int secondsToRun, Random random) {
     stopTime = System.currentTimeMillis() + (secondsToRun * 1000);
     nextTime = System.currentTimeMillis() + 60000;
     docsThisCycle.set(0);
     qTimesAccum.set(0);
     updateCounts.set(0);
     for (int idx = 0; idx < numThreads; ++idx) {
-      OneIndexer one = new OneIndexer(OCCST, url, servers.get(idx));
+      OneIndexer one = new OneIndexer(OCCST, url, servers.get(idx), random.nextLong());
       _threads.add(one);
       one.start();
     }
@@ -385,11 +384,13 @@ class OneIndexer extends Thread {
   private final OpenCloseCoreStressTest OCCST;
   private final HttpSolrServer server;
   private final String baseUrl;
+  private final Random random;
 
-  OneIndexer(OpenCloseCoreStressTest OCCST, String url, HttpSolrServer server) {
+  OneIndexer(OpenCloseCoreStressTest OCCST, String url, HttpSolrServer server, long seed) {
     this.OCCST = OCCST;
     this.server = server;
     this.baseUrl = url;
+    this.random = new Random(seed);
   }
 
   @Override
@@ -399,7 +400,7 @@ class OneIndexer extends Thread {
     while (Indexer.stopTime > System.currentTimeMillis()) {
       int myId = Indexer.idUnique.incrementAndGet();
       Indexer.docsThisCycle.incrementAndGet();
-      String core = OCCST.getRandomCore();
+      String core = OCCST.getRandomCore(random);
       OCCST.incrementCoreCount(core);
       Indexer.progress(myId, core);
       for (int idx = 0; idx < 3; ++idx) {
@@ -447,10 +448,10 @@ class Queries {
   static AtomicInteger _errors = new AtomicInteger(0);
   String baseUrl;
 
-  public Queries(OpenCloseCoreStressTest OCCST, String url, List<HttpSolrServer> servers, int numThreads) {
+  public Queries(OpenCloseCoreStressTest OCCST, String url, List<HttpSolrServer> servers, int numThreads, Random random) {
     baseUrl = url;
     for (int idx = 0; idx < numThreads; ++idx) {
-      Thread one = new OneQuery(OCCST, url, servers.get(idx));
+      Thread one = new OneQuery(OCCST, url, servers.get(idx), random.nextLong());
       _threads.add(one);
       one.start();
     }
@@ -488,18 +489,20 @@ class OneQuery extends Thread {
   OpenCloseCoreStressTest OCCST;
   private final HttpSolrServer server;
   private final String baseUrl;
+  private final Random random;
 
-  OneQuery(OpenCloseCoreStressTest OCCST, String url, HttpSolrServer server) {
+  OneQuery(OpenCloseCoreStressTest OCCST, String url, HttpSolrServer server, long seed) {
     this.OCCST = OCCST;
     this.server = server;
     this.baseUrl = url;
+    this.random = new Random(seed);
   }
 
   @Override
   public void run() {
     SolrTestCaseJ4.log.info(String.format(Locale.ROOT, "Starting query thread: " + getId()));
     while (Queries._keepon.get()) {
-      String core = OCCST.getRandomCore();
+      String core = OCCST.getRandomCore(random);
       for (int idx = 0; idx < 3; ++idx) {
         ModifiableSolrParams params = new ModifiableSolrParams();
         params.set("qt", "/select");

@@ -615,6 +615,11 @@ class DrillSidewaysScorer extends Scorer {
   }
 
   @Override
+  public long cost() {
+    return baseScorer.cost();
+  }
+
+  @Override
   public Collection<ChildScorer> getChildren() {
     return Collections.singletonList(new ChildScorer(baseScorer, "MUST"));
   }

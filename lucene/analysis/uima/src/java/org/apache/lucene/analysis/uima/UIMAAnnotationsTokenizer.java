@@ -43,7 +43,12 @@ public final class UIMAAnnotationsTokenizer extends BaseUIMATokenizer {
   private int finalOffset = 0;
 
   public UIMAAnnotationsTokenizer(String descriptorPath, String tokenType, Map<String, Object> configurationParameters, Reader input) {
-    super(input, descriptorPath, configurationParameters);
+    this(descriptorPath, tokenType, configurationParameters, AttributeFactory.DEFAULT_ATTRIBUTE_FACTORY, input);
+  }
+
+  public UIMAAnnotationsTokenizer(String descriptorPath, String tokenType, Map<String, Object> configurationParameters, 
+                                  AttributeFactory factory, Reader input) {
+    super(factory, input, descriptorPath, configurationParameters);
     this.tokenTypeString = tokenType;
     this.termAttr = addAttribute(CharTermAttribute.class);
     this.offsetAttr = addAttribute(OffsetAttribute.class);

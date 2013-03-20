@@ -17,8 +17,8 @@ package org.apache.lucene.analysis.core;
  * limitations under the License.
  */
 
-import org.apache.lucene.analysis.core.KeywordTokenizer;
 import org.apache.lucene.analysis.util.TokenizerFactory;
+import org.apache.lucene.util.AttributeSource.AttributeFactory;
 
 import java.io.Reader;
 
@@ -34,7 +34,7 @@ import java.io.Reader;
  */
 public class KeywordTokenizerFactory extends TokenizerFactory {
   @Override
-  public KeywordTokenizer create(Reader input) {
-    return new KeywordTokenizer(input);
+  public KeywordTokenizer create(AttributeFactory factory, Reader input) {
+    return new KeywordTokenizer(factory, input, KeywordTokenizer.DEFAULT_BUFFER_SIZE);
   }
 }

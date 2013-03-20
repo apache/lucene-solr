@@ -444,6 +444,11 @@ public class SimpleTextTermVectorsReader extends TermVectorsReader {
       this.doc = -1;
       didNext = false;
     }
+    
+    @Override
+    public long cost() {
+      return 1;
+    }
   }
   
   private static class SimpleTVDocsAndPositionsEnum extends DocsAndPositionsEnum {
@@ -534,6 +539,11 @@ public class SimpleTextTermVectorsReader extends TermVectorsReader {
       } else {
         return endOffsets[nextPos-1];
       }
+    }
+    
+    @Override
+    public long cost() {
+      return 1;
     }
   }
 }

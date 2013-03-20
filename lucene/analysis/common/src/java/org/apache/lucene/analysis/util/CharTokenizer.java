@@ -51,22 +51,6 @@ public abstract class CharTokenizer extends Tokenizer {
    * 
    * @param matchVersion
    *          Lucene version to match
-   * @param source
-   *          the attribute source to use for this {@link Tokenizer}
-   * @param input
-   *          the input to split up into tokens
-   */
-  public CharTokenizer(Version matchVersion, AttributeSource source,
-      Reader input) {
-    super(source, input);
-    charUtils = CharacterUtils.getInstance(matchVersion);
-  }
-  
-  /**
-   * Creates a new {@link CharTokenizer} instance
-   * 
-   * @param matchVersion
-   *          Lucene version to match
    * @param factory
    *          the attribute factory to use for this {@link Tokenizer}
    * @param input

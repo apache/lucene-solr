@@ -26,7 +26,7 @@ import org.apache.lucene.analysis.BaseTokenStreamTestCase;
 import org.apache.lucene.analysis.MockTokenizer;
 import org.apache.lucene.analysis.Tokenizer;
 import org.apache.lucene.analysis.core.KeywordTokenizer;
-import org.apache.lucene.analysis.miscellaneous.KeywordMarkerFilter;
+import org.apache.lucene.analysis.miscellaneous.SetKeywordMarkerFilter;
 import org.apache.lucene.analysis.util.CharArraySet;
 
 /**
@@ -281,7 +281,7 @@ public class TestCzechStemmer extends BaseTokenStreamTestCase {
   public void testWithKeywordAttribute() throws IOException {
     CharArraySet set = new CharArraySet(TEST_VERSION_CURRENT, 1, true);
     set.add("hole");
-    CzechStemFilter filter = new CzechStemFilter(new KeywordMarkerFilter(
+    CzechStemFilter filter = new CzechStemFilter(new SetKeywordMarkerFilter(
         new MockTokenizer(new StringReader("hole desek"), MockTokenizer.WHITESPACE, false), set));
     assertTokenStreamContents(filter, new String[] { "hole", "desk" });
   }

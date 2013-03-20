@@ -44,6 +44,7 @@
       <dependency org="org.codehaus.woodstox" name="wstx-asl" rev="3.2.7" transitive="false"/>
       <dependency org="org.slf4j" name="slf4j-api" rev="1.6.4" transitive="false"/>
       <dependency org="org.slf4j" name="slf4j-jdk14" rev="1.6.4" transitive="false"/> 
+      <dependency org="org.noggit" name="noggit" rev="0.5" transitive="false"/>
       <exclude org="*" ext="*" matcher="regexp" type="${ivy.exclude.types}"/> 
     </dependencies>
 </ivy-module>

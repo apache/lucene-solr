@@ -26,7 +26,6 @@ import javax.xml.xpath.XPathExpressionException;
 import org.apache.lucene.util.Constants;
 import org.apache.lucene.util.LuceneTestCase;
 import org.apache.lucene.util.QuickPatchThreadsFilter;
-import org.apache.noggit.*;
 import org.apache.solr.client.solrj.util.ClientUtils;
 import org.apache.solr.common.*;
 import org.apache.solr.common.cloud.SolrZkClient;
@@ -47,6 +46,9 @@ import org.apache.solr.util.TestHarness;
 import org.junit.*;
 import org.junit.rules.RuleChain;
 import org.junit.rules.TestRule;
+import org.noggit.CharArr;
+import org.noggit.JSONUtil;
+import org.noggit.ObjectBuilder;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.xml.sax.SAXException;
@@ -83,6 +85,7 @@ public abstract class SolrTestCaseJ4 extends LuceneTestCase {
   @SuppressWarnings("unused")
   private static void beforeClass() {
     System.setProperty("jetty.testMode", "true");
+    System.setProperty("tests.shardhandler.randomSeed", Long.toString(random().nextLong()));
     setupLogging();
     startTrackingSearchers();
     startTrackingZkClients();
@@ -97,7 +100,9 @@ public abstract class SolrTestCaseJ4 extends LuceneTestCase {
     endTrackingSearchers();
     endTrackingZkClients();
     resetFactory();
+    coreName = CoreContainer.DEFAULT_DEFAULT_CORE_NAME;
     System.clearProperty("jetty.testMode");
+    System.clearProperty("tests.shardhandler.randomSeed");
   }
 
   private static boolean changedFactory = false;
@@ -384,7 +389,8 @@ public abstract class SolrTestCaseJ4 extends LuceneTestCase {
   public static void createCore() {
     assertNotNull(testSolrHome);
     solrConfig = TestHarness.createConfig(testSolrHome, coreName, getSolrConfigFile());
-    h = new TestHarness( dataDir.getAbsolutePath(),
+    h = new TestHarness( coreName,
+            dataDir.getAbsolutePath(),
             solrConfig,
             getSchemaFile());
     lrf = h.getRequestFactory

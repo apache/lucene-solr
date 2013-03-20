@@ -26,9 +26,10 @@ import java.util.Comparator;
 import java.util.List;
 
 import org.apache.lucene.search.spell.TermFreqIterator;
+import org.apache.lucene.search.spell.TermFreqPayloadIterator;
 import org.apache.lucene.search.suggest.Lookup;
-import org.apache.lucene.search.suggest.SortedTermFreqIteratorWrapper;
 import org.apache.lucene.search.suggest.Sort.ByteSequencesWriter;
+import org.apache.lucene.search.suggest.SortedTermFreqIteratorWrapper;
 import org.apache.lucene.store.ByteArrayDataInput;
 import org.apache.lucene.store.ByteArrayDataOutput;
 import org.apache.lucene.store.InputStreamDataInput;
@@ -40,12 +41,12 @@ import org.apache.lucene.util.IOUtils;
 import org.apache.lucene.util.IntsRef;
 import org.apache.lucene.util.UnicodeUtil;
 import org.apache.lucene.util.fst.Builder;
-import org.apache.lucene.util.fst.FST;
 import org.apache.lucene.util.fst.FST.Arc;
 import org.apache.lucene.util.fst.FST.BytesReader;
+import org.apache.lucene.util.fst.FST;
 import org.apache.lucene.util.fst.PositiveIntOutputs;
-import org.apache.lucene.util.fst.Util;
 import org.apache.lucene.util.fst.Util.MinResult;
+import org.apache.lucene.util.fst.Util;
 
 /**
  * Suggester based on a weighted FST: it first traverses the prefix, 
@@ -93,6 +94,9 @@ public class WFSTCompletionLookup extends Lookup {
   
   @Override
   public void build(TermFreqIterator iterator) throws IOException {
+    if (iterator instanceof TermFreqPayloadIterator) {
+      throw new IllegalArgumentException("this suggester doesn't support payloads");
+    }
     BytesRef scratch = new BytesRef();
     TermFreqIterator iter = new WFSTTermFreqIteratorWrapper(iterator);
     IntsRef scratchInts = new IntsRef();

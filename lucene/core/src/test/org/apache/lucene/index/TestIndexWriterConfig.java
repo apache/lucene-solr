@@ -231,30 +231,46 @@ public class TestIndexWriterConfig extends LuceneTestCase {
     assertEquals(KeepOnlyLastCommitDeletionPolicy.class, conf.getIndexDeletionPolicy().getClass());
     conf.setIndexDeletionPolicy(new SnapshotDeletionPolicy(null));
     assertEquals(SnapshotDeletionPolicy.class, conf.getIndexDeletionPolicy().getClass());
-    conf.setIndexDeletionPolicy(null);
-    assertEquals(KeepOnlyLastCommitDeletionPolicy.class, conf.getIndexDeletionPolicy().getClass());
+    try {
+      conf.setIndexDeletionPolicy(null);
+      fail();
+    } catch (IllegalArgumentException e) {
+      // ok
+    }
 
     // Test MergeScheduler
     assertEquals(ConcurrentMergeScheduler.class, conf.getMergeScheduler().getClass());
     conf.setMergeScheduler(new SerialMergeScheduler());
     assertEquals(SerialMergeScheduler.class, conf.getMergeScheduler().getClass());
-    conf.setMergeScheduler(null);
-    assertEquals(ConcurrentMergeScheduler.class, conf.getMergeScheduler().getClass());
+    try {
+      conf.setMergeScheduler(null);
+      fail();
+    } catch (IllegalArgumentException e) {
+      // ok
+    }
 
     // Test Similarity: 
     // we shouldnt assert what the default is, just that its not null.
     assertTrue(IndexSearcher.getDefaultSimilarity() == conf.getSimilarity());
     conf.setSimilarity(new MySimilarity());
     assertEquals(MySimilarity.class, conf.getSimilarity().getClass());
-    conf.setSimilarity(null);
-    assertTrue(IndexSearcher.getDefaultSimilarity() == conf.getSimilarity());
+    try {
+      conf.setSimilarity(null);
+      fail();
+    } catch (IllegalArgumentException e) {
+      // ok
+    }
 
     // Test IndexingChain
     assertTrue(DocumentsWriterPerThread.defaultIndexingChain == conf.getIndexingChain());
     conf.setIndexingChain(new MyIndexingChain());
     assertEquals(MyIndexingChain.class, conf.getIndexingChain().getClass());
-    conf.setIndexingChain(null);
-    assertTrue(DocumentsWriterPerThread.defaultIndexingChain == conf.getIndexingChain());
+    try {
+      conf.setIndexingChain(null);
+      fail();
+    } catch (IllegalArgumentException e) {
+      // ok
+    }
 
     try {
       conf.setMaxBufferedDeleteTerms(0);
@@ -324,8 +340,12 @@ public class TestIndexWriterConfig extends LuceneTestCase {
     assertEquals(TieredMergePolicy.class, conf.getMergePolicy().getClass());
     conf.setMergePolicy(new LogDocMergePolicy());
     assertEquals(LogDocMergePolicy.class, conf.getMergePolicy().getClass());
-    conf.setMergePolicy(null);
-    assertEquals(LogByteSizeMergePolicy.class, conf.getMergePolicy().getClass());
+    try {
+      conf.setMergePolicy(null);
+      fail();
+    } catch (IllegalArgumentException e) {
+      // ok
+    }
   }
 
   public void testLiveChangeToCFS() throws Exception {

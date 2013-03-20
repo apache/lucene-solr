@@ -224,7 +224,7 @@
              See the Java Regular Expression documentation for more
              infomation on pattern and replacement string syntax.
              
-             http://java.sun.com/j2se/1.6.0/docs/api/java/util/regex/package-summary.html
+             http://docs.oracle.com/javase/7/docs/api/java/util/regex/package-summary.html
           -->
         <filter class="solr.PatternReplaceFilterFactory"
                 pattern="([^a-z])" replacement="" replace="all"
@@ -286,6 +286,7 @@ valued. -->
                stored="false" indexed="true"
                class="solr.ExternalFileField"/>
 
+    <fieldType name="text_no_analyzer" stored="false" indexed="true" class="solr.TextField" />
  </types>
 
 
@@ -321,6 +322,8 @@ valued. -->
    <field name="signatureField" type="string" indexed="true" stored="false"/>
 
    <field name="eff_trie" type="eff_tfloat" />
+
+   <field name="text_no_analyzer" type="text_no_analyzer" indexed="true" />
 
    <!-- Dynamic field definitions.  If a field name is not found, dynamicFields
         will be used if the name matches any of the patterns.

@@ -97,7 +97,6 @@ public class Token implements java.io.Serializable {
   /**
    * Returns the image.
    */
-  @Override
   public String toString()
   {
     return image;
@@ -129,4 +128,4 @@ public class Token implements java.io.Serializable {
   }
 
 }
-/* JavaCC - OriginalChecksum=405bb5d2fcd84e94ac1c8f0b12c1f914 (do not edit this line) */
+/* JavaCC - OriginalChecksum=c1e1418b35aa9e47ef8dc98b87423d70 (do not edit this line) */

@@ -7,8 +7,8 @@ import java.util.Collections;
 import java.util.Comparator;
 
 import org.apache.lucene.facet.search.FacetRequest.SortOrder;
+import org.apache.lucene.facet.taxonomy.ParallelTaxonomyArrays;
 import org.apache.lucene.facet.taxonomy.TaxonomyReader;
-import org.apache.lucene.facet.taxonomy.directory.ParallelTaxonomyArrays;
 import org.apache.lucene.util.PriorityQueue;
 
 /*

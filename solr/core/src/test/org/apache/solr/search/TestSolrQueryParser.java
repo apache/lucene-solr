@@ -104,6 +104,11 @@ public class TestSolrQueryParser extends SolrTestCaseJ4 {
     );
     assertJQ(req("q","doesnotexist_s:( * * * )")
         ,"/response/numFound==0"   // nothing should be found
+     );
+
+    // length of date math caused issues...
+    assertJQ(req("q","foo_dt:\"2013-03-08T00:46:15Z/DAY+000MILLISECONDS+00SECONDS+00MINUTES+00HOURS+0000000000YEARS+6MONTHS+3DAYS\"", "debug","query")
+        ,"/debug/parsedquery=='foo_dt:2013-09-11T00:00:00Z'"
     );
   }
 

@@ -92,6 +92,10 @@ public class TestBooleanScorer extends LuceneTestCase
         return doc = target <= 3000 ? 3000 : NO_MORE_DOCS;
       }
       
+      @Override
+      public long cost() {
+        return 1;
+      }
     }};
     
     BooleanScorer bs = new BooleanScorer(weight, false, 1, Arrays.asList(scorers), null, scorers.length);

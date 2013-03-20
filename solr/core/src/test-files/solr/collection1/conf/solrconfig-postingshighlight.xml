@@ -25,6 +25,6 @@
   <requestHandler name="standard" class="solr.StandardRequestHandler"></requestHandler>
 
   <searchComponent class="solr.HighlightComponent" name="highlight">
-    <highlighting class="org.apache.solr.highlight.PostingsSolrHighlighter"/>
+    <highlighting class="org.apache.solr.highlight.PostingsSolrHighlighter" summarizeEmpty="false"/>
   </searchComponent>
 </config>

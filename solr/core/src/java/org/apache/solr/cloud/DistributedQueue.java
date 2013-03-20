@@ -22,7 +22,10 @@ import java.util.List;
 import java.util.NoSuchElementException;
 import java.util.TreeMap;
 
+import org.apache.solr.common.SolrException;
+import org.apache.solr.common.SolrException.ErrorCode;
 import org.apache.solr.common.cloud.SolrZkClient;
+import org.apache.solr.common.cloud.ZkCmdExecutor;
 import org.apache.zookeeper.CreateMode;
 import org.apache.zookeeper.KeeperException;
 import org.apache.zookeeper.WatchedEvent;
@@ -53,6 +56,16 @@ public class DistributedQueue {
   public DistributedQueue(SolrZkClient zookeeper, String dir, List<ACL> acl) {
     this.dir = dir;
     
+    ZkCmdExecutor cmdExecutor = new ZkCmdExecutor(30);
+    try {
+      cmdExecutor.ensureExists(dir, zookeeper);
+    } catch (KeeperException e) {
+      throw new SolrException(ErrorCode.SERVER_ERROR, e);
+    } catch (InterruptedException e) {
+      Thread.currentThread().interrupt();
+      throw new SolrException(ErrorCode.SERVER_ERROR, e);
+    }
+    
     if (acl != null) {
       this.acl = acl;
     }
@@ -82,7 +95,7 @@ public class DistributedQueue {
       try {
         // Check format
         if (!childName.regionMatches(0, prefix, 0, prefix.length())) {
-          LOG.warn("Found child node with improper name: " + childName);
+          LOG.debug("Found child node with improper name: " + childName);
           continue;
         }
         String suffix = childName.substring(prefix.length());

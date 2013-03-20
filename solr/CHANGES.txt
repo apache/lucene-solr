@@ -12,7 +12,7 @@ See http://lucene.apache.org/solr for more information.
 
 Getting Started
 ---------------
-You need a Java 1.6 VM or later installed.
+You need a Java 1.7 VM or later installed.
 In this release, there is an example Solr server including a bundled 
 servlet container in the directory named "example".
 See the tutorial at http://lucene.apache.org/solr/tutorial.html
@@ -59,14 +59,169 @@ Detailed Change List
 New Features
 ----------------------
 
+* SOLR-4196 (and others). Solr.xml is being deprecated in favor of a simple
+  properties file. In the absence of a <solr_home>/solr.xml but the presence of
+  <solr_home>/solr.properties, two things will happen
+  1> The attributes that, in the solr.xml file, were in the <solr> and <cores> tags will
+      be read from the solr.properties
+  2> The <solr_home> will be walked and any cores fond will be discovered, which will
+     be inferred by the presence of a "core.properties" file which will contain the 
+     data formerly in the individual <core> tags. The implication here is that there will
+     be no individual core information in the solr.properties file.
+  See the discussion on the wiki page titled "Core Discovery (4.3 and beyond)" for
+  the formats of both solr.properties and the individual core.properties files
+  (Erick Erickson)
+
 Bug Fixes
+----------------------
+
+* SOLR-4543: setting shardHandlerFactory in solr.xml/solr.properties does not work.
+  (Ryan Ernst, Robert Muir via Erick Erickson)
+
+Optimizations
 ----------------------
 
 Other Changes
 ----------------------
 
+* SOLR-4317: SolrTestCaseJ4: Can't avoid "collection1" convention (Tricia Jenkins, via Erick Erickson)
+
+* SOLR-4571: SolrZkClient#setData should return Stat object. (Mark Miller)
+
+* SOLR-4603: CachingDirectoryFactory should use an IdentityHashMap for 
+  byDirectoryCache. (Mark Miller)
+
+* SOLR-4544: Refactor HttpShardHandlerFactory so load-balancing logic can be customized.
+  (Ryan Ernst via Robert Muir)
+
+* SOLR-4607: Use noggit 0.5 release jar rather than a forked copy.  (Yonik Seeley, Robert Muir)
+
+==================  4.2.1 ==================
+
+Versions of Major Components
+---------------------
+Apache Tika 1.3
+Carrot2 3.6.2
+Velocity 1.7 and Velocity Tools 2.0
+Apache UIMA 2.3.1
+Apache ZooKeeper 3.4.5
+
+Detailed Change List
+----------------------
+
+Bug Fixes
+----------------------
+
+* SOLR-4567: copyField source glob matching explicit field(s) stopped working
+  in Solr 4.2. (Alexandre Rafalovitch, Steve Rowe)
+  
+* SOLR-4475: Fix various places that still assume File based paths even when 
+  not using a file based DirectoryFactory. (Mark Miller)
+
+* SOLR-4551: CachingDirectoryFactory needs to create CacheEntry's with the 
+  fullpath not path. (Mark Miller)
+
+* SOLR-4555: When forceNew is used with CachingDirectoryFactory#get, the old
+  CachValue should give up it's path as it will be used by a new Directory
+  instance. (Mark Miller)
+
+* SOLR-4578: CoreAdminHandler#handleCreateAction gets a SolrCore and does not
+  close it in SolrCloud mode when a core with the same name already exists.
+  (Mark Miller)
+
+* SOLR-4574: The Collections API will silently return success on an unknown
+  ACTION parameter. (Mark Miller)
+
+* SOLR-4576: Collections API validation errors should cause an exception on
+  clients and otherwise act as validation errors with the Core Admin API.
+  (Mark Miller)
+
+* SOLR-4577: The collections API should return responses (success or failure)
+  for each node it attempts to work with. (Mark Miller)
+  
+* SOLR-4568: The lastPublished state check before becoming a leader is not 
+  working correctly. (Mark Miller)
+
+* SOLR-4570: Even if an explicit shard id is used, ZkController#preRegister 
+  should still wait to see the shard id in it's current ClusterState.
+  (Mark Miller)
+
+* SOLR-4585: The Collections API validates numShards with < 0 but should use 
+  <= 0. (Mark Miller)
+
+* SOLR-4592: DefaultSolrCoreState#doRecovery needs to check the CoreContainer
+  shutdown flag inside the recoveryLock sync block. (Mark Miller)
+
+* SOLR-4595: CachingDirectoryFactory#close can throw a concurrent 
+  modification exception. (Mark Miller)
+
+* SOLR-4573: Accessing Admin UI files in SolrCloud mode logs warnings.
+  (Mark Miller, Phil John)
+
+* SOLR-4594: StandardDirectoryFactory#remove accesses byDirectoryCache 
+  without a lock. (Mark Miller)
+
+* SOLR-4597: CachingDirectoryFactory#remove should not attempt to empty/remove 
+  the index right away but flag for removal after close. (Mark Miller)
+
+* SOLR-4598: The Core Admin unload command's option 'deleteDataDir', should use 
+  the DirectoryFactory API to remove the data dir. (Mark Miller)
+
+* SOLR-4599: CachingDirectoryFactory calls close(Directory) on forceNew if the 
+  Directory has a refCnt of 0, but it should call closeDirectory(CacheValue).
+  (Mark Miller)
+
+* SOLR-4602: ZkController#unregister should cancel it's election participation 
+  before asking the Overseer to delete the SolrCore information. (Mark Miller)
+
+* SOLR-4601: A Collection that is only partially created and then deleted will 
+  leave pre allocated shard information in ZooKeeper. (Mark Miller)
+  
+* SOLR-4604: UpdateLog#init is over called on SolrCore#reload. (Mark Miller)
+
+* SOLR-4605: Rollback does not work correctly. (Mark S, Mark Miller)
+
+* SOLR-4609: The Collections API should only send the reload command to ACTIVE 
+  cores. (Mark Miller)     
+           
+* SOLR-4297: Atomic update request containing null=true sets all subsequent
+  fields to null (Ben Pennell, Rob, shalin)
+  
+* SOLR-4371: Admin UI - Analysis Screen shows empty result (steffkes)
+
+* SOLR-4318: NPE encountered with querying with wildcards on a field that uses
+  the DefaultAnalyzer (i.e. no analysis chain defined). (Erick Erickson)
+
+* SOLR-4361: DataImportHandler would throw UnsupportedOperationException if
+  handler-level parameters were specified containing periods in the name
+  (James Dyer)
+
+* SOLR-4538: Date Math expressions were being truncated to 32 characters
+  when used in field:value queries in the lucene QParser.  (hossman, yonik)
+
+* SOLR-4617: SolrCore#reload needs to pass the deletion policy to the next 
+  SolrCore through it's constructor rather than setting a field after.
+  (Mark Miller)
+    
+* SOLR-4589: Fixed CPU spikes and poor performance in lazy field loading 
+  of multivalued fields. (hossman)
+
+Optimizations
+----------------------
+
+* SOLR-4569: waitForReplicasToComeUp should bail right away if it doesn't see the
+  expected slice in the clusterstate rather than waiting. (Mark Miller)
+
+* SOLR-4311: Admin UI - Optimize Caching Behaviour (steffkes)
+      
+Other Changes
+----------------------
+
 * SOLR-4537: Clean up schema information REST API. (Steve Rowe)
 
+* SOLR-4596: DistributedQueue should ensure its full path exists in the constructor.
+  (Mark Miller)
+  
 ==================  4.2.0 ==================
 
 Versions of Major Components
@@ -911,7 +1066,7 @@ Other Changes
 
 * SOLR-4208: ExtendedDismaxQParserPlugin has been refactored to make 
   subclassing easier. (Tomás Fernández Löbbe, hossman)
-
+  
 * SOLR-3735: Relocate the example mime-to-extension mapping, and
   upgrade Velocity Engine to 1.7 (ehatcher)
 

@@ -190,4 +190,8 @@ public class OpenBitSetIterator extends DocIdSetIterator {
     return curDocId;
   }
   
+  @Override
+  public long cost() {
+    return words / 64;
+  }
 }

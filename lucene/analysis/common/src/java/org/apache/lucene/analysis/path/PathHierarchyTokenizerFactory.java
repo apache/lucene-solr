@@ -21,9 +21,8 @@ import java.io.Reader;
 import java.util.Map;
 
 import org.apache.lucene.analysis.Tokenizer;
-import org.apache.lucene.analysis.path.PathHierarchyTokenizer;
-import org.apache.lucene.analysis.path.ReversePathHierarchyTokenizer;
 import org.apache.lucene.analysis.util.TokenizerFactory;
+import org.apache.lucene.util.AttributeSource.AttributeFactory;
 
 /**
  * Factory for {@link PathHierarchyTokenizer}. 
@@ -121,11 +120,11 @@ public class PathHierarchyTokenizerFactory extends TokenizerFactory {
   }
 
   @Override
-  public Tokenizer create(Reader input) {
+  public Tokenizer create(AttributeFactory factory, Reader input) {
     if( reverse ) {
-      return new ReversePathHierarchyTokenizer(input, delimiter, replacement, skip);
+      return new ReversePathHierarchyTokenizer(factory, input, delimiter, replacement, skip);
     }
-    return new PathHierarchyTokenizer(input, delimiter, replacement, skip);
+    return new PathHierarchyTokenizer(factory, input, delimiter, replacement, skip);
   }
 }
 

@@ -349,6 +349,12 @@ public final class ZkController {
     }
     
     try {
+      zkStateReader.close();
+    } catch(Throwable t) {
+      log.error("Error closing zkStateReader", t);
+    } 
+    
+    try {
       zkClient.close();;
     } catch(Throwable t) {
       log.error("Error closing zkClient", t);
@@ -830,20 +836,20 @@ public final class ZkController {
           .getCoreUrl();
       
       // now wait until our currently cloud state contains the latest leader
-      String clusterStateLeader = zkStateReader.getLeaderUrl(collection,
+      String clusterStateLeaderUrl = zkStateReader.getLeaderUrl(collection,
           shardId, timeoutms * 2); // since we found it in zk, we are willing to
                                    // wait a while to find it in state
       int tries = 0;
-      while (!leaderUrl.equals(clusterStateLeader)) {
+      while (!leaderUrl.equals(clusterStateLeaderUrl)) {
         if (tries == 60) {
           throw new SolrException(ErrorCode.SERVER_ERROR,
               "There is conflicting information about the leader of shard: "
                   + cloudDesc.getShardId() + " our state says:"
-                  + clusterStateLeader + " but zookeeper says:" + leaderUrl);
+                  + clusterStateLeaderUrl + " but zookeeper says:" + leaderUrl);
         }
         Thread.sleep(1000);
         tries++;
-        clusterStateLeader = zkStateReader.getLeaderUrl(collection, shardId,
+        clusterStateLeaderUrl = zkStateReader.getLeaderUrl(collection, shardId,
             timeoutms);
         leaderUrl = getLeaderProps(collection, cloudDesc.getShardId(), timeoutms)
             .getCoreUrl();
@@ -852,7 +858,7 @@ public final class ZkController {
     } catch (Exception e) {
       log.error("Error getting leader from zk", e);
       throw new SolrException(SolrException.ErrorCode.SERVER_ERROR,
-          "Error getting leader from zk", e);
+          "Error getting leader from zk for shard " + shardId, e);
     } 
     return leaderUrl;
   }
@@ -993,7 +999,9 @@ public final class ZkController {
             : null,
         ZkStateReader.CORE_NODE_NAME_PROP, coreNodeName != null ? coreNodeName
             : null);
-    cd.getCloudDescriptor().lastPublished = state;
+    if (updateLastState) {
+      cd.getCloudDescriptor().lastPublished = state;
+    }
     overseerJobQueue.offer(ZkStateReader.toJSON(m));
   }
 
@@ -1013,17 +1021,17 @@ public final class ZkController {
 
   public void unregister(String coreName, CoreDescriptor cd)
       throws InterruptedException, KeeperException {
-    ZkNodeProps m = new ZkNodeProps(Overseer.QUEUE_OPERATION,
-        "deletecore", ZkStateReader.CORE_NAME_PROP, coreName,
-        ZkStateReader.NODE_NAME_PROP, getNodeName(),
-        ZkStateReader.COLLECTION_PROP, cd.getCloudDescriptor().getCollectionName());
-    overseerJobQueue.offer(ZkStateReader.toJSON(m));
-
     final String zkNodeName = getCoreNodeName(cd);
     ElectionContext context = electionContexts.remove(zkNodeName);
     if (context != null) {
       context.cancelElection();
     }
+    
+    ZkNodeProps m = new ZkNodeProps(Overseer.QUEUE_OPERATION,
+        "deletecore", ZkStateReader.CORE_NAME_PROP, coreName,
+        ZkStateReader.NODE_NAME_PROP, getNodeName(),
+        ZkStateReader.COLLECTION_PROP, cd.getCloudDescriptor().getCollectionName());
+    overseerJobQueue.offer(ZkStateReader.toJSON(m));
   }
   
   public void createCollection(String collection) throws KeeperException,
@@ -1192,11 +1200,10 @@ public final class ZkController {
   }
 
   private String doGetShardIdProcess(String coreName, CoreDescriptor descriptor) {
-    final String shardZkNodeName = getCoreNodeName(descriptor);
+    final String coreNodeName = getCoreNodeName(descriptor);
     int retryCount = 320;
     while (retryCount-- > 0) {
-      final String shardId = zkStateReader.getClusterState().getShardId(
-          shardZkNodeName);
+      final String shardId = zkStateReader.getClusterState().getShardId(coreNodeName);
       if (shardId != null) {
         return shardId;
       }
@@ -1208,7 +1215,7 @@ public final class ZkController {
     }
     
     throw new SolrException(ErrorCode.SERVER_ERROR,
-        "Could not get shard_id for core: " + coreName + " coreNodeName:" + shardZkNodeName);
+        "Could not get shard_id for core: " + coreName + " coreNodeName:" + coreNodeName);
   }
   
   public static void uploadToZK(SolrZkClient zkClient, File dir, String zkPath) throws IOException, KeeperException, InterruptedException {
@@ -1266,12 +1273,21 @@ public final class ZkController {
   public void preRegister(CoreDescriptor cd) throws KeeperException, InterruptedException {
     // before becoming available, make sure we are not live and active
     // this also gets us our assigned shard id if it was not specified
-    publish(cd, ZkStateReader.DOWN); 
-    String shardZkNodeName = getCoreNodeName(cd);
-    if (cd.getCloudDescriptor().getShardId() == null && needsToBeAssignedShardId(cd, zkStateReader.getClusterState(), shardZkNodeName)) {
+    publish(cd, ZkStateReader.DOWN, false);
+    String coreNodeName = getCoreNodeName(cd);
+    
+    // make sure the node name is set on the descriptor
+    if (cd.getCloudDescriptor().getCoreNodeName() == null) {
+      cd.getCloudDescriptor().setCoreNodeName(coreNodeName);
+    }
+    
+    if (cd.getCloudDescriptor().getShardId() == null && needsToBeAssignedShardId(cd, zkStateReader.getClusterState(), coreNodeName)) {
       String shardId;
       shardId = doGetShardIdProcess(cd.getName(), cd);
       cd.getCloudDescriptor().setShardId(shardId);
+    } else {
+      // still wait till we see us in local state
+      doGetShardIdProcess(cd.getName(), cd);
     }
 
   }

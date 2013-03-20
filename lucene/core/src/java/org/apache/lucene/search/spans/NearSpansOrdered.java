@@ -134,6 +134,15 @@ public class NearSpansOrdered extends Spans {
     return matchPayload.isEmpty() == false;
   }
 
+  @Override
+  public long cost() {
+    long minCost = Long.MAX_VALUE;
+    for (int i = 0; i < subSpans.length; i++) {
+      minCost = Math.min(minCost, subSpans[i].cost());
+    }
+    return minCost;
+  }
+
   // inherit javadocs
   @Override
   public boolean next() throws IOException {

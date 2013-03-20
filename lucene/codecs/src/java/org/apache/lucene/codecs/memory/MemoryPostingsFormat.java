@@ -431,6 +431,11 @@ public final class MemoryPostingsFormat extends PostingsFormat {
     public int freq() {
       return freq;
     }
+    
+    @Override
+    public long cost() {
+      return numDocs;
+    }
   }
 
   private final static class FSTDocsAndPositionsEnum extends DocsAndPositionsEnum {
@@ -617,6 +622,11 @@ public final class MemoryPostingsFormat extends PostingsFormat {
     @Override
     public int freq() {
       return freq;
+    }
+    
+    @Override
+    public long cost() {
+      return numDocs;
     }
   }
 

@@ -131,6 +131,11 @@ public class NearSpansUnordered extends Spans {
     }
 
     @Override
+    public long cost() {
+      return spans.cost();
+    }
+
+    @Override
     public String toString() { return spans.toString() + "#" + index; }
   }
 
@@ -266,6 +271,15 @@ public class NearSpansUnordered extends Spans {
     }
 
     return false;
+  }
+  
+  @Override
+  public long cost() {
+    long minCost = Long.MAX_VALUE;
+    for (int i = 0; i < subSpans.length; i++) {
+      minCost = Math.min(minCost, subSpans[i].cost());
+    }
+    return minCost;
   }
 
   @Override

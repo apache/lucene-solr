@@ -19,7 +19,7 @@ package org.apache.lucene.analysis.ar;
 
 import java.io.IOException;
 
-import org.apache.lucene.analysis.miscellaneous.KeywordMarkerFilter; // javadoc @link
+import org.apache.lucene.analysis.miscellaneous.SetKeywordMarkerFilter; // javadoc @link
 import org.apache.lucene.analysis.TokenFilter;
 import org.apache.lucene.analysis.TokenStream;
 import org.apache.lucene.analysis.tokenattributes.KeywordAttribute;
@@ -29,10 +29,10 @@ import org.apache.lucene.analysis.tokenattributes.CharTermAttribute;
  * A {@link TokenFilter} that applies {@link ArabicStemmer} to stem Arabic words..
  * <p>
  * To prevent terms from being stemmed use an instance of
- * {@link KeywordMarkerFilter} or a custom {@link TokenFilter} that sets
+ * {@link SetKeywordMarkerFilter} or a custom {@link TokenFilter} that sets
  * the {@link KeywordAttribute} before this {@link TokenStream}.
  * </p>
- * @see KeywordMarkerFilter */
+ * @see SetKeywordMarkerFilter */
 
 public final class ArabicStemFilter extends TokenFilter {
   private final ArabicStemmer stemmer = new ArabicStemmer();

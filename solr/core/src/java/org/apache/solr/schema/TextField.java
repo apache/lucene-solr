@@ -137,7 +137,7 @@ public class TextField extends FieldType {
   }
 
   public static BytesRef analyzeMultiTerm(String field, String part, Analyzer analyzerIn) {
-    if (part == null) return null;
+    if (part == null || analyzerIn == null) return null;
 
     TokenStream source;
     try {

@@ -68,7 +68,7 @@ public class BasicDistributedZk2Test extends AbstractFullDistribZkTestBase {
     fixShardCount = true;
     
     sliceCount = 2;
-    shardCount = 3;
+    shardCount = 4;
   }
   
   /*
@@ -166,10 +166,7 @@ public class BasicDistributedZk2Test extends AbstractFullDistribZkTestBase {
   private void testNodeWithoutCollectionForwarding() throws Exception,
       SolrServerException, IOException {
     try {
-      final String baseUrl = ((HttpSolrServer) clients.get(0)).getBaseURL().substring(
-          0,
-          ((HttpSolrServer) clients.get(0)).getBaseURL().length()
-              - DEFAULT_COLLECTION.length() - 1);
+      final String baseUrl = getBaseUrl((HttpSolrServer) clients.get(0));
       HttpSolrServer server = new HttpSolrServer(baseUrl);
       server.setConnectionTimeout(15000);
       server.setSoTimeout(30000);
@@ -183,15 +180,14 @@ public class BasicDistributedZk2Test extends AbstractFullDistribZkTestBase {
       server.request(createCmd);
     } catch (Exception e) {
       e.printStackTrace();
-      //fail
+      fail(e.getMessage());
     }
     
     waitForRecoveriesToFinish(ONE_NODE_COLLECTION, cloudClient.getZkStateReader(), false);
     
-    final String baseUrl2 = ((HttpSolrServer) clients.get(1)).getBaseURL().substring(
-        0,
-        ((HttpSolrServer) clients.get(1)).getBaseURL().length()
-            - DEFAULT_COLLECTION.length() - 1);
+    cloudClient.getZkStateReader().getLeaderRetry(ONE_NODE_COLLECTION, "shard1", 30000);
+    
+    final String baseUrl2 = getBaseUrl((HttpSolrServer) clients.get(1));
     HttpSolrServer qclient = new HttpSolrServer(baseUrl2 + "/onenodecollection" + "core");
     
     // add a doc
@@ -207,6 +203,16 @@ public class BasicDistributedZk2Test extends AbstractFullDistribZkTestBase {
     qclient = new HttpSolrServer(baseUrl2 + "/onenodecollection");
     results = qclient.query(query);
     assertEquals(1, results.getResults().getNumFound());
+    
+    doc = new SolrInputDocument();
+    doc.addField("id", "2");
+    qclient.add(doc);
+    qclient.commit();
+    
+    query = new SolrQuery("*:*");
+    query.set("rows", 0);
+    results = qclient.query(query);
+    assertEquals(2, results.getResults().getNumFound());
   }
   
   private long testUpdateAndDelete() throws Exception {
@@ -257,7 +263,7 @@ public class BasicDistributedZk2Test extends AbstractFullDistribZkTestBase {
     
     int oldLiveNodes = cloudClient.getZkStateReader().getZkClient().getChildren(ZkStateReader.LIVE_NODES_ZKNODE, null, true).size();
     
-    assertEquals(4, oldLiveNodes);
+    assertEquals(5, oldLiveNodes);
     
     // kill a shard
     CloudJettyRunner deadShard = chaosMonkey.stopShard(SHARD1, 0);
@@ -292,7 +298,7 @@ public class BasicDistributedZk2Test extends AbstractFullDistribZkTestBase {
   
     long numFound1 = cloudClient.query(new SolrQuery("*:*")).getResults().getNumFound();
     
-    cloudClient.getZkStateReader().getLeaderRetry(DEFAULT_COLLECTION, SHARD1, 15000);
+    cloudClient.getZkStateReader().getLeaderRetry(DEFAULT_COLLECTION, SHARD1, 60000);
     index_specific(shardToJetty.get(SHARD1).get(1).client.solrClient, id, 1000, i1, 108, t1,
         "specific doc!");
     

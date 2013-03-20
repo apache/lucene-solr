@@ -20,7 +20,7 @@ package org.apache.lucene.analysis.fr;
 import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.analysis.core.LowerCaseFilter;
 import org.apache.lucene.analysis.core.StopFilter;
-import org.apache.lucene.analysis.miscellaneous.KeywordMarkerFilter;
+import org.apache.lucene.analysis.miscellaneous.SetKeywordMarkerFilter;
 import org.apache.lucene.analysis.TokenStream;
 import org.apache.lucene.analysis.Tokenizer;
 import org.apache.lucene.analysis.snowball.SnowballFilter;
@@ -133,7 +133,7 @@ public final class FrenchAnalyzer extends StopwordAnalyzerBase {
    *         built from a {@link StandardTokenizer} filtered with
    *         {@link StandardFilter}, {@link ElisionFilter},
    *         {@link LowerCaseFilter}, {@link StopFilter},
-   *         {@link KeywordMarkerFilter} if a stem exclusion set is
+   *         {@link SetKeywordMarkerFilter} if a stem exclusion set is
    *         provided, and {@link FrenchLightStemFilter}
    */
   @Override
@@ -145,7 +145,7 @@ public final class FrenchAnalyzer extends StopwordAnalyzerBase {
     result = new LowerCaseFilter(matchVersion, result);
     result = new StopFilter(matchVersion, result, stopwords);
     if(!excltable.isEmpty())
-      result = new KeywordMarkerFilter(result, excltable);
+      result = new SetKeywordMarkerFilter(result, excltable);
     result = new FrenchLightStemFilter(result);
     return new TokenStreamComponents(source, result);
   }

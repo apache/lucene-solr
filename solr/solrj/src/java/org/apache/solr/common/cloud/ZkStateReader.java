@@ -31,10 +31,10 @@ import java.util.concurrent.ThreadFactory;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 
-import org.apache.noggit.CharArr;
-import org.apache.noggit.JSONParser;
-import org.apache.noggit.JSONWriter;
-import org.apache.noggit.ObjectBuilder;
+import org.noggit.CharArr;
+import org.noggit.JSONParser;
+import org.noggit.JSONWriter;
+import org.noggit.ObjectBuilder;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.SolrException.ErrorCode;
 import org.apache.solr.common.util.ByteUtils;
@@ -132,6 +132,8 @@ public class ZkStateReader {
   private ZkCmdExecutor cmdExecutor;
 
   private Aliases aliases = new Aliases();
+
+  private volatile boolean closed = false;
 
   public ZkStateReader(SolrZkClient zkClient) {
     this.zkClient = zkClient;
@@ -437,6 +439,7 @@ public class ZkStateReader {
   }
 
   public void close() {
+    this.closed  = true;
     if (closeClient) {
       zkClient.close();
     }
@@ -469,7 +472,7 @@ public class ZkStateReader {
    */
   public Replica getLeaderRetry(String collection, String shard, int timeout) throws InterruptedException {
     long timeoutAt = System.currentTimeMillis() + timeout;
-    while (System.currentTimeMillis() < timeoutAt) {
+    while (System.currentTimeMillis() < timeoutAt && !closed) {
       if (clusterState != null) {    
         Replica replica = clusterState.getLeader(collection, shard);
         if (replica != null && getClusterState().liveNodesContain(replica.getNodeName())) {

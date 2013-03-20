@@ -472,6 +472,7 @@ class UnionDocsAndPositionsEnum extends DocsAndPositionsEnum {
   private int _freq;
   private DocsQueue _queue;
   private IntQueue _posList;
+  private long cost;
 
   public UnionDocsAndPositionsEnum(Bits liveDocs, AtomicReaderContext context, Term[] terms, Map<Term,TermContext> termContexts, TermsEnum termsEnum) throws IOException {
     List<DocsAndPositionsEnum> docsEnums = new LinkedList<DocsAndPositionsEnum>();
@@ -488,6 +489,7 @@ class UnionDocsAndPositionsEnum extends DocsAndPositionsEnum {
         // term does exist, but has no positions
         throw new IllegalStateException("field \"" + term.field() + "\" was indexed without position data; cannot run PhraseQuery (term=" + term.text() + ")");
       }
+      cost += postings.cost();
       docsEnums.add(postings);
     }
 
@@ -569,5 +571,10 @@ class UnionDocsAndPositionsEnum extends DocsAndPositionsEnum {
   @Override
   public final int docID() {
     return _doc;
+  }
+
+  @Override
+  public long cost() {
+    return cost;
   }
 }

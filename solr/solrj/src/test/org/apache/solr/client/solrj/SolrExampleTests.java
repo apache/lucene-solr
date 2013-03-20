@@ -1438,6 +1438,29 @@ abstract public class SolrExampleTests extends SolrJettyTestBase
     assertNotNull("Entire doc was replaced because null update was not written", response.getResults().get(0).getFieldValue("single_s"));
     assertNull("Null update failed. Value still exists in document", response.getResults().get(0).getFieldValue("multi_ss"));
   }
+
+  public void testSetNullUpdateOrder() throws Exception {
+    SolrServer solrServer = getSolrServer();
+    SolrInputDocument doc = new SolrInputDocument();
+    doc.addField("id", "testSetNullUpdateOrder");
+    doc.addField("single_s", "test-value");
+    doc.addField("multi_ss", Arrays.asList("first", "second"));
+    solrServer.add(doc);
+    solrServer.commit(true, true);
+
+    Map<String, Object> map = Maps.newHashMap();
+    map.put("set", null);
+    doc = new SolrInputDocument();
+    doc.addField("multi_ss", map);
+    doc.addField("id", "testSetNullUpdateOrder");
+    doc.addField("single_s", "test-value2");
+    solrServer.add(doc);
+    solrServer.commit();
+
+    QueryResponse response = solrServer.query(new SolrQuery("id:testSetNullUpdateOrder"));
+    assertEquals("Field included after set null=true not updated via atomic update", "test-value2",
+        response.getResults().get(0).getFieldValue("single_s"));
+  }
   
   @Test
   public void testQueryWithParams() throws SolrServerException {

@@ -18,6 +18,7 @@ package org.apache.solr.core;
  */
 
 import java.io.Closeable;
+import java.io.File;
 import java.io.IOException;
 
 import org.apache.lucene.store.Directory;
@@ -77,9 +78,10 @@ public abstract class DirectoryFactory implements NamedListInitializedPlugin,
   
   /**
    * Returns true if a Directory exists for a given path.
+   * @throws IOException If there is a low-level I/O error.
    * 
    */
-  public abstract boolean exists(String path);
+  public abstract boolean exists(String path) throws IOException;
   
   /**
    * Removes the Directory's persistent storage.
@@ -89,6 +91,26 @@ public abstract class DirectoryFactory implements NamedListInitializedPlugin,
    * 
    */
   public abstract void remove(Directory dir) throws IOException;
+  
+  /**
+   * Removes the Directory's persistent storage.
+   * For example: A file system impl may remove the
+   * on disk directory.
+   * @throws IOException If there is a low-level I/O error.
+   * 
+   */
+  public abstract void remove(Directory dir, boolean afterCoreClose) throws IOException;
+  
+  /**
+   * This remove is special in that it may be called even after
+   * the factory has been closed. Remove only makes sense for
+   * persistent directory factories.
+   * 
+   * @param path to remove
+   * @param afterCoreClose whether to wait until after the core is closed.
+   * @throws IOException If there is a low-level I/O error.
+   */
+  public abstract void remove(String path, boolean afterCoreClose) throws IOException;
   
   /**
    * This remove is special in that it may be called even after
@@ -170,6 +192,15 @@ public abstract class DirectoryFactory implements NamedListInitializedPlugin,
    */
   public String normalize(String path) throws IOException {
     return path;
+  }
+  
+  /**
+   * @param path the path to check
+   * @return true if absolute, as in not relative
+   */
+  public boolean isAbsolute(String path) {
+    // back compat
+    return new File(path).isAbsolute();
   }
   
   public static long sizeOfDirectory(Directory directory) throws IOException {

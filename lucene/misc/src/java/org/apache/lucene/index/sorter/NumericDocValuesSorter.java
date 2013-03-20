@@ -18,8 +18,6 @@ package org.apache.lucene.index.sorter;
  */
 
 import java.io.IOException;
-import java.util.AbstractList;
-import java.util.List;
 
 import org.apache.lucene.index.AtomicReader;
 import org.apache.lucene.index.NumericDocValues;
@@ -27,7 +25,7 @@ import org.apache.lucene.index.NumericDocValues;
 /**
  * A {@link Sorter} which sorts documents according to their
  * {@link NumericDocValues}.
- * 
+ *
  * @lucene.experimental
  */
 public class NumericDocValuesSorter extends Sorter {
@@ -39,27 +37,19 @@ public class NumericDocValuesSorter extends Sorter {
   }
 
   @Override
-  public int[] oldToNew(final AtomicReader reader) throws IOException {
+  public Sorter.DocMap sort(final AtomicReader reader) throws IOException {
     final NumericDocValues ndv = reader.getNumericDocValues(fieldName);
-    final int maxDoc = reader.maxDoc();
-    final int[] docs = new int[maxDoc];
-    final List<Long> values = new AbstractList<Long>() {
+    final DocComparator comparator = new DocComparator() {
 
       @Override
-      public Long get(int doc) {
-        return ndv.get(doc);
-      }
-
-      @Override
-      public int size() {
-        return reader.maxDoc();
+      public int compare(int docID1, int docID2) {
+        final long v1 = ndv.get(docID1);
+        final long v2 = ndv.get(docID2);
+        return v1 < v2 ? -1 : v1 == v2 ? 0 : 1;
       }
       
     };
-    for (int i = 0; i < maxDoc; i++) {
-      docs[i] = i;
-    }
-    return compute(docs, values);
+    return sort(reader.maxDoc(), comparator);
   }
   
 }

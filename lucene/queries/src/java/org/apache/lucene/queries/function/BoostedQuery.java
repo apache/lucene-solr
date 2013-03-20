@@ -188,6 +188,11 @@ public class BoostedQuery extends Query {
       res.addDetail(vals.explain(doc));
       return res;
     }
+
+    @Override
+    public long cost() {
+      return scorer.cost();
+    }
   }
 
 

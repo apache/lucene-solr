@@ -5,7 +5,6 @@ import java.io.IOException;
 import java.util.Map;
 import java.util.concurrent.atomic.AtomicInteger;
 
-import org.apache.lucene.facet.taxonomy.directory.ParallelTaxonomyArrays;
 import org.apache.lucene.store.AlreadyClosedException;
 
 /*
@@ -186,25 +185,6 @@ public abstract class TaxonomyReader implements Closeable {
    */
   public abstract int getOrdinal(CategoryPath categoryPath) throws IOException;
   
-  /**
-   * Returns the ordinal of the parent category of the category with the given
-   * ordinal, according to the following rules:
-   * 
-   * <ul>
-   * <li>If the given ordinal is the {@link #ROOT_ORDINAL}, an
-   * {@link #INVALID_ORDINAL} is returned.
-   * <li>If the given ordinal is a top-level category, the {@link #ROOT_ORDINAL}
-   * is returned.
-   * <li>If the given ordinal is an existing category, returns the ordinal of
-   * its parent
-   * </ul>
-   * 
-   * @throws ArrayIndexOutOfBoundsException
-   *           if an invalid ordinal is given (negative or beyond the last
-   *           available ordinal)
-   */
-  public abstract int getParent(int ordinal) throws IOException;
- 
   /** Returns the path name of the category with the given ordinal. */
   public abstract CategoryPath getPath(int ordinal) throws IOException;
   

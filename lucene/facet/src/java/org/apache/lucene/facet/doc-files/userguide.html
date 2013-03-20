@@ -261,7 +261,7 @@ Following is a code snippet for indexing categories. The complete example can be
 found in package <code>org.apache.lucene.facet.example.simple.SimpleIndexer</code>.
 <pre class="prettyprint lang-java linenums">
 IndexWriter writer = ...
-TaxonomyWriter taxo = new DirectoryTaxonomyWriter(taxoDir, OpenMode.CREATE);
+TaxonomyWriter taxo = new DirectoryTaxonomyWriter(taxoDir);
 ...
 Document doc = new Document();
 doc.add(new Field("title", titleText, Store.YES, Index.ANALYZED));

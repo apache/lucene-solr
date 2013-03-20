@@ -67,7 +67,7 @@ public class SimpleFacetsExample {
         new WhitespaceAnalyzer(FacetExamples.EXAMPLES_VER)));
 
     // Writes facet ords to a separate directory from the main index
-    DirectoryTaxonomyWriter taxoWriter = new DirectoryTaxonomyWriter(taxoDir, IndexWriterConfig.OpenMode.CREATE);
+    DirectoryTaxonomyWriter taxoWriter = new DirectoryTaxonomyWriter(taxoDir);
 
     // Reused across documents, to add the necessary facet fields
     FacetFields facetFields = new FacetFields(taxoWriter);
@@ -111,7 +111,7 @@ public class SimpleFacetsExample {
     return facetResults;
   }
   
-  /** User drills down on 'Publish date/2010'. */
+  /** User drills down on 'Publish Date/2010'. */
   private List<FacetResult> drillDown() throws IOException {
     DirectoryReader indexReader = DirectoryReader.open(indexDir);
     IndexSearcher searcher = new IndexSearcher(indexReader);

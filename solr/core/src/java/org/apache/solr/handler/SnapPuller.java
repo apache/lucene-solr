@@ -439,8 +439,12 @@ public class SnapPuller {
             @Override
             public void preClose() {
               LOG.info("removing old index files " + freezeIndexDir);
-              if (core.getDirectoryFactory().exists(freezeIndexDirPath)) {
-                DirectoryFactory.empty(freezeIndexDir);
+              try {
+                if (core.getDirectoryFactory().exists(freezeIndexDirPath)) {
+                  DirectoryFactory.empty(freezeIndexDir);
+                }
+              } catch (IOException e) {
+                SolrException.log(LOG, null, e);
               }
             }
             
@@ -477,13 +481,6 @@ public class SnapPuller {
         throw new InterruptedException("Index fetch interrupted");
       } catch (Exception e) {
         throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, "Index fetch failed : ", e);
-      } finally {
-        if (deleteTmpIdxDir) {
-          LOG.info("removing temporary index download directory files " + tmpIndexDir);
-          if (tmpIndex != null && core.getDirectoryFactory().exists(tmpIndex)) {
-            DirectoryFactory.empty(tmpIndexDir);
-          }
-        } 
       }
     } finally {
       try {
@@ -500,9 +497,6 @@ public class SnapPuller {
         stop = false;
         fsyncException = null;
       } finally {
-        if (tmpIndexDir != null) {
-          core.getDirectoryFactory().release(tmpIndexDir);
-        }
         if (deleteTmpIdxDir && tmpIndexDir != null) {
           try {
             core.getDirectoryFactory().remove(tmpIndexDir);
@@ -510,6 +504,11 @@ public class SnapPuller {
             SolrException.log(LOG, "Error removing directory " + tmpIndexDir, e);
           }
         }
+        
+        if (tmpIndexDir != null) {
+          core.getDirectoryFactory().release(tmpIndexDir);
+        }
+        
         if (indexDir != null) {
           core.getDirectoryFactory().release(indexDir);
         }
@@ -674,13 +673,14 @@ public class SnapPuller {
     
   }
 
-
   /**
    * All the files are copied to a temp dir first
    */
   private String createTempindexDir(SolrCore core, String tmpIdxDirName) {
-    File tmpIdxDir = new File(core.getDataDir(), tmpIdxDirName);
-    return tmpIdxDir.toString();
+    // TODO: there should probably be a DirectoryFactory#concatPath(parent, name)
+    // or something
+    String tmpIdxDir = core.getDataDir() + tmpIdxDirName;
+    return tmpIdxDir;
   }
 
   private void reloadCore() {

@@ -41,6 +41,7 @@ import org.apache.solr.common.params.CoreAdminParams;
 import org.apache.solr.common.params.CoreAdminParams.CoreAdminAction;
 import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.common.util.NamedList;
+import org.apache.solr.common.util.SimpleOrderedMap;
 import org.apache.solr.common.util.StrUtils;
 import org.apache.solr.handler.component.ShardHandler;
 import org.apache.solr.handler.component.ShardRequest;
@@ -156,22 +157,22 @@ public class OverseerCollectionProcessor implements Runnable, ClosableThread {
     NamedList results = new NamedList();
     try {
       if (CREATECOLLECTION.equals(operation)) {
-        createCollection(zkStateReader.getClusterState(), message);
+        createCollection(zkStateReader.getClusterState(), message, results);
       } else if (DELETECOLLECTION.equals(operation)) {
         ModifiableSolrParams params = new ModifiableSolrParams();
         params.set(CoreAdminParams.ACTION, CoreAdminAction.UNLOAD.toString());
         params.set(CoreAdminParams.DELETE_INSTANCE_DIR, true);
-        collectionCmd(zkStateReader.getClusterState(), message, params);
+        collectionCmd(zkStateReader.getClusterState(), message, params, results, null);
       } else if (RELOADCOLLECTION.equals(operation)) {
         ModifiableSolrParams params = new ModifiableSolrParams();
         params.set(CoreAdminParams.ACTION, CoreAdminAction.RELOAD.toString());
-        collectionCmd(zkStateReader.getClusterState(), message, params);
+        collectionCmd(zkStateReader.getClusterState(), message, params, results, ZkStateReader.ACTIVE);
       } else if (CREATEALIAS.equals(operation)) {
         createAlias(zkStateReader.getAliases(), message);
       } else if (DELETEALIAS.equals(operation)) {
         deleteAlias(zkStateReader.getAliases(), message);
       } else {
-        throw new SolrException(ErrorCode.BAD_REQUEST, "Unknow the operation:"
+        throw new SolrException(ErrorCode.BAD_REQUEST, "Unknown operation:"
             + operation);
       }
       int failed = 0;
@@ -194,6 +195,10 @@ public class OverseerCollectionProcessor implements Runnable, ClosableThread {
       SolrException.log(log, "Collection " + operation + " of " + operation
           + " failed", ex);
       results.add("Operation " + operation + " caused exception:", ex);
+      SimpleOrderedMap nl = new SimpleOrderedMap();
+      nl.add("msg", ex.getMessage());
+      nl.add("rspCode", ex instanceof SolrException ? ((SolrException)ex).code() : -1);
+      results.add("exception", nl);
     } finally {
       return new OverseerSolrResponse(results);
     }
@@ -300,11 +305,10 @@ public class OverseerCollectionProcessor implements Runnable, ClosableThread {
     
   }
   
-  private boolean createCollection(ClusterState clusterState, ZkNodeProps message) {
+  private void createCollection(ClusterState clusterState, ZkNodeProps message, NamedList results) {
     String collectionName = message.getStr("name");
     if (clusterState.getCollections().contains(collectionName)) {
-      SolrException.log(log, "collection already exists: " + collectionName);
-      return false;
+      throw new SolrException(ErrorCode.BAD_REQUEST, "collection already exists: " + collectionName);
     }
     
     try {
@@ -312,19 +316,22 @@ public class OverseerCollectionProcessor implements Runnable, ClosableThread {
       // if it does not, find best nodes to create more cores
       
       int repFactor = msgStrToInt(message, REPLICATION_FACTOR, 1);
-      int numSlices = msgStrToInt(message, NUM_SLICES, 0);
+      Integer numSlices = msgStrToInt(message, NUM_SLICES, null);
+      
+      if (numSlices == null) {
+        throw new SolrException(ErrorCode.BAD_REQUEST, "collection already exists: " + collectionName);
+      }
+      
       int maxShardsPerNode = msgStrToInt(message, MAX_SHARDS_PER_NODE, 1);
       String createNodeSetStr; 
       List<String> createNodeList = ((createNodeSetStr = message.getStr(CREATE_NODE_SET)) == null)?null:StrUtils.splitSmart(createNodeSetStr, ",", true);
       
       if (repFactor <= 0) {
-        SolrException.log(log, REPLICATION_FACTOR + " must be > 0");
-        return false;
+        throw new SolrException(ErrorCode.BAD_REQUEST, NUM_SLICES + " is a required paramater");
       }
       
-      if (numSlices < 0) {
-        SolrException.log(log, NUM_SLICES + " must be > 0");
-        return false;
+      if (numSlices <= 0) {
+        throw new SolrException(ErrorCode.BAD_REQUEST, NUM_SLICES + " must be > 0");
       }
       
       String configName = message.getStr("collection.configName");
@@ -343,9 +350,8 @@ public class OverseerCollectionProcessor implements Runnable, ClosableThread {
       Collections.shuffle(nodeList);
       
       if (nodeList.size() <= 0) {
-        log.error("Cannot create collection " + collectionName
-            + ". No live Solr-instaces" + ((createNodeList != null)?" among Solr-instances specified in " + CREATE_NODE_SET:""));
-        return false;
+        throw new SolrException(ErrorCode.BAD_REQUEST, "Cannot create collection " + collectionName
+            + ". No live Solr-instances" + ((createNodeList != null)?" among Solr-instances specified in " + CREATE_NODE_SET + ":" + createNodeSetStr:""));
       }
       
       if (repFactor > nodeList.size()) {
@@ -355,7 +361,7 @@ public class OverseerCollectionProcessor implements Runnable, ClosableThread {
             + repFactor
             + " on collection "
             + collectionName
-            + " is higher than or equal to the number of Solr instances currently live ("
+            + " is higher than or equal to the number of Solr instances currently live or part of your " + CREATE_NODE_SET + "("
             + nodeList.size()
             + "). Its unusual to run two replica of the same slice on the same Solr-instance.");
       }
@@ -363,7 +369,7 @@ public class OverseerCollectionProcessor implements Runnable, ClosableThread {
       int maxShardsAllowedToCreate = maxShardsPerNode * nodeList.size();
       int requestedShardsToCreate = numSlices * repFactor;
       if (maxShardsAllowedToCreate < requestedShardsToCreate) {
-        log.error("Cannot create collection " + collectionName + ". Value of "
+        throw new SolrException(ErrorCode.BAD_REQUEST, "Cannot create collection " + collectionName + ". Value of "
             + MAX_SHARDS_PER_NODE + " is " + maxShardsPerNode
             + ", and the number of live nodes is " + nodeList.size()
             + ". This allows a maximum of " + maxShardsAllowedToCreate
@@ -371,7 +377,6 @@ public class OverseerCollectionProcessor implements Runnable, ClosableThread {
             + " and value of " + REPLICATION_FACTOR + " is " + repFactor
             + ". This requires " + requestedShardsToCreate
             + " shards to be created (higher than the allowed number)");
-        return false;
       }
       
       for (int i = 1; i <= numSlices; i++) {
@@ -394,6 +399,7 @@ public class OverseerCollectionProcessor implements Runnable, ClosableThread {
           params.set(ZkStateReader.NUM_SHARDS_PROP, numSlices);
           
           ShardRequest sreq = new ShardRequest();
+          sreq.nodeName = nodeName;
           params.set("qt", adminPath);
           sreq.purpose = 1;
           String replica = zkStateReader.getZkClient()
@@ -408,36 +414,25 @@ public class OverseerCollectionProcessor implements Runnable, ClosableThread {
         }
       }
       
-      int failed = 0;
       ShardResponse srsp;
       do {
         srsp = shardHandler.takeCompletedOrError();
         if (srsp != null) {
-          Throwable e = srsp.getException();
-          if (e != null) {
-            // should we retry?
-            // TODO: we should return errors to the client
-            // TODO: what if one fails and others succeed?
-            failed++;
-            log.error("Error talking to shard: " + srsp.getShard(), e);
-          }
+          processResponse(results, srsp);
         }
       } while (srsp != null);
-      
-      // if all calls succeeded, return true
-      if (failed > 0) {
-        return false;
-      }
-      log.info("Successfully created all shards for collection "
+
+      log.info("Finished create command on all shards for collection: "
           + collectionName);
-      return true;
+
+    } catch (SolrException ex) {
+      throw ex;
     } catch (Exception ex) {
-      // Expecting that the necessary logging has already been performed
-      return false;
+      throw new SolrException(ErrorCode.SERVER_ERROR, null, ex);
     }
   }
   
-  private boolean collectionCmd(ClusterState clusterState, ZkNodeProps message, ModifiableSolrParams params) {
+  private void collectionCmd(ClusterState clusterState, ZkNodeProps message, ModifiableSolrParams params, NamedList results, String stateMatcher) {
     log.info("Executing Collection Cmd : " + params);
     String collectionName = message.getStr("name");
     
@@ -454,7 +449,7 @@ public class OverseerCollectionProcessor implements Runnable, ClosableThread {
       Set<Map.Entry<String,Replica>> shardEntries = shards.entrySet();
       for (Map.Entry<String,Replica> shardEntry : shardEntries) {
         final ZkNodeProps node = shardEntry.getValue();
-        if (clusterState.liveNodesContain(node.getStr(ZkStateReader.NODE_NAME_PROP))) {
+        if (clusterState.liveNodesContain(node.getStr(ZkStateReader.NODE_NAME_PROP)) && (stateMatcher != null ? node.getStr(ZkStateReader.STATE_PROP).equals(stateMatcher) : true)) {
           // For thread safety, only simple clone the ModifiableSolrParams
           ModifiableSolrParams cloneParams = new ModifiableSolrParams();
           cloneParams.add(params);
@@ -463,7 +458,7 @@ public class OverseerCollectionProcessor implements Runnable, ClosableThread {
           
           String replica = node.getStr(ZkStateReader.BASE_URL_PROP);
           ShardRequest sreq = new ShardRequest();
-          
+          sreq.nodeName = node.getStr(ZkStateReader.NODE_NAME_PROP);
           // yes, they must use same admin handler path everywhere...
           cloneParams.set("qt", adminPath);
           sreq.purpose = 1;
@@ -479,28 +474,39 @@ public class OverseerCollectionProcessor implements Runnable, ClosableThread {
       }
     }
     
-    int failed = 0;
     ShardResponse srsp;
     do {
       srsp = shardHandler.takeCompletedOrError();
       if (srsp != null) {
-        Throwable e = srsp.getException();
-        if (e != null) {
-          // should we retry?
-          // TODO: we should return errors to the client
-          // TODO: what if one fails and others succeed?
-          failed++;
-          log.error("Error talking to shard: " + srsp.getShard(), e);
-        }
+        processResponse(results, srsp);
       }
     } while (srsp != null);
 
-    
-    // if all calls succeeded, return true
-    if (failed > 0) {
-      return false;
+  }
+
+  private void processResponse(NamedList results, ShardResponse srsp) {
+    Throwable e = srsp.getException();
+    if (e != null) {
+      log.error("Error from shard: " + srsp.getShard(), e);
+      
+      SimpleOrderedMap failure = (SimpleOrderedMap) results.get("failure");
+      if (failure == null) {
+        failure = new SimpleOrderedMap();
+        results.add("failure", failure);
+      }
+
+      failure.add(srsp.getNodeName(), e.getClass().getName() + ":" + e.getMessage());
+      
+    } else {
+      
+      SimpleOrderedMap success = (SimpleOrderedMap) results.get("success");
+      if (success == null) {
+        success = new SimpleOrderedMap();
+        results.add("success", success);
+      }
+      
+      success.add(srsp.getNodeName(), srsp.getSolrResponse().getResponse());
     }
-    return true;
   }
   
   private int msgStrToInt(ZkNodeProps message, String key, Integer def)

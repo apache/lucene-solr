@@ -119,16 +119,7 @@ public class SearcherLifetimeManager implements Closeable {
     // Newer searchers are sort before older ones:
     @Override
     public int compareTo(SearcherTracker other) {
-      // Be defensive: cannot subtract since it could
-      // technically overflow long, though, we'd never hit
-      // that in practice:
-      if (recordTimeSec < other.recordTimeSec) {
-        return 1;
-      } else if (other.recordTimeSec < recordTimeSec) {
-        return -1;
-      } else {
-        return 0;
-      }
+      return Double.compare(other.recordTimeSec, recordTimeSec);
     }
 
     @Override

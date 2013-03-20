@@ -26,8 +26,7 @@ import java.util.Set;
 
 import org.apache.lucene.index.StoredDocument;
 import org.apache.lucene.search.Query;
-import org.apache.lucene.search.ScoreDoc;
-import org.apache.lucene.search.TopDocs;
+import org.apache.lucene.search.postingshighlight.Passage;
 import org.apache.lucene.search.postingshighlight.PassageFormatter;
 import org.apache.lucene.search.postingshighlight.PassageScorer;
 import org.apache.lucene.search.postingshighlight.PostingsHighlighter;
@@ -55,7 +54,11 @@ import org.apache.solr.util.plugin.PluginInfoInitialized;
  *                      preTag="&amp;lt;em&amp;gt;"
  *                      postTag="&amp;lt;/em&amp;gt;"
  *                      ellipsis="... "
- *                      maxLength=10000/&gt;
+ *                      k1="1.2"
+ *                      b="0.75"
+ *                      pivot="87"
+ *                      maxLength=10000
+ *                      summarizeEmpty=true/&gt;
  *   &lt;/searchComponent&gt;
  * </pre>
  * <p>
@@ -78,7 +81,23 @@ public class PostingsSolrHighlighter extends SolrHighlighter implements PluginIn
   public void init(PluginInfo info) {
     Map<String,String> attributes = info.attributes;
     BreakIterator breakIterator = BreakIterator.getSentenceInstance(Locale.ROOT);
-    PassageScorer scorer = new PassageScorer();
+    
+    // scorer parameters: k1/b/pivot
+    String k1 = attributes.get("k1");
+    if (k1 == null) {
+      k1 = "1.2";
+    }
+    
+    String b = attributes.get("b");
+    if (b == null) {
+      b = "0.75";
+    }
+    
+    String pivot = attributes.get("pivot");
+    if (pivot == null) {
+      pivot = "87";
+    }
+    PassageScorer scorer = new PassageScorer(Float.parseFloat(k1), Float.parseFloat(b), Float.parseFloat(pivot));
     
     // formatter parameters: preTag/postTag/ellipsis
     String preTag = attributes.get("preTag");
@@ -94,13 +113,30 @@ public class PostingsSolrHighlighter extends SolrHighlighter implements PluginIn
       ellipsis = "... ";
     }
     PassageFormatter formatter = new PassageFormatter(preTag, postTag, ellipsis);
-    
+
+    String summarizeEmpty = attributes.get("summarizeEmpty");
+    final boolean summarizeEmptyBoolean;
+    if (summarizeEmpty == null) {
+      summarizeEmptyBoolean = true;
+    } else {
+      summarizeEmptyBoolean = Boolean.parseBoolean(summarizeEmpty);
+    }
+
     // maximum content size to process
     int maxLength = PostingsHighlighter.DEFAULT_MAX_LENGTH;
     if (attributes.containsKey("maxLength")) {
       maxLength = Integer.parseInt(attributes.get("maxLength"));
     }
-    highlighter = new PostingsHighlighter(maxLength, breakIterator, scorer, formatter);
+    highlighter = new PostingsHighlighter(maxLength, breakIterator, scorer, formatter) {
+        @Override
+        protected Passage[] getEmptyHighlight(String fieldName, BreakIterator bi, int maxPassages) {
+          if (summarizeEmptyBoolean) {
+            return super.getEmptyHighlight(fieldName, bi, maxPassages);
+          } else {
+            return new Passage[0];
+          }
+        }
+      };
   }
 
   @Override
@@ -110,16 +146,16 @@ public class PostingsSolrHighlighter extends SolrHighlighter implements PluginIn
     // if highlighting isnt enabled, then why call doHighlighting?
     if (isHighlightingEnabled(params)) {
       SolrIndexSearcher searcher = req.getSearcher();
-      TopDocs topDocs = toTopDocs(docs);
+      int[] docIDs = toDocIDs(docs);
       
       // fetch the unique keys
-      String[] keys = getUniqueKeys(searcher, topDocs);
+      String[] keys = getUniqueKeys(searcher, docIDs);
       
       // query-time parameters
       String[] fieldNames = getHighlightFields(query, req, defaultFields);
       int numSnippets = params.getInt(HighlightParams.SNIPPETS, 1);
       
-      Map<String,String[]> snippets = highlighter.highlightFields(fieldNames, query, searcher, topDocs, numSnippets);
+      Map<String,String[]> snippets = highlighter.highlightFields(fieldNames, query, searcher, docIDs, numSnippets);
       return encodeSnippets(keys, fieldNames, snippets);
     } else {
       return null;
@@ -152,38 +188,38 @@ public class PostingsSolrHighlighter extends SolrHighlighter implements PluginIn
     return list;
   }
   
-  /** Converts solr's DocList to a lucene TopDocs */
-  protected TopDocs toTopDocs(DocList docs) {
-    ScoreDoc[] scoreDocs = new ScoreDoc[docs.size()];
+  /** Converts solr's DocList to the int[] docIDs */
+  protected int[] toDocIDs(DocList docs) {
+    int[] docIDs = new int[docs.size()];
     DocIterator iterator = docs.iterator();
-    for (int i = 0; i < scoreDocs.length; i++) {
+    for (int i = 0; i < docIDs.length; i++) {
       if (!iterator.hasNext()) {
         throw new AssertionError();
       }
-      scoreDocs[i] = new ScoreDoc(iterator.nextDoc(), Float.NaN);
+      docIDs[i] = iterator.nextDoc();
     }
     if (iterator.hasNext()) {
       throw new AssertionError();
     }
-    return new TopDocs(docs.matches(), scoreDocs, Float.NaN);
+    return docIDs;
   }
   
   /** Retrieves the unique keys for the topdocs to key the results */
-  protected String[] getUniqueKeys(SolrIndexSearcher searcher, TopDocs topDocs) throws IOException {
+  protected String[] getUniqueKeys(SolrIndexSearcher searcher, int[] docIDs) throws IOException {
     IndexSchema schema = searcher.getSchema();
     SchemaField keyField = schema.getUniqueKeyField();
     if (keyField != null) {
       Set<String> selector = Collections.singleton(keyField.getName());
-      String uniqueKeys[] = new String[topDocs.scoreDocs.length];
-      for (int i = 0; i < topDocs.scoreDocs.length; i++) {
-        int docid = topDocs.scoreDocs[i].doc;
+      String uniqueKeys[] = new String[docIDs.length];
+      for (int i = 0; i < docIDs.length; i++) {
+        int docid = docIDs[i];
         StoredDocument doc = searcher.doc(docid, selector);
         String id = schema.printableUniqueKey(doc);
         uniqueKeys[i] = id;
       }
       return uniqueKeys;
     } else {
-      return new String[topDocs.scoreDocs.length];
+      return new String[docIDs.length];
     }
   }
 }

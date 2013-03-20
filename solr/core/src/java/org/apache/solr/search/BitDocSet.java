@@ -292,6 +292,17 @@ public class BitDocSet extends DocSetBase {
                 pos = bs.nextSetBit(target+base);
                 return adjustedDoc = (pos>=0 && pos<max) ? pos-base : NO_MORE_DOCS;
               }
+
+              @Override
+              public long cost() {
+                // we don't want to actually compute cardinality, but
+                // if its already been computed, we use it
+                if (size != -1) {
+                  return size;
+                } else {
+                  return bs.capacity();
+                }
+              }
             };
           }
 

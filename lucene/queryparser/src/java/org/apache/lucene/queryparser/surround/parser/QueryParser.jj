@@ -81,7 +81,7 @@ public class QueryParser {
   /* CHECKME: These should be the same as for the tokenizer. How? */
   final char truncator = '*';
   final char anyChar = '?';
-  final char quote = '\"';
+  final char quote = '"';
   final char fieldOperator = ':';
   final char comma = ','; /* prefix list separator */
   final char carat = '^'; /* weight operator */

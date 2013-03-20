@@ -132,6 +132,9 @@ final class ShardLeaderElectionContext extends ShardLeaderElectionContextBase {
     syncStrategy.close();
   }
   
+  /* 
+   * weAreReplacement: has someone else been the leader already?
+   */
   @Override
   void runLeaderProcess(boolean weAreReplacement) throws KeeperException,
       InterruptedException, IOException {
@@ -302,7 +305,7 @@ final class ShardLeaderElectionContext extends ShardLeaderElectionContextBase {
           found = zkClient.getChildren(shardsElectZkPath, null, true).size();
         } catch (KeeperException e) {
           SolrException.log(log,
-              "Errir checking for the number of election participants", e);
+              "Error checking for the number of election participants", e);
         }
         
         // on startup and after connection timeout, wait for all known shards
@@ -321,6 +324,11 @@ final class ShardLeaderElectionContext extends ShardLeaderElectionContextBase {
           log.info("Was waiting for replicas to come up, but they are taking too long - assuming they won't come back till later");
           return;
         }
+      } else {
+        log.warn("Shard not found: " + shardId + " for collection " + collection);
+
+        return;
+
       }
       
       Thread.sleep(500);

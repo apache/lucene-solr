@@ -85,7 +85,7 @@ public class CloudSolrServerTest extends AbstractFullDistribZkTestBase {
   public CloudSolrServerTest() {
     super();
     sliceCount = 2;
-    shardCount = 6;
+    shardCount = 4;
   }
   
   @Override

@@ -32,9 +32,7 @@ import org.apache.lucene.index.MultiDocValues.OrdinalMap;
 import org.apache.lucene.index.NumericDocValues;
 import org.apache.lucene.index.SegmentWriteState;
 import org.apache.lucene.index.SortedDocValues;
-import org.apache.lucene.index.SortedDocValuesTermsEnum;
 import org.apache.lucene.index.SortedSetDocValues;
-import org.apache.lucene.index.SortedSetDocValuesTermsEnum;
 import org.apache.lucene.index.TermsEnum;
 import org.apache.lucene.util.ArrayUtil;
 import org.apache.lucene.util.Bits;
@@ -269,7 +267,7 @@ public abstract class DocValuesConsumer implements Closeable {
       SortedDocValues dv = dvs[sub];
       Bits liveDocs = reader.getLiveDocs();
       if (liveDocs == null) {
-        liveTerms[sub] = new SortedDocValuesTermsEnum(dv);
+        liveTerms[sub] = dv.termsEnum();
       } else {
         OpenBitSet bitset = new OpenBitSet(dv.getValueCount());
         for (int i = 0; i < reader.maxDoc(); i++) {
@@ -277,7 +275,7 @@ public abstract class DocValuesConsumer implements Closeable {
             bitset.set(dv.getOrd(i));
           }
         }
-        liveTerms[sub] = new BitsFilteredTermsEnum(new SortedDocValuesTermsEnum(dv), bitset);
+        liveTerms[sub] = new BitsFilteredTermsEnum(dv.termsEnum(), bitset);
       }
     }
     
@@ -401,7 +399,7 @@ public abstract class DocValuesConsumer implements Closeable {
       SortedSetDocValues dv = dvs[sub];
       Bits liveDocs = reader.getLiveDocs();
       if (liveDocs == null) {
-        liveTerms[sub] = new SortedSetDocValuesTermsEnum(dv);
+        liveTerms[sub] = dv.termsEnum();
       } else {
         OpenBitSet bitset = new OpenBitSet(dv.getValueCount());
         for (int i = 0; i < reader.maxDoc(); i++) {
@@ -413,7 +411,7 @@ public abstract class DocValuesConsumer implements Closeable {
             }
           }
         }
-        liveTerms[sub] = new BitsFilteredTermsEnum(new SortedSetDocValuesTermsEnum(dv), bitset);
+        liveTerms[sub] = new BitsFilteredTermsEnum(dv.termsEnum(), bitset);
       }
     }
     

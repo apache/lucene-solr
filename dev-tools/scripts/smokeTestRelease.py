@@ -56,9 +56,7 @@ def unshortenURL(url):
   return url  
 
 def javaExe(version):
-  if version == '1.6':
-    path = JAVA6_HOME
-  elif version == '1.7':
+  if version == '1.7':
     path = JAVA7_HOME
   else:
     raise RuntimeError("unknown Java version '%s'" % version)
@@ -73,11 +71,6 @@ def verifyJavaVersion(version):
 
 # http://s.apache.org/lusolr32rc2
 env = os.environ
-try:
-  JAVA6_HOME = env['JAVA6_HOME']
-except KeyError:
-  JAVA6_HOME = '/usr/local/jdk1.6.0_27'
-print('JAVA6_HOME is %s' % JAVA6_HOME)
 
 try:
   JAVA7_HOME = env['JAVA7_HOME']
@@ -85,7 +78,6 @@ except KeyError:
   JAVA7_HOME = '/usr/local/jdk1.7.0_01'
 print('JAVA7_HOME is %s' % JAVA7_HOME)
 
-verifyJavaVersion('1.6')
 verifyJavaVersion('1.7')
 
 # TODO
@@ -191,10 +183,10 @@ def checkJARMetaData(desc, jarFile, version):
     
     for verify in (
       'Implementation-Vendor: The Apache Software Foundation',
-      # Make sure 1.6 compiler was used to build release bits:
-      'X-Compile-Source-JDK: 1.6',
-      # Make sure .class files are 1.6 format:
-      'X-Compile-Target-JDK: 1.6',
+      # Make sure 1.7 compiler was used to build release bits:
+      'X-Compile-Source-JDK: 1.7',
+      # Make sure .class files are 1.7 format:
+      'X-Compile-Target-JDK: 1.7',
       # Make sure this matches the version we think we are releasing:
       'Specification-Version: %s' % version):
       if s.find(verify) == -1:
@@ -655,15 +647,6 @@ def verifyUnpacked(project, artifact, unpackPath, version, tmpDir):
     run('%s; ant validate' % javaExe('1.7'), '%s/validate.log' % unpackPath)
 
     if project == 'lucene':
-      print('    run tests w/ Java 6...')
-      run('%s; ant test' % javaExe('1.6'), '%s/test.log' % unpackPath)
-      run('%s; ant jar' % javaExe('1.6'), '%s/compile.log' % unpackPath)
-      testDemo(isSrc, version, '1.6')
-      # test javadocs
-      print('    generate javadocs w/ Java 6...')
-      run('%s; ant javadocs' % javaExe('1.6'), '%s/javadocs.log' % unpackPath)
-      checkJavadocpath('%s/build/docs' % unpackPath)
-
       print('    run tests w/ Java 7...')
       run('%s; ant clean test' % javaExe('1.7'), '%s/test.log' % unpackPath)
       run('%s; ant jar' % javaExe('1.7'), '%s/compile.log' % unpackPath)
@@ -675,14 +658,6 @@ def verifyUnpacked(project, artifact, unpackPath, version, tmpDir):
 
     else:
       os.chdir('solr')
-      # DISABLED until solr tests consistently pass
-      #print('    run tests w/ Java 6...')
-      #run('%s; ant test' % javaExe('1.6'), '%s/test.log' % unpackPath)
-
-      # test javadocs
-      print('    generate javadocs w/ Java 6...')
-      run('%s; ant javadocs' % javaExe('1.6'), '%s/javadocs.log' % unpackPath)
-      checkJavadocpath('%s/solr/build/docs' % unpackPath, False)
 
       # DISABLED until solr tests consistently pass
       #print('    run tests w/ Java 7...')
@@ -692,10 +667,6 @@ def verifyUnpacked(project, artifact, unpackPath, version, tmpDir):
       print('    generate javadocs w/ Java 7...')
       run('%s; ant clean javadocs' % javaExe('1.7'), '%s/javadocs.log' % unpackPath)
       checkJavadocpathFull('%s/solr/build/docs' % unpackPath, False)
-
-      print('    test solr example w/ Java 6...')
-      run('%s; ant clean example' % javaExe('1.6'), '%s/antexample.log' % unpackPath)
-      testSolrExample(unpackPath, JAVA6_HOME, True)
 
       print('    test solr example w/ Java 7...')
       run('%s; ant clean example' % javaExe('1.7'), '%s/antexample.log' % unpackPath)
@@ -710,20 +681,10 @@ def verifyUnpacked(project, artifact, unpackPath, version, tmpDir):
     checkAllJARs(os.getcwd(), project, version)
     
     if project == 'lucene':
-      testDemo(isSrc, version, '1.6')
       testDemo(isSrc, version, '1.7')
 
     else:
       checkSolrWAR('%s/example/webapps/solr.war' % unpackPath, version)
-
-      print('    copying unpacked distribution for Java 6 ...')
-      java6UnpackPath = '%s-java6' %unpackPath
-      if os.path.exists(java6UnpackPath):
-        shutil.rmtree(java6UnpackPath)
-      shutil.copytree(unpackPath, java6UnpackPath)
-      os.chdir(java6UnpackPath)
-      print('    test solr example w/ Java 6...')
-      testSolrExample(java6UnpackPath, JAVA6_HOME, False)
 
       print('    copying unpacked distribution for Java 7 ...')
       java7UnpackPath = '%s-java7' %unpackPath

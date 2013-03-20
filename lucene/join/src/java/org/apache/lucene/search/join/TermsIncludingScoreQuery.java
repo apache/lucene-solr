@@ -160,18 +160,21 @@ class TermsIncludingScoreQuery extends Query {
         if (terms == null) {
           return null;
         }
+        
+        // what is the runtime...seems ok?
+        final long cost = context.reader().maxDoc() * terms.size();
 
         segmentTermsEnum = terms.iterator(segmentTermsEnum);
         if (scoreDocsInOrder) {
           if (multipleValuesPerDocument) {
-            return new MVInOrderScorer(this, acceptDocs, segmentTermsEnum, context.reader().maxDoc());
+            return new MVInOrderScorer(this, acceptDocs, segmentTermsEnum, context.reader().maxDoc(), cost);
           } else {
-            return new SVInOrderScorer(this, acceptDocs, segmentTermsEnum, context.reader().maxDoc());
+            return new SVInOrderScorer(this, acceptDocs, segmentTermsEnum, context.reader().maxDoc(), cost);
           }
         } else if (multipleValuesPerDocument) {
-          return new MVInnerScorer(this, acceptDocs, segmentTermsEnum, context.reader().maxDoc());
+          return new MVInnerScorer(this, acceptDocs, segmentTermsEnum, context.reader().maxDoc(), cost);
         } else {
-          return new SVInnerScorer(this, acceptDocs, segmentTermsEnum);
+          return new SVInnerScorer(this, acceptDocs, segmentTermsEnum, cost);
         }
       }
     };
@@ -183,16 +186,18 @@ class TermsIncludingScoreQuery extends Query {
     final BytesRef spare = new BytesRef();
     final Bits acceptDocs;
     final TermsEnum termsEnum;
+    final long cost;
 
     int upto;
     DocsEnum docsEnum;
     DocsEnum reuse;
     int scoreUpto;
 
-    SVInnerScorer(Weight weight, Bits acceptDocs, TermsEnum termsEnum) {
+    SVInnerScorer(Weight weight, Bits acceptDocs, TermsEnum termsEnum, long cost) {
       super(weight);
       this.acceptDocs = acceptDocs;
       this.termsEnum = termsEnum;
+      this.cost = cost;
     }
 
     @Override
@@ -261,6 +266,11 @@ class TermsIncludingScoreQuery extends Query {
     public int freq() {
       return 1;
     }
+
+    @Override
+    public long cost() {
+      return cost;
+    }
   }
 
   // This impl that tracks whether a docid has already been emitted. This check makes sure that docs aren't emitted
@@ -270,8 +280,8 @@ class TermsIncludingScoreQuery extends Query {
 
     final FixedBitSet alreadyEmittedDocs;
 
-    MVInnerScorer(Weight weight, Bits acceptDocs, TermsEnum termsEnum, int maxDoc) {
-      super(weight, acceptDocs, termsEnum);
+    MVInnerScorer(Weight weight, Bits acceptDocs, TermsEnum termsEnum, int maxDoc, long cost) {
+      super(weight, acceptDocs, termsEnum, cost);
       alreadyEmittedDocs = new FixedBitSet(maxDoc);
     }
 
@@ -326,15 +336,17 @@ class TermsIncludingScoreQuery extends Query {
 
     final DocIdSetIterator matchingDocsIterator;
     final float[] scores;
+    final long cost;
 
     int currentDoc = -1;
 
-    SVInOrderScorer(Weight weight, Bits acceptDocs, TermsEnum termsEnum, int maxDoc) throws IOException {
+    SVInOrderScorer(Weight weight, Bits acceptDocs, TermsEnum termsEnum, int maxDoc, long cost) throws IOException {
       super(weight);
       FixedBitSet matchingDocs = new FixedBitSet(maxDoc);
       this.scores = new float[maxDoc];
       fillDocsAndScores(matchingDocs, acceptDocs, termsEnum);
       this.matchingDocsIterator = matchingDocs.iterator();
+      this.cost = cost;
     }
 
     protected void fillDocsAndScores(FixedBitSet matchingDocs, Bits acceptDocs, TermsEnum termsEnum) throws IOException {
@@ -378,13 +390,18 @@ class TermsIncludingScoreQuery extends Query {
     public int advance(int target) throws IOException {
       return currentDoc = matchingDocsIterator.advance(target);
     }
+
+    @Override
+    public long cost() {
+      return cost;
+    }
   }
 
   // This scorer deals with the fact that a document can have more than one score from multiple related documents.
   class MVInOrderScorer extends SVInOrderScorer {
 
-    MVInOrderScorer(Weight weight, Bits acceptDocs, TermsEnum termsEnum, int maxDoc) throws IOException {
-      super(weight, acceptDocs, termsEnum, maxDoc);
+    MVInOrderScorer(Weight weight, Bits acceptDocs, TermsEnum termsEnum, int maxDoc, long cost) throws IOException {
+      super(weight, acceptDocs, termsEnum, maxDoc, cost);
     }
 
     @Override

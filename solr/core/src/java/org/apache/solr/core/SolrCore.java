@@ -406,7 +406,7 @@ public final class SolrCore implements SolrInfoMBean {
     }
     
     SolrCore core = new SolrCore(getName(), getDataDir(), config,
-        schema, coreDescriptor, updateHandler, prev);
+        schema, coreDescriptor, updateHandler, this.solrDelPolicy, prev);
     core.solrDelPolicy = this.solrDelPolicy;
     
     core.getUpdateHandler().getSolrCoreState().newIndexWriter(core, false, false);
@@ -459,7 +459,7 @@ public final class SolrCore implements SolrInfoMBean {
       boolean indexExists = getDirectoryFactory().exists(indexDir);
       boolean firstTime;
       synchronized (SolrCore.class) {
-        firstTime = dirs.add(new File(indexDir).getCanonicalPath());
+        firstTime = dirs.add(getDirectoryFactory().normalize(indexDir));
       }
       boolean removeLocks = solrConfig.unlockOnStartup;
 
@@ -616,7 +616,7 @@ public final class SolrCore implements SolrInfoMBean {
    * @since solr 1.3
    */
   public SolrCore(String name, String dataDir, SolrConfig config, IndexSchema schema, CoreDescriptor cd) {
-    this(name, dataDir, config, schema, cd, null, null);
+    this(name, dataDir, config, schema, cd, null, null, null);
   }
 
 
@@ -652,16 +652,28 @@ public final class SolrCore implements SolrInfoMBean {
    *
    *@since solr 1.3
    */
-  public SolrCore(String name, String dataDir, SolrConfig config, IndexSchema schema, CoreDescriptor cd, UpdateHandler updateHandler, SolrCore prev) {
+  public SolrCore(String name, String dataDir, SolrConfig config, IndexSchema schema, CoreDescriptor cd, UpdateHandler updateHandler, IndexDeletionPolicyWrapper delPolicy, SolrCore prev) {
     coreDescriptor = cd;
     this.setName( name );
     resourceLoader = config.getResourceLoader();
-    if (dataDir == null){
-      if(cd.usingDefaultDataDir()) {
-        dataDir = config.getDataDir();
-      }
-      if(dataDir == null) {
+    this.solrConfig = config;
+    
+    if (updateHandler == null) {
+      initDirectoryFactory();
+    }
+    
+    if (dataDir == null) {
+      if (cd.usingDefaultDataDir()) dataDir = config.getDataDir();
+      if (dataDir == null) {
         dataDir = cd.getDataDir();
+        try {
+          if (!directoryFactory.isAbsolute(dataDir)) {
+            dataDir = directoryFactory.normalize(SolrResourceLoader
+                .normalizeDir(cd.getInstanceDir()) + dataDir);
+          }
+        } catch (IOException e) {
+          throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, null, e);
+        }
       }
     }
 
@@ -703,7 +715,6 @@ public final class SolrCore implements SolrInfoMBean {
 
     this.schema = schema;
     this.dataDir = dataDir;
-    this.solrConfig = config;
     this.startTime = System.currentTimeMillis();
     this.maxWarmingSearchers = config.maxWarmingSearchers;
 
@@ -715,8 +726,10 @@ public final class SolrCore implements SolrInfoMBean {
       
       initListeners();
       
-      if (updateHandler == null) {
+      if (delPolicy == null) {
         initDeletionPolicy();
+      } else {
+        this.solrDelPolicy = delPolicy;
       }
       
       this.codec = initCodec(solrConfig, schema);

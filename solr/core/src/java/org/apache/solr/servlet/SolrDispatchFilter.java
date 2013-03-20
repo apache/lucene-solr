@@ -255,10 +255,12 @@ public class SolrDispatchFilter implements Filter
             } else {
               if (!retry) {
                 // we couldn't find a core to work with, try reloading aliases
+                // TODO: it would be nice if admin ui elements skipped this...
                 ZkStateReader reader = cores.getZkController()
                     .getZkStateReader();
                 reader.updateAliases();
                 doFilter(request, response, chain, true);
+                return;
               }
             }
           }

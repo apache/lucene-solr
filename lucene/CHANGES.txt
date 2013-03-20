@@ -19,6 +19,11 @@ Changes in backwards compatibility policy
   (Nikola Tanković, Uwe Schindler, Chris Male, Mike McCandless,
   Robert Muir)
 
+New Features
+
+* LUCENE-4747: Move to Java 7 as minimum Java version.
+  (Robert Muir, Uwe Schindler)
+
 ======================= Lucene 4.3.0 =======================
 
 Changes in backwards compatibility policy
@@ -26,6 +31,23 @@ Changes in backwards compatibility policy
 * LUCENE-4810: EdgeNGramTokenFilter no longer increments position for
   multiple ngrams derived from the same input token. (Walter Underwood
   via Mike McCandless)
+
+* LUCENE-4822: KeywordTokenFilter is now an abstract class. Subclasses
+  need to implement #isKeyword() in order to mark terms as keywords. 
+  The existing functionality has been factored out into a new 
+  SetKeywordTokenFilter class. (Simon Willnauer, Uwe Schindler)
+  
+* LUCENE-4642: Remove Tokenizer's and subclasses' ctors taking
+  AttributeSource. (Renaud Delbru, Uwe Schindler, Steve Rowe)
+
+* LUCENE-4833: IndexWriterConfig used to use LogByteSizeMergePolicy when
+  calling setMergePolicy(null) although the default merge policy is
+  TieredMergePolicy. IndexWriterConfig setters now throw an exception when
+  passed null if null is not a valid value.
+
+* LUCENE-4849: Made ParallelTaxonomyArrays abstract with a concrete
+  implementation for DirectoryTaxonomyWriter/Reader. Also moved it under
+  o.a.l.facet.taxonomy. (Shai Erera)
 
 New Features
 
@@ -40,6 +62,109 @@ New Features
 * LUCENE-4817: Added KeywordRepeatFilter that allows to emit a token twice
   once as a keyword and once as an ordinary token allow stemmers to emit
   a stemmed version along with the un-stemmed version. (Simon Willnauer)
+
+* LUCENE-4822: PatternKeywordTokenFilter can mark tokens as keywords based
+  on regular expressions. (Simon Willnauer, Uwe Schindler)
+
+* LUCENE-4821: AnalyzingSuggester now uses the ending offset to
+  determine whether the last token was finished or not, so that a
+  query "i " will no longer suggest "Isla de Muerta" for example.
+  (Mike McCandless)
+  
+* LUCENE-4642: Add create(AttributeFactory) to TokenizerFactory and
+  subclasses with ctors taking AttributeFactory. 
+  (Renaud Delbru, Uwe Schindler, Steve Rowe)
+
+* LUCENE-4820: Add payloads to Analyzing/FuzzySuggester, to record an
+  arbitrary byte[] per suggestion (Mike McCandless)
+
+* LUCENE-4816: Passing null as the BreakIterator to PostingsHighlighter
+  now highlights the entire content as a single Passage.  (Robert
+  Muir, Mike McCandless)
+
+* LUCENE-4827: Add additional ctor to PostingsHighlighter PassageScorer
+  to provide bm25 k1,b,avgdl parameters. (Robert Muir)
+
+* LUCENE-4607: Add DocIDSetIterator.cost() and Spans.cost() for optimizing
+  scoring.  (Simon Willnauer, Robert Muir)
+
+* LUCENE-4795: Add SortedSetDocValuesFacetFields and
+  SortedSetDocValuesAccumulator, to compute topK facet counts from a
+  field's SortedSetDocValues.  This method only supports flat
+  (dim/label) facets, is a bit (~25%) slower, has added cost
+  per-IndexReader-open to compute its ordinal map, but it requires no
+  taxonomy index and it tie-breaks facet labels in an understandable
+  (by Unicode sort order) way.  (Robert Muir, Mike McCandless)
+  
+* LUCENE-4843: Add LimitTokenPositionFilter: don't emit tokens with 
+  positions that exceed the configured limit.  (Steve Rowe)
+
+* LUCENE-4832: Add ToParentBlockJoinCollector.getTopGroupsWithAllChildDocs, to retrieve
+  all children in each group.  (Aleksey Aleev via Mike McCandless)
+
+* LUCENE-4846: PostingsHighlighter subclasses can override where the
+  String values come from (it still defaults to pulling from stored
+  fields).  (Robert Muir, Mike McCandless)
+
+* LUCENE-4853: Add PostingsHighlighter.highlightFields method that
+  takes int[] docIDs instead of TopDocs.  (Robert Muir, Mike
+  McCandless)
+
+* LUCENE-4856: If there are no matches for a given field, return the
+  first maxPassages sentences (Robert Muir, Mike McCandless)
+
+* LUCENE-4859: IndexReader now exposes Terms statistics: getDocCount,
+  getSumDocFreq, getSumTotalTermFreq. (Shai Erera)
+
+API Changes
+
+* LUCENE-4844: removed TaxonomyReader.getParent(), you should use
+  TaxonomyReader.getParallelArrays().parents() instead. (Shai Erera)
+
+Documentation
+
+* LUCENE-4841: Added example SimpleSortedSetFacetsExample to show how
+  to use the new SortedSetDocValues backed facet implementation.
+  (Shai Erera, Mike McCandless)
+
+======================= Lucene 4.2.1 =======================
+
+Bug Fixes
+
+* LUCENE-4713: The SPI components used to load custom codecs or analysis
+  components were fixed to also scan the Lucene ClassLoader in addition
+  to the context ClassLoader, so Lucene is always able to find its own
+  codecs. The special case of a null context ClassLoader is now also
+  supported.  (Christian Kohlschütter, Uwe Schindler)
+
+* LUCENE-4819: seekExact(BytesRef, boolean) did not work correctly with
+  Sorted[Set]DocValuesTermsEnum.  (Robert Muir)
+
+* LUCENE-4826: PostingsHighlighter was not returning the top N best
+  scoring passages. (Robert Muir, Mike McCandless)
+
+* LUCENE-4854: Fix DocTermOrds.getOrdTermsEnum() to not return negative
+  ord on initial next().  (Robert Muir)
+
+* LUCENE-4836: Fix SimpleRateLimiter#pause to return the actual time spent
+  sleeping instead of the wakeup timestamp in nano seconds. (Simon Willnauer)
+
+* LUCENE-4828: BooleanQuery no longer extracts terms from its MUST_NOT
+  clauses.  (Mike McCandless)
+
+* SOLR-4589: Fixed CPU spikes and poor performance in lazy field loading 
+  of multivalued fields. (hossman)
+
+Optimizations
+
+* LUCENE-4819: Added Sorted[Set]DocValues.termsEnum(), and optimized the
+  default codec for improved enumeration performance.  (Robert Muir)
+
+* LUCENE-4854: Speed up TermsEnum of FieldCache.getDocTermOrds.
+  (Robert Muir)
+
+* LUCENE-4857: Don't unnecessarily copy stem override map in
+  StemmerOverrideFilter. (Simon Willnauer)
 
 ======================= Lucene 4.2.0 =======================
 

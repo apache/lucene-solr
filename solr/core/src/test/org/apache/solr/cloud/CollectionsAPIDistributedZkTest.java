@@ -17,9 +17,9 @@ package org.apache.solr.cloud;
  * limitations under the License.
  */
 
+import java.io.File;
 import java.io.IOException;
 import java.lang.management.ManagementFactory;
-import java.net.MalformedURLException;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.HashMap;
@@ -43,12 +43,14 @@ import javax.management.ObjectName;
 
 import org.apache.lucene.util.LuceneTestCase.Slow;
 import org.apache.lucene.util._TestUtil;
+import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.client.solrj.SolrQuery;
 import org.apache.solr.client.solrj.SolrServerException;
 import org.apache.solr.client.solrj.impl.CloudSolrServer;
 import org.apache.solr.client.solrj.impl.HttpSolrServer;
 import org.apache.solr.client.solrj.request.CoreAdminRequest;
 import org.apache.solr.client.solrj.request.QueryRequest;
+import org.apache.solr.client.solrj.request.CoreAdminRequest.Create;
 import org.apache.solr.client.solrj.response.CoreAdminResponse;
 import org.apache.solr.client.solrj.response.QueryResponse;
 import org.apache.solr.common.SolrException;
@@ -63,9 +65,12 @@ import org.apache.solr.common.cloud.ZkNodeProps;
 import org.apache.solr.common.cloud.ZkStateReader;
 import org.apache.solr.common.params.CollectionParams.CollectionAction;
 import org.apache.solr.common.params.ModifiableSolrParams;
+import org.apache.solr.common.util.NamedList;
+import org.apache.solr.common.util.SimpleOrderedMap;
 import org.apache.solr.common.util.StrUtils;
 import org.apache.solr.core.SolrCore;
 import org.apache.solr.core.SolrInfoMBean.Category;
+import org.apache.solr.servlet.SolrDispatchFilter;
 import org.apache.solr.update.DirectUpdateHandler2;
 import org.apache.solr.update.SolrCmdDistributor.Request;
 import org.apache.solr.util.DefaultSolrThreadFactory;
@@ -136,13 +141,187 @@ public class CollectionsAPIDistributedZkTest extends AbstractFullDistribZkTestBa
   
   @Override
   public void doTest() throws Exception {
-
+    
     testNodesUsedByCreate();
     testCollectionsAPI();
+    deletePartiallyCreatedCollection();
+    testErrorHandling();
 
     if (DEBUG) {
       super.printLayout();
     }
+  }
+  
+  private void deletePartiallyCreatedCollection() throws Exception {
+    final String baseUrl = getBaseUrl((HttpSolrServer) clients.get(0));
+    String collectionName = "halfdeletedcollection";
+    Create createCmd = new Create();
+    createCmd.setCoreName("halfdeletedcollection_shard1_replica1");
+    createCmd.setCollection(collectionName);
+    String dataDir = SolrTestCaseJ4.dataDir.getAbsolutePath() + File.separator
+        + System.currentTimeMillis() + "halfcollection" + "_hdn";
+    createCmd.setDataDir(dataDir);
+    createCmd.setNumShards(2);
+    createNewSolrServer("", baseUrl).request(createCmd);
+
+    ModifiableSolrParams params = new ModifiableSolrParams();
+    params.set("action", CollectionAction.DELETE.toString());
+    params.set("name", collectionName);
+    QueryRequest request = new QueryRequest(params);
+    request.setPath("/admin/collections");
+
+    NamedList<Object> resp = createNewSolrServer("", baseUrl).request(request);
+    
+    checkForMissingCollection(collectionName);
+    
+    // now creating that collection should work
+    params = new ModifiableSolrParams();
+    params.set("action", CollectionAction.CREATE.toString());
+    params.set("name", collectionName);
+    params.set("numShards", 2);
+    request = new QueryRequest(params);
+    request.setPath("/admin/collections");
+    resp = createNewSolrServer("", baseUrl).request(request);
+
+  }
+
+  private void testErrorHandling() throws Exception {
+    final String baseUrl = getBaseUrl((HttpSolrServer) clients.get(0));
+    
+    
+    // try a bad action
+    ModifiableSolrParams params = new ModifiableSolrParams();
+    params.set("action", "BADACTION");
+    String collectionName = "badactioncollection";
+    params.set("name", collectionName);
+    params.set("numShards", 2);
+    QueryRequest request = new QueryRequest(params);
+    request.setPath("/admin/collections");
+    boolean gotExp = false;
+    NamedList<Object> resp = null;
+    try {
+      resp = createNewSolrServer("", baseUrl).request(request);
+    } catch (SolrException e) {
+      gotExp = true;
+    }
+    assertTrue(gotExp);
+    
+    
+    // leave out required param name
+    params = new ModifiableSolrParams();
+    params.set("action", CollectionAction.CREATE.toString());
+    params.set("numShards", 2);
+    collectionName = "collection";
+    // No Name
+    // params.set("name", collectionName);
+    request = new QueryRequest(params);
+    request.setPath("/admin/collections");
+    gotExp = false;
+    resp = null;
+    try {
+      resp = createNewSolrServer("", baseUrl).request(request);
+    } catch (SolrException e) {
+      gotExp = true;
+    }
+    assertTrue(gotExp);
+    
+    // Too many replicas
+    params = new ModifiableSolrParams();
+    params.set("action", CollectionAction.CREATE.toString());
+    collectionName = "collection";
+    params.set("name", collectionName);
+    params.set("numShards", 2);
+    params.set(OverseerCollectionProcessor.REPLICATION_FACTOR, 10);
+    request = new QueryRequest(params);
+    request.setPath("/admin/collections");
+    gotExp = false;
+    resp = null;
+    try {
+      resp = createNewSolrServer("", baseUrl).request(request);
+    } catch (SolrException e) {
+      gotExp = true;
+    }
+    assertTrue(gotExp);
+    
+    // No numShards should fail
+    params = new ModifiableSolrParams();
+    params.set("action", CollectionAction.CREATE.toString());
+    collectionName = "acollection";
+    params.set("name", collectionName);
+    params.set(OverseerCollectionProcessor.REPLICATION_FACTOR, 10);
+    request = new QueryRequest(params);
+    request.setPath("/admin/collections");
+    gotExp = false;
+    resp = null;
+    try {
+      resp = createNewSolrServer("", baseUrl).request(request);
+    } catch (SolrException e) {
+      gotExp = true;
+    }
+    assertTrue(gotExp);
+    
+    // 0 numShards should fail
+    params = new ModifiableSolrParams();
+    params.set("action", CollectionAction.CREATE.toString());
+    collectionName = "acollection";
+    params.set("name", collectionName);
+    params.set(OverseerCollectionProcessor.REPLICATION_FACTOR, 10);
+    params.set("numShards", 0);
+    request = new QueryRequest(params);
+    request.setPath("/admin/collections");
+    gotExp = false;
+    resp = null;
+    try {
+      resp = createNewSolrServer("", baseUrl).request(request);
+    } catch (SolrException e) {
+      gotExp = true;
+    }
+    assertTrue(gotExp);
+    
+    // Fail on one node
+    
+    // first we make a core with the core name the collections api
+    // will try and use - this will cause our mock fail
+    Create createCmd = new Create();
+    createCmd.setCoreName("halfcollection_shard1_replica1");
+    createCmd.setCollection("halfcollectionblocker");
+    String dataDir = SolrTestCaseJ4.dataDir.getAbsolutePath() + File.separator
+        + System.currentTimeMillis() + "halfcollection" + "_3n";
+    createCmd.setDataDir(dataDir);
+    createCmd.setNumShards(1);
+    createNewSolrServer("", baseUrl).request(createCmd);
+    
+    createCmd = new Create();
+    createCmd.setCoreName("halfcollection_shard1_replica1");
+    createCmd.setCollection("halfcollectionblocker2");
+    dataDir = SolrTestCaseJ4.dataDir.getAbsolutePath() + File.separator
+        + System.currentTimeMillis() + "halfcollection" + "_3n";
+    createCmd.setDataDir(dataDir);
+    createCmd.setNumShards(1);
+    createNewSolrServer("", getBaseUrl((HttpSolrServer) clients.get(1))).request(createCmd);
+    
+    params = new ModifiableSolrParams();
+    params.set("action", CollectionAction.CREATE.toString());
+    collectionName = "halfcollection";
+    params.set("name", collectionName);
+    params.set("numShards", 2);
+    params.set("wt", "xml");
+    
+    String nn1 = ((SolrDispatchFilter) jettys.get(0).getDispatchFilter().getFilter()).getCores().getZkController().getNodeName();
+    String nn2 =  ((SolrDispatchFilter) jettys.get(1).getDispatchFilter().getFilter()).getCores().getZkController().getNodeName();
+    
+    params.set(OverseerCollectionProcessor.CREATE_NODE_SET, nn1 + "," + nn2);
+    request = new QueryRequest(params);
+    request.setPath("/admin/collections");
+    gotExp = false;
+    resp = createNewSolrServer("", baseUrl).request(request);
+    
+    SimpleOrderedMap success = (SimpleOrderedMap) resp.get("success");
+    SimpleOrderedMap failure = (SimpleOrderedMap) resp.get("failure");
+
+    String val1 = success.getVal(0).toString();
+    String val2 = failure.getVal(0).toString();
+    assertTrue(val1.contains("SolrException") || val2.contains("SolrException"));
   }
 
   private void testNodesUsedByCreate() throws Exception {
@@ -324,7 +503,13 @@ public class CollectionsAPIDistributedZkTest extends AbstractFullDistribZkTestBa
     request = new QueryRequest(params);
     request.setPath("/admin/collections");
  
-    createNewSolrServer("", baseUrl).request(request);
+    boolean exp = false;
+    try {
+      createNewSolrServer("", baseUrl).request(request);
+    } catch (SolrException e) {
+      exp = true;
+    }
+    assertTrue("Expected exception", exp);
     
     // create another collection should still work
     params = new ModifiableSolrParams();
@@ -363,14 +548,17 @@ public class CollectionsAPIDistributedZkTest extends AbstractFullDistribZkTestBa
     collectionInfos = new HashMap<String,List<Integer>>();
     CloudSolrServer client = createCloudClient("awholynewcollection_" + cnt);
     try {
+      exp = false;
+      try {
       createCollection(collectionInfos, "awholynewcollection_" + cnt, numShards, replicationFactor, maxShardsPerNode, client, null);
+      } catch (SolrException e) {
+        exp = true;
+      }
+      assertTrue("expected exception", exp);
     } finally {
       client.shutdown();
     }
-    
-    // TODO: REMOVE THE SLEEP IN THE METHOD CALL WHEN WE HAVE COLLECTION API 
-    // RESPONSES
-    checkCollectionIsNotCreated(collectionInfos.keySet().iterator().next());
+
     
     // Test createNodeSet
     numLiveNodes = getCommonCloudSolrServer().getZkStateReader().getClusterState().getLiveNodes().size();
@@ -507,13 +695,6 @@ public class CollectionsAPIDistributedZkTest extends AbstractFullDistribZkTestBa
     }
 
     fail("Could not find the new collection - " + exp.code() + " : " + collectionClient.getBaseURL());
-  }
-
-  private void checkCollectionIsNotCreated(String collectionName)
-    throws Exception {
-    // TODO: REMOVE THIS SLEEP WHEN WE HAVE COLLECTION API RESPONSES
-    Thread.sleep(10000);
-    assertFalse(collectionName + " not supposed to exist", getCommonCloudSolrServer().getZkStateReader().getClusterState().getCollections().contains(collectionName));
   }
   
   private void checkForMissingCollection(String collectionName)

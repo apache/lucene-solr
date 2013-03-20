@@ -594,6 +594,7 @@ public class FuzzySuggesterTest extends LuceneTestCase {
       while(true) {
         key = "";
         analyzedKey = "";
+        boolean lastRemoved = false;
         for(int token=0;token < numTokens;token++) {
           String s;
           while (true) {
@@ -612,8 +613,10 @@ public class FuzzySuggesterTest extends LuceneTestCase {
                 if (preserveSep && preserveHoles) {
                   analyzedKey += '\u0000';
                 }
+                lastRemoved = true;
               } else {
                 analyzedKey += s;
+                lastRemoved = false;
               }
               break;
             }
@@ -621,6 +624,10 @@ public class FuzzySuggesterTest extends LuceneTestCase {
         }
 
         analyzedKey = analyzedKey.replaceAll("(^| )\u0000$", "");
+
+        if (preserveSep && lastRemoved) {
+          analyzedKey += " ";
+        }
 
         // Don't add same surface form more than once:
         if (!seen.contains(key)) {
@@ -669,6 +676,7 @@ public class FuzzySuggesterTest extends LuceneTestCase {
       // "Analyze" the key:
       String[] tokens = prefix.split(" ");
       StringBuilder builder = new StringBuilder();
+      boolean lastRemoved = false;
       for(int i=0;i<tokens.length;i++) {
         String token = tokens[i];
         if (preserveSep && builder.length() > 0 && !builder.toString().endsWith(" ")) {
@@ -679,8 +687,10 @@ public class FuzzySuggesterTest extends LuceneTestCase {
           if (preserveSep && preserveHoles) {
             builder.append("\u0000");
           }
+          lastRemoved = true;
         } else {
           builder.append(token);
+          lastRemoved = false;
         }
       }
 
@@ -702,6 +712,10 @@ public class FuzzySuggesterTest extends LuceneTestCase {
         // Currently suggester can't suggest from the empty
         // string!  You get no results, not all results...
         continue;
+      }
+
+      if (preserveSep && (prefix.endsWith(" ") || lastRemoved)) {
+        analyzedKey += " ";
       }
 
       if (VERBOSE) {
