@@ -39,11 +39,12 @@ public class TestBytesRefArray extends LuceneTestCase {
       }
       int entries = atLeast(500);
       BytesRef spare = new BytesRef();
+      int initSize = list.size();
       for (int i = 0; i < entries; i++) {
         String randomRealisticUnicodeString = _TestUtil
             .randomRealisticUnicodeString(random);
         spare.copyChars(randomRealisticUnicodeString);
-        list.append(spare);
+        assertEquals(i+initSize, list.append(spare));
         stringList.add(randomRealisticUnicodeString);
       }
       for (int i = 0; i < entries; i++) {
@@ -81,11 +82,12 @@ public class TestBytesRefArray extends LuceneTestCase {
       }
       int entries = atLeast(500);
       BytesRef spare = new BytesRef();
+      final int initSize = list.size();
       for (int i = 0; i < entries; i++) {
         String randomRealisticUnicodeString = _TestUtil
             .randomRealisticUnicodeString(random);
         spare.copyChars(randomRealisticUnicodeString);
-        list.append(spare);
+        assertEquals(initSize + i, list.append(spare));
         stringList.add(randomRealisticUnicodeString);
       }
       
