@@ -15,11 +15,14 @@ package org.apache.lucene.document;
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-
 import java.io.IOException;
 import java.io.Reader;
+import java.util.List;
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.HashSet;
+import java.util.Set;
 
 import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.analysis.TokenStream;
@@ -31,53 +34,125 @@ import org.apache.lucene.util.BytesRef;
 
 /** Defers actually loading a field's value until you ask
  *  for it.  You must not use the returned Field instances
- *  after the provided reader has been closed. */
-
+ *  after the provided reader has been closed. 
+ * @see #getField
+ */
 public class LazyDocument {
-  private IndexReader reader;
+  private final IndexReader reader;
   private final int docID;
 
   // null until first field is loaded
   private Document doc;
 
-  private Map<Integer,Integer> fields = new HashMap<Integer,Integer>();
+  private Map<Integer,List<LazyField>> fields = new HashMap<Integer,List<LazyField>>();
+  private Set<String> fieldNames = new HashSet<String>();
 
   public LazyDocument(IndexReader reader, int docID) {
     this.reader = reader;
     this.docID = docID;
   }
 
+  /**
+   * Creates an IndexableField whose value will be lazy loaded if and 
+   * when it is used. 
+   * <p>
+   * <b>NOTE:</b> This method must be called once for each value of the field 
+   * name specified in sequence that the values exist.  This method may not be 
+   * used to generate multiple, lazy, IndexableField instances refering to 
+   * the same underlying IndexableField instance.
+   * </p>
+   * <p>
+   * The lazy loading of field values from all instances of IndexableField 
+   * objects returned by this method are all backed by a single Document 
+   * per LazyDocument instance.
+   * </p>
+   */
   public IndexableField getField(FieldInfo fieldInfo) {  
-    Integer num = fields.get(fieldInfo.number);
-    if (num == null) {
-      num = 0;
-    } else {
-      num++;
-    }
-    fields.put(fieldInfo.number, num);
 
-    return new LazyField(fieldInfo.name, num);
+    fieldNames.add(fieldInfo.name);
+    List<LazyField> values = fields.get(fieldInfo.number);
+    if (null == values) {
+      values = new ArrayList<LazyField>();
+      fields.put(fieldInfo.number, values);
+    } 
+
+    LazyField value = new LazyField(fieldInfo.name, fieldInfo.number);
+    values.add(value);
+
+    synchronized (this) {
+      // edge case: if someone asks this LazyDoc for more LazyFields
+      // after other LazyFields from the same LazyDoc have been
+      // actuallized, we need to force the doc to be re-fetched
+      // so the new LazyFields are also populated.
+      doc = null;
+    }
+    return value;
   }
 
-  private synchronized Document getDocument() {
+  /** 
+   * non-private for test only access
+   * @lucene.internal 
+   */
+  synchronized Document getDocument() {
     if (doc == null) {
       try {
-        doc = reader.document(docID);
+        doc = reader.document(docID, fieldNames);
       } catch (IOException ioe) {
         throw new IllegalStateException("unable to load document", ioe);
       }
-      reader = null;
     }
     return doc;
   }
 
-  private class LazyField implements IndexableField {
-    private String name;
-    private int num;
+  // :TODO: synchronize to prevent redundent copying? (sync per field name?)
+  private void fetchRealValues(String name, int fieldNum) {
+    Document d = getDocument();
+
+    List<LazyField> lazyValues = fields.get(fieldNum);
+    IndexableField[] realValues = d.getFields(name);
     
-    public LazyField(String name, int num) {
+    assert realValues.length <= lazyValues.size() 
+      : "More lazy values then real values for field: " + name;
+    
+    for (int i = 0; i < lazyValues.size(); i++) {
+      LazyField f = lazyValues.get(i);
+      if (null != f) {
+        f.realValue = realValues[i];
+      }
+    }
+  }
+
+
+  /** 
+   * @lucene.internal 
+   */
+  public class LazyField implements IndexableField {
+    private String name;
+    private int fieldNum;
+    volatile IndexableField realValue = null;
+
+    private LazyField(String name, int fieldNum) {
       this.name = name;
-      this.num = num;
+      this.fieldNum = fieldNum;
+    }
+
+    /** 
+     * non-private for test only access
+     * @lucene.internal 
+     */
+    public boolean hasBeenLoaded() {
+      return null != realValue;
+    }
+
+    private IndexableField getRealValue() {
+      if (null == realValue) {
+        fetchRealValues(name, fieldNum);
+      }
+      assert hasBeenLoaded() : "field value was not lazy loaded";
+      assert realValue.name().equals(name()) : 
+        "realvalue name != name: " + realValue.name() + " != " + name();
+
+      return realValue;
     }
 
     @Override
@@ -92,56 +167,32 @@ public class LazyDocument {
 
     @Override
     public BytesRef binaryValue() {
-      if (num == 0) {
-        return getDocument().getField(name).binaryValue();
-      } else {
-        return getDocument().getFields(name)[num].binaryValue();
-      }
+      return getRealValue().binaryValue();
     }
 
     @Override
     public String stringValue() {
-      if (num == 0) {
-        return getDocument().getField(name).stringValue();
-      } else {
-        return getDocument().getFields(name)[num].stringValue();
-      }
+      return getRealValue().stringValue();
     }
 
     @Override
     public Reader readerValue() {
-      if (num == 0) {
-        return getDocument().getField(name).readerValue();
-      } else {
-        return getDocument().getFields(name)[num].readerValue();
-      }
+      return getRealValue().readerValue();
     }
 
     @Override
     public Number numericValue() {
-      if (num == 0) {
-        return getDocument().getField(name).numericValue();
-      } else {
-        return getDocument().getFields(name)[num].numericValue();
-      }
+      return getRealValue().numericValue();
     }
 
     @Override
     public IndexableFieldType fieldType() {
-      if (num == 0) {
-        return getDocument().getField(name).fieldType();
-      } else {
-        return getDocument().getFields(name)[num].fieldType();
-      }
+      return getRealValue().fieldType();
     }
 
     @Override
     public TokenStream tokenStream(Analyzer analyzer) throws IOException {
-      if (num == 0) {
-        return getDocument().getField(name).tokenStream(analyzer);
-      } else {
-        return getDocument().getFields(name)[num].tokenStream(analyzer);
-      }
+      return getRealValue().tokenStream(analyzer);
     }
   }
 }
