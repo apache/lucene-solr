@@ -655,6 +655,7 @@ public abstract class LuceneTestCase extends Assert {
    * Return <code>args</code> as a {@link Set} instance. The order of elements is not
    * preserved in iterators.
    */
+  @SafeVarargs @SuppressWarnings("varargs")
   public static <T> Set<T> asSet(T... args) {
     return new HashSet<T>(Arrays.asList(args));
   }
