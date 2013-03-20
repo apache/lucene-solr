@@ -24,7 +24,6 @@ import org.apache.lucene.analysis.TokenStream;
 import org.apache.lucene.analysis.tokenattributes.KeywordAttribute;
 import org.apache.lucene.analysis.tokenattributes.CharTermAttribute;
 import org.apache.lucene.analysis.util.CharArrayMap;
-import org.apache.lucene.util.Version;
 
 /**
  * Provides the ability to override any {@link KeywordAttribute} aware stemmer
@@ -44,10 +43,10 @@ public final class StemmerOverrideFilter extends TokenFilter {
    * so that they will not be stemmed with stemmers down the chain.
    * </p>
    */
-  public StemmerOverrideFilter(Version matchVersion, TokenStream input,
+  public StemmerOverrideFilter(TokenStream input,
       CharArrayMap<String> dictionary) {
     super(input);
-    this.dictionary = CharArrayMap.copy(matchVersion, dictionary);
+    this.dictionary = dictionary;
   }
 
   @Override
