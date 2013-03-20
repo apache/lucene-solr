@@ -203,6 +203,16 @@ public class BasicDistributedZk2Test extends AbstractFullDistribZkTestBase {
     qclient = new HttpSolrServer(baseUrl2 + "/onenodecollection");
     results = qclient.query(query);
     assertEquals(1, results.getResults().getNumFound());
+    
+    doc = new SolrInputDocument();
+    doc.addField("id", "2");
+    qclient.add(doc);
+    qclient.commit();
+    
+    query = new SolrQuery("*:*");
+    query.set("rows", 0);
+    results = qclient.query(query);
+    assertEquals(2, results.getResults().getNumFound());
   }
   
   private long testUpdateAndDelete() throws Exception {
