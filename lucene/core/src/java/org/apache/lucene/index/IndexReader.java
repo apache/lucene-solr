@@ -446,4 +446,33 @@ public abstract class IndexReader implements Closeable {
    * @see TermsEnum#totalTermFreq() 
    */
   public abstract long totalTermFreq(Term term) throws IOException;
+  
+  /**
+   * Returns the sum of {@link TermsEnum#docFreq()} for all terms in this field,
+   * or -1 if this measure isn't stored by the codec. Note that, just like other
+   * term measures, this measure does not take deleted documents into account.
+   * 
+   * @see Terms#getSumDocFreq()
+   */
+  public abstract long getSumDocFreq(String field) throws IOException;
+  
+  /**
+   * Returns the number of documents that have at least one term for this field,
+   * or -1 if this measure isn't stored by the codec. Note that, just like other
+   * term measures, this measure does not take deleted documents into account.
+   * 
+   * @see Terms#getDocCount()
+   */
+  public abstract int getDocCount(String field) throws IOException;
+
+  /**
+   * Returns the sum of {@link TermsEnum#totalTermFreq} for all terms in this
+   * field, or -1 if this measure isn't stored by the codec (or if this fields
+   * omits term freq and positions). Note that, just like other term measures,
+   * this measure does not take deleted documents into account.
+   * 
+   * @see Terms#getSumTotalTermFreq()
+   */
+  public abstract long getSumTotalTermFreq(String field) throws IOException;
+
 }

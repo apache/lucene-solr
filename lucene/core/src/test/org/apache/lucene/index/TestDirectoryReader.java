@@ -939,10 +939,73 @@ public void testFilesOpenClose() throws IOException {
     writer.close();
     try {
       // Make sure codec impls totalTermFreq (eg PreFlex doesn't)
-      Assume.assumeTrue(MultiFields.totalTermFreq(r, "f", new BytesRef("b")) != -1);
-      assertEquals(1, MultiFields.totalTermFreq(r, "f", new BytesRef("b")));
-      assertEquals(2, MultiFields.totalTermFreq(r, "f", new BytesRef("a")));
-      assertEquals(1, MultiFields.totalTermFreq(r, "f", new BytesRef("b")));
+      Assume.assumeTrue(r.totalTermFreq(new Term("f", new BytesRef("b"))) != -1);
+      assertEquals(1, r.totalTermFreq(new Term("f", new BytesRef("b"))));
+      assertEquals(2, r.totalTermFreq(new Term("f", new BytesRef("a"))));
+      assertEquals(1, r.totalTermFreq(new Term("f", new BytesRef("b"))));
+    } finally {
+      r.close();
+      dir.close();
+    }
+  }
+  
+  public void testGetSumDocFreq() throws Exception {
+    Directory dir = newDirectory();
+    IndexWriter writer = new IndexWriter(dir, newIndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer(random())));
+    Document d = new Document();
+    d.add(newTextField("f", "a", Field.Store.NO));
+    writer.addDocument(d);
+    d = new Document();
+    d.add(newTextField("f", "b", Field.Store.NO));
+    writer.addDocument(d);
+    DirectoryReader r = writer.getReader();
+    writer.close();
+    try {
+      // Make sure codec impls getSumDocFreq (eg PreFlex doesn't)
+      Assume.assumeTrue(r.getSumDocFreq("f") != -1);
+      assertEquals(2, r.getSumDocFreq("f"));
+    } finally {
+      r.close();
+      dir.close();
+    }
+  }
+  
+  public void testGetDocCount() throws Exception {
+    Directory dir = newDirectory();
+    IndexWriter writer = new IndexWriter(dir, newIndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer(random())));
+    Document d = new Document();
+    d.add(newTextField("f", "a", Field.Store.NO));
+    writer.addDocument(d);
+    d = new Document();
+    d.add(newTextField("f", "a", Field.Store.NO));
+    writer.addDocument(d);
+    DirectoryReader r = writer.getReader();
+    writer.close();
+    try {
+      // Make sure codec impls getSumDocFreq (eg PreFlex doesn't)
+      Assume.assumeTrue(r.getDocCount("f") != -1);
+      assertEquals(2, r.getDocCount("f"));
+    } finally {
+      r.close();
+      dir.close();
+    }
+  }
+  
+  public void testGetSumTotalTermFreq() throws Exception {
+    Directory dir = newDirectory();
+    IndexWriter writer = new IndexWriter(dir, newIndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer(random())));
+    Document d = new Document();
+    d.add(newTextField("f", "a b b", Field.Store.NO));
+    writer.addDocument(d);
+    d = new Document();
+    d.add(newTextField("f", "a a b", Field.Store.NO));
+    writer.addDocument(d);
+    DirectoryReader r = writer.getReader();
+    writer.close();
+    try {
+      // Make sure codec impls getSumDocFreq (eg PreFlex doesn't)
+      Assume.assumeTrue(r.getSumTotalTermFreq("f") != -1);
+      assertEquals(6, r.getSumTotalTermFreq("f"));
     } finally {
       r.close();
       dir.close();

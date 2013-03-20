@@ -113,6 +113,9 @@ New Features
 * LUCENE-4856: If there are no matches for a given field, return the
   first maxPassages sentences (Robert Muir, Mike McCandless)
 
+* LUCENE-4859: IndexReader now exposes Terms statistics: getDocCount,
+  getSumDocFreq, getSumTotalTermFreq. (Shai Erera)
+
 API Changes
 
 * LUCENE-4844: removed TaxonomyReader.getParent(), you should use
