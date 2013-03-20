@@ -261,7 +261,7 @@ public class PostingsHighlighter {
    *        Must have a stored string value and also be indexed with offsets.
    * @param query query to highlight.
    * @param searcher searcher that was previously used to execute the query.
-   * @param docids containing the document IDs to highlight.
+   * @param docidsIn containing the document IDs to highlight.
    * @param maxPassages The maximum number of top-N ranked passages per-field used to 
    *        form the highlighted snippets.
    * @return Map keyed on field name, containing the array of formatted snippets 
