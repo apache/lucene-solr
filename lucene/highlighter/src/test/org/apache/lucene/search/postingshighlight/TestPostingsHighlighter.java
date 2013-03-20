@@ -35,6 +35,7 @@ import org.apache.lucene.index.FieldInfo.IndexOptions;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.IndexWriterConfig;
 import org.apache.lucene.index.RandomIndexWriter;
+import org.apache.lucene.index.StoredDocument;
 import org.apache.lucene.index.Term;
 import org.apache.lucene.search.BooleanClause;
 import org.apache.lucene.search.BooleanQuery;
@@ -744,6 +745,56 @@ public class TestPostingsHighlighter extends LuceneTestCase {
     String snippets[] = highlighter.highlightFields(new String[] {"body"}, query, searcher, docIDs, 2).get("body");
     assertEquals(1, snippets.length);
     assertNull(snippets[0]);
+
+    ir.close();
+    dir.close();
+  }
+
+  public void testMultipleDocs() throws Exception {
+    Directory dir = newDirectory();
+    IndexWriterConfig iwc = newIndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer(random()));
+    iwc.setMergePolicy(newLogMergePolicy());
+    RandomIndexWriter iw = new RandomIndexWriter(random(), dir, iwc);
+    
+    FieldType offsetsType = new FieldType(TextField.TYPE_STORED);
+    offsetsType.setIndexOptions(IndexOptions.DOCS_AND_FREQS_AND_POSITIONS_AND_OFFSETS);
+
+    int numDocs = atLeast(100);
+    for(int i=0;i<numDocs;i++) {
+      Document doc = new Document();
+      String content = "the answer is " + i;
+      if ((i & 1) == 0) {
+        content += " some more terms";
+      }
+      doc.add(new Field("body", content, offsetsType));
+      doc.add(newStringField("id", ""+i, Field.Store.YES));
+      iw.addDocument(doc);
+
+      if (random().nextInt(10) == 2) {
+        iw.commit();
+      }
+    }
+
+    IndexReader ir = iw.getReader();
+    iw.close();
+    
+    IndexSearcher searcher = newSearcher(ir);
+    PostingsHighlighter highlighter = new PostingsHighlighter();
+    Query query = new TermQuery(new Term("body", "answer"));
+    TopDocs hits = searcher.search(query, numDocs);
+    assertEquals(numDocs, hits.totalHits);
+
+    String snippets[] = highlighter.highlight("body", query, searcher, hits);
+    assertEquals(numDocs, snippets.length);
+    for(int hit=0;hit<numDocs;hit++) {
+      StoredDocument doc = searcher.doc(hits.scoreDocs[hit].doc);
+      int id = Integer.parseInt(doc.get("id"));
+      String expected = "the <b>answer</b> is " + id;
+      if ((id  & 1) == 0) {
+        expected += " some more terms";
+      }
+      assertEquals(expected, snippets[hit]);
+    }
 
     ir.close();
     dir.close();

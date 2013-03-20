@@ -273,7 +273,7 @@ public class PostingsHighlighter {
    * @throws IllegalArgumentException if <code>field</code> was indexed without 
    *         {@link IndexOptions#DOCS_AND_FREQS_AND_POSITIONS_AND_OFFSETS}
    */
-  public Map<String,String[]> highlightFields(String fields[], Query query, IndexSearcher searcher, int[] docids, int maxPassages) throws IOException {
+  public Map<String,String[]> highlightFields(String fields[], Query query, IndexSearcher searcher, int[] docidsIn, int maxPassages) throws IOException {
     final IndexReader reader = searcher.getIndexReader();
     query = rewrite(query);
     SortedSet<Term> queryTerms = new TreeSet<Term>();
@@ -283,6 +283,10 @@ public class PostingsHighlighter {
     List<AtomicReaderContext> leaves = readerContext.leaves();
 
     BreakIterator bi = (BreakIterator)breakIterator.clone();
+
+    // Make our own copy because we sort in-place:
+    int[] docids = new int[docidsIn.length];
+    System.arraycopy(docidsIn, 0, docids, 0, docidsIn.length);
 
     // sort for sequential io
     Arrays.sort(docids);
@@ -302,8 +306,8 @@ public class PostingsHighlighter {
       Map<Integer,String> fieldHighlights = highlightField(field, contents[i], bi, terms, docids, leaves, maxPassages);
         
       String[] result = new String[docids.length];
-      for (int j = 0; j < docids.length; j++) {
-        result[j] = fieldHighlights.get(docids[j]);
+      for (int j = 0; j < docidsIn.length; j++) {
+        result[j] = fieldHighlights.get(docidsIn[j]);
       }
       highlights.put(field, result);
     }
