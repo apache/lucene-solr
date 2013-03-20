@@ -66,6 +66,6 @@ public class StemmerOverrideFilterFactory extends TokenFilterFactory implements 
 
   @Override
   public TokenStream create(TokenStream input) {
-    return dictionary == null ? input : new StemmerOverrideFilter(luceneMatchVersion, input, dictionary);
+    return dictionary == null ? input : new StemmerOverrideFilter(input, dictionary);
   }
 }
