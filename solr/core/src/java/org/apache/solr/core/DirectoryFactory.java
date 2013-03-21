@@ -140,26 +140,11 @@ public abstract class DirectoryFactory implements NamedListInitializedPlugin,
    * Returns the Directory for a given path, using the specified rawLockType.
    * Will return the same Directory instance for the same path.
    * 
-   * Note: sometimes you might pass null for the rawLockType when
-   * you know the Directory exists and the rawLockType is already
-   * in use.
    * 
    * @throws IOException If there is a low-level I/O error.
    */
   public abstract Directory get(String path, DirContext dirContext, String rawLockType)
       throws IOException;
-  
-  /**
-   * Returns the Directory for a given path, using the specified rawLockType.
-   * Will return the same Directory instance for the same path unless forceNew,
-   * in which case a new Directory is returned. There is no need to call
-   * {@link #doneWithDirectory(Directory)} in this case - the old Directory
-   * will be closed when it's ref count hits 0.
-   * 
-   * @throws IOException If there is a low-level I/O error.
-   */
-  public abstract Directory get(String path,  DirContext dirContext, String rawLockType,
-      boolean forceNew) throws IOException;
   
   /**
    * Increment the number of references to the given Directory. You must call

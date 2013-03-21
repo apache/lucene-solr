@@ -96,6 +96,8 @@ Other Changes
 
 * SOLR-4607: Use noggit 0.5 release jar rather than a forked copy.  (Yonik Seeley, Robert Muir)
 
+* SOLR-4624: forceNew has been removed from the DirectoryFactory and related java apis.
+
 ==================  4.2.1 ==================
 
 Versions of Major Components
@@ -213,6 +215,9 @@ Bug Fixes
   values and top-level phrase slops on queries produced by nested
   sub-parsers. (yonik)
 
+* SOLR-4624: CachingDirectoryFactory does not need to support forceNew any 
+  longer and it appears to be causing a missing close directory bug. forceNew
+  is no longer respected and will be removed in 4.3. (Mark Miller)
 
 Optimizations
 ----------------------

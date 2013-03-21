@@ -32,7 +32,6 @@ import org.junit.Test;
 
 public class CachingDirectoryFactoryTest extends SolrTestCaseJ4 {
   private Map<String,Tracker> dirs = new HashMap<String,Tracker>();
-  private List<Tracker> oldDirs = new ArrayList<Tracker>();
   private volatile boolean stop = false;
   
   private class Tracker {
@@ -89,16 +88,6 @@ public class CachingDirectoryFactoryTest extends SolrTestCaseJ4 {
       int sz = dirs.size();
       if (sz > 0) {
         for (Tracker tracker : dirs.values()) {
-          int cnt = tracker.refCnt.get();
-          for (int i = 0; i < cnt; i++) {
-            tracker.refCnt.decrementAndGet();
-            df.release(tracker.dir);
-          }
-        }
-      }
-      sz = oldDirs.size();
-      if (sz > 0) {
-        for (Tracker tracker : oldDirs) {
           int cnt = tracker.refCnt.get();
           for (int i = 0; i < cnt; i++) {
             tracker.refCnt.decrementAndGet();
@@ -187,18 +176,7 @@ public class CachingDirectoryFactoryTest extends SolrTestCaseJ4 {
               tracker.dir = df.get(path, DirContext.DEFAULT, null);
               dirs.put(path, tracker);
             } else {
-              if (random.nextInt(10) > 6) {
-                Tracker oldTracker = new Tracker();
-                oldTracker.refCnt = new AtomicInteger(tracker.refCnt.get());
-                oldTracker.path = tracker.path;
-                oldTracker.dir = tracker.dir;
-                oldDirs.add(oldTracker);
-                
-                tracker.dir = df.get(path, DirContext.DEFAULT, null, true);
-                tracker.refCnt = new AtomicInteger(0);
-              } else {
-                tracker.dir = df.get(path, DirContext.DEFAULT, null);
-              }
+              tracker.dir = df.get(path, DirContext.DEFAULT, null);
             }
             tracker.refCnt.incrementAndGet();
           }

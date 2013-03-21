@@ -102,7 +102,7 @@ public class SolrIndexSplitter {
         String path = paths.get(partitionNumber);
         iw = SolrIndexWriter.create("SplittingIndexWriter"+partitionNumber + " " + ranges.get(partitionNumber), path,
                                     core.getDirectoryFactory(), true, core.getSchema(),
-                                    core.getSolrConfig().indexConfig, core.getDeletionPolicy(), core.getCodec(), true);
+                                    core.getSolrConfig().indexConfig, core.getDeletionPolicy(), core.getCodec());
       }
 
       try {
