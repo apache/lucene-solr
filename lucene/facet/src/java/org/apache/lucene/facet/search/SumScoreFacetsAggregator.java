@@ -42,11 +42,13 @@ public class SumScoreFacetsAggregator implements FacetsAggregator {
     int doc = 0;
     int length = matchingDocs.bits.length();
     float[] scores = facetArrays.getFloatArray();
+    int scoresIdx = 0;
     while (doc < length && (doc = matchingDocs.bits.nextSetBit(doc)) != -1) {
       cli.getOrdinals(doc, ordinals);
       int upto = ordinals.offset + ordinals.length;
+      final float score = matchingDocs.scores[scoresIdx++];
       for (int i = ordinals.offset; i < upto; i++) {
-        scores[ordinals.ints[i]] += matchingDocs.scores[doc];
+        scores[ordinals.ints[i]] += score;
       }
       ++doc;
     }

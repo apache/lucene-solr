@@ -22,9 +22,12 @@ import org.apache.lucene.facet.taxonomy.directory.DirectoryTaxonomyReader;
 import org.apache.lucene.facet.taxonomy.directory.DirectoryTaxonomyWriter;
 import org.apache.lucene.index.DirectoryReader;
 import org.apache.lucene.index.IndexWriter;
+import org.apache.lucene.index.Term;
 import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.search.MatchAllDocsQuery;
 import org.apache.lucene.search.MultiCollector;
+import org.apache.lucene.search.TermQuery;
+import org.apache.lucene.search.TopDocs;
 import org.apache.lucene.search.TopScoreDocCollector;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.util.IOUtils;
@@ -60,7 +63,9 @@ public class TestFacetsCollector extends FacetTestCase {
     FacetFields facetFields = new FacetFields(taxonomyWriter);
     for(int i = atLeast(30); i > 0; --i) {
       Document doc = new Document();
-      doc.add(new StringField("f", "v", Store.NO));
+      if (random().nextBoolean()) { // don't match all documents
+        doc.add(new StringField("f", "v", Store.NO));
+      }
       facetFields.addFields(doc, Collections.singletonList(new CategoryPath("a")));
       iw.addDocument(doc);
     }
@@ -80,12 +85,13 @@ public class TestFacetsCollector extends FacetTestCase {
     };
     FacetsCollector fc = FacetsCollector.create(fa);
     TopScoreDocCollector topDocs = TopScoreDocCollector.create(10, false);
-    new IndexSearcher(r).search(new MatchAllDocsQuery(), MultiCollector.wrap(fc, topDocs));
+    new IndexSearcher(r).search(new TermQuery(new Term("f", "v")), MultiCollector.wrap(fc, topDocs));
     
     List<FacetResult> res = fc.getFacetResults();
-    double value = res.get(0).getFacetResultNode().value;
-    double expected = topDocs.topDocs().getMaxScore() * r.numDocs();
-    assertEquals(expected, value, 1E-10);
+    float value = (float) res.get(0).getFacetResultNode().value;
+    TopDocs td = topDocs.topDocs();
+    float expected = td.getMaxScore() * td.totalHits;
+    assertEquals(expected, value, 1E-4);
     
     IOUtils.close(taxo, taxoDir, r, indexDir);
   }
