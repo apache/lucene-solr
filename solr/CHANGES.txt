@@ -209,6 +209,10 @@ Bug Fixes
 * SOLR-4608: Update Log replay and PeerSync replay should use the default
   processor chain to update the index. (Ludovic Boutros, yonik)
 
+* SOLR-4625: The solr (lucene syntax) query parser lost top-level boost
+  values and top-level phrase slops on queries produced by nested
+  sub-parsers. (yonik)
+
 
 Optimizations
 ----------------------
