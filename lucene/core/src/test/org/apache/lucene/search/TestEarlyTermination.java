@@ -31,6 +31,7 @@ public class TestEarlyTermination extends LuceneTestCase {
   Directory dir;
   RandomIndexWriter writer;
 
+  @Override
   public void setUp() throws Exception {
     super.setUp();
     dir = newDirectory();
@@ -44,6 +45,7 @@ public class TestEarlyTermination extends LuceneTestCase {
     }
   }
 
+  @Override
   public void tearDown() throws Exception {
     super.tearDown();
     writer.close();
@@ -53,9 +55,9 @@ public class TestEarlyTermination extends LuceneTestCase {
   public void testEarlyTermination() throws IOException {
     final int iters = atLeast(5);
     final IndexReader reader = writer.getReader();
-    final IndexSearcher searcher = new IndexSearcher(reader);
 
     for (int i = 0; i < iters; ++i) {
+      final IndexSearcher searcher = newSearcher(reader);
       final Collector collector = new Collector() {
 
         final boolean outOfOrder = random().nextBoolean();
