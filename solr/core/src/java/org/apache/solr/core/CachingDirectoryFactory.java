@@ -62,10 +62,6 @@ public abstract class CachingDirectoryFactory extends DirectoryFactory {
       this.closeEntries.add(this);
     }
     public int refCnt = 1;
-    // if we are latestForPath, I'm currently using my path
-    // otherwise a new Directory instance is using my path
-    // and I must be manipulated by Directory
-    public boolean latestForPath = false;
     // has close(Directory) been called on this?
     public boolean closeDirectoryCalled = false;
     public boolean doneWithDir = false;
@@ -217,12 +213,8 @@ public abstract class CachingDirectoryFactory extends DirectoryFactory {
         
         byDirectoryCache.remove(directory);
         
-        // if it's been closed, it's path is now
-        // owned by another Directory instance
-        if (!cacheValue.latestForPath) {
-          byPathCache.remove(cacheValue.path);
-          cacheValue.latestForPath = true;
-        }
+        byPathCache.remove(cacheValue.path);
+        
       }
     }
   }
@@ -340,24 +332,9 @@ public abstract class CachingDirectoryFactory extends DirectoryFactory {
       Directory directory = null;
       if (cacheValue != null) {
         directory = cacheValue.directory;
-        if (forceNew) {
-          cacheValue.doneWithDir = true;
-          
-          // we make a quick close attempt,
-          // otherwise this should be closed
-          // when whatever is using it, releases it
-          if (cacheValue.refCnt == 0) {
-            closeDirectory(cacheValue);
-          }
-          
-          // close the entry, it will be owned by the new dir
-          // we count on it being released by directory
-          cacheValue.latestForPath = true;
-          
-        }
       }
       
-      if (directory == null || forceNew) { 
+      if (directory == null) { 
         directory = create(fullPath, dirContext);
         
         directory = rateLimit(directory);

@@ -137,6 +137,9 @@ Bug Fixes
   values and top-level phrase slops on queries produced by nested
   sub-parsers. (yonik)
 
+* SOLR-4624: CachingDirectoryFactory does not need to support forceNew any 
+  longer and it appears to be causing a missing close directory bug. forceNew
+  is no longer respected and will be removed in 4.3. (Mark Miller)
 
 Optimizations
 ----------------------

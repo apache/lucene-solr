@@ -72,6 +72,7 @@ public final class DefaultSolrCoreState extends SolrCoreState implements Recover
         log.info("closing IndexWriter...");
         indexWriter.close();
       }
+      indexWriter = null;
     } catch (Throwable t) {
       log.error("Error during shutdown of writer.", t);
     } 
@@ -86,13 +87,7 @@ public final class DefaultSolrCoreState extends SolrCoreState implements Recover
     }
     
     synchronized (writerPauseLock) {
-      if (core == null) {
-        // core == null is a signal to just return the current writer, or null
-        // if none.
-        if (refCntWriter != null) refCntWriter.incref();
-        return refCntWriter;
-      }
-      
+
       while (pauseWriter) {
         try {
           writerPauseLock.wait(100);
@@ -102,6 +97,14 @@ public final class DefaultSolrCoreState extends SolrCoreState implements Recover
           throw new SolrException(ErrorCode.SERVICE_UNAVAILABLE, "Already closed");
         }
       }
+      
+      if (core == null) {
+        // core == null is a signal to just return the current writer, or null
+        // if none.
+        if (refCntWriter != null) refCntWriter.incref();
+        return refCntWriter;
+      }
+      
       
       if (indexWriter == null) {
         indexWriter = createMainIndexWriter(core, "DirectUpdateHandler2", false);
