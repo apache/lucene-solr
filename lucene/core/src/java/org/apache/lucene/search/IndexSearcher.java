@@ -602,7 +602,12 @@ public class IndexSearcher {
       collector.setNextReader(ctx);
       Scorer scorer = weight.scorer(ctx, !collector.acceptsDocsOutOfOrder(), true, ctx.reader().getLiveDocs());
       if (scorer != null) {
-        scorer.score(collector);
+        try {
+          scorer.score(collector);
+        } catch (CollectionTerminatedException e) {
+          // collection was terminated prematurely
+          // continue with the following leaf
+        }
       }
     }
   }
