@@ -573,11 +573,17 @@ public abstract class SolrQueryParserBase {
         throws SyntaxError {
     Query query = getFieldQuery(field, queryText, true);
 
-    if (query instanceof PhraseQuery) {
-      ((PhraseQuery) query).setSlop(slop);
-    }
-    if (query instanceof MultiPhraseQuery) {
-      ((MultiPhraseQuery) query).setSlop(slop);
+    // only set slop of the phrase query was a result of this parser
+    // and not a sub-parser.
+    if (subQParser == null) {
+
+      if (query instanceof PhraseQuery) {
+        ((PhraseQuery) query).setSlop(slop);
+      }
+      if (query instanceof MultiPhraseQuery) {
+        ((MultiPhraseQuery) query).setSlop(slop);
+      }
+
     }
 
     return query;
@@ -779,7 +785,7 @@ public abstract class SolrQueryParserBase {
       float boostVal = Float.parseFloat(boost.image);
       // avoid boosting null queries, such as those caused by stop words
       if (q != null) {
-        q.setBoost(boostVal);
+        q.setBoost(q.getBoost() * boostVal);
       }
     }
     return q;
@@ -932,7 +938,8 @@ public abstract class SolrQueryParserBase {
   }
 
 
-  // called from parser
+  private QParser subQParser = null;
+
   protected Query getFieldQuery(String field, String queryText, boolean quoted) throws SyntaxError {
     checkNullField(field);
     // intercept magic field name of "_" to use as a hook for our
@@ -940,8 +947,8 @@ public abstract class SolrQueryParserBase {
     if (field.charAt(0) == '_' && parser != null) {
       MagicFieldName magic = MagicFieldName.get(field);
       if (null != magic) {
-        QParser nested = parser.subQuery(queryText, magic.subParser);
-        return nested.getQuery();
+        subQParser = parser.subQuery(queryText, magic.subParser);
+        return subQParser.getQuery();
       }
     }
     SchemaField sf = schema.getFieldOrNull(field);
