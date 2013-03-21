@@ -206,6 +206,10 @@ Bug Fixes
 * SOLR-4589: Fixed CPU spikes and poor performance in lazy field loading 
   of multivalued fields. (hossman)
 
+* SOLR-4608: Update Log replay and PeerSync replay should use the default
+  processor chain to update the index. (Ludovic Boutros, yonik)
+
+
 Optimizations
 ----------------------
 
