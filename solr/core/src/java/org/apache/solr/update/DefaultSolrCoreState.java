@@ -72,6 +72,7 @@ public final class DefaultSolrCoreState extends SolrCoreState implements Recover
         log.info("closing IndexWriter...");
         indexWriter.close();
       }
+      indexWriter = null;
     } catch (Throwable t) {
       log.error("Error during shutdown of writer.", t);
     } 
@@ -86,13 +87,7 @@ public final class DefaultSolrCoreState extends SolrCoreState implements Recover
     }
     
     synchronized (writerPauseLock) {
-      if (core == null) {
-        // core == null is a signal to just return the current writer, or null
-        // if none.
-        if (refCntWriter != null) refCntWriter.incref();
-        return refCntWriter;
-      }
-      
+
       while (pauseWriter) {
         try {
           writerPauseLock.wait(100);
@@ -102,6 +97,14 @@ public final class DefaultSolrCoreState extends SolrCoreState implements Recover
           throw new SolrException(ErrorCode.SERVICE_UNAVAILABLE, "Already closed");
         }
       }
+      
+      if (core == null) {
+        // core == null is a signal to just return the current writer, or null
+        // if none.
+        if (refCntWriter != null) refCntWriter.incref();
+        return refCntWriter;
+      }
+      
       
       if (indexWriter == null) {
         indexWriter = createMainIndexWriter(core, "DirectUpdateHandler2");
@@ -129,7 +132,7 @@ public final class DefaultSolrCoreState extends SolrCoreState implements Recover
   }
 
   @Override
-  public synchronized void newIndexWriter(SolrCore core, boolean rollback, boolean forceNewDir) throws IOException {
+  public synchronized void newIndexWriter(SolrCore core, boolean rollback) throws IOException {
     if (closed) {
       throw new AlreadyClosedException("SolrCoreState already closed");
     }
@@ -186,7 +189,7 @@ public final class DefaultSolrCoreState extends SolrCoreState implements Recover
 
   @Override
   public synchronized void rollbackIndexWriter(SolrCore core) throws IOException {
-    newIndexWriter(core, true, false);
+    newIndexWriter(core, true);
   }
   
   protected SolrIndexWriter createMainIndexWriter(SolrCore core, String name) throws IOException {
