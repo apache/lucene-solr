@@ -63,10 +63,6 @@ public abstract class CachingDirectoryFactory extends DirectoryFactory {
       this.closeEntries.add(this);
     }
     public int refCnt = 1;
-    // if we are latestForPath, I'm currently using my path
-    // otherwise a new Directory instance is using my path
-    // and I must be manipulated by Directory
-    public boolean latestForPath = false;
     // has close(Directory) been called on this?
     public boolean closeDirectoryCalled = false;
     public boolean doneWithDir = false;
@@ -218,12 +214,8 @@ public abstract class CachingDirectoryFactory extends DirectoryFactory {
         
         byDirectoryCache.remove(directory);
         
-        // if it's been closed, it's path is now
-        // owned by another Directory instance
-        if (!cacheValue.latestForPath) {
-          byPathCache.remove(cacheValue.path);
-          cacheValue.latestForPath = true;
-        }
+        byPathCache.remove(cacheValue.path);
+        
       }
     }
   }
@@ -314,22 +306,10 @@ public abstract class CachingDirectoryFactory extends DirectoryFactory {
    * (non-Javadoc)
    * 
    * @see org.apache.solr.core.DirectoryFactory#get(java.lang.String,
-   * java.lang.String)
-   */
-  @Override
-  public final Directory get(String path,  DirContext dirContext, String rawLockType)
-      throws IOException {
-    return get(path, dirContext, rawLockType, false);
-  }
-  
-  /*
-   * (non-Javadoc)
-   * 
-   * @see org.apache.solr.core.DirectoryFactory#get(java.lang.String,
    * java.lang.String, boolean)
    */
   @Override
-  public final Directory get(String path,  DirContext dirContext, String rawLockType, boolean forceNew)
+  public final Directory get(String path,  DirContext dirContext, String rawLockType)
       throws IOException {
     String fullPath = normalize(path);
     synchronized (this) {
@@ -341,24 +321,9 @@ public abstract class CachingDirectoryFactory extends DirectoryFactory {
       Directory directory = null;
       if (cacheValue != null) {
         directory = cacheValue.directory;
-        if (forceNew) {
-          cacheValue.doneWithDir = true;
-          
-          // we make a quick close attempt,
-          // otherwise this should be closed
-          // when whatever is using it, releases it
-          if (cacheValue.refCnt == 0) {
-            closeDirectory(cacheValue);
-          }
-          
-          // close the entry, it will be owned by the new dir
-          // we count on it being released by directory
-          cacheValue.latestForPath = true;
-          
-        }
       }
       
-      if (directory == null || forceNew) { 
+      if (directory == null) { 
         directory = create(fullPath, dirContext);
         
         directory = rateLimit(directory);
@@ -369,7 +334,7 @@ public abstract class CachingDirectoryFactory extends DirectoryFactory {
         
         byDirectoryCache.put(directory, newCacheValue);
         byPathCache.put(fullPath, newCacheValue);
-        log.info("return new directory for " + fullPath + " forceNew: " + forceNew);
+        log.info("return new directory for " + fullPath);
       } else {
         cacheValue.refCnt++;
       }

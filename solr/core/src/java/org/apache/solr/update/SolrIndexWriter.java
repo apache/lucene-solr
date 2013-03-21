@@ -56,10 +56,10 @@ public class SolrIndexWriter extends IndexWriter {
   String name;
   private DirectoryFactory directoryFactory;
 
-  public static SolrIndexWriter create(String name, String path, DirectoryFactory directoryFactory, boolean create, IndexSchema schema, SolrIndexConfig config, IndexDeletionPolicy delPolicy, Codec codec, boolean forceNewDirectory) throws IOException {
+  public static SolrIndexWriter create(String name, String path, DirectoryFactory directoryFactory, boolean create, IndexSchema schema, SolrIndexConfig config, IndexDeletionPolicy delPolicy, Codec codec) throws IOException {
 
     SolrIndexWriter w = null;
-    final Directory d = directoryFactory.get(path, DirContext.DEFAULT, config.lockType, forceNewDirectory);
+    final Directory d = directoryFactory.get(path, DirContext.DEFAULT, config.lockType);
     try {
       w = new SolrIndexWriter(name, path, d, create, schema, 
                               config, delPolicy, codec);

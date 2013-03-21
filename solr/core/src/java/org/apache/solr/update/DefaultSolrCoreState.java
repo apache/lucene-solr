@@ -104,7 +104,7 @@ public final class DefaultSolrCoreState extends SolrCoreState implements Recover
       }
       
       if (indexWriter == null) {
-        indexWriter = createMainIndexWriter(core, "DirectUpdateHandler2", false);
+        indexWriter = createMainIndexWriter(core, "DirectUpdateHandler2");
       }
       initRefCntWriter();
       writerFree = false;
@@ -172,7 +172,7 @@ public final class DefaultSolrCoreState extends SolrCoreState implements Recover
             }
           }
         }
-        indexWriter = createMainIndexWriter(core, "DirectUpdateHandler2", forceNewDir);
+        indexWriter = createMainIndexWriter(core, "DirectUpdateHandler2");
         log.info("New IndexWriter is ready to be used.");
         // we need to null this so it picks up the new writer next get call
         refCntWriter = null;
@@ -189,10 +189,10 @@ public final class DefaultSolrCoreState extends SolrCoreState implements Recover
     newIndexWriter(core, true, false);
   }
   
-  protected SolrIndexWriter createMainIndexWriter(SolrCore core, String name, boolean forceNewDirectory) throws IOException {
+  protected SolrIndexWriter createMainIndexWriter(SolrCore core, String name) throws IOException {
     return SolrIndexWriter.create(name, core.getNewIndexDir(),
         core.getDirectoryFactory(), false, core.getSchema(),
-        core.getSolrConfig().indexConfig, core.getDeletionPolicy(), core.getCodec(), forceNewDirectory);
+        core.getSolrConfig().indexConfig, core.getDeletionPolicy(), core.getCodec());
   }
 
   @Override
