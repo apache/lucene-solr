@@ -116,6 +116,10 @@ New Features
 * LUCENE-4859: IndexReader now exposes Terms statistics: getDocCount,
   getSumDocFreq, getSumTotalTermFreq. (Shai Erera)
 
+* LUCENE-4862: It is now possible to terminate collection of a single
+  IndexReader leaf by throwing a CollectionTerminatedException in
+  Collector.collect. (Adrien Grand, Shai Erera)
+
 API Changes
 
 * LUCENE-4844: removed TaxonomyReader.getParent(), you should use
