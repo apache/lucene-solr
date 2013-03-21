@@ -298,8 +298,12 @@ public abstract class FSDirectory extends Directory {
       throw new IOException("Cannot overwrite: " + file);
   }
 
-  protected void onIndexOutputClosed(FSIndexOutput io) {
-    staleFiles.add(io.name);
+  /**
+   * Sub classes should call this method on closing an open {@link IndexOutput}, reporting the name of the file
+   * that was closed. {@code FSDirectory} needs this information to take care of syncing stale files.
+   */
+  protected void onIndexOutputClosed(String name) {
+    staleFiles.add(name);
   }
 
   @Override
@@ -392,65 +396,6 @@ public abstract class FSDirectory extends Directory {
     return chunkSize;
   }
 
-  /** Base class for reading input from a RandomAccessFile */
-  protected abstract static class FSIndexInput extends BufferedIndexInput {
-    /** the underlying RandomAccessFile */
-    protected final RandomAccessFile file;
-    boolean isClone = false;
-    /** maximum read length on a 32bit JVM to prevent incorrect OOM, see LUCENE-1566 */ 
-    protected final int chunkSize;
-    /** start offset: non-zero in the slice case */
-    protected final long off;
-    /** end offset (start+length) */
-    protected final long end;
-    
-    /** Create a new FSIndexInput, reading the entire file from <code>path</code> */
-    protected FSIndexInput(String resourceDesc, File path, IOContext context, int chunkSize) throws IOException {
-      super(resourceDesc, context);
-      this.file = new RandomAccessFile(path, "r"); 
-      this.chunkSize = chunkSize;
-      this.off = 0L;
-      this.end = file.length();
-    }
-    
-    /** Create a new FSIndexInput, representing a slice of an existing open <code>file</code> */
-    protected FSIndexInput(String resourceDesc, RandomAccessFile file, long off, long length, int bufferSize, int chunkSize) {
-      super(resourceDesc, bufferSize);
-      this.file = file;
-      this.chunkSize = chunkSize;
-      this.off = off;
-      this.end = off + length;
-      this.isClone = true; // well, we are sorta?
-    }
-    
-    @Override
-    public void close() throws IOException {
-      // only close the file if this is not a clone
-      if (!isClone) {
-        file.close();
-      }
-    }
-    
-    @Override
-    public FSIndexInput clone() {
-      FSIndexInput clone = (FSIndexInput)super.clone();
-      clone.isClone = true;
-      return clone;
-    }
-    
-    @Override
-    public final long length() {
-      return end - off;
-    }
-    
-    /** Method used for testing. Returns true if the underlying
-     *  file descriptor is valid.
-     */
-    boolean isFDValid() throws IOException {
-      return file.getFD().valid();
-    }
-  }
-  
   /**
    * Writes output with {@link RandomAccessFile#write(byte[], int, int)}
    */
@@ -476,7 +421,7 @@ public abstract class FSDirectory extends Directory {
     
     @Override
     public void close() throws IOException {
-      parent.onIndexOutputClosed(this);
+      parent.onIndexOutputClosed(name);
       // only close the file if it has not been closed yet
       if (isOpen) {
         boolean success = false;

@@ -24,6 +24,13 @@ New Features
 * LUCENE-4747: Move to Java 7 as minimum Java version.
   (Robert Muir, Uwe Schindler)
 
+Optimizations
+
+* LUCENE-4848: Use Java 7 NIO2-FileChannel instead of RandomAccessFile
+  for NIOFSDirectory and MMapDirectory. This allows to delete open files
+  on Windows if NIOFSDirectory is used, mmapped files are still locked.
+  (Michael Poindexter, Robert Muir, Uwe Schindler)
+
 ======================= Lucene 4.3.0 =======================
 
 Changes in backwards compatibility policy

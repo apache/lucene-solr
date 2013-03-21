@@ -19,11 +19,11 @@ package org.apache.lucene.store;
  
 import java.io.IOException;
 import java.io.File;
-import java.io.RandomAccessFile;
 import java.nio.ByteBuffer;
 import java.nio.channels.ClosedChannelException; // javadoc @link
 import java.nio.channels.FileChannel;
 import java.nio.channels.FileChannel.MapMode;
+import java.nio.file.StandardOpenOption;
 
 import java.security.AccessController;
 import java.security.PrivilegedExceptionAction;
@@ -133,7 +133,7 @@ public class MMapDirectory extends FSDirectory {
     this.chunkSizePower = 31 - Integer.numberOfLeadingZeros(maxChunkSize);
     assert this.chunkSizePower >= 0 && this.chunkSizePower <= 30;
   }
-
+  
   /**
    * <code>true</code>, if this platform supports unmapping mmapped files.
    */
@@ -189,12 +189,9 @@ public class MMapDirectory extends FSDirectory {
   @Override
   public IndexInput openInput(String name, IOContext context) throws IOException {
     ensureOpen();
-    File f = new File(getDirectory(), name);
-    RandomAccessFile raf = new RandomAccessFile(f, "r");
-    try {
-      return new MMapIndexInput("MMapIndexInput(path=\"" + f + "\")", raf);
-    } finally {
-      raf.close();
+    File file = new File(getDirectory(), name);
+    try (FileChannel c = FileChannel.open(file.toPath(), StandardOpenOption.READ)) {
+      return new MMapIndexInput("MMapIndexInput(path=\"" + file.toString() + "\")", c);
     }
   }
   
@@ -218,8 +215,8 @@ public class MMapDirectory extends FSDirectory {
   private final class MMapIndexInput extends ByteBufferIndexInput {
     private final boolean useUnmapHack;
     
-    MMapIndexInput(String resourceDescription, RandomAccessFile raf) throws IOException {
-      super(resourceDescription, map(raf, 0, raf.length()), raf.length(), chunkSizePower, getUseUnmap());
+    MMapIndexInput(String resourceDescription, FileChannel fc) throws IOException {
+      super(resourceDescription, map(fc, 0, fc.size()), fc.size(), chunkSizePower, getUseUnmap());
       this.useUnmapHack = getUseUnmap();
     }
     
@@ -256,9 +253,9 @@ public class MMapDirectory extends FSDirectory {
   }
   
   /** Maps a file into a set of buffers */
-  ByteBuffer[] map(RandomAccessFile raf, long offset, long length) throws IOException {
+  ByteBuffer[] map(FileChannel fc, long offset, long length) throws IOException {
     if ((length >>> chunkSizePower) >= Integer.MAX_VALUE)
-      throw new IllegalArgumentException("RandomAccessFile too big for chunk size: " + raf.toString());
+      throw new IllegalArgumentException("RandomAccessFile too big for chunk size: " + fc.toString());
     
     final long chunkSize = 1L << chunkSizePower;
     
@@ -268,13 +265,12 @@ public class MMapDirectory extends FSDirectory {
     ByteBuffer buffers[] = new ByteBuffer[nrBuffers];
     
     long bufferStart = 0L;
-    FileChannel rafc = raf.getChannel();
     for (int bufNr = 0; bufNr < nrBuffers; bufNr++) { 
       int bufSize = (int) ( (length > (bufferStart + chunkSize))
           ? chunkSize
               : (length - bufferStart)
           );
-      buffers[bufNr] = rafc.map(MapMode.READ_ONLY, offset + bufferStart, bufSize);
+      buffers[bufNr] = fc.map(MapMode.READ_ONLY, offset + bufferStart, bufSize);
       bufferStart += bufSize;
     }
     

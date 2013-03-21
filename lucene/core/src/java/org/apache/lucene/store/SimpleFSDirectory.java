@@ -55,7 +55,8 @@ public class SimpleFSDirectory extends FSDirectory {
   public IndexInput openInput(String name, IOContext context) throws IOException {
     ensureOpen();
     final File path = new File(directory, name);
-    return new SimpleFSIndexInput("SimpleFSIndexInput(path=\"" + path.getPath() + "\")", path, context, getReadChunkSize());
+    RandomAccessFile raf = new RandomAccessFile(path, "r");
+    return new SimpleFSIndexInput("SimpleFSIndexInput(path=\"" + path.getPath() + "\")", raf, context, getReadChunkSize());
   }
 
   @Override
@@ -83,14 +84,52 @@ public class SimpleFSDirectory extends FSDirectory {
    * Reads bytes with {@link RandomAccessFile#seek(long)} followed by
    * {@link RandomAccessFile#read(byte[], int, int)}.  
    */
-  protected static class SimpleFSIndexInput extends FSIndexInput {
-  
-    public SimpleFSIndexInput(String resourceDesc, File path, IOContext context, int chunkSize) throws IOException {
-      super(resourceDesc, path, context, chunkSize);
+  protected static class SimpleFSIndexInput extends BufferedIndexInput {
+    /** the file channel we will read from */
+    protected final RandomAccessFile file;
+    /** is this instance a clone and hence does not own the file to close it */
+    boolean isClone = false;
+    /** maximum read length on a 32bit JVM to prevent incorrect OOM, see LUCENE-1566 */ 
+    protected final int chunkSize;
+    /** start offset: non-zero in the slice case */
+    protected final long off;
+    /** end offset (start+length) */
+    protected final long end;
+    
+    public SimpleFSIndexInput(String resourceDesc, RandomAccessFile file, IOContext context, int chunkSize) throws IOException {
+      super(resourceDesc, context);
+      this.file = file; 
+      this.chunkSize = chunkSize;
+      this.off = 0L;
+      this.end = file.length();
     }
     
     public SimpleFSIndexInput(String resourceDesc, RandomAccessFile file, long off, long length, int bufferSize, int chunkSize) {
-      super(resourceDesc, file, off, length, bufferSize, chunkSize);
+      super(resourceDesc, bufferSize);
+      this.file = file;
+      this.chunkSize = chunkSize;
+      this.off = off;
+      this.end = off + length;
+      this.isClone = true;
+    }
+    
+    @Override
+    public void close() throws IOException {
+      if (!isClone) {
+        file.close();
+      }
+    }
+    
+    @Override
+    public SimpleFSIndexInput clone() {
+      SimpleFSIndexInput clone = (SimpleFSIndexInput)super.clone();
+      clone.isClone = true;
+      return clone;
+    }
+    
+    @Override
+    public final long length() {
+      return end - off;
     }
   
     /** IndexInput methods */
@@ -135,6 +174,10 @@ public class SimpleFSDirectory extends FSDirectory {
   
     @Override
     protected void seekInternal(long position) {
+    }
+    
+    boolean isFDValid() throws IOException {
+      return file.getFD().valid();
     }
   }
 }

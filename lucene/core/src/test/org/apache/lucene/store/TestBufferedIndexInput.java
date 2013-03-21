@@ -21,6 +21,9 @@ import java.io.File;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.OutputStream;
+import java.io.RandomAccessFile;
+import java.nio.channels.FileChannel;
+import java.nio.file.StandardOpenOption;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
@@ -93,16 +96,16 @@ public class TestBufferedIndexInput extends LuceneTestCase {
     writeBytes(tmpInputFile, TEST_FILE_LENGTH);
 
     // run test with chunk size of 10 bytes
-    runReadBytesAndClose(new SimpleFSIndexInput("SimpleFSIndexInput(path=\"" + tmpInputFile + "\")", tmpInputFile,
-        newIOContext(random()), 10), inputBufferSize, random());
+    runReadBytesAndClose(new SimpleFSIndexInput("SimpleFSIndexInput(path=\"" + tmpInputFile + "\")", 
+        new RandomAccessFile(tmpInputFile, "r"), newIOContext(random()), 10), inputBufferSize, random());
 
     // run test with chunk size of 10 bytes
-    runReadBytesAndClose(new NIOFSIndexInput(tmpInputFile,
-        newIOContext(random()), 10), inputBufferSize, random());
+    runReadBytesAndClose(new NIOFSIndexInput("NIOFSIndexInput(path=\"" + tmpInputFile + "\")", 
+        FileChannel.open(tmpInputFile.toPath(), StandardOpenOption.READ), newIOContext(random()), 10), 
+        inputBufferSize, random());
   }
 
-  private void runReadBytesAndClose(IndexInput input, int bufferSize, Random r)
-      throws IOException {
+  private void runReadBytesAndClose(IndexInput input, int bufferSize, Random r) throws IOException {
     try {
       runReadBytes(input, bufferSize, r);
     } finally {
