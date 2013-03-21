@@ -11,6 +11,3 @@ CPU, disk and memory requirements are based on the many choices made in
 implementing Solr (document size, number of documents, and number of 
 hits retrieved to name a few). The benchmarks page has some information 
 related to performance on particular platforms. 
-
-*To build Apache Solr from source, refer to the `BUILD.txt` file in 
-the distribution directory.* 
