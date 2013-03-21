@@ -91,10 +91,6 @@ public class PatternTokenizerFactory extends TokenizerFactory
    */
   @Override
   public PatternTokenizer create(final AttributeFactory factory, final Reader in) {
-    try {
-      return new PatternTokenizer(factory, in, pattern, group);
-    } catch( IOException ex ) {
-      throw new RuntimeException("IOException thrown creating PatternTokenizer instance", ex);
-    }
+    return new PatternTokenizer(factory, in, pattern, group);
   }
 }

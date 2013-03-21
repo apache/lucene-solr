@@ -129,13 +129,8 @@ public class TestPatternTokenizer extends BaseTokenStreamTestCase
     Analyzer a = new Analyzer() {
       @Override
       protected TokenStreamComponents createComponents(String fieldName, Reader reader) {
-        Tokenizer tokenizer = null;
-        try {
-          tokenizer = new PatternTokenizer(reader, Pattern.compile("a"), -1);
-        } catch (IOException e) {
-          throw new RuntimeException(e);
-        }
-        return new TokenStreamComponents(tokenizer, tokenizer);
+        Tokenizer tokenizer = new PatternTokenizer(reader, Pattern.compile("a"), -1);
+        return new TokenStreamComponents(tokenizer);
       }    
     };
     checkRandomData(random(), a, 1000*RANDOM_MULTIPLIER);
@@ -143,13 +138,8 @@ public class TestPatternTokenizer extends BaseTokenStreamTestCase
     Analyzer b = new Analyzer() {
       @Override
       protected TokenStreamComponents createComponents(String fieldName, Reader reader) {
-        Tokenizer tokenizer = null;
-        try {
-          tokenizer = new PatternTokenizer(reader, Pattern.compile("a"), 0);
-        } catch (IOException e) {
-          throw new RuntimeException(e);
-        }
-        return new TokenStreamComponents(tokenizer, tokenizer);
+        Tokenizer tokenizer = new PatternTokenizer(reader, Pattern.compile("a"), 0);
+        return new TokenStreamComponents(tokenizer);
       }    
     };
     checkRandomData(random(), b, 1000*RANDOM_MULTIPLIER);
