@@ -409,7 +409,7 @@ public final class SolrCore implements SolrInfoMBean {
         schema, coreDescriptor, updateHandler, this.solrDelPolicy, prev);
     core.solrDelPolicy = this.solrDelPolicy;
     
-    core.getUpdateHandler().getSolrCoreState().newIndexWriter(core, false, false);
+    core.getUpdateHandler().getSolrCoreState().newIndexWriter(core, false);
     
     core.getSearcher(true, false, null, true);
     

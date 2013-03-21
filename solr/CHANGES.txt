@@ -219,6 +219,8 @@ Bug Fixes
   longer and it appears to be causing a missing close directory bug. forceNew
   is no longer respected and will be removed in 4.3. (Mark Miller)
 
+* SOLR-4626: getIndexWriter(null) should also respect pauseWriter. (Mark Miller)
+
 Optimizations
 ----------------------
 

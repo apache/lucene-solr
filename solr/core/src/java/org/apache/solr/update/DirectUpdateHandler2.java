@@ -611,8 +611,8 @@ public class DirectUpdateHandler2 extends UpdateHandler implements SolrCoreState
   }
 
   @Override
-  public void newIndexWriter(boolean rollback, boolean forceNewDir) throws IOException {
-    solrCoreState.newIndexWriter(core, rollback, forceNewDir);
+  public void newIndexWriter(boolean rollback) throws IOException {
+    solrCoreState.newIndexWriter(core, rollback);
   }
   
   /**
