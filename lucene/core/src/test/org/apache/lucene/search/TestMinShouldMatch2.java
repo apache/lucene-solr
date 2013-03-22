@@ -18,6 +18,7 @@ package org.apache.lucene.search;
  */
 
 import java.io.IOException;
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashSet;
@@ -118,6 +119,7 @@ public class TestMinShouldMatch2 extends LuceneTestCase {
   private void assertNext(Scorer expected, Scorer actual) throws Exception {
     if (actual == null) {
       assertEquals(DocIdSetIterator.NO_MORE_DOCS, expected.nextDoc());
+      return;
     }
     int doc;
     while ((doc = expected.nextDoc()) != DocIdSetIterator.NO_MORE_DOCS) {
@@ -129,6 +131,7 @@ public class TestMinShouldMatch2 extends LuceneTestCase {
   private void assertAdvance(Scorer expected, Scorer actual, int amount) throws Exception {
     if (actual == null) {
       assertEquals(DocIdSetIterator.NO_MORE_DOCS, expected.nextDoc());
+      return;
     }
     int prevDoc = 0;
     int doc;
@@ -139,18 +142,101 @@ public class TestMinShouldMatch2 extends LuceneTestCase {
     assertEquals(DocIdSetIterator.NO_MORE_DOCS, actual.advance(prevDoc+amount));
   }
   
-  /** simple test for next() */
-  public void testNext() throws Exception {
-    Scorer expected = scorer(new String[] { "b", "f", "j" }, 2, true);
-    Scorer actual = scorer(new String[] { "b", "f", "j" }, 2, false);
-    assertNext(expected, actual);
+  /** simple test for next(): minShouldMatch=2 on 3 terms (one common, one medium, one rare) */
+  public void testNextCMR2() throws Exception {
+    for (int common = 0; common < commonTerms.length; common++) {
+      for (int medium = 0; medium < mediumTerms.length; medium++) {
+        for (int rare = 0; rare < rareTerms.length; rare++) {
+          Scorer expected = scorer(new String[] { commonTerms[common], mediumTerms[medium], rareTerms[rare] }, 2, true);
+          Scorer actual = scorer(new String[] { commonTerms[common], mediumTerms[medium], rareTerms[rare] }, 2, false);
+          assertNext(expected, actual);
+        }
+      }
+    }
   }
   
-  /** simple test for advance() */
-  public void testAdvance() throws Exception {
-    Scorer expected = scorer(new String[] { "b", "f", "j" }, 2, true);
-    Scorer actual = scorer(new String[] { "b", "f", "j" }, 2, false);
-    assertAdvance(expected, actual, 25);
+  /** simple test for advance(): minShouldMatch=2 on 3 terms (one common, one medium, one rare) */
+  public void testAdvanceCMR2() throws Exception {
+    for (int amount = 25; amount < 200; amount += 25) {
+      for (int common = 0; common < commonTerms.length; common++) {
+        for (int medium = 0; medium < mediumTerms.length; medium++) {
+          for (int rare = 0; rare < rareTerms.length; rare++) {
+            Scorer expected = scorer(new String[] { commonTerms[common], mediumTerms[medium], rareTerms[rare] }, 2, true);
+            Scorer actual = scorer(new String[] { commonTerms[common], mediumTerms[medium], rareTerms[rare] }, 2, false);
+            assertAdvance(expected, actual, amount);
+          }
+        }
+      }
+    }
+  }
+  
+  /** test next with giant bq of all terms with varying minShouldMatch */
+  public void testNextAllTerms() throws Exception {
+    List<String> termsList = new ArrayList<String>();
+    termsList.addAll(Arrays.asList(commonTerms));
+    termsList.addAll(Arrays.asList(mediumTerms));
+    termsList.addAll(Arrays.asList(rareTerms));
+    String terms[] = termsList.toArray(new String[0]);
+    
+    for (int minNrShouldMatch = 1; minNrShouldMatch <= terms.length; minNrShouldMatch++) {
+      Scorer expected = scorer(terms, minNrShouldMatch, true);
+      Scorer actual = scorer(terms, minNrShouldMatch, false);
+      assertNext(expected, actual);
+    }
+  }
+  
+  /** test advance with giant bq of all terms with varying minShouldMatch */
+  public void testAdvanceAllTerms() throws Exception {
+    List<String> termsList = new ArrayList<String>();
+    termsList.addAll(Arrays.asList(commonTerms));
+    termsList.addAll(Arrays.asList(mediumTerms));
+    termsList.addAll(Arrays.asList(rareTerms));
+    String terms[] = termsList.toArray(new String[0]);
+    
+    for (int amount = 25; amount < 200; amount += 25) {
+      for (int minNrShouldMatch = 1; minNrShouldMatch <= terms.length; minNrShouldMatch++) {
+        Scorer expected = scorer(terms, minNrShouldMatch, true);
+        Scorer actual = scorer(terms, minNrShouldMatch, false);
+        assertAdvance(expected, actual, amount);
+      }
+    }
+  }
+  
+  /** test next with varying numbers of terms with varying minShouldMatch */
+  public void testNextVaryingNumberOfTerms() throws Exception {
+    List<String> termsList = new ArrayList<String>();
+    termsList.addAll(Arrays.asList(commonTerms));
+    termsList.addAll(Arrays.asList(mediumTerms));
+    termsList.addAll(Arrays.asList(rareTerms));
+    Collections.shuffle(termsList, random());
+    for (int numTerms = 2; numTerms <= termsList.size(); numTerms++) {
+      String terms[] = termsList.subList(0, numTerms).toArray(new String[0]);
+      for (int minNrShouldMatch = 1; minNrShouldMatch <= terms.length; minNrShouldMatch++) {
+        Scorer expected = scorer(terms, minNrShouldMatch, true);
+        Scorer actual = scorer(terms, minNrShouldMatch, false);
+        assertNext(expected, actual);
+      }
+    }
+  }
+  
+  /** test advance with varying numbers of terms with varying minShouldMatch */
+  public void testAdvanceVaryingNumberOfTerms() throws Exception {
+    List<String> termsList = new ArrayList<String>();
+    termsList.addAll(Arrays.asList(commonTerms));
+    termsList.addAll(Arrays.asList(mediumTerms));
+    termsList.addAll(Arrays.asList(rareTerms));
+    Collections.shuffle(termsList, random());
+    
+    for (int amount = 25; amount < 200; amount += 25) {
+      for (int numTerms = 2; numTerms <= termsList.size(); numTerms++) {
+        String terms[] = termsList.subList(0, numTerms).toArray(new String[0]);
+        for (int minNrShouldMatch = 1; minNrShouldMatch <= terms.length; minNrShouldMatch++) {
+          Scorer expected = scorer(terms, minNrShouldMatch, true);
+          Scorer actual = scorer(terms, minNrShouldMatch, false);
+          assertAdvance(expected, actual, amount);
+        }
+      }
+    }
   }
   
   // TODO: more tests
