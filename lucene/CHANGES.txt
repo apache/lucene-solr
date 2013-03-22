@@ -147,6 +147,9 @@ Optimizations
   ArrayUtil and CollectionUtil override it so that their mergeSort and timSort
   methods are faster but only require up to 1% of extra memory. (Adrien Grand)
 
+* LUCENE-4571: Speed up BooleanQuerys with minNrShouldMatch to use
+  skipping.  (Stefan Pohl via Robert Muir)
+
 API Changes
 
 * LUCENE-4844: removed TaxonomyReader.getParent(), you should use
