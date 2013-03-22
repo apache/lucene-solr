@@ -97,7 +97,7 @@ public class PostingsSolrHighlighter extends SolrHighlighter implements PluginIn
     if (pivot == null) {
       pivot = "87";
     }
-    PassageScorer scorer = new PassageScorer(Float.parseFloat(k1), Float.parseFloat(b), Float.parseFloat(pivot));
+    final PassageScorer scorer = new PassageScorer(Float.parseFloat(k1), Float.parseFloat(b), Float.parseFloat(pivot));
     
     // formatter parameters: preTag/postTag/ellipsis
     String preTag = attributes.get("preTag");
@@ -112,7 +112,7 @@ public class PostingsSolrHighlighter extends SolrHighlighter implements PluginIn
     if (ellipsis == null) {
       ellipsis = "... ";
     }
-    PassageFormatter formatter = new PassageFormatter(preTag, postTag, ellipsis);
+    final PassageFormatter formatter = new PassageFormatter(preTag, postTag, ellipsis);
 
     String summarizeEmpty = attributes.get("summarizeEmpty");
     final boolean summarizeEmptyBoolean;
@@ -127,7 +127,7 @@ public class PostingsSolrHighlighter extends SolrHighlighter implements PluginIn
     if (attributes.containsKey("maxLength")) {
       maxLength = Integer.parseInt(attributes.get("maxLength"));
     }
-    highlighter = new PostingsHighlighter(maxLength, breakIterator, scorer, formatter) {
+    highlighter = new PostingsHighlighter(maxLength, breakIterator) {
         @Override
         protected Passage[] getEmptyHighlight(String fieldName, BreakIterator bi, int maxPassages) {
           if (summarizeEmptyBoolean) {
@@ -135,6 +135,16 @@ public class PostingsSolrHighlighter extends SolrHighlighter implements PluginIn
           } else {
             return new Passage[0];
           }
+        }
+
+        @Override
+        protected PassageFormatter getFormatter(String fieldName) {
+          return formatter;
+        }
+
+        @Override
+        protected PassageScorer getScorer(String fieldName) {
+          return scorer;
         }
       };
   }

@@ -457,7 +457,7 @@ public class TestPostingsHighlighter extends LuceneTestCase {
     iw.close();
     
     IndexSearcher searcher = newSearcher(ir);
-    PostingsHighlighter highlighter = new PostingsHighlighter(10000, null, new PassageScorer(), new PassageFormatter());
+    PostingsHighlighter highlighter = new PostingsHighlighter(10000, null);
     Query query = new TermQuery(new Term("body", "test"));
     TopDocs topDocs = searcher.search(query, null, 10, Sort.INDEXORDER);
     assertEquals(1, topDocs.totalHits);
@@ -527,7 +527,7 @@ public class TestPostingsHighlighter extends LuceneTestCase {
     
     IndexSearcher searcher = newSearcher(ir);
 
-    PostingsHighlighter highlighter = new PostingsHighlighter(10000, null, new PassageScorer(), new PassageFormatter()) {
+    PostingsHighlighter highlighter = new PostingsHighlighter(10000, null) {
         @Override
         protected String[][] loadFieldValues(IndexSearcher searcher, String[] fields, int[] docids, int maxLength) throws IOException {
           assert fields.length == 1;
@@ -636,7 +636,7 @@ public class TestPostingsHighlighter extends LuceneTestCase {
     iw.close();
     
     IndexSearcher searcher = newSearcher(ir);
-    PostingsHighlighter highlighter = new PostingsHighlighter(10000, null, new PassageScorer(), new PassageFormatter());
+    PostingsHighlighter highlighter = new PostingsHighlighter(10000, null);
     Query query = new TermQuery(new Term("body", "highlighting"));
     int[] docIDs = new int[] {0};
     String snippets[] = highlighter.highlightFields(new String[] {"body"}, query, searcher, docIDs, 2).get("body");

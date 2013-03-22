@@ -17,8 +17,8 @@ package org.apache.lucene.search.postingshighlight;
  * limitations under the License.
  */
 
-import org.apache.lucene.index.Term;
 import org.apache.lucene.util.ArrayUtil;
+import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.RamUsageEstimator;
 import org.apache.lucene.util.SorterTemplate;
 
@@ -36,15 +36,15 @@ public final class Passage {
 
   int matchStarts[] = new int[8];
   int matchEnds[] = new int[8];
-  Term matchTerms[] = new Term[8];
+  BytesRef matchTerms[] = new BytesRef[8];
   int numMatches = 0;
   
-  void addMatch(int startOffset, int endOffset, Term term) {
+  void addMatch(int startOffset, int endOffset, BytesRef term) {
     assert startOffset >= this.startOffset && startOffset <= this.endOffset;
     if (numMatches == matchStarts.length) {
       matchStarts = ArrayUtil.grow(matchStarts, numMatches+1);
       matchEnds = ArrayUtil.grow(matchEnds, numMatches+1);
-      Term newMatchTerms[] = new Term[ArrayUtil.oversize(numMatches+1, RamUsageEstimator.NUM_BYTES_OBJECT_REF)];
+      BytesRef newMatchTerms[] = new BytesRef[ArrayUtil.oversize(numMatches+1, RamUsageEstimator.NUM_BYTES_OBJECT_REF)];
       System.arraycopy(matchTerms, 0, newMatchTerms, 0, numMatches);
       matchTerms = newMatchTerms;
     }
@@ -57,7 +57,7 @@ public final class Passage {
   void sort() {
     final int starts[] = matchStarts;
     final int ends[] = matchEnds;
-    final Term terms[] = matchTerms;
+    final BytesRef terms[] = matchTerms;
     new SorterTemplate() {
       @Override
       protected void swap(int i, int j) {
@@ -69,7 +69,7 @@ public final class Passage {
         ends[i] = ends[j];
         ends[j] = temp;
         
-        Term tempTerm = terms[i];
+        BytesRef tempTerm = terms[i];
         terms[i] = terms[j];
         terms[j] = tempTerm;
       }
@@ -155,11 +155,11 @@ public final class Passage {
   }
 
   /**
-   * Term of the matches, corresponding with {@link #getMatchStarts()}.
+   * BytesRef (term text) of the matches, corresponding with {@link #getMatchStarts()}.
    * <p>
    * Only {@link #getNumMatches()} are valid.
    */
-  public Term[] getMatchTerms() {
+  public BytesRef[] getMatchTerms() {
     return matchTerms;
   }
 }
