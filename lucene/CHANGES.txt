@@ -191,6 +191,11 @@ Bug Fixes
 * SOLR-4589: Fixed CPU spikes and poor performance in lazy field loading 
   of multivalued fields. (hossman)
 
+* LUCENE-4870: Fix bug where an entire index might be deleted by the IndexWriter
+  due to false detection if an index exists in the directory when
+  OpenMode.CREATE_OR_APPEND is used. This might also affect application that set
+  the open mode manually using DirectoryReader#indexExists. (Simon Willnauer)
+
 Optimizations
 
 * LUCENE-4819: Added Sorted[Set]DocValues.termsEnum(), and optimized the
