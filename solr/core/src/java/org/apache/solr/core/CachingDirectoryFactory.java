@@ -140,8 +140,9 @@ public abstract class CachingDirectoryFactory extends DirectoryFactory {
       }
       cacheValue.doneWithDir = true;
       if (cacheValue.refCnt == 0) {
-        cacheValue.refCnt++; // this will go back to 0 in close
-        close(directory);
+        closeDirectory(cacheValue);
+        byDirectoryCache.remove(directory);
+        byPathCache.remove(cacheValue.path);
       }
     }
   }
