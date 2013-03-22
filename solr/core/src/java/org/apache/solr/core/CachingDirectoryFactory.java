@@ -29,6 +29,7 @@ import java.util.Locale;
 import java.util.Map;
 import java.util.Set;
 
+import org.apache.lucene.store.AlreadyClosedException;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.IOContext.Context;
 import org.apache.lucene.store.NativeFSLockFactory;
@@ -314,7 +315,7 @@ public abstract class CachingDirectoryFactory extends DirectoryFactory {
     String fullPath = normalize(path);
     synchronized (this) {
       if (closed) {
-        throw new RuntimeException("Already closed");
+        throw new AlreadyClosedException("Already closed");
       }
       
       final CacheValue cacheValue = byPathCache.get(fullPath);
