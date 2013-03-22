@@ -343,8 +343,10 @@ public abstract class SorterTemplate {
     merge(lo, mid, hi, mid - lo, hi - mid);
   }
 
-  // pkg-protected for access from TimSort class
-  void merge(int lo, int pivot, int hi, int len1, int len2) {
+  /** Merge the slices [lo-pivot[ (of length len1) and [pivot-hi[ (of length
+   *  len2) which are already sorted. This method merges in-place but can be
+   *  extended to provide a faster implementation using extra memory. */
+  protected void merge(int lo, int pivot, int hi, int len1, int len2) {
     if (len1 == 0 || len2 == 0) {
       return;
     }

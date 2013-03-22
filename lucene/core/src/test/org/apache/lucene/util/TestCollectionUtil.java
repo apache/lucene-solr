@@ -37,12 +37,12 @@ public class TestCollectionUtil extends LuceneTestCase {
   
   public void testQuickSort() {
     for (int i = 0, c = atLeast(500); i < c; i++) {
-      List<Integer> list1 = createRandomList(1000), list2 = new ArrayList<Integer>(list1);
+      List<Integer> list1 = createRandomList(2000), list2 = new ArrayList<Integer>(list1);
       CollectionUtil.quickSort(list1);
       Collections.sort(list2);
       assertEquals(list2, list1);
       
-      list1 = createRandomList(1000);
+      list1 = createRandomList(2000);
       list2 = new ArrayList<Integer>(list1);
       CollectionUtil.quickSort(list1, Collections.reverseOrder());
       Collections.sort(list2, Collections.reverseOrder());
@@ -56,12 +56,12 @@ public class TestCollectionUtil extends LuceneTestCase {
   
   public void testMergeSort() {
     for (int i = 0, c = atLeast(500); i < c; i++) {
-      List<Integer> list1 = createRandomList(1000), list2 = new ArrayList<Integer>(list1);
+      List<Integer> list1 = createRandomList(2000), list2 = new ArrayList<Integer>(list1);
       CollectionUtil.mergeSort(list1);
       Collections.sort(list2);
       assertEquals(list2, list1);
       
-      list1 = createRandomList(1000);
+      list1 = createRandomList(2000);
       list2 = new ArrayList<Integer>(list1);
       CollectionUtil.mergeSort(list1, Collections.reverseOrder());
       Collections.sort(list2, Collections.reverseOrder());
@@ -75,12 +75,12 @@ public class TestCollectionUtil extends LuceneTestCase {
 
   public void testTimSort() {
     for (int i = 0, c = atLeast(500); i < c; i++) {
-      List<Integer> list1 = createRandomList(1000), list2 = new ArrayList<Integer>(list1);
+      List<Integer> list1 = createRandomList(2000), list2 = new ArrayList<Integer>(list1);
       CollectionUtil.timSort(list1);
       Collections.sort(list2);
       assertEquals(list2, list1);
       
-      list1 = createRandomList(1000);
+      list1 = createRandomList(2000);
       list2 = new ArrayList<Integer>(list1);
       CollectionUtil.timSort(list1, Collections.reverseOrder());
       Collections.sort(list2, Collections.reverseOrder());

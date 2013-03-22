@@ -131,12 +131,12 @@ public class TestArrayUtil extends LuceneTestCase {
   public void testQuickSort() {
     int num = atLeast(50);
     for (int i = 0; i < num; i++) {
-      Integer[] a1 = createRandomArray(1000), a2 = a1.clone();
+      Integer[] a1 = createRandomArray(2000), a2 = a1.clone();
       ArrayUtil.quickSort(a1);
       Arrays.sort(a2);
       assertArrayEquals(a2, a1);
       
-      a1 = createRandomArray(1000);
+      a1 = createRandomArray(2000);
       a2 = a1.clone();
       ArrayUtil.quickSort(a1, Collections.reverseOrder());
       Arrays.sort(a2, Collections.reverseOrder());
@@ -171,12 +171,12 @@ public class TestArrayUtil extends LuceneTestCase {
   public void testMergeSort() {
     int num = atLeast(50);
     for (int i = 0; i < num; i++) {
-      Integer[] a1 = createRandomArray(1000), a2 = a1.clone();
+      Integer[] a1 = createRandomArray(2000), a2 = a1.clone();
       ArrayUtil.mergeSort(a1);
       Arrays.sort(a2);
       assertArrayEquals(a2, a1);
       
-      a1 = createRandomArray(1000);
+      a1 = createRandomArray(2000);
       a2 = a1.clone();
       ArrayUtil.mergeSort(a1, Collections.reverseOrder());
       Arrays.sort(a2, Collections.reverseOrder());
@@ -191,12 +191,12 @@ public class TestArrayUtil extends LuceneTestCase {
   public void testTimSort() {
     int num = atLeast(65);
     for (int i = 0; i < num; i++) {
-      Integer[] a1 = createRandomArray(1000), a2 = a1.clone();
+      Integer[] a1 = createRandomArray(2000), a2 = a1.clone();
       ArrayUtil.timSort(a1);
       Arrays.sort(a2);
       assertArrayEquals(a2, a1);
       
-      a1 = createRandomArray(1000);
+      a1 = createRandomArray(2000);
       a2 = a1.clone();
       ArrayUtil.timSort(a1, Collections.reverseOrder());
       Arrays.sort(a2, Collections.reverseOrder());

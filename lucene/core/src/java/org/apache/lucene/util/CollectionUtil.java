@@ -17,8 +17,11 @@ package org.apache.lucene.util;
  * limitations under the License.
  */
 
-import java.util.Comparator;
+import static org.apache.lucene.util.ArrayUtil.MERGE_EXTRA_MEMORY_THRESHOLD;
+import static org.apache.lucene.util.ArrayUtil.MERGE_OVERHEAD_RATIO;
+
 import java.util.Collections;
+import java.util.Comparator;
 import java.util.List;
 import java.util.RandomAccess;
 
@@ -34,33 +37,100 @@ import java.util.RandomAccess;
 public final class CollectionUtil {
 
   private CollectionUtil() {} // no instance
-  
+
+  private static abstract class ListSorterTemplate<T> extends SorterTemplate {
+
+    protected final List<T> list;
+
+    ListSorterTemplate(List<T> list) {
+      this.list = list;
+    }
+
+    protected abstract int compare(T a, T b);
+
+    @Override
+    protected void swap(int i, int j) {
+      Collections.swap(list, i, j);
+    }
+
+    @Override
+    protected int compare(int i, int j) {
+      return compare(list.get(i), list.get(j));
+    }
+
+    @Override
+    protected void setPivot(int i) {
+      pivot = list.get(i);
+    }
+
+    @Override
+    protected int comparePivot(int j) {
+      return compare(pivot, list.get(j));
+    }
+
+    private T pivot;
+
+  }
+
+  // a template for merge-based sorts which uses extra memory to speed up merging
+  private static abstract class ListMergeSorterTemplate<T> extends ListSorterTemplate<T> {
+
+    private final int threshold; // maximum length of a merge that can be made using extra memory
+    private final T[] tmp;
+
+    ListMergeSorterTemplate(List<T> list, float overheadRatio) {
+      super(list);
+      this.threshold = (int) (list.size() * overheadRatio);
+      @SuppressWarnings("unchecked")
+      final T[] tmpBuf = (T[]) new Object[threshold];
+      this.tmp = tmpBuf;
+    }
+
+    private void mergeWithExtraMemory(int lo, int pivot, int hi, int len1, int len2) {
+      for (int i = 0; i < len1; ++i) {
+        tmp[i] = list.get(lo + i);
+      }
+      int i = 0, j = pivot, dest = lo;
+      while (i < len1 && j < hi) {
+        if (compare(tmp[i], list.get(j)) <= 0) {
+          list.set(dest++, tmp[i++]);
+        } else {
+          list.set(dest++, list.get(j++));
+        }
+      }
+      while (i < len1) {
+        list.set(dest++, tmp[i++]);
+      }
+      while (j < hi) {
+        list.set(dest++, list.get(j++));
+      }
+      assert dest == hi;
+    }
+
+    @Override
+    protected void merge(int lo, int pivot, int hi, int len1, int len2) {
+      if (len1 <= threshold) {
+        mergeWithExtraMemory(lo, pivot, hi, len1, len2);
+      } else {
+        // since this method recurses to run merge on smaller arrays, it will
+        // end up using mergeWithExtraMemory
+        super.merge(lo, pivot, hi, len1, len2);
+      }
+    }
+
+  }
+
   /** SorterTemplate with custom {@link Comparator} */
   private static <T> SorterTemplate getSorter(final List<T> list, final Comparator<? super T> comp) {
     if (!(list instanceof RandomAccess))
       throw new IllegalArgumentException("CollectionUtil can only sort random access lists in-place.");
-    return new SorterTemplate() {
-      @Override
-      protected void swap(int i, int j) {
-        Collections.swap(list, i, j);
-      }
-      
-      @Override
-      protected int compare(int i, int j) {
-        return comp.compare(list.get(i), list.get(j));
-      }
+    return new ListSorterTemplate<T>(list) {
 
       @Override
-      protected void setPivot(int i) {
-        pivot = list.get(i);
+      protected int compare(T a, T b) {
+        return comp.compare(a, b);
       }
-  
-      @Override
-      protected int comparePivot(int j) {
-        return comp.compare(pivot, list.get(j));
-      }
-      
-      private T pivot;
+
     };
   }
   
@@ -68,29 +138,50 @@ public final class CollectionUtil {
   private static <T extends Comparable<? super T>> SorterTemplate getSorter(final List<T> list) {
     if (!(list instanceof RandomAccess))
       throw new IllegalArgumentException("CollectionUtil can only sort random access lists in-place.");
-    return new SorterTemplate() {
-      @Override
-      protected void swap(int i, int j) {
-        Collections.swap(list, i, j);
-      }
-      
-      @Override
-      protected int compare(int i, int j) {
-        return list.get(i).compareTo(list.get(j));
-      }
+    return new ListSorterTemplate<T>(list) {
 
       @Override
-      protected void setPivot(int i) {
-        pivot = list.get(i);
+      protected int compare(T a, T b) {
+        return a.compareTo(b);
       }
-  
-      @Override
-      protected int comparePivot(int j) {
-        return pivot.compareTo(list.get(j));
-      }
-      
-      private T pivot;
+
     };
+  }
+
+  /** SorterTemplate with custom {@link Comparator} for merge-based sorts. */
+  private static <T> SorterTemplate getMergeSorter(final List<T> list, final Comparator<? super T> comp) {
+    if (!(list instanceof RandomAccess))
+      throw new IllegalArgumentException("CollectionUtil can only sort random access lists in-place.");
+    if (list.size() < MERGE_EXTRA_MEMORY_THRESHOLD) {
+      return getSorter(list, comp);
+    } else {
+      return new ListMergeSorterTemplate<T>(list, MERGE_OVERHEAD_RATIO) {
+
+        @Override
+        protected int compare(T a, T b) {
+          return comp.compare(a, b);
+        }
+
+      };
+    }
+  }
+  
+  /** Natural SorterTemplate for merge-based sorts. */
+  private static <T extends Comparable<? super T>> SorterTemplate getMergeSorter(final List<T> list) {
+    if (!(list instanceof RandomAccess))
+      throw new IllegalArgumentException("CollectionUtil can only sort random access lists in-place.");
+    if (list.size() < MERGE_EXTRA_MEMORY_THRESHOLD) {
+      return getSorter(list);
+    } else {
+      return new ListMergeSorterTemplate<T>(list, MERGE_OVERHEAD_RATIO) {
+
+        @Override
+        protected int compare(T a, T b) {
+          return a.compareTo(b);
+        }
+
+      };
+    }
   }
 
   /**
@@ -128,7 +219,7 @@ public final class CollectionUtil {
   public static <T> void mergeSort(List<T> list, Comparator<? super T> comp) {
     final int size = list.size();
     if (size <= 1) return;
-    getSorter(list, comp).mergeSort(0, size-1);
+    getMergeSorter(list, comp).mergeSort(0, size-1);
   }
   
   /**
@@ -140,7 +231,7 @@ public final class CollectionUtil {
   public static <T extends Comparable<? super T>> void mergeSort(List<T> list) {
     final int size = list.size();
     if (size <= 1) return;
-    getSorter(list).mergeSort(0, size-1);
+    getMergeSorter(list).mergeSort(0, size-1);
   }
 
   // timSorts:
@@ -154,7 +245,7 @@ public final class CollectionUtil {
   public static <T> void timSort(List<T> list, Comparator<? super T> comp) {
     final int size = list.size();
     if (size <= 1) return;
-    getSorter(list, comp).timSort(0, size-1);
+    getMergeSorter(list, comp).timSort(0, size-1);
   }
   
   /**
@@ -166,7 +257,7 @@ public final class CollectionUtil {
   public static <T extends Comparable<? super T>> void timSort(List<T> list) {
     final int size = list.size();
     if (size <= 1) return;
-    getSorter(list).timSort(0, size-1);
+    getMergeSorter(list).timSort(0, size-1);
   }
 
   // insertionSorts:
