@@ -401,7 +401,7 @@ public class BasicDistributedZk2Test extends AbstractFullDistribZkTestBase {
     // make sure we have published we are recovering
     Thread.sleep(1500);
     
-    waitForThingsToLevelOut(15);
+    waitForThingsToLevelOut(30);
     
     Thread.sleep(500);
     
