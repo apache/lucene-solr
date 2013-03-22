@@ -20,11 +20,11 @@ package org.apache.lucene.search.postingshighlight;
 import java.text.BreakIterator;
 import java.text.CharacterIterator;
 
-/** Just produces one single fragment for the entire
- *  string. */
+/** Just produces one single fragment for the entire text */
 final class WholeBreakIterator extends BreakIterator {
   private CharacterIterator text;
-  private int len;
+  private int start;
+  private int end;
   private int current;
 
   @Override
@@ -34,17 +34,17 @@ final class WholeBreakIterator extends BreakIterator {
 
   @Override
   public int first() {
-    return (current = 0);
+    return (current = start);
   }
 
   @Override
   public int following(int pos) {
-    if (pos < 0 || pos > len) {
+    if (pos < start || pos > end) {
       throw new IllegalArgumentException("offset out of bounds");
-    } else if (pos == len) {
+    } else if (pos == end) {
       // this conflicts with the javadocs, but matches actual behavior (Oracle has a bug in something)
       // http://bugs.sun.com/bugdatabase/view_bug.do?bug_id=9000909
-      current = len;
+      current = end;
       return DONE;
     } else {
       return last();
@@ -58,12 +58,12 @@ final class WholeBreakIterator extends BreakIterator {
 
   @Override
   public int last() {
-    return (current = len);
+    return (current = end);
   }
 
   @Override
   public int next() {
-    if (current == len) {
+    if (current == end) {
       return DONE;
     } else {
       return last();
@@ -86,12 +86,12 @@ final class WholeBreakIterator extends BreakIterator {
 
   @Override
   public int preceding(int pos) {
-    if (pos < 0 || pos > len) {
+    if (pos < start || pos > end) {
       throw new IllegalArgumentException("offset out of bounds");
-    } else if (pos == 0) {
+    } else if (pos == start) {
       // this conflicts with the javadocs, but matches actual behavior (Oracle has a bug in something)
       // http://bugs.sun.com/bugdatabase/view_bug.do?bug_id=9000909
-      current = 0;
+      current = start;
       return DONE;
     } else {
       return first();
@@ -100,7 +100,7 @@ final class WholeBreakIterator extends BreakIterator {
 
   @Override
   public int previous() {
-    if (current == 0) {
+    if (current == start) {
       return DONE;
     } else {
       return first();
@@ -109,11 +109,9 @@ final class WholeBreakIterator extends BreakIterator {
 
   @Override
   public void setText(CharacterIterator newText) {
-    if (newText.getBeginIndex() != 0) {
-      throw new UnsupportedOperationException();
-    }
-    len = newText.getEndIndex();
+    start = newText.getBeginIndex();
+    end = newText.getEndIndex();
     text = newText;
-    current = 0;
+    current = newText.getIndex();
   }
 }
