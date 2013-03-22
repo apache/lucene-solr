@@ -690,7 +690,7 @@ public class SnapPuller {
         try {
           solrCore.getCoreDescriptor().getCoreContainer().reload(solrCore.getName());
         } catch (Exception e) {
-          LOG.error("Could not restart core ", e);
+          LOG.error("Could not reload core ", e);
         }
       }
     }.start();

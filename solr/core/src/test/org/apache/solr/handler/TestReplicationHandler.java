@@ -180,6 +180,7 @@ public class TestReplicationHandler extends SolrTestCaseJ4 {
     NamedList res = null;
     SolrDocumentList docList = null;
     do {
+      log.info("Waiting for " + expectedDocCount + " docs");
       res = query(query, server);
       docList = (SolrDocumentList) res.get("response");
       timeSlept += 100;
@@ -416,6 +417,8 @@ public class TestReplicationHandler extends SolrTestCaseJ4 {
     //compare results
     String cmp = BaseDistributedSearchTestCase.compare(masterQueryResult, slaveQueryResult, 0, null);
     assertEquals(null, cmp);
+    
+    assertVersions(masterClient, slaveClient);
 
     //start config files replication test
     masterClient.deleteByQuery("*:*");
@@ -454,6 +457,8 @@ public class TestReplicationHandler extends SolrTestCaseJ4 {
     NamedList masterQueryRsp2 = rQuery(1, "*:*", masterClient);
     SolrDocumentList masterQueryResult2 = (SolrDocumentList) masterQueryRsp2.get("response");
     assertEquals(1, masterQueryResult2.getNumFound());
+    
+    assertVersions(masterClient, slaveClient);
 
     slaveQueryRsp = rQuery(1, "*:*", slaveClient);
     SolrDocument d = ((SolrDocumentList) slaveQueryRsp.get("response")).get(0);
@@ -654,6 +659,87 @@ public class TestReplicationHandler extends SolrTestCaseJ4 {
     slaveClient = createNewSolrServer(slaveJetty.getLocalPort());
   }
   
+  
+  @Test
+  public void doTestStressReplication() throws Exception {
+    //change solrconfig on slave
+    //this has no entry for pollinginterval
+    slave.copyConfigFile(CONF_DIR + "solrconfig-slave1.xml", "solrconfig.xml");
+    slaveJetty.stop();
+    slaveJetty = createJetty(slave);
+    slaveClient = createNewSolrServer(slaveJetty.getLocalPort());
+    
+    master.copyConfigFile(CONF_DIR + "solrconfig-master3.xml", "solrconfig.xml");
+    masterJetty.stop();
+    masterJetty = createJetty(master);
+    masterClient = createNewSolrServer(masterJetty.getLocalPort());
+
+    masterClient.deleteByQuery("*:*");
+    slaveClient.deleteByQuery("*:*");
+    slaveClient.commit();
+ 
+    int maxDocs = TEST_NIGHTLY ? 1000 : 200;
+    int rounds = TEST_NIGHTLY ? 80 : 10;
+    int totalDocs = 0;
+    int id = 0;
+    for (int x = 0; x < rounds; x++) {
+      
+      // we randomly trigger a configuration replication
+      if (random().nextBoolean()) {
+        master.copyConfigFile(CONF_DIR + "schema-replication" + (random().nextInt(2) + 1) + ".xml", "schema.xml");
+      }
+      
+      int docs = random().nextInt(maxDocs);
+      for (int i = 0; i < docs; i++) {
+        index(masterClient, "id", id++, "name", "name = " + i);
+      }
+      
+      totalDocs += docs;
+      masterClient.commit();
+      
+      NamedList masterQueryRsp = rQuery(totalDocs, "*:*", masterClient);
+      SolrDocumentList masterQueryResult = (SolrDocumentList) masterQueryRsp
+          .get("response");
+      assertEquals(totalDocs, masterQueryResult.getNumFound());
+      
+      // snappull
+      pullFromMasterToSlave();
+      
+      // get docs from slave and check if number is equal to master
+      NamedList slaveQueryRsp = rQuery(totalDocs, "*:*", slaveClient);
+      SolrDocumentList slaveQueryResult = (SolrDocumentList) slaveQueryRsp
+          .get("response");
+      assertEquals(totalDocs, slaveQueryResult.getNumFound());
+      // compare results
+      String cmp = BaseDistributedSearchTestCase.compare(masterQueryResult,
+          slaveQueryResult, 0, null);
+      assertEquals(null, cmp);
+      
+      assertVersions(masterClient, slaveClient);
+      
+    }
+
+    // NOTE: at this point, the slave is not polling any more
+    // restore it.
+    slave.copyConfigFile(CONF_DIR + "solrconfig-slave.xml", "solrconfig.xml");
+    slaveJetty.stop();
+    slaveJetty = createJetty(slave);
+    slaveClient = createNewSolrServer(slaveJetty.getLocalPort());
+  }
+
+  private void pullFromMasterToSlave() throws MalformedURLException,
+      IOException {
+    String masterUrl = "http://127.0.0.1:" + slaveJetty.getLocalPort() + "/solr/replication?command=fetchindex&masterUrl=";
+    masterUrl += "http://127.0.0.1:" + masterJetty.getLocalPort() + "/solr/replication";
+    URL url = new URL(masterUrl);
+    InputStream stream = url.openStream();
+    try {
+      stream.close();
+    } catch (IOException e) {
+      //e.printStackTrace();
+    }
+  }
+  
   @Test
   public void doTestRepeater() throws Exception {
     // no polling
@@ -727,9 +813,11 @@ public class TestReplicationHandler extends SolrTestCaseJ4 {
     Long maxVersionClient1 = getVersion(client1);
     Long maxVersionClient2 = getVersion(client2);
 
-    assertEquals(maxVersionClient1, maxVersionClient2);
+    if (maxVersionClient1 > 0 && maxVersionClient2 > 0) {
+      assertEquals(maxVersionClient1, maxVersionClient2);
+    }
     
-    // check vs /replication?command=indexverion call
+    // check vs /replication?command=indexversion call
     ModifiableSolrParams params = new ModifiableSolrParams();
     params.set("qt", "/replication");
     params.set("command", "indexversion");
