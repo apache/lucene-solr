@@ -106,7 +106,7 @@ public class SortingAtomicReader extends FilterAtomicReader {
 
   private static class SortingTermsEnum extends FilterTermsEnum {
 
-    private final Sorter.DocMap docMap;
+    final Sorter.DocMap docMap; // pkg-protected to avoid synthetic accessor methods
     private final IndexOptions indexOptions;
     
     public SortingTermsEnum(final TermsEnum in, Sorter.DocMap docMap, IndexOptions indexOptions) {
@@ -520,19 +520,26 @@ public class SortingAtomicReader extends FilterAtomicReader {
     private void addPositions(final DocsAndPositionsEnum in, final IndexOutput out) throws IOException {
       int freq = in.freq();
       out.writeVInt(freq);
+      int previousPosition = 0;
+      int previousEndOffset = 0;
       for (int i = 0; i < freq; i++) {
         final int pos = in.nextPosition();
-        out.writeVInt(pos);
+        final BytesRef payload = in.getPayload();
+        // The low-order bit of token is set only if there is a payload, the
+        // previous bits are the delta-encoded position. 
+        final int token = (pos - previousPosition) << 1 | (payload == null ? 0 : 1);
+        out.writeVInt(token);
+        previousPosition = pos;
         if (storeOffsets) { // don't encode offsets if they are not stored
-          out.writeVInt(in.startOffset());
-          out.writeVInt(in.endOffset());
+          final int startOffset = in.startOffset();
+          final int endOffset = in.endOffset();
+          out.writeVInt(startOffset - previousEndOffset);
+          out.writeVInt(endOffset - startOffset);
+          previousEndOffset = endOffset;
         }
-        BytesRef payload = in.getPayload();
         if (payload != null) {
           out.writeVInt(payload.length);
           out.writeBytes(payload.bytes, payload.offset, payload.length);
-        } else {
-          out.writeVInt(0);
         }
       }
     }
@@ -570,24 +577,30 @@ public class SortingAtomicReader extends FilterAtomicReader {
       if (++docIt >= upto) return DocIdSetIterator.NO_MORE_DOCS;
       postingInput.seek(offsets[docIt]);
       currFreq = postingInput.readVInt();
+      // reset variables used in nextPosition
+      pos = 0;
+      endOffset = 0;
       return docs[docIt];
     }
     
     @Override
     public int nextPosition() throws IOException {
-      pos = postingInput.readVInt();
+      final int token = postingInput.readVInt();
+      pos += token >>> 1;
       if (storeOffsets) {
-        startOffset = postingInput.readVInt();
-        endOffset = postingInput.readVInt();
+        startOffset = endOffset + postingInput.readVInt();
+        endOffset = startOffset + postingInput.readVInt();
       }
-      int length = postingInput.readVInt();
-      if (length > 0) {
-        if (length >= payload.bytes.length) {
-          payload.grow(length + 1);
+      if ((token & 1) != 0) {
+        payload.offset = 0;
+        payload.length = postingInput.readVInt();
+        if (payload.length > payload.bytes.length) {
+          payload.bytes = new byte[ArrayUtil.oversize(payload.length, 1)];
         }
-        postingInput.readBytes(payload.bytes, 0, length);
+        postingInput.readBytes(payload.bytes, 0, payload.length);
+      } else {
+        payload.length = 0;
       }
-      payload.length = length;
       return pos;
     }
     
@@ -615,7 +628,7 @@ public class SortingAtomicReader extends FilterAtomicReader {
     return new SortingAtomicReader(reader, docMap);
   }
 
-  private final Sorter.DocMap docMap;
+  final Sorter.DocMap docMap; // pkg-protected to avoid synthetic accessor methods
 
   private SortingAtomicReader(final AtomicReader in, final Sorter.DocMap docMap) {
     super(in);
