@@ -265,14 +265,12 @@ public class TestRandomChains extends BaseTokenStreamTestCase {
     tokenfilters = new ArrayList<Constructor<? extends TokenFilter>>();
     charfilters = new ArrayList<Constructor<? extends CharFilter>>();
     for (final Class<?> c : analysisClasses) {
-      // TODO: Fix below code to use c.isAnnotationPresent(). It was changed
-      // to the null check to work around a bug in JDK 8 b78 (see LUCENE-4808).
       final int modifiers = c.getModifiers();
       if (
         // don't waste time with abstract classes or deprecated known-buggy ones
         Modifier.isAbstract(modifiers) || !Modifier.isPublic(modifiers)
         || c.isSynthetic() || c.isAnonymousClass() || c.isMemberClass() || c.isInterface()
-        || c.getAnnotation(Deprecated.class) != null
+        || c.isAnnotationPresent(Deprecated.class)
         || !(Tokenizer.class.isAssignableFrom(c) || TokenFilter.class.isAssignableFrom(c) || CharFilter.class.isAssignableFrom(c))
       ) {
         continue;
@@ -280,7 +278,7 @@ public class TestRandomChains extends BaseTokenStreamTestCase {
       
       for (final Constructor<?> ctor : c.getConstructors()) {
         // don't test synthetic or deprecated ctors, they likely have known bugs:
-        if (ctor.isSynthetic() || ctor.getAnnotation(Deprecated.class) != null || brokenConstructors.get(ctor) == ALWAYS) {
+        if (ctor.isSynthetic() || ctor.isAnnotationPresent(Deprecated.class) || brokenConstructors.get(ctor) == ALWAYS) {
           continue;
         }
         if (Tokenizer.class.isAssignableFrom(c)) {
