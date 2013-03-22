@@ -17,6 +17,7 @@ package org.apache.lucene.index;
  * limitations under the License.
  */
 
+import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.io.Reader;
 import java.io.StringReader;
@@ -1633,4 +1634,75 @@ public class TestIndexWriterExceptions extends LuceneTestCase {
     iw.close();
     dir.close();
   }
+  
+  // See LUCENE-4870 TooManyOpenFiles errors are thrown as
+  // FNFExceptions which can trigger data loss.
+  public void testTooManyFileException() throws Exception {
+
+    // Create failure that throws Too many open files exception randomly
+    MockDirectoryWrapper.Failure failure = new MockDirectoryWrapper.Failure() {
+
+      @Override
+      public MockDirectoryWrapper.Failure reset() {
+        doFail = false;
+        return this;
+      }
+
+      @Override
+      public void eval(MockDirectoryWrapper dir) throws IOException {
+        if (doFail) {
+          if (random().nextBoolean()) {
+            throw new FileNotFoundException("some/file/name.ext (Too many open files)");
+          }
+        }
+      }
+    };
+
+    MockDirectoryWrapper dir = newMockDirectory();
+    // The exception is only thrown on open input
+    dir.setFailOnOpenInput(true);
+    dir.failOn(failure);
+
+    // Create an index with one document
+    IndexWriterConfig iwc = new IndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer(random()));
+    IndexWriter iw = new IndexWriter(dir, iwc);
+    Document doc = new Document();
+    doc.add(new StringField("foo", "bar", Field.Store.NO));
+    iw.addDocument(doc); // add a document
+    iw.commit();
+    DirectoryReader ir = DirectoryReader.open(dir);
+    assertEquals(1, ir.numDocs());
+    ir.close();
+    iw.close();
+
+    // Open and close the index a few times
+    for (int i = 0; i < 10; i++) {
+      failure.setDoFail();
+      iwc = new IndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer(random()));
+      try {
+        iw = new IndexWriter(dir, iwc);
+      } catch (CorruptIndexException ex) {
+        // Exceptions are fine - we are running out of file handlers here
+        continue;
+      } catch (FileNotFoundException ex) {
+        continue;
+      }
+      failure.clearDoFail();
+      iw.close();
+      ir = DirectoryReader.open(dir);
+      assertEquals("lost document after iteration: " + i, 1, ir.numDocs());
+      ir.close();
+    }
+
+    // Check if document is still there
+    failure.clearDoFail();
+    ir = DirectoryReader.open(dir);
+    assertEquals(1, ir.numDocs());
+    ir.close();
+
+    dir.close();
+  }
+  
+  
+
 }
