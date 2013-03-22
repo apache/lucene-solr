@@ -142,7 +142,7 @@ public  class LeaderElector {
       } catch (KeeperException.SessionExpiredException e) {
         throw e;
       } catch (KeeperException e) {
-        SolrException.log(log, "Failed setting watch", e);
+        log.warn("Failed setting watch", e);
         // we couldn't set our watch - the node before us may already be down?
         // we need to check if we are the leader again
         checkIfIamLeader(seq, context, true);
