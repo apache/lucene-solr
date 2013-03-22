@@ -183,6 +183,7 @@ public class BasicDistributedZk2Test extends AbstractFullDistribZkTestBase {
       fail(e.getMessage());
     }
     
+    waitForCollection(cloudClient.getZkStateReader(), ONE_NODE_COLLECTION, 1);
     waitForRecoveriesToFinish(ONE_NODE_COLLECTION, cloudClient.getZkStateReader(), false);
     
     cloudClient.getZkStateReader().getLeaderRetry(ONE_NODE_COLLECTION, "shard1", 30000);
