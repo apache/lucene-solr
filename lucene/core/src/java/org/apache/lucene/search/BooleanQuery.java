@@ -18,7 +18,10 @@ package org.apache.lucene.search;
  */
 
 import java.io.IOException;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.Iterator;
+import java.util.List;
+import java.util.Set;
 
 import org.apache.lucene.index.AtomicReaderContext;
 import org.apache.lucene.index.IndexReader;
@@ -326,8 +329,10 @@ public class BooleanQuery extends Query implements Iterable<BooleanClause> {
       // detect and we never do so today... (ie, we only
       // return BooleanScorer for topScorer):
 
-      // Check if we can return a BooleanScorer
-      if (!scoreDocsInOrder && topScorer && required.size() == 0) {
+      // Check if we can and should return a BooleanScorer
+      // TODO: (LUCENE-4872) in some cases BooleanScorer may be faster for minNrShouldMatch
+      // but the same is even true of pure conjunctions...
+      if (!scoreDocsInOrder && topScorer && required.size() == 0 && minNrShouldMatch <= 1) {
         return new BooleanScorer(this, disableCoord, minNrShouldMatch, optional, prohibited, maxCoord);
       }
       
