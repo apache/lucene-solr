@@ -136,6 +136,9 @@ New Features
   to return BytesRef[] instead of Term[].  (Robert Muir, Mike
   McCandless)
 
+* LUCENE-4839: Added SorterTemplate.timSort, a O(n log n) stable sort algorithm
+  that performs well on partially sorted data. (Adrien Grand)
+
 Optimizations
 
 * LUCENE-4839: SorterTemplate.merge can now be overridden in order to replace
