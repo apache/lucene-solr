@@ -62,6 +62,13 @@ public class TestWholeBreakIterator extends LuceneTestCase {
     assertSameBreaks("000abc000", 3, 3, expected, actual);
     assertSameBreaks("000000", 3, 0, expected, actual);
   }
+  
+  /** the current position must be ignored, initial position is always first() */
+  public void testFirstPosition() throws Exception {
+    BreakIterator expected = BreakIterator.getSentenceInstance(Locale.ROOT);
+    BreakIterator actual = new WholeBreakIterator();
+    assertSameBreaks("000ab000", 3, 2, 4, expected, actual);
+  }
 
   public void assertSameBreaks(String text, BreakIterator expected, BreakIterator actual) {
     assertSameBreaks(new StringCharacterIterator(text), 
@@ -71,8 +78,12 @@ public class TestWholeBreakIterator extends LuceneTestCase {
   }
   
   public void assertSameBreaks(String text, int offset, int length, BreakIterator expected, BreakIterator actual) {
-    assertSameBreaks(new StringCharacterIterator(text, offset, offset+length, offset), 
-                     new StringCharacterIterator(text, offset, offset+length, offset), 
+    assertSameBreaks(text, offset, length, offset, expected, actual);
+  }
+  
+  public void assertSameBreaks(String text, int offset, int length, int current, BreakIterator expected, BreakIterator actual) {
+    assertSameBreaks(new StringCharacterIterator(text, offset, offset+length, current), 
+                     new StringCharacterIterator(text, offset, offset+length, current), 
                      expected, 
                      actual);
   }

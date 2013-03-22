@@ -112,6 +112,6 @@ final class WholeBreakIterator extends BreakIterator {
     start = newText.getBeginIndex();
     end = newText.getEndIndex();
     text = newText;
-    current = newText.getIndex();
+    current = start;
   }
 }
