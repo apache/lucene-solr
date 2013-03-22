@@ -112,16 +112,26 @@ public class TestPostingsHighlighterRanking extends LuceneTestCase {
   
   private void checkQuery(IndexSearcher is, Query query, int doc, int maxTopN) throws IOException {
     for (int n = 1; n < maxTopN; n++) {
-      FakePassageFormatter f1 = new FakePassageFormatter();
+      final FakePassageFormatter f1 = new FakePassageFormatter();
       PostingsHighlighter p1 = new PostingsHighlighter(Integer.MAX_VALUE-1, 
-                                                       BreakIterator.getSentenceInstance(Locale.ROOT), 
-                                                       new PassageScorer(),
-                                                       f1);
-      FakePassageFormatter f2 = new FakePassageFormatter();
+                                                       BreakIterator.getSentenceInstance(Locale.ROOT)) {
+          @Override
+          protected PassageFormatter getFormatter(String field) {
+            assertEquals("body", field);
+            return f1;
+          }
+        };
+
+      final FakePassageFormatter f2 = new FakePassageFormatter();
       PostingsHighlighter p2 = new PostingsHighlighter(Integer.MAX_VALUE-1, 
-                                                       BreakIterator.getSentenceInstance(Locale.ROOT), 
-                                                       new PassageScorer(),
-                                                       f2);
+                                                       BreakIterator.getSentenceInstance(Locale.ROOT)) {
+          @Override
+          protected PassageFormatter getFormatter(String field) {
+            assertEquals("body", field);
+            return f2;
+          }
+        };
+
       BooleanQuery bq = new BooleanQuery(false);
       bq.add(query, BooleanClause.Occur.MUST);
       bq.add(new TermQuery(new Term("id", Integer.toString(doc))), BooleanClause.Occur.MUST);
@@ -170,8 +180,7 @@ public class TestPostingsHighlighterRanking extends LuceneTestCase {
         // we use a very simple analyzer. so we can assert the matches are correct
         int lastMatchStart = -1;
         for (int i = 0; i < p.getNumMatches(); i++) {
-          Term term = p.getMatchTerms()[i];
-          assertEquals("body", term.field());
+          BytesRef term = p.getMatchTerms()[i];
           int matchStart = p.getMatchStarts()[i];
           assertTrue(matchStart >= 0);
           // must at least start within the passage
@@ -184,9 +193,8 @@ public class TestPostingsHighlighterRanking extends LuceneTestCase {
           // single character terms
           assertEquals(matchStart+1, matchEnd);
           // and the offsets must be correct...
-          BytesRef bytes = term.bytes();
-          assertEquals(1, bytes.length);
-          assertEquals((char)bytes.bytes[bytes.offset], Character.toLowerCase(content.charAt(matchStart)));
+          assertEquals(1, term.length);
+          assertEquals((char)term.bytes[term.offset], Character.toLowerCase(content.charAt(matchStart)));
         }
         // record just the start/end offset for simplicity
         seen.add(new Pair(p.getStartOffset(), p.getEndOffset()));
@@ -262,9 +270,12 @@ public class TestPostingsHighlighterRanking extends LuceneTestCase {
     
     IndexSearcher searcher = newSearcher(ir);
     PostingsHighlighter highlighter = new PostingsHighlighter(10000, 
-                                             BreakIterator.getSentenceInstance(Locale.ROOT), 
-                                             new PassageScorer(1.2f, 0, 87), 
-                                             new PassageFormatter());
+                                                              BreakIterator.getSentenceInstance(Locale.ROOT)) {
+        @Override
+        protected PassageScorer getScorer(String field) {
+          return new PassageScorer(1.2f, 0, 87);
+        }
+      };
     Query query = new TermQuery(new Term("body", "test"));
     TopDocs topDocs = searcher.search(query, null, 10, Sort.INDEXORDER);
     assertEquals(1, topDocs.totalHits);
@@ -299,9 +310,12 @@ public class TestPostingsHighlighterRanking extends LuceneTestCase {
     
     IndexSearcher searcher = newSearcher(ir);
     PostingsHighlighter highlighter = new PostingsHighlighter(10000, 
-                                             BreakIterator.getSentenceInstance(Locale.ROOT), 
-                                             new PassageScorer(0, 0.75f, 87), 
-                                             new PassageFormatter());
+                                                              BreakIterator.getSentenceInstance(Locale.ROOT)) {
+        @Override
+        protected PassageScorer getScorer(String field) {
+          return new PassageScorer(0, 0.75f, 87);
+        }
+      };
     BooleanQuery query = new BooleanQuery();
     query.add(new TermQuery(new Term("body", "foo")), BooleanClause.Occur.SHOULD);
     query.add(new TermQuery(new Term("body", "bar")), BooleanClause.Occur.SHOULD);
