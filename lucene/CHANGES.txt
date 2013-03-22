@@ -127,6 +127,9 @@ New Features
   IndexReader leaf by throwing a CollectionTerminatedException in
   Collector.collect. (Adrien Grand, Shai Erera)
 
+* LUCENE-4752: New SortingMergePolicy (in lucene/misc) that sorts documents
+  before merging segments. (Adrien Grand, Shai Erera, David Smiley)
+
 API Changes
 
 * LUCENE-4844: removed TaxonomyReader.getParent(), you should use

@@ -2395,8 +2395,12 @@ public class IndexWriter implements Closeable, TwoPhaseCommit {
       flush(false, true);
 
       String mergedName = newSegmentName();
+      final List<AtomicReader> mergeReaders = new ArrayList<AtomicReader>();
       for (IndexReader indexReader : readers) {
         numDocs += indexReader.numDocs();
+        for (AtomicReaderContext ctx : indexReader.leaves()) {
+          mergeReaders.add(ctx.reader());
+        }
       }
       final IOContext context = new IOContext(new MergeInfo(numDocs, -1, true, -1));
 
@@ -2407,12 +2411,8 @@ public class IndexWriter implements Closeable, TwoPhaseCommit {
       SegmentInfo info = new SegmentInfo(directory, Constants.LUCENE_MAIN_VERSION, mergedName, -1,
                                          false, codec, null, null);
 
-      SegmentMerger merger = new SegmentMerger(info, infoStream, trackingDir, config.getTermIndexInterval(),
+      SegmentMerger merger = new SegmentMerger(mergeReaders, info, infoStream, trackingDir, config.getTermIndexInterval(),
                                                MergeState.CheckAbort.NONE, globalFieldNumberMap, context);
-
-      for (IndexReader reader : readers) {    // add new indexes
-        merger.add(reader);
-      }
 
       MergeState mergeState;
       boolean success = false;
@@ -3561,9 +3561,6 @@ public class IndexWriter implements Closeable, TwoPhaseCommit {
     final MergeState.CheckAbort checkAbort = new MergeState.CheckAbort(merge, directory);
     final TrackingDirectoryWrapper dirWrapper = new TrackingDirectoryWrapper(directory);
 
-    SegmentMerger merger = new SegmentMerger(merge.info.info, infoStream, dirWrapper, config.getTermIndexInterval(), checkAbort,
-                                             globalFieldNumberMap, context);
-
     if (infoStream.isEnabled("IW")) {
       infoStream.message("IW", "merging " + segString(merge.segments));
     }
@@ -3633,11 +3630,14 @@ public class IndexWriter implements Closeable, TwoPhaseCommit {
 
         merge.readers.add(reader);
         assert delCount <= info.info.getDocCount(): "delCount=" + delCount + " info.docCount=" + info.info.getDocCount() + " rld.pendingDeleteCount=" + rld.getPendingDeleteCount() + " info.getDelCount()=" + info.getDelCount();
-        if (delCount < info.info.getDocCount()) {
-          merger.add(reader);
-        }
         segUpto++;
       }
+
+      // we pass merge.getMergeReaders() instead of merge.readers to allow the
+      // OneMerge to return a view over the actual segments to merge
+      final SegmentMerger merger = new SegmentMerger(merge.getMergeReaders(),
+          merge.info.info, infoStream, dirWrapper, config.getTermIndexInterval(),
+          checkAbort, globalFieldNumberMap, context);
 
       merge.checkAborted(directory);
 

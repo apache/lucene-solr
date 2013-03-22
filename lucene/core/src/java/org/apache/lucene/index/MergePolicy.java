@@ -19,6 +19,7 @@ package org.apache.lucene.index;
 
 import java.io.IOException;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 
@@ -102,6 +103,22 @@ public abstract class MergePolicy implements java.io.Closeable, Cloneable {
         count += info.info.getDocCount();
       }
       totalDocCount = count;
+    }
+
+    /** Get the list of readers to merge. Note that this list does not
+     *  necessarily match the list of segments to merge and should only be used
+     *  to feed SegmentMerger to initialize a merge. */
+    public List<AtomicReader> getMergeReaders() throws IOException {
+      if (readers == null) {
+        throw new IllegalStateException("IndexWriter has not initialized readers from the segment infos yet");
+      }
+      final List<AtomicReader> readers = new ArrayList<AtomicReader>(this.readers.size());
+      for (AtomicReader reader : this.readers) {
+        if (reader.numDocs() > 0) {
+          readers.add(reader);
+        }
+      }
+      return Collections.unmodifiableList(readers);
     }
 
     /** Record that an exception occurred while executing
