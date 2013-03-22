@@ -136,6 +136,14 @@ New Features
   to return BytesRef[] instead of Term[].  (Robert Muir, Mike
   McCandless)
 
+Optimizations
+
+* LUCENE-4839: SorterTemplate.merge can now be overridden in order to replace
+  the default implementation which merges in-place by a faster implementation
+  that could require fewer swaps at the expense of some extra memory.
+  ArrayUtil and CollectionUtil override it so that their mergeSort and timSort
+  methods are faster but only require up to 1% of extra memory. (Adrien Grand)
+
 API Changes
 
 * LUCENE-4844: removed TaxonomyReader.getParent(), you should use
