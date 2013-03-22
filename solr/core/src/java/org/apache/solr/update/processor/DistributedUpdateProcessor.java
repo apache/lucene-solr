@@ -250,7 +250,9 @@ public class DistributedUpdateProcessor extends UpdateRequestProcessor {
 
             for (ZkCoreNodeProps props : replicaProps) {
               if (skipList != null) {
-                if (!skipListSet.contains(props.getCoreUrl())) {
+                boolean skip = skipListSet.contains(props.getCoreUrl());
+                log.info("check url:" + props.getCoreUrl() + " against:" + skipListSet + " result:" + skip);
+                if (!skip) {
                   nodes.add(new StdNode(props));
                 }
               } else {
