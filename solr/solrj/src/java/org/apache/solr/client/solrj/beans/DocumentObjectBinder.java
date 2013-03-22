@@ -114,9 +114,7 @@ public class DocumentObjectBinder {
     }
 
     for (AccessibleObject member : members) {
-      // TODO: Fix below code to use c.isAnnotationPresent(). It was changed
-      // to the null check to work around a bug in JDK 8 b78 (see LUCENE-4808).
-      if (member.getAnnotation(Field.class) != null) {
+      if (member.isAnnotationPresent(Field.class)) {
         member.setAccessible(true);
         fields.add(new DocField(member));
       }
