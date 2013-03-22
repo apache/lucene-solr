@@ -23,6 +23,7 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 
+import org.apache.lucene.index.SegmentInfos.FindSegmentsFile;
 import org.apache.lucene.search.SearcherManager; // javadocs
 import org.apache.lucene.store.Directory;
 
@@ -319,7 +320,24 @@ public abstract class DirectoryReader extends BaseCompositeReader<AtomicReader> 
    */
   public static boolean indexExists(Directory directory) {
     try {
-      new SegmentInfos().read(directory);
+      new FindSegmentsFile(directory) {
+        @Override
+        protected Object doBody(String segmentFileName) throws IOException {
+          try {
+            new SegmentInfos().read(directory, segmentFileName);
+          } catch (FileNotFoundException ex) {
+            if (!directory.fileExists(segmentFileName)) {
+              throw ex;
+            }
+            /* this is ok - we might have run into a access exception here.
+             * or even worse like on LUCENE-4870 this is triggered due to
+             * too many open files on the system. In that case we rather report
+             * a false positive here since wrongly returning false from indexExist
+             * can cause data loss since IW relies on this.*/
+          }
+          return null;
+        }
+      }.run();
       return true;
     } catch (IOException ioe) {
       return false;
