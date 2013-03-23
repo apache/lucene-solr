@@ -227,6 +227,10 @@ Bug Fixes
 
 * SOLR-4626: getIndexWriter(null) should also respect pauseWriter. (Mark Miller)
 
+* SOLR-3819: Grouped faceting (group.facet=true) did not respect filter
+  exclusions. (Petter Remen, yonik)
+
+
 Optimizations
 ----------------------
 
