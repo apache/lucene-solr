@@ -35,7 +35,9 @@ import org.apache.lucene.index.Term;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.util.LuceneTestCase;
 import org.apache.lucene.util._TestUtil;
+import org.apache.lucene.util.LuceneTestCase.SuppressCodecs;
 
+@SuppressCodecs("Lucene3x")
 public class TestSortingMergePolicy extends LuceneTestCase {
 
   private static final String DELETE_TERM = "abc";
