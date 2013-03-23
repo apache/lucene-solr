@@ -125,6 +125,11 @@ public final class SortingMergePolicy extends MergePolicy {
   }
 
   @Override
+  public MergePolicy clone() {
+    return new SortingMergePolicy(in.clone(), sorter);
+  }
+
+  @Override
   public void close() {
     in.close();
   }
