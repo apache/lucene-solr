@@ -81,6 +81,9 @@ Bug Fixes
 * SOLR-4634: Fix scripting engine tests to work with Java 8's "Nashorn" Javascript
   implementation.  (Uwe Schindler)
 
+* SOLR-4636: If opening a reader fails for some reason when opening a SolrIndexSearcher,
+  a Directory can be left unreleased. (Mark Miller)
+
 Optimizations
 ----------------------
 
