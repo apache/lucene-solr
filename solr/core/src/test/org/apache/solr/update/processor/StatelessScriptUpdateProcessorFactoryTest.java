@@ -81,7 +81,6 @@ public class StatelessScriptUpdateProcessorFactoryTest extends UpdateProcessorTe
     factory.setScriptEngineCustomizer(new ScriptEngineCustomizer() {
       @Override
       public void customize(ScriptEngine engine) {
-        engine.put("testCase", StatelessScriptUpdateProcessorFactoryTest.this);
         engine.put("functionMessages", functionMessages);
       }
     });
@@ -127,7 +126,6 @@ public class StatelessScriptUpdateProcessorFactoryTest extends UpdateProcessorTe
       ScriptEngineCustomizer customizer = new ScriptEngineCustomizer() {
           @Override
           public void customize(ScriptEngine engine) {
-            engine.put("testCase", StatelessScriptUpdateProcessorFactoryTest.this);
             engine.put("functionMessages", functionMessages);
           }
         };
