@@ -44,6 +44,7 @@ import org.apache.lucene.util.ArrayUtil;
 import org.apache.lucene.util.Bits;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.SorterTemplate;
+import org.apache.lucene.util.automaton.CompiledAutomaton;
 
 /**
  * An {@link AtomicReader} which supports sorting documents by a given
@@ -100,6 +101,12 @@ public class SortingAtomicReader extends FilterAtomicReader {
     @Override
     public TermsEnum iterator(final TermsEnum reuse) throws IOException {
       return new SortingTermsEnum(in.iterator(reuse), docMap, indexOptions);
+    }
+
+    @Override
+    public TermsEnum intersect(CompiledAutomaton compiled, BytesRef startTerm)
+        throws IOException {
+      return new SortingTermsEnum(in.intersect(compiled, startTerm), docMap, indexOptions);
     }
 
   }
