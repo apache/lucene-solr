@@ -78,6 +78,9 @@ Bug Fixes
 * SOLR-4543: setting shardHandlerFactory in solr.xml/solr.properties does not work.
   (Ryan Ernst, Robert Muir via Erick Erickson)
 
+* SOLR-4634: Fix scripting engine tests to work with Java 8's "Nashorn" Javascript
+  implementation.  (Uwe Schindler)
+
 Optimizations
 ----------------------
 

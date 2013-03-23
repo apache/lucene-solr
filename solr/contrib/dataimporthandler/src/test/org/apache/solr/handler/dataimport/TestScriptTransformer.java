@@ -53,9 +53,9 @@ public class TestScriptTransformer extends AbstractDataImportHandlerTestCase {
       EntityProcessorWrapper sep = new EntityProcessorWrapper(new SqlEntityProcessor(), null, null);
       sep.init(context);
       sep.applyTransformer(map);
-      assertEquals(map.get("name"), "Hello Scott");
+      assertEquals("Hello Scott", map.get("name").toString());
     } catch (DataImportHandlerException e) {    
-      assumeFalse("This JVM does not have Rhino installed.  Test Skipped.", e
+      assumeFalse("This JVM does not have JavaScript installed.  Test Skipped.", e
           .getMessage().startsWith("Cannot load Script Engine for language"));
       throw e;
     }
@@ -86,9 +86,9 @@ public class TestScriptTransformer extends AbstractDataImportHandlerTestCase {
       EntityProcessorWrapper sep = new EntityProcessorWrapper(new SqlEntityProcessor(), null, null);
       sep.init(context);
       sep.applyTransformer(map);
-      assertEquals(map.get("name"), "Hello Scott");
+      assertEquals("Hello Scott", map.get("name").toString());
     } catch (DataImportHandlerException e) {   
-      assumeFalse("This JVM does not have Rhino installed.  Test Skipped.", e
+      assumeFalse("This JVM does not have JavaScript installed.  Test Skipped.", e
           .getMessage().startsWith("Cannot load Script Engine for language"));
       throw e;
     }
@@ -104,7 +104,7 @@ public class TestScriptTransformer extends AbstractDataImportHandlerTestCase {
       DIHConfiguration dc = di.readFromXml(document);
       assertTrue(dc.getScript().getText().indexOf("checkNextToken") > -1);
     } catch (DataImportHandlerException e) {    
-      assumeFalse("This JVM does not have Rhino installed.  Test Skipped.", e
+      assumeFalse("This JVM does not have JavaScript installed.  Test Skipped.", e
           .getMessage().startsWith("Cannot load Script Engine for language"));
       throw e;
     }
@@ -131,7 +131,7 @@ public class TestScriptTransformer extends AbstractDataImportHandlerTestCase {
       sep.applyTransformer(map);
       assertNull(map.get("$hasMore"));
     } catch (DataImportHandlerException e) {    
-      assumeFalse("This JVM does not have Rhino installed.  Test Skipped.", e
+      assumeFalse("This JVM does not have JavaScript installed.  Test Skipped.", e
           .getMessage().startsWith("Cannot load Script Engine for language"));
       throw e;
     }
