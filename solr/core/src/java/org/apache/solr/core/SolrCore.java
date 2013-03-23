@@ -1390,7 +1390,7 @@ public final class SolrCore implements SolrInfoMBean {
         }
 
        // for now, turn off caches if this is for a realtime reader (caches take a little while to instantiate)
-        tmp = new SolrIndexSearcher(this, newIndexDir, schema, (realtime ? "realtime":"main"), newReader, true, !realtime, true, directoryFactory);
+        tmp = new SolrIndexSearcher(this, newIndexDir, schema, getSolrConfig().indexConfig, (realtime ? "realtime":"main"), newReader, true, !realtime, true, directoryFactory);
 
       } else {
         // newestSearcher == null at this point
@@ -1400,7 +1400,7 @@ public final class SolrCore implements SolrInfoMBean {
           // so that we pick up any uncommitted changes and so we don't go backwards
           // in time on a core reload
           DirectoryReader newReader = newReaderCreator.call();
-          tmp = new SolrIndexSearcher(this, newIndexDir, schema, (realtime ? "realtime":"main"), newReader, true, !realtime, true, directoryFactory);
+          tmp = new SolrIndexSearcher(this, newIndexDir, schema, getSolrConfig().indexConfig, (realtime ? "realtime":"main"), newReader, true, !realtime, true, directoryFactory);
         } else {
          // normal open that happens at startup
         // verbose("non-reopen START:");
