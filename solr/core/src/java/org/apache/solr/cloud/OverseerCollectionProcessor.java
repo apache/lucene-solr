@@ -175,22 +175,7 @@ public class OverseerCollectionProcessor implements Runnable, ClosableThread {
         throw new SolrException(ErrorCode.BAD_REQUEST, "Unknown operation:"
             + operation);
       }
-      int failed = 0;
-      ShardResponse srsp;
-      
-      do {
-        srsp = shardHandler.takeCompletedIncludingErrors();
-        if (srsp != null) {
-          Throwable e = srsp.getException();
-          if (e != null) {
-            failed++;
-            log.error("Error talking to shard: " + srsp.getShard(), e);
-            results.add(srsp.getShard(), e);
-          } else {
-            results.add(srsp.getShard(), srsp.getSolrResponse().getResponse());
-          }
-        }
-      } while (srsp != null);
+
     } catch (Exception ex) {
       SolrException.log(log, "Collection " + operation + " of " + operation
           + " failed", ex);
