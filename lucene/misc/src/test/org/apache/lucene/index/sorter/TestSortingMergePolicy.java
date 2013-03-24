@@ -18,6 +18,7 @@ package org.apache.lucene.index.sorter;
  */
 
 import java.io.IOException;
+import java.util.Random;
 
 import org.apache.lucene.analysis.MockAnalyzer;
 import org.apache.lucene.document.Document;
@@ -27,9 +28,9 @@ import org.apache.lucene.document.StringField;
 import org.apache.lucene.index.AtomicReader;
 import org.apache.lucene.index.DirectoryReader;
 import org.apache.lucene.index.IndexReader;
-import org.apache.lucene.index.IndexWriter;
 import org.apache.lucene.index.IndexWriterConfig;
 import org.apache.lucene.index.NumericDocValues;
+import org.apache.lucene.index.RandomIndexWriter;
 import org.apache.lucene.index.SlowCompositeReaderWrapper;
 import org.apache.lucene.index.Term;
 import org.apache.lucene.store.Directory;
@@ -62,11 +63,12 @@ public class TestSortingMergePolicy extends LuceneTestCase {
     dir1 = newDirectory();
     dir2 = newDirectory();
     final int numDocs = atLeast(100);
-    final IndexWriterConfig iwc1 = newIndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer(random()));
-    final IndexWriterConfig iwc2 = iwc1.clone();
+    final long seed = random().nextLong();
+    final IndexWriterConfig iwc1 = newIndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer(new Random(seed)));
+    final IndexWriterConfig iwc2 = newIndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer(new Random(seed)));
     iwc2.setMergePolicy(new SortingMergePolicy(iwc2.getMergePolicy(), sorter));
-    final IndexWriter iw1 = new IndexWriter(dir1, iwc1);
-    final IndexWriter iw2 = new IndexWriter(dir2, iwc2);
+    final RandomIndexWriter iw1 = new RandomIndexWriter(new Random(seed), dir1, iwc1);
+    final RandomIndexWriter iw2 = new RandomIndexWriter(new Random(seed), dir2, iwc2);
     for (int i = 0; i < numDocs; ++i) {
       final Document doc = randomDocument();
       iw1.addDocument(doc);
