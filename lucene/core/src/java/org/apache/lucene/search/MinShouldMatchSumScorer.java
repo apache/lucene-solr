@@ -25,7 +25,8 @@ import java.util.List;
 
 import org.apache.lucene.util.ArrayUtil;
 
-/** A Scorer for OR like queries, counterpart of <code>ConjunctionScorer</code>.
+/**
+ * A Scorer for OR like queries, counterpart of <code>ConjunctionScorer</code>.
  * This Scorer implements {@link Scorer#advance(int)} and uses advance() on the given Scorers.
  * 
  * This implementation uses the minimumMatch constraint actively to efficiently
@@ -51,8 +52,7 @@ class MinShouldMatchSumScorer extends Scorer {
    *  not run out of docs, sorted by increasing sparsity of docs returned by that subScorer.
    *  For now, the cost of subscorers is assumed to be inversely correlated with sparsity.
    */
-  private final Scorer mmStack[]; // of size mm-1: 0..mm-2
-  //private int nrInStack; // always mm-1
+  private final Scorer mmStack[]; // of size mm-1: 0..mm-2, always full
 
   /** The document number of the current match. */
   private int doc = -1;
@@ -60,16 +60,17 @@ class MinShouldMatchSumScorer extends Scorer {
   protected int nrMatchers = -1;
   private double score = Float.NaN;
 
-  /** Construct a <code>DisjunctionScorer</code>.
+  /**
+   * Construct a <code>MinShouldMatchSumScorer</code>.
+   * 
    * @param weight The weight to be used.
    * @param subScorers A collection of at least two subscorers.
    * @param minimumNrMatchers The positive minimum number of subscorers that should
    * match to match this query.
    * <br>When <code>minimumNrMatchers</code> is bigger than
-   * the number of <code>subScorers</code>,
-   * no matches will be produced.
+   * the number of <code>subScorers</code>, no matches will be produced.
    * <br>When minimumNrMatchers equals the number of subScorers,
-   * it more efficient to use <code>ConjunctionScorer</code>.
+   * it is more efficient to use <code>ConjunctionScorer</code>.
    */
   public MinShouldMatchSumScorer(Weight weight, List<Scorer> subScorers, int minimumNrMatchers) throws IOException {
     super(weight);
@@ -105,9 +106,11 @@ class MinShouldMatchSumScorer extends Scorer {
       this.subScorers[i] = this.sortedSubScorers[mm-1+i];
     }
     minheapHeapify();
+    assert minheapCheck();
   }
-
-  /** Construct a <code>DisjunctionScorer</code>, using one as the minimum number
+  
+  /**
+   * Construct a <code>DisjunctionScorer</code>, using one as the minimum number
    * of matching subscorers.
    */
   public MinShouldMatchSumScorer(Weight weight, List<Scorer> subScorers) throws IOException {
@@ -126,11 +129,11 @@ class MinShouldMatchSumScorer extends Scorer {
   @Override
   public int nextDoc() throws IOException {
     assert doc != NO_MORE_DOCS;
-    while(true) {
+    while (true) {
       // to remove current doc, call next() on all subScorers on current doc within heap
       while (subScorers[0].docID() == doc) {
         if (subScorers[0].nextDoc() != NO_MORE_DOCS) {
-          minheapAdjust(0);
+          minheapSiftDown(0);
         } else {
           minheapRemoveRoot();
           numScorers--;
@@ -138,6 +141,7 @@ class MinShouldMatchSumScorer extends Scorer {
             return doc = NO_MORE_DOCS;
           }
         }
+        //assert minheapCheck();
       }
 
       evaluateSmallestDocInHeap();
@@ -162,8 +166,9 @@ class MinShouldMatchSumScorer extends Scorer {
     countMatches(1);
     countMatches(2);
     // 2. score and count number of matching subScorers within stack,
-    //    short-circuit: stop when mm can't be reached for current doc, then perform on heap next() TODO advance() might be possible, but complicates things
-    for (int i = mm-2; i >= 0; i--) { // advance first sparsest subScorer as indicated by next doc
+    // short-circuit: stop when mm can't be reached for current doc, then perform on heap next()
+    // TODO instead advance() might be possible, but complicates things
+    for (int i = mm-2; i >= 0; i--) { // first advance sparsest subScorer
       if (mmStack[i].docID() >= doc || mmStack[i].advance(doc) != NO_MORE_DOCS) {
         if (mmStack[i].docID() == doc) { // either it was already on doc, or got there via advance()
           nrMatchers++;
@@ -181,12 +186,13 @@ class MinShouldMatchSumScorer extends Scorer {
           return;
         }
         if (mm-2-i > 0) {
-          // shift RHS of array left, TODO consider double-linked list as data structure
+          // shift RHS of array left
           System.arraycopy(mmStack, i+1, mmStack, i, mm-2-i);
         }
-        // find next most costly subScorer within heap
-        while (!minheapRemove(sortedSubScorers[sortedSubScorersIdx++])) // TODO this is O((# clauses)^2), find most costly subScorer within heap in O(n)
-          ;
+        // find next most costly subScorer within heap TODO can this be done better?
+        while (!minheapRemove(sortedSubScorers[sortedSubScorersIdx++])) {
+          //assert minheapCheck();
+        }
         // add the subScorer removed from heap to stack
         mmStack[mm-2] = sortedSubScorers[sortedSubScorersIdx-1];
         
@@ -196,7 +202,7 @@ class MinShouldMatchSumScorer extends Scorer {
       }
     }
   }
-  
+
   // TODO: this currently scores, but so did the previous impl
   // TODO: remove recursion.
   // TODO: consider separating scoring out of here, then modify this
@@ -210,22 +216,22 @@ class MinShouldMatchSumScorer extends Scorer {
       countMatches((root<<1)+2);
     }
   }
-  
-  /** Returns the score of the current document matching the query.
-   * Initially invalid, until {@link #nextDoc()} is called the first time.
+
+  /**
+   * Returns the score of the current document matching the query. Initially
+   * invalid, until {@link #nextDoc()} is called the first time.
    */
   @Override
-  public float score() throws IOException { 
-    return (float) score; 
+  public float score() throws IOException {
+    return (float) score;
   }
-   
+
   @Override
   public int docID() {
     return doc;
   }
 
   @Override
-//  public float freq() throws IOException {
   public int freq() throws IOException {
     return nrMatchers;
   }
@@ -235,7 +241,7 @@ class MinShouldMatchSumScorer extends Scorer {
    * greater than or equal to a given target. <br>
    * The implementation uses the advance() method on the subscorers.
    * 
-   * @param target The target document number.
+   * @param target the target document number.
    * @return the document whose number is greater than or equal to the given
    *         target, or -1 if none exist.
    */
@@ -246,14 +252,15 @@ class MinShouldMatchSumScorer extends Scorer {
     // advance all Scorers in heap at smaller docs to at least target
     while (subScorers[0].docID() < target) {
       if (subScorers[0].advance(target) != NO_MORE_DOCS) {
-        minheapAdjust(0);
+        minheapSiftDown(0);
       } else {
         minheapRemoveRoot();
         numScorers--;
-        if (numScorers < mm ) {
+        if (numScorers < mm) {
           return doc = NO_MORE_DOCS;
         }
       }
+      //assert minheapCheck();
     }
 
     evaluateSmallestDocInHeap();
@@ -267,34 +274,35 @@ class MinShouldMatchSumScorer extends Scorer {
   
   @Override
   public long cost() {
-    // cost for merging of lists analog to DisjunctionSumScorer 
+    // cost for merging of lists analog to DisjunctionSumScorer
     long costCandidateGeneration = 0;
-    for (int i=0; i<nrInHeap; i++)
+    for (int i = 0; i < nrInHeap; i++)
       costCandidateGeneration += subScorers[i].cost();
-    // TODO cost for advance() seems intuitively higher than for iteration + heap merge
+    // TODO is cost for advance() different to cost for iteration + heap merge
+    //      and how do they compare overall to pure disjunctions? 
     final float c1 = 1.0f,
-                c2 = 1.0f; // maybe a constant, maybe a proportion between costCandidateGeneration and sum(subScorer_to_be_advanced.cost())
+                c2 = 1.0f; // maybe a constant, maybe a proportion between costCandidateGeneration and sum(subScorer_to_be_advanced.cost())?
     return (long) (
            c1 * costCandidateGeneration +        // heap-merge cost
            c2 * costCandidateGeneration * (mm-1) // advance() cost
            );
   }
   
-  
-  /** 
+  /**
    * Organize subScorers into a min heap with scorers generating the earliest document on top.
    */
   protected final void minheapHeapify() {
     for (int i = (nrInHeap >> 1) - 1; i >= 0; i--) {
-      minheapAdjust(i);
+      minheapSiftDown(i);
     }
   }
-    
-  /** 
+  
+  /**
    * The subtree of subScorers at root is a min heap except possibly for its root element.
    * Bubble the root down as required to make the subtree a heap.
    */
-  protected final void minheapAdjust(int root) {
+  protected final void minheapSiftDown(int root) {
+    // TODO could this implementation also move rather than swapping neighbours?
     Scorer scorer = subScorers[root];
     int doc = scorer.docID();
     int i = root;
@@ -328,28 +336,9 @@ class MinShouldMatchSumScorer extends Scorer {
     }
   }
 
-  /** 
-   * Remove the root Scorer from subScorers and re-establish it as a heap
-   */
-  protected final void minheapRemoveRoot() {
-    if (nrInHeap == 1) {
-      subScorers[0] = null;
-      nrInHeap = 0;
-    } else {
-      subScorers[0] = subScorers[nrInHeap-1];
-      subScorers[nrInHeap-1] = null;
-      nrInHeap--;
-      minheapAdjust(0);
-    }
-  }
-
-  /**
-   * Adds the given Scorer to the heap by adding it at the end and bubbling it up
-   */
-  protected final void minheapAdd(Scorer scorer) {
-    int i = nrInHeap;
-    nrInHeap++;
-    int doc = scorer.docID();
+  protected final void minheapSiftUp(int i) {
+    Scorer scorer = subScorers[i];
+    final int doc = scorer.docID();
     // find right place for scorer
     while (i > 0) {
       int parent = (i - 1) >> 1;
@@ -366,18 +355,51 @@ class MinShouldMatchSumScorer extends Scorer {
   }
 
   /**
-   * Removes a given Scorer from the heap by placing end of heap at that position and bubbling it down
+   * Remove the root Scorer from subScorers and re-establish it as a heap
+   */
+  protected final void minheapRemoveRoot() {
+    if (nrInHeap == 1) {
+      //subScorers[0] = null; // not necessary
+      nrInHeap = 0;
+    } else {
+      nrInHeap--;
+      subScorers[0] = subScorers[nrInHeap];
+      //subScorers[nrInHeap] = null; // not necessary
+      minheapSiftDown(0);
+    }
+  }
+  
+  /**
+   * Removes a given Scorer from the heap by placing end of heap at that
+   * position and bubbling it either up or down
    */
   protected final boolean minheapRemove(Scorer scorer) {
     // find scorer: O(nrInHeap)
     for (int i = 0; i < nrInHeap; i++) {
       if (subScorers[i] == scorer) { // remove scorer
         subScorers[i] = subScorers[--nrInHeap];
-        minheapAdjust(i);
+        //if (i != nrInHeap) subScorers[nrInHeap] = null; // not necessary
+        minheapSiftUp(i);
+        minheapSiftDown(i);
         return true;
       }
     }
     return false; // scorer already exhausted
+  }
+  
+  boolean minheapCheck() {
+    return minheapCheck(0);
+  }
+  private boolean minheapCheck(int root) {
+    if (root >= nrInHeap)
+      return true;
+    int lchild = (root << 1) + 1;
+    int rchild = (root << 1) + 2;
+    if (lchild < nrInHeap && subScorers[root].docID() > subScorers[lchild].docID())
+      return false;
+    if (rchild < nrInHeap && subScorers[root].docID() > subScorers[rchild].docID())
+      return false;
+    return minheapCheck(lchild) && minheapCheck(rchild);
   }
   
 }

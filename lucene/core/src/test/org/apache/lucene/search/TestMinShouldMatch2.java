@@ -56,7 +56,7 @@ public class TestMinShouldMatch2 extends LuceneTestCase {
   static final String alwaysTerms[] = { "a" };
   static final String commonTerms[] = { "b", "c", "d" };
   static final String mediumTerms[] = { "e", "f", "g" };
-  static final String rareTerms[]   = { "h", "i", "j" };
+  static final String rareTerms[]   = { "h", "i", "j", "k", "l", "m", "n", "o", "p", "q", "r", "s", "t", "u", "v", "w", "x", "y", "z" };
   
   @Override
   public void setUp() throws Exception {
@@ -134,6 +134,7 @@ public class TestMinShouldMatch2 extends LuceneTestCase {
     int doc;
     while ((doc = expected.nextDoc()) != DocIdSetIterator.NO_MORE_DOCS) {
       assertEquals(doc, actual.nextDoc());
+      assertEquals(expected.freq(), actual.freq());
       float expectedScore = expected.score();
       float actualScore = actual.score();
       assertEquals(expectedScore, actualScore, CheckHits.explainToleranceDelta(expectedScore, actualScore));
@@ -150,6 +151,7 @@ public class TestMinShouldMatch2 extends LuceneTestCase {
     int doc;
     while ((doc = expected.advance(prevDoc+amount)) != DocIdSetIterator.NO_MORE_DOCS) {
       assertEquals(doc, actual.advance(prevDoc+amount));
+      assertEquals(expected.freq(), actual.freq());
       float expectedScore = expected.score();
       float actualScore = actual.score();
       assertEquals(expectedScore, actualScore, CheckHits.explainToleranceDelta(expectedScore, actualScore));
