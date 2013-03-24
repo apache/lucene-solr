@@ -31,6 +31,7 @@ import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.IndexWriterConfig;
 import org.apache.lucene.index.NumericDocValues;
 import org.apache.lucene.index.RandomIndexWriter;
+import org.apache.lucene.index.SerialMergeScheduler;
 import org.apache.lucene.index.SlowCompositeReaderWrapper;
 import org.apache.lucene.index.Term;
 import org.apache.lucene.store.Directory;
@@ -67,13 +68,14 @@ public class TestSortingMergePolicy extends LuceneTestCase {
     final IndexWriterConfig iwc1 = newIndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer(new Random(seed)));
     final IndexWriterConfig iwc2 = newIndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer(new Random(seed)));
     iwc2.setMergePolicy(new SortingMergePolicy(iwc2.getMergePolicy(), sorter));
+    iwc2.setMergeScheduler(new SerialMergeScheduler()); // Remove this line when LUCENE-4752 is fixed
     final RandomIndexWriter iw1 = new RandomIndexWriter(new Random(seed), dir1, iwc1);
     final RandomIndexWriter iw2 = new RandomIndexWriter(new Random(seed), dir2, iwc2);
     for (int i = 0; i < numDocs; ++i) {
       final Document doc = randomDocument();
       iw1.addDocument(doc);
       iw2.addDocument(doc);
-      if (i == numDocs / 2 || rarely()) {
+      if (i == numDocs / 2 || (i != numDocs - 1 && rarely())) {
         iw1.commit();
         iw2.commit();
       }
