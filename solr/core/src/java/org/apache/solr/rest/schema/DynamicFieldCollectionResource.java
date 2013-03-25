@@ -1,4 +1,4 @@
-package org.apache.solr.rest;
+package org.apache.solr.rest.schema;
 /*
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
@@ -16,11 +16,12 @@ package org.apache.solr.rest;
  * limitations under the License.
  */
 
-
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.SolrException.ErrorCode;
 import org.apache.solr.common.params.CommonParams;
 import org.apache.solr.common.util.SimpleOrderedMap;
+import org.apache.solr.rest.GETable;
+import org.apache.solr.schema.IndexSchema;
 import org.apache.solr.schema.SchemaField;
 import org.restlet.representation.Representation;
 import org.restlet.resource.ResourceException;
@@ -28,71 +29,60 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
-import java.util.SortedSet;
-import java.util.TreeSet;
+import java.util.Map;
 
 /**
- * This class responds to requests at /solr/(corename)/schema/fields
+ * This class responds to requests at /solr/(corename)/schema/dynamicfields
  * <p/>
- * Two query parameters are supported:
- * <ul>
- *   <li>
- *     "fl": a comma- and/or space-separated list of fields to send properties
- *     for in the response, rather than the default: all of them.
- *   </li>
- *   <li>
- *     "includeDynamic": if the "fl" parameter is specified, matching dynamic
- *     fields are included in the response and identified with the "dynamicBase"
- *     property.  If the "fl" parameter is not specified, the "includeDynamic"
- *     query parameter is ignored.
- *   </li>
- * </ul>
+ * To restrict the set of dynamic fields in the response, specify a comma
+ * and/or space separated list of dynamic field patterns in the "fl" query
+ * parameter. 
  */
-public class FieldCollectionResource extends BaseFieldResource implements GETable {
-  private static final Logger log = LoggerFactory.getLogger(FieldCollectionResource.class);
-  private boolean includeDynamic;
-  
-  public FieldCollectionResource() {
+public class DynamicFieldCollectionResource extends BaseFieldResource implements GETable {
+  private static final Logger log = LoggerFactory.getLogger(DynamicFieldCollectionResource.class);
+
+  public DynamicFieldCollectionResource() {
     super();
   }
 
   @Override
   public void doInit() throws ResourceException {
     super.doInit();
-    includeDynamic = getSolrRequest().getParams().getBool(INCLUDE_DYNAMIC_PARAM, false);
   }
 
   @Override
   public Representation get() {
+    
     try {
-      final List<SimpleOrderedMap<Object>> props = new ArrayList<SimpleOrderedMap<Object>>();
+      List<SimpleOrderedMap<Object>> props = new ArrayList<SimpleOrderedMap<Object>>();
       if (null == getRequestedFields()) {
-        SortedSet<String> fieldNames = new TreeSet<String>(getSchema().getFields().keySet());
-        for (String fieldName : fieldNames) {
-          props.add(getFieldProperties(getSchema().getFields().get(fieldName)));
+        for (IndexSchema.DynamicField dynamicField : getSchema().getDynamicFields()) {
+          if ( ! dynamicField.getRegex().startsWith(IndexSchema.INTERNAL_POLY_FIELD_PREFIX)) { // omit internal polyfields
+            props.add(getFieldProperties(dynamicField.getPrototype()));
+          }
         }
       } else {
         if (0 == getRequestedFields().size()) {
           String message = "Empty " + CommonParams.FL + " parameter value";
           throw new SolrException(ErrorCode.BAD_REQUEST, message);
         }
+        Map<String,SchemaField> dynamicFieldsByName = new HashMap<String,SchemaField>();
+        for (IndexSchema.DynamicField dynamicField : getSchema().getDynamicFields()) {
+          dynamicFieldsByName.put(dynamicField.getRegex(), dynamicField.getPrototype());
+        }
         // Use the same order as the fl parameter
-        for (String fieldName : getRequestedFields()) {
-          final SchemaField field;
-          if (includeDynamic) {
-            field = getSchema().getFieldOrNull(fieldName);
+        for (String dynamicFieldName : getRequestedFields()) {
+          final SchemaField dynamicSchemaField = dynamicFieldsByName.get(dynamicFieldName);
+          if (null == dynamicSchemaField) {
+            log.info("Requested dynamic field '" + dynamicFieldName + "' not found.");
           } else {
-            field = getSchema().getFields().get(fieldName);
-          }
-          if (null == field) {
-            log.info("Requested field '" + fieldName + "' not found.");
-          } else {
-            props.add(getFieldProperties(field));
+            props.add(getFieldProperties(dynamicSchemaField));
           }
         }
       }
-      getSolrResponse().add(SchemaRestApi.FIELDS, props);
+      getSolrResponse().add(IndexSchema.DYNAMIC_FIELDS, props);
     } catch (Exception e) {
       getSolrResponse().setException(e);
     }

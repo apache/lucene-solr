@@ -1,4 +1,4 @@
-package org.apache.solr.rest;
+package org.apache.solr.rest.schema;
 /*
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
@@ -16,22 +16,15 @@ package org.apache.solr.rest;
  * limitations under the License.
  */
 
+import org.apache.solr.rest.SolrRestletTestBase;
 import org.junit.Test;
 
-public class TestFieldTypeCollectionResource extends SchemaRestletTestBase {
-  @Test
-  public void testGetAllFieldTypes() throws Exception {
-    assertQ("/schema/fieldtypes?indent=on&wt=xml",
-        "(/response/arr[@name='fieldTypes']/lst/str[@name='name'])[1] = 'HTMLstandardtok'",
-        "(/response/arr[@name='fieldTypes']/lst/str[@name='name'])[2] = 'HTMLwhitetok'",
-        "(/response/arr[@name='fieldTypes']/lst/str[@name='name'])[3] = 'boolean'");
-  }
+public class TestSolrQueryParserDefaultOperatorResource extends SolrRestletTestBase {
 
   @Test
-  public void testJsonGetAllFieldTypes() throws Exception {
-    assertJQ("/schema/fieldtypes?indent=on",
-        "/fieldTypes/[0]/name=='HTMLstandardtok'",
-        "/fieldTypes/[1]/name=='HTMLwhitetok'",
-        "/fieldTypes/[2]/name=='boolean'");
+  public void testGetDefaultOperator() throws Exception {
+    assertQ("/schema/solrqueryparser/defaultoperator?indent=on&wt=xml",
+            "count(/response/str[@name='defaultOperator']) = 1",
+            "/response/str[@name='defaultOperator'][.='OR']");
   }
 }

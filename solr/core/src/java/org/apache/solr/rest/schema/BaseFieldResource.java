@@ -1,4 +1,4 @@
-package org.apache.solr.rest;
+package org.apache.solr.rest.schema;
 /*
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
@@ -18,6 +18,7 @@ package org.apache.solr.rest;
 
 import org.apache.solr.common.params.CommonParams;
 import org.apache.solr.common.util.SimpleOrderedMap;
+import org.apache.solr.schema.IndexSchema;
 import org.apache.solr.schema.SchemaField;
 import org.restlet.resource.ResourceException;
 
@@ -30,9 +31,6 @@ import java.util.LinkedHashSet;
 abstract class BaseFieldResource extends BaseSchemaResource {
   protected static final String INCLUDE_DYNAMIC_PARAM = "includeDynamic";
   private static final String DYNAMIC_BASE = "dynamicBase";
-  private static final String UNIQUE_KEY = "uniqueKey";
-  private static final String SHOW_DEFAULTS = "showDefaults";
-
 
   private LinkedHashSet<String> requestedFields;
   private boolean showDefaults;
@@ -95,7 +93,7 @@ abstract class BaseFieldResource extends BaseSchemaResource {
       }
     }
     if (field == getSchema().getUniqueKeyField()) {
-      properties.add(UNIQUE_KEY, true);
+      properties.add(IndexSchema.UNIQUE_KEY, true);
     }
     return properties;
   }

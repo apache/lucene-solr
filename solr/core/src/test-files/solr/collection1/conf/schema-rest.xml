@@ -623,4 +623,6 @@
    <copyField source="title_*" dest="*_dest_sub_s"/>
    <copyField source="title_*" dest="dest_sub_no_ast_s"/>
 
+  <solrQueryParser defaultOperator="OR"/>
+
 </schema>

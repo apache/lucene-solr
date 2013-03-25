@@ -108,7 +108,9 @@ abstract public class RestTestBase extends SolrJettyTestBase {
         query = request.substring(queryStartPos + 1);
         path = request.substring(0, queryStartPos);
       }
-      query = setParam(query, "wt", "xml");
+      if ( ! query.matches(".*wt=schema\\.xml.*")) { // don't overwrite wt=schema.xml
+        query = setParam(query, "wt", "xml");
+      }
       request = path + '?' + setParam(query, "indent", "on");
 
       String response = restTestHarness.query(request);

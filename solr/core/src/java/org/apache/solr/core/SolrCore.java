@@ -90,6 +90,7 @@ import org.apache.solr.response.PythonResponseWriter;
 import org.apache.solr.response.QueryResponseWriter;
 import org.apache.solr.response.RawResponseWriter;
 import org.apache.solr.response.RubyResponseWriter;
+import org.apache.solr.response.SchemaXmlResponseWriter;
 import org.apache.solr.response.SolrQueryResponse;
 import org.apache.solr.response.XMLResponseWriter;
 import org.apache.solr.response.transform.TransformerFactory;
@@ -1901,6 +1902,7 @@ public final class SolrCore implements SolrInfoMBean {
     m.put("raw", new RawResponseWriter());
     m.put("javabin", new BinaryResponseWriter());
     m.put("csv", new CSVResponseWriter());
+    m.put("schema.xml", new SchemaXmlResponseWriter());
     DEFAULT_RESPONSE_WRITERS = Collections.unmodifiableMap(m);
   }
   

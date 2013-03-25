@@ -1,4 +1,4 @@
-package org.apache.solr.rest;
+package org.apache.solr.rest.schema;
 
 /*
  * Licensed to the Apache Software Foundation (ASF) under one or more
@@ -17,21 +17,17 @@ package org.apache.solr.rest;
  * limitations under the License.
  */
 
-import org.apache.solr.common.params.CommonParams;
 import org.apache.solr.common.util.SimpleOrderedMap;
 import org.apache.solr.schema.FieldType;
+import org.apache.solr.schema.IndexSchema;
 import org.restlet.resource.ResourceException;
 
-import java.util.LinkedHashMap;
 import java.util.List;
 
 /**
  * Base class for the FieldType resource classes.
  */
 abstract class BaseFieldTypeResource extends BaseSchemaResource {
-  private static final String FIELDS = "fields";
-  private static final String DYNAMIC_FIELDS = "dynamicFields";
-
   private boolean showDefaults;
 
   protected BaseFieldTypeResource() {
@@ -41,14 +37,16 @@ abstract class BaseFieldTypeResource extends BaseSchemaResource {
   @Override
   public void doInit() throws ResourceException {
     super.doInit();
-    showDefaults = getSolrRequest().getParams().getBool(SHOW_DEFAULTS, false);
+    if (isExisting()) {
+      showDefaults = getSolrRequest().getParams().getBool(SHOW_DEFAULTS, false);
+    }
   }
   
   /** Used by subclasses to collect field type properties */
   protected SimpleOrderedMap<Object> getFieldTypeProperties(FieldType fieldType) {
     SimpleOrderedMap<Object> properties = fieldType.getNamedPropertyValues(showDefaults);
-    properties.add(FIELDS, getFieldsWithFieldType(fieldType));
-    properties.add(DYNAMIC_FIELDS, getDynamicFieldsWithFieldType(fieldType));
+    properties.add(IndexSchema.FIELDS, getFieldsWithFieldType(fieldType));
+    properties.add(IndexSchema.DYNAMIC_FIELDS, getDynamicFieldsWithFieldType(fieldType));
     return properties;
   }
 

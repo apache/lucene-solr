@@ -51,7 +51,11 @@ Apache ZooKeeper 3.4.5
 Upgrading from Solr 4.2.0
 ----------------------
 
-(No upgrade instructions yet)
+* SOLR-4623: The output path for copyFields and dynamicFields has been changed
+  from all lowercase "copyfields" and "dynamicfields" to camelCase "copyFields"
+  and "dynamicFields", respectively, to align with all other schema REST API
+  outputs, which use camelCase.  The URL format remains the same: all resource
+  names are lowercase. (Steve Rowe)
 
 Detailed Change List
 ----------------------
@@ -71,6 +75,17 @@ New Features
   See the discussion on the wiki page titled "Core Discovery (4.3 and beyond)" for
   the formats of both solr.properties and the individual core.properties files
   (Erick Erickson)
+  
+* SOLR-4623: Provide REST API read access to all elements of the live schema.
+  Add a REST API request to return the entire live schema, in JSON, XML, and
+  schema.xml formats.  Move REST API methods from package org.apache.solr.rest
+  to org.apache.solr.rest.schema, and rename base functionality REST API
+  classes to remove the current schema focus, to prepare for other non-schema
+  REST APIs.  Change output path for copyFields and dynamicFields from
+  "copyfields" and "dynamicfields" (all lowercase) to "copyFields" and
+  "dynamicFields", respectively, to align with all other REST API outputs, which
+  use camelCase.
+  (Steve Rowe)
 
 Bug Fixes
 ----------------------
