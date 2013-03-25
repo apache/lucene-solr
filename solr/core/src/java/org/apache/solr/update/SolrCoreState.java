@@ -37,6 +37,7 @@ import org.slf4j.LoggerFactory;
 public abstract class SolrCoreState {
   public static Logger log = LoggerFactory.getLogger(SolrCoreState.class);
   
+  protected boolean closed = false;
   private final Object deleteLock = new Object();
   
   public Object getUpdateLock() {
@@ -44,10 +45,6 @@ public abstract class SolrCoreState {
   }
   
   private int solrCoreStateRefCnt = 1;
-  
-  public synchronized int getSolrCoreStateRefCnt() {
-    return solrCoreStateRefCnt;
-  }
 
   public void increfSolrCoreState() {
     synchronized (this) {
@@ -58,11 +55,13 @@ public abstract class SolrCoreState {
     }
   }
   
-  public void decrefSolrCoreState(IndexWriterCloser closer) {
+  public boolean decrefSolrCoreState(IndexWriterCloser closer) {
     boolean close = false;
     synchronized (this) {
       solrCoreStateRefCnt--;
+      assert solrCoreStateRefCnt >= 0;
       if (solrCoreStateRefCnt == 0) {
+        closed = true;
         close = true;
       }
     }
@@ -75,6 +74,7 @@ public abstract class SolrCoreState {
         log.error("Error closing SolrCoreState", t);
       }
     }
+    return close;
   }
   
   public abstract Lock getCommitLock();

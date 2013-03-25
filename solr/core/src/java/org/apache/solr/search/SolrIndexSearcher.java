@@ -159,7 +159,9 @@ public class SolrIndexSearcher extends IndexSearcher implements Closeable,SolrIn
   private DirectoryFactory directoryFactory;
   
   private final AtomicReader atomicReader;
-  private String path; 
+  private String path;
+  private final boolean reserveDirectory;
+  private final boolean createdDirectory; 
   
   private static DirectoryReader getReader(SolrCore core, SolrIndexConfig config, DirectoryFactory directoryFactory, String path) throws IOException {
     DirectoryReader reader = null;
@@ -179,19 +181,21 @@ public class SolrIndexSearcher extends IndexSearcher implements Closeable,SolrIn
   }
 
   public SolrIndexSearcher(SolrCore core, String path, IndexSchema schema, SolrIndexConfig config, String name, DirectoryReader r, boolean closeReader, boolean enableCache, boolean reserveDirectory, DirectoryFactory directoryFactory) throws IOException {
-    super(r = (r == null ? getReader(core, config, directoryFactory, path) : r));
+    super(r == null ? getReader(core, config, directoryFactory, path) : r);
 
     this.path = path;
     this.directoryFactory = directoryFactory;
-    this.reader = r;
-    this.atomicReader = SlowCompositeReaderWrapper.wrap(r);
+    this.reader = (DirectoryReader) super.readerContext.reader();
+    this.atomicReader = SlowCompositeReaderWrapper.wrap(this.reader);
     this.core = core;
     this.schema = schema;
     this.name = "Searcher@" + Integer.toHexString(hashCode()) + (name!=null ? " "+name : "");
     log.info("Opening " + this.name);
 
-    Directory dir = r.directory();
+    Directory dir = this.reader.directory();
     
+    this.reserveDirectory = reserveDirectory;
+    this.createdDirectory = r == null;
     if (reserveDirectory) {
       // keep the directory from being released while we use it
       directoryFactory.incRef(dir);
@@ -336,8 +340,12 @@ public class SolrIndexSearcher extends IndexSearcher implements Closeable,SolrIn
       cache.close();
     }
 
-
-    directoryFactory.release(getIndexReader().directory());
+    if (reserveDirectory) {
+      directoryFactory.release(getIndexReader().directory());
+    }
+    if (createdDirectory) {
+      directoryFactory.release(getIndexReader().directory());
+    }
    
     
     // do this at the end so it only gets done if there are no exceptions

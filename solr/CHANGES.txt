@@ -225,11 +225,18 @@ Bug Fixes
   longer and it appears to be causing a missing close directory bug. forceNew
   is no longer respected and will be removed in 4.3. (Mark Miller)
 
-* SOLR-4626: getIndexWriter(null) should also respect pauseWriter. (Mark Miller)
-
 * SOLR-3819: Grouped faceting (group.facet=true) did not respect filter
   exclusions. (Petter Remen, yonik)
 
+* SOLR-4637: Replication can sometimes wait until shutdown or core unload until
+  removing some tmp directories. (Mark Miller)
+  
+* SOLR-4638: DefaultSolrCoreState#getIndexWriter(null) is a way to avoid
+  creating the IndexWriter earlier than necessary, but it's not 
+  implemented quite right. (Mark Miller)
+
+* SOLR-4640: CachingDirectoryFactory can fail to close directories in some race
+  conditions. (Mark Miller)
 
 Optimizations
 ----------------------
