@@ -45,7 +45,6 @@ public final class StemmerOverrideFilter extends TokenFilter {
   private final KeywordAttribute keywordAtt = addAttribute(KeywordAttribute.class);
   private final BytesReader fstReader;
   private final Arc<BytesRef> scratchArc = new FST.Arc<BytesRef>();
-;
   private final CharsRef spare = new CharsRef();
   
   /**
@@ -65,6 +64,10 @@ public final class StemmerOverrideFilter extends TokenFilter {
   @Override
   public boolean incrementToken() throws IOException {
     if (input.incrementToken()) {
+      if (fstReader == null) {
+        // No overrides
+        return true;
+      }
       if (!keywordAtt.isKeyword()) { // don't muck with already-keyworded terms
         final BytesRef stem = stemmerOverrideMap.get(termAtt.buffer(), termAtt.length(), scratchArc, fstReader);
         if (stem != null) {
@@ -106,13 +109,17 @@ public final class StemmerOverrideFilter extends TokenFilter {
      * Returns a {@link BytesReader} to pass to the {@link #get(char[], int, Arc, BytesReader)} method.
      */
     BytesReader getBytesReader() {
-      return fst.getBytesReader();
+      if (fst == null) {
+        return null;
+      } else {
+        return fst.getBytesReader();
+      }
     }
 
     /**
      * Returns the value mapped to the given key or <code>null</code> if the key is not in the FST dictionary.
      */
-    final BytesRef get(char[] buffer, int bufferLen, Arc<BytesRef> scratchArc, BytesReader fstReader) throws IOException {
+    BytesRef get(char[] buffer, int bufferLen, Arc<BytesRef> scratchArc, BytesReader fstReader) throws IOException {
       BytesRef pendingOutput = fst.outputs.getNoOutput();
       BytesRef matchOutput = null;
       int bufUpto = 0;
