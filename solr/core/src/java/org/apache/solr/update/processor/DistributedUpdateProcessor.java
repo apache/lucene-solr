@@ -246,6 +246,7 @@ public class DistributedUpdateProcessor extends UpdateRequestProcessor {
             if (skipList != null) {
               skipListSet = new HashSet<String>(skipList.length);
               skipListSet.addAll(Arrays.asList(skipList));
+              log.info("test.distrib.skip.servers was found and contains:" + skipListSet);
             }
 
             for (ZkCoreNodeProps props : replicaProps) {
