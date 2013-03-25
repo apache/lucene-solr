@@ -199,6 +199,10 @@ Bug Fixes
   OpenMode.CREATE_OR_APPEND is used. This might also affect application that set
   the open mode manually using DirectoryReader#indexExists. (Simon Willnauer)
 
+* LUCENE-4878: Override getRegexpQuery in MultiFieldQueryParser to prefent
+  NullPointerException when regular expression syntax is used with
+  MultiFieldQueryParser. (Simon Willnauer, Adam Rauch)
+
 Optimizations
 
 * LUCENE-4819: Added Sorted[Set]DocValues.termsEnum(), and optimized the

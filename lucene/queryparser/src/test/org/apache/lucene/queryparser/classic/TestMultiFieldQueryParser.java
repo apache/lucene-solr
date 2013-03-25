@@ -28,10 +28,13 @@ import org.apache.lucene.document.Field;
 import org.apache.lucene.index.DirectoryReader;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.IndexWriter;
+import org.apache.lucene.index.Term;
 import org.apache.lucene.search.BooleanClause.Occur;
 import org.apache.lucene.search.BooleanClause;
+import org.apache.lucene.search.BooleanQuery;
 import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.search.Query;
+import org.apache.lucene.search.RegexpQuery;
 import org.apache.lucene.search.ScoreDoc;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.util.IOUtils;
@@ -327,6 +330,16 @@ public class TestMultiFieldQueryParser extends LuceneTestCase {
     public TokenStreamComponents createComponents(String fieldName, Reader reader) {
       return stdAnalyzer.createComponents(fieldName, reader);
     }
+  }
+  
+  public void testSimpleRegex() throws ParseException {
+    String[] fields = new String[] {"a", "b"};
+    MultiFieldQueryParser mfqp = new MultiFieldQueryParser(TEST_VERSION_CURRENT, fields, new MockAnalyzer(random()));
+
+    BooleanQuery bq = new BooleanQuery(true);
+    bq.add(new RegexpQuery(new Term("a", "[a-z][123]")), Occur.SHOULD);
+    bq.add(new RegexpQuery(new Term("b", "[a-z][123]")), Occur.SHOULD);
+    assertEquals(bq, mfqp.parse("/[a-z][123]/"));
   }
 
 }
