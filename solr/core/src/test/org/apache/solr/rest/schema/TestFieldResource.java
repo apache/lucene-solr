@@ -1,4 +1,4 @@
-package org.apache.solr.rest;
+package org.apache.solr.rest.schema;
 /*
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
@@ -16,9 +16,10 @@ package org.apache.solr.rest;
  * limitations under the License.
  */
 
+import org.apache.solr.rest.SolrRestletTestBase;
 import org.junit.Test;
 
-public class TestFieldResource extends SchemaRestletTestBase {
+public class TestFieldResource extends SolrRestletTestBase {
   @Test
   public void testGetField() throws Exception {
     assertQ("/schema/fields/test_postv?indent=on&wt=xml&showDefaults=true",

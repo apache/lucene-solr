@@ -1,4 +1,4 @@
-package org.apache.solr.rest;
+package org.apache.solr.rest.schema;
 /*
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
@@ -16,18 +16,18 @@ package org.apache.solr.rest;
  * limitations under the License.
  */
 
+import org.apache.solr.rest.SolrRestletTestBase;
 import org.junit.Test;
 
 import java.io.IOException;
 
-public class TestFieldCollectionResource extends SchemaRestletTestBase {
+public class TestFieldCollectionResource extends SolrRestletTestBase {
   @Test
   public void testGetAllFields() throws Exception {
     assertQ("/schema/fields?indent=on&wt=xml",
             "(/response/arr[@name='fields']/lst/str[@name='name'])[1] = 'HTMLstandardtok'",
             "(/response/arr[@name='fields']/lst/str[@name='name'])[2] = 'HTMLwhitetok'",
-            "(/response/arr[@name='fields']/lst/str[@name='name'])[3] = '_version_'",
-            "count(//copySources/str) = count(//copyDests/str)");
+            "(/response/arr[@name='fields']/lst/str[@name='name'])[3] = '_version_'");
   }
 
   @Test

@@ -17,9 +17,12 @@ package org.apache.solr.schema;
  */
 
 import org.apache.lucene.search.similarities.Similarity;
+import org.apache.solr.common.util.SimpleOrderedMap;
 import org.apache.solr.schema.SchemaAware; // javadocs
 import org.apache.solr.schema.FieldType; // javadocs
 import org.apache.solr.common.params.SolrParams;
+
+import java.util.Iterator;
 
 
 /**
@@ -38,10 +41,42 @@ import org.apache.solr.common.params.SolrParams;
  * @see FieldType#getSimilarity
  */
 public abstract class SimilarityFactory {
+  public static final String CLASS_NAME = "class";
+  
   protected SolrParams params;
 
   public void init(SolrParams params) { this.params = params; }
   public SolrParams getParams() { return params; }
 
   public abstract Similarity getSimilarity();
+
+
+  private static String normalizeSPIname(String fullyQualifiedName) {
+    if (fullyQualifiedName.startsWith("org.apache.lucene.") || fullyQualifiedName.startsWith("org.apache.solr.")) {
+      return "solr" + fullyQualifiedName.substring(fullyQualifiedName.lastIndexOf('.'));
+    }
+    return fullyQualifiedName;
+  }
+
+  /** Returns a description of this field's similarity, if any */
+  public SimpleOrderedMap<Object> getNamedPropertyValues() {
+    String className = getClass().getName();
+    if (className.startsWith("org.apache.solr.schema.IndexSchema$")) {
+      // If this class is just a no-params wrapper around a similarity class, use the similarity class
+      className = getSimilarity().getClass().getName();
+    } else {
+      // Only normalize factory names
+      className = normalizeSPIname(className);
+    }
+    SimpleOrderedMap<Object> props = new SimpleOrderedMap<Object>();
+    props.add(CLASS_NAME, normalizeSPIname(className));
+    if (null != params) {
+      Iterator<String> iter = params.getParameterNamesIterator();
+      while (iter.hasNext()) {
+        String key = iter.next();
+        props.add(key, params.get(key));
+      }
+    }
+    return props;
+  }
 }

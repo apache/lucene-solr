@@ -24,13 +24,13 @@ import org.restlet.ext.servlet.ServerServlet;
 import java.util.SortedMap;
 import java.util.TreeMap;
 
-abstract public class SchemaRestletTestBase extends RestTestBase {
+abstract public class SolrRestletTestBase extends RestTestBase {
   @BeforeClass
   public static void init() throws Exception {
     final SortedMap<ServletHolder,String> extraServlets = new TreeMap<ServletHolder,String>();
-    final ServletHolder schemaRestApi = new ServletHolder("SchemaRestApi", ServerServlet.class);
-    schemaRestApi.setInitParameter("org.restlet.application", "org.apache.solr.rest.SchemaRestApi");
-    extraServlets.put(schemaRestApi, "/schema/*");
+    final ServletHolder solrRestApi = new ServletHolder("SolrRestApi", ServerServlet.class);
+    solrRestApi.setInitParameter("org.restlet.application", "org.apache.solr.rest.SolrRestApi");
+    extraServlets.put(solrRestApi, "/schema/*");  // '/schema/*' matches '/schema', '/schema/', and '/schema/whatever...'
 
     createJettyAndHarness(TEST_HOME(), "solrconfig.xml", "schema-rest.xml", "/solr", true, extraServlets);
   }

@@ -1,4 +1,4 @@
-package org.apache.solr.rest;
+package org.apache.solr.rest.schema;
 /*
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
@@ -18,7 +18,9 @@ package org.apache.solr.rest;
 
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.SolrException.ErrorCode;
+import org.apache.solr.rest.GETable;
 import org.apache.solr.schema.FieldType;
+import org.apache.solr.schema.IndexSchema;
 import org.apache.solr.schema.SchemaField;
 import org.restlet.representation.Representation;
 import org.restlet.resource.ResourceException;
@@ -31,14 +33,13 @@ import java.util.Collections;
 import java.util.List;
 
 /**
- * This class responds to requests at /solr/(corename)/schema/fieldtype/typename
+ * This class responds to requests at /solr/(corename)/schema/fieldtype/(typename)
  * where "typename" is the name of a field type in the schema.
  * 
  * The GET method returns properties for the named field type.
  */
 public class FieldTypeResource extends BaseFieldTypeResource implements GETable {
   private static final Logger log = LoggerFactory.getLogger(FieldTypeResource.class);
-  private static final String FIELD_TYPE = "fieldType";
 
   private String typeName;
 
@@ -50,7 +51,7 @@ public class FieldTypeResource extends BaseFieldTypeResource implements GETable 
   public void doInit() throws ResourceException {
     super.doInit();
     if (isExisting()) {
-      typeName = (String)getRequestAttributes().get(SchemaRestApi.NAME_VARIABLE);
+      typeName = (String)getRequestAttributes().get(IndexSchema.NAME);
       try {
         typeName = null == typeName ? "" : urlDecode(typeName.trim()).trim();
       } catch (UnsupportedEncodingException e) {
@@ -71,7 +72,7 @@ public class FieldTypeResource extends BaseFieldTypeResource implements GETable 
           final String message = "Field type '" + typeName + "' not found.";
           throw new SolrException(ErrorCode.NOT_FOUND, message);
         }
-        getSolrResponse().add(FIELD_TYPE, getFieldTypeProperties(fieldType));
+        getSolrResponse().add(IndexSchema.FIELD_TYPE, getFieldTypeProperties(fieldType));
       }
     } catch (Exception e) {
       getSolrResponse().setException(e);

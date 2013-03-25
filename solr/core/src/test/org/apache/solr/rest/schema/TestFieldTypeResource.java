@@ -1,4 +1,4 @@
-package org.apache.solr.rest;
+package org.apache.solr.rest.schema;
 /*
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
@@ -16,9 +16,10 @@ package org.apache.solr.rest;
  * limit     ations under the License.
  */
 
+import org.apache.solr.rest.SolrRestletTestBase;
 import org.junit.Test;
 
-public class TestFieldTypeResource extends SchemaRestletTestBase {
+public class TestFieldTypeResource extends SolrRestletTestBase {
   @Test
   public void testGetFieldType() throws Exception {
     assertQ("/schema/fieldtypes/float?indent=on&wt=xml&showDefaults=true",

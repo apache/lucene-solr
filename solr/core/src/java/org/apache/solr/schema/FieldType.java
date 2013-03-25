@@ -23,7 +23,6 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
-import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -58,7 +57,6 @@ import org.apache.solr.analysis.SolrAnalyzer;
 import org.apache.solr.analysis.TokenizerChain;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.SolrException.ErrorCode;
-import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.common.util.SimpleOrderedMap;
 import org.apache.solr.common.util.StrUtils;
 import org.apache.solr.response.TextResponseWriter;
@@ -722,20 +720,27 @@ public abstract class FieldType extends FieldProperties {
     }
   }
 
-  private static final String TYPE_NAME = "name";
-  private static final String CLASS_NAME = "class";
-  private static final String ANALYZER = "analyzer";
-  private static final String INDEX_ANALYZER = "indexAnalyzer";
-  private static final String QUERY_ANALYZER = "queryAnalyzer";
-  private static final String MULTI_TERM_ANALYZER = "multiTermAnalyzer";
-  private static final String SIMILARITY = "similarity";
+  public static final String TYPE = "type";
+  public static final String TYPE_NAME = "name";
+  public static final String CLASS_NAME = "class";
+  public static final String ANALYZER = "analyzer";
+  public static final String INDEX = "index";
+  public static final String INDEX_ANALYZER = "indexAnalyzer";
+  public static final String QUERY = "query";
+  public static final String QUERY_ANALYZER = "queryAnalyzer";
+  public static final String MULTI_TERM = "multiterm";
+  public static final String MULTI_TERM_ANALYZER = "multiTermAnalyzer";
+  public static final String SIMILARITY = "similarity";
+  public static final String CHAR_FILTER = "charFilter";
+  public static final String CHAR_FILTERS = "charFilters";
+  public static final String TOKENIZER = "tokenizer";
+  public static final String FILTER = "filter";
+  public static final String FILTERS = "filters";
+
   private static final String POSTINGS_FORMAT = "postingsFormat";
   private static final String DOC_VALUES_FORMAT = "docValuesFormat";
   private static final String AUTO_GENERATE_PHRASE_QUERIES = "autoGeneratePhraseQueries";
   private static final String ARGS = "args";
-  private static final String CHAR_FILTERS = "charFilters";
-  private static final String TOKENIZER = "tokenizer";
-  private static final String FILTERS = "filters";
   private static final String POSITION_INCREMENT_GAP = "positionIncrementGap";
 
   /**
@@ -802,8 +807,8 @@ public abstract class FieldType extends FieldProperties {
         namedPropertyValues.add(MULTI_TERM_ANALYZER, getAnalyzerProperties(((TextField) this).getMultiTermAnalyzer()));
       }
     }
-    if (null != getSimilarity()) {
-      namedPropertyValues.add(SIMILARITY, getSimilarityProperties());
+    if (null != getSimilarityFactory()) {
+      namedPropertyValues.add(SIMILARITY, getSimilarityFactory().getNamedPropertyValues());
     }
     if (null != getPostingsFormat()) {
       namedPropertyValues.add(POSTINGS_FORMAT, getPostingsFormat());
@@ -885,25 +890,8 @@ public abstract class FieldType extends FieldProperties {
 
   private static String normalizeSPIname(String fullyQualifiedName) {
     if (fullyQualifiedName.startsWith("org.apache.lucene.") || fullyQualifiedName.startsWith("org.apache.solr.")) {
-      return "solr" + fullyQualifiedName.substring(fullyQualifiedName.lastIndexOf('.')); 
+      return "solr" + fullyQualifiedName.substring(fullyQualifiedName.lastIndexOf('.'));
     }
     return fullyQualifiedName;
-  }
-
-  /** Returns a description of this field's similarity, if any */
-  protected SimpleOrderedMap<Object> getSimilarityProperties() {
-    SimpleOrderedMap<Object> props = new SimpleOrderedMap<Object>();
-    if (similarity != null) {
-      props.add(CLASS_NAME, normalizeSPIname(similarity.getClass().getName()));
-      SolrParams factoryParams = similarityFactory.getParams();
-      if (null != factoryParams) {
-        Iterator<String> iter = factoryParams.getParameterNamesIterator();
-        while (iter.hasNext()) {
-          String key = iter.next();
-          props.add(key, factoryParams.get(key));
-        }
-      }
-    }
-    return props;
   }
 }

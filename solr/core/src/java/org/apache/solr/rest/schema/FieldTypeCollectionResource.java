@@ -1,4 +1,4 @@
-package org.apache.solr.rest;
+package org.apache.solr.rest.schema;
 /*
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
@@ -17,7 +17,9 @@ package org.apache.solr.rest;
  */
 
 import org.apache.solr.common.util.SimpleOrderedMap;
+import org.apache.solr.rest.GETable;
 import org.apache.solr.schema.FieldType;
+import org.apache.solr.schema.IndexSchema;
 import org.apache.solr.schema.SchemaField;
 import org.restlet.representation.Representation;
 import org.restlet.resource.ResourceException;
@@ -39,8 +41,6 @@ import java.util.TreeMap;
 public class FieldTypeCollectionResource extends BaseFieldTypeResource implements GETable {
   private static final Logger log = LoggerFactory.getLogger(FieldTypeCollectionResource.class);
   
-  private static final String FIELD_TYPES = "fieldTypes";
-
   private Map<String,List<String>> fieldsByFieldType;
   private Map<String,List<String>> dynamicFieldsByFieldType;
 
@@ -65,7 +65,7 @@ public class FieldTypeCollectionResource extends BaseFieldTypeResource implement
       for (FieldType fieldType : sortedFieldTypes.values()) {
         props.add(getFieldTypeProperties(fieldType));
       }
-      getSolrResponse().add(FIELD_TYPES, props);
+      getSolrResponse().add(IndexSchema.FIELD_TYPES, props);
     } catch (Exception e) {
       getSolrResponse().setException(e);
     }
