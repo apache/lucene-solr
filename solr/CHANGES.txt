@@ -253,6 +253,9 @@ Bug Fixes
 * SOLR-4640: CachingDirectoryFactory can fail to close directories in some race
   conditions. (Mark Miller)
 
+* SOLR-4642: QueryResultKey is not calculating the correct hashCode for filters.
+  (Joel Bernstein via Mark Miller)
+
 Optimizations
 ----------------------
 
