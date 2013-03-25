@@ -150,6 +150,9 @@ Optimizations
 * LUCENE-4571: Speed up BooleanQuerys with minNrShouldMatch to use
   skipping.  (Stefan Pohl via Robert Muir)
 
+* LUCENE-4863: StemmerOverrideFilter now uses a FST to represent its overrides
+  in memory. (Simon Willnauer)
+
 API Changes
 
 * LUCENE-4844: removed TaxonomyReader.getParent(), you should use

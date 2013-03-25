@@ -19,10 +19,15 @@ package org.apache.lucene.analysis.miscellaneous;
 
 import java.io.IOException;
 import java.util.List;
+import java.util.Locale;
 
 import org.apache.lucene.analysis.TokenStream;
 import org.apache.lucene.analysis.miscellaneous.StemmerOverrideFilter;
+import org.apache.lucene.analysis.miscellaneous.StemmerOverrideFilter.StemmerOverrideMap;
 import org.apache.lucene.analysis.util.*;
+import org.apache.lucene.util.BytesRef;
+import org.apache.lucene.util.CharsRef;
+import org.apache.lucene.util.fst.FST;
 
 /**
  * Factory for {@link StemmerOverrideFilter}.
@@ -36,7 +41,7 @@ import org.apache.lucene.analysis.util.*;
  *
  */
 public class StemmerOverrideFilterFactory extends TokenFilterFactory implements ResourceLoaderAware {
-  private CharArrayMap<String> dictionary = null;
+  private StemmerOverrideMap dictionary;
   private boolean ignoreCase;
 
   @Override
@@ -47,15 +52,15 @@ public class StemmerOverrideFilterFactory extends TokenFilterFactory implements 
       assureMatchVersion();
       List<String> files = splitFileNames(dictionaryFiles);
       if (files.size() > 0) {
-        dictionary = new CharArrayMap<String>(luceneMatchVersion, 
-            files.size() * 10, ignoreCase);
+        StemmerOverrideFilter.Builder builder = new StemmerOverrideFilter.Builder(ignoreCase);
         for (String file : files) {
           List<String> list = getLines(loader, file.trim());
           for (String line : list) {
             String[] mapping = line.split("\t", 2);
-            dictionary.put(mapping[0], mapping[1]);
+            builder.add(mapping[0], mapping[1]);
           }
         }
+        dictionary = builder.build();
       }
     }
   }
