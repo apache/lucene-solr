@@ -175,6 +175,7 @@ public class SolrIndexWriter extends IndexWriter {
 
   @Override
   public void rollback() throws IOException {
+    Directory dir = getDirectory();
     try {
       while (true) {
         try {
@@ -187,7 +188,7 @@ public class SolrIndexWriter extends IndexWriter {
       }
     } finally {
       isClosed = true;
-      directoryFactory.release(getDirectory());
+      directoryFactory.release(dir);
       numCloses.incrementAndGet();
     }
   }
