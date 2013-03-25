@@ -71,8 +71,10 @@ import org.apache.lucene.analysis.miscellaneous.HyphenatedWordsFilter;
 import org.apache.lucene.analysis.miscellaneous.KeepWordFilter;
 import org.apache.lucene.analysis.miscellaneous.LengthFilter;
 import org.apache.lucene.analysis.miscellaneous.LimitTokenCountFilter;
+import org.apache.lucene.analysis.miscellaneous.StemmerOverrideFilter;
 import org.apache.lucene.analysis.miscellaneous.TrimFilter;
 import org.apache.lucene.analysis.miscellaneous.WordDelimiterFilter;
+import org.apache.lucene.analysis.miscellaneous.StemmerOverrideFilter.StemmerOverrideMap;
 import org.apache.lucene.analysis.ngram.EdgeNGramTokenFilter;
 import org.apache.lucene.analysis.ngram.EdgeNGramTokenizer;
 import org.apache.lucene.analysis.ngram.NGramTokenFilter;
@@ -576,6 +578,29 @@ public class TestRandomChains extends BaseTokenStreamTestCase {
           map.put(_TestUtil.randomSimpleString(random), _TestUtil.randomSimpleString(random));
         }
         return map;
+      }
+    });
+    put(StemmerOverrideMap.class, new ArgProducer() {
+      @Override public Object create(Random random) {
+        int num = random.nextInt(10);
+        StemmerOverrideFilter.Builder builder = new StemmerOverrideFilter.Builder(random.nextBoolean());
+        for (int i = 0; i < num; i++) {
+          String input = ""; 
+          do {
+            input = _TestUtil.randomRealisticUnicodeString(random);
+          } while(input.isEmpty());
+          String out = ""; _TestUtil.randomSimpleString(random);
+          do {
+            out = _TestUtil.randomRealisticUnicodeString(random);
+          } while(out.isEmpty());
+          builder.add(input, out);
+        }
+        try {
+          return builder.build();
+        } catch (Exception ex) {
+          Rethrow.rethrow(ex);
+          return null; // unreachable code
+        }
       }
     });
     put(SynonymMap.class, new ArgProducer() {

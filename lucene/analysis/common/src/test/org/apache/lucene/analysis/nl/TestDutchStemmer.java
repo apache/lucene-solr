@@ -158,7 +158,18 @@ public class TestDutchStemmer extends BaseTokenStreamTestCase {
     DutchAnalyzer a = new DutchAnalyzer(TEST_VERSION_CURRENT, CharArraySet.EMPTY_SET);
     checkOneTerm(a, "fiets", "fiets");
   }
-  
+  /**
+   * 3.0 still uses the chararraymap internally check if that works as well
+   * @deprecated (4.3) remove this test in Lucene 5.0
+   */
+  @Deprecated
+  public void test30StemOverrides() throws IOException {
+    DutchAnalyzer a = new DutchAnalyzer(Version.LUCENE_30);
+    checkOneTerm(a, "fiets", "fiets");
+    a = new DutchAnalyzer(Version.LUCENE_30, CharArraySet.EMPTY_SET);
+    checkOneTerm(a, "fiets", "fiet"); // only the default ctor populates the dict
+  }
+
   public void testEmptyStemDictionary() throws IOException {
     DutchAnalyzer a = new DutchAnalyzer(TEST_VERSION_CURRENT, CharArraySet.EMPTY_SET, 
         CharArraySet.EMPTY_SET, CharArrayMap.<String>emptyMap());
