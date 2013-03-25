@@ -60,6 +60,14 @@ public class TestStemmerOverrideFilter extends BaseTokenStreamTestCase {
         tokenizer, builder.build()));
     assertTokenStreamContents(stream, new String[] {"books"});
   }
+
+  public void testNoOverrides() throws IOException {
+    StemmerOverrideFilter.Builder builder = new StemmerOverrideFilter.Builder(true);
+    Tokenizer tokenizer = new KeywordTokenizer(new StringReader("book"));
+    TokenStream stream = new PorterStemFilter(new StemmerOverrideFilter(
+        tokenizer, builder.build()));
+    assertTokenStreamContents(stream, new String[] {"book"});
+  }
   
   public void testRandomRealisticWhiteSpace() throws IOException {
     Map<String,String> map = new HashMap<String,String>();
