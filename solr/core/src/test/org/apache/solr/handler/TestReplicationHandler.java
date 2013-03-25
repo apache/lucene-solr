@@ -29,6 +29,8 @@ import java.io.Writer;
 import java.net.MalformedURLException;
 import java.net.URL;
 import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Collection;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
@@ -55,6 +57,11 @@ import org.apache.solr.common.SolrInputDocument;
 import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.common.util.SimpleOrderedMap;
+import org.apache.solr.core.CachingDirectoryFactory;
+import org.apache.solr.core.CoreContainer;
+import org.apache.solr.core.SolrCore;
+import org.apache.solr.core.StandardDirectoryFactory;
+import org.apache.solr.servlet.SolrDispatchFilter;
 import org.apache.solr.util.AbstractSolrTestCase;
 import org.junit.After;
 import org.junit.Before;
@@ -66,7 +73,6 @@ import org.junit.Test;
  *
  * @since 1.4
  */
-// TODO: can this test be sped up? it used to not be so slow...
 @Slow
 public class TestReplicationHandler extends SolrTestCaseJ4 {
 
@@ -185,7 +191,7 @@ public class TestReplicationHandler extends SolrTestCaseJ4 {
       docList = (SolrDocumentList) res.get("response");
       timeSlept += 100;
       Thread.sleep(100);
-    } while(docList.getNumFound() != expectedDocCount && timeSlept < 45000);
+    } while(docList.getNumFound() != expectedDocCount && timeSlept < 30000);
     return res;
   }
   
@@ -467,6 +473,9 @@ public class TestReplicationHandler extends SolrTestCaseJ4 {
     assertTrue(slaveXsltDir.isDirectory());
     assertTrue(slaveXsl.exists());
     
+    checkForSingleIndex(masterJetty);
+    checkForSingleIndex(slaveJetty);
+    
   }
 
   @Test
@@ -650,81 +659,126 @@ public class TestReplicationHandler extends SolrTestCaseJ4 {
     NamedList<Object> details = getDetails(masterClient);
    
     details = getDetails(slaveClient);
-
-    // NOTE: at this point, the slave is not polling any more
-    // restore it.
-    slave.copyConfigFile(CONF_DIR + "solrconfig-slave.xml", "solrconfig.xml");
-    slaveJetty.stop();
-    slaveJetty = createJetty(slave);
-    slaveClient = createNewSolrServer(slaveJetty.getLocalPort());
+    
+    checkForSingleIndex(masterJetty);
+    checkForSingleIndex(slaveJetty);
   }
   
   
   @Test
   public void doTestStressReplication() throws Exception {
-    //change solrconfig on slave
-    //this has no entry for pollinginterval
-    slave.copyConfigFile(CONF_DIR + "solrconfig-slave1.xml", "solrconfig.xml");
-    slaveJetty.stop();
-    slaveJetty = createJetty(slave);
-    slaveClient = createNewSolrServer(slaveJetty.getLocalPort());
+    // change solrconfig on slave
+    // this has no entry for pollinginterval
     
-    master.copyConfigFile(CONF_DIR + "solrconfig-master3.xml", "solrconfig.xml");
-    masterJetty.stop();
-    masterJetty = createJetty(master);
-    masterClient = createNewSolrServer(masterJetty.getLocalPort());
-
-    masterClient.deleteByQuery("*:*");
-    slaveClient.deleteByQuery("*:*");
-    slaveClient.commit();
- 
-    int maxDocs = TEST_NIGHTLY ? 1000 : 200;
-    int rounds = TEST_NIGHTLY ? 80 : 10;
-    int totalDocs = 0;
-    int id = 0;
-    for (int x = 0; x < rounds; x++) {
-      
-      // we randomly trigger a configuration replication
-      if (random().nextBoolean()) {
-        master.copyConfigFile(CONF_DIR + "schema-replication" + (random().nextInt(2) + 1) + ".xml", "schema.xml");
-      }
-      
-      int docs = random().nextInt(maxDocs);
-      for (int i = 0; i < docs; i++) {
-        index(masterClient, "id", id++, "name", "name = " + i);
-      }
-      
-      totalDocs += docs;
-      masterClient.commit();
-      
-      NamedList masterQueryRsp = rQuery(totalDocs, "*:*", masterClient);
-      SolrDocumentList masterQueryResult = (SolrDocumentList) masterQueryRsp
-          .get("response");
-      assertEquals(totalDocs, masterQueryResult.getNumFound());
-      
-      // snappull
-      pullFromMasterToSlave();
-      
-      // get docs from slave and check if number is equal to master
-      NamedList slaveQueryRsp = rQuery(totalDocs, "*:*", slaveClient);
-      SolrDocumentList slaveQueryResult = (SolrDocumentList) slaveQueryRsp
-          .get("response");
-      assertEquals(totalDocs, slaveQueryResult.getNumFound());
-      // compare results
-      String cmp = BaseDistributedSearchTestCase.compare(masterQueryResult,
-          slaveQueryResult, 0, null);
-      assertEquals(null, cmp);
-      
-      assertVersions(masterClient, slaveClient);
-      
+    // get us a straight standard fs dir rather than mock*dir
+    boolean useStraightStandardDirectory = random().nextBoolean();
+    
+    if (useStraightStandardDirectory) {
+      useFactory(null);
     }
+    try {
+      
+      slave
+          .copyConfigFile(CONF_DIR + "solrconfig-slave1.xml", "solrconfig.xml");
+      slaveJetty.stop();
+      slaveJetty = createJetty(slave);
+      slaveClient = createNewSolrServer(slaveJetty.getLocalPort());
+      
+      master.copyConfigFile(CONF_DIR + "solrconfig-master3.xml",
+          "solrconfig.xml");
+      masterJetty.stop();
+      masterJetty = createJetty(master);
+      masterClient = createNewSolrServer(masterJetty.getLocalPort());
+      
+      masterClient.deleteByQuery("*:*");
+      slaveClient.deleteByQuery("*:*");
+      slaveClient.commit();
+      
+      int maxDocs = TEST_NIGHTLY ? 1000 : 200;
+      int rounds = TEST_NIGHTLY ? 80 : 8;
+      int totalDocs = 0;
+      int id = 0;
+      for (int x = 0; x < rounds; x++) {
+        
+        // we randomly trigger a configuration replication
+        // if (random().nextBoolean()) {
+        master.copyConfigFile(CONF_DIR + "schema-replication"
+            + (random().nextInt(2) + 1) + ".xml", "schema.xml");
+        // }
+        
+        int docs = random().nextInt(maxDocs);
+        for (int i = 0; i < docs; i++) {
+          index(masterClient, "id", id++, "name", "name = " + i);
+        }
+        
+        totalDocs += docs;
+        masterClient.commit();
+        
+        NamedList masterQueryRsp = rQuery(totalDocs, "*:*", masterClient);
+        SolrDocumentList masterQueryResult = (SolrDocumentList) masterQueryRsp
+            .get("response");
+        assertEquals(totalDocs, masterQueryResult.getNumFound());
+        
+        // snappull
+        pullFromMasterToSlave();
+        
+        // get docs from slave and check if number is equal to master
+        NamedList slaveQueryRsp = rQuery(totalDocs, "*:*", slaveClient);
+        SolrDocumentList slaveQueryResult = (SolrDocumentList) slaveQueryRsp
+            .get("response");
+        assertEquals(totalDocs, slaveQueryResult.getNumFound());
+        // compare results
+        String cmp = BaseDistributedSearchTestCase.compare(masterQueryResult,
+            slaveQueryResult, 0, null);
+        assertEquals(null, cmp);
+        
+        assertVersions(masterClient, slaveClient);
+        
+        checkForSingleIndex(masterJetty);
+        checkForSingleIndex(slaveJetty);
+        
+        if (random().nextBoolean()) {
+          // move the slave ahead
+          for (int i = 0; i < 3; i++) {
+            index(slaveClient, "id", id++, "name", "name = " + i);
+          }
+          slaveClient.commit();
+        }
+        
+      }
+      
+    } finally {
+      if (useStraightStandardDirectory) {
+        resetFactory();
+      }
+    }
+  }
 
-    // NOTE: at this point, the slave is not polling any more
-    // restore it.
-    slave.copyConfigFile(CONF_DIR + "solrconfig-slave.xml", "solrconfig.xml");
-    slaveJetty.stop();
-    slaveJetty = createJetty(slave);
-    slaveClient = createNewSolrServer(slaveJetty.getLocalPort());
+  private void checkForSingleIndex(JettySolrRunner jetty) {
+    CoreContainer cores = ((SolrDispatchFilter) jetty.getDispatchFilter().getFilter()).getCores();
+    Collection<SolrCore> theCores = cores.getCores();
+    for (SolrCore core : theCores) {
+      String ddir = core.getDataDir();
+      CachingDirectoryFactory dirFactory = (CachingDirectoryFactory) core.getDirectoryFactory();
+      synchronized (dirFactory) {
+        assertEquals(dirFactory.getPaths().toString(), 2, dirFactory.getPaths().size());
+      }
+      if (dirFactory instanceof StandardDirectoryFactory) {
+        System.out.println(Arrays.asList(new File(ddir).list()));
+        assertEquals(Arrays.asList(new File(ddir).list()).toString(), 1, indexDirCount(ddir));
+      }
+    }
+  }
+
+  private int indexDirCount(String ddir) {
+    String[] list = new File(ddir).list();
+    int cnt = 0;
+    for (String file : list) {
+      if (!file.endsWith(".properties")) {
+        cnt++;
+      }
+    }
+    return cnt;
   }
 
   private void pullFromMasterToSlave() throws MalformedURLException,
@@ -830,7 +884,6 @@ public class TestReplicationHandler extends SolrTestCaseJ4 {
     // check vs /replication?command=indexversion call
     resp = client2.request(req);
     version = (Long) resp.get("indexversion");
-    
     assertEquals(maxVersionClient2, version);
   }
 
@@ -1127,6 +1180,8 @@ public class TestReplicationHandler extends SolrTestCaseJ4 {
     SolrDocument d = ((SolrDocumentList) slaveQueryRsp.get("response")).get(0);
     assertEquals("newname = 2001", (String) d.getFieldValue("newname"));
     
+    checkForSingleIndex(masterJetty);
+    checkForSingleIndex(slaveJetty);
   }
 
 
