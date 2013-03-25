@@ -106,6 +106,7 @@
   <property name="tests.asserts.gracious" value="false"/>
   <property name="tests.verbose" value="false"/>
   <property name="tests.infostream" value="${tests.verbose}"/>
+  <property name="tests.filterstacks" value="true"/>
   
   <condition property="tests.heapsize" value="768M">
     <isset property="run.clover"/>
@@ -985,8 +986,25 @@
                     maxClassNameColumns="${tests.maxClassNameColumns}"
                     
                     timestamps="${tests.timestamps}"
-                    showNumFailures="${tests.showNumFailures}"
-                />
+                    showNumFailures="${tests.showNumFailures}">
+
+                  <!-- Filter stack traces. The default set of filters is similar to Ant's (reflection, assertions, junit's own stuff). -->
+                  <junit4:filtertrace defaults="true" enabled="${tests.filterstacks}">
+                    <!-- Lucene-specific stack frames (test rules mostly). -->
+                    <containsstring contains="at com.carrotsearch.randomizedtesting.RandomizedRunner" />
+                    <containsstring contains="at org.apache.lucene.util.AbstractBeforeAfterRule" />
+                    <containsstring contains="at com.carrotsearch.randomizedtesting.rules." />
+                    <containsstring contains="at org.apache.lucene.util.TestRule" />
+                    <containsstring contains="at com.carrotsearch.randomizedtesting.rules.StatementAdapter" />
+                    <containsstring contains="at com.carrotsearch.randomizedtesting.ThreadLeakControl" />
+
+                    <!-- Add custom filters if you like. Lines that match these will be removed. -->
+                    <!--
+                    <containsstring contains=".." /> 
+                    <containsregex pattern="^(\s+at )(org\.junit\.)" /> 
+                    -->
+                  </junit4:filtertrace>                    
+                </junit4:report-text>
 
                 <!-- Emits full status for all tests, their relative order on slaves. -->
                 <junit4:report-text
@@ -1182,6 +1200,9 @@ ant -Dtests.file.encoding=XXX ...
 # Don't remove temporary files under slave directories, even if
 # the test passes.
 ant -Dtests.leaveTemporary=true
+
+# Do *not* filter stack traces emitted to the console.
+ant -Dtests.filterstacks=false
 
 # Output test files and reports.
 ${tests-output}/tests-report.txt    - full ASCII tests report

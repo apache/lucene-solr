@@ -169,6 +169,12 @@ Documentation
   to use the new SortedSetDocValues backed facet implementation.
   (Shai Erera, Mike McCandless)
 
+Build
+
+* LUCENE-4879: Upgrade randomized testing to version 2.0.9: 
+  Filter stack traces on console output. (Dawid Weiss, Robert Muir)
+
+
 ======================= Lucene 4.2.1 =======================
 
 Bug Fixes
