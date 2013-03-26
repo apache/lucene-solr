@@ -1,6 +1,7 @@
 package org.apache.lucene.facet.search;
 
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
@@ -187,6 +188,42 @@ public class TestFacetsCollector extends FacetTestCase {
     FacetResult fresB = facetResults.get(1);
     double expected = topDocs.topDocs().getMaxScore() * r.numDocs();
     assertEquals("unexpected value for " + fresB, expected, fresB.getFacetResultNode().value, 1E-10);
+    
+    IOUtils.close(taxo, taxoDir, r, indexDir);
+  }
+  
+  @Test
+  public void testCountRoot() throws Exception {
+    // LUCENE-4882: FacetsAccumulator threw NPE if a FacetRequest was defined on CP.EMPTY
+    Directory indexDir = newDirectory();
+    Directory taxoDir = newDirectory();
+    
+    TaxonomyWriter taxonomyWriter = new DirectoryTaxonomyWriter(taxoDir);
+    IndexWriter iw = new IndexWriter(indexDir, newIndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer(random())));
+    
+    FacetFields facetFields = new FacetFields(taxonomyWriter);
+    for(int i = atLeast(30); i > 0; --i) {
+      Document doc = new Document();
+      facetFields.addFields(doc, Arrays.asList(new CategoryPath("a"), new CategoryPath("b")));
+      iw.addDocument(doc);
+    }
+    
+    taxonomyWriter.close();
+    iw.close();
+    
+    DirectoryReader r = DirectoryReader.open(indexDir);
+    DirectoryTaxonomyReader taxo = new DirectoryTaxonomyReader(taxoDir);
+    
+    FacetSearchParams fsp = new FacetSearchParams(new CountFacetRequest(CategoryPath.EMPTY, 10));
+    
+    final FacetsAccumulator fa = random().nextBoolean() ? new FacetsAccumulator(fsp, r, taxo) : new StandardFacetsAccumulator(fsp, r, taxo);
+    FacetsCollector fc = FacetsCollector.create(fa);
+    new IndexSearcher(r).search(new MatchAllDocsQuery(), fc);
+    
+    FacetResult res = fc.getFacetResults().get(0);
+    for (FacetResultNode node : res.getFacetResultNode().subResults) {
+      assertEquals(r.numDocs(), (int) node.value);
+    }
     
     IOUtils.close(taxo, taxoDir, r, indexDir);
   }

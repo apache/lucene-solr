@@ -163,6 +163,9 @@ Bug Fixes
 * LUCENE-4868: SumScoreFacetsAggregator used an incorrect index into
   the scores array. (Shai Erera)
 
+* LUCENE-4882: FacetsAccumulator did not allow to count ROOT category (i.e.
+	count dimensions). (Shai Erera)
+
 Documentation
 
 * LUCENE-4841: Added example SimpleSortedSetFacetsExample to show how

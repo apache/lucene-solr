@@ -152,12 +152,15 @@ public class CountingListBuilder implements CategoryListBuilder {
       if (op != OrdinalPolicy.NO_PARENTS) {
         // need to add parents too
         int parent = taxoWriter.getParent(ordinal);
-        while (parent > 0) {
-          ordinals.ints[ordinals.length++] = parent;
-          parent = taxoWriter.getParent(parent);
-        }
-        if (op == OrdinalPolicy.ALL_BUT_DIMENSION) { // discard the last added parent, which is the dimension
-          ordinals.length--;
+        if (parent > 0) {
+          // only do this if the category is not a dimension itself, otherwise, it was just discarded by the 'if' below
+          while (parent > 0) {
+            ordinals.ints[ordinals.length++] = parent;
+            parent = taxoWriter.getParent(parent);
+          }
+          if (op == OrdinalPolicy.ALL_BUT_DIMENSION) { // discard the last added parent, which is the dimension
+            ordinals.length--;
+          }
         }
       }
     }
