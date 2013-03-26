@@ -77,6 +77,7 @@ import static org.apache.solr.update.processor.DistributingUpdateProcessorFactor
 // NOT mt-safe... create a new processor for each add thread
 // TODO: we really should not wait for distrib after local? unless a certain replication factor is asked for
 public class DistributedUpdateProcessor extends UpdateRequestProcessor {
+  private static final String TEST_DISTRIB_SKIP_SERVERS = "test.distrib.skip.servers";
   public final static Logger log = LoggerFactory.getLogger(DistributedUpdateProcessor.class);
 
   /**
@@ -241,7 +242,7 @@ public class DistributedUpdateProcessor extends UpdateRequestProcessor {
           if (replicaProps != null) {
             nodes = new ArrayList<Node>(replicaProps.size());
             // check for test param that lets us miss replicas
-            String[] skipList = req.getParams().getParams("test.distrib.skip.servers");
+            String[] skipList = req.getParams().getParams(TEST_DISTRIB_SKIP_SERVERS);
             Set<String> skipListSet = null;
             if (skipList != null) {
               skipListSet = new HashSet<String>(skipList.length);
@@ -756,6 +757,7 @@ public class DistributedUpdateProcessor extends UpdateRequestProcessor {
   private ModifiableSolrParams filterParams(SolrParams params) {
     ModifiableSolrParams fparams = new ModifiableSolrParams();
     passParam(params, fparams, UpdateParams.UPDATE_CHAIN);
+    passParam(params, fparams, TEST_DISTRIB_SKIP_SERVERS);
     return fparams;
   }
 
