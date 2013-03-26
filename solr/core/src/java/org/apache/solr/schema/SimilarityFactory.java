@@ -42,6 +42,7 @@ import java.util.Iterator;
  */
 public abstract class SimilarityFactory {
   public static final String CLASS_NAME = "class";
+  private static final String SOLR_SIMILARITIES_PACKAGE = "org.apache.solr.search.similarities"; 
   
   protected SolrParams params;
 
@@ -51,14 +52,14 @@ public abstract class SimilarityFactory {
   public abstract Similarity getSimilarity();
 
 
-  private static String normalizeSPIname(String fullyQualifiedName) {
-    if (fullyQualifiedName.startsWith("org.apache.lucene.") || fullyQualifiedName.startsWith("org.apache.solr.")) {
-      return "solr" + fullyQualifiedName.substring(fullyQualifiedName.lastIndexOf('.'));
+  private static String normalizeName(String fullyQualifiedName) {
+    if (fullyQualifiedName.startsWith(SOLR_SIMILARITIES_PACKAGE + ".")) {
+      return "solr" + fullyQualifiedName.substring(SOLR_SIMILARITIES_PACKAGE.length());
     }
     return fullyQualifiedName;
   }
 
-  /** Returns a description of this field's similarity, if any */
+  /** Returns a serializable description of this similarity(factory) */
   public SimpleOrderedMap<Object> getNamedPropertyValues() {
     String className = getClass().getName();
     if (className.startsWith("org.apache.solr.schema.IndexSchema$")) {
@@ -66,10 +67,10 @@ public abstract class SimilarityFactory {
       className = getSimilarity().getClass().getName();
     } else {
       // Only normalize factory names
-      className = normalizeSPIname(className);
+      className = normalizeName(className);
     }
     SimpleOrderedMap<Object> props = new SimpleOrderedMap<Object>();
-    props.add(CLASS_NAME, normalizeSPIname(className));
+    props.add(CLASS_NAME, className);
     if (null != params) {
       Iterator<String> iter = params.getParameterNamesIterator();
       while (iter.hasNext()) {
