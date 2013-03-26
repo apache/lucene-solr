@@ -23,11 +23,10 @@ import org.apache.lucene.facet.taxonomy.directory.DirectoryTaxonomyReader;
 import org.apache.lucene.facet.taxonomy.directory.DirectoryTaxonomyWriter;
 import org.apache.lucene.index.DirectoryReader;
 import org.apache.lucene.index.IndexWriter;
-import org.apache.lucene.index.Term;
+import org.apache.lucene.search.ConstantScoreQuery;
 import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.search.MatchAllDocsQuery;
 import org.apache.lucene.search.MultiCollector;
-import org.apache.lucene.search.TermQuery;
 import org.apache.lucene.search.TopDocs;
 import org.apache.lucene.search.TopScoreDocCollector;
 import org.apache.lucene.store.Directory;
@@ -86,13 +85,16 @@ public class TestFacetsCollector extends FacetTestCase {
     };
     FacetsCollector fc = FacetsCollector.create(fa);
     TopScoreDocCollector topDocs = TopScoreDocCollector.create(10, false);
-    new IndexSearcher(r).search(new TermQuery(new Term("f", "v")), MultiCollector.wrap(fc, topDocs));
+    ConstantScoreQuery csq = new ConstantScoreQuery(new MatchAllDocsQuery());
+    csq.setBoost(2.0f);
+    
+    new IndexSearcher(r).search(csq, MultiCollector.wrap(fc, topDocs));
     
     List<FacetResult> res = fc.getFacetResults();
     float value = (float) res.get(0).getFacetResultNode().value;
     TopDocs td = topDocs.topDocs();
-    float expected = td.getMaxScore() * td.totalHits;
-    assertEquals(expected, value, 1E-4);
+    int expected = (int) (td.getMaxScore() * td.totalHits);
+    assertEquals(expected, (int) value);
     
     IOUtils.close(taxo, taxoDir, r, indexDir);
   }
