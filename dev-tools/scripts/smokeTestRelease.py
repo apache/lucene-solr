@@ -188,7 +188,9 @@ def checkJARMetaData(desc, jarFile, version):
       # Make sure .class files are 1.7 format:
       'X-Compile-Target-JDK: 1.7',
       # Make sure this matches the version we think we are releasing:
-      'Specification-Version: %s' % version):
+      'Specification-Version: %s' % version,
+      # Make sure the release was compiled with 1.7:
+      'Created-By: 1.7'):
       if s.find(verify) == -1:
         raise RuntimeError('%s is missing "%s" inside its META-INF/MANIFES.MF' % \
                            (desc, verify))
