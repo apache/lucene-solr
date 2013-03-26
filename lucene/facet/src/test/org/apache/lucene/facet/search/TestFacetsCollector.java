@@ -1,6 +1,7 @@
 package org.apache.lucene.facet.search;
 
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
@@ -22,11 +23,10 @@ import org.apache.lucene.facet.taxonomy.directory.DirectoryTaxonomyReader;
 import org.apache.lucene.facet.taxonomy.directory.DirectoryTaxonomyWriter;
 import org.apache.lucene.index.DirectoryReader;
 import org.apache.lucene.index.IndexWriter;
-import org.apache.lucene.index.Term;
+import org.apache.lucene.search.ConstantScoreQuery;
 import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.search.MatchAllDocsQuery;
 import org.apache.lucene.search.MultiCollector;
-import org.apache.lucene.search.TermQuery;
 import org.apache.lucene.search.TopDocs;
 import org.apache.lucene.search.TopScoreDocCollector;
 import org.apache.lucene.store.Directory;
@@ -85,13 +85,16 @@ public class TestFacetsCollector extends FacetTestCase {
     };
     FacetsCollector fc = FacetsCollector.create(fa);
     TopScoreDocCollector topDocs = TopScoreDocCollector.create(10, false);
-    new IndexSearcher(r).search(new TermQuery(new Term("f", "v")), MultiCollector.wrap(fc, topDocs));
+    ConstantScoreQuery csq = new ConstantScoreQuery(new MatchAllDocsQuery());
+    csq.setBoost(2.0f);
+    
+    new IndexSearcher(r).search(csq, MultiCollector.wrap(fc, topDocs));
     
     List<FacetResult> res = fc.getFacetResults();
     float value = (float) res.get(0).getFacetResultNode().value;
     TopDocs td = topDocs.topDocs();
-    float expected = td.getMaxScore() * td.totalHits;
-    assertEquals(expected, value, 1E-4);
+    int expected = (int) (td.getMaxScore() * td.totalHits);
+    assertEquals(expected, (int) value);
     
     IOUtils.close(taxo, taxoDir, r, indexDir);
   }
@@ -187,6 +190,42 @@ public class TestFacetsCollector extends FacetTestCase {
     FacetResult fresB = facetResults.get(1);
     double expected = topDocs.topDocs().getMaxScore() * r.numDocs();
     assertEquals("unexpected value for " + fresB, expected, fresB.getFacetResultNode().value, 1E-10);
+    
+    IOUtils.close(taxo, taxoDir, r, indexDir);
+  }
+  
+  @Test
+  public void testCountRoot() throws Exception {
+    // LUCENE-4882: FacetsAccumulator threw NPE if a FacetRequest was defined on CP.EMPTY
+    Directory indexDir = newDirectory();
+    Directory taxoDir = newDirectory();
+    
+    TaxonomyWriter taxonomyWriter = new DirectoryTaxonomyWriter(taxoDir);
+    IndexWriter iw = new IndexWriter(indexDir, newIndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer(random())));
+    
+    FacetFields facetFields = new FacetFields(taxonomyWriter);
+    for(int i = atLeast(30); i > 0; --i) {
+      Document doc = new Document();
+      facetFields.addFields(doc, Arrays.asList(new CategoryPath("a"), new CategoryPath("b")));
+      iw.addDocument(doc);
+    }
+    
+    taxonomyWriter.close();
+    iw.close();
+    
+    DirectoryReader r = DirectoryReader.open(indexDir);
+    DirectoryTaxonomyReader taxo = new DirectoryTaxonomyReader(taxoDir);
+    
+    FacetSearchParams fsp = new FacetSearchParams(new CountFacetRequest(CategoryPath.EMPTY, 10));
+    
+    final FacetsAccumulator fa = random().nextBoolean() ? new FacetsAccumulator(fsp, r, taxo) : new StandardFacetsAccumulator(fsp, r, taxo);
+    FacetsCollector fc = FacetsCollector.create(fa);
+    new IndexSearcher(r).search(new MatchAllDocsQuery(), fc);
+    
+    FacetResult res = fc.getFacetResults().get(0);
+    for (FacetResultNode node : res.getFacetResultNode().subResults) {
+      assertEquals(r.numDocs(), (int) node.value);
+    }
     
     IOUtils.close(taxo, taxoDir, r, indexDir);
   }

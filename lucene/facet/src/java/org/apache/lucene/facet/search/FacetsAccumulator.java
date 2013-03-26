@@ -182,10 +182,12 @@ public class FacetsAccumulator {
         continue;
       }
       CategoryListParams clp = searchParams.indexingParams.getCategoryListParams(fr.categoryPath);
-      OrdinalPolicy ordinalPolicy = clp .getOrdinalPolicy(fr.categoryPath.components[0]);
-      if (ordinalPolicy == OrdinalPolicy.NO_PARENTS) {
-        // rollup values
-        aggregator.rollupValues(fr, rootOrd, children, siblings, facetArrays);
+      if (fr.categoryPath.length > 0) { // someone might ask to aggregate the ROOT category
+        OrdinalPolicy ordinalPolicy = clp.getOrdinalPolicy(fr.categoryPath.components[0]);
+        if (ordinalPolicy == OrdinalPolicy.NO_PARENTS) {
+          // rollup values
+          aggregator.rollupValues(fr, rootOrd, children, siblings, facetArrays);
+        }
       }
       
       FacetResultsHandler frh = createFacetResultsHandler(fr);
