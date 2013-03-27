@@ -48,27 +48,26 @@ sammy.get
     content_element
       .removeClass( 'single' );
     
-    var core_menu = this.active_core.closest( 'ul' );
-    if( !core_menu.data( 'admin-extra-loaded' ) )
+    if( !app.core_menu.data( 'admin-extra-loaded' ) )
     {
-      core_menu.data( 'admin-extra-loaded', new Date() );
+      app.core_menu.data( 'admin-extra-loaded', new Date() );
 
       $.get
       (
-        core_basepath + '/admin/file/?file=admin-extra.menu-top.html',
+        core_basepath + '/admin/file/?file=admin-extra.menu-top.html&contentType=text/html;charset=utf-8',
         function( menu_extra )
         {
-          core_menu
+          app.core_menu
             .prepend( menu_extra );
         }
       );
-            
+      
       $.get
       (
-        core_basepath + '/admin/file/?file=admin-extra.menu-bottom.html',
+        core_basepath + '/admin/file/?file=admin-extra.menu-bottom.html&contentType=text/html;charset=utf-8',
         function( menu_extra )
         {
-          core_menu
+          app.core_menu
             .append( menu_extra );
         }
       );
