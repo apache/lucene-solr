@@ -99,6 +99,8 @@ Bug Fixes
 * SOLR-4636: If opening a reader fails for some reason when opening a SolrIndexSearcher,
   a Directory can be left unreleased. (Mark Miller)
 
+* SOLR-4405: Admin UI - admin-extra files are not rendered into the core-menu (steffkes)
+
 Optimizations
 ----------------------
 
