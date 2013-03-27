@@ -139,6 +139,11 @@ New Features
 * LUCENE-4839: Added SorterTemplate.timSort, a O(n log n) stable sort algorithm
   that performs well on partially sorted data. (Adrien Grand)
 
+* LUCENE-4644: Added support for the "IsWithin" spatial predicate for
+  RecursivePrefixTreeStrategy. It's for matching non-point indexed shapes; if
+  you only have points (1/doc) then "Intersects" is equivalent and faster.
+  See the javadocs.  (David Smiley)
+
 Optimizations
 
 * LUCENE-4839: SorterTemplate.merge can now be overridden in order to replace
