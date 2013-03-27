@@ -381,7 +381,7 @@ public class SolrResourceLoader implements ResourceLoader
    * is loaded using a shortname.
    *
    * @param cname The name or the short name of the class.
-   * @param subpackages the packages to be tried if the cnams starts with solr.
+   * @param subpackages the packages to be tried if the cname starts with solr.
    * @return the loaded class. An exception is thrown if it fails
    */
   public <T> Class<? extends T> findClass(String cname, Class<T> expectedType, String... subpackages) {

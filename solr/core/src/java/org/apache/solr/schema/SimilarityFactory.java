@@ -18,8 +18,6 @@ package org.apache.solr.schema;
 
 import org.apache.lucene.search.similarities.Similarity;
 import org.apache.solr.common.util.SimpleOrderedMap;
-import org.apache.solr.schema.SchemaAware; // javadocs
-import org.apache.solr.schema.FieldType; // javadocs
 import org.apache.solr.common.params.SolrParams;
 
 import java.util.Iterator;
@@ -52,13 +50,6 @@ public abstract class SimilarityFactory {
   public abstract Similarity getSimilarity();
 
 
-  private static String normalizeName(String fullyQualifiedName) {
-    if (fullyQualifiedName.startsWith(SOLR_SIMILARITIES_PACKAGE + ".")) {
-      return "solr" + fullyQualifiedName.substring(SOLR_SIMILARITIES_PACKAGE.length());
-    }
-    return fullyQualifiedName;
-  }
-
   /** Returns a serializable description of this similarity(factory) */
   public SimpleOrderedMap<Object> getNamedPropertyValues() {
     String className = getClass().getName();
@@ -66,8 +57,10 @@ public abstract class SimilarityFactory {
       // If this class is just a no-params wrapper around a similarity class, use the similarity class
       className = getSimilarity().getClass().getName();
     } else {
-      // Only normalize factory names
-      className = normalizeName(className);
+      // Only shorten factory names
+      if (className.startsWith(SOLR_SIMILARITIES_PACKAGE + ".")) {
+        className = className.replace(SOLR_SIMILARITIES_PACKAGE, "solr");
+      }
     }
     SimpleOrderedMap<Object> props = new SimpleOrderedMap<Object>();
     props.add(CLASS_NAME, className);
