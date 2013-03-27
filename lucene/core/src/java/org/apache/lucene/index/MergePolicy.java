@@ -25,6 +25,7 @@ import java.util.Map;
 
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.MergeInfo;
+import org.apache.lucene.util.FixedBitSet;
 import org.apache.lucene.util.SetOnce.AlreadySetException;
 import org.apache.lucene.util.SetOnce;
 
@@ -58,7 +59,29 @@ import org.apache.lucene.util.SetOnce;
  */
 
 public abstract class MergePolicy implements java.io.Closeable, Cloneable {
-  
+
+  /** A map of doc IDs. */
+  public static abstract class DocMap {
+    /** Return the new doc ID according to its old value. */
+    public abstract int map(int old);
+
+    /** Useful from an assert. */
+    boolean isConsistent(int maxDoc) {
+      final FixedBitSet targets = new FixedBitSet(maxDoc);
+      for (int i = 0; i < maxDoc; ++i) {
+        final int target = map(i);
+        if (target < 0 || target >= maxDoc) {
+          assert false : "out of range: " + target + " not in [0-" + maxDoc + "[";
+          return false;
+        } else if (targets.get(target)) {
+          assert false : target + " is already taken (" + i + ")";
+          return false;
+        }
+      }
+      return true;
+    }
+  }
+
   /** OneMerge provides the information necessary to perform
    *  an individual primitive merge operation, resulting in
    *  a single new segment.  The merge spec includes the
@@ -105,9 +128,12 @@ public abstract class MergePolicy implements java.io.Closeable, Cloneable {
       totalDocCount = count;
     }
 
-    /** Get the list of readers to merge. Note that this list does not
+    /** Expert: Get the list of readers to merge. Note that this list does not
      *  necessarily match the list of segments to merge and should only be used
-     *  to feed SegmentMerger to initialize a merge. */
+     *  to feed SegmentMerger to initialize a merge. When a {@link OneMerge}
+     *  reorders doc IDs, it must override {@link #getDocMap} too so that
+     *  deletes that happened during the merge can be applied to the newly
+     *  merged segment. */
     public List<AtomicReader> getMergeReaders() throws IOException {
       if (readers == null) {
         throw new IllegalStateException("IndexWriter has not initialized readers from the segment infos yet");
@@ -119,6 +145,20 @@ public abstract class MergePolicy implements java.io.Closeable, Cloneable {
         }
       }
       return Collections.unmodifiableList(readers);
+    }
+
+    /** Expert: If {@link #getMergeReaders()} reorders document IDs, this method
+     *  must be overridden to return a mapping from the <i>natural</i> doc ID
+     *  (the doc ID that would result from a natural merge) to the actual doc
+     *  ID. This mapping is used to apply deletions that happened during the
+     *  merge to the new segment. */
+    public DocMap getDocMap(MergeState mergeState) {
+      return new DocMap() {
+        @Override
+        public int map(int docID) {
+          return docID;
+        }
+      };
     }
 
     /** Record that an exception occurred while executing
