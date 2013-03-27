@@ -342,7 +342,7 @@
  
   <target name="dist-excl-slf4j"
           description="Creates the Solr distribution files without slf4j API or bindings."
-          depends="-dist-common, dist-war-excl-slf4j" />
+          depends="-dist-common" />
  
   <target name="-dist-common"
           depends="dist-solrj, dist-core, dist-test-framework, dist-contrib">
@@ -366,20 +366,11 @@
   <target name="dist-war"
           description="Creates the Solr WAR Distribution file.">
     <ant dir="webapp" target="dist" inheritall="false">
-      <property name="exclude.from.war" value="log4j-1.*" />
+      <property name="exclude.from.war" value="*slf4j*,log4j-*" />
       <propertyset refid="uptodate.and.compiled.properties"/>
     </ant>
   </target>
   
-  <target name="dist-war-excl-slf4j"
-          description="Creates a Solr WAR Distribution file, excluding slf4j API and bindings.">
-    <ant dir="webapp" target="dist" inheritall="false">
-      <propertyset refid="uptodate.and.compiled.properties"/>
-      <property name="exclude.from.war" value="*slf4j*,log4j-*" />
-      <property name="solr.war.suffix" value="-excl-slf4j" />
-    </ant>
-  </target>
-
   <target name="prepare-release-no-sign" depends="clean, package, generate-maven-artifacts"/>
   <target name="prepare-release" depends="prepare-release-no-sign, sign-artifacts"/>
  

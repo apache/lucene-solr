@@ -43,7 +43,6 @@
   <property name="tests.userdir" location="src/test-files"/>
   <property name="example" location="${common-solr.dir}/example" />
   <property name="javadoc.dir" location="${dest}/docs"/>
-  <property name="tests.loggingfile" location="${common-solr.dir}/testlogging.properties"/>
   <property name="tests.cleanthreads.sysprop" value="perClass"/>
 
   <property name="changes.target.dir" location="${dest}/docs/changes"/>

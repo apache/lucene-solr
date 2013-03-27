@@ -25,9 +25,16 @@
       <conf name="jetty" description="jetty jars"/>
       <conf name="start" description="jetty start jar"/>
       <conf name="servlet" description="servlet-api jar"/>
+      <conf name="logging" description="logging setup"/>
     </configurations>
 
     <dependencies>
+    
+      <dependency org="log4j" name="log4j" rev="1.2.16" transitive="false" conf="logging->default"/>
+      <dependency org="org.slf4j" name="slf4j-api" rev="1.6.6" transitive="false" conf="logging->default"/>
+      <dependency org="org.slf4j" name="jcl-over-slf4j" rev="1.6.6" transitive="false" conf="logging->default"/>
+      <dependency org="org.slf4j" name="jul-to-slf4j" rev="1.6.6" transitive="false" conf="logging->default"/> 
+      <dependency org="org.slf4j" name="slf4j-log4j12" rev="1.6.6" transitive="false" conf="logging->default"/> 
       <dependency org="org.eclipse.jetty" name="jetty-continuation" rev="&jetty.version;" transitive="false" conf="jetty->default"/>
       <dependency org="org.eclipse.jetty" name="jetty-deploy" rev="&jetty.version;" transitive="false" conf="jetty->default"/>
       <dependency org="org.eclipse.jetty" name="jetty-http" rev="&jetty.version;" transitive="false" conf="jetty->default"/>
