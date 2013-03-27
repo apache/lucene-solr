@@ -710,6 +710,29 @@ public class TestFSTs extends LuceneTestCase {
     assertNull(fstEnum.seekFloor(new BytesRef("foo")));
     assertNull(fstEnum.seekCeil(new BytesRef("foobaz")));
   }
+  
+
+  public void testDuplicateFSAString() throws Exception {
+    String str = "foobar";
+    final Outputs<Object> outputs = NoOutputs.getSingleton();
+    final Builder<Object> b = new Builder<Object>(FST.INPUT_TYPE.BYTE1, outputs);
+    IntsRef ints = new IntsRef();
+    for(int i=0; i<10; i++) {
+      b.add(Util.toIntsRef(new BytesRef(str), ints), outputs.getNoOutput());
+    }
+    FST<Object> fst = b.finish();
+    
+    // count the input paths
+    int count = 0; 
+    final BytesRefFSTEnum<Object> fstEnum = new BytesRefFSTEnum<Object>(fst);
+    while(fstEnum.next()!=null) {
+      count++;  
+    }
+    assertEquals(1, count);
+    
+    assertNotNull(Util.get(fst, new BytesRef(str)));
+    assertNull(Util.get(fst, new BytesRef("foobaz")));
+  }
 
   /*
   public void testTrivial() throws Exception {
