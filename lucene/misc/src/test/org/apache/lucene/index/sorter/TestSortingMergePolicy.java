@@ -18,7 +18,11 @@ package org.apache.lucene.index.sorter;
  */
 
 import java.io.IOException;
+import java.util.ArrayList;
+import java.util.HashSet;
+import java.util.List;
 import java.util.Random;
+import java.util.Set;
 
 import org.apache.lucene.analysis.MockAnalyzer;
 import org.apache.lucene.document.Document;
@@ -29,24 +33,28 @@ import org.apache.lucene.index.AtomicReader;
 import org.apache.lucene.index.DirectoryReader;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.IndexWriterConfig;
+import org.apache.lucene.index.LogMergePolicy;
+import org.apache.lucene.index.MergePolicy;
 import org.apache.lucene.index.NumericDocValues;
 import org.apache.lucene.index.RandomIndexWriter;
-import org.apache.lucene.index.SerialMergeScheduler;
 import org.apache.lucene.index.SlowCompositeReaderWrapper;
 import org.apache.lucene.index.Term;
+import org.apache.lucene.index.TieredMergePolicy;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.util.LuceneTestCase;
 import org.apache.lucene.util._TestUtil;
 
+import com.carrotsearch.randomizedtesting.generators.RandomPicks;
+
 public class TestSortingMergePolicy extends LuceneTestCase {
 
-  private static final String DELETE_TERM = "abc";
-
+  private List<String> terms;
   private Directory dir1, dir2;
   private Sorter sorter;
   private IndexReader reader;
   private IndexReader sortedReader;
 
+  @Override
   public void setUp() throws Exception {
     super.setUp();
     sorter = new NumericDocValuesSorter("ndv");
@@ -56,32 +64,58 @@ public class TestSortingMergePolicy extends LuceneTestCase {
   private Document randomDocument() {
     final Document doc = new Document();
     doc.add(new NumericDocValuesField("ndv", random().nextLong()));
-    doc.add(new StringField("s", rarely() ? DELETE_TERM : _TestUtil.randomSimpleString(random(), 3), Store.YES));
+    doc.add(new StringField("s", RandomPicks.randomFrom(random(), terms), Store.YES));
     return doc;
+  }
+
+  private static MergePolicy newSortingMergePolicy(Sorter sorter) {
+    // create a MP with a low merge factor so that many merges happen
+    MergePolicy mp;
+    if (random().nextBoolean()) {
+      TieredMergePolicy tmp = newTieredMergePolicy(random());
+      final int numSegs = _TestUtil.nextInt(random(), 3, 5);
+      tmp.setSegmentsPerTier(numSegs);
+      tmp.setMaxMergeAtOnce(_TestUtil.nextInt(random(), 2, numSegs));
+      mp = tmp;
+    } else {
+      LogMergePolicy lmp = newLogMergePolicy(random());
+      lmp.setMergeFactor(_TestUtil.nextInt(random(), 3, 5));
+      mp = lmp;
+    }
+    // wrap it with a sorting mp
+    return new SortingMergePolicy(mp, sorter);
   }
 
   private void createRandomIndexes() throws IOException {
     dir1 = newDirectory();
     dir2 = newDirectory();
-    final int numDocs = atLeast(100);
+    final int numDocs = atLeast(150);
+    final int numTerms = _TestUtil.nextInt(random(), 1, numDocs / 5);
+    Set<String> randomTerms = new HashSet<String>();
+    while (randomTerms.size() < numTerms) {
+      randomTerms.add(_TestUtil.randomSimpleString(random()));
+    }
+    terms = new ArrayList<String>(randomTerms);
     final long seed = random().nextLong();
     final IndexWriterConfig iwc1 = newIndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer(new Random(seed)));
     final IndexWriterConfig iwc2 = newIndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer(new Random(seed)));
-    iwc2.setMergePolicy(new SortingMergePolicy(iwc2.getMergePolicy(), sorter));
-    iwc2.setMergeScheduler(new SerialMergeScheduler()); // Remove this line when LUCENE-4752 is fixed
+    iwc2.setMergePolicy(newSortingMergePolicy(sorter));
     final RandomIndexWriter iw1 = new RandomIndexWriter(new Random(seed), dir1, iwc1);
     final RandomIndexWriter iw2 = new RandomIndexWriter(new Random(seed), dir2, iwc2);
     for (int i = 0; i < numDocs; ++i) {
       final Document doc = randomDocument();
       iw1.addDocument(doc);
       iw2.addDocument(doc);
-      if (i == numDocs / 2 || (i != numDocs - 1 && rarely())) {
+      if (i == numDocs / 2 || (i != numDocs - 1 && random().nextInt(8) == 0)) {
         iw1.commit();
         iw2.commit();
       }
+      if (random().nextInt(5) == 0) {
+        final String term = RandomPicks.randomFrom(random(), terms);
+        iw1.deleteDocuments(new Term("s", term));
+        iw2.deleteDocuments(new Term("s", term));
+      }
     }
-    iw1.deleteDocuments(new Term("s", DELETE_TERM));
-    iw2.deleteDocuments(new Term("s", DELETE_TERM));
     iw1.forceMerge(1);
     iw2.forceMerge(1);
     iw1.close();
@@ -90,6 +124,7 @@ public class TestSortingMergePolicy extends LuceneTestCase {
     sortedReader = DirectoryReader.open(dir2);
   }
 
+  @Override
   public void tearDown() throws Exception {
     reader.close();
     sortedReader.close();
@@ -98,7 +133,7 @@ public class TestSortingMergePolicy extends LuceneTestCase {
     super.tearDown();
   }
 
-  private void assertSorted(AtomicReader reader) throws IOException {
+  private static void assertSorted(AtomicReader reader) throws IOException {
     final NumericDocValues ndv = reader.getNumericDocValues("ndv");
     for (int i = 1; i < reader.maxDoc(); ++i) {
       assertTrue(ndv.get(i-1) < ndv.get(i));

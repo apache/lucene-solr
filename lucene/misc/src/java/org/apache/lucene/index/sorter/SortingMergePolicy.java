@@ -26,11 +26,14 @@ import org.apache.lucene.index.AtomicReader;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.IndexWriter;
 import org.apache.lucene.index.MergePolicy;
+import org.apache.lucene.index.MergeState;
 import org.apache.lucene.index.MultiReader;
 import org.apache.lucene.index.SegmentInfoPerCommit;
 import org.apache.lucene.index.SegmentInfos;
 import org.apache.lucene.index.SlowCompositeReaderWrapper;
 import org.apache.lucene.store.Directory;
+import org.apache.lucene.util.Bits;
+import org.apache.lucene.util.packed.MonotonicAppendingLongBuffer;
 
 /** A {@link MergePolicy} that reorders documents according to a {@link Sorter}
  *  before merging them. As a consequence, all segments resulting from a merge
@@ -42,7 +45,11 @@ import org.apache.lucene.store.Directory;
  *  @lucene.experimental */
 public final class SortingMergePolicy extends MergePolicy {
 
-  private class SortingOneMerge extends OneMerge {
+  class SortingOneMerge extends OneMerge {
+
+    List<AtomicReader> unsortedReaders;
+    Sorter.DocMap docMap;
+    AtomicReader sortedView;
 
     SortingOneMerge(List<SegmentInfoPerCommit> segments) {
       super(segments);
@@ -50,28 +57,62 @@ public final class SortingMergePolicy extends MergePolicy {
 
     @Override
     public List<AtomicReader> getMergeReaders() throws IOException {
-      final List<AtomicReader> readers =  super.getMergeReaders();
-      switch (readers.size()) {
-        case 0:
-          return readers;
-        case 1:
-          return Collections.singletonList(SortingAtomicReader.wrap(readers.get(0), sorter));
-        default:
-          final IndexReader multiReader = new MultiReader(readers.toArray(new AtomicReader[readers.size()]));
-          final AtomicReader atomicReader = SlowCompositeReaderWrapper.wrap(multiReader);
-          final AtomicReader sortingReader = SortingAtomicReader.wrap(atomicReader, sorter);
-          if (sortingReader == atomicReader) {
-            // already sorted, return the original list of readers so that
-            // codec-specific bulk-merge methods can be used
-            return readers;
-          }
-          return Collections.singletonList(sortingReader);
+      if (unsortedReaders == null) {
+        unsortedReaders = super.getMergeReaders();
+        final AtomicReader atomicView;
+        if (unsortedReaders.size() == 1) {
+          atomicView = unsortedReaders.get(0);
+        } else {
+          final IndexReader multiReader = new MultiReader(unsortedReaders.toArray(new AtomicReader[unsortedReaders.size()]));
+          atomicView = SlowCompositeReaderWrapper.wrap(multiReader);
+        }
+        docMap = sorter.sort(atomicView);
+        sortedView = SortingAtomicReader.wrap(atomicView, docMap);
       }
+      // a null doc map means that the readers are already sorted
+      return docMap == null ? unsortedReaders : Collections.singletonList(sortedView);
+    }
+
+    private MonotonicAppendingLongBuffer getDeletes(List<AtomicReader> readers) {
+      MonotonicAppendingLongBuffer deletes = new MonotonicAppendingLongBuffer();
+      int deleteCount = 0;
+      for (AtomicReader reader : readers) {
+        final int maxDoc = reader.maxDoc();
+        final Bits liveDocs = reader.getLiveDocs();
+        for (int i = 0; i < maxDoc; ++i) {
+          if (liveDocs != null && !liveDocs.get(i)) {
+            ++deleteCount;
+          } else {
+            deletes.add(deleteCount);
+          }
+        }
+      }
+      return deletes;
+    }
+
+    @Override
+    public MergePolicy.DocMap getDocMap(final MergeState mergeState) {
+      if (unsortedReaders == null) {
+        throw new IllegalStateException();
+      }
+      if (docMap == null) {
+        return super.getDocMap(mergeState);
+      }
+      assert mergeState.docMaps.length == 1; // we returned a singleton reader
+      final MonotonicAppendingLongBuffer deletes = getDeletes(unsortedReaders);
+      return new MergePolicy.DocMap() {
+        @Override
+        public int map(int old) {
+          final int oldWithDeletes = old + (int) deletes.get(old);
+          final int newWithDeletes = docMap.oldToNew(oldWithDeletes);
+          return mergeState.docMaps[0].get(newWithDeletes);
+        }
+      };
     }
 
   }
 
-  private class SortingMergeSpecification extends MergeSpecification {
+  class SortingMergeSpecification extends MergeSpecification {
 
     @Override
     public void add(OneMerge merge) {
@@ -96,8 +137,8 @@ public final class SortingMergePolicy extends MergePolicy {
     return sortingSpec;
   }
 
-  private final MergePolicy in;
-  private final Sorter sorter;
+  final MergePolicy in;
+  final Sorter sorter;
 
   /** Create a new {@link MergePolicy} that sorts documents with <code>sorter</code>. */
   public SortingMergePolicy(MergePolicy in, Sorter sorter) {

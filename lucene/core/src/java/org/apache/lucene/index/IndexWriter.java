@@ -2975,7 +2975,7 @@ public class IndexWriter implements Closeable, TwoPhaseCommit {
    *  saves the resulting deletes file (incrementing the
    *  delete generation for merge.info).  If no deletes were
    *  flushed, no new deletes file is saved. */
-  synchronized private ReadersAndLiveDocs commitMergedDeletes(MergePolicy.OneMerge merge) throws IOException {
+  synchronized private ReadersAndLiveDocs commitMergedDeletes(MergePolicy.OneMerge merge, MergeState mergeState) throws IOException {
 
     assert testPoint("startCommitMergeDeletes");
 
@@ -2992,6 +2992,7 @@ public class IndexWriter implements Closeable, TwoPhaseCommit {
 
     // Lazy init (only when we find a delete to carry over):
     ReadersAndLiveDocs mergedDeletes = null;
+    MergePolicy.DocMap docMap = null;
 
     for(int i=0; i < sourceSegments.size(); i++) {
       SegmentInfoPerCommit info = sourceSegments.get(i);
@@ -3037,8 +3038,10 @@ public class IndexWriter implements Closeable, TwoPhaseCommit {
                 if (mergedDeletes == null) {
                   mergedDeletes = readerPool.get(merge.info, true);
                   mergedDeletes.initWritableLiveDocs();
+                  docMap = merge.getDocMap(mergeState);
+                  assert docMap.isConsistent(merge.info.info.getDocCount());
                 }
-                mergedDeletes.delete(docUpto);
+                mergedDeletes.delete(docMap.map(docUpto));
               }
               docUpto++;
             }
@@ -3055,8 +3058,10 @@ public class IndexWriter implements Closeable, TwoPhaseCommit {
             if (mergedDeletes == null) {
               mergedDeletes = readerPool.get(merge.info, true);
               mergedDeletes.initWritableLiveDocs();
+              docMap = merge.getDocMap(mergeState);
+              assert docMap.isConsistent(merge.info.info.getDocCount());
             }
-            mergedDeletes.delete(docUpto);
+            mergedDeletes.delete(docMap.map(docUpto));
           }
           docUpto++;
         }
@@ -3081,7 +3086,7 @@ public class IndexWriter implements Closeable, TwoPhaseCommit {
     return mergedDeletes;
   }
 
-  synchronized private boolean commitMerge(MergePolicy.OneMerge merge) throws IOException {
+  synchronized private boolean commitMerge(MergePolicy.OneMerge merge, MergeState mergeState) throws IOException {
 
     assert testPoint("startCommitMerge");
 
@@ -3109,7 +3114,7 @@ public class IndexWriter implements Closeable, TwoPhaseCommit {
       return false;
     }
 
-    final ReadersAndLiveDocs mergedDeletes =  merge.info.info.getDocCount() == 0 ? null : commitMergedDeletes(merge);
+    final ReadersAndLiveDocs mergedDeletes =  merge.info.info.getDocCount() == 0 ? null : commitMergedDeletes(merge, mergeState);
 
     assert mergedDeletes == null || mergedDeletes.getPendingDeleteCount() != 0;
 
@@ -3780,7 +3785,7 @@ public class IndexWriter implements Closeable, TwoPhaseCommit {
 
       // Force READ context because we merge deletes onto
       // this reader:
-      if (!commitMerge(merge)) {
+      if (!commitMerge(merge, mergeState)) {
         // commitMerge will return false if this merge was aborted
         return 0;
       }
