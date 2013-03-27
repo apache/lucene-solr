@@ -26,6 +26,8 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.analysis.Tokenizer;
@@ -750,7 +752,7 @@ public abstract class FieldType extends FieldProperties {
   public SimpleOrderedMap<Object> getNamedPropertyValues(boolean showDefaults) {
     SimpleOrderedMap<Object> namedPropertyValues = new SimpleOrderedMap<Object>();
     namedPropertyValues.add(TYPE_NAME, getTypeName());
-    namedPropertyValues.add(CLASS_NAME, normalizeSPIname(getClass().getName()));
+    namedPropertyValues.add(CLASS_NAME, getShortName(getClass().getName()));
     if (showDefaults) {
       Map<String,String> fieldTypeArgs = getNonFieldPropertyArgs();
       if (null != fieldTypeArgs) {
@@ -835,8 +837,7 @@ public abstract class FieldType extends FieldProperties {
    */
   protected static SimpleOrderedMap<Object> getAnalyzerProperties(Analyzer analyzer) {
     SimpleOrderedMap<Object> analyzerProps = new SimpleOrderedMap<Object>();
-    analyzerProps.add(CLASS_NAME, normalizeSPIname(analyzer.getClass().getName()));
-    
+
     if (analyzer instanceof TokenizerChain) {
       Map<String,String> factoryArgs;
       TokenizerChain tokenizerChain = (TokenizerChain)analyzer;
@@ -845,7 +846,7 @@ public abstract class FieldType extends FieldProperties {
         List<SimpleOrderedMap<Object>> charFilterProps = new ArrayList<SimpleOrderedMap<Object>>();
         for (CharFilterFactory charFilterFactory : charFilterFactories) {
           SimpleOrderedMap<Object> props = new SimpleOrderedMap<Object>();
-          props.add(CLASS_NAME, normalizeSPIname(charFilterFactory.getClass().getName()));
+          props.add(CLASS_NAME, getShortName(charFilterFactory.getClass().getName()));
           factoryArgs = charFilterFactory.getOriginalArgs();
           if (null != factoryArgs) {
             for (String key : factoryArgs.keySet()) {
@@ -859,7 +860,7 @@ public abstract class FieldType extends FieldProperties {
 
       SimpleOrderedMap<Object> tokenizerProps = new SimpleOrderedMap<Object>();
       TokenizerFactory tokenizerFactory = tokenizerChain.getTokenizerFactory();
-      tokenizerProps.add(CLASS_NAME, normalizeSPIname(tokenizerFactory.getClass().getName()));
+      tokenizerProps.add(CLASS_NAME, getShortName(tokenizerFactory.getClass().getName()));
       factoryArgs = tokenizerFactory.getOriginalArgs();
       if (null != factoryArgs) {
         for (String key : factoryArgs.keySet()) {
@@ -873,7 +874,7 @@ public abstract class FieldType extends FieldProperties {
         List<SimpleOrderedMap<Object>> filterProps = new ArrayList<SimpleOrderedMap<Object>>();
         for (TokenFilterFactory filterFactory : filterFactories) {
           SimpleOrderedMap<Object> props = new SimpleOrderedMap<Object>();
-          props.add(CLASS_NAME, normalizeSPIname(filterFactory.getClass().getName()));
+          props.add(CLASS_NAME, getShortName(filterFactory.getClass().getName()));
           factoryArgs = filterFactory.getOriginalArgs();
           if (null != factoryArgs) {
             for (String key : factoryArgs.keySet()) {
@@ -884,14 +885,17 @@ public abstract class FieldType extends FieldProperties {
         }
         analyzerProps.add(FILTERS, filterProps);
       }
+    } else { // analyzer is not instanceof TokenizerChain
+      analyzerProps.add(CLASS_NAME, analyzer.getClass().getName());
     }
     return analyzerProps;
   }
+  
+  private static final Pattern SHORTENABLE_PACKAGE_PATTERN 
+      = Pattern.compile("org\\.apache\\.(?:lucene\\.analysis(?=.).*|solr\\.(?:analysis|schema))\\.([^.]+)$");
 
-  private static String normalizeSPIname(String fullyQualifiedName) {
-    if (fullyQualifiedName.startsWith("org.apache.lucene.") || fullyQualifiedName.startsWith("org.apache.solr.")) {
-      return "solr" + fullyQualifiedName.substring(fullyQualifiedName.lastIndexOf('.'));
-    }
-    return fullyQualifiedName;
+  private static String getShortName(String fullyQualifiedName) {
+    Matcher matcher = SHORTENABLE_PACKAGE_PATTERN.matcher(fullyQualifiedName);
+    return matcher.matches() ? "solr." + matcher.group(1) : fullyQualifiedName;
   }
 }
