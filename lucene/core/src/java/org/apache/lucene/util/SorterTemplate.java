@@ -222,7 +222,7 @@ public abstract class SorterTemplate {
       final int l = runBase(i+1);
       final int pivot = runBase(i);
       final int h = runEnd(i);
-      merge(l, pivot, h, pivot - l, h - pivot);
+      runMerge(l, pivot, h, pivot - l, h - pivot);
       for (int j = i + 1; j > 0; --j) {
         setRunEnd(j, runEnd(j-1));
       }
@@ -340,22 +340,43 @@ public abstract class SorterTemplate {
     
     mergeSort(lo, mid);
     mergeSort(mid, hi);
-    merge(lo, mid, hi, mid - lo, hi - mid);
+    runMerge(lo, mid, hi, mid - lo, hi - mid);
+  }
+
+  /** Sort out trivial cases and reduce the scope of the merge as much as
+   *  possible before calling {@link #merge}/ */
+  private void runMerge(int lo, int pivot, int hi, int len1, int len2) {
+    if (len1 == 0 || len2 == 0) {
+      return;
+    }
+    setPivot(pivot - 1);
+    if (comparePivot(pivot) <= 0) {
+      // all values from the first run are below all values from the 2nd run
+      // this shortcut makes mergeSort run in linear time on sorted arrays
+      return;
+    }
+    while (comparePivot(hi - 1) <= 0) {
+      --hi;
+      --len2;
+    }
+    setPivot(pivot);
+    while (comparePivot(lo) >= 0) {
+      ++lo;
+      --len1;
+    }
+    if (len1 + len2 == 2) {
+      assert len1 == len2;
+      assert compare(lo, pivot) > 0;
+      swap(pivot, lo);
+      return;
+    }
+    merge(lo, pivot, hi, len1, len2);
   }
 
   /** Merge the slices [lo-pivot[ (of length len1) and [pivot-hi[ (of length
    *  len2) which are already sorted. This method merges in-place but can be
    *  extended to provide a faster implementation using extra memory. */
   protected void merge(int lo, int pivot, int hi, int len1, int len2) {
-    if (len1 == 0 || len2 == 0) {
-      return;
-    }
-    if (len1 + len2 == 2) {
-      if (compare(pivot, lo) < 0) {
-          swap(pivot, lo);
-      }
-      return;
-    }
     int first_cut, second_cut;
     int len11, len22;
     if (len1 > len2) {
@@ -371,8 +392,8 @@ public abstract class SorterTemplate {
     }
     rotate(first_cut, pivot, second_cut);
     final int new_mid = first_cut + len22;
-    merge(lo, first_cut, new_mid, len11, len22);
-    merge(new_mid, second_cut, hi, len1 - len11, len2 - len22);
+    runMerge(lo, first_cut, new_mid, len11, len22);
+    runMerge(new_mid, second_cut, hi, len1 - len11, len2 - len22);
   }
 
   private void rotate(int lo, int mid, int hi) {
