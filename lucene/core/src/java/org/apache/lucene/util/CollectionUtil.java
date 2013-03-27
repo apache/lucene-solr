@@ -101,10 +101,7 @@ public final class CollectionUtil {
       while (i < len1) {
         list.set(dest++, tmp[i++]);
       }
-      while (j < hi) {
-        list.set(dest++, list.get(j++));
-      }
-      assert dest == hi;
+      assert j == dest;
     }
 
     @Override

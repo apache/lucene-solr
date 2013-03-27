@@ -673,10 +673,7 @@ public final class ArrayUtil {
       while (i < len1) {
         a[dest++] = tmp[i++];
       }
-      while (j < hi) {
-        a[dest++] = a[j++];
-      }
-      assert dest == hi;
+      assert j == dest;
     }
 
     @Override

@@ -62,6 +62,18 @@ public class TestSorterTemplate extends LuceneTestCase {
       return compareValues(pivot, arr[j]);
     }
 
+    @Override
+    protected void merge(int lo, int pivot, int hi, int len1, int len2) {
+      // timSort and mergeSort should call runMerge to sort out trivial cases
+      assertTrue(len1 >= 1);
+      assertTrue(len2 >= 1);
+      assertTrue(len1 + len2 >= 3);
+      assertTrue(compare(lo, pivot) > 0);
+      assertTrue(compare(pivot - 1, hi - 1) > 0);
+      assertFalse(compare(pivot - 1, pivot) <= 0);
+      super.merge(lo, pivot, hi, len1, len2);
+    }
+
   }
 
   void testSort(int[] intArr) {
