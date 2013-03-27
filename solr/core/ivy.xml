@@ -20,6 +20,11 @@
     <info organisation="org.apache.solr" module="core"/>
 
     <dependencies>
+      <dependency org="log4j" name="log4j" rev="1.2.16" transitive="false" />
+      <dependency org="org.slf4j" name="slf4j-api" rev="1.6.6" transitive="false" />
+      <dependency org="org.slf4j" name="jcl-over-slf4j" rev="1.6.6" transitive="false"/>
+      <dependency org="org.slf4j" name="jul-to-slf4j" rev="1.6.6" transitive="false"/> 
+      <dependency org="org.slf4j" name="slf4j-log4j12" rev="1.6.6" transitive="false"/> 
       <dependency org="commons-codec" name="commons-codec" rev="1.7" transitive="false"/>
       <dependency org="commons-fileupload" name="commons-fileupload" rev="1.2.1" transitive="false"/>
       <dependency org="commons-cli" name="commons-cli" rev="1.2" transitive="false"/>

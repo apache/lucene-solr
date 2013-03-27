@@ -69,6 +69,7 @@ import org.apache.solr.handler.component.ShardHandlerFactory;
 import org.apache.solr.logging.ListenerConfig;
 import org.apache.solr.logging.LogWatcher;
 import org.apache.solr.logging.jul.JulWatcher;
+import org.apache.solr.logging.log4j.Log4jWatcher;
 import org.apache.solr.schema.IndexSchema;
 import org.apache.solr.update.SolrCoreState;
 import org.apache.solr.util.DefaultSolrThreadFactory;
@@ -400,23 +401,22 @@ public class CoreContainer
             .getLoggerFactoryClassStr();
         if (fname == null) {
           if (slf4jImpl.indexOf("Log4j") > 0) {
-            log.warn("Log watching is not yet implemented for log4j");
+            fname = "Log4j";
           } else if (slf4jImpl.indexOf("JDK") > 0) {
             fname = "JUL";
           }
         }
       } catch (Throwable ex) {
-        log.warn("Unable to read SLF4J version.  LogWatcher will be disabled: "
-            + ex);
+        log.warn("Unable to read SLF4J version.  LogWatcher will be disabled: " + ex);
       }
       
       // Now load the framework
       if (fname != null) {
         if ("JUL".equalsIgnoreCase(fname)) {
           logging = new JulWatcher(slf4jImpl);
-//      else if( "Log4j".equals(fname) ) {
-//        logging = new Log4jWatcher(slf4jImpl);
-//      }
+        }
+        else if( "Log4j".equals(fname) ) {
+          logging = new Log4jWatcher(slf4jImpl);
         } else {
           try {
             logging = loader.newInstance(fname, LogWatcher.class);
