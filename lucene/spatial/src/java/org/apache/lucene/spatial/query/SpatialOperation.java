@@ -17,6 +17,7 @@ package org.apache.lucene.spatial.query;
  * limitations under the License.
  */
 
+import com.spatial4j.core.shape.Rectangle;
 import com.spatial4j.core.shape.Shape;
 import com.spatial4j.core.shape.SpatialRelation;
 
@@ -55,13 +56,14 @@ public abstract class SpatialOperation implements Serializable {
   public static final SpatialOperation BBoxWithin     = new SpatialOperation("BBoxWithin", true, false, false) {
     @Override
     public boolean evaluate(Shape indexedShape, Shape queryShape) {
-      return indexedShape.getBoundingBox().relate(queryShape) == SpatialRelation.WITHIN;
+      Rectangle bbox = indexedShape.getBoundingBox();
+      return bbox.relate(queryShape) == SpatialRelation.WITHIN || bbox.equals(queryShape);
     }
   };
   public static final SpatialOperation Contains       = new SpatialOperation("Contains", true, true, false) {
     @Override
     public boolean evaluate(Shape indexedShape, Shape queryShape) {
-      return indexedShape.hasArea() && indexedShape.relate(queryShape) == SpatialRelation.CONTAINS;
+      return indexedShape.hasArea() && indexedShape.relate(queryShape) == SpatialRelation.CONTAINS || indexedShape.equals(queryShape);
     }
   };
   public static final SpatialOperation Intersects     = new SpatialOperation("Intersects", true, false, false) {
@@ -85,7 +87,7 @@ public abstract class SpatialOperation implements Serializable {
   public static final SpatialOperation IsWithin       = new SpatialOperation("IsWithin", true, false, true) {
     @Override
     public boolean evaluate(Shape indexedShape, Shape queryShape) {
-      return queryShape.hasArea() && indexedShape.relate(queryShape) == SpatialRelation.WITHIN;
+      return queryShape.hasArea() && (indexedShape.relate(queryShape) == SpatialRelation.WITHIN || indexedShape.equals(queryShape));
     }
   };
   public static final SpatialOperation Overlaps       = new SpatialOperation("Overlaps", true, false, true) {

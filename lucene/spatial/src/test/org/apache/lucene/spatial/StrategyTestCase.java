@@ -26,10 +26,12 @@ import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
 import org.apache.lucene.document.StoredField;
 import org.apache.lucene.document.StringField;
+import org.apache.lucene.index.Term;
 import org.apache.lucene.queries.function.FunctionQuery;
 import org.apache.lucene.queries.function.ValueSource;
 import org.apache.lucene.search.CheckHits;
 import org.apache.lucene.search.ScoreDoc;
+import org.apache.lucene.search.TermQuery;
 import org.apache.lucene.search.TopDocs;
 import org.apache.lucene.spatial.query.SpatialArgs;
 import org.apache.lucene.spatial.query.SpatialArgsParser;
@@ -200,6 +202,10 @@ public abstract class StrategyTestCase extends SpatialTestCase {
         doc.add(new StoredField(strategy.getFieldName(), ctx.toString(shape)));
     }
     return doc;
+  }
+
+  protected void deleteDoc(String id) throws IOException {
+    indexWriter.deleteDocuments(new TermQuery(new Term("id", id)));
   }
 
   /** scores[] are in docId order */

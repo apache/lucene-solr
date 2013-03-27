@@ -44,7 +44,7 @@ import static com.carrotsearch.randomizedtesting.RandomizedTest.randomIntBetween
 public abstract class SpatialTestCase extends LuceneTestCase {
 
   private DirectoryReader indexReader;
-  private RandomIndexWriter indexWriter;
+  protected RandomIndexWriter indexWriter;
   private Directory directory;
   protected IndexSearcher indexSearcher;
 

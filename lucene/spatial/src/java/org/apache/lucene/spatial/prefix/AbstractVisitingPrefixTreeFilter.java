@@ -90,7 +90,7 @@ public abstract class AbstractVisitingPrefixTreeFilter extends AbstractPrefixTre
    * method then it's short-circuited until it finds one, at which point
    * {@link #visit(org.apache.lucene.spatial.prefix.tree.Node)} is called. At
    * some depths, of the tree, the algorithm switches to a scanning mode that
-   * finds calls {@link #visitScanned(org.apache.lucene.spatial.prefix.tree.Node, com.spatial4j.core.shape.Shape)}
+   * finds calls {@link #visitScanned(org.apache.lucene.spatial.prefix.tree.Node)}
    * for each leaf cell found.
    *
    * @lucene.internal
@@ -207,7 +207,6 @@ public abstract class AbstractVisitingPrefixTreeFilter extends AbstractPrefixTre
         throw new IllegalStateException("Spatial logic error");
 
       //Check for adjacent leaf (happens for indexed non-point shapes)
-      assert !cell.isLeaf();
       if (hasIndexedLeaves && cell.getLevel() != 0) {
         //If the next indexed term just adds a leaf marker ('+') to cell,
         // then add all of those docs
@@ -257,8 +256,7 @@ public abstract class AbstractVisitingPrefixTreeFilter extends AbstractPrefixTre
      * Scans ({@code termsEnum.next()}) terms until a term is found that does
      * not start with curVNode's cell. If it finds a leaf cell or a cell at
      * level {@code scanDetailLevel} then it calls {@link
-     * #visitScanned(org.apache.lucene.spatial.prefix.tree.Node,
-     * com.spatial4j.core.shape.Shape)}.
+     * #visitScanned(org.apache.lucene.spatial.prefix.tree.Node)}.
      */
     protected void scan(int scanDetailLevel) throws IOException {
       for (;
@@ -270,15 +268,7 @@ public abstract class AbstractVisitingPrefixTreeFilter extends AbstractPrefixTre
         if (termLevel > scanDetailLevel)
           continue;
         if (termLevel == scanDetailLevel || scanCell.isLeaf()) {
-          Shape cShape;
-          //if this cell represents a point, use the cell center vs the box
-          // (points never have isLeaf())
-          if (termLevel == grid.getMaxLevels() && !scanCell.isLeaf())
-            cShape = scanCell.getCenter();
-          else
-            cShape = scanCell.getShape();
-
-          visitScanned(scanCell, cShape);
+          visitScanned(scanCell);
         }
       }//term loop
     }
@@ -337,10 +327,8 @@ public abstract class AbstractVisitingPrefixTreeFilter extends AbstractPrefixTre
     /**
      * The cell is either indexed as a leaf or is the last level of detail. It
      * might not even intersect the query shape, so be sure to check for that.
-     * Use {@code cellShape} instead of {@code cell.getCellShape} for the cell's
-     * shape.
      */
-    protected abstract void visitScanned(Node cell, Shape cellShape) throws IOException;
+    protected abstract void visitScanned(Node cell) throws IOException;
 
 
     protected void preSiblings(VNode vNode) throws IOException {

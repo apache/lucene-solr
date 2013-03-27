@@ -19,8 +19,10 @@ package org.apache.lucene.spatial.prefix;
 
 import com.carrotsearch.randomizedtesting.annotations.Repeat;
 import com.spatial4j.core.context.SpatialContext;
+import com.spatial4j.core.shape.Point;
 import com.spatial4j.core.shape.Rectangle;
 import com.spatial4j.core.shape.Shape;
+import com.spatial4j.core.shape.SpatialRelation;
 import com.spatial4j.core.shape.impl.RectangleImpl;
 import org.apache.lucene.search.Query;
 import org.apache.lucene.spatial.StrategyTestCase;
@@ -29,9 +31,11 @@ import org.apache.lucene.spatial.prefix.tree.QuadPrefixTree;
 import org.apache.lucene.spatial.prefix.tree.SpatialPrefixTree;
 import org.apache.lucene.spatial.query.SpatialArgs;
 import org.apache.lucene.spatial.query.SpatialOperation;
+import org.junit.Before;
 import org.junit.Test;
 
 import java.io.IOException;
+import java.util.Iterator;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
@@ -45,67 +49,114 @@ public class SpatialOpRecursivePrefixTreeTest extends StrategyTestCase {
 
   private SpatialPrefixTree grid;
 
-  @Test
-  @Repeat(iterations = 20)
-  public void testIntersects() throws IOException {
-    //non-geospatial makes this test a little easier
+  @Before
+  public void setUp() throws Exception {
+    super.setUp();
+    deleteAll();
+  }
+
+  public void mySetup() throws IOException {
+    //non-geospatial makes this test a little easier (in gridSnap), and using boundary values 2^X raises
+    // the prospect of edge conditions we want to test, plus makes for simpler numbers (no decimals).
     this.ctx = new SpatialContext(false, null, new RectangleImpl(0, 256, -128, 128, null));
     //A fairly shallow grid, and default 2.5% distErrPct
     this.grid = new QuadPrefixTree(ctx, randomIntBetween(1, 8));
     this.strategy = new RecursivePrefixTreeStrategy(grid, getClass().getSimpleName());
     //((PrefixTreeStrategy) strategy).setDistErrPct(0);//fully precise to grid
 
-    deleteAll();
+    System.out.println("Strategy: "+strategy.toString());
+  }
 
+  @Test
+  @Repeat(iterations = 10)
+  public void testIntersects() throws IOException {
+    mySetup();
+    doTest(SpatialOperation.Intersects);
+  }
+
+  @Test
+  @Repeat(iterations = 10)
+  public void testWithin() throws IOException {
+    mySetup();
+    doTest(SpatialOperation.IsWithin);
+  }
+
+  @Test
+  public void testWithinDisjointParts() throws IOException {
+    this.ctx = new SpatialContext(false, null, new RectangleImpl(0, 256, -128, 128, null));
+    //A fairly shallow grid, and default 2.5% distErrPct
+    this.grid = new QuadPrefixTree(ctx, 7);
+    this.strategy = new RecursivePrefixTreeStrategy(grid, getClass().getSimpleName());
+
+    //one shape comprised of two parts, quite separated apart
+    adoc("0", new ShapePair(ctx.makeRectangle(0, 10, -120, -100), ctx.makeRectangle(220, 240, 110, 125)));
+    commit();
+    //query surrounds only the second part of the indexed shape
+    Query query = strategy.makeQuery(new SpatialArgs(SpatialOperation.IsWithin, ctx.makeRectangle(210, 245, 105, 128)));
+    SearchResults searchResults = executeQuery(query, 1);
+    //we shouldn't find it because it's not completely within
+    assertTrue(searchResults.numFound==0);
+  }
+
+  private void doTest(final SpatialOperation operation) throws IOException {
     Map<String, Shape> indexedShapes = new LinkedHashMap<String, Shape>();
-    Map<String, Rectangle> indexedGriddedShapes = new LinkedHashMap<String, Rectangle>();
     final int numIndexedShapes = randomIntBetween(1, 6);
-    for (int i = 1; i <= numIndexedShapes; i++) {
-      String id = "" + i;
-      Shape indexShape = randomRectangle();
-      Rectangle gridShape = gridSnapp(indexShape);
-      indexedShapes.put(id, indexShape);
-      indexedGriddedShapes.put(id, gridShape);
-      adoc(id, indexShape);
+    for (int i = 0; i < numIndexedShapes; i++) {
+      String id = ""+i;
+      Shape indexedShape;
+      if (random().nextInt(4) == 0) {
+        indexedShape = new ShapePair( gridSnapp(randomRectangle()), gridSnapp(randomRectangle()) );
+      } else {
+        indexedShape = gridSnapp(randomRectangle());
+      }
+      indexedShapes.put(id, indexedShape);
+      adoc(id, indexedShape);
+      if (random().nextInt(10) == 0)
+        commit();
+    }
+
+    //delete some
+    Iterator<String> idIter = indexedShapes.keySet().iterator();
+    while (idIter.hasNext()) {
+      String id = idIter.next();
+      if (random().nextInt(10) == 0) {
+        deleteDoc(id);
+        idIter.remove();
+      }
     }
 
     commit();
 
-    final int numQueryShapes = atLeast(10);
+    final int numQueryShapes = atLeast(20);
     for (int i = 0; i < numQueryShapes; i++) {
       int scanLevel = randomInt(grid.getMaxLevels());
       ((RecursivePrefixTreeStrategy) strategy).setPrefixGridScanLevel(scanLevel);
-      Rectangle queryShape = randomRectangle();
-      Rectangle queryGridShape = gridSnapp(queryShape);
+      Shape queryShape = gridSnapp(randomRectangle());
 
       //Generate truth via brute force
-      final SpatialOperation operation = SpatialOperation.Intersects;
       Set<String> expectedIds = new TreeSet<String>();
-      Set<String> optionalIds = new TreeSet<String>();
-      for (String id : indexedShapes.keySet()) {
-        Shape indexShape = indexedShapes.get(id);
-        Rectangle indexGridShape = indexedGriddedShapes.get(id);
-        if (operation.evaluate(indexShape, queryShape))
-          expectedIds.add(id);
-        else if (operation.evaluate(indexGridShape, queryGridShape))
-          optionalIds.add(id);
+      for (Map.Entry<String, Shape> entry : indexedShapes.entrySet()) {
+        if (operation.evaluate(entry.getValue(), queryShape))
+          expectedIds.add(entry.getKey());
       }
 
       //Search and verify results
       Query query = strategy.makeQuery(new SpatialArgs(operation, queryShape));
       SearchResults got = executeQuery(query, 100);
       Set<String> remainingExpectedIds = new TreeSet<String>(expectedIds);
-      String msg = queryShape.toString()+" Expect: "+expectedIds+" Opt: "+optionalIds;
+      String msg = queryShape.toString()+" Expect: "+expectedIds;
       for (SearchResult result : got.results) {
         String id = result.getId();
         Object removed = remainingExpectedIds.remove(id);
         if (removed == null) {
-          assertTrue("Shouldn't match " + id + " in "+msg, optionalIds.contains(id));
+          fail("Shouldn't match " + id + " ("+ indexedShapes.get(id) +") in " + msg);
         }
       }
-      assertTrue("Didn't match " + remainingExpectedIds + " in " + msg, remainingExpectedIds.isEmpty());
+      if (!remainingExpectedIds.isEmpty()) {
+        Shape firstFailedMatch = indexedShapes.get(remainingExpectedIds.iterator().next());
+        fail("Didn't match " + firstFailedMatch + " in " + msg +" (of "+remainingExpectedIds.size()+")");
+      }
     }
-
   }
 
   protected Rectangle gridSnapp(Shape snapMe) {
@@ -128,6 +179,50 @@ public class SpatialOpRecursivePrefixTreeTest extends StrategyTestCase {
       maxY = Math.max(maxY, cellR.getMaxY());
     }
     return ctx.makeRectangle(minX, maxX, minY, maxY);
+  }
+
+  /** An aggregate of 2 shapes. Only implements what's necessary for the test here.
+   * TODO replace with Spatial4j trunk ShapeCollection. */
+  private class ShapePair implements Shape {
+
+    Shape shape1, shape2;
+
+    public ShapePair(Shape shape1, Shape shape2) {
+      this.shape1 = shape1;
+      this.shape2 = shape2;
+    }
+
+    @Override
+    public SpatialRelation relate(Shape other) {
+      //easy to observe is correct; not an optimal code path but this is a test
+      if (shape1.relate(other) == SpatialRelation.CONTAINS || shape2.relate(other) == SpatialRelation.CONTAINS)
+        return SpatialRelation.CONTAINS;
+      if (shape1.relate(other) == SpatialRelation.WITHIN && shape2.relate(other) == SpatialRelation.WITHIN)
+        return SpatialRelation.WITHIN;
+      if (shape1.relate(other).intersects() || shape2.relate(other).intersects())
+        return SpatialRelation.INTERSECTS;
+      return SpatialRelation.DISJOINT;
+    }
+
+    @Override
+    public Rectangle getBoundingBox() {
+      return ctx.getWorldBounds();//good enough
+    }
+
+    @Override
+    public boolean hasArea() {
+      throw new UnsupportedOperationException("TODO unimplemented");//TODO
+    }
+
+    @Override
+    public double getArea(SpatialContext ctx) {
+      throw new UnsupportedOperationException("TODO unimplemented");//TODO
+    }
+
+    @Override
+    public Point getCenter() {
+      throw new UnsupportedOperationException("TODO unimplemented");//TODO
+    }
   }
 
 }

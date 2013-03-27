@@ -19,6 +19,7 @@ package org.apache.lucene.spatial.prefix.tree;
 
 import com.spatial4j.core.context.SpatialContext;
 import com.spatial4j.core.shape.Point;
+import com.spatial4j.core.shape.Rectangle;
 import com.spatial4j.core.shape.Shape;
 
 import java.nio.charset.Charset;
@@ -77,7 +78,26 @@ public abstract class SpatialPrefixTree {
    */
   public abstract int getLevelForDistance(double dist);
 
-  //TODO double getDistanceForLevel(int level)
+  /**
+   * Given a node having the specified level, returns the distance from opposite
+   * corners. Since this might very depending on where the node is, this method
+   * may over-estimate.
+   *
+   * @param level [1 to maxLevels]
+   * @return > 0
+   */
+  public double getDistanceForLevel(int level) {
+    if (level < 1 || level > getMaxLevels())
+      throw new IllegalArgumentException("Level must be in 1 to maxLevels range");
+    //TODO cache for each level
+    Node node = getNode(ctx.getWorldBounds().getCenter(), level);
+    Rectangle bbox = node.getShape().getBoundingBox();
+    double width = bbox.getWidth();
+    double height = bbox.getHeight();
+    //Use standard cartesian hypotenuse. For geospatial, this answer is larger
+    // than the correct one but it's okay to over-estimate.
+    return Math.sqrt(width * width + height * height);
+  }
 
   private transient Node worldNode;//cached
 
@@ -111,6 +131,9 @@ public abstract class SpatialPrefixTree {
     return target;
   }
 
+  /**
+   * Returns the cell containing point {@code p} at the specified {@code level}.
+   */
   protected Node getNode(Point p, int level) {
     return getNodes(p, level, false).get(0);
   }

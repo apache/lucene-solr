@@ -62,17 +62,22 @@ public class RecursivePrefixTreeStrategy extends PrefixTreeStrategy {
 
   @Override
   public Filter makeFilter(SpatialArgs args) {
-    final SpatialOperation op = args.getOperation();
-    if (op != SpatialOperation.Intersects)
-      throw new UnsupportedSpatialOperation(op);
 
     Shape shape = args.getShape();
-
     int detailLevel = grid.getLevelForDistance(args.resolveDistErr(ctx, distErrPct));
+    final boolean hasIndexedLeaves = true;
 
-    return new IntersectsPrefixTreeFilter(
-        shape, getFieldName(), grid, detailLevel, prefixGridScanLevel,
-        true);//hasIndexedLeaves
+    final SpatialOperation op = args.getOperation();
+    if (op == SpatialOperation.Intersects) {
+      return new IntersectsPrefixTreeFilter(
+          shape, getFieldName(), grid, detailLevel, prefixGridScanLevel,
+          hasIndexedLeaves);
+    } else if (op == SpatialOperation.IsWithin) {
+      return new WithinPrefixTreeFilter(
+          shape, getFieldName(), grid, detailLevel, prefixGridScanLevel,
+          -1);//-1 flag is slower but ensures correct results
+    }
+    throw new UnsupportedSpatialOperation(op);
   }
 }
 
