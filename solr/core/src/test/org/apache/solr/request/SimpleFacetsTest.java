@@ -150,6 +150,15 @@ public class SimpleFacetsTest extends SolrTestCaseJ4 {
 
   @Test
   public void testSimpleGroupedQueryRangeFacets() throws Exception {
+    // for the purposes of our test data, it shouldn't matter 
+    // if we use facet.limit -100, -1, or 100 ...
+    // our set of values is small enough either way
+    testSimpleGroupedQueryRangeFacets("-100");
+    testSimpleGroupedQueryRangeFacets("-1");
+    testSimpleGroupedQueryRangeFacets("100");
+  }
+
+  private void testSimpleGroupedQueryRangeFacets(String facetLimit) {
     assertQ(
         req(
             "q", "*:*",
@@ -158,6 +167,7 @@ public class SimpleFacetsTest extends SolrTestCaseJ4 {
             "group.facet", "true",
             "group.field", "hotel_s1",
             "facet", "true",
+            "facet.limit", facetLimit,
             "facet.query", "airport_s1:ams"
         ),
         "//lst[@name='facet_queries']/int[@name='airport_s1:ams'][.='2']"
@@ -172,6 +182,7 @@ public class SimpleFacetsTest extends SolrTestCaseJ4 {
             "group.facet", "true",
             "group.field", "hotel_s1",
             "facet", "true",
+            "facet.limit", facetLimit,
             "facet.query", "{!ex=dus}airport_s1:ams"
         ),
         "//lst[@name='facet_queries']/int[@name='{!ex=dus}airport_s1:ams'][.='2']"
@@ -184,6 +195,7 @@ public class SimpleFacetsTest extends SolrTestCaseJ4 {
             "group.facet", "true",
             "group.field", "hotel_s1",
             "facet", "true",
+            "facet.limit", facetLimit,
             "facet.range", "duration_i1",
             "facet.range.start", "5",
             "facet.range.end", "11",
@@ -206,6 +218,7 @@ public class SimpleFacetsTest extends SolrTestCaseJ4 {
             "group.facet", "true",
             "group.field", "hotel_s1",
             "facet", "true",
+            "facet.limit", facetLimit,
             "facet.range", "{!ex=dus}duration_i1",
             "facet.range.start", "5",
             "facet.range.end", "11",
@@ -222,6 +235,16 @@ public class SimpleFacetsTest extends SolrTestCaseJ4 {
 
   @Test
   public void testSimpleGroupedFacets() throws Exception {
+    // for the purposes of our test data, it shouldn't matter 
+    // if we use facet.limit -100, -1, or 100 ...
+    // our set of values is small enough either way
+    testSimpleGroupedFacets("100");
+    testSimpleGroupedFacets("-100");
+    testSimpleGroupedFacets("-5");
+    testSimpleGroupedFacets("-1");
+  }
+  
+  private void testSimpleGroupedFacets(String facetLimit) throws Exception {
     assertQ(
         "Return 5 docs with id range 1937 till 1940",
          req("id:[2000 TO 2004]"),
@@ -236,11 +259,29 @@ public class SimpleFacetsTest extends SolrTestCaseJ4 {
              "group.facet", "true",
              "group.field", "hotel_s1",
              "facet", "true",
+             "facet.limit", facetLimit, 
              "facet.field", "airport_s1"
          ),
         "//lst[@name='facet_fields']/lst[@name='airport_s1']",
         "*[count(//lst[@name='airport_s1']/int)=2]",
         "//lst[@name='airport_s1']/int[@name='ams'][.='2']",
+        "//lst[@name='airport_s1']/int[@name='dus'][.='1']"
+    );
+    assertQ(
+        "Return one facet count for field airport_a using facet.offset",
+         req(
+             "q", "*:*",
+             "fq", "id:[2000 TO 2004]",
+             "group", "true",
+             "group.facet", "true",
+             "group.field", "hotel_s1",
+             "facet", "true",
+             "facet.offset", "1", 
+             "facet.limit", facetLimit, 
+             "facet.field", "airport_s1"
+         ),
+        "//lst[@name='facet_fields']/lst[@name='airport_s1']",
+        "*[count(//lst[@name='airport_s1']/int)=1]",
         "//lst[@name='airport_s1']/int[@name='dus'][.='1']"
     );
     assertQ(
@@ -253,6 +294,7 @@ public class SimpleFacetsTest extends SolrTestCaseJ4 {
              "group.facet", "true",
              "group.field", "hotel_s1",
              "facet", "true",
+             "facet.limit", facetLimit, 
              "facet.field", "airport_s1"
          ),
         "//lst[@name='facet_fields']/lst[@name='airport_s1']",
@@ -270,6 +312,7 @@ public class SimpleFacetsTest extends SolrTestCaseJ4 {
              "group.field", "hotel_s1",
              "facet", "true",
              "facet.field", "airport_s1",
+             "facet.limit", facetLimit, 
              "facet.prefix", "a"
          ),
         "//lst[@name='facet_fields']/lst[@name='airport_s1']",

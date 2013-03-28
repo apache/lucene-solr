@@ -108,6 +108,9 @@ Bug Fixes
 
 * SOLR-4405: Admin UI - admin-extra files are not rendered into the core-menu (steffkes)
 
+* SOLR-3956: Fixed group.facet=true to work with negative facet.limit
+  (Chris van der Merwe, hossman)
+
 Optimizations
 ----------------------
 

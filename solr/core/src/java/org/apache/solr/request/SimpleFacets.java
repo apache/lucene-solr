@@ -460,12 +460,16 @@ public class SimpleFacets {
     TermGroupFacetCollector collector = TermGroupFacetCollector.createTermGroupFacetCollector(groupField, field, multiToken, prefixBR, 128);
     searcher.search(new MatchAllDocsQuery(), base.getTopFilter(), collector);
     boolean orderByCount = sort.equals(FacetParams.FACET_SORT_COUNT) || sort.equals(FacetParams.FACET_SORT_COUNT_LEGACY);
-    TermGroupFacetCollector.GroupedFacetResult result = collector.mergeSegmentResults(offset + limit, mincount, orderByCount);
+    TermGroupFacetCollector.GroupedFacetResult result 
+      = collector.mergeSegmentResults(limit < 0 ? Integer.MAX_VALUE : 
+                                      (offset + limit), 
+                                      mincount, orderByCount);
 
     CharsRef charsRef = new CharsRef();
     FieldType facetFieldType = searcher.getSchema().getFieldType(field);
     NamedList<Integer> facetCounts = new NamedList<Integer>();
-    List<TermGroupFacetCollector.FacetEntry> scopedEntries = result.getFacetEntries(offset, limit);
+    List<TermGroupFacetCollector.FacetEntry> scopedEntries 
+      = result.getFacetEntries(offset, limit < 0 ? Integer.MAX_VALUE : limit);
     for (TermGroupFacetCollector.FacetEntry facetEntry : scopedEntries) {
       facetFieldType.indexedToReadable(facetEntry.getValue(), charsRef);
       facetCounts.add(charsRef.toString(), facetEntry.getCount());
