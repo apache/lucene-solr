@@ -55,7 +55,7 @@ Upgrading from Solr 4.2.0
   from all lowercase "copyfields" and "dynamicfields" to camelCase "copyFields"
   and "dynamicFields", respectively, to align with all other schema REST API
   outputs, which use camelCase.  The URL format remains the same: all resource
-  names are lowercase. (Steve Rowe)
+  names are lowercase.
   
 * SOLR-3706: Slf4j/logging jars are no longer included in the Solr webapp. All 
   logging jars are now in example/lib/ext. If you are using another webapp 
