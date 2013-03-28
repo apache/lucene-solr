@@ -395,43 +395,77 @@ public final class UnicodeUtil {
 
   /* Map UTF-8 encoded prefix byte to sequence length.  -1 (0xFF)
    * means illegal prefix.  see RFC 2279 for details */
-  static byte[] utf8CodeLength = new byte[] {
-    1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1,
-    1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1,
-    1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1,
-    1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1,
-    1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1,
-    1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1,
-    1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1,
-    1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1,
-    -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1,
-    -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1,
-    -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1,
-    -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1,
-    2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2,
-    2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2,
-    3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3,
-    4, 4, 4, 4, 4, 4, 4, 4 //, 5, 5, 5, 5, 6, 6, 0, 0
-  };
+  static final int [] utf8CodeLength;
+  static {
+    final int v = Integer.MIN_VALUE;
+    utf8CodeLength = new int [] {
+        1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1,
+        1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1,
+        1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1,
+        1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1,
+        1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1,
+        1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1,
+        1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1,
+        1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1,
+        v, v, v, v, v, v, v, v, v, v, v, v, v, v, v, v,
+        v, v, v, v, v, v, v, v, v, v, v, v, v, v, v, v,
+        v, v, v, v, v, v, v, v, v, v, v, v, v, v, v, v,
+        v, v, v, v, v, v, v, v, v, v, v, v, v, v, v, v,
+        2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2,
+        2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2,
+        3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3,
+        4, 4, 4, 4, 4, 4, 4, 4 //, 5, 5, 5, 5, 6, 6, 0, 0
+      };
+  }
 
-
-  /** Returns the number of code points in this utf8
-   *  sequence.  Behavior is undefined if the utf8 sequence
-   *  is invalid.*/
+  /** 
+   * Returns the number of code points in this UTF8 sequence.
+   * 
+   * <p>This method assumes valid UTF8 input. This method 
+   * <strong>does not perform</strong> full UTF8 validation, it will check only the 
+   * first byte of each codepoint (for multi-byte sequences any bytes after 
+   * the head are skipped).  
+   * 
+   * @throws IllegalArgumentException If invalid codepoint header byte occurs or the 
+   *    content is prematurely truncated.
+   */
   public static int codePointCount(BytesRef utf8) {
-    int upto = utf8.offset;
-    final int limit = utf8.offset + utf8.length;
+    int pos = utf8.offset;
+    final int limit = pos + utf8.length;
     final byte[] bytes = utf8.bytes;
+
     int codePointCount = 0;
-    while (upto < limit) {
-      codePointCount++;
-      upto += utf8CodeLength[bytes[upto]&0xFF];
+    for (; pos < limit; codePointCount++) {
+      int v = bytes[pos] & 0xFF;
+      if (v <   /* 0xxx xxxx */ 0x80) { pos += 1; continue; }
+      if (v >=  /* 110x xxxx */ 0xc0) {
+        if (v < /* 111x xxxx */ 0xe0) { pos += 2; continue; } 
+        if (v < /* 1111 xxxx */ 0xf0) { pos += 3; continue; } 
+        if (v < /* 1111 1xxx */ 0xf8) { pos += 4; continue; }
+        // fallthrough, consider 5 and 6 byte sequences invalid. 
+      }
+
+      // Anything not covered above is invalid UTF8.
+      throw new IllegalArgumentException();
     }
+
+    // Check if we didn't go over the limit on the last character.
+    if (pos > limit) throw new IllegalArgumentException();
+
     return codePointCount;
   }
 
-  // TODO: broken if incoming result.offset != 0
+  /**
+   * <p>This method assumes valid UTF8 input. This method 
+   * <strong>does not perform</strong> full UTF8 validation, it will check only the 
+   * first byte of each codepoint (for multi-byte sequences any bytes after 
+   * the head are skipped).  
+   * 
+   * @throws IllegalArgumentException If invalid codepoint header byte occurs or the 
+   *    content is prematurely truncated.
+   */
   public static void UTF8toUTF32(final BytesRef utf8, final IntsRef utf32) {
+    // TODO: broken if incoming result.offset != 0
     // pre-alloc for worst case
     // TODO: ints cannot be null, should be an assert
     if (utf32.ints == null || utf32.ints.length < utf8.length) {
@@ -443,7 +477,7 @@ public final class UnicodeUtil {
     final byte[] bytes = utf8.bytes;
     final int utf8Limit = utf8.offset + utf8.length;
     while(utf8Upto < utf8Limit) {
-      final int numBytes = utf8CodeLength[bytes[utf8Upto]&0xFF];
+      final int numBytes = utf8CodeLength[bytes[utf8Upto] & 0xFF];
       int v = 0;
       switch(numBytes) {
       case 1:
@@ -462,11 +496,11 @@ public final class UnicodeUtil {
         v = bytes[utf8Upto++] & 7;
         break;
       default :
-        throw new IllegalStateException("invalid utf8");
+        throw new IllegalArgumentException("invalid utf8");
       }
 
+      // TODO: this may read past utf8's limit.
       final int limit = utf8Upto + numBytes-1;
-
       while(utf8Upto < limit) {
         v = v << 6 | bytes[utf8Upto++]&63;
       }
