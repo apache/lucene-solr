@@ -166,6 +166,9 @@ API Changes
 * LUCENE-4844: removed TaxonomyReader.getParent(), you should use
   TaxonomyReader.getParallelArrays().parents() instead. (Shai Erera)
 
+* LUCENE-4742: Renamed spatial 'Node' to 'Cell', along with any method names
+  and variables using this terminology. (David Smiley)
+
 Bug Fixes
 
 * LUCENE-4868: SumScoreFacetsAggregator used an incorrect index into
