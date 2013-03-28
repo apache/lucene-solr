@@ -1,3 +1,5 @@
+package org.apache.lucene.spatial.prefix;
+
 /*
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
@@ -15,10 +17,8 @@
  * limitations under the License.
  */
 
-package org.apache.lucene.spatial.prefix;
-
 import com.spatial4j.core.shape.Point;
-import org.apache.lucene.spatial.prefix.tree.Node;
+import org.apache.lucene.spatial.prefix.tree.Cell;
 import org.apache.lucene.spatial.prefix.tree.SpatialPrefixTree;
 import org.apache.lucene.spatial.util.ShapeFieldCacheProvider;
 import org.apache.lucene.util.BytesRef;
@@ -40,11 +40,11 @@ public class PointPrefixTreeFieldCacheProvider extends ShapeFieldCacheProvider<P
     this.grid = grid;
   }
 
-  private Node scanCell = null;//re-used in readShape to save GC
+  private Cell scanCell = null;//re-used in readShape to save GC
 
   @Override
   protected Point readShape(BytesRef term) {
-    scanCell = grid.getNode(term.bytes, term.offset, term.length, scanCell);
+    scanCell = grid.getCell(term.bytes, term.offset, term.length, scanCell);
     if (scanCell.getLevel() == grid.getMaxLevels() && !scanCell.isLeaf())
       return scanCell.getCenter();
     return null;
