@@ -184,15 +184,15 @@ public abstract class AbstractGroupFacetCollector extends Collector {
      */
     public List<FacetEntry> getFacetEntries(int offset, int limit) {
       List<FacetEntry> entries = new LinkedList<FacetEntry>();
-      limit += offset;
 
-      int i = 0;
+      int skipped = 0;
+      int included = 0;
       for (FacetEntry facetEntry : facetEntries) {
-        if (i < offset) {
-          i++;
+        if (skipped < offset) {
+          skipped++;
           continue;
         }
-        if (i++ >= limit) {
+        if (included++ >= limit) {
           break;
         }
         entries.add(facetEntry);

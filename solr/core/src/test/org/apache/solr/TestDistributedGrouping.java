@@ -137,7 +137,11 @@ public class TestDistributedGrouping extends BaseDistributedSearchTestCase {
     for (int shard = 0; shard < clients.size(); shard++) {
       int groupValue = values[shard];
       for (int i = 500; i < 600; i++) {
-        index_specific(shard, i1, groupValue, s1, "a", id, i * (shard + 1), t1, shard);
+        index_specific(shard, 
+                       i1, groupValue, 
+                       s1, "a", 
+                       id, i * (shard + 1), 
+                       t1, random().nextInt(7));
       }
     }
 
@@ -197,6 +201,17 @@ public class TestDistributedGrouping extends BaseDistributedSearchTestCase {
     query("q", "*:*", "fq", s1 + ":a", "rows", 100, "fl", "id," + i1, "group", "true", "group.field", i1, "group.limit", 10, "sort", i1 + " asc, id asc", "group.ngroups", "true");
     query("q", "*:*", "fq", s1 + ":a", "rows", 100, "fl", "id," + i1, "group", "true", "group.field", i1, "group.limit", 10, "sort", i1 + " asc, id asc", "group.truncate", "true");
     query("q", "*:*", "fq", s1 + ":a", "rows", 100, "fl", "id," + i1, "group", "true", "group.field", i1, "group.limit", 10, "sort", i1 + " asc, id asc", "group.truncate", "true", "facet", "true", "facet.field", t1);
+    for (String gfacet : new String[] { "true", "false" }) {
+      for (String flimit : new String[] { "-100","-1", "1", "2", "10000" }) {
+        for (String foffset : new String[] { "0","1", "2", "1000" }) {
+          query("q", "*:*", "fq", s1+":a", 
+                "rows", 100, "fl", "id,"+i1, "sort", i1+" asc, id asc", 
+                "group", "true", "group.field", i1, "group.limit", 10, 
+                "facet", "true", "facet.field", t1, "group.facet", gfacet, 
+                "facet.limit", flimit, "facet.offset", foffset);
+        }
+      }
+    }
 
     // SOLR-3316
     query("q", "*:*", "fq", s1 + ":a", "rows", 0, "fl", "id," + i1, "group", "true", "group.field", i1, "group.limit", 10, "sort", i1 + " asc, id asc", "facet", "true", "facet.field", t1);

@@ -88,19 +88,40 @@ public class GroupFacetCollectorTest extends AbstractGroupingTestCase {
     w.addDocument(doc);
 
     IndexSearcher indexSearcher = new IndexSearcher(w.getReader());
-    AbstractGroupFacetCollector groupedAirportFacetCollector = createRandomCollector(useDv ? "hotel_dv" : "hotel", useDv ? "airport_dv" : "airport", null, false);
-    indexSearcher.search(new MatchAllDocsQuery(), groupedAirportFacetCollector);
-    TermGroupFacetCollector.GroupedFacetResult airportResult = groupedAirportFacetCollector.mergeSegmentResults(10, 0, false);
-    assertEquals(3, airportResult.getTotalCount());
-    assertEquals(0, airportResult.getTotalMissingCount());
 
-    List<TermGroupFacetCollector.FacetEntry> entries = airportResult.getFacetEntries(0, 10);
-    assertEquals(2, entries.size());
-    assertEquals("ams", entries.get(0).getValue().utf8ToString());
-    assertEquals(2, entries.get(0).getCount());
-    assertEquals("dus", entries.get(1).getValue().utf8ToString());
-    assertEquals(1, entries.get(1).getCount());
+    List<TermGroupFacetCollector.FacetEntry> entries = null;
+    AbstractGroupFacetCollector groupedAirportFacetCollector = null; 
+    TermGroupFacetCollector.GroupedFacetResult airportResult = null;
+    
+    for (int limit : new int[] { 2, 10, 100, Integer.MAX_VALUE }) {
+      // any of these limits is plenty for the data we have
 
+      groupedAirportFacetCollector = createRandomCollector
+        (useDv ? "hotel_dv" : "hotel", 
+         useDv ? "airport_dv" : "airport", null, false);
+      indexSearcher.search(new MatchAllDocsQuery(), groupedAirportFacetCollector);
+      int maxOffset = 5;
+      airportResult = groupedAirportFacetCollector.mergeSegmentResults
+        (Integer.MAX_VALUE == limit ? limit : maxOffset + limit, 0, false);
+      
+      assertEquals(3, airportResult.getTotalCount());
+      assertEquals(0, airportResult.getTotalMissingCount());
+
+      entries = airportResult.getFacetEntries(maxOffset, limit);
+      assertEquals(0, entries.size());
+
+      entries = airportResult.getFacetEntries(0, limit);
+      assertEquals(2, entries.size());
+      assertEquals("ams", entries.get(0).getValue().utf8ToString());
+      assertEquals(2, entries.get(0).getCount());
+      assertEquals("dus", entries.get(1).getValue().utf8ToString());
+      assertEquals(1, entries.get(1).getCount());
+
+      entries = airportResult.getFacetEntries(1, limit);
+      assertEquals(1, entries.size());
+      assertEquals("dus", entries.get(0).getValue().utf8ToString());
+      assertEquals(1, entries.get(0).getCount());
+    }
 
     AbstractGroupFacetCollector groupedDurationFacetCollector = createRandomCollector(useDv ? "hotel_dv" : "hotel", useDv ? "duration_dv" : "duration", null, false);
     indexSearcher.search(new MatchAllDocsQuery(), groupedDurationFacetCollector);
