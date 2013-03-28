@@ -56,7 +56,8 @@
   <property name="year" value="2000-${current.year}"/>
   <property name="final.name" value="lucene-${name}-${version}"/>
 
-  <property name="common.classpath.excludes" value="**/*.txt,**/*.template,**/*.sha1" />
+  <!-- we exclude ext/*.jar because we don't want example/lib/ext logging jars on the cp -->
+  <property name="common.classpath.excludes" value="**/*.txt,**/*.template,**/*.sha1,ext/*.jar" />
 
   <property name="ivy.bootstrap.version" value="2.3.0" />
   <property name="ivy.default.configuration" value="*"/>
