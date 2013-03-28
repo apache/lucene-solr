@@ -32,7 +32,7 @@ import java.util.List;
  *
  * @lucene.experimental
  */
-public abstract class Node implements Comparable<Node> {
+public abstract class Cell implements Comparable<Cell> {
   public static final byte LEAF_BYTE = '+';//NOTE: must sort before letters & numbers
 
   /*
@@ -58,7 +58,7 @@ public abstract class Node implements Comparable<Node> {
    */
   protected boolean leaf;
 
-  protected Node(String token) {
+  protected Cell(String token) {
     this.token = token;
     if (token.length() > 0 && token.charAt(token.length() - 1) == (char) LEAF_BYTE) {
       this.token = token.substring(0, token.length() - 1);
@@ -69,7 +69,7 @@ public abstract class Node implements Comparable<Node> {
       getShape();//ensure any lazy instantiation completes to make this threadsafe
   }
 
-  protected Node(byte[] bytes, int off, int len) {
+  protected Cell(byte[] bytes, int off, int len) {
     this.bytes = bytes;
     this.b_off = off;
     this.b_len = len;
@@ -149,8 +149,8 @@ public abstract class Node implements Comparable<Node> {
    * Like {@link #getSubCells()} but with the results filtered by a shape. If
    * that shape is a {@link com.spatial4j.core.shape.Point} then it must call
    * {@link #getSubCell(com.spatial4j.core.shape.Point)}. The returned cells
-   * should have {@link Node#getShapeRel()} set to their relation with {@code
-   * shapeFilter}. In addition, {@link org.apache.lucene.spatial.prefix.tree.Node#isLeaf()}
+   * should have {@link Cell#getShapeRel()} set to their relation with {@code
+   * shapeFilter}. In addition, {@link Cell#isLeaf()}
    * must be true when that relation is WITHIN.
    * <p/>
    * Precondition: Never called when getLevel() == maxLevel.
@@ -158,22 +158,22 @@ public abstract class Node implements Comparable<Node> {
    * @param shapeFilter an optional filter for the returned cells.
    * @return A set of cells (no dups), sorted. Not Modifiable.
    */
-  public Collection<Node> getSubCells(Shape shapeFilter) {
+  public Collection<Cell> getSubCells(Shape shapeFilter) {
     //Note: Higher-performing subclasses might override to consider the shape filter to generate fewer cells.
     if (shapeFilter instanceof Point) {
-      Node subCell = getSubCell((Point) shapeFilter);
+      Cell subCell = getSubCell((Point) shapeFilter);
       subCell.shapeRel = SpatialRelation.CONTAINS;
       return Collections.singletonList(subCell);
     }
-    Collection<Node> cells = getSubCells();
+    Collection<Cell> cells = getSubCells();
 
     if (shapeFilter == null) {
       return cells;
     }
 
     //TODO change API to return a filtering iterator
-    List<Node> copy = new ArrayList<Node>(cells.size());
-    for (Node cell : cells) {
+    List<Cell> copy = new ArrayList<Cell>(cells.size());
+    for (Cell cell : cells) {
       SpatialRelation rel = cell.getShape().relate(shapeFilter);
       if (rel == SpatialRelation.DISJOINT)
         continue;
@@ -192,7 +192,7 @@ public abstract class Node implements Comparable<Node> {
    * <p/>
    * Precondition: this.getShape().relate(p) != DISJOINT.
    */
-  public abstract Node getSubCell(Point p);
+  public abstract Cell getSubCell(Point p);
 
   //TODO Cell getSubCell(byte b)
 
@@ -202,7 +202,7 @@ public abstract class Node implements Comparable<Node> {
    *
    * @return A set of cells (no dups), sorted, modifiable, not empty, not null.
    */
-  protected abstract Collection<Node> getSubCells();
+  protected abstract Collection<Cell> getSubCells();
 
   /**
    * {@link #getSubCells()}.size() -- usually a constant. Should be >=2
@@ -216,13 +216,13 @@ public abstract class Node implements Comparable<Node> {
   }
 
   @Override
-  public int compareTo(Node o) {
+  public int compareTo(Cell o) {
     return getTokenString().compareTo(o.getTokenString());
   }
 
   @Override
   public boolean equals(Object obj) {
-    return !(obj == null || !(obj instanceof Node)) && getTokenString().equals(((Node) obj).getTokenString());
+    return !(obj == null || !(obj instanceof Cell)) && getTokenString().equals(((Cell) obj).getTokenString());
   }
 
   @Override

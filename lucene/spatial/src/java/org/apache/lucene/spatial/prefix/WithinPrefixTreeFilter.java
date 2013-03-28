@@ -26,7 +26,7 @@ import com.spatial4j.core.shape.Shape;
 import com.spatial4j.core.shape.SpatialRelation;
 import org.apache.lucene.index.AtomicReaderContext;
 import org.apache.lucene.search.DocIdSet;
-import org.apache.lucene.spatial.prefix.tree.Node;
+import org.apache.lucene.spatial.prefix.tree.Cell;
 import org.apache.lucene.spatial.prefix.tree.SpatialPrefixTree;
 import org.apache.lucene.util.Bits;
 import org.apache.lucene.util.FixedBitSet;
@@ -135,13 +135,13 @@ public class WithinPrefixTreeFilter extends AbstractVisitingPrefixTreeFilter {
       }
 
       @Override
-      protected Iterator<Node> findSubCellsToVisit(Node cell) {
+      protected Iterator<Cell> findSubCellsToVisit(Cell cell) {
         //use buffered query shape instead of orig.  Works with null too.
         return cell.getSubCells(bufferedQueryShape).iterator();
       }
 
       @Override
-      protected boolean visit(Node cell) throws IOException {
+      protected boolean visit(Cell cell) throws IOException {
         //cell.relate is based on the bufferedQueryShape; we need to examine what
         // the relation is against the queryShape
         visitRelation = cell.getShape().relate(queryShape);
@@ -159,7 +159,7 @@ public class WithinPrefixTreeFilter extends AbstractVisitingPrefixTreeFilter {
       }
 
       @Override
-      protected void visitLeaf(Node cell) throws IOException {
+      protected void visitLeaf(Cell cell) throws IOException {
         SpatialRelation relation = visitRelation;
         assert visitRelation == cell.getShape().relate(queryShape);
         if (relation.intersects()) {
@@ -170,7 +170,7 @@ public class WithinPrefixTreeFilter extends AbstractVisitingPrefixTreeFilter {
       }
 
       @Override
-      protected void visitScanned(Node cell) throws IOException {
+      protected void visitScanned(Cell cell) throws IOException {
         if (queryShape.relate(cell.getShape()).intersects()) {
           collectDocs(inside);
         } else {

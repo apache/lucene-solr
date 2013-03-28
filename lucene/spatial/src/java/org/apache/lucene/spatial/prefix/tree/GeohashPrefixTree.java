@@ -79,21 +79,21 @@ public class GeohashPrefixTree extends SpatialPrefixTree {
   }
 
   @Override
-  public Node getNode(Point p, int level) {
+  public Cell getCell(Point p, int level) {
     return new GhCell(GeohashUtils.encodeLatLon(p.getY(), p.getX(), level));//args are lat,lon (y,x)
   }
 
   @Override
-  public Node getNode(String token) {
+  public Cell getCell(String token) {
     return new GhCell(token);
   }
 
   @Override
-  public Node getNode(byte[] bytes, int offset, int len) {
+  public Cell getCell(byte[] bytes, int offset, int len) {
     return new GhCell(bytes, offset, len);
   }
 
-  class GhCell extends Node {
+  class GhCell extends Cell {
     GhCell(String token) {
       super(token);
     }
@@ -109,9 +109,9 @@ public class GeohashPrefixTree extends SpatialPrefixTree {
     }
 
     @Override
-    public Collection<Node> getSubCells() {
+    public Collection<Cell> getSubCells() {
       String[] hashes = GeohashUtils.getSubGeohashes(getGeohash());//sorted
-      List<Node> cells = new ArrayList<Node>(hashes.length);
+      List<Cell> cells = new ArrayList<Cell>(hashes.length);
       for (String hash : hashes) {
         cells.add(new GhCell(hash));
       }
@@ -124,8 +124,8 @@ public class GeohashPrefixTree extends SpatialPrefixTree {
     }
 
     @Override
-    public Node getSubCell(Point p) {
-      return GeohashPrefixTree.this.getNode(p,getLevel()+1);//not performant!
+    public Cell getSubCell(Point p) {
+      return GeohashPrefixTree.this.getCell(p, getLevel() + 1);//not performant!
     }
 
     private Shape shape;//cache

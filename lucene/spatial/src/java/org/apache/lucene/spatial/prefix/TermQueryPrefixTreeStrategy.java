@@ -20,7 +20,7 @@ package org.apache.lucene.spatial.prefix;
 import com.spatial4j.core.shape.Shape;
 import org.apache.lucene.queries.TermsFilter;
 import org.apache.lucene.search.Filter;
-import org.apache.lucene.spatial.prefix.tree.Node;
+import org.apache.lucene.spatial.prefix.tree.Cell;
 import org.apache.lucene.spatial.prefix.tree.SpatialPrefixTree;
 import org.apache.lucene.spatial.query.SpatialArgs;
 import org.apache.lucene.spatial.query.SpatialOperation;
@@ -31,7 +31,7 @@ import java.util.List;
 
 /**
  * A basic implementation of {@link PrefixTreeStrategy} using a large {@link
- * TermsFilter} of all the nodes from {@link SpatialPrefixTree#getNodes(com.spatial4j.core.shape.Shape,
+ * TermsFilter} of all the cells from {@link SpatialPrefixTree#getCells(com.spatial4j.core.shape.Shape,
  * int, boolean, boolean)}. It only supports the search of indexed Point shapes.
  * <p/>
  * The precision of query shapes (distErrPct) is an important factor in using
@@ -55,12 +55,12 @@ public class TermQueryPrefixTreeStrategy extends PrefixTreeStrategy {
 
     Shape shape = args.getShape();
     int detailLevel = grid.getLevelForDistance(args.resolveDistErr(ctx, distErrPct));
-    List<Node> cells = grid.getNodes(shape, detailLevel,
+    List<Cell> cells = grid.getCells(shape, detailLevel,
         false,//no parents
         true);//simplify
     BytesRef[] terms = new BytesRef[cells.size()];
     int i = 0;
-    for (Node cell : cells) {
+    for (Cell cell : cells) {
       terms[i++] = new BytesRef(cell.getTokenString());
     }
     return new TermsFilter(getFieldName(), terms);

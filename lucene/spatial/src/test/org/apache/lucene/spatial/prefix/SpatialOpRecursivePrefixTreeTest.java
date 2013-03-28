@@ -26,7 +26,7 @@ import com.spatial4j.core.shape.SpatialRelation;
 import com.spatial4j.core.shape.impl.RectangleImpl;
 import org.apache.lucene.search.Query;
 import org.apache.lucene.spatial.StrategyTestCase;
-import org.apache.lucene.spatial.prefix.tree.Node;
+import org.apache.lucene.spatial.prefix.tree.Cell;
 import org.apache.lucene.spatial.prefix.tree.QuadPrefixTree;
 import org.apache.lucene.spatial.prefix.tree.SpatialPrefixTree;
 import org.apache.lucene.spatial.query.SpatialArgs;
@@ -164,12 +164,12 @@ public class SpatialOpRecursivePrefixTreeTest extends StrategyTestCase {
     double distErrPct = ((PrefixTreeStrategy) strategy).getDistErrPct();
     double distErr = SpatialArgs.calcDistanceFromErrPct(snapMe, distErrPct, ctx);
     int detailLevel = grid.getLevelForDistance(distErr);
-    List<Node> cells = grid.getNodes(snapMe, detailLevel, false, true);
+    List<Cell> cells = grid.getCells(snapMe, detailLevel, false, true);
 
     //calc bounding box of cells.
     double minX = Double.POSITIVE_INFINITY, maxX = Double.NEGATIVE_INFINITY;
     double minY = Double.POSITIVE_INFINITY, maxY = Double.NEGATIVE_INFINITY;
-    for (Node cell : cells) {
+    for (Cell cell : cells) {
       assert cell.getLevel() <= detailLevel;
       Rectangle cellR = cell.getShape().getBoundingBox();
 
