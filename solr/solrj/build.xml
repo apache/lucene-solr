@@ -28,9 +28,10 @@
   <!-- Specialized common-solr.test.classpath, to remove the Solr core test output -->
   <path id="test.classpath">
     <pathelement path="${common-solr.dir}/build/solr-test-framework/classes/java"/>
-  	<pathelement path="${tests.userdir}"/>
-  	<path refid="test.base.classpath"/>
-        <path refid="solr.base.classpath"/>
+    <pathelement path="${tests.userdir}"/>
+    <path refid="test.base.classpath"/>
+    <path refid="solr.base.classpath"/>
+    <pathelement path="${example}/resources"/>
   </path>
 
   <!-- Specialized to depend on nothing -->
