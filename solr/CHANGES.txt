@@ -64,6 +64,10 @@ Upgrading from Solr 4.2.0
   folder with those necessary for the logging impl you would like. For more 
   details, see the Slf4j documentation.
 
+* SOLR-4651: The dist-excl-slf4j build target no longer exists.  SOLR-3706
+  eliminated the dist-war-excl-slf4j target and made dist-excl-slf4j
+  redundant.
+
 Detailed Change List
 ----------------------
 
@@ -133,6 +137,8 @@ Other Changes
   (Mark Miller)
   
 * SOLR-3706: Ship setup to log with log4j. (ryan, Mark Miller)
+
+* SOLR-4651: Remove dist-excl-slf4j build target. (Shawn Heisey)
 
 ==================  4.2.1 ==================
 
