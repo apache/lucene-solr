@@ -85,8 +85,29 @@ package org.apache.lucene.util;
  */
 
 public class TestUnicodeUtil extends LuceneTestCase {
-
   public void testCodePointCount() {
+    // Check invalid codepoints.
+    assertcodePointCountThrowsAssertionOn(asByteArray('z', 0x80, 'z', 'z', 'z'));
+    assertcodePointCountThrowsAssertionOn(asByteArray('z', 0xc0 - 1, 'z', 'z', 'z'));
+    // Check 5-byte and longer sequences.
+    assertcodePointCountThrowsAssertionOn(asByteArray('z', 0xf8, 'z', 'z', 'z'));
+    assertcodePointCountThrowsAssertionOn(asByteArray('z', 0xfc, 'z', 'z', 'z'));
+    // Check improperly terminated codepoints.
+    assertcodePointCountThrowsAssertionOn(asByteArray('z', 0xc2));
+    assertcodePointCountThrowsAssertionOn(asByteArray('z', 0xe2));
+    assertcodePointCountThrowsAssertionOn(asByteArray('z', 0xe2, 0x82));
+    assertcodePointCountThrowsAssertionOn(asByteArray('z', 0xf0));
+    assertcodePointCountThrowsAssertionOn(asByteArray('z', 0xf0, 0xa4));
+    assertcodePointCountThrowsAssertionOn(asByteArray('z', 0xf0, 0xa4, 0xad));
+
+    // Check some typical examples (multibyte).
+    assertEquals(0, UnicodeUtil.codePointCount(new BytesRef(asByteArray())));
+    assertEquals(3, UnicodeUtil.codePointCount(new BytesRef(asByteArray('z', 'z', 'z'))));
+    assertEquals(2, UnicodeUtil.codePointCount(new BytesRef(asByteArray('z', 0xc2, 0xa2))));
+    assertEquals(2, UnicodeUtil.codePointCount(new BytesRef(asByteArray('z', 0xe2, 0x82, 0xac))));
+    assertEquals(2, UnicodeUtil.codePointCount(new BytesRef(asByteArray('z', 0xf0, 0xa4, 0xad, 0xa2))));
+
+    // And do some random stuff.
     BytesRef utf8 = new BytesRef(20);
     int num = atLeast(50000);
     for (int i = 0; i < num; i++) {
@@ -95,6 +116,24 @@ public class TestUnicodeUtil extends LuceneTestCase {
       assertEquals(s.codePointCount(0, s.length()),
                    UnicodeUtil.codePointCount(utf8));
     }
+  }
+
+  private byte[] asByteArray(int... ints) {
+    byte [] asByteArray = new byte [ints.length];
+    for (int i = 0; i < ints.length; i++) {
+      asByteArray[i] = (byte) ints[i];
+    }
+    return asByteArray;
+  }
+
+  private void assertcodePointCountThrowsAssertionOn(byte... bytes) {
+    boolean threwAssertion = false;
+    try {
+      UnicodeUtil.codePointCount(new BytesRef(bytes));
+    } catch (IllegalArgumentException e) {
+      threwAssertion = true;
+    }
+    assertTrue(threwAssertion);
   }
 
   public void testUTF8toUTF32() {
@@ -152,16 +191,15 @@ public class TestUnicodeUtil extends LuceneTestCase {
       int rs = t[2];
       int rc = t[3];
 
-      Exception e = null;
       try {
         String str = UnicodeUtil.newString(codePoints, s, c);
         assertFalse(rc == -1);
         assertEquals(cpString.substring(rs, rs + rc), str);
         continue;
       } catch (IndexOutOfBoundsException e1) {
-        e = e1;
+        // Ignored.
       } catch (IllegalArgumentException e2) {
-        e = e2;
+        // Ignored.
       }
       assertTrue(rc == -1);
     }

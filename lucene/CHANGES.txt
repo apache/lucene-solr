@@ -158,6 +158,9 @@ Optimizations
 * LUCENE-4863: StemmerOverrideFilter now uses a FST to represent its overrides
   in memory. (Simon Willnauer)
 
+* LUCENE-4889: UnicodeUtil.codePointCount implementation replaced with a
+  non-array-lookup version. (Dawid Weiss)
+
 API Changes
 
 * LUCENE-4844: removed TaxonomyReader.getParent(), you should use
