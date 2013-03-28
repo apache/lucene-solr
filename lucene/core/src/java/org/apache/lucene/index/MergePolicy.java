@@ -62,6 +62,9 @@ public abstract class MergePolicy implements java.io.Closeable, Cloneable {
 
   /** A map of doc IDs. */
   public static abstract class DocMap {
+    /** Sole constructor, typically invoked from sub-classes constructors. */
+    protected DocMap() {}
+
     /** Return the new doc ID according to its old value. */
     public abstract int map(int old);
 
