@@ -153,8 +153,8 @@ public abstract class FieldType extends FieldProperties {
     this.args = Collections.unmodifiableMap(args);
     Map<String,String> initArgs = new HashMap<String,String>(args);
 
-    trueProperties = FieldProperties.parseProperties(initArgs,true);
-    falseProperties = FieldProperties.parseProperties(initArgs,false);
+    trueProperties = FieldProperties.parseProperties(initArgs,true,false);
+    falseProperties = FieldProperties.parseProperties(initArgs,false,false);
 
     properties &= ~falseProperties;
     properties |= trueProperties;

@@ -221,8 +221,8 @@ public final class SchemaField extends FieldProperties {
   }
 
   static int calcProps(String name, FieldType ft, Map<String, String> props) {
-    int trueProps = parseProperties(props,true);
-    int falseProps = parseProperties(props,false);
+    int trueProps = parseProperties(props,true,true);
+    int falseProps = parseProperties(props,false,true);
 
     int p = ft.properties;
 

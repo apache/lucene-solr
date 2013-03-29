@@ -64,7 +64,7 @@ public abstract class FieldProperties {
   static final Map<String,Integer> propertyMap = new HashMap<String,Integer>();
   static {
     for (String prop : propertyNames) {
-      propertyMap.put(prop, propertyNameToInt(prop));
+      propertyMap.put(prop, propertyNameToInt(prop, true));
     }
   }
 
@@ -74,13 +74,17 @@ public abstract class FieldProperties {
     return propertyNames[ Integer.numberOfTrailingZeros(property) ];
   }
 
-  static int propertyNameToInt(String name) {
+  static int propertyNameToInt(String name, boolean failOnError) {
     for (int i=0; i<propertyNames.length; i++) {
       if (propertyNames[i].equals(name)) {
         return 1 << i;
       }
     }
-    return 0;
+    if (failOnError && !"default".equals(name)) {
+      throw new IllegalArgumentException("Invalid field property: " + name);
+    } else {
+      return 0;
+    }
   }
 
 
@@ -105,13 +109,13 @@ public abstract class FieldProperties {
     return (bitfield & props) == 0;
   }
 
-  static int parseProperties(Map<String,String> properties, boolean which) {
+  static int parseProperties(Map<String,String> properties, boolean which, boolean failOnError) {
     int props = 0;
     for (Map.Entry<String, String> entry : properties.entrySet()) {
       String val = entry.getValue();
       if(val == null) continue;
       if (Boolean.parseBoolean(val) == which) {
-        props |= propertyNameToInt(entry.getKey());
+        props |= propertyNameToInt(entry.getKey(), failOnError);
       }
     }
     return props;

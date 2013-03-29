@@ -23,7 +23,7 @@ public class BadIndexSchemaTest extends AbstractBadConfigTestBase {
 
   private void doTest(final String schema, final String errString) 
     throws Exception {
-    assertConfigs("solrconfig.xml", schema, errString);
+    assertConfigs("solrconfig-basic.xml", schema, errString);
   }
 
   public void testSevereErrorsForInvalidFieldOptions() throws Exception {
@@ -109,6 +109,10 @@ public class BadIndexSchemaTest extends AbstractBadConfigTestBase {
            "Overriding default hyperbolicTf");
     doTest("bad-schema-sweetspot-partial-norms.xml", 
            "Overriding default lengthNorm");
+  }
+  
+  public void testBogusParameters() throws Exception {
+    doTest("bad-schema-bogus-field-parameters.xml", "Invalid field property");
   }
 
 }
