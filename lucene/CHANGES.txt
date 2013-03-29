@@ -50,11 +50,15 @@ Changes in backwards compatibility policy
 * LUCENE-4833: IndexWriterConfig used to use LogByteSizeMergePolicy when
   calling setMergePolicy(null) although the default merge policy is
   TieredMergePolicy. IndexWriterConfig setters now throw an exception when
-  passed null if null is not a valid value.
+  passed null if null is not a valid value. (Adrien Grand)
 
 * LUCENE-4849: Made ParallelTaxonomyArrays abstract with a concrete
   implementation for DirectoryTaxonomyWriter/Reader. Also moved it under
   o.a.l.facet.taxonomy. (Shai Erera)
+
+* LUCENE-4876: IndexDeletionPolicy is now an abstract class instead of an
+  interface. IndexDeletionPolicy, MergeScheduler and InfoStream now implement
+  Cloneable. (Adrien Grand)
 
 New Features
 
@@ -175,7 +179,11 @@ Bug Fixes
   the scores array. (Shai Erera)
 
 * LUCENE-4882: FacetsAccumulator did not allow to count ROOT category (i.e.
-	count dimensions). (Shai Erera)
+  count dimensions). (Shai Erera)
+
+* LUCENE-4876: IndexWriterConfig.clone() now clones its MergeScheduler,
+  IndexDeletionPolicy and InfoStream in order to make an IndexWriterConfig and
+  its clone fully independent. (Adrien Grand)
 
 Documentation
 

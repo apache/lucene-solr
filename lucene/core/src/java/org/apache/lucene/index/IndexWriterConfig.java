@@ -151,9 +151,14 @@ public final class IndexWriterConfig extends LiveIndexWriterConfig implements Cl
       // Mostly shallow clone, but do a deepish clone of
       // certain objects that have state that cannot be shared
       // across IW instances:
+      clone.delPolicy = delPolicy.clone();
       clone.flushPolicy = flushPolicy.clone();
       clone.indexerThreadPool = indexerThreadPool.clone();
+      // we clone the infoStream because some impls might have state variables
+      // such as line numbers, message throughput, ...
+      clone.infoStream = infoStream.clone();
       clone.mergePolicy = mergePolicy.clone();
+      clone.mergeScheduler = mergeScheduler.clone();
       
       return clone;
     } catch (CloneNotSupportedException e) {

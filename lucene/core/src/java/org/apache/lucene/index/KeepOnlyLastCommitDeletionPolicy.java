@@ -26,7 +26,7 @@ import java.util.List;
  * the default deletion policy.
  */
 
-public final class KeepOnlyLastCommitDeletionPolicy implements IndexDeletionPolicy {
+public final class KeepOnlyLastCommitDeletionPolicy extends IndexDeletionPolicy {
 
   /** Sole constructor. */
   public KeepOnlyLastCommitDeletionPolicy() {

@@ -25,7 +25,6 @@ import org.apache.lucene.document.Document;
 import org.apache.lucene.index.IndexWriterConfig.OpenMode;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.LockObtainFailedException;
-import org.apache.lucene.store.MockDirectoryWrapper;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
@@ -79,8 +78,8 @@ public class TestPersistentSnapshotDeletionPolicy extends TestSnapshotDeletionPo
   public void testExistingSnapshots() throws Exception {
     int numSnapshots = 3;
     Directory dir = newDirectory();
-    PersistentSnapshotDeletionPolicy psdp = (PersistentSnapshotDeletionPolicy) getDeletionPolicy();
-    IndexWriter writer = new IndexWriter(dir, getConfig(random(), psdp));
+    IndexWriter writer = new IndexWriter(dir, getConfig(random(), getDeletionPolicy()));
+    PersistentSnapshotDeletionPolicy psdp = (PersistentSnapshotDeletionPolicy) writer.getConfig().getIndexDeletionPolicy();
     prepareIndexAndSnapshots(psdp, writer, numSnapshots, "snapshot");
     writer.close();
     psdp.close();
@@ -143,8 +142,8 @@ public class TestPersistentSnapshotDeletionPolicy extends TestSnapshotDeletionPo
   @Test
   public void testSnapshotRelease() throws Exception {
     Directory dir = newDirectory();
-    PersistentSnapshotDeletionPolicy psdp = (PersistentSnapshotDeletionPolicy) getDeletionPolicy();
-    IndexWriter writer = new IndexWriter(dir, getConfig(random(), psdp));
+    IndexWriter writer = new IndexWriter(dir, getConfig(random(), getDeletionPolicy()));
+    PersistentSnapshotDeletionPolicy psdp = (PersistentSnapshotDeletionPolicy) writer.getConfig().getIndexDeletionPolicy();
     prepareIndexAndSnapshots(psdp, writer, 1, "snapshot");
     writer.close();
 
@@ -166,8 +165,8 @@ public class TestPersistentSnapshotDeletionPolicy extends TestSnapshotDeletionPo
     // static read method works.
     int numSnapshots = 1;
     Directory dir = newDirectory();
-    PersistentSnapshotDeletionPolicy psdp = (PersistentSnapshotDeletionPolicy) getDeletionPolicy();
-    IndexWriter writer = new IndexWriter(dir, getConfig(random(), psdp));
+    IndexWriter writer = new IndexWriter(dir, getConfig(random(), getDeletionPolicy()));
+    PersistentSnapshotDeletionPolicy psdp = (PersistentSnapshotDeletionPolicy) writer.getConfig().getIndexDeletionPolicy();
     prepareIndexAndSnapshots(psdp, writer, numSnapshots, "snapshot");
     writer.close();
     dir.close();

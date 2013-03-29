@@ -25,8 +25,6 @@ import java.util.Map.Entry;
 import java.util.Map;
 
 import org.apache.lucene.document.Document;
-import org.apache.lucene.document.Field;
-import org.apache.lucene.document.FieldType;
 import org.apache.lucene.document.StoredField;
 import org.apache.lucene.index.IndexWriterConfig.OpenMode;
 import org.apache.lucene.store.Directory;
@@ -46,6 +44,12 @@ import org.apache.lucene.util.Version;
  * <p>
  * <b>NOTE:</b> you should call {@link #close()} when you're done using this
  * class for safety (it will close the {@link IndexWriter} instance used).
+ * <p>
+ * <b>NOTE:</b> Sharing {@link PersistentSnapshotDeletionPolicy}s that write to
+ * the same directory across {@link IndexWriter}s will corrupt snapshots. You
+ * should make sure every {@link IndexWriter} has its own
+ * {@link PersistentSnapshotDeletionPolicy} and that they all write to a
+ * different {@link Directory}.
  */
 public class PersistentSnapshotDeletionPolicy extends SnapshotDeletionPolicy implements Closeable {
 
