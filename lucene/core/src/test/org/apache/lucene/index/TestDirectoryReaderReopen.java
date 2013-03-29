@@ -530,7 +530,7 @@ public class TestDirectoryReaderReopen extends LuceneTestCase {
     protected abstract void modifyIndex(int i) throws IOException;
   }
   
-  static class KeepAllCommits implements IndexDeletionPolicy {
+  static class KeepAllCommits extends IndexDeletionPolicy {
     @Override
     public void onInit(List<? extends IndexCommit> commits) {
     }

@@ -48,7 +48,10 @@ import java.io.IOException;
  * for details.</p>
  */
 
-public interface IndexDeletionPolicy {
+public abstract class IndexDeletionPolicy implements Cloneable {
+
+  /** Sole constructor, typically called by sub-classes constructors. */
+  protected IndexDeletionPolicy() {}
 
   /**
    * <p>This is called once when a writer is first
@@ -70,7 +73,7 @@ public interface IndexDeletionPolicy {
    * {@link IndexCommit point-in-time commits},
    *  sorted by age (the 0th one is the oldest commit).
    */
-  public void onInit(List<? extends IndexCommit> commits) throws IOException;
+  public abstract void onInit(List<? extends IndexCommit> commits) throws IOException;
 
   /**
    * <p>This is called each time the writer completed a commit.
@@ -94,5 +97,15 @@ public interface IndexDeletionPolicy {
    * @param commits List of {@link IndexCommit},
    *  sorted by age (the 0th one is the oldest commit).
    */
-  public void onCommit(List<? extends IndexCommit> commits) throws IOException;
+  public abstract void onCommit(List<? extends IndexCommit> commits) throws IOException;
+
+  @Override
+  public IndexDeletionPolicy clone() {
+    try {
+      return (IndexDeletionPolicy) super.clone();
+    } catch (CloneNotSupportedException e) {
+      throw new Error(e);
+    }
+  }
+
 }

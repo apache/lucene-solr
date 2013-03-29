@@ -561,4 +561,13 @@ public class ConcurrentMergeScheduler extends MergeScheduler {
     sb.append("mergeThreadPriority=").append(mergeThreadPriority);
     return sb.toString();
   }
+
+  @Override
+  public MergeScheduler clone() {
+    ConcurrentMergeScheduler clone = (ConcurrentMergeScheduler) super.clone();
+    clone.writer = null;
+    clone.dir = null;
+    clone.mergeThreads = new ArrayList<MergeThread>();
+    return clone;
+  }
 }

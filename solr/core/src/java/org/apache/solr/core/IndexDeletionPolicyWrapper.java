@@ -18,6 +18,7 @@ package org.apache.solr.core;
 
 import org.apache.lucene.index.IndexCommit;
 import org.apache.lucene.index.IndexDeletionPolicy;
+import org.apache.lucene.index.IndexWriter;
 import org.apache.lucene.store.Directory;
 import org.apache.solr.update.SolrIndexWriter;
 
@@ -32,11 +33,15 @@ import java.util.concurrent.atomic.AtomicInteger;
  * Provides features for looking up IndexCommit given a version. Allows reserving index
  * commit points for certain amounts of time to support features such as index replication
  * or snapshooting directly out of a live index directory.
- *
+ * <p/>
+ * <b>NOTE</b>: The {@link #clone()} method returns <tt>this</tt> in order to make
+ * this {@link IndexDeletionPolicy} instance trackable across {@link IndexWriter}
+ * instantiations. This is correct because each core has its own
+ * {@link IndexDeletionPolicy} and never has more than one open {@link IndexWriter}.
  *
  * @see org.apache.lucene.index.IndexDeletionPolicy
  */
-public class IndexDeletionPolicyWrapper implements IndexDeletionPolicy {
+public final class IndexDeletionPolicyWrapper extends IndexDeletionPolicy {
   private final IndexDeletionPolicy deletionPolicy;
   private volatile Map<Long, IndexCommit> solrVersionVsCommits = new ConcurrentHashMap<Long, IndexCommit>();
   private final Map<Long, Long> reserves = new ConcurrentHashMap<Long,Long>();
@@ -243,6 +248,12 @@ public class IndexDeletionPolicyWrapper implements IndexDeletionPolicy {
     } else {
       return 0;
     }
+  }
+
+  @Override
+  public IndexDeletionPolicy clone() {
+    // see class-level javadocs
+    return this;
   }
 }
 

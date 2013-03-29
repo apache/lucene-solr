@@ -101,10 +101,10 @@ public class TestSnapshotDeletionPolicy extends LuceneTestCase {
     // Run for ~1 seconds
     final long stopTime = System.currentTimeMillis() + 1000;
 
-    SnapshotDeletionPolicy dp = getDeletionPolicy();
     final IndexWriter writer = new IndexWriter(dir, newIndexWriterConfig(
-        TEST_VERSION_CURRENT, new MockAnalyzer(random)).setIndexDeletionPolicy(dp)
+        TEST_VERSION_CURRENT, new MockAnalyzer(random)).setIndexDeletionPolicy(getDeletionPolicy())
         .setMaxBufferedDocs(2));
+    SnapshotDeletionPolicy dp = (SnapshotDeletionPolicy) writer.getConfig().getIndexDeletionPolicy();
     writer.commit();
     
     final Thread t = new Thread() {
@@ -235,11 +235,11 @@ public class TestSnapshotDeletionPolicy extends LuceneTestCase {
   @Test
   public void testBasicSnapshots() throws Exception {
     int numSnapshots = 3;
-    SnapshotDeletionPolicy sdp = getDeletionPolicy();
     
     // Create 3 snapshots: snapshot0, snapshot1, snapshot2
     Directory dir = newDirectory();
-    IndexWriter writer = new IndexWriter(dir, getConfig(random(), sdp));
+    IndexWriter writer = new IndexWriter(dir, getConfig(random(), getDeletionPolicy()));
+    SnapshotDeletionPolicy sdp = (SnapshotDeletionPolicy) writer.getConfig().getIndexDeletionPolicy();
     prepareIndexAndSnapshots(sdp, writer, numSnapshots, "snapshot");
     writer.close();
     
@@ -269,8 +269,8 @@ public class TestSnapshotDeletionPolicy extends LuceneTestCase {
   @Test
   public void testMultiThreadedSnapshotting() throws Exception {
     Directory dir = newDirectory();
-    final SnapshotDeletionPolicy sdp = getDeletionPolicy();
-    final IndexWriter writer = new IndexWriter(dir, getConfig(random(), sdp));
+    final IndexWriter writer = new IndexWriter(dir, getConfig(random(), getDeletionPolicy()));
+    final SnapshotDeletionPolicy sdp = (SnapshotDeletionPolicy) writer.getConfig().getIndexDeletionPolicy();
 
     Thread[] threads = new Thread[10];
     for (int i = 0; i < threads.length; i++) {
@@ -315,8 +315,8 @@ public class TestSnapshotDeletionPolicy extends LuceneTestCase {
     int numSnapshots = 2;
     Directory dir = newDirectory();
 
-    SnapshotDeletionPolicy sdp = getDeletionPolicy();
-    IndexWriter writer = new IndexWriter(dir, getConfig(random(), sdp));
+    IndexWriter writer = new IndexWriter(dir, getConfig(random(), getDeletionPolicy()));
+    SnapshotDeletionPolicy sdp = (SnapshotDeletionPolicy) writer.getConfig().getIndexDeletionPolicy();
     prepareIndexAndSnapshots(sdp, writer, numSnapshots, "snapshot");
     writer.close();
 
@@ -338,8 +338,8 @@ public class TestSnapshotDeletionPolicy extends LuceneTestCase {
   @Test
   public void testReleaseSnapshot() throws Exception {
     Directory dir = newDirectory();
-    SnapshotDeletionPolicy sdp = getDeletionPolicy();
-    IndexWriter writer = new IndexWriter(dir, getConfig(random(), sdp));
+    IndexWriter writer = new IndexWriter(dir, getConfig(random(), getDeletionPolicy()));
+    SnapshotDeletionPolicy sdp = (SnapshotDeletionPolicy) writer.getConfig().getIndexDeletionPolicy();
     prepareIndexAndSnapshots(sdp, writer, 1, "snapshot");
     
     // Create another commit - we must do that, because otherwise the "snapshot"
@@ -370,8 +370,8 @@ public class TestSnapshotDeletionPolicy extends LuceneTestCase {
     // asserts that those snapshots/commit points are protected.
     int numSnapshots = 3;
     Directory dir = newDirectory();
-    SnapshotDeletionPolicy sdp = getDeletionPolicy();
-    IndexWriter writer = new IndexWriter(dir, getConfig(random(), sdp));
+    IndexWriter writer = new IndexWriter(dir, getConfig(random(), getDeletionPolicy()));
+    SnapshotDeletionPolicy sdp = (SnapshotDeletionPolicy) writer.getConfig().getIndexDeletionPolicy();
     prepareIndexAndSnapshots(sdp, writer, numSnapshots, "snapshot");
     writer.close();
 
@@ -389,8 +389,8 @@ public class TestSnapshotDeletionPolicy extends LuceneTestCase {
   public void testSnapshotLastCommitTwice() throws Exception {
     Directory dir = newDirectory();
 
-    SnapshotDeletionPolicy sdp = getDeletionPolicy();
-    IndexWriter writer = new IndexWriter(dir, getConfig(random(), sdp));
+    IndexWriter writer = new IndexWriter(dir, getConfig(random(), getDeletionPolicy()));
+    SnapshotDeletionPolicy sdp = (SnapshotDeletionPolicy) writer.getConfig().getIndexDeletionPolicy();
     writer.addDocument(new Document());
     writer.commit();
     
@@ -418,8 +418,8 @@ public class TestSnapshotDeletionPolicy extends LuceneTestCase {
     // Tests the behavior of SDP when commits that are given at ctor are missing
     // on onInit().
     Directory dir = newDirectory();
-    SnapshotDeletionPolicy sdp = getDeletionPolicy();
-    IndexWriter writer = new IndexWriter(dir, getConfig(random(), sdp));
+    IndexWriter writer = new IndexWriter(dir, getConfig(random(), getDeletionPolicy()));
+    SnapshotDeletionPolicy sdp = (SnapshotDeletionPolicy) writer.getConfig().getIndexDeletionPolicy();
     writer.addDocument(new Document());
     writer.commit();
     IndexCommit ic = sdp.snapshot("s1");
@@ -436,8 +436,9 @@ public class TestSnapshotDeletionPolicy extends LuceneTestCase {
     
     // Now reinit SDP from the commits in the index - the snapshot id should not
     // exist anymore.
-    sdp = getDeletionPolicy(sdp.getSnapshots());
-    new IndexWriter(dir, getConfig(random(), sdp)).close();
+    writer = new IndexWriter(dir, getConfig(random(), getDeletionPolicy(sdp.getSnapshots())));
+    sdp = (SnapshotDeletionPolicy) writer.getConfig().getIndexDeletionPolicy();
+    writer.close();
     
     try {
       sdp.getSnapshot("s1");

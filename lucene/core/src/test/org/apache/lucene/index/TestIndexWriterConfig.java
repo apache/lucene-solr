@@ -216,8 +216,26 @@ public class TestIndexWriterConfig extends LuceneTestCase {
     IndexWriterConfig conf = new IndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer(random()));
     IndexWriterConfig clone = conf.clone();
 
-    // Clone is shallow since not all parameters are cloneable.
-    assertTrue(conf.getIndexDeletionPolicy() == clone.getIndexDeletionPolicy());
+    // Make sure parameters that can't be reused are cloned
+    IndexDeletionPolicy delPolicy = conf.delPolicy;
+    IndexDeletionPolicy delPolicyClone = clone.delPolicy;
+    assertTrue(delPolicy.getClass() == delPolicyClone.getClass() && (delPolicy != delPolicyClone || delPolicy.clone() == delPolicyClone.clone()));
+
+    FlushPolicy flushPolicy = conf.flushPolicy;
+    FlushPolicy flushPolicyClone = clone.flushPolicy;
+    assertTrue(flushPolicy.getClass() == flushPolicyClone.getClass() && (flushPolicy != flushPolicyClone || flushPolicy.clone() == flushPolicyClone.clone()));
+
+    DocumentsWriterPerThreadPool pool = conf.indexerThreadPool;
+    DocumentsWriterPerThreadPool poolClone = clone.indexerThreadPool;
+    assertTrue(pool.getClass() == poolClone.getClass() && (pool != poolClone || pool.clone() == poolClone.clone()));
+
+    MergePolicy mergePolicy = conf.mergePolicy;
+    MergePolicy mergePolicyClone = clone.mergePolicy;
+    assertTrue(mergePolicy.getClass() == mergePolicyClone.getClass() && (mergePolicy != mergePolicyClone || mergePolicy.clone() == mergePolicyClone.clone()));
+
+    MergeScheduler mergeSched = conf.mergeScheduler;
+    MergeScheduler mergeSchedClone = clone.mergeScheduler;
+    assertTrue(mergeSched.getClass() == mergeSchedClone.getClass() && (mergeSched != mergeSchedClone || mergeSched.clone() == mergeSchedClone.clone()));
 
     conf.setMergeScheduler(new SerialMergeScheduler());
     assertEquals(ConcurrentMergeScheduler.class, clone.getMergeScheduler().getClass());

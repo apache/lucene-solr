@@ -49,7 +49,7 @@ import org.apache.lucene.store.Directory;
  * 
  * @lucene.experimental
  */
-public class SnapshotDeletionPolicy implements IndexDeletionPolicy {
+public class SnapshotDeletionPolicy extends IndexDeletionPolicy {
 
   /** Holds a Snapshot's information. */
   private static class SnapshotInfo {
@@ -371,6 +371,16 @@ public class SnapshotDeletionPolicy implements IndexDeletionPolicy {
 
     registerSnapshotInfo(id, lastCommit.getSegmentsFileName(), lastCommit);
     return lastCommit;
+  }
+
+  @Override
+  public IndexDeletionPolicy clone() {
+    SnapshotDeletionPolicy other = (SnapshotDeletionPolicy) super.clone();
+    other.primary = this.primary.clone();
+    other.lastCommit = null;
+    other.segmentsFileToIDs = new HashMap<String, Set<String>>(segmentsFileToIDs);
+    other.idToSnapshot = new HashMap<String, SnapshotInfo>(idToSnapshot);
+    return other;
   }
 
 }
