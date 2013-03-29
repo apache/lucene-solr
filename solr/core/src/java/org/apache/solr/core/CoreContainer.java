@@ -1454,10 +1454,13 @@ class CoreMaps {
           core.close();
         } catch (Throwable t) {
           SolrException.log(CoreContainer.log, "Error shutting down core", t);
+        } finally {
+          synchronized (locker) {
+            cores.remove(coreName);
+          }
         }
       }
     }
-    cores.clear();
 
     for (String coreName : transientNames) {
       SolrCore core = transientCores.get(coreName);
@@ -1466,10 +1469,13 @@ class CoreMaps {
           core.close();
         } catch (Throwable t) {
           SolrException.log(CoreContainer.log, "Error shutting down core", t);
+        } finally {
+          synchronized (locker) {
+            transientCores.remove(coreName);
+          }
         }
       }
     }
-    transientCores.clear();
 
     // We might have some cores that we were _thinking_ about shutting down, so take care of those too.
     for (SolrCore core : pendingToClose) {
@@ -1477,9 +1483,12 @@ class CoreMaps {
         core.close();
       } catch (Throwable t) {
         SolrException.log(CoreContainer.log, "Error shutting down core", t);
+      } finally {
+        synchronized (locker) {
+          pendingCloses.remove(core);
+        }
       }
     }
-
   }
 
   protected void addCoresToList(ArrayList<SolrCoreState> coreStates) {
