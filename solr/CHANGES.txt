@@ -114,6 +114,10 @@ Bug Fixes
 
 * SOLR-3956: Fixed group.facet=true to work with negative facet.limit
   (Chris van der Merwe, hossman)
+  
+* SOLR-4650: copyField doesn't work with source globs that don't match any
+  explicit or dynamic fields.  This regression was introduced in Solr 4.2.
+  (Daniel Collins, Steve Rowe)
 
 Optimizations
 ----------------------

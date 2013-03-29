@@ -740,8 +740,21 @@ public final class IndexSchema {
     
     boolean sourceIsDynamicFieldReference = false;
     boolean sourceIsExplicitFieldGlob = false;
-    
-    if (null == sourceSchemaField && isValidFieldGlob(source)) {
+
+
+    final String invalidGlobMessage = "is an invalid glob: either it contains more than one asterisk,"
+                                    + " or the asterisk occurs neither at the start nor at the end.";
+    final boolean sourceIsGlob = isValidFieldGlob(source);
+    if (source.contains("*") && ! sourceIsGlob) {
+      String msg = "copyField source :'" + source + "' " + invalidGlobMessage;
+      throw new SolrException(ErrorCode.SERVER_ERROR, msg);
+    }
+    if (dest.contains("*") && ! isValidFieldGlob(dest)) {
+      String msg = "copyField dest :'" + dest + "' " + invalidGlobMessage;
+      throw new SolrException(ErrorCode.SERVER_ERROR, msg);
+    }
+
+    if (null == sourceSchemaField && sourceIsGlob) {
       Pattern pattern = Pattern.compile(source.replace("*", ".*")); // glob->regex
       for (String field : fields.keySet()) {
         if (pattern.matcher(field).matches()) {
@@ -778,19 +791,19 @@ public final class IndexSchema {
         }
       }
     }
-    if (null == sourceSchemaField && ! sourceIsDynamicFieldReference && ! sourceIsExplicitFieldGlob) {
-      String msg = "copyField source :'" + source + "' doesn't match any explicit field or dynamicField.";
+    if (null == sourceSchemaField && ! sourceIsGlob && ! sourceIsDynamicFieldReference) {
+      String msg = "copyField source :'" + source + "' is not a glob and doesn't match any explicit field or dynamicField.";
       throw new SolrException(ErrorCode.SERVER_ERROR, msg);
     }
     if (null == destSchemaField) {
       String msg = "copyField dest :'" + dest + "' is not an explicit field and doesn't match a dynamicField.";
       throw new SolrException(ErrorCode.SERVER_ERROR, msg);
     }
-    if (sourceIsDynamicFieldReference || sourceIsExplicitFieldGlob) {
-      if (null != destDynamicField) { // source: dynamic field ref or explicit field glob; dest: dynamic field ref
+    if (sourceIsDynamicFieldReference || sourceIsGlob) {
+      if (null != destDynamicField) { // source: glob or no-asterisk dynamic field ref; dest: dynamic field ref
         registerDynamicCopyField(new DynamicCopy(source, destDynamicField, maxChars, sourceDynamicBase, destDynamicBase));
         incrementCopyFieldTargetCount(destSchemaField);
-      } else {                        // source: dynamic field reference; dest: explicit field
+      } else {                        // source: glob or no-asterisk dynamic field ref; dest: explicit field
         destDynamicField = new DynamicField(destSchemaField);
         registerDynamicCopyField(new DynamicCopy(source, destDynamicField, maxChars, sourceDynamicBase, null));
         incrementCopyFieldTargetCount(destSchemaField);
