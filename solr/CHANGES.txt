@@ -118,6 +118,8 @@ Bug Fixes
 * SOLR-4650: copyField doesn't work with source globs that don't match any
   explicit or dynamic fields.  This regression was introduced in Solr 4.2.
   (Daniel Collins, Steve Rowe)
+  
+* SOLR-4641: Schema now throws exception on illegal field parameters.  (Robert Muir)
 
 Optimizations
 ----------------------
