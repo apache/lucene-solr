@@ -766,19 +766,21 @@ def testSolrExample(unpackPath, javaPath, isSrc):
   serverThread.setDaemon(True)
   serverThread.start()
 
-  # Make sure Solr finishes startup:
-  if not startupEvent.wait(1800):
-    raise RuntimeError('startup took more than 30 minutes')
-  if failureEvent.isSet():
-    logFile = os.path.abspath(logFile)
-    print
-    print('Startup failed; see log %s' % logFile)
-    printFileContents(logFile)
-    raise RuntimeError('failure on startup; see log %s' % logFile)
-    
-  print('      startup done')
-  
   try:
+
+    # Make sure Solr finishes startup:
+    if not startupEvent.wait(1800):
+      raise RuntimeError('startup took more than 30 minutes')
+
+    if failureEvent.isSet():
+      logFile = os.path.abspath(logFile)
+      print
+      print('Startup failed; see log %s' % logFile)
+      printFileContents(logFile)
+      raise RuntimeError('failure on startup; see log %s' % logFile)
+
+    print('      startup done')
+
     print('      test utf8...')
     run('sh ./exampledocs/test_utf8.sh', 'utf8.log')
     print('      index example docs...')
