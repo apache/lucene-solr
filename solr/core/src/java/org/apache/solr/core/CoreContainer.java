@@ -1434,58 +1434,72 @@ class CoreMaps {
     }
   }
 
-  // We are shutting down. We don't want to risk deadlock, so do this manipulation the expensive way. Note, I've
-  // already deadlocked with closing/opening cores while keeping locks here....
+  // We are shutting down. You can't hold the lock on the various lists of cores while they shut down, so we need to
+  // make a temporary copy of the names and shut them down outside the lock.
   protected void clearMaps(ConfigSolr cfg) {
     List<String> coreNames;
     List<String> transientNames;
     List<SolrCore> pendingToClose;
-    synchronized (locker) {
-      coreNames = new ArrayList(cores.keySet());
-      transientNames = new ArrayList(transientCores.keySet());
-      pendingToClose = new ArrayList(pendingCloses);
-    }
-    for (String coreName : coreNames) {
-      SolrCore core = cores.get(coreName);
-      if (core != null) {
-        try {
-          addPersistOneCore(cfg, core, container.loader);
 
+    // It might be possible for one of the cores to move from one list to another while we're closing them. So
+    // loop through the lists until they're all empty. In particular, the core could have moved from the transient
+    // list to the pendingCloses list.
+
+    while (true) {
+      synchronized (locker) {
+        coreNames = new ArrayList(cores.keySet());
+        transientNames = new ArrayList(transientCores.keySet());
+        pendingToClose = new ArrayList(pendingCloses);
+      }
+
+      if (coreNames.size() == 0 && transientNames.size() == 0 && pendingToClose.size() == 0) break;
+
+      for (String coreName : coreNames) {
+        SolrCore core = cores.get(coreName);
+        if (core == null) {
+          CoreContainer.log.info("Core " + coreName + " moved from core container list before closing.");
+        } else {
+          try {
+            addPersistOneCore(cfg, core, container.loader);
+
+            core.close();
+          } catch (Throwable t) {
+            SolrException.log(CoreContainer.log, "Error shutting down core", t);
+          } finally {
+            synchronized (locker) {
+              cores.remove(coreName);
+            }
+          }
+        }
+      }
+
+      for (String coreName : transientNames) {
+        SolrCore core = transientCores.get(coreName);
+        if (core == null) {
+          CoreContainer.log.info("Core " + coreName + " moved from transient core container list before closing.");
+        } else {
+          try {
+            core.close();
+          } catch (Throwable t) {
+            SolrException.log(CoreContainer.log, "Error shutting down core", t);
+          } finally {
+            synchronized (locker) {
+              transientCores.remove(coreName);
+            }
+          }
+        }
+      }
+
+      // We might have some cores that we were _thinking_ about shutting down, so take care of those too.
+      for (SolrCore core : pendingToClose) {
+        try {
           core.close();
         } catch (Throwable t) {
           SolrException.log(CoreContainer.log, "Error shutting down core", t);
         } finally {
           synchronized (locker) {
-            cores.remove(coreName);
+            pendingCloses.remove(core);
           }
-        }
-      }
-    }
-
-    for (String coreName : transientNames) {
-      SolrCore core = transientCores.get(coreName);
-      if (core != null) {
-        try {
-          core.close();
-        } catch (Throwable t) {
-          SolrException.log(CoreContainer.log, "Error shutting down core", t);
-        } finally {
-          synchronized (locker) {
-            transientCores.remove(coreName);
-          }
-        }
-      }
-    }
-
-    // We might have some cores that we were _thinking_ about shutting down, so take care of those too.
-    for (SolrCore core : pendingToClose) {
-      try {
-        core.close();
-      } catch (Throwable t) {
-        SolrException.log(CoreContainer.log, "Error shutting down core", t);
-      } finally {
-        synchronized (locker) {
-          pendingCloses.remove(core);
         }
       }
     }
