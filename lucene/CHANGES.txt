@@ -189,6 +189,9 @@ Bug Fixes
   IndexDeletionPolicy and InfoStream in order to make an IndexWriterConfig and
   its clone fully independent. (Adrien Grand)
 
+* LUCENE-4893: Facet counts were multiplied as many times as 
+  FacetsCollector.getFacetResults() is called. (Shai Erera)
+
 Documentation
 
 * LUCENE-4841: Added example SimpleSortedSetFacetsExample to show how

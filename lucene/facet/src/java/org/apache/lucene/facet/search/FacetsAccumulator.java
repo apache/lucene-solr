@@ -81,6 +81,14 @@ public class FacetsAccumulator {
     return new FacetsAccumulator(fsp, indexReader, taxoReader);
   }
   
+  private static FacetResult emptyResult(int ordinal, FacetRequest fr) {
+    FacetResultNode root = new FacetResultNode();
+    root.ordinal = ordinal;
+    root.label = fr.categoryPath;
+    root.value = 0;
+    return new FacetResult(fr, root, 0);
+  }
+  
   /**
    * Initializes the accumulator with the given parameters as well as
    * {@link FacetArrays}. Note that the accumulator doesn't call
@@ -173,12 +181,8 @@ public class FacetsAccumulator {
     for (FacetRequest fr : searchParams.facetRequests) {
       int rootOrd = taxonomyReader.getOrdinal(fr.categoryPath);
       if (rootOrd == TaxonomyReader.INVALID_ORDINAL) { // category does not exist
-        // Add empty FacetResult:
-        FacetResultNode root = new FacetResultNode();
-        root.ordinal = TaxonomyReader.INVALID_ORDINAL;
-        root.label = fr.categoryPath;
-        root.value = 0;
-        res.add(new FacetResult(fr, root, 0));
+        // Add empty FacetResult
+        res.add(emptyResult(rootOrd, fr));
         continue;
       }
       CategoryListParams clp = searchParams.indexingParams.getCategoryListParams(fr.categoryPath);

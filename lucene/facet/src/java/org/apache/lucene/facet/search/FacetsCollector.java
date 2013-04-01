@@ -87,7 +87,7 @@ public abstract class FacetsCollector extends Collector {
     }
     
     @Override
-    public final void setNextReader(AtomicReaderContext context) throws IOException {
+    protected final void doSetNextReader(AtomicReaderContext context) throws IOException {
       if (bits != null) {
         matchingDocs.add(new MatchingDocs(this.context, bits, totalHits, scores));
       }
@@ -133,7 +133,7 @@ public abstract class FacetsCollector extends Collector {
     public final void setScorer(Scorer scorer) throws IOException {}
     
     @Override
-    public final void setNextReader(AtomicReaderContext context) throws IOException {
+    protected final void doSetNextReader(AtomicReaderContext context) throws IOException {
       if (bits != null) {
         matchingDocs.add(new MatchingDocs(this.context, bits, totalHits, null));
       }
@@ -183,6 +183,7 @@ public abstract class FacetsCollector extends Collector {
   }
 
   private final FacetsAccumulator accumulator;
+  private List<FacetResult> cachedResults;
   
   protected final List<MatchingDocs> matchingDocs = new ArrayList<MatchingDocs>();
 
@@ -196,15 +197,24 @@ public abstract class FacetsCollector extends Collector {
    */
   protected abstract void finish();
   
+  /** Performs the actual work of {@link #setNextReader(AtomicReaderContext)}. */
+  protected abstract void doSetNextReader(AtomicReaderContext context) throws IOException;
+  
   /**
    * Returns a {@link FacetResult} per {@link FacetRequest} set in
-   * {@link FacetSearchParams}. Note that if one of the {@link FacetRequest
-   * requests} is for a {@link CategoryPath} that does not exist in the taxonomy,
-   * no matching {@link FacetResult} will be returned.
+   * {@link FacetSearchParams}. Note that if a {@link FacetRequest} defines a
+   * {@link CategoryPath} which does not exist in the taxonomy, an empty
+   * {@link FacetResult} will be returned for it.
    */
   public final List<FacetResult> getFacetResults() throws IOException {
-    finish();
-    return accumulator.accumulate(matchingDocs);
+    // LUCENE-4893: if results are not cached, counts are multiplied as many
+    // times as this method is called. 
+    if (cachedResults == null) {
+      finish();
+      cachedResults = accumulator.accumulate(matchingDocs);
+    }
+    
+    return cachedResults;
   }
   
   /**
@@ -218,12 +228,22 @@ public abstract class FacetsCollector extends Collector {
   
   /**
    * Allows to reuse the collector between search requests. This method simply
-   * clears all collected documents (and scores) information, and does not
-   * attempt to reuse allocated memory spaces.
+   * clears all collected documents (and scores) information (as well as cached
+   * results), and does not attempt to reuse allocated memory spaces.
    */
   public final void reset() {
     finish();
     matchingDocs.clear();
+    cachedResults = null;
   }
 
+  @Override
+  public final void setNextReader(AtomicReaderContext context) throws IOException {
+    // clear cachedResults - needed in case someone called getFacetResults()
+    // before doing a search and didn't call reset(). Defensive code to prevent
+    // traps.
+    cachedResults = null;
+    doSetNextReader(context);
+  }
+  
 }
