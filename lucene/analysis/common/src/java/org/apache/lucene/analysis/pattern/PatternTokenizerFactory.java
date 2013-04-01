@@ -71,13 +71,8 @@ public class PatternTokenizerFactory extends TokenizerFactory {
   public PatternTokenizerFactory(Map<String,String> args) {
     super(args);
     pattern = getPattern(args, PATTERN);
-    
-    String v = args.remove(GROUP);
-    if (v == null) {
-      group = -1;  // use 'split'
-    } else {
-      group = Integer.parseInt(v);
-    }
+    group = getInt(args, GROUP, -1);
+
     if (!args.isEmpty()) {
       throw new IllegalArgumentException("Unknown parameters: " + args);
     }

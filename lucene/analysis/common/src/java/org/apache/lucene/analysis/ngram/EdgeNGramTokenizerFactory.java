@@ -40,8 +40,8 @@ public class EdgeNGramTokenizerFactory extends TokenizerFactory {
   /** Creates a new EdgeNGramTokenizerFactory */
   public EdgeNGramTokenizerFactory(Map<String, String> args) {
     super(args);
-    minGramSize = getInt(args, "minGramSize", EdgeNGramTokenFilter.DEFAULT_MIN_GRAM_SIZE);
-    maxGramSize = getInt(args, "maxGramSize", EdgeNGramTokenFilter.DEFAULT_MAX_GRAM_SIZE);
+    minGramSize = getInt(args, "minGramSize", EdgeNGramTokenizer.DEFAULT_MIN_GRAM_SIZE);
+    maxGramSize = getInt(args, "maxGramSize", EdgeNGramTokenizer.DEFAULT_MAX_GRAM_SIZE);
 
     String sideArg = args.remove("side");
     if (sideArg == null) {
