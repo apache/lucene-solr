@@ -68,6 +68,12 @@ Upgrading from Solr 4.2.0
   eliminated the dist-war-excl-slf4j target and made dist-excl-slf4j
   redundant.
 
+* SOLR-4622: The hardcoded SolrCloud defaults for 'hostContext="solr"' and 
+  'hostPort="8983"' have been deprecated and will be removed in Solr 5.0.  
+  Existing solr.xml files that do not have these options explicitly specified 
+  should be updated accordingly.
+
+
 Detailed Change List
 ----------------------
 
@@ -154,6 +160,11 @@ Other Changes
 * SOLR-3706: Ship setup to log with log4j. (ryan, Mark Miller)
 
 * SOLR-4651: Remove dist-excl-slf4j build target. (Shawn Heisey)
+
+* SOLR-4622: The hardcoded SolrCloud defaults for 'hostContext="solr"' and 
+  'hostPort="8983"' have been deprecated and will be removed in Solr 5.0.  
+  Existing solr.xml files that do not have these options explicitly specified 
+  should be updated accordingly.  (hossman)
 
 ==================  4.2.1 ==================
 

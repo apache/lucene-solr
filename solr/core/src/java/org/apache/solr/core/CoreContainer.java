@@ -90,7 +90,9 @@ public class CoreContainer
 {
   private static final String LEADER_VOTE_WAIT = "180000";  // 3 minutes
   private static final int CORE_LOAD_THREADS = 3;
+  /** @deprecated will be remove in Solr 5.0 (SOLR-4622) */
   private static final String DEFAULT_HOST_CONTEXT = "solr";
+  /** @deprecated will be remove in Solr 5.0 (SOLR-4622) */
   private static final String DEFAULT_HOST_PORT = "8983";
   private static final int DEFAULT_ZK_CLIENT_TIMEOUT = 15000;
   public static final String DEFAULT_DEFAULT_CORE_NAME = "collection1";
@@ -185,6 +187,21 @@ public class CoreContainer
 
     if (zkRun == null && zookeeperHost == null)
         return;  // not in zk mode
+
+    // BEGIN: SOLR-4622: deprecated hardcoded defaults for hostPort & hostContext
+    if (null == hostPort) {
+      // throw new ZooKeeperException(SolrException.ErrorCode.SERVER_ERROR,
+      //               "'hostPort' must be configured to run SolrCloud");
+      log.warn("Solr 'hostPort' has not be explicitly configured, using hardcoded default of " + DEFAULT_HOST_PORT + ".  This default has been deprecated and will be removed in future versions of Solr, please configure this value explicitly");
+      hostPort = DEFAULT_HOST_PORT;
+    }
+    if (null == hostContext) {
+      // throw new ZooKeeperException(SolrException.ErrorCode.SERVER_ERROR,
+      //               "'hostContext' must be configured to run SolrCloud");
+      log.warn("Solr 'hostContext' has not be explicitly configured, using hardcoded default of " + DEFAULT_HOST_CONTEXT + ".  This default has been deprecated and will be removed in future versions of Solr, please configure this value explicitly");
+      hostContext = DEFAULT_HOST_CONTEXT;
+    }
+    // END: SOLR-4622
 
     // zookeeper in quorum mode currently causes a failure when trying to
     // register log4j mbeans.  See SOLR-2369
@@ -453,10 +470,12 @@ public class CoreContainer
     
     distribUpdateConnTimeout = cfg.getInt(ConfigSolr.ConfLevel.SOLR_CORES, "distribUpdateConnTimeout", 0);
     distribUpdateSoTimeout = cfg.getInt(ConfigSolr.ConfLevel.SOLR_CORES, "distribUpdateSoTimeout", 0);
-    
-    hostPort = cfg.get(ConfigSolr.ConfLevel.SOLR_CORES, "hostPort", DEFAULT_HOST_PORT);
 
-    hostContext = cfg.get(ConfigSolr.ConfLevel.SOLR_CORES, "hostContext", DEFAULT_HOST_CONTEXT);
+    // Note: initZooKeeper will apply hardcoded default if cloud mode
+    hostPort = cfg.get(ConfigSolr.ConfLevel.SOLR_CORES, "hostPort", null);
+    // Note: initZooKeeper will apply hardcoded default if cloud mode
+    hostContext = cfg.get(ConfigSolr.ConfLevel.SOLR_CORES, "hostContext", null);
+
     host = cfg.get(ConfigSolr.ConfLevel.SOLR_CORES, "host", null);
     
     leaderVoteWait = cfg.get(ConfigSolr.ConfLevel.SOLR_CORES, "leaderVoteWait", LEADER_VOTE_WAIT);
