@@ -24,7 +24,19 @@ import java.util.Map;
 import org.apache.lucene.analysis.BaseTokenStreamTestCase;
 import org.apache.lucene.util.Version;
 
-/** Base class for testing tokenstream factories */
+/** 
+ * Base class for testing tokenstream factories. 
+ * <p>
+ * Example usage:
+ * <code><pre>
+ *   Reader reader = new StringReader("Some Text to Analyze");
+ *   reader = charFilterFactory("htmlstrip").create(reader);
+ *   TokenStream stream = tokenizerFactory("standard").create(reader);
+ *   stream = tokenFilterFactory("lowercase").create(stream);
+ *   stream = tokenFilterFactory("asciifolding").create(stream);
+ *   assertTokenStreamContents(stream, new String[] { "some", "text", "to", "analyze" });
+ * </pre></code>
+ */
 // TODO: this has to be here, since the abstract factories are not in lucene-core,
 // so test-framework doesnt know about them...
 // this also means we currently cannot use this in other analysis modules :(
@@ -61,26 +73,53 @@ public abstract class BaseTokenStreamFactoryTestCase extends BaseTokenStreamTest
     return factory;
   }
   
+  /** 
+   * Returns a fully initialized TokenizerFactory with the specified name and key-value arguments.
+   * {@link ClasspathResourceLoader} is used for loading resources, so any required ones should
+   * be on the test classpath.
+   */
   protected TokenizerFactory tokenizerFactory(String name, String... keysAndValues) throws Exception {
     return tokenizerFactory(name, TEST_VERSION_CURRENT, new ClasspathResourceLoader(getClass()), keysAndValues);
   }
   
+  /** 
+   * Returns a fully initialized TokenizerFactory with the specified name, version, resource loader, 
+   * and key-value arguments.
+   */
   protected TokenizerFactory tokenizerFactory(String name, Version matchVersion, ResourceLoader loader, String... keysAndValues) throws Exception {
     return (TokenizerFactory) analysisFactory(TokenizerFactory.lookupClass(name), matchVersion, loader, keysAndValues);
   }
   
+  /** 
+   * Returns a fully initialized TokenFilterFactory with the specified name and key-value arguments.
+   * {@link ClasspathResourceLoader} is used for loading resources, so any required ones should
+   * be on the test classpath.
+   */
   protected TokenFilterFactory tokenFilterFactory(String name, String... keysAndValues) throws Exception {
     return tokenFilterFactory(name, TEST_VERSION_CURRENT, new ClasspathResourceLoader(getClass()), keysAndValues);
   }
   
+  /** 
+   * Returns a fully initialized TokenFilterFactory with the specified name, version, resource loader, 
+   * and key-value arguments.
+   */
   protected TokenFilterFactory tokenFilterFactory(String name, Version matchVersion, ResourceLoader loader, String... keysAndValues) throws Exception {
     return (TokenFilterFactory) analysisFactory(TokenFilterFactory.lookupClass(name), matchVersion, loader, keysAndValues);
   }
   
+  /** 
+   * Returns a fully initialized CharFilterFactory with the specified name and key-value arguments.
+   * {@link ClasspathResourceLoader} is used for loading resources, so any required ones should
+   * be on the test classpath.
+   */
   protected CharFilterFactory charFilterFactory(String name, String... keysAndValues) throws Exception {
     return charFilterFactory(name, TEST_VERSION_CURRENT, new ClasspathResourceLoader(getClass()), keysAndValues);
   }
   
+  /** 
+   * Returns a fully initialized CharFilterFactory with the specified name, version, resource loader, 
+   * and key-value arguments.
+   */
   protected CharFilterFactory charFilterFactory(String name, Version matchVersion, ResourceLoader loader, String... keysAndValues) throws Exception {
     return (CharFilterFactory) analysisFactory(CharFilterFactory.lookupClass(name), matchVersion, loader, keysAndValues);
   }
