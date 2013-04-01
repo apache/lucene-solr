@@ -18,7 +18,6 @@ package org.apache.lucene.analysis.phonetic;
  */
 
 import java.io.StringReader;
-import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
 
@@ -29,10 +28,7 @@ import org.apache.lucene.analysis.TokenStream;
 /** Simple tests for {@link BeiderMorseFilterFactory} */
 public class TestBeiderMorseFilterFactory extends BaseTokenStreamTestCase {
   public void testBasics() throws Exception {
-    BeiderMorseFilterFactory factory = new BeiderMorseFilterFactory();
-    factory.setLuceneMatchVersion(TEST_VERSION_CURRENT);
-    Map<String, String> args = Collections.emptyMap();
-    factory.init(args);
+    BeiderMorseFilterFactory factory = new BeiderMorseFilterFactory(new HashMap<String,String>());
     TokenStream ts = factory.create(new MockTokenizer(new StringReader("Weinberg"), MockTokenizer.WHITESPACE, false));
     assertTokenStreamContents(ts,
         new String[] { "vDnbirk", "vanbirk", "vinbirk", "wDnbirk", "wanbirk", "winbirk" },
@@ -42,10 +38,9 @@ public class TestBeiderMorseFilterFactory extends BaseTokenStreamTestCase {
   }
   
   public void testLanguageSet() throws Exception {
-    BeiderMorseFilterFactory factory = new BeiderMorseFilterFactory();
     Map<String,String> args = new HashMap<String,String>();
     args.put("languageSet", "polish");
-    factory.init(args);
+    BeiderMorseFilterFactory factory = new BeiderMorseFilterFactory(args);
     TokenStream ts = factory.create(new MockTokenizer(new StringReader("Weinberg"), MockTokenizer.WHITESPACE, false));
     assertTokenStreamContents(ts,
         new String[] { "vDmbYrk", "vDmbirk", "vambYrk", "vambirk", "vimbYrk", "vimbirk" },
@@ -55,16 +50,27 @@ public class TestBeiderMorseFilterFactory extends BaseTokenStreamTestCase {
   }
   
   public void testOptions() throws Exception {
-    BeiderMorseFilterFactory factory = new BeiderMorseFilterFactory();
     Map<String,String> args = new HashMap<String,String>();
     args.put("nameType", "ASHKENAZI");
     args.put("ruleType", "EXACT");
-    factory.init(args);
+    BeiderMorseFilterFactory factory = new BeiderMorseFilterFactory(args);
     TokenStream ts = factory.create(new MockTokenizer(new StringReader("Weinberg"), MockTokenizer.WHITESPACE, false));
     assertTokenStreamContents(ts,
         new String[] { "vajnberk" },
         new int[] { 0 },
         new int[] { 8 },
         new int[] { 1 });
+  }
+  
+  /** Test that bogus arguments result in exception */
+  public void testBogusArguments() throws Exception {
+    try {
+      new BeiderMorseFilterFactory(new HashMap<String,String>() {{
+        put("bogusArg", "bogusValue");
+      }});
+      fail();
+    } catch (IllegalArgumentException expected) {
+      assertTrue(expected.getMessage().contains("Unknown parameters"));
+    }
   }
 }

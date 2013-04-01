@@ -38,22 +38,19 @@ import com.ibm.icu.text.Transliterator;
  * @see Transliterator
  */
 public class ICUTransformFilterFactory extends TokenFilterFactory implements MultiTermAwareComponent {
-  private Transliterator transliterator;
-  
-  /** Sole constructor. See {@link AbstractAnalysisFactory} for initialization lifecycle. */
-  public ICUTransformFilterFactory() {}
+  private final Transliterator transliterator;
   
   // TODO: add support for custom rules
-  @Override
-  public void init(Map<String,String> args) {
-    super.init(args);
-    String id = args.get("id");
+  /** Creates a new ICUTransformFilterFactory */
+  public ICUTransformFilterFactory(Map<String,String> args) {
+    super(args);
+    String id = args.remove("id");
     if (id == null) {
       throw new IllegalArgumentException("id is required.");
     }
     
     int dir;
-    String direction = args.get("direction");
+    String direction = args.remove("direction");
     if (direction == null || direction.equalsIgnoreCase("forward"))
       dir = Transliterator.FORWARD;
     else if (direction.equalsIgnoreCase("reverse"))
@@ -62,6 +59,9 @@ public class ICUTransformFilterFactory extends TokenFilterFactory implements Mul
       throw new IllegalArgumentException("invalid direction: " + direction);
     
     transliterator = Transliterator.getInstance(id, dir);
+    if (!args.isEmpty()) {
+      throw new IllegalArgumentException("Unknown parameters: " + args);
+    }
   }
 
   @Override

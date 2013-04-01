@@ -285,7 +285,7 @@
     <fieldtype name="syn" class="solr.TextField">
       <analyzer>
           <tokenizer class="solr.MockTokenizerFactory"/>
-          <filter name="syn" class="solr.SynonymFilterFactory" synonyms="synonyms.txt"/>
+          <filter class="solr.SynonymFilterFactory" synonyms="synonyms.txt"/>
       </analyzer>
     </fieldtype>
     

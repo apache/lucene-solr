@@ -19,6 +19,7 @@ package org.apache.lucene.analysis.ja;
 
 import java.io.IOException;
 import java.util.HashSet;
+import java.util.Map;
 import java.util.Set;
 
 import org.apache.lucene.analysis.TokenStream;
@@ -39,13 +40,22 @@ import org.apache.lucene.analysis.util.*;
  * </pre>
  */
 public class JapanesePartOfSpeechStopFilterFactory extends TokenFilterFactory implements ResourceLoaderAware  {
-  private boolean enablePositionIncrements;
+  private final String stopTagFiles;
+  private final boolean enablePositionIncrements;
   private Set<String> stopTags;
 
+  /** Creates a new JapanesePartOfSpeechStopFilterFactory */
+  public JapanesePartOfSpeechStopFilterFactory(Map<String,String> args) {
+    super(args);
+    stopTagFiles = args.remove("tags");
+    enablePositionIncrements = getBoolean(args, "enablePositionIncrements", false);
+    if (!args.isEmpty()) {
+      throw new IllegalArgumentException("Unknown parameters: " + args);
+    }
+  }
+  
   @Override
   public void inform(ResourceLoader loader) throws IOException {
-    String stopTagFiles = args.get("tags");
-    enablePositionIncrements = getBoolean("enablePositionIncrements", false);
     stopTags = null;
     CharArraySet cas = getWordSet(loader, stopTagFiles, false);
     if (cas != null) {

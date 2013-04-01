@@ -26,11 +26,12 @@ import org.apache.lucene.analysis.util.TokenFilterFactory;
 import java.io.IOException;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
 
 /**
  * Factory class for {@link TypeTokenFilter}.
- * <pre class="prettyprint" >
+ * <pre class="prettyprint">
  * &lt;fieldType name="chars" class="solr.TextField" positionIncrementGap="100"&gt;
  *   &lt;analyzer&gt;
  *     &lt;tokenizer class="solr.StandardTokenizerFactory"/&gt;
@@ -40,29 +41,36 @@ import java.util.Set;
  * &lt;/fieldType&gt;</pre>
  */
 public class TypeTokenFilterFactory extends TokenFilterFactory implements ResourceLoaderAware {
-
-  @Override
-  public void inform(ResourceLoader loader) throws IOException {
-    String stopTypesFiles = args.get("types");
-    enablePositionIncrements = getBoolean("enablePositionIncrements", false);
-    useWhitelist = getBoolean("useWhitelist", false);
-    if (stopTypesFiles != null) {
-      List<String> files = splitFileNames(stopTypesFiles);
-      if (files.size() > 0) {
-        stopTypes = new HashSet<String>();
-        for (String file : files) {
-          List<String> typesLines = getLines(loader, file.trim());
-          stopTypes.addAll(typesLines);
-        }
-      }
-    } else {
+  private final boolean useWhitelist;
+  private final boolean enablePositionIncrements;
+  private final String stopTypesFiles;
+  private Set<String> stopTypes;
+  
+  /** Creates a new TypeTokenFilterFactory */
+  public TypeTokenFilterFactory(Map<String,String> args) {
+    super(args);
+    stopTypesFiles = args.remove("types");
+    if (stopTypesFiles == null) {
       throw new IllegalArgumentException("Missing required parameter: types.");
     }
+    enablePositionIncrements = getBoolean(args, "enablePositionIncrements", false);
+    useWhitelist = getBoolean(args, "useWhitelist", false);
+    if (!args.isEmpty()) {
+      throw new IllegalArgumentException("Unknown parameters: " + args);
+    }
   }
-
-  private boolean useWhitelist;
-  private Set<String> stopTypes;
-  private boolean enablePositionIncrements;
+  
+  @Override
+  public void inform(ResourceLoader loader) throws IOException {
+    List<String> files = splitFileNames(stopTypesFiles);
+    if (files.size() > 0) {
+      stopTypes = new HashSet<String>();
+      for (String file : files) {
+        List<String> typesLines = getLines(loader, file.trim());
+        stopTypes.addAll(typesLines);
+      }
+    }
+  }
 
   public boolean isEnablePositionIncrements() {
     return enablePositionIncrements;

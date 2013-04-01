@@ -20,18 +20,28 @@ package org.apache.lucene.analysis.cjk;
 import java.io.Reader;
 import java.io.StringReader;
 
-import org.apache.lucene.analysis.BaseTokenStreamTestCase;
 import org.apache.lucene.analysis.MockTokenizer;
 import org.apache.lucene.analysis.TokenStream;
+import org.apache.lucene.analysis.util.BaseTokenStreamFactoryTestCase;
 
 /**
  * Simple tests to ensure the CJKWidthFilterFactory is working
  */
-public class TestCJKWidthFilterFactory extends BaseTokenStreamTestCase {
+public class TestCJKWidthFilterFactory extends BaseTokenStreamFactoryTestCase {
   public void test() throws Exception {
     Reader reader = new StringReader("Ｔｅｓｔ １２３４");
-    CJKWidthFilterFactory factory = new CJKWidthFilterFactory();
-    TokenStream stream = factory.create(new MockTokenizer(reader, MockTokenizer.WHITESPACE, false));
+    TokenStream stream = new MockTokenizer(reader, MockTokenizer.WHITESPACE, false);
+    stream = tokenFilterFactory("CJKWidth").create(stream);
     assertTokenStreamContents(stream, new String[] { "Test", "1234" });
+  }
+  
+  /** Test that bogus arguments result in exception */
+  public void testBogusArguments() throws Exception {
+    try {
+      tokenFilterFactory("CJKWidth", "bogusArg", "bogusValue");
+      fail();
+    } catch (IllegalArgumentException expected) {
+      assertTrue(expected.getMessage().contains("Unknown parameters"));
+    }
   }
 }

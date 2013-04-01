@@ -18,6 +18,7 @@ package org.apache.lucene.analysis.util;
  */
 
 import java.io.Reader;
+import java.util.Map;
 import java.util.Set;
 
 import org.apache.lucene.analysis.CharFilter;
@@ -32,8 +33,8 @@ public abstract class CharFilterFactory extends AbstractAnalysisFactory {
       new AnalysisSPILoader<CharFilterFactory>(CharFilterFactory.class);
   
   /** looks up a charfilter by name from context classpath */
-  public static CharFilterFactory forName(String name) {
-    return loader.newInstance(name);
+  public static CharFilterFactory forName(String name, Map<String,String> args) {
+    return loader.newInstance(name, args);
   }
   
   /** looks up a charfilter class by name from context classpath */
@@ -59,6 +60,13 @@ public abstract class CharFilterFactory extends AbstractAnalysisFactory {
    */
   public static void reloadCharFilters(ClassLoader classloader) {
     loader.reload(classloader);
+  }
+
+  /**
+   * Initialize this factory via a set of key-value pairs.
+   */
+  protected CharFilterFactory(Map<String,String> args) {
+    super(args);
   }
 
   /** Wraps the given Reader with a CharFilter. */

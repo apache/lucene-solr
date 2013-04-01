@@ -17,30 +17,38 @@ package org.apache.lucene.analysis.pattern;
  * limitations under the License.
  */
 
-import org.apache.lucene.analysis.BaseTokenStreamTestCase;
 import org.apache.lucene.analysis.MockTokenizer;
 import org.apache.lucene.analysis.TokenStream;
+import org.apache.lucene.analysis.util.BaseTokenStreamFactoryTestCase;
 
+import java.io.Reader;
 import java.io.StringReader;
-import java.util.HashMap;
-import java.util.Map;
 
 /**
  * Simple tests to ensure this factory is working
  */
-public class TestPatternReplaceFilterFactory extends BaseTokenStreamTestCase {
+public class TestPatternReplaceFilterFactory extends BaseTokenStreamFactoryTestCase {
 
   public void testReplaceAll() throws Exception {
-    String input = "aabfooaabfooabfoob ab caaaaaaaaab";
-    PatternReplaceFilterFactory factory = new PatternReplaceFilterFactory();
-    Map<String,String> args = new HashMap<String,String>();
-    args.put("pattern", "a*b");
-    args.put("replacement", "-");
-    factory.init(args);
-    TokenStream ts = factory.create
-            (new MockTokenizer(new StringReader(input), MockTokenizer.WHITESPACE, false));
+    Reader reader = new StringReader("aabfooaabfooabfoob ab caaaaaaaaab");
+    TokenStream stream = new MockTokenizer(reader, MockTokenizer.WHITESPACE, false);
+    stream = tokenFilterFactory("PatternReplace",
+        "pattern", "a*b",
+        "replacement", "-").create(stream);
                    
-    assertTokenStreamContents(ts, 
+    assertTokenStreamContents(stream, 
         new String[] { "-foo-foo-foo-", "-", "c-" });
+  }
+  
+  /** Test that bogus arguments result in exception */
+  public void testBogusArguments() throws Exception {
+    try {
+      tokenFilterFactory("PatternReplace",
+          "pattern", "something",
+          "bogusArg", "bogusValue");
+      fail();
+    } catch (IllegalArgumentException expected) {
+      assertTrue(expected.getMessage().contains("Unknown parameters"));
+    }
   }
 }

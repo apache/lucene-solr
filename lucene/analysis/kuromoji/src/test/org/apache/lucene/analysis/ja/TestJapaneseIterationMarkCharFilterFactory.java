@@ -24,7 +24,6 @@ import org.apache.lucene.analysis.TokenStream;
 
 import java.io.IOException;
 import java.io.StringReader;
-import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
 
@@ -35,22 +34,17 @@ public class TestJapaneseIterationMarkCharFilterFactory extends BaseTokenStreamT
 
   public void testIterationMarksWithKeywordTokenizer() throws IOException {
     final String text = "時々馬鹿々々しいところゞゝゝミスヾ";
-    JapaneseIterationMarkCharFilterFactory filterFactory = new JapaneseIterationMarkCharFilterFactory();
+    JapaneseIterationMarkCharFilterFactory filterFactory = new JapaneseIterationMarkCharFilterFactory(new HashMap<String,String>());
     CharFilter filter = filterFactory.create(new StringReader(text));
     TokenStream tokenStream = new MockTokenizer(filter, MockTokenizer.KEYWORD, false);
     assertTokenStreamContents(tokenStream, new String[]{"時時馬鹿馬鹿しいところどころミスズ"});
   }
 
   public void testIterationMarksWithJapaneseTokenizer() throws IOException {
-    JapaneseTokenizerFactory tokenizerFactory = new JapaneseTokenizerFactory();
-    Map<String, String> tokenizerArgs = Collections.emptyMap();
-    tokenizerFactory.init(tokenizerArgs);
+    JapaneseTokenizerFactory tokenizerFactory = new JapaneseTokenizerFactory(new HashMap<String,String>());
     tokenizerFactory.inform(new StringMockResourceLoader(""));
 
-    JapaneseIterationMarkCharFilterFactory filterFactory = new JapaneseIterationMarkCharFilterFactory();
-    Map<String, String> filterArgs = Collections.emptyMap();
-    filterFactory.init(filterArgs);
-
+    JapaneseIterationMarkCharFilterFactory filterFactory = new JapaneseIterationMarkCharFilterFactory(new HashMap<String,String>());
     CharFilter filter = filterFactory.create(
         new StringReader("時々馬鹿々々しいところゞゝゝミスヾ")
     );
@@ -59,16 +53,13 @@ public class TestJapaneseIterationMarkCharFilterFactory extends BaseTokenStreamT
   }
 
   public void testKanjiOnlyIterationMarksWithJapaneseTokenizer() throws IOException {
-    JapaneseTokenizerFactory tokenizerFactory = new JapaneseTokenizerFactory();
-    Map<String, String> tokenizerArgs = Collections.emptyMap();
-    tokenizerFactory.init(tokenizerArgs);
+    JapaneseTokenizerFactory tokenizerFactory = new JapaneseTokenizerFactory(new HashMap<String,String>());
     tokenizerFactory.inform(new StringMockResourceLoader(""));
 
-    JapaneseIterationMarkCharFilterFactory filterFactory = new JapaneseIterationMarkCharFilterFactory();
     Map<String, String> filterArgs = new HashMap<String, String>();
     filterArgs.put("normalizeKanji", "true");
     filterArgs.put("normalizeKana", "false");
-    filterFactory.init(filterArgs);
+    JapaneseIterationMarkCharFilterFactory filterFactory = new JapaneseIterationMarkCharFilterFactory(filterArgs);
     
     CharFilter filter = filterFactory.create(
         new StringReader("時々馬鹿々々しいところゞゝゝミスヾ")
@@ -78,21 +69,30 @@ public class TestJapaneseIterationMarkCharFilterFactory extends BaseTokenStreamT
   }
 
   public void testKanaOnlyIterationMarksWithJapaneseTokenizer() throws IOException {
-    JapaneseTokenizerFactory tokenizerFactory = new JapaneseTokenizerFactory();
-    Map<String, String> tokenizerArgs = Collections.emptyMap();
-    tokenizerFactory.init(tokenizerArgs);
+    JapaneseTokenizerFactory tokenizerFactory = new JapaneseTokenizerFactory(new HashMap<String,String>());
     tokenizerFactory.inform(new StringMockResourceLoader(""));
 
-    JapaneseIterationMarkCharFilterFactory filterFactory = new JapaneseIterationMarkCharFilterFactory();
     Map<String, String> filterArgs = new HashMap<String, String>();
     filterArgs.put("normalizeKanji", "false");
     filterArgs.put("normalizeKana", "true");
-    filterFactory.init(filterArgs);
+    JapaneseIterationMarkCharFilterFactory filterFactory = new JapaneseIterationMarkCharFilterFactory(filterArgs);
 
     CharFilter filter = filterFactory.create(
         new StringReader("時々馬鹿々々しいところゞゝゝミスヾ")
     );
     TokenStream tokenStream = tokenizerFactory.create(filter);
     assertTokenStreamContents(tokenStream, new String[]{"時々", "馬鹿", "々", "々", "しい", "ところどころ", "ミ", "スズ"});
+  }
+  
+  /** Test that bogus arguments result in exception */
+  public void testBogusArguments() throws Exception {
+    try {
+      new JapaneseIterationMarkCharFilterFactory(new HashMap<String,String>() {{
+        put("bogusArg", "bogusValue");
+      }});
+      fail();
+    } catch (IllegalArgumentException expected) {
+      assertTrue(expected.getMessage().contains("Unknown parameters"));
+    }
   }
 }

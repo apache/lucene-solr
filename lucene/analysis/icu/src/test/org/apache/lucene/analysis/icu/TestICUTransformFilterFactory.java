@@ -23,9 +23,8 @@ import java.util.HashMap;
 import java.util.Map;
 
 import org.apache.lucene.analysis.BaseTokenStreamTestCase;
+import org.apache.lucene.analysis.MockTokenizer;
 import org.apache.lucene.analysis.TokenStream;
-import org.apache.lucene.analysis.Tokenizer;
-import org.apache.lucene.analysis.core.WhitespaceTokenizer;
 
 /** basic tests for {@link ICUTransformFilterFactory} */
 public class TestICUTransformFilterFactory extends BaseTokenStreamTestCase {
@@ -33,33 +32,48 @@ public class TestICUTransformFilterFactory extends BaseTokenStreamTestCase {
   /** ensure the transform is working */
   public void test() throws Exception {
     Reader reader = new StringReader("簡化字");
-    ICUTransformFilterFactory factory = new ICUTransformFilterFactory();
     Map<String,String> args = new HashMap<String,String>();
     args.put("id", "Traditional-Simplified");
-    factory.init(args);
-    Tokenizer tokenizer = new WhitespaceTokenizer(TEST_VERSION_CURRENT, reader);
-    TokenStream stream = factory.create(tokenizer);
+    ICUTransformFilterFactory factory = new ICUTransformFilterFactory(args);
+    TokenStream stream = new MockTokenizer(reader, MockTokenizer.WHITESPACE, false);
+    stream = factory.create(stream);
     assertTokenStreamContents(stream, new String[] { "简化字" });
   }
   
   /** test forward and reverse direction */
-  public void testDirection() throws Exception {
+  public void testForwardDirection() throws Exception {
     // forward
     Reader reader = new StringReader("Российская Федерация");
-    ICUTransformFilterFactory factory = new ICUTransformFilterFactory();
     Map<String,String> args = new HashMap<String,String>();
     args.put("id", "Cyrillic-Latin");
-    factory.init(args);
-    Tokenizer tokenizer = new WhitespaceTokenizer(TEST_VERSION_CURRENT, reader);
-    TokenStream stream = factory.create(tokenizer);
+    ICUTransformFilterFactory factory = new ICUTransformFilterFactory(args);
+    TokenStream stream = new MockTokenizer(reader, MockTokenizer.WHITESPACE, false);
+    stream = factory.create(stream);
     assertTokenStreamContents(stream, new String[] { "Rossijskaâ",  "Federaciâ" });
-    
+  }
+  
+  public void testReverseDirection() throws Exception {
     // backward (invokes Latin-Cyrillic)
-    reader = new StringReader("Rossijskaâ Federaciâ");
+    Reader reader = new StringReader("Rossijskaâ Federaciâ");
+    Map<String,String> args = new HashMap<String,String>();
+    args.put("id", "Cyrillic-Latin");
     args.put("direction", "reverse");
-    factory.init(args);
-    tokenizer = new WhitespaceTokenizer(TEST_VERSION_CURRENT, reader);
-    stream = factory.create(tokenizer);
+    ICUTransformFilterFactory factory = new ICUTransformFilterFactory(args);
+    TokenStream stream = new MockTokenizer(reader, MockTokenizer.WHITESPACE, false);
+    stream = factory.create(stream);
     assertTokenStreamContents(stream, new String[] { "Российская", "Федерация" });
+  }
+  
+  /** Test that bogus arguments result in exception */
+  public void testBogusArguments() throws Exception {
+    try {
+      new ICUTransformFilterFactory(new HashMap<String,String>() {{
+        put("id", "Null");
+        put("bogusArg", "bogusValue");
+      }});
+      fail();
+    } catch (IllegalArgumentException expected) {
+      assertTrue(expected.getMessage().contains("Unknown parameters"));
+    }
   }
 }

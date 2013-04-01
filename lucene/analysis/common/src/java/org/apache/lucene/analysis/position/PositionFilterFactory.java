@@ -27,7 +27,7 @@ import java.util.Map;
  * Factory for {@link PositionFilter}.
  * Set the positionIncrement of all tokens to the "positionIncrement", except the first return token which retains its
  * original positionIncrement value. The default positionIncrement value is zero.
- * <pre class="prettyprint" >
+ * <pre class="prettyprint">
  * &lt;fieldType name="text_position" class="solr.TextField" positionIncrementGap="100"&gt;
  *   &lt;analyzer&gt;
  *     &lt;tokenizer class="solr.WhitespaceTokenizerFactory"/&gt;
@@ -35,17 +35,19 @@ import java.util.Map;
  *   &lt;/analyzer&gt;
  * &lt;/fieldType&gt;</pre>
  *
- *
  * @see org.apache.lucene.analysis.position.PositionFilter
  * @since solr 1.4
  */
 public class PositionFilterFactory extends TokenFilterFactory {
-  private int positionIncrement;
+  private final int positionIncrement;
 
-  @Override
-  public void init(Map<String, String> args) {
-    super.init(args);
-    positionIncrement = getInt("positionIncrement", 0);
+  /** Creates a new PositionFilterFactory */
+  public PositionFilterFactory(Map<String,String> args) {
+    super(args);
+    positionIncrement = getInt(args, "positionIncrement", 0);
+    if (!args.isEmpty()) {
+      throw new IllegalArgumentException("Unknown parameters: " + args);
+    }
   }
 
   @Override

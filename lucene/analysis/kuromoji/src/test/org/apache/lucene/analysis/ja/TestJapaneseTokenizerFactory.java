@@ -31,10 +31,7 @@ import org.apache.lucene.analysis.TokenStream;
  */
 public class TestJapaneseTokenizerFactory extends BaseTokenStreamTestCase {
   public void testSimple() throws IOException {
-    JapaneseTokenizerFactory factory = new JapaneseTokenizerFactory();
-    factory.setLuceneMatchVersion(TEST_VERSION_CURRENT);
-    Map<String, String> args = Collections.emptyMap();
-    factory.init(args);
+    JapaneseTokenizerFactory factory = new JapaneseTokenizerFactory(new HashMap<String,String>());
     factory.inform(new StringMockResourceLoader(""));
     TokenStream ts = factory.create(new StringReader("これは本ではない"));
     assertTokenStreamContents(ts,
@@ -48,10 +45,7 @@ public class TestJapaneseTokenizerFactory extends BaseTokenStreamTestCase {
    * Test that search mode is enabled and working by default
    */
   public void testDefaults() throws IOException {
-    JapaneseTokenizerFactory factory = new JapaneseTokenizerFactory();
-    factory.setLuceneMatchVersion(TEST_VERSION_CURRENT);
-    Map<String, String> args = Collections.emptyMap();
-    factory.init(args);
+    JapaneseTokenizerFactory factory = new JapaneseTokenizerFactory(new HashMap<String,String>());
     factory.inform(new StringMockResourceLoader(""));
     TokenStream ts = factory.create(new StringReader("シニアソフトウェアエンジニア"));
     assertTokenStreamContents(ts,
@@ -63,10 +57,9 @@ public class TestJapaneseTokenizerFactory extends BaseTokenStreamTestCase {
    * Test mode parameter: specifying normal mode
    */
   public void testMode() throws IOException {
-    JapaneseTokenizerFactory factory = new JapaneseTokenizerFactory();
     Map<String,String> args = new HashMap<String,String>();
     args.put("mode", "normal");
-    factory.init(args);
+    JapaneseTokenizerFactory factory = new JapaneseTokenizerFactory(args);
     factory.inform(new StringMockResourceLoader(""));
     TokenStream ts = factory.create(new StringReader("シニアソフトウェアエンジニア"));
     assertTokenStreamContents(ts,
@@ -84,10 +77,9 @@ public class TestJapaneseTokenizerFactory extends BaseTokenStreamTestCase {
         "関西国際空港,関西 国際 空港,カンサイ コクサイ クウコウ,テスト名詞\n" +
         "# Custom reading for sumo wrestler\n" +
         "朝青龍,朝青龍,アサショウリュウ,カスタム人名\n";
-    JapaneseTokenizerFactory factory = new JapaneseTokenizerFactory();
     Map<String,String> args = new HashMap<String,String>();
     args.put("userDictionary", "userdict.txt");
-    factory.init(args);
+    JapaneseTokenizerFactory factory = new JapaneseTokenizerFactory(args);
     factory.inform(new StringMockResourceLoader(userDict));
     TokenStream ts = factory.create(new StringReader("関西国際空港に行った"));
     assertTokenStreamContents(ts,
@@ -99,20 +91,30 @@ public class TestJapaneseTokenizerFactory extends BaseTokenStreamTestCase {
    * Test preserving punctuation
    */
   public void testPreservePunctuation() throws IOException {
-    JapaneseTokenizerFactory factory = new JapaneseTokenizerFactory();
     Map<String,String> args = new HashMap<String,String>();
     args.put("discardPunctuation", "false");
-    factory.init(args);
+    JapaneseTokenizerFactory factory = new JapaneseTokenizerFactory(args);
     factory.inform(new StringMockResourceLoader(""));
     TokenStream ts = factory.create(
         new StringReader("今ノルウェーにいますが、来週の頭日本に戻ります。楽しみにしています！お寿司が食べたいな。。。")
     );
-    System.out.println(ts.toString());
     assertTokenStreamContents(ts,
         new String[] { "今", "ノルウェー", "に", "い", "ます", "が", "、",
             "来週", "の", "頭", "日本", "に", "戻り", "ます", "。",
             "楽しみ", "に", "し", "て", "い", "ます", "！",
             "お", "寿司", "が", "食べ", "たい", "な", "。", "。", "。"}
     );
+  }
+  
+  /** Test that bogus arguments result in exception */
+  public void testBogusArguments() throws Exception {
+    try {
+      new JapaneseTokenizerFactory(new HashMap<String,String>() {{
+        put("bogusArg", "bogusValue");
+      }});
+      fail();
+    } catch (IllegalArgumentException expected) {
+      assertTrue(expected.getMessage().contains("Unknown parameters"));
+    }
   }
 }

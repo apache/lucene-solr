@@ -17,6 +17,8 @@ package org.apache.lucene.analysis.miscellaneous;
  * limitations under the License.
  */
 
+import java.util.Map;
+
 import org.apache.lucene.analysis.TokenStream;
 import org.apache.lucene.analysis.util.TokenFilterFactory;
 
@@ -28,6 +30,15 @@ import org.apache.lucene.analysis.util.TokenFilterFactory;
  * {@link RemoveDuplicatesTokenFilterFactory} later in the analysis chain.
  */
 public final class KeywordRepeatFilterFactory extends TokenFilterFactory {
+  
+  /** Creates a new KeywordRepeatFilterFactory */
+  public KeywordRepeatFilterFactory(Map<String,String> args) {
+    super(args);
+    if (!args.isEmpty()) {
+      throw new IllegalArgumentException("Unknown parameters: " + args);
+    }
+  }
+  
   @Override
   public TokenStream create(TokenStream input) {
     return new KeywordRepeatFilter(input);

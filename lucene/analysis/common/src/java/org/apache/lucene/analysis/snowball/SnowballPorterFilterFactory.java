@@ -31,7 +31,7 @@ import org.tartarus.snowball.SnowballProgram;
  * Factory for {@link SnowballFilter}, with configurable language
  * <p>
  * Note: Use of the "Lovins" stemmer is not recommended, as it is implemented with reflection.
- * <pre class="prettyprint" >
+ * <pre class="prettyprint">
  * &lt;fieldType name="text_snowballstem" class="solr.TextField" positionIncrementGap="100"&gt;
  *   &lt;analyzer&gt;
  *     &lt;tokenizer class="solr.StandardTokenizerFactory"/&gt;
@@ -39,26 +39,35 @@ import org.tartarus.snowball.SnowballProgram;
  *     &lt;filter class="solr.SnowballPorterFilterFactory" protected="protectedkeyword.txt" language="English"/&gt;
  *   &lt;/analyzer&gt;
  * &lt;/fieldType&gt;</pre>
- * 
- *
  */
 public class SnowballPorterFilterFactory extends TokenFilterFactory implements ResourceLoaderAware {
   public static final String PROTECTED_TOKENS = "protected";
 
-  private String language = "English";
+  private final String language;
+  private final String wordFiles;
   private Class<? extends SnowballProgram> stemClass;
   private CharArraySet protectedWords = null;
+  
+  /** Creates a new SnowballPorterFilterFactory */
+  public SnowballPorterFilterFactory(Map<String,String> args) {
+    super(args);
+    String cfgLanguage = args.remove("language");
+    if (cfgLanguage == null) {
+      language = "English";
+    } else {
+      language = cfgLanguage;
+    }
+    wordFiles = args.remove(PROTECTED_TOKENS);
+    if (!args.isEmpty()) {
+      throw new IllegalArgumentException("Unknown parameters: " + args);
+    }
+  }
 
   @Override
   public void inform(ResourceLoader loader) throws IOException {
-    String cfgLanguage = args.get("language");
-    if (cfgLanguage != null)
-      language = cfgLanguage;
-
     String className = "org.tartarus.snowball.ext." + language + "Stemmer";
     stemClass = loader.newInstance(className, SnowballProgram.class).getClass();
 
-    String wordFiles = args.get(PROTECTED_TOKENS);
     if (wordFiles != null) {
       protectedWords = getWordSet(loader, wordFiles, false);
     }

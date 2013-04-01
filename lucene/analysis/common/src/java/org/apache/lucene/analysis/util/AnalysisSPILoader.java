@@ -104,10 +104,10 @@ final class AnalysisSPILoader<S extends AbstractAnalysisFactory> {
     this.services = Collections.unmodifiableMap(services);
   }
   
-  public S newInstance(String name) {
+  public S newInstance(String name, Map<String,String> args) {
     final Class<? extends S> service = lookupClass(name);
     try {
-      return service.newInstance();
+      return service.getConstructor(Map.class).newInstance(args);
     } catch (Exception e) {
       throw new IllegalArgumentException("SPI class of type "+clazz.getName()+" with name '"+name+"' cannot be instantiated. " +
             "This is likely due to a misconfiguration of the java class '" + service.getName() + "': ", e);

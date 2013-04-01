@@ -17,88 +17,73 @@ package org.apache.lucene.analysis.core;
  * limitations under the License.
  */
 
-import org.apache.lucene.analysis.BaseTokenStreamTestCase;
 import org.apache.lucene.analysis.NumericTokenStream;
-import org.apache.lucene.analysis.util.ClasspathResourceLoader;
-import org.apache.lucene.analysis.util.ResourceLoader;
-import org.junit.Test;
+import org.apache.lucene.analysis.util.BaseTokenStreamFactoryTestCase;
+import org.apache.lucene.analysis.util.TokenFilterFactory;
 
-import java.util.HashMap;
-import java.util.Map;
 import java.util.Set;
 
 /**
  * Testcase for {@link TypeTokenFilterFactory}
  */
-public class TestTypeTokenFilterFactory extends BaseTokenStreamTestCase {
+public class TestTypeTokenFilterFactory extends BaseTokenStreamFactoryTestCase {
 
-  @Test
   public void testInform() throws Exception {
-    ResourceLoader loader = new ClasspathResourceLoader(getClass());
-    TypeTokenFilterFactory factory = new TypeTokenFilterFactory();
-    Map<String, String> args = new HashMap<String, String>();
-    args.put("types", "stoptypes-1.txt");
-    args.put("enablePositionIncrements", "true");
-    factory.setLuceneMatchVersion(TEST_VERSION_CURRENT);
-    factory.init(args);
-    factory.inform(loader);
+    TypeTokenFilterFactory factory = (TypeTokenFilterFactory) tokenFilterFactory("Type",
+        "types", "stoptypes-1.txt",
+        "enablePositionIncrements", "true");
     Set<String> types = factory.getStopTypes();
     assertTrue("types is null and it shouldn't be", types != null);
     assertTrue("types Size: " + types.size() + " is not: " + 2, types.size() == 2);
     assertTrue("enablePositionIncrements was set to true but not correctly parsed", factory.isEnablePositionIncrements());
 
-    factory = new TypeTokenFilterFactory();
-    args.put("types", "stoptypes-1.txt, stoptypes-2.txt");
-    args.put("enablePositionIncrements", "false");
-    args.put("useWhitelist","true");
-    factory.init(args);
-    factory.inform(loader);
+    factory = (TypeTokenFilterFactory) tokenFilterFactory("Type",
+        "types", "stoptypes-1.txt, stoptypes-2.txt",
+        "enablePositionIncrements", "false",
+        "useWhitelist", "true");
     types = factory.getStopTypes();
     assertTrue("types is null and it shouldn't be", types != null);
     assertTrue("types Size: " + types.size() + " is not: " + 4, types.size() == 4);
     assertTrue("enablePositionIncrements was set to false but not correctly parsed", !factory.isEnablePositionIncrements());
   }
 
-  @Test
   public void testCreationWithBlackList() throws Exception {
-    TypeTokenFilterFactory typeTokenFilterFactory = new TypeTokenFilterFactory();
-    Map<String, String> args = new HashMap<String, String>();
-    args.put("types", "stoptypes-1.txt, stoptypes-2.txt");
-    args.put("enablePositionIncrements", "false");
-    typeTokenFilterFactory.setLuceneMatchVersion(TEST_VERSION_CURRENT);
-    typeTokenFilterFactory.init(args);
+    TokenFilterFactory factory = tokenFilterFactory("Type",
+        "types", "stoptypes-1.txt, stoptypes-2.txt",
+        "enablePositionIncrements", "false");
     NumericTokenStream input = new NumericTokenStream();
     input.setIntValue(123);
-    typeTokenFilterFactory.create(input);
+    factory.create(input);
   }
   
-  @Test
-    public void testCreationWithWhiteList() throws Exception {
-      TypeTokenFilterFactory typeTokenFilterFactory = new TypeTokenFilterFactory();
-      Map<String, String> args = new HashMap<String, String>();
-      args.put("types", "stoptypes-1.txt, stoptypes-2.txt");
-      args.put("enablePositionIncrements", "false");
-      args.put("useWhitelist","true");
-      typeTokenFilterFactory.setLuceneMatchVersion(TEST_VERSION_CURRENT);
-      typeTokenFilterFactory.init(args);
-      NumericTokenStream input = new NumericTokenStream();
-      input.setIntValue(123);
-      typeTokenFilterFactory.create(input);
-    }
+  public void testCreationWithWhiteList() throws Exception {
+    TokenFilterFactory factory = tokenFilterFactory("Type",
+        "types", "stoptypes-1.txt, stoptypes-2.txt",
+        "enablePositionIncrements", "false",
+        "useWhitelist", "true");
+    NumericTokenStream input = new NumericTokenStream();
+    input.setIntValue(123);
+    factory.create(input);
+  }
 
-  @Test
   public void testMissingTypesParameter() throws Exception {
     try {
-      TypeTokenFilterFactory typeTokenFilterFactory = new TypeTokenFilterFactory();
-      Map<String, String> args = new HashMap<String, String>();
-      args.put("enablePositionIncrements", "false");
-      typeTokenFilterFactory.setLuceneMatchVersion(TEST_VERSION_CURRENT);
-      typeTokenFilterFactory.init(args);
-      typeTokenFilterFactory.inform(new ClasspathResourceLoader(getClass()));
+      tokenFilterFactory("Type", "enablePositionIncrements", "false");
       fail("not supplying 'types' parameter should cause an IllegalArgumentException");
     } catch (IllegalArgumentException e) {
       // everything ok
     }
   }
-
+  
+  /** Test that bogus arguments result in exception */
+  public void testBogusArguments() throws Exception {
+    try {
+      tokenFilterFactory("Type", 
+          "types", "stoptypes-1.txt", 
+          "bogusArg", "bogusValue");
+      fail();
+    } catch (IllegalArgumentException expected) {
+      assertTrue(expected.getMessage().contains("Unknown parameters"));
+    }
+  }
 }

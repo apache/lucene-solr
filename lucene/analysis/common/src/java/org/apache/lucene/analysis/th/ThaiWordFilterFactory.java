@@ -17,6 +17,8 @@ package org.apache.lucene.analysis.th;
  * limitations under the License.
  */
 
+import java.util.Map;
+
 import org.apache.lucene.analysis.th.ThaiWordFilter;
 
 import org.apache.lucene.analysis.TokenStream;
@@ -24,19 +26,27 @@ import org.apache.lucene.analysis.util.TokenFilterFactory;
 
 /** 
  * Factory for {@link ThaiWordFilter}.
- * <pre class="prettyprint" >
+ * <pre class="prettyprint">
  * &lt;fieldType name="text_thai" class="solr.TextField" positionIncrementGap="100"&gt;
  *   &lt;analyzer&gt;
  *     &lt;tokenizer class="solr.StandardTokenizerFactory"/&gt;
  *     &lt;filter class="solr.ThaiWordFilterFactory"/&gt;
  *   &lt;/analyzer&gt;
  * &lt;/fieldType&gt;</pre>
- *
  */
 public class ThaiWordFilterFactory extends TokenFilterFactory {
+  
+  /** Creates a new ThaiWordFilterFactory */
+  public ThaiWordFilterFactory(Map<String,String> args) {
+    super(args);
+    assureMatchVersion();
+    if (!args.isEmpty()) {
+      throw new IllegalArgumentException("Unknown parameters: " + args);
+    }
+  }
+  
   @Override
   public ThaiWordFilter create(TokenStream input) {
-    assureMatchVersion();
     return new ThaiWordFilter(luceneMatchVersion, input);
   }
 }

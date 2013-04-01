@@ -17,6 +17,8 @@ package org.apache.lucene.analysis.cn.smart;
  * limitations under the License.
  */
 
+import java.util.Map;
+
 import org.apache.lucene.analysis.TokenFilter;
 import org.apache.lucene.analysis.TokenStream;
 import org.apache.lucene.analysis.cn.smart.WordTokenFilter;
@@ -32,6 +34,15 @@ import org.apache.lucene.analysis.util.TokenFilterFactory;
  * @lucene.experimental
  */
 public class SmartChineseWordTokenFilterFactory extends TokenFilterFactory {
+  
+  /** Creates a new SmartChineseWordTokenFilterFactory */
+  public SmartChineseWordTokenFilterFactory(Map<String,String> args) {
+    super(args);
+    if (!args.isEmpty()) {
+      throw new IllegalArgumentException("Unknown parameters: " + args);
+    }
+  }
+  
   @Override
   public TokenFilter create(TokenStream input) {
       return new WordTokenFilter(input);

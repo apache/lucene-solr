@@ -56,14 +56,10 @@ public abstract class AbstractBadConfigTestBase extends SolrTestCaseJ4 {
         initCore( solrconfigFile, schemaFile, solrHome );
       }
     } catch (Exception e) {
-      // short circuit out if we found what we expected
-      if (-1 != e.getMessage().indexOf(errString)) return;
-      // Test the cause too in case the expected error is wrapped by the TestHarness
-      // (NOTE: we don't go all the way down. Either errString should be changed,
-      // or some error wrapping should use a better message or both)
-      if (null != e.getCause() &&
-          null != e.getCause().getMessage() &&
-          -1 != e.getCause().getMessage().indexOf(errString)) return;
+      for (Throwable t = e; t != null; t = t.getCause()) {
+        // short circuit out if we found what we expected
+        if (t.getMessage() != null && -1 != t.getMessage().indexOf(errString)) return;
+      }
 
       // otherwise, rethrow it, possibly completley unrelated
       throw new SolrException

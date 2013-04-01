@@ -91,4 +91,9 @@ public final class FilesystemResourceLoader implements ResourceLoader {
   public <T> T newInstance(String cname, Class<T> expectedType) {
     return delegate.newInstance(cname, expectedType);
   }
+
+  @Override
+  public <T> Class<? extends T> findClass(String cname, Class<T> expectedType) {
+    return delegate.findClass(cname, expectedType);
+  }
 }

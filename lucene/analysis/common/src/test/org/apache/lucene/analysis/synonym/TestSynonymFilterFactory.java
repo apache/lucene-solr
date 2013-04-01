@@ -17,42 +17,46 @@ package org.apache.lucene.analysis.synonym;
  * limitations under the License.
  */
 
+import java.io.Reader;
 import java.io.StringReader;
-import java.util.HashMap;
-import java.util.Map;
 
-import org.apache.lucene.analysis.BaseTokenStreamTestCase;
 import org.apache.lucene.analysis.MockTokenizer;
 import org.apache.lucene.analysis.TokenStream;
 import org.apache.lucene.analysis.synonym.SynonymFilter;
-import org.apache.lucene.analysis.util.ClasspathResourceLoader;
+import org.apache.lucene.analysis.util.BaseTokenStreamFactoryTestCase;
 import org.apache.lucene.analysis.util.StringMockResourceLoader;
 
-public class TestSynonymFilterFactory extends BaseTokenStreamTestCase {
+public class TestSynonymFilterFactory extends BaseTokenStreamFactoryTestCase {
   /** test that we can parse and use the solr syn file */
   public void testSynonyms() throws Exception {
-    SynonymFilterFactory factory = new SynonymFilterFactory();
-    Map<String,String> args = new HashMap<String,String>();
-    args.put("synonyms", "synonyms.txt");
-    factory.setLuceneMatchVersion(TEST_VERSION_CURRENT);
-    factory.init(args);
-    factory.inform(new ClasspathResourceLoader(getClass()));
-    TokenStream ts = factory.create(new MockTokenizer(new StringReader("GB"), MockTokenizer.WHITESPACE, false));
-    assertTrue(ts instanceof SynonymFilter);
-    assertTokenStreamContents(ts, 
+    Reader reader = new StringReader("GB");
+    TokenStream stream = new MockTokenizer(reader, MockTokenizer.WHITESPACE, false);
+    stream = tokenFilterFactory("Synonym", "synonyms", "synonyms.txt").create(stream);
+    assertTrue(stream instanceof SynonymFilter);
+    assertTokenStreamContents(stream, 
         new String[] { "GB", "gib", "gigabyte", "gigabytes" },
         new int[] { 1, 0, 0, 0 });
   }
   
   /** if the synonyms are completely empty, test that we still analyze correctly */
   public void testEmptySynonyms() throws Exception {
-    SynonymFilterFactory factory = new SynonymFilterFactory();
-    Map<String,String> args = new HashMap<String,String>();
-    args.put("synonyms", "synonyms.txt");
-    factory.setLuceneMatchVersion(TEST_VERSION_CURRENT);
-    factory.init(args);
-    factory.inform(new StringMockResourceLoader("")); // empty file!
-    TokenStream ts = factory.create(new MockTokenizer(new StringReader("GB"), MockTokenizer.WHITESPACE, false));
-    assertTokenStreamContents(ts, new String[] { "GB" });
+    Reader reader = new StringReader("GB");
+    TokenStream stream = new MockTokenizer(reader, MockTokenizer.WHITESPACE, false);
+    stream = tokenFilterFactory("Synonym", TEST_VERSION_CURRENT, 
+        new StringMockResourceLoader(""), // empty file!
+        "synonyms", "synonyms.txt").create(stream);
+    assertTokenStreamContents(stream, new String[] { "GB" });
+  }
+  
+  /** Test that bogus arguments result in exception */
+  public void testBogusArguments() throws Exception {
+    try {
+      tokenFilterFactory("Synonym", 
+          "synonyms", "synonyms.txt", 
+          "bogusArg", "bogusValue");
+      fail();
+    } catch (IllegalArgumentException expected) {
+      assertTrue(expected.getMessage().contains("Unknown parameters"));
+    }
   }
 }

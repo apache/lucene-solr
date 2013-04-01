@@ -27,7 +27,6 @@ import java.util.Map;
 import org.apache.commons.codec.Encoder;
 import org.apache.commons.codec.language.*;
 import org.apache.lucene.analysis.TokenStream;
-import org.apache.lucene.analysis.util.AbstractAnalysisFactory; // javadocs
 import org.apache.lucene.analysis.util.ResourceLoader;
 import org.apache.lucene.analysis.util.ResourceLoaderAware;
 import org.apache.lucene.analysis.util.TokenFilterFactory;
@@ -49,7 +48,7 @@ import org.apache.lucene.analysis.util.TokenFilterFactory;
  *  support this then specifying this is an error.</dd>
  * </dl>
  *
- * <pre class="prettyprint" >
+ * <pre class="prettyprint">
  * &lt;fieldType name="text_phonetic" class="solr.TextField" positionIncrementGap="100"&gt;
  *   &lt;analyzer&gt;
  *     &lt;tokenizer class="solr.WhitespaceTokenizerFactory"/&gt;
@@ -59,9 +58,7 @@ import org.apache.lucene.analysis.util.TokenFilterFactory;
  * 
  * @see PhoneticFilter
  */
-public class PhoneticFilterFactory extends TokenFilterFactory
-  implements ResourceLoaderAware
-{
+public class PhoneticFilterFactory extends TokenFilterFactory implements ResourceLoaderAware {
   /** parameter name: either a short name or a full class name */
   public static final String ENCODER = "encoder";
   /** parameter name: true if encoded tokens should be added as synonyms */
@@ -82,33 +79,40 @@ public class PhoneticFilterFactory extends TokenFilterFactory
     registry.put("ColognePhonetic".toUpperCase(Locale.ROOT), ColognePhonetic.class);
   }
 
-  boolean inject = true; //accessed by the test
-  private String name = null;
+  final boolean inject; //accessed by the test
+  private final String name;
+  private final Integer maxCodeLength;
   private Class<? extends Encoder> clazz = null;
   private Method setMaxCodeLenMethod = null;
-  private Integer maxCodeLength = null;
   
-  /** Sole constructor. See {@link AbstractAnalysisFactory} for initialization lifecycle. */
-  public PhoneticFilterFactory() {}
+  /** Creates a new PhoneticFilterFactory */
+  public PhoneticFilterFactory(Map<String,String> args) {
+    super(args);
+    inject = getBoolean(args, INJECT, true);
+    name = args.remove(ENCODER);
+    if (name == null) {
+      throw new IllegalArgumentException("Missing required parameter: " + ENCODER
+                                       + " [" + registry.keySet() + "]");
+    }
+    String v = args.remove(MAX_CODE_LENGTH);
+    if (v != null) {
+      maxCodeLength = Integer.valueOf(v);
+    } else {
+      maxCodeLength = null;
+    }
+    if (!args.isEmpty()) {
+      throw new IllegalArgumentException("Unknown parameters: " + args);
+    }
+  }
 
   @Override
   public void inform(ResourceLoader loader) throws IOException {
-
-    inject = getBoolean(INJECT, true);
-
-    String name = args.get( ENCODER );
-    if( name == null ) {
-      throw new IllegalArgumentException("Missing required parameter: " + ENCODER
-          + " [" + registry.keySet() + "]");
-    }
     clazz = registry.get(name.toUpperCase(Locale.ROOT));
     if( clazz == null ) {
       clazz = resolveEncoder(name, loader);
     }
 
-    String v = args.get(MAX_CODE_LENGTH);
-    if (v != null) {
-      maxCodeLength = Integer.valueOf(v);
+    if (maxCodeLength != null) {
       try {
         setMaxCodeLenMethod = clazz.getMethod("setMaxCodeLen", int.class);
       } catch (Exception e) {

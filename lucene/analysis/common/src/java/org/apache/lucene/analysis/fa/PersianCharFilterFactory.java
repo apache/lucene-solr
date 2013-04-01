@@ -18,6 +18,7 @@ package org.apache.lucene.analysis.fa;
  */
 
 import java.io.Reader;
+import java.util.Map;
 
 import org.apache.lucene.analysis.CharFilter;
 import org.apache.lucene.analysis.fa.PersianCharFilter;
@@ -27,17 +28,24 @@ import org.apache.lucene.analysis.util.MultiTermAwareComponent;
 
 /**
  * Factory for {@link PersianCharFilter}.
- * <pre class="prettyprint" >
+ * <pre class="prettyprint">
  * &lt;fieldType name="text_fa" class="solr.TextField" positionIncrementGap="100"&gt;
  *   &lt;analyzer&gt;
  *     &lt;charFilter class="solr.PersianCharFilterFactory"/&gt;
  *     &lt;tokenizer class="solr.StandardTokenizerFactory"/&gt;
  *   &lt;/analyzer&gt;
  * &lt;/fieldType&gt;</pre>
- *
  */
 public class PersianCharFilterFactory extends CharFilterFactory implements MultiTermAwareComponent {
 
+  /** Creates a new PersianCharFilterFactory */
+  public PersianCharFilterFactory(Map<String,String> args) {
+    super(args);
+    if (!args.isEmpty()) {
+      throw new IllegalArgumentException("Unknown parameters: " + args);
+    }
+  }
+  
   @Override
   public CharFilter create(Reader input) {
     return new PersianCharFilter(input);

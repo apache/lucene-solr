@@ -24,28 +24,32 @@ import java.util.Map;
 
 /** 
  * Factory for {@link NumericPayloadTokenFilter}.
- * <pre class="prettyprint" >
+ * <pre class="prettyprint">
  * &lt;fieldType name="text_numpayload" class="solr.TextField" positionIncrementGap="100"&gt;
  *   &lt;analyzer&gt;
  *     &lt;tokenizer class="solr.WhitespaceTokenizerFactory"/&gt;
  *     &lt;filter class="solr.NumericPayloadTokenFilterFactory" payload="24" typeMatch="word"/&gt;
  *   &lt;/analyzer&gt;
  * &lt;/fieldType&gt;</pre>
- *
  */
 public class NumericPayloadTokenFilterFactory extends TokenFilterFactory {
-  private float payload;
-  private String typeMatch;
-  @Override
-  public void init(Map<String, String> args) {
-    super.init(args);
-    String payloadArg = args.get("payload");
-    typeMatch = args.get("typeMatch");
+  private final float payload;
+  private final String typeMatch;
+  
+  /** Creates a new NumericPayloadTokenFilterFactory */
+  public NumericPayloadTokenFilterFactory(Map<String, String> args) {
+    super(args);
+    String payloadArg = args.remove("payload");
+    typeMatch = args.remove("typeMatch");
     if (payloadArg == null || typeMatch == null) {
       throw new IllegalArgumentException("Both payload and typeMatch are required");
     }
     payload = Float.parseFloat(payloadArg);
+    if (!args.isEmpty()) {
+      throw new IllegalArgumentException("Unknown parameters: " + args);
+    }
   }
+
   @Override
   public NumericPayloadTokenFilter create(TokenStream input) {
     return new NumericPayloadTokenFilter(input,payload,typeMatch);

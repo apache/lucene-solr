@@ -19,6 +19,7 @@ package org.apache.solr.analysis;
  */
 
 import java.io.Reader;
+import java.util.Map;
 
 import org.apache.lucene.analysis.charfilter.HTMLStripCharFilterFactory;
 import org.apache.lucene.analysis.util.CharFilterFactory;
@@ -54,6 +55,14 @@ import org.apache.lucene.analysis.util.CharFilterFactory;
 @Deprecated
 public class LegacyHTMLStripCharFilterFactory extends CharFilterFactory {
 
+  /** Creates a new LegacyHTMLStripCharFilterFactory */
+  public LegacyHTMLStripCharFilterFactory(Map<String,String> args) {
+    super(args);
+    if (!args.isEmpty()) {
+      throw new IllegalArgumentException("Unknown parameters: " + args);
+    }
+  }
+  
   @Override
   public LegacyHTMLStripCharFilter create(Reader input) {
     return new LegacyHTMLStripCharFilter(input);

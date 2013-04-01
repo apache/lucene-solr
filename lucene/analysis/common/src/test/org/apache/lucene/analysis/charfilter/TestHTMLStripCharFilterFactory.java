@@ -17,28 +17,24 @@ package org.apache.lucene.analysis.charfilter;
  * limitations under the License.
  */
 
-import java.io.IOException;
+import java.io.Reader;
 import java.io.StringReader;
-import java.util.HashMap;
-import java.util.Map;
 
-import org.apache.lucene.analysis.*;
+import org.apache.lucene.analysis.MockTokenizer;
+import org.apache.lucene.analysis.TokenStream;
+import org.apache.lucene.analysis.util.BaseTokenStreamFactoryTestCase;
 
 /**
  * Simple tests to ensure this factory is working
  */
-public class TestHTMLStripCharFilterFactory extends BaseTokenStreamTestCase {
+public class TestHTMLStripCharFilterFactory extends BaseTokenStreamFactoryTestCase {
 
 
-  public void testNothingChanged() throws IOException {
+  public void testNothingChanged() throws Exception {
     //                             11111111112
     //                   012345678901234567890
     final String text = "this is only a test.";
-    HTMLStripCharFilterFactory factory = new HTMLStripCharFilterFactory();
-    Map<String,String> args = new HashMap<String,String>();
-    args.put("escapedTags", "a, Title");
-    factory.init(args);
-    CharFilter cs = factory.create(new StringReader(text));
+    Reader cs = charFilterFactory("HTMLStrip", "escapedTags", "a, Title").create(new StringReader(text));
     TokenStream ts = new MockTokenizer(cs, MockTokenizer.WHITESPACE, false);
     assertTokenStreamContents(ts,
         new String[] { "this", "is", "only", "a", "test." },
@@ -46,14 +42,11 @@ public class TestHTMLStripCharFilterFactory extends BaseTokenStreamTestCase {
         new int[] { 4, 7, 12, 14, 20 });
   }
 
-  public void testNoEscapedTags() throws IOException {
+  public void testNoEscapedTags() throws Exception {
     //                             11111111112222222222333333333344
     //                   012345678901234567890123456789012345678901
     final String text = "<u>this</u> is <b>only</b> a <I>test</I>.";
-    HTMLStripCharFilterFactory factory = new HTMLStripCharFilterFactory();
-    Map<String,String> args = new HashMap<String,String>();
-    factory.init(args);
-    CharFilter cs = factory.create(new StringReader(text));
+    Reader cs = charFilterFactory("HTMLStrip").create(new StringReader(text));
     TokenStream ts = new MockTokenizer(cs, MockTokenizer.WHITESPACE, false);
     assertTokenStreamContents(ts,
         new String[] { "this", "is", "only", "a", "test." },
@@ -61,15 +54,11 @@ public class TestHTMLStripCharFilterFactory extends BaseTokenStreamTestCase {
         new int[] { 11, 14, 26, 28, 41 });
   }
 
-  public void testEscapedTags() throws IOException {
+  public void testEscapedTags() throws Exception {
     //                             11111111112222222222333333333344
     //                   012345678901234567890123456789012345678901
     final String text = "<u>this</u> is <b>only</b> a <I>test</I>.";
-    HTMLStripCharFilterFactory factory = new HTMLStripCharFilterFactory();
-    Map<String,String> args = new HashMap<String,String>();
-    args.put("escapedTags", "U i");
-    factory.init(args);
-    CharFilter cs = factory.create(new StringReader(text));
+    Reader cs = charFilterFactory("HTMLStrip", "escapedTags", "U i").create(new StringReader(text));
     TokenStream ts = new MockTokenizer(cs, MockTokenizer.WHITESPACE, false);
     assertTokenStreamContents(ts,
         new String[] { "<u>this</u>", "is", "only", "a", "<I>test</I>." },
@@ -77,15 +66,11 @@ public class TestHTMLStripCharFilterFactory extends BaseTokenStreamTestCase {
         new int[] { 11, 14, 26, 28, 41 });
   }
 
-  public void testSeparatorOnlyEscapedTags() throws IOException {
+  public void testSeparatorOnlyEscapedTags() throws Exception {
     //                             11111111112222222222333333333344
     //                   012345678901234567890123456789012345678901
     final String text = "<u>this</u> is <b>only</b> a <I>test</I>.";
-    HTMLStripCharFilterFactory factory = new HTMLStripCharFilterFactory();
-    Map<String,String> args = new HashMap<String,String>();
-    args.put("escapedTags", ",, , ");
-    factory.init(args);
-    CharFilter cs = factory.create(new StringReader(text));
+    Reader cs = charFilterFactory("HTMLStrip", "escapedTags", ",, , ").create(new StringReader(text));
     TokenStream ts = new MockTokenizer(cs, MockTokenizer.WHITESPACE, false);
     assertTokenStreamContents(ts,
         new String[] { "this", "is", "only", "a", "test." },
@@ -93,15 +78,11 @@ public class TestHTMLStripCharFilterFactory extends BaseTokenStreamTestCase {
         new int[] { 11, 14, 26, 28, 41 });
   }
 
-  public void testEmptyEscapedTags() throws IOException {
+  public void testEmptyEscapedTags() throws Exception {
     //                             11111111112222222222333333333344
     //                   012345678901234567890123456789012345678901
     final String text = "<u>this</u> is <b>only</b> a <I>test</I>.";
-    HTMLStripCharFilterFactory factory = new HTMLStripCharFilterFactory();
-    Map<String,String> args = new HashMap<String,String>();
-    args.put("escapedTags", "");
-    factory.init(args);
-    CharFilter cs = factory.create(new StringReader(text));
+    Reader cs = charFilterFactory("HTMLStrip", "escapedTags", "").create(new StringReader(text));
     TokenStream ts = new MockTokenizer(cs, MockTokenizer.WHITESPACE, false);
     assertTokenStreamContents(ts,
         new String[] { "this", "is", "only", "a", "test." },
@@ -109,19 +90,25 @@ public class TestHTMLStripCharFilterFactory extends BaseTokenStreamTestCase {
         new int[] { 11, 14, 26, 28, 41 });
   }
 
-  public void testSingleEscapedTag() throws IOException {
+  public void testSingleEscapedTag() throws Exception {
     //                             11111111112222222222333333333344
     //                   012345678901234567890123456789012345678901
     final String text = "<u>this</u> is <b>only</b> a <I>test</I>.";
-    HTMLStripCharFilterFactory factory = new HTMLStripCharFilterFactory();
-    Map<String,String> args = new HashMap<String,String>();
-    args.put("escapedTags", ", B\r\n\t");
-    factory.init(args);
-    CharFilter cs = factory.create(new StringReader(text));
+    Reader cs = charFilterFactory("HTMLStrip", "escapedTags", ", B\r\n\t").create(new StringReader(text));
     TokenStream ts = new MockTokenizer(cs, MockTokenizer.WHITESPACE, false);
     assertTokenStreamContents(ts,
         new String[] { "this", "is", "<b>only</b>", "a", "test." },
         new int[] {  3, 12, 15, 27, 32 },
         new int[] { 11, 14, 26, 28, 41 });
+  }
+  
+  /** Test that bogus arguments result in exception */
+  public void testBogusArguments() throws Exception {
+    try {
+      charFilterFactory("HTMLStrip", "bogusArg", "bogusValue");
+      fail();
+    } catch (IllegalArgumentException expected) {
+      assertTrue(expected.getMessage().contains("Unknown parameters"));
+    }
   }
 }

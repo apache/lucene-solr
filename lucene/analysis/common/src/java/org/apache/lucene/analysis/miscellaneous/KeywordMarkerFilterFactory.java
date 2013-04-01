@@ -18,6 +18,7 @@ package org.apache.lucene.analysis.miscellaneous;
  */
 
 import java.io.IOException;
+import java.util.Map;
 import java.util.regex.Pattern;
 
 import org.apache.lucene.analysis.miscellaneous.KeywordMarkerFilter;
@@ -26,34 +27,42 @@ import org.apache.lucene.analysis.TokenStream;
 
 /**
  * Factory for {@link KeywordMarkerFilter}.
- * <pre class="prettyprint" >
+ * <pre class="prettyprint">
  * &lt;fieldType name="text_keyword" class="solr.TextField" positionIncrementGap="100"&gt;
  *   &lt;analyzer&gt;
  *     &lt;tokenizer class="solr.WhitespaceTokenizerFactory"/&gt;
  *     &lt;filter class="solr.KeywordMarkerFilterFactory" protected="protectedkeyword.txt" pattern="^.+er$" ignoreCase="false"/&gt;
  *   &lt;/analyzer&gt;
- * &lt;/fieldType&gt;</pre> 
- *
+ * &lt;/fieldType&gt;</pre>
  */
 public class KeywordMarkerFilterFactory extends TokenFilterFactory implements ResourceLoaderAware {
   public static final String PROTECTED_TOKENS = "protected";
   public static final String PATTERN = "pattern";
-  private CharArraySet protectedWords;
-  private boolean ignoreCase;
+  private final String wordFiles;
+  private final String stringPattern;
+  private final boolean ignoreCase;
   private Pattern pattern;
+  private CharArraySet protectedWords;
+  
+  /** Creates a new KeywordMarkerFilterFactory */
+  public KeywordMarkerFilterFactory(Map<String,String> args) {
+    super(args);
+    wordFiles = args.remove(PROTECTED_TOKENS);
+    stringPattern = args.remove(PATTERN);
+    ignoreCase = getBoolean(args, "ignoreCase", false);
+    if (!args.isEmpty()) {
+      throw new IllegalArgumentException("Unknown parameters: " + args);
+    }
+  }
   
   @Override
   public void inform(ResourceLoader loader) throws IOException {
-    String wordFiles = args.get(PROTECTED_TOKENS);
-    String stringPattern = args.get(PATTERN);
-    ignoreCase = getBoolean("ignoreCase", false);
     if (wordFiles != null) {  
       protectedWords = getWordSet(loader, wordFiles, ignoreCase);
     }
     if (stringPattern != null) {
       pattern = ignoreCase ? Pattern.compile(stringPattern, Pattern.CASE_INSENSITIVE | Pattern.UNICODE_CASE) : Pattern.compile(stringPattern);
     }
-    
   }
   
   public boolean isIgnoreCase() {

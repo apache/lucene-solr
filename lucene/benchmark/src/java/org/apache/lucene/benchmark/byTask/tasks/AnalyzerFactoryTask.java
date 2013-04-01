@@ -287,13 +287,6 @@ public class AnalyzerFactoryTask extends PerfTask {
    */
   private void createAnalysisPipelineComponent
       (StreamTokenizer stok, Class<? extends AbstractAnalysisFactory> clazz) {
-    final AbstractAnalysisFactory instance;
-    try {
-     instance = clazz.newInstance();
-    } catch (Exception e) {
-      throw new RuntimeException("Line #" + lineno(stok) + ": ", e);
-    }
-    Version luceneMatchVersion = null;
     Map<String,String> argMap = new HashMap<String,String>();
     boolean parenthetical = false;
     try {
@@ -347,16 +340,7 @@ public class AnalyzerFactoryTask extends PerfTask {
               case '"':
               case '\'':
               case StreamTokenizer.TT_WORD: {
-                if (argName.equalsIgnoreCase("luceneMatchVersion")) {
-                  try {
-                    luceneMatchVersion = Version.parseLeniently(argValue);
-                  } catch (IllegalArgumentException e) {
-                    throw new RuntimeException
-                        ("Line #" + lineno(stok) + ": Unrecognized luceneMatchVersion '" + argValue + "'", e);
-                  }
-                } else {
-                  argMap.put(argName, argValue);
-                }
+                argMap.put(argName, argValue);
                 break;
               }
               case StreamTokenizer.TT_EOF: {
@@ -370,10 +354,15 @@ public class AnalyzerFactoryTask extends PerfTask {
           }
         }
       }
-
-      instance.setLuceneMatchVersion
-          (null == luceneMatchVersion ? Version.LUCENE_CURRENT : luceneMatchVersion);
-      instance.init(argMap);
+      if (!argMap.containsKey("luceneMatchVersion")) {
+        argMap.put("luceneMatchVersion", Version.LUCENE_CURRENT.toString());
+      }
+      final AbstractAnalysisFactory instance;
+      try {
+        instance = clazz.getConstructor(Map.class).newInstance(argMap);
+      } catch (Exception e) {
+        throw new RuntimeException("Line #" + lineno(stok) + ": ", e);
+      }
       if (instance instanceof ResourceLoaderAware) {
         File baseDir = new File(getRunData().getConfig().get("work.dir", "work")).getAbsoluteFile();
         if ( ! baseDir.isDirectory()) {

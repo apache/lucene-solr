@@ -19,29 +19,32 @@ package org.apache.lucene.analysis.reverse;
 
 import java.io.Reader;
 import java.io.StringReader;
-import java.util.Collections;
-import java.util.Map;
 
-import org.apache.lucene.analysis.BaseTokenStreamTestCase;
 import org.apache.lucene.analysis.MockTokenizer;
 import org.apache.lucene.analysis.TokenStream;
-import org.apache.lucene.analysis.Tokenizer;
+import org.apache.lucene.analysis.util.BaseTokenStreamFactoryTestCase;
 
 /**
  * Simple tests to ensure the Reverse string filter factory is working.
  */
-public class TestReverseStringFilterFactory extends BaseTokenStreamTestCase {
+public class TestReverseStringFilterFactory extends BaseTokenStreamFactoryTestCase {
   /**
    * Ensure the filter actually reverses text.
    */
   public void testReversing() throws Exception {
     Reader reader = new StringReader("simple test");
-    Tokenizer tokenizer = new MockTokenizer(reader, MockTokenizer.WHITESPACE, false);
-    ReverseStringFilterFactory factory = new ReverseStringFilterFactory();
-    factory.setLuceneMatchVersion(TEST_VERSION_CURRENT);
-    Map<String, String> args = Collections.emptyMap();
-    factory.init(args);
-    TokenStream stream = factory.create(tokenizer);
+    TokenStream stream = new MockTokenizer(reader, MockTokenizer.WHITESPACE, false);
+    stream = tokenFilterFactory("ReverseString").create(stream);
     assertTokenStreamContents(stream, new String[] { "elpmis", "tset" });
+  }
+  
+  /** Test that bogus arguments result in exception */
+  public void testBogusArguments() throws Exception {
+    try {
+      tokenFilterFactory("ReverseString", "bogusArg", "bogusValue");
+      fail();
+    } catch (IllegalArgumentException expected) {
+      assertTrue(expected.getMessage().contains("Unknown parameters"));
+    }
   }
 }

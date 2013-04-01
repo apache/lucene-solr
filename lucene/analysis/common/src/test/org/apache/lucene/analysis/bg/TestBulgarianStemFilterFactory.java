@@ -20,23 +20,32 @@ package org.apache.lucene.analysis.bg;
 import java.io.Reader;
 import java.io.StringReader;
 
-import org.apache.lucene.analysis.BaseTokenStreamTestCase;
 import org.apache.lucene.analysis.MockTokenizer;
 import org.apache.lucene.analysis.TokenStream;
 import org.apache.lucene.analysis.Tokenizer;
+import org.apache.lucene.analysis.util.BaseTokenStreamFactoryTestCase;
 
 /**
  * Simple tests to ensure the Bulgarian stem filter factory is working.
  */
-public class TestBulgarianStemFilterFactory extends BaseTokenStreamTestCase {
+public class TestBulgarianStemFilterFactory extends BaseTokenStreamFactoryTestCase {
   /**
    * Ensure the filter actually stems text.
    */
   public void testStemming() throws Exception {
     Reader reader = new StringReader("компютри");
     Tokenizer tokenizer = new MockTokenizer(reader, MockTokenizer.WHITESPACE, false);
-    BulgarianStemFilterFactory factory = new BulgarianStemFilterFactory();
-    TokenStream stream = factory.create(tokenizer);
+    TokenStream stream = tokenFilterFactory("BulgarianStem").create(tokenizer);
     assertTokenStreamContents(stream, new String[] { "компютр" });
+  }
+  
+  /** Test that bogus arguments result in exception */
+  public void testBogusArguments() throws Exception {
+    try {
+      tokenFilterFactory("BulgarianStem", "bogusArg", "bogusValue");
+      fail();
+    } catch (IllegalArgumentException expected) {
+      assertTrue(expected.getMessage().contains("Unknown parameters"));
+    }
   }
 }

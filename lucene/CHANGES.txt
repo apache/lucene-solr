@@ -31,6 +31,11 @@ Optimizations
   on Windows if NIOFSDirectory is used, mmapped files are still locked.
   (Michael Poindexter, Robert Muir, Uwe Schindler)
 
+Bug Fixes
+
+* LUCENE-4877: Throw exception for invalid arguments in analysis factories.
+  (Steve Rowe, Uwe Schindler, Robert Muir)
+
 ======================= Lucene 4.3.0 =======================
 
 Changes in backwards compatibility policy

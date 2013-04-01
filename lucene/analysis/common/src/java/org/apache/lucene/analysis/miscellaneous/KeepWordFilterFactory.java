@@ -17,61 +17,49 @@ package org.apache.lucene.analysis.miscellaneous;
  * limitations under the License.
  */
 
-import org.apache.lucene.analysis.util.*;
 import org.apache.lucene.analysis.TokenStream;
 import org.apache.lucene.analysis.miscellaneous.KeepWordFilter;
+import org.apache.lucene.analysis.util.CharArraySet;
+import org.apache.lucene.analysis.util.ResourceLoader;
+import org.apache.lucene.analysis.util.ResourceLoaderAware;
+import org.apache.lucene.analysis.util.TokenFilterFactory;
 
 import java.util.Map;
-import java.util.Set;
 import java.io.IOException;
 
 /**
  * Factory for {@link KeepWordFilter}. 
- * <pre class="prettyprint" >
+ * <pre class="prettyprint">
  * &lt;fieldType name="text_keepword" class="solr.TextField" positionIncrementGap="100"&gt;
  *   &lt;analyzer&gt;
  *     &lt;tokenizer class="solr.WhitespaceTokenizerFactory"/&gt;
  *     &lt;filter class="solr.KeepWordFilterFactory" words="keepwords.txt" ignoreCase="false" enablePositionIncrements="false"/&gt;
  *   &lt;/analyzer&gt;
- * &lt;/fieldType&gt;</pre> 
- *
+ * &lt;/fieldType&gt;</pre>
  */
 public class KeepWordFilterFactory extends TokenFilterFactory implements ResourceLoaderAware {
-
-  @Override
-  public void init(Map<String,String> args) {
-    super.init(args);
+  private final boolean ignoreCase;
+  private final boolean enablePositionIncrements;
+  private final String wordFiles;
+  private CharArraySet words;
+  
+  /** Creates a new KeepWordFilterFactory */
+  public KeepWordFilterFactory(Map<String,String> args) {
+    super(args);
     assureMatchVersion();
+    wordFiles = args.remove("words");
+    ignoreCase = getBoolean(args, "ignoreCase", false);
+    enablePositionIncrements = getBoolean(args, "enablePositionIncrements", false);
+    if (!args.isEmpty()) {
+      throw new IllegalArgumentException("Unknown parameters: " + args);
+    }
   }
 
   @Override
   public void inform(ResourceLoader loader) throws IOException {
-    String wordFiles = args.get("words");
-    ignoreCase = getBoolean("ignoreCase", false);
-    enablePositionIncrements = getBoolean("enablePositionIncrements",false);
-
     if (wordFiles != null) {
       words = getWordSet(loader, wordFiles, ignoreCase);
     }
-  }
-
-  private CharArraySet words;
-  private boolean ignoreCase;
-  private boolean enablePositionIncrements;
-
-  /**
-   * Set the keep word list.
-   * NOTE: if ignoreCase==true, the words are expected to be lowercase
-   */
-  public void setWords(Set<String> words) {
-    this.words = new CharArraySet(luceneMatchVersion, words, ignoreCase);
-  }
-
-  public void setIgnoreCase(boolean ignoreCase) {    
-    if (words != null && this.ignoreCase != ignoreCase) {
-      words = new CharArraySet(luceneMatchVersion, words, ignoreCase);
-    }
-    this.ignoreCase = ignoreCase;
   }
 
   public boolean isEnablePositionIncrements() {

@@ -31,12 +31,11 @@ public class UIMAAnnotationsTokenizerFactory extends TokenizerFactory {
 
   private String descriptorPath;
   private String tokenType;
-  private Map<String, Object> configurationParameters;
+  private final Map<String,Object> configurationParameters = new HashMap<String,Object>();
 
-  @Override
-  public void init(Map<String, String> args) {
-    super.init(args);
-    configurationParameters = new HashMap<String, Object>();
+  /** Creates a new UIMAAnnotationsTokenizerFactory */
+  public UIMAAnnotationsTokenizerFactory(Map<String, String> args) {
+    super(args);
     for (String k : args.keySet()) {
       if (k.equals("tokenType")) {
         tokenType = args.get("tokenType");
@@ -49,7 +48,6 @@ public class UIMAAnnotationsTokenizerFactory extends TokenizerFactory {
     if (descriptorPath == null || tokenType == null ) {
       throw new IllegalArgumentException("descriptorPath and tokenType are mandatory");
     }
-
   }
 
   @Override
