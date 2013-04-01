@@ -23,10 +23,6 @@ import org.apache.solr.common.SolrException.ErrorCode;
 
 import java.util.regex.Pattern;
 
-import javax.script.ScriptEngineManager;
-
-import org.junit.Assume;
-
 public abstract class AbstractBadConfigTestBase extends SolrTestCaseJ4 {
 
   /**
@@ -35,13 +31,30 @@ public abstract class AbstractBadConfigTestBase extends SolrTestCaseJ4 {
    * files causes an error matching the specified errString ot be thrown.
    */
   protected final void assertConfigs(final String solrconfigFile,
-                                     final String schemaFile, 
+                                     final String schemaFile,
+                                     final String errString)
+      throws Exception {
+    assertConfigs(solrconfigFile, schemaFile, null, errString);
+  }
+
+    /**
+     * Given a solrconfig.xml file name, a schema file name, a solr home directory, 
+     * and an expected errString, asserts that initializing a core with these 
+     * files causes an error matching the specified errString ot be thrown.
+     */
+  protected final void assertConfigs(final String solrconfigFile,
+                                     final String schemaFile,
+                                     final String solrHome,
                                      final String errString) 
     throws Exception {
 
     ignoreException(Pattern.quote(errString));
     try {
-      initCore( solrconfigFile, schemaFile );
+      if (null == solrHome) {
+        initCore( solrconfigFile, schemaFile );
+      } else {
+        initCore( solrconfigFile, schemaFile, solrHome );
+      }
     } catch (Exception e) {
       // short circuit out if we found what we expected
       if (-1 != e.getMessage().indexOf(errString)) return;

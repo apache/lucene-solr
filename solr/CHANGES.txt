@@ -97,6 +97,12 @@ New Features
   "dynamicFields", respectively, to align with all other REST API outputs, which
   use camelCase.
   (Steve Rowe)
+  
+* SOLR-4658: In preparation for REST API requests that can modify the schema,
+  a "managed schema" is introduced.  
+  Add '<schemaFactory class="ManagedSchemaFactory" mutable="true"/>' to solrconfig.xml
+  in order to use it, and to enable schema modifications via REST API requests.
+  (Steve Rowe, Robert Muir)
 
 Bug Fixes
 ----------------------

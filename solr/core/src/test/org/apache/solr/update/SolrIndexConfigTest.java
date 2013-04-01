@@ -22,6 +22,7 @@ import java.io.File;
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.core.SolrConfig;
 import org.apache.solr.schema.IndexSchema;
+import org.apache.solr.schema.IndexSchemaFactory;
 import org.junit.Test;
 
 /**
@@ -34,7 +35,7 @@ public class SolrIndexConfigTest extends SolrTestCaseJ4 {
     try {
       SolrConfig solrConfig = new SolrConfig("bad-mp-solrconfig.xml");
       SolrIndexConfig solrIndexConfig = new SolrIndexConfig(solrConfig, null, null);
-      IndexSchema indexSchema = new IndexSchema(solrConfig, "schema.xml", null);
+      IndexSchema indexSchema = IndexSchemaFactory.buildIndexSchema("schema.xml", solrConfig);
       solrIndexConfig.toIndexWriterConfig(indexSchema);
       fail("a mergePolicy should have an empty constructor in order to be instantiated in Solr thus this should fail ");
     } catch (Exception e) {
@@ -51,7 +52,7 @@ public class SolrIndexConfigTest extends SolrTestCaseJ4 {
     assertNotNull(solrIndexConfig);
     assertEquals("org.apache.lucene.index.TieredMergePolicy",
         solrIndexConfig.defaultMergePolicyClassName);
-    IndexSchema indexSchema = new IndexSchema(solrConfig, "schema.xml", null);
+    IndexSchema indexSchema = IndexSchemaFactory.buildIndexSchema("schema.xml", solrConfig);
     solrIndexConfig.toIndexWriterConfig(indexSchema);
   }
 

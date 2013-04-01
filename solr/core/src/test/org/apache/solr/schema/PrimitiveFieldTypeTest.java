@@ -68,7 +68,7 @@ public class PrimitiveFieldTypeTest extends SolrTestCaseJ4 {
     // ***********************
     // With schema version 1.4:
     // ***********************
-    schema = new IndexSchema(config, testConfHome + "schema12.xml", null);
+    schema = IndexSchemaFactory.buildIndexSchema(testConfHome + "schema12.xml", config);
     
     dt = new DateField();
     dt.init(schema, initMap);
@@ -130,7 +130,7 @@ public class PrimitiveFieldTypeTest extends SolrTestCaseJ4 {
     // ***********************
     // With schema version 1.5
     // ***********************
-    schema = new IndexSchema(config, testConfHome + "schema15.xml", null);
+    schema = IndexSchemaFactory.buildIndexSchema(testConfHome + "schema15.xml", config);
 
     dt = new DateField();
     dt.init(schema, initMap);

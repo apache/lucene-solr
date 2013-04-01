@@ -17,6 +17,7 @@
 
 package org.apache.solr.schema;
 
+import org.apache.commons.io.IOUtils;
 import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.analysis.AnalyzerWrapper;
 import org.apache.lucene.index.IndexableField;
@@ -24,17 +25,27 @@ import org.apache.lucene.index.StorableField;
 import org.apache.lucene.index.StoredDocument;
 import org.apache.lucene.search.similarities.Similarity;
 import org.apache.lucene.util.Version;
+import org.apache.solr.cloud.ZkController;
+import org.apache.solr.cloud.ZkSolrResourceLoader;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.SolrException.ErrorCode;
+import org.apache.solr.common.cloud.ZkCmdExecutor;
+import org.apache.solr.common.cloud.ZooKeeperException;
 import org.apache.solr.common.params.SolrParams;
+import org.apache.solr.common.util.NamedList;
 import org.apache.solr.common.util.SimpleOrderedMap;
+import org.apache.solr.request.LocalSolrQueryRequest;
+import org.apache.solr.response.SchemaXmlWriter;
+import org.apache.solr.response.SolrQueryResponse;
 import org.apache.solr.util.DOMUtil;
+import org.apache.solr.util.FileUtils;
 import org.apache.solr.util.SystemIdResolver;
 import org.apache.solr.core.SolrConfig;
 import org.apache.solr.core.Config;
 import org.apache.solr.core.SolrResourceLoader;
 import org.apache.solr.search.similarities.DefaultSimilarityFactory;
 import org.apache.solr.util.plugin.SolrCoreAware;
+import org.apache.zookeeper.KeeperException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.w3c.dom.Document;
@@ -47,7 +58,13 @@ import org.xml.sax.InputSource;
 import javax.xml.xpath.XPath;
 import javax.xml.xpath.XPathConstants;
 
+import java.io.File;
+import java.io.FileOutputStream;
 import java.io.IOException;
+import java.io.InputStream;
+import java.io.OutputStreamWriter;
+import java.io.StringWriter;
+import java.io.Writer;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
@@ -71,7 +88,7 @@ import java.util.regex.Pattern;
  *
  *
  */
-public final class IndexSchema {
+public class IndexSchema {
   public static final String COPY_FIELD = "copyField";
   public static final String COPY_FIELDS = COPY_FIELD + "s";
   public static final String DEFAULT_OPERATOR = "defaultOperator";
@@ -108,7 +125,7 @@ public final class IndexSchema {
 
   final static Logger log = LoggerFactory.getLogger(IndexSchema.class);
   private final SolrConfig solrConfig;
-  private final String resourceName;
+  private String resourceName;
   private String name;
   private float version;
   private final SolrResourceLoader loader;
@@ -145,24 +162,21 @@ public final class IndexSchema {
 
     /**
    * Constructs a schema using the specified resource name and stream.
-   * If the is stream is null, the resource loader will load the schema resource by name.
    * @see SolrResourceLoader#openSchema
    * By default, this follows the normal config path directory searching rules.
    * @see SolrResourceLoader#openResource
    */
   public IndexSchema(SolrConfig solrConfig, String name, InputSource is) {
+    assert null != solrConfig : "SolrConfig should never be null";
+    assert null != name : "schema resource name should never be null";
+    assert null != is : "schema InputSource should never be null";
+
     this.solrConfig = solrConfig;
-    if (name == null)
-      name = DEFAULT_SCHEMA_FILE;
     this.resourceName = name;
     loader = solrConfig.getResourceLoader();
     try {
-      if (is == null) {
-        is = new InputSource(loader.openSchema(name));
-        is.setSystemId(SystemIdResolver.createSystemIdFromResourceName(name));
-      }
       readSchema(is);
-      loader.inform( loader );
+      loader.inform(loader);
     } catch (IOException e) {
       throw new RuntimeException(e);
     }
@@ -179,7 +193,12 @@ public final class IndexSchema {
   public String getResourceName() {
     return resourceName;
   }
-  
+
+  /** Sets the name of the resource used to instantiate this schema. */
+  public void setResourceName(String resourceName) {
+    this.resourceName = resourceName;
+  }
+
   /** Gets the name of the schema as specified in the schema resource. */
   public String getSchemaName() {
     return name;
@@ -345,6 +364,24 @@ public final class IndexSchema {
     queryAnalyzer = new SolrQueryAnalyzer();
   }
 
+  /**
+   * Writes the schema in schema.xml format to the given writer 
+   */
+  void persist(Writer writer) throws IOException {
+    final SolrQueryResponse response = new SolrQueryResponse();
+    response.add(IndexSchema.SCHEMA, getNamedPropertyValues());
+    final NamedList args = new NamedList(Arrays.<Object>asList("indent", "on"));
+    final LocalSolrQueryRequest req = new LocalSolrQueryRequest(null, args);
+    final SchemaXmlWriter schemaXmlWriter = new SchemaXmlWriter(writer, req, response);
+    schemaXmlWriter.setEmitManagedSchemaDoNotEditWarning(true);
+    schemaXmlWriter.writeResponse();
+    schemaXmlWriter.close();
+  }
+
+  public boolean isMutable() {
+    return false;
+  }
+
   private class SolrIndexAnalyzer extends AnalyzerWrapper {
     protected final HashMap<String, Analyzer> analyzers;
 
@@ -392,7 +429,7 @@ public final class IndexSchema {
   }
 
   private void readSchema(InputSource is) {
-    log.info("Reading Solr Schema");
+    log.info("Reading Solr Schema from " + resourceName);
 
     try {
       // pass the config resource loader to avoid building an empty one for no reason:
@@ -1239,7 +1276,7 @@ public final class IndexSchema {
   }
 
   /**
-   * Get a map of property name -> value for this field.
+   * Get a map of property name -> value for the whole schema.
    */
   public SimpleOrderedMap<Object> getNamedPropertyValues() {
     SimpleOrderedMap<Object> topLevel = new SimpleOrderedMap<Object>();
