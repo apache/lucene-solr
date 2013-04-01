@@ -113,8 +113,7 @@ public class TestPostingsHighlighterRanking extends LuceneTestCase {
   private void checkQuery(IndexSearcher is, Query query, int doc, int maxTopN) throws IOException {
     for (int n = 1; n < maxTopN; n++) {
       final FakePassageFormatter f1 = new FakePassageFormatter();
-      PostingsHighlighter p1 = new PostingsHighlighter(Integer.MAX_VALUE-1, 
-                                                       BreakIterator.getSentenceInstance(Locale.ROOT)) {
+      PostingsHighlighter p1 = new PostingsHighlighter(Integer.MAX_VALUE-1) {
           @Override
           protected PassageFormatter getFormatter(String field) {
             assertEquals("body", field);
@@ -123,8 +122,7 @@ public class TestPostingsHighlighterRanking extends LuceneTestCase {
         };
 
       final FakePassageFormatter f2 = new FakePassageFormatter();
-      PostingsHighlighter p2 = new PostingsHighlighter(Integer.MAX_VALUE-1, 
-                                                       BreakIterator.getSentenceInstance(Locale.ROOT)) {
+      PostingsHighlighter p2 = new PostingsHighlighter(Integer.MAX_VALUE-1) {
           @Override
           protected PassageFormatter getFormatter(String field) {
             assertEquals("body", field);
@@ -269,8 +267,7 @@ public class TestPostingsHighlighterRanking extends LuceneTestCase {
     iw.close();
     
     IndexSearcher searcher = newSearcher(ir);
-    PostingsHighlighter highlighter = new PostingsHighlighter(10000, 
-                                                              BreakIterator.getSentenceInstance(Locale.ROOT)) {
+    PostingsHighlighter highlighter = new PostingsHighlighter(10000) {
         @Override
         protected PassageScorer getScorer(String field) {
           return new PassageScorer(1.2f, 0, 87);
@@ -309,8 +306,7 @@ public class TestPostingsHighlighterRanking extends LuceneTestCase {
     iw.close();
     
     IndexSearcher searcher = newSearcher(ir);
-    PostingsHighlighter highlighter = new PostingsHighlighter(10000, 
-                                                              BreakIterator.getSentenceInstance(Locale.ROOT)) {
+    PostingsHighlighter highlighter = new PostingsHighlighter(10000) {
         @Override
         protected PassageScorer getScorer(String field) {
           return new PassageScorer(0, 0.75f, 87);

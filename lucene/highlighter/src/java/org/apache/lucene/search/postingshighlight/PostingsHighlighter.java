@@ -96,7 +96,6 @@ public class PostingsHighlighter {
   public static final int DEFAULT_MAX_LENGTH = 10000;
     
   private final int maxLength;
-  private final BreakIterator breakIterator;
 
   /** Set the first time {@link #getFormatter} is called,
    *  and then reused. */
@@ -119,28 +118,20 @@ public class PostingsHighlighter {
    * @throws IllegalArgumentException if <code>maxLength</code> is negative or <code>Integer.MAX_VALUE</code>
    */
   public PostingsHighlighter(int maxLength) {
-    this(maxLength, BreakIterator.getSentenceInstance(Locale.ROOT));
-  }
-  
-  /**
-   * Creates a new highlighter with custom parameters.
-   * @param maxLength maximum content size to process.
-   * @param breakIterator used for finding passage
-   *        boundaries; pass null to highlight the entire
-   *        content as a single Passage.
-   * @throws IllegalArgumentException if <code>maxLength</code> is negative or <code>Integer.MAX_VALUE</code>
-   */
-  public PostingsHighlighter(int maxLength, BreakIterator breakIterator) {
     if (maxLength < 0 || maxLength == Integer.MAX_VALUE) {
       // two reasons: no overflow problems in BreakIterator.preceding(offset+1),
       // our sentinel in the offsets queue uses this value to terminate.
       throw new IllegalArgumentException("maxLength must be < Integer.MAX_VALUE");
     }
-    if (breakIterator == null) {
-      breakIterator = new WholeBreakIterator();
-    }
     this.maxLength = maxLength;
-    this.breakIterator = breakIterator;
+  }
+  
+  /** Returns the {@link BreakIterator} to use for
+   *  dividing text into passages.  This returns 
+   *  {@link BreakIterator#getSentenceInstance(Locale)} by default;
+   *  subclasses can override to customize. */
+  protected BreakIterator getBreakIterator(String field) {
+    return BreakIterator.getSentenceInstance(Locale.ROOT);
   }
 
   /** Returns the {@link PassageFormatter} to use for
@@ -303,8 +294,6 @@ public class PostingsHighlighter {
     IndexReaderContext readerContext = reader.getContext();
     List<AtomicReaderContext> leaves = readerContext.leaves();
 
-    BreakIterator bi = (BreakIterator)breakIterator.clone();
-
     // Make our own copy because we sort in-place:
     int[] docids = new int[docidsIn.length];
     System.arraycopy(docidsIn, 0, docids, 0, docidsIn.length);
@@ -330,7 +319,7 @@ public class PostingsHighlighter {
       for(Term term : fieldTerms) {
         terms[termUpto++] = term.bytes();
       }
-      Map<Integer,String> fieldHighlights = highlightField(field, contents[i], bi, terms, docids, leaves, maxPassages);
+      Map<Integer,String> fieldHighlights = highlightField(field, contents[i], getBreakIterator(field), terms, docids, leaves, maxPassages);
         
       String[] result = new String[docids.length];
       for (int j = 0; j < docidsIn.length; j++) {
