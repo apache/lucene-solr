@@ -19,7 +19,6 @@ package org.apache.lucene.analysis.ngram;
 
 import java.util.Map;
 import org.apache.lucene.analysis.TokenStream;
-import org.apache.lucene.analysis.ngram.NGramTokenFilter;
 import org.apache.lucene.analysis.util.TokenFilterFactory;
 
 /**
@@ -41,7 +40,6 @@ public class NGramFilterFactory extends TokenFilterFactory {
     super(args);
     minGramSize = getInt(args, "minGramSize", NGramTokenFilter.DEFAULT_MIN_NGRAM_SIZE);
     maxGramSize = getInt(args, "maxGramSize", NGramTokenFilter.DEFAULT_MAX_NGRAM_SIZE);
-
     if (!args.isEmpty()) {
       throw new IllegalArgumentException("Unknown parameters: " + args);
     }

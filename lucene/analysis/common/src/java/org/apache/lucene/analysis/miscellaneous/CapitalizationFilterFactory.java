@@ -18,7 +18,6 @@ package org.apache.lucene.analysis.miscellaneous;
  */
 
 import org.apache.lucene.analysis.TokenStream;
-import org.apache.lucene.analysis.miscellaneous.CapitalizationFilter;
 import org.apache.lucene.analysis.util.CharArraySet;
 import org.apache.lucene.analysis.util.TokenFilterFactory;
 
@@ -26,7 +25,7 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.Map;
-import java.util.StringTokenizer;
+import java.util.Set;
 
 /**
  * Factory for {@link CapitalizationFilter}.
@@ -81,22 +80,17 @@ public class CapitalizationFilterFactory extends TokenFilterFactory {
     super(args);
     assureMatchVersion();
     boolean ignoreCase = getBoolean(args, KEEP_IGNORE_CASE, false);
-    String k = args.remove(KEEP);
+    Set<String> k = getSet(args, KEEP);
     if (k != null) {
-      StringTokenizer st = new StringTokenizer(k);
       keep = new CharArraySet(luceneMatchVersion, 10, ignoreCase);
-      while (st.hasMoreTokens()) {
-        k = st.nextToken().trim();
-        keep.add(k.toCharArray());
-      }
+      keep.addAll(k);
     }
 
-    k = args.remove(OK_PREFIX);
+    k = getSet(args, OK_PREFIX);
     if (k != null) {
       okPrefix = new ArrayList<char[]>();
-      StringTokenizer st = new StringTokenizer(k);
-      while (st.hasMoreTokens()) {
-        okPrefix.add(st.nextToken().trim().toCharArray());
+      for (String item : k) {
+        okPrefix.add(item.toCharArray());
       }
     }
 

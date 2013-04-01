@@ -35,22 +35,12 @@ public class UIMATypeAwareAnnotationsTokenizerFactory extends TokenizerFactory {
   private final Map<String,Object> configurationParameters = new HashMap<String,Object>();
 
   /** Creates a new UIMATypeAwareAnnotationsTokenizerFactory */
-  public UIMATypeAwareAnnotationsTokenizerFactory(Map<String, String> args) {
+  public UIMATypeAwareAnnotationsTokenizerFactory(Map<String,String> args) {
     super(args);
-    for (String k : args.keySet()) {
-      if (k.equals("featurePath")) {
-        featurePath = args.get("featurePath");
-      } else if (k.equals("tokenType")) {
-        tokenType = args.get("tokenType");
-      } else if (k.equals("descriptorPath")) {
-        descriptorPath = args.get("descriptorPath");
-      } else {
-        configurationParameters.put(k, args.get(k));
-      }
-    }
-    if (descriptorPath == null || tokenType == null || featurePath == null) {
-      throw new IllegalArgumentException("descriptorPath, tokenType, and featurePath are mandatory");
-    }
+    featurePath = require(args, "featurePath");
+    tokenType = require(args, "tokenType");
+    descriptorPath = require(args, "descriptorPath");
+    configurationParameters.putAll(args);
   }
 
   @Override

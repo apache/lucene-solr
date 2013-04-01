@@ -26,9 +26,11 @@ import java.util.Map;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
-import org.apache.lucene.analysis.charfilter.MappingCharFilter;
-import org.apache.lucene.analysis.charfilter.NormalizeCharMap;
-import org.apache.lucene.analysis.util.*;
+import org.apache.lucene.analysis.util.AbstractAnalysisFactory;
+import org.apache.lucene.analysis.util.CharFilterFactory;
+import org.apache.lucene.analysis.util.MultiTermAwareComponent;
+import org.apache.lucene.analysis.util.ResourceLoader;
+import org.apache.lucene.analysis.util.ResourceLoaderAware;
 
 /**
  * Factory for {@link MappingCharFilter}. 
@@ -51,7 +53,7 @@ public class MappingCharFilterFactory extends CharFilterFactory implements
   /** Creates a new MappingCharFilterFactory */
   public MappingCharFilterFactory(Map<String,String> args) {
     super(args);
-    mapping = args.remove("mapping");
+    mapping = get(args, "mapping");
     if (!args.isEmpty()) {
       throw new IllegalArgumentException("Unknown parameters: " + args);
     }

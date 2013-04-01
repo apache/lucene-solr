@@ -18,9 +18,9 @@ package org.apache.lucene.analysis.pattern;
  */
 
 import org.apache.lucene.analysis.TokenStream;
-import org.apache.lucene.analysis.pattern.PatternReplaceFilter;
 import org.apache.lucene.analysis.util.TokenFilterFactory;
 
+import java.util.Arrays;
 import java.util.Map;
 import java.util.regex.Pattern;
 
@@ -46,17 +46,8 @@ public class PatternReplaceFilterFactory extends TokenFilterFactory {
   public PatternReplaceFilterFactory(Map<String, String> args) {
     super(args);
     pattern = getPattern(args, "pattern");
-    replacement = args.remove("replacement");
-    
-    String v = args.remove("replace");
-    if (v == null || v.equals("all")) {
-      replaceAll = true;
-    } else if (v.equals("first")) {
-      replaceAll = false;
-    } else {
-      throw new IllegalArgumentException("Configuration Error: " +
-        "'replace' must be 'first' or 'all' in " + getClass().getName());
-    }
+    replacement = get(args, "replacement");
+    replaceAll = "all".equals(get(args, "replace", Arrays.asList("all", "first"), "all"));
     if (!args.isEmpty()) {
       throw new IllegalArgumentException("Unknown parameters: " + args);
     }

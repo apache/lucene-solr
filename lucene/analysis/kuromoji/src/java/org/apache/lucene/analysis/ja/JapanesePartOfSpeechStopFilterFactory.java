@@ -23,8 +23,10 @@ import java.util.Map;
 import java.util.Set;
 
 import org.apache.lucene.analysis.TokenStream;
-import org.apache.lucene.analysis.ja.JapanesePartOfSpeechStopFilter;
-import org.apache.lucene.analysis.util.*;
+import org.apache.lucene.analysis.util.CharArraySet;
+import org.apache.lucene.analysis.util.ResourceLoader;
+import org.apache.lucene.analysis.util.ResourceLoaderAware;
+import org.apache.lucene.analysis.util.TokenFilterFactory;
 
 /**
  * Factory for {@link org.apache.lucene.analysis.ja.JapanesePartOfSpeechStopFilter}.
@@ -39,7 +41,7 @@ import org.apache.lucene.analysis.util.*;
  * &lt;/fieldType&gt;
  * </pre>
  */
-public class JapanesePartOfSpeechStopFilterFactory extends TokenFilterFactory implements ResourceLoaderAware  {
+public class JapanesePartOfSpeechStopFilterFactory extends TokenFilterFactory implements ResourceLoaderAware {
   private final String stopTagFiles;
   private final boolean enablePositionIncrements;
   private Set<String> stopTags;
@@ -47,7 +49,7 @@ public class JapanesePartOfSpeechStopFilterFactory extends TokenFilterFactory im
   /** Creates a new JapanesePartOfSpeechStopFilterFactory */
   public JapanesePartOfSpeechStopFilterFactory(Map<String,String> args) {
     super(args);
-    stopTagFiles = args.remove("tags");
+    stopTagFiles = get(args, "tags");
     enablePositionIncrements = getBoolean(args, "enablePositionIncrements", false);
     if (!args.isEmpty()) {
       throw new IllegalArgumentException("Unknown parameters: " + args);

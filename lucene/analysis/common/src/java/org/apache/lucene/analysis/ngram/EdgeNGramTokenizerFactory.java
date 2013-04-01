@@ -42,13 +42,7 @@ public class EdgeNGramTokenizerFactory extends TokenizerFactory {
     super(args);
     minGramSize = getInt(args, "minGramSize", EdgeNGramTokenizer.DEFAULT_MIN_GRAM_SIZE);
     maxGramSize = getInt(args, "maxGramSize", EdgeNGramTokenizer.DEFAULT_MAX_GRAM_SIZE);
-
-    String sideArg = args.remove("side");
-    if (sideArg == null) {
-      side = EdgeNGramTokenFilter.Side.FRONT.getLabel();
-    } else {
-      side = sideArg;
-    }
+    side = get(args, "side", EdgeNGramTokenFilter.Side.FRONT.getLabel());
     if (!args.isEmpty()) {
       throw new IllegalArgumentException("Unknown parameters: " + args);
     }

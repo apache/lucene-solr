@@ -22,7 +22,6 @@ import java.util.Map;
 import java.util.regex.Pattern;
 
 import org.apache.lucene.analysis.CharFilter;
-import org.apache.lucene.analysis.pattern.PatternReplaceCharFilter;
 import org.apache.lucene.analysis.util.CharFilterFactory;
 
 /**
@@ -46,12 +45,7 @@ public class PatternReplaceCharFilterFactory extends CharFilterFactory {
   public PatternReplaceCharFilterFactory(Map<String, String> args) {
     super(args);
     pattern = getPattern(args, "pattern");
-    String v = args.remove("replacement");
-    if (v == null) {
-      replacement = "";
-    } else {
-      replacement = v;
-    }
+    replacement = get(args, "replacement", "");
     if (!args.isEmpty()) {
       throw new IllegalArgumentException("Unknown parameters: " + args);
     }

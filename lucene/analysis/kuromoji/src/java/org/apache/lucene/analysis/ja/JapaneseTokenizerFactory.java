@@ -70,7 +70,7 @@ public class JapaneseTokenizerFactory extends TokenizerFactory implements Resour
   /** Creates a new JapaneseTokenizerFactory */
   public JapaneseTokenizerFactory(Map<String,String> args) {
     super(args);
-    mode = getMode(args);
+    mode = Mode.valueOf(get(args, MODE, JapaneseTokenizer.DEFAULT_MODE.toString()).toUpperCase(Locale.ROOT));
     userDictionaryPath = args.remove(USER_DICT_PATH);
     userDictionaryEncoding = args.remove(USER_DICT_ENCODING);
     discardPunctuation = getBoolean(args, DISCARD_PUNCTUATION, true);
@@ -100,14 +100,5 @@ public class JapaneseTokenizerFactory extends TokenizerFactory implements Resour
   @Override
   public JapaneseTokenizer create(AttributeFactory factory, Reader input) {
     return new JapaneseTokenizer(factory, input, userDictionary, discardPunctuation, mode);
-  }
-  
-  private Mode getMode(Map<String,String> args) {
-    String modeArg = args.remove(MODE);
-    if (modeArg != null) {
-      return Mode.valueOf(modeArg.toUpperCase(Locale.ROOT));
-    } else {
-      return JapaneseTokenizer.DEFAULT_MODE;
-    }
   }
 }

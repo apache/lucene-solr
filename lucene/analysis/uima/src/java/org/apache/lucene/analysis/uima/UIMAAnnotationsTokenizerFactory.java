@@ -34,20 +34,11 @@ public class UIMAAnnotationsTokenizerFactory extends TokenizerFactory {
   private final Map<String,Object> configurationParameters = new HashMap<String,Object>();
 
   /** Creates a new UIMAAnnotationsTokenizerFactory */
-  public UIMAAnnotationsTokenizerFactory(Map<String, String> args) {
+  public UIMAAnnotationsTokenizerFactory(Map<String,String> args) {
     super(args);
-    for (String k : args.keySet()) {
-      if (k.equals("tokenType")) {
-        tokenType = args.get("tokenType");
-      } else if (k.equals("descriptorPath")) {
-        descriptorPath = args.get("descriptorPath");
-      } else {
-        configurationParameters.put(k, args.get(k));
-      }
-    }
-    if (descriptorPath == null || tokenType == null ) {
-      throw new IllegalArgumentException("descriptorPath and tokenType are mandatory");
-    }
+    tokenType = require(args, "tokenType");
+    descriptorPath = require(args, "descriptorPath");
+    configurationParameters.putAll(args);
   }
 
   @Override

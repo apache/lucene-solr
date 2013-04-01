@@ -17,16 +17,14 @@ package org.apache.lucene.analysis.phonetic;
  * limitations under the License.
  */
 
-import java.util.Arrays;
-import java.util.HashSet;
 import java.util.Map;
+import java.util.Set;
 
 import org.apache.commons.codec.language.bm.Languages.LanguageSet;
 import org.apache.commons.codec.language.bm.NameType;
 import org.apache.commons.codec.language.bm.PhoneticEngine;
 import org.apache.commons.codec.language.bm.RuleType;
 import org.apache.lucene.analysis.TokenStream;
-import org.apache.lucene.analysis.phonetic.BeiderMorseFilter;
 import org.apache.lucene.analysis.util.TokenFilterFactory;
 
 /** 
@@ -51,22 +49,15 @@ public class BeiderMorseFilterFactory extends TokenFilterFactory {
     super(args);
     // PhoneticEngine = NameType + RuleType + concat
     // we use common-codec's defaults: GENERIC + APPROX + true
-    String nameTypeArg = args.remove("nameType");
-    NameType nameType = (nameTypeArg == null) ? NameType.GENERIC : NameType.valueOf(nameTypeArg);
-
-    String ruleTypeArg = args.remove("ruleType");
-    RuleType ruleType = (ruleTypeArg == null) ? RuleType.APPROX : RuleType.valueOf(ruleTypeArg);
+    NameType nameType = NameType.valueOf(get(args, "nameType", NameType.GENERIC.toString()));
+    RuleType ruleType = RuleType.valueOf(get(args, "ruleType", RuleType.APPROX.toString()));
     
     boolean concat = getBoolean(args, "concat", true);
     engine = new PhoneticEngine(nameType, ruleType, concat);
     
     // LanguageSet: defaults to automagic, otherwise a comma-separated list.
-    String languageSetArg = args.remove("languageSet");
-    if (languageSetArg == null || languageSetArg.equals("auto")) {
-      languageSet = null;
-    } else {
-      languageSet = LanguageSet.from(new HashSet<String>(Arrays.asList(languageSetArg.split(","))));
-    }
+    Set<String> langs = getSet(args, "languageSet");
+    languageSet = (null == langs || (1 == langs.size() && langs.contains("auto"))) ? null : LanguageSet.from(langs);
     if (!args.isEmpty()) {
       throw new IllegalArgumentException("Unknown parameters: " + args);
     }

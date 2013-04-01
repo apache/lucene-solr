@@ -17,10 +17,10 @@ package org.apache.lucene.analysis.icu;
  * limitations under the License.
  */
 
+import java.util.Arrays;
 import java.util.Map;
 
 import org.apache.lucene.analysis.TokenStream;
-import org.apache.lucene.analysis.icu.ICUNormalizer2Filter;
 import org.apache.lucene.analysis.util.AbstractAnalysisFactory; // javadocs
 import org.apache.lucene.analysis.util.MultiTermAwareComponent;
 import org.apache.lucene.analysis.util.TokenFilterFactory;
@@ -51,22 +51,12 @@ public class ICUNormalizer2FilterFactory extends TokenFilterFactory implements M
   /** Creates a new ICUNormalizer2FilterFactory */
   public ICUNormalizer2FilterFactory(Map<String,String> args) {
     super(args);
-    String name = args.remove("name");
-    if (name == null)
-      name = "nfkc_cf";
-    String mode = args.remove("mode");
-    if (mode == null)
-      mode = "compose";
+    String name = get(args, "name", "nfkc_cf");
+    String mode = get(args, "mode", Arrays.asList("compose", "decompose"), "compose");
+    Normalizer2 normalizer = Normalizer2.getInstance
+        (null, name, "compose".equals(mode) ? Normalizer2.Mode.COMPOSE : Normalizer2.Mode.DECOMPOSE);
     
-    Normalizer2 normalizer;
-    if (mode.equals("compose"))
-      normalizer = Normalizer2.getInstance(null, name, Normalizer2.Mode.COMPOSE);
-    else if (mode.equals("decompose"))
-      normalizer = Normalizer2.getInstance(null, name, Normalizer2.Mode.DECOMPOSE);
-    else 
-      throw new IllegalArgumentException("Invalid mode: " + mode);
-    
-    String filter = args.remove("filter");
+    String filter = get(args, "filter");
     if (filter != null) {
       UnicodeSet set = new UnicodeSet(filter);
       if (!set.isEmpty()) {

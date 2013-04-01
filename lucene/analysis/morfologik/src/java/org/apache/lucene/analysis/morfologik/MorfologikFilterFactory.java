@@ -24,7 +24,6 @@ import java.util.Map;
 import morfologik.stemming.PolishStemmer.DICTIONARY;
 
 import org.apache.lucene.analysis.TokenStream;
-import org.apache.lucene.analysis.morfologik.MorfologikFilter;
 import org.apache.lucene.analysis.util.TokenFilterFactory;
 
 /**
@@ -54,7 +53,7 @@ public class MorfologikFilterFactory extends TokenFilterFactory {
   /** Creates a new MorfologikFilterFactory */
   public MorfologikFilterFactory(Map<String,String> args) {
     super(args);
-    String dictionaryName = args.remove(DICTIONARY_SCHEMA_ATTRIBUTE);
+    String dictionaryName = get(args, DICTIONARY_SCHEMA_ATTRIBUTE);
     if (dictionaryName != null && !dictionaryName.isEmpty()) {
       try {
         DICTIONARY dictionary = DICTIONARY.valueOf(dictionaryName.toUpperCase(Locale.ROOT));

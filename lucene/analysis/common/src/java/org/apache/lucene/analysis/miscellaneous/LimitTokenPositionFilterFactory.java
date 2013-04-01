@@ -44,7 +44,7 @@ public class LimitTokenPositionFilterFactory extends TokenFilterFactory {
   /** Creates a new LimitTokenPositionFilterFactory */
   public LimitTokenPositionFilterFactory(Map<String,String> args) {
     super(args);
-    maxTokenPosition = getInt(args, MAX_TOKEN_POSITION_KEY);
+    maxTokenPosition = requireInt(args, MAX_TOKEN_POSITION_KEY);
     consumeAllTokens = getBoolean(args, CONSUME_ALL_TOKENS_KEY, false);
     if (!args.isEmpty()) {
       throw new IllegalArgumentException("Unknown parameters: " + args);

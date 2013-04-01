@@ -18,11 +18,6 @@ package org.apache.lucene.analysis.payloads;
  */
 
 import org.apache.lucene.analysis.TokenStream;
-import org.apache.lucene.analysis.payloads.DelimitedPayloadTokenFilter;
-import org.apache.lucene.analysis.payloads.PayloadEncoder;
-import org.apache.lucene.analysis.payloads.FloatEncoder;
-import org.apache.lucene.analysis.payloads.IntegerEncoder;
-import org.apache.lucene.analysis.payloads.IdentityEncoder;
 import org.apache.lucene.analysis.util.ResourceLoader;
 import org.apache.lucene.analysis.util.ResourceLoaderAware;
 import org.apache.lucene.analysis.util.TokenFilterFactory;
@@ -51,18 +46,8 @@ public class DelimitedPayloadTokenFilterFactory extends TokenFilterFactory imple
   /** Creates a new DelimitedPayloadTokenFilterFactory */
   public DelimitedPayloadTokenFilterFactory(Map<String, String> args) {
     super(args);
-    encoderClass = args.remove(ENCODER_ATTR);
-    if (encoderClass == null) {
-      throw new IllegalArgumentException("Parameter " + ENCODER_ATTR + " is mandatory");
-    }
-    String delim = args.remove(DELIMITER_ATTR);
-    if (delim == null) {
-      delimiter = '|';
-    } else if (delim.length() == 1) {
-      delimiter = delim.charAt(0);
-    } else {
-      throw new IllegalArgumentException("Delimiter must be one character only");
-    }
+    encoderClass = require(args, ENCODER_ATTR);
+    delimiter = getChar(args, DELIMITER_ATTR, '|');
     if (!args.isEmpty()) {
       throw new IllegalArgumentException("Unknown parameters: " + args);
     }

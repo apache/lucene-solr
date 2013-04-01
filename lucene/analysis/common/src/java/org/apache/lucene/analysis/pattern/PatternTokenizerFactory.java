@@ -72,7 +72,6 @@ public class PatternTokenizerFactory extends TokenizerFactory {
     super(args);
     pattern = getPattern(args, PATTERN);
     group = getInt(args, GROUP, -1);
-
     if (!args.isEmpty()) {
       throw new IllegalArgumentException("Unknown parameters: " + args);
     }

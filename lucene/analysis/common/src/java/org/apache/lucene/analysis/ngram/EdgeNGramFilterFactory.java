@@ -19,7 +19,6 @@ package org.apache.lucene.analysis.ngram;
 
 import java.util.Map;
 import org.apache.lucene.analysis.TokenStream;
-import org.apache.lucene.analysis.ngram.EdgeNGramTokenFilter;
 import org.apache.lucene.analysis.util.TokenFilterFactory;
 
 /**
@@ -42,13 +41,7 @@ public class EdgeNGramFilterFactory extends TokenFilterFactory {
     super(args);
     minGramSize = getInt(args, "minGramSize", EdgeNGramTokenFilter.DEFAULT_MIN_GRAM_SIZE);
     maxGramSize = getInt(args, "maxGramSize", EdgeNGramTokenFilter.DEFAULT_MAX_GRAM_SIZE);
-
-    String sideArg = args.remove("side");
-    if (sideArg == null) {
-      side = EdgeNGramTokenFilter.Side.FRONT.getLabel();
-    } else {
-      side = sideArg;
-    }
+    side = get(args, "side", EdgeNGramTokenFilter.Side.FRONT.getLabel());
     if (!args.isEmpty()) {
       throw new IllegalArgumentException("Unknown parameters: " + args);
     }

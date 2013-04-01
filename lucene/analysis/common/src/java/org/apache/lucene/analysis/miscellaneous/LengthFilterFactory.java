@@ -18,7 +18,6 @@ package org.apache.lucene.analysis.miscellaneous;
  */
 
 import org.apache.lucene.analysis.TokenStream;
-import org.apache.lucene.analysis.miscellaneous.LengthFilter;
 import org.apache.lucene.analysis.util.TokenFilterFactory;
 
 import java.util.Map;
@@ -43,8 +42,8 @@ public class LengthFilterFactory extends TokenFilterFactory {
   /** Creates a new LengthFilterFactory */
   public LengthFilterFactory(Map<String, String> args) {
     super(args);
-    min = getInt(args, MIN_KEY, 0, false);
-    max = getInt(args, MAX_KEY, 0, false);
+    min = requireInt(args, MIN_KEY);
+    max = requireInt(args, MAX_KEY);
     enablePositionIncrements = getBoolean(args, "enablePositionIncrements", false);
     if (!args.isEmpty()) {
       throw new IllegalArgumentException("Unknown parameters: " + args);

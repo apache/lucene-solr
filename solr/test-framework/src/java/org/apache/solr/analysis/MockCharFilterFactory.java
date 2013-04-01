@@ -32,7 +32,7 @@ public class MockCharFilterFactory extends CharFilterFactory {
   /** Creates a new MockCharFilterFactory */
   public MockCharFilterFactory(Map<String,String> args) {
     super(args);
-    remainder = getInt(args, "remainder", 0, false);
+    remainder = requireInt(args, "remainder");
     if (!args.isEmpty()) {
       throw new IllegalArgumentException("Unknown parameters: " + args);
     }

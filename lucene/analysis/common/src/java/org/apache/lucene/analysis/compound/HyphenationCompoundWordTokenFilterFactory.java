@@ -18,10 +18,11 @@ package org.apache.lucene.analysis.compound;
  */
 
 import org.apache.lucene.analysis.TokenStream;
-import org.apache.lucene.analysis.compound.CompoundWordTokenFilterBase;
-import org.apache.lucene.analysis.compound.HyphenationCompoundWordTokenFilter;
 import org.apache.lucene.analysis.compound.hyphenation.HyphenationTree;
-import org.apache.lucene.analysis.util.*;
+import org.apache.lucene.analysis.util.CharArraySet;
+import org.apache.lucene.analysis.util.ResourceLoader;
+import org.apache.lucene.analysis.util.ResourceLoaderAware;
+import org.apache.lucene.analysis.util.TokenFilterFactory;
 import org.apache.lucene.util.IOUtils;
 
 import java.util.Map;
@@ -71,13 +72,9 @@ public class HyphenationCompoundWordTokenFilterFactory extends TokenFilterFactor
   public HyphenationCompoundWordTokenFilterFactory(Map<String, String> args) {
     super(args);
     assureMatchVersion();
-    dictFile = args.remove("dictionary");
-    encoding = args.remove("encoding");
-    hypFile = args.remove("hyphenator");
-    if (null == hypFile) {
-      throw new IllegalArgumentException("Missing required parameter: hyphenator");
-    }
-
+    dictFile = get(args, "dictionary");
+    encoding = get(args, "encoding");
+    hypFile = require(args, "hyphenator");
     minWordSize = getInt(args, "minWordSize", CompoundWordTokenFilterBase.DEFAULT_MIN_WORD_SIZE);
     minSubwordSize = getInt(args, "minSubwordSize", CompoundWordTokenFilterBase.DEFAULT_MIN_SUBWORD_SIZE);
     maxSubwordSize = getInt(args, "maxSubwordSize", CompoundWordTokenFilterBase.DEFAULT_MAX_SUBWORD_SIZE);

@@ -34,11 +34,10 @@ import org.apache.lucene.analysis.TokenStream;
 import org.apache.lucene.analysis.Tokenizer;
 import org.apache.lucene.analysis.core.LowerCaseFilter;
 import org.apache.lucene.analysis.core.WhitespaceTokenizer;
-import org.apache.lucene.analysis.synonym.SynonymFilter;
-import org.apache.lucene.analysis.synonym.SynonymMap;
-import org.apache.lucene.analysis.synonym.SolrSynonymParser;
-import org.apache.lucene.analysis.synonym.WordnetSynonymParser;
-import org.apache.lucene.analysis.util.*;
+import org.apache.lucene.analysis.util.ResourceLoader;
+import org.apache.lucene.analysis.util.ResourceLoaderAware;
+import org.apache.lucene.analysis.util.TokenFilterFactory;
+import org.apache.lucene.analysis.util.TokenizerFactory;
 import org.apache.lucene.util.Version;
 
 /**
@@ -65,17 +64,13 @@ public class SynonymFilterFactory extends TokenFilterFactory implements Resource
   public SynonymFilterFactory(Map<String,String> args) {
     super(args);
     ignoreCase = getBoolean(args, "ignoreCase", false);
-    tokenizerFactory = args.remove("tokenizerFactory");
+    tokenizerFactory = get(args, "tokenizerFactory");
     if (tokenizerFactory != null) {
       assureMatchVersion();
     }
-    synonyms = args.remove("synonyms");
-    if (synonyms == null) {
-      throw new IllegalArgumentException("Missing required argument 'synonyms'.");
-    }
-    format = args.remove("format");
+    synonyms = require(args, "synonyms");
+    format = get(args, "format");
     expand = getBoolean(args, "expand", true);
-
     if (!args.isEmpty()) {
       throw new IllegalArgumentException("Unknown parameters: " + args);
     }

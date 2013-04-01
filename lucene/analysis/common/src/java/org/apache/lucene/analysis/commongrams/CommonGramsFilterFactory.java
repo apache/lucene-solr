@@ -22,7 +22,6 @@ import java.util.Map;
 
 import org.apache.lucene.analysis.TokenFilter;
 import org.apache.lucene.analysis.TokenStream;
-import org.apache.lucene.analysis.commongrams.CommonGramsFilter;
 import org.apache.lucene.analysis.core.StopAnalyzer;
 import org.apache.lucene.analysis.util.*;
 
@@ -46,8 +45,8 @@ public class CommonGramsFilterFactory extends TokenFilterFactory implements Reso
   /** Creates a new CommonGramsFilterFactory */
   public CommonGramsFilterFactory(Map<String,String> args) {
     super(args);
-    commonWordFiles = args.remove("words");
-    format = args.remove("format");
+    commonWordFiles = get(args, "words");
+    format = get(args, "format");
     ignoreCase = getBoolean(args, "ignoreCase", false);
     if (!args.isEmpty()) {
       throw new IllegalArgumentException("Unknown parameters: " + args);

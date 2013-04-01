@@ -17,14 +17,11 @@ package org.apache.lucene.analysis.charfilter;
  * limitations under the License.
  */
 
-import org.apache.lucene.analysis.charfilter.HTMLStripCharFilter;
 import org.apache.lucene.analysis.util.CharFilterFactory;
 
 import java.io.Reader;
-import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;
-import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
 /**
@@ -44,16 +41,7 @@ public class HTMLStripCharFilterFactory extends CharFilterFactory {
   /** Creates a new HTMLStripCharFilterFactory */
   public HTMLStripCharFilterFactory(Map<String,String> args) {
     super(args);
-    String escapedTagsArg = args.remove("escapedTags");
-    if (escapedTagsArg == null) {
-      escapedTags = null;
-    } else {
-      escapedTags = new HashSet<String>();
-      Matcher matcher = TAG_NAME_PATTERN.matcher(escapedTagsArg);
-      while (matcher.find()) {
-        escapedTags.add(matcher.group(0));
-      }
-    }
+    escapedTags = getSet(args, "escapedTags");
     if (!args.isEmpty()) {
       throw new IllegalArgumentException("Unknown parameters: " + args);
     }

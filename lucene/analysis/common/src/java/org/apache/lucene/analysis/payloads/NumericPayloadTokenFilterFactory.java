@@ -17,7 +17,6 @@ package org.apache.lucene.analysis.payloads;
  * limitations under the License.
  */
 
-import org.apache.lucene.analysis.payloads.NumericPayloadTokenFilter;
 import org.apache.lucene.analysis.TokenStream;
 import org.apache.lucene.analysis.util.TokenFilterFactory;
 import java.util.Map;
@@ -39,12 +38,8 @@ public class NumericPayloadTokenFilterFactory extends TokenFilterFactory {
   /** Creates a new NumericPayloadTokenFilterFactory */
   public NumericPayloadTokenFilterFactory(Map<String, String> args) {
     super(args);
-    String payloadArg = args.remove("payload");
-    typeMatch = args.remove("typeMatch");
-    if (payloadArg == null || typeMatch == null) {
-      throw new IllegalArgumentException("Both payload and typeMatch are required");
-    }
-    payload = Float.parseFloat(payloadArg);
+    payload = requireFloat(args, "payload");
+    typeMatch = require(args, "typeMatch");
     if (!args.isEmpty()) {
       throw new IllegalArgumentException("Unknown parameters: " + args);
     }

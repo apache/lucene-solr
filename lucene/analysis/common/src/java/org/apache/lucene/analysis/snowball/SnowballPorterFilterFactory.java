@@ -23,8 +23,10 @@ import java.io.IOException;
 import org.apache.lucene.analysis.miscellaneous.SetKeywordMarkerFilter;
 import org.apache.lucene.analysis.TokenFilter;
 import org.apache.lucene.analysis.TokenStream;
-import org.apache.lucene.analysis.snowball.SnowballFilter;
-import org.apache.lucene.analysis.util.*;
+import org.apache.lucene.analysis.util.CharArraySet;
+import org.apache.lucene.analysis.util.ResourceLoader;
+import org.apache.lucene.analysis.util.ResourceLoaderAware;
+import org.apache.lucene.analysis.util.TokenFilterFactory;
 import org.tartarus.snowball.SnowballProgram;
 
 /**
@@ -51,13 +53,8 @@ public class SnowballPorterFilterFactory extends TokenFilterFactory implements R
   /** Creates a new SnowballPorterFilterFactory */
   public SnowballPorterFilterFactory(Map<String,String> args) {
     super(args);
-    String cfgLanguage = args.remove("language");
-    if (cfgLanguage == null) {
-      language = "English";
-    } else {
-      language = cfgLanguage;
-    }
-    wordFiles = args.remove(PROTECTED_TOKENS);
+    language = get(args, "language", "English");
+    wordFiles = get(args, PROTECTED_TOKENS);
     if (!args.isEmpty()) {
       throw new IllegalArgumentException("Unknown parameters: " + args);
     }

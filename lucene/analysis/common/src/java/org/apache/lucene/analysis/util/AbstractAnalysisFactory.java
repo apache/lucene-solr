@@ -28,10 +28,14 @@ import java.io.Reader;
 import java.nio.charset.CharsetDecoder;
 import java.nio.charset.CodingErrorAction;
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
+import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import java.util.regex.PatternSyntaxException;
 
@@ -59,7 +63,7 @@ public abstract class AbstractAnalysisFactory {
    */
   protected AbstractAnalysisFactory(Map<String,String> args) {
     originalArgs = Collections.unmodifiableMap(new HashMap<String,String>(args));
-    String version = args.remove("luceneMatchVersion");
+    String version = get(args, "luceneMatchVersion");
     luceneMatchVersion = version == null ? null : Version.parseLeniently(version);
   }
   
@@ -80,37 +84,128 @@ public abstract class AbstractAnalysisFactory {
   public final Version getLuceneMatchVersion() {
     return this.luceneMatchVersion;
   }
-
-  protected final int getInt(Map<String,String> args, String name) {
-    return getInt(args, name, -1, false);
-  }
-
-  protected final int getInt(Map<String,String> args, String name, int defaultVal) {
-    return getInt(args, name, defaultVal, true);
-  }
-
-  protected final int getInt(Map<String,String> args, String name, int defaultVal, boolean useDefault) {
+  
+  public String require(Map<String,String> args, String name) {
     String s = args.remove(name);
     if (s == null) {
-      if (useDefault) {
-        return defaultVal;
-      }
       throw new IllegalArgumentException("Configuration Error: missing parameter '" + name + "'");
     }
-    return Integer.parseInt(s);
+    return s;
   }
-
-  protected final boolean getBoolean(Map<String,String> args, String name, boolean defaultVal) {
-    return getBoolean(args, name, defaultVal, true);
+  public String require(Map<String,String> args, String name, Collection<String> allowedValues) {
+    return require(args, name, allowedValues, true);
   }
-
-  protected final boolean getBoolean(Map<String,String> args, String name, boolean defaultVal, boolean useDefault) {
+  public String require(Map<String,String> args, String name, Collection<String> allowedValues, boolean caseSensitive) {
     String s = args.remove(name);
-    if (s==null) {
-      if (useDefault) return defaultVal;
+    if (s == null) {
       throw new IllegalArgumentException("Configuration Error: missing parameter '" + name + "'");
+    } else {
+      for (String allowedValue : allowedValues) {
+        if (caseSensitive) {
+          if (s.equals(allowedValue)) {
+            return s;
+          }
+        } else {
+          if (s.equalsIgnoreCase(allowedValue)) {
+            return s;
+          }
+        }
+      }
+      throw new IllegalArgumentException("Configuration Error: '" + name + "' value must be one of " + allowedValues);
     }
-    return Boolean.parseBoolean(s);
+  }
+  public String get(Map<String,String> args, String name) {
+    return args.remove(name); // defaultVal = null
+  }
+  public String get(Map<String,String> args, String name, String defaultVal) {
+    String s = args.remove(name);
+    return s == null ? defaultVal : s;
+  }
+  public String get(Map<String,String> args, String name, Collection<String> allowedValues) {
+    return get(args, name, allowedValues, null); // defaultVal = null
+  }
+  public String get(Map<String,String> args, String name, Collection<String> allowedValues, String defaultVal) {
+    return get(args, name, allowedValues, defaultVal, true);
+  }
+  public String get(Map<String,String> args, String name, Collection<String> allowedValues, String defaultVal, boolean caseSensitive) {
+    String s = args.remove(name);
+    if (s == null) {
+      return defaultVal;
+    } else {
+      for (String allowedValue : allowedValues) {
+        if (caseSensitive) {
+          if (s.equals(allowedValue)) {
+            return s;
+          }
+        } else {
+          if (s.equalsIgnoreCase(allowedValue)) {
+            return s;
+          }
+        }
+      }
+      throw new IllegalArgumentException("Configuration Error: '" + name + "' value must be one of " + allowedValues);
+    }
+  }
+
+  protected final int requireInt(Map<String,String> args, String name) {
+    return Integer.parseInt(require(args, name));
+  }
+  protected final int getInt(Map<String,String> args, String name, int defaultVal) {
+    String s = args.remove(name);
+    return s == null ? defaultVal : Integer.parseInt(s);
+  }
+
+  protected final boolean requireBoolean(Map<String,String> args, String name) {
+    return Boolean.parseBoolean(require(args, name));
+  }
+  protected final boolean getBoolean(Map<String,String> args, String name, boolean defaultVal) {
+    String s = args.remove(name);
+    return s == null ? defaultVal : Boolean.parseBoolean(s);
+  }
+
+  protected final float requireFloat(Map<String,String> args, String name) {
+    return Float.parseFloat(require(args, name));
+  }
+  protected final float getFloat(Map<String,String> args, String name, float defaultVal) {
+    String s = args.remove(name);
+    return s == null ? defaultVal : Float.parseFloat(s);
+  }
+
+  public char requireChar(Map<String,String> args, String name) {
+    return require(args, name).charAt(0);
+  }
+  public char getChar(Map<String,String> args, String name, char defaultValue) {
+    String s = args.remove(name);
+    if (s == null) {
+      return defaultValue;
+    } else { 
+      if (s.length() != 1) {
+        throw new IllegalArgumentException(name + " should be a char. \"" + s + "\" is invalid");
+      } else {
+        return s.charAt(0);
+      }
+    }
+  }
+  
+  private static final Pattern ITEM_PATTERN = Pattern.compile("[^,\\s]+");
+
+  /** Returns whitespace- and/or comma-separated set of values, or null if none are found */
+  public Set<String> getSet(Map<String,String> args, String name) {
+    String s = args.remove(name);
+    if (s == null) {
+     return null;
+    } else {
+      Set<String> set = null;
+      Matcher matcher = ITEM_PATTERN.matcher(s);
+      if (matcher.find()) {
+        set = new HashSet<String>();
+        set.add(matcher.group(0));
+        while (matcher.find()) {
+          set.add(matcher.group(0));
+        }
+      }
+      return set;
+    }
   }
 
   /**
@@ -118,11 +213,7 @@ public abstract class AbstractAnalysisFactory {
    */
   protected final Pattern getPattern(Map<String,String> args, String name) {
     try {
-      String pat = args.remove(name);
-      if (null == pat) {
-        throw new IllegalArgumentException("Configuration Error: missing parameter '" + name + "'");
-      }
-      return Pattern.compile(pat);
+      return Pattern.compile(require(args, name));
     } catch (PatternSyntaxException e) {
       throw new IllegalArgumentException
         ("Configuration Error: '" + name + "' can not be parsed in " +
