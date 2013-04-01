@@ -194,8 +194,8 @@ public class TestSolrProperties extends AbstractEmbeddedSolrServerTestCase {
                  exists("/solr/cores[@hostPort='${hostPort:8983}']", document));
       assertTrue("\"/solr/cores[@zkClientTimeout='8000']\" doesn't match in:\n" + solrPersistXml,
                  exists("/solr/cores[@zkClientTimeout='8000']", document));
-      assertTrue("\"/solr/cores[@hostContext='solr']\" doesn't match in:\n" + solrPersistXml,
-                 exists("/solr/cores[@hostContext='solr']", document));
+      assertTrue("\"/solr/cores[@hostContext='${hostContext:solr}']\" doesn't match in:\n" + solrPersistXml,
+                 exists("/solr/cores[@hostContext='${hostContext:solr}']", document));
       
     } finally {
       fis.close();
