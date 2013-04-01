@@ -250,9 +250,9 @@ public class SpellCheckComponent extends SearchComponent implements SolrCoreAwar
   @Override
   public void modifyRequest(ResponseBuilder rb, SearchComponent who, ShardRequest sreq) {
     SolrParams params = rb.req.getParams();
-    // Turn on spellcheck only only when retrieving fields
     if (!params.getBool(COMPONENT_NAME, false)) return;
-    if ((sreq.purpose & ShardRequest.PURPOSE_GET_TOP_IDS) != 0) {
+    int purpose = rb.grouping() ? ShardRequest.PURPOSE_GET_TOP_GROUPS : ShardRequest.PURPOSE_GET_TOP_IDS;   
+    if ((sreq.purpose & purpose) != 0) {
       // fetch at least 5 suggestions from each shard
       int count = sreq.params.getInt(SPELLCHECK_COUNT, 1);
       if (count < 5)  count = 5;
@@ -287,7 +287,7 @@ public class SpellCheckComponent extends SearchComponent implements SolrCoreAwar
       }
     }
     
-    long hits = rb.getNumberDocumentsFound();
+    long hits = rb.grouping() ? rb.totalHitCount : rb.getNumberDocumentsFound();
     boolean isCorrectlySpelled = hits > (maxResultsForSuggest==null ? 0 : maxResultsForSuggest);
     
     SpellCheckMergeData mergeData = new SpellCheckMergeData();  

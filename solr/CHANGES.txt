@@ -127,6 +127,9 @@ Bug Fixes
   
 * SOLR-4641: Schema now throws exception on illegal field parameters.  (Robert Muir)
 
+* SOLR-3758: Fixed SpellCheckComponent to work consistently with distributed grouping
+  (James Dyer)
+
 Optimizations
 ----------------------
 
