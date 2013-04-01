@@ -457,7 +457,12 @@ public class TestPostingsHighlighter extends LuceneTestCase {
     iw.close();
     
     IndexSearcher searcher = newSearcher(ir);
-    PostingsHighlighter highlighter = new PostingsHighlighter(10000, null);
+    PostingsHighlighter highlighter = new PostingsHighlighter(10000) {
+      @Override
+      protected BreakIterator getBreakIterator(String field) {
+        return new WholeBreakIterator();
+      }
+    };
     Query query = new TermQuery(new Term("body", "test"));
     TopDocs topDocs = searcher.search(query, null, 10, Sort.INDEXORDER);
     assertEquals(1, topDocs.totalHits);
@@ -527,7 +532,7 @@ public class TestPostingsHighlighter extends LuceneTestCase {
     
     IndexSearcher searcher = newSearcher(ir);
 
-    PostingsHighlighter highlighter = new PostingsHighlighter(10000, null) {
+    PostingsHighlighter highlighter = new PostingsHighlighter(10000) {
         @Override
         protected String[][] loadFieldValues(IndexSearcher searcher, String[] fields, int[] docids, int maxLength) throws IOException {
           assert fields.length == 1;
@@ -535,6 +540,11 @@ public class TestPostingsHighlighter extends LuceneTestCase {
           String[][] contents = new String[1][1];
           contents[0][0] = text;
           return contents;
+        }
+
+        @Override
+        protected BreakIterator getBreakIterator(String field) {
+          return new WholeBreakIterator();
         }
       };
 
@@ -636,7 +646,12 @@ public class TestPostingsHighlighter extends LuceneTestCase {
     iw.close();
     
     IndexSearcher searcher = newSearcher(ir);
-    PostingsHighlighter highlighter = new PostingsHighlighter(10000, null);
+    PostingsHighlighter highlighter = new PostingsHighlighter(10000) {
+      @Override
+      protected BreakIterator getBreakIterator(String field) {
+        return new WholeBreakIterator();
+      }
+    };
     Query query = new TermQuery(new Term("body", "highlighting"));
     int[] docIDs = new int[] {0};
     String snippets[] = highlighter.highlightFields(new String[] {"body"}, query, searcher, docIDs, 2).get("body");

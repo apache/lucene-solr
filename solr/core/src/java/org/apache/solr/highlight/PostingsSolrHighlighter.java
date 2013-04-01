@@ -80,7 +80,6 @@ public class PostingsSolrHighlighter extends SolrHighlighter implements PluginIn
   @Override
   public void init(PluginInfo info) {
     Map<String,String> attributes = info.attributes;
-    BreakIterator breakIterator = BreakIterator.getSentenceInstance(Locale.ROOT);
     
     // scorer parameters: k1/b/pivot
     String k1 = attributes.get("k1");
@@ -127,7 +126,7 @@ public class PostingsSolrHighlighter extends SolrHighlighter implements PluginIn
     if (attributes.containsKey("maxLength")) {
       maxLength = Integer.parseInt(attributes.get("maxLength"));
     }
-    highlighter = new PostingsHighlighter(maxLength, breakIterator) {
+    highlighter = new PostingsHighlighter(maxLength) {
         @Override
         protected Passage[] getEmptyHighlight(String fieldName, BreakIterator bi, int maxPassages) {
           if (summarizeEmptyBoolean) {

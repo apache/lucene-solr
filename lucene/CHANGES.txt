@@ -89,8 +89,8 @@ New Features
 * LUCENE-4820: Add payloads to Analyzing/FuzzySuggester, to record an
   arbitrary byte[] per suggestion (Mike McCandless)
 
-* LUCENE-4816: Passing null as the BreakIterator to PostingsHighlighter
-  now highlights the entire content as a single Passage.  (Robert
+* LUCENE-4816: Add WholeBreakIterator to PostingsHighlighter
+  for treating the entire content as a single Passage.  (Robert
   Muir, Mike McCandless)
 
 * LUCENE-4827: Add additional ctor to PostingsHighlighter PassageScorer
@@ -147,6 +147,10 @@ New Features
   RecursivePrefixTreeStrategy. It's for matching non-point indexed shapes; if
   you only have points (1/doc) then "Intersects" is equivalent and faster.
   See the javadocs.  (David Smiley)
+
+* LUCENE-4861: Make BreakIterator per-field in PostingsHighlighter. This means
+  you can override getBreakIterator(String field) to use different mechanisms
+  for e.g. title vs. body fields.  (Mike McCandless, Robert Muir)
 
 Optimizations
 

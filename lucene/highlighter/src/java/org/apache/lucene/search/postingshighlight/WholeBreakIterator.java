@@ -21,7 +21,7 @@ import java.text.BreakIterator;
 import java.text.CharacterIterator;
 
 /** Just produces one single fragment for the entire text */
-final class WholeBreakIterator extends BreakIterator {
+public final class WholeBreakIterator extends BreakIterator {
   private CharacterIterator text;
   private int start;
   private int end;
