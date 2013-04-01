@@ -134,7 +134,11 @@ public class CoreDescriptor {
   }
 
   public Properties initImplicitProperties() {
-    Properties implicitProperties = new Properties(coreContainer.getContainerProperties());
+
+    Properties implicitProperties = new Properties();
+    if (coreContainer != null && coreContainer.getContainerProperties() != null){
+      implicitProperties.putAll(coreContainer.getContainerProperties());
+    }
     implicitProperties.setProperty("solr.core.name", getName());
     implicitProperties.setProperty("solr.core.instanceDir", getInstanceDir());
     implicitProperties.setProperty("solr.core.dataDir", getDataDir());
@@ -203,6 +207,9 @@ public class CoreDescriptor {
       return SolrResourceLoader.normalizeDir(
           SolrResourceLoader.normalizeDir(instDir));
     }
+
+    if (coreContainer == null) return null;
+
     return SolrResourceLoader.normalizeDir(coreContainer.getSolrHome() +
         SolrResourceLoader.normalizeDir(instDir));
   }

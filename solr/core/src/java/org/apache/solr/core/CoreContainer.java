@@ -131,11 +131,11 @@ public class CoreContainer
   private ShardHandlerFactory shardHandlerFactory;
   protected LogWatcher logging = null;
   private String zkHost;
+  private int transientCacheSize = Integer.MAX_VALUE;
 
   private String leaderVoteWait = LEADER_VOTE_WAIT;
   private int distribUpdateConnTimeout = 0;
   private int distribUpdateSoTimeout = 0;
-  protected int transientCacheSize = Integer.MAX_VALUE; // Use as a flag too, if transientCacheSize set in solr.xml this will be changed
   private int coreLoadThreads;
   private CloserThread backgroundCloser = null;
   
@@ -145,7 +145,7 @@ public class CoreContainer
 
   /**
    * Deprecated
-   * @deprecated use the single arg constructure with locateSolrHome()
+   * @deprecated use the single arg constructor with locateSolrHome()
    * @see SolrResourceLoader#locateSolrHome
    */
   @Deprecated
@@ -321,19 +321,14 @@ public class CoreContainer
       log.info("looking for solr config file: " + fconf.getAbsolutePath());
       cores = new CoreContainer(solrHome);
 
-      if (! fconf.exists()) {
-        if (StringUtils.isBlank(containerConfigFilename) || containerConfigFilename.endsWith(".xml")) {
-          fconf = new File(solrHome, SolrProperties.SOLR_PROPERTIES_FILE);
-        }
-      }
-      // Either we have a config file or not. If it ends in .properties, assume new-style.
+      // Either we have a config file or not.
       
       if (fconf.exists()) {
         cores.load(solrHome, fconf);
       } else {
-        log.info("no solr.xml or solr.properties file found - using default old-style solr.xml");
+        log.info("no solr.xml found. using default old-style solr.xml");
         try {
-          cores.load(solrHome, new ByteArrayInputStream(ConfigSolrXmlBackCompat.DEF_SOLR_XML.getBytes("UTF-8")), true, null);
+          cores.load(solrHome, new ByteArrayInputStream(ConfigSolrXml.DEF_SOLR_XML.getBytes("UTF-8")), null);
         } catch (Exception e) {
           throw new SolrException(ErrorCode.SERVER_ERROR,
               "CoreContainer.Initialize failed when trying to load default solr.xml file", e);
@@ -361,7 +356,7 @@ public class CoreContainer
     this.configFile = configFile;
     InputStream in = new FileInputStream(configFile);
     try {
-      this.load(dir, in, configFile.getName().endsWith(".xml"),  configFile.getName());
+      this.load(dir, in,  configFile.getName());
     } finally {
       IOUtils.closeQuietly(in);
     }
@@ -375,7 +370,7 @@ public class CoreContainer
    */
 
   // Let's keep this ugly boolean out of public circulation.
-  protected void load(String dir, InputStream is, boolean isXmlFile, String fileName)  {
+  protected void load(String dir, InputStream is, String fileName)  {
     ThreadPoolExecutor coreLoadExecutor = null;
     if (null == dir) {
       // don't rely on SolrResourceLoader(), determine explicitly first
@@ -389,16 +384,9 @@ public class CoreContainer
     ConfigSolr cfg;
     
     // keep orig config for persist to consult
-    //TODO 5.0: Remove this confusing junk, the properties file is so fast to read that there's no good reason
-    //          to add this stuff. Furthermore, it would be good to persist comments when saving.....
     try {
-      if (isXmlFile) {
-        cfg = new ConfigSolrXmlBackCompat(loader, null, is, null, false);
-        this.cfg = new ConfigSolrXmlBackCompat(loader, (ConfigSolrXmlBackCompat)cfg);
-      } else {
-        cfg = new SolrProperties(this, loader, is, fileName);
-        this.cfg = new SolrProperties(this, loader, (SolrProperties)cfg);
-      }
+      cfg = new ConfigSolrXml(loader, null, is, null, false, this);
+      this.cfg = new ConfigSolrXml(loader, (ConfigSolrXml) cfg, this);
     } catch (Exception e) {
       throw new SolrException(ErrorCode.SERVER_ERROR, "", e);
     }
@@ -479,13 +467,15 @@ public class CoreContainer
     host = cfg.get(ConfigSolr.ConfLevel.SOLR_CORES, "host", null);
     
     leaderVoteWait = cfg.get(ConfigSolr.ConfLevel.SOLR_CORES, "leaderVoteWait", LEADER_VOTE_WAIT);
-    
+
     if (shareSchema) {
       indexSchemaCache = new ConcurrentHashMap<String,IndexSchema>();
     }
     adminHandler = cfg.get(ConfigSolr.ConfLevel.SOLR_CORES, "adminHandler", null);
     managementPath = cfg.get(ConfigSolr.ConfLevel.SOLR_CORES, "managementPath", null);
-    
+
+    transientCacheSize = cfg.getInt(ConfigSolr.ConfLevel.SOLR_CORES, "transientCacheSize", Integer.MAX_VALUE);
+
     zkClientTimeout = Integer.parseInt(System.getProperty("zkClientTimeout",
         Integer.toString(zkClientTimeout)));
     initZooKeeper(zkHost, zkClientTimeout);
@@ -886,7 +876,8 @@ public class CoreContainer
         throw new ZooKeeperException(SolrException.ErrorCode.SERVER_ERROR,
             "Could not find config name for collection:" + collection);
       }
-      solrLoader = new ZkSolrResourceLoader(instanceDir, zkConfigName, libLoader, SolrProperties.getCoreProperties(instanceDir, dcore), zkController);
+      solrLoader = new ZkSolrResourceLoader(instanceDir, zkConfigName, libLoader,
+          ConfigSolrXml.getCoreProperties(instanceDir, dcore), zkController);
       config = getSolrConfigFromZk(zkConfigName, dcore.getConfigName(), solrLoader);
       schema = IndexSchemaFactory.buildIndexSchema(dcore.getSchemaName(), config);
       return new SolrCore(dcore.getName(), null, config, schema, dcore);
@@ -909,7 +900,7 @@ public class CoreContainer
     SolrResourceLoader solrLoader = null;
 
     SolrConfig config = null;
-    solrLoader = new SolrResourceLoader(instanceDir, libLoader, SolrProperties.getCoreProperties(instanceDir, dcore));
+    solrLoader = new SolrResourceLoader(instanceDir, libLoader, ConfigSolrXml.getCoreProperties(instanceDir, dcore));
     try {
       config = new SolrConfig(solrLoader, dcore.getConfigName(), null);
     } catch (Exception e) {
@@ -1066,7 +1057,7 @@ public class CoreContainer
                  cd.getName(), instanceDir.getAbsolutePath());
         SolrResourceLoader solrLoader;
         if(zkController == null) {
-          solrLoader = new SolrResourceLoader(instanceDir.getAbsolutePath(), libLoader, SolrProperties.getCoreProperties(instanceDir.getAbsolutePath(), cd));
+          solrLoader = new SolrResourceLoader(instanceDir.getAbsolutePath(), libLoader, ConfigSolrXml.getCoreProperties(instanceDir.getAbsolutePath(), cd));
         } else {
           try {
             String collection = cd.getCloudDescriptor().getCollectionName();
@@ -1079,7 +1070,7 @@ public class CoreContainer
                                            "Could not find config name for collection:" + collection);
             }
             solrLoader = new ZkSolrResourceLoader(instanceDir.getAbsolutePath(), zkConfigName, libLoader,
-                SolrProperties.getCoreProperties(instanceDir.getAbsolutePath(), cd), zkController);
+                ConfigSolrXml.getCoreProperties(instanceDir.getAbsolutePath(), cd), zkController);
           } catch (KeeperException e) {
             log.error("", e);
             throw new ZooKeeperException(SolrException.ErrorCode.SERVER_ERROR,
@@ -1229,7 +1220,24 @@ public class CoreContainer
   public String getAdminPath() {
     return adminPath;
   }
-  
+
+  public String getHostPort() {
+    return hostPort;
+  }
+
+  public String getHostContext() {
+    return hostContext;
+  }
+
+  public String getHost() {
+    return host;
+  }
+
+  public int getZkClientTimeout() {
+    return zkClientTimeout;
+  }
+
+
   public void setAdminPath(String adminPath) {
       this.adminPath = adminPath;
   }
@@ -1308,10 +1316,6 @@ public class CoreContainer
       coresAttribs.put("defaultCoreName", defaultCoreName);
     }
 
-    if (transientCacheSize != Integer.MAX_VALUE) {
-      coresAttribs.put("transientCacheSize", Integer.toString(transientCacheSize));
-    }
-    
     addCoresAttrib(coresAttribs, "hostPort", this.hostPort, DEFAULT_HOST_PORT);
     addCoresAttrib(coresAttribs, "zkClientTimeout",
         intToString(this.zkClientTimeout),
@@ -1319,6 +1323,10 @@ public class CoreContainer
     addCoresAttrib(coresAttribs, "hostContext", this.hostContext, DEFAULT_HOST_CONTEXT);
     addCoresAttrib(coresAttribs, "leaderVoteWait", this.leaderVoteWait, LEADER_VOTE_WAIT);
     addCoresAttrib(coresAttribs, "coreLoadThreads", Integer.toString(this.coreLoadThreads), Integer.toString(CORE_LOAD_THREADS));
+    if (transientCacheSize != Integer.MAX_VALUE) { // This test
+    // is a consequence of testing. I really hate it.
+      addCoresAttrib(coresAttribs, "transientCacheSize", Integer.toString(this.transientCacheSize), Integer.toString(Integer.MAX_VALUE));
+    }
 
     coreMaps.persistCores(cfg, containerProperties, rootSolrAttribs, coresAttribs, file, configFile, loader);
 
@@ -1402,8 +1410,6 @@ class CoreMaps {
 
   private final Map<String, CoreDescriptor> dynamicDescriptors = new LinkedHashMap<String, CoreDescriptor>();
 
-  private int transientCacheSize = Integer.MAX_VALUE;
-
   private Map<SolrCore, String> coreToOrigName = new ConcurrentHashMap<SolrCore, String>();
 
   private final CoreContainer container;
@@ -1423,7 +1429,7 @@ class CoreMaps {
   // Trivial helper method for load, note it implements LRU on transient cores. Also note, if
   // there is no setting for max size, nothing is done and all cores go in the regular "cores" list
   protected void allocateLazyCores(final ConfigSolr cfg, final SolrResourceLoader loader) {
-    transientCacheSize = cfg.getInt(ConfigSolr.ConfLevel.SOLR_CORES, "transientCacheSize", Integer.MAX_VALUE);
+    final int transientCacheSize = cfg.getInt(ConfigSolr.ConfLevel.SOLR_CORES, "transientCacheSize", Integer.MAX_VALUE);
     if (transientCacheSize != Integer.MAX_VALUE) {
       CoreContainer.log.info("Allocating transient cache for {} transient cores", transientCacheSize);
       transientCores = new LinkedHashMap<String, SolrCore>(transientCacheSize, 0.75f, true) {
@@ -1535,7 +1541,7 @@ class CoreMaps {
     CoreContainer.log.info("Opening transient core {}", name);
     synchronized (locker) {
       retCore = transientCores.put(name, core);
-  }
+    }
     return retCore;
   }
 
@@ -1745,10 +1751,10 @@ class CoreMaps {
     //
     synchronized (locker) {
       if (cfg == null) {
-        ConfigSolrXmlBackCompat.initPersistStatic();
+        ConfigSolrXml.initPersistStatic();
         persistCores(cfg, cores, loader);
         persistCores(cfg, transientCores, loader);
-        ConfigSolrXmlBackCompat.addPersistAllCoresStatic(containerProperties, rootSolrAttribs, coresAttribs,
+        ConfigSolrXml.addPersistAllCoresStatic(containerProperties, rootSolrAttribs, coresAttribs,
             (file == null ? configFile : file));
       } else {
         cfg.initPersist();
@@ -1907,7 +1913,7 @@ class CoreMaps {
       cfg.addPersistCore(coreName, persistProps, coreAttribs);
     } else {
       // Another awkward bit for back-compat for SOLR-4196
-      ConfigSolrXmlBackCompat.addPersistCore(persistProps, coreAttribs);
+      ConfigSolrXml.addPersistCore(persistProps, coreAttribs);
     }
   }
 

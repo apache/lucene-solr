@@ -31,7 +31,7 @@ import java.io.StringReader;
 import java.util.Properties;
 import java.util.Set;
 
-public class TestSolrDiscoveryProperties extends SolrTestCaseJ4 {
+public class TestCoreDiscovery extends SolrTestCaseJ4 {
   private static String NEW_LINE = System.getProperty("line.separator");
 
   @BeforeClass
@@ -39,7 +39,7 @@ public class TestSolrDiscoveryProperties extends SolrTestCaseJ4 {
     initCore();
   }
 
-  private final File solrHomeDirectory = new File(TEMP_DIR, "org.apache.solr.core.TestSolrDiscoveryProperties" + File.separator + "solrHome");
+  private final File solrHomeDirectory = new File(TEMP_DIR, "org.apache.solr.core.TestCoreDiscovery" + File.separator + "solrHome");
 
   private void setMeUp() throws Exception {
     if (solrHomeDirectory.exists()) {
@@ -49,24 +49,8 @@ public class TestSolrDiscoveryProperties extends SolrTestCaseJ4 {
     System.setProperty("solr.solr.home", solrHomeDirectory.getAbsolutePath());
   }
 
-  private void addSolrPropertiesFile(String... extras) throws Exception {
-    File solrProps = new File(solrHomeDirectory, SolrProperties.SOLR_PROPERTIES_FILE);
-    Properties props = new Properties();
-    props.load(new StringReader(SOLR_PROPERTIES));
-    for (String extra : extras) {
-      String[] parts = extra.split("=");
-      props.put(parts[0], parts[1]);
-    }
-    FileOutputStream out = new FileOutputStream(solrProps.getAbsolutePath());
-    try {
-      props.store(out, null);
-    } finally {
-      out.close();
-    }
-  }
-
   private void addSolrXml() throws Exception {
-    File tmpFile = new File(solrHomeDirectory, SolrProperties.SOLR_XML_FILE);
+    File tmpFile = new File(solrHomeDirectory, ConfigSolr.SOLR_XML_FILE);
     FileUtils.write(tmpFile, SOLR_XML, IOUtils.CHARSET_UTF_8.toString());
   }
 
@@ -90,7 +74,7 @@ public class TestSolrDiscoveryProperties extends SolrTestCaseJ4 {
   private void addCoreWithProps(Properties stockProps) throws Exception {
 
     File propFile = new File(solrHomeDirectory,
-        stockProps.getProperty(CoreDescriptor.CORE_NAME) + File.separator + SolrProperties.CORE_PROP_FILE);
+        stockProps.getProperty(CoreDescriptor.CORE_NAME) + File.separator + ConfigSolr.CORE_PROP_FILE);
     File parent = propFile.getParentFile();
     assertTrue("Failed to mkdirs for " + parent.getAbsolutePath(), parent.mkdirs());
 
@@ -132,12 +116,12 @@ public class TestSolrDiscoveryProperties extends SolrTestCaseJ4 {
     }
   }
 
-  // Test the basic setup, create some dirs with core.properties files in them, but no solr.xml (a solr.properties
-  // instead) and insure that we find all the cores and can load them.
+  // Test the basic setup, create some dirs with core.properties files in them, but solr.xml has discoverCores
+  // set and insure that we find all the cores and can load them.
   @Test
   public void testPropertiesFile() throws Exception {
     setMeUp();
-    addSolrPropertiesFile();
+    addSolrXml();
     // name, isLazy, loadOnStartup
     addCoreWithProps(makeCorePropFile("core1", false, true));
     addCoreWithProps(makeCorePropFile("core2", false, false));
@@ -150,14 +134,12 @@ public class TestSolrDiscoveryProperties extends SolrTestCaseJ4 {
     try {
       Properties props = cc.containerProperties;
 
-      assertEquals("/admin/cores/props", props.getProperty("cores.adminPath"));
-      assertEquals("/admin/cores/props", cc.getAdminPath());
-      assertEquals("defcore", props.getProperty("cores.defaultCoreName"));
+      assertEquals("/admin/cores", cc.getAdminPath());
       assertEquals("defcore", cc.getDefaultCoreName());
-      assertEquals("222.333.444.555", props.getProperty("host"));
-      assertEquals("6000", props.getProperty("port")); // getProperty actually looks at original props.
-      assertEquals("/solrprop", props.getProperty("cores.hostContext"));
-      assertEquals("20", props.getProperty("cores.zkClientTimeout"));
+      assertEquals("222.333.444.555", cc.getHost());
+      assertEquals("6000", cc.getHostPort());
+      assertEquals("solrprop", cc.getHostContext());
+      assertEquals(20, cc.getZkClientTimeout());
 
       TestLazyCores.checkInCores(cc, "core1");
       TestLazyCores.checkNotInCores(cc, "lazy1", "core2", "collection1");
@@ -194,7 +176,7 @@ public class TestSolrDiscoveryProperties extends SolrTestCaseJ4 {
   @Test
   public void testPersistTrue() throws Exception {
     setMeUp();
-    addSolrPropertiesFile();
+    addSolrXml();
     System.setProperty("solr.persistent", "true");
 
     Properties special = makeCorePropFile("core1", false, true);
@@ -229,11 +211,6 @@ public class TestSolrDiscoveryProperties extends SolrTestCaseJ4 {
       TestLazyCores.checkInCores(cc, "core1", "core2", "lazy2", "lazy3");
       TestLazyCores.checkNotInCores(cc, "lazy1");
 
-      checkSolrProperties(cc);
-
-      File xmlFile = new File(solrHomeDirectory, "solr.xml");
-      assertFalse("Solr.xml should NOT exist", xmlFile.exists());
-
       Properties orig = makeCorePropFile("core1", false, true);
       orig.put(CoreDescriptor.CORE_INSTDIR, "${core1inst:anothersillypath}");
       checkCoreProps(orig, "addedPropC1=addedC1", "addedPropC1B=foo", "addedPropC1C=bar");
@@ -267,7 +244,7 @@ public class TestSolrDiscoveryProperties extends SolrTestCaseJ4 {
   @Test
   public void testPersistFalse() throws Exception {
     setMeUp();
-    addSolrPropertiesFile();
+    addSolrXml();
 
     addCoreWithProps(makeCorePropFile("core1", false, true));
     addCoreWithProps(makeCorePropFile("core2", false, false));
@@ -290,7 +267,7 @@ public class TestSolrDiscoveryProperties extends SolrTestCaseJ4 {
 
     try {
       cc.persist();
-      checkSolrProperties(cc);
+//      checkSolrProperties(cc);
 
       checkCoreProps(makeCorePropFile("core1", false, true));
       checkCoreProps(makeCorePropFile("core2", false, false));
@@ -313,49 +290,13 @@ public class TestSolrDiscoveryProperties extends SolrTestCaseJ4 {
     }
   }
 
-  // Insure that the solr.properties is as it should be after persisting _and_, in some cases, different than
-  // what's in memory
-  void checkSolrProperties(CoreContainer cc, String... checkMemPairs) throws Exception {
-    Properties orig = new Properties();
-    orig.load(new StringReader(SOLR_PROPERTIES));
-
-    Properties curr = cc.getContainerProperties();
-
-    Properties persisted = new Properties();
-    FileInputStream in = new FileInputStream(new File(solrHomeDirectory, SolrProperties.SOLR_PROPERTIES_FILE));
-    try {
-      persisted.load(in);
-    } finally {
-      in.close();
-    }
-
-    assertEquals("Persisted and original should be the same size", orig.size(), persisted.size());
-
-    for (String prop : orig.stringPropertyNames()) {
-      assertEquals("Values of original should match current", orig.getProperty(prop), persisted.getProperty(prop));
-    }
-
-    Properties specialProps = new Properties();
-    for (String special : checkMemPairs) {
-      String[] pair = special.split("=");
-      specialProps.put(pair[0], pair[1]);
-    }
-    // OK, current should match original except if the property is "special"
-    for (String prop : curr.stringPropertyNames()) {
-      String val = specialProps.getProperty(prop);
-      if (val != null) { // Compare curr and val
-        assertEquals("Modified property should be in current container properties", val, curr.getProperty(prop));
-      }
-    }
-  }
-
   // Insure that the properties in the core passed in are exactly what's in the default core.properties below plus
   // whatever extra is passed in.
   void checkCoreProps(Properties orig, String... extraProps) throws Exception {
     // Read the persisted file.
     Properties props = new Properties();
     File propParent = new File(solrHomeDirectory, orig.getProperty(CoreDescriptor.CORE_NAME));
-    FileInputStream in = new FileInputStream(new File(propParent, SolrProperties.CORE_PROP_FILE));
+    FileInputStream in = new FileInputStream(new File(propParent, ConfigSolr.CORE_PROP_FILE));
     try {
       props.load(in);
     } finally {
@@ -374,63 +315,9 @@ public class TestSolrDiscoveryProperties extends SolrTestCaseJ4 {
     }
   }
 
-  // If there's a solr.xml AND a properties file, make sure that the xml file is loaded and the properties file
-  // is ignored.
-
-  @Test
-  public void testBackCompatXml() throws Exception {
-    setMeUp();
-    addSolrPropertiesFile();
-    addSolrXml();
-    addConfigsForBackCompat();
-
-    CoreContainer cc = init();
-    try {
-      Properties props = cc.getContainerProperties();
-
-      assertEquals("/admin/cores", cc.getAdminPath());
-      assertEquals("collectionLazy2", cc.getDefaultCoreName());
-
-      // Shouldn't get these in properties at this point
-      assertNull(props.getProperty("cores.adminPath"));
-      assertNull(props.getProperty("cores.defaultCoreName"));
-      assertNull(props.getProperty("host"));
-      assertNull(props.getProperty("port")); // getProperty actually looks at original props.
-      assertNull(props.getProperty("cores.hostContext"));
-      assertNull(props.getProperty("cores.zkClientTimeout"));
-
-      SolrCore core1 = cc.getCore("collection1");
-      CoreDescriptor desc = core1.getCoreDescriptor();
-
-      assertEquals("collection1", desc.getProperty("solr.core.name"));
-
-      // This is too long and ugly to put in. Besides, it varies.
-      assertNotNull(desc.getProperty("solr.core.instanceDir"));
-
-      assertEquals("data" + File.separator, desc.getProperty("solr.core.dataDir"));
-      assertEquals("solrconfig-minimal.xml", desc.getProperty("solr.core.configName"));
-      assertEquals("schema-tiny.xml", desc.getProperty("solr.core.schemaName"));
-      core1.close();
-    } finally {
-      cc.shutdown();
-    }
-  }
-
-  // For this test I want some of these to be different than what would be in solr.xml by default.
-  private final static String SOLR_PROPERTIES =
-      "persistent=${persistent:false}" + NEW_LINE +
-          "cores.adminPath=/admin/cores/props" + NEW_LINE +
-          "cores.defaultCoreName=defcore" + NEW_LINE +
-          "host=222.333.444.555" + NEW_LINE +
-          "port=6000" + NEW_LINE +
-          "cores.hostContext=/solrprop" + NEW_LINE +
-          "cores.zkClientTimeout=20" + NEW_LINE +
-          "cores.transientCacheSize=2";
-
   // For testing whether finding a solr.xml overrides looking at solr.properties
-  private final static String SOLR_XML = " <solr persistent=\"false\"> " +
-      "<cores adminPath=\"/admin/cores\" defaultCoreName=\"collectionLazy2\" transientCacheSize=\"4\">  " +
-      "<core name=\"collection1\" instanceDir=\"collection1\" config=\"solrconfig-minimal.xml\" schema=\"schema-tiny.xml\" /> " +
-      "</cores> " +
+  private final static String SOLR_XML = " <solr persistent=\"${persistent:false}\"> " +
+      "<cores autoDiscoverCores=\"true\" adminPath=\"/admin/cores\" defaultCoreName=\"defcore\" transientCacheSize=\"2\" " +
+       " hostContext=\"solrprop\" zkClientTimeout=\"20\" host=\"222.333.444.555\" hostPort=\"6000\" />  " +
       "</solr>";
 }

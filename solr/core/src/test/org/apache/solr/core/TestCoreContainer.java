@@ -193,12 +193,11 @@ public class TestCoreContainer extends SolrTestCaseJ4 {
       assertEquals("cores not added?", 3, cores.getCoreNames().size());
       
       final File twoXml = new File(workDir, "2.solr.xml");
-      cores.transientCacheSize = 32;
 
       cores.persistFile(twoXml);
 
       assertXmlFile(twoXml, "/solr[@persistent='true']",
-          "/solr/cores[@defaultCoreName='collection1' and @transientCacheSize='32']",
+          "/solr/cores[@defaultCoreName='collection1']",
           "/solr/cores/core[@name='collection1' and @instanceDir='" + instDir
               + "']", "/solr/cores/core[@name='X' and @instanceDir='" + instDir
               + "' and @dataDir='" + dataX + "']",
@@ -271,7 +270,7 @@ public class TestCoreContainer extends SolrTestCaseJ4 {
       FileUtils.deleteDirectory(solrHomeDirectory);
       throw e;
     }
-    
+
     //init
     System.setProperty("solr.solr.home", solrHomeDirectory.getAbsolutePath());
     CoreContainer.Initializer init = new CoreContainer.Initializer();
@@ -293,8 +292,13 @@ public class TestCoreContainer extends SolrTestCaseJ4 {
       cores.register(newCore, false);
       
       //assert one registered core
+
       assertEquals("There core registered", 1, cores.getCores().size());
-      
+
+
+      assertXmlFile(new File(solrHomeDirectory, "solr.xml"),
+          "/solr/cores[@transientCacheSize='32']");
+
       newCore.close();
       cores.remove("core1");
       //assert cero cores
@@ -308,7 +312,7 @@ public class TestCoreContainer extends SolrTestCaseJ4 {
   
   private static final String EMPTY_SOLR_XML ="<?xml version=\"1.0\" encoding=\"UTF-8\" ?>\n" +
       "<solr persistent=\"false\">\n" +
-      "  <cores adminPath=\"/admin/cores\">\n" +
+      "  <cores adminPath=\"/admin/cores\" transientCacheSize=\"32\" >\n" +
       "  </cores>\n" +
       "</solr>";
   
