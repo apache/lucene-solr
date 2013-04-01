@@ -34,6 +34,7 @@ import org.apache.lucene.util.automaton.SpecialOperations;
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.schema.IndexSchema;
+import org.apache.solr.schema.IndexSchemaFactory;
 import org.apache.solr.search.QParser;
 import org.apache.solr.search.SolrQueryParser;
 import org.junit.Before;
@@ -56,7 +57,7 @@ public class TestReversedWildcardFilterFactory extends SolrTestCaseJ4 {
   @Before
   public void setUp() throws Exception {
     super.setUp();
-    schema = new IndexSchema(solrConfig, getSchemaFile(), null);
+    schema = IndexSchemaFactory.buildIndexSchema(getSchemaFile(), solrConfig);
     clearIndex();
     assertU(commit());
   }

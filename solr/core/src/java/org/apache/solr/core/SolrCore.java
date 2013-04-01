@@ -96,6 +96,7 @@ import org.apache.solr.response.XMLResponseWriter;
 import org.apache.solr.response.transform.TransformerFactory;
 import org.apache.solr.schema.FieldType;
 import org.apache.solr.schema.IndexSchema;
+import org.apache.solr.schema.IndexSchemaFactory;
 import org.apache.solr.schema.SchemaAware;
 import org.apache.solr.search.QParserPlugin;
 import org.apache.solr.search.SolrFieldCacheMBean;
@@ -393,11 +394,9 @@ public final class SolrCore implements SolrInfoMBean {
   public SolrCore reload(SolrResourceLoader resourceLoader, SolrCore prev) throws IOException,
       ParserConfigurationException, SAXException {
     
-    SolrConfig config = new SolrConfig(resourceLoader,
-        getSolrConfig().getName(), null);
+    SolrConfig config = new SolrConfig(resourceLoader, getSolrConfig().getName(), null);
     
-    IndexSchema schema = new IndexSchema(config,
-        getSchema().getResourceName(), null);
+    IndexSchema schema = IndexSchemaFactory.buildIndexSchema(getSchema().getResourceName(), config);
     
     solrCoreState.increfSolrCoreState();
     
@@ -681,7 +680,7 @@ public final class SolrCore implements SolrInfoMBean {
     log.info(logid+"Opening new SolrCore at " + resourceLoader.getInstanceDir() + ", dataDir="+dataDir);
 
     if (schema==null) {
-      schema = new IndexSchema(config, IndexSchema.DEFAULT_SCHEMA_FILE, null);
+      schema = IndexSchemaFactory.buildIndexSchema(IndexSchema.DEFAULT_SCHEMA_FILE, config);
     }
 
     if (null != cd && null != cd.getCloudDescriptor()) {
@@ -689,7 +688,7 @@ public final class SolrCore implements SolrInfoMBean {
       //
       // In cloud mode, version field is required for correct consistency
       // ideally this check would be more fine grained, and individual features
-      // would assert it when they initialize, but DistribuedUpdateProcessor
+      // would assert it when they initialize, but DistributedUpdateProcessor
       // is currently a big ball of wax that does more then just distributing
       // updates (ie: partial document updates), so it needs to work in no cloud
       // mode as well, and can't assert version field support on init.

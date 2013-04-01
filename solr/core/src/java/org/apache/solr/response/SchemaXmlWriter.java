@@ -40,8 +40,15 @@ import org.slf4j.LoggerFactory;
  * @lucene.internal
  */
 public class SchemaXmlWriter extends TextResponseWriter {
-  final static Logger log = LoggerFactory.getLogger(SchemaXmlWriter.class);
+  private static final Logger log = LoggerFactory.getLogger(SchemaXmlWriter.class);
   private static final char[] XML_DECLARATION = "<?xml version=\"1.0\" encoding=\"UTF-8\"?>".toCharArray();
+  private static final char[] MANAGED_SCHEMA_DO_NOT_EDIT_WARNING 
+      = "<!-- Solr managed schema - automatically generated - DO NOT EDIT -->".toCharArray();
+  
+  private boolean emitManagedSchemaDoNotEditWarning = false;
+  public void setEmitManagedSchemaDoNotEditWarning(boolean emitManagedSchemaDoNotEditWarning) { 
+    this.emitManagedSchemaDoNotEditWarning = emitManagedSchemaDoNotEditWarning; 
+  }
 
   public static void writeResponse(Writer writer, SolrQueryRequest req, SolrQueryResponse rsp) throws IOException {
     SchemaXmlWriter schemaXmlWriter = null;
@@ -62,6 +69,13 @@ public class SchemaXmlWriter extends TextResponseWriter {
   public void writeResponse() throws IOException {
     
     writer.write(XML_DECLARATION);
+    if (emitManagedSchemaDoNotEditWarning) {
+      if (doIndent) {
+        writer.write('\n');
+      }
+      writer.write(MANAGED_SCHEMA_DO_NOT_EDIT_WARNING);
+    }
+
     @SuppressWarnings("unchecked") SimpleOrderedMap<Object> schemaProperties
         = (SimpleOrderedMap<Object>)rsp.getValues().get(IndexSchema.SCHEMA);
 
@@ -139,7 +153,6 @@ public class SchemaXmlWriter extends TextResponseWriter {
     }
     decLevel();
     endTag(IndexSchema.SCHEMA);
-    
   }
 
   private void writeFieldTypes(List<SimpleOrderedMap<Object>> fieldTypePropertiesList) throws IOException {

@@ -24,11 +24,9 @@ import org.apache.solr.common.SolrException;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.handler.component.HttpShardHandlerFactory;
 import org.apache.solr.handler.component.ShardHandlerFactory;
-import org.apache.solr.schema.IndexSchema;
 import org.apache.solr.util.PropertiesUtil;
 import org.apache.solr.util.SystemIdResolver;
 import org.apache.solr.util.plugin.PluginInfoInitialized;
-import org.apache.zookeeper.KeeperException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.xml.sax.InputSource;
@@ -409,18 +407,6 @@ public class SolrProperties implements ConfigSolr {
     }
   }
 
-
-  // Copied verbatim from the old code, presumably this will be tested when we eliminate solr.xml
-  @Override
-  public IndexSchema getSchemaFromZk(ZkController zkController, String zkConfigName, String schemaName,
-                                     SolrConfig config)
-      throws KeeperException, InterruptedException {
-    byte[] configBytes = zkController.getConfigFileData(zkConfigName, schemaName);
-    InputSource is = new InputSource(new ByteArrayInputStream(configBytes));
-    is.setSystemId(SystemIdResolver.createSystemIdFromResourceName(schemaName));
-    IndexSchema schema = new IndexSchema(config, schemaName, is);
-    return schema;
-  }
 
   // Copied verbatim from the old code, presumably this will be tested when we eliminate solr.xml
   @Override

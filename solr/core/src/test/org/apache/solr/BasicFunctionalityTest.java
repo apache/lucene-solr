@@ -53,6 +53,7 @@ import org.apache.solr.response.ResultContext;
 import org.apache.solr.response.SolrQueryResponse;
 import org.apache.solr.response.XMLWriter;
 import org.apache.solr.schema.IndexSchema;
+import org.apache.solr.schema.IndexSchemaFactory;
 import org.apache.solr.schema.SchemaField;
 import org.apache.solr.search.DocIterator;
 import org.apache.solr.search.DocList;
@@ -530,7 +531,7 @@ public class BasicFunctionalityTest extends SolrTestCaseJ4 {
   @Test
   public void testTermVectorFields() {
     
-    IndexSchema ischema = new IndexSchema(solrConfig, getSchemaFile(), null);
+    IndexSchema ischema = IndexSchemaFactory.buildIndexSchema(getSchemaFile(), solrConfig);
     SchemaField f; // Solr field type
     IndexableField luf; // Lucene field
 

@@ -25,7 +25,10 @@ import org.apache.solr.common.util.XMLErrorLogger;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.w3c.dom.Document;
+import org.w3c.dom.Element;
+import org.w3c.dom.NamedNodeMap;
 import org.w3c.dom.Node;
+import org.w3c.dom.NodeList;
 import org.xml.sax.InputSource;
 import org.xml.sax.SAXException;
 import org.apache.commons.io.IOUtils;
@@ -41,6 +44,13 @@ import javax.xml.xpath.XPathExpressionException;
 import javax.xml.xpath.XPathFactory;
 import java.io.IOException;
 import java.util.Arrays;
+import java.util.HashSet;
+import java.util.Map;
+import java.util.Set;
+import java.util.SortedMap;
+import java.util.SortedSet;
+import java.util.TreeMap;
+import java.util.TreeSet;
 import java.util.concurrent.atomic.AtomicBoolean;
 
 /**
@@ -232,6 +242,98 @@ public class Config {
     } catch (Throwable e) {
       SolrException.log(log,"Error in xpath",e);
       throw new SolrException( SolrException.ErrorCode.SERVER_ERROR,"Error in xpath:" + xstr+ " for " + name,e);
+    }
+  }
+
+  public NodeList getNodeList(String path, boolean errIfMissing) {
+    XPath xpath = xpathFactory.newXPath();
+    String xstr = normalize(path);
+
+    try {
+      NodeList nodeList = (NodeList)xpath.evaluate(xstr, doc, XPathConstants.NODESET);
+
+      if (null == nodeList) {
+        if (errIfMissing) {
+          throw new RuntimeException(name + " missing "+path);
+        } else {
+          log.debug(name + " missing optional " + path);
+          return null;
+        }
+      }
+
+      log.trace(name + ":" + path + "=" + nodeList);
+      return nodeList;
+
+    } catch (XPathExpressionException e) {
+      SolrException.log(log,"Error in xpath",e);
+      throw new SolrException( SolrException.ErrorCode.SERVER_ERROR,"Error in xpath:" + xstr + " for " + name,e);
+    } catch (SolrException e) {
+      throw(e);
+    } catch (Throwable e) {
+      SolrException.log(log,"Error in xpath",e);
+      throw new SolrException( SolrException.ErrorCode.SERVER_ERROR,"Error in xpath:" + xstr+ " for " + name,e);
+    }
+  }
+
+  /**
+   * Returns the set of attributes on the given element that are not among the given knownAttributes,
+   * or null if all attributes are known.
+   */
+  public Set<String> getUnknownAttributes(Element element, String... knownAttributes) {
+    Set<String> knownAttributeSet = new HashSet<String>(Arrays.asList(knownAttributes));
+    Set<String> unknownAttributeSet = null;
+    NamedNodeMap attributes = element.getAttributes();
+    for (int i = 0 ; i < attributes.getLength() ; ++i) {
+      final String attributeName = attributes.item(i).getNodeName();
+      if ( ! knownAttributeSet.contains(attributeName)) {
+        if (null == unknownAttributeSet) {
+          unknownAttributeSet = new HashSet<String>();
+        }
+        unknownAttributeSet.add(attributeName);
+      }
+    }
+    return unknownAttributeSet;
+  }
+
+  /**
+   * Logs an error and throws an exception if any of the element(s) at the given elementXpath
+   * contains an attribute name that is not among knownAttributes. 
+   */
+  public void complainAboutUnknownAttributes(String elementXpath, String... knownAttributes) {
+    SortedMap<String,SortedSet<String>> problems = new TreeMap<String,SortedSet<String>>(); 
+    NodeList nodeList = getNodeList(elementXpath, false);
+    for (int i = 0 ; i < nodeList.getLength() ; ++i) {
+      Element element = (Element)nodeList.item(i);
+      Set<String> unknownAttributes = getUnknownAttributes(element, knownAttributes);
+      if (null != unknownAttributes) {
+        String elementName = element.getNodeName();
+        SortedSet<String> allUnknownAttributes = problems.get(elementName);
+        if (null == allUnknownAttributes) {
+          allUnknownAttributes = new TreeSet<String>();
+          problems.put(elementName, allUnknownAttributes);
+        }
+        allUnknownAttributes.addAll(unknownAttributes);
+      }
+    }
+    if (problems.size() > 0) {
+      StringBuilder message = new StringBuilder();
+      for (Map.Entry<String,SortedSet<String>> entry : problems.entrySet()) {
+        if (message.length() > 0) {
+          message.append(", ");
+        }
+        message.append('<');
+        message.append(entry.getKey());
+        for (String attributeName : entry.getValue()) {
+          message.append(' ');
+          message.append(attributeName);
+          message.append("=\"...\"");
+        }
+        message.append('>');
+      }
+      message.insert(0, "Unknown attribute(s) on element(s): ");
+      String msg = message.toString();
+      SolrException.log(log, msg);
+      throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, msg);
     }
   }
 

@@ -71,6 +71,7 @@ import org.apache.solr.logging.LogWatcher;
 import org.apache.solr.logging.jul.JulWatcher;
 import org.apache.solr.logging.log4j.Log4jWatcher;
 import org.apache.solr.schema.IndexSchema;
+import org.apache.solr.schema.IndexSchemaFactory;
 import org.apache.solr.update.SolrCoreState;
 import org.apache.solr.util.DefaultSolrThreadFactory;
 import org.apache.solr.util.FileUtils;
@@ -868,7 +869,7 @@ public class CoreContainer
       }
       solrLoader = new ZkSolrResourceLoader(instanceDir, zkConfigName, libLoader, SolrProperties.getCoreProperties(instanceDir, dcore), zkController);
       config = getSolrConfigFromZk(zkConfigName, dcore.getConfigName(), solrLoader);
-      schema = getSchemaFromZk(zkConfigName, dcore.getSchemaName(), config);
+      schema = IndexSchemaFactory.buildIndexSchema(dcore.getSchemaName(), config);
       return new SolrCore(dcore.getName(), null, config, schema, dcore);
 
     } catch (KeeperException e) {
@@ -912,7 +913,7 @@ public class CoreContainer
         schema = indexSchemaCache.get(key);
         if (schema == null) {
           log.info("creating new schema object for core: " + dcore.getProperty(CoreDescriptor.CORE_NAME));
-          schema = new IndexSchema(config, dcore.getSchemaName(), null);
+          schema = IndexSchemaFactory.buildIndexSchema(dcore.getSchemaName(), config);
           indexSchemaCache.put(key, schema);
         } else {
           log.info("re-using schema object for core: " + dcore.getProperty(CoreDescriptor.CORE_NAME));
@@ -921,7 +922,7 @@ public class CoreContainer
     }
 
     if (schema == null) {
-      schema = new IndexSchema(config, dcore.getSchemaName(), null);
+      schema = IndexSchemaFactory.buildIndexSchema(dcore.getSchemaName(), config);
     }
 
     SolrCore core = new SolrCore(dcore.getName(), null, config, schema, dcore);
@@ -1360,12 +1361,6 @@ public class CoreContainer
     }
     log.error(msg, ex);
     return new SolrException(ErrorCode.SERVER_ERROR, msg, ex);
-  }
-
-  private IndexSchema getSchemaFromZk(String zkConfigName, String schemaName,
-      SolrConfig config)
-      throws KeeperException, InterruptedException {
-    return cfg.getSchemaFromZk(zkController, zkConfigName, schemaName, config);
   }
 }
 

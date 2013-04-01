@@ -36,6 +36,7 @@ import org.apache.solr.request.SolrRequestInfo;
 import org.apache.solr.response.QueryResponseWriter;
 import org.apache.solr.response.SolrQueryResponse;
 import org.apache.solr.schema.IndexSchema;
+import org.apache.solr.schema.IndexSchemaFactory;
 import org.apache.solr.servlet.DirectSolrConnection;
 import org.apache.solr.common.util.NamedList.NamedListEntry;
 
@@ -97,7 +98,7 @@ public class TestHarness extends BaseTestHarness {
                          String dataDirectory,
                          SolrConfig solrConfig,
                          String schemaFile) {
-    this( coreName, dataDirectory, solrConfig, new IndexSchema(solrConfig, schemaFile, null));
+    this( coreName, dataDirectory, solrConfig, IndexSchemaFactory.buildIndexSchema(schemaFile, solrConfig));
   } 
   /**
    * @param coreName to initialize
@@ -119,7 +120,7 @@ public class TestHarness extends BaseTestHarness {
       public TestHarness( String dataDirectory,
                           SolrConfig solrConfig,
                           String schemaFile) {
-     this( dataDirectory, solrConfig, new IndexSchema(solrConfig, schemaFile, null));
+     this( dataDirectory, solrConfig, IndexSchemaFactory.buildIndexSchema(schemaFile, solrConfig));
    }
    /**
     * @param dataDirectory path for index data, will not be cleaned up

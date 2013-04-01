@@ -27,6 +27,7 @@ import org.apache.lucene.analysis.commongrams.CommonGramsFilterFactory;
 import org.apache.lucene.analysis.core.StopFilterFactory;
 import org.apache.solr.analysis.TokenizerChain;
 import org.apache.solr.schema.IndexSchema;
+import org.apache.solr.schema.ManagedIndexSchema;
 import org.carrot2.core.LanguageCode;
 import org.carrot2.core.attribute.Init;
 import org.carrot2.core.attribute.Processing;
@@ -37,6 +38,7 @@ import org.carrot2.text.util.MutableCharArray;
 import org.carrot2.util.attribute.Attribute;
 import org.carrot2.util.attribute.Bindable;
 import org.carrot2.util.attribute.Input;
+import org.carrot2.util.attribute.constraint.ImplementingClasses;
 import org.slf4j.Logger;
 
 import com.google.common.collect.HashMultimap;
@@ -60,6 +62,7 @@ public class SolrStopwordsCarrot2LexicalDataFactory implements
   @Init
   @Input
   @Attribute(key = "solrIndexSchema")
+  @ImplementingClasses(classes = { IndexSchema.class, ManagedIndexSchema.class })
   private IndexSchema schema;
 
   @Processing

@@ -19,8 +19,6 @@ package org.apache.solr.core;
 
 import org.apache.solr.cloud.ZkController;
 import org.apache.solr.handler.component.ShardHandlerFactory;
-import org.apache.solr.schema.IndexSchema;
-import org.apache.zookeeper.KeeperException;
 
 import java.io.File;
 import java.util.List;
@@ -57,9 +55,6 @@ public interface ConfigSolr {
   public ShardHandlerFactory initShardHandler();
 
   public Properties getSolrProperties(ConfigSolr cfg, String context);
-
-  public IndexSchema getSchemaFromZk(ZkController zkController, String zkConfigName, String schemaName,
-                                     SolrConfig config) throws KeeperException, InterruptedException;
 
   public SolrConfig getSolrConfigFromZk(ZkController zkController, String zkConfigName, String solrConfigFileName,
                                         SolrResourceLoader resourceLoader);
