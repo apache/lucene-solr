@@ -309,6 +309,26 @@ public class TestCoreContainer extends SolrTestCaseJ4 {
     }
 
   }
+
+  @Test
+  public void testClassLoaderHierarchy() throws Exception {
+    final CoreContainer cc = init("_classLoaderHierarchy");
+    try {
+      cc.setPersistent(false);
+      ClassLoader sharedLoader = cc.loader.getClassLoader();
+      ClassLoader contextLoader = Thread.currentThread().getContextClassLoader();
+      assertSame(contextLoader, sharedLoader.getParent());
+
+      CoreDescriptor descriptor1 = new CoreDescriptor(cc, "core1", "./collection1");
+      SolrCore core1 = cc.create(descriptor1);
+      ClassLoader coreLoader = core1.getResourceLoader().getClassLoader();
+      assertSame(sharedLoader, coreLoader.getParent());
+
+      core1.close();
+    } finally {
+      cc.shutdown();
+    }
+  }
   
   private static final String EMPTY_SOLR_XML ="<?xml version=\"1.0\" encoding=\"UTF-8\" ?>\n" +
       "<solr persistent=\"false\">\n" +

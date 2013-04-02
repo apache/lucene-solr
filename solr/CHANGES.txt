@@ -147,6 +147,9 @@ Bug Fixes
 * SOLR-3758: Fixed SpellCheckComponent to work consistently with distributed grouping
   (James Dyer)
 
+* SOLR-4652: Fix broken behavior with shared libraries in resource loader for
+  solr.xml plugins.  (Ryan Ernst, Robert Muir, Uwe Schindler)
+
 Optimizations
 ----------------------
 
