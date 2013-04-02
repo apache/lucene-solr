@@ -116,7 +116,6 @@ public class CoreContainer
   protected CollectionsHandler collectionsHandler = null;
   protected File configFile = null;
   protected String libDir = null;
-  protected ClassLoader libLoader = null;
   protected SolrResourceLoader loader = null;
   protected Properties containerProperties;
   protected Map<String ,IndexSchema> indexSchemaCache;
@@ -394,6 +393,15 @@ public class CoreContainer
     // now.
     cfg.substituteProperties();
 
+    // add the sharedLib to the shared resource loader before initializing cfg based plugins
+    libDir = cfg.get(ConfigSolr.ConfLevel.SOLR, "sharedLib", null);
+    if (libDir != null) {
+      File f = FileUtils.resolvePath(new File(dir), libDir);
+      log.info("loading shared library: " + f.getAbsolutePath());
+      loader.addToClassLoader(libDir);
+      loader.reloadLuceneSPI();
+    }
+
     shardHandlerFactory = cfg.initShardHandler();
 
     coreMaps.allocateLazyCores(cfg, loader);
@@ -448,7 +456,6 @@ public class CoreContainer
       defaultCoreName = dcoreName;
     }
     persistent = cfg.getBool(ConfigSolr.ConfLevel.SOLR, "persistent", false);
-    libDir = cfg.get(ConfigSolr.ConfLevel.SOLR, "sharedLib", null);
     zkHost = cfg.get(ConfigSolr.ConfLevel.SOLR, "zkHost", null);
     coreLoadThreads = cfg.getInt(ConfigSolr.ConfLevel.SOLR, "coreLoadThreads", CORE_LOAD_THREADS);
     
@@ -483,12 +490,6 @@ public class CoreContainer
     if (isZooKeeperAware() && coreLoadThreads <= 1) {
       throw new SolrException(ErrorCode.SERVER_ERROR,
           "SolrCloud requires a value of at least 2 in solr.xml for coreLoadThreads");
-    }
-    
-    if (libDir != null) {
-      File f = FileUtils.resolvePath(new File(dir), libDir);
-      log.info("loading shared library: " + f.getAbsolutePath());
-      libLoader = SolrResourceLoader.createClassLoader(f, null);
     }
     
     if (adminPath != null) {
@@ -876,7 +877,7 @@ public class CoreContainer
         throw new ZooKeeperException(SolrException.ErrorCode.SERVER_ERROR,
             "Could not find config name for collection:" + collection);
       }
-      solrLoader = new ZkSolrResourceLoader(instanceDir, zkConfigName, libLoader,
+      solrLoader = new ZkSolrResourceLoader(instanceDir, zkConfigName, loader.getClassLoader(),
           ConfigSolrXml.getCoreProperties(instanceDir, dcore), zkController);
       config = getSolrConfigFromZk(zkConfigName, dcore.getConfigName(), solrLoader);
       schema = IndexSchemaFactory.buildIndexSchema(dcore.getSchemaName(), config);
@@ -900,7 +901,7 @@ public class CoreContainer
     SolrResourceLoader solrLoader = null;
 
     SolrConfig config = null;
-    solrLoader = new SolrResourceLoader(instanceDir, libLoader, ConfigSolrXml.getCoreProperties(instanceDir, dcore));
+    solrLoader = new SolrResourceLoader(instanceDir, loader.getClassLoader(), ConfigSolrXml.getCoreProperties(instanceDir, dcore));
     try {
       config = new SolrConfig(solrLoader, dcore.getConfigName(), null);
     } catch (Exception e) {
@@ -1057,7 +1058,7 @@ public class CoreContainer
                  cd.getName(), instanceDir.getAbsolutePath());
         SolrResourceLoader solrLoader;
         if(zkController == null) {
-          solrLoader = new SolrResourceLoader(instanceDir.getAbsolutePath(), libLoader, ConfigSolrXml.getCoreProperties(instanceDir.getAbsolutePath(), cd));
+          solrLoader = new SolrResourceLoader(instanceDir.getAbsolutePath(), loader.getClassLoader(), ConfigSolrXml.getCoreProperties(instanceDir.getAbsolutePath(), cd));
         } else {
           try {
             String collection = cd.getCloudDescriptor().getCollectionName();
@@ -1069,7 +1070,7 @@ public class CoreContainer
               throw new ZooKeeperException(SolrException.ErrorCode.SERVER_ERROR,
                                            "Could not find config name for collection:" + collection);
             }
-            solrLoader = new ZkSolrResourceLoader(instanceDir.getAbsolutePath(), zkConfigName, libLoader,
+            solrLoader = new ZkSolrResourceLoader(instanceDir.getAbsolutePath(), zkConfigName, loader.getClassLoader(),
                 ConfigSolrXml.getCoreProperties(instanceDir.getAbsolutePath(), cd), zkController);
           } catch (KeeperException e) {
             log.error("", e);
@@ -1187,8 +1188,6 @@ public class CoreContainer
    * @return a CoreAdminHandler
    */
   protected CoreAdminHandler createMultiCoreHandler(final String adminHandlerClass) {
-    // :TODO: why create a new SolrResourceLoader? why not use this.loader ???
-    SolrResourceLoader loader = new SolrResourceLoader(solrHome, libLoader, null);
     return loader.newAdminHandlerInstance(CoreContainer.this, adminHandlerClass);
   }
 
