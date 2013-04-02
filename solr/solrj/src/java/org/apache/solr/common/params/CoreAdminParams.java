@@ -88,6 +88,9 @@ public interface CoreAdminParams
 
   public static final String DELETE_INSTANCE_DIR = "deleteInstanceDir";
 
+  public static final String LOAD_ON_STARTUP = "loadOnStartup";
+  
+  public static final String TRANSIENT = "transient";
 
   public enum CoreAdminAction {
     STATUS,  
@@ -104,7 +107,9 @@ public interface CoreAdminParams
     REQUESTRECOVERY, 
     REQUESTSYNCSHARD,
     CREATEALIAS,
-    DELETEALIAS;
+    DELETEALIAS,
+    LOAD_ON_STARTUP,
+    TRANSIENT;
     
     public static CoreAdminAction get( String p )
     {

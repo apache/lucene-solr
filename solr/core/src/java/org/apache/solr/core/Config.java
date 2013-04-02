@@ -84,7 +84,7 @@ public class Config {
    */
   @Deprecated
   public Config(SolrResourceLoader loader, Config cfg) throws TransformerException {
-    this(loader, null, ConfigSolrXmlBackCompat.copyDoc(cfg.getDocument()));
+    this(loader, null, ConfigSolrXml.copyDoc(cfg.getDocument()));
   }
 
   public Config(SolrResourceLoader loader, String name, InputSource is, String prefix) throws ParserConfigurationException, IOException, SAXException 

@@ -33,16 +33,16 @@ import java.util.Properties;
  * This is already deprecated, it's only intended to exist for while transitioning to properties-based replacement for
  * solr.xml
  *
- * @since solr 4.2
+ * @since solr 4.3
  */
-@Deprecated
 public interface ConfigSolr {
 
   public static enum ConfLevel {
     SOLR, SOLR_CORES, SOLR_CORES_CORE, SOLR_LOGGING, SOLR_LOGGING_WATCHER
-  }
+  };
 
-  ;
+  public final static String CORE_PROP_FILE = "core.properties";
+  public final static String SOLR_XML_FILE = "solr.xml";
 
   public int getInt(ConfLevel level, String tag, int def);
 

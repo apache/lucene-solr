@@ -438,6 +438,18 @@ public class CoreAdminHandler extends RequestHandlerBase {
       if (opts != null)
         dcore.setUlogDir(opts);
 
+      opts = params.get(CoreAdminParams.LOAD_ON_STARTUP);
+      if (opts != null){
+        Boolean value = Boolean.valueOf(opts);
+        dcore.setLoadOnStartup(value);
+      }
+      
+      opts = params.get(CoreAdminParams.TRANSIENT);
+      if (opts != null){
+        Boolean value = Boolean.valueOf(opts);
+        dcore.setTransient(value);
+      }
+      
       CloudDescriptor cd = dcore.getCloudDescriptor();
       if (cd != null) {
         cd.setParams(req.getParams());
@@ -457,7 +469,7 @@ public class CoreAdminHandler extends RequestHandlerBase {
         opts = params.get(CoreAdminParams.CORE_NODE_NAME);
         if (opts != null)
           cd.setCoreNodeName(opts);
-        
+                        
         Integer numShards = params.getInt(ZkStateReader.NUM_SHARDS_PROP);
         if (numShards != null)
           cd.setNumShards(numShards);

@@ -21,8 +21,7 @@ import org.apache.commons.io.IOUtils;
 import org.apache.solr.common.cloud.OnReconnect;
 import org.apache.solr.common.cloud.SolrZkClient;
 import org.apache.solr.core.ConfigSolr;
-import org.apache.solr.core.ConfigSolrXmlBackCompat;
-import org.apache.solr.core.SolrProperties;
+import org.apache.solr.core.ConfigSolrXml;
 import org.apache.solr.core.SolrResourceLoader;
 import org.apache.zookeeper.KeeperException;
 import org.xml.sax.SAXException;
@@ -177,21 +176,12 @@ public class ZkCLI {
           solrHome = loader.getInstanceDir();
 
           File configFile = new File(solrHome, SOLR_XML);
-          boolean isXml = true;
-          if (! configFile.exists()) {
-            configFile = new File(solrHome, SolrProperties.SOLR_PROPERTIES_FILE);
-            isXml = false;
-          }
           InputStream is = new FileInputStream(configFile);
 
           ConfigSolr cfg;
 
           try {
-            if (isXml) {
-              cfg = new ConfigSolrXmlBackCompat(loader, null, is, null, false);
-            } else {
-              cfg = new SolrProperties(null, loader, is, null);
-            }
+            cfg = new ConfigSolrXml(loader, null, is, null, false, null);
           } finally {
             IOUtils.closeQuietly(is);
           }
