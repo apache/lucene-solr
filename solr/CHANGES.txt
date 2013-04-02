@@ -103,12 +103,23 @@ New Features
   "dynamicFields", respectively, to align with all other REST API outputs, which
   use camelCase.
   (Steve Rowe)
-  
+    
 * SOLR-4658: In preparation for REST API requests that can modify the schema,
   a "managed schema" is introduced.  
   Add '<schemaFactory class="ManagedSchemaFactory" mutable="true"/>' to solrconfig.xml
   in order to use it, and to enable schema modifications via REST API requests.
   (Steve Rowe, Robert Muir)
+
+* SOLR-4656: Added two new highlight parameters, hl.maxMultiValuedToMatch and 
+  hl.maxMultiValuedToExamine. maxMultiValuedToMatch stops looking for snippets after 
+  finding the specified number of matches, no matter how far into the multivalued field
+  you've gone. maxMultiValuedToExamine stops looking for matches after the specified
+  number of multiValued entries have been examined. If both are specified, the limit
+  hit first stops the loop. Also this patch cuts down on the copying of the document 
+  entries during highlighting. These optimizations are probably unnoticeable unless
+  there are a large number of entries in the multiValued field. Conspicuously, this will
+  prevent the "best" match from being found if it appears later in the MV list than the
+  cutoff specified by either of these params. (Erick Erickson)
 
 Bug Fixes
 ----------------------

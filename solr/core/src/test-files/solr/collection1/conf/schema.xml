@@ -582,6 +582,8 @@
    
    <field name="store" type="location" indexed="true" stored="true" omitNorms="false"/>
 
+   <field name="lower" type="lowertok" indexed="false" stored="true" multiValued="true" />
+
    <!-- Dynamic field definitions.  If a field name is not found, dynamicFields
         will be used if the name matches any of the patterns.
         RESTRICTION: the glob-like pattern in the name attribute must have
