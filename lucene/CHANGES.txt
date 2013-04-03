@@ -197,6 +197,11 @@ Bug Fixes
 * LUCENE-4893: Facet counts were multiplied as many times as 
   FacetsCollector.getFacetResults() is called. (Shai Erera)
 
+* LUCENE-4888: Fixed SloppyPhraseScorer, MultiDocs(AndPositions)Enum and
+  MultiSpansWrapper which happened to sometimes call DocIdSetIterator.advance
+  with target<=current (in this case the behavior of advance is undefined).
+  (Adrien Grand)
+
 Documentation
 
 * LUCENE-4841: Added example SimpleSortedSetFacetsExample to show how

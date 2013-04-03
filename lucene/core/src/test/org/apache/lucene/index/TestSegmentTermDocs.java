@@ -149,7 +149,7 @@ public class TestSegmentTermDocs extends LuceneTestCase {
     assertTrue(tdocs.nextDoc() != DocIdSetIterator.NO_MORE_DOCS);
     assertEquals(1, tdocs.docID());
     assertEquals(4, tdocs.freq());
-    assertTrue(tdocs.advance(0) != DocIdSetIterator.NO_MORE_DOCS);
+    assertTrue(tdocs.advance(2) != DocIdSetIterator.NO_MORE_DOCS);
     assertEquals(2, tdocs.docID());
     assertTrue(tdocs.advance(4) != DocIdSetIterator.NO_MORE_DOCS);
     assertEquals(4, tdocs.docID());
@@ -189,7 +189,7 @@ public class TestSegmentTermDocs extends LuceneTestCase {
     assertTrue(tdocs.nextDoc() != DocIdSetIterator.NO_MORE_DOCS);
     assertEquals(11, tdocs.docID());
     assertEquals(4, tdocs.freq());
-    assertTrue(tdocs.advance(5) != DocIdSetIterator.NO_MORE_DOCS);
+    assertTrue(tdocs.advance(12) != DocIdSetIterator.NO_MORE_DOCS);
     assertEquals(12, tdocs.docID());
     assertTrue(tdocs.advance(15) != DocIdSetIterator.NO_MORE_DOCS);
     assertEquals(15, tdocs.docID());
@@ -233,7 +233,7 @@ public class TestSegmentTermDocs extends LuceneTestCase {
     assertTrue(tdocs.nextDoc() != DocIdSetIterator.NO_MORE_DOCS);
     assertEquals(27, tdocs.docID());
     assertEquals(4, tdocs.freq());
-    assertTrue(tdocs.advance(5) != DocIdSetIterator.NO_MORE_DOCS);
+    assertTrue(tdocs.advance(28) != DocIdSetIterator.NO_MORE_DOCS);
     assertEquals(28, tdocs.docID());
     assertTrue(tdocs.advance(40) != DocIdSetIterator.NO_MORE_DOCS);
     assertEquals(40, tdocs.docID());

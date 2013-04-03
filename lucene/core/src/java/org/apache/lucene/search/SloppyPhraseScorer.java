@@ -561,7 +561,7 @@ final class SloppyPhraseScorer extends Scorer {
 
   @Override
   public int nextDoc() throws IOException {
-    return advance(max.doc);
+    return advance(max.doc + 1); // advance to the next doc after #docID()
   }
   
   @Override
@@ -571,27 +571,25 @@ final class SloppyPhraseScorer extends Scorer {
 
   @Override
   public int advance(int target) throws IOException {
-    sloppyFreq = 0.0f;
-    if (!advanceMin(target)) {
-      return NO_MORE_DOCS;
-    }        
-    boolean restart=false;
-    while (sloppyFreq == 0.0f) {
-      while (min.doc < max.doc || restart) {
-        restart = false;
+    assert target > docID();
+    do {
+      if (!advanceMin(target)) {
+        return NO_MORE_DOCS;
+      }
+      while (min.doc < max.doc) {
         if (!advanceMin(max.doc)) {
           return NO_MORE_DOCS;
-        }        
+        }
       }
       // found a doc with all of the terms
       sloppyFreq = phraseFreq(); // check for phrase
-      restart = true;
-    } 
+      target = min.doc + 1; // next target in case sloppyFreq is still 0
+    } while (sloppyFreq == 0f);
 
     // found a match
     return max.doc;
   }
-  
+
   @Override
   public long cost() {
     return cost;
