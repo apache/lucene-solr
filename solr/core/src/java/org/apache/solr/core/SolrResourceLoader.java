@@ -111,7 +111,7 @@ public class SolrResourceLoader implements ResourceLoader
     }
     
     this.classLoader = createClassLoader(null, parent);
-    addToClassLoader("./lib/", null);
+    addToClassLoader("./lib/", null, true);
     reloadLuceneSPI();
     this.coreProperties = coreProperties;
   }
@@ -135,17 +135,35 @@ public class SolrResourceLoader implements ResourceLoader
    * only be called prior to using this ResourceLoader to get any resources, otherwise
    * it's behavior will be non-deterministic. You also have to {link @reloadLuceneSPI}
    * before using this ResourceLoader.
+   * 
+   * <p>This method will quietly ignore missing or non-directory <code>baseDir</code>
+   *  folder. 
    *
    * @param baseDir base directory whose children (either jars or directories of
    *                classes) will be in the classpath, will be resolved relative
    *                the instance dir.
    * @param filter The filter files must satisfy, if null all files will be accepted.
+   * @param quiet  Be quiet if baseDir does not point to a directory or if no file is 
+   *               left after applying the filter. 
    */
-  void addToClassLoader(final String baseDir, final FileFilter filter) {
+  void addToClassLoader(final String baseDir, final FileFilter filter, boolean quiet) {
     File base = FileUtils.resolvePath(new File(getInstanceDir()), baseDir);
-    this.classLoader = replaceClassLoader(classLoader, base, filter);
+    if (base != null && base.exists() && base.isDirectory()) {
+      File[] files = base.listFiles(filter);
+      if (!quiet && (files == null || files.length == 0)) {
+        log.warn("No files added to classloader from lib: "
+            + baseDir + " (resolved as: " + base.getAbsolutePath() + ").");
+      } else {
+        this.classLoader = replaceClassLoader(classLoader, base, filter);
+      }
+    } else {
+      if (!quiet) {
+        log.warn("Can't find (or read) directory to add to classloader: "
+            + baseDir + " (resolved as: " + base.getAbsolutePath() + ").");
+      }
+    }
   }
-  
+
   /**
    * Adds the specific file/dir specified to the ClassLoader used by this
    * ResourceLoader.  This method <b>MUST</b>
@@ -174,7 +192,7 @@ public class SolrResourceLoader implements ResourceLoader
   /**
    * Reloads all Lucene SPI implementations using the new classloader.
    * This method must be called after {@link #addToClassLoader(String)}
-   * and {@link #addToClassLoader(String,FileFilter)} before using
+   * and {@link #addToClassLoader(String,FileFilter,boolean)} before using
    * this ResourceLoader.
    */
   void reloadLuceneSPI() {
