@@ -76,6 +76,8 @@ public class RecursivePrefixTreeStrategy extends PrefixTreeStrategy {
       return new WithinPrefixTreeFilter(
           shape, getFieldName(), grid, detailLevel, prefixGridScanLevel,
           -1);//-1 flag is slower but ensures correct results
+    } else if (op == SpatialOperation.Contains) {
+      return new ContainsPrefixTreeFilter(shape, getFieldName(), grid, detailLevel);
     }
     throw new UnsupportedSpatialOperation(op);
   }

@@ -157,6 +157,9 @@ New Features
   you can override getBreakIterator(String field) to use different mechanisms
   for e.g. title vs. body fields.  (Mike McCandless, Robert Muir)
 
+* LUCENE-4645: Added support for the "Contains" spatial predicate for
+  RecursivePrefixTreeStrategy.  (David Smiley)
+
 Optimizations
 
 * LUCENE-4839: SorterTemplate.merge can now be overridden in order to replace

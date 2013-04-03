@@ -82,6 +82,13 @@ public class SpatialOpRecursivePrefixTreeTest extends StrategyTestCase {
   }
 
   @Test
+  @Repeat(iterations = 10)
+  public void testContains() throws IOException {
+    mySetup();
+    doTest(SpatialOperation.Contains);
+  }
+
+  @Test
   public void testWithinDisjointParts() throws IOException {
     this.ctx = new SpatialContext(false, null, new RectangleImpl(0, 256, -128, 128, null));
     //A fairly shallow grid, and default 2.5% distErrPct
@@ -211,7 +218,7 @@ public class SpatialOpRecursivePrefixTreeTest extends StrategyTestCase {
 
     @Override
     public boolean hasArea() {
-      throw new UnsupportedOperationException("TODO unimplemented");//TODO
+      return true;
     }
 
     @Override
