@@ -462,10 +462,10 @@ public class SolrConfig extends Config {
         String baseDir = DOMUtil.getAttr(node, "dir");
         String path = DOMUtil.getAttr(node, "path");
         if (null != baseDir) {
-          // :TODO: add support for a simpler 'glob' mutually eclusive of regex
+          // :TODO: add support for a simpler 'glob' mutually exclusive of regex
           String regex = DOMUtil.getAttr(node, "regex");
           FileFilter filter = (null == regex) ? null : new RegexFileFilter(regex);
-          getResourceLoader().addToClassLoader(baseDir, filter);
+          getResourceLoader().addToClassLoader(baseDir, filter, false);
         } else if (null != path) {
           getResourceLoader().addToClassLoader(path);
         } else {
