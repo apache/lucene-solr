@@ -340,6 +340,7 @@ public class ZkStateReader {
             
           }, true);
     }
+    updateAliases();
   }
   
   

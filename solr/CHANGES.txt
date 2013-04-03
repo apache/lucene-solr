@@ -150,6 +150,9 @@ Bug Fixes
 * SOLR-4652: Fix broken behavior with shared libraries in resource loader for
   solr.xml plugins.  (Ryan Ernst, Robert Muir, Uwe Schindler)
 
+* SOLR-4664: ZkStateReader should update aliases on construction. 
+  (Mark Miller, Elodie Sannier)
+
 Optimizations
 ----------------------
 
