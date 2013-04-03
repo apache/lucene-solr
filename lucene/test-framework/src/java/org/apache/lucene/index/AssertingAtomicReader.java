@@ -225,38 +225,42 @@ public class AssertingAtomicReader extends FilterAtomicReader {
   static enum DocsEnumState { START, ITERATING, FINISHED };
   static class AssertingDocsEnum extends FilterDocsEnum {
     private DocsEnumState state = DocsEnumState.START;
+    private int doc;
     
     public AssertingDocsEnum(DocsEnum in) {
       super(in);
       int docid = in.docID();
       assert docid == -1 || docid == DocIdSetIterator.NO_MORE_DOCS : "invalid initial doc id: " + docid;
+      doc = -1;
     }
 
     @Override
     public int nextDoc() throws IOException {
       assert state != DocsEnumState.FINISHED : "nextDoc() called after NO_MORE_DOCS";
       int nextDoc = super.nextDoc();
-      assert nextDoc >= 0 : "invalid doc id: " + nextDoc;
+      assert nextDoc > doc : "backwards nextDoc from " + doc + " to " + nextDoc;
       if (nextDoc == DocIdSetIterator.NO_MORE_DOCS) {
         state = DocsEnumState.FINISHED;
       } else {
         state = DocsEnumState.ITERATING;
       }
-      return nextDoc;
+      assert docID() == nextDoc;
+      return doc = nextDoc;
     }
 
     @Override
     public int advance(int target) throws IOException {
       assert state != DocsEnumState.FINISHED : "advance() called after NO_MORE_DOCS";
+      assert target > doc : "target must be > docID(), got " + target + " <= " + doc;
       int advanced = super.advance(target);
-      assert advanced >= 0 : "invalid doc id: " + advanced;
       assert advanced >= target : "backwards advance from: " + target + " to: " + advanced;
       if (advanced == DocIdSetIterator.NO_MORE_DOCS) {
         state = DocsEnumState.FINISHED;
       } else {
         state = DocsEnumState.ITERATING;
       }
-      return advanced;
+      assert docID() == advanced;
+      return doc = advanced;
     }
 
     // NOTE: We don't assert anything for docId(). Specifically DocsEnum javadocs
@@ -277,18 +281,20 @@ public class AssertingAtomicReader extends FilterAtomicReader {
     private DocsEnumState state = DocsEnumState.START;
     private int positionMax = 0;
     private int positionCount = 0;
+    private int doc;
 
     public AssertingDocsAndPositionsEnum(DocsAndPositionsEnum in) {
       super(in);
       int docid = in.docID();
       assert docid == -1 || docid == DocIdSetIterator.NO_MORE_DOCS : "invalid initial doc id: " + docid;
+      doc = -1;
     }
 
     @Override
     public int nextDoc() throws IOException {
       assert state != DocsEnumState.FINISHED : "nextDoc() called after NO_MORE_DOCS";
       int nextDoc = super.nextDoc();
-      assert nextDoc >= 0 : "invalid doc id: " + nextDoc;
+      assert nextDoc > doc : "backwards nextDoc from " + doc + " to " + nextDoc;
       positionCount = 0;
       if (nextDoc == DocIdSetIterator.NO_MORE_DOCS) {
         state = DocsEnumState.FINISHED;
@@ -297,14 +303,15 @@ public class AssertingAtomicReader extends FilterAtomicReader {
         state = DocsEnumState.ITERATING;
         positionMax = super.freq();
       }
-      return nextDoc;
+      assert docID() == nextDoc;
+      return doc = nextDoc;
     }
 
     @Override
     public int advance(int target) throws IOException {
       assert state != DocsEnumState.FINISHED : "advance() called after NO_MORE_DOCS";
+      assert target > doc : "target must be > docID(), got " + target + " <= " + doc;
       int advanced = super.advance(target);
-      assert advanced >= 0 : "invalid doc id: " + advanced;
       assert advanced >= target : "backwards advance from: " + target + " to: " + advanced;
       positionCount = 0;
       if (advanced == DocIdSetIterator.NO_MORE_DOCS) {
@@ -314,7 +321,8 @@ public class AssertingAtomicReader extends FilterAtomicReader {
         state = DocsEnumState.ITERATING;
         positionMax = super.freq();
       }
-      return advanced;
+      assert docID() == advanced;
+      return doc = advanced;
     }
 
     @Override

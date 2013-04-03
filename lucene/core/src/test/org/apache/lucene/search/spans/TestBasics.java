@@ -593,8 +593,8 @@ public class TestBasics extends LuceneTestCase {
     boolean hasMore = true;
 
     do {
-      hasMore = skipToAccoringToJavaDocs(s1, s1.doc());
-      assertEquals(hasMore, s2.skipTo(s2.doc()));
+      hasMore = skipToAccoringToJavaDocs(s1, s1.doc() + 1);
+      assertEquals(hasMore, s2.skipTo(s2.doc() + 1));
       assertEquals(s1.doc(), s2.doc());
     } while (hasMore);
   }
