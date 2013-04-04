@@ -172,6 +172,9 @@ New Features
 * LUCENE-4905: Made the maxPassages parameter per-field in PostingsHighlighter.
   (Robert Muir)
 
+* LUCENE-4897: Added TaxonomyReader.getChildren for traversing a category's 
+  children. (Shai Erera)
+
 Optimizations
 
 * LUCENE-4839: SorterTemplate.merge can now be overridden in order to replace

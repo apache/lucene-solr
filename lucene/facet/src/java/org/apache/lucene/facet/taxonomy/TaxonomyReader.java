@@ -65,6 +65,31 @@ import org.apache.lucene.store.AlreadyClosedException;
  */
 public abstract class TaxonomyReader implements Closeable {
   
+  /** An iterator over a category's children. */
+  public static class ChildrenIterator {
+    
+    private final int[] siblings;
+    private int child;
+    
+    ChildrenIterator(int child, int[] siblings) {
+      this.siblings = siblings;
+      this.child = child;
+    }
+
+    /**
+     * Return the next child ordinal, or {@link TaxonomyReader#INVALID_ORDINAL}
+     * if no more children.
+     */
+    public int next() {
+      int res = child;
+      if (child != TaxonomyReader.INVALID_ORDINAL) {
+        child = siblings[child];
+      }
+      return res;
+    }
+    
+  }
+  
   /**
    * The root category (the category with the empty path) always has the ordinal
    * 0, to which we give a name ROOT_ORDINAL. {@link #getOrdinal(CategoryPath)}
@@ -166,6 +191,13 @@ public abstract class TaxonomyReader implements Closeable {
    * efficiently traverse the taxonomy tree.
    */
   public abstract ParallelTaxonomyArrays getParallelTaxonomyArrays() throws IOException;
+  
+  /** Returns an iterator over the children of the given ordinal. */
+  public ChildrenIterator getChildren(final int ordinal) throws IOException {
+    ParallelTaxonomyArrays arrays = getParallelTaxonomyArrays();
+    int child = ordinal >= 0 ? arrays.children()[ordinal] : INVALID_ORDINAL;
+    return new ChildrenIterator(child, arrays.siblings());
+  }
   
   /**
    * Retrieve user committed data.
