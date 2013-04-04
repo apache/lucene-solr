@@ -48,6 +48,7 @@ import org.apache.lucene.search.Query;
 import org.apache.lucene.search.ScoreDoc;
 import org.apache.lucene.search.TopDocs;
 import org.apache.lucene.util.BytesRef;
+import org.apache.lucene.util.SorterTemplate;
 import org.apache.lucene.util.UnicodeUtil;
 
 /**
@@ -194,7 +195,7 @@ public class PostingsHighlighter {
    *         {@link IndexOptions#DOCS_AND_FREQS_AND_POSITIONS_AND_OFFSETS}
    */
   public String[] highlight(String field, Query query, IndexSearcher searcher, TopDocs topDocs, int maxPassages) throws IOException {
-    Map<String,String[]> res = highlightFields(new String[] { field }, query, searcher, topDocs, maxPassages);
+    Map<String,String[]> res = highlightFields(new String[] { field }, query, searcher, topDocs, new int[] { maxPassages });
     return res.get(field);
   }
   
@@ -224,7 +225,9 @@ public class PostingsHighlighter {
    *         {@link IndexOptions#DOCS_AND_FREQS_AND_POSITIONS_AND_OFFSETS}
    */
   public Map<String,String[]> highlightFields(String fields[], Query query, IndexSearcher searcher, TopDocs topDocs) throws IOException {
-    return highlightFields(fields, query, searcher, topDocs, 1);
+    int maxPassages[] = new int[fields.length];
+    Arrays.fill(maxPassages, 1);
+    return highlightFields(fields, query, searcher, topDocs, maxPassages);
   }
   
   /**
@@ -255,7 +258,7 @@ public class PostingsHighlighter {
    * @throws IllegalArgumentException if <code>field</code> was indexed without 
    *         {@link IndexOptions#DOCS_AND_FREQS_AND_POSITIONS_AND_OFFSETS}
    */
-  public Map<String,String[]> highlightFields(String fields[], Query query, IndexSearcher searcher, TopDocs topDocs, int maxPassages) throws IOException {
+  public Map<String,String[]> highlightFields(String fields[], Query query, IndexSearcher searcher, TopDocs topDocs, int maxPassages[]) throws IOException {
     final ScoreDoc scoreDocs[] = topDocs.scoreDocs;
     int docids[] = new int[scoreDocs.length];
     for (int i = 0; i < docids.length; i++) {
@@ -269,12 +272,12 @@ public class PostingsHighlighter {
    * Highlights the top-N passages from multiple fields,
    * for the provided int[] docids.
    * 
-   * @param fields field names to highlight. 
+   * @param fieldsIn field names to highlight. 
    *        Must have a stored string value and also be indexed with offsets.
    * @param query query to highlight.
    * @param searcher searcher that was previously used to execute the query.
    * @param docidsIn containing the document IDs to highlight.
-   * @param maxPassages The maximum number of top-N ranked passages per-field used to 
+   * @param maxPassagesIn The maximum number of top-N ranked passages per-field used to 
    *        form the highlighted snippets.
    * @return Map keyed on field name, containing the array of formatted snippets 
    *         corresponding to the documents in <code>topDocs</code>. 
@@ -285,7 +288,13 @@ public class PostingsHighlighter {
    * @throws IllegalArgumentException if <code>field</code> was indexed without 
    *         {@link IndexOptions#DOCS_AND_FREQS_AND_POSITIONS_AND_OFFSETS}
    */
-  public Map<String,String[]> highlightFields(String fields[], Query query, IndexSearcher searcher, int[] docidsIn, int maxPassages) throws IOException {
+  public Map<String,String[]> highlightFields(String fieldsIn[], Query query, IndexSearcher searcher, int[] docidsIn, int maxPassagesIn[]) throws IOException {
+    if (fieldsIn.length < 1) {
+      throw new IllegalArgumentException("fieldsIn must not be empty");
+    }
+    if (fieldsIn.length != maxPassagesIn.length) {
+      throw new IllegalArgumentException("invalid number of maxPassagesIn");
+    }
     final IndexReader reader = searcher.getIndexReader();
     query = rewrite(query);
     SortedSet<Term> queryTerms = new TreeSet<Term>();
@@ -294,20 +303,53 @@ public class PostingsHighlighter {
     IndexReaderContext readerContext = reader.getContext();
     List<AtomicReaderContext> leaves = readerContext.leaves();
 
-    // Make our own copy because we sort in-place:
+    // Make our own copies because we sort in-place:
     int[] docids = new int[docidsIn.length];
     System.arraycopy(docidsIn, 0, docids, 0, docidsIn.length);
+    final String fields[] = new String[fieldsIn.length];
+    System.arraycopy(fieldsIn, 0, fields, 0, fieldsIn.length);
+    final int maxPassages[] = new int[maxPassagesIn.length];
+    System.arraycopy(maxPassagesIn, 0, maxPassages, 0, maxPassagesIn.length);
 
     // sort for sequential io
     Arrays.sort(docids);
-    Arrays.sort(fields);
+    new SorterTemplate() {
+      String pivot;
+      
+      @Override
+      protected void swap(int i, int j) {
+        String tmp = fields[i];
+        fields[i] = fields[j];
+        fields[j] = tmp;
+        int tmp2 = maxPassages[i];
+        maxPassages[i] = maxPassages[j];
+        maxPassages[j] = tmp2;
+      }
+
+      @Override
+      protected int compare(int i, int j) {
+        return fields[i].compareTo(fields[j]);
+      }
+
+      @Override
+      protected void setPivot(int i) {
+        pivot = fields[i];
+      }
+
+      @Override
+      protected int comparePivot(int j) {
+        return pivot.compareTo(fields[j]);
+      }
+      
+    }.mergeSort(0, fields.length-1);
     
     // pull stored data:
     String[][] contents = loadFieldValues(searcher, fields, docids, maxLength);
     
-    Map<String,String[]> highlights = new HashMap<String,String[]>();
+    Map<String,String[]> highlights = new HashMap<String,String[]>();;
     for (int i = 0; i < fields.length; i++) {
       String field = fields[i];
+      int numPassages = maxPassages[i];
       Term floor = new Term(field, "");
       Term ceiling = new Term(field, UnicodeUtil.BIG_TERM);
       SortedSet<Term> fieldTerms = queryTerms.subSet(floor, ceiling);
@@ -319,7 +361,7 @@ public class PostingsHighlighter {
       for(Term term : fieldTerms) {
         terms[termUpto++] = term.bytes();
       }
-      Map<Integer,String> fieldHighlights = highlightField(field, contents[i], getBreakIterator(field), terms, docids, leaves, maxPassages);
+      Map<Integer,String> fieldHighlights = highlightField(field, contents[i], getBreakIterator(field), terms, docids, leaves, numPassages);
         
       String[] result = new String[docids.length];
       for (int j = 0; j < docidsIn.length; j++) {

@@ -164,6 +164,9 @@ New Features
   on an IndexCommit starting from a near-real-time reader (previously
   this would throw IllegalArgumentException).  (Mike McCandless)
 
+* LUCENE-4905: Made the maxPassages parameter per-field in PostingsHighlighter.
+  (Robert Muir)
+
 Optimizations
 
 * LUCENE-4839: SorterTemplate.merge can now be overridden in order to replace

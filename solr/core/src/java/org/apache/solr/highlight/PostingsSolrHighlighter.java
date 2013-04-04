@@ -19,6 +19,7 @@ package org.apache.solr.highlight;
 
 import java.io.IOException;
 import java.text.BreakIterator;
+import java.util.Arrays;
 import java.util.Collections;
 import java.util.Locale;
 import java.util.Map;
@@ -162,9 +163,12 @@ public class PostingsSolrHighlighter extends SolrHighlighter implements PluginIn
       
       // query-time parameters
       String[] fieldNames = getHighlightFields(query, req, defaultFields);
+      // TODO: make this per-field
       int numSnippets = params.getInt(HighlightParams.SNIPPETS, 1);
+      int maxPassages[] = new int[fieldNames.length];
+      Arrays.fill(maxPassages, numSnippets);
       
-      Map<String,String[]> snippets = highlighter.highlightFields(fieldNames, query, searcher, docIDs, numSnippets);
+      Map<String,String[]> snippets = highlighter.highlightFields(fieldNames, query, searcher, docIDs, maxPassages);
       return encodeSnippets(keys, fieldNames, snippets);
     } else {
       return null;
