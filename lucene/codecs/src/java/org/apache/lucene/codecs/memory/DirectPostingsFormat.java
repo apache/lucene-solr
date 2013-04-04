@@ -1490,12 +1490,10 @@ public final class DirectPostingsFormat extends PostingsFormat {
     }
 
     @Override
-    public int advance(int target) {
+    public int advance(int target) throws IOException {
       // Linear scan, but this is low-freq term so it won't
       // be costly:
-      while(nextDoc() < target) {
-      }
-      return docID();
+      return slowAdvance(target);
     }
     
     @Override
@@ -1560,12 +1558,10 @@ public final class DirectPostingsFormat extends PostingsFormat {
     }
 
     @Override
-    public int advance(int target) {
+    public int advance(int target) throws IOException {
       // Linear scan, but this is low-freq term so it won't
       // be costly:
-      while(nextDoc() < target) {
-      }
-      return docID();
+      return slowAdvance(target);
     }
     
     @Override
@@ -1646,12 +1642,10 @@ public final class DirectPostingsFormat extends PostingsFormat {
     }
 
     @Override
-    public int advance(int target) {
+    public int advance(int target) throws IOException {
       // Linear scan, but this is low-freq term so it won't
       // be costly:
-      while(nextDoc() < target) {
-      }
-      return docID();
+      return slowAdvance(target);
     }
     
     @Override
@@ -1792,12 +1786,8 @@ public final class DirectPostingsFormat extends PostingsFormat {
     }
 
     @Override
-    public int advance(int target) {
-      // Linear scan, but this is low-freq term so it won't
-      // be costly:
-      while (nextDoc() < target) {
-      }
-      return docID;
+    public int advance(int target) throws IOException {
+      return slowAdvance(target);
     }
 
     @Override

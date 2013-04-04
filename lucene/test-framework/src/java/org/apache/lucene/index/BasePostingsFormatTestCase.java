@@ -275,10 +275,8 @@ public abstract class BasePostingsFormatTestCase extends LuceneTestCase {
     }
 
     @Override
-    public int advance(int target) {
-      while(nextDoc() < target) {
-      }
-      return docID;
+    public int advance(int target) throws IOException {
+      return slowAdvance(target);
     }
     
     @Override

@@ -246,11 +246,6 @@ public class MultiPassIndexSplitter {
     }
 
     @Override
-    public boolean hasDeletions() {
-      return (in.maxDoc() != this.numDocs());
-    }
-
-    @Override
     public Bits getLiveDocs() {
       return liveDocs;
     }

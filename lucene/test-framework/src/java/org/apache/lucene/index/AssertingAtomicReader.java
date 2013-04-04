@@ -84,7 +84,7 @@ public class AssertingAtomicReader extends FilterAtomicReader {
 
     @Override
     public TermsEnum intersect(CompiledAutomaton automaton, BytesRef bytes) throws IOException {
-      TermsEnum termsEnum = super.intersect(automaton, bytes);
+      TermsEnum termsEnum = in.intersect(automaton, bytes);
       assert termsEnum != null;
       assert bytes == null || bytes.isValid();
       return new AssertingTermsEnum(termsEnum);
