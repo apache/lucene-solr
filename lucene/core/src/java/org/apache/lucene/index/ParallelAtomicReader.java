@@ -214,12 +214,6 @@ public final class ParallelAtomicReader extends AtomicReader {
   }
   
   @Override
-  public boolean hasDeletions() {
-    ensureOpen();
-    return hasDeletions;
-  }
-  
-  @Override
   public void document(int docID, StoredFieldVisitor visitor) throws IOException {
     ensureOpen();
     for (final AtomicReader reader: storedFieldsReaders) {

@@ -161,11 +161,6 @@ public class PKIndexSplitter {
     }
     
     @Override
-    public boolean hasDeletions() {
-      return (in.maxDoc() != numDocs);
-    }
-    
-    @Override
     public Bits getLiveDocs() {
       return liveDocs;
     }

@@ -364,11 +364,6 @@ public class TestDocSet extends LuceneTestCase {
       }
 
       @Override
-      public boolean hasDeletions() {
-        return false;
-      }
-
-      @Override
       public FieldInfos getFieldInfos() {
         return new FieldInfos(new FieldInfo[0]);
       }

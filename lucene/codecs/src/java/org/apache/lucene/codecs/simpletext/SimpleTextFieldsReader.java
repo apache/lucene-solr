@@ -315,8 +315,7 @@ class SimpleTextFieldsReader extends FieldsProducer {
     @Override
     public int advance(int target) throws IOException {
       // Naive -- better to index skip data
-      while(nextDoc() < target);
-      return docID;
+      return slowAdvance(target);
     }
     
     @Override
@@ -422,8 +421,7 @@ class SimpleTextFieldsReader extends FieldsProducer {
     @Override
     public int advance(int target) throws IOException {
       // Naive -- better to index skip data
-      while(nextDoc() < target);
-      return docID;
+      return slowAdvance(target);
     }
 
     @Override

@@ -394,8 +394,7 @@ public class SortingAtomicReader extends FilterAtomicReader {
     public int advance(final int target) throws IOException {
       // need to support it for checkIndex, but in practice it won't be called, so
       // don't bother to implement efficiently for now.
-      while (nextDoc() < target) {}
-      return docID();
+      return slowAdvance(target);
     }
     
     @Override
@@ -555,8 +554,7 @@ public class SortingAtomicReader extends FilterAtomicReader {
     public int advance(final int target) throws IOException {
       // need to support it for checkIndex, but in practice it won't be called, so
       // don't bother to implement efficiently for now.
-      while (nextDoc() < target) {}
-      return docID();
+      return slowAdvance(target);
     }
     
     @Override

@@ -65,6 +65,11 @@ Changes in backwards compatibility policy
   interface. IndexDeletionPolicy, MergeScheduler and InfoStream now implement
   Cloneable. (Adrien Grand)
 
+* LUCENE-4874: FilterAtomicReader and related classes (FilterTerms,
+  FilterDocsEnum, ...) don't forward anymore to the filtered instance when the
+  method has a default implementation through other abstract methods.
+  (Adrien Grand, Robert Muir)
+
 New Features
 
 * LUCENE-4815: DrillSideways now allows more than one FacetRequest per

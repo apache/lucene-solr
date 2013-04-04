@@ -22,15 +22,14 @@ import java.io.IOException;
 import java.util.Collections;
 import java.util.LinkedHashSet;
 import java.util.List;
-import java.util.WeakHashMap;
 import java.util.Set;
+import java.util.WeakHashMap;
 import java.util.concurrent.atomic.AtomicInteger;
 
-import org.apache.lucene.document.Document;
 import org.apache.lucene.document.DocumentStoredFieldVisitor;
-import org.apache.lucene.search.SearcherManager; // javadocs
 import org.apache.lucene.store.AlreadyClosedException;
 import org.apache.lucene.util.Bits;
+// javadocs
 
 /** IndexReader is an abstract class, providing an interface for accessing an
  index.  Search of an index is done entirely through this abstract interface,
@@ -361,8 +360,12 @@ public abstract class IndexReader implements Closeable {
     return visitor.getDocument();
   }
 
-  /** Returns true if any documents have been deleted */
-  public abstract boolean hasDeletions();
+  /** Returns true if any documents have been deleted. Implementers should
+   *  consider overriding this method if {@link #maxDoc()} or {@link #numDocs()}
+   *  are not constant-time operations. */
+  public boolean hasDeletions() {
+    return numDeletedDocs() > 0;
+  }
 
   /**
    * Closes files associated with this index.

@@ -605,12 +605,8 @@ public class Lucene40TermVectorsReader extends TermVectorsReader implements Clos
     }
 
     @Override
-    public int advance(int target) {
-      if (!didNext && target == 0) {
-        return nextDoc();
-      } else {
-        return (doc = NO_MORE_DOCS);
-      }
+    public int advance(int target) throws IOException {
+      return slowAdvance(target);
     }
 
     public void reset(Bits liveDocs, int freq) {
@@ -664,12 +660,8 @@ public class Lucene40TermVectorsReader extends TermVectorsReader implements Clos
     }
 
     @Override
-    public int advance(int target) {
-      if (!didNext && target == 0) {
-        return nextDoc();
-      } else {
-        return (doc = NO_MORE_DOCS);
-      }
+    public int advance(int target) throws IOException {
+      return slowAdvance(target);
     }
 
     public void reset(Bits liveDocs, int[] positions, int[] startOffsets, int[] endOffsets, int[] payloadLengths, byte[] payloadBytes) {

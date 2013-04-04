@@ -243,10 +243,7 @@ public class ContainsPrefixTreeFilter extends AbstractPrefixTreeFilter {
         public int advance(int target) throws IOException {
           //for this small set this is likely faster vs. a binary search
           // into the sorted array
-          int doc;
-          while ((doc = nextDoc()) < target) {
-          }
-          return doc;
+          return slowAdvance(target);
         }
 
         @Override
