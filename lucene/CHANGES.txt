@@ -160,6 +160,10 @@ New Features
 * LUCENE-4645: Added support for the "Contains" spatial predicate for
   RecursivePrefixTreeStrategy.  (David Smiley)
 
+* LUCENE-4898: DirectoryReader.openIfChanged now allows opening a reader
+  on an IndexCommit starting from a near-real-time reader (previously
+  this would throw IllegalArgumentException).  (Mike McCandless)
+
 Optimizations
 
 * LUCENE-4839: SorterTemplate.merge can now be overridden in order to replace

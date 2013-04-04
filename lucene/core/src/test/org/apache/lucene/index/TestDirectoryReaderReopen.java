@@ -594,4 +594,28 @@ public class TestDirectoryReaderReopen extends LuceneTestCase {
     r.close();
     dir.close();
   }
+
+  public void testOpenIfChangedNRTToCommit() throws Exception {
+    Directory dir = newDirectory();
+
+    // Can't use RIW because it randomly commits:
+    IndexWriter w = new IndexWriter(dir, newIndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer(random())));
+    Document doc = new Document();
+    doc.add(newStringField("field", "value", Field.Store.NO));
+    w.addDocument(doc);
+    w.commit();
+    List<IndexCommit> commits = DirectoryReader.listCommits(dir);
+    assertEquals(1, commits.size());
+    w.addDocument(doc);
+    DirectoryReader r = DirectoryReader.open(w, true);
+
+    assertEquals(2, r.numDocs());
+    IndexReader r2 = DirectoryReader.openIfChanged(r, commits.get(0));
+    assertNotNull(r2);
+    r.close();
+    assertEquals(1, r2.numDocs());
+    w.close();
+    r2.close();
+    dir.close();
+  }
 }
