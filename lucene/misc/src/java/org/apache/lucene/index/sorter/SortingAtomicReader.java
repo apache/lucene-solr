@@ -559,7 +559,7 @@ public class SortingAtomicReader extends FilterAtomicReader {
     
     @Override
     public int docID() {
-      return docIt >= upto ? NO_MORE_DOCS : docs[docIt];
+      return docIt < 0 ? -1 : docIt >= upto ? NO_MORE_DOCS : docs[docIt];
     }
     
     @Override
