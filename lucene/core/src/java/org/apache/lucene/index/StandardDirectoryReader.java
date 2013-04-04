@@ -260,7 +260,7 @@ final class StandardDirectoryReader extends DirectoryReader {
 
   private DirectoryReader doOpenFromWriter(IndexCommit commit) throws IOException {
     if (commit != null) {
-      throw new IllegalArgumentException("a reader obtained from IndexWriter.getReader() cannot currently accept a commit");
+      return doOpenFromCommit(commit);
     }
 
     if (writer.nrtIsCurrent(segmentInfos)) {
@@ -293,6 +293,10 @@ final class StandardDirectoryReader extends DirectoryReader {
       }
     }
 
+    return doOpenFromCommit(commit);
+  }
+
+  private DirectoryReader doOpenFromCommit(IndexCommit commit) throws IOException {
     return (DirectoryReader) new SegmentInfos.FindSegmentsFile(directory) {
       @Override
       protected Object doBody(String segmentFileName) throws IOException {
