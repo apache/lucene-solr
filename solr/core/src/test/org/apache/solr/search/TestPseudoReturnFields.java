@@ -18,6 +18,7 @@
 package org.apache.solr.search;
 
 import org.apache.solr.SolrTestCaseJ4;
+import org.apache.solr.schema.SchemaField;
 
 import org.apache.commons.lang.StringUtils;
 
@@ -66,6 +67,20 @@ public class TestPseudoReturnFields extends SolrTestCaseJ4 {
     // a multi valued field (the field value is copied first, then
     // if the type lookup is done again later, we get the wrong thing). SOLR-4036
 
+    // score as psuedo field - precondition checks
+    for (String name : new String[] {"score", "val_ss"}) {
+      SchemaField sf = h.getCore().getSchema().getFieldOrNull(name);
+      assertNotNull("Test depends on a (dynamic) field mtching '"+name+
+                    "', schema was changed out from under us!",sf);
+      assertTrue("Test depends on a multivalued dynamic field matching '"+name+
+                 "', schema was changed out from under us!", sf.multiValued());
+    }
+
+    // score as psuedo field
+    assertJQ(req("q","*:*", "fq", "id:42", "fl","id,score")
+             ,"/response/docs==[{'id':'42','score':1.0}]");
+    
+    // single value int using alias that matches multivalued dynamic field
     assertJQ(req("q","id:42", "fl","val_ss:val_i, val2_ss:10")
         ,"/response/docs==[{'val2_ss':10,'val_ss':1}]"
     );

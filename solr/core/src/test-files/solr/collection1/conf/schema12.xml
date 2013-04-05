@@ -596,6 +596,11 @@
    <dynamicField name="bar_copydest_*" type="ignored" multiValued="true"/>
    <dynamicField name="*_es"  type="text"    indexed="true"  stored="true"/>
 
+   <!-- for testing if score psuedofield is erroneously treated as multivalued
+        when a matching dynamic field exists 
+   -->
+   <dynamicField name="*core" type="ignored" multiValued="true" />
+
  </fields>
 
  <defaultSearchField>text</defaultSearchField>
