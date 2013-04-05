@@ -175,6 +175,9 @@ New Features
 * LUCENE-4897: Added TaxonomyReader.getChildren for traversing a category's 
   children. (Shai Erera)
 
+* LUCENE-4902: Added FilterDirectoryReader to allow easy filtering of a
+  DirectoryReader's subreaders. (Alan Woodward, Adrien Grand, Uwe Schindler)
+
 Optimizations
 
 * LUCENE-4839: SorterTemplate.merge can now be overridden in order to replace
