@@ -175,6 +175,12 @@ public class DocumentBuilder {
 
 
   private static void addField(Document doc, SchemaField field, Object val, float boost) {
+    if (val instanceof StorableField) {
+      // set boost to the calculated compound boost
+      ((Field)val).setBoost(boost);
+      doc.add((Field)val);
+      return;
+    }
     for (StorableField f : field.getType().createFields(field, val, boost)) {
       if (f != null) doc.add((Field) f); // null fields are not added
     }

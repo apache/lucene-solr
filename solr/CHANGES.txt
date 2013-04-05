@@ -80,6 +80,10 @@ Detailed Change List
 New Features
 ----------------------
 
+* SOLR-4648 PreAnalyzedUpdateProcessorFactory allows using the functionality
+  of PreAnalyzedField with other field types. See javadoc for details and
+  examples. (Andrzej Bialecki)
+
 * SOLR-4196 (and others). Solr.xml is being deprecated in favor of a simple
   properties file. In the absence of a <solr_home>/solr.xml but the presence of
   <solr_home>/solr.properties, two things will happen
