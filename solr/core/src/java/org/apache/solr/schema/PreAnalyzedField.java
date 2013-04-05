@@ -28,6 +28,7 @@ import java.util.Map;
 import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.analysis.Tokenizer;
 import org.apache.lucene.document.Field;
+import org.apache.lucene.index.FieldInfo.IndexOptions;
 import org.apache.lucene.index.IndexableField;
 import org.apache.lucene.search.SortField;
 import org.apache.lucene.util.AttributeSource;
@@ -55,23 +56,27 @@ public class PreAnalyzedField extends FieldType {
   private PreAnalyzedParser parser;
   
   @Override
-  protected void init(IndexSchema schema, Map<String, String> args) {
+  public void init(IndexSchema schema, Map<String, String> args) {
     super.init(schema, args);
     String implName = args.get(PARSER_IMPL);
     if (implName == null) {
       parser = new JsonPreAnalyzedParser();
     } else {
-      try {
-        Class<?> implClazz = Class.forName(implName);
-        if (!PreAnalyzedParser.class.isAssignableFrom(implClazz)) {
-          throw new Exception("must implement " + PreAnalyzedParser.class.getName());
-        }
-        Constructor<?> c = implClazz.getConstructor(new Class<?>[0]);
-        parser = (PreAnalyzedParser) c.newInstance(new Object[0]);
-      } catch (Exception e) {
-        LOG.warn("Can't use the configured PreAnalyzedParser class '" + implName + "' (" +
-            e.getMessage() + "), using default " + DEFAULT_IMPL);
+      // short name
+      if ("json".equalsIgnoreCase(implName)) {
         parser = new JsonPreAnalyzedParser();
+      } else if ("simple".equalsIgnoreCase(implName)) {
+        parser = new SimplePreAnalyzedParser();
+      } else {
+        try {
+          Class<? extends PreAnalyzedParser> implClazz = schema.getResourceLoader().findClass(implName, PreAnalyzedParser.class);
+          Constructor<?> c = implClazz.getConstructor(new Class<?>[0]);
+          parser = (PreAnalyzedParser) c.newInstance(new Object[0]);
+        } catch (Exception e) {
+          LOG.warn("Can't use the configured PreAnalyzedParser class '" + implName +
+              "', using default " + DEFAULT_IMPL, e);
+          parser = new JsonPreAnalyzedParser();
+        }
       }
     }
   }
@@ -100,7 +105,7 @@ public class PreAnalyzedField extends FieldType {
     try {
       f = fromString(field, String.valueOf(value), boost);
     } catch (Exception e) {
-      e.printStackTrace();
+      LOG.warn("Error parsing pre-analyzed field '" + field.getName() + "'", e);
       return null;
     }
     return f;
@@ -125,6 +130,36 @@ public class PreAnalyzedField extends FieldType {
    */
   public String toFormattedString(Field f) throws IOException {
     return parser.toFormattedString(f);
+  }
+  
+  /**
+   * Utility method to create a {@link org.apache.lucene.document.FieldType}
+   * based on the {@link SchemaField}
+   */
+  public static org.apache.lucene.document.FieldType createFieldType(SchemaField field) {
+    if (!field.indexed() && !field.stored()) {
+      if (log.isTraceEnabled())
+        log.trace("Ignoring unindexed/unstored field: " + field);
+      return null;
+    }
+    org.apache.lucene.document.FieldType newType = new org.apache.lucene.document.FieldType();
+    newType.setIndexed(field.indexed());
+    newType.setTokenized(field.isTokenized());
+    newType.setStored(field.stored());
+    newType.setOmitNorms(field.omitNorms());
+    IndexOptions options = IndexOptions.DOCS_AND_FREQS_AND_POSITIONS;
+    if (field.omitTermFreqAndPositions()) {
+      options = IndexOptions.DOCS_ONLY;
+    } else if (field.omitPositions()) {
+      options = IndexOptions.DOCS_AND_FREQS;
+    } else if (field.storeOffsetsWithPositions()) {
+      options = IndexOptions.DOCS_AND_FREQS_AND_POSITIONS_AND_OFFSETS;
+    }
+    newType.setIndexOptions(options);
+    newType.setStoreTermVectors(field.storeTermVector());
+    newType.setStoreTermVectorOffsets(field.storeTermOffsets());
+    newType.setStoreTermVectorPositions(field.storeTermPositions());
+    return newType;
   }
   
   /**
@@ -165,19 +200,44 @@ public class PreAnalyzedField extends FieldType {
     }
     PreAnalyzedTokenizer parse = new PreAnalyzedTokenizer(new StringReader(val), parser);
     parse.reset(); // consume
-    Field f = (Field)super.createField(field, val, boost);
+    org.apache.lucene.document.FieldType type = createFieldType(field);
+    if (type == null) {
+      parse.close();
+      return null;
+    }
+    Field f = null;
     if (parse.getStringValue() != null) {
-      f.setStringValue(parse.getStringValue());
+      if (field.stored()) {
+        f = new Field(field.getName(), parse.getStringValue(), type);
+      } else {
+        type.setStored(false);
+      }
     } else if (parse.getBinaryValue() != null) {
-      f.setBytesValue(parse.getBinaryValue());
+      if (field.isBinary()) {
+        f = new Field(field.getName(), parse.getBinaryValue(), type);
+      }
     } else {
-      f.fieldType().setStored(false);
+      type.setStored(false);
     }
     
     if (parse.hasTokenStream()) {
-      f.fieldType().setIndexed(true);
-      f.fieldType().setTokenized(true);
-      f.setTokenStream(parse);
+      if (field.indexed()) {
+        type.setIndexed(true);
+        type.setTokenized(true);
+        if (f != null) {
+          f.setTokenStream(parse);
+        } else {
+          f = new Field(field.getName(), parse, type);
+        }
+      } else {
+        if (f != null) {
+          f.fieldType().setIndexed(false);
+          f.fieldType().setTokenized(false);
+        }
+      }
+    }
+    if (f != null) {
+      f.setBoost(boost);
     }
     return f;
   }
