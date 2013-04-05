@@ -220,6 +220,10 @@ Bug Fixes
   with target<=current (in this case the behavior of advance is undefined).
   (Adrien Grand)
 
+* LUCENE-4899: FastVectorHighlihgter failed with StringIndexOutOfBoundsException
+  if a single highlight phrase or term was greater than the fragCharSize producing
+  negative string offsets. (Simon Willnauer)
+
 Documentation
 
 * LUCENE-4841: Added example SimpleSortedSetFacetsExample to show how

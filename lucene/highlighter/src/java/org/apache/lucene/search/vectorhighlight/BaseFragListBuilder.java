@@ -46,63 +46,98 @@ public abstract class BaseFragListBuilder implements FragListBuilder {
     this( MARGIN_DEFAULT );
   }
   
-  protected FieldFragList createFieldFragList( FieldPhraseList fieldPhraseList, FieldFragList fieldFragList, int fragCharSize ){
-    
+ protected FieldFragList createFieldFragList( FieldPhraseList fieldPhraseList, FieldFragList fieldFragList, int fragCharSize ){
     if( fragCharSize < minFragCharSize )
       throw new IllegalArgumentException( "fragCharSize(" + fragCharSize + ") is too small. It must be " + minFragCharSize + " or higher." );
     
     List<WeightedPhraseInfo> wpil = new ArrayList<WeightedPhraseInfo>();
-    Iterator<WeightedPhraseInfo> ite = fieldPhraseList.getPhraseList().iterator();
+    IteratorQueue<WeightedPhraseInfo> queue = new IteratorQueue<WeightedPhraseInfo>(fieldPhraseList.getPhraseList().iterator());
     WeightedPhraseInfo phraseInfo = null;
     int startOffset = 0;
-    boolean taken = false;
-    while( true ){
-      if( !taken ){
-        if( !ite.hasNext() ) break;
-        phraseInfo = ite.next();
-      }
-      taken = false;
-      if( phraseInfo == null ) break;
-
+    while((phraseInfo = queue.top()) != null){
       // if the phrase violates the border of previous fragment, discard it and try next phrase
-      if( phraseInfo.getStartOffset() < startOffset ) continue;
-
+      if( phraseInfo.getStartOffset() < startOffset )  {
+        queue.removeTop();
+        continue;
+      }
+      
       wpil.clear();
-      wpil.add( phraseInfo );
-      int firstOffset = phraseInfo.getStartOffset();
-      int st = phraseInfo.getStartOffset() - margin < startOffset ?
-          startOffset : phraseInfo.getStartOffset() - margin;
-      int en = st + fragCharSize;
-      if( phraseInfo.getEndOffset() > en )
-        en = phraseInfo.getEndOffset();
-
-      int lastEndOffset = phraseInfo.getEndOffset();
-      while( true ){
-        if( ite.hasNext() ){
-          phraseInfo = ite.next();
-          taken = true;
-          if( phraseInfo == null ) break;
-        }
-        else
-          break;
-        if( phraseInfo.getEndOffset() <= en ){
-          wpil.add( phraseInfo );
-          lastEndOffset = phraseInfo.getEndOffset();
-        }
-        else
-          break;
+      final int currentPhraseStartOffset = phraseInfo.getStartOffset();
+      int currentPhraseEndOffset = phraseInfo.getEndOffset();
+      int spanStart = Math.max(currentPhraseStartOffset - margin, startOffset);
+      int spanEnd = Math.max(currentPhraseEndOffset, spanStart + fragCharSize);
+      if (acceptPhrase(queue.removeTop(),  currentPhraseEndOffset - currentPhraseStartOffset, fragCharSize)) {
+        wpil.add(phraseInfo);
       }
-      int matchLen = lastEndOffset - firstOffset;
-      //now recalculate the start and end position to "center" the result
-      int newMargin = (fragCharSize-matchLen)/2;
-      st = firstOffset - newMargin;
-      if(st<startOffset){
-        st = startOffset;
+      while((phraseInfo = queue.top()) != null) { // pull until we crossed the current spanEnd
+        if (phraseInfo.getEndOffset() <= spanEnd) {
+          currentPhraseEndOffset = phraseInfo.getEndOffset();
+          if (acceptPhrase(queue.removeTop(),  currentPhraseEndOffset - currentPhraseStartOffset, fragCharSize)) {
+            wpil.add(phraseInfo);
+          }
+        } else {
+          break;
+        }
       }
-      en = st+fragCharSize;
-      startOffset = en;
-      fieldFragList.add( st, en, wpil );
+      if (wpil.isEmpty()) {
+        continue;
+      }
+      
+      final int matchLen = currentPhraseEndOffset - currentPhraseStartOffset;
+      // now recalculate the start and end position to "center" the result
+      final int newMargin = Math.max(0, (fragCharSize-matchLen)/2); // matchLen can be > fragCharSize prevent IAOOB here
+      spanStart = currentPhraseStartOffset - newMargin;
+      if (spanStart < startOffset) {
+        spanStart = startOffset;
+      }
+      // whatever is bigger here we grow this out
+      spanEnd = spanStart + Math.max(matchLen, fragCharSize);  
+      startOffset = spanEnd;
+      fieldFragList.add(spanStart, spanEnd, wpil);
     }
     return fieldFragList;
   }
+ 
+  /**
+   * A predicate to decide if the given {@link WeightedPhraseInfo} should be
+   * accepted as a highlighted phrase or if it should be discarded.
+   * <p>
+   * The default implementation discards phrases that are composed of more than one term
+   * and where the matchLength exceeds the fragment character size.
+   * 
+   * @param info the phrase info to accept
+   * @param matchLength the match length of the current phrase
+   * @param fragCharSize the configured fragment character size
+   * @return <code>true</code> if this phrase info should be accepted as a highligh phrase
+   */
+ protected boolean acceptPhrase(WeightedPhraseInfo info, int matchLength, int fragCharSize) {
+   return info.getTermsOffsets().size() <= 1 ||  matchLength <= fragCharSize;
+ }
+ 
+ private static final class IteratorQueue<T> {
+   private final Iterator<T> iter;
+   private T top;
+   
+   public IteratorQueue(Iterator<T> iter) {
+     this.iter = iter;
+     T removeTop = removeTop();
+     assert removeTop == null;
+   }
+   
+   public T top() {
+     return top;
+   }
+   
+   public T removeTop() {
+     T currentTop = top;
+     if (iter.hasNext()) {
+       top = iter.next();
+     } else {
+       top = null;
+     }
+     return currentTop;
+   }
+   
+ }
+ 
 }

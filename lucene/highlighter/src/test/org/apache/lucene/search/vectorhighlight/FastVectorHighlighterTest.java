@@ -29,17 +29,18 @@ import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.IndexWriter;
 import org.apache.lucene.index.Term;
 import org.apache.lucene.queries.CommonTermsQuery;
+import org.apache.lucene.search.BooleanClause.Occur;
+import org.apache.lucene.search.BooleanQuery;
 import org.apache.lucene.search.IndexSearcher;
+import org.apache.lucene.search.PhraseQuery;
 import org.apache.lucene.search.TermQuery;
 import org.apache.lucene.search.TopDocs;
-import org.apache.lucene.search.BooleanClause.Occur;
-import org.apache.lucene.search.highlight.SimpleSpanFragmenter;
-import org.apache.lucene.search.highlight.TokenSources;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.util.LuceneTestCase;
 
 
 public class FastVectorHighlighterTest extends LuceneTestCase {
+  
   
   public void testSimpleHighlightTest() throws IOException {
     Directory dir = newDirectory();
@@ -66,6 +67,179 @@ public class FastVectorHighlighterTest extends LuceneTestCase {
     assertEquals("This is a test where <b>foo</b> is highlighed and should be", bestFragments[0]);
     bestFragments = highlighter.getBestFragments(fieldQuery, reader, docId, "field", 30, 1);
     assertEquals("a test where <b>foo</b> is highlighed", bestFragments[0]);
+    reader.close();
+    writer.close();
+    dir.close();
+  }
+  
+  public void testPhraseHighlightLongTextTest() throws IOException {
+    Directory dir = newDirectory();
+    IndexWriter writer = new IndexWriter(dir, newIndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer(random())));
+    Document doc = new Document();
+    FieldType type = new FieldType(TextField.TYPE_STORED);
+    type.setStoreTermVectorOffsets(true);
+    type.setStoreTermVectorPositions(true);
+    type.setStoreTermVectors(true);
+    type.freeze();
+    Field text = new Field("text", 
+        "Netscape was the general name for a series of web browsers originally produced by Netscape Communications Corporation, now a subsidiary of AOL The original browser was once the dominant browser in terms of usage share, but as a result of the first browser war it lost virtually all of its share to Internet Explorer Netscape was discontinued and support for all Netscape browsers and client products was terminated on March 1, 2008 Netscape Navigator was the name of Netscape\u0027s web browser from versions 1.0 through 4.8 The first beta release versions of the browser were released in 1994 and known as Mosaic and then Mosaic Netscape until a legal challenge from the National Center for Supercomputing Applications (makers of NCSA Mosaic, which many of Netscape\u0027s founders used to develop), led to the name change to Netscape Navigator The company\u0027s name also changed from Mosaic Communications Corporation to Netscape Communications Corporation The browser was easily the most advanced...", type);
+    doc.add(text);
+    writer.addDocument(doc);
+    FastVectorHighlighter highlighter = new FastVectorHighlighter();
+    IndexReader reader = DirectoryReader.open(writer, true);
+    int docId = 0;
+    String field = "text";
+    {
+      BooleanQuery query = new BooleanQuery();
+      query.add(new TermQuery(new Term(field, "internet")), Occur.MUST);
+      query.add(new TermQuery(new Term(field, "explorer")), Occur.MUST);
+      FieldQuery fieldQuery = highlighter.getFieldQuery(query, reader);
+      String[] bestFragments = highlighter.getBestFragments(fieldQuery, reader,
+          docId, field, 128, 1);
+      // highlighted results are centered
+      assertEquals(1, bestFragments.length);
+      assertEquals("first browser war it lost virtually all of its share to <b>Internet</b> <b>Explorer</b> Netscape was discontinued and support for all Netscape browsers", bestFragments[0]);
+    }
+    
+    {
+      PhraseQuery query = new PhraseQuery();
+      query.add(new Term(field, "internet"));
+      query.add(new Term(field, "explorer"));
+      FieldQuery fieldQuery = highlighter.getFieldQuery(query, reader);
+      String[] bestFragments = highlighter.getBestFragments(fieldQuery, reader,
+          docId, field, 128, 1);
+      // highlighted results are centered
+      assertEquals(1, bestFragments.length);
+      assertEquals("first browser war it lost virtually all of its share to <b>Internet Explorer</b> Netscape was discontinued and support for all Netscape browsers", bestFragments[0]);
+    }
+    reader.close();
+    writer.close();
+    dir.close();
+  }
+  
+  // see LUCENE-4899
+  public void testPhraseHighlightTest() throws IOException {
+    Directory dir = newDirectory();
+    IndexWriter writer = new IndexWriter(dir, newIndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer(random())));
+    Document doc = new Document();
+    FieldType type = new FieldType(TextField.TYPE_STORED);
+    type.setStoreTermVectorOffsets(true);
+    type.setStoreTermVectorPositions(true);
+    type.setStoreTermVectors(true);
+    type.freeze();
+    Field longTermField = new Field("long_term", "This is a test thisisaverylongwordandmakessurethisfails where foo is highlighed and should be highlighted", type);
+    Field noLongTermField = new Field("no_long_term", "This is a test where foo is highlighed and should be highlighted", type);
+
+    doc.add(longTermField);
+    doc.add(noLongTermField);
+    writer.addDocument(doc);
+    FastVectorHighlighter highlighter = new FastVectorHighlighter();
+    IndexReader reader = DirectoryReader.open(writer, true);
+    int docId = 0;
+    String field = "no_long_term";
+    {
+      BooleanQuery query = new BooleanQuery();
+      query.add(new TermQuery(new Term(field, "test")), Occur.MUST);
+      query.add(new TermQuery(new Term(field, "foo")), Occur.MUST);
+      query.add(new TermQuery(new Term(field, "highlighed")), Occur.MUST);
+      FieldQuery fieldQuery = highlighter.getFieldQuery(query, reader);
+      String[] bestFragments = highlighter.getBestFragments(fieldQuery, reader,
+          docId, field, 18, 1);
+      // highlighted results are centered
+      assertEquals(1, bestFragments.length);
+      assertEquals("<b>foo</b> is <b>highlighed</b> and", bestFragments[0]);
+    }
+    {
+      BooleanQuery query = new BooleanQuery();
+      PhraseQuery pq = new PhraseQuery();
+      pq.add(new Term(field, "test"));
+      pq.add(new Term(field, "foo"));
+      pq.add(new Term(field, "highlighed"));
+      pq.setSlop(5);
+      query.add(new TermQuery(new Term(field, "foo")), Occur.MUST);
+      query.add(pq, Occur.MUST);
+      query.add(new TermQuery(new Term(field, "highlighed")), Occur.MUST);
+      FieldQuery fieldQuery = highlighter.getFieldQuery(query, reader);
+      String[] bestFragments = highlighter.getBestFragments(fieldQuery, reader,
+          docId, field, 18, 1);
+      // highlighted results are centered
+      assertEquals(0, bestFragments.length);
+      bestFragments = highlighter.getBestFragments(fieldQuery, reader,
+          docId, field, 30, 1);
+      // highlighted results are centered
+      assertEquals(1, bestFragments.length);
+      assertEquals("a <b>test</b> where <b>foo</b> is <b>highlighed</b> and", bestFragments[0]);
+      
+    }
+    {
+      PhraseQuery query = new PhraseQuery();
+      query.add(new Term(field, "test"));
+      query.add(new Term(field, "foo"));
+      query.add(new Term(field, "highlighed"));
+      query.setSlop(3);
+      FieldQuery fieldQuery = highlighter.getFieldQuery(query, reader);
+      String[] bestFragments = highlighter.getBestFragments(fieldQuery, reader,
+          docId, field, 18, 1);
+      // highlighted results are centered
+      assertEquals(0, bestFragments.length);
+      bestFragments = highlighter.getBestFragments(fieldQuery, reader,
+          docId, field, 30, 1);
+      // highlighted results are centered
+      assertEquals(1, bestFragments.length);
+      assertEquals("a <b>test</b> where <b>foo</b> is <b>highlighed</b> and", bestFragments[0]);
+      
+    }
+    {
+      PhraseQuery query = new PhraseQuery();
+      query.add(new Term(field, "test"));
+      query.add(new Term(field, "foo"));
+      query.add(new Term(field, "highlighted"));
+      query.setSlop(30);
+      FieldQuery fieldQuery = highlighter.getFieldQuery(query, reader);
+      String[] bestFragments = highlighter.getBestFragments(fieldQuery, reader,
+          docId, field, 18, 1);
+      assertEquals(0, bestFragments.length);
+    }
+    {
+      BooleanQuery query = new BooleanQuery();
+      PhraseQuery pq = new PhraseQuery();
+      pq.add(new Term(field, "test"));
+      pq.add(new Term(field, "foo"));
+      pq.add(new Term(field, "highlighed"));
+      pq.setSlop(5);
+      BooleanQuery inner = new BooleanQuery();
+      inner.add(pq, Occur.MUST);
+      inner.add(new TermQuery(new Term(field, "foo")), Occur.MUST);
+      query.add(inner, Occur.MUST);
+      query.add(pq, Occur.MUST);
+      query.add(new TermQuery(new Term(field, "highlighed")), Occur.MUST);
+      FieldQuery fieldQuery = highlighter.getFieldQuery(query, reader);
+      String[] bestFragments = highlighter.getBestFragments(fieldQuery, reader,
+          docId, field, 18, 1);
+      assertEquals(0, bestFragments.length);
+      
+      bestFragments = highlighter.getBestFragments(fieldQuery, reader,
+          docId, field, 30, 1);
+      // highlighted results are centered
+      assertEquals(1, bestFragments.length);
+      assertEquals("a <b>test</b> where <b>foo</b> is <b>highlighed</b> and", bestFragments[0]);
+    }
+    
+    field = "long_term";
+    {
+      BooleanQuery query = new BooleanQuery();
+      query.add(new TermQuery(new Term(field,
+          "thisisaverylongwordandmakessurethisfails")), Occur.MUST);
+      query.add(new TermQuery(new Term(field, "foo")), Occur.MUST);
+      query.add(new TermQuery(new Term(field, "highlighed")), Occur.MUST);
+      FieldQuery fieldQuery = highlighter.getFieldQuery(query, reader);
+      String[] bestFragments = highlighter.getBestFragments(fieldQuery, reader,
+          docId, field, 18, 1);
+      // highlighted results are centered
+      assertEquals(1, bestFragments.length);
+      assertEquals("<b>thisisaverylongwordandmakessurethisfails</b>",
+          bestFragments[0]);
+    }
     reader.close();
     writer.close();
     dir.close();
