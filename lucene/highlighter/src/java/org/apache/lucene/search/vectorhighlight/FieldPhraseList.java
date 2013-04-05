@@ -81,7 +81,7 @@ public class FieldPhraseList {
         if( ti != null )
           nextMap = currMap.getTermMap( ti.getText() );
         if( ti == null || nextMap == null ){
-          if( ti != null )
+          if( ti != null ) 
             fieldTermStack.push( ti );
           if( currMap.isValidTermOrPhrase( phraseCandidate ) ){
             addIfNoOverlap( new WeightedPhraseInfo( phraseCandidate, currMap.getBoost(), currMap.getTermOrPhraseNumber() ) );

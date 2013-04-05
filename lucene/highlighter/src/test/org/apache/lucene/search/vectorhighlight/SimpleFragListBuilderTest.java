@@ -42,7 +42,7 @@ public class SimpleFragListBuilderTest extends AbstractTestCase {
     SimpleFragListBuilder sflb = new SimpleFragListBuilder();
     FieldFragList ffl = sflb.createFieldFragList( fpl(new TermQuery(new Term(F, "abcdefghijklmnopqrs")), "abcdefghijklmnopqrs" ), sflb.minFragCharSize );
     assertEquals( 1, ffl.getFragInfos().size() );
-    assertEquals( "subInfos=(abcdefghijklmnopqrs((0,19)))/1.0(0,18)", ffl.getFragInfos().get( 0 ).toString() );
+    assertEquals( "subInfos=(abcdefghijklmnopqrs((0,19)))/1.0(0,19)", ffl.getFragInfos().get( 0 ).toString() );
   }
   
   public void testSmallerFragSizeThanPhraseQuery() throws Exception {
@@ -55,7 +55,7 @@ public class SimpleFragListBuilderTest extends AbstractTestCase {
     FieldFragList ffl = sflb.createFieldFragList( fpl(phraseQuery, "abcdefgh   jklmnopqrs" ), sflb.minFragCharSize );
     assertEquals( 1, ffl.getFragInfos().size() );
     if (VERBOSE) System.out.println( ffl.getFragInfos().get( 0 ).toString() );
-    assertEquals( "subInfos=(abcdefghjklmnopqrs((0,21)))/1.0(1,19)", ffl.getFragInfos().get( 0 ).toString() );
+    assertEquals( "subInfos=(abcdefghjklmnopqrs((0,21)))/1.0(0,21)", ffl.getFragInfos().get( 0 ).toString() );
   }
   
   public void test1TermIndex() throws Exception {
