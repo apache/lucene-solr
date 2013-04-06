@@ -34,7 +34,7 @@ public class FastVectorHighlighterTest extends SolrTestCaseJ4 {
   
   @Test
   public void testConfig(){
-    SolrHighlighter highlighter = HighlightComponent.getHighlighter(h.getCore());
+    DefaultSolrHighlighter highlighter = (DefaultSolrHighlighter) HighlightComponent.getHighlighter(h.getCore());
 
     // Make sure we loaded one fragListBuilder
     SolrFragListBuilder solrFlbNull = highlighter.fragListBuilders.get( null );

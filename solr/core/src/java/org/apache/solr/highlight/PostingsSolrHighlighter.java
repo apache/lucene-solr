@@ -19,9 +19,7 @@ package org.apache.solr.highlight;
 
 import java.io.IOException;
 import java.text.BreakIterator;
-import java.util.Arrays;
 import java.util.Collections;
-import java.util.Locale;
 import java.util.Map;
 import java.util.Set;
 
@@ -50,108 +48,57 @@ import org.apache.solr.util.plugin.PluginInfoInitialized;
  * <p>
  * Example configuration:
  * <pre class="prettyprint">
+ *   &lt;requestHandler name="standard" class="solr.StandardRequestHandler"&gt;
+ *     &lt;lst name="defaults"&gt;
+ *       &lt;int name="hl.snippets"&gt;1&lt;/int&gt;
+ *       &lt;str name="hl.tag.pre"&gt;&amp;lt;em&amp;gt;&lt;/str&gt;
+ *       &lt;str name="hl.tag.post"&gt;&amp;lt;/em&amp;gt;&lt;/str&gt;
+ *       &lt;str name="hl.tag.ellipsis"&gt;... &lt;/str&gt;
+ *       &lt;bool name="hl.defaultSummary"&gt;true&lt;/bool&gt;
+ *       &lt;float name="hl.score.k1"&gt;1.2&lt;/float&gt;
+ *       &lt;float name="hl.score.b"&gt;0.75&lt;/float&gt;
+ *       &lt;float name="hl.score.pivot"&gt;87&lt;/float&gt;
+ *       &lt;int name="hl.maxAnalyzedChars"&gt;10000&lt;/int&gt;
+ *     &lt;/lst&gt;
+ *   &lt;/requestHandler&gt;
+ * </pre>
+ * ...
+ * <pre class="prettyprint">
  *   &lt;searchComponent class="solr.HighlightComponent" name="highlight"&gt;
- *     &lt;highlighting class="org.apache.solr.highlight.PostingsSolrHighlighter"
- *                      preTag="&amp;lt;em&amp;gt;"
- *                      postTag="&amp;lt;/em&amp;gt;"
- *                      ellipsis="... "
- *                      k1="1.2"
- *                      b="0.75"
- *                      pivot="87"
- *                      maxLength=10000
- *                      summarizeEmpty=true/&gt;
+ *     &lt;highlighting class="org.apache.solr.highlight.PostingsSolrHighlighter"/&gt;
  *   &lt;/searchComponent&gt;
  * </pre>
  * <p>
  * Notes:
  *  <ul>
  *    <li>fields to highlight must be configured with storeOffsetsWithPositions="true"
- *    <li>hl.fl specifies the field list.
- *    <li>hl.snippets specifies how many underlying sentence fragments form the resulting snippet.
+ *    <li>hl.q (string) can specify the query
+ *    <li>hl.fl (string) specifies the field list.
+ *    <li>hl.snippets (int) specifies how many underlying sentence fragments form the resulting snippet.
+ *    <li>hl.tag.pre (string) specifies text which appears before a highlighted term.
+ *    <li>hl.tag.post (string) specifies text which appears after a highlighted term.
+ *    <li>hl.tag.ellipsis (string) specifies text which joins non-adjacent passages.
+ *    <li>hl.defaultSummary (bool) specifies if a field should have a default summary.
+ *    <li>hl.score.k1 (float) specifies bm25 scoring parameter 'k1'
+ *    <li>hl.score.b (float) specifies bm25 scoring parameter 'b'
+ *    <li>hl.score.pivot (float) specifies bm25 scoring parameter 'avgdl'
+ *    <li>hl.maxAnalyzedChars specifies how many characters at most will be processed in a document.
+ *        NOTE: currently hl.maxAnalyzedChars cannot yet be specified per-field
  *  </ul>
  *  
  * @lucene.experimental 
  */
 public class PostingsSolrHighlighter extends SolrHighlighter implements PluginInfoInitialized {
-  protected PostingsHighlighter highlighter;
 
   @Override
   public void initalize(SolrConfig config) {}
   
   @Override
-  public void init(PluginInfo info) {
-    Map<String,String> attributes = info.attributes;
-    
-    // scorer parameters: k1/b/pivot
-    String k1 = attributes.get("k1");
-    if (k1 == null) {
-      k1 = "1.2";
-    }
-    
-    String b = attributes.get("b");
-    if (b == null) {
-      b = "0.75";
-    }
-    
-    String pivot = attributes.get("pivot");
-    if (pivot == null) {
-      pivot = "87";
-    }
-    final PassageScorer scorer = new PassageScorer(Float.parseFloat(k1), Float.parseFloat(b), Float.parseFloat(pivot));
-    
-    // formatter parameters: preTag/postTag/ellipsis
-    String preTag = attributes.get("preTag");
-    if (preTag == null) {
-      preTag = "<em>";
-    }
-    String postTag = attributes.get("postTag");
-    if (postTag == null) {
-      postTag = "</em>";
-    }
-    String ellipsis = attributes.get("ellipsis");
-    if (ellipsis == null) {
-      ellipsis = "... ";
-    }
-    final PassageFormatter formatter = new PassageFormatter(preTag, postTag, ellipsis);
-
-    String summarizeEmpty = attributes.get("summarizeEmpty");
-    final boolean summarizeEmptyBoolean;
-    if (summarizeEmpty == null) {
-      summarizeEmptyBoolean = true;
-    } else {
-      summarizeEmptyBoolean = Boolean.parseBoolean(summarizeEmpty);
-    }
-
-    // maximum content size to process
-    int maxLength = PostingsHighlighter.DEFAULT_MAX_LENGTH;
-    if (attributes.containsKey("maxLength")) {
-      maxLength = Integer.parseInt(attributes.get("maxLength"));
-    }
-    highlighter = new PostingsHighlighter(maxLength) {
-        @Override
-        protected Passage[] getEmptyHighlight(String fieldName, BreakIterator bi, int maxPassages) {
-          if (summarizeEmptyBoolean) {
-            return super.getEmptyHighlight(fieldName, bi, maxPassages);
-          } else {
-            return new Passage[0];
-          }
-        }
-
-        @Override
-        protected PassageFormatter getFormatter(String fieldName) {
-          return formatter;
-        }
-
-        @Override
-        protected PassageScorer getScorer(String fieldName) {
-          return scorer;
-        }
-      };
-  }
+  public void init(PluginInfo info) {}
 
   @Override
   public NamedList<Object> doHighlighting(DocList docs, Query query, SolrQueryRequest req, String[] defaultFields) throws IOException {
-    SolrParams params = req.getParams(); 
+    final SolrParams params = req.getParams(); 
     
     // if highlighting isnt enabled, then why call doHighlighting?
     if (isHighlightingEnabled(params)) {
@@ -162,11 +109,41 @@ public class PostingsSolrHighlighter extends SolrHighlighter implements PluginIn
       String[] keys = getUniqueKeys(searcher, docIDs);
       
       // query-time parameters
+      int maxLength = params.getInt(HighlightParams.MAX_CHARS, PostingsHighlighter.DEFAULT_MAX_LENGTH);
       String[] fieldNames = getHighlightFields(query, req, defaultFields);
-      // TODO: make this per-field
-      int numSnippets = params.getInt(HighlightParams.SNIPPETS, 1);
+      
       int maxPassages[] = new int[fieldNames.length];
-      Arrays.fill(maxPassages, numSnippets);
+      for (int i = 0; i < fieldNames.length; i++) {
+        maxPassages[i] = params.getFieldInt(fieldNames[i], HighlightParams.SNIPPETS, 1);
+      }
+      
+      PostingsHighlighter highlighter = new PostingsHighlighter(maxLength) {
+        @Override
+        protected Passage[] getEmptyHighlight(String fieldName, BreakIterator bi, int maxPassages) {
+          boolean defaultSummary = params.getFieldBool(fieldName, HighlightParams.DEFAULT_SUMMARY, true);
+          if (defaultSummary) {
+            return super.getEmptyHighlight(fieldName, bi, maxPassages);
+          } else {
+            return new Passage[0];
+          }
+        }
+
+        @Override
+        protected PassageFormatter getFormatter(String fieldName) {
+          String preTag = params.getFieldParam(fieldName, HighlightParams.TAG_PRE, "<em>");
+          String postTag = params.getFieldParam(fieldName, HighlightParams.TAG_POST, "</em>");
+          String ellipsis = params.getFieldParam(fieldName, HighlightParams.TAG_ELLIPSIS, "... ");
+          return new PassageFormatter(preTag, postTag, ellipsis);
+        }
+
+        @Override
+        protected PassageScorer getScorer(String fieldName) {
+          float k1 = params.getFieldFloat(fieldName, HighlightParams.SCORE_K1, 1.2f);
+          float b = params.getFieldFloat(fieldName, HighlightParams.SCORE_B, 0.75f);
+          float pivot = params.getFieldFloat(fieldName, HighlightParams.SCORE_PIVOT, 87f);
+          return new PassageScorer(k1, b, pivot);
+        }
+      };
       
       Map<String,String[]> snippets = highlighter.highlightFields(fieldNames, query, searcher, docIDs, maxPassages);
       return encodeSnippets(keys, fieldNames, snippets);
