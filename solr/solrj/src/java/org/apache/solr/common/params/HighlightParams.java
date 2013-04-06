@@ -41,6 +41,7 @@ public interface HighlightParams {
   public static final String BS_TYPE = HIGHLIGHT+".bs.type";
   public static final String BS_LANGUAGE = HIGHLIGHT+".bs.language";
   public static final String BS_COUNTRY = HIGHLIGHT+".bs.country";
+  public static final String BS_VARIANT = HIGHLIGHT+".bs.variant";
   public static final String FIELD_MATCH = HIGHLIGHT+".requireFieldMatch";
   public static final String DEFAULT_SUMMARY = HIGHLIGHT + ".defaultSummary";
   public static final String ALTERNATE_FIELD = HIGHLIGHT+".alternateField";

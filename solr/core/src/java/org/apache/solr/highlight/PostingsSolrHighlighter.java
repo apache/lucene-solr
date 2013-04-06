@@ -20,6 +20,7 @@ package org.apache.solr.highlight;
 import java.io.IOException;
 import java.text.BreakIterator;
 import java.util.Collections;
+import java.util.Locale;
 import java.util.Map;
 import java.util.Set;
 
@@ -29,6 +30,7 @@ import org.apache.lucene.search.postingshighlight.Passage;
 import org.apache.lucene.search.postingshighlight.PassageFormatter;
 import org.apache.lucene.search.postingshighlight.PassageScorer;
 import org.apache.lucene.search.postingshighlight.PostingsHighlighter;
+import org.apache.lucene.search.postingshighlight.WholeBreakIterator;
 import org.apache.solr.common.params.HighlightParams;
 import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.common.util.NamedList;
@@ -58,6 +60,10 @@ import org.apache.solr.util.plugin.PluginInfoInitialized;
  *       &lt;float name="hl.score.k1"&gt;1.2&lt;/float&gt;
  *       &lt;float name="hl.score.b"&gt;0.75&lt;/float&gt;
  *       &lt;float name="hl.score.pivot"&gt;87&lt;/float&gt;
+ *       &lt;str name="hl.bs.language"&gt;&lt;/str&gt;
+ *       &lt;str name="hl.bs.country"&gt;&lt;/str&gt;
+ *       &lt;str name="hl.bs.variant"&gt;&lt;/str&gt;
+ *       &lt;str name="hl.bs.type"&gt;SENTENCE&lt;/str&gt;
  *       &lt;int name="hl.maxAnalyzedChars"&gt;10000&lt;/int&gt;
  *     &lt;/lst&gt;
  *   &lt;/requestHandler&gt;
@@ -74,7 +80,7 @@ import org.apache.solr.util.plugin.PluginInfoInitialized;
  *    <li>fields to highlight must be configured with storeOffsetsWithPositions="true"
  *    <li>hl.q (string) can specify the query
  *    <li>hl.fl (string) specifies the field list.
- *    <li>hl.snippets (int) specifies how many underlying sentence fragments form the resulting snippet.
+ *    <li>hl.snippets (int) specifies how many underlying passages form the resulting snippet.
  *    <li>hl.tag.pre (string) specifies text which appears before a highlighted term.
  *    <li>hl.tag.post (string) specifies text which appears after a highlighted term.
  *    <li>hl.tag.ellipsis (string) specifies text which joins non-adjacent passages.
@@ -82,6 +88,10 @@ import org.apache.solr.util.plugin.PluginInfoInitialized;
  *    <li>hl.score.k1 (float) specifies bm25 scoring parameter 'k1'
  *    <li>hl.score.b (float) specifies bm25 scoring parameter 'b'
  *    <li>hl.score.pivot (float) specifies bm25 scoring parameter 'avgdl'
+ *    <li>hl.bs.type (string) specifies how to divide text into passages: [SENTENCE, LINE, WORD, CHAR, WHOLE]
+ *    <li>hl.bs.language (string) specifies language code for BreakIterator. default is empty string (root locale)
+ *    <li>hl.bs.country (string) specifies country code for BreakIterator. default is empty string (root locale)
+ *    <li>hl.bs.variant (string) specifies country code for BreakIterator. default is empty string (root locale)
  *    <li>hl.maxAnalyzedChars specifies how many characters at most will be processed in a document.
  *        NOTE: currently hl.maxAnalyzedChars cannot yet be specified per-field
  *  </ul>
@@ -142,6 +152,16 @@ public class PostingsSolrHighlighter extends SolrHighlighter implements PluginIn
           float b = params.getFieldFloat(fieldName, HighlightParams.SCORE_B, 0.75f);
           float pivot = params.getFieldFloat(fieldName, HighlightParams.SCORE_PIVOT, 87f);
           return new PassageScorer(k1, b, pivot);
+        }
+
+        @Override
+        protected BreakIterator getBreakIterator(String field) {
+          String language = params.getFieldParam(field, HighlightParams.BS_LANGUAGE);
+          String country = params.getFieldParam(field, HighlightParams.BS_COUNTRY);
+          String variant = params.getFieldParam(field, HighlightParams.BS_VARIANT);
+          Locale locale = parseLocale(language, country, variant);
+          String type = params.getFieldParam(field, HighlightParams.BS_TYPE);
+          return parseBreakIterator(type, locale);
         }
       };
       
@@ -210,6 +230,38 @@ public class PostingsSolrHighlighter extends SolrHighlighter implements PluginIn
       return uniqueKeys;
     } else {
       return new String[docIDs.length];
+    }
+  }
+  
+  /** parse a break iterator type for the specified locale */
+  protected BreakIterator parseBreakIterator(String type, Locale locale) {
+    if (type == null || "SENTENCE".equals(type)) {
+      return BreakIterator.getSentenceInstance(locale);
+    } else if ("LINE".equals(type)) {
+      return BreakIterator.getLineInstance(locale);
+    } else if ("WORD".equals(type)) {
+      return BreakIterator.getWordInstance(locale);
+    } else if ("CHARACTER".equals(type)) {
+      return BreakIterator.getCharacterInstance(locale);
+    } else if ("WHOLE".equals(type)) {
+      return new WholeBreakIterator();
+    } else {
+      throw new IllegalArgumentException("Unknown " + HighlightParams.BS_TYPE + ": " + type);
+    }
+  }
+  
+  /** parse a locale from a language+country+variant spec */
+  protected Locale parseLocale(String language, String country, String variant) {
+    if (language == null && country == null && variant == null) {
+      return Locale.ROOT;
+    } else if (language != null && country == null && variant != null) {
+      throw new IllegalArgumentException("To specify variant, country is required");
+    } else if (language != null && country != null && variant != null) {
+      return new Locale(language, country, variant);
+    } else if (language != null && country != null) {
+      return new Locale(language, country);
+    } else { 
+      return new Locale(language);
     }
   }
 }
