@@ -42,7 +42,12 @@ public class TestPostingsSolrHighlighter extends SolrTestCaseJ4 {
     assertTrue(schema.getField("text").storeOffsetsWithPositions());
     assertTrue(schema.getField("text3").storeOffsetsWithPositions());
     assertFalse(schema.getField("text2").storeOffsetsWithPositions());
-    
+  }
+  
+  @Override
+  public void setUp() throws Exception {
+    super.setUp();
+    clearIndex();
     assertU(adoc("text", "document one", "text2", "document one", "text3", "crappy document", "id", "101"));
     assertU(adoc("text", "second document", "text2", "second document", "text3", "crappier document", "id", "102"));
     assertU(commit());
@@ -125,5 +130,21 @@ public class TestPostingsSolrHighlighter extends SolrTestCaseJ4 {
         "//lst[@name='highlighting']/lst[@name='101']/arr[@name='text3']/str='crappy [document]'",
         "//lst[@name='highlighting']/lst[@name='102']/arr[@name='text']/str='second <em>document</em>'",
         "//lst[@name='highlighting']/lst[@name='102']/arr[@name='text3']/str='crappier [document]'");
+  }
+  
+  public void testBreakIterator() {
+    assertQ("different breakiterator", 
+        req("q", "text:document", "sort", "id asc", "hl", "true", "hl.bs.type", "WORD"),
+        "count(//lst[@name='highlighting']/*)=2",
+        "//lst[@name='highlighting']/lst[@name='101']/arr[@name='text']/str='<em>document</em>'",
+        "//lst[@name='highlighting']/lst[@name='102']/arr[@name='text']/str='<em>document</em>'");
+  }
+  
+  public void testBreakIterator2() {
+    assertU(adoc("text", "Document one has a first sentence. Document two has a second sentence.", "id", "103"));
+    assertU(commit());
+    assertQ("different breakiterator", 
+        req("q", "text:document", "sort", "id asc", "hl", "true", "hl.bs.type", "WHOLE"),
+        "//lst[@name='highlighting']/lst[@name='103']/arr[@name='text']/str='<em>Document</em> one has a first sentence. <em>Document</em> two has a second sentence.'");
   }
 }
