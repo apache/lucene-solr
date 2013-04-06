@@ -31,11 +31,6 @@ Optimizations
   on Windows if NIOFSDirectory is used, mmapped files are still locked.
   (Michael Poindexter, Robert Muir, Uwe Schindler)
 
-Bug Fixes
-
-* LUCENE-4877: Throw exception for invalid arguments in analysis factories.
-  (Steve Rowe, Uwe Schindler, Robert Muir)
-
 ======================= Lucene 4.3.0 =======================
 
 Changes in backwards compatibility policy
@@ -226,6 +221,9 @@ Bug Fixes
 * LUCENE-4899: FastVectorHighlihgter failed with StringIndexOutOfBoundsException
   if a single highlight phrase or term was greater than the fragCharSize producing
   negative string offsets. (Simon Willnauer)
+
+* LUCENE-4877: Throw exception for invalid arguments in analysis factories.
+  (Steve Rowe, Uwe Schindler, Robert Muir)
 
 Documentation
 
