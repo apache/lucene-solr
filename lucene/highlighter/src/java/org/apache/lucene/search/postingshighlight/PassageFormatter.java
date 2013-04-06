@@ -28,12 +28,13 @@ public class PassageFormatter {
   private final String preTag;
   private final String postTag;
   private final String ellipsis;
+  private final boolean escape;
   
   /**
    * Creates a new PassageFormatter with the default tags.
    */
   public PassageFormatter() {
-    this("<b>", "</b>", "... ");
+    this("<b>", "</b>", "... ", false);
   }
   
   /**
@@ -41,14 +42,16 @@ public class PassageFormatter {
    * @param preTag text which should appear before a highlighted term.
    * @param postTag text which should appear after a highlighted term.
    * @param ellipsis text which should be used to connect two unconnected passages.
+   * @param escape true if text should be html-escaped
    */
-  public PassageFormatter(String preTag, String postTag, String ellipsis) {
+  public PassageFormatter(String preTag, String postTag, String ellipsis, boolean escape) {
     if (preTag == null || postTag == null || ellipsis == null) {
       throw new NullPointerException();
     }
     this.preTag = preTag;
     this.postTag = postTag;
     this.ellipsis = ellipsis;
+    this.escape = escape;
   }
   
   /**
@@ -74,19 +77,60 @@ public class PassageFormatter {
         int end = passage.matchEnds[i];
         // its possible to have overlapping terms
         if (start > pos) {
-          sb.append(content.substring(pos, start));
+          append(sb, content, pos, start);
         }
         if (end > pos) {
           sb.append(preTag);
-          sb.append(content.substring(Math.max(pos, start), end));
+          append(sb, content, Math.max(pos, start), end);
           sb.append(postTag);
           pos = end;
         }
       }
       // its possible a "term" from the analyzer could span a sentence boundary.
-      sb.append(content.substring(pos, Math.max(pos, passage.endOffset)));
+      append(sb, content, pos, Math.max(pos, passage.endOffset));
       pos = passage.endOffset;
     }
     return sb.toString();
+  }
+
+  private void append(StringBuilder dest, String content, int start, int end) {
+    if (escape) {
+      // note: these are the rules from owasp.org
+      for (int i = start; i < end; i++) {
+        char ch = content.charAt(i);
+        switch(ch) {
+          case '&': 
+            dest.append("&amp;");
+            break;
+          case '<':
+            dest.append("&lt;");
+            break;
+          case '>':
+            dest.append("&gt;");
+            break;
+          case '"':
+            dest.append("&quot;");
+            break;
+          case '\'':
+            dest.append("&#x27;");
+            break;
+          case '/':
+            dest.append("&#x2F;");
+            break;
+          default:
+            if (ch >= 0x30 && ch <= 0x39 || ch >= 0x41 && ch <= 0x5A || ch >= 0x61 && ch <= 0x7A) {
+              dest.append(ch);
+            } else if (ch < 0xff) {
+              dest.append("&#");
+              dest.append((int)ch);
+              dest.append(";");
+            } else {
+              dest.append(ch);
+            }
+        }
+      }
+    } else {
+      dest.append(content, start, end);
+    }
   }
 }

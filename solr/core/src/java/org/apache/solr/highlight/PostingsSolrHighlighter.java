@@ -57,6 +57,7 @@ import org.apache.solr.util.plugin.PluginInfoInitialized;
  *       &lt;str name="hl.tag.post"&gt;&amp;lt;/em&amp;gt;&lt;/str&gt;
  *       &lt;str name="hl.tag.ellipsis"&gt;... &lt;/str&gt;
  *       &lt;bool name="hl.defaultSummary"&gt;true&lt;/bool&gt;
+ *       &lt;str name="hl.encoder"&gt;simple&lt;/str&gt;
  *       &lt;float name="hl.score.k1"&gt;1.2&lt;/float&gt;
  *       &lt;float name="hl.score.b"&gt;0.75&lt;/float&gt;
  *       &lt;float name="hl.score.pivot"&gt;87&lt;/float&gt;
@@ -85,6 +86,7 @@ import org.apache.solr.util.plugin.PluginInfoInitialized;
  *    <li>hl.tag.post (string) specifies text which appears after a highlighted term.
  *    <li>hl.tag.ellipsis (string) specifies text which joins non-adjacent passages.
  *    <li>hl.defaultSummary (bool) specifies if a field should have a default summary.
+ *    <li>hl.encoder (string) can be 'html' (html escapes content) or 'simple' (no escaping).
  *    <li>hl.score.k1 (float) specifies bm25 scoring parameter 'k1'
  *    <li>hl.score.b (float) specifies bm25 scoring parameter 'b'
  *    <li>hl.score.pivot (float) specifies bm25 scoring parameter 'avgdl'
@@ -143,7 +145,8 @@ public class PostingsSolrHighlighter extends SolrHighlighter implements PluginIn
           String preTag = params.getFieldParam(fieldName, HighlightParams.TAG_PRE, "<em>");
           String postTag = params.getFieldParam(fieldName, HighlightParams.TAG_POST, "</em>");
           String ellipsis = params.getFieldParam(fieldName, HighlightParams.TAG_ELLIPSIS, "... ");
-          return new PassageFormatter(preTag, postTag, ellipsis);
+          String encoder = params.getFieldParam(fieldName, HighlightParams.ENCODER, "simple");
+          return new PassageFormatter(preTag, postTag, ellipsis, "html".equals(encoder));
         }
 
         @Override
