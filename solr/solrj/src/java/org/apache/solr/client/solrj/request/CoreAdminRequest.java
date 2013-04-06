@@ -349,12 +349,12 @@ public class CoreAdminRequest extends SolrRequest
       params.set(CoreAdminParams.CORE, core);
       if (indexDirs != null)  {
         for (String indexDir : indexDirs) {
-          params.set(CoreAdminParams.INDEX_DIR, indexDir);
+          params.add(CoreAdminParams.INDEX_DIR, indexDir);
         }
       }
       if (srcCores != null) {
         for (String srcCore : srcCores) {
-          params.set(CoreAdminParams.SRC_CORE, srcCore);
+          params.add(CoreAdminParams.SRC_CORE, srcCore);
         }
       }
       return params;
