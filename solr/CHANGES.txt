@@ -157,6 +157,9 @@ Bug Fixes
 * SOLR-4664: ZkStateReader should update aliases on construction. 
   (Mark Miller, Elodie Sannier)
 
+* SOLR-4682: CoreAdminRequest.mergeIndexes can not merge multiple cores or indexDirs.
+  (Jason.D.Cao via shalin)
+
 Optimizations
 ----------------------
 
