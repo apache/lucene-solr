@@ -167,7 +167,8 @@ eussent
 
                | Later additions (from Jean-Christophe Deschamps)
 ceci           |  this
-celà           |  that
+cela           |  that
+celà           |  that
 cet            |  this
 cette          |  this
 ici            |  here
