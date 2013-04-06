@@ -18,7 +18,6 @@ package org.apache.lucene.analysis.core;
  */
 
 import org.apache.lucene.analysis.TokenStream;
-import org.apache.lucene.analysis.core.TypeTokenFilter;
 import org.apache.lucene.analysis.util.ResourceLoader;
 import org.apache.lucene.analysis.util.ResourceLoaderAware;
 import org.apache.lucene.analysis.util.TokenFilterFactory;
@@ -49,10 +48,7 @@ public class TypeTokenFilterFactory extends TokenFilterFactory implements Resour
   /** Creates a new TypeTokenFilterFactory */
   public TypeTokenFilterFactory(Map<String,String> args) {
     super(args);
-    stopTypesFiles = args.remove("types");
-    if (stopTypesFiles == null) {
-      throw new IllegalArgumentException("Missing required parameter: types.");
-    }
+    stopTypesFiles = require(args, "types");
     enablePositionIncrements = getBoolean(args, "enablePositionIncrements", false);
     useWhitelist = getBoolean(args, "useWhitelist", false);
     if (!args.isEmpty()) {

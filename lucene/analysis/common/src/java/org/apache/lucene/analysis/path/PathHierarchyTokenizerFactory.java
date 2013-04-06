@@ -86,19 +86,6 @@ public class PathHierarchyTokenizerFactory extends TokenizerFactory {
     }
   }
   
-  private char getChar(Map<String,String> args, String name, char defaultValue) {
-    String v = args.remove(name);
-    if (v != null) {
-      if (v.length() != 1) {
-        throw new IllegalArgumentException(name + " should be a char. \"" + v + "\" is invalid");
-      } else {
-        return v.charAt(0);
-      }
-    } else {
-      return defaultValue;
-    }
-  }
-
   @Override
   public Tokenizer create(AttributeFactory factory, Reader input) {
     if (reverse) {

@@ -18,7 +18,6 @@ package org.apache.lucene.analysis.miscellaneous;
  */
 
 import org.apache.lucene.analysis.TokenStream;
-import org.apache.lucene.analysis.miscellaneous.KeepWordFilter;
 import org.apache.lucene.analysis.util.CharArraySet;
 import org.apache.lucene.analysis.util.ResourceLoader;
 import org.apache.lucene.analysis.util.ResourceLoaderAware;
@@ -47,7 +46,7 @@ public class KeepWordFilterFactory extends TokenFilterFactory implements Resourc
   public KeepWordFilterFactory(Map<String,String> args) {
     super(args);
     assureMatchVersion();
-    wordFiles = args.remove("words");
+    wordFiles = get(args, "words");
     ignoreCase = getBoolean(args, "ignoreCase", false);
     enablePositionIncrements = getBoolean(args, "enablePositionIncrements", false);
     if (!args.isEmpty()) {

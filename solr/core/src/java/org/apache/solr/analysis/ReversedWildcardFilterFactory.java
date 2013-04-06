@@ -136,13 +136,4 @@ public class ReversedWildcardFilterFactory extends TokenFilterFactory {
   public char getMarkerChar() {
     return markerChar;
   }
-  
-  protected final float getFloat(Map<String,String> args, String name, float defValue) {
-    String val = args.remove(name);
-    if (val == null) {
-      return defValue;
-    } else {
-      return Float.parseFloat(val);
-    }
-  }
 }

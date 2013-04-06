@@ -51,13 +51,11 @@ final class SlowSynonymFilterFactory extends TokenFilterFactory implements Resou
   
   public SlowSynonymFilterFactory(Map<String,String> args) {
     super(args);
-    synonyms = args.remove("synonyms");
-    if (synonyms == null)
-      throw new IllegalArgumentException("Missing required argument 'synonyms'.");
+    synonyms = require(args, "synonyms");
     ignoreCase = getBoolean(args, "ignoreCase", false);
     expand = getBoolean(args, "expand", true);
 
-    tf = args.remove("tokenizerFactory");
+    tf = get(args, "tokenizerFactory");
     if (!args.isEmpty()) {
       throw new IllegalArgumentException("Unknown parameters: " + args);
     }

@@ -17,10 +17,10 @@ package org.apache.lucene.analysis.icu;
  * limitations under the License.
  */
 
+import java.util.Arrays;
 import java.util.Map;
 
 import org.apache.lucene.analysis.TokenStream;
-import org.apache.lucene.analysis.icu.ICUTransformFilter;
 import org.apache.lucene.analysis.util.AbstractAnalysisFactory; // javadocs
 import org.apache.lucene.analysis.util.MultiTermAwareComponent;
 import org.apache.lucene.analysis.util.TokenFilterFactory;
@@ -44,20 +44,9 @@ public class ICUTransformFilterFactory extends TokenFilterFactory implements Mul
   /** Creates a new ICUTransformFilterFactory */
   public ICUTransformFilterFactory(Map<String,String> args) {
     super(args);
-    String id = args.remove("id");
-    if (id == null) {
-      throw new IllegalArgumentException("id is required.");
-    }
-    
-    int dir;
-    String direction = args.remove("direction");
-    if (direction == null || direction.equalsIgnoreCase("forward"))
-      dir = Transliterator.FORWARD;
-    else if (direction.equalsIgnoreCase("reverse"))
-      dir = Transliterator.REVERSE;
-    else
-      throw new IllegalArgumentException("invalid direction: " + direction);
-    
+    String id = require(args, "id");
+    String direction = get(args, "direction", Arrays.asList("forward", "reverse"), "forward", false);
+    int dir = "forward".equals(direction) ? Transliterator.FORWARD : Transliterator.REVERSE;
     transliterator = Transliterator.getInstance(id, dir);
     if (!args.isEmpty()) {
       throw new IllegalArgumentException("Unknown parameters: " + args);

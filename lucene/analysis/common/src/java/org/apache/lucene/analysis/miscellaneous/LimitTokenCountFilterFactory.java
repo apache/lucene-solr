@@ -20,7 +20,6 @@ package org.apache.lucene.analysis.miscellaneous;
 import java.util.Map;
 
 import org.apache.lucene.analysis.TokenStream;
-import org.apache.lucene.analysis.miscellaneous.LimitTokenCountFilter;
 import org.apache.lucene.analysis.util.TokenFilterFactory;
 
 /**
@@ -46,7 +45,7 @@ public class LimitTokenCountFilterFactory extends TokenFilterFactory {
   /** Creates a new LimitTokenCountFilterFactory */
   public LimitTokenCountFilterFactory(Map<String, String> args) {
     super(args);
-    maxTokenCount = getInt(args, MAX_TOKEN_COUNT_KEY);
+    maxTokenCount = requireInt(args, MAX_TOKEN_COUNT_KEY);
     consumeAllTokens = getBoolean(args, CONSUME_ALL_TOKENS_KEY, false);
     if (!args.isEmpty()) {
       throw new IllegalArgumentException("Unknown parameters: " + args);

@@ -25,8 +25,6 @@ import java.util.List;
 import java.util.Map;
 
 import org.apache.lucene.analysis.TokenStream;
-import org.apache.lucene.analysis.hunspell.HunspellDictionary;
-import org.apache.lucene.analysis.hunspell.HunspellStemFilter;
 import org.apache.lucene.analysis.util.ResourceLoader;
 import org.apache.lucene.analysis.util.ResourceLoaderAware;
 import org.apache.lucene.analysis.util.TokenFilterFactory;
@@ -67,11 +65,8 @@ public class HunspellStemFilterFactory extends TokenFilterFactory implements Res
   public HunspellStemFilterFactory(Map<String,String> args) {
     super(args);
     assureMatchVersion();
-    dictionaryArg = args.remove(PARAM_DICTIONARY);
-    if (dictionaryArg == null) {
-      throw new IllegalArgumentException("Parameter " + PARAM_DICTIONARY + " is mandatory.");
-    }
-    affixFile = args.remove(PARAM_AFFIX);
+    dictionaryArg = require(args, PARAM_DICTIONARY);
+    affixFile = get(args, PARAM_AFFIX);
     ignoreCase = getBoolean(args, PARAM_IGNORE_CASE, false);
     strictAffixParsing = getBoolean(args, PARAM_STRICT_AFFIX_PARSING, true);
     if (!args.isEmpty()) {

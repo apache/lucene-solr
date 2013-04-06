@@ -17,10 +17,11 @@ package org.apache.lucene.analysis.core;
  * limitations under the License.
  */
 
-import org.apache.lucene.analysis.util.*;
 import org.apache.lucene.analysis.TokenStream;
-import org.apache.lucene.analysis.core.StopAnalyzer;
-import org.apache.lucene.analysis.core.StopFilter;
+import org.apache.lucene.analysis.util.CharArraySet;
+import org.apache.lucene.analysis.util.ResourceLoader;
+import org.apache.lucene.analysis.util.ResourceLoaderAware;
+import org.apache.lucene.analysis.util.TokenFilterFactory;
 
 import java.util.Map;
 import java.io.IOException;
@@ -47,8 +48,8 @@ public class StopFilterFactory extends TokenFilterFactory implements ResourceLoa
   public StopFilterFactory(Map<String,String> args) {
     super(args);
     assureMatchVersion();
-    stopWordFiles = args.remove("words");
-    format = args.remove("format");
+    stopWordFiles = get(args, "words");
+    format = get(args, "format");
     ignoreCase = getBoolean(args, "ignoreCase", false);
     enablePositionIncrements = getBoolean(args, "enablePositionIncrements", false);
     if (!args.isEmpty()) {

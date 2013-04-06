@@ -17,14 +17,12 @@ package org.apache.lucene.analysis.charfilter;
  * limitations under the License.
  */
 
-import java.util.HashMap;
-
 import org.apache.lucene.analysis.util.BaseTokenStreamFactoryTestCase;
 
 public class TestMappingCharFilterFactory extends BaseTokenStreamFactoryTestCase {
   public void testParseString() throws Exception {
 
-    MappingCharFilterFactory f = new MappingCharFilterFactory(new HashMap<String,String>());
+    MappingCharFilterFactory f = (MappingCharFilterFactory)charFilterFactory("Mapping");
 
     try {
       f.parseString( "\\" );

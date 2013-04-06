@@ -39,8 +39,7 @@ public class ClassicTokenizerFactory extends TokenizerFactory {
   public ClassicTokenizerFactory(Map<String,String> args) {
     super(args);
     assureMatchVersion();
-    maxTokenLength = getInt(args, "maxTokenLength", 
-                            StandardAnalyzer.DEFAULT_MAX_TOKEN_LENGTH);
+    maxTokenLength = getInt(args, "maxTokenLength", StandardAnalyzer.DEFAULT_MAX_TOKEN_LENGTH);
     if (!args.isEmpty()) {
       throw new IllegalArgumentException("Unknown parameters: " + args);
     }

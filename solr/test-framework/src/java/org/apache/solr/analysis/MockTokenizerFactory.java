@@ -18,6 +18,7 @@ package org.apache.solr.analysis;
  */
 
 import java.io.Reader;
+import java.util.Arrays;
 import java.util.Map;
 
 import org.apache.lucene.analysis.MockTokenizer;
@@ -35,19 +36,13 @@ public class MockTokenizerFactory extends TokenizerFactory {
   /** Creates a new MockTokenizerFactory */
   public MockTokenizerFactory(Map<String,String> args) {
     super(args);
-    String patternArg = args.remove("pattern");
-    if (patternArg == null) {
-      patternArg = "whitespace";
-    }
-    
-    if ("whitespace".equalsIgnoreCase(patternArg)) {
-      pattern = MockTokenizer.WHITESPACE;
-    } else if ("keyword".equalsIgnoreCase(patternArg)) {
+    String patternArg = get(args, "pattern", Arrays.asList("keyword", "simple", "whitespace"));
+    if ("keyword".equalsIgnoreCase(patternArg)) {
       pattern = MockTokenizer.KEYWORD;
     } else if ("simple".equalsIgnoreCase(patternArg)) {
       pattern = MockTokenizer.SIMPLE;
     } else {
-      throw new RuntimeException("invalid pattern!");
+      pattern = MockTokenizer.WHITESPACE;
     }
     
     enableChecks = getBoolean(args, "enableChecks", true);

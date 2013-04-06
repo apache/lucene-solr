@@ -84,7 +84,7 @@ public class ICUTokenizerFactory extends TokenizerFactory implements ResourceLoa
   public ICUTokenizerFactory(Map<String,String> args) {
     super(args);
     tailored = new HashMap<Integer,String>();
-    String rulefilesArg = args.remove(RULEFILES);
+    String rulefilesArg = get(args, RULEFILES);
     if (rulefilesArg != null) {
       List<String> scriptAndResourcePaths = splitFileNames(rulefilesArg);
       for (String scriptAndResourcePath : scriptAndResourcePaths) {

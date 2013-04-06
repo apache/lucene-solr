@@ -43,7 +43,7 @@ public class ElisionFilterFactory extends TokenFilterFactory implements Resource
   /** Creates a new ElisionFilterFactory */
   public ElisionFilterFactory(Map<String,String> args) {
     super(args);
-    articlesFile = args.remove("articles");
+    articlesFile = get(args, "articles");
     ignoreCase = getBoolean(args, "ignoreCase", false);
     if (!args.isEmpty()) {
       throw new IllegalArgumentException("Unknown parameters: " + args);

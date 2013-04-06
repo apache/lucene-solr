@@ -22,7 +22,6 @@ import java.util.List;
 import java.util.Map;
 
 import org.apache.lucene.analysis.TokenStream;
-import org.apache.lucene.analysis.miscellaneous.StemmerOverrideFilter;
 import org.apache.lucene.analysis.miscellaneous.StemmerOverrideFilter.StemmerOverrideMap;
 import org.apache.lucene.analysis.util.ResourceLoader;
 import org.apache.lucene.analysis.util.ResourceLoaderAware;
@@ -46,7 +45,7 @@ public class StemmerOverrideFilterFactory extends TokenFilterFactory implements 
   /** Creates a new StemmerOverrideFilterFactory */
   public StemmerOverrideFilterFactory(Map<String,String> args) {
     super(args);
-    dictionaryFiles = args.remove("dictionary");
+    dictionaryFiles = get(args, "dictionary");
     ignoreCase = getBoolean(args, "ignoreCase", false);
     if (!args.isEmpty()) {
       throw new IllegalArgumentException("Unknown parameters: " + args);

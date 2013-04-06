@@ -21,9 +21,11 @@ import java.io.IOException;
 import java.util.Map;
 import java.util.regex.Pattern;
 
-import org.apache.lucene.analysis.miscellaneous.KeywordMarkerFilter;
-import org.apache.lucene.analysis.util.*;
 import org.apache.lucene.analysis.TokenStream;
+import org.apache.lucene.analysis.util.CharArraySet;
+import org.apache.lucene.analysis.util.ResourceLoader;
+import org.apache.lucene.analysis.util.ResourceLoaderAware;
+import org.apache.lucene.analysis.util.TokenFilterFactory;
 
 /**
  * Factory for {@link KeywordMarkerFilter}.
@@ -47,8 +49,8 @@ public class KeywordMarkerFilterFactory extends TokenFilterFactory implements Re
   /** Creates a new KeywordMarkerFilterFactory */
   public KeywordMarkerFilterFactory(Map<String,String> args) {
     super(args);
-    wordFiles = args.remove(PROTECTED_TOKENS);
-    stringPattern = args.remove(PATTERN);
+    wordFiles = get(args, PROTECTED_TOKENS);
+    stringPattern = get(args, PATTERN);
     ignoreCase = getBoolean(args, "ignoreCase", false);
     if (!args.isEmpty()) {
       throw new IllegalArgumentException("Unknown parameters: " + args);

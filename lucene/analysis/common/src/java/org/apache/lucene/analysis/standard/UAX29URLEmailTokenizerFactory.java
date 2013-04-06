@@ -39,8 +39,7 @@ public class UAX29URLEmailTokenizerFactory extends TokenizerFactory {
   public UAX29URLEmailTokenizerFactory(Map<String,String> args) {
     super(args);
     assureMatchVersion();
-    maxTokenLength = getInt(args, "maxTokenLength",
-                            StandardAnalyzer.DEFAULT_MAX_TOKEN_LENGTH);
+    maxTokenLength = getInt(args, "maxTokenLength", StandardAnalyzer.DEFAULT_MAX_TOKEN_LENGTH);
     if (!args.isEmpty()) {
       throw new IllegalArgumentException("Unknown parameters: " + args);
     }

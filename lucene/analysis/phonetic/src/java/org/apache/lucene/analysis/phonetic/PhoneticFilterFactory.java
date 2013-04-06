@@ -25,7 +25,12 @@ import java.util.Locale;
 import java.util.Map;
 
 import org.apache.commons.codec.Encoder;
-import org.apache.commons.codec.language.*;
+import org.apache.commons.codec.language.Caverphone2;
+import org.apache.commons.codec.language.ColognePhonetic;
+import org.apache.commons.codec.language.DoubleMetaphone;
+import org.apache.commons.codec.language.Metaphone;
+import org.apache.commons.codec.language.RefinedSoundex;
+import org.apache.commons.codec.language.Soundex;
 import org.apache.lucene.analysis.TokenStream;
 import org.apache.lucene.analysis.util.ResourceLoader;
 import org.apache.lucene.analysis.util.ResourceLoaderAware;
@@ -89,12 +94,8 @@ public class PhoneticFilterFactory extends TokenFilterFactory implements Resourc
   public PhoneticFilterFactory(Map<String,String> args) {
     super(args);
     inject = getBoolean(args, INJECT, true);
-    name = args.remove(ENCODER);
-    if (name == null) {
-      throw new IllegalArgumentException("Missing required parameter: " + ENCODER
-                                       + " [" + registry.keySet() + "]");
-    }
-    String v = args.remove(MAX_CODE_LENGTH);
+    name = require(args, ENCODER);
+    String v = get(args, MAX_CODE_LENGTH);
     if (v != null) {
       maxCodeLength = Integer.valueOf(v);
     } else {

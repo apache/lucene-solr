@@ -18,9 +18,10 @@ package org.apache.lucene.analysis.miscellaneous;
  */
 
 import org.apache.lucene.analysis.TokenStream;
-import org.apache.lucene.analysis.miscellaneous.WordDelimiterFilter;
-import org.apache.lucene.analysis.miscellaneous.WordDelimiterIterator;
-import org.apache.lucene.analysis.util.*;
+import org.apache.lucene.analysis.util.CharArraySet;
+import org.apache.lucene.analysis.util.ResourceLoader;
+import org.apache.lucene.analysis.util.ResourceLoaderAware;
+import org.apache.lucene.analysis.util.TokenFilterFactory;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -88,8 +89,8 @@ public class WordDelimiterFilterFactory extends TokenFilterFactory implements Re
     if (getInt(args, "stemEnglishPossessive", 1) != 0) {
       flags |= STEM_ENGLISH_POSSESSIVE;
     }
-    wordFiles = args.remove(PROTECTED_TOKENS);
-    types = args.remove(TYPES);
+    wordFiles = get(args, PROTECTED_TOKENS);
+    types = get(args, TYPES);
     this.flags = flags;
     if (!args.isEmpty()) {
       throw new IllegalArgumentException("Unknown parameters: " + args);

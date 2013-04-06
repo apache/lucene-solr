@@ -17,7 +17,6 @@ package org.apache.lucene.analysis.shingle;
  * limitations under the License.
  */
 
-import org.apache.lucene.analysis.shingle.ShingleFilter;
 import org.apache.lucene.analysis.TokenStream;
 import org.apache.lucene.analysis.util.TokenFilterFactory;
 
@@ -44,28 +43,21 @@ public class ShingleFilterFactory extends TokenFilterFactory {
   /** Creates a new ShingleFilterFactory */
   public ShingleFilterFactory(Map<String, String> args) {
     super(args);
-    maxShingleSize = getInt(args, "maxShingleSize", 
-                            ShingleFilter.DEFAULT_MAX_SHINGLE_SIZE);
+    maxShingleSize = getInt(args, "maxShingleSize", ShingleFilter.DEFAULT_MAX_SHINGLE_SIZE);
     if (maxShingleSize < 2) {
-      throw new IllegalArgumentException("Invalid maxShingleSize (" + maxShingleSize
-                              + ") - must be at least 2");
+      throw new IllegalArgumentException("Invalid maxShingleSize (" + maxShingleSize + ") - must be at least 2");
     }
-    minShingleSize = getInt(args, "minShingleSize",
-                            ShingleFilter.DEFAULT_MIN_SHINGLE_SIZE);
+    minShingleSize = getInt(args, "minShingleSize", ShingleFilter.DEFAULT_MIN_SHINGLE_SIZE);
     if (minShingleSize < 2) {
-      throw new IllegalArgumentException("Invalid minShingleSize (" + minShingleSize
-                              + ") - must be at least 2");
+      throw new IllegalArgumentException("Invalid minShingleSize (" + minShingleSize + ") - must be at least 2");
     }
     if (minShingleSize > maxShingleSize) {
-      throw new IllegalArgumentException("Invalid minShingleSize (" + minShingleSize
-                              + ") - must be no greater than maxShingleSize ("
-                              + maxShingleSize + ")");
+      throw new IllegalArgumentException
+          ("Invalid minShingleSize (" + minShingleSize + ") - must be no greater than maxShingleSize (" + maxShingleSize + ")");
     }
     outputUnigrams = getBoolean(args, "outputUnigrams", true);
     outputUnigramsIfNoShingles = getBoolean(args, "outputUnigramsIfNoShingles", false);
-    tokenSeparator = args.containsKey("tokenSeparator")
-                     ? args.remove("tokenSeparator")
-                     : ShingleFilter.TOKEN_SEPARATOR;
+    tokenSeparator = get(args, "tokenSeparator", ShingleFilter.TOKEN_SEPARATOR);
     if (!args.isEmpty()) {
       throw new IllegalArgumentException("Unknown parameters: " + args);
     }

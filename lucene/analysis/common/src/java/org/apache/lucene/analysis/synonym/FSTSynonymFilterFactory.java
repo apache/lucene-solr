@@ -60,15 +60,12 @@ final class FSTSynonymFilterFactory extends TokenFilterFactory implements Resour
   public FSTSynonymFilterFactory(Map<String,String> args) {
     super(args);
     ignoreCase = getBoolean(args, "ignoreCase", false);
-    tokenizerFactory = args.remove("tokenizerFactory");
+    tokenizerFactory = get(args, "tokenizerFactory");
     if (tokenizerFactory != null) {
       assureMatchVersion();
     }
-    synonyms = args.remove("synonyms");
-    if (synonyms == null) {
-      throw new IllegalArgumentException("Missing required argument 'synonyms'.");
-    }
-    format = args.remove("format");
+    synonyms = require(args, "synonyms");
+    format = get(args, "format");
     expand = getBoolean(args, "expand", true);
     if (!args.isEmpty()) {
       throw new IllegalArgumentException("Unknown parameters: " + args);

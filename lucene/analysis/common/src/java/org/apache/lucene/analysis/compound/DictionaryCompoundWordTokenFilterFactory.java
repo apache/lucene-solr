@@ -17,8 +17,11 @@ package org.apache.lucene.analysis.compound;
  * limitations under the License.
  */
 
-import org.apache.lucene.analysis.util.*;
 import org.apache.lucene.analysis.TokenStream;
+import org.apache.lucene.analysis.util.CharArraySet;
+import org.apache.lucene.analysis.util.ResourceLoader;
+import org.apache.lucene.analysis.util.ResourceLoaderAware;
+import org.apache.lucene.analysis.util.TokenFilterFactory;
 
 import java.util.Map;
 import java.io.IOException;
@@ -34,7 +37,7 @@ import java.io.IOException;
  *   &lt;/analyzer&gt;
  * &lt;/fieldType&gt;</pre>
  */
-public class DictionaryCompoundWordTokenFilterFactory extends TokenFilterFactory  implements ResourceLoaderAware {
+public class DictionaryCompoundWordTokenFilterFactory extends TokenFilterFactory implements ResourceLoaderAware {
   private CharArraySet dictionary;
   private final String dictFile;
   private final int minWordSize;
@@ -46,11 +49,7 @@ public class DictionaryCompoundWordTokenFilterFactory extends TokenFilterFactory
   public DictionaryCompoundWordTokenFilterFactory(Map<String, String> args) {
     super(args);
     assureMatchVersion();
-    dictFile = args.remove("dictionary");
-    if (null == dictFile) {
-      throw new IllegalArgumentException("Missing required parameter: dictionary");
-    }
-
+    dictFile = require(args, "dictionary");
     minWordSize = getInt(args, "minWordSize", CompoundWordTokenFilterBase.DEFAULT_MIN_WORD_SIZE);
     minSubwordSize = getInt(args, "minSubwordSize", CompoundWordTokenFilterBase.DEFAULT_MIN_SUBWORD_SIZE);
     maxSubwordSize = getInt(args, "maxSubwordSize", CompoundWordTokenFilterBase.DEFAULT_MAX_SUBWORD_SIZE);
@@ -68,7 +67,8 @@ public class DictionaryCompoundWordTokenFilterFactory extends TokenFilterFactory
   @Override
   public TokenStream create(TokenStream input) {
     // if the dictionary is null, it means it was empty
-    return dictionary == null ? input : new DictionaryCompoundWordTokenFilter(luceneMatchVersion,input,dictionary,minWordSize,minSubwordSize,maxSubwordSize,onlyLongestMatch);
+    return dictionary == null ? input : new DictionaryCompoundWordTokenFilter
+        (luceneMatchVersion, input, dictionary, minWordSize, minSubwordSize, maxSubwordSize, onlyLongestMatch);
   }
 }
 
