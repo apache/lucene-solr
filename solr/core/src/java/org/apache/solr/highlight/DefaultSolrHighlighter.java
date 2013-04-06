@@ -69,6 +69,30 @@ public class DefaultSolrHighlighter extends SolrHighlighter implements PluginInf
     this.solrCore = solrCore;
   }
 
+  // Thread safe registry
+  protected final Map<String,SolrFormatter> formatters =
+    new HashMap<String, SolrFormatter>();
+
+  // Thread safe registry
+  protected final Map<String,SolrEncoder> encoders =
+    new HashMap<String, SolrEncoder>();
+
+  // Thread safe registry
+  protected final Map<String,SolrFragmenter> fragmenters =
+    new HashMap<String, SolrFragmenter>() ;
+
+  // Thread safe registry
+  protected final Map<String, SolrFragListBuilder> fragListBuilders =
+    new HashMap<String, SolrFragListBuilder>() ;
+
+  // Thread safe registry
+  protected final Map<String, SolrFragmentsBuilder> fragmentsBuilders =
+    new HashMap<String, SolrFragmentsBuilder>() ;
+
+  // Thread safe registry
+  protected final Map<String, SolrBoundaryScanner> boundaryScanners =
+    new HashMap<String, SolrBoundaryScanner>() ;
+
   @Override
   public void init(PluginInfo info) {
     formatters.clear();

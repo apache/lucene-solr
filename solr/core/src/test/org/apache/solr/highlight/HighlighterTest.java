@@ -64,7 +64,7 @@ public class HighlighterTest extends SolrTestCaseJ4 {
   @Test
   public void testConfig()
   {
-    SolrHighlighter highlighter = HighlightComponent.getHighlighter(h.getCore());
+    DefaultSolrHighlighter highlighter = (DefaultSolrHighlighter) HighlightComponent.getHighlighter(h.getCore());
 
     // Make sure we loaded the one formatter
     SolrFormatter fmt1 = highlighter.formatters.get( null );

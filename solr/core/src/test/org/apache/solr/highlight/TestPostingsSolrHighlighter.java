@@ -71,6 +71,14 @@ public class TestPostingsSolrHighlighter extends SolrTestCaseJ4 {
         "count(//lst[@name='highlighting']/lst[@name='102']/arr[@name='text']/*)=0");
   }
   
+  public void testDefaultSummary() {
+    assertQ("null snippet test", 
+      req("q", "text:one OR *:*", "sort", "id asc", "hl", "true", "hl.defaultSummary", "true"),
+        "count(//lst[@name='highlighting']/*)=2",
+        "//lst[@name='highlighting']/lst[@name='101']/arr[@name='text']/str='document <em>one</em>'",
+        "//lst[@name='highlighting']/lst[@name='102']/arr[@name='text']/str='second document'");
+  }
+  
   public void testDifferentField() {
     assertQ("highlighting text3", 
         req("q", "text3:document", "sort", "id asc", "hl", "true", "hl.fl", "text3"),
@@ -99,5 +107,23 @@ public class TestPostingsSolrHighlighter extends SolrTestCaseJ4 {
       // expected
     }
     resetExceptionIgnores();
+  }
+  
+  public void testTags() {
+    assertQ("different pre/post tags", 
+        req("q", "text:document", "sort", "id asc", "hl", "true", "hl.tag.pre", "[", "hl.tag.post", "]"),
+        "count(//lst[@name='highlighting']/*)=2",
+        "//lst[@name='highlighting']/lst[@name='101']/arr[@name='text']/str='[document] one'",
+        "//lst[@name='highlighting']/lst[@name='102']/arr[@name='text']/str='second [document]'");
+  }
+  
+  public void testTagsPerField() {
+    assertQ("highlighting text and text3", 
+        req("q", "text:document text3:document", "sort", "id asc", "hl", "true", "hl.fl", "text,text3", "f.text3.hl.tag.pre", "[", "f.text3.hl.tag.post", "]"),
+        "count(//lst[@name='highlighting']/*)=2",
+        "//lst[@name='highlighting']/lst[@name='101']/arr[@name='text']/str='<em>document</em> one'",
+        "//lst[@name='highlighting']/lst[@name='101']/arr[@name='text3']/str='crappy [document]'",
+        "//lst[@name='highlighting']/lst[@name='102']/arr[@name='text']/str='second <em>document</em>'",
+        "//lst[@name='highlighting']/lst[@name='102']/arr[@name='text3']/str='crappier [document]'");
   }
 }

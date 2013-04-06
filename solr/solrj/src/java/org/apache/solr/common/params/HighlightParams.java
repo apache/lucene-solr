@@ -42,6 +42,7 @@ public interface HighlightParams {
   public static final String BS_LANGUAGE = HIGHLIGHT+".bs.language";
   public static final String BS_COUNTRY = HIGHLIGHT+".bs.country";
   public static final String FIELD_MATCH = HIGHLIGHT+".requireFieldMatch";
+  public static final String DEFAULT_SUMMARY = HIGHLIGHT + ".defaultSummary";
   public static final String ALTERNATE_FIELD = HIGHLIGHT+".alternateField";
   public static final String ALTERNATE_FIELD_LENGTH = HIGHLIGHT+".maxAlternateFieldLength";
   public static final String MAX_MULTIVALUED_TO_EXAMINE = HIGHLIGHT + ".maxMultiValuedToExamine";
@@ -55,6 +56,7 @@ public interface HighlightParams {
   public static final String USE_FVH  = HIGHLIGHT + ".useFastVectorHighlighter";
   public static final String TAG_PRE  = HIGHLIGHT + ".tag.pre";
   public static final String TAG_POST = HIGHLIGHT + ".tag.post";
+  public static final String TAG_ELLIPSIS = HIGHLIGHT + ".tag.ellipsis";
   public static final String PHRASE_LIMIT = HIGHLIGHT + ".phraseLimit";
   public static final String MULTI_VALUED_SEPARATOR = HIGHLIGHT + ".multiValuedSeparatorChar";
   
@@ -68,4 +70,10 @@ public interface HighlightParams {
   public static final String SLOP  = HIGHLIGHT+"."+REGEX+".slop";
   public static final String PATTERN  = HIGHLIGHT+"."+REGEX+".pattern";
   public static final String MAX_RE_CHARS   = HIGHLIGHT+"."+REGEX+".maxAnalyzedChars";
+  
+  // Scoring parameters
+  public static final String SCORE = "score";
+  public static final String SCORE_K1 = HIGHLIGHT +"."+SCORE+".k1";
+  public static final String SCORE_B = HIGHLIGHT +"."+SCORE+".b";
+  public static final String SCORE_PIVOT = HIGHLIGHT +"."+SCORE+".pivot";
 }

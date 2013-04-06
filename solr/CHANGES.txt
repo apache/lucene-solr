@@ -125,6 +125,10 @@ New Features
   prevent the "best" match from being found if it appears later in the MV list than the
   cutoff specified by either of these params. (Erick Erickson)
 
+* SOLR-4675: Improve PostingsSolrHighlighter to support per-field/query-time overrides
+  and add additional configuration parameters. See the javadocs for more details and
+  examples. (Robert Muir)
+
 Bug Fixes
 ----------------------
 
