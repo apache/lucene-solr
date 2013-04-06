@@ -31,6 +31,7 @@ import static org.apache.solr.schema.TrieField.TrieTypes;
 
 import java.io.IOException;
 import java.io.Reader;
+import java.util.HashMap;
 import java.util.Iterator;
 
 /**
@@ -50,6 +51,7 @@ public class TrieTokenizerFactory extends TokenizerFactory {
   protected final TrieTypes type;
 
   public TrieTokenizerFactory(TrieTypes type, int precisionStep) {
+    super(new HashMap<String,String>());
     this.type = type;
     this.precisionStep = precisionStep;
   }

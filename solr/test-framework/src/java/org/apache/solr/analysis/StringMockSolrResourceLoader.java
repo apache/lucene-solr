@@ -20,8 +20,6 @@ package org.apache.solr.analysis;
 import java.io.ByteArrayInputStream;
 import java.io.IOException;
 import java.io.InputStream;
-import java.util.Arrays;
-import java.util.List;
 
 import org.apache.lucene.analysis.util.ResourceLoader;
 
@@ -33,8 +31,22 @@ class StringMockSolrResourceLoader implements ResourceLoader {
   }
 
   @Override
+  public <T> Class<? extends T> findClass(String cname, Class<T> expectedType) {
+    try {
+      return Class.forName(cname).asSubclass(expectedType);
+    } catch (Exception e) {
+      throw new RuntimeException("Cannot load class: " + cname, e);
+    }
+  }
+
+  @Override
   public <T> T newInstance(String cname, Class<T> expectedType) {
-    return null;
+    Class<? extends T> clazz = findClass(cname, expectedType);
+    try {
+      return clazz.newInstance();
+    } catch (Exception e) {
+      throw new RuntimeException("Cannot create instance: " + cname, e);
+    }
   }
 
   @Override

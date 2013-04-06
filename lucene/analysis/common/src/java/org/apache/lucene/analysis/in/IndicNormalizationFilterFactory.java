@@ -17,6 +17,8 @@ package org.apache.lucene.analysis.in;
  * limitations under the License.
  */
 
+import java.util.Map;
+
 import org.apache.lucene.analysis.TokenStream;
 import org.apache.lucene.analysis.in.IndicNormalizationFilter;
 import org.apache.lucene.analysis.util.AbstractAnalysisFactory;
@@ -25,16 +27,24 @@ import org.apache.lucene.analysis.util.TokenFilterFactory;
 
 /** 
  * Factory for {@link IndicNormalizationFilter}. 
- * <pre class="prettyprint" >
+ * <pre class="prettyprint">
  * &lt;fieldType name="text_innormal" class="solr.TextField" positionIncrementGap="100"&gt;
  *   &lt;analyzer&gt;
  *     &lt;tokenizer class="solr.StandardTokenizerFactory"/&gt;
  *     &lt;filter class="solr.IndicNormalizationFilterFactory"/&gt;
  *   &lt;/analyzer&gt;
  * &lt;/fieldType&gt;</pre>
- *
  */
 public class IndicNormalizationFilterFactory extends TokenFilterFactory implements MultiTermAwareComponent {
+  
+  /** Creates a new IndicNormalizationFilterFactory */
+  public IndicNormalizationFilterFactory(Map<String,String> args) {
+    super(args);
+    if (!args.isEmpty()) {
+      throw new IllegalArgumentException("Unknown parameters: " + args);
+    }
+  }
+  
   @Override
   public TokenStream create(TokenStream input) {
     return new IndicNormalizationFilter(input);

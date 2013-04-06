@@ -39,7 +39,7 @@ import org.apache.lucene.util.AttributeSource.AttributeFactory;
  * <code>Books/Fic</code>...
  * </p>
  *
- * <pre class="prettyprint" >
+ * <pre class="prettyprint">
  * &lt;fieldType name="descendent_path" class="solr.TextField"&gt;
  *   &lt;analyzer type="index"&gt;
  *     &lt;tokenizer class="solr.PathHierarchyTokenizerFactory" delimiter="/" /&gt;
@@ -57,7 +57,7 @@ import org.apache.lucene.util.AttributeSource.AttributeFactory;
  * <code>Books/NonFic/Science/Physics/Theory</code> or 
  * <code>Books/NonFic/Law</code>.
  * </p>
- * <pre class="prettyprint" >
+ * <pre class="prettyprint">
  * &lt;fieldType name="descendent_path" class="solr.TextField"&gt;
  *   &lt;analyzer type="index"&gt;
  *     &lt;tokenizer class="solr.KeywordTokenizerFactory" /&gt;
@@ -69,59 +69,39 @@ import org.apache.lucene.util.AttributeSource.AttributeFactory;
  * </pre>
  */
 public class PathHierarchyTokenizerFactory extends TokenizerFactory {
+  private final char delimiter;
+  private final char replacement;
+  private final boolean reverse;
+  private final int skip;
   
-  private char delimiter;
-  private char replacement;
-  private boolean reverse = false;
-  private int skip =  PathHierarchyTokenizer.DEFAULT_SKIP;
+  /** Creates a new PathHierarchyTokenizerFactory */
+  public PathHierarchyTokenizerFactory(Map<String,String> args) {
+    super(args);
+    delimiter = getChar(args, "delimiter", PathHierarchyTokenizer.DEFAULT_DELIMITER);
+    replacement = getChar(args, "replace", delimiter);
+    reverse = getBoolean(args, "reverse", false);
+    skip = getInt(args, "skip", PathHierarchyTokenizer.DEFAULT_SKIP);
+    if (!args.isEmpty()) {
+      throw new IllegalArgumentException("Unknown parameters: " + args);
+    }
+  }
   
-  /**
-   * Require a configured pattern
-   */
-  @Override
-  public void init(Map<String,String> args){
-    super.init( args );
-    
-    String v = args.get( "delimiter" );
-    if( v != null ){
-      if( v.length() != 1 ){
-        throw new IllegalArgumentException("delimiter should be a char. \"" + v + "\" is invalid");
+  private char getChar(Map<String,String> args, String name, char defaultValue) {
+    String v = args.remove(name);
+    if (v != null) {
+      if (v.length() != 1) {
+        throw new IllegalArgumentException(name + " should be a char. \"" + v + "\" is invalid");
+      } else {
+        return v.charAt(0);
       }
-      else{
-        delimiter = v.charAt(0);
-      }
-    }
-    else{
-      delimiter = PathHierarchyTokenizer.DEFAULT_DELIMITER;
-    }
-    
-    v = args.get( "replace" );
-    if( v != null ){
-      if( v.length() != 1 ){
-        throw new IllegalArgumentException("replace should be a char. \"" + v + "\" is invalid");
-      }
-      else{
-        replacement = v.charAt(0);
-      }
-    }
-    else{
-      replacement = delimiter;
-    }
-    
-    v = args.get( "reverse" );
-    if( v != null ){
-      reverse = "true".equals( v );
-    }
-
-    v = args.get( "skip" );
-    if( v != null ){
-      skip = Integer.parseInt( v );
+    } else {
+      return defaultValue;
     }
   }
 
   @Override
   public Tokenizer create(AttributeFactory factory, Reader input) {
-    if( reverse ) {
+    if (reverse) {
       return new ReversePathHierarchyTokenizer(factory, input, delimiter, replacement, skip);
     }
     return new PathHierarchyTokenizer(factory, input, delimiter, replacement, skip);

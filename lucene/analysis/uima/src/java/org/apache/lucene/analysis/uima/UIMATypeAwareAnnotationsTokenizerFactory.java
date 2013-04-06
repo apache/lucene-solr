@@ -32,12 +32,11 @@ public class UIMATypeAwareAnnotationsTokenizerFactory extends TokenizerFactory {
   private String descriptorPath;
   private String tokenType;
   private String featurePath;
-  private Map<String, Object> configurationParameters;
+  private final Map<String,Object> configurationParameters = new HashMap<String,Object>();
 
-  @Override
-  public void init(Map<String, String> args) {
-    super.init(args);
-    configurationParameters = new HashMap<String, Object>();
+  /** Creates a new UIMATypeAwareAnnotationsTokenizerFactory */
+  public UIMATypeAwareAnnotationsTokenizerFactory(Map<String, String> args) {
+    super(args);
     for (String k : args.keySet()) {
       if (k.equals("featurePath")) {
         featurePath = args.get("featurePath");

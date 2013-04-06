@@ -53,8 +53,8 @@ public class TestFilesystemResourceLoader extends LuceneTestCase {
     );
     assertTrue(set.contains("you"));
     // try to load a class; we use string comparison because classloader may be different...
-    assertEquals("org.apache.lucene.analysis.en.KStemFilterFactory",
-        rl.newInstance("org.apache.lucene.analysis.en.KStemFilterFactory", TokenFilterFactory.class).getClass().getName());
+    assertEquals("org.apache.lucene.analysis.util.RollingCharBuffer",
+        rl.newInstance("org.apache.lucene.analysis.util.RollingCharBuffer", Object.class).getClass().getName());
     // theoretically classes should also be loadable:
     IOUtils.closeWhileHandlingException(rl.openResource("java/lang/String.class"));
   }

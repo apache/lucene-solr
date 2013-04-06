@@ -17,6 +17,8 @@ package org.apache.lucene.analysis.cjk;
  * limitations under the License.
  */
 
+import java.util.Map;
+
 import org.apache.lucene.analysis.TokenStream;
 import org.apache.lucene.analysis.cjk.CJKWidthFilter;
 import org.apache.lucene.analysis.util.AbstractAnalysisFactory;
@@ -25,7 +27,7 @@ import org.apache.lucene.analysis.util.TokenFilterFactory;
 
 /** 
  * Factory for {@link CJKWidthFilter}.
- * <pre class="prettyprint" >
+ * <pre class="prettyprint">
  * &lt;fieldType name="text_cjk" class="solr.TextField"&gt;
  *   &lt;analyzer&gt;
  *     &lt;tokenizer class="solr.StandardTokenizerFactory"/&gt;
@@ -35,8 +37,15 @@ import org.apache.lucene.analysis.util.TokenFilterFactory;
  *   &lt;/analyzer&gt;
  * &lt;/fieldType&gt;</pre>
  */
-
 public class CJKWidthFilterFactory extends TokenFilterFactory implements MultiTermAwareComponent {
+  
+  /** Creates a new CJKWidthFilterFactory */
+  public CJKWidthFilterFactory(Map<String,String> args) {
+    super(args);
+    if (!args.isEmpty()) {
+      throw new IllegalArgumentException("Unknown parameters: " + args);
+    }
+  }
   
   @Override
   public TokenStream create(TokenStream input) {

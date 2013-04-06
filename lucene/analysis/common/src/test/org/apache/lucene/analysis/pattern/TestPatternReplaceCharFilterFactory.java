@@ -17,31 +17,27 @@ package org.apache.lucene.analysis.pattern;
  * limitations under the License.
  */
 
-import java.io.IOException;
+import java.io.Reader;
 import java.io.StringReader;
-import java.util.HashMap;
-import java.util.Map;
 
-import org.apache.lucene.analysis.*;
+import org.apache.lucene.analysis.MockTokenizer;
+import org.apache.lucene.analysis.TokenStream;
+import org.apache.lucene.analysis.util.BaseTokenStreamFactoryTestCase;
 
 /**
  * Simple tests to ensure this factory is working
  */
-public class TestPatternReplaceCharFilterFactory extends BaseTokenStreamTestCase {
+public class TestPatternReplaceCharFilterFactory extends BaseTokenStreamFactoryTestCase {
   
   //           1111
   // 01234567890123
   // this is test.
-  public void testNothingChange() throws IOException {
-    final String BLOCK = "this is test.";
-    PatternReplaceCharFilterFactory factory = new PatternReplaceCharFilterFactory();
-    Map<String,String> args = new HashMap<String,String>();
-    args.put("pattern", "(aa)\\s+(bb)\\s+(cc)");
-    args.put("replacement", "$1$2$3");
-    factory.init(args);
-    CharFilter cs = factory.create(
-          new StringReader( BLOCK ) );
-    TokenStream ts = new MockTokenizer(cs, MockTokenizer.WHITESPACE, false);
+  public void testNothingChange() throws Exception {
+    Reader reader = new StringReader("this is test.");
+    reader = charFilterFactory("PatternReplace",
+        "pattern", "(aa)\\s+(bb)\\s+(cc)",
+        "replacement", "$1$2$3").create(reader);
+    TokenStream ts = new MockTokenizer(reader, MockTokenizer.WHITESPACE, false);
     assertTokenStreamContents(ts,
         new String[] { "this", "is", "test." },
         new int[] { 0, 5, 8 },
@@ -50,37 +46,38 @@ public class TestPatternReplaceCharFilterFactory extends BaseTokenStreamTestCase
   
   // 012345678
   // aa bb cc
-  public void testReplaceByEmpty() throws IOException {
-    final String BLOCK = "aa bb cc";
-    PatternReplaceCharFilterFactory factory = new PatternReplaceCharFilterFactory();
-    Map<String,String> args = new HashMap<String,String>();
-    args.put("pattern", "(aa)\\s+(bb)\\s+(cc)");
-    factory.init(args);
-    CharFilter cs = factory.create(
-          new StringReader( BLOCK ) );
-    TokenStream ts = new MockTokenizer(cs, MockTokenizer.WHITESPACE, false);
-    ts.reset();
-    assertFalse(ts.incrementToken());
-    ts.end();
-    ts.close();
+  public void testReplaceByEmpty() throws Exception {
+    Reader reader = new StringReader("aa bb cc");
+    reader = charFilterFactory("PatternReplace",
+        "pattern", "(aa)\\s+(bb)\\s+(cc)").create(reader);
+    TokenStream ts = new MockTokenizer(reader, MockTokenizer.WHITESPACE, false);
+    assertTokenStreamContents(ts, new String[] {});
   }
   
   // 012345678
   // aa bb cc
   // aa#bb#cc
-  public void test1block1matchSameLength() throws IOException {
-    final String BLOCK = "aa bb cc";
-    PatternReplaceCharFilterFactory factory = new PatternReplaceCharFilterFactory();
-    Map<String,String> args = new HashMap<String,String>();
-    args.put("pattern", "(aa)\\s+(bb)\\s+(cc)");
-    args.put("replacement", "$1#$2#$3");
-    factory.init(args);
-    CharFilter cs = factory.create(
-          new StringReader( BLOCK ) );
-    TokenStream ts = new MockTokenizer(cs, MockTokenizer.WHITESPACE, false);
+  public void test1block1matchSameLength() throws Exception {
+    Reader reader = new StringReader("aa bb cc");
+    reader = charFilterFactory("PatternReplace",
+        "pattern", "(aa)\\s+(bb)\\s+(cc)",
+        "replacement", "$1#$2#$3").create(reader);
+    TokenStream ts = new MockTokenizer(reader, MockTokenizer.WHITESPACE, false);
     assertTokenStreamContents(ts,
         new String[] { "aa#bb#cc" },
         new int[] { 0 },
         new int[] { 8 });
+  }
+  
+  /** Test that bogus arguments result in exception */
+  public void testBogusArguments() throws Exception {
+    try {
+      charFilterFactory("PatternReplace",
+          "pattern", "something",
+          "bogusArg", "bogusValue");
+      fail();
+    } catch (IllegalArgumentException expected) {
+      assertTrue(expected.getMessage().contains("Unknown parameters"));
+    }
   }
 }

@@ -20,23 +20,31 @@ package org.apache.lucene.analysis.cn;
 import java.io.Reader;
 import java.io.StringReader;
 
-import org.apache.lucene.analysis.BaseTokenStreamTestCase;
 import org.apache.lucene.analysis.MockTokenizer;
 import org.apache.lucene.analysis.TokenStream;
-import org.apache.lucene.analysis.Tokenizer;
+import org.apache.lucene.analysis.util.BaseTokenStreamFactoryTestCase;
 
 /**
  * Simple tests to ensure the Chinese filter factory is working.
  */
-public class TestChineseFilterFactory extends BaseTokenStreamTestCase {
+public class TestChineseFilterFactory extends BaseTokenStreamFactoryTestCase {
   /**
    * Ensure the filter actually normalizes text (numerics, stopwords)
    */
   public void testFiltering() throws Exception {
     Reader reader = new StringReader("this 1234 Is such a silly filter");
-    Tokenizer tokenizer = new MockTokenizer(reader, MockTokenizer.WHITESPACE, false);
-    ChineseFilterFactory factory = new ChineseFilterFactory();
-    TokenStream stream = factory.create(tokenizer);
+    TokenStream stream = new MockTokenizer(reader, MockTokenizer.WHITESPACE, false);
+    stream = tokenFilterFactory("Chinese").create(stream);
     assertTokenStreamContents(stream, new String[] { "Is", "silly", "filter" });
+  }
+  
+  /** Test that bogus arguments result in exception */
+  public void testBogusArguments() throws Exception {
+    try {
+      tokenFilterFactory("Chinese", "bogusArg", "bogusValue");
+      fail();
+    } catch (IllegalArgumentException expected) {
+      assertTrue(expected.getMessage().contains("Unknown parameters"));
+    }
   }
 }

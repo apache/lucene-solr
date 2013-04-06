@@ -29,14 +29,13 @@ import org.apache.lucene.util.AttributeSource.AttributeFactory;
 @Deprecated
 public class RussianLetterTokenizerFactory extends TokenizerFactory {
 
-  @Override
-  public void init(Map<String, String> args) {
-    super.init(args);
-    if (args.containsKey("charset"))
-      throw new IllegalArgumentException(
-          "The charset parameter is no longer supported.  "
-          + "Please process your documents as Unicode instead.");
+  /** Creates a new RussianLetterTokenizerFactory */
+  public RussianLetterTokenizerFactory(Map<String,String> args) {
+    super(args);
     assureMatchVersion();
+    if (!args.isEmpty()) {
+      throw new IllegalArgumentException("Unknown parameters: " + args);
+    }
   }
 
   @Override

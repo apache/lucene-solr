@@ -19,35 +19,21 @@ package org.apache.lucene.analysis.util;
 
 import java.io.Reader;
 import java.io.StringReader;
-import java.util.Collections;
-import java.util.HashMap;
-import java.util.Map;
 
-import org.apache.lucene.analysis.BaseTokenStreamTestCase;
 import org.apache.lucene.analysis.MockTokenizer;
 import org.apache.lucene.analysis.TokenStream;
-import org.apache.lucene.analysis.Tokenizer;
-import org.apache.lucene.analysis.util.ClasspathResourceLoader;
-import org.apache.lucene.analysis.util.ResourceLoader;
 
 /**
  * Simple tests to ensure the French elision filter factory is working.
  */
-public class TestElisionFilterFactory extends BaseTokenStreamTestCase {
+public class TestElisionFilterFactory extends BaseTokenStreamFactoryTestCase {
   /**
    * Ensure the filter actually normalizes text.
    */
   public void testElision() throws Exception {
     Reader reader = new StringReader("l'avion");
-    Tokenizer tokenizer = new MockTokenizer(reader, MockTokenizer.WHITESPACE, false);
-    ElisionFilterFactory factory = new ElisionFilterFactory();
-    factory.setLuceneMatchVersion(TEST_VERSION_CURRENT);
-    ResourceLoader loader = new ClasspathResourceLoader(getClass());
-    Map<String,String> args = new HashMap<String,String>();
-    args.put("articles", "frenchArticles.txt");
-    factory.init(args);
-    factory.inform(loader);
-    TokenStream stream = factory.create(tokenizer);
+    TokenStream stream = new MockTokenizer(reader, MockTokenizer.WHITESPACE, false);
+    stream = tokenFilterFactory("Elision", "articles", "frenchArticles.txt").create(stream);
     assertTokenStreamContents(stream, new String[] { "avion" });
   }
   
@@ -56,14 +42,8 @@ public class TestElisionFilterFactory extends BaseTokenStreamTestCase {
    */
   public void testDefaultArticles() throws Exception {
     Reader reader = new StringReader("l'avion");
-    Tokenizer tokenizer = new MockTokenizer(reader, MockTokenizer.WHITESPACE, false);
-    ElisionFilterFactory factory = new ElisionFilterFactory();
-    factory.setLuceneMatchVersion(TEST_VERSION_CURRENT);
-    Map<String, String> args = Collections.emptyMap();
-    factory.init(args);
-    ResourceLoader loader = new ClasspathResourceLoader(getClass());
-    factory.inform(loader);
-    TokenStream stream = factory.create(tokenizer);
+    TokenStream stream = new MockTokenizer(reader, MockTokenizer.WHITESPACE, false);
+    stream = tokenFilterFactory("Elision").create(stream);
     assertTokenStreamContents(stream, new String[] { "avion" });
   }
   
@@ -72,17 +52,20 @@ public class TestElisionFilterFactory extends BaseTokenStreamTestCase {
    */
   public void testCaseInsensitive() throws Exception {
     Reader reader = new StringReader("L'avion");
-    Tokenizer tokenizer = new MockTokenizer(reader, MockTokenizer.WHITESPACE, false);
-    ElisionFilterFactory factory = new ElisionFilterFactory();
-    factory.setLuceneMatchVersion(TEST_VERSION_CURRENT);
-    ResourceLoader loader = new ClasspathResourceLoader(getClass());
-    Map<String,String> args = new HashMap<String,String>();
-    args.put("articles", "frenchArticles.txt");
-    args.put("ignoreCase", "true");
-    factory.init(args);
-    factory.inform(loader);
-    TokenStream stream = factory.create(tokenizer);
+    TokenStream stream = new MockTokenizer(reader, MockTokenizer.WHITESPACE, false);
+    stream = tokenFilterFactory("Elision",
+        "articles", "frenchArticles.txt",
+        "ignoreCase", "true").create(stream);
     assertTokenStreamContents(stream, new String[] { "avion" });
   }
   
+  /** Test that bogus arguments result in exception */
+  public void testBogusArguments() throws Exception {
+    try {
+      tokenFilterFactory("Elision", "bogusArg", "bogusValue");
+      fail();
+    } catch (IllegalArgumentException expected) {
+      assertTrue(expected.getMessage().contains("Unknown parameters"));
+    }
+  }
 }

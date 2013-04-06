@@ -17,63 +17,63 @@ package org.apache.lucene.analysis.payloads;
  * limitations under the License.
  */
 
+import java.io.Reader;
 import java.io.StringReader;
-import java.util.HashMap;
-import java.util.Map;
 
-import org.apache.lucene.analysis.BaseTokenStreamTestCase;
 import org.apache.lucene.analysis.MockTokenizer;
 import org.apache.lucene.analysis.TokenStream;
-import org.apache.lucene.analysis.payloads.DelimitedPayloadTokenFilter;
-import org.apache.lucene.analysis.payloads.FloatEncoder;
 import org.apache.lucene.analysis.payloads.PayloadHelper;
 import org.apache.lucene.analysis.tokenattributes.PayloadAttribute;
-import org.apache.lucene.analysis.util.ResourceLoader;
-import org.apache.lucene.analysis.util.StringMockResourceLoader;
+import org.apache.lucene.analysis.util.BaseTokenStreamFactoryTestCase;
 
-public class TestDelimitedPayloadTokenFilterFactory extends BaseTokenStreamTestCase {
+public class TestDelimitedPayloadTokenFilterFactory extends BaseTokenStreamFactoryTestCase {
 
   public void testEncoder() throws Exception {
-    Map<String,String> args = new HashMap<String, String>();
-    args.put(DelimitedPayloadTokenFilterFactory.ENCODER_ATTR, "float");
-    DelimitedPayloadTokenFilterFactory factory = new DelimitedPayloadTokenFilterFactory();
-    factory.init(args);
-    ResourceLoader loader = new StringMockResourceLoader("solr/collection1");
-    factory.inform(loader);
+    Reader reader = new StringReader("the|0.1 quick|0.1 red|0.1");
+    TokenStream stream = new MockTokenizer(reader, MockTokenizer.WHITESPACE, false);
+    stream = tokenFilterFactory("DelimitedPayload", "encoder", "float").create(stream);
 
-    TokenStream input = new MockTokenizer(new StringReader("the|0.1 quick|0.1 red|0.1"), MockTokenizer.WHITESPACE, false);
-    DelimitedPayloadTokenFilter tf = factory.create(input);
-    tf.reset();
-    while (tf.incrementToken()){
-      PayloadAttribute payAttr = tf.getAttribute(PayloadAttribute.class);
-      assertTrue("payAttr is null and it shouldn't be", payAttr != null);
+    stream.reset();
+    while (stream.incrementToken()) {
+      PayloadAttribute payAttr = stream.getAttribute(PayloadAttribute.class);
+      assertNotNull(payAttr);
       byte[] payData = payAttr.getPayload().bytes;
-      assertTrue("payData is null and it shouldn't be", payData != null);
-      assertTrue("payData is null and it shouldn't be", payData != null);
+      assertNotNull(payData);
       float payFloat = PayloadHelper.decodeFloat(payData);
-      assertTrue(payFloat + " does not equal: " + 0.1f, payFloat == 0.1f);
+      assertEquals(0.1f, payFloat, 0.0f);
     }
+    stream.end();
+    stream.close();
   }
 
   public void testDelim() throws Exception {
-    Map<String,String> args = new HashMap<String, String>();
-    args.put(DelimitedPayloadTokenFilterFactory.ENCODER_ATTR, FloatEncoder.class.getName());
-    args.put(DelimitedPayloadTokenFilterFactory.DELIMITER_ATTR, "*");
-    DelimitedPayloadTokenFilterFactory factory = new DelimitedPayloadTokenFilterFactory();
-    factory.init(args);
-    ResourceLoader loader = new StringMockResourceLoader("solr/collection1");
-    factory.inform(loader);
-
-    TokenStream input = new MockTokenizer(new StringReader("the*0.1 quick*0.1 red*0.1"), MockTokenizer.WHITESPACE, false);
-    DelimitedPayloadTokenFilter tf = factory.create(input);
-    tf.reset();
-    while (tf.incrementToken()){
-      PayloadAttribute payAttr = tf.getAttribute(PayloadAttribute.class);
-      assertTrue("payAttr is null and it shouldn't be", payAttr != null);
+    Reader reader = new StringReader("the*0.1 quick*0.1 red*0.1");
+    TokenStream stream = new MockTokenizer(reader, MockTokenizer.WHITESPACE, false);
+    stream = tokenFilterFactory("DelimitedPayload",
+        "encoder", "float",
+        "delimiter", "*").create(stream);
+    stream.reset();
+    while (stream.incrementToken()) {
+      PayloadAttribute payAttr = stream.getAttribute(PayloadAttribute.class);
+      assertNotNull(payAttr);
       byte[] payData = payAttr.getPayload().bytes;
-      assertTrue("payData is null and it shouldn't be", payData != null);
+      assertNotNull(payData);
       float payFloat = PayloadHelper.decodeFloat(payData);
-      assertTrue(payFloat + " does not equal: " + 0.1f, payFloat == 0.1f);
+      assertEquals(0.1f, payFloat, 0.0f);
+    }
+    stream.end();
+    stream.close();
+  }
+  
+  /** Test that bogus arguments result in exception */
+  public void testBogusArguments() throws Exception {
+    try {
+      tokenFilterFactory("DelimitedPayload", 
+          "encoder", "float",
+          "bogusArg", "bogusValue");
+      fail();
+    } catch (IllegalArgumentException expected) {
+      assertTrue(expected.getMessage().contains("Unknown parameters"));
     }
   }
 }

@@ -33,6 +33,7 @@ import java.io.File;
 import java.io.InputStream;
 import java.nio.charset.CharacterCodingException;
 import java.util.Arrays;
+import java.util.HashMap;
 import java.util.List;
 
 public class ResourceLoaderTest extends LuceneTestCase 
@@ -53,8 +54,8 @@ public class ResourceLoaderTest extends LuceneTestCase
     
     Class clazz = ResourceLoaderAware.class;
     // Check ResourceLoaderAware valid objects
-    loader.assertAwareCompatibility( clazz, new NGramFilterFactory() );
-    loader.assertAwareCompatibility( clazz, new KeywordTokenizerFactory() );
+    loader.assertAwareCompatibility( clazz, new NGramFilterFactory(new HashMap<String,String>()) );
+    loader.assertAwareCompatibility( clazz, new KeywordTokenizerFactory(new HashMap<String,String>()) );
     
     // Make sure it throws an error for invalid objects
     Object[] invalid = new Object[] {
@@ -80,9 +81,9 @@ public class ResourceLoaderTest extends LuceneTestCase
     
     // Make sure it throws an error for invalid objects
     invalid = new Object[] {
-        new NGramFilterFactory(),
+        new NGramFilterFactory(new HashMap<String,String>()),
         "hello",  new Float( 12.3f ),
-        new KeywordTokenizerFactory()
+        new KeywordTokenizerFactory(new HashMap<String,String>())
     };
     for( Object obj : invalid ) {
       try {

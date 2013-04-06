@@ -25,26 +25,25 @@ import java.util.Map;
 
 /**
  * Factory for {@link ClassicTokenizer}.
- * <pre class="prettyprint" >
+ * <pre class="prettyprint">
  * &lt;fieldType name="text_clssc" class="solr.TextField" positionIncrementGap="100"&gt;
  *   &lt;analyzer&gt;
  *     &lt;tokenizer class="solr.ClassicTokenizerFactory" maxTokenLength="120"/&gt;
  *   &lt;/analyzer&gt;
  * &lt;/fieldType&gt;</pre>
- *
- *
  */
-
 public class ClassicTokenizerFactory extends TokenizerFactory {
+  private final int maxTokenLength;
 
-  private int maxTokenLength;
-
-  @Override
-  public void init(Map<String,String> args) {
-    super.init(args);
+  /** Creates a new ClassicTokenizerFactory */
+  public ClassicTokenizerFactory(Map<String,String> args) {
+    super(args);
     assureMatchVersion();
-    maxTokenLength = getInt("maxTokenLength", 
+    maxTokenLength = getInt(args, "maxTokenLength", 
                             StandardAnalyzer.DEFAULT_MAX_TOKEN_LENGTH);
+    if (!args.isEmpty()) {
+      throw new IllegalArgumentException("Unknown parameters: " + args);
+    }
   }
 
   @Override

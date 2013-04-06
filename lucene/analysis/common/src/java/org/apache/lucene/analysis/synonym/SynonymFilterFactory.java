@@ -18,6 +18,7 @@ package org.apache.lucene.analysis.synonym;
  */
 
 import java.io.IOException;
+import java.util.HashMap;
 import java.util.Map;
 
 import org.apache.lucene.analysis.TokenStream;
@@ -40,35 +41,30 @@ import org.apache.lucene.analysis.util.TokenFilterFactory;
  * &lt;/fieldType&gt;</pre>
  */
 public class SynonymFilterFactory extends TokenFilterFactory implements ResourceLoaderAware {
-  private TokenFilterFactory delegator;
+  private final TokenFilterFactory delegator;
 
-  @Override
-  public void init(Map<String,String> args) {
-    super.init(args);
+  public SynonymFilterFactory(Map<String,String> args) {
+    super(args);
     assureMatchVersion();
     if (luceneMatchVersion.onOrAfter(Version.LUCENE_34)) {
-      delegator = new FSTSynonymFilterFactory();
+      delegator = new FSTSynonymFilterFactory(new HashMap<String,String>(getOriginalArgs()));
     } else {
       // check if you use the new optional arg "format". this makes no sense for the old one, 
       // as its wired to solr's synonyms format only.
       if (args.containsKey("format") && !args.get("format").equals("solr")) {
         throw new IllegalArgumentException("You must specify luceneMatchVersion >= 3.4 to use alternate synonyms formats");
       }
-      delegator = new SlowSynonymFilterFactory();
+      delegator = new SlowSynonymFilterFactory(new HashMap<String,String>(getOriginalArgs()));
     }
-    delegator.setLuceneMatchVersion(luceneMatchVersion);
-    delegator.init(args);
   }
 
   @Override
   public TokenStream create(TokenStream input) {
-    assert delegator != null : "init() was not called!";
     return delegator.create(input);
   }
 
   @Override
   public void inform(ResourceLoader loader) throws IOException {
-    assert delegator != null : "init() was not called!";
     ((ResourceLoaderAware) delegator).inform(loader);
   }
 }

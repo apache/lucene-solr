@@ -31,10 +31,13 @@ import java.util.Map;
 @Deprecated
 public class ArabicLetterTokenizerFactory extends TokenizerFactory {
 
-  @Override
-  public void init(Map<String,String> args) {
-    super.init(args);
+  /** Creates a new ArabicNormalizationFilterFactory */
+  public ArabicLetterTokenizerFactory(Map<String,String> args) {
+    super(args);
     assureMatchVersion();
+    if (!args.isEmpty()) {
+      throw new IllegalArgumentException("Unknown parameters: " + args);
+    }
   }
 
   @Override

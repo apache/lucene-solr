@@ -19,19 +19,15 @@ package org.apache.lucene.analysis.ar;
 
 import java.io.Reader;
 import java.io.StringReader;
-import java.util.Collections;
-import java.util.Map;
 
-import org.apache.lucene.analysis.BaseTokenStreamTestCase;
 import org.apache.lucene.analysis.TokenStream;
 import org.apache.lucene.analysis.Tokenizer;
-import org.apache.lucene.analysis.fa.PersianCharFilterFactory;
-import org.apache.lucene.analysis.standard.StandardTokenizerFactory;
+import org.apache.lucene.analysis.util.BaseTokenStreamFactoryTestCase;
 
 /**
  * Simple tests to ensure the Arabic filter Factories are working.
  */
-public class TestArabicFilters extends BaseTokenStreamTestCase {
+public class TestArabicFilters extends BaseTokenStreamFactoryTestCase {
   /**
    * Test ArabicLetterTokenizerFactory
    * @deprecated (3.1) Remove in Lucene 5.0
@@ -39,11 +35,7 @@ public class TestArabicFilters extends BaseTokenStreamTestCase {
   @Deprecated
   public void testTokenizer() throws Exception {
     Reader reader = new StringReader("الذين مَلكت أيمانكم");
-    ArabicLetterTokenizerFactory factory = new ArabicLetterTokenizerFactory();
-    factory.setLuceneMatchVersion(TEST_VERSION_CURRENT);
-    Map<String, String> args = Collections.emptyMap();
-    factory.init(args);
-    Tokenizer stream = factory.create(reader);
+    TokenStream stream = tokenizerFactory("ArabicLetter").create(reader);
     assertTokenStreamContents(stream, new String[] {"الذين", "مَلكت", "أيمانكم"});
   }
   
@@ -52,15 +44,8 @@ public class TestArabicFilters extends BaseTokenStreamTestCase {
    */
   public void testNormalizer() throws Exception {
     Reader reader = new StringReader("الذين مَلكت أيمانكم");
-    StandardTokenizerFactory factory = new StandardTokenizerFactory();
-    factory.setLuceneMatchVersion(TEST_VERSION_CURRENT);
-    ArabicNormalizationFilterFactory filterFactory = new ArabicNormalizationFilterFactory();
-    filterFactory.setLuceneMatchVersion(TEST_VERSION_CURRENT);
-    Map<String, String> args = Collections.emptyMap();
-    factory.init(args);
-    filterFactory.init(args);
-    Tokenizer tokenizer = factory.create(reader);
-    TokenStream stream = filterFactory.create(tokenizer);
+    Tokenizer tokenizer = tokenizerFactory("Standard").create(reader);
+    TokenStream stream = tokenFilterFactory("ArabicNormalization").create(tokenizer);
     assertTokenStreamContents(stream, new String[] {"الذين", "ملكت", "ايمانكم"});
   }
   
@@ -69,17 +54,9 @@ public class TestArabicFilters extends BaseTokenStreamTestCase {
    */
   public void testStemmer() throws Exception {
     Reader reader = new StringReader("الذين مَلكت أيمانكم");
-    StandardTokenizerFactory factory = new StandardTokenizerFactory();
-    factory.setLuceneMatchVersion(TEST_VERSION_CURRENT);
-    ArabicNormalizationFilterFactory normFactory = new ArabicNormalizationFilterFactory();
-    normFactory.setLuceneMatchVersion(TEST_VERSION_CURRENT);
-    ArabicStemFilterFactory stemFactory = new ArabicStemFilterFactory();
-    Map<String, String> args = Collections.emptyMap();
-    factory.init(args);
-    normFactory.init(args);
-    Tokenizer tokenizer = factory.create(reader);
-    TokenStream stream = normFactory.create(tokenizer);
-    stream = stemFactory.create(stream);
+    Tokenizer tokenizer = tokenizerFactory("Standard").create(reader);
+    TokenStream stream = tokenFilterFactory("ArabicNormalization").create(tokenizer);
+    stream = tokenFilterFactory("ArabicStem").create(stream);
     assertTokenStreamContents(stream, new String[] {"ذين", "ملكت", "ايمانكم"});
   }
   
@@ -87,13 +64,39 @@ public class TestArabicFilters extends BaseTokenStreamTestCase {
    * Test PersianCharFilterFactory
    */
   public void testPersianCharFilter() throws Exception {
-    Reader reader = new StringReader("می‌خورد");
-    PersianCharFilterFactory charfilterFactory = new PersianCharFilterFactory();
-    StandardTokenizerFactory tokenizerFactory = new StandardTokenizerFactory();
-    tokenizerFactory.setLuceneMatchVersion(TEST_VERSION_CURRENT);
-    Map<String, String> args = Collections.emptyMap();
-    tokenizerFactory.init(args);
-    TokenStream stream = tokenizerFactory.create(charfilterFactory.create(reader));
-    assertTokenStreamContents(stream, new String[] { "می", "خورد" });
+    Reader reader = charFilterFactory("Persian").create(new StringReader("می‌خورد"));
+    Tokenizer tokenizer = tokenizerFactory("Standard").create(reader);
+    assertTokenStreamContents(tokenizer, new String[] { "می", "خورد" });
+  }
+  
+  /** Test that bogus arguments result in exception */
+  public void testBogusArguments() throws Exception {
+    try {
+      tokenFilterFactory("ArabicNormalization", "bogusArg", "bogusValue");
+      fail();
+    } catch (IllegalArgumentException expected) {
+      assertTrue(expected.getMessage().contains("Unknown parameters"));
+    }
+    
+    try {
+      tokenFilterFactory("Arabicstem", "bogusArg", "bogusValue");
+      fail();
+    } catch (IllegalArgumentException expected) {
+      assertTrue(expected.getMessage().contains("Unknown parameters"));
+    }
+    
+    try {
+      charFilterFactory("Persian", "bogusArg", "bogusValue");
+      fail();
+    } catch (IllegalArgumentException expected) {
+      assertTrue(expected.getMessage().contains("Unknown parameters"));
+    }
+    
+    try {
+      tokenizerFactory("ArabicLetter", "bogusArg", "bogusValue");
+      fail();
+    } catch (IllegalArgumentException expected) {
+      assertTrue(expected.getMessage().contains("Unknown parameters"));
+    }
   }
 }

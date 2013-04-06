@@ -41,37 +41,29 @@ import java.util.regex.PatternSyntaxException;
  * <p>
  * The typical lifecycle for a factory consumer is:
  * <ol>
- *   <li>Create factory via its a no-arg constructor
- *   <li>Set version emulation by calling {@link #setLuceneMatchVersion(Version)}
- *   <li>Calls {@link #init(Map)} passing arguments as key-value mappings.
+ *   <li>Create factory via its constructor (or via XXXFactory.forName)
  *   <li>(Optional) If the factory uses resources such as files, {@link ResourceLoaderAware#inform(ResourceLoader)} is called to initialize those resources.
  *   <li>Consumer calls create() to obtain instances.
  * </ol>
  */
 public abstract class AbstractAnalysisFactory {
 
-  /** The original args, before init() processes them */
-  private Map<String,String> originalArgs;
-  
-  /** The init args */
-  protected Map<String,String> args;
+  /** The original args, before any processing */
+  private final Map<String,String> originalArgs;
 
   /** the luceneVersion arg */
-  protected Version luceneMatchVersion = null;
+  protected final Version luceneMatchVersion;
 
   /**
    * Initialize this factory via a set of key-value pairs.
    */
-  public void init(Map<String,String> args) {
-    originalArgs = Collections.unmodifiableMap(args);
-    this.args = new HashMap<String,String>(args);
-  }
-
-  public Map<String,String> getArgs() {
-    return args;
+  protected AbstractAnalysisFactory(Map<String,String> args) {
+    originalArgs = Collections.unmodifiableMap(new HashMap<String,String>(args));
+    String version = args.remove("luceneMatchVersion");
+    luceneMatchVersion = version == null ? null : Version.parseLeniently(version);
   }
   
-  public Map<String,String> getOriginalArgs() {
+  public final Map<String,String> getOriginalArgs() {
     return originalArgs;
   }
 
@@ -85,24 +77,20 @@ public abstract class AbstractAnalysisFactory {
     }
   }
 
-  public void setLuceneMatchVersion(Version luceneMatchVersion) {
-    this.luceneMatchVersion = luceneMatchVersion;
-  }
-
-  public Version getLuceneMatchVersion() {
+  public final Version getLuceneMatchVersion() {
     return this.luceneMatchVersion;
   }
 
-  protected int getInt(String name) {
-    return getInt(name, -1, false);
+  protected final int getInt(Map<String,String> args, String name) {
+    return getInt(args, name, -1, false);
   }
 
-  protected int getInt(String name, int defaultVal) {
-    return getInt(name, defaultVal, true);
+  protected final int getInt(Map<String,String> args, String name, int defaultVal) {
+    return getInt(args, name, defaultVal, true);
   }
 
-  protected int getInt(String name, int defaultVal, boolean useDefault) {
-    String s = args.get(name);
+  protected final int getInt(Map<String,String> args, String name, int defaultVal, boolean useDefault) {
+    String s = args.remove(name);
     if (s == null) {
       if (useDefault) {
         return defaultVal;
@@ -112,12 +100,12 @@ public abstract class AbstractAnalysisFactory {
     return Integer.parseInt(s);
   }
 
-  protected boolean getBoolean(String name, boolean defaultVal) {
-    return getBoolean(name, defaultVal, true);
+  protected final boolean getBoolean(Map<String,String> args, String name, boolean defaultVal) {
+    return getBoolean(args, name, defaultVal, true);
   }
 
-  protected boolean getBoolean(String name, boolean defaultVal, boolean useDefault) {
-    String s = args.get(name);
+  protected final boolean getBoolean(Map<String,String> args, String name, boolean defaultVal, boolean useDefault) {
+    String s = args.remove(name);
     if (s==null) {
       if (useDefault) return defaultVal;
       throw new IllegalArgumentException("Configuration Error: missing parameter '" + name + "'");
@@ -128,13 +116,13 @@ public abstract class AbstractAnalysisFactory {
   /**
    * Compiles a pattern for the value of the specified argument key <code>name</code> 
    */
-  protected Pattern getPattern(String name) {
+  protected final Pattern getPattern(Map<String,String> args, String name) {
     try {
-      String pat = args.get(name);
+      String pat = args.remove(name);
       if (null == pat) {
         throw new IllegalArgumentException("Configuration Error: missing parameter '" + name + "'");
       }
-      return Pattern.compile(args.get(name));
+      return Pattern.compile(pat);
     } catch (PatternSyntaxException e) {
       throw new IllegalArgumentException
         ("Configuration Error: '" + name + "' can not be parsed in " +
@@ -146,7 +134,7 @@ public abstract class AbstractAnalysisFactory {
    * Returns as {@link CharArraySet} from wordFiles, which
    * can be a comma-separated list of filenames
    */
-  protected CharArraySet getWordSet(ResourceLoader loader,
+  protected final CharArraySet getWordSet(ResourceLoader loader,
       String wordFiles, boolean ignoreCase) throws IOException {
     assureMatchVersion();
     List<String> files = splitFileNames(wordFiles);
@@ -168,13 +156,13 @@ public abstract class AbstractAnalysisFactory {
   /**
    * Returns the resource's lines (with content treated as UTF-8)
    */
-  protected List<String> getLines(ResourceLoader loader, String resource) throws IOException {
+  protected final List<String> getLines(ResourceLoader loader, String resource) throws IOException {
     return WordlistLoader.getLines(loader.openResource(resource), IOUtils.CHARSET_UTF_8);
   }
 
   /** same as {@link #getWordSet(ResourceLoader, String, boolean)},
    * except the input is in snowball format. */
-  protected CharArraySet getSnowballWordSet(ResourceLoader loader,
+  protected final CharArraySet getSnowballWordSet(ResourceLoader loader,
       String wordFiles, boolean ignoreCase) throws IOException {
     assureMatchVersion();
     List<String> files = splitFileNames(wordFiles);
@@ -209,7 +197,7 @@ public abstract class AbstractAnalysisFactory {
    * @param fileNames the string containing file names
    * @return a list of file names with the escaping backslashed removed
    */
-  protected List<String> splitFileNames(String fileNames) {
+  protected final List<String> splitFileNames(String fileNames) {
     if (fileNames == null)
       return Collections.<String>emptyList();
 

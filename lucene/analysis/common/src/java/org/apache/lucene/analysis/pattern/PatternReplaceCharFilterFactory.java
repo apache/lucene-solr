@@ -27,7 +27,7 @@ import org.apache.lucene.analysis.util.CharFilterFactory;
 
 /**
  * Factory for {@link PatternReplaceCharFilter}. 
- * <pre class="prettyprint" >
+ * <pre class="prettyprint">
  * &lt;fieldType name="text_ptnreplace" class="solr.TextField" positionIncrementGap="100"&gt;
  *   &lt;analyzer&gt;
  *     &lt;charFilter class="solr.PatternReplaceCharFilterFactory" 
@@ -36,30 +36,34 @@ import org.apache.lucene.analysis.util.CharFilterFactory;
  *   &lt;/analyzer&gt;
  * &lt;/fieldType&gt;</pre>
  * 
- *
  * @since Solr 3.1
  */
 public class PatternReplaceCharFilterFactory extends CharFilterFactory {
-  
-  private Pattern p;
-  private String replacement;
-  private int maxBlockChars;
-  private String blockDelimiters;
+  private final Pattern pattern;
+  private final String replacement;
+  private final int maxBlockChars;
+  private final String blockDelimiters;
 
-  @Override
-  public void init(Map<String, String> args) {
-    super.init( args );
-    p = getPattern("pattern");
-    replacement = args.get( "replacement" );
-    if( replacement == null )
+  /** Creates a new PatternReplaceCharFilterFactory */
+  public PatternReplaceCharFilterFactory(Map<String, String> args) {
+    super(args);
+    pattern = getPattern(args, "pattern");
+    String v = args.remove("replacement");
+    if (v == null) {
       replacement = "";
+    } else {
+      replacement = v;
+    }
     // TODO: warn if you set maxBlockChars or blockDelimiters ?
-    maxBlockChars = getInt( "maxBlockChars", PatternReplaceCharFilter.DEFAULT_MAX_BLOCK_CHARS );
-    blockDelimiters = args.get( "blockDelimiters" );
+    maxBlockChars = getInt(args, "maxBlockChars", PatternReplaceCharFilter.DEFAULT_MAX_BLOCK_CHARS);
+    blockDelimiters = args.remove("blockDelimiters");
+    if (!args.isEmpty()) {
+      throw new IllegalArgumentException("Unknown parameters: " + args);
+    }
   }
 
   @Override
   public CharFilter create(Reader input) {
-    return new PatternReplaceCharFilter( p, replacement, maxBlockChars, blockDelimiters, input );
+    return new PatternReplaceCharFilter(pattern, replacement, maxBlockChars, blockDelimiters, input);
   }
 }

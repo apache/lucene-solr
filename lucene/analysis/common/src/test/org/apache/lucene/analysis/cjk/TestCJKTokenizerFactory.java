@@ -20,22 +20,31 @@ package org.apache.lucene.analysis.cjk;
 import java.io.Reader;
 import java.io.StringReader;
 
-import org.apache.lucene.analysis.BaseTokenStreamTestCase;
 import org.apache.lucene.analysis.TokenStream;
+import org.apache.lucene.analysis.util.BaseTokenStreamFactoryTestCase;
 
 /**
  * Simple tests to ensure the CJK tokenizer factory is working.
  * @deprecated remove this test in 5.0
  */
 @Deprecated
-public class TestCJKTokenizerFactory extends BaseTokenStreamTestCase {
+public class TestCJKTokenizerFactory extends BaseTokenStreamFactoryTestCase {
   /**
    * Ensure the tokenizer actually tokenizes CJK text correctly
    */
   public void testTokenizer() throws Exception {
     Reader reader = new StringReader("我是中国人");
-    CJKTokenizerFactory factory = new CJKTokenizerFactory();
-    TokenStream stream = factory.create(reader);
+    TokenStream stream = tokenizerFactory("CJK").create(reader);
     assertTokenStreamContents(stream, new String[] {"我是", "是中", "中国", "国人"});
+  }
+  
+  /** Test that bogus arguments result in exception */
+  public void testBogusArguments() throws Exception {
+    try {
+      tokenizerFactory("CJK", "bogusArg", "bogusValue");
+      fail();
+    } catch (IllegalArgumentException expected) {
+      assertTrue(expected.getMessage().contains("Unknown parameters"));
+    }
   }
 }

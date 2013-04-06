@@ -46,22 +46,19 @@ import com.ibm.icu.text.UnicodeSet;
  * @see FilteredNormalizer2
  */
 public class ICUNormalizer2FilterFactory extends TokenFilterFactory implements MultiTermAwareComponent {
-  private Normalizer2 normalizer;
+  private final Normalizer2 normalizer;
 
-  /** Sole constructor. See {@link AbstractAnalysisFactory} for initialization lifecycle. */
-  public ICUNormalizer2FilterFactory() {}
-
-  // TODO: support custom normalization
-  @Override
-  public void init(Map<String,String> args) {
-    super.init(args);
-    String name = args.get("name");
+  /** Creates a new ICUNormalizer2FilterFactory */
+  public ICUNormalizer2FilterFactory(Map<String,String> args) {
+    super(args);
+    String name = args.remove("name");
     if (name == null)
       name = "nfkc_cf";
-    String mode = args.get("mode");
+    String mode = args.remove("mode");
     if (mode == null)
       mode = "compose";
     
+    Normalizer2 normalizer;
     if (mode.equals("compose"))
       normalizer = Normalizer2.getInstance(null, name, Normalizer2.Mode.COMPOSE);
     else if (mode.equals("decompose"))
@@ -69,7 +66,7 @@ public class ICUNormalizer2FilterFactory extends TokenFilterFactory implements M
     else 
       throw new IllegalArgumentException("Invalid mode: " + mode);
     
-    String filter = args.get("filter");
+    String filter = args.remove("filter");
     if (filter != null) {
       UnicodeSet set = new UnicodeSet(filter);
       if (!set.isEmpty()) {
@@ -77,7 +74,13 @@ public class ICUNormalizer2FilterFactory extends TokenFilterFactory implements M
         normalizer = new FilteredNormalizer2(normalizer, set);
       }
     }
+    if (!args.isEmpty()) {
+      throw new IllegalArgumentException("Unknown parameters: " + args);
+    }
+    this.normalizer = normalizer;
   }
+
+  // TODO: support custom normalization
   
   @Override
   public TokenStream create(TokenStream input) {

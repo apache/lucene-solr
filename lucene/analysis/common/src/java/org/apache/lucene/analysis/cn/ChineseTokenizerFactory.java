@@ -18,6 +18,7 @@ package org.apache.lucene.analysis.cn;
  */
 
 import java.io.Reader;
+import java.util.Map;
 
 import org.apache.lucene.analysis.util.TokenizerFactory;
 import org.apache.lucene.util.AttributeSource.AttributeFactory;
@@ -28,6 +29,14 @@ import org.apache.lucene.util.AttributeSource.AttributeFactory;
  */
 @Deprecated
 public class ChineseTokenizerFactory extends TokenizerFactory {
+  
+  /** Creates a new ChineseTokenizerFactory */
+  public ChineseTokenizerFactory(Map<String,String> args) {
+    super(args);
+    if (!args.isEmpty()) {
+      throw new IllegalArgumentException("Unknown parameters: " + args);
+    }
+  }
   
   @Override
   public ChineseTokenizer create(AttributeFactory factory, Reader in) {

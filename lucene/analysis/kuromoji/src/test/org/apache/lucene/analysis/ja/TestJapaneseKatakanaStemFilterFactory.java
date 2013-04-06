@@ -22,27 +22,34 @@ import org.apache.lucene.analysis.TokenStream;
 
 import java.io.IOException;
 import java.io.StringReader;
-import java.util.Collections;
-import java.util.Map;
+import java.util.HashMap;
 
 /**
  * Simple tests for {@link JapaneseKatakanaStemFilterFactory}
  */
 public class TestJapaneseKatakanaStemFilterFactory extends BaseTokenStreamTestCase {
   public void testKatakanaStemming() throws IOException {
-    JapaneseTokenizerFactory tokenizerFactory = new JapaneseTokenizerFactory();
-    Map<String, String> tokenizerArgs = Collections.emptyMap();
-    tokenizerFactory.init(tokenizerArgs);
+    JapaneseTokenizerFactory tokenizerFactory = new JapaneseTokenizerFactory(new HashMap<String,String>());
     tokenizerFactory.inform(new StringMockResourceLoader(""));
     TokenStream tokenStream = tokenizerFactory.create(
         new StringReader("明後日パーティーに行く予定がある。図書館で資料をコピーしました。")
     );
-    JapaneseKatakanaStemFilterFactory filterFactory = new JapaneseKatakanaStemFilterFactory();
-    Map<String, String> filterArgs = Collections.emptyMap();
-    filterFactory.init(filterArgs);
+    JapaneseKatakanaStemFilterFactory filterFactory = new JapaneseKatakanaStemFilterFactory(new HashMap<String,String>());;
     assertTokenStreamContents(filterFactory.create(tokenStream),
         new String[]{ "明後日", "パーティ", "に", "行く", "予定", "が", "ある",   // パーティー should be stemmed
                       "図書館", "で", "資料", "を", "コピー", "し", "まし", "た"} // コピー should not be stemmed
     );
+  }
+  
+  /** Test that bogus arguments result in exception */
+  public void testBogusArguments() throws Exception {
+    try {
+      new JapaneseKatakanaStemFilterFactory(new HashMap<String,String>() {{
+        put("bogusArg", "bogusValue");
+      }});
+      fail();
+    } catch (IllegalArgumentException expected) {
+      assertTrue(expected.getMessage().contains("Unknown parameters"));
+    }
   }
 }

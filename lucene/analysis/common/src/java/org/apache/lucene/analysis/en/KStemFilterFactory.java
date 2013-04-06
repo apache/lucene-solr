@@ -17,16 +17,34 @@ package org.apache.lucene.analysis.en;
  * limitations under the License.
  */
 
+import java.util.Map;
+
 import org.apache.lucene.analysis.TokenFilter;
 import org.apache.lucene.analysis.TokenStream;
 import org.apache.lucene.analysis.en.KStemFilter;
 import org.apache.lucene.analysis.util.TokenFilterFactory;
 
 /**
- * Factory for {@link KStemFilter}
+ * Factory for {@link KStemFilter}.
+ * <pre class="prettyprint">
+ * &lt;fieldType name="text_kstem" class="solr.TextField" positionIncrementGap="100"&gt;
+ *   &lt;analyzer&gt;
+ *     &lt;tokenizer class="solr.StandardTokenizerFactory"/&gt;
+ *     &lt;filter class="solr.LowerCaseFilterFactory"/&gt;
+ *     &lt;filter class="solr.KStemFilterFactory"/&gt;
+ *   &lt;/analyzer&gt;
+ * &lt;/fieldType&gt;</pre>
  */
 public class KStemFilterFactory extends TokenFilterFactory {
 
+  /** Creates a new KStemFilterFactory */
+  public KStemFilterFactory(Map<String,String> args) {
+    super(args);
+    if (!args.isEmpty()) {
+      throw new IllegalArgumentException("Unknown parameters: " + args);
+    }
+  }
+  
   @Override
   public TokenFilter create(TokenStream input) {
     return new KStemFilter(input);

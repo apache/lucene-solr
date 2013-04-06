@@ -114,5 +114,9 @@ public class BadIndexSchemaTest extends AbstractBadConfigTestBase {
   public void testBogusParameters() throws Exception {
     doTest("bad-schema-bogus-field-parameters.xml", "Invalid field property");
   }
+  
+  public void testBogusAnalysisParameters() throws Exception {
+    doTest("bad-schema-bogus-analysis-parameters.xml", "Unknown parameters");
+  }
 
 }

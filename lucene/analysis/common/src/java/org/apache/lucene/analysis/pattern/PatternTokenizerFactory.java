@@ -17,7 +17,6 @@ package org.apache.lucene.analysis.pattern;
  * limitations under the License.
  */
 
-import java.io.IOException;
 import java.io.Reader;
 import java.util.Map;
 import java.util.regex.Pattern;
@@ -45,13 +44,13 @@ import org.apache.lucene.util.AttributeSource.AttributeFactory;
  *  pattern = \'([^\']+)\'
  *  group = 0
  *  input = aaa 'bbb' 'ccc'
- *</pre>
+ * </pre>
  * the output will be two tokens: 'bbb' and 'ccc' (including the ' marks).  With the same input
  * but using group=1, the output would be: bbb and ccc (no ' marks)
  * </p>
  * <p>NOTE: This Tokenizer does not output tokens that are of zero length.</p>
  *
- * <pre class="prettyprint" >
+ * <pre class="prettyprint">
  * &lt;fieldType name="text_ptn" class="solr.TextField" positionIncrementGap="100"&gt;
  *   &lt;analyzer&gt;
  *     &lt;tokenizer class="solr.PatternTokenizerFactory" pattern="\'([^\']+)\'" group="1"/&gt;
@@ -60,29 +59,27 @@ import org.apache.lucene.util.AttributeSource.AttributeFactory;
  * 
  * @see PatternTokenizer
  * @since solr1.2
- *
  */
-public class PatternTokenizerFactory extends TokenizerFactory
-{
+public class PatternTokenizerFactory extends TokenizerFactory {
   public static final String PATTERN = "pattern";
   public static final String GROUP = "group";
  
-  protected Pattern pattern;
-  protected int group;
+  protected final Pattern pattern;
+  protected final int group;
   
-  /**
-   * Require a configured pattern
-   */
-  @Override
-  public void init(Map<String,String> args) 
-  {
-    super.init(args);
-    pattern = getPattern( PATTERN );
+  /** Creates a new PatternTokenizerFactory */
+  public PatternTokenizerFactory(Map<String,String> args) {
+    super(args);
+    pattern = getPattern(args, PATTERN);
     
-    group = -1;  // use 'split'
-    String g = args.get( GROUP );
-    if( g != null ) {
-      group = Integer.parseInt( g );
+    String v = args.remove(GROUP);
+    if (v == null) {
+      group = -1;  // use 'split'
+    } else {
+      group = Integer.parseInt(v);
+    }
+    if (!args.isEmpty()) {
+      throw new IllegalArgumentException("Unknown parameters: " + args);
     }
   }
   

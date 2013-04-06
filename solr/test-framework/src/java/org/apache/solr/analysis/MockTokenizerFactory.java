@@ -29,13 +29,13 @@ import org.apache.lucene.util.automaton.CharacterRunAutomaton;
  * Factory for {@link MockTokenizer} for testing purposes.
  */
 public class MockTokenizerFactory extends TokenizerFactory {
-  CharacterRunAutomaton pattern;
-  boolean enableChecks;
+  final CharacterRunAutomaton pattern;
+  final boolean enableChecks;
   
-  @Override
-  public void init(Map<String,String> args) {
-    super.init(args);
-    String patternArg = args.get("pattern");
+  /** Creates a new MockTokenizerFactory */
+  public MockTokenizerFactory(Map<String,String> args) {
+    super(args);
+    String patternArg = args.remove("pattern");
     if (patternArg == null) {
       patternArg = "whitespace";
     }
@@ -50,7 +50,10 @@ public class MockTokenizerFactory extends TokenizerFactory {
       throw new RuntimeException("invalid pattern!");
     }
     
-    enableChecks = getBoolean("enableChecks", true);
+    enableChecks = getBoolean(args, "enableChecks", true);
+    if (!args.isEmpty()) {
+      throw new IllegalArgumentException("Unknown parameters: " + args);
+    }
   }
 
   @Override

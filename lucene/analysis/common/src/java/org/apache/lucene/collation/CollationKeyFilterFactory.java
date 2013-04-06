@@ -24,6 +24,7 @@ import java.text.Collator;
 import java.text.ParseException;
 import java.text.RuleBasedCollator;
 import java.util.Locale;
+import java.util.Map;
 
 import org.apache.lucene.analysis.TokenStream;
 import org.apache.lucene.analysis.util.*;
@@ -72,14 +73,21 @@ import org.apache.lucene.util.IOUtils;
 @Deprecated
 public class CollationKeyFilterFactory extends TokenFilterFactory implements MultiTermAwareComponent, ResourceLoaderAware {
   private Collator collator;
-
-  public void inform(ResourceLoader loader) throws IOException {
-    String custom = args.get("custom");
-    String language = args.get("language");
-    String country = args.get("country");
-    String variant = args.get("variant");
-    String strength = args.get("strength");
-    String decomposition = args.get("decomposition");
+  private final String custom;
+  private final String language;
+  private final String country;
+  private final String variant;
+  private final String strength;
+  private final String decomposition;
+  
+  public CollationKeyFilterFactory(Map<String,String> args) {
+    super(args);
+    custom = args.remove("custom");
+    language = args.remove("language");
+    country = args.remove("country");
+    variant = args.remove("variant");
+    strength = args.remove("strength");
+    decomposition = args.remove("decomposition");
     
     if (custom == null && language == null)
       throw new IllegalArgumentException("Either custom or language is required.");
@@ -90,6 +98,12 @@ public class CollationKeyFilterFactory extends TokenFilterFactory implements Mul
           + "To tailor rules for a built-in language, see the javadocs for RuleBasedCollator. "
           + "Then save the entire customized ruleset to a file, and use with the custom parameter");
     
+    if (!args.isEmpty()) {
+      throw new IllegalArgumentException("Unknown parameters: " + args);
+    }
+  }
+
+  public void inform(ResourceLoader loader) throws IOException {
     if (language != null) { 
       // create from a system collator, based on Locale.
       collator = createFromLocale(language, country, variant);

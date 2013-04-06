@@ -19,13 +19,11 @@ package org.apache.lucene.analysis.icu;
 
 import java.io.Reader;
 import java.io.StringReader;
-import java.util.Collections;
-import java.util.Map;
+import java.util.HashMap;
 
 import org.apache.lucene.analysis.BaseTokenStreamTestCase;
+import org.apache.lucene.analysis.MockTokenizer;
 import org.apache.lucene.analysis.TokenStream;
-import org.apache.lucene.analysis.Tokenizer;
-import org.apache.lucene.analysis.core.WhitespaceTokenizer;
 
 /** basic tests for {@link ICUNormalizer2FilterFactory} */
 public class TestICUNormalizer2FilterFactory extends BaseTokenStreamTestCase {
@@ -33,13 +31,22 @@ public class TestICUNormalizer2FilterFactory extends BaseTokenStreamTestCase {
   /** Test nfkc_cf defaults */
   public void testDefaults() throws Exception {
     Reader reader = new StringReader("This is a Ｔｅｓｔ");
-    ICUNormalizer2FilterFactory factory = new ICUNormalizer2FilterFactory();
-    factory.setLuceneMatchVersion(TEST_VERSION_CURRENT);
-    Map<String, String> args = Collections.emptyMap();
-    factory.init(args);
-    Tokenizer tokenizer = new WhitespaceTokenizer(TEST_VERSION_CURRENT, reader);
-    TokenStream stream = factory.create(tokenizer);
+    ICUNormalizer2FilterFactory factory = new ICUNormalizer2FilterFactory(new HashMap<String,String>());
+    TokenStream stream = new MockTokenizer(reader, MockTokenizer.WHITESPACE, false);
+    stream = factory.create(stream);
     assertTokenStreamContents(stream, new String[] { "this", "is", "a", "test" });
+  }
+  
+  /** Test that bogus arguments result in exception */
+  public void testBogusArguments() throws Exception {
+    try {
+      new ICUNormalizer2FilterFactory(new HashMap<String,String>() {{
+        put("bogusArg", "bogusValue");
+      }});
+      fail();
+    } catch (IllegalArgumentException expected) {
+      assertTrue(expected.getMessage().contains("Unknown parameters"));
+    }
   }
   
   // TODO: add tests for different forms

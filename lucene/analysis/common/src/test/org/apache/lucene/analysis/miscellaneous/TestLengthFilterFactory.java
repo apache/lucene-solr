@@ -16,35 +16,44 @@ package org.apache.lucene.analysis.miscellaneous;
  * limitations under the License.
  */
 
-import java.io.IOException;
+import java.io.Reader;
 import java.io.StringReader;
-import java.util.HashMap;
-import java.util.Map;
 
-import org.apache.lucene.analysis.BaseTokenStreamTestCase;
 import org.apache.lucene.analysis.MockTokenizer;
 import org.apache.lucene.analysis.TokenStream;
+import org.apache.lucene.analysis.util.BaseTokenStreamFactoryTestCase;
 
-public class TestLengthFilterFactory extends BaseTokenStreamTestCase {
+public class TestLengthFilterFactory extends BaseTokenStreamFactoryTestCase {
 
-  public void test() throws IOException {
-    LengthFilterFactory factory = new LengthFilterFactory();
-    Map<String, String> args = new HashMap<String, String>();
-    args.put(LengthFilterFactory.MIN_KEY, String.valueOf(4));
-    args.put(LengthFilterFactory.MAX_KEY, String.valueOf(10));
-    // default: args.put("enablePositionIncrements", "false");
-    factory.init(args);
-    String test = "foo foobar super-duper-trooper";
-    TokenStream stream = factory.create(new MockTokenizer(new StringReader(test), MockTokenizer.WHITESPACE, false));
+  public void test() throws Exception {
+    Reader reader = new StringReader("foo foobar super-duper-trooper");
+    TokenStream stream = new MockTokenizer(reader, MockTokenizer.WHITESPACE, false);
+    stream = tokenFilterFactory("Length",
+        "min", "4",
+        "max", "10").create(stream);
     assertTokenStreamContents(stream, new String[] { "foobar" }, new int[] { 1 });
+  }
 
-    factory = new LengthFilterFactory();
-    args = new HashMap<String, String>();
-    args.put(LengthFilterFactory.MIN_KEY, String.valueOf(4));
-    args.put(LengthFilterFactory.MAX_KEY, String.valueOf(10));
-    args.put("enablePositionIncrements", "true");
-    factory.init(args);
-    stream = factory.create(new MockTokenizer(new StringReader(test), MockTokenizer.WHITESPACE, false));
+  public void testPositionIncrements() throws Exception {
+    Reader reader = new StringReader("foo foobar super-duper-trooper");
+    TokenStream stream = new MockTokenizer(reader, MockTokenizer.WHITESPACE, false);
+    stream = tokenFilterFactory("Length",
+        "min", "4",
+        "max", "10",
+        "enablePositionIncrements", "true").create(stream);
     assertTokenStreamContents(stream, new String[] { "foobar" }, new int[] { 2 });
+  }
+  
+  /** Test that bogus arguments result in exception */
+  public void testBogusArguments() throws Exception {
+    try {
+      tokenFilterFactory("Length", 
+          "min", "4", 
+          "max", "5", 
+          "bogusArg", "bogusValue");
+      fail();
+    } catch (IllegalArgumentException expected) {
+      assertTrue(expected.getMessage().contains("Unknown parameters"));
+    }
   }
 }

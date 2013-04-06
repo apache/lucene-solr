@@ -62,17 +62,28 @@ public class JapaneseTokenizerFactory extends TokenizerFactory implements Resour
 
   private UserDictionary userDictionary;
 
-  private Mode mode;
+  private final Mode mode;
+  private final boolean discardPunctuation;  
+  private final String userDictionaryPath;
+  private final String userDictionaryEncoding;
 
-  private boolean discardPunctuation;
-
+  /** Creates a new JapaneseTokenizerFactory */
+  public JapaneseTokenizerFactory(Map<String,String> args) {
+    super(args);
+    mode = getMode(args);
+    userDictionaryPath = args.remove(USER_DICT_PATH);
+    userDictionaryEncoding = args.remove(USER_DICT_ENCODING);
+    discardPunctuation = getBoolean(args, DISCARD_PUNCTUATION, true);
+    if (!args.isEmpty()) {
+      throw new IllegalArgumentException("Unknown parameters: " + args);
+    }
+  }
+  
   @Override
   public void inform(ResourceLoader loader) throws IOException {
-    mode = getMode(args);
-    String userDictionaryPath = args.get(USER_DICT_PATH);
     if (userDictionaryPath != null) {
       InputStream stream = loader.openResource(userDictionaryPath);
-      String encoding = args.get(USER_DICT_ENCODING);
+      String encoding = userDictionaryEncoding;
       if (encoding == null) {
         encoding = IOUtils.UTF_8;
       }
@@ -84,7 +95,6 @@ public class JapaneseTokenizerFactory extends TokenizerFactory implements Resour
     } else {
       userDictionary = null;
     }
-    discardPunctuation = getBoolean(DISCARD_PUNCTUATION, true);
   }
   
   @Override
@@ -92,10 +102,10 @@ public class JapaneseTokenizerFactory extends TokenizerFactory implements Resour
     return new JapaneseTokenizer(factory, input, userDictionary, discardPunctuation, mode);
   }
   
-  private Mode getMode(Map<String, String> args) {
-    String mode = args.get(MODE);
-    if (mode != null) {
-      return Mode.valueOf(mode.toUpperCase(Locale.ROOT));
+  private Mode getMode(Map<String,String> args) {
+    String modeArg = args.remove(MODE);
+    if (modeArg != null) {
+      return Mode.valueOf(modeArg.toUpperCase(Locale.ROOT));
     } else {
       return JapaneseTokenizer.DEFAULT_MODE;
     }

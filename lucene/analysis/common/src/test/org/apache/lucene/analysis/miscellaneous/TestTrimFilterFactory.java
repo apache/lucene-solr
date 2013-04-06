@@ -17,24 +17,31 @@ package org.apache.lucene.analysis.miscellaneous;
  * limitations under the License.
  */
 
+import java.io.Reader;
 import java.io.StringReader;
-import java.util.HashMap;
-import java.util.Map;
 
-import org.apache.lucene.analysis.BaseTokenStreamTestCase;
 import org.apache.lucene.analysis.MockTokenizer;
 import org.apache.lucene.analysis.TokenStream;
+import org.apache.lucene.analysis.util.BaseTokenStreamFactoryTestCase;
 
 /**
  * Simple tests to ensure this factory is working
  */
-public class TestTrimFilterFactory extends BaseTokenStreamTestCase {
+public class TestTrimFilterFactory extends BaseTokenStreamFactoryTestCase {
   public void testTrimming() throws Exception {
-    TrimFilterFactory factory = new TrimFilterFactory();
-    Map<String,String> args = new HashMap<String,String>();
-    args.put("updateOffsets", "false");
-    factory.init(args);
-    TokenStream ts = factory.create(new MockTokenizer(new StringReader("trim me    "), MockTokenizer.KEYWORD, false));
-    assertTokenStreamContents(ts, new String[] { "trim me" });
+    Reader reader = new StringReader("trim me    ");
+    TokenStream stream = new MockTokenizer(reader, MockTokenizer.KEYWORD, false);
+    stream = tokenFilterFactory("Trim").create(stream);
+    assertTokenStreamContents(stream, new String[] { "trim me" });
+  }
+  
+  /** Test that bogus arguments result in exception */
+  public void testBogusArguments() throws Exception {
+    try {
+      tokenFilterFactory("Trim", "bogusArg", "bogusValue");
+      fail();
+    } catch (IllegalArgumentException expected) {
+      assertTrue(expected.getMessage().contains("Unknown parameters"));
+    }
   }
 }

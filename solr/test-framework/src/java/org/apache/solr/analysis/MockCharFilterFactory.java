@@ -27,16 +27,15 @@ import org.apache.lucene.analysis.util.CharFilterFactory;
  * Factory for {@link MockCharFilter} for testing purposes.
  */
 public class MockCharFilterFactory extends CharFilterFactory {
-  int remainder;
+  final int remainder;
 
-  @Override
-  public void init(Map<String,String> args) {
-    super.init(args);
-    String sval = args.get("remainder");
-    if (sval == null) {
-      throw new IllegalArgumentException("remainder is mandatory");
+  /** Creates a new MockCharFilterFactory */
+  public MockCharFilterFactory(Map<String,String> args) {
+    super(args);
+    remainder = getInt(args, "remainder", 0, false);
+    if (!args.isEmpty()) {
+      throw new IllegalArgumentException("Unknown parameters: " + args);
     }
-    remainder = Integer.parseInt(sval);
   }
 
   @Override

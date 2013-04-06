@@ -17,13 +17,15 @@ package org.apache.lucene.analysis.sv;
  * limitations under the License.
  */
 
+import java.util.Map;
+
 import org.apache.lucene.analysis.TokenStream;
 import org.apache.lucene.analysis.sv.SwedishLightStemFilter;
 import org.apache.lucene.analysis.util.TokenFilterFactory;
 
 /** 
  * Factory for {@link SwedishLightStemFilter}.
- * <pre class="prettyprint" >
+ * <pre class="prettyprint">
  * &lt;fieldType name="text_svlgtstem" class="solr.TextField" positionIncrementGap="100"&gt;
  *   &lt;analyzer&gt;
  *     &lt;tokenizer class="solr.StandardTokenizerFactory"/&gt;
@@ -31,9 +33,17 @@ import org.apache.lucene.analysis.util.TokenFilterFactory;
  *     &lt;filter class="solr.SwedishLightStemFilterFactory"/&gt;
  *   &lt;/analyzer&gt;
  * &lt;/fieldType&gt;</pre>
- *
  */
 public class SwedishLightStemFilterFactory extends TokenFilterFactory {
+  
+  /** Creates a new SwedishLightStemFilterFactory */
+  public SwedishLightStemFilterFactory(Map<String,String> args) {
+    super(args);
+    if (!args.isEmpty()) {
+      throw new IllegalArgumentException("Unknown parameters: " + args);
+    }
+  }
+  
   @Override
   public TokenStream create(TokenStream input) {
     return new SwedishLightStemFilter(input);

@@ -17,6 +17,8 @@ package org.apache.lucene.analysis.cn;
  * limitations under the License.
  */
 
+import java.util.Map;
+
 import org.apache.lucene.analysis.TokenStream;
 import org.apache.lucene.analysis.cn.ChineseFilter;
 import org.apache.lucene.analysis.core.StopFilterFactory; // javadocs
@@ -28,6 +30,14 @@ import org.apache.lucene.analysis.util.TokenFilterFactory;
  */
 @Deprecated
 public class ChineseFilterFactory extends TokenFilterFactory {
+  
+  /** Creates a new ChineseFilterFactory */
+  public ChineseFilterFactory(Map<String,String> args) {
+    super(args);
+    if (!args.isEmpty()) {
+      throw new IllegalArgumentException("Unknown parameters: " + args);
+    }
+  }
   
   public ChineseFilter create(TokenStream in) {
     return new ChineseFilter(in);

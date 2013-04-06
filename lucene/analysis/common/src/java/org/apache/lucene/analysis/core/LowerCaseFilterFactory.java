@@ -27,20 +27,23 @@ import org.apache.lucene.analysis.util.TokenFilterFactory;
 
 /**
  * Factory for {@link LowerCaseFilter}. 
- * <pre class="prettyprint" >
+ * <pre class="prettyprint">
  * &lt;fieldType name="text_lwrcase" class="solr.TextField" positionIncrementGap="100"&gt;
  *   &lt;analyzer&gt;
  *     &lt;tokenizer class="solr.WhitespaceTokenizerFactory"/&gt;
  *     &lt;filter class="solr.LowerCaseFilterFactory"/&gt;
  *   &lt;/analyzer&gt;
- * &lt;/fieldType&gt;</pre> 
- *
+ * &lt;/fieldType&gt;</pre>
  */
 public class LowerCaseFilterFactory extends TokenFilterFactory implements MultiTermAwareComponent {
-  @Override
-  public void init(Map<String,String> args) {
-    super.init(args);
+  
+  /** Creates a new LowerCaseFilterFactory */
+  public LowerCaseFilterFactory(Map<String,String> args) {
+    super(args);
     assureMatchVersion();
+    if (!args.isEmpty()) {
+      throw new IllegalArgumentException("Unknown parameters: " + args);
+    }
   }
 
   @Override

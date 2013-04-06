@@ -25,13 +25,14 @@ import java.util.HashMap;
 import java.util.Locale;
 import java.util.Map;
 
-import org.apache.lucene.analysis.BaseTokenStreamTestCase;
 import org.apache.lucene.analysis.MockTokenizer;
 import org.apache.lucene.analysis.TokenStream;
 import org.apache.lucene.analysis.tokenattributes.CharTermAttribute;
+import org.apache.lucene.analysis.util.BaseTokenStreamFactoryTestCase;
 import org.apache.lucene.analysis.util.StringMockResourceLoader;
+import org.apache.lucene.analysis.util.TokenFilterFactory;
 
-public class TestCollationKeyFilterFactory extends BaseTokenStreamTestCase {
+public class TestCollationKeyFilterFactory extends BaseTokenStreamFactoryTestCase {
 
   /*
    * Turkish has some funny casing.
@@ -39,15 +40,12 @@ public class TestCollationKeyFilterFactory extends BaseTokenStreamTestCase {
    * Instead of using LowerCaseFilter, use a turkish collator with primary strength.
    * Then things will sort and match correctly.
    */
-  public void testBasicUsage() throws IOException {
+  public void testBasicUsage() throws Exception {
     String turkishUpperCase = "I WİLL USE TURKİSH CASING";
     String turkishLowerCase = "ı will use turkish casıng";
-    CollationKeyFilterFactory factory = new CollationKeyFilterFactory();
-    Map<String,String> args = new HashMap<String,String>();
-    args.put("language", "tr");
-    args.put("strength", "primary");
-    factory.init(args);
-    factory.inform(new StringMockResourceLoader(""));
+    TokenFilterFactory factory = tokenFilterFactory("CollationKey",
+        "language", "tr",
+        "strength", "primary");
     TokenStream tsUpper = factory.create(
         new MockTokenizer(new StringReader(turkishUpperCase), MockTokenizer.KEYWORD, false));
     TokenStream tsLower = factory.create(
@@ -58,16 +56,13 @@ public class TestCollationKeyFilterFactory extends BaseTokenStreamTestCase {
   /*
    * Test usage of the decomposition option for unicode normalization.
    */
-  public void testNormalization() throws IOException {
+  public void testNormalization() throws Exception {
     String turkishUpperCase = "I W\u0049\u0307LL USE TURKİSH CASING";
     String turkishLowerCase = "ı will use turkish casıng";
-    CollationKeyFilterFactory factory = new CollationKeyFilterFactory();
-    Map<String,String> args = new HashMap<String,String>();
-    args.put("language", "tr");
-    args.put("strength", "primary");
-    args.put("decomposition", "canonical");
-    factory.init(args);
-    factory.inform(new StringMockResourceLoader(""));
+    TokenFilterFactory factory = tokenFilterFactory("CollationKey",
+        "language", "tr",
+        "strength", "primary",
+        "decomposition", "canonical");
     TokenStream tsUpper = factory.create(
         new MockTokenizer(new StringReader(turkishUpperCase), MockTokenizer.KEYWORD, false));
     TokenStream tsLower = factory.create(
@@ -79,16 +74,13 @@ public class TestCollationKeyFilterFactory extends BaseTokenStreamTestCase {
    * Test usage of the K decomposition option for unicode normalization.
    * This works even with identical strength.
    */
-  public void testFullDecomposition() throws IOException {
+  public void testFullDecomposition() throws Exception {
     String fullWidth = "Ｔｅｓｔｉｎｇ";
     String halfWidth = "Testing";
-    CollationKeyFilterFactory factory = new CollationKeyFilterFactory();
-    Map<String,String> args = new HashMap<String,String>();
-    args.put("language", "zh");
-    args.put("strength", "identical");
-    args.put("decomposition", "full");
-    factory.init(args);
-    factory.inform(new StringMockResourceLoader(""));
+    TokenFilterFactory factory = tokenFilterFactory("CollationKey",
+        "language", "zh",
+        "strength", "identical",
+        "decomposition", "full");
     TokenStream tsFull = factory.create(
         new MockTokenizer(new StringReader(fullWidth), MockTokenizer.KEYWORD, false));
     TokenStream tsHalf = factory.create(
@@ -99,16 +91,13 @@ public class TestCollationKeyFilterFactory extends BaseTokenStreamTestCase {
   /*
    * Test secondary strength, for english case is not significant.
    */
-  public void testSecondaryStrength() throws IOException {
+  public void testSecondaryStrength() throws Exception {
     String upperCase = "TESTING";
     String lowerCase = "testing";
-    CollationKeyFilterFactory factory = new CollationKeyFilterFactory();
-    Map<String,String> args = new HashMap<String,String>();
-    args.put("language", "en");
-    args.put("strength", "secondary");
-    args.put("decomposition", "no");
-    factory.init(args);
-    factory.inform(new StringMockResourceLoader(""));
+    TokenFilterFactory factory = tokenFilterFactory("CollationKey",
+        "language", "en",
+        "strength", "secondary",
+        "decomposition", "no");
     TokenStream tsUpper = factory.create(
         new MockTokenizer(new StringReader(upperCase), MockTokenizer.KEYWORD, false));
     TokenStream tsLower = factory.create(
@@ -139,11 +128,10 @@ public class TestCollationKeyFilterFactory extends BaseTokenStreamTestCase {
     //
     String germanUmlaut = "Töne";
     String germanOE = "Toene";
-    CollationKeyFilterFactory factory = new CollationKeyFilterFactory();
     Map<String,String> args = new HashMap<String,String>();
     args.put("custom", "rules.txt");
     args.put("strength", "primary");
-    factory.init(args);
+    CollationKeyFilterFactory factory = new CollationKeyFilterFactory(args);
     factory.inform(new StringMockResourceLoader(tailoredRules));
     TokenStream tsUmlaut = factory.create(
         new MockTokenizer(new StringReader(germanUmlaut), MockTokenizer.KEYWORD, false));

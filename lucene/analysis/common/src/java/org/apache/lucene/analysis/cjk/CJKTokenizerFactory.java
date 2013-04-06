@@ -21,6 +21,7 @@ import org.apache.lucene.analysis.util.TokenizerFactory;
 import org.apache.lucene.util.AttributeSource.AttributeFactory;
 
 import java.io.Reader;
+import java.util.Map;
 
 /** 
  * Factory for {@link CJKTokenizer}. 
@@ -34,6 +35,15 @@ import java.io.Reader;
  */
 @Deprecated
 public class CJKTokenizerFactory extends TokenizerFactory {
+  
+  /** Creates a new CJKTokenizerFactory */
+  public CJKTokenizerFactory(Map<String,String> args) {
+    super(args);
+    if (!args.isEmpty()) {
+      throw new IllegalArgumentException("Unknown parameters: " + args);
+    }
+  }
+  
   @Override
   public CJKTokenizer create(AttributeFactory factory, Reader in) {
     return new CJKTokenizer(factory, in);

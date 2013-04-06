@@ -17,6 +17,7 @@ package org.apache.lucene.analysis.util;
  * limitations under the License.
  */
 
+import java.util.Map;
 import java.util.Set;
 
 import org.apache.lucene.analysis.TokenStream;
@@ -32,8 +33,8 @@ public abstract class TokenFilterFactory extends AbstractAnalysisFactory {
           new String[] { "TokenFilterFactory", "FilterFactory" });
   
   /** looks up a tokenfilter by name from context classpath */
-  public static TokenFilterFactory forName(String name) {
-    return loader.newInstance(name);
+  public static TokenFilterFactory forName(String name, Map<String,String> args) {
+    return loader.newInstance(name, args);
   }
   
   /** looks up a tokenfilter class by name from context classpath */
@@ -59,6 +60,13 @@ public abstract class TokenFilterFactory extends AbstractAnalysisFactory {
    */
   public static void reloadTokenFilters(ClassLoader classloader) {
     loader.reload(classloader);
+  }
+  
+  /**
+   * Initialize this factory via a set of key-value pairs.
+   */
+  protected TokenFilterFactory(Map<String,String> args) {
+    super(args);
   }
 
   /** Transform the specified input TokenStream */

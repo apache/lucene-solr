@@ -25,33 +25,32 @@ import java.util.Map;
 
 /**
  * Creates new instances of {@link EdgeNGramTokenizer}.
- * <pre class="prettyprint" >
+ * <pre class="prettyprint">
  * &lt;fieldType name="text_edgngrm" class="solr.TextField" positionIncrementGap="100"&gt;
  *   &lt;analyzer&gt;
  *     &lt;tokenizer class="solr.EdgeNGramTokenizerFactory" side="front" minGramSize="1" maxGramSize="1"/&gt;
  *   &lt;/analyzer&gt;
  * &lt;/fieldType&gt;</pre>
- *
  */
 public class EdgeNGramTokenizerFactory extends TokenizerFactory {
-  private int maxGramSize = 0;
-  
-  private int minGramSize = 0;
-  
-  private String side;
-  
-  @Override
-  public void init(Map<String, String> args) {
-    super.init(args);
-    String maxArg = args.get("maxGramSize");
-    maxGramSize = (maxArg != null ? Integer.parseInt(maxArg) : EdgeNGramTokenizer.DEFAULT_MAX_GRAM_SIZE);
-    
-    String minArg = args.get("minGramSize");
-    minGramSize = (minArg != null ? Integer.parseInt(minArg) : EdgeNGramTokenizer.DEFAULT_MIN_GRAM_SIZE);
-    
-    side = args.get("side");
-    if (side == null) {
-      side = EdgeNGramTokenizer.Side.FRONT.getLabel();
+  private final int maxGramSize;
+  private final int minGramSize;
+  private final String side;
+
+  /** Creates a new EdgeNGramTokenizerFactory */
+  public EdgeNGramTokenizerFactory(Map<String, String> args) {
+    super(args);
+    minGramSize = getInt(args, "minGramSize", EdgeNGramTokenFilter.DEFAULT_MIN_GRAM_SIZE);
+    maxGramSize = getInt(args, "maxGramSize", EdgeNGramTokenFilter.DEFAULT_MAX_GRAM_SIZE);
+
+    String sideArg = args.remove("side");
+    if (sideArg == null) {
+      side = EdgeNGramTokenFilter.Side.FRONT.getLabel();
+    } else {
+      side = sideArg;
+    }
+    if (!args.isEmpty()) {
+      throw new IllegalArgumentException("Unknown parameters: " + args);
     }
   }
   

@@ -20,20 +20,29 @@ package org.apache.lucene.analysis.cn;
 import java.io.Reader;
 import java.io.StringReader;
 
-import org.apache.lucene.analysis.BaseTokenStreamTestCase;
 import org.apache.lucene.analysis.TokenStream;
+import org.apache.lucene.analysis.util.BaseTokenStreamFactoryTestCase;
 
 /**
  * Simple tests to ensure the Chinese tokenizer factory is working.
  */
-public class TestChineseTokenizerFactory extends BaseTokenStreamTestCase {
+public class TestChineseTokenizerFactory extends BaseTokenStreamFactoryTestCase {
   /**
    * Ensure the tokenizer actually tokenizes chinese text correctly
    */
   public void testTokenizer() throws Exception {
     Reader reader = new StringReader("我是中国人");
-    ChineseTokenizerFactory factory = new ChineseTokenizerFactory();
-    TokenStream stream = factory.create(reader);
+    TokenStream stream = tokenizerFactory("Chinese").create(reader);
     assertTokenStreamContents(stream, new String[] {"我", "是", "中", "国", "人"});
+  }
+  
+  /** Test that bogus arguments result in exception */
+  public void testBogusArguments() throws Exception {
+    try {
+      tokenizerFactory("Chinese", "bogusArg", "bogusValue");
+      fail();
+    } catch (IllegalArgumentException expected) {
+      assertTrue(expected.getMessage().contains("Unknown parameters"));
+    }
   }
 }

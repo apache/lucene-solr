@@ -198,7 +198,6 @@ public class TestWordDelimiterFilterFactory extends SolrTestCaseJ4 {
   @Test
   public void testCustomTypes() throws Exception {
     String testText = "I borrowed $5,400.00 at 25% interest-rate";
-    WordDelimiterFilterFactory factoryDefault = new WordDelimiterFilterFactory();
     ResourceLoader loader = new SolrResourceLoader("solr/collection1");
     Map<String,String> args = new HashMap<String,String>();
     args.put("generateWordParts", "1");
@@ -209,7 +208,7 @@ public class TestWordDelimiterFilterFactory extends SolrTestCaseJ4 {
     args.put("splitOnCaseChange", "1");
     
     /* default behavior */
-    factoryDefault.init(args);
+    WordDelimiterFilterFactory factoryDefault = new WordDelimiterFilterFactory(args);
     factoryDefault.inform(loader);
     
     TokenStream ts = factoryDefault.create(
@@ -224,10 +223,16 @@ public class TestWordDelimiterFilterFactory extends SolrTestCaseJ4 {
 
     
     /* custom behavior */
-    WordDelimiterFilterFactory factoryCustom = new WordDelimiterFilterFactory();
+    args = new HashMap<String,String>();
     // use a custom type mapping
+    args.put("generateWordParts", "1");
+    args.put("generateNumberParts", "1");
+    args.put("catenateWords", "1");
+    args.put("catenateNumbers", "1");
+    args.put("catenateAll", "0");
+    args.put("splitOnCaseChange", "1");
     args.put("types", "wdftypes.txt");
-    factoryCustom.init(args);
+    WordDelimiterFilterFactory factoryCustom = new WordDelimiterFilterFactory(args);
     factoryCustom.inform(loader);
     
     ts = factoryCustom.create(

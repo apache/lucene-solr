@@ -25,7 +25,7 @@ import org.apache.lucene.analysis.util.TokenFilterFactory;
 
 /** 
  * Factory for {@link IndonesianStemFilter}. 
- * <pre class="prettyprint" >
+ * <pre class="prettyprint">
  * &lt;fieldType name="text_idstem" class="solr.TextField" positionIncrementGap="100"&gt;
  *   &lt;analyzer&gt;
  *     &lt;tokenizer class="solr.StandardTokenizerFactory"/&gt;
@@ -33,15 +33,17 @@ import org.apache.lucene.analysis.util.TokenFilterFactory;
  *     &lt;filter class="solr.IndonesianStemFilterFactory" stemDerivational="true"/&gt;
  *   &lt;/analyzer&gt;
  * &lt;/fieldType&gt;</pre>
- *
  */
 public class IndonesianStemFilterFactory extends TokenFilterFactory {
-  private boolean stemDerivational = true;
+  private final boolean stemDerivational;
 
-  @Override
-  public void init(Map<String, String> args) {
-    super.init(args);
-    stemDerivational = getBoolean("stemDerivational", true);
+  /** Creates a new IndonesianStemFilterFactory */
+  public IndonesianStemFilterFactory(Map<String,String> args) {
+    super(args);
+    stemDerivational = getBoolean(args, "stemDerivational", true);
+    if (!args.isEmpty()) {
+      throw new IllegalArgumentException("Unknown parameters: " + args);
+    }
   }
 
   @Override

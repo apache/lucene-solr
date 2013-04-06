@@ -17,13 +17,15 @@ package org.apache.lucene.analysis.bg;
  * limitations under the License.
  */
 
+import java.util.Map;
+
 import org.apache.lucene.analysis.TokenStream;
 import org.apache.lucene.analysis.bg.BulgarianStemFilter;
 import org.apache.lucene.analysis.util.TokenFilterFactory;
 
 /** 
  * Factory for {@link BulgarianStemFilter}.
- * <pre class="prettyprint" >
+ * <pre class="prettyprint">
  * &lt;fieldType name="text_bgstem" class="solr.TextField" positionIncrementGap="100"&gt;
  *   &lt;analyzer&gt;
  *     &lt;tokenizer class="solr.StandardTokenizerFactory"/&gt;
@@ -31,9 +33,17 @@ import org.apache.lucene.analysis.util.TokenFilterFactory;
  *     &lt;filter class="solr.BulgarianStemFilterFactory"/&gt;
  *   &lt;/analyzer&gt;
  * &lt;/fieldType&gt;</pre>
- *
  */
 public class BulgarianStemFilterFactory extends TokenFilterFactory {
+  
+  /** Creates a new BulgarianStemFilterFactory */
+  public BulgarianStemFilterFactory(Map<String,String> args) {
+    super(args);
+    if (!args.isEmpty()) {
+      throw new IllegalArgumentException("Unknown parameters: " + args);
+    }
+  }
+  
   @Override
   public TokenStream create(TokenStream input) {
     return new BulgarianStemFilter(input);

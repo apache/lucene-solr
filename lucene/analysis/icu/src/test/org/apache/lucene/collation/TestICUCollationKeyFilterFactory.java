@@ -21,15 +21,21 @@ import java.io.ByteArrayInputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.StringReader;
+import java.lang.reflect.InvocationTargetException;
 import java.util.HashMap;
-import java.util.List;
 import java.util.Map;
 
 import org.apache.lucene.analysis.BaseTokenStreamTestCase;
 import org.apache.lucene.analysis.TokenStream;
 import org.apache.lucene.analysis.core.KeywordTokenizer;
 import org.apache.lucene.analysis.tokenattributes.CharTermAttribute;
+import org.apache.lucene.analysis.util.AbstractAnalysisFactory;
+import org.apache.lucene.analysis.util.ClasspathResourceLoader;
 import org.apache.lucene.analysis.util.ResourceLoader;
+import org.apache.lucene.analysis.util.ResourceLoaderAware;
+import org.apache.lucene.analysis.util.TokenFilterFactory;
+import org.apache.lucene.analysis.util.TokenizerFactory;
+import org.apache.lucene.util.Version;
 
 import com.ibm.icu.text.Collator;
 import com.ibm.icu.text.RuleBasedCollator;
@@ -44,15 +50,12 @@ public class TestICUCollationKeyFilterFactory extends BaseTokenStreamTestCase {
    * Instead of using LowerCaseFilter, use a turkish collator with primary strength.
    * Then things will sort and match correctly.
    */
-  public void testBasicUsage() throws IOException {
+  public void testBasicUsage() throws Exception {
     String turkishUpperCase = "I WİLL USE TURKİSH CASING";
     String turkishLowerCase = "ı will use turkish casıng";
-    ICUCollationKeyFilterFactory factory = new ICUCollationKeyFilterFactory();
-    Map<String,String> args = new HashMap<String,String>();
-    args.put("locale", "tr");
-    args.put("strength", "primary");
-    factory.init(args);
-    factory.inform(new StringMockResourceLoader(""));
+    TokenFilterFactory factory = tokenFilterFactory("ICUCollationKey",
+        "locale", "tr",
+        "strength", "primary");
     TokenStream tsUpper = factory.create(
         new KeywordTokenizer(new StringReader(turkishUpperCase)));
     TokenStream tsLower = factory.create(
@@ -63,16 +66,13 @@ public class TestICUCollationKeyFilterFactory extends BaseTokenStreamTestCase {
   /*
    * Test usage of the decomposition option for unicode normalization.
    */
-  public void testNormalization() throws IOException {
+  public void testNormalization() throws Exception {
     String turkishUpperCase = "I W\u0049\u0307LL USE TURKİSH CASING";
     String turkishLowerCase = "ı will use turkish casıng";
-    ICUCollationKeyFilterFactory factory = new ICUCollationKeyFilterFactory();
-    Map<String,String> args = new HashMap<String,String>();
-    args.put("locale", "tr");
-    args.put("strength", "primary");
-    args.put("decomposition", "canonical");
-    factory.init(args);
-    factory.inform(new StringMockResourceLoader(""));
+    TokenFilterFactory factory = tokenFilterFactory("ICUCollationKey",
+        "locale", "tr",
+        "strength", "primary",
+        "decomposition", "canonical");
     TokenStream tsUpper = factory.create(
         new KeywordTokenizer(new StringReader(turkishUpperCase)));
     TokenStream tsLower = factory.create(
@@ -83,16 +83,13 @@ public class TestICUCollationKeyFilterFactory extends BaseTokenStreamTestCase {
   /*
    * Test secondary strength, for english case is not significant.
    */
-  public void testSecondaryStrength() throws IOException {
+  public void testSecondaryStrength() throws Exception {
     String upperCase = "TESTING";
     String lowerCase = "testing";
-    ICUCollationKeyFilterFactory factory = new ICUCollationKeyFilterFactory();
-    Map<String,String> args = new HashMap<String,String>();
-    args.put("locale", "en");
-    args.put("strength", "secondary");
-    args.put("decomposition", "no");
-    factory.init(args);
-    factory.inform(new StringMockResourceLoader(""));
+    TokenFilterFactory factory = tokenFilterFactory("ICUCollationKey",
+        "locale", "en",
+        "strength", "secondary",
+        "decomposition", "no");
     TokenStream tsUpper = factory.create(
         new KeywordTokenizer(new StringReader(upperCase)));
     TokenStream tsLower = factory.create(
@@ -104,16 +101,13 @@ public class TestICUCollationKeyFilterFactory extends BaseTokenStreamTestCase {
    * Setting alternate=shifted to shift whitespace, punctuation and symbols
    * to quaternary level 
    */
-  public void testIgnorePunctuation() throws IOException {
+  public void testIgnorePunctuation() throws Exception {
     String withPunctuation = "foo-bar";
     String withoutPunctuation = "foo bar";
-    ICUCollationKeyFilterFactory factory = new ICUCollationKeyFilterFactory();
-    Map<String,String> args = new HashMap<String,String>();
-    args.put("locale", "en");
-    args.put("strength", "primary");
-    args.put("alternate", "shifted");
-    factory.init(args);
-    factory.inform(new StringMockResourceLoader(""));
+    TokenFilterFactory factory = tokenFilterFactory("ICUCollationKey",
+        "locale", "en",
+        "strength", "primary",
+        "alternate", "shifted");
     TokenStream tsPunctuation = factory.create(
         new KeywordTokenizer(new StringReader(withPunctuation)));
     TokenStream tsWithoutPunctuation = factory.create(
@@ -125,18 +119,15 @@ public class TestICUCollationKeyFilterFactory extends BaseTokenStreamTestCase {
    * Setting alternate=shifted and variableTop to shift whitespace, but not 
    * punctuation or symbols, to quaternary level 
    */
-  public void testIgnoreWhitespace() throws IOException {
+  public void testIgnoreWhitespace() throws Exception {
     String withSpace = "foo bar";
     String withoutSpace = "foobar";
     String withPunctuation = "foo-bar";
-    ICUCollationKeyFilterFactory factory = new ICUCollationKeyFilterFactory();
-    Map<String,String> args = new HashMap<String,String>();
-    args.put("locale", "en");
-    args.put("strength", "primary");
-    args.put("alternate", "shifted");
-    args.put("variableTop", " ");
-    factory.init(args);
-    factory.inform(new StringMockResourceLoader(""));
+    TokenFilterFactory factory = tokenFilterFactory("ICUCollationKey",
+        "locale", "en",
+        "strength", "primary",
+        "alternate", "shifted",
+        "variableTop", " ");
     TokenStream tsWithSpace = factory.create(
         new KeywordTokenizer(new StringReader(withSpace)));
     TokenStream tsWithoutSpace = factory.create(
@@ -154,15 +145,12 @@ public class TestICUCollationKeyFilterFactory extends BaseTokenStreamTestCase {
    * Setting numeric to encode digits with numeric value, so that
    * foobar-9 sorts before foobar-10
    */
-  public void testNumerics() throws IOException {
+  public void testNumerics() throws Exception {
     String nine = "foobar-9";
     String ten = "foobar-10";
-    ICUCollationKeyFilterFactory factory = new ICUCollationKeyFilterFactory();
-    Map<String,String> args = new HashMap<String,String>();
-    args.put("locale", "en");
-    args.put("numeric", "true");
-    factory.init(args);
-    factory.inform(new StringMockResourceLoader(""));
+    TokenFilterFactory factory = tokenFilterFactory("ICUCollationKey",
+        "locale", "en",
+        "numeric", "true");
     TokenStream tsNine = factory.create(
         new KeywordTokenizer(new StringReader(nine)));
     TokenStream tsTen = factory.create(
@@ -174,18 +162,15 @@ public class TestICUCollationKeyFilterFactory extends BaseTokenStreamTestCase {
    * Setting caseLevel=true to create an additional case level between
    * secondary and tertiary
    */
-  public void testIgnoreAccentsButNotCase() throws IOException {
+  public void testIgnoreAccentsButNotCase() throws Exception {
     String withAccents = "résumé";
     String withoutAccents = "resume";
     String withAccentsUpperCase = "Résumé";
     String withoutAccentsUpperCase = "Resume";
-    ICUCollationKeyFilterFactory factory = new ICUCollationKeyFilterFactory();
-    Map<String,String> args = new HashMap<String,String>();
-    args.put("locale", "en");
-    args.put("strength", "primary");
-    args.put("caseLevel", "true");
-    factory.init(args);
-    factory.inform(new StringMockResourceLoader(""));
+    TokenFilterFactory factory = tokenFilterFactory("ICUCollationKey",
+        "locale", "en",
+        "strength", "primary",
+        "caseLevel", "true");
     TokenStream tsWithAccents = factory.create(
         new KeywordTokenizer(new StringReader(withAccents)));
     TokenStream tsWithoutAccents = factory.create(
@@ -210,16 +195,13 @@ public class TestICUCollationKeyFilterFactory extends BaseTokenStreamTestCase {
    * Setting caseFirst=upper to cause uppercase strings to sort
    * before lowercase ones.
    */
-  public void testUpperCaseFirst() throws IOException {
+  public void testUpperCaseFirst() throws Exception {
     String lower = "resume";
     String upper = "Resume";
-    ICUCollationKeyFilterFactory factory = new ICUCollationKeyFilterFactory();
-    Map<String,String> args = new HashMap<String,String>();
-    args.put("locale", "en");
-    args.put("strength", "tertiary");
-    args.put("caseFirst", "upper");
-    factory.init(args);
-    factory.inform(new StringMockResourceLoader(""));
+    TokenFilterFactory factory = tokenFilterFactory("ICUCollationKey",
+        "locale", "en",
+        "strength", "tertiary",
+        "caseFirst", "upper");
     TokenStream tsLower = factory.create(
         new KeywordTokenizer(new StringReader(lower)));
     TokenStream tsUpper = factory.create(
@@ -250,11 +232,10 @@ public class TestICUCollationKeyFilterFactory extends BaseTokenStreamTestCase {
     //
     String germanUmlaut = "Töne";
     String germanOE = "Toene";
-    ICUCollationKeyFilterFactory factory = new ICUCollationKeyFilterFactory();
     Map<String,String> args = new HashMap<String,String>();
     args.put("custom", "rules.txt");
     args.put("strength", "primary");
-    factory.init(args);
+    ICUCollationKeyFilterFactory factory = new ICUCollationKeyFilterFactory(args);
     factory.inform(new StringMockResourceLoader(tailoredRules));
     TokenStream tsUmlaut = factory.create(
         new KeywordTokenizer(new StringReader(germanUmlaut)));
@@ -291,8 +272,42 @@ public class TestICUCollationKeyFilterFactory extends BaseTokenStreamTestCase {
       return null;
     }
 
+    @Override
+    public <T> Class<? extends T> findClass(String cname, Class<T> expectedType) {
+      return null;
+    }
+
     public InputStream openResource(String resource) throws IOException {
       return new ByteArrayInputStream(text.getBytes("UTF-8"));
     }
+  }
+  
+  private TokenFilterFactory tokenFilterFactory(String name, String... keysAndValues) throws Exception {
+    Class<? extends TokenFilterFactory> clazz = TokenFilterFactory.lookupClass(name);
+    if (keysAndValues.length % 2 == 1) {
+      throw new IllegalArgumentException("invalid keysAndValues map");
+    }
+    Map<String,String> args = new HashMap<String,String>();
+    for (int i = 0; i < keysAndValues.length; i += 2) {
+      String previous = args.put(keysAndValues[i], keysAndValues[i+1]);
+      assertNull("duplicate values for key: " + keysAndValues[i], previous);
+    }
+    String previous = args.put("luceneMatchVersion", TEST_VERSION_CURRENT.toString());
+    assertNull("duplicate values for key: luceneMatchVersion", previous);
+    TokenFilterFactory factory = null;
+    try {
+      factory = clazz.getConstructor(Map.class).newInstance(args);
+    } catch (InvocationTargetException e) {
+      // to simplify tests that check for illegal parameters
+      if (e.getCause() instanceof IllegalArgumentException) {
+        throw (IllegalArgumentException) e.getCause();
+      } else {
+        throw e;
+      }
+    }
+    if (factory instanceof ResourceLoaderAware) {
+      ((ResourceLoaderAware) factory).inform(new ClasspathResourceLoader(getClass()));
+    }
+    return factory;
   }
 }

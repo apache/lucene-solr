@@ -17,53 +17,49 @@ package org.apache.lucene.analysis.miscellaneous;
  * limitations under the License.
  */
 
-import java.io.IOException;
 import java.io.Reader;
 import java.io.StringReader;
-import java.util.HashMap;
-import java.util.Map;
 
-import org.apache.lucene.analysis.BaseTokenStreamTestCase;
-import org.apache.lucene.analysis.en.PorterStemFilter;
 import org.apache.lucene.analysis.MockTokenizer;
 import org.apache.lucene.analysis.TokenStream;
-import org.apache.lucene.analysis.Tokenizer;
-import org.apache.lucene.analysis.util.ResourceLoader;
+import org.apache.lucene.analysis.util.BaseTokenStreamFactoryTestCase;
 import org.apache.lucene.analysis.util.StringMockResourceLoader;
 
 /**
  * Simple tests to ensure the stemmer override filter factory is working.
  */
-public class TestStemmerOverrideFilterFactory extends BaseTokenStreamTestCase {
-  public void testKeywords() throws IOException {
+public class TestStemmerOverrideFilterFactory extends BaseTokenStreamFactoryTestCase {
+  public void testKeywords() throws Exception {
     // our stemdict stems dogs to 'cat'
     Reader reader = new StringReader("testing dogs");
-    Tokenizer tokenizer = new MockTokenizer(reader, MockTokenizer.WHITESPACE, false);
-    StemmerOverrideFilterFactory factory = new StemmerOverrideFilterFactory();
-    Map<String,String> args = new HashMap<String,String>();
-    ResourceLoader loader = new StringMockResourceLoader("dogs\tcat");
-    args.put("dictionary", "stemdict.txt");
-    factory.setLuceneMatchVersion(TEST_VERSION_CURRENT);
-    factory.init(args);
-    factory.inform(loader);
-    
-    TokenStream ts = new PorterStemFilter(factory.create(tokenizer));
-    assertTokenStreamContents(ts, new String[] { "test", "cat" });
+    TokenStream stream = new MockTokenizer(reader, MockTokenizer.WHITESPACE, false);
+    stream = tokenFilterFactory("StemmerOverride", TEST_VERSION_CURRENT,
+        new StringMockResourceLoader("dogs\tcat"),
+        "dictionary", "stemdict.txt").create(stream);
+    stream = tokenFilterFactory("PorterStem").create(stream);
+
+    assertTokenStreamContents(stream, new String[] { "test", "cat" });
   }
   
-  public void testKeywordsCaseInsensitive() throws IOException {
+  public void testKeywordsCaseInsensitive() throws Exception {
     Reader reader = new StringReader("testing DoGs");
-    Tokenizer tokenizer = new MockTokenizer(reader, MockTokenizer.WHITESPACE, false);
-    StemmerOverrideFilterFactory factory = new StemmerOverrideFilterFactory();
-    Map<String,String> args = new HashMap<String,String>();
-    ResourceLoader loader = new StringMockResourceLoader("dogs\tcat");
-    args.put("dictionary", "stemdict.txt");
-    args.put("ignoreCase", "true");
-    factory.setLuceneMatchVersion(TEST_VERSION_CURRENT);
-    factory.init(args);
-    factory.inform(loader);
+    TokenStream stream = new MockTokenizer(reader, MockTokenizer.WHITESPACE, false);
+    stream = tokenFilterFactory("StemmerOverride", TEST_VERSION_CURRENT,
+        new StringMockResourceLoader("dogs\tcat"),
+        "dictionary", "stemdict.txt",
+        "ignoreCase", "true").create(stream);
+    stream = tokenFilterFactory("PorterStem").create(stream);
     
-    TokenStream ts = new PorterStemFilter(factory.create(tokenizer));
-    assertTokenStreamContents(ts, new String[] { "test", "cat" });
+    assertTokenStreamContents(stream, new String[] { "test", "cat" });
+  }
+  
+  /** Test that bogus arguments result in exception */
+  public void testBogusArguments() throws Exception {
+    try {
+      tokenFilterFactory("StemmerOverride", "bogusArg", "bogusValue");
+      fail();
+    } catch (IllegalArgumentException expected) {
+      assertTrue(expected.getMessage().contains("Unknown parameters"));
+    }
   }
 }

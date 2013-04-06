@@ -25,7 +25,6 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
-import org.apache.lucene.analysis.util.AbstractAnalysisFactory; // javadocs
 import org.apache.lucene.analysis.util.ResourceLoader;
 import org.apache.lucene.analysis.util.ResourceLoaderAware;
 import org.apache.lucene.analysis.util.TokenizerFactory;
@@ -75,21 +74,17 @@ import com.ibm.icu.text.RuleBasedBreakIterator;
  *                rulefiles="Latn:my.Latin.rules.rbbi,Cyrl:my.Cyrillic.rules.rbbi"/&gt;
  *   &lt;/analyzer&gt;
  * &lt;/fieldType&gt;</pre>
- *
  */
 public class ICUTokenizerFactory extends TokenizerFactory implements ResourceLoaderAware {
   static final String RULEFILES = "rulefiles";
-  private Map<Integer,String> tailored;
+  private final Map<Integer,String> tailored;
   private ICUTokenizerConfig config;
   
-  /** Sole constructor. See {@link AbstractAnalysisFactory} for initialization lifecycle. */
-  public ICUTokenizerFactory() {}
-
-  @Override
-  public void init(Map<String,String> args) {
-    super.init(args);
+  /** Creates a new ICUTokenizerFactory */
+  public ICUTokenizerFactory(Map<String,String> args) {
+    super(args);
     tailored = new HashMap<Integer,String>();
-    String rulefilesArg = args.get(RULEFILES);
+    String rulefilesArg = args.remove(RULEFILES);
     if (rulefilesArg != null) {
       List<String> scriptAndResourcePaths = splitFileNames(rulefilesArg);
       for (String scriptAndResourcePath : scriptAndResourcePaths) {
@@ -98,6 +93,9 @@ public class ICUTokenizerFactory extends TokenizerFactory implements ResourceLoa
         String resourcePath = scriptAndResourcePath.substring(colonPos+1).trim();
         tailored.put(UCharacter.getPropertyValueEnum(UProperty.SCRIPT, scriptCode), resourcePath);
       }
+    }
+    if (!args.isEmpty()) {
+      throw new IllegalArgumentException("Unknown parameters: " + args);
     }
   }
 

@@ -17,77 +17,37 @@ package org.apache.lucene.analysis.commongrams;
  * limitations under the License.
  */
 
-import java.io.IOException;
 import java.util.Map;
 
+import org.apache.lucene.analysis.TokenFilter;
 import org.apache.lucene.analysis.TokenStream;
 import org.apache.lucene.analysis.commongrams.CommonGramsFilter;
 import org.apache.lucene.analysis.commongrams.CommonGramsQueryFilter;
-import org.apache.lucene.analysis.core.StopAnalyzer;
-import org.apache.lucene.analysis.core.StopFilterFactory;
-import org.apache.lucene.analysis.util.*;
 
 /**
  * Construct {@link CommonGramsQueryFilter}.
  * 
- * This is pretty close to a straight copy from {@link StopFilterFactory}.
- * 
- * <pre class="prettyprint" >
+ * <pre class="prettyprint">
  * &lt;fieldType name="text_cmmngrmsqry" class="solr.TextField" positionIncrementGap="100"&gt;
  *   &lt;analyzer&gt;
  *     &lt;tokenizer class="solr.WhitespaceTokenizerFactory"/&gt;
  *     &lt;filter class="solr.CommonGramsQueryFilterFactory" words="commongramsquerystopwords.txt" ignoreCase="false"/&gt;
  *   &lt;/analyzer&gt;
  * &lt;/fieldType&gt;</pre>
- *
  */
-public class CommonGramsQueryFilterFactory extends TokenFilterFactory
-    implements ResourceLoaderAware {
+public class CommonGramsQueryFilterFactory extends CommonGramsFilterFactory {
 
-  @Override
-  public void init(Map<String,String> args) {
-    super.init(args);
-    assureMatchVersion();
-  }
-
-  @Override
-  public void inform(ResourceLoader loader) throws IOException {
-    String commonWordFiles = args.get("words");
-    ignoreCase = getBoolean("ignoreCase", false);
-
-    if (commonWordFiles != null) {
-      if ("snowball".equalsIgnoreCase(args.get("format"))) {
-        commonWords = getSnowballWordSet(loader, commonWordFiles, ignoreCase);
-      } else {
-        commonWords = getWordSet(loader, commonWordFiles, ignoreCase);
-      }
-    } else {
-      commonWords = StopAnalyzer.ENGLISH_STOP_WORDS_SET;
-    }
-  }
-
-  // Force the use of a char array set, as it is the most performant, although
-  // this may break things if Lucene ever goes away from it. See SOLR-1095
-  private CharArraySet commonWords;
-
-  private boolean ignoreCase;
-
-  public boolean isIgnoreCase() {
-    return ignoreCase;
-  }
-
-  public CharArraySet getCommonWords() {
-    return commonWords;
+  /** Creates a new CommonGramsQueryFilterFactory */
+  public CommonGramsQueryFilterFactory(Map<String,String> args) {
+    super(args);
   }
 
   /**
    * Create a CommonGramsFilter and wrap it with a CommonGramsQueryFilter
    */
   @Override
-  public CommonGramsQueryFilter create(TokenStream input) {
-    CommonGramsFilter commonGrams = new CommonGramsFilter(luceneMatchVersion, input, commonWords);
-    CommonGramsQueryFilter commonGramsQuery = new CommonGramsQueryFilter(
-        commonGrams);
-    return commonGramsQuery;
+  public TokenFilter create(TokenStream input) {
+    CommonGramsFilter commonGrams = (CommonGramsFilter) super.create(input);
+    return new CommonGramsQueryFilter(commonGrams);
   }
 }

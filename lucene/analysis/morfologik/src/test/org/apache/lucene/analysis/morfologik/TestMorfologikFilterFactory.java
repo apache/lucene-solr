@@ -22,8 +22,8 @@ import java.util.HashMap;
 import java.util.Map;
 
 import org.apache.lucene.analysis.BaseTokenStreamTestCase;
+import org.apache.lucene.analysis.MockTokenizer;
 import org.apache.lucene.analysis.TokenStream;
-import org.apache.lucene.analysis.core.WhitespaceTokenizer;
 
 /**
  * Test for {@link MorfologikFilterFactory}.
@@ -32,13 +32,23 @@ public class TestMorfologikFilterFactory extends BaseTokenStreamTestCase {
   public void testCreateDictionary() throws Exception {
     StringReader reader = new StringReader("rowery bilety");
     Map<String,String> initParams = new HashMap<String,String>();
-    initParams.put(MorfologikFilterFactory.DICTIONARY_SCHEMA_ATTRIBUTE,
-        "morfologik");
-    MorfologikFilterFactory factory = new MorfologikFilterFactory();
-    factory.setLuceneMatchVersion(TEST_VERSION_CURRENT);
-    factory.init(initParams);
-    TokenStream ts = factory.create(new WhitespaceTokenizer(TEST_VERSION_CURRENT,
-        reader));
-    assertTokenStreamContents(ts, new String[] {"rower", "bilet"});
+    initParams.put(MorfologikFilterFactory.DICTIONARY_SCHEMA_ATTRIBUTE, "morfologik");
+    initParams.put("luceneMatchVersion", TEST_VERSION_CURRENT.toString());
+    MorfologikFilterFactory factory = new MorfologikFilterFactory(initParams);
+    TokenStream stream = new MockTokenizer(reader, MockTokenizer.WHITESPACE, false);
+    stream = factory.create(stream);
+    assertTokenStreamContents(stream, new String[] {"rower", "bilet"});
+  }
+  
+  /** Test that bogus arguments result in exception */
+  public void testBogusArguments() throws Exception {
+    try {
+      new MorfologikFilterFactory(new HashMap<String,String>() {{
+        put("bogusArg", "bogusValue");
+      }});
+      fail();
+    } catch (IllegalArgumentException expected) {
+      assertTrue(expected.getMessage().contains("Unknown parameters"));
+    }
   }
 }

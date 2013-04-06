@@ -19,27 +19,31 @@ package org.apache.lucene.analysis.ru;
 
 import java.io.Reader;
 import java.io.StringReader;
-import java.util.Collections;
-import java.util.Map;
 
-import org.apache.lucene.analysis.BaseTokenStreamTestCase;
-import org.apache.lucene.analysis.Tokenizer;
+import org.apache.lucene.analysis.TokenStream;
+import org.apache.lucene.analysis.util.BaseTokenStreamFactoryTestCase;
 
 /**
  * Simple tests to ensure the Russian filter factories are working.
  */
-public class TestRussianFilters extends BaseTokenStreamTestCase {
+public class TestRussianFilters extends BaseTokenStreamFactoryTestCase {
   /**
    * Test RussianLetterTokenizerFactory
    */
   public void testTokenizer() throws Exception {
     Reader reader = new StringReader("Вместе с тем о силе электромагнитной 100");
-    RussianLetterTokenizerFactory factory = new RussianLetterTokenizerFactory();
-    factory.setLuceneMatchVersion(TEST_VERSION_CURRENT);
-    Map<String, String> args = Collections.emptyMap();
-    factory.init(args);
-    Tokenizer stream = factory.create(reader);
+    TokenStream stream = tokenizerFactory("RussianLetter").create(reader);
     assertTokenStreamContents(stream, new String[] {"Вместе", "с", "тем", "о",
         "силе", "электромагнитной", "100"});
+  }
+  
+  /** Test that bogus arguments result in exception */
+  public void testBogusArguments() throws Exception {
+    try {
+      tokenizerFactory("RussianLetter", "bogusArg", "bogusValue");
+      fail();
+    } catch (IllegalArgumentException expected) {
+      assertTrue(expected.getMessage().contains("Unknown parameters"));
+    }
   }
 }

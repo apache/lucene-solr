@@ -20,6 +20,7 @@ package org.apache.lucene.collation;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.Reader;
+import java.util.Map;
 
 import org.apache.lucene.analysis.TokenStream;
 import org.apache.lucene.analysis.util.*;
@@ -71,18 +72,29 @@ import com.ibm.icu.util.ULocale;
 @Deprecated
 public class ICUCollationKeyFilterFactory extends TokenFilterFactory implements MultiTermAwareComponent, ResourceLoaderAware {
   private Collator collator;
+  private final String custom;
+  private final String localeID;
+  private final String strength;
+  private final String decomposition;
 
-  public void inform(ResourceLoader loader) throws IOException {
-    String custom = args.get("custom");
-    String localeID = args.get("locale");
-    String strength = args.get("strength");
-    String decomposition = args.get("decomposition");
+  private final String alternate;
+  private final String caseLevel;
+  private final String caseFirst;
+  private final String numeric;
+  private final String variableTop;
+  
+  public ICUCollationKeyFilterFactory(Map<String,String> args) {
+    super(args);
+    custom = args.remove("custom");
+    localeID = args.remove("locale");
+    strength = args.remove("strength");
+    decomposition = args.remove("decomposition");
 
-    String alternate = args.get("alternate");
-    String caseLevel = args.get("caseLevel");
-    String caseFirst = args.get("caseFirst");
-    String numeric = args.get("numeric");
-    String variableTop = args.get("variableTop");
+    alternate = args.remove("alternate");
+    caseLevel = args.remove("caseLevel");
+    caseFirst = args.remove("caseFirst");
+    numeric = args.remove("numeric");
+    variableTop = args.remove("variableTop");
     
     if (custom == null && localeID == null)
       throw new IllegalArgumentException("Either custom or locale is required.");
@@ -92,6 +104,12 @@ public class ICUCollationKeyFilterFactory extends TokenFilterFactory implements 
           + "To tailor rules for a built-in language, see the javadocs for RuleBasedCollator. "
           + "Then save the entire customized ruleset to a file, and use with the custom parameter");
     
+    if (!args.isEmpty()) {
+      throw new IllegalArgumentException("Unknown parameters: " + args);
+    }
+  }
+
+  public void inform(ResourceLoader loader) throws IOException {
     if (localeID != null) { 
       // create from a system collator, based on Locale.
       collator = createFromLocale(localeID);

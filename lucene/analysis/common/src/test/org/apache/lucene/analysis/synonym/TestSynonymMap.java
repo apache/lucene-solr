@@ -247,12 +247,11 @@ public class TestSynonymMap extends LuceneTestCase {
     SlowSynonymMap synMap;
 
     // prepare bi-gram tokenizer factory
-    TokenizerFactory tf = new NGramTokenizerFactory();
     Map<String, String> args = new HashMap<String, String>();
     args.put("minGramSize","2");
     args.put("maxGramSize","2");
-    tf.init( args );
-
+    TokenizerFactory tf = new NGramTokenizerFactory(args);
+    
     // (ab)->(bc)->(cd)->[ef][fg][gh]
     List<String> rules = new ArrayList<String>();
     rules.add( "abcd=>efgh" );
@@ -270,12 +269,16 @@ public class TestSynonymMap extends LuceneTestCase {
   public void testLoadRules() throws Exception {
     Map<String, String> args = new HashMap<String, String>();
     args.put( "synonyms", "something.txt" );
-    SlowSynonymFilterFactory ff = new SlowSynonymFilterFactory();
-    ff.init(args);
+    SlowSynonymFilterFactory ff = new SlowSynonymFilterFactory(args);
     ff.inform( new ResourceLoader() {
 
       @Override
       public <T> T newInstance(String cname, Class<T> expectedType) {
+        throw new RuntimeException("stub");
+      }
+
+      @Override
+      public <T> Class<? extends T> findClass(String cname, Class<T> expectedType) {
         throw new RuntimeException("stub");
       }
 

@@ -45,7 +45,7 @@ import org.xml.sax.InputSource;
  *    to the stream. defaults to false.
  * </ul>
  * <p>
- * <pre class="prettyprint" >
+ * <pre class="prettyprint">
  * &lt;fieldType name="text_hyphncomp" class="solr.TextField" positionIncrementGap="100"&gt;
  *   &lt;analyzer&gt;
  *     &lt;tokenizer class="solr.WhitespaceTokenizerFactory"/&gt;
@@ -59,30 +59,32 @@ import org.xml.sax.InputSource;
 public class HyphenationCompoundWordTokenFilterFactory extends TokenFilterFactory implements ResourceLoaderAware {
   private CharArraySet dictionary;
   private HyphenationTree hyphenator;
-  private String dictFile;
-  private String hypFile;
-  private String encoding;
-  private int minWordSize;
-  private int minSubwordSize;
-  private int maxSubwordSize;
-  private boolean onlyLongestMatch;
+  private final String dictFile;
+  private final String hypFile;
+  private final String encoding;
+  private final int minWordSize;
+  private final int minSubwordSize;
+  private final int maxSubwordSize;
+  private final boolean onlyLongestMatch;
   
-  @Override
-  public void init(Map<String, String> args) {
-    super.init(args);
+  /** Creates a new HyphenationCompoundWordTokenFilterFactory */
+  public HyphenationCompoundWordTokenFilterFactory(Map<String, String> args) {
+    super(args);
     assureMatchVersion();
-    dictFile = args.get("dictionary");
-    if (args.containsKey("encoding"))
-      encoding = args.get("encoding");
-    hypFile = args.get("hyphenator");
+    dictFile = args.remove("dictionary");
+    encoding = args.remove("encoding");
+    hypFile = args.remove("hyphenator");
     if (null == hypFile) {
       throw new IllegalArgumentException("Missing required parameter: hyphenator");
     }
 
-    minWordSize = getInt("minWordSize", CompoundWordTokenFilterBase.DEFAULT_MIN_WORD_SIZE);
-    minSubwordSize = getInt("minSubwordSize", CompoundWordTokenFilterBase.DEFAULT_MIN_SUBWORD_SIZE);
-    maxSubwordSize = getInt("maxSubwordSize", CompoundWordTokenFilterBase.DEFAULT_MAX_SUBWORD_SIZE);
-    onlyLongestMatch = getBoolean("onlyLongestMatch", false);
+    minWordSize = getInt(args, "minWordSize", CompoundWordTokenFilterBase.DEFAULT_MIN_WORD_SIZE);
+    minSubwordSize = getInt(args, "minSubwordSize", CompoundWordTokenFilterBase.DEFAULT_MIN_SUBWORD_SIZE);
+    maxSubwordSize = getInt(args, "maxSubwordSize", CompoundWordTokenFilterBase.DEFAULT_MAX_SUBWORD_SIZE);
+    onlyLongestMatch = getBoolean(args, "onlyLongestMatch", false);
+    if (!args.isEmpty()) {
+      throw new IllegalArgumentException("Unknown parameters: " + args);
+    }
   }
   
   @Override
