@@ -229,6 +229,9 @@ Bug Fixes
   flag.  It affects SpatialRecursivePrefixTreeStrategy on non-point indexed
   shapes, as of Lucene 4.2. (David Smiley)
 
+* LUCENE-4913: FacetResultNode.ordinal was always 0 when all children
+  are returned. (Mike McCandless)
+
 Documentation
 
 * LUCENE-4841: Added example SimpleSortedSetFacetsExample to show how

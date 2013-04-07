@@ -304,4 +304,49 @@ public class TestFacetsCollector extends FacetTestCase {
     IOUtils.close(taxo, taxoDir, r, indexDir);
   }
   
+  @Test
+  public void testParentOrdinal() throws Exception {
+    // LUCENE-4913: root ordinal was always 0 when all children were requested
+    Directory indexDir = newDirectory();
+    Directory taxoDir = newDirectory();
+    
+    TaxonomyWriter taxonomyWriter = new DirectoryTaxonomyWriter(taxoDir);
+    IndexWriter iw = new IndexWriter(indexDir, newIndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer(random())));
+    
+    FacetFields facetFields = new FacetFields(taxonomyWriter);
+    Document doc = new Document();
+    facetFields.addFields(doc, Arrays.asList(new CategoryPath("a/1", '/')));
+    iw.addDocument(doc);
+    taxonomyWriter.close();
+    iw.close();
+    
+    DirectoryReader r = DirectoryReader.open(indexDir);
+    DirectoryTaxonomyReader taxo = new DirectoryTaxonomyReader(taxoDir);
+
+    // assert IntFacetResultHandler
+    FacetSearchParams fsp = new FacetSearchParams(new CountFacetRequest(new CategoryPath("a"), 10));
+    FacetsAccumulator fa = random().nextBoolean() ? new FacetsAccumulator(fsp, r, taxo) : new StandardFacetsAccumulator(fsp, r, taxo);
+    FacetsCollector fc = FacetsCollector.create(fa);
+    new IndexSearcher(r).search(new MatchAllDocsQuery(), fc);
+    assertTrue("invalid ordinal for child node: 0", 0 != fc.getFacetResults().get(0).getFacetResultNode().subResults.get(0).ordinal);
+    
+    // assert IntFacetResultHandler
+    fsp = new FacetSearchParams(new SumScoreFacetRequest(new CategoryPath("a"), 10));
+    if (random().nextBoolean()) {
+      fa = new FacetsAccumulator(fsp, r, taxo) {
+        @Override
+        public FacetsAggregator getAggregator() {
+          return new SumScoreFacetsAggregator();
+        }
+      };
+    } else {
+      fa = new StandardFacetsAccumulator(fsp, r, taxo);
+    }
+    fc = FacetsCollector.create(fa);
+    new IndexSearcher(r).search(new MatchAllDocsQuery(), fc);
+    assertTrue("invalid ordinal for child node: 0", 0 != fc.getFacetResults().get(0).getFacetResultNode().subResults.get(0).ordinal);
+    
+    IOUtils.close(taxo, taxoDir, r, indexDir);
+  }
+  
 }
