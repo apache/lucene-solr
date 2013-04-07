@@ -225,6 +225,10 @@ Bug Fixes
 * LUCENE-4877: Throw exception for invalid arguments in analysis factories.
   (Steve Rowe, Uwe Schindler, Robert Muir)
 
+* LUCENE-4914: SpatialPrefixTree's Node/Cell.reset() forgot to reset the 'leaf'
+  flag.  It affects SpatialRecursivePrefixTreeStrategy on non-point indexed
+  shapes, as of Lucene 4.2. (David Smiley)
+
 Documentation
 
 * LUCENE-4841: Added example SimpleSortedSetFacetsExample to show how
