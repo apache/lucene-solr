@@ -203,7 +203,7 @@ public class TestDemoFacets extends FacetTestCase {
     FacetSearchParams fsp = new FacetSearchParams(fip,
                                                   new CountFacetRequest(new CategoryPath("a", '/'), 10));
 
-    // Aggregatses the facet counts:
+    // Aggregate the facet counts:
     FacetsCollector c = FacetsCollector.create(fsp, searcher.getIndexReader(), taxoReader);
 
     // MatchAllDocsQuery is for "browsing" (counts facets
@@ -214,6 +214,11 @@ public class TestDemoFacets extends FacetTestCase {
     List<FacetResult> results = c.getFacetResults();
     assertEquals(1, results.size());
     assertEquals(1, (int) results.get(0).getFacetResultNode().value);
+
+    // LUCENE-4913:
+    for(FacetResultNode childNode : results.get(0).getFacetResultNode().subResults) {
+      assertTrue(childNode.ordinal != 0);
+    }
 
     searcher.getIndexReader().close();
     taxoReader.close();
