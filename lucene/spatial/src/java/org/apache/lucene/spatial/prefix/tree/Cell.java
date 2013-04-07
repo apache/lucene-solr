@@ -91,6 +91,8 @@ public abstract class Cell implements Comparable<Cell> {
     if (bytes[b_off + b_len - 1] == LEAF_BYTE) {
       b_len--;
       setLeaf();
+    } else {
+      leaf = false;
     }
   }
 
