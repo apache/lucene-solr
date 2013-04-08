@@ -486,7 +486,7 @@ public class SolrDispatchFilter implements Filter
   
   private String getRemotCoreUrl(CoreContainer cores, String collectionName, String origCorename) {
     ClusterState clusterState = cores.getZkController().getClusterState();
-    Collection<Slice> slices = clusterState.getSlices(collectionName);
+    Collection<Slice> slices = clusterState.getActiveSlices(collectionName);
     boolean byCoreName = false;
     if (slices == null) {
       // look by core name
@@ -494,7 +494,7 @@ public class SolrDispatchFilter implements Filter
       Set<String> collections = clusterState.getCollections();
       for (String collection : collections) {
         slices = new ArrayList<Slice>();
-        slices.addAll(clusterState.getSlices(collection));
+        slices.addAll(clusterState.getActiveSlices(collection));
       }
     }
     
@@ -541,7 +541,7 @@ public class SolrDispatchFilter implements Filter
     ZkStateReader zkStateReader = cores.getZkController().getZkStateReader();
     
     ClusterState clusterState = zkStateReader.getClusterState();
-    Map<String,Slice> slices = clusterState.getSlicesMap(collection);
+    Map<String,Slice> slices = clusterState.getActiveSlicesMap(collection);
     if (slices == null) {
       return null;
     }

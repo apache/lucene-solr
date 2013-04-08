@@ -792,6 +792,13 @@ public final class ZkController {
 
       UpdateLog ulog = core.getUpdateHandler().getUpdateLog();
       if (!core.isReloaded() && ulog != null) {
+        // disable recovery in case shard is in construction state (for shard splits)
+        Slice slice = getClusterState().getSlice(collection, shardId);
+        if (Slice.CONSTRUCTION.equals(slice.getState())) {
+          core.getUpdateHandler().getUpdateLog().bufferUpdates();
+          publish(desc, ZkStateReader.ACTIVE);
+
+        } else  {
         Future<UpdateLog.RecoveryInfo> recoveryFuture = core.getUpdateHandler()
             .getUpdateLog().recoverFromLog();
         if (recoveryFuture != null) {
@@ -802,11 +809,12 @@ public final class ZkController {
         } else {
           log.info("No LogReplay needed for core="+core.getName() + " baseURL=" + baseUrl);
         }
-      }      
       boolean didRecovery = checkRecovery(coreName, desc, recoverReloadedCores, isLeader, cloudDesc,
           collection, coreZkNodeName, shardId, leaderProps, core, cc);
       if (!didRecovery) {
         publish(desc, ZkStateReader.ACTIVE);
+      }
+        }
       }
     } finally {
       if (core != null) {
@@ -817,7 +825,6 @@ public final class ZkController {
     
     // make sure we have an update cluster state right away
     zkStateReader.updateClusterState(true);
-
     return shardId;
   }
 
@@ -993,6 +1000,8 @@ public final class ZkController {
         ZkStateReader.ROLES_PROP, cd.getCloudDescriptor().getRoles(),
         ZkStateReader.NODE_NAME_PROP, getNodeName(),
         ZkStateReader.SHARD_ID_PROP, cd.getCloudDescriptor().getShardId(),
+        ZkStateReader.SHARD_RANGE_PROP, cd.getCloudDescriptor().getShardRange(),
+        ZkStateReader.SHARD_STATE_PROP, cd.getCloudDescriptor().getShardState(),
         ZkStateReader.COLLECTION_PROP, cd.getCloudDescriptor()
             .getCollectionName(),
         ZkStateReader.NUM_SHARDS_PROP, numShards != null ? numShards.toString()
@@ -1274,6 +1283,9 @@ public final class ZkController {
     // before becoming available, make sure we are not live and active
     // this also gets us our assigned shard id if it was not specified
     publish(cd, ZkStateReader.DOWN, false);
+    // shardState and shardRange are for one-time use only, thereafter the actual values in the Slice should be used
+    cd.getCloudDescriptor().setShardState(null);
+    cd.getCloudDescriptor().setShardRange(null);
     String coreNodeName = getCoreNodeName(cd);
     
     // make sure the node name is set on the descriptor

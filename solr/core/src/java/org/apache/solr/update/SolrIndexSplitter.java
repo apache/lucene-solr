@@ -28,6 +28,7 @@ import org.apache.lucene.index.Terms;
 import org.apache.lucene.index.TermsEnum;
 import org.apache.lucene.util.Bits;
 import org.apache.lucene.util.BytesRef;
+import org.apache.lucene.util.CharsRef;
 import org.apache.lucene.util.IOUtils;
 import org.apache.lucene.util.OpenBitSet;
 import org.apache.solr.common.cloud.DocRouter;
@@ -149,8 +150,10 @@ public class SolrIndexSplitter {
 
       // figure out the hash for the term
       // TODO: hook in custom hashes (or store hashes)
-      int hash = Hash.murmurhash3_x86_32(term.bytes, term.offset, term.length, 0);
-
+      // TODO: performance implications of using indexedToReadable?
+      CharsRef ref = new CharsRef(term.length);
+      ref = field.getType().indexedToReadable(term, ref);
+      int hash = Hash.murmurhash3_x86_32(ref, ref.offset, ref.length, 0);
       docsEnum = termsEnum.docs(liveDocs, docsEnum, DocsEnum.FLAG_NONE);
       for (;;) {
         int doc = docsEnum.nextDoc();

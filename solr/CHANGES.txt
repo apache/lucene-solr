@@ -129,6 +129,9 @@ New Features
   and add additional configuration parameters. See the javadocs for more details and
   examples. (Robert Muir)
 
+* SOLR-3755: A new collections api to add additional shards dynamically by splitting
+  existing shards. (yonik, Anshum Gupta, shalin)
+
 Bug Fixes
 ----------------------
 

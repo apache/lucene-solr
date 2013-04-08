@@ -744,7 +744,7 @@ public class DirectUpdateHandler2 extends UpdateHandler implements SolrCoreState
 
   @Override
   public void split(SplitIndexCommand cmd) throws IOException {
-    // TODO: do a commit first?
+    commit(new CommitUpdateCommand(cmd.req, false));
     SolrIndexSplitter splitter = new SolrIndexSplitter(cmd);
     splitter.split();
   }

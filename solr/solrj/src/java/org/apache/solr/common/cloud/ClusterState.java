@@ -115,16 +115,22 @@ public class ClusterState implements JSONWriter.Writable {
     return coll.getSlicesMap();
   }
   
-  public Map<String, Slice> getAllSlicesMap(String collection) {
+  public Map<String, Slice> getActiveSlicesMap(String collection) {
     DocCollection coll = collectionStates.get(collection);
     if (coll == null) return null;
-    return coll.getAllSlicesMap();
+    return coll.getActiveSlicesMap();
   }
 
   public Collection<Slice> getSlices(String collection) {
     DocCollection coll = collectionStates.get(collection);
     if (coll == null) return null;
     return coll.getSlices();
+  }
+
+  public Collection<Slice> getActiveSlices(String collection) {
+    DocCollection coll = collectionStates.get(collection);
+    if (coll == null) return null;
+    return coll.getActiveSlices();
   }
 
   /**

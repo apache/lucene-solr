@@ -19,6 +19,7 @@ package org.apache.solr.cloud;
 
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.List;
@@ -27,6 +28,7 @@ import java.util.Map.Entry;
 import java.util.Set;
 
 import org.apache.solr.common.SolrException;
+import org.apache.solr.common.SolrException.ErrorCode;
 import org.apache.solr.common.cloud.ClosableThread;
 import org.apache.solr.common.cloud.ClusterState;
 import org.apache.solr.common.cloud.DocCollection;
@@ -190,6 +192,10 @@ public class Overseer {
             message.getStr(ZkStateReader.SHARD_ID_PROP),
             sb.length() > 0 ? sb.toString() : null);
 
+      } else if ("createshard".equals(operation)) {
+        clusterState = createShard(clusterState, message);
+      } else if ("updateshardstate".equals(operation))  {
+        clusterState = updateShardState(clusterState, message);
       } else {
         throw new RuntimeException("unknown operation:" + operation
             + " contents:" + message.getProperties());
@@ -197,6 +203,46 @@ public class Overseer {
       return clusterState;
     }
       
+    private ClusterState updateShardState(ClusterState clusterState, ZkNodeProps message) {
+      String collection = message.getStr(ZkStateReader.COLLECTION_PROP);
+      log.info("Update shard state invoked for collection: " + collection);
+      for (String key : message.keySet()) {
+        if (ZkStateReader.COLLECTION_PROP.equals(key)) continue;
+        if (QUEUE_OPERATION.equals(key)) continue;
+
+        Slice slice = clusterState.getSlice(collection, key);
+        if (slice == null)  {
+          throw new RuntimeException("Overseer.updateShardState unknown collection: " + collection + " slice: " + key);
+        }
+        log.info("Update shard state " + key + " to " + message.getStr(key));
+        Map<String, Object> props = slice.shallowCopy();
+        props.put(Slice.STATE, message.getStr(key));
+        Slice newSlice = new Slice(slice.getName(), slice.getReplicasCopy(), props);
+        clusterState = updateSlice(clusterState, collection, newSlice);
+      }
+
+      return clusterState;
+    }
+
+    private ClusterState createShard(ClusterState clusterState, ZkNodeProps message) {
+      String collection = message.getStr(ZkStateReader.COLLECTION_PROP);
+      String shardId = message.getStr(ZkStateReader.SHARD_ID_PROP);
+      Slice slice = clusterState.getSlice(collection, shardId);
+      if (slice == null)  {
+        Map<String, Replica> replicas = Collections.EMPTY_MAP;
+        Map<String, Object> sliceProps = new HashMap<String, Object>();
+        String shardRange = message.getStr(ZkStateReader.SHARD_RANGE_PROP);
+        String shardState = message.getStr(ZkStateReader.SHARD_STATE_PROP);
+        sliceProps.put(Slice.RANGE, shardRange);
+        sliceProps.put(Slice.STATE, shardState);
+        slice = new Slice(shardId, replicas, sliceProps);
+        clusterState = updateSlice(clusterState, collection, slice);
+      } else  {
+        log.error("Unable to create Shard: " + shardId + " because it already exists in collection: " + collection);
+      }
+      return clusterState;
+    }
+
       private boolean amILeader() {
         try {
           ZkNodeProps props = ZkNodeProps.load(zkClient.getData("/overseer_elect/leader", null, null, true));
@@ -211,6 +257,7 @@ public class Overseer {
         log.info("According to ZK I (id=" + myId + ") am no longer a leader.");
         return false;
       }
+    
       /**
        * Try to assign core to the cluster. 
        */
@@ -247,15 +294,24 @@ public class Overseer {
             log.info("Collection already exists with " + ZkStateReader.NUM_SHARDS_PROP + "=" + numShards);
           }
           sliceName = AssignShard.assignShard(collection, state, numShards);
-          log.info("Assigning new node to shard shard=" + sliceName);
+          log.info("Assigning new node to shard=" + sliceName);
         }
 
         Slice slice = state.getSlice(collection, sliceName);
+        
         Map<String,Object> replicaProps = new LinkedHashMap<String,Object>();
 
         replicaProps.putAll(message.getProperties());
         // System.out.println("########## UPDATE MESSAGE: " + JSONUtil.toJSON(message));
         if (slice != null) {
+          String sliceState = slice.getState();
+          
+          // throw an exception if the slice is not yet active.
+
+          //if(!sliceState.equals(Slice.ACTIVE)) {
+          //  throw new SolrException(ErrorCode.BAD_REQUEST, "Can not assign core to a non-active slice [" + slice.getName() + "]");
+          //}
+          
           Replica oldReplica = slice.getReplicasMap().get(coreNodeName);
           if (oldReplica != null && oldReplica.containsKey(ZkStateReader.LEADER_PROP)) {
             replicaProps.put(ZkStateReader.LEADER_PROP, oldReplica.get(ZkStateReader.LEADER_PROP));
@@ -278,6 +334,9 @@ public class Overseer {
             replicaProps.remove(removeKey);
           }
           replicaProps.remove(ZkStateReader.CORE_NODE_NAME_PROP);
+          // remove shard specific properties
+          String shardRange = (String) replicaProps.remove(ZkStateReader.SHARD_RANGE_PROP);
+          String shardState = (String) replicaProps.remove(ZkStateReader.SHARD_STATE_PROP);
 
 
           Replica replica = new Replica(coreNodeName, replicaProps);
@@ -292,6 +351,9 @@ public class Overseer {
             replicas = slice.getReplicasCopy();
           } else {
             replicas = new HashMap<String, Replica>(1);
+            sliceProps = new HashMap<String, Object>();
+            sliceProps.put(Slice.RANGE, shardRange);
+            sliceProps.put(Slice.STATE, shardState);
           }
 
           replicas.put(replica.getName(), replica);
@@ -399,7 +461,11 @@ public class Overseer {
 
         Slice slice = slices.get(sliceName);
         if (slice == null) {
-          log.error("Could not mark leader for non existing slice:" + sliceName);
+          slice = coll.getSlice(sliceName);
+        }
+
+        if (slice == null) {
+          log.error("Could not mark leader for non existing/active slice:" + sliceName);
           return state;
         } else {
           // TODO: consider just putting the leader property on the shard, not on individual replicas
