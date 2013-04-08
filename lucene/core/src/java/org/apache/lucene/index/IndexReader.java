@@ -178,7 +178,7 @@ public abstract class IndexReader implements Closeable {
    * and returns <code>true</code> iff the refCount was
    * successfully incremented, otherwise <code>false</code>.
    * If this method returns <code>false</code> the reader is either
-   * already closed or is currently been closed. Either way this
+   * already closed or is currently being closed. Either way this
    * reader instance shouldn't be used by an application unless
    * <code>true</code> is returned.
    * <p>
