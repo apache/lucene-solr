@@ -55,12 +55,14 @@ public class SpatialOpRecursivePrefixTreeTest extends StrategyTestCase {
     deleteAll();
   }
 
-  public void mySetup() throws IOException {
+  public void mySetup(int maxLevels) throws IOException {
     //non-geospatial makes this test a little easier (in gridSnap), and using boundary values 2^X raises
     // the prospect of edge conditions we want to test, plus makes for simpler numbers (no decimals).
     this.ctx = new SpatialContext(false, null, new RectangleImpl(0, 256, -128, 128, null));
     //A fairly shallow grid, and default 2.5% distErrPct
-    this.grid = new QuadPrefixTree(ctx, randomIntBetween(1, 8));
+    if (maxLevels == -1)
+      maxLevels = randomIntBetween(1, 8);
+    this.grid = new QuadPrefixTree(ctx, maxLevels);
     this.strategy = new RecursivePrefixTreeStrategy(grid, getClass().getSimpleName());
     //((PrefixTreeStrategy) strategy).setDistErrPct(0);//fully precise to grid
 
@@ -70,30 +72,27 @@ public class SpatialOpRecursivePrefixTreeTest extends StrategyTestCase {
   @Test
   @Repeat(iterations = 10)
   public void testIntersects() throws IOException {
-    mySetup();
+    mySetup(-1);
     doTest(SpatialOperation.Intersects);
   }
 
   @Test
   @Repeat(iterations = 10)
   public void testWithin() throws IOException {
-    mySetup();
+    mySetup(-1);
     doTest(SpatialOperation.IsWithin);
   }
 
   @Test
   @Repeat(iterations = 10)
   public void testContains() throws IOException {
-    mySetup();
+    mySetup(-1);
     doTest(SpatialOperation.Contains);
   }
 
   @Test
   public void testWithinDisjointParts() throws IOException {
-    this.ctx = new SpatialContext(false, null, new RectangleImpl(0, 256, -128, 128, null));
-    //A fairly shallow grid, and default 2.5% distErrPct
-    this.grid = new QuadPrefixTree(ctx, 7);
-    this.strategy = new RecursivePrefixTreeStrategy(grid, getClass().getSimpleName());
+    mySetup(7);
 
     //one shape comprised of two parts, quite separated apart
     adoc("0", new ShapePair(ctx.makeRectangle(0, 10, -120, -100), ctx.makeRectangle(220, 240, 110, 125)));
@@ -102,7 +101,30 @@ public class SpatialOpRecursivePrefixTreeTest extends StrategyTestCase {
     Query query = strategy.makeQuery(new SpatialArgs(SpatialOperation.IsWithin, ctx.makeRectangle(210, 245, 105, 128)));
     SearchResults searchResults = executeQuery(query, 1);
     //we shouldn't find it because it's not completely within
-    assertTrue(searchResults.numFound==0);
+    assertTrue(searchResults.numFound == 0);
+  }
+
+  @Test /** LUCENE-4916 */
+  public void testWithinLeafApproxRule() throws IOException {
+    mySetup(2);//4x4 grid
+    //indexed shape will simplify to entire right half (2 top cells)
+    adoc("0", ctx.makeRectangle(192, 204, -128, 128));
+    commit();
+
+    ((RecursivePrefixTreeStrategy) strategy).setPrefixGridScanLevel(randomInt(2));
+
+    //query does NOT contain it; both indexed cells are leaves to the query, and
+    // when expanded to the full grid cells, the top one's top row is disjoint
+    // from the query and thus not a match.
+    assertTrue(executeQuery(strategy.makeQuery(
+        new SpatialArgs(SpatialOperation.IsWithin, ctx.makeRectangle(38, 192, -72, 56))
+    ), 1).numFound==0);//no-match
+
+    //this time the rect is a little bigger and is considered a match. It's a
+    // an acceptable false-positive because of the grid approximation.
+    assertTrue(executeQuery(strategy.makeQuery(
+        new SpatialArgs(SpatialOperation.IsWithin, ctx.makeRectangle(38, 192, -72, 80))
+    ), 1).numFound==1);//match
   }
 
   private void doTest(final SpatialOperation operation) throws IOException {
