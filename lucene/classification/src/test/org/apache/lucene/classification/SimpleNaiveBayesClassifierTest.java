@@ -19,6 +19,7 @@ package org.apache.lucene.classification;
 import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.analysis.MockAnalyzer;
 import org.apache.lucene.analysis.ngram.EdgeNGramTokenizer;
+import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.LuceneTestCase;
 import org.junit.Test;
 
@@ -29,16 +30,16 @@ import java.io.Reader;
  */
 // TODO : eventually remove this if / when fallback methods exist for all un-supportable codec methods (see LUCENE-4872)
 @LuceneTestCase.SuppressCodecs("Lucene3x")
-public class SimpleNaiveBayesClassifierTest extends ClassificationTestBase {
+public class SimpleNaiveBayesClassifierTest extends ClassificationTestBase<BytesRef> {
 
   @Test
   public void testBasicUsage() throws Exception {
-    checkCorrectClassification(new SimpleNaiveBayesClassifier(), new MockAnalyzer(random()));
+    checkCorrectClassification(new SimpleNaiveBayesClassifier(), new BytesRef("technology"), new MockAnalyzer(random()), categoryFieldName);
   }
 
   @Test
   public void testNGramUsage() throws Exception {
-    checkCorrectClassification(new SimpleNaiveBayesClassifier(), new NGramAnalyzer());
+    checkCorrectClassification(new SimpleNaiveBayesClassifier(), new BytesRef("technology"), new NGramAnalyzer(), categoryFieldName);
   }
 
   private class NGramAnalyzer extends Analyzer {

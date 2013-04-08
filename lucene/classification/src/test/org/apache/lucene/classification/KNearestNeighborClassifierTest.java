@@ -17,16 +17,17 @@
 package org.apache.lucene.classification;
 
 import org.apache.lucene.analysis.MockAnalyzer;
+import org.apache.lucene.util.BytesRef;
 import org.junit.Test;
 
 /**
  * Testcase for {@link KNearestNeighborClassifier}
  */
-public class KNearestNeighborClassifierTest extends ClassificationTestBase {
+public class KNearestNeighborClassifierTest extends ClassificationTestBase<BytesRef> {
 
   @Test
   public void testBasicUsage() throws Exception {
-    checkCorrectClassification(new KNearestNeighborClassifier(1), new MockAnalyzer(random()));
+     checkCorrectClassification(new KNearestNeighborClassifier(1), new BytesRef("technology"), new MockAnalyzer(random()), categoryFieldName);
   }
 
 }

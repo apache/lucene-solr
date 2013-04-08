@@ -103,7 +103,7 @@ public class SimpleNaiveBayesClassifier implements Classifier<BytesRef> {
   @Override
   public ClassificationResult<BytesRef> assignClass(String inputDocument) throws IOException {
     if (atomicReader == null) {
-      throw new RuntimeException("need to train the classifier first");
+      throw new IOException("You must first call Classifier#train first");
     }
     double max = 0d;
     BytesRef foundClass = new BytesRef();
