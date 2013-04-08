@@ -32,6 +32,7 @@ import org.apache.lucene.util.Bits;
 import org.apache.lucene.util.FixedBitSet;
 
 import java.io.IOException;
+import java.util.Collection;
 import java.util.Iterator;
 
 /**
@@ -160,18 +161,41 @@ public class WithinPrefixTreeFilter extends AbstractVisitingPrefixTreeFilter {
 
       @Override
       protected void visitLeaf(Cell cell) throws IOException {
-        SpatialRelation relation = visitRelation;
+        //visitRelation is declared as a field, populated by visit() so we don't recompute it
+        assert detailLevel != cell.getLevel();
         assert visitRelation == cell.getShape().relate(queryShape);
-        if (relation.intersects()) {
+        if (allCellsIntersectQuery(cell, visitRelation))
           collectDocs(inside);
-        } else {
+        else
           collectDocs(outside);
+      }
+
+      /** Returns true if the provided cell, and all its sub-cells down to
+       * detailLevel all intersect the queryShape.
+       */
+      private boolean allCellsIntersectQuery(Cell cell, SpatialRelation relate/*cell to query*/) {
+        if (relate == null)
+          relate = cell.getShape().relate(queryShape);
+        if (cell.getLevel() == detailLevel)
+          return relate.intersects();
+        if (relate == SpatialRelation.WITHIN)
+          return true;
+        if (relate == SpatialRelation.DISJOINT)
+          return false;
+        // Note: Generating all these cells just to determine intersection is not ideal.
+        // It was easy to implement but could be optimized. For example if the docs
+        // in question are already marked in the 'outside' bitset then it can be avoided.
+        Collection<Cell> subCells = cell.getSubCells(null);
+        for (Cell subCell : subCells) {
+          if (!allCellsIntersectQuery(subCell, null))//recursion
+            return false;
         }
+        return true;
       }
 
       @Override
       protected void visitScanned(Cell cell) throws IOException {
-        if (queryShape.relate(cell.getShape()).intersects()) {
+        if (allCellsIntersectQuery(cell, null)) {
           collectDocs(inside);
         } else {
           collectDocs(outside);

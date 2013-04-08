@@ -52,7 +52,7 @@ public abstract class AbstractVisitingPrefixTreeFilter extends AbstractPrefixTre
   public AbstractVisitingPrefixTreeFilter(Shape queryShape, String fieldName, SpatialPrefixTree grid,
                                           int detailLevel, int prefixGridScanLevel) {
     super(queryShape, fieldName, grid, detailLevel);
-    this.prefixGridScanLevel = Math.max(1, Math.min(prefixGridScanLevel, grid.getMaxLevels() - 1));
+    this.prefixGridScanLevel = Math.max(0, Math.min(prefixGridScanLevel, grid.getMaxLevels() - 1));
     assert detailLevel <= grid.getMaxLevels();
   }
 
