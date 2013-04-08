@@ -1138,10 +1138,13 @@ public class CoreContainer
       }
     }
   }
-  /** Gets a core by name and increase its refcount.
+  /** 
+   * Gets a core by name and increase its refcount.
+   *
    * @see SolrCore#close() 
    * @param name the core name
-   * @return the core if found
+   * @return the core if found, null if a SolrCore by this name does not exist
+   * @exception SolrException if a SolrCore with this name failed to be initialized
    */
   public SolrCore getCore(String name) {
 
@@ -1157,6 +1160,16 @@ public class CoreContainer
     // OK, it's not presently in any list, is it in the list of dynamic cores but not loaded yet? If so, load it.
     CoreDescriptor desc = coreMaps.getDynamicDescriptor(name);
     if (desc == null) { //Nope, no transient core with this name
+      
+      // if there was an error initalizing this core, throw a 500
+      // error with the details for clients attempting to access it.
+      Exception e = getCoreInitFailures().get(name);
+      if (null != e) {
+        throw new SolrException(ErrorCode.SERVER_ERROR, "SolrCore '" + name +
+                                "' is not available due to init failure: " +
+                                e.getMessage(), e);
+      }
+      // otherwise the user is simply asking for something that doesn't exist.
       return null;
     }
 

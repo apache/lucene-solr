@@ -200,6 +200,12 @@ Other Changes
   Existing solr.xml files that do not have these options explicitly specified 
   should be updated accordingly.  (hossman)
 
+* SOLR-4672: Requests attempting to use SolrCores which had init failures 
+  (that would be reported by CoreAdmin STATUS requests) now result in 500 
+  error responses with the details about the init failure, instead of 404 
+  error responses.  (hossman)
+  
+
 ==================  4.2.1 ==================
 
 Versions of Major Components
