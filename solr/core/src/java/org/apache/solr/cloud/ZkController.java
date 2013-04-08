@@ -795,25 +795,23 @@ public final class ZkController {
         // disable recovery in case shard is in construction state (for shard splits)
         Slice slice = getClusterState().getSlice(collection, shardId);
         if (Slice.CONSTRUCTION.equals(slice.getState())) {
-          core.getUpdateHandler().getUpdateLog().bufferUpdates();
           publish(desc, ZkStateReader.ACTIVE);
-
-        } else  {
-        Future<UpdateLog.RecoveryInfo> recoveryFuture = core.getUpdateHandler()
-            .getUpdateLog().recoverFromLog();
-        if (recoveryFuture != null) {
-          recoveryFuture.get(); // NOTE: this could potentially block for
-          // minutes or more!
-          // TODO: public as recovering in the mean time?
-          // TODO: in the future we could do peersync in parallel with recoverFromLog
         } else {
-          log.info("No LogReplay needed for core="+core.getName() + " baseURL=" + baseUrl);
-        }
-      boolean didRecovery = checkRecovery(coreName, desc, recoverReloadedCores, isLeader, cloudDesc,
-          collection, coreZkNodeName, shardId, leaderProps, core, cc);
-      if (!didRecovery) {
-        publish(desc, ZkStateReader.ACTIVE);
-      }
+          Future<UpdateLog.RecoveryInfo> recoveryFuture = core.getUpdateHandler()
+              .getUpdateLog().recoverFromLog();
+          if (recoveryFuture != null) {
+            recoveryFuture.get(); // NOTE: this could potentially block for
+            // minutes or more!
+            // TODO: public as recovering in the mean time?
+            // TODO: in the future we could do peersync in parallel with recoverFromLog
+          } else {
+            log.info("No LogReplay needed for core=" + core.getName() + " baseURL=" + baseUrl);
+          }
+          boolean didRecovery = checkRecovery(coreName, desc, recoverReloadedCores, isLeader, cloudDesc,
+              collection, coreZkNodeName, shardId, leaderProps, core, cc);
+          if (!didRecovery) {
+            publish(desc, ZkStateReader.ACTIVE);
+          }
         }
       }
     } finally {
@@ -1279,13 +1277,17 @@ public final class ZkController {
     downloadFromZK(zkClient, ZkController.CONFIGS_ZKNODE + "/" + configName, dir);
   }
 
-  public void preRegister(CoreDescriptor cd) throws KeeperException, InterruptedException {
+  public void preRegister(SolrCore core) throws KeeperException, InterruptedException {
+    CoreDescriptor cd = core.getCoreDescriptor();
     // before becoming available, make sure we are not live and active
     // this also gets us our assigned shard id if it was not specified
     publish(cd, ZkStateReader.DOWN, false);
     // shardState and shardRange are for one-time use only, thereafter the actual values in the Slice should be used
-    cd.getCloudDescriptor().setShardState(null);
-    cd.getCloudDescriptor().setShardRange(null);
+    if (Slice.CONSTRUCTION.equals(cd.getCloudDescriptor().getShardState())) {
+      cd.getCloudDescriptor().setShardState(null);
+      cd.getCloudDescriptor().setShardRange(null);
+      core.getUpdateHandler().getUpdateLog().bufferUpdates();
+    }
     String coreNodeName = getCoreNodeName(cd);
     
     // make sure the node name is set on the descriptor
