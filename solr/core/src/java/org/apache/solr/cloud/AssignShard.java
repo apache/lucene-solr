@@ -39,7 +39,7 @@ public class AssignShard {
       numShards = 1;
     }
     String returnShardId = null;
-    Map<String, Slice> sliceMap = state.getSlicesMap(collection);
+    Map<String, Slice> sliceMap = state.getActiveSlicesMap(collection);
 
 
     // TODO: now that we create shards ahead of time, is this code needed?  Esp since hash ranges aren't assigned when creating via this method?

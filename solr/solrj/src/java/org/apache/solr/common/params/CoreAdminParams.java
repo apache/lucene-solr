@@ -74,6 +74,16 @@ public interface CoreAdminParams
   /** The shard id in solr cloud */
   public final static String SHARD = "shard";
   
+  /** The shard range in solr cloud */
+  public final static String SHARD_RANGE = "shard.range";
+
+  /** The shard range in solr cloud */
+  public final static String SHARD_STATE = "shard.state";
+
+  /** The target core to which a split index should be written to
+   * Multiple targetCores can be specified by multiple targetCore parameters */
+  public final static String TARGET_CORE = "targetCore";
+  
   public static final String ROLES = "roles";
   
   public static final String CORE_NODE_NAME = "coreNodeName";
@@ -108,6 +118,7 @@ public interface CoreAdminParams
     REQUESTSYNCSHARD,
     CREATEALIAS,
     DELETEALIAS,
+    REQUESTAPPLYUPDATES,
     LOAD_ON_STARTUP,
     TRANSIENT;
     

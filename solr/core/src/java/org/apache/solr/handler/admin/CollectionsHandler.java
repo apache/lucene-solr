@@ -132,9 +132,13 @@ public class CollectionsHandler extends RequestHandlerBase {
         this.handleDeleteAliasAction(req, rsp);
         break;
       }
+        case SPLITSHARD:  {
+          this.handleSplitShardAction(req, rsp);
+          break;
+        }
+
       default: {
-        throw new SolrException(ErrorCode.BAD_REQUEST, "Unknown action: "
-            + action);
+          throw new RuntimeException("Unknown action: " + action);
       }
     }
 
@@ -275,6 +279,26 @@ public class CollectionsHandler extends RequestHandlerBase {
     ZkNodeProps m = new ZkNodeProps(props);
 
     handleResponse(OverseerCollectionProcessor.CREATECOLLECTION, m, rsp);
+  }
+
+  private void handleSplitShardAction(SolrQueryRequest req, SolrQueryResponse rsp) throws KeeperException, InterruptedException {
+    log.info("Splitting shard : " + req.getParamString());
+    String name = req.getParams().required().get("collection");
+    // TODO : add support for multiple shards
+    String shard = req.getParams().required().get("shard");
+    // TODO : add support for shard range
+
+    Map<String,Object> props = new HashMap<String,Object>();
+    props.put(Overseer.QUEUE_OPERATION, OverseerCollectionProcessor.SPLITSHARD);
+    props.put("collection", name);
+    props.put(ZkStateReader.SHARD_ID_PROP, shard);
+
+    ZkNodeProps m = new ZkNodeProps(props);
+
+    // todo remove this hack
+    DEFAULT_ZK_TIMEOUT *= 5;
+    handleResponse(OverseerCollectionProcessor.SPLITSHARD, m, rsp);
+    DEFAULT_ZK_TIMEOUT /= 5;
   }
 
   public static ModifiableSolrParams params(String... params) {

@@ -39,6 +39,7 @@ import org.apache.solr.common.SolrInputDocument;
 import org.apache.solr.common.SolrInputField;
 import org.apache.solr.common.cloud.ClusterState;
 import org.apache.solr.common.cloud.DocCollection;
+import org.apache.solr.common.cloud.DocRouter;
 import org.apache.solr.common.cloud.Replica;
 import org.apache.solr.common.cloud.Slice;
 import org.apache.solr.common.cloud.ZkCoreNodeProps;
@@ -137,6 +138,7 @@ public class DistributedUpdateProcessor extends UpdateRequestProcessor {
   // method in this update processor
   private boolean isLeader = true;
   private boolean forwardToLeader = false;
+  private boolean forwardToSubShard = false;
   private List<Node> nodes;
 
   private int numNodes;
@@ -239,8 +241,12 @@ public class DistributedUpdateProcessor extends UpdateRequestProcessor {
           List<ZkCoreNodeProps> replicaProps = zkController.getZkStateReader()
               .getReplicaProps(collection, shardId, coreNodeName,
                   coreName, null, ZkStateReader.DOWN);
+
+          nodes = addSubShardLeaders(coll, shardId, id, doc, nodes);
           if (replicaProps != null) {
+            if (nodes == null)  {
             nodes = new ArrayList<Node>(replicaProps.size());
+            }
             // check for test param that lets us miss replicas
             String[] skipList = req.getParams().getParams(TEST_DISTRIB_SKIP_SERVERS);
             Set<String> skipListSet = null;
@@ -280,16 +286,54 @@ public class DistributedUpdateProcessor extends UpdateRequestProcessor {
     return nodes;
   }
 
+  private List<Node> addSubShardLeaders(DocCollection coll, String shardId, String docId, SolrInputDocument doc, List<Node> nodes) {
+    Collection<Slice> allSlices = coll.getSlices();
+    for (Slice aslice : allSlices) {
+      if (Slice.CONSTRUCTION.equals(aslice.getState()))  {
+        DocRouter.Range myRange = coll.getSlice(shardId).getRange();
+        if (myRange == null) myRange = new DocRouter.Range(Integer.MIN_VALUE, Integer.MAX_VALUE);
+        boolean isSubset = aslice.getRange() != null && aslice.getRange().isSubsetOf(myRange);
+        if (isSubset &&
+            (docId == null // in case of deletes
+            || (docId != null && coll.getRouter().isTargetSlice(docId, doc, req.getParams(), aslice.getName(), coll)))) {
+          Replica sliceLeader = aslice.getLeader();
+          // slice leader can be null because node/shard is created zk before leader election
+          if (sliceLeader != null)  {
+            if (nodes == null) nodes = new ArrayList<Node>();
+            ZkCoreNodeProps nodeProps = new ZkCoreNodeProps(sliceLeader);
+            nodes.add(new StdNode(nodeProps));
+            forwardToSubShard = true;
+          }
+        }
+      }
+    }
+    return nodes;
+  }
 
   private void doDefensiveChecks(DistribPhase phase) {
     boolean isReplayOrPeersync = (updateCommand.getFlags() & (UpdateCommand.REPLAY | UpdateCommand.REPLAY)) != 0;
     if (isReplayOrPeersync) return;
 
     String from = req.getParams().get("distrib.from");
-    boolean localIsLeader = req.getCore().getCoreDescriptor().getCloudDescriptor().isLeader();
+    ClusterState clusterState = zkController.getClusterState();
+    CloudDescriptor cloudDescriptor = req.getCore().getCoreDescriptor().getCloudDescriptor();
+    Slice mySlice = clusterState.getSlice(collection, cloudDescriptor.getShardId());
+    boolean localIsLeader = cloudDescriptor.isLeader();
     if (DistribPhase.FROMLEADER == phase && localIsLeader && from != null) { // from will be null on log replay
+      String fromShard = req.getParams().get("distrib.from.parent");
+      if (fromShard != null)  {
+        // shard splitting case -- check ranges to see if we are a sub-shard
+        Slice fromSlice = zkController.getClusterState().getCollection(collection).getSlice(fromShard);
+        DocRouter.Range parentRange = fromSlice.getRange();
+        if (parentRange == null) parentRange = new DocRouter.Range(Integer.MIN_VALUE, Integer.MAX_VALUE);
+        if (mySlice.getRange() != null && !mySlice.getRange().isSubsetOf(parentRange)) {
+          throw new SolrException(ErrorCode.SERVICE_UNAVAILABLE,
+              "Request says it is coming from parent shard leader but parent hash range is not superset of my range");
+        }
+      } else  {
       log.error("Request says it is coming from leader, but we are the leader: " + req.getParamString());
       throw new SolrException(ErrorCode.SERVICE_UNAVAILABLE, "Request says it is coming from leader, but we are the leader");
+    }
     }
     
     if (isLeader && !localIsLeader) {
@@ -324,6 +368,8 @@ public class DistributedUpdateProcessor extends UpdateRequestProcessor {
           nodes.add(new StdNode(props));
         }
       }
+
+      nodes = addSubShardLeaders(zkController.getClusterState().getCollection(collection), shardId, null, null, nodes);
     } catch (InterruptedException e) {
       Thread.currentThread().interrupt();
       throw new ZooKeeperException(SolrException.ErrorCode.SERVER_ERROR, "",
@@ -366,6 +412,9 @@ public class DistributedUpdateProcessor extends UpdateRequestProcessor {
       if (isLeader) {
         params.set("distrib.from", ZkCoreNodeProps.getCoreUrl(
             zkController.getBaseUrl(), req.getCore().getName()));
+      }
+      if (forwardToSubShard)  {
+        params.set("distrib.from.parent", req.getCore().getCoreDescriptor().getCloudDescriptor().getShardId());
       }
 
       params.set("distrib.from", ZkCoreNodeProps.getCoreUrl(

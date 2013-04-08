@@ -25,6 +25,7 @@ import java.util.Map;
 import java.util.Set;
 
 import org.apache.solr.client.solrj.SolrResponse;
+import org.apache.solr.client.solrj.request.CoreAdminRequest;
 import org.apache.solr.cloud.DistributedQueue.QueueEvent;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.SolrException.ErrorCode;
@@ -32,6 +33,8 @@ import org.apache.solr.common.cloud.Aliases;
 import org.apache.solr.common.cloud.ClosableThread;
 import org.apache.solr.common.cloud.ClusterState;
 import org.apache.solr.common.cloud.DocCollection;
+import org.apache.solr.common.cloud.DocRouter;
+import org.apache.solr.common.cloud.PlainIdRouter;
 import org.apache.solr.common.cloud.Replica;
 import org.apache.solr.common.cloud.Slice;
 import org.apache.solr.common.cloud.ZkNodeProps;
@@ -70,6 +73,8 @@ public class OverseerCollectionProcessor implements Runnable, ClosableThread {
   
   public static final String DELETEALIAS = "deletealias";
   
+  public static final String SPLITSHARD = "splitshard";
+
   // TODO: use from Overseer?
   private static final String QUEUE_OPERATION = "operation";
   
@@ -171,6 +176,8 @@ public class OverseerCollectionProcessor implements Runnable, ClosableThread {
         createAlias(zkStateReader.getAliases(), message);
       } else if (DELETEALIAS.equals(operation)) {
         deleteAlias(zkStateReader.getAliases(), message);
+      } else if (SPLITSHARD.equals(operation))  {
+        splitShard(zkStateReader.getClusterState(), message, results);
       } else {
         throw new SolrException(ErrorCode.BAD_REQUEST, "Unknown operation:"
             + operation);
@@ -290,6 +297,265 @@ public class OverseerCollectionProcessor implements Runnable, ClosableThread {
     
   }
   
+  private boolean splitShard(ClusterState clusterState, ZkNodeProps message, NamedList results) {
+    log.info("Split shard invoked");
+    String collection = message.getStr("collection");
+    String slice = message.getStr(ZkStateReader.SHARD_ID_PROP);
+    Slice parentSlice = clusterState.getSlice(collection, slice);
+    
+    if (parentSlice == null) {
+      if(clusterState.getCollections().contains(collection)) {
+        throw new SolrException(ErrorCode.BAD_REQUEST, "No shard with the specified name exists: " + slice);
+      } else {
+        throw new SolrException(ErrorCode.BAD_REQUEST, "No collection with the specified name exists: " + collection);
+      }      
+    }
+    
+    // find the leader for the shard
+    Replica parentShardLeader = clusterState.getLeader(collection, slice);
+    
+    DocRouter.Range range = parentSlice.getRange();
+    if (range == null) {
+      range = new PlainIdRouter().fullRange();
+    }
+
+    // todo: fixed to two partitions?
+    // todo: accept the range as a param to api?
+    // todo: handle randomizing subshard name in case a shard with the same name already exists.
+    List<DocRouter.Range> subRanges = new PlainIdRouter().partitionRange(2, range);
+    try {
+      List<String> subSlices = new ArrayList<String>(subRanges.size());
+      List<String> subShardNames = new ArrayList<String>(subRanges.size());
+      String nodeName = parentShardLeader.getNodeName();
+      for (int i = 0; i < subRanges.size(); i++) {
+        String subSlice = slice + "_" + i;
+        subSlices.add(subSlice);
+        String subShardName = collection + "_" + subSlice + "_replica1";
+        subShardNames.add(subShardName);
+
+        Slice oSlice = clusterState.getSlice(collection, subSlice);
+        if (oSlice != null) {
+          if (Slice.ACTIVE.equals(oSlice.getState())) {
+            throw new SolrException(ErrorCode.BAD_REQUEST, "Sub-shard: " + subSlice + " exists in active state. Aborting split shard.");
+          } else if (Slice.CONSTRUCTION.equals(oSlice.getState()))  {
+            for (Replica replica : oSlice.getReplicas()) {
+              String core = replica.getStr("core");
+              log.info("Unloading core: " + core + " from node: " + replica.getNodeName());
+              ModifiableSolrParams params = new ModifiableSolrParams();
+              params.set(CoreAdminParams.ACTION, CoreAdminAction.UNLOAD.toString());
+              params.set(CoreAdminParams.CORE, core);
+              sendShardRequest(replica.getNodeName(), params);
+            }
+          }
+        }
+      }
+
+      ShardResponse srsp;
+      do {
+        srsp = shardHandler.takeCompletedOrError();
+        if (srsp != null) {
+          processResponse(results, srsp);
+        }
+      } while (srsp != null);
+
+      for (int i=0; i<subRanges.size(); i++)  {
+        String subSlice = subSlices.get(i);
+        String subShardName = subShardNames.get(i);
+        DocRouter.Range subRange = subRanges.get(i);
+
+        log.info("Creating shard " + subShardName + " as part of slice "
+            + subSlice + " of collection " + collection + " on "
+            + nodeName);
+
+        ModifiableSolrParams params = new ModifiableSolrParams();
+        params.set(CoreAdminParams.ACTION, CoreAdminAction.CREATE.toString());
+
+        params.set(CoreAdminParams.NAME, subShardName);
+        params.set(CoreAdminParams.COLLECTION, collection);
+        params.set(CoreAdminParams.SHARD, subSlice);
+        params.set(CoreAdminParams.SHARD_RANGE, subRange.toString());
+        params.set(CoreAdminParams.SHARD_STATE, Slice.CONSTRUCTION);
+        //params.set(ZkStateReader.NUM_SHARDS_PROP, numSlices); todo: is it necessary, we're not creating collections?
+
+        sendShardRequest(nodeName, params);
+
+        // wait for parent leader to acknowledge the sub-shard core
+        log.info("Asking parent leader to wait for: " + subShardName + " to be alive on: " + nodeName);
+        CoreAdminRequest.WaitForState cmd = new CoreAdminRequest.WaitForState();
+        cmd.setCoreName(subShardName);
+        cmd.setNodeName(nodeName);
+        cmd.setCoreNodeName(nodeName + "_" + subShardName);
+        cmd.setState(ZkStateReader.ACTIVE);
+        cmd.setCheckLive(true);
+        cmd.setOnlyIfLeader(true);
+        sendShardRequest(nodeName, new ModifiableSolrParams(cmd.getParams()));
+      }
+
+      do {
+        srsp = shardHandler.takeCompletedOrError();
+        if (srsp != null) {
+          processResponse(results, srsp);
+        }
+      } while (srsp != null);
+      
+      log.info("Successfully created all sub-shards for collection "
+          + collection + " parent shard: " + slice + " on: " + parentShardLeader);
+
+      log.info("Splitting shard " + parentShardLeader.getName() + " as part of slice "
+          + slice + " of collection " + collection + " on "
+          + parentShardLeader);
+
+      ModifiableSolrParams params = new ModifiableSolrParams();
+      params.set(CoreAdminParams.ACTION, CoreAdminAction.SPLIT.toString());
+      params.set(CoreAdminParams.CORE, parentShardLeader.getStr("core"));
+      for (int i = 0; i < subShardNames.size(); i++) {
+        String subShardName = subShardNames.get(i);
+        params.add(CoreAdminParams.TARGET_CORE, subShardName);
+      }
+
+      sendShardRequest(parentShardLeader.getNodeName(), params);
+      do {
+        srsp = shardHandler.takeCompletedOrError();
+        if (srsp != null) {
+          processResponse(results, srsp);
+        }
+      } while (srsp != null);
+
+      log.info("Index on shard: " + nodeName + " split into two successfully");
+
+      // apply buffered updates on sub-shards
+      for (int i = 0; i < subShardNames.size(); i++) {
+        String subShardName = subShardNames.get(i);
+
+        log.info("Applying buffered updates on : " + subShardName);
+
+        params = new ModifiableSolrParams();
+        params.set(CoreAdminParams.ACTION, CoreAdminAction.REQUESTAPPLYUPDATES.toString());
+        params.set(CoreAdminParams.NAME, subShardName);
+
+        sendShardRequest(nodeName, params);
+      }
+
+      do {
+        srsp = shardHandler.takeCompletedOrError();
+        if (srsp != null) {
+          processResponse(results, srsp);
+        }
+      } while (srsp != null);
+
+      log.info("Successfully applied buffered updates on : " + subShardNames);
+
+      // Replica creation for the new Slices
+
+      // look at the replication factor and see if it matches reality
+      // if it does not, find best nodes to create more cores
+
+      // TODO: Have replication factor decided in some other way instead of numShards for the parent
+
+      int repFactor = clusterState.getSlice(collection, slice).getReplicas().size();
+
+      // we need to look at every node and see how many cores it serves
+      // add our new cores to existing nodes serving the least number of cores
+      // but (for now) require that each core goes on a distinct node.
+
+      // TODO: add smarter options that look at the current number of cores per
+      // node?
+      // for now we just go random
+      Set<String> nodes = clusterState.getLiveNodes();
+      List<String> nodeList = new ArrayList<String>(nodes.size());
+      nodeList.addAll(nodes);
+      
+      Collections.shuffle(nodeList);
+
+      // TODO: Have maxShardsPerNode param for this operation?
+
+      // Remove the node that hosts the parent shard for replica creation.
+      nodeList.remove(nodeName);
+      
+      // TODO: change this to handle sharding a slice into > 2 sub-shards.
+
+      for (int i = 1; i <= subSlices.size(); i++) {
+        Collections.shuffle(nodeList);
+        String sliceName = subSlices.get(i - 1);
+        for (int j = 2; j <= repFactor; j++) {
+          String subShardNodeName = nodeList.get((repFactor * (i - 1) + (j - 2)) % nodeList.size());
+          String shardName = collection + "_" + sliceName + "_replica" + (j);
+
+          log.info("Creating replica shard " + shardName + " as part of slice "
+              + sliceName + " of collection " + collection + " on "
+              + subShardNodeName);
+
+          // Need to create new params for each request
+          params = new ModifiableSolrParams();
+          params.set(CoreAdminParams.ACTION, CoreAdminAction.CREATE.toString());
+
+          params.set(CoreAdminParams.NAME, shardName);
+          params.set(CoreAdminParams.COLLECTION, collection);
+          params.set(CoreAdminParams.SHARD, sliceName);
+          // TODO:  Figure the config used by the parent shard and use it.
+          //params.set("collection.configName", configName);
+          
+          //Not using this property. Do we really need to use it?
+          //params.set(ZkStateReader.NUM_SHARDS_PROP, numSlices);
+
+          sendShardRequest(subShardNodeName, params);
+
+          // wait for the replicas to be seen as active on sub shard leader
+          log.info("Asking sub shard leader to wait for: " + shardName + " to be alive on: " + subShardNodeName);
+          CoreAdminRequest.WaitForState cmd = new CoreAdminRequest.WaitForState();
+          cmd.setCoreName(subShardNames.get(i-1));
+          cmd.setNodeName(subShardNodeName);
+          cmd.setCoreNodeName(subShardNodeName + "_" + shardName);
+          cmd.setState(ZkStateReader.ACTIVE);
+          cmd.setCheckLive(true);
+          cmd.setOnlyIfLeader(true);
+          sendShardRequest(nodeName, new ModifiableSolrParams(cmd.getParams()));
+        }
+      }
+
+      do {
+        srsp = shardHandler.takeCompletedOrError();
+        if (srsp != null) {
+          processResponse(results, srsp);
+        }
+      } while (srsp != null);
+      log.info("Successfully created all replica shards for all sub-slices "
+          + subSlices);
+
+      log.info("Requesting update shard state");
+      DistributedQueue inQueue = Overseer.getInQueue(zkStateReader.getZkClient());
+      Map<String, Object> propMap = new HashMap<String, Object>();
+      propMap.put(Overseer.QUEUE_OPERATION, "updateshardstate");
+      propMap.put(slice, Slice.INACTIVE);
+      for (String subSlice : subSlices) {
+        propMap.put(subSlice, Slice.ACTIVE);
+      }
+      propMap.put(ZkStateReader.COLLECTION_PROP, collection);
+      ZkNodeProps m = new ZkNodeProps(propMap);
+      inQueue.offer(ZkStateReader.toJSON(m));
+
+      return true;
+    } catch (SolrException e) {
+      throw e;
+    } catch (Exception e) {
+      log.error("Error executing split operation for collection: " + collection + " parent shard: " + slice, e);
+      throw new SolrException(ErrorCode.SERVER_ERROR, null, e);
+    }
+  }
+
+  private void sendShardRequest(String nodeName, ModifiableSolrParams params) {
+    ShardRequest sreq = new ShardRequest();
+    params.set("qt", adminPath);
+    sreq.purpose = 1;
+    String replica = zkStateReader.getZkClient().getBaseUrlForNodeName(nodeName);
+    if (replica.startsWith("http://")) replica = replica.substring(7);
+    sreq.shards = new String[]{replica};
+    sreq.actualShards = sreq.shards;
+    sreq.params = params;
+
+    shardHandler.submit(sreq, replica, sreq.params);
+  }
+  
   private void createCollection(ClusterState clusterState, ZkNodeProps message, NamedList results) {
     String collectionName = message.getStr("name");
     if (clusterState.getCollections().contains(collectionName)) {
@@ -384,7 +650,6 @@ public class OverseerCollectionProcessor implements Runnable, ClosableThread {
           params.set(ZkStateReader.NUM_SHARDS_PROP, numSlices);
           
           ShardRequest sreq = new ShardRequest();
-          sreq.nodeName = nodeName;
           params.set("qt", adminPath);
           sreq.purpose = 1;
           String replica = zkStateReader.getZkClient()
