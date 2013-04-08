@@ -763,7 +763,7 @@ public class CoreContainer
     if (zkController != null) {
       // this happens before we can receive requests
       try {
-        zkController.preRegister(core.getCoreDescriptor());
+        zkController.preRegister(core);
       } catch (KeeperException e) {
         log.error("", e);
         throw new ZooKeeperException(SolrException.ErrorCode.SERVER_ERROR,
