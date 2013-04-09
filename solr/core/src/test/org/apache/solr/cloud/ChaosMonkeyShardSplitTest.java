@@ -105,9 +105,9 @@ public class ChaosMonkeyShardSplitTest extends AbstractFullDistribZkTestBase {
   
   public ChaosMonkeyShardSplitTest() {
     super();
-    fixShardCount = true;
-    sliceCount = 1;
-    shardCount = TEST_NIGHTLY ? 7 : 4;
+//    fixShardCount = true;
+//    sliceCount = 1;
+//    shardCount = TEST_NIGHTLY ? 7 : 4;
   }
   
   @Override
@@ -118,11 +118,14 @@ public class ChaosMonkeyShardSplitTest extends AbstractFullDistribZkTestBase {
     
     waitForThingsToLevelOut(15);
     printLayout();
-    
-    PlainIdRouter router = new PlainIdRouter();
-    final List<DocRouter.Range> ranges = router.partitionRange(2,
-        router.fullRange());
+
+    ClusterState clusterState = cloudClient.getZkStateReader().getClusterState();
+    DocRouter router = clusterState.getCollection(AbstractDistribZkTestBase.DEFAULT_COLLECTION).getRouter();
+    Slice shard1 = clusterState.getSlice(AbstractDistribZkTestBase.DEFAULT_COLLECTION, SHARD1);
+    DocRouter.Range shard1Range = shard1.getRange() != null ? shard1.getRange() : router.fullRange();
+    final List<DocRouter.Range> ranges = router.partitionRange(2, shard1Range);
     final int[] docCounts = new int[ranges.size()];
+    int numReplicas = shard1.getReplicas().size();
     Thread indexThread = null;
     OverseerRestarter killer = null;
     Thread killerThread = null;
@@ -131,9 +134,7 @@ public class ChaosMonkeyShardSplitTest extends AbstractFullDistribZkTestBase {
     try {
       solrServer.deleteByQuery("*:*");
       for (int i = 0; i < 100; i++) {
-        SolrInputDocument doc = new SolrInputDocument();
-        doc.addField("id", i);
-        solrServer.add(doc);
+        indexr("id", i);
         
         // todo - hook in custom hashing
         byte[] bytes = String.valueOf(i).getBytes("UTF-8");
@@ -152,9 +153,7 @@ public class ChaosMonkeyShardSplitTest extends AbstractFullDistribZkTestBase {
         public void run() {
           for (int i = 101; i < 201; i++) {
             try {
-              SolrInputDocument doc = new SolrInputDocument();
-              doc.addField("id", i);
-              solrServer.add(doc);
+              indexr("id", i);
               
               // todo - hook in custom hashing
               byte[] bytes = String.valueOf(i).getBytes("UTF-8");
@@ -273,6 +272,28 @@ public class ChaosMonkeyShardSplitTest extends AbstractFullDistribZkTestBase {
     
     assertEquals("Wrong doc count on shard1_0", docCounts[0], shard10Count);
     assertEquals("Wrong doc count on shard1_1", docCounts[1], shard11Count);
+
+    Slice slice1_0 = null, slice1_1 = null;
+    int i = 0;
+    for (i = 0; i < 10; i++) {
+      ZkStateReader zkStateReader = cloudClient.getZkStateReader();
+      zkStateReader.updateClusterState(true);
+      clusterState = zkStateReader.getClusterState();
+      slice1_0 = clusterState.getSlice(AbstractDistribZkTestBase.DEFAULT_COLLECTION, "shard1_0");
+      slice1_1 = clusterState.getSlice(AbstractDistribZkTestBase.DEFAULT_COLLECTION, "shard1_1");
+      if (Slice.ACTIVE.equals(slice1_0.getState()) && Slice.ACTIVE.equals(slice1_1.getState()))
+        break;
+      Thread.sleep(500);
+    }
+
+    log.info("ShardSplitTest waited for {} ms for shard state to be set to active", i * 500);
+
+    assertNotNull("Cluster state does not contain shard1_0", slice1_0);
+    assertNotNull("Cluster state does not contain shard1_0", slice1_1);
+    assertEquals("shard1_0 is not active", Slice.ACTIVE, slice1_0.getState());
+    assertEquals("shard1_1 is not active", Slice.ACTIVE, slice1_1.getState());
+    assertEquals("Wrong number of replicas created for shard1_0", numReplicas, slice1_0.getReplicas().size());
+    assertEquals("Wrong number of replicas created for shard1_1", numReplicas, slice1_1.getReplicas().size());
     
     // todo - can't call waitForThingsToLevelOut because it looks for
     // jettys of all shards
