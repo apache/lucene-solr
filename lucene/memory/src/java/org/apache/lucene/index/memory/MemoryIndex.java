@@ -429,7 +429,6 @@ public class MemoryIndex {
       
       while (stream.incrementToken()) {
         termAtt.fillBytesRef();
-        if (ref.length == 0) continue; // nothing to do
 //        if (DEBUG) System.err.println("token='" + term + "'");
         numTokens++;
         final int posIncr = posIncrAttribute.getPositionIncrement();
