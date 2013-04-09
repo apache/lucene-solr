@@ -39,6 +39,7 @@ import org.apache.lucene.search.FieldCache;
 import org.apache.lucene.util.Bits;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.CharsRef;
+import org.apache.lucene.util.NumericUtils;
 import org.apache.lucene.util.PriorityQueue;
 import org.apache.lucene.util.StringHelper;
 import org.apache.solr.common.params.FacetParams;
@@ -171,7 +172,7 @@ final class NumericFacets {
             longs = new FieldCache.Longs() {
               @Override
               public long get(int docID) {
-                return Float.floatToIntBits(floats.get(docID));
+                return NumericUtils.floatToSortableInt(floats.get(docID));
               }
             };
             break;
@@ -180,7 +181,7 @@ final class NumericFacets {
             longs = new FieldCache.Longs() {
               @Override
               public long get(int docID) {
-                return Double.doubleToLongBits(doubles.get(docID));
+                return NumericUtils.doubleToSortableLong(doubles.get(docID));
               }
             };
             break;

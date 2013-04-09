@@ -294,4 +294,31 @@ public class TestFaceting extends SolrTestCaseJ4 {
     }
   }
 
+  @Test
+  public void testFacetSortWithMinCount() {
+    assertU(adoc("id", "1.0", "f_td", "-420.126"));
+    assertU(adoc("id", "2.0", "f_td", "-285.672"));
+    assertU(adoc("id", "3.0", "f_td", "-1.218"));
+    assertU(commit());
+
+    /**
+    assertQ(req("q", "*:*", FacetParams.FACET, "true", FacetParams.FACET_FIELD, "f_td", "f.f_td.facet.sort", FacetParams.FACET_SORT_INDEX),
+        "*[count(//lst[@name='f_td']/int)=3]",
+        "//lst[@name='facet_fields']/lst[@name='f_td']/int[1][@name='-420.126']",
+        "//lst[@name='facet_fields']/lst[@name='f_td']/int[2][@name='-285.672']",
+        "//lst[@name='facet_fields']/lst[@name='f_td']/int[3][@name='-1.218']");
+
+    assertQ(req("q", "*:*", FacetParams.FACET, "true", FacetParams.FACET_FIELD, "f_td", "f.f_td.facet.sort", FacetParams.FACET_SORT_INDEX, FacetParams.FACET_MINCOUNT, "1", FacetParams.FACET_METHOD, FacetParams.FACET_METHOD_fc),
+        "*[count(//lst[@name='f_td']/int)=3]",
+        "//lst[@name='facet_fields']/lst[@name='f_td']/int[1][@name='-420.126']",
+        "//lst[@name='facet_fields']/lst[@name='f_td']/int[2][@name='-285.672']",
+        "//lst[@name='facet_fields']/lst[@name='f_td']/int[3][@name='-1.218']");
+  **/  // nocommit
+    assertQ(req("q", "*:*", FacetParams.FACET, "true", FacetParams.FACET_FIELD, "f_td", "f.f_td.facet.sort", FacetParams.FACET_SORT_INDEX, FacetParams.FACET_MINCOUNT, "1", "indent","true"),
+        "*[count(//lst[@name='f_td']/int)=3]",
+        "//lst[@name='facet_fields']/lst[@name='f_td']/int[1][@name='-420.126']",
+        "//lst[@name='facet_fields']/lst[@name='f_td']/int[2][@name='-285.672']",
+        "//lst[@name='facet_fields']/lst[@name='f_td']/int[3][@name='-1.218']");
+  }
+
 }
