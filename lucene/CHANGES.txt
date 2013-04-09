@@ -235,6 +235,9 @@ Bug Fixes
 * LUCENE-4918: Highlighter closes the given IndexReader if QueryScorer
   is used with an external IndexReader. (Simon Willnauer, Sirvan Yahyaei)
 
+* LUCENE-4880: Fix MemoryIndex to consume empty terms from the tokenstream consistent
+  with IndexWriter. Previously it discarded them.  (Timothy Allison via Robert Muir)
+
 Documentation
 
 * LUCENE-4841: Added example SimpleSortedSetFacetsExample to show how

@@ -21,15 +21,22 @@ import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
+import java.io.Reader;
 import java.io.StringReader;
 import java.util.HashSet;
 import java.util.Set;
 
 import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.analysis.BaseTokenStreamTestCase;
+import org.apache.lucene.analysis.CannedTokenStream;
 import org.apache.lucene.analysis.MockAnalyzer;
 import org.apache.lucene.analysis.MockTokenFilter;
 import org.apache.lucene.analysis.MockTokenizer;
+import org.apache.lucene.analysis.Token;
+import org.apache.lucene.analysis.TokenFilter;
+import org.apache.lucene.analysis.TokenStream;
+import org.apache.lucene.analysis.Tokenizer;
+import org.apache.lucene.analysis.tokenattributes.CharTermAttribute;
 import org.apache.lucene.codecs.lucene41.Lucene41PostingsFormat;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
@@ -54,6 +61,7 @@ import org.apache.lucene.search.DocIdSetIterator;
 import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.search.PhraseQuery;
 import org.apache.lucene.search.RegexpQuery;
+import org.apache.lucene.search.TermQuery;
 import org.apache.lucene.search.TopDocs;
 import org.apache.lucene.search.spans.SpanMultiTermQueryWrapper;
 import org.apache.lucene.search.spans.SpanOrQuery;
@@ -249,12 +257,40 @@ public class MemoryIndexTest extends BaseTokenStreamTestCase {
    * Return a random analyzer (Simple, Stop, Standard) to analyze the terms.
    */
   private Analyzer randomAnalyzer() {
-    switch(random().nextInt(3)) {
+    switch(random().nextInt(4)) {
       case 0: return new MockAnalyzer(random(), MockTokenizer.SIMPLE, true);
       case 1: return new MockAnalyzer(random(), MockTokenizer.SIMPLE, true, MockTokenFilter.ENGLISH_STOPSET, true);
+      case 2: return new Analyzer() {
+        @Override
+        protected TokenStreamComponents createComponents(String fieldName, Reader reader) {
+          Tokenizer tokenizer = new MockTokenizer(reader);
+          return new TokenStreamComponents(tokenizer, new CrazyTokenFilter(tokenizer));
+        }
+      };
       default: return new MockAnalyzer(random(), MockTokenizer.WHITESPACE, false);
     }
   }
+  
+  // a tokenfilter that makes all terms starting with 't' empty strings
+  static final class CrazyTokenFilter extends TokenFilter {
+    final CharTermAttribute termAtt = addAttribute(CharTermAttribute.class);
+    
+    CrazyTokenFilter(TokenStream input) {
+      super(input);
+    }
+
+    @Override
+    public boolean incrementToken() throws IOException {
+      if (input.incrementToken()) {
+        if (termAtt.length() > 0 && termAtt.buffer()[0] == 't') {
+          termAtt.setLength(0);
+        }
+        return true;
+      } else {
+        return false;
+      }
+    }
+  };
   
   /**
    * Some terms to be indexed, in addition to random words. 
@@ -424,5 +460,14 @@ public class MemoryIndexTest extends BaseTokenStreamTestCase {
       dir.close();
     }
     lineFileDocs.close();
+  }
+  
+  // LUCENE-4880
+  public void testEmptyString() throws IOException {
+    MemoryIndex memory = new MemoryIndex();
+    memory.addField("foo", new CannedTokenStream(new Token("", 0, 5)));
+    IndexSearcher searcher = memory.createSearcher();
+    TopDocs docs = searcher.search(new TermQuery(new Term("foo", "")), 10);
+    assertEquals(1, docs.totalHits);
   }
 }
