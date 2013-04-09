@@ -24,7 +24,7 @@ cp -r -f example example4
 cp -r -f example example5
 cp -r -f example example6
 
-java -classpath lib/*:dist/*:build/lucene-libs/* org.apache.solr.cloud.ZkController "$zkaddress" 8983 example/solr/conf conf1
+java -classpath "example/solr-webapp/webapp/WEB-INF/lib/*:example/lib/ext/" org.apache.solr.cloud.ZkController "$zkaddress" 8983 example/solr/conf conf1
 
 cd example
 java -DzkHost="$zkaddress" -DnumShards=2 -DSTOP.PORT=7983 -DSTOP.KEY=key -jar start.jar 1>example.log 2>&1 &
