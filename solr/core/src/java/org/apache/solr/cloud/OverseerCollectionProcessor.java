@@ -344,6 +344,7 @@ public class OverseerCollectionProcessor implements Runnable, ClosableThread {
               ModifiableSolrParams params = new ModifiableSolrParams();
               params.set(CoreAdminParams.ACTION, CoreAdminAction.UNLOAD.toString());
               params.set(CoreAdminParams.CORE, core);
+              params.set(CoreAdminParams.DELETE_INDEX, "true");
               sendShardRequest(replica.getNodeName(), params);
             }
           }
