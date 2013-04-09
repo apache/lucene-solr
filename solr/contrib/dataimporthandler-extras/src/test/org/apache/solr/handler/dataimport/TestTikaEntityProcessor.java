@@ -55,6 +55,21 @@ public class TestTikaEntityProcessor extends AbstractDataImportHandlerTestCase {
       ,"//str[@name='text']"
   };
 
+  private String[] testsHTMLDefault = {
+      "//*[@numFound='1']"
+      , "//str[@name='text'][contains(.,'Basic div')]"
+      , "//str[@name='text'][contains(.,'<h1>')]"
+      , "//str[@name='text'][not(contains(.,'<div>'))]" //default mapper lower-cases elements as it maps
+      , "//str[@name='text'][not(contains(.,'<DIV>'))]"
+  };
+
+  private String[] testsHTMLIdentity = {
+      "//*[@numFound='1']"
+      , "//str[@name='text'][contains(.,'Basic div')]"
+      , "//str[@name='text'][contains(.,'<h1>')]"
+      , "//str[@name='text'][contains(.,'<div>')]"
+      , "//str[@name='text'][contains(.,'class=\"classAttribute\"')]" //attributes are lower-cased
+  };
 
   @BeforeClass
   public static void beforeClass() throws Exception {
@@ -67,4 +82,36 @@ public class TestTikaEntityProcessor extends AbstractDataImportHandlerTestCase {
     assertQ(req("*:*"), tests );
   }
 
+  @Test
+  public void testTikaHTMLMapperEmpty() throws Exception {
+    runFullImport(getConfigHTML(null));
+    assertQ(req("*:*"), testsHTMLDefault);
+  }
+
+  @Test
+  public void testTikaHTMLMapperDefault() throws Exception {
+    runFullImport(getConfigHTML("default"));
+    assertQ(req("*:*"), testsHTMLDefault);
+  }
+
+  @Test
+  public void testTikaHTMLMapperIdentity() throws Exception {
+    runFullImport(getConfigHTML("identity"));
+    assertQ(req("*:*"), testsHTMLIdentity);
+  }
+
+  private String getConfigHTML(String htmlMapper) {
+    return
+        "<dataConfig>" +
+            "  <dataSource type='BinFileDataSource'/>" +
+            "  <document>" +
+            "    <entity name='Tika' format='xml' processor='TikaEntityProcessor' " +
+            "       url='" + getFile("dihextras/structured.html").getAbsolutePath() + "' " +
+            ((htmlMapper == null) ? "" : (" htmlMapper='" + htmlMapper + "'")) + ">" +
+            "      <field column='text'/>" +
+            "     </entity>" +
+            "  </document>" +
+            "</dataConfig>";
+
+  }
 }

@@ -22,6 +22,8 @@ import org.apache.tika.metadata.Metadata;
 import org.apache.tika.parser.AutoDetectParser;
 import org.apache.tika.parser.ParseContext;
 import org.apache.tika.parser.Parser;
+import org.apache.tika.parser.html.HtmlMapper;
+import org.apache.tika.parser.html.IdentityHtmlMapper;
 import org.apache.tika.sax.BodyContentHandler;
 import org.apache.tika.sax.ContentHandlerDecorator;
 import org.apache.tika.sax.XHTMLContentHandler;
@@ -63,7 +65,7 @@ public class TikaEntityProcessor extends EntityProcessorBase {
   private boolean done = false;
   private String parser;
   static final String AUTO_PARSER = "org.apache.tika.parser.AutoDetectParser";
-
+  private String htmlMapper;
 
   @Override
   protected void firstInit(Context context) {
@@ -88,6 +90,13 @@ public class TikaEntityProcessor extends EntityProcessorBase {
       format = "text";
     if (!"html".equals(format) && !"xml".equals(format) && !"text".equals(format)&& !"none".equals(format) )
       throw new DataImportHandlerException(SEVERE, "'format' can be one of text|html|xml|none");
+
+    htmlMapper = context.getResolvedEntityAttribute("htmlMapper");
+    if (htmlMapper == null)
+      htmlMapper = "default";
+    if (!"default".equals(htmlMapper) && !"identity".equals(htmlMapper))
+      throw new DataImportHandlerException(SEVERE, "'htmlMapper', if present, must be 'default' or 'identity'");
+
     parser = context.getResolvedEntityAttribute("parser");
     if(parser == null) {
       parser = AUTO_PARSER;
@@ -124,7 +133,11 @@ public class TikaEntityProcessor extends EntityProcessorBase {
       tikaParser = context.getSolrCore().getResourceLoader().newInstance(parser, Parser.class);
     }
     try {
-      tikaParser.parse(is, contentHandler, metadata , new ParseContext());
+        ParseContext context = new ParseContext();
+        if ("identity".equals(htmlMapper)){
+          context.set(HtmlMapper.class, IdentityHtmlMapper.INSTANCE);
+        }
+        tikaParser.parse(is, contentHandler, metadata , context);
     } catch (Exception e) {
       wrapAndThrow(SEVERE, e, "Unable to read content");
     }
