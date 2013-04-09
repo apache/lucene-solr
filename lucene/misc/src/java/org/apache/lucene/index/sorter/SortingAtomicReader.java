@@ -633,7 +633,10 @@ public class SortingAtomicReader extends FilterAtomicReader {
       // the reader is already sorter
       return reader;
     }
-    assert Sorter.isConsistent(docMap, reader.maxDoc());
+    if (reader.maxDoc() != docMap.size()) {
+      throw new IllegalArgumentException("reader.maxDoc() should be equal to docMap.size(), got" + reader.maxDoc() + " != " + docMap.size());
+    }
+    assert Sorter.isConsistent(docMap);
     return new SortingAtomicReader(reader, docMap);
   }
 

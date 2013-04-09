@@ -192,7 +192,7 @@ public final class SegmentReader extends AtomicReader {
   /**
    * Return the SegmentInfoPerCommit of the segment this reader is reading.
    */
-  SegmentInfoPerCommit getSegmentInfo() {
+  public SegmentInfoPerCommit getSegmentInfo() {
     return si;
   }
 

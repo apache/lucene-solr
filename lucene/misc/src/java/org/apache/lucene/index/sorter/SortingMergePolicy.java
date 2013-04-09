@@ -28,8 +28,10 @@ import org.apache.lucene.index.IndexWriter;
 import org.apache.lucene.index.MergePolicy;
 import org.apache.lucene.index.MergeState;
 import org.apache.lucene.index.MultiReader;
+import org.apache.lucene.index.SegmentInfo;
 import org.apache.lucene.index.SegmentInfoPerCommit;
 import org.apache.lucene.index.SegmentInfos;
+import org.apache.lucene.index.SegmentReader;
 import org.apache.lucene.index.SlowCompositeReaderWrapper;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.util.Bits;
@@ -39,12 +41,23 @@ import org.apache.lucene.util.packed.MonotonicAppendingLongBuffer;
  *  before merging them. As a consequence, all segments resulting from a merge
  *  will be sorted while segments resulting from a flush will be in the order
  *  in which documents have been added.
- *  <p>Never use this {@link MergePolicy} if you rely on
+ *  <p><b>NOTE</b>: Never use this {@link MergePolicy} if you rely on
  *  {@link IndexWriter#addDocuments(Iterable, org.apache.lucene.analysis.Analyzer)}
  *  to have sequentially-assigned doc IDs, this policy will scatter doc IDs.
+ *  <p><b>NOTE</b>: This {@link MergePolicy} should only be used with idempotent
+ *  {@link Sorter}s so that the order of segments is predictable. For example,
+ *  using {@link SortingMergePolicy} with {@link Sorter#REVERSE_DOCS} (which is
+ *  not idempotent) will make the order of documents in a segment depend on the
+ *  number of times the segment has been merged.
  *  @lucene.experimental */
 public final class SortingMergePolicy extends MergePolicy {
 
+  /**
+   * Put in the {@link SegmentInfo#getDiagnostics() diagnostics} to denote that
+   * this segment is sorted.
+   */
+  public static final String SORTER_ID_PROP = "sorter";
+  
   class SortingOneMerge extends OneMerge {
 
     List<AtomicReader> unsortedReaders;
@@ -71,6 +84,13 @@ public final class SortingMergePolicy extends MergePolicy {
       }
       // a null doc map means that the readers are already sorted
       return docMap == null ? unsortedReaders : Collections.singletonList(sortedView);
+    }
+    
+    @Override
+    public void setInfo(SegmentInfoPerCommit info) {
+      Map<String,String> diagnostics = info.info.getDiagnostics();
+      diagnostics.put(SORTER_ID_PROP, sorter.getID());
+      super.setInfo(info);
     }
 
     private MonotonicAppendingLongBuffer getDeletes(List<AtomicReader> readers) {
@@ -124,6 +144,18 @@ public final class SortingMergePolicy extends MergePolicy {
       return "SortingMergeSpec(" + super.segString(dir) + ", sorter=" + sorter + ")";
     }
 
+  }
+
+  /** Returns true if the given reader is sorted by the given sorter. */
+  public static boolean isSorted(AtomicReader reader, Sorter sorter) {
+    if (reader instanceof SegmentReader) {
+      final SegmentReader segReader = (SegmentReader) reader;
+      final Map<String, String> diagnostics = segReader.getSegmentInfo().info.getDiagnostics();
+      if (diagnostics != null && sorter.getID().equals(diagnostics.get(SORTER_ID_PROP))) {
+        return true;
+      }
+    }
+    return false;
   }
 
   private MergeSpecification sortedMergeSpecification(MergeSpecification specification) {

@@ -149,6 +149,14 @@ public abstract class MergePolicy implements java.io.Closeable, Cloneable {
       }
       return Collections.unmodifiableList(readers);
     }
+    
+    /**
+     * Expert: Sets the {@link SegmentInfoPerCommit} of this {@link OneMerge}.
+     * Allows sub-classes to e.g. set diagnostics properties.
+     */
+    public void setInfo(SegmentInfoPerCommit info) {
+      this.info = info;
+    }
 
     /** Expert: If {@link #getMergeReaders()} reorders document IDs, this method
      *  must be overridden to return a mapping from the <i>natural</i> doc ID
