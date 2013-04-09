@@ -170,6 +170,10 @@ Bug Fixes
 * SOLR-4682: CoreAdminRequest.mergeIndexes can not merge multiple cores or indexDirs.
   (Jason.D.Cao via shalin)
 
+* SOLR-4581: When faceting on numeric fields in Solr 4.2, negative values (constraints)
+  were sorted incorrectly. (Alexander Buhr, shalin, yonik)
+
+
 Optimizations
 ----------------------
 
