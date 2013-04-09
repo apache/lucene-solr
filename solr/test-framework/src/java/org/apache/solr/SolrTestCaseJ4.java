@@ -23,6 +23,7 @@ import java.util.logging.*;
 
 import javax.xml.xpath.XPathExpressionException;
 
+import org.apache.commons.io.FileUtils;
 import org.apache.lucene.util.Constants;
 import org.apache.lucene.util.LuceneTestCase;
 import org.apache.lucene.util.QuickPatchThreadsFilter;
@@ -1442,4 +1443,30 @@ public abstract class SolrTestCaseJ4 extends LuceneTestCase {
     }
     return result;
   }
+
+  public void assertXmlFile(final File file, String... xpath)
+      throws IOException, SAXException {
+
+    try {
+      String xml = FileUtils.readFileToString(file, "UTF-8");
+      String results = h.validateXPath(xml, xpath);
+      if (null != results) {
+        String msg = "File XPath failure: file=" + file.getPath() + " xpath="
+            + results + "\n\nxml was: " + xml;
+        fail(msg);
+      }
+    } catch (XPathExpressionException e2) {
+      throw new RuntimeException("XPath is invalid", e2);
+    }
+  }
+  // Creates a mininmal conf dir.
+  public void copyMinConf(File dstRoot) throws IOException {
+
+    File subHome = new File(dstRoot, "conf");
+    assertTrue("Failed to make subdirectory ", dstRoot.mkdirs());
+    String top = SolrTestCaseJ4.TEST_HOME() + "/collection1/conf";
+    FileUtils.copyFile(new File(top, "schema-tiny.xml"), new File(subHome, "schema-tiny.xml"));
+    FileUtils.copyFile(new File(top, "solrconfig-minimal.xml"), new File(subHome, "solrconfig-minimal.xml"));
+  }
+
 }

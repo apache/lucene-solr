@@ -83,19 +83,6 @@ New Features
 * SOLR-4648 PreAnalyzedUpdateProcessorFactory allows using the functionality
   of PreAnalyzedField with other field types. See javadoc for details and
   examples. (Andrzej Bialecki)
-
-* SOLR-4196 (and others). Solr.xml is being deprecated in favor of a simple
-  properties file. In the absence of a <solr_home>/solr.xml but the presence of
-  <solr_home>/solr.properties, two things will happen
-  1> The attributes that, in the solr.xml file, were in the <solr> and <cores> tags will
-      be read from the solr.properties
-  2> The <solr_home> will be walked and any cores fond will be discovered, which will
-     be inferred by the presence of a "core.properties" file which will contain the 
-     data formerly in the individual <core> tags. The implication here is that there will
-     be no individual core information in the solr.properties file.
-  See the discussion on the wiki page titled "Core Discovery (4.3 and beyond)" for
-  the formats of both solr.properties and the individual core.properties files
-  (Erick Erickson)
   
 * SOLR-4623: Provide REST API read access to all elements of the live schema.
   Add a REST API request to return the entire live schema, in JSON, XML, and
@@ -124,6 +111,9 @@ New Features
   there are a large number of entries in the multiValued field. Conspicuously, this will
   prevent the "best" match from being found if it appears later in the MV list than the
   cutoff specified by either of these params. (Erick Erickson)
+  
+ * SOLR-4663: Complain loudly and do NOT load cores if they have the same data dir or the 
+  same name
 
 * SOLR-4675: Improve PostingsSolrHighlighter to support per-field/query-time overrides
   and add additional configuration parameters. See the javadocs for more details and
@@ -134,6 +124,18 @@ New Features
 
 * SOLR-4530: DIH: Provide configuration to use Tika's IdentityHtmlMapper
   (Alexandre Rafalovitch via shalin)
+  
+* SOLR-4663: Log an error if more than one core has the same name or points to the same
+  data directory. The new discovery-based core enumeration will be particularly sensitive
+  to this. (Erick Erickson)
+  
+* SOLR-4347: Insure that newly-created cores via Admin handler are persisted in solr.xml
+  (Erick Erickson)
+  
+* SOLR-1905: Cores created by the admin request handler should be persisted to solr.xml.
+  Also fixed a problem whereby properties like solr.solr.datadir would be persisted
+  to solr.xml. Also, cores that didn't happen to be loaded were not persisted. 
+  (Erick Erickson)
 
 Bug Fixes
 ----------------------

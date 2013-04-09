@@ -20,9 +20,13 @@ package org.apache.solr.core;
 import org.apache.commons.io.FileUtils;
 import org.apache.lucene.util.IOUtils;
 import org.apache.solr.SolrTestCaseJ4;
+import org.apache.solr.common.SolrException;
+import org.apache.solr.common.params.CoreAdminParams;
 import org.apache.solr.common.util.NamedList;
+import org.apache.solr.handler.admin.CoreAdminHandler;
 import org.apache.solr.request.LocalSolrQueryRequest;
 import org.apache.solr.request.SolrQueryRequest;
+import org.apache.solr.response.SolrQueryResponse;
 import org.apache.solr.search.SolrIndexSearcher;
 import org.apache.solr.update.AddUpdateCommand;
 import org.apache.solr.update.CommitUpdateCommand;
@@ -48,14 +52,6 @@ public class TestLazyCores extends SolrTestCaseJ4 {
 
   private final File solrHomeDirectory = new File(TEMP_DIR, "org.apache.solr.core.TestLazyCores_testlazy");
 
-  private void copyConfFiles(File home, String subdir) throws IOException {
-
-    File subHome = new File(new File(home, subdir), "conf");
-    assertTrue("Failed to make subdirectory ", subHome.mkdirs());
-    String top = SolrTestCaseJ4.TEST_HOME() + "/collection1/conf";
-    FileUtils.copyFile(new File(top, "schema-tiny.xml"), new File(subHome, "schema-tiny.xml"));
-    FileUtils.copyFile(new File(top, "solrconfig-minimal.xml"), new File(subHome, "solrconfig-minimal.xml"));
-  }
 
   private CoreContainer init() throws Exception {
 
@@ -64,7 +60,7 @@ public class TestLazyCores extends SolrTestCaseJ4 {
     }
     assertTrue("Failed to mkdirs workDir", solrHomeDirectory.mkdirs());
     for (int idx = 1; idx < 10; ++idx) {
-      copyConfFiles(solrHomeDirectory, "collection" + idx);
+      copyMinConf(new File(solrHomeDirectory, "collection" + idx));
     }
 
     File solrXml = new File(solrHomeDirectory, "solr.xml");
@@ -83,7 +79,6 @@ public class TestLazyCores extends SolrTestCaseJ4 {
       FileUtils.deleteDirectory(solrHomeDirectory);
     }
   }
-
   @Test
   public void testLazyLoad() throws Exception {
     CoreContainer cc = init();
@@ -127,6 +122,7 @@ public class TestLazyCores extends SolrTestCaseJ4 {
 
   // This is a little weak. I'm not sure how to test that lazy core2 is loaded automagically. The getCore
   // will, of course, load it.
+
   @Test
   public void testLazySearch() throws Exception {
     CoreContainer cc = init();
@@ -246,6 +242,7 @@ public class TestLazyCores extends SolrTestCaseJ4 {
   }
 
   // Test case for SOLR-4300
+
   @Test
   public void testRace() throws Exception {
     final List<SolrCore> theCores = new ArrayList<SolrCore>();
@@ -280,6 +277,166 @@ public class TestLazyCores extends SolrTestCaseJ4 {
     }
   }
 
+  private void tryCreateFail(CoreAdminHandler admin, String name, String dataDir, String... errs) throws Exception {
+    try {
+      SolrQueryResponse resp = new SolrQueryResponse();
+
+      SolrQueryRequest request = req(CoreAdminParams.ACTION,
+          CoreAdminParams.CoreAdminAction.CREATE.toString(),
+          CoreAdminParams.DATA_DIR, dataDir,
+          CoreAdminParams.NAME, name,
+          "schema", "schema-tiny.xml",
+          "config", "solrconfig-minimal.xml");
+
+      admin.handleRequestBody(request, resp);
+      fail("Should have thrown an error");
+    } catch (SolrException se) {
+      SolrException cause = (SolrException)se.getCause();
+      assertEquals("Exception code should be 500", 500, cause.code());
+      for (String err : errs) {
+       assertTrue("Should have seen an exception containing the an error",
+            cause.getMessage().contains(err));
+      }
+    }
+  }
+  @Test
+  public void testCreateSame() throws Exception {
+    final CoreContainer cc = init();
+    try {
+      // First, try all 4 combinations of load on startup and transient
+      final CoreAdminHandler admin = new CoreAdminHandler(cc);
+      SolrCore lc2 = cc.getCore("collectionLazy2");
+      SolrCore lc4 = cc.getCore("collectionLazy4");
+      SolrCore lc5 = cc.getCore("collectionLazy5");
+      SolrCore lc6 = cc.getCore("collectionLazy6");
+
+      copyMinConf(new File(solrHomeDirectory, "t2"));
+      copyMinConf(new File(solrHomeDirectory, "t4"));
+      copyMinConf(new File(solrHomeDirectory, "t5"));
+      copyMinConf(new File(solrHomeDirectory, "t6"));
+
+      tryCreateFail(admin, "t2", lc2.getDataDir(), "Core with same data dir", "collectionLazy2", "already exists");
+      tryCreateFail(admin, "t4", lc4.getDataDir(), "Core with same data dir", "collectionLazy4", "already exists");
+      tryCreateFail(admin, "t5", lc5.getDataDir(), "Core with same data dir", "collectionLazy5", "already exists");
+      tryCreateFail(admin, "t6", lc6.getDataDir(), "Core with same data dir", "collectionLazy6", "already exists");
+
+      // Insure a newly-created core fails too
+      CoreDescriptor d1 = new CoreDescriptor(cc, "core1", "./core1");
+      d1.setSchemaName("schema-tiny.xml");
+      d1.setConfigName("solrconfig-minimal.xml");
+      copyMinConf(new File(solrHomeDirectory, "core1"));
+      SolrCore core1 = cc.create(d1);
+      cc.register(core1, false);
+      copyMinConf(new File(solrHomeDirectory, "core77"));
+      tryCreateFail(admin, "core77", core1.getDataDir(), "Core with same data dir", "core1", "already exists");
+
+      // Should also fail with the same name
+      tryCreateFail(admin, "collectionLazy2", "t12", "Core with name", "collectionLazy2", "already exists");
+      tryCreateFail(admin, "collectionLazy4", "t14", "Core with name", "collectionLazy4", "already exists");
+      tryCreateFail(admin, "collectionLazy5", "t15", "Core with name", "collectionLazy5", "already exists");
+      tryCreateFail(admin, "collectionLazy6", "t16", "Core with name", "collectionLazy6", "already exists");
+      tryCreateFail(admin, "core1", "t10", "Core with name", "core1", "already exists");
+
+      core1.close();
+      lc2.close();
+      lc4.close();
+      lc5.close();
+      lc6.close();
+
+    } finally {
+      cc.shutdown();
+    }
+  }
+
+  //Make sure persisting not-loaded lazy cores is done. See SOLR-4347
+
+  @Test
+  public void testPersistence() throws Exception {
+    final CoreContainer cc = init();
+    try {
+      copyMinConf(new File(solrHomeDirectory, "core1"));
+      copyMinConf(new File(solrHomeDirectory, "core2"));
+      copyMinConf(new File(solrHomeDirectory, "core3"));
+      copyMinConf(new File(solrHomeDirectory, "core4"));
+
+      cc.setPersistent(true);
+      CoreDescriptor d1 = new CoreDescriptor(cc, "core1", "./core1");
+      d1.setTransient(true);
+      d1.setLoadOnStartup(true);
+      d1.setSchemaName("schema-tiny.xml");
+      d1.setConfigName("solrconfig-minimal.xml");
+      SolrCore core1 = cc.create(d1);
+
+      CoreDescriptor d2 = new CoreDescriptor(cc, "core2", "./core2");
+      d2.setTransient(true);
+      d2.setLoadOnStartup(false);
+      d2.setSchemaName("schema-tiny.xml");
+      d2.setConfigName("solrconfig-minimal.xml");
+      SolrCore core2 = cc.create(d2);
+
+      CoreDescriptor d3 = new CoreDescriptor(cc, "core3", "./core3");
+      d3.setTransient(false);
+      d3.setLoadOnStartup(true);
+      d3.setSchemaName("schema-tiny.xml");
+      d3.setConfigName("solrconfig-minimal.xml");
+      SolrCore core3 = cc.create(d3);
+
+      CoreDescriptor d4 = new CoreDescriptor(cc, "core4", "./core4");
+      d4.setTransient(false);
+      d4.setLoadOnStartup(false);
+      d4.setSchemaName("schema-tiny.xml");
+      d4.setConfigName("solrconfig-minimal.xml");
+      SolrCore core4 = cc.create(d4);
+
+      final File oneXml = new File(solrHomeDirectory, "lazy1.solr.xml");
+      cc.persistFile(oneXml);
+
+      assertXmlFile(oneXml,
+          "/solr/cores/core[@name='collection1']",
+          "/solr/cores/core[@name='collectionLazy2']",
+          "/solr/cores/core[@name='collectionLazy3']",
+          "/solr/cores/core[@name='collectionLazy4']",
+          "/solr/cores/core[@name='collectionLazy5']",
+          "/solr/cores/core[@name='collectionLazy6']",
+          "/solr/cores/core[@name='collectionLazy7']",
+          "/solr/cores/core[@name='collectionLazy8']",
+          "/solr/cores/core[@name='collectionLazy9']",
+          "/solr/cores/core[@name='core1']",
+          "/solr/cores/core[@name='core2']",
+          "/solr/cores/core[@name='core3']",
+          "/solr/cores/core[@name='core4']");
+      assertXmlFile(oneXml, "13=count(/solr/cores/core)");
+      core1.close();
+      core2.close();
+      core3.close();
+      core4.close();
+
+      removeOne(cc, "collectionLazy2");
+      removeOne(cc, "collectionLazy3");
+      removeOne(cc, "collectionLazy4");
+      removeOne(cc, "collectionLazy5");
+      removeOne(cc, "collectionLazy6");
+      removeOne(cc, "collectionLazy7");
+      removeOne(cc, "core1");
+      removeOne(cc, "core2");
+      removeOne(cc, "core3");
+      removeOne(cc, "core4");
+
+      // now test that unloading a core means the core is not persisted
+
+      final File twoXml = new File(solrHomeDirectory, "lazy2.solr.xml");
+      cc.persistFile(twoXml);
+
+      assertXmlFile(twoXml, "3=count(/solr/cores/core)");
+    } finally {
+      cc.shutdown();
+    }
+  }
+
+  private void removeOne(CoreContainer cc, String coreName) {
+    SolrCore tmp = cc.remove(coreName);
+    if (tmp != null) tmp.close();
+  }
   public static void checkNotInCores(CoreContainer cc, String... nameCheck) {
     Collection<String> names = cc.getCoreNames();
     for (String name : nameCheck) {

@@ -20,6 +20,7 @@ package org.apache.solr.core;
 import org.apache.commons.io.FileUtils;
 import org.apache.lucene.util.IOUtils;
 import org.apache.solr.SolrTestCaseJ4;
+import org.apache.solr.common.SolrException;
 import org.junit.After;
 import org.junit.BeforeClass;
 import org.junit.Test;
@@ -88,6 +89,24 @@ public class TestCoreDiscovery extends SolrTestCaseJ4 {
     addConfFiles(new File(parent, "conf"));
   }
 
+  // For testing error condition of having multiple cores with the same name.
+  private void addCoreWithPropsDir(String coreDir, Properties stockProps) throws Exception {
+
+    File propFile = new File(solrHomeDirectory, coreDir + File.separator + ConfigSolr.CORE_PROP_FILE);
+    File parent = propFile.getParentFile();
+    assertTrue("Failed to mkdirs for " + parent.getAbsolutePath(), parent.mkdirs());
+
+    FileOutputStream out = new FileOutputStream(propFile);
+    try {
+      stockProps.store(out, null);
+    } finally {
+      out.close();
+    }
+
+    addConfFiles(new File(parent, "conf"));
+  }
+
+
   private void addConfFiles(File confDir) throws Exception {
     String top = SolrTestCaseJ4.TEST_HOME() + "/collection1/conf";
     assertTrue("Failed to mkdirs for " + confDir.getAbsolutePath(), confDir.mkdirs());
@@ -119,7 +138,7 @@ public class TestCoreDiscovery extends SolrTestCaseJ4 {
   // Test the basic setup, create some dirs with core.properties files in them, but solr.xml has discoverCores
   // set and insure that we find all the cores and can load them.
   @Test
-  public void testPropertiesFile() throws Exception {
+  public void testDiscover() throws Exception {
     setMeUp();
     addSolrXml();
     // name, isLazy, loadOnStartup
@@ -267,7 +286,6 @@ public class TestCoreDiscovery extends SolrTestCaseJ4 {
 
     try {
       cc.persist();
-//      checkSolrProperties(cc);
 
       checkCoreProps(makeCorePropFile("core1", false, true));
       checkCoreProps(makeCorePropFile("core2", false, false));
@@ -280,6 +298,127 @@ public class TestCoreDiscovery extends SolrTestCaseJ4 {
       coreL2.close();
     } finally {
       cc.shutdown();
+    }
+  }
+
+  @Test
+  public void testCoresWithSameNameError() throws Exception {
+    setMeUp();
+    addSolrXml();
+    addCoreWithPropsDir("core1_1", makeCorePropFile("core1", false, true));
+    addCoreWithPropsDir("core1_2", makeCorePropFile("core1", false, true));
+    // Should just blow up here.
+    CoreContainer cc = null;
+    try {
+      cc = init();
+    } catch (SolrException se) {
+      assertEquals("Should be returning proper error code of 500", 500, se.code());
+      assertTrue(se.getCause().getMessage().indexOf("More than one core defined for core named core1") != -1);
+    } finally {
+      if (cc != null) {
+        cc.shutdown();
+      }
+    }
+  }
+
+  @Test
+  public void testCoresWithSameDataDirError() throws Exception{
+    setMeUp();
+    addSolrXml();
+    addCoreWithProps(makeCorePropFile("core1", false, true, "dataDir=" + solrHomeDirectory + "datadir"));
+    addCoreWithProps(makeCorePropFile("core2", false, true, "dataDir=" + solrHomeDirectory + "datadir"));
+    // Should just blow up here.
+    CoreContainer cc = null;
+    try {
+      cc = init();
+    } catch (SolrException se) {
+      assertEquals("Should be returning proper error code of 500", 500, se.code());
+      assertTrue(se.getCause().getMessage().indexOf("More than one core points to data dir") != -1);
+    } finally {
+      if (cc != null) {
+        cc.shutdown();
+      }
+    }
+  }
+
+  @Test
+  public void testCoresWithSameNameErrorTransient() throws Exception {
+    setMeUp();
+    addSolrXml();
+    addCoreWithPropsDir("core1_1", makeCorePropFile("core1", true, false));
+    addCoreWithPropsDir("core1_2", makeCorePropFile("core1", true, false));
+    // Should just blow up here.
+    CoreContainer cc = null;
+    try {
+      cc = init();
+    } catch (SolrException se) {
+      assertEquals("Should be returning proper error code of 500", 500, se.code());
+      assertTrue(se.getCause().getMessage().indexOf("More than one core defined for core named core1") != -1);
+    } finally {
+      if (cc != null) {
+        cc.shutdown();
+      }
+    }
+  }
+
+  @Test
+  public void testCoresWithSameDataDirErrorTransient() throws Exception{
+    setMeUp();
+    addSolrXml();
+    addCoreWithProps(makeCorePropFile("core1", true, false, "dataDir=" + solrHomeDirectory + "datadir"));
+    addCoreWithProps(makeCorePropFile("core2", true, false, "dataDir=" + solrHomeDirectory + "datadir"));
+    // Should just blow up here.
+    CoreContainer cc = null;
+    try {
+      cc = init();
+    } catch (SolrException se) {
+      assertEquals("Should be returning proper error code of 500", 500, se.code());
+      assertTrue(se.getCause().getMessage().indexOf("More than one core points to data dir") != -1);
+    } finally {
+      if (cc != null) {
+        cc.shutdown();
+      }
+    }
+  }
+
+
+  @Test
+  public void testCoresWithSameNameErrorboth() throws Exception {
+    setMeUp();
+    addSolrXml();
+    addCoreWithPropsDir("core1_1", makeCorePropFile("core1", true,  false));
+    addCoreWithPropsDir("core1_2", makeCorePropFile("core1", false, false));
+    // Should just blow up here.
+    CoreContainer cc = null;
+    try {
+      cc = init();
+    } catch (SolrException se) {
+      assertEquals("Should be returning proper error code of 500", 500, se.code());
+      assertTrue(se.getCause().getMessage().indexOf("More than one core defined for core named core1") != -1);
+    } finally {
+      if (cc != null) {
+        cc.shutdown();
+      }
+    }
+  }
+
+  @Test
+  public void testCoresWithSameDataDirErrorBoth() throws Exception{
+    setMeUp();
+    addSolrXml();
+    addCoreWithProps(makeCorePropFile("core1", false, false, "dataDir=" + solrHomeDirectory + "datadir"));
+    addCoreWithProps(makeCorePropFile("core2", true,  false, "dataDir=" + solrHomeDirectory + "datadir"));
+    // Should just blow up here.
+    CoreContainer cc = null;
+    try {
+      cc = init();
+    } catch (SolrException se) {
+      assertEquals("Should be returning proper error code of 500", 500, se.code());
+      assertTrue(se.getCause().getMessage().indexOf("More than one core points to data dir") != -1);
+    } finally {
+      if (cc != null) {
+        cc.shutdown();
+      }
     }
   }
 
