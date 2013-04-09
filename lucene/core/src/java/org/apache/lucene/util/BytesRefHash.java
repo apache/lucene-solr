@@ -402,6 +402,12 @@ public final class BytesRefHash {
     return hashPos;
   }
 
+  /** Adds a "arbitrary" int offset instead of a BytesRef
+   *  term.  This is used in the indexer to hold the hash for term
+   *  vectors, because they do not redundantly store the byte[] term
+   *  directly and instead reference the byte[] term
+   *  already stored by the postings BytesRefHash.  See
+   *  add(int textStart) in TermsHashPerField. */
   public int addByPoolOffset(int offset) {
     assert bytesStart != null : "Bytesstart is null - not initialized";
     // final position
