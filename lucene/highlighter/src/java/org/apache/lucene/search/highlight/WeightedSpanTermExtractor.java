@@ -69,7 +69,7 @@ public class WeightedSpanTermExtractor {
   private boolean cachedTokenStream;
   private boolean wrapToCaching = true;
   private int maxDocCharsToAnalyze;
-  private AtomicReader reader = null;
+  private AtomicReader internalReader = null;
 
 
   public WeightedSpanTermExtractor() {
@@ -350,7 +350,7 @@ public class WeightedSpanTermExtractor {
   }
 
   protected AtomicReaderContext getLeafContext() throws IOException {
-    if (reader == null) {
+    if (internalReader == null) {
       if(wrapToCaching && !(tokenStream instanceof CachingTokenFilter)) {
         assert !cachedTokenStream;
         tokenStream = new CachingTokenFilter(new OffsetLimitTokenFilter(tokenStream, maxDocCharsToAnalyze));
@@ -361,9 +361,9 @@ public class WeightedSpanTermExtractor {
       tokenStream.reset();
       final IndexSearcher searcher = indexer.createSearcher();
       // MEM index has only atomic ctx
-      reader = new DelegatingAtomicReader(((AtomicReaderContext)searcher.getTopReaderContext()).reader());
+      internalReader = new DelegatingAtomicReader(((AtomicReaderContext)searcher.getTopReaderContext()).reader());
     }
-    return reader.getContext();
+    return internalReader.getContext();
   }
   
   /*
@@ -468,7 +468,7 @@ public class WeightedSpanTermExtractor {
     try {
       extract(query, terms);
     } finally {
-      IOUtils.close(reader);
+      IOUtils.close(internalReader);
     }
 
     return terms;
@@ -516,7 +516,7 @@ public class WeightedSpanTermExtractor {
         weightedSpanTerm.weight *= idf;
       }
     } finally {
-      IOUtils.close(reader);
+      IOUtils.close(internalReader);
     }
 
     return terms;

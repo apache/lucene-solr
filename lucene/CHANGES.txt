@@ -232,6 +232,9 @@ Bug Fixes
 * LUCENE-4913: FacetResultNode.ordinal was always 0 when all children
   are returned. (Mike McCandless)
 
+* LUCENE-4918: Highlighter closes the given IndexReader if QueryScorer
+  is used with an external IndexReader. (Simon Willnauer, Sirvan Yahyaei)
+
 Documentation
 
 * LUCENE-4841: Added example SimpleSortedSetFacetsExample to show how
