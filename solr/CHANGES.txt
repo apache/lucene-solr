@@ -132,6 +132,9 @@ New Features
 * SOLR-3755: A new collections api to add additional shards dynamically by splitting
   existing shards. (yonik, Anshum Gupta, shalin)
 
+* SOLR-4530: DIH: Provide configuration to use Tika's IdentityHtmlMapper
+  (Alexandre Rafalovitch via shalin)
+
 Bug Fixes
 ----------------------
 
