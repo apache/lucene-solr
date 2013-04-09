@@ -58,16 +58,6 @@
   	<fileset dir="lib" excludes="${common.classpath.excludes}" erroronmissingdir="false"/>
   </path>
 
-  <!-- Solr Specification Version
-
-       This will be used in the Manifest file, and therefore must
-       match the pattern "digit+{.digit+}*"
-
-       By default, this should be set to "X.Y.M.${dateversion}"
-       where X.Y.M is the last version released (on this branch).
-    -->
-  <property name="solr.spec.version" value="5.0.0.${dateversion}" />
-  
   <!-- defined here to be able to make the forbidden-api checker correctly
    reference it. 'ivy.xml' is also referencing this property. -->
   <property name="commons-io.version" value="2.1" />
@@ -169,7 +159,7 @@
     <attribute name="excludes" default="**/pom.xml,**/*.iml"/>
     <attribute name="metainf.source.dir" default="${common-solr.dir}"/>
     <attribute name="implementation.title" default="org.apache.solr"/>
-    <attribute name="spec.version" default="${solr.spec.version}"/>
+    <attribute name="spec.version" default="${spec.version}"/>
     <attribute name="manifest.file" default="${manifest.file}"/>
     <element name="nested" optional="true" implicit="true"/>
     <sequential>

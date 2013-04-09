@@ -182,12 +182,16 @@ def checkJARMetaData(desc, jarFile, version):
     s = decodeUTF8(z.read(MANIFEST_FILE_NAME))
     
     for verify in (
+      'Specification-Vendor: The Apache Software Foundation',
       'Implementation-Vendor: The Apache Software Foundation',
       # Make sure 1.7 compiler was used to build release bits:
       'X-Compile-Source-JDK: 1.7',
+      # Make sure 1.8 ant was used to build release bits: (this will match 1.8+)
+      'Ant-Version: Apache Ant 1.8',
       # Make sure .class files are 1.7 format:
       'X-Compile-Target-JDK: 1.7',
       # Make sure this matches the version we think we are releasing:
+      'Implementation-Version: %s' % version,
       'Specification-Version: %s' % version,
       # Make sure the release was compiled with 1.7:
       'Created-By: 1.7'):
