@@ -185,12 +185,20 @@ import org.apache.lucene.util.ThreadInterruptedException;
 public class IndexWriter implements Closeable, TwoPhaseCommit {
   
   private static final int UNBOUNDED_MAX_MERGE_SEGMENTS = -1;
-
   
   /**
    * Name of the write lock in the index.
    */
   public static final String WRITE_LOCK_NAME = "write.lock";
+
+  /** Key for the source of a segment in the {@link SegmentInfo#getDiagnostics() diagnostics}. */
+  public static final String SOURCE = "source";
+  /** Source of a segment which results from a merge of other segments. */
+  public static final String SOURCE_MERGE = "merge";
+  /** Source of a segment which results from a flush. */
+  public static final String SOURCE_FLUSH = "flush";
+  /** Source of a segment which results from a call to {@link #addIndexes(IndexReader...)}. */
+  public static final String SOURCE_ADDINDEXES_READERS = "addIndexes(IndexReader...)";
 
   /**
    * Absolute hard maximum length for a term, in bytes once
@@ -2432,7 +2440,7 @@ public class IndexWriter implements Closeable, TwoPhaseCommit {
       info.setFiles(new HashSet<String>(trackingDir.getCreatedFiles()));
       trackingDir.getCreatedFiles().clear();
                                          
-      setDiagnostics(info, "addIndexes(IndexReader...)");
+      setDiagnostics(info, SOURCE_ADDINDEXES_READERS);
 
       boolean useCompoundFile;
       synchronized(this) { // Guard segmentInfos
@@ -3455,15 +3463,14 @@ public class IndexWriter implements Closeable, TwoPhaseCommit {
     // names.
     final String mergeSegmentName = newSegmentName();
     SegmentInfo si = new SegmentInfo(directory, Constants.LUCENE_MAIN_VERSION, mergeSegmentName, -1, false, codec, null, null);
-    merge.info = new SegmentInfoPerCommit(si, 0, -1L);
+    Map<String,String> details = new HashMap<String,String>();
+    details.put("mergeMaxNumSegments", "" + merge.maxNumSegments);
+    details.put("mergeFactor", Integer.toString(merge.segments.size()));
+    setDiagnostics(si, SOURCE_MERGE, details);
+    merge.setInfo(new SegmentInfoPerCommit(si, 0, -1L));
 
     // Lock order: IW -> BD
     bufferedDeletesStream.prune(segmentInfos);
-
-    Map<String,String> details = new HashMap<String,String>();
-    details.put("mergeMaxNumSegments", ""+merge.maxNumSegments);
-    details.put("mergeFactor", Integer.toString(merge.segments.size()));
-    setDiagnostics(si, "merge", details);
 
     if (infoStream.isEnabled("IW")) {
       infoStream.message("IW", "merge seg=" + merge.info.info.name + " " + segString(merge.segments));

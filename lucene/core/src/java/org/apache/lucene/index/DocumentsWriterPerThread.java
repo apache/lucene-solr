@@ -555,7 +555,7 @@ class DocumentsWriterPerThread {
 
     SegmentInfoPerCommit newSegment = flushedSegment.segmentInfo;
 
-    IndexWriter.setDiagnostics(newSegment.info, "flush");
+    IndexWriter.setDiagnostics(newSegment.info, IndexWriter.SOURCE_FLUSH);
     
     IOContext context = new IOContext(new FlushInfo(newSegment.info.getDocCount(), newSegment.sizeInBytes()));
 

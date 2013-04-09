@@ -61,6 +61,10 @@ public class SortingAtomicReaderTest extends SorterTestBase {
       public Sorter.DocMap sort(AtomicReader reader) throws IOException {
         return docMap;
       }
+      @Override
+      public String getID() {
+        return ID_FIELD;
+      }
     });
     
     if (VERBOSE) {

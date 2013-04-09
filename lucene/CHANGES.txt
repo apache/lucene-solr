@@ -173,6 +173,10 @@ New Features
 * LUCENE-4902: Added FilterDirectoryReader to allow easy filtering of a
   DirectoryReader's subreaders. (Alan Woodward, Adrien Grand, Uwe Schindler)
 
+* LUCENE-4858: Added EarlyTerminatingSortingCollector to be used in conjunction
+  with SortingMergePolicy, which allows to early terminate queries on sorted
+  indexes, when the sort order matches the index order. (Adrien Grand, Shai Erera)
+
 Optimizations
 
 * LUCENE-4839: SorterTemplate.merge can now be overridden in order to replace

@@ -77,7 +77,12 @@ public class TestEarlyTermination extends LuceneTestCase {
 
         @Override
         public void setNextReader(AtomicReaderContext context) throws IOException {
-          collectionTerminated = false;
+          if (random().nextBoolean()) {
+            collectionTerminated = true;
+            throw new CollectionTerminatedException();
+          } else {
+            collectionTerminated = false;
+          }
         }
 
         @Override

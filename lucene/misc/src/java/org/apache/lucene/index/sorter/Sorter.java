@@ -26,10 +26,12 @@ import org.apache.lucene.util.SorterTemplate;
 import org.apache.lucene.util.packed.MonotonicAppendingLongBuffer;
 
 /**
- * Sorts documents in a given index by returning a permutation on the docs.
- * Implementations can call {@link #sort(int, DocComparator)} to compute the
- * old-to-new permutation over the given documents and values.
- * 
+ * Sorts documents of a given index by returning a permutation on the document
+ * IDs.
+ * <p><b>NOTE</b>: A {@link Sorter} implementation can be easily written from
+ * a {@link DocComparator document comparator} by using the
+ * {@link #sort(int, DocComparator)} helper method. This is especially useful
+ * when documents are directly comparable by their field values.
  * @lucene.experimental
  */
 public abstract class Sorter {
@@ -48,10 +50,16 @@ public abstract class Sorter {
     /** Given the ordinal of a doc ID, return its doc ID in the original index. */
     public abstract int newToOld(int docID);
 
+    /** Return the number of documents in this map. This must be equal to the
+     *  {@link AtomicReader#maxDoc() number of documents} of the
+     *  {@link AtomicReader} which is sorted. */
+    public abstract int size();
+
   }
 
   /** Check consistency of a {@link DocMap}, useful for assertions. */
-  static boolean isConsistent(DocMap docMap, int maxDoc) {
+  static boolean isConsistent(DocMap docMap) {
+    final int maxDoc = docMap.size();
     for (int i = 0; i < maxDoc; ++i) {
       final int newID = docMap.oldToNew(i);
       final int oldID = docMap.newToOld(newID);
@@ -73,7 +81,11 @@ public abstract class Sorter {
 
   }
 
-  /** Sorts documents in reverse order. */
+  /** Sorts documents in reverse order.
+   *  <b>NOTE</b>: This {@link Sorter} is not idempotent. Sorting an
+   *  {@link AtomicReader} once or twice will return two different
+   *  {@link AtomicReader} views. This {@link Sorter} should not be used with
+   *  {@link SortingMergePolicy}. */
   public static final Sorter REVERSE_DOCS = new Sorter() {
     @Override
     public DocMap sort(final AtomicReader reader) throws IOException {
@@ -87,7 +99,16 @@ public abstract class Sorter {
         public int newToOld(int docID) {
           return maxDoc - docID - 1;
         }
+        @Override
+        public int size() {
+          return maxDoc;
+        }
       };
+    }
+    
+    @Override
+    public String getID() {
+      return "ReverseDocs";
     }
   };
 
@@ -179,6 +200,11 @@ public abstract class Sorter {
       public int newToOld(int docID) {
         return (int) newToOld.get(docID);
       }
+
+      @Override
+      public int size() {
+        return maxDoc;
+      }
     };
   }
   
@@ -192,8 +218,17 @@ public abstract class Sorter {
    * <code>reader</code> is already sorted.
    * <p>
    * <b>NOTE:</b> deleted documents are expected to appear in the mapping as
-   * well, they will however be dropped when the index is actually sorted.
+   * well, they will however be marked as deleted in the sorted view.
    */
   public abstract DocMap sort(AtomicReader reader) throws IOException;
-  
+
+  /**
+   * Returns the identifier of this {@link Sorter}.
+   * <p>This identifier is similar to {@link Object#hashCode()} and should be
+   * chosen so that two instances of this class that sort documents likewise
+   * will have the same identifier. On the contrary, this identifier should be
+   * different on different {@link Sorter sorters}.
+   */
+  public abstract String getID();
+
 }

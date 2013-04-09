@@ -52,4 +52,9 @@ public class NumericDocValuesSorter extends Sorter {
     return sort(reader.maxDoc(), comparator);
   }
   
+  @Override
+  public String getID() {
+    return "DocValues(" + fieldName + ",asc)";
+  }
+  
 }

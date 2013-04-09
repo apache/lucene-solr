@@ -591,7 +591,13 @@ public class IndexSearcher {
     // threaded...?  the Collector could be sync'd?
     // always use single thread:
     for (AtomicReaderContext ctx : leaves) { // search each subreader
-      collector.setNextReader(ctx);
+      try {
+        collector.setNextReader(ctx);
+      } catch (CollectionTerminatedException e) {
+        // there is no doc of interest in this reader context
+        // continue with the following leaf
+        continue;
+      }
       Scorer scorer = weight.scorer(ctx, !collector.acceptsDocsOutOfOrder(), true, ctx.reader().getLiveDocs());
       if (scorer != null) {
         try {
