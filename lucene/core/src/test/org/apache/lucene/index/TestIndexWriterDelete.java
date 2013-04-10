@@ -498,6 +498,7 @@ public class TestIndexWriterDelete extends LuceneTestCase {
           }
           testName = "disk full during reader.close() @ " + thisDiskFree
             + " bytes";
+          dir.setRandomIOExceptionRateOnOpen(random().nextDouble()*0.01);
         } else {
           thisDiskFree = 0;
           rate = 0.0;
@@ -505,6 +506,7 @@ public class TestIndexWriterDelete extends LuceneTestCase {
             System.out.println("\ncycle: same writer: unlimited disk space");
           }
           testName = "reader re-use after disk full";
+          dir.setRandomIOExceptionRateOnOpen(0.0);
         }
 
         dir.setMaxSizeInBytes(thisDiskFree);
@@ -548,6 +550,7 @@ public class TestIndexWriterDelete extends LuceneTestCase {
         final double randomIOExceptionRate = dir.getRandomIOExceptionRate();
         final long maxSizeInBytes = dir.getMaxSizeInBytes();
         dir.setRandomIOExceptionRate(0.0);
+        dir.setRandomIOExceptionRateOnOpen(0.0);
         dir.setMaxSizeInBytes(0);
         if (!success) {
           // Must force the close else the writer can have
