@@ -346,9 +346,19 @@ public class BooleanQuery extends Query implements Iterable<BooleanClause> {
         return null;
       }
       
+      // simple conjunction
       if (optional.size() == 0 && prohibited.size() == 0) {
         float coord = disableCoord ? 1.0f : coord(required.size(), maxCoord);
         return new ConjunctionScorer(this, required.toArray(new Scorer[required.size()]), coord);
+      }
+      
+      // simple disjunction
+      if (required.size() == 0 && prohibited.size() == 0 && minNrShouldMatch <= 1 && optional.size() > 1) {
+        float coord[] = new float[optional.size()+1];
+        for (int i = 0; i < coord.length; i++) {
+          coord[i] = disableCoord ? 1.0f : coord(i, maxCoord);
+        }
+        return new DisjunctionSumScorer(this, optional.toArray(new Scorer[optional.size()]), coord);
       }
       
       // Return a BooleanScorer2
