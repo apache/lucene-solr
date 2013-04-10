@@ -42,10 +42,12 @@ import org.apache.lucene.search.TermQuery;
 import org.apache.lucene.search.TopFieldCollector;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.util.LuceneTestCase;
+import org.apache.lucene.util.LuceneTestCase.SuppressCodecs;
 import org.apache.lucene.util._TestUtil;
 
 import com.carrotsearch.randomizedtesting.generators.RandomPicks;
 
+@SuppressCodecs("Lucene3x")
 public class TestEarlyTermination extends LuceneTestCase {
 
   private int numDocs;
