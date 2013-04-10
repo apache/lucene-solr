@@ -179,6 +179,10 @@ New Features
 
 * LUCENE-4904: Added descending sort order to NumericDocValuesSorter. (Shai Erera)
 
+* LUCENE-3786: Added SearcherTaxonomyManager, to manage access to both
+  IndexSearcher and DirectoryTaxonomyReader for near-real-time
+  faceting.  (Shai Erera, Mike McCandless)
+
 Optimizations
 
 * LUCENE-4839: SorterTemplate.merge can now be overridden in order to replace

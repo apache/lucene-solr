@@ -83,6 +83,7 @@ public final class FastCountingFacetsAggregator extends IntRollupFacetsAggregato
           byte b = buf.bytes[offset++];
           if (b >= 0) {
             prev = ord = ((ord << 7) | b) + prev;
+            assert ord < counts.length: "ord=" + ord + " vs maxOrd=" + counts.length;
             ++counts[ord];
             ord = 0;
           } else {

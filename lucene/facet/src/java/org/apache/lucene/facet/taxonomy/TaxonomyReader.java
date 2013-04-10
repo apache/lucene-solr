@@ -246,4 +246,16 @@ public abstract class TaxonomyReader implements Closeable {
     refCount.incrementAndGet();
   }
 
+  /** Expert: increments the refCount of this TaxonomyReader
+   *  instance only if it has not been closed yet.  Returns
+   *  true on success. */
+  public final boolean tryIncRef() {
+    int count;
+    while ((count = refCount.get()) > 0) {
+      if (refCount.compareAndSet(count, count+1)) {
+        return true;
+      }
+    }
+    return false;
+  }
 }
