@@ -17,6 +17,7 @@ import org.apache.lucene.facet.params.CategoryListParams;
 import org.apache.lucene.facet.params.FacetIndexingParams;
 import org.apache.lucene.facet.params.FacetSearchParams;
 import org.apache.lucene.facet.params.PerDimensionIndexingParams;
+import org.apache.lucene.facet.search.FacetRequest.ResultMode;
 import org.apache.lucene.facet.taxonomy.CategoryPath;
 import org.apache.lucene.facet.taxonomy.TaxonomyWriter;
 import org.apache.lucene.facet.taxonomy.directory.DirectoryTaxonomyReader;
@@ -345,6 +346,41 @@ public class TestFacetsCollector extends FacetTestCase {
     fc = FacetsCollector.create(fa);
     new IndexSearcher(r).search(new MatchAllDocsQuery(), fc);
     assertTrue("invalid ordinal for child node: 0", 0 != fc.getFacetResults().get(0).getFacetResultNode().subResults.get(0).ordinal);
+    
+    IOUtils.close(taxo, taxoDir, r, indexDir);
+  }
+  
+  @Test
+  public void testNumValidDescendants() throws Exception {
+    // LUCENE-4885: FacetResult.numValidDescendants was not set properly by FacetsAccumulator
+    Directory indexDir = newDirectory();
+    Directory taxoDir = newDirectory();
+    
+    TaxonomyWriter taxonomyWriter = new DirectoryTaxonomyWriter(taxoDir);
+    IndexWriter iw = new IndexWriter(indexDir, newIndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer(random())));
+    
+    FacetFields facetFields = new FacetFields(taxonomyWriter);
+    for (int i = 0; i < 10; i++) {
+      Document doc = new Document();
+      facetFields.addFields(doc, Arrays.asList(new CategoryPath("a", Integer.toString(i))));
+      iw.addDocument(doc);
+    }
+    
+    taxonomyWriter.close();
+    iw.close();
+    
+    DirectoryReader r = DirectoryReader.open(indexDir);
+    DirectoryTaxonomyReader taxo = new DirectoryTaxonomyReader(taxoDir);
+    
+    CountFacetRequest cfr = new CountFacetRequest(new CategoryPath("a"), 2);
+    cfr.setResultMode(random().nextBoolean() ? ResultMode.GLOBAL_FLAT : ResultMode.PER_NODE_IN_TREE);
+    FacetSearchParams fsp = new FacetSearchParams(cfr);
+    final FacetsAccumulator fa = random().nextBoolean() ? new FacetsAccumulator(fsp, r, taxo) : new StandardFacetsAccumulator(fsp, r, taxo);
+    FacetsCollector fc = FacetsCollector.create(fa);
+    new IndexSearcher(r).search(new MatchAllDocsQuery(), fc);
+    
+    FacetResult res = fc.getFacetResults().get(0);
+    assertEquals(10, res.getNumValidDescendants());
     
     IOUtils.close(taxo, taxoDir, r, indexDir);
   }

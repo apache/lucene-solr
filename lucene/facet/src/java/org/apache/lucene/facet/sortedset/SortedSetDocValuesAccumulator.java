@@ -107,7 +107,6 @@ public class SortedSetDocValuesAccumulator extends FacetsAccumulator {
 
           if (matchingDocs.totalHits < numSegOrds/10) {
             // Remap every ord to global ord as we iterate:
-            final int[] segCounts = new int[numSegOrds];
             int doc = 0;
             while (doc < maxDoc && (doc = matchingDocs.bits.nextSetBit(doc)) != -1) {
               segValues.setDocument(doc);
@@ -259,22 +258,26 @@ public class SortedSetDocValuesAccumulator extends FacetsAccumulator {
 
       //System.out.println("collect");
       int dimCount = 0;
+      int childCount = 0;
       FacetResultNode reuse = null;
       for(int ord=ordRange.start; ord<=ordRange.end; ord++) {
         //System.out.println("  ord=" + ord + " count= "+ counts[ord] + " bottomCount=" + bottomCount);
-        if (counts[ord] > bottomCount) {
-          dimCount += counts[ord];
-          //System.out.println("    keep");
-          if (reuse == null) {
-            reuse = new FacetResultNode(ord, counts[ord]);
-          } else {
-            reuse.ordinal = ord;
-            reuse.value = counts[ord];
-          }
-          reuse = q.insertWithOverflow(reuse);
-          if (q.size() == request.numResults) {
-            bottomCount = (int) q.top().value;
-            //System.out.println("    new bottom=" + bottomCount);
+        if (counts[ord] > 0) {
+          childCount++;
+          if (counts[ord] > bottomCount) {
+            dimCount += counts[ord];
+            //System.out.println("    keep");
+            if (reuse == null) {
+              reuse = new FacetResultNode(ord, counts[ord]);
+            } else {
+              reuse.ordinal = ord;
+              reuse.value = counts[ord];
+            }
+            reuse = q.insertWithOverflow(reuse);
+            if (q.size() == request.numResults) {
+              bottomCount = (int) q.top().value;
+              //System.out.println("    new bottom=" + bottomCount);
+            }
           }
         }
       }
@@ -295,7 +298,7 @@ public class SortedSetDocValuesAccumulator extends FacetsAccumulator {
       }
       rootNode.subResults = Arrays.asList(childNodes);
       
-      results.add(new FacetResult(request, rootNode, childNodes.length));
+      results.add(new FacetResult(request, rootNode, childCount));
     }
 
     return results;
