@@ -196,6 +196,9 @@ Optimizations
 * LUCENE-4889: UnicodeUtil.codePointCount implementation replaced with a
   non-array-lookup version. (Dawid Weiss)
 
+* LUCENE-4923: Speed up BooleanQuerys processing of in-order disjunctions.
+  (Robert Muir)
+
 API Changes
 
 * LUCENE-4844: removed TaxonomyReader.getParent(), you should use

@@ -159,38 +159,19 @@ class BooleanScorer2 extends Scorer {
     // each scorer from the list counted as a single matcher
     if (minNrShouldMatch > 1) {
       return new MinShouldMatchSumScorer(weight, scorers, minNrShouldMatch) {
-        private int lastScoredDoc = -1;
-        // Save the score of lastScoredDoc, so that we don't compute it more than
-        // once in score().
-        private float lastDocScore = Float.NaN;
-        @Override public float score() throws IOException {
-          int doc = docID();
-          if (doc >= lastScoredDoc) {
-            if (doc > lastScoredDoc) {
-              lastDocScore = super.score();
-              lastScoredDoc = doc;
-            }
-            coordinator.nrMatchers += super.nrMatchers;
-          }
-        return lastDocScore;
+        @Override 
+        public float score() throws IOException {
+          coordinator.nrMatchers += super.nrMatchers;
+          return super.score();
         }
       };
     } else {
-      return new DisjunctionSumScorer(weight, scorers) {
-        private int lastScoredDoc = -1;
-        // Save the score of lastScoredDoc, so that we don't compute it more than
-        // once in score().
-        private float lastDocScore = Float.NaN;
-        @Override public float score() throws IOException {
-          int doc = docID();
-          if (doc >= lastScoredDoc) {
-            if (doc > lastScoredDoc) {
-              lastDocScore = super.score();
-              lastScoredDoc = doc;
-            }
-            coordinator.nrMatchers += super.nrMatchers;
-          }
-        return lastDocScore;
+      // we pass null for coord[] since we coordinate ourselves and override score()
+      return new DisjunctionSumScorer(weight, scorers.toArray(new Scorer[scorers.size()]), null) {
+        @Override 
+        public float score() throws IOException {
+          coordinator.nrMatchers += super.nrMatchers;
+          return (float) super.score;
         }
       };
     }
