@@ -54,42 +54,45 @@ public class TestSearcherTaxonomyManager extends LuceneTestCase {
     Thread indexer = new Thread() {
         @Override
         public void run() {
-          Set<String> seen = new HashSet<String>();
-          List<String> paths = new ArrayList<String>();
-          while (true) {
-            Document doc = new Document();
-            List<CategoryPath> docPaths = new ArrayList<CategoryPath>();
-            int numPaths = _TestUtil.nextInt(random(), 1, 5);
-            for(int i=0;i<numPaths;i++) {
-              String path;
-              if (!paths.isEmpty() && random().nextInt(5) != 4) {
-                // Use previous path
-                path = paths.get(random().nextInt(paths.size()));
-              } else {
-                // Create new path
-                path = null;
-                while (true) {
-                  path = _TestUtil.randomRealisticUnicodeString(random());
-                  if (path.length() != 0 && !seen.contains(path) && path.indexOf(FacetIndexingParams.DEFAULT_FACET_DELIM_CHAR) == -1) {
-                    seen.add(path);
-                    paths.add(path);
-                    break;
+          try {
+            Set<String> seen = new HashSet<String>();
+            List<String> paths = new ArrayList<String>();
+            while (true) {
+              Document doc = new Document();
+              List<CategoryPath> docPaths = new ArrayList<CategoryPath>();
+              int numPaths = _TestUtil.nextInt(random(), 1, 5);
+              for(int i=0;i<numPaths;i++) {
+                String path;
+                if (!paths.isEmpty() && random().nextInt(5) != 4) {
+                  // Use previous path
+                  path = paths.get(random().nextInt(paths.size()));
+                } else {
+                  // Create new path
+                  path = null;
+                  while (true) {
+                    path = _TestUtil.randomRealisticUnicodeString(random());
+                    if (path.length() != 0 && !seen.contains(path) && path.indexOf(FacetIndexingParams.DEFAULT_FACET_DELIM_CHAR) == -1) {
+                      seen.add(path);
+                      paths.add(path);
+                      break;
+                    }
                   }
                 }
+                docPaths.add(new CategoryPath("field", path));
               }
-              docPaths.add(new CategoryPath("field", path));
-            }
-            try {
-              facetFields.addFields(doc, docPaths);
-              w.addDocument(doc);
-            } catch (IOException ioe) {
-              throw new RuntimeException(ioe);
-            }
+              try {
+                facetFields.addFields(doc, docPaths);
+                w.addDocument(doc);
+              } catch (IOException ioe) {
+                throw new RuntimeException(ioe);
+              }
 
-            if (tw.getSize() >= ordLimit) {
-              stop.set(true);
-              break;
+              if (tw.getSize() >= ordLimit) {
+                break;
+              }
             }
+          } finally {
+            stop.set(true);
           }
         }
       };
