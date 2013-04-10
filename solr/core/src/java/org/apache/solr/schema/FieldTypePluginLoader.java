@@ -137,11 +137,10 @@ public final class FieldTypePluginLoader
   @Override
   protected void init(FieldType plugin, Node node) throws Exception {
 
-    Map<String,String> params = DOMUtil.toMapExcept( node.getAttributes(), 
-                                                     "name","class" );
-    plugin.setArgs(schema, params );
+    Map<String,String> params = DOMUtil.toMapExcept( node.getAttributes(), "name");
+    plugin.setArgs(schema, params);
   }
-  
+
   @Override
   protected FieldType register(String name, 
                                FieldType plugin) throws Exception {
@@ -301,10 +300,12 @@ public final class FieldTypePluginLoader
 
       @Override
       protected CharFilterFactory create(SolrResourceLoader loader, String name, String className, Node node) throws Exception {
-        final Map<String,String> params = DOMUtil.toMapExcept(node.getAttributes(),"class");
+        final Map<String,String> params = DOMUtil.toMap(node.getAttributes());
         String configuredVersion = params.remove(LUCENE_MATCH_VERSION_PARAM);
         params.put(LUCENE_MATCH_VERSION_PARAM, parseConfiguredVersion(configuredVersion, CharFilterFactory.class.getSimpleName()).toString());
-        return loader.newInstance(className, CharFilterFactory.class, getDefaultPackages(), new Class[] { Map.class }, new Object[] { params });
+        CharFilterFactory factory = loader.newInstance(className, CharFilterFactory.class, getDefaultPackages(), new Class[] { Map.class }, new Object[] { params });
+        factory.setExplicitLuceneMatchVersion(null != configuredVersion);
+        return factory;
       }
 
       @Override
@@ -335,10 +336,12 @@ public final class FieldTypePluginLoader
       
       @Override
       protected TokenizerFactory create(SolrResourceLoader loader, String name, String className, Node node) throws Exception {
-        final Map<String,String> params = DOMUtil.toMapExcept(node.getAttributes(),"class");
+        final Map<String,String> params = DOMUtil.toMap(node.getAttributes());
         String configuredVersion = params.remove(LUCENE_MATCH_VERSION_PARAM);
         params.put(LUCENE_MATCH_VERSION_PARAM, parseConfiguredVersion(configuredVersion, TokenizerFactory.class.getSimpleName()).toString());
-        return loader.newInstance(className, TokenizerFactory.class, getDefaultPackages(), new Class[] { Map.class }, new Object[] { params });
+        TokenizerFactory factory = loader.newInstance(className, TokenizerFactory.class, getDefaultPackages(), new Class[] { Map.class }, new Object[] { params });
+        factory.setExplicitLuceneMatchVersion(null != configuredVersion);
+        return factory;
       }
       
       @Override
@@ -373,10 +376,13 @@ public final class FieldTypePluginLoader
     {
       @Override
       protected TokenFilterFactory create(SolrResourceLoader loader, String name, String className, Node node) throws Exception {
-        final Map<String,String> params = DOMUtil.toMapExcept(node.getAttributes(),"class");
+        final Map<String,String> params = DOMUtil.toMap(node.getAttributes());
         String configuredVersion = params.remove(LUCENE_MATCH_VERSION_PARAM);
         params.put(LUCENE_MATCH_VERSION_PARAM, parseConfiguredVersion(configuredVersion, TokenFilterFactory.class.getSimpleName()).toString());
-        return loader.newInstance(className, TokenFilterFactory.class, getDefaultPackages(), new Class[] { Map.class }, new Object[] { params });
+        TokenFilterFactory factory = loader.newInstance
+            (className, TokenFilterFactory.class, getDefaultPackages(), new Class[] { Map.class }, new Object[] { params });
+        factory.setExplicitLuceneMatchVersion(null != configuredVersion);
+        return factory;
       }
       
       @Override

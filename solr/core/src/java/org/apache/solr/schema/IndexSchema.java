@@ -890,10 +890,13 @@ public class IndexSchema {
       return null;
     } else {
       SimilarityFactory similarityFactory;
-      final Object obj = loader.newInstance(((Element) node).getAttribute("class"), Object.class, "search.similarities.");
+      final String classArg = ((Element) node).getAttribute(SimilarityFactory.CLASS_NAME);
+      final Object obj = loader.newInstance(classArg, Object.class, "search.similarities.");
       if (obj instanceof SimilarityFactory) {
         // configure a factory, get a similarity back
-        SolrParams params = SolrParams.toSolrParams(DOMUtil.childNodesToNamedList(node));
+        final NamedList<Object> namedList = DOMUtil.childNodesToNamedList(node);
+        namedList.add(SimilarityFactory.CLASS_NAME, classArg);
+        SolrParams params = SolrParams.toSolrParams(namedList);
         similarityFactory = (SimilarityFactory)obj;
         similarityFactory.init(params);
       } else {

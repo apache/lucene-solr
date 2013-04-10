@@ -49,6 +49,7 @@ public abstract class AbstractSubTypeFieldType extends FieldType implements Sche
 
   @Override
   protected void init(IndexSchema schema, Map<String, String> args) {
+    super.init(schema, args);
     this.schema = schema;
     //it's not a first class citizen for the IndexSchema
     SolrParams p = new MapSolrParams(args);

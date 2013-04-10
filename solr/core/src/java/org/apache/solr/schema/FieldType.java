@@ -26,8 +26,8 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
-import java.util.regex.Matcher;
-import java.util.regex.Pattern;
+
+import static org.apache.lucene.analysis.util.AbstractAnalysisFactory.LUCENE_MATCH_VERSION_PARAM; 
 
 import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.analysis.Tokenizer;
@@ -95,7 +95,6 @@ public abstract class FieldType extends FieldProperties {
   private boolean isExplicitQueryAnalyzer;
   private boolean isExplicitAnalyzer;
 
-
   /** Returns true if fields of this type should be tokenized */
   public boolean isTokenized() {
     return (properties & TOKENIZED) != 0;
@@ -152,6 +151,7 @@ public abstract class FieldType extends FieldProperties {
 
     this.args = Collections.unmodifiableMap(args);
     Map<String,String> initArgs = new HashMap<String,String>(args);
+    initArgs.remove(CLASS_NAME); // consume the class arg 
 
     trueProperties = FieldProperties.parseProperties(initArgs,true,false);
     falseProperties = FieldProperties.parseProperties(initArgs,false,false);
@@ -413,7 +413,21 @@ public abstract class FieldType extends FieldProperties {
     return isExplicitAnalyzer;
   }
 
-    /**
+  /**
+   * @return the string used to specify the concrete class name in a serialized representation: the class arg.  
+   *         If the concrete class name was not specified via a class arg, returns {@code getClass().getName()}.
+   */
+  public String getClassArg() {
+    if (null != args) {
+      String className = args.get(CLASS_NAME);
+      if (null != className) {
+        return className;
+      }
+    }
+    return getClass().getName();
+  }
+
+  /**
    * Default analyzer for types that only produce 1 verbatim token...
    * A maximum size of chars to be read must be specified
    */
@@ -752,12 +766,14 @@ public abstract class FieldType extends FieldProperties {
   public SimpleOrderedMap<Object> getNamedPropertyValues(boolean showDefaults) {
     SimpleOrderedMap<Object> namedPropertyValues = new SimpleOrderedMap<Object>();
     namedPropertyValues.add(TYPE_NAME, getTypeName());
-    namedPropertyValues.add(CLASS_NAME, getShortName(getClass().getName()));
+    namedPropertyValues.add(CLASS_NAME, getClassArg());
     if (showDefaults) {
       Map<String,String> fieldTypeArgs = getNonFieldPropertyArgs();
       if (null != fieldTypeArgs) {
         for (String key : fieldTypeArgs.keySet()) {
-          namedPropertyValues.add(key, fieldTypeArgs.get(key));
+        if ( ! CLASS_NAME.equals(key) && ! TYPE_NAME.equals(key)) {
+            namedPropertyValues.add(key, fieldTypeArgs.get(key));
+          }
         }
       }
       if (this instanceof TextField) {
@@ -790,7 +806,7 @@ public abstract class FieldType extends FieldProperties {
       for (String key : args.keySet()) {
         if (fieldProperties.contains(key)) {
           namedPropertyValues.add(key, StrUtils.parseBool(args.get(key)));
-        } else {
+        } else if ( ! CLASS_NAME.equals(key) && ! TYPE_NAME.equals(key)) {
           namedPropertyValues.add(key, args.get(key));
         }
       }
@@ -846,11 +862,19 @@ public abstract class FieldType extends FieldProperties {
         List<SimpleOrderedMap<Object>> charFilterProps = new ArrayList<SimpleOrderedMap<Object>>();
         for (CharFilterFactory charFilterFactory : charFilterFactories) {
           SimpleOrderedMap<Object> props = new SimpleOrderedMap<Object>();
-          props.add(CLASS_NAME, getShortName(charFilterFactory.getClass().getName()));
+          props.add(CLASS_NAME, charFilterFactory.getClassArg());
           factoryArgs = charFilterFactory.getOriginalArgs();
           if (null != factoryArgs) {
             for (String key : factoryArgs.keySet()) {
-              props.add(key, factoryArgs.get(key));
+              if ( ! CLASS_NAME.equals(key)) {
+                if (LUCENE_MATCH_VERSION_PARAM.equals(key)) {
+                  if (charFilterFactory.isExplicitLuceneMatchVersion()) {
+                    props.add(key, factoryArgs.get(key));
+                  }
+                } else {
+                   props.add(key, factoryArgs.get(key));
+                }
+              }
             }
           }
           charFilterProps.add(props);
@@ -860,11 +884,19 @@ public abstract class FieldType extends FieldProperties {
 
       SimpleOrderedMap<Object> tokenizerProps = new SimpleOrderedMap<Object>();
       TokenizerFactory tokenizerFactory = tokenizerChain.getTokenizerFactory();
-      tokenizerProps.add(CLASS_NAME, getShortName(tokenizerFactory.getClass().getName()));
+      tokenizerProps.add(CLASS_NAME, tokenizerFactory.getClassArg());
       factoryArgs = tokenizerFactory.getOriginalArgs();
       if (null != factoryArgs) {
         for (String key : factoryArgs.keySet()) {
-          tokenizerProps.add(key, factoryArgs.get(key));
+          if ( ! CLASS_NAME.equals(key)) {
+            if (LUCENE_MATCH_VERSION_PARAM.equals(key)) {
+              if (tokenizerFactory.isExplicitLuceneMatchVersion()) {
+                tokenizerProps.add(key, factoryArgs.get(key));
+              }
+            } else {
+              tokenizerProps.add(key, factoryArgs.get(key));
+            }
+          }
         }
       }
       analyzerProps.add(TOKENIZER, tokenizerProps);
@@ -874,11 +906,19 @@ public abstract class FieldType extends FieldProperties {
         List<SimpleOrderedMap<Object>> filterProps = new ArrayList<SimpleOrderedMap<Object>>();
         for (TokenFilterFactory filterFactory : filterFactories) {
           SimpleOrderedMap<Object> props = new SimpleOrderedMap<Object>();
-          props.add(CLASS_NAME, getShortName(filterFactory.getClass().getName()));
+          props.add(CLASS_NAME, filterFactory.getClassArg());
           factoryArgs = filterFactory.getOriginalArgs();
           if (null != factoryArgs) {
             for (String key : factoryArgs.keySet()) {
-              props.add(key, factoryArgs.get(key));
+              if ( ! CLASS_NAME.equals(key)) {
+                if (LUCENE_MATCH_VERSION_PARAM.equals(key)) {
+                  if (filterFactory.isExplicitLuceneMatchVersion()) {
+                    props.add(key, factoryArgs.get(key));
+                  }
+                } else {
+                  props.add(key, factoryArgs.get(key));
+                }
+              }
             }
           }
           filterProps.add(props);
@@ -889,13 +929,5 @@ public abstract class FieldType extends FieldProperties {
       analyzerProps.add(CLASS_NAME, analyzer.getClass().getName());
     }
     return analyzerProps;
-  }
-  
-  private static final Pattern SHORTENABLE_PACKAGE_PATTERN 
-      = Pattern.compile("org\\.apache\\.(?:lucene\\.analysis(?=.).*|solr\\.(?:analysis|schema))\\.([^.]+)$");
-
-  private static String getShortName(String fullyQualifiedName) {
-    Matcher matcher = SHORTENABLE_PACKAGE_PATTERN.matcher(fullyQualifiedName);
-    return matcher.matches() ? "solr." + matcher.group(1) : fullyQualifiedName;
   }
 }

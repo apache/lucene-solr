@@ -51,20 +51,24 @@ import java.util.regex.PatternSyntaxException;
  * </ol>
  */
 public abstract class AbstractAnalysisFactory {
+  public static final String LUCENE_MATCH_VERSION_PARAM = "luceneMatchVersion";
 
   /** The original args, before any processing */
   private final Map<String,String> originalArgs;
 
   /** the luceneVersion arg */
   protected final Version luceneMatchVersion;
+  /** whether the luceneMatchVersion arg is explicitly specified in the serialized schema */
+  private boolean isExplicitLuceneMatchVersion = false;
 
   /**
    * Initialize this factory via a set of key-value pairs.
    */
   protected AbstractAnalysisFactory(Map<String,String> args) {
     originalArgs = Collections.unmodifiableMap(new HashMap<String,String>(args));
-    String version = get(args, "luceneMatchVersion");
+    String version = get(args, LUCENE_MATCH_VERSION_PARAM);
     luceneMatchVersion = version == null ? null : Version.parseLeniently(version);
+    args.remove(CLASS_NAME);  // consume the class arg
   }
   
   public final Map<String,String> getOriginalArgs() {
@@ -298,5 +302,29 @@ public abstract class AbstractAnalysisFactory {
     }
 
     return result;
+  }
+
+  private static final String CLASS_NAME = "class";
+  
+  /**
+   * @return the string used to specify the concrete class name in a serialized representation: the class arg.  
+   *         If the concrete class name was not specified via a class arg, returns {@code getClass().getName()}.
+   */ 
+  public String getClassArg() {
+    if (null != originalArgs) {
+      String className = originalArgs.get(CLASS_NAME);
+      if (null != className) {
+        return className;
+      }
+    }
+    return getClass().getName();
+  }
+
+  public boolean isExplicitLuceneMatchVersion() {
+    return isExplicitLuceneMatchVersion;
+  }
+
+  public void setExplicitLuceneMatchVersion(boolean isExplicitLuceneMatchVersion) {
+    this.isExplicitLuceneMatchVersion = isExplicitLuceneMatchVersion;
   }
 }
