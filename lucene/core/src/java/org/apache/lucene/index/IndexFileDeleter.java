@@ -123,7 +123,7 @@ final class IndexFileDeleter implements Closeable {
    * @throws IOException if there is a low-level IO error
    */
   public IndexFileDeleter(Directory directory, IndexDeletionPolicy policy, SegmentInfos segmentInfos,
-                          InfoStream infoStream, IndexWriter writer) throws IOException {
+                          InfoStream infoStream, IndexWriter writer, boolean initialIndexExists) throws IOException {
     this.infoStream = infoStream;
     this.writer = writer;
 
@@ -209,7 +209,7 @@ final class IndexFileDeleter implements Closeable {
       }
     }
 
-    if (currentCommitPoint == null && currentSegmentsFile != null) {
+    if (currentCommitPoint == null && currentSegmentsFile != null && initialIndexExists) {
       // We did not in fact see the segments_N file
       // corresponding to the segmentInfos that was passed
       // in.  Yet, it must exist, because our caller holds
@@ -221,7 +221,7 @@ final class IndexFileDeleter implements Closeable {
       try {
         sis.read(directory, currentSegmentsFile);
       } catch (IOException e) {
-        throw new CorruptIndexException("failed to locate current segments_N file");
+        throw new CorruptIndexException("failed to locate current segments_N file \"" + currentSegmentsFile + "\"");
       }
       if (infoStream.isEnabled("IFD")) {
         infoStream.message("IFD", "forced open of current segments file " + segmentInfos.getSegmentsFileName());

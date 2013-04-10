@@ -914,19 +914,6 @@ public void testFilesOpenClose() throws IOException {
     dir.close();
   }
   
-  // LUCENE-2812
-  public void testIndexExists() throws Exception {
-    Directory dir = newDirectory();
-    IndexWriter writer = new IndexWriter(dir, newIndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer(random())));
-    writer.addDocument(new Document());
-    writer.prepareCommit();
-    assertFalse(DirectoryReader.indexExists(dir));
-    writer.commit();
-    writer.close();
-    assertTrue(DirectoryReader.indexExists(dir));
-    dir.close();
-  }
-  
   // Make sure totalTermFreq works correctly in the terms
   // dict cache
   public void testTotalTermFreqCached() throws Exception {
@@ -1149,4 +1136,12 @@ public void testFilesOpenClose() throws IOException {
     dir.close();
   }
 
+  public void testIndexExistsOnNonExistentDirectory() throws Exception {
+    File tempDir = _TestUtil.getTempDir("testIndexExistsOnNonExistentDirectory");
+    tempDir.delete();
+    Directory dir = newFSDirectory(tempDir);
+    System.out.println("dir=" + dir);
+    assertFalse(DirectoryReader.indexExists(dir));
+    dir.close();
+  }
 }

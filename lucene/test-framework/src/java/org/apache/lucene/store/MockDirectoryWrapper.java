@@ -67,6 +67,7 @@ public class MockDirectoryWrapper extends BaseDirectoryWrapper {
   // Max actual bytes used. This is set by MockRAMOutputStream:
   long maxUsedSize;
   double randomIOExceptionRate;
+  double randomIOExceptionRateOnOpen;
   Random randomState;
   boolean noDeleteOpenFile = true;
   boolean preventDoubleWrite = true;
@@ -322,8 +323,24 @@ public class MockDirectoryWrapper extends BaseDirectoryWrapper {
   public void setRandomIOExceptionRate(double rate) {
     randomIOExceptionRate = rate;
   }
+  
   public double getRandomIOExceptionRate() {
     return randomIOExceptionRate;
+  }
+
+  /**
+   * If 0.0, no exceptions will be thrown during openInput
+   * and createOutput.  Else this should
+   * be a double 0.0 - 1.0 and we will randomly throw an
+   * IOException in openInput and createOutput with
+   * this probability.
+   */
+  public void setRandomIOExceptionRateOnOpen(double rate) {
+    randomIOExceptionRateOnOpen = rate;
+  }
+  
+  public double getRandomIOExceptionRateOnOpen() {
+    return randomIOExceptionRateOnOpen;
   }
 
   void maybeThrowIOException() throws IOException {
@@ -331,14 +348,25 @@ public class MockDirectoryWrapper extends BaseDirectoryWrapper {
   }
 
   void maybeThrowIOException(String message) throws IOException {
-    if (randomIOExceptionRate > 0.0) {
-      int number = Math.abs(randomState.nextInt() % 1000);
-      if (number < randomIOExceptionRate*1000) {
-        if (LuceneTestCase.VERBOSE) {
-          System.out.println(Thread.currentThread().getName() + ": MockDirectoryWrapper: now throw random exception" + (message == null ? "" : " (" + message + ")"));
-          new Throwable().printStackTrace(System.out);
-        }
-        throw new IOException("a random IOException" + (message == null ? "" : "(" + message + ")"));
+    if (randomState.nextDouble() < randomIOExceptionRate) {
+      if (LuceneTestCase.VERBOSE) {
+        System.out.println(Thread.currentThread().getName() + ": MockDirectoryWrapper: now throw random exception" + (message == null ? "" : " (" + message + ")"));
+        new Throwable().printStackTrace(System.out);
+      }
+      throw new IOException("a random IOException" + (message == null ? "" : "(" + message + ")"));
+    }
+  }
+
+  void maybeThrowIOExceptionOnOpen() throws IOException {
+    if (randomState.nextDouble() < randomIOExceptionRateOnOpen) {
+      if (LuceneTestCase.VERBOSE) {
+        System.out.println(Thread.currentThread().getName() + ": MockDirectoryWrapper: now throw random exception during open");
+        new Throwable().printStackTrace(System.out);
+      }
+      if (randomState.nextBoolean()) {
+        throw new IOException("a random IOException");
+      } else {
+        throw new FileNotFoundException("a random IOException");
       }
     }
   }
@@ -403,22 +431,28 @@ public class MockDirectoryWrapper extends BaseDirectoryWrapper {
   
   @Override
   public synchronized IndexOutput createOutput(String name, IOContext context) throws IOException {
+    maybeThrowDeterministicException();
+    maybeThrowIOExceptionOnOpen();
     maybeYield();
     if (failOnCreateOutput) {
       maybeThrowDeterministicException();
     }
-    if (crashed)
+    if (crashed) {
       throw new IOException("cannot createOutput after crash");
+    }
     init();
     synchronized(this) {
-      if (preventDoubleWrite && createdFiles.contains(name) && !name.equals("segments.gen"))
+      if (preventDoubleWrite && createdFiles.contains(name) && !name.equals("segments.gen")) {
         throw new IOException("file \"" + name + "\" was already written to");
+      }
     }
-    if (noDeleteOpenFile && openFiles.containsKey(name))
+    if (noDeleteOpenFile && openFiles.containsKey(name)) {
       throw new IOException("MockDirectoryWrapper: file \"" + name + "\" is still open: cannot overwrite");
+    }
     
-    if (crashed)
+    if (crashed) {
       throw new IOException("cannot createOutput after crash");
+    }
     unSyncedFiles.add(name);
     createdFiles.add(name);
     
@@ -428,9 +462,9 @@ public class MockDirectoryWrapper extends BaseDirectoryWrapper {
       RAMFile existing = ramdir.fileMap.get(name);
     
       // Enforce write once:
-      if (existing!=null && !name.equals("segments.gen") && preventDoubleWrite)
+      if (existing!=null && !name.equals("segments.gen") && preventDoubleWrite) {
         throw new IOException("file " + name + " already exists");
-      else {
+      } else {
         if (existing!=null) {
           ramdir.sizeInBytes.getAndAdd(-existing.sizeInBytes);
           existing.directory = null;
@@ -484,6 +518,8 @@ public class MockDirectoryWrapper extends BaseDirectoryWrapper {
 
   @Override
   public synchronized IndexInput openInput(String name, IOContext context) throws IOException {
+    maybeThrowDeterministicException();
+    maybeThrowIOExceptionOnOpen();
     maybeYield();
     if (failOnOpenInput) {
       maybeThrowDeterministicException();
@@ -587,9 +623,12 @@ public class MockDirectoryWrapper extends BaseDirectoryWrapper {
     if (noDeleteOpenFile && openLocks.size() > 0) {
       throw new RuntimeException("MockDirectoryWrapper: cannot close: there are still open locks: " + openLocks);
     }
+
     isOpen = false;
     if (getCheckIndexOnClose()) {
-      if (indexPossiblyExists()) {
+      randomIOExceptionRate = 0.0;
+      randomIOExceptionRateOnOpen = 0.0;
+      if (DirectoryReader.indexExists(this)) {
         if (LuceneTestCase.VERBOSE) {
           System.out.println("\nNOTE: MockDirectoryWrapper: now crash");
         }
@@ -793,7 +832,7 @@ public class MockDirectoryWrapper extends BaseDirectoryWrapper {
       }
     }
   }
-
+  
   @Override
   public synchronized String[] listAll() throws IOException {
     maybeYield();

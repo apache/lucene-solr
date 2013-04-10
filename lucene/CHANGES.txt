@@ -261,6 +261,15 @@ Bug Fixes
   and one of the sort fields is the relevance score. Only IndexSearchers created
   with an ExecutorService are concerned. (Adrien Grand)
 
+* LUCENE-4738, LUCENE-2727, LUCENE-2812: Simplified
+  DirectoryReader.indexExists so that it's more robust to transient
+  IOExceptions (e.g. due to issues like file descriptor exhaustion),
+  but this will also cause it to err towards returning true for
+  example if the directory contains a corrupted index or an incomplete
+  initial commit.  In addition, IndexWriter with OpenMode.CREATE will
+  now succeed even if the directory contains a corrupted index (Billow
+  Gao, Robert Muir, Mike McCandless)
+
 Documentation
 
 * LUCENE-4841: Added example SimpleSortedSetFacetsExample to show how

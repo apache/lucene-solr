@@ -23,9 +23,9 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 
-import org.apache.lucene.index.SegmentInfos.FindSegmentsFile;
 import org.apache.lucene.search.SearcherManager; // javadocs
 import org.apache.lucene.store.Directory;
+import org.apache.lucene.store.NoSuchDirectoryException;
 
 /** DirectoryReader is an implementation of {@link CompositeReader}
  that can read indexes in a {@link Directory}. 
@@ -314,34 +314,45 @@ public abstract class DirectoryReader extends BaseCompositeReader<AtomicReader> 
   }
   
   /**
-   * Returns <code>true</code> if an index exists at the specified directory.
+   * Returns <code>true</code> if an index likely exists at
+   * the specified directory.  Note that if a corrupt index
+   * exists, or if an index in the process of committing 
    * @param  directory the directory to check for an index
    * @return <code>true</code> if an index exists; <code>false</code> otherwise
    */
-  public static boolean indexExists(Directory directory) {
+  public static boolean indexExists(Directory directory) throws IOException {
+    // LUCENE-2812, LUCENE-2727, LUCENE-4738: this logic will
+    // return true in cases that should arguably be false,
+    // such as only IW.prepareCommit has been called, or a
+    // corrupt first commit, but it's too deadly to make
+    // this logic "smarter" and risk accidentally returning
+    // false due to various cases like file description
+    // exhaustion, access denited, etc., because in that
+    // case IndexWriter may delete the entire index.  It's
+    // safer to err towards "index exists" than try to be
+    // smart about detecting not-yet-fully-committed or
+    // corrupt indices.  This means that IndexWriter will
+    // throw an exception on such indices and the app must
+    // resolve the situation manually:
+    String[] files;
     try {
-      new FindSegmentsFile(directory) {
-        @Override
-        protected Object doBody(String segmentFileName) throws IOException {
-          try {
-            new SegmentInfos().read(directory, segmentFileName);
-          } catch (FileNotFoundException ex) {
-            if (!directory.fileExists(segmentFileName)) {
-              throw ex;
-            }
-            /* this is ok - we might have run into a access exception here.
-             * or even worse like on LUCENE-4870 this is triggered due to
-             * too many open files on the system. In that case we rather report
-             * a false positive here since wrongly returning false from indexExist
-             * can cause data loss since IW relies on this.*/
-          }
-          return null;
-        }
-      }.run();
-      return true;
-    } catch (IOException ioe) {
+      files = directory.listAll();
+    } catch (NoSuchDirectoryException nsde) {
+      // Directory does not exist --> no index exists
       return false;
     }
+
+    // Defensive: maybe a Directory impl returns null
+    // instead of throwing NoSuchDirectoryException:
+    if (files != null) {
+      String prefix = IndexFileNames.SEGMENTS + "_";
+      for(String file : files) {
+        if (file.startsWith(prefix) || file.equals(IndexFileNames.SEGMENTS_GEN)) {
+          return true;
+        }
+      }
+    }
+    return false;
   }
 
   /**

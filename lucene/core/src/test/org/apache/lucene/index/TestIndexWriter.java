@@ -52,7 +52,9 @@ import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.search.ScoreDoc;
 import org.apache.lucene.search.TermQuery;
 import org.apache.lucene.store.AlreadyClosedException;
+import org.apache.lucene.store.BaseDirectoryWrapper;
 import org.apache.lucene.store.Directory;
+import org.apache.lucene.store.IOContext;
 import org.apache.lucene.store.IndexOutput;
 import org.apache.lucene.store.Lock;
 import org.apache.lucene.store.LockFactory;
@@ -1477,7 +1479,7 @@ public class TestIndexWriter extends LuceneTestCase {
   }
 
   public void testNoSegmentFile() throws IOException {
-    Directory dir = newDirectory();
+    BaseDirectoryWrapper dir = newDirectory();
     dir.setLockFactory(NoLockFactory.getNoLockFactory());
     IndexWriter w = new IndexWriter(dir, newIndexWriterConfig(
         TEST_VERSION_CURRENT, new MockAnalyzer(random())).setMaxBufferedDocs(2));
@@ -1497,6 +1499,10 @@ public class TestIndexWriter extends LuceneTestCase {
     w2.close();
     // If we don't do that, the test fails on Windows
     w.rollback();
+
+    // This test leaves only segments.gen, which causes
+    // DirectoryReader.indexExists to return true:
+    dir.setCheckIndexOnClose(false);
     dir.close();
   }
 
@@ -2115,5 +2121,52 @@ public class TestIndexWriter extends LuceneTestCase {
     }
     
   }
-  
+
+  // LUCENE-2727/LUCENE-2812/LUCENE-4738:
+  public void testCorruptFirstCommit() throws Exception {
+    for(int i=0;i<6;i++) {
+      BaseDirectoryWrapper dir = newDirectory();
+      dir.createOutput("segments_0", IOContext.DEFAULT).close();
+      IndexWriterConfig iwc = newIndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer(random()));
+      int mode = i/2;
+      if (mode == 0) {
+        iwc.setOpenMode(OpenMode.CREATE);
+      } else if (mode == 1) {
+        iwc.setOpenMode(OpenMode.APPEND);
+      } else if (mode == 2) {
+        iwc.setOpenMode(OpenMode.CREATE_OR_APPEND);
+      }
+
+      if (VERBOSE) {
+        System.out.println("\nTEST: i=" + i);
+      }
+
+      try {
+        if ((i & 1) == 0) {
+          new IndexWriter(dir, iwc).close();
+        } else {
+          new IndexWriter(dir, iwc).rollback();
+        }
+        if (mode != 0) {
+          fail("expected exception");
+        }
+      } catch (IOException ioe) {
+        // OpenMode.APPEND should throw an exception since no
+        // index exists:
+        if (mode == 0) {
+          // Unexpected
+          throw ioe;
+        }
+      }
+
+      if (VERBOSE) {
+        System.out.println("  at close: " + Arrays.toString(dir.listAll()));
+      }
+
+      if (mode != 0) {
+        dir.setCheckIndexOnClose(false);
+      }
+      dir.close();
+    }
+  }
 }

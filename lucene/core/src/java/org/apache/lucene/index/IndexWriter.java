@@ -659,6 +659,8 @@ public class IndexWriter implements Closeable, TwoPhaseCommit {
       // IndexFormatTooOldException.
       segmentInfos = new SegmentInfos();
 
+      boolean initialIndexExists = true;
+
       if (create) {
         // Try to read first.  This is to allow create
         // against an index that's currently open for
@@ -669,6 +671,7 @@ public class IndexWriter implements Closeable, TwoPhaseCommit {
           segmentInfos.clear();
         } catch (IOException e) {
           // Likely this means it's a fresh directory
+          initialIndexExists = false;
         }
 
         // Record that we have a change (zero out all
@@ -709,7 +712,8 @@ public class IndexWriter implements Closeable, TwoPhaseCommit {
       synchronized(this) {
         deleter = new IndexFileDeleter(directory,
                                        config.getIndexDeletionPolicy(),
-                                       segmentInfos, infoStream, this);
+                                       segmentInfos, infoStream, this,
+                                       initialIndexExists);
       }
 
       if (deleter.startingCommitDeleted) {

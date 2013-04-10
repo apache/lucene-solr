@@ -184,7 +184,7 @@ public abstract class Directory implements Closeable {
    * <pre class="prettyprint">
    * Directory to; // the directory to copy to
    * for (String file : dir.listAll()) {
-   *   dir.copy(to, file, newFile); // newFile can be either file, or a new name
+   *   dir.copy(to, file, newFile, IOContext.DEFAULT); // newFile can be either file, or a new name
    * }
    * </pre>
    * <p>

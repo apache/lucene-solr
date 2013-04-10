@@ -1496,7 +1496,7 @@ public class TestIndexWriterExceptions extends LuceneTestCase {
       if (doFail && name.startsWith("segments_")) {
         StackTraceElement[] trace = new Exception().getStackTrace();
         for (int i = 0; i < trace.length; i++) {
-          if ("indexExists".equals(trace[i].getMethodName())) {
+          if ("read".equals(trace[i].getMethodName())) {
             throw new UnsupportedOperationException("expected UOE");
           }
         }
@@ -1516,8 +1516,8 @@ public class TestIndexWriterExceptions extends LuceneTestCase {
       new IndexWriter(d, newIndexWriterConfig(TEST_VERSION_CURRENT, null));
       fail("should have gotten a UOE");
     } catch (UnsupportedOperationException expected) {
-      
     }
+
     uoe.doFail = false;
     d.close();
   }
