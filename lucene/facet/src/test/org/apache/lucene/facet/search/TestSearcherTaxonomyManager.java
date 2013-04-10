@@ -37,8 +37,10 @@ import org.apache.lucene.search.MatchAllDocsQuery;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.util.IOUtils;
 import org.apache.lucene.util.LuceneTestCase;
+import org.apache.lucene.util.LuceneTestCase.SuppressCodecs;
 import org.apache.lucene.util._TestUtil;
 
+@SuppressCodecs("Lucene3x")
 public class TestSearcherTaxonomyManager extends LuceneTestCase {
   public void test() throws Exception {
     Directory dir = newDirectory();
