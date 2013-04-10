@@ -1396,7 +1396,7 @@ public class TestIndexWriterExceptions extends LuceneTestCase {
     final IndexReader r = w.getReader();
     w.close();
 
-    final IndexSearcher s = new IndexSearcher(r);
+    final IndexSearcher s = newSearcher(r);
     PhraseQuery pq = new PhraseQuery();
     pq.add(new Term("content", "silly"));
     pq.add(new Term("content", "content"));
@@ -1476,7 +1476,7 @@ public class TestIndexWriterExceptions extends LuceneTestCase {
     final IndexReader r = w.getReader();
     w.close();
 
-    final IndexSearcher s = new IndexSearcher(r);
+    final IndexSearcher s = newSearcher(r);
     PhraseQuery pq = new PhraseQuery();
     pq.add(new Term("content", "silly"));
     pq.add(new Term("content", "content"));

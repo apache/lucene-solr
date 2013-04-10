@@ -164,7 +164,7 @@ public class TestBooleanQuery extends LuceneTestCase {
     query.add(wildcardQuery, BooleanClause.Occur.MUST_NOT);
     
     MultiReader multireader = new MultiReader(reader1, reader2);
-    IndexSearcher searcher = new IndexSearcher(multireader);
+    IndexSearcher searcher = newSearcher(multireader);
     assertEquals(0, searcher.search(query, 10).totalHits);
     
     final ExecutorService es = Executors.newCachedThreadPool(new NamedThreadFactory("NRT search threads"));
@@ -307,7 +307,7 @@ public class TestBooleanQuery extends LuceneTestCase {
     writer.close();
 
     IndexReader indexReader = DirectoryReader.open(directory);
-    IndexSearcher searcher = new IndexSearcher(indexReader);
+    IndexSearcher searcher = newSearcher(indexReader);
 
     BooleanQuery query = new BooleanQuery();
     SpanQuery sq1 = new SpanTermQuery(new Term(FIELD, "clockwork"));

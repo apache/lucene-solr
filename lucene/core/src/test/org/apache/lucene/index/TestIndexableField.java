@@ -222,7 +222,7 @@ public class TestIndexableField extends LuceneTestCase {
     final IndexReader r = w.getReader();
     w.close();
 
-    final IndexSearcher s = new IndexSearcher(r);
+    final IndexSearcher s = newSearcher(r);
     int counter = 0;
     for(int id=0;id<NUM_DOCS;id++) {
       if (VERBOSE) {

@@ -351,7 +351,7 @@ public class TestNumericRangeQuery64 extends LuceneTestCase {
     writer.close();
     
     IndexReader r = DirectoryReader.open(dir);
-    IndexSearcher s = new IndexSearcher(r);
+    IndexSearcher s = newSearcher(r);
     
     Query q=NumericRangeQuery.newLongRange("long", null, null, true, true);
     TopDocs topDocs = s.search(q, 10);

@@ -73,7 +73,7 @@ public class TestNRTCachingDirectory extends LuceneTestCase {
           }
         }
         assertEquals(1+docCount, r.numDocs());
-        final IndexSearcher s = new IndexSearcher(r);
+        final IndexSearcher s = newSearcher(r);
         // Just make sure search can run; we can't assert
         // totHits since it could be 0
         TopDocs hits = s.search(new TermQuery(new Term("body", "the")), 10);

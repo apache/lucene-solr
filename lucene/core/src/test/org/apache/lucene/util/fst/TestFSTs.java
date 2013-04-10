@@ -868,7 +868,7 @@ public class TestFSTs extends LuceneTestCase {
 
       // turn writer into reader:
       final IndexReader r = w.getReader();
-      final IndexSearcher s = new IndexSearcher(r);
+      final IndexSearcher s = newSearcher(r);
       w.close();
 
       final List<String> allIDsList = new ArrayList<String>(allIDs);
@@ -997,7 +997,7 @@ public class TestFSTs extends LuceneTestCase {
     if (VERBOSE) {
       System.out.println("TEST: got reader=" + r);
     }
-    IndexSearcher s = new IndexSearcher(r);
+    IndexSearcher s = newSearcher(r);
     w.close();
 
     final List<String> allTermsList = new ArrayList<String>(allTerms);

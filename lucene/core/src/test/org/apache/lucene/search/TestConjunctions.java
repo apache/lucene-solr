@@ -58,7 +58,7 @@ public class TestConjunctions extends LuceneTestCase {
     writer.addDocument(doc("nutch", "nutch is an internet search engine with web crawler and is using lucene and hadoop"));
     reader = writer.getReader();
     writer.close();
-    searcher = new IndexSearcher(reader);
+    searcher = newSearcher(reader);
     searcher.setSimilarity(new TFSimilarity());
   }
   

@@ -326,7 +326,7 @@ public class TestNumericRangeQuery32 extends LuceneTestCase {
     writer.close();
     
     IndexReader r = DirectoryReader.open(dir);
-    IndexSearcher s = new IndexSearcher(r);
+    IndexSearcher s = newSearcher(r);
     
     Query q=NumericRangeQuery.newIntRange("int", null, null, true, true);
     TopDocs topDocs = s.search(q, 10);

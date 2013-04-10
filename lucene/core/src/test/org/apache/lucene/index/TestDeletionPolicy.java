@@ -689,7 +689,7 @@ public class TestDeletionPolicy extends LuceneTestCase {
       assertEquals(3*(N+1)+1, policy.numOnCommit);
 
       IndexReader rwReader = DirectoryReader.open(dir);
-      IndexSearcher searcher = new IndexSearcher(rwReader);
+      IndexSearcher searcher = newSearcher(rwReader);
       ScoreDoc[] hits = searcher.search(query, null, 1000).scoreDocs;
       assertEquals(0, hits.length);
 

@@ -96,7 +96,7 @@ public class TestPerFieldDocValuesFormat extends BaseDocValuesFormatTestCase {
     
     // Now search the index:
     IndexReader ireader = DirectoryReader.open(directory); // read-only=true
-    IndexSearcher isearcher = new IndexSearcher(ireader);
+    IndexSearcher isearcher = newSearcher(ireader);
 
     assertEquals(1, isearcher.search(new TermQuery(new Term("fieldname", longTerm)), 1).totalHits);
     Query query = new TermQuery(new Term("fieldname", "text"));
