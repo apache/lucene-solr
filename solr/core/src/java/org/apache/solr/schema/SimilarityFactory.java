@@ -40,7 +40,6 @@ import java.util.Iterator;
  */
 public abstract class SimilarityFactory {
   public static final String CLASS_NAME = "class";
-  private static final String SOLR_SIMILARITIES_PACKAGE = "org.apache.solr.search.similarities"; 
   
   protected SolrParams params;
 
@@ -52,25 +51,38 @@ public abstract class SimilarityFactory {
 
   /** Returns a serializable description of this similarity(factory) */
   public SimpleOrderedMap<Object> getNamedPropertyValues() {
-    String className = getClass().getName();
-    if (className.startsWith("org.apache.solr.schema.IndexSchema$")) {
-      // If this class is just a no-params wrapper around a similarity class, use the similarity class
-      className = getSimilarity().getClass().getName();
-    } else {
-      // Only shorten factory names
-      if (className.startsWith(SOLR_SIMILARITIES_PACKAGE + ".")) {
-        className = className.replace(SOLR_SIMILARITIES_PACKAGE, "solr");
-      }
-    }
     SimpleOrderedMap<Object> props = new SimpleOrderedMap<Object>();
-    props.add(CLASS_NAME, className);
+    props.add(CLASS_NAME, getClassArg());
     if (null != params) {
       Iterator<String> iter = params.getParameterNamesIterator();
       while (iter.hasNext()) {
         String key = iter.next();
-        props.add(key, params.get(key));
+        if ( ! CLASS_NAME.equals(key)) {
+          props.add(key, params.get(key));
+        }
       }
     }
     return props;
+  }
+
+  /**
+   * @return the string used to specify the concrete class name in a serialized representation: the class arg.  
+   *         If the concrete class name was not specified via a class arg, returns {@code getClass().getName()},
+   *         unless this class is the anonymous similarity wrapper produced in {@link IndexSchema}, in which
+   *         case the {@code getSimilarity().getClass().getName()} is returned.
+   */
+  public String getClassArg() {
+    if (null != params) {
+      String className = params.get(CLASS_NAME);
+      if (null != className) {
+        return className;
+      }
+    }
+    String className = getClass().getName(); 
+    if (className.startsWith("org.apache.solr.schema.IndexSchema$")) {
+      // If this class is just a no-params wrapper around a similarity class, use the similarity class
+      className = getSimilarity().getClass().getName();
+    }
+    return className; 
   }
 }
