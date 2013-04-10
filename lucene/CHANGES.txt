@@ -257,6 +257,10 @@ Bug Fixes
 * LUCENE-4885: FacetsAccumulator did not set the correct value for
   FacetResult.numValidDescendants. (Mike McCandless, Shai Erera)
 
+* LUCENE-4925: Fixed IndexSearcher.search when the argument list contains a Sort
+  and one of the sort fields is the relevance score. Only IndexSearchers created
+  with an ExecutorService are concerned. (Adrien Grand)
+
 Documentation
 
 * LUCENE-4841: Added example SimpleSortedSetFacetsExample to show how

@@ -804,7 +804,7 @@ public class IndexSearcher {
     public TopFieldDocs call() throws IOException {
       assert slice.leaves.length == 1;
       final TopFieldDocs docs = searcher.search(Arrays.asList(slice.leaves),
-          weight, after, nDocs, sort, true, doDocScores, doMaxScore);
+          weight, after, nDocs, sort, true, doDocScores || sort.needsScores(), doMaxScore);
       lock.lock();
       try {
         final AtomicReaderContext ctx = slice.leaves[0];

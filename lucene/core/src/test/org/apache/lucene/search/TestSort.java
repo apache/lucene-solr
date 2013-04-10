@@ -35,6 +35,7 @@ import org.apache.lucene.index.RandomIndexWriter;
 import org.apache.lucene.index.Term;
 import org.apache.lucene.index.Terms;
 import org.apache.lucene.index.TermsEnum;
+import org.apache.lucene.search.BooleanClause.Occur;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.LuceneTestCase;
@@ -1512,6 +1513,33 @@ public class TestSort extends LuceneTestCase {
     // 'bar' comes before 'foo'
     assertEquals("bar", searcher.doc(td.scoreDocs[0].doc).get("value"));
     assertEquals("foo", searcher.doc(td.scoreDocs[1].doc).get("value"));
+
+    ir.close();
+    dir.close();
+  }
+
+  public void testScore() throws IOException {
+    Directory dir = newDirectory();
+    RandomIndexWriter writer = new RandomIndexWriter(random(), dir);
+    Document doc = new Document();
+    doc.add(newStringField("value", "bar", Field.Store.NO));
+    writer.addDocument(doc);
+    doc = new Document();
+    doc.add(newStringField("value", "foo", Field.Store.NO));
+    writer.addDocument(doc);
+    IndexReader ir = writer.getReader();
+    writer.close();
+
+    IndexSearcher searcher = newSearcher(ir);
+    Sort sort = new Sort(SortField.FIELD_SCORE);
+
+    final BooleanQuery bq = new BooleanQuery();
+    bq.add(new TermQuery(new Term("value", "foo")), Occur.SHOULD);
+    bq.add(new MatchAllDocsQuery(), Occur.SHOULD);
+    TopDocs td = searcher.search(bq, 10, sort);
+    assertEquals(2, td.totalHits);
+    assertEquals(1, td.scoreDocs[0].doc);
+    assertEquals(0, td.scoreDocs[1].doc);
 
     ir.close();
     dir.close();
