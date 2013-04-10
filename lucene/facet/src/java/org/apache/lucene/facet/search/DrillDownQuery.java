@@ -19,7 +19,9 @@ package org.apache.lucene.facet.search;
 
 import java.io.IOException;
 import java.util.LinkedHashMap;
+import java.util.List;
 import java.util.Map;
+import java.util.regex.Pattern;
 
 import org.apache.lucene.facet.params.CategoryListParams;
 import org.apache.lucene.facet.params.FacetIndexingParams;
@@ -61,7 +63,7 @@ public final class DrillDownQuery extends Query {
   
   private final BooleanQuery query;
   private final Map<String,Integer> drillDownDims = new LinkedHashMap<String,Integer>();
-  private final FacetIndexingParams fip;
+  final FacetIndexingParams fip;
 
   /** Used by clone() */
   DrillDownQuery(FacetIndexingParams fip, BooleanQuery query, Map<String,Integer> drillDownDims) {
@@ -85,6 +87,32 @@ public final class DrillDownQuery extends Query {
       query.add(clauses[i].getQuery(), Occur.MUST);
     }
     fip = other.fip;
+  }
+
+  /** Used by DrillSideways */
+  DrillDownQuery(FacetIndexingParams fip, Query baseQuery, List<Query> clauses) {
+    this.fip = fip;
+    this.query = new BooleanQuery(true);
+    if (baseQuery != null) {
+      query.add(baseQuery, Occur.MUST);      
+    }
+    for(Query clause : clauses) {
+      query.add(clause, Occur.MUST);
+      drillDownDims.put(getDim(clause), drillDownDims.size());
+    }
+  }
+
+  String getDim(Query clause) {
+    assert clause instanceof ConstantScoreQuery;
+    clause = ((ConstantScoreQuery) clause).getQuery();
+    assert clause instanceof TermQuery || clause instanceof BooleanQuery;
+    String term;
+    if (clause instanceof TermQuery) {
+      term = ((TermQuery) clause).getTerm().text();
+    } else {
+      term = ((TermQuery) ((BooleanQuery) clause).getClauses()[0].getQuery()).getTerm().text();
+    }
+    return term.split(Pattern.quote(Character.toString(fip.getFacetDelimChar())), 2)[0];
   }
 
   /**
