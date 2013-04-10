@@ -20,6 +20,7 @@ package org.apache.lucene.store;
 import java.io.IOException;
 import java.util.Collection;
 
+import org.apache.lucene.index.DirectoryReader;
 import org.apache.lucene.util._TestUtil;
 
 /**
@@ -42,7 +43,7 @@ public class BaseDirectoryWrapper extends Directory {
   @Override
   public void close() throws IOException {
     isOpen = false;
-    if (checkIndexOnClose && indexPossiblyExists()) {
+    if (checkIndexOnClose && DirectoryReader.indexExists(this)) {
       _TestUtil.checkIndex(this, crossCheckTermVectorsOnClose);
     }
     delegate.close();
@@ -50,27 +51,6 @@ public class BaseDirectoryWrapper extends Directory {
   
   public boolean isOpen() {
     return isOpen;
-  }
-  
-  /** 
-   * don't rely upon DirectoryReader.fileExists to determine if we should
-   * checkIndex() or not. It might mask real problems, where we silently
-   * don't checkindex at all. instead we look for a segments file.
-   */
-  protected boolean indexPossiblyExists() {
-    String files[];
-    try {
-      files = listAll();
-    } catch (IOException ex) {
-      // this means directory doesn't exist, which is ok. return false
-      return false;
-    }
-    for (String f : files) {
-      if (f.startsWith("segments_")) {
-        return true;
-      }
-    }
-    return false;
   }
   
   /**
