@@ -24,37 +24,58 @@ import org.apache.lucene.index.NumericDocValues;
 
 /**
  * A {@link Sorter} which sorts documents according to their
- * {@link NumericDocValues}.
- *
+ * {@link NumericDocValues}. One can specify ascending or descending sort order.
+ * 
  * @lucene.experimental
  */
 public class NumericDocValuesSorter extends Sorter {
 
   private final String fieldName;
-
+  private final boolean ascending;
+  
+  /** Constructor over the given field name, and ascending sort order. */
   public NumericDocValuesSorter(final String fieldName) {
+    this(fieldName, true);
+  }
+  
+  /**
+   * Constructor over the given field name, and whether sorting should be
+   * ascending ({@code true}) or descending ({@code false}).
+   */
+  public NumericDocValuesSorter(final String fieldName, boolean ascending) {
     this.fieldName = fieldName;
+    this.ascending = ascending;
   }
 
   @Override
   public Sorter.DocMap sort(final AtomicReader reader) throws IOException {
     final NumericDocValues ndv = reader.getNumericDocValues(fieldName);
-    final DocComparator comparator = new DocComparator() {
-
-      @Override
-      public int compare(int docID1, int docID2) {
-        final long v1 = ndv.get(docID1);
-        final long v2 = ndv.get(docID2);
-        return v1 < v2 ? -1 : v1 == v2 ? 0 : 1;
-      }
-      
-    };
+    final DocComparator comparator;
+    if (ascending) {
+      comparator = new DocComparator() {
+        @Override
+        public int compare(int docID1, int docID2) {
+          final long v1 = ndv.get(docID1);
+          final long v2 = ndv.get(docID2);
+          return v1 < v2 ? -1 : v1 == v2 ? 0 : 1;
+        }
+      };
+    } else {
+      comparator = new DocComparator() {
+        @Override
+        public int compare(int docID1, int docID2) {
+          final long v1 = ndv.get(docID1);
+          final long v2 = ndv.get(docID2);
+          return v1 > v2 ? -1 : v1 == v2 ? 0 : 1;
+        }
+      };
+    }
     return sort(reader.maxDoc(), comparator);
   }
   
   @Override
   public String getID() {
-    return "DocValues(" + fieldName + ",asc)";
+    return "DocValues(" + fieldName + "," + (ascending ? "ascending" : "descending") + ")";
   }
   
 }

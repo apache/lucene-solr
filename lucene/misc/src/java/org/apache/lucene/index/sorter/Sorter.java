@@ -81,11 +81,12 @@ public abstract class Sorter {
 
   }
 
-  /** Sorts documents in reverse order.
-   *  <b>NOTE</b>: This {@link Sorter} is not idempotent. Sorting an
-   *  {@link AtomicReader} once or twice will return two different
-   *  {@link AtomicReader} views. This {@link Sorter} should not be used with
-   *  {@link SortingMergePolicy}. */
+  /**
+   * Sorts documents in reverse order. <b>NOTE</b>: This {@link Sorter} is not
+   * idempotent. Sorting an {@link AtomicReader} once or twice will return two
+   * different {@link AtomicReader} views. This {@link Sorter} should not be
+   * used with {@link SortingMergePolicy}.
+   */
   public static final Sorter REVERSE_DOCS = new Sorter() {
     @Override
     public DocMap sort(final AtomicReader reader) throws IOException {
@@ -111,7 +112,7 @@ public abstract class Sorter {
       return "ReverseDocs";
     }
   };
-
+  
   private static final class DocValueSorterTemplate extends SorterTemplate {
     
     private final int[] docs;
@@ -231,4 +232,9 @@ public abstract class Sorter {
    */
   public abstract String getID();
 
+  @Override
+  public String toString() {
+    return getID();
+  }
+  
 }

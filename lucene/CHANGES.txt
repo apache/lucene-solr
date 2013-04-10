@@ -177,6 +177,8 @@ New Features
   with SortingMergePolicy, which allows to early terminate queries on sorted
   indexes, when the sort order matches the index order. (Adrien Grand, Shai Erera)
 
+* LUCENE-4904: Added descending sort order to NumericDocValuesSorter. (Shai Erera)
+
 Optimizations
 
 * LUCENE-4839: SorterTemplate.merge can now be overridden in order to replace
