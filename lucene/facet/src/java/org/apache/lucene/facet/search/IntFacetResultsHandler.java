@@ -49,11 +49,13 @@ public final class IntFacetResultsHandler extends DepthOneFacetResultsHandler {
     int numResults = 0;
     while (ordinal != TaxonomyReader.INVALID_ORDINAL) {
       int value = values[ordinal];
-      if (value > top.value) {
-        top.value = value;
-        top.ordinal = ordinal;
-        top = pq.updateTop();
+      if (value > 0) {
         ++numResults;
+        if (value > top.value) {
+          top.value = value;
+          top.ordinal = ordinal;
+          top = pq.updateTop();
+        }
       }
       ordinal = siblings[ordinal];
     }

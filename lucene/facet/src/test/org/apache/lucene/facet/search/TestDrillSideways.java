@@ -150,10 +150,13 @@ public class TestDrillSideways extends FacetTestCase {
     // Publish Date is only drill-down, and Lisa published
     // one in 2012 and one in 2010:
     assertEquals("Publish Date: 2012=1 2010=1", toString(r.facetResults.get(0)));
+    assertEquals(2, r.facetResults.get(0).getNumValidDescendants());
+
     // Author is drill-sideways + drill-down: Lisa
     // (drill-down) published twice, and Frank/Susan/Bob
     // published once:
     assertEquals("Author: Lisa=2 Frank=1 Susan=1 Bob=1", toString(r.facetResults.get(1)));
+    assertEquals(4, r.facetResults.get(1).getNumValidDescendants());
 
     // Another simple case: drill-down on on single fields
     // but OR of two values
@@ -766,6 +769,7 @@ public class TestDrillSideways extends FacetTestCase {
         ds = new DrillSideways(s, tr);
       }
 
+      // Retrieve all facets:
       DrillSidewaysResult actual = ds.search(ddq, filter, null, numDocs, sort, true, true, fsp);
 
       TopDocs hits = s.search(baseQuery, numDocs);
@@ -773,9 +777,12 @@ public class TestDrillSideways extends FacetTestCase {
       for(ScoreDoc sd : hits.scoreDocs) {
         scores.put(s.doc(sd.doc).get("id"), sd.score);
       }
+      if (VERBOSE) {
+        System.out.println("  verify all facets");
+      }
       verifyEquals(requests, dimValues, s, expected, actual, scores, -1, doUseDV);
 
-      // Make sure topN works:
+      // Retrieve topN facets:
       int topN = _TestUtil.nextInt(random(), 1, 20);
 
       List<FacetRequest> newRequests = new ArrayList<FacetRequest>();
@@ -784,6 +791,9 @@ public class TestDrillSideways extends FacetTestCase {
       }
       fsp = new FacetSearchParams(newRequests);
       actual = ds.search(ddq, filter, null, numDocs, sort, true, true, fsp);
+      if (VERBOSE) {
+        System.out.println("  verify topN=" + topN);
+      }
       verifyEquals(newRequests, dimValues, s, expected, actual, scores, topN, doUseDV);
 
       // Make sure drill down doesn't change score:
@@ -834,6 +844,7 @@ public class TestDrillSideways extends FacetTestCase {
   private static class SimpleFacetResult {
     List<Doc> hits;
     int[][] counts;
+    int[] uniqueCounts;
   }
   
   private int[] getTopNOrds(final int[] counts, final String[] values, int topN) {
@@ -985,13 +996,21 @@ public class TestDrillSideways extends FacetTestCase {
     SimpleFacetResult res = new SimpleFacetResult();
     res.hits = hits;
     res.counts = new int[numDims][];
-    for(int i=0;i<requests.size();i++) {
+    res.uniqueCounts = new int[numDims];
+    for (int i = 0; i < requests.size(); i++) {
       int dim = Integer.parseInt(requests.get(i).categoryPath.components[0].substring(3));
       if (drillDowns[dim] != null) {
         res.counts[dim] = drillSidewaysCounts[dim].counts[dim];
       } else {
         res.counts[dim] = drillDownCounts.counts[dim];
       }
+      int uniqueCount = 0;
+      for (int j = 0; j < res.counts[dim].length; j++) {
+        if (res.counts[dim][j] != 0) {
+          uniqueCount++;
+        }
+      }
+      res.uniqueCounts[dim] = uniqueCount;
     }
 
     return res;
@@ -1107,6 +1126,8 @@ public class TestDrillSideways extends FacetTestCase {
         }
         assertEquals(setCount, actualValues.size());
       }
+
+      assertEquals("dim=" + dim, expected.uniqueCounts[dim], fr.getNumValidDescendants());
     }
   }
 

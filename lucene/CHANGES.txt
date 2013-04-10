@@ -254,6 +254,9 @@ Bug Fixes
 * LUCENE-4880: Fix MemoryIndex to consume empty terms from the tokenstream consistent
   with IndexWriter. Previously it discarded them.  (Timothy Allison via Robert Muir)
 
+* LUCENE-4885: FacetsAccumulator did not set the correct value for
+  FacetResult.numValidDescendants. (Mike McCandless, Shai Erera)
+
 Documentation
 
 * LUCENE-4841: Added example SimpleSortedSetFacetsExample to show how

@@ -81,11 +81,10 @@ public class FacetsAccumulator {
     return new FacetsAccumulator(fsp, indexReader, taxoReader);
   }
   
-  private static FacetResult emptyResult(int ordinal, FacetRequest fr) {
-    FacetResultNode root = new FacetResultNode();
-    root.ordinal = ordinal;
+  /** Returns an empty {@link FacetResult}. */
+  protected static FacetResult emptyResult(int ordinal, FacetRequest fr) {
+    FacetResultNode root = new FacetResultNode(ordinal, 0);
     root.label = fr.categoryPath;
-    root.value = 0;
     return new FacetResult(fr, root, 0);
   }
   

@@ -706,8 +706,7 @@ public class TopKInEachNodeHandler extends PartitionsFacetResultsHandler {
       value = tmp.rootNodeValue;
     }
     FacetResultNode root = generateNode(ordinal, value, tmp.mapToAACOs);
-    return new FacetResult (tmp.facetRequest, root, tmp.totalNumOfFacetsConsidered); 
-
+    return new FacetResult(tmp.facetRequest, root, tmp.totalNumOfFacetsConsidered);
   }
 
   private FacetResultNode generateNode(int ordinal, double val,  IntToObjectMap<AACO> mapToAACOs) {
