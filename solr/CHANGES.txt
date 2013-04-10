@@ -175,6 +175,8 @@ Bug Fixes
 * SOLR-4581: When faceting on numeric fields in Solr 4.2, negative values (constraints)
   were sorted incorrectly. (Alexander Buhr, shalin, yonik)
 
+* SOLR-4699: The System admin handler should not assume a file system based data directory 
+  location. (Mark Miller)
 
 Optimizations
 ----------------------

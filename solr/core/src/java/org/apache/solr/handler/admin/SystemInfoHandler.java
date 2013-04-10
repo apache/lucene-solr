@@ -106,7 +106,12 @@ public class SystemInfoHandler extends RequestHandlerBase
     SimpleOrderedMap<Object> dirs = new SimpleOrderedMap<Object>();
     dirs.add( "cwd" , new File( System.getProperty("user.dir")).getAbsolutePath() );
     dirs.add( "instance", new File( core.getResourceLoader().getInstanceDir() ).getAbsolutePath() );
-    dirs.add( "data", new File( core.getDataDir() ).getAbsolutePath() );
+    try {
+      dirs.add( "data", core.getDirectoryFactory().normalize(core.getDataDir()));
+    } catch (IOException e) {
+      log.warn("Problem getting the normalized data directory path", e);
+      dirs.add( "data", "N/A" );
+    }
     dirs.add( "dirimpl", core.getDirectoryFactory().getClass().getName());
     try {
       dirs.add( "index", core.getDirectoryFactory().normalize(core.getIndexDir()) );
