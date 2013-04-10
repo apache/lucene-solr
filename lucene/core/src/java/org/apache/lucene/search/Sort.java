@@ -201,4 +201,15 @@ public class Sort {
   public int hashCode() {
     return 0x45aaf665 + Arrays.hashCode(fields);
   }
+
+  /** Whether the relevance score is needed to sort documents. */
+  boolean needsScores() {
+    for (SortField sortField : fields) {
+      if (sortField.getType() == SortField.Type.SCORE) {
+        return true;
+      }
+    }
+    return false;
+  }
+
 }
