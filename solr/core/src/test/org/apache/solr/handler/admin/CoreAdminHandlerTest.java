@@ -79,7 +79,7 @@ public class CoreAdminHandlerTest extends SolrTestCaseJ4 {
     
     SolrQueryResponse resp = new SolrQueryResponse();
     admin.handleRequestBody
-      (req(CoreAdminParams.ACTION, 
+      (req(CoreAdminParams.ACTION,
            CoreAdminParams.CoreAdminAction.CREATE.toString(),
            CoreAdminParams.INSTANCE_DIR, instPropFile.getAbsolutePath(),
            CoreAdminParams.NAME, "props",
@@ -143,21 +143,4 @@ public class CoreAdminHandlerTest extends SolrTestCaseJ4 {
 
   }
 
-  
-  public void assertXmlFile(final File file, String... xpath)
-      throws IOException, SAXException {
-    
-    try {
-      String xml = FileUtils.readFileToString(file, "UTF-8");
-      String results = h.validateXPath(xml, xpath);
-      if (null != results) {
-        String msg = "File XPath failure: file=" + file.getPath() + " xpath="
-            + results + "\n\nxml was: " + xml;
-        fail(msg);
-      }
-    } catch (XPathExpressionException e2) {
-      throw new RuntimeException("XPath is invalid", e2);
-    }
-  }
-  
 }

@@ -75,4 +75,8 @@ public interface ConfigSolr {
   public Properties readCoreProperties(String coreName);
 
   public Map<String, String> readCoreAttributes(String coreName);
+
+  // If the core is not to be loaded (say two cores defined with the same name or with the same data dir), return
+  // the reason. If it's OK to load the core, return null.
+  public String getBadCoreMessage(String name);
 }

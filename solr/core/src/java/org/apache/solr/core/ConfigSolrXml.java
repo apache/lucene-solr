@@ -52,9 +52,12 @@ import java.io.InputStream;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Locale;
 import java.util.Map;
 import java.util.Properties;
+import java.util.Set;
 
 /**
  * ConfigSolrXml
@@ -66,7 +69,7 @@ import java.util.Properties;
  *
  * It's a bit twisted, but we decided to NOT do the solr.properties switch. But since there's already an interface
  * it makes sense to leave it in so we can use other methods of providing the Solr information that is contained
- * in solr.xml. Perhapse something form SolrCloud in the future?
+ * in solr.xml. Perhaps something form SolrCloud in the future?
  *
  */
 
@@ -77,6 +80,8 @@ public class ConfigSolrXml extends Config implements ConfigSolr {
 
   private final Map<String, CoreDescriptorPlus> coreDescriptorPlusMap = new HashMap<String, CoreDescriptorPlus>();
   private NodeList coreNodes = null;
+  private final Map<String, String> badCores = new HashMap<String, String>();
+    // List of cores that we should _never_ load. Ones with dup names or duplicate datadirs or...
 
   static {
     prefixes = new HashMap<ConfLevel, String>();
@@ -104,14 +109,47 @@ public class ConfigSolrXml extends Config implements ConfigSolr {
     isAutoDiscover = getBool(ConfigSolr.ConfLevel.SOLR_CORES, "autoDiscoverCores", false);
     if (isAutoDiscover) {
       synchronized (coreDescriptorPlusMap) {
-        walkFromHere(new File(container.getSolrHome()), container);
+        walkFromHere(new File(container.getSolrHome()), container, new HashMap<String, CoreDescriptorPlus>());
       }
 
     } else {
       coreNodes = (NodeList) evaluate("solr/cores/core",
           XPathConstants.NODESET);
-    }
+      // Check a couple of error conditions
+      Set<String> names = new HashSet<String>(); // for duplicate names
+      Map<String, String> dirs = new HashMap<String, String>(); // for duplicate data dirs.
 
+      for (int idx = 0; idx < coreNodes.getLength(); ++idx) {
+        Node node = coreNodes.item(idx);
+        String name = DOMUtil.getAttr(node,  CoreDescriptor.CORE_NAME, null);
+        String dataDir = DOMUtil.getAttr(node,  CoreDescriptor.CORE_DATADIR, null);
+        if (name != null) {
+          if (! names.contains(name)) {
+            names.add(name);
+          } else {
+            String msg = String.format(Locale.ROOT, "More than one core defined for core named %s", name);
+            log.error(msg);
+            badCores.put(name, msg);
+          }
+        }
+
+        if (dataDir != null) {
+          if (! dirs.containsKey(dataDir)) {
+            dirs.put(dataDir, name);
+          } else {
+            String msg = String.format(Locale.ROOT, "More than one core points to data dir %s. They are in %s and %s",
+                dataDir, dirs.get(dataDir), name);
+            log.error(msg);
+            badCores.put(name, msg);
+          }
+        }
+      }
+    }
+  }
+
+  @Override
+  public String getBadCoreMessage(String name) {
+    return badCores.get(name);
   }
   public static Document copyDoc(Document doc) throws TransformerException {
     TransformerFactory tfactory = TransformerFactory.newInstance();
@@ -219,7 +257,7 @@ public class ConfigSolrXml extends Config implements ConfigSolr {
   // deeper in the tree.
   //
   // @param file - the directory we're to either read the properties file from or recurse into.
-  private void walkFromHere(File file, CoreContainer container) throws IOException {
+  private void walkFromHere(File file, CoreContainer container, Map<String, CoreDescriptorPlus> checkMap) throws IOException {
     log.info("Looking for cores in " + file.getAbsolutePath());
     for (File childFile : file.listFiles()) {
       // This is a little tricky, we are asking if core.properties exists in a child directory of the directory passed
@@ -251,11 +289,29 @@ public class ConfigSolrXml extends Config implements ConfigSolr {
         }
         CoreDescriptor desc = new CoreDescriptor(container, props);
         CoreDescriptorPlus plus = new CoreDescriptorPlus(propFile.getAbsolutePath(), desc, propsOrig);
-        coreDescriptorPlusMap.put(desc.getName(), plus);
+        CoreDescriptorPlus check = coreDescriptorPlusMap.get(desc.getName());
+        if (check == null) { // It's bad to have two cores with the same name
+          coreDescriptorPlusMap.put(desc.getName(), plus);
+        } else {
+          String msg = String.format(Locale.ROOT, "More than one core defined for core named %s, paths are '%s' and '%s' ",
+              desc.getName(), check.getFilePath(), plus.getFilePath());
+          log.error(msg);
+          badCores.put(desc.getName(), msg);
+        }
+        check = coreDescriptorPlusMap.get(plus.getCoreDescriptor().getDataDir());
+        if (check == null) {
+          coreDescriptorPlusMap.put(desc.getName(), plus);
+        } else {
+          String msg = String.format(Locale.ROOT, "More than one core points to data dir %s. They are in %s and %s",
+              plus.getCoreDescriptor().getDataDir(), plus.getFilePath(), check.getFilePath());
+          log.error(msg);
+          badCores.put(plus.getCoreDescriptor().getName(), msg);
+        }
+
         continue; // Go on to the sibling directory
       }
       if (childFile.isDirectory()) {
-        walkFromHere(childFile, container);
+        walkFromHere(childFile, container, checkMap);
       }
     }
   }

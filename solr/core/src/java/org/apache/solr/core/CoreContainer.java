@@ -963,11 +963,15 @@ public class CoreContainer
                dcore.getName(), instanceDir);
 
       // Initialize the solr config
+      SolrCore created = null;
       if (zkController != null) {
-        return createFromZk(instanceDir, dcore);
+        created = createFromZk(instanceDir, dcore);
       } else {
-        return createFromLocal(instanceDir, dcore);
+        created = createFromLocal(instanceDir, dcore);
       }
+
+      coreMaps.addCreated(created); // For persisting newly-created cores.
+      return created;
 
       // :TODO: Java7...
       // http://docs.oracle.com/javase/7/docs/technotes/guides/language/catch-multiple.html
@@ -1003,6 +1007,16 @@ public class CoreContainer
    */
   public Collection<String> getAllCoreNames() {
     return coreMaps.getAllCoreNames();
+
+  }
+
+  /**
+   * Checks that the data dir passed is is NOT shared by any other core
+   * @param targetPath - path to check
+   * @return - null if this path is unique, core name of the first other core that shares this path.
+   */
+  public String checkUniqueDataDir(String targetPath) {
+    return coreMaps.checkUniqueDataDir(targetPath);
 
   }
 
@@ -1043,6 +1057,13 @@ public class CoreContainer
   public void reload(String name) {
     try {
       name = checkDefault(name);
+
+      if (cfg != null) { // Another test artifact.
+        String badMsg = cfg.getBadCoreMessage(name);
+        if (badMsg != null) {
+          throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, badMsg);
+        }
+      }
 
       SolrCore core = coreMaps.getCore(name);
       if (core == null)
@@ -1098,6 +1119,7 @@ public class CoreContainer
     }
   }
 
+  //5.0 remove all checkDefaults?
   private String checkDefault(String name) {
     return (null == name || name.isEmpty()) ? defaultCoreName : name;
   } 
@@ -1149,6 +1171,14 @@ public class CoreContainer
   public SolrCore getCore(String name) {
 
     name = checkDefault(name);
+
+    if (cfg != null) { // Get this out of here sometime, this is test-code only stuff!
+      String badMsg = cfg.getBadCoreMessage(name);
+      if (badMsg != null) {
+        throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, badMsg);
+      }
+    }
+
     // Do this in two phases since we don't want to lock access to the cores over a load.
     SolrCore core = coreMaps.getCoreFromAnyList(name);
 
@@ -1401,6 +1431,9 @@ public class CoreContainer
     log.error(msg, ex);
     return new SolrException(ErrorCode.SERVER_ERROR, msg, ex);
   }
+  String getCoreToOrigName(SolrCore core) {
+    return coreMaps.getCoreToOrigName(core);
+  }
 }
 
 
@@ -1421,6 +1454,8 @@ class CoreMaps {
   private Map<String, SolrCore> transientCores = new LinkedHashMap<String, SolrCore>(); // For "lazily loaded" cores
 
   private final Map<String, CoreDescriptor> dynamicDescriptors = new LinkedHashMap<String, CoreDescriptor>();
+
+  private final Map<String, SolrCore> createdCores = new LinkedHashMap<String, SolrCore>();
 
   private Map<SolrCore, String> coreToOrigName = new ConcurrentHashMap<SolrCore, String>();
 
@@ -1492,7 +1527,7 @@ class CoreMaps {
           CoreContainer.log.info("Core " + coreName + " moved from core container list before closing.");
         } else {
           try {
-            addPersistOneCore(cfg, core, container.loader);
+            addPersistOneCore(cfg, container.loader, core.getCoreDescriptor(), getCoreToOrigName(core));
 
             core.close();
           } catch (Throwable t) {
@@ -1611,6 +1646,7 @@ class CoreMaps {
       set.addAll(cores.keySet());
       set.addAll(transientCores.keySet());
       set.addAll(dynamicDescriptors.keySet());
+      set.addAll(createdCores.keySet());
     }
     return set;
   }
@@ -1645,12 +1681,20 @@ class CoreMaps {
   protected SolrCore remove(String name, boolean removeOrig) {
 
     synchronized (locker) {
-      SolrCore core = cores.remove(name);
-      if (removeOrig && core != null) {
-        coreToOrigName.remove(core);
+      SolrCore tmp = cores.remove(name);
+      SolrCore ret = null;
+      if (removeOrig && tmp != null) {
+        coreToOrigName.remove(tmp);
       }
-
-      return core;
+      ret = (ret == null) ? tmp : ret;
+      // It could have been a newly-created core. It could have been a transient core. The newly-created cores
+      // in particular should be checked. It could have been a dynamic core.
+      tmp = transientCores.remove(name);
+      ret = (ret == null) ? tmp : ret;
+      tmp = createdCores.remove(name);
+      ret = (ret == null) ? tmp : ret;
+      dynamicDescriptors.remove(name);
+      return ret;
     }
   }
 
@@ -1757,21 +1801,43 @@ class CoreMaps {
     // This is expensive in the maximal case, but I think necessary. It should keep a reference open to all of the
     // current cores while they are saved. Remember that especially the transient core can come and go.
     //
-    // Maybe the right thing to do is keep all the core descriptors NOT in the SolrCore, but keep all of the
-    // core descriptors in SolrProperties exclusively.
-    // TODO: 5.0 move coreDescriptors out of SolrCore and keep them only once in SolrProperties
+    // TODO: 5.0. remove the possibility of storing core descirptors in solr.xml?
     //
     synchronized (locker) {
       if (cfg == null) {
         ConfigSolrXml.initPersistStatic();
         persistCores(cfg, cores, loader);
         persistCores(cfg, transientCores, loader);
+        // add back all the cores that aren't loaded, either in cores or transient cores
+        for (Map.Entry<String, CoreDescriptor> ent : dynamicDescriptors.entrySet()) {
+          if (! cores.containsKey(ent.getKey()) && ! transientCores.containsKey(ent.getKey())) {
+            addPersistOneCore(cfg, loader, ent.getValue(), null);
+          }
+        }
+        for (Map.Entry<String, SolrCore> ent : createdCores.entrySet()) {
+          if (! cores.containsKey(ent.getKey()) && ! transientCores.containsKey(ent.getKey())
+              && ! dynamicDescriptors.containsKey(ent.getKey())) {
+            addPersistOneCore(cfg, loader, ent.getValue().getCoreDescriptor(), null);
+          }
+        }
         ConfigSolrXml.addPersistAllCoresStatic(containerProperties, rootSolrAttribs, coresAttribs,
             (file == null ? configFile : file));
       } else {
         cfg.initPersist();
         persistCores(cfg, cores, loader);
         persistCores(cfg, transientCores, loader);
+        // add back all the cores that aren't loaded, either in cores or transient cores
+        for (Map.Entry<String, CoreDescriptor> ent : dynamicDescriptors.entrySet()) {
+          if (! cores.containsKey(ent.getKey()) && ! transientCores.containsKey(ent.getKey())) {
+            addPersistOneCore(cfg, loader, ent.getValue(), null);
+          }
+        }
+        for (Map.Entry<String, SolrCore> ent : createdCores.entrySet()) {
+          if (! cores.containsKey(ent.getKey()) && ! transientCores.containsKey(ent.getKey())
+              && ! dynamicDescriptors.containsKey(ent.getKey())) {
+            addPersistOneCore(cfg, loader, ent.getValue().getCoreDescriptor(), null);
+          }
+        }
         cfg.addPersistAllCores(containerProperties, rootSolrAttribs, coresAttribs, (file == null ? configFile : file));
       }
     }
@@ -1827,7 +1893,7 @@ class CoreMaps {
 
   protected void persistCores(ConfigSolr cfg, Map<String, SolrCore> whichCores, SolrResourceLoader loader) {
     for (SolrCore solrCore : whichCores.values()) {
-      addPersistOneCore(cfg, solrCore, loader);
+      addPersistOneCore(cfg, loader, solrCore.getCoreDescriptor(), getCoreToOrigName(solrCore));
     }
   }
 
@@ -1836,13 +1902,9 @@ class CoreMaps {
     coreAttribs.put(key, value);
   }
 
-  protected void addPersistOneCore(ConfigSolr cfg, SolrCore solrCore, SolrResourceLoader loader) {
-
-    CoreDescriptor dcore = solrCore.getCoreDescriptor();
+  protected void addPersistOneCore(ConfigSolr cfg, SolrResourceLoader loader, CoreDescriptor dcore, String origCoreName) {
 
     String coreName = dcore.getProperty(CoreDescriptor.CORE_NAME);
-
-    String origCoreName = null;
 
     Map<String, String> coreAttribs = new HashMap<String, String>();
     Properties persistProps = new Properties();
@@ -1879,9 +1941,6 @@ class CoreMaps {
       }
 
     } else {
-
-      origCoreName = getCoreToOrigName(solrCore);
-
       if (origCoreName == null) {
         origCoreName = coreName;
       }
@@ -1911,16 +1970,6 @@ class CoreMaps {
     coreAttribs.put(CoreDescriptor.CORE_LOADONSTARTUP, Boolean.toString(dcore.isLoadOnStartup()));
     coreAttribs.put(CoreDescriptor.CORE_TRANSIENT, Boolean.toString(dcore.isTransient()));
 
-    // Now add back in any implicit properties that aren't in already. These are all "attribs" in this meaning
-    Properties implicit = dcore.initImplicitProperties();
-
-    if (! coreName.equals(container.getDefaultCoreName())) {
-      for (String prop : implicit.stringPropertyNames()) {
-        if (coreAttribs.get(prop) == null) {
-          coreAttribs.put(prop, implicit.getProperty(prop));
-        }
-      }
-    }
     if (cfg != null) {
       cfg.addPersistCore(coreName, persistProps, coreAttribs);
     } else {
@@ -1948,7 +1997,31 @@ class CoreMaps {
     return null;
   }
 
+  protected void addCreated(SolrCore core) {
+    synchronized (locker) {
+      createdCores.put(core.getName(), core);
+    }
+  }
 
+  protected String checkUniqueDataDir(String targetPath) {
+    // Have to check
+    // loaded cores
+    // transient cores
+    // dynamic cores
+    synchronized (locker) {
+      for (SolrCore core : cores.values()) {
+        if (targetPath.equals(core.getDataDir())) return core.getName();
+      }
+      for (SolrCore core : transientCores.values()) {
+        if (targetPath.equals(core.getDataDir())) return core.getName();
+      }
+      for (CoreDescriptor desc : dynamicDescriptors.values()) {
+        if (targetPath.equals(desc.getDataDir())) return desc.getName();
+      }
+    }
+
+    return null;
+  }
 }
 
 class CloserThread extends Thread {
@@ -1982,7 +2055,8 @@ class CloserThread extends Thread {
            removeMe != null && !container.isShutDown();
            removeMe = coreMaps.getCoreToClose()) {
         try {
-          coreMaps.addPersistOneCore(cfg, removeMe, container.loader);
+          coreMaps.addPersistOneCore(cfg, container.loader, removeMe.getCoreDescriptor(),
+              container.getCoreToOrigName(removeMe));
           removeMe.close();
         } finally {
           coreMaps.removeFromPendingOps(removeMe.getName());
