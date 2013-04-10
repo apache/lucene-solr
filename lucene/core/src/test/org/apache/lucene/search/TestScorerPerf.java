@@ -53,7 +53,7 @@ public class TestScorerPerf extends LuceneTestCase {
     iw.addDocument(new Document());
     iw.close();
     r = DirectoryReader.open(d);
-    s = new IndexSearcher(r);
+    s = newSearcher(r);
   }
 
   public void createRandomTerms(int nDocs, int nTerms, double power, Directory dir) throws Exception {
@@ -366,7 +366,7 @@ public class TestScorerPerf extends LuceneTestCase {
     RAMDirectory dir = new RAMDirectory();
     if (VERBOSE) System.out.println("Creating index");
     createRandomTerms(100000,25,.5, dir);
-    s = new IndexSearcher(dir, true);
+    s = newSearcher(dir, true);
     if (VERBOSE) System.out.println("Starting performance test");
     for (int i=0; i<bigIter; i++) {
       long start = System.currentTimeMillis();
@@ -383,7 +383,7 @@ public class TestScorerPerf extends LuceneTestCase {
     RAMDirectory dir = new RAMDirectory();
     if (VERBOSE) System.out.println("Creating index");
     createRandomTerms(100000,25,.2, dir);
-    s = new IndexSearcher(dir, true);
+    s = newSearcher(dir, true);
     if (VERBOSE) System.out.println("Starting performance test");
     for (int i=0; i<bigIter; i++) {
       long start = System.currentTimeMillis();
@@ -401,7 +401,7 @@ public class TestScorerPerf extends LuceneTestCase {
     RAMDirectory dir = new RAMDirectory();
     if (VERBOSE) System.out.println("Creating index");
     createRandomTerms(100000,25,2,dir);
-    s = new IndexSearcher(dir, true);
+    s = newSearcher(dir, true);
     if (VERBOSE) System.out.println("Starting performance test");
     for (int i=0; i<bigIter; i++) {
       long start = System.currentTimeMillis();

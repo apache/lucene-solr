@@ -223,14 +223,25 @@ public class AssertingAtomicReader extends FilterAtomicReader {
   }
   
   static enum DocsEnumState { START, ITERATING, FINISHED };
-  static class AssertingDocsEnum extends FilterDocsEnum {
+
+  public static class AssertingDocsEnum extends FilterDocsEnum {
     private DocsEnumState state = DocsEnumState.START;
     private int doc;
     
     public AssertingDocsEnum(DocsEnum in) {
+      this(in, true);
+    }
+
+    public AssertingDocsEnum(DocsEnum in, boolean failOnUnsupportedDocID) {
       super(in);
-      int docid = in.docID();
-      assert docid == -1 || docid == DocIdSetIterator.NO_MORE_DOCS : "invalid initial doc id: " + docid;
+      try {
+        int docid = in.docID();
+        assert docid == -1 || docid == DocIdSetIterator.NO_MORE_DOCS : in.getClass() + ": invalid initial doc id: " + docid;
+      } catch (UnsupportedOperationException e) {
+        if (failOnUnsupportedDocID) {
+          throw e;
+        }
+      }
       doc = -1;
     }
 
@@ -238,7 +249,7 @@ public class AssertingAtomicReader extends FilterAtomicReader {
     public int nextDoc() throws IOException {
       assert state != DocsEnumState.FINISHED : "nextDoc() called after NO_MORE_DOCS";
       int nextDoc = super.nextDoc();
-      assert nextDoc > doc : "backwards nextDoc from " + doc + " to " + nextDoc;
+      assert nextDoc > doc : "backwards nextDoc from " + doc + " to " + nextDoc + " " + in;
       if (nextDoc == DocIdSetIterator.NO_MORE_DOCS) {
         state = DocsEnumState.FINISHED;
       } else {

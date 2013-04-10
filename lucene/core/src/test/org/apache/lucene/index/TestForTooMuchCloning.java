@@ -60,7 +60,7 @@ public class TestForTooMuchCloning extends LuceneTestCase {
     //System.out.println("merge clone count=" + cloneCount);
     assertTrue("too many calls to IndexInput.clone during merging: " + dir.getInputCloneCount(), cloneCount < 500);
 
-    final IndexSearcher s = new IndexSearcher(r);
+    final IndexSearcher s = newSearcher(r);
 
     // MTQ that matches all terms so the AUTO_REWRITE should
     // cutover to filter rewrite and reuse a single DocsEnum

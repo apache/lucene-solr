@@ -362,7 +362,7 @@ public class TestBackwardsCompatibility extends LuceneTestCase {
     //Query query = parser.parse("handle:1");
 
     IndexReader reader = DirectoryReader.open(dir);
-    IndexSearcher searcher = new IndexSearcher(reader);
+    IndexSearcher searcher = newSearcher(reader);
 
     _TestUtil.checkIndex(dir);
     
@@ -522,7 +522,7 @@ public class TestBackwardsCompatibility extends LuceneTestCase {
 
     // make sure searching sees right # hits
     IndexReader reader = DirectoryReader.open(dir);
-    IndexSearcher searcher = new IndexSearcher(reader);
+    IndexSearcher searcher = newSearcher(reader);
     ScoreDoc[] hits = searcher.search(new TermQuery(new Term("content", "aaa")), null, 1000).scoreDocs;
     StoredDocument d = searcher.getIndexReader().document(hits[0].doc);
     assertEquals("wrong first document", "0", d.get("id"));
@@ -535,7 +535,7 @@ public class TestBackwardsCompatibility extends LuceneTestCase {
     writer.close();
 
     reader = DirectoryReader.open(dir);
-    searcher = new IndexSearcher(reader);
+    searcher = newSearcher(reader);
     hits = searcher.search(new TermQuery(new Term("content", "aaa")), null, 1000).scoreDocs;
     assertEquals("wrong number of hits", 44, hits.length);
     d = searcher.doc(hits[0].doc);
@@ -547,7 +547,7 @@ public class TestBackwardsCompatibility extends LuceneTestCase {
   public void changeIndexNoAdds(Random random, Directory dir) throws IOException {
     // make sure searching sees right # hits
     DirectoryReader reader = DirectoryReader.open(dir);
-    IndexSearcher searcher = new IndexSearcher(reader);
+    IndexSearcher searcher = newSearcher(reader);
     ScoreDoc[] hits = searcher.search(new TermQuery(new Term("content", "aaa")), null, 1000).scoreDocs;
     assertEquals("wrong number of hits", 34, hits.length);
     StoredDocument d = searcher.doc(hits[0].doc);
@@ -560,7 +560,7 @@ public class TestBackwardsCompatibility extends LuceneTestCase {
     writer.close();
 
     reader = DirectoryReader.open(dir);
-    searcher = new IndexSearcher(reader);
+    searcher = newSearcher(reader);
     hits = searcher.search(new TermQuery(new Term("content", "aaa")), null, 1000).scoreDocs;
     assertEquals("wrong number of hits", 34, hits.length);
     doTestHits(hits, 34, searcher.getIndexReader());
@@ -852,7 +852,7 @@ public class TestBackwardsCompatibility extends LuceneTestCase {
       
       Directory dir = oldIndexDirs.get(name);
       IndexReader reader = DirectoryReader.open(dir);
-      IndexSearcher searcher = new IndexSearcher(reader);
+      IndexSearcher searcher = newSearcher(reader);
       
       for (int id=10; id<15; id++) {
         ScoreDoc[] hits = searcher.search(NumericRangeQuery.newIntRange("trieInt", 4, Integer.valueOf(id), Integer.valueOf(id), true, true), 100).scoreDocs;

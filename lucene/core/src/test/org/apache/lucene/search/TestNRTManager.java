@@ -39,6 +39,7 @@ import org.apache.lucene.index.ThreadedIndexingAndSearchingTestCase;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.NRTCachingDirectory;
 import org.apache.lucene.util.IOUtils;
+import org.apache.lucene.util.LuceneTestCase;
 import org.apache.lucene.util.LuceneTestCase.SuppressCodecs;
 import org.apache.lucene.util.ThreadInterruptedException;
 
@@ -402,7 +403,7 @@ public class TestNRTManager extends ThreadedIndexingAndSearchingTestCase {
     final SearcherFactory theEvilOne = new SearcherFactory() {
       @Override
       public IndexSearcher newSearcher(IndexReader ignored) {
-        return new IndexSearcher(other);
+        return LuceneTestCase.newSearcher(other);
       }
       };
 

@@ -458,7 +458,7 @@ public class TestIndexWriter extends LuceneTestCase {
       writer.close();
 
       IndexReader reader = DirectoryReader.open(dir);
-      IndexSearcher searcher = new IndexSearcher(reader);
+      IndexSearcher searcher = newSearcher(reader);
       int totalHits = searcher.search(new TermQuery(new Term("field", "aaa")), null, 1).totalHits;
       assertEquals(n*100, totalHits);
       reader.close();
@@ -489,7 +489,7 @@ public class TestIndexWriter extends LuceneTestCase {
       Term searchTerm = new Term("field", "aaa");
 
       IndexReader reader = DirectoryReader.open(dir);
-      IndexSearcher searcher = new IndexSearcher(reader);
+      IndexSearcher searcher = newSearcher(reader);
       ScoreDoc[] hits = searcher.search(new TermQuery(searchTerm), null, 1000).scoreDocs;
       assertEquals(10, hits.length);
       reader.close();
@@ -511,7 +511,7 @@ public class TestIndexWriter extends LuceneTestCase {
       }
       writer.close();
       reader = DirectoryReader.open(dir);
-      searcher = new IndexSearcher(reader);
+      searcher = newSearcher(reader);
       hits = searcher.search(new TermQuery(searchTerm), null, 1000).scoreDocs;
       assertEquals(27, hits.length);
       reader.close();
@@ -589,7 +589,7 @@ public class TestIndexWriter extends LuceneTestCase {
       writer.close();
       Term searchTerm = new Term("content", "aaa");
       IndexReader reader = DirectoryReader.open(dir);
-      IndexSearcher searcher = new IndexSearcher(reader);
+      IndexSearcher searcher = newSearcher(reader);
       ScoreDoc[] hits = searcher.search(new TermQuery(searchTerm), null, 1000).scoreDocs;
       assertEquals("did not get right number of hits", 100, hits.length);
       reader.close();

@@ -500,7 +500,7 @@ public class TestBlockJoin extends LuceneTestCase {
 
     final IndexSearcher s = newSearcher(r);
 
-    final IndexSearcher joinS = newSearcher(joinR);
+    final IndexSearcher joinS = new IndexSearcher(joinR);
 
     final Filter parentsFilter = new CachingWrapperFilter(new QueryWrapperFilter(new TermQuery(new Term("isParent", "x"))));
 
@@ -1074,7 +1074,7 @@ public class TestBlockJoin extends LuceneTestCase {
 
     IndexReader r = w.getReader();
     w.close();
-    IndexSearcher s = newSearcher(r);
+    IndexSearcher s = new IndexSearcher(r);
 
     // Create a filter that defines "parent" documents in the index - in this case resumes
     Filter parentsFilter = new CachingWrapperFilter(new QueryWrapperFilter(new TermQuery(new Term("docType", "resume"))));

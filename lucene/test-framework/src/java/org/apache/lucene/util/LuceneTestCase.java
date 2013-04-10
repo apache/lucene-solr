@@ -1237,7 +1237,7 @@ public abstract class LuceneTestCase extends Assert {
    * Create a new searcher over the reader. This searcher might randomly use
    * threads.
    */
-  public static IndexSearcher newSearcher(IndexReader r) throws IOException {
+  public static IndexSearcher newSearcher(IndexReader r) {
     return newSearcher(r, true);
   }
   
@@ -1246,18 +1246,26 @@ public abstract class LuceneTestCase extends Assert {
    * threads. if <code>maybeWrap</code> is true, this searcher might wrap the
    * reader with one that returns null for getSequentialSubReaders.
    */
-  public static IndexSearcher newSearcher(IndexReader r, boolean maybeWrap) throws IOException {
+  public static IndexSearcher newSearcher(IndexReader r, boolean maybeWrap) {
     Random random = random();
     if (usually()) {
       if (maybeWrap) {
-        r = maybeWrapReader(r);
+        try {
+          r = maybeWrapReader(r);
+        } catch (IOException e) {
+          throw new AssertionError(e);
+        }
       }
       // TODO: this whole check is a coverage hack, we should move it to tests for various filterreaders.
       // ultimately whatever you do will be checkIndex'd at the end anyway. 
       if (random.nextInt(500) == 0 && r instanceof AtomicReader) {
         // TODO: not useful to check DirectoryReader (redundant with checkindex)
         // but maybe sometimes run this on the other crazy readers maybeWrapReader creates?
-        _TestUtil.checkReader(r);
+        try {
+          _TestUtil.checkReader(r);
+        } catch (IOException e) {
+          throw new AssertionError(e);
+        }
       }
       IndexSearcher ret = random.nextBoolean() ? new AssertingIndexSearcher(random, r) : new AssertingIndexSearcher(random, r.getContext());
       ret.setSimilarity(classEnvRule.similarity);

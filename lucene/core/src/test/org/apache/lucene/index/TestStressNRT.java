@@ -318,7 +318,7 @@ public class TestStressNRT extends LuceneTestCase {
               }
 
               //  sreq = req("wt","json", "q","id:"+Integer.toString(id), "omitHeader","true");
-              IndexSearcher searcher = new IndexSearcher(r);
+              IndexSearcher searcher = newSearcher(r);
               Query q = new TermQuery(new Term("id",Integer.toString(id)));
               TopDocs results = searcher.search(q, 10);
 

@@ -18,6 +18,7 @@ package org.apache.lucene.index;
  */
 
 import java.io.IOException;
+import java.util.concurrent.ExecutionException;
 
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.LuceneTestCase;
@@ -281,7 +282,7 @@ public class TestOmitTf extends LuceneTestCase {
      * Verify the index
      */         
     IndexReader reader = DirectoryReader.open(dir);
-    IndexSearcher searcher = new IndexSearcher(reader);
+    IndexSearcher searcher = newSearcher(reader);
     searcher.setSimilarity(new SimpleSimilarity());
         
     Term a = new Term("noTf", term);
@@ -299,8 +300,15 @@ public class TestOmitTf extends LuceneTestCase {
     try {
       searcher.search(pq, 10);
       fail("did not hit expected exception");
-    } catch (IllegalStateException ise) {
-      // expected
+    } catch (Exception e) {
+      Throwable cause = e;
+      // If the searcher uses an executor service, the IAE is wrapped into other exceptions
+      while (cause.getCause() != null) {
+        cause = cause.getCause();
+      }
+      if (!(cause instanceof IllegalStateException)) {
+        throw new AssertionError("Expected an IAE", e);
+      } // else OK because positions are not indexed
     }
         
     searcher.search(q1,

@@ -55,7 +55,7 @@ public class TestSearch extends LuceneTestCase {
       
       IndexReader reader = DirectoryReader.open(directory);
       try {
-        IndexSearcher searcher = new IndexSearcher(reader);
+        IndexSearcher searcher = newSearcher(reader);
         
         ScoreDoc[] hits = searcher.search(q, null, 1000).scoreDocs;
         assertEquals(1, hits.length);
@@ -136,7 +136,7 @@ public class TestSearch extends LuceneTestCase {
       writer.close();
 
       IndexReader reader = DirectoryReader.open(directory);
-      IndexSearcher searcher = new IndexSearcher(reader);
+      IndexSearcher searcher = newSearcher(reader);
 
       ScoreDoc[] hits = null;
 

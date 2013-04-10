@@ -47,7 +47,7 @@ public class TestFieldValueFilter extends LuceneTestCase {
     }
 
     IndexReader reader = DirectoryReader.open(directory);
-    IndexSearcher searcher = new IndexSearcher(reader);
+    IndexSearcher searcher = newSearcher(reader);
     TopDocs search = searcher.search(new TermQuery(new Term("all", "test")),
         new FieldValueFilter("some", true), docs);
     assertEquals(search.totalHits, numDocsNoValue);
@@ -74,7 +74,7 @@ public class TestFieldValueFilter extends LuceneTestCase {
       }
     }
     IndexReader reader = DirectoryReader.open(directory);
-    IndexSearcher searcher = new IndexSearcher(reader);
+    IndexSearcher searcher = newSearcher(reader);
     TopDocs search = searcher.search(new TermQuery(new Term("all", "test")),
         new FieldValueFilter("some"), docs);
     assertEquals(search.totalHits, numDocsWithValue);

@@ -70,7 +70,7 @@ public class TestWildcard
   public void testTermWithoutWildcard() throws IOException {
       Directory indexStore = getIndexStore("field", new String[]{"nowildcard", "nowildcardx"});
       IndexReader reader = DirectoryReader.open(indexStore);
-      IndexSearcher searcher = new IndexSearcher(reader);
+      IndexSearcher searcher = newSearcher(reader);
 
       MultiTermQuery wq = new WildcardQuery(new Term("field", "nowildcard"));
       assertMatches(searcher, wq, 1);
@@ -108,7 +108,7 @@ public class TestWildcard
   public void testEmptyTerm() throws IOException {
     Directory indexStore = getIndexStore("field", new String[]{"nowildcard", "nowildcardx"});
     IndexReader reader = DirectoryReader.open(indexStore);
-    IndexSearcher searcher = new IndexSearcher(reader);
+    IndexSearcher searcher = newSearcher(reader);
 
     MultiTermQuery wq = new WildcardQuery(new Term("field", ""));
     wq.setRewriteMethod(MultiTermQuery.SCORING_BOOLEAN_QUERY_REWRITE);
@@ -128,7 +128,7 @@ public class TestWildcard
   public void testPrefixTerm() throws IOException {
     Directory indexStore = getIndexStore("field", new String[]{"prefix", "prefixx"});
     IndexReader reader = DirectoryReader.open(indexStore);
-    IndexSearcher searcher = new IndexSearcher(reader);
+    IndexSearcher searcher = newSearcher(reader);
 
     MultiTermQuery wq = new WildcardQuery(new Term("field", "prefix*"));
     assertMatches(searcher, wq, 2);
@@ -151,7 +151,7 @@ public class TestWildcard
     Directory indexStore = getIndexStore("body", new String[]
     {"metal", "metals"});
     IndexReader reader = DirectoryReader.open(indexStore);
-    IndexSearcher searcher = new IndexSearcher(reader);
+    IndexSearcher searcher = newSearcher(reader);
     Query query1 = new TermQuery(new Term("body", "metal"));
     Query query2 = new WildcardQuery(new Term("body", "metal*"));
     Query query3 = new WildcardQuery(new Term("body", "m*tal"));
@@ -193,7 +193,7 @@ public class TestWildcard
     Directory indexStore = getIndexStore("body", new String[]
     {"metal", "metals", "mXtals", "mXtXls"});
     IndexReader reader = DirectoryReader.open(indexStore);
-    IndexSearcher searcher = new IndexSearcher(reader);
+    IndexSearcher searcher = newSearcher(reader);
     Query query1 = new WildcardQuery(new Term("body", "m?tal"));
     Query query2 = new WildcardQuery(new Term("body", "metal?"));
     Query query3 = new WildcardQuery(new Term("body", "metals?"));
@@ -218,7 +218,7 @@ public class TestWildcard
     Directory indexStore = getIndexStore("field", 
         new String[]{"foo*bar", "foo??bar", "fooCDbar", "fooSOMETHINGbar", "foo\\"});
     IndexReader reader = DirectoryReader.open(indexStore);
-    IndexSearcher searcher = new IndexSearcher(reader);
+    IndexSearcher searcher = newSearcher(reader);
 
     // without escape: matches foo??bar, fooCDbar, foo*bar, and fooSOMETHINGbar
     WildcardQuery unescaped = new WildcardQuery(new Term("field", "foo*bar"));
@@ -355,7 +355,7 @@ public class TestWildcard
     iw.close();
     
     IndexReader reader = DirectoryReader.open(dir);
-    IndexSearcher searcher = new IndexSearcher(reader);
+    IndexSearcher searcher = newSearcher(reader);
     
     // test queries that must find all
     for (Query q : matchAll) {
