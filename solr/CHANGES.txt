@@ -112,7 +112,7 @@ New Features
   prevent the "best" match from being found if it appears later in the MV list than the
   cutoff specified by either of these params. (Erick Erickson)
   
- * SOLR-4663: Complain loudly and do NOT load cores if they have the same data dir or the 
+* SOLR-4663: Complain loudly and do NOT load cores if they have the same data dir or the 
   same name
 
 * SOLR-4675: Improve PostingsSolrHighlighter to support per-field/query-time overrides

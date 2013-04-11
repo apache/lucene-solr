@@ -140,7 +140,7 @@ New Features
   before merging segments. (Adrien Grand, Shai Erera, David Smiley)
 
 * LUCENE-4860: Customize scoring and formatting per-field in
-  PosthingsHighlighter by subclassing and overriding the getFormatter
+  PostingsHighlighter by subclassing and overriding the getFormatter
   and/or getScorer methods.  This also changes Passage.getMatchTerms()
   to return BytesRef[] instead of Term[].  (Robert Muir, Mike
   McCandless)
@@ -234,7 +234,7 @@ Bug Fixes
   with target<=current (in this case the behavior of advance is undefined).
   (Adrien Grand)
 
-* LUCENE-4899: FastVectorHighlihgter failed with StringIndexOutOfBoundsException
+* LUCENE-4899: FastVectorHighlighter failed with StringIndexOutOfBoundsException
   if a single highlight phrase or term was greater than the fragCharSize producing
   negative string offsets. (Simon Willnauer)
 
