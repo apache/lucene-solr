@@ -178,6 +178,8 @@ Bug Fixes
 * SOLR-4699: The System admin handler should not assume a file system based data directory 
   location. (Mark Miller)
 
+* SOLR-4685: Fix core admin SPLIT action to be useful with non-cloud setups (shalin)
+
 Optimizations
 ----------------------
 
