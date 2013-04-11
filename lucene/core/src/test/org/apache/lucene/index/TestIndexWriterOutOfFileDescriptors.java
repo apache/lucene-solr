@@ -38,7 +38,7 @@ public class TestIndexWriterOutOfFileDescriptors extends LuceneTestCase {
     //System.out.println("rate=" + rate);
     dir.setRandomIOExceptionRateOnOpen(rate);
     int iters = atLeast(20);
-    LineFileDocs docs = new LineFileDocs(random());
+    LineFileDocs docs = new LineFileDocs(random(), defaultCodecSupportsDocValues());
     IndexReader r = null;
     DirectoryReader r2 = null;
     boolean any = false;
