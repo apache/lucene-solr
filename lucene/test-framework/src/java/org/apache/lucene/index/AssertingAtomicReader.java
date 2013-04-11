@@ -224,6 +224,7 @@ public class AssertingAtomicReader extends FilterAtomicReader {
   
   static enum DocsEnumState { START, ITERATING, FINISHED };
 
+  /** Wraps a docsenum with additional checks */
   public static class AssertingDocsEnum extends FilterDocsEnum {
     private DocsEnumState state = DocsEnumState.START;
     private int doc;
