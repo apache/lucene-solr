@@ -206,6 +206,8 @@ Optimizations
 * LUCENE-4923: Speed up BooleanQuerys processing of in-order disjunctions.
   (Robert Muir)
 
+* LUCENE-4926: Speed up DisjunctionMatchQuery.  (Robert Muir)
+
 API Changes
 
 * LUCENE-4844: removed TaxonomyReader.getParent(), you should use
