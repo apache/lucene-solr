@@ -19,6 +19,7 @@ package org.apache.lucene.spatial.prefix;
 
 import com.spatial4j.core.shape.Shape;
 import org.apache.lucene.search.Filter;
+import org.apache.lucene.spatial.DisjointSpatialFilter;
 import org.apache.lucene.spatial.prefix.tree.SpatialPrefixTree;
 import org.apache.lucene.spatial.query.SpatialArgs;
 import org.apache.lucene.spatial.query.SpatialOperation;
@@ -62,12 +63,14 @@ public class RecursivePrefixTreeStrategy extends PrefixTreeStrategy {
 
   @Override
   public Filter makeFilter(SpatialArgs args) {
+    final SpatialOperation op = args.getOperation();
+    if (op == SpatialOperation.IsDisjointTo)
+      return new DisjointSpatialFilter(this, args, getFieldName());
 
     Shape shape = args.getShape();
     int detailLevel = grid.getLevelForDistance(args.resolveDistErr(ctx, distErrPct));
     final boolean hasIndexedLeaves = true;
 
-    final SpatialOperation op = args.getOperation();
     if (op == SpatialOperation.Intersects) {
       return new IntersectsPrefixTreeFilter(
           shape, getFieldName(), grid, detailLevel, prefixGridScanLevel,

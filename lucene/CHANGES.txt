@@ -186,6 +186,9 @@ New Features
 * LUCENE-4915: DrillSideways now allows drilling down on fields that
   are not faceted. (Mike McCandless)
 
+* LUCENE-4895: Added support for the "IsDisjointTo" spatial predicate for
+  RecursivePrefixTreeStrategy.  (David Smiley)
+
 Optimizations
 
 * LUCENE-4839: SorterTemplate.merge can now be overridden in order to replace
