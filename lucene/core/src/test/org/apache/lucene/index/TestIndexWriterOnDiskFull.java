@@ -365,6 +365,7 @@ public class TestIndexWriterOnDiskFull extends LuceneTestCase {
           // we succeeded, we see all docs added, and if we
           // failed, we see either all docs or no docs added
           // (transactional semantics):
+          dir.setRandomIOExceptionRateOnOpen(0.0);
           try {
             reader = DirectoryReader.open(dir);
           } catch (IOException e) {
