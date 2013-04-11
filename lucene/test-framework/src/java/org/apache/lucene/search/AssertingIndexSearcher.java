@@ -148,6 +148,7 @@ public class AssertingIndexSearcher extends IndexSearcher {
     YES, NO, UNKNOWN;
   }
 
+  /** Wraps a Scorer with additional checks */
   public static class AssertingScorer extends Scorer {
 
     private static final VirtualMethod<Scorer> SCORE_COLLECTOR = new VirtualMethod<Scorer>(Scorer.class, "score", Collector.class);
