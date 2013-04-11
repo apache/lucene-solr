@@ -231,18 +231,17 @@ public class CoreAdminHandler extends RequestHandlerBase {
    */
   protected boolean handleSplitAction(SolrQueryRequest adminReq, SolrQueryResponse rsp) throws IOException {
     SolrParams params = adminReq.getParams();
-     // partitions=N    (split into N partitions, leaving it up to solr what the ranges are and where to put them)
-    // path - multiValued param, or comma separated param?  Only creates indexes, not cores
-
     List<DocRouter.Range> ranges = null;
-    // boolean closeDirectories = true;
-    // DirectoryFactory dirFactory = null;
 
     String[] pathsArr = params.getParams("path");
     String rangesStr = params.get("ranges");    // ranges=a-b,c-d,e-f
     String[] newCoreNames = params.getParams("targetCore");
-
     String cname = params.get(CoreAdminParams.CORE, "");
+
+    if ((pathsArr == null || pathsArr.length == 0) && (newCoreNames == null || newCoreNames.length == 0)) {
+      throw new SolrException(ErrorCode.BAD_REQUEST, "Either path or targetCore param must be specified");
+    }
+
     log.info("Invoked split action for core: " + cname);
     SolrCore core = coreContainer.getCore(cname);
     SolrQueryRequest req = new LocalSolrQueryRequest(core, params);
@@ -251,20 +250,18 @@ public class CoreAdminHandler extends RequestHandlerBase {
     try {
       // TODO: allow use of rangesStr in the future
       List<String> paths = null;
-      int partitions = pathsArr != null ? pathsArr.length : params.getInt("partitions", 2);
+      int partitions = pathsArr != null ? pathsArr.length : newCoreNames.length;
 
-      // TODO: if we don't know the real range of the current core, we should just
-      //  split on every other doc rather than hash.
-      ClusterState clusterState = coreContainer.getZkController().getClusterState();
-      String collectionName = req.getCore().getCoreDescriptor().getCloudDescriptor().getCollectionName();
-      DocCollection collection = clusterState.getCollection(collectionName);
-      String sliceName = req.getCore().getCoreDescriptor().getCloudDescriptor().getShardId();
-      Slice slice = clusterState.getSlice(collectionName, sliceName);
-      DocRouter.Range currentRange = slice.getRange() == null ?
-          new DocRouter.Range(Integer.MIN_VALUE, Integer.MAX_VALUE) : slice.getRange();
-
-      DocRouter hp = collection.getRouter() != null ? collection.getRouter() : DocRouter.DEFAULT;
-      ranges = hp.partitionRange(partitions, currentRange);
+      if (coreContainer.isZooKeeperAware()) {
+        ClusterState clusterState = coreContainer.getZkController().getClusterState();
+        String collectionName = req.getCore().getCoreDescriptor().getCloudDescriptor().getCollectionName();
+        DocCollection collection = clusterState.getCollection(collectionName);
+        String sliceName = req.getCore().getCoreDescriptor().getCloudDescriptor().getShardId();
+        Slice slice = clusterState.getSlice(collectionName, sliceName);
+        DocRouter.Range currentRange = slice.getRange();
+        DocRouter hp = collection.getRouter() != null ? collection.getRouter() : DocRouter.DEFAULT;
+        ranges = currentRange != null ? hp.partitionRange(partitions, currentRange) : null;
+      }
 
       if (pathsArr == null) {
         newCores = new ArrayList<SolrCore>(partitions);
