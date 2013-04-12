@@ -189,6 +189,11 @@ New Features
 * LUCENE-4895: Added support for the "IsDisjointTo" spatial predicate for
   RecursivePrefixTreeStrategy.  (David Smiley)
 
+API Changes
+
+* LUCENE-4896: Made PassageFormatter abstract in PostingsHighlighter, made
+  members of DefaultPassageFormatter protected.  (Luca Cavanna via Robert Muir)
+
 Optimizations
 
 * LUCENE-4839: SorterTemplate.merge can now be overridden in order to replace

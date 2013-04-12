@@ -18,9 +18,7 @@ package org.apache.lucene.search.postingshighlight;
  */
 
 import java.io.IOException;
-import java.text.BreakIterator;
 import java.util.HashSet;
-import java.util.Locale;
 import java.util.Random;
 
 import org.apache.lucene.analysis.MockAnalyzer;
@@ -30,10 +28,10 @@ import org.apache.lucene.document.Field;
 import org.apache.lucene.document.FieldType;
 import org.apache.lucene.document.StringField;
 import org.apache.lucene.document.TextField;
+import org.apache.lucene.index.FieldInfo.IndexOptions;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.IndexWriterConfig;
 import org.apache.lucene.index.RandomIndexWriter;
-import org.apache.lucene.index.FieldInfo.IndexOptions;
 import org.apache.lucene.index.Term;
 import org.apache.lucene.search.BooleanClause;
 import org.apache.lucene.search.BooleanQuery;
@@ -45,8 +43,8 @@ import org.apache.lucene.search.TopDocs;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.LuceneTestCase;
-import org.apache.lucene.util._TestUtil;
 import org.apache.lucene.util.LuceneTestCase.SuppressCodecs;
+import org.apache.lucene.util._TestUtil;
 
 @SuppressCodecs({"MockFixedIntBlock", "MockVariableIntBlock", "MockSep", "MockRandom"})
 public class TestPostingsHighlighterRanking extends LuceneTestCase {
@@ -75,7 +73,7 @@ public class TestPostingsHighlighterRanking extends LuceneTestCase {
     document.add(id);
     document.add(body);
     
-    for (int i = 0; i < numDocs; i++) {;
+    for (int i = 0; i < numDocs; i++) {
       StringBuilder bodyText = new StringBuilder();
       int numSentences = _TestUtil.nextInt(random(), 1, maxNumSentences);
       for (int j = 0; j < numSentences; j++) {

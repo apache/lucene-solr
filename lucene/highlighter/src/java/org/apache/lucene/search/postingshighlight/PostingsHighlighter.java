@@ -33,8 +33,8 @@ import java.util.TreeSet;
 import org.apache.lucene.index.AtomicReader;
 import org.apache.lucene.index.AtomicReaderContext;
 import org.apache.lucene.index.DocsAndPositionsEnum;
-import org.apache.lucene.index.FieldInfo.IndexOptions;
 import org.apache.lucene.index.FieldInfo;
+import org.apache.lucene.index.FieldInfo.IndexOptions;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.IndexReaderContext;
 import org.apache.lucene.index.MultiReader;
@@ -141,7 +141,7 @@ public class PostingsHighlighter {
    *  subclasses can override to customize. */
   protected PassageFormatter getFormatter(String field) {
     if (defaultFormatter == null) {
-      defaultFormatter = new PassageFormatter();
+      defaultFormatter = new DefaultPassageFormatter();
     }
     return defaultFormatter;
   }
@@ -346,7 +346,7 @@ public class PostingsHighlighter {
     // pull stored data:
     String[][] contents = loadFieldValues(searcher, fields, docids, maxLength);
     
-    Map<String,String[]> highlights = new HashMap<String,String[]>();;
+    Map<String,String[]> highlights = new HashMap<String,String[]>();
     for (int i = 0; i < fields.length; i++) {
       String field = fields[i];
       int numPassages = maxPassages[i];

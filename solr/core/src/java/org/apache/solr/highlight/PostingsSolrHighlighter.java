@@ -26,6 +26,7 @@ import java.util.Set;
 
 import org.apache.lucene.index.StoredDocument;
 import org.apache.lucene.search.Query;
+import org.apache.lucene.search.postingshighlight.DefaultPassageFormatter;
 import org.apache.lucene.search.postingshighlight.Passage;
 import org.apache.lucene.search.postingshighlight.PassageFormatter;
 import org.apache.lucene.search.postingshighlight.PassageScorer;
@@ -146,7 +147,7 @@ public class PostingsSolrHighlighter extends SolrHighlighter implements PluginIn
           String postTag = params.getFieldParam(fieldName, HighlightParams.TAG_POST, "</em>");
           String ellipsis = params.getFieldParam(fieldName, HighlightParams.TAG_ELLIPSIS, "... ");
           String encoder = params.getFieldParam(fieldName, HighlightParams.ENCODER, "simple");
-          return new PassageFormatter(preTag, postTag, ellipsis, "html".equals(encoder));
+          return new DefaultPassageFormatter(preTag, postTag, ellipsis, "html".equals(encoder));
         }
 
         @Override
