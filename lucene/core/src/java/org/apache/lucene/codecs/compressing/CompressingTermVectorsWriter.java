@@ -56,6 +56,9 @@ import org.apache.lucene.util.packed.PackedInts;
  */
 public final class CompressingTermVectorsWriter extends TermVectorsWriter {
 
+  // hard limit on the maximum number of documents per chunk
+  static final int MAX_DOCUMENTS_PER_CHUNK = 128;
+
   static final String VECTORS_EXTENSION = "tvd";
   static final String VECTORS_INDEX_EXTENSION = "tvx";
 
@@ -322,7 +325,8 @@ public final class CompressingTermVectorsWriter extends TermVectorsWriter {
   }
 
   private boolean triggerFlush() {
-    return termSuffixes.length >= chunkSize || pendingDocs.size() >= chunkSize;
+    return termSuffixes.length >= chunkSize
+        || pendingDocs.size() >= MAX_DOCUMENTS_PER_CHUNK;
   }
 
   private void flush() throws IOException {

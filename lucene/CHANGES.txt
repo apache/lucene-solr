@@ -275,6 +275,13 @@ Bug Fixes
   now succeed even if the directory contains a corrupted index (Billow
   Gao, Robert Muir, Mike McCandless)
 
+* LUCENE-4928: Stored fields and term vectors could become super slow in case
+  of tiny documents (a few bytes). This is especially problematic when switching
+  codecs since bulk-merge strategies can't be applied and the same chunk of
+  documents can end up being decompressed thousands of times. A hard limit on
+  the number of documents per chunk has been added to fix this issue.
+  (Robert Muir, Adrien Grand)
+
 Documentation
 
 * LUCENE-4841: Added example SimpleSortedSetFacetsExample to show how
