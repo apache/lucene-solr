@@ -46,8 +46,8 @@ import org.apache.lucene.search.Sort;
 import org.apache.lucene.search.TermQuery;
 import org.apache.lucene.search.TopDocs;
 import org.apache.lucene.store.Directory;
-import org.apache.lucene.util.LuceneTestCase.SuppressCodecs;
 import org.apache.lucene.util.LuceneTestCase;
+import org.apache.lucene.util.LuceneTestCase.SuppressCodecs;
 
 @SuppressCodecs({"MockFixedIntBlock", "MockVariableIntBlock", "MockSep", "MockRandom", "Lucene3x"})
 public class TestPostingsHighlighter extends LuceneTestCase {
@@ -871,7 +871,7 @@ public class TestPostingsHighlighter extends LuceneTestCase {
     PostingsHighlighter highlighter = new PostingsHighlighter() {
       @Override
       protected PassageFormatter getFormatter(String field) {
-        return new PassageFormatter("<b>", "</b>", "... ", true);
+        return new DefaultPassageFormatter("<b>", "</b>", "... ", true);
       }
     };
     Query query = new TermQuery(new Term("body", "highlighting"));
