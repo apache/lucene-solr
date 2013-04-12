@@ -520,7 +520,7 @@ public abstract class BaseTermVectorsFormatTestCase extends LuceneTestCase {
   public void testRareVectors() throws IOException {
     final RandomDocumentFactory docFactory = new RandomDocumentFactory(10, 20);
     for (Options options : validOptions()) {
-      final int numDocs = _TestUtil.nextInt(random(), 10, 10000);
+      final int numDocs = atLeast(200);
       final int docWithVectors = random().nextInt(numDocs);
       final Document emptyDoc = new Document();
       final Directory dir = newDirectory();
@@ -560,7 +560,7 @@ public abstract class BaseTermVectorsFormatTestCase extends LuceneTestCase {
       }
       final Directory dir = newDirectory();
       final RandomIndexWriter writer = new RandomIndexWriter(random(), dir);
-      final RandomDocument doc = docFactory.newDocument(_TestUtil.nextInt(random(), 1, 2), _TestUtil.nextInt(random(), 50000, 100000), options);
+      final RandomDocument doc = docFactory.newDocument(_TestUtil.nextInt(random(), 1, 2), atLeast(20000), options);
       writer.addDocument(doc.toDocument());
       final IndexReader reader = writer.getReader();
       assertEquals(doc, reader.getTermVectors(0));
@@ -575,7 +575,7 @@ public abstract class BaseTermVectorsFormatTestCase extends LuceneTestCase {
     for (Options options : validOptions()) {
       final Directory dir = newDirectory();
       final RandomIndexWriter writer = new RandomIndexWriter(random(), dir);
-      final RandomDocument doc = docFactory.newDocument(_TestUtil.nextInt(random(), 500, 1000), 5, options);
+      final RandomDocument doc = docFactory.newDocument(atLeast(100), 5, options);
       writer.addDocument(doc.toDocument());
       final IndexReader reader = writer.getReader();
       assertEquals(doc, reader.getTermVectors(0));
@@ -614,7 +614,7 @@ public abstract class BaseTermVectorsFormatTestCase extends LuceneTestCase {
 
   public void testRandom() throws IOException {
     final RandomDocumentFactory docFactory = new RandomDocumentFactory(5, 20);
-    final int numDocs = _TestUtil.nextInt(random(), 100, 1000);
+    final int numDocs = atLeast(100);
     final RandomDocument[] docs = new RandomDocument[numDocs];
     for (int i = 0; i < numDocs; ++i) {
       docs[i] = docFactory.newDocument(_TestUtil.nextInt(random(), 1, 3), _TestUtil.nextInt(random(), 10, 50), randomOptions());
@@ -636,7 +636,7 @@ public abstract class BaseTermVectorsFormatTestCase extends LuceneTestCase {
 
   public void testMerge() throws IOException {
     final RandomDocumentFactory docFactory = new RandomDocumentFactory(5, 20);
-    final int numDocs = _TestUtil.nextInt(random(), 100, 500);
+    final int numDocs = atLeast(100);
     final int numDeletes = random().nextInt(numDocs);
     final Set<Integer> deletes = new HashSet<Integer>();
     while (deletes.size() < numDeletes) {
@@ -645,7 +645,7 @@ public abstract class BaseTermVectorsFormatTestCase extends LuceneTestCase {
     for (Options options : validOptions()) {
       final RandomDocument[] docs = new RandomDocument[numDocs];
       for (int i = 0; i < numDocs; ++i) {
-        docs[i] = docFactory.newDocument(_TestUtil.nextInt(random(), 1, 3), _TestUtil.nextInt(random(), 10, 50), options);
+        docs[i] = docFactory.newDocument(_TestUtil.nextInt(random(), 1, 3), atLeast(10), options);
       }
       final Directory dir = newDirectory();
       final RandomIndexWriter writer = new RandomIndexWriter(random(), dir);
@@ -677,11 +677,11 @@ public abstract class BaseTermVectorsFormatTestCase extends LuceneTestCase {
   // don't share mutable data
   public void testClone() throws IOException, InterruptedException {
     final RandomDocumentFactory docFactory = new RandomDocumentFactory(5, 20);
-    final int numDocs = _TestUtil.nextInt(random(), 100, 1000);
+    final int numDocs = atLeast(100);
     for (Options options : validOptions()) {
       final RandomDocument[] docs = new RandomDocument[numDocs];
       for (int i = 0; i < numDocs; ++i) {
-        docs[i] = docFactory.newDocument(_TestUtil.nextInt(random(), 1, 3), _TestUtil.nextInt(random(), 10, 50), options);
+        docs[i] = docFactory.newDocument(_TestUtil.nextInt(random(), 1, 3), atLeast(10), options);
       }
       final Directory dir = newDirectory();
       final RandomIndexWriter writer = new RandomIndexWriter(random(), dir);

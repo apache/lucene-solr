@@ -189,7 +189,7 @@ final class TestRuleSetupAndRestoreClassEnv extends AbstractBeforeAfterRule {
           return super.toString() + ": " + format.toString() + ", " + dvFormat.toString();
         }
       };
-    } else if ("SimpleText".equals(TEST_CODEC) || ("random".equals(TEST_CODEC) && randomVal == 9 && !shouldAvoidCodec("SimpleText"))) {
+    } else if ("SimpleText".equals(TEST_CODEC) || ("random".equals(TEST_CODEC) && randomVal == 9 && LuceneTestCase.rarely(random) && !shouldAvoidCodec("SimpleText"))) {
       codec = new SimpleTextCodec();
     } else if ("CheapBastard".equals(TEST_CODEC) || ("random".equals(TEST_CODEC) && randomVal == 8 && !shouldAvoidCodec("CheapBastard") && !shouldAvoidCodec("Lucene41"))) {
       // we also avoid this codec if Lucene41 is avoided, since thats the postings format it uses.

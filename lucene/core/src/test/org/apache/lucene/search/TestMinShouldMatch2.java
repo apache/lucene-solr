@@ -44,26 +44,27 @@ import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.LuceneTestCase;
 import org.apache.lucene.util._TestUtil;
 import org.apache.lucene.util.LuceneTestCase.SuppressCodecs;
+import org.junit.AfterClass;
+import org.junit.BeforeClass;
 
 /** tests BooleanScorer2's minShouldMatch */
 @SuppressCodecs({"Lucene40", "Lucene41"})
 public class TestMinShouldMatch2 extends LuceneTestCase {
-  Directory dir;
-  DirectoryReader r;
-  AtomicReader reader;
-  IndexSearcher searcher;
+  static Directory dir;
+  static DirectoryReader r;
+  static AtomicReader reader;
+  static IndexSearcher searcher;
   
   static final String alwaysTerms[] = { "a" };
   static final String commonTerms[] = { "b", "c", "d" };
   static final String mediumTerms[] = { "e", "f", "g" };
   static final String rareTerms[]   = { "h", "i", "j", "k", "l", "m", "n", "o", "p", "q", "r", "s", "t", "u", "v", "w", "x", "y", "z" };
   
-  @Override
-  public void setUp() throws Exception {
-    super.setUp();
+  @BeforeClass
+  public static void beforeClass() throws Exception {
     dir = newDirectory();
     RandomIndexWriter iw = new RandomIndexWriter(random(), dir);
-    final int numDocs = 1000;
+    final int numDocs = atLeast(300);
     for (int i = 0; i < numDocs; i++) {
       Document doc = new Document();
       
@@ -93,14 +94,17 @@ public class TestMinShouldMatch2 extends LuceneTestCase {
     });
   }
   
-  @Override
-  public void tearDown() throws Exception {
+  @AfterClass
+  public static void afterClass() throws Exception {
     reader.close();
     dir.close();
-    super.tearDown();
+    searcher = null;
+    reader = null;
+    r = null;
+    dir = null;
   }
   
-  private void addSome(Document doc, String values[]) {
+  private static void addSome(Document doc, String values[]) {
     List<String> list = Arrays.asList(values);
     Collections.shuffle(list, random());
     int howMany = _TestUtil.nextInt(random(), 1, list.size());

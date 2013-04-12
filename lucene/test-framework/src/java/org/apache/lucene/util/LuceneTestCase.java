@@ -625,7 +625,7 @@ public abstract class LuceneTestCase extends Assert {
    * is active and {@link #RANDOM_MULTIPLIER}.
    */
   public static boolean rarely(Random random) {
-    int p = TEST_NIGHTLY ? 10 : 5;
+    int p = TEST_NIGHTLY ? 10 : 1;
     p += (p * Math.log(RANDOM_MULTIPLIER));
     int min = 100 - Math.min(p, 50); // never more than 50
     return random.nextInt(100) >= min;
