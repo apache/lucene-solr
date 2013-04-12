@@ -1136,7 +1136,7 @@ public abstract class BaseDocValuesFormatTestCase extends LuceneTestCase {
     doc.add(dvField);
     
     // index some docs
-    int numDocs = atLeast(1000);
+    int numDocs = atLeast(300);
     for (int i = 0; i < numDocs; i++) {
       idField.setStringValue(Integer.toString(i));
       long value = _TestUtil.nextLong(random(), minValue, maxValue);
@@ -1218,7 +1218,7 @@ public abstract class BaseDocValuesFormatTestCase extends LuceneTestCase {
     doc.add(dvField);
     
     // index some docs
-    int numDocs = atLeast(1000);
+    int numDocs = atLeast(300);
     for (int i = 0; i < numDocs; i++) {
       idField.setStringValue(Integer.toString(i));
       final int length;
@@ -1289,7 +1289,7 @@ public abstract class BaseDocValuesFormatTestCase extends LuceneTestCase {
     doc.add(dvField);
     
     // index some docs
-    int numDocs = atLeast(1000);
+    int numDocs = atLeast(300);
     for (int i = 0; i < numDocs; i++) {
       idField.setStringValue(Integer.toString(i));
       final int length;
@@ -1801,7 +1801,7 @@ public abstract class BaseDocValuesFormatTestCase extends LuceneTestCase {
     RandomIndexWriter writer = new RandomIndexWriter(random(), dir, conf);
     
     // index some docs
-    int numDocs = atLeast(1000);
+    int numDocs = atLeast(300);
     for (int i = 0; i < numDocs; i++) {
       Document doc = new Document();
       Field idField = new StringField("id", Integer.toString(i), Field.Store.NO);
@@ -1922,7 +1922,7 @@ public abstract class BaseDocValuesFormatTestCase extends LuceneTestCase {
     RandomIndexWriter writer = new RandomIndexWriter(random(), dir, conf);
     
     // index some docs
-    int numDocs = atLeast(1000);
+    int numDocs = atLeast(300);
     for (int i = 0; i < numDocs; i++) {
       Document doc = new Document();
       Field idField = new StringField("id", Integer.toString(i), Field.Store.NO);
