@@ -1,0 +1,4 @@
+#set($dym = $response.response.spellcheck.suggestions.collation.collationQuery)
+#if($dym)
+  Did you mean <a href="#{url_for_home}#{lensNoQ}&q=$esc.url($dym)">$esc.html($dym)</a>?
+#end

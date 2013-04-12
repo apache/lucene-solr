@@ -180,6 +180,12 @@ Bug Fixes
 
 * SOLR-4695: Fix core admin SPLIT action to be useful with non-cloud setups (shalin)
 
+* SOLR-4680: Correct example spellcheck configuration's queryAnalyzerFieldType and
+  use "text" field instead of narrower "name" field (ehatcher, Mark Bennett)
+
+* SOLR-4702: Fix example /browse "Did you mean?" suggestion feature. (ehatcher, Mark Bennett)
+
+
 Optimizations
 ----------------------
 
