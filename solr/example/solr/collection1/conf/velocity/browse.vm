@@ -4,9 +4,7 @@
 #set($mltResults = $response.response.get("moreLikeThis"))
 #set($annotate = $params.get("annotateBrowse"))
 #parse('query.vm')
-#if($response.response.spellcheck.suggestions and $response.response.spellcheck.suggestions.size() > 0)
-  Did you mean <a href="#url_for_home?q=$esc.url($response.response.spellcheck.suggestions.collation)#if($list.size($request.params.getParams('fq')) > 0)&#fqs($request.params.getParams('fq'))#end#debug">$response.response.spellcheck.suggestions.collation</a>?
-#end
+#parse('did_you_mean.vm')
 
 <div class="navigators">
   #parse("facets.vm")
