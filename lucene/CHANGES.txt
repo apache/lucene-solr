@@ -216,6 +216,11 @@ Optimizations
 
 * LUCENE-4926: Speed up DisjunctionMatchQuery.  (Robert Muir)
 
+* LUCENE-4930: Reduce contention in older/buggy JVMs when using
+  AttributeSource#addAttribute() because java.lang.ref.ReferenceQueue#poll()
+  is implemented using synchronization.  (Christian Ziech, Karl Wright,
+  Uwe Schindler)
+
 API Changes
 
 * LUCENE-4844: removed TaxonomyReader.getParent(), you should use
