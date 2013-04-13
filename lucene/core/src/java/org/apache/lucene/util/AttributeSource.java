@@ -55,9 +55,9 @@ public class AttributeSource {
     
     private static final class DefaultAttributeFactory extends AttributeFactory {
       private static final WeakIdentityMap<Class<? extends Attribute>, WeakReference<Class<? extends AttributeImpl>>> attClassImplMap =
-        WeakIdentityMap.newConcurrentHashMap();
+        WeakIdentityMap.newConcurrentHashMap(false);
       
-      private DefaultAttributeFactory() {}
+      DefaultAttributeFactory() {}
     
       @Override
       public AttributeImpl createAttributeInstance(Class<? extends Attribute> attClass) {
@@ -201,7 +201,7 @@ public class AttributeSource {
   
   /** a cache that stores all interfaces for known implementation classes for performance (slow reflection) */
   private static final WeakIdentityMap<Class<? extends AttributeImpl>,LinkedList<WeakReference<Class<? extends Attribute>>>> knownImplClasses =
-    WeakIdentityMap.newConcurrentHashMap();
+    WeakIdentityMap.newConcurrentHashMap(false);
   
   static LinkedList<WeakReference<Class<? extends Attribute>>> getAttributeInterfaces(final Class<? extends AttributeImpl> clazz) {
     LinkedList<WeakReference<Class<? extends Attribute>>> foundInterfaces = knownImplClasses.get(clazz);

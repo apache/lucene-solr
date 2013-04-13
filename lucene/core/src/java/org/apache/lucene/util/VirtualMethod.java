@@ -63,7 +63,7 @@ public final class VirtualMethod<C> {
   private final Class<C> baseClass;
   private final String method;
   private final Class<?>[] parameters;
-  private final WeakIdentityMap<Class<? extends C>, Integer> cache = WeakIdentityMap.newConcurrentHashMap();
+  private final WeakIdentityMap<Class<? extends C>, Integer> cache = WeakIdentityMap.newConcurrentHashMap(false);
 
   /**
    * Creates a new instance for the given {@code baseClass} and method declaration.
