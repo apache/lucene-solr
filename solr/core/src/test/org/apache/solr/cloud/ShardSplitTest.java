@@ -19,7 +19,7 @@ package org.apache.solr.cloud;
 
 import org.apache.solr.client.solrj.SolrQuery;
 import org.apache.solr.client.solrj.SolrRequest;
-import org.apache.solr.client.solrj.SolrServer;
+import org.apache.solr.client.solrj.SolrServerException;
 import org.apache.solr.client.solrj.impl.HttpSolrServer;
 import org.apache.solr.client.solrj.request.QueryRequest;
 import org.apache.solr.client.solrj.response.QueryResponse;
@@ -34,9 +34,11 @@ import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.common.util.Hash;
 import org.apache.solr.handler.admin.CollectionsHandler;
 import org.apache.solr.update.DirectUpdateHandler2;
+import org.apache.zookeeper.KeeperException;
 import org.junit.After;
 import org.junit.Before;
 
+import java.io.IOException;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -45,13 +47,6 @@ public class ShardSplitTest extends BasicDistributedZkTest {
 
   public static final String SHARD1_0 = SHARD1 + "_0";
   public static final String SHARD1_1 = SHARD1 + "_1";
-
-  public ShardSplitTest() {
-    super();
-//    fixShardCount = true;
-//    shardCount = 8;
-//    sliceCount = 4;
-  }
 
   @Override
   @Before
@@ -93,7 +88,6 @@ public class ShardSplitTest extends BasicDistributedZkTest {
   @Override
   public void doTest() throws Exception {
     waitForThingsToLevelOut(15);
-    printLayout();
 
     ClusterState clusterState = cloudClient.getZkStateReader().getClusterState();
     DocRouter router = clusterState.getCollection(AbstractDistribZkTestBase.DEFAULT_COLLECTION).getRouter();
@@ -103,40 +97,19 @@ public class ShardSplitTest extends BasicDistributedZkTest {
     final int[] docCounts = new int[ranges.size()];
     int numReplicas = shard1.getReplicas().size();
 
-    final SolrServer solrServer = clients.get(0);
-    solrServer.deleteByQuery("*:*");
-    for (int i = 0; i < 100; i++) {
-      indexr("id", i);
-
-      // todo - hook in custom hashing
-      byte[] bytes = String.valueOf(i).getBytes("UTF-8");
-      int hash = Hash.murmurhash3_x86_32(bytes, 0, bytes.length, 0);
-      for (int i2 = 0; i2 < ranges.size(); i2++) {
-        DocRouter.Range range = ranges.get(i2);
-        if (range.includes(hash))
-          docCounts[i2]++;
-      }
+    del("*:*");
+    for (int id = 0; id < 100; id++) {
+      indexAndUpdateCount(ranges, docCounts, id);
     }
-    solrServer.commit();
-
-    waitForRecoveriesToFinish(false);
+    commit();
 
     Thread indexThread = new Thread() {
       @Override
       public void run() {
-        for (int i = 101; i < 201; i++) {
+        for (int id = 101; id < atLeast(401); id++) {
           try {
-            indexr("id", i);
-
-            // todo - hook in custom hashing
-            byte[] bytes = String.valueOf(i).getBytes("UTF-8");
-            int hash = Hash.murmurhash3_x86_32(bytes, 0, bytes.length, 0);
-            for (int i2 = 0; i2 < ranges.size(); i2++) {
-              DocRouter.Range range = ranges.get(i2);
-              if (range.includes(hash))
-                docCounts[i2]++;
-            }
-            Thread.sleep(100);
+            indexAndUpdateCount(ranges, docCounts, id);
+            Thread.sleep(atLeast(25));
           } catch (Exception e) {
             log.error("Exception while adding doc", e);
           }
@@ -145,10 +118,71 @@ public class ShardSplitTest extends BasicDistributedZkTest {
     };
     indexThread.start();
 
+    splitShard(SHARD1);
+
+    log.info("Layout after split: \n");
+    printLayout();
+
+    indexThread.join();
+
+    commit();
+
+    checkDocCountsAndShardStates(docCounts, numReplicas);
+
+    // todo can't call waitForThingsToLevelOut because it looks for jettys of all shards
+    // and the new sub-shards don't have any.
+    waitForRecoveriesToFinish(true);
+    //waitForThingsToLevelOut(15);
+  }
+
+  protected void checkDocCountsAndShardStates(int[] docCounts, int numReplicas) throws SolrServerException, KeeperException, InterruptedException {
+    SolrQuery query = new SolrQuery("*:*").setRows(1000).setFields("id", "_version_");
+    query.set("distrib", false);
+
+    ZkCoreNodeProps shard1_0 = getLeaderUrlFromZk(AbstractDistribZkTestBase.DEFAULT_COLLECTION, SHARD1_0);
+    HttpSolrServer shard1_0Server = new HttpSolrServer(shard1_0.getCoreUrl());
+    QueryResponse response = shard1_0Server.query(query);
+    long shard10Count = response.getResults().getNumFound();
+
+    ZkCoreNodeProps shard1_1 = getLeaderUrlFromZk(AbstractDistribZkTestBase.DEFAULT_COLLECTION, SHARD1_1);
+    HttpSolrServer shard1_1Server = new HttpSolrServer(shard1_1.getCoreUrl());
+    QueryResponse response2 = shard1_1Server.query(query);
+    long shard11Count = response2.getResults().getNumFound();
+
+    logDebugHelp(docCounts, response, shard10Count, response2, shard11Count);
+
+    assertEquals("Wrong doc count on shard1_0", docCounts[0], shard10Count);
+    assertEquals("Wrong doc count on shard1_1", docCounts[1], shard11Count);
+
+    ClusterState clusterState = null;
+    Slice slice1_0 = null, slice1_1 = null;
+    int i = 0;
+    for (i = 0; i < 10; i++) {
+      ZkStateReader zkStateReader = cloudClient.getZkStateReader();
+      zkStateReader.updateClusterState(true);
+      clusterState = zkStateReader.getClusterState();
+      slice1_0 = clusterState.getSlice(AbstractDistribZkTestBase.DEFAULT_COLLECTION, "shard1_0");
+      slice1_1 = clusterState.getSlice(AbstractDistribZkTestBase.DEFAULT_COLLECTION, "shard1_1");
+      if (Slice.ACTIVE.equals(slice1_0.getState()) && Slice.ACTIVE.equals(slice1_1.getState()))
+        break;
+      Thread.sleep(500);
+    }
+
+    log.info("ShardSplitTest waited for {} ms for shard state to be set to active", i * 500);
+
+    assertNotNull("Cluster state does not contain shard1_0", slice1_0);
+    assertNotNull("Cluster state does not contain shard1_0", slice1_1);
+    assertEquals("shard1_0 is not active", Slice.ACTIVE, slice1_0.getState());
+    assertEquals("shard1_1 is not active", Slice.ACTIVE, slice1_1.getState());
+    assertEquals("Wrong number of replicas created for shard1_0", numReplicas, slice1_0.getReplicas().size());
+    assertEquals("Wrong number of replicas created for shard1_1", numReplicas, slice1_1.getReplicas().size());
+  }
+
+  protected void splitShard(String shardId) throws SolrServerException, IOException {
     ModifiableSolrParams params = new ModifiableSolrParams();
     params.set("action", CollectionParams.CollectionAction.SPLITSHARD.toString());
     params.set("collection", "collection1");
-    params.set("shard", SHARD1);
+    params.set("shard", shardId);
     SolrRequest request = new QueryRequest(params);
     request.setPath("/admin/collections");
 
@@ -160,35 +194,27 @@ public class ShardSplitTest extends BasicDistributedZkTest {
     baseServer.setConnectionTimeout(15000);
     baseServer.setSoTimeout((int) (CollectionsHandler.DEFAULT_ZK_TIMEOUT * 5));
     baseServer.request(request);
+  }
 
-    log.info("Layout after split: \n");
-    printLayout();
+  protected void indexAndUpdateCount(List<DocRouter.Range> ranges, int[] docCounts, int id) throws Exception {
+    indexr("id", id);
 
-    indexThread.join();
+    // todo - hook in custom hashing
+    byte[] bytes = String.valueOf(id).getBytes("UTF-8");
+    int hash = Hash.murmurhash3_x86_32(bytes, 0, bytes.length, 0);
+    for (int i = 0; i < ranges.size(); i++) {
+      DocRouter.Range range = ranges.get(i);
+      if (range.includes(hash))
+        docCounts[i]++;
+    }
+  }
 
-    solrServer.commit(); // distributed commit on all shards
-
-    SolrQuery query = new SolrQuery("*:*").setRows(1000).setFields("id", "_version_");
-    query.set("distrib", false);
-
-    ZkCoreNodeProps shard1_0 = getLeaderUrlFromZk(AbstractDistribZkTestBase.DEFAULT_COLLECTION, SHARD1_0);
-    HttpSolrServer shard1_0Server = new HttpSolrServer(shard1_0.getCoreUrl());
-    QueryResponse response = shard1_0Server.query(query);
-    long shard10Count = response.getResults().getNumFound();
-//    log.info("Resp: shard: shard1_0 url: " + shard1_0.getCoreUrl() + "\n" + response.getResponse());
-
-    ZkCoreNodeProps shard1_1 = getLeaderUrlFromZk(AbstractDistribZkTestBase.DEFAULT_COLLECTION, SHARD1_1);
-    HttpSolrServer shard1_1Server = new HttpSolrServer(shard1_1.getCoreUrl());
-    QueryResponse response2 = shard1_1Server.query(query);
-    long shard11Count = response2.getResults().getNumFound();
-    //log.info("Resp: shard: shard1_1 url: " + shard1_1.getCoreUrl() + "\n" + response.getResponse());
-
+  protected void logDebugHelp(int[] docCounts, QueryResponse response, long shard10Count, QueryResponse response2, long shard11Count) {
     for (int i = 0; i < docCounts.length; i++) {
       int docCount = docCounts[i];
       log.info("Expected docCount for shard1_{} = {}", i, docCount);
     }
 
-    // DEBUGGING CODE
     log.info("Actual docCount for shard1_0 = {}", shard10Count);
     log.info("Actual docCount for shard1_1 = {}", shard11Count);
     Map<String, String> idVsVersion = new HashMap<String, String>();
@@ -214,39 +240,6 @@ public class ShardSplitTest extends BasicDistributedZkTest {
         log.error("EXTRA: ID: " + document.getFieldValue("id") + " on shard1_1. Old version: " + old.getFieldValue("_version_") + " new version: " + document.getFieldValue("_version_"));
       }
     }
-    // END DEBUGGING CODE
-
-    assertEquals("Wrong doc count on shard1_0", docCounts[0], shard10Count);
-    assertEquals("Wrong doc count on shard1_1", docCounts[1], shard11Count);
-
-    Slice slice1_0 = null, slice1_1 = null;
-    int i = 0;
-    for (i = 0; i < 10; i++) {
-      ZkStateReader zkStateReader = cloudClient.getZkStateReader();
-      zkStateReader.updateClusterState(true);
-      clusterState = zkStateReader.getClusterState();
-      slice1_0 = clusterState.getSlice(AbstractDistribZkTestBase.DEFAULT_COLLECTION, "shard1_0");
-      slice1_1 = clusterState.getSlice(AbstractDistribZkTestBase.DEFAULT_COLLECTION, "shard1_1");
-      if (Slice.ACTIVE.equals(slice1_0.getState()) && Slice.ACTIVE.equals(slice1_1.getState()))
-        break;
-      Thread.sleep(500);
-    }
-
-    log.info("ShardSplitTest waited for {} ms for shard state to be set to active", i * 500);
-
-    assertNotNull("Cluster state does not contain shard1_0", slice1_0);
-    assertNotNull("Cluster state does not contain shard1_0", slice1_1);
-    assertEquals("shard1_0 is not active", Slice.ACTIVE, slice1_0.getState());
-    assertEquals("shard1_1 is not active", Slice.ACTIVE, slice1_1.getState());
-    assertEquals("Wrong number of replicas created for shard1_0", numReplicas, slice1_0.getReplicas().size());
-    assertEquals("Wrong number of replicas created for shard1_1", numReplicas, slice1_1.getReplicas().size());
-
-    // todo can't call waitForThingsToLevelOut because it looks for jettys of all shards
-    // and the new sub-shards don't have any.
-    waitForRecoveriesToFinish(true);
-    //waitForThingsToLevelOut(15);
-
-    // todo - more and better tests
   }
 }
 
