@@ -19,7 +19,9 @@ package org.apache.solr.cloud;
 
 import java.io.IOException;
 import java.util.Collection;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.concurrent.atomic.AtomicInteger;
 
 import org.apache.lucene.util.LuceneTestCase.Slow;
@@ -31,11 +33,11 @@ import org.apache.solr.client.solrj.impl.HttpSolrServer;
 import org.apache.solr.client.solrj.request.QueryRequest;
 import org.apache.solr.client.solrj.request.UpdateRequest;
 import org.apache.solr.client.solrj.response.QueryResponse;
+import org.apache.solr.common.SolrDocument;
 import org.apache.solr.common.SolrInputDocument;
 import org.apache.solr.common.cloud.ClusterState;
 import org.apache.solr.common.cloud.DocCollection;
 import org.apache.solr.common.cloud.DocRouter;
-import org.apache.solr.common.cloud.PlainIdRouter;
 import org.apache.solr.common.cloud.Replica;
 import org.apache.solr.common.cloud.Slice;
 import org.apache.solr.common.cloud.SolrZkClient;
@@ -259,16 +261,44 @@ public class ChaosMonkeyShardSplitTest extends AbstractFullDistribZkTestBase {
         AbstractFullDistribZkTestBase.DEFAULT_COLLECTION, "shard1_1",
         DEFAULT_CONNECTION_TIMEOUT);
     HttpSolrServer shard1_1Server = new HttpSolrServer(shard1_1_url);
-    response = shard1_1Server.query(query);
-    long shard11Count = response.getResults().getNumFound();
+    QueryResponse response2 = shard1_1Server.query(query);
+    long shard11Count = response2.getResults().getNumFound();
     System.out.println("Resp: shard: shard1_1 url: " + shard1_1_url + "\n"
-        + response.getResponse());
+        + response2.getResponse());
     
     for (int i = 0; i < docCounts.length; i++) {
       int docCount = docCounts[i];
       System.out
           .println("Expected docCount for shard1_" + i + " = " + docCount);
     }
+
+    // DEBUGGING CODE
+    log.info("Actual docCount for shard1_0 = {}", shard10Count);
+    log.info("Actual docCount for shard1_1 = {}", shard11Count);
+    Map<String, String> idVsVersion = new HashMap<String, String>();
+    Map<String, SolrDocument> shard10Docs = new HashMap<String, SolrDocument>();
+    Map<String, SolrDocument> shard11Docs = new HashMap<String, SolrDocument>();
+    for (int i = 0; i < response.getResults().size(); i++) {
+      SolrDocument document = response.getResults().get(i);
+      idVsVersion.put(document.getFieldValue("id").toString(), document.getFieldValue("_version_").toString());
+      SolrDocument old = shard10Docs.put(document.getFieldValue("id").toString(), document);
+      if (old != null) {
+        log.error("EXTRA: ID: " + document.getFieldValue("id") + " on shard1_0. Old version: " + old.getFieldValue("_version_") + " new version: " + document.getFieldValue("_version_"));
+      }
+    }
+    for (int i = 0; i < response2.getResults().size(); i++) {
+      SolrDocument document = response2.getResults().get(i);
+      String value = document.getFieldValue("id").toString();
+      String version = idVsVersion.get(value);
+      if (version != null) {
+        log.error("DUPLICATE: ID: " + value + " , shard1_0Version: " + version + " shard1_1Version:" + document.getFieldValue("_version_"));
+      }
+      SolrDocument old = shard11Docs.put(document.getFieldValue("id").toString(), document);
+      if (old != null) {
+        log.error("EXTRA: ID: " + document.getFieldValue("id") + " on shard1_1. Old version: " + old.getFieldValue("_version_") + " new version: " + document.getFieldValue("_version_"));
+      }
+    }
+    // END DEBUGGING CODE
     
     assertEquals("Wrong doc count on shard1_0", docCounts[0], shard10Count);
     assertEquals("Wrong doc count on shard1_1", docCounts[1], shard11Count);
