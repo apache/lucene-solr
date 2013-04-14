@@ -28,6 +28,8 @@ import java.io.OutputStreamWriter;
 import java.io.Writer;
 import java.net.MalformedURLException;
 import java.net.URL;
+import java.util.Set;
+import java.util.Date;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
@@ -49,11 +51,15 @@ import org.apache.solr.client.solrj.SolrServer;
 import org.apache.solr.client.solrj.SolrServerException;
 import org.apache.solr.client.solrj.embedded.JettySolrRunner;
 import org.apache.solr.client.solrj.impl.HttpSolrServer;
+import org.apache.solr.client.solrj.request.UpdateRequest;
 import org.apache.solr.client.solrj.request.QueryRequest;
 import org.apache.solr.client.solrj.response.QueryResponse;
+import org.apache.solr.client.solrj.response.UpdateResponse;
+import org.apache.solr.common.SolrException;
 import org.apache.solr.common.SolrDocument;
 import org.apache.solr.common.SolrDocumentList;
 import org.apache.solr.common.SolrInputDocument;
+import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.common.util.SimpleOrderedMap;
@@ -110,14 +116,11 @@ public class TestReplicationHandler extends SolrTestCaseJ4 {
   }
 
   public void clearIndexWithReplication() throws Exception {
-    NamedList res = query("*:*", masterClient);
-    SolrDocumentList docs = (SolrDocumentList)res.get("response");
-    if (docs.getNumFound() != 0) {
+    if (numFound(query("*:*", masterClient)) != 0) {
       masterClient.deleteByQuery("*:*");
       masterClient.commit();
-      // wait for replication to sync
-      res = rQuery(0, "*:*", slaveClient);
-      assertEquals(0, ((SolrDocumentList) res.get("response")).getNumFound());
+      // wait for replication to sync & verify
+      assertEquals(0, numFound(rQuery(0, "*:*", slaveClient)));
     }
   }
 
@@ -183,23 +186,27 @@ public class TestReplicationHandler extends SolrTestCaseJ4 {
   /** will sleep up to 30 seconds, looking for expectedDocCount */
   private NamedList rQuery(int expectedDocCount, String query, SolrServer server) throws Exception {
     int timeSlept = 0;
-    NamedList res = null;
-    SolrDocumentList docList = null;
-    do {
+    NamedList res = query(query, server);
+    while (expectedDocCount != numFound(res)
+           && timeSlept < 30000) {
       log.info("Waiting for " + expectedDocCount + " docs");
-      res = query(query, server);
-      docList = (SolrDocumentList) res.get("response");
       timeSlept += 100;
       Thread.sleep(100);
-    } while(docList.getNumFound() != expectedDocCount && timeSlept < 30000);
+      res = query(query, server);
+    }
     return res;
   }
   
+  private long numFound(NamedList res) {
+    return ((SolrDocumentList) res.get("response")).getNumFound();
+  }
+
   private NamedList<Object> getDetails(SolrServer s) throws Exception {
     
 
     ModifiableSolrParams params = new ModifiableSolrParams();
     params.set("command","details");
+    params.set("_trace","getDetails");
     params.set("qt","/replication");
     QueryRequest req = new QueryRequest(params);
 
@@ -220,6 +227,7 @@ public class TestReplicationHandler extends SolrTestCaseJ4 {
 
     ModifiableSolrParams params = new ModifiableSolrParams();
     params.set("command","commits");
+    params.set("_trace","getCommits");
     params.set("qt","/replication");
     QueryRequest req = new QueryRequest(params);
 
@@ -235,6 +243,7 @@ public class TestReplicationHandler extends SolrTestCaseJ4 {
     
     ModifiableSolrParams params = new ModifiableSolrParams();
     params.set("command","indexversion");
+    params.set("_trace","getIndexVersion");
     params.set("qt","/replication");
     QueryRequest req = new QueryRequest(params);
 
@@ -329,6 +338,56 @@ public class TestReplicationHandler extends SolrTestCaseJ4 {
     }
   }
 
+  /**
+   * Verify that empty commits and/or commits with openSearcher=false 
+   * on the master do not cause subsequent replication problems on the slave 
+   */
+  public void testEmptyCommits() throws Exception {
+    clearIndexWithReplication();
+    
+    // add a doc to master and commit
+    index(masterClient, "id", "1", "name", "empty1");
+    emptyUpdate(masterClient, "commit", "true");
+    // force replication
+    pullFromMasterToSlave();
+    // verify doc is on slave
+    rQuery(1, "name:empty1", slaveClient);
+    assertVersions(masterClient, slaveClient);
+
+    // do a completely empty commit on master and force replication
+    emptyUpdate(masterClient, "commit", "true");
+    pullFromMasterToSlave();
+
+    // add another doc and verify slave gets it
+    index(masterClient, "id", "2", "name", "empty2");
+    emptyUpdate(masterClient, "commit", "true");
+    // force replication
+    pullFromMasterToSlave();
+
+    rQuery(1, "name:empty2", slaveClient);
+    assertVersions(masterClient, slaveClient);
+
+    // add a third doc but don't open a new searcher on master
+    index(masterClient, "id", "3", "name", "empty3");
+    emptyUpdate(masterClient, "commit", "true", "openSearcher", "false");
+    pullFromMasterToSlave();
+    
+    // verify slave can search the doc, but master doesn't
+    rQuery(0, "name:empty3", masterClient);
+    rQuery(1, "name:empty3", slaveClient);
+
+    // final doc with hard commit, slave and master both showing all docs
+    index(masterClient, "id", "4", "name", "empty4");
+    emptyUpdate(masterClient, "commit", "true");
+    pullFromMasterToSlave();
+
+    String q = "name:(empty1 empty2 empty3 empty4)";
+    rQuery(4, q, masterClient);
+    rQuery(4, q, slaveClient);
+    assertVersions(masterClient, slaveClient);
+
+  }
+
   @Test
   public void doTestReplicateAfterWrite2Slave() throws Exception {
     clearIndexWithReplication();
@@ -342,9 +401,7 @@ public class TestReplicationHandler extends SolrTestCaseJ4 {
     
     masterClient.commit();
 
-    NamedList masterQueryRsp = rQuery(nDocs, "*:*", masterClient);
-    SolrDocumentList masterQueryResult = (SolrDocumentList) masterQueryRsp.get("response");
-    assertEquals(nDocs, masterQueryResult.getNumFound());
+    assertEquals(nDocs, numFound(rQuery(nDocs, "*:*", masterClient)));
 
     // Make sure that both the index version and index generation on the slave is
     // higher than that of the master, just to make the test harder.
@@ -360,14 +417,8 @@ public class TestReplicationHandler extends SolrTestCaseJ4 {
     index(slaveClient, "id", 555, "name", "name = " + 555);
     slaveClient.commit(true, true);
 
-
-    
     //this doc is added to slave so it should show an item w/ that result
-    SolrDocumentList slaveQueryResult = null;
-    NamedList slaveQueryRsp;
-    slaveQueryRsp = rQuery(1, "id:555", slaveClient);
-    slaveQueryResult = (SolrDocumentList) slaveQueryRsp.get("response");
-    assertEquals(1, slaveQueryResult.getNumFound());
+    assertEquals(1, numFound(rQuery(1, "id:555", slaveClient)));
 
     //Let's fetch the index rather than rely on the polling.
     invokeReplicationCommand(masterJetty.getLocalPort(), "enablereplication");
@@ -413,12 +464,12 @@ public class TestReplicationHandler extends SolrTestCaseJ4 {
 
     NamedList masterQueryRsp = rQuery(nDocs, "*:*", masterClient);
     SolrDocumentList masterQueryResult = (SolrDocumentList) masterQueryRsp.get("response");
-    assertEquals(nDocs, masterQueryResult.getNumFound());
+    assertEquals(nDocs, numFound(masterQueryRsp));
 
     //get docs from slave and check if number is equal to master
     NamedList slaveQueryRsp = rQuery(nDocs, "*:*", slaveClient);
     SolrDocumentList slaveQueryResult = (SolrDocumentList) slaveQueryRsp.get("response");
-    assertEquals(nDocs, slaveQueryResult.getNumFound());
+    assertEquals(nDocs, numFound(slaveQueryRsp));
 
     //compare results
     String cmp = BaseDistributedSearchTestCase.compare(masterQueryResult, slaveQueryResult, 0, null);
@@ -460,9 +511,7 @@ public class TestReplicationHandler extends SolrTestCaseJ4 {
     index(masterClient, "id", "2000", "name", "name = " + 2000, "newname", "newname = " + 2000);
     masterClient.commit();
 
-    NamedList masterQueryRsp2 = rQuery(1, "*:*", masterClient);
-    SolrDocumentList masterQueryResult2 = (SolrDocumentList) masterQueryRsp2.get("response");
-    assertEquals(1, masterQueryResult2.getNumFound());
+    assertEquals(1, numFound( rQuery(1, "*:*", masterClient)));
     
     assertVersions(masterClient, slaveClient);
 
@@ -493,12 +542,12 @@ public class TestReplicationHandler extends SolrTestCaseJ4 {
 
     NamedList masterQueryRsp = rQuery(nDocs, "*:*", masterClient);
     SolrDocumentList masterQueryResult = (SolrDocumentList) masterQueryRsp.get("response");
-    assertEquals(nDocs, masterQueryResult.getNumFound());
+    assertEquals(nDocs, numFound(masterQueryRsp));
 
     //get docs from slave and check if number is equal to master
     NamedList slaveQueryRsp = rQuery(nDocs, "*:*", slaveClient);
     SolrDocumentList slaveQueryResult = (SolrDocumentList) slaveQueryRsp.get("response");
-    assertEquals(nDocs, slaveQueryResult.getNumFound());
+    assertEquals(nDocs, numFound(slaveQueryRsp));
 
     //compare results
     String cmp = BaseDistributedSearchTestCase.compare(masterQueryResult, slaveQueryResult, 0, null);
@@ -511,25 +560,19 @@ public class TestReplicationHandler extends SolrTestCaseJ4 {
     masterClient.commit();
 
     //get docs from master and check if number is equal to master
-    masterQueryRsp = rQuery(nDocs+1, "*:*", masterClient);
-    masterQueryResult = (SolrDocumentList) masterQueryRsp.get("response");
-    assertEquals(nDocs+1, masterQueryResult.getNumFound());
+    assertEquals(nDocs+1, numFound(rQuery(nDocs+1, "*:*", masterClient)));
     
     // NOTE: this test is wierd, we want to verify it DOESNT replicate...
     // for now, add a sleep for this.., but the logic is wierd.
     Thread.sleep(3000);
     
     //get docs from slave and check if number is not equal to master; polling is disabled
-    slaveQueryRsp = rQuery(nDocs, "*:*", slaveClient);
-    slaveQueryResult = (SolrDocumentList) slaveQueryRsp.get("response");
-    assertEquals(nDocs, slaveQueryResult.getNumFound());
+    assertEquals(nDocs, numFound(rQuery(nDocs, "*:*", slaveClient)));
 
     // re-enable replication
     invokeReplicationCommand(slaveJetty.getLocalPort(), "enablepoll");
 
-    slaveQueryRsp = rQuery(nDocs+1, "*:*", slaveClient);
-    slaveQueryResult = (SolrDocumentList) slaveQueryRsp.get("response");
-    assertEquals(nDocs+1, slaveQueryResult.getNumFound());   
+    assertEquals(nDocs+1, numFound(rQuery(nDocs+1, "*:*", slaveClient)));
   }
 
   @Test
@@ -676,14 +719,18 @@ public class TestReplicationHandler extends SolrTestCaseJ4 {
     if (useStraightStandardDirectory) {
       useFactory(null);
     }
+    final String SLAVE_SCHEMA_1 = "schema-replication1.xml";
+    final String SLAVE_SCHEMA_2 = "schema-replication2.xml";
+    String slaveSchema = SLAVE_SCHEMA_1;
+
     try {
       
-      slave
-          .copyConfigFile(CONF_DIR + "solrconfig-slave1.xml", "solrconfig.xml");
+      slave.copyConfigFile(CONF_DIR +"solrconfig-slave1.xml", "solrconfig.xml");
+      slave.copyConfigFile(CONF_DIR +slaveSchema, "schema.xml");
       slaveJetty.stop();
       slaveJetty = createJetty(slave);
       slaveClient = createNewSolrServer(slaveJetty.getLocalPort());
-      
+
       master.copyConfigFile(CONF_DIR + "solrconfig-master3.xml",
           "solrconfig.xml");
       masterJetty.stop();
@@ -700,11 +747,14 @@ public class TestReplicationHandler extends SolrTestCaseJ4 {
       int id = 0;
       for (int x = 0; x < rounds; x++) {
         
-        // we randomly trigger a configuration replication
-        // if (random().nextBoolean()) {
-        master.copyConfigFile(CONF_DIR + "schema-replication"
-            + (random().nextInt(2) + 1) + ".xml", "schema.xml");
-        // }
+        final boolean confCoreReload = random().nextBoolean();
+        if (confCoreReload) {
+          // toggle the schema file used
+
+          slaveSchema = slaveSchema.equals(SLAVE_SCHEMA_1) ? 
+            SLAVE_SCHEMA_2 : SLAVE_SCHEMA_1;
+          master.copyConfigFile(CONF_DIR + slaveSchema, "schema.xml");
+        }
         
         int docs = random().nextInt(maxDocs);
         for (int i = 0; i < docs; i++) {
@@ -720,8 +770,12 @@ public class TestReplicationHandler extends SolrTestCaseJ4 {
         assertEquals(totalDocs, masterQueryResult.getNumFound());
         
         // snappull
+        Date slaveCoreStart = watchCoreStartAt(slaveClient, 30*1000, null);
         pullFromMasterToSlave();
-        
+        if (confCoreReload) {
+          watchCoreStartAt(slaveClient, 30*1000, slaveCoreStart);
+        }
+
         // get docs from slave and check if number is equal to master
         NamedList slaveQueryRsp = rQuery(totalDocs, "*:*", slaveClient);
         SolrDocumentList slaveQueryResult = (SolrDocumentList) slaveQueryRsp
@@ -761,7 +815,10 @@ public class TestReplicationHandler extends SolrTestCaseJ4 {
       String ddir = core.getDataDir();
       CachingDirectoryFactory dirFactory = (CachingDirectoryFactory) core.getDirectoryFactory();
       synchronized (dirFactory) {
-        assertEquals(dirFactory.getPaths().toString(), 2, dirFactory.getPaths().size());
+        Set<String> livePaths = dirFactory.getLivePaths();
+        // one for data, one for hte index under data
+        assertEquals(livePaths.toString(), 2, livePaths.size());
+        // :TODO: assert that one of the paths is a subpath of hte other
       }
       if (dirFactory instanceof StandardDirectoryFactory) {
         System.out.println(Arrays.asList(new File(ddir).list()));
@@ -783,15 +840,7 @@ public class TestReplicationHandler extends SolrTestCaseJ4 {
 
   private void pullFromMasterToSlave() throws MalformedURLException,
       IOException {
-    String masterUrl = "http://127.0.0.1:" + slaveJetty.getLocalPort() + "/solr/replication?command=fetchindex&masterUrl=";
-    masterUrl += "http://127.0.0.1:" + masterJetty.getLocalPort() + "/solr/replication";
-    URL url = new URL(masterUrl);
-    InputStream stream = url.openStream();
-    try {
-      stream.close();
-    } catch (IOException e) {
-      //e.printStackTrace();
-    }
+    pullFromTo(masterJetty, slaveJetty);
   }
   
   @Test
@@ -874,6 +923,7 @@ public class TestReplicationHandler extends SolrTestCaseJ4 {
     // check vs /replication?command=indexversion call
     ModifiableSolrParams params = new ModifiableSolrParams();
     params.set("qt", "/replication");
+    params.set("_trace", "assertVersions");
     params.set("command", "indexversion");
     QueryRequest req = new QueryRequest(params);
     NamedList<Object> resp = client1.request(req);
@@ -910,7 +960,7 @@ public class TestReplicationHandler extends SolrTestCaseJ4 {
     URL url;
     InputStream stream;
     masterUrl = "http://127.0.0.1:" + to.getLocalPort()
-        + "/solr/replication?command=fetchindex&masterUrl=";
+        + "/solr/replication?wait=true&command=fetchindex&masterUrl=";
     masterUrl += "http://127.0.0.1:" + from.getLocalPort()
         + "/solr/replication";
     url = new URL(masterUrl);
@@ -1102,7 +1152,6 @@ public class TestReplicationHandler extends SolrTestCaseJ4 {
   }
 
   @Test
-  //@Ignore("ignore while i track down the intermittent problem with this test")
   public void doTestIndexAndConfigAliasReplication() throws Exception {
     clearIndexWithReplication();
 
@@ -1130,6 +1179,7 @@ public class TestReplicationHandler extends SolrTestCaseJ4 {
     //clear master index
     masterClient.deleteByQuery("*:*");
     masterClient.commit();
+    rQuery(0, "*:*", masterClient); // sanity check w/retry
 
     //change solrconfig on master
     master.copyConfigFile(CONF_DIR + "solrconfig-master1.xml", 
@@ -1157,28 +1207,33 @@ public class TestReplicationHandler extends SolrTestCaseJ4 {
 
     slaveClient.deleteByQuery("*:*");
     slaveClient.commit();
+    rQuery(0, "*:*", slaveClient); // sanity check w/retry
     
-    //add a doc with new field and commit on master to trigger snappull from slave.
-    index(masterClient, "id", "2000", "name", "name = " + 2000, "newname", "newname = " + 2000);
-    masterClient.commit();
+    // record collection1's start time on slave
+    final Date slaveStartTime = watchCoreStartAt(slaveClient, 30*1000, null);
 
-    NamedList masterQueryRsp2 = rQuery(1, "*:*", masterClient);
+    //add a doc with new field and commit on master to trigger snappull from slave.
+    index(masterClient, "id", "2000", "name", "name = " + 2000, "newname", "n2000");
+    masterClient.commit();
+    rQuery(1, "newname:n2000", masterClient);  // sanity check
+
+    // wait for slave to reload core by watching updated startTime
+    watchCoreStartAt(slaveClient, 30*1000, slaveStartTime);
+
+    NamedList masterQueryRsp2 = rQuery(1, "id:2000", masterClient);
     SolrDocumentList masterQueryResult2 = (SolrDocumentList) masterQueryRsp2.get("response");
     assertEquals(1, masterQueryResult2.getNumFound());
 
-    NamedList slaveQueryRsp2 = rQuery(1, "*:*", slaveClient);
+    NamedList slaveQueryRsp2 = rQuery(1, "id:2000", slaveClient);
     SolrDocumentList slaveQueryResult2 = (SolrDocumentList) slaveQueryRsp2.get("response");
     assertEquals(1, slaveQueryResult2.getNumFound());
     
-    // we need to wait until the core is reloaded
-    rQuery(1, "*:*", slaveClient);
-
-    index(slaveClient, "id", "2000", "name", "name = " + 2001, "newname", "newname = " + 2001);
+    index(slaveClient, "id", "2001", "name", "name = " + 2001, "newname", "n2001");
     slaveClient.commit();
 
-    slaveQueryRsp = rQuery(1, "*:*", slaveClient);
+    slaveQueryRsp = rQuery(1, "id:2001", slaveClient);
     SolrDocument d = ((SolrDocumentList) slaveQueryRsp.get("response")).get(0);
-    assertEquals("newname = 2001", (String) d.getFieldValue("newname"));
+    assertEquals("n2001", (String) d.getFieldValue("newname"));
     
     checkForSingleIndex(masterJetty);
     checkForSingleIndex(slaveJetty);
@@ -1363,6 +1418,59 @@ public class TestReplicationHandler extends SolrTestCaseJ4 {
     }
     in.close();
     out.close();
+  }
+
+  private UpdateResponse emptyUpdate(SolrServer client, String... params) 
+    throws SolrServerException, IOException {
+
+    UpdateRequest req = new UpdateRequest();
+    req.setParams(params(params));
+    return req.process(client);
+  }
+
+  /**
+   * Polls the SolrCore stats using the specified client until the "startTime" 
+   * time for collection is after the specified "min".  Will loop for 
+   * at most "timeout" milliseconds before throwing an assertion failure.
+   * 
+   * @param client The SolrServer to poll
+   * @param timeout the max milliseconds to continue polling for
+   * @param min the startTime value must exceed this value before the method will return, if null this method will return the first startTime value encountered.
+   * @return the startTime value of collection
+   */
+  private Date watchCoreStartAt(SolrServer client, final long timeout, 
+                                final Date min) throws InterruptedException, IOException, SolrServerException {
+    final long sleepInterval = 200;
+    long timeSlept = 0;
+
+    SolrParams p = params("action","status", "core", "collection1");
+    while (timeSlept < timeout) {
+      QueryRequest req = new QueryRequest(p);
+      req.setPath("/admin/cores");
+      try {
+        NamedList data = client.request(req);
+        for (String k : new String[] {"status","collection1"}) {
+          Object o = data.get(k);
+          assertNotNull("core status rsp missing key: " + k, o);
+          data = (NamedList) o;
+        }
+        Date startTime = (Date) data.get("startTime");
+        assertNotNull("core has null startTime", startTime);
+        if (null == min || startTime.after(min)) {
+          return startTime;
+        }
+      } catch (SolrException e) {
+        // workarround for SOLR-4668
+        if (500 != e.code()) {
+          throw e;
+        } // else server possibly from the core reload in progress...
+      }
+
+      timeSlept += sleepInterval;
+      Thread.sleep(sleepInterval);
+    }
+    fail("timed out waiting for collection1 startAt time to exceed: " + min);
+    return min; // compilation neccessity
   }
 
   private static class SolrInstance {

@@ -180,12 +180,16 @@ public class ReplicationHandler extends RequestHandlerBase implements SolrCoreAw
         return;
       }
       final SolrParams paramsCopy = new ModifiableSolrParams(solrParams);
-      new Thread() {
+      Thread puller = new Thread("explicit-fetchindex-cmd") {
         @Override
         public void run() {
           doFetch(paramsCopy, false);
         }
-      }.start();
+      };
+      puller.start();
+      if (solrParams.getBool(WAIT, false)) {
+        puller.join();
+      }
       rsp.add(STATUS, OK_STATUS);
     } else if (command.equalsIgnoreCase(CMD_DISABLE_POLL)) {
       if (snapPuller != null){
@@ -1298,4 +1302,15 @@ public class ReplicationHandler extends RequestHandlerBase implements SolrCoreAw
   public static final String NUMBER_BACKUPS_TO_KEEP_REQUEST_PARAM = "numberToKeep";
   
   public static final String NUMBER_BACKUPS_TO_KEEP_INIT_PARAM = "maxNumberOfBackups";
+
+  /** 
+   * Boolean param for tests that can be specified when using 
+   * {@link #CMD_FETCH_INDEX} to force the current request to block until 
+   * the fetch is complete.  <b>NOTE:</b> This param is not advised for 
+   * non-test code, since the the durration of the fetch for non-trivial
+   * indexes will likeley cause the request to time out.
+   *
+   * @lucene.internal
+   */
+  public static final String WAIT = "wait";
 }
