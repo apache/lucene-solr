@@ -5,7 +5,7 @@ install at least Update 1! With all Java versions it is strongly
 recommended to not use experimental `-XX` JVM options. It is also 
 recommended to always use the latest update version of your Java VM, 
 because bugs may affect Solr. An overview of known JVM bugs can be 
-found on http://wiki.apache.org/lucene-java/SunJavaBugs. 
+found on http://wiki.apache.org/lucene-java/JavaBugs. 
 
 CPU, disk and memory requirements are based on the many choices made in 
 implementing Solr (document size, number of documents, and number of 
