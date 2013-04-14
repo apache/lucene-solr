@@ -218,6 +218,7 @@ public class SnapPuller {
           return;
         }
         try {
+          LOG.debug("Polling for index modifications");
           executorStartTime = System.currentTimeMillis();
           replicationHandler.doFetch(null, false);
         } catch (Exception e) {

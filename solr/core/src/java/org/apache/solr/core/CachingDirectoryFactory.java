@@ -143,6 +143,7 @@ public abstract class CachingDirectoryFactory extends DirectoryFactory {
             + " " + byDirectoryCache);
       }
       cacheValue.doneWithDir = true;
+      log.debug("Done with dir: {}", cacheValue);
       if (cacheValue.refCnt == 0 && !closed) {
         boolean cl = closeCacheValue(cacheValue);
         if (cl) {
@@ -164,6 +165,8 @@ public abstract class CachingDirectoryFactory extends DirectoryFactory {
       this.closed = true;
       Collection<CacheValue> values = byDirectoryCache.values();
       for (CacheValue val : values) {
+        log.debug("Closing {} - currently tracking: {}", 
+                  this.getClass().getSimpleName(), val);
         try {
           // if there are still refs out, we have to wait for them
           int cnt = 0;
@@ -217,9 +220,9 @@ public abstract class CachingDirectoryFactory extends DirectoryFactory {
   }
 
   private void removeFromCache(CacheValue v) {
+    log.debug("Removing from cache: {}", v);
     byDirectoryCache.remove(v.directory);
     byPathCache.remove(v.path);
-    
   }
 
   // be sure this is called with the this sync lock
@@ -353,6 +356,7 @@ public abstract class CachingDirectoryFactory extends DirectoryFactory {
         log.info("return new directory for " + fullPath);
       } else {
         cacheValue.refCnt++;
+        log.debug("Reusing cached directory: {}", cacheValue);
       }
       
       return directory;
@@ -397,6 +401,7 @@ public abstract class CachingDirectoryFactory extends DirectoryFactory {
       }
       
       cacheValue.refCnt++;
+      log.debug("incRef'ed: {}", cacheValue);
     }
   }
   
@@ -521,8 +526,20 @@ public abstract class CachingDirectoryFactory extends DirectoryFactory {
     return path;
   }
   
-  // for tests
-  public synchronized Set<String> getPaths() {
-    return byPathCache.keySet();
+  /**
+   * Test only method for inspecting the cache
+   * @return paths in the cache which have not been marked "done"
+   *
+   * @see #doneWithDirectory
+   * @lucene.internal
+   */
+  public synchronized Set<String> getLivePaths() {
+    HashSet<String> livePaths = new HashSet<String>();
+    for (CacheValue val : byPathCache.values()) {
+      if (!val.doneWithDir) {
+        livePaths.add(val.path);
+      }
+    }
+    return livePaths;
   }
 }

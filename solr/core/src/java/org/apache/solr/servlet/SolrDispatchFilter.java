@@ -368,6 +368,7 @@ public class SolrDispatchFilter implements Filter
       } 
       finally {
         if( solrReq != null ) {
+          log.debug("Closing out SolrRequest: {}", solrReq);
           solrReq.close();
         }
         if (core != null) {
