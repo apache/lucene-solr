@@ -89,7 +89,7 @@ public class TestFacetsCollector extends FacetTestCase {
     ConstantScoreQuery csq = new ConstantScoreQuery(new MatchAllDocsQuery());
     csq.setBoost(2.0f);
     
-    new IndexSearcher(r).search(csq, MultiCollector.wrap(fc, topDocs));
+    newSearcher(r).search(csq, MultiCollector.wrap(fc, topDocs));
     
     List<FacetResult> res = fc.getFacetResults();
     float value = (float) res.get(0).getFacetResultNode().value;
@@ -130,7 +130,7 @@ public class TestFacetsCollector extends FacetTestCase {
         new CountFacetRequest(new CategoryPath("a"), 10), 
         new CountFacetRequest(new CategoryPath("b"), 10));
     FacetsCollector fc = FacetsCollector.create(sParams, r, taxo);
-    new IndexSearcher(r).search(new MatchAllDocsQuery(), fc);
+    newSearcher(r).search(new MatchAllDocsQuery(), fc);
     
     for (FacetResult res : fc.getFacetResults()) {
       assertEquals("unexpected count for " + res, r.maxDoc(), (int) res.getFacetResultNode().value);
@@ -182,7 +182,7 @@ public class TestFacetsCollector extends FacetTestCase {
     
     FacetsCollector fc = FacetsCollector.create(fa);
     TopScoreDocCollector topDocs = TopScoreDocCollector.create(10, false);
-    new IndexSearcher(r).search(new MatchAllDocsQuery(), MultiCollector.wrap(fc, topDocs));
+    newSearcher(r).search(new MatchAllDocsQuery(), MultiCollector.wrap(fc, topDocs));
     
     List<FacetResult> facetResults = fc.getFacetResults();
     FacetResult fresA = facetResults.get(0);
@@ -221,7 +221,7 @@ public class TestFacetsCollector extends FacetTestCase {
     
     final FacetsAccumulator fa = random().nextBoolean() ? new FacetsAccumulator(fsp, r, taxo) : new StandardFacetsAccumulator(fsp, r, taxo);
     FacetsCollector fc = FacetsCollector.create(fa);
-    new IndexSearcher(r).search(new MatchAllDocsQuery(), fc);
+    newSearcher(r).search(new MatchAllDocsQuery(), fc);
     
     FacetResult res = fc.getFacetResults().get(0);
     for (FacetResultNode node : res.getFacetResultNode().subResults) {
@@ -255,7 +255,7 @@ public class TestFacetsCollector extends FacetTestCase {
         new CountFacetRequest(new CategoryPath("b"), 10));
     final FacetsAccumulator fa = random().nextBoolean() ? new FacetsAccumulator(fsp, r, taxo) : new StandardFacetsAccumulator(fsp, r, taxo);
     final FacetsCollector fc = FacetsCollector.create(fa);
-    new IndexSearcher(r).search(new MatchAllDocsQuery(), fc);
+    newSearcher(r).search(new MatchAllDocsQuery(), fc);
     
     List<FacetResult> res1 = fc.getFacetResults();
     List<FacetResult> res2 = fc.getFacetResults();
@@ -289,7 +289,7 @@ public class TestFacetsCollector extends FacetTestCase {
     final FacetsCollector fc = FacetsCollector.create(fa);
     // this should populate the cached results, but doing search should clear the cache
     fc.getFacetResults();
-    new IndexSearcher(r).search(new MatchAllDocsQuery(), fc);
+    newSearcher(r).search(new MatchAllDocsQuery(), fc);
     
     List<FacetResult> res1 = fc.getFacetResults();
     // verify that we didn't get the cached result
@@ -328,7 +328,7 @@ public class TestFacetsCollector extends FacetTestCase {
     FacetSearchParams fsp = new FacetSearchParams(new CountFacetRequest(new CategoryPath("a"), 10));
     FacetsAccumulator fa = random().nextBoolean() ? new FacetsAccumulator(fsp, r, taxo) : new StandardFacetsAccumulator(fsp, r, taxo);
     FacetsCollector fc = FacetsCollector.create(fa);
-    new IndexSearcher(r).search(new MatchAllDocsQuery(), fc);
+    newSearcher(r).search(new MatchAllDocsQuery(), fc);
     assertTrue("invalid ordinal for child node: 0", 0 != fc.getFacetResults().get(0).getFacetResultNode().subResults.get(0).ordinal);
     
     // assert IntFacetResultHandler
@@ -344,7 +344,7 @@ public class TestFacetsCollector extends FacetTestCase {
       fa = new StandardFacetsAccumulator(fsp, r, taxo);
     }
     fc = FacetsCollector.create(fa);
-    new IndexSearcher(r).search(new MatchAllDocsQuery(), fc);
+    newSearcher(r).search(new MatchAllDocsQuery(), fc);
     assertTrue("invalid ordinal for child node: 0", 0 != fc.getFacetResults().get(0).getFacetResultNode().subResults.get(0).ordinal);
     
     IOUtils.close(taxo, taxoDir, r, indexDir);
@@ -377,7 +377,7 @@ public class TestFacetsCollector extends FacetTestCase {
     FacetSearchParams fsp = new FacetSearchParams(cfr);
     final FacetsAccumulator fa = random().nextBoolean() ? new FacetsAccumulator(fsp, r, taxo) : new StandardFacetsAccumulator(fsp, r, taxo);
     FacetsCollector fc = FacetsCollector.create(fa);
-    new IndexSearcher(r).search(new MatchAllDocsQuery(), fc);
+    newSearcher(r).search(new MatchAllDocsQuery(), fc);
     
     FacetResult res = fc.getFacetResults().get(0);
     assertEquals(10, res.getNumValidDescendants());

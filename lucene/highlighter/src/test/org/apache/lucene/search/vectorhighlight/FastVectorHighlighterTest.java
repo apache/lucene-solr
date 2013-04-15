@@ -272,7 +272,7 @@ public class FastVectorHighlighterTest extends LuceneTestCase {
    
     FastVectorHighlighter highlighter = new FastVectorHighlighter();
     IndexReader reader = DirectoryReader.open(writer, true);
-    IndexSearcher searcher = new IndexSearcher(reader);
+    IndexSearcher searcher = newSearcher(reader);
     TopDocs hits = searcher.search(query, 10);
     assertEquals(2, hits.totalHits);
     FieldQuery fieldQuery  = highlighter.getFieldQuery(query, reader);

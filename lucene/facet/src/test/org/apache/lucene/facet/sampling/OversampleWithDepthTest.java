@@ -119,7 +119,7 @@ public class OversampleWithDepthTest extends FacetTestCase {
     StandardFacetsAccumulator sfa = new SamplingAccumulator(sampler, fsp, r, tr);
     FacetsCollector fcWithSampling = FacetsCollector.create(sfa);
     
-    IndexSearcher s = new IndexSearcher(r);
+    IndexSearcher s = newSearcher(r);
     s.search(new MatchAllDocsQuery(), fcWithSampling);
     
     // there's only one expected result, return just it.

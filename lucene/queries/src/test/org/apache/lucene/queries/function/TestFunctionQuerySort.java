@@ -59,7 +59,7 @@ public class TestFunctionQuerySort extends LuceneTestCase {
     // Open index
     IndexReader reader = writer.getReader();
     writer.close();
-    IndexSearcher searcher = new IndexSearcher(reader);
+    IndexSearcher searcher = newSearcher(reader);
 
     // Get ValueSource from FieldCache
     IntFieldSource src = new IntFieldSource("value");

@@ -83,7 +83,7 @@ public class TestFieldScoreQuery extends FunctionTestSetup {
   private void doTestRank (ValueSource valueSource) throws Exception {
     FunctionQuery functionQuery = new FunctionQuery(valueSource);
     IndexReader r = DirectoryReader.open(dir);
-    IndexSearcher s = new IndexSearcher(r);
+    IndexSearcher s = newSearcher(r);
     log("test: "+ functionQuery);
     QueryUtils.check(random(), functionQuery,s);
     ScoreDoc[] h = s.search(functionQuery, null, 1000).scoreDocs;
@@ -132,7 +132,7 @@ public class TestFieldScoreQuery extends FunctionTestSetup {
   private void doTestExactScore (ValueSource valueSource) throws Exception {
     FunctionQuery functionQuery = new FunctionQuery(valueSource);
     IndexReader r = DirectoryReader.open(dir);
-    IndexSearcher s = new IndexSearcher(r);
+    IndexSearcher s = newSearcher(r);
     TopDocs td = s.search(functionQuery,null,1000);
     assertEquals("All docs should be matched!",N_DOCS,td.totalHits);
     ScoreDoc sd[] = td.scoreDocs;

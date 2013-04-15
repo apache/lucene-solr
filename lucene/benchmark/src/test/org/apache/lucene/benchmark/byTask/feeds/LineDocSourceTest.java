@@ -151,7 +151,7 @@ public class LineDocSourceTest extends BenchmarkTestCase {
       }
       
       reader = DirectoryReader.open(runData.getDirectory());
-      searcher = new IndexSearcher(reader);
+      searcher = newSearcher(reader);
       TopDocs td = searcher.search(new TermQuery(new Term("body", "body")), 10);
       assertEquals(numAdds, td.totalHits);
       assertNotNull(td.scoreDocs[0]);

@@ -100,7 +100,7 @@ public class GroupFacetCollectorTest extends AbstractGroupingTestCase {
     addField(doc, "duration", "5", useDv);
     w.addDocument(doc);
 
-    IndexSearcher indexSearcher = new IndexSearcher(w.getReader());
+    IndexSearcher indexSearcher = newSearcher(w.getReader());
 
     List<TermGroupFacetCollector.FacetEntry> entries;
     AbstractGroupFacetCollector groupedAirportFacetCollector;
@@ -181,7 +181,7 @@ public class GroupFacetCollectorTest extends AbstractGroupingTestCase {
     w.addDocument(doc);
 
     indexSearcher.getIndexReader().close();
-    indexSearcher = new IndexSearcher(w.getReader());
+    indexSearcher = newSearcher(w.getReader());
     groupedAirportFacetCollector = createRandomCollector(useDv ? "hotel_dv" : "hotel", useDv ? "airport_dv" : "airport", null, !useDv);
     indexSearcher.search(new MatchAllDocsQuery(), groupedAirportFacetCollector);
     airportResult = groupedAirportFacetCollector.mergeSegmentResults(3, 0, true);
@@ -229,7 +229,7 @@ public class GroupFacetCollectorTest extends AbstractGroupingTestCase {
     w.addDocument(doc);
 
     indexSearcher.getIndexReader().close();
-    indexSearcher = new IndexSearcher(w.getReader());
+    indexSearcher = newSearcher(w.getReader());
     groupedAirportFacetCollector = createRandomCollector(useDv ? "hotel_dv" : "hotel", useDv ? "airport_dv" : "airport", null, false);
     indexSearcher.search(new MatchAllDocsQuery(), groupedAirportFacetCollector);
     airportResult = groupedAirportFacetCollector.mergeSegmentResults(10, 0, false);
@@ -345,7 +345,7 @@ public class GroupFacetCollectorTest extends AbstractGroupingTestCase {
     w.commit();
 
     w.close();
-    IndexSearcher indexSearcher = new IndexSearcher(DirectoryReader.open(dir));
+    IndexSearcher indexSearcher = newSearcher(DirectoryReader.open(dir));
     AbstractGroupFacetCollector groupedAirportFacetCollector = createRandomCollector(groupField, "airport", null, true);
     indexSearcher.search(new MatchAllDocsQuery(), groupedAirportFacetCollector);
     TermGroupFacetCollector.GroupedFacetResult airportResult = groupedAirportFacetCollector.mergeSegmentResults(10, 0, false);

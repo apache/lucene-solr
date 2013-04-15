@@ -46,6 +46,8 @@ import org.apache.lucene.index.Term;
  */
 public class TestCustomScoreQuery extends FunctionTestSetup {
 
+  // TODO: why can't this test use newSearcher?
+  
   @BeforeClass
   public static void beforeClass() throws Exception {
     createIndex(true);
