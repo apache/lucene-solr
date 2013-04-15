@@ -446,7 +446,8 @@ public class ToParentBlockJoinQuery extends Query {
       final ToParentBlockJoinQuery other = (ToParentBlockJoinQuery) _other;
       return origChildQuery.equals(other.origChildQuery) &&
         parentsFilter.equals(other.parentsFilter) &&
-        scoreMode == other.scoreMode;
+        scoreMode == other.scoreMode && 
+        super.equals(other);
     } else {
       return false;
     }
@@ -455,17 +456,10 @@ public class ToParentBlockJoinQuery extends Query {
   @Override
   public int hashCode() {
     final int prime = 31;
-    int hash = 1;
+    int hash = super.hashCode();
     hash = prime * hash + origChildQuery.hashCode();
     hash = prime * hash + scoreMode.hashCode();
     hash = prime * hash + parentsFilter.hashCode();
     return hash;
-  }
-
-  @Override
-  public ToParentBlockJoinQuery clone() {
-    return new ToParentBlockJoinQuery(origChildQuery.clone(),
-                              parentsFilter,
-                              scoreMode);
   }
 }

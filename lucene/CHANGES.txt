@@ -299,6 +299,10 @@ Bug Fixes
   the number of documents per chunk has been added to fix this issue.
   (Robert Muir, Adrien Grand)
 
+* LUCENE-4934: Fix minor equals/hashcode problems in facet/DrillDownQuery, 
+  BoostingQuery, MoreLikeThisQuery, FuzzyLikeThisQuery, and block join queries.
+  (Robert Muir, Uwe Schindler)
+
 Documentation
 
 * LUCENE-4841: Added example SimpleSortedSetFacetsExample to show how

@@ -263,6 +263,7 @@ public class TestBlockJoin extends LuceneTestCase {
     IndexSearcher s = newSearcher(r);
     
     ToParentBlockJoinQuery q = new ToParentBlockJoinQuery(new MatchAllDocsQuery(), new QueryWrapperFilter(new MatchAllDocsQuery()), ScoreMode.Avg);
+    QueryUtils.check(random(), q, s);
     s.search(q, 10);
     BooleanQuery bq = new BooleanQuery();
     bq.setBoost(2f); // we boost the BQ

@@ -82,6 +82,15 @@ public class AssertingIndexSearcher extends IndexSearcher {
   }
 
   @Override
+  public Query rewrite(Query original) throws IOException {
+    // TODO: use the more sophisticated QueryUtils.check sometimes!
+    QueryUtils.check(original);
+    Query rewritten = super.rewrite(original);
+    QueryUtils.check(rewritten);
+    return rewritten;
+  }
+
+  @Override
   protected Query wrapFilter(Query query, Filter filter) {
     if (random.nextBoolean())
       return super.wrapFilter(query, filter);
