@@ -162,13 +162,13 @@ public class TestBlockJoin extends LuceneTestCase {
     final Directory dir = newDirectory();
     final RandomIndexWriter w = new RandomIndexWriter(random(), dir);
 
-    final List<Document> docs = new ArrayList<Document>();
+    final List<Document> docs = new ArrayList<>();
     docs.add(makeJob("java", 2007));
     docs.add(makeJob("python", 2010));
     Collections.shuffle(docs, random());
     docs.add(makeResume("Lisa", "United Kingdom"));
 
-    final List<Document> docs2 = new ArrayList<Document>();
+    final List<Document> docs2 = new ArrayList<>();
     docs2.add(makeJob("ruby", 2005));
     docs2.add(makeJob("java", 2006));
     Collections.shuffle(docs2, random());
@@ -283,7 +283,7 @@ public class TestBlockJoin extends LuceneTestCase {
     // Cannot assert this since we use NoMergePolicy:
     w.setDoRandomForceMergeAssert(false);
 
-    List<Document> docs = new ArrayList<Document>();
+    List<Document> docs = new ArrayList<>();
     docs.add(makeJob("java", 2007));
     docs.add(makeJob("python", 2010));
     docs.add(makeResume("Lisa", "United Kingdom"));
@@ -358,7 +358,7 @@ public class TestBlockJoin extends LuceneTestCase {
   }
 
   private Sort getRandomSort(String prefix, int numFields) {
-    final List<SortField> sortFields = new ArrayList<SortField>();
+    final List<SortField> sortFields = new ArrayList<>();
     // TODO: sometimes sort by score; problem is scores are
     // not comparable across the two indices
     // sortFields.add(SortField.FIELD_SCORE);
@@ -390,7 +390,7 @@ public class TestBlockJoin extends LuceneTestCase {
     final String[][] childFields = getRandomFields(numParentDocs);
 
     final boolean doDeletes = random().nextBoolean();
-    final List<Integer> toDelete = new ArrayList<Integer>();
+    final List<Integer> toDelete = new ArrayList<>();
 
     // TODO: parallel star join, nested join cases too!
     final RandomIndexWriter w = new RandomIndexWriter(random(), dir);
@@ -415,7 +415,7 @@ public class TestBlockJoin extends LuceneTestCase {
         parentJoinDoc.add(newStringField("blockID", ""+parentDocID, Field.Store.NO));
       }
 
-      final List<Document> joinDocs = new ArrayList<Document>();
+      final List<Document> joinDocs = new ArrayList<>();
 
       if (VERBOSE) {
         StringBuilder sb = new StringBuilder();
@@ -608,7 +608,7 @@ public class TestBlockJoin extends LuceneTestCase {
       }
 
       // Merge both sorts:
-      final List<SortField> sortFields = new ArrayList<SortField>(Arrays.asList(parentSort.getSort()));
+      final List<SortField> sortFields = new ArrayList<>(Arrays.asList(parentSort.getSort()));
       sortFields.addAll(Arrays.asList(childSort.getSort()));
       final Sort parentAndChildSort = new Sort(sortFields.toArray(new SortField[sortFields.size()]));
 
@@ -915,7 +915,7 @@ public class TestBlockJoin extends LuceneTestCase {
     final Directory dir = newDirectory();
     final RandomIndexWriter w = new RandomIndexWriter(random(), dir);
 
-    final List<Document> docs = new ArrayList<Document>();
+    final List<Document> docs = new ArrayList<>();
 
     docs.add(makeJob("java", 2007));
     docs.add(makeJob("python", 2010));
@@ -1060,7 +1060,7 @@ public class TestBlockJoin extends LuceneTestCase {
     final Directory dir = newDirectory();
     final RandomIndexWriter w = new RandomIndexWriter(random(), dir);
 
-    final List<Document> docs = new ArrayList<Document>();
+    final List<Document> docs = new ArrayList<>();
     docs.add(makeJob("ruby", 2005));
     docs.add(makeJob("java", 2006));
     docs.add(makeJob("java", 2010));

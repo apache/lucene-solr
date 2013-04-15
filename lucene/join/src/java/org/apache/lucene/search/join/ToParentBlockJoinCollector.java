@@ -80,7 +80,7 @@ public class ToParentBlockJoinCollector extends Collector {
 
   // Maps each BlockJoinQuery instance to its "slot" in
   // joinScorers and in OneGroup's cached doc/scores/count:
-  private final Map<Query,Integer> joinQueryID = new HashMap<Query,Integer>();
+  private final Map<Query,Integer> joinQueryID = new HashMap<>();
   private final int numParentHits;
   private final FieldValueHitQueue<OneGroup> queue;
   private final FieldComparator[] comparators;
@@ -138,7 +138,7 @@ public class ToParentBlockJoinCollector extends Collector {
     int[][] docs;
     float[][] scores;
     int[] counts;
-  };
+  }
 
   @Override
   public void collect(int parentDoc) throws IOException {
@@ -470,7 +470,7 @@ public class ToParentBlockJoinCollector extends Collector {
 
       final TopDocs topDocs = collector.topDocs(withinGroupOffset, numDocsInGroup);
 
-      groups[groupIDX-offset] = new GroupDocs<Integer>(og.score,
+      groups[groupIDX-offset] = new GroupDocs<>(og.score,
                                                        topDocs.getMaxScore(),
                                                        numChildDocs,
                                                        topDocs.scoreDocs,
@@ -478,9 +478,9 @@ public class ToParentBlockJoinCollector extends Collector {
                                                        groupSortValues);
     }
 
-    return new TopGroups<Integer>(new TopGroups<Integer>(sort.getSort(),
-                                                         withinGroupSort == null ? null : withinGroupSort.getSort(),
-                                                         0, totalGroupedHitCount, groups, maxScore),
+    return new TopGroups<>(new TopGroups<>(sort.getSort(),
+                                                       withinGroupSort == null ? null : withinGroupSort.getSort(),
+                                                       0, totalGroupedHitCount, groups, maxScore),
                                   totalHitCount);
   }
 
