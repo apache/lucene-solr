@@ -112,7 +112,7 @@ public class AllGroupHeadsCollectorTest extends LuceneTestCase {
     w.addDocument(doc);
 
     IndexReader reader = w.getReader();
-    IndexSearcher indexSearcher = new IndexSearcher(reader);
+    IndexSearcher indexSearcher = newSearcher(reader);
     if (SlowCompositeReaderWrapper.class.isAssignableFrom(reader.getClass())) {
       canUseIDV = false;
     }

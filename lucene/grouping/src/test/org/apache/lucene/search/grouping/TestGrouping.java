@@ -116,7 +116,7 @@ public class TestGrouping extends LuceneTestCase {
     doc.add(new Field("id", "6", customType));
     w.addDocument(doc);
 
-    IndexSearcher indexSearcher = new IndexSearcher(w.getReader());
+    IndexSearcher indexSearcher = newSearcher(w.getReader());
     w.close();
 
     final Sort groupSort = Sort.RELEVANCE;

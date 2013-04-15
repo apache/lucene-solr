@@ -152,7 +152,7 @@ public class TestQueryTemplateManager extends LuceneTestCase {
     w.forceMerge(1);
     w.close();
     reader = DirectoryReader.open(dir);
-    searcher = new IndexSearcher(reader);
+    searcher = newSearcher(reader);
 
     //initialize the parser
     builder = new CorePlusExtensionsParser("artist", analyzer);

@@ -292,7 +292,7 @@ public class CountingFacetsAggregatorTest extends FacetTestCase {
     // test the collector w/ FacetRequests and different numResults
     DirectoryReader indexReader = DirectoryReader.open(indexDir);
     TaxonomyReader taxoReader = new DirectoryTaxonomyReader(taxoDir);
-    IndexSearcher searcher = new IndexSearcher(indexReader);
+    IndexSearcher searcher = newSearcher(indexReader);
     
     FacetSearchParams fsp = new FacetSearchParams(new CountFacetRequest(CP_A, NUM_CHILDREN_CP_A), 
         new CountFacetRequest(CP_B, NUM_CHILDREN_CP_B));
@@ -317,7 +317,7 @@ public class CountingFacetsAggregatorTest extends FacetTestCase {
   public void testAllCounts() throws Exception {
     DirectoryReader indexReader = DirectoryReader.open(indexDir);
     TaxonomyReader taxoReader = new DirectoryTaxonomyReader(taxoDir);
-    IndexSearcher searcher = new IndexSearcher(indexReader);
+    IndexSearcher searcher = newSearcher(indexReader);
     
     FacetSearchParams fsp = new FacetSearchParams(new CountFacetRequest(CP_A, NUM_CHILDREN_CP_A), 
         new CountFacetRequest(CP_B, NUM_CHILDREN_CP_B));
@@ -349,7 +349,7 @@ public class CountingFacetsAggregatorTest extends FacetTestCase {
   public void testBigNumResults() throws Exception {
     DirectoryReader indexReader = DirectoryReader.open(indexDir);
     TaxonomyReader taxoReader = new DirectoryTaxonomyReader(taxoDir);
-    IndexSearcher searcher = new IndexSearcher(indexReader);
+    IndexSearcher searcher = newSearcher(indexReader);
     
     FacetSearchParams fsp = new FacetSearchParams(new CountFacetRequest(CP_A, Integer.MAX_VALUE), 
         new CountFacetRequest(CP_B, Integer.MAX_VALUE));
@@ -373,7 +373,7 @@ public class CountingFacetsAggregatorTest extends FacetTestCase {
   public void testNoParents() throws Exception {
     DirectoryReader indexReader = DirectoryReader.open(indexDir);
     TaxonomyReader taxoReader = new DirectoryTaxonomyReader(taxoDir);
-    IndexSearcher searcher = new IndexSearcher(indexReader);
+    IndexSearcher searcher = newSearcher(indexReader);
     FacetSearchParams fsp = new FacetSearchParams(fip, new CountFacetRequest(CP_C, NUM_CHILDREN_CP_C), 
         new CountFacetRequest(CP_D, NUM_CHILDREN_CP_D));
     FacetsCollector fc = FacetsCollector.create(randomAccumulator(fsp, indexReader, taxoReader));

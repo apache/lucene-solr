@@ -118,7 +118,7 @@ public class GroupingSearchTest extends LuceneTestCase {
 
     w.addDocument(doc);
 
-    IndexSearcher indexSearcher = new IndexSearcher(w.getReader());
+    IndexSearcher indexSearcher = newSearcher(w.getReader());
     w.close();
 
     Sort groupSort = Sort.RELEVANCE;
@@ -233,7 +233,7 @@ public class GroupingSearchTest extends LuceneTestCase {
     doc.add(newField("group", "foo", StringField.TYPE_NOT_STORED));
     w.addDocument(doc);
 
-    IndexSearcher indexSearcher = new IndexSearcher(w.getReader());
+    IndexSearcher indexSearcher = newSearcher(w.getReader());
     w.close();
 
     GroupingSearch gs = new GroupingSearch("group");

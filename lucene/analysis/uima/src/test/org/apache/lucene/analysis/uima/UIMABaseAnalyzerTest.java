@@ -81,7 +81,7 @@ public class UIMABaseAnalyzerTest extends BaseTokenStreamTestCase {
 
     // try the search over the first doc
     DirectoryReader directoryReader = DirectoryReader.open(dir);
-    IndexSearcher indexSearcher = new IndexSearcher(directoryReader);
+    IndexSearcher indexSearcher = newSearcher(directoryReader);
     TopDocs result = indexSearcher.search(new MatchAllDocsQuery(), 1);
     assertTrue(result.totalHits > 0);
     Document d = indexSearcher.doc(result.scoreDocs[0].doc);
@@ -102,7 +102,7 @@ public class UIMABaseAnalyzerTest extends BaseTokenStreamTestCase {
 
     directoryReader.close();
     directoryReader = DirectoryReader.open(dir);
-    indexSearcher = new IndexSearcher(directoryReader);
+    indexSearcher = newSearcher(directoryReader);
     result = indexSearcher.search(new MatchAllDocsQuery(), 2);
     Document d1 = indexSearcher.doc(result.scoreDocs[1].doc);
     assertNotNull(d1);
@@ -112,7 +112,7 @@ public class UIMABaseAnalyzerTest extends BaseTokenStreamTestCase {
     assertEquals(dogmasContents, d1.getField("contents").stringValue());
 
     // do a matchalldocs query to retrieve both docs
-    indexSearcher = new IndexSearcher(directoryReader);
+    indexSearcher = newSearcher(directoryReader);
     result = indexSearcher.search(new MatchAllDocsQuery(), 2);
     assertEquals(2, result.totalHits);
     writer.close();

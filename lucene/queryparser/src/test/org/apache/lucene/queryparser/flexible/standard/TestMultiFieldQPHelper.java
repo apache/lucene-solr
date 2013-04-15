@@ -333,7 +333,7 @@ public class TestMultiFieldQPHelper extends LuceneTestCase {
     mfqp.setDefaultOperator(StandardQueryConfigHandler.Operator.AND);
     Query q = mfqp.parse("the footest", null);
     IndexReader ir = DirectoryReader.open(ramDir);
-    IndexSearcher is = new IndexSearcher(ir);
+    IndexSearcher is = newSearcher(ir);
     ScoreDoc[] hits = is.search(q, null, 1000).scoreDocs;
     assertEquals(1, hits.length);
     ir.close();

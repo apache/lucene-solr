@@ -93,7 +93,7 @@ public class TestStandardFacetsAccumulator extends FacetTestCase {
 
     DirectoryReader indexReader = DirectoryReader.open(indexDir);
     TaxonomyReader taxoReader = new DirectoryTaxonomyReader(taxoDir);
-    IndexSearcher indexSearcher = new IndexSearcher(indexReader);
+    IndexSearcher indexSearcher = newSearcher(indexReader);
     
     // search for "f:a", only segments 1 and 3 should match results
     Query q = new TermQuery(new Term("f", "a"));

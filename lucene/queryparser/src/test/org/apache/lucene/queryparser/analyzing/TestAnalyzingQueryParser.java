@@ -166,7 +166,7 @@ public class TestAnalyzingQueryParser extends LuceneTestCase {
     writer.addDocument(doc);
     writer.close();
     DirectoryReader ir = DirectoryReader.open(ramDir);
-    IndexSearcher is = new IndexSearcher(ir);
+    IndexSearcher is = newSearcher(ir);
     QueryParser qp = new AnalyzingQueryParser(TEST_VERSION_CURRENT, "content", analyzer);
     Query q = qp.parse("[เข TO เข]");
     assertEquals(1, is.search(q, 10).totalHits);

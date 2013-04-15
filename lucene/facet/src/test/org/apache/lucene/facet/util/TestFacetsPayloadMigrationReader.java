@@ -229,7 +229,7 @@ public class TestFacetsPayloadMigrationReader extends FacetTestCase {
       FacetIndexingParams fip) throws Exception {
     DirectoryReader indexReader = DirectoryReader.open(indexDir);
     TaxonomyReader taxoReader = new DirectoryTaxonomyReader(taxoDir);
-    IndexSearcher searcher = new IndexSearcher(indexReader);
+    IndexSearcher searcher = newSearcher(indexReader);
 
     assertFalse("index should not have deletions", indexReader.hasDeletions());
     

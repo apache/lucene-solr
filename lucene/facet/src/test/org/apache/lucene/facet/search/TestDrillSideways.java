@@ -606,7 +606,7 @@ public class TestDrillSideways extends FacetTestCase {
     TaxonomyReader tr = new DirectoryTaxonomyReader(tw);
     tw.close();
 
-    IndexSearcher s = new IndexSearcher(r);
+    IndexSearcher s = newSearcher(r);
 
     int numIters = atLeast(10);
 

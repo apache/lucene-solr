@@ -363,7 +363,7 @@ public class ComplexPhraseQueryParser extends QueryParser {
     @Override
     public int hashCode() {
       final int prime = 31;
-      int result = 1;
+      int result = super.hashCode();
       result = prime * result + ((field == null) ? 0 : field.hashCode());
       result = prime
           * result
@@ -381,6 +381,9 @@ public class ComplexPhraseQueryParser extends QueryParser {
         return false;
       if (getClass() != obj.getClass())
         return false;
+      if (!super.equals(obj)) {
+        return false;
+      }
       ComplexPhraseQuery other = (ComplexPhraseQuery) obj;
       if (field == null) {
         if (other.field != null)

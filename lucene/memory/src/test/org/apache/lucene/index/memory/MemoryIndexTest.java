@@ -242,7 +242,7 @@ public class MemoryIndexTest extends BaseTokenStreamTestCase {
    */
   public void assertAllQueries(MemoryIndex memory, Directory ramdir, Analyzer analyzer) throws Exception {
     IndexReader reader = DirectoryReader.open(ramdir);
-    IndexSearcher ram = new IndexSearcher(reader);
+    IndexSearcher ram = newSearcher(reader);
     IndexSearcher mem = memory.createSearcher();
     QueryParser qp = new QueryParser(TEST_VERSION_CURRENT, "foo", analyzer);
     for (String query : queries) {

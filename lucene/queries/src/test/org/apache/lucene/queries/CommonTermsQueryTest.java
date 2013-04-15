@@ -332,7 +332,7 @@ public class CommonTermsQueryTest extends LuceneTestCase {
       List<TermAndFreq> highTerms = queueToList(highFreqQueue);
       List<TermAndFreq> lowTerms = queueToList(lowFreqQueue);
       
-      IndexSearcher searcher = new IndexSearcher(reader);
+      IndexSearcher searcher = newSearcher(reader);
       Occur lowFreqOccur = randomOccur(random());
       BooleanQuery verifyQuery = new BooleanQuery();
       CommonTermsQuery cq = new CommonTermsQuery(randomOccur(random()),

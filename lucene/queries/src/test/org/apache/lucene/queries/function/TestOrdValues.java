@@ -66,7 +66,7 @@ public class TestOrdValues extends FunctionTestSetup {
   // Test that queries based on reverse/ordFieldScore scores correctly
   private void doTestRank(String field, boolean inOrder) throws Exception {
     IndexReader r = DirectoryReader.open(dir);
-    IndexSearcher s = new IndexSearcher(r);
+    IndexSearcher s = newSearcher(r);
     ValueSource vs;
     if (inOrder) {
       vs = new OrdFieldSource(field);
@@ -117,7 +117,7 @@ public class TestOrdValues extends FunctionTestSetup {
   // Test that queries based on reverse/ordFieldScore returns docs with expected score.
   private void doTestExactScore(String field, boolean inOrder) throws Exception {
     IndexReader r = DirectoryReader.open(dir);
-    IndexSearcher s = new IndexSearcher(r);
+    IndexSearcher s = newSearcher(r);
     ValueSource vs;
     if (inOrder) {
       vs = new OrdFieldSource(field);

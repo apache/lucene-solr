@@ -99,7 +99,7 @@ public class AllGroupsCollectorTest extends LuceneTestCase {
     doc.add(new Field("id", "6", customType));
     w.addDocument(doc);
 
-    IndexSearcher indexSearcher = new IndexSearcher(w.getReader());
+    IndexSearcher indexSearcher = newSearcher(w.getReader());
     w.close();
 
     AbstractAllGroupsCollector<?> allGroupsCollector = createRandomCollector(groupField, canUseIDV);

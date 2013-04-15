@@ -126,7 +126,7 @@ public class TestComplexPhraseQuery extends LuceneTestCase {
     }
     w.close();
     reader = DirectoryReader.open(rd);
-    searcher = new IndexSearcher(reader);
+    searcher = newSearcher(reader);
   }
 
   @Override

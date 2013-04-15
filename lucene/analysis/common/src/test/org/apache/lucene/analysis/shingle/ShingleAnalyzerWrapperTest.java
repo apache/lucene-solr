@@ -74,7 +74,7 @@ public class ShingleAnalyzerWrapperTest extends BaseTokenStreamTestCase {
     writer.close();
 
     reader = DirectoryReader.open(directory);
-    searcher = new IndexSearcher(reader);
+    searcher = newSearcher(reader);
   }
   
   @Override
