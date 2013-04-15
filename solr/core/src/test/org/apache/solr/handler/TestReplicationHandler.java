@@ -175,6 +175,7 @@ public class TestReplicationHandler extends SolrTestCaseJ4 {
     ModifiableSolrParams params = new ModifiableSolrParams();
 
     params.add("q", query);
+    params.add("sort","id desc");
 
     QueryResponse qres = s.query(params);
 
