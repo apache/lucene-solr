@@ -189,6 +189,9 @@ New Features
 * LUCENE-4895: Added support for the "IsDisjointTo" spatial predicate for
   RecursivePrefixTreeStrategy.  (David Smiley)
 
+* LUCENE-4774: Added FieldComparator that allows sorting parent documents based on
+  fields on the child / nested document level. (Martijn van Groningen)
+
 API Changes
 
 * LUCENE-4896: Made PassageFormatter abstract in PostingsHighlighter, made
