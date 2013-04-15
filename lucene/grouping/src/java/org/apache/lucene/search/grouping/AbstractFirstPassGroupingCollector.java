@@ -85,7 +85,7 @@ abstract public class AbstractFirstPassGroupingCollector<GROUP_VALUE_TYPE> exten
     }
 
     spareSlot = topNGroups;
-    groupMap = new HashMap<GROUP_VALUE_TYPE, CollectedSearchGroup<GROUP_VALUE_TYPE>>(topNGroups);
+    groupMap = new HashMap<>(topNGroups);
   }
 
   /**
@@ -113,7 +113,7 @@ abstract public class AbstractFirstPassGroupingCollector<GROUP_VALUE_TYPE> exten
       buildSortedSet();
     }
 
-    final Collection<SearchGroup<GROUP_VALUE_TYPE>> result = new ArrayList<SearchGroup<GROUP_VALUE_TYPE>>();
+    final Collection<SearchGroup<GROUP_VALUE_TYPE>> result = new ArrayList<>();
     int upto = 0;
     final int sortFieldCount = groupSort.getSort().length;
     for(CollectedSearchGroup<GROUP_VALUE_TYPE> group : orderedGroups) {
@@ -121,7 +121,7 @@ abstract public class AbstractFirstPassGroupingCollector<GROUP_VALUE_TYPE> exten
         continue;
       }
       //System.out.println("  group=" + (group.groupValue == null ? "null" : group.groupValue.utf8ToString()));
-      SearchGroup<GROUP_VALUE_TYPE> searchGroup = new SearchGroup<GROUP_VALUE_TYPE>();
+      SearchGroup<GROUP_VALUE_TYPE> searchGroup = new SearchGroup<>();
       searchGroup.groupValue = group.groupValue;
       if (fillFields) {
         searchGroup.sortValues = new Object[sortFieldCount];
@@ -193,7 +193,7 @@ abstract public class AbstractFirstPassGroupingCollector<GROUP_VALUE_TYPE> exten
         // just keep collecting them
 
         // Add a new CollectedSearchGroup:
-        CollectedSearchGroup<GROUP_VALUE_TYPE> sg = new CollectedSearchGroup<GROUP_VALUE_TYPE>();
+        CollectedSearchGroup<GROUP_VALUE_TYPE> sg = new CollectedSearchGroup<>();
         sg.groupValue = copyDocGroupValue(groupValue, null);
         sg.comparatorSlot = groupMap.size();
         sg.topDoc = docBase + doc;
@@ -311,7 +311,7 @@ abstract public class AbstractFirstPassGroupingCollector<GROUP_VALUE_TYPE> exten
       }
     };
 
-    orderedGroups = new TreeSet<CollectedSearchGroup<GROUP_VALUE_TYPE>>(comparator);
+    orderedGroups = new TreeSet<>(comparator);
     orderedGroups.addAll(groupMap.values());
     assert orderedGroups.size() > 0;
 

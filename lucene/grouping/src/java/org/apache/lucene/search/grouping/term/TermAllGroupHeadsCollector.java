@@ -17,15 +17,23 @@ package org.apache.lucene.search.grouping.term;
  * limitations under the License.
  */
 
-import java.io.IOException;
-import java.util.*;
-
 import org.apache.lucene.index.AtomicReaderContext;
 import org.apache.lucene.index.SortedDocValues;
-import org.apache.lucene.search.*;
+import org.apache.lucene.search.FieldCache;
+import org.apache.lucene.search.FieldComparator;
+import org.apache.lucene.search.Scorer;
+import org.apache.lucene.search.Sort;
+import org.apache.lucene.search.SortField;
 import org.apache.lucene.search.grouping.AbstractAllGroupHeadsCollector;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.SentinelIntSet;
+
+import java.io.IOException;
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
 
 /**
  * A base implementation of {@link org.apache.lucene.search.grouping.AbstractAllGroupHeadsCollector} for retrieving the most relevant groups when grouping
@@ -115,7 +123,7 @@ public abstract class TermAllGroupHeadsCollector<GH extends AbstractAllGroupHead
     GeneralAllGroupHeadsCollector(String groupField, Sort sortWithinGroup) {
       super(groupField, sortWithinGroup.getSort().length);
       this.sortWithinGroup = sortWithinGroup;
-      groups = new HashMap<BytesRef, GroupHead>();
+      groups = new HashMap<>();
 
       final SortField[] sortFields = sortWithinGroup.getSort();
       for (int i = 0; i < sortFields.length; i++) {
@@ -219,7 +227,7 @@ public abstract class TermAllGroupHeadsCollector<GH extends AbstractAllGroupHead
     OrdScoreAllGroupHeadsCollector(String groupField, Sort sortWithinGroup, int initialSize) {
       super(groupField, sortWithinGroup.getSort().length);
       ordSet = new SentinelIntSet(initialSize, -2);
-      collectedGroups = new ArrayList<GroupHead>(initialSize);
+      collectedGroups = new ArrayList<>(initialSize);
 
       final SortField[] sortFields = sortWithinGroup.getSort();
       fields = new SortField[sortFields.length];
@@ -388,7 +396,7 @@ public abstract class TermAllGroupHeadsCollector<GH extends AbstractAllGroupHead
     OrdAllGroupHeadsCollector(String groupField, Sort sortWithinGroup, int initialSize) {
       super(groupField, sortWithinGroup.getSort().length);
       ordSet = new SentinelIntSet(initialSize, -2);
-      collectedGroups = new ArrayList<GroupHead>(initialSize);
+      collectedGroups = new ArrayList<>(initialSize);
 
       final SortField[] sortFields = sortWithinGroup.getSort();
       fields = new SortField[sortFields.length];
@@ -531,7 +539,7 @@ public abstract class TermAllGroupHeadsCollector<GH extends AbstractAllGroupHead
     ScoreAllGroupHeadsCollector(String groupField, Sort sortWithinGroup, int initialSize) {
       super(groupField, sortWithinGroup.getSort().length);
       ordSet = new SentinelIntSet(initialSize, -2);
-      collectedGroups = new ArrayList<GroupHead>(initialSize);
+      collectedGroups = new ArrayList<>(initialSize);
 
       final SortField[] sortFields = sortWithinGroup.getSort();
       fields = new SortField[sortFields.length];

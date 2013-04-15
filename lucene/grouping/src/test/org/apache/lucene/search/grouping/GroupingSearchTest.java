@@ -60,7 +60,7 @@ public class GroupingSearchTest extends LuceneTestCase {
         newIndexWriterConfig(TEST_VERSION_CURRENT,
             new MockAnalyzer(random())).setMergePolicy(newLogMergePolicy()));
     boolean canUseIDV = true;
-    List<Document> documents = new ArrayList<Document>();
+    List<Document> documents = new ArrayList<>();
     // 0
     Document doc = new Document();
     addGroupField(doc, groupField, "author1", canUseIDV);
@@ -207,7 +207,7 @@ public class GroupingSearchTest extends LuceneTestCase {
     GroupingSearch groupingSearch;
     if (random().nextBoolean()) {
       ValueSource vs = new BytesRefFieldSource(groupField);
-      groupingSearch = new GroupingSearch(vs, new HashMap<Object, Object>());
+      groupingSearch = new GroupingSearch(vs, new HashMap<>());
     } else {
       groupingSearch = new GroupingSearch(groupField);
     }

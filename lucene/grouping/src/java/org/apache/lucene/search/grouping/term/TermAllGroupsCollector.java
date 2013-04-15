@@ -17,17 +17,17 @@ package org.apache.lucene.search.grouping.term;
  * limitations under the License.
  */
 
-import java.io.IOException;
-import java.util.ArrayList;
-import java.util.Collection;
-import java.util.List;
-
 import org.apache.lucene.index.AtomicReaderContext;
 import org.apache.lucene.index.SortedDocValues;
 import org.apache.lucene.search.FieldCache;
 import org.apache.lucene.search.grouping.AbstractAllGroupsCollector;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.SentinelIntSet;
+
+import java.io.IOException;
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.List;
 
 /**
  * A collector that collects all groups that match the
@@ -66,7 +66,7 @@ public class TermAllGroupsCollector extends AbstractAllGroupsCollector<BytesRef>
    */
   public TermAllGroupsCollector(String groupField, int initialSize) {
     ordSet = new SentinelIntSet(initialSize, -2);
-    groups = new ArrayList<BytesRef>(initialSize);
+    groups = new ArrayList<>(initialSize);
     this.groupField = groupField;
   }
 

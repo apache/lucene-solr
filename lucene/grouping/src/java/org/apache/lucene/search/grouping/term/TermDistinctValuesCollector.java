@@ -17,9 +17,6 @@ package org.apache.lucene.search.grouping.term;
  * limitations under the License.
  */
 
-import java.io.IOException;
-import java.util.*;
-
 import org.apache.lucene.index.AtomicReaderContext;
 import org.apache.lucene.index.SortedDocValues;
 import org.apache.lucene.search.FieldCache;
@@ -27,6 +24,12 @@ import org.apache.lucene.search.grouping.AbstractDistinctValuesCollector;
 import org.apache.lucene.search.grouping.SearchGroup;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.SentinelIntSet;
+
+import java.io.IOException;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Collection;
+import java.util.List;
 
 /**
  * A term based implementation of {@link org.apache.lucene.search.grouping.AbstractDistinctValuesCollector} that relies
@@ -55,7 +58,7 @@ public class TermDistinctValuesCollector extends AbstractDistinctValuesCollector
   public TermDistinctValuesCollector(String groupField, String countField, Collection<SearchGroup<BytesRef>> groups) {
     this.groupField = groupField;
     this.countField = countField;
-    this.groups = new ArrayList<GroupCount>(groups.size());
+    this.groups = new ArrayList<>(groups.size());
     for (SearchGroup<BytesRef> group : groups) {
       this.groups.add(new GroupCount(group.groupValue));
     }

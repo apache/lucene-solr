@@ -18,7 +18,11 @@ package org.apache.lucene.search.grouping;
  */
 
 import org.apache.lucene.analysis.MockAnalyzer;
-import org.apache.lucene.document.*;
+import org.apache.lucene.document.Document;
+import org.apache.lucene.document.Field;
+import org.apache.lucene.document.FieldType;
+import org.apache.lucene.document.SortedDocValuesField;
+import org.apache.lucene.document.StringField;
 import org.apache.lucene.index.DirectoryReader;
 import org.apache.lucene.index.NoMergePolicy;
 import org.apache.lucene.index.RandomIndexWriter;
@@ -28,12 +32,22 @@ import org.apache.lucene.search.MatchAllDocsQuery;
 import org.apache.lucene.search.TermQuery;
 import org.apache.lucene.search.grouping.term.TermGroupFacetCollector;
 import org.apache.lucene.store.Directory;
-import org.apache.lucene.store.FSDirectory;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util._TestUtil;
 
 import java.io.IOException;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.Comparator;
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Locale;
+import java.util.Map;
+import java.util.NavigableSet;
+import java.util.Random;
+import java.util.Set;
+import java.util.TreeSet;
 
 public class GroupFacetCollectorTest extends AbstractGroupingTestCase {
 
@@ -48,8 +62,7 @@ public class GroupFacetCollectorTest extends AbstractGroupingTestCase {
         dir,
         newIndexWriterConfig(TEST_VERSION_CURRENT,
             new MockAnalyzer(random())).setMergePolicy(newLogMergePolicy()));
-    boolean canUseDV = true;
-    boolean useDv = canUseDV && random().nextBoolean();
+    boolean useDv = random().nextBoolean();
 
     // 0
     Document doc = new Document();
@@ -89,9 +102,9 @@ public class GroupFacetCollectorTest extends AbstractGroupingTestCase {
 
     IndexSearcher indexSearcher = new IndexSearcher(w.getReader());
 
-    List<TermGroupFacetCollector.FacetEntry> entries = null;
-    AbstractGroupFacetCollector groupedAirportFacetCollector = null; 
-    TermGroupFacetCollector.GroupedFacetResult airportResult = null;
+    List<TermGroupFacetCollector.FacetEntry> entries;
+    AbstractGroupFacetCollector groupedAirportFacetCollector;
+    TermGroupFacetCollector.GroupedFacetResult airportResult;
     
     for (int limit : new int[] { 2, 10, 100, Integer.MAX_VALUE }) {
       // any of these limits is plenty for the data we have
@@ -473,11 +486,11 @@ public class GroupFacetCollectorTest extends AbstractGroupingTestCase {
       System.out.println("TEST: numDocs=" + numDocs + " numGroups=" + numGroups);
     }
 
-    final List<String> groups = new ArrayList<String>();
+    final List<String> groups = new ArrayList<>();
     for (int i = 0; i < numGroups; i++) {
       groups.add(generateRandomNonEmptyString());
     }
-    final List<String> facetValues = new ArrayList<String>();
+    final List<String> facetValues = new ArrayList<>();
     for (int i = 0; i < numFacets; i++) {
       facetValues.add(generateRandomNonEmptyString());
     }
@@ -540,7 +553,7 @@ public class GroupFacetCollectorTest extends AbstractGroupingTestCase {
     docNoFacet.add(content);
     docNoGroupNoFacet.add(content);
 
-    NavigableSet<String> uniqueFacetValues = new TreeSet<String>(new Comparator<String>() {
+    NavigableSet<String> uniqueFacetValues = new TreeSet<>(new Comparator<String>() {
 
       @Override
       public int compare(String a, String b) {
@@ -556,7 +569,7 @@ public class GroupFacetCollectorTest extends AbstractGroupingTestCase {
       }
 
     });
-    Map<String, Map<String, Set<String>>> searchTermToFacetToGroups = new HashMap<String, Map<String, Set<String>>>();
+    Map<String, Map<String, Set<String>>> searchTermToFacetToGroups = new HashMap<>();
     int facetWithMostGroups = 0;
     for (int i = 0; i < numDocs; i++) {
       final String groupValue;
@@ -578,7 +591,7 @@ public class GroupFacetCollectorTest extends AbstractGroupingTestCase {
       }
       Map<String, Set<String>> facetToGroups = searchTermToFacetToGroups.get(contentStr);
 
-      List<String> facetVals = new ArrayList<String>();
+      List<String> facetVals = new ArrayList<>();
       if (useDv || random.nextInt(24) != 18) {
         if (useDv) {
           String facetValue = facetValues.get(random.nextInt(facetValues.size()));
@@ -656,14 +669,14 @@ public class GroupFacetCollectorTest extends AbstractGroupingTestCase {
   private GroupedFacetResult createExpectedFacetResult(String searchTerm, IndexContext context, int offset, int limit, int minCount, final boolean orderByCount, String facetPrefix) {
     Map<String, Set<String>> facetGroups = context.searchTermToFacetGroups.get(searchTerm);
     if (facetGroups == null) {
-      facetGroups = new HashMap<String, Set<String>>();
+      facetGroups = new HashMap<>();
     }
 
     int totalCount = 0;
     int totalMissCount = 0;
     Set<String> facetValues;
     if (facetPrefix != null) {
-      facetValues = new HashSet<String>();
+      facetValues = new HashSet<>();
       for (String facetValue : context.facetValues) {
         if (facetValue != null && facetValue.startsWith(facetPrefix)) {
           facetValues.add(facetValue);
@@ -673,7 +686,7 @@ public class GroupFacetCollectorTest extends AbstractGroupingTestCase {
       facetValues = context.facetValues;
     }
 
-    List<TermGroupFacetCollector.FacetEntry> entries = new ArrayList<TermGroupFacetCollector.FacetEntry>(facetGroups.size());
+    List<TermGroupFacetCollector.FacetEntry> entries = new ArrayList<>(facetGroups.size());
     // also includes facets with count 0
     for (String facetValue : facetValues) {
       if (facetValue == null) {

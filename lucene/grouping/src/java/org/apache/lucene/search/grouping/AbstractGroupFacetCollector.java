@@ -46,7 +46,7 @@ public abstract class AbstractGroupFacetCollector extends Collector {
     this.groupField = groupField;
     this.facetField = facetField;
     this.facetPrefix = facetPrefix;
-    segmentResults = new ArrayList<SegmentResult>();
+    segmentResults = new ArrayList<>();
   }
 
   /**
@@ -148,7 +148,7 @@ public abstract class AbstractGroupFacetCollector extends Collector {
     private int currentMin;
 
     public GroupedFacetResult(int size, int minCount, boolean orderByCount, int totalCount, int totalMissingCount) {
-      this.facetEntries = new TreeSet<FacetEntry>(orderByCount ? orderByCountAndValue : orderByValue);
+      this.facetEntries = new TreeSet<>(orderByCount ? orderByCountAndValue : orderByValue);
       this.totalMissingCount = totalMissingCount;
       this.totalCount = totalCount;
       maxSize = size;
@@ -183,7 +183,7 @@ public abstract class AbstractGroupFacetCollector extends Collector {
      * @return a list of facet entries to be rendered based on the specified offset and limit
      */
     public List<FacetEntry> getFacetEntries(int offset, int limit) {
-      List<FacetEntry> entries = new LinkedList<FacetEntry>();
+      List<FacetEntry> entries = new LinkedList<>();
 
       int skipped = 0;
       int included = 0;

@@ -365,7 +365,7 @@ public class BlockGroupingCollector extends Collector {
 
       // TODO: we could aggregate scores across children
       // by Sum/Avg instead of passing NaN:
-      groups[downTo] = new GroupDocs<Object>(Float.NaN,
+      groups[downTo] = new GroupDocs<>(Float.NaN,
                                              topDocs.getMaxScore(),
                                              og.count,
                                              topDocs.scoreDocs,
@@ -382,7 +382,7 @@ public class BlockGroupingCollector extends Collector {
     }
     */
 
-    return new TopGroups<Object>(new TopGroups<Object>(groupSort.getSort(),
+    return new TopGroups<>(new TopGroups<>(groupSort.getSort(),
                                        withinGroupSort == null ? null : withinGroupSort.getSort(),
                                        totalHitCount, totalGroupedHitCount, groups, maxScore),
                          totalGroupCount);

@@ -17,18 +17,19 @@ package org.apache.lucene.search.grouping.term;
  * limitations under the License.
  */
 
-import java.io.IOException;
-import java.util.ArrayList;
-import java.util.List;
-
 import org.apache.lucene.index.AtomicReaderContext;
-import org.apache.lucene.index.DocTermOrds;
 import org.apache.lucene.index.SortedDocValues;
 import org.apache.lucene.index.SortedSetDocValues;
 import org.apache.lucene.index.TermsEnum;
 import org.apache.lucene.search.FieldCache;
 import org.apache.lucene.search.grouping.AbstractGroupFacetCollector;
-import org.apache.lucene.util.*;
+import org.apache.lucene.util.BytesRef;
+import org.apache.lucene.util.SentinelIntSet;
+import org.apache.lucene.util.UnicodeUtil;
+
+import java.io.IOException;
+import java.util.ArrayList;
+import java.util.List;
 
 /**
  * An implementation of {@link AbstractGroupFacetCollector} that computes grouped facets based on the indexed terms
@@ -70,7 +71,7 @@ public abstract class TermGroupFacetCollector extends AbstractGroupFacetCollecto
 
   TermGroupFacetCollector(String groupField, String facetField, BytesRef facetPrefix, int initialSize) {
     super(groupField, facetField, facetPrefix);
-    groupedFacetHits = new ArrayList<GroupedFacetHit>(initialSize);
+    groupedFacetHits = new ArrayList<>(initialSize);
     segmentGroupedFacetHits = new SentinelIntSet(initialSize, Integer.MIN_VALUE);
   }
 

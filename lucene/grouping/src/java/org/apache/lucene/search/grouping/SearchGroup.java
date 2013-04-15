@@ -198,9 +198,9 @@ public class SearchGroup<GROUP_VALUE_TYPE> {
     private final Map<T,MergedGroup<T>> groupsSeen;
 
     public GroupMerger(Sort groupSort) throws IOException {
-      groupComp = new GroupComparator<T>(groupSort);
-      queue = new TreeSet<MergedGroup<T>>(groupComp);
-      groupsSeen = new HashMap<T,MergedGroup<T>>();
+      groupComp = new GroupComparator<>(groupSort);
+      queue = new TreeSet<>(groupComp);
+      groupsSeen = new HashMap<>();
     }
 
     @SuppressWarnings({"unchecked","rawtypes"})

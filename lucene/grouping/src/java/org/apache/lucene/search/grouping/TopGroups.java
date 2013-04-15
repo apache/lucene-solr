@@ -78,7 +78,7 @@ public class TopGroups<GROUP_VALUE_TYPE> {
     Total,
     /* Avg score across all shards for this group. */
     Avg,
-  };
+  }
 
   /** Merges an array of TopGroups, for example obtained
    *  from the second-pass collector across multiple
@@ -202,7 +202,7 @@ public class TopGroups<GROUP_VALUE_TYPE> {
       }
         
       //System.out.println("SHARDS=" + Arrays.toString(mergedTopDocs.shardIndex));
-      mergedGroupDocs[groupIDX] = new GroupDocs<T>(groupScore,
+      mergedGroupDocs[groupIDX] = new GroupDocs<>(groupScore,
                                                    maxScore,
                                                    totalHits,
                                                    mergedScoreDocs,
@@ -212,15 +212,15 @@ public class TopGroups<GROUP_VALUE_TYPE> {
     }
 
     if (totalGroupCount != null) {
-      TopGroups<T> result = new TopGroups<T>(groupSort.getSort(),
+      TopGroups<T> result = new TopGroups<>(groupSort.getSort(),
                               docSort == null ? null : docSort.getSort(),
                               totalHitCount,
                               totalGroupedHitCount,
                               mergedGroupDocs,
                               totalMaxScore);
-      return new TopGroups<T>(result, totalGroupCount);
+      return new TopGroups<>(result, totalGroupCount);
     } else {
-      return new TopGroups<T>(groupSort.getSort(),
+      return new TopGroups<>(groupSort.getSort(),
                               docSort == null ? null : docSort.getSort(),
                               totalHitCount,
                               totalGroupedHitCount,

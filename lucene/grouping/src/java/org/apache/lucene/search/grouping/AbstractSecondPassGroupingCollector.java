@@ -62,7 +62,7 @@ public abstract class AbstractSecondPassGroupingCollector<GROUP_VALUE_TYPE> exte
     this.withinGroupSort = withinGroupSort;
     this.groups = groups;
     this.maxDocsPerGroup = maxDocsPerGroup;
-    groupMap = new HashMap<GROUP_VALUE_TYPE, SearchGroupDocs<GROUP_VALUE_TYPE>>(groups.size());
+    groupMap = new HashMap<>(groups.size());
 
     for (SearchGroup<GROUP_VALUE_TYPE> group : groups) {
       //System.out.println("  prep group=" + (group.groupValue == null ? "null" : group.groupValue.utf8ToString()));
@@ -75,7 +75,7 @@ public abstract class AbstractSecondPassGroupingCollector<GROUP_VALUE_TYPE> exte
         collector = TopFieldCollector.create(withinGroupSort, maxDocsPerGroup, fillSortFields, getScores, getMaxScores, true);
       }
       groupMap.put(group.groupValue,
-          new SearchGroupDocs<GROUP_VALUE_TYPE>(group.groupValue,
+          new SearchGroupDocs<>(group.groupValue,
               collector));
     }
   }
@@ -128,7 +128,7 @@ public abstract class AbstractSecondPassGroupingCollector<GROUP_VALUE_TYPE> exte
     for(SearchGroup<?> group : groups) {
       final SearchGroupDocs<GROUP_VALUE_TYPE> groupDocs = groupMap.get(group.groupValue);
       final TopDocs topDocs = groupDocs.collector.topDocs(withinGroupOffset, maxDocsPerGroup);
-      groupDocsResult[groupIDX++] = new GroupDocs<GROUP_VALUE_TYPE>(Float.NaN,
+      groupDocsResult[groupIDX++] = new GroupDocs<>(Float.NaN,
                                                                     topDocs.getMaxScore(),
                                                                     topDocs.totalHits,
                                                                     topDocs.scoreDocs,
@@ -137,7 +137,7 @@ public abstract class AbstractSecondPassGroupingCollector<GROUP_VALUE_TYPE> exte
       maxScore = Math.max(maxScore, topDocs.getMaxScore());
     }
 
-    return new TopGroups<GROUP_VALUE_TYPE>(groupSort.getSort(),
+    return new TopGroups<>(groupSort.getSort(),
                                            withinGroupSort == null ? null : withinGroupSort.getSort(),
                                            totalHitCount, totalGroupedHitCount, groupDocsResult,
                                            maxScore);
