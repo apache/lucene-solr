@@ -168,6 +168,26 @@ public class OverseerCollectionProcessor implements Runnable, ClosableThread {
         params.set(CoreAdminParams.ACTION, CoreAdminAction.UNLOAD.toString());
         params.set(CoreAdminParams.DELETE_INSTANCE_DIR, true);
         collectionCmd(zkStateReader.getClusterState(), message, params, results, null);
+        
+        ZkNodeProps m = new ZkNodeProps(Overseer.QUEUE_OPERATION,
+            Overseer.REMOVECOLLECTION, "name", message.getStr("name"));
+          Overseer.getInQueue(zkStateReader.getZkClient()).offer(ZkStateReader.toJSON(m));
+          
+        // wait for a while until we don't see the collection
+        long now = System.currentTimeMillis();
+        long timeout = now + 30000;
+        boolean removed = false;
+        while (System.currentTimeMillis() < timeout) {
+          Thread.sleep(100);
+          removed = !zkStateReader.getClusterState().getCollections().contains(message.getStr("name"));
+          if (removed) {
+            Thread.sleep(100); // just a bit of time so it's more likely other readers see on return
+            break;
+          }
+        }
+        if (!removed) {
+          throw new SolrException(ErrorCode.SERVER_ERROR, "Could not fully remove collection: " + message.getStr("name"));
+        }
       } else if (RELOADCOLLECTION.equals(operation)) {
         ModifiableSolrParams params = new ModifiableSolrParams();
         params.set(CoreAdminParams.ACTION, CoreAdminAction.RELOAD.toString());
