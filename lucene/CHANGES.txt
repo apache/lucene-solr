@@ -303,6 +303,9 @@ Bug Fixes
   BoostingQuery, MoreLikeThisQuery, FuzzyLikeThisQuery, and block join queries.
   (Robert Muir, Uwe Schindler)
 
+* LUCENE-4504: Fix broken sort comparator in ValueSource.getSortField,
+  used when sorting by a function query.  (Tom Shally via Robert Muir)
+
 Documentation
 
 * LUCENE-4841: Added example SimpleSortedSetFacetsExample to show how
@@ -868,9 +871,6 @@ Bug Fixes
 * SOLR-3906: JapaneseReadingFormFilter in romaji mode will return
   romaji even for out-of-vocabulary kana cases (e.g. half-width forms).
   (Robert Muir)
-
-* LUCENE-4504: Fix broken sort comparator in ValueSource.getSortField,
-  used when sorting by a function query.  (Tom Shally via Robert Muir)
 
 * LUCENE-4511: TermsFilter might return wrong results if a field is not 
   indexed or doesn't exist in the index. (Simon Willnauer)
