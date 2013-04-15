@@ -1534,8 +1534,8 @@ public abstract class LuceneTestCase extends Assert {
       assertNull(rightDocs);
       return;
     }
-    assertTrue(info, leftDocs.docID() == -1 || leftDocs.docID() == DocIdSetIterator.NO_MORE_DOCS);
-    assertTrue(info, rightDocs.docID() == -1 || rightDocs.docID() == DocIdSetIterator.NO_MORE_DOCS);
+    assertEquals(info, -1, leftDocs.docID());
+    assertEquals(info, -1, rightDocs.docID());
     int docid;
     while ((docid = leftDocs.nextDoc()) != DocIdSetIterator.NO_MORE_DOCS) {
       assertEquals(info, docid, rightDocs.nextDoc());
@@ -1559,8 +1559,8 @@ public abstract class LuceneTestCase extends Assert {
       assertNull(rightDocs);
       return;
     }
-    assertTrue(info, leftDocs.docID() == -1 || leftDocs.docID() == DocIdSetIterator.NO_MORE_DOCS);
-    assertTrue(info, rightDocs.docID() == -1 || rightDocs.docID() == DocIdSetIterator.NO_MORE_DOCS);
+    assertEquals(info, -1, leftDocs.docID());
+    assertEquals(info, -1, rightDocs.docID());
     int docid;
     while ((docid = leftDocs.nextDoc()) != DocIdSetIterator.NO_MORE_DOCS) {
       assertEquals(info, docid, rightDocs.nextDoc());

@@ -19,6 +19,10 @@ Changes in backwards compatibility policy
   (Nikola Tanković, Uwe Schindler, Chris Male, Mike McCandless,
   Robert Muir)
 
+* LUCENE-4924: DocIdSetIterator.docID() must now return -1 when the iterator is
+  not positioned. This change affects all classes that inherit from
+  DocIdSetIterator, including DocsEnum and DocsAndPositionsEnum. (Adrien Grand)
+
 New Features
 
 * LUCENE-4747: Move to Java 7 as minimum Java version.

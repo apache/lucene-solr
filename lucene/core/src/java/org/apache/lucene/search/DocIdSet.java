@@ -29,20 +29,36 @@ public abstract class DocIdSet {
   /** An empty {@code DocIdSet} instance for easy use, e.g. in Filters that hit no documents. */
   public static final DocIdSet EMPTY_DOCIDSET = new DocIdSet() {
     
-    private final DocIdSetIterator iterator = new DocIdSetIterator() {
-      @Override
-      public int advance(int target) { return NO_MORE_DOCS; }
-      @Override
-      public int docID() { return NO_MORE_DOCS; }
-      @Override
-      public int nextDoc() { return NO_MORE_DOCS; }
-      @Override
-      public long cost() { return 0; }
-    };
-    
     @Override
     public DocIdSetIterator iterator() {
-      return iterator;
+      return new DocIdSetIterator() {
+        boolean exhausted = false;
+
+        @Override
+        public int advance(int target) {
+          assert !exhausted;
+          assert target >= 0;
+          exhausted = true;
+          return NO_MORE_DOCS;
+        }
+
+        @Override
+        public int docID() {
+          return exhausted ? NO_MORE_DOCS : -1;
+        }
+
+        @Override
+        public int nextDoc() {
+          assert !exhausted;
+          exhausted = true;
+          return NO_MORE_DOCS;
+        }
+
+        @Override
+        public long cost() {
+          return 0;
+        }
+      };
     }
     
     @Override
@@ -56,7 +72,7 @@ public abstract class DocIdSet {
       return null;
     }
   };
-    
+
   /** Provides a {@link DocIdSetIterator} to access the set.
    * This implementation can return <code>null</code> or
    * <code>{@linkplain #EMPTY_DOCIDSET}.iterator()</code> if there

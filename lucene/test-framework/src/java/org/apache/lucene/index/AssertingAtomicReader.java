@@ -237,7 +237,7 @@ public class AssertingAtomicReader extends FilterAtomicReader {
       super(in);
       try {
         int docid = in.docID();
-        assert docid == -1 || docid == DocIdSetIterator.NO_MORE_DOCS : in.getClass() + ": invalid initial doc id: " + docid;
+        assert docid == -1 : in.getClass() + ": invalid initial doc id: " + docid;
       } catch (UnsupportedOperationException e) {
         if (failOnUnsupportedDocID) {
           throw e;
@@ -256,7 +256,7 @@ public class AssertingAtomicReader extends FilterAtomicReader {
       } else {
         state = DocsEnumState.ITERATING;
       }
-      assert docID() == nextDoc;
+      assert super.docID() == nextDoc;
       return doc = nextDoc;
     }
 
@@ -271,13 +271,15 @@ public class AssertingAtomicReader extends FilterAtomicReader {
       } else {
         state = DocsEnumState.ITERATING;
       }
-      assert docID() == advanced;
+      assert super.docID() == advanced;
       return doc = advanced;
     }
 
-    // NOTE: We don't assert anything for docId(). Specifically DocsEnum javadocs
-    // are ambiguous with DocIdSetIterator here, DocIdSetIterator says its ok
-    // to call this method before nextDoc(), just that it must be -1 or NO_MORE_DOCS!
+    @Override
+    public int docID() {
+      assert doc == super.docID() : " invalid docID() in " + in.getClass() + " " + super.docID() + " instead of " + doc;
+      return doc;
+    }
 
     @Override
     public int freq() throws IOException {
@@ -298,7 +300,7 @@ public class AssertingAtomicReader extends FilterAtomicReader {
     public AssertingDocsAndPositionsEnum(DocsAndPositionsEnum in) {
       super(in);
       int docid = in.docID();
-      assert docid == -1 || docid == DocIdSetIterator.NO_MORE_DOCS : "invalid initial doc id: " + docid;
+      assert docid == -1 : "invalid initial doc id: " + docid;
       doc = -1;
     }
 
@@ -315,7 +317,7 @@ public class AssertingAtomicReader extends FilterAtomicReader {
         state = DocsEnumState.ITERATING;
         positionMax = super.freq();
       }
-      assert docID() == nextDoc;
+      assert super.docID() == nextDoc;
       return doc = nextDoc;
     }
 
@@ -333,8 +335,14 @@ public class AssertingAtomicReader extends FilterAtomicReader {
         state = DocsEnumState.ITERATING;
         positionMax = super.freq();
       }
-      assert docID() == advanced;
+      assert super.docID() == advanced;
       return doc = advanced;
+    }
+
+    @Override
+    public int docID() {
+      assert doc == super.docID() : " invalid docID() in " + in.getClass() + " " + super.docID() + " instead of " + doc;
+      return doc;
     }
 
     @Override

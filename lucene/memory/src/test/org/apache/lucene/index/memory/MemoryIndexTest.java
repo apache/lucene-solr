@@ -323,7 +323,7 @@ public class MemoryIndexTest extends BaseTokenStreamTestCase {
     AtomicReader reader = (AtomicReader) memory.createSearcher().getIndexReader();
     DocsEnum disi = _TestUtil.docs(random(), reader, "foo", new BytesRef("bar"), null, null, DocsEnum.FLAG_NONE);
     int docid = disi.docID();
-    assertTrue(docid == -1 || docid == DocIdSetIterator.NO_MORE_DOCS);
+    assertEquals(-1, docid);
     assertTrue(disi.nextDoc() != DocIdSetIterator.NO_MORE_DOCS);
     
     // now reuse and check again
@@ -331,7 +331,7 @@ public class MemoryIndexTest extends BaseTokenStreamTestCase {
     assertTrue(te.seekExact(new BytesRef("bar"), true));
     disi = te.docs(null, disi, DocsEnum.FLAG_NONE);
     docid = disi.docID();
-    assertTrue(docid == -1 || docid == DocIdSetIterator.NO_MORE_DOCS);
+    assertEquals(-1, docid);
     assertTrue(disi.nextDoc() != DocIdSetIterator.NO_MORE_DOCS);
     reader.close();
   }
@@ -354,7 +354,7 @@ public class MemoryIndexTest extends BaseTokenStreamTestCase {
       assertEquals(1, reader.terms("foo").getSumTotalTermFreq());
       DocsAndPositionsEnum disi = reader.termPositionsEnum(new Term("foo", "bar"));
       int docid = disi.docID();
-      assertTrue(docid == -1 || docid == DocIdSetIterator.NO_MORE_DOCS);
+      assertEquals(-1, docid);
       assertTrue(disi.nextDoc() != DocIdSetIterator.NO_MORE_DOCS);
       assertEquals(0, disi.nextPosition());
       assertEquals(0, disi.startOffset());
@@ -365,7 +365,7 @@ public class MemoryIndexTest extends BaseTokenStreamTestCase {
       assertTrue(te.seekExact(new BytesRef("bar"), true));
       disi = te.docsAndPositions(null, disi);
       docid = disi.docID();
-      assertTrue(docid == -1 || docid == DocIdSetIterator.NO_MORE_DOCS);
+      assertEquals(-1, docid);
       assertTrue(disi.nextDoc() != DocIdSetIterator.NO_MORE_DOCS);
       reader.close();
       memory.reset();
