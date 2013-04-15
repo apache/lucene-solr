@@ -141,12 +141,11 @@ public class CollectionsAPIDistributedZkTest extends AbstractFullDistribZkTestBa
   
   @Override
   public void doTest() throws Exception {
-    
     testNodesUsedByCreate();
     testCollectionsAPI();
-    deletePartiallyCreatedCollection();
     testErrorHandling();
-
+    deletePartiallyCreatedCollection();
+    deleteCollectionWithDownNodes();
     if (DEBUG) {
       super.printLayout();
     }
@@ -182,7 +181,34 @@ public class CollectionsAPIDistributedZkTest extends AbstractFullDistribZkTestBa
     request = new QueryRequest(params);
     request.setPath("/admin/collections");
     resp = createNewSolrServer("", baseUrl).request(request);
-
+  }
+  
+  
+  private void deleteCollectionWithDownNodes() throws Exception {
+    String baseUrl = getBaseUrl((HttpSolrServer) clients.get(0));
+    // now try to remove a collection when a couple of it's nodes are down
+    createCollection(null, "halfdeletedcollection2", 3, 2, 6,
+        createNewSolrServer("", baseUrl), null);
+    
+    // stop a couple nodes
+    ChaosMonkey.stop(jettys.get(0));
+    ChaosMonkey.stop(jettys.get(1));
+    
+    baseUrl = getBaseUrl((HttpSolrServer) clients.get(2));
+    
+    // remove a collection
+    ModifiableSolrParams params = new ModifiableSolrParams();
+    params.set("action", CollectionAction.DELETE.toString());
+    params.set("name", "halfdeletedcollection2");
+    QueryRequest request = new QueryRequest(params);
+    request.setPath("/admin/collections");
+    
+    createNewSolrServer("", baseUrl).request(request);
+    
+    cloudClient.getZkStateReader().updateClusterState(true);
+    assertFalse(cloudClient.getZkStateReader().getClusterState()
+        .getCollections().contains("halfdeletedcollection2"));
+    
   }
 
   private void testErrorHandling() throws Exception {

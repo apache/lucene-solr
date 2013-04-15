@@ -185,6 +185,8 @@ Bug Fixes
 
 * SOLR-4702: Fix example /browse "Did you mean?" suggestion feature. (ehatcher, Mark Bennett)
 
+* SOLR-4710: You cannot delete a collection fully from ZooKeeper unless all nodes are up and 
+  functioning correctly. (Mark Miller)
 
 Optimizations
 ----------------------

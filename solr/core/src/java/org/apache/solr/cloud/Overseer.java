@@ -28,7 +28,6 @@ import java.util.Map.Entry;
 import java.util.Set;
 
 import org.apache.solr.common.SolrException;
-import org.apache.solr.common.SolrException.ErrorCode;
 import org.apache.solr.common.cloud.ClosableThread;
 import org.apache.solr.common.cloud.ClusterState;
 import org.apache.solr.common.cloud.DocCollection;
@@ -51,7 +50,8 @@ import org.slf4j.LoggerFactory;
  */
 public class Overseer {
   public static final String QUEUE_OPERATION = "operation";
-
+  public static final String REMOVECOLLECTION = "removecollection";
+  
   private static final int STATE_UPDATE_DELAY = 1500;  // delay between cloud state updates
 
   private static Logger log = LoggerFactory.getLogger(Overseer.class);
@@ -178,6 +178,8 @@ public class Overseer {
         clusterState = updateState(clusterState, message);
       } else if (DELETECORE.equals(operation)) {
         clusterState = removeCore(clusterState, message);
+      } else if (REMOVECOLLECTION.equals(operation)) {
+        clusterState = removeCollection(clusterState, message);
       } else if (ZkStateReader.LEADER_PROP.equals(operation)) {
 
         StringBuilder sb = new StringBuilder();
@@ -504,6 +506,20 @@ public class Overseer {
         return new ClusterState(state.getLiveNodes(), newCollections);
       }
 
+      /*
+       * Remove collection from cloudstate
+       */
+      private ClusterState removeCollection(final ClusterState clusterState, ZkNodeProps message) {
+
+        final String collection = message.getStr("name");
+
+        final Map<String, DocCollection> newCollections = new LinkedHashMap<String,DocCollection>(clusterState.getCollectionStates()); // shallow copy
+        newCollections.remove(collection);
+
+        ClusterState newState = new ClusterState(clusterState.getLiveNodes(), newCollections);
+        return newState;
+      }
+      
       /*
        * Remove core from cloudstate
        */
