@@ -394,8 +394,8 @@ public class TestBlockPostingsFormat3 extends LuceneTestCase {
       assertNull(rightDocs);
       return;
     }
-    assertTrue(leftDocs.docID() == -1 || leftDocs.docID() == DocIdSetIterator.NO_MORE_DOCS);
-    assertTrue(rightDocs.docID() == -1 || rightDocs.docID() == DocIdSetIterator.NO_MORE_DOCS);
+    assertEquals(-1, leftDocs.docID());
+    assertEquals(-1, rightDocs.docID());
     int docid;
     while ((docid = leftDocs.nextDoc()) != DocIdSetIterator.NO_MORE_DOCS) {
       assertEquals(docid, rightDocs.nextDoc());
@@ -417,8 +417,8 @@ public class TestBlockPostingsFormat3 extends LuceneTestCase {
       assertNull(rightDocs);
       return;
     }
-    assertTrue(leftDocs.docID() == -1 || leftDocs.docID() == DocIdSetIterator.NO_MORE_DOCS);
-    assertTrue(rightDocs.docID() == -1 || rightDocs.docID() == DocIdSetIterator.NO_MORE_DOCS);
+    assertEquals(-1, leftDocs.docID());
+    assertEquals(-1, rightDocs.docID());
     int docid;
     while ((docid = leftDocs.nextDoc()) != DocIdSetIterator.NO_MORE_DOCS) {
       assertEquals(docid, rightDocs.nextDoc());

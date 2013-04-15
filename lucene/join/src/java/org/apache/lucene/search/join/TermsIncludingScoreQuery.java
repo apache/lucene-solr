@@ -193,29 +193,22 @@ class TermsIncludingScoreQuery extends Query {
     DocsEnum docsEnum;
     DocsEnum reuse;
     int scoreUpto;
+    int doc;
 
     SVInnerScorer(Weight weight, Bits acceptDocs, TermsEnum termsEnum, long cost) {
       super(weight);
       this.acceptDocs = acceptDocs;
       this.termsEnum = termsEnum;
       this.cost = cost;
+      this.doc = -1;
     }
 
     @Override
     public void score(Collector collector) throws IOException {
-      score(collector, NO_MORE_DOCS, nextDocOutOfOrder());
-    }
-
-    @Override
-    public boolean score(Collector collector, int max, int firstDocID)
-        throws IOException {
-      assert collector.acceptsDocsOutOfOrder();
       collector.setScorer(this);
-      int doc;
-      for (doc = firstDocID; doc < max; doc = nextDocOutOfOrder()) {
+      for (int doc = nextDocOutOfOrder(); doc != NO_MORE_DOCS; doc = nextDocOutOfOrder()) {
         collector.collect(doc);
       }
-      return doc != NO_MORE_DOCS;
     }
 
     @Override
@@ -229,7 +222,7 @@ class TermsIncludingScoreQuery extends Query {
 
     @Override
     public int docID() {
-      return docsEnum != null ? docsEnum.docID() : DocIdSetIterator.NO_MORE_DOCS;
+      return doc;
     }
 
     int nextDocOutOfOrder() throws IOException {
@@ -238,13 +231,13 @@ class TermsIncludingScoreQuery extends Query {
         if (docId == DocIdSetIterator.NO_MORE_DOCS) {
           docsEnum = null;
         } else {
-          return docId;
+          return doc = docId;
         }
       }
 
       do {
         if (upto == terms.size()) {
-          return DocIdSetIterator.NO_MORE_DOCS;
+          return doc = DocIdSetIterator.NO_MORE_DOCS;
         }
 
         scoreUpto = upto;
@@ -253,7 +246,7 @@ class TermsIncludingScoreQuery extends Query {
         }
       } while (docsEnum == null);
 
-      return docsEnum.nextDoc();
+      return doc = docsEnum.nextDoc();
     }
 
     @Override

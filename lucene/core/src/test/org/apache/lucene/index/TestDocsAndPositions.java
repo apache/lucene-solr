@@ -336,7 +336,7 @@ public class TestDocsAndPositions extends LuceneTestCase {
     AtomicReader r = getOnlySegmentReader(reader);
     DocsEnum disi = _TestUtil.docs(random(), r, "foo", new BytesRef("bar"), null, null, DocsEnum.FLAG_NONE);
     int docid = disi.docID();
-    assertTrue(docid == -1 || docid == DocIdSetIterator.NO_MORE_DOCS);
+    assertEquals(-1, docid);
     assertTrue(disi.nextDoc() != DocIdSetIterator.NO_MORE_DOCS);
     
     // now reuse and check again
@@ -344,7 +344,7 @@ public class TestDocsAndPositions extends LuceneTestCase {
     assertTrue(te.seekExact(new BytesRef("bar"), true));
     disi = _TestUtil.docs(random(), te, null, disi, DocsEnum.FLAG_NONE);
     docid = disi.docID();
-    assertTrue(docid == -1 || docid == DocIdSetIterator.NO_MORE_DOCS);
+    assertEquals(-1, docid);
     assertTrue(disi.nextDoc() != DocIdSetIterator.NO_MORE_DOCS);
     writer.close();
     r.close();
@@ -361,7 +361,7 @@ public class TestDocsAndPositions extends LuceneTestCase {
     AtomicReader r = getOnlySegmentReader(reader);
     DocsAndPositionsEnum disi = r.termPositionsEnum(new Term("foo", "bar"));
     int docid = disi.docID();
-    assertTrue(docid == -1 || docid == DocIdSetIterator.NO_MORE_DOCS);
+    assertEquals(-1, docid);
     assertTrue(disi.nextDoc() != DocIdSetIterator.NO_MORE_DOCS);
     
     // now reuse and check again
@@ -369,7 +369,7 @@ public class TestDocsAndPositions extends LuceneTestCase {
     assertTrue(te.seekExact(new BytesRef("bar"), true));
     disi = te.docsAndPositions(null, disi);
     docid = disi.docID();
-    assertTrue(docid == -1 || docid == DocIdSetIterator.NO_MORE_DOCS);
+    assertEquals(-1, docid);
     assertTrue(disi.nextDoc() != DocIdSetIterator.NO_MORE_DOCS);
     writer.close();
     r.close();
