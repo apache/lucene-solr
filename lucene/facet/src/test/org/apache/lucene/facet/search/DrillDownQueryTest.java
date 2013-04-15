@@ -43,6 +43,7 @@ import org.apache.lucene.index.Term;
 import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.search.MatchAllDocsQuery;
 import org.apache.lucene.search.Query;
+import org.apache.lucene.search.QueryUtils;
 import org.apache.lucene.search.ScoreDoc;
 import org.apache.lucene.search.TermQuery;
 import org.apache.lucene.search.TopDocs;
@@ -148,6 +149,7 @@ public class DrillDownQueryTest extends FacetTestCase {
     // Making sure the query yields 25 documents with the facet "a"
     DrillDownQuery q = new DrillDownQuery(defaultParams);
     q.add(new CategoryPath("a"));
+    QueryUtils.check(q);
     TopDocs docs = searcher.search(q, 100);
     assertEquals(25, docs.totalHits);
     

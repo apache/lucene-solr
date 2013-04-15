@@ -181,7 +181,9 @@ public final class DrillDownQuery extends Query {
   
   @Override
   public int hashCode() {
-    return query.hashCode();
+    final int prime = 31;
+    int result = super.hashCode();
+    return prime * result + query.hashCode();
   }
   
   @Override
@@ -191,7 +193,7 @@ public final class DrillDownQuery extends Query {
     }
     
     DrillDownQuery other = (DrillDownQuery) obj;
-    return query.equals(other.query);
+    return query.equals(other.query) && super.equals(other);
   }
   
   @Override

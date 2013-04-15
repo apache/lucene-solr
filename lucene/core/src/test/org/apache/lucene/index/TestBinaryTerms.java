@@ -71,4 +71,9 @@ public class TestBinaryTerms extends LuceneTestCase {
     ir.close();
     dir.close();
   }
+  
+  public void testToString() {
+    Term term = new Term("foo", new BytesRef(new byte[] { (byte) 0xff, (byte) 0xfe }));
+    assertEquals("foo:[ff fe]", term.toString());
+  }
 }

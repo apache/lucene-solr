@@ -17,7 +17,13 @@ package org.apache.lucene.index;
  * limitations under the License.
  */
 
+import java.nio.ByteBuffer;
+import java.nio.charset.CharacterCodingException;
+import java.nio.charset.CharsetDecoder;
+import java.nio.charset.CodingErrorAction;
+
 import org.apache.lucene.util.BytesRef;
+import org.apache.lucene.util.IOUtils;
 
 /**
   A Term represents a word from text.  This is the unit of search.  It is
@@ -69,7 +75,23 @@ public final class Term implements Comparable<Term> {
   /** Returns the text of this term.  In the case of words, this is simply the
     text of the word.  In the case of dates and other types, this is an
     encoding of the object as a string.  */
-  public final String text() { return bytes.utf8ToString(); }
+  public final String text() { 
+    return toString(bytes);
+  }
+  
+  /** Returns human-readable form of the term text. If the term is not unicode,
+   * the raw bytes will be printed instead. */
+  public static final String toString(BytesRef termText) {
+    // the term might not be text, but usually is. so we make a best effort
+    CharsetDecoder decoder = IOUtils.CHARSET_UTF_8.newDecoder()
+        .onMalformedInput(CodingErrorAction.REPORT)
+        .onUnmappableCharacter(CodingErrorAction.REPORT);
+    try {
+      return decoder.decode(ByteBuffer.wrap(termText.bytes, termText.offset, termText.length)).toString();
+    } catch (CharacterCodingException e) {
+      return termText.toString();
+    }
+  }
 
   /** Returns the bytes of this term. */
   public final BytesRef bytes() { return bytes; }
@@ -132,5 +154,5 @@ public final class Term implements Comparable<Term> {
   }
 
   @Override
-  public final String toString() { return field + ":" + bytes.utf8ToString(); }
+  public final String toString() { return field + ":" + text(); }
 }

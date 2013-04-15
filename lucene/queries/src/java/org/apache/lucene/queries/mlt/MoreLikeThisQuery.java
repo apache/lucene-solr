@@ -29,6 +29,7 @@ import org.apache.lucene.search.Query;
 import java.io.ByteArrayInputStream;
 import java.io.IOException;
 import java.io.StringReader;
+import java.util.Arrays;
 import java.util.Set;
 
 /**
@@ -147,5 +148,48 @@ public class MoreLikeThisQuery extends Query {
 
   public void setMinDocFreq(int minDocFreq) {
     this.minDocFreq = minDocFreq;
+  }
+
+  @Override
+  public int hashCode() {
+    final int prime = 31;
+    int result = super.hashCode();
+    result = prime * result + ((analyzer == null) ? 0 : analyzer.hashCode());
+    result = prime * result + ((fieldName == null) ? 0 : fieldName.hashCode());
+    result = prime * result + ((likeText == null) ? 0 : likeText.hashCode());
+    result = prime * result + maxQueryTerms;
+    result = prime * result + minDocFreq;
+    result = prime * result + minTermFrequency;
+    result = prime * result + Arrays.hashCode(moreLikeFields);
+    result = prime * result + Float.floatToIntBits(percentTermsToMatch);
+    result = prime * result + ((stopWords == null) ? 0 : stopWords.hashCode());
+    return result;
+  }
+
+  @Override
+  public boolean equals(Object obj) {
+    if (this == obj) return true;
+    if (!super.equals(obj)) return false;
+    if (getClass() != obj.getClass()) return false;
+    MoreLikeThisQuery other = (MoreLikeThisQuery) obj;
+    if (analyzer == null) {
+      if (other.analyzer != null) return false;
+    } else if (!analyzer.equals(other.analyzer)) return false;
+    if (fieldName == null) {
+      if (other.fieldName != null) return false;
+    } else if (!fieldName.equals(other.fieldName)) return false;
+    if (likeText == null) {
+      if (other.likeText != null) return false;
+    } else if (!likeText.equals(other.likeText)) return false;
+    if (maxQueryTerms != other.maxQueryTerms) return false;
+    if (minDocFreq != other.minDocFreq) return false;
+    if (minTermFrequency != other.minTermFrequency) return false;
+    if (!Arrays.equals(moreLikeFields, other.moreLikeFields)) return false;
+    if (Float.floatToIntBits(percentTermsToMatch) != Float
+        .floatToIntBits(other.percentTermsToMatch)) return false;
+    if (stopWords == null) {
+      if (other.stopWords != null) return false;
+    } else if (!stopWords.equals(other.stopWords)) return false;
+    return true;
   }
 }
