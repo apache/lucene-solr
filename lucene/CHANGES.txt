@@ -306,6 +306,9 @@ Bug Fixes
 * LUCENE-4504: Fix broken sort comparator in ValueSource.getSortField,
   used when sorting by a function query.  (Tom Shally via Robert Muir)
 
+* LUCENE-4937: Fix incorrect sorting of float/double values (+/-0, NaN).
+  (Robert Muir, Uwe Schindler)
+
 Documentation
 
 * LUCENE-4841: Added example SimpleSortedSetFacetsExample to show how

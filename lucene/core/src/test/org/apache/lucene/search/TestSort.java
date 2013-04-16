@@ -964,6 +964,33 @@ public class TestSort extends LuceneTestCase {
     dir.close();
   }
   
+  /** Tests sorting on type double with +/- zero */
+  public void testDoubleSignedZero() throws IOException {
+    Directory dir = newDirectory();
+    RandomIndexWriter writer = new RandomIndexWriter(random(), dir);
+    Document doc = new Document();
+    doc.add(newStringField("value", "+0", Field.Store.YES));
+    writer.addDocument(doc);
+    doc = new Document();
+    doc.add(newStringField("value", "-0", Field.Store.YES));
+    writer.addDocument(doc);
+    doc = new Document();
+    IndexReader ir = writer.getReader();
+    writer.close();
+    
+    IndexSearcher searcher = newSearcher(ir);
+    Sort sort = new Sort(new SortField("value", SortField.Type.DOUBLE));
+
+    TopDocs td = searcher.search(new MatchAllDocsQuery(), 10, sort);
+    assertEquals(2, td.totalHits);
+    // numeric order
+    assertEquals("-0", searcher.doc(td.scoreDocs[0].doc).get("value"));
+    assertEquals("+0", searcher.doc(td.scoreDocs[1].doc).get("value"));
+
+    ir.close();
+    dir.close();
+  }
+  
   /** Tests sorting on type double with a missing value */
   public void testDoubleMissing() throws IOException {
     Directory dir = newDirectory();

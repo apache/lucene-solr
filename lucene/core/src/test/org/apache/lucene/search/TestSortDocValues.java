@@ -602,6 +602,35 @@ public class TestSortDocValues extends LuceneTestCase {
     dir.close();
   }
   
+  /** Tests sorting on type double with +/- zero */
+  public void testDoubleSignedZero() throws IOException {
+    Directory dir = newDirectory();
+    RandomIndexWriter writer = new RandomIndexWriter(random(), dir);
+    Document doc = new Document();
+    doc.add(new DoubleDocValuesField("value", +0D));
+    doc.add(newStringField("value", "+0", Field.Store.YES));
+    writer.addDocument(doc);
+    doc = new Document();
+    doc.add(new DoubleDocValuesField("value", -0D));
+    doc.add(newStringField("value", "-0", Field.Store.YES));
+    writer.addDocument(doc);
+    doc = new Document();
+    IndexReader ir = writer.getReader();
+    writer.close();
+    
+    IndexSearcher searcher = newSearcher(ir);
+    Sort sort = new Sort(new SortField("value", SortField.Type.DOUBLE));
+
+    TopDocs td = searcher.search(new MatchAllDocsQuery(), 10, sort);
+    assertEquals(2, td.totalHits);
+    // numeric order
+    assertEquals("-0", searcher.doc(td.scoreDocs[0].doc).get("value"));
+    assertEquals("+0", searcher.doc(td.scoreDocs[1].doc).get("value"));
+
+    ir.close();
+    dir.close();
+  }
+  
   /** Tests sorting on type double in reverse */
   public void testDoubleReverse() throws IOException {
     Directory dir = newDirectory();
