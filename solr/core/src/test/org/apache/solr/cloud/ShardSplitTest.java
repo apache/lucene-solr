@@ -17,10 +17,12 @@ package org.apache.solr.cloud;
  * limitations under the License.
  */
 
+import org.apache.http.params.CoreConnectionPNames;
 import org.apache.solr.client.solrj.SolrQuery;
 import org.apache.solr.client.solrj.SolrRequest;
 import org.apache.solr.client.solrj.SolrServer;
 import org.apache.solr.client.solrj.SolrServerException;
+import org.apache.solr.client.solrj.impl.CloudSolrServer;
 import org.apache.solr.client.solrj.impl.HttpSolrServer;
 import org.apache.solr.client.solrj.request.QueryRequest;
 import org.apache.solr.client.solrj.response.QueryResponse;
@@ -40,6 +42,7 @@ import org.junit.After;
 import org.junit.Before;
 
 import java.io.IOException;
+import java.net.MalformedURLException;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -255,6 +258,13 @@ public class ShardSplitTest extends BasicDistributedZkTest {
     HttpSolrServer server = (HttpSolrServer) super.createNewSolrServer(port);
     server.setSoTimeout(5 * 60 * 1000);
     return server;
+  }
+
+  @Override
+  protected CloudSolrServer createCloudClient(String defaultCollection) throws MalformedURLException {
+    CloudSolrServer client = super.createCloudClient(defaultCollection);
+    client.getLbServer().getHttpClient().getParams().setParameter(CoreConnectionPNames.SO_TIMEOUT, 5 * 60 * 1000);
+    return client;
   }
 }
 
