@@ -35,6 +35,13 @@ public abstract class ReturnFields {
    */
   public abstract Set<String> getLuceneFieldNames();
 
+  /**
+   * The requested field names (includes pseudo fields)
+   * <p>
+   * @return Set of field names or <code>null</code> (all fields).
+   */
+  public abstract Set<String> getRequestedFieldNames();
+
   /** Returns <code>true</code> if the specified field should be returned. */
   public abstract boolean wantsField(String name);
 
@@ -43,6 +50,9 @@ public abstract class ReturnFields {
 
   /** Returns <code>true</code> if the score should be returned. */
   public abstract boolean wantsScore();
+
+  /** Returns <code>true</code> if the fieldnames should be picked with a pattern */
+  public abstract boolean hasPatternMatching();
 
   /** Returns the DocTransformer used to modify documents, or <code>null</code> */
   public abstract DocTransformer getTransformer();
