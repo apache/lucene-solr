@@ -321,4 +321,182 @@ public class TestFaceting extends SolrTestCaseJ4 {
         "//lst[@name='facet_fields']/lst[@name='f_td']/int[3][@name='-1.218']");
   }
 
+
+
+  public void testDateFacetsWithMultipleConfigurationForSameField() {
+    clearIndex();
+    final String f = "bday_dt";
+
+    assertU(adoc("id", "1",  f, "1976-07-04T12:08:56.235Z"));
+    assertU(adoc("id", "2",  f, "1976-07-05T00:00:00.000Z"));
+    assertU(adoc("id", "3",  f, "1976-07-15T00:07:67.890Z"));
+    assertU(commit());
+    assertU(adoc("id", "4",  f, "1976-07-21T00:07:67.890Z"));
+    assertU(adoc("id", "5",  f, "1976-07-13T12:12:25.255Z"));
+    assertU(adoc("id", "6",  f, "1976-07-03T17:01:23.456Z"));
+    assertU(adoc("id", "7",  f, "1976-07-12T12:12:25.255Z"));
+    assertU(adoc("id", "8",  f, "1976-07-15T15:15:15.155Z"));
+    assertU(adoc("id", "9",  f, "1907-07-12T13:13:23.235Z"));
+    assertU(adoc("id", "10", f, "1976-07-03T11:02:45.678Z"));
+    assertU(commit());
+    assertU(adoc("id", "11", f, "1907-07-12T12:12:25.255Z"));
+    assertU(adoc("id", "12", f, "2007-07-30T07:07:07.070Z"));
+    assertU(adoc("id", "13", f, "1976-07-30T22:22:22.222Z"));
+    assertU(adoc("id", "14", f, "1976-07-05T22:22:22.222Z"));
+    assertU(commit());
+
+    final String preFoo = "//lst[@name='facet_dates']/lst[@name='foo']";
+    final String preBar = "//lst[@name='facet_dates']/lst[@name='bar']";
+
+    assertQ("check counts for month of facet by day",
+            req( "q", "*:*"
+                ,"rows", "0"
+                ,"facet", "true"
+                ,"facet.date", "{!key=foo " +
+                  "facet.date.start=1976-07-01T00:00:00.000Z " +
+                  "facet.date.end=1976-07-01T00:00:00.000Z+1MONTH " +
+                  "facet.date.gap=+1DAY " +
+                  "facet.date.other=all " +
+                "}" + f
+                ,"facet.date", "{!key=bar " +
+                  "facet.date.start=1976-07-01T00:00:00.000Z " +
+                  "facet.date.end=1976-07-01T00:00:00.000Z+7DAY " +
+                  "facet.date.gap=+1DAY " +
+                "}" + f
+              )
+            // 31 days + pre+post+inner = 34
+            ,"*[count("+preFoo+"/int)=34]"
+            ,preFoo+"/int[@name='1976-07-01T00:00:00Z'][.='0'  ]"
+            ,preFoo+"/int[@name='1976-07-02T00:00:00Z'][.='0'  ]"
+            ,preFoo+"/int[@name='1976-07-03T00:00:00Z'][.='2'  ]"
+            // july4th = 2 because exists doc @ 00:00:00.000 on July5
+            // (date faceting is inclusive)
+            ,preFoo+"/int[@name='1976-07-04T00:00:00Z'][.='2'  ]"
+            ,preFoo+"/int[@name='1976-07-05T00:00:00Z'][.='2'  ]"
+            ,preFoo+"/int[@name='1976-07-06T00:00:00Z'][.='0']"
+            ,preFoo+"/int[@name='1976-07-07T00:00:00Z'][.='0']"
+            ,preFoo+"/int[@name='1976-07-08T00:00:00Z'][.='0']"
+            ,preFoo+"/int[@name='1976-07-09T00:00:00Z'][.='0']"
+            ,preFoo+"/int[@name='1976-07-10T00:00:00Z'][.='0']"
+            ,preFoo+"/int[@name='1976-07-11T00:00:00Z'][.='0']"
+            ,preFoo+"/int[@name='1976-07-12T00:00:00Z'][.='1'  ]"
+            ,preFoo+"/int[@name='1976-07-13T00:00:00Z'][.='1'  ]"
+            ,preFoo+"/int[@name='1976-07-14T00:00:00Z'][.='0']"
+            ,preFoo+"/int[@name='1976-07-15T00:00:00Z'][.='2'  ]"
+            ,preFoo+"/int[@name='1976-07-16T00:00:00Z'][.='0']"
+            ,preFoo+"/int[@name='1976-07-17T00:00:00Z'][.='0']"
+            ,preFoo+"/int[@name='1976-07-18T00:00:00Z'][.='0']"
+            ,preFoo+"/int[@name='1976-07-19T00:00:00Z'][.='0']"
+            ,preFoo+"/int[@name='1976-07-21T00:00:00Z'][.='1'  ]"
+            ,preFoo+"/int[@name='1976-07-22T00:00:00Z'][.='0']"
+            ,preFoo+"/int[@name='1976-07-23T00:00:00Z'][.='0']"
+            ,preFoo+"/int[@name='1976-07-24T00:00:00Z'][.='0']"
+            ,preFoo+"/int[@name='1976-07-25T00:00:00Z'][.='0']"
+            ,preFoo+"/int[@name='1976-07-26T00:00:00Z'][.='0']"
+            ,preFoo+"/int[@name='1976-07-27T00:00:00Z'][.='0']"
+            ,preFoo+"/int[@name='1976-07-28T00:00:00Z'][.='0']"
+            ,preFoo+"/int[@name='1976-07-29T00:00:00Z'][.='0']"
+            ,preFoo+"/int[@name='1976-07-30T00:00:00Z'][.='1'  ]"
+            ,preFoo+"/int[@name='1976-07-31T00:00:00Z'][.='0']"
+
+            ,preFoo+"/int[@name='before' ][.='2']"
+            ,preFoo+"/int[@name='after'  ][.='1']"
+            ,preFoo+"/int[@name='between'][.='11']"
+
+            ,"*[count("+preBar+"/int)=7]"
+            ,preBar+"/int[@name='1976-07-01T00:00:00Z'][.='0'  ]"
+            ,preBar+"/int[@name='1976-07-02T00:00:00Z'][.='0'  ]"
+            ,preBar+"/int[@name='1976-07-03T00:00:00Z'][.='2'  ]"
+            // july4th = 2 because exists doc @ 00:00:00.000 on July5
+            // (date faceting is inclusive)
+            ,preBar+"/int[@name='1976-07-04T00:00:00Z'][.='2'  ]"
+            ,preBar+"/int[@name='1976-07-05T00:00:00Z'][.='2'  ]"
+            ,preBar+"/int[@name='1976-07-06T00:00:00Z'][.='0']"
+            ,preBar+"/int[@name='1976-07-07T00:00:00Z'][.='0']"
+              );
+
+      clearIndex();
+      assertU(commit());
+    }
+
+    public void testSimpleFacetCountsWithMultipleConfigurationsForSameField() {
+      clearIndex();
+      String fname = "trait_ss";
+      assertU(adoc("id", "42",
+          fname, "Tool",
+          fname, "Obnoxious",
+          "name_s", "Zapp Brannigan"));
+
+      assertU(adoc("id", "43" ,
+                   "title_s", "Democratic Order of Planets"));
+      assertU(commit());
+  
+      assertU(adoc("id", "44",
+          fname, "Tool",
+          "name_s", "The Zapper"));
+  
+      assertU(adoc("id", "45",
+          fname, "Chauvinist",
+          "title_s", "25 star General"));
+  
+      assertU(adoc("id", "46",
+          fname, "Obnoxious",
+          "subject_s", "Defeated the pacifists of the Gandhi nebula"));
+  
+      assertU(commit());
+  
+      assertU(adoc("id", "47",
+          fname, "Pig",
+          "text_t", "line up and fly directly at the enemy death cannons, clogging them with wreckage!"));
+      assertU(commit());
+  
+      assertQ("checking facets when one has missing=true&mincount=2 and the other has missing=false&mincount=0",
+              req("q", "id:[42 TO 47]"
+                  ,"facet", "true"
+                  ,"facet.zeros", "false"
+                  ,"fq", "id:[42 TO 45]"
+                  ,"facet.field", "{!key=foo " +
+                     "facet.mincount=0 "+
+                     "facet.missing=false "+
+                  "}"+fname
+                  ,"facet.field", "{!key=bar " +
+                     "facet.mincount=2 "+
+                     "facet.missing=true "+
+                  "}"+fname
+                  )
+              ,"*[count(//doc)=4]"
+              ,"*[count(//lst[@name='foo']/int)=4]"
+              ,"*[count(//lst[@name='bar']/int)=2]"
+              ,"//lst[@name='foo']/int[@name='Tool'][.='2']"
+              ,"//lst[@name='foo']/int[@name='Obnoxious'][.='1']"
+              ,"//lst[@name='foo']/int[@name='Chauvinist'][.='1']"
+              ,"//lst[@name='foo']/int[@name='Pig'][.='0']"
+              ,"//lst[@name='foo']/int[@name='Tool'][.='2']"
+              ,"//lst[@name='bar']/int[not(@name)][.='1']"
+              );
+  
+      assertQ("checking facets when one has missing=true&mincount=2 and the other has missing=false&mincount=0",
+              req("q", "id:[42 TO 47]"
+                  ,"facet", "true"
+                  ,"facet.zeros", "false"
+                  ,"fq", "id:[42 TO 45]"
+                  ,"facet.field", "{!key=foo " +
+                      "facet.prefix=Too "+
+                  "}"+fname
+                  ,"facet.field", "{!key=bar " +
+                      "facet.limit=2 "+
+                      "facet.sort=false "+
+                  "}"+fname
+                  )
+              ,"*[count(//doc)=4]"
+              ,"*[count(//lst[@name='foo']/int)=1]"
+              ,"*[count(//lst[@name='bar']/int)=2]"
+              ,"//lst[@name='foo']/int[@name='Tool'][.='2']"
+              ,"//lst[@name='bar']/int[@name='Chauvinist'][.='1']"
+              ,"//lst[@name='bar']/int[@name='Obnoxious'][.='1']"
+              );
+      clearIndex();
+      assertU(commit());
+  }
 }
+

@@ -106,7 +106,6 @@ public class SimpleFacets {
   protected DocSet docsOrig;
   /** Configuration params behavior should be driven by */
   protected final SolrParams orig;
-  protected final SolrParams required;
   /** Searcher to use for all calculations */
   protected final SolrIndexSearcher searcher;
   protected final SolrQueryRequest req;
@@ -117,6 +116,7 @@ public class SimpleFacets {
   // per-facet values
   protected SolrParams localParams; // localParams on this particular facet command
   protected SolrParams params;      // local+original
+  protected SolrParams required;    // required version of params
   protected String facetValue;      // the field to or query to facet on (minus local params)
   protected DocSet docs;            // the base docset for this particular facet
   protected String key;             // what name should the results be stored under
@@ -152,6 +152,7 @@ public class SimpleFacets {
       return;
     }
     params = SolrParams.wrapDefaults(localParams, orig);
+    required = new RequiredSolrParams(params);
 
     // remove local params unless it's a query
     if (type != FacetParams.FACET_QUERY) { // TODO Cut over to an Enum here
