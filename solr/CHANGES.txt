@@ -148,6 +148,9 @@ New Features
 
 * SOLR-4671: CSVResponseWriter now supports pseudo fields. (ryan, nihed mbarek)
 
+* SOLR-4358: HttpSolrServer sends the stream name and exposes 'useMultiPartPost'
+  (Karl Wright via ryan)
+   
 
 Bug Fixes
 ----------------------
