@@ -62,8 +62,8 @@ import java.util.Set;
 /**
  * ConfigSolrXml
  * <p/>
- * This class is entirely to localize the backwards compatibility for dealing with specific issues when transitioning
- * from solr.xml to a solr.properties-based, enumeration/discovery of defined cores. See SOLR-4196 for background.
+ * This class is entirely to localize the dealing with specific issues when transitioning from old-style solr.xml
+ * to new-style xml, enumeration/discovery of defined cores. See SOLR-4196 for background.
  * <p/>
  * @since solr 4.3
  *
@@ -73,45 +73,181 @@ import java.util.Set;
  *
  */
 
+
 public class ConfigSolrXml extends Config implements ConfigSolr {
 
-  private static Map<ConfLevel, String> prefixes;
-  private boolean isAutoDiscover = false;
+  private boolean is50OrLater = false;
 
   private final Map<String, CoreDescriptorPlus> coreDescriptorPlusMap = new HashMap<String, CoreDescriptorPlus>();
   private NodeList coreNodes = null;
   private final Map<String, String> badCores = new HashMap<String, String>();
     // List of cores that we should _never_ load. Ones with dup names or duplicate datadirs or...
 
-  static {
-    prefixes = new HashMap<ConfLevel, String>();
 
-    prefixes.put(ConfLevel.SOLR, "solr/@");
-    prefixes.put(ConfLevel.SOLR_CORES, "solr/cores/@");
-    prefixes.put(ConfLevel.SOLR_CORES_CORE, "solr/cores/core/@");
-    prefixes.put(ConfLevel.SOLR_LOGGING, "solr/logging/@");
-    prefixes.put(ConfLevel.SOLR_LOGGING_WATCHER, "solr/logging/watcher/@");
-  }
+  private Map<CfgProp, String> propMap = new HashMap<CfgProp, String>();
 
   public ConfigSolrXml(SolrResourceLoader loader, String name, InputStream is, String prefix,
-                       boolean subProps, CoreContainer container) throws ParserConfigurationException, IOException, SAXException {
+                       boolean subProps, CoreContainer container)
+      throws ParserConfigurationException, IOException, SAXException {
+
     super(loader, name, new InputSource(is), prefix, subProps);
-    initCoreList(container);
+    init(container);
   }
 
 
-  public ConfigSolrXml(SolrResourceLoader loader, Config cfg, CoreContainer container) throws TransformerException, IOException {
+  public ConfigSolrXml(SolrResourceLoader loader, Config cfg, CoreContainer container)
+      throws TransformerException, IOException {
+
     super(loader, null, copyDoc(cfg.getDocument())); // Mimics a call from CoreContainer.
+    init(container);
+  }
+  private void init(CoreContainer container) throws IOException {
+    is50OrLater = getNode("solr/cores", false) == null;
+
+    // Do sanity checks, old and new style. Pretty exhaustive for now, but want to hammer this.
+    // TODO: 5.0 maybe remove this checking, it's mostly for correctness as we make this transition.
+
+    if (is50OrLater()) {
+      insureFail("solr/@coreLoadThreads");
+      insureFail("solr/@persist");
+      insureFail("solr/@sharedLib");
+      insureFail("solr/@zkHost");
+
+      insureFail("solr/logging/@class");
+      insureFail("solr/logging/@enabled");
+      insureFail("solr/logging/watcher/@size");
+      insureFail("solr/logging/watcher/@threshold");
+
+      insureFail("solr/cores/@adminHandler");
+      insureFail("solr/cores/@distribUpdateConnTimeout");
+      insureFail("solr/cores/@distribUpdateSoTimeout");
+      insureFail("solr/cores/@host");
+      insureFail("solr/cores/@hostContext");
+      insureFail("solr/cores/@hostPort");
+      insureFail("solr/cores/@leaderVoteWait");
+      insureFail("solr/cores/@managementPath");
+      insureFail("solr/cores/@shareSchema");
+      insureFail("solr/cores/@transientCacheSize");
+      insureFail("solr/cores/@zkClientTimeout");
+
+      // These have no counterpart in 5.0, asking for any o fthese in Solr 5.0 will result in an error being
+      // thrown.
+      insureFail("solr/cores/@defaultCoreName");
+      insureFail("solr/@persistent");
+      insureFail("solr/cores/@adminPath");
+    } else {
+      insureFail("solr/str[@name='adminHandler']");
+      insureFail("solr/int[@name='coreLoadThreads']");
+      insureFail("solr/str[@name='coreRootDirectory']");
+      insureFail("solr/solrcloud/int[@name='distribUpdateConnTimeout']");
+      insureFail("solr/solrcloud/int[@name='distribUpdateSoTimeout']");
+      insureFail("solr/solrcloud/str[@name='host']");
+      insureFail("solr/solrcloud/str[@name='hostContext']");
+      insureFail("solr/solrcloud/int[@name='hostPort']");
+      insureFail("solr/solrcloud/int[@name='leaderVoteWait']");
+      insureFail("solr/str[@name='managementPath']");
+      insureFail("solr/str[@name='sharedLib']");
+      insureFail("solr/str[@name='shareSchema']");
+      insureFail("solr/int[@name='transientCacheSize']");
+      insureFail("solr/solrcloud/int[@name='zkClientTimeout']");
+      insureFail("solr/solrcloud/int[@name='zkHost']");
+
+      insureFail("solr/logging/str[@name='class']");
+      insureFail("solr/logging/str[@name='enabled']");
+
+      insureFail("solr/logging/watcher/int[@name='size']");
+      insureFail("solr/logging/watcher/int[@name='threshold']");
+
+    }
+    fillPropMap();
     initCoreList(container);
   }
+  private void insureFail(String xPath) {
 
+    if (getVal(xPath, false) != null) {
+      throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, "Should not have found " + xPath +
+          " solr.xml may be a mix of old and new style formats.");
+    }
+  }
+
+  // We can do this in 5.0 when we read the solr.xml since we don't need to keep the original around for persistence.
+  private String doSub(String path) {
+    String val = getVal(path, false);
+    if (val != null) {
+      val = PropertiesUtil.substituteProperty(val, null);
+    }
+    return val;
+  }
+  private void fillPropMap() {
+    if (is50OrLater) { // Can do the prop subs early here since we don't need to preserve them for persistence.
+      propMap.put(CfgProp.SOLR_ADMINHANDLER, doSub("solr/str[@name='adminHandler']"));
+      propMap.put(CfgProp.SOLR_CORELOADTHREADS, doSub("solr/int[@name='coreLoadThreads']"));
+      propMap.put(CfgProp.SOLR_COREROOTDIRECTORY, doSub("solr/str[@name='coreRootDirectory']"));
+      propMap.put(CfgProp.SOLR_DISTRIBUPDATECONNTIMEOUT, doSub("solr/solrcloud/int[@name='distribUpdateConnTimeout']"));
+      propMap.put(CfgProp.SOLR_DISTRIBUPDATESOTIMEOUT, doSub("solr/solrcloud/int[@name='distribUpdateSoTimeout']"));
+      propMap.put(CfgProp.SOLR_HOST, doSub("solr/solrcloud/str[@name='host']"));
+      propMap.put(CfgProp.SOLR_HOSTCONTEXT, doSub("solr/solrcloud/str[@name='hostContext']"));
+      propMap.put(CfgProp.SOLR_HOSTPORT, doSub("solr/solrcloud/int[@name='hostPort']"));
+      propMap.put(CfgProp.SOLR_LEADERVOTEWAIT, doSub("solr/solrcloud/int[@name='leaderVoteWait']"));
+      propMap.put(CfgProp.SOLR_MANAGEMENTPATH, doSub("solr/str[@name='managementPath']"));
+      propMap.put(CfgProp.SOLR_SHAREDLIB, doSub("solr/str[@name='sharedLib']"));
+      propMap.put(CfgProp.SOLR_SHARESCHEMA, doSub("solr/str[@name='shareSchema']"));
+      propMap.put(CfgProp.SOLR_TRANSIENTCACHESIZE, doSub("solr/int[@name='transientCacheSize']"));
+      propMap.put(CfgProp.SOLR_ZKCLIENTTIMEOUT, doSub("solr/solrcloud/int[@name='zkClientTimeout']"));
+      propMap.put(CfgProp.SOLR_ZKHOST, doSub("solr/solrcloud/str[@name='zkHost']"));
+
+      propMap.put(CfgProp.SOLR_LOGGING_CLASS, doSub("solr/logging/str[@name='class']"));
+      propMap.put(CfgProp.SOLR_LOGGING_ENABLED, doSub("solr/logging/str[@name='enabled']"));
+
+      propMap.put(CfgProp.SOLR_LOGGING_WATCHER_SIZE, doSub("solr/logging/watcher/int[@name='size']"));
+      propMap.put(CfgProp.SOLR_LOGGING_WATCHER_THRESHOLD, doSub("solr/logging/watcher/int[@name='threshold']"));
+      propMap.put(CfgProp.SOLR_SHARDHANDLERFACTORY_CLASS, doSub("solr/shardHandlerFactory/@class"));
+      propMap.put(CfgProp.SOLR_SHARDHANDLERFACTORY_NAME, doSub("solr/shardHandlerFactory/@name"));
+      propMap.put(CfgProp.SOLR_SHARDHANDLERFACTORY_CONNTIMEOUT, doSub("solr/shardHandlerFactory/int[@name='connTimeout']"));
+      propMap.put(CfgProp.SOLR_SHARDHANDLERFACTORY_SOCKETTIMEOUT, doSub("solr/shardHandlerFactory/int[@name='socketTimeout']"));
+    } else {
+      propMap.put(CfgProp.SOLR_CORELOADTHREADS, getVal("solr/@coreLoadThreads", false));
+      propMap.put(CfgProp.SOLR_SHAREDLIB, getVal("solr/@sharedLib", false));
+      propMap.put(CfgProp.SOLR_ZKHOST, getVal("solr/@zkHost", false));
+
+      propMap.put(CfgProp.SOLR_LOGGING_CLASS, getVal("solr/logging/@class", false));
+      propMap.put(CfgProp.SOLR_LOGGING_ENABLED, getVal("solr/logging/@enabled", false));
+      propMap.put(CfgProp.SOLR_LOGGING_WATCHER_SIZE, getVal("solr/logging/watcher/@size", false));
+      propMap.put(CfgProp.SOLR_LOGGING_WATCHER_THRESHOLD, getVal("solr/logging/watcher/@threshold", false));
+
+      propMap.put(CfgProp.SOLR_ADMINHANDLER, getVal("solr/cores/@adminHandler", false));
+      propMap.put(CfgProp.SOLR_DISTRIBUPDATECONNTIMEOUT, getVal("solr/cores/@distribUpdateConnTimeout", false));
+      propMap.put(CfgProp.SOLR_DISTRIBUPDATESOTIMEOUT, getVal("solr/cores/@distribUpdateSoTimeout", false));
+      propMap.put(CfgProp.SOLR_HOST, getVal("solr/cores/@host", false));
+      propMap.put(CfgProp.SOLR_HOSTCONTEXT, getVal("solr/cores/@hostContext", false));
+      propMap.put(CfgProp.SOLR_HOSTPORT, getVal("solr/cores/@hostPort", false));
+      propMap.put(CfgProp.SOLR_LEADERVOTEWAIT, getVal("solr/cores/@leaderVoteWait", false));
+      propMap.put(CfgProp.SOLR_MANAGEMENTPATH, getVal("solr/cores/@managementPath", false));
+      propMap.put(CfgProp.SOLR_SHARESCHEMA, getVal("solr/cores/@shareSchema", false));
+      propMap.put(CfgProp.SOLR_TRANSIENTCACHESIZE, getVal("solr/cores/@transientCacheSize", false));
+      propMap.put(CfgProp.SOLR_ZKCLIENTTIMEOUT, getVal("solr/cores/@zkClientTimeout", false));
+      propMap.put(CfgProp.SOLR_SHARDHANDLERFACTORY_CLASS, getVal("solr/shardHandlerFactory/@class", false));
+      propMap.put(CfgProp.SOLR_SHARDHANDLERFACTORY_NAME, getVal("solr/shardHandlerFactory/@name", false));
+      propMap.put(CfgProp.SOLR_SHARDHANDLERFACTORY_CONNTIMEOUT, getVal(  "solr/shardHandlerFactory/int[@connTimeout]", false));
+      propMap.put(CfgProp.SOLR_SHARDHANDLERFACTORY_SOCKETTIMEOUT, getVal("solr/shardHandlerFactory/int[@socketTimeout]", false));
+
+      // These have no counterpart in 5.0, asking, for any o, fthese in Solr 5.0 will result in an error being
+      // thrown.
+      propMap.put(CfgProp.SOLR_CORES_DEFAULT_CORE_NAME, getVal("solr/cores/@defaultCoreName", false));
+      propMap.put(CfgProp.SOLR_PERSISTENT, getVal("solr/@persistent", false));
+      propMap.put(CfgProp.SOLR_ADMINPATH, getVal("solr/cores/@adminPath", false));
+    }
+  }
+
+  //NOTE:
   public void initCoreList(CoreContainer container) throws IOException {
-    isAutoDiscover = getBool(ConfigSolr.ConfLevel.SOLR_CORES, "autoDiscoverCores", false);
-    if (isAutoDiscover) {
-      synchronized (coreDescriptorPlusMap) {
-        walkFromHere(new File(container.getSolrHome()), container, new HashMap<String, CoreDescriptorPlus>());
+    if (is50OrLater) {
+      if (container != null) { //TODO: 5.0. Yet another bit of nonsense only because of the test harness.
+        synchronized (coreDescriptorPlusMap) {
+          String coreRoot = get(CfgProp.SOLR_COREROOTDIRECTORY, container.getSolrHome());
+          walkFromHere(new File(coreRoot), container, new HashMap<String, String>(), new HashMap<String, String>());
+        }
       }
-
     } else {
       coreNodes = (NodeList) evaluate("solr/cores/core",
           XPathConstants.NODESET);
@@ -160,20 +296,36 @@ public class ConfigSolrXml extends Config implements ConfigSolr {
     return (Document) result.getNode();
   }
 
+  //TODO: For 5.0, you shouldn't have to do the sbustituteProperty, this is anothe bit
+  // of awkward back-compat due to persistence.
   @Override
-  public int getInt(ConfLevel level, String tag, int def) {
-    return getInt(prefixes.get(level) + tag, def);
+  public int getInt(CfgProp prop, int def) {
+    String val = propMap.get(prop);
+    if (val != null) val = PropertiesUtil.substituteProperty(val, null);
+    return (val == null) ? def : Integer.parseInt(val);
   }
 
   @Override
-  public boolean getBool(ConfLevel level, String tag, boolean defValue) {
-    return getBool(prefixes.get(level) + tag, defValue);
+  public boolean getBool(CfgProp prop, boolean defValue) {
+    String val = propMap.get(prop);
+    if (val != null) val = PropertiesUtil.substituteProperty(val, null);
+    return (val == null) ? defValue : Boolean.parseBoolean(val);
   }
 
   @Override
-  public String get(ConfLevel level, String tag, String def) {
-    return get(prefixes.get(level) + tag, def);
+  public String get(CfgProp prop, String def) {
+    String val = propMap.get(prop);
+    if (val != null) val = PropertiesUtil.substituteProperty(val, null);
+    return (val == null) ? def : val;
   }
+
+  // For saving the original property, ${} syntax and all.
+  @Override
+  public String getOrigProp(CfgProp prop, String def) {
+    String val = propMap.get(prop);
+    return (val == null) ? def : val;
+  }
+
 
   public ShardHandlerFactory initShardHandler() {
     PluginInfo info = null;
@@ -227,7 +379,7 @@ public class ConfigSolrXml extends Config implements ConfigSolr {
   public Map<String, String> readCoreAttributes(String coreName) {
     Map<String, String> attrs = new HashMap<String, String>();
 
-    if (isAutoDiscover) {
+    if (is50OrLater) {
       return attrs; // this is a no-op.... intentionally
     }
     synchronized (coreNodes) {
@@ -257,63 +409,98 @@ public class ConfigSolrXml extends Config implements ConfigSolr {
   // deeper in the tree.
   //
   // @param file - the directory we're to either read the properties file from or recurse into.
-  private void walkFromHere(File file, CoreContainer container, Map<String, CoreDescriptorPlus> checkMap) throws IOException {
+  private void walkFromHere(File file, CoreContainer container, Map<String, String>seenDirs, HashMap<String, String> seenCores)
+      throws IOException {
     log.info("Looking for cores in " + file.getAbsolutePath());
+    if (! file.exists()) return;
+
     for (File childFile : file.listFiles()) {
       // This is a little tricky, we are asking if core.properties exists in a child directory of the directory passed
       // in. In other words we're looking for core.properties in the grandchild directories of the parameter passed
       // in. That allows us to gracefully top recursing deep but continue looking wide.
       File propFile = new File(childFile, CORE_PROP_FILE);
       if (propFile.exists()) { // Stop looking after processing this file!
-        log.info("Discovered properties file {}, adding to cores", propFile.getAbsolutePath());
-        Properties propsOrig = new Properties();
-        InputStream is = new FileInputStream(propFile);
-        try {
-          propsOrig.load(is);
-        } finally {
-          IOUtils.closeQuietly(is);
-        }
-
-        Properties props = new Properties();
-        for (String prop : propsOrig.stringPropertyNames()) {
-          props.put(prop, PropertiesUtil.substituteProperty(propsOrig.getProperty(prop), null));
-        }
-
-        if (props.getProperty(CoreDescriptor.CORE_INSTDIR) == null) {
-          props.setProperty(CoreDescriptor.CORE_INSTDIR, childFile.getPath());
-        }
-
-        if (props.getProperty(CoreDescriptor.CORE_NAME) == null) {
-          // Should default to this directory
-          props.setProperty(CoreDescriptor.CORE_NAME, childFile.getName());
-        }
-        CoreDescriptor desc = new CoreDescriptor(container, props);
-        CoreDescriptorPlus plus = new CoreDescriptorPlus(propFile.getAbsolutePath(), desc, propsOrig);
-        CoreDescriptorPlus check = coreDescriptorPlusMap.get(desc.getName());
-        if (check == null) { // It's bad to have two cores with the same name
-          coreDescriptorPlusMap.put(desc.getName(), plus);
-        } else {
-          String msg = String.format(Locale.ROOT, "More than one core defined for core named %s, paths are '%s' and '%s' ",
-              desc.getName(), check.getFilePath(), plus.getFilePath());
-          log.error(msg);
-          badCores.put(desc.getName(), msg);
-        }
-        check = coreDescriptorPlusMap.get(plus.getCoreDescriptor().getDataDir());
-        if (check == null) {
-          coreDescriptorPlusMap.put(desc.getName(), plus);
-        } else {
-          String msg = String.format(Locale.ROOT, "More than one core points to data dir %s. They are in %s and %s",
-              plus.getCoreDescriptor().getDataDir(), plus.getFilePath(), check.getFilePath());
-          log.error(msg);
-          badCores.put(plus.getCoreDescriptor().getName(), msg);
-        }
-
-        continue; // Go on to the sibling directory
+        addCore(container, seenDirs, seenCores, childFile, propFile);
+        continue; // Go on to the sibling directory, don't descend any deeper.
       }
       if (childFile.isDirectory()) {
-        walkFromHere(childFile, container, checkMap);
+        walkFromHere(childFile, container, seenDirs, seenCores);
       }
     }
+  }
+
+  private void addCore(CoreContainer container, Map<String, String> seenDirs, Map<String, String> seenCores,
+                       File childFile, File propFile) throws IOException {
+    log.info("Discovered properties file {}, adding to cores", propFile.getAbsolutePath());
+    Properties propsOrig = new Properties();
+    InputStream is = new FileInputStream(propFile);
+    try {
+      propsOrig.load(is);
+    } finally {
+      IOUtils.closeQuietly(is);
+    }
+
+    Properties props = new Properties();
+    for (String prop : propsOrig.stringPropertyNames()) {
+      props.put(prop, PropertiesUtil.substituteProperty(propsOrig.getProperty(prop), null));
+    }
+
+    // Too much of the code depends on this value being here, but it is NOT supported in discovery mode, so
+    // ignore it if present in the core.properties file.
+    props.setProperty(CoreDescriptor.CORE_INSTDIR, childFile.getPath());
+
+    if (props.getProperty(CoreDescriptor.CORE_NAME) == null) {
+      // Should default to this directory
+      props.setProperty(CoreDescriptor.CORE_NAME, childFile.getName());
+    }
+    CoreDescriptor desc = new CoreDescriptor(container, props);
+    CoreDescriptorPlus plus = new CoreDescriptorPlus(propFile.getAbsolutePath(), desc, propsOrig);
+
+    // It's bad to have two cores with the same name or same data dir.
+    if (! seenCores.containsKey(desc.getName()) && ! seenDirs.containsKey(desc.getAbsoluteDataDir())) {
+      coreDescriptorPlusMap.put(desc.getName(), plus);
+      // Use the full path to the prop file so we can unambiguously report the place the error is.
+      seenCores.put(desc.getName(), propFile.getAbsolutePath());
+      seenDirs.put(desc.getAbsoluteDataDir(), propFile.getAbsolutePath());
+      return;
+    }
+
+    // record the appropriate error
+    if (seenCores.containsKey(desc.getName())) {
+      String msg = String.format(Locale.ROOT, "More than one core defined for core named '%s', paths are '%s' and '%s'  Removing both cores.",
+          desc.getName(), propFile.getAbsolutePath(), seenCores.get(desc.getName()));
+      log.error(msg);
+      // Load up as many errors as there are.
+      if (badCores.containsKey(desc.getName())) msg += " " + badCores.get(desc.getName());
+      badCores.put(desc.getName(), msg);
+    }
+    // There's no reason both errors may not have occurred.
+    if (seenDirs.containsKey(desc.getAbsoluteDataDir())) {
+      String msg = String.format(Locale.ROOT, "More than one core points to data dir '%s'. They are in '%s' and '%s'. Removing all offending cores.",
+          desc.getAbsoluteDataDir(), propFile.getAbsolutePath(), seenDirs.get(desc.getAbsoluteDataDir()));
+      if (badCores.containsKey(desc.getName())) msg += " " + badCores.get(desc.getName());
+      log.error(msg);
+      badCores.put(desc.getName(), msg);
+
+      // find the core with this datadir and remove it
+      List<String> badNames = new ArrayList<String>();
+      for (Map.Entry<String, CoreDescriptorPlus> ent : coreDescriptorPlusMap.entrySet()) {
+        if (ent.getValue().getCoreDescriptor().getAbsoluteDataDir().equals(desc.getAbsoluteDataDir())) {
+          badNames.add(ent.getKey());
+          if (! badCores.containsKey(ent.getKey())) {
+            // Record that the first core is also a bad core.
+            badCores.put(ent.getKey(), msg);
+            log.error(msg);
+
+          }
+          break;
+        }
+      }
+      for (String badName : badNames) {
+        coreDescriptorPlusMap.remove(badName);
+      }
+    }
+    coreDescriptorPlusMap.remove(desc.getName());
   }
 
   public IndexSchema getSchemaFromZk(ZkController zkController, String zkConfigName, String schemaName,
@@ -383,7 +570,7 @@ public class ConfigSolrXml extends Config implements ConfigSolr {
   @Override
   public String getCoreNameFromOrig(String origCoreName, SolrResourceLoader loader, String coreName) {
 
-    if (isAutoDiscover) {
+    if (is50OrLater) {
       // first look for an exact match
       for (Map.Entry<String, CoreDescriptorPlus> ent : coreDescriptorPlusMap.entrySet()) {
 
@@ -445,7 +632,7 @@ public class ConfigSolrXml extends Config implements ConfigSolr {
   @Override
   public List<String> getAllCoreNames() {
     List<String> ret = new ArrayList<String>();
-    if (isAutoDiscover) {
+    if (is50OrLater) {
       ret = new ArrayList<String>(coreDescriptorPlusMap.keySet());
     } else {
       synchronized (coreNodes) {
@@ -460,7 +647,7 @@ public class ConfigSolrXml extends Config implements ConfigSolr {
 
   @Override
   public String getProperty(String coreName, String property, String defaultVal) {
-    if (isAutoDiscover) {
+    if (is50OrLater) {
       CoreDescriptorPlus plus = coreDescriptorPlusMap.get(coreName);
       if (plus == null) return defaultVal;
       CoreDescriptor desc = plus.getCoreDescriptor();
@@ -481,7 +668,7 @@ public class ConfigSolrXml extends Config implements ConfigSolr {
 
   @Override
   public Properties readCoreProperties(String coreName) {
-    if (isAutoDiscover) {
+    if (is50OrLater) {
       CoreDescriptorPlus plus = coreDescriptorPlusMap.get(coreName);
       if (plus == null) return null;
       return new Properties(plus.getCoreDescriptor().getCoreProperties());
@@ -501,6 +688,9 @@ public class ConfigSolrXml extends Config implements ConfigSolr {
     }
     return null;
   }
+
+  @Override
+  public boolean is50OrLater() { return is50OrLater; }
 
   static Properties getCoreProperties(String instanceDir, CoreDescriptor dcore) {
     String file = dcore.getPropertiesName();
@@ -560,7 +750,7 @@ public class ConfigSolrXml extends Config implements ConfigSolr {
 class CoreDescriptorPlus {
   private CoreDescriptor coreDescriptor;
   private String filePath;
-  private Properties propsOrig;
+  private Properties propsOrig; // TODO: 5.0. Remove this since it's only really used for persisting.
 
   CoreDescriptorPlus(String filePath, CoreDescriptor descriptor, Properties propsOrig) {
     coreDescriptor = descriptor;

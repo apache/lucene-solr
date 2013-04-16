@@ -382,7 +382,7 @@ public class CoreContainer
 
     ConfigSolr cfg;
     
-    // keep orig config for persist to consult
+    // keep orig config for persist to consult. TODO: Remove this silly stuff for 5.0, persistence not supported.
     try {
       cfg = new ConfigSolrXml(loader, null, is, null, false, this);
       this.cfg = new ConfigSolrXml(loader, (ConfigSolrXml) cfg, this);
@@ -394,7 +394,7 @@ public class CoreContainer
     cfg.substituteProperties();
 
     // add the sharedLib to the shared resource loader before initializing cfg based plugins
-    libDir = cfg.get(ConfigSolr.ConfLevel.SOLR, "sharedLib", null);
+    libDir = cfg.get(ConfigSolr.CfgProp.SOLR_SHAREDLIB , null);
     if (libDir != null) {
       File f = FileUtils.resolvePath(new File(dir), libDir);
       log.info("loading shared library: " + f.getAbsolutePath());
@@ -407,9 +407,9 @@ public class CoreContainer
     coreMaps.allocateLazyCores(cfg, loader);
 
     // Initialize Logging
-    if (cfg.getBool(ConfigSolr.ConfLevel.SOLR_LOGGING, "enabled", true)) {
+    if (cfg.getBool(ConfigSolr.CfgProp.SOLR_LOGGING_ENABLED, true)) {
       String slf4jImpl = null;
-      String fname = cfg.get(ConfigSolr.ConfLevel.SOLR_LOGGING, "class", null);
+      String fname = cfg.get(ConfigSolr.CfgProp.SOLR_LOGGING_CLASS, null);
       try {
         slf4jImpl = StaticLoggerBinder.getSingleton()
             .getLoggerFactoryClassStr();
@@ -441,8 +441,8 @@ public class CoreContainer
         
         if (logging != null) {
           ListenerConfig v = new ListenerConfig();
-          v.size = cfg.getInt(ConfigSolr.ConfLevel.SOLR_LOGGING_WATCHER, "size", 50);
-          v.threshold = cfg.get(ConfigSolr.ConfLevel.SOLR_LOGGING_WATCHER, "threshold", null);
+          v.size = cfg.getInt(ConfigSolr.CfgProp.SOLR_LOGGING_WATCHER_SIZE, 50);
+          v.threshold = cfg.get(ConfigSolr.CfgProp.SOLR_LOGGING_WATCHER_THRESHOLD, null);
           if (v.size > 0) {
             log.info("Registering Log Listener");
             logging.registerListener(v, this);
@@ -450,38 +450,43 @@ public class CoreContainer
         }
       }
     }
-    
-    String dcoreName = cfg.get(ConfigSolr.ConfLevel.SOLR_CORES, "defaultCoreName", null);
-    if (dcoreName != null && !dcoreName.isEmpty()) {
-      defaultCoreName = dcoreName;
+
+
+    if (! cfg.is50OrLater()) { //TODO: Remove for 5.0
+      String dcoreName = cfg.get(ConfigSolr.CfgProp.SOLR_CORES_DEFAULT_CORE_NAME, null);
+      if (dcoreName != null && !dcoreName.isEmpty()) {
+        defaultCoreName = dcoreName;
+      }
+      persistent = cfg.getBool(ConfigSolr.CfgProp.SOLR_PERSISTENT, false);
+      adminPath = cfg.get(ConfigSolr.CfgProp.SOLR_ADMINPATH, null);
     }
-    persistent = cfg.getBool(ConfigSolr.ConfLevel.SOLR, "persistent", false);
-    zkHost = cfg.get(ConfigSolr.ConfLevel.SOLR, "zkHost", null);
-    coreLoadThreads = cfg.getInt(ConfigSolr.ConfLevel.SOLR, "coreLoadThreads", CORE_LOAD_THREADS);
+    zkHost = cfg.get(ConfigSolr.CfgProp.SOLR_ZKHOST, null);
+    coreLoadThreads = cfg.getInt(ConfigSolr.CfgProp.SOLR_CORELOADTHREADS, CORE_LOAD_THREADS);
     
-    adminPath = cfg.get(ConfigSolr.ConfLevel.SOLR_CORES, "adminPath", null);
-    shareSchema = cfg.getBool(ConfigSolr.ConfLevel.SOLR_CORES, "shareSchema", DEFAULT_SHARE_SCHEMA);
-    zkClientTimeout = cfg.getInt(ConfigSolr.ConfLevel.SOLR_CORES, "zkClientTimeout", DEFAULT_ZK_CLIENT_TIMEOUT);
+
+    shareSchema = cfg.getBool(ConfigSolr.CfgProp.SOLR_SHARESCHEMA, DEFAULT_SHARE_SCHEMA);
+    zkClientTimeout = cfg.getInt(ConfigSolr.CfgProp.SOLR_ZKCLIENTTIMEOUT, DEFAULT_ZK_CLIENT_TIMEOUT);
     
-    distribUpdateConnTimeout = cfg.getInt(ConfigSolr.ConfLevel.SOLR_CORES, "distribUpdateConnTimeout", 0);
-    distribUpdateSoTimeout = cfg.getInt(ConfigSolr.ConfLevel.SOLR_CORES, "distribUpdateSoTimeout", 0);
+    distribUpdateConnTimeout = cfg.getInt(ConfigSolr.CfgProp.SOLR_DISTRIBUPDATECONNTIMEOUT, 0);
+    distribUpdateSoTimeout = cfg.getInt(ConfigSolr.CfgProp.SOLR_DISTRIBUPDATESOTIMEOUT, 0);
 
     // Note: initZooKeeper will apply hardcoded default if cloud mode
-    hostPort = cfg.get(ConfigSolr.ConfLevel.SOLR_CORES, "hostPort", null);
+    hostPort = cfg.get(ConfigSolr.CfgProp.SOLR_HOSTPORT, null);
     // Note: initZooKeeper will apply hardcoded default if cloud mode
-    hostContext = cfg.get(ConfigSolr.ConfLevel.SOLR_CORES, "hostContext", null);
+    hostContext = cfg.get(ConfigSolr.CfgProp.SOLR_HOSTCONTEXT, null);
 
-    host = cfg.get(ConfigSolr.ConfLevel.SOLR_CORES, "host", null);
+    host = cfg.get(ConfigSolr.CfgProp.SOLR_HOST, null);
     
-    leaderVoteWait = cfg.get(ConfigSolr.ConfLevel.SOLR_CORES, "leaderVoteWait", LEADER_VOTE_WAIT);
+    leaderVoteWait = cfg.get(ConfigSolr.CfgProp.SOLR_LEADERVOTEWAIT, LEADER_VOTE_WAIT);
+
+    adminHandler = cfg.get(ConfigSolr.CfgProp.SOLR_ADMINHANDLER, null);
+    managementPath = cfg.get(ConfigSolr.CfgProp.SOLR_MANAGEMENTPATH, null);
+
+    transientCacheSize = cfg.getInt(ConfigSolr.CfgProp.SOLR_TRANSIENTCACHESIZE, Integer.MAX_VALUE);
 
     if (shareSchema) {
       indexSchemaCache = new ConcurrentHashMap<String,IndexSchema>();
     }
-    adminHandler = cfg.get(ConfigSolr.ConfLevel.SOLR_CORES, "adminHandler", null);
-    managementPath = cfg.get(ConfigSolr.ConfLevel.SOLR_CORES, "managementPath", null);
-
-    transientCacheSize = cfg.getInt(ConfigSolr.ConfLevel.SOLR_CORES, "transientCacheSize", Integer.MAX_VALUE);
 
     zkClientTimeout = Integer.parseInt(System.getProperty("zkClientTimeout",
         Integer.toString(zkClientTimeout)));
@@ -1336,7 +1341,10 @@ public class CoreContainer
   }
 
   /** Persists the cores config file in a user provided file. */
+  //TODO: obsolete in SOLR 5.0
   public void persistFile(File file) {
+    if (cfg != null && cfg.is50OrLater()) return;
+
     log.info("Persisting cores config to " + (file == null ? configFile : file));
 
     
@@ -1347,27 +1355,31 @@ public class CoreContainer
     
     // <solr attrib="value"> <cores attrib="value">
     Map<String,String> coresAttribs = new HashMap<String,String>();
-    addCoresAttrib(coresAttribs, "adminPath", this.adminPath, null);
-    addCoresAttrib(coresAttribs, "adminHandler", this.adminHandler, null);
-    addCoresAttrib(coresAttribs, "shareSchema",
+    addCoresAttrib(coresAttribs, ConfigSolr.CfgProp.SOLR_ADMINPATH, "adminPath", this.adminPath, null);
+    addCoresAttrib(coresAttribs, ConfigSolr.CfgProp.SOLR_ADMINHANDLER, "adminHandler", this.adminHandler, null);
+    addCoresAttrib(coresAttribs, ConfigSolr.CfgProp.SOLR_SHARESCHEMA,"shareSchema",
         Boolean.toString(this.shareSchema),
         Boolean.toString(DEFAULT_SHARE_SCHEMA));
-    addCoresAttrib(coresAttribs, "host", this.host, null);
+    addCoresAttrib(coresAttribs, ConfigSolr.CfgProp.SOLR_HOST, "host", this.host, null);
 
     if (! (null == defaultCoreName || defaultCoreName.equals("")) ) {
       coresAttribs.put("defaultCoreName", defaultCoreName);
     }
 
-    addCoresAttrib(coresAttribs, "hostPort", this.hostPort, DEFAULT_HOST_PORT);
-    addCoresAttrib(coresAttribs, "zkClientTimeout",
+    addCoresAttrib(coresAttribs, ConfigSolr.CfgProp.SOLR_HOSTPORT, "hostPort", this.hostPort, DEFAULT_HOST_PORT);
+    addCoresAttrib(coresAttribs, ConfigSolr.CfgProp.SOLR_ZKCLIENTTIMEOUT, "zkClientTimeout",
         intToString(this.zkClientTimeout),
         Integer.toString(DEFAULT_ZK_CLIENT_TIMEOUT));
-    addCoresAttrib(coresAttribs, "hostContext", this.hostContext, DEFAULT_HOST_CONTEXT);
-    addCoresAttrib(coresAttribs, "leaderVoteWait", this.leaderVoteWait, LEADER_VOTE_WAIT);
-    addCoresAttrib(coresAttribs, "coreLoadThreads", Integer.toString(this.coreLoadThreads), Integer.toString(CORE_LOAD_THREADS));
+    addCoresAttrib(coresAttribs, ConfigSolr.CfgProp.SOLR_HOSTCONTEXT, "hostContext",
+        this.hostContext, DEFAULT_HOST_CONTEXT);
+    addCoresAttrib(coresAttribs, ConfigSolr.CfgProp.SOLR_LEADERVOTEWAIT, "leaderVoteWait",
+        this.leaderVoteWait, LEADER_VOTE_WAIT);
+    addCoresAttrib(coresAttribs, ConfigSolr.CfgProp.SOLR_CORELOADTHREADS, "coreLoadThreads",
+        Integer.toString(this.coreLoadThreads), Integer.toString(CORE_LOAD_THREADS));
     if (transientCacheSize != Integer.MAX_VALUE) { // This test
     // is a consequence of testing. I really hate it.
-      addCoresAttrib(coresAttribs, "transientCacheSize", Integer.toString(this.transientCacheSize), Integer.toString(Integer.MAX_VALUE));
+      addCoresAttrib(coresAttribs, ConfigSolr.CfgProp.SOLR_TRANSIENTCACHESIZE, "transientCacheSize",
+          Integer.toString(this.transientCacheSize), Integer.toString(Integer.MAX_VALUE));
     }
 
     coreMaps.persistCores(cfg, containerProperties, rootSolrAttribs, coresAttribs, file, configFile, loader);
@@ -1378,18 +1390,21 @@ public class CoreContainer
     return Integer.toString(integer);
   }
 
-  private void addCoresAttrib(Map<String,String> coresAttribs, String attribName, String attribValue, String defaultValue) {
+  //TODO: Obsolete in 5.0 Having to pass prop is a hack to get us to 5.0.
+  private void addCoresAttrib(Map<String,String> coresAttribs, ConfigSolr.CfgProp prop,
+                              String attribName, String attribValue, String defaultValue) {
     if (cfg == null) {
       coresAttribs.put(attribName, attribValue);
       return;
     }
     
     if (attribValue != null) {
-      String rawValue = cfg.get(ConfigSolr.ConfLevel.SOLR_CORES, attribName, null);
-      if (rawValue == null && defaultValue != null && attribValue.equals(defaultValue)) return;
+      String origValue = cfg.getOrigProp(prop, null);
 
-      if (attribValue.equals(PropertiesUtil.substituteProperty(rawValue, loader.getCoreProperties()))) {
-        coresAttribs.put(attribName, rawValue);
+      if (origValue == null && defaultValue != null && attribValue.equals(defaultValue)) return;
+
+      if (attribValue.equals(PropertiesUtil.substituteProperty(origValue, loader.getCoreProperties()))) {
+        coresAttribs.put(attribName, origValue);
       } else {
         coresAttribs.put(attribName, attribValue);
       }
@@ -1434,6 +1449,11 @@ public class CoreContainer
   String getCoreToOrigName(SolrCore core) {
     return coreMaps.getCoreToOrigName(core);
   }
+
+  public String getBadCoreMessage(String name) {
+    return cfg.getBadCoreMessage(name);
+  }
+
 }
 
 
@@ -1476,7 +1496,7 @@ class CoreMaps {
   // Trivial helper method for load, note it implements LRU on transient cores. Also note, if
   // there is no setting for max size, nothing is done and all cores go in the regular "cores" list
   protected void allocateLazyCores(final ConfigSolr cfg, final SolrResourceLoader loader) {
-    final int transientCacheSize = cfg.getInt(ConfigSolr.ConfLevel.SOLR_CORES, "transientCacheSize", Integer.MAX_VALUE);
+    final int transientCacheSize = cfg.getInt(ConfigSolr.CfgProp.SOLR_TRANSIENTCACHESIZE, Integer.MAX_VALUE);
     if (transientCacheSize != Integer.MAX_VALUE) {
       CoreContainer.log.info("Allocating transient cache for {} transient cores", transientCacheSize);
       transientCores = new LinkedHashMap<String, SolrCore>(transientCacheSize, 0.75f, true) {
