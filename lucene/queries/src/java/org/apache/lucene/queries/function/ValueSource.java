@@ -140,7 +140,6 @@ public abstract class ValueSource {
     @Override
     public int compare(int slot1, int slot2) {
       return Double.compare(values[slot1], values[slot2]);
-
     }
 
     @Override
