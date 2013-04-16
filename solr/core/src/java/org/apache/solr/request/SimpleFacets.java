@@ -105,17 +105,18 @@ public class SimpleFacets {
   /** The main set of documents all facet counts should be relative to */
   protected DocSet docsOrig;
   /** Configuration params behavior should be driven by */
-  protected SolrParams params;
-  protected SolrParams required;
+  protected final SolrParams orig;
+  protected final SolrParams required;
   /** Searcher to use for all calculations */
-  protected SolrIndexSearcher searcher;
-  protected SolrQueryRequest req;
-  protected ResponseBuilder rb;
+  protected final SolrIndexSearcher searcher;
+  protected final SolrQueryRequest req;
+  protected final ResponseBuilder rb;
 
   protected SimpleOrderedMap<Object> facetResponse;
 
   // per-facet values
   protected SolrParams localParams; // localParams on this particular facet command
+  protected SolrParams params;      // local+original
   protected String facetValue;      // the field to or query to facet on (minus local params)
   protected DocSet docs;            // the base docset for this particular facet
   protected String key;             // what name should the results be stored under
@@ -134,7 +135,7 @@ public class SimpleFacets {
     this.req = req;
     this.searcher = req.getSearcher();
     this.docs = this.docsOrig = docs;
-    this.params = params;
+    this.params = orig = params;
     this.required = new RequiredSolrParams(params);
     this.rb = rb;
   }
@@ -147,7 +148,10 @@ public class SimpleFacets {
     key = param;
     threads = -1;
 
-    if (localParams == null) return;
+    if (localParams == null) {
+      return;
+    }
+    params = SolrParams.wrapDefaults(localParams, orig);
 
     // remove local params unless it's a query
     if (type != FacetParams.FACET_QUERY) { // TODO Cut over to an Enum here

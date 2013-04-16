@@ -142,6 +142,8 @@ New Features
   5.0) for basing the enumeration of cores. In the new way of doing things, a
   core.propeties file will mark the instanceDir for that core, and instanceDir will
   be obsolete as well
+
+* SOLR-4717: SimpleFacets now work with localParams (ryan)
    
 
 Bug Fixes
