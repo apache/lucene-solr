@@ -19,6 +19,7 @@ package org.apache.solr.cloud;
 
 import org.apache.solr.client.solrj.SolrQuery;
 import org.apache.solr.client.solrj.SolrRequest;
+import org.apache.solr.client.solrj.SolrServer;
 import org.apache.solr.client.solrj.SolrServerException;
 import org.apache.solr.client.solrj.impl.HttpSolrServer;
 import org.apache.solr.client.solrj.request.QueryRequest;
@@ -197,29 +198,15 @@ public class ShardSplitTest extends BasicDistributedZkTest {
   }
 
   protected void indexAndUpdateCount(List<DocRouter.Range> ranges, int[] docCounts, int id) throws Exception {
-    boolean success = true;
-    try {
-      indexr("id", id);
-    } catch (SolrServerException e) {
-      if (!e.getMessage().startsWith("No live SolrServers available to handle this request"))  {
-        success = false;
-        log.error("Exception while adding doc", e);
-      } else  {
-        // Error is recoverable because the proxy node will store the request in its log and
-        // it will be retried later and sent to the leader
-        log.warn("Counting doc: " + id + " because error is recoverable", e);
-      }
-    } finally {
-      if (success)  {
-        // todo - hook in custom hashing
-        byte[] bytes = String.valueOf(id).getBytes("UTF-8");
-        int hash = Hash.murmurhash3_x86_32(bytes, 0, bytes.length, 0);
-        for (int i = 0; i < ranges.size(); i++) {
-          DocRouter.Range range = ranges.get(i);
-          if (range.includes(hash))
-            docCounts[i]++;
-        }
-      }
+    indexr("id", id);
+
+    // todo - hook in custom hashing
+    byte[] bytes = String.valueOf(id).getBytes("UTF-8");
+    int hash = Hash.murmurhash3_x86_32(bytes, 0, bytes.length, 0);
+    for (int i = 0; i < ranges.size(); i++) {
+      DocRouter.Range range = ranges.get(i);
+      if (range.includes(hash))
+        docCounts[i]++;
     }
   }
 
@@ -254,6 +241,20 @@ public class ShardSplitTest extends BasicDistributedZkTest {
         log.error("EXTRA: ID: " + document.getFieldValue("id") + " on shard1_1. Old version: " + old.getFieldValue("_version_") + " new version: " + document.getFieldValue("_version_"));
       }
     }
+  }
+
+  @Override
+  protected SolrServer createNewSolrServer(String collection, String baseUrl) {
+    HttpSolrServer server = (HttpSolrServer) super.createNewSolrServer(collection, baseUrl);
+    server.setSoTimeout(5 * 60 * 1000);
+    return server;
+  }
+
+  @Override
+  protected SolrServer createNewSolrServer(int port) {
+    HttpSolrServer server = (HttpSolrServer) super.createNewSolrServer(port);
+    server.setSoTimeout(5 * 60 * 1000);
+    return server;
   }
 }
 
