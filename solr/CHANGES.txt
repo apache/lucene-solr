@@ -143,7 +143,8 @@ New Features
   core.propeties file will mark the instanceDir for that core, and instanceDir will
   be obsolete as well
 
-* SOLR-4717: SimpleFacets now work with localParams (ryan)
+* SOLR-4717/SOLR-1351: SimpleFacets now work with localParams allowing faceting on the 
+  same field multiple ways (ryan, Uri Boness)
    
 
 Bug Fixes
