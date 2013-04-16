@@ -546,13 +546,7 @@ public abstract class LogMergePolicy extends MergePolicy {
     // Sorts largest to smallest
     @Override
     public int compareTo(SegmentInfoAndLevel other) {
-      if (level < other.level) {
-        return 1;
-      } else if (level > other.level) {
-        return -1;
-      } else {
-        return 0;
-      }
+      return Float.compare(other.level, level);
     }
   }
 

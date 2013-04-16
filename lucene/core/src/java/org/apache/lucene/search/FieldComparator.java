@@ -19,7 +19,6 @@ package org.apache.lucene.search;
 
 import java.io.IOException;
 
-import org.apache.lucene.index.AtomicReader; // javadocs
 import org.apache.lucene.index.AtomicReaderContext;
 import org.apache.lucene.index.BinaryDocValues;
 import org.apache.lucene.index.SortedDocValues;
@@ -307,15 +306,7 @@ public abstract class FieldComparator<T> {
 
     @Override
     public int compare(int slot1, int slot2) {
-      final double v1 = values[slot1];
-      final double v2 = values[slot2];
-      if (v1 > v2) {
-        return 1;
-      } else if (v1 < v2) {
-        return -1;
-      } else {
-        return 0;
-      }
+      return Double.compare(values[slot1], values[slot2]);
     }
 
     @Override
@@ -327,13 +318,7 @@ public abstract class FieldComparator<T> {
         v2 = missingValue;
       }
 
-      if (bottom > v2) {
-        return 1;
-      } else if (bottom < v2) {
-        return -1;
-      } else {
-        return 0;
-      }
+      return Double.compare(bottom, v2);
     }
 
     @Override
@@ -375,13 +360,7 @@ public abstract class FieldComparator<T> {
       if (docsWithField != null && docValue == 0 && !docsWithField.get(doc)) {
         docValue = missingValue;
       }
-      if (docValue < value) {
-        return -1;
-      } else if (docValue > value) {
-        return 1;
-      } else {
-        return 0;
-      }
+      return Double.compare(docValue, value);
     }
   }
 
@@ -401,17 +380,7 @@ public abstract class FieldComparator<T> {
     
     @Override
     public int compare(int slot1, int slot2) {
-      // TODO: are there sneaky non-branch ways to compute
-      // sign of float?
-      final float v1 = values[slot1];
-      final float v2 = values[slot2];
-      if (v1 > v2) {
-        return 1;
-      } else if (v1 < v2) {
-        return -1;
-      } else {
-        return 0;
-      }
+      return Float.compare(values[slot1], values[slot2]);
     }
 
     @Override
@@ -423,14 +392,8 @@ public abstract class FieldComparator<T> {
       if (docsWithField != null && v2 == 0 && !docsWithField.get(doc)) {
         v2 = missingValue;
       }
-      
-      if (bottom > v2) {
-        return 1;
-      } else if (bottom < v2) {
-        return -1;
-      } else {
-        return 0;
-      }
+
+      return Float.compare(bottom, v2);
     }
 
     @Override
@@ -472,13 +435,7 @@ public abstract class FieldComparator<T> {
       if (docsWithField != null && docValue == 0 && !docsWithField.get(doc)) {
         docValue = missingValue;
       }
-      if (docValue < value) {
-        return -1;
-      } else if (docValue > value) {
-        return 1;
-      } else {
-        return 0;
-      }
+      return Float.compare(docValue, value);
     }
   }
 
@@ -773,16 +730,14 @@ public abstract class FieldComparator<T> {
 
     @Override
     public int compare(int slot1, int slot2) {
-      final float score1 = scores[slot1];
-      final float score2 = scores[slot2];
-      return score1 > score2 ? -1 : (score1 < score2 ? 1 : 0);
+      return Float.compare(scores[slot2], scores[slot1]);
     }
 
     @Override
     public int compareBottom(int doc) throws IOException {
       float score = scorer.score();
       assert !Float.isNaN(score);
-      return bottom > score ? -1 : (bottom < score ? 1 : 0);
+      return Float.compare(score, bottom);
     }
 
     @Override
@@ -831,15 +786,7 @@ public abstract class FieldComparator<T> {
       final float value = valueObj.floatValue();
       float docValue = scorer.score();
       assert !Float.isNaN(docValue);
-      if (docValue < value) {
-        // reverse of FloatComparator
-        return 1;
-      } else if (docValue > value) {
-        // reverse of FloatComparator
-        return -1;
-      } else {
-        return 0;
-      }
+      return Float.compare(value, docValue);
     }
   }
 
