@@ -70,11 +70,12 @@ public class HttpSolrServer extends SolrServer {
   private static final String UTF_8 = "UTF-8";
   private static final String DEFAULT_PATH = "/select";
   private static final long serialVersionUID = -946812319974801896L;
+  private static final String RESOURCE_NAME = "resource.name";
+  
   /**
    * User-Agent String.
    */
-  public static final String AGENT = "Solr[" + HttpSolrServer.class.getName()
-      + "] 1.0";
+  public static final String AGENT = "Solr[" + HttpSolrServer.class.getName() + "] 1.0";
   
   private static Logger log = LoggerFactory.getLogger(HttpSolrServer.class);
   
@@ -207,7 +208,6 @@ public class HttpSolrServer extends SolrServer {
     if (invariantParams != null) {
       wparams.add(invariantParams);
     }
-    params = wparams;
     
     int tries = maxRetries + 1;
     try {
@@ -221,7 +221,7 @@ public class HttpSolrServer extends SolrServer {
             if( streams != null ) {
               throw new SolrException( SolrException.ErrorCode.BAD_REQUEST, "GET can't send streams!" );
             }
-            method = new HttpGet( baseUrl + path + ClientUtils.toQueryString( params, false ) );
+            method = new HttpGet( baseUrl + path + ClientUtils.toQueryString( wparams, false ) );
           }
           else if( SolrRequest.METHOD.POST == request.getMethod() ) {
 
@@ -238,10 +238,10 @@ public class HttpSolrServer extends SolrServer {
               }
 
               List<FormBodyPart> parts = new LinkedList<FormBodyPart>();
-              Iterator<String> iter = params.getParameterNamesIterator();
+              Iterator<String> iter = wparams.getParameterNamesIterator();
               while (iter.hasNext()) {
                 String p = iter.next();
-                String[] vals = params.getParams(p);
+                String[] vals = wparams.getParams(p);
                 if (vals != null) {
                   for (String v : vals) {
                     if (this.useMultiPartPost || isMultipart) {
@@ -265,6 +265,12 @@ public class HttpSolrServer extends SolrServer {
                            contentType, 
                            content.getName())));
                 }
+              } else {
+                for (ContentStream content : streams) {
+                  if (content.getName() != null) {
+                    postParams.add(new BasicNameValuePair(RESOURCE_NAME, content.getName()));
+                  }
+                }
               }
               
               if (parts.size() > 0) {
@@ -282,9 +288,6 @@ public class HttpSolrServer extends SolrServer {
             }
             // It is has one stream, it is the post body, put the params in the URL
             else {
-              String pstr = ClientUtils.toQueryString(params, false);
-              HttpPost post = new HttpPost(url + pstr);
-
               // Single stream as body
               // Using a loop just to get the first one
               final ContentStream[] contentStream = new ContentStream[1];
@@ -292,6 +295,12 @@ public class HttpSolrServer extends SolrServer {
                 contentStream[0] = content;
                 break;
               }
+              if (contentStream[0] != null && contentStream[0].getName() != null) {
+                wparams.set(RESOURCE_NAME, contentStream[0].getName());
+              }
+              String pstr = ClientUtils.toQueryString(wparams, false);
+              HttpPost post = new HttpPost(url + pstr);
+
               if (contentStream[0] instanceof RequestWriter.LazyContentStream) {
                 post.setEntity(new InputStreamEntity(contentStream[0].getStream(), -1) {
                   @Override
@@ -341,8 +350,7 @@ public class HttpSolrServer extends SolrServer {
     }
     
     // XXX client already has this set, is this needed?
-    method.getParams().setParameter(ClientPNames.HANDLE_REDIRECTS,
-        followRedirects);
+    method.getParams().setParameter(ClientPNames.HANDLE_REDIRECTS, followRedirects);
     method.addHeader("User-Agent", AGENT);
     
     InputStream respBody = null;
@@ -621,5 +629,16 @@ public class HttpSolrServer extends SolrServer {
       throw new UnsupportedOperationException(
           "Client was created outside of HttpSolrServer");
     }
+  }
+
+  public boolean isUseMultiPartPost() {
+    return useMultiPartPost;
+  }
+
+  /**
+   * Set the multipart connection properties
+   */
+  public void setUseMultiPartPost(boolean useMultiPartPost) {
+    this.useMultiPartPost = useMultiPartPost;
   }
 }
