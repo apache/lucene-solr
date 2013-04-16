@@ -28,7 +28,6 @@ import org.junit.Test;
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileOutputStream;
-import java.io.StringReader;
 import java.util.Properties;
 import java.util.Set;
 
@@ -42,17 +41,24 @@ public class TestCoreDiscovery extends SolrTestCaseJ4 {
 
   private final File solrHomeDirectory = new File(TEMP_DIR, "org.apache.solr.core.TestCoreDiscovery" + File.separator + "solrHome");
 
-  private void setMeUp() throws Exception {
+  private void setMeUp(String alternateCoreDir) throws Exception {
     if (solrHomeDirectory.exists()) {
       FileUtils.deleteDirectory(solrHomeDirectory);
     }
     assertTrue("Failed to mkdirs workDir", solrHomeDirectory.mkdirs());
+
     System.setProperty("solr.solr.home", solrHomeDirectory.getAbsolutePath());
+    String xmlStr = SOLR_XML;
+    if (alternateCoreDir != null) {
+      xmlStr = xmlStr.replace("<solr>", "<solr> <str name=\"coreRootDirectory\">" + alternateCoreDir + "</str> ");
+    }
+    File tmpFile = new File(solrHomeDirectory, ConfigSolr.SOLR_XML_FILE);
+    FileUtils.write(tmpFile, xmlStr, IOUtils.CHARSET_UTF_8.toString());
+
   }
 
-  private void addSolrXml() throws Exception {
-    File tmpFile = new File(solrHomeDirectory, ConfigSolr.SOLR_XML_FILE);
-    FileUtils.write(tmpFile, SOLR_XML, IOUtils.CHARSET_UTF_8.toString());
+  private void setMeUp() throws Exception {
+    setMeUp(null);
   }
 
   private Properties makeCorePropFile(String name, boolean isLazy, boolean loadOnStartup, String... extraProps) {
@@ -63,6 +69,7 @@ public class TestCoreDiscovery extends SolrTestCaseJ4 {
     props.put(CoreDescriptor.CORE_TRANSIENT, Boolean.toString(isLazy));
     props.put(CoreDescriptor.CORE_LOADONSTARTUP, Boolean.toString(loadOnStartup));
     props.put(CoreDescriptor.CORE_DATADIR, "${core.dataDir:stuffandnonsense}");
+    props.put(CoreDescriptor.CORE_INSTDIR, "totallybogus"); // For testing that this property is ignored if present.
 
     for (String extra : extraProps) {
       String[] parts = extra.split("=");
@@ -72,13 +79,8 @@ public class TestCoreDiscovery extends SolrTestCaseJ4 {
     return props;
   }
 
-  private void addCoreWithProps(Properties stockProps) throws Exception {
-
-    File propFile = new File(solrHomeDirectory,
-        stockProps.getProperty(CoreDescriptor.CORE_NAME) + File.separator + ConfigSolr.CORE_PROP_FILE);
-    File parent = propFile.getParentFile();
-    assertTrue("Failed to mkdirs for " + parent.getAbsolutePath(), parent.mkdirs());
-
+  private void addCoreWithProps(Properties stockProps, File propFile) throws Exception {
+    if (!propFile.getParentFile().exists()) propFile.getParentFile().mkdirs();
     FileOutputStream out = new FileOutputStream(propFile);
     try {
       stockProps.store(out, null);
@@ -86,7 +88,17 @@ public class TestCoreDiscovery extends SolrTestCaseJ4 {
       out.close();
     }
 
-    addConfFiles(new File(parent, "conf"));
+    addConfFiles(new File(propFile.getParent(), "conf"));
+
+  }
+
+  private void addCoreWithProps(Properties stockProps) throws Exception {
+
+    File propFile = new File(solrHomeDirectory,
+        stockProps.getProperty(CoreDescriptor.CORE_NAME) + File.separator + ConfigSolr.CORE_PROP_FILE);
+    File parent = propFile.getParentFile();
+    assertTrue("Failed to mkdirs for " + parent.getAbsolutePath(), parent.mkdirs());
+    addCoreWithProps(stockProps, propFile);
   }
 
   // For testing error condition of having multiple cores with the same name.
@@ -114,10 +126,6 @@ public class TestCoreDiscovery extends SolrTestCaseJ4 {
     FileUtils.copyFile(new File(top, "solrconfig-minimal.xml"), new File(confDir, "solrconfig-minimal.xml"));
   }
 
-  private void addConfigsForBackCompat() throws Exception {
-    addConfFiles(new File(solrHomeDirectory, "collection1" + File.separator + "conf"));
-  }
-
   private CoreContainer init() throws Exception {
 
     CoreContainer.Initializer init = new CoreContainer.Initializer();
@@ -138,23 +146,22 @@ public class TestCoreDiscovery extends SolrTestCaseJ4 {
   // Test the basic setup, create some dirs with core.properties files in them, but solr.xml has discoverCores
   // set and insure that we find all the cores and can load them.
   @Test
-  public void testDiscover() throws Exception {
+  public void testDiscovery() throws Exception {
     setMeUp();
-    addSolrXml();
+
     // name, isLazy, loadOnStartup
-    addCoreWithProps(makeCorePropFile("core1", false, true));
-    addCoreWithProps(makeCorePropFile("core2", false, false));
+    addCoreWithProps(makeCorePropFile("core1", false, true, "dataDir=core1"));
+    addCoreWithProps(makeCorePropFile("core2", false, false, "dataDir=core2"));
 
     // I suspect what we're adding in here is a "configset" rather than a schema or solrconfig.
     //
-    addCoreWithProps(makeCorePropFile("lazy1", true, false));
+    addCoreWithProps(makeCorePropFile("lazy1", true, false, "dataDir=lazy1"));
 
     CoreContainer cc = init();
     try {
-      Properties props = cc.containerProperties;
+      assertNull("adminPath no longer allowed in solr.xml", cc.getAdminPath());
+      assertNull("defaultCore no longer allowed in solr.xml", cc.getDefaultCoreName());
 
-      assertEquals("/admin/cores", cc.getAdminPath());
-      assertEquals("defcore", cc.getDefaultCoreName());
       assertEquals("222.333.444.555", cc.getHost());
       assertEquals("6000", cc.getHostPort());
       assertEquals("solrprop", cc.getHostContext());
@@ -169,10 +176,13 @@ public class TestCoreDiscovery extends SolrTestCaseJ4 {
       CoreDescriptor desc = core1.getCoreDescriptor();
       assertEquals("core1", desc.getProperty("solr.core.name"));
 
+      // Prove we're ignoring this even though it's set in the properties file
+      assertFalse("InstanceDir should be ignored", desc.getProperty("solr.core.instanceDir").contains("totallybogus"));
+
       // This is too long and ugly to put in. Besides, it varies.
       assertNotNull(desc.getProperty("solr.core.instanceDir"));
 
-      assertEquals("stuffandnonsense", desc.getProperty("solr.core.dataDir"));
+      assertEquals("core1", desc.getProperty("solr.core.dataDir"));
       assertEquals("solrconfig-minimal.xml", desc.getProperty("solr.core.configName"));
       assertEquals("schema-tiny.xml", desc.getProperty("solr.core.schemaName"));
 
@@ -188,132 +198,49 @@ public class TestCoreDiscovery extends SolrTestCaseJ4 {
     }
   }
 
-
-  // Check that the various flavors of persistence work, including saving the state of a core when it's being swapped
-  // out. Added a test in here to insure that files that have config variables are saved with the config vars not the
-  // substitutions.
   @Test
-  public void testPersistTrue() throws Exception {
-    setMeUp();
-    addSolrXml();
-    System.setProperty("solr.persistent", "true");
-
-    Properties special = makeCorePropFile("core1", false, true);
-    special.put(CoreDescriptor.CORE_INSTDIR, "${core1inst:anothersillypath}");
-    addCoreWithProps(special);
-    addCoreWithProps(makeCorePropFile("core2", false, false));
-    addCoreWithProps(makeCorePropFile("lazy1", true, true));
-    addCoreWithProps(makeCorePropFile("lazy2", true, true));
-    addCoreWithProps(makeCorePropFile("lazy3", true, false));
-
-    System.setProperty("core1inst", "core1");
+  public void testAlternateCoreDir() throws Exception {
+    File alt = new File(TEMP_DIR, "alternateCoreDir");
+    if (alt.exists()) FileUtils.deleteDirectory(alt);
+    alt.mkdirs();
+    setMeUp(alt.getAbsolutePath());
+    addCoreWithProps(makeCorePropFile("core1", false, true, "dataDir=core1"),
+        new File(alt, "core1" + File.separator + ConfigSolr.CORE_PROP_FILE));
+    addCoreWithProps(makeCorePropFile("core2", false, false, "dataDir=core2"),
+        new File(alt, "core2" + File.separator + ConfigSolr.CORE_PROP_FILE));
     CoreContainer cc = init();
-    SolrCore coreC1 = cc.getCore("core1");
-    addCoreProps(coreC1, "addedPropC1=addedC1", "addedPropC1B=foo", "addedPropC1C=bar");
-
-    SolrCore coreC2 = cc.getCore("core2");
-    addCoreProps(coreC2, "addedPropC2=addedC2", "addedPropC2B=foo", "addedPropC2C=bar");
-
-    SolrCore coreL1 = cc.getCore("lazy1");
-    addCoreProps(coreL1, "addedPropL1=addedL1", "addedPropL1B=foo", "addedPropL1C=bar");
-
-    SolrCore coreL2 = cc.getCore("lazy2");
-    addCoreProps(coreL2, "addedPropL2=addedL2", "addedPropL2B=foo", "addedPropL2C=bar");
-
-    SolrCore coreL3 = cc.getCore("lazy3");
-    addCoreProps(coreL3, "addedPropL3=addedL3", "addedPropL3B=foo", "addedPropL3C=bar");
-
     try {
-      cc.persist();
-
-      // Insure that one of the loaded cores was swapped out, with a cache size of 2 lazy1 should be gone.
-      TestLazyCores.checkInCores(cc, "core1", "core2", "lazy2", "lazy3");
-      TestLazyCores.checkNotInCores(cc, "lazy1");
-
-      Properties orig = makeCorePropFile("core1", false, true);
-      orig.put(CoreDescriptor.CORE_INSTDIR, "${core1inst:anothersillypath}");
-      checkCoreProps(orig, "addedPropC1=addedC1", "addedPropC1B=foo", "addedPropC1C=bar");
-
-      orig = makeCorePropFile("core2", false, false);
-      checkCoreProps(orig, "addedPropC2=addedC2", "addedPropC2B=foo", "addedPropC2C=bar");
-
-      // This test insures that a core that was swapped out has its properties file persisted. Currently this happens
-      // as the file is removed from the cache.
-      orig = makeCorePropFile("lazy1", true, true);
-      checkCoreProps(orig, "addedPropL1=addedL1", "addedPropL1B=foo", "addedPropL1C=bar");
-
-      orig = makeCorePropFile("lazy2", true, true);
-      checkCoreProps(orig, "addedPropL2=addedL2", "addedPropL2B=foo", "addedPropL2C=bar");
-
-      orig = makeCorePropFile("lazy3", true, false);
-      checkCoreProps(orig, "addedPropL3=addedL3", "addedPropL3B=foo", "addedPropL3C=bar");
-
-      coreC1.close();
-      coreC2.close();
-      coreL1.close();
-      coreL2.close();
-      coreL3.close();
-
+      SolrCore core1 = cc.getCore("core1");
+      SolrCore core2 = cc.getCore("core2");
+      assertNotNull(core1);
+      assertNotNull(core2);
+      core1.close();
+      core2.close();
     } finally {
       cc.shutdown();
-    }
-  }
-
-  // Make sure that, even if we do call persist, nothing's saved unless the flag is set in solr.properties.
-  @Test
-  public void testPersistFalse() throws Exception {
-    setMeUp();
-    addSolrXml();
-
-    addCoreWithProps(makeCorePropFile("core1", false, true));
-    addCoreWithProps(makeCorePropFile("core2", false, false));
-    addCoreWithProps(makeCorePropFile("lazy1", true, true));
-    addCoreWithProps(makeCorePropFile("lazy2", false, true));
-
-    CoreContainer cc = init();
-    SolrCore coreC1 = cc.getCore("core1");
-    addCoreProps(coreC1, "addedPropC1=addedC1", "addedPropC1B=foo", "addedPropC1C=bar");
-
-    SolrCore coreC2 = cc.getCore("core2");
-    addCoreProps(coreC2, "addedPropC2=addedC2", "addedPropC2B=foo", "addedPropC2C=bar");
-
-    SolrCore coreL1 = cc.getCore("lazy1");
-    addCoreProps(coreL1, "addedPropL1=addedL1", "addedPropL1B=foo", "addedPropL1C=bar");
-
-    SolrCore coreL2 = cc.getCore("lazy2");
-    addCoreProps(coreL2, "addedPropL2=addedL2", "addedPropL2B=foo", "addedPropL2C=bar");
-
-
-    try {
-      cc.persist();
-
-      checkCoreProps(makeCorePropFile("core1", false, true));
-      checkCoreProps(makeCorePropFile("core2", false, false));
-      checkCoreProps(makeCorePropFile("lazy1", true, true));
-      checkCoreProps(makeCorePropFile("lazy2", false, true));
-
-      coreC1.close();
-      coreC2.close();
-      coreL1.close();
-      coreL2.close();
-    } finally {
-      cc.shutdown();
+      if (alt.exists()) FileUtils.deleteDirectory(alt);
     }
   }
 
   @Test
   public void testCoresWithSameNameError() throws Exception {
     setMeUp();
-    addSolrXml();
     addCoreWithPropsDir("core1_1", makeCorePropFile("core1", false, true));
     addCoreWithPropsDir("core1_2", makeCorePropFile("core1", false, true));
-    // Should just blow up here.
     CoreContainer cc = null;
     try {
       cc = init();
-    } catch (SolrException se) {
-      assertEquals("Should be returning proper error code of 500", 500, se.code());
-      assertTrue(se.getCause().getMessage().indexOf("More than one core defined for core named core1") != -1);
+      String msg = cc.getBadCoreMessage("core1");
+      assertTrue("Should have found multiple cores with same name", msg.contains("More than one core defined for core named 'core1'"));
+      assertTrue("Should have found multiple cores with same data dir", msg.contains("More than one core points to data dir"));
+      try {
+        cc.getCore("core1");
+      } catch (SolrException se) {
+        assertEquals("Should be returning proper error code of 500", 500, se.code());
+        msg = se.getMessage();
+        assertTrue("Should have found multiple cores with same name", msg.contains("More than one core defined for core named 'core1'"));
+        assertTrue("Should have found multiple cores with same data dir", msg.contains("More than one core points to data dir"));
+      }
     } finally {
       if (cc != null) {
         cc.shutdown();
@@ -322,18 +249,33 @@ public class TestCoreDiscovery extends SolrTestCaseJ4 {
   }
 
   @Test
-  public void testCoresWithSameDataDirError() throws Exception{
+  public void testCoresWithSameDataDirError() throws Exception {
     setMeUp();
-    addSolrXml();
     addCoreWithProps(makeCorePropFile("core1", false, true, "dataDir=" + solrHomeDirectory + "datadir"));
     addCoreWithProps(makeCorePropFile("core2", false, true, "dataDir=" + solrHomeDirectory + "datadir"));
-    // Should just blow up here.
     CoreContainer cc = null;
     try {
       cc = init();
-    } catch (SolrException se) {
-      assertEquals("Should be returning proper error code of 500", 500, se.code());
-      assertTrue(se.getCause().getMessage().indexOf("More than one core points to data dir") != -1);
+      String msg = cc.getBadCoreMessage("core2");
+      assertFalse("Should have found multiple cores with same name", msg.contains("More than one core defined for core named 'core1'"));
+      assertTrue("Should have found multiple cores with same data dir", msg.contains("More than one core points to data dir"));
+      try {
+        cc.getCore("core1");
+      } catch (SolrException se) {
+        assertEquals("Should be returning proper error code of 500", 500, se.code());
+        msg = se.getMessage();
+        assertFalse("Should have found multiple cores with same name", msg.contains("More than one core defined for core named 'core1'"));
+        assertTrue("Should have found multiple cores with same data dir", msg.contains("More than one core points to data dir"));
+      }
+      try {
+        cc.getCore("core2");
+      } catch (SolrException se) {
+        assertEquals("Should be returning proper error code of 500", 500, se.code());
+        msg = se.getMessage();
+        assertFalse("Should have found multiple cores with same name", msg.contains("More than one core defined for core named 'core1'"));
+        assertTrue("Should have found multiple cores with same data dir", msg.contains("More than one core points to data dir"));
+      }
+
     } finally {
       if (cc != null) {
         cc.shutdown();
@@ -344,16 +286,22 @@ public class TestCoreDiscovery extends SolrTestCaseJ4 {
   @Test
   public void testCoresWithSameNameErrorTransient() throws Exception {
     setMeUp();
-    addSolrXml();
     addCoreWithPropsDir("core1_1", makeCorePropFile("core1", true, false));
     addCoreWithPropsDir("core1_2", makeCorePropFile("core1", true, false));
-    // Should just blow up here.
     CoreContainer cc = null;
     try {
       cc = init();
-    } catch (SolrException se) {
-      assertEquals("Should be returning proper error code of 500", 500, se.code());
-      assertTrue(se.getCause().getMessage().indexOf("More than one core defined for core named core1") != -1);
+      String msg = cc.getBadCoreMessage("core1");
+      assertTrue("Should have found multiple cores with same name", msg.contains("More than one core defined for core named 'core1'"));
+      assertTrue("Should have found multiple cores with same data dir", msg.contains("More than one core points to data dir"));
+      try {
+        cc.getCore("core1");
+      } catch (SolrException se) {
+        assertEquals("Should be returning proper error code of 500", 500, se.code());
+        msg = se.getMessage();
+        assertTrue("Should have found multiple cores with same name", msg.contains("More than one core defined for core named 'core1'"));
+        assertTrue("Should have found multiple cores with same data dir", msg.contains("More than one core points to data dir"));
+      }
     } finally {
       if (cc != null) {
         cc.shutdown();
@@ -362,18 +310,25 @@ public class TestCoreDiscovery extends SolrTestCaseJ4 {
   }
 
   @Test
-  public void testCoresWithSameDataDirErrorTransient() throws Exception{
+  public void testCoresWithSameDataDirErrorTransient() throws Exception {
     setMeUp();
-    addSolrXml();
     addCoreWithProps(makeCorePropFile("core1", true, false, "dataDir=" + solrHomeDirectory + "datadir"));
     addCoreWithProps(makeCorePropFile("core2", true, false, "dataDir=" + solrHomeDirectory + "datadir"));
     // Should just blow up here.
     CoreContainer cc = null;
     try {
       cc = init();
-    } catch (SolrException se) {
-      assertEquals("Should be returning proper error code of 500", 500, se.code());
-      assertTrue(se.getCause().getMessage().indexOf("More than one core points to data dir") != -1);
+      String msg = cc.getBadCoreMessage("core1");
+      assertFalse("Should have found multiple cores with same name", msg.contains("More than one core defined for core named 'core1'"));
+      assertTrue("Should have found multiple cores with same data dir", msg.contains("More than one core points to data dir"));
+      try {
+        cc.getCore("core1");
+      } catch (SolrException se) {
+        assertEquals("Should be returning proper error code of 500", 500, se.code());
+        msg = se.getMessage();
+        assertFalse("Should have found multiple cores with same name", msg.contains("More than one core defined for core named 'core1'"));
+        assertTrue("Should have found multiple cores with same data dir", msg.contains("More than one core points to data dir"));
+      }
     } finally {
       if (cc != null) {
         cc.shutdown();
@@ -383,18 +338,25 @@ public class TestCoreDiscovery extends SolrTestCaseJ4 {
 
 
   @Test
-  public void testCoresWithSameNameErrorboth() throws Exception {
+  public void testCoresWithSameNameErrorBoth() throws Exception {
     setMeUp();
-    addSolrXml();
-    addCoreWithPropsDir("core1_1", makeCorePropFile("core1", true,  false));
+    addCoreWithPropsDir("core1_1", makeCorePropFile("core1", true, false));
     addCoreWithPropsDir("core1_2", makeCorePropFile("core1", false, false));
     // Should just blow up here.
     CoreContainer cc = null;
     try {
       cc = init();
-    } catch (SolrException se) {
-      assertEquals("Should be returning proper error code of 500", 500, se.code());
-      assertTrue(se.getCause().getMessage().indexOf("More than one core defined for core named core1") != -1);
+      String msg = cc.getBadCoreMessage("core1");
+      assertTrue("Should have found multiple cores with same name", msg.contains("More than one core defined for core named 'core1'"));
+      assertTrue("Should have found multiple cores with same data dir", msg.contains("More than one core points to data dir"));
+      try {
+        cc.getCore("core1");
+      } catch (SolrException se) {
+        assertEquals("Should be returning proper error code of 500", 500, se.code());
+        msg = se.getMessage();
+        assertTrue("Should have found multiple cores with same name", msg.contains("More than one core defined for core named 'core1'"));
+        assertTrue("Should have found multiple cores with same data dir", msg.contains("More than one core points to data dir"));
+      }
     } finally {
       if (cc != null) {
         cc.shutdown();
@@ -402,19 +364,41 @@ public class TestCoreDiscovery extends SolrTestCaseJ4 {
     }
   }
 
+
   @Test
-  public void testCoresWithSameDataDirErrorBoth() throws Exception{
+  public void testCoresWithSameDataDirErrorBoth() throws Exception {
     setMeUp();
-    addSolrXml();
-    addCoreWithProps(makeCorePropFile("core1", false, false, "dataDir=" + solrHomeDirectory + "datadir"));
-    addCoreWithProps(makeCorePropFile("core2", true,  false, "dataDir=" + solrHomeDirectory + "datadir"));
+    addCoreWithProps(makeCorePropFile("core1", false, false, "dataDir=" + solrHomeDirectory + "/datadir"));
+    addCoreWithProps(makeCorePropFile("core2", true, false, "dataDir=" + solrHomeDirectory + "/datadir"));
     // Should just blow up here.
     CoreContainer cc = null;
     try {
       cc = init();
-    } catch (SolrException se) {
-      assertEquals("Should be returning proper error code of 500", 500, se.code());
-      assertTrue(se.getCause().getMessage().indexOf("More than one core points to data dir") != -1);
+      String msg = cc.getBadCoreMessage("core2");
+      assertFalse("Should have found multiple cores with same name", msg.contains("More than one core defined for core named 'core1'"));
+      assertTrue("Should have found multiple cores with same data dir", msg.contains("More than one core points to data dir"));
+
+      msg = cc.getBadCoreMessage("core1");
+      assertFalse("Should have found multiple cores with same name", msg.contains("More than one core defined for core named 'core1'"));
+      assertTrue("Should have found multiple cores with same data dir", msg.contains("More than one core points to data dir"));
+
+      try {
+        cc.getCore("core1");
+      } catch (SolrException se) {
+        assertEquals("Should be returning proper error code of 500", 500, se.code());
+        msg = se.getMessage();
+        assertFalse("Should have found multiple cores with same name", msg.contains("More than one core defined for core named 'core1'"));
+        assertTrue("Should have found multiple cores with same data dir", msg.contains("More than one core points to data dir"));
+      }
+      try {
+        cc.getCore("core2");
+      } catch (SolrException se) {
+        assertEquals("Should be returning proper error code of 500", 500, se.code());
+        msg = se.getMessage();
+        assertFalse("Should have found multiple cores with same name", msg.contains("More than one core defined for core named 'core1'"));
+        assertTrue("Should have found multiple cores with same data dir", msg.contains("More than one core points to data dir"));
+      }
+
     } finally {
       if (cc != null) {
         cc.shutdown();
@@ -422,41 +406,14 @@ public class TestCoreDiscovery extends SolrTestCaseJ4 {
     }
   }
 
-  void addCoreProps(SolrCore core, String... propPairs) {
-    for (String keyval : propPairs) {
-      String[] pair = keyval.split("=");
-      core.getCoreDescriptor().putProperty(pair[0], pair[1]);
-    }
-  }
-
-  // Insure that the properties in the core passed in are exactly what's in the default core.properties below plus
-  // whatever extra is passed in.
-  void checkCoreProps(Properties orig, String... extraProps) throws Exception {
-    // Read the persisted file.
-    Properties props = new Properties();
-    File propParent = new File(solrHomeDirectory, orig.getProperty(CoreDescriptor.CORE_NAME));
-    FileInputStream in = new FileInputStream(new File(propParent, ConfigSolr.CORE_PROP_FILE));
-    try {
-      props.load(in);
-    } finally {
-      in.close();
-    }
-    Set<String> propSet = props.stringPropertyNames();
-
-    assertEquals("Persisted properties should NOT contain extra properties", propSet.size(), orig.size());
-
-    for (String prop : orig.stringPropertyNames()) {
-      assertEquals("Original and new properties should be equal for " + prop, props.getProperty(prop), orig.getProperty(prop));
-    }
-    for (String prop : extraProps) {
-      String[] pair = prop.split("=");
-      assertNull("Modified parameters should not be present for " + prop, props.getProperty(pair[0]));
-    }
-  }
-
   // For testing whether finding a solr.xml overrides looking at solr.properties
-  private final static String SOLR_XML = " <solr persistent=\"${persistent:false}\"> " +
-      "<cores autoDiscoverCores=\"true\" adminPath=\"/admin/cores\" defaultCoreName=\"defcore\" transientCacheSize=\"2\" " +
-       " hostContext=\"solrprop\" zkClientTimeout=\"20\" host=\"222.333.444.555\" hostPort=\"6000\" />  " +
+  private final static String SOLR_XML = "<solr> " +
+      "<int name=\"transientCacheSize\">2</int> " +
+      "<solrcloud> " +
+      "<str name=\"hostContext\">solrprop</str> " +
+      "<int name=\"zkClientTimeout\">20</int> " +
+      "<str name=\"host\">222.333.444.555</str> " +
+      "<int name=\"hostPort\">6000</int>  " +
+      "</solrcloud> " +
       "</solr>";
 }

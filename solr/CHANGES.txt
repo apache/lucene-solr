@@ -111,9 +111,6 @@ New Features
   there are a large number of entries in the multiValued field. Conspicuously, this will
   prevent the "best" match from being found if it appears later in the MV list than the
   cutoff specified by either of these params. (Erick Erickson)
-  
-* SOLR-4663: Complain loudly and do NOT load cores if they have the same data dir or the 
-  same name
 
 * SOLR-4675: Improve PostingsSolrHighlighter to support per-field/query-time overrides
   and add additional configuration parameters. See the javadocs for more details and
@@ -136,6 +133,16 @@ New Features
   Also fixed a problem whereby properties like solr.solr.datadir would be persisted
   to solr.xml. Also, cores that didn't happen to be loaded were not persisted. 
   (Erick Erickson)
+  
+* SOLR-4662: Finalize what we're going to do with solr.xml, auto-discovery, config sets.
+  The format of solr.xml is changing. <core> and <cores> tags are no longer supported as
+  of 5.0 (but will be supported for 4.x). defaultCoreName, persistent and adminPath are
+  obsolete in 5.0 as well. Discovery mode will be the way cores are enumerated in 5.0.
+  Supports a new value (<cores> attribute coreRootDirectory in 4.x, element in <solr> in
+  5.0) for basing the enumeration of cores. In the new way of doing things, a
+  core.propeties file will mark the instanceDir for that core, and instanceDir will
+  be obsolete as well
+   
 
 Bug Fixes
 ----------------------

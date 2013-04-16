@@ -37,18 +37,48 @@ import java.util.Properties;
  */
 public interface ConfigSolr {
 
-  public static enum ConfLevel {
-    SOLR, SOLR_CORES, SOLR_CORES_CORE, SOLR_LOGGING, SOLR_LOGGING_WATCHER
+  // Ugly for now, but we'll at least be able to centralize all of the differences between 4x and 5x.
+  public static enum CfgProp {
+    SOLR_ADMINHANDLER,
+    SOLR_CORELOADTHREADS,
+    SOLR_COREROOTDIRECTORY,
+    SOLR_DISTRIBUPDATECONNTIMEOUT,
+    SOLR_DISTRIBUPDATESOTIMEOUT,
+    SOLR_HOST,
+    SOLR_HOSTCONTEXT,
+    SOLR_HOSTPORT,
+    SOLR_LEADERVOTEWAIT,
+    SOLR_LOGGING_CLASS,
+    SOLR_LOGGING_ENABLED,
+    SOLR_LOGGING_WATCHER_SIZE,
+    SOLR_LOGGING_WATCHER_THRESHOLD,
+    SOLR_MANAGEMENTPATH,
+    SOLR_SHAREDLIB,
+    SOLR_SHARDHANDLERFACTORY_CLASS,
+    SOLR_SHARDHANDLERFACTORY_CONNTIMEOUT,
+    SOLR_SHARDHANDLERFACTORY_NAME,
+    SOLR_SHARDHANDLERFACTORY_SOCKETTIMEOUT,
+    SOLR_SHARESCHEMA,
+    SOLR_TRANSIENTCACHESIZE,
+    SOLR_ZKCLIENTTIMEOUT,
+    SOLR_ZKHOST,
+
+    //TODO: Remove all of these elements for 5.0
+    SOLR_PERSISTENT,
+    SOLR_CORES_DEFAULT_CORE_NAME,
+    SOLR_ADMINPATH
   };
 
   public final static String CORE_PROP_FILE = "core.properties";
   public final static String SOLR_XML_FILE = "solr.xml";
 
-  public int getInt(ConfLevel level, String tag, int def);
+  public int getInt(CfgProp prop, int def);
 
-  public boolean getBool(ConfLevel level, String tag, boolean defValue);
+  public boolean getBool(CfgProp prop,boolean defValue);
 
-  public String get(ConfLevel level, String tag, String def);
+  public String get(CfgProp prop, String def);
+
+  public String getOrigProp(CfgProp prop, String def);
 
   public void substituteProperties();
 
@@ -79,4 +109,6 @@ public interface ConfigSolr {
   // If the core is not to be loaded (say two cores defined with the same name or with the same data dir), return
   // the reason. If it's OK to load the core, return null.
   public String getBadCoreMessage(String name);
+
+  public boolean is50OrLater();
 }
