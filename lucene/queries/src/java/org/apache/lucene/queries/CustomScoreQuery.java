@@ -184,6 +184,7 @@ public class CustomScoreQuery extends Query {
     Weight subQueryWeight;
     Weight[] valSrcWeights;
     boolean qStrict;
+    float queryWeight;
 
     public CustomWeight(IndexSearcher searcher) throws IOException {
       this.subQueryWeight = subQuery.createWeight(searcher);
@@ -210,22 +211,26 @@ public class CustomScoreQuery extends Query {
           sum += valSrcWeight.getValueForNormalization();
         }
       }
-      sum *= getBoost() * getBoost(); // boost each sub-weight
-      return sum ;
+      return sum;
     }
 
     /*(non-Javadoc) @see org.apache.lucene.search.Weight#normalize(float) */
     @Override
     public void normalize(float norm, float topLevelBoost) {
-      topLevelBoost *= getBoost(); // incorporate boost
-      subQueryWeight.normalize(norm, topLevelBoost);
+      // note we DONT incorporate our boost, nor pass down any topLevelBoost 
+      // (e.g. from outer BQ), as there is no guarantee that the CustomScoreProvider's 
+      // function obeys the distributive law... it might call sqrt() on the subQuery score
+      // or some other arbitrary function other than multiplication.
+      // so, instead boosts are applied directly in score()
+      subQueryWeight.normalize(norm, 1f);
       for (Weight valSrcWeight : valSrcWeights) {
         if (qStrict) {
           valSrcWeight.normalize(1, 1); // do not normalize the ValueSource part
         } else {
-          valSrcWeight.normalize(norm, topLevelBoost);
+          valSrcWeight.normalize(norm, 1f);
         }
       }
+      queryWeight = topLevelBoost * getBoost();
     }
 
     @Override
@@ -244,7 +249,7 @@ public class CustomScoreQuery extends Query {
       for(int i = 0; i < valSrcScorers.length; i++) {
          valSrcScorers[i] = valSrcWeights[i].scorer(context, true, topScorer, acceptDocs);
       }
-      return new CustomScorer(CustomScoreQuery.this.getCustomScoreProvider(context), this, getBoost(), subQueryScorer, valSrcScorers);
+      return new CustomScorer(CustomScoreQuery.this.getCustomScoreProvider(context), this, queryWeight, subQueryScorer, valSrcScorers);
     }
 
     @Override
