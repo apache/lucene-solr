@@ -46,8 +46,6 @@ import org.apache.lucene.index.Term;
  */
 public class TestCustomScoreQuery extends FunctionTestSetup {
 
-  // TODO: why can't this test use newSearcher?
-  
   @BeforeClass
   public static void beforeClass() throws Exception {
     createIndex(true);
@@ -211,7 +209,7 @@ public class TestCustomScoreQuery extends FunctionTestSetup {
     log(q);
 
     IndexReader r = DirectoryReader.open(dir);
-    IndexSearcher s = new IndexSearcher(r);
+    IndexSearcher s = newSearcher(r);
     TopDocs hits = s.search(q, 1000);
     assertEquals(N_DOCS, hits.totalHits);
     for(int i=0;i<N_DOCS;i++) {
@@ -225,7 +223,7 @@ public class TestCustomScoreQuery extends FunctionTestSetup {
   @Test
   public void testRewrite() throws Exception {
     IndexReader r = DirectoryReader.open(dir);
-    final IndexSearcher s = new IndexSearcher(r);
+    final IndexSearcher s = newSearcher(r);
 
     Query q = new TermQuery(new Term(TEXT_FIELD, "first"));
     CustomScoreQuery original = new CustomScoreQuery(q);
@@ -250,7 +248,7 @@ public class TestCustomScoreQuery extends FunctionTestSetup {
     float boost = (float) dboost;
     FunctionQuery functionQuery = new FunctionQuery(valueSource);
     IndexReader r = DirectoryReader.open(dir);
-    IndexSearcher s = new IndexSearcher(r);
+    IndexSearcher s = newSearcher(r);
 
     // regular (boolean) query.
     BooleanQuery q1 = new BooleanQuery();
@@ -260,8 +258,13 @@ public class TestCustomScoreQuery extends FunctionTestSetup {
     log(q1);
 
     // custom query, that should score the same as q1.
-    Query q2CustomNeutral = new CustomScoreQuery(q1);
-    q2CustomNeutral.setBoost(boost);
+    BooleanQuery q2CustomNeutral = new BooleanQuery(true);
+    Query q2CustomNeutralInner = new CustomScoreQuery(q1);
+    q2CustomNeutral.add(q2CustomNeutralInner, BooleanClause.Occur.SHOULD);
+    // a little tricky: we split the boost across an outer BQ and CustomScoreQuery
+    // this ensures boosting is correct across all these functions (see LUCENE-4935)
+    q2CustomNeutral.setBoost((float)Math.sqrt(dboost));
+    q2CustomNeutralInner.setBoost((float)Math.sqrt(dboost));
     log(q2CustomNeutral);
 
     // custom query, that should (by default) multiply the scores of q1 by that of the field

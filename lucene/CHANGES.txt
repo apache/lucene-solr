@@ -35,6 +35,13 @@ Optimizations
   on Windows if NIOFSDirectory is used, mmapped files are still locked.
   (Michael Poindexter, Robert Muir, Uwe Schindler)
 
+======================= Lucene 4.4.0 =======================
+
+Bug Fixes
+
+* LUCENE-4935: CustomScoreQuery wrongly applied its query boost twice 
+  (boost^2).  (Robert Muir)
+
 ======================= Lucene 4.3.0 =======================
 
 Changes in backwards compatibility policy
