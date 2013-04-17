@@ -256,7 +256,8 @@ sammy.get
               var is_slave = 'undefined' !== typeof( data.slave );
               var headline = $( 'h2 span', this );
               var details_element = $( '#details', this );
-              var current_type_element = $( ( is_slave ? '.slave' : '.master' ), this );
+              var current_type_element = $( ( is_slave ? '.slave' : '.masterSearch' ), this );
+              var master_data = is_slave ? data.slave.masterDetails : data;
 
               if( is_slave )
               {
@@ -275,6 +276,7 @@ sammy.get
                   .html( headline.html() + ' (Master)' );
               }
 
+              // the currently searchable commit regardless of type
               $( '.version div', current_type_element )
                 .html( data.indexVersion );
               $( '.generation div', current_type_element )
@@ -282,9 +284,18 @@ sammy.get
               $( '.size div', current_type_element )
                 .html( data.indexSize );
                             
+              // what's replicable on the master
+              var master_element = $( '.master', details_element );
+              $( '.version div', master_element )
+                .html( master_data.master.replicableVersion || '-' );
+              $( '.generation div', master_element )
+                .html( master_data.master.replicableGeneration || '-' );
+              $( '.size div', master_element )
+                .html( "-" );
+
               if( is_slave )
               {
-                var master_element = $( '.master', details_element );
+                var master_element = $( '.masterSearch', details_element );
                 $( '.version div', master_element )
                   .html( data.slave.masterDetails.indexVersion );
                 $( '.generation div', master_element )
@@ -292,7 +303,8 @@ sammy.get
                 $( '.size div', master_element )
                   .html( data.slave.masterDetails.indexSize );
                                 
-                if( data.indexVersion !== data.slave.masterDetails.indexVersion )
+                // warnings if slave version|gen doesn't match what's replicable
+                if( data.indexVersion !== master_data.master.replicableVersion )
                 {
                   $( '.version', details_element )
                     .addClass( 'diff' );
@@ -303,7 +315,7 @@ sammy.get
                     .removeClass( 'diff' );
                 }
                                 
-                if( data.generation !== data.slave.masterDetails.generation )
+                if( data.generation !== master_data.master.replicableGeneration )
                 {
                   $( '.generation', details_element )
                     .addClass( 'diff' );

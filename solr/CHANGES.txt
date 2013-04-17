@@ -224,6 +224,9 @@ Bug Fixes
   code is not something Solr itself returned -- eg: from the Servlet Container, 
   or an intermediate HTTP Proxy (hossman)
 
+* SOLR-4661: Admin UI Replication details now correctly displays the current
+  replicable generation/version of the master. (hossman)
+
 Optimizations
 ----------------------
 
