@@ -124,7 +124,7 @@
     </subant>
   </target>
 
-  <property name="version" value="4.3-SNAPSHOT"/>
+  <property name="version" value="4.4-SNAPSHOT"/>
   <property name="maven-build-dir" value="maven-build"/>
   <property name="maven-version" value="2.2.1"/>
   
@@ -267,7 +267,7 @@
   <property name="python32.exe" value="python3.2" />
   <property name="fakeRelease" location="lucene/build/fakeRelease"/>
   <property name="fakeReleaseTmp" location="lucene/build/fakeReleaseTmp"/>
-  <property name="fakeReleaseVersion" value="4.3.0"/> <!-- *not* -SNAPSHOT, the real version -->
+  <property name="fakeReleaseVersion" value="4.4.0"/> <!-- *not* -SNAPSHOT, the real version -->
 
   <target name="-load-env">
      <!-- load the properties only here, so not on every invocation /usr/bin/env is called: -->
