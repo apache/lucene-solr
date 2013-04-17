@@ -138,26 +138,18 @@ New Features
 * SOLR-4530: DIH: Provide configuration to use Tika's IdentityHtmlMapper
   (Alexandre Rafalovitch via shalin)
   
-* SOLR-4663: Log an error if more than one core has the same name or points to the same
-  data directory. The new discovery-based core enumeration will be particularly sensitive
-  to this. (Erick Erickson)
-  
-* SOLR-4347: Insure that newly-created cores via Admin handler are persisted in solr.xml
+* SOLR-4662: Discover SolrCores by directory structure rather than defining them
+  in solr.xml. Also, change the format of solr.xml to be closer to that of solrconfig.xml.
+  This version of Solr will ship the example in the old style, but you can manually
+  try the new style. Solr 4.4 will ship with the new style, and Solr 5.0 will remove
+  support for the old style. (Erick Erickson, Mark Miller)
+  Additional Work:
+  - SOLR-4347: Ensure that newly-created cores via Admin handler are persisted in solr.xml
   (Erick Erickson)
-  
-* SOLR-1905: Cores created by the admin request handler should be persisted to solr.xml.
+  - SOLR-1905: Cores created by the admin request handler should be persisted to solr.xml.
   Also fixed a problem whereby properties like solr.solr.datadir would be persisted
   to solr.xml. Also, cores that didn't happen to be loaded were not persisted. 
   (Erick Erickson)
-  
-* SOLR-4662: Finalize what we're going to do with solr.xml, auto-discovery, config sets.
-  The format of solr.xml is changing. <core> and <cores> tags are no longer supported as
-  of 5.0 (but will be supported for 4.x). defaultCoreName, persistent and adminPath are
-  obsolete in 5.0 as well. Discovery mode will be the way cores are enumerated in 5.0.
-  Supports a new value (<cores> attribute coreRootDirectory in 4.x, element in <solr> in
-  5.0) for basing the enumeration of cores. In the new way of doing things, a
-  core.propeties file will mark the instanceDir for that core, and instanceDir will
-  be obsolete as well
 
 * SOLR-4717/SOLR-1351: SimpleFacets now work with localParams allowing faceting on the 
   same field multiple ways (ryan, Uri Boness)
