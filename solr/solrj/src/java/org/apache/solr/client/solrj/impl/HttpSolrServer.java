@@ -369,10 +369,9 @@ public class HttpSolrServer extends SolrServer {
           }
           break;
         default:
-          throw new SolrException(SolrException.ErrorCode.getErrorCode(httpStatus), "Server at " + getBaseURL()
+          throw new RemoteSolrException(httpStatus, "Server at " + getBaseURL()
               + " returned non ok status:" + httpStatus + ", message:"
-              + response.getStatusLine().getReasonPhrase());
-          
+              + response.getStatusLine().getReasonPhrase(), null);
       }
       if (processor == null) {
         // no processor specified, return raw stream
@@ -400,8 +399,7 @@ public class HttpSolrServer extends SolrServer {
           msg.append("request: " + method.getURI());
           reason = java.net.URLDecoder.decode(msg.toString(), UTF_8);
         }
-        throw new SolrException(
-            SolrException.ErrorCode.getErrorCode(httpStatus), reason);
+        throw new RemoteSolrException(httpStatus, reason, null);
       }
       return rsp;
     } catch (ConnectException e) {
@@ -631,5 +629,21 @@ public class HttpSolrServer extends SolrServer {
    */
   public void setUseMultiPartPost(boolean useMultiPartPost) {
     this.useMultiPartPost = useMultiPartPost;
+  }
+
+  /**
+   * Subclass of SolrException that allows us to capture an arbitrary HTTP
+   * status code that may have been returned by the remote server or a 
+   * proxy along the way.
+   */
+  protected static class RemoteSolrException extends SolrException {
+    /**
+     * @param code Arbitrary HTTP status code
+     * @param msg Exception Message
+     * @param th Throwable to wrap with this Exception
+     */
+    public RemoteSolrException(int code, String msg, Throwable th) {
+      super(code, msg, th);
+    }
   }
 }
