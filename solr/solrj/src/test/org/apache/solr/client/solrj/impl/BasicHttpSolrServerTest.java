@@ -43,6 +43,8 @@ import org.apache.solr.client.solrj.request.QueryRequest;
 import org.apache.solr.client.solrj.request.UpdateRequest;
 import org.apache.solr.client.solrj.response.QueryResponse;
 import org.apache.solr.common.SolrInputDocument;
+import org.apache.solr.common.SolrException;
+import org.apache.solr.common.SolrException.ErrorCode;
 import org.apache.solr.common.params.CommonParams;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.util.ExternalPaths;
@@ -74,12 +76,19 @@ public class BasicHttpSolrServerTest extends SolrJettyTestBase {
       lastMethod = null;
       headers = null;
       parameters = null;
+      errorCode = null;
     }
     
+    public static Integer errorCode = null;
     public static String lastMethod = null;
     public static HashMap<String,String> headers = null;
     public static Map<String,String[]> parameters = null;
     
+    public static void setErrorCode(Integer code) {
+      errorCode = code;
+    }
+    
+
     @Override
     protected void doGet(HttpServletRequest req, HttpServletResponse resp)
         throws ServletException, IOException {
@@ -110,6 +119,13 @@ public class BasicHttpSolrServerTest extends SolrJettyTestBase {
     private void recordRequest(HttpServletRequest req, HttpServletResponse resp) {
       setHeaders(req);
       setParameters(req);
+      if (null != errorCode) {
+        try { 
+          resp.sendError(errorCode); 
+        } catch (IOException e) {
+          throw new RuntimeException("sendError IO fail in DebugServlet", e);
+        }
+      }
     }
   }
   
@@ -160,6 +176,34 @@ public class BasicHttpSolrServerTest extends SolrJettyTestBase {
     server.shutdown();
   }
   
+  /**
+   * test that SolrExceptions thrown by HttpSolrServer can
+   * correctly encapsulate http status codes even when not on the list of
+   * ErrorCodes solr may return.
+   */
+  public void testSolrExceptionCodeNotFromSolr() throws IOException, SolrServerException {
+    final int status = 527;
+    assertEquals(status + " didn't generate an UNKNOWN error code, someone modified the list of valid ErrorCode's w/o changing this test to work a different way",
+                 ErrorCode.UNKNOWN, ErrorCode.getErrorCode(status));
+
+    HttpSolrServer server = new HttpSolrServer(jetty.getBaseUrl().toString() +
+                                               "/debug/foo");
+    try {
+      DebugServlet.setErrorCode(status);
+      try {
+        SolrQuery q = new SolrQuery("foo");
+        server.query(q, METHOD.GET);
+        fail("Didn't get excepted exception from oversided request");
+      } catch (SolrException e) {
+        System.out.println(e);
+        assertEquals("Unexpected exception status code", status, e.code());
+      }
+    } finally {
+      server.shutdown();
+      DebugServlet.clear();
+    }
+  }
+
   @Test
   public void testQuery(){
     DebugServlet.clear();

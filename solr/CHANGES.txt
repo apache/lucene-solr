@@ -203,6 +203,11 @@ Bug Fixes
 * SOLR-4710: You cannot delete a collection fully from ZooKeeper unless all nodes are up and 
   functioning correctly. (Mark Miller)
 
+* SOLR-4487: SolrExceptions thrown by HttpSolrServer will now contain the 
+  proper HTTP status code returned by the remote server, even if that status 
+  code is not something Solr itself returned -- eg: from the Servlet Container, 
+  or an intermediate HTTP Proxy (hossman)
+
 Optimizations
 ----------------------
 
