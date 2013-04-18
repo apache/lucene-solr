@@ -50,11 +50,11 @@
         plugin architecture when more advanced customization is required.</p>
         <p>
           This is the official documentation for <b><xsl:text>Apache Solr </xsl:text>
-          <xsl:value-of select="$version"/></b>. Additional documentation is available in the
-          <a href="http://wiki.apache.org/solr">Wiki</a>.
+          <xsl:value-of select="$version"/></b>.
         </p>
         <h2>Reference Documents</h2>
           <ul>
+            <li><a href="http://wiki.apache.org/solr">Wiki</a>: Additional documentation, especially focused on using Solr.</li>
             <li><a href="changes/Changes.html">Changes</a>: List of changes in this release.</li>
             <li><a href="SYSTEM_REQUIREMENTS.html">System Requirements</a>: Minimum and supported Java versions.</li>
             <li><a href="tutorial.html">Solr Tutorial</a>: This document covers the basics of running Solr using an example schema, and some sample data.</li>
