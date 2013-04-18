@@ -245,5 +245,20 @@ public class CopyFieldTest extends SolrTestCaseJ4 {
         ,"//*[@numFound='1']"
         ,"//result/doc[1]/str[@name='id'][.='A5']"
     );
- }
+  }
+
+  public void testCatchAllCopyField() {
+    IndexSchema schema = h.getCore().getSchema();
+
+    assertNull("'*' should not be (or match) a dynamic field", 
+               schema.getDynamicPattern("*"));
+    
+    assertU(adoc("id", "A5", "sku1", "10-1839ACX-93", "testing123_s", "AAM46"));
+    assertU(commit());
+    for (String q : new String[] {"A5", "10-1839ACX-93", "AAM46" }) {
+      assertQ(req("q","catchall_t:" + q)
+              ,"//*[@numFound='1']"
+              ,"//result/doc[1]/str[@name='id'][.='A5']");
+    }
+  }
 }
