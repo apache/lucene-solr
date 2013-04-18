@@ -256,6 +256,9 @@ Other Changes
   (that would be reported by CoreAdmin STATUS requests) now result in 500 
   error responses with the details about the init failure, instead of 404 
   error responses.  (hossman)
+
+* SOLR-4730: Make the wiki link more prominent in the release documentation.
+  (Uri Laserson via Robert Muir)
   
 
 ==================  4.2.1 ==================
