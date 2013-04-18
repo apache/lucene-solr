@@ -22,6 +22,7 @@ import java.io.File;
 
 import org.apache.commons.lang.StringUtils;
 import org.apache.solr.cloud.CloudDescriptor;
+import org.apache.solr.core.ConfigSolr.CfgProp;
 
 /**
  * A Solr core descriptor
@@ -33,7 +34,7 @@ public class CoreDescriptor {
   // Properties file name constants
   public static final String CORE_NAME = "name";
   public static final String CORE_CONFIG = "config";
-  public static final String CORE_INSTDIR = "instanceDir";
+  public static final String CORE_INSTDIR = "instanceDir"; // should probably be removed after 4x
   public static final String CORE_DATADIR = "dataDir";
   public static final String CORE_ULOGDIR = "ulogDir";
   public static final String CORE_SCHEMA = "schema";
@@ -209,7 +210,14 @@ public class CoreDescriptor {
     }
 
     if (coreContainer == null) return null;
-
+    if( coreContainer.cfg != null) {
+      String coreRootDir = coreContainer.cfg.get(
+          CfgProp.SOLR_COREROOTDIRECTORY, null);
+      if (coreRootDir != null) {
+        return SolrResourceLoader.normalizeDir(coreRootDir
+            + SolrResourceLoader.normalizeDir(instDir));
+      }
+    }
     return SolrResourceLoader.normalizeDir(coreContainer.getSolrHome() +
         SolrResourceLoader.normalizeDir(instDir));
   }

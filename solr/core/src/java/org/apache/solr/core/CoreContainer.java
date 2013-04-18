@@ -458,7 +458,9 @@ public class CoreContainer
         defaultCoreName = dcoreName;
       }
       persistent = cfg.getBool(ConfigSolr.CfgProp.SOLR_PERSISTENT, false);
-      adminPath = cfg.get(ConfigSolr.CfgProp.SOLR_ADMINPATH, null);
+      adminPath = cfg.get(ConfigSolr.CfgProp.SOLR_ADMINPATH, "/admin/cores");
+    } else {
+      adminPath = "/admin/cores";
     }
     zkHost = cfg.get(ConfigSolr.CfgProp.SOLR_ZKHOST, null);
     coreLoadThreads = cfg.getInt(ConfigSolr.CfgProp.SOLR_CORELOADTHREADS, CORE_LOAD_THREADS);
@@ -506,7 +508,7 @@ public class CoreContainer
     }
     
     collectionsHandler = new CollectionsHandler(this);
-    containerProperties = cfg.getSolrProperties(cfg, DEFAULT_HOST_CONTEXT);
+    containerProperties = cfg.getSolrProperties("solr");
 
     // setup executor to load cores in parallel
     coreLoadExecutor = new ThreadPoolExecutor(coreLoadThreads, coreLoadThreads, 1,
@@ -662,7 +664,7 @@ public class CoreContainer
 
   private volatile boolean isShutDown = false;
 
-  private volatile ConfigSolr cfg;
+  volatile ConfigSolr cfg;
   
   public boolean isShutDown() {
     return isShutDown;
@@ -702,7 +704,10 @@ public class CoreContainer
         try {
           backgroundCloser.join();
         } catch (InterruptedException e) {
-          ; // Don't much care if this gets interrupted
+          Thread.currentThread().interrupt();
+          if (log.isDebugEnabled()) {
+            log.debug("backgroundCloser thread was interrupted before finishing");
+          }
         }
       }
       // Now clear all the cores that are being operated upon.
@@ -910,7 +915,7 @@ public class CoreContainer
     try {
       config = new SolrConfig(solrLoader, dcore.getConfigName(), null);
     } catch (Exception e) {
-      log.error("Failed to load file {}/{}", instanceDir, dcore.getConfigName());
+      log.error("Failed to load file {}", new File(instanceDir, dcore.getConfigName()).getAbsolutePath());
       throw new SolrException(ErrorCode.SERVER_ERROR, "Could not load config for " + dcore.getConfigName(), e);
     }
 
@@ -958,6 +963,10 @@ public class CoreContainer
    */
   public SolrCore create(CoreDescriptor dcore) {
 
+    if (isShutDown) {
+      throw new SolrException(ErrorCode.SERVICE_UNAVAILABLE, "Solr has shutdown.");
+    }
+    
     final String name = dcore.getName();
 
     try {
@@ -1064,7 +1073,7 @@ public class CoreContainer
       name = checkDefault(name);
 
       if (cfg != null) { // Another test artifact.
-        String badMsg = cfg.getBadCoreMessage(name);
+        String badMsg = cfg.getBadConfigCoreMessage(name);
         if (badMsg != null) {
           throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, badMsg);
         }
@@ -1178,7 +1187,7 @@ public class CoreContainer
     name = checkDefault(name);
 
     if (cfg != null) { // Get this out of here sometime, this is test-code only stuff!
-      String badMsg = cfg.getBadCoreMessage(name);
+      String badMsg = cfg.getBadConfigCoreMessage(name);
       if (badMsg != null) {
         throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, badMsg);
       }
@@ -1283,12 +1292,6 @@ public class CoreContainer
   public int getZkClientTimeout() {
     return zkClientTimeout;
   }
-
-
-  public void setAdminPath(String adminPath) {
-      this.adminPath = adminPath;
-  }
-  
 
   public String getManagementPath() {
     return managementPath;
@@ -1451,7 +1454,7 @@ public class CoreContainer
   }
 
   public String getBadCoreMessage(String name) {
-    return cfg.getBadCoreMessage(name);
+    return cfg.getBadConfigCoreMessage(name);
   }
 
 }
@@ -1930,7 +1933,7 @@ class CoreMaps {
     Properties persistProps = new Properties();
     CloudDescriptor cd = dcore.getCloudDescriptor();
     String collection = null;
-    if (cd  != null) collection = cd.getCollectionName();
+    if (cd != null) collection = cd.getCollectionName();
     String instDir = dcore.getRawInstanceDir();
 
     if (cfg == null) {
@@ -1969,13 +1972,17 @@ class CoreMaps {
 
       coreAttribs = cfg.readCoreAttributes(origCoreName);
       persistProps = cfg.readCoreProperties(origCoreName);
-      if (coreAttribs != null) {
-        coreAttribs.put(CoreDescriptor.CORE_NAME, coreName);
-        if (coreAttribs.containsKey(CoreDescriptor.CORE_COLLECTION)) collection = coreAttribs.get(CoreDescriptor.CORE_COLLECTION);
-        if (coreAttribs.containsKey(CoreDescriptor.CORE_INSTDIR)) instDir = coreAttribs.get(CoreDescriptor.CORE_INSTDIR);
-      }
-      addIfNotNull(coreAttribs, CoreDescriptor.CORE_INSTDIR, dcore.getRawInstanceDir());
-      coreAttribs.put(CoreDescriptor.CORE_COLLECTION, StringUtils.isNotBlank(collection) ? collection : dcore.getName());
+      
+      coreAttribs.put(CoreDescriptor.CORE_NAME, coreName);
+      if (coreAttribs.containsKey(CoreDescriptor.CORE_COLLECTION)) collection = coreAttribs
+          .get(CoreDescriptor.CORE_COLLECTION);
+      if (coreAttribs.containsKey(CoreDescriptor.CORE_INSTDIR)) instDir = coreAttribs
+          .get(CoreDescriptor.CORE_INSTDIR);
+      
+      addIfNotNull(coreAttribs, CoreDescriptor.CORE_INSTDIR,
+          dcore.getRawInstanceDir());
+      coreAttribs.put(CoreDescriptor.CORE_COLLECTION,
+          StringUtils.isNotBlank(collection) ? collection : dcore.getName());
 
     }
 

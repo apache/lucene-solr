@@ -80,7 +80,7 @@ public class ConfigSolrXml extends Config implements ConfigSolr {
 
   private final Map<String, CoreDescriptorPlus> coreDescriptorPlusMap = new HashMap<String, CoreDescriptorPlus>();
   private NodeList coreNodes = null;
-  private final Map<String, String> badCores = new HashMap<String, String>();
+  private final Map<String, String> badConfigCores = new HashMap<String, String>();
     // List of cores that we should _never_ load. Ones with dup names or duplicate datadirs or...
 
 
@@ -101,6 +101,7 @@ public class ConfigSolrXml extends Config implements ConfigSolr {
     super(loader, null, copyDoc(cfg.getDocument())); // Mimics a call from CoreContainer.
     init(container);
   }
+  
   private void init(CoreContainer container) throws IOException {
     is50OrLater = getNode("solr/cores", false) == null;
 
@@ -108,61 +109,61 @@ public class ConfigSolrXml extends Config implements ConfigSolr {
     // TODO: 5.0 maybe remove this checking, it's mostly for correctness as we make this transition.
 
     if (is50OrLater()) {
-      insureFail("solr/@coreLoadThreads");
-      insureFail("solr/@persist");
-      insureFail("solr/@sharedLib");
-      insureFail("solr/@zkHost");
+      failIfFound("solr/@coreLoadThreads");
+      failIfFound("solr/@persist");
+      failIfFound("solr/@sharedLib");
+      failIfFound("solr/@zkHost");
 
-      insureFail("solr/logging/@class");
-      insureFail("solr/logging/@enabled");
-      insureFail("solr/logging/watcher/@size");
-      insureFail("solr/logging/watcher/@threshold");
+      failIfFound("solr/logging/@class");
+      failIfFound("solr/logging/@enabled");
+      failIfFound("solr/logging/watcher/@size");
+      failIfFound("solr/logging/watcher/@threshold");
 
-      insureFail("solr/cores/@adminHandler");
-      insureFail("solr/cores/@distribUpdateConnTimeout");
-      insureFail("solr/cores/@distribUpdateSoTimeout");
-      insureFail("solr/cores/@host");
-      insureFail("solr/cores/@hostContext");
-      insureFail("solr/cores/@hostPort");
-      insureFail("solr/cores/@leaderVoteWait");
-      insureFail("solr/cores/@managementPath");
-      insureFail("solr/cores/@shareSchema");
-      insureFail("solr/cores/@transientCacheSize");
-      insureFail("solr/cores/@zkClientTimeout");
+      failIfFound("solr/cores/@adminHandler");
+      failIfFound("solr/cores/@distribUpdateConnTimeout");
+      failIfFound("solr/cores/@distribUpdateSoTimeout");
+      failIfFound("solr/cores/@host");
+      failIfFound("solr/cores/@hostContext");
+      failIfFound("solr/cores/@hostPort");
+      failIfFound("solr/cores/@leaderVoteWait");
+      failIfFound("solr/cores/@managementPath");
+      failIfFound("solr/cores/@shareSchema");
+      failIfFound("solr/cores/@transientCacheSize");
+      failIfFound("solr/cores/@zkClientTimeout");
 
-      // These have no counterpart in 5.0, asking for any o fthese in Solr 5.0 will result in an error being
+      // These have no counterpart in 5.0, asking for any of these in Solr 5.0 will result in an error being
       // thrown.
-      insureFail("solr/cores/@defaultCoreName");
-      insureFail("solr/@persistent");
-      insureFail("solr/cores/@adminPath");
+      failIfFound("solr/cores/@defaultCoreName");
+      failIfFound("solr/@persistent");
+      failIfFound("solr/cores/@adminPath");
     } else {
-      insureFail("solr/str[@name='adminHandler']");
-      insureFail("solr/int[@name='coreLoadThreads']");
-      insureFail("solr/str[@name='coreRootDirectory']");
-      insureFail("solr/solrcloud/int[@name='distribUpdateConnTimeout']");
-      insureFail("solr/solrcloud/int[@name='distribUpdateSoTimeout']");
-      insureFail("solr/solrcloud/str[@name='host']");
-      insureFail("solr/solrcloud/str[@name='hostContext']");
-      insureFail("solr/solrcloud/int[@name='hostPort']");
-      insureFail("solr/solrcloud/int[@name='leaderVoteWait']");
-      insureFail("solr/str[@name='managementPath']");
-      insureFail("solr/str[@name='sharedLib']");
-      insureFail("solr/str[@name='shareSchema']");
-      insureFail("solr/int[@name='transientCacheSize']");
-      insureFail("solr/solrcloud/int[@name='zkClientTimeout']");
-      insureFail("solr/solrcloud/int[@name='zkHost']");
+      failIfFound("solr/str[@name='adminHandler']");
+      failIfFound("solr/int[@name='coreLoadThreads']");
+      failIfFound("solr/str[@name='coreRootDirectory']");
+      failIfFound("solr/solrcloud/int[@name='distribUpdateConnTimeout']");
+      failIfFound("solr/solrcloud/int[@name='distribUpdateSoTimeout']");
+      failIfFound("solr/solrcloud/str[@name='host']");
+      failIfFound("solr/solrcloud/str[@name='hostContext']");
+      failIfFound("solr/solrcloud/int[@name='hostPort']");
+      failIfFound("solr/solrcloud/int[@name='leaderVoteWait']");
+      failIfFound("solr/str[@name='managementPath']");
+      failIfFound("solr/str[@name='sharedLib']");
+      failIfFound("solr/str[@name='shareSchema']");
+      failIfFound("solr/int[@name='transientCacheSize']");
+      failIfFound("solr/solrcloud/int[@name='zkClientTimeout']");
+      failIfFound("solr/solrcloud/int[@name='zkHost']");
 
-      insureFail("solr/logging/str[@name='class']");
-      insureFail("solr/logging/str[@name='enabled']");
+      failIfFound("solr/logging/str[@name='class']");
+      failIfFound("solr/logging/str[@name='enabled']");
 
-      insureFail("solr/logging/watcher/int[@name='size']");
-      insureFail("solr/logging/watcher/int[@name='threshold']");
+      failIfFound("solr/logging/watcher/int[@name='size']");
+      failIfFound("solr/logging/watcher/int[@name='threshold']");
 
     }
     fillPropMap();
     initCoreList(container);
   }
-  private void insureFail(String xPath) {
+  private void failIfFound(String xPath) {
 
     if (getVal(xPath, false) != null) {
       throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, "Should not have found " + xPath +
@@ -178,6 +179,7 @@ public class ConfigSolrXml extends Config implements ConfigSolr {
     }
     return val;
   }
+  
   private void fillPropMap() {
     if (is50OrLater) { // Can do the prop subs early here since we don't need to preserve them for persistence.
       propMap.put(CfgProp.SOLR_ADMINHANDLER, doSub("solr/str[@name='adminHandler']"));
@@ -231,7 +233,7 @@ public class ConfigSolrXml extends Config implements ConfigSolr {
       propMap.put(CfgProp.SOLR_SHARDHANDLERFACTORY_CONNTIMEOUT, getVal(  "solr/shardHandlerFactory/int[@connTimeout]", false));
       propMap.put(CfgProp.SOLR_SHARDHANDLERFACTORY_SOCKETTIMEOUT, getVal("solr/shardHandlerFactory/int[@socketTimeout]", false));
 
-      // These have no counterpart in 5.0, asking, for any o, fthese in Solr 5.0 will result in an error being
+      // These have no counterpart in 5.0, asking, for any of these in Solr 5.0 will result in an error being
       // thrown.
       propMap.put(CfgProp.SOLR_CORES_DEFAULT_CORE_NAME, getVal("solr/cores/@defaultCoreName", false));
       propMap.put(CfgProp.SOLR_PERSISTENT, getVal("solr/@persistent", false));
@@ -239,8 +241,7 @@ public class ConfigSolrXml extends Config implements ConfigSolr {
     }
   }
 
-  //NOTE:
-  public void initCoreList(CoreContainer container) throws IOException {
+  private void initCoreList(CoreContainer container) throws IOException {
     if (is50OrLater) {
       if (container != null) { //TODO: 5.0. Yet another bit of nonsense only because of the test harness.
         synchronized (coreDescriptorPlusMap) {
@@ -265,7 +266,6 @@ public class ConfigSolrXml extends Config implements ConfigSolr {
           } else {
             String msg = String.format(Locale.ROOT, "More than one core defined for core named %s", name);
             log.error(msg);
-            badCores.put(name, msg);
           }
         }
 
@@ -275,8 +275,7 @@ public class ConfigSolrXml extends Config implements ConfigSolr {
           } else {
             String msg = String.format(Locale.ROOT, "More than one core points to data dir %s. They are in %s and %s",
                 dataDir, dirs.get(dataDir), name);
-            log.error(msg);
-            badCores.put(name, msg);
+            log.warn(msg);
           }
         }
       }
@@ -284,9 +283,10 @@ public class ConfigSolrXml extends Config implements ConfigSolr {
   }
 
   @Override
-  public String getBadCoreMessage(String name) {
-    return badCores.get(name);
+  public String getBadConfigCoreMessage(String name) {
+    return badConfigCores.get(name);
   }
+  
   public static Document copyDoc(Document doc) throws TransformerException {
     TransformerFactory tfactory = TransformerFactory.newInstance();
     Transformer tx = tfactory.newTransformer();
@@ -353,10 +353,10 @@ public class ConfigSolrXml extends Config implements ConfigSolr {
   }
 
   @Override
-  public Properties getSolrProperties(ConfigSolr cfg, String context) {
+  public Properties getSolrProperties(String path) {
     try {
       return readProperties(((NodeList) evaluate(
-          context, XPathConstants.NODESET)).item(0));
+          path, XPathConstants.NODESET)).item(0));
     } catch (Throwable e) {
       SolrException.log(log, null, e);
     }
@@ -409,9 +409,9 @@ public class ConfigSolrXml extends Config implements ConfigSolr {
   // deeper in the tree.
   //
   // @param file - the directory we're to either read the properties file from or recurse into.
-  private void walkFromHere(File file, CoreContainer container, Map<String, String>seenDirs, HashMap<String, String> seenCores)
+  private void walkFromHere(File file, CoreContainer container, Map<String, String> seenDirs, HashMap<String, String> seenCores)
       throws IOException {
-    log.info("Looking for cores in " + file.getAbsolutePath());
+    log.info("Looking for cores in " + file.getCanonicalPath());
     if (! file.exists()) return;
 
     for (File childFile : file.listFiles()) {
@@ -471,34 +471,15 @@ public class ConfigSolrXml extends Config implements ConfigSolr {
           desc.getName(), propFile.getAbsolutePath(), seenCores.get(desc.getName()));
       log.error(msg);
       // Load up as many errors as there are.
-      if (badCores.containsKey(desc.getName())) msg += " " + badCores.get(desc.getName());
-      badCores.put(desc.getName(), msg);
+      if (badConfigCores.containsKey(desc.getName())) msg += " " + badConfigCores.get(desc.getName());
+      badConfigCores.put(desc.getName(), msg);
     }
     // There's no reason both errors may not have occurred.
     if (seenDirs.containsKey(desc.getAbsoluteDataDir())) {
       String msg = String.format(Locale.ROOT, "More than one core points to data dir '%s'. They are in '%s' and '%s'. Removing all offending cores.",
           desc.getAbsoluteDataDir(), propFile.getAbsolutePath(), seenDirs.get(desc.getAbsoluteDataDir()));
-      if (badCores.containsKey(desc.getName())) msg += " " + badCores.get(desc.getName());
-      log.error(msg);
-      badCores.put(desc.getName(), msg);
-
-      // find the core with this datadir and remove it
-      List<String> badNames = new ArrayList<String>();
-      for (Map.Entry<String, CoreDescriptorPlus> ent : coreDescriptorPlusMap.entrySet()) {
-        if (ent.getValue().getCoreDescriptor().getAbsoluteDataDir().equals(desc.getAbsoluteDataDir())) {
-          badNames.add(ent.getKey());
-          if (! badCores.containsKey(ent.getKey())) {
-            // Record that the first core is also a bad core.
-            badCores.put(ent.getKey(), msg);
-            log.error(msg);
-
-          }
-          break;
-        }
-      }
-      for (String badName : badNames) {
-        coreDescriptorPlusMap.remove(badName);
-      }
+      if (badConfigCores.containsKey(desc.getName())) msg += " " + badConfigCores.get(desc.getName());
+      log.warn(msg);
     }
     coreDescriptorPlusMap.remove(desc.getName());
   }

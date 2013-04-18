@@ -84,7 +84,7 @@ public interface ConfigSolr {
 
   public ShardHandlerFactory initShardHandler();
 
-  public Properties getSolrProperties(ConfigSolr cfg, String context);
+  public Properties getSolrProperties(String context);
 
   public SolrConfig getSolrConfigFromZk(ZkController zkController, String zkConfigName, String solrConfigFileName,
                                         SolrResourceLoader resourceLoader);
@@ -108,7 +108,7 @@ public interface ConfigSolr {
 
   // If the core is not to be loaded (say two cores defined with the same name or with the same data dir), return
   // the reason. If it's OK to load the core, return null.
-  public String getBadCoreMessage(String name);
+  public String getBadConfigCoreMessage(String name);
 
   public boolean is50OrLater();
 }
