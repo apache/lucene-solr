@@ -470,6 +470,8 @@
    <!-- test source glob that doesn't match any explicit or dynamic field -->
    <copyField source="testing123_*" dest="text"/>
   
+   <copyField source="*" dest="catchall_t"/>
+
  <!-- Similarity is the scoring routine for each document vs a query.
       A custom similarity may be specified here, but the default is fine
       for most applications.
