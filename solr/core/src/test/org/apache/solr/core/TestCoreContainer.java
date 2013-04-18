@@ -297,65 +297,6 @@ public class TestCoreContainer extends SolrTestCaseJ4 {
 
   }
 
-  @Test
-  public void testCoresSameName() throws IOException, ParserConfigurationException, SAXException {
-    //create solrHome
-    File solrHomeDirectory = new File(TEMP_DIR, this.getClass().getName()
-        + "_sameName");
-    SetUpHome(solrHomeDirectory, SOLR_XML_SAME_NAME);
-    copyMinConf(new File(solrHomeDirectory, "core1"));
-    copyMinConf(new File(solrHomeDirectory, "core2"));
-    CoreContainer.Initializer init = new CoreContainer.Initializer();
-    CoreContainer cores = null;
-    SolrCore core1 = null;
-    try {
-      cores = init.initialize();
-      core1 = cores.getCore("core1");
-    } catch(SolrException se) {
-      assertEquals("Exception code should be 500", 500, se.code());
-      assertTrue("Should have seen an exception when two cores have the same name",
-          se.getMessage().contains("More than one core defined for core named"));
-
-    } finally {
-      if (cores != null) {
-        if (core1 != null) core1.close();
-        cores.shutdown();
-      }
-      FileUtils.deleteDirectory(solrHomeDirectory);
-    }
-  }
-
-  @Test
-  public void testCoresSameDataDir() throws IOException, ParserConfigurationException, SAXException {
-    //create solrHome
-    File solrHomeDirectory = new File(TEMP_DIR, this.getClass().getName()
-        + "_sameDataDir");
-    SetUpHome(solrHomeDirectory, SOLR_XML_SAME_DATADIR);
-    copyMinConf(new File(solrHomeDirectory, "core1"));
-    copyMinConf(new File(solrHomeDirectory, "core2"));
-    CoreContainer.Initializer init = new CoreContainer.Initializer();
-    CoreContainer cores = null;
-    SolrCore core1 = null;
-    SolrCore core2 = null;
-    try {
-      cores = init.initialize();
-      core1 = cores.getCore("core1");
-      core2 = cores.getCore("core2");
-    }
-    catch(SolrException se) {
-      assertEquals("Exception code should be 500", 500, se.code());
-      assertTrue("Should have seen an exception when two cores have the same data dir",
-          se.getMessage().contains("More than one core points to data dir"));
-    } finally {
-      if (cores != null) {
-        if (core1 != null) core1.close();
-        if (core2 != null) core2.close();
-        cores.shutdown();
-      }
-      FileUtils.deleteDirectory(solrHomeDirectory);
-    }
-  }
-
   private void SetUpHome(File solrHomeDirectory, String xmlFile) throws IOException {
     if (solrHomeDirectory.exists()) {
       FileUtils.deleteDirectory(solrHomeDirectory);
