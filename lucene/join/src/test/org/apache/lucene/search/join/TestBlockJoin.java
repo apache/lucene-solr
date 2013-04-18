@@ -61,6 +61,64 @@ public class TestBlockJoin extends LuceneTestCase {
     job.add(new IntField("year", year, Field.Store.NO));
     return job;
   }
+  
+  public void testEmptyChildFilter() throws Exception {
+
+    final Directory dir = newDirectory();
+    final RandomIndexWriter w = new RandomIndexWriter(random(), dir);
+
+    final List<Document> docs = new ArrayList<Document>();
+
+    docs.add(makeJob("java", 2007));
+    docs.add(makeJob("python", 2010));
+    docs.add(makeResume("Lisa", "United Kingdom"));
+    w.addDocuments(docs);
+
+    docs.clear();
+    docs.add(makeJob("ruby", 2005));
+    docs.add(makeJob("java", 2006));
+    docs.add(makeResume("Frank", "United States"));
+    w.addDocuments(docs);
+    
+    w.commit();
+    int num = atLeast(10); // produce a segment that doesn't have a value in the docType field
+    for (int i = 0; i < num; i++) {
+      docs.clear();
+      docs.add(makeJob("java", 2007));
+      w.addDocuments(docs);
+    }
+    
+    IndexReader r = w.getReader();
+    w.close();
+    IndexSearcher s = newSearcher(r);
+    Filter parentsFilter = new CachingWrapperFilter(new QueryWrapperFilter(new TermQuery(new Term("docType", "resume"))));
+
+    BooleanQuery childQuery = new BooleanQuery();
+    childQuery.add(new BooleanClause(new TermQuery(new Term("skill", "java")), Occur.MUST));
+    childQuery.add(new BooleanClause(NumericRangeQuery.newIntRange("year", 2006, 2011, true, true), Occur.MUST));
+
+    ToParentBlockJoinQuery childJoinQuery = new ToParentBlockJoinQuery(childQuery, parentsFilter, ScoreMode.Avg);
+
+    BooleanQuery fullQuery = new BooleanQuery();
+    fullQuery.add(new BooleanClause(childJoinQuery, Occur.MUST));
+    fullQuery.add(new BooleanClause(new MatchAllDocsQuery(), Occur.MUST));
+    ToParentBlockJoinCollector c = new ToParentBlockJoinCollector(Sort.RELEVANCE, 1, true, true);
+    s.search(fullQuery, c);
+    TopGroups<Integer> results = c.getTopGroups(childJoinQuery, null, 0, 10, 0, true);
+    assertFalse(Float.isNaN(results.maxScore));
+    assertEquals(1, results.totalGroupedHitCount);
+    assertEquals(1, results.groups.length);
+    final GroupDocs<Integer> group = results.groups[0];
+    StoredDocument childDoc = s.doc(group.scoreDocs[0].doc);
+    assertEquals("java", childDoc.get("skill"));
+    assertNotNull(group.groupValue);
+    StoredDocument parentDoc = s.doc(group.groupValue);
+    assertEquals("Lisa", parentDoc.get("name"));
+
+    r.close();
+    dir.close();
+  }
+  
 
   public void testSimple() throws Exception {
 
@@ -79,7 +137,7 @@ public class TestBlockJoin extends LuceneTestCase {
     docs.add(makeJob("java", 2006));
     docs.add(makeResume("Frank", "United States"));
     w.addDocuments(docs);
-
+    
     IndexReader r = w.getReader();
     w.close();
     IndexSearcher s = newSearcher(r);
