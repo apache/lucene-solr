@@ -37,6 +37,17 @@ Changes in backwards compatibility policy
   method has a default implementation through other abstract methods.
   (Adrien Grand, Robert Muir)
 
+API Changes
+
+* LUCENE-4896: Made PassageFormatter abstract in PostingsHighlighter, made
+  members of DefaultPassageFormatter protected.  (Luca Cavanna via Robert Muir)
+
+* LUCENE-4844: removed TaxonomyReader.getParent(), you should use
+  TaxonomyReader.getParallelArrays().parents() instead. (Shai Erera)
+
+* LUCENE-4742: Renamed spatial 'Node' to 'Cell', along with any method names
+  and variables using this terminology. (David Smiley)
+
 New Features
 
 * LUCENE-4815: DrillSideways now allows more than one FacetRequest per
@@ -164,11 +175,6 @@ New Features
 * LUCENE-4774: Added FieldComparator that allows sorting parent documents based on
   fields on the child / nested document level. (Martijn van Groningen)
 
-API Changes
-
-* LUCENE-4896: Made PassageFormatter abstract in PostingsHighlighter, made
-  members of DefaultPassageFormatter protected.  (Luca Cavanna via Robert Muir)
-
 Optimizations
 
 * LUCENE-4839: SorterTemplate.merge can now be overridden in order to replace
@@ -195,14 +201,6 @@ Optimizations
   AttributeSource#addAttribute() because java.lang.ref.ReferenceQueue#poll()
   is implemented using synchronization.  (Christian Ziech, Karl Wright,
   Uwe Schindler)
-
-API Changes
-
-* LUCENE-4844: removed TaxonomyReader.getParent(), you should use
-  TaxonomyReader.getParallelArrays().parents() instead. (Shai Erera)
-
-* LUCENE-4742: Renamed spatial 'Node' to 'Cell', along with any method names
-  and variables using this terminology. (David Smiley)
 
 Bug Fixes
 
