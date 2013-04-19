@@ -49,6 +49,13 @@ Changes in backwards compatibility policy
   method has a default implementation through other abstract methods.
   (Adrien Grand, Robert Muir)
 
+* LUCENE-4642, LUCENE-4877: Implementors of TokenizerFactory, TokenFilterFactory,
+  and CharFilterFactory now need to provide at least one constructor taking
+  Map<String,String> to be able to be loaded by the SPI framework (e.g., from Solr).
+  In addition, TokenizerFactory needs to implement the abstract
+  create(AttributeFactory,Reader) method.  (Renaud Delbru, Uwe Schindler,
+  Steve Rowe, Robert Muir)
+
 API Changes
 
 * LUCENE-4896: Made PassageFormatter abstract in PostingsHighlighter, made
