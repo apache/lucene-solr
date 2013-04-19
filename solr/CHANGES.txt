@@ -222,6 +222,9 @@ Bug Fixes
 * SOLR-4661: Admin UI Replication details now correctly displays the current
   replicable generation/version of the master. (hossman)
 
+* SOLR-4716,SOLR-4584: SolrCloud request proxying does not work on Tomcat and
+  perhaps other non Jetty containers. (Po Rui, Yago Riveiro via Mark Miller)
+
 Optimizations
 ----------------------
 
