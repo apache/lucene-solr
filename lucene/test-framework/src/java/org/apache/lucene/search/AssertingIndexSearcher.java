@@ -351,4 +351,9 @@ public class AssertingIndexSearcher extends IndexSearcher {
 
   }
 
+  @Override
+  public String toString() {
+    return "AssertingIndexSearcher(" + super.toString() + ")";
+  }
+
 }
