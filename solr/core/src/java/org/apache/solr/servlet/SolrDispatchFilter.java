@@ -448,6 +448,7 @@ public class SolrDispatchFilter implements Filter
           os = con.getOutputStream(); // side effect: method is switched to POST
           try {
             IOUtils.copyLarge(is, os);
+            os.flush();
           } finally {
             IOUtils.closeQuietly(os);
             IOUtils.closeQuietly(is);  // TODO: I thought we weren't supposed to explicitly close servlet streams
@@ -470,6 +471,7 @@ public class SolrDispatchFilter implements Filter
         os = resp.getOutputStream();
         try {
           IOUtils.copyLarge(is, os);
+          os.flush();
         } finally {
           IOUtils.closeQuietly(os);   // TODO: I thought we weren't supposed to explicitly close servlet streams
           IOUtils.closeQuietly(is);
