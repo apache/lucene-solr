@@ -46,6 +46,7 @@ public class SolrExampleBinaryTest extends SolrExampleTests {
       s.setConnectionTimeout(DEFAULT_CONNECTION_TIMEOUT);
       s.setDefaultMaxConnectionsPerHost(100);
       s.setMaxTotalConnections(100);
+      s.setUseMultiPartPost(random().nextBoolean());
 
       // where the magic happens
       s.setParser(new BinaryResponseParser());

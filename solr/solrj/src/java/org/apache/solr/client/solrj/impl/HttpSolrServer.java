@@ -225,13 +225,22 @@ public class HttpSolrServer extends SolrServer {
           else if( SolrRequest.METHOD.POST == request.getMethod() ) {
 
             String url = baseUrl + path;
-            boolean isMultipart = ( streams != null && streams.size() > 1 );
+            boolean hasNullStreamName = false;
+            if (streams != null) {
+              for (ContentStream cs : streams) {
+                if (cs.getName() == null) {
+                  hasNullStreamName = true;
+                  break;
+                }
+              }
+            }
+            boolean isMultipart = (this.useMultiPartPost || ( streams != null && streams.size() > 1 )) && !hasNullStreamName;
 
             LinkedList<NameValuePair> postParams = new LinkedList<NameValuePair>();
             if (streams == null || isMultipart) {
               HttpPost post = new HttpPost(url);
               post.setHeader("Content-Charset", "UTF-8");
-              if (!this.useMultiPartPost && !isMultipart) {
+              if (!isMultipart) {
                 post.addHeader("Content-Type",
                     "application/x-www-form-urlencoded; charset=UTF-8");
               }
@@ -243,7 +252,7 @@ public class HttpSolrServer extends SolrServer {
                 String[] vals = params.getParams(p);
                 if (vals != null) {
                   for (String v : vals) {
-                    if (this.useMultiPartPost || isMultipart) {
+                    if (isMultipart) {
                       parts.add(new FormBodyPart(p, new StringBody(v, Charset.forName("UTF-8"))));
                     } else {
                       postParams.add(new BasicNameValuePair(p, v));
@@ -252,13 +261,17 @@ public class HttpSolrServer extends SolrServer {
                 }
               }
 
-              if (isMultipart) {
+              if (isMultipart && streams != null) {
                 for (ContentStream content : streams) {
                   String contentType = content.getContentType();
                   if(contentType==null) {
                     contentType = "application/octet-stream"; // default
                   }
-                  parts.add(new FormBodyPart(content.getName(), 
+                  String name = content.getName();
+                  if(name==null) {
+                    name = "";
+                  }
+                  parts.add(new FormBodyPart(name, 
                        new InputStreamBody(
                            content.getStream(), 
                            contentType, 
@@ -381,6 +394,15 @@ public class HttpSolrServer extends SolrServer {
         shouldClose = false;
         return rsp;
       }
+      
+//      if(true) {
+//        ByteArrayOutputStream copy = new ByteArrayOutputStream();
+//        IOUtils.copy(respBody, copy);
+//        String val = new String(copy.toByteArray());
+//        System.out.println(">RESPONSE>"+val+"<"+val.length());
+//        respBody = new ByteArrayInputStream(copy.toByteArray());
+//      }
+      
       String charset = EntityUtils.getContentCharSet(response.getEntity());
       NamedList<Object> rsp = processor.processResponse(respBody, charset);
       if (httpStatus != HttpStatus.SC_OK) {
