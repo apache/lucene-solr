@@ -426,6 +426,12 @@ public class IndexSearcher {
    *         {@link BooleanQuery#getMaxClauseCount()} clauses.
    */
   protected TopDocs search(Weight weight, ScoreDoc after, int nDocs) throws IOException {
+    int limit = reader.maxDoc();
+    if (limit == 0) {
+      limit = 1;
+    }
+    nDocs = Math.min(nDocs, limit);
+    
     if (executor == null) {
       return search(leafContexts, weight, after, nDocs);
     } else {
@@ -511,6 +517,12 @@ public class IndexSearcher {
 
     if (sort == null) throw new NullPointerException("Sort must not be null");
     
+    int limit = reader.maxDoc();
+    if (limit == 0) {
+      limit = 1;
+    }
+    nDocs = Math.min(nDocs, limit);
+
     if (executor == null) {
       // use all leaves here!
       return search(leafContexts, weight, after, nDocs, sort, fillFields, doDocScores, doMaxScore);

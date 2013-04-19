@@ -42,6 +42,11 @@ Bug Fixes
 * LUCENE-4935: CustomScoreQuery wrongly applied its query boost twice 
   (boost^2).  (Robert Muir)
 
+Optimizations
+
+* LUCENE-4938: Don't use an unnecessarily large priority queue in IndexSearcher
+  methods that take top-N.  (Uwe Schindler, Mike McCandless, Robert Muir)
+
 ======================= Lucene 4.3.0 =======================
 
 Changes in backwards compatibility policy
