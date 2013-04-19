@@ -24,7 +24,7 @@
       <dependency org="commons-fileupload" name="commons-fileupload" rev="1.2.1" transitive="false"/>
       <dependency org="commons-cli" name="commons-cli" rev="1.2" transitive="false"/>
       <dependency org="commons-lang" name="commons-lang" rev="2.6" transitive="false"/>
-      <dependency org="com.google.guava" name="guava" rev="13.0.1" transitive="false"/>
+      <dependency org="com.google.guava" name="guava" rev="14.0.1" transitive="false"/>
       <dependency org="org.easymock" name="easymock" rev="3.0" transitive="false"/>
       <dependency org="cglib" name="cglib-nodep" rev="2.2" transitive="false"/>
       <dependency org="org.objenesis" name="objenesis" rev="1.2" transitive="false"/>

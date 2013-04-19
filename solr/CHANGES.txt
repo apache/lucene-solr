@@ -54,6 +54,11 @@ Upgrading from Solr 4.3.0
 Detailed Change List
 ----------------------
 
+Other Changes
+----------------------
+
+* SOLR-4737: Update Guava to 14.0.1 (Mark Miller)
+
 ==================  4.3.0 ==================
 
 Versions of Major Components
