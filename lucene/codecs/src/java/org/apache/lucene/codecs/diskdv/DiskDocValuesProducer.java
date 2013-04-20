@@ -92,47 +92,47 @@ class DiskDocValuesProducer extends DocValuesProducer {
       } else if (type == DiskDocValuesFormat.SORTED) {
         // sorted = binary + numeric
         if (meta.readVInt() != fieldNumber) {
-          throw new CorruptIndexException("sorted entry for field: " + fieldNumber + " is corrupt");
+          throw new CorruptIndexException("sorted entry for field: " + fieldNumber + " is corrupt (resource=" + meta + ")");
         }
         if (meta.readByte() != DiskDocValuesFormat.BINARY) {
-          throw new CorruptIndexException("sorted entry for field: " + fieldNumber + " is corrupt");
+          throw new CorruptIndexException("sorted entry for field: " + fieldNumber + " is corrupt (resource=" + meta + ")");
         }
         BinaryEntry b = readBinaryEntry(meta);
         binaries.put(fieldNumber, b);
         
         if (meta.readVInt() != fieldNumber) {
-          throw new CorruptIndexException("sorted entry for field: " + fieldNumber + " is corrupt");
+          throw new CorruptIndexException("sorted entry for field: " + fieldNumber + " is corrupt (resource=" + meta + ")");
         }
         if (meta.readByte() != DiskDocValuesFormat.NUMERIC) {
-          throw new CorruptIndexException("sorted entry for field: " + fieldNumber + " is corrupt");
+          throw new CorruptIndexException("sorted entry for field: " + fieldNumber + " is corrupt (resource=" + meta + ")");
         }
         NumericEntry n = readNumericEntry(meta);
         ords.put(fieldNumber, n);
       } else if (type == DiskDocValuesFormat.SORTED_SET) {
         // sortedset = binary + numeric + ordIndex
         if (meta.readVInt() != fieldNumber) {
-          throw new CorruptIndexException("sortedset entry for field: " + fieldNumber + " is corrupt");
+          throw new CorruptIndexException("sortedset entry for field: " + fieldNumber + " is corrupt (resource=" + meta + ")");
         }
         if (meta.readByte() != DiskDocValuesFormat.BINARY) {
-          throw new CorruptIndexException("sortedset entry for field: " + fieldNumber + " is corrupt");
+          throw new CorruptIndexException("sortedset entry for field: " + fieldNumber + " is corrupt (resource=" + meta + ")");
         }
         BinaryEntry b = readBinaryEntry(meta);
         binaries.put(fieldNumber, b);
         
         if (meta.readVInt() != fieldNumber) {
-          throw new CorruptIndexException("sortedset entry for field: " + fieldNumber + " is corrupt");
+          throw new CorruptIndexException("sortedset entry for field: " + fieldNumber + " is corrupt (resource=" + meta + ")");
         }
         if (meta.readByte() != DiskDocValuesFormat.NUMERIC) {
-          throw new CorruptIndexException("sortedset entry for field: " + fieldNumber + " is corrupt");
+          throw new CorruptIndexException("sortedset entry for field: " + fieldNumber + " is corrupt (resource=" + meta + ")");
         }
         NumericEntry n1 = readNumericEntry(meta);
         ords.put(fieldNumber, n1);
         
         if (meta.readVInt() != fieldNumber) {
-          throw new CorruptIndexException("sortedset entry for field: " + fieldNumber + " is corrupt");
+          throw new CorruptIndexException("sortedset entry for field: " + fieldNumber + " is corrupt (resource=" + meta + ")");
         }
         if (meta.readByte() != DiskDocValuesFormat.NUMERIC) {
-          throw new CorruptIndexException("sortedset entry for field: " + fieldNumber + " is corrupt");
+          throw new CorruptIndexException("sortedset entry for field: " + fieldNumber + " is corrupt (resource=" + meta + ")");
         }
         NumericEntry n2 = readNumericEntry(meta);
         ordIndexes.put(fieldNumber, n2);

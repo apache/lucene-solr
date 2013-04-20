@@ -99,7 +99,7 @@ class Lucene40FieldInfosReader extends FieldInfosReader {
         }
         if (oldNormsType.mapping != null) {
           if (oldNormsType.mapping != DocValuesType.NUMERIC) {
-            throw new CorruptIndexException("invalid norm type: " + oldNormsType);
+            throw new CorruptIndexException("invalid norm type: " + oldNormsType + " (resource=" + input + ")");
           }
           attributes.put(LEGACY_NORM_TYPE_KEY, oldNormsType.name());
         }
