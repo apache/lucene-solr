@@ -78,9 +78,9 @@ for (my $line_num = 0 ; $line_num <= $#lines ; ++$line_num) {
     ($reldate, $relinfo) = get_release_date($release, $relinfo);
     $sections = [];
     push @releases, [ $release, $reldate, $relinfo, $sections ];
-    ($first_relid = lc($release)) =~ s/\s+/_/g
+    ($first_relid = 'v'.lc($release)) =~ s/\s+/_/g
        if ($#releases == 0 or ($#releases == 1 and not ($releases[0][0])));
-    ($second_relid = lc($release)) =~ s/\s+/_/g
+    ($second_relid = 'v'.lc($release)) =~ s/\s+/_/g
        if (   ($#releases == 1 and $releases[0][0])
            or ($#releases == 2 and not $releases[0][0]));
     $items = undef;
@@ -122,6 +122,11 @@ for (my $line_num = 0 ; $line_num <= $#lines ; ++$line_num) {
       $sections = [];
       # Make a fake release to hold pre-release sections
       push @releases, [ undef, undef, undef, $sections ];
+    }
+    for my $section (@$sections) {
+      if ($heading eq $section->[0]) {
+        die "Section '$heading' appears more than once under release '$releases[-1][0]'";
+      }
     }
     push @$sections, [ $heading, $items ];
     $in_major_component_versions_section
@@ -416,7 +421,7 @@ for my $rel (@releases) {
   my $relid = '';
   if ($release) { # Pre-release sections have no release ID
     ++$relcnt;
-    ($relid = lc($release)) =~ s/\s+/_/g;
+    ($relid = 'v'.lc($release)) =~ s/\s+/_/g;
     print "<$header>";
     print "<a id=\"$relid\" href=\"javascript:toggleList('$relid')\">"
       unless ($release =~ /^20\d\d/);
