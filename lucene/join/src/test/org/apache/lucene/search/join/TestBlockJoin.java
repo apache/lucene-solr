@@ -63,9 +63,11 @@ public class TestBlockJoin extends LuceneTestCase {
   }
   
   public void testEmptyChildFilter() throws Exception {
-
     final Directory dir = newDirectory();
-    final RandomIndexWriter w = new RandomIndexWriter(random(), dir);
+    final IndexWriterConfig config = new IndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer(random()));
+    config.setMergePolicy(NoMergePolicy.NO_COMPOUND_FILES);
+    // we don't want to merge - since we rely on certain segment setup
+    final IndexWriter w = new IndexWriter(dir, config);
 
     final List<Document> docs = new ArrayList<Document>();
 
@@ -79,7 +81,6 @@ public class TestBlockJoin extends LuceneTestCase {
     docs.add(makeJob("java", 2006));
     docs.add(makeResume("Frank", "United States"));
     w.addDocuments(docs);
-    
     w.commit();
     int num = atLeast(10); // produce a segment that doesn't have a value in the docType field
     for (int i = 0; i < num; i++) {
@@ -88,9 +89,10 @@ public class TestBlockJoin extends LuceneTestCase {
       w.addDocuments(docs);
     }
     
-    IndexReader r = w.getReader();
+    IndexReader r = DirectoryReader.open(w, random().nextBoolean());
     w.close();
-    IndexSearcher s = newSearcher(r);
+    assertTrue(r.leaves().size() > 1);
+    IndexSearcher s = new IndexSearcher(r);
     Filter parentsFilter = new CachingWrapperFilter(new QueryWrapperFilter(new TermQuery(new Term("docType", "resume"))));
 
     BooleanQuery childQuery = new BooleanQuery();
