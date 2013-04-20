@@ -203,17 +203,17 @@ public class OverseerCollectionProcessor implements Runnable, ClosableThread {
             + operation);
       }
 
-    } catch (Exception ex) {
+    } catch (Throwable t) {
       SolrException.log(log, "Collection " + operation + " of " + operation
-          + " failed", ex);
-      results.add("Operation " + operation + " caused exception:", ex);
+          + " failed", t);
+      results.add("Operation " + operation + " caused exception:", t);
       SimpleOrderedMap nl = new SimpleOrderedMap();
-      nl.add("msg", ex.getMessage());
-      nl.add("rspCode", ex instanceof SolrException ? ((SolrException)ex).code() : -1);
+      nl.add("msg", t.getMessage());
+      nl.add("rspCode", t instanceof SolrException ? ((SolrException)t).code() : -1);
       results.add("exception", nl);
-    } finally {
-      return new OverseerSolrResponse(results);
-    }
+    } 
+    
+    return new OverseerSolrResponse(results);
   }
 
   private void createAlias(Aliases aliases, ZkNodeProps message) {
