@@ -71,11 +71,10 @@ def verifyJavaVersion(version):
 
 # http://s.apache.org/lusolr32rc2
 env = os.environ
-
 try:
   JAVA7_HOME = env['JAVA7_HOME']
 except KeyError:
-  JAVA7_HOME = '/usr/local/jdk1.7.0_01'
+  raise RuntimeError('please set JAVA7_HOME in the env before running smokeTestRelease')
 print('JAVA7_HOME is %s' % JAVA7_HOME)
 
 verifyJavaVersion('1.7')
@@ -131,26 +130,29 @@ def download(name, urlString, tmpDir, quiet=False):
     if not quiet and fileName.find('.asc') == -1:
       print('    already done: %.1f MB' % (os.path.getsize(fileName)/1024./1024.))
     return
-  fIn = urllib.request.urlopen(urlString)
-  fOut = open(fileName, 'wb')
-  success = False
   try:
-    while True:
-      s = fIn.read(65536)
-      if s == b'':
-        break
-      fOut.write(s)
-    fOut.close()
-    fIn.close()
-    success = True
-  finally:
-    fIn.close()
-    fOut.close()
-    if not success:
-      os.remove(fileName)
-  if not quiet and fileName.find('.asc') == -1:
-    print('    %.1f MB' % (os.path.getsize(fileName)/1024./1024.))
-    
+    fIn = urllib.request.urlopen(urlString)
+    fOut = open(fileName, 'wb')
+    success = False
+    try:
+      while True:
+        s = fIn.read(65536)
+        if s == b'':
+          break
+        fOut.write(s)
+      fOut.close()
+      fIn.close()
+      success = True
+    finally:
+      fIn.close()
+      fOut.close()
+      if not success:
+        os.remove(fileName)
+    if not quiet and fileName.find('.asc') == -1:
+      print('    %.1f MB' % (os.path.getsize(fileName)/1024./1024.))
+  except Exception as e:
+    raise RuntimeError('failed to download url "%s"' % urlString) from e
+  
 def load(urlString):
   return urllib.request.urlopen(urlString).read().decode('utf-8')
 
@@ -1275,6 +1277,8 @@ def main():
   if len(sys.argv) < 4:
     print()
     print('Usage python -u %s BaseURL version tmpDir' % sys.argv[0])
+    print()
+    print('  example: python3.2 -u dev-tools/scripts/smokeTestRelease.py http://people.apache.org/~whoever/staging_area/lucene-solr-4.3.0-RC1-rev1469340 4.3.0 /path/to/a/tmp/dir')
     print()
     sys.exit(1)
 
