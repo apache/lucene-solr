@@ -19,6 +19,8 @@ import tarfile
 import zipfile
 import threading
 import traceback
+import datetime
+import time
 import subprocess
 import signal
 import shutil
@@ -125,6 +127,7 @@ def getHREFs(urlString):
   return links
 
 def download(name, urlString, tmpDir, quiet=False):
+  startTime = time.time()
   fileName = '%s/%s' % (tmpDir, name)
   if not FORCE_CLEAN and os.path.exists(fileName):
     if not quiet and fileName.find('.asc') == -1:
@@ -149,7 +152,9 @@ def download(name, urlString, tmpDir, quiet=False):
       if not success:
         os.remove(fileName)
     if not quiet and fileName.find('.asc') == -1:
-      print('    %.1f MB' % (os.path.getsize(fileName)/1024./1024.))
+      t = time.time()-startTime
+      sizeMB = os.path.getsize(fileName)/1024./1024.
+      print('    %.1f MB in %.2f sec (%.1f MB/sec)' % (sizeMB, t, sizeMB/t))
   except Exception as e:
     raise RuntimeError('failed to download url "%s"' % urlString) from e
   
@@ -1297,6 +1302,8 @@ def main():
 
 def smokeTest(baseURL, version, tmpDir, isSigned):
 
+  startTime = datetime.datetime.now()
+  
   if FORCE_CLEAN:
     if os.path.exists(tmpDir):
       raise RuntimeError('temp dir %s exists; please remove first' % tmpDir)
@@ -1342,7 +1349,7 @@ def smokeTest(baseURL, version, tmpDir, isSigned):
   print('Test Maven artifacts for Lucene and Solr...')
   checkMaven(baseURL, tmpDir, version, isSigned)
 
-  print('\nSUCCESS!\n')
+  print('\nSUCCESS! [%s]\n' % (datetime.datetime.now() - startTime))
 
 if __name__ == '__main__':
   print('NOTE: output encoding is %s' % sys.stdout.encoding)
