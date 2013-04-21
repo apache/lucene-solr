@@ -167,6 +167,7 @@ public class OverseerCollectionProcessor implements Runnable, ClosableThread {
         ModifiableSolrParams params = new ModifiableSolrParams();
         params.set(CoreAdminParams.ACTION, CoreAdminAction.UNLOAD.toString());
         params.set(CoreAdminParams.DELETE_INSTANCE_DIR, true);
+        params.set(CoreAdminParams.DELETE_DATA_DIR, true);
         collectionCmd(zkStateReader.getClusterState(), message, params, results, null);
         
         ZkNodeProps m = new ZkNodeProps(Overseer.QUEUE_OPERATION,

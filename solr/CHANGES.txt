@@ -54,6 +54,12 @@ Upgrading from Solr 4.3.0
 Detailed Change List
 ----------------------
 
+Bug Fixes
+----------------------
+
+* SOLR-4741: Deleting a collection should set DELETE_DATA_DIR to true. 
+  (Mark Miller)
+
 Other Changes
 ----------------------
 
