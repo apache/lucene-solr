@@ -565,6 +565,9 @@ class DrillSidewaysScorer extends Scorer {
       //  System.out.println("  now collect: " + filledCount + " hits");
       //}
       for(int i=0;i<filledCount;i++) {
+        // NOTE: This is actually in-order collection,
+        // because we only accept docs originally returned by
+        // the baseScorer (ie that Scorer is AND'd)
         int slot = filledSlots[i];
         collectDocID = docIDs[slot];
         collectScore = scores[slot];
