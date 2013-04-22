@@ -1564,9 +1564,6 @@ class CloserThread extends Thread {
            removeMe != null && !container.isShutDown();
            removeMe = coreMaps.getCoreToClose()) {
         try {
-         // nocommit: wtf is this?
-         // coreMaps.addPersistOneCore(cfg, container.loader, removeMe.getCoreDescriptor(),
-         //     container.getCoreToOrigName(removeMe), null);
           removeMe.close();
         } finally {
           coreMaps.removeFromPendingOps(removeMe.getName());
