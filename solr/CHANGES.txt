@@ -64,6 +64,9 @@ Bug Fixes
 
 * SOLR-4741: Deleting a collection should set DELETE_DATA_DIR to true. 
   (Mark Miller)
+  
+* SOLR-4333: edismax parser to not double-escape colons if already escaped by 
+  the client application (James Dyer, Robert J. van der Boon)
 
 Other Changes
 ----------------------

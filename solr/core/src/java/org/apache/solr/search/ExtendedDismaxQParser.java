@@ -812,7 +812,7 @@ public class ExtendedDismaxQParser extends QParser {
           clause.raw = s.substring(start, pos);
           // escape colons, except for "match all" query
           if(!"*:*".equals(clause.raw)) {
-            clause.raw = clause.raw.replaceAll(":", "\\\\:");
+            clause.raw = clause.raw.replaceAll("([^\\\\]):", "$1\\\\:");
           }
         } else {
           clause.raw = s.substring(start, pos);
