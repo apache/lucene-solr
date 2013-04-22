@@ -296,8 +296,6 @@
    <copy todir="${fakeRelease}/solr">
      <fileset dir="solr/package"/>
    </copy>
-   <property name="svnversion.exe" value="svnversion" />
-   <exec dir="." executable="${svnversion.exe}" outputproperty="fakeReleaseSvnRevision" failifexecutionfails="false"/>
    <makeurl file="${fakeRelease}" validate="false" property="fakeRelease.uri"/>
    <exec executable="${python32.exe}" failonerror="true">
      <arg value="-u"/>
