@@ -42,12 +42,18 @@ public final class Passage {
   void addMatch(int startOffset, int endOffset, BytesRef term) {
     assert startOffset >= this.startOffset && startOffset <= this.endOffset;
     if (numMatches == matchStarts.length) {
-      matchStarts = ArrayUtil.grow(matchStarts, numMatches+1);
-      matchEnds = ArrayUtil.grow(matchEnds, numMatches+1);
-      BytesRef newMatchTerms[] = new BytesRef[ArrayUtil.oversize(numMatches+1, RamUsageEstimator.NUM_BYTES_OBJECT_REF)];
+      int newLength = ArrayUtil.oversize(numMatches+1, RamUsageEstimator.NUM_BYTES_OBJECT_REF);
+      int newMatchStarts[] = new int[newLength];
+      int newMatchEnds[] = new int[newLength];
+      BytesRef newMatchTerms[] = new BytesRef[newLength];
+      System.arraycopy(matchStarts, 0, newMatchStarts, 0, numMatches);
+      System.arraycopy(matchEnds, 0, newMatchEnds, 0, numMatches);
       System.arraycopy(matchTerms, 0, newMatchTerms, 0, numMatches);
+      matchStarts = newMatchStarts;
+      matchEnds = newMatchEnds;
       matchTerms = newMatchTerms;
     }
+    assert matchStarts.length == matchEnds.length && matchEnds.length == matchTerms.length;
     matchStarts[numMatches] = startOffset;
     matchEnds[numMatches] = endOffset;
     matchTerms[numMatches] = term;

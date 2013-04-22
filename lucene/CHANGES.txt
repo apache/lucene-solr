@@ -42,6 +42,10 @@ Bug Fixes
 * LUCENE-4935: CustomScoreQuery wrongly applied its query boost twice 
   (boost^2).  (Robert Muir)
 
+* LUCENE-4948: Fixed ArrayIndexOutOfBoundsException in PostingsHighlighter
+  if you had a 64-bit JVM without compressed OOPS: IBM J9, or Oracle with
+  large heap/explicitly disabled.  (Mike McCandless, Uwe Schindler, Robert Muir)
+
 Optimizations
 
 * LUCENE-4938: Don't use an unnecessarily large priority queue in IndexSearcher
