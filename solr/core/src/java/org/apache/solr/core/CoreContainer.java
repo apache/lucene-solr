@@ -108,14 +108,14 @@ public class CoreContainer
   protected static Logger log = LoggerFactory.getLogger(CoreContainer.class);
 
 
-  private final CoreMaps coreMaps = new CoreMaps(this);
+  private final SolrCores solrCores = new SolrCores(this);
 
   protected final Map<String,Exception> coreInitFailures =
     Collections.synchronizedMap(new LinkedHashMap<String,Exception>());
   
   protected boolean persistent = false;
   protected String adminPath = null;
-  protected String managementPath = null;
+  protected volatile String managementPath = null;
   protected String hostPort;
   protected String hostContext;
   protected String host;
@@ -335,16 +335,13 @@ public class CoreContainer
 
   // Helper class to initialize the CoreContainer
   public static class Initializer {
-    protected String containerConfigFilename = null;  // normally "solr.xml" becoming solr.properties in 5.0
-    protected String dataDir = null; // override datadir for single core mode
 
     // core container instantiation
     public CoreContainer initialize() throws FileNotFoundException {
       CoreContainer cores = null;
       String solrHome = SolrResourceLoader.locateSolrHome();
       // ContainerConfigFilename could  could be a properties file
-      File fconf = new File(solrHome, containerConfigFilename == null ? "solr.xml"
-          : containerConfigFilename);
+      File fconf = new File(solrHome, "solr.xml");
 
       log.info("looking for solr config file: " + fconf.getAbsolutePath());
       cores = new CoreContainer(solrHome);
@@ -364,8 +361,6 @@ public class CoreContainer
         }
         cores.configFile = fconf;
       }
-      
-      containerConfigFilename = cores.getConfigFile().getName();
       
       return cores;
     }
@@ -441,7 +436,7 @@ public class CoreContainer
 
     shardHandlerFactory = initShardHandler(cfg);
 
-    coreMaps.allocateLazyCores(cfg, loader);
+    solrCores.allocateLazyCores(cfg, loader);
 
     // Initialize Logging
     if (cfg.getBool(ConfigSolr.CfgProp.SOLR_LOGGING_ENABLED, true)) {
@@ -647,7 +642,7 @@ public class CoreContainer
           } else {
             // Store it away for later use. includes non-transient but not
             // loaded at startup cores.
-            coreMaps.putDynamicDescriptor(rawName, p);
+            solrCores.putDynamicDescriptor(rawName, p);
           }
         } catch (Throwable ex) {
           SolrException.log(log, null, ex);
@@ -665,7 +660,7 @@ public class CoreContainer
             SolrCore c = future.get();
             // track original names
             if (c != null) {
-              coreMaps.putCoreToOrigName(c, c.getName());
+              solrCores.putCoreToOrigName(c, c.getName());
             }
           } catch (ExecutionException e) {
             SolrException.log(SolrCore.log, "Error loading core", e);
@@ -678,7 +673,7 @@ public class CoreContainer
       }
 
       // Start the background thread
-      backgroundCloser = new CloserThread(this, coreMaps, cfg);
+      backgroundCloser = new CloserThread(this, solrCores, cfg);
       backgroundCloser.start();
 
     } finally {
@@ -750,15 +745,15 @@ public class CoreContainer
     isShutDown = true;
 
     if (isZooKeeperAware()) {
-      coreMaps.publishCoresAsDown(zkController);
+      publishCoresAsDown();
       cancelCoreRecoveries();
     }
 
 
     try {
       // First wake up the closer thread, it'll terminate almost immediately since it checks isShutDown.
-      synchronized (coreMaps.getLocker()) {
-        coreMaps.getLocker().notifyAll(); // wake up anyone waiting
+      synchronized (solrCores.getModifyLock()) {
+        solrCores.getModifyLock().notifyAll(); // wake up anyone waiting
       }
       if (backgroundCloser != null) { // Doesn't seem right, but tests get in here without initializing the core.
         try {
@@ -771,12 +766,12 @@ public class CoreContainer
         }
       }
       // Now clear all the cores that are being operated upon.
-      coreMaps.clearMaps(cfg);
+      solrCores.close();
 
       // It's still possible that one of the pending dynamic load operation is waiting, so wake it up if so.
       // Since all the pending operations queues have been drained, there should be nothing to do.
-      synchronized (coreMaps.getLocker()) {
-        coreMaps.getLocker().notifyAll(); // wake up the thread
+      synchronized (solrCores.getModifyLock()) {
+        solrCores.getModifyLock().notifyAll(); // wake up the thread
       }
 
     } finally {
@@ -796,7 +791,7 @@ public class CoreContainer
 
   public void cancelCoreRecoveries() {
     ArrayList<SolrCoreState> coreStates = new ArrayList<SolrCoreState>();
-    coreMaps.addCoresToList(coreStates);
+    solrCores.addCoresToList(coreStates);
 
     // we must cancel without holding the cores sync
     // make sure we wait for any recoveries to stop
@@ -853,9 +848,9 @@ public class CoreContainer
       throw new IllegalStateException("This CoreContainer has been shutdown");
     }
     if (isTransientCore) {
-      old = coreMaps.putTransientCore(cfg, name, core, loader);
+      old = solrCores.putTransientCore(cfg, name, core, loader);
     } else {
-      old = coreMaps.putCore(name, core);
+      old = solrCores.putCore(name, core);
     }
       /*
       * set both the name of the descriptor and the name of the
@@ -1044,7 +1039,7 @@ public class CoreContainer
         created = createFromLocal(instanceDir, dcore);
       }
 
-      coreMaps.addCreated(created); // For persisting newly-created cores.
+      solrCores.addCreated(created); // For persisting newly-created cores.
       return created;
 
       // :TODO: Java7...
@@ -1058,21 +1053,21 @@ public class CoreContainer
    * @return a Collection of registered SolrCores
    */
   public Collection<SolrCore> getCores() {
-    return coreMaps.getCores();
+    return solrCores.getCores();
   }
 
   /**
    * @return a Collection of the names that cores are mapped to
    */
   public Collection<String> getCoreNames() {
-    return coreMaps.getCoreNames();
+    return solrCores.getCoreNames();
   }
 
   /** This method is currently experimental.
    * @return a Collection of the names that a specific core is mapped to.
    */
   public Collection<String> getCoreNames(SolrCore core) {
-    return coreMaps.getCoreNames(core);
+    return solrCores.getCoreNames(core);
   }
 
   /**
@@ -1080,17 +1075,7 @@ public class CoreContainer
    * @return a list of al lthe available core names in either permanent or transient core lists.
    */
   public Collection<String> getAllCoreNames() {
-    return coreMaps.getAllCoreNames();
-
-  }
-
-  /**
-   * Checks that the data dir passed is is NOT shared by any other core
-   * @param targetPath - path to check
-   * @return - null if this path is unique, core name of the first other core that shares this path.
-   */
-  public String checkUniqueDataDir(String targetPath) {
-    return coreMaps.checkUniqueDataDir(targetPath);
+    return solrCores.getAllCoreNames();
 
   }
 
@@ -1132,19 +1117,12 @@ public class CoreContainer
     try {
       name = checkDefault(name);
 
-      if (cfg != null) { // Another test artifact.
-        String badMsg = cfg.getBadConfigCoreMessage(name);
-        if (badMsg != null) {
-          throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, badMsg);
-        }
-      }
-
-      SolrCore core = coreMaps.getCore(name);
+      SolrCore core = solrCores.getCore(name);
       if (core == null)
         throw new SolrException( SolrException.ErrorCode.BAD_REQUEST, "No such core: " + name );
 
       try {
-        coreMaps.waitAddPendingCoreOps(name);
+        solrCores.waitAddPendingCoreOps(name);
         CoreDescriptor cd = core.getCoreDescriptor();
 
         File instanceDir = new File(cd.getInstanceDir());
@@ -1181,10 +1159,10 @@ public class CoreContainer
         }
         SolrCore newCore = core.reload(solrLoader, core);
         // keep core to orig name link
-        coreMaps.removeCoreToOrigName(newCore, core);
+        solrCores.removeCoreToOrigName(newCore, core);
         registerCore(false, name, newCore, false);
       } finally {
-        coreMaps.removeFromPendingOps(name);
+        solrCores.removeFromPendingOps(name);
       }
       // :TODO: Java7...
       // http://docs.oracle.com/javase/7/docs/technotes/guides/language/catch-multiple.html
@@ -1207,7 +1185,7 @@ public class CoreContainer
     }
     n0 = checkDefault(n0);
     n1 = checkDefault(n1);
-    coreMaps.swap(n0, n1);
+    solrCores.swap(n0, n1);
 
     log.info("swapped: "+n0 + " with " + n1);
   }
@@ -1216,7 +1194,7 @@ public class CoreContainer
   public SolrCore remove( String name ) {
     name = checkDefault(name);    
 
-    return coreMaps.remove(name, true);
+    return solrCores.remove(name, true);
 
   }
 
@@ -1226,7 +1204,7 @@ public class CoreContainer
       if (core != null) {
         registerCore(false, toName, core, false);
         name = checkDefault(name);
-        coreMaps.remove(name, false);
+        solrCores.remove(name, false);
       }
     } finally {
       if (core != null) {
@@ -1246,15 +1224,8 @@ public class CoreContainer
 
     name = checkDefault(name);
 
-    if (cfg != null) { // Get this out of here sometime, this is test-code only stuff!
-      String badMsg = cfg.getBadConfigCoreMessage(name);
-      if (badMsg != null) {
-        throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, badMsg);
-      }
-    }
-
     // Do this in two phases since we don't want to lock access to the cores over a load.
-    SolrCore core = coreMaps.getCoreFromAnyList(name);
+    SolrCore core = solrCores.getCoreFromAnyList(name);
 
     if (core != null) {
       core.open();
@@ -1262,7 +1233,7 @@ public class CoreContainer
     }
 
     // OK, it's not presently in any list, is it in the list of dynamic cores but not loaded yet? If so, load it.
-    CoreDescriptor desc = coreMaps.getDynamicDescriptor(name);
+    CoreDescriptor desc = solrCores.getDynamicDescriptor(name);
     if (desc == null) { //Nope, no transient core with this name
       
       // if there was an error initalizing this core, throw a 500
@@ -1278,7 +1249,7 @@ public class CoreContainer
     }
 
     // This will put an entry in pending core ops if the core isn't loaded
-    core = coreMaps.waitAddPendingCoreOps(name);
+    core = solrCores.waitAddPendingCoreOps(name);
 
     if (isShutDown) return null; // We're quitting, so stop. This needs to be after the wait above since we may come off
                                  // the wait as a consequence of shutting down.
@@ -1293,7 +1264,7 @@ public class CoreContainer
     } catch(Exception ex){
       throw recordAndThrow(name, "Unable to create core: " + name, ex);
     } finally {
-      coreMaps.removeFromPendingOps(name);
+      solrCores.removeFromPendingOps(name);
     }
 
     return core;
@@ -1330,6 +1301,7 @@ public class CoreContainer
     return persistent;
   }
   
+  @Deprecated
   public void setPersistent(boolean persistent) {
     this.persistent = persistent;
   }
@@ -1385,7 +1357,7 @@ public class CoreContainer
    *
    */
   public boolean isLoaded(String name) {
-    return coreMaps.isLoaded(name);
+    return solrCores.isLoaded(name);
   }
 
   /** Persists the cores config file in cores.xml. */
@@ -1401,7 +1373,7 @@ public class CoreContainer
    * @return a coreDescriptor. May return null
    */
   public CoreDescriptor getUnloadedCoreDescriptor(String cname) {
-    return coreMaps.getUnloadedCoreDescriptor(cname);
+    return solrCores.getUnloadedCoreDescriptor(cname);
   }
 
   /** Persists the cores config file in a user provided file. */
@@ -1449,7 +1421,7 @@ public class CoreContainer
     }
 
     try {
-      coreMaps.persistCores(origCfg, containerProperties, rootSolrAttribs, coresAttribs, file, configFile, loader);
+      solrCores.persistCores(origCfg, containerProperties, rootSolrAttribs, coresAttribs, file, configFile, loader);
     } catch (XPathExpressionException e) {
       throw new SolrException(ErrorCode.SERVER_ERROR, null, e);
     }
@@ -1513,11 +1485,7 @@ public class CoreContainer
   }
   
   String getCoreToOrigName(SolrCore core) {
-    return coreMaps.getCoreToOrigName(core);
-  }
-
-  public String getBadCoreMessage(String name) {
-    return cfg.getBadConfigCoreMessage(name);
+    return solrCores.getCoreToOrigName(core);
   }
   
   private Document copyDoc(Document document) throws TransformerException {
@@ -1529,19 +1497,30 @@ public class CoreContainer
     return (Document)result.getNode();
   }
 
+  protected void publishCoresAsDown() {
+    List<SolrCore> cores = solrCores.getCores();
+    
+    for (SolrCore core : cores) {
+      try {
+        zkController.publish(core.getCoreDescriptor(), ZkStateReader.DOWN);
+      } catch (KeeperException e) {
+        CoreContainer.log.error("", e);
+      } catch (InterruptedException e) {
+        CoreContainer.log.error("", e);
+      }
+    }
+  }
 }
-
-
 
 class CloserThread extends Thread {
   CoreContainer container;
-  CoreMaps coreMaps;
+  SolrCores solrCores;
   ConfigSolr cfg;
 
 
-  CloserThread(CoreContainer container, CoreMaps coreMaps, ConfigSolr cfg) {
+  CloserThread(CoreContainer container, SolrCores solrCores, ConfigSolr cfg) {
     this.container = container;
-    this.coreMaps = coreMaps;
+    this.solrCores = solrCores;
     this.cfg = cfg;
   }
 
@@ -1552,21 +1531,21 @@ class CloserThread extends Thread {
   @Override
   public void run() {
     while (! container.isShutDown()) {
-      synchronized (coreMaps.getLocker()) { // need this so we can wait and be awoken.
+      synchronized (solrCores.getModifyLock()) { // need this so we can wait and be awoken.
         try {
-          coreMaps.getLocker().wait();
+          solrCores.getModifyLock().wait();
         } catch (InterruptedException e) {
           // Well, if we've been told to stop, we will. Otherwise, continue on and check to see if there are
           // any cores to close.
         }
       }
-      for (SolrCore removeMe = coreMaps.getCoreToClose();
+      for (SolrCore removeMe = solrCores.getCoreToClose();
            removeMe != null && !container.isShutDown();
-           removeMe = coreMaps.getCoreToClose()) {
+           removeMe = solrCores.getCoreToClose()) {
         try {
           removeMe.close();
         } finally {
-          coreMaps.removeFromPendingOps(removeMe.getName());
+          solrCores.removeFromPendingOps(removeMe.getName());
         }
       }
     }

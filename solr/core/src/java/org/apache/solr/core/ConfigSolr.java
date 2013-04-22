@@ -75,7 +75,6 @@ public abstract class ConfigSolr {
 
   protected Config config;
   protected Map<CfgProp, String> propMap = new HashMap<CfgProp, String>();
-  protected final Map<String, String> badConfigCores = new HashMap<String, String>();
 
   public ConfigSolr(Config config) {
     this.config = config;
@@ -83,12 +82,6 @@ public abstract class ConfigSolr {
   
   public Config getConfig() {
     return config;
-  }
-  
-  // If the core is not to be loaded (say two cores defined with the same name or with the same data dir), return
-  // the reason. If it's OK to load the core, return null.
-  public String getBadConfigCoreMessage(String name) {
-    return badConfigCores.get(name);
   }
 
   public int getInt(CfgProp prop, int def) {
@@ -151,38 +144,3 @@ public abstract class ConfigSolr {
 
 }
 
-// It's mightily convenient to have all of the original path names and property
-// values when persisting cores, so
-// this little convenience class is just for that.
-// Also, let's keep track of anything we added here, especially the instance dir
-// for persistence purposes. We don't
-// want, for instance, to persist instanceDir if it was not specified
-// originally.
-//
-// I suspect that for persistence purposes, we may want to expand this idea to
-// record, say, ${blah}
-class CoreDescriptorPlus {
-  private CoreDescriptor coreDescriptor;
-  private String filePath;
-  private Properties propsOrig; // TODO: 5.0. Remove this since it's only really
-                                // used for persisting.
-  
-  CoreDescriptorPlus(String filePath, CoreDescriptor descriptor,
-      Properties propsOrig) {
-    coreDescriptor = descriptor;
-    this.filePath = filePath;
-    this.propsOrig = propsOrig;
-  }
-  
-  CoreDescriptor getCoreDescriptor() {
-    return coreDescriptor;
-  }
-  
-  String getFilePath() {
-    return filePath;
-  }
-  
-  Properties getPropsOrig() {
-    return propsOrig;
-  }
-}

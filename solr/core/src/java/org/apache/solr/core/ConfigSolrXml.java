@@ -25,7 +25,6 @@ import java.io.InputStream;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
-import java.util.Locale;
 import java.util.Map;
 import java.util.Properties;
 
@@ -50,7 +49,7 @@ import org.xml.sax.SAXException;
 public class ConfigSolrXml extends ConfigSolr {
   protected static Logger log = LoggerFactory.getLogger(ConfigSolrXml.class);
 
-  private final Map<String, CoreDescriptorPlus> coreDescriptorPlusMap = new HashMap<String, CoreDescriptorPlus>();
+  private final Map<String, CoreDescriptor> coreDescriptorMap = new HashMap<String, CoreDescriptor>();
 
   public ConfigSolrXml(Config config, CoreContainer container)
       throws ParserConfigurationException, IOException, SAXException {
@@ -141,12 +140,12 @@ public class ConfigSolrXml extends ConfigSolr {
   private void initCoreList(CoreContainer container) throws IOException {
     if (container != null) { // TODO: 5.0. Yet another bit of nonsense only
                              // because of the test harness.
-      synchronized (coreDescriptorPlusMap) {
-        String coreRoot = get(CfgProp.SOLR_COREROOTDIRECTORY,
-            container.getSolrHome());
-        walkFromHere(new File(coreRoot), container,
-            new HashMap<String,String>(), new HashMap<String,String>());
-      }
+      
+      String coreRoot = get(CfgProp.SOLR_COREROOTDIRECTORY,
+          container.getSolrHome());
+      walkFromHere(new File(coreRoot), container, new HashMap<String,String>(),
+          new HashMap<String,String>());
+      
     }
   }
 
@@ -206,34 +205,8 @@ public class ConfigSolrXml extends ConfigSolr {
       props.setProperty(CoreDescriptor.CORE_NAME, childFile.getName());
     }
     CoreDescriptor desc = new CoreDescriptor(container, props);
-    CoreDescriptorPlus plus = new CoreDescriptorPlus(propFile.getAbsolutePath(), desc, propsOrig);
+    coreDescriptorMap.put(desc.getName(), desc);
 
-    // It's bad to have two cores with the same name or same data dir.
-    if (! seenCores.containsKey(desc.getName()) && ! seenDirs.containsKey(desc.getAbsoluteDataDir())) {
-      coreDescriptorPlusMap.put(desc.getName(), plus);
-      // Use the full path to the prop file so we can unambiguously report the place the error is.
-      seenCores.put(desc.getName(), propFile.getAbsolutePath());
-      seenDirs.put(desc.getAbsoluteDataDir(), propFile.getAbsolutePath());
-      return;
-    }
-
-    // record the appropriate error
-    if (seenCores.containsKey(desc.getName())) {
-      String msg = String.format(Locale.ROOT, "More than one core defined for core named '%s', paths are '%s' and '%s'  Removing both cores.",
-          desc.getName(), propFile.getAbsolutePath(), seenCores.get(desc.getName()));
-      log.error(msg);
-      // Load up as many errors as there are.
-      if (badConfigCores.containsKey(desc.getName())) msg += " " + badConfigCores.get(desc.getName());
-      badConfigCores.put(desc.getName(), msg);
-    }
-    // There's no reason both errors may not have occurred.
-    if (seenDirs.containsKey(desc.getAbsoluteDataDir())) {
-      String msg = String.format(Locale.ROOT, "More than one core points to data dir '%s'. They are in '%s' and '%s'. Removing all offending cores.",
-          desc.getAbsoluteDataDir(), propFile.getAbsolutePath(), seenDirs.get(desc.getAbsoluteDataDir()));
-      if (badConfigCores.containsKey(desc.getName())) msg += " " + badConfigCores.get(desc.getName());
-      log.warn(msg);
-    }
-    coreDescriptorPlusMap.remove(desc.getName());
   }
 
   public IndexSchema getSchemaFromZk(ZkController zkController, String zkConfigName, String schemaName,
@@ -251,11 +224,10 @@ public class ConfigSolrXml extends ConfigSolr {
       SolrResourceLoader loader, String coreName) {
     
     // first look for an exact match
-    for (Map.Entry<String,CoreDescriptorPlus> ent : coreDescriptorPlusMap
+    for (Map.Entry<String,CoreDescriptor> ent : coreDescriptorMap
         .entrySet()) {
       
-      String name = ent.getValue().getCoreDescriptor()
-          .getProperty(CoreDescriptor.CORE_NAME, null);
+      String name = ent.getValue().getProperty(CoreDescriptor.CORE_NAME, null);
       if (origCoreName.equals(name)) {
         if (coreName.equals(origCoreName)) {
           return name;
@@ -264,10 +236,9 @@ public class ConfigSolrXml extends ConfigSolr {
       }
     }
     
-    for (Map.Entry<String,CoreDescriptorPlus> ent : coreDescriptorPlusMap
+    for (Map.Entry<String,CoreDescriptor> ent : coreDescriptorMap
         .entrySet()) {
-      String name = ent.getValue().getCoreDescriptor()
-          .getProperty(CoreDescriptor.CORE_NAME, null);
+      String name = ent.getValue().getProperty(CoreDescriptor.CORE_NAME, null);
       // see if we match with substitution
       if (origCoreName.equals(PropertiesUtil.substituteProperty(name,
           loader.getCoreProperties()))) {
@@ -282,7 +253,7 @@ public class ConfigSolrXml extends ConfigSolr {
 
   @Override
   public List<String> getAllCoreNames() {
-    List<String> ret = new ArrayList<String>(coreDescriptorPlusMap.keySet());
+    List<String> ret = new ArrayList<String>(coreDescriptorMap.keySet());
     
     return ret;
   }
@@ -290,20 +261,18 @@ public class ConfigSolrXml extends ConfigSolr {
   @Override
   public String getProperty(String coreName, String property, String defaultVal) {
     
-    CoreDescriptorPlus plus = coreDescriptorPlusMap.get(coreName);
-    if (plus == null) return defaultVal;
-    CoreDescriptor desc = plus.getCoreDescriptor();
-    if (desc == null) return defaultVal;
-    return desc.getProperty(property, defaultVal);
-    
+    CoreDescriptor cd = coreDescriptorMap.get(coreName);
+    if (cd == null) return defaultVal;
+
+    return cd.getProperty(property, defaultVal);
   }
 
   @Override
   public Properties readCoreProperties(String coreName) {
     
-    CoreDescriptorPlus plus = coreDescriptorPlusMap.get(coreName);
+    CoreDescriptor plus = coreDescriptorMap.get(coreName);
     if (plus == null) return null;
-    return new Properties(plus.getCoreDescriptor().getCoreProperties());
+    return new Properties(plus.getCoreProperties());
 
   }
 
