@@ -847,6 +847,15 @@ public class TestExtendedDismaxParser extends SolrTestCaseJ4 {
             "defType", "edismax")
         , "*[count(//doc)=1]");
     
+    assertQ(
+        "Might be double-escaping a client-escaped colon", 
+        req("q", "text_sw:(theos OR thistokenhasa\\:preescapedcolon OR theou)", "defType", "edismax", "qf", "id"),
+        "*[count(//doc)=3]");
+    assertQ(
+        "Might be double-escaping a client-escaped colon", 
+        req("q", "text_sw:(theos OR thistokenhasa\\:preescapedcolon OR theou)", "defType", "edismax", "qf", "text"),
+        "*[count(//doc)=3]");    
+    
   }
   
   /**
