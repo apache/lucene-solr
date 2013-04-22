@@ -20,10 +20,13 @@ import org.apache.commons.cli.PosixParser;
 import org.apache.commons.io.IOUtils;
 import org.apache.solr.common.cloud.OnReconnect;
 import org.apache.solr.common.cloud.SolrZkClient;
+import org.apache.solr.core.Config;
 import org.apache.solr.core.ConfigSolr;
 import org.apache.solr.core.ConfigSolrXml;
+import org.apache.solr.core.ConfigSolrXmlOld;
 import org.apache.solr.core.SolrResourceLoader;
 import org.apache.zookeeper.KeeperException;
+import org.xml.sax.InputSource;
 import org.xml.sax.SAXException;
 
 /*
@@ -181,7 +184,15 @@ public class ZkCLI {
           ConfigSolr cfg;
 
           try {
-            cfg = new ConfigSolrXml(loader, null, is, null, false, null);
+            Config config = new Config(loader, null, new InputSource(is), null, false);
+            
+            boolean oldStyle = (config.getNode("solr/cores", false) != null);
+            // cfg = new ConfigSolrXml(loader, null, is, null, false, this);
+             if (oldStyle) {
+               cfg = new ConfigSolrXmlOld(config, null);
+             } else {
+               cfg = new ConfigSolrXml(config, null);
+             }
           } finally {
             IOUtils.closeQuietly(is);
           }

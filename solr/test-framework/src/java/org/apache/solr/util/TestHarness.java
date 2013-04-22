@@ -20,6 +20,8 @@ package org.apache.solr.util;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.params.CommonParams;
 import org.apache.solr.common.util.NamedList;
+import org.apache.solr.core.Config;
+import org.apache.solr.core.ConfigSolrXmlOld;
 import org.apache.solr.core.SolrConfig;
 import org.apache.solr.core.SolrCore;
 import org.apache.solr.core.CoreContainer;
@@ -39,12 +41,17 @@ import org.apache.solr.schema.IndexSchema;
 import org.apache.solr.schema.IndexSchemaFactory;
 import org.apache.solr.servlet.DirectSolrConnection;
 import org.apache.solr.common.util.NamedList.NamedListEntry;
+import org.xml.sax.InputSource;
+import org.xml.sax.SAXException;
 
+import java.io.ByteArrayInputStream;
 import java.io.File;
 import java.io.IOException;
 import java.io.StringWriter;
 import java.util.HashMap;
 import java.util.Map;
+
+import javax.xml.parsers.ParserConfigurationException;
 
 
 /**
@@ -171,15 +178,27 @@ public class TestHarness extends BaseTestHarness {
     }
     @Override
     public CoreContainer initialize() {
-      CoreContainer container = new CoreContainer(new SolrResourceLoader(SolrResourceLoader.locateSolrHome())) {
-        {
-          hostPort = System.getProperty("hostPort");
-          hostContext = "solr";
-          defaultCoreName = CoreContainer.DEFAULT_DEFAULT_CORE_NAME;
-          initShardHandler();
-          initZooKeeper(System.getProperty("zkHost"), 10000);
-        }
-      };
+      CoreContainer container;
+      try {
+        container = new CoreContainer(new SolrResourceLoader(SolrResourceLoader.locateSolrHome())) {
+          {
+            hostPort = System.getProperty("hostPort");
+            hostContext = "solr";
+            defaultCoreName = CoreContainer.DEFAULT_DEFAULT_CORE_NAME;
+            initShardHandler();
+            initZooKeeper(System.getProperty("zkHost"), 10000);
+            ByteArrayInputStream is = new ByteArrayInputStream(ConfigSolrXmlOld.DEF_SOLR_XML.getBytes("UTF-8"));
+            Config config = new Config(loader, null, new InputSource(is), null, false);
+            cfg = new ConfigSolrXmlOld(config, this);
+          }
+        };
+      } catch (ParserConfigurationException e) {
+        throw new RuntimeException(e);
+      } catch (IOException e) {
+        throw new RuntimeException(e);
+      } catch (SAXException e) {
+        throw new RuntimeException(e);
+      }
       LogWatcher<?> logging = new JulWatcher("test");
       logging.registerListener(new ListenerConfig(), container);
       container.setLogging(logging);

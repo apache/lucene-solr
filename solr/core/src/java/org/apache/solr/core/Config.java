@@ -37,11 +37,16 @@ import javax.xml.namespace.QName;
 import javax.xml.parsers.DocumentBuilder;
 import javax.xml.parsers.DocumentBuilderFactory;
 import javax.xml.parsers.ParserConfigurationException;
+import javax.xml.transform.Transformer;
 import javax.xml.transform.TransformerException;
+import javax.xml.transform.TransformerFactory;
+import javax.xml.transform.dom.DOMResult;
+import javax.xml.transform.dom.DOMSource;
 import javax.xml.xpath.XPath;
 import javax.xml.xpath.XPathConstants;
 import javax.xml.xpath.XPathExpressionException;
 import javax.xml.xpath.XPathFactory;
+
 import java.io.IOException;
 import java.util.Arrays;
 import java.util.HashSet;
@@ -73,18 +78,6 @@ public class Config {
   public Config(SolrResourceLoader loader, String name) throws ParserConfigurationException, IOException, SAXException 
   {
     this( loader, name, null, null );
-  }
-
-  /**
-   * For the transition from using solr.xml to solr.properties, see SOLR-4196. Remove
-   * for 5.0, thus it's already deprecated
-   * @param loader - Solr resource loader
-   * @param cfg    - SolrConfig, for backwards compatability with solr.xml layer.
-   * @throws TransformerException if the XML file is mal-formed
-   */
-  @Deprecated
-  public Config(SolrResourceLoader loader, Config cfg) throws TransformerException {
-    this(loader, null, ConfigSolrXml.copyDoc(cfg.getDocument()));
   }
 
   public Config(SolrResourceLoader loader, String name, InputSource is, String prefix) throws ParserConfigurationException, IOException, SAXException 
@@ -164,6 +157,16 @@ public class Config {
     this.loader = loader;
   }
 
+  
+  private static Document copyDoc(Document doc) throws TransformerException {
+    TransformerFactory tfactory = TransformerFactory.newInstance();
+    Transformer tx = tfactory.newTransformer();
+    DOMSource source = new DOMSource(doc);
+    DOMResult result = new DOMResult();
+    tx.transform(source, result);
+    return (Document) result.getNode();
+  }
+  
   /**
    * @since solr 1.3
    */
