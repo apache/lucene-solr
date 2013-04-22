@@ -180,7 +180,9 @@ public class TestManagedSchema extends AbstractBadConfigTestBase {
     h.getCore().setLatestSchema(newSchema);
 
     assertTrue(managedSchemaFile.exists());
-    managedSchemaContents = IOUtils.toString(new FileInputStream(managedSchemaFile), "UTF-8");
+    FileInputStream stream = new FileInputStream(managedSchemaFile);
+    managedSchemaContents = IOUtils.toString(stream, "UTF-8");
+    stream.close(); // Explicitly close so that Windows can delete this file
     assertTrue(managedSchemaContents.contains("<field name=\"new_field\" type=\"string\" stored=\"false\"/>"));
   }
   
