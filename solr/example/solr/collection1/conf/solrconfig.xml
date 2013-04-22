@@ -700,6 +700,13 @@
          POST. You can use POST to pass request parameters not
          fitting into the URL.
          
+         addHttpRequestToContext - if set to true, it will instruct
+         the requestParsers to include the original HttpServletRequest
+         object in the context map of the SolrQueryRequest under the 
+         key "httpRequest". It will not be used by any of the existing
+         Solr components, but may be useful when developing custom 
+         plugins.
+         
          *** WARNING ***
          The settings below authorize Solr to fetch remote files, You
          should make sure your system has some authentication before
@@ -708,7 +715,8 @@
       --> 
     <requestParsers enableRemoteStreaming="true" 
                     multipartUploadLimitInKB="2048000"
-                    formdataUploadLimitInKB="2048"/>
+                    formdataUploadLimitInKB="2048"
+                    addHttpRequestToContext="false"/>
 
     <!-- HTTP Caching
 

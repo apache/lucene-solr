@@ -72,7 +72,8 @@ public class SolrRequestParsers
   private final boolean enableRemoteStreams;
   private StandardRequestParser standard;
   private boolean handleSelect = true;
-  
+  private boolean addHttpRequestToContext;
+
   /** Default instance for e.g. admin requests. Limits to 2 MB uploads and does not allow remote streams. */
   public static final SolrRequestParsers DEFAULT = new SolrRequestParsers();
   
@@ -86,6 +87,7 @@ public class SolrRequestParsers
       multipartUploadLimitKB = formUploadLimitKB = Integer.MAX_VALUE; 
       enableRemoteStreams = true;
       handleSelect = true;
+      addHttpRequestToContext = false;
     } else {
       multipartUploadLimitKB = globalConfig.getInt( 
           "requestDispatcher/requestParsers/@multipartUploadLimitInKB", 2048 );
@@ -99,6 +101,9 @@ public class SolrRequestParsers
       // Let this filter take care of /select?xxx format
       handleSelect = globalConfig.getBool( 
           "requestDispatcher/@handleSelect", true ); 
+      
+      addHttpRequestToContext = globalConfig.getBool( 
+          "requestDispatcher/requestParsers/@addHttpRequestToContext", false ); 
     }
     init(multipartUploadLimitKB, formUploadLimitKB);
   }
@@ -106,6 +111,7 @@ public class SolrRequestParsers
   private SolrRequestParsers() {
     enableRemoteStreams = false;
     handleSelect = false;
+    addHttpRequestToContext = false;
     init(2048, 2048);
   }
 
@@ -139,6 +145,10 @@ public class SolrRequestParsers
     // Handlers and login will want to know the path. If it contains a ':'
     // the handler could use it for RESTful URLs
     sreq.getContext().put( "path", path );
+    
+    if(addHttpRequestToContext) {
+      sreq.getContext().put("httpRequest", req);
+    }
     return sreq;
   }
   
@@ -341,6 +351,14 @@ public class SolrRequestParsers
 
   public void setHandleSelect(boolean handleSelect) {
     this.handleSelect = handleSelect;
+  }
+  
+  public boolean isAddRequestHeadersToContext() {
+    return addHttpRequestToContext;
+  }
+
+  public void setAddRequestHeadersToContext(boolean addRequestHeadersToContext) {
+    this.addHttpRequestToContext = addRequestHeadersToContext;
   }
 }
 
