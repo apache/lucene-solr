@@ -91,12 +91,15 @@ public class TestCloudManagedSchemaAddField extends AbstractFullDistribZkTestBas
             + "  content=" + content + "  response=" + response);
       }
         
-      int maxAttempts = 10;
+      int maxAttempts = 20;
+      long retryPauseMillis = 10;
+
       for (RestTestHarness client : restTestHarnesses) {
         boolean stillTrying = true;
         for (int attemptNum = 1; stillTrying && attemptNum <= maxAttempts ; ++attemptNum) {
           request = "/schema/fields/" + newFieldName + "?wt=xml";
           response = client.query(request);
+          long elapsedTimeMillis = System.currentTimeMillis() - addFieldTime;
           result = client.validateXPath(response,
                                         "/response/lst[@name='responseHeader']/int[@name='status'][.='0']",
                                         "/response/lst[@name='field']/str[@name='name'][.='" + newFieldName + "']");
@@ -104,16 +107,18 @@ public class TestCloudManagedSchemaAddField extends AbstractFullDistribZkTestBas
             stillTrying = false;
             if (attemptNum > 1) {
               log.info("On attempt #" + attemptNum + ", successful request " + request + " against server "
-                      + client.getBaseURL() + " after " + (System.currentTimeMillis() - addFieldTime) + " ms");
+                      + client.getBaseURL() + " after " + elapsedTimeMillis + " ms");
             }
           } else {
             if (attemptNum == maxAttempts || ! response.contains("Field '" + newFieldName + "' not found.")) {
               String msg = "QUERY FAILED: xpath=" + result + "  request=" + request + "  response=" + response;
               if (attemptNum == maxAttempts) {
-                msg = "Max retry count " + maxAttempts + " exceeded.  " + msg;
+                msg = "Max retry count " + maxAttempts + " exceeded after " + elapsedTimeMillis +" ms.  " + msg;
               }
+              log.error(msg);
               fail(msg);
             }
+            Thread.sleep(retryPauseMillis);
           }
         }
       }
