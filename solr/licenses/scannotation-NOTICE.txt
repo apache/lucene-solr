@@ -1,7 +1,0 @@
-Created by Bill Burke
-
-Scannotation is a Java library that creates an annotation database from a set of .class files. This database is really just a set of maps that index what annotations are used and what classes are using them. Why do you need this? What if you are an annotation framework like an EJB 3.0 container and you want to automatically scan your classpath for EJB annotations so that you know what to deploy? Scannotation gives you apis that allow you to find archives in your classpath or WAR (web application) that you want to scan, then automatically scans them without loading each and every class within those archives.
-There are really 3 main classes to Scannotation: ClasspathUrlFinder, WarUrlFinder, and AnnotationDB. The first step in scanning for annotations is declaring what archives or what parts of your classpath you want to scan in. ClasspathUrlFinder has various ways to automatically find the URLs that make up your classpath. WarUrlFinder is similar but provides ways to get things from your WAR lib directory.
-Once you find the URLs that make up your classpath, you feed them to AnnotationDB to scan and index. Its best to read the javadocs
-
-The sourceforge.net project site is at http://sourceforge.net/projects/scannotation/
