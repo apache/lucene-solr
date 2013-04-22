@@ -73,6 +73,9 @@ Other Changes
 
 * SOLR-4737: Update Guava to 14.0.1 (Mark Miller)
 
+* SOLR-2079: Add option to pass HttpServletRequest in the SolrQueryRequest context map.
+  (Tomás Fernández Löbbe via Robert Muir)
+
 ==================  4.3.0 ==================
 
 Versions of Major Components

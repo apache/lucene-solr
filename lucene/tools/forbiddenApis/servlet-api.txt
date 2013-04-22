@@ -20,6 +20,8 @@ javax.servlet.ServletRequest#getParameterMap()
 javax.servlet.ServletRequest#getParameterNames() 
 javax.servlet.ServletRequest#getParameterValues(java.lang.String) 
 
+javax.servlet.http.HttpServletRequest#getSession() @ Servlet API getter has side effect of creating sessions
+
 @defaultMessage Servlet API method is broken and slow in some environments (e.g., Jetty's UTF-8 readers)
 
 javax.servlet.ServletRequest#getReader()
