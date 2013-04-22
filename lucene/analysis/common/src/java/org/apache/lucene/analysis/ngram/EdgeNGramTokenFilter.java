@@ -75,6 +75,7 @@ public final class EdgeNGramTokenFilter extends TokenFilter {
   private int tokEnd; // only used if the length changed before this filter
   private boolean hasIllegalOffsets; // only if the length changed before this filter
   private int savePosIncr;
+  private boolean isFirstToken = true;
   
   private final CharTermAttribute termAtt = addAttribute(CharTermAttribute.class);
   private final OffsetAttribute offsetAtt = addAttribute(OffsetAttribute.class);
@@ -138,9 +139,8 @@ public final class EdgeNGramTokenFilter extends TokenFilter {
           savePosIncr = posIncrAtt.getPositionIncrement();
         }
       }
-      if (curGramSize <= maxGram) {
-        if (! (curGramSize > curTermLength         // if the remaining input is too short, we can't generate any n-grams
-            || curGramSize > maxGram)) {       // if we have hit the end of our n-gram size range, quit
+      if (curGramSize <= maxGram) {         // if we have hit the end of our n-gram size range, quit
+        if (curGramSize <= curTermLength) { // if the remaining input is too short, we can't generate any n-grams
           // grab gramSize chars from front or back
           int start = side == Side.FRONT ? 0 : curTermLength - curGramSize;
           int end = start + curGramSize;
@@ -152,12 +152,16 @@ public final class EdgeNGramTokenFilter extends TokenFilter {
           }
           // first ngram gets increment, others don't
           if (curGramSize == minGram) {
-            posIncrAtt.setPositionIncrement(savePosIncr);
+            //  Leave the first token position increment at the cleared-attribute value of 1
+            if ( ! isFirstToken) {
+              posIncrAtt.setPositionIncrement(savePosIncr);
+            }
           } else {
             posIncrAtt.setPositionIncrement(0);
           }
           termAtt.copyBuffer(curTermBuffer, start, curGramSize);
           curGramSize++;
+          isFirstToken = false;
           return true;
         }
       }
@@ -169,5 +173,6 @@ public final class EdgeNGramTokenFilter extends TokenFilter {
   public void reset() throws IOException {
     super.reset();
     curTermBuffer = null;
+    isFirstToken = true;
   }
 }
