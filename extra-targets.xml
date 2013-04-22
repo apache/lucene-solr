@@ -89,7 +89,7 @@
       statusClient.doStatus(basedir, SVNRevision.WORKING, SVNDepth.fromRecurse(true), false, true, false, false, {
         status ->
         SVNStatusType nodeStatus = status.getNodeStatus();
-        if (nodeStatus == SVNStatusType.STATUS_UNVERSIONED) {
+        if (nodeStatus == SVNStatusType.STATUS_UNVERSIONED || nodeStatus == SVNStatusType.STATUS_MISSING) {
           unversioned.add(convertRelative(status.getFile()));
         } else if (status.getKind() == SVNNodeKind.FILE && nodeStatus != SVNStatusType.STATUS_DELETED) {
           missingProps.add(convertRelative(status.getFile()));
