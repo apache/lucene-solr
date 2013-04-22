@@ -415,11 +415,8 @@ public class CoreAdminHandler extends RequestHandlerBase {
     }
     try {
       
-      //for now, do not allow creating new core with same name when in cloud mode
-      //XXX perhaps it should just be unregistered from cloud before reading it?,
-      //XXX perhaps we should also check that cores are of same type before adding new core to collection?
       if (coreContainer.getAllCoreNames().contains(name)) {
-        log.warn("Re-creating a core with existing name is not allowed");
+        log.warn("Creating a core with existing name is not allowed");
         throw new SolrException(ErrorCode.SERVER_ERROR,
             "Core with name '" + name + "' already exists.");
       }
@@ -508,14 +505,6 @@ public class CoreAdminHandler extends RequestHandlerBase {
       dcore.setCoreProperties(coreProperties);
       
       SolrCore core = coreContainer.create(dcore);
-
-      String sameDirCore = coreContainer.checkUniqueDataDir(core.getDataDir());
-      if (sameDirCore != null) {
-        if (core != null) core.close();
-        log.warn("Creating a core that points to the same data dir as core {} is not allowed", sameDirCore);
-        throw new SolrException(ErrorCode.SERVER_ERROR,
-            "Core with same data dir '" + sameDirCore + "' already exists.");
-      }
 
       coreContainer.register(name, core, false);
       rsp.add("core", core.getName());

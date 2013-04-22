@@ -315,29 +315,13 @@ public class TestLazyCores extends SolrTestCaseJ4 {
       copyMinConf(new File(solrHomeDirectory, "t5"));
       copyMinConf(new File(solrHomeDirectory, "t6"));
 
-      tryCreateFail(admin, "t2", lc2.getDataDir(), "Core with same data dir", "collectionLazy2", "already exists");
-      tryCreateFail(admin, "t4", lc4.getDataDir(), "Core with same data dir", "collectionLazy4", "already exists");
-      tryCreateFail(admin, "t5", lc5.getDataDir(), "Core with same data dir", "collectionLazy5", "already exists");
-      tryCreateFail(admin, "t6", lc6.getDataDir(), "Core with same data dir", "collectionLazy6", "already exists");
-
-      // Insure a newly-created core fails too
-      CoreDescriptor d1 = new CoreDescriptor(cc, "core1", "./core1");
-      d1.setSchemaName("schema-tiny.xml");
-      d1.setConfigName("solrconfig-minimal.xml");
-      copyMinConf(new File(solrHomeDirectory, "core1"));
-      SolrCore core1 = cc.create(d1);
-      cc.register(core1, false);
-      copyMinConf(new File(solrHomeDirectory, "core77"));
-      tryCreateFail(admin, "core77", core1.getDataDir(), "Core with same data dir", "core1", "already exists");
 
       // Should also fail with the same name
       tryCreateFail(admin, "collectionLazy2", "t12", "Core with name", "collectionLazy2", "already exists");
       tryCreateFail(admin, "collectionLazy4", "t14", "Core with name", "collectionLazy4", "already exists");
       tryCreateFail(admin, "collectionLazy5", "t15", "Core with name", "collectionLazy5", "already exists");
       tryCreateFail(admin, "collectionLazy6", "t16", "Core with name", "collectionLazy6", "already exists");
-      tryCreateFail(admin, "core1", "t10", "Core with name", "core1", "already exists");
 
-      core1.close();
       lc2.close();
       lc4.close();
       lc5.close();
