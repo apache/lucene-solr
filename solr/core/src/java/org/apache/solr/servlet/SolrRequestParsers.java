@@ -44,6 +44,7 @@ import org.apache.commons.fileupload.disk.DiskFileItemFactory;
 import org.apache.commons.fileupload.servlet.ServletFileUpload;
 import org.apache.lucene.util.IOUtils;
 import org.apache.solr.common.SolrException;
+import org.apache.solr.common.SolrException.ErrorCode;
 import org.apache.solr.common.params.CommonParams;
 import org.apache.solr.common.params.MultiMapSolrParams;
 import org.apache.solr.common.params.SolrParams;
@@ -151,7 +152,7 @@ public class SolrRequestParsers
     String[] strs = params.getParams( CommonParams.STREAM_URL );
     if( strs != null ) {
       if( !enableRemoteStreams ) {
-        throw new SolrException( SolrException.ErrorCode.BAD_REQUEST, "Remote Streaming is disabled." );
+        throw new SolrException( ErrorCode.BAD_REQUEST, "Remote Streaming is disabled." );
       }
       for( final String url : strs ) {
         ContentStreamBase stream = new ContentStreamBase.URLStream( new URL(url) );
@@ -166,7 +167,7 @@ public class SolrRequestParsers
     strs = params.getParams( CommonParams.STREAM_FILE );
     if( strs != null ) {
       if( !enableRemoteStreams ) {
-        throw new SolrException( SolrException.ErrorCode.BAD_REQUEST, "Remote Streaming is disabled." );
+        throw new SolrException( ErrorCode.BAD_REQUEST, "Remote Streaming is disabled." );
       }
       for( final String file : strs ) {
         ContentStreamBase stream = new ContentStreamBase.FileStream( new File(file) );
@@ -222,7 +223,7 @@ public class SolrRequestParsers
             if (pos < len) {
               final char ch = queryString.charAt(pos);
               if (ch > 127) {
-                throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, "URLDecoder: The query string contains a not-%-escaped byte > 127 at position " + pos);
+                throw new SolrException(ErrorCode.BAD_REQUEST, "URLDecoder: The query string contains a not-%-escaped byte > 127 at position " + pos);
               }
               pos++;
               return ch;
@@ -233,7 +234,7 @@ public class SolrRequestParsers
         };
         parseFormDataContent(in, Long.MAX_VALUE, IOUtils.CHARSET_UTF_8, map);
       } catch (IOException ioe) {
-        throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, ioe);
+        throw new SolrException(ErrorCode.BAD_REQUEST, ioe);
       }
     }
   }
@@ -263,7 +264,7 @@ public class SolrRequestParsers
             final String key = decodeChars(keyStream, keyPos, charsetDecoder), value = decodeChars(valueStream, valuePos, charsetDecoder);
             MultiMapSolrParams.addParam(key, value, map);
           } else if (valueStream.size() > 0) {
-            throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, "application/x-www-form-urlencoded invalid: missing key");
+            throw new SolrException(ErrorCode.BAD_REQUEST, "application/x-www-form-urlencoded invalid: missing key");
           }
           keyStream.reset();
           valueStream.reset();
@@ -295,7 +296,7 @@ public class SolrRequestParsers
       }
       len++;
       if (len > maxLen) {
-        throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, "application/x-www-form-urlencoded content exceeds upload limit of " + (maxLen/1024L) + " KB");
+        throw new SolrException(ErrorCode.BAD_REQUEST, "application/x-www-form-urlencoded content exceeds upload limit of " + (maxLen/1024L) + " KB");
       }
     }
     return len;
@@ -305,7 +306,7 @@ public class SolrRequestParsers
     try {
       return charsetDecoder.decode(ByteBuffer.wrap(stream.buffer(), 0, stream.size())).toString();
     } catch (CharacterCodingException cce) {
-      throw new SolrException(SolrException.ErrorCode.BAD_REQUEST,
+      throw new SolrException(ErrorCode.BAD_REQUEST,
         "URLDecoder: Invalid character encoding detected after position " + position +
         " of query string / form data (while parsing as " + charsetDecoder.charset().name() + ")"
       );
@@ -321,7 +322,7 @@ public class SolrRequestParsers
   
   private static int digit16(int b) {
     if (b == -1) {
-      throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, "URLDecoder: Incomplete trailing escape (%) pattern");
+      throw new SolrException(ErrorCode.BAD_REQUEST, "URLDecoder: Incomplete trailing escape (%) pattern");
     }
     if (b >= '0' && b <= '9') {
       return b - '0';
@@ -332,7 +333,7 @@ public class SolrRequestParsers
     if (b >= 'a' && b <= 'f') {
       return b - ('a' - 10);
     }
-    throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, "URLDecoder: Invalid digit (" + ((char) b) + ") in escape (%) pattern");
+    throw new SolrException(ErrorCode.BAD_REQUEST, "URLDecoder: Invalid digit (" + ((char) b) + ") in escape (%) pattern");
   }
   
   public boolean isHandleSelect() {
@@ -453,7 +454,7 @@ class MultipartRequestParser implements SolrRequestParser
       final HttpServletRequest req, ArrayList<ContentStream> streams ) throws Exception
   {
     if( !ServletFileUpload.isMultipartContent(req) ) {
-      throw new SolrException( SolrException.ErrorCode.BAD_REQUEST, "Not multipart content! "+req.getContentType() );
+      throw new SolrException( ErrorCode.BAD_REQUEST, "Not multipart content! "+req.getContentType() );
     }
     
     MultiMapSolrParams params = SolrRequestParsers.parseQueryString( req.getQueryString() );
@@ -508,7 +509,7 @@ class FormDataRequestParser implements SolrRequestParser
       final HttpServletRequest req, ArrayList<ContentStream> streams ) throws Exception
   {
     if (!isFormData(req)) {
-      throw new SolrException( SolrException.ErrorCode.BAD_REQUEST, "Not application/x-www-form-urlencoded content: "+req.getContentType() );
+      throw new SolrException( ErrorCode.BAD_REQUEST, "Not application/x-www-form-urlencoded content: "+req.getContentType() );
     }
     
     final Map<String,String[]> map = new HashMap<String, String[]>();
@@ -523,7 +524,7 @@ class FormDataRequestParser implements SolrRequestParser
     final long totalLength = req.getContentLength();
     final long maxLength = ((long) uploadLimitKB) * 1024L;
     if (totalLength > maxLength) {
-      throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, "application/x-www-form-urlencoded content length (" +
+      throw new SolrException(ErrorCode.BAD_REQUEST, "application/x-www-form-urlencoded content length (" +
         totalLength + " bytes) exceeds upload limit of " + uploadLimitKB + " KB");
     }
     
@@ -538,7 +539,7 @@ class FormDataRequestParser implements SolrRequestParser
         throw getParameterIncompatibilityException();
       }
     } catch (IOException ioe) {
-      throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, ioe);
+      throw new SolrException(ErrorCode.BAD_REQUEST, ioe);
     } catch (IllegalStateException ise) {
       throw (SolrException) getParameterIncompatibilityException().initCause(ise);
     } finally {
@@ -549,7 +550,7 @@ class FormDataRequestParser implements SolrRequestParser
   }
   
   private SolrException getParameterIncompatibilityException() {
-    return new SolrException(SolrException.ErrorCode.SERVER_ERROR,
+    return new SolrException(ErrorCode.SERVER_ERROR,
       "Solr requires that request parameters sent using application/x-www-form-urlencoded " +
       "content-type can be read through the request input stream. Unfortunately, the " +
       "stream was empty / not available. This may be caused by another servlet filter calling " +
@@ -595,7 +596,8 @@ class StandardRequestParser implements SolrRequestParser
       final HttpServletRequest req, ArrayList<ContentStream> streams ) throws Exception
   {
     String method = req.getMethod().toUpperCase(Locale.ROOT);
-    if ("GET".equals(method) || "HEAD".equals(method)) {
+    if ("GET".equals(method) || "HEAD".equals(method) 
+        || ("PUT".equals(method) && req.getRequestURI().contains("/schema"))) {
       return SolrRequestParsers.parseQueryString(req.getQueryString());
     }
     if ("POST".equals( method ) ) {
@@ -607,7 +609,7 @@ class StandardRequestParser implements SolrRequestParser
       }
       return raw.parseParamsAndFillStreams(req, streams);
     }
-    throw new SolrException( SolrException.ErrorCode.BAD_REQUEST, "Unsupported method: "+method );
+    throw new SolrException(ErrorCode.BAD_REQUEST, "Unsupported method: " + method + " for request " + req);
   }
 }
 

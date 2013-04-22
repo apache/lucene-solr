@@ -69,7 +69,7 @@ public class TestPseudoReturnFields extends SolrTestCaseJ4 {
 
     // score as psuedo field - precondition checks
     for (String name : new String[] {"score", "val_ss"}) {
-      SchemaField sf = h.getCore().getSchema().getFieldOrNull(name);
+      SchemaField sf = h.getCore().getLatestSchema().getFieldOrNull(name);
       assertNotNull("Test depends on a (dynamic) field mtching '"+name+
                     "', schema was changed out from under us!",sf);
       assertTrue("Test depends on a multivalued dynamic field matching '"+name+

@@ -21,7 +21,6 @@ import org.apache.solr.common.SolrException;
 import org.apache.lucene.index.StorableField;
 import org.apache.lucene.search.SortField;
 import org.apache.solr.common.util.SimpleOrderedMap;
-import org.apache.solr.common.util.StrUtils;
 import org.apache.solr.search.QParser;
 
 import org.apache.solr.response.TextResponseWriter;
@@ -49,7 +48,7 @@ public final class SchemaField extends FieldProperties {
   boolean required = false;  // this can't be final since it may be changed dynamically
   
   /** Declared field property overrides */
-  Map<String,String> args = Collections.emptyMap();
+  Map<String,?> args = Collections.emptyMap();
 
 
   /** Create a new SchemaField with the given name and type,
@@ -195,14 +194,14 @@ public final class SchemaField extends FieldProperties {
     
   }
 
-  static SchemaField create(String name, FieldType ft, Map<String,String> props) {
+  static SchemaField create(String name, FieldType ft, Map<String,?> props) {
 
     String defaultValue = null;
     if (props.containsKey(DEFAULT_VALUE)) {
-      defaultValue = props.get(DEFAULT_VALUE);
+      defaultValue = (String)props.get(DEFAULT_VALUE);
     }
     SchemaField field = new SchemaField(name, ft, calcProps(name, ft, props), defaultValue);
-    field.args = new HashMap<String,String>(props);
+    field.args = new HashMap<String,Object>(props);
     return field;
   }
 
@@ -220,7 +219,7 @@ public final class SchemaField extends FieldProperties {
     return new SchemaField(name, ft, props, defValue);
   }
 
-  static int calcProps(String name, FieldType ft, Map<String, String> props) {
+  static int calcProps(String name, FieldType ft, Map<String,?> props) {
     int trueProps = parseProperties(props,true,true);
     int falseProps = parseProperties(props,false,true);
 
@@ -334,13 +333,14 @@ public final class SchemaField extends FieldProperties {
       // The BINARY property is always false
       // properties.add(getPropertyName(BINARY), isBinary());
     } else {
-      for (Map.Entry<String,String> arg : args.entrySet()) {
+      for (Map.Entry<String,?> arg : args.entrySet()) {
         String key = arg.getKey();
-        String value = arg.getValue();
+        Object value = arg.getValue();
         if (key.equals(DEFAULT_VALUE)) {
           properties.add(key, value);
         } else {
-          properties.add(key, StrUtils.parseBool(value, false));
+          boolean boolVal = value instanceof Boolean ? (Boolean)value : Boolean.parseBoolean(value.toString());
+          properties.add(key, boolVal);
         }
       }
     }

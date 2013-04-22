@@ -27,7 +27,6 @@ import org.apache.solr.core.SolrCore;
 import org.apache.solr.core.SolrEventListener;
 import org.apache.solr.core.SolrInfoMBean;
 import org.apache.solr.schema.FieldType;
-import org.apache.solr.schema.IndexSchema;
 import org.apache.solr.schema.SchemaField;
 import org.apache.solr.util.plugin.SolrCoreAware;
 import org.slf4j.Logger;
@@ -45,7 +44,6 @@ public abstract class UpdateHandler implements SolrInfoMBean {
   protected final static Logger log = LoggerFactory.getLogger(UpdateHandler.class);
 
   protected final SolrCore core;
-  protected final IndexSchema schema;
 
   protected final SchemaField idField;
   protected final FieldType idFieldType;
@@ -125,8 +123,7 @@ public abstract class UpdateHandler implements SolrInfoMBean {
   
   public UpdateHandler(SolrCore core, UpdateLog updateLog)  {
     this.core=core;
-    schema = core.getSchema();
-    idField = schema.getUniqueKeyField();
+    idField = core.getLatestSchema().getUniqueKeyField();
     idFieldType = idField!=null ? idField.getType() : null;
     parseEventListeners();
     PluginInfo ulogPluginInfo = core.getSolrConfig().getPluginInfo(UpdateLog.class.getName());

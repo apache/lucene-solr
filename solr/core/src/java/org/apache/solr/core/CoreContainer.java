@@ -31,6 +31,7 @@ import java.util.Collections;
 import java.util.Date;
 import java.util.HashMap;
 import java.util.HashSet;
+import java.util.Iterator;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Locale;
@@ -921,10 +922,10 @@ public class CoreContainer
 
     IndexSchema schema = null;
     if (indexSchemaCache != null) {
-      File schemaFile = new File(dcore.getSchemaName());
+      final String resourceNameToBeUsed = IndexSchemaFactory.getResourceNameToBeUsed(dcore.getSchemaName(), config);
+      File schemaFile = new File(resourceNameToBeUsed);
       if (!schemaFile.isAbsolute()) {
-        schemaFile = new File(solrLoader.getInstanceDir() + "conf"
-            + File.separator + dcore.getSchemaName());
+        schemaFile = new File(solrLoader.getConfigDir(), schemaFile.getPath());
       }
       if (schemaFile.exists()) {
         String key = schemaFile.getAbsolutePath()
@@ -956,6 +957,54 @@ public class CoreContainer
   }
 
   /**
+   * Removes all references to the oldSchema from the schema cache; places an entry
+   * in the schema cache for the newSchema; and replaces references to the oldSchema
+   * with references to the newSchema in all registered cores.
+   * 
+   * @param initiatingCore The initiating core; schema references doesn't need to be changed here
+   * @param oldSchema The schema to remove references to
+   * @param newSchema The schema to add references to
+   */
+  public void replaceSchema(SolrCore initiatingCore, IndexSchema oldSchema, IndexSchema newSchema) {
+    if (null != indexSchemaCache) { // isShareSchema() == true
+      // Remove references to the oldSchema from the schema cache
+      for (Iterator<Map.Entry<String,IndexSchema>> iter = indexSchemaCache.entrySet().iterator() ; iter.hasNext() ; ) {
+        Map.Entry<String,IndexSchema> entry = iter.next();
+        if (oldSchema == entry.getValue()) {
+          iter.remove();
+        }
+      }
+
+      // Cache the new schema
+      final String newSchemaResourceName
+          = IndexSchemaFactory.getResourceNameToBeUsed(newSchema.getResourceName(), initiatingCore.getSolrConfig());
+      File schemaFile = new File(newSchemaResourceName);
+      if ( ! schemaFile.isAbsolute()) {
+        schemaFile = new File(initiatingCore.getResourceLoader().getConfigDir(), schemaFile.getPath());
+      }
+      if (schemaFile.exists()) {
+        String key = schemaFile.getAbsolutePath()
+            + ":"
+            + new SimpleDateFormat("yyyyMMddHHmmss", Locale.ROOT).format(new Date(
+            schemaFile.lastModified()));
+        indexSchemaCache.put(key, newSchema);
+      }
+
+      // Replace oldSchema references with newSchema references in all active cores
+      for (String coreName : coreMaps.getAllCoreNames()) {
+        SolrCore activeCore = coreMaps.getCoreFromAnyList(coreName);
+        if (null != activeCore) {
+          if (initiatingCore != activeCore) {
+            if (oldSchema == activeCore.getLatestSchema()) {
+              activeCore.setLatestSchema(newSchema);
+            }
+          }
+        }
+      }
+    }
+  }
+
+ /**
    * Creates a new core based on a descriptor but does not register it.
    *
    * @param dcore a core descriptor
@@ -1739,7 +1788,7 @@ class CoreMaps {
     }
   }
 
-  protected SolrCore getCoreFromAnyList(String name) {
+  public SolrCore getCoreFromAnyList(String name) {
     SolrCore core;
 
     synchronized (locker) {

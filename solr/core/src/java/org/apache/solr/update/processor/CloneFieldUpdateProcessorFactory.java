@@ -17,17 +17,12 @@
 package org.apache.solr.update.processor;
 
 import java.io.IOException;
-import java.util.Arrays;
 import java.util.Collection;
-import java.util.Collections;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.HashSet;
 
-import org.apache.solr.schema.IndexSchema;
-
 import org.apache.solr.core.SolrCore;
-import org.apache.solr.core.SolrResourceLoader;
 import org.apache.solr.util.plugin.SolrCoreAware;
 
 import org.apache.solr.common.util.NamedList;
@@ -36,15 +31,13 @@ import org.apache.solr.common.SolrInputField;
 import org.apache.solr.common.SolrInputDocument;
 
 import org.apache.solr.common.SolrException;
-import org.apache.solr.common.SolrException.ErrorCode;
-import static org.apache.solr.common.SolrException.ErrorCode.*;
+import static org.apache.solr.common.SolrException.ErrorCode.SERVER_ERROR;
 
 import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.response.SolrQueryResponse;
 
 import org.apache.solr.update.AddUpdateCommand;
 
-import org.apache.solr.update.processor.FieldMutatingUpdateProcessorFactory;
 import org.apache.solr.update.processor.FieldMutatingUpdateProcessorFactory.SelectorParams;
 import org.apache.solr.update.processor.FieldMutatingUpdateProcessor.FieldNameSelector;
 
@@ -200,12 +193,10 @@ public class CloneFieldUpdateProcessorFactory
   @Override
   public void inform(final SolrCore core) {
     
-    final IndexSchema schema = core.getSchema();
-
     srcSelector = 
       FieldMutatingUpdateProcessor.createFieldNameSelector
       (core.getResourceLoader(),
-       core.getSchema(),
+       core,
        srcInclusions.fieldName,
        srcInclusions.typeName,
        srcInclusions.typeClass,
@@ -217,7 +208,7 @@ public class CloneFieldUpdateProcessorFactory
         (srcSelector,
          FieldMutatingUpdateProcessor.createFieldNameSelector
          (core.getResourceLoader(),
-          core.getSchema(),
+          core,
           exc.fieldName,
           exc.typeName,
           exc.typeClass,

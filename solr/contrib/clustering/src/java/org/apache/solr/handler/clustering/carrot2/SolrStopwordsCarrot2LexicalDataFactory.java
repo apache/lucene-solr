@@ -26,8 +26,7 @@ import org.apache.lucene.analysis.util.TokenFilterFactory;
 import org.apache.lucene.analysis.commongrams.CommonGramsFilterFactory;
 import org.apache.lucene.analysis.core.StopFilterFactory;
 import org.apache.solr.analysis.TokenizerChain;
-import org.apache.solr.schema.IndexSchema;
-import org.apache.solr.schema.ManagedIndexSchema;
+import org.apache.solr.core.SolrCore;
 import org.carrot2.core.LanguageCode;
 import org.carrot2.core.attribute.Init;
 import org.carrot2.core.attribute.Processing;
@@ -38,7 +37,6 @@ import org.carrot2.text.util.MutableCharArray;
 import org.carrot2.util.attribute.Attribute;
 import org.carrot2.util.attribute.Bindable;
 import org.carrot2.util.attribute.Input;
-import org.carrot2.util.attribute.constraint.ImplementingClasses;
 import org.slf4j.Logger;
 
 import com.google.common.collect.HashMultimap;
@@ -61,9 +59,8 @@ public class SolrStopwordsCarrot2LexicalDataFactory implements
 
   @Init
   @Input
-  @Attribute(key = "solrIndexSchema")
-  @ImplementingClasses(classes = { IndexSchema.class, ManagedIndexSchema.class })
-  private IndexSchema schema;
+  @Attribute(key = "solrCore")
+  private SolrCore core;
 
   @Processing
   @Input
@@ -89,7 +86,7 @@ public class SolrStopwordsCarrot2LexicalDataFactory implements
     // No need to synchronize here, Carrot2 ensures that instances
     // of this class are not used by multiple threads at a time.
     if (!solrStopWords.containsKey(fieldName)) {
-      final Analyzer fieldAnalyzer = schema.getFieldType(fieldName)
+      final Analyzer fieldAnalyzer = core.getLatestSchema().getFieldType(fieldName)
           .getAnalyzer();
       if (fieldAnalyzer instanceof TokenizerChain) {
         final TokenFilterFactory[] filterFactories = ((TokenizerChain) fieldAnalyzer)

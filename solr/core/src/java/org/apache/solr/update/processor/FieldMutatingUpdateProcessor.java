@@ -18,27 +18,21 @@
 package org.apache.solr.update.processor;
 
 import java.io.IOException;
-import java.util.Arrays;
 import java.util.ArrayList;
 import java.util.Collection;
-import java.util.Collections;
-import java.util.HashSet;
-import java.util.List;
 import java.util.Set;
 import java.util.regex.Pattern;
-import java.util.regex.PatternSyntaxException;
 
-import static org.apache.solr.common.SolrException.ErrorCode.*;
+import static org.apache.solr.common.SolrException.ErrorCode.BAD_REQUEST;
+import static org.apache.solr.common.SolrException.ErrorCode.SERVER_ERROR;
 
 import org.apache.solr.common.SolrInputDocument;
 import org.apache.solr.common.SolrInputField;
 import org.apache.solr.common.SolrException;
+import org.apache.solr.core.SolrCore;
 import org.apache.solr.core.SolrResourceLoader;
-import org.apache.solr.schema.IndexSchema;
 import org.apache.solr.schema.FieldType;
 
-import org.apache.solr.request.SolrQueryRequest;
-import org.apache.solr.response.SolrQueryResponse;
 import org.apache.solr.update.AddUpdateCommand;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -197,7 +191,7 @@ public abstract class FieldMutatingUpdateProcessor
    */
   public static FieldNameSelector createFieldNameSelector
     (final SolrResourceLoader loader,
-     final IndexSchema schema,
+     final SolrCore core,
      final Set<String> fields,
      final Set<String> typeNames,
      final Collection<String> typeClasses,
@@ -223,25 +217,24 @@ public abstract class FieldMutatingUpdateProcessor
       return defSelector;
     }
     
-    return new ConfigurableFieldNameSelector
-      (schema, fields, typeNames, classes, regexes); 
+    return new ConfigurableFieldNameSelector(core, fields, typeNames, classes, regexes); 
   }
   
   private static final class ConfigurableFieldNameSelector 
     implements FieldNameSelector {
 
-    final IndexSchema schema;
+    final SolrCore core;
     final Set<String> fields;
     final Set<String> typeNames;
     final Collection<Class> classes;
     final Collection<Pattern> regexes;
 
-    private ConfigurableFieldNameSelector(final IndexSchema schema,
+    private ConfigurableFieldNameSelector(final SolrCore core,
                                           final Set<String> fields,
                                           final Set<String> typeNames,
                                           final Collection<Class> classes,
                                           final Collection<Pattern> regexes) {
-      this.schema = schema;
+      this.core = core;
       this.fields = fields;
       this.typeNames = typeNames;
       this.classes = classes;
@@ -260,7 +253,7 @@ public abstract class FieldMutatingUpdateProcessor
       
       // do not consider it an error if the fieldName has no type
       // there might be another processor dealing with it later
-      FieldType t = schema.getFieldTypeNoEx(fieldName);
+      FieldType t =  core.getLatestSchema().getFieldTypeNoEx(fieldName);
       if (null != t) {
         if (! (typeNames.isEmpty() || typeNames.contains(t.getTypeName())) ) {
           return false;

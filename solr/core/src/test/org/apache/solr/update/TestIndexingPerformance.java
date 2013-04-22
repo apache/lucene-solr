@@ -17,10 +17,8 @@
 
 package org.apache.solr.update;
 
-import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.common.SolrInputDocument;
 import org.apache.solr.request.SolrQueryRequest;
-import org.apache.solr.schema.IndexSchema;
 import org.apache.solr.util.AbstractSolrTestCase;
 import org.apache.solr.common.util.StrUtils;
 import org.junit.AfterClass;
@@ -73,7 +71,6 @@ public class TestIndexingPerformance extends AbstractSolrTestCase {
 
 
     SolrQueryRequest req = lrf.makeRequest();
-    IndexSchema schema = req.getSchema();
     UpdateHandler updateHandler = req.getCore().getUpdateHandler();
     String field = "textgap";
 

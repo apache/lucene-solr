@@ -649,6 +649,7 @@ public abstract class FieldType extends FieldProperties {
    * Sub-classes should override this method to provide their own range query implementation. They should strive to
    * handle nulls in part1 and/or part2 as well as unequal minInclusive and maxInclusive parameters gracefully.
    *
+   * @param parser       the {@link org.apache.solr.search.QParser} calling the method
    * @param field        the schema field
    * @param part1        the lower boundary of the range, nulls are allowed.
    * @param part2        the upper boundary of the range, nulls are allowed

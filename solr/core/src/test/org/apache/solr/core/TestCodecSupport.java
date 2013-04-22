@@ -35,7 +35,7 @@ public class TestCodecSupport extends SolrTestCaseJ4 {
 
   public void testPostingsFormats() {
     Codec codec = h.getCore().getCodec();
-    Map<String, SchemaField> fields = h.getCore().getSchema().getFields();
+    Map<String, SchemaField> fields = h.getCore().getLatestSchema().getFields();
     SchemaField schemaField = fields.get("string_pulsing_f");
     PerFieldPostingsFormat format = (PerFieldPostingsFormat) codec.postingsFormat();
     assertEquals("Pulsing41", format.getPostingsFormatForField(schemaField.getName()).getName());
@@ -50,7 +50,7 @@ public class TestCodecSupport extends SolrTestCaseJ4 {
 
   public void testDocValuesFormats() {
     Codec codec = h.getCore().getCodec();
-    Map<String, SchemaField> fields = h.getCore().getSchema().getFields();
+    Map<String, SchemaField> fields = h.getCore().getLatestSchema().getFields();
     SchemaField schemaField = fields.get("string_disk_f");
     PerFieldDocValuesFormat format = (PerFieldDocValuesFormat) codec.docValuesFormat();
     assertEquals("Disk", format.getDocValuesFormatForField(schemaField.getName()).getName());

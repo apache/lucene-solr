@@ -1,14 +1,11 @@
 package org.apache.solr.update.processor;
 
 import java.util.HashMap;
-import java.util.LinkedList;
-import java.util.List;
 import java.util.Map;
 
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
 import org.apache.lucene.document.FieldType;
-import org.apache.lucene.index.FieldInfo.IndexOptions;
 import org.apache.lucene.index.StorableField;
 import org.apache.solr.common.SolrInputField;
 import org.apache.solr.common.util.NamedList;
@@ -128,7 +125,7 @@ public class PreAnalyzedUpdateProcessorFactory extends FieldMutatingUpdateProces
     if (parserImpl != null) {
       args.put(PreAnalyzedField.PARSER_IMPL, parserImpl);
     }
-    parser.init(core.getSchema(), args);
+    parser.init(core.getLatestSchema(), args);
   }  
 }
 

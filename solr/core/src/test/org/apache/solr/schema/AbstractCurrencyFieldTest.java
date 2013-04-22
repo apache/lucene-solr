@@ -64,7 +64,7 @@ public abstract class AbstractCurrencyFieldTest extends SolrTestCaseJ4 {
 
   @Test
   public void testCurrencySchema() throws Exception {
-    IndexSchema schema = h.getCore().getSchema();
+    IndexSchema schema = h.getCore().getLatestSchema();
 
     SchemaField amount = schema.getField(field());
     assertNotNull(amount);
@@ -91,7 +91,7 @@ public abstract class AbstractCurrencyFieldTest extends SolrTestCaseJ4 {
   @Test
   public void testCurrencyFieldType() throws Exception {
     SolrCore core = h.getCore();
-    IndexSchema schema = core.getSchema();
+    IndexSchema schema = core.getLatestSchema();
     SchemaField amount = schema.getField(field());
     assertNotNull(amount);
     assertTrue(field() + " is not a poly field", amount.isPolyField());
@@ -122,7 +122,7 @@ public abstract class AbstractCurrencyFieldTest extends SolrTestCaseJ4 {
   @Test
   public void testMockExchangeRateProvider() throws Exception {
     SolrCore core = h.getCore();
-    IndexSchema schema = core.getSchema();
+    IndexSchema schema = core.getLatestSchema();
     SchemaField amount = schema.getField("mock_amount");
 
     // A few tests on the provider directly

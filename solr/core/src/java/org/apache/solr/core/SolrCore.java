@@ -97,7 +97,7 @@ import org.apache.solr.response.transform.TransformerFactory;
 import org.apache.solr.schema.FieldType;
 import org.apache.solr.schema.IndexSchema;
 import org.apache.solr.schema.IndexSchemaFactory;
-import org.apache.solr.schema.SchemaAware;
+import org.apache.solr.schema.SimilarityFactory;
 import org.apache.solr.search.QParserPlugin;
 import org.apache.solr.search.SolrFieldCacheMBean;
 import org.apache.solr.search.SolrIndexSearcher;
@@ -147,7 +147,7 @@ public final class SolrCore implements SolrInfoMBean {
 
   private final SolrConfig solrConfig;
   private final SolrResourceLoader resourceLoader;
-  private final IndexSchema schema;
+  private volatile IndexSchema schema;
   private final String dataDir;
   private final UpdateHandler updateHandler;
   private final SolrCoreState solrCoreState;
@@ -206,14 +206,17 @@ public final class SolrCore implements SolrInfoMBean {
    * @since solr 1.3
    */
   public String getSchemaResource() {
-    return schema.getResourceName();
+    return getLatestSchema().getResourceName();
   }
 
-  /**
-   * Gets the schema object used by this core instance.
-   */
-  public IndexSchema getSchema() { 
+  /** @return the latest snapshot of the schema used by this core instance. */
+  public IndexSchema getLatestSchema() { 
     return schema;
+  }
+  
+  /** Sets the latest schema snapshot to be used by this core instance. */
+  public void setLatestSchema(IndexSchema replacementSchema) {
+    schema = replacementSchema;
   }
   
   public String getDataDir() {
@@ -396,7 +399,7 @@ public final class SolrCore implements SolrInfoMBean {
     
     SolrConfig config = new SolrConfig(resourceLoader, getSolrConfig().getName(), null);
     
-    IndexSchema schema = IndexSchemaFactory.buildIndexSchema(getSchema().getResourceName(), config);
+    IndexSchema schema = IndexSchemaFactory.buildIndexSchema(getLatestSchema().getResourceName(), config);
     
     solrCoreState.increfSolrCoreState();
     
@@ -419,7 +422,8 @@ public final class SolrCore implements SolrInfoMBean {
 
   // gets a non-caching searcher
   public SolrIndexSearcher newSearcher(String name) throws IOException {
-    return new SolrIndexSearcher(this, getNewIndexDir(), schema, getSolrConfig().indexConfig, name, false, directoryFactory);
+    return new SolrIndexSearcher(this, getNewIndexDir(), getLatestSchema(), getSolrConfig().indexConfig, 
+                                 name, false, directoryFactory);
   }
 
 
@@ -496,7 +500,8 @@ public final class SolrCore implements SolrInfoMBean {
         log.warn(logid+"Solr index directory '" + new File(indexDir) + "' doesn't exist."
                 + " Creating new index...");
 
-        SolrIndexWriter writer = SolrIndexWriter.create("SolrCore.initIndex", indexDir, getDirectoryFactory(), true, schema, solrConfig.indexConfig, solrDelPolicy, codec);
+        SolrIndexWriter writer = SolrIndexWriter.create("SolrCore.initIndex", indexDir, getDirectoryFactory(), true, 
+                                                        getLatestSchema(), solrConfig.indexConfig, solrDelPolicy, codec);
         writer.close();
       }
 
@@ -679,10 +684,6 @@ public final class SolrCore implements SolrInfoMBean {
     dataDir = SolrResourceLoader.normalizeDir(dataDir);
     log.info(logid+"Opening new SolrCore at " + resourceLoader.getInstanceDir() + ", dataDir="+dataDir);
 
-    if (schema==null) {
-      schema = IndexSchemaFactory.buildIndexSchema(IndexSchema.DEFAULT_SCHEMA_FILE, config);
-    }
-
     if (null != cd && null != cd.getCloudDescriptor()) {
       // we are evidently running in cloud mode.  
       //
@@ -712,7 +713,16 @@ public final class SolrCore implements SolrInfoMBean {
 
     infoRegistry.put("fieldCache", new SolrFieldCacheMBean());
 
+    if (schema==null) {
+      schema = IndexSchemaFactory.buildIndexSchema(IndexSchema.DEFAULT_SCHEMA_FILE, config);
+    }
     this.schema = schema;
+    final SimilarityFactory similarityFactory = schema.getSimilarityFactory(); 
+    if (similarityFactory instanceof SolrCoreAware) {
+      // Similarity needs SolrCore before inform() is called on all registered SolrCoreAware listeners below
+      ((SolrCoreAware)similarityFactory).inform(this);
+    }
+
     this.dataDir = dataDir;
     this.startTime = System.currentTimeMillis();
     this.maxWarmingSearchers = config.maxWarmingSearchers;
@@ -854,8 +864,10 @@ public final class SolrCore implements SolrInfoMBean {
         }
       };
     }
-    if (factory instanceof SchemaAware) {
-      ((SchemaAware)factory).inform(schema);
+    if (factory instanceof SolrCoreAware) {
+      // CodecFactory needs SolrCore before inform() is called on all registered
+      // SolrCoreAware listeners, at the end of the SolrCore constructor
+      ((SolrCoreAware)factory).inform(this);
     } else {
       for (FieldType ft : schema.getFieldTypes().values()) {
         if (null != ft.getPostingsFormat()) {
@@ -1393,7 +1405,8 @@ public final class SolrCore implements SolrInfoMBean {
         }
 
        // for now, turn off caches if this is for a realtime reader (caches take a little while to instantiate)
-        tmp = new SolrIndexSearcher(this, newIndexDir, schema, getSolrConfig().indexConfig, (realtime ? "realtime":"main"), newReader, true, !realtime, true, directoryFactory);
+        tmp = new SolrIndexSearcher(this, newIndexDir, getLatestSchema(), getSolrConfig().indexConfig, 
+            (realtime ? "realtime":"main"), newReader, true, !realtime, true, directoryFactory);
 
       } else {
         // newestSearcher == null at this point
@@ -1403,11 +1416,13 @@ public final class SolrCore implements SolrInfoMBean {
           // so that we pick up any uncommitted changes and so we don't go backwards
           // in time on a core reload
           DirectoryReader newReader = newReaderCreator.call();
-          tmp = new SolrIndexSearcher(this, newIndexDir, schema, getSolrConfig().indexConfig, (realtime ? "realtime":"main"), newReader, true, !realtime, true, directoryFactory);
+          tmp = new SolrIndexSearcher(this, newIndexDir, getLatestSchema(), getSolrConfig().indexConfig, 
+              (realtime ? "realtime":"main"), newReader, true, !realtime, true, directoryFactory);
         } else {
          // normal open that happens at startup
         // verbose("non-reopen START:");
-        tmp = new SolrIndexSearcher(this, newIndexDir, schema, getSolrConfig().indexConfig, "main", true, directoryFactory);
+        tmp = new SolrIndexSearcher(this, newIndexDir, getLatestSchema(), getSolrConfig().indexConfig,
+                                    "main", true, directoryFactory);
         // verbose("non-reopen DONE: searcher=",tmp);
         }
       }

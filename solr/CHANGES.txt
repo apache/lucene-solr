@@ -54,6 +54,11 @@ Upgrading from Solr 4.3.0
 Detailed Change List
 ----------------------
 
+New Features
+----------------------
+
+* SOLR-3251: Dynamically add fields to schema. (Steve Rowe, Robert Muir, yonik)   
+
 Bug Fixes
 ----------------------
 

@@ -81,7 +81,7 @@ public class IndexSchemaTest extends SolrTestCaseJ4 {
   @Test
   public void testIsDynamicField() throws Exception {
     SolrCore core = h.getCore();
-    IndexSchema schema = core.getSchema();
+    IndexSchema schema = core.getLatestSchema();
     assertFalse( schema.isDynamicField( "id" ) );
     assertTrue( schema.isDynamicField( "aaa_i" ) );
     assertFalse( schema.isDynamicField( "no_such_field" ) );
@@ -90,7 +90,7 @@ public class IndexSchemaTest extends SolrTestCaseJ4 {
   @Test
   public void testProperties() throws Exception{
     SolrCore core = h.getCore();
-    IndexSchema schema = core.getSchema();
+    IndexSchema schema = core.getLatestSchema();
     assertFalse(schema.getField("id").multiValued());
   }
 }

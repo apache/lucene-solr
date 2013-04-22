@@ -31,7 +31,7 @@ public class TestMergePolicyConfig extends SolrTestCaseJ4 {
   }
   
   public void testTieredMergePolicyConfig() throws Exception {
-    IndexWriterConfig iwc = solrConfig.indexConfig.toIndexWriterConfig(h.getCore().getSchema());
+    IndexWriterConfig iwc = solrConfig.indexConfig.toIndexWriterConfig(h.getCore().getLatestSchema());
     MergePolicy mp = iwc.getMergePolicy();
     assertTrue(mp instanceof TieredMergePolicy);
     TieredMergePolicy tieredMP = (TieredMergePolicy) mp;

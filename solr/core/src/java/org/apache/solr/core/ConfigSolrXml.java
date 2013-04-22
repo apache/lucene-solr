@@ -22,12 +22,10 @@ import org.apache.solr.cloud.ZkController;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.handler.component.HttpShardHandlerFactory;
 import org.apache.solr.handler.component.ShardHandlerFactory;
-import org.apache.solr.schema.IndexSchema;
 import org.apache.solr.util.DOMUtil;
 import org.apache.solr.util.PropertiesUtil;
 import org.apache.solr.util.SystemIdResolver;
 import org.apache.solr.util.plugin.PluginInfoInitialized;
-import org.apache.zookeeper.KeeperException;
 import org.w3c.dom.Document;
 import org.w3c.dom.NamedNodeMap;
 import org.w3c.dom.Node;
@@ -482,16 +480,6 @@ public class ConfigSolrXml extends Config implements ConfigSolr {
       log.warn(msg);
     }
     coreDescriptorPlusMap.remove(desc.getName());
-  }
-
-  public IndexSchema getSchemaFromZk(ZkController zkController, String zkConfigName, String schemaName,
-                                     SolrConfig config)
-      throws KeeperException, InterruptedException {
-    byte[] configBytes = zkController.getConfigFileData(zkConfigName, schemaName);
-    InputSource is = new InputSource(new ByteArrayInputStream(configBytes));
-    is.setSystemId(SystemIdResolver.createSystemIdFromResourceName(schemaName));
-    IndexSchema schema = new IndexSchema(config, schemaName, is);
-    return schema;
   }
 
   @Override

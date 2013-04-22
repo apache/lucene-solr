@@ -26,7 +26,7 @@ import org.apache.lucene.analysis.miscellaneous.ASCIIFoldingFilterFactory;
 import org.apache.lucene.analysis.miscellaneous.TrimFilterFactory;
 import org.apache.lucene.analysis.util.TokenFilterFactory;
 import org.apache.solr.SolrTestCaseJ4;
-import org.apache.solr.analysis.*;
+import org.apache.solr.analysis.TokenizerChain;
 import org.junit.BeforeClass;
 import org.junit.Test;
 
@@ -42,7 +42,7 @@ public class MultiTermTest extends SolrTestCaseJ4 {
 
   @Test
   public void testMultiFound() {
-    SchemaField field = h.getCore().getSchema().getField("content_multi");
+    SchemaField field = h.getCore().getLatestSchema().getField("content_multi");
     Analyzer analyzer = ((TextField)field.getType()).getMultiTermAnalyzer();
     assertTrue(analyzer instanceof TokenizerChain);
     assertTrue(((TokenizerChain) analyzer).getTokenizerFactory() instanceof WhitespaceTokenizerFactory);
@@ -64,7 +64,7 @@ public class MultiTermTest extends SolrTestCaseJ4 {
 
   @Test
   public void testQueryCopiedToMulti() {
-    SchemaField field = h.getCore().getSchema().getField("content_charfilter");
+    SchemaField field = h.getCore().getLatestSchema().getField("content_charfilter");
     Analyzer analyzer = ((TextField)field.getType()).getMultiTermAnalyzer();
     assertTrue(analyzer instanceof TokenizerChain);
     assertTrue(((TokenizerChain) analyzer).getTokenizerFactory() instanceof KeywordTokenizerFactory);
@@ -79,7 +79,7 @@ public class MultiTermTest extends SolrTestCaseJ4 {
 
   @Test
   public void testDefaultCopiedToMulti() {
-    SchemaField field = h.getCore().getSchema().getField("content_ws");
+    SchemaField field = h.getCore().getLatestSchema().getField("content_ws");
     Analyzer analyzer = ((TextField)field.getType()).getMultiTermAnalyzer();
     assertTrue(analyzer instanceof TokenizerChain);
     assertTrue(((TokenizerChain) analyzer).getTokenizerFactory() instanceof KeywordTokenizerFactory);

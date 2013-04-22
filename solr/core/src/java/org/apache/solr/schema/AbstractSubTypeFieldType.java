@@ -41,6 +41,8 @@ public abstract class AbstractSubTypeFieldType extends FieldType implements Sche
   protected String suffix;
   protected int dynFieldProps;
   protected String[] suffixes;
+  protected String subFieldType = null;
+  protected String subSuffix = null;
   protected IndexSchema schema;   // needed for retrieving SchemaFields
 
   public FieldType getSubType() {
@@ -53,11 +55,11 @@ public abstract class AbstractSubTypeFieldType extends FieldType implements Sche
     this.schema = schema;
     //it's not a first class citizen for the IndexSchema
     SolrParams p = new MapSolrParams(args);
-    String subFT = p.get(SUB_FIELD_TYPE);
-    String subSuffix = p.get(SUB_FIELD_SUFFIX);
-    if (subFT != null) {
+    subFieldType = p.get(SUB_FIELD_TYPE);
+    subSuffix = p.get(SUB_FIELD_SUFFIX);
+    if (subFieldType != null) {
       args.remove(SUB_FIELD_TYPE);
-      subType = schema.getFieldTypeByName(subFT.trim());
+      subType = schema.getFieldTypeByName(subFieldType.trim());
       suffix = POLY_FIELD_SEPARATOR + subType.typeName;
     } else if (subSuffix != null) {
       args.remove(SUB_FIELD_SUFFIX);
@@ -67,7 +69,6 @@ public abstract class AbstractSubTypeFieldType extends FieldType implements Sche
               + " must specify the " +
               SUB_FIELD_TYPE + " attribute or the " + SUB_FIELD_SUFFIX + " attribute.");
     }
-
   }
 
   /**
@@ -94,8 +95,17 @@ public abstract class AbstractSubTypeFieldType extends FieldType implements Sche
     return proto;
   }
 
+  /**
+   * Registers the polyfield dynamic prototype for this field type: : "*___(field type name)" 
+   * 
+   * {@inheritDoc}
+   *  
+   * @param schema {@inheritDoc}
+   *
+   */
   @Override
   public void inform(IndexSchema schema) {
+    this.schema = schema;
     //Can't do this until here b/c the Dynamic Fields are not initialized until here.
     if (subType != null) {
       SchemaField proto = registerPolyFieldDynamicPrototype(schema, subType);
@@ -118,7 +128,7 @@ public abstract class AbstractSubTypeFieldType extends FieldType implements Sche
     }
   }
 
-  protected SchemaField subField(SchemaField base, int i) {
+  protected SchemaField subField(SchemaField base, int i, IndexSchema schema) {
     return schema.getField(base.getName() + suffixes[i]);
   }
 }

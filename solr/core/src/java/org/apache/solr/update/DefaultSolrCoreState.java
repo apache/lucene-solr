@@ -195,7 +195,7 @@ public final class DefaultSolrCoreState extends SolrCoreState implements Recover
   
   protected SolrIndexWriter createMainIndexWriter(SolrCore core, String name) throws IOException {
     return SolrIndexWriter.create(name, core.getNewIndexDir(),
-        core.getDirectoryFactory(), false, core.getSchema(),
+        core.getDirectoryFactory(), false, core.getLatestSchema(),
         core.getSolrConfig().indexConfig, core.getDeletionPolicy(), core.getCodec());
   }
 

@@ -17,12 +17,12 @@ package org.apache.solr.util;
  */
 
 import org.apache.commons.io.IOUtils;
-import org.eclipse.jetty.util.IO;
 
 import javax.xml.xpath.XPathExpressionException;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
+import java.io.OutputStreamWriter;
 import java.io.StringWriter;
 import java.net.HttpURLConnection;
 import java.net.URL;
@@ -43,19 +43,36 @@ public class RestTestHarness extends BaseTestHarness {
   }
   
   /**
-   * Validates a "query" response against an array of XPath test strings
+   * Validates an XML "query" response against an array of XPath test strings
    *
    * @param request the Query to process
    * @return null if all good, otherwise the first test that fails.
    * @exception Exception any exception in the response.
    * @exception java.io.IOException if there is a problem writing the XML
    */
-  public String validateQuery(String request, String... tests)
-      throws Exception {
+  public String validateQuery(String request, String... tests) throws Exception {
 
     String res = query(request);
     return validateXPath(res, tests);
   }
+
+
+  /**
+   * Validates an XML PUT response against an array of XPath test strings
+   *
+   * @param request the PUT request to process
+   * @param content the content to send with the PUT request
+   * @param tests the validating XPath tests
+   * @return null if all good, otherwise the first test that fails.
+   * @exception Exception any exception in the response.
+   * @exception java.io.IOException if there is a problem writing the XML
+   */
+  public String validatePut(String request, String content, String... tests) throws Exception {
+
+    String res = put(request, content);
+    return validateXPath(res, tests);
+  }
+
 
   /**
    * Processes a "query" using a URL path (with no context path) + optional query params,
@@ -84,7 +101,74 @@ public class RestTestHarness extends BaseTestHarness {
     return strWriter.toString();
   }
 
-  public String checkQueryStatus(String xml, String code) throws Exception {
+  /**
+   * Processes a PUT request using a URL path (with no context path) + optional query params,
+   * e.g. "/schema/fields/newfield", PUTs the given content, and returns the response content.
+   * 
+   * @param request The URL path and optional query params
+   * @param content The content to include with the PUT request
+   * @return The response to the PUT request
+   */
+  public String put(String request, String content) throws IOException {
+    URL url = new URL(getBaseURL() + request);
+    HttpURLConnection connection = (HttpURLConnection)url.openConnection();
+    connection.setDoOutput(true);
+    connection.setRequestMethod("PUT");
+    OutputStreamWriter out = new OutputStreamWriter(connection.getOutputStream(), "UTF-8");
+    out.write(content);
+    out.close();
+    InputStream inputStream = null;
+    StringWriter stringWriter;
+    try {
+      try {
+        inputStream = connection.getInputStream();
+      } catch (IOException e) {
+        inputStream = connection.getErrorStream();
+      }
+      stringWriter = new StringWriter();
+      IOUtils.copy(new InputStreamReader(inputStream, "UTF-8"), stringWriter);
+    } finally {
+      IOUtils.closeQuietly(inputStream);
+    }
+    return stringWriter.toString();
+  }
+
+  /**
+   * Processes a POST request using a URL path (with no context path) + optional query params,
+   * e.g. "/schema/fields/newfield", PUTs the given content, and returns the response content.
+   *
+   * @param request The URL path and optional query params
+   * @param content The content to include with the POST request
+   * @return The response to the PUT request
+   */
+  public String post(String request, String content) throws IOException {
+    URL url = new URL(getBaseURL() + request);
+    HttpURLConnection connection = (HttpURLConnection)url.openConnection();
+    connection.setDoOutput(true);
+    connection.setRequestMethod("POST");
+    connection.setRequestProperty("Content-Type", "application/json; charset=utf-8");
+
+    OutputStreamWriter out = new OutputStreamWriter(connection.getOutputStream(), "UTF-8");
+    out.write(content);
+    out.close();
+    InputStream inputStream = null;
+    StringWriter stringWriter;
+    try {
+      try {
+        inputStream = connection.getInputStream();
+      } catch (IOException e) {
+        inputStream = connection.getErrorStream();
+      }
+      stringWriter = new StringWriter();
+      IOUtils.copy(new InputStreamReader(inputStream, "UTF-8"), stringWriter);
+    } finally {
+      IOUtils.closeQuietly(inputStream);
+    }
+    return stringWriter.toString();
+  }
+
+
+  public String checkResponseStatus(String xml, String code) throws Exception {
     try {
       String response = query(xml);
       String valid = validateXPath(response, "//int[@name='status']="+code );
@@ -94,9 +178,10 @@ public class RestTestHarness extends BaseTestHarness {
     }
   }
 
+  
   @Override
   public void reload() throws Exception {
-    String xml = checkQueryStatus("/admin/cores?action=RELOAD", "0");
+    String xml = checkResponseStatus("/admin/cores?action=RELOAD", "0");
     if (null != xml) {
       throw new RuntimeException("RELOAD failed:\n" + xml);
     }
@@ -112,7 +197,7 @@ public class RestTestHarness extends BaseTestHarness {
   @Override
   public String update(String xml) {
     try {
-      return query("/update?stream.base=" + URLEncoder.encode(xml, "UTF-8"));
+      return query("/update?stream.body=" + URLEncoder.encode(xml, "UTF-8"));
     } catch (Exception e) {
       throw new RuntimeException(e);
     }

@@ -18,7 +18,6 @@
 package org.apache.solr.handler;
 
 import org.apache.lucene.analysis.MockTokenizer;
-import org.apache.lucene.analysis.core.KeywordTokenizer;
 import org.apache.lucene.analysis.core.WhitespaceTokenizer;
 import org.apache.solr.common.params.AnalysisParams;
 import org.apache.solr.common.params.CommonParams;
@@ -126,7 +125,7 @@ public class FieldAnalysisRequestHandlerTest extends AnalysisRequestHandlerTestB
     request.setQuery("fox brown");
     request.setShowMatch(true);
 
-    NamedList<NamedList> result = handler.handleAnalysisRequest(request, h.getCore().getSchema());
+    NamedList<NamedList> result = handler.handleAnalysisRequest(request, h.getCore().getLatestSchema());
     assertTrue("result is null and it shouldn't be", result != null);
 
     NamedList<NamedList> fieldTypes = result.get("field_types");
@@ -315,7 +314,7 @@ public class FieldAnalysisRequestHandlerTest extends AnalysisRequestHandlerTestB
     request.setFieldValue("<html><body>whátëvêr</body></html>");
     request.setShowMatch(false);
 
-    NamedList<NamedList> result = handler.handleAnalysisRequest(request, h.getCore().getSchema());
+    NamedList<NamedList> result = handler.handleAnalysisRequest(request, h.getCore().getLatestSchema());
     assertTrue("result is null and it shouldn't be", result != null);
 
     NamedList<NamedList> fieldTypes = result.get("field_types");
@@ -343,7 +342,7 @@ public class FieldAnalysisRequestHandlerTest extends AnalysisRequestHandlerTestB
     request.setFieldValue("hi, 3456-12 a Test");
     request.setShowMatch(false);
 
-    NamedList<NamedList> result = handler.handleAnalysisRequest(request, h.getCore().getSchema());
+    NamedList<NamedList> result = handler.handleAnalysisRequest(request, h.getCore().getLatestSchema());
     assertTrue("result is null and it shouldn't be", result != null);
 
     NamedList<NamedList> fieldTypes = result.get("field_types");

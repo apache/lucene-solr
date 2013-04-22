@@ -352,7 +352,7 @@ public class SimpleFacetsTest extends SolrTestCaseJ4 {
   }
   
   static void doEmptyFacetCounts(String field, String[] prefixes) throws Exception {
-    SchemaField sf = h.getCore().getSchema().getField(field);
+    SchemaField sf = h.getCore().getLatestSchema().getField(field);
 
     String response = JQ(req("q", "*:*"));
     Map rsp = (Map) ObjectBuilder.fromJSON(response);

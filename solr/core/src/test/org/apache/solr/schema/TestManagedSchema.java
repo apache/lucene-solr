@@ -17,8 +17,15 @@ package org.apache.solr.schema;
  */
 
 import java.io.File;
+import java.io.FileInputStream;
+import java.util.Collections;
+import java.util.HashMap;
+import java.util.Map;
+import java.util.regex.Pattern;
 
 import org.apache.commons.io.FileUtils;
+import org.apache.commons.io.IOUtils;
+import org.apache.solr.common.SolrException;
 import org.apache.solr.common.params.CoreAdminParams;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.core.AbstractBadConfigTestBase;
@@ -45,9 +52,14 @@ public class TestManagedSchema extends AbstractBadConfigTestBase {
     tmpSolrHome = new File(tmpSolrHomePath).getAbsoluteFile();
     tmpConfDir = new File(tmpSolrHome, confDir);
     File testHomeConfDir = new File(TEST_HOME(), confDir);
+    FileUtils.copyFileToDirectory(new File(testHomeConfDir, "solrconfig-mutable-managed-schema.xml"), tmpConfDir);
     FileUtils.copyFileToDirectory(new File(testHomeConfDir, "solrconfig-managed-schema.xml"), tmpConfDir);
     FileUtils.copyFileToDirectory(new File(testHomeConfDir, "solrconfig-basic.xml"), tmpConfDir);
+    FileUtils.copyFileToDirectory(new File(testHomeConfDir, "schema-one-field-no-dynamic-field.xml"), tmpConfDir);
     FileUtils.copyFileToDirectory(new File(testHomeConfDir, "schema-minimal.xml"), tmpConfDir);
+    FileUtils.copyFileToDirectory(new File(testHomeConfDir, "schema_codec.xml"), tmpConfDir);
+    FileUtils.copyFileToDirectory(new File(testHomeConfDir, "schema-bm25.xml"), tmpConfDir);
+
     // initCore will trigger an upgrade to managed schema, since the solrconfig has
     // <schemaFactory class="ManagedIndexSchemaFactory" ... />
     initCore("solrconfig-managed-schema.xml", "schema-minimal.xml", tmpSolrHome.getPath());
@@ -120,4 +132,255 @@ public class TestManagedSchema extends AbstractBadConfigTestBase {
     String collectionSchema = (String)collectionStatus.get(CoreAdminParams.SCHEMA);
     assertEquals("Schema resource name differs from expected name", expectedSchemaResource, collectionSchema);
   }
+
+  public void testAddFieldWhenNotMutable() throws Exception {
+    assertSchemaResource(collection, "managed-schema");
+    String errString = "This ManagedIndexSchema is not mutable.";
+    ignoreException(Pattern.quote(errString));
+    try {
+      IndexSchema oldSchema = h.getCore().getLatestSchema();
+      String fieldName = "new_field";
+      String fieldType = "string";
+      Map<String,?> options = Collections.emptyMap();
+      SchemaField newField = oldSchema.newField(fieldName, fieldType, options);
+      IndexSchema newSchema = oldSchema.addField(newField);
+      h.getCore().setLatestSchema(newSchema);
+      fail();
+    } catch (Exception e) {
+      for (Throwable t = e; t != null; t = t.getCause()) {
+        // short circuit out if we found what we expected
+        if (t.getMessage() != null && -1 != t.getMessage().indexOf(errString)) return;
+      }
+      // otherwise, rethrow it, possibly completely unrelated
+      throw new SolrException(SolrException.ErrorCode.SERVER_ERROR,
+                              "Unexpected error, expected error matching: " + errString, e);
+    } finally {
+      resetExceptionIgnores();
+    }
+  }
+  
+  public void testAddFieldPersistence() throws Exception {
+    assertSchemaResource(collection, "managed-schema");
+    deleteCore();
+    File managedSchemaFile = new File(tmpConfDir, "managed-schema");
+    assertTrue(managedSchemaFile.delete()); // Delete managed-schema so it won't block parsing a new schema
+    initCore("solrconfig-mutable-managed-schema.xml", "schema-one-field-no-dynamic-field.xml", tmpSolrHome.getPath());
+    
+    assertTrue(managedSchemaFile.exists());
+    String managedSchemaContents = FileUtils.readFileToString(managedSchemaFile, "UTF-8");
+    assertFalse(managedSchemaContents.contains("\"new_field\""));
+    
+    Map<String,Object> options = new HashMap<String,Object>();
+    options.put("stored", "false");
+    IndexSchema oldSchema = h.getCore().getLatestSchema();
+    String fieldName = "new_field";
+    String fieldType = "string";
+    SchemaField newField = oldSchema.newField(fieldName, fieldType, options);
+    IndexSchema newSchema = oldSchema.addField(newField);
+    h.getCore().setLatestSchema(newSchema);
+
+    assertTrue(managedSchemaFile.exists());
+    managedSchemaContents = IOUtils.toString(new FileInputStream(managedSchemaFile), "UTF-8");
+    assertTrue(managedSchemaContents.contains("<field name=\"new_field\" type=\"string\" stored=\"false\"/>"));
+  }
+  
+  public void testAddedFieldIndexableAndQueryable() throws Exception {
+    assertSchemaResource(collection, "managed-schema");
+    deleteCore();
+    File managedSchemaFile = new File(tmpConfDir, "managed-schema");
+    assertTrue(managedSchemaFile.delete()); // Delete managed-schema so it won't block parsing a new schema
+    initCore("solrconfig-mutable-managed-schema.xml", "schema-one-field-no-dynamic-field.xml", tmpSolrHome.getPath());
+
+    assertTrue(managedSchemaFile.exists());
+    String managedSchemaContents = FileUtils.readFileToString(managedSchemaFile, "UTF-8");
+    assertFalse(managedSchemaContents.contains("\"new_field\""));
+
+    clearIndex();
+
+    String errString = "unknown field 'new_field'";
+    ignoreException(Pattern.quote(errString));
+    try {
+      assertU(adoc("new_field", "thing1 thing2", "str", "X"));
+      fail();
+    } catch (Exception e) {
+      for (Throwable t = e; t != null; t = t.getCause()) {
+        // short circuit out if we found what we expected
+        if (t.getMessage() != null && -1 != t.getMessage().indexOf(errString)) return;
+      }
+      // otherwise, rethrow it, possibly completely unrelated
+      throw new SolrException(SolrException.ErrorCode.SERVER_ERROR,
+          "Unexpected error, expected error matching: " + errString, e);
+    } finally {
+      resetExceptionIgnores();
+    }
+    assertU(commit());
+    assertQ(req("new_field:thing1"), "//*[@numFound='0']");
+
+    Map<String,Object> options = new HashMap<String,Object>();
+    options.put("stored", "false");
+    IndexSchema oldSchema = h.getCore().getLatestSchema();
+    String fieldName = "new_field";
+    String fieldType = "text";
+    SchemaField newField = oldSchema.newField(fieldName, fieldType, options);
+    IndexSchema newSchema = oldSchema.addField(newField);
+    h.getCore().setLatestSchema(newSchema);
+
+    assertU(adoc("new_field", "thing1 thing2", "str", "X"));
+    assertU(commit());
+
+    assertQ(req("new_field:thing1"), "//*[@numFound='1']");
+  }
+  
+  public void testAddFieldWhenItAlreadyExists() throws Exception{
+    deleteCore();
+    File managedSchemaFile = new File(tmpConfDir, "managed-schema");
+    assertTrue(managedSchemaFile.delete()); // Delete managed-schema so it won't block parsing a new schema
+    initCore("solrconfig-mutable-managed-schema.xml", "schema-one-field-no-dynamic-field.xml", tmpSolrHome.getPath());
+
+    assertNotNull("Field 'str' is not present in the schema", h.getCore().getLatestSchema().getFieldOrNull("str"));
+    
+    String errString = "Field 'str' already exists.";
+    ignoreException(Pattern.quote(errString));
+    try {
+      Map<String,Object> options = new HashMap<String,Object>();
+      IndexSchema oldSchema = h.getCore().getLatestSchema();
+      String fieldName = "str";
+      String fieldType = "string";
+      SchemaField newField = oldSchema.newField(fieldName, fieldType, options);
+      IndexSchema newSchema = oldSchema.addField(newField);
+      h.getCore().setLatestSchema(newSchema);
+      fail("Should fail when adding a field that already exists");
+    } catch (Exception e) {
+      for (Throwable t = e; t != null; t = t.getCause()) {
+        // short circuit out if we found what we expected
+        if (t.getMessage() != null && -1 != t.getMessage().indexOf(errString)) return;
+      }
+      // otherwise, rethrow it, possibly completely unrelated
+      throw new SolrException(SolrException.ErrorCode.SERVER_ERROR,
+          "Unexpected error, expected error matching: " + errString, e);
+    } finally {
+      resetExceptionIgnores();
+    }
+  }
+
+  public void testAddSameFieldTwice() throws Exception{
+    deleteCore();
+    File managedSchemaFile = new File(tmpConfDir, "managed-schema");
+    assertTrue(managedSchemaFile.delete()); // Delete managed-schema so it won't block parsing a new schema
+    initCore("solrconfig-mutable-managed-schema.xml", "schema-one-field-no-dynamic-field.xml", tmpSolrHome.getPath());
+
+    Map<String,Object> options = new HashMap<String,Object>();
+    options.put("stored", "false");
+    IndexSchema oldSchema = h.getCore().getLatestSchema();
+    String fieldName = "new_field";
+    String fieldType = "text";
+    SchemaField newField = oldSchema.newField(fieldName, fieldType, options);
+    IndexSchema newSchema = oldSchema.addField(newField);
+    h.getCore().setLatestSchema(newSchema);
+
+    String errString = "Field 'new_field' already exists.";
+    ignoreException(Pattern.quote(errString));
+    try {
+      newSchema = newSchema.addField(newField);
+      h.getCore().setLatestSchema(newSchema);
+      fail("Should fail when adding the same field twice");
+    } catch (Exception e) {
+      for (Throwable t = e; t != null; t = t.getCause()) {
+        // short circuit out if we found what we expected
+        if (t.getMessage() != null && -1 != t.getMessage().indexOf(errString)) return;
+      }
+      // otherwise, rethrow it, possibly completely unrelated
+      throw new SolrException(SolrException.ErrorCode.SERVER_ERROR,
+          "Unexpected error, expected error matching: " + errString, e);
+    } finally {
+      resetExceptionIgnores();
+    }
+  }
+
+  public void testAddDynamicField() throws Exception{
+    deleteCore();
+    File managedSchemaFile = new File(tmpConfDir, "managed-schema");
+    assertTrue(managedSchemaFile.delete()); // Delete managed-schema so it won't block parsing a new schema
+    initCore("solrconfig-mutable-managed-schema.xml", "schema-one-field-no-dynamic-field.xml", tmpSolrHome.getPath());
+
+    assertNull("Field '*_s' is present in the schema", h.getCore().getLatestSchema().getFieldOrNull("*_s"));
+
+    String errString = "Can't add dynamic field '*_s'.";
+    ignoreException(Pattern.quote(errString));
+    try {
+      Map<String,Object> options = new HashMap<String,Object>();
+      IndexSchema oldSchema = h.getCore().getLatestSchema();
+      String fieldName = "*_s";
+      String fieldType = "string";
+      SchemaField newField = oldSchema.newField(fieldName, fieldType, options);
+      IndexSchema newSchema = oldSchema.addField(newField);
+      h.getCore().setLatestSchema(newSchema);
+      fail("Should fail when adding a dynamic field");
+    } catch (Exception e) {
+      for (Throwable t = e; t != null; t = t.getCause()) {
+        // short circuit out if we found what we expected
+        if (t.getMessage() != null && -1 != t.getMessage().indexOf(errString)) return;
+      }
+      // otherwise, rethrow it, possibly completely unrelated
+      throw new SolrException(SolrException.ErrorCode.SERVER_ERROR,
+          "Unexpected error, expected error matching: " + errString, e);
+    } finally {
+      resetExceptionIgnores();
+    }
+  }
+  
+  public void testAddWithSchemaCodecFactory() throws Exception {
+    deleteCore();
+    File managedSchemaFile = new File(tmpConfDir, "managed-schema");
+    assertTrue(managedSchemaFile.delete()); // Delete managed-schema so it won't block parsing a new schema
+    initCore("solrconfig-mutable-managed-schema.xml", "schema_codec.xml", tmpSolrHome.getPath());
+
+    String uniqueKey = "string_f";
+    assertNotNull("Unique key field '" + uniqueKey + "' is not present in the schema", 
+                  h.getCore().getLatestSchema().getFieldOrNull(uniqueKey));
+
+    String fieldName = "string_disk_new_field";
+    assertNull("Field '" + fieldName + "' is present in the schema", 
+               h.getCore().getLatestSchema().getFieldOrNull(fieldName));
+
+    Map<String,Object> options = new HashMap<String,Object>();
+    IndexSchema oldSchema = h.getCore().getLatestSchema();
+    String fieldType = "string_disk";
+    SchemaField newField = oldSchema.newField(fieldName, fieldType, options);
+    IndexSchema newSchema = oldSchema.addField(newField);
+    h.getCore().setLatestSchema(newSchema);
+
+    assertU(adoc(fieldName, "thing", uniqueKey, "aBc"));
+    assertU(commit());
+
+    assertQ(req(fieldName + ":thing"), "//*[@numFound='1']");
+  }
+
+  public void testAddWithSchemaSimilarityFactory() throws Exception {
+    deleteCore();
+    File managedSchemaFile = new File(tmpConfDir, "managed-schema");
+    assertTrue(managedSchemaFile.delete()); // Delete managed-schema so it won't block parsing a new schema
+    initCore("solrconfig-mutable-managed-schema.xml", "schema-bm25.xml", tmpSolrHome.getPath());
+
+    String uniqueKey = "id";
+    assertNotNull("Unique key field '" + uniqueKey + "' is not present in the schema",
+        h.getCore().getLatestSchema().getFieldOrNull(uniqueKey));
+
+    String fieldName = "new_text_field";
+    assertNull("Field '" + fieldName + "' is present in the schema",
+        h.getCore().getLatestSchema().getFieldOrNull(fieldName));
+
+    Map<String,Object> options = new HashMap<String,Object>();
+    IndexSchema oldSchema = h.getCore().getLatestSchema();
+    String fieldType = "text";
+    SchemaField newField = oldSchema.newField(fieldName, fieldType, options);
+    IndexSchema newSchema = oldSchema.addField(newField);
+    h.getCore().setLatestSchema(newSchema);
+
+    assertU(adoc(fieldName, "thing", uniqueKey, "123"));
+    assertU(commit());
+
+    assertQ(req(fieldName + ":thing"), "//*[@numFound='1']");
+  }
+
 }

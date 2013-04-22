@@ -57,6 +57,7 @@ import org.apache.solr.handler.component.RealTimeGetComponent;
 import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.request.SolrRequestInfo;
 import org.apache.solr.response.SolrQueryResponse;
+import org.apache.solr.schema.IndexSchema;
 import org.apache.solr.schema.SchemaField;
 import org.apache.solr.update.AddUpdateCommand;
 import org.apache.solr.update.CommitUpdateCommand;
@@ -685,6 +686,7 @@ public class DistributedUpdateProcessor extends UpdateRequestProcessor {
       oldDoc.remove(VERSION_FIELD);
     }
 
+    IndexSchema schema = cmd.getReq().getSchema();
     for (SolrInputField sif : sdoc.values()) {
       Object val = sif.getValue();
       if (val instanceof Map) {
@@ -706,7 +708,7 @@ public class DistributedUpdateProcessor extends UpdateRequestProcessor {
             } else {
               // TODO: fieldtype needs externalToObject?
               String oldValS = numericField.getFirstValue().toString();
-              SchemaField sf = cmd.getReq().getSchema().getField(sif.getName());
+              SchemaField sf = schema.getField(sif.getName());
               BytesRef term = new BytesRef();
               sf.getType().readableToIndexed(oldValS, term);
               Object oldVal = sf.getType().toObject(sf, term);

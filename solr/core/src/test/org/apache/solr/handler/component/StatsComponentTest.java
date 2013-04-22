@@ -351,7 +351,7 @@ public class StatsComponentTest extends AbstractSolrTestCase {
 
   public void testStatsFacetMultivaluedErrorHandling() throws Exception {
     SolrCore core = h.getCore();
-    SchemaField foo_ss = core.getSchema().getField("foo_ss");
+    SchemaField foo_ss = core.getLatestSchema().getField("foo_ss");
 
     assertU(adoc("id", "1", "active_i", "1", "foo_ss", "aa" ));
     assertU(commit());

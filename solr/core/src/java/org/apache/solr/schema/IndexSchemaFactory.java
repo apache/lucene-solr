@@ -16,14 +16,47 @@ package org.apache.solr.schema;
  * limitations under the License.
  */
 
+import org.apache.solr.common.SolrException;
+import org.apache.solr.common.SolrException.ErrorCode;
 import org.apache.solr.core.PluginInfo;
-import org.apache.solr.core.SolrConfig;
+import org.apache.solr.core.SolrConfig;         
+import org.apache.solr.core.SolrResourceLoader;
+import org.apache.solr.util.SystemIdResolver;
 import org.apache.solr.util.plugin.NamedListInitializedPlugin;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import org.xml.sax.InputSource;
 
+import java.io.File;
+import java.io.InputStream;
+
+/** Base class for factories for IndexSchema implementations */
 public abstract class IndexSchemaFactory implements NamedListInitializedPlugin {
+  private static final Logger log = LoggerFactory.getLogger(IndexSchemaFactory.class);
   
-  public abstract IndexSchema create(String resourceName, SolrConfig config);
+  /** Returns an index schema created from a local resource */
+  public IndexSchema create(String resourceName, SolrConfig config) {
+    SolrResourceLoader loader = config.getResourceLoader();
+    InputStream schemaInputStream = null;
 
+    if (null == resourceName) {
+      resourceName = IndexSchema.DEFAULT_SCHEMA_FILE;
+    }
+
+    try {
+      schemaInputStream = loader.openSchema(resourceName);
+    } catch (Exception e) {
+      final String msg = "Error loading schema resource " + resourceName;
+      log.error(msg, e);
+      throw new SolrException(ErrorCode.SERVER_ERROR, msg, e);
+    }
+    InputSource inputSource = new InputSource(schemaInputStream);
+    inputSource.setSystemId(SystemIdResolver.createSystemIdFromResourceName(resourceName));
+    IndexSchema schema = new IndexSchema(config, resourceName, inputSource);
+    return schema;
+  }
+
+  /** Instantiates the configured schema factory, then calls create on it. */
   public static IndexSchema buildIndexSchema(String resourceName, SolrConfig config) {
     PluginInfo info = config.getPluginInfo(IndexSchemaFactory.class.getName());
     IndexSchemaFactory factory;
@@ -35,5 +68,32 @@ public abstract class IndexSchemaFactory implements NamedListInitializedPlugin {
     }
     IndexSchema schema = factory.create(resourceName, config);
     return schema;
+  }
+
+  /** 
+   * Returns the resource name that will be used: if the schema is managed, the resource
+   * name will be drawn from the schema factory configuration in the given SolrConfig.
+   * Otherwise, the given resourceName will be returned.
+   * 
+   * @param resourceName The name to use if the schema is not managed
+   * @param config The SolrConfig from which to get the schema factory config
+   * @return If the schema is managed, the resource name from the given SolrConfig,
+   *         otherwise the given resourceName. 
+   */
+  public static String getResourceNameToBeUsed(String resourceName, SolrConfig config) {
+    PluginInfo info = config.getPluginInfo(IndexSchemaFactory.class.getName());
+    final String nonManagedResourceName = null == resourceName ? IndexSchema.DEFAULT_SCHEMA_FILE : resourceName;
+    if (null == info) {
+      return nonManagedResourceName;
+    }
+    String managedSchemaResourceName
+        = (String)info.initArgs.get(ManagedIndexSchemaFactory.MANAGED_SCHEMA_RESOURCE_NAME);
+    if (null == managedSchemaResourceName) {
+      managedSchemaResourceName = ManagedIndexSchemaFactory.DEFAULT_MANAGED_SCHEMA_RESOURCE_NAME;
+    }
+    if ((new File(config.getResourceLoader().getConfigDir(), managedSchemaResourceName)).exists()) {
+      return managedSchemaResourceName;
+    }
+    return nonManagedResourceName;
   }
 }

@@ -19,14 +19,8 @@ package org.apache.solr.schema;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.SolrException.ErrorCode;
 import org.apache.solr.common.util.NamedList;
-import org.apache.solr.core.SolrConfig;
-import org.apache.solr.core.SolrResourceLoader;
-import org.apache.solr.util.SystemIdResolver;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.xml.sax.InputSource;
-
-import java.io.InputStream;
 
 public class ClassicIndexSchemaFactory extends IndexSchemaFactory {
   private static final Logger log = LoggerFactory.getLogger(ClassicIndexSchemaFactory.class);
@@ -39,27 +33,5 @@ public class ClassicIndexSchemaFactory extends IndexSchemaFactory {
       log.error(msg);
       throw new SolrException(ErrorCode.SERVER_ERROR, msg);
     }
-  }
-
-  @Override
-  public IndexSchema create(String resourceName, SolrConfig config) {
-    SolrResourceLoader loader = config.getResourceLoader();
-    InputStream schemaInputStream = null;
-
-    if (null == resourceName) {
-      resourceName = IndexSchema.DEFAULT_SCHEMA_FILE;
-    }
-
-    try {
-      schemaInputStream = loader.openSchema(resourceName);
-    } catch (Exception e) {
-      final String msg = "Error loading schema resource " + resourceName;
-      log.error(msg, e);
-      throw new SolrException(ErrorCode.SERVER_ERROR, msg, e);
-    }
-    InputSource inputSource = new InputSource(schemaInputStream);
-    inputSource.setSystemId(SystemIdResolver.createSystemIdFromResourceName(resourceName));
-    IndexSchema schema = new IndexSchema(config, resourceName, inputSource);
-    return schema;
   }
 }

@@ -20,14 +20,15 @@ package org.apache.solr.search.similarities;
 import org.apache.lucene.search.similarities.DefaultSimilarity;
 import org.apache.lucene.search.similarities.PerFieldSimilarityWrapper;
 import org.apache.lucene.search.similarities.Similarity;
+import org.apache.solr.common.params.SolrParams;
+import org.apache.solr.core.SolrCore;
 import org.apache.solr.schema.FieldType;
-import org.apache.solr.schema.IndexSchema;
-import org.apache.solr.schema.SchemaAware;
 import org.apache.solr.schema.SimilarityFactory;
+import org.apache.solr.util.plugin.SolrCoreAware;
 
 /**
  * SimilarityFactory that returns a {@link PerFieldSimilarityWrapper}
- * that delegates to the field type, if its configured, otherwise
+ * that delegates to the field type, if it's configured, otherwise
  * {@link DefaultSimilarity}.
  *
  * <p>
@@ -42,16 +43,23 @@ import org.apache.solr.schema.SimilarityFactory;
  *
  * @see FieldType#getSimilarity
  */
-public class SchemaSimilarityFactory extends SimilarityFactory implements SchemaAware {
+public class SchemaSimilarityFactory extends SimilarityFactory implements SolrCoreAware {
   private Similarity similarity;
   private Similarity defaultSimilarity = new DefaultSimilarity();
+  private volatile SolrCore core;
+
+  @Override
+  public void inform(SolrCore core) {
+    this.core = core;
+  }
   
   @Override
-  public void inform(final IndexSchema schema) {
+  public void init(SolrParams args) {
+    super.init(args);
     similarity = new PerFieldSimilarityWrapper() {
       @Override
       public Similarity get(String name) {
-        FieldType fieldType = schema.getFieldTypeNoEx(name);
+        FieldType fieldType = core.getLatestSchema().getFieldTypeNoEx(name);
         if (fieldType == null) {
           return defaultSimilarity;
         } else {
@@ -64,7 +72,7 @@ public class SchemaSimilarityFactory extends SimilarityFactory implements Schema
 
   @Override
   public Similarity getSimilarity() {
-    assert similarity != null : "inform must be called first";
+    assert core != null : "inform must be called first";
     return similarity;
   }
 }
