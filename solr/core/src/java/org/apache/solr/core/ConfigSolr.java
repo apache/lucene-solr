@@ -17,26 +17,30 @@ package org.apache.solr.core;
  * limitations under the License.
  */
 
-import org.apache.solr.cloud.ZkController;
-import org.apache.solr.handler.component.ShardHandlerFactory;
-
-import java.io.File;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Properties;
 
-/**
- * ConfigSolr is a new interface  to aid us in obsoleting solr.xml and replacing it with solr.properties. The problem here
- * is that the Config class is used for _all_ the xml file, e.g. solrconfig.xml and we can't mess with _that_ as part
- * of this issue. Primarily used in CoreContainer at present.
- * <p/>
- * This is already deprecated, it's only intended to exist for while transitioning to properties-based replacement for
- * solr.xml
- *
- * @since solr 4.3
- */
-public interface ConfigSolr {
+import javax.xml.xpath.XPath;
+import javax.xml.xpath.XPathConstants;
+import javax.xml.xpath.XPathExpressionException;
 
+import org.apache.solr.common.SolrException;
+import org.apache.solr.util.DOMUtil;
+import org.apache.solr.util.PropertiesUtil;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import org.w3c.dom.Node;
+import org.w3c.dom.NodeList;
+
+
+public abstract class ConfigSolr {
+  protected static Logger log = LoggerFactory.getLogger(ConfigSolr.class);
+  
+  public final static String CORE_PROP_FILE = "core.properties";
+  public final static String SOLR_XML_FILE = "solr.xml";
+  
   // Ugly for now, but we'll at least be able to centralize all of the differences between 4x and 5x.
   public static enum CfgProp {
     SOLR_ADMINHANDLER,
@@ -67,48 +71,118 @@ public interface ConfigSolr {
     SOLR_PERSISTENT,
     SOLR_CORES_DEFAULT_CORE_NAME,
     SOLR_ADMINPATH
-  };
+  }
 
-  public final static String CORE_PROP_FILE = "core.properties";
-  public final static String SOLR_XML_FILE = "solr.xml";
+  protected Config config;
+  protected Map<CfgProp, String> propMap = new HashMap<CfgProp, String>();
+  protected final Map<String, String> badConfigCores = new HashMap<String, String>();
 
-  public int getInt(CfgProp prop, int def);
-
-  public boolean getBool(CfgProp prop,boolean defValue);
-
-  public String get(CfgProp prop, String def);
-
-  public String getOrigProp(CfgProp prop, String def);
-
-  public void substituteProperties();
-
-  public ShardHandlerFactory initShardHandler();
-
-  public Properties getSolrProperties(String context);
-
-  public SolrConfig getSolrConfigFromZk(ZkController zkController, String zkConfigName, String solrConfigFileName,
-                                        SolrResourceLoader resourceLoader);
-
-  public void initPersist();
-
-  public void addPersistCore(String coreName, Properties attribs, Map<String, String> props);
-
-  public void addPersistAllCores(Properties containerProperties, Map<String, String> rootSolrAttribs, Map<String, String> coresAttribs,
-                                 File file);
-
-  public String getCoreNameFromOrig(String origCoreName, SolrResourceLoader loader, String coreName);
-
-  public List<String> getAllCoreNames();
-
-  public String getProperty(String coreName, String property, String defaultVal);
-
-  public Properties readCoreProperties(String coreName);
-
-  public Map<String, String> readCoreAttributes(String coreName);
-
+  public ConfigSolr(Config config) {
+    this.config = config;
+  }
+  
+  public Config getConfig() {
+    return config;
+  }
+  
   // If the core is not to be loaded (say two cores defined with the same name or with the same data dir), return
   // the reason. If it's OK to load the core, return null.
-  public String getBadConfigCoreMessage(String name);
+  public String getBadConfigCoreMessage(String name) {
+    return badConfigCores.get(name);
+  }
 
-  public boolean is50OrLater();
+  public int getInt(CfgProp prop, int def) {
+    String val = propMap.get(prop);
+    if (val != null) val = PropertiesUtil.substituteProperty(val, null);
+    return (val == null) ? def : Integer.parseInt(val);
+  }
+
+  public boolean getBool(CfgProp prop, boolean defValue) {
+    String val = propMap.get(prop);
+    if (val != null) val = PropertiesUtil.substituteProperty(val, null);
+    return (val == null) ? defValue : Boolean.parseBoolean(val);
+  }
+
+  public String get(CfgProp prop, String def) {
+    String val = propMap.get(prop);
+    if (val != null) val = PropertiesUtil.substituteProperty(val, null);
+    return (val == null) ? def : val;
+  }
+
+  // For saving the original property, ${} syntax and all.
+  public String getOrigProp(CfgProp prop, String def) {
+    String val = propMap.get(prop);
+    return (val == null) ? def : val;
+  }
+
+  public Properties getSolrProperties(String path) {
+    try {
+      return readProperties(((NodeList) config.evaluate(
+          path, XPathConstants.NODESET)).item(0));
+    } catch (Throwable e) {
+      SolrException.log(log, null, e);
+    }
+    return null;
+
+  }
+  
+  protected Properties readProperties(Node node) throws XPathExpressionException {
+    XPath xpath = config.getXPath();
+    NodeList props = (NodeList) xpath.evaluate("property", node, XPathConstants.NODESET);
+    Properties properties = new Properties();
+    for (int i = 0; i < props.getLength(); i++) {
+      Node prop = props.item(i);
+      properties.setProperty(DOMUtil.getAttr(prop, "name"), DOMUtil.getAttr(prop, "value"));
+    }
+    return properties;
+  }
+
+  public abstract void substituteProperties();
+
+  public abstract String getCoreNameFromOrig(String origCoreName, SolrResourceLoader loader, String coreName);
+
+  public abstract List<String> getAllCoreNames();
+
+  public abstract String getProperty(String coreName, String property, String defaultVal);
+
+  public abstract Properties readCoreProperties(String coreName);
+
+  public abstract Map<String, String> readCoreAttributes(String coreName);
+
+}
+
+// It's mightily convenient to have all of the original path names and property
+// values when persisting cores, so
+// this little convenience class is just for that.
+// Also, let's keep track of anything we added here, especially the instance dir
+// for persistence purposes. We don't
+// want, for instance, to persist instanceDir if it was not specified
+// originally.
+//
+// I suspect that for persistence purposes, we may want to expand this idea to
+// record, say, ${blah}
+class CoreDescriptorPlus {
+  private CoreDescriptor coreDescriptor;
+  private String filePath;
+  private Properties propsOrig; // TODO: 5.0. Remove this since it's only really
+                                // used for persisting.
+  
+  CoreDescriptorPlus(String filePath, CoreDescriptor descriptor,
+      Properties propsOrig) {
+    coreDescriptor = descriptor;
+    this.filePath = filePath;
+    this.propsOrig = propsOrig;
+  }
+  
+  CoreDescriptor getCoreDescriptor() {
+    return coreDescriptor;
+  }
+  
+  String getFilePath() {
+    return filePath;
+  }
+  
+  Properties getPropsOrig() {
+    return propsOrig;
+  }
 }

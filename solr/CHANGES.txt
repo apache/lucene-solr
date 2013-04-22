@@ -78,6 +78,9 @@ Other Changes
 
 * SOLR-4738: Update Jetty to 8.1.10.v20130312 (Mark Miller, Robert Muir)
 
+* SOLR-4749: Clean up and refactor CoreContainer code around solr.xml and SolrCore
+  management. (Mark Miller)
+
 ==================  4.3.0 ==================
 
 Versions of Major Components
