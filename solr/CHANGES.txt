@@ -231,6 +231,11 @@ Bug Fixes
 * SOLR-4716,SOLR-4584: SolrCloud request proxying does not work on Tomcat and
   perhaps other non Jetty containers. (Po Rui, Yago Riveiro via Mark Miller)
 
+* SOLR-4746: Distributed grouping used a NamedList instead of a SimpleOrderedMap
+  for the top level group commands, causing output formatting differences
+  compared to non-distributed grouping. (yonik)
+
+
 Optimizations
 ----------------------
 
