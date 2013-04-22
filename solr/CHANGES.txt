@@ -76,6 +76,8 @@ Other Changes
 * SOLR-2079: Add option to pass HttpServletRequest in the SolrQueryRequest context map.
   (Tomás Fernández Löbbe via Robert Muir)
 
+* SOLR-4738: Update Jetty to 8.1.10.v20130312 (Mark Miller, Robert Muir)
+
 ==================  4.3.0 ==================
 
 Versions of Major Components
