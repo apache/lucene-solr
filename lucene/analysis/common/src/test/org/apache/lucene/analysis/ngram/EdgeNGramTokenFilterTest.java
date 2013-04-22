@@ -26,6 +26,7 @@ import org.apache.lucene.analysis.Tokenizer;
 import org.apache.lucene.analysis.core.KeywordTokenizer;
 import org.apache.lucene.analysis.core.WhitespaceTokenizer;
 import org.apache.lucene.analysis.miscellaneous.ASCIIFoldingFilter;
+import org.apache.lucene.analysis.position.PositionFilter;
 
 import java.io.Reader;
 import java.io.StringReader;
@@ -118,6 +119,21 @@ public class EdgeNGramTokenFilterTest extends BaseTokenStreamTestCase {
                               null,
                               null,
                               false);
+  }
+
+  public void testFirstTokenPositionIncrement() throws Exception {
+    TokenStream ts = new MockTokenizer(new StringReader("a abc"), MockTokenizer.WHITESPACE, false);
+    ts = new PositionFilter(ts, 0); // All but first token will get 0 position increment
+    EdgeNGramTokenFilter filter = new EdgeNGramTokenFilter(ts, EdgeNGramTokenFilter.Side.FRONT, 2, 3);
+    // The first token "a" will not be output, since it's smaller than the mingram size of 2.
+    // The second token on input to EdgeNGramTokenFilter will have position increment of 0,
+    // which should be increased to 1, since this is the first output token in the stream.
+    assertTokenStreamContents(filter,
+        new String[] { "ab", "abc" },
+        new int[]    {    2,     2 },
+        new int[]    {    4,     5 },
+        new int[]    {    1,     0 }
+    );
   }
 
   public void testTokenizerPositions() throws Exception {
