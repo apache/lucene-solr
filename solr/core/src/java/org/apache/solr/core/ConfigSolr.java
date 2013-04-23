@@ -38,7 +38,6 @@ import org.w3c.dom.NodeList;
 public abstract class ConfigSolr {
   protected static Logger log = LoggerFactory.getLogger(ConfigSolr.class);
   
-  public final static String CORE_PROP_FILE = "core.properties";
   public final static String SOLR_XML_FILE = "solr.xml";
   
   // Ugly for now, but we'll at least be able to centralize all of the differences between 4x and 5x.
@@ -131,8 +130,6 @@ public abstract class ConfigSolr {
   }
 
   public abstract void substituteProperties();
-
-  public abstract String getCoreNameFromOrig(String origCoreName, SolrResourceLoader loader, String coreName);
 
   public abstract List<String> getAllCoreNames();
 
