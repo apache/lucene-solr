@@ -1224,25 +1224,25 @@ public class IndexSchema {
    * @return Array of fields copied into this field
    */
 
-  public SchemaField[] getCopySources(String destField) {
+  public List<String> getCopySources(String destField) {
     SchemaField f = getField(destField);
     if (!isCopyFieldTarget(f)) {
-      return new SchemaField[0];
+      return Collections.emptyList();
     }
-    List<SchemaField> sf = new ArrayList<SchemaField>();
+    List<String> fieldNames = new ArrayList<String>();
     for (Map.Entry<String, List<CopyField>> cfs : copyFieldsMap.entrySet()) {
       for (CopyField copyField : cfs.getValue()) {
         if (copyField.getDestination().getName().equals(destField)) {
-          sf.add(copyField.getSource());
+          fieldNames.add(copyField.getSource().getName());
         }
       }
     }
     for (DynamicCopy dynamicCopy : dynamicCopyFields) {
       if (dynamicCopy.getDestFieldName().equals(destField)) {
-        sf.add(getField(dynamicCopy.getRegex()));
+        fieldNames.add(dynamicCopy.getRegex());
       }
     }
-    return sf.toArray(new SchemaField[sf.size()]);
+    return fieldNames;
   }
 
   /**
