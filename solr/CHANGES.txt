@@ -72,6 +72,9 @@ Bug Fixes
   not also a dynamic field triggers error message 'undefined field: "(glob)"'.
   (Adam Hahn, hossman, Steve Rowe)
 
+* SOLR-4752: There are some minor bugs in the Collections API parameter
+  validation. (Mark Miller)
+
 Other Changes
 ----------------------
 
