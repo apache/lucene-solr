@@ -109,7 +109,6 @@ public class TestCoreDiscovery extends SolrTestCaseJ4 {
     CoreContainer.Initializer init = new CoreContainer.Initializer();
 
     final CoreContainer cores = init.initialize();
-
     cores.setPersistent(false);
     return cores;
   }
@@ -138,11 +137,6 @@ public class TestCoreDiscovery extends SolrTestCaseJ4 {
     CoreContainer cc = init();
     try {
       assertNull("defaultCore no longer allowed in solr.xml", cc.getDefaultCoreName());
-
-      assertEquals("222.333.444.555", cc.zkSys.getHost());
-      assertEquals("6000", cc.zkSys.getHostPort());
-      assertEquals("solrprop", cc.zkSys.getHostContext());
-      assertEquals(20, cc.zkSys.getZkClientTimeout());
 
       TestLazyCores.checkInCores(cc, "core1");
       TestLazyCores.checkNotInCores(cc, "lazy1", "core2", "collection1");

@@ -53,7 +53,7 @@ public class ConfigSolrXml extends ConfigSolr {
     
     fillPropMap();
     
-    String coreRoot = get(CfgProp.SOLR_COREROOTDIRECTORY, container.getSolrHome());
+    String coreRoot = get(CfgProp.SOLR_COREROOTDIRECTORY, (container == null ? null : container.getSolrHome()));
     coreDescriptorMap = solrCoreDiscoverer.discover(container, new File(coreRoot));
   }
   
