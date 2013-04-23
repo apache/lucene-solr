@@ -47,13 +47,22 @@
     <format property="dateversion" pattern="yyyy.MM.dd.HH.mm.ss" />
   </tstamp>
 
-  <property name="name" value="${ant.project.name}"/>
   <property name="Name" value="Lucene"/>
-  <property name="dev.version" value="5.0-SNAPSHOT"/>
+  
+  <property name="name" value="${ant.project.name}"/>
   <property name="tests.luceneMatchVersion" value="5.0"/>
+  <property name="dev.version.base" value="5.0"/>
+  <property name="dev.version.suffix" value="SNAPSHOT"/>
+  <property name="dev.version" value="${dev.version.base}-${dev.version.suffix}"/>
   <property name="version" value="${dev.version}"/>
   <property name="spec.version" value="${version}"/>	
+  
   <property name="year" value="2000-${current.year}"/>
+  
+  <!-- Lucene modules unfortunately don't have the "lucene-" prefix, so we add it if no prefix is given in $name: -->
+  <condition property="final.name" value="${name}-${version}">
+    <matches pattern="^(lucene|solr)\b" string="${name}"/>
+  </condition>
   <property name="final.name" value="lucene-${name}-${version}"/>
 
   <!-- we exclude ext/*.jar because we don't want example/lib/ext logging jars on the cp -->

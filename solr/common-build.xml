@@ -24,10 +24,6 @@
   <dirname file="${ant.file.common-solr}" property="common-solr.dir"/>
   
   <property name="Name" value="Solr" />
-  <property name="version" value="5.0-SNAPSHOT"/>
-  <property name="fullname" value="${ant.project.name}"/>
-  <property name="fullnamever" value="${fullname}-${version}"/>
-  <property name="final.name" value="${fullnamever}"/>
   
   <!-- solr uses 1.7 -->
   <property name="javac.source" value="1.7"/>
@@ -49,6 +45,9 @@
   <property name="license.dir" location="${common-solr.dir}/licenses"/>
 
   <import file="${common-solr.dir}/../lucene/module-build.xml"/>
+
+  <!-- backwards compatibility with existing targets/tasks; TODO: remove this! -->
+  <property name="fullnamever" value="${final.name}"/>
 
   <path id="additional.dependencies">
   	<fileset dir="${common-solr.dir}/core/lib" excludes="${common.classpath.excludes}"/>
