@@ -29,6 +29,7 @@ import org.apache.solr.common.util.NamedList;
 import org.apache.solr.core.SolrCore;
 import org.apache.solr.handler.component.SpellCheckMergeData;
 import org.apache.solr.schema.FieldType;
+import org.apache.solr.schema.IndexSchema;
 import org.apache.solr.search.SolrIndexSearcher;
 
 import java.io.IOException;
@@ -63,12 +64,13 @@ public abstract class SolrSpellChecker {
       name = DEFAULT_DICTIONARY_NAME;
     }
     field = (String)config.get(FIELD);
-    if (field != null && core.getSchema().getFieldTypeNoEx(field) != null)  {
-      analyzer = core.getSchema().getFieldType(field).getQueryAnalyzer();
+    IndexSchema schema = core.getLatestSchema();
+    if (field != null && schema.getFieldTypeNoEx(field) != null)  {
+      analyzer = schema.getFieldType(field).getQueryAnalyzer();
     }
     fieldTypeName = (String) config.get(FIELD_TYPE);
-    if (core.getSchema().getFieldTypes().containsKey(fieldTypeName))  {
-      FieldType fieldType = core.getSchema().getFieldTypes().get(fieldTypeName);
+    if (schema.getFieldTypes().containsKey(fieldTypeName))  {
+      FieldType fieldType = schema.getFieldTypes().get(fieldTypeName);
       analyzer = fieldType.getQueryAnalyzer();
     }
     if (analyzer == null)   {

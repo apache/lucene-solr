@@ -125,7 +125,7 @@ public class PreAnalyzedUpdateProcessorFactory extends FieldMutatingUpdateProces
     if (parserImpl != null) {
       args.put(PreAnalyzedField.PARSER_IMPL, parserImpl);
     }
-    parser.init(core.getSchema(), args);
+    parser.init(core.getLatestSchema(), args);
   }  
 }
 

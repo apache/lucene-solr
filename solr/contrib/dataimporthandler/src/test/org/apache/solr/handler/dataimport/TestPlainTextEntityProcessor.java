@@ -34,7 +34,7 @@ public class TestPlainTextEntityProcessor extends AbstractDataImportHandlerTestC
     DataImporter di = new DataImporter();
     di.loadAndInit(DATA_CONFIG);
     TestDocBuilder.SolrWriterImpl sw = new TestDocBuilder.SolrWriterImpl();
-    RequestInfo rp = new RequestInfo(createMap("command", "full-import"), null);
+    RequestInfo rp = new RequestInfo(null, createMap("command", "full-import"), null);
     di.runCmd(rp, sw);
     assertEquals(DS.s, sw.docs.get(0).getFieldValue("x"));
   }

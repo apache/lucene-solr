@@ -216,7 +216,7 @@ public class DocumentAnalysisRequestHandlerTest extends AnalysisRequestHandlerTe
             .setShowMatch(true)
             .addDocument(document);
 
-    NamedList<Object> result = handler.handleAnalysisRequest(request, h.getCore().getSchema());
+    NamedList<Object> result = handler.handleAnalysisRequest(request, h.getCore().getLatestSchema());
     assertNotNull("result is null and it shouldn't be", result);
     NamedList<NamedList<NamedList<Object>>> documentResult = (NamedList<NamedList<NamedList<Object>>>) result.get("1");
     assertNotNull("An analysis for document with key '1' should be returned", documentResult);

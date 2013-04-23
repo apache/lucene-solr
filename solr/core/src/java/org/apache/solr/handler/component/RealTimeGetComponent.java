@@ -41,7 +41,6 @@ import org.apache.solr.common.cloud.Slice;
 import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.common.params.ShardParams;
 import org.apache.solr.common.params.SolrParams;
-import org.apache.solr.common.util.Hash;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.common.util.StrUtils;
 import org.apache.solr.core.SolrCore;
@@ -119,11 +118,12 @@ public class RealTimeGetComponent extends SearchComponent
       allIds = lst.toArray(new String[lst.size()]);
     }
 
-    SchemaField idField = req.getSchema().getUniqueKeyField();
+    SolrCore core = req.getCore();
+    SchemaField idField = core.getLatestSchema().getUniqueKeyField();
     FieldType fieldType = idField.getType();
 
     SolrDocumentList docList = new SolrDocumentList();
-    UpdateLog ulog = req.getCore().getUpdateHandler().getUpdateLog();
+    UpdateLog ulog = core.getUpdateHandler().getUpdateLog();
 
     RefCounted<SolrIndexSearcher> searcherHolder = null;
 
@@ -148,7 +148,7 @@ public class RealTimeGetComponent extends SearchComponent
            int oper = (Integer)entry.get(0) & UpdateLog.OPERATION_MASK;
            switch (oper) {
              case UpdateLog.ADD:
-               SolrDocument doc = toSolrDoc((SolrInputDocument)entry.get(entry.size()-1), req.getSchema());
+               SolrDocument doc = toSolrDoc((SolrInputDocument)entry.get(entry.size()-1), core.getLatestSchema());
                if(transformer!=null) {
                  transformer.transform(doc, -1); // unknown docID
                }
@@ -165,7 +165,7 @@ public class RealTimeGetComponent extends SearchComponent
 
        // didn't find it in the update log, so it should be in the newest searcher opened
        if (searcher == null) {
-         searcherHolder = req.getCore().getRealtimeSearcher();
+         searcherHolder = core.getRealtimeSearcher();
          searcher = searcherHolder.get();
        }
 
@@ -174,7 +174,7 @@ public class RealTimeGetComponent extends SearchComponent
        int docid = searcher.getFirstMatch(new Term(idField.getName(), idBytes));
        if (docid < 0) continue;
        Document luceneDocument = searcher.doc(docid);
-       SolrDocument doc = toSolrDoc(luceneDocument,  req.getSchema());
+       SolrDocument doc = toSolrDoc(luceneDocument,  core.getLatestSchema());
        if( transformer != null ) {
          transformer.transform(doc, docid);
        }
@@ -236,12 +236,12 @@ public class RealTimeGetComponent extends SearchComponent
         }
 
         // SolrCore.verbose("RealTimeGet using searcher ", searcher);
-        SchemaField idField = core.getSchema().getUniqueKeyField();
+        SchemaField idField = core.getLatestSchema().getUniqueKeyField();
 
         int docid = searcher.getFirstMatch(new Term(idField.getName(), idBytes));
         if (docid < 0) return null;
         Document luceneDocument = searcher.doc(docid);
-        sid = toSolrInputDocument(luceneDocument, core.getSchema());
+        sid = toSolrInputDocument(luceneDocument, core.getLatestSchema());
       }
     } finally {
       if (searcherHolder != null) {

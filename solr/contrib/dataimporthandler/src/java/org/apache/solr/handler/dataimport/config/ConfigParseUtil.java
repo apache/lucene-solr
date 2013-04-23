@@ -23,6 +23,7 @@ import java.util.List;
 import java.util.Map;
 
 import org.apache.solr.handler.dataimport.DataImporter;
+import org.apache.solr.schema.IndexSchema;
 import org.apache.solr.schema.SchemaField;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -32,7 +33,6 @@ import org.w3c.dom.Node;
 import org.w3c.dom.NodeList;
 
 public class ConfigParseUtil {
-  private static final Logger LOG = LoggerFactory .getLogger(ConfigParseUtil.class);
   
   public static String getStringAttribute(Element e, String name, String def) {
     String r = e.getAttribute(name);
@@ -76,47 +76,5 @@ public class ConfigParseUtil {
           .item(i));
     }
     return result;
-  }
-  
-  public static void verifyWithSchema(DataImporter di, Map<String,EntityField> fields) {
-    Map<String,SchemaField> schemaFields = null;
-    if (di.getSchema() == null) {
-      schemaFields = Collections.emptyMap();
-    } else {
-      schemaFields = di.getSchema().getFields();
-    }
-    for (Map.Entry<String,SchemaField> entry : schemaFields.entrySet()) {
-      SchemaField sf = entry.getValue();
-      if (!fields.containsKey(sf.getName())) {
-        if (sf.isRequired()) {
-          LOG
-              .info(sf.getName()
-                  + " is a required field in SolrSchema . But not found in DataConfig");
-        }
-      }
-    }
-    for (Map.Entry<String,EntityField> entry : fields.entrySet()) {
-      EntityField fld = entry.getValue();
-      SchemaField field = di.getSchemaField(fld.getName());
-      if (field == null) {
-        LOG
-            .info("The field :"
-                + fld.getName()
-                + " present in DataConfig does not have a counterpart in Solr Schema");
-      }
-    }
-  }
-  
-  public static Map<String,EntityField> gatherAllFields(DataImporter di, Entity e) {
-    Map<String,EntityField> fields = new HashMap<String,EntityField>();
-    if (e.getFields() != null) {
-      for (EntityField f : e.getFields()) {
-        fields.put(f.getName(), f);
-      }
-    }
-    for (Entity e1 : e.getChildren()) {
-      fields.putAll(gatherAllFields(di, e1));
-    }
-    return fields;
   }
 }

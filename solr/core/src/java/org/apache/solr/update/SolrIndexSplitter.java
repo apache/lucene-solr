@@ -57,8 +57,8 @@ public class SolrIndexSplitter {
   int currPartition = 0;
 
   public SolrIndexSplitter(SplitIndexCommand cmd) {
-    field = cmd.getReq().getSchema().getUniqueKeyField();
     searcher = cmd.getReq().getSearcher();
+    field = searcher.getSchema().getUniqueKeyField();
     ranges = cmd.ranges;
     paths = cmd.paths;
     cores = cmd.cores;
@@ -109,7 +109,7 @@ public class SolrIndexSplitter {
         SolrCore core = searcher.getCore();
         String path = paths.get(partitionNumber);
         iw = SolrIndexWriter.create("SplittingIndexWriter"+partitionNumber + (ranges != null ? " " + ranges.get(partitionNumber) : ""), path,
-                                    core.getDirectoryFactory(), true, core.getSchema(),
+                                    core.getDirectoryFactory(), true, core.getLatestSchema(),
                                     core.getSolrConfig().indexConfig, core.getDeletionPolicy(), core.getCodec());
       }
 

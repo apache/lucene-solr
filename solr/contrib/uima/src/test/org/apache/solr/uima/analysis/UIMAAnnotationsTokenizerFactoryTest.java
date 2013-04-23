@@ -33,8 +33,8 @@ public class UIMAAnnotationsTokenizerFactoryTest extends SolrTestCaseJ4 {
 
   @Test
   public void testInitialization() throws Exception {
-    assertNotNull(h.getCore().getSchema().getField("sentences"));
-    assertNotNull(h.getCore().getSchema().getFieldType("sentences"));
+    assertNotNull(h.getCore().getLatestSchema().getField("sentences"));
+    assertNotNull(h.getCore().getLatestSchema().getFieldType("sentences"));
   }
 
   @Test

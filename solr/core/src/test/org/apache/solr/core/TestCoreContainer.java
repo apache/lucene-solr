@@ -30,7 +30,6 @@ import javax.xml.parsers.ParserConfigurationException;
 import org.apache.commons.io.FileUtils;
 import org.apache.lucene.util.IOUtils;
 import org.apache.solr.SolrTestCaseJ4;
-import org.apache.solr.common.SolrException;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.junit.Test;
@@ -88,7 +87,7 @@ public class TestCoreContainer extends SolrTestCaseJ4 {
       CoreDescriptor descriptor2 = new CoreDescriptor(cores, "core2", "./collection1");
       SolrCore core2 = cores.create(descriptor2);
       
-      assertSame(core1.getSchema(), core2.getSchema());
+      assertSame(core1.getLatestSchema(), core2.getLatestSchema());
       
       core1.close();
       core2.close();

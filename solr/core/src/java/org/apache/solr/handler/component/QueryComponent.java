@@ -23,7 +23,12 @@ import org.apache.lucene.index.AtomicReaderContext;
 import org.apache.lucene.index.IndexReaderContext;
 import org.apache.lucene.index.ReaderUtil;
 import org.apache.lucene.index.Term;
-import org.apache.lucene.search.*;
+import org.apache.lucene.search.BooleanQuery;
+import org.apache.lucene.search.FieldComparator;
+import org.apache.lucene.search.Query;
+import org.apache.lucene.search.ScoreDoc;
+import org.apache.lucene.search.Sort;
+import org.apache.lucene.search.SortField;
 import org.apache.lucene.search.grouping.GroupDocs;
 import org.apache.lucene.search.grouping.SearchGroup;
 import org.apache.lucene.search.grouping.TopGroups;
@@ -43,7 +48,19 @@ import org.apache.solr.response.ResultContext;
 import org.apache.solr.response.SolrQueryResponse;
 import org.apache.solr.schema.FieldType;
 import org.apache.solr.schema.SchemaField;
-import org.apache.solr.search.*;
+import org.apache.solr.search.DocIterator;
+import org.apache.solr.search.DocList;
+import org.apache.solr.search.DocListAndSet;
+import org.apache.solr.search.DocSlice;
+import org.apache.solr.search.Grouping;
+import org.apache.solr.search.QParser;
+import org.apache.solr.search.QParserPlugin;
+import org.apache.solr.search.QueryParsing;
+import org.apache.solr.search.ReturnFields;
+import org.apache.solr.search.SolrIndexSearcher;
+import org.apache.solr.search.SolrReturnFields;
+import org.apache.solr.search.SortSpec;
+import org.apache.solr.search.SyntaxError;
 import org.apache.solr.search.grouping.CommandHandler;
 import org.apache.solr.search.grouping.GroupingSpecification;
 import org.apache.solr.search.grouping.distributed.ShardRequestFactory;
@@ -69,7 +86,15 @@ import java.io.IOException;
 import java.io.PrintWriter;
 import java.io.StringWriter;
 import java.net.URL;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Collection;
+import java.util.HashMap;
+import java.util.Iterator;
+import java.util.LinkedHashMap;
+import java.util.List;
+import java.util.Locale;
+import java.util.Map;
 
 /**
  * TODO!
@@ -101,7 +126,7 @@ public class QueryComponent extends SearchComponent
     }
     rb.setFieldFlags( flags );
 
-    String defType = params.get(QueryParsing.DEFTYPE,QParserPlugin.DEFAULT_QTYPE);
+    String defType = params.get(QueryParsing.DEFTYPE, QParserPlugin.DEFAULT_QTYPE);
 
     // get it from the response builder to give a different component a chance
     // to set it.
@@ -225,7 +250,7 @@ public class QueryComponent extends SearchComponent
     // too if desired).
     String ids = params.get(ShardParams.IDS);
     if (ids != null) {
-      SchemaField idField = req.getSchema().getUniqueKeyField();
+      SchemaField idField = searcher.getSchema().getUniqueKeyField();
       List<String> idArr = StrUtils.splitSmart(ids, ",", true);
       int[] luceneIds = new int[idArr.size()];
       int docs = 0;
@@ -463,7 +488,7 @@ public class QueryComponent extends SearchComponent
         FieldComparator comparator = null;
 
         String fieldname = sortField.getField();
-        FieldType ft = fieldname==null ? null : req.getSchema().getFieldTypeNoEx(fieldname);
+        FieldType ft = fieldname==null ? null : searcher.getSchema().getFieldTypeNoEx(fieldname);
 
         Object[] vals = new Object[nDocs];
         

@@ -77,7 +77,7 @@ public class AnalyzingLookupFactory extends LookupFactory {
     if (fieldTypeName == null) {
       throw new IllegalArgumentException("Error in configuration: " + QUERY_ANALYZER + " parameter is mandatory");
     }
-    FieldType ft = core.getSchema().getFieldTypeByName(fieldTypeName.toString());
+    FieldType ft = core.getLatestSchema().getFieldTypeByName(fieldTypeName.toString());
     Analyzer indexAnalyzer = ft.getAnalyzer();
     Analyzer queryAnalyzer = ft.getQueryAnalyzer();
     

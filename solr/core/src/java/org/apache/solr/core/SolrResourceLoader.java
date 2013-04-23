@@ -41,6 +41,8 @@ import org.apache.lucene.analysis.util.WordlistLoader;
 import org.apache.solr.common.ResourceLoader;
 import org.apache.solr.handler.admin.CoreAdminHandler;
 import org.apache.solr.handler.component.ShardHandlerFactory;
+import org.apache.solr.schema.ManagedIndexSchemaFactory;
+import org.apache.solr.schema.SimilarityFactory;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -730,11 +732,14 @@ public class SolrResourceLoader implements ResourceLoader
     awareCompatibility = new HashMap<Class, Class[]>();
     awareCompatibility.put( 
       SolrCoreAware.class, new Class[] {
-        SolrRequestHandler.class,
+        CodecFactory.class,
+        ManagedIndexSchemaFactory.class,
         QueryResponseWriter.class,
         SearchComponent.class,
-        UpdateRequestProcessorFactory.class,
-        ShardHandlerFactory.class
+        ShardHandlerFactory.class,
+        SimilarityFactory.class,
+        SolrRequestHandler.class,
+        UpdateRequestProcessorFactory.class
       }
     );
 

@@ -229,7 +229,8 @@ abstract public class RestTestBase extends SolrJettyTestBase {
 
     for (String test : tests) {
       if (null == test || 0 == test.length()) continue;
-      String testJSON = test.replace('\'', '"');
+      String testJSON = test.replaceAll("(?<!\\\\)\'", "\"");
+      testJSON = testJSON.replaceAll("\\\\\'", "'");
 
       try {
         failed = true;
@@ -254,6 +255,170 @@ abstract public class RestTestBase extends SolrJettyTestBase {
       }
     }
   }
+
+  
+  
+  /**
+   * Validates the response from a PUT request matches some JSON test expressions
+   * 
+   * @see org.apache.solr.JSONTestUtil#DEFAULT_DELTA
+   * @see #assertJQ(String,double,String...)
+   */
+  public static void assertJPut(String request, String content, String... tests) throws Exception {
+    assertJPut(request, content, JSONTestUtil.DEFAULT_DELTA, tests);
+  }
+
+
+  /**
+   * Validates the response from a PUT request matches some JSON test expressions
+   * and closes the query. The text expression is of the form path==JSON.
+   * To facilitate easy embedding in Java strings, the JSON can have double
+   * quotes replaced with single quotes.
+   * <p>
+   * Please use this with care: this makes it easy to match complete
+   * structures, but doing so can result in fragile tests if you are
+   * matching more than what you want to test.
+   * </p>
+   * @param request a URL path with optional query params, e.g. "/schema/fields?fl=id,_version_"
+   * @param content The content to include with the PUT request
+   * @param delta tolerance allowed in comparing float/double values
+   * @param tests JSON path expression + '==' + expected value
+   */
+  public static void assertJPut(String request, String content, double delta, String... tests) throws Exception {
+    int queryStartPos = request.indexOf('?');
+    String query;
+    String path;
+    if (-1 == queryStartPos) {
+      query = "";
+      path = request;
+    } else {
+      query = request.substring(queryStartPos + 1);
+      path = request.substring(0, queryStartPos);
+    }
+    query = setParam(query, "wt", "json");
+    request = path + '?' + setParam(query, "indent", "on");
+
+    String response;
+    boolean failed = true;
+    try {
+      response = restTestHarness.put(request, content);
+      failed = false;
+    } finally {
+      if (failed) {
+        log.error("REQUEST FAILED: " + request);
+      }
+    }
+
+    for (String test : tests) {
+      if (null == test || 0 == test.length()) continue;
+      String testJSON = test.replaceAll("(?<!\\\\)\'", "\"");
+      testJSON = testJSON.replaceAll("\\\\\'", "'");
+
+      try {
+        failed = true;
+        String err = JSONTestUtil.match(response, testJSON, delta);
+        failed = false;
+        if (err != null) {
+          log.error("query failed JSON validation. error=" + err +
+              "\n expected =" + testJSON +
+              "\n response = " + response +
+              "\n request = " + request + "\n"
+          );
+          throw new RuntimeException(err);
+        }
+      } finally {
+        if (failed) {
+          log.error("JSON query validation threw an exception." +
+              "\n expected =" + testJSON +
+              "\n response = " + response +
+              "\n request = " + request + "\n"
+          );
+        }
+      }
+    }
+  }
+
+  /**
+   * Validates the response from a POST request matches some JSON test expressions
+   *
+   * @see org.apache.solr.JSONTestUtil#DEFAULT_DELTA
+   * @see #assertJQ(String,double,String...)
+   */
+  public static void assertJPost(String request, String content, String... tests) throws Exception {
+    assertJPost(request, content, JSONTestUtil.DEFAULT_DELTA, tests);
+  }
+
+
+  /**
+   * Validates the response from a PUT request matches some JSON test expressions
+   * and closes the query. The text expression is of the form path==JSON.
+   * To facilitate easy embedding in Java strings, the JSON can have double
+   * quotes replaced with single quotes.
+   * <p>
+   * Please use this with care: this makes it easy to match complete
+   * structures, but doing so can result in fragile tests if you are
+   * matching more than what you want to test.
+   * </p>
+   * @param request a URL path with optional query params, e.g. "/schema/fields?fl=id,_version_"
+   * @param content The content to include with the PUT request
+   * @param delta tolerance allowed in comparing float/double values
+   * @param tests JSON path expression + '==' + expected value
+   */
+  public static void assertJPost(String request, String content, double delta, String... tests) throws Exception {
+    int queryStartPos = request.indexOf('?');
+    String query;
+    String path;
+    if (-1 == queryStartPos) {
+      query = "";
+      path = request;
+    } else {
+      query = request.substring(queryStartPos + 1);
+      path = request.substring(0, queryStartPos);
+    }
+    query = setParam(query, "wt", "json");
+    request = path + '?' + setParam(query, "indent", "on");
+
+    String response;
+    boolean failed = true;
+    try {
+      response = restTestHarness.post(request, content);
+      failed = false;
+    } finally {
+      if (failed) {
+        log.error("REQUEST FAILED: " + request);
+      }
+    }
+
+    for (String test : tests) {
+      if (null == test || 0 == test.length()) continue;
+      String testJSON = test.replaceAll("(?<!\\\\)\'", "\"");
+      testJSON = testJSON.replaceAll("\\\\\'", "'");
+
+      try {
+        failed = true;
+        String err = JSONTestUtil.match(response, testJSON, delta);
+        failed = false;
+        if (err != null) {
+          log.error("query failed JSON validation. error=" + err +
+              "\n expected =" + testJSON +
+              "\n response = " + response +
+              "\n request = " + request + "\n"
+          );
+          throw new RuntimeException(err);
+        }
+      } finally {
+        if (failed) {
+          log.error("JSON query validation threw an exception." +
+              "\n expected =" + testJSON +
+              "\n response = " + response +
+              "\n request = " + request + "\n"
+          );
+        }
+      }
+    }
+  }
+
+
 
   /**
    * Insures that the given param is included in the query with the given value.

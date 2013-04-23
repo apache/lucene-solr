@@ -22,7 +22,6 @@ import org.apache.lucene.search.SortField;
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.request.SolrQueryRequest;
-import org.apache.solr.schema.IndexSchema;
 import org.junit.BeforeClass;
 import org.junit.Test;
 
@@ -75,7 +74,6 @@ public class QueryParsingTest extends SolrTestCaseJ4 {
     Sort sort;
     SolrQueryRequest req = req();
 
-    IndexSchema schema = h.getCore().getSchema();
     sort = QueryParsing.parseSort("score desc", req);
     assertNull("sort", sort);//only 1 thing in the list, no Sort specified
 
@@ -188,7 +186,6 @@ public class QueryParsingTest extends SolrTestCaseJ4 {
     Sort sort;
     SolrQueryRequest req = req();
 
-    IndexSchema schema = h.getCore().getSchema();
     //test some bad vals
     try {
       sort = QueryParsing.parseSort("weight, desc", req);

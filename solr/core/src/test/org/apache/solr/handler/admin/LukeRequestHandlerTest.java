@@ -201,7 +201,7 @@ public class LukeRequestHandlerTest extends AbstractSolrTestCase {
     deleteCore();
     initCore("solrconfig.xml", "schema-copyfield-test.xml");
     
-    IndexSchema schema = h.getCore().getSchema();
+    IndexSchema schema = h.getCore().getLatestSchema();
     
     assertNull("'*' should not be (or match) a dynamic field", schema.getDynamicPattern("*"));
     

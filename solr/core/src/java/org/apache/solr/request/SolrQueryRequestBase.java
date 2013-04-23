@@ -42,6 +42,7 @@ import java.util.HashMap;
  */
 public abstract class SolrQueryRequestBase implements SolrQueryRequest {
   protected final SolrCore core;
+  protected final IndexSchema schema;
   protected final SolrParams origParams;
   protected SolrParams params;
   protected Map<Object,Object> context;
@@ -49,6 +50,7 @@ public abstract class SolrQueryRequestBase implements SolrQueryRequest {
 
   public SolrQueryRequestBase(SolrCore core, SolrParams params) {
     this.core = core;
+    this.schema = null == core ? null : core.getLatestSchema();
     this.params = this.origParams = params;
   }
 
@@ -85,7 +87,7 @@ public abstract class SolrQueryRequestBase implements SolrQueryRequest {
   protected RefCounted<SolrIndexSearcher> searcherHolder;
   @Override
   public SolrIndexSearcher getSearcher() {
-    if(core == null) return null;//a request for a core admin will no have a core
+    if(core == null) return null;//a request for a core admin will not have a core
     // should this reach out and get a searcher from the core singleton, or
     // should the core populate one in a factory method to create requests?
     // or there could be a setSearcher() method that Solr calls
@@ -107,7 +109,7 @@ public abstract class SolrQueryRequestBase implements SolrQueryRequest {
   @Override
   public IndexSchema getSchema() {
     //a request for a core admin will no have a core
-    return core == null? null: core.getSchema();
+    return schema;
   }
 
   /**

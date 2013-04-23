@@ -20,8 +20,22 @@ package org.apache.solr.handler.component;
 import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.analysis.TokenStream;
 import org.apache.lucene.analysis.tokenattributes.CharTermAttribute;
-import org.apache.lucene.index.*;
-import org.apache.lucene.search.*;
+import org.apache.lucene.index.AtomicReaderContext;
+import org.apache.lucene.index.DocsEnum;
+import org.apache.lucene.index.Fields;
+import org.apache.lucene.index.IndexReader;
+import org.apache.lucene.index.Term;
+import org.apache.lucene.index.Terms;
+import org.apache.lucene.index.TermsEnum;
+import org.apache.lucene.search.BooleanClause;
+import org.apache.lucene.search.BooleanQuery;
+import org.apache.lucene.search.DocIdSetIterator;
+import org.apache.lucene.search.FieldComparator;
+import org.apache.lucene.search.FieldComparatorSource;
+import org.apache.lucene.search.Query;
+import org.apache.lucene.search.Sort;
+import org.apache.lucene.search.SortField;
+import org.apache.lucene.search.TermQuery;
 import org.apache.lucene.util.Bits;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.SentinelIntSet;
@@ -29,6 +43,7 @@ import org.apache.solr.cloud.ZkController;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.params.QueryElevationParams;
 import org.apache.solr.common.params.SolrParams;
+import org.apache.solr.schema.IndexSchema;
 import org.apache.solr.util.DOMUtil;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.common.util.SimpleOrderedMap;
@@ -60,7 +75,14 @@ import java.io.InputStream;
 import java.io.StringReader;
 import java.net.MalformedURLException;
 import java.net.URL;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Map;
+import java.util.Set;
+import java.util.WeakHashMap;
 
 /**
  * A component to elevate some documents to the top of the result set.
@@ -139,9 +161,10 @@ public class QueryElevationComponent extends SearchComponent implements SolrCore
 
   @Override
   public void inform(SolrCore core) {
+    IndexSchema schema = core.getLatestSchema();
     String a = initArgs.get(FIELD_TYPE);
     if (a != null) {
-      FieldType ft = core.getSchema().getFieldTypes().get(a);
+      FieldType ft = schema.getFieldTypes().get(a);
       if (ft == null) {
         throw new SolrException(SolrException.ErrorCode.SERVER_ERROR,
             "Unknown FieldType: '" + a + "' used in QueryElevationComponent");
@@ -149,7 +172,7 @@ public class QueryElevationComponent extends SearchComponent implements SolrCore
       analyzer = ft.getQueryAnalyzer();
     }
 
-    SchemaField sf = core.getSchema().getUniqueKeyField();
+    SchemaField sf = schema.getUniqueKeyField();
     if( sf == null) {
       throw new SolrException( SolrException.ErrorCode.SERVER_ERROR, 
           "QueryElevationComponent requires the schema to have a uniqueKeyField." );

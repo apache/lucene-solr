@@ -55,7 +55,7 @@ import java.io.IOException;
  *
  * @see ExternalFileFieldReloader
  */
-public class ExternalFileField extends FieldType {
+public class ExternalFileField extends FieldType implements SchemaAware {
   private FieldType ftype;
   private String keyFieldName;
   private IndexSchema schema;
@@ -127,4 +127,8 @@ public class ExternalFileField extends FieldType {
         schema.getField(keyFieldName);
   }
 
+  @Override
+  public void inform(IndexSchema schema) {
+    this.schema = schema;
+  }
 }

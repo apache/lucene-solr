@@ -1442,10 +1442,10 @@ public class ExtendedDismaxQParser extends QParser {
     public ExtendedDismaxConfiguration(SolrParams localParams,
         SolrParams params, SolrQueryRequest req) {
       solrParams = SolrParams.wrapDefaults(localParams, params);
-      minShouldMatch = DisMaxQParser.parseMinShouldMatch(req.getSchema(), solrParams);
+      minShouldMatch = DisMaxQParser.parseMinShouldMatch(req.getSchema(), solrParams); // req.getSearcher() here causes searcher refcount imbalance
       userFields = new UserFields(U.parseFieldBoosts(solrParams.getParams(DMP.UF)));
       try {
-        queryFields = DisMaxQParser.parseQueryFields(req.getSchema(), solrParams);
+        queryFields = DisMaxQParser.parseQueryFields(req.getSchema(), solrParams);  // req.getSearcher() here causes searcher refcount imbalance
       } catch (SyntaxError e) {
         throw new RuntimeException();
       }

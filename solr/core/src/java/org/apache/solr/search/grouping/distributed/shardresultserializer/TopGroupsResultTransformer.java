@@ -32,6 +32,7 @@ import org.apache.solr.common.util.NamedList;
 import org.apache.solr.handler.component.ResponseBuilder;
 import org.apache.solr.handler.component.ShardDoc;
 import org.apache.solr.schema.FieldType;
+import org.apache.solr.schema.IndexSchema;
 import org.apache.solr.schema.SchemaField;
 import org.apache.solr.search.grouping.Command;
 import org.apache.solr.search.grouping.distributed.command.QueryCommand;
@@ -66,11 +67,12 @@ public class TopGroupsResultTransformer implements ShardResultTransformer<List<C
   @Override
   public NamedList transform(List<Command> data) throws IOException {
     NamedList<NamedList> result = new NamedList<NamedList>();
+    final IndexSchema schema = rb.req.getSearcher().getSchema();
     for (Command command : data) {
       NamedList commandResult;
       if (TopGroupsFieldCommand.class.isInstance(command)) {
         TopGroupsFieldCommand fieldCommand = (TopGroupsFieldCommand) command;
-        SchemaField groupField = rb.req.getSearcher().getSchema().getField(fieldCommand.getKey());
+        SchemaField groupField = schema.getField(fieldCommand.getKey());
         commandResult = serializeTopGroups(fieldCommand.result(), groupField);
       } else if (QueryCommand.class.isInstance(command)) {
         QueryCommand queryCommand = (QueryCommand) command;
@@ -184,7 +186,8 @@ public class TopGroupsResultTransformer implements ShardResultTransformer<List<C
     }
     CharsRef spare = new CharsRef();
 
-    SchemaField uniqueField = rb.req.getSearcher().getSchema().getUniqueKeyField();
+    final IndexSchema schema = rb.req.getSearcher().getSchema();
+    SchemaField uniqueField = schema.getUniqueKeyField();
     for (GroupDocs<BytesRef> searchGroup : data.groups) {
       NamedList<Object> groupResult = new NamedList<Object>();
       groupResult.add("totalHits", searchGroup.totalHits);
@@ -211,7 +214,7 @@ public class TopGroupsResultTransformer implements ShardResultTransformer<List<C
         for (int j = 0; j < fieldDoc.fields.length; j++) {
           Object sortValue  = fieldDoc.fields[j];
           Sort sortWithinGroup = rb.getGroupingSpec().getSortWithinGroup();
-          SchemaField field = sortWithinGroup.getSort()[j].getField() != null ? rb.req.getSearcher().getSchema().getFieldOrNull(sortWithinGroup.getSort()[j].getField()) : null;
+          SchemaField field = sortWithinGroup.getSort()[j].getField() != null ? schema.getFieldOrNull(sortWithinGroup.getSort()[j].getField()) : null;
           if (field != null) {
             FieldType fieldType = field.getType();
             if (sortValue instanceof BytesRef) {
@@ -244,7 +247,8 @@ public class TopGroupsResultTransformer implements ShardResultTransformer<List<C
     List<NamedList> documents = new ArrayList<NamedList>();
     queryResult.add("documents", documents);
 
-    SchemaField uniqueField = rb.req.getSearcher().getSchema().getUniqueKeyField();
+    final IndexSchema schema = rb.req.getSearcher().getSchema();
+    SchemaField uniqueField = schema.getUniqueKeyField();
     CharsRef spare = new CharsRef();
     for (ScoreDoc scoreDoc : result.getTopDocs().scoreDocs) {
       NamedList<Object> document = new NamedList<Object>();
@@ -264,7 +268,8 @@ public class TopGroupsResultTransformer implements ShardResultTransformer<List<C
       for (int j = 0; j < fieldDoc.fields.length; j++) {
         Object sortValue  = fieldDoc.fields[j];
         Sort groupSort = rb.getGroupingSpec().getGroupSort();
-        SchemaField field = groupSort.getSort()[j].getField() != null ? rb.req.getSearcher().getSchema().getFieldOrNull(groupSort.getSort()[j].getField()) : null;
+        SchemaField field = groupSort.getSort()[j].getField() != null 
+                          ? schema.getFieldOrNull(groupSort.getSort()[j].getField()) : null;
         if (field != null) {
           FieldType fieldType = field.getType();
           if (sortValue instanceof BytesRef) {

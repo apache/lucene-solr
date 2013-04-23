@@ -211,12 +211,15 @@ public class CurrencyField extends FieldType implements SchemaAware, ResourceLoa
   }
 
   /**
-   * When index schema is informed, add dynamic fields.
-   *
-   * @param indexSchema The index schema.
+   * When index schema is informed, add dynamic fields "*____currency" and "*____amount_raw". 
+   * 
+   * {@inheritDoc}
+   * 
+   * @param schema {@inheritDoc}
    */
   @Override
-  public void inform(IndexSchema indexSchema) {
+  public void inform(IndexSchema schema) {
+    this.schema = schema;
     createDynamicCurrencyField(FIELD_SUFFIX_CURRENCY,   fieldTypeCurrency);
     createDynamicCurrencyField(FIELD_SUFFIX_AMOUNT_RAW, fieldTypeAmountRaw);
   }

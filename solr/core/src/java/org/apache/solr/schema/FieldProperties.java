@@ -109,16 +109,16 @@ public abstract class FieldProperties {
     return (bitfield & props) == 0;
   }
 
-  static int parseProperties(Map<String,String> properties, boolean which, boolean failOnError) {
+  static int parseProperties(Map<String,?> properties, boolean which, boolean failOnError) {
     int props = 0;
-    for (Map.Entry<String, String> entry : properties.entrySet()) {
-      String val = entry.getValue();
+    for (Map.Entry<String,?> entry : properties.entrySet()) {
+      Object val = entry.getValue();
       if(val == null) continue;
-      if (Boolean.parseBoolean(val) == which) {
+      boolean boolVal = val instanceof Boolean ? (Boolean)val : Boolean.parseBoolean(val.toString());
+      if (boolVal == which) {
         props |= propertyNameToInt(entry.getKey(), failOnError);
       }
     }
     return props;
   }
-
 }

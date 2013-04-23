@@ -124,7 +124,7 @@ public class DataImportHandler extends RequestHandlerBase implements
     }
     SolrParams params = req.getParams();
     NamedList defaultParams = (NamedList) initArgs.get("defaults");
-    RequestInfo requestParams = new RequestInfo(getParamsMap(params), contentStream);
+    RequestInfo requestParams = new RequestInfo(req, getParamsMap(params), contentStream);
     String command = requestParams.getCommand();
     
     if (DataImporter.SHOW_CONF_CMD.equals(command)) {    

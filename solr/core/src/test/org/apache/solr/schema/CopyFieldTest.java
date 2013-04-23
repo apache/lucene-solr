@@ -167,7 +167,7 @@ public class CopyFieldTest extends SolrTestCaseJ4 {
   public void testExplicitSourceGlob()
   {
     SolrCore core = h.getCore();
-    IndexSchema schema = core.getSchema();
+    IndexSchema schema = core.getLatestSchema();
     
     assertTrue("schema should contain explicit field 'sku1'", schema.getFields().containsKey("sku1"));
     assertTrue("schema should contain explicit field 'sku2'", schema.getFields().containsKey("sku2"));
@@ -228,7 +228,7 @@ public class CopyFieldTest extends SolrTestCaseJ4 {
   {
     // SOLR-4650: copyField source globs should not have to match an explicit or dynamic field 
     SolrCore core = h.getCore();
-    IndexSchema schema = core.getSchema();
+    IndexSchema schema = core.getLatestSchema();
 
     assertNull("'testing123_*' should not be (or match) a dynamic or explicit field", schema.getFieldOrNull("testing123_*"));
 
@@ -248,7 +248,7 @@ public class CopyFieldTest extends SolrTestCaseJ4 {
   }
 
   public void testCatchAllCopyField() {
-    IndexSchema schema = h.getCore().getSchema();
+    IndexSchema schema = h.getCore().getLatestSchema();
 
     assertNull("'*' should not be (or match) a dynamic field", 
                schema.getDynamicPattern("*"));

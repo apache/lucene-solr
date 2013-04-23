@@ -745,10 +745,10 @@ public class CoreContainer
 
     IndexSchema schema = null;
     if (indexSchemaCache != null) {
-      File schemaFile = new File(dcore.getSchemaName());
+      final String resourceNameToBeUsed = IndexSchemaFactory.getResourceNameToBeUsed(dcore.getSchemaName(), config);
+      File schemaFile = new File(resourceNameToBeUsed);
       if (!schemaFile.isAbsolute()) {
-        schemaFile = new File(solrLoader.getInstanceDir() + "conf"
-            + File.separator + dcore.getSchemaName());
+        schemaFile = new File(solrLoader.getConfigDir(), schemaFile.getPath());
       }
       if (schemaFile.exists()) {
         String key = schemaFile.getAbsolutePath()

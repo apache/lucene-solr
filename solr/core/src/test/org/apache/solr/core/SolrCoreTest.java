@@ -30,8 +30,15 @@ import org.apache.solr.util.plugin.SolrCoreAware;
 import org.junit.Test;
 
 import java.io.File;
-import java.util.concurrent.*;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Map;
+import java.util.concurrent.Callable;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+import java.util.concurrent.Future;
+import java.util.concurrent.TimeUnit;
+
 public class SolrCoreTest extends SolrTestCaseJ4 {
   private static final String COLLECTION1 = "collection1";
   
@@ -52,7 +59,7 @@ public class SolrCoreTest extends SolrTestCaseJ4 {
     final CoreContainer cores = h.getCoreContainer();
     SolrCore core = cores.getCore("");
 
-    IndexSchema schema = h.getCore().getSchema();
+    IndexSchema schema = h.getCore().getLatestSchema();
     assertEquals(COLLECTION1, cores.getDefaultCoreName());
     
     cores.remove("");

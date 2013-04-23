@@ -75,7 +75,7 @@ public class SystemInfoHandler extends RequestHandlerBase
   @Override
   public void handleRequestBody(SolrQueryRequest req, SolrQueryResponse rsp) throws Exception
   {
-    rsp.add( "core", getCoreInfo( req.getCore() ) );
+    rsp.add( "core", getCoreInfo( req.getCore(), req.getSchema() ) );
     boolean solrCloudMode = req.getCore().getCoreDescriptor().getCoreContainer().isZooKeeperAware();
     rsp.add( "mode", solrCloudMode ? "solrcloud" : "std");
     rsp.add( "lucene", getLuceneInfo() );
@@ -87,10 +87,9 @@ public class SystemInfoHandler extends RequestHandlerBase
   /**
    * Get system info
    */
-  private SimpleOrderedMap<Object> getCoreInfo( SolrCore core ) {
+  private SimpleOrderedMap<Object> getCoreInfo( SolrCore core, IndexSchema schema ) {
     SimpleOrderedMap<Object> info = new SimpleOrderedMap<Object>();
     
-    IndexSchema schema = core.getSchema();
     info.add( "schema", schema != null ? schema.getSchemaName():"no schema!" );
     
     // Host

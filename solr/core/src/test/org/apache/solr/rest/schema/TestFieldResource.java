@@ -92,4 +92,18 @@ public class TestFieldResource extends SolrRestletTestBase {
     assertQ("/schema/fields/id?indent=on&wt=xml", tests);
     assertQ("/schema/fields/id?indent=on&wt=xml&showDefaults=false", tests);
   }
+  
+  @Test
+  public void testJsonPutFieldToNonMutableIndexSchema() throws Exception {
+    assertJPut("/schema/fields/newfield",
+        "{\"type\":\"text_general\", \"stored\":\"false\"}",
+        "/error/msg=='This IndexSchema is not mutable.'");
+  }
+
+  @Test
+  public void testJsonPostFieldsToNonMutableIndexSchema() throws Exception {
+    assertJPost("/schema/fields",
+        "[{\"name\":\"foobarbaz\", \"type\":\"text_general\", \"stored\":\"false\"}]",
+        "/error/msg=='This IndexSchema is not mutable.'");
+  }
 }

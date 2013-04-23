@@ -18,7 +18,6 @@ package org.apache.solr.analysis;
 
 import java.lang.reflect.Field;
 
-import org.apache.lucene.analysis.util.TokenizerFactory;
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.core.Config;
 import org.apache.solr.schema.IndexSchema;
@@ -45,7 +44,7 @@ public class TestLuceneMatchVersion extends SolrTestCaseJ4 {
   public void testStandardTokenizerVersions() throws Exception {
     assertEquals(DEFAULT_VERSION, solrConfig.luceneMatchVersion);
     
-    final IndexSchema schema = h.getCore().getSchema();
+    final IndexSchema schema = h.getCore().getLatestSchema();
     
     FieldType type = schema.getFieldType("textDefault");
     TokenizerChain ana = (TokenizerChain) type.getAnalyzer();

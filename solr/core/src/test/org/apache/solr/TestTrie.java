@@ -53,7 +53,7 @@ public class TestTrie extends SolrTestCaseJ4 {
   
   @Test
   public void testTokenizer() throws Exception {
-    FieldType type = h.getCore().getSchema().getFieldType("tint");
+    FieldType type = h.getCore().getLatestSchema().getFieldType("tint");
     assertTrue(type instanceof TrieField);
     
     String value = String.valueOf(random().nextInt());
@@ -303,7 +303,7 @@ public class TestTrie extends SolrTestCaseJ4 {
   }
 
   private void checkPrecisionSteps(String fieldType) {
-    FieldType type = h.getCore().getSchema().getFieldType(fieldType);
+    FieldType type = h.getCore().getLatestSchema().getFieldType(fieldType);
     if (type instanceof TrieField) {
       TrieField field = (TrieField) type;
       assertTrue(field.getPrecisionStep() > 0 && field.getPrecisionStep() < 64);

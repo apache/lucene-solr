@@ -92,7 +92,7 @@ public class UIMAUpdateRequestProcessor extends UpdateRequestProcessor {
     } catch (Exception e) {
       String logField = solrUIMAConfiguration.getLogField();
       if(logField == null){
-        SchemaField uniqueKeyField = solrCore.getSchema().getUniqueKeyField();
+        SchemaField uniqueKeyField = cmd.getReq().getSchema().getUniqueKeyField();
         if(uniqueKeyField != null){
           logField = uniqueKeyField.getName();
         }

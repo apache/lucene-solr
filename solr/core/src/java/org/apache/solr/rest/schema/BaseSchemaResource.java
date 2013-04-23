@@ -107,7 +107,7 @@ abstract class BaseSchemaResource extends ServerResource {
           } else {
             solrResponse = solrRequestInfo.getRsp();
             solrCore = solrRequest.getCore();
-            schema = solrCore.getSchema();
+            schema = solrRequest.getSchema();
             String responseWriterName = solrRequest.getParams().get(CommonParams.WT);
             if (null == responseWriterName) {
               responseWriterName = "json"; // Default to json writer
@@ -124,8 +124,12 @@ abstract class BaseSchemaResource extends ServerResource {
             responseWriter = solrCore.getQueryResponseWriter(responseWriterName);
             contentType = responseWriter.getContentType(solrRequest, solrResponse);
             final String path = getRequest().getRootRef().getPath();
-            final String firstPathElement = path.substring(0, path.indexOf("/", 1));
-            solrRequest.getContext().put("webapp", firstPathElement); // Context path
+            if ( ! "/schema".equals(path)) { 
+              // don't set webapp property on the request when context and core/collection are excluded 
+              final int cutoffPoint = path.indexOf("/", 1);
+              final String firstPathElement = -1 == cutoffPoint ? path : path.substring(0, cutoffPoint);
+              solrRequest.getContext().put("webapp", firstPathElement); // Context path
+            }
             SolrCore.preDecorateResponse(solrRequest, solrResponse);
           }
         }

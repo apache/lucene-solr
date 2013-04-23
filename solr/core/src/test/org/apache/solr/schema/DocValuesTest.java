@@ -65,7 +65,7 @@ public class DocValuesTest extends SolrTestCaseJ4 {
         assertEquals(Double.doubleToLongBits(3), reader.getNumericDocValues("doubledv").get(0));
         assertEquals(4L, reader.getNumericDocValues("longdv").get(0));
 
-        final IndexSchema schema = core.getSchema();
+        final IndexSchema schema = core.getLatestSchema();
         final SchemaField floatDv = schema.getField("floatdv");
         final SchemaField intDv = schema.getField("intdv");
         final SchemaField doubleDv = schema.getField("doubledv");
