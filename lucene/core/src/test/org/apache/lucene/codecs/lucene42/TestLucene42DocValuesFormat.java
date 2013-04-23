@@ -18,12 +18,12 @@ package org.apache.lucene.codecs.lucene42;
  */
 
 import org.apache.lucene.codecs.Codec;
-import org.apache.lucene.index.BaseDocValuesFormatTestCase;
+import org.apache.lucene.index.BaseCompressingDocValuesFormatTestCase;
 
 /**
  * Tests Lucene42DocValuesFormat
  */
-public class TestLucene42DocValuesFormat extends BaseDocValuesFormatTestCase {
+public class TestLucene42DocValuesFormat extends BaseCompressingDocValuesFormatTestCase {
   private final Codec codec = new Lucene42Codec();
 
   @Override

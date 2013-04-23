@@ -19,6 +19,11 @@ Optimizations
 * LUCENE-4938: Don't use an unnecessarily large priority queue in IndexSearcher
   methods that take top-N.  (Uwe Schindler, Mike McCandless, Robert Muir)
 
+* LUCENE-4936: Improve numeric doc values compression in case all values share
+  a common divisor. In particular, this improves the compression ratio of dates
+  without time when they are encoded as milliseconds since Epoch. Also support
+  TABLE compressed numerics in the Disk codec.  (Robert Muir, Adrien Grand)
+
 ======================= Lucene 4.3.0 =======================
 
 Changes in backwards compatibility policy

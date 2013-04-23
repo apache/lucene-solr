@@ -44,6 +44,8 @@ import org.apache.lucene.util.packed.BlockPackedWriter;
  *    <li>Uncompressed Numerics: when all values would fit into a single byte, and the 
  *        <code>acceptableOverheadRatio</code> would pack values into 8 bits per value anyway, they
  *        are written as absolute values (with no indirection or packing) for performance.
+ *    <li>GCD-compressed Numerics: when all numbers share a common divisor, such as dates, the greatest
+ *        common denominator (GCD) is computed, and quotients are stored using Delta-compressed Numerics.
  *    <li>Fixed-width Binary: one large concatenated byte[] is written, along with the fixed length.
  *        Each document's value can be addressed by maxDoc*length. 
  *    <li>Variable-width Binary: one large concatenated byte[] is written, along with end addresses 
@@ -93,6 +95,8 @@ import org.apache.lucene.util.packed.BlockPackedWriter;
  *         <li>2 --&gt; uncompressed. When the <code>acceptableOverheadRatio</code> parameter would upgrade the number
  *             of bits required to 8, and all values fit in a byte, these are written as absolute binary values
  *             for performance.
+ *         <li>3 --&gt, gcd-compressed. When all integers share a common divisor, only quotients are stored
+ *             using blocks of delta-encoded ints.
  *      </ul>
  *   <p>MinLength and MaxLength represent the min and max byte[] value lengths for Binary values.
  *      If they are equal, then all values are of a fixed size, and can be addressed as DataOffset + (docID * length).
@@ -103,7 +107,7 @@ import org.apache.lucene.util.packed.BlockPackedWriter;
  *   <p>For DocValues field, this stores the actual per-document data (the heavy-lifting)</p>
  *   <p>DocValues data (.dvd) --&gt; Header,&lt;NumericData | BinaryData | SortedData&gt;<sup>NumFields</sup></p>
  *   <ul>
- *     <li>NumericData --&gt; DeltaCompressedNumerics | TableCompressedNumerics | UncompressedNumerics</li>
+ *     <li>NumericData --&gt; DeltaCompressedNumerics | TableCompressedNumerics | UncompressedNumerics | GCDCompressedNumerics</li>
  *     <li>BinaryData --&gt;  {@link DataOutput#writeByte Byte}<sup>DataLength</sup>,Addresses</li>
  *     <li>SortedData --&gt; {@link FST FST&lt;Int64&gt;}</li>
  *     <li>DeltaCompressedNumerics --&gt; {@link BlockPackedWriter BlockPackedInts(blockSize=4096)}</li>
