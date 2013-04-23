@@ -68,6 +68,10 @@ Bug Fixes
 * SOLR-4333: edismax parser to not double-escape colons if already escaped by 
   the client application (James Dyer, Robert J. van der Boon)
 
+* SOLR-4729: LukeRequestHandler: Using a dynamic copyField source that is
+  not also a dynamic field triggers error message 'undefined field: "(glob)"'.
+  (Adam Hahn, hossman, Steve Rowe)
+
 Other Changes
 ----------------------
 

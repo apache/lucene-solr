@@ -22,6 +22,7 @@ import java.util.EnumSet;
 
 import org.apache.solr.common.luke.FieldFlag;
 import org.apache.solr.request.SolrQueryRequest;
+import org.apache.solr.schema.IndexSchema;
 import org.apache.solr.util.AbstractSolrTestCase;
 import org.junit.Before;
 import org.junit.BeforeClass;
@@ -196,4 +197,27 @@ public class LukeRequestHandlerTest extends AbstractSolrTestCase {
     assertEquals(xml, null, r);
   }
 
+  public void testCatchAllCopyField() throws Exception {
+    deleteCore();
+    initCore("solrconfig.xml", "schema-copyfield-test.xml");
+    
+    IndexSchema schema = h.getCore().getLatestSchema();
+    
+    assertNull("'*' should not be (or match) a dynamic field", schema.getDynamicPattern("*"));
+    
+    boolean foundCatchAllCopyField = false;
+    for (IndexSchema.DynamicCopy dcf : schema.getDynamicCopyFields()) {
+      foundCatchAllCopyField = dcf.getRegex().equals("*") && dcf.getDestFieldName().equals("catchall_t");
+    }
+    assertTrue("<copyField source=\"*\" dest=\"catchall_t\"/> is missing from the schema", foundCatchAllCopyField);
+
+    SolrQueryRequest req = req("qt", "/admin/luke", "show", "schema", "indent", "on");
+    String xml = h.query(req);
+    String result = h.validateXPath(xml, field("bday") + "/arr[@name='copyDests']/str[.='catchall_t']");
+    assertNull(xml, result);
+
+    // Put back the configuration expected by the rest of the tests in this suite
+    deleteCore();
+    initCore("solrconfig.xml", "schema12.xml");
+  }
 }
