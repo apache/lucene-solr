@@ -592,7 +592,7 @@ public class OverseerCollectionProcessor implements Runnable, ClosableThread {
       Integer numSlices = msgStrToInt(message, NUM_SLICES, null);
       
       if (numSlices == null) {
-        throw new SolrException(ErrorCode.BAD_REQUEST, "collection already exists: " + collectionName);
+        throw new SolrException(ErrorCode.BAD_REQUEST, NUM_SLICES + " is a required param");
       }
       
       int maxShardsPerNode = msgStrToInt(message, MAX_SHARDS_PER_NODE, 1);
@@ -600,7 +600,7 @@ public class OverseerCollectionProcessor implements Runnable, ClosableThread {
       List<String> createNodeList = ((createNodeSetStr = message.getStr(CREATE_NODE_SET)) == null)?null:StrUtils.splitSmart(createNodeSetStr, ",", true);
       
       if (repFactor <= 0) {
-        throw new SolrException(ErrorCode.BAD_REQUEST, NUM_SLICES + " is a required paramater");
+        throw new SolrException(ErrorCode.BAD_REQUEST, REPLICATION_FACTOR + " must be greater than or equal to 0");
       }
       
       if (numSlices <= 0) {
@@ -781,7 +781,7 @@ public class OverseerCollectionProcessor implements Runnable, ClosableThread {
     }
   }
   
-  private int msgStrToInt(ZkNodeProps message, String key, Integer def)
+  private Integer msgStrToInt(ZkNodeProps message, String key, Integer def)
       throws Exception {
     String str = message.getStr(key);
     try {
