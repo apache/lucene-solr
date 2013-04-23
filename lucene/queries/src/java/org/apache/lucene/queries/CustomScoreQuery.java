@@ -387,6 +387,16 @@ public class CustomScoreQuery extends Query {
     this.strict = strict;
   }
 
+  /** The sub-query that CustomScoreQuery wraps, affecting both the score and which documents match. */
+  public Query getSubQuery() {
+    return subQuery;
+  }
+
+  /** The scoring queries that only affect the score of CustomScoreQuery. */
+  public Query[] getScoringQueries() {
+    return scoringQueries;
+  }
+
   /**
    * A short name of this query, used in {@link #toString(String)}.
    */
