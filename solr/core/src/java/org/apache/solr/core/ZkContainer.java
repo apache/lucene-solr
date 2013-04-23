@@ -107,9 +107,6 @@ public class ZkContainer {
     }
 
     String zkRun = System.getProperty("zkRun");
-
-    if (zkRun == null && zookeeperHost == null)
-        return;  // not in zk mode
     
     this.zkClientTimeout = zkClientTimeout;
     this.hostPort = hostPort;
@@ -118,6 +115,10 @@ public class ZkContainer {
     this.leaderVoteWait = leaderVoteWait;
     this.distribUpdateConnTimeout = distribUpdateConnTimeout;
     this.distribUpdateSoTimeout = distribUpdateSoTimeout;
+    
+    if (zkRun == null && zookeeperHost == null)
+        return;  // not in zk mode
+
 
     // BEGIN: SOLR-4622: deprecated hardcoded defaults for hostPort & hostContext
     if (null == hostPort) {
