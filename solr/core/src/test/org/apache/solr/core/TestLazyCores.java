@@ -390,10 +390,6 @@ public class TestLazyCores extends SolrTestCaseJ4 {
           "/solr/cores/core[@name='core3']",
           "/solr/cores/core[@name='core4']");
       assertXmlFile(oneXml, "13=count(/solr/cores/core)");
-      core1.close();
-      core2.close();
-      core3.close();
-      core4.close();
 
       removeOne(cc, "collectionLazy2");
       removeOne(cc, "collectionLazy3");
