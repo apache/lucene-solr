@@ -88,6 +88,9 @@ Other Changes
 * SOLR-4749: Clean up and refactor CoreContainer code around solr.xml and SolrCore
   management. (Mark Miller)
 
+* SOLR-4547: Move logging of filenames on commit from INFO to DEBUG.
+  (Shawn Heisey, hossman)
+
 ==================  4.3.0 ==================
 
 Versions of Major Components
