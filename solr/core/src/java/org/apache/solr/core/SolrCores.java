@@ -17,13 +17,9 @@ import javax.xml.xpath.XPathExpressionException;
 
 import org.apache.commons.lang.StringUtils;
 import org.apache.solr.cloud.CloudDescriptor;
-import org.apache.solr.cloud.ZkController;
 import org.apache.solr.common.SolrException;
-import org.apache.solr.common.cloud.ZkStateReader;
 import org.apache.solr.core.SolrXMLSerializer.SolrCoreXMLDef;
-import org.apache.solr.update.SolrCoreState;
 import org.apache.solr.util.DOMUtil;
-import org.apache.zookeeper.KeeperException;
 import org.w3c.dom.Node;
 
 
@@ -152,16 +148,6 @@ class SolrCores {
           }
         }
       }
-    }
-  }
-
-  protected void addCoresToList(ArrayList<SolrCoreState> coreStates) {
-    List<SolrCore> addCores;
-    synchronized (modifyLock) {
-      addCores = new ArrayList<SolrCore>(cores.values());
-    }
-    for (SolrCore core : addCores) {
-      coreStates.add(core.getUpdateHandler().getSolrCoreState());
     }
   }
 
@@ -352,21 +338,10 @@ class SolrCores {
     }
   }
   
-  // Irrepressably ugly bit of the transition in SOLR-4196, but there as at least one test case that follows
-  // this path, presumably it's there for a reason.
-  // This is really perverse, but all we need the here is to call a couple of static methods that for back-compat
-  // purposes
   public void persistCores(Config cfg, Properties containerProperties,
       Map<String,String> rootSolrAttribs, Map<String,String> coresAttribs,
       File file, File configFile, SolrResourceLoader loader) throws XPathExpressionException {
-    // This is expensive in the maximal case, but I think necessary. It should
-    // keep a reference open to all of the
-    // current cores while they are saved. Remember that especially the
-    // transient core can come and go.
-    //
-    // TODO: 5.0. remove the possibility of storing core descriptors in
-    // solr.xml?
-    //
+
     
     List<SolrXMLSerializer.SolrCoreXMLDef> solrCoreXMLDefs = new ArrayList<SolrXMLSerializer.SolrCoreXMLDef>();
     synchronized (modifyLock) {

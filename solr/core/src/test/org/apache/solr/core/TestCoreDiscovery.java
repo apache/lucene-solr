@@ -91,29 +91,11 @@ public class TestCoreDiscovery extends SolrTestCaseJ4 {
   private void addCoreWithProps(Properties stockProps) throws Exception {
 
     File propFile = new File(solrHomeDirectory,
-        stockProps.getProperty(CoreDescriptor.CORE_NAME) + File.separator + ConfigSolr.CORE_PROP_FILE);
+        stockProps.getProperty(CoreDescriptor.CORE_NAME) + File.separator + SolrCoreDiscoverer.CORE_PROP_FILE);
     File parent = propFile.getParentFile();
     assertTrue("Failed to mkdirs for " + parent.getAbsolutePath(), parent.mkdirs());
     addCoreWithProps(stockProps, propFile);
   }
-
-  // For testing error condition of having multiple cores with the same name.
-  private void addCoreWithPropsDir(String coreDir, Properties stockProps) throws Exception {
-
-    File propFile = new File(solrHomeDirectory, coreDir + File.separator + ConfigSolr.CORE_PROP_FILE);
-    File parent = propFile.getParentFile();
-    assertTrue("Failed to mkdirs for " + parent.getAbsolutePath(), parent.mkdirs());
-
-    FileOutputStream out = new FileOutputStream(propFile);
-    try {
-      stockProps.store(out, null);
-    } finally {
-      out.close();
-    }
-
-    addConfFiles(new File(parent, "conf"));
-  }
-
 
   private void addConfFiles(File confDir) throws Exception {
     String top = SolrTestCaseJ4.TEST_HOME() + "/collection1/conf";
@@ -157,10 +139,10 @@ public class TestCoreDiscovery extends SolrTestCaseJ4 {
     try {
       assertNull("defaultCore no longer allowed in solr.xml", cc.getDefaultCoreName());
 
-      assertEquals("222.333.444.555", cc.getHost());
-      assertEquals("6000", cc.getHostPort());
-      assertEquals("solrprop", cc.getHostContext());
-      assertEquals(20, cc.getZkClientTimeout());
+      assertEquals("222.333.444.555", cc.zkSys.getHost());
+      assertEquals("6000", cc.zkSys.getHostPort());
+      assertEquals("solrprop", cc.zkSys.getHostContext());
+      assertEquals(20, cc.zkSys.getZkClientTimeout());
 
       TestLazyCores.checkInCores(cc, "core1");
       TestLazyCores.checkNotInCores(cc, "lazy1", "core2", "collection1");
@@ -200,9 +182,9 @@ public class TestCoreDiscovery extends SolrTestCaseJ4 {
     alt.mkdirs();
     setMeUp(alt.getAbsolutePath());
     addCoreWithProps(makeCorePropFile("core1", false, true, "dataDir=core1"),
-        new File(alt, "core1" + File.separator + ConfigSolr.CORE_PROP_FILE));
+        new File(alt, "core1" + File.separator + SolrCoreDiscoverer.CORE_PROP_FILE));
     addCoreWithProps(makeCorePropFile("core2", false, false, "dataDir=core2"),
-        new File(alt, "core2" + File.separator + ConfigSolr.CORE_PROP_FILE));
+        new File(alt, "core2" + File.separator + SolrCoreDiscoverer.CORE_PROP_FILE));
     CoreContainer cc = init();
     try {
       SolrCore core1 = cc.getCore("core1");

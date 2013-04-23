@@ -37,7 +37,6 @@ import javax.xml.xpath.XPathExpressionException;
 import org.apache.commons.io.IOUtils;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.util.DOMUtil;
-import org.apache.solr.util.PropertiesUtil;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.w3c.dom.NamedNodeMap;
@@ -58,11 +57,13 @@ public class ConfigSolrXmlOld extends ConfigSolr {
       throws ParserConfigurationException, IOException, SAXException {
 
     super(config);
-    init(container);
+    checkForIllegalConfig(container);
+    
+    fillPropMap();
+    initCoreList(container);
   }
   
-  private void init(CoreContainer container) throws IOException {
-    
+  private void checkForIllegalConfig(CoreContainer container) throws IOException {
     // Do sanity checks - we don't want to find new style
     // config
     failIfFound("solr/str[@name='adminHandler']");
@@ -86,9 +87,6 @@ public class ConfigSolrXmlOld extends ConfigSolr {
     
     failIfFound("solr/logging/watcher/int[@name='size']");
     failIfFound("solr/logging/watcher/int[@name='threshold']");
-    
-    fillPropMap();
-    initCoreList(container);
   }
   
   private void failIfFound(String xPath) {
@@ -222,47 +220,6 @@ public class ConfigSolrXmlOld extends ConfigSolr {
       }
     }
     return attrs;
-  }
-
-  // Fortunately, we don't iterate over these too often, so the waste is probably tolerable.
-
-  @Override
-  public String getCoreNameFromOrig(String origCoreName,
-      SolrResourceLoader loader, String coreName) {
-    
-    // look for an existing node
-    synchronized (coreNodes) {
-      // first look for an exact match
-      Node coreNode = null;
-      for (int i = 0; i < coreNodes.getLength(); i++) {
-        Node node = coreNodes.item(i);
-        
-        String name = DOMUtil.getAttr(node, CoreDescriptor.CORE_NAME, null);
-        if (origCoreName.equals(name)) {
-          if (coreName.equals(origCoreName)) {
-            return name;
-          }
-          return coreName;
-        }
-      }
-      
-      if (coreNode == null) {
-        // see if we match with substitution
-        for (int i = 0; i < coreNodes.getLength(); i++) {
-          Node node = coreNodes.item(i);
-          String name = DOMUtil.getAttr(node, CoreDescriptor.CORE_NAME, null);
-          if (origCoreName.equals(PropertiesUtil.substituteProperty(name,
-              loader.getCoreProperties()))) {
-            if (coreName.equals(origCoreName)) {
-              return name;
-            }
-            return coreName;
-          }
-        }
-      }
-    }
-    
-    return null;
   }
 
   @Override

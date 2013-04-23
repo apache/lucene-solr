@@ -180,13 +180,14 @@ public class TestHarness extends BaseTestHarness {
     public CoreContainer initialize() {
       CoreContainer container;
       try {
-        container = new CoreContainer(new SolrResourceLoader(SolrResourceLoader.locateSolrHome())) {
+        String solrHome = SolrResourceLoader.locateSolrHome();
+        container = new CoreContainer(new SolrResourceLoader(solrHome)) {
           {
-            hostPort = System.getProperty("hostPort");
-            hostContext = "solr";
+            String hostPort = System.getProperty("hostPort");
+            String hostContext = "solr";
             defaultCoreName = CoreContainer.DEFAULT_DEFAULT_CORE_NAME;
             initShardHandler();
-            initZooKeeper(System.getProperty("zkHost"), 10000);
+            zkSys.initZooKeeper(this, solrHome, System.getProperty("zkHost"), 30000, hostPort, hostContext, null, "30000", 30000, 30000);
             ByteArrayInputStream is = new ByteArrayInputStream(ConfigSolrXmlOld.DEF_SOLR_XML.getBytes("UTF-8"));
             Config config = new Config(loader, null, new InputSource(is), null, false);
             cfg = new ConfigSolrXmlOld(config, this);
