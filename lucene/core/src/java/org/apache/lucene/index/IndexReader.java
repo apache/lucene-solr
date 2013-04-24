@@ -418,7 +418,7 @@ public abstract class IndexReader implements Closeable {
    * it again.
    * This key must not have equals()/hashCode() methods, so &quot;equals&quot; means &quot;identical&quot;. */
   public Object getCoreCacheKey() {
-    // Don't can ensureOpen since FC calls this (to evict)
+    // Don't call ensureOpen since FC calls this (to evict)
     // on close
     return this;
   }
@@ -427,7 +427,7 @@ public abstract class IndexReader implements Closeable {
    * so FieldCache/CachingWrapperFilter can find it again.
    * This key must not have equals()/hashCode() methods, so &quot;equals&quot; means &quot;identical&quot;. */
   public Object getCombinedCoreAndDeletesKey() {
-    // Don't can ensureOpen since FC calls this (to evict)
+    // Don't call ensureOpen since FC calls this (to evict)
     // on close
     return this;
   }
