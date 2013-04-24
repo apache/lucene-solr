@@ -23,6 +23,13 @@ Optimizations
   a common divisor. In particular, this improves the compression ratio of dates
   without time when they are encoded as milliseconds since Epoch. Also support
   TABLE compressed numerics in the Disk codec.  (Robert Muir, Adrien Grand)
+  
+  
+New Features
+
+* LUCENE-4766: Added a PatternCaptureGroupTokenFilter that uses Java regexes to 
+  emit multiple tokens one for each capture group in one or more patterns.
+  (Simon Willnauer, Clinton Gormley)
 
 ======================= Lucene 4.3.0 =======================
 

@@ -470,6 +470,12 @@ public class TestRandomChains extends BaseTokenStreamTestCase {
         return Pattern.compile("a");
       }
     });
+    
+    put(Pattern[].class, new ArgProducer() {
+      @Override public Object create(Random random) {
+        return new Pattern[] {Pattern.compile("([a-z]+)"), Pattern.compile("([0-9]+)")};
+      }
+    });
     put(PayloadEncoder.class, new ArgProducer() {
       @Override public Object create(Random random) {
         return new IdentityEncoder(); // the other encoders will throw exceptions if tokens arent numbers?
