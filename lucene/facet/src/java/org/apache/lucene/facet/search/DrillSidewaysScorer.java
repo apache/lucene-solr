@@ -107,7 +107,7 @@ class DrillSidewaysScorer extends Scorer {
     /*
     System.out.println("\nbaseDocID=" + baseScorer.docID() + " est=" + estBaseHitCount);
     System.out.println("  maxDoc=" + context.reader().maxDoc());
-    System.out.println("  maxFreq=" + maxFreq);
+    System.out.println("  maxCost=" + maxCost);
     System.out.println("  dims[0].freq=" + dims[0].freq);
     if (numDims > 1) {
       System.out.println("  dims[1].freq=" + dims[1].freq);
@@ -119,7 +119,7 @@ class DrillSidewaysScorer extends Scorer {
       if (baseQueryCost < drillDownCost/10) {
         //System.out.println("baseAdvance");
         doBaseAdvanceScoring(collector, docsEnums, sidewaysCollectors);
-      } else if (numDims > 1 && (dims[1].maxFreq < baseQueryCost/10)) {
+      } else if (numDims > 1 && (dims[1].maxCost < baseQueryCost/10)) {
         //System.out.println("drillDownAdvance");
         doDrillDownAdvanceScoring(collector, docsEnums, sidewaysCollectors);
       } else {
@@ -640,14 +640,20 @@ class DrillSidewaysScorer extends Scorer {
 
   static class DocsEnumsAndFreq implements Comparable<DocsEnumsAndFreq> {
     DocsEnum[] docsEnums;
-    // Max docFreq for all docsEnums for this dim:
-    int maxFreq;
+    // Max cost for all docsEnums for this dim:
+    long maxCost;
     Collector sidewaysCollector;
     String dim;
 
     @Override
     public int compareTo(DocsEnumsAndFreq other) {
-      return maxFreq - other.maxFreq;
+      if (maxCost < other.maxCost) {
+        return -1;
+      } else if (maxCost > other.maxCost) {
+        return 1;
+      } else {
+        return 0;
+      }
     }
   }
 }
