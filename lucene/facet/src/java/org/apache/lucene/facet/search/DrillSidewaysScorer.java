@@ -76,7 +76,7 @@ class DrillSidewaysScorer extends Scorer {
     assert baseScorer != null;
 
     // Position all scorers to their first matching doc:
-    int baseDocID = baseScorer.nextDoc();
+    baseScorer.nextDoc();
 
     for(DocsEnumsAndFreq dim : dims) {
       for(DocsEnum docsEnum : dim.docsEnums) {
@@ -90,18 +90,21 @@ class DrillSidewaysScorer extends Scorer {
 
     DocsEnum[][] docsEnums = new DocsEnum[numDims][];
     Collector[] sidewaysCollectors = new Collector[numDims];
-    int maxFreq = 0;
+    long drillDownCost = 0;
     for(int dim=0;dim<numDims;dim++) {
       docsEnums[dim] = dims[dim].docsEnums;
       sidewaysCollectors[dim] = dims[dim].sidewaysCollector;
-      maxFreq = Math.max(maxFreq, dims[dim].freq);
+      for(DocsEnum de : dims[dim].docsEnums) {
+        if (de != null) {
+          drillDownCost += de.cost();
+        }
+      }
     }
 
-    // TODO: if we add cost API to Scorer, switch to that!
-    int estBaseHitCount = context.reader().maxDoc() / (1+baseDocID);
+    long baseQueryCost = baseScorer.cost();
 
     /*
-    System.out.println("\nbaseDocID=" + baseDocID + " est=" + estBaseHitCount);
+    System.out.println("\nbaseDocID=" + baseScorer.docID() + " est=" + estBaseHitCount);
     System.out.println("  maxDoc=" + context.reader().maxDoc());
     System.out.println("  maxFreq=" + maxFreq);
     System.out.println("  dims[0].freq=" + dims[0].freq);
@@ -110,10 +113,10 @@ class DrillSidewaysScorer extends Scorer {
     }
     */
 
-    if (estBaseHitCount < maxFreq/10) {
+    if (baseQueryCost < drillDownCost/10) {
       //System.out.println("baseAdvance");
       doBaseAdvanceScoring(collector, docsEnums, sidewaysCollectors);
-    } else if (numDims > 1 && (dims[1].freq < estBaseHitCount/10)) {
+    } else if (numDims > 1 && (dims[1].maxFreq < baseQueryCost/10)) {
       //System.out.println("drillDownAdvance");
       doDrillDownAdvanceScoring(collector, docsEnums, sidewaysCollectors);
     } else {
@@ -630,13 +633,13 @@ class DrillSidewaysScorer extends Scorer {
   static class DocsEnumsAndFreq implements Comparable<DocsEnumsAndFreq> {
     DocsEnum[] docsEnums;
     // Max docFreq for all docsEnums for this dim:
-    int freq;
+    int maxFreq;
     Collector sidewaysCollector;
     String dim;
 
     @Override
     public int compareTo(DocsEnumsAndFreq other) {
-      return freq - other.freq;
+      return maxFreq - other.maxFreq;
     }
   }
 }
