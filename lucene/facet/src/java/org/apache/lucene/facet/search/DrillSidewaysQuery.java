@@ -39,12 +39,14 @@ class DrillSidewaysQuery extends Query {
   final Collector drillDownCollector;
   final Collector[] drillSidewaysCollectors;
   final Term[][] drillDownTerms;
+  final boolean scoreSubDocsAtOnce;
 
-  DrillSidewaysQuery(Query baseQuery, Collector drillDownCollector, Collector[] drillSidewaysCollectors, Term[][] drillDownTerms) {
+  DrillSidewaysQuery(Query baseQuery, Collector drillDownCollector, Collector[] drillSidewaysCollectors, Term[][] drillDownTerms, boolean scoreSubDocsAtOnce) {
     this.baseQuery = baseQuery;
     this.drillDownCollector = drillDownCollector;
     this.drillSidewaysCollectors = drillSidewaysCollectors;
     this.drillDownTerms = drillDownTerms;
+    this.scoreSubDocsAtOnce = scoreSubDocsAtOnce;
   }
 
   @Override
@@ -65,7 +67,7 @@ class DrillSidewaysQuery extends Query {
     if (newQuery == baseQuery) {
       return this;
     } else {
-      return new DrillSidewaysQuery(newQuery, drillDownCollector, drillSidewaysCollectors, drillDownTerms);
+      return new DrillSidewaysQuery(newQuery, drillDownCollector, drillSidewaysCollectors, drillDownTerms, scoreSubDocsAtOnce);
     }
   }
   
@@ -152,7 +154,7 @@ class DrillSidewaysQuery extends Query {
 
         return new DrillSidewaysScorer(this, context,
                                        baseScorer,
-                                       drillDownCollector, dims);
+                                       drillDownCollector, dims, scoreSubDocsAtOnce);
       }
     };
   }

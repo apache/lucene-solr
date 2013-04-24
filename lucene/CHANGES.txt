@@ -28,6 +28,11 @@ New Features
 * LUCENE-4747: Move to Java 7 as minimum Java version.
   (Robert Muir, Uwe Schindler)
 
+* LUCENE-4952: Expose control (protected method) in DrillSideways to
+  force all sub-scorers to be on the same document being collected.
+  This is necessary when using collectors like
+  ToParentBlockJoinCollector with DrillSideways.  (Mike McCandless)
+
 Optimizations
 
 * LUCENE-4848: Use Java 7 NIO2-FileChannel instead of RandomAccessFile

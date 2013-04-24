@@ -209,7 +209,7 @@ public class DrillSideways {
       drillSidewaysCollectors[idx++] = FacetsCollector.create(getDrillSidewaysAccumulator(dim, new FacetSearchParams(fsp.indexingParams, requests)));
     }
 
-    DrillSidewaysQuery dsq = new DrillSidewaysQuery(baseQuery, drillDownCollector, drillSidewaysCollectors, drillDownTerms);
+    DrillSidewaysQuery dsq = new DrillSidewaysQuery(baseQuery, drillDownCollector, drillSidewaysCollectors, drillDownTerms, scoreSubDocsAtOnce());
 
     searcher.search(dsq, hitCollector);
 
@@ -298,6 +298,19 @@ public class DrillSideways {
    *  FacetsAccumulator}. */
   protected FacetsAccumulator getDrillSidewaysAccumulator(String dim, FacetSearchParams fsp) throws IOException {
     return FacetsAccumulator.create(fsp, searcher.getIndexReader(), taxoReader);
+  }
+
+  /** Override this and return true if your collector
+   *  (e.g., ToParentBlockJoinCollector) expects all
+   *  sub-scorers to be positioned on the document being
+   *  collected.  This will cause some performance loss;
+   *  default is false.  Note that if you return true from
+   *  this method (in a subclass) be sure your collector
+   *  also returns false from {@link
+   *  Collector#acceptsDocsOutOfOrder}: this will trick
+   *  BooleanQuery into also scoring all subDocs at once. */
+  protected boolean scoreSubDocsAtOnce() {
+    return false;
   }
 
   /** Represents the returned result from a drill sideways

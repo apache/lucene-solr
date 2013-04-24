@@ -642,6 +642,7 @@ public class TestDrillSideways extends FacetTestCase {
       String[][] drillDowns = new String[numDims][];
 
       int count = 0;
+      boolean anyMultiValuedDrillDowns = false;
       while (count < numDrillDown) {
         int dim = random().nextInt(numDims);
         if (drillDowns[dim] == null) {
@@ -651,6 +652,7 @@ public class TestDrillSideways extends FacetTestCase {
           } else {
             int orCount = _TestUtil.nextInt(random(), 1, Math.min(5, dimValues[dim].length));
             drillDowns[dim] = new String[orCount];
+            anyMultiValuedDrillDowns |= orCount > 1;
             for(int i=0;i<orCount;i++) {
               while (true) {
                 String value = dimValues[dim][random().nextInt(dimValues[dim].length)];
@@ -748,6 +750,22 @@ public class TestDrillSideways extends FacetTestCase {
                                return false;
                              }
                            }, fsp);
+
+      // Also separately verify that DS respects the
+      // scoreSubDocsAtOnce method, to ensure that all
+      // subScorers are on the same docID:
+      if (!anyMultiValuedDrillDowns) {
+        // Can only do this test when there are no OR'd
+        // drill-down values, beacuse in that case it's
+        // easily possible for one of the DD terms to be on
+        // a future docID:
+        new DrillSideways(s, tr) {
+          @Override
+          protected boolean scoreSubDocsAtOnce() {
+            return true;
+          }
+        }.search(ddq, new AssertingSubDocsAtOnceCollector(), fsp);
+      }
 
       SimpleFacetResult expected = slowDrillSidewaysSearch(s, requests, docs, contentToken, drillDowns, dimValues, filter);
 
