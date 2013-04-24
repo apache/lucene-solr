@@ -33,6 +33,11 @@ New Features
   emit multiple tokens one for each capture group in one or more patterns.
   (Simon Willnauer, Clinton Gormley)
 
+* LUCENE-4952: Expose control (protected method) in DrillSideways to
+  force all sub-scorers to be on the same document being collected.
+  This is necessary when using collectors like
+  ToParentBlockJoinCollector with DrillSideways.  (Mike McCandless)
+
 ======================= Lucene 4.3.0 =======================
 
 Changes in backwards compatibility policy
