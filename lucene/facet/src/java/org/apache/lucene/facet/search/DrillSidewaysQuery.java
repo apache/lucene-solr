@@ -129,7 +129,7 @@ class DrillSidewaysQuery extends Query {
           dims[dim].docsEnums = new DocsEnum[drillDownTerms[dim].length];
           for(int i=0;i<drillDownTerms[dim].length;i++) {
             if (termsEnum.seekExact(drillDownTerms[dim][i].bytes(), false)) {
-              dims[dim].freq = Math.max(dims[dim].freq, termsEnum.docFreq());
+              dims[dim].maxFreq = Math.max(dims[dim].maxFreq, termsEnum.docFreq());
               dims[dim].docsEnums[i] = termsEnum.docs(null, null);
             }
           }
