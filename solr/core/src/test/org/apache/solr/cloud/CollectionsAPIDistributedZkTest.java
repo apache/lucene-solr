@@ -190,6 +190,8 @@ public class CollectionsAPIDistributedZkTest extends AbstractFullDistribZkTestBa
     createCollection(null, "halfdeletedcollection2", 3, 2, 6,
         createNewSolrServer("", baseUrl), null);
     
+    waitForRecoveriesToFinish("halfdeletedcollection2", false);
+    
     // stop a couple nodes
     ChaosMonkey.stop(jettys.get(0));
     ChaosMonkey.stop(jettys.get(1));
