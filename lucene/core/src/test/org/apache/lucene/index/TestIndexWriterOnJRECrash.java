@@ -138,7 +138,13 @@ public class TestIndexWriterOnJRECrash extends TestNRTThreads {
         if (VERBOSE) {
           System.err.println("Checking index: " + file);
         }
-        _TestUtil.checkIndex(dir);
+        // LUCENE-4738: if we crashed while writing first
+        // commit it's possible index will be corrupt (by
+        // design we don't try to be smart about this case
+        // since that too risky):
+        if (SegmentInfos.getLastCommitGeneration(dir) > 1) {
+          _TestUtil.checkIndex(dir);
+        }
         dir.close();
         return true;
       }
