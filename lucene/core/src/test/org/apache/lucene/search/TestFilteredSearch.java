@@ -51,8 +51,6 @@ public class TestFilteredSearch extends LuceneTestCase {
     searchFiltered(writer, directory, filter, enforceSingleSegment);
     // run the test on more than one segment
     enforceSingleSegment = false;
-    // reset - it is stateful
-    filter.reset();
     writer.close();
     writer = new IndexWriter(directory, newIndexWriterConfig( TEST_VERSION_CURRENT, new MockAnalyzer(random())).setOpenMode(OpenMode.CREATE).setMaxBufferedDocs(10).setMergePolicy(newLogMergePolicy()));
     // we index 60 docs - this will create 6 segments
@@ -61,37 +59,30 @@ public class TestFilteredSearch extends LuceneTestCase {
     directory.close();
   }
 
-  public void searchFiltered(IndexWriter writer, Directory directory, Filter filter, boolean fullMerge) {
-    try {
-      for (int i = 0; i < 60; i++) {//Simple docs
-        Document doc = new Document();
-        doc.add(newStringField(FIELD, Integer.toString(i), Field.Store.YES));
-        writer.addDocument(doc);
-      }
-      if (fullMerge) {
-        writer.forceMerge(1);
-      }
-      writer.close();
+  public void searchFiltered(IndexWriter writer, Directory directory, Filter filter, boolean fullMerge) throws IOException {
+    for (int i = 0; i < 60; i++) {//Simple docs
+      Document doc = new Document();
+      doc.add(newStringField(FIELD, Integer.toString(i), Field.Store.YES));
+      writer.addDocument(doc);
+    }
+    if (fullMerge) {
+      writer.forceMerge(1);
+    }
+    writer.close();
 
-      BooleanQuery booleanQuery = new BooleanQuery();
-      booleanQuery.add(new TermQuery(new Term(FIELD, "36")), BooleanClause.Occur.SHOULD);
+    BooleanQuery booleanQuery = new BooleanQuery();
+    booleanQuery.add(new TermQuery(new Term(FIELD, "36")), BooleanClause.Occur.SHOULD);
      
      
-      IndexReader reader = DirectoryReader.open(directory);
-      IndexSearcher indexSearcher = newSearcher(reader);
-      ScoreDoc[] hits = indexSearcher.search(booleanQuery, filter, 1000).scoreDocs;
-      assertEquals("Number of matched documents", 1, hits.length);
-      reader.close();
-    }
-    catch (IOException e) {
-      fail(e.getMessage());
-    }
-    
+    IndexReader reader = DirectoryReader.open(directory);
+    IndexSearcher indexSearcher = newSearcher(reader);
+    ScoreDoc[] hits = indexSearcher.search(booleanQuery, filter, 1000).scoreDocs;
+    assertEquals("Number of matched documents", 1, hits.length);
+    reader.close();
   }
  
   public static final class SimpleDocIdSetFilter extends Filter {
     private final int[] docs;
-    private int index;
     
     public SimpleDocIdSetFilter(int[] docs) {
       this.docs = docs;
@@ -103,19 +94,13 @@ public class TestFilteredSearch extends LuceneTestCase {
       final FixedBitSet set = new FixedBitSet(context.reader().maxDoc());
       int docBase = context.docBase;
       final int limit = docBase+context.reader().maxDoc();
-      for (;index < docs.length; index++) {
+      for (int index=0;index < docs.length; index++) {
         final int docId = docs[index];
-        if(docId > limit)
-          break;
-        if (docId >= docBase) {
+        if (docId >= docBase && docId < limit) {
           set.set(docId-docBase);
         }
       }
       return set.cardinality() == 0 ? null:set;
-    }
-    
-    public void reset(){
-      index = 0;
     }
   }
 
