@@ -128,11 +128,13 @@ public class BooleanFilterTest extends LuceneTestCase {
 
   private void tstFilterCard(String mes, int expected, Filter filt)
       throws Exception {
-    // BooleanFilter never returns null DIS or null DISI!
-    DocIdSetIterator disi = filt.getDocIdSet(reader.getContext(), reader.getLiveDocs()).iterator();
+    final DocIdSet docIdSet = filt.getDocIdSet(reader.getContext(), reader.getLiveDocs());
     int actual = 0;
-    while (disi.nextDoc() != DocIdSetIterator.NO_MORE_DOCS) {
-      actual++;
+    if (docIdSet != null) {
+      DocIdSetIterator disi = docIdSet.iterator();
+      while (disi.nextDoc() != DocIdSetIterator.NO_MORE_DOCS) {
+        actual++;
+      }
     }
     assertEquals(mes, expected, actual);
   }

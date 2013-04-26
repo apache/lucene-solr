@@ -93,7 +93,7 @@ public abstract class ToParentBlockJoinFieldComparator extends FieldComparator<O
   }
 
   private static boolean isEmpty(DocIdSet set) {
-    return set == null || set == DocIdSet.EMPTY_DOCIDSET;
+    return set == null;
   }
 
   private static FixedBitSet toFixedBitSet(DocIdSetIterator iterator, int numBits) throws IOException {

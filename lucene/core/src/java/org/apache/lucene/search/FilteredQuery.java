@@ -102,9 +102,9 @@ public class FilteredQuery extends Query {
         Explanation inner = weight.explain (ir, i);
         Filter f = FilteredQuery.this.filter;
         DocIdSet docIdSet = f.getDocIdSet(ir, ir.reader().getLiveDocs());
-        DocIdSetIterator docIdSetIterator = docIdSet == null ? DocIdSet.EMPTY_DOCIDSET.iterator() : docIdSet.iterator();
+        DocIdSetIterator docIdSetIterator = docIdSet == null ? DocIdSetIterator.empty() : docIdSet.iterator();
         if (docIdSetIterator == null) {
-          docIdSetIterator = DocIdSet.EMPTY_DOCIDSET.iterator();
+          docIdSetIterator = DocIdSetIterator.empty();
         }
         if (docIdSetIterator.advance(i) == i) {
           return inner;
