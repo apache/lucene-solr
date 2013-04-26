@@ -40,6 +40,7 @@ import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.MockDirectoryWrapper;
 import org.apache.lucene.store.RAMDirectory;
 import org.apache.lucene.util.BytesRef;
+import org.apache.lucene.util.InfoStream;
 import org.apache.lucene.util.LuceneTestCase;
 import org.apache.lucene.util.ThreadInterruptedException;
 import org.apache.lucene.util._TestUtil;
@@ -952,6 +953,46 @@ public class TestIndexWriterReader extends LuceneTestCase {
                 didWarm.set(true);
               }
             }).
+            setMergePolicy(newLogMergePolicy(10))
+    );
+
+    Document doc = new Document();
+    doc.add(newStringField("foo", "bar", Field.Store.NO));
+    for(int i=0;i<20;i++) {
+      w.addDocument(doc);
+    }
+    w.waitForMerges();
+    w.close();
+    dir.close();
+    assertTrue(didWarm.get());
+  }
+  
+  public void testSimpleMergedSegmentWramer() throws Exception {
+    Directory dir = newDirectory();
+    final AtomicBoolean didWarm = new AtomicBoolean();
+    InfoStream infoStream = new InfoStream() {
+      @Override
+      public void close() throws IOException {}
+
+      @Override
+      public void message(String component, String message) {
+        if ("SMSW".equals(component)) {
+          didWarm.set(true);
+        }
+      }
+
+      @Override
+      public boolean isEnabled(String component) {
+        return true;
+      }
+    };
+    IndexWriter w = new IndexWriter(
+        dir,
+        newIndexWriterConfig( TEST_VERSION_CURRENT, new MockAnalyzer(random())).
+            setMaxBufferedDocs(2).
+            setReaderPooling(true).
+            setInfoStream(infoStream).
+            setMergedSegmentWarmer(new SimpleMergedSegmentWarmer(infoStream)).
             setMergePolicy(newLogMergePolicy(10))
     );
 

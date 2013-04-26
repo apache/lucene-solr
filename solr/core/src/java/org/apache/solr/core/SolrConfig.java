@@ -142,11 +142,10 @@ public class SolrConfig extends Config {
       defaultIndexConfig = mainIndexConfig = null;
       indexConfigPrefix = "indexConfig";
     }
+    reopenReaders = getBool(indexConfigPrefix+"/reopenReaders", true);
     // Parse indexConfig section, using mainIndex as backup in case old config is used
     indexConfig = new SolrIndexConfig(this, "indexConfig", mainIndexConfig);
-
-    reopenReaders = getBool(indexConfigPrefix+"/reopenReaders", true);
-    
+   
     booleanQueryMaxClauseCount = getInt("query/maxBooleanClauses", BooleanQuery.getMaxClauseCount());
     log.info("Using Lucene MatchVersion: " + luceneMatchVersion);
 

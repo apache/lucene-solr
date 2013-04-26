@@ -19,6 +19,8 @@ package org.apache.solr.update;
 
 import java.io.File;
 
+import org.apache.lucene.index.IndexWriterConfig;
+import org.apache.lucene.index.SimpleMergedSegmentWarmer;
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.core.SolrConfig;
 import org.apache.solr.schema.IndexSchema;
@@ -54,6 +56,19 @@ public class SolrIndexConfigTest extends SolrTestCaseJ4 {
         solrIndexConfig.defaultMergePolicyClassName);
     IndexSchema indexSchema = IndexSchemaFactory.buildIndexSchema("schema.xml", solrConfig);
     solrIndexConfig.toIndexWriterConfig(indexSchema);
+  }
+  
+  public void testMergedSegmentWarmerIndexConfigCreation() throws Exception {
+    SolrConfig solrConfig = new SolrConfig("solr" + File.separator
+        + "collection1", "solrconfig-warmer.xml", null);
+    SolrIndexConfig solrIndexConfig = new SolrIndexConfig(solrConfig, null, null);
+    assertNotNull(solrIndexConfig);
+    assertNotNull(solrIndexConfig.mergedSegmentWarmerInfo);
+    assertEquals(SimpleMergedSegmentWarmer.class.getName(),
+        solrIndexConfig.mergedSegmentWarmerInfo.className);
+    IndexSchema indexSchema = IndexSchemaFactory.buildIndexSchema("schema.xml", solrConfig);
+    IndexWriterConfig iwc = solrIndexConfig.toIndexWriterConfig(indexSchema);
+    assertEquals(SimpleMergedSegmentWarmer.class, iwc.getMergedSegmentWarmer().getClass());
   }
 
 }
