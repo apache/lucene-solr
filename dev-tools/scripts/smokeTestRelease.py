@@ -1041,7 +1041,7 @@ def getZipFileEntries(fileName):
   entries = []
   with zipfile.ZipFile(fileName) as zf:
     for zi in zf.infolist():
-      entries.append((zi.filename, zi.file_size))
+      entries.append(zi.filename)
   # Sort by name:
   entries.sort()
   return entries
@@ -1066,8 +1066,8 @@ def checkIdenticalMavenArtifacts(distributionFiles, nonMavenizedDeps, artifacts,
             if binaryEntries != entries:
               raise RuntimeError('Maven artifact %s has different contents than binary distribution\n  maven:\n%s\n  binary:\n%s\n' % \
                     (artifactFilename,
-                     '\n'.join('    %s [%d bytes]' % (name, size) for name, size in entries),
-                     '\n'.join('    %s [%d bytes]' % (name, size) for name, size in binaryEntries)))
+                     '\n'.join(entries),
+                     '\n'.join(binaryEntries)))
           
          # TODO: Either fix the build to ensure that maven artifacts *are* identical, or recursively compare contents
          # identical = filecmp.cmp(artifact, distFilenames[artifactFilename], shallow=False)
