@@ -18,6 +18,8 @@
 package org.apache.solr.update;
 
 import org.apache.lucene.index.*;
+import org.apache.lucene.index.IndexWriter.IndexReaderWarmer;
+import org.apache.lucene.util.InfoStream;
 import org.apache.lucene.util.Version;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.SolrException.ErrorCode;
@@ -55,6 +57,8 @@ public class SolrIndexConfig {
   public final PluginInfo mergeSchedulerInfo;
   public final int termIndexInterval;
   
+  public final PluginInfo mergedSegmentWarmerInfo;
+  
   public String infoStreamFile = null;
 
   // Available lock types
@@ -81,6 +85,7 @@ public class SolrIndexConfig {
     mergePolicyInfo = null;
     mergeSchedulerInfo = null;
     defaultMergePolicyClassName = TieredMergePolicy.class.getName();
+    mergedSegmentWarmerInfo = null;
   }
   
   /**
@@ -135,6 +140,11 @@ public class SolrIndexConfig {
       infoStreamFile= solrConfig.get(prefix + "/infoStream/@file", null);
       log.info("IndexWriter infoStream debug log is enabled: " + infoStreamFile);
     }
+    
+    mergedSegmentWarmerInfo = getPluginInfo(prefix + "/mergedSegmentWarmer", solrConfig, def.mergedSegmentWarmerInfo);
+    if (mergedSegmentWarmerInfo != null && solrConfig.reopenReaders == false) {
+      throw new IllegalArgumentException("Supplying a mergedSegmentWarmer will do nothing since reopenReaders is false");
+    }
   }
 
   /*
@@ -181,6 +191,16 @@ public class SolrIndexConfig {
 
     if (maxIndexingThreads != -1) {
       iwc.setMaxThreadStates(maxIndexingThreads);
+    }
+    
+    if (mergedSegmentWarmerInfo != null) {
+      // TODO: add infostream -> normal logging system (there is an issue somewhere)
+      IndexReaderWarmer warmer = schema.getResourceLoader().newInstance(mergedSegmentWarmerInfo.className, 
+                                                                        IndexReaderWarmer.class,
+                                                                        null,
+                                                                        new Class[] { InfoStream.class },
+                                                                        new Object[] { InfoStream.NO_OUTPUT });
+      iwc.setMergedSegmentWarmer(warmer);
     }
 
     return iwc;
