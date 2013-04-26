@@ -26,6 +26,7 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.Collections;
 import java.util.concurrent.Callable;
 import java.util.concurrent.CompletionService;
 import java.util.concurrent.ExecutorCompletionService;
@@ -34,6 +35,7 @@ import java.util.concurrent.SynchronousQueue;
 import java.util.concurrent.ThreadPoolExecutor;
 import java.util.concurrent.TimeUnit;
 
+import org.apache.commons.lang.StringUtils;
 import org.apache.lucene.util.LuceneTestCase.Slow;
 import org.apache.solr.JSONTestUtil;
 import org.apache.solr.client.solrj.SolrQuery;
@@ -319,6 +321,7 @@ public class BasicDistributedZkTest extends AbstractFullDistribZkTestBase {
     // would be better if these where all separate tests - but much, much
     // slower
     doOptimisticLockingAndUpdating();
+    testShardParamVariations();
     testMultipleCollections();
     testANewCollectionInOneInstance();
     testSearchByCollectionName();
@@ -336,6 +339,109 @@ public class BasicDistributedZkTest extends AbstractFullDistribZkTestBase {
     }
   }
   
+  private void testShardParamVariations() throws Exception {
+    SolrQuery query = new SolrQuery("*:*");
+    Map<String,Long> shardCounts = new HashMap<String,Long>();
+
+    for (String shard : shardToJetty.keySet()) {
+      // every client should give the same numDocs for this shard
+      // shffle the clients in a diff order for each shard
+      List<SolrServer> solrclients = new ArrayList<SolrServer>(this.clients);
+      Collections.shuffle(solrclients, random());
+      for (SolrServer client : solrclients) {
+        query.set("shards", shard);
+        long numDocs = client.query(query).getResults().getNumFound();
+        assertTrue("numDocs < 0 for shard "+shard+" via "+client,
+                   0 <= numDocs);
+        if (!shardCounts.containsKey(shard)) {
+          shardCounts.put(shard, numDocs);
+        }
+        assertEquals("inconsitent numDocs for shard "+shard+" via "+client,
+                     shardCounts.get(shard).longValue(), numDocs);
+        
+        List<CloudJettyRunner> replicaJetties 
+          = new ArrayList<CloudJettyRunner>(shardToJetty.get(shard));
+        Collections.shuffle(replicaJetties, random());
+
+        // each replica should also give the same numDocs
+        ArrayList<String> replicaAlts = new ArrayList<String>(replicaJetties.size() * 2);
+        for (CloudJettyRunner replicaJetty : shardToJetty.get(shard)) {
+          String replica = removeProtocol(replicaJetty.url);
+          query.set("shards", replica);
+
+          // replicas already shuffled, use this in the alternative check below
+          if (0 == random().nextInt(3) || replicaAlts.size() < 2) {
+            replicaAlts.add(replica);
+          }
+
+          numDocs = client.query(query).getResults().getNumFound();
+          assertTrue("numDocs < 0 for replica "+replica+" via "+client,
+                     0 <= numDocs);
+          assertEquals("inconsitent numDocs for shard "+shard+
+                       " in replica "+replica+" via "+client,
+                       shardCounts.get(shard).longValue(), numDocs);
+        }
+
+        // any combination of replica alternatives should give same numDocs
+        String replicas = StringUtils.join(replicaAlts.toArray(), "|");
+        query.set("shards", replicas);
+        numDocs = client.query(query).getResults().getNumFound();
+        assertTrue("numDocs < 0 for replicas "+replicas+" via "+client,
+                   0 <= numDocs);
+          assertEquals("inconsitent numDocs for replicas "+replicas+
+                       " via "+client,
+                       shardCounts.get(shard).longValue(), numDocs);
+      }
+    }
+
+    // sums of multiple shards should add up regardless of how we 
+    // query those shards or which client we use
+    long randomShardCountsExpected = 0;
+    ArrayList<String> randomShards = new ArrayList<String>(shardCounts.size());
+    for (Map.Entry<String,Long> shardData : shardCounts.entrySet()) {
+      if (random().nextBoolean() || randomShards.size() < 2) {
+        String shard = shardData.getKey();
+        randomShardCountsExpected += shardData.getValue();
+        if (random().nextBoolean()) {
+          // use shard id
+          randomShards.add(shard);
+        } else {
+          // use some set explicit replicas
+          ArrayList<String> replicas = new ArrayList<String>(7);
+          for (CloudJettyRunner replicaJetty : shardToJetty.get(shard)) {
+            if (0 == random().nextInt(3) || 0 == replicas.size()) {
+              replicas.add(removeProtocol(replicaJetty.url));
+            }
+          }
+          Collections.shuffle(replicas, random());
+          randomShards.add(StringUtils.join(replicas, "|"));
+        }
+      }
+    }
+    String randShards = StringUtils.join(randomShards, ",");
+    query.set("shards", randShards);
+    for (SolrServer client : this.clients) {
+      assertEquals("numDocs for "+randShards+" via "+client,
+                   randomShardCountsExpected, 
+                   client.query(query).getResults().getNumFound());
+    }
+
+    // total num docs must match sum of every shard's numDocs
+    query = new SolrQuery("*:*");
+    long totalShardNumDocs = 0;
+    for (Long c : shardCounts.values()) {
+      totalShardNumDocs += c;
+    }
+    for (SolrServer client : clients) {
+      assertEquals("sum of shard numDocs on client: " + client, 
+                   totalShardNumDocs,
+                   client.query(query).getResults().getNumFound());
+    }
+    assertTrue("total numDocs <= 0, WTF? Test is useless",
+               0 < totalShardNumDocs);
+
+  }
+
   private void testStopAndStartCoresInOneInstance() throws Exception {
     SolrServer client = clients.get(0);
     String url3 = getBaseUrl(client);
@@ -979,5 +1085,12 @@ public class BasicDistributedZkTest extends AbstractFullDistribZkTestBase {
     
     // insurance
     DirectUpdateHandler2.commitOnClose = true;
+  }
+
+  /**
+   * Given a URL as a string, removes the leading protocol from that string
+   */
+  private static String removeProtocol(String url) {
+    return url.replaceFirst("^[^:/]{1,20}:/+","");
   }
 }
