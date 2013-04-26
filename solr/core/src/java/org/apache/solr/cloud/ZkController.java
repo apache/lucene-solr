@@ -1441,12 +1441,15 @@ public final class ZkController {
   public static void bootstrapConf(SolrZkClient zkClient, ConfigSolr cfg, String solrHome) throws IOException,
       KeeperException, InterruptedException {
 
-    log.info("bootstraping config into ZooKeeper using solr.xml");
     List<String> allCoreNames = cfg.getAllCoreNames();
+    
+    log.info("bootstraping config for " + allCoreNames.size() + " cores into ZooKeeper using solr.xml from " + solrHome);
+
     for (String coreName : allCoreNames) {
       String rawName = PropertiesUtil.substituteProperty(cfg.getProperty(coreName, "name", null), new Properties());
       String instanceDir = cfg.getProperty(coreName, "instanceDir", null);
       File idir = new File(instanceDir);
+      System.out.println("idir:" + idir);
       if (!idir.isAbsolute()) {
         idir = new File(solrHome, instanceDir);
       }

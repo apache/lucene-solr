@@ -1,0 +1,1 @@
+This is around for back compat testing purposes and should be able to be removed in Solr 5.0

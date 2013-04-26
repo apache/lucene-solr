@@ -78,6 +78,7 @@ public class CoreDescriptor {
     coreProperties.put(CORE_TRANSIENT, "false");
 
   }
+  
   public CoreDescriptor(CoreContainer container, String name, String instanceDir) {
     this(container);
     doInit(name, instanceDir);
@@ -202,7 +203,7 @@ public class CoreDescriptor {
    */
   public String getInstanceDir() {
     String instDir = coreProperties.getProperty(CORE_INSTDIR);
-    if (instDir == null) return null; // No worse than before.
+    if (instDir == null) return null;
 
     if (new File(instDir).isAbsolute()) {
       return SolrResourceLoader.normalizeDir(

@@ -37,9 +37,9 @@ public class SolrCoreDiscoverer {
   
   public Map<String, CoreDescriptor> discover(CoreContainer container, File root) throws IOException {
     Map<String, CoreDescriptor> coreDescriptorMap = new HashMap<String, CoreDescriptor>();
-    if (container != null) { 
-      walkFromHere(root, container, coreDescriptorMap);
-    }
+
+    walkFromHere(root, container, coreDescriptorMap);
+    
     return coreDescriptorMap;
   }
   
@@ -83,6 +83,7 @@ public class SolrCoreDiscoverer {
 
     // Too much of the code depends on this value being here, but it is NOT supported in discovery mode, so
     // ignore it if present in the core.properties file.
+    System.out.println("SET INST DIR:" + childFile.getPath());
     props.setProperty(CoreDescriptor.CORE_INSTDIR, childFile.getPath());
 
     if (props.getProperty(CoreDescriptor.CORE_NAME) == null) {

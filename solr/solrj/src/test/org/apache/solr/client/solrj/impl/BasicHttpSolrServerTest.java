@@ -57,7 +57,7 @@ public class BasicHttpSolrServerTest extends SolrJettyTestBase {
     @Override
     protected void doGet(HttpServletRequest req, HttpServletResponse resp)
         throws ServletException, IOException {
-      resp.sendRedirect("/solr/select?" + req.getQueryString());
+      resp.sendRedirect("/solr/collection1/select?" + req.getQueryString());
     }
   }
   
@@ -439,7 +439,7 @@ public class BasicHttpSolrServerTest extends SolrJettyTestBase {
     assertNull(DebugServlet.headers.get("Accept-Encoding"));
     
     // verify server compresses output
-    HttpGet get = new HttpGet(jetty.getBaseUrl().toString() + 
+    HttpGet get = new HttpGet(jetty.getBaseUrl().toString() + "/collection1" +
                               "/select?q=foo&wt=xml");
     get.setHeader("Accept-Encoding", "gzip");
     HttpClient client = HttpClientUtil.createClient(null);
@@ -458,7 +458,7 @@ public class BasicHttpSolrServerTest extends SolrJettyTestBase {
     }
     
     // verify compressed response can be handled
-    server = new HttpSolrServer(jetty.getBaseUrl().toString());
+    server = new HttpSolrServer(jetty.getBaseUrl().toString() + "/collection1");
     server.setAllowCompression(true);
     q = new SolrQuery("foo");
     QueryResponse response = server.query(q);
@@ -485,7 +485,7 @@ public class BasicHttpSolrServerTest extends SolrJettyTestBase {
   @Test
   public void testGetRawStream() throws SolrServerException, IOException{
     HttpClient client = HttpClientUtil.createClient(null);
-    HttpSolrServer server = new HttpSolrServer(jetty.getBaseUrl().toString(), 
+    HttpSolrServer server = new HttpSolrServer(jetty.getBaseUrl().toString() + "/collection1", 
                                                client, null);
     QueryRequest req = new QueryRequest();
     NamedList response = server.request(req);
