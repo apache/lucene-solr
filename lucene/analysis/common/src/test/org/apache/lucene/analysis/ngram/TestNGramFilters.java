@@ -35,7 +35,7 @@ public class TestNGramFilters extends BaseTokenStreamFactoryTestCase {
     Reader reader = new StringReader("test");
     TokenStream stream = tokenizerFactory("NGram").create(reader);
     assertTokenStreamContents(stream, 
-        new String[] { "t", "e", "s", "t", "te", "es", "st" });
+        new String[] { "t", "te", "e", "es", "s", "st", "t" });
   }
 
   /**
@@ -47,7 +47,7 @@ public class TestNGramFilters extends BaseTokenStreamFactoryTestCase {
         "minGramSize", "2",
         "maxGramSize", "3").create(reader);
     assertTokenStreamContents(stream, 
-        new String[] { "te", "es", "st", "tes", "est" });
+        new String[] { "te", "tes", "es", "est", "st" });
   }
 
   /**
@@ -58,7 +58,7 @@ public class TestNGramFilters extends BaseTokenStreamFactoryTestCase {
     TokenStream stream = new MockTokenizer(reader, MockTokenizer.WHITESPACE, false);
     stream = tokenFilterFactory("NGram").create(stream);
     assertTokenStreamContents(stream, 
-        new String[] { "t", "e", "s", "t", "te", "es", "st" });
+        new String[] { "t", "te", "e", "es", "s", "st", "t" });
   }
 
   /**
@@ -71,7 +71,7 @@ public class TestNGramFilters extends BaseTokenStreamFactoryTestCase {
         "minGramSize", "2",
         "maxGramSize", "3").create(stream);
     assertTokenStreamContents(stream, 
-        new String[] { "te", "es", "st", "tes", "est" });
+        new String[] { "te", "tes", "es", "est", "st" });
   }
 
   /**

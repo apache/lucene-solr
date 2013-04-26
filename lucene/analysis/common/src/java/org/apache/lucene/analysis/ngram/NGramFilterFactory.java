@@ -47,6 +47,6 @@ public class NGramFilterFactory extends TokenFilterFactory {
 
   @Override
   public NGramTokenFilter create(TokenStream input) {
-    return new NGramTokenFilter(input, minGramSize, maxGramSize);
+    return new NGramTokenFilter(luceneMatchVersion, input, minGramSize, maxGramSize);
   }
 }

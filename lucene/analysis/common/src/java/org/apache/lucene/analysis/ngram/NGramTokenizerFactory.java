@@ -18,8 +18,10 @@ package org.apache.lucene.analysis.ngram;
  */
 
 import org.apache.lucene.analysis.TokenStream;
+import org.apache.lucene.analysis.Tokenizer;
 import org.apache.lucene.analysis.util.TokenizerFactory;
 import org.apache.lucene.util.AttributeSource.AttributeFactory;
+import org.apache.lucene.util.Version;
 
 import java.io.Reader;
 import java.util.Map;
@@ -49,7 +51,11 @@ public class NGramTokenizerFactory extends TokenizerFactory {
   
   /** Creates the {@link TokenStream} of n-grams from the given {@link Reader} and {@link AttributeFactory}. */
   @Override
-  public NGramTokenizer create(AttributeFactory factory, Reader input) {
-    return new NGramTokenizer(factory, input, minGramSize, maxGramSize);
+  public Tokenizer create(AttributeFactory factory, Reader input) {
+    if (luceneMatchVersion.onOrAfter(Version.LUCENE_44)) {
+      return new NGramTokenizer(luceneMatchVersion, factory, input, minGramSize, maxGramSize);
+    } else {
+      return new Lucene43NGramTokenizer(factory, input, minGramSize, maxGramSize);
+    }
   }
 }
