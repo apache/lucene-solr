@@ -78,9 +78,6 @@ Bug Fixes
 * SOLR-4752: There are some minor bugs in the Collections API parameter
   validation. (Mark Miller)
 
-* SOLR-4705: Fixed bug causing NPE when querying a single replica in SolrCloud 
-  using the shards param (Raintung Li, hossman)
-
 Other Changes
 ----------------------
 
@@ -270,6 +267,8 @@ Bug Fixes
   for the top level group commands, causing output formatting differences
   compared to non-distributed grouping. (yonik)
 
+* SOLR-4705: Fixed bug causing NPE when querying a single replica in SolrCloud 
+  using the shards param (Raintung Li, hossman)
 
 Optimizations
 ----------------------
