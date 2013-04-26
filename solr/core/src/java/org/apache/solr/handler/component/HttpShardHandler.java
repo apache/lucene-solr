@@ -324,7 +324,7 @@ public class HttpShardHandler extends ShardHandler {
         // and make it a non-distributed request.
         String ourSlice = cloudDescriptor.getShardId();
         String ourCollection = cloudDescriptor.getCollectionName();
-        if (rb.slices.length == 1
+        if (rb.slices.length == 1 && rb.slices[0] != null
             && ( rb.slices[0].equals(ourSlice) || rb.slices[0].equals(ourCollection + "_" + ourSlice) )  // handle the <collection>_<slice> format
             && ZkStateReader.ACTIVE.equals(cloudDescriptor.getLastPublished()) )
         {
