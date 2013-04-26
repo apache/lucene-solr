@@ -14,6 +14,7 @@
 # limitations under the License.
 
 import os
+import zipfile
 import codecs
 import tarfile
 import zipfile
@@ -1013,7 +1014,7 @@ def getDistributionsForMavenChecks(tmpDir, version, baseURL):
 def checkJavadocAndSourceArtifacts(nonMavenizedDeps, artifacts, version):
   for project in ('lucene', 'solr'):
     for artifact in artifacts[project]:
-      if artifact.endswith(version + '.jar') and artifact not in list(nonMavenizedDeps.keys()):
+      if artifact.endswith(version + '.jar') and artifact not in nonMavenizedDeps:
         javadocJar = artifact[:-4] + '-javadoc.jar'
         if javadocJar not in artifacts[project]:
           raise RuntimeError('missing: %s' % javadocJar)
@@ -1026,7 +1027,7 @@ def checkIdenticalNonMavenizedDeps(distributionFiles, nonMavenizedDeps):
     distFilenames = dict()
     for file in distributionFiles[project]:
       distFilenames[os.path.basename(file)] = file
-    for dep in list(nonMavenizedDeps.keys()):
+    for dep in nonMavenizedDeps.keys():
       if ('/%s/' % project) in dep:
         depOrigFilename = os.path.basename(nonMavenizedDeps[dep])
         if not depOrigFilename in distFilenames:
@@ -1035,6 +1036,15 @@ def checkIdenticalNonMavenizedDeps(distributionFiles, nonMavenizedDeps):
         if not identical:
           raise RuntimeError('Deployed non-mavenized dep %s differs from distribution dep %s'
                             % (dep, distFilenames[depOrigFilename]))
+
+def getZipFileEntries(fileName):
+  entries = []
+  with zipfile.ZipFile(fileName) as zf:
+    for zi in zf.infolist():
+      entries.append((zi.filename, zi.file_size))
+  # Sort by name:
+  entries.sort()
+  return entries
 
 def checkIdenticalMavenArtifacts(distributionFiles, nonMavenizedDeps, artifacts, version):
   reJarWar = re.compile(r'%s\.[wj]ar$' % version) # exclude *-javadoc.jar and *-sources.jar
@@ -1045,11 +1055,20 @@ def checkIdenticalMavenArtifacts(distributionFiles, nonMavenizedDeps, artifacts,
       distFilenames[baseName] = file
     for artifact in artifacts[project]:
       if reJarWar.search(artifact):
-        if artifact not in list(nonMavenizedDeps.keys()):
+        entries = getZipFileEntries(artifact)
+        if artifact not in nonMavenizedDeps:
           artifactFilename = os.path.basename(artifact)
-          if artifactFilename not in list(distFilenames.keys()):
+          if artifactFilename not in distFilenames:
             raise RuntimeError('Maven artifact %s is not present in %s binary distribution'
                               % (artifact, project))
+          else:
+            binaryEntries = getZipFileEntries(distFilenames[artifactFilename])
+            if binaryEntries != entries:
+              raise RuntimeError('Maven artifact %s has different contents than binary distribution\n  maven:\n%s\n  binary:\n%s\n' % \
+                    (artifactFilename,
+                     '\n'.join('    %s [%d bytes]' % (name, size) for name, size in entries),
+                     '\n'.join('    %s [%d bytes]' % (name, size) for name, size in binaryEntries)))
+          
          # TODO: Either fix the build to ensure that maven artifacts *are* identical, or recursively compare contents
          # identical = filecmp.cmp(artifact, distFilenames[artifactFilename], shallow=False)
          # if not identical:
