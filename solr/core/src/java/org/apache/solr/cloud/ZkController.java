@@ -405,7 +405,7 @@ public final class ZkController {
   // input can be null, host, or url_prefix://host
   private String getHostAddress(String host) throws IOException {
 
-    if (host == null) {
+    if (host == null || host.length() == 0) {
       String hostaddress;
       try {
         hostaddress = InetAddress.getLocalHost().getHostAddress();
