@@ -252,8 +252,7 @@ class JoinQuery extends Query {
 
       // Although this set only includes live docs, other filters can be pushed down to queries.
       DocIdSet readerSet = filter.getDocIdSet(context, acceptDocs);
-      if (readerSet == null) readerSet=DocIdSet.EMPTY_DOCIDSET;
-      return new JoinScorer(this, readerSet.iterator(), getBoost());
+      return new JoinScorer(this, readerSet == null ? DocIdSetIterator.empty() : readerSet.iterator(), getBoost());
     }
 
 
@@ -519,7 +518,7 @@ class JoinQuery extends Query {
     public JoinScorer(Weight w, DocIdSetIterator iter, float score) throws IOException {
       super(w);
       this.score = score;
-      this.iter = iter==null ? DocIdSet.EMPTY_DOCIDSET.iterator() : iter;
+      this.iter = iter==null ? DocIdSetIterator.empty() : iter;
     }
 
     @Override

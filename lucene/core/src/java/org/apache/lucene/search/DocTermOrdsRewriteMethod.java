@@ -143,7 +143,7 @@ public final class DocTermOrdsRewriteMethod extends MultiTermQuery.RewriteMethod
           termSet.set(termsEnum.ord());
         } while (termsEnum.next() != null);
       } else {
-        return DocIdSet.EMPTY_DOCIDSET;
+        return null;
       }
       
       return new FieldCacheDocIdSet(context.reader().maxDoc(), acceptDocs) {

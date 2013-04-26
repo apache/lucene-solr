@@ -67,7 +67,7 @@ public class BooleanFilter extends Filter implements Iterable<FilterClause> {
       }
     }
     if (hasShouldClauses && res == null)
-      return DocIdSet.EMPTY_DOCIDSET;
+      return null;
     
     for (final FilterClause fc : clauses) {
       if (fc.getOccur() == Occur.MUST_NOT) {
@@ -87,7 +87,7 @@ public class BooleanFilter extends Filter implements Iterable<FilterClause> {
       if (fc.getOccur() == Occur.MUST) {
         final DocIdSetIterator disi = getDISI(fc.getFilter(), context);
         if (disi == null) {
-          return DocIdSet.EMPTY_DOCIDSET; // no documents can match
+          return null; // no documents can match
         }
         if (res == null) {
           res = new FixedBitSet(reader.maxDoc());
@@ -98,14 +98,14 @@ public class BooleanFilter extends Filter implements Iterable<FilterClause> {
       }
     }
 
-    return res != null ? BitsFilteredDocIdSet.wrap(res, acceptDocs) : DocIdSet.EMPTY_DOCIDSET;
+    return BitsFilteredDocIdSet.wrap(res, acceptDocs);
   }
 
   private static DocIdSetIterator getDISI(Filter filter, AtomicReaderContext context)
       throws IOException {
     // we dont pass acceptDocs, we will filter at the end using an additional filter
     final DocIdSet set = filter.getDocIdSet(context, null);
-    return (set == null || set == DocIdSet.EMPTY_DOCIDSET) ? null : set.iterator();
+    return set == null ? null : set.iterator();
   }
 
   /**

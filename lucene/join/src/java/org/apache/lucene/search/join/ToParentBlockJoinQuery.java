@@ -181,7 +181,7 @@ public class ToParentBlockJoinQuery extends Query {
       // acceptDocs when we score:
       final DocIdSet parents = parentsFilter.getDocIdSet(readerContext, null);
 
-      if (parents == null || parents == DocIdSet.EMPTY_DOCIDSET) {
+      if (parents == null) {
         // No matches
         return null;
       }

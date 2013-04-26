@@ -28,6 +28,37 @@ import java.io.IOException;
  */
 public abstract class DocIdSetIterator {
   
+  /** An empty {@code DocIdSetIterator} instance */
+  public static final DocIdSetIterator empty() {
+    return new DocIdSetIterator() {
+      boolean exhausted = false;
+      
+      @Override
+      public int advance(int target) {
+        assert !exhausted;
+        assert target >= 0;
+        exhausted = true;
+        return NO_MORE_DOCS;
+      }
+      
+      @Override
+      public int docID() {
+        return exhausted ? NO_MORE_DOCS : -1;
+      }
+      @Override
+      public int nextDoc() {
+        assert !exhausted;
+        exhausted = true;
+        return NO_MORE_DOCS;
+      }
+      
+      @Override
+      public long cost() {
+        return 0;
+      }
+    };
+  }
+  
   /**
    * When returned by {@link #nextDoc()}, {@link #advance(int)} and
    * {@link #docID()} it means there are no more docs in the iterator.

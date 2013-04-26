@@ -146,7 +146,7 @@ public final class FieldCacheRewriteMethod extends MultiTermQuery.RewriteMethod 
           }
         } while (termsEnum.next() != null);
       } else {
-        return DocIdSet.EMPTY_DOCIDSET;
+        return null;
       }
       
       return new FieldCacheDocIdSet(context.reader().maxDoc(), acceptDocs) {
