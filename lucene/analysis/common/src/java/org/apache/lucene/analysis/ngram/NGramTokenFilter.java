@@ -21,37 +21,60 @@ import java.io.IOException;
 
 import org.apache.lucene.analysis.TokenFilter;
 import org.apache.lucene.analysis.TokenStream;
-import org.apache.lucene.analysis.tokenattributes.OffsetAttribute;
+import org.apache.lucene.analysis.miscellaneous.LengthFilter;
 import org.apache.lucene.analysis.tokenattributes.CharTermAttribute;
+import org.apache.lucene.analysis.tokenattributes.OffsetAttribute;
+import org.apache.lucene.analysis.tokenattributes.PositionIncrementAttribute;
+import org.apache.lucene.analysis.tokenattributes.PositionLengthAttribute;
+import org.apache.lucene.util.Version;
 
 /**
  * Tokenizes the input into n-grams of the given size(s).
+ * <a name="version"/>
+ * <p>You must specify the required {@link Version} compatibility when
+ * creating a {@link NGramTokenFilter}. As of Lucene 4.4, this token filters:<ul>
+ * <li>emits all n-grams for the same token at the same position,</li>
+ * <li>does not modify offsets,</li>
+ * <li>sorts n-grams by their offset in the original token first, then
+ * increasing length (meaning that "abc" will give "a", "ab", "abc", "b", "bc",
+ * "c").</li></ul>
+ * <p>You can make this filter use the old behavior by providing a version &lt;
+ * {@link Version#LUCENE_44} in the constructor but this is not recommended as
+ * it will lead to broken {@link TokenStream}s that will cause highlighting
+ * bugs.
  */
 public final class NGramTokenFilter extends TokenFilter {
   public static final int DEFAULT_MIN_NGRAM_SIZE = 1;
   public static final int DEFAULT_MAX_NGRAM_SIZE = 2;
 
-  private int minGram, maxGram;
-  
+  private final int minGram, maxGram;
+
   private char[] curTermBuffer;
   private int curTermLength;
   private int curGramSize;
   private int curPos;
+  private int curPosInc, curPosLen;
   private int tokStart;
-  private int tokEnd; // only used if the length changed before this filter
+  private int tokEnd;
   private boolean hasIllegalOffsets; // only if the length changed before this filter
-  
+
+  private final Version version;
   private final CharTermAttribute termAtt = addAttribute(CharTermAttribute.class);
+  private final PositionIncrementAttribute posIncAtt;
+  private final PositionLengthAttribute posLenAtt;
   private final OffsetAttribute offsetAtt = addAttribute(OffsetAttribute.class);
 
   /**
    * Creates NGramTokenFilter with given min and max n-grams.
+   * @param version Lucene version to enable correct position increments.
+   *                See <a href="#version">above</a> for details.
    * @param input {@link TokenStream} holding the input to be tokenized
    * @param minGram the smallest n-gram to generate
    * @param maxGram the largest n-gram to generate
    */
-  public NGramTokenFilter(TokenStream input, int minGram, int maxGram) {
-    super(input);
+  public NGramTokenFilter(Version version, TokenStream input, int minGram, int maxGram) {
+    super(new LengthFilter(true, input, minGram, Integer.MAX_VALUE));
+    this.version = version;
     if (minGram < 1) {
       throw new IllegalArgumentException("minGram must be greater than zero");
     }
@@ -60,14 +83,37 @@ public final class NGramTokenFilter extends TokenFilter {
     }
     this.minGram = minGram;
     this.maxGram = maxGram;
+    if (version.onOrAfter(Version.LUCENE_44)) {
+      posIncAtt = addAttribute(PositionIncrementAttribute.class);
+      posLenAtt = addAttribute(PositionLengthAttribute.class);
+    } else {
+      posIncAtt = new PositionIncrementAttribute() {
+        @Override
+        public void setPositionIncrement(int positionIncrement) {}
+        @Override
+        public int getPositionIncrement() {
+          return 0;
+        }
+      };
+      posLenAtt = new PositionLengthAttribute() {
+        @Override
+        public void setPositionLength(int positionLength) {}        
+        @Override
+        public int getPositionLength() {
+          return 0;
+        }
+      };
+    }
   }
 
   /**
    * Creates NGramTokenFilter with default min and max n-grams.
+   * @param version Lucene version to enable correct position increments.
+   *                See <a href="#version">above</a> for details.
    * @param input {@link TokenStream} holding the input to be tokenized
    */
-  public NGramTokenFilter(TokenStream input) {
-    this(input, DEFAULT_MIN_NGRAM_SIZE, DEFAULT_MAX_NGRAM_SIZE);
+  public NGramTokenFilter(Version version, TokenStream input) {
+    this(version, input, DEFAULT_MIN_NGRAM_SIZE, DEFAULT_MAX_NGRAM_SIZE);
   }
 
   /** Returns the next token in the stream, or null at EOS. */
@@ -82,6 +128,8 @@ public final class NGramTokenFilter extends TokenFilter {
           curTermLength = termAtt.length();
           curGramSize = minGram;
           curPos = 0;
+          curPosInc = posIncAtt.getPositionIncrement();
+          curPosLen = posLenAtt.getPositionLength();
           tokStart = offsetAtt.startOffset();
           tokEnd = offsetAtt.endOffset();
           // if length by start + end offsets doesn't match the term text then assume
@@ -89,20 +137,37 @@ public final class NGramTokenFilter extends TokenFilter {
           hasIllegalOffsets = (tokStart + curTermLength) != tokEnd;
         }
       }
-      while (curGramSize <= maxGram) {
-        while (curPos+curGramSize <= curTermLength) {     // while there is input
+      if (version.onOrAfter(Version.LUCENE_44)) {
+        if (curGramSize > maxGram || curPos + curGramSize > curTermLength) {
+          ++curPos;
+          curGramSize = minGram;
+        }
+        if (curPos + curGramSize <= curTermLength) {
           clearAttributes();
           termAtt.copyBuffer(curTermBuffer, curPos, curGramSize);
-          if (hasIllegalOffsets) {
-            offsetAtt.setOffset(tokStart, tokEnd);
-          } else {
-            offsetAtt.setOffset(tokStart + curPos, tokStart + curPos + curGramSize);
-          }
-          curPos++;
+          posIncAtt.setPositionIncrement(curPosInc);
+          curPosInc = 0;
+          posLenAtt.setPositionLength(curPosLen);
+          offsetAtt.setOffset(tokStart, tokEnd);
+          curGramSize++;
           return true;
         }
-        curGramSize++;                         // increase n-gram size
-        curPos = 0;
+      } else {
+        while (curGramSize <= maxGram) {
+          while (curPos+curGramSize <= curTermLength) {     // while there is input
+            clearAttributes();
+            termAtt.copyBuffer(curTermBuffer, curPos, curGramSize);
+            if (hasIllegalOffsets) {
+              offsetAtt.setOffset(tokStart, tokEnd);
+            } else {
+              offsetAtt.setOffset(tokStart + curPos, tokStart + curPos + curGramSize);
+            }
+            curPos++;
+            return true;
+          }
+          curGramSize++;                         // increase n-gram size
+          curPos = 0;
+        }
       }
       curTermBuffer = null;
     }

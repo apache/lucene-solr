@@ -158,6 +158,7 @@ final class SlowSynonymFilterFactory extends TokenFilterFactory implements Resou
     List<String> tokList = new ArrayList<String>();
     try {
       CharTermAttribute termAtt = ts.addAttribute(CharTermAttribute.class);
+      ts.reset();
       while (ts.incrementToken()){
         if( termAtt.length() > 0 )
           tokList.add( termAtt.toString() );

@@ -5,6 +5,16 @@ http://s.apache.org/luceneversions
 
 ======================= Lucene 4.4.0 =======================
 
+Changes in backwards compatibility policy
+
+* LUCENE-4955: NGramTokenFilter now emits all n-grams for the same token at the
+  same position and preserves the position length and the offsets of the
+  original token. (Simon Willnauer, Adrien Grand)
+
+* LUCENE-4955: NGramTokenizer now emits n-grams in a different order
+  (a, ab, b, bc, c) instead of (a, b, c, ab, bc) and doesn't trim trailing
+  whitespaces. (Adrien Grand)
+
 Bug Fixes
 
 * LUCENE-4935: CustomScoreQuery wrongly applied its query boost twice 
@@ -13,6 +23,9 @@ Bug Fixes
 * LUCENE-4948: Fixed ArrayIndexOutOfBoundsException in PostingsHighlighter
   if you had a 64-bit JVM without compressed OOPS: IBM J9, or Oracle with
   large heap/explicitly disabled.  (Mike McCandless, Uwe Schindler, Robert Muir)
+
+* LUCENE-4955: NGramTokenizer now supports inputs larger than 1024 chars.
+  (Adrien Grand)
 
 Optimizations
 

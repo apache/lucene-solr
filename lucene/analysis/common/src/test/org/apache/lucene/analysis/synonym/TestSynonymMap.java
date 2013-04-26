@@ -27,6 +27,7 @@ import java.util.Map;
 
 import org.apache.lucene.analysis.Token;
 import org.apache.lucene.analysis.ngram.NGramTokenizerFactory;
+import org.apache.lucene.analysis.util.AbstractAnalysisFactory;
 import org.apache.lucene.analysis.util.TokenizerFactory;
 import org.apache.lucene.util.LuceneTestCase;
 import org.apache.lucene.analysis.util.ResourceLoader;
@@ -248,6 +249,7 @@ public class TestSynonymMap extends LuceneTestCase {
 
     // prepare bi-gram tokenizer factory
     Map<String, String> args = new HashMap<String, String>();
+    args.put(AbstractAnalysisFactory.LUCENE_MATCH_VERSION_PARAM, "4.4");
     args.put("minGramSize","2");
     args.put("maxGramSize","2");
     TokenizerFactory tf = new NGramTokenizerFactory(args);
