@@ -20,7 +20,7 @@
 
   <import file="../common-build.xml"/>
 
-	<property name="exclude.from.war" value="" />
+  <property name="exclude.from.war" value="*slf4j*,log4j-*" />
   <property name="solr.war.suffix" value="" />
 	
   <target name="test" depends="compile-test-solr-core">
