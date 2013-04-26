@@ -183,6 +183,9 @@ public class CoreContainer
       log.info("looking for solr config file: " + fconf.getAbsolutePath());
       cores = new CoreContainer(solrHome);
 
+      // first we find zkhost, then we check for solr.xml in zk
+      // 1. look for zkhost from sys prop 2. look for zkhost in {solr.home}/solr.properties
+      
       // Either we have a config file or not.
       
       if (fconf.exists()) {

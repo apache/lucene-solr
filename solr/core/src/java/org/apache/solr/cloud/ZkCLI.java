@@ -187,7 +187,7 @@ public class ZkCLI {
             Config config = new Config(loader, null, new InputSource(is), null, false);
             
             boolean oldStyle = (config.getNode("solr/cores", false) != null);
-            // cfg = new ConfigSolrXml(loader, null, is, null, false, this);
+
              if (oldStyle) {
                cfg = new ConfigSolrXmlOld(config, null);
              } else {

@@ -49,15 +49,15 @@ public class ConfigSolrXml extends ConfigSolr {
   public ConfigSolrXml(Config config, CoreContainer container)
       throws ParserConfigurationException, IOException, SAXException {
     super(config);
-    checkForIllegalConfig(container);
+    checkForIllegalConfig();
     
     fillPropMap();
     
-    String coreRoot = get(CfgProp.SOLR_COREROOTDIRECTORY, (container == null ? null : container.getSolrHome()));
+    String coreRoot = get(CfgProp.SOLR_COREROOTDIRECTORY, (container == null ? config.getResourceLoader().getInstanceDir() : container.getSolrHome()));
     coreDescriptorMap = solrCoreDiscoverer.discover(container, new File(coreRoot));
   }
   
-  private void checkForIllegalConfig(CoreContainer container) throws IOException {
+  private void checkForIllegalConfig() throws IOException {
     
     // Do sanity checks - we don't want to find old style config
     failIfFound("solr/@coreLoadThreads");
