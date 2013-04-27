@@ -117,7 +117,7 @@ public class SimpleNaiveBayesClassifier implements Classifier<BytesRef> {
       double clVal = calculatePrior(next) * calculateLikelihood(tokenizedDoc, next);
       if (clVal > max) {
         max = clVal;
-        foundClass = next.clone();
+        foundClass = BytesRef.deepCopyOf(next);
       }
     }
     return new ClassificationResult<BytesRef>(foundClass, max);

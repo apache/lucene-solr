@@ -65,6 +65,9 @@ Bug Fixes
   toString() was changed to better reflect the reader structure.
   (Mike McCandless, Uwe Schindler)
 
+* LUCENE-4959: Fix incorrect return value in
+  SimpleNaiveBayesClassifier.assignClass. (Alexey Kutin via Adrien Grand)
+
 Optimizations
 
 * LUCENE-4938: Don't use an unnecessarily large priority queue in IndexSearcher
