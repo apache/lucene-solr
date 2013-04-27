@@ -27,6 +27,12 @@ Bug Fixes
 * LUCENE-4955: NGramTokenizer now supports inputs larger than 1024 chars.
   (Adrien Grand)
 
+* LUCENE-4953: Fixed ParallelCompositeReader to inform ReaderClosedListeners of
+  its synthetic subreaders. FieldCaches keyed on the atomic childs will be purged
+  earlier and FC insanity prevented.  In addition, ParallelCompositeReader's
+  toString() was changed to better reflect the reader structure.
+  (Mike McCandless, Uwe Schindler)
+
 Optimizations
 
 * LUCENE-4938: Don't use an unnecessarily large priority queue in IndexSearcher

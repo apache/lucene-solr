@@ -20,7 +20,6 @@ package org.apache.lucene.index;
 import java.io.IOException;
 import java.util.Collections;
 import java.util.IdentityHashMap;
-import java.util.Iterator;
 import java.util.List;
 import java.util.Set;
 
@@ -47,10 +46,10 @@ import java.util.Set;
  * by number of documents per segment. If you use different {@link MergePolicy}s
  * it might happen that the segment structure of your index is no longer predictable.
  */
-public final class ParallelCompositeReader extends BaseCompositeReader<IndexReader> {
+public class ParallelCompositeReader extends BaseCompositeReader<IndexReader> {
   private final boolean closeSubReaders;
-  private final Set<CompositeReader> completeReaderSet =
-    Collections.newSetFromMap(new IdentityHashMap<CompositeReader,Boolean>());
+  private final Set<IndexReader> completeReaderSet =
+    Collections.newSetFromMap(new IdentityHashMap<IndexReader,Boolean>());
 
   /** Create a ParallelCompositeReader based on the provided
    *  readers; auto-closes the given readers on {@link #close()}. */
@@ -72,12 +71,14 @@ public final class ParallelCompositeReader extends BaseCompositeReader<IndexRead
     this.closeSubReaders = closeSubReaders;
     Collections.addAll(completeReaderSet, readers);
     Collections.addAll(completeReaderSet, storedFieldReaders);
-    // do this finally so any Exceptions occurred before don't affect refcounts:
+    // update ref-counts (like MultiReader):
     if (!closeSubReaders) {
-      for (CompositeReader reader : completeReaderSet) {
+      for (final IndexReader reader : completeReaderSet) {
         reader.incRef();
       }
     }
+    // finally add our own synthetic readers, so we close or decRef them, too (it does not matter what we do)
+    completeReaderSet.addAll(getSequentialSubReaders());
   }
 
   private static IndexReader[] prepareSubReaders(CompositeReader[] readers, CompositeReader[] storedFieldsReaders) throws IOException {
@@ -112,10 +113,12 @@ public final class ParallelCompositeReader extends BaseCompositeReader<IndexRead
           for (int j = 0; j < storedFieldsReaders.length; j++) {
             storedSubs[j] = (AtomicReader) storedFieldsReaders[j].getSequentialSubReaders().get(i);
           }
-          // we simply enable closing of subReaders, to prevent incRefs on subReaders
-          // -> for synthetic subReaders, close() is never
-          // called by our doClose()
-          subReaders[i] = new ParallelAtomicReader(true, atomicSubs, storedSubs);
+          // We pass true for closeSubs and we prevent closing of subreaders in doClose():
+          // By this the synthetic throw-away readers used here are completely invisible to ref-counting
+          subReaders[i] = new ParallelAtomicReader(true, atomicSubs, storedSubs) {
+            @Override
+            protected void doClose() {}
+          };
         } else {
           assert firstSubReaders.get(i) instanceof CompositeReader;
           final CompositeReader[] compositeSubs = new CompositeReader[readers.length];
@@ -126,9 +129,12 @@ public final class ParallelCompositeReader extends BaseCompositeReader<IndexRead
           for (int j = 0; j < storedFieldsReaders.length; j++) {
             storedSubs[j] = (CompositeReader) storedFieldsReaders[j].getSequentialSubReaders().get(i);
           }
-          // we simply enable closing of subReaders, to prevent incRefs on subReaders
-          // -> for synthetic subReaders, close() is never called by our doClose()
-          subReaders[i] = new ParallelCompositeReader(true, compositeSubs, storedSubs);
+          // We pass true for closeSubs and we prevent closing of subreaders in doClose():
+          // By this the synthetic throw-away readers used here are completely invisible to ref-counting
+          subReaders[i] = new ParallelCompositeReader(true, compositeSubs, storedSubs) {
+            @Override
+            protected void doClose() {}
+          };
         }
       }
       return subReaders;
@@ -159,19 +165,9 @@ public final class ParallelCompositeReader extends BaseCompositeReader<IndexRead
   }
   
   @Override
-  public String toString() {
-    final StringBuilder buffer = new StringBuilder("ParallelCompositeReader(");
-    for (final Iterator<CompositeReader> iter = completeReaderSet.iterator(); iter.hasNext();) {
-      buffer.append(iter.next());
-      if (iter.hasNext()) buffer.append(", ");
-    }
-    return buffer.append(')').toString();
-  }
-  
-  @Override
   protected synchronized void doClose() throws IOException {
     IOException ioe = null;
-    for (final CompositeReader reader : completeReaderSet) {
+    for (final IndexReader reader : completeReaderSet) {
       try {
         if (closeSubReaders) {
           reader.close();

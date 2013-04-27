@@ -25,6 +25,7 @@ import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
 import org.apache.lucene.search.BooleanClause.Occur;
 import org.apache.lucene.search.*;
+import org.apache.lucene.store.AlreadyClosedException;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.util.LuceneTestCase;
 import org.apache.lucene.util._TestUtil;
@@ -114,6 +115,29 @@ public class TestParallelAtomicReader extends LuceneTestCase {
     dir2.close();    
   }
   
+  public void testCloseInnerReader() throws Exception {
+    Directory dir1 = getDir1(random());
+    AtomicReader ir1 = SlowCompositeReaderWrapper.wrap(DirectoryReader.open(dir1));
+    
+    // with overlapping
+    ParallelAtomicReader pr = new ParallelAtomicReader(true,
+     new AtomicReader[] {ir1},
+     new AtomicReader[] {ir1});
+
+    ir1.close();
+    
+    try {
+      pr.document(0);
+      fail("ParallelAtomicReader should be already closed because inner reader was closed!");
+    } catch (AlreadyClosedException e) {
+      // pass
+    }
+    
+    // noop:
+    pr.close();
+    dir1.close();
+  }
+
   public void testIncompatibleIndexes() throws IOException {
     // two documents:
     Directory dir1 = getDir1(random());
