@@ -17,10 +17,12 @@ package org.apache.lucene.search.join;
  * limitations under the License.
  */
 
+import org.apache.lucene.analysis.MockAnalyzer;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
 import org.apache.lucene.document.StringField;
 import org.apache.lucene.index.DirectoryReader;
+import org.apache.lucene.index.NoMergePolicy;
 import org.apache.lucene.index.RandomIndexWriter;
 import org.apache.lucene.index.Term;
 import org.apache.lucene.search.CachingWrapperFilter;
@@ -50,7 +52,8 @@ public class TestBlockJoinSorting extends LuceneTestCase {
   @Test
   public void testNestedSorting() throws Exception {
     final Directory dir = newDirectory();
-    final RandomIndexWriter w = new RandomIndexWriter(random(), dir);
+    final RandomIndexWriter w = new RandomIndexWriter(random(), dir, newIndexWriterConfig(TEST_VERSION_CURRENT,
+        new MockAnalyzer(random())).setMergePolicy(NoMergePolicy.COMPOUND_FILES));
 
     List<Document> docs = new ArrayList<Document>();
     Document document = new Document();
