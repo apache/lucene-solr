@@ -208,6 +208,9 @@ public class LukeRequestHandlerTest extends AbstractSolrTestCase {
     boolean foundCatchAllCopyField = false;
     for (IndexSchema.DynamicCopy dcf : schema.getDynamicCopyFields()) {
       foundCatchAllCopyField = dcf.getRegex().equals("*") && dcf.getDestFieldName().equals("catchall_t");
+      if (foundCatchAllCopyField) {
+        break;
+      }
     }
     assertTrue("<copyField source=\"*\" dest=\"catchall_t\"/> is missing from the schema", foundCatchAllCopyField);
 
