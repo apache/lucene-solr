@@ -24,6 +24,7 @@ import org.apache.lucene.document.TextField;
 import org.apache.lucene.index.RandomIndexWriter;
 import org.apache.lucene.index.SlowCompositeReaderWrapper;
 import org.apache.lucene.store.Directory;
+import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.LuceneTestCase;
 import org.junit.After;
 import org.junit.Before;
@@ -32,6 +33,11 @@ import org.junit.Before;
  * Base class for testing {@link Classifier}s
  */
 public abstract class ClassificationTestBase<T> extends LuceneTestCase {
+  public final static String POLITICS_INPUT = "Here are some interesting questions and answers about Mitt Romney.. If you don't know the answer to the question about Mitt Romney, then simply click on the answer below the question section.";
+  public static final BytesRef POLITICS_RESULT = new BytesRef("politics");
+
+  public static final String TECHNOLOGY_INPUT = "Much is made of what the likes of Facebook, Google and Apple know about users. Truth is, Amazon may know more.";
+  public static final BytesRef TECHNOLOGY_RESULT = new BytesRef("technology");
 
   private RandomIndexWriter indexWriter;
   private String textFieldName;
@@ -57,14 +63,13 @@ public abstract class ClassificationTestBase<T> extends LuceneTestCase {
   }
 
 
-  protected void checkCorrectClassification(Classifier<T> classifier, T expectedResult, Analyzer analyzer, String classFieldName) throws Exception {
+  protected void checkCorrectClassification(Classifier<T> classifier, String inputDoc, T expectedResult, Analyzer analyzer, String classFieldName) throws Exception {
     SlowCompositeReaderWrapper compositeReaderWrapper = null;
     try {
       populateIndex(analyzer);
       compositeReaderWrapper = new SlowCompositeReaderWrapper(indexWriter.getReader());
       classifier.train(compositeReaderWrapper, textFieldName, classFieldName, analyzer);
-      String newText = "Much is made of what the likes of Facebook, Google and Apple know about users. Truth is, Amazon may know more.";
-      ClassificationResult<T> classificationResult = classifier.assignClass(newText);
+      ClassificationResult<T> classificationResult = classifier.assignClass(inputDoc);
       assertNotNull(classificationResult.getAssignedClass());
       assertEquals("got an assigned class of " + classificationResult.getAssignedClass(), expectedResult, classificationResult.getAssignedClass());
       assertTrue("got a not positive score " + classificationResult.getScore(), classificationResult.getScore() > 0);

@@ -27,7 +27,7 @@ public class KNearestNeighborClassifierTest extends ClassificationTestBase<Bytes
 
   @Test
   public void testBasicUsage() throws Exception {
-     checkCorrectClassification(new KNearestNeighborClassifier(1), new BytesRef("technology"), new MockAnalyzer(random()), categoryFieldName);
+    checkCorrectClassification(new KNearestNeighborClassifier(1), TECHNOLOGY_INPUT, TECHNOLOGY_RESULT, new MockAnalyzer(random()), categoryFieldName);
   }
 
 }
