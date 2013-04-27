@@ -270,6 +270,10 @@ Bug Fixes
 * SOLR-4705: Fixed bug causing NPE when querying a single replica in SolrCloud 
   using the shards param (Raintung Li, hossman)
 
+* SOLR-4729: LukeRequestHandler: Using a dynamic copyField source that is
+  not also a dynamic field triggers error message 'undefined field: "(glob)"'.
+  (Adam Hahn, hossman, Steve Rowe)
+
 Optimizations
 ----------------------
 
