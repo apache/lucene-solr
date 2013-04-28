@@ -72,7 +72,7 @@ import org.apache.lucene.util.ThreadInterruptedException;
  * </pre>
  *
  *
- * When you are done be sure to close both the manager and the reopen thrad:
+ * When you are done be sure to close both the manager and the reopen thread:
  * <pre class="prettyprint"> 
  *   reopenThread.close();       
  *   manager.close();
