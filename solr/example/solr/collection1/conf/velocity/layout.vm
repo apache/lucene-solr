@@ -1,3 +1,7 @@
+#**
+ *  Overall HTML page layout
+ *#
+
 <html>
 <head>
   #parse("head.vm")

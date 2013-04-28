@@ -93,6 +93,9 @@ Other Changes
 * SOLR-4757: Change the example to use the new solr.xml format and core 
   discovery by directory structure. (Mark Miller)
 
+* SOLR-4759: Velocity (/browse) template cosmetic cleanup.
+  (Mark Bennett, ehatcher)
+
 ==================  4.3.0 ==================
 
 Versions of Major Components
