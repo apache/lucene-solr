@@ -1,3 +1,8 @@
+#**
+ *  Render a hit representing a Product
+ *  assumed to have a field called "name"
+ *#
+
 <div class="result-title"><b>#field('name')</b><span class="mlt">   #if($params.getBool('mlt', false) == false)<a href="#lensNoQ&q=id:$docId&mlt=true">More Like This</a>#end</span></div>
 ##do we have a physical store for this product
 #set($store = $doc.getFieldValue('store'))
