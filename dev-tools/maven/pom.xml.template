@@ -487,7 +487,7 @@
         <plugin>
           <groupId>de.thetaphi</groupId>
           <artifactId>forbiddenapis</artifactId>
-          <version>1.2</version>
+          <version>1.3</version>
           <configuration>
             <!--
               This is the default setting, we don't support Java 8 at the moment.
