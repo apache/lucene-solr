@@ -103,7 +103,7 @@ public class RandomIndexWriter implements Closeable {
 
     // Make sure we sometimes test indices that don't get
     // any forced merges:
-    doRandomForceMerge = r.nextBoolean();
+    doRandomForceMerge = !(c.getMergePolicy() instanceof NoMergePolicy) && r.nextBoolean();
   } 
   
   /**
