@@ -490,7 +490,7 @@
           <version>1.3</version>
           <configuration>
             <!--
-              This is the default setting, we don't support Java 8 at the moment.
+              This is the default setting, we don't support too new Java versions.
               The checker simply passes by default and only prints a warning.
              -->
             <failOnUnsupportedJava>false</failOnUnsupportedJava>
