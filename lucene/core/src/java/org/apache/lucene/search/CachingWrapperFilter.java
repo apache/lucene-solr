@@ -18,14 +18,17 @@ package org.apache.lucene.search;
  */
 
 import java.io.IOException;
+import java.util.ArrayList;
 import java.util.Collections;
+import java.util.List;
 import java.util.Map;
 import java.util.WeakHashMap;
 
 import org.apache.lucene.index.AtomicReader;
 import org.apache.lucene.index.AtomicReaderContext;
-import org.apache.lucene.util.FixedBitSet;
 import org.apache.lucene.util.Bits;
+import org.apache.lucene.util.FixedBitSet;
+import org.apache.lucene.util.RamUsageEstimator;
 
 /**
  * Wraps another {@link Filter}'s result and caches it.  The purpose is to allow
@@ -132,4 +135,21 @@ public class CachingWrapperFilter extends Filter {
       return null;
     }
   };
+
+  /** Returns total byte size used by cached filters. */
+  public long sizeInBytes() {
+
+    // Sync only to pull the current set of values:
+    List<DocIdSet> docIdSets;
+    synchronized(cache) {
+      docIdSets = new ArrayList<DocIdSet>(cache.values());
+    }
+
+    long total = 0;
+    for(DocIdSet dis : docIdSets) {
+      total += RamUsageEstimator.sizeOf(dis);
+    }
+
+    return total;
+  }
 }
