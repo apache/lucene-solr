@@ -63,6 +63,10 @@ New Features
 * SOLR-4761: Add SimpleMergedSegmentWarmer, which just initializes terms,
   norms, docvalues, and so on. (Mark Miller, Mike McCandless, Robert Muir)
 
+* LUCENE-4964: Allow arbitrary Query for per-dimension drill-down to
+  DrillDownQuery and DrillSideways, to support future dynamic faceting
+  methods (Mike McCandless)
+
 ======================= Lucene 4.3.0 =======================
 
 Changes in backwards compatibility policy
