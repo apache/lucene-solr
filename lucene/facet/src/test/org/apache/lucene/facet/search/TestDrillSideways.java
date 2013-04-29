@@ -120,12 +120,14 @@ public class TestDrillSideways extends FacetTestCase {
         new CountFacetRequest(new CategoryPath("Publish Date"), 10), 
         new CountFacetRequest(new CategoryPath("Author"), 10));
 
+    DrillSideways ds = new DrillSideways(searcher, taxoReader);
+
     // Simple case: drill-down on a single field; in this
     // case the drill-sideways + drill-down counts ==
     // drill-down of just the query: 
     DrillDownQuery ddq = new DrillDownQuery(fsp.indexingParams, new MatchAllDocsQuery());
     ddq.add(new CategoryPath("Author", "Lisa"));
-    DrillSidewaysResult r = new DrillSideways(searcher, taxoReader).search(null, ddq, 10, fsp);
+    DrillSidewaysResult r = ds.search(null, ddq, 10, fsp);
 
     assertEquals(2, r.hits.totalHits);
     assertEquals(2, r.facetResults.size());
@@ -143,7 +145,7 @@ public class TestDrillSideways extends FacetTestCase {
     // just the query:
     ddq = new DrillDownQuery(fsp.indexingParams);
     ddq.add(new CategoryPath("Author", "Lisa"));
-    r = new DrillSideways(searcher, taxoReader).search(null, ddq, 10, fsp);
+    r = ds.search(null, ddq, 10, fsp);
 
     assertEquals(2, r.hits.totalHits);
     assertEquals(2, r.facetResults.size());
@@ -162,7 +164,7 @@ public class TestDrillSideways extends FacetTestCase {
     // but OR of two values
     ddq = new DrillDownQuery(fsp.indexingParams, new MatchAllDocsQuery());
     ddq.add(new CategoryPath("Author", "Lisa"), new CategoryPath("Author", "Bob"));
-    r = new DrillSideways(searcher, taxoReader).search(null, ddq, 10, fsp);
+    r = ds.search(null, ddq, 10, fsp);
     assertEquals(3, r.hits.totalHits);
     assertEquals(2, r.facetResults.size());
     // Publish Date is only drill-down: Lisa and Bob
@@ -177,7 +179,7 @@ public class TestDrillSideways extends FacetTestCase {
     ddq = new DrillDownQuery(fsp.indexingParams, new MatchAllDocsQuery());
     ddq.add(new CategoryPath("Author", "Lisa"));
     ddq.add(new CategoryPath("Publish Date", "2010"));
-    r = new DrillSideways(searcher, taxoReader).search(null, ddq, 10, fsp);
+    r = ds.search(null, ddq, 10, fsp);
     assertEquals(1, r.hits.totalHits);
     assertEquals(2, r.facetResults.size());
     // Publish Date is drill-sideways + drill-down: Lisa
@@ -195,7 +197,7 @@ public class TestDrillSideways extends FacetTestCase {
     ddq.add(new CategoryPath("Author", "Lisa"),
             new CategoryPath("Author", "Bob"));
     ddq.add(new CategoryPath("Publish Date", "2010"));
-    r = new DrillSideways(searcher, taxoReader).search(null, ddq, 10, fsp);
+    r = ds.search(null, ddq, 10, fsp);
     assertEquals(2, r.hits.totalHits);
     assertEquals(2, r.facetResults.size());
     // Publish Date is both drill-sideways + drill-down:
@@ -211,7 +213,7 @@ public class TestDrillSideways extends FacetTestCase {
     fsp = new FacetSearchParams(
         new CountFacetRequest(new CategoryPath("Publish Date"), 10), 
         new CountFacetRequest(new CategoryPath("Foobar"), 10));
-    r = new DrillSideways(searcher, taxoReader).search(null, ddq, 10, fsp);
+    r = ds.search(null, ddq, 10, fsp);
     assertEquals(0, r.hits.totalHits);
     assertEquals(2, r.facetResults.size());
     assertEquals("Publish Date:", toString(r.facetResults.get(0)));
@@ -224,7 +226,7 @@ public class TestDrillSideways extends FacetTestCase {
     fsp = new FacetSearchParams(
         new CountFacetRequest(new CategoryPath("Publish Date"), 10), 
         new CountFacetRequest(new CategoryPath("Author"), 10));
-    r = new DrillSideways(searcher, taxoReader).search(null, ddq, 10, fsp);
+    r = ds.search(null, ddq, 10, fsp);
     assertEquals(2, r.hits.totalHits);
     assertEquals(2, r.facetResults.size());
     // Publish Date is only drill-down, and Lisa published
@@ -242,7 +244,7 @@ public class TestDrillSideways extends FacetTestCase {
             new CategoryPath("Author", "Tom"));
     fsp = new FacetSearchParams(
               new CountFacetRequest(new CategoryPath("Publish Date"), 10));
-    r = new DrillSideways(searcher, taxoReader).search(null, ddq, 10, fsp);
+    r = ds.search(null, ddq, 10, fsp);
     assertEquals(2, r.hits.totalHits);
     assertEquals(1, r.facetResults.size());
     // Publish Date is only drill-down, and Lisa published
@@ -255,7 +257,7 @@ public class TestDrillSideways extends FacetTestCase {
         new CountFacetRequest(new CategoryPath("Author"), 10));
     ddq = new DrillDownQuery(fsp.indexingParams, new TermQuery(new Term("foobar", "baz")));
     ddq.add(new CategoryPath("Author", "Lisa"));
-    r = new DrillSideways(searcher, taxoReader).search(null, ddq, 10, fsp);
+    r = ds.search(null, ddq, 10, fsp);
 
     assertEquals(0, r.hits.totalHits);
     assertEquals(2, r.facetResults.size());

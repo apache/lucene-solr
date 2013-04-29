@@ -167,11 +167,25 @@ public final class DrillDownQuery extends Query {
       }
       q = bq;
     }
-    drillDownDims.put(dim, drillDownDims.size());
 
-    final ConstantScoreQuery drillDownQuery = new ConstantScoreQuery(q);
+    add(dim, q);
+  }
+
+  /** Expert: add a custom drill-down subQuery.  Use this
+   *  when you have a separate way to drill-down on the
+   *  dimension than the indexed facet ordinals. */
+  public void add(String dim, Query subQuery) {
+
+    // TODO: we should use FilteredQuery?
+
+    // So scores of the drill-down query don't have an
+    // effect:
+    final ConstantScoreQuery drillDownQuery = new ConstantScoreQuery(subQuery);
     drillDownQuery.setBoost(0.0f);
+
     query.add(drillDownQuery, Occur.MUST);
+
+    drillDownDims.put(dim, drillDownDims.size());
   }
 
   @Override

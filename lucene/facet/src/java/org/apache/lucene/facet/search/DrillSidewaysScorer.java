@@ -43,19 +43,17 @@ class DrillSidewaysScorer extends Scorer {
 
   private static final int CHUNK = 2048;
   private static final int MASK = CHUNK-1;
-  private final boolean scoreSubDocsAtOnce;
 
   private int collectDocID = -1;
   private float collectScore;
 
   DrillSidewaysScorer(Weight w, AtomicReaderContext context, Scorer baseScorer, Collector drillDownCollector,
-                      DocsEnumsAndFreq[] dims, boolean scoreSubDocsAtOnce) {
+                      DocsEnumsAndFreq[] dims) {
     super(w);
     this.dims = dims;
     this.context = context;
     this.baseScorer = baseScorer;
     this.drillDownCollector = drillDownCollector;
-    this.scoreSubDocsAtOnce = scoreSubDocsAtOnce;
   }
 
   @Override
@@ -114,22 +112,15 @@ class DrillSidewaysScorer extends Scorer {
     }
     */
 
-    //System.out.println("DS score " + scoreSubDocsAtOnce);
-    if (!scoreSubDocsAtOnce) {
-      if (baseQueryCost < drillDownCost/10) {
-        //System.out.println("baseAdvance");
-        doBaseAdvanceScoring(collector, docsEnums, sidewaysCollectors);
-      } else if (numDims > 1 && (dims[1].maxCost < baseQueryCost/10)) {
-        //System.out.println("drillDownAdvance");
-        doDrillDownAdvanceScoring(collector, docsEnums, sidewaysCollectors);
-      } else {
-        //System.out.println("union");
-        doUnionScoring(collector, docsEnums, sidewaysCollectors);
-      }
-    } else {
-      // TODO: we should fallback to BS2 ReqOptSum scorer here
+    if (baseQueryCost < drillDownCost/10) {
       //System.out.println("baseAdvance");
       doBaseAdvanceScoring(collector, docsEnums, sidewaysCollectors);
+    } else if (numDims > 1 && (dims[1].maxCost < baseQueryCost/10)) {
+      //System.out.println("drillDownAdvance");
+      doDrillDownAdvanceScoring(collector, docsEnums, sidewaysCollectors);
+    } else {
+      //System.out.println("union");
+      doUnionScoring(collector, docsEnums, sidewaysCollectors);
     }
   }
 
