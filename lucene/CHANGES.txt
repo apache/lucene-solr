@@ -67,6 +67,8 @@ New Features
   DrillDownQuery and DrillSideways, to support future dynamic faceting
   methods (Mike McCandless)
 
+* LUCENE-4966: Add CachingWrapperFilter.sizeInBytes() (Mike McCandless)
+
 ======================= Lucene 4.3.0 =======================
 
 Changes in backwards compatibility policy
