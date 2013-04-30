@@ -24,8 +24,8 @@ import java.util.List;
 import org.apache.lucene.analysis.core.WhitespaceAnalyzer;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
-import org.apache.lucene.document.LongDocValuesField;
 import org.apache.lucene.document.LongField;
+import org.apache.lucene.document.NumericDocValuesField;
 import org.apache.lucene.facet.params.FacetIndexingParams;
 import org.apache.lucene.facet.params.FacetSearchParams;
 import org.apache.lucene.facet.range.LongRange;
@@ -66,7 +66,7 @@ public class RangeFacetsExample implements Closeable {
       Document doc = new Document();
       long then = nowSec - i * 1000;
       // Add as doc values field, so we can compute range facets:
-      doc.add(new LongDocValuesField("timestamp", then));
+      doc.add(new NumericDocValuesField("timestamp", then));
       // Add as numeric field so we can drill-down:
       doc.add(new LongField("timestamp", then, Field.Store.NO));
       indexWriter.addDocument(doc);

@@ -25,7 +25,6 @@ import org.apache.lucene.document.DoubleField;
 import org.apache.lucene.document.Field;
 import org.apache.lucene.document.FloatDocValuesField;
 import org.apache.lucene.document.FloatField;
-import org.apache.lucene.document.LongDocValuesField;
 import org.apache.lucene.document.LongField;
 import org.apache.lucene.document.NumericDocValuesField;
 import org.apache.lucene.facet.FacetTestCase;
@@ -164,7 +163,7 @@ public class TestRangeAccumulator extends FacetTestCase {
       Document doc = new Document();
       long v = random().nextLong();
       values[i] = v;
-      doc.add(new LongDocValuesField("field", v));
+      doc.add(new NumericDocValuesField("field", v));
       doc.add(new LongField("field", v, Field.Store.NO));
       w.addDocument(doc);
     }
