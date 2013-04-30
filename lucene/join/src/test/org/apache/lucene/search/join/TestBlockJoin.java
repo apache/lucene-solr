@@ -1206,4 +1206,191 @@ public class TestBlockJoin extends LuceneTestCase {
     r.close();
     dir.close();
   }
+
+  // LUCENE-4968
+  public void testSometimesParentOnlyMatches() throws Exception {
+    Directory d = newDirectory();
+    RandomIndexWriter w = new RandomIndexWriter(random(), d);
+    Document parent = new Document();
+    parent.add(new StoredField("parentID", "0"));
+    parent.add(newTextField("parentText", "text", Field.Store.NO));
+    parent.add(newStringField("isParent", "yes", Field.Store.NO));
+
+    List<Document> docs = new ArrayList<Document>();
+
+    Document child = new Document();
+    docs.add(child);
+    child.add(new StoredField("childID", "0"));
+    child.add(newTextField("childText", "text", Field.Store.NO));
+
+    // parent last:
+    docs.add(parent);
+    w.addDocuments(docs);
+
+    docs.clear();
+
+    parent = new Document();
+    parent.add(newTextField("parentText", "text", Field.Store.NO));
+    parent.add(newStringField("isParent", "yes", Field.Store.NO));
+    parent.add(new StoredField("parentID", "1"));
+
+    // parent last:
+    docs.add(parent);
+    w.addDocuments(docs);
+    
+    IndexReader r = w.getReader();
+    w.close();
+
+    Query childQuery = new TermQuery(new Term("childText", "text"));
+    Filter parentsFilter = new CachingWrapperFilter(new QueryWrapperFilter(new TermQuery(new Term("isParent", "yes"))));
+    ToParentBlockJoinQuery childJoinQuery = new ToParentBlockJoinQuery(childQuery, parentsFilter, ScoreMode.Avg);
+    BooleanQuery parentQuery = new BooleanQuery();
+    parentQuery.add(childJoinQuery, Occur.SHOULD);
+    parentQuery.add(new TermQuery(new Term("parentText", "text")), Occur.SHOULD);
+
+    ToParentBlockJoinCollector c = new ToParentBlockJoinCollector(new Sort(new SortField("parentID", SortField.Type.STRING)),
+                                                                  10, true, true);
+    newSearcher(r).search(parentQuery, c);
+    TopGroups<Integer> groups = c.getTopGroups(childJoinQuery, null, 0, 10, 0, false);
+
+    // Two parents:
+    assertEquals(2, groups.totalGroupCount.intValue());
+
+    // One child docs:
+    assertEquals(1, groups.totalGroupedHitCount);
+
+    GroupDocs<Integer> group = groups.groups[0];
+    StoredDocument doc = r.document(group.groupValue.intValue());
+    assertEquals("0", doc.get("parentID"));
+    System.out.println("group: " + group);
+
+    group = groups.groups[1];
+    doc = r.document(group.groupValue.intValue());
+    assertEquals("1", doc.get("parentID"));
+
+    r.close();
+    d.close();
+  }
+
+  // LUCENE-4968
+  public void testChildQueryNeverMatches() throws Exception {
+    Directory d = newDirectory();
+    RandomIndexWriter w = new RandomIndexWriter(random(), d);
+    Document parent = new Document();
+    parent.add(new StoredField("parentID", "0"));
+    parent.add(newTextField("parentText", "text", Field.Store.NO));
+    parent.add(newStringField("isParent", "yes", Field.Store.NO));
+
+    List<Document> docs = new ArrayList<Document>();
+
+    Document child = new Document();
+    docs.add(child);
+    child.add(new StoredField("childID", "0"));
+    child.add(newTextField("childText", "text", Field.Store.NO));
+
+    // parent last:
+    docs.add(parent);
+    w.addDocuments(docs);
+
+    docs.clear();
+
+    parent = new Document();
+    parent.add(newTextField("parentText", "text", Field.Store.NO));
+    parent.add(newStringField("isParent", "yes", Field.Store.NO));
+    parent.add(new StoredField("parentID", "1"));
+
+    // parent last:
+    docs.add(parent);
+    w.addDocuments(docs);
+    
+    IndexReader r = w.getReader();
+    w.close();
+
+    // never matches:
+    Query childQuery = new TermQuery(new Term("childText", "bogus"));
+    Filter parentsFilter = new CachingWrapperFilter(new QueryWrapperFilter(new TermQuery(new Term("isParent", "yes"))));
+    ToParentBlockJoinQuery childJoinQuery = new ToParentBlockJoinQuery(childQuery, parentsFilter, ScoreMode.Avg);
+    BooleanQuery parentQuery = new BooleanQuery();
+    parentQuery.add(childJoinQuery, Occur.SHOULD);
+    parentQuery.add(new TermQuery(new Term("parentText", "text")), Occur.SHOULD);
+
+    ToParentBlockJoinCollector c = new ToParentBlockJoinCollector(new Sort(new SortField("parentID", SortField.Type.STRING)),
+                                                                  10, true, true);
+    newSearcher(r).search(parentQuery, c);
+    TopGroups<Integer> groups = c.getTopGroups(childJoinQuery, null, 0, 10, 0, false);
+
+    // Two parents:
+    assertEquals(2, groups.totalGroupCount.intValue());
+
+    // One child docs:
+    assertEquals(0, groups.totalGroupedHitCount);
+
+    GroupDocs<Integer> group = groups.groups[0];
+    StoredDocument doc = r.document(group.groupValue.intValue());
+    assertEquals("0", doc.get("parentID"));
+    System.out.println("group: " + group);
+
+    group = groups.groups[1];
+    doc = r.document(group.groupValue.intValue());
+    assertEquals("1", doc.get("parentID"));
+
+    r.close();
+    d.close();
+  }
+
+  // LUCENE-4968
+  public void testChildQueryMatchesParent() throws Exception {
+    Directory d = newDirectory();
+    RandomIndexWriter w = new RandomIndexWriter(random(), d);
+    Document parent = new Document();
+    parent.add(new StoredField("parentID", "0"));
+    parent.add(newTextField("parentText", "text", Field.Store.NO));
+    parent.add(newStringField("isParent", "yes", Field.Store.NO));
+
+    List<Document> docs = new ArrayList<Document>();
+
+    Document child = new Document();
+    docs.add(child);
+    child.add(new StoredField("childID", "0"));
+    child.add(newTextField("childText", "text", Field.Store.NO));
+
+    // parent last:
+    docs.add(parent);
+    w.addDocuments(docs);
+
+    docs.clear();
+
+    parent = new Document();
+    parent.add(newTextField("parentText", "text", Field.Store.NO));
+    parent.add(newStringField("isParent", "yes", Field.Store.NO));
+    parent.add(new StoredField("parentID", "1"));
+
+    // parent last:
+    docs.add(parent);
+    w.addDocuments(docs);
+    
+    IndexReader r = w.getReader();
+    w.close();
+
+    // illegally matches parent:
+    Query childQuery = new TermQuery(new Term("parentText", "text"));
+    Filter parentsFilter = new CachingWrapperFilter(new QueryWrapperFilter(new TermQuery(new Term("isParent", "yes"))));
+    ToParentBlockJoinQuery childJoinQuery = new ToParentBlockJoinQuery(childQuery, parentsFilter, ScoreMode.Avg);
+    BooleanQuery parentQuery = new BooleanQuery();
+    parentQuery.add(childJoinQuery, Occur.SHOULD);
+    parentQuery.add(new TermQuery(new Term("parentText", "text")), Occur.SHOULD);
+
+    ToParentBlockJoinCollector c = new ToParentBlockJoinCollector(new Sort(new SortField("parentID", SortField.Type.STRING)),
+                                                                  10, true, true);
+
+    try {
+      newSearcher(r).search(parentQuery, c);
+      fail("should have hit exception");
+    } catch (IllegalStateException ise) {
+      // expected
+    }
+
+    r.close();
+    d.close();
+  }
 }

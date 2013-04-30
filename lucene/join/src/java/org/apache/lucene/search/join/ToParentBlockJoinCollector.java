@@ -111,6 +111,7 @@ public class ToParentBlockJoinCollector extends Collector {
     if (trackMaxScore) {
       maxScore = Float.MIN_VALUE;
     }
+    //System.out.println("numParentHits=" + numParentHits);
     this.trackScores = trackScores;
     this.numParentHits = numParentHits;
     queue = FieldValueHitQueue.create(sort.getSort(), numParentHits);
@@ -122,6 +123,7 @@ public class ToParentBlockJoinCollector extends Collector {
   private static final class OneGroup extends FieldValueHitQueue.Entry {
     public OneGroup(int comparatorSlot, int parentDoc, float parentScore, int numJoins, boolean doScores) {
       super(comparatorSlot, parentDoc, parentScore);
+      //System.out.println("make OneGroup parentDoc=" + parentDoc);
       docs = new int[numJoins][];
       for(int joinID=0;joinID<numJoins;joinID++) {
         docs[joinID] = new int[5];
@@ -142,7 +144,7 @@ public class ToParentBlockJoinCollector extends Collector {
 
   @Override
   public void collect(int parentDoc) throws IOException {
-    //System.out.println("C parentDoc=" + parentDoc);
+    //System.out.println("\nC parentDoc=" + parentDoc);
     totalHitCount++;
 
     float score = Float.NaN;
@@ -203,8 +205,7 @@ public class ToParentBlockJoinCollector extends Collector {
       for (int i = 0; i < comparators.length; i++) {
         comparators[i].copy(comparatorSlot, parentDoc);
       }
-      //System.out.println("  startup: new OG doc=" +
-      //(docBase+parentDoc));
+      //System.out.println("  startup: new OG doc=" + (docBase+parentDoc));
       if (!trackMaxScore && trackScores) {
         score = scorer.score();
       }
@@ -241,22 +242,28 @@ public class ToParentBlockJoinCollector extends Collector {
       og.scores = ArrayUtil.grow(og.scores);
     }
 
-    //System.out.println("copyGroups parentDoc=" + og.doc);
+    //System.out.println("\ncopyGroups parentDoc=" + og.doc);
     for(int scorerIDX = 0;scorerIDX < numSubScorers;scorerIDX++) {
       final ToParentBlockJoinQuery.BlockJoinScorer joinScorer = joinScorers[scorerIDX];
       //System.out.println("  scorer=" + joinScorer);
-      if (joinScorer != null) {
+      if (joinScorer != null && docBase + joinScorer.getParentDoc() == og.doc) {
         og.counts[scorerIDX] = joinScorer.getChildCount();
         //System.out.println("    count=" + og.counts[scorerIDX]);
         og.docs[scorerIDX] = joinScorer.swapChildDocs(og.docs[scorerIDX]);
+        assert og.docs[scorerIDX].length >= og.counts[scorerIDX]: "length=" + og.docs[scorerIDX].length + " vs count=" + og.counts[scorerIDX];
+        //System.out.println("    len=" + og.docs[scorerIDX].length);
         /*
-        for(int idx=0;idx<og.counts[scorerIDX];idx++) {
+          for(int idx=0;idx<og.counts[scorerIDX];idx++) {
           System.out.println("    docs[" + idx + "]=" + og.docs[scorerIDX][idx]);
-        }
+          }
         */
         if (trackScores) {
+          //System.out.println("    copy scores");
           og.scores[scorerIDX] = joinScorer.swapChildScores(og.scores[scorerIDX]);
+          assert og.scores[scorerIDX].length >= og.counts[scorerIDX]: "length=" + og.scores[scorerIDX].length + " vs count=" + og.counts[scorerIDX];
         }
+      } else {
+        og.counts[scorerIDX] = 0;
       }
     }
   }
@@ -302,13 +309,16 @@ public class ToParentBlockJoinCollector extends Collector {
     Arrays.fill(joinScorers, null);
 
     Queue<Scorer> queue = new LinkedList<Scorer>();
+    //System.out.println("\nqueue: add top scorer=" + scorer);
     queue.add(scorer);
     while ((scorer = queue.poll()) != null) {
+      //System.out.println("  poll: " + scorer + "; " + scorer.getWeight().getQuery());
       if (scorer instanceof ToParentBlockJoinQuery.BlockJoinScorer) {
         enroll((ToParentBlockJoinQuery) scorer.getWeight().getQuery(), (ToParentBlockJoinQuery.BlockJoinScorer) scorer);
       }
 
       for (ChildScorer sub : scorer.getChildren()) {
+        //System.out.println("  add sub: " + sub.child + "; " + sub.child.getWeight().getQuery());
         queue.add(sub.child);
       }
     }
@@ -384,12 +394,8 @@ public class ToParentBlockJoinCollector extends Collector {
     throws IOException {
 
     final Integer _slot = joinQueryID.get(query);
-    if (_slot == null) {
-      if (totalHitCount == 0) {
-        return null;
-      } else {
-        throw new IllegalArgumentException("the Query did not contain the provided BlockJoinQuery");
-      }
+    if (_slot == null && totalHitCount == 0) {
+      return null;
     }
 
     if (sortedGroups == null) {
@@ -401,7 +407,7 @@ public class ToParentBlockJoinCollector extends Collector {
       return null;
     }
 
-    return accumulateGroups(_slot, offset, maxDocsPerGroup, withinGroupOffset, withinGroupSort, fillSortFields);
+    return accumulateGroups(_slot == null ? -1 : _slot.intValue(), offset, maxDocsPerGroup, withinGroupOffset, withinGroupSort, fillSortFields);
   }
 
   /**
@@ -423,18 +429,26 @@ public class ToParentBlockJoinCollector extends Collector {
     final FakeScorer fakeScorer = new FakeScorer();
 
     int totalGroupedHitCount = 0;
+    //System.out.println("slot=" + slot);
 
     for(int groupIDX=offset;groupIDX<sortedGroups.length;groupIDX++) {
       final OneGroup og = sortedGroups[groupIDX];
-      final int numChildDocs = og.counts[slot];
+      final int numChildDocs;
+      if (slot == -1 || slot >= og.counts.length) {
+        numChildDocs = 0;
+      } else {
+        numChildDocs = og.counts[slot];
+      }
 
       // Number of documents in group should be bounded to prevent redundant memory allocation
-      final int numDocsInGroup = Math.min(numChildDocs, maxDocsPerGroup);
+      final int numDocsInGroup = Math.max(1, Math.min(numChildDocs, maxDocsPerGroup));
+      //System.out.println("parent doc=" + og.doc + " numChildDocs=" + numChildDocs + " maxDocsPG=" + maxDocsPerGroup);
 
       // At this point we hold all docs w/ in each group,
       // unsorted; we now sort them:
       final TopDocsCollector<?> collector;
       if (withinGroupSort == null) {
+        //System.out.println("sort by score");
         // Sort by score
         if (!trackScores) {
           throw new IllegalArgumentException("cannot sort by relevance within group: trackScores=false");
@@ -448,6 +462,7 @@ public class ToParentBlockJoinCollector extends Collector {
       collector.setScorer(fakeScorer);
       collector.setNextReader(og.readerContext);
       for(int docIDX=0;docIDX<numChildDocs;docIDX++) {
+        //System.out.println("docIDX=" + docIDX + " vs " + og.docs[slot].length);
         final int doc = og.docs[slot][docIDX];
         fakeScorer.doc = doc;
         if (trackScores) {
