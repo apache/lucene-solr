@@ -17,6 +17,7 @@ package org.apache.lucene.util;
  * limitations under the License.
  */
 
+import java.io.PrintStream;
 import java.util.Arrays;
 import java.util.Date;
 import java.util.HashMap;
@@ -33,21 +34,17 @@ import org.apache.lucene.codecs.PostingsFormat;
 import org.apache.lucene.codecs.asserting.AssertingCodec;
 import org.apache.lucene.codecs.cheapbastard.CheapBastardCodec;
 import org.apache.lucene.codecs.compressing.CompressingCodec;
-import org.apache.lucene.codecs.lucene40.Lucene40Codec;
 import org.apache.lucene.codecs.lucene40.Lucene40RWCodec;
 import org.apache.lucene.codecs.lucene40.Lucene40RWPostingsFormat;
-import org.apache.lucene.codecs.lucene41.Lucene41Codec;
 import org.apache.lucene.codecs.lucene41.Lucene41RWCodec;
 import org.apache.lucene.codecs.lucene42.Lucene42Codec;
-import org.apache.lucene.codecs.mockrandom.MockRandomPostingsFormat;
 import org.apache.lucene.codecs.simpletext.SimpleTextCodec;
 import org.apache.lucene.index.RandomCodec;
 import org.apache.lucene.search.RandomSimilarityProvider;
 import org.apache.lucene.search.similarities.DefaultSimilarity;
 import org.apache.lucene.search.similarities.Similarity;
-import org.apache.lucene.util.LuceneTestCase.SuppressCodecs;
+import org.apache.lucene.util.LuceneTestCase.SuppressCodecs;  // javadocs
 import org.junit.internal.AssumptionViolatedException;
-
 import com.carrotsearch.randomizedtesting.RandomizedContext;
 
 import static org.apache.lucene.util.LuceneTestCase.*;
@@ -79,6 +76,25 @@ final class TestRuleSetupAndRestoreClassEnv extends AbstractBeforeAfterRule {
    */
   HashSet<String> avoidCodecs;
 
+  static class ThreadNameFixingPrintStreamInfoStream extends PrintStreamInfoStream {
+
+    public ThreadNameFixingPrintStreamInfoStream(PrintStream out) {
+      super(out);
+    }
+
+    @Override
+    public void message(String component, String message) {
+      final String name;
+      if (Thread.currentThread().getName().startsWith("TEST-")) {
+        // The name of the main thread is way too
+        // long when looking at IW verbose output...
+        name = "main";
+      } else {
+        name = Thread.currentThread().getName();
+      }
+      stream.println(component + " " + messageID + " [" + new Date() + "; " + name + "]: " + message);    
+    }
+  }
 
   @Override
   protected void before() throws Exception {
@@ -111,20 +127,7 @@ final class TestRuleSetupAndRestoreClassEnv extends AbstractBeforeAfterRule {
     final Random random = RandomizedContext.current().getRandom();
     final boolean v = random.nextBoolean();
     if (INFOSTREAM) {
-      InfoStream.setDefault(new PrintStreamInfoStream(System.out) {
-          @Override
-          public void message(String component, String message) {
-            final String name;
-            if (Thread.currentThread().getName().startsWith("TEST-")) {
-              // The name of the main thread is way too
-              // long when looking at IW verbose output...
-              name = "main";
-            } else {
-              name = Thread.currentThread().getName();
-            }
-            stream.println(component + " " + messageID + " [" + new Date() + "; " + name + "]: " + message);    
-          }
-        });
+      InfoStream.setDefault(new ThreadNameFixingPrintStreamInfoStream(System.out));
     } else if (v) {
       InfoStream.setDefault(new NullInfoStream());
     }
