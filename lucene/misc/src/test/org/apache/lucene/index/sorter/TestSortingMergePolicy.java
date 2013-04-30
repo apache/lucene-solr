@@ -37,6 +37,7 @@ import org.apache.lucene.index.LogMergePolicy;
 import org.apache.lucene.index.MergePolicy;
 import org.apache.lucene.index.NumericDocValues;
 import org.apache.lucene.index.RandomIndexWriter;
+import org.apache.lucene.index.SegmentReader;
 import org.apache.lucene.index.SlowCompositeReaderWrapper;
 import org.apache.lucene.index.Term;
 import org.apache.lucene.index.TieredMergePolicy;
@@ -103,19 +104,26 @@ public class TestSortingMergePolicy extends LuceneTestCase {
     final RandomIndexWriter iw1 = new RandomIndexWriter(new Random(seed), dir1, iwc1);
     final RandomIndexWriter iw2 = new RandomIndexWriter(new Random(seed), dir2, iwc2);
     for (int i = 0; i < numDocs; ++i) {
-      final Document doc = randomDocument();
-      iw1.addDocument(doc);
-      iw2.addDocument(doc);
-      if (i == numDocs / 2 || (i != numDocs - 1 && random().nextInt(8) == 0)) {
-        iw1.commit();
-        iw2.commit();
-      }
-      if (random().nextInt(5) == 0) {
+      if (random().nextInt(5) == 0 && i != numDocs - 1) {
         final String term = RandomPicks.randomFrom(random(), terms);
         iw1.deleteDocuments(new Term("s", term));
         iw2.deleteDocuments(new Term("s", term));
       }
+      final Document doc = randomDocument();
+      iw1.addDocument(doc);
+      iw2.addDocument(doc);
+      if (random().nextInt(8) == 0) {
+        iw1.commit();
+        iw2.commit();
+      }
     }
+    // Make sure we have something to merge
+    iw1.commit();
+    iw2.commit();
+    final Document doc = randomDocument();
+    iw1.addDocument(doc);
+    iw2.addDocument(doc);
+
     iw1.forceMerge(1);
     iw2.forceMerge(1);
     iw1.close();
@@ -136,7 +144,7 @@ public class TestSortingMergePolicy extends LuceneTestCase {
   private static void assertSorted(AtomicReader reader) throws IOException {
     final NumericDocValues ndv = reader.getNumericDocValues("ndv");
     for (int i = 1; i < reader.maxDoc(); ++i) {
-      assertTrue(ndv.get(i-1) < ndv.get(i));
+      assertTrue(ndv.get(i-1) <= ndv.get(i));
     }
   }
 
