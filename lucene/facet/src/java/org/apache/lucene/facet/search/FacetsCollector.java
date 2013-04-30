@@ -175,7 +175,7 @@ public abstract class FacetsCollector extends Collector {
    * given {@link FacetsAccumulator}.
    */
   public static FacetsCollector create(FacetsAccumulator accumulator) {
-    if (accumulator.getAggregator().requiresDocScores()) {
+    if (accumulator.requiresDocScores()) {
       return new DocsAndScoresCollector(accumulator);
     } else {
       return new DocsOnlyCollector(accumulator);
