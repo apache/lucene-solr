@@ -114,6 +114,7 @@ public class QueryResponseTest extends LuceneTestCase {
     assertEquals(0, manufacturedateDt.getCounts().get(2).getCount());
     assertEquals(90, manufacturedateDt.getBefore());
     assertEquals(1, manufacturedateDt.getAfter());
+    assertEquals(11, manufacturedateDt.getBetween());
   }
 
   @Test
