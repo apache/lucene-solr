@@ -704,6 +704,16 @@ public abstract class LuceneTestCase extends Assert {
   public static IndexWriterConfig newIndexWriterConfig(Random r, Version v, Analyzer a) {
     IndexWriterConfig c = new IndexWriterConfig(v, a);
     c.setSimilarity(classEnvRule.similarity);
+    if (VERBOSE) {
+      // Even though TestRuleSetupAndRestoreClassEnv calls
+      // InfoStream.setDefault, we do it again here so that
+      // the PrintStreamInfoStream.messageID increments so
+      // that when there are separate instances of
+      // IndexWriter created we see "IW 0", "IW 1", "IW 2",
+      // ... instead of just always "IW 0":
+      c.setInfoStream(new TestRuleSetupAndRestoreClassEnv.ThreadNameFixingPrintStreamInfoStream(System.out));
+    }
+
     if (r.nextBoolean()) {
       c.setMergeScheduler(new SerialMergeScheduler());
     }
