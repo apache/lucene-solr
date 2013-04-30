@@ -58,7 +58,7 @@ public class FacetsAccumulator {
    * constructor.
    */
   public FacetsAccumulator(FacetSearchParams searchParams, IndexReader indexReader, TaxonomyReader taxonomyReader) {
-    this(searchParams, indexReader, taxonomyReader, null);
+    this(searchParams, indexReader, taxonomyReader, new FacetArrays(taxonomyReader.getSize()));
   }
 
   /**
@@ -97,9 +97,6 @@ public class FacetsAccumulator {
    */
   public FacetsAccumulator(FacetSearchParams searchParams, IndexReader indexReader, TaxonomyReader taxonomyReader, 
       FacetArrays facetArrays) {
-    if (facetArrays == null) {
-      facetArrays = new FacetArrays(taxonomyReader.getSize());
-    }
     this.facetArrays = facetArrays;
     this.indexReader = indexReader;
     this.taxonomyReader = taxonomyReader;
@@ -199,4 +196,7 @@ public class FacetsAccumulator {
     return res;
   }
 
+  protected boolean requiresDocScores() {
+    return getAggregator().requiresDocScores();
+  }
 }
