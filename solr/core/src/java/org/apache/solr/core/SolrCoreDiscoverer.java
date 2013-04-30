@@ -54,7 +54,7 @@ public class SolrCoreDiscoverer {
     for (File childFile : file.listFiles()) {
       // This is a little tricky, we are asking if core.properties exists in a child directory of the directory passed
       // in. In other words we're looking for core.properties in the grandchild directories of the parameter passed
-      // in. That allows us to gracefully top recursing deep but continue looking wide.
+      // in. That allows us to gracefully stop recursing deep but continue looking wide.
       File propFile = new File(childFile, CORE_PROP_FILE);
       if (propFile.exists()) { // Stop looking after processing this file!
         addCore(container, childFile, propFile, coreDescriptorMap);
@@ -75,7 +75,6 @@ public class SolrCoreDiscoverer {
     } finally {
       IOUtils.closeQuietly(is);
     }
-
     Properties props = new Properties();
     for (String prop : propsOrig.stringPropertyNames()) {
       props.put(prop, PropertiesUtil.substituteProperty(propsOrig.getProperty(prop), null));
@@ -83,8 +82,7 @@ public class SolrCoreDiscoverer {
 
     // Too much of the code depends on this value being here, but it is NOT supported in discovery mode, so
     // ignore it if present in the core.properties file.
-    System.out.println("SET INST DIR:" + childFile.getPath());
-    props.setProperty(CoreDescriptor.CORE_INSTDIR, childFile.getPath());
+    props.setProperty(CoreDescriptor.CORE_INSTDIR, childFile.getCanonicalPath());
 
     if (props.getProperty(CoreDescriptor.CORE_NAME) == null) {
       // Should default to this directory
