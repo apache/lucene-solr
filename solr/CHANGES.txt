@@ -74,6 +74,9 @@ Bug Fixes
 * SOLR-4752: There are some minor bugs in the Collections API parameter
   validation. (Mark Miller)
 
+* SOLR-4776: Solrj doesn't return "between" count in range facets
+  (Philip K. Warren via shalin)
+
 Other Changes
 ----------------------
 
