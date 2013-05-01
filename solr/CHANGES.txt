@@ -51,6 +51,10 @@ Apache ZooKeeper 3.4.5
 Upgrading from Solr 4.3.0
 ----------------------
 
+* SOLR-4778: The signature of LogWatcher.registerListener has changed, from
+  (ListenerConfig, CoreContainer) to (ListenerConfig).  Users implementing their
+  own LogWatcher classes will need to change their code accordingly.
+
 Detailed Change List
 ----------------------
 
@@ -98,6 +102,8 @@ Other Changes
 
 * SOLR-4759: Velocity (/browse) template cosmetic cleanup.
   (Mark Bennett, ehatcher)
+
+* SOLR-4778: LogWatcher init code moved out of CoreContainer (Alan Woodward)
 
 ==================  4.3.0 ==================
 

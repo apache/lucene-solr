@@ -17,14 +17,20 @@
 
 package org.apache.solr.logging;
 
+import org.apache.solr.common.SolrDocument;
+import org.apache.solr.common.SolrDocumentList;
+import org.apache.solr.core.ConfigSolr;
+import org.apache.solr.core.SolrResourceLoader;
+import org.apache.solr.logging.jul.JulWatcher;
+import org.apache.solr.logging.log4j.Log4jWatcher;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import org.slf4j.impl.StaticLoggerBinder;
+
 import java.util.Collection;
 import java.util.Iterator;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicBoolean;
-
-import org.apache.solr.common.SolrDocument;
-import org.apache.solr.common.SolrDocumentList;
-import org.apache.solr.core.CoreContainer;
 
 /**
  * A Class to monitor Logging events and hold N events in memory
@@ -32,6 +38,8 @@ import org.apache.solr.core.CoreContainer;
  * This is abstract so we can support both JUL and Log4j (and other logging platforms)
  */
 public abstract class LogWatcher<E> {
+
+  private static final Logger log = LoggerFactory.getLogger(LogWatcher.class);
   
   protected CircularList<E> history;
   protected long last = -1;
@@ -98,10 +106,82 @@ public abstract class LogWatcher<E> {
   public abstract long getTimestamp(E event);
   public abstract SolrDocument toSolrDocument(E event);
   
-  public abstract void registerListener(ListenerConfig cfg, CoreContainer container);
+  public abstract void registerListener(ListenerConfig cfg);
 
   public void reset() {
     history.clear();
     last = -1;
+  }
+
+  /**
+   * Create and register a LogWatcher.
+   *
+   * JUL and Log4j watchers are supported out-of-the-box.  You can register your own
+   * LogWatcher implementation via the plugins architecture
+   *
+   * @param config the CoreContainer's config, with logging configuration details
+   * @param loader a SolrResourceLoader, to be used to load plugin LogWatcher implementations.
+   *               Can be null if
+   *
+   * @return a LogWatcher configured for the container's logging framework
+   */
+  public static LogWatcher newRegisteredLogWatcher(ConfigSolr config, SolrResourceLoader loader) {
+
+    if (!config.getBool(ConfigSolr.CfgProp.SOLR_LOGGING_ENABLED, true))
+      return null;
+
+    LogWatcher logWatcher = createWatcher(config, loader);
+
+    if (logWatcher != null) {
+      ListenerConfig v = new ListenerConfig();
+      v.size = config.getInt(ConfigSolr.CfgProp.SOLR_LOGGING_WATCHER_SIZE, 50);
+      v.threshold = config.get(ConfigSolr.CfgProp.SOLR_LOGGING_WATCHER_THRESHOLD, null);
+      if (v.size > 0) {
+        log.info("Registering Log Listener");
+        logWatcher.registerListener(v);
+      }
+    }
+
+    return logWatcher;
+  }
+
+  private static LogWatcher createWatcher(ConfigSolr config, SolrResourceLoader loader) {
+
+    String fname = config.get(ConfigSolr.CfgProp.SOLR_LOGGING_CLASS, null);
+    String slf4jImpl;
+
+    try {
+      slf4jImpl = StaticLoggerBinder.getSingleton().getLoggerFactoryClassStr();
+      if (fname == null) {
+        if (slf4jImpl.indexOf("Log4j") > 0) {
+          fname = "Log4j";
+        } else if (slf4jImpl.indexOf("JDK") > 0) {
+          fname = "JUL";
+        }
+      }
+    }
+    catch (Throwable e) {
+      log.warn("Unable to read SLF4J version.  LogWatcher will be disabled: " + e);
+      return null;
+    }
+
+    if (fname == null) {
+      log.info("No LogWatcher configured");
+      return null;
+    }
+
+    if ("JUL".equalsIgnoreCase(fname))
+      return new JulWatcher(slf4jImpl);
+    if ("Log4j".equals(fname))
+      return new Log4jWatcher(slf4jImpl);
+
+    try {
+      return loader != null ? loader.newInstance(fname, LogWatcher.class) : null;
+    }
+    catch (Throwable e) {
+      log.warn("Unable to load LogWatcher {}: {}", fname, e);
+    }
+
+    return null;
   }
 }

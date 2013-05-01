@@ -17,6 +17,18 @@
 package org.apache.solr.logging.log4j;
 
 
+import com.google.common.base.Throwables;
+import org.apache.log4j.AppenderSkeleton;
+import org.apache.log4j.Level;
+import org.apache.log4j.Logger;
+import org.apache.log4j.spi.LoggingEvent;
+import org.apache.log4j.spi.ThrowableInformation;
+import org.apache.solr.common.SolrDocument;
+import org.apache.solr.logging.CircularList;
+import org.apache.solr.logging.ListenerConfig;
+import org.apache.solr.logging.LogWatcher;
+import org.apache.solr.logging.LoggerInfo;
+
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.Date;
@@ -24,20 +36,6 @@ import java.util.Enumeration;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-
-import org.apache.log4j.AppenderSkeleton;
-import org.apache.log4j.Level;
-import org.apache.log4j.Logger;
-import org.apache.log4j.spi.LoggingEvent;
-import org.apache.log4j.spi.ThrowableInformation;
-import org.apache.solr.common.SolrDocument;
-import org.apache.solr.core.CoreContainer;
-import org.apache.solr.logging.CircularList;
-import org.apache.solr.logging.ListenerConfig;
-import org.apache.solr.logging.LogWatcher;
-import org.apache.solr.logging.LoggerInfo;
-
-import com.google.common.base.Throwables;
 
 public class Log4jWatcher extends LogWatcher<LoggingEvent> {
 
@@ -124,7 +122,7 @@ public class Log4jWatcher extends LogWatcher<LoggingEvent> {
   }
 
   @Override
-  public void registerListener(ListenerConfig cfg, CoreContainer container) {
+  public void registerListener(ListenerConfig cfg) {
     if(history!=null) {
       throw new IllegalStateException("History already registered");
     }
