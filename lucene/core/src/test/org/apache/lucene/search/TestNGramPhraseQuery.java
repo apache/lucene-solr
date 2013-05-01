@@ -88,6 +88,17 @@ public class TestNGramPhraseQuery extends LuceneTestCase {
     pq3 = (PhraseQuery)q;
     assertArrayEquals(new Term[]{new Term("f", "ABC"), new Term("f", "DEF"), new Term("f", "FGH")}, pq3.getTerms());
     assertArrayEquals(new int[]{0, 3, 5}, pq3.getPositions());
+    
+    // LUCENE-4970: boosting test
+    PhraseQuery pq4 = new NGramPhraseQuery(2);
+    pq4.add(new Term("f", "AB"));
+    pq4.add(new Term("f", "BC"));
+    pq4.add(new Term("f", "CD"));
+    pq4.setBoost(100.0F);
+    
+    q = pq4.rewrite(reader);
+    assertNotSame(pq4, q);
+    assertEquals(pq4.getBoost(), q.getBoost(), 0.1f);
   }
 
 }

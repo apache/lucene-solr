@@ -41,6 +41,9 @@ Bug Fixes
   the child query has no hits, more aggressively catch cases where childQuery
   incorrectly matches parent documents (Mike McCandless)
 
+* LUCENE-4970: Fix boost value of rewritten NGramPhraseQuery.
+  (Shingo Sasaki via Adrien Grand)
+
 Optimizations
 
 * LUCENE-4938: Don't use an unnecessarily large priority queue in IndexSearcher
