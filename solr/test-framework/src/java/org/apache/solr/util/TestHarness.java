@@ -201,7 +201,7 @@ public class TestHarness extends BaseTestHarness {
         throw new RuntimeException(e);
       }
       LogWatcher<?> logging = new JulWatcher("test");
-      logging.registerListener(new ListenerConfig(), container);
+      logging.registerListener(new ListenerConfig());
       container.setLogging(logging);
       
       CoreDescriptor dcore = new CoreDescriptor(container, coreName, solrConfig.getResourceLoader().getInstanceDir());

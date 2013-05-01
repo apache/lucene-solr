@@ -17,6 +17,38 @@
 
 package org.apache.solr.core;
 
+import org.apache.commons.io.IOUtils;
+import org.apache.solr.cloud.ZkController;
+import org.apache.solr.cloud.ZkSolrResourceLoader;
+import org.apache.solr.common.SolrException;
+import org.apache.solr.common.SolrException.ErrorCode;
+import org.apache.solr.common.cloud.ZooKeeperException;
+import org.apache.solr.common.util.ExecutorUtil;
+import org.apache.solr.handler.admin.CollectionsHandler;
+import org.apache.solr.handler.admin.CoreAdminHandler;
+import org.apache.solr.handler.component.HttpShardHandlerFactory;
+import org.apache.solr.handler.component.ShardHandlerFactory;
+import org.apache.solr.logging.LogWatcher;
+import org.apache.solr.logging.jul.JulWatcher;
+import org.apache.solr.schema.IndexSchema;
+import org.apache.solr.schema.IndexSchemaFactory;
+import org.apache.solr.util.DefaultSolrThreadFactory;
+import org.apache.solr.util.FileUtils;
+import org.apache.solr.util.PropertiesUtil;
+import org.apache.solr.util.plugin.PluginInfoInitialized;
+import org.apache.zookeeper.KeeperException;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import org.w3c.dom.Document;
+import org.w3c.dom.Node;
+import org.xml.sax.InputSource;
+
+import javax.xml.transform.Transformer;
+import javax.xml.transform.TransformerException;
+import javax.xml.transform.TransformerFactory;
+import javax.xml.transform.dom.DOMResult;
+import javax.xml.transform.dom.DOMSource;
+import javax.xml.xpath.XPathExpressionException;
 import java.io.ByteArrayInputStream;
 import java.io.File;
 import java.io.FileInputStream;
@@ -43,42 +75,6 @@ import java.util.concurrent.Future;
 import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.ThreadPoolExecutor;
 import java.util.concurrent.TimeUnit;
-
-import javax.xml.transform.Transformer;
-import javax.xml.transform.TransformerException;
-import javax.xml.transform.TransformerFactory;
-import javax.xml.transform.dom.DOMResult;
-import javax.xml.transform.dom.DOMSource;
-import javax.xml.xpath.XPathExpressionException;
-
-import org.apache.commons.io.IOUtils;
-import org.apache.solr.cloud.ZkController;
-import org.apache.solr.cloud.ZkSolrResourceLoader;
-import org.apache.solr.common.SolrException;
-import org.apache.solr.common.SolrException.ErrorCode;
-import org.apache.solr.common.cloud.ZooKeeperException;
-import org.apache.solr.common.util.ExecutorUtil;
-import org.apache.solr.handler.admin.CollectionsHandler;
-import org.apache.solr.handler.admin.CoreAdminHandler;
-import org.apache.solr.handler.component.HttpShardHandlerFactory;
-import org.apache.solr.handler.component.ShardHandlerFactory;
-import org.apache.solr.logging.ListenerConfig;
-import org.apache.solr.logging.LogWatcher;
-import org.apache.solr.logging.jul.JulWatcher;
-import org.apache.solr.logging.log4j.Log4jWatcher;
-import org.apache.solr.schema.IndexSchema;
-import org.apache.solr.schema.IndexSchemaFactory;
-import org.apache.solr.util.DefaultSolrThreadFactory;
-import org.apache.solr.util.FileUtils;
-import org.apache.solr.util.PropertiesUtil;
-import org.apache.solr.util.plugin.PluginInfoInitialized;
-import org.apache.zookeeper.KeeperException;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-import org.slf4j.impl.StaticLoggerBinder;
-import org.w3c.dom.Document;
-import org.w3c.dom.Node;
-import org.xml.sax.InputSource;
 
 
 /**
@@ -282,51 +278,7 @@ public class CoreContainer
 
     solrCores.allocateLazyCores(cfg, loader);
 
-    // Initialize Logging
-    if (cfg.getBool(ConfigSolr.CfgProp.SOLR_LOGGING_ENABLED, true)) {
-      String slf4jImpl = null;
-      String fname = cfg.get(ConfigSolr.CfgProp.SOLR_LOGGING_CLASS, null);
-      try {
-        slf4jImpl = StaticLoggerBinder.getSingleton()
-            .getLoggerFactoryClassStr();
-        if (fname == null) {
-          if (slf4jImpl.indexOf("Log4j") > 0) {
-            fname = "Log4j";
-          } else if (slf4jImpl.indexOf("JDK") > 0) {
-            fname = "JUL";
-          }
-        }
-      } catch (Throwable ex) {
-        log.warn("Unable to read SLF4J version.  LogWatcher will be disabled: " + ex);
-      }
-      
-      // Now load the framework
-      if (fname != null) {
-        if ("JUL".equalsIgnoreCase(fname)) {
-          logging = new JulWatcher(slf4jImpl);
-        }
-        else if( "Log4j".equals(fname) ) {
-          logging = new Log4jWatcher(slf4jImpl);
-        } else {
-          try {
-            logging = loader.newInstance(fname, LogWatcher.class);
-          } catch (Throwable e) {
-            log.warn("Unable to load LogWatcher", e);
-          }
-        }
-        
-        if (logging != null) {
-          ListenerConfig v = new ListenerConfig();
-          v.size = cfg.getInt(ConfigSolr.CfgProp.SOLR_LOGGING_WATCHER_SIZE, 50);
-          v.threshold = cfg.get(ConfigSolr.CfgProp.SOLR_LOGGING_WATCHER_THRESHOLD, null);
-          if (v.size > 0) {
-            log.info("Registering Log Listener");
-            logging.registerListener(v, this);
-          }
-        }
-      }
-    }
-
+    logging = JulWatcher.newRegisteredLogWatcher(cfg, loader);
 
     if (cfg instanceof ConfigSolrXmlOld) { //TODO: Remove for 5.0
       String dcoreName = cfg.get(ConfigSolr.CfgProp.SOLR_CORES_DEFAULT_CORE_NAME, null);
