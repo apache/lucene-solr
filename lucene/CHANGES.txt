@@ -76,6 +76,8 @@ Bug Fixes
 * LUCENE-4970: Fix boost value of rewritten NGramPhraseQuery.
   (Shingo Sasaki via Adrien Grand)
 
+* LUCENE-4974: CommitIndexTask was broken if no params were set. (Shai Erera)
+
 Optimizations
 
 * LUCENE-4938: Don't use an unnecessarily large priority queue in IndexSearcher
