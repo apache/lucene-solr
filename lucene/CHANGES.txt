@@ -15,6 +15,11 @@ Changes in backwards compatibility policy
   (a, ab, b, bc, c) instead of (a, b, c, ab, bc) and doesn't trim trailing
   whitespaces. (Adrien Grand)
 
+* LUCENE-4967: NRTManager is replaced by
+  ControlledRealTimeReopenThread, for controlling which requests must
+  see which indexing changes, so that it can work with any
+  ReferenceManager (Mike McCandless)
+
 Bug Fixes
 
 * LUCENE-4935: CustomScoreQuery wrongly applied its query boost twice 
