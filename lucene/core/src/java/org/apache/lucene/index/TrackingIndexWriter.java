@@ -21,6 +21,7 @@ import java.io.IOException;
 import java.util.concurrent.atomic.AtomicLong;
 
 import org.apache.lucene.analysis.Analyzer;
+import org.apache.lucene.document.Document;
 import org.apache.lucene.search.ControlledRealTimeReopenThread; // javadocs
 import org.apache.lucene.search.Query;
 import org.apache.lucene.store.Directory;
@@ -48,7 +49,7 @@ public class TrackingIndexWriter {
   }
 
   /** Calls {@link
-   *  IndexWriter#updateDocument(Term,IndexDocument,Analyzer)}
+   *  IndexWriter#updateDocument(Term,Iterable,Analyzer)}
    *  and returns the generation that reflects this change. */
   public long updateDocument(Term t, Iterable<? extends IndexableField> d, Analyzer a) throws IOException {
     writer.updateDocument(t, d, a);
@@ -57,7 +58,7 @@ public class TrackingIndexWriter {
   }
 
   /** Calls {@link
-   *  IndexWriter#updateDocument(Term,IndexDocument)} and
+   *  IndexWriter#updateDocument(Term,Iterable)} and
    *  returns the generation that reflects this change. */
   public long updateDocument(Term t, Iterable<? extends IndexableField> d) throws IOException {
     writer.updateDocument(t, d);
@@ -124,7 +125,7 @@ public class TrackingIndexWriter {
   }
 
   /** Calls {@link
-   *  IndexWriter#addDocument(IndexDocument,Analyzer)} and
+   *  IndexWriter#addDocument(Iterable,Analyzer)} and
    *  returns the generation that reflects this change. */
   public long addDocument(Iterable<? extends IndexableField> d, Analyzer a) throws IOException {
     writer.addDocument(d, a);
@@ -141,7 +142,7 @@ public class TrackingIndexWriter {
     return indexingGen.get();
   }
 
-  /** Calls {@link IndexWriter#addDocument(IndexDocument)}
+  /** Calls {@link IndexWriter#addDocument(Iterable)}
    *  and returns the generation that reflects this change. */
   public long addDocument(Iterable<? extends IndexableField> d) throws IOException {
     writer.addDocument(d);
