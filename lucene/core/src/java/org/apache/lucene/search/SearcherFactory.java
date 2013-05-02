@@ -26,7 +26,7 @@ import org.apache.lucene.index.IndexWriterConfig; // javadocs
 import org.apache.lucene.search.similarities.Similarity; // javadocs
 
 /**
- * Factory class used by {@link SearcherManager} and {@link NRTManager} to
+ * Factory class used by {@link SearcherManager} to
  * create new IndexSearchers. The default implementation just creates 
  * an IndexSearcher with no custom behavior:
  * 
