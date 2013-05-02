@@ -18,8 +18,6 @@ package org.apache.lucene.index;
  */
 
 import java.io.IOException;
-import java.util.Map;
-import java.util.Map.Entry;
 
 import org.apache.lucene.document.Document;
 import org.apache.lucene.index.IndexWriterConfig.OpenMode;
@@ -62,25 +60,13 @@ public class TestPersistentSnapshotDeletionPolicy extends TestSnapshotDeletionPo
         TEST_VERSION_CURRENT);
   }
 
-  @Override
-  protected SnapshotDeletionPolicy getDeletionPolicy(Map<String, String> snapshots) throws IOException {
-    SnapshotDeletionPolicy sdp = getDeletionPolicy();
-    if (snapshots != null) {
-      for (Entry<String, String> e: snapshots.entrySet()) {
-        sdp.registerSnapshotInfo(e.getKey(), e.getValue(), null);
-      }
-    }
-    return sdp;
-  }
-
-  @Override
   @Test
   public void testExistingSnapshots() throws Exception {
     int numSnapshots = 3;
     Directory dir = newDirectory();
     IndexWriter writer = new IndexWriter(dir, getConfig(random(), getDeletionPolicy()));
     PersistentSnapshotDeletionPolicy psdp = (PersistentSnapshotDeletionPolicy) writer.getConfig().getIndexDeletionPolicy();
-    prepareIndexAndSnapshots(psdp, writer, numSnapshots, "snapshot");
+    prepareIndexAndSnapshots(psdp, writer, numSnapshots);
     writer.close();
     psdp.close();
 
@@ -88,19 +74,16 @@ public class TestPersistentSnapshotDeletionPolicy extends TestSnapshotDeletionPo
     psdp = new PersistentSnapshotDeletionPolicy(
         new KeepOnlyLastCommitDeletionPolicy(), snapshotDir, OpenMode.APPEND,
         TEST_VERSION_CURRENT);
-    new IndexWriter(dir, getConfig(random(), psdp)).close();
 
-    assertSnapshotExists(dir, psdp, numSnapshots);
-    assertEquals(numSnapshots, psdp.getSnapshots().size());
+    IndexWriter iw = new IndexWriter(dir, getConfig(random(), psdp));
+    psdp = (PersistentSnapshotDeletionPolicy) iw.getConfig().getIndexDeletionPolicy();
+    iw.close();
+
+    assertSnapshotExists(dir, psdp, numSnapshots, false);
     psdp.close();
     dir.close();
   }
 
-  @Test(expected=IllegalArgumentException.class)
-  public void testIllegalSnapshotId() throws Exception {
-    getDeletionPolicy().snapshot("$SNAPSHOTS_DOC$");
-  }
-  
   @Test
   public void testInvalidSnapshotInfos() throws Exception {
     // Add the correct number of documents (1), but without snapshot information
@@ -113,6 +96,7 @@ public class TestPersistentSnapshotDeletionPolicy extends TestSnapshotDeletionPo
           TEST_VERSION_CURRENT);
       fail("should not have succeeded to read from an invalid Directory");
     } catch (IllegalStateException e) {
+      // expected
     }
   }
 
@@ -144,16 +128,35 @@ public class TestPersistentSnapshotDeletionPolicy extends TestSnapshotDeletionPo
     Directory dir = newDirectory();
     IndexWriter writer = new IndexWriter(dir, getConfig(random(), getDeletionPolicy()));
     PersistentSnapshotDeletionPolicy psdp = (PersistentSnapshotDeletionPolicy) writer.getConfig().getIndexDeletionPolicy();
-    prepareIndexAndSnapshots(psdp, writer, 1, "snapshot");
+    prepareIndexAndSnapshots(psdp, writer, 1);
     writer.close();
 
-    psdp.release("snapshot0");
+    psdp.release(snapshots.get(0));
     psdp.close();
 
     psdp = new PersistentSnapshotDeletionPolicy(
         new KeepOnlyLastCommitDeletionPolicy(), snapshotDir, OpenMode.APPEND,
         TEST_VERSION_CURRENT);
-    assertEquals("Should have no snapshots !", 0, psdp.getSnapshots().size());
+    assertEquals("Should have no snapshots !", 0, psdp.getSnapshotCount());
+    psdp.close();
+    dir.close();
+  }
+
+  @Test
+  public void testSnapshotReleaseByGeneration() throws Exception {
+    Directory dir = newDirectory();
+    IndexWriter writer = new IndexWriter(dir, getConfig(random(), getDeletionPolicy()));
+    PersistentSnapshotDeletionPolicy psdp = (PersistentSnapshotDeletionPolicy) writer.getConfig().getIndexDeletionPolicy();
+    prepareIndexAndSnapshots(psdp, writer, 1);
+    writer.close();
+
+    psdp.release(snapshots.get(0).getGeneration());
+    psdp.close();
+
+    psdp = new PersistentSnapshotDeletionPolicy(
+        new KeepOnlyLastCommitDeletionPolicy(), snapshotDir, OpenMode.APPEND,
+        TEST_VERSION_CURRENT);
+    assertEquals("Should have no snapshots !", 0, psdp.getSnapshotCount());
     psdp.close();
     dir.close();
   }
@@ -167,7 +170,7 @@ public class TestPersistentSnapshotDeletionPolicy extends TestSnapshotDeletionPo
     Directory dir = newDirectory();
     IndexWriter writer = new IndexWriter(dir, getConfig(random(), getDeletionPolicy()));
     PersistentSnapshotDeletionPolicy psdp = (PersistentSnapshotDeletionPolicy) writer.getConfig().getIndexDeletionPolicy();
-    prepareIndexAndSnapshots(psdp, writer, numSnapshots, "snapshot");
+    prepareIndexAndSnapshots(psdp, writer, numSnapshots);
     writer.close();
     dir.close();
     
@@ -176,16 +179,11 @@ public class TestPersistentSnapshotDeletionPolicy extends TestSnapshotDeletionPo
       new PersistentSnapshotDeletionPolicy(
           new KeepOnlyLastCommitDeletionPolicy(), snapshotDir, OpenMode.APPEND,
           TEST_VERSION_CURRENT);
-     fail("should not have reached here - the snapshots directory should be locked!");
+      fail("should not have reached here - the snapshots directory should be locked!");
     } catch (LockObtainFailedException e) {
       // expected
     } finally {
       psdp.close();
     }
-    
-    // Reading the snapshots info should succeed though
-    Map<String, String> snapshots = PersistentSnapshotDeletionPolicy.readSnapshotsInfo(snapshotDir);
-    assertEquals("expected " + numSnapshots + " snapshots, got " + snapshots.size(), numSnapshots, snapshots.size());
   }
-  
 }

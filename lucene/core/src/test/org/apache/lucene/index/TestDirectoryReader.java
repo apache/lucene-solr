@@ -896,13 +896,13 @@ public void testFilesOpenClose() throws IOException {
     SnapshotDeletionPolicy sdp = (SnapshotDeletionPolicy) writer.getConfig().getIndexDeletionPolicy();
     writer.addDocument(new Document());
     writer.commit();
-    sdp.snapshot("c1");
+    sdp.snapshot();
     writer.addDocument(new Document());
     writer.commit();
-    sdp.snapshot("c2");
+    sdp.snapshot();
     writer.addDocument(new Document());
     writer.commit();
-    sdp.snapshot("c3");
+    sdp.snapshot();
     writer.close();
     long currentGen = 0;
     for (IndexCommit ic : DirectoryReader.listCommits(dir)) {
