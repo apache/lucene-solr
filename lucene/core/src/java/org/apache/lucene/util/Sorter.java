@@ -187,8 +187,11 @@ public abstract class Sorter {
       switch (i - l) {
       case 2:
         swap(l + 1, l + 2);
+        swap(l, l + 1);
+        break;
       case 1:
         swap(l, l + 1);
+        break;
       case 0:
         break;
       default:

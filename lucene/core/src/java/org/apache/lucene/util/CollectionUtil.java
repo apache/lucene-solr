@@ -17,6 +17,7 @@ package org.apache.lucene.util;
  * limitations under the License.
  */
 
+
 import java.util.Collections;
 import java.util.Comparator;
 import java.util.List;
@@ -145,8 +146,7 @@ public final class CollectionUtil {
   public static <T extends Comparable<? super T>> void introSort(List<T> list) {
     final int size = list.size();
     if (size <= 1) return;
-    final Comparator<T> comp = ArrayUtil.naturalComparator();
-    introSort(list, comp);
+    introSort(list, ArrayUtil.<T>naturalComparator());
   }
 
   // Tim sorts:
@@ -172,8 +172,7 @@ public final class CollectionUtil {
   public static <T extends Comparable<? super T>> void timSort(List<T> list) {
     final int size = list.size();
     if (size <= 1) return;
-    final Comparator<T> comp = ArrayUtil.naturalComparator();
-    timSort(list, comp);
+    timSort(list, ArrayUtil.<T>naturalComparator());
   }
 
 }
