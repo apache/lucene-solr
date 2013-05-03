@@ -250,9 +250,7 @@ final class IndexFileDeleter implements Closeable {
 
     // Finally, give policy a chance to remove things on
     // startup:
-    if (currentSegmentsFile != null) {
-      policy.onInit(commits);
-    }
+    policy.onInit(commits);
 
     // Always protect the incoming segmentInfos since
     // sometime it may not be the most recent commit

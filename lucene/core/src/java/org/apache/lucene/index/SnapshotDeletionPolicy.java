@@ -58,6 +58,9 @@ public class SnapshotDeletionPolicy extends IndexDeletionPolicy {
   /** Most recently committed {@link IndexCommit}. */
   protected IndexCommit lastCommit;
 
+  /** Used to detect misuse */
+  private boolean initCalled;
+
   /** Sole constructor, taking the incoming {@link
    *  IndexDeletionPolicy} to wrap. */
   public SnapshotDeletionPolicy(IndexDeletionPolicy primary) {
@@ -74,13 +77,16 @@ public class SnapshotDeletionPolicy extends IndexDeletionPolicy {
   @Override
   public synchronized void onInit(List<? extends IndexCommit> commits)
       throws IOException {
+    initCalled = true;
     primary.onInit(wrapCommits(commits));
     for(IndexCommit commit : commits) {
       if (refCounts.containsKey(commit.getGeneration())) {
         indexCommits.put(commit.getGeneration(), commit);
       }
     }
-    lastCommit = commits.get(commits.size() - 1);
+    if (!commits.isEmpty()) {
+      lastCommit = commits.get(commits.size() - 1);
+    }
   }
 
   /**
@@ -96,6 +102,9 @@ public class SnapshotDeletionPolicy extends IndexDeletionPolicy {
 
   /** Release a snapshot by generation. */
   protected void releaseGen(long gen) throws IOException {
+    if (!initCalled) {
+      throw new IllegalStateException("this instance is not being used by IndexWriter; be sure to use the instance returned from writer.getConfig().getIndexDeletionPolicy()");
+    }
     Integer refCount = refCounts.get(gen);
     if (refCount == null) {
       throw new IllegalArgumentException("commit gen=" + gen + " is not currently snapshotted");
@@ -109,6 +118,20 @@ public class SnapshotDeletionPolicy extends IndexDeletionPolicy {
     } else {
       refCounts.put(gen, refCountInt);
     }
+  }
+
+  /** Increments the refCount for this {@link IndexCommit}. */
+  protected synchronized void incRef(IndexCommit ic) {
+    long gen = ic.getGeneration();
+    Integer refCount = refCounts.get(gen);
+    int refCountInt;
+    if (refCount == null) {
+      indexCommits.put(gen, lastCommit);
+      refCountInt = 0;
+    } else {
+      refCountInt = refCount.intValue();
+    }
+    refCounts.put(gen, refCountInt+1);
   }
 
   /**
@@ -129,25 +152,22 @@ public class SnapshotDeletionPolicy extends IndexDeletionPolicy {
    * @return the {@link IndexCommit} that was snapshotted.
    */
   public synchronized IndexCommit snapshot() throws IOException {
+    if (!initCalled) {
+      throw new IllegalStateException("this instance is not being used by IndexWriter; be sure to use the instance returned from writer.getConfig().getIndexDeletionPolicy()");
+    }
     if (lastCommit == null) {
       // No commit yet, eg this is a new IndexWriter:
       throw new IllegalStateException("No index commit to snapshot");
     }
 
-    long gen = lastCommit.getGeneration();
-
-    Integer refCount = refCounts.get(gen);
-    int refCountInt;
-    if (refCount == null) {
-      indexCommits.put(gen, lastCommit);
-      refCountInt = 0;
-    } else {
-      refCountInt = refCount.intValue();
-    }
-
-    refCounts.put(gen, refCountInt+1);
+    incRef(lastCommit);
 
     return lastCommit;
+  }
+
+  /** Returns all IndexCommits held by at least one snapshot. */
+  public synchronized List<IndexCommit> getSnapshots() {
+    return new ArrayList<IndexCommit>(indexCommits.values());
   }
 
   /** Returns the total number of snapshots currently held. */
