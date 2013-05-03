@@ -29,6 +29,7 @@ import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
 import org.apache.commons.io.IOUtils;
+import org.apache.lucene.util.Constants;
 import org.apache.solr.client.solrj.SolrQuery;
 import org.apache.solr.client.solrj.SolrServer;
 import org.apache.solr.client.solrj.SolrServerException;
@@ -60,7 +61,7 @@ public class BasicDistributedZk2Test extends AbstractFullDistribZkTestBase {
 
   @BeforeClass
   public static void beforeThisClass2() throws Exception {
-
+    assumeFalse("FIXME: This test fails under Java 8 all the time, see SOLR-4711", Constants.JRE_IS_MINIMUM_JAVA8);
   }
   
   public BasicDistributedZk2Test() {

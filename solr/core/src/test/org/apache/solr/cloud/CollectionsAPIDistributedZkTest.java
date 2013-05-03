@@ -41,6 +41,7 @@ import javax.management.MBeanServer;
 import javax.management.MBeanServerFactory;
 import javax.management.ObjectName;
 
+import org.apache.lucene.util.Constants;
 import org.apache.lucene.util.LuceneTestCase.Slow;
 import org.apache.lucene.util._TestUtil;
 import org.apache.solr.SolrTestCaseJ4;
@@ -95,7 +96,7 @@ public class CollectionsAPIDistributedZkTest extends AbstractFullDistribZkTestBa
   
   @BeforeClass
   public static void beforeThisClass2() throws Exception {
-
+    assumeFalse("FIXME: This test fails under Java 8 all the time, see SOLR-4711", Constants.JRE_IS_MINIMUM_JAVA8);
   }
   
   @Before
