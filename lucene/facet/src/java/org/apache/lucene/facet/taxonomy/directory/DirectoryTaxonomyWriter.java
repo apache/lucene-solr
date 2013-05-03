@@ -225,7 +225,7 @@ public class DirectoryTaxonomyWriter implements TaxonomyWriter {
       }
       // no commit data, or no epoch in it means an old taxonomy, so set its epoch to 1, for lack
       // of a better value.
-      indexEpoch = epochStr == null ? 1 : Long.parseLong(epochStr);
+      indexEpoch = epochStr == null ? 1 : Long.parseLong(epochStr, 16);
     }
     
     if (openMode == OpenMode.CREATE) {
@@ -355,8 +355,7 @@ public class DirectoryTaxonomyWriter implements TaxonomyWriter {
   @Override
   public synchronized void close() throws IOException {
     if (!isClosed) {
-      indexWriter.setCommitData(combinedCommitData(indexWriter.getCommitData()));
-      indexWriter.commit();
+      commit();
       doClose();
     }
   }
@@ -617,7 +616,11 @@ public class DirectoryTaxonomyWriter implements TaxonomyWriter {
   @Override
   public synchronized void commit() throws IOException {
     ensureOpen();
-    indexWriter.setCommitData(combinedCommitData(indexWriter.getCommitData()));
+    // LUCENE-4972: if we always call setCommitData, we create empty commits
+    String epochStr = indexWriter.getCommitData().get(INDEX_EPOCH);
+    if (epochStr == null || Long.parseLong(epochStr, 16) != indexEpoch) {
+      indexWriter.setCommitData(combinedCommitData(indexWriter.getCommitData()));
+    }
     indexWriter.commit();
   }
 
@@ -627,7 +630,7 @@ public class DirectoryTaxonomyWriter implements TaxonomyWriter {
     if (commitData != null) {
       m.putAll(commitData);
     }
-    m.put(INDEX_EPOCH, Long.toString(indexEpoch));
+    m.put(INDEX_EPOCH, Long.toString(indexEpoch, 16));
     return m;
   }
   
@@ -648,7 +651,11 @@ public class DirectoryTaxonomyWriter implements TaxonomyWriter {
   @Override
   public synchronized void prepareCommit() throws IOException {
     ensureOpen();
-    indexWriter.setCommitData(combinedCommitData(indexWriter.getCommitData()));
+    // LUCENE-4972: if we always call setCommitData, we create empty commits
+    String epochStr = indexWriter.getCommitData().get(INDEX_EPOCH);
+    if (epochStr == null || Long.parseLong(epochStr, 16) != indexEpoch) {
+      indexWriter.setCommitData(combinedCommitData(indexWriter.getCommitData()));
+    }
     indexWriter.prepareCommit();
   }
   

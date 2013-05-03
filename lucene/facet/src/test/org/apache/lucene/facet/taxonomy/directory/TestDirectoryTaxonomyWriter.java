@@ -359,5 +359,58 @@ public class TestDirectoryTaxonomyWriter extends FacetTestCase {
     taxoWriter.close();
     dir.close();
   }
+
+  @Test
+  public void testCommitNoEmptyCommits() throws Exception {
+    // LUCENE-4972: DTW used to create empty commits even if no changes were made
+    Directory dir = newDirectory();
+    DirectoryTaxonomyWriter taxoWriter = new DirectoryTaxonomyWriter(dir);
+    taxoWriter.addCategory(new CategoryPath("a"));
+    taxoWriter.commit();
+    
+    long gen1 = SegmentInfos.getLastCommitGeneration(dir);
+    taxoWriter.commit();
+    long gen2 = SegmentInfos.getLastCommitGeneration(dir);
+    assertEquals("empty commit should not have changed the index", gen1, gen2);
+    
+    taxoWriter.close();
+    dir.close();
+  }
+  
+  @Test
+  public void testCloseNoEmptyCommits() throws Exception {
+    // LUCENE-4972: DTW used to create empty commits even if no changes were made
+    Directory dir = newDirectory();
+    DirectoryTaxonomyWriter taxoWriter = new DirectoryTaxonomyWriter(dir);
+    taxoWriter.addCategory(new CategoryPath("a"));
+    taxoWriter.commit();
+    
+    long gen1 = SegmentInfos.getLastCommitGeneration(dir);
+    taxoWriter.close();
+    long gen2 = SegmentInfos.getLastCommitGeneration(dir);
+    assertEquals("empty commit should not have changed the index", gen1, gen2);
+    
+    taxoWriter.close();
+    dir.close();
+  }
+  
+  @Test
+  public void testPrepareCommitNoEmptyCommits() throws Exception {
+    // LUCENE-4972: DTW used to create empty commits even if no changes were made
+    Directory dir = newDirectory();
+    DirectoryTaxonomyWriter taxoWriter = new DirectoryTaxonomyWriter(dir);
+    taxoWriter.addCategory(new CategoryPath("a"));
+    taxoWriter.prepareCommit();
+    taxoWriter.commit();
+    
+    long gen1 = SegmentInfos.getLastCommitGeneration(dir);
+    taxoWriter.prepareCommit();
+    taxoWriter.commit();
+    long gen2 = SegmentInfos.getLastCommitGeneration(dir);
+    assertEquals("empty commit should not have changed the index", gen1, gen2);
+    
+    taxoWriter.close();
+    dir.close();
+  }
   
 }
