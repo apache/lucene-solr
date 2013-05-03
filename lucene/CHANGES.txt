@@ -86,6 +86,9 @@ Bug Fixes
 
 * LUCENE-4974: CommitIndexTask was broken if no params were set. (Shai Erera)
 
+* LUCENE-4972: DirectoryTaxonomyWriter created empty commits even if no changes 
+  were made. (Shai Erera, Michael McCandless)
+  
 Optimizations
 
 * LUCENE-4938: Don't use an unnecessarily large priority queue in IndexSearcher
