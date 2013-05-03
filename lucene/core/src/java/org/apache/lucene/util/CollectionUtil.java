@@ -42,6 +42,8 @@ public final class CollectionUtil {
 
     ListIntroSorter(List<T> list, Comparator<? super T> comp) {
       super();
+      if (!(list instanceof RandomAccess))
+        throw new IllegalArgumentException("CollectionUtil can only sort random access lists in-place.");
       this.list = list;
       this.comp = comp;
     }
@@ -77,6 +79,8 @@ public final class CollectionUtil {
     @SuppressWarnings("unchecked")
     ListTimSorter(List<T> list, Comparator<? super T> comp, int maxTempSlots) {
       super(maxTempSlots);
+      if (!(list instanceof RandomAccess))
+        throw new IllegalArgumentException("CollectionUtil can only sort random access lists in-place.");
       this.list = list;
       this.comp = comp;
       if (maxTempSlots > 0) {
