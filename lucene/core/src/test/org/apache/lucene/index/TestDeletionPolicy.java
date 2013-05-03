@@ -45,7 +45,10 @@ import org.apache.lucene.util._TestUtil;
 public class TestDeletionPolicy extends LuceneTestCase {
   
   private void verifyCommitOrder(List<? extends IndexCommit> commits) {
-    final IndexCommit firstCommit =  commits.get(0);
+    if (commits.isEmpty()) {
+      return;
+    }
+    final IndexCommit firstCommit = commits.get(0);
     long last = SegmentInfos.generationFromSegmentsFileName(firstCommit.getSegmentsFileName());
     assertEquals(last, firstCommit.getGeneration());
     for(int i=1;i<commits.size();i++) {
@@ -184,6 +187,9 @@ public class TestDeletionPolicy extends LuceneTestCase {
 
     @Override
     public void onInit(List<? extends IndexCommit> commits) throws IOException {
+      if (commits.isEmpty()) {
+        return;
+      }
       verifyCommitOrder(commits);
       onCommit(commits);
     }
@@ -353,7 +359,7 @@ public class TestDeletionPolicy extends LuceneTestCase {
         writer.close();
       }
 
-      assertEquals(needsMerging ? 1:0, policy.numOnInit);
+      assertEquals(needsMerging ? 2:1, policy.numOnInit);
 
       // If we are not auto committing then there should
       // be exactly 2 commits (one per close above):
@@ -541,7 +547,7 @@ public class TestDeletionPolicy extends LuceneTestCase {
       writer.forceMerge(1);
       writer.close();
 
-      assertEquals(1, policy.numOnInit);
+      assertEquals(2, policy.numOnInit);
       // If we are not auto committing then there should
       // be exactly 2 commits (one per close above):
       assertEquals(2, policy.numOnCommit);
@@ -588,7 +594,7 @@ public class TestDeletionPolicy extends LuceneTestCase {
       }
 
       assertTrue(policy.numDelete > 0);
-      assertEquals(N, policy.numOnInit);
+      assertEquals(N+1, policy.numOnInit);
       assertEquals(N+1, policy.numOnCommit);
 
       // Simplistic check: just verify only the past N segments_N's still
@@ -685,7 +691,7 @@ public class TestDeletionPolicy extends LuceneTestCase {
         writer.close();
       }
 
-      assertEquals(3*(N+1), policy.numOnInit);
+      assertEquals(3*(N+1)+1, policy.numOnInit);
       assertEquals(3*(N+1)+1, policy.numOnCommit);
 
       IndexReader rwReader = DirectoryReader.open(dir);

@@ -104,10 +104,19 @@ public class TestSnapshotDeletionPolicy extends LuceneTestCase {
     // Run for ~1 seconds
     final long stopTime = System.currentTimeMillis() + 1000;
 
+    SnapshotDeletionPolicy dp = getDeletionPolicy();
     final IndexWriter writer = new IndexWriter(dir, newIndexWriterConfig(
-        TEST_VERSION_CURRENT, new MockAnalyzer(random)).setIndexDeletionPolicy(getDeletionPolicy())
+        TEST_VERSION_CURRENT, new MockAnalyzer(random)).setIndexDeletionPolicy(dp)
         .setMaxBufferedDocs(2));
-    SnapshotDeletionPolicy dp = (SnapshotDeletionPolicy) writer.getConfig().getIndexDeletionPolicy();
+
+    // Verify we catch misuse:
+    try {
+      dp.snapshot();
+      fail("did not hit exception");
+    } catch(IllegalStateException ise) {
+      // expected
+    }
+    dp = (SnapshotDeletionPolicy) writer.getConfig().getIndexDeletionPolicy();
     writer.commit();
     
     final Thread t = new Thread() {
@@ -247,6 +256,8 @@ public class TestSnapshotDeletionPolicy extends LuceneTestCase {
     prepareIndexAndSnapshots(sdp, writer, numSnapshots);
     writer.close();
     
+    assertEquals(numSnapshots, sdp.getSnapshots().size());
+    assertEquals(numSnapshots, sdp.getSnapshotCount());
     assertSnapshotExists(dir, sdp, numSnapshots, true);
 
     // open a reader on a snapshot - should succeed.
@@ -322,6 +333,7 @@ public class TestSnapshotDeletionPolicy extends LuceneTestCase {
     // this does the actual rollback
     writer.commit();
     writer.deleteUnusedFiles();
+    //sdp = (SnapshotDeletionPolicy) writer.getConfig().getIndexDeletionPolicy();
     assertSnapshotExists(dir, sdp, numSnapshots - 1, true);
     writer.close();
 
