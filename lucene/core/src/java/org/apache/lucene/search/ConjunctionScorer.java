@@ -44,7 +44,7 @@ class ConjunctionScorer extends Scorer {
     }
     // Sort the array the first time to allow the least frequent DocsEnum to
     // lead the matching.
-    ArrayUtil.mergeSort(docsAndFreqs, new Comparator<DocsAndFreqs>() {
+    ArrayUtil.timSort(docsAndFreqs, new Comparator<DocsAndFreqs>() {
       @Override
       public int compare(DocsAndFreqs o1, DocsAndFreqs o2) {
         return Long.signum(o1.cost - o2.cost);

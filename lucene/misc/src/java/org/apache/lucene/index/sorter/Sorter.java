@@ -22,7 +22,7 @@ import java.util.Comparator;
 
 import org.apache.lucene.index.AtomicReader;
 import org.apache.lucene.index.IndexReader;
-import org.apache.lucene.util.SorterTemplate;
+import org.apache.lucene.util.TimSorter;
 import org.apache.lucene.util.packed.MonotonicAppendingLongBuffer;
 
 /**
@@ -113,16 +113,17 @@ public abstract class Sorter {
     }
   };
   
-  private static final class DocValueSorterTemplate extends SorterTemplate {
+  private static final class DocValueSorter extends TimSorter {
     
     private final int[] docs;
     private final Sorter.DocComparator comparator;
+    private final int[] tmp;
     
-    private int pivot;
-    
-    public DocValueSorterTemplate(int[] docs, Sorter.DocComparator comparator) {
+    public DocValueSorter(int[] docs, Sorter.DocComparator comparator) {
+      super(docs.length / 64);
       this.docs = docs;
       this.comparator = comparator;
+      tmp = new int[docs.length / 64];
     }
     
     @Override
@@ -131,20 +132,30 @@ public abstract class Sorter {
     }
     
     @Override
-    protected int comparePivot(int j) {
-      return comparator.compare(pivot, docs[j]);
-    }
-    
-    @Override
-    protected void setPivot(int i) {
-      pivot = docs[i];
-    }
-    
-    @Override
     protected void swap(int i, int j) {
       int tmpDoc = docs[i];
       docs[i] = docs[j];
       docs[j] = tmpDoc;
+    }
+
+    @Override
+    protected void copy(int src, int dest) {
+      docs[dest] = docs[src];
+    }
+
+    @Override
+    protected void save(int i, int len) {
+      System.arraycopy(docs, i, tmp, 0, len);
+    }
+
+    @Override
+    protected void restore(int i, int j) {
+      docs[j] = tmp[i];
+    }
+
+    @Override
+    protected int compareSaved(int i, int j) {
+      return comparator.compare(tmp[i], docs[j]);
     }
   }
 
@@ -168,10 +179,10 @@ public abstract class Sorter {
       docs[i] = i;
     }
     
-    SorterTemplate sorter = new DocValueSorterTemplate(docs, comparator);
+    DocValueSorter sorter = new DocValueSorter(docs, comparator);
     // It can be common to sort a reader, add docs, sort it again, ... and in
     // that case timSort can save a lot of time
-    sorter.timSort(0, docs.length - 1); // docs is now the newToOld mapping
+    sorter.sort(0, docs.length); // docs is now the newToOld mapping
 
     // The reason why we use MonotonicAppendingLongBuffer here is that it
     // wastes very little memory if the index is in random order but can save

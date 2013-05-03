@@ -156,7 +156,7 @@ public abstract class TopTermsRewrite<Q extends Query> extends TermCollectingRew
     
     final Q q = getTopLevelQuery();
     final ScoreTerm[] scoreTerms = stQueue.toArray(new ScoreTerm[stQueue.size()]);
-    ArrayUtil.mergeSort(scoreTerms, scoreTermSortByTermComp);
+    ArrayUtil.timSort(scoreTerms, scoreTermSortByTermComp);
     
     for (final ScoreTerm st : scoreTerms) {
       final Term term = new Term(query.field, st.bytes);

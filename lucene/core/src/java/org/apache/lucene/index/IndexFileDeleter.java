@@ -232,7 +232,7 @@ final class IndexFileDeleter implements Closeable {
     }
 
     // We keep commits list in sorted order (oldest to newest):
-    CollectionUtil.mergeSort(commits);
+    CollectionUtil.timSort(commits);
 
     // Now delete anything with ref count at 0.  These are
     // presumably abandoned files eg due to crash of

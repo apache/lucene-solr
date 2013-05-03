@@ -128,21 +128,21 @@ public class TestArrayUtil extends LuceneTestCase {
     return a;
   }
   
-  public void testQuickSort() {
+  public void testIntroSort() {
     int num = atLeast(50);
     for (int i = 0; i < num; i++) {
       Integer[] a1 = createRandomArray(2000), a2 = a1.clone();
-      ArrayUtil.quickSort(a1);
+      ArrayUtil.introSort(a1);
       Arrays.sort(a2);
       assertArrayEquals(a2, a1);
       
       a1 = createRandomArray(2000);
       a2 = a1.clone();
-      ArrayUtil.quickSort(a1, Collections.reverseOrder());
+      ArrayUtil.introSort(a1, Collections.reverseOrder());
       Arrays.sort(a2, Collections.reverseOrder());
       assertArrayEquals(a2, a1);
       // reverse back, so we can test that completely backwards sorted array (worst case) is working:
-      ArrayUtil.quickSort(a1);
+      ArrayUtil.introSort(a1);
       Arrays.sort(a2);
       assertArrayEquals(a2, a1);
     }
@@ -158,38 +158,18 @@ public class TestArrayUtil extends LuceneTestCase {
   }
   
   // This is a test for LUCENE-3054 (which fails without the merge sort fall back with stack overflow in most cases)
-  public void testQuickToMergeSortFallback() {
+  public void testQuickToHeapSortFallback() {
     int num = atLeast(50);
     for (int i = 0; i < num; i++) {
       Integer[] a1 = createSparseRandomArray(40000), a2 = a1.clone();
-      ArrayUtil.quickSort(a1);
+      ArrayUtil.introSort(a1);
       Arrays.sort(a2);
       assertArrayEquals(a2, a1);
     }
   }
   
-  public void testMergeSort() {
-    int num = atLeast(50);
-    for (int i = 0; i < num; i++) {
-      Integer[] a1 = createRandomArray(2000), a2 = a1.clone();
-      ArrayUtil.mergeSort(a1);
-      Arrays.sort(a2);
-      assertArrayEquals(a2, a1);
-      
-      a1 = createRandomArray(2000);
-      a2 = a1.clone();
-      ArrayUtil.mergeSort(a1, Collections.reverseOrder());
-      Arrays.sort(a2, Collections.reverseOrder());
-      assertArrayEquals(a2, a1);
-      // reverse back, so we can test that completely backwards sorted array (worst case) is working:
-      ArrayUtil.mergeSort(a1);
-      Arrays.sort(a2);
-      assertArrayEquals(a2, a1);
-    }
-  }
-
   public void testTimSort() {
-    int num = atLeast(65);
+    int num = atLeast(50);
     for (int i = 0; i < num; i++) {
       Integer[] a1 = createRandomArray(2000), a2 = a1.clone();
       ArrayUtil.timSort(a1);
@@ -203,44 +183,6 @@ public class TestArrayUtil extends LuceneTestCase {
       assertArrayEquals(a2, a1);
       // reverse back, so we can test that completely backwards sorted array (worst case) is working:
       ArrayUtil.timSort(a1);
-      Arrays.sort(a2);
-      assertArrayEquals(a2, a1);
-    }
-  }
-
-  public void testInsertionSort() {
-    for (int i = 0, c = atLeast(500); i < c; i++) {
-      Integer[] a1 = createRandomArray(30), a2 = a1.clone();
-      ArrayUtil.insertionSort(a1);
-      Arrays.sort(a2);
-      assertArrayEquals(a2, a1);
-      
-      a1 = createRandomArray(30);
-      a2 = a1.clone();
-      ArrayUtil.insertionSort(a1, Collections.reverseOrder());
-      Arrays.sort(a2, Collections.reverseOrder());
-      assertArrayEquals(a2, a1);
-      // reverse back, so we can test that completely backwards sorted array (worst case) is working:
-      ArrayUtil.insertionSort(a1);
-      Arrays.sort(a2);
-      assertArrayEquals(a2, a1);
-    }
-  }
-  
-  public void testBinarySort() {
-    for (int i = 0, c = atLeast(500); i < c; i++) {
-      Integer[] a1 = createRandomArray(30), a2 = a1.clone();
-      ArrayUtil.binarySort(a1);
-      Arrays.sort(a2);
-      assertArrayEquals(a2, a1);
-      
-      a1 = createRandomArray(30);
-      a2 = a1.clone();
-      ArrayUtil.binarySort(a1, Collections.reverseOrder());
-      Arrays.sort(a2, Collections.reverseOrder());
-      assertArrayEquals(a2, a1);
-      // reverse back, so we can test that completely backwards sorted array (worst case) is working:
-      ArrayUtil.binarySort(a1);
       Arrays.sort(a2);
       assertArrayEquals(a2, a1);
     }
@@ -279,7 +221,7 @@ public class TestArrayUtil extends LuceneTestCase {
     
     if (VERBOSE) System.out.println("Before: " + Arrays.toString(items));
     // if you replace this with ArrayUtil.quickSort(), test should fail:
-    ArrayUtil.mergeSort(items);
+    ArrayUtil.timSort(items);
     if (VERBOSE) System.out.println("Sorted: " + Arrays.toString(items));
     
     Item last = items[0];
@@ -326,16 +268,10 @@ public class TestArrayUtil extends LuceneTestCase {
   // should produce no exceptions
   public void testEmptyArraySort() {
     Integer[] a = new Integer[0];
-    ArrayUtil.quickSort(a);
-    ArrayUtil.mergeSort(a);
-    ArrayUtil.insertionSort(a);
-    ArrayUtil.binarySort(a);
+    ArrayUtil.introSort(a);
     ArrayUtil.timSort(a);
-    ArrayUtil.quickSort(a, Collections.reverseOrder());
-    ArrayUtil.mergeSort(a, Collections.reverseOrder());
+    ArrayUtil.introSort(a, Collections.reverseOrder());
     ArrayUtil.timSort(a, Collections.reverseOrder());
-    ArrayUtil.insertionSort(a, Collections.reverseOrder());
-    ArrayUtil.binarySort(a, Collections.reverseOrder());
   }
   
 }

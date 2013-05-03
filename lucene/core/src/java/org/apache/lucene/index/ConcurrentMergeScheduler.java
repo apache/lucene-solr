@@ -184,7 +184,7 @@ public class ConcurrentMergeScheduler extends MergeScheduler {
     }
 
     // Sort the merge threads in descending order.
-    CollectionUtil.mergeSort(activeMerges, compareByMergeDocCount);
+    CollectionUtil.timSort(activeMerges, compareByMergeDocCount);
     
     int pri = mergeThreadPriority;
     final int activeMergeCount = activeMerges.size();

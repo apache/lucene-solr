@@ -163,7 +163,7 @@ public final class BytesRefHash {
    */
   public int[] sort(final Comparator<BytesRef> comp) {
     final int[] compact = compact();
-    new SorterTemplate() {
+    new IntroSorter() {
       @Override
       protected void swap(int i, int j) {
         final int o = compact[i];
@@ -197,7 +197,7 @@ public final class BytesRefHash {
       
       private final BytesRef pivot = new BytesRef(),
         scratch1 = new BytesRef(), scratch2 = new BytesRef();
-    }.quickSort(0, count - 1);
+    }.sort(0, count);
     return compact;
   }
 

@@ -65,8 +65,8 @@ import org.apache.lucene.store.Directory;
 import org.apache.lucene.util.Bits;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.FixedBitSet;
+import org.apache.lucene.util.InPlaceMergeSorter;
 import org.apache.lucene.util.InfoStream;
-import org.apache.lucene.util.SorterTemplate;
 import org.apache.lucene.util._TestUtil;
 
 public class TestDrillSideways extends FacetTestCase {
@@ -875,9 +875,7 @@ public class TestDrillSideways extends FacetTestCase {
 
     // Naive (on purpose, to reduce bug in tester/gold):
     // sort all ids, then return top N slice:
-    new SorterTemplate() {
-
-      private int pivot;
+    new InPlaceMergeSorter() {
 
       @Override
       protected void swap(int i, int j) {
@@ -901,26 +899,7 @@ public class TestDrillSideways extends FacetTestCase {
         }
       }
 
-      @Override
-      protected void setPivot(int i) {
-        pivot = ids[i];
-      }
-
-      @Override
-      protected int comparePivot(int j) {
-        int counti = counts[pivot];
-        int countj = counts[ids[j]];
-        // Sort by count descending...
-        if (counti > countj) {
-          return -1;
-        } else if (counti < countj) {
-          return 1;
-        } else {
-          // ... then by ord ascending:
-          return new BytesRef(values[pivot]).compareTo(new BytesRef(values[ids[j]]));
-        }
-      }
-    }.mergeSort(0, ids.length-1);
+    }.sort(0, ids.length);
 
     if (topN > ids.length) {
       topN = ids.length;

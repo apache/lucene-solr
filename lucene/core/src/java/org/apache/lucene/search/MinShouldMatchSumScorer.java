@@ -87,7 +87,7 @@ class MinShouldMatchSumScorer extends Scorer {
     this.sortedSubScorers = subScorers.toArray(new Scorer[this.numScorers]);
     // sorting by decreasing subscorer cost should be inversely correlated with
     // next docid (assuming costs are due to generating many postings)
-    ArrayUtil.mergeSort(sortedSubScorers, new Comparator<Scorer>() {
+    ArrayUtil.timSort(sortedSubScorers, new Comparator<Scorer>() {
       @Override
       public int compare(Scorer o1, Scorer o2) {
         return Long.signum(o2.cost() - o1.cost());
