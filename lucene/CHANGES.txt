@@ -55,6 +55,10 @@ Changes in backwards compatibility policy
 * LUCENE-4973: SnapshotDeletionPolicy no longer requires a unique
   String id (Mike McCandless, Shai Erera)
 
+* LUCENE-4946: The internal sorting API (SorterTemplate, now Sorter) has been
+  completely refactored to allow for a better implementation of TimSort.
+  (Adrien Grand, Uwe Schindler, Dawid Weiss)
+
 Bug Fixes
 
 * LUCENE-4935: CustomScoreQuery wrongly applied its query boost twice 

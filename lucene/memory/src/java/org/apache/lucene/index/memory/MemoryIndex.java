@@ -572,7 +572,7 @@ public class MemoryIndex {
       entries[i] = iter.next();
     }
     
-    if (size > 1) ArrayUtil.quickSort(entries, termComparator);
+    if (size > 1) ArrayUtil.introSort(entries, termComparator);
     return entries;
   }
   

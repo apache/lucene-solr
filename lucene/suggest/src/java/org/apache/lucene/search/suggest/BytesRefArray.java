@@ -21,12 +21,12 @@ import java.util.Arrays;
 import java.util.Comparator;
 
 import org.apache.lucene.util.ArrayUtil;
-import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.ByteBlockPool;
+import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.BytesRefIterator;
 import org.apache.lucene.util.Counter;
+import org.apache.lucene.util.IntroSorter;
 import org.apache.lucene.util.RamUsageEstimator;
-import org.apache.lucene.util.SorterTemplate;
 
 /**
  * A simple append only random-access {@link BytesRef} array that stores full
@@ -120,7 +120,7 @@ public final class BytesRefArray {
     for (int i = 0; i < orderedEntries.length; i++) {
       orderedEntries[i] = i;
     }
-    new SorterTemplate() {
+    new IntroSorter() {
       @Override
       protected void swap(int i, int j) {
         final int o = orderedEntries[i];
@@ -148,7 +148,7 @@ public final class BytesRefArray {
       
       private final BytesRef pivot = new BytesRef(), scratch1 = new BytesRef(),
           scratch2 = new BytesRef();
-    }.quickSort(0, size() - 1);
+    }.sort(0, size());
     return orderedEntries;
   }
   

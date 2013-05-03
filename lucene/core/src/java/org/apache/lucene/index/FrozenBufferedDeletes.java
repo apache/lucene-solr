@@ -56,7 +56,7 @@ class FrozenBufferedDeletes {
     assert !isSegmentPrivate || deletes.terms.size() == 0 : "segment private package should only have del queries"; 
     Term termsArray[] = deletes.terms.keySet().toArray(new Term[deletes.terms.size()]);
     termCount = termsArray.length;
-    ArrayUtil.mergeSort(termsArray);
+    ArrayUtil.timSort(termsArray);
     PrefixCodedTerms.Builder builder = new PrefixCodedTerms.Builder();
     for (Term term : termsArray) {
       builder.add(term);

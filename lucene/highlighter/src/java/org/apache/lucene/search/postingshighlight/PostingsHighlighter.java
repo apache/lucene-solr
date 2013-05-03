@@ -48,7 +48,7 @@ import org.apache.lucene.search.Query;
 import org.apache.lucene.search.ScoreDoc;
 import org.apache.lucene.search.TopDocs;
 import org.apache.lucene.util.BytesRef;
-import org.apache.lucene.util.SorterTemplate;
+import org.apache.lucene.util.InPlaceMergeSorter;
 import org.apache.lucene.util.UnicodeUtil;
 
 /**
@@ -313,9 +313,8 @@ public class PostingsHighlighter {
 
     // sort for sequential io
     Arrays.sort(docids);
-    new SorterTemplate() {
-      String pivot;
-      
+    new InPlaceMergeSorter() {
+
       @Override
       protected void swap(int i, int j) {
         String tmp = fields[i];
@@ -330,18 +329,8 @@ public class PostingsHighlighter {
       protected int compare(int i, int j) {
         return fields[i].compareTo(fields[j]);
       }
-
-      @Override
-      protected void setPivot(int i) {
-        pivot = fields[i];
-      }
-
-      @Override
-      protected int comparePivot(int j) {
-        return pivot.compareTo(fields[j]);
-      }
       
-    }.mergeSort(0, fields.length-1);
+    }.sort(0, fields.length);
     
     // pull stored data:
     String[][] contents = loadFieldValues(searcher, fields, docids, maxLength);

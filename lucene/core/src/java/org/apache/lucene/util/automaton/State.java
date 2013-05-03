@@ -239,7 +239,7 @@ public class State implements Comparable<State> {
   /** Sorts transitions array in-place. */
   public void sortTransitions(Comparator<Transition> comparator) {
     // mergesort seems to perform better on already sorted arrays:
-    if (numTransitions > 1) ArrayUtil.mergeSort(transitionsArray, 0, numTransitions, comparator);
+    if (numTransitions > 1) ArrayUtil.timSort(transitionsArray, 0, numTransitions, comparator);
   }
   
   /**

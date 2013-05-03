@@ -54,7 +54,7 @@ final class FreqProxTermsWriter extends TermsHashConsumer {
     final int numAllFields = allFields.size();
 
     // Sort by field name
-    CollectionUtil.quickSort(allFields);
+    CollectionUtil.introSort(allFields);
 
     final FieldsConsumer consumer = state.segmentInfo.getCodec().postingsFormat().fieldsConsumer(state);
 

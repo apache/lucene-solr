@@ -19,8 +19,8 @@ package org.apache.lucene.search.postingshighlight;
 
 import org.apache.lucene.util.ArrayUtil;
 import org.apache.lucene.util.BytesRef;
+import org.apache.lucene.util.InPlaceMergeSorter;
 import org.apache.lucene.util.RamUsageEstimator;
-import org.apache.lucene.util.SorterTemplate;
 
 /**
  * Represents a passage (typically a sentence of the document). 
@@ -64,7 +64,7 @@ public final class Passage {
     final int starts[] = matchStarts;
     final int ends[] = matchEnds;
     final BytesRef terms[] = matchTerms;
-    new SorterTemplate() {
+    new InPlaceMergeSorter() {
       @Override
       protected void swap(int i, int j) {
         int temp = starts[i];
@@ -85,18 +85,7 @@ public final class Passage {
         return Integer.compare(starts[i], starts[j]);
       }
 
-      @Override
-      protected void setPivot(int i) {
-        pivot = starts[i];
-      }
-
-      @Override
-      protected int comparePivot(int j) {
-        return Integer.compare(pivot, starts[j]);
-      }
-      
-      int pivot;
-    }.mergeSort(0, numMatches-1);
+    }.sort(0, numMatches);
   }
   
   void reset() {
