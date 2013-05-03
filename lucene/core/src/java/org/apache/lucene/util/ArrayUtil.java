@@ -657,8 +657,7 @@ public final class ArrayUtil {
    */
   public static <T extends Comparable<? super T>> void introSort(T[] a, int fromIndex, int toIndex) {
     if (toIndex-fromIndex <= 1) return;
-    final Comparator<T> comp = naturalComparator();
-    introSort(a, fromIndex, toIndex, comp);
+    introSort(a, fromIndex, toIndex, ArrayUtil.<T>naturalComparator());
   }
   
   /**
@@ -698,8 +697,7 @@ public final class ArrayUtil {
    */
   public static <T extends Comparable<? super T>> void timSort(T[] a, int fromIndex, int toIndex) {
     if (toIndex-fromIndex <= 1) return;
-    final Comparator<T> comp = naturalComparator();
-    timSort(a, fromIndex, toIndex, comp);
+    timSort(a, fromIndex, toIndex, ArrayUtil.<T>naturalComparator());
   }
   
   /**
