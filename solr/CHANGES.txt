@@ -81,6 +81,9 @@ Bug Fixes
 * SOLR-4776: Solrj doesn't return "between" count in range facets
   (Philip K. Warren via shalin)
 
+* SOLR-4616: HitRatio on caches is now exposed over JMX MBeans as a float.
+  (Greg Bowyer)
+
 Other Changes
 ----------------------
 
