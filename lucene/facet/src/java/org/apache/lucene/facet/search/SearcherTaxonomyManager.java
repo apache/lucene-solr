@@ -47,7 +47,8 @@ public class SearcherTaxonomyManager extends ReferenceManager<SearcherTaxonomyMa
     public final IndexSearcher searcher;
     public final DirectoryTaxonomyReader taxonomyReader;
 
-    SearcherAndTaxonomy(IndexSearcher searcher, DirectoryTaxonomyReader taxonomyReader) {
+    /** Create a SearcherAndTaxonomy */
+    public SearcherAndTaxonomy(IndexSearcher searcher, DirectoryTaxonomyReader taxonomyReader) {
       this.searcher = searcher;
       this.taxonomyReader = taxonomyReader;
     }
