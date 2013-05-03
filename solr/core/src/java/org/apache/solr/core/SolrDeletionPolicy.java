@@ -79,6 +79,9 @@ public class SolrDeletionPolicy extends IndexDeletionPolicy implements NamedList
   @Override
   public void onInit(List commits) throws IOException {
     // SOLR-4547: log basic data at INFO, add filenames at DEBUG.
+    if (commits.isEmpty()) {
+      return;
+    }
     log.info("SolrDeletionPolicy.onInit: commits: {}",
         new CommitsLoggingInfo(commits));
     log.debug("SolrDeletionPolicy.onInit: commits: {}",

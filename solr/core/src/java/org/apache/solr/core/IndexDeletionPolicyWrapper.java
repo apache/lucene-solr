@@ -237,7 +237,9 @@ public final class IndexDeletionPolicyWrapper extends IndexDeletionPolicy {
         map.put(wrapper.delegate.getGeneration(), wrapper.delegate);
     }
     solrVersionVsCommits = map;
-    latestCommit = ((list.get(list.size() - 1)).delegate);
+    if (!list.isEmpty()) {
+      latestCommit = ((list.get(list.size() - 1)).delegate);
+    }
   }
 
   public static long getCommitTimestamp(IndexCommit commit) throws IOException {
