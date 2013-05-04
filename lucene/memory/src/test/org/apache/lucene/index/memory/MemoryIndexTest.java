@@ -259,7 +259,7 @@ public class MemoryIndexTest extends BaseTokenStreamTestCase {
   private Analyzer randomAnalyzer() {
     switch(random().nextInt(4)) {
       case 0: return new MockAnalyzer(random(), MockTokenizer.SIMPLE, true);
-      case 1: return new MockAnalyzer(random(), MockTokenizer.SIMPLE, true, MockTokenFilter.ENGLISH_STOPSET, true);
+      case 1: return new MockAnalyzer(random(), MockTokenizer.SIMPLE, true, MockTokenFilter.ENGLISH_STOPSET);
       case 2: return new Analyzer() {
         @Override
         protected TokenStreamComponents createComponents(String fieldName, Reader reader) {

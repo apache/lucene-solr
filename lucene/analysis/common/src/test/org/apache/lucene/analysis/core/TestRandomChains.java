@@ -161,8 +161,6 @@ public class TestRandomChains extends BaseTokenStreamTestCase {
           // startOffset thats > its endOffset
           // (see LUCENE-3738 for a list of other offenders here)
           // broken!
-          Lucene43NGramTokenizer.class,
-          // broken!
           EdgeNGramTokenizer.class,
           // broken!
           EdgeNGramTokenFilter.class,
@@ -182,55 +180,6 @@ public class TestRandomChains extends BaseTokenStreamTestCase {
   private static final Map<Constructor<?>,Predicate<Object[]>> brokenOffsetsConstructors = new HashMap<Constructor<?>, Predicate<Object[]>>();
   static {
     try {
-      brokenOffsetsConstructors.put(
-          TrimFilter.class.getConstructor(TokenStream.class, boolean.class),
-          new Predicate<Object[]>() {
-            @Override
-            public boolean apply(Object[] args) {
-              assert args.length == 2;
-              return (Boolean) args[1]; // args are broken if updateOffsets is true
-            }
-          });
-      brokenOffsetsConstructors.put(
-          TypeTokenFilter.class.getConstructor(boolean.class, TokenStream.class, Set.class, boolean.class),
-          new Predicate<Object[]>() {
-            @Override
-            public boolean apply(Object[] args) {
-              assert args.length == 4;
-              // LUCENE-4065: only if you pass 'false' to enablePositionIncrements!
-              return !(Boolean) args[0];
-            }
-          });
-      brokenOffsetsConstructors.put(
-          TypeTokenFilter.class.getConstructor(boolean.class, TokenStream.class, Set.class),
-          new Predicate<Object[]>() {
-            @Override
-            public boolean apply(Object[] args) {
-              assert args.length == 3;
-              // LUCENE-4065: only if you pass 'false' to enablePositionIncrements!
-              return !(Boolean) args[0];
-            }
-          });
-      brokenOffsetsConstructors.put(
-          LengthFilter.class.getConstructor(boolean.class, TokenStream.class, int.class, int.class),
-          new Predicate<Object[]>() {
-            @Override
-            public boolean apply(Object[] args) {
-              assert args.length == 4;
-              // LUCENE-4065: only if you pass 'false' to enablePositionIncrements!
-              return !(Boolean) args[0];
-            }
-          });
-      brokenOffsetsConstructors.put(
-          KeepWordFilter.class.getConstructor(boolean.class, TokenStream.class, CharArraySet.class),
-          new Predicate<Object[]>() {
-            @Override
-            public boolean apply(Object[] args) {
-              assert args.length == 3;
-              // LUCENE-4065: only if you pass 'false' to enablePositionIncrements!
-              return !(Boolean) args[0];
-            }
-          });
       for (Class<?> c : Arrays.<Class<?>>asList(
           ReversePathHierarchyTokenizer.class,
           PathHierarchyTokenizer.class,

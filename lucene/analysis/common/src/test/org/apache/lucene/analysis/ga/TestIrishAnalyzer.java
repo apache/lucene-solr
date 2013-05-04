@@ -61,7 +61,7 @@ public class TestIrishAnalyzer extends BaseTokenStreamTestCase {
     Analyzer a = new IrishAnalyzer(TEST_VERSION_CURRENT);
     assertAnalyzesTo(a, "n-athair",
         new String[] { "athair" },
-        new int[] { 1 });
+        new int[] { 2 });
   }
   
   /** blast some random strings through the analyzer */

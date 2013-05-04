@@ -50,7 +50,7 @@ public class TestTypeTokenFilterFactory extends BaseTokenStreamFactoryTestCase {
   public void testCreationWithBlackList() throws Exception {
     TokenFilterFactory factory = tokenFilterFactory("Type",
         "types", "stoptypes-1.txt, stoptypes-2.txt",
-        "enablePositionIncrements", "false");
+        "enablePositionIncrements", "true");
     NumericTokenStream input = new NumericTokenStream();
     input.setIntValue(123);
     factory.create(input);
@@ -59,7 +59,7 @@ public class TestTypeTokenFilterFactory extends BaseTokenStreamFactoryTestCase {
   public void testCreationWithWhiteList() throws Exception {
     TokenFilterFactory factory = tokenFilterFactory("Type",
         "types", "stoptypes-1.txt, stoptypes-2.txt",
-        "enablePositionIncrements", "false",
+        "enablePositionIncrements", "true",
         "useWhitelist", "true");
     NumericTokenStream input = new NumericTokenStream();
     input.setIntValue(123);

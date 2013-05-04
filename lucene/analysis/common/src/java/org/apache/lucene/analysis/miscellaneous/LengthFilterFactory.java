@@ -17,10 +17,10 @@ package org.apache.lucene.analysis.miscellaneous;
  * limitations under the License.
  */
 
+import java.util.Map;
+
 import org.apache.lucene.analysis.TokenStream;
 import org.apache.lucene.analysis.util.TokenFilterFactory;
-
-import java.util.Map;
 
 /**
  * Factory for {@link LengthFilter}. 
@@ -28,7 +28,7 @@ import java.util.Map;
  * &lt;fieldType name="text_lngth" class="solr.TextField" positionIncrementGap="100"&gt;
  *   &lt;analyzer&gt;
  *     &lt;tokenizer class="solr.WhitespaceTokenizerFactory"/&gt;
- *     &lt;filter class="solr.LengthFilterFactory" min="0" max="1" enablePositionIncrements="false"/&gt;
+ *     &lt;filter class="solr.LengthFilterFactory" min="0" max="1" /&gt;
  *   &lt;/analyzer&gt;
  * &lt;/fieldType&gt;</pre>
  */
@@ -44,7 +44,7 @@ public class LengthFilterFactory extends TokenFilterFactory {
     super(args);
     min = requireInt(args, MIN_KEY);
     max = requireInt(args, MAX_KEY);
-    enablePositionIncrements = getBoolean(args, "enablePositionIncrements", false);
+    enablePositionIncrements = getBoolean(args, "enablePositionIncrements", true);
     if (!args.isEmpty()) {
       throw new IllegalArgumentException("Unknown parameters: " + args);
     }
@@ -52,6 +52,8 @@ public class LengthFilterFactory extends TokenFilterFactory {
   
   @Override
   public LengthFilter create(TokenStream input) {
-    return new LengthFilter(enablePositionIncrements, input,min,max);
+    @SuppressWarnings("deprecation")
+    final LengthFilter filter = new LengthFilter(luceneMatchVersion, enablePositionIncrements, input,min,max);
+    return filter;
   }
 }

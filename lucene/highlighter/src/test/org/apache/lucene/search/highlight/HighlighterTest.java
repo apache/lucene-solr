@@ -247,7 +247,7 @@ public class HighlighterTest extends BaseTokenStreamTestCase implements Formatte
    */
   private String highlightField(Query query, String fieldName, String text)
       throws IOException, InvalidTokenOffsetsException {
-    TokenStream tokenStream = new MockAnalyzer(random(), MockTokenizer.SIMPLE, true, MockTokenFilter.ENGLISH_STOPSET, true)
+    TokenStream tokenStream = new MockAnalyzer(random(), MockTokenizer.SIMPLE, true, MockTokenFilter.ENGLISH_STOPSET)
         .tokenStream(fieldName, new StringReader(text));
     // Assuming "<B>", "</B>" used to highlight
     SimpleHTMLFormatter formatter = new SimpleHTMLFormatter();
@@ -1308,7 +1308,7 @@ public class HighlighterTest extends BaseTokenStreamTestCase implements Formatte
   }
 
   public void testMaxSizeHighlight() throws Exception {
-    final MockAnalyzer analyzer = new MockAnalyzer(random(), MockTokenizer.SIMPLE, true, MockTokenFilter.ENGLISH_STOPSET, true);
+    final MockAnalyzer analyzer = new MockAnalyzer(random(), MockTokenizer.SIMPLE, true, MockTokenFilter.ENGLISH_STOPSET);
     // we disable MockTokenizer checks because we will forcefully limit the 
     // tokenstream and call end() before incrementToken() returns false.
     analyzer.setEnableChecks(false);
@@ -1343,7 +1343,7 @@ public class HighlighterTest extends BaseTokenStreamTestCase implements Formatte
         CharacterRunAutomaton stopWords = new CharacterRunAutomaton(BasicAutomata.makeString("stoppedtoken"));
         // we disable MockTokenizer checks because we will forcefully limit the 
         // tokenstream and call end() before incrementToken() returns false.
-        final MockAnalyzer analyzer = new MockAnalyzer(random(), MockTokenizer.SIMPLE, true, stopWords, true);
+        final MockAnalyzer analyzer = new MockAnalyzer(random(), MockTokenizer.SIMPLE, true, stopWords);
         analyzer.setEnableChecks(false);
         TermQuery query = new TermQuery(new Term("data", goodWord));
 
@@ -1394,7 +1394,7 @@ public class HighlighterTest extends BaseTokenStreamTestCase implements Formatte
         Highlighter hg = getHighlighter(query, "text", fm);
         hg.setTextFragmenter(new NullFragmenter());
         hg.setMaxDocCharsToAnalyze(36);
-        String match = hg.getBestFragment(new MockAnalyzer(random(), MockTokenizer.SIMPLE, true, stopWords, true), "text", text);
+        String match = hg.getBestFragment(new MockAnalyzer(random(), MockTokenizer.SIMPLE, true, stopWords), "text", text);
         assertTrue(
             "Matched text should contain remainder of text after highlighted query ",
             match.endsWith("in it"));
@@ -1411,7 +1411,7 @@ public class HighlighterTest extends BaseTokenStreamTestCase implements Formatte
         numHighlights = 0;
         // test to show how rewritten query can still be used
         searcher = newSearcher(reader);
-        Analyzer analyzer = new MockAnalyzer(random(), MockTokenizer.SIMPLE, true, MockTokenFilter.ENGLISH_STOPSET, true);
+        Analyzer analyzer = new MockAnalyzer(random(), MockTokenizer.SIMPLE, true, MockTokenFilter.ENGLISH_STOPSET);
         
         BooleanQuery query = new BooleanQuery();
         query.add(new WildcardQuery(new Term(FIELD_NAME, "jf?")), Occur.SHOULD);
@@ -1875,11 +1875,11 @@ public class HighlighterTest extends BaseTokenStreamTestCase implements Formatte
     super.setUp();
 
     a = new MockAnalyzer(random(), MockTokenizer.WHITESPACE, false);
-    analyzer = new MockAnalyzer(random(), MockTokenizer.SIMPLE, true, MockTokenFilter.ENGLISH_STOPSET, true);
+    analyzer = new MockAnalyzer(random(), MockTokenizer.SIMPLE, true, MockTokenFilter.ENGLISH_STOPSET);
     dir = newDirectory();
     ramDir = newDirectory();
     IndexWriter writer = new IndexWriter(ramDir, newIndexWriterConfig(
-        TEST_VERSION_CURRENT, new MockAnalyzer(random(), MockTokenizer.SIMPLE, true, MockTokenFilter.ENGLISH_STOPSET, true)));
+        TEST_VERSION_CURRENT, new MockAnalyzer(random(), MockTokenizer.SIMPLE, true, MockTokenFilter.ENGLISH_STOPSET)));
     for (String text : texts) {
       addDoc(writer, text);
     }

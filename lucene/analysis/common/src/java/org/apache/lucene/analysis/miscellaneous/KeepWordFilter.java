@@ -21,6 +21,7 @@ import org.apache.lucene.analysis.TokenStream;
 import org.apache.lucene.analysis.util.FilteringTokenFilter;
 import org.apache.lucene.analysis.tokenattributes.CharTermAttribute;
 import org.apache.lucene.analysis.util.CharArraySet;
+import org.apache.lucene.util.Version;
 
 /**
  * A TokenFilter that only keeps tokens with text contained in the
@@ -32,10 +33,23 @@ public final class KeepWordFilter extends FilteringTokenFilter {
   private final CharArraySet words;
   private final CharTermAttribute termAtt = addAttribute(CharTermAttribute.class);
 
-  /** The words set passed to this constructor will be directly used by this filter
-   * and should not be modified, */
-  public KeepWordFilter(boolean enablePositionIncrements, TokenStream in, CharArraySet words) {
-    super(enablePositionIncrements, in);
+  /** @deprecated enablePositionIncrements=false is not supported anymore as of Lucene 4.4. */
+  @Deprecated
+  public KeepWordFilter(Version version, boolean enablePositionIncrements, TokenStream in, CharArraySet words) {
+    super(version, enablePositionIncrements, in);
+    this.words = words;
+  }
+
+  /**
+   * Create a new {@link KeepWordFilter}.
+   * <p><b>NOTE</b>: The words set passed to this constructor will be directly
+   * used by this filter and should not be modified.
+   * @param version the Lucene match version
+   * @param in      the {@link TokenStream} to consume
+   * @param words   the words to keep
+   */
+  public KeepWordFilter(Version version, TokenStream in, CharArraySet words) {
+    super(version, in);
     this.words = words;
   }
 

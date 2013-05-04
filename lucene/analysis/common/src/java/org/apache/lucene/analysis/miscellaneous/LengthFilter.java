@@ -20,6 +20,7 @@ package org.apache.lucene.analysis.miscellaneous;
 import org.apache.lucene.analysis.TokenStream;
 import org.apache.lucene.analysis.util.FilteringTokenFilter;
 import org.apache.lucene.analysis.tokenattributes.CharTermAttribute;
+import org.apache.lucene.util.Version;
 
 /**
  * Removes words that are too long or too short from the stream.
@@ -34,16 +35,29 @@ public final class LengthFilter extends FilteringTokenFilter {
   
   private final CharTermAttribute termAtt = addAttribute(CharTermAttribute.class);
 
-  /**
-   * Build a filter that removes words that are too long or too
-   * short from the text.
-   */
-  public LengthFilter(boolean enablePositionIncrements, TokenStream in, int min, int max) {
-    super(enablePositionIncrements, in);
+  /** @deprecated enablePositionIncrements=false is not supported anymore as of Lucene 4.4. */
+  @Deprecated
+  public LengthFilter(Version version, boolean enablePositionIncrements, TokenStream in, int min, int max) {
+    super(version, enablePositionIncrements, in);
     this.min = min;
     this.max = max;
   }
-  
+
+  /**
+   * Create a new {@link LengthFilter}. This will filter out tokens whose
+   * {@link CharTermAttribute} is either too short ({@link CharTermAttribute#length()}
+   * &lt; min) or too long ({@link CharTermAttribute#length()} &gt; max).
+   * @param version the Lucene match version
+   * @param in      the {@link TokenStream} to consume
+   * @param min     the minimum length
+   * @param max     the maximum length
+   */
+  public LengthFilter(Version version, TokenStream in, int min, int max) {
+    super(version, in);
+    this.min = min;
+    this.max = max;
+  }
+
   @Override
   public boolean accept() {
     final int len = termAtt.length();

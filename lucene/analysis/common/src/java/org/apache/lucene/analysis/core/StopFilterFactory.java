@@ -51,7 +51,7 @@ public class StopFilterFactory extends TokenFilterFactory implements ResourceLoa
     stopWordFiles = get(args, "words");
     format = get(args, "format");
     ignoreCase = getBoolean(args, "ignoreCase", false);
-    enablePositionIncrements = getBoolean(args, "enablePositionIncrements", false);
+    enablePositionIncrements = getBoolean(args, "enablePositionIncrements", true);
     if (!args.isEmpty()) {
       throw new IllegalArgumentException("Unknown parameters: " + args);
     }

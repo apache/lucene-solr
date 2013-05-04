@@ -50,7 +50,7 @@ public class JapanesePartOfSpeechStopFilterFactory extends TokenFilterFactory im
   public JapanesePartOfSpeechStopFilterFactory(Map<String,String> args) {
     super(args);
     stopTagFiles = get(args, "tags");
-    enablePositionIncrements = getBoolean(args, "enablePositionIncrements", false);
+    enablePositionIncrements = getBoolean(args, "enablePositionIncrements", true);
     if (!args.isEmpty()) {
       throw new IllegalArgumentException("Unknown parameters: " + args);
     }
@@ -72,6 +72,12 @@ public class JapanesePartOfSpeechStopFilterFactory extends TokenFilterFactory im
   @Override
   public TokenStream create(TokenStream stream) {
     // if stoptags is null, it means the file is empty
-    return stopTags == null ? stream : new JapanesePartOfSpeechStopFilter(enablePositionIncrements, stream, stopTags);
+    if (stopTags != null) {
+      @SuppressWarnings("deprecation")
+      final TokenStream filter = new JapanesePartOfSpeechStopFilter(luceneMatchVersion, enablePositionIncrements, stream, stopTags);
+      return filter;
+    } else {
+      return stream;
+    }
   }
 }

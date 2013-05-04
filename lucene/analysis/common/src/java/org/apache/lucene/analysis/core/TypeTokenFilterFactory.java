@@ -35,7 +35,7 @@ import java.util.Set;
  *   &lt;analyzer&gt;
  *     &lt;tokenizer class="solr.StandardTokenizerFactory"/&gt;
  *     &lt;filter class="solr.TypeTokenFilterFactory" types="stoptypes.txt"
- *                   enablePositionIncrements="true" useWhitelist="false"/&gt;
+ *                   useWhitelist="false"/&gt;
  *   &lt;/analyzer&gt;
  * &lt;/fieldType&gt;</pre>
  */
@@ -49,7 +49,7 @@ public class TypeTokenFilterFactory extends TokenFilterFactory implements Resour
   public TypeTokenFilterFactory(Map<String,String> args) {
     super(args);
     stopTypesFiles = require(args, "types");
-    enablePositionIncrements = getBoolean(args, "enablePositionIncrements", false);
+    enablePositionIncrements = getBoolean(args, "enablePositionIncrements", true);
     useWhitelist = getBoolean(args, "useWhitelist", false);
     if (!args.isEmpty()) {
       throw new IllegalArgumentException("Unknown parameters: " + args);
@@ -78,6 +78,8 @@ public class TypeTokenFilterFactory extends TokenFilterFactory implements Resour
 
   @Override
   public TokenStream create(TokenStream input) {
-    return new TypeTokenFilter(enablePositionIncrements, input, stopTypes, useWhitelist);
+    @SuppressWarnings("deprecation")
+    final TokenStream filter = new TypeTokenFilter(luceneMatchVersion, enablePositionIncrements, input, stopTypes, useWhitelist);
+    return filter;
   }
 }

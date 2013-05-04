@@ -282,18 +282,18 @@ and proximity searches (though sentence identification is not provided by Lucene
 <p>
    If the selected analyzer filters the stop words "is" and "the", then for a document 
    containing the string "blue is the sky", only the tokens "blue", "sky" are indexed, 
-   with position("sky") = 1 + position("blue"). Now, a phrase query "blue is the sky"
+   with position("sky") = 3 + position("blue"). Now, a phrase query "blue is the sky"
    would find that document, because the same analyzer filters the same stop words from
-   that query. But also the phrase query "blue sky" would find that document.
+   that query. But the phrase query "blue sky" would not find that document because the
+   position increment between "blue" and "sky" is only 1.
 </p>
 <p>   
-   If this behavior does not fit the application needs, a modified analyzer can
-   be used, that would increment further the positions of tokens following a
-   removed stop word, using
-   {@link org.apache.lucene.analysis.tokenattributes.PositionIncrementAttribute#setPositionIncrement(int)}.
-   This can be done with something like the following (note, however, that 
-   StopFilter natively includes this capability by subclassing 
-   FilteringTokenFilter}:
+   If this behavior does not fit the application needs, the query parser needs to be
+   configured to not take position increments into account when generating phrase queries.
+</p>
+<p>
+  Note that a StopFilter MUST increment the position increment in order not to generate corrupt
+  tokenstream graphs. Here is the logic used by StopFilter to increment positions when filtering out tokens:
 </p>
 <PRE class="prettyprint">
   public TokenStream tokenStream(final String fieldName, Reader reader) {
@@ -308,7 +308,7 @@ and proximity searches (though sentence identification is not provided by Lucene
           boolean hasNext = ts.incrementToken();
           if (hasNext) {
             if (stopWords.contains(termAtt.toString())) {
-              extraIncrement++; // filter this word
+              extraIncrement += posIncrAtt.getPositionIncrement(); // filter this word
               continue;
             } 
             if (extraIncrement>0) {
@@ -323,11 +323,6 @@ and proximity searches (though sentence identification is not provided by Lucene
   }
 </PRE>
 <p>
-  Now, with this modified analyzer, the phrase query "blue sky" would find that document.
-  But note that this is yet not a perfect solution, because any phrase query "blue w1 w2 sky"
-  where both w1 and w2 are stop words would match that document.
-</p>
-<p>
    A few more use cases for modifying position increments are:
 </p>
 <ol>
@@ -338,6 +333,72 @@ and proximity searches (though sentence identification is not provided by Lucene
     As result, all synonyms of a token would be considered to appear in exactly the 
     same position as that token, and so would they be seen by phrase and proximity searches.</li>
 </ol>
+
+<h3>Token Position Length</h3>
+<p>
+   By default, all tokens created by Analyzers and Tokenizers have a
+   {@link org.apache.lucene.analysis.tokenattributes.PositionLengthAttribute#getPositionLength() position length} of one.
+   This means that the token occupies a single position. This attribute is not indexed
+   and thus not taken into account for positional queries, but is used by eg. suggesters.
+</p>
+<p>
+   The main use case for positions lengths is multi-word synonyms. With single-word
+   synonyms, setting the position increment to 0 is enough to denote the fact that two
+   words are synonyms, for example:
+</p>
+<table>
+<tr><td>Term</td><td>red</td><td>magenta</td></tr>
+<tr><td>Position increment</td><td>1</td><td>0</td></tr>
+</table>
+<p>
+   Given that position(magenta) = 0 + position(red), they are at the same position, so anything
+   working with analyzers will return the exact same result if you replace "magenta" with "red"
+   in the input. However, multi-word synonyms are more tricky. Let's say that you want to build
+   a TokenStream where "IBM" is a synonym of "Internal Business Machines". Position increments
+   are not enough anymore:
+</p>
+<table>
+<tr><td>Term</td><td>IBM</td><td>International</td><td>Business</td><td>Machines</td></tr>
+<tr><td>Position increment</td><td>1</td><td>0</td><td>1</td><td>1</td></tr>
+</table>
+<p>
+   The problem with this token stream is that "IBM" is at the same position as "International"
+   although it is a synonym with "International Business Machines" as a whole. Setting
+   the position increment of "Business" and "Machines" to 0 wouldn't help as it would mean
+   than "International" is a synonym of "Business". The only way to solve this issue is to
+   make "IBM" span across 3 positions, this is where position lengths come to rescue.
+</p>
+<table>
+<tr><td>Term</td><td>IBM</td><td>International</td><td>Business</td><td>Machines</td></tr>
+<tr><td>Position increment</td><td>1</td><td>0</td><td>1</td><td>1</td></tr>
+<tr><td>Position length</td><td>3</td><td>1</td><td>1</td><td>1</td></tr>
+</table>
+<p>
+   This new attribute makes clear that "IBM" and "International Business Machines" start and end
+   at the same positions.
+</p>
+<a name="corrupt" />
+<h3>How to not write corrupt token streams</h3>
+<p>
+   There are a few rules to observe when writing custom Tokenizers and TokenFilters:
+</p>
+<ul>
+  <li>The first position increment must be &gt; 0.</li>
+  <li>Positions must not go backward.</li>
+  <li>Tokens that have the same start position must have the same start offset.</li>
+  <li>Tokens that have the same end position (taking into account the position length) must have the same end offset.</li>
+</ul>
+<p>
+   Although these rules might seem easy to follow, problems can quickly happen when chaining
+   badly implemented filters that play with positions and offsets, such as synonym or n-grams
+   filters. Here are good practices for writing correct filters:
+</p>
+<ul>
+  <li>Token filters should not modify offsets. If you feel that your filter would need to modify offsets, then it should probably be implemented as a tokenizer.</li>
+  <li>Token filters should not insert positions. If a filter needs to add tokens, then they shoud all have a position increment of 0.</li>
+  <li>When they remove tokens, token filters should increment the position increment of the following token.</li>
+  <li>Token filters should preserve position lengths.</li>
+</ul>
 <h2>TokenStream API</h2>
 <p>
 	"Flexible Indexing" summarizes the effort of making the Lucene indexer
@@ -381,6 +442,10 @@ and proximity searches (though sentence identification is not provided by Lucene
   <tr>
     <td>{@link org.apache.lucene.analysis.tokenattributes.PositionIncrementAttribute}</td>
     <td>See above for detailed information about position increment.</td>
+  </tr>
+  <tr>
+    <td>{@link org.apache.lucene.analysis.tokenattributes.PositionLengthAttribute}</td>
+    <td>The number of positions occupied by a token.</td>
   </tr>
   <tr>
     <td>{@link org.apache.lucene.analysis.tokenattributes.PayloadAttribute}</td>
@@ -532,20 +597,26 @@ public final class LengthFilter extends FilteringTokenFilter {
   private final CharTermAttribute termAtt = addAttribute(CharTermAttribute.class);
 
   /**
-   * Build a filter that removes words that are too long or too
-   * short from the text.
+   * Create a new LengthFilter. This will filter out tokens whose
+   * CharTermAttribute is either too short
+   * (&lt; min) or too long (&gt; max).
+   * @param version the Lucene match version
+   * @param in      the TokenStream to consume
+   * @param min     the minimum length
+   * @param max     the maximum length
    */
-  public LengthFilter(boolean enablePositionIncrements, TokenStream in, int min, int max) {
-    super(enablePositionIncrements, in);
+  public LengthFilter(Version version, TokenStream in, int min, int max) {
+    super(version, in);
     this.min = min;
     this.max = max;
   }
-  
+
   {@literal @Override}
-  public boolean accept() throws IOException {
+  public boolean accept() {
     final int len = termAtt.length();
-    return (len >= min && len <= max);
+    return (len &gt;= min &amp;&amp; len <= max);
   }
+
 }
 </pre>
 <p>
@@ -573,66 +644,39 @@ public final class LengthFilter extends FilteringTokenFilter {
 public abstract class FilteringTokenFilter extends TokenFilter {
 
   private final PositionIncrementAttribute posIncrAtt = addAttribute(PositionIncrementAttribute.class);
-  private boolean enablePositionIncrements; // no init needed, as ctor enforces setting value!
 
-  public FilteringTokenFilter(boolean enablePositionIncrements, TokenStream input){
-    super(input);
-    this.enablePositionIncrements = enablePositionIncrements;
+  /**
+   * Create a new FilteringTokenFilter.
+   * @param in      the TokenStream to consume
+   */
+  public FilteringTokenFilter(Version version, TokenStream in) {
+    super(in);
   }
 
-  /** Override this method and return if the current input token should be returned by {@literal {@link #incrementToken}}. */
+  /** Override this method and return if the current input token should be returned by incrementToken. */
   protected abstract boolean accept() throws IOException;
 
   {@literal @Override}
   public final boolean incrementToken() throws IOException {
-    if (enablePositionIncrements) {
-      int skippedPositions = 0;
-      while (input.incrementToken()) {
-        if (accept()) {
-          if (skippedPositions != 0) {
-            posIncrAtt.setPositionIncrement(posIncrAtt.getPositionIncrement() + skippedPositions);
-          }
-          return true;
+    int skippedPositions = 0;
+    while (input.incrementToken()) {
+      if (accept()) {
+        if (skippedPositions != 0) {
+          posIncrAtt.setPositionIncrement(posIncrAtt.getPositionIncrement() + skippedPositions);
         }
-        skippedPositions += posIncrAtt.getPositionIncrement();
+        return true;
       }
-    } else {
-      while (input.incrementToken()) {
-        if (accept()) {
-          return true;
-        }
-      }
+      skippedPositions += posIncrAtt.getPositionIncrement();
     }
     // reached EOS -- return false
     return false;
   }
 
-  /**
-   * {@literal @see #setEnablePositionIncrements(boolean)}
-   */
-  public boolean getEnablePositionIncrements() {
-    return enablePositionIncrements;
+  {@literal @Override}
+  public void reset() throws IOException {
+    super.reset();
   }
 
-  /**
-   * If <code>true</code>, this TokenFilter will preserve
-   * positions of the incoming tokens (ie, accumulate and
-   * set position increments of the removed tokens).
-   * Generally, <code>true</code> is best as it does not
-   * lose information (positions of the original tokens)
-   * during indexing.
-   * 
-   * <p> When set, when a token is stopped
-   * (omitted), the position increment of the following
-   * token is incremented.
-   *
-   * <p> <b>NOTE</b>: be sure to also
-   * set org.apache.lucene.queryparser.classic.QueryParser#setEnablePositionIncrements if
-   * you use QueryParser to create queries.
-   */
-  public void setEnablePositionIncrements(boolean enable) {
-    this.enablePositionIncrements = enable;
-  }
 }
 </pre>
 

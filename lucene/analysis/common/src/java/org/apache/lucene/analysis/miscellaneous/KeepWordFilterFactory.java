@@ -32,7 +32,7 @@ import java.io.IOException;
  * &lt;fieldType name="text_keepword" class="solr.TextField" positionIncrementGap="100"&gt;
  *   &lt;analyzer&gt;
  *     &lt;tokenizer class="solr.WhitespaceTokenizerFactory"/&gt;
- *     &lt;filter class="solr.KeepWordFilterFactory" words="keepwords.txt" ignoreCase="false" enablePositionIncrements="false"/&gt;
+ *     &lt;filter class="solr.KeepWordFilterFactory" words="keepwords.txt" ignoreCase="false"/&gt;
  *   &lt;/analyzer&gt;
  * &lt;/fieldType&gt;</pre>
  */
@@ -48,7 +48,7 @@ public class KeepWordFilterFactory extends TokenFilterFactory implements Resourc
     assureMatchVersion();
     wordFiles = get(args, "words");
     ignoreCase = getBoolean(args, "ignoreCase", false);
-    enablePositionIncrements = getBoolean(args, "enablePositionIncrements", false);
+    enablePositionIncrements = getBoolean(args, "enablePositionIncrements", true);
     if (!args.isEmpty()) {
       throw new IllegalArgumentException("Unknown parameters: " + args);
     }
@@ -76,6 +76,12 @@ public class KeepWordFilterFactory extends TokenFilterFactory implements Resourc
   @Override
   public TokenStream create(TokenStream input) {
     // if the set is null, it means it was empty
-    return words == null ? input : new KeepWordFilter(enablePositionIncrements, input, words);
+    if (words == null) {
+      return input;
+    } else {
+      @SuppressWarnings("deprecation")
+      final TokenStream filter = new KeepWordFilter(luceneMatchVersion, enablePositionIncrements, input, words);
+      return filter;
+    }
   }
 }

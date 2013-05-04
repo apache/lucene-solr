@@ -946,7 +946,7 @@ public class TestQPHelper extends LuceneTestCase {
 
   public void testBoost() throws Exception {
     CharacterRunAutomaton stopSet = new CharacterRunAutomaton(BasicAutomata.makeString("on"));
-    Analyzer oneStopAnalyzer = new MockAnalyzer(random(), MockTokenizer.SIMPLE, true, stopSet, true);
+    Analyzer oneStopAnalyzer = new MockAnalyzer(random(), MockTokenizer.SIMPLE, true, stopSet);
     StandardQueryParser qp = new StandardQueryParser();
     qp.setAnalyzer(oneStopAnalyzer);
 
@@ -962,7 +962,7 @@ public class TestQPHelper extends LuceneTestCase {
     assertNotNull(q);
 
     StandardQueryParser qp2 = new StandardQueryParser();
-    qp2.setAnalyzer(new MockAnalyzer(random(), MockTokenizer.SIMPLE, true, MockTokenFilter.ENGLISH_STOPSET, true));
+    qp2.setAnalyzer(new MockAnalyzer(random(), MockTokenizer.SIMPLE, true, MockTokenFilter.ENGLISH_STOPSET));
 
     q = qp2.parse("the^3", "field");
     // "the" is a stop word so the result is an empty query:
@@ -1179,7 +1179,7 @@ public class TestQPHelper extends LuceneTestCase {
   public void testStopwords() throws Exception {
     StandardQueryParser qp = new StandardQueryParser();
     CharacterRunAutomaton stopSet = new CharacterRunAutomaton(new RegExp("the|foo").toAutomaton());
-    qp.setAnalyzer(new MockAnalyzer(random(), MockTokenizer.SIMPLE, true, stopSet, true));
+    qp.setAnalyzer(new MockAnalyzer(random(), MockTokenizer.SIMPLE, true, stopSet));
 
     Query result = qp.parse("a:the OR a:foo", "a");
     assertNotNull("result is null and it shouldn't be", result);
@@ -1203,7 +1203,7 @@ public class TestQPHelper extends LuceneTestCase {
   public void testPositionIncrement() throws Exception {
     StandardQueryParser qp = new StandardQueryParser();
     qp.setAnalyzer(
-        new MockAnalyzer(random(), MockTokenizer.SIMPLE, true, MockTokenFilter.ENGLISH_STOPSET, true));
+        new MockAnalyzer(random(), MockTokenizer.SIMPLE, true, MockTokenFilter.ENGLISH_STOPSET));
 
     qp.setEnablePositionIncrements(true);
 

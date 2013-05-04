@@ -21,11 +21,14 @@ import org.apache.lucene.analysis.TokenFilter;
 import org.apache.lucene.analysis.TokenStream;
 import org.apache.lucene.analysis.tokenattributes.CharTermAttribute;
 import org.apache.lucene.analysis.tokenattributes.OffsetAttribute;
+import org.apache.lucene.util.Version;
 
 import java.io.IOException;
 
 /**
  * Trims leading and trailing whitespace from Tokens in the stream.
+ * <p>As of Lucene 4.4, this filter does not support updateOffsets=true anymore
+ * as it can lead to broken token streams.
  */
 public final class TrimFilter extends TokenFilter {
 
@@ -33,10 +36,25 @@ public final class TrimFilter extends TokenFilter {
   private final CharTermAttribute termAtt = addAttribute(CharTermAttribute.class);
   private final OffsetAttribute offsetAtt = addAttribute(OffsetAttribute.class);
 
-
-  public TrimFilter(TokenStream in, boolean updateOffsets) {
+  /**
+   * Create a new {@link TrimFilter}.
+   * @param version       the Lucene match version
+   * @param in            the stream to consume
+   * @param updateOffsets whether to update offsets
+   * @deprecated Offset updates are not supported anymore as of Lucene 4.4.
+   */
+  @Deprecated
+  public TrimFilter(Version version, TokenStream in, boolean updateOffsets) {
     super(in);
+    if (updateOffsets && version.onOrAfter(Version.LUCENE_44)) {
+      throw new IllegalArgumentException("updateOffsets=true is not supported anymore as of Lucene 4.4");
+    }
     this.updateOffsets = updateOffsets;
+  }
+
+  /** Create a new {@link TrimFilter} on top of <code>in</code>. */
+  public TrimFilter(Version version, TokenStream in) {
+    this(version, in, false);
   }
 
   @Override
@@ -55,11 +73,10 @@ public final class TrimFilter extends TokenFilter {
     int endOff = 0;
 
     // eat the first characters
-    //QUESTION: Should we use Character.isWhitespace() instead?
-    for (start = 0; start < len && termBuffer[start] <= ' '; start++) {
+    for (start = 0; start < len && Character.isWhitespace(termBuffer[start]); start++) {
     }
     // eat the end characters
-    for (end = len; end >= start && termBuffer[end - 1] <= ' '; end--) {
+    for (end = len; end >= start && Character.isWhitespace(termBuffer[end - 1]); end--) {
       endOff++;
     }
     if (start > 0 || end < len) {

@@ -24,6 +24,7 @@ import org.apache.lucene.analysis.tokenattributes.CharTermAttribute;
 import org.apache.lucene.analysis.tokenattributes.PositionIncrementAttribute;
 import org.apache.lucene.analysis.tokenattributes.TypeAttribute;
 import org.apache.lucene.util.English;
+import org.apache.lucene.util.Version;
 
 import java.io.IOException;
 import java.io.StringReader;
@@ -36,7 +37,7 @@ public class TestTypeTokenFilter extends BaseTokenStreamTestCase {
   public void testTypeFilter() throws IOException {
     StringReader reader = new StringReader("121 is palindrome, while 123 is not");
     Set<String> stopTypes = asSet("<NUM>");
-    TokenStream stream = new TypeTokenFilter(true, new StandardTokenizer(TEST_VERSION_CURRENT, reader), stopTypes);
+    TokenStream stream = new TypeTokenFilter(TEST_VERSION_CURRENT, true, new StandardTokenizer(TEST_VERSION_CURRENT, reader), stopTypes);
     assertTokenStreamContents(stream, new String[]{"is", "palindrome", "while", "is", "not"});
   }
 
@@ -59,12 +60,12 @@ public class TestTypeTokenFilter extends BaseTokenStreamTestCase {
 
     // with increments
     StringReader reader = new StringReader(sb.toString());
-    TypeTokenFilter typeTokenFilter = new TypeTokenFilter(true, new StandardTokenizer(TEST_VERSION_CURRENT, reader), stopSet);
+    TypeTokenFilter typeTokenFilter = new TypeTokenFilter(TEST_VERSION_CURRENT, new StandardTokenizer(TEST_VERSION_CURRENT, reader), stopSet);
     testPositons(typeTokenFilter);
 
     // without increments
     reader = new StringReader(sb.toString());
-    typeTokenFilter = new TypeTokenFilter(false, new StandardTokenizer(TEST_VERSION_CURRENT, reader), stopSet);
+    typeTokenFilter = new TypeTokenFilter(Version.LUCENE_43, false, new StandardTokenizer(TEST_VERSION_CURRENT, reader), stopSet);
     testPositons(typeTokenFilter);
 
   }
@@ -87,7 +88,7 @@ public class TestTypeTokenFilter extends BaseTokenStreamTestCase {
   public void testTypeFilterWhitelist() throws IOException {
     StringReader reader = new StringReader("121 is palindrome, while 123 is not");
     Set<String> stopTypes = Collections.singleton("<NUM>");
-    TokenStream stream = new TypeTokenFilter(true, new StandardTokenizer(TEST_VERSION_CURRENT, reader), stopTypes, true);
+    TokenStream stream = new TypeTokenFilter(TEST_VERSION_CURRENT, new StandardTokenizer(TEST_VERSION_CURRENT, reader), stopTypes, true);
     assertTokenStreamContents(stream, new String[]{"121", "123"});
   }
 

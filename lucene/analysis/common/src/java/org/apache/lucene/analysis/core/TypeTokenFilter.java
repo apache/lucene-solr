@@ -17,12 +17,12 @@ package org.apache.lucene.analysis.core;
  * limitations under the License.
  */
 
+import java.util.Set;
+
 import org.apache.lucene.analysis.TokenStream;
 import org.apache.lucene.analysis.tokenattributes.TypeAttribute;
 import org.apache.lucene.analysis.util.FilteringTokenFilter;
-
-import java.io.IOException;
-import java.util.Set;
+import org.apache.lucene.util.Version;
 
 /**
  * Removes tokens whose types appear in a set of blocked types from a token stream.
@@ -33,14 +33,41 @@ public final class TypeTokenFilter extends FilteringTokenFilter {
   private final TypeAttribute typeAttribute = addAttribute(TypeAttribute.class);
   private final boolean useWhiteList;
 
-  public TypeTokenFilter(boolean enablePositionIncrements, TokenStream input, Set<String> stopTypes, boolean useWhiteList) {
-    super(enablePositionIncrements, input);
+  /** @deprecated enablePositionIncrements=false is not supported anymore as of Lucene 4.4. */
+  @Deprecated
+  public TypeTokenFilter(Version version, boolean enablePositionIncrements, TokenStream input, Set<String> stopTypes, boolean useWhiteList) {
+    super(version, enablePositionIncrements, input);
     this.stopTypes = stopTypes;
     this.useWhiteList = useWhiteList;
   }
 
-  public TypeTokenFilter(boolean enablePositionIncrements, TokenStream input, Set<String> stopTypes) {
-    this(enablePositionIncrements, input, stopTypes, false);
+  /** @deprecated enablePositionIncrements=false is not supported anymore as of Lucene 4.4. */
+  @Deprecated
+  public TypeTokenFilter(Version version, boolean enablePositionIncrements, TokenStream input, Set<String> stopTypes) {
+    this(version, enablePositionIncrements, input, stopTypes, false);
+  }
+
+  /**
+   * Create a new {@link TypeTokenFilter}.
+   * @param version      the Lucene match version
+   * @param input        the {@link TokenStream} to consume
+   * @param stopTypes    the types to filter
+   * @param useWhiteList if true, then tokens whose type is in stopTypes will
+   *                     be kept, otherwise they will be filtered out
+   */
+  public TypeTokenFilter(Version version, TokenStream input, Set<String> stopTypes, boolean useWhiteList) {
+    super(version, input);
+    this.stopTypes = stopTypes;
+    this.useWhiteList = useWhiteList;
+  }
+
+  /**
+   * Create a new {@link TypeTokenFilter} that filters tokens out
+   * (useWhiteList=false).
+   * @see #TypeTokenFilter(Version, TokenStream, Set, boolean)
+   */
+  public TypeTokenFilter(Version version, TokenStream input, Set<String> stopTypes) {
+    this(version, input, stopTypes, false);
   }
 
   /**

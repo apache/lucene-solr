@@ -17,12 +17,8 @@ package org.apache.lucene.analysis;
  * limitations under the License.
  */
 
-import java.io.FileOutputStream;
 import java.io.IOException;
-import java.io.OutputStreamWriter;
-import java.io.Writer;
 
-import org.apache.lucene.analysis.tokenattributes.CharTermAttribute;
 import org.apache.lucene.analysis.tokenattributes.OffsetAttribute;
 import org.apache.lucene.analysis.tokenattributes.PositionIncrementAttribute;
 import org.apache.lucene.analysis.tokenattributes.PositionLengthAttribute;
@@ -43,8 +39,16 @@ import org.apache.lucene.util.automaton.Transition;
  * @lucene.experimental */
 public class TokenStreamToAutomaton {
 
+  private boolean preservePositionIncrements;
+
   /** Sole constructor. */
   public TokenStreamToAutomaton() {
+    this.preservePositionIncrements = true;
+  }
+
+  /** Whether to generate holes in the automaton for missing positions, <code>true</code> by default. */
+  public void setPreservePositionIncrements(boolean enablePositionIncrements) {
+    this.preservePositionIncrements = enablePositionIncrements;
   }
 
   private static class Position implements RollingBuffer.Resettable {
@@ -108,6 +112,9 @@ public class TokenStreamToAutomaton {
     int maxOffset = 0;
     while (in.incrementToken()) {
       int posInc = posIncAtt.getPositionIncrement();
+      if (!preservePositionIncrements && posInc > 1) {
+        posInc = 1;
+      }
       assert pos > -1 || posInc > 0;
 
       if (posInc > 0) {
