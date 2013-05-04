@@ -35,22 +35,19 @@ import org.apache.lucene.analysis.util.TokenFilterFactory;
  *   &lt;analyzer&gt;
  *     &lt;tokenizer class="solr.JapaneseTokenizerFactory"/&gt;
  *     &lt;filter class="solr.JapanesePartOfSpeechStopFilterFactory"
- *             tags="stopTags.txt" 
- *             enablePositionIncrements="true"/&gt;
+ *             tags="stopTags.txt"/&gt;
  *   &lt;/analyzer&gt;
  * &lt;/fieldType&gt;
  * </pre>
  */
 public class JapanesePartOfSpeechStopFilterFactory extends TokenFilterFactory implements ResourceLoaderAware {
   private final String stopTagFiles;
-  private final boolean enablePositionIncrements;
   private Set<String> stopTags;
 
   /** Creates a new JapanesePartOfSpeechStopFilterFactory */
   public JapanesePartOfSpeechStopFilterFactory(Map<String,String> args) {
     super(args);
     stopTagFiles = get(args, "tags");
-    enablePositionIncrements = getBoolean(args, "enablePositionIncrements", true);
     if (!args.isEmpty()) {
       throw new IllegalArgumentException("Unknown parameters: " + args);
     }
@@ -73,8 +70,7 @@ public class JapanesePartOfSpeechStopFilterFactory extends TokenFilterFactory im
   public TokenStream create(TokenStream stream) {
     // if stoptags is null, it means the file is empty
     if (stopTags != null) {
-      @SuppressWarnings("deprecation")
-      final TokenStream filter = new JapanesePartOfSpeechStopFilter(luceneMatchVersion, enablePositionIncrements, stream, stopTags);
+      final TokenStream filter = new JapanesePartOfSpeechStopFilter(luceneMatchVersion, stream, stopTags);
       return filter;
     } else {
       return stream;

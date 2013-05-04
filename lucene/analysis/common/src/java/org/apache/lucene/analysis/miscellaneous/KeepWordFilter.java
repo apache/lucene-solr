@@ -33,13 +33,6 @@ public final class KeepWordFilter extends FilteringTokenFilter {
   private final CharArraySet words;
   private final CharTermAttribute termAtt = addAttribute(CharTermAttribute.class);
 
-  /** @deprecated enablePositionIncrements=false is not supported anymore as of Lucene 4.4. */
-  @Deprecated
-  public KeepWordFilter(Version version, boolean enablePositionIncrements, TokenStream in, CharArraySet words) {
-    super(version, enablePositionIncrements, in);
-    this.words = words;
-  }
-
   /**
    * Create a new {@link KeepWordFilter}.
    * <p><b>NOTE</b>: The words set passed to this constructor will be directly

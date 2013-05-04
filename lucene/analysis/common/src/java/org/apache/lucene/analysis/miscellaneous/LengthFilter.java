@@ -35,14 +35,6 @@ public final class LengthFilter extends FilteringTokenFilter {
   
   private final CharTermAttribute termAtt = addAttribute(CharTermAttribute.class);
 
-  /** @deprecated enablePositionIncrements=false is not supported anymore as of Lucene 4.4. */
-  @Deprecated
-  public LengthFilter(Version version, boolean enablePositionIncrements, TokenStream in, int min, int max) {
-    super(version, enablePositionIncrements, in);
-    this.min = min;
-    this.max = max;
-  }
-
   /**
    * Create a new {@link LengthFilter}. This will filter out tokens whose
    * {@link CharTermAttribute} is either too short ({@link CharTermAttribute#length()}

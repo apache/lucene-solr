@@ -31,13 +31,6 @@ public final class JapanesePartOfSpeechStopFilter extends FilteringTokenFilter {
   private final Set<String> stopTags;
   private final PartOfSpeechAttribute posAtt = addAttribute(PartOfSpeechAttribute.class);
 
-  /** @deprecated enablePositionIncrements=false is not supported anymore as of Lucene 4.4. */
-  @Deprecated
-  public JapanesePartOfSpeechStopFilter(Version version, boolean enablePositionIncrements, TokenStream input, Set<String> stopTags) {
-    super(version, enablePositionIncrements, input);
-    this.stopTags = stopTags;
-  }
-
   /**
    * Create a new {@link JapanesePartOfSpeechStopFilter}.
    * @param version  the Lucene match version

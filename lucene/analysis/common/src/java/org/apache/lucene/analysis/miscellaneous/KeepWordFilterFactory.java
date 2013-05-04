@@ -38,7 +38,6 @@ import java.io.IOException;
  */
 public class KeepWordFilterFactory extends TokenFilterFactory implements ResourceLoaderAware {
   private final boolean ignoreCase;
-  private final boolean enablePositionIncrements;
   private final String wordFiles;
   private CharArraySet words;
   
@@ -48,7 +47,6 @@ public class KeepWordFilterFactory extends TokenFilterFactory implements Resourc
     assureMatchVersion();
     wordFiles = get(args, "words");
     ignoreCase = getBoolean(args, "ignoreCase", false);
-    enablePositionIncrements = getBoolean(args, "enablePositionIncrements", true);
     if (!args.isEmpty()) {
       throw new IllegalArgumentException("Unknown parameters: " + args);
     }
@@ -59,10 +57,6 @@ public class KeepWordFilterFactory extends TokenFilterFactory implements Resourc
     if (wordFiles != null) {
       words = getWordSet(loader, wordFiles, ignoreCase);
     }
-  }
-
-  public boolean isEnablePositionIncrements() {
-    return enablePositionIncrements;
   }
 
   public boolean isIgnoreCase() {
@@ -79,8 +73,7 @@ public class KeepWordFilterFactory extends TokenFilterFactory implements Resourc
     if (words == null) {
       return input;
     } else {
-      @SuppressWarnings("deprecation")
-      final TokenStream filter = new KeepWordFilter(luceneMatchVersion, enablePositionIncrements, input, words);
+      final TokenStream filter = new KeepWordFilter(luceneMatchVersion, input, words);
       return filter;
     }
   }

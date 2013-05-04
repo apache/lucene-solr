@@ -35,7 +35,6 @@ import org.apache.lucene.analysis.util.TokenFilterFactory;
 public class LengthFilterFactory extends TokenFilterFactory {
   final int min;
   final int max;
-  final boolean enablePositionIncrements;
   public static final String MIN_KEY = "min";
   public static final String MAX_KEY = "max";
 
@@ -44,7 +43,6 @@ public class LengthFilterFactory extends TokenFilterFactory {
     super(args);
     min = requireInt(args, MIN_KEY);
     max = requireInt(args, MAX_KEY);
-    enablePositionIncrements = getBoolean(args, "enablePositionIncrements", true);
     if (!args.isEmpty()) {
       throw new IllegalArgumentException("Unknown parameters: " + args);
     }
@@ -52,8 +50,7 @@ public class LengthFilterFactory extends TokenFilterFactory {
   
   @Override
   public LengthFilter create(TokenStream input) {
-    @SuppressWarnings("deprecation")
-    final LengthFilter filter = new LengthFilter(luceneMatchVersion, enablePositionIncrements, input,min,max);
+    final LengthFilter filter = new LengthFilter(luceneMatchVersion, input,min,max);
     return filter;
   }
 }

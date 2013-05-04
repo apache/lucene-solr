@@ -37,12 +37,9 @@ import org.apache.lucene.analysis.util.TokenFilterFactory;
  */
 public class TrimFilterFactory extends TokenFilterFactory {
   
-  protected final boolean updateOffsets;
-  
   /** Creates a new TrimFilterFactory */
   public TrimFilterFactory(Map<String,String> args) {
     super(args);
-    updateOffsets = getBoolean(args, "updateOffsets", false);
     if (!args.isEmpty()) {
       throw new IllegalArgumentException("Unknown parameters: " + args);
     }
@@ -50,8 +47,7 @@ public class TrimFilterFactory extends TokenFilterFactory {
   
   @Override
   public TrimFilter create(TokenStream input) {
-    @SuppressWarnings("deprecation")
-    final TrimFilter filter = new TrimFilter(luceneMatchVersion, input, updateOffsets);
+    final TrimFilter filter = new TrimFilter(luceneMatchVersion, input);
     return filter;
   }
 }

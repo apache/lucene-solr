@@ -17,6 +17,11 @@ package org.apache.lucene.analysis.core;
  * limitations under the License.
  */
 
+import java.io.IOException;
+import java.io.StringReader;
+import java.util.Collections;
+import java.util.Set;
+
 import org.apache.lucene.analysis.BaseTokenStreamTestCase;
 import org.apache.lucene.analysis.TokenStream;
 import org.apache.lucene.analysis.standard.StandardTokenizer;
@@ -24,12 +29,6 @@ import org.apache.lucene.analysis.tokenattributes.CharTermAttribute;
 import org.apache.lucene.analysis.tokenattributes.PositionIncrementAttribute;
 import org.apache.lucene.analysis.tokenattributes.TypeAttribute;
 import org.apache.lucene.util.English;
-import org.apache.lucene.util.Version;
-
-import java.io.IOException;
-import java.io.StringReader;
-import java.util.Collections;
-import java.util.Set;
 
 
 public class TestTypeTokenFilter extends BaseTokenStreamTestCase {
@@ -37,7 +36,7 @@ public class TestTypeTokenFilter extends BaseTokenStreamTestCase {
   public void testTypeFilter() throws IOException {
     StringReader reader = new StringReader("121 is palindrome, while 123 is not");
     Set<String> stopTypes = asSet("<NUM>");
-    TokenStream stream = new TypeTokenFilter(TEST_VERSION_CURRENT, true, new StandardTokenizer(TEST_VERSION_CURRENT, reader), stopTypes);
+    TokenStream stream = new TypeTokenFilter(TEST_VERSION_CURRENT, new StandardTokenizer(TEST_VERSION_CURRENT, reader), stopTypes);
     assertTokenStreamContents(stream, new String[]{"is", "palindrome", "while", "is", "not"});
   }
 
@@ -63,11 +62,6 @@ public class TestTypeTokenFilter extends BaseTokenStreamTestCase {
     TypeTokenFilter typeTokenFilter = new TypeTokenFilter(TEST_VERSION_CURRENT, new StandardTokenizer(TEST_VERSION_CURRENT, reader), stopSet);
     testPositons(typeTokenFilter);
 
-    // without increments
-    reader = new StringReader(sb.toString());
-    typeTokenFilter = new TypeTokenFilter(Version.LUCENE_43, false, new StandardTokenizer(TEST_VERSION_CURRENT, reader), stopSet);
-    testPositons(typeTokenFilter);
-
   }
 
   private void testPositons(TypeTokenFilter stpf) throws IOException {
@@ -75,11 +69,10 @@ public class TestTypeTokenFilter extends BaseTokenStreamTestCase {
     CharTermAttribute termAttribute = stpf.getAttribute(CharTermAttribute.class);
     PositionIncrementAttribute posIncrAtt = stpf.getAttribute(PositionIncrementAttribute.class);
     stpf.reset();
-    boolean enablePositionIncrements = stpf.getEnablePositionIncrements();
     while (stpf.incrementToken()) {
       log("Token: " + termAttribute.toString() + ": " + typeAtt.type() + " - " + posIncrAtt.getPositionIncrement());
       assertEquals("if position increment is enabled the positionIncrementAttribute value should be 3, otherwise 1",
-          posIncrAtt.getPositionIncrement(), enablePositionIncrements ? 3 : 1);
+          posIncrAtt.getPositionIncrement(), 3);
     }
     stpf.end();
     stpf.close();

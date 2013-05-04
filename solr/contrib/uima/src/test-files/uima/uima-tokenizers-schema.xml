@@ -253,8 +253,6 @@
         -->
         <!--
           Case insensitive stop word removal. add
-          enablePositionIncrements=true in both the index and query
-          analyzers to leave a 'gap' for more accurate phrase queries.
         -->
         <filter class="solr.WordDelimiterFilterFactory"
           generateWordParts="1" generateNumberParts="1" catenateWords="1"

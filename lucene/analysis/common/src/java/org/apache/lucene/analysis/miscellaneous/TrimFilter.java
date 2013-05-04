@@ -32,29 +32,15 @@ import java.io.IOException;
  */
 public final class TrimFilter extends TokenFilter {
 
-  final boolean updateOffsets;
   private final CharTermAttribute termAtt = addAttribute(CharTermAttribute.class);
-  private final OffsetAttribute offsetAtt = addAttribute(OffsetAttribute.class);
 
   /**
    * Create a new {@link TrimFilter}.
    * @param version       the Lucene match version
    * @param in            the stream to consume
-   * @param updateOffsets whether to update offsets
-   * @deprecated Offset updates are not supported anymore as of Lucene 4.4.
    */
-  @Deprecated
-  public TrimFilter(Version version, TokenStream in, boolean updateOffsets) {
-    super(in);
-    if (updateOffsets && version.onOrAfter(Version.LUCENE_44)) {
-      throw new IllegalArgumentException("updateOffsets=true is not supported anymore as of Lucene 4.4");
-    }
-    this.updateOffsets = updateOffsets;
-  }
-
-  /** Create a new {@link TrimFilter} on top of <code>in</code>. */
   public TrimFilter(Version version, TokenStream in) {
-    this(version, in, false);
+    super(in);
   }
 
   @Override
@@ -70,25 +56,18 @@ public final class TrimFilter extends TokenFilter {
     }
     int start = 0;
     int end = 0;
-    int endOff = 0;
 
     // eat the first characters
     for (start = 0; start < len && Character.isWhitespace(termBuffer[start]); start++) {
     }
     // eat the end characters
     for (end = len; end >= start && Character.isWhitespace(termBuffer[end - 1]); end--) {
-      endOff++;
     }
     if (start > 0 || end < len) {
       if (start < end) {
         termAtt.copyBuffer(termBuffer, start, (end - start));
       } else {
         termAtt.setEmpty();
-      }
-      if (updateOffsets && len == offsetAtt.endOffset() - offsetAtt.startOffset()) {
-        int newStart = offsetAtt.startOffset()+start;
-        int newEnd = offsetAtt.endOffset() - (start<end ? endOff:0);
-        offsetAtt.setOffset(newStart, newEnd);
       }
     }
 

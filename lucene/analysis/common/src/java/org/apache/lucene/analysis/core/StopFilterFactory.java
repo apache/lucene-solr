@@ -33,7 +33,7 @@ import java.io.IOException;
  *   &lt;analyzer&gt;
  *     &lt;tokenizer class="solr.WhitespaceTokenizerFactory"/&gt;
  *     &lt;filter class="solr.StopFilterFactory" ignoreCase="true"
- *             words="stopwords.txt" enablePositionIncrements="true"/&gt;
+ *             words="stopwords.txt"
  *   &lt;/analyzer&gt;
  * &lt;/fieldType&gt;</pre>
  */
@@ -42,7 +42,6 @@ public class StopFilterFactory extends TokenFilterFactory implements ResourceLoa
   private final String stopWordFiles;
   private final String format;
   private final boolean ignoreCase;
-  private final boolean enablePositionIncrements;
   
   /** Creates a new StopFilterFactory */
   public StopFilterFactory(Map<String,String> args) {
@@ -51,7 +50,6 @@ public class StopFilterFactory extends TokenFilterFactory implements ResourceLoa
     stopWordFiles = get(args, "words");
     format = get(args, "format");
     ignoreCase = getBoolean(args, "ignoreCase", false);
-    enablePositionIncrements = getBoolean(args, "enablePositionIncrements", true);
     if (!args.isEmpty()) {
       throw new IllegalArgumentException("Unknown parameters: " + args);
     }
@@ -70,10 +68,6 @@ public class StopFilterFactory extends TokenFilterFactory implements ResourceLoa
     }
   }
 
-  public boolean isEnablePositionIncrements() {
-    return enablePositionIncrements;
-  }
-
   public boolean isIgnoreCase() {
     return ignoreCase;
   }
@@ -85,7 +79,6 @@ public class StopFilterFactory extends TokenFilterFactory implements ResourceLoa
   @Override
   public TokenStream create(TokenStream input) {
     StopFilter stopFilter = new StopFilter(luceneMatchVersion,input,stopWords);
-    stopFilter.setEnablePositionIncrements(enablePositionIncrements);
     return stopFilter;
   }
 }

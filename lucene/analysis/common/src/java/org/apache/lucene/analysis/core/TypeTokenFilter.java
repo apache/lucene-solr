@@ -33,20 +33,6 @@ public final class TypeTokenFilter extends FilteringTokenFilter {
   private final TypeAttribute typeAttribute = addAttribute(TypeAttribute.class);
   private final boolean useWhiteList;
 
-  /** @deprecated enablePositionIncrements=false is not supported anymore as of Lucene 4.4. */
-  @Deprecated
-  public TypeTokenFilter(Version version, boolean enablePositionIncrements, TokenStream input, Set<String> stopTypes, boolean useWhiteList) {
-    super(version, enablePositionIncrements, input);
-    this.stopTypes = stopTypes;
-    this.useWhiteList = useWhiteList;
-  }
-
-  /** @deprecated enablePositionIncrements=false is not supported anymore as of Lucene 4.4. */
-  @Deprecated
-  public TypeTokenFilter(Version version, boolean enablePositionIncrements, TokenStream input, Set<String> stopTypes) {
-    this(version, enablePositionIncrements, input, stopTypes, false);
-  }
-
   /**
    * Create a new {@link TypeTokenFilter}.
    * @param version      the Lucene match version

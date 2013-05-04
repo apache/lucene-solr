@@ -30,27 +30,22 @@ public class TestTypeTokenFilterFactory extends BaseTokenStreamFactoryTestCase {
 
   public void testInform() throws Exception {
     TypeTokenFilterFactory factory = (TypeTokenFilterFactory) tokenFilterFactory("Type",
-        "types", "stoptypes-1.txt",
-        "enablePositionIncrements", "true");
+        "types", "stoptypes-1.txt");
     Set<String> types = factory.getStopTypes();
     assertTrue("types is null and it shouldn't be", types != null);
     assertTrue("types Size: " + types.size() + " is not: " + 2, types.size() == 2);
-    assertTrue("enablePositionIncrements was set to true but not correctly parsed", factory.isEnablePositionIncrements());
 
     factory = (TypeTokenFilterFactory) tokenFilterFactory("Type",
         "types", "stoptypes-1.txt, stoptypes-2.txt",
-        "enablePositionIncrements", "false",
         "useWhitelist", "true");
     types = factory.getStopTypes();
     assertTrue("types is null and it shouldn't be", types != null);
     assertTrue("types Size: " + types.size() + " is not: " + 4, types.size() == 4);
-    assertTrue("enablePositionIncrements was set to false but not correctly parsed", !factory.isEnablePositionIncrements());
   }
 
   public void testCreationWithBlackList() throws Exception {
     TokenFilterFactory factory = tokenFilterFactory("Type",
-        "types", "stoptypes-1.txt, stoptypes-2.txt",
-        "enablePositionIncrements", "true");
+        "types", "stoptypes-1.txt, stoptypes-2.txt");
     NumericTokenStream input = new NumericTokenStream();
     input.setIntValue(123);
     factory.create(input);
@@ -59,7 +54,6 @@ public class TestTypeTokenFilterFactory extends BaseTokenStreamFactoryTestCase {
   public void testCreationWithWhiteList() throws Exception {
     TokenFilterFactory factory = tokenFilterFactory("Type",
         "types", "stoptypes-1.txt, stoptypes-2.txt",
-        "enablePositionIncrements", "true",
         "useWhitelist", "true");
     NumericTokenStream input = new NumericTokenStream();
     input.setIntValue(123);
@@ -68,7 +62,7 @@ public class TestTypeTokenFilterFactory extends BaseTokenStreamFactoryTestCase {
 
   public void testMissingTypesParameter() throws Exception {
     try {
-      tokenFilterFactory("Type", "enablePositionIncrements", "false");
+      tokenFilterFactory("Type");
       fail("not supplying 'types' parameter should cause an IllegalArgumentException");
     } catch (IllegalArgumentException e) {
       // everything ok

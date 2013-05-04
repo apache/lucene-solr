@@ -19,7 +19,6 @@ package org.apache.lucene.analysis.miscellaneous;
 
 import java.io.IOException;
 import java.io.Reader;
-import java.util.Collection;
 
 import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.analysis.BaseTokenStreamTestCase;
@@ -28,7 +27,12 @@ import org.apache.lucene.analysis.Token;
 import org.apache.lucene.analysis.TokenStream;
 import org.apache.lucene.analysis.Tokenizer;
 import org.apache.lucene.analysis.core.KeywordTokenizer;
-import org.apache.lucene.analysis.tokenattributes.*;
+import org.apache.lucene.analysis.tokenattributes.CharTermAttribute;
+import org.apache.lucene.analysis.tokenattributes.FlagsAttribute;
+import org.apache.lucene.analysis.tokenattributes.OffsetAttribute;
+import org.apache.lucene.analysis.tokenattributes.PayloadAttribute;
+import org.apache.lucene.analysis.tokenattributes.PositionIncrementAttribute;
+import org.apache.lucene.analysis.tokenattributes.TypeAttribute;
 import org.apache.lucene.util.Version;
 
 /**
@@ -47,30 +51,9 @@ public class TestTrimFilter extends BaseTokenStreamTestCase {
                     new Token(ccc, 0, ccc.length, 11, 15),
                     new Token(whitespace, 0, whitespace.length, 16, 20),
                     new Token(empty, 0, empty.length, 21, 21));
-    ts = new TrimFilter(TEST_VERSION_CURRENT, ts, false);
+    ts = new TrimFilter(TEST_VERSION_CURRENT, ts);
 
     assertTokenStreamContents(ts, new String[] { "a", "b", "cCc", "", ""});
-
-    a = " a".toCharArray();
-    b = "b ".toCharArray();
-    ccc = " c ".toCharArray();
-    whitespace = "   ".toCharArray();
-    ts = new IterTokenStream(
-            new Token(a, 0, a.length, 0, 2),
-            new Token(b, 0, b.length, 0, 2),
-            new Token(ccc, 0, ccc.length, 0, 3),
-            new Token(whitespace, 0, whitespace.length, 0, 3));
-    ts = new TrimFilter(Version.LUCENE_43, ts, true);
-    
-    assertTokenStreamContents(ts, 
-        new String[] { "a", "b", "c", "" },
-        new int[] { 1, 0, 1, 3 },
-        new int[] { 2, 1, 2, 3 },
-        null,
-        new int[] { 1, 1, 1, 1 },
-        null,
-        null,
-        false);
   }
   
   /**
@@ -90,10 +73,6 @@ public class TestTrimFilter extends BaseTokenStreamTestCase {
     public IterTokenStream(Token... tokens) {
       super();
       this.tokens = tokens;
-    }
-    
-    public IterTokenStream(Collection<Token> tokens) {
-      this(tokens.toArray(new Token[tokens.size()]));
     }
     
     @Override
@@ -121,20 +100,10 @@ public class TestTrimFilter extends BaseTokenStreamTestCase {
       @Override
       protected TokenStreamComponents createComponents(String fieldName, Reader reader) {
         Tokenizer tokenizer = new MockTokenizer(reader, MockTokenizer.KEYWORD, false);
-        return new TokenStreamComponents(tokenizer, new TrimFilter(Version.LUCENE_43, tokenizer, true));
+        return new TokenStreamComponents(tokenizer, new TrimFilter(TEST_VERSION_CURRENT, tokenizer));
       } 
     };
     checkRandomData(random(), a, 1000*RANDOM_MULTIPLIER);
-    
-    Analyzer b = new Analyzer() {
-
-      @Override
-      protected TokenStreamComponents createComponents(String fieldName, Reader reader) {
-        Tokenizer tokenizer = new MockTokenizer(reader, MockTokenizer.KEYWORD, false);
-        return new TokenStreamComponents(tokenizer, new TrimFilter(TEST_VERSION_CURRENT, tokenizer, false));
-      } 
-    };
-    checkRandomData(random(), b, 1000*RANDOM_MULTIPLIER);
   }
   
   public void testEmptyTerm() throws IOException {
@@ -142,9 +111,8 @@ public class TestTrimFilter extends BaseTokenStreamTestCase {
       @Override
       protected TokenStreamComponents createComponents(String fieldName, Reader reader) {
         Tokenizer tokenizer = new KeywordTokenizer(reader);
-        final boolean updateOffsets = random().nextBoolean();
-        final Version version = updateOffsets ? Version.LUCENE_43 : TEST_VERSION_CURRENT;
-        return new TokenStreamComponents(tokenizer, new TrimFilter(version, tokenizer, updateOffsets));
+        final Version version = TEST_VERSION_CURRENT;
+        return new TokenStreamComponents(tokenizer, new TrimFilter(version, tokenizer));
       }
     };
     checkOneTermReuse(a, "", "");
