@@ -108,6 +108,8 @@ Other Changes
 
 * SOLR-4778: LogWatcher init code moved out of CoreContainer (Alan Woodward)
 
+* SOLR-4784: Make class LuceneQParser public (janhoy)
+
 ==================  4.3.0 ==================
 
 Versions of Major Components
