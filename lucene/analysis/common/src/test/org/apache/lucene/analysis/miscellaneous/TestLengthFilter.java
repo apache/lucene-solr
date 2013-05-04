@@ -19,6 +19,7 @@ package org.apache.lucene.analysis.miscellaneous;
 
 import org.apache.lucene.analysis.*;
 import org.apache.lucene.analysis.core.KeywordTokenizer;
+import org.apache.lucene.util.Version;
 
 import java.io.IOException;
 import java.io.Reader;
@@ -29,7 +30,7 @@ public class TestLengthFilter extends BaseTokenStreamTestCase {
   public void testFilterNoPosIncr() throws Exception {
     TokenStream stream = new MockTokenizer(
         new StringReader("short toolong evenmuchlongertext a ab toolong foo"), MockTokenizer.WHITESPACE, false);
-    LengthFilter filter = new LengthFilter(false, stream, 2, 6);
+    LengthFilter filter = new LengthFilter(Version.LUCENE_43, false, stream, 2, 6);
     assertTokenStreamContents(filter,
       new String[]{"short", "ab", "foo"},
       new int[]{1, 1, 1}
@@ -39,7 +40,7 @@ public class TestLengthFilter extends BaseTokenStreamTestCase {
   public void testFilterWithPosIncr() throws Exception {
     TokenStream stream = new MockTokenizer(
         new StringReader("short toolong evenmuchlongertext a ab toolong foo"), MockTokenizer.WHITESPACE, false);
-    LengthFilter filter = new LengthFilter(true, stream, 2, 6);
+    LengthFilter filter = new LengthFilter(TEST_VERSION_CURRENT, stream, 2, 6);
     assertTokenStreamContents(filter,
       new String[]{"short", "ab", "foo"},
       new int[]{1, 4, 2}
@@ -51,7 +52,7 @@ public class TestLengthFilter extends BaseTokenStreamTestCase {
       @Override
       protected TokenStreamComponents createComponents(String fieldName, Reader reader) {
         Tokenizer tokenizer = new KeywordTokenizer(reader);
-        return new TokenStreamComponents(tokenizer, new LengthFilter(true, tokenizer, 0, 5));
+        return new TokenStreamComponents(tokenizer, new LengthFilter(TEST_VERSION_CURRENT, tokenizer, 0, 5));
       }
     };
     checkOneTermReuse(a, "", "");

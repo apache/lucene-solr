@@ -64,16 +64,10 @@ public class TestMockAnalyzer extends BaseTokenStreamTestCase {
   
   /** Test a configuration that behaves a lot like StopAnalyzer */
   public void testStop() throws Exception {
-    Analyzer a = new MockAnalyzer(random(), MockTokenizer.SIMPLE, true, MockTokenFilter.ENGLISH_STOPSET, true);
+    Analyzer a = new MockAnalyzer(random(), MockTokenizer.SIMPLE, true, MockTokenFilter.ENGLISH_STOPSET);
     assertAnalyzesTo(a, "the quick brown a fox",
         new String[] { "quick", "brown", "fox" },
         new int[] { 2, 1, 2 });
-    
-    // disable positions
-    a = new MockAnalyzer(random(), MockTokenizer.SIMPLE, true, MockTokenFilter.ENGLISH_STOPSET, false);
-    assertAnalyzesTo(a, "the quick brown a fox",
-        new String[] { "quick", "brown", "fox" },
-        new int[] { 1, 1, 1 });
   }
   
   /** Test a configuration that behaves a lot like KeepWordFilter */
@@ -83,7 +77,7 @@ public class TestMockAnalyzer extends BaseTokenStreamTestCase {
           BasicOperations.complement(
               Automaton.union(
                   Arrays.asList(BasicAutomata.makeString("foo"), BasicAutomata.makeString("bar")))));
-    Analyzer a = new MockAnalyzer(random(), MockTokenizer.SIMPLE, true, keepWords, true);
+    Analyzer a = new MockAnalyzer(random(), MockTokenizer.SIMPLE, true, keepWords);
     assertAnalyzesTo(a, "quick foo brown bar bar fox foo",
         new String[] { "foo", "bar", "bar", "foo" },
         new int[] { 2, 2, 1, 2 });
@@ -92,7 +86,7 @@ public class TestMockAnalyzer extends BaseTokenStreamTestCase {
   /** Test a configuration that behaves a lot like LengthFilter */
   public void testLength() throws Exception {
     CharacterRunAutomaton length5 = new CharacterRunAutomaton(new RegExp(".{5,}").toAutomaton());
-    Analyzer a = new MockAnalyzer(random(), MockTokenizer.WHITESPACE, true, length5, true);
+    Analyzer a = new MockAnalyzer(random(), MockTokenizer.WHITESPACE, true, length5);
     assertAnalyzesTo(a, "ok toolong fine notfine",
         new String[] { "ok", "fine" },
         new int[] { 1, 2 });

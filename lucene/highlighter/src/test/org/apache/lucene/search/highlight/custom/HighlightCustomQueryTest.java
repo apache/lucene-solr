@@ -89,7 +89,7 @@ public class HighlightCustomQueryTest extends LuceneTestCase {
   private String highlightField(Query query, String fieldName,
       String text) throws IOException, InvalidTokenOffsetsException {
     TokenStream tokenStream = new MockAnalyzer(random(), MockTokenizer.SIMPLE,
-        true, MockTokenFilter.ENGLISH_STOPSET, true).tokenStream(fieldName,
+        true, MockTokenFilter.ENGLISH_STOPSET).tokenStream(fieldName,
         new StringReader(text));
     // Assuming "<B>", "</B>" used to highlight
     SimpleHTMLFormatter formatter = new SimpleHTMLFormatter();

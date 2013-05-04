@@ -59,7 +59,7 @@ public class TestSpansAdvanced extends LuceneTestCase {
     mDirectory = newDirectory();
     final RandomIndexWriter writer = new RandomIndexWriter(random(), mDirectory, 
         newIndexWriterConfig(TEST_VERSION_CURRENT, 
-            new MockAnalyzer(random(), MockTokenizer.SIMPLE, true, MockTokenFilter.ENGLISH_STOPSET, true))
+            new MockAnalyzer(random(), MockTokenizer.SIMPLE, true, MockTokenFilter.ENGLISH_STOPSET))
             .setMergePolicy(newLogMergePolicy()).setSimilarity(new DefaultSimilarity()));
     addDocument(writer, "1", "I think it should work.");
     addDocument(writer, "2", "I think it should work.");

@@ -153,8 +153,9 @@ public class FuzzySuggesterTest extends LuceneTestCase {
         new TermFreq("the ghost of christmas past", 50),
     };
     
-    Analyzer standard = new MockAnalyzer(random(), MockTokenizer.WHITESPACE, true, MockTokenFilter.ENGLISH_STOPSET, false);
+    Analyzer standard = new MockAnalyzer(random(), MockTokenizer.WHITESPACE, true, MockTokenFilter.ENGLISH_STOPSET);
     FuzzySuggester suggester = new FuzzySuggester(standard);
+    suggester.setPreservePositionIncrements(false);
     suggester.build(new TermFreqArrayIterator(keys));
     
     List<LookupResult> results = suggester.lookup(_TestUtil.stringToCharSequence("the ghost of chris", random()), false, 1);

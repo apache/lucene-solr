@@ -138,7 +138,9 @@ public final class IrishAnalyzer extends StopwordAnalyzerBase {
     final Tokenizer source = new StandardTokenizer(matchVersion, reader);
     TokenStream result = new StandardFilter(matchVersion, source);
     StopFilter s = new StopFilter(matchVersion, result, HYPHENATIONS);
-    s.setEnablePositionIncrements(false);
+    if (!matchVersion.onOrAfter(Version.LUCENE_44)) {
+      s.setEnablePositionIncrements(false);
+    }
     result = s;
     result = new ElisionFilter(result, DEFAULT_ARTICLES);
     result = new IrishLowerCaseFilter(result);

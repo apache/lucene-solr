@@ -28,6 +28,7 @@ import org.apache.lucene.analysis.MockTokenizer;
 import org.apache.lucene.analysis.TokenStream;
 import org.apache.lucene.analysis.Tokenizer;
 import org.apache.lucene.analysis.util.CharArraySet;
+import org.apache.lucene.util.Version;
 
 /** Test {@link KeepWordFilter} */
 public class TestKeepWordFilter extends BaseTokenStreamTestCase {
@@ -42,22 +43,22 @@ public class TestKeepWordFilter extends BaseTokenStreamTestCase {
     
     // Test Stopwords
     TokenStream stream = new MockTokenizer(new StringReader(input), MockTokenizer.WHITESPACE, false);
-    stream = new KeepWordFilter(true, stream, new CharArraySet(TEST_VERSION_CURRENT, words, true));
+    stream = new KeepWordFilter(TEST_VERSION_CURRENT, stream, new CharArraySet(TEST_VERSION_CURRENT, words, true));
     assertTokenStreamContents(stream, new String[] { "aaa", "BBB" }, new int[] { 3, 2 });
        
     // Now force case
     stream = new MockTokenizer(new StringReader(input), MockTokenizer.WHITESPACE, false);
-    stream = new KeepWordFilter(true, stream, new CharArraySet(TEST_VERSION_CURRENT,words, false));
+    stream = new KeepWordFilter(TEST_VERSION_CURRENT, stream, new CharArraySet(TEST_VERSION_CURRENT,words, false));
     assertTokenStreamContents(stream, new String[] { "aaa" }, new int[] { 3 });
     
     // Test Stopwords
     stream = new MockTokenizer(new StringReader(input), MockTokenizer.WHITESPACE, false);
-    stream = new KeepWordFilter(false, stream, new CharArraySet(TEST_VERSION_CURRENT, words, true));
+    stream = new KeepWordFilter(Version.LUCENE_43, false, stream, new CharArraySet(TEST_VERSION_CURRENT, words, true));
     assertTokenStreamContents(stream, new String[] { "aaa", "BBB" }, new int[] { 1, 1 });
        
     // Now force case
     stream = new MockTokenizer(new StringReader(input), MockTokenizer.WHITESPACE, false);
-    stream = new KeepWordFilter(false, stream, new CharArraySet(TEST_VERSION_CURRENT,words, false));
+    stream = new KeepWordFilter(Version.LUCENE_43, false, stream, new CharArraySet(TEST_VERSION_CURRENT,words, false));
     assertTokenStreamContents(stream, new String[] { "aaa" }, new int[] { 1 });
   }
   
@@ -72,7 +73,7 @@ public class TestKeepWordFilter extends BaseTokenStreamTestCase {
       @Override
       protected TokenStreamComponents createComponents(String fieldName, Reader reader) {
         Tokenizer tokenizer = new MockTokenizer(reader, MockTokenizer.WHITESPACE, false);
-        TokenStream stream = new KeepWordFilter(true, tokenizer, new CharArraySet(TEST_VERSION_CURRENT, words, true));
+        TokenStream stream = new KeepWordFilter(TEST_VERSION_CURRENT, tokenizer, new CharArraySet(TEST_VERSION_CURRENT, words, true));
         return new TokenStreamComponents(tokenizer, stream);
       }
     };

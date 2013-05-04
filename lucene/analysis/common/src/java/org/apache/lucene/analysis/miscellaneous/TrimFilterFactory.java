@@ -29,7 +29,7 @@ import org.apache.lucene.analysis.util.TokenFilterFactory;
  * &lt;fieldType name="text_trm" class="solr.TextField" positionIncrementGap="100"&gt;
  *   &lt;analyzer&gt;
  *     &lt;tokenizer class="solr.NGramTokenizerFactory"/&gt;
- *     &lt;filter class="solr.TrimFilterFactory" updateOffsets="false"/&gt;
+ *     &lt;filter class="solr.TrimFilterFactory" /&gt;
  *   &lt;/analyzer&gt;
  * &lt;/fieldType&gt;</pre>
  *
@@ -50,6 +50,8 @@ public class TrimFilterFactory extends TokenFilterFactory {
   
   @Override
   public TrimFilter create(TokenStream input) {
-    return new TrimFilter(input, updateOffsets);
+    @SuppressWarnings("deprecation")
+    final TrimFilter filter = new TrimFilter(luceneMatchVersion, input, updateOffsets);
+    return filter;
   }
 }

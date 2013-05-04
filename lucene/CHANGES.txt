@@ -27,6 +27,16 @@ Changes in backwards compatibility policy
   completely refactored to allow for a better implementation of TimSort.
   (Adrien Grand, Uwe Schindler, Dawid Weiss)
 
+* LUCENE-4963: Some TokenFilter options that generate broken TokenStreams have
+  been deprecated: updateOffsets=true on TrimFilter and
+  enablePositionIncrements=false on all classes that inherit from
+  FilteringTokenFilter: JapanesePartOfSpeechStopFilter, KeepWordFilter,
+  LengthFilter, StopFilter and TypeTokenFilter. (Adrien Grand)
+
+* LUCENE-4963: In order not to take position increments into account in
+  suggesters, you now need to call setPreservePositionIncrements(false) instead
+  of configuring the token filters to not increment positions. (Adrien Grand)
+
 Bug Fixes
 
 * LUCENE-4935: CustomScoreQuery wrongly applied its query boost twice 

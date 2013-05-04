@@ -22,22 +22,52 @@ import java.io.IOException;
 import org.apache.lucene.analysis.TokenFilter;
 import org.apache.lucene.analysis.TokenStream;
 import org.apache.lucene.analysis.tokenattributes.PositionIncrementAttribute;
+import org.apache.lucene.util.Version;
 
 /**
  * Abstract base class for TokenFilters that may remove tokens.
  * You have to implement {@link #accept} and return a boolean if the current
  * token should be preserved. {@link #incrementToken} uses this method
  * to decide if a token should be passed to the caller.
+ * <p><a name="version" />As of Lucene 4.4, an {@link IllegalArgumentException}
+ * is thrown when trying to disable position increments when filtering terms.
  */
 public abstract class FilteringTokenFilter extends TokenFilter {
 
+  private static void checkPositionIncrement(Version version, boolean enablePositionIncrements) {
+    if (!enablePositionIncrements && version.onOrAfter(Version.LUCENE_44)) {
+      throw new IllegalArgumentException("enablePositionIncrements=false is not supported anymore as of Lucene 4.4 as it can create broken token streams");
+    }
+  }
+
+  protected final Version version;
   private final PositionIncrementAttribute posIncrAtt = addAttribute(PositionIncrementAttribute.class);
   private boolean enablePositionIncrements; // no init needed, as ctor enforces setting value!
-  private boolean first = true; // only used when not preserving gaps
+  private boolean first = true;
 
-  public FilteringTokenFilter(boolean enablePositionIncrements, TokenStream input){
-    super(input);
+  /**
+   * Create a new {@link FilteringTokenFilter}.
+   * @param version                  the Lucene match <a href="#version">version</a>
+   * @param enablePositionIncrements whether to increment position increments when filtering out terms
+   * @param input                    the input to consume
+   * @deprecated enablePositionIncrements=false is not supported anymore as of Lucene 4.4
+   */
+  @Deprecated
+  public FilteringTokenFilter(Version version, boolean enablePositionIncrements, TokenStream input){
+    this(version, input);
+    checkPositionIncrement(version, enablePositionIncrements);
     this.enablePositionIncrements = enablePositionIncrements;
+  }
+
+  /**
+   * Create a new {@link FilteringTokenFilter}.
+   * @param version the Lucene match version
+   * @param in      the {@link TokenStream} to consume
+   */
+  public FilteringTokenFilter(Version version, TokenStream in) {
+    super(in);
+    this.version = version;
+    this.enablePositionIncrements = true;
   }
 
   /** Override this method and return if the current input token should be returned by {@link #incrementToken}. */
@@ -102,8 +132,11 @@ public abstract class FilteringTokenFilter extends TokenFilter {
    * <p> <b>NOTE</b>: be sure to also
    * set org.apache.lucene.queryparser.classic.QueryParser#setEnablePositionIncrements if
    * you use QueryParser to create queries.
+   * @deprecated enablePositionIncrements=false is not supported anymore as of Lucene 4.4
    */
+  @Deprecated
   public void setEnablePositionIncrements(boolean enable) {
+    checkPositionIncrement(version, enable);
     this.enablePositionIncrements = enable;
   }
 }

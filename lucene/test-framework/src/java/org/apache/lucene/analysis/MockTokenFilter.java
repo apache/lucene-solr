@@ -55,7 +55,6 @@ public final class MockTokenFilter extends TokenFilter {
       makeString("with"))));
   
   private final CharacterRunAutomaton filter;
-  private boolean enablePositionIncrements = true;
 
   private final CharTermAttribute termAtt = addAttribute(CharTermAttribute.class);
   private final PositionIncrementAttribute posIncrAtt = addAttribute(PositionIncrementAttribute.class);
@@ -80,30 +79,12 @@ public final class MockTokenFilter extends TokenFilter {
     int skippedPositions = 0;
     while (input.incrementToken()) {
       if (!filter.run(termAtt.buffer(), 0, termAtt.length())) {
-        if (enablePositionIncrements) {
-          posIncrAtt.setPositionIncrement(posIncrAtt.getPositionIncrement() + skippedPositions);
-        }
+        posIncrAtt.setPositionIncrement(posIncrAtt.getPositionIncrement() + skippedPositions);
         return true;
       }
       skippedPositions += posIncrAtt.getPositionIncrement();
     }
     // reached EOS -- return false
     return false;
-  }
-  
-  /**
-   * @see #setEnablePositionIncrements(boolean)
-   */
-  public boolean getEnablePositionIncrements() {
-    return enablePositionIncrements;
-  }
-
-  /**
-   * If <code>true</code>, this Filter will preserve
-   * positions of the incoming tokens (ie, accumulate and
-   * set position increments of the removed stop tokens).
-   */
-  public void setEnablePositionIncrements(boolean enable) {
-    this.enablePositionIncrements = enable;
   }
 }

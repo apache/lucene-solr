@@ -222,7 +222,7 @@ public class TestPhraseQuery extends LuceneTestCase {
   
   public void testPhraseQueryWithStopAnalyzer() throws Exception {
     Directory directory = newDirectory();
-    Analyzer stopAnalyzer = new MockAnalyzer(random(), MockTokenizer.SIMPLE, true, MockTokenFilter.ENGLISH_STOPSET, false);
+    Analyzer stopAnalyzer = new MockAnalyzer(random(), MockTokenizer.SIMPLE, true, MockTokenFilter.ENGLISH_STOPSET);
     RandomIndexWriter writer = new RandomIndexWriter(random(), directory, 
         newIndexWriterConfig( Version.LUCENE_40, stopAnalyzer));
     Document doc = new Document();
@@ -240,16 +240,6 @@ public class TestPhraseQuery extends LuceneTestCase {
     ScoreDoc[] hits = searcher.search(query, null, 1000).scoreDocs;
     assertEquals(1, hits.length);
     QueryUtils.check(random(), query,searcher);
-
-
-    // StopAnalyzer as of 2.4 does not leave "holes", so this matches.
-    query = new PhraseQuery();
-    query.add(new Term("field", "words"));
-    query.add(new Term("field", "here"));
-    hits = searcher.search(query, null, 1000).scoreDocs;
-    assertEquals(1, hits.length);
-    QueryUtils.check(random(), query,searcher);
-
 
     reader.close();
     directory.close();
