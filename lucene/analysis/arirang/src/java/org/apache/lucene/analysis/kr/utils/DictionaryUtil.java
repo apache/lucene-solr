@@ -63,7 +63,7 @@ public class DictionaryUtil {
 		if(strList==null) throw new MorphException("dictionary is null");;
 		
 		for(String str:strList) {
-			String[] infos = StringUtil.split(str,",");
+			String[] infos = str.split("[,]+");
 			if(infos.length!=2) continue;
 			infos[1] = infos[1].trim();
 			if(infos[1].length()==6) infos[1] = infos[1].substring(0,5)+"000"+infos[1].substring(5);
@@ -73,10 +73,10 @@ public class DictionaryUtil {
 		}
 		
 		for(String compound: compounds) {		
-			String[] infos = StringUtil.split(compound,":");
+			String[] infos = compound.split("[:]+");
 			if(infos.length!=2) continue;
 			WordEntry entry = new WordEntry(infos[0].trim(),"20000000X".toCharArray());
-			entry.setCompounds(compoundArrayToList(infos[1], StringUtil.split(infos[1],",")));
+			entry.setCompounds(compoundArrayToList(infos[1], infos[1].split("[,]+")));
 			dictionary.add(entry.getWord(), entry);
 		}
 	}
@@ -179,10 +179,10 @@ public class DictionaryUtil {
 				uncompounds = new HashMap();
 				List<String> lines = FileUtil.readLines(KoreanEnv.getInstance().getValue(KoreanEnv.FILE_UNCOMPOUNDS),"UTF-8");	
 				for(String compound: lines) {		
-					String[] infos = StringUtil.split(compound,":");
+					String[] infos = compound.split("[:]+");
 					if(infos.length!=2) continue;
 					WordEntry entry = new WordEntry(infos[0].trim(),"90000X".toCharArray());
-					entry.setCompounds(compoundArrayToList(infos[1], StringUtil.split(infos[1],",")));
+					entry.setCompounds(compoundArrayToList(infos[1], infos[1].split("[,]+")));
 					uncompounds.put(entry.getWord(), entry);
 				}			
 			}	
@@ -199,7 +199,7 @@ public class DictionaryUtil {
 				cjwords = new HashMap();
 				List<String> lines = FileUtil.readLines(KoreanEnv.getInstance().getValue(KoreanEnv.FILE_CJ),"UTF-8");	
 				for(String cj: lines) {		
-					String[] infos = StringUtil.split(cj,":");
+					String[] infos = cj.split("[:]+");
 					if(infos.length!=2) continue;
 					cjwords.put(infos[0], infos[1]);
 				}			

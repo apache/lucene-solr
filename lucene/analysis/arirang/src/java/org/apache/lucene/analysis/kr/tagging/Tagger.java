@@ -27,7 +27,6 @@ import org.apache.lucene.analysis.kr.morph.PatternConstants;
 import org.apache.lucene.analysis.kr.utils.ConstraintUtil;
 import org.apache.lucene.analysis.kr.utils.FileUtil;
 import org.apache.lucene.analysis.kr.utils.KoreanEnv;
-import org.apache.lucene.analysis.kr.utils.StringUtil;
 import org.apache.lucene.analysis.kr.utils.Trie;
 
 /**
@@ -232,8 +231,8 @@ public class Tagger {
 	
 	private boolean checkWord(String source, String value, AnalysisOutput morph) {		
 		
-		String[] types = StringUtil.split(value,"^");
-		String[] strs  = StringUtil.split(types[0],",");
+		String[] types = value.split("[\\^]+");
+		String[] strs  = types[0].split("[,]+");
 		
 		String text = source;
 		if("S".equals(types[1])) text = morph.getStem();		
@@ -247,7 +246,7 @@ public class Tagger {
 	
 	private boolean checkEomi(String value, String rend) {
 		
-		String[] strs  = StringUtil.split(value,",");
+		String[] strs  = value.split("[,]+");
 		
 		for(int i=0;i<strs.length;i++) {
 			if(strs[i].equals(rend)) return true;
@@ -258,7 +257,7 @@ public class Tagger {
 	
 	private boolean checkPattern(String value, int ptn) {
 		
-		String[] strs  = StringUtil.split(value,",");
+		String[] strs  = value.split("[,]+");
 		String strPtn = Integer.toString(ptn);
 		
 		for(int i=0;i<strs.length;i++) {
@@ -294,14 +293,15 @@ public class Tagger {
 			for(String str : strs) {
 				if(str==null) continue;
 				str = str.trim();
-				String[] syls = StringUtil.split(str,":");
+				String[] syls = str.split("[:]+");
 				if(syls.length!=4) continue;
 				
 				String key = null;				
 				if("F".equals(syls[0])) key = syls[2].substring(0,syls[2].lastIndexOf("/")+1) + syls[1].substring(0,syls[1].lastIndexOf("/"));
 				else key = syls[1].substring(0,syls[1].lastIndexOf("/")+1) + syls[2].substring(0,syls[2].lastIndexOf("/"));
-				
-				String[] patns = StringUtil.split(syls[1]+"/"+syls[2]+"/"+syls[3],"/");
+
+				final String joined = syls[1] + "/" + syls[2] + "/" + syls[3];
+				String[] patns = joined.split("[/]+");
 				
 				occurrences.add(syls[0]+key, patns);
 				

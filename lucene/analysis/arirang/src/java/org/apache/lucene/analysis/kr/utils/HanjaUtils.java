@@ -38,7 +38,7 @@ public class HanjaUtils {
 				if(strList.get(i).length()<1||
 						strList.get(i).indexOf(",")==-1) continue;
 
-				String[] hanInfos = StringUtil.split(strList.get(i),",");
+				String[] hanInfos = strList.get(i).split("[,]+");
 
 				if(hanInfos.length!=2) continue;
 				

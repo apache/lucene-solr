@@ -271,29 +271,6 @@ public class FileUtil {
             return new File(filename);
         }
     }
-    
-
-    //-----------------------------------------------------------------------
-    /**
-     * Reads the contents of a file into a String.
-     * The file is always closed.
-     *
-     * @param file  the file to read, must not be <code>null</code>
-     * @param encoding  the encoding to use, <code>null</code> means platform default
-     * @return the file contents, never <code>null</code>
-     * @throws IOException in case of an I/O error
-     * @throws java.io.UnsupportedEncodingException if the encoding is not supported by the VM
-     */
-    public static String readFileToString(File file, String encoding) throws IOException {
-        InputStream in = null;
-        try {
-            in = openInputStream(file);
-            return StringUtil.toString(in, encoding);
-        } finally {
-        	closeQuietly(in);
-        }
-    }
-    
 
 	public static byte[] readByteFromCurrentJar(String resource) throws MorphException {
 
