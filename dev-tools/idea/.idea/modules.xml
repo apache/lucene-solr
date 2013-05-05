@@ -8,9 +8,9 @@
       <module filepath="$PROJECT_DIR$/lucene/core/src/resources/lucene-core-resources.iml" />
       <module filepath="$PROJECT_DIR$/lucene/core/src/test/lucene-core-tests.iml" />
 
+      <module filepath="$PROJECT_DIR$/lucene/analysis/arirang/arirang.iml" />
       <module filepath="$PROJECT_DIR$/lucene/analysis/common/analysis-common.iml" />
       <module filepath="$PROJECT_DIR$/lucene/analysis/icu/icu.iml" />
-      <module filepath="$PROJECT_DIR$/lucene/analysis/arirang/arirang.iml" />
       <module filepath="$PROJECT_DIR$/lucene/analysis/kuromoji/kuromoji.iml" />
       <module filepath="$PROJECT_DIR$/lucene/analysis/morfologik/morfologik.iml" />
       <module filepath="$PROJECT_DIR$/lucene/analysis/phonetic/phonetic.iml" />

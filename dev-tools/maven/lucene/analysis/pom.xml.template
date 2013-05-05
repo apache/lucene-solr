@@ -31,6 +31,7 @@
   <name>Lucene Analysis Modules aggregator POM</name>
   <packaging>pom</packaging>
   <modules>
+    <module>arirang</module>
     <module>common</module>
     <module>icu</module>
     <module>kuromoji</module>
