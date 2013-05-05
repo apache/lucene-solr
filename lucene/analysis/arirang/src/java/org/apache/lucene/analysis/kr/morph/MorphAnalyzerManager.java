@@ -19,7 +19,6 @@ package org.apache.lucene.analysis.kr.morph;
 
 import java.util.List;
 
-
 public class MorphAnalyzerManager {
 
 	public void analyze(String strs) {

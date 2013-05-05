@@ -18,8 +18,6 @@ package org.apache.lucene.analysis.kr;
  */
 
 import java.io.IOException;
-
-
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.Iterator;
@@ -27,9 +25,7 @@ import java.util.LinkedHashMap;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
-import java.util.Stack;
 
-import org.apache.lucene.analysis.Token;
 import org.apache.lucene.analysis.TokenFilter;
 import org.apache.lucene.analysis.TokenStream;
 import org.apache.lucene.analysis.kr.morph.AnalysisOutput;
@@ -48,7 +44,6 @@ import org.apache.lucene.analysis.tokenattributes.OffsetAttribute;
 import org.apache.lucene.analysis.tokenattributes.PositionIncrementAttribute;
 import org.apache.lucene.analysis.tokenattributes.PositionLengthAttribute;
 import org.apache.lucene.analysis.tokenattributes.TypeAttribute;
-import org.apache.lucene.util.Version;
 
 public class KoreanFilter extends TokenFilter {
 

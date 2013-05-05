@@ -18,13 +18,9 @@ package org.apache.lucene.analysis.kr.morph;
  */
 
 import java.util.ArrayList;
-
 import java.util.List;
 
-import org.apache.lucene.analysis.kr.utils.MorphUtil;
 import org.apache.lucene.analysis.kr.utils.Utilities;
-
-import org.apache.lucene.analysis.kr.morph.PatternConstants;
 
 public class AnalysisOutput implements Cloneable {
 

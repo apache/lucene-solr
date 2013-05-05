@@ -18,29 +18,14 @@ package org.apache.lucene.analysis.kr;
  */
 
 import java.io.IOException;
-
 import java.io.Reader;
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.Iterator;
-import java.util.LinkedList;
-import java.util.List;
 
-import org.apache.lucene.analysis.Token;
 import org.apache.lucene.analysis.Tokenizer;
-import org.apache.lucene.analysis.kr.morph.AnalysisOutput;
-import org.apache.lucene.analysis.kr.morph.CompoundEntry;
-import org.apache.lucene.analysis.kr.morph.MorphAnalyzer;
-import org.apache.lucene.analysis.kr.morph.MorphException;
-import org.apache.lucene.analysis.kr.morph.PatternConstants;
-import org.apache.lucene.analysis.kr.morph.WordSpaceAnalyzer;
-import org.apache.lucene.analysis.kr.utils.DictionaryUtil;
 import org.apache.lucene.analysis.standard.StandardAnalyzer;
 import org.apache.lucene.analysis.tokenattributes.CharTermAttribute;
 import org.apache.lucene.analysis.tokenattributes.OffsetAttribute;
 import org.apache.lucene.analysis.tokenattributes.PositionIncrementAttribute;
 import org.apache.lucene.analysis.tokenattributes.TypeAttribute;
-import org.apache.lucene.util.AttributeSource;
 import org.apache.lucene.util.Version;
 
 public class KoreanTokenizer extends Tokenizer {

@@ -18,7 +18,6 @@ package org.apache.lucene.analysis.kr.tagging;
  */
 
 import java.util.ArrayList;
-
 import java.util.Iterator;
 import java.util.List;
 
@@ -30,7 +29,6 @@ import org.apache.lucene.analysis.kr.utils.FileUtil;
 import org.apache.lucene.analysis.kr.utils.KoreanEnv;
 import org.apache.lucene.analysis.kr.utils.StringUtil;
 import org.apache.lucene.analysis.kr.utils.Trie;
-
 
 /**
  * 여러개의 형태소분석 결과 중에 최적의 것을 선택한다.

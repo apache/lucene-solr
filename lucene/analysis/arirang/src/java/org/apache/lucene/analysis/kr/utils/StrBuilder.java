@@ -21,7 +21,6 @@ import java.io.Reader;
 import java.io.Writer;
 import java.util.Collection;
 import java.util.Iterator;
-import java.util.List;
 
 /**
  * Builds a string from constituent parts providing a more flexible and powerful API

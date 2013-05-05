@@ -17,7 +17,6 @@ package org.apache.lucene.analysis.kr.utils;
  * limitations under the License.
  */
 
-import java.io.File;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;

@@ -17,7 +17,6 @@ package org.apache.lucene.analysis.kr.utils;
  * limitations under the License.
  */
 
-import java.util.ArrayList;
 import java.util.List;
 
 import org.apache.lucene.analysis.kr.morph.AnalysisOutput;

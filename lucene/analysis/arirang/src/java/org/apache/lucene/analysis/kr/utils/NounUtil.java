@@ -18,12 +18,9 @@ package org.apache.lucene.analysis.kr.utils;
  */
 
 import java.util.ArrayList;
-import java.util.HashMap;
 import java.util.List;
 
 import org.apache.lucene.analysis.kr.morph.AnalysisOutput;
-import org.apache.lucene.analysis.kr.morph.CompoundEntry;
-import org.apache.lucene.analysis.kr.morph.CompoundNounAnalyzer;
 import org.apache.lucene.analysis.kr.morph.MorphException;
 import org.apache.lucene.analysis.kr.morph.PatternConstants;
 import org.apache.lucene.analysis.kr.morph.WordEntry;

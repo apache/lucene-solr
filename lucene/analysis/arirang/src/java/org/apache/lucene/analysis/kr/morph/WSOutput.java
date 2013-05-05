@@ -18,7 +18,6 @@ package org.apache.lucene.analysis.kr.morph;
  */
 
 import java.util.ArrayList;
-import java.util.Collections;
 import java.util.List;
 
 public class WSOutput  implements Cloneable {

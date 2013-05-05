@@ -18,7 +18,6 @@ package org.apache.lucene.analysis.kr.utils;
  */
 
 import java.util.HashMap;
-
 import java.util.Map;
 
 import org.apache.lucene.analysis.kr.morph.PatternConstants;

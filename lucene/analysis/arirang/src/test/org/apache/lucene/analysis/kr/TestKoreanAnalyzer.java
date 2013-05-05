@@ -1,5 +1,8 @@
 package org.apache.lucene.analysis.kr;
 
+import java.io.IOException;
+import java.io.StringReader;
+
 import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.analysis.BaseTokenStreamTestCase;
 import org.apache.lucene.analysis.TokenStream;
@@ -7,9 +10,6 @@ import org.apache.lucene.analysis.tokenattributes.CharTermAttribute;
 import org.apache.lucene.analysis.tokenattributes.OffsetAttribute;
 import org.apache.lucene.analysis.tokenattributes.PositionIncrementAttribute;
 import org.apache.lucene.analysis.tokenattributes.TypeAttribute;
-
-import java.io.IOException;
-import java.io.StringReader;
 
 public class TestKoreanAnalyzer extends BaseTokenStreamTestCase {
 

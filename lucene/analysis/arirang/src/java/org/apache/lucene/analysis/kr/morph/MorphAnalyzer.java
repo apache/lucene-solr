@@ -17,19 +17,15 @@ package org.apache.lucene.analysis.kr.morph;
  * limitations under the License.
  */
 
-import java.net.URISyntaxException;
 import java.util.ArrayList;
-import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
-import java.util.Iterator;
 import java.util.List;
 
 import org.apache.lucene.analysis.kr.utils.ConstraintUtil;
 import org.apache.lucene.analysis.kr.utils.DictionaryUtil;
 import org.apache.lucene.analysis.kr.utils.EomiUtil;
 import org.apache.lucene.analysis.kr.utils.IrregularUtil;
-import org.apache.lucene.analysis.kr.utils.KoreanEnv;
 import org.apache.lucene.analysis.kr.utils.MorphUtil;
 import org.apache.lucene.analysis.kr.utils.NounUtil;
 import org.apache.lucene.analysis.kr.utils.SyllableUtil;

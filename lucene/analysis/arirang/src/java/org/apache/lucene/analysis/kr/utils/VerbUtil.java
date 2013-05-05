@@ -17,7 +17,6 @@ package org.apache.lucene.analysis.kr.utils;
  * limitations under the License.
  */
 
-import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
