@@ -49,13 +49,26 @@ public class TestPersistentSnapshotDeletionPolicy extends TestSnapshotDeletionPo
   @Test
   public void testExistingSnapshots() throws Exception {
     int numSnapshots = 3;
-    Directory dir = newDirectory();
+    MockDirectoryWrapper dir = newMockDirectory();
     IndexWriter writer = new IndexWriter(dir, getConfig(random(), getDeletionPolicy(dir)));
     PersistentSnapshotDeletionPolicy psdp = (PersistentSnapshotDeletionPolicy) writer.getConfig().getIndexDeletionPolicy();
     assertNull(psdp.getLastSaveFile());
     prepareIndexAndSnapshots(psdp, writer, numSnapshots);
     assertNotNull(psdp.getLastSaveFile());
     writer.close();
+
+    // Make sure only 1 save file exists:
+    int count = 0;
+    for(String file : dir.listAll()) {
+      if (file.startsWith(PersistentSnapshotDeletionPolicy.SNAPSHOTS_PREFIX)) {
+        count++;
+      }
+    }
+    assertEquals(1, count);
+
+    // Make sure we fsync:
+    dir.crash();
+    dir.clearCrash();
 
     // Re-initialize and verify snapshots were persisted
     psdp = new PersistentSnapshotDeletionPolicy(
