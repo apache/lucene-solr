@@ -216,8 +216,10 @@ public class FileUtil {
         List list = new ArrayList();
         String line = reader.readLine();
         while (line != null) {
+          if ( ! (line.startsWith("!") || line.startsWith("\uFEFF!"))) { // Skip comment lines starting with '!'
             list.add(line);
-            line = reader.readLine();
+          }
+          line = reader.readLine();
         }
         return list;
     }
