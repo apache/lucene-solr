@@ -22,34 +22,32 @@ package org.apache.lucene.analysis.kr;
  */
 public class IndexWord {
 
-	private String word;
-	
-	private int offset = 0;
-	
-	public IndexWord() {
-		
-	}
-	
-	public IndexWord(String word, int pos) {
-		this.word = word;
-		this.offset = pos;
-	}
-	
-	public String getWord() {
-		return word;
-	}
+  private String word;
+  
+  private int offset = 0;
+  
+  public IndexWord() {
+    
+  }
+  
+  public IndexWord(String word, int pos) {
+    this.word = word;
+    this.offset = pos;
+  }
+  
+  public String getWord() {
+    return word;
+  }
 
-	public void setWord(String word) {
-		this.word = word;
-	}
-	
-	public int getOffset() {
-		return offset;
-	}
+  public void setWord(String word) {
+    this.word = word;
+  }
+  
+  public int getOffset() {
+    return offset;
+  }
 
-	public void setOffset(int offset) {
-		this.offset = offset;
-	}
-	
-	
+  public void setOffset(int offset) {
+    this.offset = offset;
+  }
 }

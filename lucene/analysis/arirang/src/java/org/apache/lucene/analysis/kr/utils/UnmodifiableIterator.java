@@ -21,8 +21,7 @@ import java.util.Iterator;
 
 public abstract class UnmodifiableIterator implements Iterator {
 
-    public void remove() {
-        throw new UnsupportedOperationException("Cannot remove from this iterator");
-    }
-
+  public void remove() {
+    throw new UnsupportedOperationException("Cannot remove from this iterator");
+  }
 }

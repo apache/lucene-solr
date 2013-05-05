@@ -19,19 +19,19 @@ package org.apache.lucene.analysis.kr.morph;
 
 public class MorphException extends Exception {
 
-	public MorphException() {
-		super();
-	}
-	
-	public MorphException(String message) {
-		super(message);
-	}
+  public MorphException() {
+    super();
+  }
+  
+  public MorphException(String message) {
+    super(message);
+  }
 
-	public MorphException(String message, Throwable cause) {
-		super(message, cause);
-	}
+  public MorphException(String message, Throwable cause) {
+    super(message, cause);
+  }
 
-	public MorphException(Throwable cause) {
-		super(cause);
-	}
+  public MorphException(Throwable cause) {
+    super(cause);
+  }
 }

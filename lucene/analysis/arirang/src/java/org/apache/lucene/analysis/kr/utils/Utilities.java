@@ -23,118 +23,117 @@ import org.apache.lucene.analysis.kr.morph.PatternConstants;
 
 public class Utilities {
 
-	public static String arrayToString(String[] strs) {
-		StringBuffer sb = new StringBuffer();
-		for(String str:strs) {
-			sb.append(str);
-		}
-		return sb.toString();
-	}
-	
-	public static AnalysisOutput cloneOutput(AnalysisOutput o) throws MorphException {
-		try {
-			return o.clone();
-		} catch (CloneNotSupportedException e) {
-			throw new MorphException(e.getMessage(),e);
-		}
-	}
-	
-	public static String buildOutputString(AnalysisOutput o) {
-		
+  public static String arrayToString(String[] strs) {
+    StringBuffer sb = new StringBuffer();
+    for(String str:strs) {
+      sb.append(str);
+    }
+    return sb.toString();
+  }
+  
+  public static AnalysisOutput cloneOutput(AnalysisOutput o) throws MorphException {
+    try {
+      return o.clone();
+    } catch (CloneNotSupportedException e) {
+      throw new MorphException(e.getMessage(),e);
+    }
+  }
+  
+  public static String buildOutputString(AnalysisOutput o) {
+    
 
-		StringBuffer buff = new StringBuffer();
-	
-		buff.append(MorphUtil.buildTypeString(o.getStem(),o.getPos()));
-		if(o.getNsfx()!=null)
-			buff.append(",").append(MorphUtil.buildTypeString(o.getNsfx(),PatternConstants.POS_SFX_N));
-		
-		if(o.getPatn()==PatternConstants.PTN_NJ || o.getPatn()==PatternConstants.PTN_ADVJ) {
-			buff.append(",").append(MorphUtil.buildTypeString(o.getJosa(),PatternConstants.POS_JOSA));
-		}else if(o.getPatn()==PatternConstants.PTN_NSM) {
-			buff.append(",").append(MorphUtil.buildTypeString(o.getVsfx(),PatternConstants.POS_SFX_V));
-			if(o.getPomi()!=null) 
-				buff.append(",").append(MorphUtil.buildTypeString(o.getPomi(),PatternConstants.POS_PEOMI));
-			buff.append(",").append(MorphUtil.buildTypeString(o.getEomi(),PatternConstants.POS_EOMI));			
-		}else if(o.getPatn()==PatternConstants.PTN_NSMJ) {
-			buff.append(",").append(MorphUtil.buildTypeString(o.getVsfx(),PatternConstants.POS_SFX_V));
-			buff.append(",").append(MorphUtil.buildTypeString(o.getElist().get(0),PatternConstants.POS_NEOMI));
-			buff.append(",").append(MorphUtil.buildTypeString(o.getJosa(),PatternConstants.POS_JOSA));
-		}else if(o.getPatn()==PatternConstants.PTN_NSMXM) {
-			buff.append(",").append(MorphUtil.buildTypeString(o.getVsfx(),PatternConstants.POS_SFX_V));
-			buff.append(",").append(MorphUtil.buildTypeString(o.getElist().get(0),PatternConstants.POS_COPULA));
-			buff.append(",").append(MorphUtil.buildTypeString(o.getXverb(),PatternConstants.POS_XVERB));		
-			if(o.getPomi()!=null) 
-				buff.append(",").append(MorphUtil.buildTypeString(o.getPomi(),PatternConstants.POS_PEOMI));
-			buff.append(",").append(MorphUtil.buildTypeString(o.getEomi(),PatternConstants.POS_EOMI));
-		}else if(o.getPatn()==PatternConstants.PTN_NJCM) {
-			buff.append(",").append(MorphUtil.buildTypeString(o.getJosa(),PatternConstants.POS_JOSA));
-			buff.append(",").append(MorphUtil.buildTypeString(o.getElist().get(0),PatternConstants.POS_SFX_V));
-			if(o.getPomi()!=null) 
-				buff.append(",").append(MorphUtil.buildTypeString(o.getPomi(),PatternConstants.POS_PEOMI));			
-			buff.append(",").append(MorphUtil.buildTypeString(o.getEomi(),PatternConstants.POS_EOMI));	
-		}else if(o.getPatn()==PatternConstants.PTN_NSMXMJ) {
-			buff.append(",").append(MorphUtil.buildTypeString(o.getVsfx(),PatternConstants.POS_SFX_V));			
-			buff.append(",").append(MorphUtil.buildTypeString(o.getElist().get(1),PatternConstants.POS_COPULA));			
-			buff.append(",").append(MorphUtil.buildTypeString(o.getXverb(),PatternConstants.POS_XVERB));	
-			if(o.getPomi()!=null) 
-				buff.append(",").append(MorphUtil.buildTypeString(o.getPomi(),PatternConstants.POS_PEOMI));	
-			buff.append(",").append(MorphUtil.buildTypeString(o.getElist().get(0),PatternConstants.POS_NEOMI));			
-			buff.append(",").append(MorphUtil.buildTypeString(o.getJosa(),PatternConstants.POS_JOSA));				
-		}else if(o.getPatn()==PatternConstants.PTN_VM) {
-			if(o.getPomi()!=null) 
-				buff.append(",").append(MorphUtil.buildTypeString(o.getPomi(),PatternConstants.POS_PEOMI));			
-			buff.append(",").append(MorphUtil.buildTypeString(o.getEomi(),PatternConstants.POS_EOMI));				
-		}else if(o.getPatn()==PatternConstants.PTN_VMJ) {
-			buff.append(",").append(MorphUtil.buildTypeString(o.getElist().get(0),PatternConstants.POS_NEOMI));			
-			buff.append(",").append(MorphUtil.buildTypeString(o.getJosa(),PatternConstants.POS_JOSA));				
-		}else if(o.getPatn()==PatternConstants.PTN_VMCM) {
-			buff.append(",").append(MorphUtil.buildTypeString(o.getElist().get(0),PatternConstants.POS_NEOMI));			
-			buff.append(",").append(MorphUtil.buildTypeString(o.getElist().get(1),PatternConstants.POS_SFX_N));			
-			if(o.getPomi()!=null) 
-				buff.append(",").append(MorphUtil.buildTypeString(o.getPomi(),PatternConstants.POS_PEOMI));			
-			buff.append(",").append(MorphUtil.buildTypeString(o.getEomi(),PatternConstants.POS_EOMI));				
-		}else if(o.getPatn()==PatternConstants.PTN_VMXM) {
-			buff.append(",").append(MorphUtil.buildTypeString(o.getElist().get(0),PatternConstants.POS_COPULA));			
-			buff.append(",").append(MorphUtil.buildTypeString(o.getXverb(),PatternConstants.POS_XVERB));
-			if(o.getPomi()!=null) 
-				buff.append(",").append(MorphUtil.buildTypeString(o.getPomi(),PatternConstants.POS_PEOMI));			
-			buff.append(",").append(MorphUtil.buildTypeString(o.getEomi(),PatternConstants.POS_EOMI));				
-		}else if(o.getPatn()==PatternConstants.PTN_VMXMJ) {
-			buff.append(",").append(MorphUtil.buildTypeString(o.getElist().get(1),PatternConstants.POS_COPULA));			
-			buff.append(",").append(MorphUtil.buildTypeString(o.getXverb(),PatternConstants.POS_XVERB));	
-			if(o.getPomi()!=null) 
-				buff.append(",").append(MorphUtil.buildTypeString(o.getPomi(),PatternConstants.POS_PEOMI));	
-			buff.append(",").append(MorphUtil.buildTypeString(o.getElist().get(0),PatternConstants.POS_NEOMI));			
-			buff.append(",").append(MorphUtil.buildTypeString(o.getJosa(),PatternConstants.POS_JOSA));								
-		}
-		return buff.toString();
-		
-	}
-	
-   // -----------------------------------------------------------------------
-   /**
-    * <p>
-    * Gets a System property, defaulting to <code>null</code> if the property cannot be read.
-    * </p>
-    * 
-    * <p>
-    * If a <code>SecurityException</code> is caught, the return value is <code>null</code> and a message is written to
-    * <code>System.err</code>.
-    * </p>
-    * 
-    * @param property
-    *            the system property name
-    * @return the system property value or <code>null</code> if a security problem occurs
-    */
-   public static String getSystemProperty(String property) {
-       try {
-           return System.getProperty(property);
-       } catch (SecurityException ex) {
-           // we are not allowed to look at this property
-           System.err.println("Caught a SecurityException reading the system property '" + property
-                   + "'; the SystemUtils property value will default to null.");
-           return null;
-       }
-   }  
-	   
+    StringBuffer buff = new StringBuffer();
+  
+    buff.append(MorphUtil.buildTypeString(o.getStem(),o.getPos()));
+    if(o.getNsfx()!=null)
+      buff.append(",").append(MorphUtil.buildTypeString(o.getNsfx(),PatternConstants.POS_SFX_N));
+    
+    if(o.getPatn()==PatternConstants.PTN_NJ || o.getPatn()==PatternConstants.PTN_ADVJ) {
+      buff.append(",").append(MorphUtil.buildTypeString(o.getJosa(),PatternConstants.POS_JOSA));
+    }else if(o.getPatn()==PatternConstants.PTN_NSM) {
+      buff.append(",").append(MorphUtil.buildTypeString(o.getVsfx(),PatternConstants.POS_SFX_V));
+      if(o.getPomi()!=null) 
+        buff.append(",").append(MorphUtil.buildTypeString(o.getPomi(),PatternConstants.POS_PEOMI));
+      buff.append(",").append(MorphUtil.buildTypeString(o.getEomi(),PatternConstants.POS_EOMI));      
+    }else if(o.getPatn()==PatternConstants.PTN_NSMJ) {
+      buff.append(",").append(MorphUtil.buildTypeString(o.getVsfx(),PatternConstants.POS_SFX_V));
+      buff.append(",").append(MorphUtil.buildTypeString(o.getElist().get(0),PatternConstants.POS_NEOMI));
+      buff.append(",").append(MorphUtil.buildTypeString(o.getJosa(),PatternConstants.POS_JOSA));
+    }else if(o.getPatn()==PatternConstants.PTN_NSMXM) {
+      buff.append(",").append(MorphUtil.buildTypeString(o.getVsfx(),PatternConstants.POS_SFX_V));
+      buff.append(",").append(MorphUtil.buildTypeString(o.getElist().get(0),PatternConstants.POS_COPULA));
+      buff.append(",").append(MorphUtil.buildTypeString(o.getXverb(),PatternConstants.POS_XVERB));    
+      if(o.getPomi()!=null) 
+        buff.append(",").append(MorphUtil.buildTypeString(o.getPomi(),PatternConstants.POS_PEOMI));
+      buff.append(",").append(MorphUtil.buildTypeString(o.getEomi(),PatternConstants.POS_EOMI));
+    }else if(o.getPatn()==PatternConstants.PTN_NJCM) {
+      buff.append(",").append(MorphUtil.buildTypeString(o.getJosa(),PatternConstants.POS_JOSA));
+      buff.append(",").append(MorphUtil.buildTypeString(o.getElist().get(0),PatternConstants.POS_SFX_V));
+      if(o.getPomi()!=null) 
+        buff.append(",").append(MorphUtil.buildTypeString(o.getPomi(),PatternConstants.POS_PEOMI));      
+      buff.append(",").append(MorphUtil.buildTypeString(o.getEomi(),PatternConstants.POS_EOMI));  
+    }else if(o.getPatn()==PatternConstants.PTN_NSMXMJ) {
+      buff.append(",").append(MorphUtil.buildTypeString(o.getVsfx(),PatternConstants.POS_SFX_V));      
+      buff.append(",").append(MorphUtil.buildTypeString(o.getElist().get(1),PatternConstants.POS_COPULA));      
+      buff.append(",").append(MorphUtil.buildTypeString(o.getXverb(),PatternConstants.POS_XVERB));  
+      if(o.getPomi()!=null) 
+        buff.append(",").append(MorphUtil.buildTypeString(o.getPomi(),PatternConstants.POS_PEOMI));  
+      buff.append(",").append(MorphUtil.buildTypeString(o.getElist().get(0),PatternConstants.POS_NEOMI));      
+      buff.append(",").append(MorphUtil.buildTypeString(o.getJosa(),PatternConstants.POS_JOSA));        
+    }else if(o.getPatn()==PatternConstants.PTN_VM) {
+      if(o.getPomi()!=null) 
+        buff.append(",").append(MorphUtil.buildTypeString(o.getPomi(),PatternConstants.POS_PEOMI));      
+      buff.append(",").append(MorphUtil.buildTypeString(o.getEomi(),PatternConstants.POS_EOMI));        
+    }else if(o.getPatn()==PatternConstants.PTN_VMJ) {
+      buff.append(",").append(MorphUtil.buildTypeString(o.getElist().get(0),PatternConstants.POS_NEOMI));      
+      buff.append(",").append(MorphUtil.buildTypeString(o.getJosa(),PatternConstants.POS_JOSA));        
+    }else if(o.getPatn()==PatternConstants.PTN_VMCM) {
+      buff.append(",").append(MorphUtil.buildTypeString(o.getElist().get(0),PatternConstants.POS_NEOMI));      
+      buff.append(",").append(MorphUtil.buildTypeString(o.getElist().get(1),PatternConstants.POS_SFX_N));      
+      if(o.getPomi()!=null) 
+        buff.append(",").append(MorphUtil.buildTypeString(o.getPomi(),PatternConstants.POS_PEOMI));      
+      buff.append(",").append(MorphUtil.buildTypeString(o.getEomi(),PatternConstants.POS_EOMI));        
+    }else if(o.getPatn()==PatternConstants.PTN_VMXM) {
+      buff.append(",").append(MorphUtil.buildTypeString(o.getElist().get(0),PatternConstants.POS_COPULA));      
+      buff.append(",").append(MorphUtil.buildTypeString(o.getXverb(),PatternConstants.POS_XVERB));
+      if(o.getPomi()!=null) 
+        buff.append(",").append(MorphUtil.buildTypeString(o.getPomi(),PatternConstants.POS_PEOMI));      
+      buff.append(",").append(MorphUtil.buildTypeString(o.getEomi(),PatternConstants.POS_EOMI));        
+    }else if(o.getPatn()==PatternConstants.PTN_VMXMJ) {
+      buff.append(",").append(MorphUtil.buildTypeString(o.getElist().get(1),PatternConstants.POS_COPULA));      
+      buff.append(",").append(MorphUtil.buildTypeString(o.getXverb(),PatternConstants.POS_XVERB));  
+      if(o.getPomi()!=null) 
+        buff.append(",").append(MorphUtil.buildTypeString(o.getPomi(),PatternConstants.POS_PEOMI));  
+      buff.append(",").append(MorphUtil.buildTypeString(o.getElist().get(0),PatternConstants.POS_NEOMI));      
+      buff.append(",").append(MorphUtil.buildTypeString(o.getJosa(),PatternConstants.POS_JOSA));                
+    }
+    return buff.toString();
+    
+  }
+  
+  // -----------------------------------------------------------------------
+  /**
+   * <p>
+   * Gets a System property, defaulting to <code>null</code> if the property cannot be read.
+   * </p>
+   * 
+   * <p>
+   * If a <code>SecurityException</code> is caught, the return value is <code>null</code> and a message is written to
+   * <code>System.err</code>.
+   * </p>
+   * 
+   * @param property
+   *            the system property name
+   * @return the system property value or <code>null</code> if a security problem occurs
+   */
+  public static String getSystemProperty(String property) {
+    try {
+      return System.getProperty(property);
+    } catch (SecurityException ex) {
+      // we are not allowed to look at this property
+      System.err.println("Caught a SecurityException reading the system property '" + property
+          + "'; the SystemUtils property value will default to null.");
+      return null;
+    }
+  }  
 }

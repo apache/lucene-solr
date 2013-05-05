@@ -20,25 +20,25 @@ package org.apache.lucene.analysis.kr.morph;
 import java.util.Comparator;
 
 public class AnalysisOutputComparator<T> implements Comparator<T> {
-	public int compare(T o1, T o2) {
-		
-		AnalysisOutput out1 = (AnalysisOutput)o1;
-		AnalysisOutput out2 = (AnalysisOutput)o2;
-		
-		int score = out2.getScore()-out1.getScore();
-		int pattern = out2.getPatn()-out1.getPatn();
-		int len = out1.getStem().length()-out2.getStem().length();
-		
-		if(score!=0) return score;
-		
-		if(out2.getScore()==AnalysisOutput.SCORE_CORRECT &&
-				out1.getScore()==AnalysisOutput.SCORE_CORRECT) {
-			pattern = out1.getPatn()==PatternConstants.PTN_N || out1.getPatn()==PatternConstants.PTN_AID ? -1 : pattern;
-			pattern = out2.getPatn()==PatternConstants.PTN_N || out2.getPatn()==PatternConstants.PTN_AID ? 1 : pattern;
-		}
-		
-		if(pattern!=0) return pattern;
-		
-		return len;
-	}
+  public int compare(T o1, T o2) {
+    
+    AnalysisOutput out1 = (AnalysisOutput)o1;
+    AnalysisOutput out2 = (AnalysisOutput)o2;
+    
+    int score = out2.getScore()-out1.getScore();
+    int pattern = out2.getPatn()-out1.getPatn();
+    int len = out1.getStem().length()-out2.getStem().length();
+    
+    if(score!=0) return score;
+    
+    if(out2.getScore()==AnalysisOutput.SCORE_CORRECT &&
+        out1.getScore()==AnalysisOutput.SCORE_CORRECT) {
+      pattern = out1.getPatn()==PatternConstants.PTN_N || out1.getPatn()==PatternConstants.PTN_AID ? -1 : pattern;
+      pattern = out2.getPatn()==PatternConstants.PTN_N || out2.getPatn()==PatternConstants.PTN_AID ? 1 : pattern;
+    }
+    
+    if(pattern!=0) return pattern;
+    
+    return len;
+  }
 }

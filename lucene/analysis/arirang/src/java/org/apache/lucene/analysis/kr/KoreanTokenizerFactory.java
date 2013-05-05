@@ -27,7 +27,7 @@ import org.apache.lucene.util.Version;
 
 public class KoreanTokenizerFactory extends TokenizerFactory {
 
-	private Version version;
+  private Version version;
 
   /**
    * Initialize this factory via a set of key-value pairs.
@@ -41,17 +41,17 @@ public class KoreanTokenizerFactory extends TokenizerFactory {
     return null;  //To change body of implemented methods use File | Settings | File Templates.
   }
 
-//	public KoreanTokenizerFactory() {
-//		version = Version.LUCENE_42;
-//	}
+//  public KoreanTokenizerFactory() {
+//    version = Version.LUCENE_42;
+//  }
 //
 //  
-//	public KoreanTokenizerFactory(Version v) {
-//		version = v;
-//	}
-//	
-//	public Tokenizer create(Reader input) {
-//		return new KoreanTokenizer(version, input);
-//	}
+//  public KoreanTokenizerFactory(Version v) {
+//    version = v;
+//  }
+//  
+//  public Tokenizer create(Reader input) {
+//    return new KoreanTokenizer(version, input);
+//  }
 
 }

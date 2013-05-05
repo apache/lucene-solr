@@ -21,22 +21,22 @@ import java.util.List;
 
 public class MorphAnalyzerManager {
 
-	public void analyze(String strs) {
-		MorphAnalyzer analyzer = new MorphAnalyzer();
-		String[] tokens = strs.split(" ");
-		for(String token:tokens) {
-			try {
-				List<AnalysisOutput> results = analyzer.analyze(token);
-				for(AnalysisOutput o:results) {
-					System.out.print(o.toString()+"->");
-					for(int i=0;i<o.getCNounList().size();i++){
-						System.out.print(o.getCNounList().get(i)+"/");
-					}
-					System.out.println("<"+o.getScore()+">");
-				}
-			} catch (MorphException e) {
-				e.printStackTrace();
-			}
-		}
-	}
+  public void analyze(String strs) {
+    MorphAnalyzer analyzer = new MorphAnalyzer();
+    String[] tokens = strs.split(" ");
+    for(String token:tokens) {
+      try {
+        List<AnalysisOutput> results = analyzer.analyze(token);
+        for(AnalysisOutput o:results) {
+          System.out.print(o.toString()+"->");
+          for(int i=0;i<o.getCNounList().size();i++){
+            System.out.print(o.getCNounList().get(i)+"/");
+          }
+          System.out.println("<"+o.getScore()+">");
+        }
+      } catch (MorphException e) {
+        e.printStackTrace();
+      }
+    }
+  }
 }
