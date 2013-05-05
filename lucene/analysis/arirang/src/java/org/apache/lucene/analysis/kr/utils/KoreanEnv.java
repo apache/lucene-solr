@@ -84,7 +84,7 @@ public class KoreanEnv {
 		
 		defaults.setProperty(FILE_SYLLABLE_FEATURE,"org/apache/lucene/analysis/kr/dic/syllable.dic");
 		defaults.setProperty(FILE_DICTIONARY,"org/apache/lucene/analysis/kr/dic/dictionary.dic");
-		defaults.setProperty(FILE_DICTIONARY,"org/apache/lucene/analysis/kr/dic/extension.dic");		
+		defaults.setProperty(FILE_EXTENSION,"org/apache/lucene/analysis/kr/dic/extension.dic");		
 		defaults.setProperty(FILE_JOSA,"org/apache/lucene/analysis/kr/dic/josa.dic");	
 		defaults.setProperty(FILE_EOMI,"org/apache/lucene/analysis/kr/dic/eomi.dic");	
 		defaults.setProperty(FILE_PREFIX,"org/apache/lucene/analysis/kr/dic/prefix.dic");		
