@@ -23,7 +23,8 @@
     Additional Analyzers
       - common:	Additional Analyzers
       - icu: Analyzers that use functionality from ICU
-      - kuromoji:       Japanese Morphological Analyzer
+      - arirang: Korean Morphological Analyzer
+      - kuromoji: Japanese Morphological Analyzer
       - morfologik:	Morfologik Stemmer
       - smartcn:	Smart Analyzer for Simplified Chinese Text
       - stempel:	Algorithmic Stemmer for Polish
@@ -54,6 +55,10 @@
 
   <target name="icu">
     <ant dir="icu" />
+  </target>
+
+  <target name="arirang">
+    <ant dir="arirang" />
   </target>
 
   <target name="kuromoji">
