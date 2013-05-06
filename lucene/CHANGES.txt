@@ -103,6 +103,9 @@ Bug Fixes
 * LUCENE-4972: DirectoryTaxonomyWriter created empty commits even if no changes 
   were made. (Shai Erera, Michael McCandless)
   
+* LUCENE-949: AnalyzingQueryParser can't work with leading wildcards.
+  (Tim Allison, Robert Muir, Steve Rowe)
+  
 Optimizations
 
 * LUCENE-4938: Don't use an unnecessarily large priority queue in IndexSearcher
