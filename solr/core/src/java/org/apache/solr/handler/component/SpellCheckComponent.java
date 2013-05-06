@@ -226,7 +226,7 @@ public class SpellCheckComponent extends SearchComponent implements SolrCoreAwar
         .setMaxCollationEvaluations(maxCollationEvaluations)
         .setSuggestionsMayOverlap(suggestionsMayOverlap)
         .setDocCollectionLimit(maxCollationCollectDocs)
-        .setReportHits(collationExtendedResults);
+    ;
     List<SpellCheckCollation> collations = collator.collate(spellingResult, q, rb);
     //by sorting here we guarantee a non-distributed request returns all 
     //results in the same order as a distributed request would,
