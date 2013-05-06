@@ -129,12 +129,31 @@ public interface SpellingParams {
    * </p>
    */
   public static final String SPELLCHECK_MAX_COLLATION_EVALUATIONS = SPELLCHECK_PREFIX + "maxCollationEvaluations";
-  
+  /**
+   * <p>
+   * For use with {@link SpellingParams#SPELLCHECK_MAX_COLLATION_TRIES} and 
+   * {@link SpellingParams#SPELLCHECK_COLLATE_EXTENDED_RESULTS}.
+   * A performance optimization in cases where the exact number of hits a collation would return is not needed.  
+   * Specify "0" to return the exact # of hits, otherwise give the maximum documents Lucene should collect 
+   * with which to base an estimate.  The higher the value the more likely the estimates will be accurate 
+   * (at expense of performance). 
+   * </p>
+   * 
+   * <p>
+   * The default is 0 (report exact hit-counts) when {@link SpellingParams#SPELLCHECK_COLLATE_EXTENDED_RESULTS} is TRUE.
+   * When {@link SpellingParams#SPELLCHECK_COLLATE_EXTENDED_RESULTS} is FALSE, this optimization is always performed.
+   * </p>
+   */
+  public static final String SPELLCHECK_COLLATE_MAX_COLLECT_DOCS = SPELLCHECK_PREFIX + "collateMaxCollectDocs";
   /**
    * <p>
    * Whether to use the Extended Results Format for collations. 
    * Includes "before>after" pairs to easily allow clients to generate messages like "no results for PORK.  did you mean POLK?"
    * Also indicates the # of hits each collation will return on re-query.  Default=false, which retains 1.4-compatible output.
+   * </p>
+   * <p>
+   * Note: that if {@link SpellingParams#SPELLCHECK_COLLATE_MAX_COLLECT_DOCS} is set to a value greater than 0, 
+   * then the hit counts returned by this will be estimated.
    * </p>
    */
   public static final String SPELLCHECK_COLLATE_EXTENDED_RESULTS = SPELLCHECK_PREFIX + "collateExtendedResults";

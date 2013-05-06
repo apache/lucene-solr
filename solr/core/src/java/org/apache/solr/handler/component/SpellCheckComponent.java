@@ -214,10 +214,20 @@ public class SpellCheckComponent extends SearchComponent implements SolrCoreAwar
     int maxCollationTries = params.getInt(SPELLCHECK_MAX_COLLATION_TRIES, 0);
     int maxCollationEvaluations = params.getInt(SPELLCHECK_MAX_COLLATION_EVALUATIONS, 10000);
     boolean collationExtendedResults = params.getBool(SPELLCHECK_COLLATE_EXTENDED_RESULTS, false);
+    int maxCollationCollectDocs = params.getInt(SPELLCHECK_COLLATE_MAX_COLLECT_DOCS, 0);
+    // If not reporting hits counts, don't bother collecting more than 1 document per try.
+    if (!collationExtendedResults) {
+      maxCollationCollectDocs = 1;
+    }
     boolean shard = params.getBool(ShardParams.IS_SHARD, false);
-
-    SpellCheckCollator collator = new SpellCheckCollator();
-    List<SpellCheckCollation> collations = collator.collate(spellingResult, q, rb, maxCollations, maxCollationTries, maxCollationEvaluations, suggestionsMayOverlap);
+    SpellCheckCollator collator = new SpellCheckCollator()
+        .setMaxCollations(maxCollations)
+        .setMaxCollationTries(maxCollationTries)
+        .setMaxCollationEvaluations(maxCollationEvaluations)
+        .setSuggestionsMayOverlap(suggestionsMayOverlap)
+        .setDocCollectionLimit(maxCollationCollectDocs)
+        .setReportHits(collationExtendedResults);
+    List<SpellCheckCollation> collations = collator.collate(spellingResult, q, rb);
     //by sorting here we guarantee a non-distributed request returns all 
     //results in the same order as a distributed request would,
     //even in cases when the internal rank is the same.
