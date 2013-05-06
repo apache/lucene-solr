@@ -1237,7 +1237,6 @@ public class SolrIndexSearcher extends IndexSearcher implements Closeable,SolrIn
   static final int NO_CHECK_FILTERCACHE  = 0x20000000;
   static final int NO_SET_QCACHE         = 0x10000000;
   public static final int TERMINATE_EARLY = 0x04;
-  public static final int FORCE_INORDER_COLLECTION = 0x08;
   public static final int GET_DOCLIST           =        0x02; // get the documents actually returned in a response
   public static final int GET_SCORES             =       0x01;
 

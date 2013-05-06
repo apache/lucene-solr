@@ -47,7 +47,6 @@ public class SpellCheckCollator {
   private int maxCollationEvaluations = 10000;
   private boolean suggestionsMayOverlap = false;
   private int docCollectionLimit = 0;
-  private boolean reportHits = true;
 
   public List<SpellCheckCollation> collate(SpellingResult result,
       String originalQuery, ResponseBuilder ultimateResponse) {
@@ -142,11 +141,7 @@ public class SpellCheckCollator {
           queryComponent.prepare(checkResponse);
           if (docCollectionLimit > 0) {
             int f = checkResponse.getFieldFlags();
-            checkResponse.setFieldFlags(f |= SolrIndexSearcher.TERMINATE_EARLY);
-            if (reportHits) {
-              f = checkResponse.getFieldFlags();
-              checkResponse.setFieldFlags(f |= SolrIndexSearcher.FORCE_INORDER_COLLECTION);
-            }
+            checkResponse.setFieldFlags(f |= SolrIndexSearcher.TERMINATE_EARLY);            
           }
           queryComponent.process(checkResponse);
           hits = (Integer) checkResponse.rsp.getToLog().get("hits");
@@ -259,9 +254,5 @@ public class SpellCheckCollator {
   public SpellCheckCollator setDocCollectionLimit(int docCollectionLimit) {
     this.docCollectionLimit = docCollectionLimit;
     return this;
-  }  
-  public SpellCheckCollator setReportHits(boolean reportHits) {
-    this.reportHits = reportHits;
-    return this;
-  }
+  }    
 }
