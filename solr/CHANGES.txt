@@ -66,6 +66,12 @@ New Features
 * SOLR-4761: Add option to plugin a merged segment warmer into solrconfig.xml
   (Mark Miller, Mike McCandless, Robert Muir)
 
+* SOLR-3240: Add "spellcheck.collateMaxCollectDocs" option so that when testing
+  potential Collations against the index, SpellCheckComponent will only collect
+  n documents, thereby estimating the hit-count.  This is a performance optimization
+  in cases where exact hit-counts are unnecessary.  Also, when "collateExtendedResults"
+  is false, this optimization is always made (James Dyer).
+
 Bug Fixes
 ----------------------
 

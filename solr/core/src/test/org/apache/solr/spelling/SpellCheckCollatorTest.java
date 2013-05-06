@@ -42,21 +42,24 @@ import org.junit.Test;
 public class SpellCheckCollatorTest extends SolrTestCaseJ4 {
   @BeforeClass
   public static void beforeClass() throws Exception {
-     initCore("solrconfig-spellcheckcomponent.xml", "schema.xml");
-    assertNull(h.validateUpdate(adoc("id", "0", "lowerfilt", "faith hope and love")));
+    initCore("solrconfig-spellcheckcomponent.xml", "schema.xml");
+    assertNull(h.validateUpdate(adoc("id", "0", "lowerfilt", "faith hope and love", "teststop", "metanoia")));
     assertNull(h.validateUpdate(adoc("id", "1", "lowerfilt", "faith hope and loaves")));
     assertNull(h.validateUpdate(adoc("id", "2", "lowerfilt", "fat hops and loaves")));
-    assertNull(h.validateUpdate(adoc("id", "3", "lowerfilt", "faith of homer")));
+    assertNull(h.validateUpdate(adoc("id", "3", "lowerfilt", "faith of homer", "teststop", "metanoia")));
     assertNull(h.validateUpdate(adoc("id", "4", "lowerfilt", "fat of homer")));
     assertNull(h.validateUpdate(adoc("id", "5", "lowerfilt1", "peace")));
     assertNull(h.validateUpdate(adoc("id", "6", "lowerfilt", "hyphenated word")));
-     assertNull(h.validateUpdate(adoc("id", "7", "teststop", "Jane filled out a form at Charles De Gaulle")));
-     assertNull(h.validateUpdate(adoc("id", "8", "teststop", "Dick flew from Heathrow")));
-     assertNull(h.validateUpdate(adoc("id", "9", "teststop", "Jane is stuck in customs because Spot chewed up the form")));
-     assertNull(h.validateUpdate(adoc("id", "10", "teststop", "Once in Paris Dick built a fire on the hearth")));
-     assertNull(h.validateUpdate(adoc("id", "11", "teststop", "Dick waited for Jane as he watched the sparks flow upward")));
-     assertNull(h.validateUpdate(adoc("id", "12", "teststop", "This June parisian rendez-vous is ruined because of a customs snafu")));
-     assertNull(h.validateUpdate(adoc("id", "13", "teststop", "partisan political machine")));
+    assertNull(h.validateUpdate(adoc("id", "7", "teststop", "Jane filled out a form at Charles De Gaulle")));
+    assertNull(h.validateUpdate(adoc("id", "8", "teststop", "Dick flew from Heathrow")));
+    assertNull(h.validateUpdate(adoc("id", "9", "teststop", "Jane is stuck in customs because Spot chewed up the form")));
+    assertNull(h.validateUpdate(adoc("id", "10", "teststop", "Once in Paris Dick built a fire on the hearth")));
+    assertNull(h.validateUpdate(adoc("id", "11", "teststop", "Dick waited for Jane as he watched the sparks flow upward")));
+    assertNull(h.validateUpdate(adoc("id", "12", "teststop", "This June parisian rendez-vous is ruined because of a customs snafu")));
+    assertNull(h.validateUpdate(adoc("id", "13", "teststop", "partisan political machine", "teststop", "metanoia")));
+    assertNull(h.validateUpdate(adoc("id", "14", "teststop", "metanoia")));
+    assertNull(h.validateUpdate(adoc("id", "15", "teststop", "metanoia")));
+    assertNull(h.validateUpdate(adoc("id", "16", "teststop", "metanoia")));
     assertNull(h.validateUpdate(commit()));
   }
 
@@ -430,4 +433,71 @@ public class SpellCheckCollatorTest extends SolrTestCaseJ4 {
       );
     }
   }
+  @Test
+  public void testEstimatedHitCounts() throws Exception {
+   assertQ(
+        req(
+          SpellCheckComponent.COMPONENT_NAME, "true",
+          SpellCheckComponent.SPELLCHECK_DICT, "direct",
+          SpellingParams.SPELLCHECK_COUNT, "1",   
+          SpellingParams.SPELLCHECK_COLLATE, "true",
+          SpellingParams.SPELLCHECK_MAX_COLLATION_TRIES, "1",
+          SpellingParams.SPELLCHECK_MAX_COLLATIONS, "1",
+          SpellingParams.SPELLCHECK_COLLATE_EXTENDED_RESULTS, "true",          
+          "qt", "spellCheckCompRH",          
+          CommonParams.Q, "teststop:metnoia"
+        ),
+        "//lst[@name='spellcheck']/lst[@name='suggestions']/lst[@name='collation']/str[@name='collationQuery']='teststop:metanoia'",
+        "//lst[@name='spellcheck']/lst[@name='suggestions']/lst[@name='collation']/int[@name='hits']=6"        
+      );
+    assertQ(
+        req(
+          SpellCheckComponent.COMPONENT_NAME, "true",
+          SpellCheckComponent.SPELLCHECK_DICT, "direct",
+          SpellingParams.SPELLCHECK_COUNT, "1",   
+          SpellingParams.SPELLCHECK_COLLATE, "true",
+          SpellingParams.SPELLCHECK_MAX_COLLATION_TRIES, "1",
+          SpellingParams.SPELLCHECK_MAX_COLLATIONS, "1",
+          SpellingParams.SPELLCHECK_COLLATE_EXTENDED_RESULTS, "true",
+          SpellingParams.SPELLCHECK_COLLATE_MAX_COLLECT_DOCS, "1",
+          "qt", "spellCheckCompRH",          
+          CommonParams.Q, "teststop:metnoia"
+        ),
+        "//lst[@name='spellcheck']/lst[@name='suggestions']/lst[@name='collation']/str[@name='collationQuery']='teststop:metanoia'",
+        "//lst[@name='spellcheck']/lst[@name='suggestions']/lst[@name='collation']/int[@name='hits']=17"        
+      );
+    assertQ(
+        req(
+          SpellCheckComponent.COMPONENT_NAME, "true",
+          SpellCheckComponent.SPELLCHECK_DICT, "direct",
+          SpellingParams.SPELLCHECK_COUNT, "1",   
+          SpellingParams.SPELLCHECK_COLLATE, "true",
+          SpellingParams.SPELLCHECK_MAX_COLLATION_TRIES, "1",
+          SpellingParams.SPELLCHECK_MAX_COLLATIONS, "1",
+          SpellingParams.SPELLCHECK_COLLATE_EXTENDED_RESULTS, "true",
+          SpellingParams.SPELLCHECK_COLLATE_MAX_COLLECT_DOCS, "3",
+          "qt", "spellCheckCompRH",          
+          CommonParams.Q, "teststop:metnoia"
+        ),
+        "//lst[@name='spellcheck']/lst[@name='suggestions']/lst[@name='collation']/str[@name='collationQuery']='teststop:metanoia'",
+        "//lst[@name='spellcheck']/lst[@name='suggestions']/lst[@name='collation']/int[@name='hits']=4"        
+      );
+    assertQ(
+        req(
+          SpellCheckComponent.COMPONENT_NAME, "true",
+          SpellCheckComponent.SPELLCHECK_DICT, "direct",
+          SpellingParams.SPELLCHECK_COUNT, "1",   
+          SpellingParams.SPELLCHECK_COLLATE, "true",
+          SpellingParams.SPELLCHECK_MAX_COLLATION_TRIES, "1",
+          SpellingParams.SPELLCHECK_MAX_COLLATIONS, "1",
+          SpellingParams.SPELLCHECK_COLLATE_EXTENDED_RESULTS, "true",
+          SpellingParams.SPELLCHECK_COLLATE_MAX_COLLECT_DOCS, "100",
+          "qt", "spellCheckCompRH",          
+          CommonParams.Q, "teststop:metnoia"
+        ),
+        "//lst[@name='spellcheck']/lst[@name='suggestions']/lst[@name='collation']/str[@name='collationQuery']='teststop:metanoia'",
+        "//lst[@name='spellcheck']/lst[@name='suggestions']/lst[@name='collation']/int[@name='hits']=6"        
+      );
+  }  
+  
 }
