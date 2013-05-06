@@ -19,8 +19,17 @@ package org.apache.lucene.queryparser.analyzing;
 
 import java.io.IOException;
 import java.io.Reader;
+import java.util.Map;
+import java.util.TreeMap;
 
-import org.apache.lucene.analysis.*;
+import org.apache.lucene.analysis.Analyzer;
+import org.apache.lucene.analysis.MockAnalyzer;
+import org.apache.lucene.analysis.MockBytesAnalyzer;
+import org.apache.lucene.analysis.MockTokenFilter;
+import org.apache.lucene.analysis.MockTokenizer;
+import org.apache.lucene.analysis.TokenFilter;
+import org.apache.lucene.analysis.TokenStream;
+import org.apache.lucene.analysis.Tokenizer;
 import org.apache.lucene.analysis.tokenattributes.CharTermAttribute;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
@@ -39,7 +48,8 @@ import org.apache.lucene.util.LuceneTestCase.SuppressCodecs;
  */
 @SuppressCodecs("Lucene3x") // binary terms
 public class TestAnalyzingQueryParser extends LuceneTestCase {
-
+  private final static String FIELD = "field";
+   
   private Analyzer a;
 
   private String[] wildcardInput;
@@ -51,12 +61,15 @@ public class TestAnalyzingQueryParser extends LuceneTestCase {
   private String[] fuzzyInput;
   private String[] fuzzyExpected;
 
+  private Map<String, String> wildcardEscapeHits = new TreeMap<String, String>();
+  private Map<String, String> wildcardEscapeMisses = new TreeMap<String, String>();
+
   @Override
   public void setUp() throws Exception {
     super.setUp();
-    wildcardInput = new String[] { "übersetzung über*ung",
+    wildcardInput = new String[] { "*bersetzung über*ung",
         "Mötley Cr\u00fce Mötl?* Crü?", "Renée Zellweger Ren?? Zellw?ger" };
-    wildcardExpected = new String[] { "ubersetzung uber*ung", "motley crue motl?* cru?",
+    wildcardExpected = new String[] { "*bersetzung uber*ung", "motley crue motl?* cru?",
         "renee zellweger ren?? zellw?ger" };
 
     prefixInput = new String[] { "übersetzung übersetz*",
@@ -73,43 +86,138 @@ public class TestAnalyzingQueryParser extends LuceneTestCase {
     fuzzyExpected = new String[] { "ubersetzung ubersetzung~1",
         "motley crue motley~1 crue~2", "renee zellweger renee~0 zellweger~2" };
 
+    wildcardEscapeHits.put("mö*tley", "moatley");
+
+    // need to have at least one genuine wildcard to trigger the wildcard analysis
+    // hence the * before the y
+    wildcardEscapeHits.put("mö\\*tl*y", "mo*tley");
+
+    // escaped backslash then true wildcard
+    wildcardEscapeHits.put("mö\\\\*tley", "mo\\atley");
+    
+    // escaped wildcard then true wildcard
+    wildcardEscapeHits.put("mö\\??ley", "mo?tley");
+
+    // the first is an escaped * which should yield a miss
+    wildcardEscapeMisses.put("mö\\*tl*y", "moatley");
+      
     a = new ASCIIAnalyzer();
+  }
+
+  public void testSingleChunkExceptions() {
+    boolean ex = false;
+    String termStr = "the*tre";
+      
+    Analyzer stopsAnalyzer = new MockAnalyzer
+        (random(), MockTokenizer.WHITESPACE, true, MockTokenFilter.ENGLISH_STOPSET);
+    try {
+      String q = parseWithAnalyzingQueryParser(termStr, stopsAnalyzer, true);     
+    } catch (ParseException e){
+      if (e.getMessage().contains("returned nothing")){
+        ex = true;
+      }
+    }
+    assertEquals("Should have returned nothing", true, ex);
+    ex = false;
+     
+    AnalyzingQueryParser qp = new AnalyzingQueryParser(TEST_VERSION_CURRENT, FIELD, a);
+    try{
+      qp.analyzeSingleChunk(FIELD, "", "not a single chunk");
+    } catch (ParseException e){
+      if (e.getMessage().contains("multiple terms")){
+        ex = true;
+      }
+    }
+    assertEquals("Should have produced multiple terms", true, ex);
+  }
+   
+  public void testWildcardAlone() throws ParseException {
+    //seems like crazy edge case, but can be useful in concordance 
+    boolean pex = false;
+    try{
+      Query q = getAnalyzedQuery("*", a, false);
+    } catch (ParseException e){
+      pex = true;
+    }
+    assertEquals("Wildcard alone with allowWildcard=false", true, pex);
+      
+    pex = false;
+    try {
+      String qString = parseWithAnalyzingQueryParser("*", a, true);
+      assertEquals("Every word", "*", qString);
+    } catch (ParseException e){
+      pex = true;
+    }
+      
+    assertEquals("Wildcard alone with allowWildcard=true", false, pex);
+
+  }
+  public void testWildCardEscapes() throws ParseException, IOException {
+
+    for (Map.Entry<String, String> entry : wildcardEscapeHits.entrySet()){
+      Query q = getAnalyzedQuery(entry.getKey(), a, false);
+      assertEquals("WildcardEscapeHits: " + entry.getKey(), true, isAHit(q, entry.getValue(), a));
+    }
+    for (Map.Entry<String, String> entry : wildcardEscapeMisses.entrySet()){
+      Query q = getAnalyzedQuery(entry.getKey(), a, false);
+      assertEquals("WildcardEscapeMisses: " + entry.getKey(), false, isAHit(q, entry.getValue(), a));
+    }
+
+  }
+  public void testWildCardQueryNoLeadingAllowed() {
+    boolean ex = false;
+    try{
+      String q = parseWithAnalyzingQueryParser(wildcardInput[0], a, false);
+
+    } catch (ParseException e){
+      ex = true;
+    }
+    assertEquals("Testing initial wildcard not allowed",
+        true, ex);
   }
 
   public void testWildCardQuery() throws ParseException {
     for (int i = 0; i < wildcardInput.length; i++) {
       assertEquals("Testing wildcards with analyzer " + a.getClass() + ", input string: "
-          + wildcardInput[i], wildcardExpected[i], parseWithAnalyzingQueryParser(wildcardInput[i], a));
+          + wildcardInput[i], wildcardExpected[i], parseWithAnalyzingQueryParser(wildcardInput[i], a, true));
     }
   }
+
 
   public void testPrefixQuery() throws ParseException {
     for (int i = 0; i < prefixInput.length; i++) {
       assertEquals("Testing prefixes with analyzer " + a.getClass() + ", input string: "
-          + prefixInput[i], prefixExpected[i], parseWithAnalyzingQueryParser(prefixInput[i], a));
+          + prefixInput[i], prefixExpected[i], parseWithAnalyzingQueryParser(prefixInput[i], a, false));
     }
   }
 
   public void testRangeQuery() throws ParseException {
     for (int i = 0; i < rangeInput.length; i++) {
       assertEquals("Testing ranges with analyzer " + a.getClass() + ", input string: "
-          + rangeInput[i], rangeExpected[i], parseWithAnalyzingQueryParser(rangeInput[i], a));
+          + rangeInput[i], rangeExpected[i], parseWithAnalyzingQueryParser(rangeInput[i], a, false));
     }
   }
 
   public void testFuzzyQuery() throws ParseException {
     for (int i = 0; i < fuzzyInput.length; i++) {
       assertEquals("Testing fuzzys with analyzer " + a.getClass() + ", input string: "
-          + fuzzyInput[i], fuzzyExpected[i], parseWithAnalyzingQueryParser(fuzzyInput[i], a));
+          + fuzzyInput[i], fuzzyExpected[i], parseWithAnalyzingQueryParser(fuzzyInput[i], a, false));
     }
   }
 
-  private String parseWithAnalyzingQueryParser(String s, Analyzer a) throws ParseException {
-    AnalyzingQueryParser qp = new AnalyzingQueryParser(TEST_VERSION_CURRENT, "field", a);
-    org.apache.lucene.search.Query q = qp.parse(s);
-    return q.toString("field");
+
+  private String parseWithAnalyzingQueryParser(String s, Analyzer a, boolean allowLeadingWildcard) throws ParseException {
+    Query q = getAnalyzedQuery(s, a, allowLeadingWildcard);
+    return q.toString(FIELD);
   }
-  
+
+  private Query getAnalyzedQuery(String s, Analyzer a, boolean allowLeadingWildcard) throws ParseException {
+    AnalyzingQueryParser qp = new AnalyzingQueryParser(TEST_VERSION_CURRENT, FIELD, a);
+    qp.setAllowLeadingWildcard(allowLeadingWildcard);
+    org.apache.lucene.search.Query q = qp.parse(s);
+    return q;
+  }
+
   final static class FoldingFilter extends TokenFilter {
     final CharTermAttribute termAtt = addAttribute(CharTermAttribute.class);
 
@@ -146,31 +254,45 @@ public class TestAnalyzingQueryParser extends LuceneTestCase {
   final static class ASCIIAnalyzer extends Analyzer {
     @Override
     public TokenStreamComponents createComponents(String fieldName, Reader reader) {
-      Tokenizer result = new MockTokenizer(reader, MockTokenizer.SIMPLE, true);
+      Tokenizer result = new MockTokenizer(reader, MockTokenizer.WHITESPACE, true);
       return new TokenStreamComponents(result, new FoldingFilter(result));
     }
   }
-  
+   
+
   // LUCENE-4176
   public void testByteTerms() throws Exception {
-    Directory ramDir = newDirectory();
+    String s = "เข";
     Analyzer analyzer = new MockBytesAnalyzer();
+    QueryParser qp = new AnalyzingQueryParser(TEST_VERSION_CURRENT, FIELD, analyzer);
+    Query q = qp.parse("[เข TO เข]");
+    assertEquals(true, isAHit(q, s, analyzer));
+  }
+   
+  
+  private boolean isAHit(Query q, String content, Analyzer analyzer) throws IOException{
+    Directory ramDir = newDirectory();
     RandomIndexWriter writer = new RandomIndexWriter(random(), ramDir, analyzer);
     Document doc = new Document();
     FieldType fieldType = new FieldType();
     fieldType.setIndexed(true);
     fieldType.setTokenized(true);
     fieldType.setStored(true);
-    Field field = new Field("content","เข", fieldType);
+    Field field = new Field(FIELD, content, fieldType);
     doc.add(field);
     writer.addDocument(doc);
     writer.close();
     DirectoryReader ir = DirectoryReader.open(ramDir);
-    IndexSearcher is = newSearcher(ir);
-    QueryParser qp = new AnalyzingQueryParser(TEST_VERSION_CURRENT, "content", analyzer);
-    Query q = qp.parse("[เข TO เข]");
-    assertEquals(1, is.search(q, 10).totalHits);
+    IndexSearcher is = new IndexSearcher(ir);
+      
+    int hits = is.search(q, 10).totalHits;
     ir.close();
     ramDir.close();
+    if (hits == 1){
+      return true;
+    } else {
+      return false;
+    }
+
   }
 }
