@@ -286,7 +286,6 @@
    <fail unless="JAVA6_HOME">JAVA6_HOME property or environment variable is not defined.</fail>
    <fail unless="JAVA7_HOME">JAVA7_HOME property or environment variable is not defined.</fail>
    <property name="svnversion.exe" value="svnversion" />
-   <exec dir="." executable="${svnversion.exe}" outputproperty="fakeReleaseSvnRevision" failifexecutionfails="false"/>
    <subant target="prepare-release-no-sign" inheritall="false" failonerror="true">
      <fileset dir="lucene" includes="build.xml" />
      <fileset dir="solr" includes="build.xml" />
@@ -308,7 +307,7 @@
      <arg value="-B"/>
      <arg file="dev-tools/scripts/smokeTestRelease.py"/>
      <arg value="${fakeRelease.uri}"/>
-     <arg value="${fakeReleaseSvnRevision}"/>
+     <arg value="skip"/>
      <arg value="${fakeReleaseVersion}"/>
      <arg file="${fakeReleaseTmp}"/>
      <arg value="false"/>

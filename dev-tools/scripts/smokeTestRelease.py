@@ -207,14 +207,19 @@ def checkJARMetaData(desc, jarFile, svnRevision, version):
       'Ant-Version: Apache Ant 1.8',
       # Make sure .class files are 1.6 format:
       'X-Compile-Target-JDK: 1.6',
-      # Make sure this matches the version and svn revision we think we are releasing:
-      'Implementation-Version: %s %s ' % (version, svnRevision),
       'Specification-Version: %s' % version,
       # Make sure the release was compiled with 1.6:
       'Created-By: 1.6'):
       if s.find(verify) == -1:
         raise RuntimeError('%s is missing "%s" inside its META-INF/MANIFEST.MF' % \
                            (desc, verify))
+
+    if svnRevision != 'skip':
+      # Make sure this matches the version and svn revision we think we are releasing:
+      verifyRevision = 'Implementation-Version: %s %s ' % (version, svnRevision)
+      if s.find(verifyRevision) == -1:
+        raise RuntimeError('%s is missing "%s" inside its META-INF/MANIFEST.MF (wrong svn revision?)' % \
+                           (desc, verifyRevision))
 
     notice = decodeUTF8(z.read(NOTICE_FILE_NAME))
     license = decodeUTF8(z.read(LICENSE_FILE_NAME))
