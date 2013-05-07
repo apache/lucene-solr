@@ -90,6 +90,9 @@ Bug Fixes
 * SOLR-4616: HitRatio on caches is now exposed over JMX MBeans as a float.
   (Greg Bowyer)
 
+* SOLR-4795: Sub shard leader should not accept any updates from parent after
+  it goes active (shalin)
+
 Other Changes
 ----------------------
 
