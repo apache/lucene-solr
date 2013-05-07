@@ -30,8 +30,14 @@ public interface ResourceLoader {
    */
   public InputStream openResource(String resource) throws IOException;
   
+  
   /**
-   * Creates a class of the name and expected type
+   * Finds class of the name and expected type
+   */
+  public <T> Class<? extends T> findClass(String cname, Class<T> expectedType);
+  
+  /**
+   * Creates an instance of the name and expected type
    */
   // TODO: fix exception handling
   public <T> T newInstance(String cname, Class<T> expectedType);

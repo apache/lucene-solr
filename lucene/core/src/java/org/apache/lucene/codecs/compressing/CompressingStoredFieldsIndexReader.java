@@ -82,7 +82,7 @@ public final class CompressingStoredFieldsIndexReader implements Closeable, Clon
       avgChunkDocs[blockCount] = fieldsIndexIn.readVInt();
       final int bitsPerDocBase = fieldsIndexIn.readVInt();
       if (bitsPerDocBase > 32) {
-        throw new CorruptIndexException("Corrupted");
+        throw new CorruptIndexException("Corrupted bitsPerDocBase (resource=" + fieldsIndexIn + ")");
       }
       docBasesDeltas[blockCount] = PackedInts.getReaderNoHeader(fieldsIndexIn, PackedInts.Format.PACKED, packedIntsVersion, numChunks, bitsPerDocBase);
 
@@ -91,7 +91,7 @@ public final class CompressingStoredFieldsIndexReader implements Closeable, Clon
       avgChunkSizes[blockCount] = fieldsIndexIn.readVLong();
       final int bitsPerStartPointer = fieldsIndexIn.readVInt();
       if (bitsPerStartPointer > 64) {
-        throw new CorruptIndexException("Corrupted");
+        throw new CorruptIndexException("Corrupted bitsPerStartPointer (resource=" + fieldsIndexIn + ")");
       }
       startPointersDeltas[blockCount] = PackedInts.getReaderNoHeader(fieldsIndexIn, PackedInts.Format.PACKED, packedIntsVersion, numChunks, bitsPerStartPointer);
 

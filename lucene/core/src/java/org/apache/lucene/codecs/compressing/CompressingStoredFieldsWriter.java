@@ -53,6 +53,9 @@ import org.apache.lucene.util.packed.PackedInts;
  */
 public final class CompressingStoredFieldsWriter extends StoredFieldsWriter {
 
+  // hard limit on the maximum number of documents per chunk
+  static final int MAX_DOCUMENTS_PER_CHUNK = 128;
+
   static final int         STRING = 0x00;
   static final int       BYTE_ARR = 0x01;
   static final int    NUMERIC_INT = 0x02;
@@ -200,7 +203,7 @@ public final class CompressingStoredFieldsWriter extends StoredFieldsWriter {
 
   private boolean triggerFlush() {
     return bufferedDocs.length >= chunkSize || // chunks of at least chunkSize bytes
-        numBufferedDocs >= chunkSize; // can be necessary if most docs are empty
+        numBufferedDocs >= MAX_DOCUMENTS_PER_CHUNK;
   }
 
   private void flush() throws IOException {

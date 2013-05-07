@@ -376,7 +376,7 @@ public class DirectSpellChecker {
       suggestions[index--] = suggestion;
     }
     
-    ArrayUtil.mergeSort(suggestions, Collections.reverseOrder(comparator));
+    ArrayUtil.timSort(suggestions, Collections.reverseOrder(comparator));
     if (numSug < suggestions.length) {
       SuggestWord trimmed[] = new SuggestWord[numSug];
       System.arraycopy(suggestions, 0, trimmed, 0, numSug);

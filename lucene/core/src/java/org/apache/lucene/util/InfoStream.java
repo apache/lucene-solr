@@ -30,7 +30,7 @@ import java.io.Closeable;
  * 
  * @lucene.internal 
  */
-public abstract class InfoStream implements Closeable {
+public abstract class InfoStream implements Closeable, Cloneable {
 
   /** Instance of InfoStream that does no logging at all. */
   public static final InfoStream NO_OUTPUT = new NoOutput();
@@ -74,5 +74,14 @@ public abstract class InfoStream implements Closeable {
     }
     defaultInfoStream = infoStream;
   }
-  
+
+  @Override
+  public InfoStream clone() {
+    try {
+      return (InfoStream) super.clone();
+    } catch (CloneNotSupportedException e) {
+      throw new Error(e);
+    }
+  }
+
 }

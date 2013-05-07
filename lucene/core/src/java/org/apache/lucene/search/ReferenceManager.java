@@ -81,7 +81,7 @@ public abstract class ReferenceManager<G> implements Closeable {
    * the operation was successful.
    * @throws AlreadyClosedException if the reference manager has been {@link #close() closed}. 
    */
-  protected abstract boolean tryIncRef(G reference);
+  protected abstract boolean tryIncRef(G reference) throws IOException;
 
   /**
    * Obtain the current reference. You must match every call to acquire with one
@@ -90,7 +90,7 @@ public abstract class ReferenceManager<G> implements Closeable {
    * released.
    * @throws AlreadyClosedException if the reference manager has been {@link #close() closed}. 
    */
-  public final G acquire() {
+  public final G acquire() throws IOException {
     G ref;
     do {
       if ((ref = current) == null) {

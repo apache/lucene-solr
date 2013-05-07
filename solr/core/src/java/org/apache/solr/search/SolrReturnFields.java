@@ -52,14 +52,14 @@ public class SolrReturnFields extends ReturnFields {
   private final List<String> globs = new ArrayList<String>(1);
 
   // The lucene field names to request from the SolrIndexSearcher
-  // Order is important for CSVResponseWriter
-  private final Set<String> fields = new LinkedHashSet<String>();
+  private final Set<String> fields = new HashSet<String>();
 
   // Field names that are OK to include in the response.
   // This will include pseudo fields, lucene fields, and matching globs
   private Set<String> okFieldNames = new HashSet<String>();
 
   // The list of explicitly requested fields
+  // Order is important for CSVResponseWriter
   private Set<String> reqFieldNames = null;
   
   protected DocTransformer transformer;
@@ -122,7 +122,7 @@ public class SolrReturnFields extends ReturnFields {
           if(from.equals(rename.getName(j))) {
             rename.setName(j, to); // copy from the current target
             if(reqFieldNames==null) {
-              reqFieldNames = new HashSet<String>();
+              reqFieldNames = new LinkedHashSet<String>();
             }
             reqFieldNames.add(to); // don't rename our current target
           }
@@ -360,11 +360,15 @@ public class SolrReturnFields extends ReturnFields {
 
   private void addField(String field, String key, DocTransformers augmenters, SolrQueryRequest req)
   {
+    if(reqFieldNames==null) {
+      reqFieldNames = new LinkedHashSet<String>();
+    }
+    
     if(key==null) {
-      if(reqFieldNames==null) {
-        reqFieldNames = new HashSet<String>();
-      }
       reqFieldNames.add(field);
+    }
+    else {
+      reqFieldNames.add(key);
     }
 
     fields.add(field); // need to put in the map to maintain order for things like CSVResponseWriter
@@ -383,6 +387,19 @@ public class SolrReturnFields extends ReturnFields {
   public Set<String> getLuceneFieldNames()
   {
     return (_wantsAllFields || fields.isEmpty()) ? null : fields;
+  }
+
+  @Override
+  public Set<String> getRequestedFieldNames() {
+    if(_wantsAllFields || reqFieldNames==null || reqFieldNames.isEmpty()) {
+      return null;
+    }
+    return reqFieldNames;
+  }
+  
+  @Override
+  public boolean hasPatternMatching() {
+    return !globs.isEmpty();
   }
 
   @Override

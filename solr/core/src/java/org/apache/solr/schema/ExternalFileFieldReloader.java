@@ -50,7 +50,6 @@ import java.util.List;
  */
 public class ExternalFileFieldReloader extends AbstractSolrEventListener {
 
-  private IndexSchema schema;
   private String datadir;
   private List<FileFloatSource> fieldSources = new ArrayList<FileFloatSource>();
 
@@ -58,29 +57,36 @@ public class ExternalFileFieldReloader extends AbstractSolrEventListener {
 
   public ExternalFileFieldReloader(SolrCore core) {
     super(core);
-    schema = core.getSchema();
     datadir = core.getDataDir();
   }
 
   @Override
   public void init(NamedList args) {
-    for (SchemaField field : schema.getFields().values()) {
-      FieldType type = field.getType();
-      if (type instanceof ExternalFileField) {
-        ExternalFileField eff = (ExternalFileField) type;
-        fieldSources.add(eff.getFileFloatSource(field, datadir));
-        log.info("Adding ExternalFileFieldReloader listener for field {}", field.getName());
-      }
-    }
+    cacheFieldSources(getCore().getLatestSchema());
   }
 
   @Override
   public void newSearcher(SolrIndexSearcher newSearcher, SolrIndexSearcher currentSearcher) {
     // We need to reload the caches for the new searcher
+    if (null == currentSearcher || newSearcher.getSchema() != currentSearcher.getSchema()) {
+      cacheFieldSources(newSearcher.getSchema());
+    }
     IndexReader reader = newSearcher.getIndexReader();
     for (FileFloatSource fieldSource : fieldSources) {
       fieldSource.refreshCache(reader);
     }
   }
-}
 
+  /** Caches FileFloatSource's from all ExternalFileField instances in the schema */
+  public void cacheFieldSources(IndexSchema schema) {
+    fieldSources.clear();
+    for (SchemaField field : schema.getFields().values()) {
+      FieldType type = field.getType();
+      if (type instanceof ExternalFileField) {
+        ExternalFileField eff = (ExternalFileField)type;
+        fieldSources.add(eff.getFileFloatSource(field, datadir));
+        log.info("Adding ExternalFileFieldReloader listener for field {}", field.getName());
+      }
+    }
+  }
+}

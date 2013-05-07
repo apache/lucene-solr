@@ -400,11 +400,8 @@ public final class RAMOnlyPostingsFormat extends PostingsFormat {
     }
 
     @Override
-    public int advance(int targetDocID) {
-      do {
-        nextDoc();
-      } while (upto < ramTerm.docs.size() && current.docID < targetDocID);
-      return NO_MORE_DOCS;
+    public int advance(int targetDocID) throws IOException {
+      return slowAdvance(targetDocID);
     }
 
     // TODO: override bulk read, for better perf
@@ -453,11 +450,8 @@ public final class RAMOnlyPostingsFormat extends PostingsFormat {
     }
 
     @Override
-    public int advance(int targetDocID) {
-      do {
-        nextDoc();
-      } while (upto < ramTerm.docs.size() && current.docID < targetDocID);
-      return NO_MORE_DOCS;
+    public int advance(int targetDocID) throws IOException {
+      return slowAdvance(targetDocID);
     }
 
     // TODO: override bulk read, for better perf

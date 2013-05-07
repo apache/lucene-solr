@@ -17,11 +17,25 @@
 -->
 <html>
 <body>
-Provides index sorting capablities. The application can use one of the
-pre-existing Sorter implementations, e.g. to sort by a numeric 
-DocValues or reverse the order of the documents. Additionally, the
-application can implement a Sorter which returns a permutation on 
-a source Directory's document IDs, to sort the input documents by additional
-values.
+<p>Provides index sorting capablities. The application can use one of the
+pre-existing Sorter implementations, e.g. to sort by a
+{@link org.apache.lucene.index.sorter.NumericDocValuesSorter}
+or {@link org.apache.lucene.index.sorter.Sorter#REVERSE_DOCS reverse} the order
+of the documents. Additionally, the application can implement a custom
+{@link org.apache.lucene.index.sorter.Sorter} which returns a permutation on 
+a source {@link org.apache.lucene.index.AtomicReader}'s document IDs, to sort
+the input documents by additional criteria.
+
+<p>{@link org.apache.lucene.index.sorter.SortingMergePolicy} can be used to
+make Lucene sort segments before merging them. This will ensure that every
+segment resulting from a merge will be sorted according to the provided
+{@link org.apache.lucene.index.sorter.Sorter}. This however makes merging and
+thus indexing slower.
+
+<p>Sorted segments allow for early query termination when the sort order
+matches index order. This makes query execution faster since not all documents
+need to be visited. Please note that this is an expert feature and should not
+be used without a deep understanding of Lucene merging and document collection.
+
 </body>
 </html>

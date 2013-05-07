@@ -19,43 +19,54 @@ package org.apache.lucene.analysis.miscellaneous;
 
 import java.io.IOException;
 import java.util.List;
+import java.util.Map;
 
 import org.apache.lucene.analysis.TokenStream;
-import org.apache.lucene.analysis.miscellaneous.StemmerOverrideFilter;
-import org.apache.lucene.analysis.util.*;
+import org.apache.lucene.analysis.miscellaneous.StemmerOverrideFilter.StemmerOverrideMap;
+import org.apache.lucene.analysis.util.ResourceLoader;
+import org.apache.lucene.analysis.util.ResourceLoaderAware;
+import org.apache.lucene.analysis.util.TokenFilterFactory;
 
 /**
  * Factory for {@link StemmerOverrideFilter}.
- * <pre class="prettyprint" >
+ * <pre class="prettyprint">
  * &lt;fieldType name="text_dicstem" class="solr.TextField" positionIncrementGap="100"&gt;
  *   &lt;analyzer&gt;
  *     &lt;tokenizer class="solr.WhitespaceTokenizerFactory"/&gt;
  *     &lt;filter class="solr.StemmerOverrideFilterFactory" dictionary="dictionary.txt" ignoreCase="false"/&gt;
  *   &lt;/analyzer&gt;
  * &lt;/fieldType&gt;</pre>
- *
  */
 public class StemmerOverrideFilterFactory extends TokenFilterFactory implements ResourceLoaderAware {
-  private CharArrayMap<String> dictionary = null;
-  private boolean ignoreCase;
+  private StemmerOverrideMap dictionary;
+  private final String dictionaryFiles;
+  private final boolean ignoreCase;
+
+  /** Creates a new StemmerOverrideFilterFactory */
+  public StemmerOverrideFilterFactory(Map<String,String> args) {
+    super(args);
+    dictionaryFiles = get(args, "dictionary");
+    ignoreCase = getBoolean(args, "ignoreCase", false);
+    if (!args.isEmpty()) {
+      throw new IllegalArgumentException("Unknown parameters: " + args);
+    }
+  }
 
   @Override
   public void inform(ResourceLoader loader) throws IOException {
-    String dictionaryFiles = args.get("dictionary");
-    ignoreCase = getBoolean("ignoreCase", false);
     if (dictionaryFiles != null) {
       assureMatchVersion();
       List<String> files = splitFileNames(dictionaryFiles);
       if (files.size() > 0) {
-        dictionary = new CharArrayMap<String>(luceneMatchVersion, 
-            files.size() * 10, ignoreCase);
+        StemmerOverrideFilter.Builder builder = new StemmerOverrideFilter.Builder(ignoreCase);
         for (String file : files) {
           List<String> list = getLines(loader, file.trim());
           for (String line : list) {
             String[] mapping = line.split("\t", 2);
-            dictionary.put(mapping[0], mapping[1]);
+            builder.add(mapping[0], mapping[1]);
           }
         }
+        dictionary = builder.build();
       }
     }
   }

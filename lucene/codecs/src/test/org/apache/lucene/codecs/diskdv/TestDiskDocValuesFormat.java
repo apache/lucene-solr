@@ -18,13 +18,13 @@ package org.apache.lucene.codecs.diskdv;
  */
 
 import org.apache.lucene.codecs.Codec;
-import org.apache.lucene.index.BaseDocValuesFormatTestCase;
+import org.apache.lucene.index.BaseCompressingDocValuesFormatTestCase;
 import org.apache.lucene.util._TestUtil;
 
 /**
  * Tests DiskDocValuesFormat
  */
-public class TestDiskDocValuesFormat extends BaseDocValuesFormatTestCase {
+public class TestDiskDocValuesFormat extends BaseCompressingDocValuesFormatTestCase {
   private final Codec codec = _TestUtil.alwaysDocValuesFormat(new DiskDocValuesFormat());
 
   @Override

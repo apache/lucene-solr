@@ -43,18 +43,19 @@ public final class FloatFacetResultsHandler extends DepthOneFacetResultsHandler 
     return values[ordinal];
   }
 
-  
   @Override
   protected final int addSiblings(int ordinal, int[] siblings, PriorityQueue<FacetResultNode> pq) {
     FacetResultNode top = pq.top();
     int numResults = 0;
     while (ordinal != TaxonomyReader.INVALID_ORDINAL) {
       float value = values[ordinal];
-      if (value > top.value) {
-        top.value = value;
-        top.ordinal = ordinal;
-        top = pq.updateTop();
+      if (value > 0.0f) {
         ++numResults;
+        if (value > top.value) {
+          top.value = value;
+          top.ordinal = ordinal;
+          top = pq.updateTop();
+        }
       }
       ordinal = siblings[ordinal];
     }
@@ -66,9 +67,8 @@ public final class FloatFacetResultsHandler extends DepthOneFacetResultsHandler 
     while (ordinal != TaxonomyReader.INVALID_ORDINAL) {
       float value = values[ordinal];
       if (value > 0) {
-        FacetResultNode node = new FacetResultNode();
+        FacetResultNode node = new FacetResultNode(ordinal, value);
         node.label = taxonomyReader.getPath(ordinal);
-        node.value = value;
         nodes.add(node);
       }
       ordinal = siblings[ordinal];

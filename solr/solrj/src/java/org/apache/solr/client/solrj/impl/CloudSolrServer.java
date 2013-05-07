@@ -228,7 +228,7 @@ public class CloudSolrServer extends SolrServer {
       // add it to the Map of slices.
       Map<String,Slice> slices = new HashMap<String,Slice>();
       for (String collectionName : collectionsList) {
-        Collection<Slice> colSlices = clusterState.getSlices(collectionName);
+        Collection<Slice> colSlices = clusterState.getActiveSlices(collectionName);
         if (colSlices == null) {
           throw new SolrServerException("Could not find collection:" + collectionName);
         }

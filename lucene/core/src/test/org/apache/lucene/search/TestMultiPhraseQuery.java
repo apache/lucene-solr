@@ -376,7 +376,7 @@ public class TestMultiPhraseQuery extends LuceneTestCase {
     writer.addDocument(doc);
     IndexReader r = writer.getReader();
     writer.close();
-    IndexSearcher s = new IndexSearcher(r);
+    IndexSearcher s = newSearcher(r);
     MultiPhraseQuery mpq = new MultiPhraseQuery();
     //mpq.setSlop(1);
 
@@ -474,7 +474,7 @@ public class TestMultiPhraseQuery extends LuceneTestCase {
     writer.addDocument(doc);
     IndexReader r = DirectoryReader.open(writer,false);
     writer.close();
-    IndexSearcher s = new IndexSearcher(r);
+    IndexSearcher s = newSearcher(r);
     
     if (VERBOSE) {
       System.out.println("QUERY=" + q);

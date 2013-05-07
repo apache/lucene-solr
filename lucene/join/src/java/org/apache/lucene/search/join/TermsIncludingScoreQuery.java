@@ -23,6 +23,7 @@ import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.Term;
 import org.apache.lucene.index.Terms;
 import org.apache.lucene.index.TermsEnum;
+import org.apache.lucene.search.Collector;
 import org.apache.lucene.search.ComplexExplanation;
 import org.apache.lucene.search.DocIdSetIterator;
 import org.apache.lucene.search.Explanation;
@@ -192,12 +193,22 @@ class TermsIncludingScoreQuery extends Query {
     DocsEnum docsEnum;
     DocsEnum reuse;
     int scoreUpto;
+    int doc;
 
     SVInnerScorer(Weight weight, Bits acceptDocs, TermsEnum termsEnum, long cost) {
       super(weight);
       this.acceptDocs = acceptDocs;
       this.termsEnum = termsEnum;
       this.cost = cost;
+      this.doc = -1;
+    }
+
+    @Override
+    public void score(Collector collector) throws IOException {
+      collector.setScorer(this);
+      for (int doc = nextDocOutOfOrder(); doc != NO_MORE_DOCS; doc = nextDocOutOfOrder()) {
+        collector.collect(doc);
+      }
     }
 
     @Override
@@ -211,23 +222,22 @@ class TermsIncludingScoreQuery extends Query {
 
     @Override
     public int docID() {
-      return docsEnum != null ? docsEnum.docID() : DocIdSetIterator.NO_MORE_DOCS;
+      return doc;
     }
 
-    @Override
-    public int nextDoc() throws IOException {
+    int nextDocOutOfOrder() throws IOException {
       if (docsEnum != null) {
         int docId = docsEnum.nextDoc();
         if (docId == DocIdSetIterator.NO_MORE_DOCS) {
           docsEnum = null;
         } else {
-          return docId;
+          return doc = docId;
         }
       }
 
       do {
         if (upto == terms.size()) {
-          return DocIdSetIterator.NO_MORE_DOCS;
+          return doc = DocIdSetIterator.NO_MORE_DOCS;
         }
 
         scoreUpto = upto;
@@ -236,7 +246,12 @@ class TermsIncludingScoreQuery extends Query {
         }
       } while (docsEnum == null);
 
-      return docsEnum.nextDoc();
+      return doc = docsEnum.nextDoc();
+    }
+
+    @Override
+    public int nextDoc() throws IOException {
+      throw new UnsupportedOperationException("nextDoc() isn't supported because doc ids are emitted out of order");
     }
 
     @Override
@@ -247,7 +262,7 @@ class TermsIncludingScoreQuery extends Query {
     private int advanceForExplainOnly(int target) throws IOException {
       int docId;
       do {
-        docId = nextDoc();
+        docId = nextDocOutOfOrder();
         if (docId < target) {
           int tempDocId = docsEnum.advance(target);
           if (tempDocId == target) {
@@ -286,7 +301,7 @@ class TermsIncludingScoreQuery extends Query {
     }
 
     @Override
-    public int nextDoc() throws IOException {
+    int nextDocOutOfOrder() throws IOException {
       if (docsEnum != null) {
         int docId;
         do {

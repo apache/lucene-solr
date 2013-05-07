@@ -241,7 +241,7 @@ public class MultiPhraseQuery extends Query {
 
       // sort by increasing docFreq order
       if (slop == 0) {
-        ArrayUtil.mergeSort(postingsFreqs);
+        ArrayUtil.timSort(postingsFreqs);
       }
 
       if (slop == 0) {

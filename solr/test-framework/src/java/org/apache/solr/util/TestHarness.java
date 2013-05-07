@@ -20,6 +20,8 @@ package org.apache.solr.util;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.params.CommonParams;
 import org.apache.solr.common.util.NamedList;
+import org.apache.solr.core.Config;
+import org.apache.solr.core.ConfigSolrXmlOld;
 import org.apache.solr.core.SolrConfig;
 import org.apache.solr.core.SolrCore;
 import org.apache.solr.core.CoreContainer;
@@ -36,14 +38,20 @@ import org.apache.solr.request.SolrRequestInfo;
 import org.apache.solr.response.QueryResponseWriter;
 import org.apache.solr.response.SolrQueryResponse;
 import org.apache.solr.schema.IndexSchema;
+import org.apache.solr.schema.IndexSchemaFactory;
 import org.apache.solr.servlet.DirectSolrConnection;
 import org.apache.solr.common.util.NamedList.NamedListEntry;
+import org.xml.sax.InputSource;
+import org.xml.sax.SAXException;
 
+import java.io.ByteArrayInputStream;
 import java.io.File;
 import java.io.IOException;
 import java.io.StringWriter;
 import java.util.HashMap;
 import java.util.Map;
+
+import javax.xml.parsers.ParserConfigurationException;
 
 
 /**
@@ -97,7 +105,7 @@ public class TestHarness extends BaseTestHarness {
                          String dataDirectory,
                          SolrConfig solrConfig,
                          String schemaFile) {
-    this( coreName, dataDirectory, solrConfig, new IndexSchema(solrConfig, schemaFile, null));
+    this( coreName, dataDirectory, solrConfig, IndexSchemaFactory.buildIndexSchema(schemaFile, solrConfig));
   } 
   /**
    * @param coreName to initialize
@@ -119,7 +127,7 @@ public class TestHarness extends BaseTestHarness {
       public TestHarness( String dataDirectory,
                           SolrConfig solrConfig,
                           String schemaFile) {
-     this( dataDirectory, solrConfig, new IndexSchema(solrConfig, schemaFile, null));
+     this( dataDirectory, solrConfig, IndexSchemaFactory.buildIndexSchema(schemaFile, solrConfig));
    }
    /**
     * @param dataDirectory path for index data, will not be cleaned up
@@ -170,17 +178,30 @@ public class TestHarness extends BaseTestHarness {
     }
     @Override
     public CoreContainer initialize() {
-      CoreContainer container = new CoreContainer(new SolrResourceLoader(SolrResourceLoader.locateSolrHome())) {
-        {
-          hostPort = System.getProperty("hostPort");
-          hostContext = "solr";
-          defaultCoreName = CoreContainer.DEFAULT_DEFAULT_CORE_NAME;
-          initShardHandler();
-          initZooKeeper(System.getProperty("zkHost"), 10000);
-        }
-      };
+      CoreContainer container;
+      try {
+        String solrHome = SolrResourceLoader.locateSolrHome();
+        container = new CoreContainer(new SolrResourceLoader(solrHome)) {
+          {
+            String hostPort = System.getProperty("hostPort");
+            String hostContext = "solr";
+            defaultCoreName = CoreContainer.DEFAULT_DEFAULT_CORE_NAME;
+            initShardHandler();
+            zkSys.initZooKeeper(this, solrHome, System.getProperty("zkHost"), 30000, hostPort, hostContext, null, "30000", 30000, 30000);
+            ByteArrayInputStream is = new ByteArrayInputStream(ConfigSolrXmlOld.DEF_SOLR_XML.getBytes("UTF-8"));
+            Config config = new Config(loader, null, new InputSource(is), null, false);
+            cfg = new ConfigSolrXmlOld(config, this);
+          }
+        };
+      } catch (ParserConfigurationException e) {
+        throw new RuntimeException(e);
+      } catch (IOException e) {
+        throw new RuntimeException(e);
+      } catch (SAXException e) {
+        throw new RuntimeException(e);
+      }
       LogWatcher<?> logging = new JulWatcher("test");
-      logging.registerListener(new ListenerConfig(), container);
+      logging.registerListener(new ListenerConfig());
       container.setLogging(logging);
       
       CoreDescriptor dcore = new CoreDescriptor(container, coreName, solrConfig.getResourceLoader().getInstanceDir());

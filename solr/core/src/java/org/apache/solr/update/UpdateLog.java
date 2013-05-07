@@ -23,6 +23,7 @@ import org.apache.solr.common.SolrException.ErrorCode;
 import org.apache.solr.common.SolrInputDocument;
 import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.common.params.SolrParams;
+import org.apache.solr.common.params.UpdateParams;
 import org.apache.solr.common.util.ExecutorUtil;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.core.PluginInfo;
@@ -34,8 +35,10 @@ import org.apache.solr.response.SolrQueryResponse;
 import org.apache.solr.search.SolrIndexSearcher;
 import org.apache.solr.update.processor.DistributedUpdateProcessor;
 import org.apache.solr.update.processor.DistributedUpdateProcessorFactory;
+import org.apache.solr.update.processor.DistributingUpdateProcessorFactory;
 import org.apache.solr.update.processor.RunUpdateProcessorFactory;
 import org.apache.solr.update.processor.UpdateRequestProcessor;
+import org.apache.solr.update.processor.UpdateRequestProcessorChain;
 import org.apache.solr.util.DefaultSolrThreadFactory;
 import org.apache.solr.util.RefCounted;
 import org.apache.solr.util.plugin.PluginInfoInitialized;
@@ -1195,13 +1198,8 @@ public class UpdateLog implements PluginInfoInitialized {
         // NOTE: we don't currently handle a core reload during recovery.  This would cause the core
         // to change underneath us.
 
-        // TODO: use the standard request factory?  We won't get any custom configuration instantiating this way.
-        RunUpdateProcessorFactory runFac = new RunUpdateProcessorFactory();
-        DistributedUpdateProcessorFactory magicFac = new DistributedUpdateProcessorFactory();
-        runFac.init(new NamedList());
-        magicFac.init(new NamedList());
-
-        UpdateRequestProcessor proc = magicFac.getInstance(req, rsp, runFac.getInstance(req, rsp, null));
+        UpdateRequestProcessorChain processorChain = req.getCore().getUpdateProcessingChain(null);
+        UpdateRequestProcessor proc = processorChain.createProcessor(req, rsp);
 
         long commitVersion = 0;
         int operationAndFlags = 0;

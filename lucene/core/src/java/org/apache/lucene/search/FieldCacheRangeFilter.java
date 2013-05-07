@@ -121,7 +121,7 @@ public abstract class FieldCacheRangeFilter<T> extends Filter {
         }      
 
         if (inclusiveUpperPoint < 0 || inclusiveLowerPoint > inclusiveUpperPoint) {
-          return DocIdSet.EMPTY_DOCIDSET;
+          return null;
         }
         
         assert inclusiveLowerPoint >= 0 && inclusiveUpperPoint >= 0;
@@ -178,7 +178,7 @@ public abstract class FieldCacheRangeFilter<T> extends Filter {
         }      
 
         if (inclusiveUpperPoint < 0 || inclusiveLowerPoint > inclusiveUpperPoint) {
-          return DocIdSet.EMPTY_DOCIDSET;
+          return null;
         }
         
         assert inclusiveLowerPoint >= 0 && inclusiveUpperPoint >= 0;
@@ -216,7 +216,7 @@ public abstract class FieldCacheRangeFilter<T> extends Filter {
         if (lowerVal != null) {
           final byte i = lowerVal.byteValue();
           if (!includeLower && i == Byte.MAX_VALUE)
-            return DocIdSet.EMPTY_DOCIDSET;
+            return null;
           inclusiveLowerPoint = (byte) (includeLower ?  i : (i + 1));
         } else {
           inclusiveLowerPoint = Byte.MIN_VALUE;
@@ -224,14 +224,14 @@ public abstract class FieldCacheRangeFilter<T> extends Filter {
         if (upperVal != null) {
           final byte i = upperVal.byteValue();
           if (!includeUpper && i == Byte.MIN_VALUE)
-            return DocIdSet.EMPTY_DOCIDSET;
+            return null;
           inclusiveUpperPoint = (byte) (includeUpper ? i : (i - 1));
         } else {
           inclusiveUpperPoint = Byte.MAX_VALUE;
         }
         
         if (inclusiveLowerPoint > inclusiveUpperPoint)
-          return DocIdSet.EMPTY_DOCIDSET;
+          return null;
         
         final FieldCache.Bytes values = FieldCache.DEFAULT.getBytes(context.reader(), field, (FieldCache.ByteParser) parser, false);
         return new FieldCacheDocIdSet(context.reader().maxDoc(), acceptDocs) {
@@ -267,7 +267,7 @@ public abstract class FieldCacheRangeFilter<T> extends Filter {
         if (lowerVal != null) {
           short i = lowerVal.shortValue();
           if (!includeLower && i == Short.MAX_VALUE)
-            return DocIdSet.EMPTY_DOCIDSET;
+            return null;
           inclusiveLowerPoint = (short) (includeLower ? i : (i + 1));
         } else {
           inclusiveLowerPoint = Short.MIN_VALUE;
@@ -275,14 +275,14 @@ public abstract class FieldCacheRangeFilter<T> extends Filter {
         if (upperVal != null) {
           short i = upperVal.shortValue();
           if (!includeUpper && i == Short.MIN_VALUE)
-            return DocIdSet.EMPTY_DOCIDSET;
+            return null;
           inclusiveUpperPoint = (short) (includeUpper ? i : (i - 1));
         } else {
           inclusiveUpperPoint = Short.MAX_VALUE;
         }
         
         if (inclusiveLowerPoint > inclusiveUpperPoint)
-          return DocIdSet.EMPTY_DOCIDSET;
+          return null;
         
         final FieldCache.Shorts values = FieldCache.DEFAULT.getShorts(context.reader(), field, (FieldCache.ShortParser) parser, false);
         return new FieldCacheDocIdSet(context.reader().maxDoc(), acceptDocs) {
@@ -318,7 +318,7 @@ public abstract class FieldCacheRangeFilter<T> extends Filter {
         if (lowerVal != null) {
           int i = lowerVal.intValue();
           if (!includeLower && i == Integer.MAX_VALUE)
-            return DocIdSet.EMPTY_DOCIDSET;
+            return null;
           inclusiveLowerPoint = includeLower ? i : (i + 1);
         } else {
           inclusiveLowerPoint = Integer.MIN_VALUE;
@@ -326,14 +326,14 @@ public abstract class FieldCacheRangeFilter<T> extends Filter {
         if (upperVal != null) {
           int i = upperVal.intValue();
           if (!includeUpper && i == Integer.MIN_VALUE)
-            return DocIdSet.EMPTY_DOCIDSET;
+            return null;
           inclusiveUpperPoint = includeUpper ? i : (i - 1);
         } else {
           inclusiveUpperPoint = Integer.MAX_VALUE;
         }
         
         if (inclusiveLowerPoint > inclusiveUpperPoint)
-          return DocIdSet.EMPTY_DOCIDSET;
+          return null;
         
         final FieldCache.Ints values = FieldCache.DEFAULT.getInts(context.reader(), field, (FieldCache.IntParser) parser, false);
         return new FieldCacheDocIdSet(context.reader().maxDoc(), acceptDocs) {
@@ -369,7 +369,7 @@ public abstract class FieldCacheRangeFilter<T> extends Filter {
         if (lowerVal != null) {
           long i = lowerVal.longValue();
           if (!includeLower && i == Long.MAX_VALUE)
-            return DocIdSet.EMPTY_DOCIDSET;
+            return null;
           inclusiveLowerPoint = includeLower ? i : (i + 1L);
         } else {
           inclusiveLowerPoint = Long.MIN_VALUE;
@@ -377,14 +377,14 @@ public abstract class FieldCacheRangeFilter<T> extends Filter {
         if (upperVal != null) {
           long i = upperVal.longValue();
           if (!includeUpper && i == Long.MIN_VALUE)
-            return DocIdSet.EMPTY_DOCIDSET;
+            return null;
           inclusiveUpperPoint = includeUpper ? i : (i - 1L);
         } else {
           inclusiveUpperPoint = Long.MAX_VALUE;
         }
         
         if (inclusiveLowerPoint > inclusiveUpperPoint)
-          return DocIdSet.EMPTY_DOCIDSET;
+          return null;
         
         final FieldCache.Longs values = FieldCache.DEFAULT.getLongs(context.reader(), field, (FieldCache.LongParser) parser, false);
         return new FieldCacheDocIdSet(context.reader().maxDoc(), acceptDocs) {
@@ -422,7 +422,7 @@ public abstract class FieldCacheRangeFilter<T> extends Filter {
         if (lowerVal != null) {
           float f = lowerVal.floatValue();
           if (!includeUpper && f > 0.0f && Float.isInfinite(f))
-            return DocIdSet.EMPTY_DOCIDSET;
+            return null;
           int i = NumericUtils.floatToSortableInt(f);
           inclusiveLowerPoint = NumericUtils.sortableIntToFloat( includeLower ?  i : (i + 1) );
         } else {
@@ -431,7 +431,7 @@ public abstract class FieldCacheRangeFilter<T> extends Filter {
         if (upperVal != null) {
           float f = upperVal.floatValue();
           if (!includeUpper && f < 0.0f && Float.isInfinite(f))
-            return DocIdSet.EMPTY_DOCIDSET;
+            return null;
           int i = NumericUtils.floatToSortableInt(f);
           inclusiveUpperPoint = NumericUtils.sortableIntToFloat( includeUpper ? i : (i - 1) );
         } else {
@@ -439,7 +439,7 @@ public abstract class FieldCacheRangeFilter<T> extends Filter {
         }
         
         if (inclusiveLowerPoint > inclusiveUpperPoint)
-          return DocIdSet.EMPTY_DOCIDSET;
+          return null;
         
         final FieldCache.Floats values = FieldCache.DEFAULT.getFloats(context.reader(), field, (FieldCache.FloatParser) parser, false);
         return new FieldCacheDocIdSet(context.reader().maxDoc(), acceptDocs) {
@@ -477,7 +477,7 @@ public abstract class FieldCacheRangeFilter<T> extends Filter {
         if (lowerVal != null) {
           double f = lowerVal.doubleValue();
           if (!includeUpper && f > 0.0 && Double.isInfinite(f))
-            return DocIdSet.EMPTY_DOCIDSET;
+            return null;
           long i = NumericUtils.doubleToSortableLong(f);
           inclusiveLowerPoint = NumericUtils.sortableLongToDouble( includeLower ?  i : (i + 1L) );
         } else {
@@ -486,7 +486,7 @@ public abstract class FieldCacheRangeFilter<T> extends Filter {
         if (upperVal != null) {
           double f = upperVal.doubleValue();
           if (!includeUpper && f < 0.0 && Double.isInfinite(f))
-            return DocIdSet.EMPTY_DOCIDSET;
+            return null;
           long i = NumericUtils.doubleToSortableLong(f);
           inclusiveUpperPoint = NumericUtils.sortableLongToDouble( includeUpper ? i : (i - 1L) );
         } else {
@@ -494,7 +494,7 @@ public abstract class FieldCacheRangeFilter<T> extends Filter {
         }
         
         if (inclusiveLowerPoint > inclusiveUpperPoint)
-          return DocIdSet.EMPTY_DOCIDSET;
+          return null;
         
         final FieldCache.Doubles values = FieldCache.DEFAULT.getDoubles(context.reader(), field, (FieldCache.DoubleParser) parser, false);
         // ignore deleted docs if range doesn't contain 0

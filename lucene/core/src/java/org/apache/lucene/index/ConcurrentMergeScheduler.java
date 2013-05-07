@@ -184,7 +184,7 @@ public class ConcurrentMergeScheduler extends MergeScheduler {
     }
 
     // Sort the merge threads in descending order.
-    CollectionUtil.mergeSort(activeMerges, compareByMergeDocCount);
+    CollectionUtil.timSort(activeMerges, compareByMergeDocCount);
     
     int pri = mergeThreadPriority;
     final int activeMergeCount = activeMerges.size();
@@ -560,5 +560,14 @@ public class ConcurrentMergeScheduler extends MergeScheduler {
     sb.append("maxMergeCount=").append(maxMergeCount).append(", ");    
     sb.append("mergeThreadPriority=").append(mergeThreadPriority);
     return sb.toString();
+  }
+
+  @Override
+  public MergeScheduler clone() {
+    ConcurrentMergeScheduler clone = (ConcurrentMergeScheduler) super.clone();
+    clone.writer = null;
+    clone.dir = null;
+    clone.mergeThreads = new ArrayList<MergeThread>();
+    return clone;
   }
 }

@@ -102,9 +102,9 @@ public class FilteredQuery extends Query {
         Explanation inner = weight.explain (ir, i);
         Filter f = FilteredQuery.this.filter;
         DocIdSet docIdSet = f.getDocIdSet(ir, ir.reader().getLiveDocs());
-        DocIdSetIterator docIdSetIterator = docIdSet == null ? DocIdSet.EMPTY_DOCIDSET.iterator() : docIdSet.iterator();
+        DocIdSetIterator docIdSetIterator = docIdSet == null ? DocIdSetIterator.empty() : docIdSet.iterator();
         if (docIdSetIterator == null) {
-          docIdSetIterator = DocIdSet.EMPTY_DOCIDSET.iterator();
+          docIdSetIterator = DocIdSetIterator.empty();
         }
         if (docIdSetIterator.advance(i) == i) {
           return inner;
@@ -240,11 +240,11 @@ public class FilteredQuery extends Query {
     // optimization: we are topScorer and collect directly using short-circuited algo
     @Override
     public final void score(Collector collector) throws IOException {
-      int primDoc = primaryNext();
-      int secDoc = secondary.advance(primDoc);
       // the normalization trick already applies the boost of this query,
       // so we can use the wrapped scorer directly:
       collector.setScorer(scorer);
+      int primDoc = primaryNext();
+      int secDoc = secondary.advance(primDoc);
       for (;;) {
         if (primDoc == secDoc) {
           // Check if scorer has exhausted, only before collecting.

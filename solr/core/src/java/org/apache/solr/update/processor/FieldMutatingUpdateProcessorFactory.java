@@ -17,7 +17,6 @@
 
 package org.apache.solr.update.processor;
 
-import java.io.IOException;
 import java.util.Arrays;
 import java.util.ArrayList;
 import java.util.Collection;
@@ -32,11 +31,6 @@ import org.apache.solr.core.SolrCore;
 import org.apache.solr.common.SolrException;
 import static org.apache.solr.common.SolrException.ErrorCode.*;
 import org.apache.solr.common.util.NamedList;
-import org.apache.solr.request.SolrQueryRequest;
-import org.apache.solr.response.SolrQueryResponse;
-import org.apache.solr.update.AddUpdateCommand;
-import org.apache.solr.schema.IndexSchema;
-import org.apache.solr.schema.FieldType;
 import org.apache.solr.util.plugin.SolrCoreAware;
 
 
@@ -199,12 +193,10 @@ public abstract class FieldMutatingUpdateProcessorFactory
   @Override
   public void inform(final SolrCore core) {
     
-    final IndexSchema schema = core.getSchema();
-
     selector = 
       FieldMutatingUpdateProcessor.createFieldNameSelector
       (core.getResourceLoader(),
-       core.getSchema(),
+       core,
        inclusions.fieldName,
        inclusions.typeName,
        inclusions.typeClass,
@@ -216,7 +208,7 @@ public abstract class FieldMutatingUpdateProcessorFactory
         (selector,
          FieldMutatingUpdateProcessor.createFieldNameSelector
          (core.getResourceLoader(),
-          core.getSchema(),
+          core,
           exc.fieldName,
           exc.typeName,
           exc.typeClass,

@@ -65,7 +65,7 @@ public class TestMailEntityProcessor extends AbstractDataImportHandlerTestCase {
     DataImporter di = new DataImporter();
     di.loadAndInit(getConfigFromMap(paramMap));
     Entity ent = di.getConfig().getEntities().get(0);
-    RequestInfo rp = new RequestInfo(createMap("command", "full-import"), null);
+    RequestInfo rp = new RequestInfo(null, createMap("command", "full-import"), null);
     SolrWriterImpl swi = new SolrWriterImpl();
     di.runCmd(rp, swi);
     assertEquals("top1 did not return 2 messages", swi.docs.size(), 2);
@@ -80,7 +80,7 @@ public class TestMailEntityProcessor extends AbstractDataImportHandlerTestCase {
     DataImporter di = new DataImporter();
     di.loadAndInit(getConfigFromMap(paramMap));
     Entity ent = di.getConfig().getEntities().get(0);
-    RequestInfo rp = new RequestInfo(createMap("command", "full-import"), null);
+    RequestInfo rp = new RequestInfo(null, createMap("command", "full-import"), null);
     SolrWriterImpl swi = new SolrWriterImpl();
     di.runCmd(rp, swi);
     assertEquals("top2 and its children did not return 8 messages", swi.docs.size(), 8);
@@ -96,7 +96,7 @@ public class TestMailEntityProcessor extends AbstractDataImportHandlerTestCase {
     DataImporter di = new DataImporter();
     di.loadAndInit(getConfigFromMap(paramMap));
     Entity ent = di.getConfig().getEntities().get(0);
-    RequestInfo rp = new RequestInfo(createMap("command", "full-import"), null);
+    RequestInfo rp = new RequestInfo(null, createMap("command", "full-import"), null);
     SolrWriterImpl swi = new SolrWriterImpl();
     di.runCmd(rp, swi);
     assertEquals("top2 and its direct children did not return 5 messages", swi.docs.size(), 5);
@@ -112,7 +112,7 @@ public class TestMailEntityProcessor extends AbstractDataImportHandlerTestCase {
     DataImporter di = new DataImporter();
     di.loadAndInit(getConfigFromMap(paramMap));
     Entity ent = di.getConfig().getEntities().get(0);
-    RequestInfo rp = new RequestInfo(createMap("command", "full-import"), null);
+    RequestInfo rp = new RequestInfo(null, createMap("command", "full-import"), null);
     SolrWriterImpl swi = new SolrWriterImpl();
     di.runCmd(rp, swi);
     assertEquals("top2 and its direct children did not return 3 messages", swi.docs.size(), 3);
@@ -129,7 +129,7 @@ public class TestMailEntityProcessor extends AbstractDataImportHandlerTestCase {
     DataImporter di = new DataImporter();
     di.loadAndInit(getConfigFromMap(paramMap));
     Entity ent = di.getConfig().getEntities().get(0);
-    RequestInfo rp = new RequestInfo(createMap("command", "full-import"), null);
+    RequestInfo rp = new RequestInfo(null, createMap("command", "full-import"), null);
     SolrWriterImpl swi = new SolrWriterImpl();
     di.runCmd(rp, swi);
     assertEquals("top2 and its direct children did not return 3 messages", swi.docs.size(), 3);
@@ -145,7 +145,7 @@ public class TestMailEntityProcessor extends AbstractDataImportHandlerTestCase {
     DataImporter di = new DataImporter();
     di.loadAndInit(getConfigFromMap(paramMap));
     Entity ent = di.getConfig().getEntities().get(0);
-    RequestInfo rp = new RequestInfo(createMap("command", "full-import"), null);
+    RequestInfo rp = new RequestInfo(null, createMap("command", "full-import"), null);
     SolrWriterImpl swi = new SolrWriterImpl();
     di.runCmd(rp, swi);
     assertEquals("top2 and its direct children did not return 3 messages", swi.docs.size(), 3);

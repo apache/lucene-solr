@@ -51,7 +51,6 @@ public abstract class BaseCompositeReader<R extends IndexReader> extends Composi
   private final int[] starts;       // 1st docno for each reader
   private final int maxDoc;
   private final int numDocs;
-  private final boolean hasDeletions;
 
   /** List view solely for {@link #getSequentialSubReaders()},
    * for effectiveness the array is used internally. */
@@ -70,7 +69,6 @@ public abstract class BaseCompositeReader<R extends IndexReader> extends Composi
     this.subReadersList = Collections.unmodifiableList(Arrays.asList(subReaders));
     starts = new int[subReaders.length + 1];    // build starts array
     int maxDoc = 0, numDocs = 0;
-    boolean hasDeletions = false;
     for (int i = 0; i < subReaders.length; i++) {
       starts[i] = maxDoc;
       final IndexReader r = subReaders[i];
@@ -79,15 +77,11 @@ public abstract class BaseCompositeReader<R extends IndexReader> extends Composi
         throw new IllegalArgumentException("Too many documents, composite IndexReaders cannot exceed " + Integer.MAX_VALUE);
       }
       numDocs += r.numDocs();    // compute numDocs
-      if (r.hasDeletions()) {
-        hasDeletions = true;
-      }
       r.registerParentReader(this);
     }
     starts[subReaders.length] = maxDoc;
     this.maxDoc = maxDoc;
     this.numDocs = numDocs;
-    this.hasDeletions = hasDeletions;
   }
 
   @Override
@@ -114,12 +108,6 @@ public abstract class BaseCompositeReader<R extends IndexReader> extends Composi
     ensureOpen();
     final int i = readerIndex(docID);                          // find subreader num
     subReaders[i].document(docID - starts[i], visitor);    // dispatch to subreader
-  }
-
-  @Override
-  public final boolean hasDeletions() {
-    // Don't call ensureOpen() here (it could affect performance)
-    return hasDeletions;
   }
 
   @Override

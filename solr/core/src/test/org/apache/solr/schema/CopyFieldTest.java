@@ -167,7 +167,7 @@ public class CopyFieldTest extends SolrTestCaseJ4 {
   public void testExplicitSourceGlob()
   {
     SolrCore core = h.getCore();
-    IndexSchema schema = core.getSchema();
+    IndexSchema schema = core.getLatestSchema();
     
     assertTrue("schema should contain explicit field 'sku1'", schema.getFields().containsKey("sku1"));
     assertTrue("schema should contain explicit field 'sku2'", schema.getFields().containsKey("sku2"));
@@ -221,5 +221,44 @@ public class CopyFieldTest extends SolrTestCaseJ4 {
     req = new LocalSolrQueryRequest( core, new MapSolrParams( args) );
     assertQ("sku2 copied to dest_sub_no_ast_s (*_s subset pattern no asterisk)", req
         ,"//*[@numFound='1']");
+  }
+
+  @Test
+  public void testSourceGlobMatchesNoDynamicOrExplicitField()
+  {
+    // SOLR-4650: copyField source globs should not have to match an explicit or dynamic field 
+    SolrCore core = h.getCore();
+    IndexSchema schema = core.getLatestSchema();
+
+    assertNull("'testing123_*' should not be (or match) a dynamic or explicit field", schema.getFieldOrNull("testing123_*"));
+
+    assertTrue("schema should contain dynamic field '*_s'", schema.getDynamicPattern("*_s").equals("*_s"));
+
+    assertU(adoc("id", "A5", "sku1", "10-1839ACX-93", "testing123_s", "AAM46"));
+    assertU(commit());
+
+    Map<String,String> args = new HashMap<String, String>();
+    args.put( CommonParams.Q, "text:AAM46" );
+    args.put( "indent", "true" );
+    SolrQueryRequest req = new LocalSolrQueryRequest( core, new MapSolrParams( args) );
+    assertQ("sku2 copied to text", req
+        ,"//*[@numFound='1']"
+        ,"//result/doc[1]/str[@name='id'][.='A5']"
+    );
+  }
+
+  public void testCatchAllCopyField() {
+    IndexSchema schema = h.getCore().getLatestSchema();
+
+    assertNull("'*' should not be (or match) a dynamic field", 
+               schema.getDynamicPattern("*"));
+    
+    assertU(adoc("id", "A5", "sku1", "10-1839ACX-93", "testing123_s", "AAM46"));
+    assertU(commit());
+    for (String q : new String[] {"A5", "10-1839ACX-93", "AAM46" }) {
+      assertQ(req("q","catchall_t:" + q)
+              ,"//*[@numFound='1']"
+              ,"//result/doc[1]/str[@name='id'][.='A5']");
+    }
   }
 }

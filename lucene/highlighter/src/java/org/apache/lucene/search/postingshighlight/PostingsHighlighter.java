@@ -33,8 +33,8 @@ import java.util.TreeSet;
 import org.apache.lucene.index.AtomicReader;
 import org.apache.lucene.index.AtomicReaderContext;
 import org.apache.lucene.index.DocsAndPositionsEnum;
-import org.apache.lucene.index.FieldInfo.IndexOptions;
 import org.apache.lucene.index.FieldInfo;
+import org.apache.lucene.index.FieldInfo.IndexOptions;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.IndexReaderContext;
 import org.apache.lucene.index.MultiReader;
@@ -48,6 +48,7 @@ import org.apache.lucene.search.Query;
 import org.apache.lucene.search.ScoreDoc;
 import org.apache.lucene.search.TopDocs;
 import org.apache.lucene.util.BytesRef;
+import org.apache.lucene.util.InPlaceMergeSorter;
 import org.apache.lucene.util.UnicodeUtil;
 
 /**
@@ -96,9 +97,14 @@ public class PostingsHighlighter {
   public static final int DEFAULT_MAX_LENGTH = 10000;
     
   private final int maxLength;
-  private final BreakIterator breakIterator;
-  private final PassageScorer scorer;
-  private final PassageFormatter formatter;
+
+  /** Set the first time {@link #getFormatter} is called,
+   *  and then reused. */
+  private PassageFormatter defaultFormatter;
+
+  /** Set the first time {@link #getScorer} is called,
+   *  and then reused. */
+  private PassageScorer defaultScorer;
   
   /**
    * Creates a new highlighter with default parameters.
@@ -113,35 +119,42 @@ public class PostingsHighlighter {
    * @throws IllegalArgumentException if <code>maxLength</code> is negative or <code>Integer.MAX_VALUE</code>
    */
   public PostingsHighlighter(int maxLength) {
-    this(maxLength, BreakIterator.getSentenceInstance(Locale.ROOT), new PassageScorer(), new PassageFormatter());
-  }
-  
-  /**
-   * Creates a new highlighter with custom parameters.
-   * @param maxLength maximum content size to process.
-   * @param breakIterator used for finding passage
-   *        boundaries; pass null to highlight the entire
-   *        content as a single Passage.
-   * @param scorer used for ranking passages.
-   * @param formatter used for formatting passages into highlighted snippets.
-   * @throws IllegalArgumentException if <code>maxLength</code> is negative or <code>Integer.MAX_VALUE</code>
-   */
-  public PostingsHighlighter(int maxLength, BreakIterator breakIterator, PassageScorer scorer, PassageFormatter formatter) {
     if (maxLength < 0 || maxLength == Integer.MAX_VALUE) {
       // two reasons: no overflow problems in BreakIterator.preceding(offset+1),
       // our sentinel in the offsets queue uses this value to terminate.
       throw new IllegalArgumentException("maxLength must be < Integer.MAX_VALUE");
     }
-    if (breakIterator == null) {
-      breakIterator = new WholeBreakIterator();
-    }
-    if (scorer == null || formatter == null) {
-      throw new NullPointerException();
-    }
     this.maxLength = maxLength;
-    this.breakIterator = breakIterator;
-    this.scorer = scorer;
-    this.formatter = formatter;
+  }
+  
+  /** Returns the {@link BreakIterator} to use for
+   *  dividing text into passages.  This returns 
+   *  {@link BreakIterator#getSentenceInstance(Locale)} by default;
+   *  subclasses can override to customize. */
+  protected BreakIterator getBreakIterator(String field) {
+    return BreakIterator.getSentenceInstance(Locale.ROOT);
+  }
+
+  /** Returns the {@link PassageFormatter} to use for
+   *  formatting passages into highlighted snippets.  This
+   *  returns a new {@code PassageFormatter} by default;
+   *  subclasses can override to customize. */
+  protected PassageFormatter getFormatter(String field) {
+    if (defaultFormatter == null) {
+      defaultFormatter = new DefaultPassageFormatter();
+    }
+    return defaultFormatter;
+  }
+
+  /** Returns the {@link PassageScorer} to use for
+   *  ranking passages.  This
+   *  returns a new {@code PassageScorer} by default;
+   *  subclasses can override to customize. */
+  protected PassageScorer getScorer(String field) {
+    if (defaultScorer == null) {
+      defaultScorer = new PassageScorer();
+    }
+    return defaultScorer;
   }
 
   /**
@@ -182,7 +195,7 @@ public class PostingsHighlighter {
    *         {@link IndexOptions#DOCS_AND_FREQS_AND_POSITIONS_AND_OFFSETS}
    */
   public String[] highlight(String field, Query query, IndexSearcher searcher, TopDocs topDocs, int maxPassages) throws IOException {
-    Map<String,String[]> res = highlightFields(new String[] { field }, query, searcher, topDocs, maxPassages);
+    Map<String,String[]> res = highlightFields(new String[] { field }, query, searcher, topDocs, new int[] { maxPassages });
     return res.get(field);
   }
   
@@ -212,7 +225,9 @@ public class PostingsHighlighter {
    *         {@link IndexOptions#DOCS_AND_FREQS_AND_POSITIONS_AND_OFFSETS}
    */
   public Map<String,String[]> highlightFields(String fields[], Query query, IndexSearcher searcher, TopDocs topDocs) throws IOException {
-    return highlightFields(fields, query, searcher, topDocs, 1);
+    int maxPassages[] = new int[fields.length];
+    Arrays.fill(maxPassages, 1);
+    return highlightFields(fields, query, searcher, topDocs, maxPassages);
   }
   
   /**
@@ -243,7 +258,7 @@ public class PostingsHighlighter {
    * @throws IllegalArgumentException if <code>field</code> was indexed without 
    *         {@link IndexOptions#DOCS_AND_FREQS_AND_POSITIONS_AND_OFFSETS}
    */
-  public Map<String,String[]> highlightFields(String fields[], Query query, IndexSearcher searcher, TopDocs topDocs, int maxPassages) throws IOException {
+  public Map<String,String[]> highlightFields(String fields[], Query query, IndexSearcher searcher, TopDocs topDocs, int maxPassages[]) throws IOException {
     final ScoreDoc scoreDocs[] = topDocs.scoreDocs;
     int docids[] = new int[scoreDocs.length];
     for (int i = 0; i < docids.length; i++) {
@@ -257,12 +272,12 @@ public class PostingsHighlighter {
    * Highlights the top-N passages from multiple fields,
    * for the provided int[] docids.
    * 
-   * @param fields field names to highlight. 
+   * @param fieldsIn field names to highlight. 
    *        Must have a stored string value and also be indexed with offsets.
    * @param query query to highlight.
    * @param searcher searcher that was previously used to execute the query.
-   * @param docids containing the document IDs to highlight.
-   * @param maxPassages The maximum number of top-N ranked passages per-field used to 
+   * @param docidsIn containing the document IDs to highlight.
+   * @param maxPassagesIn The maximum number of top-N ranked passages per-field used to 
    *        form the highlighted snippets.
    * @return Map keyed on field name, containing the array of formatted snippets 
    *         corresponding to the documents in <code>topDocs</code>. 
@@ -273,7 +288,13 @@ public class PostingsHighlighter {
    * @throws IllegalArgumentException if <code>field</code> was indexed without 
    *         {@link IndexOptions#DOCS_AND_FREQS_AND_POSITIONS_AND_OFFSETS}
    */
-  public Map<String,String[]> highlightFields(String fields[], Query query, IndexSearcher searcher, int[] docids, int maxPassages) throws IOException {
+  public Map<String,String[]> highlightFields(String fieldsIn[], Query query, IndexSearcher searcher, int[] docidsIn, int maxPassagesIn[]) throws IOException {
+    if (fieldsIn.length < 1) {
+      throw new IllegalArgumentException("fieldsIn must not be empty");
+    }
+    if (fieldsIn.length != maxPassagesIn.length) {
+      throw new IllegalArgumentException("invalid number of maxPassagesIn");
+    }
     final IndexReader reader = searcher.getIndexReader();
     query = rewrite(query);
     SortedSet<Term> queryTerms = new TreeSet<Term>();
@@ -282,11 +303,34 @@ public class PostingsHighlighter {
     IndexReaderContext readerContext = reader.getContext();
     List<AtomicReaderContext> leaves = readerContext.leaves();
 
-    BreakIterator bi = (BreakIterator)breakIterator.clone();
+    // Make our own copies because we sort in-place:
+    int[] docids = new int[docidsIn.length];
+    System.arraycopy(docidsIn, 0, docids, 0, docidsIn.length);
+    final String fields[] = new String[fieldsIn.length];
+    System.arraycopy(fieldsIn, 0, fields, 0, fieldsIn.length);
+    final int maxPassages[] = new int[maxPassagesIn.length];
+    System.arraycopy(maxPassagesIn, 0, maxPassages, 0, maxPassagesIn.length);
 
     // sort for sequential io
     Arrays.sort(docids);
-    Arrays.sort(fields);
+    new InPlaceMergeSorter() {
+
+      @Override
+      protected void swap(int i, int j) {
+        String tmp = fields[i];
+        fields[i] = fields[j];
+        fields[j] = tmp;
+        int tmp2 = maxPassages[i];
+        maxPassages[i] = maxPassages[j];
+        maxPassages[j] = tmp2;
+      }
+
+      @Override
+      protected int compare(int i, int j) {
+        return fields[i].compareTo(fields[j]);
+      }
+      
+    }.sort(0, fields.length);
     
     // pull stored data:
     String[][] contents = loadFieldValues(searcher, fields, docids, maxLength);
@@ -294,16 +338,23 @@ public class PostingsHighlighter {
     Map<String,String[]> highlights = new HashMap<String,String[]>();
     for (int i = 0; i < fields.length; i++) {
       String field = fields[i];
+      int numPassages = maxPassages[i];
       Term floor = new Term(field, "");
       Term ceiling = new Term(field, UnicodeUtil.BIG_TERM);
       SortedSet<Term> fieldTerms = queryTerms.subSet(floor, ceiling);
       // TODO: should we have some reasonable defaults for term pruning? (e.g. stopwords)
-      Term terms[] = fieldTerms.toArray(new Term[fieldTerms.size()]);
-      Map<Integer,String> fieldHighlights = highlightField(field, contents[i], bi, terms, docids, leaves, maxPassages);
+
+      // Strip off the redundant field:
+      BytesRef terms[] = new BytesRef[fieldTerms.size()];
+      int termUpto = 0;
+      for(Term term : fieldTerms) {
+        terms[termUpto++] = term.bytes();
+      }
+      Map<Integer,String> fieldHighlights = highlightField(field, contents[i], getBreakIterator(field), terms, docids, leaves, numPassages);
         
       String[] result = new String[docids.length];
-      for (int j = 0; j < docids.length; j++) {
-        result[j] = fieldHighlights.get(docids[j]);
+      for (int j = 0; j < docidsIn.length; j++) {
+        result[j] = fieldHighlights.get(docidsIn[j]);
       }
       highlights.put(field, result);
     }
@@ -329,13 +380,18 @@ public class PostingsHighlighter {
     return contents;
   }
     
-  private Map<Integer,String> highlightField(String field, String contents[], BreakIterator bi, Term terms[], int[] docids, List<AtomicReaderContext> leaves, int maxPassages) throws IOException {  
+  private Map<Integer,String> highlightField(String field, String contents[], BreakIterator bi, BytesRef terms[], int[] docids, List<AtomicReaderContext> leaves, int maxPassages) throws IOException {  
     Map<Integer,String> highlights = new HashMap<Integer,String>();
     
     // reuse in the real sense... for docs in same segment we just advance our old enum
     DocsAndPositionsEnum postings[] = null;
     TermsEnum termsEnum = null;
     int lastLeaf = -1;
+
+    PassageFormatter fieldFormatter = getFormatter(field);
+    if (fieldFormatter == null) {
+      throw new NullPointerException("PassageFormatter cannot be null");
+    }
 
     for (int i = 0; i < docids.length; i++) {
       String content = contents[i];
@@ -362,7 +418,7 @@ public class PostingsHighlighter {
       if (passages.length > 0) {
         // otherwise a null snippet (eg if field is missing
         // entirely from the doc)
-        highlights.put(doc, formatter.format(passages, content));
+        highlights.put(doc, fieldFormatter.format(passages, content));
       }
       lastLeaf = leaf;
     }
@@ -373,8 +429,12 @@ public class PostingsHighlighter {
   // algorithm: treat sentence snippets as miniature documents
   // we can intersect these with the postings lists via BreakIterator.preceding(offset),s
   // score each sentence as norm(sentenceStartOffset) * sum(weight * tf(freq))
-  private Passage[] highlightDoc(String field, Term terms[], int contentLength, BreakIterator bi, int doc, 
+  private Passage[] highlightDoc(String field, BytesRef terms[], int contentLength, BreakIterator bi, int doc, 
       TermsEnum termsEnum, DocsAndPositionsEnum[] postings, int n) throws IOException {
+    PassageScorer scorer = getScorer(field);
+    if (scorer == null) {
+      throw new NullPointerException("PassageScorer cannot be null");
+    }
     PriorityQueue<OffsetsEnum> pq = new PriorityQueue<OffsetsEnum>();
     float weights[] = new float[terms.length];
     // initialize postings
@@ -385,7 +445,7 @@ public class PostingsHighlighter {
         continue;
       } else if (de == null) {
         postings[i] = EMPTY; // initially
-        if (!termsEnum.seekExact(terms[i].bytes(), true)) {
+        if (!termsEnum.seekExact(terms[i], true)) {
           continue; // term not found
         }
         de = postings[i] = termsEnum.docsAndPositions(null, null, DocsAndPositionsEnum.FLAG_OFFSETS);

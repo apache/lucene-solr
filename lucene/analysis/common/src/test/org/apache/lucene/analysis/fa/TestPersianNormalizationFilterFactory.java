@@ -20,23 +20,31 @@ package org.apache.lucene.analysis.fa;
 import java.io.Reader;
 import java.io.StringReader;
 
-import org.apache.lucene.analysis.BaseTokenStreamTestCase;
 import org.apache.lucene.analysis.MockTokenizer;
 import org.apache.lucene.analysis.TokenStream;
-import org.apache.lucene.analysis.Tokenizer;
+import org.apache.lucene.analysis.util.BaseTokenStreamFactoryTestCase;
 
 /**
  * Simple tests to ensure the Persian normalization factory is working.
  */
-public class TestPersianNormalizationFilterFactory extends BaseTokenStreamTestCase {
+public class TestPersianNormalizationFilterFactory extends BaseTokenStreamFactoryTestCase {
   /**
    * Ensure the filter actually normalizes persian text.
    */
   public void testNormalization() throws Exception {
     Reader reader = new StringReader("های");
-    Tokenizer tokenizer = new MockTokenizer(reader, MockTokenizer.WHITESPACE, false);
-    PersianNormalizationFilterFactory factory = new PersianNormalizationFilterFactory();
-    TokenStream stream = factory.create(tokenizer);
+    TokenStream stream = new MockTokenizer(reader, MockTokenizer.WHITESPACE, false);
+    stream = tokenFilterFactory("PersianNormalization").create(stream);
     assertTokenStreamContents(stream, new String[] { "هاي" });
+  }
+  
+  /** Test that bogus arguments result in exception */
+  public void testBogusArguments() throws Exception {
+    try {
+      tokenFilterFactory("PersianNormalization", "bogusArg", "bogusValue");
+      fail();
+    } catch (IllegalArgumentException expected) {
+      assertTrue(expected.getMessage().contains("Unknown parameters"));
+    }
   }
 }

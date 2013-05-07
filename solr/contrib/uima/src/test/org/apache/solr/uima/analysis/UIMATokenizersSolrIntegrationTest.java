@@ -19,6 +19,7 @@ package org.apache.solr.uima.analysis;
 
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.request.SolrQueryRequest;
+import org.apache.solr.schema.IndexSchema;
 import org.junit.BeforeClass;
 import org.junit.Test;
 
@@ -34,10 +35,11 @@ public class UIMATokenizersSolrIntegrationTest extends SolrTestCaseJ4 {
 
   @Test
   public void testInitialization() throws Exception {
-    assertNotNull(h.getCore().getSchema().getField("sentences"));
-    assertNotNull(h.getCore().getSchema().getFieldType("sentences"));
-    assertNotNull(h.getCore().getSchema().getField("nouns"));
-    assertNotNull(h.getCore().getSchema().getFieldType("nouns"));
+    IndexSchema schema = h.getCore().getLatestSchema();
+    assertNotNull(schema.getField("sentences"));
+    assertNotNull(schema.getFieldType("sentences"));
+    assertNotNull(schema.getField("nouns"));
+    assertNotNull(schema.getFieldType("nouns"));
   }
 
   @Test

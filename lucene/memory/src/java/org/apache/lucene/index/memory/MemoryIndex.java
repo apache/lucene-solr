@@ -63,7 +63,6 @@ import org.apache.lucene.util.ByteBlockPool;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.BytesRefHash.DirectBytesStartArray;
 import org.apache.lucene.util.BytesRefHash;
-import org.apache.lucene.util.Constants; // for javadocs
 import org.apache.lucene.util.Counter;
 import org.apache.lucene.util.IntBlockPool.SliceReader;
 import org.apache.lucene.util.IntBlockPool.SliceWriter;
@@ -430,7 +429,6 @@ public class MemoryIndex {
       
       while (stream.incrementToken()) {
         termAtt.fillBytesRef();
-        if (ref.length == 0) continue; // nothing to do
 //        if (DEBUG) System.err.println("token='" + term + "'");
         numTokens++;
         final int posIncr = posIncrAttribute.getPositionIncrement();
@@ -574,7 +572,7 @@ public class MemoryIndex {
       entries[i] = iter.next();
     }
     
-    if (size > 1) ArrayUtil.quickSort(entries, termComparator);
+    if (size > 1) ArrayUtil.introSort(entries, termComparator);
     return entries;
   }
   
@@ -1012,8 +1010,8 @@ public class MemoryIndex {
       }
 
       @Override
-      public int advance(int target) {
-        return nextDoc();
+      public int advance(int target) throws IOException {
+        return slowAdvance(target);
       }
 
       @Override
@@ -1068,8 +1066,8 @@ public class MemoryIndex {
       }
 
       @Override
-      public int advance(int target) {
-        return nextDoc();
+      public int advance(int target) throws IOException {
+        return slowAdvance(target);
       }
 
       @Override
@@ -1133,7 +1131,7 @@ public class MemoryIndex {
     @Override
     public int numDocs() {
       if (DEBUG) System.err.println("MemoryIndexReader.numDocs");
-      return fields.size() > 0 ? 1 : 0;
+      return 1;
     }
   
     @Override
@@ -1146,12 +1144,6 @@ public class MemoryIndex {
     public void document(int docID, StoredFieldVisitor visitor) {
       if (DEBUG) System.err.println("MemoryIndexReader.document");
       // no-op: there are no stored fields
-    }
-    
-    @Override
-    public boolean hasDeletions() {
-      if (DEBUG) System.err.println("MemoryIndexReader.hasDeletions");
-      return false;
     }
   
     @Override

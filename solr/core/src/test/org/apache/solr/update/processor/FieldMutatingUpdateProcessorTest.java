@@ -17,36 +17,15 @@
 
 package org.apache.solr.update.processor;
 
-import java.util.ArrayList;
 import java.util.LinkedHashSet;
 import java.util.TreeSet;
-import java.util.HashMap;
-import java.util.Map;
 import java.util.Arrays;
-import java.io.IOException;
-
-import org.apache.solr.SolrTestCaseJ4;
 
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.SolrInputDocument;
 import org.apache.solr.common.SolrInputField;
-import org.apache.solr.common.params.ModifiableSolrParams;
-import org.apache.solr.common.params.SolrParams;
-
-import org.apache.solr.core.SolrCore;
 import org.apache.solr.schema.IndexSchema;
-
-import org.apache.solr.request.SolrQueryRequest;
-import org.apache.solr.request.LocalSolrQueryRequest;
-import org.apache.solr.response.SolrQueryResponse;
-
-import org.apache.solr.update.AddUpdateCommand;
-import org.apache.solr.update.processor.UpdateRequestProcessor;
-import org.apache.solr.update.processor.UpdateRequestProcessorChain;
-
-import org.junit.Before;
 import org.junit.BeforeClass;
-import org.junit.Test;
 
 /**
  * Tests the basics of configuring FieldMutatingUpdateProcessors  
@@ -570,7 +549,7 @@ public class FieldMutatingUpdateProcessorTest extends UpdateProcessorTestBase {
 
   public void testIgnore() throws Exception {
 
-    IndexSchema schema = h.getCore().getSchema();
+    IndexSchema schema = h.getCore().getLatestSchema();
     assertNull("test expects 'foo_giberish' to not be a valid field, looks like schema was changed out from under us",
                schema.getFieldTypeNoEx("foo_giberish"));
     assertNotNull("test expects 't_raw' to be a valid field, looks like schema was changed out from under us",

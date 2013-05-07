@@ -21,7 +21,13 @@ import java.io.InputStreamReader;
 import java.util.List;
 
 import org.apache.lucene.document.Field;
-import org.apache.lucene.index.*;
+import org.apache.lucene.index.DirectoryReader;
+import org.apache.lucene.index.IndexReader;
+import org.apache.lucene.index.IndexWriter;
+import org.apache.lucene.index.IndexWriterConfig;
+import org.apache.lucene.index.LogByteSizeMergePolicy;
+import org.apache.lucene.index.LogMergePolicy;
+import org.apache.solr.schema.IndexSchema;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -60,7 +66,7 @@ public class FileBasedSpellChecker extends AbstractLuceneSpellChecker {
 
   @Override
   public void build(SolrCore core, SolrIndexSearcher searcher) throws IOException {
-    loadExternalFileDictionary(core);
+    loadExternalFileDictionary(core, searcher);
     spellChecker.clearIndex();
     // TODO: you should be able to specify the IWC params?
     // TODO: if we enable this, codec gets angry since field won't exist in the schema
@@ -76,12 +82,12 @@ public class FileBasedSpellChecker extends AbstractLuceneSpellChecker {
     return null;
   }
 
-  private void loadExternalFileDictionary(SolrCore core) {
+  private void loadExternalFileDictionary(SolrCore core, SolrIndexSearcher searcher) {
     try {
-
+      IndexSchema schema = null == searcher ? core.getLatestSchema() : searcher.getSchema();
       // Get the field's analyzer
-      if (fieldTypeName != null && core.getSchema().getFieldTypeNoEx(fieldTypeName) != null) {
-        FieldType fieldType = core.getSchema().getFieldTypes().get(fieldTypeName);
+      if (fieldTypeName != null && schema.getFieldTypeNoEx(fieldTypeName) != null) {
+        FieldType fieldType = schema.getFieldTypes().get(fieldTypeName);
         // Do index-time analysis using the given fieldType's analyzer
         RAMDirectory ramDir = new RAMDirectory();
 

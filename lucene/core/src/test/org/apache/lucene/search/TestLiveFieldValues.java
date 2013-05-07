@@ -25,7 +25,6 @@ import java.util.List;
 import java.util.Locale;
 import java.util.Map;
 import java.util.Random;
-import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.CountDownLatch;
 
 import org.apache.lucene.analysis.MockAnalyzer;
@@ -36,10 +35,8 @@ import org.apache.lucene.document.StringField;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.IndexWriter;
 import org.apache.lucene.index.IndexWriterConfig;
-import org.apache.lucene.index.RandomIndexWriter;
 import org.apache.lucene.index.StoredDocument;
 import org.apache.lucene.index.Term;
-import org.apache.lucene.search.NRTManager.TrackingIndexWriter;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.util.LuceneTestCase;
 import org.apache.lucene.util._TestUtil;
@@ -50,10 +47,9 @@ public class TestLiveFieldValues extends LuceneTestCase {
     Directory dir = newFSDirectory(_TestUtil.getTempDir("livefieldupdates"));
     IndexWriterConfig iwc = newIndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer(random()));
 
-    final IndexWriter _w = new IndexWriter(dir, iwc);
-    final TrackingIndexWriter w = new TrackingIndexWriter(_w);
+    final IndexWriter w = new IndexWriter(dir, iwc);
 
-    final NRTManager mgr = new NRTManager(w, new SearcherFactory() {
+    final SearcherManager mgr = new SearcherManager(w, true, new SearcherFactory() {
         @Override
         public IndexSearcher newSearcher(IndexReader r) {
           return new IndexSearcher(r);
@@ -174,7 +170,7 @@ public class TestLiveFieldValues extends LuceneTestCase {
 
     rt.close();
     mgr.close();
-    _w.close();
+    w.close();
     dir.close();
   }
 }

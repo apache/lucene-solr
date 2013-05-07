@@ -28,14 +28,23 @@ public class StringMockResourceLoader implements ResourceLoader {
   public StringMockResourceLoader(String text) {
     this.text = text;
   }
+  
+  @Override
+  public <T> Class<? extends T> findClass(String cname, Class<T> expectedType) {
+    try {
+      return Class.forName(cname).asSubclass(expectedType);
+    } catch (Exception e) {
+      throw new RuntimeException("Cannot load class: " + cname, e);
+    }
+  }
 
   @Override
   public <T> T newInstance(String cname, Class<T> expectedType) {
+    Class<? extends T> clazz = findClass(cname, expectedType);
     try {
-      Class<? extends T> clazz = Class.forName(cname).asSubclass(expectedType);
       return clazz.newInstance();
     } catch (Exception e) {
-      throw new RuntimeException(e);
+      throw new RuntimeException("Cannot create instance: " + cname, e);
     }
   }
 

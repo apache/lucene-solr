@@ -31,6 +31,9 @@ import org.slf4j.Logger;
 public class SolrException extends RuntimeException {
 
   /**
+   * This list of valid HTTP Status error codes that Solr may return in 
+   * the case of a "Server Side" error.
+   *
    * @since solr 1.2
    */
   public enum ErrorCode {
@@ -69,8 +72,28 @@ public class SolrException extends RuntimeException {
     super(th);
     this.code = code.code;
   }
+
+  /**
+   * Constructor that can set arbitrary http status code. Not for 
+   * use in Solr, but may be used by clients in subclasses to capture 
+   * errors returned by the servlet container or other HTTP proxies.
+   */
+  protected SolrException(int code, String msg, Throwable th) {
+    super(msg, th);
+    this.code = code;
+  }
   
   int code=0;
+
+  /**
+   * The HTTP Status code associated with this Exception.  For SolrExceptions 
+   * thrown by Solr "Server Side", this should valid {@link ErrorCode}, 
+   * however client side exceptions may contain an arbitrary error code based 
+   * on the behavior of the Servlet Container hosting Solr, or any HTTP 
+   * Proxies that may exist between the client and the server.
+   *
+   * @return The HTTP Status code associated with this Exception
+   */
   public int code() { return code; }
 
 

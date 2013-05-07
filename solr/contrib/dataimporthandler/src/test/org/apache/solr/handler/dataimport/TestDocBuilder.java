@@ -57,7 +57,7 @@ public class TestDocBuilder extends AbstractDataImportHandlerTestCase {
     DIHConfiguration cfg = di.getConfig();
     Entity ent = cfg.getEntities().get(0);
     MockDataSource.setIterator("select * from x", new ArrayList<Map<String, Object>>().iterator());
-    RequestInfo rp = new RequestInfo(createMap("command", "full-import"), null);
+    RequestInfo rp = new RequestInfo(null, createMap("command", "full-import"), null);
     SolrWriterImpl swi = new SolrWriterImpl();
     di.runCmd(rp, swi);
     assertEquals(Boolean.TRUE, swi.deleteAllCalled);
@@ -77,7 +77,7 @@ public class TestDocBuilder extends AbstractDataImportHandlerTestCase {
     Entity ent = cfg.getEntities().get(0);
     MockDataSource.setIterator("select * from x", new ArrayList<Map<String, Object>>().iterator());
     MockDataSource.setIterator("select id from x", new ArrayList<Map<String, Object>>().iterator());
-    RequestInfo rp = new RequestInfo(createMap("command", "delta-import"), null);
+    RequestInfo rp = new RequestInfo(null, createMap("command", "delta-import"), null);
     SolrWriterImpl swi = new SolrWriterImpl();
     di.runCmd(rp, swi);
     assertEquals(Boolean.FALSE, swi.deleteAllCalled);
@@ -98,7 +98,7 @@ public class TestDocBuilder extends AbstractDataImportHandlerTestCase {
     List<Map<String, Object>> l = new ArrayList<Map<String, Object>>();
     l.add(createMap("id", 1, "desc", "one"));
     MockDataSource.setIterator("select * from x", l.iterator());
-    RequestInfo rp = new RequestInfo(createMap("command", "full-import"), null);
+    RequestInfo rp = new RequestInfo(null, createMap("command", "full-import"), null);
     SolrWriterImpl swi = new SolrWriterImpl();
     di.runCmd(rp, swi);
     assertEquals(Boolean.TRUE, swi.deleteAllCalled);
@@ -127,7 +127,7 @@ public class TestDocBuilder extends AbstractDataImportHandlerTestCase {
     List<Map<String, Object>> l = new ArrayList<Map<String, Object>>();
     l.add(createMap("id", 1, "desc", "one"));
     MockDataSource.setIterator("select * from x", l.iterator());
-    RequestInfo rp = new RequestInfo(createMap("command", "import"), null);
+    RequestInfo rp = new RequestInfo(null, createMap("command", "import"), null);
     SolrWriterImpl swi = new SolrWriterImpl();
     di.runCmd(rp, swi);
     assertEquals(Boolean.FALSE, swi.deleteAllCalled);
@@ -153,7 +153,7 @@ public class TestDocBuilder extends AbstractDataImportHandlerTestCase {
     di.loadAndInit(dc_singleEntity);
     DIHConfiguration cfg = di.getConfig();
     Entity ent = cfg.getEntities().get(0);
-    RequestInfo rp = new RequestInfo(createMap("command", "full-import"), null);
+    RequestInfo rp = new RequestInfo(null, createMap("command", "full-import"), null);
     List<Map<String, Object>> l = new ArrayList<Map<String, Object>>();
     l.add(createMap("id", 1, "desc", "one"));
     l.add(createMap("id", 2, "desc", "two"));

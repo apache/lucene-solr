@@ -20,7 +20,17 @@ package org.apache.solr.search;
 import java.io.Closeable;
 import java.io.IOException;
 import java.net.URL;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Collection;
+import java.util.Collections;
+import java.util.Comparator;
+import java.util.Date;
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.LinkedList;
+import java.util.List;
+import java.util.Set;
 import java.util.concurrent.atomic.AtomicLong;
 
 import org.apache.lucene.document.Document;
@@ -33,23 +43,55 @@ import org.apache.lucene.document.LazyDocument;
 import org.apache.lucene.document.LongField;
 import org.apache.lucene.document.StoredField;
 import org.apache.lucene.document.TextField;
-import org.apache.lucene.index.*;
-import org.apache.lucene.search.*;
+import org.apache.lucene.index.AtomicReader;
+import org.apache.lucene.index.AtomicReaderContext;
+import org.apache.lucene.index.DirectoryReader;
+import org.apache.lucene.index.DocsEnum;
+import org.apache.lucene.index.FieldInfo;
+import org.apache.lucene.index.FieldInfos;
+import org.apache.lucene.index.Fields;
+import org.apache.lucene.index.IndexReader;
+import org.apache.lucene.index.MultiDocsEnum;
+import org.apache.lucene.index.SlowCompositeReaderWrapper;
+import org.apache.lucene.index.StorableField;
+import org.apache.lucene.index.StoredDocument;
+import org.apache.lucene.index.StoredFieldVisitor;
+import org.apache.lucene.index.Term;
+import org.apache.lucene.index.Terms;
+import org.apache.lucene.index.TermsEnum;
+import org.apache.lucene.search.Collector;
+import org.apache.lucene.search.DocIdSet;
+import org.apache.lucene.search.DocIdSetIterator;
+import org.apache.lucene.search.Explanation;
+import org.apache.lucene.search.Filter;
+import org.apache.lucene.search.IndexSearcher;
+import org.apache.lucene.search.MatchAllDocsQuery;
+import org.apache.lucene.search.Query;
+import org.apache.lucene.search.ScoreDoc;
+import org.apache.lucene.search.Scorer;
+import org.apache.lucene.search.Sort;
+import org.apache.lucene.search.SortField;
+import org.apache.lucene.search.TermQuery;
+import org.apache.lucene.search.TimeLimitingCollector;
+import org.apache.lucene.search.TopDocs;
+import org.apache.lucene.search.TopDocsCollector;
+import org.apache.lucene.search.TopFieldCollector;
+import org.apache.lucene.search.TopScoreDocCollector;
+import org.apache.lucene.search.Weight;
 import org.apache.lucene.store.Directory;
-import org.apache.lucene.store.FSDirectory;
-import org.apache.lucene.store.NRTCachingDirectory;
 import org.apache.lucene.util.Bits;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.OpenBitSet;
 import org.apache.solr.common.SolrException;
+import org.apache.solr.common.SolrException.ErrorCode;
 import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.common.util.SimpleOrderedMap;
 import org.apache.solr.core.DirectoryFactory;
+import org.apache.solr.core.DirectoryFactory.DirContext;
 import org.apache.solr.core.SolrConfig;
 import org.apache.solr.core.SolrCore;
 import org.apache.solr.core.SolrInfoMBean;
-import org.apache.solr.core.DirectoryFactory.DirContext;
 import org.apache.solr.request.LocalSolrQueryRequest;
 import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.request.SolrRequestInfo;
@@ -57,6 +99,7 @@ import org.apache.solr.request.UnInvertedField;
 import org.apache.solr.response.SolrQueryResponse;
 import org.apache.solr.schema.IndexSchema;
 import org.apache.solr.schema.SchemaField;
+import org.apache.solr.spelling.QueryConverter;
 import org.apache.solr.update.SolrIndexConfig;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -117,26 +160,43 @@ public class SolrIndexSearcher extends IndexSearcher implements Closeable,SolrIn
   private DirectoryFactory directoryFactory;
   
   private final AtomicReader atomicReader;
-  private String path; 
+  private String path;
+  private final boolean reserveDirectory;
+  private final boolean createdDirectory; 
+  
+  private static DirectoryReader getReader(SolrCore core, SolrIndexConfig config, DirectoryFactory directoryFactory, String path) throws IOException {
+    DirectoryReader reader = null;
+    Directory dir = directoryFactory.get(path, DirContext.DEFAULT, config.lockType);
+    try {
+      reader = core.getIndexReaderFactory().newReader(dir, core);
+    } catch (Throwable t) {
+      directoryFactory.release(dir);
+      throw new SolrException(ErrorCode.SERVER_ERROR, "Error opening Reader", t);
+    }
+    return reader;
+  }
 
   public SolrIndexSearcher(SolrCore core, String path, IndexSchema schema, SolrIndexConfig config, String name, boolean enableCache, DirectoryFactory directoryFactory) throws IOException {
     // we don't need to reserve the directory because we get it from the factory
-    this(core, path, schema,name, core.getIndexReaderFactory().newReader(directoryFactory.get(path, DirContext.DEFAULT, config.lockType), core), true, enableCache, false, directoryFactory);
+    this(core, path, schema, config, name, null, true, enableCache, false, directoryFactory);
   }
 
-  public SolrIndexSearcher(SolrCore core, String path, IndexSchema schema, String name, DirectoryReader r, boolean closeReader, boolean enableCache, boolean reserveDirectory, DirectoryFactory directoryFactory) throws IOException {
-    super(r);
+  public SolrIndexSearcher(SolrCore core, String path, IndexSchema schema, SolrIndexConfig config, String name, DirectoryReader r, boolean closeReader, boolean enableCache, boolean reserveDirectory, DirectoryFactory directoryFactory) throws IOException {
+    super(r == null ? getReader(core, config, directoryFactory, path) : r);
+
     this.path = path;
     this.directoryFactory = directoryFactory;
-    this.reader = r;
-    this.atomicReader = SlowCompositeReaderWrapper.wrap(r);
+    this.reader = (DirectoryReader) super.readerContext.reader();
+    this.atomicReader = SlowCompositeReaderWrapper.wrap(this.reader);
     this.core = core;
     this.schema = schema;
     this.name = "Searcher@" + Integer.toHexString(hashCode()) + (name!=null ? " "+name : "");
     log.info("Opening " + this.name);
 
-    Directory dir = r.directory();
+    Directory dir = this.reader.directory();
     
+    this.reserveDirectory = reserveDirectory;
+    this.createdDirectory = r == null;
     if (reserveDirectory) {
       // keep the directory from being released while we use it
       directoryFactory.incRef(dir);
@@ -281,8 +341,12 @@ public class SolrIndexSearcher extends IndexSearcher implements Closeable,SolrIn
       cache.close();
     }
 
-
-    directoryFactory.release(getIndexReader().directory());
+    if (reserveDirectory) {
+      directoryFactory.release(getIndexReader().directory());
+    }
+    if (createdDirectory) {
+      directoryFactory.release(getIndexReader().directory());
+    }
    
     
     // do this at the end so it only gets done if there are no exceptions
@@ -1172,7 +1236,7 @@ public class SolrIndexSearcher extends IndexSearcher implements Closeable,SolrIn
   public static final int GET_DOCSET            = 0x40000000;
   static final int NO_CHECK_FILTERCACHE  = 0x20000000;
   static final int NO_SET_QCACHE         = 0x10000000;
-
+  public static final int TERMINATE_EARLY = 0x04;
   public static final int GET_DOCLIST           =        0x02; // get the documents actually returned in a response
   public static final int GET_SCORES             =       0x01;
 
@@ -1331,7 +1395,8 @@ public class SolrIndexSearcher extends IndexSearcher implements Closeable,SolrIn
     float[] scores;
 
     boolean needScores = (cmd.getFlags() & GET_SCORES) != 0;
-
+    boolean terminateEarly = (cmd.getFlags() & TERMINATE_EARLY) == TERMINATE_EARLY;
+    
     Query query = QueryUtils.makeQueryable(cmd.getQuery());
 
     ProcessedFilter pf = getProcessedFilter(cmd.getFilter(), cmd.getFilterList());
@@ -1383,7 +1448,9 @@ public class SolrIndexSearcher extends IndexSearcher implements Closeable,SolrIn
           }
         };
       }
-      
+      if (terminateEarly) {
+        collector = new EarlyTerminatingCollector(collector, cmd.len);
+      }
       if( timeAllowed > 0 ) {
         collector = new TimeLimitingCollector(collector, TimeLimitingCollector.getGlobalCounter(), timeAllowed);
       }
@@ -1418,6 +1485,9 @@ public class SolrIndexSearcher extends IndexSearcher implements Closeable,SolrIn
         topCollector = TopFieldCollector.create(weightSort(cmd.getSort()), len, false, needScores, needScores, true);
       }
       Collector collector = topCollector;
+      if (terminateEarly) {
+        collector = new EarlyTerminatingCollector(collector, cmd.len);
+      }
       if( timeAllowed > 0 ) {
         collector = new TimeLimitingCollector(collector, TimeLimitingCollector.getGlobalCounter(), timeAllowed);
       }
@@ -1466,6 +1536,7 @@ public class SolrIndexSearcher extends IndexSearcher implements Closeable,SolrIn
     DocSet set;
 
     boolean needScores = (cmd.getFlags() & GET_SCORES) != 0;
+    boolean terminateEarly = (cmd.getFlags() & TERMINATE_EARLY) == TERMINATE_EARLY;
     int maxDoc = maxDoc();
     int smallSetSize = maxDoc>>6;
 
@@ -1505,7 +1576,9 @@ public class SolrIndexSearcher extends IndexSearcher implements Closeable,SolrIn
            }
          });
        }
-
+       if (terminateEarly) {
+         collector = new EarlyTerminatingCollector(collector, cmd.len);
+       }
        if( timeAllowed > 0 ) {
          collector = new TimeLimitingCollector(collector, TimeLimitingCollector.getGlobalCounter(), timeAllowed);
        }
@@ -1541,7 +1614,9 @@ public class SolrIndexSearcher extends IndexSearcher implements Closeable,SolrIn
 
       DocSetCollector setCollector = new DocSetDelegateCollector(maxDoc>>6, maxDoc, topCollector);
       Collector collector = setCollector;
-
+      if (terminateEarly) {
+        collector = new EarlyTerminatingCollector(collector, cmd.len);
+      }
       if( timeAllowed > 0 ) {
         collector = new TimeLimitingCollector(collector, TimeLimitingCollector.getGlobalCounter(), timeAllowed );
       }

@@ -30,8 +30,7 @@ import org.apache.lucene.analysis.util.ClasspathResourceLoader;
 public class TestICUTokenizerFactory extends BaseTokenStreamTestCase {
   public void testMixedText() throws Exception {
     Reader reader = new StringReader("การที่ได้ต้องแสดงว่างานดี  This is a test ກວ່າດອກ");
-    ICUTokenizerFactory factory = new ICUTokenizerFactory();
-    factory.init(new HashMap<String,String>());
+    ICUTokenizerFactory factory = new ICUTokenizerFactory(new HashMap<String,String>());
     factory.inform(new ClasspathResourceLoader(getClass()));
     TokenStream stream = factory.create(reader);
     assertTokenStreamContents(stream,
@@ -43,10 +42,9 @@ public class TestICUTokenizerFactory extends BaseTokenStreamTestCase {
     // “ U+201C LEFT DOUBLE QUOTATION MARK; ” U+201D RIGHT DOUBLE QUOTATION MARK
     Reader reader = new StringReader
         ("  Don't,break.at?/(punct)!  \u201Cnice\u201D\r\n\r\n85_At:all; `really\" +2=3$5,&813 !@#%$^)(*@#$   ");
-    ICUTokenizerFactory factory = new ICUTokenizerFactory();
     final Map<String,String> args = new HashMap<String,String>();
     args.put(ICUTokenizerFactory.RULEFILES, "Latn:Latin-break-only-on-whitespace.rbbi");
-    factory.init(args);
+    ICUTokenizerFactory factory = new ICUTokenizerFactory(args);
     factory.inform(new ClasspathResourceLoader(this.getClass()));
     TokenStream stream = factory.create(reader);
     assertTokenStreamContents(stream,
@@ -57,10 +55,9 @@ public class TestICUTokenizerFactory extends BaseTokenStreamTestCase {
   public void testTokenizeLatinDontBreakOnHyphens() throws Exception {
     Reader reader = new StringReader
         ("One-two punch.  Brang-, not brung-it.  This one--not that one--is the right one, -ish.");
-    ICUTokenizerFactory factory = new ICUTokenizerFactory();
     final Map<String,String> args = new HashMap<String,String>();
     args.put(ICUTokenizerFactory.RULEFILES, "Latn:Latin-dont-break-on-hyphens.rbbi");
-    factory.init(args);
+    ICUTokenizerFactory factory = new ICUTokenizerFactory(args);
     factory.inform(new ClasspathResourceLoader(getClass()));
     TokenStream stream = factory.create(reader);
     assertTokenStreamContents(stream,
@@ -77,15 +74,26 @@ public class TestICUTokenizerFactory extends BaseTokenStreamTestCase {
   public void testKeywordTokenizeCyrillicAndThai() throws Exception {
     Reader reader = new StringReader
         ("Some English.  Немного русский.  ข้อความภาษาไทยเล็ก ๆ น้อย ๆ  More English.");
-    ICUTokenizerFactory factory = new ICUTokenizerFactory();
     final Map<String,String> args = new HashMap<String,String>();
     args.put(ICUTokenizerFactory.RULEFILES, "Cyrl:KeywordTokenizer.rbbi,Thai:KeywordTokenizer.rbbi");
-    factory.init(args);
+    ICUTokenizerFactory factory = new ICUTokenizerFactory(args);
     factory.inform(new ClasspathResourceLoader(getClass()));
     TokenStream stream = factory.create(reader);
     assertTokenStreamContents(stream, new String[] { "Some", "English",
         "Немного русский.  ",
         "ข้อความภาษาไทยเล็ก ๆ น้อย ๆ  ",
         "More", "English" });
+  }
+  
+  /** Test that bogus arguments result in exception */
+  public void testBogusArguments() throws Exception {
+    try {
+      new ICUTokenizerFactory(new HashMap<String,String>() {{
+        put("bogusArg", "bogusValue");
+      }});
+      fail();
+    } catch (IllegalArgumentException expected) {
+      assertTrue(expected.getMessage().contains("Unknown parameters"));
+    }
   }
 }

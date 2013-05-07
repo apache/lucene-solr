@@ -19,8 +19,7 @@ package org.apache.lucene.analysis.ja;
 
 import java.io.IOException;
 import java.io.StringReader;
-import java.util.Collections;
-import java.util.Map;
+import java.util.HashMap;
 
 import org.apache.lucene.analysis.BaseTokenStreamTestCase;
 import org.apache.lucene.analysis.TokenStream;
@@ -30,16 +29,25 @@ import org.apache.lucene.analysis.TokenStream;
  */
 public class TestJapaneseBaseFormFilterFactory extends BaseTokenStreamTestCase {
   public void testBasics() throws IOException {
-    JapaneseTokenizerFactory tokenizerFactory = new JapaneseTokenizerFactory();
-    tokenizerFactory.setLuceneMatchVersion(TEST_VERSION_CURRENT);
-    Map<String, String> args = Collections.emptyMap();
-    tokenizerFactory.init(args);
+    JapaneseTokenizerFactory tokenizerFactory = new JapaneseTokenizerFactory(new HashMap<String,String>());
     tokenizerFactory.inform(new StringMockResourceLoader(""));
     TokenStream ts = tokenizerFactory.create(new StringReader("それはまだ実験段階にあります"));
-    JapaneseBaseFormFilterFactory factory = new JapaneseBaseFormFilterFactory();
+    JapaneseBaseFormFilterFactory factory = new JapaneseBaseFormFilterFactory(new HashMap<String,String>());
     ts = factory.create(ts);
     assertTokenStreamContents(ts,
         new String[] { "それ", "は", "まだ", "実験", "段階", "に", "ある", "ます"  }
     );
+  }
+  
+  /** Test that bogus arguments result in exception */
+  public void testBogusArguments() throws Exception {
+    try {
+      new JapaneseBaseFormFilterFactory(new HashMap<String,String>() {{
+        put("bogusArg", "bogusValue");
+      }});
+      fail();
+    } catch (IllegalArgumentException expected) {
+      assertTrue(expected.getMessage().contains("Unknown parameters"));
+    }
   }
 }

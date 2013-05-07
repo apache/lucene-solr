@@ -21,7 +21,6 @@ import java.io.IOException;
 
 import org.apache.lucene.index.AtomicReader; // javadocs
 import org.apache.lucene.index.AtomicReaderContext;
-import org.apache.lucene.index.IndexReader; // javadocs
 import org.apache.lucene.util.Bits;
 
 /** 
@@ -53,8 +52,9 @@ public abstract class Filter {
    *          but possibly filtering other documents)
    *          
    * @return a DocIdSet that provides the documents which should be permitted or
-   *         prohibited in search results. <b>NOTE:</b> null can be returned if
-   *         no documents will be accepted by this Filter.
+   *         prohibited in search results. <b>NOTE:</b> <code>null</code> should be returned if
+   *         the filter doesn't accept any documents otherwise internal optimization might not apply
+   *         in the case an <i>empty</i> {@link DocIdSet} is returned.
    */
   public abstract DocIdSet getDocIdSet(AtomicReaderContext context, Bits acceptDocs) throws IOException;
 }

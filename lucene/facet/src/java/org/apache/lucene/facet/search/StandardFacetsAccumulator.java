@@ -198,11 +198,7 @@ public class StandardFacetsAccumulator extends FacetsAccumulator {
         IntermediateFacetResult tmpResult = fr2tmpRes.get(fr);
         if (tmpResult == null) {
           // Add empty FacetResult:
-          FacetResultNode root = new FacetResultNode();
-          root.ordinal = TaxonomyReader.INVALID_ORDINAL;
-          root.label = fr.categoryPath;
-          root.value = 0;
-          res.add(new FacetResult(fr, root, 0));
+          res.add(emptyResult(taxonomyReader.getOrdinal(fr.categoryPath), fr));
           continue;
         }
         FacetResult facetRes = frHndlr.renderFacetResult(tmpResult);

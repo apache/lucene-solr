@@ -17,21 +17,36 @@ package org.apache.lucene.analysis.stempel;
  * limitations under the License.
  */
 
+import java.io.Reader;
 import java.io.StringReader;
+import java.util.HashMap;
 
 import org.apache.lucene.analysis.BaseTokenStreamTestCase;
+import org.apache.lucene.analysis.MockTokenizer;
 import org.apache.lucene.analysis.TokenStream;
-import org.apache.lucene.analysis.core.WhitespaceTokenizer;
 
 /**
  * Tests for {@link StempelPolishStemFilterFactory}
  */
 public class TestStempelPolishStemFilterFactory extends BaseTokenStreamTestCase {
   public void testBasics() throws Exception {
-    StringReader document = new StringReader("studenta studenci");
-    StempelPolishStemFilterFactory factory = new StempelPolishStemFilterFactory();
-    TokenStream ts = factory.create(new WhitespaceTokenizer(TEST_VERSION_CURRENT, document));
-    assertTokenStreamContents(ts,
+    Reader reader = new StringReader("studenta studenci");
+    StempelPolishStemFilterFactory factory = new StempelPolishStemFilterFactory(new HashMap<String,String>());
+    TokenStream stream = new MockTokenizer(reader, MockTokenizer.WHITESPACE, false);
+    stream = factory.create(stream);
+    assertTokenStreamContents(stream,
         new String[] { "student", "student" });
+  }
+  
+  /** Test that bogus arguments result in exception */
+  public void testBogusArguments() throws Exception {
+    try {
+      new StempelPolishStemFilterFactory(new HashMap<String,String>() {{
+        put("bogusArg", "bogusValue");
+      }});
+      fail();
+    } catch (IllegalArgumentException expected) {
+      assertTrue(expected.getMessage().contains("Unknown parameters"));
+    }
   }
 }

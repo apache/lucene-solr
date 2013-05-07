@@ -17,67 +17,127 @@ package org.apache.solr.core;
  * limitations under the License.
  */
 
-import org.apache.solr.cloud.ZkController;
-import org.apache.solr.handler.component.ShardHandlerFactory;
-import org.apache.solr.schema.IndexSchema;
-import org.apache.zookeeper.KeeperException;
-
-import java.io.File;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Properties;
 
-/**
- * ConfigSolr is a new interface  to aid us in obsoleting solr.xml and replacing it with solr.properties. The problem here
- * is that the Config class is used for _all_ the xml file, e.g. solrconfig.xml and we can't mess with _that_ as part
- * of this issue. Primarily used in CoreContainer at present.
- * <p/>
- * This is already deprecated, it's only intended to exist for while transitioning to properties-based replacement for
- * solr.xml
- *
- * @since solr 4.2
- */
-@Deprecated
-public interface ConfigSolr {
+import javax.xml.xpath.XPath;
+import javax.xml.xpath.XPathConstants;
+import javax.xml.xpath.XPathExpressionException;
 
-  public static enum ConfLevel {
-    SOLR, SOLR_CORES, SOLR_CORES_CORE, SOLR_LOGGING, SOLR_LOGGING_WATCHER
+import org.apache.solr.common.SolrException;
+import org.apache.solr.util.DOMUtil;
+import org.apache.solr.util.PropertiesUtil;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import org.w3c.dom.Node;
+import org.w3c.dom.NodeList;
+
+
+public abstract class ConfigSolr {
+  protected static Logger log = LoggerFactory.getLogger(ConfigSolr.class);
+  
+  public final static String SOLR_XML_FILE = "solr.xml";
+  
+  // Ugly for now, but we'll at least be able to centralize all of the differences between 4x and 5x.
+  public static enum CfgProp {
+    SOLR_ADMINHANDLER,
+    SOLR_CORELOADTHREADS,
+    SOLR_COREROOTDIRECTORY,
+    SOLR_DISTRIBUPDATECONNTIMEOUT,
+    SOLR_DISTRIBUPDATESOTIMEOUT,
+    SOLR_HOST,
+    SOLR_HOSTCONTEXT,
+    SOLR_HOSTPORT,
+    SOLR_LEADERVOTEWAIT,
+    SOLR_LOGGING_CLASS,
+    SOLR_LOGGING_ENABLED,
+    SOLR_LOGGING_WATCHER_SIZE,
+    SOLR_LOGGING_WATCHER_THRESHOLD,
+    SOLR_MANAGEMENTPATH,
+    SOLR_SHAREDLIB,
+    SOLR_SHARDHANDLERFACTORY_CLASS,
+    SOLR_SHARDHANDLERFACTORY_CONNTIMEOUT,
+    SOLR_SHARDHANDLERFACTORY_NAME,
+    SOLR_SHARDHANDLERFACTORY_SOCKETTIMEOUT,
+    SOLR_SHARESCHEMA,
+    SOLR_TRANSIENTCACHESIZE,
+    SOLR_ZKCLIENTTIMEOUT,
+    SOLR_ZKHOST,
+
+    //TODO: Remove all of these elements for 5.0
+    SOLR_PERSISTENT,
+    SOLR_CORES_DEFAULT_CORE_NAME,
+    SOLR_ADMINPATH
   }
 
-  ;
+  protected Config config;
+  protected Map<CfgProp, String> propMap = new HashMap<CfgProp, String>();
 
-  public int getInt(ConfLevel level, String tag, int def);
+  public ConfigSolr(Config config) {
+    this.config = config;
+  }
+  
+  public Config getConfig() {
+    return config;
+  }
 
-  public boolean getBool(ConfLevel level, String tag, boolean defValue);
+  public int getInt(CfgProp prop, int def) {
+    String val = propMap.get(prop);
+    if (val != null) val = PropertiesUtil.substituteProperty(val, null);
+    return (val == null) ? def : Integer.parseInt(val);
+  }
 
-  public String get(ConfLevel level, String tag, String def);
+  public boolean getBool(CfgProp prop, boolean defValue) {
+    String val = propMap.get(prop);
+    if (val != null) val = PropertiesUtil.substituteProperty(val, null);
+    return (val == null) ? defValue : Boolean.parseBoolean(val);
+  }
 
-  public void substituteProperties();
+  public String get(CfgProp prop, String def) {
+    String val = propMap.get(prop);
+    if (val != null) val = PropertiesUtil.substituteProperty(val, null);
+    return (val == null) ? def : val;
+  }
 
-  public ShardHandlerFactory initShardHandler();
+  // For saving the original property, ${} syntax and all.
+  public String getOrigProp(CfgProp prop, String def) {
+    String val = propMap.get(prop);
+    return (val == null) ? def : val;
+  }
 
-  public Properties getSolrProperties(ConfigSolr cfg, String context);
+  public Properties getSolrProperties(String path) {
+    try {
+      return readProperties(((NodeList) config.evaluate(
+          path, XPathConstants.NODESET)).item(0));
+    } catch (Throwable e) {
+      SolrException.log(log, null, e);
+    }
+    return null;
 
-  public IndexSchema getSchemaFromZk(ZkController zkController, String zkConfigName, String schemaName,
-                                     SolrConfig config) throws KeeperException, InterruptedException;
+  }
+  
+  protected Properties readProperties(Node node) throws XPathExpressionException {
+    XPath xpath = config.getXPath();
+    NodeList props = (NodeList) xpath.evaluate("property", node, XPathConstants.NODESET);
+    Properties properties = new Properties();
+    for (int i = 0; i < props.getLength(); i++) {
+      Node prop = props.item(i);
+      properties.setProperty(DOMUtil.getAttr(prop, "name"), DOMUtil.getAttr(prop, "value"));
+    }
+    return properties;
+  }
 
-  public SolrConfig getSolrConfigFromZk(ZkController zkController, String zkConfigName, String solrConfigFileName,
-                                        SolrResourceLoader resourceLoader);
+  public abstract void substituteProperties();
 
-  public void initPersist();
+  public abstract List<String> getAllCoreNames();
 
-  public void addPersistCore(String coreName, Properties attribs, Map<String, String> props);
+  public abstract String getProperty(String coreName, String property, String defaultVal);
 
-  public void addPersistAllCores(Properties containerProperties, Map<String, String> rootSolrAttribs, Map<String, String> coresAttribs,
-                                 File file);
+  public abstract Properties readCoreProperties(String coreName);
 
-  public String getCoreNameFromOrig(String origCoreName, SolrResourceLoader loader, String coreName);
+  public abstract Map<String, String> readCoreAttributes(String coreName);
 
-  public List<String> getAllCoreNames();
-
-  public String getProperty(String coreName, String property, String defaultVal);
-
-  public Properties readCoreProperties(String coreName);
-
-  public Map<String, String> readCoreAttributes(String coreName);
 }
+

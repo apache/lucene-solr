@@ -17,6 +17,11 @@ package org.apache.lucene.codecs.lucene42;
  * limitations under the License.
  */
 
+import static org.apache.lucene.codecs.lucene42.Lucene42DocValuesConsumer.DELTA_COMPRESSED;
+import static org.apache.lucene.codecs.lucene42.Lucene42DocValuesConsumer.GCD_COMPRESSED;
+import static org.apache.lucene.codecs.lucene42.Lucene42DocValuesConsumer.TABLE_COMPRESSED;
+import static org.apache.lucene.codecs.lucene42.Lucene42DocValuesConsumer.UNCOMPRESSED;
+
 import java.io.IOException;
 import java.util.Comparator;
 import java.util.HashMap;
@@ -80,14 +85,16 @@ class Lucene42DocValuesProducer extends DocValuesProducer {
     // read in the entries from the metadata file.
     IndexInput in = state.directory.openInput(metaName, state.context);
     boolean success = false;
+    final int version;
     try {
-      CodecUtil.checkHeader(in, metaCodec, 
-                                Lucene42DocValuesConsumer.VERSION_START,
-                                Lucene42DocValuesConsumer.VERSION_START);
+      version = CodecUtil.checkHeader(in, metaCodec, 
+                                      Lucene42DocValuesConsumer.VERSION_START,
+                                      Lucene42DocValuesConsumer.VERSION_CURRENT);
       numerics = new HashMap<Integer,NumericEntry>();
       binaries = new HashMap<Integer,BinaryEntry>();
       fsts = new HashMap<Integer,FSTEntry>();
       readFields(in, state.fieldInfos);
+
       success = true;
     } finally {
       if (success) {
@@ -96,12 +103,24 @@ class Lucene42DocValuesProducer extends DocValuesProducer {
         IOUtils.closeWhileHandlingException(in);
       }
     }
-    
-    String dataName = IndexFileNames.segmentFileName(state.segmentInfo.name, state.segmentSuffix, dataExtension);
-    data = state.directory.openInput(dataName, state.context);
-    CodecUtil.checkHeader(data, dataCodec, 
-                                Lucene42DocValuesConsumer.VERSION_START,
-                                Lucene42DocValuesConsumer.VERSION_START);
+
+    success = false;
+    try {
+      String dataName = IndexFileNames.segmentFileName(state.segmentInfo.name, state.segmentSuffix, dataExtension);
+      data = state.directory.openInput(dataName, state.context);
+      final int version2 = CodecUtil.checkHeader(data, dataCodec, 
+                                                 Lucene42DocValuesConsumer.VERSION_START,
+                                                 Lucene42DocValuesConsumer.VERSION_CURRENT);
+      if (version != version2) {
+        throw new CorruptIndexException("Format versions mismatch");
+      }
+
+      success = true;
+    } finally {
+      if (!success) {
+        IOUtils.closeWhileHandlingException(this.data);
+      }
+    }
   }
   
   private void readFields(IndexInput meta, FieldInfos infos) throws IOException {
@@ -112,6 +131,15 @@ class Lucene42DocValuesProducer extends DocValuesProducer {
         NumericEntry entry = new NumericEntry();
         entry.offset = meta.readLong();
         entry.format = meta.readByte();
+        switch(entry.format) {
+          case DELTA_COMPRESSED:
+          case TABLE_COMPRESSED:
+          case GCD_COMPRESSED:
+          case UNCOMPRESSED:
+               break;
+          default:
+               throw new CorruptIndexException("Unknown format: " + entry.format + ", input=" + meta);
+        }
         if (entry.format != Lucene42DocValuesConsumer.UNCOMPRESSED) {
           entry.packedIntsVersion = meta.readVInt();
         }
@@ -152,41 +180,56 @@ class Lucene42DocValuesProducer extends DocValuesProducer {
   private NumericDocValues loadNumeric(FieldInfo field) throws IOException {
     NumericEntry entry = numerics.get(field.number);
     data.seek(entry.offset);
-    if (entry.format == Lucene42DocValuesConsumer.TABLE_COMPRESSED) {
-      int size = data.readVInt();
-      final long decode[] = new long[size];
-      for (int i = 0; i < decode.length; i++) {
-        decode[i] = data.readLong();
-      }
-      final int formatID = data.readVInt();
-      final int bitsPerValue = data.readVInt();
-      final PackedInts.Reader reader = PackedInts.getReaderNoHeader(data, PackedInts.Format.byId(formatID), entry.packedIntsVersion, maxDoc, bitsPerValue);
-      return new NumericDocValues() {
-        @Override
-        public long get(int docID) {
-          return decode[(int)reader.get(docID)];
+    switch (entry.format) {
+      case TABLE_COMPRESSED:
+        int size = data.readVInt();
+        if (size > 256) {
+          throw new CorruptIndexException("TABLE_COMPRESSED cannot have more than 256 distinct values, input=" + data);
         }
-      };
-    } else if (entry.format == Lucene42DocValuesConsumer.DELTA_COMPRESSED) {
-      final int blockSize = data.readVInt();
-      final BlockPackedReader reader = new BlockPackedReader(data, entry.packedIntsVersion, blockSize, maxDoc, false);
-      return new NumericDocValues() {
-        @Override
-        public long get(int docID) {
-          return reader.get(docID);
+        final long decode[] = new long[size];
+        for (int i = 0; i < decode.length; i++) {
+          decode[i] = data.readLong();
         }
-      };
-    } else if (entry.format == Lucene42DocValuesConsumer.UNCOMPRESSED) {
-      final byte bytes[] = new byte[maxDoc];
-      data.readBytes(bytes, 0, bytes.length);
-      return new NumericDocValues() {
-        @Override
-        public long get(int docID) {
-          return bytes[docID];
-        }
-      };
-    } else {
-      throw new IllegalStateException();
+        final int formatID = data.readVInt();
+        final int bitsPerValue = data.readVInt();
+        final PackedInts.Reader ordsReader = PackedInts.getReaderNoHeader(data, PackedInts.Format.byId(formatID), entry.packedIntsVersion, maxDoc, bitsPerValue);
+        return new NumericDocValues() {
+          @Override
+          public long get(int docID) {
+            return decode[(int)ordsReader.get(docID)];
+          }
+        };
+      case DELTA_COMPRESSED:
+        final int blockSize = data.readVInt();
+        final BlockPackedReader reader = new BlockPackedReader(data, entry.packedIntsVersion, blockSize, maxDoc, false);
+        return new NumericDocValues() {
+          @Override
+          public long get(int docID) {
+            return reader.get(docID);
+          }
+        };
+      case UNCOMPRESSED:
+        final byte bytes[] = new byte[maxDoc];
+        data.readBytes(bytes, 0, bytes.length);
+        return new NumericDocValues() {
+          @Override
+          public long get(int docID) {
+            return bytes[docID];
+          }
+        };
+      case GCD_COMPRESSED:
+        final long min = data.readLong();
+        final long mult = data.readLong();
+        final int quotientBlockSize = data.readVInt();
+        final BlockPackedReader quotientReader = new BlockPackedReader(data, entry.packedIntsVersion, quotientBlockSize, maxDoc, false);
+        return new NumericDocValues() {
+          @Override
+          public long get(int docID) {
+            return min + mult * quotientReader.get(docID);
+          }
+        };
+      default:
+        throw new AssertionError();
     }
   }
 

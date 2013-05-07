@@ -24,15 +24,18 @@ import org.apache.solr.search.SolrIndexSearcher;
 /**
  */
 public class AbstractSolrEventListener implements SolrEventListener {
-  protected final SolrCore core;
+  private final SolrCore core;
+  public SolrCore getCore() { return core; }
+
   public AbstractSolrEventListener(SolrCore core) {
     this.core = core;
   }
-  protected NamedList args;
+  private NamedList args;
+  public NamedList getArgs() { return args; }
 
   @Override
   public void init(NamedList args) {
-    this.args = args;
+    this.args = args.clone();
   }
 
   @Override

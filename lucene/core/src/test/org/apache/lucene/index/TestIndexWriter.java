@@ -52,7 +52,9 @@ import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.search.ScoreDoc;
 import org.apache.lucene.search.TermQuery;
 import org.apache.lucene.store.AlreadyClosedException;
+import org.apache.lucene.store.BaseDirectoryWrapper;
 import org.apache.lucene.store.Directory;
+import org.apache.lucene.store.IOContext;
 import org.apache.lucene.store.IndexOutput;
 import org.apache.lucene.store.Lock;
 import org.apache.lucene.store.LockFactory;
@@ -456,7 +458,7 @@ public class TestIndexWriter extends LuceneTestCase {
       writer.close();
 
       IndexReader reader = DirectoryReader.open(dir);
-      IndexSearcher searcher = new IndexSearcher(reader);
+      IndexSearcher searcher = newSearcher(reader);
       int totalHits = searcher.search(new TermQuery(new Term("field", "aaa")), null, 1).totalHits;
       assertEquals(n*100, totalHits);
       reader.close();
@@ -487,7 +489,7 @@ public class TestIndexWriter extends LuceneTestCase {
       Term searchTerm = new Term("field", "aaa");
 
       IndexReader reader = DirectoryReader.open(dir);
-      IndexSearcher searcher = new IndexSearcher(reader);
+      IndexSearcher searcher = newSearcher(reader);
       ScoreDoc[] hits = searcher.search(new TermQuery(searchTerm), null, 1000).scoreDocs;
       assertEquals(10, hits.length);
       reader.close();
@@ -509,7 +511,7 @@ public class TestIndexWriter extends LuceneTestCase {
       }
       writer.close();
       reader = DirectoryReader.open(dir);
-      searcher = new IndexSearcher(reader);
+      searcher = newSearcher(reader);
       hits = searcher.search(new TermQuery(searchTerm), null, 1000).scoreDocs;
       assertEquals(27, hits.length);
       reader.close();
@@ -587,7 +589,7 @@ public class TestIndexWriter extends LuceneTestCase {
       writer.close();
       Term searchTerm = new Term("content", "aaa");
       IndexReader reader = DirectoryReader.open(dir);
-      IndexSearcher searcher = new IndexSearcher(reader);
+      IndexSearcher searcher = newSearcher(reader);
       ScoreDoc[] hits = searcher.search(new TermQuery(searchTerm), null, 1000).scoreDocs;
       assertEquals("did not get right number of hits", 100, hits.length);
       reader.close();
@@ -1371,10 +1373,10 @@ public class TestIndexWriter extends LuceneTestCase {
     // Validates that iw.deleteUnusedFiles() also deletes unused index commits
     // in case a deletion policy which holds onto commits is used.
     Directory dir = newDirectory();
-    SnapshotDeletionPolicy sdp = new SnapshotDeletionPolicy(new KeepOnlyLastCommitDeletionPolicy());
     IndexWriter writer = new IndexWriter(dir, newIndexWriterConfig(
         TEST_VERSION_CURRENT, new MockAnalyzer(random()))
-        .setIndexDeletionPolicy(sdp));
+        .setIndexDeletionPolicy(new SnapshotDeletionPolicy(new KeepOnlyLastCommitDeletionPolicy())));
+    SnapshotDeletionPolicy sdp = (SnapshotDeletionPolicy) writer.getConfig().getIndexDeletionPolicy();
 
     // First commit
     Document doc = new Document();
@@ -1390,7 +1392,7 @@ public class TestIndexWriter extends LuceneTestCase {
     assertEquals(1, DirectoryReader.listCommits(dir).size());
 
     // Keep that commit
-    sdp.snapshot("id");
+    IndexCommit id = sdp.snapshot();
 
     // Second commit - now KeepOnlyLastCommit cannot delete the prev commit.
     doc = new Document();
@@ -1400,7 +1402,7 @@ public class TestIndexWriter extends LuceneTestCase {
     assertEquals(2, DirectoryReader.listCommits(dir).size());
 
     // Should delete the unreferenced commit
-    sdp.release("id");
+    sdp.release(id);
     writer.deleteUnusedFiles();
     assertEquals(1, DirectoryReader.listCommits(dir).size());
 
@@ -1477,7 +1479,7 @@ public class TestIndexWriter extends LuceneTestCase {
   }
 
   public void testNoSegmentFile() throws IOException {
-    Directory dir = newDirectory();
+    BaseDirectoryWrapper dir = newDirectory();
     dir.setLockFactory(NoLockFactory.getNoLockFactory());
     IndexWriter w = new IndexWriter(dir, newIndexWriterConfig(
         TEST_VERSION_CURRENT, new MockAnalyzer(random())).setMaxBufferedDocs(2));
@@ -1497,6 +1499,10 @@ public class TestIndexWriter extends LuceneTestCase {
     w2.close();
     // If we don't do that, the test fails on Windows
     w.rollback();
+
+    // This test leaves only segments.gen, which causes
+    // DirectoryReader.indexExists to return true:
+    dir.setCheckIndexOnClose(false);
     dir.close();
   }
 
@@ -2115,5 +2121,52 @@ public class TestIndexWriter extends LuceneTestCase {
     }
     
   }
-  
+
+  // LUCENE-2727/LUCENE-2812/LUCENE-4738:
+  public void testCorruptFirstCommit() throws Exception {
+    for(int i=0;i<6;i++) {
+      BaseDirectoryWrapper dir = newDirectory();
+      dir.createOutput("segments_0", IOContext.DEFAULT).close();
+      IndexWriterConfig iwc = newIndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer(random()));
+      int mode = i/2;
+      if (mode == 0) {
+        iwc.setOpenMode(OpenMode.CREATE);
+      } else if (mode == 1) {
+        iwc.setOpenMode(OpenMode.APPEND);
+      } else if (mode == 2) {
+        iwc.setOpenMode(OpenMode.CREATE_OR_APPEND);
+      }
+
+      if (VERBOSE) {
+        System.out.println("\nTEST: i=" + i);
+      }
+
+      try {
+        if ((i & 1) == 0) {
+          new IndexWriter(dir, iwc).close();
+        } else {
+          new IndexWriter(dir, iwc).rollback();
+        }
+        if (mode != 0) {
+          fail("expected exception");
+        }
+      } catch (IOException ioe) {
+        // OpenMode.APPEND should throw an exception since no
+        // index exists:
+        if (mode == 0) {
+          // Unexpected
+          throw ioe;
+        }
+      }
+
+      if (VERBOSE) {
+        System.out.println("  at close: " + Arrays.toString(dir.listAll()));
+      }
+
+      if (mode != 0) {
+        dir.setCheckIndexOnClose(false);
+      }
+      dir.close();
+    }
+  }
 }

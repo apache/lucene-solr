@@ -17,12 +17,12 @@ package org.apache.lucene.analysis.charfilter;
  * limitations under the License.
  */
 
-import org.apache.lucene.util.LuceneTestCase;
+import org.apache.lucene.analysis.util.BaseTokenStreamFactoryTestCase;
 
-public class TestMappingCharFilterFactory extends LuceneTestCase {
+public class TestMappingCharFilterFactory extends BaseTokenStreamFactoryTestCase {
   public void testParseString() throws Exception {
 
-    MappingCharFilterFactory f = new MappingCharFilterFactory();
+    MappingCharFilterFactory f = (MappingCharFilterFactory)charFilterFactory("Mapping");
 
     try {
       f.parseString( "\\" );
@@ -48,5 +48,15 @@ public class TestMappingCharFilterFactory extends LuceneTestCase {
       fail( "invalid hex number check." );
     }
     catch( NumberFormatException expected ){}
+  }
+  
+  /** Test that bogus arguments result in exception */
+  public void testBogusArguments() throws Exception {
+    try {
+      charFilterFactory("Mapping", "bogusArg", "bogusValue");
+      fail();
+    } catch (IllegalArgumentException expected) {
+      assertTrue(expected.getMessage().contains("Unknown parameters"));
+    }
   }
 }

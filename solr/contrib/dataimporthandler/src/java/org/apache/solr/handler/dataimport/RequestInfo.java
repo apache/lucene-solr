@@ -24,6 +24,7 @@ import java.util.Map;
 
 import org.apache.solr.common.util.ContentStream;
 import org.apache.solr.common.util.StrUtils;
+import org.apache.solr.request.SolrQueryRequest;
 
 public class RequestInfo {
   private final String command;
@@ -37,13 +38,15 @@ public class RequestInfo {
   private final List<String> entitiesToRun;
   private final Map<String,Object> rawParams;
   private final String configFile;
-  private final String dataConfig;  
+  private final String dataConfig;
+  private final SolrQueryRequest request;
   
   //TODO:  find a different home for these two...
   private final ContentStream contentStream;  
   private final DebugInfo debugInfo;
   
-  public RequestInfo(Map<String,Object> requestParams, ContentStream stream) {
+  public RequestInfo(SolrQueryRequest request, Map<String,Object> requestParams, ContentStream stream) {
+    this.request = request;
     this.contentStream = stream;    
     if (requestParams.containsKey("command")) { 
       command = (String) requestParams.get("command");
@@ -166,5 +169,9 @@ public class RequestInfo {
 
   public String getConfigFile() {
     return configFile;
+  }
+
+  public SolrQueryRequest getRequest() {
+    return request;
   }
 }

@@ -893,37 +893,24 @@ public void testFilesOpenClose() throws IOException {
   // LUCENE-2753
   public void testListCommits() throws Exception {
     Directory dir = newDirectory();
-    SnapshotDeletionPolicy sdp = new SnapshotDeletionPolicy(new KeepOnlyLastCommitDeletionPolicy());
-    IndexWriter writer = new IndexWriter(dir, newIndexWriterConfig( 
-        TEST_VERSION_CURRENT, null).setIndexDeletionPolicy(sdp));
+    IndexWriter writer = new IndexWriter(dir, newIndexWriterConfig(TEST_VERSION_CURRENT, null)
+        .setIndexDeletionPolicy(new SnapshotDeletionPolicy(new KeepOnlyLastCommitDeletionPolicy())));
+    SnapshotDeletionPolicy sdp = (SnapshotDeletionPolicy) writer.getConfig().getIndexDeletionPolicy();
     writer.addDocument(new Document());
     writer.commit();
-    sdp.snapshot("c1");
+    sdp.snapshot();
     writer.addDocument(new Document());
     writer.commit();
-    sdp.snapshot("c2");
+    sdp.snapshot();
     writer.addDocument(new Document());
     writer.commit();
-    sdp.snapshot("c3");
+    sdp.snapshot();
     writer.close();
     long currentGen = 0;
     for (IndexCommit ic : DirectoryReader.listCommits(dir)) {
       assertTrue("currentGen=" + currentGen + " commitGen=" + ic.getGeneration(), currentGen < ic.getGeneration());
       currentGen = ic.getGeneration();
     }
-    dir.close();
-  }
-  
-  // LUCENE-2812
-  public void testIndexExists() throws Exception {
-    Directory dir = newDirectory();
-    IndexWriter writer = new IndexWriter(dir, newIndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer(random())));
-    writer.addDocument(new Document());
-    writer.prepareCommit();
-    assertFalse(DirectoryReader.indexExists(dir));
-    writer.commit();
-    writer.close();
-    assertTrue(DirectoryReader.indexExists(dir));
     dir.close();
   }
   
@@ -1149,4 +1136,12 @@ public void testFilesOpenClose() throws IOException {
     dir.close();
   }
 
+  public void testIndexExistsOnNonExistentDirectory() throws Exception {
+    File tempDir = _TestUtil.getTempDir("testIndexExistsOnNonExistentDirectory");
+    tempDir.delete();
+    Directory dir = newFSDirectory(tempDir);
+    System.out.println("dir=" + dir);
+    assertFalse(DirectoryReader.indexExists(dir));
+    dir.close();
+  }
 }

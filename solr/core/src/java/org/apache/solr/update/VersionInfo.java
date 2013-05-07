@@ -27,7 +27,6 @@ import org.apache.lucene.queries.function.ValueSource;
 import org.apache.lucene.util.BitUtil;
 import org.apache.lucene.util.BytesRef;
 import org.apache.solr.common.SolrException;
-import org.apache.solr.core.SolrCore;
 import org.apache.solr.schema.IndexSchema;
 import org.apache.solr.schema.SchemaField;
 import org.apache.solr.search.SolrIndexSearcher;
@@ -79,9 +78,9 @@ public class VersionInfo {
 
   public VersionInfo(UpdateLog ulog, int nBuckets) {
     this.ulog = ulog;
-    SolrCore core = ulog.uhandler.core;
-    versionField = getAndCheckVersionField(core.getSchema());
-    idField = core.getSchema().getUniqueKeyField();
+    IndexSchema schema = ulog.uhandler.core.getLatestSchema(); 
+    versionField = getAndCheckVersionField(schema);
+    idField = schema.getUniqueKeyField();
     buckets = new VersionBucket[ BitUtil.nextHighestPowerOfTwo(nBuckets) ];
     for (int i=0; i<buckets.length; i++) {
       buckets[i] = new VersionBucket();

@@ -256,7 +256,6 @@ public class TopKFacetResultsHandler extends PartitionsFacetResultsHandler {
      * Create a Facet Result.
      * @param facetRequest Request for which this result was obtained.
      * @param facetResultNode top result node for this facet result.
-     * @param totalFacets - number of children of the targetFacet, up till the requested depth.
      */
     TopKFacetResult(FacetRequest facetRequest, FacetResultNode facetResultNode, int totalFacets) {
       super(facetRequest, facetResultNode, totalFacets);

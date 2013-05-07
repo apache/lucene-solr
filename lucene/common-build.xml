@@ -47,16 +47,26 @@
     <format property="dateversion" pattern="yyyy.MM.dd.HH.mm.ss" />
   </tstamp>
 
-  <property name="name" value="${ant.project.name}"/>
   <property name="Name" value="Lucene"/>
-  <property name="dev.version" value="5.0-SNAPSHOT"/>
+  
+  <property name="name" value="${ant.project.name}"/>
   <property name="tests.luceneMatchVersion" value="5.0"/>
+  <property name="dev.version.base" value="5.0"/>
+  <property name="dev.version.suffix" value="SNAPSHOT"/>
+  <property name="dev.version" value="${dev.version.base}-${dev.version.suffix}"/>
   <property name="version" value="${dev.version}"/>
   <property name="spec.version" value="${version}"/>	
+  
   <property name="year" value="2000-${current.year}"/>
+  
+  <!-- Lucene modules unfortunately don't have the "lucene-" prefix, so we add it if no prefix is given in $name: -->
+  <condition property="final.name" value="${name}-${version}">
+    <matches pattern="^(lucene|solr)\b" string="${name}"/>
+  </condition>
   <property name="final.name" value="lucene-${name}-${version}"/>
 
-  <property name="common.classpath.excludes" value="**/*.txt,**/*.template,**/*.sha1" />
+  <!-- we exclude ext/*.jar because we don't want example/lib/ext logging jars on the cp -->
+  <property name="common.classpath.excludes" value="**/*.txt,**/*.template,**/*.sha1,ext/*.jar" />
 
   <property name="ivy.bootstrap.version" value="2.3.0" />
   <property name="ivy.default.configuration" value="*"/>
@@ -106,6 +116,7 @@
   <property name="tests.asserts.gracious" value="false"/>
   <property name="tests.verbose" value="false"/>
   <property name="tests.infostream" value="${tests.verbose}"/>
+  <property name="tests.filterstacks" value="true"/>
   
   <condition property="tests.heapsize" value="768M">
     <isset property="run.clover"/>
@@ -293,8 +304,7 @@
       </or>
       <or>
         <equals arg1="${build.java.runtime}" arg2="1.7"/>
-        <!-- TODO: Current Java 8 JDKs have broken Javadocs -->
-        <!--<equals arg1="${build.java.runtime}" arg2="1.8"/>-->
+        <equals arg1="${build.java.runtime}" arg2="1.8"/>
       </or>
       <!-- TODO: Fix this! For now only run this on 64bit, because jTIDY OOMs with default heap size: -->
       <contains string="${os.arch}" substring="64"/>
@@ -986,8 +996,25 @@
                     maxClassNameColumns="${tests.maxClassNameColumns}"
                     
                     timestamps="${tests.timestamps}"
-                    showNumFailures="${tests.showNumFailures}"
-                />
+                    showNumFailures="${tests.showNumFailures}">
+
+                  <!-- Filter stack traces. The default set of filters is similar to Ant's (reflection, assertions, junit's own stuff). -->
+                  <junit4:filtertrace defaults="true" enabled="${tests.filterstacks}">
+                    <!-- Lucene-specific stack frames (test rules mostly). -->
+                    <containsstring contains="at com.carrotsearch.randomizedtesting.RandomizedRunner" />
+                    <containsstring contains="at org.apache.lucene.util.AbstractBeforeAfterRule" />
+                    <containsstring contains="at com.carrotsearch.randomizedtesting.rules." />
+                    <containsstring contains="at org.apache.lucene.util.TestRule" />
+                    <containsstring contains="at com.carrotsearch.randomizedtesting.rules.StatementAdapter" />
+                    <containsstring contains="at com.carrotsearch.randomizedtesting.ThreadLeakControl" />
+
+                    <!-- Add custom filters if you like. Lines that match these will be removed. -->
+                    <!--
+                    <containsstring contains=".." /> 
+                    <containsregex pattern="^(\s+at )(org\.junit\.)" /> 
+                    -->
+                  </junit4:filtertrace>                    
+                </junit4:report-text>
 
                 <!-- Emits full status for all tests, their relative order on slaves. -->
                 <junit4:report-text
@@ -1183,6 +1210,9 @@ ant -Dtests.file.encoding=XXX ...
 # Don't remove temporary files under slave directories, even if
 # the test passes.
 ant -Dtests.leaveTemporary=true
+
+# Do *not* filter stack traces emitted to the console.
+ant -Dtests.filterstacks=false
 
 # Output test files and reports.
 ${tests-output}/tests-report.txt    - full ASCII tests report
@@ -1516,6 +1546,14 @@ ${tests-output}/junit4-*.suites     - per-JVM executed suites
         <pattern substring="Permission is hereby granted, free of charge, to any person obtaining a copy"/>
       </rat:substringMatcher>
 
+      <!-- apache -->
+      <rat:substringMatcher licenseFamilyCategory="AL   "
+             licenseFamilyName="Apache">
+        <pattern substring="Licensed to the Apache Software Foundation (ASF) under"/>
+        <!-- this is the old-school one under some files -->
+        <pattern substring="Licensed under the Apache License, Version 2.0 (the &quot;License&quot;)"/>
+      </rat:substringMatcher>
+
       <rat:substringMatcher licenseFamilyCategory="GEN  "
              licenseFamilyName="Generated">
       <!-- svg files generated by gnuplot -->
@@ -1527,7 +1565,7 @@ ${tests-output}/junit4-*.suites     - per-JVM executed suites
       </rat:substringMatcher>
 
       <!-- built in approved licenses -->
-      <rat:approvedLicense familyName="Apache License Version 2.0"/>
+      <rat:approvedLicense familyName="Apache"/>
       <rat:approvedLicense familyName="The MIT License"/>
       <rat:approvedLicense familyName="Modified BSD License"/>
       <rat:approvedLicense familyName="Generated"/>
@@ -1537,7 +1575,12 @@ ${tests-output}/junit4-*.suites     - per-JVM executed suites
     <echo>${rat.output}</echo>
     <delete>
       <fileset file="${rat.sources.logfile}">
-        <containsregexp expression="^0 Unknown Licenses"/>
+        <and>
+          <containsregexp expression="^0 Unknown Licenses"/>
+          <not>
+            <containsregexp expression="^\s+!AL"/>
+          </not>
+        </and>
       </fileset>
     </delete>
     <!-- fail if we didnt find the pattern -->
@@ -1939,7 +1982,7 @@ ${tests-output}/junit4-*.suites     - per-JVM executed suites
   
   <!-- Forbidden API Task -->
   <target name="install-forbidden-apis" unless="forbidden-apis.loaded" depends="ivy-availability-check,ivy-configure">
-    <ivy:cachepath organisation="de.thetaphi" module="forbiddenapis" revision="1.2"
+    <ivy:cachepath organisation="de.thetaphi" module="forbiddenapis" revision="1.3"
       inline="true" conf="default" transitive="true" pathid="forbidden-apis.classpath"/>
     <taskdef name="forbidden-apis" classname="de.thetaphi.forbiddenapis.AntTask" classpathref="forbidden-apis.classpath"/>
     <property name="forbidden-apis.loaded" value="true"/>

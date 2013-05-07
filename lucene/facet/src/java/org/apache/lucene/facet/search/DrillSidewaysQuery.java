@@ -129,8 +129,11 @@ class DrillSidewaysQuery extends Query {
           dims[dim].docsEnums = new DocsEnum[drillDownTerms[dim].length];
           for(int i=0;i<drillDownTerms[dim].length;i++) {
             if (termsEnum.seekExact(drillDownTerms[dim][i].bytes(), false)) {
-              dims[dim].freq = Math.max(dims[dim].freq, termsEnum.docFreq());
-              dims[dim].docsEnums[i] = termsEnum.docs(null, null);
+              DocsEnum docsEnum = termsEnum.docs(null, null);
+              if (docsEnum != null) {
+                dims[dim].docsEnums[i] = docsEnum;
+                dims[dim].maxCost = Math.max(dims[dim].maxCost, docsEnum.cost());
+              }
             }
           }
         }
@@ -157,13 +160,34 @@ class DrillSidewaysQuery extends Query {
     };
   }
 
+  // TODO: these should do "deeper" equals/hash on the 2-D drillDownTerms array
+
   @Override
   public int hashCode() {
-    throw new UnsupportedOperationException();
+    final int prime = 31;
+    int result = super.hashCode();
+    result = prime * result + ((baseQuery == null) ? 0 : baseQuery.hashCode());
+    result = prime * result
+        + ((drillDownCollector == null) ? 0 : drillDownCollector.hashCode());
+    result = prime * result + Arrays.hashCode(drillDownTerms);
+    result = prime * result + Arrays.hashCode(drillSidewaysCollectors);
+    return result;
   }
 
   @Override
   public boolean equals(Object obj) {
-    throw new UnsupportedOperationException();
+    if (this == obj) return true;
+    if (!super.equals(obj)) return false;
+    if (getClass() != obj.getClass()) return false;
+    DrillSidewaysQuery other = (DrillSidewaysQuery) obj;
+    if (baseQuery == null) {
+      if (other.baseQuery != null) return false;
+    } else if (!baseQuery.equals(other.baseQuery)) return false;
+    if (drillDownCollector == null) {
+      if (other.drillDownCollector != null) return false;
+    } else if (!drillDownCollector.equals(other.drillDownCollector)) return false;
+    if (!Arrays.equals(drillDownTerms, other.drillDownTerms)) return false;
+    if (!Arrays.equals(drillSidewaysCollectors, other.drillSidewaysCollectors)) return false;
+    return true;
   }
 }

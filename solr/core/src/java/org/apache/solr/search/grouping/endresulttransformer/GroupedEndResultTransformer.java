@@ -50,7 +50,7 @@ public class GroupedEndResultTransformer implements EndResultTransformer {
    */
   @Override
   public void transform(Map<String, ?> result, ResponseBuilder rb, SolrDocumentSource solrDocumentSource) {
-    NamedList<Object> commands = new NamedList<Object>();
+    NamedList<Object> commands = new SimpleOrderedMap<Object>();
     for (Map.Entry<String, ?> entry : result.entrySet()) {
       Object value = entry.getValue();
       if (TopGroups.class.isInstance(value)) {

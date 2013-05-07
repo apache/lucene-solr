@@ -1,6 +1,5 @@
 package org.apache.lucene.facet.search;
 
-
 /*
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
@@ -41,19 +40,15 @@ public class FacetResult {
    * @see FacetRequest#categoryPath
    */
   public final FacetResultNode getFacetResultNode() {
-    return this.rootNode;
+    return rootNode;
   }
   
   /**
    * Number of descendants of {@link #getFacetResultNode() root facet result
-   * node}, up till the requested depth. Typically -- have value != 0. This
-   * number does not include the root node.
-   * 
-   * @see #getFacetRequest()
-   * @see FacetRequest#getDepth()
+   * node}, up till the requested depth.
    */
   public final int getNumValidDescendants() {
-    return this.numValidDescendants;
+    return numValidDescendants;
   }
   
   /**
@@ -62,7 +57,7 @@ public class FacetResult {
   public final FacetRequest getFacetRequest() {
     return this.facetRequest;
   }
-  
+
   /**
    * String representation of this facet result.
    * Use with caution: might return a very long string.

@@ -19,7 +19,6 @@ package org.apache.lucene.analysis.ja;
 
 import java.io.IOException;
 import java.io.StringReader;
-import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
 
@@ -35,21 +34,30 @@ public class TestJapanesePartOfSpeechStopFilterFactory extends BaseTokenStreamTe
         "#  verb-main:\n" +
         "動詞-自立\n";
     
-    JapaneseTokenizerFactory tokenizerFactory = new JapaneseTokenizerFactory();
-    tokenizerFactory.setLuceneMatchVersion(TEST_VERSION_CURRENT);
-    Map<String, String> tokenizerArgs = Collections.emptyMap();
-    tokenizerFactory.init(tokenizerArgs);
+    JapaneseTokenizerFactory tokenizerFactory = new JapaneseTokenizerFactory(new HashMap<String,String>());
     tokenizerFactory.inform(new StringMockResourceLoader(""));
     TokenStream ts = tokenizerFactory.create(new StringReader("私は制限スピードを超える。"));
-    JapanesePartOfSpeechStopFilterFactory factory = new JapanesePartOfSpeechStopFilterFactory();
     Map<String,String> args = new HashMap<String,String>();
+    args.put("luceneMatchVersion", TEST_VERSION_CURRENT.toString());
     args.put("tags", "stoptags.txt");
-    factory.setLuceneMatchVersion(TEST_VERSION_CURRENT);
-    factory.init(args);
+    JapanesePartOfSpeechStopFilterFactory factory = new JapanesePartOfSpeechStopFilterFactory(args);
     factory.inform(new StringMockResourceLoader(tags));
     ts = factory.create(ts);
     assertTokenStreamContents(ts,
         new String[] { "私", "は", "制限", "スピード", "を" }
     );
+  }
+  
+  /** Test that bogus arguments result in exception */
+  public void testBogusArguments() throws Exception {
+    try {
+      new JapanesePartOfSpeechStopFilterFactory(new HashMap<String,String>() {{
+        put("luceneMatchVersion", TEST_VERSION_CURRENT.toString());
+        put("bogusArg", "bogusValue");
+      }});
+      fail();
+    } catch (IllegalArgumentException expected) {
+      assertTrue(expected.getMessage().contains("Unknown parameters"));
+    }
   }
 }

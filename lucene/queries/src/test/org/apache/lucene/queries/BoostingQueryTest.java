@@ -18,15 +18,20 @@ package org.apache.lucene.queries;
  */
 
 import org.apache.lucene.index.Term;
+import org.apache.lucene.search.QueryUtils;
 import org.apache.lucene.search.TermQuery;
 import org.apache.lucene.util.LuceneTestCase;
 
 public class BoostingQueryTest extends LuceneTestCase {
+  // TODO: this suite desperately needs more tests!
+  // ... like ones that actually run the query
+  
   public void testBoostingQueryEquals() {
     TermQuery q1 = new TermQuery(new Term("subject:", "java"));
     TermQuery q2 = new TermQuery(new Term("subject:", "java"));
     assertEquals("Two TermQueries with same attributes should be equal", q1, q2);
     BoostingQuery bq1 = new BoostingQuery(q1, q2, 0.1f);
+    QueryUtils.check(bq1);
     BoostingQuery bq2 = new BoostingQuery(q1, q2, 0.1f);
     assertEquals("BoostingQuery with same attributes is not equal", bq1, bq2);
   }

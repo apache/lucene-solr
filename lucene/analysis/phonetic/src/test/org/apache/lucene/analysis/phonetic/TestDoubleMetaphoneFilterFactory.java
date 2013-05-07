@@ -30,8 +30,7 @@ import org.apache.lucene.analysis.tokenattributes.CharTermAttribute;
 public class TestDoubleMetaphoneFilterFactory extends BaseTokenStreamTestCase {
 
   public void testDefaults() throws Exception {
-    DoubleMetaphoneFilterFactory factory = new DoubleMetaphoneFilterFactory();
-    factory.init(new HashMap<String, String>());
+    DoubleMetaphoneFilterFactory factory = new DoubleMetaphoneFilterFactory(new HashMap<String, String>());
     TokenStream inputStream = new MockTokenizer(new StringReader("international"), MockTokenizer.WHITESPACE, false);
 
     TokenStream filteredStream = factory.create(inputStream);
@@ -40,11 +39,10 @@ public class TestDoubleMetaphoneFilterFactory extends BaseTokenStreamTestCase {
   }
 
   public void testSettingSizeAndInject() throws Exception {
-    DoubleMetaphoneFilterFactory factory = new DoubleMetaphoneFilterFactory();
-    Map<String, String> parameters = new HashMap<String, String>();
+    Map<String,String> parameters = new HashMap<String,String>();
     parameters.put("inject", "false");
     parameters.put("maxCodeLength", "8");
-    factory.init(parameters);
+    DoubleMetaphoneFilterFactory factory = new DoubleMetaphoneFilterFactory(parameters);
 
     TokenStream inputStream = new MockTokenizer(new StringReader("international"), MockTokenizer.WHITESPACE, false);
 
@@ -57,8 +55,7 @@ public class TestDoubleMetaphoneFilterFactory extends BaseTokenStreamTestCase {
    * Ensure that reset() removes any state (buffered tokens)
    */
   public void testReset() throws Exception {
-    DoubleMetaphoneFilterFactory factory = new DoubleMetaphoneFilterFactory();
-    factory.init(new HashMap<String, String>());
+    DoubleMetaphoneFilterFactory factory = new DoubleMetaphoneFilterFactory(new HashMap<String, String>());
     TokenStream inputStream = new MockTokenizer(new StringReader("international"), MockTokenizer.WHITESPACE, false);
 
     TokenStream filteredStream = factory.create(inputStream);
@@ -73,5 +70,17 @@ public class TestDoubleMetaphoneFilterFactory extends BaseTokenStreamTestCase {
     
     // ensure there are no more tokens, such as ANTRNXNL
     assertFalse(filteredStream.incrementToken());
+  }
+  
+  /** Test that bogus arguments result in exception */
+  public void testBogusArguments() throws Exception {
+    try {
+      new DoubleMetaphoneFilterFactory(new HashMap<String,String>() {{
+        put("bogusArg", "bogusValue");
+      }});
+      fail();
+    } catch (IllegalArgumentException expected) {
+      assertTrue(expected.getMessage().contains("Unknown parameters"));
+    }
   }
 }

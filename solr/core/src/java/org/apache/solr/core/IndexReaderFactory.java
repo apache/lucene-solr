@@ -19,7 +19,6 @@ package org.apache.solr.core;
 import java.io.IOException;
 
 import org.apache.lucene.index.DirectoryReader;
-import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.store.Directory;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.util.plugin.NamedListInitializedPlugin;
@@ -61,7 +60,7 @@ public abstract class IndexReaderFactory implements NamedListInitializedPlugin {
    * @param indexDir indexDir index location
    * @param core {@link SolrCore} instance where this reader will be used. NOTE:
    * this SolrCore instance may not be fully configured yet, but basic things like
-   * {@link SolrCore#getCoreDescriptor()}, {@link SolrCore#getSchema()} and
+   * {@link SolrCore#getCoreDescriptor()}, {@link SolrCore#getLatestSchema()} and
    * {@link SolrCore#getSolrConfig()} are valid.
    * @return An IndexReader instance
    * @throws IOException If there is a low-level I/O error.

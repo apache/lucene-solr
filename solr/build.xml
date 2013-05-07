@@ -59,7 +59,6 @@
   <target name="run-example" depends="example"
           description="Run Solr interactively, via Jetty.  -Dexample.debug=true to enable JVM debugger">
     <property name="example.solr.home" location="example/solr"/>
-    <property name="example.data.dir" location="example/solr/data"/>
     <property name="example.debug.suspend" value="n"/>
     <property name="example.jetty.port" value="8983"/>
     <condition property="example.jvm.line" value="-Xdebug -Xrunjdwp:transport=dt_socket,server=y,suspend=${example.debug.suspend},address=5005">
@@ -70,7 +69,6 @@
     <java jar="${example}/start.jar" fork="true" dir="${example}" maxmemory="${example.heap.size}">
       <jvmarg line="${example.jvm.line}"/>
       <sysproperty key="solr.solr.home" file="${example.solr.home}"/>
-      <sysproperty key="solr.data.dir" value="${example.data.dir}"/>
       <sysproperty key="jetty.port" value="${example.jetty.port}"/>
     </java>
   </target>
@@ -338,18 +336,7 @@
   
   <target name="dist"
           description="Creates the Solr distribution files."
-          depends="-dist-common, dist-war" />
- 
-  <target name="dist-excl-slf4j"
-          description="Creates the Solr distribution files without slf4j API or bindings."
-          depends="-dist-common, dist-war-excl-slf4j" />
- 
-  <target name="-dist-common"
-          depends="dist-solrj, dist-core, dist-test-framework, dist-contrib">
-    <!-- Targets common to dist and dist-excl-slf4j.
-         Only usable as a dependency
-    -->
-  </target>
+          depends="dist-solrj, dist-core, dist-test-framework, dist-contrib, dist-war" />
  
   <target name="dist-test-framework" depends="init-dist"
           description="Creates the Solr test-framework JAR.">
@@ -366,20 +353,10 @@
   <target name="dist-war"
           description="Creates the Solr WAR Distribution file.">
     <ant dir="webapp" target="dist" inheritall="false">
-      <property name="exclude.from.war" value="log4j-1.*" />
       <propertyset refid="uptodate.and.compiled.properties"/>
     </ant>
   </target>
   
-  <target name="dist-war-excl-slf4j"
-          description="Creates a Solr WAR Distribution file, excluding slf4j API and bindings.">
-    <ant dir="webapp" target="dist" inheritall="false">
-      <propertyset refid="uptodate.and.compiled.properties"/>
-      <property name="exclude.from.war" value="*slf4j*,log4j-*" />
-      <property name="solr.war.suffix" value="-excl-slf4j" />
-    </ant>
-  </target>
-
   <target name="prepare-release-no-sign" depends="clean, package, generate-maven-artifacts"/>
   <target name="prepare-release" depends="prepare-release-no-sign, sign-artifacts"/>
  

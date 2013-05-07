@@ -26,10 +26,12 @@ import java.util.Set;
 
 import org.apache.lucene.index.StoredDocument;
 import org.apache.lucene.search.Query;
+import org.apache.lucene.search.postingshighlight.DefaultPassageFormatter;
 import org.apache.lucene.search.postingshighlight.Passage;
 import org.apache.lucene.search.postingshighlight.PassageFormatter;
 import org.apache.lucene.search.postingshighlight.PassageScorer;
 import org.apache.lucene.search.postingshighlight.PostingsHighlighter;
+import org.apache.lucene.search.postingshighlight.WholeBreakIterator;
 import org.apache.solr.common.params.HighlightParams;
 import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.common.util.NamedList;
@@ -49,99 +51,67 @@ import org.apache.solr.util.plugin.PluginInfoInitialized;
  * <p>
  * Example configuration:
  * <pre class="prettyprint">
+ *   &lt;requestHandler name="standard" class="solr.StandardRequestHandler"&gt;
+ *     &lt;lst name="defaults"&gt;
+ *       &lt;int name="hl.snippets"&gt;1&lt;/int&gt;
+ *       &lt;str name="hl.tag.pre"&gt;&amp;lt;em&amp;gt;&lt;/str&gt;
+ *       &lt;str name="hl.tag.post"&gt;&amp;lt;/em&amp;gt;&lt;/str&gt;
+ *       &lt;str name="hl.tag.ellipsis"&gt;... &lt;/str&gt;
+ *       &lt;bool name="hl.defaultSummary"&gt;true&lt;/bool&gt;
+ *       &lt;str name="hl.encoder"&gt;simple&lt;/str&gt;
+ *       &lt;float name="hl.score.k1"&gt;1.2&lt;/float&gt;
+ *       &lt;float name="hl.score.b"&gt;0.75&lt;/float&gt;
+ *       &lt;float name="hl.score.pivot"&gt;87&lt;/float&gt;
+ *       &lt;str name="hl.bs.language"&gt;&lt;/str&gt;
+ *       &lt;str name="hl.bs.country"&gt;&lt;/str&gt;
+ *       &lt;str name="hl.bs.variant"&gt;&lt;/str&gt;
+ *       &lt;str name="hl.bs.type"&gt;SENTENCE&lt;/str&gt;
+ *       &lt;int name="hl.maxAnalyzedChars"&gt;10000&lt;/int&gt;
+ *     &lt;/lst&gt;
+ *   &lt;/requestHandler&gt;
+ * </pre>
+ * ...
+ * <pre class="prettyprint">
  *   &lt;searchComponent class="solr.HighlightComponent" name="highlight"&gt;
- *     &lt;highlighting class="org.apache.solr.highlight.PostingsSolrHighlighter"
- *                      preTag="&amp;lt;em&amp;gt;"
- *                      postTag="&amp;lt;/em&amp;gt;"
- *                      ellipsis="... "
- *                      k1="1.2"
- *                      b="0.75"
- *                      pivot="87"
- *                      maxLength=10000
- *                      summarizeEmpty=true/&gt;
+ *     &lt;highlighting class="org.apache.solr.highlight.PostingsSolrHighlighter"/&gt;
  *   &lt;/searchComponent&gt;
  * </pre>
  * <p>
  * Notes:
  *  <ul>
  *    <li>fields to highlight must be configured with storeOffsetsWithPositions="true"
- *    <li>hl.fl specifies the field list.
- *    <li>hl.snippets specifies how many underlying sentence fragments form the resulting snippet.
+ *    <li>hl.q (string) can specify the query
+ *    <li>hl.fl (string) specifies the field list.
+ *    <li>hl.snippets (int) specifies how many underlying passages form the resulting snippet.
+ *    <li>hl.tag.pre (string) specifies text which appears before a highlighted term.
+ *    <li>hl.tag.post (string) specifies text which appears after a highlighted term.
+ *    <li>hl.tag.ellipsis (string) specifies text which joins non-adjacent passages.
+ *    <li>hl.defaultSummary (bool) specifies if a field should have a default summary.
+ *    <li>hl.encoder (string) can be 'html' (html escapes content) or 'simple' (no escaping).
+ *    <li>hl.score.k1 (float) specifies bm25 scoring parameter 'k1'
+ *    <li>hl.score.b (float) specifies bm25 scoring parameter 'b'
+ *    <li>hl.score.pivot (float) specifies bm25 scoring parameter 'avgdl'
+ *    <li>hl.bs.type (string) specifies how to divide text into passages: [SENTENCE, LINE, WORD, CHAR, WHOLE]
+ *    <li>hl.bs.language (string) specifies language code for BreakIterator. default is empty string (root locale)
+ *    <li>hl.bs.country (string) specifies country code for BreakIterator. default is empty string (root locale)
+ *    <li>hl.bs.variant (string) specifies country code for BreakIterator. default is empty string (root locale)
+ *    <li>hl.maxAnalyzedChars specifies how many characters at most will be processed in a document.
+ *        NOTE: currently hl.maxAnalyzedChars cannot yet be specified per-field
  *  </ul>
  *  
  * @lucene.experimental 
  */
 public class PostingsSolrHighlighter extends SolrHighlighter implements PluginInfoInitialized {
-  protected PostingsHighlighter highlighter;
 
   @Override
   public void initalize(SolrConfig config) {}
   
   @Override
-  public void init(PluginInfo info) {
-    Map<String,String> attributes = info.attributes;
-    BreakIterator breakIterator = BreakIterator.getSentenceInstance(Locale.ROOT);
-    
-    // scorer parameters: k1/b/pivot
-    String k1 = attributes.get("k1");
-    if (k1 == null) {
-      k1 = "1.2";
-    }
-    
-    String b = attributes.get("b");
-    if (b == null) {
-      b = "0.75";
-    }
-    
-    String pivot = attributes.get("pivot");
-    if (pivot == null) {
-      pivot = "87";
-    }
-    PassageScorer scorer = new PassageScorer(Float.parseFloat(k1), Float.parseFloat(b), Float.parseFloat(pivot));
-    
-    // formatter parameters: preTag/postTag/ellipsis
-    String preTag = attributes.get("preTag");
-    if (preTag == null) {
-      preTag = "<em>";
-    }
-    String postTag = attributes.get("postTag");
-    if (postTag == null) {
-      postTag = "</em>";
-    }
-    String ellipsis = attributes.get("ellipsis");
-    if (ellipsis == null) {
-      ellipsis = "... ";
-    }
-    PassageFormatter formatter = new PassageFormatter(preTag, postTag, ellipsis);
-
-    String summarizeEmpty = attributes.get("summarizeEmpty");
-    final boolean summarizeEmptyBoolean;
-    if (summarizeEmpty == null) {
-      summarizeEmptyBoolean = true;
-    } else {
-      summarizeEmptyBoolean = Boolean.parseBoolean(summarizeEmpty);
-    }
-
-    // maximum content size to process
-    int maxLength = PostingsHighlighter.DEFAULT_MAX_LENGTH;
-    if (attributes.containsKey("maxLength")) {
-      maxLength = Integer.parseInt(attributes.get("maxLength"));
-    }
-    highlighter = new PostingsHighlighter(maxLength, breakIterator, scorer, formatter) {
-        @Override
-        protected Passage[] getEmptyHighlight(String fieldName, BreakIterator bi, int maxPassages) {
-          if (summarizeEmptyBoolean) {
-            return super.getEmptyHighlight(fieldName, bi, maxPassages);
-          } else {
-            return new Passage[0];
-          }
-        }
-      };
-  }
+  public void init(PluginInfo info) {}
 
   @Override
   public NamedList<Object> doHighlighting(DocList docs, Query query, SolrQueryRequest req, String[] defaultFields) throws IOException {
-    SolrParams params = req.getParams(); 
+    final SolrParams params = req.getParams(); 
     
     // if highlighting isnt enabled, then why call doHighlighting?
     if (isHighlightingEnabled(params)) {
@@ -152,10 +122,54 @@ public class PostingsSolrHighlighter extends SolrHighlighter implements PluginIn
       String[] keys = getUniqueKeys(searcher, docIDs);
       
       // query-time parameters
+      int maxLength = params.getInt(HighlightParams.MAX_CHARS, PostingsHighlighter.DEFAULT_MAX_LENGTH);
       String[] fieldNames = getHighlightFields(query, req, defaultFields);
-      int numSnippets = params.getInt(HighlightParams.SNIPPETS, 1);
       
-      Map<String,String[]> snippets = highlighter.highlightFields(fieldNames, query, searcher, docIDs, numSnippets);
+      int maxPassages[] = new int[fieldNames.length];
+      for (int i = 0; i < fieldNames.length; i++) {
+        maxPassages[i] = params.getFieldInt(fieldNames[i], HighlightParams.SNIPPETS, 1);
+      }
+      
+      PostingsHighlighter highlighter = new PostingsHighlighter(maxLength) {
+        @Override
+        protected Passage[] getEmptyHighlight(String fieldName, BreakIterator bi, int maxPassages) {
+          boolean defaultSummary = params.getFieldBool(fieldName, HighlightParams.DEFAULT_SUMMARY, true);
+          if (defaultSummary) {
+            return super.getEmptyHighlight(fieldName, bi, maxPassages);
+          } else {
+            return new Passage[0];
+          }
+        }
+
+        @Override
+        protected PassageFormatter getFormatter(String fieldName) {
+          String preTag = params.getFieldParam(fieldName, HighlightParams.TAG_PRE, "<em>");
+          String postTag = params.getFieldParam(fieldName, HighlightParams.TAG_POST, "</em>");
+          String ellipsis = params.getFieldParam(fieldName, HighlightParams.TAG_ELLIPSIS, "... ");
+          String encoder = params.getFieldParam(fieldName, HighlightParams.ENCODER, "simple");
+          return new DefaultPassageFormatter(preTag, postTag, ellipsis, "html".equals(encoder));
+        }
+
+        @Override
+        protected PassageScorer getScorer(String fieldName) {
+          float k1 = params.getFieldFloat(fieldName, HighlightParams.SCORE_K1, 1.2f);
+          float b = params.getFieldFloat(fieldName, HighlightParams.SCORE_B, 0.75f);
+          float pivot = params.getFieldFloat(fieldName, HighlightParams.SCORE_PIVOT, 87f);
+          return new PassageScorer(k1, b, pivot);
+        }
+
+        @Override
+        protected BreakIterator getBreakIterator(String field) {
+          String language = params.getFieldParam(field, HighlightParams.BS_LANGUAGE);
+          String country = params.getFieldParam(field, HighlightParams.BS_COUNTRY);
+          String variant = params.getFieldParam(field, HighlightParams.BS_VARIANT);
+          Locale locale = parseLocale(language, country, variant);
+          String type = params.getFieldParam(field, HighlightParams.BS_TYPE);
+          return parseBreakIterator(type, locale);
+        }
+      };
+      
+      Map<String,String[]> snippets = highlighter.highlightFields(fieldNames, query, searcher, docIDs, maxPassages);
       return encodeSnippets(keys, fieldNames, snippets);
     } else {
       return null;
@@ -220,6 +234,38 @@ public class PostingsSolrHighlighter extends SolrHighlighter implements PluginIn
       return uniqueKeys;
     } else {
       return new String[docIDs.length];
+    }
+  }
+  
+  /** parse a break iterator type for the specified locale */
+  protected BreakIterator parseBreakIterator(String type, Locale locale) {
+    if (type == null || "SENTENCE".equals(type)) {
+      return BreakIterator.getSentenceInstance(locale);
+    } else if ("LINE".equals(type)) {
+      return BreakIterator.getLineInstance(locale);
+    } else if ("WORD".equals(type)) {
+      return BreakIterator.getWordInstance(locale);
+    } else if ("CHARACTER".equals(type)) {
+      return BreakIterator.getCharacterInstance(locale);
+    } else if ("WHOLE".equals(type)) {
+      return new WholeBreakIterator();
+    } else {
+      throw new IllegalArgumentException("Unknown " + HighlightParams.BS_TYPE + ": " + type);
+    }
+  }
+  
+  /** parse a locale from a language+country+variant spec */
+  protected Locale parseLocale(String language, String country, String variant) {
+    if (language == null && country == null && variant == null) {
+      return Locale.ROOT;
+    } else if (language != null && country == null && variant != null) {
+      throw new IllegalArgumentException("To specify variant, country is required");
+    } else if (language != null && country != null && variant != null) {
+      return new Locale(language, country, variant);
+    } else if (language != null && country != null) {
+      return new Locale(language, country);
+    } else { 
+      return new Locale(language);
     }
   }
 }

@@ -215,11 +215,12 @@ public class OpenCloseCoreStressTest extends SolrTestCaseJ4 {
 
   private void makeCores(File home, boolean oldStyle) throws Exception {
     File testSrcRoot = new File(SolrTestCaseJ4.TEST_HOME());
+    String srcSolrXml = "solr-stress-new.xml";
+
     if (oldStyle) {
-      FileUtils.copyFile(new File(testSrcRoot, "solr-stress.xml"), new File(home, "solr.xml"));
-    } else {
-      FileUtils.copyFile(new File(testSrcRoot, "solr-stress.properties"), new File(home, "solr.properties"));
+      srcSolrXml = "solr-stress-old.xml";
     }
+    FileUtils.copyFile(new File(testSrcRoot, srcSolrXml), new File(home, "solr.xml"));
 
     // create directories in groups of 100 until you have enough.
     for (int idx = 0; idx < numCores; ++idx) {

@@ -14,11 +14,14 @@
 # limitations under the License.
 
 import os
+import zipfile
 import codecs
 import tarfile
 import zipfile
 import threading
 import traceback
+import datetime
+import time
 import subprocess
 import signal
 import shutil
@@ -71,11 +74,10 @@ def verifyJavaVersion(version):
 
 # http://s.apache.org/lusolr32rc2
 env = os.environ
-
 try:
   JAVA7_HOME = env['JAVA7_HOME']
 except KeyError:
-  JAVA7_HOME = '/usr/local/jdk1.7.0_01'
+  raise RuntimeError('please set JAVA7_HOME in the env before running smokeTestRelease')
 print('JAVA7_HOME is %s' % JAVA7_HOME)
 
 verifyJavaVersion('1.7')
@@ -126,31 +128,37 @@ def getHREFs(urlString):
   return links
 
 def download(name, urlString, tmpDir, quiet=False):
+  startTime = time.time()
   fileName = '%s/%s' % (tmpDir, name)
   if not FORCE_CLEAN and os.path.exists(fileName):
     if not quiet and fileName.find('.asc') == -1:
       print('    already done: %.1f MB' % (os.path.getsize(fileName)/1024./1024.))
     return
-  fIn = urllib.request.urlopen(urlString)
-  fOut = open(fileName, 'wb')
-  success = False
   try:
-    while True:
-      s = fIn.read(65536)
-      if s == b'':
-        break
-      fOut.write(s)
-    fOut.close()
-    fIn.close()
-    success = True
-  finally:
-    fIn.close()
-    fOut.close()
-    if not success:
-      os.remove(fileName)
-  if not quiet and fileName.find('.asc') == -1:
-    print('    %.1f MB' % (os.path.getsize(fileName)/1024./1024.))
-    
+    fIn = urllib.request.urlopen(urlString)
+    fOut = open(fileName, 'wb')
+    success = False
+    try:
+      while True:
+        s = fIn.read(65536)
+        if s == b'':
+          break
+        fOut.write(s)
+      fOut.close()
+      fIn.close()
+      success = True
+    finally:
+      fIn.close()
+      fOut.close()
+      if not success:
+        os.remove(fileName)
+    if not quiet and fileName.find('.asc') == -1:
+      t = time.time()-startTime
+      sizeMB = os.path.getsize(fileName)/1024./1024.
+      print('    %.1f MB in %.2f sec (%.1f MB/sec)' % (sizeMB, t, sizeMB/t))
+  except Exception as e:
+    raise RuntimeError('failed to download url "%s"' % urlString) from e
+  
 def load(urlString):
   return urllib.request.urlopen(urlString).read().decode('utf-8')
 
@@ -167,7 +175,7 @@ MANIFEST_FILE_NAME = 'META-INF/MANIFEST.MF'
 NOTICE_FILE_NAME = 'META-INF/NOTICE.txt'
 LICENSE_FILE_NAME = 'META-INF/LICENSE.txt'
 
-def checkJARMetaData(desc, jarFile, version):
+def checkJARMetaData(desc, jarFile, svnRevision, version):
 
   with zipfile.ZipFile(jarFile, 'r') as z:
     for name in (MANIFEST_FILE_NAME, NOTICE_FILE_NAME, LICENSE_FILE_NAME):
@@ -182,15 +190,21 @@ def checkJARMetaData(desc, jarFile, version):
     s = decodeUTF8(z.read(MANIFEST_FILE_NAME))
     
     for verify in (
+      'Specification-Vendor: The Apache Software Foundation',
       'Implementation-Vendor: The Apache Software Foundation',
       # Make sure 1.7 compiler was used to build release bits:
       'X-Compile-Source-JDK: 1.7',
+      # Make sure 1.8 ant was used to build release bits: (this will match 1.8+)
+      'Ant-Version: Apache Ant 1.8',
       # Make sure .class files are 1.7 format:
       'X-Compile-Target-JDK: 1.7',
-      # Make sure this matches the version we think we are releasing:
-      'Specification-Version: %s' % version):
+      # Make sure this matches the version and svn revision we think we are releasing:
+      'Implementation-Version: %s %s ' % (version, svnRevision),
+      'Specification-Version: %s' % version,
+      # Make sure the release was compiled with 1.7:
+      'Created-By: 1.7'):
       if s.find(verify) == -1:
-        raise RuntimeError('%s is missing "%s" inside its META-INF/MANIFES.MF' % \
+        raise RuntimeError('%s is missing "%s" inside its META-INF/MANIFEST.MF' % \
                            (desc, verify))
 
     notice = decodeUTF8(z.read(NOTICE_FILE_NAME))
@@ -230,7 +244,7 @@ def checkJARMetaData(desc, jarFile, version):
 def normSlashes(path):
   return path.replace(os.sep, '/')
     
-def checkAllJARs(topDir, project, version):
+def checkAllJARs(topDir, project, svnRevision, version):
   print('    verify JAR/WAR metadata...')  
   for root, dirs, files in os.walk(topDir):
 
@@ -249,10 +263,10 @@ def checkAllJARs(topDir, project, version):
         fullPath = '%s/%s' % (root, file)
         noJavaPackageClasses('JAR file "%s"' % fullPath, fullPath)
         if file.lower().find('lucene') != -1 or file.lower().find('solr') != -1:
-          checkJARMetaData('JAR file "%s"' % fullPath, fullPath, version)
+          checkJARMetaData('JAR file "%s"' % fullPath, fullPath, svnRevision, version)
   
 
-def checkSolrWAR(warFileName, version):
+def checkSolrWAR(warFileName, svnRevision, version):
 
   """
   Crawls for JARs inside the WAR and ensures there are no classes
@@ -261,7 +275,7 @@ def checkSolrWAR(warFileName, version):
 
   print('    make sure WAR file has no javax.* or java.* classes...')
 
-  checkJARMetaData(warFileName, warFileName, version)
+  checkJARMetaData(warFileName, warFileName, svnRevision, version)
 
   with zipfile.ZipFile(warFileName, 'r') as z:
     for name in z.namelist():
@@ -271,6 +285,7 @@ def checkSolrWAR(warFileName, version):
         if name.lower().find('lucene') != -1 or name.lower().find('solr') != -1:
           checkJARMetaData('JAR file %s inside WAR file %s' % (name, warFileName),
                            io.BytesIO(z.read(name)),
+                           svnRevision,
                            version)
         
 def checkSigs(project, urlString, version, tmpDir, isSigned):
@@ -414,7 +429,9 @@ def testChangesText(dir, version, project):
       fullPath = '%s/CHANGES.txt' % root
       #print 'CHECK %s' % fullPath
       checkChangesContent(open(fullPath, encoding='UTF-8').read(), version, fullPath, project, False)
-      
+
+reChangesSectionHREF = re.compile('<a id="(.*?)".*?>(.*?)</a>', re.IGNORECASE)
+
 def checkChangesContent(s, version, name, project, isHTML):
 
   if isHTML and s.find('Release %s' % version) == -1:
@@ -433,6 +450,23 @@ def checkChangesContent(s, version, name, project, isHTML):
       # benchmark never seems to include release info:
       if name.find('/benchmark/') == -1:
         raise RuntimeError('did not see "%s" in %s' % (sub, name))
+
+  if isHTML:
+    # Make sure a section only appears once under each release:
+    seenIDs = set()
+    seenText = set()
+
+    release = None
+    for id, text in reChangesSectionHREF.findall(s):
+      if text.lower().startswith('release '):
+        release = text[8:].strip()
+        seenText.clear()
+      if id in seenIDs:
+        raise RuntimeError('%s has duplicate section "%s" under release "%s"' % (name, text, release))
+      seenIDs.add(id)
+      if text in seenText:
+        raise RuntimeError('%s has duplicate section "%s" under release "%s"' % (name, text, release))
+      seenText.add(text)
 
 reUnixPath = re.compile(r'\b[a-zA-Z_]+=(?:"(?:\\"|[^"])*"' + '|(?:\\\\.|[^"\'\\s])*' + r"|'(?:\\'|[^'])*')" \
                         + r'|(/(?:\\.|[^"\'\s])*)' \
@@ -533,7 +567,7 @@ def getDirEntries(urlString):
       if text == 'Parent Directory' or text == '..':
         return links[(i+1):]
 
-def unpackAndVerify(project, tmpDir, artifact, version):
+def unpackAndVerify(project, tmpDir, artifact, svnRevision, version):
   destDir = '%s/unpack' % tmpDir
   if os.path.exists(destDir):
     shutil.rmtree(destDir)
@@ -553,14 +587,14 @@ def unpackAndVerify(project, tmpDir, artifact, version):
     raise RuntimeError('unpack produced entries %s; expected only %s' % (l, expected))
 
   unpackPath = '%s/%s' % (destDir, expected)
-  verifyUnpacked(project, artifact, unpackPath, version, tmpDir)
+  verifyUnpacked(project, artifact, unpackPath, svnRevision, version, tmpDir)
 
 LUCENE_NOTICE = None
 LUCENE_LICENSE = None
 SOLR_NOTICE = None
 SOLR_LICENSE = None
 
-def verifyUnpacked(project, artifact, unpackPath, version, tmpDir):
+def verifyUnpacked(project, artifact, unpackPath, svnRevision, version, tmpDir):
   global LUCENE_NOTICE
   global LUCENE_LICENSE
   global SOLR_NOTICE
@@ -678,13 +712,13 @@ def verifyUnpacked(project, artifact, unpackPath, version, tmpDir):
 
   else:
 
-    checkAllJARs(os.getcwd(), project, version)
+    checkAllJARs(os.getcwd(), project, svnRevision, version)
     
     if project == 'lucene':
       testDemo(isSrc, version, '1.7')
 
     else:
-      checkSolrWAR('%s/example/webapps/solr.war' % unpackPath, version)
+      checkSolrWAR('%s/example/webapps/solr.war' % unpackPath, svnRevision, version)
 
       print('    copying unpacked distribution for Java 7 ...')
       java7UnpackPath = '%s-java7' %unpackPath
@@ -722,7 +756,7 @@ def readSolrOutput(p, startupEvent, failureEvent, logFile):
   f = open(logFile, 'wb')
   try:
     while True:
-      line = p.stderr.readline()
+      line = p.stdout.readline()
       if len(line) == 0:
         p.poll()
         if not startupEvent.isSet():
@@ -756,7 +790,7 @@ def testSolrExample(unpackPath, javaPath, isSrc):
   env.update(os.environ)
   env['JAVA_HOME'] = javaPath
   env['PATH'] = '%s/bin:%s' % (javaPath, env['PATH'])
-  server = subprocess.Popen(['java', '-jar', 'start.jar'], stdout=subprocess.PIPE, stderr=subprocess.PIPE, stdin=subprocess.PIPE, env=env)
+  server = subprocess.Popen(['java', '-jar', 'start.jar'], stdout=subprocess.PIPE, stderr=subprocess.STDOUT, stdin=subprocess.PIPE, env=env)
 
   startupEvent = threading.Event()
   failureEvent = threading.Event()
@@ -764,19 +798,21 @@ def testSolrExample(unpackPath, javaPath, isSrc):
   serverThread.setDaemon(True)
   serverThread.start()
 
-  # Make sure Solr finishes startup:
-  if not startupEvent.wait(1800):
-    raise RuntimeError('startup took more than 30 minutes')
-  if failureEvent.isSet():
-    logFile = os.path.abspath(logFile)
-    print
-    print('Startup failed; see log %s' % logFile)
-    printFileContents(logFile)
-    raise RuntimeError('failure on startup; see log %s' % logFile)
-    
-  print('      startup done')
-  
   try:
+
+    # Make sure Solr finishes startup:
+    if not startupEvent.wait(1800):
+      raise RuntimeError('startup took more than 30 minutes')
+
+    if failureEvent.isSet():
+      logFile = os.path.abspath(logFile)
+      print
+      print('Startup failed; see log %s' % logFile)
+      printFileContents(logFile)
+      raise RuntimeError('failure on startup; see log %s' % logFile)
+
+    print('      startup done')
+
     print('      test utf8...')
     run('sh ./exampledocs/test_utf8.sh', 'utf8.log')
     print('      index example docs...')
@@ -858,7 +894,7 @@ def testDemo(isSrc, version, jdk):
       raise RuntimeError('lucene demo\'s SearchFiles found too few results: %s' % numHits)
     print('      got %d hits for query "lucene"' % numHits)
 
-def checkMaven(baseURL, tmpDir, version, isSigned):
+def checkMaven(baseURL, tmpDir, svnRevision, version, isSigned):
   # Locate the release branch in subversion
   m = re.match('(\d+)\.(\d+)', version) # Get Major.minor version components
   releaseBranchText = 'lucene_solr_%s_%s/' % (m.group(1), m.group(2))
@@ -907,8 +943,8 @@ def checkMaven(baseURL, tmpDir, version, isSigned):
   print('    verify that Maven artifacts are same as in the binary distribution...')
   checkIdenticalMavenArtifacts(distributionFiles, nonMavenizedDeps, artifacts, version)
 
-  checkAllJARs('%s/maven/org/apache/lucene' % tmpDir, 'lucene', version)
-  checkAllJARs('%s/maven/org/apache/solr' % tmpDir, 'solr', version)
+  checkAllJARs('%s/maven/org/apache/lucene' % tmpDir, 'lucene', svnRevision, version)
+  checkAllJARs('%s/maven/org/apache/solr' % tmpDir, 'solr', svnRevision, version)
 
 def getDistributionsForMavenChecks(tmpDir, version, baseURL):
   distributionFiles = defaultdict()
@@ -938,7 +974,7 @@ def getDistributionsForMavenChecks(tmpDir, version, baseURL):
 def checkJavadocAndSourceArtifacts(nonMavenizedDeps, artifacts, version):
   for project in ('lucene', 'solr'):
     for artifact in artifacts[project]:
-      if artifact.endswith(version + '.jar') and artifact not in list(nonMavenizedDeps.keys()):
+      if artifact.endswith(version + '.jar') and artifact not in nonMavenizedDeps:
         javadocJar = artifact[:-4] + '-javadoc.jar'
         if javadocJar not in artifacts[project]:
           raise RuntimeError('missing: %s' % javadocJar)
@@ -951,7 +987,7 @@ def checkIdenticalNonMavenizedDeps(distributionFiles, nonMavenizedDeps):
     distFilenames = dict()
     for file in distributionFiles[project]:
       distFilenames[os.path.basename(file)] = file
-    for dep in list(nonMavenizedDeps.keys()):
+    for dep in nonMavenizedDeps.keys():
       if ('/%s/' % project) in dep:
         depOrigFilename = os.path.basename(nonMavenizedDeps[dep])
         if not depOrigFilename in distFilenames:
@@ -960,6 +996,15 @@ def checkIdenticalNonMavenizedDeps(distributionFiles, nonMavenizedDeps):
         if not identical:
           raise RuntimeError('Deployed non-mavenized dep %s differs from distribution dep %s'
                             % (dep, distFilenames[depOrigFilename]))
+
+def getZipFileEntries(fileName):
+  entries = []
+  with zipfile.ZipFile(fileName) as zf:
+    for zi in zf.infolist():
+      entries.append(zi.filename)
+  # Sort by name:
+  entries.sort()
+  return entries
 
 def checkIdenticalMavenArtifacts(distributionFiles, nonMavenizedDeps, artifacts, version):
   reJarWar = re.compile(r'%s\.[wj]ar$' % version) # exclude *-javadoc.jar and *-sources.jar
@@ -970,11 +1015,20 @@ def checkIdenticalMavenArtifacts(distributionFiles, nonMavenizedDeps, artifacts,
       distFilenames[baseName] = file
     for artifact in artifacts[project]:
       if reJarWar.search(artifact):
-        if artifact not in list(nonMavenizedDeps.keys()):
+        entries = getZipFileEntries(artifact)
+        if artifact not in nonMavenizedDeps:
           artifactFilename = os.path.basename(artifact)
-          if artifactFilename not in list(distFilenames.keys()):
+          if artifactFilename not in distFilenames:
             raise RuntimeError('Maven artifact %s is not present in %s binary distribution'
                               % (artifact, project))
+          else:
+            binaryEntries = getZipFileEntries(distFilenames[artifactFilename])
+            if binaryEntries != entries:
+              raise RuntimeError('Maven artifact %s has different contents than binary distribution\n  maven:\n%s\n  binary:\n%s\n' % \
+                    (artifactFilename,
+                     '\n'.join(entries),
+                     '\n'.join(binaryEntries)))
+          
          # TODO: Either fix the build to ensure that maven artifacts *are* identical, or recursively compare contents
          # identical = filecmp.cmp(artifact, distFilenames[artifactFilename], shallow=False)
          # if not identical:
@@ -1245,27 +1299,32 @@ reAllowedVersion = re.compile(r'^\d+\.\d+\.\d+(-ALPHA|-BETA)?$')
 
 def main():
 
-  if len(sys.argv) < 4:
+  if len(sys.argv) < 5:
     print()
-    print('Usage python -u %s BaseURL version tmpDir' % sys.argv[0])
+    print('Usage python -u %s BaseURL SvnRevision version tmpDir' % sys.argv[0])
+    print()
+    print('  example: python3.2 -u dev-tools/scripts/smokeTestRelease.py http://people.apache.org/~whoever/staging_area/lucene-solr-4.3.0-RC1-rev1469340 1469340 4.3.0 /path/to/a/tmp/dir')
     print()
     sys.exit(1)
 
   baseURL = sys.argv[1]
-  version = sys.argv[2]
+  svnRevision = sys.argv[2]
+  version = sys.argv[3]
 
   if not reAllowedVersion.match(version):
     raise RuntimeError('version "%s" does not match format X.Y.Z[-ALPHA|-BETA]' % version)
   
-  tmpDir = os.path.abspath(sys.argv[3])
+  tmpDir = os.path.abspath(sys.argv[4])
   isSigned = True 
-  if len(sys.argv) == 5:
-    isSigned = (sys.argv[4] == "True")
+  if len(sys.argv) == 6:
+    isSigned = (sys.argv[5] == "True")
 
-  smokeTest(baseURL, version, tmpDir, isSigned)
+  smokeTest(baseURL, svnRevision, version, tmpDir, isSigned)
 
-def smokeTest(baseURL, version, tmpDir, isSigned):
+def smokeTest(baseURL, svnRevision, version, tmpDir, isSigned):
 
+  startTime = datetime.datetime.now()
+  
   if FORCE_CLEAN:
     if os.path.exists(tmpDir):
       raise RuntimeError('temp dir %s exists; please remove first' % tmpDir)
@@ -1297,21 +1356,21 @@ def smokeTest(baseURL, version, tmpDir, isSigned):
   print('Test Lucene...')
   checkSigs('lucene', lucenePath, version, tmpDir, isSigned)
   for artifact in ('lucene-%s.tgz' % version, 'lucene-%s.zip' % version):
-    unpackAndVerify('lucene', tmpDir, artifact, version)
-  unpackAndVerify('lucene', tmpDir, 'lucene-%s-src.tgz' % version, version)
+    unpackAndVerify('lucene', tmpDir, artifact, svnRevision, version)
+  unpackAndVerify('lucene', tmpDir, 'lucene-%s-src.tgz' % version, svnRevision, version)
 
   print()
   print('Test Solr...')
   checkSigs('solr', solrPath, version, tmpDir, isSigned)
   for artifact in ('solr-%s.tgz' % version, 'solr-%s.zip' % version):
-    unpackAndVerify('solr', tmpDir, artifact, version)
-  unpackAndVerify('solr', tmpDir, 'solr-%s-src.tgz' % version, version)
+    unpackAndVerify('solr', tmpDir, artifact, svnRevision, version)
+  unpackAndVerify('solr', tmpDir, 'solr-%s-src.tgz' % version, svnRevision, version)
 
   print()
   print('Test Maven artifacts for Lucene and Solr...')
-  checkMaven(baseURL, tmpDir, version, isSigned)
+  checkMaven(baseURL, tmpDir, svnRevision, version, isSigned)
 
-  print('\nSUCCESS!\n')
+  print('\nSUCCESS! [%s]\n' % (datetime.datetime.now() - startTime))
 
 if __name__ == '__main__':
   print('NOTE: output encoding is %s' % sys.stdout.encoding)

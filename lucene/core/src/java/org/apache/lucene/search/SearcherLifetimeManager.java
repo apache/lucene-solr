@@ -24,7 +24,6 @@ import java.util.Collections;
 import java.util.List;
 import java.util.concurrent.ConcurrentHashMap;
 
-import org.apache.lucene.search.NRTManager;        // javadocs
 import org.apache.lucene.index.DirectoryReader;
 import org.apache.lucene.store.AlreadyClosedException;
 import org.apache.lucene.util.IOUtils;
@@ -41,8 +40,8 @@ import org.apache.lucene.util.IOUtils;
  *
  * Per search-request, if it's a "new" search request, then
  * obtain the latest searcher you have (for example, by
- * using {@link SearcherManager} or {@link NRTManager}), and
- * then record this searcher:
+ * using {@link SearcherManager}), and then record this
+ * searcher:
  *
  * <pre class="prettyprint">
  *   // Record the current searcher, and save the returend
@@ -143,8 +142,7 @@ public class SearcherLifetimeManager implements Closeable {
 
   /** Records that you are now using this IndexSearcher.
    *  Always call this when you've obtained a possibly new
-   *  {@link IndexSearcher}, for example from one of the
-   *  <code>get</code> methods in {@link NRTManager} or {@link
+   *  {@link IndexSearcher}, for example from {@link
    *  SearcherManager}.  It's fine if you already passed the
    *  same searcher to this method before.
    *

@@ -22,6 +22,7 @@ import java.io.File;
 
 import org.apache.commons.lang.StringUtils;
 import org.apache.solr.cloud.CloudDescriptor;
+import org.apache.solr.core.ConfigSolr.CfgProp;
 
 /**
  * A Solr core descriptor
@@ -33,7 +34,7 @@ public class CoreDescriptor {
   // Properties file name constants
   public static final String CORE_NAME = "name";
   public static final String CORE_CONFIG = "config";
-  public static final String CORE_INSTDIR = "instanceDir";
+  public static final String CORE_INSTDIR = "instanceDir"; // should probably be removed after 4x
   public static final String CORE_DATADIR = "dataDir";
   public static final String CORE_ULOGDIR = "ulogDir";
   public static final String CORE_SCHEMA = "schema";
@@ -77,6 +78,7 @@ public class CoreDescriptor {
     coreProperties.put(CORE_TRANSIENT, "false");
 
   }
+  
   public CoreDescriptor(CoreContainer container, String name, String instanceDir) {
     this(container);
     doInit(name, instanceDir);
@@ -134,7 +136,11 @@ public class CoreDescriptor {
   }
 
   public Properties initImplicitProperties() {
-    Properties implicitProperties = new Properties(coreContainer.getContainerProperties());
+
+    Properties implicitProperties = new Properties();
+    if (coreContainer != null && coreContainer.getContainerProperties() != null){
+      implicitProperties.putAll(coreContainer.getContainerProperties());
+    }
     implicitProperties.setProperty("solr.core.name", getName());
     implicitProperties.setProperty("solr.core.instanceDir", getInstanceDir());
     implicitProperties.setProperty("solr.core.dataDir", getDataDir());
@@ -197,11 +203,21 @@ public class CoreDescriptor {
    */
   public String getInstanceDir() {
     String instDir = coreProperties.getProperty(CORE_INSTDIR);
-    if (instDir == null) return null; // No worse than before.
+    if (instDir == null) return null;
 
     if (new File(instDir).isAbsolute()) {
       return SolrResourceLoader.normalizeDir(
           SolrResourceLoader.normalizeDir(instDir));
+    }
+
+    if (coreContainer == null) return null;
+    if( coreContainer.cfg != null) {
+      String coreRootDir = coreContainer.cfg.get(
+          CfgProp.SOLR_COREROOTDIRECTORY, null);
+      if (coreRootDir != null) {
+        return SolrResourceLoader.normalizeDir(coreRootDir
+            + SolrResourceLoader.normalizeDir(instDir));
+      }
     }
     return SolrResourceLoader.normalizeDir(coreContainer.getSolrHome() +
         SolrResourceLoader.normalizeDir(instDir));
@@ -326,5 +342,23 @@ public class CoreDescriptor {
    */
   public void putProperty(String prop, String val) {
     coreProperties.put(prop, val);
+  }
+
+  // This is particularly useful for checking if any two cores have the same
+  // data dir.
+  public String getAbsoluteDataDir() {
+    String dataDir = getDataDir();
+    if (dataDir == null) return null; // No worse than before.
+
+    if (new File(dataDir).isAbsolute()) {
+      return SolrResourceLoader.normalizeDir(
+          SolrResourceLoader.normalizeDir(dataDir));
+    }
+
+    if (coreContainer == null) return null;
+
+    return SolrResourceLoader.normalizeDir(coreContainer.getSolrHome() +
+        SolrResourceLoader.normalizeDir(dataDir));
+
   }
 }

@@ -40,7 +40,6 @@ import org.apache.lucene.search.TermQuery;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.MockDirectoryWrapper;
 import org.apache.lucene.store.RAMDirectory;
-import org.apache.lucene.util.Bits;
 import org.apache.lucene.util.LuceneTestCase;
 import org.apache.lucene.util._TestUtil;
 
@@ -407,7 +406,7 @@ public class TestIndexWriterDelete extends LuceneTestCase {
 
   private int getHitCount(Directory dir, Term term) throws IOException {
     IndexReader reader = DirectoryReader.open(dir);
-    IndexSearcher searcher = new IndexSearcher(reader);
+    IndexSearcher searcher = newSearcher(reader);
     int hitCount = searcher.search(new TermQuery(term), null, 1000).totalHits;
     reader.close();
     return hitCount;
@@ -499,6 +498,7 @@ public class TestIndexWriterDelete extends LuceneTestCase {
           }
           testName = "disk full during reader.close() @ " + thisDiskFree
             + " bytes";
+          dir.setRandomIOExceptionRateOnOpen(random().nextDouble()*0.01);
         } else {
           thisDiskFree = 0;
           rate = 0.0;
@@ -506,6 +506,7 @@ public class TestIndexWriterDelete extends LuceneTestCase {
             System.out.println("\ncycle: same writer: unlimited disk space");
           }
           testName = "reader re-use after disk full";
+          dir.setRandomIOExceptionRateOnOpen(0.0);
         }
 
         dir.setMaxSizeInBytes(thisDiskFree);
@@ -549,6 +550,7 @@ public class TestIndexWriterDelete extends LuceneTestCase {
         final double randomIOExceptionRate = dir.getRandomIOExceptionRate();
         final long maxSizeInBytes = dir.getMaxSizeInBytes();
         dir.setRandomIOExceptionRate(0.0);
+        dir.setRandomIOExceptionRateOnOpen(0.0);
         dir.setMaxSizeInBytes(0);
         if (!success) {
           // Must force the close else the writer can have

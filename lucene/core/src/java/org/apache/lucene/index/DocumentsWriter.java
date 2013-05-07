@@ -18,6 +18,7 @@ package org.apache.lucene.index;
  */
 
 import java.io.IOException;
+import java.util.ArrayList;
 import java.util.Collection;
 import java.util.HashSet;
 import java.util.List;
@@ -477,21 +478,21 @@ final class DocumentsWriter {
         
         // TODO: somehow we should fix this merge so it's
         // abortable so that IW.close(false) is able to stop it
-        TrackingDirectoryWrapper trackingDir = new TrackingDirectoryWrapper(
-            directory);
+        TrackingDirectoryWrapper trackingDir = new TrackingDirectoryWrapper(directory);
         
-        SegmentMerger merger = new SegmentMerger(info, infoStream, trackingDir,
+        final List<AtomicReader> mergeReaders = new ArrayList<AtomicReader>();
+        AtomicReader reader;
+        while ((reader = updates.nextReader()) != null) { // add new indexes
+          mergeReaders.add(reader);
+        }
+        
+        SegmentMerger merger = new SegmentMerger(mergeReaders, info, infoStream, trackingDir,
             interval, MergeState.CheckAbort.NONE, globalFieldNumberMap, context);
         
         updates.startWriting(infoPerCommit.getNextUpdateGen(),
             infoPerCommit.info.getDocCount(), indexWriter.getConfig()
                 .getReaderTermsIndexDivisor());
 
-        AtomicReader reader;
-        while ((reader = updates.nextReader()) != null) { // add new indexes
-          merger.add(reader);
-        }
-        
         Set<String> generationReplacementFilenames = null;
         boolean success = false;
         try {

@@ -48,6 +48,7 @@ import javax.servlet.http.HttpServletResponse;
 
 import org.apache.commons.io.IOUtils;
 import org.apache.solr.common.SolrException;
+import org.apache.solr.common.SolrException.ErrorCode;
 import org.apache.solr.common.cloud.Aliases;
 import org.apache.solr.common.cloud.ClusterState;
 import org.apache.solr.common.cloud.Replica;
@@ -87,7 +88,7 @@ import org.slf4j.LoggerFactory;
  */
 public class SolrDispatchFilter implements Filter
 {
-  final Logger log = LoggerFactory.getLogger(SolrDispatchFilter.class);
+  final Logger log;
 
   protected volatile CoreContainer cores;
 
@@ -97,6 +98,19 @@ public class SolrDispatchFilter implements Filter
   
   private static final Charset UTF8 = Charset.forName("UTF-8");
 
+  public SolrDispatchFilter() {
+    try {
+      log = LoggerFactory.getLogger(SolrDispatchFilter.class);
+    } catch (NoClassDefFoundError e) {
+      throw new SolrException(
+          ErrorCode.SERVER_ERROR,
+          "Could not find necessary SLF4j logging jars. If using Jetty, the SLF4j logging jars need to go in "
+          +"the jetty lib/ext directory. For other containers, the corresponding directory should be used. "
+          +"For more information, see: http://wiki.apache.org/solr/SolrLogging",
+          e);
+    }
+  }
+  
   @Override
   public void init(FilterConfig config) throws ServletException
   {
@@ -368,6 +382,7 @@ public class SolrDispatchFilter implements Filter
       } 
       finally {
         if( solrReq != null ) {
+          log.debug("Closing out SolrRequest: {}", solrReq);
           solrReq.close();
         }
         if (core != null) {
@@ -447,6 +462,7 @@ public class SolrDispatchFilter implements Filter
           os = con.getOutputStream(); // side effect: method is switched to POST
           try {
             IOUtils.copyLarge(is, os);
+            os.flush();
           } finally {
             IOUtils.closeQuietly(os);
             IOUtils.closeQuietly(is);  // TODO: I thought we weren't supposed to explicitly close servlet streams
@@ -469,6 +485,7 @@ public class SolrDispatchFilter implements Filter
         os = resp.getOutputStream();
         try {
           IOUtils.copyLarge(is, os);
+          os.flush();
         } finally {
           IOUtils.closeQuietly(os);   // TODO: I thought we weren't supposed to explicitly close servlet streams
           IOUtils.closeQuietly(is);
@@ -486,7 +503,7 @@ public class SolrDispatchFilter implements Filter
   
   private String getRemotCoreUrl(CoreContainer cores, String collectionName, String origCorename) {
     ClusterState clusterState = cores.getZkController().getClusterState();
-    Collection<Slice> slices = clusterState.getSlices(collectionName);
+    Collection<Slice> slices = clusterState.getActiveSlices(collectionName);
     boolean byCoreName = false;
     if (slices == null) {
       // look by core name
@@ -494,7 +511,7 @@ public class SolrDispatchFilter implements Filter
       Set<String> collections = clusterState.getCollections();
       for (String collection : collections) {
         slices = new ArrayList<Slice>();
-        slices.addAll(clusterState.getSlices(collection));
+        slices.addAll(clusterState.getActiveSlices(collection));
       }
     }
     
@@ -541,7 +558,7 @@ public class SolrDispatchFilter implements Filter
     ZkStateReader zkStateReader = cores.getZkController().getZkStateReader();
     
     ClusterState clusterState = zkStateReader.getClusterState();
-    Map<String,Slice> slices = clusterState.getSlicesMap(collection);
+    Map<String,Slice> slices = clusterState.getActiveSlicesMap(collection);
     if (slices == null) {
       return null;
     }

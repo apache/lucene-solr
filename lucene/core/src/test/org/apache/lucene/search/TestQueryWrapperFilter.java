@@ -113,7 +113,7 @@ public class TestQueryWrapperFilter extends LuceneTestCase {
 
     final IndexReader r = w.getReader();
     w.close();
-    final TopDocs hits = new IndexSearcher(r).search(new MatchAllDocsQuery(),
+    final TopDocs hits = newSearcher(r).search(new MatchAllDocsQuery(),
                                                      new QueryWrapperFilter(new TermQuery(new Term("field", "a"))),
                                                      numDocs);
     assertEquals(aDocs.size(), hits.totalHits);

@@ -17,64 +17,90 @@ package org.apache.lucene.analysis.ngram;
  * limitations under the License.
  */
 
-import org.apache.lucene.analysis.Tokenizer;
-import org.apache.lucene.analysis.tokenattributes.CharTermAttribute;
-import org.apache.lucene.analysis.tokenattributes.OffsetAttribute;
-import org.apache.lucene.util.AttributeSource;
-
 import java.io.IOException;
 import java.io.Reader;
 
+import org.apache.lucene.analysis.Tokenizer;
+import org.apache.lucene.analysis.tokenattributes.CharTermAttribute;
+import org.apache.lucene.analysis.tokenattributes.OffsetAttribute;
+import org.apache.lucene.analysis.tokenattributes.PositionIncrementAttribute;
+import org.apache.lucene.analysis.tokenattributes.PositionLengthAttribute;
+import org.apache.lucene.util.Version;
+
 /**
  * Tokenizes the input into n-grams of the given size(s).
+ * <p>On the contrary to {@link NGramTokenFilter}, this class sets offsets so
+ * that characters between startOffset and endOffset in the original stream are
+ * the same as the term chars.
+ * <p>For example, "abcde" would be tokenized as (minGram=2, maxGram=3):
+ * <table>
+ * <tr><th>Term</th><td>ab</td><td>abc</td><td>bc</td><td>bcd</td><td>cd</td><td>cde</td><td>de</td></tr>
+ * <tr><th>Position increment</th><td>1</td><td>1</td><td>1</td><td>1</td><td>1</td><td>1</td><td>1</td></tr>
+ * <tr><th>Position length</th><td>1</td><td>1</td><td>1</td><td>1</td><td>1</td><td>1</td><td>1</td></tr>
+ * <tr><th>Offsets</th><td>[0,2[</td><td>[0,3[</td><td>[1,3[</td><td>[1,4[</td><td>[2,4[</td><td>[2,5[</td><td>[3,5[</td></tr>
+ * </table>
+ * <a name="version"/>
+ * <p>Before Lucene 4.4, this class had a different behavior:<ul>
+ * <li>It didn't support more than 1024 chars of input, the rest was trashed.</li>
+ * <li>The last whitespaces of the 1024 chars block were trimmed.</li>
+ * <li>Tokens were emitted in a different order (by increasing lengths).</li></ul>
+ * <p>Although highly discouraged, it is still possible to use the old behavior
+ * through {@link Lucene43NGramTokenizer}.
  */
 public final class NGramTokenizer extends Tokenizer {
   public static final int DEFAULT_MIN_NGRAM_SIZE = 1;
   public static final int DEFAULT_MAX_NGRAM_SIZE = 2;
 
-  private int minGram, maxGram;
+  private char[] buffer;
+  private int bufferStart, bufferEnd; // remaining slice of the buffer
+  private int offset;
   private int gramSize;
-  private int pos;
-  private int inLen; // length of the input AFTER trim()
-  private int charsRead; // length of the input
-  private String inStr;
-  private boolean started;
-  
+  private int minGram, maxGram;
+  private boolean exhausted;
+
   private final CharTermAttribute termAtt = addAttribute(CharTermAttribute.class);
+  private final PositionIncrementAttribute posIncAtt = addAttribute(PositionIncrementAttribute.class);
+  private final PositionLengthAttribute posLenAtt = addAttribute(PositionLengthAttribute.class);
   private final OffsetAttribute offsetAtt = addAttribute(OffsetAttribute.class);
 
   /**
    * Creates NGramTokenizer with given min and max n-grams.
+   * @param version the lucene compatibility <a href="#version">version</a>
    * @param input {@link Reader} holding the input to be tokenized
    * @param minGram the smallest n-gram to generate
    * @param maxGram the largest n-gram to generate
    */
-  public NGramTokenizer(Reader input, int minGram, int maxGram) {
+  public NGramTokenizer(Version version, Reader input, int minGram, int maxGram) {
     super(input);
-    init(minGram, maxGram);
+    init(version, minGram, maxGram);
   }
 
   /**
    * Creates NGramTokenizer with given min and max n-grams.
+   * @param version the lucene compatibility <a href="#version">version</a>
    * @param factory {@link org.apache.lucene.util.AttributeSource.AttributeFactory} to use
    * @param input {@link Reader} holding the input to be tokenized
    * @param minGram the smallest n-gram to generate
    * @param maxGram the largest n-gram to generate
    */
-  public NGramTokenizer(AttributeFactory factory, Reader input, int minGram, int maxGram) {
+  public NGramTokenizer(Version version, AttributeFactory factory, Reader input, int minGram, int maxGram) {
     super(factory, input);
-    init(minGram, maxGram);
+    init(version, minGram, maxGram);
   }
 
   /**
    * Creates NGramTokenizer with default min and max n-grams.
+   * @param version the lucene compatibility <a href="#version">version</a>
    * @param input {@link Reader} holding the input to be tokenized
    */
-  public NGramTokenizer(Reader input) {
-    this(input, DEFAULT_MIN_NGRAM_SIZE, DEFAULT_MAX_NGRAM_SIZE);
+  public NGramTokenizer(Version version, Reader input) {
+    this(version, input, DEFAULT_MIN_NGRAM_SIZE, DEFAULT_MAX_NGRAM_SIZE);
   }
-  
-  private void init(int minGram, int maxGram) {
+
+  private void init(Version version, int minGram, int maxGram) {
+    if (!version.onOrAfter(Version.LUCENE_44)) {
+      throw new IllegalArgumentException("This class only works with Lucene 4.4+. To emulate the old (broken) behavior of NGramTokenizer, use Lucene43NGramTokenizer");
+    }
     if (minGram < 1) {
       throw new IllegalArgumentException("minGram must be greater than zero");
     }
@@ -83,73 +109,66 @@ public final class NGramTokenizer extends Tokenizer {
     }
     this.minGram = minGram;
     this.maxGram = maxGram;
+    buffer = new char[maxGram + 1024];
   }
 
   /** Returns the next token in the stream, or null at EOS. */
   @Override
   public boolean incrementToken() throws IOException {
     clearAttributes();
-    if (!started) {
-      started = true;
-      gramSize = minGram;
-      char[] chars = new char[1024];
-      charsRead = 0;
-      // TODO: refactor to a shared readFully somewhere:
-      while (charsRead < chars.length) {
-        int inc = input.read(chars, charsRead, chars.length-charsRead);
-        if (inc == -1) {
-          break;
-        }
-        charsRead += inc;
-      }
-      inStr = new String(chars, 0, charsRead).trim();  // remove any trailing empty strings 
 
-      if (charsRead == chars.length) {
-        // Read extra throwaway chars so that on end() we
-        // report the correct offset:
-        char[] throwaway = new char[1024];
-        while(true) {
-          final int inc = input.read(throwaway, 0, throwaway.length);
-          if (inc == -1) {
+    // compact
+    if (bufferStart >= buffer.length - maxGram) {
+      System.arraycopy(buffer, bufferStart, buffer, 0, bufferEnd - bufferStart);
+      bufferEnd -= bufferStart;
+      bufferStart = 0;
+
+      // fill in remaining space
+      if (!exhausted) {
+        // TODO: refactor to a shared readFully
+        while (bufferEnd < buffer.length) {
+          final int read = input.read(buffer, bufferEnd, buffer.length - bufferEnd);
+          if (read == -1) {
+            exhausted = true;
             break;
           }
-          charsRead += inc;
+          bufferEnd += read;
         }
       }
-
-      inLen = inStr.length();
-      if (inLen == 0) {
-        return false;
-      }
     }
 
-    if (pos+gramSize > inLen) {            // if we hit the end of the string
-      pos = 0;                           // reset to beginning of string
-      gramSize++;                        // increase n-gram size
-      if (gramSize > maxGram)            // we are done
-        return false;
-      if (pos+gramSize > inLen)
-        return false;
+    // should we go to the next offset?
+    if (gramSize > maxGram || bufferStart + gramSize > bufferEnd) {
+      bufferStart++;
+      offset++;
+      gramSize = minGram;
     }
 
-    int oldPos = pos;
-    pos++;
-    termAtt.setEmpty().append(inStr, oldPos, oldPos+gramSize);
-    offsetAtt.setOffset(correctOffset(oldPos), correctOffset(oldPos+gramSize));
+    // are there enough chars remaining?
+    if (bufferStart + gramSize > bufferEnd) {
+      return false;
+    }
+
+    termAtt.copyBuffer(buffer, bufferStart, gramSize);
+    posIncAtt.setPositionIncrement(1);
+    posLenAtt.setPositionLength(1);
+    offsetAtt.setOffset(correctOffset(offset), correctOffset(offset + gramSize));
+    ++gramSize;
     return true;
   }
-  
+
   @Override
   public void end() {
-    // set final offset
-    final int finalOffset = correctOffset(charsRead);
-    this.offsetAtt.setOffset(finalOffset, finalOffset);
-  }    
-  
+    final int endOffset = correctOffset(offset + bufferEnd - bufferStart);
+    offsetAtt.setOffset(endOffset, endOffset);
+  }
+
   @Override
   public void reset() throws IOException {
     super.reset();
-    started = false;
-    pos = 0;
+    bufferStart = bufferEnd = buffer.length;
+    offset = 0;
+    gramSize = minGram;
+    exhausted = false;
   }
 }

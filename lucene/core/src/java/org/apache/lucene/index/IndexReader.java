@@ -22,15 +22,14 @@ import java.io.IOException;
 import java.util.Collections;
 import java.util.LinkedHashSet;
 import java.util.List;
-import java.util.WeakHashMap;
 import java.util.Set;
+import java.util.WeakHashMap;
 import java.util.concurrent.atomic.AtomicInteger;
 
-import org.apache.lucene.document.Document;
 import org.apache.lucene.document.DocumentStoredFieldVisitor;
-import org.apache.lucene.search.SearcherManager; // javadocs
 import org.apache.lucene.store.AlreadyClosedException;
 import org.apache.lucene.util.Bits;
+// javadocs
 
 /** IndexReader is an abstract class, providing an interface for accessing an
  index.  Search of an index is done entirely through this abstract interface,
@@ -179,7 +178,7 @@ public abstract class IndexReader implements Closeable {
    * and returns <code>true</code> iff the refCount was
    * successfully incremented, otherwise <code>false</code>.
    * If this method returns <code>false</code> the reader is either
-   * already closed or is currently been closed. Either way this
+   * already closed or is currently being closed. Either way this
    * reader instance shouldn't be used by an application unless
    * <code>true</code> is returned.
    * <p>
@@ -361,8 +360,12 @@ public abstract class IndexReader implements Closeable {
     return visitor.getDocument();
   }
 
-  /** Returns true if any documents have been deleted */
-  public abstract boolean hasDeletions();
+  /** Returns true if any documents have been deleted. Implementers should
+   *  consider overriding this method if {@link #maxDoc()} or {@link #numDocs()}
+   *  are not constant-time operations. */
+  public boolean hasDeletions() {
+    return numDeletedDocs() > 0;
+  }
 
   /**
    * Closes files associated with this index.
@@ -415,7 +418,7 @@ public abstract class IndexReader implements Closeable {
    * it again.
    * This key must not have equals()/hashCode() methods, so &quot;equals&quot; means &quot;identical&quot;. */
   public Object getCoreCacheKey() {
-    // Don't can ensureOpen since FC calls this (to evict)
+    // Don't call ensureOpen since FC calls this (to evict)
     // on close
     return this;
   }
@@ -424,7 +427,7 @@ public abstract class IndexReader implements Closeable {
    * so FieldCache/CachingWrapperFilter can find it again.
    * This key must not have equals()/hashCode() methods, so &quot;equals&quot; means &quot;identical&quot;. */
   public Object getCombinedCoreAndDeletesKey() {
-    // Don't can ensureOpen since FC calls this (to evict)
+    // Don't call ensureOpen since FC calls this (to evict)
     // on close
     return this;
   }
@@ -438,12 +441,11 @@ public abstract class IndexReader implements Closeable {
    */
   public abstract int docFreq(Term term) throws IOException;
   
-  /** Returns the number of documents containing the term
-   * <code>term</code>.  This method returns 0 if the term or
-   * field does not exists, or -1 if the Codec does not support
-   * the measure.  This method does not take into account deleted 
-   * documents that have not yet been merged away.
-   * @see TermsEnum#totalTermFreq() 
+  /**
+   * Returns the total number of occurrences of {@code term} across all
+   * documents (the sum of the freq() for each doc that has this term). This
+   * will be -1 if the codec doesn't support this measure. Note that, like other
+   * term measures, this measure does not take deleted documents into account.
    */
   public abstract long totalTermFreq(Term term) throws IOException;
   

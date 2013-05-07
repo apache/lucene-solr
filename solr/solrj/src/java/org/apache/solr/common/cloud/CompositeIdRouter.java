@@ -91,7 +91,7 @@ public class CompositeIdRouter extends HashBasedRouter {
     if (shardKey == null) {
       // search across whole collection
       // TODO: this may need modification in the future when shard splitting could cause an overlap
-      return collection.getSlices();
+      return collection.getActiveSlices();
     }
     String id = shardKey;
 
@@ -132,7 +132,7 @@ public class CompositeIdRouter extends HashBasedRouter {
     Range completeRange = new Range(lowerBound, upperBound);
 
     List<Slice> targetSlices = new ArrayList<Slice>(1);
-    for (Slice slice : collection.getSlices()) {
+    for (Slice slice : collection.getActiveSlices()) {
       Range range = slice.getRange();
       if (range != null && range.overlaps(completeRange)) {
         targetSlices.add(slice);

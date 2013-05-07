@@ -71,6 +71,7 @@ public class TermSpans extends Spans {
 
   @Override
   public boolean skipTo(int target) throws IOException {
+    assert target > doc;
     doc = postings.advance(target);
     if (doc == DocIdSetIterator.NO_MORE_DOCS) {
       return false;

@@ -25,20 +25,22 @@ import java.util.Map;
 
 /**
  * Factory for {@link LetterTokenizer}. 
- * <pre class="prettyprint" >
+ * <pre class="prettyprint">
  * &lt;fieldType name="text_letter" class="solr.TextField" positionIncrementGap="100"&gt;
  *   &lt;analyzer&gt;
  *     &lt;tokenizer class="solr.LetterTokenizerFactory"/&gt;
  *   &lt;/analyzer&gt;
- * &lt;/fieldType&gt;</pre> 
- *
+ * &lt;/fieldType&gt;</pre>
  */
 public class LetterTokenizerFactory extends TokenizerFactory {
 
-  @Override
-  public void init(Map<String,String> args) {
-    super.init(args);
+  /** Creates a new LetterTokenizerFactory */
+  public LetterTokenizerFactory(Map<String,String> args) {
+    super(args);
     assureMatchVersion();
+    if (!args.isEmpty()) {
+      throw new IllegalArgumentException("Unknown parameters: " + args);
+    }
   }
 
   @Override

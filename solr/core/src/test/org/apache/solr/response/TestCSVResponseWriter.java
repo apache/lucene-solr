@@ -59,7 +59,7 @@ public class TestCSVResponseWriter extends SolrTestCaseJ4 {
     // test multivalued
     assertEquals("2,\"hi,there\"\n"
     , h.query(req("q","id:2", "wt","csv", "csv.header","false", "fl","id,v_ss")));
-
+    
     // test separator change
     assertEquals("2|\"hi|there\"\n"
     , h.query(req("q","id:2", "wt","csv", "csv.header","false", "csv.separator","|", "fl","id,v_ss")));
@@ -193,6 +193,21 @@ public class TestCSVResponseWriter extends SolrTestCaseJ4 {
 
     req.close();
   }
+  
+
+  @Test
+  public void testPseudoFields() throws Exception {
+    // Use Pseudo Field
+    assertEquals("1,hi",
+        h.query(req("q","id:1", "wt","csv", "csv.header","false", "fl","XXX:id,foo_s")).trim());
+    
+    String txt = h.query(req("q","id:1", "wt","csv", "csv.header","true", "fl","XXX:id,YYY:[docid],FOO:foo_s"));
+    String[] lines = txt.split("\n");
+    assertEquals(2, lines.length);
+    assertEquals("XXX,YYY,FOO", lines[0] );
+    assertEquals("1,0,hi", lines[1] );
+  }
+    
 
   /*
    * Utility method to sort a comma separated list of strings, for easier comparison regardless of platform

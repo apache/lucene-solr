@@ -69,7 +69,7 @@ public class ScriptEngineTest extends LuceneTestCase {
     ScriptEngine engine = manager.getEngineByName("JavaScript");
     assertNotNull(engine);
     engine.eval("function add(a,b) { return a + b }");
-    Double result = (Double) ((Invocable)engine).invokeFunction("add", 1, 2);
+    Number result = (Number) ((Invocable)engine).invokeFunction("add", 1, 2);
     assertNotNull(result);
     assertEquals(3, result.intValue());
   }
@@ -79,7 +79,7 @@ public class ScriptEngineTest extends LuceneTestCase {
     assertNotNull(engine);
     StringReader reader = new StringReader("function add(a,b) { return a + b }");
     engine.eval(reader);
-    Double result = (Double) ((Invocable)engine).invokeFunction("add", 1, 2);
+    Number result = (Number) ((Invocable)engine).invokeFunction("add", 1, 2);
     assertNotNull(result);
     assertEquals(3, result.intValue());
   }
@@ -90,7 +90,7 @@ public class ScriptEngineTest extends LuceneTestCase {
     engine.put("b", 2);
     assertNotNull(engine);
     engine.eval("function add() { return a + b }");
-    Double result = (Double) ((Invocable)engine).invokeFunction("add", 1, 2);
+    Number result = (Number) ((Invocable)engine).invokeFunction("add", 1, 2);
     assertNotNull(result);
     assertEquals(3, result.intValue());
   }
@@ -103,7 +103,7 @@ public class ScriptEngineTest extends LuceneTestCase {
 
    assertNotNull(engine);
    engine.eval("def add(a,b); a + b; end");
-   Long result = (Long) ((Invocable)engine).invokeFunction("add", 1, 2);
+   Number result = (Number) ((Invocable)engine).invokeFunction("add", 1, 2);
    assertNotNull(result);
    assertEquals(3, result.intValue());
  }

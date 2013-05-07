@@ -87,7 +87,7 @@ public class DirectUpdateHandlerTest extends SolrTestCaseJ4 {
     assertNull("This test requires a schema that has no version field, " +
                "it appears the schema file in use has been edited to violate " +
                "this requirement",
-               h.getCore().getSchema().getFieldOrNull(VersionInfo.VERSION_FIELD));
+               h.getCore().getLatestSchema().getFieldOrNull(VersionInfo.VERSION_FIELD));
 
     assertU(adoc("id","5"));
     assertU(adoc("id","6"));

@@ -50,6 +50,7 @@ import org.junit.BeforeClass;
  */
 @Slow
 public class SyncSliceTest extends AbstractFullDistribZkTestBase {
+  private boolean success = false;
   
   @BeforeClass
   public static void beforeSuperClass() throws Exception {
@@ -73,6 +74,9 @@ public class SyncSliceTest extends AbstractFullDistribZkTestBase {
   @Override
   @After
   public void tearDown() throws Exception {
+    if (!success) {
+      printLayoutOnTearDown = true;
+    }
     super.tearDown();
     resetExceptionIgnores();
   }
@@ -188,8 +192,9 @@ public class SyncSliceTest extends AbstractFullDistribZkTestBase {
     skipServers.addAll( getRandomOtherJetty(leaderJetty, deadJetty));
     // skip list should be 
     
-    //System.out.println("leader:" + leaderJetty.url);
-    //System.out.println("skip list:" + skipServers);
+//    System.out.println("leader:" + leaderJetty.url);
+//    System.out.println("dead:" + deadJetty.url);
+//    System.out.println("skip list:" + skipServers);
     
     // we are skipping  2 nodes
     assertEquals(2, skipServers.size());
@@ -232,6 +237,7 @@ public class SyncSliceTest extends AbstractFullDistribZkTestBase {
 
     checkShardConsistency(true, true);
     
+    success = true;
   }
 
   private void waitTillRecovered() throws Exception {

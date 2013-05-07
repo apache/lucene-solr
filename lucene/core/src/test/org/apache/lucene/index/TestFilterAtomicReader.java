@@ -21,12 +21,13 @@ package org.apache.lucene.index;
 import java.io.IOException;
 import java.lang.reflect.Method;
 import java.lang.reflect.Modifier;
+
 import org.apache.lucene.analysis.MockAnalyzer;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
 import org.apache.lucene.search.DocIdSetIterator;
-import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.BaseDirectoryWrapper;
+import org.apache.lucene.store.Directory;
 import org.apache.lucene.util.Bits;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.LuceneTestCase;
@@ -159,21 +160,27 @@ public class TestFilterAtomicReader extends LuceneTestCase {
     directory.close();
     target.close();
   }
-  
-  private void checkOverrideMethods(Class<?> clazz) {
-    boolean fail = false;
-    for (Method m : clazz.getMethods()) {
-      int mods = m.getModifiers();
-      if (Modifier.isStatic(mods) || Modifier.isFinal(mods) || m.isSynthetic()) {
+
+  private static void checkOverrideMethods(Class<?> clazz) throws NoSuchMethodException, SecurityException {
+    final Class<?> superClazz = clazz.getSuperclass();
+    for (Method m : superClazz.getMethods()) {
+      final int mods = m.getModifiers();
+      if (Modifier.isStatic(mods) || Modifier.isAbstract(mods) || Modifier.isFinal(mods) || m.isSynthetic()
+          || m.getName().equals("attributes")) {
         continue;
       }
-      Class<?> declaringClass = m.getDeclaringClass();
-      if (declaringClass != clazz && declaringClass != Object.class) {
-        System.err.println("method is not overridden by "+clazz.getName()+": " + m.toGenericString());
-        fail = true;
+      // The point of these checks is to ensure that methods that have a default
+      // impl through other methods are not overridden. This makes the number of
+      // methods to override to have a working impl minimal and prevents from some
+      // traps: for example, think about having getCoreCacheKey delegate to the
+      // filtered impl by default
+      final Method subM = clazz.getMethod(m.getName(), m.getParameterTypes());
+      if (subM.getDeclaringClass() == clazz
+          && m.getDeclaringClass() != Object.class
+          && m.getDeclaringClass() != subM.getDeclaringClass()) {
+        fail(clazz + " overrides " + m + " although it has a default impl");
       }
     }
-    assertFalse(clazz.getName()+" does not override some methods; see log above", fail);
   }
 
   public void testOverrideMethods() throws Exception {

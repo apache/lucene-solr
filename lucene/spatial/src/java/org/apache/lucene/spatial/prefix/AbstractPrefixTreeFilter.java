@@ -27,14 +27,14 @@ import org.apache.lucene.search.DocIdSetIterator;
 import org.apache.lucene.search.Filter;
 import org.apache.lucene.spatial.prefix.tree.SpatialPrefixTree;
 import org.apache.lucene.util.Bits;
-import org.apache.lucene.util.OpenBitSet;
+import org.apache.lucene.util.FixedBitSet;
 
 import java.io.IOException;
 
 /**
  * Base class for Lucene Filters on SpatialPrefixTree fields.
  *
- * @lucene.internal
+ * @lucene.experimental
  */
 public abstract class AbstractPrefixTreeFilter extends Filter {
 
@@ -93,13 +93,13 @@ public abstract class AbstractPrefixTreeFilter extends Filter {
         this.termsEnum = terms.iterator(null);
     }
 
-    protected void collectDocs(OpenBitSet bitSet) throws IOException {
+    protected void collectDocs(FixedBitSet bitSet) throws IOException {
       //WARN: keep this specialization in sync
       assert termsEnum != null;
       docsEnum = termsEnum.docs(acceptDocs, docsEnum, DocsEnum.FLAG_NONE);
       int docid;
       while ((docid = docsEnum.nextDoc()) != DocIdSetIterator.NO_MORE_DOCS) {
-        bitSet.fastSet(docid);
+        bitSet.set(docid);
       }
     }
 

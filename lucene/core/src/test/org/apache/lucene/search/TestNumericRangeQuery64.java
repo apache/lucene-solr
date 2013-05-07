@@ -214,14 +214,14 @@ public class TestNumericRangeQuery64 extends LuceneTestCase {
   public void testInverseRange() throws Exception {
     AtomicReaderContext context = SlowCompositeReaderWrapper.wrap(searcher.getIndexReader()).getContext();
     NumericRangeFilter<Long> f = NumericRangeFilter.newLongRange("field8", 8, 1000L, -1000L, true, true);
-    assertSame("A inverse range should return the EMPTY_DOCIDSET instance", DocIdSet.EMPTY_DOCIDSET,
+    assertNull("A inverse range should return the null instance", 
         f.getDocIdSet(context, context.reader().getLiveDocs()));
     f = NumericRangeFilter.newLongRange("field8", 8, Long.MAX_VALUE, null, false, false);
-    assertSame("A exclusive range starting with Long.MAX_VALUE should return the EMPTY_DOCIDSET instance",
-               DocIdSet.EMPTY_DOCIDSET, f.getDocIdSet(context, context.reader().getLiveDocs()));
+    assertNull("A exclusive range starting with Long.MAX_VALUE should return the null instance",
+               f.getDocIdSet(context, context.reader().getLiveDocs()));
     f = NumericRangeFilter.newLongRange("field8", 8, null, Long.MIN_VALUE, false, false);
-    assertSame("A exclusive range ending with Long.MIN_VALUE should return the EMPTY_DOCIDSET instance",
-               DocIdSet.EMPTY_DOCIDSET, f.getDocIdSet(context, context.reader().getLiveDocs()));
+    assertNull("A exclusive range ending with Long.MIN_VALUE should return the null instance",
+               f.getDocIdSet(context, context.reader().getLiveDocs()));
   }
   
   @Test
@@ -352,7 +352,7 @@ public class TestNumericRangeQuery64 extends LuceneTestCase {
     writer.close();
     
     IndexReader r = DirectoryReader.open(dir);
-    IndexSearcher s = new IndexSearcher(r);
+    IndexSearcher s = newSearcher(r);
     
     Query q=NumericRangeQuery.newLongRange("long", null, null, true, true);
     TopDocs topDocs = s.search(q, 10);

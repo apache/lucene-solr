@@ -57,7 +57,7 @@ public final class StopFilter extends FilteringTokenFilter {
    * @see #makeStopSet(Version, java.lang.String...)
    */
   public StopFilter(Version matchVersion, TokenStream in, CharArraySet stopWords) {
-    super(true, in);
+    super(matchVersion, in);
     this.stopWords = stopWords;
   }
 

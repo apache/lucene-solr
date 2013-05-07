@@ -213,7 +213,7 @@ public class TestTermVectorsWriter extends LuceneTestCase {
   public void testEndOffsetPositionStopFilter() throws Exception {
     Directory dir = newDirectory();
     IndexWriter w = new IndexWriter(dir, newIndexWriterConfig( 
-        TEST_VERSION_CURRENT, new MockAnalyzer(random(), MockTokenizer.SIMPLE, true, MockTokenFilter.ENGLISH_STOPSET, true)));
+        TEST_VERSION_CURRENT, new MockAnalyzer(random(), MockTokenizer.SIMPLE, true, MockTokenFilter.ENGLISH_STOPSET)));
     Document doc = new Document();
     FieldType customType = new FieldType(TextField.TYPE_NOT_STORED);
     customType.setStoreTermVectors(true);

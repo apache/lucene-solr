@@ -164,8 +164,9 @@ public class AnalyzingSuggesterTest extends LuceneTestCase {
         new TermFreq("the ghost of christmas past", 50),
     };
     
-    Analyzer standard = new MockAnalyzer(random(), MockTokenizer.WHITESPACE, true, MockTokenFilter.ENGLISH_STOPSET, false);
+    Analyzer standard = new MockAnalyzer(random(), MockTokenizer.WHITESPACE, true, MockTokenFilter.ENGLISH_STOPSET);
     AnalyzingSuggester suggester = new AnalyzingSuggester(standard);
+    suggester.setPreservePositionIncrements(false);
     suggester.build(new TermFreqArrayIterator(keys));
     
     List<LookupResult> results = suggester.lookup(_TestUtil.stringToCharSequence("the ghost of chris", random()), false, 1);
@@ -187,7 +188,7 @@ public class AnalyzingSuggesterTest extends LuceneTestCase {
   }
 
   public void testEmpty() throws Exception {
-    Analyzer standard = new MockAnalyzer(random(), MockTokenizer.WHITESPACE, true, MockTokenFilter.ENGLISH_STOPSET, false);
+    Analyzer standard = new MockAnalyzer(random(), MockTokenizer.WHITESPACE, true, MockTokenFilter.ENGLISH_STOPSET);
     AnalyzingSuggester suggester = new AnalyzingSuggester(standard);
     suggester.build(new TermFreqArrayIterator(new TermFreq[0]));
 

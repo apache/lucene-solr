@@ -28,6 +28,7 @@ import org.apache.lucene.index.Terms;
 import org.apache.lucene.index.TermsEnum;
 import org.apache.lucene.util.Bits;
 import org.apache.lucene.util.BytesRef;
+import org.apache.lucene.util.CharsRef;
 import org.apache.lucene.util.IOUtils;
 import org.apache.lucene.util.OpenBitSet;
 import org.apache.solr.common.cloud.DocRouter;
@@ -52,14 +53,21 @@ public class SolrIndexSplitter {
   DocRouter.Range[] rangesArr; // same as ranges list, but an array for extra speed in inner loops
   List<String> paths;
   List<SolrCore> cores;
+  int numPieces;
+  int currPartition = 0;
 
   public SolrIndexSplitter(SplitIndexCommand cmd) {
-    field = cmd.getReq().getSchema().getUniqueKeyField();
     searcher = cmd.getReq().getSearcher();
+    field = searcher.getSchema().getUniqueKeyField();
     ranges = cmd.ranges;
-    rangesArr = ranges.toArray(new DocRouter.Range[ranges.size()]);
     paths = cmd.paths;
     cores = cmd.cores;
+    if (ranges == null) {
+      numPieces =  paths != null ? paths.size() : cores.size();
+    } else  {
+      numPieces = ranges.size();
+      rangesArr = ranges.toArray(new DocRouter.Range[ranges.size()]);
+    }
   }
 
   public void split() throws IOException {
@@ -67,7 +75,7 @@ public class SolrIndexSplitter {
     List<AtomicReaderContext> leaves = searcher.getTopReaderContext().leaves();
     List<OpenBitSet[]> segmentDocSets = new ArrayList<OpenBitSet[]>(leaves.size());
 
-    log.info("SolrIndexSplitter: partitions=" + ranges.size() + " segments="+leaves.size());
+    log.info("SolrIndexSplitter: partitions=" + numPieces + " segments="+leaves.size());
 
     for (AtomicReaderContext readerContext : leaves) {
       assert readerContext.ordInParent == segmentDocSets.size();  // make sure we're going in order
@@ -82,8 +90,8 @@ public class SolrIndexSplitter {
     // - would be more efficient on the read side, but prob less efficient merging
 
     IndexReader[] subReaders = new IndexReader[leaves.size()];
-    for (int partitionNumber=0; partitionNumber<ranges.size(); partitionNumber++) {
-      log.info("SolrIndexSplitter: partition #" + partitionNumber + " range=" + ranges.get(partitionNumber));
+    for (int partitionNumber=0; partitionNumber<numPieces; partitionNumber++) {
+      log.info("SolrIndexSplitter: partition #" + partitionNumber + (ranges != null ? " range=" + ranges.get(partitionNumber) : ""));
 
       for (int segmentNumber = 0; segmentNumber<subReaders.length; segmentNumber++) {
         subReaders[segmentNumber] = new LiveDocsReader( leaves.get(segmentNumber), segmentDocSets.get(segmentNumber)[partitionNumber] );
@@ -100,9 +108,9 @@ public class SolrIndexSplitter {
       } else {
         SolrCore core = searcher.getCore();
         String path = paths.get(partitionNumber);
-        iw = SolrIndexWriter.create("SplittingIndexWriter"+partitionNumber + " " + ranges.get(partitionNumber), path,
-                                    core.getDirectoryFactory(), true, core.getSchema(),
-                                    core.getSolrConfig().indexConfig, core.getDeletionPolicy(), core.getCodec(), true);
+        iw = SolrIndexWriter.create("SplittingIndexWriter"+partitionNumber + (ranges != null ? " " + ranges.get(partitionNumber) : ""), path,
+                                    core.getDirectoryFactory(), true, core.getLatestSchema(),
+                                    core.getSolrConfig().indexConfig, core.getDeletionPolicy(), core.getCodec());
       }
 
       try {
@@ -129,7 +137,7 @@ public class SolrIndexSplitter {
 
   OpenBitSet[] split(AtomicReaderContext readerContext) throws IOException {
     AtomicReader reader = readerContext.reader();
-    OpenBitSet[] docSets = new OpenBitSet[ranges.size()];
+    OpenBitSet[] docSets = new OpenBitSet[numPieces];
     for (int i=0; i<docSets.length; i++) {
       docSets[i] = new OpenBitSet(reader.maxDoc());
     }
@@ -149,15 +157,22 @@ public class SolrIndexSplitter {
 
       // figure out the hash for the term
       // TODO: hook in custom hashes (or store hashes)
-      int hash = Hash.murmurhash3_x86_32(term.bytes, term.offset, term.length, 0);
-
+      // TODO: performance implications of using indexedToReadable?
+      CharsRef ref = new CharsRef(term.length);
+      ref = field.getType().indexedToReadable(term, ref);
+      int hash = Hash.murmurhash3_x86_32(ref, ref.offset, ref.length, 0);
       docsEnum = termsEnum.docs(liveDocs, docsEnum, DocsEnum.FLAG_NONE);
       for (;;) {
         int doc = docsEnum.nextDoc();
         if (doc == DocsEnum.NO_MORE_DOCS) break;
-        for (int i=0; i<rangesArr.length; i++) {      // inner-loop: use array here for extra speed.
-          if (rangesArr[i].includes(hash)) {
-            docSets[i].fastSet(doc);
+        if (ranges == null) {
+          docSets[currPartition].fastSet(doc);
+          currPartition = (currPartition + 1) % numPieces;
+        } else  {
+          for (int i=0; i<rangesArr.length; i++) {      // inner-loop: use array here for extra speed.
+            if (rangesArr[i].includes(hash)) {
+              docSets[i].fastSet(doc);
+            }
           }
         }
       }
@@ -181,11 +196,6 @@ public class SolrIndexSplitter {
     @Override
     public int numDocs() {
       return numDocs;
-    }
-
-    @Override
-    public boolean hasDeletions() {
-      return (in.maxDoc() != numDocs);
     }
 
     @Override

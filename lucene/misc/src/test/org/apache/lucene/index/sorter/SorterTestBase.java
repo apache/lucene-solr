@@ -47,7 +47,6 @@ import org.apache.lucene.index.DocsAndPositionsEnum;
 import org.apache.lucene.index.DocsEnum;
 import org.apache.lucene.index.FieldInfo.IndexOptions;
 import org.apache.lucene.index.FieldInvertState;
-import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.IndexWriterConfig;
 import org.apache.lucene.index.NumericDocValues;
 import org.apache.lucene.index.RandomIndexWriter;
@@ -284,7 +283,7 @@ public abstract class SorterTestBase extends LuceneTestCase {
       assertTrue(((SortingDocsAndPositionsEnum) sortedPositions).reused(reuse)); // make sure reuse worked
     }
     doc = 0;
-    while ((doc = sortedPositions.advance(doc)) != DocIdSetIterator.NO_MORE_DOCS) {
+    while ((doc = sortedPositions.advance(doc + _TestUtil.nextInt(random(), 1, 5))) != DocIdSetIterator.NO_MORE_DOCS) {
       int freq = sortedPositions.freq();
       assertEquals("incorrect freq for doc=" + doc, sortedValues[doc].intValue() / 10 + 1, freq);
       for (int i = 0; i < freq; i++) {

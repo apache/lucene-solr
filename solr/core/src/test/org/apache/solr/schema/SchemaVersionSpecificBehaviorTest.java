@@ -18,12 +18,6 @@
 package org.apache.solr.schema;
 
 import org.apache.solr.SolrTestCaseJ4;
-import org.apache.solr.core.SolrCore;
-import org.apache.solr.schema.IndexSchema;
-
-
-import java.util.HashMap;
-import java.util.Map;
 
 
 public class SchemaVersionSpecificBehaviorTest extends SolrTestCaseJ4 {
@@ -189,7 +183,7 @@ public class SchemaVersionSpecificBehaviorTest extends SolrTestCaseJ4 {
     try {
       System.setProperty("solr.schema.test.ver", String.valueOf(ver));
       initCore( "solrconfig-basic.xml", "schema-behavior.xml" );
-      IndexSchema s = h.getCore().getSchema();
+      IndexSchema s = h.getCore().getLatestSchema();
       assertEquals("Schema version not set correctly",
                    String.valueOf(ver),
                    String.valueOf(s.getVersion()));

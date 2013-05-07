@@ -17,12 +17,13 @@ package org.apache.lucene.analysis.cn.smart;
  * limitations under the License.
  */
 
+import java.io.Reader;
 import java.io.StringReader;
+import java.util.HashMap;
 
 import org.apache.lucene.analysis.BaseTokenStreamTestCase;
+import org.apache.lucene.analysis.MockTokenizer;
 import org.apache.lucene.analysis.TokenStream;
-import org.apache.lucene.analysis.Tokenizer;
-import org.apache.lucene.analysis.core.WhitespaceTokenizer;
 
 /** 
  * Tests for {@link SmartChineseSentenceTokenizerFactory} and 
@@ -31,28 +32,49 @@ import org.apache.lucene.analysis.core.WhitespaceTokenizer;
 public class TestSmartChineseFactories extends BaseTokenStreamTestCase {
   /** Test showing the behavior with whitespace */
   public void testSimple() throws Exception {
-    String sentence = "我购买了道具和服装。";
-    WhitespaceTokenizer ws = new WhitespaceTokenizer(TEST_VERSION_CURRENT, new StringReader(sentence));
-    SmartChineseWordTokenFilterFactory factory = new SmartChineseWordTokenFilterFactory();
-    TokenStream ts = factory.create(ws);
+    Reader reader = new StringReader("我购买了道具和服装。");
+    TokenStream stream = new MockTokenizer(reader, MockTokenizer.WHITESPACE, false);
+    SmartChineseWordTokenFilterFactory factory = new SmartChineseWordTokenFilterFactory(new HashMap<String,String>());
+    stream = factory.create(stream);
     // TODO: fix smart chinese to not emit punctuation tokens
     // at the moment: you have to clean up with WDF, or use the stoplist, etc
-    assertTokenStreamContents(ts, 
+    assertTokenStreamContents(stream, 
        new String[] { "我", "购买", "了", "道具", "和", "服装", "," });
   }
   
   /** Test showing the behavior with whitespace */
   public void testTokenizer() throws Exception {
-    String sentence = "我购买了道具和服装。我购买了道具和服装。";
-    SmartChineseSentenceTokenizerFactory tokenizerFactory = new SmartChineseSentenceTokenizerFactory();
-    Tokenizer tokenizer = tokenizerFactory.create(new StringReader(sentence));
-    SmartChineseWordTokenFilterFactory factory = new SmartChineseWordTokenFilterFactory();
-    TokenStream ts = factory.create(tokenizer);
+    Reader reader = new StringReader("我购买了道具和服装。我购买了道具和服装。");
+    SmartChineseSentenceTokenizerFactory tokenizerFactory = new SmartChineseSentenceTokenizerFactory(new HashMap<String,String>());
+    TokenStream stream = tokenizerFactory.create(reader);
+    SmartChineseWordTokenFilterFactory factory = new SmartChineseWordTokenFilterFactory(new HashMap<String,String>());
+    stream = factory.create(stream);
     // TODO: fix smart chinese to not emit punctuation tokens
     // at the moment: you have to clean up with WDF, or use the stoplist, etc
-    assertTokenStreamContents(ts, 
+    assertTokenStreamContents(stream, 
        new String[] { "我", "购买", "了", "道具", "和", "服装", ",", 
         "我", "购买", "了", "道具", "和", "服装", ","
         });
+  }
+  
+  /** Test that bogus arguments result in exception */
+  public void testBogusArguments() throws Exception {
+    try {
+      new SmartChineseSentenceTokenizerFactory(new HashMap<String,String>() {{
+        put("bogusArg", "bogusValue");
+      }});
+      fail();
+    } catch (IllegalArgumentException expected) {
+      assertTrue(expected.getMessage().contains("Unknown parameters"));
+    }
+    
+    try {
+      new SmartChineseWordTokenFilterFactory(new HashMap<String,String>() {{
+        put("bogusArg", "bogusValue");
+      }});
+      fail();
+    } catch (IllegalArgumentException expected) {
+      assertTrue(expected.getMessage().contains("Unknown parameters"));
+    }
   }
 }

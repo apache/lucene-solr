@@ -27,7 +27,6 @@ import java.util.Locale;
 import java.util.Random;
 
 import org.apache.lucene.analysis.MockAnalyzer;
-import org.apache.lucene.analysis.core.WhitespaceAnalyzer;
 import org.apache.lucene.codecs.simpletext.SimpleTextCodec;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field.Store;
@@ -139,11 +138,9 @@ public class TestFieldReplacements extends LuceneTestCase {
     
     final IndexWriterConfig config;
     if (randomConfig) {
-      config = newIndexWriterConfig(TEST_VERSION_CURRENT,
-          new WhitespaceAnalyzer(TEST_VERSION_CURRENT));
+      config = newIndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer(random()));
     } else {
-      config = new IndexWriterConfig(TEST_VERSION_CURRENT,
-          new WhitespaceAnalyzer(TEST_VERSION_CURRENT));
+      config = new IndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer(random()));
     }
     System.out.println(config.getMergePolicy());
     config.setCodec(new SimpleTextCodec());
@@ -614,7 +611,7 @@ public class TestFieldReplacements extends LuceneTestCase {
   
   public void testReplaceAndAddAgain() throws IOException {
     IndexWriter writer = new IndexWriter(dir, newIndexWriterConfig(
-        TEST_VERSION_CURRENT, new WhitespaceAnalyzer(TEST_VERSION_CURRENT)));
+        TEST_VERSION_CURRENT, new MockAnalyzer(random())));
     
     FieldType fieldType = new FieldType();
     fieldType.setIndexed(true);
@@ -703,7 +700,7 @@ public class TestFieldReplacements extends LuceneTestCase {
   
   public void testReplaceAndAddSameField() throws IOException {
     IndexWriter writer = new IndexWriter(dir, newIndexWriterConfig(
-        TEST_VERSION_CURRENT, new WhitespaceAnalyzer(TEST_VERSION_CURRENT)));
+        TEST_VERSION_CURRENT, new MockAnalyzer(random())));
     
     FieldType fieldType = new FieldType();
     fieldType.setIndexed(true);

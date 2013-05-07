@@ -36,7 +36,7 @@ public class TestFieldReader extends AbstractDataImportHandlerTestCase {
     DataImporter di = new DataImporter();
     di.loadAndInit(config);
     TestDocBuilder.SolrWriterImpl sw = new TestDocBuilder.SolrWriterImpl();
-    RequestInfo rp = new RequestInfo(createMap("command", "full-import"), null);
+    RequestInfo rp = new RequestInfo(null, createMap("command", "full-import"), null);
     List<Map<String, Object>> l = new ArrayList<Map<String, Object>>();
     l.add(createMap("xml", xml));
     MockDataSource.setIterator("select * from a", l.iterator());

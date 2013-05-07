@@ -16,69 +16,69 @@ package org.apache.lucene.analysis.miscellaneous;
  * limitations under the License.
  */
 
-import java.io.IOException;
+import java.io.Reader;
 import java.io.StringReader;
-import java.util.HashMap;
-import java.util.Map;
 
-import org.apache.lucene.analysis.BaseTokenStreamTestCase;
 import org.apache.lucene.analysis.MockTokenizer;
 import org.apache.lucene.analysis.TokenStream;
-import org.apache.lucene.analysis.shingle.ShingleFilter;
+import org.apache.lucene.analysis.util.BaseTokenStreamFactoryTestCase;
 
-public class TestLimitTokenPositionFilterFactory extends BaseTokenStreamTestCase {
+public class TestLimitTokenPositionFilterFactory extends BaseTokenStreamFactoryTestCase {
 
-  public void testMaxPosition1() throws IOException {
-    LimitTokenPositionFilterFactory factory = new LimitTokenPositionFilterFactory();
-    Map<String, String> args = new HashMap<String, String>();
-    args.put(LimitTokenPositionFilterFactory.MAX_TOKEN_POSITION_KEY, "1");
-    factory.init(args);
-    String test = "A1 B2 C3 D4 E5 F6";
-    MockTokenizer tok = new MockTokenizer(new StringReader(test), MockTokenizer.WHITESPACE, false);
+  public void testMaxPosition1() throws Exception {
+    Reader reader = new StringReader("A1 B2 C3 D4 E5 F6");
+    MockTokenizer tokenizer = new MockTokenizer(reader, MockTokenizer.WHITESPACE, false);
     // LimitTokenPositionFilter doesn't consume the entire stream that it wraps
-    tok.setEnableChecks(false);
-    TokenStream stream = factory.create(tok);
+    tokenizer.setEnableChecks(false);
+    TokenStream stream = tokenizer;
+    stream = tokenFilterFactory("LimitTokenPosition",
+        "maxTokenPosition", "1").create(stream);
     assertTokenStreamContents(stream, new String[] { "A1" });
   }
   
-  public void testMissingParam() {
-    LimitTokenPositionFilterFactory factory = new LimitTokenPositionFilterFactory();
-    Map<String, String> args = new HashMap<String, String>();
-    IllegalArgumentException iae = null;
+  public void testMissingParam() throws Exception {
     try {
-      factory.init(args);
+      tokenFilterFactory("LimitTokenPosition");
+      fail();
     } catch (IllegalArgumentException e) {
       assertTrue("exception doesn't mention param: " + e.getMessage(),
           0 < e.getMessage().indexOf(LimitTokenPositionFilterFactory.MAX_TOKEN_POSITION_KEY));
-      iae = e;
     }
-    assertNotNull("no exception thrown", iae);
   }
 
-  public void testMaxPosition1WithShingles() throws IOException {
-    LimitTokenPositionFilterFactory factory = new LimitTokenPositionFilterFactory();
-    Map<String, String> args = new HashMap<String, String>();
-    args.put(LimitTokenPositionFilterFactory.MAX_TOKEN_POSITION_KEY, "1");
-    factory.init(args);
-    String input = "one two three four five";
-    MockTokenizer tok = new MockTokenizer(new StringReader(input), MockTokenizer.WHITESPACE, false);
+  public void testMaxPosition1WithShingles() throws Exception {
+    Reader reader = new StringReader("one two three four five");
+    MockTokenizer tokenizer = new MockTokenizer(reader, MockTokenizer.WHITESPACE, false);
     // LimitTokenPositionFilter doesn't consume the entire stream that it wraps
-    tok.setEnableChecks(false);
-    ShingleFilter shingleFilter = new ShingleFilter(tok, 2, 3);
-    shingleFilter.setOutputUnigrams(true);
-    TokenStream stream = factory.create(shingleFilter);
+    tokenizer.setEnableChecks(false);
+    TokenStream stream = tokenizer;
+    stream = tokenFilterFactory("Shingle",
+        "minShingleSize", "2",
+        "maxShingleSize", "3",
+        "outputUnigrams", "true").create(stream);
+    stream = tokenFilterFactory("LimitTokenPosition",
+        "maxTokenPosition", "1").create(stream);
     assertTokenStreamContents(stream, new String[] { "one", "one two", "one two three" });
   }
   
-  public void testConsumeAllTokens() throws IOException {
-    LimitTokenPositionFilterFactory factory = new LimitTokenPositionFilterFactory();
-    Map<String, String> args = new HashMap<String, String>();
-    args.put(LimitTokenPositionFilterFactory.MAX_TOKEN_POSITION_KEY, "3");
-    args.put(LimitTokenPositionFilterFactory.CONSUME_ALL_TOKENS_KEY, "true");
-    factory.init(args);
-    String test = "A1 B2 C3 D4 E5 F6";
-    MockTokenizer tok = new MockTokenizer(new StringReader(test), MockTokenizer.WHITESPACE, false);
-    TokenStream stream = factory.create(tok);
+  public void testConsumeAllTokens() throws Exception {
+    Reader reader = new StringReader("A1 B2 C3 D4 E5 F6");
+    TokenStream stream = new MockTokenizer(reader, MockTokenizer.WHITESPACE, false);
+    stream = tokenFilterFactory("LimitTokenPosition",
+        "maxTokenPosition", "3",
+        "consumeAllTokens", "true").create(stream);
     assertTokenStreamContents(stream, new String[] { "A1", "B2", "C3" });
+  }
+  
+  /** Test that bogus arguments result in exception */
+  public void testBogusArguments() throws Exception {
+    try {
+      tokenFilterFactory("LimitTokenPosition", 
+          "maxTokenPosition", "3", 
+          "bogusArg", "bogusValue");
+      fail();
+    } catch (IllegalArgumentException expected) {
+      assertTrue(expected.getMessage().contains("Unknown parameters"));
+    }
   }
 }

@@ -116,11 +116,11 @@ public class ChainedFilter extends Filter {
     // we dont pass acceptDocs, we will filter at the end using an additional filter
     DocIdSet docIdSet = filter.getDocIdSet(context, null);
     if (docIdSet == null) {
-      return DocIdSet.EMPTY_DOCIDSET.iterator();
+      return DocIdSetIterator.empty();
     } else {
       DocIdSetIterator iter = docIdSet.iterator();
       if (iter == null) {
-        return DocIdSet.EMPTY_DOCIDSET.iterator();
+        return DocIdSetIterator.empty();
       } else {
         return iter;
       }
@@ -223,11 +223,11 @@ public class ChainedFilter extends Filter {
     } else {
       DocIdSetIterator disi;
       if (dis == null) {
-        disi = DocIdSet.EMPTY_DOCIDSET.iterator();
+        disi = DocIdSetIterator.empty();
       } else {
         disi = dis.iterator();
         if (disi == null) {
-          disi = DocIdSet.EMPTY_DOCIDSET.iterator();
+          disi = DocIdSetIterator.empty();
         }
       }
 

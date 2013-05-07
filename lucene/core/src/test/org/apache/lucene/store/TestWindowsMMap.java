@@ -78,7 +78,7 @@ public class TestWindowsMMap extends LuceneTestCase {
         .setOpenMode(OpenMode.CREATE));
     writer.commit();
     IndexReader reader = DirectoryReader.open(dir);
-    IndexSearcher searcher = new IndexSearcher(reader);
+    IndexSearcher searcher = newSearcher(reader);
     
     int num = atLeast(1000);
     for(int dx = 0; dx < num; dx ++) {

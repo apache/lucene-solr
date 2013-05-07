@@ -19,9 +19,7 @@ package org.apache.solr.highlight;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Collection;
-import java.util.HashMap;
 import java.util.List;
-import java.util.Map;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -38,33 +36,8 @@ public abstract class SolrHighlighter
 {
   public static Logger log = LoggerFactory.getLogger(SolrHighlighter.class);
 
-  // Thread safe registry
-  protected final Map<String,SolrFormatter> formatters =
-    new HashMap<String, SolrFormatter>();
-
-  // Thread safe registry
-  protected final Map<String,SolrEncoder> encoders =
-    new HashMap<String, SolrEncoder>();
-
-  // Thread safe registry
-  protected final Map<String,SolrFragmenter> fragmenters =
-    new HashMap<String, SolrFragmenter>() ;
-
-  // Thread safe registry
-  protected final Map<String, SolrFragListBuilder> fragListBuilders =
-    new HashMap<String, SolrFragListBuilder>() ;
-
-  // Thread safe registry
-  protected final Map<String, SolrFragmentsBuilder> fragmentsBuilders =
-    new HashMap<String, SolrFragmentsBuilder>() ;
-
-  // Thread safe registry
-  protected final Map<String, SolrBoundaryScanner> boundaryScanners =
-    new HashMap<String, SolrBoundaryScanner>() ;
-
   @Deprecated
   public abstract void initalize( SolrConfig config );
-
 
   /**
    * Check whether Highlighting is enabled for this request.

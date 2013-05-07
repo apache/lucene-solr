@@ -129,13 +129,13 @@ public class MergeState {
   }
 
   /** {@link SegmentInfo} of the newly merged segment. */
-  public SegmentInfo segmentInfo;
+  public final SegmentInfo segmentInfo;
 
   /** {@link FieldInfos} of the newly merged segment. */
   public FieldInfos fieldInfos;
 
   /** Readers being merged. */
-  public List<AtomicReader> readers;
+  public final List<AtomicReader> readers;
 
   /** Maps docIDs around deletions. */
   public DocMap[] docMaps;
@@ -145,10 +145,10 @@ public class MergeState {
 
   /** Holds the CheckAbort instance, which is invoked
    *  periodically to see if the merge has been aborted. */
-  public CheckAbort checkAbort;
+  public final CheckAbort checkAbort;
 
   /** InfoStream for debugging messages. */
-  public InfoStream infoStream;
+  public final InfoStream infoStream;
 
   // TODO: get rid of this? it tells you which segments are 'aligned' (e.g. for bulk merging)
   // but is this really so expensive to compute again in different components, versus once in SM?
@@ -162,7 +162,11 @@ public class MergeState {
   public int matchedCount;
 
   /** Sole constructor. */
-  MergeState() {
+  MergeState(List<AtomicReader> readers, SegmentInfo segmentInfo, InfoStream infoStream, CheckAbort checkAbort) {
+    this.readers = readers;
+    this.segmentInfo = segmentInfo;
+    this.infoStream = infoStream;
+    this.checkAbort = checkAbort;
   }
 
   /**

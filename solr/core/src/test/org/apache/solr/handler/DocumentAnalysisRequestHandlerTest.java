@@ -216,7 +216,7 @@ public class DocumentAnalysisRequestHandlerTest extends AnalysisRequestHandlerTe
             .setShowMatch(true)
             .addDocument(document);
 
-    NamedList<Object> result = handler.handleAnalysisRequest(request, h.getCore().getSchema());
+    NamedList<Object> result = handler.handleAnalysisRequest(request, h.getCore().getLatestSchema());
     assertNotNull("result is null and it shouldn't be", result);
     NamedList<NamedList<NamedList<Object>>> documentResult = (NamedList<NamedList<NamedList<Object>>>) result.get("1");
     assertNotNull("An analysis for document with key '1' should be returned", documentResult);
@@ -323,16 +323,16 @@ public class DocumentAnalysisRequestHandlerTest extends AnalysisRequestHandlerTe
     tokenList = valueResult.get("org.apache.lucene.analysis.core.StopFilter");
     assertNotNull("Expecting the 'StopFilter' to be applied on the index for the 'text' field", tokenList);
     assertEquals("Expecting 4 tokens after stop word removal", 4, tokenList.size());
-    assertToken(tokenList.get(0), new TokenInfo("fox", null, "<ALPHANUM>", 4, 7, 1, new int[]{2,2,2,1}, null, false));
-    assertToken(tokenList.get(1), new TokenInfo("jumped", null, "<ALPHANUM>", 8, 14, 2, new int[]{3,3,3,2}, null, false));
-    assertToken(tokenList.get(2), new TokenInfo("over", null, "<ALPHANUM>", 15, 19, 3, new int[]{4,4,4,3}, null, false));
-    assertToken(tokenList.get(3), new TokenInfo("dogs", null, "<ALPHANUM>", 24, 28, 4, new int[]{6,6,6,4}, null, false));
+    assertToken(tokenList.get(0), new TokenInfo("fox", null, "<ALPHANUM>", 4, 7, 2, new int[]{2,2,2,2}, null, false));
+    assertToken(tokenList.get(1), new TokenInfo("jumped", null, "<ALPHANUM>", 8, 14, 3, new int[]{3,3,3,3}, null, false));
+    assertToken(tokenList.get(2), new TokenInfo("over", null, "<ALPHANUM>", 15, 19, 4, new int[]{4,4,4,4}, null, false));
+    assertToken(tokenList.get(3), new TokenInfo("dogs", null, "<ALPHANUM>", 24, 28, 6, new int[]{6,6,6,6}, null, false));
     tokenList = valueResult.get("org.apache.lucene.analysis.en.PorterStemFilter");
     assertNotNull("Expecting the 'PorterStemFilter' to be applied on the index for the 'text' field", tokenList);
     assertEquals("Expecting 4 tokens", 4, tokenList.size());
-    assertToken(tokenList.get(0), new TokenInfo("fox", null, "<ALPHANUM>", 4, 7, 1, new int[]{2,2,2,1,1}, null, false));
-    assertToken(tokenList.get(1), new TokenInfo("jump", null, "<ALPHANUM>", 8, 14, 2, new int[]{3,3,3,2,2}, null, true));
-    assertToken(tokenList.get(2), new TokenInfo("over", null, "<ALPHANUM>", 15, 19, 3, new int[]{4,4,4,3,3}, null, false));
-    assertToken(tokenList.get(3), new TokenInfo("dog", null, "<ALPHANUM>", 24, 28, 4, new int[]{6,6,6,4,4}, null, false));
+    assertToken(tokenList.get(0), new TokenInfo("fox", null, "<ALPHANUM>", 4, 7, 2, new int[]{2,2,2,2,2}, null, false));
+    assertToken(tokenList.get(1), new TokenInfo("jump", null, "<ALPHANUM>", 8, 14, 3, new int[]{3,3,3,3,3}, null, true));
+    assertToken(tokenList.get(2), new TokenInfo("over", null, "<ALPHANUM>", 15, 19, 4, new int[]{4,4,4,4,4}, null, false));
+    assertToken(tokenList.get(3), new TokenInfo("dog", null, "<ALPHANUM>", 24, 28, 6, new int[]{6,6,6,6,6}, null, false));
   }
 }

@@ -21,8 +21,10 @@ import java.io.Reader;
 import java.io.StringReader;
 import java.lang.reflect.Modifier;
 import java.util.Collections;
+import java.util.HashMap;
 import java.util.IdentityHashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
 
 import org.apache.lucene.analysis.CachingTokenFilter;
@@ -115,31 +117,35 @@ public class TestAllAnalyzersHaveFactories extends LuceneTestCase {
         continue;
       }
       
+      Map<String,String> args = new HashMap<String,String>();
+      args.put("luceneMatchVersion", TEST_VERSION_CURRENT.toString());
+      
       if (Tokenizer.class.isAssignableFrom(c)) {
         String clazzName = c.getSimpleName();
         assertTrue(clazzName.endsWith("Tokenizer"));
         String simpleName = clazzName.substring(0, clazzName.length() - 9);
-        TokenizerFactory instance = TokenizerFactory.forName(simpleName);
-        assertNotNull(instance);
+        TokenizerFactory instance = null;
         try {
-          instance.setLuceneMatchVersion(TEST_VERSION_CURRENT);
-          instance.init(Collections.<String,String>emptyMap());
+          instance = TokenizerFactory.forName(simpleName, args);
+          assertNotNull(instance);
           if (instance instanceof ResourceLoaderAware) {
             ((ResourceLoaderAware) instance).inform(loader);
           }
           assertSame(c, instance.create(new StringReader("")).getClass());
         } catch (IllegalArgumentException e) {
+          if (!e.getMessage().contains("SPI")) {
+            throw e;
+          }
           // TODO: For now pass because some factories have not yet a default config that always works
         }
       } else if (TokenFilter.class.isAssignableFrom(c)) {
         String clazzName = c.getSimpleName();
         assertTrue(clazzName.endsWith("Filter"));
         String simpleName = clazzName.substring(0, clazzName.length() - (clazzName.endsWith("TokenFilter") ? 11 : 6));
-        TokenFilterFactory instance = TokenFilterFactory.forName(simpleName);
-        assertNotNull(instance);
+        TokenFilterFactory instance = null; 
         try {
-          instance.setLuceneMatchVersion(TEST_VERSION_CURRENT);
-          instance.init(Collections.<String,String>emptyMap());
+          instance = TokenFilterFactory.forName(simpleName, args);
+          assertNotNull(instance);
           if (instance instanceof ResourceLoaderAware) {
             ((ResourceLoaderAware) instance).inform(loader);
           }
@@ -149,17 +155,19 @@ public class TestAllAnalyzersHaveFactories extends LuceneTestCase {
             assertSame(c, createdClazz);
           }
         } catch (IllegalArgumentException e) {
+          if (!e.getMessage().contains("SPI")) {
+            throw e;
+          }
           // TODO: For now pass because some factories have not yet a default config that always works
         }
       } else if (CharFilter.class.isAssignableFrom(c)) {
         String clazzName = c.getSimpleName();
         assertTrue(clazzName.endsWith("CharFilter"));
         String simpleName = clazzName.substring(0, clazzName.length() - 10);
-        CharFilterFactory instance = CharFilterFactory.forName(simpleName);
-        assertNotNull(instance);
+        CharFilterFactory instance = null;
         try {
-          instance.setLuceneMatchVersion(TEST_VERSION_CURRENT);
-          instance.init(Collections.<String,String>emptyMap());
+          instance = CharFilterFactory.forName(simpleName, args);
+          assertNotNull(instance);
           if (instance instanceof ResourceLoaderAware) {
             ((ResourceLoaderAware) instance).inform(loader);
           }
@@ -169,6 +177,9 @@ public class TestAllAnalyzersHaveFactories extends LuceneTestCase {
             assertSame(c, createdClazz);
           }
         } catch (IllegalArgumentException e) {
+          if (!e.getMessage().contains("SPI")) {
+            throw e;
+          }
           // TODO: For now pass because some factories have not yet a default config that always works
         }
       }

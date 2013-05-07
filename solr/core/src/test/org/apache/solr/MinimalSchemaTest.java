@@ -43,7 +43,7 @@ public class MinimalSchemaTest extends SolrTestCaseJ4 {
        a uniqueKey field and defeat the point of the tests
     */
     assertNull("UniqueKey Field isn't null", 
-               h.getCore().getSchema().getUniqueKeyField());
+               h.getCore().getLatestSchema().getUniqueKeyField());
 
     lrf.args.put(CommonParams.VERSION,"2.2");
 

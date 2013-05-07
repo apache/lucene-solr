@@ -35,7 +35,16 @@ import org.junit.Test;
 
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Collection;
+import java.util.Collections;
+import java.util.Comparator;
+import java.util.HashMap;
+import java.util.LinkedHashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.TreeMap;
 
 public class TestGroupingSearch extends SolrTestCaseJ4 {
 
@@ -720,10 +729,12 @@ public class TestGroupingSearch extends SolrTestCaseJ4 {
         int group_limit = random().nextInt(10)==0 ? random().nextInt(model.size()+2) : random().nextInt(11)-1;    
         int group_offset = random().nextInt(10)==0 ? random().nextInt(model.size()+2) : random().nextInt(2); // pick a small start normally for better coverage
 
+        IndexSchema schema = h.getCore().getLatestSchema();
+        
         String[] stringSortA = new String[1];
-        Comparator<Doc> sortComparator = createSort(h.getCore().getSchema(), types, stringSortA);
+        Comparator<Doc> sortComparator = createSort(schema, types, stringSortA);
         String sortStr = stringSortA[0];
-        Comparator<Doc> groupComparator = random().nextBoolean() ? sortComparator : createSort(h.getCore().getSchema(), types, stringSortA);
+        Comparator<Doc> groupComparator = random().nextBoolean() ? sortComparator : createSort(schema, types, stringSortA);
         String groupSortStr = stringSortA[0];
 
         // since groupSortStr defaults to sortStr, we need to normalize null to "score desc" if
@@ -760,7 +771,7 @@ public class TestGroupingSearch extends SolrTestCaseJ4 {
         Collections.sort(sortedGroups,  groupComparator==sortComparator ? createFirstDocComparator(sortComparator) : createMaxDocComparator(sortComparator));
 
         boolean includeNGroups = random().nextBoolean();
-        Object modelResponse = buildGroupedResult(h.getCore().getSchema(), sortedGroups, start, rows, group_offset, group_limit, includeNGroups);
+        Object modelResponse = buildGroupedResult(schema, sortedGroups, start, rows, group_offset, group_limit, includeNGroups);
 
         boolean truncateGroups = random().nextBoolean();
         Map<String, Integer> facetCounts = new TreeMap<String, Integer>();

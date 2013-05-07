@@ -78,7 +78,7 @@ import org.slf4j.LoggerFactory;
 
 /**
  * <p> A Handler which provides a REST API for replication and serves replication requests from Slaves. <p/> </p>
- * <p>When running on the master, it provides the following commands <ol> <li>Get the current replicatable index version
+ * <p>When running on the master, it provides the following commands <ol> <li>Get the current replicable index version
  * (command=indexversion)</li> <li>Get the list of files for a given index version
  * (command=filelist&amp;indexversion=&lt;VERSION&gt;)</li> <li>Get full or a part (chunk) of a given index or a config
  * file (command=filecontent&amp;file=&lt;FILE_NAME&gt;) You can optionally specify an offset and length to get that
@@ -95,6 +95,38 @@ public class ReplicationHandler extends RequestHandlerBase implements SolrCoreAw
   
   private static final Logger LOG = LoggerFactory.getLogger(ReplicationHandler.class.getName());
   SolrCore core;
+
+  private static final class CommitVersionInfo {
+    public final long version;
+    public final long generation;
+    private CommitVersionInfo(long g, long v) {
+      generation = g;
+      version = v;
+    }
+    /**
+     * builds a CommitVersionInfo data for the specified IndexCommit.  
+     * Will never be null, ut version and generation may be zero if 
+     * there are problems extracting them from the commit data
+     */
+    public static CommitVersionInfo build(IndexCommit commit) {
+      long generation = commit.getGeneration();
+      long version = 0;
+      try {
+        final Map<String,String> commitData = commit.getUserData();
+        String commitTime = commitData.get(SolrIndexWriter.COMMIT_TIME_MSEC_KEY);
+        if (commitTime != null) {
+          try {
+            version = Long.parseLong(commitTime);
+          } catch (NumberFormatException e) {
+            LOG.warn("Version in commitData was not formated correctly: " + commitTime, e);
+          }
+        }
+      } catch (IOException e) {
+        LOG.warn("Unable to get version from commitData, commit: " + commit, e);
+      }
+      return new CommitVersionInfo(generation, version);
+    }
+  }
 
   private SnapPuller snapPuller;
 
@@ -180,12 +212,16 @@ public class ReplicationHandler extends RequestHandlerBase implements SolrCoreAw
         return;
       }
       final SolrParams paramsCopy = new ModifiableSolrParams(solrParams);
-      new Thread() {
+      Thread puller = new Thread("explicit-fetchindex-cmd") {
         @Override
         public void run() {
           doFetch(paramsCopy, false);
         }
-      }.start();
+      };
+      puller.start();
+      if (solrParams.getBool(WAIT, false)) {
+        puller.join();
+      }
       rsp.add(STATUS, OK_STATUS);
     } else if (command.equalsIgnoreCase(CMD_DISABLE_POLL)) {
       if (snapPuller != null){
@@ -497,23 +533,20 @@ public class ReplicationHandler extends RequestHandlerBase implements SolrCoreAw
     return "$URL$";
   }
 
-  private long[] getIndexVersion() {
-    long version[] = new long[2];
+  /** 
+   * returns the CommitVersionInfo for the current searcher, or null on error.
+   */
+  private CommitVersionInfo getIndexVersion() {
+    CommitVersionInfo v = null;
     RefCounted<SolrIndexSearcher> searcher = core.getSearcher();
     try {
-      final IndexCommit commit = searcher.get().getIndexReader().getIndexCommit();
-      final Map<String,String> commitData = commit.getUserData();
-      String commitTime = commitData.get(SolrIndexWriter.COMMIT_TIME_MSEC_KEY);
-      if (commitTime != null) {
-        version[0] = Long.parseLong(commitTime);
-      }
-      version[1] = commit.getGeneration();
+      v = CommitVersionInfo.build(searcher.get().getIndexReader().getIndexCommit());
     } catch (IOException e) {
-      LOG.warn("Unable to get index version : ", e);
+      LOG.warn("Unable to get index commit: ", e);
     } finally {
       searcher.decref();
     }
-    return version;
+    return v;
   }
 
   @Override
@@ -522,9 +555,9 @@ public class ReplicationHandler extends RequestHandlerBase implements SolrCoreAw
     NamedList list = super.getStatistics();
     if (core != null) {
       list.add("indexSize", NumberUtils.readableSize(getIndexSize()));
-      long[] versionGen = getIndexVersion();
-      list.add("indexVersion", versionGen[0]);
-      list.add(GENERATION, versionGen[1]);
+      CommitVersionInfo vInfo = getIndexVersion();
+      list.add("indexVersion", null == vInfo ? 0 : vInfo.version);
+      list.add(GENERATION, null == vInfo ? 0 : vInfo.generation);
 
       list.add("indexPath", core.getIndexDir());
       list.add("isMaster", String.valueOf(isMaster));
@@ -578,10 +611,10 @@ public class ReplicationHandler extends RequestHandlerBase implements SolrCoreAw
     details.add(CMD_SHOW_COMMITS, getCommits());
     details.add("isMaster", String.valueOf(isMaster));
     details.add("isSlave", String.valueOf(isSlave));
-    long[] versionAndGeneration = getIndexVersion();
-    details.add("indexVersion", versionAndGeneration[0]);
-    details.add(GENERATION, versionAndGeneration[1]);
-
+    CommitVersionInfo vInfo = getIndexVersion();
+    details.add("indexVersion", null == vInfo ? 0 : vInfo.version);
+    details.add(GENERATION, null == vInfo ? 0 : vInfo.generation);
+    
     IndexCommit commit = indexCommitPoint;  // make a copy so it won't change
 
     if (isMaster) {
@@ -591,7 +624,9 @@ public class ReplicationHandler extends RequestHandlerBase implements SolrCoreAw
     }
 
     if (isMaster && commit != null) {
-      master.add("replicatableGeneration", commit.getGeneration());
+      CommitVersionInfo repCommitInfo = CommitVersionInfo.build(commit);
+      master.add("replicableVersion", repCommitInfo.version);
+      master.add("replicableGeneration", repCommitInfo.generation);
     }
 
     SnapPuller snapPuller = tempSnapPuller;
@@ -1298,4 +1333,15 @@ public class ReplicationHandler extends RequestHandlerBase implements SolrCoreAw
   public static final String NUMBER_BACKUPS_TO_KEEP_REQUEST_PARAM = "numberToKeep";
   
   public static final String NUMBER_BACKUPS_TO_KEEP_INIT_PARAM = "maxNumberOfBackups";
+
+  /** 
+   * Boolean param for tests that can be specified when using 
+   * {@link #CMD_FETCH_INDEX} to force the current request to block until 
+   * the fetch is complete.  <b>NOTE:</b> This param is not advised for 
+   * non-test code, since the the durration of the fetch for non-trivial
+   * indexes will likeley cause the request to time out.
+   *
+   * @lucene.internal
+   */
+  public static final String WAIT = "wait";
 }

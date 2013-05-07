@@ -16,74 +16,56 @@ package org.apache.lucene.analysis.snowball;
  * limitations under the License.
  */
 
-import org.apache.lucene.analysis.BaseTokenStreamTestCase;
 import org.apache.lucene.analysis.MockTokenizer;
 import org.apache.lucene.analysis.TokenStream;
-import org.apache.lucene.analysis.Tokenizer;
-import org.apache.lucene.analysis.util.ResourceLoader;
+import org.apache.lucene.analysis.util.BaseTokenStreamFactoryTestCase;
 import org.apache.lucene.analysis.util.StringMockResourceLoader;
 import org.tartarus.snowball.ext.EnglishStemmer;
 
-import java.io.IOException;
-import java.io.InputStream;
 import java.io.Reader;
 import java.io.StringReader;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
 
-public class TestSnowballPorterFilterFactory extends BaseTokenStreamTestCase {
+public class TestSnowballPorterFilterFactory extends BaseTokenStreamFactoryTestCase {
 
-  public void test() throws IOException {
+  public void test() throws Exception {
+    String text = "The fledgling banks were counting on a big boom in banking";
     EnglishStemmer stemmer = new EnglishStemmer();
-    String[] test = {"The", "fledgling", "banks", "were", "counting", "on", "a", "big", "boom", "in", "banking"};
+    String[] test = text.split("\\s");
     String[] gold = new String[test.length];
     for (int i = 0; i < test.length; i++) {
       stemmer.setCurrent(test[i]);
       stemmer.stem();
       gold[i] = stemmer.getCurrent();
     }
-
-    SnowballPorterFilterFactory factory = new SnowballPorterFilterFactory();
-    Map<String, String> args = new HashMap<String, String>();
-    args.put("language", "English");
-
-    factory.setLuceneMatchVersion(TEST_VERSION_CURRENT);
-    factory.init(args);
-    factory.inform(new StringMockResourceLoader(""));
-    Tokenizer tokenizer = new MockTokenizer(
-        new StringReader(join(test, ' ')), MockTokenizer.WHITESPACE, false);
-    TokenStream stream = factory.create(tokenizer);
+    
+    Reader reader = new StringReader(text);
+    TokenStream stream = new MockTokenizer(reader, MockTokenizer.WHITESPACE, false);
+    stream = tokenFilterFactory("SnowballPorter", "language", "English").create(stream);
     assertTokenStreamContents(stream, gold);
-  }
-  
-  String join(String[] stuff, char sep) {
-    StringBuilder sb = new StringBuilder();
-    for (int i = 0; i < stuff.length; i++) {
-      if (i > 0) {
-        sb.append(sep);
-      }
-      sb.append(stuff[i]);
-    }
-    return sb.toString();
   }
   
   /**
    * Test the protected words mechanism of SnowballPorterFilterFactory
    */
   public void testProtected() throws Exception {
-    SnowballPorterFilterFactory factory = new SnowballPorterFilterFactory();
-    ResourceLoader loader = new StringMockResourceLoader("ridding");
-    Map<String,String> args = new HashMap<String,String>();
-    args.put("protected", "protwords.txt");
-    args.put("language", "English");
-    factory.setLuceneMatchVersion(TEST_VERSION_CURRENT);
-    factory.init(args);
-    factory.inform(loader);
     Reader reader = new StringReader("ridding of some stemming");
-    Tokenizer tokenizer = new MockTokenizer(reader, MockTokenizer.WHITESPACE, false);
-    TokenStream stream = factory.create(tokenizer);
+    TokenStream stream = new MockTokenizer(reader, MockTokenizer.WHITESPACE, false);
+    stream = tokenFilterFactory("SnowballPorter", TEST_VERSION_CURRENT,
+        new StringMockResourceLoader("ridding"),
+        "protected", "protwords.txt",
+        "language", "English").create(stream);
+
     assertTokenStreamContents(stream, new String[] { "ridding", "of", "some", "stem" });
+  }
+  
+  /** Test that bogus arguments result in exception */
+  public void testBogusArguments() throws Exception {
+    try {
+      tokenFilterFactory("SnowballPorter", "bogusArg", "bogusValue");
+      fail();
+    } catch (IllegalArgumentException expected) {
+      assertTrue(expected.getMessage().contains("Unknown parameters"));
+    }
   }
 }
 

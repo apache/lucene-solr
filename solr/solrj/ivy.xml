@@ -40,11 +40,13 @@
        -->
       <dependency org="org.apache.httpcomponents" name="httpcore" rev="4.2.2" transitive="false"/>
       <dependency org="commons-io" name="commons-io" rev="${commons-io.version}" transitive="false"/>
-      <dependency org="org.slf4j" name="jcl-over-slf4j" rev="1.6.4" transitive="false"/>
       <dependency org="org.codehaus.woodstox" name="wstx-asl" rev="3.2.7" transitive="false"/>
-      <dependency org="org.slf4j" name="slf4j-api" rev="1.6.4" transitive="false"/>
-      <dependency org="org.slf4j" name="slf4j-jdk14" rev="1.6.4" transitive="false"/> 
       <dependency org="org.noggit" name="noggit" rev="0.5" transitive="false"/>
+      <dependency org="log4j" name="log4j" rev="1.2.16" transitive="false"/>
+      <dependency org="org.slf4j" name="slf4j-api" rev="1.6.6" transitive="false"/>
+      <dependency org="org.slf4j" name="jcl-over-slf4j" rev="1.6.6" transitive="false"/>
+      <dependency org="org.slf4j" name="jul-to-slf4j" rev="1.6.6" transitive="false"/> 
+      <dependency org="org.slf4j" name="slf4j-log4j12" rev="1.6.6" transitive="false"/> 
       <exclude org="*" ext="*" matcher="regexp" type="${ivy.exclude.types}"/> 
     </dependencies>
 </ivy-module>

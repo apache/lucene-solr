@@ -187,7 +187,7 @@ public final class CompressingTermVectorsReader extends TermVectorsReader implem
     final int docBase = vectorsStream.readVInt();
     final int chunkDocs = vectorsStream.readVInt();
     if (doc < docBase || doc >= docBase + chunkDocs || docBase + chunkDocs > numDocs) {
-      throw new CorruptIndexException("docBase=" + docBase + ",chunkDocs=" + chunkDocs + ",doc=" + doc);
+      throw new CorruptIndexException("docBase=" + docBase + ",chunkDocs=" + chunkDocs + ",doc=" + doc + " (resource=" + vectorsStream + ")");
     }
 
     final int skip; // number of fields to skip
@@ -1030,11 +1030,7 @@ public final class CompressingTermVectorsReader extends TermVectorsReader implem
 
     @Override
     public int advance(int target) throws IOException {
-      if (doc == -1 && target == 0 && (liveDocs == null || liveDocs.get(0))) {
-        return (doc = 0);
-      } else {
-        return (doc = NO_MORE_DOCS);
-      }
+      return slowAdvance(target);
     }
 
     @Override

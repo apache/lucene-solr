@@ -181,8 +181,7 @@ public class ToParentBlockJoinQuery extends Query {
       // acceptDocs when we score:
       final DocIdSet parents = parentsFilter.getDocIdSet(readerContext, null);
 
-      if (parents == null
-          || parents.iterator().docID() == DocIdSetIterator.NO_MORE_DOCS) { // <-- means DocIdSet#EMPTY_DOCIDSET
+      if (parents == null) {
         // No matches
         return null;
       }
@@ -196,10 +195,8 @@ public class ToParentBlockJoinQuery extends Query {
     @Override
     public Explanation explain(AtomicReaderContext context, int doc) throws IOException {
       BlockJoinScorer scorer = (BlockJoinScorer) scorer(context, true, false, context.reader().getLiveDocs());
-      if (scorer != null) {
-        if (scorer.advance(doc) == doc) {
-          return scorer.explain(context.docBase);
-        }
+      if (scorer != null && scorer.advance(doc) == doc) {
+        return scorer.explain(context.docBase);
       }
       return new ComplexExplanation(false, 0.0f, "Not a match");
     }
@@ -247,6 +244,10 @@ public class ToParentBlockJoinQuery extends Query {
       return childDocUpto;
     }
 
+    int getParentDoc() {
+      return parentDoc;
+    }
+
     int[] swapChildDocs(int[] other) {
       final int[] ret = pendingChildDocs;
       if (other == null) {
@@ -273,7 +274,6 @@ public class ToParentBlockJoinQuery extends Query {
     @Override
     public int nextDoc() throws IOException {
       //System.out.println("Q.nextDoc() nextChildDoc=" + nextChildDoc);
-
       // Loop until we hit a parentDoc that's accepted
       while (true) {
         if (nextChildDoc == NO_MORE_DOCS) {
@@ -286,6 +286,12 @@ public class ToParentBlockJoinQuery extends Query {
 
         parentDoc = parentBits.nextSetBit(nextChildDoc);
 
+        // Parent & child docs are supposed to be
+        // orthogonal:
+        if (nextChildDoc == parentDoc) {
+          throw new IllegalStateException("child query must only match non-parent docs, but parent docID=" + nextChildDoc + " matched childScorer=" + childScorer.getClass());
+        }
+
         //System.out.println("  parentDoc=" + parentDoc);
         assert parentDoc != -1;
 
@@ -296,6 +302,13 @@ public class ToParentBlockJoinQuery extends Query {
           do {
             nextChildDoc = childScorer.nextDoc();
           } while (nextChildDoc < parentDoc);
+
+          // Parent & child docs are supposed to be
+          // orthogonal:
+          if (nextChildDoc == parentDoc) {
+            throw new IllegalStateException("child query must only match non-parent docs, but parent docID=" + nextChildDoc + " matched childScorer=" + childScorer.getClass());
+          }
+
           continue;
         }
 
@@ -327,8 +340,11 @@ public class ToParentBlockJoinQuery extends Query {
           nextChildDoc = childScorer.nextDoc();
         } while (nextChildDoc < parentDoc);
 
-        // Parent & child docs are supposed to be orthogonal:
-        assert nextChildDoc != parentDoc;
+        // Parent & child docs are supposed to be
+        // orthogonal:
+        if (nextChildDoc == parentDoc) {
+          throw new IllegalStateException("child query must only match non-parent docs, but parent docID=" + nextChildDoc + " matched childScorer=" + childScorer.getClass());
+        }
 
         switch(scoreMode) {
         case Avg:
@@ -344,7 +360,7 @@ public class ToParentBlockJoinQuery extends Query {
           break;
         }
 
-        //System.out.println("  return parentDoc=" + parentDoc);
+        //System.out.println("  return parentDoc=" + parentDoc + " childDocUpto=" + childDocUpto);
         return parentDoc;
       }
     }
@@ -394,7 +410,9 @@ public class ToParentBlockJoinQuery extends Query {
       }
 
       // Parent & child docs are supposed to be orthogonal:
-      assert nextChildDoc != prevParentDoc;
+      if (nextChildDoc == prevParentDoc) {
+        throw new IllegalStateException("child query must only match non-parent docs, but parent docID=" + nextChildDoc + " matched childScorer=" + childScorer.getClass());
+      }
 
       final int nd = nextDoc();
       //System.out.println("  return nextParentDoc=" + nd);
@@ -446,7 +464,8 @@ public class ToParentBlockJoinQuery extends Query {
       final ToParentBlockJoinQuery other = (ToParentBlockJoinQuery) _other;
       return origChildQuery.equals(other.origChildQuery) &&
         parentsFilter.equals(other.parentsFilter) &&
-        scoreMode == other.scoreMode;
+        scoreMode == other.scoreMode && 
+        super.equals(other);
     } else {
       return false;
     }
@@ -455,17 +474,10 @@ public class ToParentBlockJoinQuery extends Query {
   @Override
   public int hashCode() {
     final int prime = 31;
-    int hash = 1;
+    int hash = super.hashCode();
     hash = prime * hash + origChildQuery.hashCode();
     hash = prime * hash + scoreMode.hashCode();
     hash = prime * hash + parentsFilter.hashCode();
     return hash;
-  }
-
-  @Override
-  public ToParentBlockJoinQuery clone() {
-    return new ToParentBlockJoinQuery(origChildQuery.clone(),
-                              parentsFilter,
-                              scoreMode);
   }
 }

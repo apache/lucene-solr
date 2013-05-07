@@ -15,9 +15,11 @@
 
 import datetime
 import re
+import time
 import shutil
 import os
 import sys
+import subprocess
 
 # Usage: python3.2 -u buildAndPushRelease.py [-sign gpgKey(eg: 6E68DA61)] [-prepare] [-push userName] [-pushLocal dirName] [-smoke tmpDir] /path/to/checkout version(eg: 3.4.0) rcNum(eg: 0)
 #
@@ -39,6 +41,25 @@ def log(msg):
 def run(command):
   log('\n\n%s: RUN: %s\n' % (datetime.datetime.now(), command))
   if os.system('%s >> %s 2>&1' % (command, LOG)):
+    msg = '    FAILED: %s [see log %s]' % (command, LOG)
+    print(msg)
+    raise RuntimeError(msg)
+
+def runAndSendGPGPassword(command, password):
+  p = subprocess.Popen(command, shell=True, stdout=subprocess.PIPE, stderr=subprocess.STDOUT, stdin=subprocess.PIPE)
+  f = open(LOG, 'ab')
+  while True:
+    line = p.stdout.readline()
+    if len(line) == 0:
+      break
+    f.write(line)
+    if line.find(b'Enter GPG keystore password:') != -1:
+      time.sleep(1.0)
+      p.stdin.write((password + '\n').encode('UTF-8'))
+      p.stdin.write('\n'.encode('UTF-8'))
+
+  result = p.poll()
+  if result != 0:
     msg = '    FAILED: %s [see log %s]' % (command, LOG)
     print(msg)
     raise RuntimeError(msg)
@@ -68,7 +89,7 @@ def getSVNRev():
   return rev
   
 
-def prepare(root, version, gpgKeyID, doTest):
+def prepare(root, version, gpgKeyID, gpgPassword, doTest):
   print()
   print('Prepare release...')
   if os.path.exists(LOG):
@@ -98,7 +119,11 @@ def prepare(root, version, gpgKeyID, doTest):
     cmd += ' -Dgpg.key=%s prepare-release' % gpgKeyID
   else:
     cmd += ' prepare-release-no-sign'
-  run(cmd)
+
+  if gpgPassword is not None:
+    runAndSendGPGPassword(cmd, gpgPassword)
+  else:
+    run(cmd)
   
   print('  solr prepare-release')
   os.chdir('../solr')
@@ -107,7 +132,12 @@ def prepare(root, version, gpgKeyID, doTest):
     cmd += ' -Dgpg.key=%s prepare-release' % gpgKeyID
   else:
     cmd += ' prepare-release-no-sign'
-  run(cmd)
+
+  if gpgPassword is not None:
+    runAndSendGPGPassword(cmd, gpgPassword)
+  else:
+    run(cmd)
+    
   print('  done!')
   print()
   return rev
@@ -115,7 +145,7 @@ def prepare(root, version, gpgKeyID, doTest):
 def push(version, root, rev, rcNum, username):
   print('Push...')
   dir = 'lucene-solr-%s-RC%d-rev%s' % (version, rcNum, rev)
-  s = os.popen('ssh %s@people.apache.org "ls -ld public_html/staging_area/%s" 2>&1' % (username, dir)).read().decode('UTF-8')
+  s = os.popen('ssh %s@people.apache.org "ls -ld public_html/staging_area/%s" 2>&1' % (username, dir)).read()
   if 'no such file or directory' not in s.lower():
     print('  Remove old dir...')
     run('ssh %s@people.apache.org "chmod -R u+rwX public_html/staging_area/%s; rm -rf public_html/staging_area/%s"' % 
@@ -253,12 +283,16 @@ def main():
     gpgKeyID = sys.argv[idx+1]
     del sys.argv[idx:idx+2]
 
+    sys.stdout.flush()
+    import getpass
+    gpgPassword = getpass.getpass('Enter GPG keystore password: ')
+
   root = os.path.abspath(sys.argv[1])
   version = sys.argv[2]
   rcNum = int(sys.argv[3])
 
   if doPrepare:
-    rev = prepare(root, version, gpgKeyID, smokeTmpDir is None)
+    rev = prepare(root, version, gpgKeyID, gpgPassword, smokeTmpDir is None)
   else:
     os.chdir(root)
     rev = open('rev.txt', encoding='UTF-8').read()
@@ -276,7 +310,7 @@ def main():
   if smokeTmpDir is not None:
     import smokeTestRelease
     smokeTestRelease.DEBUG = False
-    smokeTestRelease.smokeTest(url, version, smokeTmpDir, gpgKeyID is not None)
+    smokeTestRelease.smokeTest(url, rev, version, smokeTmpDir, gpgKeyID is not None)
 
 if __name__ == '__main__':
   try:

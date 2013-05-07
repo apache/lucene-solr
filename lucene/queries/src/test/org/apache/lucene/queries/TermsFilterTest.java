@@ -222,7 +222,7 @@ public class TermsFilterTest extends LuceneTestCase {
     IndexReader reader = w.getReader();
     w.close();
     
-    IndexSearcher searcher = new IndexSearcher(reader);
+    IndexSearcher searcher = newSearcher(reader);
     
     int numQueries = atLeast(10);
     for (int i = 0; i < numQueries; i++) {

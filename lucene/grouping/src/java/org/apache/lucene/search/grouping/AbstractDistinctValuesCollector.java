@@ -57,7 +57,7 @@ public abstract class AbstractDistinctValuesCollector<GC extends AbstractDistinc
 
     public GroupCount(GROUP_VALUE_TYPE groupValue) {
       this.groupValue = groupValue;
-      this.uniqueValues = new HashSet<GROUP_VALUE_TYPE>();
+      this.uniqueValues = new HashSet<>();
     }
   }
 

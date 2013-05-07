@@ -20,33 +20,36 @@ package org.apache.lucene.analysis.miscellaneous;
 import java.util.Map;
 
 import org.apache.lucene.analysis.TokenStream;
-import org.apache.lucene.analysis.miscellaneous.LimitTokenCountFilter;
 import org.apache.lucene.analysis.util.TokenFilterFactory;
 
 /**
  * Factory for {@link LimitTokenCountFilter}. 
- * <pre class="prettyprint" >
+ * <pre class="prettyprint">
  * &lt;fieldType name="text_lngthcnt" class="solr.TextField" positionIncrementGap="100"&gt;
  *   &lt;analyzer&gt;
  *     &lt;tokenizer class="solr.WhitespaceTokenizerFactory"/&gt;
  *     &lt;filter class="solr.LimitTokenCountFilterFactory" maxTokenCount="10" consumeAllTokens="false" /&gt;
  *   &lt;/analyzer&gt;
- * &lt;/fieldType&gt;</pre> 
+ * &lt;/fieldType&gt;</pre>
  * <p>
- * The {@code consumeAllTokens} property is optional and defaults to {@code false}.  See {@link LimitTokenCountFilter} for an explanation of it's use.
+ * The {@code consumeAllTokens} property is optional and defaults to {@code false}.  
+ * See {@link LimitTokenCountFilter} for an explanation of it's use.
  */
 public class LimitTokenCountFilterFactory extends TokenFilterFactory {
 
   public static final String MAX_TOKEN_COUNT_KEY = "maxTokenCount";
   public static final String CONSUME_ALL_TOKENS_KEY = "consumeAllTokens";
-  int maxTokenCount;
-  boolean consumeAllTokens;
+  final int maxTokenCount;
+  final boolean consumeAllTokens;
 
-  @Override
-  public void init(Map<String, String> args) {
-    super.init( args );
-    maxTokenCount = getInt(MAX_TOKEN_COUNT_KEY);
-    consumeAllTokens = getBoolean(CONSUME_ALL_TOKENS_KEY, false);
+  /** Creates a new LimitTokenCountFilterFactory */
+  public LimitTokenCountFilterFactory(Map<String, String> args) {
+    super(args);
+    maxTokenCount = requireInt(args, MAX_TOKEN_COUNT_KEY);
+    consumeAllTokens = getBoolean(args, CONSUME_ALL_TOKENS_KEY, false);
+    if (!args.isEmpty()) {
+      throw new IllegalArgumentException("Unknown parameters: " + args);
+    }
   }
 
   @Override

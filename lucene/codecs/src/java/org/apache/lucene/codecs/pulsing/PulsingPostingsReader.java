@@ -362,12 +362,7 @@ public class PulsingPostingsReader extends PostingsReaderBase {
 
     @Override
     public int advance(int target) throws IOException {
-      int doc;
-      while((doc=nextDoc()) != NO_MORE_DOCS) {
-        if (doc >= target)
-          return doc;
-      }
-      return docID = NO_MORE_DOCS;
+      return docID = slowAdvance(target);
     }
     
     @Override
@@ -474,13 +469,7 @@ public class PulsingPostingsReader extends PostingsReaderBase {
 
     @Override
     public int advance(int target) throws IOException {
-      int doc;
-      while((doc=nextDoc()) != NO_MORE_DOCS) {
-        if (doc >= target) {
-          return docID = doc;
-        }
-      }
-      return docID = NO_MORE_DOCS;
+      return docID = slowAdvance(target);
     }
 
     @Override

@@ -17,6 +17,8 @@ package org.apache.lucene.analysis.fa;
  * limitations under the License.
  */
 
+import java.util.Map;
+
 import org.apache.lucene.analysis.fa.PersianNormalizationFilter;
 import org.apache.lucene.analysis.TokenStream;
 import org.apache.lucene.analysis.util.AbstractAnalysisFactory;
@@ -25,7 +27,7 @@ import org.apache.lucene.analysis.util.TokenFilterFactory;
 
 /** 
  * Factory for {@link PersianNormalizationFilter}.
- * <pre class="prettyprint" >
+ * <pre class="prettyprint">
  * &lt;fieldType name="text_fanormal" class="solr.TextField" positionIncrementGap="100"&gt;
  *   &lt;analyzer&gt;
  *     &lt;charFilter class="solr.PersianCharFilterFactory"/&gt;
@@ -33,9 +35,17 @@ import org.apache.lucene.analysis.util.TokenFilterFactory;
  *     &lt;filter class="solr.PersianNormalizationFilterFactory"/&gt;
  *   &lt;/analyzer&gt;
  * &lt;/fieldType&gt;</pre>
- *
  */
 public class PersianNormalizationFilterFactory extends TokenFilterFactory implements MultiTermAwareComponent {
+  
+  /** Creates a new PersianNormalizationFilterFactory */
+  public PersianNormalizationFilterFactory(Map<String,String> args) {
+    super(args);
+    if (!args.isEmpty()) {
+      throw new IllegalArgumentException("Unknown parameters: " + args);
+    }
+  }
+  
   @Override
   public PersianNormalizationFilter create(TokenStream input) {
     return new PersianNormalizationFilter(input);

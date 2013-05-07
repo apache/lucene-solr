@@ -40,12 +40,11 @@ public class TestVersion extends LuceneTestCase {
       if (i + 1 == values.length) {
         assertSame("Last constant must be LUCENE_CURRENT", Version.LUCENE_CURRENT, values[i]);
       }
-      // TODO: Use isAnnotationPresent once bug in Java 8 is fixed (LUCENE-4808)
-      final Deprecated ann = Version.class.getField(values[i].name()).getAnnotation(Deprecated.class);
+      final boolean dep = Version.class.getField(values[i].name()).isAnnotationPresent(Deprecated.class);
       if (i + 2 != values.length) {
-        assertNotNull(values[i].name() + " should be deprecated", ann);
+        assertTrue(values[i].name() + " should be deprecated", dep);
       } else {
-        assertNull(values[i].name() + " should not be deprecated", ann);
+        assertFalse(values[i].name() + " should not be deprecated", dep);
       }
     }
   }

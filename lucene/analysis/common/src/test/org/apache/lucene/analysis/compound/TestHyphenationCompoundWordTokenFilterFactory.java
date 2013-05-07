@@ -19,35 +19,24 @@ package org.apache.lucene.analysis.compound;
 
 import java.io.Reader;
 import java.io.StringReader;
-import java.util.HashMap;
-import java.util.Map;
 
-import org.apache.lucene.analysis.BaseTokenStreamTestCase;
 import org.apache.lucene.analysis.MockTokenizer;
 import org.apache.lucene.analysis.TokenStream;
-import org.apache.lucene.analysis.Tokenizer;
-import org.apache.lucene.analysis.util.ClasspathResourceLoader;
-import org.apache.lucene.analysis.util.ResourceLoader;
+import org.apache.lucene.analysis.util.BaseTokenStreamFactoryTestCase;
 
 /**
  * Simple tests to ensure the Hyphenation compound filter factory is working.
  */
-public class TestHyphenationCompoundWordTokenFilterFactory extends BaseTokenStreamTestCase {
+public class TestHyphenationCompoundWordTokenFilterFactory extends BaseTokenStreamFactoryTestCase {
   /**
    * Ensure the factory works with hyphenation grammar+dictionary: using default options.
    */
   public void testHyphenationWithDictionary() throws Exception {
     Reader reader = new StringReader("min veninde som er lidt af en læsehest");
-    Tokenizer tokenizer = new MockTokenizer(reader, MockTokenizer.WHITESPACE, false);
-    HyphenationCompoundWordTokenFilterFactory factory = new HyphenationCompoundWordTokenFilterFactory();
-    ResourceLoader loader = new ClasspathResourceLoader(getClass());
-    Map<String,String> args = new HashMap<String,String>();
-    args.put("hyphenator", "da_UTF8.xml");
-    args.put("dictionary", "da_compoundDictionary.txt");
-    factory.setLuceneMatchVersion(TEST_VERSION_CURRENT);
-    factory.init(args);
-    factory.inform(loader);
-    TokenStream stream = factory.create(tokenizer);
+    TokenStream stream = new MockTokenizer(reader, MockTokenizer.WHITESPACE, false);
+    stream = tokenFilterFactory("HyphenationCompoundWord", 
+        "hyphenator", "da_UTF8.xml",
+        "dictionary", "da_compoundDictionary.txt").create(stream);
     
     assertTokenStreamContents(stream, 
         new String[] { "min", "veninde", "som", "er", "lidt", "af", "en", "læsehest", "læse", "hest" },
@@ -62,20 +51,26 @@ public class TestHyphenationCompoundWordTokenFilterFactory extends BaseTokenStre
    */
   public void testHyphenationOnly() throws Exception {
     Reader reader = new StringReader("basketballkurv");
-    Tokenizer tokenizer = new MockTokenizer(reader, MockTokenizer.WHITESPACE, false);
-    HyphenationCompoundWordTokenFilterFactory factory = new HyphenationCompoundWordTokenFilterFactory();
-    ResourceLoader loader = new ClasspathResourceLoader(getClass());
-    Map<String,String> args = new HashMap<String,String>();
-    args.put("hyphenator", "da_UTF8.xml");
-    args.put("minSubwordSize", "2");
-    args.put("maxSubwordSize", "4");
-    factory.setLuceneMatchVersion(TEST_VERSION_CURRENT);
-    factory.init(args);
-    factory.inform(loader);
-    TokenStream stream = factory.create(tokenizer);
+    TokenStream stream = new MockTokenizer(reader, MockTokenizer.WHITESPACE, false);
+    stream = tokenFilterFactory("HyphenationCompoundWord", 
+        "hyphenator", "da_UTF8.xml",
+        "minSubwordSize", "2",
+        "maxSubwordSize", "4").create(stream);
     
     assertTokenStreamContents(stream,
         new String[] { "basketballkurv", "ba", "sket", "bal", "ball", "kurv" }
     );
+  }
+  
+  /** Test that bogus arguments result in exception */
+  public void testBogusArguments() throws Exception {
+    try {
+      tokenFilterFactory("HyphenationCompoundWord", 
+          "hyphenator", "da_UTF8.xml",
+          "bogusArg", "bogusValue");
+      fail();
+    } catch (IllegalArgumentException expected) {
+      assertTrue(expected.getMessage().contains("Unknown parameters"));
+    }
   }
 }

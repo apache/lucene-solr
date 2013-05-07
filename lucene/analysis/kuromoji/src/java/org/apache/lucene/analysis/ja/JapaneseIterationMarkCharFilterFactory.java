@@ -39,23 +39,24 @@ import java.util.Map;
 public class JapaneseIterationMarkCharFilterFactory extends CharFilterFactory implements MultiTermAwareComponent {
 
   private static final String NORMALIZE_KANJI_PARAM = "normalizeKanji";
-
   private static final String NORMALIZE_KANA_PARAM = "normalizeKana";
 
-  private boolean normalizeKanji = true;
-
-  private boolean normalizeKana = true;
+  private final boolean normalizeKanji;
+  private final boolean normalizeKana;
+  
+  /** Creates a new JapaneseIterationMarkCharFilterFactory */
+  public JapaneseIterationMarkCharFilterFactory(Map<String,String> args) {
+    super(args);
+    normalizeKanji = getBoolean(args, NORMALIZE_KANJI_PARAM, JapaneseIterationMarkCharFilter.NORMALIZE_KANJI_DEFAULT);
+    normalizeKana = getBoolean(args, NORMALIZE_KANA_PARAM, JapaneseIterationMarkCharFilter.NORMALIZE_KANA_DEFAULT);
+    if (!args.isEmpty()) {
+      throw new IllegalArgumentException("Unknown parameters: " + args);
+    }
+  }
 
   @Override
   public CharFilter create(Reader input) {
     return new JapaneseIterationMarkCharFilter(input, normalizeKanji, normalizeKana);
-  }
-
-  @Override
-  public void init(Map<String, String> args) {
-    super.init(args);
-    normalizeKanji = getBoolean(NORMALIZE_KANJI_PARAM, JapaneseIterationMarkCharFilter.NORMALIZE_KANJI_DEFAULT);
-    normalizeKana = getBoolean(NORMALIZE_KANA_PARAM, JapaneseIterationMarkCharFilter.NORMALIZE_KANA_DEFAULT);
   }
 
   @Override

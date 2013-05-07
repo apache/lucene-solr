@@ -59,7 +59,7 @@ public abstract class SearchEquivalenceTestBase extends LuceneTestCase {
     directory = newDirectory();
     stopword = "" + randomChar();
     CharacterRunAutomaton stopset = new CharacterRunAutomaton(BasicAutomata.makeString(stopword));
-    analyzer = new MockAnalyzer(random, MockTokenizer.WHITESPACE, false, stopset, true);
+    analyzer = new MockAnalyzer(random, MockTokenizer.WHITESPACE, false, stopset);
     RandomIndexWriter iw = new RandomIndexWriter(random, directory, analyzer);
     Document doc = new Document();
     Field id = new StringField("id", "", Field.Store.NO);

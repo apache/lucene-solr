@@ -268,6 +268,10 @@ final class ShardLeaderElectionContext extends ShardLeaderElectionContextBase {
         .getClusterState();
     Map<String,Slice> slices = clusterState.getSlicesMap(collection);
     Slice slice = slices.get(shardId);
+    if (!slice.getState().equals(Slice.ACTIVE)) {
+      //Return false if the Slice is not active yet.
+      return false;
+    }
     Map<String,Replica> replicasMap = slice.getReplicasMap();
     for (Map.Entry<String,Replica> shard : replicasMap.entrySet()) {
       String state = shard.getValue().getStr(ZkStateReader.STATE_PROP);

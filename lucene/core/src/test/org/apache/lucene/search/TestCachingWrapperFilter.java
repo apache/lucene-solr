@@ -80,7 +80,7 @@ public class TestCachingWrapperFilter extends LuceneTestCase {
     CachingWrapperFilter cacher = new CachingWrapperFilter(filter);
 
     // the caching filter should return the empty set constant
-    assertSame(DocIdSet.EMPTY_DOCIDSET, cacher.getDocIdSet(context, context.reader().getLiveDocs()));
+    assertNull(cacher.getDocIdSet(context, context.reader().getLiveDocs()));
     
     reader.close();
     dir.close();
@@ -108,7 +108,7 @@ public class TestCachingWrapperFilter extends LuceneTestCase {
     CachingWrapperFilter cacher = new CachingWrapperFilter(filter);
 
     // the caching filter should return the empty set constant
-    assertSame(DocIdSet.EMPTY_DOCIDSET, cacher.getDocIdSet(context, context.reader().getLiveDocs()));
+    assertNull(cacher.getDocIdSet(context, context.reader().getLiveDocs()));
     
     reader.close();
     dir.close();
@@ -120,13 +120,20 @@ public class TestCachingWrapperFilter extends LuceneTestCase {
     final CachingWrapperFilter cacher = new CachingWrapperFilter(filter);
     final DocIdSet originalSet = filter.getDocIdSet(context, context.reader().getLiveDocs());
     final DocIdSet cachedSet = cacher.getDocIdSet(context, context.reader().getLiveDocs());
-    assertTrue(cachedSet.isCacheable());
-    assertEquals(shouldCacheable, originalSet.isCacheable());
-    //System.out.println("Original: "+originalSet.getClass().getName()+" -- cached: "+cachedSet.getClass().getName());
-    if (originalSet.isCacheable()) {
-      assertEquals("Cached DocIdSet must be of same class like uncached, if cacheable", originalSet.getClass(), cachedSet.getClass());
+    if (originalSet == null) {
+      assertNull(cachedSet);
+    }
+    if (cachedSet == null) {
+      assertTrue(originalSet == null || originalSet.iterator() == null);
     } else {
-      assertTrue("Cached DocIdSet must be an FixedBitSet if the original one was not cacheable", cachedSet instanceof FixedBitSet || cachedSet == DocIdSet.EMPTY_DOCIDSET);
+      assertTrue(cachedSet.isCacheable());
+      assertEquals(shouldCacheable, originalSet.isCacheable());
+      //System.out.println("Original: "+originalSet.getClass().getName()+" -- cached: "+cachedSet.getClass().getName());
+      if (originalSet.isCacheable()) {
+        assertEquals("Cached DocIdSet must be of same class like uncached, if cacheable", originalSet.getClass(), cachedSet.getClass());
+      } else {
+        assertTrue("Cached DocIdSet must be an FixedBitSet if the original one was not cacheable", cachedSet instanceof FixedBitSet || cachedSet == null);
+      }
     }
   }
   
@@ -192,6 +199,7 @@ public class TestCachingWrapperFilter extends LuceneTestCase {
     CachingWrapperFilter filter = new CachingWrapperFilter(startFilter);
 
     docs = searcher.search(new MatchAllDocsQuery(), filter, 1);
+    assertTrue(filter.sizeInBytes() > 0);
 
     assertEquals("[query + filter] Should find a hit...", 1, docs.totalHits);
 

@@ -75,9 +75,9 @@ import org.apache.lucene.util.fst.Util;
  * example, if you use an analyzer removing stop words, 
  * then the partial text "ghost chr..." could see the
  * suggestion "The Ghost of Christmas Past". Note that
- * your {@code StopFilter} instance must NOT preserve
- * position increments for this example to work, so you should call
- * {@code setEnablePositionIncrements(false)} on it.
+ * position increments MUST NOT be preserved for this example
+ * to work, so you should call
+ * {@link #setPreservePositionIncrements(boolean) setPreservePositionIncrements(false)}.
  *
  * <p>
  * If SynonymFilter is used to map wifi and wireless network to
@@ -185,6 +185,9 @@ public class AnalyzingSuggester extends Lookup {
 
   private static final int PAYLOAD_SEP = '\u001f';
 
+  /** Whether position holes should appear in the automaton. */
+  private boolean preservePositionIncrements;
+
   /**
    * Calls {@link #AnalyzingSuggester(Analyzer,Analyzer,int,int,int)
    * AnalyzingSuggester(analyzer, analyzer, EXACT_FIRST |
@@ -241,6 +244,13 @@ public class AnalyzingSuggester extends Lookup {
       throw new IllegalArgumentException("maxGraphExpansions must -1 (no limit) or > 0 (got: " + maxGraphExpansions + ")");
     }
     this.maxGraphExpansions = maxGraphExpansions;
+    preservePositionIncrements = true;
+  }
+
+  /** Whether to take position holes (position increment > 1) into account when
+   *  building the automaton, <code>true</code> by default. */
+  public void setPreservePositionIncrements(boolean preservePositionIncrements) {
+    this.preservePositionIncrements = preservePositionIncrements;
   }
 
   /** Returns byte size of the underlying FST. */
@@ -327,13 +337,16 @@ public class AnalyzingSuggester extends Lookup {
   }
 
   TokenStreamToAutomaton getTokenStreamToAutomaton() {
+    final TokenStreamToAutomaton tsta;
     if (preserveSep) {
-      return new EscapingTokenStreamToAutomaton();
+      tsta = new EscapingTokenStreamToAutomaton();
     } else {
       // When we're not preserving sep, we don't steal 0xff
       // byte, so we don't need to do any escaping:
-      return new TokenStreamToAutomaton();
+      tsta = new TokenStreamToAutomaton();
     }
+    tsta.setPreservePositionIncrements(preservePositionIncrements);
+    return tsta;
   }
   
   private static class AnalyzingComparator implements Comparator<BytesRef> {

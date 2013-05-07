@@ -213,6 +213,7 @@ public abstract class TermsEnum implements BytesRefIterator {
     return new TermState() {
       @Override
       public void copyFrom(TermState other) {
+        throw new UnsupportedOperationException();
       }
     };
   }

@@ -29,102 +29,107 @@ import org.apache.lucene.analysis.MockTokenizer;
 import org.apache.lucene.analysis.TokenStream;
 import org.apache.lucene.analysis.Tokenizer;
 import org.apache.lucene.analysis.util.ClasspathResourceLoader;
-import org.apache.lucene.util.LuceneTestCase.Slow;
 
-
-/**
- *
- */
-@Slow
 public class TestPhoneticFilterFactory extends BaseTokenStreamTestCase {
   
-  private static final int REPEATS = 100000;
-
   /**
    * Case: default
    */
-  public void testFactory() throws IOException {
-    Map<String,String> args = new HashMap<String, String>();
-    
-    PhoneticFilterFactory ff = new PhoneticFilterFactory();
-    
-    args.put( PhoneticFilterFactory.ENCODER, "Metaphone" );
-    ff.init( args );
-    ff.inform(new ClasspathResourceLoader(ff.getClass()));
-    assertTrue( ff.getEncoder() instanceof Metaphone );
-    assertTrue( ff.inject ); // default
-
-    args.put( PhoneticFilterFactory.INJECT, "false" );
-    ff.init( args );
-    ff.inform(new ClasspathResourceLoader(ff.getClass()));
-    assertFalse( ff.inject );
-
-    args.put( PhoneticFilterFactory.MAX_CODE_LENGTH, "2");
-    ff.init(args);
-    ff.inform(new ClasspathResourceLoader(ff.getClass()));
-    assertEquals(2, ((Metaphone) ff.getEncoder()).getMaxCodeLen());
+  public void testFactoryDefaults() throws IOException {
+    Map<String,String> args = new HashMap<String,String>();
+    args.put(PhoneticFilterFactory.ENCODER, "Metaphone");
+    PhoneticFilterFactory factory = new PhoneticFilterFactory(args);
+    factory.inform(new ClasspathResourceLoader(factory.getClass()));
+    assertTrue(factory.getEncoder() instanceof Metaphone);
+    assertTrue(factory.inject); // default
+  }
+  
+  public void testInjectFalse() throws IOException {
+    Map<String,String> args = new HashMap<String,String>();
+    args.put(PhoneticFilterFactory.ENCODER, "Metaphone");
+    args.put(PhoneticFilterFactory.INJECT, "false");
+    PhoneticFilterFactory factory = new PhoneticFilterFactory(args);
+    factory.inform(new ClasspathResourceLoader(factory.getClass()));
+    assertFalse(factory.inject);
+  }
+  
+  public void testMaxCodeLength() throws IOException {
+    Map<String,String> args = new HashMap<String,String>();
+    args.put(PhoneticFilterFactory.ENCODER, "Metaphone");
+    args.put(PhoneticFilterFactory.MAX_CODE_LENGTH, "2");
+    PhoneticFilterFactory factory = new PhoneticFilterFactory(args);
+    factory.inform(new ClasspathResourceLoader(factory.getClass()));
+    assertEquals(2, ((Metaphone) factory.getEncoder()).getMaxCodeLen());
   }
   
   /**
    * Case: Failures and Exceptions
    */
-  public void testFactoryCaseFailure() throws IOException {
-    Map<String,String> args = new HashMap<String, String>();
-    
-    PhoneticFilterFactory ff = new PhoneticFilterFactory();
-    ClasspathResourceLoader loader = new ClasspathResourceLoader(ff.getClass());
-
+  public void testMissingEncoder() throws IOException {
     try {
-      ff.init( args );
-      ff.inform( loader );
-      fail( "missing encoder parameter" );
+      new PhoneticFilterFactory(new HashMap<String,String>());
+      fail();
+    } catch (IllegalArgumentException expected) {
+      assertTrue(expected.getMessage().contains("Configuration Error: missing parameter 'encoder'"));
     }
-    catch( Exception ex ) {}
-    args.put( PhoneticFilterFactory.ENCODER, "XXX" );
+  }
+  
+  public void testUnknownEncoder() throws IOException {
     try {
-      ff.init( args );
-      ff.inform( loader );
-      fail( "unknown encoder parameter" );
+      Map<String,String> args = new HashMap<String,String>();
+      args.put("encoder", "XXX");
+      PhoneticFilterFactory factory = new PhoneticFilterFactory(args);
+      factory.inform(new ClasspathResourceLoader(factory.getClass()));
+      fail();
+    } catch (IllegalArgumentException expected) {
+      assertTrue(expected.getMessage().contains("Error loading encoder"));
     }
-    catch( Exception ex ) {}
-    args.put( PhoneticFilterFactory.ENCODER, "org.apache.commons.codec.language.NonExistence" );
+  }
+  
+  public void testUnknownEncoderReflection() throws IOException {
     try {
-      ff.init( args );
-      ff.inform( loader );
-      fail( "unknown encoder parameter" );
+      Map<String,String> args = new HashMap<String,String>();
+      args.put("encoder", "org.apache.commons.codec.language.NonExistence");
+      PhoneticFilterFactory factory = new PhoneticFilterFactory(args);
+      factory.inform(new ClasspathResourceLoader(factory.getClass()));
+      fail();
+    } catch (IllegalArgumentException expected) {
+      assertTrue(expected.getMessage().contains("Error loading encoder"));
     }
-    catch( Exception ex ) {}
   }
   
   /**
    * Case: Reflection
    */
-  public void testFactoryCaseReflection() throws IOException {
+  public void testFactoryReflection() throws IOException {
     Map<String,String> args = new HashMap<String, String>();
-    
-    PhoneticFilterFactory ff = new PhoneticFilterFactory();
-    ClasspathResourceLoader loader = new ClasspathResourceLoader(ff.getClass());
+    args.put(PhoneticFilterFactory.ENCODER, "org.apache.commons.codec.language.Metaphone");
+    PhoneticFilterFactory factory = new PhoneticFilterFactory(args);
+    factory.inform(new ClasspathResourceLoader(factory.getClass()));
+    assertTrue(factory.getEncoder() instanceof Metaphone);
+    assertTrue(factory.inject); // default
+  }
 
-    args.put( PhoneticFilterFactory.ENCODER, "org.apache.commons.codec.language.Metaphone" );
-    ff.init( args );
-    ff.inform( loader );
-    assertTrue( ff.getEncoder() instanceof Metaphone );
-    assertTrue( ff.inject ); // default
-
-    // we use "Caverphone2" as it is registered in the REGISTRY as Caverphone,
-    // so this effectively tests reflection without package name
-    args.put( PhoneticFilterFactory.ENCODER, "Caverphone2" );
-    ff.init( args );
-    ff.inform( loader );
-    assertTrue( ff.getEncoder() instanceof Caverphone2 );
-    assertTrue( ff.inject ); // default
-    
-    // cross check with registry
-    args.put( PhoneticFilterFactory.ENCODER, "Caverphone" );
-    ff.init( args );
-    ff.inform( loader );
-    assertTrue( ff.getEncoder() instanceof Caverphone2 );
-    assertTrue( ff.inject ); // default
+  /** 
+   * we use "Caverphone2" as it is registered in the REGISTRY as Caverphone,
+   * so this effectively tests reflection without package name
+   */
+  public void testFactoryReflectionCaverphone2() throws IOException {
+    Map<String,String> args = new HashMap<String, String>();
+    args.put(PhoneticFilterFactory.ENCODER, "Caverphone2");
+    PhoneticFilterFactory factory = new PhoneticFilterFactory(args);
+    factory.inform(new ClasspathResourceLoader(factory.getClass()));
+    assertTrue(factory.getEncoder() instanceof Caverphone2);
+    assertTrue(factory.inject); // default
+  }
+  
+  public void testFactoryReflectionCaverphone() throws IOException {
+    Map<String,String> args = new HashMap<String, String>();
+    args.put(PhoneticFilterFactory.ENCODER, "Caverphone");
+    PhoneticFilterFactory factory = new PhoneticFilterFactory(args);
+    factory.inform(new ClasspathResourceLoader(factory.getClass()));
+    assertTrue(factory.getEncoder() instanceof Caverphone2);
+    assertTrue(factory.inject); // default
   }
   
   public void testAlgorithms() throws Exception {
@@ -161,37 +166,28 @@ public class TestPhoneticFilterFactory extends BaseTokenStreamTestCase {
         new String[] { "67", "862", "67", "862" });
   }
   
+  /** Test that bogus arguments result in exception */
+  public void testBogusArguments() throws Exception {
+    try {
+      new PhoneticFilterFactory(new HashMap<String,String>() {{
+        put("encoder", "Metaphone");
+        put("bogusArg", "bogusValue");
+      }});
+      fail();
+    } catch (IllegalArgumentException expected) {
+      assertTrue(expected.getMessage().contains("Unknown parameters"));
+    }
+  }
+  
   static void assertAlgorithm(String algName, String inject, String input,
       String[] expected) throws Exception {
     Tokenizer tokenizer = new MockTokenizer(new StringReader(input), MockTokenizer.WHITESPACE, false);
     Map<String,String> args = new HashMap<String,String>();
     args.put("encoder", algName);
     args.put("inject", inject);
-    PhoneticFilterFactory factory = new PhoneticFilterFactory();
-    factory.init(args);
+    PhoneticFilterFactory factory = new PhoneticFilterFactory(args);
     factory.inform(new ClasspathResourceLoader(factory.getClass()));
     TokenStream stream = factory.create(tokenizer);
     assertTokenStreamContents(stream, expected);
   }
-  
-  public void testSpeed() throws Exception {
-    checkSpeedEncoding("Metaphone", "easgasg", "ESKS");
-    checkSpeedEncoding("DoubleMetaphone", "easgasg", "ASKS");
-    checkSpeedEncoding("Soundex", "easgasg", "E220");
-    checkSpeedEncoding("RefinedSoundex", "easgasg", "E034034");
-    checkSpeedEncoding("Caverphone", "Carlene", "KLN1111111");
-    checkSpeedEncoding("ColognePhonetic", "Schmitt", "862");
-  }
-  
-  private void checkSpeedEncoding(String encoder, String toBeEncoded, String estimated) throws Exception {
-    long start = System.currentTimeMillis();
-    for ( int i=0; i<REPEATS; i++) {
-        assertAlgorithm(encoder, "false", toBeEncoded,
-                new String[] { estimated });
-    }
-    long duration = System.currentTimeMillis()-start;
-    if (VERBOSE)
-      System.out.println(encoder + " encodings per msec: "+(REPEATS/duration));
-  }
-  
 }

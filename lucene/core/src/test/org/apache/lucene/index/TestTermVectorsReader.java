@@ -229,7 +229,7 @@ public class TestTermVectorsReader extends LuceneTestCase {
         docsEnum = _TestUtil.docs(random(), termsEnum, null, docsEnum, DocsEnum.FLAG_NONE);
         assertNotNull(docsEnum);
         int doc = docsEnum.docID();
-        assertTrue(doc == -1 || doc == DocIdSetIterator.NO_MORE_DOCS);
+        assertEquals(-1, doc);
         assertTrue(docsEnum.nextDoc() != DocIdSetIterator.NO_MORE_DOCS);
         assertEquals(DocIdSetIterator.NO_MORE_DOCS, docsEnum.nextDoc());
       }
@@ -256,7 +256,7 @@ public class TestTermVectorsReader extends LuceneTestCase {
       dpEnum = termsEnum.docsAndPositions(null, dpEnum);
       assertNotNull(dpEnum);
       int doc = dpEnum.docID();
-      assertTrue(doc == -1 || doc == DocIdSetIterator.NO_MORE_DOCS);
+      assertEquals(-1, doc);
       assertTrue(dpEnum.nextDoc() != DocIdSetIterator.NO_MORE_DOCS);
       assertEquals(dpEnum.freq(), positions[i].length);
       for (int j = 0; j < positions[i].length; j++) {
@@ -266,7 +266,7 @@ public class TestTermVectorsReader extends LuceneTestCase {
 
       dpEnum = termsEnum.docsAndPositions(null, dpEnum);
       doc = dpEnum.docID();
-      assertTrue(doc == -1 || doc == DocIdSetIterator.NO_MORE_DOCS);
+      assertEquals(-1, doc);
       assertTrue(dpEnum.nextDoc() != DocIdSetIterator.NO_MORE_DOCS);
       assertNotNull(dpEnum);
       assertEquals(dpEnum.freq(), positions[i].length);

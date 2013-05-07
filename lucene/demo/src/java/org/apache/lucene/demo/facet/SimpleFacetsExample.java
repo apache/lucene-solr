@@ -119,7 +119,10 @@ public class SimpleFacetsExample {
 
     // Now user drills down on Publish Date/2010:
     FacetSearchParams fsp = new FacetSearchParams(new CountFacetRequest(new CategoryPath("Author"), 10));
-    DrillDownQuery q = new DrillDownQuery(fsp.indexingParams, new MatchAllDocsQuery());
+
+    // Passing no baseQuery means we drill down on all
+    // documents ("browse only"):
+    DrillDownQuery q = new DrillDownQuery(fsp.indexingParams);
     q.add(new CategoryPath("Publish Date/2010", '/'));
     FacetsCollector fc = FacetsCollector.create(fsp, searcher.getIndexReader(), taxoReader);
     searcher.search(q, fc);

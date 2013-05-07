@@ -25,6 +25,7 @@ import org.apache.lucene.util.LuceneTestCase.Slow;
 import org.apache.solr.client.solrj.SolrQuery;
 import org.apache.solr.client.solrj.SolrServerException;
 import org.apache.solr.client.solrj.embedded.JettySolrRunner;
+import org.apache.solr.client.solrj.impl.CloudSolrServer;
 import org.apache.solr.client.solrj.impl.HttpSolrServer;
 import org.apache.solr.client.solrj.request.QueryRequest;
 import org.apache.solr.client.solrj.request.UpdateRequest;
@@ -149,6 +150,14 @@ public class AliasIntegrationTest extends AbstractFullDistribZkTestBase {
     
     // create alias, collection2 first because it's not on every node
     createAlias("testalias", "collection2,collection1");
+    
+    // search with new cloud client
+    CloudSolrServer cloudSolrServer = new CloudSolrServer(zkServer.getZkAddress());
+    query = new SolrQuery("*:*");
+    query.set("collection", "testalias");
+    res = cloudSolrServer.query(query);
+    cloudSolrServer.shutdown();
+    assertEquals(5, res.getResults().getNumFound());
     
     // search for alias with random non cloud client
     query = new SolrQuery("*:*");

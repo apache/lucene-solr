@@ -275,6 +275,7 @@ public class TestIndexWriterOnDiskFull extends LuceneTestCase {
           String testName = null;
           
           if (0 == x) {
+            dir.setRandomIOExceptionRateOnOpen(random().nextDouble()*0.01);
             thisDiskFree = diskFree;
             if (diskRatio >= 2.0) {
               rate /= 2;
@@ -288,6 +289,7 @@ public class TestIndexWriterOnDiskFull extends LuceneTestCase {
             if (VERBOSE)
               testName = "disk full test " + methodName + " with disk full at " + diskFree + " bytes";
           } else {
+            dir.setRandomIOExceptionRateOnOpen(0.0);
             thisDiskFree = 0;
             rate = 0.0;
             if (VERBOSE)
@@ -363,6 +365,7 @@ public class TestIndexWriterOnDiskFull extends LuceneTestCase {
           // we succeeded, we see all docs added, and if we
           // failed, we see either all docs or no docs added
           // (transactional semantics):
+          dir.setRandomIOExceptionRateOnOpen(0.0);
           try {
             reader = DirectoryReader.open(dir);
           } catch (IOException e) {
@@ -432,6 +435,7 @@ public class TestIndexWriterOnDiskFull extends LuceneTestCase {
         // Make sure we don't hit disk full during close below:
         dir.setMaxSizeInBytes(0);
         dir.setRandomIOExceptionRate(0.0);
+        dir.setRandomIOExceptionRateOnOpen(0.0);
         
         writer.close();
         

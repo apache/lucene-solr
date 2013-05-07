@@ -82,11 +82,11 @@ public class LatLonType extends AbstractSubTypeFieldType implements SpatialQuery
         throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, e);
       }
       //latitude
-      SchemaField lat = subField(field, i);
+      SchemaField lat = subField(field, i, schema);
       f.add(lat.createField(String.valueOf(latLon[LAT]), lat.indexed() && !lat.omitNorms() ? boost : 1f));
       i++;
       //longitude
-      SchemaField lon = subField(field, i);
+      SchemaField lon = subField(field, i, schema);
       f.add(lon.createField(String.valueOf(latLon[LON]), lon.indexed() && !lon.omitNorms() ? boost : 1f));
 
     }
@@ -114,7 +114,7 @@ public class LatLonType extends AbstractSubTypeFieldType implements SpatialQuery
     }
     BooleanQuery result = new BooleanQuery(true);
     for (int i = 0; i < dimension; i++) {
-      SchemaField subSF = subField(field, i);
+      SchemaField subSF = subField(field, i, parser.getReq().getSchema());
       // points must currently be ordered... should we support specifying any two opposite corner points?
       result.add(subSF.getType().getRangeQuery(parser, subSF, p1[i], p2[i], minInclusive, maxInclusive), BooleanClause.Occur.MUST);
     }
@@ -134,7 +134,7 @@ public class LatLonType extends AbstractSubTypeFieldType implements SpatialQuery
     }
     BooleanQuery bq = new BooleanQuery(true);
     for (int i = 0; i < dimension; i++) {
-      SchemaField sf = subField(field, i);
+      SchemaField sf = subField(field, i, parser.getReq().getSchema());
       Query tq = sf.getType().getFieldQuery(parser, sf, p1[i]);
       bq.add(tq, BooleanClause.Occur.MUST);
     }
@@ -173,9 +173,11 @@ public class LatLonType extends AbstractSubTypeFieldType implements SpatialQuery
        lon2Max = 180;
     }
     
+    IndexSchema schema = parser.getReq().getSchema();
+    
     // Now that we've figured out the ranges, build them!
-    SchemaField latField = subField(options.field, LAT);
-    SchemaField lonField = subField(options.field, LON);
+    SchemaField latField = subField(options.field, LAT, schema);
+    SchemaField lonField = subField(options.field, LON, schema);
 
     SpatialDistanceQuery spatial = new SpatialDistanceQuery();
 
@@ -240,7 +242,7 @@ public class LatLonType extends AbstractSubTypeFieldType implements SpatialQuery
   public ValueSource getValueSource(SchemaField field, QParser parser) {
     ArrayList<ValueSource> vs = new ArrayList<ValueSource>(2);
     for (int i = 0; i < 2; i++) {
-      SchemaField sub = subField(field, i);
+      SchemaField sub = subField(field, i, parser.getReq().getSchema());
       vs.add(sub.getType().getValueSource(sub, parser));
     }
     return new LatLonValueSource(field, vs);

@@ -71,14 +71,17 @@ public class ReversedWildcardFilterFactory extends TokenFilterFactory {
   private int minTrailing;
   private float maxFractionAsterisk;
 
-  @Override
-  public void init(Map<String, String> args) {
-    super.init(args);
-    withOriginal = getBoolean("withOriginal", true);
-    maxPosAsterisk = getInt("maxPosAsterisk", 2);
-    maxPosQuestion = getInt("maxPosQuestion", 1);
-    minTrailing = getInt("minTrailing", 2);
-    maxFractionAsterisk = getFloat("maxFractionAsterisk", 0.0f);
+  /** Creates a new ReversedWildcardFilterFactory */
+  public ReversedWildcardFilterFactory(Map<String,String> args) {
+    super(args);
+    withOriginal = getBoolean(args, "withOriginal", true);
+    maxPosAsterisk = getInt(args, "maxPosAsterisk", 2);
+    maxPosQuestion = getInt(args, "maxPosQuestion", 1);
+    minTrailing = getInt(args, "minTrailing", 2);
+    maxFractionAsterisk = getFloat(args, "maxFractionAsterisk", 0.0f);
+    if (!args.isEmpty()) {
+      throw new IllegalArgumentException("Unknown parameters: " + args);
+    }
   }
 
 
@@ -132,14 +135,5 @@ public class ReversedWildcardFilterFactory extends TokenFilterFactory {
   
   public char getMarkerChar() {
     return markerChar;
-  }
-  
-  protected float getFloat(String name, float defValue) {
-    String val = args.get(name);
-    if (val == null) {
-      return defValue;
-    } else {
-      return Float.parseFloat(val);
-    }
   }
 }

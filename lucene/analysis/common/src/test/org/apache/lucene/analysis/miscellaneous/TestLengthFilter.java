@@ -17,29 +17,23 @@ package org.apache.lucene.analysis.miscellaneous;
  * limitations under the License.
  */
 
-import org.apache.lucene.analysis.*;
-import org.apache.lucene.analysis.core.KeywordTokenizer;
-
 import java.io.IOException;
 import java.io.Reader;
 import java.io.StringReader;
 
+import org.apache.lucene.analysis.Analyzer;
+import org.apache.lucene.analysis.BaseTokenStreamTestCase;
+import org.apache.lucene.analysis.MockTokenizer;
+import org.apache.lucene.analysis.TokenStream;
+import org.apache.lucene.analysis.Tokenizer;
+import org.apache.lucene.analysis.core.KeywordTokenizer;
+
 public class TestLengthFilter extends BaseTokenStreamTestCase {
-  
-  public void testFilterNoPosIncr() throws Exception {
-    TokenStream stream = new MockTokenizer(
-        new StringReader("short toolong evenmuchlongertext a ab toolong foo"), MockTokenizer.WHITESPACE, false);
-    LengthFilter filter = new LengthFilter(false, stream, 2, 6);
-    assertTokenStreamContents(filter,
-      new String[]{"short", "ab", "foo"},
-      new int[]{1, 1, 1}
-    );
-  }
 
   public void testFilterWithPosIncr() throws Exception {
     TokenStream stream = new MockTokenizer(
         new StringReader("short toolong evenmuchlongertext a ab toolong foo"), MockTokenizer.WHITESPACE, false);
-    LengthFilter filter = new LengthFilter(true, stream, 2, 6);
+    LengthFilter filter = new LengthFilter(TEST_VERSION_CURRENT, stream, 2, 6);
     assertTokenStreamContents(filter,
       new String[]{"short", "ab", "foo"},
       new int[]{1, 4, 2}
@@ -51,7 +45,7 @@ public class TestLengthFilter extends BaseTokenStreamTestCase {
       @Override
       protected TokenStreamComponents createComponents(String fieldName, Reader reader) {
         Tokenizer tokenizer = new KeywordTokenizer(reader);
-        return new TokenStreamComponents(tokenizer, new LengthFilter(true, tokenizer, 0, 5));
+        return new TokenStreamComponents(tokenizer, new LengthFilter(TEST_VERSION_CURRENT, tokenizer, 0, 5));
       }
     };
     checkOneTermReuse(a, "", "");

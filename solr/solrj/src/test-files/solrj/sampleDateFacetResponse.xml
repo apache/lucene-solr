@@ -74,6 +74,7 @@
         <date name="end">2008-02-13T15:26:37Z</date>
         <int name="before">90</int>
         <int name="after">1</int>
+        <int name="between">11</int>
       </lst>
     </lst>
   </lst>

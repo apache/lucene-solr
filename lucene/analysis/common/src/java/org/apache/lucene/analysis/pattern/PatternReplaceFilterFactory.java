@@ -18,16 +18,15 @@ package org.apache.lucene.analysis.pattern;
  */
 
 import org.apache.lucene.analysis.TokenStream;
-import org.apache.lucene.analysis.pattern.PatternReplaceFilter;
 import org.apache.lucene.analysis.util.TokenFilterFactory;
 
+import java.util.Arrays;
 import java.util.Map;
 import java.util.regex.Pattern;
-import java.util.regex.PatternSyntaxException;
 
 /**
  * Factory for {@link PatternReplaceFilter}. 
- * <pre class="prettyprint" >
+ * <pre class="prettyprint">
  * &lt;fieldType name="text_ptnreplace" class="solr.TextField" positionIncrementGap="100"&gt;
  *   &lt;analyzer&gt;
  *     &lt;tokenizer class="solr.KeywordTokenizerFactory"/&gt;
@@ -39,34 +38,23 @@ import java.util.regex.PatternSyntaxException;
  * @see PatternReplaceFilter
  */
 public class PatternReplaceFilterFactory extends TokenFilterFactory {
-  Pattern p;
-  String replacement;
-  boolean all = true;
+  final Pattern pattern;
+  final String replacement;
+  final boolean replaceAll;
   
-  @Override
-  public void init(Map<String, String> args) {
-    super.init(args);
-    p = getPattern("pattern");
-    replacement = args.get("replacement");
-    
-    String r = args.get("replace");
-    if (null != r) {
-      if (r.equals("all")) {
-        all = true;
-      } else {
-        if (r.equals("first")) {
-          all = false;
-        } else {
-          throw new IllegalArgumentException
-            ("Configuration Error: 'replace' must be 'first' or 'all' in "
-             + this.getClass().getName());
-        }
-      }
+  /** Creates a new PatternReplaceFilterFactory */
+  public PatternReplaceFilterFactory(Map<String, String> args) {
+    super(args);
+    pattern = getPattern(args, "pattern");
+    replacement = get(args, "replacement");
+    replaceAll = "all".equals(get(args, "replace", Arrays.asList("all", "first"), "all"));
+    if (!args.isEmpty()) {
+      throw new IllegalArgumentException("Unknown parameters: " + args);
     }
-
   }
+
   @Override
   public PatternReplaceFilter create(TokenStream input) {
-    return new PatternReplaceFilter(input, p, replacement, all);
+    return new PatternReplaceFilter(input, pattern, replacement, replaceAll);
   }
 }

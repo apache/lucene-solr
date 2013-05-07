@@ -23,23 +23,27 @@ import org.apache.lucene.analysis.util.TokenizerFactory;
 import org.apache.lucene.util.AttributeSource.AttributeFactory;
 
 import java.io.Reader;
+import java.util.HashMap;
 import java.util.Map;
 
 /**
  * Factory for {@link LowerCaseTokenizer}. 
- * <pre class="prettyprint" >
+ * <pre class="prettyprint">
  * &lt;fieldType name="text_lwrcase" class="solr.TextField" positionIncrementGap="100"&gt;
  *   &lt;analyzer&gt;
  *     &lt;tokenizer class="solr.LowerCaseTokenizerFactory"/&gt;
  *   &lt;/analyzer&gt;
- * &lt;/fieldType&gt;</pre> 
- *
+ * &lt;/fieldType&gt;</pre>
  */
 public class LowerCaseTokenizerFactory extends TokenizerFactory implements MultiTermAwareComponent {
-  @Override
-  public void init(Map<String,String> args) {
-    super.init(args);
+  
+  /** Creates a new LowerCaseTokenizerFactory */
+  public LowerCaseTokenizerFactory(Map<String,String> args) {
+    super(args);
     assureMatchVersion();
+    if (!args.isEmpty()) {
+      throw new IllegalArgumentException("Unknown parameters: " + args);
+    }
   }
 
   @Override
@@ -49,9 +53,6 @@ public class LowerCaseTokenizerFactory extends TokenizerFactory implements Multi
 
   @Override
   public AbstractAnalysisFactory getMultiTermComponent() {
-    LowerCaseFilterFactory filt = new LowerCaseFilterFactory();
-    filt.setLuceneMatchVersion(luceneMatchVersion);
-    filt.init(args);
-    return filt;
+    return new LowerCaseFilterFactory(new HashMap<String,String>(getOriginalArgs()));
   }
 }

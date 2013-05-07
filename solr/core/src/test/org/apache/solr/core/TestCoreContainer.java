@@ -26,21 +26,33 @@ import java.util.ArrayList;
 import java.util.List;
 
 import javax.xml.parsers.ParserConfigurationException;
-import javax.xml.xpath.XPathExpressionException;
 
 import org.apache.commons.io.FileUtils;
 import org.apache.lucene.util.IOUtils;
 import org.apache.solr.SolrTestCaseJ4;
+import org.junit.AfterClass;
 import org.junit.BeforeClass;
-import org.junit.Ignore;
 import org.junit.Test;
 import org.xml.sax.SAXException;
 
 public class TestCoreContainer extends SolrTestCaseJ4 {
-  
+
+  private static String oldSolrHome;
+  private static final String SOLR_HOME_PROP = "solr.solr.home";
+
   @BeforeClass
   public static void beforeClass() throws Exception {
+    oldSolrHome = System.getProperty(SOLR_HOME_PROP);
     initCore("solrconfig.xml", "schema.xml");
+  }
+
+  @AfterClass
+  public static void afterClass() {
+    if (oldSolrHome != null) {
+      System.setProperty(SOLR_HOME_PROP, oldSolrHome);
+    } else {
+      System.clearProperty(SOLR_HOME_PROP);
+    }
   }
 
   private File solrHomeDirectory;
@@ -75,7 +87,7 @@ public class TestCoreContainer extends SolrTestCaseJ4 {
       CoreDescriptor descriptor2 = new CoreDescriptor(cores, "core2", "./collection1");
       SolrCore core2 = cores.create(descriptor2);
       
-      assertSame(core1.getSchema(), core2.getSchema());
+      assertSame(core1.getLatestSchema(), core2.getLatestSchema());
       
       core1.close();
       core2.close();
@@ -193,17 +205,19 @@ public class TestCoreContainer extends SolrTestCaseJ4 {
       assertEquals("cores not added?", 3, cores.getCoreNames().size());
       
       final File twoXml = new File(workDir, "2.solr.xml");
-      cores.transientCacheSize = 32;
 
       cores.persistFile(twoXml);
 
       assertXmlFile(twoXml, "/solr[@persistent='true']",
-          "/solr/cores[@defaultCoreName='collection1' and @transientCacheSize='32']",
+          "/solr/cores[@defaultCoreName='collection1']",
           "/solr/cores/core[@name='collection1' and @instanceDir='" + instDir
               + "']", "/solr/cores/core[@name='X' and @instanceDir='" + instDir
               + "' and @dataDir='" + dataX + "']",
           "/solr/cores/core[@name='Y' and @instanceDir='" + instY + "']",
           "3=count(/solr/cores/core)");
+
+      // Test for saving implicit properties, we should not do this.
+      assertXmlFile(twoXml, "/solr/cores/core[@name='X' and not(@solr.core.instanceDir) and not (@solr.core.configName)]");
 
       // delete a core, check persistence again
       assertNotNull("removing X returned null", cores.remove("X"));
@@ -213,9 +227,9 @@ public class TestCoreContainer extends SolrTestCaseJ4 {
       
       assertXmlFile(threeXml, "/solr[@persistent='true']",
           "/solr/cores[@defaultCoreName='collection1']",
-          "/solr/cores/core[@name='collection1' and @instanceDir='" + instDir
-              + "']", "/solr/cores/core[@name='Y' and @instanceDir='" + instY
-              + "']", "2=count(/solr/cores/core)");
+          "/solr/cores/core[@name='collection1' and @instanceDir='" + instDir + "']",
+          "/solr/cores/core[@name='Y' and @instanceDir='" + instY + "']",
+          "2=count(/solr/cores/core)");
       
       // sanity check that persisting w/o changes has no changes
       
@@ -238,42 +252,13 @@ public class TestCoreContainer extends SolrTestCaseJ4 {
     }
   }
   
-  public void assertXmlFile(final File file, String... xpath)
-      throws IOException, SAXException {
-    
-    try {
-      String xml = FileUtils.readFileToString(file, "UTF-8");
-      String results = h.validateXPath(xml, xpath);
-      if (null != results) {
-        String msg = "File XPath failure: file=" + file.getPath() + " xpath="
-            + results + "\n\nxml was: " + xml;
-        fail(msg);
-      }
-    } catch (XPathExpressionException e2) {
-      throw new RuntimeException("XPath is invalid", e2);
-    }
-  }
 
+  @Test
   public void testNoCores() throws IOException, ParserConfigurationException, SAXException {
     //create solrHome
     File solrHomeDirectory = new File(TEMP_DIR, this.getClass().getName()
         + "_noCores");
-    if (solrHomeDirectory.exists()) {
-      FileUtils.deleteDirectory(solrHomeDirectory);
-    }
-    assertTrue("Failed to mkdirs workDir", solrHomeDirectory.mkdirs());
-    try {
-      File solrXmlFile = new File(solrHomeDirectory, "solr.xml");
-      BufferedWriter out = new BufferedWriter(new OutputStreamWriter(new FileOutputStream(solrXmlFile), IOUtils.CHARSET_UTF_8));
-      out.write(EMPTY_SOLR_XML);
-      out.close();
-    } catch (IOException e) {
-      FileUtils.deleteDirectory(solrHomeDirectory);
-      throw e;
-    }
-    
-    //init
-    System.setProperty("solr.solr.home", solrHomeDirectory.getAbsolutePath());
+    SetUpHome(solrHomeDirectory, EMPTY_SOLR_XML);
     CoreContainer.Initializer init = new CoreContainer.Initializer();
     CoreContainer cores = null;
     try {
@@ -293,8 +278,13 @@ public class TestCoreContainer extends SolrTestCaseJ4 {
       cores.register(newCore, false);
       
       //assert one registered core
+
       assertEquals("There core registered", 1, cores.getCores().size());
-      
+
+
+      assertXmlFile(new File(solrHomeDirectory, "solr.xml"),
+          "/solr/cores[@transientCacheSize='32']");
+
       newCore.close();
       cores.remove("core1");
       //assert cero cores
@@ -305,11 +295,67 @@ public class TestCoreContainer extends SolrTestCaseJ4 {
     }
 
   }
+
+  private void SetUpHome(File solrHomeDirectory, String xmlFile) throws IOException {
+    if (solrHomeDirectory.exists()) {
+      FileUtils.deleteDirectory(solrHomeDirectory);
+    }
+    assertTrue("Failed to mkdirs workDir", solrHomeDirectory.mkdirs());
+    try {
+      File solrXmlFile = new File(solrHomeDirectory, "solr.xml");
+      BufferedWriter out = new BufferedWriter(new OutputStreamWriter(new FileOutputStream(solrXmlFile), IOUtils.CHARSET_UTF_8));
+      out.write(xmlFile);
+      out.close();
+    } catch (IOException e) {
+      FileUtils.deleteDirectory(solrHomeDirectory);
+      throw e;
+    }
+
+    //init
+    System.setProperty(SOLR_HOME_PROP, solrHomeDirectory.getAbsolutePath());
+  }
+
+  @Test
+  public void testClassLoaderHierarchy() throws Exception {
+    final CoreContainer cc = init("_classLoaderHierarchy");
+    try {
+      cc.setPersistent(false);
+      ClassLoader sharedLoader = cc.loader.getClassLoader();
+      ClassLoader contextLoader = Thread.currentThread().getContextClassLoader();
+      assertSame(contextLoader, sharedLoader.getParent());
+
+      CoreDescriptor descriptor1 = new CoreDescriptor(cc, "core1", "./collection1");
+      SolrCore core1 = cc.create(descriptor1);
+      ClassLoader coreLoader = core1.getResourceLoader().getClassLoader();
+      assertSame(sharedLoader, coreLoader.getParent());
+
+      core1.close();
+    } finally {
+      cc.shutdown();
+    }
+  }
   
   private static final String EMPTY_SOLR_XML ="<?xml version=\"1.0\" encoding=\"UTF-8\" ?>\n" +
       "<solr persistent=\"false\">\n" +
-      "  <cores adminPath=\"/admin/cores\">\n" +
+      "  <cores adminPath=\"/admin/cores\" transientCacheSize=\"32\" >\n" +
       "  </cores>\n" +
       "</solr>";
-  
+
+  private static final String SOLR_XML_SAME_NAME ="<?xml version=\"1.0\" encoding=\"UTF-8\" ?>\n" +
+      "<solr persistent=\"false\">\n" +
+      "  <cores adminPath=\"/admin/cores\" transientCacheSize=\"32\" >\n" +
+      "    <core name=\"core1\" instanceDir=\"core1\" dataDir=\"core1\"/> \n" +
+      "    <core name=\"core1\" instanceDir=\"core2\" dataDir=\"core2\"/> \n " +
+      "  </cores>\n" +
+      "</solr>";
+
+  private static final String SOLR_XML_SAME_DATADIR ="<?xml version=\"1.0\" encoding=\"UTF-8\" ?>\n" +
+      "<solr persistent=\"false\">\n" +
+      "  <cores adminPath=\"/admin/cores\" transientCacheSize=\"32\" >\n" +
+      "    <core name=\"core2\" instanceDir=\"core2\" dataDir=\"../samedatadir\" schema=\"schema-tiny.xml\" config=\"solrconfig-minimal.xml\" /> \n" +
+      "    <core name=\"core1\" instanceDir=\"core2\" dataDir=\"../samedatadir\" schema=\"schema-tiny.xml\" config=\"solrconfig-minimal.xml\"  /> \n " +
+      "  </cores>\n" +
+      "</solr>";
+
+
 }

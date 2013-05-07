@@ -32,7 +32,7 @@ import org.junit.BeforeClass;
 public class IndexSortingTest extends SorterTestBase {
   
   private static final Sorter[] SORTERS = new Sorter[] {
-    new NumericDocValuesSorter(NUMERIC_DV_FIELD),
+    new NumericDocValuesSorter(NUMERIC_DV_FIELD, true),
     Sorter.REVERSE_DOCS,
   };
   
@@ -52,6 +52,10 @@ public class IndexSortingTest extends SorterTestBase {
       Collections.reverse(values);
     } else {
       Collections.sort(values);
+      if (sorter instanceof NumericDocValuesSorter && random().nextBoolean()) {
+        sorter = new NumericDocValuesSorter(NUMERIC_DV_FIELD, false); // descending
+        Collections.reverse(values);
+      }
     }
     sortedValues = values.toArray(new Integer[values.size()]);
     if (VERBOSE) {
@@ -61,7 +65,7 @@ public class IndexSortingTest extends SorterTestBase {
 
     Directory target = newDirectory();
     IndexWriter writer = new IndexWriter(target, newIndexWriterConfig(TEST_VERSION_CURRENT, null));
-    reader = SortingAtomicReader.sort(reader, sorter);
+    reader = SortingAtomicReader.wrap(reader, sorter);
     writer.addIndexes(reader);
     writer.close();
     reader.close();

@@ -32,26 +32,15 @@ public class UIMATypeAwareAnnotationsTokenizerFactory extends TokenizerFactory {
   private String descriptorPath;
   private String tokenType;
   private String featurePath;
-  private Map<String, Object> configurationParameters;
+  private final Map<String,Object> configurationParameters = new HashMap<String,Object>();
 
-  @Override
-  public void init(Map<String, String> args) {
-    super.init(args);
-    configurationParameters = new HashMap<String, Object>();
-    for (String k : args.keySet()) {
-      if (k.equals("featurePath")) {
-        featurePath = args.get("featurePath");
-      } else if (k.equals("tokenType")) {
-        tokenType = args.get("tokenType");
-      } else if (k.equals("descriptorPath")) {
-        descriptorPath = args.get("descriptorPath");
-      } else {
-        configurationParameters.put(k, args.get(k));
-      }
-    }
-    if (descriptorPath == null || tokenType == null || featurePath == null) {
-      throw new IllegalArgumentException("descriptorPath, tokenType, and featurePath are mandatory");
-    }
+  /** Creates a new UIMATypeAwareAnnotationsTokenizerFactory */
+  public UIMATypeAwareAnnotationsTokenizerFactory(Map<String,String> args) {
+    super(args);
+    featurePath = require(args, "featurePath");
+    tokenType = require(args, "tokenType");
+    descriptorPath = require(args, "descriptorPath");
+    configurationParameters.putAll(args);
   }
 
   @Override

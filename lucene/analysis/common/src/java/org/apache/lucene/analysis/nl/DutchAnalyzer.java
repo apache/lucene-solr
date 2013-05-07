@@ -21,6 +21,7 @@ import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.analysis.core.LowerCaseFilter;
 import org.apache.lucene.analysis.core.StopFilter;
 import org.apache.lucene.analysis.miscellaneous.SetKeywordMarkerFilter;
+import org.apache.lucene.analysis.miscellaneous.StemmerOverrideFilter.StemmerOverrideMap;
 import org.apache.lucene.analysis.TokenStream;
 import org.apache.lucene.analysis.Tokenizer;
 import org.apache.lucene.analysis.miscellaneous.StemmerOverrideFilter;
@@ -30,9 +31,13 @@ import org.apache.lucene.analysis.standard.StandardTokenizer;
 import org.apache.lucene.analysis.standard.StandardAnalyzer;  // for javadoc
 import org.apache.lucene.analysis.util.CharArrayMap;
 import org.apache.lucene.analysis.util.CharArraySet;
+import org.apache.lucene.analysis.util.CharacterUtils;
 import org.apache.lucene.analysis.util.WordlistLoader;
+import org.apache.lucene.util.BytesRef;
+import org.apache.lucene.util.CharsRef;
 import org.apache.lucene.util.IOUtils;
 import org.apache.lucene.util.Version;
+import org.apache.lucene.util.fst.FST;
 
 import java.io.IOException;
 import java.io.Reader;
@@ -96,7 +101,7 @@ public final class DutchAnalyzer extends Analyzer {
    */
   private CharArraySet excltable = CharArraySet.EMPTY_SET;
 
-  private final CharArrayMap<String> stemdict;
+  private final StemmerOverrideMap stemdict;
   private final Version matchVersion;
 
   /**
@@ -120,7 +125,24 @@ public final class DutchAnalyzer extends Analyzer {
     this.matchVersion = matchVersion;
     this.stoptable = CharArraySet.unmodifiableSet(CharArraySet.copy(matchVersion, stopwords));
     this.excltable = CharArraySet.unmodifiableSet(CharArraySet.copy(matchVersion, stemExclusionTable));
-    this.stemdict = CharArrayMap.unmodifiableMap(CharArrayMap.copy(matchVersion, stemOverrideDict));
+    if (stemOverrideDict.isEmpty()) {
+      this.stemdict = null;
+    } else {
+      // we don't need to ignore case here since we lowercase in this analyzer anyway
+      StemmerOverrideFilter.Builder builder = new StemmerOverrideFilter.Builder(false);
+      CharArrayMap<String>.EntryIterator iter = stemOverrideDict.entrySet().iterator();
+      CharsRef spare = new CharsRef();
+      while (iter.hasNext()) {
+        char[] nextKey = iter.nextKey();
+        spare.copyChars(nextKey, 0, nextKey.length);
+        builder.add(spare, iter.currentValue());
+      }
+      try {
+        this.stemdict = builder.build();
+      } catch (IOException ex) {
+        throw new RuntimeException("can not build stem dict", ex);
+      }
+    }
   }
   
   /**
@@ -141,7 +163,7 @@ public final class DutchAnalyzer extends Analyzer {
     result = new StopFilter(matchVersion, result, stoptable);
     if (!excltable.isEmpty())
       result = new SetKeywordMarkerFilter(result, excltable);
-    if (!stemdict.isEmpty())
+    if (stemdict != null)
       result = new StemmerOverrideFilter(result, stemdict);
     result = new SnowballFilter(result, new org.tartarus.snowball.ext.DutchStemmer());
     return new TokenStreamComponents(source, result);

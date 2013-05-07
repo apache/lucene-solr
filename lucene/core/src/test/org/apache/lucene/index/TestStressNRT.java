@@ -298,6 +298,9 @@ public class TestStressNRT extends LuceneTestCase {
         @Override
         public void run() {
           try {
+            IndexReader lastReader = null;
+            IndexSearcher lastSearcher = null;
+
             while (operations.decrementAndGet() >= 0) {
               // bias toward a recently changed doc
               int id = rand.nextInt(100) < 25 ? lastId : rand.nextInt(ndocs);
@@ -318,7 +321,17 @@ public class TestStressNRT extends LuceneTestCase {
               }
 
               //  sreq = req("wt","json", "q","id:"+Integer.toString(id), "omitHeader","true");
-              IndexSearcher searcher = new IndexSearcher(r);
+              IndexSearcher searcher;
+              if (r == lastReader) {
+                // Just re-use lastSearcher, else
+                // newSearcher may create too many thread
+                // pools (ExecutorService):
+                searcher = lastSearcher;
+              } else {
+                searcher = newSearcher(r);
+                lastReader = r;
+                lastSearcher = searcher;
+              }
               Query q = new TermQuery(new Term("id",Integer.toString(id)));
               TopDocs results = searcher.search(q, 10);
 

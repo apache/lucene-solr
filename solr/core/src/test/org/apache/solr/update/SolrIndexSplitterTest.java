@@ -41,7 +41,7 @@ import java.io.UnsupportedEncodingException;
 import java.util.List;
 
 public class SolrIndexSplitterTest extends SolrTestCaseJ4 {
-  File indexDir1 = null, indexDir2 = null;
+  File indexDir1 = null, indexDir2 = null, indexDir3 = null;
 
   @BeforeClass
   public static void beforeClass() throws Exception {
@@ -58,6 +58,8 @@ public class SolrIndexSplitterTest extends SolrTestCaseJ4 {
         + "_testSplit1");
     indexDir2 = new File(TEMP_DIR, this.getClass().getName()
         + "_testSplit2");
+    indexDir3 = new File(TEMP_DIR, this.getClass().getName()
+        + "_testSplit3");
 
     if (indexDir1.exists()) {
       FileUtils.deleteDirectory(indexDir1);
@@ -68,6 +70,11 @@ public class SolrIndexSplitterTest extends SolrTestCaseJ4 {
       FileUtils.deleteDirectory(indexDir2);
     }
     assertTrue("Failed to mkdirs indexDir2 for split index", indexDir2.mkdirs());
+
+    if (indexDir3.exists()) {
+      FileUtils.deleteDirectory(indexDir3);
+    }
+    assertTrue("Failed to mkdirs indexDir3 for split index", indexDir3.mkdirs());
   }
 
   @Test
@@ -159,6 +166,53 @@ public class SolrIndexSplitterTest extends SolrTestCaseJ4 {
       h.getCoreContainer().remove("split1");
       if (core2 != null) core2.close();
       if (core1 != null) core1.close();
+    }
+  }
+
+  @Test
+  public void testSplitAlternately() throws Exception {
+    LocalSolrQueryRequest request = null;
+    Directory directory = null;
+    try {
+      // add an even number of docs
+      int max = (1 + random().nextInt(10)) * 3;
+      log.info("Adding {} number of documents", max);
+      for (int i = 0; i < max; i++) {
+        assertU(adoc("id", String.valueOf(i)));
+      }
+      assertU(commit());
+
+      request = lrf.makeRequest("q", "dummy");
+
+      SplitIndexCommand command = new SplitIndexCommand(request,
+          Lists.newArrayList(indexDir1.getAbsolutePath(), indexDir2.getAbsolutePath(), indexDir3.getAbsolutePath()), null, null);
+      new SolrIndexSplitter(command).split();
+
+      directory = h.getCore().getDirectoryFactory().get(indexDir1.getAbsolutePath(),
+          DirectoryFactory.DirContext.DEFAULT, h.getCore().getSolrConfig().indexConfig.lockType);
+      DirectoryReader reader = DirectoryReader.open(directory);
+      assertEquals("split index1 has wrong number of documents", max / 3, reader.numDocs());
+      reader.close();
+      h.getCore().getDirectoryFactory().release(directory);
+      directory = h.getCore().getDirectoryFactory().get(indexDir2.getAbsolutePath(),
+          DirectoryFactory.DirContext.DEFAULT, h.getCore().getSolrConfig().indexConfig.lockType);
+      reader = DirectoryReader.open(directory);
+      assertEquals("split index2 has wrong number of documents", max / 3, reader.numDocs());
+      reader.close();
+      h.getCore().getDirectoryFactory().release(directory);
+      directory = h.getCore().getDirectoryFactory().get(indexDir3.getAbsolutePath(),
+          DirectoryFactory.DirContext.DEFAULT, h.getCore().getSolrConfig().indexConfig.lockType);
+      reader = DirectoryReader.open(directory);
+      assertEquals("split index3 has wrong number of documents", max / 3, reader.numDocs());
+      reader.close();
+      h.getCore().getDirectoryFactory().release(directory);
+      directory = null;
+    } finally {
+      if (request != null) request.close(); // decrefs the searcher
+      if (directory != null)  {
+        // perhaps an assert failed, release the directory
+        h.getCore().getDirectoryFactory().release(directory);
+      }
     }
   }
 

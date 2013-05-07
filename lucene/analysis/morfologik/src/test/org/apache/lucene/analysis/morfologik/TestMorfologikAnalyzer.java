@@ -52,6 +52,14 @@ public class TestMorfologikAnalyzer extends BaseTokenStreamTestCase {
       new int[] { 0, 0, 0, 0, 7, 7, 7, 7 },
       new int[] { 6, 6, 6, 6, 13, 13, 13, 13 },
       new int[] { 1, 0, 0, 0, 1, 0, 0, 0 });
+
+    assertAnalyzesToReuse(
+        a,
+        "T. Gl\u00FCcksberg",
+        new String[] { "to", "tom", "tona", "Gl\u00FCcksberg" },
+        new int[] { 0, 0, 0, 3  },
+        new int[] { 1, 1, 1, 13 },
+        new int[] { 1, 0, 0, 1  });
   }
 
   /** Test reuse of MorfologikFilter with leftover stems. */

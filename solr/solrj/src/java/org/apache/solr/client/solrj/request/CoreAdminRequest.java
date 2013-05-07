@@ -57,6 +57,8 @@ public class CoreAdminRequest extends SolrRequest
     private String shardId;
     private String roles;
     private String coreNodeName;
+    private Boolean loadOnStartup;
+    private Boolean isTransient;
 
     public Create() {
       action = CoreAdminAction.CREATE;
@@ -72,7 +74,9 @@ public class CoreAdminRequest extends SolrRequest
     public void setShardId(String shardId) {this.shardId = shardId;}
     public void setRoles(String roles) {this.roles = roles;}
     public void setCoreNodeName(String coreNodeName) {this.coreNodeName = coreNodeName;}
-    
+    public void setIsTransient(Boolean isTransient) { this.isTransient = isTransient; }
+    public void setIsLoadOnStartup(Boolean loadOnStartup) { this.loadOnStartup = loadOnStartup;}
+
     public String getInstanceDir() { return instanceDir; }
     public String getSchemaName()  { return schemaName; }
     public String getConfigName()  { return configName; }
@@ -82,7 +86,9 @@ public class CoreAdminRequest extends SolrRequest
     public String getShardId() { return shardId; }
     public String getRoles() { return roles; }
     public String getCoreNodeName() { return coreNodeName; }
-    
+    public Boolean getIsLoadOnStartup() { return loadOnStartup; }
+    public Boolean getIsTransient() { return isTransient; }
+
     @Override
     public SolrParams getParams() {
       if( action == null ) {
@@ -123,6 +129,14 @@ public class CoreAdminRequest extends SolrRequest
       if (coreNodeName != null) {
         params.set( CoreAdminParams.CORE_NODE_NAME, coreNodeName);
       }
+
+      if (isTransient != null) {
+        params.set(CoreAdminParams.TRANSIENT, isTransient);
+      }
+
+      if (loadOnStartup != null) {
+        params.set(CoreAdminParams.LOAD_ON_STARTUP, loadOnStartup);
+      }
       return params;
     }
 
@@ -151,11 +165,11 @@ public class CoreAdminRequest extends SolrRequest
     public String getCoreNodeName() {
       return coreNodeName;
     }
-    
+
     public void setCoreNodeName(String coreNodeName) {
       this.coreNodeName = coreNodeName;
     }
-    
+
     public String getState() {
       return state;
     }
@@ -335,12 +349,12 @@ public class CoreAdminRequest extends SolrRequest
       params.set(CoreAdminParams.CORE, core);
       if (indexDirs != null)  {
         for (String indexDir : indexDirs) {
-          params.set(CoreAdminParams.INDEX_DIR, indexDir);
+          params.add(CoreAdminParams.INDEX_DIR, indexDir);
         }
       }
       if (srcCores != null) {
         for (String srcCore : srcCores) {
-          params.set(CoreAdminParams.SRC_CORE, srcCore);
+          params.add(CoreAdminParams.SRC_CORE, srcCore);
         }
       }
       return params;

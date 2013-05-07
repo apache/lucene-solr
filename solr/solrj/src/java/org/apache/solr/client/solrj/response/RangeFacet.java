@@ -34,14 +34,16 @@ public abstract class RangeFacet<B, G> {
 
   private final Number before;
   private final Number after;
+  private final Number between;
 
-  protected RangeFacet(String name, B start, B end, G gap, Number before, Number after) {
+  protected RangeFacet(String name, B start, B end, G gap, Number before, Number after, Number between) {
     this.name = name;
     this.start = start;
     this.end = end;
     this.gap = gap;
     this.before = before;
     this.after = after;
+    this.between = between;
   }
 
   public void addCount(String value, int count) {
@@ -76,18 +78,32 @@ public abstract class RangeFacet<B, G> {
     return after;
   }
 
+  public Number getBetween() {
+    return between;
+  }
+
   public static class Numeric extends RangeFacet<Number, Number> {
 
+    @Deprecated
     public Numeric(String name, Number start, Number end, Number gap, Number before, Number after) {
-      super(name, start, end, gap, before, after);
+      this(name, start, end, gap, before, after, null);
+    }
+
+    public Numeric(String name, Number start, Number end, Number gap, Number before, Number after, Number between) {
+      super(name, start, end, gap, before, after, between);
     }
 
   }
 
   public static class Date extends RangeFacet<java.util.Date, String> {
 
+    @Deprecated
     public Date(String name, java.util.Date start, java.util.Date end, String gap, Number before, Number after) {
-      super(name, start, end, gap, before, after);
+      this(name, start, end, gap, before, after, null);
+    }
+
+    public Date(String name, java.util.Date start, java.util.Date end, String gap, Number before, Number after, Number between) {
+      super(name, start, end, gap, before, after, between);
     }
 
   }

@@ -17,15 +17,18 @@ package org.apache.lucene.analysis.compound;
  * limitations under the License.
  */
 
-import org.apache.lucene.analysis.util.*;
 import org.apache.lucene.analysis.TokenStream;
+import org.apache.lucene.analysis.util.CharArraySet;
+import org.apache.lucene.analysis.util.ResourceLoader;
+import org.apache.lucene.analysis.util.ResourceLoaderAware;
+import org.apache.lucene.analysis.util.TokenFilterFactory;
 
 import java.util.Map;
 import java.io.IOException;
 
 /** 
  * Factory for {@link DictionaryCompoundWordTokenFilter}. 
- * <pre class="prettyprint" >
+ * <pre class="prettyprint">
  * &lt;fieldType name="text_dictcomp" class="solr.TextField" positionIncrementGap="100"&gt;
  *   &lt;analyzer&gt;
  *     &lt;tokenizer class="solr.WhitespaceTokenizerFactory"/&gt;
@@ -33,37 +36,39 @@ import java.io.IOException;
  *         minWordSize="5" minSubwordSize="2" maxSubwordSize="15" onlyLongestMatch="true"/&gt;
  *   &lt;/analyzer&gt;
  * &lt;/fieldType&gt;</pre>
- *
  */
-public class DictionaryCompoundWordTokenFilterFactory extends TokenFilterFactory  implements ResourceLoaderAware {
+public class DictionaryCompoundWordTokenFilterFactory extends TokenFilterFactory implements ResourceLoaderAware {
   private CharArraySet dictionary;
-  private String dictFile;
-  private int minWordSize;
-  private int minSubwordSize;
-  private int maxSubwordSize;
-  private boolean onlyLongestMatch;
-  @Override
-  public void init(Map<String, String> args) {
-    super.init(args);
-    assureMatchVersion();
-    dictFile = args.get("dictionary");
-    if (null == dictFile) {
-      throw new IllegalArgumentException("Missing required parameter: dictionary");
-    }
+  private final String dictFile;
+  private final int minWordSize;
+  private final int minSubwordSize;
+  private final int maxSubwordSize;
+  private final boolean onlyLongestMatch;
 
-    minWordSize= getInt("minWordSize",CompoundWordTokenFilterBase.DEFAULT_MIN_WORD_SIZE);
-    minSubwordSize= getInt("minSubwordSize",CompoundWordTokenFilterBase.DEFAULT_MIN_SUBWORD_SIZE);
-    maxSubwordSize= getInt("maxSubwordSize",CompoundWordTokenFilterBase.DEFAULT_MAX_SUBWORD_SIZE);
-    onlyLongestMatch = getBoolean("onlyLongestMatch",true);
+  /** Creates a new DictionaryCompoundWordTokenFilterFactory */
+  public DictionaryCompoundWordTokenFilterFactory(Map<String, String> args) {
+    super(args);
+    assureMatchVersion();
+    dictFile = require(args, "dictionary");
+    minWordSize = getInt(args, "minWordSize", CompoundWordTokenFilterBase.DEFAULT_MIN_WORD_SIZE);
+    minSubwordSize = getInt(args, "minSubwordSize", CompoundWordTokenFilterBase.DEFAULT_MIN_SUBWORD_SIZE);
+    maxSubwordSize = getInt(args, "maxSubwordSize", CompoundWordTokenFilterBase.DEFAULT_MAX_SUBWORD_SIZE);
+    onlyLongestMatch = getBoolean(args, "onlyLongestMatch", true);
+    if (!args.isEmpty()) {
+      throw new IllegalArgumentException("Unknown parameters: " + args);
+    }
   }
+  
   @Override
   public void inform(ResourceLoader loader) throws IOException {
     dictionary = super.getWordSet(loader, dictFile, false);
   }
+  
   @Override
   public TokenStream create(TokenStream input) {
     // if the dictionary is null, it means it was empty
-    return dictionary == null ? input : new DictionaryCompoundWordTokenFilter(luceneMatchVersion,input,dictionary,minWordSize,minSubwordSize,maxSubwordSize,onlyLongestMatch);
+    return dictionary == null ? input : new DictionaryCompoundWordTokenFilter
+        (luceneMatchVersion, input, dictionary, minWordSize, minSubwordSize, maxSubwordSize, onlyLongestMatch);
   }
 }
 
