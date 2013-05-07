@@ -195,6 +195,8 @@ public class TestRandomChains extends BaseTokenStreamTestCase {
           CJKBigramFilter.class,
           // TODO: doesn't handle graph inputs (or even look at positionIncrement)
           HyphenatedWordsFilter.class,
+          // TODO: LUCENE-4983
+          CommonGramsFilter.class,
           // TODO: doesn't handle graph inputs
           CommonGramsQueryFilter.class)) {
         for (Constructor<?> ctor : c.getConstructors()) {
