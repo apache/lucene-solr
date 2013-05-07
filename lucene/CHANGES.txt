@@ -37,6 +37,13 @@ Changes in backwards compatibility policy
   suggesters, you now need to call setPreservePositionIncrements(false) instead
   of configuring the token filters to not increment positions. (Adrien Grand)
 
+* LUCENE-3907: EdgeNGramTokenizer now supports maxGramSize > 1024, doesn't trim
+  the input, sets position increment = 1 for all tokens and doesn't support
+  backward grams anymore. (Adrien Grand)
+
+* LUCENE-3907: EdgeNGramTokenFilter does not support backward grams and does
+  not update offsets anymore. (Adrien Grand)
+
 Bug Fixes
 
 * LUCENE-4935: CustomScoreQuery wrongly applied its query boost twice 

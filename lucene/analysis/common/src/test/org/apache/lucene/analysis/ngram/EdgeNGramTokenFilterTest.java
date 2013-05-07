@@ -27,6 +27,7 @@ import org.apache.lucene.analysis.core.KeywordTokenizer;
 import org.apache.lucene.analysis.core.WhitespaceTokenizer;
 import org.apache.lucene.analysis.miscellaneous.ASCIIFoldingFilter;
 import org.apache.lucene.analysis.position.PositionFilter;
+import org.apache.lucene.util.Version;
 
 import java.io.Reader;
 import java.io.StringReader;
@@ -47,7 +48,7 @@ public class EdgeNGramTokenFilterTest extends BaseTokenStreamTestCase {
   public void testInvalidInput() throws Exception {
     boolean gotException = false;
     try {        
-      new EdgeNGramTokenFilter(input, EdgeNGramTokenFilter.Side.FRONT, 0, 0);
+      new EdgeNGramTokenFilter(TEST_VERSION_CURRENT, input, EdgeNGramTokenFilter.Side.FRONT, 0, 0);
     } catch (IllegalArgumentException e) {
       gotException = true;
     }
@@ -57,7 +58,7 @@ public class EdgeNGramTokenFilterTest extends BaseTokenStreamTestCase {
   public void testInvalidInput2() throws Exception {
     boolean gotException = false;
     try {        
-      new EdgeNGramTokenFilter(input, EdgeNGramTokenFilter.Side.FRONT, 2, 1);
+      new EdgeNGramTokenFilter(TEST_VERSION_CURRENT, input, EdgeNGramTokenFilter.Side.FRONT, 2, 1);
     } catch (IllegalArgumentException e) {
       gotException = true;
     }
@@ -67,7 +68,7 @@ public class EdgeNGramTokenFilterTest extends BaseTokenStreamTestCase {
   public void testInvalidInput3() throws Exception {
     boolean gotException = false;
     try {        
-      new EdgeNGramTokenFilter(input, EdgeNGramTokenFilter.Side.FRONT, -1, 2);
+      new EdgeNGramTokenFilter(TEST_VERSION_CURRENT, input, EdgeNGramTokenFilter.Side.FRONT, -1, 2);
     } catch (IllegalArgumentException e) {
       gotException = true;
     }
@@ -75,27 +76,27 @@ public class EdgeNGramTokenFilterTest extends BaseTokenStreamTestCase {
   }
 
   public void testFrontUnigram() throws Exception {
-    EdgeNGramTokenFilter tokenizer = new EdgeNGramTokenFilter(input, EdgeNGramTokenFilter.Side.FRONT, 1, 1);
-    assertTokenStreamContents(tokenizer, new String[]{"a"}, new int[]{0}, new int[]{1});
+    EdgeNGramTokenFilter tokenizer = new EdgeNGramTokenFilter(TEST_VERSION_CURRENT, input, EdgeNGramTokenFilter.Side.FRONT, 1, 1);
+    assertTokenStreamContents(tokenizer, new String[]{"a"}, new int[]{0}, new int[]{5});
   }
 
   public void testBackUnigram() throws Exception {
-    EdgeNGramTokenFilter tokenizer = new EdgeNGramTokenFilter(input, EdgeNGramTokenFilter.Side.BACK, 1, 1);
+    EdgeNGramTokenFilter tokenizer = new EdgeNGramTokenFilter(Version.LUCENE_43, input, EdgeNGramTokenFilter.Side.BACK, 1, 1);
     assertTokenStreamContents(tokenizer, new String[]{"e"}, new int[]{4}, new int[]{5});
   }
 
   public void testOversizedNgrams() throws Exception {
-    EdgeNGramTokenFilter tokenizer = new EdgeNGramTokenFilter(input, EdgeNGramTokenFilter.Side.FRONT, 6, 6);
+    EdgeNGramTokenFilter tokenizer = new EdgeNGramTokenFilter(TEST_VERSION_CURRENT, input, EdgeNGramTokenFilter.Side.FRONT, 6, 6);
     assertTokenStreamContents(tokenizer, new String[0], new int[0], new int[0]);
   }
 
   public void testFrontRangeOfNgrams() throws Exception {
-    EdgeNGramTokenFilter tokenizer = new EdgeNGramTokenFilter(input, EdgeNGramTokenFilter.Side.FRONT, 1, 3);
-    assertTokenStreamContents(tokenizer, new String[]{"a","ab","abc"}, new int[]{0,0,0}, new int[]{1,2,3});
+    EdgeNGramTokenFilter tokenizer = new EdgeNGramTokenFilter(TEST_VERSION_CURRENT, input, EdgeNGramTokenFilter.Side.FRONT, 1, 3);
+    assertTokenStreamContents(tokenizer, new String[]{"a","ab","abc"}, new int[]{0,0,0}, new int[]{5,5,5});
   }
 
   public void testBackRangeOfNgrams() throws Exception {
-    EdgeNGramTokenFilter tokenizer = new EdgeNGramTokenFilter(input, EdgeNGramTokenFilter.Side.BACK, 1, 3);
+    EdgeNGramTokenFilter tokenizer = new EdgeNGramTokenFilter(Version.LUCENE_43, input, EdgeNGramTokenFilter.Side.BACK, 1, 3);
     assertTokenStreamContents(tokenizer,
                               new String[]{"e","de","cde"},
                               new int[]{4,3,2},
@@ -109,11 +110,11 @@ public class EdgeNGramTokenFilterTest extends BaseTokenStreamTestCase {
 
   public void testFilterPositions() throws Exception {
     TokenStream ts = new MockTokenizer(new StringReader("abcde vwxyz"), MockTokenizer.WHITESPACE, false);
-    EdgeNGramTokenFilter tokenizer = new EdgeNGramTokenFilter(ts, EdgeNGramTokenFilter.Side.FRONT, 1, 3);
+    EdgeNGramTokenFilter tokenizer = new EdgeNGramTokenFilter(TEST_VERSION_CURRENT, ts, EdgeNGramTokenFilter.Side.FRONT, 1, 3);
     assertTokenStreamContents(tokenizer,
                               new String[]{"a","ab","abc","v","vw","vwx"},
                               new int[]{0,0,0,6,6,6},
-                              new int[]{1,2,3,7,8,9},
+                              new int[]{5,5,5,11,11,11},
                               null,
                               new int[]{1,0,0,1,0,0},
                               null,
@@ -124,43 +125,30 @@ public class EdgeNGramTokenFilterTest extends BaseTokenStreamTestCase {
   public void testFirstTokenPositionIncrement() throws Exception {
     TokenStream ts = new MockTokenizer(new StringReader("a abc"), MockTokenizer.WHITESPACE, false);
     ts = new PositionFilter(ts, 0); // All but first token will get 0 position increment
-    EdgeNGramTokenFilter filter = new EdgeNGramTokenFilter(ts, EdgeNGramTokenFilter.Side.FRONT, 2, 3);
+    EdgeNGramTokenFilter filter = new EdgeNGramTokenFilter(TEST_VERSION_CURRENT, ts, EdgeNGramTokenFilter.Side.FRONT, 2, 3);
     // The first token "a" will not be output, since it's smaller than the mingram size of 2.
     // The second token on input to EdgeNGramTokenFilter will have position increment of 0,
     // which should be increased to 1, since this is the first output token in the stream.
     assertTokenStreamContents(filter,
         new String[] { "ab", "abc" },
         new int[]    {    2,     2 },
-        new int[]    {    4,     5 },
+        new int[]    {    5,     5 },
         new int[]    {    1,     0 }
     );
-  }
-
-  public void testTokenizerPositions() throws Exception {
-    EdgeNGramTokenizer tokenizer = new EdgeNGramTokenizer(new StringReader("abcde"), EdgeNGramTokenizer.Side.FRONT, 1, 3);
-    assertTokenStreamContents(tokenizer,
-                              new String[]{"a","ab","abc"},
-                              new int[]{0,0,0},
-                              new int[]{1,2,3},
-                              null,
-                              new int[]{1,0,0},
-                              null,
-                              null,
-                              false);
   }
   
   public void testSmallTokenInStream() throws Exception {
     input = new MockTokenizer(new StringReader("abc de fgh"), MockTokenizer.WHITESPACE, false);
-    EdgeNGramTokenFilter tokenizer = new EdgeNGramTokenFilter(input, EdgeNGramTokenFilter.Side.FRONT, 3, 3);
+    EdgeNGramTokenFilter tokenizer = new EdgeNGramTokenFilter(TEST_VERSION_CURRENT, input, EdgeNGramTokenFilter.Side.FRONT, 3, 3);
     assertTokenStreamContents(tokenizer, new String[]{"abc","fgh"}, new int[]{0,7}, new int[]{3,10});
   }
   
   public void testReset() throws Exception {
     WhitespaceTokenizer tokenizer = new WhitespaceTokenizer(TEST_VERSION_CURRENT, new StringReader("abcde"));
-    EdgeNGramTokenFilter filter = new EdgeNGramTokenFilter(tokenizer, EdgeNGramTokenFilter.Side.FRONT, 1, 3);
-    assertTokenStreamContents(filter, new String[]{"a","ab","abc"}, new int[]{0,0,0}, new int[]{1,2,3});
+    EdgeNGramTokenFilter filter = new EdgeNGramTokenFilter(TEST_VERSION_CURRENT, tokenizer, EdgeNGramTokenFilter.Side.FRONT, 1, 3);
+    assertTokenStreamContents(filter, new String[]{"a","ab","abc"}, new int[]{0,0,0}, new int[]{5,5,5});
     tokenizer.setReader(new StringReader("abcde"));
-    assertTokenStreamContents(filter, new String[]{"a","ab","abc"}, new int[]{0,0,0}, new int[]{1,2,3});
+    assertTokenStreamContents(filter, new String[]{"a","ab","abc"}, new int[]{0,0,0}, new int[]{5,5,5});
   }
   
   // LUCENE-3642
@@ -173,7 +161,7 @@ public class EdgeNGramTokenFilterTest extends BaseTokenStreamTestCase {
       protected TokenStreamComponents createComponents(String fieldName, Reader reader) {
         Tokenizer tokenizer = new MockTokenizer(reader, MockTokenizer.WHITESPACE, false);
         TokenFilter filters = new ASCIIFoldingFilter(tokenizer);
-        filters = new EdgeNGramTokenFilter(filters, EdgeNGramTokenFilter.Side.FRONT, 2, 15);
+        filters = new EdgeNGramTokenFilter(Version.LUCENE_43, filters, EdgeNGramTokenFilter.Side.FRONT, 2, 15);
         return new TokenStreamComponents(tokenizer, filters);
       }
     };
@@ -190,7 +178,7 @@ public class EdgeNGramTokenFilterTest extends BaseTokenStreamTestCase {
       protected TokenStreamComponents createComponents(String fieldName, Reader reader) {
         Tokenizer tokenizer = new MockTokenizer(reader, MockTokenizer.WHITESPACE, false);
         return new TokenStreamComponents(tokenizer, 
-            new EdgeNGramTokenFilter(tokenizer, EdgeNGramTokenFilter.Side.FRONT, 2, 4));
+            new EdgeNGramTokenFilter(TEST_VERSION_CURRENT, tokenizer, EdgeNGramTokenFilter.Side.FRONT, 2, 4));
       }    
     };
     checkRandomData(random(), a, 1000*RANDOM_MULTIPLIER);
@@ -200,7 +188,7 @@ public class EdgeNGramTokenFilterTest extends BaseTokenStreamTestCase {
       protected TokenStreamComponents createComponents(String fieldName, Reader reader) {
         Tokenizer tokenizer = new MockTokenizer(reader, MockTokenizer.WHITESPACE, false);
         return new TokenStreamComponents(tokenizer, 
-            new EdgeNGramTokenFilter(tokenizer, EdgeNGramTokenFilter.Side.BACK, 2, 4));
+            new EdgeNGramTokenFilter(Version.LUCENE_43, tokenizer, EdgeNGramTokenFilter.Side.BACK, 2, 4));
       }    
     };
     checkRandomData(random(), b, 1000*RANDOM_MULTIPLIER, 20, false, false);
@@ -213,7 +201,7 @@ public class EdgeNGramTokenFilterTest extends BaseTokenStreamTestCase {
       protected TokenStreamComponents createComponents(String fieldName, Reader reader) {
         Tokenizer tokenizer = new KeywordTokenizer(reader);
         return new TokenStreamComponents(tokenizer, 
-            new EdgeNGramTokenFilter(tokenizer, EdgeNGramTokenFilter.Side.FRONT, 2, 15));
+            new EdgeNGramTokenFilter(TEST_VERSION_CURRENT, tokenizer, EdgeNGramTokenFilter.Side.FRONT, 2, 15));
       }    
     };
     checkAnalysisConsistency(random, a, random.nextBoolean(), "");
@@ -223,7 +211,7 @@ public class EdgeNGramTokenFilterTest extends BaseTokenStreamTestCase {
       protected TokenStreamComponents createComponents(String fieldName, Reader reader) {
         Tokenizer tokenizer = new KeywordTokenizer(reader);
         return new TokenStreamComponents(tokenizer, 
-            new EdgeNGramTokenFilter(tokenizer, EdgeNGramTokenFilter.Side.BACK, 2, 15));
+            new EdgeNGramTokenFilter(Version.LUCENE_43, tokenizer, EdgeNGramTokenFilter.Side.BACK, 2, 15));
       }    
     };
     checkAnalysisConsistency(random, b, random.nextBoolean(), "");
