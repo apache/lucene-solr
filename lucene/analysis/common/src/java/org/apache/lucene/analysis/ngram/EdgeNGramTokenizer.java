@@ -156,7 +156,6 @@ public final class EdgeNGramTokenizer extends Tokenizer {
    * @param minGram the smallest n-gram to generate
    * @param maxGram the largest n-gram to generate
    */
-  @Deprecated
   public EdgeNGramTokenizer(Version version, Reader input, int minGram, int maxGram) {
     this(version, input, Side.FRONT, minGram, maxGram);
   }
@@ -170,7 +169,6 @@ public final class EdgeNGramTokenizer extends Tokenizer {
    * @param minGram the smallest n-gram to generate
    * @param maxGram the largest n-gram to generate
    */
-  @Deprecated
   public EdgeNGramTokenizer(Version version, AttributeFactory factory, Reader input, int minGram, int maxGram) {
     this(version, factory, input, Side.FRONT, minGram, maxGram);
   }
