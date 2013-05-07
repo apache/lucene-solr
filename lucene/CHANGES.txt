@@ -153,6 +153,9 @@ New Features
 * LUCENE-4965: Add dynamic (no taxonomy index used) numeric range
   faceting to Lucene's facet module (Mike McCandless, Shai Erera)
 
+* LUCENE-4979: LiveFieldFields can work with any ReferenceManager, not
+  just ReferenceManager<IndexSearcher> (Mike McCandless).
+
 ======================= Lucene 4.3.0 =======================
 
 Changes in backwards compatibility policy
