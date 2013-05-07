@@ -80,6 +80,10 @@ Bug Fixes
   
 * LUCENE-949: AnalyzingQueryParser can't work with leading wildcards.
   (Tim Allison, Robert Muir, Steve Rowe)
+
+* LUCENE-4980: Fix issues preventing mixing of RangeFacetRequest and
+  non-RangeFacetRequest when using DrillSideways.  (Mike McCandless,
+  Shai Erera)
   
 Optimizations
 
