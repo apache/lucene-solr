@@ -30,158 +30,54 @@ import org.apache.lucene.util.Version;
 /**
  * Tokenizes the input from an edge into n-grams of given size(s).
  * <p>
- * This {@link Tokenizer} create n-grams from the beginning edge or ending edge of a input token.
- * <p><a name="version" /> As of Lucene 4.4, this tokenizer<ul>
- * <li>can handle <code>maxGram</code> larger than 1024 chars, but beware that this will result in increased memory usage
- * <li>doesn't trim the input,
- * <li>sets position increments equal to 1 instead of 1 for the first token and 0 for all other ones
- * <li>doesn't support {@link Side#BACK} anymore.
- * </ul>
+ * This {@link Tokenizer} create n-grams from the beginning edge of a input token.
  */
 public final class EdgeNGramTokenizer extends Tokenizer {
-  public static final Side DEFAULT_SIDE = Side.FRONT;
   public static final int DEFAULT_MAX_GRAM_SIZE = 1;
   public static final int DEFAULT_MIN_GRAM_SIZE = 1;
 
-  private Version version;
   private final CharTermAttribute termAtt = addAttribute(CharTermAttribute.class);
   private final OffsetAttribute offsetAtt = addAttribute(OffsetAttribute.class);
   private final PositionIncrementAttribute posIncrAtt = addAttribute(PositionIncrementAttribute.class);
 
-  /** Specifies which side of the input the n-gram should be generated from */
-  public static enum Side {
-
-    /** Get the n-gram from the front of the input */
-    FRONT {
-      @Override
-      public String getLabel() { return "front"; }
-    },
-
-    /** Get the n-gram from the end of the input */
-    @Deprecated
-    BACK  {
-      @Override
-      public String getLabel() { return "back"; }
-    };
-
-    public abstract String getLabel();
-
-    // Get the appropriate Side from a string
-    public static Side getSide(String sideName) {
-      if (FRONT.getLabel().equals(sideName)) {
-        return FRONT;
-      }
-      if (BACK.getLabel().equals(sideName)) {
-        return BACK;
-      }
-      return null;
-    }
-  }
-
   private int minGram;
   private int maxGram;
   private int gramSize;
-  private Side side;
   private boolean started;
   private int inLen; // length of the input AFTER trim()
   private int charsRead; // length of the input
   private String inStr;
 
-
   /**
    * Creates EdgeNGramTokenizer that can generate n-grams in the sizes of the given range
    *
-   * @param version the <a href="#version">Lucene match version</a>
-   * @param input {@link Reader} holding the input to be tokenized
-   * @param side the {@link Side} from which to chop off an n-gram
-   * @param minGram the smallest n-gram to generate
-   * @param maxGram the largest n-gram to generate
-   */
-  @Deprecated
-  public EdgeNGramTokenizer(Version version, Reader input, Side side, int minGram, int maxGram) {
-    super(input);
-    init(version, side, minGram, maxGram);
-  }
-
-  /**
-   * Creates EdgeNGramTokenizer that can generate n-grams in the sizes of the given range
-   * 
-   * @param version the <a href="#version">Lucene match version</a>
-   * @param factory {@link org.apache.lucene.util.AttributeSource.AttributeFactory} to use
-   * @param input {@link Reader} holding the input to be tokenized
-   * @param side the {@link Side} from which to chop off an n-gram
-   * @param minGram the smallest n-gram to generate
-   * @param maxGram the largest n-gram to generate
-   */
-  @Deprecated
-  public EdgeNGramTokenizer(Version version, AttributeFactory factory, Reader input, Side side, int minGram, int maxGram) {
-    super(factory, input);
-    init(version, side, minGram, maxGram);
-  }
-  
-  /**
-   * Creates EdgeNGramTokenizer that can generate n-grams in the sizes of the given range
-   *
-   * @param version the <a href="#version">Lucene match version</a>
-   * @param input {@link Reader} holding the input to be tokenized
-   * @param sideLabel the name of the {@link Side} from which to chop off an n-gram
-   * @param minGram the smallest n-gram to generate
-   * @param maxGram the largest n-gram to generate
-   */
-  @Deprecated
-  public EdgeNGramTokenizer(Version version, Reader input, String sideLabel, int minGram, int maxGram) {
-    this(version, input, Side.getSide(sideLabel), minGram, maxGram);
-  }
-
-  /**
-   * Creates EdgeNGramTokenizer that can generate n-grams in the sizes of the given range
-   *
-   * @param version the <a href="#version">Lucene match version</a>
-   * @param factory {@link org.apache.lucene.util.AttributeSource.AttributeFactory} to use
-   * @param input {@link Reader} holding the input to be tokenized
-   * @param sideLabel the name of the {@link Side} from which to chop off an n-gram
-   * @param minGram the smallest n-gram to generate
-   * @param maxGram the largest n-gram to generate
-   */
-  @Deprecated
-  public EdgeNGramTokenizer(Version version, AttributeFactory factory, Reader input, String sideLabel, int minGram, int maxGram) {
-    this(version, factory, input, Side.getSide(sideLabel), minGram, maxGram);
-  }
-
-  /**
-   * Creates EdgeNGramTokenizer that can generate n-grams in the sizes of the given range
-   *
-   * @param version the <a href="#version">Lucene match version</a>
+   * @param version the Lucene match version
    * @param input {@link Reader} holding the input to be tokenized
    * @param minGram the smallest n-gram to generate
    * @param maxGram the largest n-gram to generate
    */
-  @Deprecated
   public EdgeNGramTokenizer(Version version, Reader input, int minGram, int maxGram) {
-    this(version, input, Side.FRONT, minGram, maxGram);
+    super(input);
+    init(version, minGram, maxGram);
   }
 
   /**
    * Creates EdgeNGramTokenizer that can generate n-grams in the sizes of the given range
    *
-   * @param version the <a href="#version">Lucene match version</a>
+   * @param version the Lucene match version
    * @param factory {@link org.apache.lucene.util.AttributeSource.AttributeFactory} to use
    * @param input {@link Reader} holding the input to be tokenized
    * @param minGram the smallest n-gram to generate
    * @param maxGram the largest n-gram to generate
    */
-  @Deprecated
   public EdgeNGramTokenizer(Version version, AttributeFactory factory, Reader input, int minGram, int maxGram) {
-    this(version, factory, input, Side.FRONT, minGram, maxGram);
+    super(factory, input);
+    init(version, minGram, maxGram);
   }
 
-  private void init(Version version, Side side, int minGram, int maxGram) {
+  private void init(Version version, int minGram, int maxGram) {
     if (version == null) {
       throw new IllegalArgumentException("version must not be null");
-    }
-
-    if (side == null) {
-      throw new IllegalArgumentException("sideLabel must be either front or back");
     }
 
     if (minGram < 1) {
@@ -192,18 +88,8 @@ public final class EdgeNGramTokenizer extends Tokenizer {
       throw new IllegalArgumentException("minGram must not be greater than maxGram");
     }
 
-    if (version.onOrAfter(Version.LUCENE_44)) {
-      if (side == Side.BACK) {
-        throw new IllegalArgumentException("Side.BACK is not supported anymore as of Lucene 4.4");
-      }
-    } else {
-      maxGram = Math.min(maxGram, 1024);
-    }
-
-    this.version = version;
     this.minGram = minGram;
     this.maxGram = maxGram;
-    this.side = side;
   }
 
   /** Returns the next token in the stream, or null at EOS. */
@@ -214,27 +100,23 @@ public final class EdgeNGramTokenizer extends Tokenizer {
     if (!started) {
       started = true;
       gramSize = minGram;
-      final int limit = side == Side.FRONT ? maxGram : 1024;
-      char[] chars = new char[Math.min(1024, limit)];
+      char[] chars = new char[Math.min(1024, maxGram)];
       charsRead = 0;
       // TODO: refactor to a shared readFully somewhere:
       boolean exhausted = false;
-      while (charsRead < limit) {
+      while (charsRead < maxGram) {
         final int inc = input.read(chars, charsRead, chars.length-charsRead);
         if (inc == -1) {
           exhausted = true;
           break;
         }
         charsRead += inc;
-        if (charsRead == chars.length && charsRead < limit) {
+        if (charsRead == chars.length && charsRead < maxGram) {
           chars = ArrayUtil.grow(chars);
         }
       }
 
       inStr = new String(chars, 0, charsRead);
-      if (!version.onOrAfter(Version.LUCENE_44)) {
-        inStr = inStr.trim();
-      }
 
       if (!exhausted) {
         // Read extra throwaway chars so that on end() we
@@ -254,10 +136,8 @@ public final class EdgeNGramTokenizer extends Tokenizer {
         return false;
       }
       posIncrAtt.setPositionIncrement(1);
-    } else if (version.onOrAfter(Version.LUCENE_44)) {
-      posIncrAtt.setPositionIncrement(1);
     } else {
-      posIncrAtt.setPositionIncrement(0);
+      posIncrAtt.setPositionIncrement(1);
     }
 
     // if the remaining input is too short, we can't generate any n-grams
@@ -271,10 +151,8 @@ public final class EdgeNGramTokenizer extends Tokenizer {
     }
 
     // grab gramSize chars from front or back
-    int start = side == Side.FRONT ? 0 : inLen - gramSize;
-    int end = start + gramSize;
-    termAtt.setEmpty().append(inStr, start, end);
-    offsetAtt.setOffset(correctOffset(start), correctOffset(end));
+    termAtt.setEmpty().append(inStr, 0, gramSize);
+    offsetAtt.setOffset(correctOffset(0), correctOffset(gramSize));
     gramSize++;
     return true;
   }

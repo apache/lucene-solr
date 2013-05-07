@@ -23,7 +23,6 @@ import java.io.StringReader;
 import org.apache.lucene.analysis.MockTokenizer;
 import org.apache.lucene.analysis.TokenStream;
 import org.apache.lucene.analysis.util.BaseTokenStreamFactoryTestCase;
-import org.apache.lucene.util.Version;
 
 /**
  * Simple tests to ensure the NGram filter factories are working.
@@ -98,17 +97,6 @@ public class TestNGramFilters extends BaseTokenStreamFactoryTestCase {
   }
 
   /**
-   * Test EdgeNGramTokenizerFactory with side option
-   */
-  public void testEdgeNGramTokenizer3() throws Exception {
-    Reader reader = new StringReader("ready");
-    TokenStream stream = tokenizerFactory("EdgeNGram", Version.LUCENE_43,
-        "side", "back").create(reader);
-    assertTokenStreamContents(stream, 
-        new String[] { "y" });
-  }
-
-  /**
    * Test EdgeNGramFilterFactory
    */
   public void testEdgeNGramFilter() throws Exception {
@@ -130,18 +118,6 @@ public class TestNGramFilters extends BaseTokenStreamFactoryTestCase {
         "maxGramSize", "2").create(stream);
     assertTokenStreamContents(stream, 
         new String[] { "t", "te" });
-  }
-
-  /**
-   * Test EdgeNGramFilterFactory with side option
-   */
-  public void testEdgeNGramFilter3() throws Exception {
-    Reader reader = new StringReader("ready");
-    TokenStream stream = new MockTokenizer(reader, MockTokenizer.WHITESPACE, false);
-    stream = tokenFilterFactory("EdgeNGram", Version.LUCENE_43,
-        "side", "back").create(stream);
-    assertTokenStreamContents(stream, 
-        new String[] { "y" });
   }
   
   /** Test that bogus arguments result in exception */

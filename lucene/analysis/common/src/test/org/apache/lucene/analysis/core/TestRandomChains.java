@@ -431,20 +431,6 @@ public class TestRandomChains extends BaseTokenStreamTestCase {
         }
       }
     });
-    put(EdgeNGramTokenizer.Side.class, new ArgProducer() {
-      @Override public Object create(Random random) {
-        return random.nextBoolean() 
-            ? EdgeNGramTokenizer.Side.FRONT 
-            : EdgeNGramTokenizer.Side.BACK;
-      }
-    });
-    put(EdgeNGramTokenFilter.Side.class, new ArgProducer() {
-      @Override public Object create(Random random) {
-        return random.nextBoolean() 
-            ? EdgeNGramTokenFilter.Side.FRONT 
-            : EdgeNGramTokenFilter.Side.BACK;
-      }
-    });
     put(HyphenationTree.class, new ArgProducer() {
       @Override public Object create(Random random) {
         // TODO: make nastier
