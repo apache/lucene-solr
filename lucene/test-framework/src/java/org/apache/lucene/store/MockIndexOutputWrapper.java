@@ -43,6 +43,50 @@ public class MockIndexOutputWrapper extends IndexOutput {
     this.delegate = delegate;
   }
 
+  private void checkCrashed() throws IOException {
+    // If MockRAMDir crashed since we were opened, then don't write anything
+    if (dir.crashed) {
+      throw new IOException("MockRAMDirectory was crashed; cannot write to " + name);
+    }
+  }
+  
+  private void checkDiskFull(byte[] b, int offset, DataInput in, long len) throws IOException {
+    long freeSpace = dir.maxSize == 0 ? 0 : dir.maxSize - dir.sizeInBytes();
+    long realUsage = 0;
+
+    // Enforce disk full:
+    if (dir.maxSize != 0 && freeSpace < len) {
+      // Compute the real disk free.  This will greatly slow
+      // down our test but makes it more accurate:
+      realUsage = dir.getRecomputedActualSizeInBytes();
+      freeSpace = dir.maxSize - realUsage;
+    }
+
+    if (dir.maxSize != 0 && freeSpace < len) {
+      if (freeSpace > 0) {
+        realUsage += freeSpace;
+        if (b != null) {
+          delegate.writeBytes(b, offset, (int) freeSpace);
+        } else {
+          delegate.copyBytes(in, len);
+        }
+      }
+      if (realUsage > dir.maxUsedSize) {
+        dir.maxUsedSize = realUsage;
+      }
+      String message = "fake disk full at " + dir.getRecomputedActualSizeInBytes() + " bytes when writing " + name + " (file length=" + delegate.length();
+      if (freeSpace > 0) {
+        message += "; wrote " + freeSpace + " of " + len + " bytes";
+      }
+      message += ")";
+      if (LuceneTestCase.VERBOSE) {
+        System.out.println(Thread.currentThread().getName() + ": MDW: now throw fake disk full");
+        new Throwable().printStackTrace(System.out);
+      }
+      throw new IOException(message);
+    }
+  }
+  
   @Override
   public void close() throws IOException {
     try {
@@ -75,48 +119,16 @@ public class MockIndexOutputWrapper extends IndexOutput {
   
   @Override
   public void writeBytes(byte[] b, int offset, int len) throws IOException {
-    long freeSpace = dir.maxSize == 0 ? 0 : dir.maxSize - dir.sizeInBytes();
-    long realUsage = 0;
-    // If MockRAMDir crashed since we were opened, then
-    // don't write anything:
-    if (dir.crashed)
-      throw new IOException("MockRAMDirectory was crashed; cannot write to " + name);
-
-    // Enforce disk full:
-    if (dir.maxSize != 0 && freeSpace <= len) {
-      // Compute the real disk free.  This will greatly slow
-      // down our test but makes it more accurate:
-      realUsage = dir.getRecomputedActualSizeInBytes();
-      freeSpace = dir.maxSize - realUsage;
-    }
-
-    if (dir.maxSize != 0 && freeSpace <= len) {
-      if (freeSpace > 0) {
-        realUsage += freeSpace;
-        delegate.writeBytes(b, offset, (int) freeSpace);
-      }
-      if (realUsage > dir.maxUsedSize) {
-        dir.maxUsedSize = realUsage;
-      }
-      String message = "fake disk full at " + dir.getRecomputedActualSizeInBytes() + " bytes when writing " + name + " (file length=" + delegate.length();
-      if (freeSpace > 0) {
-        message += "; wrote " + freeSpace + " of " + len + " bytes";
-      }
-      message += ")";
-      if (LuceneTestCase.VERBOSE) {
-        System.out.println(Thread.currentThread().getName() + ": MDW: now throw fake disk full");
-        new Throwable().printStackTrace(System.out);
-      }
-      throw new IOException(message);
+    checkCrashed();
+    checkDiskFull(b, offset, null, len);
+    
+    if (dir.randomState.nextInt(200) == 0) {
+      final int half = len/2;
+      delegate.writeBytes(b, offset, half);
+      Thread.yield();
+      delegate.writeBytes(b, offset+half, len-half);
     } else {
-      if (dir.randomState.nextInt(200) == 0) {
-        final int half = len/2;
-        delegate.writeBytes(b, offset, half);
-        Thread.yield();
-        delegate.writeBytes(b, offset+half, len-half);
-      } else {
-        delegate.writeBytes(b, offset, len);
-      }
+      delegate.writeBytes(b, offset, len);
     }
 
     dir.maybeThrowDeterministicException();
@@ -146,8 +158,10 @@ public class MockIndexOutputWrapper extends IndexOutput {
 
   @Override
   public void copyBytes(DataInput input, long numBytes) throws IOException {
+    checkCrashed();
+    checkDiskFull(null, 0, input, numBytes);
+    
     delegate.copyBytes(input, numBytes);
-    // TODO: we may need to check disk full here as well
     dir.maybeThrowDeterministicException();
   }
 
