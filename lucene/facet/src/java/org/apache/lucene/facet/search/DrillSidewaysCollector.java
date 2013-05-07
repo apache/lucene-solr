@@ -82,7 +82,9 @@ class DrillSidewaysCollector extends Collector {
       // drillDown collector:
       //System.out.println("  hit " + drillDownCollector);
       hitCollector.collect(doc);
-      drillDownCollector.collect(doc);
+      if (drillDownCollector != null) {
+        drillDownCollector.collect(doc);
+      }
 
       // Also collect across all drill-sideways counts so
       // we "merge in" drill-down counts for this
@@ -98,21 +100,28 @@ class DrillSidewaysCollector extends Collector {
       }
 
     } else {
+      boolean found = false;
       for(int i=0;i<subScorers.length;i++) {
         if (subScorers[i] == null) {
           // This segment did not have any docs with this
           // drill-down field & value:
-          continue;
+          drillSidewaysCollectors[i].collect(doc);
+          assert allMatchesFrom(i+1, doc);
+          found = true;
+          break;
         }
         int subDoc = subScorers[i].docID();
-        //System.out.println("  sub: " + subDoc);
+        //System.out.println("  i=" + i + " sub: " + subDoc);
         if (subDoc != doc) {
+          //System.out.println("  +ds[" + i + "]");
           assert subDoc > doc: "subDoc=" + subDoc + " doc=" + doc;
           drillSidewaysCollectors[i].collect(doc);
           assert allMatchesFrom(i+1, doc);
+          found = true;
           break;
         }
       }
+      assert found;
     }
   }
 
@@ -134,8 +143,11 @@ class DrillSidewaysCollector extends Collector {
 
   @Override
   public void setNextReader(AtomicReaderContext leaf) throws IOException {
+    //System.out.println("DS.setNextReader reader=" + leaf.reader());
     hitCollector.setNextReader(leaf);
-    drillDownCollector.setNextReader(leaf);
+    if (drillDownCollector != null) {
+      drillDownCollector.setNextReader(leaf);
+    }
     for(Collector dsc : drillSidewaysCollectors) {
       dsc.setNextReader(leaf);
     }
@@ -166,7 +178,9 @@ class DrillSidewaysCollector extends Collector {
     Arrays.fill(subScorers, null);
     findScorers(scorer);
     hitCollector.setScorer(scorer);
-    drillDownCollector.setScorer(scorer);
+    if (drillDownCollector != null) {
+      drillDownCollector.setScorer(scorer);
+    }
     for(Collector dsc : drillSidewaysCollectors) {
       dsc.setScorer(scorer);
     }
