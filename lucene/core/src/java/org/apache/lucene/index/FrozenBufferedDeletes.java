@@ -21,13 +21,13 @@ import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
-import java.util.Map.Entry;
 import java.util.SortedSet;
+import java.util.TreeSet;
 
+import org.apache.lucene.index.BufferedDeletesStream.QueryAndLimit;
 import org.apache.lucene.search.Query;
 import org.apache.lucene.util.ArrayUtil;
 import org.apache.lucene.util.RamUsageEstimator;
-import org.apache.lucene.index.BufferedDeletesStream.QueryAndLimit;
 
 /** Holds buffered deletes by term or query, once pushed.
  *  Pushed deletes are write-once, so we shift to more
@@ -55,10 +55,8 @@ class FrozenBufferedDeletes {
                                    // a segment private deletes. in that case is should
                                    // only have Queries 
   
-  // Updated terms, in sorted order:
-  final PrefixCodedTerms updateTerms;
-  // Updated fields per term
-  final FieldsUpdate[][] updateArrays;
+  // An sorted set of updates
+  final SortedSet<FieldsUpdate> allUpdates;
 
   public FrozenBufferedDeletes(BufferedDeletes deletes, BufferedUpdates updates, boolean isSegmentPrivate) {
     this.isSegmentPrivate = isSegmentPrivate;
@@ -95,24 +93,14 @@ class FrozenBufferedDeletes {
     }
     
     // freeze updates
-    if (updates != null && !updates.terms.isEmpty()) {
-      PrefixCodedTerms.Builder builder = new PrefixCodedTerms.Builder();
-      updateArrays = new FieldsUpdate[updates.terms.size()][];
-      localBytesUsed += RamUsageEstimator.NUM_BYTES_OBJECT_REF * (1 + updateArrays.length);
-      int i = 0;
-      for (Entry<Term,SortedSet<FieldsUpdate>> entry : updates.terms.entrySet()) {
-        builder.add(entry.getKey());
-        SortedSet<FieldsUpdate> updateList = entry.getValue();
-        // TODO : calculate bytes of updates?
-        updateArrays[i] = updateList.toArray(new FieldsUpdate[updateList.size()]);
-        localBytesUsed += RamUsageEstimator.NUM_BYTES_OBJECT_REF * (1 + updateArrays[i].length);
-        i++;
-      }
-      updateTerms = builder.finish();
-      localBytesUsed += (int) updateTerms.getSizeInBytes();
+    if (updates == null || updates.terms.isEmpty()) {
+      allUpdates = null;
     } else {
-      updateTerms = null;
-      updateArrays = null;
+      allUpdates = new TreeSet<>();
+      for (SortedSet<FieldsUpdate> list : updates.terms.values()) {
+        allUpdates.addAll(list);
+      }
+      localBytesUsed += 100;
     }
     
     bytesUsed = localBytesUsed;
@@ -177,8 +165,8 @@ class FrozenBufferedDeletes {
     if (queries != null && queries.length != 0) {
       s += " " + queries.length + " deleted queries";
     }
-    if (updateArrays != null && updateArrays.length > 0) {
-      s += " " + updateArrays.length + " updates";
+    if (allUpdates != null && !allUpdates.isEmpty()) {
+      s += " " + allUpdates.size() + " updates";
     }
     if (bytesUsed != 0) {
       s += " bytesUsed=" + bytesUsed;
@@ -192,6 +180,6 @@ class FrozenBufferedDeletes {
   }
   
   boolean anyUpdates() {
-    return updateTerms != null;
+    return allUpdates != null;
   }
 }

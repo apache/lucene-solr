@@ -3,6 +3,7 @@ package org.apache.lucene.index;
 import java.io.IOException;
 import java.util.Comparator;
 import java.util.HashMap;
+import java.util.Iterator;
 import java.util.Map;
 import java.util.TreeSet;
 
@@ -33,14 +34,14 @@ import org.apache.lucene.util.BytesRef;
  * with no occurrences might return. Given a certain term, all the enumerations
  * take into account fields replacements.
  */
-public class StackedTermsEnum extends TermsEnum {
+class StackedTermsEnum extends TermsEnum {
   
   private final Terms[] subTerms;
   private final FieldGenerationReplacements replacements;
   private Comparator<BytesRef> comparator;
   private TreeSet<InnerTermsEnum> activeEnums;
   
-  public StackedTermsEnum(Terms[] subTerms,
+  protected StackedTermsEnum(Terms[] subTerms,
       FieldGenerationReplacements replacements, Comparator<BytesRef> comparator)
       throws IOException {
     this.subTerms = subTerms;
@@ -117,7 +118,7 @@ public class StackedTermsEnum extends TermsEnum {
       throws IOException {
     // reset active enums
     if (activeEnums == null) {
-      activeEnums = new TreeSet<InnerTermsEnum>();
+      activeEnums = new TreeSet<InnerTermsEnum>(new InnerTermsEnumFullComparator());
     } else {
       activeEnums.clear();
     }
@@ -181,13 +182,23 @@ public class StackedTermsEnum extends TermsEnum {
       throws IOException {
     // build map of active enums with indexes
     Map<DocsEnum,Integer> activeMap = new HashMap<DocsEnum,Integer>();
-    for (InnerTermsEnum inner : activeEnums.headSet(activeEnums.first(), true)) {
-      final DocsEnum docs = inner.termsEnum.docs(liveDocs, reuse, flags);
-      if (docs != null) {
-        activeMap.put(docs, inner.getIndex());
+
+    // iterate over active enums, fetch DocsEnum of all those pointing to the
+    // next term
+    InnerTermsEnum first = activeEnums.first();
+    Iterator<InnerTermsEnum> iterator = activeEnums.iterator();
+    while (iterator != null && iterator.hasNext()) {
+      InnerTermsEnum inner = iterator.next();
+      if (comparator.compare(first.term, inner.term) == 0) {
+        final DocsEnum docs = inner.termsEnum.docs(liveDocs, reuse, flags);
+        if (docs != null) {
+          activeMap.put(docs, inner.getIndex());
+        }
+      } else {
+        iterator = null;
       }
     }
-    
+
     if (activeMap.isEmpty()) {
       return null;
     }
@@ -204,11 +215,21 @@ public class StackedTermsEnum extends TermsEnum {
       DocsAndPositionsEnum reuse, int flags) throws IOException {
     // build map of active enums with indexes
     Map<DocsEnum,Integer> activeMap = new HashMap<DocsEnum,Integer>();
-    for (InnerTermsEnum inner : activeEnums.headSet(activeEnums.first(), true)) {
-      final DocsAndPositionsEnum docsAndPositions = inner.termsEnum
-          .docsAndPositions(liveDocs, reuse, flags);
-      if (docsAndPositions != null) {
-        activeMap.put(docsAndPositions, inner.getIndex());
+
+    // iterate over active enums, fetch DocsAndPositionsEnum of all those
+    // pointing to the next term
+    InnerTermsEnum first = activeEnums.first();
+    Iterator<InnerTermsEnum> iterator = activeEnums.iterator();
+    while (iterator != null && iterator.hasNext()) {
+      InnerTermsEnum inner = iterator.next();
+      if (comparator.compare(first.term, inner.term) == 0) {
+        final DocsAndPositionsEnum docsAndPositions = inner.termsEnum
+            .docsAndPositions(liveDocs, reuse, flags);
+        if (docsAndPositions != null) {
+          activeMap.put(docsAndPositions, inner.getIndex());
+        }
+      } else {
+        iterator = null;
       }
     }
     

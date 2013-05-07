@@ -18,10 +18,13 @@ package org.apache.lucene.index;
  */
 
 import java.io.IOException;
-import java.util.List;
 import java.util.ArrayList;
-import java.util.Comparator;
 import java.util.Collections;
+import java.util.Comparator;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Set;
+import java.util.SortedSet;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;
 
@@ -174,7 +177,7 @@ class BufferedDeletesStream {
     int delIDX = deletes.size()-1;
 
     List<SegmentInfoPerCommit> allDeleted = null;
-    List<SegmentInfoPerCommit> advanced = null;
+    Set<SegmentInfoPerCommit> advanced = null;
 
     while (infosIDX >= 0) {
       //System.out.println("BD: cycle delIDX=" + delIDX + " infoIDX=" + infosIDX);
@@ -252,11 +255,14 @@ class BufferedDeletesStream {
         delIDX--;
         infosIDX--;
         if (advanced == null) {
-          advanced = new ArrayList<SegmentInfoPerCommit>();
+          advanced = new HashSet<SegmentInfoPerCommit>();
         }
         advanced.add(info);
 
-      } else if (packet != null && packet.anyDeletes()){
+      } else if (packet != null && !packet.anyDeletes() && packet.anyUpdates()) {
+        // ignore updates only packets
+        delIDX--;
+      } else {
         //System.out.println("  gt");
 
         if (coalescedDeletes != null) {
@@ -289,40 +295,39 @@ class BufferedDeletesStream {
             infoStream.message("BD", "seg=" + info + " segGen=" + segGen + " coalesced deletes=[" + (coalescedDeletes == null ? "null" : coalescedDeletes) + "] newDelCount=" + delCount + (segAllDeletes ? " 100% deleted" : ""));
           }
         if (advanced == null) {
-          advanced = new ArrayList<SegmentInfoPerCommit>();
+          advanced = new HashSet<SegmentInfoPerCommit>();
         }
         advanced.add(info);
         }
 
         infosIDX--;
-      } else if (packet != null) {
-        delIDX--;
-      } else {
-        infosIDX--;
       }
     }
     
+    // go through deletes forward and apply updates
     for (SegmentInfoPerCommit updateInfo : infos2) {
-      //System.out.println("BD: cycle delIDX=" + delIDX + " infoIDX=" + infosIDX);
       final long updateSegGen = updateInfo.getBufferedDeletesGen();
       
       for (FrozenBufferedDeletes updatePacket : deletes) {
         if (updatePacket.anyUpdates() && updateSegGen <= updatePacket.delGen()) {
           assert readerPool.infoIsLive(updateInfo);
+          // we need to reopen the reader every time, to include previous
+          // updates when applying new ones
           final ReadersAndLiveDocs rld = readerPool.get(updateInfo, true);
           final SegmentReader reader = rld.getReader(IOContext.READ);
+          final boolean exactGen = updateSegGen == updatePacket.delGen();
           try {
-            anyNewDeletes |= applyTermUpdates(updatePacket.updateTerms,
-                updatePacket.updateArrays, rld, reader);
+            anyNewDeletes |= applyTermUpdates(updatePacket.allUpdates, rld,
+                reader, exactGen);
           } finally {
             rld.release(reader);
             readerPool.release(rld);
           }
+          if (advanced == null) {
+            advanced = new HashSet<SegmentInfoPerCommit>();
+          }
+          advanced.add(updateInfo);
         }
-        if (advanced == null) {
-          advanced = new ArrayList<SegmentInfoPerCommit>();
-        }
-        advanced.add(updateInfo);
       }
     }
 
@@ -463,65 +468,25 @@ class BufferedDeletesStream {
     return delCount;
   }
 
-  private synchronized boolean applyTermUpdates(PrefixCodedTerms updateTerms,
-      FieldsUpdate[][] updateArrays, ReadersAndLiveDocs rld,
-      SegmentReader reader) throws IOException {
+  private synchronized boolean applyTermUpdates(
+      SortedSet<FieldsUpdate> packetUpdates, ReadersAndLiveDocs rld,
+      SegmentReader reader, boolean checkDocId) throws IOException {
     Fields fields = reader.fields();
     if (fields == null) {
       // This reader has no postings
       return false;
     }
     
-    TermsEnum termsEnum = null;
-    
-    String currentField = null;
-    DocsEnum docs = null;
-    
     assert checkDeleteTerm(null);
 
     UpdatedSegmentData updatedSegmentData = new UpdatedSegmentData();
-    int termIndex = -1;
     
-    // System.out.println(Thread.currentThread().getName() +
-    // " del terms reader=" + reader);
-    for (Term term : updateTerms) {
-      termIndex++;
-      // Since we visit terms sorted, we gain performance
-      // by re-using the same TermsEnum and seeking only
-      // forwards
-      if (!term.field().equals(currentField)) {
-        assert currentField == null || currentField.compareTo(term.field()) < 0;
-        currentField = term.field();
-        Terms terms = fields.terms(currentField);
-        if (terms != null) {
-          termsEnum = terms.iterator(null);
-        } else {
-          termsEnum = null;
-        }
-      }
-      
-      if (termsEnum == null) {
-        continue;
-      }
-      assert checkDeleteTerm(term);
-      
-      // System.out.println("  term=" + term);
-      
-      if (termsEnum.seekExact(term.bytes(), false)) {
-        // we don't need term frequencies for this
-        DocsEnum docsEnum = termsEnum.docs(rld.getLiveDocs(), docs, 0);
-        // System.out.println("BDS: got docsEnum=" + docsEnum);
-        
-        if (docsEnum != null) {
-          while (true) {
-            final int docID = docsEnum.nextDoc();
-            // System.out.println(Thread.currentThread().getName() +
-            // " del term=" + term + " doc=" + docID);
-            if (docID == DocIdSetIterator.NO_MORE_DOCS) {
-              break;
-            }
-            updatedSegmentData.addUpdates(docID, updateArrays[termIndex]);
-          }
+    for (FieldsUpdate update : packetUpdates) {
+      DocsEnum docsEnum = reader.termDocsEnum(update.term);
+      if (docsEnum != null) {
+        int docID;
+        while ((docID = docsEnum.nextDoc()) != DocIdSetIterator.NO_MORE_DOCS) {
+          updatedSegmentData.addUpdate(docID, update, checkDocId);
         }
       }
     }

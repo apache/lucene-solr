@@ -4,12 +4,12 @@ import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Comparator;
-import java.util.HashMap;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.TreeMap;
 
+import org.apache.lucene.document.StoredField;
 import org.apache.lucene.index.DocsEnum;
 import org.apache.lucene.index.Fields;
 import org.apache.lucene.index.IndexReader;
@@ -293,6 +293,7 @@ public class IndexData {
     
     public DocumentData(StoredDocument document) {
       storedFields = document.getFields();
+      Collections.sort(storedFields, new StorableFieldsComparator());
     }
     
     public boolean isEmpty() {
@@ -373,5 +374,14 @@ public class IndexData {
       return 0;
       
     }
+  }
+  
+  private class StorableFieldsComparator implements Comparator<StorableField> {
+
+    @Override
+    public int compare(StorableField f0, StorableField f1) {
+      return f0.stringValue().compareTo(f1.stringValue());
+    }
+    
   }
 }

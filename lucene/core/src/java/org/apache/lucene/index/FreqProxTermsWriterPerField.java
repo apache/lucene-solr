@@ -520,7 +520,7 @@ final class FreqProxTermsWriterPerField extends TermsHashConsumerPerField implem
             if (state.liveUpdates == null) {
               state.liveUpdates = new UpdatedSegmentData();
             }
-            state.liveUpdates.addUpdate(docID, nextUpdate);
+            state.liveUpdates.addUpdate(docID, nextUpdate, true);
         }
 
         totTF += termFreq;

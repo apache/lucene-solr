@@ -417,8 +417,10 @@ final class DocumentsWriter {
       
       final DocumentsWriterPerThread dwpt = perThread.dwpt;
       try {
-        FieldsUpdate fieldsUpdate = new FieldsUpdate(operation, fields, 
-            analyzer, numDocsInRAM.get());
+        // create new fields update, which should effect previous docs in the
+        // current segment
+        FieldsUpdate fieldsUpdate = new FieldsUpdate(term, operation, fields, 
+            analyzer, numDocsInRAM.get() - 1);
         // invert the given fields and store in RAMDirectory
         dwpt.invertFieldsUpdate(fieldsUpdate, globalFieldNumberMap);
         dwpt.updateFields(term, fieldsUpdate);
@@ -427,7 +429,7 @@ final class DocumentsWriter {
           flushControl.doOnAbort(perThread);
         }
       }
-     final boolean isUpdate = term != null;
+      final boolean isUpdate = term != null;
       flushingDWPT = flushControl.doAfterDocument(perThread, isUpdate);
     } finally {
       perThread.unlock();
@@ -539,7 +541,7 @@ final class DocumentsWriter {
       perThread.unlock();
     }
     
-    return null;
+    return updates;
   }
   
   private boolean doFlush(DocumentsWriterPerThread flushingDWPT)

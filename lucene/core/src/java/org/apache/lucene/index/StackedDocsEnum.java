@@ -1,6 +1,8 @@
 package org.apache.lucene.index;
 
 import java.io.IOException;
+import java.util.ArrayList;
+import java.util.Collections;
 import java.util.Iterator;
 import java.util.LinkedList;
 import java.util.Map;
@@ -35,12 +37,12 @@ class StackedDocsEnum extends DocsAndPositionsEnum {
   /**
    * A queue containing non-active enums, ordered by doc ID.
    */
-  final private PriorityQueue<DocsEnumWithIndex> queueByDocId;
+  final private DocsEnumDocIdPriorityQueue queueByDocId;
   
   /**
    * A queue for ordering active enums by decreasing enum index.
    */
-  final private PriorityQueue<DocsEnumWithIndex> queueByIndex;
+  final private DocsEnumIndexPriorityQueue queueByIndex;
   
   /**
    * Field generation replacements for the enclosing field.
@@ -68,6 +70,7 @@ class StackedDocsEnum extends DocsAndPositionsEnum {
   private int positionsLeft;
   
   private static final FieldGenerationReplacements NO_REPLACEMENTS = new FieldGenerationReplacements();
+  private static final int STACKED_SEGMENT_POSITION_INCREMENT = 50000;
   
   public StackedDocsEnum(Map<DocsEnum,Integer> activeMap,
       FieldGenerationReplacements replacements) {
@@ -160,7 +163,13 @@ class StackedDocsEnum extends DocsAndPositionsEnum {
   @Override
   public int nextPosition() throws IOException {
     if (positionsEnum == null) {
-      activeIterator = active.iterator();
+      if (active.size() == 1) {
+        activeIterator = active.iterator();
+      } else {
+        ArrayList<DocsEnumWithIndex> tempList = new ArrayList<>(active);
+        Collections.sort(tempList);
+        activeIterator = tempList.iterator();
+      }
       positionsLeft = 0;
     }
     
@@ -170,7 +179,9 @@ class StackedDocsEnum extends DocsAndPositionsEnum {
     }
     
     positionsLeft--;
-    return ((DocsAndPositionsEnum) positionsEnum.docsEnum).nextPosition();
+    int pos = positionsEnum.index * STACKED_SEGMENT_POSITION_INCREMENT
+        + ((DocsAndPositionsEnum) positionsEnum.docsEnum).nextPosition();
+    return pos;
   }
   
   @Override
@@ -188,7 +199,16 @@ class StackedDocsEnum extends DocsAndPositionsEnum {
     return ((DocsAndPositionsEnum) positionsEnum.docsEnum).getPayload();
   }
   
-  protected class DocsEnumWithIndex {
+  @Override
+  public long cost() {
+    long cost = 0;
+    for (DocsEnumWithIndex docsEnum : active) {
+      cost += docsEnum.docsEnum.cost();
+    }
+    return cost;
+  }
+
+  protected class DocsEnumWithIndex implements Comparable<DocsEnumWithIndex> {
     
     DocsEnum docsEnum;
     int index;
@@ -196,6 +216,11 @@ class StackedDocsEnum extends DocsAndPositionsEnum {
     public DocsEnumWithIndex(DocsEnum docsEnum, int index) {
       this.docsEnum = docsEnum;
       this.index = index;
+    }
+
+    @Override
+    public int compareTo(DocsEnumWithIndex other) {
+      return this.index - other.index;
     }
     
   }
@@ -224,7 +249,7 @@ class StackedDocsEnum extends DocsAndPositionsEnum {
     @Override
     protected boolean lessThan(DocsEnumWithIndex a, DocsEnumWithIndex b) {
       // bigger index should be first
-      return a.index < b.index;
+      return a.index > b.index;
     }
     
   }

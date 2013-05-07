@@ -27,6 +27,7 @@ import java.util.Locale;
 import java.util.Random;
 
 import org.apache.lucene.analysis.MockAnalyzer;
+import org.apache.lucene.analysis.core.WhitespaceAnalyzer;
 import org.apache.lucene.codecs.simpletext.SimpleTextCodec;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field.Store;
@@ -44,7 +45,7 @@ import org.apache.lucene.util.LuceneTestCase;
 
 public class TestFieldReplacements extends LuceneTestCase {
   private Directory dir;
-  
+
   private static String[] fieldNames = null;
   private static String[][] fieldTokens = null;
   private static String loremIpsum = "Lorem ipsum dolor sit amet, consectetuer adipiscing elit, "
@@ -68,7 +69,6 @@ public class TestFieldReplacements extends LuceneTestCase {
   public void setUp() throws Exception {
     super.setUp();
     dir = newDirectory();
-
     
     // init fields data structures
     int numFields = 4 + random().nextInt(4);
@@ -85,7 +85,7 @@ public class TestFieldReplacements extends LuceneTestCase {
       fieldTokens[i] = tokens.toArray(new String[tokens.size()]);
     }
   }
-
+  
   @Override
   public void tearDown() throws Exception {
     dir.close();
@@ -94,7 +94,7 @@ public class TestFieldReplacements extends LuceneTestCase {
   
   public void testEmptyIndex() throws IOException {
     init(random());
-
+    
     // test performing fields addition and replacement on an empty index
     IndexWriter writer = new IndexWriter(dir, newIndexWriterConfig(
         TEST_VERSION_CURRENT, new MockAnalyzer(random())));
@@ -131,14 +131,21 @@ public class TestFieldReplacements extends LuceneTestCase {
       fieldTokens[i] = tokens.toArray(new String[tokens.size()]);
     }
   }
-
-  private static void addDocuments(Directory directory, Random localRandom, 
-      int maxDocs) throws IOException {
+  
+  private static void addDocuments(Directory directory, Random localRandom,
+      int maxDocs, boolean randomConfig) throws IOException {
     init(localRandom);
     HashSet<Term> usedTerms = new HashSet<Term>();
     
-    IndexWriterConfig config = newIndexWriterConfig(TEST_VERSION_CURRENT, 
-        new MockAnalyzer(random()));
+    final IndexWriterConfig config;
+    if (randomConfig) {
+      config = newIndexWriterConfig(TEST_VERSION_CURRENT,
+          new WhitespaceAnalyzer(TEST_VERSION_CURRENT));
+    } else {
+      config = new IndexWriterConfig(TEST_VERSION_CURRENT,
+          new WhitespaceAnalyzer(TEST_VERSION_CURRENT));
+    }
+    System.out.println(config.getMergePolicy());
     config.setCodec(new SimpleTextCodec());
     IndexWriter writer = new IndexWriter(directory, config);
     
@@ -226,7 +233,8 @@ public class TestFieldReplacements extends LuceneTestCase {
     return fields;
   }
   
-  public static Term getOperationTerm(HashSet<Term> usedTerms, Random loaclRandom) {
+  public static Term getOperationTerm(HashSet<Term> usedTerms,
+      Random loaclRandom) {
     Term term = null;
     boolean used = loaclRandom.nextInt(5) < 4;
     if (used && !usedTerms.isEmpty()) {
@@ -268,13 +276,13 @@ public class TestFieldReplacements extends LuceneTestCase {
   }
   
   public void testRandomIndexGeneration() throws IOException {
-    addDocuments(dir, random(), Integer.MAX_VALUE);
+    addDocuments(dir, random(), Integer.MAX_VALUE, true);
     DirectoryReader directoryReader = DirectoryReader.open(dir);
     directoryReader.close();
   }
   
   public void testAddIndexes() throws IOException {
-    addDocuments(dir, random(), Integer.MAX_VALUE);
+    addDocuments(dir, random(), Integer.MAX_VALUE, true);
     RAMDirectory addedDir = new RAMDirectory();
     IndexWriter addedIndexWriter = new IndexWriter(addedDir,
         newIndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer(random())));
@@ -293,167 +301,300 @@ public class TestFieldReplacements extends LuceneTestCase {
     assertEquals("Difference in addIndexes ", updatesIndexData, addedIndexData);
   }
   
-  
   public void testIndexEquality() throws IOException {
     // create index through updates
-    addDocuments(dir, new Random(3), Integer.MAX_VALUE);
-
+    addDocuments(dir, new Random(3), Integer.MAX_VALUE, true);
+    
     DirectoryReader updatesReader = DirectoryReader.open(dir);
     IndexData updatesIndexData = new IndexData(updatesReader);
     System.out.println("Updates index data");
-    System.out.println(updatesIndexData.toString(true));
+    System.out.println(updatesIndexData.toString(false));
     System.out.println();
     updatesReader.close();
-
+    
     // create the same index directly
     RAMDirectory directDir = new RAMDirectory();
-    IndexWriter directWriter = new IndexWriter(directDir,
-        newIndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer(random())));
-
+    IndexWriter directWriter = new IndexWriter(directDir, newIndexWriterConfig(
+        TEST_VERSION_CURRENT, new MockAnalyzer(random())));
+    
     Document doc = new Document();
-    doc.add(new StoredField("f0","elit, magna volutpat. tation ea dolor consequat, facilisis odio te soluta doming facer qui me consuetudium littera per nunc "));
-    doc.add(new TextField("f4","consectetuer tincidunt erat nostrud hendrerit dignissim claritatem me etiam quam claram, ", Store.NO));
-    doc.add(new TextField("f3","nibh iriure qui liber claritatem. claram, seacula videntur sollemnes ", Store.NO));
+    doc.add(new StoredField(
+        "f0",
+        "elit, magna volutpat. tation ea dolor consequat, facilisis odio te soluta doming facer qui me consuetudium littera per nunc "));
+    doc.add(new TextField(
+        "f4",
+        "consectetuer tincidunt erat nostrud hendrerit dignissim claritatem me etiam quam claram, ",
+        Store.NO));
+    doc.add(new TextField(
+        "f3",
+        "nibh iriure qui liber claritatem. claram, seacula videntur sollemnes ",
+        Store.NO));
     directWriter.addDocument(doc);
     
     doc = new Document();
-    doc.add(new TextField("f4","diam eum nulla nulla claritatem. mutationem claram, ", Store.NO));
-    doc.add(new TextField("f4","amet, erat eum delenit iis claritatem. claram, et fiant ", Store.NO));
-    doc.add(new StoredField("f0","dolore quis duis iriure illum accumsan blandit tempor nihil facer assum. qui lectores dynamicus, claram, quinta qui sollemnes "));
-    doc.add(new StoredField("f1","elit, dolore aliquip dolore et facilisi. nobis placerat demonstraverunt processus qui littera eodem clari, "));
-    doc.add(new TextField("f1","nonummy ad commodo at te eleifend congue doming in demonstraverunt consuetudium est eodem ", Store.NO));
-    doc.add(new TextField("f3","dolore volutpat. exerci nisl consequat, delenit liber nobis qui lectores saepius. et fiant ", Store.NO));
+    doc.add(new StoredField(
+        "f0",
+        "dolore quis duis iriure illum accumsan blandit tempor nihil facer assum. qui lectores dynamicus, claram, quinta qui sollemnes "));
+    doc.add(new TextField(
+        "f3",
+        "wisi vel accumsan liber qui nunc qui ",
+        Store.NO));
+    doc.add(new TextField("f4",
+        "adipiscing ea dolore claritatem. est litterarum qui fiant ", Store.NO));
+    doc.add(new StoredField("f4",
+        "diam hendrerit illum cum claritatem. quam claram, litterarum fiant "));
+    doc.add(new TextField(
+        "f1",
+        "volutpat. nostrud lobortis dolore nulla odio blandit eleifend quod eorum qui formas nunc nobis ",
+        Store.NO));
     directWriter.addDocument(doc);
     
     doc = new Document();
-    doc.add(new TextField("f5","magna dolore luptatum claritatem investigationes quod per ", Store.NO));
-    doc.add(new TextField("f2","elit, sed dolore aliquip commodo eum dignissim feugait doming habent insitam; legunt est qui quarta parum ", Store.NO));
-    doc.add(new StoredField("f3","nibh volutpat. in facilisis accumsan luptatum mazim lectores sequitur anteposuerit sollemnes "));
-    doc.add(new TextField("f2","euismod suscipit eum dolor molestie at qui duis doming in lius qui notare nunc ", Store.NO));
+    doc.add(new TextField("f5",
+        "magna dolore luptatum claritatem investigationes quod per ", Store.NO));
+    doc.add(new TextField(
+        "f2",
+        "elit, sed dolore aliquip commodo eum dignissim feugait doming habent insitam; legunt est qui quarta parum ",
+        Store.NO));
+    doc.add(new StoredField(
+        "f3",
+        "nibh volutpat. in facilisis accumsan luptatum mazim lectores sequitur anteposuerit sollemnes "));
+    doc.add(new TextField(
+        "f2",
+        "euismod suscipit eum dolor molestie at qui duis doming in lius qui notare nunc ",
+        Store.NO));
     directWriter.addDocument(doc);
     
     doc = new Document();
-    doc.add(new TextField("f4","tincidunt velit facilisis dignissim cum iis claram, ", Store.NO));
-    doc.add(new StoredField("f4","ullamcorper accumsan delenit dolore nihil claritatem. mutationem clari, "));
+    doc.add(new TextField("f4",
+        "tincidunt velit facilisis dignissim cum iis claram, ", Store.NO));
+    doc.add(new StoredField("f4",
+        "ullamcorper accumsan delenit dolore nihil claritatem. mutationem clari, "));
     directWriter.addDocument(doc);
     
     doc = new Document();
-    doc.add(new TextField("f3","exerci ea esse consequat, facilisis praesent placerat dynamicus, seacula qui ", Store.NO));
-    doc.add(new TextField("f2","sed nonummy erat duis eum iriure dignissim duis nam assum. insitam; qui quam nunc futurum. ", Store.NO));
-    doc.add(new TextField("f5","velit luptatum augue placerat quam ", Store.NO));
-    doc.add(new TextField("f3","minim commodo facilisis qui imperdiet ii claritas seacula ", Store.NO));
+    doc.add(new TextField(
+        "f3",
+        "exerci ea esse consequat, facilisis praesent placerat dynamicus, seacula qui ",
+        Store.NO));
+    doc.add(new TextField(
+        "f2",
+        "sed nonummy erat duis eum iriure dignissim duis nam assum. insitam; qui quam nunc futurum. ",
+        Store.NO));
+    doc.add(new TextField("f5", "velit luptatum augue placerat quam ", Store.NO));
+    doc.add(new TextField("f3",
+        "minim commodo facilisis qui imperdiet ii claritas seacula ", Store.NO));
     directWriter.addDocument(doc);
     
     doc = new Document();
-    doc.add(new TextField("f2","tincidunt suscipit dolor eu dignissim delenit congue possim lius anteposuerit in ", Store.NO));
+    doc.add(new TextField(
+        "f2",
+        "tincidunt suscipit dolor eu dignissim delenit congue possim lius anteposuerit in ",
+        Store.NO));
     directWriter.addDocument(doc);
     
     doc = new Document();
-    doc.add(new TextField("f5","consectetuer illum eleifend processus fiant ", Store.NO));
+    doc.add(new TextField("f5", "consectetuer illum eleifend processus fiant ",
+        Store.NO));
     directWriter.addDocument(doc);
     
     doc = new Document();
-    doc.add(new TextField("f1","volutpat. minim aliquip duis dolore zzril congue in saepius. dynamicus, qui est eodem qui futurum. ", Store.NO));
-    doc.add(new TextField("f0","ut quis duis eum hendrerit dolore odio feugait option doming mazim possim usus claritatem. legunt mirum litterarum qui sollemnes futurum. ", Store.NO));
+    doc.add(new TextField(
+        "f1",
+        "volutpat. minim aliquip duis dolore zzril congue in saepius. dynamicus, qui est eodem qui futurum. ",
+        Store.NO));
+    doc.add(new TextField(
+        "f0",
+        "ut quis duis eum hendrerit dolore odio feugait option doming mazim possim usus claritatem. legunt mirum litterarum qui sollemnes futurum. ",
+        Store.NO));
     directWriter.addDocument(doc);
     
     doc = new Document();
-    doc.add(new TextField("f0","nibh ut ut minim exerci ea duis esse et blandit luptatum facilisi. soluta doming quod typi usus quod dynamicus, consuetudium mirum quam quarta clari, in ", Store.NO));
-    doc.add(new TextField("f4","wisi facilisis claritatem iis lius mutationem qui ", Store.NO));
+    doc.add(new TextField(
+        "f0",
+        "nibh ut ut minim exerci ea duis esse et blandit luptatum facilisi. soluta doming quod typi usus quod dynamicus, consuetudium mirum quam quarta clari, in ",
+        Store.NO));
+    doc.add(new TextField("f4",
+        "wisi facilisis claritatem iis lius mutationem qui ", Store.NO));
     directWriter.addDocument(doc);
     
     doc = new Document();
-    doc.add(new StoredField("f4","nibh ullamcorper ea dignissim usus mutationem quarta "));
-    doc.add(new StoredField("f4","consectetuer wisi ea illum facilisis assum. mutationem quarta clari, "));
+    doc.add(new StoredField("f4",
+        "nibh ullamcorper ea dignissim usus mutationem quarta "));
+    doc.add(new StoredField("f4",
+        "consectetuer wisi ea illum facilisis assum. mutationem quarta clari, "));
     directWriter.addDocument(doc);
     
     doc = new Document();
-    doc.add(new TextField("f5","velit tempor processus putamus et typi, ", Store.NO));
-    doc.add(new TextField("f0","nibh dolore exerci eum esse feugiat facilisis iusto dolore cum quod non facit legunt quam claram, litterarum nunc ", Store.NO));
-    doc.add(new TextField("f4","consectetuer ullamcorper eum dignissim dolore assum. est littera in ", Store.NO));
-    doc.add(new TextField("f2","ipsum ad duis dolor eu at nam doming habent eorum me consuetudium decima futurum. ", Store.NO));
+    doc.add(new TextField(
+        "f2",
+        "ipsum ad duis dolor eu at nam doming habent eorum me consuetudium decima futurum. ",
+        Store.NO));
+    doc.add(new StoredField("f5", "velit tempor processus putamus et typi, "));
+    doc.add(new TextField(
+        "f4",
+        "adipiscing nibh wisi velit nulla nihil claritatem etiam quarta fiant ",
+        Store.NO));
     directWriter.addDocument(doc);
     
     doc = new Document();
-    doc.add(new TextField("f3","adipiscing wisi nisl consequat, dignissim nobis qui mirum fiant sollemnes ", Store.NO));
-    doc.add(new TextField("f0","euismod ut ad nisl dolor eu blandit te eleifend nihil typi qui lectores claritas consuetudium gothica, claram, decima sollemnes ", Store.NO));
-    doc.add(new TextField("f0","ut erat ut nisl ea dolor velit vel eros odio qui feugait facilisi. nihil assum. usus ii legunt littera decima nobis sollemnes ", Store.NO));
+    doc.add(new TextField(
+        "f3",
+        "adipiscing wisi nisl consequat, dignissim nobis qui mirum fiant sollemnes ",
+        Store.NO));
+    doc.add(new TextField(
+        "f0",
+        "euismod ut ad nisl dolor eu blandit te eleifend nihil typi qui lectores claritas consuetudium gothica, claram, decima sollemnes ",
+        Store.NO));
+    doc.add(new TextField(
+        "f0",
+        "ut erat ut nisl ea dolor velit vel eros odio qui feugait facilisi. nihil assum. usus ii legunt littera decima nobis sollemnes ",
+        Store.NO));
     directWriter.addDocument(doc);
     
     doc = new Document();
-    doc.add(new TextField("f5","velit tempor legentis mirum fiant ", Store.NO));
-    doc.add(new TextField("f0","nibh dolore exerci eum esse feugiat facilisis iusto dolore cum quod non facit legunt quam claram, litterarum nunc ", Store.NO));
-    doc.add(new TextField("f4","consectetuer ullamcorper eum dignissim dolore assum. est littera in ", Store.NO));
+    doc.add(new StoredField("f4",
+        "nostrud velit accumsan quod assum. claritatem. etiam et in "));
+    doc.add(new TextField("f4",
+        "adipiscing ea facilisis nihil usus lius etiam qui ",
+        Store.NO));
     directWriter.addDocument(doc);
     
     doc = new Document();
-    doc.add(new TextField("f2","dolore tation duis in eu delenit nam placerat in qui quarta ", Store.NO));
-    doc.add(new TextField("f2","ut suscipit duis at dignissim delenit soluta insitam; me quam qui futurum. ", Store.NO));
+    doc.add(new TextField("f2",
+        "dolore tation duis in eu delenit nam placerat in qui quarta ",
+        Store.NO));
+    doc.add(new TextField(
+        "f2",
+        "ut suscipit duis at dignissim delenit soluta insitam; me quam qui futurum. ",
+        Store.NO));
     directWriter.addDocument(doc);
     
     doc = new Document();
-    doc.add(new TextField("f0","diam euismod quis autem consequat, eros iusto delenit feugait option quod habent claritatem claritatem. lectores consuetudium nunc per qui sollemnes ", Store.NO));
-    doc.add(new TextField("f4","nibh tincidunt hendrerit nulla usus est quam qui ", Store.NO));
-    doc.add(new TextField("f1","adipiscing diam nostrud duis at zzril te nobis congue est demonstraverunt lius consuetudium est claram, qui in ", Store.NO));
-    doc.add(new StoredField("f0","nibh euismod magna erat suscipit duis dolor esse et delenit tempor quod typi in legunt littera nunc decima. in "));
+    doc.add(new TextField(
+        "f0",
+        "diam euismod quis autem consequat, eros iusto delenit feugait option quod habent claritatem claritatem. lectores consuetudium nunc per qui sollemnes ",
+        Store.NO));
+    doc.add(new TextField("f4",
+        "nibh tincidunt hendrerit nulla usus est quam qui ", Store.NO));
+    doc.add(new TextField(
+        "f1",
+        "adipiscing diam nostrud duis at zzril te nobis congue est demonstraverunt lius consuetudium est claram, qui in ",
+        Store.NO));
+    doc.add(new StoredField(
+        "f0",
+        "nibh euismod magna erat suscipit duis dolor esse et delenit tempor quod typi in legunt littera nunc decima. in "));
     directWriter.addDocument(doc);
     
     doc = new Document();
-    doc.add(new TextField("f1","diam nonummy tincidunt lobortis dolor et luptatum liber cum doming quod assum. habent insitam; est ii littera per et qui ", Store.NO));
-    doc.add(new TextField("f4","diam ullamcorper dignissim assum. claritatem. me etiam qui clari, ", Store.NO));
-    doc.add(new TextField("f0","ipsum ut volutpat. minim autem dolor vulputate vel dolore odio blandit cum nobis mazim placerat facer possim est lectores sequitur consuetudium claram, modo qui in ", Store.NO));
-    doc.add(new TextField("f2","tincidunt nisl duis in zzril placerat habent qui parum litterarum qui ", Store.NO));
+    doc.add(new TextField("f4",
+        "diam ullamcorper dignissim assum. claritatem. me etiam qui clari, ",
+        Store.NO));
+    doc.add(new TextField(
+        "f0",
+        "ipsum ut volutpat. minim autem dolor vulputate vel dolore odio blandit cum nobis mazim placerat facer possim est lectores sequitur consuetudium claram, modo qui in ",
+        Store.NO));
+    doc.add(new TextField(
+        "f2",
+        "tincidunt nisl duis in zzril placerat habent qui parum litterarum qui ",
+        Store.NO));
     directWriter.addDocument(doc);
     
     doc = new Document();
-    doc.add(new StoredField("f3","nibh ea consequat, accumsan tempor est dynamicus, seacula typi, videntur sollemnes "));
+    doc.add(new StoredField(
+        "f3",
+        "nibh ea consequat, accumsan tempor est dynamicus, seacula typi, videntur sollemnes "));
     directWriter.addDocument(doc);
     
     doc = new Document();
-    doc.add(new TextField("f1","volutpat. duis dolor esse at iusto delenit doming est facit est consuetudium humanitatis sollemnes ", Store.NO));
-    doc.add(new TextField("f2","ipsum ut nisl dolor dignissim nam placerat investigationes processus notare nunc in ", Store.NO));
-    doc.add(new TextField("f1","ipsum tincidunt nostrud lobortis in vel nulla dolore placerat facit ii quam littera formas nunc clari, ", Store.NO));
+    doc.add(new TextField(
+        "f1",
+        "volutpat. duis dolor esse at iusto delenit doming est facit est consuetudium humanitatis sollemnes ",
+        Store.NO));
+    doc.add(new TextField(
+        "f2",
+        "ipsum ut nisl dolor dignissim nam placerat investigationes processus notare nunc in ",
+        Store.NO));
+    doc.add(new TextField(
+        "f1",
+        "ipsum tincidunt nostrud lobortis in vel nulla dolore placerat facit ii quam littera formas nunc clari, ",
+        Store.NO));
     directWriter.addDocument(doc);
     
     doc = new Document();
-    doc.add(new TextField("f3","adipiscing ea consequat, qui nobis ii mirum et sollemnes ", Store.NO));
-    doc.add(new TextField("f5","velit te legere typi, ", Store.NO));
-    doc.add(new TextField("f3","nisl in dignissim delenit placerat est claritatem. notare anteposuerit et videntur ", Store.NO));
+    doc.add(new TextField("f3",
+        "adipiscing ea consequat, qui nobis ii mirum et sollemnes ", Store.NO));
+    doc.add(new TextField("f5", "velit te legere typi, ", Store.NO));
+    doc.add(new TextField(
+        "f3",
+        "nisl in dignissim delenit placerat est claritatem. notare anteposuerit et videntur ",
+        Store.NO));
     directWriter.addDocument(doc);
     
     doc = new Document();
-    doc.add(new TextField("f1","dolore nostrud suscipit lobortis duis vel et delenit liber cum habent usus claritatem. qui formas nobis sollemnes futurum. ", Store.NO));
-    doc.add(new TextField("f2","erat tation duis in molestie dignissim liber congue possim me qui litterarum eodem in ", Store.NO));
+    doc.add(new TextField(
+        "f1",
+        "dolore nostrud suscipit lobortis duis vel et delenit liber cum habent usus claritatem. qui formas nobis sollemnes futurum. ",
+        Store.NO));
+    doc.add(new TextField(
+        "f2",
+        "erat tation duis in molestie dignissim liber congue possim me qui litterarum eodem in ",
+        Store.NO));
     directWriter.addDocument(doc);
     
     doc = new Document();
-    doc.add(new TextField("f0","amet, elit, ut minim duis eum esse vel eu iusto blandit nam eleifend nihil typi usus facit legunt notare litterarum per decima clari, ", Store.NO));
+    doc.add(new TextField(
+        "f0",
+        "amet, elit, ut minim duis eum esse vel eu iusto blandit nam eleifend nihil typi usus facit legunt notare litterarum per decima clari, ",
+        Store.NO));
     directWriter.addDocument(doc);
     
     doc = new Document();
-    doc.add(new TextField("f2","euismod suscipit in velit delenit facer legunt quam formas parum ", Store.NO));
-    doc.add(new StoredField("f4","ullamcorper accumsan delenit insitam; lius mutationem quarta decima. "));
+    doc.add(new TextField("f2",
+        "euismod suscipit in velit delenit facer legunt quam formas parum ",
+        Store.NO));
+    doc.add(new StoredField("f4",
+        "ullamcorper accumsan delenit insitam; lius mutationem quarta decima. "));
     directWriter.addDocument(doc);
     
     doc = new Document();
-    doc.add(new StoredField("f3","ipsum adipiscing wisi nisl consequat, praesent placerat qui saepius. dynamicus, seacula videntur "));
+    doc.add(new StoredField(
+        "f3",
+        "ipsum adipiscing wisi nisl consequat, praesent placerat qui saepius. dynamicus, seacula videntur "));
     directWriter.addDocument(doc);
     
     doc = new Document();
-    doc.add(new StoredField("f0","consectetuer erat minim suscipit ea esse consequat, feugiat accumsan duis cum nihil typi claritatem facit etiam quam claram, quinta modo futurum. "));
-    doc.add(new TextField("f4","tincidunt illum cum claritatem. mutationem litterarum ", Store.NO));
+    doc.add(new StoredField(
+        "f0",
+        "consectetuer erat minim suscipit ea esse consequat, feugiat accumsan duis cum nihil typi claritatem facit etiam quam claram, quinta modo futurum. "));
+    doc.add(new TextField("f4",
+        "tincidunt illum cum claritatem. mutationem litterarum ", Store.NO));
     directWriter.addDocument(doc);
     
     doc = new Document();
-    doc.add(new TextField("f2","tincidunt erat ad aliquip duis velit dignissim delenit facer insitam; processus qui litterarum formas quarta ", Store.NO));
-    doc.add(new StoredField("f2","erat ut nisl duis at feugait congue in lius anteposuerit nunc "));
-    doc.add(new TextField("f3","adipiscing minim esse luptatum tempor imperdiet est saepius. seacula fiant ", Store.NO));
-    doc.add(new TextField("f0","ipsum elit, magna suscipit dolor eu iusto feugait eleifend quod assum. non est investigationes claritas nunc seacula videntur ", Store.NO));
-    doc.add(new TextField("f4","amet, nibh ullamcorper velit nulla dignissim quod insitam; lius decima. ", Store.NO));
+    doc.add(new TextField(
+        "f2",
+        "tincidunt erat ad aliquip duis velit dignissim delenit facer insitam; processus qui litterarum formas quarta ",
+        Store.NO));
+    doc.add(new StoredField("f2",
+        "erat ut nisl duis at feugait congue in lius anteposuerit nunc "));
+    doc.add(new TextField(
+        "f3",
+        "adipiscing minim esse luptatum tempor imperdiet est saepius. seacula fiant ",
+        Store.NO));
+    doc.add(new TextField(
+        "f0",
+        "ipsum elit, magna suscipit dolor eu iusto feugait eleifend quod assum. non est investigationes claritas nunc seacula videntur ",
+        Store.NO));
+    doc.add(new TextField(
+        "f4",
+        "amet, nibh ullamcorper velit nulla dignissim quod insitam; lius decima. ",
+        Store.NO));
     directWriter.addDocument(doc);
     
     doc = new Document();
-    doc.add(new TextField("f5","quis dolore eleifend investigationes mirum per eodem typi, ", Store.NO));
+    doc.add(new TextField("f5",
+        "quis dolore eleifend investigationes mirum per eodem typi, ", Store.NO));
     directWriter.addDocument(doc);
     
     directWriter.close();
@@ -461,7 +602,7 @@ public class TestFieldReplacements extends LuceneTestCase {
     
     IndexData directIndexData = new IndexData(directReader);
     System.out.println("Direct index data");
-    System.out.println(directIndexData.toString(true));
+    System.out.println(directIndexData.toString(false));
     System.out.println();
     directReader.close();
     directDir.close();
@@ -473,7 +614,7 @@ public class TestFieldReplacements extends LuceneTestCase {
   
   public void testReplaceAndAddAgain() throws IOException {
     IndexWriter writer = new IndexWriter(dir, newIndexWriterConfig(
-        TEST_VERSION_CURRENT, new MockAnalyzer(random())));
+        TEST_VERSION_CURRENT, new WhitespaceAnalyzer(TEST_VERSION_CURRENT)));
     
     FieldType fieldType = new FieldType();
     fieldType.setIndexed(true);
@@ -491,9 +632,9 @@ public class TestFieldReplacements extends LuceneTestCase {
     doc1.add(new StoredField("f1", "c", fieldType));
     writer.addDocument(doc1);
     
-    Document doc3 = new Document();
-    doc3.add(new StoredField("f1", "d", fieldType));
-    writer.updateFields(Operation.REPLACE_FIELDS, new Term("f1", "b"), doc3);
+    Document fields1 = new Document();
+    fields1.add(new StoredField("f1", "d", fieldType));
+    writer.updateFields(Operation.REPLACE_FIELDS, new Term("f1", "b"), fields1);
     
     Document doc2 = new Document();
     doc2.add(new StoredField("f1", "b", fieldType));
@@ -508,6 +649,7 @@ public class TestFieldReplacements extends LuceneTestCase {
     // check indexed fields
     final DocsAndPositionsEnum termPositionsA = atomicReader
         .termPositionsEnum(new Term("f1", "a"));
+    assertNotNull("no positions for term", termPositionsA);
     assertEquals("wrong doc id", 1, termPositionsA.nextDoc());
     assertEquals("wrong position", 0, termPositionsA.nextPosition());
     assertEquals("wrong doc id", DocIdSetIterator.NO_MORE_DOCS,
@@ -515,6 +657,7 @@ public class TestFieldReplacements extends LuceneTestCase {
     
     final DocsAndPositionsEnum termPositionsB = atomicReader
         .termPositionsEnum(new Term("f1", "b"));
+    assertNotNull("no positions for term", termPositionsB);
     assertEquals("wrong doc id", 2, termPositionsB.nextDoc());
     assertEquals("wrong position", 0, termPositionsB.nextPosition());
     assertEquals("wrong doc id", DocIdSetIterator.NO_MORE_DOCS,
@@ -522,6 +665,7 @@ public class TestFieldReplacements extends LuceneTestCase {
     
     final DocsAndPositionsEnum termPositionsC = atomicReader
         .termPositionsEnum(new Term("f1", "c"));
+    assertNotNull("no positions for term", termPositionsC);
     assertEquals("wrong doc id", 1, termPositionsC.nextDoc());
     assertEquals("wrong position", 1, termPositionsC.nextPosition());
     assertEquals("wrong doc id", DocIdSetIterator.NO_MORE_DOCS,
@@ -529,8 +673,10 @@ public class TestFieldReplacements extends LuceneTestCase {
     
     final DocsAndPositionsEnum termPositionsD = atomicReader
         .termPositionsEnum(new Term("f1", "d"));
+    assertNotNull("no positions for term", termPositionsD);
     assertEquals("wrong doc id", 0, termPositionsD.nextDoc());
-    assertEquals("wrong position", 0, termPositionsD.nextPosition());
+    // 50000 == StackedDocsEnum.STACKED_SEGMENT_POSITION_INCREMENT
+    assertEquals("wrong position", 50000, termPositionsD.nextPosition());
     assertEquals("wrong doc id", DocIdSetIterator.NO_MORE_DOCS,
         termPositionsD.nextDoc());
     
@@ -550,6 +696,91 @@ public class TestFieldReplacements extends LuceneTestCase {
     final StorableField[] f1_2 = stored2.getFields("f1");
     assertEquals("wrong numeber of stored fields", 1, f1_2.length);
     assertEquals("wrong field value", "b", f1_2[0].stringValue());
+    
+    directoryReader.close();
+    
+  }
+  
+  public void testReplaceAndAddSameField() throws IOException {
+    IndexWriter writer = new IndexWriter(dir, newIndexWriterConfig(
+        TEST_VERSION_CURRENT, new WhitespaceAnalyzer(TEST_VERSION_CURRENT)));
+    
+    FieldType fieldType = new FieldType();
+    fieldType.setIndexed(true);
+    fieldType.setTokenized(false);
+    fieldType.setOmitNorms(true);
+    fieldType.setStored(true);
+    
+    Document doc0 = new Document();
+    doc0.add(new StoredField("f1", "a", fieldType));
+    doc0.add(new StoredField("f1", "b", fieldType));
+    writer.addDocument(doc0);
+    
+    Document doc1 = new Document();
+    doc1.add(new StoredField("f1", "a", fieldType));
+    doc1.add(new StoredField("f1", "c", fieldType));
+    writer.addDocument(doc1);
+    
+    writer.commit();
+    
+    Document fields1 = new Document();
+    fields1.add(new StoredField("f1", "d", fieldType));
+    writer.updateFields(Operation.ADD_FIELDS, new Term("f1", "c"), fields1);
+    
+    writer.close();
+    
+    DirectoryReader directoryReader = DirectoryReader.open(dir);
+    final AtomicReader atomicReader = directoryReader.leaves().get(0).reader();
+    printField(atomicReader, "f1");
+    
+    // check indexed fields
+    final DocsAndPositionsEnum termPositionsA = atomicReader
+        .termPositionsEnum(new Term("f1", "a"));
+    assertNotNull("no positions for term", termPositionsA);
+    assertEquals("wrong doc id", 0, termPositionsA.nextDoc());
+    assertEquals("wrong position", 0, termPositionsA.nextPosition());
+    assertEquals("wrong doc id", 1, termPositionsA.nextDoc());
+    assertEquals("wrong position", 0, termPositionsA.nextPosition());
+    assertEquals("wrong doc id", DocIdSetIterator.NO_MORE_DOCS,
+        termPositionsA.nextDoc());
+    
+    final DocsAndPositionsEnum termPositionsB = atomicReader
+        .termPositionsEnum(new Term("f1", "b"));
+    assertNotNull("no positions for term", termPositionsB);
+    assertEquals("wrong doc id", 0, termPositionsB.nextDoc());
+    assertEquals("wrong position", 1, termPositionsB.nextPosition());
+    assertEquals("wrong doc id", DocIdSetIterator.NO_MORE_DOCS,
+        termPositionsB.nextDoc());
+    
+    final DocsAndPositionsEnum termPositionsC = atomicReader
+        .termPositionsEnum(new Term("f1", "c"));
+    assertNotNull("no positions for term", termPositionsC);
+    assertEquals("wrong doc id", 1, termPositionsC.nextDoc());
+    assertEquals("wrong position", 1, termPositionsC.nextPosition());
+    assertEquals("wrong doc id", DocIdSetIterator.NO_MORE_DOCS,
+        termPositionsC.nextDoc());
+    
+    final DocsAndPositionsEnum termPositionsD = atomicReader
+        .termPositionsEnum(new Term("f1", "d"));
+    assertNotNull("no positions for term", termPositionsD);
+    assertEquals("wrong doc id", 1, termPositionsD.nextDoc());
+    assertEquals("wrong position", 0, termPositionsD.nextPosition());
+    assertEquals("wrong doc id", DocIdSetIterator.NO_MORE_DOCS,
+        termPositionsD.nextDoc());
+    
+    // check stored fields
+    final StoredDocument stored0 = atomicReader.document(0);
+    final StorableField[] f1_0 = stored0.getFields("f1");
+    assertEquals("wrong numeber of stored fields", 2, f1_0.length);
+    assertEquals("wrong field value", "a", f1_0[0].stringValue());
+    assertEquals("wrong field value", "b", f1_0[1].stringValue());
+    
+    final StoredDocument stored1 = atomicReader.document(1);
+    final StorableField[] f1_1 = stored1.getFields("f1");
+    assertEquals("wrong numeber of stored fields", 3, f1_1.length);
+    assertEquals("wrong field value", "d", f1_1[0].stringValue());
+    assertEquals("wrong field value", "a", f1_1[1].stringValue());
+    assertEquals("wrong field value", "c", f1_1[2].stringValue());
     
     directoryReader.close();
     
@@ -580,29 +811,28 @@ public class TestFieldReplacements extends LuceneTestCase {
   }
   
   public void testprintIndexes() throws IOException {
-    File outDir = new File("D:/temp/ifu/compare/scenario/c");
+    File outDir = new File("D:/temp/ifu/compare/scenario/a");
     outDir.mkdirs();
-
+    
     for (int i = 0; i < 42; i++) {
-      //Directory directory = new RAMDirectory();
+      // Directory directory = new RAMDirectory();
       File fsDirFile = new File(outDir, "" + i);
       fsDirFile.mkdirs();
       Directory directory = FSDirectory.open(fsDirFile);
       for (String filename : directory.listAll()) {
         new File(fsDirFile, filename).delete();
       }
-      addDocuments(directory, new Random(3), i);
+      System.out.print("" + i + " ");
+      addDocuments(directory, new Random(3), i, true);
       DirectoryReader updatesReader = DirectoryReader.open(directory);
-      IndexData updatesIndexData = new IndexData(
-          updatesReader);
+      IndexData updatesIndexData = new IndexData(updatesReader);
       updatesReader.close();
-
+      
       File out = new File(outDir, (i < 10 ? "0" : "") + i + ".txt");
       FileWriter fileWriter = new FileWriter(out);
       fileWriter.append(updatesIndexData.toString());
       fileWriter.close();
     }
   }
-  
 
 }

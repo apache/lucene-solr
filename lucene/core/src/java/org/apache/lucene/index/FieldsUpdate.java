@@ -41,7 +41,8 @@ public class FieldsUpdate implements Comparable<FieldsUpdate> {
      */
     REPLACE_FIELDS
   }
-  
+
+  final Term term;
   final Operation operation;
   final Set<String> replacedFields;
   final Analyzer analyzer;
@@ -54,6 +55,8 @@ public class FieldsUpdate implements Comparable<FieldsUpdate> {
   /**
    * An update of fields which is not assigned to a specific live segment.
    * 
+   * @param term
+   *          The term to apply this update on
    * @param operation
    *          The type of update operation.
    * @param fields
@@ -63,8 +66,9 @@ public class FieldsUpdate implements Comparable<FieldsUpdate> {
    * @param docIDUpto
    *          Document ID of the last document added before this field update
    */
-  public FieldsUpdate(Operation operation, IndexDocument fields,
+  public FieldsUpdate(Term term, Operation operation, IndexDocument fields,
       Analyzer analyzer, int docIDUpto) {
+    this.term = term;
     this.fields = fields;
     this.operation = operation;
     if (operation == Operation.ADD_FIELDS) {
@@ -87,15 +91,13 @@ public class FieldsUpdate implements Comparable<FieldsUpdate> {
    * 
    * @param other
    *          A non-specific update with the update data.
-   * @param docIDUpto
-   *          The doc ID in the live segment up to which the update should be
-   *          applied.
    */
-  public FieldsUpdate(FieldsUpdate other, int docIDUpto) {
+  public FieldsUpdate(FieldsUpdate other) {
+    this.term = other.term;
     this.operation = other.operation;
     this.replacedFields = other.replacedFields;
     this.analyzer = other.analyzer;
-    this.docIDUpto = docIDUpto;
+    this.docIDUpto = other.docIDUpto;
     this.directory = other.directory;
     this.segmentInfo = other.segmentInfo;
   }

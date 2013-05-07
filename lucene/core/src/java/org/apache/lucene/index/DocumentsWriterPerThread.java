@@ -471,7 +471,6 @@ class DocumentsWriterPerThread {
       fieldsUpdate.directory = updateDir;
       fieldsUpdate.segmentInfo = updateSegment;
       fieldsUpdate.fields = null;
-      //fieldsUpdate.docIDUpto = 
       
       success = true;
     } finally {
@@ -710,8 +709,7 @@ class DocumentsWriterPerThread {
   }
 
   void sealUpdatedSegment(SegmentInfo info, Directory directory,
-      long updateGen, Set<String> generationReplacementFilenames)
-      throws IOException {
+      long updateGen, Set<String> excludedFiles) throws IOException {
     assert updateGen > 0;
     boolean success = false;
     try {
@@ -721,7 +719,7 @@ class DocumentsWriterPerThread {
         // Now build compound file
         Collection<String> oldFiles = IndexWriter.createCompoundFile(
             infoStream, directory, MergeState.CheckAbort.NONE, info, context,
-            -1L, generationReplacementFilenames);
+            -1L, excludedFiles);
         writer.deleteNewFiles(oldFiles);
       }
       

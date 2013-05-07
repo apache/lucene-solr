@@ -58,34 +58,18 @@ class UpdatedSegmentData {
     updatesMap = new TreeMap<Integer,PriorityQueue<FieldsUpdate>>();
   }
   
-  void addUpdate(int docID, FieldsUpdate fieldsUpdate) {
-    if (docID >= fieldsUpdate.docIDUpto) {
+  void addUpdate(int docId, FieldsUpdate fieldsUpdate, boolean checkDocId) {
+    if (checkDocId && docId > fieldsUpdate.docIDUpto) {
       return;
     }
-    PriorityQueue<FieldsUpdate> prevUpdates = updatesMap.get(docID);
+    PriorityQueue<FieldsUpdate> prevUpdates = updatesMap.get(docId);
     if (prevUpdates == null) {
       prevUpdates = new PriorityQueue<FieldsUpdate>();
-      updatesMap.put(docID, prevUpdates);
+      updatesMap.put(docId, prevUpdates);
     } else {
       System.out.println();
     }
     prevUpdates.add(fieldsUpdate);
-  }
-  
-  void addUpdates(int docID, FieldsUpdate[] updatesArray) {
-    PriorityQueue<FieldsUpdate> prevUpdates = updatesMap.get(docID);
-    if (prevUpdates == null) {
-      prevUpdates = new PriorityQueue<FieldsUpdate>();
-    }
-    for (int i = 0; i < updatesArray.length; i++) {
-      FieldsUpdate fieldsUpdate = updatesArray[i];
-      if (docID < fieldsUpdate.docIDUpto) {
-        prevUpdates.add(fieldsUpdate);
-      }
-    }
-    if (!prevUpdates.isEmpty()) {
-      updatesMap.put(docID, prevUpdates);
-    }
   }
   
   boolean hasUpdates() {
@@ -173,6 +157,10 @@ class UpdatedSegmentData {
     return toReturn;
   }
   
+  boolean isEmpty() {
+    return updatesMap.isEmpty();
+  }
+
   private class UpdateAtomicReader extends AtomicReader {
     
     final private SegmentCoreReaders core;

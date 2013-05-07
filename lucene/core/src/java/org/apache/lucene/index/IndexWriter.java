@@ -2406,7 +2406,7 @@ public class IndexWriter implements Closeable, TwoPhaseCommit {
       UpdatedSegmentData updates, IOContext context) throws IOException {
     // add updates, single update per document in each round, until all updates
     // were added
-    while (updates != null) {
+    while (updates != null && !updates.isEmpty()) {
       updates = docWriter.writeUpdatedSegment(info, updates,
           config.getTermIndexInterval(), globalFieldNumberMap, deleter);
       info.advanceUpdateGen();

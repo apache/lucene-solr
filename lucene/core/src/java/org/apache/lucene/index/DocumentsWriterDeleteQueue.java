@@ -349,7 +349,7 @@ final class DocumentsWriterDeleteQueue {
       if (fieldsUpdate == null) {
         bufferedDeletes.addTerm(item, docIDUpto);
       } else {
-        bufferedUpdates.addTerm(item, new FieldsUpdate(fieldsUpdate, docIDUpto));
+        bufferedUpdates.addTerm(item, new FieldsUpdate(fieldsUpdate));
       }
     }
 

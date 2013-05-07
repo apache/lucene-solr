@@ -19,13 +19,13 @@ package org.apache.lucene.index;
 
 import java.io.IOException;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.Map;
+import java.util.Set;
 
-import org.apache.lucene.codecs.FieldsProducer;
 import org.apache.lucene.codecs.StoredFieldsReader;
 import org.apache.lucene.codecs.TermVectorsReader;
 import org.apache.lucene.search.FieldCache;
-import org.apache.lucene.store.CompoundFileDirectory;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.IOContext;
 import org.apache.lucene.util.Bits;
@@ -224,35 +224,30 @@ public final class SegmentReader extends AtomicReader {
   
   private synchronized void generateReplacementsMap() throws IOException {
     if (replacementsMap == null) {
+      Set<String> visitedFields = new HashSet<String>();
       replacementsMap = new HashMap<String,FieldGenerationReplacements>();
-      boolean found = addReplacements(core.fields, core.cfsReader);
-      for (int i = 0; i < updates.length; i++) {
-        if (addReplacements(updates[i].fields, updates[i].cfsReader)) {
-          found = true;
-        }
+      for (String field : core.fields) {
+        addReplacements(field);
+        visitedFields.add(field);
       }
-      if (!found) {
-        // no replacements
-        replacementsMap.clear();
+      for (int i = 0; i < updates.length; i++) {
+        for (String field : updates[i].fields) {
+          if (!visitedFields.contains(field)) {
+            addReplacements(field);
+            visitedFields.add(field);
+          }
+        }
       }
     }
   }
   
-  private boolean addReplacements(FieldsProducer fields,
-      CompoundFileDirectory cfsReader) throws IOException {
-    boolean found = false;
-    for (String field : fields) {
-      if (!replacementsMap.containsKey(field)) {
-        final FieldGenerationReplacements replacements = si.info.getCodec()
-            .generationReplacementsFormat()
-            .readGenerationReplacements(field, si, context);
-        replacementsMap.put(field, replacements);
-        if (replacements != null) {
-          found = true;
-        }
-      }
+  private void addReplacements(String field) throws IOException {
+    final FieldGenerationReplacements replacements = si.info.getCodec()
+        .generationReplacementsFormat()
+        .readGenerationReplacements(field, si, context);
+    if (replacements != null) {
+      replacementsMap.put(field, replacements);
     }
-    return found;
   }
   
   @Override
