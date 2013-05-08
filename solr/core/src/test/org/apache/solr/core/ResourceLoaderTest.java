@@ -181,5 +181,6 @@ public class ResourceLoaderTest extends LuceneTestCase
     // null file filter means accept all (making otherFile accessible)
     loader.addToClassLoader("otherLib", null, false);
     assertNotNull(loader.getClassLoader().getResource("otherFile"));
+    loader.close();
   }
 }
