@@ -28,13 +28,15 @@ import org.apache.solr.client.solrj.request.QueryRequest;
 import org.apache.solr.client.solrj.response.QueryResponse;
 import org.apache.solr.common.SolrDocument;
 import org.apache.solr.common.cloud.ClusterState;
+import org.apache.solr.common.cloud.CompositeIdRouter;
 import org.apache.solr.common.cloud.DocRouter;
+import org.apache.solr.common.cloud.HashBasedRouter;
+import org.apache.solr.common.cloud.PlainIdRouter;
 import org.apache.solr.common.cloud.Slice;
 import org.apache.solr.common.cloud.ZkCoreNodeProps;
 import org.apache.solr.common.cloud.ZkStateReader;
 import org.apache.solr.common.params.CollectionParams;
 import org.apache.solr.common.params.ModifiableSolrParams;
-import org.apache.solr.common.util.Hash;
 import org.apache.solr.handler.admin.CollectionsHandler;
 import org.apache.solr.update.DirectUpdateHandler2;
 import org.apache.zookeeper.KeeperException;
@@ -51,6 +53,10 @@ public class ShardSplitTest extends BasicDistributedZkTest {
 
   public static final String SHARD1_0 = SHARD1 + "_0";
   public static final String SHARD1_1 = SHARD1 + "_1";
+
+  public ShardSplitTest() {
+    schemaString = "schema15.xml";      // we need a string id
+  }
 
   @Override
   @Before
@@ -94,7 +100,7 @@ public class ShardSplitTest extends BasicDistributedZkTest {
     waitForThingsToLevelOut(15);
 
     ClusterState clusterState = cloudClient.getZkStateReader().getClusterState();
-    DocRouter router = clusterState.getCollection(AbstractDistribZkTestBase.DEFAULT_COLLECTION).getRouter();
+    final DocRouter router = clusterState.getCollection(AbstractDistribZkTestBase.DEFAULT_COLLECTION).getRouter();
     Slice shard1 = clusterState.getSlice(AbstractDistribZkTestBase.DEFAULT_COLLECTION, SHARD1);
     DocRouter.Range shard1Range = shard1.getRange() != null ? shard1.getRange() : router.fullRange();
     final List<DocRouter.Range> ranges = router.partitionRange(2, shard1Range);
@@ -102,8 +108,9 @@ public class ShardSplitTest extends BasicDistributedZkTest {
     int numReplicas = shard1.getReplicas().size();
 
     del("*:*");
-    for (int id = 0; id < 100; id++) {
-      indexAndUpdateCount(ranges, docCounts, id);
+    for (int id = 0; id <= 100; id++) {
+      String shardKey = "" + (char)('a' + (id % 26)); // See comment in ShardRoutingTest for hash distribution
+      indexAndUpdateCount(router, ranges, docCounts, shardKey + "!" + String.valueOf(id));
     }
     commit();
 
@@ -113,7 +120,7 @@ public class ShardSplitTest extends BasicDistributedZkTest {
         int max = atLeast(401);
         for (int id = 101; id < max; id++) {
           try {
-            indexAndUpdateCount(ranges, docCounts, id);
+            indexAndUpdateCount(router, ranges, docCounts, String.valueOf(id));
             Thread.sleep(atLeast(25));
           } catch (Exception e) {
             log.error("Exception while adding doc", e);
@@ -201,12 +208,14 @@ public class ShardSplitTest extends BasicDistributedZkTest {
     baseServer.request(request);
   }
 
-  protected void indexAndUpdateCount(List<DocRouter.Range> ranges, int[] docCounts, int id) throws Exception {
-    indexr("id", id);
+  protected void indexAndUpdateCount(DocRouter router, List<DocRouter.Range> ranges, int[] docCounts, String id) throws Exception {
+    index("id", id);
 
-    // todo - hook in custom hashing
-    byte[] bytes = String.valueOf(id).getBytes("UTF-8");
-    int hash = Hash.murmurhash3_x86_32(bytes, 0, bytes.length, 0);
+    int hash = 0;
+    if (router instanceof HashBasedRouter) {
+      HashBasedRouter hashBasedRouter = (HashBasedRouter) router;
+      hash = hashBasedRouter.sliceHash(id, null, null);
+    }
     for (int i = 0; i < ranges.size(); i++) {
       DocRouter.Range range = ranges.get(i);
       if (range.includes(hash))

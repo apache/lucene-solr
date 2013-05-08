@@ -63,7 +63,7 @@ public class ChaosMonkeyShardSplitTest extends ShardSplitTest {
     waitForThingsToLevelOut(15);
 
     ClusterState clusterState = cloudClient.getZkStateReader().getClusterState();
-    DocRouter router = clusterState.getCollection(AbstractDistribZkTestBase.DEFAULT_COLLECTION).getRouter();
+    final DocRouter router = clusterState.getCollection(AbstractDistribZkTestBase.DEFAULT_COLLECTION).getRouter();
     Slice shard1 = clusterState.getSlice(AbstractDistribZkTestBase.DEFAULT_COLLECTION, SHARD1);
     DocRouter.Range shard1Range = shard1.getRange() != null ? shard1.getRange() : router.fullRange();
     final List<DocRouter.Range> ranges = router.partitionRange(2, shard1Range);
@@ -78,7 +78,7 @@ public class ChaosMonkeyShardSplitTest extends ShardSplitTest {
     try {
       del("*:*");
       for (int id = 0; id < 100; id++) {
-        indexAndUpdateCount(ranges, docCounts, id);
+        indexAndUpdateCount(router, ranges, docCounts, String.valueOf(id));
       }
       commit();
 
@@ -88,7 +88,7 @@ public class ChaosMonkeyShardSplitTest extends ShardSplitTest {
           int max = atLeast(401);
           for (int id = 101; id < max; id++) {
             try {
-              indexAndUpdateCount(ranges, docCounts, id);
+              indexAndUpdateCount(router, ranges, docCounts, String.valueOf(id));
               Thread.sleep(atLeast(25));
             } catch (Exception e) {
               log.error("Exception while adding doc", e);
