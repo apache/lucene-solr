@@ -38,6 +38,12 @@ TBD...
 Detailed Change List
 ----------------------
 
+Other Changes
+----------------------
+
+* SOLR-4622: Hardcoded SolrCloud defaults for hostContext and hostPort that
+  were deprecated in 4.3 have been removed completely. (hossman)
+
 ==================  4.4.0 ==================
 
 Versions of Major Components
