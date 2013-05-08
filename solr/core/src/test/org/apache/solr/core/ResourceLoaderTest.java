@@ -22,6 +22,7 @@ import junit.framework.Assert;
 import org.apache.lucene.util.LuceneTestCase;
 import org.apache.lucene.analysis.core.KeywordTokenizerFactory;
 import org.apache.lucene.analysis.ngram.NGramFilterFactory;
+import org.apache.lucene.util._TestUtil;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.handler.admin.LukeRequestHandler;
 import org.apache.solr.handler.component.FacetComponent;
@@ -30,11 +31,15 @@ import org.apache.lucene.analysis.util.ResourceLoaderAware;
 import org.apache.solr.util.plugin.SolrCoreAware;
 
 import java.io.File;
+import java.io.FileFilter;
+import java.io.FileOutputStream;
 import java.io.InputStream;
 import java.nio.charset.CharacterCodingException;
 import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
+import java.util.jar.JarEntry;
+import java.util.jar.JarOutputStream;
 
 public class ResourceLoaderTest extends LuceneTestCase 
 {
@@ -130,5 +135,51 @@ public class ResourceLoaderTest extends LuceneTestCase
     } catch (SolrException expected) {
       assertTrue(expected.getCause() instanceof CharacterCodingException);
     }
+  }
+
+  public void testClassLoaderLibs() throws Exception {
+    File tmpRoot = _TestUtil.getTempDir("testClassLoaderLibs");
+
+    File lib = new File(tmpRoot, "lib");
+    lib.mkdirs();
+
+    JarOutputStream jar1 = new JarOutputStream(new FileOutputStream(new File(lib, "jar1.jar")));
+    jar1.putNextEntry(new JarEntry("aLibFile"));
+    jar1.closeEntry();
+    jar1.close();
+
+    File otherLib = new File(tmpRoot, "otherLib");
+    otherLib.mkdirs();
+
+    JarOutputStream jar2 = new JarOutputStream(new FileOutputStream(new File(otherLib, "jar2.jar")));
+    jar2.putNextEntry(new JarEntry("explicitFile"));
+    jar2.closeEntry();
+    jar2.close();
+    JarOutputStream jar3 = new JarOutputStream(new FileOutputStream(new File(otherLib, "jar3.jar")));
+    jar3.putNextEntry(new JarEntry("otherFile"));
+    jar3.closeEntry();
+    jar3.close();
+
+    SolrResourceLoader loader = new SolrResourceLoader(tmpRoot.getAbsolutePath());
+
+    // ./lib is accessible by default
+    assertNotNull(loader.getClassLoader().getResource("aLibFile"));
+
+    // file filter works (and doesn't add other files in the same dir)
+    final File explicitFileJar = new File(otherLib, "jar2.jar").getAbsoluteFile();
+    loader.addToClassLoader("otherLib",
+        new FileFilter() {
+          @Override
+          public boolean accept(File pathname) {
+            return pathname.equals(explicitFileJar);
+          }
+        }, false);
+    assertNotNull(loader.getClassLoader().getResource("explicitFile"));
+    assertNull(loader.getClassLoader().getResource("otherFile"));
+
+
+    // null file filter means accept all (making otherFile accessible)
+    loader.addToClassLoader("otherLib", null, false);
+    assertNotNull(loader.getClassLoader().getResource("otherFile"));
   }
 }
