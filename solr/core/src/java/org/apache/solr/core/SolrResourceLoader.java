@@ -152,9 +152,11 @@ public class SolrResourceLoader implements ResourceLoader
     File base = FileUtils.resolvePath(new File(getInstanceDir()), baseDir);
     if (base != null && base.exists() && base.isDirectory()) {
       File[] files = base.listFiles(filter);
-      if (!quiet && (files == null || files.length == 0)) {
-        log.warn("No files added to classloader from lib: "
-            + baseDir + " (resolved as: " + base.getAbsolutePath() + ").");
+      if (files == null || files.length == 0) {
+        if (!quiet) {
+          log.warn("No files added to classloader from lib: "
+                   + baseDir + " (resolved as: " + base.getAbsolutePath() + ").");
+        }
       } else {
         this.classLoader = replaceClassLoader(classLoader, base, filter);
       }
@@ -165,35 +167,10 @@ public class SolrResourceLoader implements ResourceLoader
       }
     }
   }
-
-  /**
-   * Adds the specific file/dir specified to the ClassLoader used by this
-   * ResourceLoader.  This method <b>MUST</b>
-   * only be called prior to using this ResourceLoader to get any resources, otherwise
-   * it's behavior will be non-deterministic. You also have to {link #reloadLuceneSPI()}
-   * before using this ResourceLoader.
-   *
-   * @param path A jar file (or directory of classes) to be added to the classpath,
-   *             will be resolved relative the instance dir.
-   */
-  void addToClassLoader(final String path) {
-    final File file = FileUtils.resolvePath(new File(getInstanceDir()), path);
-    if (file.canRead()) {
-      this.classLoader = replaceClassLoader(classLoader, file.getParentFile(),
-                                            new FileFilter() {
-                                              @Override
-                                              public boolean accept(File pathname) {
-                                                return pathname.equals(file);
-                                              }
-                                            });
-    } else {
-      log.error("Can't find (or read) file to add to classloader: " + file);
-    }
-  }
   
   /**
    * Reloads all Lucene SPI implementations using the new classloader.
-   * This method must be called after {@link #addToClassLoader(String)}
+   * This method must be called after {@link #addToClassLoader(String, FileFilter, boolean)}
    * and {@link #addToClassLoader(String,FileFilter,boolean)} before using
    * this ResourceLoader.
    */

@@ -270,7 +270,7 @@ public class CoreContainer
     if (libDir != null) {
       File f = FileUtils.resolvePath(new File(dir), libDir);
       log.info("loading shared library: " + f.getAbsolutePath());
-      loader.addToClassLoader(libDir);
+      loader.addToClassLoader(libDir, null, false);
       loader.reloadLuceneSPI();
     }
 

@@ -24,11 +24,14 @@ import java.io.IOException;
 import java.io.OutputStreamWriter;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.jar.JarEntry;
+import java.util.jar.JarOutputStream;
 
 import javax.xml.parsers.ParserConfigurationException;
 
 import org.apache.commons.io.FileUtils;
 import org.apache.lucene.util.IOUtils;
+import org.apache.lucene.util._TestUtil;
 import org.apache.solr.SolrTestCaseJ4;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
@@ -332,6 +335,55 @@ public class TestCoreContainer extends SolrTestCaseJ4 {
       core1.close();
     } finally {
       cc.shutdown();
+    }
+  }
+
+  @Test
+  public void testSharedLib() throws Exception {
+    File tmpRoot = _TestUtil.getTempDir("testSharedLib");
+
+    File lib = new File(tmpRoot, "lib");
+    lib.mkdirs();
+
+    JarOutputStream jar1 = new JarOutputStream(new FileOutputStream(new File(lib, "jar1.jar")));
+    jar1.putNextEntry(new JarEntry("defaultSharedLibFile"));
+    jar1.closeEntry();
+    jar1.close();
+
+    File customLib = new File(tmpRoot, "customLib");
+    customLib.mkdirs();
+
+    JarOutputStream jar2 = new JarOutputStream(new FileOutputStream(new File(customLib, "jar2.jar")));
+    jar2.putNextEntry(new JarEntry("customSharedLibFile"));
+    jar2.closeEntry();
+    jar2.close();
+
+    FileUtils.writeStringToFile(new File(tmpRoot, "default-lib-solr.xml"), "<solr><cores/></solr>", "UTF-8");
+    FileUtils.writeStringToFile(new File(tmpRoot, "explicit-lib-solr.xml"), "<solr sharedLib=\"lib\"><cores/></solr>", "UTF-8");
+    FileUtils.writeStringToFile(new File(tmpRoot, "custom-lib-solr.xml"), "<solr sharedLib=\"customLib\"><cores/></solr>", "UTF-8");
+
+    final CoreContainer cc1 = new CoreContainer(tmpRoot.getAbsolutePath());
+    cc1.load(tmpRoot.getAbsolutePath(), new File(tmpRoot, "default-lib-solr.xml"));
+    try {
+      cc1.loader.openResource("defaultSharedLibFile").close();
+    } finally {
+      cc1.shutdown();
+    }
+
+    final CoreContainer cc2 = new CoreContainer(tmpRoot.getAbsolutePath());
+    cc2.load(tmpRoot.getAbsolutePath(), new File(tmpRoot, "explicit-lib-solr.xml"));
+    try {
+      cc2.loader.openResource("defaultSharedLibFile").close();
+    } finally {
+      cc2.shutdown();
+    }
+
+    final CoreContainer cc3 = new CoreContainer(tmpRoot.getAbsolutePath());
+    cc3.load(tmpRoot.getAbsolutePath(), new File(tmpRoot, "custom-lib-solr.xml"));
+    try {
+      cc3.loader.openResource("customSharedLibFile").close();
+    } finally {
+      cc3.shutdown();
     }
   }
   
