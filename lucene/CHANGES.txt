@@ -160,6 +160,12 @@ New Features
 * LUCENE-4979: LiveFieldFields can work with any ReferenceManager, not
   just ReferenceManager<IndexSearcher> (Mike McCandless).
 
+Build
+
+* LUCENE-4987: Upgrade randomized testing to version 2.0.10: 
+  Test framework may fail internally due to overly aggresive J9 optimizations. 
+  (Dawid Weiss, Shai Erera)
+
 ======================= Lucene 4.3.0 =======================
 
 Changes in backwards compatibility policy
