@@ -34,13 +34,14 @@ public class SplitIndexCommand extends UpdateCommand {
   public List<String> paths;
   public List<SolrCore> cores;  // either paths or cores should be specified
   public List<DocRouter.Range> ranges;
-  // TODO: allow specification of custom hash function
+  public DocRouter router;
 
-  public SplitIndexCommand(SolrQueryRequest req, List<String> paths,  List<SolrCore> cores, List<DocRouter.Range> ranges) {
+  public SplitIndexCommand(SolrQueryRequest req, List<String> paths,  List<SolrCore> cores, List<DocRouter.Range> ranges, DocRouter router) {
     super(req);
     this.paths = paths;
     this.cores = cores;
     this.ranges = ranges;
+    this.router = router;
   }
 
   @Override
@@ -54,6 +55,7 @@ public class SplitIndexCommand extends UpdateCommand {
     sb.append(",paths=" + paths);
     sb.append(",cores=" + cores);
     sb.append(",ranges=" + ranges);
+    sb.append(",router=" + router);
     sb.append('}');
     return sb.toString();
   }

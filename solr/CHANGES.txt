@@ -99,6 +99,13 @@ Bug Fixes
 * SOLR-4795: Sub shard leader should not accept any updates from parent after
   it goes active (shalin)
 
+* SOLR-4798: shard splitting does not respect the router for the collection
+  when executing the index split.   One effect of this is that documents
+  may be placed in the wrong shard when the default compositeId router
+  is used in conjunction with IDs containing "!". (yonik)
+
+
+
 Other Changes
 ----------------------
 

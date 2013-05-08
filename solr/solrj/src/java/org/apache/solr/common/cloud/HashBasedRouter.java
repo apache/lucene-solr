@@ -42,7 +42,7 @@ public abstract class HashBasedRouter extends DocRouter {
     return range != null && range.includes(hash);
   }
 
-  protected int sliceHash(String id, SolrInputDocument sdoc, SolrParams params) {
+  public int sliceHash(String id, SolrInputDocument sdoc, SolrParams params) {
     return Hash.murmurhash3_x86_32(id, 0, id.length(), 0);
   }
 
