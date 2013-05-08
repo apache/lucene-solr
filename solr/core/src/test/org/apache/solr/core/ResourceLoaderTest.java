@@ -19,6 +19,7 @@ package org.apache.solr.core;
 
 import junit.framework.Assert;
 
+import org.apache.lucene.util.Constants;
 import org.apache.lucene.util.LuceneTestCase;
 import org.apache.lucene.analysis.core.KeywordTokenizerFactory;
 import org.apache.lucene.analysis.ngram.NGramFilterFactory;
@@ -138,6 +139,7 @@ public class ResourceLoaderTest extends LuceneTestCase
   }
 
   public void testClassLoaderLibs() throws Exception {
+    assumeTrue("needs URLClassLoader.close() support", Constants.WINDOWS == false || Constants.JRE_IS_MINIMUM_JAVA7);
     File tmpRoot = _TestUtil.getTempDir("testClassLoaderLibs");
 
     File lib = new File(tmpRoot, "lib");
@@ -181,5 +183,6 @@ public class ResourceLoaderTest extends LuceneTestCase
     // null file filter means accept all (making otherFile accessible)
     loader.addToClassLoader("otherLib", null, false);
     assertNotNull(loader.getClassLoader().getResource("otherFile"));
+    loader.close();
   }
 }

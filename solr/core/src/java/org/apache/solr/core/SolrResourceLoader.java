@@ -17,6 +17,7 @@
 
 package org.apache.solr.core;
 
+import java.io.Closeable;
 import java.io.File;
 import java.io.FileFilter;
 import java.io.FileInputStream;
@@ -37,6 +38,7 @@ import org.apache.lucene.analysis.util.TokenizerFactory;
 import org.apache.lucene.codecs.Codec;
 import org.apache.lucene.codecs.PostingsFormat;
 import org.apache.lucene.codecs.DocValuesFormat;
+import org.apache.lucene.util.IOUtils;
 import org.apache.lucene.analysis.util.WordlistLoader;
 import org.apache.solr.common.ResourceLoader;
 import org.apache.solr.handler.admin.CoreAdminHandler;
@@ -68,7 +70,7 @@ import org.apache.solr.search.QParserPlugin;
 /**
  * @since solr 1.3
  */ 
-public class SolrResourceLoader implements ResourceLoader
+public class SolrResourceLoader implements ResourceLoader,Closeable
 {
   public static final Logger log = LoggerFactory.getLogger(SolrResourceLoader.class);
 
@@ -206,7 +208,9 @@ public class SolrResourceLoader implements ResourceLoader
           SolrException.log(log, "Can't add element to classloader: " + files[j], e);
         }
       }
-      return URLClassLoader.newInstance(elements, oldLoader.getParent());
+      ClassLoader oldParent = oldLoader.getParent();
+      closeHack(oldLoader); // best effort
+      return URLClassLoader.newInstance(elements, oldParent);
     }
     // are we still here?
     return oldLoader;
@@ -754,5 +758,20 @@ public class SolrResourceLoader implements ResourceLoader
       builder.append( "[" ).append( v.getName() ).append( "] ") ;
     }
     throw new SolrException( SolrException.ErrorCode.SERVER_ERROR, builder.toString() );
+  }
+  
+  /** 
+   * We don't have URLClassLoader.close() until java7, but
+   * we still try to release resources with a Schindler-häck
+   */
+  private static void closeHack(URLClassLoader loader) {
+    if (loader instanceof Closeable) {
+      IOUtils.closeWhileHandlingException((Closeable)loader);
+    }
+  }
+
+  @Override
+  public void close() throws IOException {
+    closeHack(classLoader);
   }
 }
