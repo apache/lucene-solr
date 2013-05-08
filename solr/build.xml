@@ -681,6 +681,9 @@
                          tofile="${analysis.conf.dest}/stopwords_ja.txt"/>
     <copy verbose="true" file="${analysis-kuromoji.res.dir}/ja/stoptags.txt"
                          tofile="${analysis.conf.dest}/stoptags_ja.txt"/>
+    <!-- korean -->
+    <copy verbose="true" file="${analysis-kuromoji.res.dir}/kr/stopwords.txt"
+          tofile="${analysis.conf.dest}/stopwords_kr.txt"/>
   	<!-- latvian -->
     <copy verbose="true" file="${analysis-common.res.dir}/lv/stopwords.txt"
                          tofile="${analysis.conf.dest}/stopwords_lv.txt"/>

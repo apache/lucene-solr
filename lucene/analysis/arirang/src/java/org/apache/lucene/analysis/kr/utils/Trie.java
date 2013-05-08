@@ -107,8 +107,6 @@ public class Trie<S,V> {
 
   /**
    * Makes this empty.
-   * 
-   * @modifies this
    */
   public void clear() {
     this.root = new TrieNode<V>();
@@ -180,8 +178,6 @@ public class Trie<S,V> {
    * Maps the given key (which may be empty) to the given value.
    * 
    * @return the old value associated with key, or <tt>null</tt> if none
-   * @requires value != null
-   * @modifies this
    */
   public V add(String key, V value) {
     // early conversion of key, for best performance
@@ -290,7 +286,6 @@ public class Trie<S,V> {
    * Ensures no values are associated with the given key.
    * 
    * @return <tt>true</tt> if any values were actually removed
-   * @modifies this
    */
   public boolean remove(String key) {
     // early conversion of search key
@@ -312,8 +307,6 @@ public class Trie<S,V> {
    * contains exactly the values v for which there exists a key k so that
    * k.startsWith(prefix) and get(k) == v. The remove() operation on the
    * iterator is unimplemented.
-   * 
-   * @requires this not modified while iterator in use
    */
   public Iterator getPrefixedBy(String prefix) {
     // Early conversion of search key
@@ -331,7 +324,7 @@ public class Trie<S,V> {
    * But it can be performed early on the whole buffer using the public method
    * <tt>canonicalCase(String)</tt> of this.
    * 
-   * @requires 0 &lt;= startOffset &lt;= stopOffset &lt;= prefix.length
+   * requires 0 &lt;= startOffset &lt;= stopOffset &lt;= prefix.length
    * @see #canonicalCase(String)
    */
   public Iterator getPrefixedBy(String prefix, int startOffset, int stopOffset) {

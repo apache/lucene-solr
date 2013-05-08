@@ -68,8 +68,6 @@ public class Tagger {
    * occurrence.dic 에 등록되어 있는 경우만.. 최적을 찾아서 반환한다.
    * 1. 첫번째는 어간으로 시작되는 문법 규칙을 찾는다.
    * 2. 두번째는 표층형으로 시작되는 문법규칙을 찾는다.
-   * @param morphs
-   * @return
    */
   private AnalysisOutput lookupBest(String psource,String rsource, List<AnalysisOutput> pmorphs, List<AnalysisOutput> rmorphs)  throws MorphException {
     
@@ -92,7 +90,7 @@ public class Tagger {
    * @param source
    * @param pmorphs
    * @param rmorphs
-   * @return
+   * @return analysis output
    * @throws MorphException
    */
   private AnalysisOutput lookupBestByPWord(String rsource, List<AnalysisOutput> rmorphs)  throws MorphException {
@@ -124,15 +122,10 @@ public class Tagger {
   /**
    * 뒷 어절에 의해 현재 어절이 결정된다.
    * 뒷 어절은 NULL이 아니다.
-   * @param source
-   * @param pmorphs
-   * @param rmorphs
-   * @return
-   * @throws MorphException
    */
   private AnalysisOutput lookupBestByRWord(String psource, String rsource, List<AnalysisOutput> pmorphs, List<AnalysisOutput> rmorphs)  throws MorphException {
     
-    List<AnalysisOutput> removes = new ArrayList();
+    List<AnalysisOutput> removes = new ArrayList<AnalysisOutput>();
     
     for(AnalysisOutput rmorph : rmorphs) {
       

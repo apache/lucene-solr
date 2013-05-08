@@ -35,7 +35,7 @@ public class KoreanFilterFactory extends TokenFilterFactory {
   /**
    * Initialize this factory via a set of key-value pairs.
    */
-  protected KoreanFilterFactory(Map<String, String> args) {
+  public KoreanFilterFactory(Map<String, String> args) {
     super(args);
     init(args);
   }

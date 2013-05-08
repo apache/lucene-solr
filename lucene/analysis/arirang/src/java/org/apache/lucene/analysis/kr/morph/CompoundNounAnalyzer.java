@@ -520,7 +520,7 @@ public class CompoundNounAnalyzer {
   /**
    * 입력된 String 을 CompoundEntry 로 변환
    * @param input
-   * @return
+   * @return compound entry
    * @throws MorphException
    */
   private CompoundEntry analyzeSingle(String input) throws MorphException {

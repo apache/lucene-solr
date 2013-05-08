@@ -70,7 +70,7 @@ public class MorphAnalyzer {
    * 
    * @param input
    * @param pos
-   * @return
+   * @return candidates
    * @throws MorphException
    */
   public List<AnalysisOutput> analyze(String input, int pos) throws MorphException {    
@@ -373,8 +373,6 @@ public class MorphAnalyzer {
    * 복합명사인지 조사하고, 복합명사이면 단위명사들을 찾는다.
    * 복합명사인지 여부는 단위명사가 모두 사전에 있는지 여부로 판단한다.
    * 단위명사는 2글자 이상 단어에서만 찾는다.
-   * @param o
-   * @return
    * @throws MorphException
    */
   public boolean confirmCNoun(AnalysisOutput o) throws MorphException  {

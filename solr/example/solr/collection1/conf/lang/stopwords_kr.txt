@@ -1,0 +1,7 @@
+#
+# This file defines a stopword set for Korean.
+#
+# When editing this file, note that comments are not allowed on the
+# same line as stopwords.
+
+##### End of file

@@ -54,9 +54,6 @@ public class HanjaUtils {
   /**
    * 한자에 대응하는 한글을 찾아서 반환한다.
    * 하나의 한자는 여러 음으로 읽일 수 있으므로 가능한 모든 음을 한글로 반환한다.
-   * @param hanja
-   * @return
-   * @throws MorphException
    */
   public static char[] convertToHangul(char hanja) throws MorphException {
  

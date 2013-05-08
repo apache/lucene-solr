@@ -37,7 +37,6 @@ public class EomiUtil {
   /**
    * 가장 길이가 긴 어미를 분리한다.
    * @param term
-   * @return
    * @throws MorphException
    */
   public static String[] longestEomi(String term) throws MorphException  {
@@ -123,8 +122,6 @@ public class EomiUtil {
   
   /**
    * 선어말어미를 분석한다.
-   * @param stem
-   * @return
    */
   public static String[] splitPomi(String stem) throws MorphException  {
 
@@ -236,9 +233,6 @@ public class EomiUtil {
   
   /**
    * 불규칙 용언의 원형을 구한다.
-   * @param output
-   * @return
-   * @throws MorphException
    */
   public static List irregular(AnalysisOutput output) throws MorphException {
     
@@ -501,7 +495,7 @@ public class EomiUtil {
    * 시제 선어미말을 만들어서 반환한다.
    * @param preword  '아' 또는 '어'
    * @param endword  어미[선어미말을 포함]
-   * @return '았' 또는 '었'을 만들어서 반환한다.
+   * return '았' 또는 '었'을 만들어서 반환한다.
    */
   public static String makeTesnseEomi(String preword, String endword) {
 
@@ -529,8 +523,6 @@ public class EomiUtil {
  
    /**
     * '음/기' + '이' + 어미, '에서/부터/에서부터' + '이' + 어미 인지 조사한다.
-    * @param stem
-    * @return
     */
    public static boolean endsWithEEomi(String stem) {
      int len = stem.length();
@@ -553,11 +545,6 @@ public class EomiUtil {
     results[1] = pomi;
   }  
   
-  /**
-   * 
-   * @param ch
-   * @return
-   */
   public static boolean IsNLMBSyl(char ech, char lch) throws MorphException {
   
     char[] features = SyllableUtil.getFeature(ech);
@@ -585,11 +572,6 @@ public class EomiUtil {
    * 3. '여/거라/너라'의 불규칙 어절
    * 4. 어미 '아/어'가 탈락되는 어절
    * 5. '아/어'의 변이체 분리
-   * 
-   * @param stem
-   * @param end
-   * @return
-   * @throws MorphException
    */
   public static String[] splitEomi(String stem, String end) throws MorphException {
 

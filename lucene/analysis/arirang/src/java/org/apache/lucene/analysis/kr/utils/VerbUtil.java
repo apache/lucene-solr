@@ -43,8 +43,6 @@ public class VerbUtil {
   
   /**
    * 어간이 용언화접미사로 끝나면 index 를 반환한다.  아니면 -1을 반환한다.
-   * @param result
-   * @return
    */
   public static int endsWithVerbSuffix(String stem) {
     int len = stem.length();
@@ -59,8 +57,6 @@ public class VerbUtil {
    
   /**
    * 어간부에 보조용언 [하,되,오,내,주,지]가 있는지 조사한다.
-   * @param stem
-   * @return
    */
   public static int endsWithXVerb(String stem) {
     int len = stem.length();
@@ -127,7 +123,6 @@ public class VerbUtil {
    * 어미부와 어간부가 분리된 상태에서 용언화접미사가 결합될 수 있는지 조사한다.
    * @param o  어미부와 어간부가 분리된 결과
    * @param candidates
-   * @return
    * @throws MorphException
    */
   public static boolean ananlysisNSM(AnalysisOutput o, List candidates) throws MorphException {
@@ -257,10 +252,6 @@ public class VerbUtil {
    * 
    * 6. 도와주다 : 용언 + '아/어' + 보조용언 + 어미 (PTN_VMXM)
    * 
-   * @param o
-   * @param candidates
-   * @return
-   * @throws MorphException
    */
   public static boolean analysisVMXM(AnalysisOutput o, List candidates) throws MorphException {
 

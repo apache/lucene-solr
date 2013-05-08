@@ -78,7 +78,6 @@ public class SyllableUtil {
    * 영자 또는 숫자일 경우는 모두 해당이 안되므로 가장 마지막 글자인 '힣' 의 음절특성을 반환한다.
    * 
    * @param idx '가'(0xAC00)이 0부터 유니코드에 의해 한글음절을 순차적으로 나열한 값
-   * @return
    * @throws Exception 
    */
   public static char[] getFeature(int idx)  throws MorphException {
@@ -95,7 +94,6 @@ public class SyllableUtil {
   /**
    * 각 음절의 특성을 반환한다.
    * @param syl  음절 하나
-   * @return
    * @throws Exception 
    */
   public static char[] getFeature(char syl) throws MorphException {
@@ -108,7 +106,6 @@ public class SyllableUtil {
   /**
    * 음절정보특성을 파일에서 읽는다.
    * 
-   * @return
    * @throws Exception
    */  
   private static List getSyllableFeature() throws MorphException {

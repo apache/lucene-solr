@@ -32,13 +32,13 @@ public class KoreanTokenizerFactory extends TokenizerFactory {
   /**
    * Initialize this factory via a set of key-value pairs.
    */
-  protected KoreanTokenizerFactory(Map<String, String> args) {
+  public KoreanTokenizerFactory(Map<String, String> args) {
     super(args);
   }
 
   @Override
   public Tokenizer create(AttributeSource.AttributeFactory factory, Reader input) {
-    return null;  //To change body of implemented methods use File | Settings | File Templates.
+    return new KoreanTokenizer(Version.LUCENE_50, factory, input);
   }
 
 //  public KoreanTokenizerFactory() {

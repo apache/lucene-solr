@@ -42,7 +42,6 @@ public class NounUtil {
    * 
    * @param o
    * @param candidates
-   * @return
    * @throws MorphException
    */
   public static boolean analysisMJ(AnalysisOutput o, List candidates) throws MorphException {
@@ -97,7 +96,6 @@ public class NounUtil {
    * 용언 + '음/기' + 조사(PTN_VMXMJ)
    * @param o
    * @param candidates
-   * @return
    * @throws MorphException
    */
   public static boolean analysisVMJ(AnalysisOutput o, List candidates) throws MorphException {
@@ -123,7 +121,6 @@ public class NounUtil {
    * 용언 + '아/어' + 보조용언 + '음/기' + 조사(PTN_VMXMJ)
    * @param o
    * @param candidates
-   * @return
    * @throws MorphException
    */
   public static boolean analysisVMXMJ(AnalysisOutput o, List candidates) throws MorphException {
@@ -169,7 +166,6 @@ public class NounUtil {
    * 체언 + 용언화접미사 + '음/기' + 조사 (PTN_NSMJ)
    * @param o
    * @param candidates
-   * @return
    * @throws MorphException
    */
   public static boolean analysisNSMJ(AnalysisOutput o, List candidates) throws MorphException {
@@ -232,7 +228,6 @@ public class NounUtil {
    * 복합명사인지 여부는 단위명사가 모두 사전에 있는지 여부로 판단한다.
    * 단위명사는 2글자 이상 단어에서만 찾는다.
    * @param o
-   * @return
    * @throws MorphException
    */     
 //     public static boolean confirmCNoun(AnalysisOutput o) throws MorphException  {
@@ -308,7 +303,7 @@ public class NounUtil {
    * @param str  복합명사
    * @param pos
    * @param o    분석결과
-   * @return    단위명사 리스트
+   * return    단위명사 리스트
    * @throws MorphException
    */
   private static List findNouns(String str, int pos, AnalysisOutput o) throws MorphException {

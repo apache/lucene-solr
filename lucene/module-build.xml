@@ -308,6 +308,28 @@
     <property name="analyzers-stempel-javadocs.uptodate" value="true"/>
   </target>
 
+  <property name="analyzers-arirang.jar" value="${common.dir}/build/analysis/arirang/lucene-analyzers-arirang-${version}.jar"/>
+  <target name="check-analyzers-arirang-uptodate" unless="analyzers-arirang.uptodate">
+    <module-uptodate name="analysis/arirang" jarfile="${analyzers-arirang.jar}" property="analyzers-arirang.uptodate"/>
+  </target>
+  <target name="jar-analyzers-arirang" unless="analyzers-arirang.uptodate" depends="check-analyzers-arirang-uptodate">
+    <ant dir="${common.dir}/analysis/arirang" target="jar-core" inheritAll="false">
+      <propertyset refid="uptodate.and.compiled.properties"/>
+    </ant>
+    <property name="analyzers-arirang.uptodate" value="true"/>
+  </target>
+
+  <property name="analyzers-arirang-javadoc.jar" value="${common.dir}/build/analysis/arirang/lucene-analyzers-arirang-${version}-javadoc.jar"/>
+  <target name="check-analyzers-arirang-javadocs-uptodate" unless="analyzers-arirang-javadocs.uptodate">
+    <module-uptodate name="analysis/arirang" jarfile="${analyzers-arirang-javadoc.jar}" property="analyzers-arirang-javadocs.uptodate"/>
+  </target>
+  <target name="javadocs-analyzers-arirang" unless="analyzers-arirang-javadocs.uptodate" depends="check-analyzers-arirang-javadocs-uptodate">
+    <ant dir="${common.dir}/analysis/arirang" target="javadocs" inheritAll="false">
+      <propertyset refid="uptodate.and.compiled.properties"/>
+    </ant>
+    <property name="analyzers-arirang-javadocs.uptodate" value="true"/>
+  </target>
+
   <property name="analyzers-kuromoji.jar" value="${common.dir}/build/analysis/kuromoji/lucene-analyzers-kuromoji-${version}.jar"/>
   <target name="check-analyzers-kuromoji-uptodate" unless="analyzers-kuromoji.uptodate">
     <module-uptodate name="analysis/kuromoji" jarfile="${analyzers-kuromoji.jar}" property="analyzers-kuromoji.uptodate"/>

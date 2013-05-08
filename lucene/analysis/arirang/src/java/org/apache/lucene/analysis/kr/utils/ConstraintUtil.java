@@ -103,8 +103,6 @@ public class ConstraintUtil {
     
   /**
    * 어미가 ㄴ,ㄹ,ㅁ 으로 끝나는지 조사한다.
-   * @param eomi
-   * @return
    */
   public static boolean isNLM(String eomi) {
     

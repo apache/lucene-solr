@@ -1003,6 +1003,16 @@
       </analyzer>
     </fieldType>
     
+    <!-- Korean -->
+    <fieldType name="text_kr" class="solr.TextField" positionIncrementGap="100">
+      <analyzer>
+        <tokenizer class="solr.KoreanTokenizerFactory"/>
+        <filter class="solr.KoreanFilterFactory"/>
+        <filter class="solr.LowerCaseFilterFactory"/>
+        <filter class="solr.StopFilterFactory" ignoreCase="true" words="lang/stopwords_kr.txt"/>
+      </analyzer>
+    </fieldType>
+    
     <!-- Latvian -->
     <fieldType name="text_lv" class="solr.TextField" positionIncrementGap="100">
       <analyzer> 

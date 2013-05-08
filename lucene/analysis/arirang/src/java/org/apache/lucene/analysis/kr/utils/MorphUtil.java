@@ -49,7 +49,6 @@ public class MorphUtil {
   /**
    * 한글 한글자를 초성/중성/종성의 배열로 만들어 반환한다.
    * @param c
-   * @return
    */
   public static char[] decompose(char c) {
     char[] result = null;
@@ -104,7 +103,6 @@ public class MorphUtil {
    * 형태소 유형 출력을 위한 문자열을 생성한다.
    * @param word
    * @param type
-   * @return
    */
   public static String buildTypeString(String word, char type) {
     StringBuffer sb = new StringBuffer();
@@ -233,8 +231,6 @@ public class MorphUtil {
   /**
    * 용언화접미사가 결합될 수 있는지 여부를 점검한다.
    * 특히 사전에 등록된 되다, 하다형 의 접속이 가능한지를 조사한다.
-   * @param o
-   * @return
    */
   public static boolean isValidSuffix(WordEntry entry, AnalysisOutput o) {
     

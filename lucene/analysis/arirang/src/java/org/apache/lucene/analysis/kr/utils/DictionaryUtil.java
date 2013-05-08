@@ -253,9 +253,6 @@ public class DictionaryUtil {
   
   /**
    * ㄴ,ㄹ,ㅁ,ㅂ과 eomi 가 결합하여 어미가 될 수 있는지 점검한다.
-   * @param s
-   * @param end
-   * @return
    */
   public static String combineAndEomiCheck(char s, String eomi) throws MorphException {
   

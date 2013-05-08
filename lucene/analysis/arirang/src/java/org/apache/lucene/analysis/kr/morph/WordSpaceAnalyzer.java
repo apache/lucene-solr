@@ -132,7 +132,7 @@ public class WordSpaceAnalyzer {
    * 조사로 끝나는 어구를 분석한다.
    * @param snipt
    * @param js
-   * @return
+   * @return candidates
    * @throws MorphException
    */
   private List<AnalysisOutput> anlysisWithJosa(String snipt, int js) throws MorphException {
@@ -182,7 +182,7 @@ public class WordSpaceAnalyzer {
    * 가장 큰 조사를 찾는다.
    * @param snipt
    * @param jstart
-   * @return
+   * @return jend
    * @throws MorphException
    */
   private int findJosaEnd(String snipt, int jstart) throws MorphException {
@@ -389,10 +389,6 @@ public class WordSpaceAnalyzer {
   /**
    * 어미의 첫음절부터 어미의 1음절이상에 사용될 수 있는 음절을 조사하여
    * 가장 큰 조사를 찾는다.
-   * @param snipt
-   * @param jstart
-   * @return
-   * @throws MorphException
    */
   private int findEomiEnd(String snipt, int estart) throws MorphException {
     
@@ -434,10 +430,6 @@ public class WordSpaceAnalyzer {
   
   /**
    * validation 후 후보가 될 가능성이 높은 최상위 것을 결과에 추가한다.
-   * 
-   * @param output
-   * @param candidates
-   * @param stack
    */
   private int validationAndAppend(WSOutput output, List<AnalysisOutput> candidates, String input)
       throws MorphException {
@@ -544,7 +536,7 @@ public class WordSpaceAnalyzer {
    * @param str  분석하고자 하는 전체 문자열
    * @param ws  문자열에서 명사를 찾는 시작위치
    * @param es  문자열에서 명사를 찾는 끝 위치
-   * @return
+   * @return found noun
    * @throws MorphException
    */
   private boolean findNounWithinStr(String str, int ws, int es) throws MorphException {

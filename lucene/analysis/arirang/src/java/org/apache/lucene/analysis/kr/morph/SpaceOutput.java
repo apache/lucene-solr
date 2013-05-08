@@ -62,7 +62,6 @@ public class SpaceOutput {
   }
 
   /**
-   * @param nrWord the nrWord to set
    */
   public void setNRWords(List words) {
     this.nrWords = words;
@@ -104,7 +103,6 @@ public class SpaceOutput {
   
   /**
    * 분석된 전체 단어의 길이를 반환한다.
-   * @return
    */
   public int getLength() {
     

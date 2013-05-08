@@ -93,7 +93,7 @@ public class FileUtil {
    * Reads the contents of a file line by line to a List of Strings.
    * The file is always closed.
    *
-   * @param file  the file to read, must not be <code>null</code>
+   * @param fName  the file to read, must not be <code>null</code>
    * @param encoding  the encoding to use, <code>null</code> means platform default
    * @return the list of Strings representing each line in the file, never <code>null</code>
    * @throws MorphException 
