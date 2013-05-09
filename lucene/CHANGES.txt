@@ -170,6 +170,13 @@ Build
   Test framework may fail internally due to overly aggresive J9 optimizations. 
   (Dawid Weiss, Shai Erera)
 
+
+======================= Lucene 4.3.1 =======================
+
+Bug Fixes
+
+
+
 ======================= Lucene 4.3.0 =======================
 
 Changes in backwards compatibility policy
