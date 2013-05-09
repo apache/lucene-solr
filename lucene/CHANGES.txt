@@ -121,6 +121,9 @@ Bug Fixes
   fails to reflect a delete from IndexWriter.tryDeleteDocument (Reg,
   Mike McCandless)
   
+* LUCENE-4994: Fix PatternKeywordMarkerFilter to have public constructor.
+  (Uwe Schindler)
+  
 Optimizations
 
 * LUCENE-4938: Don't use an unnecessarily large priority queue in IndexSearcher
