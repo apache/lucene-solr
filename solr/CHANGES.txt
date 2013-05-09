@@ -108,6 +108,8 @@ Bug Fixes
   range in cluster state. This happens when numShards is not a power of two
   and router is compositeId. (shalin)
 
+* SOLR-4803: Fixed core discovery mode (ie: new style solr.xml) to treat 
+  'collection1' as the default core name. (hossman)
 
 Other Changes
 ----------------------

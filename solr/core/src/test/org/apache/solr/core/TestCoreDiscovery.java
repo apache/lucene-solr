@@ -136,7 +136,8 @@ public class TestCoreDiscovery extends SolrTestCaseJ4 {
 
     CoreContainer cc = init();
     try {
-      assertNull("defaultCore no longer allowed in solr.xml", cc.getDefaultCoreName());
+      assertEquals(CoreContainer.DEFAULT_DEFAULT_CORE_NAME,
+                   cc.getDefaultCoreName());
 
       TestLazyCores.checkInCores(cc, "core1");
       TestLazyCores.checkNotInCores(cc, "lazy1", "core2", "collection1");

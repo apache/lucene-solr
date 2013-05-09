@@ -289,6 +289,7 @@ public class CoreContainer
       adminPath = cfg.get(ConfigSolr.CfgProp.SOLR_ADMINPATH, "/admin/cores");
     } else {
       adminPath = "/admin/cores";
+      defaultCoreName = DEFAULT_DEFAULT_CORE_NAME;
     }
     zkHost = cfg.get(ConfigSolr.CfgProp.SOLR_ZKHOST, null);
     coreLoadThreads = cfg.getInt(ConfigSolr.CfgProp.SOLR_CORELOADTHREADS, CORE_LOAD_THREADS);
