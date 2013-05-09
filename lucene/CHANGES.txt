@@ -84,6 +84,10 @@ Bug Fixes
 * LUCENE-4980: Fix issues preventing mixing of RangeFacetRequest and
   non-RangeFacetRequest when using DrillSideways.  (Mike McCandless,
   Shai Erera)
+
+* LUCENE-4986: Fixed case where a newly opened near-real-time reader
+  fails to reflect a delete from IndexWriter.tryDeleteDocument (Reg,
+  Mike McCandless)
   
 Optimizations
 
