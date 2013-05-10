@@ -9,6 +9,7 @@ import java.util.Map;
 import java.util.Properties;
 
 import org.apache.commons.io.IOUtils;
+import org.apache.solr.common.SolrException;
 import org.apache.solr.util.PropertiesUtil;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -89,6 +90,11 @@ public class SolrCoreDiscoverer {
       props.setProperty(CoreDescriptor.CORE_NAME, childFile.getName());
     }
     CoreDescriptor desc = new CoreDescriptor(container, props);
+    CoreDescriptor check = coreDescriptorMap.get(desc.getName());
+    if (check != null) {
+      throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, "Core " + desc.getName() +
+          " defined more than once, once in " + desc.getInstanceDir() + " and once in " + check.getInstanceDir());
+    }
     coreDescriptorMap.put(desc.getName(), desc);
   }
 }
