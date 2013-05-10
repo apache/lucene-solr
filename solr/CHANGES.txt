@@ -60,7 +60,7 @@ Upgrading from Solr 4.3.0
 * SOLR-4778: The signature of LogWatcher.registerListener has changed, from
   (ListenerConfig, CoreContainer) to (ListenerConfig).  Users implementing their
   own LogWatcher classes will need to change their code accordingly.
-
+  
 Detailed Change List
 ----------------------
 
@@ -95,9 +95,12 @@ Bug Fixes
 
 * SOLR-4616: HitRatio on caches is now exposed over JMX MBeans as a float.
   (Greg Bowyer)
-
+  
 * SOLR-4803: Fixed core discovery mode (ie: new style solr.xml) to treat 
   'collection1' as the default core name. (hossman)
+  
+* SOLR-4790: Throw an error if a core has the same name as another core, both old and
+  new style solr.xml
 
 * SOLR-4563: RSS DIH-example not working (janhoy)
 

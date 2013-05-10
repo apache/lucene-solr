@@ -24,6 +24,7 @@ import java.util.Properties;
 import org.apache.commons.io.FileUtils;
 import org.apache.lucene.util.IOUtils;
 import org.apache.solr.SolrTestCaseJ4;
+import org.apache.solr.common.SolrException;
 import org.junit.After;
 import org.junit.BeforeClass;
 import org.junit.Test;
@@ -88,10 +89,9 @@ public class TestCoreDiscovery extends SolrTestCaseJ4 {
 
   }
 
-  private void addCoreWithProps(Properties stockProps) throws Exception {
+  private void addCoreWithProps(String name, Properties stockProps) throws Exception {
 
-    File propFile = new File(solrHomeDirectory,
-        stockProps.getProperty(CoreDescriptor.CORE_NAME) + File.separator + SolrCoreDiscoverer.CORE_PROP_FILE);
+    File propFile = new File(new File(solrHomeDirectory, name), SolrCoreDiscoverer.CORE_PROP_FILE);
     File parent = propFile.getParentFile();
     assertTrue("Failed to mkdirs for " + parent.getAbsolutePath(), parent.mkdirs());
     addCoreWithProps(stockProps, propFile);
@@ -127,12 +127,12 @@ public class TestCoreDiscovery extends SolrTestCaseJ4 {
     setMeUp();
 
     // name, isLazy, loadOnStartup
-    addCoreWithProps(makeCorePropFile("core1", false, true, "dataDir=core1"));
-    addCoreWithProps(makeCorePropFile("core2", false, false, "dataDir=core2"));
+    addCoreWithProps("core1", makeCorePropFile("core1", false, true, "dataDir=core1"));
+    addCoreWithProps("core2", makeCorePropFile("core2", false, false, "dataDir=core2"));
 
     // I suspect what we're adding in here is a "configset" rather than a schema or solrconfig.
     //
-    addCoreWithProps(makeCorePropFile("lazy1", true, false, "dataDir=lazy1"));
+    addCoreWithProps("lazy1", makeCorePropFile("lazy1", true, false, "dataDir=lazy1"));
 
     CoreContainer cc = init();
     try {
@@ -171,6 +171,30 @@ public class TestCoreDiscovery extends SolrTestCaseJ4 {
   }
 
   @Test
+  public void testDuplicateNames() throws Exception {
+    setMeUp();
+
+    // name, isLazy, loadOnStartup
+    addCoreWithProps("core1", makeCorePropFile("core1", false, true));
+    addCoreWithProps("core2", makeCorePropFile("core2", false, false, "name=core1"));
+    CoreContainer cc = null;
+    try {
+      cc = init();
+      fail("Should have thrown exception in testDuplicateNames");
+    } catch (SolrException se) {
+      assertTrue("Should have seen an exception because two cores had the same name",
+          "Core  + desc.getName() + \" defined twice".indexOf(se.getMessage()) != -1);
+      assertTrue("/core1 should have been mentioned in the message", "/core1".indexOf(se.getMessage()) != -1);
+      assertTrue("/core2 should have been mentioned in the message", "/core2".indexOf(se.getMessage()) != -1);
+    } finally {
+      if (cc != null) {
+        cc.shutdown();
+      }
+    }
+  }
+
+
+  @Test
   public void testAlternateCoreDir() throws Exception {
     File alt = new File(TEMP_DIR, "alternateCoreDir");
     if (alt.exists()) FileUtils.deleteDirectory(alt);
@@ -193,7 +217,29 @@ public class TestCoreDiscovery extends SolrTestCaseJ4 {
       if (alt.exists()) FileUtils.deleteDirectory(alt);
     }
   }
-
+  @Test
+  public void testNoCoreDir() throws Exception {
+    File noCoreDir = new File(TEMP_DIR, "noCoreDir");
+    if (noCoreDir.exists()) FileUtils.deleteDirectory(noCoreDir);
+    noCoreDir.mkdirs();
+    setMeUp(noCoreDir.getAbsolutePath());
+    addCoreWithProps(makeCorePropFile("core1", false, true),
+        new File(noCoreDir, "core1" + File.separator + SolrCoreDiscoverer.CORE_PROP_FILE));
+    addCoreWithProps(makeCorePropFile("core2", false, false),
+        new File(noCoreDir, "core2" + File.separator + SolrCoreDiscoverer.CORE_PROP_FILE));
+    CoreContainer cc = init();
+    try {
+      SolrCore core1 = cc.getCore("core1");
+      SolrCore core2 = cc.getCore("core2");
+      assertNotNull(core1);
+      assertNotNull(core2);
+      core1.close();
+      core2.close();
+    } finally {
+      cc.shutdown();
+      if (noCoreDir.exists()) FileUtils.deleteDirectory(noCoreDir);
+    }
+  }
   // For testing whether finding a solr.xml overrides looking at solr.properties
   private final static String SOLR_XML = "<solr> " +
       "<int name=\"transientCacheSize\">2</int> " +
