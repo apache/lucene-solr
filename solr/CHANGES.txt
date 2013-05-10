@@ -99,6 +99,8 @@ Bug Fixes
 * SOLR-4803: Fixed core discovery mode (ie: new style solr.xml) to treat 
   'collection1' as the default core name. (hossman)
 
+* SOLR-4563: RSS DIH-example not working (janhoy)
+
 Other Changes
 ----------------------
 
