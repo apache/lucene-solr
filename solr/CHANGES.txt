@@ -154,6 +154,11 @@ Detailed Change List
 Bug Fixes
 ----------------------
 
+Other Changes
+----------------------
+
+* SOLR-4760: Include core name in logs when loading schema.
+  (Shawn Heisey)
 
 ==================  4.3.0 ==================
 
