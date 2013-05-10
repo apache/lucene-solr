@@ -110,7 +110,8 @@ public class ShardSplitTest extends BasicDistributedZkTest {
     Thread indexThread = new Thread() {
       @Override
       public void run() {
-        for (int id = 101; id < atLeast(401); id++) {
+        int max = atLeast(401);
+        for (int id = 101; id < max; id++) {
           try {
             indexAndUpdateCount(ranges, docCounts, id);
             Thread.sleep(atLeast(25));

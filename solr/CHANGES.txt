@@ -37,6 +37,9 @@ Detailed Change List
 Bug Fixes
 ----------------------
 
+* SOLR-4795: Sub shard leader should not accept any updates from parent after
+  it goes active (shalin)
+
 Other Changes
 ----------------------
 
