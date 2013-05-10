@@ -126,6 +126,9 @@ Bug Fixes
   
 * LUCENE-4993: Fix BeiderMorseFilter to preserve custom attributes when
   inserting tokens with position increment 0.  (Uwe Schindler)
+
+* LUCENE-4996: Ensure DocInverterPerField always includes field name
+  in exception messages.  (Markus Jelsma via Robert Muir)
   
 Optimizations
 
