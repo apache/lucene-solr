@@ -433,9 +433,13 @@ public class IndexSchema {
       String expression = stepsToPath(SCHEMA, AT + NAME);
       Node nd = (Node) xpath.evaluate(expression, document, XPathConstants.NODE);
       StringBuilder sb = new StringBuilder();
+      // Another case where the initialization from the test harness is different than the "real world"
       sb.append("[");
-      sb.append(loader.getCoreProperties().getProperty(NAME));
-      sb.append("] ");
+      if (loader.getCoreProperties() != null) {
+        sb.append(loader.getCoreProperties().getProperty(NAME));
+      } else {
+        sb.append("null");
+      }
       if (nd==null) {
         sb.append("schema has no name!");
         log.warn(sb.toString());
