@@ -252,6 +252,7 @@ public class CoreAdminHandler extends RequestHandlerBase {
       List<String> paths = null;
       int partitions = pathsArr != null ? pathsArr.length : newCoreNames.length;
 
+      DocRouter router = null;
       if (coreContainer.isZooKeeperAware()) {
         ClusterState clusterState = coreContainer.getZkController().getClusterState();
         String collectionName = req.getCore().getCoreDescriptor().getCloudDescriptor().getCollectionName();
@@ -259,8 +260,8 @@ public class CoreAdminHandler extends RequestHandlerBase {
         String sliceName = req.getCore().getCoreDescriptor().getCloudDescriptor().getShardId();
         Slice slice = clusterState.getSlice(collectionName, sliceName);
         DocRouter.Range currentRange = slice.getRange();
-        DocRouter hp = collection.getRouter() != null ? collection.getRouter() : DocRouter.DEFAULT;
-        ranges = currentRange != null ? hp.partitionRange(partitions, currentRange) : null;
+        router = collection.getRouter() != null ? collection.getRouter() : DocRouter.DEFAULT;
+        ranges = currentRange != null ? router.partitionRange(partitions, currentRange) : null;
       }
 
       if (pathsArr == null) {
@@ -278,7 +279,7 @@ public class CoreAdminHandler extends RequestHandlerBase {
       }
 
 
-      SplitIndexCommand cmd = new SplitIndexCommand(req, paths, newCores, ranges);
+      SplitIndexCommand cmd = new SplitIndexCommand(req, paths, newCores, ranges, router);
       core.getUpdateHandler().split(cmd);
 
       // After the split has completed, someone (here?) should start the process of replaying the buffered updates.
