@@ -372,13 +372,10 @@ public class OverseerCollectionProcessor implements Runnable, ClosableThread {
         }
       }
 
-      ShardResponse srsp;
-      do {
-        srsp = shardHandler.takeCompletedOrError();
-        if (srsp != null) {
-          processResponse(results, srsp);
-        }
-      } while (srsp != null);
+      // do not abort splitshard if the unloading fails
+      // this can happen because the replicas created previously may be down
+      // the only side effect of this is that the sub shard may end up having more replicas than we want
+      collectShardResponses(results, false, null);
 
       for (int i=0; i<subRanges.size(); i++)  {
         String subSlice = subSlices.get(i);
@@ -413,12 +410,8 @@ public class OverseerCollectionProcessor implements Runnable, ClosableThread {
         sendShardRequest(nodeName, new ModifiableSolrParams(cmd.getParams()));
       }
 
-      do {
-        srsp = shardHandler.takeCompletedOrError();
-        if (srsp != null) {
-          processResponse(results, srsp);
-        }
-      } while (srsp != null);
+      collectShardResponses(results, true,
+          "SPLTSHARD failed to create subshard leaders or timed out waiting for them to come up");
       
       log.info("Successfully created all sub-shards for collection "
           + collectionName + " parent shard: " + slice + " on: " + parentShardLeader);
@@ -436,12 +429,7 @@ public class OverseerCollectionProcessor implements Runnable, ClosableThread {
       }
 
       sendShardRequest(parentShardLeader.getNodeName(), params);
-      do {
-        srsp = shardHandler.takeCompletedOrError();
-        if (srsp != null) {
-          processResponse(results, srsp);
-        }
-      } while (srsp != null);
+      collectShardResponses(results, true, "SPLITSHARD failed to invoke SPLIT core admin command");
 
       log.info("Index on shard: " + nodeName + " split into two successfully");
 
@@ -458,12 +446,8 @@ public class OverseerCollectionProcessor implements Runnable, ClosableThread {
         sendShardRequest(nodeName, params);
       }
 
-      do {
-        srsp = shardHandler.takeCompletedOrError();
-        if (srsp != null) {
-          processResponse(results, srsp);
-        }
-      } while (srsp != null);
+      collectShardResponses(results, true,
+          "SPLITSHARD failed while asking sub shard leaders to apply buffered updates");
 
       log.info("Successfully applied buffered updates on : " + subShardNames);
 
@@ -535,12 +519,9 @@ public class OverseerCollectionProcessor implements Runnable, ClosableThread {
         }
       }
 
-      do {
-        srsp = shardHandler.takeCompletedOrError();
-        if (srsp != null) {
-          processResponse(results, srsp);
-        }
-      } while (srsp != null);
+      collectShardResponses(results, true,
+          "SPLTSHARD failed to create subshard replicas or timed out waiting for them to come up");
+
       log.info("Successfully created all replica shards for all sub-slices "
           + subSlices);
 
@@ -563,6 +544,19 @@ public class OverseerCollectionProcessor implements Runnable, ClosableThread {
       log.error("Error executing split operation for collection: " + collectionName + " parent shard: " + slice, e);
       throw new SolrException(ErrorCode.SERVER_ERROR, null, e);
     }
+  }
+
+  private void collectShardResponses(NamedList results, boolean abortOnError, String msgOnError) {
+    ShardResponse srsp;
+    do {
+      srsp = shardHandler.takeCompletedOrError();
+      if (srsp != null) {
+        processResponse(results, srsp);
+        if (abortOnError && srsp.getException() != null)  {
+          throw new SolrException(ErrorCode.SERVER_ERROR, msgOnError, srsp.getException());
+        }
+      }
+    } while (srsp != null);
   }
 
   private void sendShardRequest(String nodeName, ModifiableSolrParams params) {

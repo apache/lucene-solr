@@ -162,6 +162,8 @@ Bug Fixes
 * SOLR-4791: solr.xml sharedLib does not work in 4.3.0 (Ryan Ernst, Jan Høydahl via 
   Erick Erickson)
 
+* SOLR-4806: Shard splitting does not abort if WaitForState times out (shalin)
+
 Other Changes
 ----------------------
 
