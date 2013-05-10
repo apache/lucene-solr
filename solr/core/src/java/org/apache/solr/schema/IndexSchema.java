@@ -438,7 +438,7 @@ public class IndexSchema {
       } else {
         sb.append("null");
       }
-      sb.append("]est");
+      sb.append("] ");
       if (nd==null) {
         sb.append("schema has no name!");
         log.warn(sb.toString());
