@@ -97,6 +97,11 @@ Bug Fixes
 
 * LUCENE-4996: Ensure DocInverterPerField always includes field name
   in exception messages.  (Markus Jelsma via Robert Muir)
+
+* LUCENE-4991: Fix handling of synonyms in classic QueryParser.getFieldQuery for 
+  terms not separated by whitespace. PositionIncrementAttribute was ignored, so with 
+  default AND synonyms wrongly became mandatory clauses, and with OR, the 
+  coordination factor was wrong.  (李威, Robert Muir)
   
 Optimizations
 

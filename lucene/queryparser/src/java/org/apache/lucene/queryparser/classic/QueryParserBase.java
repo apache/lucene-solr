@@ -576,24 +576,53 @@ public abstract class QueryParserBase implements CommonQueryParserConfiguration 
       if (severalTokensAtSamePosition || (!quoted && !autoGeneratePhraseQueries)) {
         if (positionCount == 1 || (!quoted && !autoGeneratePhraseQueries)) {
           // no phrase query:
-          BooleanQuery q = newBooleanQuery(positionCount == 1);
-
-          BooleanClause.Occur occur = positionCount > 1 && operator == AND_OPERATOR ?
-            BooleanClause.Occur.MUST : BooleanClause.Occur.SHOULD;
-
-          for (int i = 0; i < numTokens; i++) {
-            try {
-              boolean hasNext = buffer.incrementToken();
-              assert hasNext == true;
-              termAtt.fillBytesRef();
-            } catch (IOException e) {
-              // safe to ignore, because we know the number of tokens
+          
+          if (positionCount == 1) {
+            // simple case: only one position, with synonyms
+            BooleanQuery q = newBooleanQuery(true);
+            for (int i = 0; i < numTokens; i++) {
+              try {
+                boolean hasNext = buffer.incrementToken();
+                assert hasNext == true;
+                termAtt.fillBytesRef();
+              } catch (IOException e) {
+                // safe to ignore, because we know the number of tokens
+              }
+              Query currentQuery = newTermQuery(
+                  new Term(field, BytesRef.deepCopyOf(bytes)));
+              q.add(currentQuery, BooleanClause.Occur.SHOULD);
             }
-            Query currentQuery = newTermQuery(
-                new Term(field, BytesRef.deepCopyOf(bytes)));
+            return q;
+          } else {
+            // multiple positions
+            BooleanQuery q = newBooleanQuery(false);
+            final BooleanClause.Occur occur = operator == Operator.AND ? BooleanClause.Occur.MUST : BooleanClause.Occur.SHOULD;
+            Query currentQuery = null;
+            for (int i = 0; i < numTokens; i++) {
+              try {
+                boolean hasNext = buffer.incrementToken();
+                assert hasNext == true;
+                termAtt.fillBytesRef();
+              } catch (IOException e) {
+                // safe to ignore, because we know the number of tokens
+              }
+              if (posIncrAtt != null && posIncrAtt.getPositionIncrement() == 0) {
+                if (!(currentQuery instanceof BooleanQuery)) {
+                  Query t = currentQuery;
+                  currentQuery = newBooleanQuery(true);
+                  ((BooleanQuery)currentQuery).add(t, BooleanClause.Occur.SHOULD);
+                }
+                ((BooleanQuery)currentQuery).add(newTermQuery(new Term(field, BytesRef.deepCopyOf(bytes))), BooleanClause.Occur.SHOULD);
+              } else {
+                if (currentQuery != null) {
+                  q.add(currentQuery, occur);
+                }
+                currentQuery = newTermQuery(new Term(field, BytesRef.deepCopyOf(bytes)));
+              }
+            }
             q.add(currentQuery, occur);
+            return q;
           }
-          return q;
         }
         else {
           // phrase query:
