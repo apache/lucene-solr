@@ -48,10 +48,11 @@ Bug Fixes
 * SOLR-4797: Shard splitting creates sub shards which have the wrong hash
   range in cluster state. This happens when numShards is not a power of two
   and router is compositeId. (shalin)
-  
-* SOLR-4791: solr.xml sharedLib does not work in 4.3.0 (Ryan Ernst, Jan Høydahl via 
+
+* SOLR-4791: solr.xml sharedLib does not work in 4.3.0 (Ryan Ernst, Jan Høydahl via
   Erick Erickson)
 
+* SOLR-4806: Shard splitting does not abort if WaitForState times out (shalin)
 
 Other Changes
 ----------------------
@@ -229,6 +230,9 @@ Bug Fixes
   for the top level group commands, causing output formatting differences
   compared to non-distributed grouping. (yonik)
 
+* SOLR-4705: Fixed bug causing NPE when querying a single replica in SolrCloud 
+  using the shards param (Raintung Li, hossman)
+
 * SOLR-4729: LukeRequestHandler: Using a dynamic copyField source that is
   not also a dynamic field triggers error message 'undefined field: "(glob)"'.
   (Adam Hahn, hossman, Steve Rowe)
@@ -253,9 +257,6 @@ Other Changes
   (Ryan Ernst via Robert Muir)
 
 * SOLR-4607: Use noggit 0.5 release jar rather than a forked copy.  (Yonik Seeley, Robert Muir)
-
-* SOLR-4624: forceNew has been removed from the DirectoryFactory and related java apis.
-  (Mark Miller)
   
 * SOLR-3706: Ship setup to log with log4j. (ryan, Mark Miller)
 
