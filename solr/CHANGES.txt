@@ -135,6 +135,8 @@ Bug Fixes
   range in cluster state. This happens when numShards is not a power of two
   and router is compositeId. (shalin)
 
+* SOLR-4806: Shard splitting does not abort if WaitForState times out (shalin)
+
 Other Changes
 ----------------------
 
