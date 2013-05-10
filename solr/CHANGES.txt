@@ -48,6 +48,9 @@ Bug Fixes
 * SOLR-4797: Shard splitting creates sub shards which have the wrong hash
   range in cluster state. This happens when numShards is not a power of two
   and router is compositeId. (shalin)
+  
+* SOLR-4791: solr.xml sharedLib does not work in 4.3.0 (Ryan Ernst, Jan Høydahl via 
+  Erick Erickson)
 
 * SOLR-4751: Fix replication problem of files in sub directory of conf directory.
   (Minoru Osuka via Koji Sekiguchi)
