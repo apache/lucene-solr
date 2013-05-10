@@ -164,6 +164,9 @@ Bug Fixes
 
 * SOLR-4806: Shard splitting does not abort if WaitForState times out (shalin)
 
+* SOLR-4807: The zkcli script now works with log4j. The zkcli.bat script
+  was broken on Windows in 4.3.0, now it works. (Shawn Heisey)
+
 Other Changes
 ----------------------
 
