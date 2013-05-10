@@ -798,14 +798,29 @@ public class SnapPuller {
   }
 
   /**
+   * Make file list 
+   */
+  private List<File> makeTmpConfDirFileList(File dir, List<File> fileList) {
+    File[] files = dir.listFiles();
+    for (File file : files) {
+      if (file.isFile()) {
+        fileList.add(file);
+      } else if (file.isDirectory()) {
+        fileList = makeTmpConfDirFileList(file, fileList);
+      }
+    }
+    return fileList;
+  }
+  
+  /**
    * The conf files are copied to the tmp dir to the conf dir. A backup of the old file is maintained
    */
   private void copyTmpConfFiles2Conf(File tmpconfDir) {
     File confDir = new File(solrCore.getResourceLoader().getConfigDir());
-    for (File file : tmpconfDir.listFiles()) {
-      File oldFile = new File(confDir, file.getName());
+    for (File file : makeTmpConfDirFileList(tmpconfDir, new ArrayList<File>())) {
+      File oldFile = new File(confDir, file.getPath().substring(tmpconfDir.getPath().length(), file.getPath().length()));
       if (oldFile.exists()) {
-        File backupFile = new File(confDir, oldFile.getName() + "." + getDateAsStr(new Date(oldFile.lastModified())));
+        File backupFile = new File(oldFile.getPath() + "." + getDateAsStr(new Date(oldFile.lastModified())));
         boolean status = oldFile.renameTo(backupFile);
         if (!status) {
           throw new SolrException(SolrException.ErrorCode.SERVER_ERROR,
