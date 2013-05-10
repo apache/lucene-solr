@@ -124,6 +124,9 @@ Bug Fixes
 * LUCENE-4994: Fix PatternKeywordMarkerFilter to have public constructor.
   (Uwe Schindler)
   
+* LUCENE-4993: Fix BeiderMorseFilter to preserve custom attributes when
+  inserting tokens with position increment 0.  (Uwe Schindler)
+  
 Optimizations
 
 * LUCENE-4938: Don't use an unnecessarily large priority queue in IndexSearcher
