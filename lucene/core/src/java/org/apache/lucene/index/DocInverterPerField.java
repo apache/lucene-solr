@@ -119,10 +119,10 @@ final class DocInverterPerField extends DocFieldConsumerPerField {
 
               final int posIncr = posIncrAttribute.getPositionIncrement();
               if (posIncr < 0) {
-                throw new IllegalArgumentException("position increment must be >=0 (got " + posIncr + ")");
+                throw new IllegalArgumentException("position increment must be >=0 (got " + posIncr + ") for field '" + field.name() + "'");
               }
               if (fieldState.position == 0 && posIncr == 0) {
-                throw new IllegalArgumentException("first position increment must be > 0 (got 0)");
+                throw new IllegalArgumentException("first position increment must be > 0 (got 0) for field '" + field.name() + "'");
               }
               int position = fieldState.position + posIncr;
               if (position > 0) {
@@ -145,11 +145,11 @@ final class DocInverterPerField extends DocFieldConsumerPerField {
                 int endOffset = fieldState.offset + offsetAttribute.endOffset();
                 if (startOffset < 0 || endOffset < startOffset) {
                   throw new IllegalArgumentException("startOffset must be non-negative, and endOffset must be >= startOffset, "
-                      + "startOffset=" + startOffset + ",endOffset=" + endOffset);
+                      + "startOffset=" + startOffset + ",endOffset=" + endOffset + " for field '" + field.name() + "'");
                 }
                 if (startOffset < lastStartOffset) {
                   throw new IllegalArgumentException("offsets must not go backwards startOffset=" 
-                       + startOffset + " is < lastStartOffset=" + lastStartOffset);
+                       + startOffset + " is < lastStartOffset=" + lastStartOffset + " for field '" + field.name() + "'");
                 }
                 lastStartOffset = startOffset;
               }
