@@ -96,18 +96,6 @@ Bug Fixes
 * SOLR-4616: HitRatio on caches is now exposed over JMX MBeans as a float.
   (Greg Bowyer)
 
-* SOLR-4795: Sub shard leader should not accept any updates from parent after
-  it goes active (shalin)
-
-* SOLR-4798: shard splitting does not respect the router for the collection
-  when executing the index split.   One effect of this is that documents
-  may be placed in the wrong shard when the default compositeId router
-  is used in conjunction with IDs containing "!". (yonik)
-
-* SOLR-4797: Shard splitting creates sub shards which have the wrong hash
-  range in cluster state. This happens when numShards is not a power of two
-  and router is compositeId. (shalin)
-
 * SOLR-4803: Fixed core discovery mode (ie: new style solr.xml) to treat 
   'collection1' as the default core name. (hossman)
 
@@ -153,6 +141,18 @@ Detailed Change List
 
 Bug Fixes
 ----------------------
+
+* SOLR-4795: Sub shard leader should not accept any updates from parent after
+  it goes active (shalin)
+
+* SOLR-4798: shard splitting does not respect the router for the collection
+  when executing the index split.   One effect of this is that documents
+  may be placed in the wrong shard when the default compositeId router
+  is used in conjunction with IDs containing "!". (yonik)
+
+* SOLR-4797: Shard splitting creates sub shards which have the wrong hash
+  range in cluster state. This happens when numShards is not a power of two
+  and router is compositeId. (shalin)
 
 Other Changes
 ----------------------
