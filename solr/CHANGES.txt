@@ -78,6 +78,8 @@ New Features
   in cases where exact hit-counts are unnecessary.  Also, when "collateExtendedResults"
   is false, this optimization is always made (James Dyer).
 
+* SOLR-4785: New MaxScoreQParserPlugin returning max() instead of sum() of terms (janhoy)
+
 Bug Fixes
 ----------------------
 
