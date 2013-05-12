@@ -66,13 +66,10 @@ public class TestMaxFailuresRule extends WithNestedTests {
 
   @Test
   public void testMaxFailures() {
-    int maxFailures = LuceneTestCase.ignoreAfterMaxFailures.maxFailures;
-    int failuresSoFar = LuceneTestCase.ignoreAfterMaxFailures.failuresSoFar;
+    TestRuleIgnoreAfterMaxFailures newRule = new TestRuleIgnoreAfterMaxFailures(2);
+    TestRuleIgnoreAfterMaxFailures prevRule = LuceneTestCase.replaceMaxFailureRule(newRule);
     System.clearProperty(SysGlobals.SYSPROP_ITERATIONS());
     try {
-      LuceneTestCase.ignoreAfterMaxFailures.maxFailures = 2;
-      LuceneTestCase.ignoreAfterMaxFailures.failuresSoFar = 0;
-
       JUnitCore core = new JUnitCore();
       final StringBuilder results = new StringBuilder();
       core.addListener(new RunListener() {
@@ -110,8 +107,7 @@ public class TestMaxFailuresRule extends WithNestedTests {
           results.toString().matches("(S*F){2}A+"));
 
     } finally {
-      LuceneTestCase.ignoreAfterMaxFailures.maxFailures = maxFailures;
-      LuceneTestCase.ignoreAfterMaxFailures.failuresSoFar = failuresSoFar;
+      LuceneTestCase.replaceMaxFailureRule(prevRule);
     }
   }
 }

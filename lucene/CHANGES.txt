@@ -78,6 +78,9 @@ Changes in backwards compatibility policy
 
 Bug Fixes
 
+* LUCENE-4997: Internal test framework's tests are sensitive to previous 
+  test failures and tests.failfast. (Dawid Weiss, Shai Erera)
+
 * LUCENE-4935: CustomScoreQuery wrongly applied its query boost twice 
   (boost^2).  (Robert Muir)
 

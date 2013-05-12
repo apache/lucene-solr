@@ -23,6 +23,7 @@ import java.lang.reflect.Constructor;
 import java.lang.reflect.Method;
 import java.util.*;
 import java.util.concurrent.*;
+import java.util.concurrent.atomic.AtomicReference;
 import java.util.logging.Logger;
 
 import org.apache.lucene.analysis.Analyzer;
@@ -148,10 +149,10 @@ public abstract class LuceneTestCase extends Assert {
   public static final String SYSPROP_BADAPPLES = "tests.badapples";
 
   /** @see #ignoreAfterMaxFailures*/
-  private static final String SYSPROP_MAXFAILURES = "tests.maxfailures";
+  public static final String SYSPROP_MAXFAILURES = "tests.maxfailures";
 
   /** @see #ignoreAfterMaxFailures*/
-  private static final String SYSPROP_FAILFAST = "tests.failfast";
+  public static final String SYSPROP_FAILFAST = "tests.failfast";
 
   /**
    * Annotation for tests that should only be run during nightly builds.
@@ -356,9 +357,17 @@ public abstract class LuceneTestCase extends Assert {
       new TestRuleMarkFailure();
 
   /**
-   * Ignore tests after hitting a designated number of initial failures.
+   * Ignore tests after hitting a designated number of initial failures. This
+   * is truly a "static" global singleton since it needs to span the lifetime of all
+   * test classes running inside this JVM (it cannot be part of a class rule).
+   * 
+   * <p>This poses some problems for the test framework's tests because these sometimes
+   * trigger intentional failures which add up to the global count. This field contains
+   * a (possibly) changing reference to {@link TestRuleIgnoreAfterMaxFailures} and we
+   * dispatch to its current value from the {@link #classRules} chain using {@link TestRuleDelegate}.  
    */
-  final static TestRuleIgnoreAfterMaxFailures ignoreAfterMaxFailures; 
+  private static final AtomicReference<TestRuleIgnoreAfterMaxFailures> ignoreAfterMaxFailuresDelegate;
+  private static final TestRule ignoreAfterMaxFailures;
   static {
     int maxFailures = systemPropertyAsInt(SYSPROP_MAXFAILURES, Integer.MAX_VALUE);
     boolean failFast = systemPropertyAsBoolean(SYSPROP_FAILFAST, false);
@@ -373,7 +382,19 @@ public abstract class LuceneTestCase extends Assert {
       }
     }
 
-    ignoreAfterMaxFailures = new TestRuleIgnoreAfterMaxFailures(maxFailures);
+    ignoreAfterMaxFailuresDelegate = 
+        new AtomicReference<TestRuleIgnoreAfterMaxFailures>(
+            new TestRuleIgnoreAfterMaxFailures(maxFailures));
+    ignoreAfterMaxFailures = TestRuleDelegate.of(ignoreAfterMaxFailuresDelegate);
+  }
+
+  /**
+   * Temporarily substitute the global {@link TestRuleIgnoreAfterMaxFailures}. See
+   * {@link #ignoreAfterMaxFailuresDelegate} for some explanation why this method 
+   * is needed.
+   */
+  public static TestRuleIgnoreAfterMaxFailures replaceMaxFailureRule(TestRuleIgnoreAfterMaxFailures newValue) {
+    return ignoreAfterMaxFailuresDelegate.getAndSet(newValue);
   }
 
   /**
