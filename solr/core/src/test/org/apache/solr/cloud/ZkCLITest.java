@@ -22,6 +22,8 @@ import java.util.Collection;
 import java.util.List;
 
 import org.apache.commons.io.FileUtils;
+import org.apache.commons.io.filefilter.RegexFileFilter;
+import org.apache.commons.io.filefilter.TrueFileFilter;
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.common.cloud.SolrZkClient;
 import org.apache.solr.common.cloud.ZkNodeProps;
@@ -189,16 +191,14 @@ public class ZkCLITest extends SolrTestCaseJ4 {
     
     File sourceConfDir = new File(ExternalPaths.EXAMPLE_HOME + File.separator + "collection1"
             + File.separator + "conf");
-    Collection<File> sourceFiles = FileUtils.listFiles(sourceConfDir,null,true);
+    // filter out all directories starting with . (e.g. .svn)
+    Collection<File> sourceFiles = FileUtils.listFiles(sourceConfDir, TrueFileFilter.INSTANCE, new RegexFileFilter("[^\\.].*"));
     for (File sourceFile :sourceFiles){
-      if (!sourceFile.isHidden()){
         int indexOfRelativePath = sourceFile.getAbsolutePath().lastIndexOf("collection1/conf");
         String relativePathofFile = sourceFile.getAbsolutePath().substring(indexOfRelativePath + 17, sourceFile.getAbsolutePath().length());
         File downloadedFile = new File(confDir,relativePathofFile);
         assertTrue(downloadedFile.getAbsolutePath() + " does not exist source:" + sourceFile.getAbsolutePath(), downloadedFile.exists());
         assertTrue("Content didn't change",FileUtils.contentEquals(sourceFile,downloadedFile));
-      }
-      
     }
     
    
