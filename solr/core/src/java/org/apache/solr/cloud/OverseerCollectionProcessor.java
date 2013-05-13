@@ -320,21 +320,22 @@ public class OverseerCollectionProcessor implements Runnable, ClosableThread {
   
   private boolean splitShard(ClusterState clusterState, ZkNodeProps message, NamedList results) {
     log.info("Split shard invoked");
-    String collection = message.getStr("collection");
+    String collectionName = message.getStr("collection");
     String slice = message.getStr(ZkStateReader.SHARD_ID_PROP);
-    Slice parentSlice = clusterState.getSlice(collection, slice);
+    Slice parentSlice = clusterState.getSlice(collectionName, slice);
     
     if (parentSlice == null) {
-      if(clusterState.getCollections().contains(collection)) {
+      if(clusterState.getCollections().contains(collectionName)) {
         throw new SolrException(ErrorCode.BAD_REQUEST, "No shard with the specified name exists: " + slice);
       } else {
-        throw new SolrException(ErrorCode.BAD_REQUEST, "No collection with the specified name exists: " + collection);
+        throw new SolrException(ErrorCode.BAD_REQUEST, "No collection with the specified name exists: " + collectionName);
       }      
     }
     
     // find the leader for the shard
-    Replica parentShardLeader = clusterState.getLeader(collection, slice);
-    
+    Replica parentShardLeader = clusterState.getLeader(collectionName, slice);
+    DocCollection collection = clusterState.getCollection(collectionName);
+    DocRouter router = collection.getRouter() != null ? collection.getRouter() : DocRouter.DEFAULT;
     DocRouter.Range range = parentSlice.getRange();
     if (range == null) {
       range = new PlainIdRouter().fullRange();
@@ -342,8 +343,7 @@ public class OverseerCollectionProcessor implements Runnable, ClosableThread {
 
     // todo: fixed to two partitions?
     // todo: accept the range as a param to api?
-    // todo: handle randomizing subshard name in case a shard with the same name already exists.
-    List<DocRouter.Range> subRanges = new PlainIdRouter().partitionRange(2, range);
+    List<DocRouter.Range> subRanges = router.partitionRange(2, range);
     try {
       List<String> subSlices = new ArrayList<String>(subRanges.size());
       List<String> subShardNames = new ArrayList<String>(subRanges.size());
@@ -351,10 +351,10 @@ public class OverseerCollectionProcessor implements Runnable, ClosableThread {
       for (int i = 0; i < subRanges.size(); i++) {
         String subSlice = slice + "_" + i;
         subSlices.add(subSlice);
-        String subShardName = collection + "_" + subSlice + "_replica1";
+        String subShardName = collectionName + "_" + subSlice + "_replica1";
         subShardNames.add(subShardName);
 
-        Slice oSlice = clusterState.getSlice(collection, subSlice);
+        Slice oSlice = clusterState.getSlice(collectionName, subSlice);
         if (oSlice != null) {
           if (Slice.ACTIVE.equals(oSlice.getState())) {
             throw new SolrException(ErrorCode.BAD_REQUEST, "Sub-shard: " + subSlice + " exists in active state. Aborting split shard.");
@@ -372,13 +372,10 @@ public class OverseerCollectionProcessor implements Runnable, ClosableThread {
         }
       }
 
-      ShardResponse srsp;
-      do {
-        srsp = shardHandler.takeCompletedOrError();
-        if (srsp != null) {
-          processResponse(results, srsp);
-        }
-      } while (srsp != null);
+      // do not abort splitshard if the unloading fails
+      // this can happen because the replicas created previously may be down
+      // the only side effect of this is that the sub shard may end up having more replicas than we want
+      collectShardResponses(results, false, null);
 
       for (int i=0; i<subRanges.size(); i++)  {
         String subSlice = subSlices.get(i);
@@ -386,14 +383,14 @@ public class OverseerCollectionProcessor implements Runnable, ClosableThread {
         DocRouter.Range subRange = subRanges.get(i);
 
         log.info("Creating shard " + subShardName + " as part of slice "
-            + subSlice + " of collection " + collection + " on "
+            + subSlice + " of collection " + collectionName + " on "
             + nodeName);
 
         ModifiableSolrParams params = new ModifiableSolrParams();
         params.set(CoreAdminParams.ACTION, CoreAdminAction.CREATE.toString());
 
         params.set(CoreAdminParams.NAME, subShardName);
-        params.set(CoreAdminParams.COLLECTION, collection);
+        params.set(CoreAdminParams.COLLECTION, collectionName);
         params.set(CoreAdminParams.SHARD, subSlice);
         params.set(CoreAdminParams.SHARD_RANGE, subRange.toString());
         params.set(CoreAdminParams.SHARD_STATE, Slice.CONSTRUCTION);
@@ -413,18 +410,14 @@ public class OverseerCollectionProcessor implements Runnable, ClosableThread {
         sendShardRequest(nodeName, new ModifiableSolrParams(cmd.getParams()));
       }
 
-      do {
-        srsp = shardHandler.takeCompletedOrError();
-        if (srsp != null) {
-          processResponse(results, srsp);
-        }
-      } while (srsp != null);
+      collectShardResponses(results, true,
+          "SPLTSHARD failed to create subshard leaders or timed out waiting for them to come up");
       
       log.info("Successfully created all sub-shards for collection "
-          + collection + " parent shard: " + slice + " on: " + parentShardLeader);
+          + collectionName + " parent shard: " + slice + " on: " + parentShardLeader);
 
       log.info("Splitting shard " + parentShardLeader.getName() + " as part of slice "
-          + slice + " of collection " + collection + " on "
+          + slice + " of collection " + collectionName + " on "
           + parentShardLeader);
 
       ModifiableSolrParams params = new ModifiableSolrParams();
@@ -436,12 +429,7 @@ public class OverseerCollectionProcessor implements Runnable, ClosableThread {
       }
 
       sendShardRequest(parentShardLeader.getNodeName(), params);
-      do {
-        srsp = shardHandler.takeCompletedOrError();
-        if (srsp != null) {
-          processResponse(results, srsp);
-        }
-      } while (srsp != null);
+      collectShardResponses(results, true, "SPLITSHARD failed to invoke SPLIT core admin command");
 
       log.info("Index on shard: " + nodeName + " split into two successfully");
 
@@ -458,12 +446,8 @@ public class OverseerCollectionProcessor implements Runnable, ClosableThread {
         sendShardRequest(nodeName, params);
       }
 
-      do {
-        srsp = shardHandler.takeCompletedOrError();
-        if (srsp != null) {
-          processResponse(results, srsp);
-        }
-      } while (srsp != null);
+      collectShardResponses(results, true,
+          "SPLITSHARD failed while asking sub shard leaders to apply buffered updates");
 
       log.info("Successfully applied buffered updates on : " + subShardNames);
 
@@ -474,7 +458,7 @@ public class OverseerCollectionProcessor implements Runnable, ClosableThread {
 
       // TODO: Have replication factor decided in some other way instead of numShards for the parent
 
-      int repFactor = clusterState.getSlice(collection, slice).getReplicas().size();
+      int repFactor = clusterState.getSlice(collectionName, slice).getReplicas().size();
 
       // we need to look at every node and see how many cores it serves
       // add our new cores to existing nodes serving the least number of cores
@@ -501,10 +485,10 @@ public class OverseerCollectionProcessor implements Runnable, ClosableThread {
         String sliceName = subSlices.get(i - 1);
         for (int j = 2; j <= repFactor; j++) {
           String subShardNodeName = nodeList.get((repFactor * (i - 1) + (j - 2)) % nodeList.size());
-          String shardName = collection + "_" + sliceName + "_replica" + (j);
+          String shardName = collectionName + "_" + sliceName + "_replica" + (j);
 
           log.info("Creating replica shard " + shardName + " as part of slice "
-              + sliceName + " of collection " + collection + " on "
+              + sliceName + " of collection " + collectionName + " on "
               + subShardNodeName);
 
           // Need to create new params for each request
@@ -512,7 +496,7 @@ public class OverseerCollectionProcessor implements Runnable, ClosableThread {
           params.set(CoreAdminParams.ACTION, CoreAdminAction.CREATE.toString());
 
           params.set(CoreAdminParams.NAME, shardName);
-          params.set(CoreAdminParams.COLLECTION, collection);
+          params.set(CoreAdminParams.COLLECTION, collectionName);
           params.set(CoreAdminParams.SHARD, sliceName);
           // TODO:  Figure the config used by the parent shard and use it.
           //params.set("collection.configName", configName);
@@ -535,12 +519,9 @@ public class OverseerCollectionProcessor implements Runnable, ClosableThread {
         }
       }
 
-      do {
-        srsp = shardHandler.takeCompletedOrError();
-        if (srsp != null) {
-          processResponse(results, srsp);
-        }
-      } while (srsp != null);
+      collectShardResponses(results, true,
+          "SPLTSHARD failed to create subshard replicas or timed out waiting for them to come up");
+
       log.info("Successfully created all replica shards for all sub-slices "
           + subSlices);
 
@@ -552,7 +533,7 @@ public class OverseerCollectionProcessor implements Runnable, ClosableThread {
       for (String subSlice : subSlices) {
         propMap.put(subSlice, Slice.ACTIVE);
       }
-      propMap.put(ZkStateReader.COLLECTION_PROP, collection);
+      propMap.put(ZkStateReader.COLLECTION_PROP, collectionName);
       ZkNodeProps m = new ZkNodeProps(propMap);
       inQueue.offer(ZkStateReader.toJSON(m));
 
@@ -560,9 +541,22 @@ public class OverseerCollectionProcessor implements Runnable, ClosableThread {
     } catch (SolrException e) {
       throw e;
     } catch (Exception e) {
-      log.error("Error executing split operation for collection: " + collection + " parent shard: " + slice, e);
+      log.error("Error executing split operation for collection: " + collectionName + " parent shard: " + slice, e);
       throw new SolrException(ErrorCode.SERVER_ERROR, null, e);
     }
+  }
+
+  private void collectShardResponses(NamedList results, boolean abortOnError, String msgOnError) {
+    ShardResponse srsp;
+    do {
+      srsp = shardHandler.takeCompletedOrError();
+      if (srsp != null) {
+        processResponse(results, srsp);
+        if (abortOnError && srsp.getException() != null)  {
+          throw new SolrException(ErrorCode.SERVER_ERROR, msgOnError, srsp.getException());
+        }
+      }
+    } while (srsp != null);
   }
 
   private void sendShardRequest(String nodeName, ModifiableSolrParams params) {

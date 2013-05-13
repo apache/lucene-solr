@@ -88,13 +88,16 @@ public class SimpleTextStoredFieldsReader extends StoredFieldsReader {
         upto++;
       }
     }
-    assert upto == offsets.length;
+    //assert upto == offsets.length;
   }
   
   @Override
   public void visitDocument(int n, StoredFieldVisitor visitor, Set<String> ignoreFields) throws IOException {
     in.seek(offsets[n]);
     readLine();
+    if (!StringHelper.startsWith(scratch, NUM)) {
+      return;
+    }
     assert StringHelper.startsWith(scratch, NUM);
     int numFields = parseIntAt(NUM.length);
     

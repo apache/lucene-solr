@@ -46,7 +46,8 @@ public class FieldsUpdate implements Comparable<FieldsUpdate> {
   final Operation operation;
   final Set<String> replacedFields;
   final Analyzer analyzer;
-  final int docIDUpto;
+  final int docIdUpto;
+  final long timeStamp;
 
   IndexDocument fields;
   Directory directory;
@@ -67,7 +68,7 @@ public class FieldsUpdate implements Comparable<FieldsUpdate> {
    *          Document ID of the last document added before this field update
    */
   public FieldsUpdate(Term term, Operation operation, IndexDocument fields,
-      Analyzer analyzer, int docIDUpto) {
+      Analyzer analyzer, int docIDUpto, long timeStamp) {
     this.term = term;
     this.fields = fields;
     this.operation = operation;
@@ -83,7 +84,8 @@ public class FieldsUpdate implements Comparable<FieldsUpdate> {
       }
     }
     this.analyzer = analyzer;
-    this.docIDUpto = docIDUpto;
+    this.docIdUpto = docIDUpto;
+    this.timeStamp = timeStamp;
   }
   
   /**
@@ -97,7 +99,8 @@ public class FieldsUpdate implements Comparable<FieldsUpdate> {
     this.operation = other.operation;
     this.replacedFields = other.replacedFields;
     this.analyzer = other.analyzer;
-    this.docIDUpto = other.docIDUpto;
+    this.docIdUpto = other.docIdUpto;
+    this.timeStamp = other.timeStamp;
     this.directory = other.directory;
     this.segmentInfo = other.segmentInfo;
   }
@@ -105,7 +108,15 @@ public class FieldsUpdate implements Comparable<FieldsUpdate> {
   /* Order FrieldsUpdate by increasing docIDUpto */
   @Override
   public int compareTo(FieldsUpdate other) {
-    return this.docIDUpto - other.docIDUpto;
+    int diff = this.docIdUpto - other.docIdUpto;
+    if (diff == 0) {
+      if (this.timeStamp < other.timeStamp) {
+        return -1;
+      } else if (this.timeStamp > other.timeStamp) {
+        return 1;
+      }
+    }
+    return diff;
   }
   
 }

@@ -132,13 +132,11 @@ class DocumentsWriterPerThread {
     final FieldInfos fieldInfos;
     final FrozenBufferedDeletes segmentDeletes;
     final MutableBits liveDocs;
-    final UpdatedSegmentData liveUpdates;
     final int delCount;
 
     private FlushedSegment(SegmentInfoPerCommit segmentInfo, FieldInfos fieldInfos,
                            BufferedDeletes segmentDeletes, MutableBits liveDocs, 
-                           int delCount, BufferedUpdates segmentUpdates,
-                           UpdatedSegmentData liveUpdates) {
+                           int delCount, BufferedUpdates segmentUpdates) {
       this.segmentInfo = segmentInfo;
       this.fieldInfos = fieldInfos;
       if ((segmentDeletes != null && segmentDeletes.any())
@@ -149,7 +147,6 @@ class DocumentsWriterPerThread {
         this.segmentDeletes = null;
       }
       this.liveDocs = liveDocs;
-      this.liveUpdates = liveUpdates;
       this.delCount = delCount;
     }
   }
@@ -618,9 +615,9 @@ class DocumentsWriterPerThread {
 
       assert segmentInfo != null;
 
-      FlushedSegment fs = new FlushedSegment(segmentInfoPerCommit, flushState.fieldInfos,
-                                             segmentDeletes, flushState.liveDocs, flushState.delCountOnFlush, 
-                                             pendingUpdates, flushState.liveUpdates);
+      FlushedSegment fs = new FlushedSegment(segmentInfoPerCommit,
+          flushState.fieldInfos, segmentDeletes, flushState.liveDocs,
+          flushState.delCountOnFlush, pendingUpdates);
       sealFlushedSegment(fs);
       doAfterFlush();
       success = true;

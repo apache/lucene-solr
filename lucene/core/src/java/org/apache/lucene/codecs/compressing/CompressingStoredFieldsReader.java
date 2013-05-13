@@ -194,7 +194,11 @@ public final class CompressingStoredFieldsReader extends StoredFieldsReader {
   @Override
   public void visitDocument(int docID, StoredFieldVisitor visitor, Set<String> ignoreFields)
       throws IOException {
-    fieldsStream.seek(indexReader.getStartPointer(docID));
+    long startPointer = indexReader.getStartPointer(docID);
+    if (startPointer < 0) {
+      return;
+    }
+    fieldsStream.seek(startPointer);
 
     final int docBase = fieldsStream.readVInt();
     final int chunkDocs = fieldsStream.readVInt();

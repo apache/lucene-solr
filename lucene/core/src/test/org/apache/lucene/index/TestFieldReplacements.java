@@ -132,17 +132,12 @@ public class TestFieldReplacements extends LuceneTestCase {
   }
   
   private static void addDocuments(Directory directory, Random localRandom,
-      int maxDocs, boolean randomConfig) throws IOException {
+      int maxDocs) throws IOException {
     init(localRandom);
     HashSet<Term> usedTerms = new HashSet<Term>();
     
-    final IndexWriterConfig config;
-    if (randomConfig) {
-      config = newIndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer(random()));
-    } else {
-      config = new IndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer(random()));
-    }
-    System.out.println(config.getMergePolicy());
+    final IndexWriterConfig config = newIndexWriterConfig(TEST_VERSION_CURRENT,
+        new MockAnalyzer(random()));
     config.setCodec(new SimpleTextCodec());
     IndexWriter writer = new IndexWriter(directory, config);
     
@@ -273,13 +268,13 @@ public class TestFieldReplacements extends LuceneTestCase {
   }
   
   public void testRandomIndexGeneration() throws IOException {
-    addDocuments(dir, random(), Integer.MAX_VALUE, true);
+    addDocuments(dir, random(), Integer.MAX_VALUE);
     DirectoryReader directoryReader = DirectoryReader.open(dir);
     directoryReader.close();
   }
   
   public void testAddIndexes() throws IOException {
-    addDocuments(dir, random(), Integer.MAX_VALUE, true);
+    addDocuments(dir, random(), Integer.MAX_VALUE);
     RAMDirectory addedDir = new RAMDirectory();
     IndexWriter addedIndexWriter = new IndexWriter(addedDir,
         newIndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer(random())));
@@ -300,13 +295,10 @@ public class TestFieldReplacements extends LuceneTestCase {
   
   public void testIndexEquality() throws IOException {
     // create index through updates
-    addDocuments(dir, new Random(3), Integer.MAX_VALUE, true);
+    addDocuments(dir, new Random(3), Integer.MAX_VALUE);
     
     DirectoryReader updatesReader = DirectoryReader.open(dir);
     IndexData updatesIndexData = new IndexData(updatesReader);
-    System.out.println("Updates index data");
-    System.out.println(updatesIndexData.toString(false));
-    System.out.println();
     updatesReader.close();
     
     // create the same index directly
@@ -598,9 +590,6 @@ public class TestFieldReplacements extends LuceneTestCase {
     DirectoryReader directReader = DirectoryReader.open(directDir);
     
     IndexData directIndexData = new IndexData(directReader);
-    System.out.println("Direct index data");
-    System.out.println(directIndexData.toString(false));
-    System.out.println();
     directReader.close();
     directDir.close();
     
@@ -783,6 +772,81 @@ public class TestFieldReplacements extends LuceneTestCase {
     
   }
   
+  public void testReplaceLayers() throws IOException {
+    IndexWriter writer = new IndexWriter(dir, newIndexWriterConfig(
+        TEST_VERSION_CURRENT, new MockAnalyzer(random())));
+    
+    FieldType fieldType = new FieldType();
+    fieldType.setIndexed(true);
+    fieldType.setTokenized(false);
+    fieldType.setOmitNorms(true);
+    fieldType.setStored(true);
+    
+    Document doc0 = new Document();
+    doc0.add(new StoredField("f1", "a", fieldType));
+    writer.addDocument(doc0);
+
+    // add f2:b
+    Document fields1 = new Document();
+    fields1.add(new StoredField("f2", "b", fieldType));
+    writer.updateFields(Operation.ADD_FIELDS, new Term("f1", "a"), fields1);
+    
+    // remove f2:b and add f2:c
+    Document fields2 = new Document();
+    fields2.add(new StoredField("f2", "c", fieldType));
+    writer.updateFields(Operation.REPLACE_FIELDS, new Term("f2", "b"), fields2);
+    
+    // do nothing since f2:b was removed
+    Document fields3 = new Document();
+    fields3.add(new StoredField("f2", "d", fieldType));
+    writer.updateFields(Operation.ADD_FIELDS, new Term("f2", "b"), fields3);
+    
+    writer.close();
+    
+    DirectoryReader directoryReader = DirectoryReader.open(dir);
+    final AtomicReader atomicReader = directoryReader.leaves().get(0).reader();
+    printField(atomicReader, "f1");
+    
+    // check indexed fields
+    final DocsAndPositionsEnum termPositionsA = atomicReader
+        .termPositionsEnum(new Term("f1", "a"));
+    assertNotNull("no positions for term", termPositionsA);
+    assertEquals("wrong doc id", 0, termPositionsA.nextDoc());
+    assertEquals("wrong position", 0, termPositionsA.nextPosition());
+    assertEquals("wrong doc id", DocIdSetIterator.NO_MORE_DOCS,
+        termPositionsA.nextDoc());
+    
+    final DocsAndPositionsEnum termPositionsB = atomicReader
+        .termPositionsEnum(new Term("f2", "b"));
+    assertNotNull("no positions for term", termPositionsB);
+    assertEquals("wrong doc id", DocIdSetIterator.NO_MORE_DOCS,
+        termPositionsB.nextDoc());
+    
+    final DocsAndPositionsEnum termPositionsC = atomicReader
+        .termPositionsEnum(new Term("f2", "c"));
+    assertNotNull("no positions for term", termPositionsC);
+    assertEquals("wrong doc id", 0, termPositionsC.nextDoc());
+    assertEquals("wrong position", 100000, termPositionsC.nextPosition());
+    assertEquals("wrong doc id", DocIdSetIterator.NO_MORE_DOCS,
+        termPositionsC.nextDoc());
+    
+    final DocsAndPositionsEnum termPositionsD = atomicReader
+        .termPositionsEnum(new Term("f2", "d"));
+    assertNull("unexpected positions for term", termPositionsD);
+    
+    // check stored fields
+    final StoredDocument stored0 = atomicReader.document(0);
+    final StorableField[] f1_0 = stored0.getFields("f1");
+    assertEquals("wrong numeber of stored fields", 1, f1_0.length);
+    assertEquals("wrong field value", "a", f1_0[0].stringValue());
+    final StorableField[] f2_0 = stored0.getFields("f2");
+    assertEquals("wrong numeber of stored fields", 1, f2_0.length);
+    assertEquals("wrong field value", "c", f2_0[0].stringValue());
+    
+    directoryReader.close();
+    
+  }
+  
   private void printField(AtomicReader atomicReader, String fieldName)
       throws IOException {
     if (!VERBOSE_FIELD_REPLACEMENTS) {
@@ -807,8 +871,8 @@ public class TestFieldReplacements extends LuceneTestCase {
     }
   }
   
-  public void testprintIndexes() throws IOException {
-    File outDir = new File("D:/temp/ifu/compare/scenario/a");
+  public void printIndexes() throws IOException {
+    File outDir = new File("D:/temp/ifu/compare/scenario/b");
     outDir.mkdirs();
     
     for (int i = 0; i < 42; i++) {
@@ -819,8 +883,7 @@ public class TestFieldReplacements extends LuceneTestCase {
       for (String filename : directory.listAll()) {
         new File(fsDirFile, filename).delete();
       }
-      System.out.print("" + i + " ");
-      addDocuments(directory, new Random(3), i, true);
+      addDocuments(directory, new Random(3), i);
       DirectoryReader updatesReader = DirectoryReader.open(directory);
       IndexData updatesIndexData = new IndexData(updatesReader);
       updatesReader.close();

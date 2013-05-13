@@ -19,9 +19,7 @@ package org.apache.lucene.index;
 
 import java.io.IOException;
 import java.util.Comparator;
-import java.util.Iterator;
 import java.util.Map;
-import java.util.SortedSet;
 
 import org.apache.lucene.analysis.tokenattributes.OffsetAttribute;
 import org.apache.lucene.analysis.tokenattributes.PayloadAttribute;
@@ -367,13 +365,6 @@ final class FreqProxTermsWriterPerField extends TermsHashConsumerPerField implem
       segDeletes = null;
     }
     
-    final Map<Term,SortedSet<FieldsUpdate>> segUpdates;
-    if (state.segUpdates != null && state.segUpdates.terms.size() > 0) {
-      segUpdates = state.segUpdates.terms;
-    } else {
-      segUpdates = null;
-    }
-    
     final int[] termIDs = termsHashPerField.sortPostings(termComp);
     final int numTerms = termsHashPerField.bytesHash.size();
     final BytesRef text = new BytesRef();
@@ -406,8 +397,6 @@ final class FreqProxTermsWriterPerField extends TermsHashConsumerPerField implem
 
       final PostingsConsumer postingsConsumer = termsConsumer.startTerm(text);
 
-      Term term = new Term(fieldName, text);
-      
       final int delDocLimit;
       if (segDeletes != null) {
         protoTerm.bytes = text;
@@ -419,19 +408,6 @@ final class FreqProxTermsWriterPerField extends TermsHashConsumerPerField implem
         }
       } else {
         delDocLimit = 0;
-      }
-
-      final SortedSet<FieldsUpdate> termUpdates;
-      Iterator<FieldsUpdate> updatesIterator = null;
-      FieldsUpdate nextUpdate = null;
-      if (segUpdates != null) {
-        termUpdates = segUpdates.get(term);
-        if (termUpdates != null && !termUpdates.isEmpty()) {
-          updatesIterator = termUpdates.iterator();
-          nextUpdate = updatesIterator.next();
-        }
-      } else {
-        termUpdates = null;
       }
 
       // Now termStates has numToMerge FieldMergeStates
@@ -504,23 +480,6 @@ final class FreqProxTermsWriterPerField extends TermsHashConsumerPerField implem
             state.delCountOnFlush++;
             state.liveDocs.clear(docID);
           }
-        }
-
-        // make sure we update the relevant documents according to the doc ID
-        // in which the updates arrived
-        while (nextUpdate != null && docID > nextUpdate.docIDUpto) {
-          if (updatesIterator.hasNext()) {
-            nextUpdate = updatesIterator.next();
-          } else {
-            nextUpdate = null;
-          }
-        }
-        
-        if (nextUpdate != null) {
-            if (state.liveUpdates == null) {
-              state.liveUpdates = new UpdatedSegmentData();
-            }
-            state.liveUpdates.addUpdate(docID, nextUpdate, true);
         }
 
         totTF += termFreq;

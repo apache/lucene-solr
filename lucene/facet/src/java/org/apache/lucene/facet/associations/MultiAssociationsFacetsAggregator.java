@@ -48,7 +48,7 @@ public class MultiAssociationsFacetsAggregator implements FacetsAggregator {
    * Creates a new {@link MultiAssociationsFacetsAggregator} over the given
    * aggregators. The mapping is used by
    * {@link #rollupValues(FacetRequest, int, int[], int[], FacetArrays)} to
-   * rollup the values of the speicfic category by the corresponding
+   * rollup the values of the specific category by the corresponding
    * {@link FacetsAggregator}. However, since each {@link FacetsAggregator}
    * handles the associations of a specific type, which could cover multiple
    * categories, the aggregation is done on the unique set of aggregators, which

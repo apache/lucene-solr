@@ -343,22 +343,4 @@ public class CoreDescriptor {
   public void putProperty(String prop, String val) {
     coreProperties.put(prop, val);
   }
-
-  // This is particularly useful for checking if any two cores have the same
-  // data dir.
-  public String getAbsoluteDataDir() {
-    String dataDir = getDataDir();
-    if (dataDir == null) return null; // No worse than before.
-
-    if (new File(dataDir).isAbsolute()) {
-      return SolrResourceLoader.normalizeDir(
-          SolrResourceLoader.normalizeDir(dataDir));
-    }
-
-    if (coreContainer == null) return null;
-
-    return SolrResourceLoader.normalizeDir(coreContainer.getSolrHome() +
-        SolrResourceLoader.normalizeDir(dataDir));
-
-  }
 }

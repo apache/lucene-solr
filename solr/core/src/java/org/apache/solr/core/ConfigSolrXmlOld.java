@@ -178,16 +178,19 @@ public class ConfigSolrXmlOld extends ConfigSolr {
           log.error(msg);
         }
       }
-      
-      if (dataDir != null) {
-        if (!dirs.containsKey(dataDir)) {
-          dirs.put(dataDir, name);
+
+      String instDir = DOMUtil.getAttr(node, CoreDescriptor.CORE_INSTDIR, null);
+      if (dataDir != null && instDir != null) { // this won't load anyway if instDir not specified.
+
+        String absData = new File(instDir, dataDir).getCanonicalPath();
+        if (!dirs.containsKey(absData)) {
+          dirs.put(absData, name);
         } else {
           String msg = String
               .format(
                   Locale.ROOT,
                   "More than one core points to data dir %s. They are in %s and %s",
-                  dataDir, dirs.get(dataDir), name);
+                  absData, dirs.get(absData), name);
           log.warn(msg);
         }
       }

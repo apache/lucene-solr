@@ -63,8 +63,10 @@ class DrillSidewaysScorer extends Scorer {
     //}
     //System.out.println("score r=" + context.reader());
     collector.setScorer(this);
-    drillDownCollector.setScorer(this);
-    drillDownCollector.setNextReader(context);
+    if (drillDownCollector != null) {
+      drillDownCollector.setScorer(this);
+      drillDownCollector.setNextReader(context);
+    }
     for(DocsEnumsAndFreq dim : dims) {
       dim.sidewaysCollector.setScorer(this);
       dim.sidewaysCollector.setNextReader(context);
@@ -393,7 +395,9 @@ class DrillSidewaysScorer extends Scorer {
     //}
 
     collector.collect(collectDocID);
-    drillDownCollector.collect(collectDocID);
+    if (drillDownCollector != null) {
+      drillDownCollector.collect(collectDocID);
+    }
 
     // TODO: we could "fix" faceting of the sideways counts
     // to do this "union" (of the drill down hits) in the

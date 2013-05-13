@@ -119,7 +119,7 @@ public class RangeAccumulator extends FacetsAccumulator {
   }
 
   @Override
-  protected boolean requiresDocScores() {
+  public boolean requiresDocScores() {
     return false;
   }
 }

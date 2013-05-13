@@ -67,9 +67,6 @@ public class SegmentWriteState {
    *  only set if there is one or more deleted documents. */
   public MutableBits liveDocs;
 
-  // Lazily created:
-  public UpdatedSegmentData liveUpdates;
-  
   /** Unique suffix for any postings files written for this
    *  segment.  {@link PerFieldPostingsFormat} sets this for
    *  each of the postings formats it wraps.  If you create

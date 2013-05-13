@@ -90,8 +90,9 @@ public final class Lucene40StoredFieldsReader extends StoredFieldsReader impleme
       assert HEADER_LENGTH_IDX == indexStream.getFilePointer();
       final long indexSize = indexStream.length() - HEADER_LENGTH_IDX;
       this.size = (int) (indexSize >> 3);
-      // Verify two sources of "maxDoc" agree:
-      if (this.size != si.getDocCount()) {
+      // Verify two sources of "maxDoc" agree, but for stacked segments allow 
+      // less actual documents:
+      if (this.size > si.getDocCount()) {
         throw new CorruptIndexException("doc counts differ for segment " + segment + ": fieldsReader shows " + this.size + " but segmentInfo shows " + si.getDocCount());
       }
       numTotalDocs = (int) (indexSize >> 3);

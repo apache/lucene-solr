@@ -183,8 +183,8 @@ public class TestHarness extends BaseTestHarness {
         String solrHome = SolrResourceLoader.locateSolrHome();
         container = new CoreContainer(new SolrResourceLoader(solrHome)) {
           {
-            String hostPort = System.getProperty("hostPort");
-            String hostContext = "solr";
+            String hostPort = System.getProperty("hostPort", "8983");
+            String hostContext = System.getProperty("hostContext", "solr");
             defaultCoreName = CoreContainer.DEFAULT_DEFAULT_CORE_NAME;
             initShardHandler();
             zkSys.initZooKeeper(this, solrHome, System.getProperty("zkHost"), 30000, hostPort, hostContext, null, "30000", 30000, 30000);

@@ -165,6 +165,9 @@ public final class CompressingStoredFieldsIndexReader implements Closeable, Clon
     if (docID < 0 || docID >= maxDoc) {
       throw new IllegalArgumentException("docID out of range [0-" + maxDoc + "]: " + docID);
     }
+    if (docBases.length == 0) {
+      return -1;
+    }
     final int block = block(docID);
     final int relativeChunk = relativeChunk(block, docID - docBases[block]);
     return startPointers[block] + relativeStartPointer(block, relativeChunk);

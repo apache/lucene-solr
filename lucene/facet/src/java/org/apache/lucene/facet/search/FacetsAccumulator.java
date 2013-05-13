@@ -196,7 +196,7 @@ public class FacetsAccumulator {
     return res;
   }
 
-  protected boolean requiresDocScores() {
+  public boolean requiresDocScores() {
     return getAggregator().requiresDocScores();
   }
 }

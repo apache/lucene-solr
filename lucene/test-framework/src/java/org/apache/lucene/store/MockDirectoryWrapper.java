@@ -60,7 +60,6 @@ import org.apache.lucene.util._TestUtil;
  *        refusing to write/delete to open files.
  * </ul>
  */
-
 public class MockDirectoryWrapper extends BaseDirectoryWrapper {
   long maxSize;
 
@@ -159,6 +158,26 @@ public class MockDirectoryWrapper extends BaseDirectoryWrapper {
     this.throttling = throttling;
   }
 
+  /**
+   * Returns true if {@link #getDelegate() delegate} must sync its files.
+   * Currently, only {@link NRTCachingDirectory} requires sync'ing its files
+   * because otherwise they are cached in an internal {@link RAMDirectory}. If
+   * other directories require that too, they should be added to this method.
+   */
+  private boolean mustSync() {
+    Directory delegate = this.delegate;
+    while (true) {
+      if (delegate instanceof RateLimitedDirectoryWrapper) {
+        delegate = ((RateLimitedDirectoryWrapper) delegate).getDelegate();
+      } else if (delegate instanceof TrackingDirectoryWrapper) {
+        delegate = ((TrackingDirectoryWrapper) delegate).getDelegate();
+      } else {
+        break;
+      }
+    }
+    return delegate instanceof NRTCachingDirectory;
+  }
+  
   @Override
   public synchronized void sync(Collection<String> names) throws IOException {
     maybeYield();
@@ -166,12 +185,16 @@ public class MockDirectoryWrapper extends BaseDirectoryWrapper {
     if (crashed) {
       throw new IOException("cannot sync after crash");
     }
-    unSyncedFiles.removeAll(names);
-    // TODO: need to improve hack to be OK w/
-    // RateLimitingDirWrapper in between...
-    if (true || LuceneTestCase.rarely(randomState) || delegate instanceof NRTCachingDirectory) {
-      // don't wear out our hardware so much in tests.
-      delegate.sync(names);
+    // don't wear out our hardware so much in tests.
+    if (LuceneTestCase.rarely(randomState) || mustSync()) {
+      for (String name : names) {
+        // randomly fail with IOE on any file
+        maybeThrowIOException(name);
+        delegate.sync(Collections.singleton(name));
+        unSyncedFiles.remove(name);
+      }
+    } else {
+      unSyncedFiles.removeAll(names);
     }
   }
   
@@ -343,30 +366,26 @@ public class MockDirectoryWrapper extends BaseDirectoryWrapper {
     return randomIOExceptionRateOnOpen;
   }
 
-  void maybeThrowIOException() throws IOException {
-    maybeThrowIOException(null);
-  }
-
   void maybeThrowIOException(String message) throws IOException {
     if (randomState.nextDouble() < randomIOExceptionRate) {
       if (LuceneTestCase.VERBOSE) {
         System.out.println(Thread.currentThread().getName() + ": MockDirectoryWrapper: now throw random exception" + (message == null ? "" : " (" + message + ")"));
         new Throwable().printStackTrace(System.out);
       }
-      throw new IOException("a random IOException" + (message == null ? "" : "(" + message + ")"));
+      throw new IOException("a random IOException" + (message == null ? "" : " (" + message + ")"));
     }
   }
 
-  void maybeThrowIOExceptionOnOpen() throws IOException {
+  void maybeThrowIOExceptionOnOpen(String name) throws IOException {
     if (randomState.nextDouble() < randomIOExceptionRateOnOpen) {
       if (LuceneTestCase.VERBOSE) {
-        System.out.println(Thread.currentThread().getName() + ": MockDirectoryWrapper: now throw random exception during open");
+        System.out.println(Thread.currentThread().getName() + ": MockDirectoryWrapper: now throw random exception during open file=" + name);
         new Throwable().printStackTrace(System.out);
       }
       if (randomState.nextBoolean()) {
-        throw new IOException("a random IOException");
+        throw new IOException("a random IOException (" + name + ")");
       } else {
-        throw new FileNotFoundException("a random IOException");
+        throw new FileNotFoundException("a random IOException (" + name + ")");
       }
     }
   }
@@ -432,7 +451,7 @@ public class MockDirectoryWrapper extends BaseDirectoryWrapper {
   @Override
   public synchronized IndexOutput createOutput(String name, IOContext context) throws IOException {
     maybeThrowDeterministicException();
-    maybeThrowIOExceptionOnOpen();
+    maybeThrowIOExceptionOnOpen(name);
     maybeYield();
     if (failOnCreateOutput) {
       maybeThrowDeterministicException();
@@ -486,7 +505,7 @@ public class MockDirectoryWrapper extends BaseDirectoryWrapper {
     if (throttling == Throttling.ALWAYS || 
         (throttling == Throttling.SOMETIMES && randomState.nextInt(50) == 0) && !(delegate instanceof RateLimitedDirectoryWrapper)) {
       if (LuceneTestCase.VERBOSE) {
-        System.out.println("MockDirectoryWrapper: throttling indexOutput");
+        System.out.println("MockDirectoryWrapper: throttling indexOutput (" + name + ")");
       }
       return throttledOutput.newFromDelegate(io);
     } else {
@@ -519,7 +538,7 @@ public class MockDirectoryWrapper extends BaseDirectoryWrapper {
   @Override
   public synchronized IndexInput openInput(String name, IOContext context) throws IOException {
     maybeThrowDeterministicException();
-    maybeThrowIOExceptionOnOpen();
+    maybeThrowIOExceptionOnOpen(name);
     maybeYield();
     if (failOnOpenInput) {
       maybeThrowDeterministicException();
@@ -632,7 +651,7 @@ public class MockDirectoryWrapper extends BaseDirectoryWrapper {
         if (LuceneTestCase.VERBOSE) {
           System.out.println("\nNOTE: MockDirectoryWrapper: now crash");
         }
-        crash(); // corrumpt any unsynced-files
+        crash(); // corrupt any unsynced-files
         if (LuceneTestCase.VERBOSE) {
           System.out.println("\nNOTE: MockDirectoryWrapper: now run CheckIndex");
         } 

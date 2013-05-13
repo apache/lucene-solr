@@ -421,7 +421,7 @@ final class DocumentsWriter {
         // create new fields update, which should effect previous docs in the
         // current segment
         FieldsUpdate fieldsUpdate = new FieldsUpdate(term, operation, fields, 
-            analyzer, numDocsInRAM.get() - 1);
+            analyzer, numDocsInRAM.get() - 1, System.currentTimeMillis());
         // invert the given fields and store in RAMDirectory
         dwpt.invertFieldsUpdate(fieldsUpdate, globalFieldNumberMap);
         dwpt.updateFields(term, fieldsUpdate);
@@ -480,6 +480,9 @@ final class DocumentsWriter {
         // abortable so that IW.close(false) is able to stop it
         TrackingDirectoryWrapper trackingDir = new TrackingDirectoryWrapper(directory);
         
+        updates.startWriting(infoPerCommit.getNextUpdateGen(),
+            infoPerCommit.info.getDocCount());
+
         final List<AtomicReader> mergeReaders = new ArrayList<AtomicReader>();
         AtomicReader reader;
         while ((reader = updates.nextReader()) != null) { // add new indexes
@@ -489,10 +492,6 @@ final class DocumentsWriter {
         SegmentMerger merger = new SegmentMerger(mergeReaders, info, infoStream, trackingDir,
             interval, MergeState.CheckAbort.NONE, globalFieldNumberMap, context);
         
-        updates.startWriting(infoPerCommit.getNextUpdateGen(),
-            infoPerCommit.info.getDocCount(), indexWriter.getConfig()
-                .getReaderTermsIndexDivisor());
-
         Set<String> generationReplacementFilenames = null;
         boolean success = false;
         try {

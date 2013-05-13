@@ -322,7 +322,11 @@ public class DistributedUpdateProcessor extends UpdateRequestProcessor {
     boolean localIsLeader = cloudDescriptor.isLeader();
     if (DistribPhase.FROMLEADER == phase && localIsLeader && from != null) { // from will be null on log replay
       String fromShard = req.getParams().get("distrib.from.parent");
-      if (fromShard != null)  {
+      if (fromShard != null) {
+        if (!Slice.CONSTRUCTION.equals(mySlice.getState()))  {
+          throw new SolrException(ErrorCode.SERVICE_UNAVAILABLE,
+              "Request says it is coming from parent shard leader but we are not in construction state");
+        }
         // shard splitting case -- check ranges to see if we are a sub-shard
         Slice fromSlice = zkController.getClusterState().getCollection(collection).getSlice(fromShard);
         DocRouter.Range parentRange = fromSlice.getRange();
@@ -331,12 +335,12 @@ public class DistributedUpdateProcessor extends UpdateRequestProcessor {
           throw new SolrException(ErrorCode.SERVICE_UNAVAILABLE,
               "Request says it is coming from parent shard leader but parent hash range is not superset of my range");
         }
-      } else  {
-      log.error("Request says it is coming from leader, but we are the leader: " + req.getParamString());
-      throw new SolrException(ErrorCode.SERVICE_UNAVAILABLE, "Request says it is coming from leader, but we are the leader");
+      } else {
+        log.error("Request says it is coming from leader, but we are the leader: " + req.getParamString());
+        throw new SolrException(ErrorCode.SERVICE_UNAVAILABLE, "Request says it is coming from leader, but we are the leader");
+      }
     }
-    }
-    
+
     if (isLeader && !localIsLeader) {
       log.error("ClusterState says we are the leader, but locally we don't think so");
       throw new SolrException(ErrorCode.SERVICE_UNAVAILABLE, "ClusterState says we are the leader, but locally we don't think so");

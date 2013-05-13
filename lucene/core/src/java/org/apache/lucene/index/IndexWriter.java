@@ -384,7 +384,7 @@ public class IndexWriter implements Closeable, TwoPhaseCommit {
           }
           success = true;
           // Prevent segmentInfos from changing while opening the
-          // reader; in theory we could do similar retry logic,
+          // reader; in theory we could instead do similar retry logic,
           // just like we do when loading segments_N
           synchronized(this) {
             maybeApplyDeletes(applyAllDeletes);
@@ -452,6 +452,16 @@ public class IndexWriter implements Closeable, TwoPhaseCommit {
       }
     }
     
+    public synchronized boolean anyPendingDeletes() {
+      for(ReadersAndLiveDocs rld : readerMap.values()) {
+        if (rld.getPendingDeleteCount() != 0) {
+          return true;
+        }
+      }
+
+      return false;
+    }
+
     public synchronized void release(ReadersAndLiveDocs rld) throws IOException {
       
       // Matches incRef in get:
@@ -575,7 +585,20 @@ public class IndexWriter implements Closeable, TwoPhaseCommit {
         rld.incRef();
       }
       
+      assert noDups();
+
       return rld;
+    }
+
+    // Make sure that every segment appears only once in the
+    // pool:
+    private boolean noDups() {
+      Set<String> seen = new HashSet<String>();
+      for(SegmentInfoPerCommit info : readerMap.keySet()) {
+        assert !seen.contains(info.info.name);
+        seen.add(info.info.name);
+      }
+      return true;
     }
   }
   
@@ -699,8 +722,7 @@ public class IndexWriter implements Closeable, TwoPhaseCommit {
         
         // Record that we have a change (zero out all
         // segments) pending:
-        changeCount++;
-        segmentInfos.changed();
+        changed();
       } else {
         segmentInfos.read(directory);
         
@@ -716,8 +738,7 @@ public class IndexWriter implements Closeable, TwoPhaseCommit {
           SegmentInfos oldInfos = new SegmentInfos();
           oldInfos.read(directory, commit.getSegmentsFileName());
           segmentInfos.replace(oldInfos);
-          changeCount++;
-          segmentInfos.changed();
+          changed();
           if (infoStream.isEnabled("IW")) {
             infoStream.message("IW",
                 "init: loaded commit \"" + commit.getSegmentsFileName() + "\"");
@@ -746,8 +767,7 @@ public class IndexWriter implements Closeable, TwoPhaseCommit {
         // We have to mark ourself as changed so that if we
         // are closed w/o any further changes we write a new
         // segments_N file.
-        changeCount++;
-        segmentInfos.changed();
+        changed();
       }
       
       if (infoStream.isEnabled("IW")) {
@@ -1116,6 +1136,9 @@ public class IndexWriter implements Closeable, TwoPhaseCommit {
       return true;
     }
     if (docWriter.anyDeletions()) {
+      return true;
+    }
+    if (readerPool.anyPendingDeletes()) {
       return true;
     }
     for (final SegmentInfoPerCommit info : segmentInfos) {
@@ -1524,7 +1547,7 @@ public class IndexWriter implements Closeable, TwoPhaseCommit {
             
             // Must bump changeCount so if no other changes
             // happened, we still commit this change:
-            changeCount++;
+            changed();
           }
           // System.out.println("  yes " + info.info.name + " " + docID);
           return true;
@@ -2411,9 +2434,14 @@ public class IndexWriter implements Closeable, TwoPhaseCommit {
    * referenced exist (correctly) in the index directory.
    */
   synchronized void checkpoint() throws IOException {
+    changed();
+    deleter.checkpoint(segmentInfos, false);
+  }
+
+  /** Called internally if any index state has changed. */
+  synchronized void changed() {
     changeCount++;
     segmentInfos.changed();
-    deleter.checkpoint(segmentInfos, false);
   }
   
   void writeSegmentUpdates(SegmentInfoPerCommit info,
@@ -4513,7 +4541,6 @@ public class IndexWriter implements Closeable, TwoPhaseCommit {
               + (infos.version == segmentInfos.version) + " DW changes: "
               + docWriter.anyChanges() + " BD changes: "
               + bufferedDeletesStream.any());
-      
     }
     return infos.version == segmentInfos.version && !docWriter.anyChanges()
         && !bufferedDeletesStream.any();

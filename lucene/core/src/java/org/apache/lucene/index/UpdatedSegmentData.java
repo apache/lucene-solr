@@ -1,14 +1,21 @@
 package org.apache.lucene.index;
 
 import java.io.IOException;
+import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.Iterator;
+import java.util.LinkedHashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
-import java.util.PriorityQueue;
+import java.util.Set;
+import java.util.SortedSet;
 import java.util.TreeMap;
 
 import org.apache.lucene.analysis.Analyzer;
+import org.apache.lucene.index.FieldsUpdate.Operation;
+import org.apache.lucene.search.DocIdSetIterator;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.IOContext;
 import org.apache.lucene.util.Bits;
@@ -36,44 +43,96 @@ import org.apache.lucene.util.Bits;
 class UpdatedSegmentData {
   
   static final FieldInfos EMPTY_FIELD_INFOS = new FieldInfos(new FieldInfo[0]);
-
+  
   /** Updates mapped by doc ID, for each do sorted list of updates. */
-  private TreeMap<Integer,PriorityQueue<FieldsUpdate>> updatesMap;
+  private TreeMap<Integer,TreeMap<FieldsUpdate, Set<String>>> docIdToUpdatesMap;
+  private HashMap<FieldsUpdate, List<Integer>> updatesToDocIdMap;
+  private LinkedHashMap<FieldsUpdate,UpdateAtomicReader> allApplied;
   
-  /** */
   private long generation;
+  private boolean exactSegment;
   
-  private Map<String,FieldGenerationReplacements> fieldGenerationReplacments = new HashMap<String,FieldGenerationReplacements>();
+  private Map<String,FieldGenerationReplacements> fieldGenerationReplacments;
   
-  private Iterator<Entry<Integer,PriorityQueue<FieldsUpdate>>> updatesIterator;
+  private Iterator<Entry<Integer,TreeMap<FieldsUpdate,Set<String>>>> updatesIterator;
   private int currDocID;
   private int nextDocID;
   private int numDocs;
-  private PriorityQueue<FieldsUpdate> nextUpdate;
+  private TreeMap<FieldsUpdate,Set<String>> nextUpdate;
   private Analyzer analyzer;
   
-  private int termsIndexDivisor;
-  
-  UpdatedSegmentData() {
-    updatesMap = new TreeMap<Integer,PriorityQueue<FieldsUpdate>>();
+  UpdatedSegmentData(SegmentReader reader,
+      SortedSet<FieldsUpdate> packetUpdates, boolean exactSegment)
+      throws IOException {
+    docIdToUpdatesMap = new TreeMap<>();
+    updatesToDocIdMap = new HashMap<>();
+    this.exactSegment = exactSegment;
+    
+    allApplied = new LinkedHashMap<>();
+    
+    for (FieldsUpdate update : packetUpdates) {
+      // add updates according to the base reader
+      DocsEnum docsEnum = reader.termDocsEnum(update.term);
+      if (docsEnum != null) {
+        int docId;
+        while ((docId = docsEnum.nextDoc()) != DocIdSetIterator.NO_MORE_DOCS) {
+          addUpdate(docId, update);
+        }
+      }
+      
+      // try applying on previous updates in this packet
+      for (Entry<FieldsUpdate,UpdateAtomicReader> applied : allApplied
+          .entrySet()) {
+        if (applied.getValue().hasTerm(update.term)) {
+          List<Integer> list = updatesToDocIdMap.get(applied.getKey());
+          if (list != null) {
+            for (Integer docId : list) {
+              Set<String> ignoredFields = docIdToUpdatesMap.get(docId).get(
+                  applied.getKey());
+              if (ignoredFields == null
+                  || !ignoredFields.contains(update.term.field())) {
+                addUpdate(docId, update);
+              }
+            }
+          }
+        }
+      }
+      
+      allApplied.put(update, new UpdateAtomicReader(update.directory,
+          update.segmentInfo, IOContext.DEFAULT));
+    }
+    
   }
   
-  void addUpdate(int docId, FieldsUpdate fieldsUpdate, boolean checkDocId) {
-    if (checkDocId && docId > fieldsUpdate.docIDUpto) {
+  private void addUpdate(int docId, FieldsUpdate fieldsUpdate) {
+    if (exactSegment && docId > fieldsUpdate.docIdUpto) {
       return;
     }
-    PriorityQueue<FieldsUpdate> prevUpdates = updatesMap.get(docId);
+    TreeMap<FieldsUpdate,Set<String>> prevUpdates = docIdToUpdatesMap.get(docId);
     if (prevUpdates == null) {
-      prevUpdates = new PriorityQueue<FieldsUpdate>();
-      updatesMap.put(docId, prevUpdates);
-    } else {
-      System.out.println();
+      prevUpdates = new TreeMap<>();
+      docIdToUpdatesMap.put(docId, prevUpdates);
+    } else if (fieldsUpdate.operation == Operation.REPLACE_FIELDS) {
+      // set ignored fields in previous updates
+      for (Entry<FieldsUpdate,Set<String>> addIgnore : prevUpdates.entrySet()) {
+        if (addIgnore.getValue() == null) {
+          prevUpdates.put(addIgnore.getKey(), new HashSet<>(fieldsUpdate.replacedFields));
+        } else {
+          addIgnore.getValue().addAll(fieldsUpdate.replacedFields);
+        }
+      }
     }
-    prevUpdates.add(fieldsUpdate);
+    prevUpdates.put(fieldsUpdate, null);
+    List<Integer> prevDocIds = updatesToDocIdMap.get(fieldsUpdate);
+    if (prevDocIds == null) {
+      prevDocIds = new ArrayList<Integer>();
+      updatesToDocIdMap.put(fieldsUpdate, prevDocIds);
+    }
+    prevDocIds.add(docId);
   }
   
   boolean hasUpdates() {
-    return !updatesMap.isEmpty();
+    return !docIdToUpdatesMap.isEmpty();
   }
   
   /**
@@ -83,16 +142,13 @@ class UpdatedSegmentData {
    *          The updates generation.
    * @param numDocs
    *          number of documents in the base segment
-   * @param termsIndexDivisor
-   *          Terms index divisor to use in temporary segments
    */
-  void startWriting(long generation, int numDocs, int termsIndexDivisor) {
+  void startWriting(long generation, int numDocs) {
     this.generation = generation;
     this.numDocs = numDocs;
-    this.termsIndexDivisor = termsIndexDivisor;
-    updatesIterator = updatesMap.entrySet().iterator();
+    
+    updatesIterator = docIdToUpdatesMap.entrySet().iterator();
     currDocID = 0;
-    fieldGenerationReplacments.clear();
     // fetch the first actual updates document if exists
     nextDocUpdate();
   }
@@ -102,8 +158,7 @@ class UpdatedSegmentData {
    */
   private void nextDocUpdate() {
     if (updatesIterator.hasNext()) {
-      Entry<Integer,PriorityQueue<FieldsUpdate>> docUpdates = updatesIterator
-          .next();
+      Entry<Integer,TreeMap<FieldsUpdate,Set<String>>> docUpdates = updatesIterator.next();
       nextDocID = docUpdates.getKey();
       nextUpdate = docUpdates.getValue();
     } else {
@@ -128,9 +183,9 @@ class UpdatedSegmentData {
       currDocID = nextDocID;
     } else if (currDocID < numDocs) {
       // get the an actual updates reader...
-      FieldsUpdate update = nextUpdate.poll();
-      toReturn = new UpdateAtomicReader(update.directory, update.segmentInfo,
-          IOContext.DEFAULT);
+      FieldsUpdate update = nextUpdate.firstEntry().getKey();
+      Set<String> ignore = nextUpdate.remove(update);
+      toReturn = allApplied.get(update);
       
       // ... and if done for this document remove from updates map
       if (nextUpdate.isEmpty()) {
@@ -139,6 +194,9 @@ class UpdatedSegmentData {
       
       // add generation replacements if exist
       if (update.replacedFields != null) {
+        if (fieldGenerationReplacments == null) {
+          fieldGenerationReplacments = new HashMap<String,FieldGenerationReplacements>();
+        }
         for (String fieldName : update.replacedFields) {
           FieldGenerationReplacements fieldReplacement = fieldGenerationReplacments
               .get(fieldName);
@@ -158,9 +216,9 @@ class UpdatedSegmentData {
   }
   
   boolean isEmpty() {
-    return updatesMap.isEmpty();
+    return docIdToUpdatesMap.isEmpty();
   }
-
+  
   private class UpdateAtomicReader extends AtomicReader {
     
     final private SegmentCoreReaders core;
@@ -180,8 +238,7 @@ class UpdatedSegmentData {
      */
     UpdateAtomicReader(Directory fieldsDir, SegmentInfo segmentInfo,
         IOContext context) throws IOException {
-      core = new SegmentCoreReaders(null, segmentInfo, -1, context,
-          termsIndexDivisor);
+      core = new SegmentCoreReaders(null, segmentInfo, -1, context, -1);
       numDocs = 1;
     }
     
@@ -193,6 +250,17 @@ class UpdatedSegmentData {
       this.numDocs = numDocs;
     }
     
+    boolean hasTerm(Term term) throws IOException {
+      if (core == null) {
+        return false;
+      }
+      DocsEnum termDocsEnum = termDocsEnum(term);
+      if (termDocsEnum == null) {
+        return false;
+      }
+      return termDocsEnum.nextDoc() != DocIdSetIterator.NO_MORE_DOCS;
+    }
+
     @Override
     public Fields fields() throws IOException {
       if (core == null) {
@@ -247,8 +315,13 @@ class UpdatedSegmentData {
     }
     
     @Override
-    protected void doClose() throws IOException {}
-
+    protected void doClose() throws IOException {
+      if (core == null) {
+        return;
+      }
+      core.decRef();
+    }
+    
     @Override
     public NumericDocValues getNumericDocValues(String field)
         throws IOException {
@@ -257,7 +330,7 @@ class UpdatedSegmentData {
       }
       return core.getNumericDocValues(field);
     }
-
+    
     @Override
     public BinaryDocValues getBinaryDocValues(String field) throws IOException {
       if (core == null) {
@@ -265,7 +338,7 @@ class UpdatedSegmentData {
       }
       return core.getBinaryDocValues(field);
     }
-
+    
     @Override
     public SortedDocValues getSortedDocValues(String field) throws IOException {
       if (core == null) {
@@ -273,7 +346,7 @@ class UpdatedSegmentData {
       }
       return core.getSortedDocValues(field);
     }
-
+    
     @Override
     public SortedSetDocValues getSortedSetDocValues(String field)
         throws IOException {
@@ -282,7 +355,7 @@ class UpdatedSegmentData {
       }
       return core.getSortedSetDocValues(field);
     }
-
+    
     @Override
     public NumericDocValues getNormValues(String field) throws IOException {
       if (core == null) {
@@ -290,6 +363,6 @@ class UpdatedSegmentData {
       }
       return core.getNormValues(field);
     }
-    
   }
+  
 }

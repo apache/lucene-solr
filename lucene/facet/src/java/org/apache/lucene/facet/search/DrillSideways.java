@@ -20,6 +20,7 @@ package org.apache.lucene.facet.search;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.HashSet;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -94,6 +95,11 @@ public class DrillSideways {
     BooleanClause[] clauses = in.getBooleanQuery().getClauses();
     Map<String,Integer> drillDownDims = in.getDims();
 
+    String[] dimsByIndex = new String[drillDownDims.size()];
+    for(Map.Entry<String,Integer> ent : drillDownDims.entrySet()) {
+      dimsByIndex[ent.getValue()] = ent.getKey();
+    }
+
     int startClause;
     if (clauses.length == drillDownDims.size()) {
       startClause = 0;
@@ -107,13 +113,15 @@ public class DrillSideways {
     // baseQuery:
     List<Query> nonFacetClauses = new ArrayList<Query>();
     List<Query> facetClauses = new ArrayList<Query>();
+    Map<String,Integer> dimToIndex = new LinkedHashMap<String,Integer>();
     for(int i=startClause;i<clauses.length;i++) {
       Query q = clauses[i].getQuery();
-      String dim = in.getDim(q);
+      String dim = dimsByIndex[i-startClause];
       if (!facetDims.contains(dim)) {
         nonFacetClauses.add(q);
       } else {
         facetClauses.add(q);
+        dimToIndex.put(dim, dimToIndex.size());
       }
     }
 
@@ -127,7 +135,7 @@ public class DrillSideways {
         newBaseQuery.add(q, BooleanClause.Occur.MUST);
       }
 
-      return new DrillDownQuery(fsp.indexingParams, newBaseQuery, facetClauses);
+      return new DrillDownQuery(fsp.indexingParams, newBaseQuery, facetClauses, dimToIndex);
     } else {
       // No change:
       return in;
@@ -157,6 +165,20 @@ public class DrillSideways {
       return new DrillSidewaysResult(c.getFacetResults(), null);      
     }
 
+    List<FacetRequest> ddRequests = new ArrayList<FacetRequest>();
+    for(FacetRequest fr : fsp.facetRequests) {
+      assert fr.categoryPath.length > 0;
+      if (!drillDownDims.containsKey(fr.categoryPath.components[0])) {
+        ddRequests.add(fr);
+      }
+    }
+    FacetSearchParams fsp2;
+    if (!ddRequests.isEmpty()) {
+      fsp2 = new FacetSearchParams(fsp.indexingParams, ddRequests);
+    } else {
+      fsp2 = null;
+    }
+
     BooleanQuery ddq = query.getBooleanQuery();
     BooleanClause[] clauses = ddq.getClauses();
 
@@ -173,7 +195,7 @@ public class DrillSideways {
       startClause = 1;
     }
 
-    FacetsCollector drillDownCollector = FacetsCollector.create(getDrillDownAccumulator(fsp));
+    FacetsCollector drillDownCollector = fsp2 == null ? null : FacetsCollector.create(getDrillDownAccumulator(fsp2));
 
     FacetsCollector[] drillSidewaysCollectors = new FacetsCollector[drillDownDims.size()];
 
@@ -225,6 +247,8 @@ public class DrillSideways {
               break;
             }
           }
+        } else {
+          useCollectorMethod = true;
         }
       }
     }
@@ -246,6 +270,7 @@ public class DrillSideways {
 
     List<FacetResult> mergedResults = new ArrayList<FacetResult>();
     int[] requestUpto = new int[drillDownDims.size()];
+    int ddUpto = 0;
     for(int i=0;i<fsp.facetRequests.size();i++) {
       FacetRequest fr = fsp.facetRequests.get(i);
       assert fr.categoryPath.length > 0;
@@ -260,7 +285,7 @@ public class DrillSideways {
           //System.out.println("get DD results");
         }
         //System.out.println("add dd results " + i);
-        mergedResults.add(drillDownResults.get(i));
+        mergedResults.add(drillDownResults.get(ddUpto++));
       } else {
         // Drill sideways dim:
         int dim = dimIndex.intValue();
@@ -359,7 +384,7 @@ public class DrillSideways {
 
     subQuery.setMinimumNumberShouldMatch(minShouldMatch);
 
-    //System.out.println("EXE " + topQuery);
+    // System.out.println("EXE " + topQuery);
 
     // Collects against the passed-in
     // drillDown/SidewaysCollectors as a side effect:

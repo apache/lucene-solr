@@ -69,7 +69,17 @@ Changes in backwards compatibility policy
   suggesters, you now need to call setPreservePositionIncrements(false) instead
   of configuring the token filters to not increment positions. (Adrien Grand)
 
+* LUCENE-3907: EdgeNGramTokenizer now supports maxGramSize > 1024, doesn't trim
+  the input, sets position increment = 1 for all tokens and doesn't support
+  backward grams anymore. (Adrien Grand)
+
+* LUCENE-3907: EdgeNGramTokenFilter does not support backward grams and does
+  not update offsets anymore. (Adrien Grand)
+
 Bug Fixes
+
+* LUCENE-4997: Internal test framework's tests are sensitive to previous 
+  test failures and tests.failfast. (Dawid Weiss, Shai Erera)
 
 * LUCENE-4935: CustomScoreQuery wrongly applied its query boost twice 
   (boost^2).  (Robert Muir)
@@ -105,6 +115,28 @@ Bug Fixes
   
 * LUCENE-949: AnalyzingQueryParser can't work with leading wildcards.
   (Tim Allison, Robert Muir, Steve Rowe)
+
+* LUCENE-4980: Fix issues preventing mixing of RangeFacetRequest and
+  non-RangeFacetRequest when using DrillSideways.  (Mike McCandless,
+  Shai Erera)
+
+* LUCENE-4986: Fixed case where a newly opened near-real-time reader
+  fails to reflect a delete from IndexWriter.tryDeleteDocument (Reg,
+  Mike McCandless)
+  
+* LUCENE-4994: Fix PatternKeywordMarkerFilter to have public constructor.
+  (Uwe Schindler)
+  
+* LUCENE-4993: Fix BeiderMorseFilter to preserve custom attributes when
+  inserting tokens with position increment 0.  (Uwe Schindler)
+
+* LUCENE-4996: Ensure DocInverterPerField always includes field name
+  in exception messages.  (Markus Jelsma via Robert Muir)
+
+* LUCENE-4991: Fix handling of synonyms in classic QueryParser.getFieldQuery for 
+  terms not separated by whitespace. PositionIncrementAttribute was ignored, so with 
+  default AND synonyms wrongly became mandatory clauses, and with OR, the 
+  coordination factor was wrong.  (李威, Robert Muir)
   
 Optimizations
 
@@ -145,6 +177,25 @@ New Features
 
 * LUCENE-4965: Add dynamic (no taxonomy index used) numeric range
   faceting to Lucene's facet module (Mike McCandless, Shai Erera)
+
+* LUCENE-4979: LiveFieldFields can work with any ReferenceManager, not
+  just ReferenceManager<IndexSearcher> (Mike McCandless).
+
+* LUCENE-4975: Added a new Replicator module which can replicate index 
+  revisions between server and client. (Shai Erera, Mike McCandless)
+
+Build
+
+* LUCENE-4987: Upgrade randomized testing to version 2.0.10: 
+  Test framework may fail internally due to overly aggresive J9 optimizations. 
+  (Dawid Weiss, Shai Erera)
+
+
+======================= Lucene 4.3.1 =======================
+
+Bug Fixes
+
+
 
 ======================= Lucene 4.3.0 =======================
 

@@ -470,7 +470,7 @@ class BufferedDeletesStream {
 
   private synchronized boolean applyTermUpdates(
       SortedSet<FieldsUpdate> packetUpdates, ReadersAndLiveDocs rld,
-      SegmentReader reader, boolean checkDocId) throws IOException {
+      SegmentReader reader, boolean exactSegment) throws IOException {
     Fields fields = reader.fields();
     if (fields == null) {
       // This reader has no postings
@@ -479,17 +479,8 @@ class BufferedDeletesStream {
     
     assert checkDeleteTerm(null);
 
-    UpdatedSegmentData updatedSegmentData = new UpdatedSegmentData();
-    
-    for (FieldsUpdate update : packetUpdates) {
-      DocsEnum docsEnum = reader.termDocsEnum(update.term);
-      if (docsEnum != null) {
-        int docID;
-        while ((docID = docsEnum.nextDoc()) != DocIdSetIterator.NO_MORE_DOCS) {
-          updatedSegmentData.addUpdate(docID, update, checkDocId);
-        }
-      }
-    }
+    UpdatedSegmentData updatedSegmentData = new UpdatedSegmentData(reader,
+        packetUpdates, exactSegment);
     
     if (updatedSegmentData.hasUpdates()) {
       rld.setLiveUpdates(updatedSegmentData);
