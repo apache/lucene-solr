@@ -108,6 +108,8 @@ Bug Fixes
 
 * SOLR-4563: RSS DIH-example not working (janhoy)
 
+* SOLR-4796: zkcli.sh should honor JAVA_HOME (Roman Shaposhnik via Mark Miller)
+
 Other Changes
 ----------------------
 
