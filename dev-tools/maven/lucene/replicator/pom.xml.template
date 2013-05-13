@@ -62,7 +62,6 @@
     <dependency>
       <groupId>org.apache.httpcomponents</groupId>
       <artifactId>httpclient</artifactId>
-      <!-- HttpReplicator requires this dependency. -->
       <exclusions>
         <exclusion>
           <groupId>commons-logging</groupId>
