@@ -80,6 +80,8 @@ New Features
 
 * SOLR-4785: New MaxScoreQParserPlugin returning max() instead of sum() of terms (janhoy)
 
+* SOLR-4234: Add support for binary files in ZooKeeper. (Eric Pugh via Mark Miller)
+
 Bug Fixes
 ----------------------
 

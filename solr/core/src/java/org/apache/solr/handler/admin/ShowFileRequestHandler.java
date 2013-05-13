@@ -191,9 +191,7 @@ public class ShowFileRequestHandler extends RequestHandlerBase
       ModifiableSolrParams params = new ModifiableSolrParams(req.getParams());
       params.set(CommonParams.WT, "raw");
       req.setParams(params);
-      
-      ContentStreamBase content = new ContentStreamBase.StringStream(
-          new String(zkClient.getData(adminFile, null, null, true), "UTF-8"));
+      ContentStreamBase content = new ContentStreamBase.ByteArrayStream(zkClient.getData(adminFile, null, null, true), adminFile);
       content.setContentType(req.getParams().get(USE_CONTENT_TYPE));
       
       rsp.add(RawResponseWriter.CONTENT, content);

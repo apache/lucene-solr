@@ -18,6 +18,7 @@ package org.apache.solr.cloud;
  */
 
 import java.io.File;
+import java.util.Collection;
 import java.util.List;
 
 import org.apache.commons.io.FileUtils;
@@ -186,6 +187,22 @@ public class ZkCLITest extends SolrTestCaseJ4 {
     List<String> zkFiles = zkClient.getChildren(ZkController.CONFIGS_ZKNODE + "/" + confsetname, null, true);
     assertEquals(files.length, zkFiles.size());
     
+    File sourceConfDir = new File(ExternalPaths.EXAMPLE_HOME + File.separator + "collection1"
+            + File.separator + "conf");
+    Collection<File> sourceFiles = FileUtils.listFiles(sourceConfDir,null,true);
+    for (File sourceFile :sourceFiles){
+      if (!sourceFile.isHidden()){
+        int indexOfRelativePath = sourceFile.getAbsolutePath().lastIndexOf("collection1/conf");
+        String relativePathofFile = sourceFile.getAbsolutePath().substring(indexOfRelativePath + 17, sourceFile.getAbsolutePath().length());
+        File downloadedFile = new File(confDir,relativePathofFile);
+        assertTrue("Make sure we did download each file in the original configuration",downloadedFile.exists());
+        assertTrue("Content didn't change",FileUtils.contentEquals(sourceFile,downloadedFile));
+
+      }
+      
+    }
+    
+   
     // test reset zk
     args = new String[] {"-zkhost", zkServer.getZkAddress(), "-cmd",
         "clear", "/"};
