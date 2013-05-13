@@ -72,7 +72,7 @@ public abstract class Sorter {
       first_cut = upper(from, mid, second_cut);
       len11 = first_cut - from;
     }
-    rotate( first_cut, mid, second_cut);
+    rotate(first_cut, mid, second_cut);
     final int new_mid = first_cut + len22;
     mergeInPlace(from, first_cut, new_mid);
     mergeInPlace(new_mid, second_cut, to);
@@ -142,7 +142,15 @@ public abstract class Sorter {
     }
   }
 
-  void rotate(int lo, int mid, int hi) {
+  final void rotate(int lo, int mid, int hi) {
+    assert lo <= mid && mid <= hi;
+    if (lo == mid || mid == hi) {
+      return;
+    }
+    doRotate(lo, mid, hi);
+  }
+
+  void doRotate(int lo, int mid, int hi) {
     if (mid - lo == hi - mid) {
       // happens rarely but saves n/2 swaps
       while (mid < hi) {
