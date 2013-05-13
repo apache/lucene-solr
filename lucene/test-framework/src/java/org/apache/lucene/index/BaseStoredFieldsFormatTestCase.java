@@ -53,6 +53,7 @@ import org.apache.lucene.search.Query;
 import org.apache.lucene.search.TermQuery;
 import org.apache.lucene.search.TopDocs;
 import org.apache.lucene.store.Directory;
+import org.apache.lucene.store.MMapDirectory;
 import org.apache.lucene.store.MockDirectoryWrapper;
 import org.apache.lucene.store.MockDirectoryWrapper.Throttling;
 import org.apache.lucene.util.BytesRef;
@@ -594,7 +595,9 @@ public abstract class BaseStoredFieldsFormatTestCase extends LuceneTestCase {
   public void testBigDocuments() throws IOException {
     // "big" as "much bigger than the chunk size"
     // for this test we force a FS dir
-    Directory dir = newFSDirectory(_TestUtil.getTempDir(getClass().getSimpleName()));
+    // we can't just use newFSDirectory, because this test doesn't really index anything.
+    // so if we get NRTCachingDir+SimpleText, we make massive stored fields and OOM (LUCENE-4484)
+    Directory dir = new MockDirectoryWrapper(random(), new MMapDirectory(_TestUtil.getTempDir("testBigDocuments")));
     IndexWriterConfig iwConf = newIndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer(random()));
     iwConf.setMaxBufferedDocs(RandomInts.randomIntBetween(random(), 2, 30));
     RandomIndexWriter iw = new RandomIndexWriter(random(), dir, iwConf);
