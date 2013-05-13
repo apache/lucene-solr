@@ -118,7 +118,7 @@ public abstract class ReplicatorTestCase extends LuceneTestCase {
     }
     
     server.setConnectors(new Connector[] {connector});
-    server.setSessionIdManager(new HashSessionIdManager(new Random()));
+    server.setSessionIdManager(new HashSessionIdManager(new Random(random().nextLong())));
     
     server.start();
     
