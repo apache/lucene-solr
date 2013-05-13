@@ -181,6 +181,9 @@ New Features
 * LUCENE-4979: LiveFieldFields can work with any ReferenceManager, not
   just ReferenceManager<IndexSearcher> (Mike McCandless).
 
+* LUCENE-4975: Added a new Replicator module which can replicate index 
+  revisions between server and client. (Shai Erera, Mike McCandless)
+
 Build
 
 * LUCENE-4987: Upgrade randomized testing to version 2.0.10: 
