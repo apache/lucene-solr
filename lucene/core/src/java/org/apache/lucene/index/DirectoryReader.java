@@ -327,7 +327,7 @@ public abstract class DirectoryReader extends BaseCompositeReader<AtomicReader> 
     // corrupt first commit, but it's too deadly to make
     // this logic "smarter" and risk accidentally returning
     // false due to various cases like file description
-    // exhaustion, access denited, etc., because in that
+    // exhaustion, access denied, etc., because in that
     // case IndexWriter may delete the entire index.  It's
     // safer to err towards "index exists" than try to be
     // smart about detecting not-yet-fully-committed or

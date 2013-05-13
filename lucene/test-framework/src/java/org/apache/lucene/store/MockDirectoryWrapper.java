@@ -372,7 +372,7 @@ public class MockDirectoryWrapper extends BaseDirectoryWrapper {
         System.out.println(Thread.currentThread().getName() + ": MockDirectoryWrapper: now throw random exception" + (message == null ? "" : " (" + message + ")"));
         new Throwable().printStackTrace(System.out);
       }
-      throw new IOException("a random IOException" + (message == null ? "" : "(" + message + ")"));
+      throw new IOException("a random IOException" + (message == null ? "" : " (" + message + ")"));
     }
   }
 
@@ -383,9 +383,9 @@ public class MockDirectoryWrapper extends BaseDirectoryWrapper {
         new Throwable().printStackTrace(System.out);
       }
       if (randomState.nextBoolean()) {
-        throw new IOException("a random IOException");
+        throw new IOException("a random IOException (" + name + ")");
       } else {
-        throw new FileNotFoundException("a random IOException");
+        throw new FileNotFoundException("a random IOException (" + name + ")");
       }
     }
   }
@@ -505,7 +505,7 @@ public class MockDirectoryWrapper extends BaseDirectoryWrapper {
     if (throttling == Throttling.ALWAYS || 
         (throttling == Throttling.SOMETIMES && randomState.nextInt(50) == 0) && !(delegate instanceof RateLimitedDirectoryWrapper)) {
       if (LuceneTestCase.VERBOSE) {
-        System.out.println("MockDirectoryWrapper: throttling indexOutput");
+        System.out.println("MockDirectoryWrapper: throttling indexOutput (" + name + ")");
       }
       return throttledOutput.newFromDelegate(io);
     } else {
