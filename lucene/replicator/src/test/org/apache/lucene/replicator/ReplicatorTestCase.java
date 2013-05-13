@@ -30,7 +30,7 @@ import org.eclipse.jetty.util.thread.QueuedThreadPool;
 import org.junit.AfterClass;
 
 @SuppressCodecs("Lucene3x")
-public class ReplicatorTestCase extends LuceneTestCase {
+public abstract class ReplicatorTestCase extends LuceneTestCase {
   
   private static final int BASE_PORT = 7000;
   
