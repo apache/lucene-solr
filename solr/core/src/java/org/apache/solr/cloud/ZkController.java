@@ -1251,7 +1251,7 @@ public final class ZkController {
         byte[] data = zkClient.getData(zkPath + "/" + file, null, null, true);
         dir.mkdirs(); 
         log.info("Write file " + new File(dir, file));
-        FileUtils.writeStringToFile(new File(dir, file), new String(data, "UTF-8"), "UTF-8");
+        FileUtils.writeByteArrayToFile(new File(dir, file), data);
       } else {
         downloadFromZK(zkClient, zkPath + "/" + file, new File(dir, file));
       }
