@@ -195,9 +195,8 @@ public class ZkCLITest extends SolrTestCaseJ4 {
         int indexOfRelativePath = sourceFile.getAbsolutePath().lastIndexOf("collection1/conf");
         String relativePathofFile = sourceFile.getAbsolutePath().substring(indexOfRelativePath + 17, sourceFile.getAbsolutePath().length());
         File downloadedFile = new File(confDir,relativePathofFile);
-        assertTrue("Make sure we did download each file in the original configuration",downloadedFile.exists());
+        assertTrue(downloadedFile.getAbsolutePath() + " does not exist source:" + sourceFile.getAbsolutePath(), downloadedFile.exists());
         assertTrue("Content didn't change",FileUtils.contentEquals(sourceFile,downloadedFile));
-
       }
       
     }
