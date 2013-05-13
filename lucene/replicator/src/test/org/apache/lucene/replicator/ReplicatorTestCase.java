@@ -18,6 +18,7 @@ package org.apache.lucene.replicator;
  */
 
 import java.net.SocketException;
+import java.util.Random;
 
 import org.apache.http.conn.ClientConnectionManager;
 import org.apache.http.impl.conn.PoolingClientConnectionManager;
@@ -26,6 +27,12 @@ import org.apache.lucene.util.LuceneTestCase.SuppressCodecs;
 import org.eclipse.jetty.server.Connector;
 import org.eclipse.jetty.server.Handler;
 import org.eclipse.jetty.server.Server;
+import org.eclipse.jetty.server.bio.SocketConnector;
+import org.eclipse.jetty.server.nio.SelectChannelConnector;
+import org.eclipse.jetty.server.session.HashSessionIdManager;
+import org.eclipse.jetty.server.ssl.SslSelectChannelConnector;
+import org.eclipse.jetty.server.ssl.SslSocketConnector;
+import org.eclipse.jetty.util.ssl.SslContextFactory;
 import org.eclipse.jetty.util.thread.QueuedThreadPool;
 import org.junit.AfterClass;
 
@@ -61,11 +68,68 @@ public abstract class ReplicatorTestCase extends LuceneTestCase {
         
         server.setHandler(handler);
         
-        QueuedThreadPool threadPool = new QueuedThreadPool();
-        threadPool.setDaemon(true);
-        threadPool.setMaxIdleTimeMs(0);
-        server.setThreadPool(threadPool);
+        final String connectorName = System.getProperty("tests.jettyConnector", "SelectChannel");
+
+        // if this property is true, then jetty will be configured to use SSL
+        // leveraging the same system properties as java to specify
+        // the keystore/truststore if they are set
+        //
+        // This means we will use the same truststore, keystore (and keys) for
+        // the server as well as any client actions taken by this JVM in
+        // talking to that server, but for the purposes of testing that should 
+        // be good enough
+        final boolean useSsl = Boolean.getBoolean("tests.jettySsl");
+        final SslContextFactory sslcontext = new SslContextFactory(false);
+
+        if (useSsl) {
+          if (null != System.getProperty("javax.net.ssl.keyStore")) {
+            sslcontext.setKeyStorePath
+              (System.getProperty("javax.net.ssl.keyStore"));
+          }
+          if (null != System.getProperty("javax.net.ssl.keyStorePassword")) {
+            sslcontext.setKeyStorePassword
+              (System.getProperty("javax.net.ssl.keyStorePassword"));
+          }
+          if (null != System.getProperty("javax.net.ssl.trustStore")) {
+            sslcontext.setTrustStore
+              (System.getProperty("javax.net.ssl.trustStore"));
+          }
+          if (null != System.getProperty("javax.net.ssl.trustStorePassword")) {
+            sslcontext.setTrustStorePassword
+              (System.getProperty("javax.net.ssl.trustStorePassword"));
+          }
+          sslcontext.setNeedClientAuth(Boolean.getBoolean("tests.jettySsl.clientAuth"));
+        }
+
+        final Connector connector;
+        final QueuedThreadPool threadPool;
+        if ("SelectChannel".equals(connectorName)) {
+          final SelectChannelConnector c = useSsl ? new SslSelectChannelConnector(sslcontext) : new SelectChannelConnector();
+          c.setReuseAddress(true);
+          c.setLowResourcesMaxIdleTime(1500);
+          connector = c;
+          threadPool = (QueuedThreadPool) c.getThreadPool();
+        } else if ("Socket".equals(connectorName)) {
+          final SocketConnector c = useSsl ? new SslSocketConnector(sslcontext) : new SocketConnector();
+          c.setReuseAddress(true);
+          connector = c;
+          threadPool = (QueuedThreadPool) c.getThreadPool();
+        } else {
+          throw new IllegalArgumentException("Illegal value for system property 'tests.jettyConnector': " + connectorName);
+        }
+
+        connector.setPort(port);
+        connector.setHost("127.0.0.1");
+        if (threadPool != null) {
+          threadPool.setDaemon(true);
+          threadPool.setMaxThreads(10000);
+          threadPool.setMaxIdleTimeMs(5000);
+          threadPool.setMaxStopTimeMs(30000);
+        }
         
+        server.setConnectors(new Connector[] {connector});
+        server.setSessionIdManager(new HashSessionIdManager(new Random()));
+
         // this will test the port
         server.start();
         
