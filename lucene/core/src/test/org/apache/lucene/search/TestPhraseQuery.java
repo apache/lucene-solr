@@ -38,13 +38,6 @@ import com.carrotsearch.randomizedtesting.annotations.Seed;
  *
  * @see TestPositionIncrement
  */ 
-/*
- * Remove ThreadLeaks and run with (Eclipse or command line):
- * -ea -Drt.seed=AFD1E7E84B35D2B1
- * to get leaked thread errors.
- */
-// @ThreadLeaks(linger = 1000, leakedThreadsBelongToSuite = true)
-@Seed("AFD1E7E84B35D2B1")
 public class TestPhraseQuery extends LuceneTestCase {
 
   /** threshold for comparing floats */
