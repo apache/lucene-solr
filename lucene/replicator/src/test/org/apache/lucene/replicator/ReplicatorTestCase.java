@@ -39,12 +39,6 @@ import org.junit.AfterClass;
 @SuppressCodecs("Lucene3x")
 public abstract class ReplicatorTestCase extends LuceneTestCase {
   
-  private static final int BASE_PORT = 7000;
-  
-  // if a test calls newServer() multiple times, or some ports already failed,
-  // don't start from BASE_PORT again
-  private static int lastPortUsed = -1;
-  
   private static ClientConnectionManager clientConnectionManager;
   
   @AfterClass
@@ -60,88 +54,75 @@ public abstract class ReplicatorTestCase extends LuceneTestCase {
    * {@link #serverPort(Server)}.
    */
   public static synchronized Server newHttpServer(Handler handler) throws Exception {
-    int port = lastPortUsed == -1 ? BASE_PORT : lastPortUsed + 1;
-    Server server = null;
-    while (true) {
-      try {
-        server = new Server(port);
-        
-        server.setHandler(handler);
-        
-        final String connectorName = System.getProperty("tests.jettyConnector", "SelectChannel");
-
-        // if this property is true, then jetty will be configured to use SSL
-        // leveraging the same system properties as java to specify
-        // the keystore/truststore if they are set
-        //
-        // This means we will use the same truststore, keystore (and keys) for
-        // the server as well as any client actions taken by this JVM in
-        // talking to that server, but for the purposes of testing that should 
-        // be good enough
-        final boolean useSsl = Boolean.getBoolean("tests.jettySsl");
-        final SslContextFactory sslcontext = new SslContextFactory(false);
-
-        if (useSsl) {
-          if (null != System.getProperty("javax.net.ssl.keyStore")) {
-            sslcontext.setKeyStorePath
-              (System.getProperty("javax.net.ssl.keyStore"));
-          }
-          if (null != System.getProperty("javax.net.ssl.keyStorePassword")) {
-            sslcontext.setKeyStorePassword
-              (System.getProperty("javax.net.ssl.keyStorePassword"));
-          }
-          if (null != System.getProperty("javax.net.ssl.trustStore")) {
-            sslcontext.setTrustStore
-              (System.getProperty("javax.net.ssl.trustStore"));
-          }
-          if (null != System.getProperty("javax.net.ssl.trustStorePassword")) {
-            sslcontext.setTrustStorePassword
-              (System.getProperty("javax.net.ssl.trustStorePassword"));
-          }
-          sslcontext.setNeedClientAuth(Boolean.getBoolean("tests.jettySsl.clientAuth"));
-        }
-
-        final Connector connector;
-        final QueuedThreadPool threadPool;
-        if ("SelectChannel".equals(connectorName)) {
-          final SelectChannelConnector c = useSsl ? new SslSelectChannelConnector(sslcontext) : new SelectChannelConnector();
-          c.setReuseAddress(true);
-          c.setLowResourcesMaxIdleTime(1500);
-          connector = c;
-          threadPool = (QueuedThreadPool) c.getThreadPool();
-        } else if ("Socket".equals(connectorName)) {
-          final SocketConnector c = useSsl ? new SslSocketConnector(sslcontext) : new SocketConnector();
-          c.setReuseAddress(true);
-          connector = c;
-          threadPool = (QueuedThreadPool) c.getThreadPool();
-        } else {
-          throw new IllegalArgumentException("Illegal value for system property 'tests.jettyConnector': " + connectorName);
-        }
-
-        connector.setPort(port);
-        connector.setHost("127.0.0.1");
-        if (threadPool != null) {
-          threadPool.setDaemon(true);
-          threadPool.setMaxThreads(10000);
-          threadPool.setMaxIdleTimeMs(5000);
-          threadPool.setMaxStopTimeMs(30000);
-        }
-        
-        server.setConnectors(new Connector[] {connector});
-        server.setSessionIdManager(new HashSessionIdManager(new Random()));
-
-        // this will test the port
-        server.start();
-        
-        // if here, port is available
-        lastPortUsed = port;
-        return server;
-      } catch (SocketException e) {
-        stopHttpServer(server);
-        // this is ok, we'll try the next port until successful.
-        ++port;
+    Server server = new Server(0);
+    
+    server.setHandler(handler);
+    
+    final String connectorName = System.getProperty("tests.jettyConnector", "SelectChannel");
+    
+    // if this property is true, then jetty will be configured to use SSL
+    // leveraging the same system properties as java to specify
+    // the keystore/truststore if they are set
+    //
+    // This means we will use the same truststore, keystore (and keys) for
+    // the server as well as any client actions taken by this JVM in
+    // talking to that server, but for the purposes of testing that should 
+    // be good enough
+    final boolean useSsl = Boolean.getBoolean("tests.jettySsl");
+    final SslContextFactory sslcontext = new SslContextFactory(false);
+    
+    if (useSsl) {
+      if (null != System.getProperty("javax.net.ssl.keyStore")) {
+        sslcontext.setKeyStorePath
+        (System.getProperty("javax.net.ssl.keyStore"));
       }
+      if (null != System.getProperty("javax.net.ssl.keyStorePassword")) {
+        sslcontext.setKeyStorePassword
+        (System.getProperty("javax.net.ssl.keyStorePassword"));
+      }
+      if (null != System.getProperty("javax.net.ssl.trustStore")) {
+        sslcontext.setTrustStore
+        (System.getProperty("javax.net.ssl.trustStore"));
+      }
+      if (null != System.getProperty("javax.net.ssl.trustStorePassword")) {
+        sslcontext.setTrustStorePassword
+        (System.getProperty("javax.net.ssl.trustStorePassword"));
+      }
+      sslcontext.setNeedClientAuth(Boolean.getBoolean("tests.jettySsl.clientAuth"));
     }
+    
+    final Connector connector;
+    final QueuedThreadPool threadPool;
+    if ("SelectChannel".equals(connectorName)) {
+      final SelectChannelConnector c = useSsl ? new SslSelectChannelConnector(sslcontext) : new SelectChannelConnector();
+      c.setReuseAddress(true);
+      c.setLowResourcesMaxIdleTime(1500);
+      connector = c;
+      threadPool = (QueuedThreadPool) c.getThreadPool();
+    } else if ("Socket".equals(connectorName)) {
+      final SocketConnector c = useSsl ? new SslSocketConnector(sslcontext) : new SocketConnector();
+      c.setReuseAddress(true);
+      connector = c;
+      threadPool = (QueuedThreadPool) c.getThreadPool();
+    } else {
+      throw new IllegalArgumentException("Illegal value for system property 'tests.jettyConnector': " + connectorName);
+    }
+    
+    connector.setPort(0);
+    connector.setHost("127.0.0.1");
+    if (threadPool != null) {
+      threadPool.setDaemon(true);
+      threadPool.setMaxThreads(10000);
+      threadPool.setMaxIdleTimeMs(5000);
+      threadPool.setMaxStopTimeMs(30000);
+    }
+    
+    server.setConnectors(new Connector[] {connector});
+    server.setSessionIdManager(new HashSessionIdManager(new Random()));
+    
+    server.start();
+    
+    return server;
   }
   
   /**
@@ -149,7 +130,7 @@ public abstract class ReplicatorTestCase extends LuceneTestCase {
    * {@link Connector}s were added to the Server besides the default one.
    */
   public static int serverPort(Server httpServer) {
-    return httpServer.getConnectors()[0].getPort();
+    return httpServer.getConnectors()[0].getLocalPort();
   }
   
   /**
