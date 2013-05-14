@@ -40,7 +40,7 @@ public class WordSpaceAnalyzer {
   
   public List<AnalysisOutput> analyze(String input)  throws MorphException {
 
-    List stack = new ArrayList();
+    List<AnalysisOutput> stack = new ArrayList<AnalysisOutput>();
     
     WSOutput output = new WSOutput();
     
@@ -48,7 +48,7 @@ public class WordSpaceAnalyzer {
     
     int sgCount = -9;
     
-    Map<Integer, Integer> fCounter = new HashMap();
+    Map<Integer, Integer> fCounter = new HashMap<Integer, Integer>();
     
     for(int i=0;i<input.length();i++) {            
       
@@ -57,7 +57,7 @@ public class WordSpaceAnalyzer {
       String prefix = i==input.length()-1 ? "X" : input.substring(wStart,i+2);          
       Iterator iter = DictionaryUtil.findWithPrefix(prefix);
       
-      List<AnalysisOutput> candidates = new ArrayList();    
+      List<AnalysisOutput> candidates = new ArrayList<AnalysisOutput>();    
       
       WordEntry entry = null;
           
@@ -137,7 +137,7 @@ public class WordSpaceAnalyzer {
    */
   private List<AnalysisOutput> anlysisWithJosa(String snipt, int js) throws MorphException {
 
-    List<AnalysisOutput> candidates = new ArrayList();
+    List<AnalysisOutput> candidates = new ArrayList<AnalysisOutput>();
     if(js<1) return candidates;
     
     int jend = findJosaEnd(snipt, js);
@@ -283,9 +283,9 @@ public class WordSpaceAnalyzer {
     
   }
   
-  private List anlysisWithEomi(String snipt, int estart) throws MorphException {
+  private List<AnalysisOutput> anlysisWithEomi(String snipt, int estart) throws MorphException {
 
-    List<AnalysisOutput> candidates = new ArrayList();
+    List<AnalysisOutput> candidates = new ArrayList<AnalysisOutput>();
     
     int eend = findEomiEnd(snipt,estart);    
 

@@ -87,16 +87,10 @@ public class Tagger {
   /**
    * 앞 어절에 의해 현재 어절을 결정한다.
    * 앞 어절은 NULL이 아니다.
-   * @param source
-   * @param pmorphs
-   * @param rmorphs
-   * @return analysis output
-   * @throws MorphException
    */
   private AnalysisOutput lookupBestByPWord(String rsource, List<AnalysisOutput> rmorphs)  throws MorphException {
     
-  
-    List<AnalysisOutput> removes = new ArrayList();        
+    List<AnalysisOutput> removes = new ArrayList<AnalysisOutput>();        
 
     for(AnalysisOutput morph : rmorphs) {
   
@@ -165,7 +159,7 @@ public class Tagger {
   }
   
   private AnalysisOutput selectBest(Iterator<String[]> iter, String psource, String rsource, 
-                                    AnalysisOutput pmorph, AnalysisOutput rmorph, boolean rear, List removes) {
+                                    AnalysisOutput pmorph, AnalysisOutput rmorph, boolean rear, List<AnalysisOutput> removes) {
 
     while(iter.hasNext()) {    
 
@@ -277,7 +271,7 @@ public class Tagger {
   
   private static synchronized void loadTaggerDic() throws MorphException {
     
-    occurrences = new Trie(true);
+    occurrences = new Trie<String, String[]>(true);
     
     try {
       

@@ -79,7 +79,7 @@ public class FileUtil {
    * @throws java.io.UnsupportedEncodingException if the encoding is not supported by the VM
    * @since Commons IO 1.1
    */
-  public static List readLines(File file, String encoding) throws IOException {
+  public static List<String> readLines(File file, String encoding) throws IOException {
     InputStream in = null;
     try {
       in = openInputStream(file);
@@ -102,7 +102,7 @@ public class FileUtil {
    * @throws java.io.UnsupportedEncodingException if the encoding is not supported by the VM
    * @since Commons IO 1.1
    */
-  public static List readLines(String fName, String encoding) throws MorphException, IOException  {
+  public static List<String> readLines(String fName, String encoding) throws MorphException, IOException  {
     InputStream in = null;        
     try {
 
@@ -167,7 +167,7 @@ public class FileUtil {
    * @throws IOException if an I/O error occurs
    * @since Commons IO 1.1
    */
-  public static List readLines(InputStream input) throws IOException {
+  public static List<String> readLines(InputStream input) throws IOException {
     InputStreamReader reader = new InputStreamReader(input);
     return readLines(reader);
   }
@@ -189,7 +189,7 @@ public class FileUtil {
    * @throws IOException if an I/O error occurs
    * @since Commons IO 1.1
    */
-  public static List readLines(InputStream input, String encoding) throws IOException {
+  public static List<String> readLines(InputStream input, String encoding) throws IOException {
     if (encoding == null) {
       return readLines(input);
     } else {
@@ -211,7 +211,7 @@ public class FileUtil {
    * @throws IOException if an I/O error occurs
    * @since Commons IO 1.1
    */
-  public static List readLines(Reader input) throws IOException {
+  public static List<String> readLines(Reader input) throws IOException {
     BufferedReader reader = new BufferedReader(input);
     List list = new ArrayList();
     String line = reader.readLine();

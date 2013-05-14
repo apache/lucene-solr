@@ -193,11 +193,11 @@ public class AnalysisOutput implements Cloneable {
     return compound;
   }
   
-  public void setCNoun(List cnoun) {
+  public void setCNoun(List<CompoundEntry> cnoun) {
     compound = cnoun;
   }
   
-  public void addCNoun(List cnoun) {
+  public void addCNoun(List<CompoundEntry> cnoun) {
     compound.addAll(cnoun);
   }
   

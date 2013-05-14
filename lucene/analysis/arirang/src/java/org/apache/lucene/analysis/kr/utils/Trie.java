@@ -275,7 +275,7 @@ public class Trie<S,V> {
     // early conversion of search key
     key = canonicalCase(key);
     // search the node associated with key, if it exists
-    TrieNode node = fetch(key);
+    TrieNode<V> node = fetch(key);
     if (node == null)
       return null;
     // key exists, return the value
@@ -332,10 +332,10 @@ public class Trie<S,V> {
     // implementation overview for a definition of KEY(node).) This code is
     // similar to fetch(prefix), except that if prefix extends into the
     // middle of an edge label, that edge's child is considered a match.
-    TrieNode node = root;
+    TrieNode<V> node = root;
     for (int i = startOffset; i < stopOffset;) {
       // Find the edge whose label starts with prefix[i].
-      TrieEdge edge = node.get(prefix.charAt(i));
+      TrieEdge<V> edge = node.get(prefix.charAt(i));
       if (edge == null) {
         return EMPTY_ITERATOR;
       }

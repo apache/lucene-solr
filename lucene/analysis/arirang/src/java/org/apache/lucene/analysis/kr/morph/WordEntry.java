@@ -43,7 +43,7 @@ public class WordEntry {
    */
   private char[] features;
   
-  private List<CompoundEntry> compounds = new ArrayList();
+  private List<CompoundEntry> compounds = new ArrayList<CompoundEntry>();
   
   public WordEntry() {
     
@@ -58,7 +58,7 @@ public class WordEntry {
     this.features = cs;
   }
   
-  public WordEntry(String word, List c) {
+  public WordEntry(String word, List<CompoundEntry> c) {
     this.word = word;
     this.compounds = c;
   }

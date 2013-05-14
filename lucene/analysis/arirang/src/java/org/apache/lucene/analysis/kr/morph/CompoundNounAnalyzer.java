@@ -33,15 +33,9 @@ public class CompoundNounAnalyzer {
   
   private boolean exactMach  = true;
   
-  private static Pattern NUM_PATTERN;
-  static {
-    NUM_PATTERN = Pattern.compile("^[0-9\\.,]+$");
-  }
+  private static Pattern NUM_PATTERN = Pattern.compile("^[0-9\\.,]+$");
 
-  private static Pattern ALPHANUM_PATTERN;
-  static {
-    ALPHANUM_PATTERN = Pattern.compile("^[0-9A-Za-z\\.,]+$");
-  }
+  private static Pattern ALPHANUM_PATTERN = Pattern.compile("^[0-9A-Za-z\\.,]+$");
     
   public boolean isExactMach() {
     return exactMach;
@@ -51,7 +45,7 @@ public class CompoundNounAnalyzer {
     this.exactMach = exactMach;
   }
 
-  public List analyze(String input) throws MorphException {
+  public List<CompoundEntry> analyze(String input) throws MorphException {
     
     return analyze(input,true);
     
@@ -268,7 +262,7 @@ public class CompoundNounAnalyzer {
     if(input.length()>20) return; // 20글자 이상의 복합명사는 무시함.
     
     int score = 0;
-    List results = new ArrayList();
+    List<CompoundEntry> results = new ArrayList<CompoundEntry>();
     boolean hasContain = false;
     
     for(int i=pos;i>=2;i--) {
@@ -276,13 +270,13 @@ public class CompoundNounAnalyzer {
       String prev = input.substring(0,i);
       String rear = input.substring(i);
       
-      List<CompoundEntry> candidates = new ArrayList();
+      List<CompoundEntry> candidates = new ArrayList<CompoundEntry>();
       
       CompoundEntry prevEntry = analyzeSingle(prev);
       if(prevEntry.isExist()) {
         candidates.add(prevEntry);
       } else {
-        List list = analyze(prev, true);
+        List<CompoundEntry> list = analyze(prev, true);
         if(list.size()==0) {
           candidates.add(prevEntry);
         } else {

@@ -29,14 +29,14 @@ public class SpaceOutput {
   private AnalysisOutput output;
   
   // 분석 결과 앞에 있는 미등록어, 사람 이름은 대부분 이런 경우임.
-  private List<AnalysisOutput> nrWords = new ArrayList();
+  private List<AnalysisOutput> nrWords = new ArrayList<AnalysisOutput>();
   
   // 분석하기 이전의 어절
   private String source;
   
   public void initialize() {
     output = null;
-    nrWords = new ArrayList();
+    nrWords = new ArrayList<AnalysisOutput>();
     source = null;
   }
 
@@ -57,13 +57,13 @@ public class SpaceOutput {
   /**
    * @return the nrWord
    */
-  public List getNRWords() {
+  public List<AnalysisOutput> getNRWords() {
     return nrWords;
   }
 
   /**
    */
-  public void setNRWords(List words) {
+  public void setNRWords(List<AnalysisOutput> words) {
     this.nrWords = words;
   }
 

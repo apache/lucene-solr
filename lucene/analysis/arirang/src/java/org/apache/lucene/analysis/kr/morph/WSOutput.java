@@ -26,7 +26,7 @@ public class WSOutput  implements Cloneable {
   
   private int lastEnd = 0;  
   
-  private List<AnalysisOutput> phrases = new ArrayList();
+  private List<AnalysisOutput> phrases = new ArrayList<AnalysisOutput>();
   
   public WSOutput() {
     
@@ -157,13 +157,13 @@ public class WSOutput  implements Cloneable {
   
   public WSOutput clone() throws CloneNotSupportedException {
         
-    WSOutput candidate = (WSOutput)super.clone();
+    WSOutput candidate = (WSOutput)super.clone(); // FIXME: What's this? -Christian
     
     candidate.setLastStart(lastStart);
     
     candidate.setLastEnd(lastEnd);
     
-    List list = new ArrayList();
+    List<AnalysisOutput> list = new ArrayList<AnalysisOutput>();
     list.addAll(phrases);
     candidate.setPhrases(list);
     

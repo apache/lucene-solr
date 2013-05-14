@@ -27,17 +27,17 @@ import org.apache.lucene.analysis.kr.morph.PatternConstants;
  */
 public class ConstraintUtil {
 
-  private static Map hahes = new HashMap(); // "글로벌화해 ", "민족화해" 처럼 화해와 결합이 가능한 명사
+  private static Map<String, String> hahes = new HashMap<String, String>(); // "글로벌화해 ", "민족화해" 처럼 화해와 결합이 가능한 명사
   static {
     hahes.put("민족", "Y");hahes.put("동서", "Y");hahes.put("남북", "Y");
   }
   
-  private static Map eomiPnouns = new HashMap(); 
+  private static Map<String, String> eomiPnouns = new HashMap<String, String>(); 
   static {
     eomiPnouns.put("ㄴ", "Y");eomiPnouns.put("ㄹ", "Y");eomiPnouns.put("ㅁ", "Y");
   }
   
-  private static Map PTN_MLIST= new HashMap();
+  private static Map<Integer, Integer> PTN_MLIST= new HashMap<Integer, Integer>();
   static {
     PTN_MLIST.put(PatternConstants.PTN_NSM, PatternConstants.PTN_NSM);
     PTN_MLIST.put(PatternConstants.PTN_NSMXM, PatternConstants.PTN_NSMXM);
@@ -48,7 +48,7 @@ public class ConstraintUtil {
     PTN_MLIST.put(PatternConstants.PTN_NVM, PatternConstants.PTN_NVM);
   }
   
-  private static Map PTN_JLIST= new HashMap();
+  private static Map<Integer, Integer> PTN_JLIST= new HashMap<Integer, Integer>();
   static {
     PTN_JLIST.put(PatternConstants.PTN_NJ, PatternConstants.PTN_NJ);
     PTN_JLIST.put(PatternConstants.PTN_NSMJ, PatternConstants.PTN_NSMJ);
@@ -56,7 +56,7 @@ public class ConstraintUtil {
     PTN_JLIST.put(PatternConstants.PTN_VMXMJ, PatternConstants.PTN_VMXMJ);
   }
   
-  private static Map WORD_GUKS= new HashMap();
+  private static Map<String, String> WORD_GUKS= new HashMap<String, String>();
   static {
     WORD_GUKS.put("날것", "Y");
     WORD_GUKS.put("들것", "Y");
@@ -67,7 +67,7 @@ public class ConstraintUtil {
   }
   
   // 종성이 있는 음절과 연결될 수 없는 조사
-  private static Map JOSA_TWO= new HashMap();
+  private static Map<String, String> JOSA_TWO = new HashMap<String, String>();
   static {
     JOSA_TWO.put("가", "Y");
     JOSA_TWO.put("는", "Y");
@@ -86,7 +86,7 @@ public class ConstraintUtil {
   }
   
   // 종성이 없는 음절과 연결될 수 없는 조사
-  private static Map JOSA_THREE= new HashMap();
+  private static Map<String, String> JOSA_THREE= new HashMap<String, String>();
   static {
     JOSA_THREE.put("과", "Y");
     JOSA_THREE.put("은", "Y");
