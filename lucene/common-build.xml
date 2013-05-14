@@ -1417,7 +1417,7 @@ ${tests-output}/junit4-*.suites     - per-JVM executed suites
     </sequential>
   </target>
   
-  <target name="-validate-maven-dependencies.init">
+  <target name="-validate-maven-dependencies.init" depends="filter-pom-templates">
     <!-- find the correct pom.xml path and assigns it to property pom.xml -->
     <property name="top.level.dir" location="${common.dir}/.."/>
     <pathconvert property="maven.pom.xml">
@@ -1444,6 +1444,11 @@ ${tests-output}/junit4-*.suites     - per-JVM executed suites
   
   <target name="-validate-maven-dependencies" depends="-validate-maven-dependencies.init">
     <m2-validate-dependencies pom.xml="${maven.pom.xml}" licenseDirectory="${license.dir}">
+      <additional-filters>
+        <replaceregex pattern="jetty([^/]+)$" replace="jetty" flags="gi" />
+        <replaceregex pattern="slf4j-([^/]+)$" replace="slf4j" flags="gi" />
+        <replaceregex pattern="javax\.servlet-([^/]+)$" replace="servlet-api" flags="gi" />
+      </additional-filters>
       <excludes>
         <rsel:name name="**/lucene-*-${maven.version.glob}.jar" handledirsep="true"/>
       </excludes>
