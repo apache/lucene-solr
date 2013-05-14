@@ -8,7 +8,8 @@ http://s.apache.org/luceneversions
 
 Bug Fixes
 
-
+* SOLR-4813: Fix SynonymFilterFactory to allow init parameters for
+  tokenizer factory used when parsing synonyms file.  (Shingo Sasaki, hossman)
 
 ======================= Lucene 4.3.0 =======================
 

@@ -27,6 +27,7 @@ import java.io.Reader;
 import java.io.StringReader;
 import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 
@@ -48,6 +49,7 @@ final class SlowSynonymFilterFactory extends TokenFilterFactory implements Resou
   private final boolean ignoreCase;
   private final boolean expand;
   private final String tf;
+  private final Map<String, String> tokArgs = new HashMap<String, String>();
   
   public SlowSynonymFilterFactory(Map<String,String> args) {
     super(args);
@@ -56,6 +58,15 @@ final class SlowSynonymFilterFactory extends TokenFilterFactory implements Resou
     expand = getBoolean(args, "expand", true);
 
     tf = get(args, "tokenizerFactory");
+    if (tf != null) {
+      assureMatchVersion();
+      tokArgs.put("luceneMatchVersion", getLuceneMatchVersion().toString());
+      for (Iterator<String> itr = args.keySet().iterator(); itr.hasNext();) {
+        String key = itr.next();
+        tokArgs.put(key.replaceAll("^tokenizerFactory\\.",""), args.get(key));
+        itr.remove();
+      }
+    }
     if (!args.isEmpty()) {
       throw new IllegalArgumentException("Unknown parameters: " + args);
     }
@@ -169,11 +180,9 @@ final class SlowSynonymFilterFactory extends TokenFilterFactory implements Resou
   }
 
   private TokenizerFactory loadTokenizerFactory(ResourceLoader loader, String cname) throws IOException {
-    Map<String,String> args = new HashMap<String,String>();
-    args.put("luceneMatchVersion", getLuceneMatchVersion().toString());
     Class<? extends TokenizerFactory> clazz = loader.findClass(cname, TokenizerFactory.class);
     try {
-      TokenizerFactory tokFactory = clazz.getConstructor(Map.class).newInstance(args);
+      TokenizerFactory tokFactory = clazz.getConstructor(Map.class).newInstance(tokArgs);
       if (tokFactory instanceof ResourceLoaderAware) {
         ((ResourceLoaderAware) tokFactory).inform(loader);
       }

@@ -72,14 +72,23 @@ public abstract class BaseTokenStreamFactoryTestCase extends BaseTokenStreamTest
     }
     return factory;
   }
-  
+
   /** 
    * Returns a fully initialized TokenizerFactory with the specified name and key-value arguments.
    * {@link ClasspathResourceLoader} is used for loading resources, so any required ones should
    * be on the test classpath.
    */
   protected TokenizerFactory tokenizerFactory(String name, String... keysAndValues) throws Exception {
-    return tokenizerFactory(name, TEST_VERSION_CURRENT, new ClasspathResourceLoader(getClass()), keysAndValues);
+    return tokenizerFactory(name, TEST_VERSION_CURRENT, keysAndValues);
+  }
+
+  /** 
+   * Returns a fully initialized TokenizerFactory with the specified name and key-value arguments.
+   * {@link ClasspathResourceLoader} is used for loading resources, so any required ones should
+   * be on the test classpath.
+   */
+  protected TokenizerFactory tokenizerFactory(String name, Version version, String... keysAndValues) throws Exception {
+    return tokenizerFactory(name, version, new ClasspathResourceLoader(getClass()), keysAndValues);
   }
   
   /** 
@@ -89,14 +98,23 @@ public abstract class BaseTokenStreamFactoryTestCase extends BaseTokenStreamTest
   protected TokenizerFactory tokenizerFactory(String name, Version matchVersion, ResourceLoader loader, String... keysAndValues) throws Exception {
     return (TokenizerFactory) analysisFactory(TokenizerFactory.lookupClass(name), matchVersion, loader, keysAndValues);
   }
-  
+
+  /** 
+   * Returns a fully initialized TokenFilterFactory with the specified name and key-value arguments.
+   * {@link ClasspathResourceLoader} is used for loading resources, so any required ones should
+   * be on the test classpath.
+   */
+  protected TokenFilterFactory tokenFilterFactory(String name, Version version, String... keysAndValues) throws Exception {
+    return tokenFilterFactory(name, version, new ClasspathResourceLoader(getClass()), keysAndValues);
+  }
+
   /** 
    * Returns a fully initialized TokenFilterFactory with the specified name and key-value arguments.
    * {@link ClasspathResourceLoader} is used for loading resources, so any required ones should
    * be on the test classpath.
    */
   protected TokenFilterFactory tokenFilterFactory(String name, String... keysAndValues) throws Exception {
-    return tokenFilterFactory(name, TEST_VERSION_CURRENT, new ClasspathResourceLoader(getClass()), keysAndValues);
+    return tokenFilterFactory(name, TEST_VERSION_CURRENT, keysAndValues);
   }
   
   /** 

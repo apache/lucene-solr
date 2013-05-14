@@ -26,6 +26,7 @@ import java.nio.charset.CharsetDecoder;
 import java.nio.charset.CodingErrorAction;
 import java.text.ParseException;
 import java.util.HashMap;
+import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 
@@ -54,19 +55,27 @@ final class FSTSynonymFilterFactory extends TokenFilterFactory implements Resour
   private final String synonyms;
   private final String format;
   private final boolean expand;
+  private final Map<String, String> tokArgs = new HashMap<String, String>();
 
   private SynonymMap map;
   
   public FSTSynonymFilterFactory(Map<String,String> args) {
     super(args);
     ignoreCase = getBoolean(args, "ignoreCase", false);
-    tokenizerFactory = get(args, "tokenizerFactory");
-    if (tokenizerFactory != null) {
-      assureMatchVersion();
-    }
     synonyms = require(args, "synonyms");
     format = get(args, "format");
     expand = getBoolean(args, "expand", true);
+
+    tokenizerFactory = get(args, "tokenizerFactory");
+    if (tokenizerFactory != null) {
+      assureMatchVersion();
+      tokArgs.put("luceneMatchVersion", getLuceneMatchVersion().toString());
+      for (Iterator<String> itr = args.keySet().iterator(); itr.hasNext();) {
+        String key = itr.next();
+        tokArgs.put(key.replaceAll("^tokenizerFactory\\.",""), args.get(key));
+        itr.remove();
+      }
+    }
     if (!args.isEmpty()) {
       throw new IllegalArgumentException("Unknown parameters: " + args);
     }
@@ -155,11 +164,9 @@ final class FSTSynonymFilterFactory extends TokenFilterFactory implements Resour
   
   // (there are no tests for this functionality)
   private TokenizerFactory loadTokenizerFactory(ResourceLoader loader, String cname) throws IOException {
-    Map<String,String> args = new HashMap<String,String>();
-    args.put("luceneMatchVersion", getLuceneMatchVersion().toString());
     Class<? extends TokenizerFactory> clazz = loader.findClass(cname, TokenizerFactory.class);
     try {
-      TokenizerFactory tokFactory = clazz.getConstructor(Map.class).newInstance(args);
+      TokenizerFactory tokFactory = clazz.getConstructor(Map.class).newInstance(tokArgs);
       if (tokFactory instanceof ResourceLoaderAware) {
         ((ResourceLoaderAware) tokFactory).inform(loader);
       }
