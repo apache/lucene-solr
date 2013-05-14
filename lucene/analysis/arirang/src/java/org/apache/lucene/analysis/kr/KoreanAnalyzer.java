@@ -36,8 +36,6 @@ import org.apache.lucene.util.Version;
 /**
  * Filters {@link StandardTokenizer} with {@link StandardFilter}, {@link
  * LowerCaseFilter} and {@link StopFilter}, using a list of English stop words.
- *
- * @version $Id: KoreanAnalyzer.java,v 1.2 2013/04/07 13:09:33 smlee0818 Exp $
  */
 public class KoreanAnalyzer extends StopwordAnalyzerBase {
   

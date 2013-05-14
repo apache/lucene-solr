@@ -40,18 +40,4 @@ public class KoreanTokenizerFactory extends TokenizerFactory {
   public Tokenizer create(AttributeSource.AttributeFactory factory, Reader input) {
     return new KoreanTokenizer(Version.LUCENE_50, factory, input);
   }
-
-//  public KoreanTokenizerFactory() {
-//    version = Version.LUCENE_42;
-//  }
-//
-//  
-//  public KoreanTokenizerFactory(Version v) {
-//    version = v;
-//  }
-//  
-//  public Tokenizer create(Reader input) {
-//    return new KoreanTokenizer(version, input);
-//  }
-
 }

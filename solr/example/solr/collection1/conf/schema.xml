@@ -1005,9 +1005,15 @@
     
     <!-- Korean -->
     <fieldType name="text_kr" class="solr.TextField" positionIncrementGap="100">
-      <analyzer>
+      <analyzer type="index">
         <tokenizer class="solr.KoreanTokenizerFactory"/>
-        <filter class="solr.KoreanFilterFactory"/>
+        <filter class="solr.KoreanFilterFactory" hasOrigin="true" hasCNoun="true"  bigrammable="true"/>
+        <filter class="solr.LowerCaseFilterFactory"/>
+        <filter class="solr.StopFilterFactory" ignoreCase="true" words="lang/stopwords_kr.txt"/>
+      </analyzer>
+      <analyzer type="query">
+        <tokenizer class="solr.KoreanTokenizerFactory"/>
+        <filter class="solr.KoreanFilterFactory" hasOrigin="false" hasCNoun="false"  bigrammable="false"/>
         <filter class="solr.LowerCaseFilterFactory"/>
         <filter class="solr.StopFilterFactory" ignoreCase="true" words="lang/stopwords_kr.txt"/>
       </analyzer>

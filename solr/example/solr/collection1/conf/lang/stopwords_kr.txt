@@ -3,5 +3,55 @@
 #
 # When editing this file, note that comments are not allowed on the
 # same line as stopwords.
+#
+# This stopwords file has the same default set as KoreanAnalyzer
+#
+
+a
+an
+and
+are
+as
+at
+be
+but
+by
+for
+if
+in
+into
+is
+it
+no
+not
+of
+on
+or
+such
+that
+the
+their
+then
+there
+these
+they
+this
+to
+was
+will
+with
+이
+그
+저
+것
+수
+등
+들
+및
+에서
+그리고
+그래서
+또
+또는
 
 ##### End of file

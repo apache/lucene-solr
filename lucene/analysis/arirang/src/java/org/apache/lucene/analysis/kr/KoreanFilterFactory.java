@@ -22,15 +22,41 @@ import java.util.Map;
 import org.apache.lucene.analysis.TokenStream;
 import org.apache.lucene.analysis.util.TokenFilterFactory;
 
+/**
+ * Factory for {@link org.apache.lucene.analysis.kr.KoreanFilter}.
+ * <pre class="prettyprint">
+ * &lt;fieldType name="text_kr" class="solr.TextField"&gt;
+ *   &lt;analyzer&gt;
+ *     &lt;tokenizer class="solr.KoreanTokenizerFilterFactory"/&gt;
+ *     &lt;filter class="solr.KoreanFilter"
+ *       bigrammable="true"
+ *       hasOrigin="true"
+ *       hasCNoun="true"
+ *       exactMatch="false"
+ *     /&gt;
+ *   &lt;/filter&gt;
+ * &lt;/fieldType&gt;
+ * </pre>
+ */
+
 public class KoreanFilterFactory extends TokenFilterFactory {
 
-  private boolean bigrammable = true;
-  
-  private boolean hasOrigin = true;
-  
-  private boolean hasCNoun = true;
-  
-  private boolean exactMatch = false;
+  private static final String BIGRAMMABLE_PARAM = "bigrammable";
+
+  private static final String HAS_ORIGIN_PARAM = "hasOrigin";
+
+  private static final String HAS_COMPOUND_NOUN_PARAM = "hasCNoun";
+
+  // Decides whether the original compound noun is returned or not if analyzed morphologically
+  private static final String EXACT_MATCH_PARAM = "exactMatch";
+
+  private boolean bigrammable;
+
+  private boolean hasOrigin;
+
+  private boolean hasCNoun;
+
+  private boolean exactMatch;
 
   /**
    * Initialize this factory via a set of key-value pairs.
@@ -40,35 +66,14 @@ public class KoreanFilterFactory extends TokenFilterFactory {
     init(args);
   }
 
-
   public void init(Map<String, String> args) {
-//      bigrammable = getBoolean("bigrammable", true);
-//      hasOrigin = getBoolean("hasOrigin", true);
-//      exactMatch = getBoolean("exactMatch", false);
-//      hasCNoun = getBoolean("hasCNoun", true);
+    bigrammable = getBoolean(args, BIGRAMMABLE_PARAM, true);
+    hasOrigin = getBoolean(args, HAS_ORIGIN_PARAM, true);
+    exactMatch = getBoolean(args, EXACT_MATCH_PARAM, false);
+    hasCNoun = getBoolean(args, HAS_COMPOUND_NOUN_PARAM, true);
   }
-    
+
   public TokenStream create(TokenStream tokenstream) {
     return new KoreanFilter(tokenstream, bigrammable, hasOrigin, exactMatch, hasCNoun);
   }
-
-  public void setBigrammable(boolean bool) {
-    this.bigrammable = bool;
-  }
-  
-  public void setHasOrigin(boolean bool) {
-    this.hasOrigin = bool;
-  }
-  
-  public void setHasCNoun(boolean bool) {
-    this.hasCNoun = bool;
-  }  
-  
-  /**
-   * determin whether the original compound noun is returned or not if a input word is analyzed morphically.
-   //   * @param has
-   */
-  public void setExactMatch(boolean bool) {
-    exactMatch = bool;
-  }  
 }
