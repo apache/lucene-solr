@@ -150,17 +150,23 @@ public class HttpShardHandlerFactory extends ShardHandlerFactory implements org.
     clientParams.set(HttpClientUtil.PROP_CONNECTION_TIMEOUT, connectionTimeout);
     clientParams.set(HttpClientUtil.PROP_USE_RETRY, false);
     this.defaultClient = HttpClientUtil.createClient(clientParams);
+    this.loadbalancer = createLoadbalancer(defaultClient);
+  }
 
+  protected ThreadPoolExecutor getThreadPoolExecutor(){
+    return this.commExecutor;
+  }
+
+  protected LBHttpSolrServer createLoadbalancer(HttpClient httpClient){
     try {
-      loadbalancer = new LBHttpSolrServer(defaultClient);
+      return new LBHttpSolrServer(httpClient);
     } catch (MalformedURLException e) {
       // should be impossible since we're not passing any URLs here
       throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, e);
     }
-
   }
 
-  private <T> T getParameter(NamedList initArgs, String configKey, T defaultValue) {
+  protected <T> T getParameter(NamedList initArgs, String configKey, T defaultValue) {
     T toReturn = defaultValue;
     if (initArgs != null) {
       T temp = (T) initArgs.get(configKey);

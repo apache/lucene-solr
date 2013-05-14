@@ -80,7 +80,7 @@ public class LBHttpSolrServer extends SolrServer {
   private final Map<String, ServerWrapper> aliveServers = new LinkedHashMap<String, ServerWrapper>();
   // access to aliveServers should be synchronized on itself
   
-  private final Map<String, ServerWrapper> zombieServers = new ConcurrentHashMap<String, ServerWrapper>();
+  protected final Map<String, ServerWrapper> zombieServers = new ConcurrentHashMap<String, ServerWrapper>();
 
   // changes to aliveServers are reflected in this array, no need to synchronize
   private volatile ServerWrapper[] aliveServerList = new ServerWrapper[0];
@@ -99,7 +99,7 @@ public class LBHttpSolrServer extends SolrServer {
     solrQuery.setRows(0);
   }
 
-  private static class ServerWrapper {
+  protected static class ServerWrapper {
     final HttpSolrServer solrServer;
 
     long lastUsed;     // last time used for a real request
@@ -335,8 +335,7 @@ public class LBHttpSolrServer extends SolrServer {
 
   }
 
-  private Exception addZombie(HttpSolrServer server,
-      Exception e) {
+  protected Exception addZombie(HttpSolrServer server, Exception e) {
 
     ServerWrapper wrapper;
 
