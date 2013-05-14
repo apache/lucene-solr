@@ -36,9 +36,18 @@ import org.apache.lucene.analysis.util.TokenFilterFactory;
  *     &lt;tokenizer class="solr.WhitespaceTokenizerFactory"/&gt;
  *     &lt;filter class="solr.SynonymFilterFactory" synonyms="synonyms.txt" 
  *             format="solr" ignoreCase="false" expand="true" 
- *             tokenizerFactory="solr.WhitespaceTokenizerFactory"/&gt;
+ *             tokenizerFactory="solr.WhitespaceTokenizerFactory"
+ *             [optional tokenizer factory parameters]/&gt;
  *   &lt;/analyzer&gt;
  * &lt;/fieldType&gt;</pre>
+ * 
+ * <p>
+ * An optional param name prefix of "tokenizerFactory." may be used for any 
+ * init params that the SynonymFilterFactory needs to pass to the specified 
+ * TokenizerFactory.  If the TokenizerFactory expects an init parameters with 
+ * the same name as an init param used by the SynonymFilterFactory, the prefix 
+ * is mandatory.
+ * </p>
  */
 public class SynonymFilterFactory extends TokenFilterFactory implements ResourceLoaderAware {
   private final TokenFilterFactory delegator;
@@ -66,5 +75,15 @@ public class SynonymFilterFactory extends TokenFilterFactory implements Resource
   @Override
   public void inform(ResourceLoader loader) throws IOException {
     ((ResourceLoaderAware) delegator).inform(loader);
+  }
+
+  /**
+   * Access to the delegator TokenFilterFactory for test verification
+   *
+   * @deprecated Method exists only for testing 4x, will be removed in 5.0
+   * @lucene.internal
+   */
+  TokenFilterFactory getDelegator() {
+    return delegator;
   }
 }

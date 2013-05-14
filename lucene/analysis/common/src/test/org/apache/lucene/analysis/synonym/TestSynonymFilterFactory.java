@@ -19,10 +19,13 @@ package org.apache.lucene.analysis.synonym;
 
 import java.io.Reader;
 import java.io.StringReader;
+import java.util.HashMap;
+import java.util.Map;
 
 import org.apache.lucene.analysis.MockTokenizer;
 import org.apache.lucene.analysis.TokenStream;
-import org.apache.lucene.analysis.synonym.SynonymFilter;
+import org.apache.lucene.analysis.pattern.PatternTokenizerFactory;
+import org.apache.lucene.analysis.util.TokenFilterFactory;
 import org.apache.lucene.analysis.util.BaseTokenStreamFactoryTestCase;
 import org.apache.lucene.analysis.util.ClasspathResourceLoader;
 import org.apache.lucene.analysis.util.StringMockResourceLoader;
@@ -91,4 +94,83 @@ public class TestSynonymFilterFactory extends BaseTokenStreamFactoryTestCase {
       assertTrue(expected.getMessage().contains("Unknown parameters"));
     }
   }
+
+  static final String TOK_SYN_ARG_VAL = "argument";
+  static final String TOK_FOO_ARG_VAL = "foofoofoo";
+
+  /** Test that we can parse TokenierFactory's arguments */
+  public void testTokenizerFactoryArguments() throws Exception {
+    // diff versions produce diff delegator behavior,
+    // all should be (mostly) equivilent for our test purposes.
+    doTestTokenizerFactoryArguments(Version.LUCENE_33, 
+                                    SlowSynonymFilterFactory.class);
+    doTestTokenizerFactoryArguments(Version.LUCENE_34, 
+                                    FSTSynonymFilterFactory.class);
+    doTestTokenizerFactoryArguments(Version.LUCENE_35, 
+                                    FSTSynonymFilterFactory.class);
+
+    doTestTokenizerFactoryArguments(Version.LUCENE_CURRENT, 
+                                    FSTSynonymFilterFactory.class);
+  }
+
+  protected void doTestTokenizerFactoryArguments(final Version ver, 
+                                                 final Class delegatorClass) 
+    throws Exception {
+
+    final String clazz = PatternTokenizerFactory.class.getName();
+    TokenFilterFactory factory = null;
+
+    // simple arg form
+    factory = tokenFilterFactory("Synonym", ver,
+        "synonyms", "synonyms.txt", 
+        "tokenizerFactory", clazz,
+        "pattern", "(.*)",
+        "group", "0");
+    assertDelegator(factory, delegatorClass);
+
+    // prefix
+    factory = tokenFilterFactory("Synonym", ver,
+        "synonyms", "synonyms.txt", 
+        "tokenizerFactory", clazz,
+        "tokenizerFactory.pattern", "(.*)",
+        "tokenizerFactory.group", "0");
+    assertDelegator(factory, delegatorClass);
+
+    // sanity check that sub-PatternTokenizerFactory fails w/o pattern
+    try {
+      factory = tokenFilterFactory("Synonym", ver,
+          "synonyms", "synonyms.txt", 
+          "tokenizerFactory", clazz);
+      fail("tokenizerFactory should have complained about missing pattern arg");
+    } catch (Exception expected) {
+      // :NOOP:
+    }
+
+    // sanity check that sub-PatternTokenizerFactory fails on unexpected
+    try {
+      factory = tokenFilterFactory("Synonym", ver,
+          "synonyms", "synonyms.txt", 
+          "tokenizerFactory", clazz,
+          "tokenizerFactory.pattern", "(.*)",
+          "tokenizerFactory.bogusbogusbogus", "bogus",
+          "tokenizerFactory.group", "0");
+      fail("tokenizerFactory should have complained about missing pattern arg");
+    } catch (Exception expected) {
+      // :NOOP:
+    }
+  }
+  private static void assertDelegator(final TokenFilterFactory factory,
+                                      final Class delegatorClass) {
+    assertNotNull(factory);
+    assertTrue("factory not expected class: " + factory.getClass(),
+               factory instanceof SynonymFilterFactory);
+    SynonymFilterFactory synFac = (SynonymFilterFactory) factory;
+    Object delegator = synFac.getDelegator();
+    assertNotNull(delegator);
+    assertTrue("delegator not expected class: " + delegator.getClass(),
+               delegatorClass.isInstance(delegator));
+    
+  }
 }
+
+
