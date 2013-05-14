@@ -41,7 +41,7 @@
               excludes="build/**,site/**,tools/**,**/lib/*servlet-api*.jar"
   />
 
-
+<target name="valll" depends="-validate-maven-dependencies"/>
   <!-- ================================================================== -->
   <!-- Prepares the build directory                                       -->
   <!-- ================================================================== -->
