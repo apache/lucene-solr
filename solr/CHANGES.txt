@@ -136,6 +136,8 @@ Other Changes
 
 * SOLR-4784: Make class LuceneQParser public (janhoy)
 
+* SOLR-4448: Allow the solr internal load balancer to be more easily pluggable.
+  (Philip Hoy via Robert Muir)
 
 ==================  4.3.1 ==================
 
