@@ -173,6 +173,10 @@ Bug Fixes
 * SOLR-4807: The zkcli script now works with log4j. The zkcli.bat script
   was broken on Windows in 4.3.0, now it works. (Shawn Heisey)
 
+* SOLR-4813: Fix SynonymFilterFactory to allow init parameters for
+  tokenizer factory used when parsing synonyms file.  (Shingo Sasaki, hossman)
+  
+
 Other Changes
 ----------------------
 

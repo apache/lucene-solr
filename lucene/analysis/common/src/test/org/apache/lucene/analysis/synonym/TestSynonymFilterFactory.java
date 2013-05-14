@@ -19,11 +19,15 @@ package org.apache.lucene.analysis.synonym;
 
 import java.io.Reader;
 import java.io.StringReader;
+import java.util.HashMap;
+import java.util.Map;
 
 import org.apache.lucene.analysis.MockTokenizer;
 import org.apache.lucene.analysis.TokenStream;
-import org.apache.lucene.analysis.synonym.SynonymFilter;
+import org.apache.lucene.analysis.pattern.PatternTokenizerFactory;
+import org.apache.lucene.analysis.util.TokenFilterFactory;
 import org.apache.lucene.analysis.util.BaseTokenStreamFactoryTestCase;
+import org.apache.lucene.analysis.util.ClasspathResourceLoader;
 import org.apache.lucene.analysis.util.StringMockResourceLoader;
 
 public class TestSynonymFilterFactory extends BaseTokenStreamFactoryTestCase {
@@ -59,4 +63,53 @@ public class TestSynonymFilterFactory extends BaseTokenStreamFactoryTestCase {
       assertTrue(expected.getMessage().contains("Unknown parameters"));
     }
   }
+
+  static final String TOK_SYN_ARG_VAL = "argument";
+  static final String TOK_FOO_ARG_VAL = "foofoofoo";
+
+  /** Test that we can parse TokenierFactory's arguments */
+  public void testTokenizerFactoryArguments() throws Exception {
+    final String clazz = PatternTokenizerFactory.class.getName();
+    TokenFilterFactory factory = null;
+
+    // simple arg form
+    factory = tokenFilterFactory("Synonym", 
+        "synonyms", "synonyms.txt", 
+        "tokenizerFactory", clazz,
+        "pattern", "(.*)",
+        "group", "0");
+    assertNotNull(factory);
+    // prefix
+    factory = tokenFilterFactory("Synonym", 
+        "synonyms", "synonyms.txt", 
+        "tokenizerFactory", clazz,
+        "tokenizerFactory.pattern", "(.*)",
+        "tokenizerFactory.group", "0");
+    assertNotNull(factory);
+
+    // sanity check that sub-PatternTokenizerFactory fails w/o pattern
+    try {
+      factory = tokenFilterFactory("Synonym", 
+          "synonyms", "synonyms.txt", 
+          "tokenizerFactory", clazz);
+      fail("tokenizerFactory should have complained about missing pattern arg");
+    } catch (Exception expected) {
+      // :NOOP:
+    }
+
+    // sanity check that sub-PatternTokenizerFactory fails on unexpected
+    try {
+      factory = tokenFilterFactory("Synonym", 
+          "synonyms", "synonyms.txt", 
+          "tokenizerFactory", clazz,
+          "tokenizerFactory.pattern", "(.*)",
+          "tokenizerFactory.bogusbogusbogus", "bogus",
+          "tokenizerFactory.group", "0");
+      fail("tokenizerFactory should have complained about missing pattern arg");
+    } catch (Exception expected) {
+      // :NOOP:
+    }
+  }
 }
+
+
