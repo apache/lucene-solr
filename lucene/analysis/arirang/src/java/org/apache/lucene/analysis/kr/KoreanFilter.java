@@ -325,7 +325,7 @@ public class KoreanFilter extends TokenFilter {
           sb.append(chs[k]);          
           if(k>0)  candiList.add(sb);
           
-          Iterator iter = DictionaryUtil.findWithPrefix(sb.toString());
+          Iterator<String[]> iter = DictionaryUtil.findWithPrefix(sb.toString());
           if(!iter.hasNext()) // 사전에 없으면 삭제 후보
             removeList.add(sb);    
         }        

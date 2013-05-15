@@ -53,6 +53,7 @@ import java.util.NoSuchElementException;
  * See http://www.csse.monash.edu.au/~lloyd/tildeAlgDS/Tree/Trie.html for a
  * discussion of Tries.
  */
+
 public class Trie<S,V> {
   /**
    * Our representation consists of a tree of nodes whose edges are labelled
@@ -95,6 +96,7 @@ public class Trie<S,V> {
   /**
    * The constant EmptyIterator to return when nothing matches.
    */
+  @SuppressWarnings({"rawtypes","unchecked"})
   private final static Iterator EMPTY_ITERATOR = new EmptyIterator();
 
   /**
@@ -308,6 +310,7 @@ public class Trie<S,V> {
    * k.startsWith(prefix) and get(k) == v. The remove() operation on the
    * iterator is unimplemented.
    */
+  @SuppressWarnings({"rawtypes","unchecked"})
   public Iterator getPrefixedBy(String prefix) {
     // Early conversion of search key
     prefix = canonicalCase(prefix);
@@ -327,6 +330,7 @@ public class Trie<S,V> {
    * requires 0 &lt;= startOffset &lt;= stopOffset &lt;= prefix.length
    * @see #canonicalCase(String)
    */
+  @SuppressWarnings({"rawtypes","unchecked"})
   public Iterator getPrefixedBy(String prefix, int startOffset, int stopOffset) {
     // Find the first node for which "prefix" prefixes KEY(node). (See the
     // implementation overview for a definition of KEY(node).) This code is
@@ -366,6 +370,7 @@ public class Trie<S,V> {
    * Returns all the (non-null) values associated with a given node and its
    * children. (internal)
    */
+  @SuppressWarnings({"rawtypes","unchecked"})
   private class ValueIterator extends NodeIterator {
     ValueIterator(TrieNode start) {
       super(start, false);
@@ -380,6 +385,7 @@ public class Trie<S,V> {
   /**
    * Yields nothing. (internal)
    */
+  @SuppressWarnings({"rawtypes","unchecked"})
   private static class EmptyIterator implements Iterator {
     // inherits javadoc comment
     public boolean hasNext() {
@@ -405,6 +411,7 @@ public class Trie<S,V> {
      * INVARIANT: Top of stack contains the next node with not null value to
      * pop. All other elements in stack are iterators.
      */
+    @SuppressWarnings({"rawtypes","unchecked"})
     private ArrayList /* of Iterator of TrieNode */stack = new ArrayList();
     private boolean withNulls;
 
@@ -412,6 +419,7 @@ public class Trie<S,V> {
      * Creates a new iterator that yields all the nodes of start and its
      * children that have values (ignoring internal nodes).
      */
+    @SuppressWarnings({"rawtypes","unchecked"})
     public NodeIterator(TrieNode start, boolean withNulls) {
       this.withNulls = withNulls;
       if (withNulls || start.getValue() != null)
@@ -428,6 +436,7 @@ public class Trie<S,V> {
     }
 
     // inherits javadoc comment
+    @SuppressWarnings({"rawtypes","unchecked"})
     public Object next() {
       int size;
       if ((size = stack.size()) == 0)
@@ -444,6 +453,7 @@ public class Trie<S,V> {
      * empty stack, or a stack whose top will be the next node returned by
      * next().
      */
+    @SuppressWarnings({"rawtypes","unchecked"})
     private void advance(TrieNode node) {
       Iterator children = node.childrenForward();
       while (true) { // scan siblings and their children
@@ -484,6 +494,7 @@ public class Trie<S,V> {
    * Prints a description of the substree starting with start to buf. The
    * printing starts with the given indent level. (internal)
    */
+  @SuppressWarnings({"rawtypes","unchecked"})
   private void toStringHelper(TrieNode start, StringBuffer buf, int indent) {
     // Print value of node.
     if (start.getValue() != null) {
@@ -684,6 +695,7 @@ final class TrieNode<V> {
    * Returns the children of this in forward order, as an iterator of
    * TrieNode.
    */
+  @SuppressWarnings({"rawtypes","unchecked"})
   public Iterator childrenForward() {
     return new ChildrenForwardIterator();
   }
@@ -731,6 +743,7 @@ final class TrieNode<V> {
    * Returns the labels of the children of this in forward order, as an
    * iterator of Strings.
    */
+  @SuppressWarnings({"rawtypes","unchecked"})
   public Iterator labelsForward() {
     return new LabelForwardIterator();
   }

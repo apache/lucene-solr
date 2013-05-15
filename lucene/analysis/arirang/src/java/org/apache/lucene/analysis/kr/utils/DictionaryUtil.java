@@ -80,8 +80,9 @@ public class DictionaryUtil {
       dictionary.add(entry.getWord(), entry);
     }
   }
-  
-  public static Iterator findWithPrefix(String prefix) throws MorphException {
+
+  @SuppressWarnings({"rawtypes","unchecked"})
+  public static Iterator<String[]> findWithPrefix(String prefix) throws MorphException {
     if(dictionary==null) loadDictionary();
     return dictionary.getPrefixedBy(prefix);
   }

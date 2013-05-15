@@ -261,11 +261,12 @@ public class Tagger {
     
     return false;    
   }
-  
+
+  @SuppressWarnings("unchecked")
   public static synchronized Iterator<String[]> getGR(String prefix) throws MorphException {
 
     if(occurrences==null) loadTaggerDic();
-    
+
     return occurrences.getPrefixedBy(prefix);
   }
   

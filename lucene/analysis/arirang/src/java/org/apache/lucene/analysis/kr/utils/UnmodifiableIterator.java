@@ -19,6 +19,7 @@ package org.apache.lucene.analysis.kr.utils;
 
 import java.util.Iterator;
 
+@SuppressWarnings({"rawtypes","unchecked"})
 public abstract class UnmodifiableIterator implements Iterator {
 
   public void remove() {

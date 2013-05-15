@@ -55,7 +55,7 @@ public class WordSpaceAnalyzer {
       char[] f = SyllableUtil.getFeature(input.charAt(i));
       
       String prefix = i==input.length()-1 ? "X" : input.substring(wStart,i+2);          
-      Iterator iter = DictionaryUtil.findWithPrefix(prefix);
+      Iterator<String[]> iter = DictionaryUtil.findWithPrefix(prefix);
       
       List<AnalysisOutput> candidates = new ArrayList<AnalysisOutput>();    
       
@@ -292,7 +292,7 @@ public class WordSpaceAnalyzer {
     // 동사앞에 명사분리
     int vstart = 0;
     for(int i=estart-1;i>=0;i--) {  
-      Iterator iter = DictionaryUtil.findWithPrefix(snipt.substring(i,estart)); 
+      Iterator<String[]> iter = DictionaryUtil.findWithPrefix(snipt.substring(i,estart)); 
       if(iter.hasNext()) vstart=i;
       else break;
     }
