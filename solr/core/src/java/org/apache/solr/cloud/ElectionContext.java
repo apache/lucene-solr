@@ -172,8 +172,6 @@ final class ShardLeaderElectionContext extends ShardLeaderElectionContextBase {
       }
       
       log.info("I may be the new leader - try and sync");
-      
-      UpdateLog ulog = core.getUpdateHandler().getUpdateLog();
  
       
       // we are going to attempt to be the leader
@@ -187,7 +185,9 @@ final class ShardLeaderElectionContext extends ShardLeaderElectionContextBase {
         success = false;
       }
       
-      if (!success && ulog.getRecentUpdates().getVersions(1).isEmpty()) {
+      UpdateLog ulog = core.getUpdateHandler().getUpdateLog();
+      
+      if (!success && (ulog == null || ulog.getRecentUpdates().getVersions(1).isEmpty())) {
         // we failed sync, but we have no versions - we can't sync in that case
         // - we were active
         // before, so become leader anyway

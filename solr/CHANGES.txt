@@ -110,6 +110,9 @@ Bug Fixes
 
 * SOLR-4796: zkcli.sh should honor JAVA_HOME (Roman Shaposhnik via Mark Miller)
 
+* SOLR-4734: Leader election fails with an NPE if there is no UpdateLog.
+ (Mark Miller, Alexander Eibner)
+
 Other Changes
 ----------------------
 
