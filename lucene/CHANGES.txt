@@ -158,6 +158,11 @@ Build
   Test framework may fail internally due to overly aggresive J9 optimizations. 
   (Dawid Weiss, Shai Erera)
 
+Tests
+
+* LUCENE-4901: TestIndexWriterOnJRECrash should work on any 
+  JRE vendor via Runtime.halt().
+  (Mike McCandless, Robert Muir, Uwe Schindler, Rodrigo Trujillo, Dawid Weiss)
 
 ======================= Lucene 4.3.1 =======================
 
