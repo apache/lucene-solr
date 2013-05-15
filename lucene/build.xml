@@ -163,6 +163,7 @@
       <additional-filters>
         <replaceregex pattern="jetty([^/]+)$" replace="jetty" flags="gi" />
         <replaceregex pattern="slf4j-([^/]+)$" replace="slf4j" flags="gi" />
+        <replaceregex pattern="javax\.servlet([^/]+)$" replace="javax.servlet" flags="gi" />
         <replaceregex pattern="(bcmail|bcprov)-([^/]+)$" replace="\1" flags="gi" />
       </additional-filters>
     </license-check-macro>
