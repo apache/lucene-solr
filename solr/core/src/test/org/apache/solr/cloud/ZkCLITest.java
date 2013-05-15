@@ -194,7 +194,7 @@ public class ZkCLITest extends SolrTestCaseJ4 {
     // filter out all directories starting with . (e.g. .svn)
     Collection<File> sourceFiles = FileUtils.listFiles(sourceConfDir, TrueFileFilter.INSTANCE, new RegexFileFilter("[^\\.].*"));
     for (File sourceFile :sourceFiles){
-        int indexOfRelativePath = sourceFile.getAbsolutePath().lastIndexOf("collection1/conf");
+        int indexOfRelativePath = sourceFile.getAbsolutePath().lastIndexOf("collection1" + File.separator + "conf");
         String relativePathofFile = sourceFile.getAbsolutePath().substring(indexOfRelativePath + 17, sourceFile.getAbsolutePath().length());
         File downloadedFile = new File(confDir,relativePathofFile);
         assertTrue(downloadedFile.getAbsolutePath() + " does not exist source:" + sourceFile.getAbsolutePath(), downloadedFile.exists());
