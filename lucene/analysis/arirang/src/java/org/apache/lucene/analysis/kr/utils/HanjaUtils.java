@@ -31,7 +31,7 @@ public class HanjaUtils {
   public synchronized static void loadDictionary() throws MorphException {
     try {
       List<String> strList = FileUtil.readLines("org/apache/lucene/analysis/kr/dic/mapHanja.dic","UTF-8");
-      mapHanja = new HashMap();    
+      mapHanja = new HashMap<String, char[]>();    
     
       for(int i=0;i<strList.size();i++) {
         

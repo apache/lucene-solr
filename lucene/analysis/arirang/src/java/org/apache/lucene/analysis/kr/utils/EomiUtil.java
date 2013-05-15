@@ -234,9 +234,9 @@ public class EomiUtil {
   /**
    * 불규칙 용언의 원형을 구한다.
    */
-  public static List irregular(AnalysisOutput output) throws MorphException {
+  public static List<AnalysisOutput> irregular(AnalysisOutput output) throws MorphException {
     
-    List results = new ArrayList();
+    List<AnalysisOutput> results = new ArrayList<AnalysisOutput>();
   
     if(output.getStem()==null||output.getStem().length()==0) 
       return results;    
@@ -244,7 +244,7 @@ public class EomiUtil {
     String ending = output.getEomi();
     if(output.getPomi()!=null) ending = output.getPomi();
     
-    List<String[]> irrs = new ArrayList();
+    List<String[]> irrs = new ArrayList<String[]>();
     
     irregularStem(irrs,output.getStem(),ending);
     irregularEnding(irrs,output.getStem(),ending);
@@ -274,7 +274,7 @@ public class EomiUtil {
    * @param stem
    * @param ending
    */
-  private static void irregularStem(List results, String stem, String ending) {  
+  private static void irregularStem(List<String[]> results, String stem, String ending) {  
 
     char feCh = ending.charAt(0);
     char[] fechJaso =  MorphUtil.decompose(feCh);
@@ -334,7 +334,7 @@ public class EomiUtil {
    * @param stem
    * @param ending
    */
-  private static void irregularEnding(List results, String stem, String ending) {
+  private static void irregularEnding(List<String[]> results, String stem, String ending) {
     if(ending.startsWith("ㅆ")) return;
     
     char feCh = ending.charAt(0);
@@ -371,7 +371,7 @@ public class EomiUtil {
    * @param stem
    * @param ending
    */
-  private static void irregularAO(List results, String stem, String ending) {
+  private static void irregularAO(List<String[]> results, String stem, String ending) {
     
     char ls = stem.charAt(stem.length()-1);
     char[] lsJaso = MorphUtil.decompose(ls);

@@ -964,15 +964,15 @@ public class StrBuilder implements Cloneable {
    * @return this, to enable chaining
    * @since 2.3
    */
-  public StrBuilder appendAll(Collection coll) {
-    if (coll != null && coll.size() > 0) {
-      Iterator it = coll.iterator();
-      while (it.hasNext()) {
-        append(it.next());
-      }
-    }
-    return this;
-  }
+//  public StrBuilder appendAll(Collection coll) {
+//    if (coll != null && coll.size() > 0) {
+//      Iterator it = coll.iterator();
+//      while (it.hasNext()) {
+//        append(it.next());
+//      }
+//    }
+//    return this;
+//  }
 
   /**
    * Appends each item in an iterator to the builder without any separators.
@@ -983,14 +983,14 @@ public class StrBuilder implements Cloneable {
    * @return this, to enable chaining
    * @since 2.3
    */
-  public StrBuilder appendAll(Iterator it) {
-    if (it != null) {
-      while (it.hasNext()) {
-        append(it.next());
-      }
-    }
-    return this;
-  }
+//  public StrBuilder appendAll(Iterator it) {
+//    if (it != null) {
+//      while (it.hasNext()) {
+//        append(it.next());
+//      }
+//    }
+//    return this;
+//  }
 
   //-----------------------------------------------------------------------
   /**
@@ -1025,19 +1025,19 @@ public class StrBuilder implements Cloneable {
    * @param separator  the separator to use, null means no separator
    * @return this, to enable chaining
    */
-  public StrBuilder appendWithSeparators(Collection coll, String separator) {
-    if (coll != null && coll.size() > 0) {
-      separator = (separator == null ? "" : separator);
-      Iterator it = coll.iterator();
-      while (it.hasNext()) {
-        append(it.next());
-        if (it.hasNext()) {
-          append(separator);
-        }
-      }
-    }
-    return this;
-  }
+//  public StrBuilder appendWithSeparators(Collection coll, String separator) {
+//    if (coll != null && coll.size() > 0) {
+//      separator = (separator == null ? "" : separator);
+//      Iterator it = coll.iterator();
+//      while (it.hasNext()) {
+//        append(it.next());
+//        if (it.hasNext()) {
+//          append(separator);
+//        }
+//      }
+//    }
+//    return this;
+//  }
 
   /**
    * Appends an iterator placing separators between each value, but
@@ -1049,18 +1049,18 @@ public class StrBuilder implements Cloneable {
    * @param separator  the separator to use, null means no separator
    * @return this, to enable chaining
    */
-  public StrBuilder appendWithSeparators(Iterator it, String separator) {
-    if (it != null) {
-      separator = (separator == null ? "" : separator);
-      while (it.hasNext()) {
-        append(it.next());
-        if (it.hasNext()) {
-          append(separator);
-        }
-      }
-    }
-    return this;
-  }
+//  public StrBuilder appendWithSeparators(Iterator it, String separator) {
+//    if (it != null) {
+//      separator = (separator == null ? "" : separator);
+//      while (it.hasNext()) {
+//        append(it.next());
+//        if (it.hasNext()) {
+//          append(separator);
+//        }
+//      }
+//    }
+//    return this;
+//  }
 
   //-----------------------------------------------------------------------
   /**

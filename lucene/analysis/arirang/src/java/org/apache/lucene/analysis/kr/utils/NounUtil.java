@@ -21,13 +21,14 @@ import java.util.ArrayList;
 import java.util.List;
 
 import org.apache.lucene.analysis.kr.morph.AnalysisOutput;
+import org.apache.lucene.analysis.kr.morph.CompoundEntry;
 import org.apache.lucene.analysis.kr.morph.MorphException;
 import org.apache.lucene.analysis.kr.morph.PatternConstants;
 import org.apache.lucene.analysis.kr.morph.WordEntry;
 
 public class NounUtil {
 
-  private static final List DNouns = new ArrayList();
+  private static final List<String> DNouns = new ArrayList<String>();
     
   static {
     String[] strs = new String[]{"등", "들","상","간","뿐","별"};
@@ -44,7 +45,7 @@ public class NounUtil {
    * @param candidates
    * @throws MorphException
    */
-  public static boolean analysisMJ(AnalysisOutput o, List candidates) throws MorphException {
+  public static boolean analysisMJ(AnalysisOutput o, List<AnalysisOutput> candidates) throws MorphException {
 
     int strlen = o.getStem().length();
        
@@ -98,7 +99,7 @@ public class NounUtil {
    * @param candidates
    * @throws MorphException
    */
-  public static boolean analysisVMJ(AnalysisOutput o, List candidates) throws MorphException {
+  public static boolean analysisVMJ(AnalysisOutput o, List<AnalysisOutput> candidates) throws MorphException {
 
     String[] irrs =  IrregularUtil.restoreIrregularVerb(o.getStem(), o.getElist().get(0));
     if(irrs!=null) {
@@ -123,7 +124,7 @@ public class NounUtil {
    * @param candidates
    * @throws MorphException
    */
-  public static boolean analysisVMXMJ(AnalysisOutput o, List candidates) throws MorphException {
+  public static boolean analysisVMXMJ(AnalysisOutput o, List<AnalysisOutput> candidates) throws MorphException {
   
     int idxXVerb = VerbUtil.endsWithXVerb(o.getStem());
 
@@ -168,7 +169,7 @@ public class NounUtil {
    * @param candidates
    * @throws MorphException
    */
-  public static boolean analysisNSMJ(AnalysisOutput o, List candidates) throws MorphException {
+  public static boolean analysisNSMJ(AnalysisOutput o, List<AnalysisOutput> candidates) throws MorphException {
 
     int idxVbSfix = VerbUtil.endsWithVerbSuffix(o.getStem());        
     if(idxVbSfix==-1) return false;
@@ -195,7 +196,7 @@ public class NounUtil {
     return true;
   }         
      
-  public static boolean analysisNSMXMJ(AnalysisOutput o, List candidates) throws MorphException {
+  public static boolean analysisNSMXMJ(AnalysisOutput o, List<AnalysisOutput> candidates) throws MorphException {
 
     int idxVbSfix = VerbUtil.endsWithVerbSuffix(o.getStem());        
     if(idxVbSfix==-1) return false;
@@ -306,9 +307,9 @@ public class NounUtil {
    * return    단위명사 리스트
    * @throws MorphException
    */
-  private static List findNouns(String str, int pos, AnalysisOutput o) throws MorphException {
+  private static List<WordEntry> findNouns(String str, int pos, AnalysisOutput o) throws MorphException {
 
-    List<WordEntry> nList = new ArrayList();
+    List<WordEntry> nList = new ArrayList<WordEntry>();
 
     if(str.length()==2&&DictionaryUtil.existSuffix(str.substring(0,1))&&DNouns.contains(str.substring(1))) {
       o.setStem(o.getStem().substring(0,o.getStem().length()-1));
@@ -356,7 +357,7 @@ public class NounUtil {
       if(cnoun.getFeature(WordEntry.IDX_NOUN)=='2')
         output.setCNoun(cnoun.getCompounds());
       else
-        output.setCNoun(new ArrayList());
+        output.setCNoun(new ArrayList<CompoundEntry>());
       output.setScore(AnalysisOutput.SCORE_CORRECT);
     }
           

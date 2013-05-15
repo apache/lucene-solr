@@ -115,7 +115,7 @@ public class MorphUtil {
   }
   
   
-  public static void buildPtnVM(AnalysisOutput output, List candidates) throws MorphException {
+  public static void buildPtnVM(AnalysisOutput output, List<AnalysisOutput> candidates) throws MorphException {
     
     String end = output.getEomi();
     if(output.getPomi()!=null) end = output.getPomi();
@@ -142,7 +142,7 @@ public class MorphUtil {
    * @param candidates
    * @throws MorphException
    */
-  public static void buildPtnCM(AnalysisOutput output, List candidates) throws MorphException {
+  public static void buildPtnCM(AnalysisOutput output, List<AnalysisOutput> candidates) throws MorphException {
     
     char ch = output.getStem().charAt(output.getStem().length()-2);
     char[] jasos = MorphUtil.decompose(ch);
@@ -153,7 +153,7 @@ public class MorphUtil {
     }
   }
   
-  private static void buildPtnVMCM(AnalysisOutput output, List candidates) throws MorphException {
+  private static void buildPtnVMCM(AnalysisOutput output, List<AnalysisOutput> candidates) throws MorphException {
     String stem = output.getStem();
   
     output.setPatn(PatternConstants.PTN_VMCM);

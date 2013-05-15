@@ -28,9 +28,9 @@ import org.apache.lucene.analysis.kr.morph.WordEntry;
 
 public class VerbUtil {
 
-  public static final Map verbSuffix = new HashMap();
+  public static final Map<String, String> verbSuffix = new HashMap<String, String>();
   
-  public static final Map XVerb = new HashMap();
+  public static final Map<String, String> XVerb = new HashMap<String, String>();
   
   static {
     String[] suffixs = {
@@ -88,7 +88,7 @@ public class VerbUtil {
   /**
    * 3. 학교에서이다 : 체언 + '에서/부터/에서부터' + '이' + 어미 (PTN_NJCM) <br>
    */
-  public static boolean ananlysisNJCM(AnalysisOutput o, List candidates) throws MorphException {
+  public static boolean ananlysisNJCM(AnalysisOutput o, List<AnalysisOutput> candidates) throws MorphException {
  
     int strlen = o.getStem().length();
     boolean success = false;
@@ -125,7 +125,7 @@ public class VerbUtil {
    * @param candidates
    * @throws MorphException
    */
-  public static boolean ananlysisNSM(AnalysisOutput o, List candidates) throws MorphException {
+  public static boolean ananlysisNSM(AnalysisOutput o, List<AnalysisOutput> candidates) throws MorphException {
 
     if(o.getStem().endsWith("스러우")) o.setStem(o.getStem().substring(0,o.getStem().length()-3)+"스럽");
     int idxVbSfix = VerbUtil.endsWithVerbSuffix(o.getStem());
@@ -164,7 +164,7 @@ public class VerbUtil {
 
   }
    
-  public static boolean ananlysisNSMXM(AnalysisOutput o, List candidates) throws MorphException {
+  public static boolean ananlysisNSMXM(AnalysisOutput o, List<AnalysisOutput> candidates) throws MorphException {
    
     int idxXVerb = VerbUtil.endsWithXVerb(o.getStem());
     if(idxXVerb==-1) return false;
@@ -204,7 +204,7 @@ public class VerbUtil {
     return true;     
   }
    
-  public static boolean analysisVMCM(AnalysisOutput o, List candidates) throws MorphException {
+  public static boolean analysisVMCM(AnalysisOutput o, List<AnalysisOutput> candidates) throws MorphException {
    
     int strlen = o.getStem().length();
      
@@ -253,7 +253,7 @@ public class VerbUtil {
    * 6. 도와주다 : 용언 + '아/어' + 보조용언 + 어미 (PTN_VMXM)
    * 
    */
-  public static boolean analysisVMXM(AnalysisOutput o, List candidates) throws MorphException {
+  public static boolean analysisVMXM(AnalysisOutput o, List<AnalysisOutput> candidates) throws MorphException {
 
     int idxXVerb = VerbUtil.endsWithXVerb(o.getStem());
 

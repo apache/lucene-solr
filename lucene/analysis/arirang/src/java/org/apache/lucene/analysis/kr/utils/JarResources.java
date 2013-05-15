@@ -22,7 +22,8 @@ import java.io.FileInputStream;
 import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.util.Enumeration;
-import java.util.Hashtable;
+import java.util.HashMap;
+import java.util.Map;
 import java.util.zip.ZipEntry;
 import java.util.zip.ZipFile;
 import java.util.zip.ZipInputStream;
@@ -38,7 +39,7 @@ public final class JarResources {
   public boolean debugOn=false;
 
   // jar resource mapping tables
-  private Hashtable htSizes=new Hashtable();  
+  private Map<String, Integer> htSizes=new HashMap<String, Integer>();  
 
   // a jar file
   private String jarFileName;
@@ -67,9 +68,9 @@ public final class JarResources {
     try {
       // extracts just sizes only. 
       ZipFile zf=new ZipFile(jarFileName);
-      Enumeration e=zf.entries();
+      Enumeration<? extends ZipEntry> e=zf.entries();
       while (e.hasMoreElements()) {
-        ZipEntry ze=(ZipEntry)e.nextElement();
+        ZipEntry ze=e.nextElement();
         if (debugOn) {
           System.out.println(dumpZipEntry(ze));
         }
@@ -94,13 +95,13 @@ public final class JarResources {
         int size=(int)ze.getSize();
         // -1 means unknown size. 
         if (size==-1) {
-          size=((Integer)htSizes.get(ze.getName())).intValue();
+          size=(htSizes.get(ze.getName())).intValue();
         }
-        byte[] b=new byte[(int)size];
+        byte[] b=new byte[size];
         int rb=0;
         int chunk=0;
-        while (((int)size - rb) > 0) {
-          chunk=zis.read(b,rb,(int)size - rb);
+        while ((size - rb) > 0) {
+          chunk=zis.read(b,rb,size - rb);
           if (chunk==-1) {
             break;
           }

@@ -71,7 +71,7 @@ public class SyllableUtil {
   
   public static int IDX_EOGAN = 39; // 어미 또는 어미의 변형으로 존재할 수 있는 음 (즉 IDX_EOMI 이거나 IDX_YNPNA 이후에 1이 있는 음절)
   
-  private static List Syllables;  // 음절특성 정보
+  private static List<char[]> Syllables;  // 음절특성 정보
   
   /**
    * 인덱스 값에 해당하는 음절의 특성을 반환한다.
@@ -85,9 +85,9 @@ public class SyllableUtil {
     if(Syllables==null) Syllables = getSyllableFeature();
   
     if(idx<0||idx>=Syllables.size()) 
-      return (char[])Syllables.get(Syllables.size()-1);
+      return Syllables.get(Syllables.size()-1);
     else 
-      return (char[])Syllables.get(idx);
+      return Syllables.get(idx);
     
   }
   
@@ -108,7 +108,7 @@ public class SyllableUtil {
    * 
    * @throws Exception
    */  
-  private static List getSyllableFeature() throws MorphException {
+  private static List<char[]> getSyllableFeature() throws MorphException {
   
     try{
       Syllables = new ArrayList<char[]>();

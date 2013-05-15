@@ -213,7 +213,7 @@ public class FileUtil {
    */
   public static List<String> readLines(Reader input) throws IOException {
     BufferedReader reader = new BufferedReader(input);
-    List list = new ArrayList();
+    List<String> list = new ArrayList<String>();
     String line = reader.readLine();
     while (line != null) {
       if ( ! (line.startsWith("!") || line.startsWith("\uFEFF!"))) { // Skip comment lines starting with '!'
