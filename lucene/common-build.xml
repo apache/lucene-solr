@@ -1447,7 +1447,7 @@ ${tests-output}/junit4-*.suites     - per-JVM executed suites
       <additional-filters>
         <replaceregex pattern="jetty([^/]+)$" replace="jetty" flags="gi" />
         <replaceregex pattern="slf4j-([^/]+)$" replace="slf4j" flags="gi" />
-        <replaceregex pattern="javax\.servlet-([^/]+)$" replace="servlet-api" flags="gi" />
+        <replaceregex pattern="javax\.servlet([^/]+)$" replace="javax.servlet" flags="gi" />
       </additional-filters>
       <excludes>
         <rsel:name name="**/lucene-*-${maven.version.glob}.jar" handledirsep="true"/>

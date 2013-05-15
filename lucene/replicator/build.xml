@@ -31,8 +31,8 @@
 
 	<target name="resolve" depends="common.resolve">
 		<sequential>
-	    <!-- servlet-api.jar -->
-	    <ivy:retrieve conf="servlet" log="download-only" type="orbit" pattern="lib/servlet-api-3.0.jar"/>
+	    <!-- javax.servlet jar -->
+	    <ivy:retrieve conf="servlet" log="download-only" type="orbit"/>
 		</sequential>
 	</target>
 
