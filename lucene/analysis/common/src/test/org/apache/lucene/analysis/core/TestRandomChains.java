@@ -174,8 +174,6 @@ public class TestRandomChains extends BaseTokenStreamTestCase {
           PathHierarchyTokenizer.class,
           HyphenationCompoundWordTokenFilter.class,
           DictionaryCompoundWordTokenFilter.class,
-          // TODO: corrumpts graphs (offset consistency check):
-          PositionFilter.class,
           // TODO: it seems to mess up offsets!?
           WikipediaTokenizer.class,
           // TODO: doesn't handle graph inputs

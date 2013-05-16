@@ -20,6 +20,7 @@ package org.apache.lucene.analysis.position;
 import org.apache.lucene.analysis.TokenStream;
 import org.apache.lucene.analysis.position.PositionFilter;
 import org.apache.lucene.analysis.util.TokenFilterFactory;
+import org.apache.lucene.util.Version;
 
 import java.util.Map;
 
@@ -37,7 +38,9 @@ import java.util.Map;
  *
  * @see org.apache.lucene.analysis.position.PositionFilter
  * @since solr 1.4
+ * @deprecated (4.4)
  */
+@Deprecated
 public class PositionFilterFactory extends TokenFilterFactory {
   private final int positionIncrement;
 
@@ -47,6 +50,9 @@ public class PositionFilterFactory extends TokenFilterFactory {
     positionIncrement = getInt(args, "positionIncrement", 0);
     if (!args.isEmpty()) {
       throw new IllegalArgumentException("Unknown parameters: " + args);
+    }
+    if (luceneMatchVersion != null && luceneMatchVersion.onOrAfter(Version.LUCENE_44)) {
+      throw new IllegalArgumentException("PositionFilter is deprecated as of Lucene 4.4. You should either fix your code to not use it or use Lucene 4.3 version compatibility");
     }
   }
 

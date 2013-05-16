@@ -44,6 +44,12 @@ Changes in backwards compatibility policy
 * LUCENE-3907: EdgeNGramTokenFilter does not support backward grams and does
   not update offsets anymore. (Adrien Grand)
 
+* LUCENE-4981: PositionFilter is now deprecated as it can corrupt token stream
+  graphs. Since it main use-case was to make query parsers generate boolean
+  queries instead of phrase queries, it is now advised to use
+  QueryParser.setAutoGeneratePhraseQueries(false) (for simple cases) or to
+  override QueryParser.newFieldQuery. (Adrien Grand, Steve Rowe)
+
 Bug Fixes
 
 * LUCENE-4997: Internal test framework's tests are sensitive to previous 
