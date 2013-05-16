@@ -18,6 +18,12 @@ Bug Fixes
   if you had a 64-bit JVM without compressed OOPS: IBM J9, or Oracle with
   large heap/explicitly disabled.  (Mike McCandless, Uwe Schindler, Robert Muir)
 
+* LUCENE-4953: Fixed ParallelCompositeReader to inform ReaderClosedListeners of
+  its synthetic subreaders. FieldCaches keyed on the atomic childs will be purged
+  earlier and FC insanity prevented.  In addition, ParallelCompositeReader's
+  toString() was changed to better reflect the reader structure.
+  (Mike McCandless, Uwe Schindler)
+
 ======================= Lucene 4.3.0 =======================
 
 Changes in backwards compatibility policy
