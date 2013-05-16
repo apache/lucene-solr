@@ -46,6 +46,9 @@ Bug Fixes
 * LUCENE-4994: Fix PatternKeywordMarkerFilter to have public constructor.
   (Uwe Schindler)
 
+* LUCENE-4993: Fix BeiderMorseFilter to preserve custom attributes when
+  inserting tokens with position increment 0.  (Uwe Schindler)
+
 ======================= Lucene 4.3.0 =======================
 
 Changes in backwards compatibility policy
