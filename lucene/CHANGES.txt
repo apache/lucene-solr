@@ -11,6 +11,9 @@ Bug Fixes
 * SOLR-4813: Fix SynonymFilterFactory to allow init parameters for
   tokenizer factory used when parsing synonyms file.  (Shingo Sasaki, hossman)
 
+* LUCENE-4935: CustomScoreQuery wrongly applied its query boost twice
+  (boost^2).  (Robert Muir)
+
 ======================= Lucene 4.3.0 =======================
 
 Changes in backwards compatibility policy
