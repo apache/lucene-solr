@@ -265,6 +265,9 @@ def checkAllJARs(topDir, project, svnRevision, version):
           if normRoot.endswith('/contrib/dataimporthandler/lib') and (file.startswith('mail-') or file.startswith('activation-')):
             print('      **WARNING**: skipping check of %s/%s: it has javax.* classes' % (root, file))
             continue
+        else:
+          if normRoot.endswith('/replicator/lib') and file.startswith('javax.servlet'):
+            continue
         fullPath = '%s/%s' % (root, file)
         noJavaPackageClasses('JAR file "%s"' % fullPath, fullPath)
         if file.lower().find('lucene') != -1 or file.lower().find('solr') != -1:
