@@ -552,13 +552,13 @@ public class RealTimeGetComponent extends SearchComponent
 
     List<String> versions = StrUtils.splitSmart(versionsStr, ",", true);
 
-    // TODO: get this from cache instead of rebuilding?
-    UpdateLog.RecentUpdates recentUpdates = ulog.getRecentUpdates();
 
     List<Object> updates = new ArrayList<Object>(versions.size());
 
     long minVersion = Long.MAX_VALUE;
-    
+
+    // TODO: get this from cache instead of rebuilding?
+    UpdateLog.RecentUpdates recentUpdates = ulog.getRecentUpdates();
     try {
       for (String versionStr : versions) {
         long version = Long.parseLong(versionStr);
