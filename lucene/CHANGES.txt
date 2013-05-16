@@ -34,6 +34,10 @@ Bug Fixes
 
 * LUCENE-4974: CommitIndexTask was broken if no params were set. (Shai Erera)
 
+* LUCENE-4986: Fixed case where a newly opened near-real-time reader
+  fails to reflect a delete from IndexWriter.tryDeleteDocument (Reg,
+  Mike McCandless)
+
 ======================= Lucene 4.3.0 =======================
 
 Changes in backwards compatibility policy
