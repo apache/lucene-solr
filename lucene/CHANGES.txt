@@ -29,6 +29,9 @@ Bug Fixes
   the child query has no hits, more aggressively catch cases where childQuery
   incorrectly matches parent documents (Mike McCandless)
 
+* LUCENE-4970: Fix boost value of rewritten NGramPhraseQuery.
+  (Shingo Sasaki via Adrien Grand)
+
 ======================= Lucene 4.3.0 =======================
 
 Changes in backwards compatibility policy
