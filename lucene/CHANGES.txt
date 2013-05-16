@@ -39,10 +39,13 @@ Bug Fixes
   Mike McCandless)
 
 * LUCENE-4991: Fix handling of synonyms in classic QueryParser.getFieldQuery for
-  terms not separated by whitespace. PositionIncrementAttribute was ignored, so with 
-  default AND synonyms wrongly became mandatory clauses, and with OR, the 
+  terms not separated by whitespace. PositionIncrementAttribute was ignored, so with
+  default AND synonyms wrongly became mandatory clauses, and with OR, the
   coordination factor was wrong.  (李威, Robert Muir)
-  
+
+* LUCENE-4994: Fix PatternKeywordMarkerFilter to have public constructor.
+  (Uwe Schindler)
+
 ======================= Lucene 4.3.0 =======================
 
 Changes in backwards compatibility policy
