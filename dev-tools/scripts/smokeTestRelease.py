@@ -428,7 +428,9 @@ def testChangesText(dir, version, project):
       fullPath = '%s/CHANGES.txt' % root
       #print 'CHECK %s' % fullPath
       checkChangesContent(open(fullPath, encoding='UTF-8').read(), version, fullPath, project, False)
-      
+
+reChangesSectionHREF = re.compile('<a id="(.*?)".*?>(.*?)</a>', re.IGNORECASE)
+
 def checkChangesContent(s, version, name, project, isHTML):
 
   if isHTML and s.find('Release %s' % version) == -1:
@@ -447,6 +449,23 @@ def checkChangesContent(s, version, name, project, isHTML):
       # benchmark never seems to include release info:
       if name.find('/benchmark/') == -1:
         raise RuntimeError('did not see "%s" in %s' % (sub, name))
+
+  if isHTML:
+    # Make sure a section only appears once under each release:
+    seenIDs = set()
+    seenText = set()
+
+    release = None
+    for id, text in reChangesSectionHREF.findall(s):
+      if text.lower().startswith('release '):
+        release = text[8:].strip()
+        seenText.clear()
+      if id in seenIDs:
+        raise RuntimeError('%s has duplicate section "%s" under release "%s"' % (name, text, release))
+      seenIDs.add(id)
+      if text in seenText:
+        raise RuntimeError('%s has duplicate section "%s" under release "%s"' % (name, text, release))
+      seenText.add(text)
 
 reUnixPath = re.compile(r'\b[a-zA-Z_]+=(?:"(?:\\"|[^"])*"' + '|(?:\\\\.|[^"\'\\s])*' + r"|'(?:\\'|[^'])*')" \
                         + r'|(/(?:\\.|[^"\'\s])*)' \
