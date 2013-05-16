@@ -28,9 +28,10 @@ import org.apache.lucene.analysis.tokenattributes.PositionIncrementAttribute;
  * The default positionIncrement value is zero.
  * @deprecated (4.4) PositionFilter makes {@link TokenStream} graphs inconsistent
  *             which can cause highlighting bugs. Its main use-case being to make
- *             QueryParsers generate boolean queries instead of phrase
- *             queries, it is now advised to use org.apache.lucene.queryparser.classic.QueryParser.setEnablePositionIncrements()
- *             (for simple cases) or to override QueryParser.newFieldQuery.
+ *             <a href="{@docRoot}/../queryparser/overview-summary.html">QueryParser</a>
+ *             generate boolean queries instead of phrase queries, it is now advised to use
+ *             {@code QueryParser.setAutoGeneratePhraseQueries(boolean)}
+ *             (for simple cases) or to override {@code QueryParser.newFieldQuery}.
  */
 @Deprecated
 public final class PositionFilter extends TokenFilter {
