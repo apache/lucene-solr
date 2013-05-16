@@ -24,6 +24,11 @@ Bug Fixes
   toString() was changed to better reflect the reader structure.
   (Mike McCandless, Uwe Schindler)
 
+* LUCENE-4968: Fixed ToParentBlockJoinQuery/Collector: correctly handle parent
+  hits that had no child matches, don't throw IllegalArgumentEx when
+  the child query has no hits, more aggressively catch cases where childQuery
+  incorrectly matches parent documents (Mike McCandless)
+
 ======================= Lucene 4.3.0 =======================
 
 Changes in backwards compatibility policy
