@@ -236,7 +236,7 @@ public abstract class QueryParserTestBase extends LuceneTestCase {
   }
 
   //individual CJK chars as terms, like StandardAnalyzer
-  private class SimpleCJKTokenizer extends Tokenizer {
+  protected static class SimpleCJKTokenizer extends Tokenizer {
     private CharTermAttribute termAtt = addAttribute(CharTermAttribute.class);
 
     public SimpleCJKTokenizer(Reader input) {
@@ -244,7 +244,7 @@ public abstract class QueryParserTestBase extends LuceneTestCase {
     }
 
     @Override
-    public boolean incrementToken() throws IOException {
+    public final boolean incrementToken() throws IOException {
       int ch = input.read();
       if (ch < 0)
         return false;
@@ -1088,7 +1088,7 @@ public abstract class QueryParserTestBase extends LuceneTestCase {
   /**
    * adds synonym of "dog" for "dogs".
    */
-  private class MockSynonymFilter extends TokenFilter {
+  protected static class MockSynonymFilter extends TokenFilter {
     CharTermAttribute termAtt = addAttribute(CharTermAttribute.class);
     PositionIncrementAttribute posIncAtt = addAttribute(PositionIncrementAttribute.class);
     boolean addSynonym = false;
