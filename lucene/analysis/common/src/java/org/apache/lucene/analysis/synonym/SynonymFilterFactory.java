@@ -83,6 +83,7 @@ public class SynonymFilterFactory extends TokenFilterFactory implements Resource
    * @deprecated Method exists only for testing 4x, will be removed in 5.0
    * @lucene.internal
    */
+  @Deprecated
   TokenFilterFactory getDelegator() {
     return delegator;
   }

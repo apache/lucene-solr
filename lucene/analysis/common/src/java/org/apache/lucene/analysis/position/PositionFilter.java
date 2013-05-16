@@ -22,17 +22,15 @@ import java.io.IOException;
 import org.apache.lucene.analysis.TokenFilter;
 import org.apache.lucene.analysis.TokenStream;
 import org.apache.lucene.analysis.tokenattributes.PositionIncrementAttribute;
-import org.apache.lucene.queryparser.classic.QueryParser;
 
 /** Set the positionIncrement of all tokens to the "positionIncrement",
  * except the first return token which retains its original positionIncrement value.
  * The default positionIncrement value is zero.
  * @deprecated (4.4) PositionFilter makes {@link TokenStream} graphs inconsistent
  *             which can cause highlighting bugs. Its main use-case being to make
- *             {@link QueryParser} generate boolean queries instead of phrase
- *             queries, it is now advised to use
- *             {@link QueryParser#setAutoGeneratePhraseQueries(boolean) QueryParser.setAutoGeneratePhraseQueries(false)}
- *             (for simple cases) or to override {@link QueryParser#newFieldQuery}.
+ *             QueryParsers generate boolean queries instead of phrase
+ *             queries, it is now advised to use org.apache.lucene.queryparser.classic.QueryParser.setEnablePositionIncrements()
+ *             (for simple cases) or to override QueryParser.newFieldQuery.
  */
 @Deprecated
 public final class PositionFilter extends TokenFilter {
