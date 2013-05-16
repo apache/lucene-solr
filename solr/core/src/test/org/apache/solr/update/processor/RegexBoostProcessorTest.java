@@ -24,6 +24,7 @@ import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.response.SolrQueryResponse;
 import org.apache.solr.servlet.SolrRequestParsers;
 import org.apache.solr.update.AddUpdateCommand;
+import org.junit.AfterClass;
 import org.junit.Before;
 import org.junit.BeforeClass;
 import org.junit.Test;
@@ -49,6 +50,15 @@ public class RegexBoostProcessorTest extends SolrTestCaseJ4 {
     factory = new RegexpBoostProcessorFactory();
     factory.init(parameters.toNamedList());
     reProcessor = (RegexpBoostProcessor) factory.getInstance(req, resp, null);
+  }
+  
+  @AfterClass
+  public static void tearDownAfterClass() throws Exception {
+    // null static members for gc
+    reProcessor = null;
+    _parser = null;
+    parameters = null;
+    factory = null;
   }
 
   @Before
