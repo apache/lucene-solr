@@ -1630,21 +1630,43 @@ ${tests-output}/junit4-*.suites     - per-JVM executed suites
     </sequential>
   </macrodef>
 
-  <target name="-ecj-javadoc-lint" depends="-ecj-javadoc-lint-src,-ecj-javadoc-lint-tests"/>
+  <!-- ECJ Javadoc linting: -->
+  
+  <condition property="ecj-javadoc-lint.supported">
+    <not><equals arg1="${build.java.runtime}" arg2="1.8"/></not>
+  </condition>
 
-  <target name="-ecj-javadoc-lint-src" depends="-ecj-resolve">
+  <condition property="ecj-javadoc-lint-tests.supported">
+    <and>
+      <isset property="ecj-javadoc-lint.supported"/>
+      <isset property="module.has.tests"/>
+    </and>
+  </condition>
+
+  <target name="-ecj-javadoc-lint-unsupported" unless="ecj-javadoc-lint.supported">
+    <fail message="Linting documentation with ECJ is not supported on this Java version (${build.java.runtime}).">
+      <condition>
+        <not><isset property="is.jenkins.build"/></not>
+      </condition>
+    </fail>
+    <echo level="warning" message="WARN: Linting documentation with ECJ is not supported on this Java version (${build.java.runtime}). NOTHING DONE!"/>
+  </target>
+
+  <target name="-ecj-javadoc-lint" depends="-ecj-javadoc-lint-unsupported,-ecj-javadoc-lint-src,-ecj-javadoc-lint-tests"/>
+
+  <target name="-ecj-javadoc-lint-src" depends="-ecj-resolve" if="ecj-javadoc-lint.supported">
     <ecj-macro srcdir="${src.dir}" configuration="${common.dir}/tools/javadoc/ecj.javadocs.prefs">
       <classpath refid="classpath"/>
     </ecj-macro>
   </target>
 
-  <target name="-ecj-javadoc-lint-tests" depends="-ecj-resolve" if="module.has.tests">
+  <target name="-ecj-javadoc-lint-tests" depends="-ecj-resolve" if="ecj-javadoc-lint-tests.supported">
     <ecj-macro srcdir="${tests.src.dir}" configuration="${common.dir}/tools/javadoc/ecj.javadocs.prefs">
       <classpath refid="test.classpath"/>
     </ecj-macro>
   </target>
   
-  <target name="-ecj-resolve" unless="ecj.loaded" depends="ivy-availability-check,ivy-configure">
+  <target name="-ecj-resolve" unless="ecj.loaded" depends="ivy-availability-check,ivy-configure" if="ecj-javadoc-lint.supported">
     <ivy:cachepath organisation="org.eclipse.jdt.core.compiler" module="ecj" revision="3.7.2"
      inline="true" conf="master" type="jar" pathid="ecj.classpath" />
     <componentdef classname="org.eclipse.jdt.core.JDTCompilerAdapter"
