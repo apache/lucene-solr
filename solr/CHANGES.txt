@@ -70,6 +70,9 @@ Bug Fixes
 * SOLR-4741: Deleting a collection should set DELETE_DATA_DIR to true.
   (Mark Miller)
 
+* SOLR-4752: There are some minor bugs in the Collections API parameter
+  validation. (Mark Miller)
+
 Other Changes
 ----------------------
 
