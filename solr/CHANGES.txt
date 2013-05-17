@@ -67,6 +67,9 @@ Bug Fixes
 * SOLR-4751: Fix replication problem of files in sub directory of conf directory.
   (Minoru Osuka via Koji)
 
+* SOLR-4741: Deleting a collection should set DELETE_DATA_DIR to true.
+  (Mark Miller)
+
 Other Changes
 ----------------------
 
