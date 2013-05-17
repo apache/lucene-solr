@@ -85,14 +85,8 @@ New Features
 Bug Fixes
 ----------------------
 
-* SOLR-4741: Deleting a collection should set DELETE_DATA_DIR to true. 
-  (Mark Miller)
-  
-* SOLR-4333: edismax parser to not double-escape colons if already escaped by 
+* SOLR-4333: edismax parser to not double-escape colons if already escaped by
   the client application (James Dyer, Robert J. van der Boon)
-
-* SOLR-4752: There are some minor bugs in the Collections API parameter
-  validation. (Mark Miller)
 
 * SOLR-4776: Solrj doesn't return "between" count in range facets
   (Philip K. Warren via shalin)
@@ -105,13 +99,6 @@ Bug Fixes
   
 * SOLR-4790: Throw an error if a core has the same name as another core, both old and
   new style solr.xml
-
-* SOLR-4563: RSS DIH-example not working (janhoy)
-
-* SOLR-4796: zkcli.sh should honor JAVA_HOME (Roman Shaposhnik via Mark Miller)
-
-* SOLR-4734: Leader election fails with an NPE if there is no UpdateLog.
- (Mark Miller, Alexander Eibner)
 
 Other Changes
 ----------------------
@@ -187,6 +174,19 @@ Bug Fixes
 
 * SOLR-4751: Fix replication problem of files in sub directory of conf directory.
   (Minoru Osuka via Koji)
+
+* SOLR-4741: Deleting a collection should set DELETE_DATA_DIR to true.
+  (Mark Miller)
+
+* SOLR-4752: There are some minor bugs in the Collections API parameter
+  validation. (Mark Miller)
+
+* SOLR-4563: RSS DIH-example not working (janhoy)
+
+* SOLR-4796: zkcli.sh should honor JAVA_HOME (Roman Shaposhnik via Mark Miller)
+
+* SOLR-4734: Leader election fails with an NPE if there is no UpdateLog.
+ (Mark Miller, Alexander Eibner)
 
 Other Changes
 ----------------------
