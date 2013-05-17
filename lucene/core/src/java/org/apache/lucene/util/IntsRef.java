@@ -56,6 +56,13 @@ public final class IntsRef implements Comparable<IntsRef>, Cloneable {
     assert isValid();
   }
 
+  /**
+   * Returns a shallow clone of this instance (the underlying ints are
+   * <b>not</b> copied and will be shared by both the returned object and this
+   * object.
+   * 
+   * @see #deepCopyOf
+   */  
   @Override
   public IntsRef clone() {
     return new IntsRef(ints, offset, length);
