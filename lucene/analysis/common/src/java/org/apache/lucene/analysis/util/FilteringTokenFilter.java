@@ -29,8 +29,9 @@ import org.apache.lucene.util.Version;
  * You have to implement {@link #accept} and return a boolean if the current
  * token should be preserved. {@link #incrementToken} uses this method
  * to decide if a token should be passed to the caller.
- * <p><a name="version" />As of Lucene 4.4, an {@link IllegalArgumentException}
- * is thrown when trying to disable position increments when filtering terms.
+ * <p><a name="lucene_match_version" />As of Lucene 4.4, an
+ * {@link IllegalArgumentException} is thrown when trying to disable position
+ * increments when filtering terms.
  */
 public abstract class FilteringTokenFilter extends TokenFilter {
 
@@ -47,7 +48,7 @@ public abstract class FilteringTokenFilter extends TokenFilter {
 
   /**
    * Create a new {@link FilteringTokenFilter}.
-   * @param version                  the Lucene match <a href="#version">version</a>
+   * @param version                  the <a href="#lucene_match_version">Lucene match version</a>
    * @param enablePositionIncrements whether to increment position increments when filtering out terms
    * @param input                    the input to consume
    * @deprecated enablePositionIncrements=false is not supported anymore as of Lucene 4.4
