@@ -65,7 +65,7 @@ class FindHyperlinks(HTMLParser):
             pass
           else:
             self.printFile()
-            print('    WARNING: anchor "%s" appears more than once' % name)
+            raise RuntimeError('anchor "%s" appears more than once' % name)
         else:
           self.anchors.add(name)
       elif href is not None:
