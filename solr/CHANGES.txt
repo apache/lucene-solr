@@ -184,7 +184,9 @@ Bug Fixes
 * SOLR-4829: Fix transaction log leaks (a failure to clean up some old logs)
   on a shard leader, or when unexpected exceptions are thrown during log
   recovery.  (Steven Bower, Mark Miller, yonik)
-  
+
+* SOLR-4751: Fix replication problem of files in sub directory of conf directory.
+  (Minoru Osuka via Koji)
 
 Other Changes
 ----------------------
