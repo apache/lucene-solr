@@ -73,6 +73,8 @@ Bug Fixes
 * SOLR-4752: There are some minor bugs in the Collections API parameter
   validation. (Mark Miller)
 
+* SOLR-4563: RSS DIH-example not working (janhoy)
+
 Other Changes
 ----------------------
 
