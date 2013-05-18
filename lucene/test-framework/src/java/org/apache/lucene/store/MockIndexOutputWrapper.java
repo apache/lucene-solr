@@ -55,14 +55,14 @@ public class MockIndexOutputWrapper extends IndexOutput {
     long realUsage = 0;
 
     // Enforce disk full:
-    if (dir.maxSize != 0 && freeSpace < len) {
+    if (dir.maxSize != 0 && freeSpace <= len) {
       // Compute the real disk free.  This will greatly slow
       // down our test but makes it more accurate:
       realUsage = dir.getRecomputedActualSizeInBytes();
       freeSpace = dir.maxSize - realUsage;
     }
 
-    if (dir.maxSize != 0 && freeSpace < len) {
+    if (dir.maxSize != 0 && freeSpace <= len) {
       if (freeSpace > 0) {
         realUsage += freeSpace;
         if (b != null) {
