@@ -85,9 +85,9 @@ public class NamedListTest extends LuceneTestCase {
     assertTrue(nltest instanceof NamedList);
     Integer int1test = (Integer) nl.findRecursive("key2", "k2int1");
     assertEquals(int1test, (Integer) 5);
-    int int2test = (int) nl.findRecursive("key2", "k2int2");
+    int int2test = (Integer) nl.findRecursive("key2", "k2int2");
     assertEquals(int2test, 7);
-    int int3test = (int) nl.findRecursive("key2", "k2int3");
+    int int3test = (Integer) nl.findRecursive("key2", "k2int3");
     assertEquals(int3test, 48);
   }
 }
