@@ -82,6 +82,8 @@ New Features
 
 * SOLR-4234: Add support for binary files in ZooKeeper. (Eric Pugh via Mark Miller)
 
+* SOLR-4048: Add findRecursive method to NamedList. (Shawn Heisey)
+
 Bug Fixes
 ----------------------
 
