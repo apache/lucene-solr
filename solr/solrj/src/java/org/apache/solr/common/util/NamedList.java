@@ -17,8 +17,11 @@
 
 package org.apache.solr.common.util;
 
-import java.util.*;
 import java.io.Serializable;
+import java.util.ArrayList;
+import java.util.Iterator;
+import java.util.List;
+import java.util.Map;
 
 
 
@@ -250,6 +253,47 @@ public class NamedList<T> implements Cloneable, Serializable, Iterable<Map.Entry
       }
     }
     return result;
+  }
+
+  /**
+   * Recursively parses the NamedList structure to arrive at a
+   * specific element.  As you descend the NamedList tree, the
+   * last element can be any type, including NamedList, but
+   * the previous elements MUST be NamedList ojects themselves.
+   * This method is particularly useful for parsing the response
+   * from Solr's /admin/mbeans handler. 
+   * 
+   * Explicit casts are recommended.
+   * Usage examples:
+   *
+   * String coreName = (String) response.findRecursive(
+   * "solr-mbeans", "CORE", "core", "stats", "coreName");
+   * long numDoc = (long) response.findRecursive(
+   * "solr-mbeans", "CORE", "searcher", "stats", "numDocs");
+   *
+   * @param args One or more strings specifying the tree to navigate.
+   * @return the last entry in the tree, null if not found.
+   */
+  public T findRecursive(String... args) {
+    NamedList<T> list = null;
+    T value = null;
+    for (String key : args) {
+      /* First pass: this list.  Later passes: previous value. */
+      if (list == null) {
+        list = this;
+      }
+      else
+      {
+        if (NamedList.class.isInstance(value)) {
+          list = (NamedList<T>) value;
+        } else {
+          value = null;
+          break;
+        }
+      }
+      value = list.get(key);
+    }
+    return value;
   }
 
   @Override
