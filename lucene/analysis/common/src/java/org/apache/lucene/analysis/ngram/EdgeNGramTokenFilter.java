@@ -24,6 +24,7 @@ import org.apache.lucene.analysis.TokenStream;
 import org.apache.lucene.analysis.tokenattributes.CharTermAttribute;
 import org.apache.lucene.analysis.tokenattributes.OffsetAttribute;
 import org.apache.lucene.analysis.tokenattributes.PositionIncrementAttribute;
+import org.apache.lucene.analysis.tokenattributes.PositionLengthAttribute;
 import org.apache.lucene.util.Version;
 
 /**
@@ -43,11 +44,13 @@ public final class EdgeNGramTokenFilter extends TokenFilter {
   private int tokStart;
   private int tokEnd; // only used if the length changed before this filter
   private int savePosIncr;
+  private int savePosLen;
   private boolean isFirstToken = true;
   
   private final CharTermAttribute termAtt = addAttribute(CharTermAttribute.class);
   private final OffsetAttribute offsetAtt = addAttribute(OffsetAttribute.class);
   private final PositionIncrementAttribute posIncrAtt = addAttribute(PositionIncrementAttribute.class);
+  private final PositionLengthAttribute posLenAtt = addAttribute(PositionLengthAttribute.class);
 
   /**
    * Creates EdgeNGramTokenFilter that can generate n-grams in the sizes of the given range
@@ -88,7 +91,8 @@ public final class EdgeNGramTokenFilter extends TokenFilter {
           curGramSize = minGram;
           tokStart = offsetAtt.startOffset();
           tokEnd = offsetAtt.endOffset();
-          savePosIncr = posIncrAtt.getPositionIncrement();
+          savePosIncr += posIncrAtt.getPositionIncrement();
+          savePosLen = posLenAtt.getPositionLength();
         }
       }
       if (curGramSize <= maxGram) {         // if we have hit the end of our n-gram size range, quit
@@ -98,13 +102,12 @@ public final class EdgeNGramTokenFilter extends TokenFilter {
           offsetAtt.setOffset(tokStart, tokEnd);
           // first ngram gets increment, others don't
           if (curGramSize == minGram) {
-            //  Leave the first token position increment at the cleared-attribute value of 1
-            if ( ! isFirstToken) {
-              posIncrAtt.setPositionIncrement(savePosIncr);
-            }
+            posIncrAtt.setPositionIncrement(savePosIncr);
+            savePosIncr = 0;
           } else {
             posIncrAtt.setPositionIncrement(0);
           }
+          posLenAtt.setPositionLength(savePosLen);
           termAtt.copyBuffer(curTermBuffer, 0, curGramSize);
           curGramSize++;
           isFirstToken = false;
@@ -120,5 +123,6 @@ public final class EdgeNGramTokenFilter extends TokenFilter {
     super.reset();
     curTermBuffer = null;
     isFirstToken = true;
+    savePosIncr = 0;
   }
 }

@@ -29,8 +29,11 @@ import org.apache.lucene.analysis.TokenFilter;
 import org.apache.lucene.analysis.TokenStream;
 import org.apache.lucene.analysis.Tokenizer;
 import org.apache.lucene.analysis.core.KeywordTokenizer;
+import org.apache.lucene.analysis.core.LetterTokenizer;
 import org.apache.lucene.analysis.core.WhitespaceTokenizer;
+import org.apache.lucene.analysis.shingle.ShingleFilter;
 import org.apache.lucene.analysis.tokenattributes.PositionIncrementAttribute;
+import org.apache.lucene.util.Version;
 
 /**
  * Tests {@link EdgeNGramTokenFilter} for correctness.
@@ -186,5 +189,20 @@ public class EdgeNGramTokenFilterTest extends BaseTokenStreamTestCase {
       }    
     };
     checkAnalysisConsistency(random, a, random.nextBoolean(), "");
+  }
+
+  public void testGraphs() throws IOException {
+    TokenStream tk = new LetterTokenizer(Version.LUCENE_44, new StringReader("abc d efgh ij klmno p q"));
+    tk = new ShingleFilter(tk);
+    tk = new EdgeNGramTokenFilter(Version.LUCENE_44, tk, 7, 10);
+    tk.reset();
+    assertTokenStreamContents(tk,
+        new String[] { "efgh ij", "ij klmn", "ij klmno", "klmno p" },
+        new int[]    { 6,11,11,14 },
+        new int[]    { 13,19,19,21 },
+        new int[]    { 3,1,0,1 },
+        new int[]    { 2,2,2,2 },
+        23
+    );
   }
 }
