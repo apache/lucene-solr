@@ -58,7 +58,7 @@ public class StandardQueryConfigHandler extends QueryConfigHandler {
     final public static ConfigurationKey<Boolean> ENABLE_POSITION_INCREMENTS = ConfigurationKey.newInstance();
     
     /**
-     * Key used to set whether expanded terms should be expanded
+     * Key used to set whether expanded terms should be lower-cased
      * 
      * @see StandardQueryParser#setLowercaseExpandedTerms(boolean)
      * @see StandardQueryParser#getLowercaseExpandedTerms()
