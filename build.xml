@@ -268,6 +268,7 @@
   <property name="fakeRelease" location="lucene/build/fakeRelease"/>
   <property name="fakeReleaseTmp" location="lucene/build/fakeReleaseTmp"/>
   <property name="fakeReleaseVersion" value="4.4.0"/> <!-- *not* -SNAPSHOT, the real version -->
+  <property name="smokeTestRelease.testArgs" value=""/>
 
   <target name="-load-env">
      <!-- load the properties only here, so not on every invocation /usr/bin/env is called: -->
@@ -311,6 +312,8 @@
      <arg value="${fakeReleaseVersion}"/>
      <arg file="${fakeReleaseTmp}"/>
      <arg value="false"/>
+     <arg value="-testArgs"/>
+     <arg value="${smokeTestRelease.testArgs}"/>
      <env key="JAVA6_HOME" file="${JAVA6_HOME}"/>
      <env key="JAVA7_HOME" file="${JAVA7_HOME}"/>
    </exec>
