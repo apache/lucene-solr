@@ -23,8 +23,6 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 
-
-
 /**
  * A simple container class for modeling an ordered list of name/value pairs.
  *
@@ -50,16 +48,16 @@ import java.util.Map;
  * or simply use a regular {@link Map}
  * </p>
  *
- *
  */
 public class NamedList<T> implements Cloneable, Serializable, Iterable<Map.Entry<String,T>> {
+
+  private static final long serialVersionUID = 1957981902839867821L;
   protected final List<Object> nvPairs;
 
   /** Creates an empty instance */
   public NamedList() {
     nvPairs = new ArrayList<Object>();
   }
-
 
   /**
    * Creates a NamedList instance containing the "name,value" pairs contained in the
@@ -83,8 +81,8 @@ public class NamedList<T> implements Cloneable, Serializable, Iterable<Map.Entry
    * pairwise names/values.
    *
    * <p>
-   * When using this constructor, runtime typesafety is only guaranteed if the all
-   * even numbered elements of the input list are of type "T".
+   * When using this constructor, runtime type safety is only guaranteed if
+   * all even numbered elements of the input list are of type "T".
    * </p>
    *
    * @param nameValuePairs underlying List which should be used to implement a NamedList
@@ -156,6 +154,7 @@ public class NamedList<T> implements Cloneable, Serializable, Iterable<Map.Entry
 
   /**
    * Modifies the value of the pair at the specified index.
+   *
    * @return the value that used to be at index
    */
   public T setVal(int idx, T val) {
@@ -168,6 +167,7 @@ public class NamedList<T> implements Cloneable, Serializable, Iterable<Map.Entry
 
   /**
    * Removes the name/value pair at the specified index.
+   *
    * @return the value at the index removed
    */
   public T remove(int idx) {
@@ -206,10 +206,11 @@ public class NamedList<T> implements Cloneable, Serializable, Iterable<Map.Entry
    * NOTE: this runs in linear time (it scans starting at the
    * beginning of the list until it finds the first pair with
    * the specified name).
+   *
    * @return null if not found or if the value stored was null.
    * @see #indexOf
    * @see #get(String,int)
-   * 
+   *
    */
   public T get(String name) {
     return get(name,0);
@@ -222,6 +223,7 @@ public class NamedList<T> implements Cloneable, Serializable, Iterable<Map.Entry
    * NOTE: this runs in linear time (it scans starting at the
    * specified position until it finds the first pair with
    * the specified name).
+   *
    * @return null if not found or if the value stored was null.
    * @see #indexOf
    */
@@ -240,6 +242,7 @@ public class NamedList<T> implements Cloneable, Serializable, Iterable<Map.Entry
 
   /**
    * Gets the values for the the specified name
+   *
    * @param name Name
    * @return List of values
    */
@@ -256,42 +259,66 @@ public class NamedList<T> implements Cloneable, Serializable, Iterable<Map.Entry
   }
 
   /**
-   * Recursively parses the NamedList structure to arrive at a
-   * specific element.  As you descend the NamedList tree, the
-   * last element can be any type, including NamedList, but
-   * the previous elements MUST be NamedList ojects themselves.
-   * This method is particularly useful for parsing the response
-   * from Solr's /admin/mbeans handler. 
+   * Recursively parses the NamedList structure to arrive at a specific element.
+   * As you descend the NamedList tree, the last element can be any type,
+   * including NamedList, but the previous elements MUST be NamedList objects
+   * themselves. A null value is returned if the indicated hierarchy doesn't
+   * exist, but NamedList allows null values so that could be the actual value
+   * at the end of the path.
    * 
-   * Explicit casts are recommended.
+   * This method is particularly useful for parsing the response from Solr's
+   * /admin/mbeans handler, but it also works for any complex structure.
+   * 
+   * Explicitly casting the return value is recommended. An even safer option is
+   * to accept the return value as an object and then check its type.
+   * 
    * Usage examples:
-   *
-   * String coreName = (String) response.findRecursive(
-   * "solr-mbeans", "CORE", "core", "stats", "coreName");
-   * long numDoc = (long) response.findRecursive(
-   * "solr-mbeans", "CORE", "searcher", "stats", "numDocs");
-   *
-   * @param args One or more strings specifying the tree to navigate.
-   * @return the last entry in the tree, null if not found.
+   * 
+   * String coreName = (String) response.findRecursive
+   * ("solr-mbeans", "CORE", "core", "stats", "coreName");
+   * long numDoc = (long) response.findRecursive
+   * ("solr-mbeans", "CORE", "searcher", "stats", "numDocs");
+   * 
+   * @param args
+   *          One or more strings specifying the tree to navigate.
+   * @return the last entry in the given path hierarchy, null if not found.
    */
-  public T findRecursive(String... args) {
-    NamedList<T> list = null;
-    T value = null;
-    for (String key : args) {
-      /* First pass: this list.  Later passes: previous value. */
-      if (list == null) {
-        list = this;
-      }
-      else
-      {
-        if (NamedList.class.isInstance(value)) {
-          list = (NamedList<T>) value;
+  public Object findRecursive(String... args) {
+    NamedList<?> currentList = null;
+    Object value = null;
+    for (int i = 0; i < args.length; i++) {
+      String key = args[i];
+      /*
+       * The first time through the loop, the current list is null, so we assign
+       * it to this list. Then we retrieve the first key from this list and
+       * assign it to value.
+       * 
+       * On the next loop, we check whether the retrieved value is a NamedList.
+       * If it is, then we drop down to that NamedList, grab the value of the
+       * next key, and start the loop over. If it is not a NamedList, then we
+       * assign the value to null and break out of the loop.
+       * 
+       * Assigning the value to null and then breaking out of the loop seems
+       * like the wrong thing to do, but there's a very simple reason that it
+       * works: If we have reached the last key, then the loop ends naturally
+       * after we retrieve the value, and that code is never executed.
+       */
+      if (currentList == null) {
+        currentList = this;
+      } else {
+        if (value instanceof NamedList) {
+          currentList = (NamedList<?>) value;
         } else {
           value = null;
           break;
         }
       }
-      value = list.get(key);
+      /*
+       * We do not need to do a null check on currentList for the following
+       * assignment. The instanceof check above will fail if the current list is
+       * null, and if that happens, the loop will end before this point.
+       */
+      value = currentList.get(key, 0);
     }
     return value;
   }
@@ -313,12 +340,12 @@ public class NamedList<T> implements Cloneable, Serializable, Iterable<Map.Entry
   }
 
   /**
-   *
+   * 
    * Helper class implementing Map.Entry&lt;String, T&gt; to store the key-value
-   * relationship in NamedList (the keys of which are String-s) 
+   * relationship in NamedList (the keys of which are String-s)
    */
-  public static final class NamedListEntry<T> implements Map.Entry<String, T> {
-
+  public static final class NamedListEntry<T> implements Map.Entry<String,T> {
+    
     public NamedListEntry() {
 
     }
@@ -335,7 +362,7 @@ public class NamedList<T> implements Cloneable, Serializable, Iterable<Map.Entry
 
     @Override
     public T getValue() {
-      return  value;
+      return value;
     }
 
     @Override
@@ -354,8 +381,8 @@ public class NamedList<T> implements Cloneable, Serializable, Iterable<Map.Entry
    * Iterates over the Map and sequentially adds it's key/value pairs
    */
   public boolean addAll(Map<String,T> args) {
-    for( Map.Entry<String, T> entry : args.entrySet() ) {
-      add( entry.getKey(), entry.getValue() );
+    for (Map.Entry<String, T> entry : args.entrySet() ) {
+      add(entry.getKey(), entry.getValue());
     }
     return args.size()>0;
   }
@@ -375,7 +402,6 @@ public class NamedList<T> implements Cloneable, Serializable, Iterable<Map.Entry
     newList.addAll(nvPairs);
     return new NamedList<T>(newList);
   }
-
 
   //----------------------------------------------------------------------------
   // Iterable interface
@@ -408,14 +434,12 @@ public class NamedList<T> implements Cloneable, Serializable, Iterable<Map.Entry
           }
 
           @Override
-          @SuppressWarnings("unchecked")
           public T getValue() {
             return list.getVal( index );
           }
 
           @Override
-          public String toString()
-          {
+          public String toString() {
             return getKey()+"="+getValue();
           }
 
@@ -435,7 +459,7 @@ public class NamedList<T> implements Cloneable, Serializable, Iterable<Map.Entry
     return iter;
   }
 
-  /** 
+  /**
    * NOTE: this runs in linear time (it scans starting at the
    * beginning of the list until it finds the first pair with
    * the specified name).
@@ -445,7 +469,6 @@ public class NamedList<T> implements Cloneable, Serializable, Iterable<Map.Entry
     if(idx != -1) return remove(idx);
     return null;
   }
-
 
   public void clear() {
     nvPairs.clear();
@@ -459,7 +482,7 @@ public class NamedList<T> implements Cloneable, Serializable, Iterable<Map.Entry
   @Override
   public boolean equals(Object obj) {
     if (!(obj instanceof NamedList)) return false;
-    NamedList nl = (NamedList) obj;
+    NamedList<?> nl = (NamedList<?>) obj;
     return this.nvPairs.equals(nl.nvPairs);
   }
 }
