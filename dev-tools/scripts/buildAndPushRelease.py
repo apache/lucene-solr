@@ -310,7 +310,7 @@ def main():
   if smokeTmpDir is not None:
     import smokeTestRelease
     smokeTestRelease.DEBUG = False
-    smokeTestRelease.smokeTest(url, rev, version, smokeTmpDir, gpgKeyID is not None)
+    smokeTestRelease.smokeTest(url, rev, version, smokeTmpDir, gpgKeyID is not None, '')
 
 if __name__ == '__main__':
   try:
