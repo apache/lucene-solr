@@ -274,7 +274,6 @@ abstract class DocumentsWriterPerThreadPool implements Cloneable {
    *         given ord.
    */
   ThreadState getThreadState(int ord) {
-    assert ord < numThreadStatesActive;
     return threadStates[ord];
   }
 

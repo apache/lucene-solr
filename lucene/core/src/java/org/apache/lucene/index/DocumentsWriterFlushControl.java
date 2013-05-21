@@ -240,6 +240,7 @@ final class DocumentsWriterFlushControl  {
   }
   
   public synchronized void waitForFlush() {
+    assert !Thread.holdsLock(this.documentsWriter.indexWriter) : "IW lock should never be hold when waiting on flush";
     while (flushingWriters.size() != 0) {
       try {
         this.wait();
@@ -606,9 +607,10 @@ final class DocumentsWriterFlushControl  {
       for (DocumentsWriterPerThread dwpt : flushQueue) {
         try {
           dwpt.abort();
-          doAfterFlush(dwpt);
         } catch (Throwable ex) {
           // ignore - keep on aborting the flush queue
+        } finally {
+          doAfterFlush(dwpt);
         }
       }
       for (BlockedFlush blockedFlush : blockedFlushes) {
@@ -616,9 +618,10 @@ final class DocumentsWriterFlushControl  {
           flushingWriters
               .put(blockedFlush.dwpt, Long.valueOf(blockedFlush.bytes));
           blockedFlush.dwpt.abort();
-          doAfterFlush(blockedFlush.dwpt);
         } catch (Throwable ex) {
           // ignore - keep on aborting the blocked queue
+        } finally {
+          doAfterFlush(blockedFlush.dwpt);
         }
       }
     } finally {
