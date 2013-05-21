@@ -102,6 +102,9 @@ Bug Fixes
 * SOLR-4790: Throw an error if a core has the same name as another core, both old and
   new style solr.xml
 
+* SOLR-4842: Fix facet.field local params from affecting other facet.field's.
+  (ehatcher, hossman)
+
 Other Changes
 ----------------------
 
