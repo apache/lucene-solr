@@ -362,7 +362,7 @@ def checkSigs(project, urlString, version, tmpDir, isSigned):
     shutil.rmtree(gpgHomeDir)
   os.makedirs(gpgHomeDir, 0o700)
   run('gpg --homedir %s --import %s' % (gpgHomeDir, keysFile),
-      '%s/%s.gpg.import.log 2>&1' % (tmpDir, project))
+      '%s/%s.gpg.import.log' % (tmpDir, project))
 
   if mavenURL is None:
     raise RuntimeError('%s is missing maven' % project)
@@ -395,7 +395,7 @@ def checkSigs(project, urlString, version, tmpDir, isSigned):
 
       # Test trust (this is done with the real users config)
       run('gpg --import %s' % (keysFile),
-          '%s/%s.gpg.trust.import.log 2>&1' % (tmpDir, project))
+          '%s/%s.gpg.trust.import.log' % (tmpDir, project))
       print('    verify trust')
       logFile = '%s/%s.%s.gpg.trust.log' % (tmpDir, project, artifact)
       run('gpg --verify %s %s' % (sigFile, artifactFile), logFile)
