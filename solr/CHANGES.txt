@@ -79,6 +79,9 @@ Bug Fixes
 
 * SOLR-4734: Leader election fails with an NPE if there is no UpdateLog.
  (Mark Miller, Alexander Eibner)
+ 
+* SOLR-4842: Fix facet.field local params from affecting other facet.field's.
+  (ehatcher, hossman) 
 
 Other Changes
 ----------------------
