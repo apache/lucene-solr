@@ -206,6 +206,11 @@ Bug Fixes
   default AND synonyms wrongly became mandatory clauses, and with OR, the
   coordination factor was wrong.  (李威, Robert Muir)
 
+* LUCENE-5002: IndexWriter#deleteAll() caused a deadlock in DWPT / DWSC if a
+  DwPT was flushing concurrently while deleteAll() aborted all DWPT. The IW
+  should never wait on DWPT via the flush control while holding on to the IW
+  Lock. (Simon Willnauer)
+
 Optimizations
 
 * LUCENE-4938: Don't use an unnecessarily large priority queue in IndexSearcher

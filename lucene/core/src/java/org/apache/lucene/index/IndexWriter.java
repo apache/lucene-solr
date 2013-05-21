@@ -957,7 +957,7 @@ public class IndexWriter implements Closeable, TwoPhaseCommit {
         if (doFlush) {
           flush(waitForMerges, true);
         } else {
-          docWriter.abort(); // already closed
+          docWriter.abort(); // already closed -- never sync on IW 
         }
         
       } finally {
@@ -2006,7 +2006,7 @@ public class IndexWriter implements Closeable, TwoPhaseCommit {
 
       bufferedDeletesStream.clear();
       docWriter.close(); // mark it as closed first to prevent subsequent indexing actions/flushes 
-      docWriter.abort();
+      docWriter.abort(); // don't sync on IW here
       synchronized(this) {
 
         if (pendingCommit != null) {
@@ -2066,7 +2066,13 @@ public class IndexWriter implements Closeable, TwoPhaseCommit {
    *    visible until a {@link #commit()} has been called. This method
    *    can be rolled back using {@link #rollback()}.</p>
    *
-   * <p>NOTE: this method is much faster than using deleteDocuments( new MatchAllDocsQuery() ).</p>
+   * <p>NOTE: this method is much faster than using deleteDocuments( new MatchAllDocsQuery() ). 
+   *    Yet, this method also has different semantics compared to {@link #deleteDocuments(Query)} 
+   *    / {@link #deleteDocuments(Query...)} since internal data-structures are cleared as well 
+   *    as all segment information is forcefully dropped anti-viral semantics like omitting norms
+   *    are reset or doc value types are cleared. Essentially a call to {@link #deleteAll()} is equivalent
+   *    to creating a new {@link IndexWriter} with {@link OpenMode#CREATE} which a delete query only marks
+   *    documents as deleted.</p>
    *
    * <p>NOTE: this method will forcefully abort all merges
    *    in progress.  If other threads are running {@link
@@ -2074,40 +2080,58 @@ public class IndexWriter implements Closeable, TwoPhaseCommit {
    *    {@link #forceMergeDeletes} methods, they may receive
    *    {@link MergePolicy.MergeAbortedException}s.
    */
-  public synchronized void deleteAll() throws IOException {
+  public void deleteAll() throws IOException {
     ensureOpen();
+    // Remove any buffered docs
     boolean success = false;
-    try {
-
-      // Abort any running merges
-      finishMerges(false);
-
-      // Remove any buffered docs
-      docWriter.abort();
-
-      // Remove all segments
-      segmentInfos.clear();
-
-      // Ask deleter to locate unreferenced files & remove them:
-      deleter.checkpoint(segmentInfos, false);
-      deleter.refresh();
-
-      globalFieldNumberMap.clear();
-
-      // Don't bother saving any changes in our segmentInfos
-      readerPool.dropAll(false);
-
-      // Mark that the index has changed
-      ++changeCount;
-      segmentInfos.changed();
-      success = true;
-    } catch (OutOfMemoryError oom) {
-      handleOOM(oom, "deleteAll");
-    } finally {
-      if (!success) {
-        if (infoStream.isEnabled("IW")) {
-          infoStream.message("IW", "hit exception during deleteAll");
+    /* hold the full flush lock to prevent concurrency commits / NRT reopens to
+     * get in our way and do unnecessary work. -- if we don't lock this here we might
+     * get in trouble if */
+    synchronized (fullFlushLock) { 
+        /*
+         * We first abort and trash everything we have in-memory
+         * and keep the thread-states locked, the lockAndAbortAll operation
+         * also guarantees "point in time semantics" ie. the checkpoint that we need in terms
+         * of logical happens-before relationship in the DW. So we do
+         * abort all in memory structures 
+         * We also drop global field numbering before during abort to make
+         * sure it's just like a fresh index.
+         */
+      try {
+        docWriter.lockAndAbortAll();
+        synchronized (this) {
+          try {
+            // Abort any running merges
+            finishMerges(false);
+            // Remove all segments
+            segmentInfos.clear();
+            // Ask deleter to locate unreferenced files & remove them:
+            deleter.checkpoint(segmentInfos, false);
+            /* don't refresh the deleter here since there might
+             * be concurrent indexing requests coming in opening
+             * files on the directory after we called DW#abort()
+             * if we do so these indexing requests might hit FNF exceptions.
+             * We will remove the files incrementally as we go...
+             */
+            // Don't bother saving any changes in our segmentInfos
+            readerPool.dropAll(false);
+            // Mark that the index has changed
+            ++changeCount;
+            segmentInfos.changed();
+            globalFieldNumberMap.clear();
+            success = true;
+          } catch (OutOfMemoryError oom) {
+            handleOOM(oom, "deleteAll");
+          } finally {
+            if (!success) {
+              if (infoStream.isEnabled("IW")) {
+                infoStream.message("IW", "hit exception during deleteAll");
+              }
+            }
+          }
         }
+      } finally {
+        docWriter.unlockAllAfterAbortAll();
       }
     }
   }
@@ -2867,6 +2891,11 @@ public class IndexWriter implements Closeable, TwoPhaseCommit {
   // Ensures only one flush() is actually flushing segments
   // at a time:
   private final Object fullFlushLock = new Object();
+  
+  // for assert
+  boolean holdsFullFlushLock() {
+    return Thread.holdsLock(fullFlushLock);
+  }
 
   /**
    * Flush all in-memory buffered updates (adds and deletes)
