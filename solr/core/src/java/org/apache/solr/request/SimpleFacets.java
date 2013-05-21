@@ -149,6 +149,7 @@ public class SimpleFacets {
     threads = -1;
 
     if (localParams == null) {
+      params = orig;
       return;
     }
     params = SolrParams.wrapDefaults(localParams, orig);

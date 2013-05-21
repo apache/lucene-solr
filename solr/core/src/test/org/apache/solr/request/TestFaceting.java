@@ -494,6 +494,104 @@ public class TestFaceting extends SolrTestCaseJ4 {
               ,"//lst[@name='bar']/int[@name='Chauvinist'][.='1']"
               ,"//lst[@name='bar']/int[@name='Obnoxious'][.='1']"
               );
+
+      assertQ("localparams in one facet variant should not affect defaults in another: facet.sort vs facet.missing",
+                  req("q", "id:[42 TO 47]"
+                          ,"rows","0"
+                          ,"facet", "true"
+                          ,"fq", "id:[42 TO 45]"
+                          ,"facet.field", "{!key=foo " +
+                              "facet.sort=index" +
+                          "}"+fname
+                          ,"facet.field", "{!key=bar " +
+                              "facet.missing=true" +
+                          "}"+fname
+                          )
+                      // foo is in index order w/o missing
+                      ,"*[count(//lst[@name='foo']/int)=4]"
+                  ,"//lst[@name='foo']/int[1][@name='Chauvinist'][.='1']"
+                  ,"//lst[@name='foo']/int[2][@name='Obnoxious'][.='1']"
+                  ,"//lst[@name='foo']/int[3][@name='Pig'][.='0']"
+                  ,"//lst[@name='foo']/int[4][@name='Tool'][.='2']"
+                  // bar is in count order by default and includes missing
+                  ,"*[count(//lst[@name='bar']/int)=5]"
+                  ,"//lst[@name='bar']/int[1][@name='Tool'][.='2']"
+                  // don't assume tie breaker for slots 3 & 4, behavior undefined?
+                  ,"//lst[@name='bar']/int[4][@name='Pig'][.='0']"
+                  ,"//lst[@name='bar']/int[5][not(@name)][.='1']"
+                  );
+
+      assertQ("localparams in one facet variant should not affect defaults in another: facet.mincount",
+                  req("q", "id:[42 TO 47]"
+                          ,"rows","0"
+                          ,"facet", "true"
+                          ,"fq", "id:[42 TO 45]"
+                          ,"facet.field", "{!key=foo " +
+                              "facet.mincount=2" +
+                          "}"+fname
+                          ,"facet.field", "{!key=bar}"+fname
+                          )
+                      // only Tool for foo
+                      ,"*[count(//lst[@name='foo']/int)=1]"
+                  ,"//lst[@name='foo']/int[1][@name='Tool'][.='2']"
+                  // all for bar
+                  ,"*[count(//lst[@name='bar']/int)=4]"
+                  ,"//lst[@name='bar']/int[1][@name='Tool'][.='2']"
+                  // don't assume tie breaker for slots 3 & 4, behavior undefined?
+                  ,"//lst[@name='bar']/int[4][@name='Pig'][.='0']"
+                  );
+
+      assertQ("localparams in one facet variant should not affect defaults in another: facet.missing",
+                  req("q", "id:[42 TO 47]"
+                          ,"rows","0"
+                          ,"facet", "true"
+                          ,"fq", "id:[42 TO 45]"
+                          ,"facet.field", "{!key=foo " +
+                              "facet.missing=true" +
+                          "}"+fname
+                          ,"facet.field", "{!key=bar}"+fname
+                          )
+                      // foo includes missing
+                      ,"*[count(//lst[@name='foo']/int)=5]"
+                  ,"//lst[@name='foo']/int[1][@name='Tool'][.='2']"
+                  // don't assume tie breaker for slots 3 & 4, behavior undefined?
+                  ,"//lst[@name='foo']/int[4][@name='Pig'][.='0']"
+                  ,"//lst[@name='foo']/int[5][not(@name)][.='1']"
+                  // bar does not
+                  ,"*[count(//lst[@name='bar']/int)=4]"
+                  ,"//lst[@name='bar']/int[1][@name='Tool'][.='2']"
+                  // don't assume tie breaker for slots 3 & 4, behavior undefined?
+                  ,"//lst[@name='bar']/int[4][@name='Pig'][.='0']"
+                  );
+
+      assertQ("checking facets when local facet.prefix param used after regular/raw field faceting",
+          req("q", "*:*"
+              ,"facet", "true"
+              ,"facet.field", fname
+              ,"facet.field", "{!key=foo " +
+              "facet.prefix=T "+
+              "}"+fname
+          )
+          ,"*[count(//doc)=6]"
+          ,"*[count(//lst[@name='" + fname + "']/int)=4]"
+          ,"*[count(//lst[@name='foo']/int)=1]"
+          ,"//lst[@name='foo']/int[@name='Tool'][.='2']"
+      );
+
+      assertQ("checking facets when local facet.prefix param used before regular/raw field faceting",
+          req("q", "*:*"
+              ,"facet", "true"
+              ,"facet.field", "{!key=foo " +
+              "facet.prefix=T "+
+              "}"+fname
+              ,"facet.field", fname
+          )
+          ,"*[count(//doc)=6]"
+          ,"*[count(//lst[@name='" + fname + "']/int)=4]"
+          ,"*[count(//lst[@name='foo']/int)=1]"
+          ,"//lst[@name='foo']/int[@name='Tool'][.='2']"
+      );
+
       clearIndex();
       assertU(commit());
   }
