@@ -81,15 +81,7 @@ public class SolrLogLayout extends Layout {
     Map<String,Object> coreProps;
   }
   
-  Map<SolrCore,CoreInfo> coreInfoMap = new WeakHashMap<SolrCore,CoreInfo>(); // TODO:
-                                                                             // use
-                                                                             // something
-                                                                             // that
-                                                                             // survives
-                                                                             // across
-                                                                             // a
-                                                                             // core
-                                                                             // reload?
+  Map<Integer,CoreInfo> coreInfoMap = new WeakHashMap<Integer,CoreInfo>();
   
   public Map<String,String> classAliases = new HashMap<String,String>();
   
@@ -145,11 +137,11 @@ public class SolrLogLayout extends Layout {
     CoreInfo info = null;
     
     if (core != null) {
-      info = coreInfoMap.get(core);
+      info = coreInfoMap.get(core.hashCode());
       if (info == null) {
         info = new CoreInfo();
         info.shortId = "C" + Integer.toString(CoreInfo.maxCoreNum++);
-        coreInfoMap.put(core, info);
+        coreInfoMap.put(core.hashCode(), info);
         
         if (sb.length() == 0) sb.append("ASYNC ");
         sb.append(" NEW_CORE " + info.shortId);
