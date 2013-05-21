@@ -79,7 +79,7 @@ Bug Fixes
   new style solr.xml
 
 * SOLR-4842: Fix facet.field local params from affecting other facet.field's.
-  (ehatcher)
+  (ehatcher, hossman)
 
 Other Changes
 ----------------------

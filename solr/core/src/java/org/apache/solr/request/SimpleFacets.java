@@ -150,6 +150,7 @@ public class SimpleFacets {
 
     if (localParams == null) {
       params = orig;
+      required = new RequiredSolrParams(params);
       return;
     }
     params = SolrParams.wrapDefaults(localParams, orig);
