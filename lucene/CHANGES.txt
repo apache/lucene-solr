@@ -49,6 +49,11 @@ Bug Fixes
 * LUCENE-4993: Fix BeiderMorseFilter to preserve custom attributes when
   inserting tokens with position increment 0.  (Uwe Schindler)
 
+* LUCENE-5002: IndexWriter#deleteAll() caused a deadlock in DWPT / DWSC if a
+  DwPT was flushing concurrently while deleteAll() aborted all DWPT. The IW
+  should never wait on DWPT via the flush control while holding on to the IW
+  Lock. (Simon Willnauer)
+
 Optimizations
 
 * LUCENE-4938: Don't use an unnecessarily large priority queue in IndexSearcher
