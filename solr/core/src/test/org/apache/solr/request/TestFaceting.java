@@ -592,6 +592,24 @@ public class TestFaceting extends SolrTestCaseJ4 {
           ,"//lst[@name='foo']/int[@name='Tool'][.='2']"
       );
 
+      final String foo_range_facet = "{!key=foo facet.range.gap=2}val_i";
+      final String val_range_facet = "val_i";
+      for (boolean toggle : new boolean[] { true, false }) {
+          assertQ("local gap param mixed w/raw range faceting: " + toggle,
+                      req("q", "*:*"
+                              ,"facet", "true"
+                              ,"rows", "0"
+                              ,"facet.range.start", "0"
+                              ,"facet.range.end", "10"
+                              ,"facet.range.gap", "1"
+                              ,"facet.range", (toggle ? foo_range_facet : val_range_facet)
+                              ,"facet.range", (toggle ? val_range_facet : foo_range_facet)
+                              )
+                          ,"*[count(//lst[@name='val_i']/lst[@name='counts']/int)=10]"
+                      ,"*[count(//lst[@name='foo']/lst[@name='counts']/int)=5]"
+                      );
+        }
+
       clearIndex();
       assertU(commit());
   }
