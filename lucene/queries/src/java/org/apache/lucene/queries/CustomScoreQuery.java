@@ -58,7 +58,7 @@ public class CustomScoreQuery extends Query {
    * @param subQuery the sub query whose scored is being customized. Must not be null. 
    */
   public CustomScoreQuery(Query subQuery) {
-    this(subQuery, new Query[0]);
+    this(subQuery, new FunctionQuery[0]);
   }
 
   /**
@@ -67,9 +67,9 @@ public class CustomScoreQuery extends Query {
    * @param scoringQuery a value source query whose scores are used in the custom score
    * computation.  This parameter is optional - it can be null.
    */
-  public CustomScoreQuery(Query subQuery, Query scoringQuery) {
+  public CustomScoreQuery(Query subQuery, FunctionQuery scoringQuery) {
     this(subQuery, scoringQuery!=null ? // don't want an array that contains a single null..
-        new Query[] {scoringQuery} : new Query[0]);
+        new FunctionQuery[] {scoringQuery} : new FunctionQuery[0]);
   }
 
   /**
@@ -78,7 +78,7 @@ public class CustomScoreQuery extends Query {
    * @param scoringQueries value source queries whose scores are used in the custom score
    * computation.  This parameter is optional - it can be null or even an empty array.
    */
-  public CustomScoreQuery(Query subQuery, Query... scoringQueries) {
+  public CustomScoreQuery(Query subQuery, FunctionQuery... scoringQueries) {
     this.subQuery = subQuery;
     this.scoringQueries = scoringQueries !=null?
         scoringQueries : new Query[0];
