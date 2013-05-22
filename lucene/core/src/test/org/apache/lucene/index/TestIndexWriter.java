@@ -1183,6 +1183,46 @@ public class TestIndexWriter extends LuceneTestCase {
     t.join();
     assertFalse(t.failed);
   }
+  
+  /** testThreadInterruptDeadlock but with 2 indexer threads */
+  public void testTwoThreadsInterruptDeadlock() throws Exception {
+    IndexerThreadInterrupt t1 = new IndexerThreadInterrupt();
+    t1.setDaemon(true);
+    t1.start();
+    
+    IndexerThreadInterrupt t2 = new IndexerThreadInterrupt();
+    t2.setDaemon(true);
+    t2.start();
+
+    // Force class loader to load ThreadInterruptedException
+    // up front... else we can see a false failure if 2nd
+    // interrupt arrives while class loader is trying to
+    // init this class (in servicing a first interrupt):
+    assertTrue(new ThreadInterruptedException(new InterruptedException()).getCause() instanceof InterruptedException);
+
+    // issue 300 interrupts to child thread
+    final int numInterrupts = atLeast(300);
+    int i = 0;
+    while(i < numInterrupts) {
+      // TODO: would be nice to also sometimes interrupt the
+      // CMS merge threads too ...
+      Thread.sleep(10);
+      IndexerThreadInterrupt t = random().nextBoolean() ? t1 : t2;
+      if (t.allowInterrupt) {
+        i++;
+        t.interrupt();
+      }
+      if (!t1.isAlive() && !t2.isAlive()) {
+        break;
+      }
+    }
+    t1.finish = true;
+    t2.finish = true;
+    t1.join();
+    t2.join();
+    assertFalse(t1.failed);
+    assertFalse(t2.failed);
+  }
 
 
   public void testIndexStoreCombos() throws Exception {
