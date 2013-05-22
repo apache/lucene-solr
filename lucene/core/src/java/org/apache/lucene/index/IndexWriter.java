@@ -368,7 +368,7 @@ public class IndexWriter implements Closeable, TwoPhaseCommit {
           }
           success = true;
           // Prevent segmentInfos from changing while opening the
-          // reader; in theory we could do similar retry logic,
+          // reader; in theory we could instead do similar retry logic,
           // just like we do when loading segments_N
           synchronized(this) {
             maybeApplyDeletes(applyAllDeletes);
@@ -433,6 +433,16 @@ public class IndexWriter implements Closeable, TwoPhaseCommit {
         readerMap.remove(info);
         rld.dropReaders();
       }
+    }
+
+    public synchronized boolean anyPendingDeletes() {
+      for(ReadersAndLiveDocs rld : readerMap.values()) {
+        if (rld.getPendingDeleteCount() != 0) {
+          return true;
+        }
+      }
+
+      return false;
     }
 
     public synchronized void release(ReadersAndLiveDocs rld) throws IOException {
@@ -553,7 +563,20 @@ public class IndexWriter implements Closeable, TwoPhaseCommit {
         rld.incRef();
       }
 
+      assert noDups();
+
       return rld;
+    }
+
+    // Make sure that every segment appears only once in the
+    // pool:
+    private boolean noDups() {
+      Set<String> seen = new HashSet<String>();
+      for(SegmentInfoPerCommit info : readerMap.keySet()) {
+        assert !seen.contains(info.info.name);
+        seen.add(info.info.name);
+      }
+      return true;
     }
   }
 
@@ -676,8 +699,7 @@ public class IndexWriter implements Closeable, TwoPhaseCommit {
 
         // Record that we have a change (zero out all
         // segments) pending:
-        changeCount++;
-        segmentInfos.changed();
+        changed();
       } else {
         segmentInfos.read(directory);
 
@@ -693,8 +715,7 @@ public class IndexWriter implements Closeable, TwoPhaseCommit {
           SegmentInfos oldInfos = new SegmentInfos();
           oldInfos.read(directory, commit.getSegmentsFileName());
           segmentInfos.replace(oldInfos);
-          changeCount++;
-          segmentInfos.changed();
+          changed();
           if (infoStream.isEnabled("IW")) {
             infoStream.message("IW", "init: loaded commit \"" + commit.getSegmentsFileName() + "\"");
           }
@@ -721,8 +742,7 @@ public class IndexWriter implements Closeable, TwoPhaseCommit {
         // We have to mark ourself as changed so that if we
         // are closed w/o any further changes we write a new
         // segments_N file.
-        changeCount++;
-        segmentInfos.changed();
+        changed();
       }
 
       if (infoStream.isEnabled("IW")) {
@@ -937,7 +957,7 @@ public class IndexWriter implements Closeable, TwoPhaseCommit {
         if (doFlush) {
           flush(waitForMerges, true);
         } else {
-          docWriter.abort(); // already closed
+          docWriter.abort(); // already closed -- never sync on IW 
         }
         
       } finally {
@@ -1083,6 +1103,9 @@ public class IndexWriter implements Closeable, TwoPhaseCommit {
       return true;
     }
     if (docWriter.anyDeletions()) {
+      return true;
+    }
+    if (readerPool.anyPendingDeletes()) {
       return true;
     }
     for (final SegmentInfoPerCommit info : segmentInfos) {
@@ -1354,7 +1377,7 @@ public class IndexWriter implements Closeable, TwoPhaseCommit {
 
             // Must bump changeCount so if no other changes
             // happened, we still commit this change:
-            changeCount++;
+            changed();
           }
           //System.out.println("  yes " + info.info.name + " " + docID);
           return true;
@@ -1983,7 +2006,7 @@ public class IndexWriter implements Closeable, TwoPhaseCommit {
 
       bufferedDeletesStream.clear();
       docWriter.close(); // mark it as closed first to prevent subsequent indexing actions/flushes 
-      docWriter.abort();
+      docWriter.abort(); // don't sync on IW here
       synchronized(this) {
 
         if (pendingCommit != null) {
@@ -2043,7 +2066,13 @@ public class IndexWriter implements Closeable, TwoPhaseCommit {
    *    visible until a {@link #commit()} has been called. This method
    *    can be rolled back using {@link #rollback()}.</p>
    *
-   * <p>NOTE: this method is much faster than using deleteDocuments( new MatchAllDocsQuery() ).</p>
+   * <p>NOTE: this method is much faster than using deleteDocuments( new MatchAllDocsQuery() ). 
+   *    Yet, this method also has different semantics compared to {@link #deleteDocuments(Query)} 
+   *    / {@link #deleteDocuments(Query...)} since internal data-structures are cleared as well 
+   *    as all segment information is forcefully dropped anti-viral semantics like omitting norms
+   *    are reset or doc value types are cleared. Essentially a call to {@link #deleteAll()} is equivalent
+   *    to creating a new {@link IndexWriter} with {@link OpenMode#CREATE} which a delete query only marks
+   *    documents as deleted.</p>
    *
    * <p>NOTE: this method will forcefully abort all merges
    *    in progress.  If other threads are running {@link
@@ -2051,40 +2080,58 @@ public class IndexWriter implements Closeable, TwoPhaseCommit {
    *    {@link #forceMergeDeletes} methods, they may receive
    *    {@link MergePolicy.MergeAbortedException}s.
    */
-  public synchronized void deleteAll() throws IOException {
+  public void deleteAll() throws IOException {
     ensureOpen();
+    // Remove any buffered docs
     boolean success = false;
-    try {
-
-      // Abort any running merges
-      finishMerges(false);
-
-      // Remove any buffered docs
-      docWriter.abort();
-
-      // Remove all segments
-      segmentInfos.clear();
-
-      // Ask deleter to locate unreferenced files & remove them:
-      deleter.checkpoint(segmentInfos, false);
-      deleter.refresh();
-
-      globalFieldNumberMap.clear();
-
-      // Don't bother saving any changes in our segmentInfos
-      readerPool.dropAll(false);
-
-      // Mark that the index has changed
-      ++changeCount;
-      segmentInfos.changed();
-      success = true;
-    } catch (OutOfMemoryError oom) {
-      handleOOM(oom, "deleteAll");
-    } finally {
-      if (!success) {
-        if (infoStream.isEnabled("IW")) {
-          infoStream.message("IW", "hit exception during deleteAll");
+    /* hold the full flush lock to prevent concurrency commits / NRT reopens to
+     * get in our way and do unnecessary work. -- if we don't lock this here we might
+     * get in trouble if */
+    synchronized (fullFlushLock) { 
+        /*
+         * We first abort and trash everything we have in-memory
+         * and keep the thread-states locked, the lockAndAbortAll operation
+         * also guarantees "point in time semantics" ie. the checkpoint that we need in terms
+         * of logical happens-before relationship in the DW. So we do
+         * abort all in memory structures 
+         * We also drop global field numbering before during abort to make
+         * sure it's just like a fresh index.
+         */
+      try {
+        docWriter.lockAndAbortAll();
+        synchronized (this) {
+          try {
+            // Abort any running merges
+            finishMerges(false);
+            // Remove all segments
+            segmentInfos.clear();
+            // Ask deleter to locate unreferenced files & remove them:
+            deleter.checkpoint(segmentInfos, false);
+            /* don't refresh the deleter here since there might
+             * be concurrent indexing requests coming in opening
+             * files on the directory after we called DW#abort()
+             * if we do so these indexing requests might hit FNF exceptions.
+             * We will remove the files incrementally as we go...
+             */
+            // Don't bother saving any changes in our segmentInfos
+            readerPool.dropAll(false);
+            // Mark that the index has changed
+            ++changeCount;
+            segmentInfos.changed();
+            globalFieldNumberMap.clear();
+            success = true;
+          } catch (OutOfMemoryError oom) {
+            handleOOM(oom, "deleteAll");
+          } finally {
+            if (!success) {
+              if (infoStream.isEnabled("IW")) {
+                infoStream.message("IW", "hit exception during deleteAll");
+              }
+            }
+          }
         }
+      } finally {
+        docWriter.unlockAllAfterAbortAll();
       }
     }
   }
@@ -2171,9 +2218,14 @@ public class IndexWriter implements Closeable, TwoPhaseCommit {
    * index directory.
    */
   synchronized void checkpoint() throws IOException {
+    changed();
+    deleter.checkpoint(segmentInfos, false);
+  }
+
+  /** Called internally if any index state has changed. */
+  synchronized void changed() {
     changeCount++;
     segmentInfos.changed();
-    deleter.checkpoint(segmentInfos, false);
   }
 
   synchronized void publishFrozenDeletes(FrozenBufferedDeletes packet) {
@@ -2839,6 +2891,11 @@ public class IndexWriter implements Closeable, TwoPhaseCommit {
   // Ensures only one flush() is actually flushing segments
   // at a time:
   private final Object fullFlushLock = new Object();
+  
+  // for assert
+  boolean holdsFullFlushLock() {
+    return Thread.holdsLock(fullFlushLock);
+  }
 
   /**
    * Flush all in-memory buffered updates (adds and deletes)
@@ -4113,8 +4170,7 @@ public class IndexWriter implements Closeable, TwoPhaseCommit {
     //System.out.println("IW.nrtIsCurrent " + (infos.version == segmentInfos.version && !docWriter.anyChanges() && !bufferedDeletesStream.any()));
     ensureOpen();
     if (infoStream.isEnabled("IW")) {
-      infoStream.message("IW", "nrtIsCurrent: infoVersion matches: " + (infos.version == segmentInfos.version) + " DW changes: " + docWriter.anyChanges() + " BD changes: "+bufferedDeletesStream.any());
-
+      infoStream.message("IW", "nrtIsCurrent: infoVersion matches: " + (infos.version == segmentInfos.version) + "; DW changes: " + docWriter.anyChanges() + "; BD changes: "+ bufferedDeletesStream.any());
     }
     return infos.version == segmentInfos.version && !docWriter.anyChanges() && !bufferedDeletesStream.any();
   }

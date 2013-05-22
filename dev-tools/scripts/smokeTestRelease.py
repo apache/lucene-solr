@@ -198,14 +198,19 @@ def checkJARMetaData(desc, jarFile, svnRevision, version):
       'Ant-Version: Apache Ant 1.8',
       # Make sure .class files are 1.7 format:
       'X-Compile-Target-JDK: 1.7',
-      # Make sure this matches the version and svn revision we think we are releasing:
-      'Implementation-Version: %s %s ' % (version, svnRevision),
       'Specification-Version: %s' % version,
       # Make sure the release was compiled with 1.7:
       'Created-By: 1.7'):
       if s.find(verify) == -1:
         raise RuntimeError('%s is missing "%s" inside its META-INF/MANIFEST.MF' % \
                            (desc, verify))
+
+    if svnRevision != 'skip':
+      # Make sure this matches the version and svn revision we think we are releasing:
+      verifyRevision = 'Implementation-Version: %s %s ' % (version, svnRevision)
+      if s.find(verifyRevision) == -1:
+        raise RuntimeError('%s is missing "%s" inside its META-INF/MANIFEST.MF (wrong svn revision?)' % \
+                           (desc, verifyRevision))
 
     notice = decodeUTF8(z.read(NOTICE_FILE_NAME))
     license = decodeUTF8(z.read(LICENSE_FILE_NAME))
@@ -259,6 +264,9 @@ def checkAllJARs(topDir, project, svnRevision, version):
         if project == 'solr':
           if normRoot.endswith('/contrib/dataimporthandler/lib') and (file.startswith('mail-') or file.startswith('activation-')):
             print('      **WARNING**: skipping check of %s/%s: it has javax.* classes' % (root, file))
+            continue
+        else:
+          if normRoot.endswith('/replicator/lib') and file.startswith('javax.servlet'):
             continue
         fullPath = '%s/%s' % (root, file)
         noJavaPackageClasses('JAR file "%s"' % fullPath, fullPath)
@@ -363,7 +371,7 @@ def checkSigs(project, urlString, version, tmpDir, isSigned):
     shutil.rmtree(gpgHomeDir)
   os.makedirs(gpgHomeDir, 0o700)
   run('gpg --homedir %s --import %s' % (gpgHomeDir, keysFile),
-      '%s/%s.gpg.import.log 2>&1' % (tmpDir, project))
+      '%s/%s.gpg.import.log' % (tmpDir, project))
 
   if mavenURL is None:
     raise RuntimeError('%s is missing maven' % project)
@@ -396,7 +404,7 @@ def checkSigs(project, urlString, version, tmpDir, isSigned):
 
       # Test trust (this is done with the real users config)
       run('gpg --import %s' % (keysFile),
-          '%s/%s.gpg.trust.import.log 2>&1' % (tmpDir, project))
+          '%s/%s.gpg.trust.import.log' % (tmpDir, project))
       print('    verify trust')
       logFile = '%s/%s.%s.gpg.trust.log' % (tmpDir, project, artifact)
       run('gpg --verify %s %s' % (sigFile, artifactFile), logFile)
@@ -567,7 +575,7 @@ def getDirEntries(urlString):
       if text == 'Parent Directory' or text == '..':
         return links[(i+1):]
 
-def unpackAndVerify(project, tmpDir, artifact, svnRevision, version):
+def unpackAndVerify(project, tmpDir, artifact, svnRevision, version, testArgs):
   destDir = '%s/unpack' % tmpDir
   if os.path.exists(destDir):
     shutil.rmtree(destDir)
@@ -587,14 +595,14 @@ def unpackAndVerify(project, tmpDir, artifact, svnRevision, version):
     raise RuntimeError('unpack produced entries %s; expected only %s' % (l, expected))
 
   unpackPath = '%s/%s' % (destDir, expected)
-  verifyUnpacked(project, artifact, unpackPath, svnRevision, version, tmpDir)
+  verifyUnpacked(project, artifact, unpackPath, svnRevision, version, testArgs)
 
 LUCENE_NOTICE = None
 LUCENE_LICENSE = None
 SOLR_NOTICE = None
 SOLR_LICENSE = None
 
-def verifyUnpacked(project, artifact, unpackPath, svnRevision, version, tmpDir):
+def verifyUnpacked(project, artifact, unpackPath, svnRevision, version, testArgs):
   global LUCENE_NOTICE
   global LUCENE_LICENSE
   global SOLR_NOTICE
@@ -643,7 +651,7 @@ def verifyUnpacked(project, artifact, unpackPath, svnRevision, version, tmpDir):
 
   if project == 'lucene':
     # TODO: clean this up to not be a list of modules that we must maintain
-    extras = ('analysis', 'benchmark', 'classification', 'codecs', 'core', 'demo', 'docs', 'facet', 'grouping', 'highlighter', 'join', 'memory', 'misc', 'queries', 'queryparser', 'sandbox', 'spatial', 'suggest', 'test-framework', 'licenses')
+    extras = ('analysis', 'benchmark', 'classification', 'codecs', 'core', 'demo', 'docs', 'facet', 'grouping', 'highlighter', 'join', 'memory', 'misc', 'queries', 'queryparser', 'replicator', 'sandbox', 'spatial', 'suggest', 'test-framework', 'licenses')
     if isSrc:
       extras += ('build.xml', 'common-build.xml', 'module-build.xml', 'ivy-settings.xml', 'backwards', 'tools', 'site')
   else:
@@ -681,8 +689,8 @@ def verifyUnpacked(project, artifact, unpackPath, svnRevision, version, tmpDir):
     run('%s; ant validate' % javaExe('1.7'), '%s/validate.log' % unpackPath)
 
     if project == 'lucene':
-      print('    run tests w/ Java 7...')
-      run('%s; ant clean test' % javaExe('1.7'), '%s/test.log' % unpackPath)
+      print("    run tests w/ Java 7 and testArgs='%s'..." % testArgs)
+      run('%s; ant clean test %s' % (javaExe('1.7'), testArgs), '%s/test.log' % unpackPath)
       run('%s; ant jar' % javaExe('1.7'), '%s/compile.log' % unpackPath)
       testDemo(isSrc, version, '1.7')
 
@@ -694,8 +702,8 @@ def verifyUnpacked(project, artifact, unpackPath, svnRevision, version, tmpDir):
       os.chdir('solr')
 
       # DISABLED until solr tests consistently pass
-      #print('    run tests w/ Java 7...')
-      #run('%s; ant test' % javaExe('1.7'), '%s/test.log' % unpackPath)
+      #print("    run tests w/ Java 7 and testArgs='%s'..." % testArgs)
+      #run('%s; ant clean test %s' % (javaExe('1.7'), testArgs), '%s/test.log' % unpackPath)
  
       # test javadocs
       print('    generate javadocs w/ Java 7...')
@@ -1301,7 +1309,8 @@ def main():
 
   if len(sys.argv) < 5:
     print()
-    print('Usage python -u %s BaseURL SvnRevision version tmpDir' % sys.argv[0])
+    print('Usage python -u %s BaseURL SvnRevision version tmpDir [ isSigned ] [ -testArgs "-Dwhat=ever [ ... ]" ]'
+          % sys.argv[0])
     print()
     print('  example: python3.2 -u dev-tools/scripts/smokeTestRelease.py http://people.apache.org/~whoever/staging_area/lucene-solr-4.3.0-RC1-rev1469340 1469340 4.3.0 /path/to/a/tmp/dir')
     print()
@@ -1314,14 +1323,37 @@ def main():
   if not reAllowedVersion.match(version):
     raise RuntimeError('version "%s" does not match format X.Y.Z[-ALPHA|-BETA]' % version)
   
-  tmpDir = os.path.abspath(sys.argv[4])
-  isSigned = True 
-  if len(sys.argv) == 6:
-    isSigned = (sys.argv[5] == "True")
+  tmpDirArgNum = 4
+  tmpDir = os.path.abspath(sys.argv[tmpDirArgNum])
 
-  smokeTest(baseURL, svnRevision, version, tmpDir, isSigned)
+  # TODO: yuck: positional-only args with more than one optional arg totally sucks
+  # TODO: consider naming all args
+  isSigned = True
+  testArgs = ''
+  lastArgNum = len(sys.argv) - 1
+  if lastArgNum > tmpDirArgNum:
+    nextArgNum = tmpDirArgNum + 1
+    if sys.argv[nextArgNum] == '-testArgs':
+      if nextArgNum == lastArgNum:
+        raise RuntimeError('missing expected argument to -testArgs')
+      else:
+        # TODO: should there be arg validation here?  E.g. starts with '-D'?
+        testArgs = sys.argv[nextArgNum + 1]
+        nextArgNum += 2
+    if nextArgNum <= lastArgNum:
+      isSigned = (sys.argv[nextArgNum] == "True")
+      nextArgNum += 1
+    if nextArgNum <= lastArgNum and testArgs == '':
+      if sys.argv[nextArgNum] == '-testArgs':
+        if nextArgNum == lastArgNum:
+          raise RuntimeError('missing expected argument to -testArgs')
+        else:
+          # TODO: should there be arg validation here?  E.g. starts with '-D'?
+          testArgs = sys.argv[nextArgNum + 1]
 
-def smokeTest(baseURL, svnRevision, version, tmpDir, isSigned):
+  smokeTest(baseURL, svnRevision, version, tmpDir, isSigned, testArgs)
+
+def smokeTest(baseURL, svnRevision, version, tmpDir, isSigned, testArgs):
 
   startTime = datetime.datetime.now()
   
@@ -1356,15 +1388,15 @@ def smokeTest(baseURL, svnRevision, version, tmpDir, isSigned):
   print('Test Lucene...')
   checkSigs('lucene', lucenePath, version, tmpDir, isSigned)
   for artifact in ('lucene-%s.tgz' % version, 'lucene-%s.zip' % version):
-    unpackAndVerify('lucene', tmpDir, artifact, svnRevision, version)
-  unpackAndVerify('lucene', tmpDir, 'lucene-%s-src.tgz' % version, svnRevision, version)
+    unpackAndVerify('lucene', tmpDir, artifact, svnRevision, version, testArgs)
+  unpackAndVerify('lucene', tmpDir, 'lucene-%s-src.tgz' % version, svnRevision, version, testArgs)
 
   print()
   print('Test Solr...')
   checkSigs('solr', solrPath, version, tmpDir, isSigned)
   for artifact in ('solr-%s.tgz' % version, 'solr-%s.zip' % version):
-    unpackAndVerify('solr', tmpDir, artifact, svnRevision, version)
-  unpackAndVerify('solr', tmpDir, 'solr-%s-src.tgz' % version, svnRevision, version)
+    unpackAndVerify('solr', tmpDir, artifact, svnRevision, version, testArgs)
+  unpackAndVerify('solr', tmpDir, 'solr-%s-src.tgz' % version, svnRevision, version, testArgs)
 
   print()
   print('Test Maven artifacts for Lucene and Solr...')

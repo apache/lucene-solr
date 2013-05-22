@@ -19,9 +19,9 @@ package org.apache.solr.core;
 
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.SolrException.ErrorCode;
-import org.apache.solr.schema.IndexSchema;
 import org.apache.solr.schema.IndexSchemaFactory;
 import org.apache.solr.util.DOMUtil;
+import org.apache.solr.util.FileUtils;
 import org.apache.solr.util.RegexFileFilter;
 import org.apache.solr.handler.component.SearchComponent;
 import org.apache.solr.request.SolrRequestHandler;
@@ -51,6 +51,7 @@ import org.xml.sax.SAXException;
 import javax.xml.parsers.ParserConfigurationException;
 import javax.xml.xpath.XPathConstants;
 
+import java.io.File;
 import java.util.*;
 import java.util.regex.Pattern;
 import java.util.regex.Matcher;
@@ -453,6 +454,7 @@ public class SolrConfig extends Config {
     if (nodes == null || nodes.getLength() == 0) return;
     
     log.info("Adding specified lib dirs to ClassLoader");
+    SolrResourceLoader loader = getResourceLoader();
     
     try {
       for (int i = 0; i < nodes.getLength(); i++) {
@@ -464,16 +466,22 @@ public class SolrConfig extends Config {
           // :TODO: add support for a simpler 'glob' mutually exclusive of regex
           String regex = DOMUtil.getAttr(node, "regex");
           FileFilter filter = (null == regex) ? null : new RegexFileFilter(regex);
-          getResourceLoader().addToClassLoader(baseDir, filter, false);
+          loader.addToClassLoader(baseDir, filter, false);
         } else if (null != path) {
-          getResourceLoader().addToClassLoader(path);
+          final File file = FileUtils.resolvePath(new File(loader.getInstanceDir()), path);
+          loader.addToClassLoader(file.getParent(), new FileFilter() {
+            @Override
+            public boolean accept(File pathname) {
+              return pathname.equals(file);
+            }
+          }, false);
         } else {
           throw new RuntimeException(
               "lib: missing mandatory attributes: 'dir' or 'path'");
         }
       }
     } finally {
-      getResourceLoader().reloadLuceneSPI();
+      loader.reloadLuceneSPI();
     }
   }
 }

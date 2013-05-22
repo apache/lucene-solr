@@ -18,9 +18,12 @@ package org.apache.solr.cloud;
  */
 
 import java.io.File;
+import java.util.Collection;
 import java.util.List;
 
 import org.apache.commons.io.FileUtils;
+import org.apache.commons.io.filefilter.RegexFileFilter;
+import org.apache.commons.io.filefilter.TrueFileFilter;
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.common.cloud.SolrZkClient;
 import org.apache.solr.common.cloud.ZkNodeProps;
@@ -186,6 +189,19 @@ public class ZkCLITest extends SolrTestCaseJ4 {
     List<String> zkFiles = zkClient.getChildren(ZkController.CONFIGS_ZKNODE + "/" + confsetname, null, true);
     assertEquals(files.length, zkFiles.size());
     
+    File sourceConfDir = new File(ExternalPaths.EXAMPLE_HOME + File.separator + "collection1"
+            + File.separator + "conf");
+    // filter out all directories starting with . (e.g. .svn)
+    Collection<File> sourceFiles = FileUtils.listFiles(sourceConfDir, TrueFileFilter.INSTANCE, new RegexFileFilter("[^\\.].*"));
+    for (File sourceFile :sourceFiles){
+        int indexOfRelativePath = sourceFile.getAbsolutePath().lastIndexOf("collection1" + File.separator + "conf");
+        String relativePathofFile = sourceFile.getAbsolutePath().substring(indexOfRelativePath + 17, sourceFile.getAbsolutePath().length());
+        File downloadedFile = new File(confDir,relativePathofFile);
+        assertTrue(downloadedFile.getAbsolutePath() + " does not exist source:" + sourceFile.getAbsolutePath(), downloadedFile.exists());
+        assertTrue("Content didn't change",FileUtils.contentEquals(sourceFile,downloadedFile));
+    }
+    
+   
     // test reset zk
     args = new String[] {"-zkhost", zkServer.getZkAddress(), "-cmd",
         "clear", "/"};

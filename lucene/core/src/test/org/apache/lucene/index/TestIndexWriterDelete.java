@@ -25,6 +25,8 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 import java.util.Random;
+import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 
@@ -300,6 +302,69 @@ public class TestIndexWriterDelete extends LuceneTestCase {
     reader.close();
 
     modifier.close();
+    dir.close();
+  }
+  
+  
+  public void testDeleteAllNoDeadLock() throws IOException, InterruptedException {
+    Directory dir = newDirectory();
+    final RandomIndexWriter modifier = new RandomIndexWriter(random(), dir); 
+    int numThreads = atLeast(2);
+    Thread[] threads = new Thread[numThreads];
+    final CountDownLatch latch = new CountDownLatch(1);
+    final CountDownLatch doneLatch = new CountDownLatch(numThreads);
+    for (int i = 0; i < numThreads; i++) {
+      final int offset = i;
+      threads[i] = new Thread() {
+        @Override
+        public void run() {
+          int id = offset * 1000;
+          int value = 100;
+          try {
+            latch.await();
+            for (int i = 0; i < 1000; i++) {
+              Document doc = new Document();
+              doc.add(newTextField("content", "aaa", Field.Store.NO));
+              doc.add(newStringField("id", String.valueOf(id++), Field.Store.YES));
+              doc.add(newStringField("value", String.valueOf(value), Field.Store.NO));
+              doc.add(new NumericDocValuesField("dv", value));
+              modifier.addDocument(doc);
+              if (VERBOSE) {
+                System.out.println("\tThread["+offset+"]: add doc: " + id);
+              }
+            }
+          } catch (Exception e) {
+            throw new RuntimeException(e);
+          } finally {
+            doneLatch.countDown();
+            if (VERBOSE) {
+              System.out.println("\tThread["+offset+"]: done indexing" );
+            }
+          }
+        }
+      };
+      threads[i].start();
+    }
+    latch.countDown();
+    while(!doneLatch.await(1, TimeUnit.MILLISECONDS)) {
+      modifier.deleteAll();
+      if (VERBOSE) {
+        System.out.println("del all");
+      }
+    }
+    
+    modifier.deleteAll();
+    for (Thread thread : threads) {
+      thread.join();
+    }
+    
+    modifier.close();
+    DirectoryReader reader = DirectoryReader.open(dir);
+    assertEquals(reader.maxDoc(), 0);
+    assertEquals(reader.numDocs(), 0);
+    assertEquals(reader.numDeletedDocs(), 0);
+    reader.close();
+
     dir.close();
   }
 

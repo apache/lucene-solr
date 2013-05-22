@@ -71,6 +71,13 @@ public final class CharsRef implements Comparable<CharsRef>, CharSequence, Clone
     this.length = chars.length;
   }
 
+  /**
+   * Returns a shallow clone of this instance (the underlying characters are
+   * <b>not</b> copied and will be shared by both the returned object and this
+   * object.
+   * 
+   * @see #deepCopyOf
+   */  
   @Override
   public CharsRef clone() {
     return new CharsRef(chars, offset, length);

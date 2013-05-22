@@ -38,6 +38,12 @@ TBD...
 Detailed Change List
 ----------------------
 
+Other Changes
+----------------------
+
+* SOLR-4622: Hardcoded SolrCloud defaults for hostContext and hostPort that
+  were deprecated in 4.3 have been removed completely. (hossman)
+
 ==================  4.4.0 ==================
 
 Versions of Major Components
@@ -54,7 +60,7 @@ Upgrading from Solr 4.3.0
 * SOLR-4778: The signature of LogWatcher.registerListener has changed, from
   (ListenerConfig, CoreContainer) to (ListenerConfig).  Users implementing their
   own LogWatcher classes will need to change their code accordingly.
-
+  
 Detailed Change List
 ----------------------
 
@@ -66,23 +72,38 @@ New Features
 * SOLR-4761: Add option to plugin a merged segment warmer into solrconfig.xml
   (Mark Miller, Mike McCandless, Robert Muir)
 
+* SOLR-3240: Add "spellcheck.collateMaxCollectDocs" option so that when testing
+  potential Collations against the index, SpellCheckComponent will only collect
+  n documents, thereby estimating the hit-count.  This is a performance optimization
+  in cases where exact hit-counts are unnecessary.  Also, when "collateExtendedResults"
+  is false, this optimization is always made (James Dyer).
+
+* SOLR-4785: New MaxScoreQParserPlugin returning max() instead of sum() of terms (janhoy)
+
+* SOLR-4234: Add support for binary files in ZooKeeper. (Eric Pugh via Mark Miller)
+
+* SOLR-4048: Add findRecursive method to NamedList. (Shawn Heisey)
+
 Bug Fixes
 ----------------------
 
-* SOLR-4741: Deleting a collection should set DELETE_DATA_DIR to true. 
-  (Mark Miller)
-  
-* SOLR-4333: edismax parser to not double-escape colons if already escaped by 
+* SOLR-4333: edismax parser to not double-escape colons if already escaped by
   the client application (James Dyer, Robert J. van der Boon)
-
-* SOLR-4752: There are some minor bugs in the Collections API parameter
-  validation. (Mark Miller)
 
 * SOLR-4776: Solrj doesn't return "between" count in range facets
   (Philip K. Warren via shalin)
 
 * SOLR-4616: HitRatio on caches is now exposed over JMX MBeans as a float.
   (Greg Bowyer)
+  
+* SOLR-4803: Fixed core discovery mode (ie: new style solr.xml) to treat 
+  'collection1' as the default core name. (hossman)
+  
+* SOLR-4790: Throw an error if a core has the same name as another core, both old and
+  new style solr.xml
+
+* SOLR-4842: Fix facet.field local params from affecting other facet.field's.
+  (ehatcher, hossman)
 
 Other Changes
 ----------------------
@@ -109,6 +130,74 @@ Other Changes
 * SOLR-4778: LogWatcher init code moved out of CoreContainer (Alan Woodward)
 
 * SOLR-4784: Make class LuceneQParser public (janhoy)
+
+* SOLR-4448: Allow the solr internal load balancer to be more easily pluggable.
+  (Philip Hoy via Robert Muir)
+
+==================  4.3.1 ==================
+
+Versions of Major Components
+---------------------
+Apache Tika 1.3
+Carrot2 3.6.2
+Velocity 1.7 and Velocity Tools 2.0
+Apache UIMA 2.3.1
+Apache ZooKeeper 3.4.5
+
+Detailed Change List
+----------------------
+
+Bug Fixes
+----------------------
+
+* SOLR-4795: Sub shard leader should not accept any updates from parent after
+  it goes active (shalin)
+
+* SOLR-4798: shard splitting does not respect the router for the collection
+  when executing the index split.   One effect of this is that documents
+  may be placed in the wrong shard when the default compositeId router
+  is used in conjunction with IDs containing "!". (yonik)
+
+* SOLR-4797: Shard splitting creates sub shards which have the wrong hash
+  range in cluster state. This happens when numShards is not a power of two
+  and router is compositeId. (shalin)
+  
+* SOLR-4791: solr.xml sharedLib does not work in 4.3.0 (Ryan Ernst, Jan Høydahl via 
+  Erick Erickson)
+
+* SOLR-4806: Shard splitting does not abort if WaitForState times out (shalin)
+
+* SOLR-4807: The zkcli script now works with log4j. The zkcli.bat script
+  was broken on Windows in 4.3.0, now it works. (Shawn Heisey)
+
+* SOLR-4813: Fix SynonymFilterFactory to allow init parameters for
+  tokenizer factory used when parsing synonyms file.  (Shingo Sasaki, hossman)
+
+* SOLR-4829: Fix transaction log leaks (a failure to clean up some old logs)
+  on a shard leader, or when unexpected exceptions are thrown during log
+  recovery.  (Steven Bower, Mark Miller, yonik)
+
+* SOLR-4751: Fix replication problem of files in sub directory of conf directory.
+  (Minoru Osuka via Koji)
+
+* SOLR-4741: Deleting a collection should set DELETE_DATA_DIR to true.
+  (Mark Miller)
+
+* SOLR-4752: There are some minor bugs in the Collections API parameter
+  validation. (Mark Miller)
+
+* SOLR-4563: RSS DIH-example not working (janhoy)
+
+* SOLR-4796: zkcli.sh should honor JAVA_HOME (Roman Shaposhnik via Mark Miller)
+
+* SOLR-4734: Leader election fails with an NPE if there is no UpdateLog.
+ (Mark Miller, Alexander Eibner)
+
+Other Changes
+----------------------
+
+* SOLR-4760: Include core name in logs when loading schema.
+  (Shawn Heisey)
 
 ==================  4.3.0 ==================
 

@@ -311,13 +311,13 @@ public class SolrZkClient {
   
   public void makePath(String path, File file, boolean failOnExists, boolean retryOnConnLoss)
       throws IOException, KeeperException, InterruptedException {
-    makePath(path, FileUtils.readFileToString(file).getBytes("UTF-8"),
+    makePath(path, FileUtils.readFileToByteArray(file),
         CreateMode.PERSISTENT, null, failOnExists, retryOnConnLoss);
   }
   
   public void makePath(String path, File file, boolean retryOnConnLoss) throws IOException,
       KeeperException, InterruptedException {
-    makePath(path, FileUtils.readFileToString(file).getBytes("UTF-8"), retryOnConnLoss);
+    makePath(path, FileUtils.readFileToByteArray(file), retryOnConnLoss);
   }
   
   public void makePath(String path, CreateMode createMode, boolean retryOnConnLoss) throws KeeperException,

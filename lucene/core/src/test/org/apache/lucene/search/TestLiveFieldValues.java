@@ -58,7 +58,7 @@ public class TestLiveFieldValues extends LuceneTestCase {
 
     final Integer missing = -1;
 
-    final LiveFieldValues<Integer> rt = new LiveFieldValues<Integer>(mgr, missing) {
+    final LiveFieldValues<IndexSearcher,Integer> rt = new LiveFieldValues<IndexSearcher,Integer>(mgr, missing) {
         @Override
         protected Integer lookupFromSearcher(IndexSearcher s, String id) throws IOException {
           TermQuery tq = new TermQuery(new Term("id", id));

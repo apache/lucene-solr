@@ -32,9 +32,11 @@ import org.apache.lucene.util.CharsRef;
 import org.apache.lucene.util.IOUtils;
 import org.apache.lucene.util.OpenBitSet;
 import org.apache.solr.common.cloud.DocRouter;
+import org.apache.solr.common.cloud.HashBasedRouter;
 import org.apache.solr.common.util.Hash;
 import org.apache.solr.core.SolrCore;
 import org.apache.solr.schema.SchemaField;
+import org.apache.solr.schema.StrField;
 import org.apache.solr.search.SolrIndexSearcher;
 import org.apache.solr.util.RefCounted;
 import org.slf4j.Logger;
@@ -53,6 +55,8 @@ public class SolrIndexSplitter {
   DocRouter.Range[] rangesArr; // same as ranges list, but an array for extra speed in inner loops
   List<String> paths;
   List<SolrCore> cores;
+  DocRouter router;
+  HashBasedRouter hashRouter;
   int numPieces;
   int currPartition = 0;
 
@@ -62,6 +66,9 @@ public class SolrIndexSplitter {
     ranges = cmd.ranges;
     paths = cmd.paths;
     cores = cmd.cores;
+    router = cmd.router;
+    hashRouter = router instanceof HashBasedRouter ? (HashBasedRouter)router : null;
+
     if (ranges == null) {
       numPieces =  paths != null ? paths.size() : cores.size();
     } else  {
@@ -151,16 +158,24 @@ public class SolrIndexSplitter {
     BytesRef term = null;
     DocsEnum docsEnum = null;
 
+    CharsRef idRef = new CharsRef(100);
     for (;;) {
       term = termsEnum.next();
       if (term == null) break;
 
       // figure out the hash for the term
-      // TODO: hook in custom hashes (or store hashes)
-      // TODO: performance implications of using indexedToReadable?
-      CharsRef ref = new CharsRef(term.length);
-      ref = field.getType().indexedToReadable(term, ref);
-      int hash = Hash.murmurhash3_x86_32(ref, ref.offset, ref.length, 0);
+
+      // FUTURE: if conversion to strings costs too much, we could
+      // specialize and use the hash function that can work over bytes.
+      idRef = field.getType().indexedToReadable(term, idRef);
+      String idString = idRef.toString();
+
+      int hash = 0;
+      if (hashRouter != null) {
+        hash = hashRouter.sliceHash(idString, null, null);
+      }
+      // int hash = Hash.murmurhash3_x86_32(ref, ref.offset, ref.length, 0);
+
       docsEnum = termsEnum.docs(liveDocs, docsEnum, DocsEnum.FLAG_NONE);
       for (;;) {
         int doc = docsEnum.nextDoc();

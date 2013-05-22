@@ -17,9 +17,17 @@ package org.apache.lucene.queryparser.classic;
  * limitations under the License.
  */
 
+import java.io.IOException;
+import java.io.Reader;
+
 import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.analysis.MockAnalyzer;
 import org.apache.lucene.analysis.MockTokenizer;
+import org.apache.lucene.analysis.TokenFilter;
+import org.apache.lucene.analysis.TokenStream;
+import org.apache.lucene.analysis.Tokenizer;
+import org.apache.lucene.analysis.tokenattributes.CharTermAttribute;
+import org.apache.lucene.analysis.tokenattributes.PositionIncrementAttribute;
 import org.apache.lucene.document.DateTools.Resolution;
 import org.apache.lucene.index.Term;
 import org.apache.lucene.queryparser.classic.QueryParser.Operator;
@@ -27,6 +35,7 @@ import org.apache.lucene.queryparser.flexible.standard.CommonQueryParserConfigur
 import org.apache.lucene.queryparser.util.QueryParserTestBase;
 import org.apache.lucene.search.BooleanClause;
 import org.apache.lucene.search.BooleanQuery;
+import org.apache.lucene.search.MultiPhraseQuery;
 import org.apache.lucene.search.Query;
 import org.apache.lucene.search.TermQuery;
 
@@ -305,6 +314,180 @@ public class TestQueryParser extends QueryParserTestBase {
     
     Query unexpanded = new TermQuery(new Term("field", "dogs"));
     assertEquals(unexpanded, smart.parse("\"dogs\""));
+  }
+  
+  // TODO: fold these into QueryParserTestBase
+  
+  /** adds synonym of "dog" for "dogs". */
+  static class MockSynonymAnalyzer extends Analyzer {
+    @Override
+    protected TokenStreamComponents createComponents(String fieldName, Reader reader) {
+      MockTokenizer tokenizer = new MockTokenizer(reader);
+      return new TokenStreamComponents(tokenizer, new MockSynonymFilter(tokenizer));
+    }
+  }
+  
+  /** simple synonyms test */
+  public void testSynonyms() throws Exception {
+    BooleanQuery expected = new BooleanQuery(true);
+    expected.add(new TermQuery(new Term("field", "dogs")), BooleanClause.Occur.SHOULD);
+    expected.add(new TermQuery(new Term("field", "dog")), BooleanClause.Occur.SHOULD);
+    QueryParser qp = new QueryParser(TEST_VERSION_CURRENT, "field", new MockSynonymAnalyzer());
+    assertEquals(expected, qp.parse("dogs"));
+    assertEquals(expected, qp.parse("\"dogs\""));
+    qp.setDefaultOperator(Operator.AND);
+    assertEquals(expected, qp.parse("dogs"));
+    assertEquals(expected, qp.parse("\"dogs\""));
+    expected.setBoost(2.0f);
+    assertEquals(expected, qp.parse("dogs^2"));
+    assertEquals(expected, qp.parse("\"dogs\"^2"));
+  }
+  
+  /** forms multiphrase query */
+  public void testSynonymsPhrase() throws Exception {
+    MultiPhraseQuery expected = new MultiPhraseQuery();
+    expected.add(new Term("field", "old"));
+    expected.add(new Term[] { new Term("field", "dogs"), new Term("field", "dog") });
+    QueryParser qp = new QueryParser(TEST_VERSION_CURRENT, "field", new MockSynonymAnalyzer());
+    assertEquals(expected, qp.parse("\"old dogs\""));
+    qp.setDefaultOperator(Operator.AND);
+    assertEquals(expected, qp.parse("\"old dogs\""));
+    expected.setBoost(2.0f);
+    assertEquals(expected, qp.parse("\"old dogs\"^2"));
+    expected.setSlop(3);
+    assertEquals(expected, qp.parse("\"old dogs\"~3^2"));
+  }
+  
+  /**
+   * adds synonym of "國" for "国".
+   */
+  protected static class MockCJKSynonymFilter extends TokenFilter {
+    CharTermAttribute termAtt = addAttribute(CharTermAttribute.class);
+    PositionIncrementAttribute posIncAtt = addAttribute(PositionIncrementAttribute.class);
+    boolean addSynonym = false;
+    
+    public MockCJKSynonymFilter(TokenStream input) {
+      super(input);
+    }
+
+    @Override
+    public final boolean incrementToken() throws IOException {
+      if (addSynonym) { // inject our synonym
+        clearAttributes();
+        termAtt.setEmpty().append("國");
+        posIncAtt.setPositionIncrement(0);
+        addSynonym = false;
+        return true;
+      }
+      
+      if (input.incrementToken()) {
+        addSynonym = termAtt.toString().equals("国");
+        return true;
+      } else {
+        return false;
+      }
+    } 
+  }
+  
+  static class MockCJKSynonymAnalyzer extends Analyzer {
+    @Override
+    protected TokenStreamComponents createComponents(String fieldName, Reader reader) {
+      Tokenizer tokenizer = new SimpleCJKTokenizer(reader);
+      return new TokenStreamComponents(tokenizer, new MockCJKSynonymFilter(tokenizer));
+    }
+  }
+  
+  /** simple CJK synonym test */
+  public void testCJKSynonym() throws Exception {
+    BooleanQuery expected = new BooleanQuery(true);
+    expected.add(new TermQuery(new Term("field", "国")), BooleanClause.Occur.SHOULD);
+    expected.add(new TermQuery(new Term("field", "國")), BooleanClause.Occur.SHOULD);
+    QueryParser qp = new QueryParser(TEST_VERSION_CURRENT, "field", new MockCJKSynonymAnalyzer());
+    assertEquals(expected, qp.parse("国"));
+    qp.setDefaultOperator(Operator.AND);
+    assertEquals(expected, qp.parse("国"));
+    expected.setBoost(2.0f);
+    assertEquals(expected, qp.parse("国^2"));
+  }
+  
+  /** synonyms with default OR operator */
+  public void testCJKSynonymsOR() throws Exception {
+    BooleanQuery expected = new BooleanQuery();
+    expected.add(new TermQuery(new Term("field", "中")), BooleanClause.Occur.SHOULD);
+    BooleanQuery inner = new BooleanQuery(true);
+    inner.add(new TermQuery(new Term("field", "国")), BooleanClause.Occur.SHOULD);
+    inner.add(new TermQuery(new Term("field", "國")), BooleanClause.Occur.SHOULD);
+    expected.add(inner, BooleanClause.Occur.SHOULD);
+    QueryParser qp = new QueryParser(TEST_VERSION_CURRENT, "field", new MockCJKSynonymAnalyzer());
+    assertEquals(expected, qp.parse("中国"));
+    expected.setBoost(2.0f);
+    assertEquals(expected, qp.parse("中国^2"));
+  }
+  
+  /** more complex synonyms with default OR operator */
+  public void testCJKSynonymsOR2() throws Exception {
+    BooleanQuery expected = new BooleanQuery();
+    expected.add(new TermQuery(new Term("field", "中")), BooleanClause.Occur.SHOULD);
+    BooleanQuery inner = new BooleanQuery(true);
+    inner.add(new TermQuery(new Term("field", "国")), BooleanClause.Occur.SHOULD);
+    inner.add(new TermQuery(new Term("field", "國")), BooleanClause.Occur.SHOULD);
+    expected.add(inner, BooleanClause.Occur.SHOULD);
+    BooleanQuery inner2 = new BooleanQuery(true);
+    inner2.add(new TermQuery(new Term("field", "国")), BooleanClause.Occur.SHOULD);
+    inner2.add(new TermQuery(new Term("field", "國")), BooleanClause.Occur.SHOULD);
+    expected.add(inner2, BooleanClause.Occur.SHOULD);
+    QueryParser qp = new QueryParser(TEST_VERSION_CURRENT, "field", new MockCJKSynonymAnalyzer());
+    assertEquals(expected, qp.parse("中国国"));
+    expected.setBoost(2.0f);
+    assertEquals(expected, qp.parse("中国国^2"));
+  }
+  
+  /** synonyms with default AND operator */
+  public void testCJKSynonymsAND() throws Exception {
+    BooleanQuery expected = new BooleanQuery();
+    expected.add(new TermQuery(new Term("field", "中")), BooleanClause.Occur.MUST);
+    BooleanQuery inner = new BooleanQuery(true);
+    inner.add(new TermQuery(new Term("field", "国")), BooleanClause.Occur.SHOULD);
+    inner.add(new TermQuery(new Term("field", "國")), BooleanClause.Occur.SHOULD);
+    expected.add(inner, BooleanClause.Occur.MUST);
+    QueryParser qp = new QueryParser(TEST_VERSION_CURRENT, "field", new MockCJKSynonymAnalyzer());
+    qp.setDefaultOperator(Operator.AND);
+    assertEquals(expected, qp.parse("中国"));
+    expected.setBoost(2.0f);
+    assertEquals(expected, qp.parse("中国^2"));
+  }
+  
+  /** more complex synonyms with default AND operator */
+  public void testCJKSynonymsAND2() throws Exception {
+    BooleanQuery expected = new BooleanQuery();
+    expected.add(new TermQuery(new Term("field", "中")), BooleanClause.Occur.MUST);
+    BooleanQuery inner = new BooleanQuery(true);
+    inner.add(new TermQuery(new Term("field", "国")), BooleanClause.Occur.SHOULD);
+    inner.add(new TermQuery(new Term("field", "國")), BooleanClause.Occur.SHOULD);
+    expected.add(inner, BooleanClause.Occur.MUST);
+    BooleanQuery inner2 = new BooleanQuery(true);
+    inner2.add(new TermQuery(new Term("field", "国")), BooleanClause.Occur.SHOULD);
+    inner2.add(new TermQuery(new Term("field", "國")), BooleanClause.Occur.SHOULD);
+    expected.add(inner2, BooleanClause.Occur.MUST);
+    QueryParser qp = new QueryParser(TEST_VERSION_CURRENT, "field", new MockCJKSynonymAnalyzer());
+    qp.setDefaultOperator(Operator.AND);
+    assertEquals(expected, qp.parse("中国国"));
+    expected.setBoost(2.0f);
+    assertEquals(expected, qp.parse("中国国^2"));
+  }
+  
+  /** forms multiphrase query */
+  public void testCJKSynonymsPhrase() throws Exception {
+    MultiPhraseQuery expected = new MultiPhraseQuery();
+    expected.add(new Term("field", "中"));
+    expected.add(new Term[] { new Term("field", "国"), new Term("field", "國")});
+    QueryParser qp = new QueryParser(TEST_VERSION_CURRENT, "field", new MockCJKSynonymAnalyzer());
+    qp.setDefaultOperator(Operator.AND);
+    assertEquals(expected, qp.parse("\"中国\""));
+    expected.setBoost(2.0f);
+    assertEquals(expected, qp.parse("\"中国\"^2"));
+    expected.setSlop(3);
+    assertEquals(expected, qp.parse("\"中国\"~3^2"));
   }
   
 }

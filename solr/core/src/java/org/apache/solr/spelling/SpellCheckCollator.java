@@ -22,7 +22,9 @@ import java.util.Iterator;
 import java.util.List;
 
 import org.apache.lucene.analysis.Token;
+import org.apache.lucene.index.IndexReader;
 import org.apache.solr.common.params.CommonParams;
+import org.apache.solr.common.params.DisMaxParams;
 import org.apache.solr.common.params.GroupParams;
 import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.common.params.SolrParams;
@@ -33,15 +35,22 @@ import org.apache.solr.handler.component.ResponseBuilder;
 import org.apache.solr.handler.component.SearchComponent;
 import org.apache.solr.request.LocalSolrQueryRequest;
 import org.apache.solr.response.SolrQueryResponse;
+import org.apache.solr.search.EarlyTerminatingCollectorException;
+import org.apache.solr.search.SolrIndexSearcher;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 public class SpellCheckCollator {
   private static final Logger LOG = LoggerFactory.getLogger(SpellCheckCollator.class);
+  private int maxCollations = 1;
+  private int maxCollationTries = 0;
+  private int maxCollationEvaluations = 10000;
+  private boolean suggestionsMayOverlap = false;
+  private int docCollectionLimit = 0;
 
-  public List<SpellCheckCollation> collate(SpellingResult result, String originalQuery, ResponseBuilder ultimateResponse,
-                                           int maxCollations, int maxTries, int maxEvaluations, boolean suggestionsMayOverlap) {
-    List<SpellCheckCollation> collations = new ArrayList<SpellCheckCollation>();
+  public List<SpellCheckCollation> collate(SpellingResult result,
+      String originalQuery, ResponseBuilder ultimateResponse) {
+  List<SpellCheckCollation> collations = new ArrayList<SpellCheckCollation>();
 
     QueryComponent queryComponent = null;
     if (ultimateResponse.components != null) {
@@ -54,6 +63,7 @@ public class SpellCheckCollator {
     }
 
     boolean verifyCandidateWithQuery = true;
+    int maxTries = maxCollationTries;
     int maxNumberToIterate = maxTries;
     if (maxTries < 1) {
       maxTries = 1;
@@ -65,10 +75,17 @@ public class SpellCheckCollator {
       maxTries = 1;
       verifyCandidateWithQuery = false;
     }
+    docCollectionLimit = docCollectionLimit > 0 ? docCollectionLimit : 0;
+    int maxDocId = -1;
+    if (verifyCandidateWithQuery && docCollectionLimit > 0) {
+      IndexReader reader = ultimateResponse.req.getSearcher().getIndexReader();
+      maxDocId = reader.maxDoc();
+    }
 
     int tryNo = 0;
     int collNo = 0;
-    PossibilityIterator possibilityIter = new PossibilityIterator(result.getSuggestions(), maxNumberToIterate, maxEvaluations, suggestionsMayOverlap);
+    PossibilityIterator possibilityIter = new PossibilityIterator(result.getSuggestions(), 
+        maxNumberToIterate, maxCollationEvaluations, suggestionsMayOverlap);
     while (tryNo < maxTries && collNo < maxCollations && possibilityIter.hasNext()) {
 
       PossibilityIterator.RankedSpellPossibility possibility = possibilityIter.next();
@@ -96,12 +113,25 @@ public class SpellCheckCollator {
         }
         params.set(CommonParams.Q, collationQueryStr);
         params.remove(CommonParams.START);
+        params.set(CommonParams.ROWS, "" + docCollectionLimit);
+        // we don't want any stored fields
         params.set(CommonParams.FL, "id");
-        params.set(CommonParams.ROWS, "0");
+        // we'll sort by doc id to ensure no scoring is done.
+        params.set(CommonParams.SORT, "_docid_ asc");
+        // If a dismax query, don't add unnecessary clauses for scoring
+        params.remove(DisMaxParams.TIE);
+        params.remove(DisMaxParams.PF);
+        params.remove(DisMaxParams.PF2);
+        params.remove(DisMaxParams.PF3);
+        params.remove(DisMaxParams.BQ);
+        params.remove(DisMaxParams.BF);
+        // Collate testing does not support Grouping (see SOLR-2577)
         params.remove(GroupParams.GROUP);
 
         // creating a request here... make sure to close it!
-        ResponseBuilder checkResponse = new ResponseBuilder(new LocalSolrQueryRequest(ultimateResponse.req.getCore(), params),new SolrQueryResponse(), Arrays.<SearchComponent>asList(queryComponent));
+        ResponseBuilder checkResponse = new ResponseBuilder(
+            new LocalSolrQueryRequest(ultimateResponse.req.getCore(), params),
+            new SolrQueryResponse(), Arrays.<SearchComponent> asList(queryComponent)); 
         checkResponse.setQparser(ultimateResponse.getQparser());
         checkResponse.setFilters(ultimateResponse.getFilters());
         checkResponse.setQueryString(collationQueryStr);
@@ -109,8 +139,19 @@ public class SpellCheckCollator {
 
         try {
           queryComponent.prepare(checkResponse);
+          if (docCollectionLimit > 0) {
+            int f = checkResponse.getFieldFlags();
+            checkResponse.setFieldFlags(f |= SolrIndexSearcher.TERMINATE_EARLY);            
+          }
           queryComponent.process(checkResponse);
           hits = (Integer) checkResponse.rsp.getToLog().get("hits");
+        } catch (EarlyTerminatingCollectorException etce) {
+          assert (docCollectionLimit > 0);
+          if (etce.getLastDocId() + 1 == maxDocId) {
+            hits = docCollectionLimit;
+          } else {
+            hits = maxDocId / ((etce.getLastDocId() + 1) / docCollectionLimit);
+          }
         } catch (Exception e) {
           LOG.warn("Exception trying to re-query to check if a spell check possibility would return any hits.", e);
         } finally {
@@ -191,6 +232,27 @@ public class SpellCheckCollator {
       offset += corr.length() - oneForReqOrProhib - (tok.endOffset() - tok.startOffset());      
     }
     return collation.toString();
-  }
-
+  }  
+  public SpellCheckCollator setMaxCollations(int maxCollations) {
+    this.maxCollations = maxCollations;
+    return this;
+  }  
+  public SpellCheckCollator setMaxCollationTries(int maxCollationTries) {
+    this.maxCollationTries = maxCollationTries;
+    return this;
+  }  
+  public SpellCheckCollator setMaxCollationEvaluations(
+      int maxCollationEvaluations) {
+    this.maxCollationEvaluations = maxCollationEvaluations;
+    return this;
+  }  
+  public SpellCheckCollator setSuggestionsMayOverlap(
+      boolean suggestionsMayOverlap) {
+    this.suggestionsMayOverlap = suggestionsMayOverlap;
+    return this;
+  }  
+  public SpellCheckCollator setDocCollectionLimit(int docCollectionLimit) {
+    this.docCollectionLimit = docCollectionLimit;
+    return this;
+  }    
 }

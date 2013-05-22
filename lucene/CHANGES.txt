@@ -69,44 +69,48 @@ Changes in backwards compatibility policy
   suggesters, you now need to call setPreservePositionIncrements(false) instead
   of configuring the token filters to not increment positions. (Adrien Grand)
 
+* LUCENE-3907: EdgeNGramTokenizer now supports maxGramSize > 1024, doesn't trim
+  the input, sets position increment = 1 for all tokens and doesn't support
+  backward grams anymore. (Adrien Grand)
+
+* LUCENE-3907: EdgeNGramTokenFilter does not support backward grams and does
+  not update offsets anymore. (Adrien Grand)
+
+* LUCENE-4981: PositionFilter is now deprecated as it can corrupt token stream
+  graphs. Since it main use-case was to make query parsers generate boolean
+  queries instead of phrase queries, it is now advised to use
+  QueryParser.setAutoGeneratePhraseQueries(false) (for simple cases) or to
+  override QueryParser.newFieldQuery. (Adrien Grand, Steve Rowe)
+
 Bug Fixes
 
-* LUCENE-4935: CustomScoreQuery wrongly applied its query boost twice 
-  (boost^2).  (Robert Muir)
-
-* LUCENE-4948: Fixed ArrayIndexOutOfBoundsException in PostingsHighlighter
-  if you had a 64-bit JVM without compressed OOPS: IBM J9, or Oracle with
-  large heap/explicitly disabled.  (Mike McCandless, Uwe Schindler, Robert Muir)
+* LUCENE-4997: Internal test framework's tests are sensitive to previous 
+  test failures and tests.failfast. (Dawid Weiss, Shai Erera)
 
 * LUCENE-4955: NGramTokenizer now supports inputs larger than 1024 chars.
   (Adrien Grand)
 
-* LUCENE-4953: Fixed ParallelCompositeReader to inform ReaderClosedListeners of
-  its synthetic subreaders. FieldCaches keyed on the atomic childs will be purged
-  earlier and FC insanity prevented.  In addition, ParallelCompositeReader's
-  toString() was changed to better reflect the reader structure.
-  (Mike McCandless, Uwe Schindler)
-
 * LUCENE-4959: Fix incorrect return value in
   SimpleNaiveBayesClassifier.assignClass. (Alexey Kutin via Adrien Grand)
 
-* LUCENE-4968: Fixed ToParentBlockJoinQuery/Collector: correctly handle parent
-  hits that had no child matches, don't throw IllegalArgumentEx when
-  the child query has no hits, more aggressively catch cases where childQuery
-  incorrectly matches parent documents (Mike McCandless)
-
-* LUCENE-4970: Fix boost value of rewritten NGramPhraseQuery.
-  (Shingo Sasaki via Adrien Grand)
-
-* LUCENE-4974: CommitIndexTask was broken if no params were set. (Shai Erera)
-
-* LUCENE-4972: DirectoryTaxonomyWriter created empty commits even if no changes 
+* LUCENE-4972: DirectoryTaxonomyWriter created empty commits even if no changes
   were made. (Shai Erera, Michael McCandless)
   
-Optimizations
+* LUCENE-949: AnalyzingQueryParser can't work with leading wildcards.
+  (Tim Allison, Robert Muir, Steve Rowe)
 
-* LUCENE-4938: Don't use an unnecessarily large priority queue in IndexSearcher
-  methods that take top-N.  (Uwe Schindler, Mike McCandless, Robert Muir)
+* LUCENE-4980: Fix issues preventing mixing of RangeFacetRequest and
+  non-RangeFacetRequest when using DrillSideways.  (Mike McCandless,
+  Shai Erera)
+
+* LUCENE-4996: Ensure DocInverterPerField always includes field name
+  in exception messages.  (Markus Jelsma via Robert Muir)
+
+* LUCENE-4992: Fix constructor of CustomScoreQuery to take FunctionQuery
+  for scoringQueries. Instead use QueryValueSource to safely wrap arbitrary 
+  queries and use them with CustomScoreQuery.  (John Wang, Robert Muir)
+
+Optimizations
 
 * LUCENE-4936: Improve numeric doc values compression in case all values share
   a common divisor. In particular, this improves the compression ratio of dates
@@ -142,6 +146,80 @@ New Features
 
 * LUCENE-4965: Add dynamic (no taxonomy index used) numeric range
   faceting to Lucene's facet module (Mike McCandless, Shai Erera)
+
+* LUCENE-4979: LiveFieldFields can work with any ReferenceManager, not
+  just ReferenceManager<IndexSearcher> (Mike McCandless).
+
+* LUCENE-4975: Added a new Replicator module which can replicate index 
+  revisions between server and client. (Shai Erera, Mike McCandless)
+
+Build
+
+* LUCENE-4987: Upgrade randomized testing to version 2.0.10: 
+  Test framework may fail internally due to overly aggresive J9 optimizations. 
+  (Dawid Weiss, Shai Erera)
+
+Tests
+
+* LUCENE-4901: TestIndexWriterOnJRECrash should work on any 
+  JRE vendor via Runtime.halt().
+  (Mike McCandless, Robert Muir, Uwe Schindler, Rodrigo Trujillo, Dawid Weiss)
+
+======================= Lucene 4.3.1 =======================
+
+Bug Fixes
+
+* SOLR-4813: Fix SynonymFilterFactory to allow init parameters for
+  tokenizer factory used when parsing synonyms file.  (Shingo Sasaki, hossman)
+
+* LUCENE-4935: CustomScoreQuery wrongly applied its query boost twice
+  (boost^2).  (Robert Muir)
+
+* LUCENE-4948: Fixed ArrayIndexOutOfBoundsException in PostingsHighlighter
+  if you had a 64-bit JVM without compressed OOPS: IBM J9, or Oracle with
+  large heap/explicitly disabled.  (Mike McCandless, Uwe Schindler, Robert Muir)
+
+* LUCENE-4953: Fixed ParallelCompositeReader to inform ReaderClosedListeners of
+  its synthetic subreaders. FieldCaches keyed on the atomic childs will be purged
+  earlier and FC insanity prevented.  In addition, ParallelCompositeReader's
+  toString() was changed to better reflect the reader structure.
+  (Mike McCandless, Uwe Schindler)
+
+* LUCENE-4968: Fixed ToParentBlockJoinQuery/Collector: correctly handle parent
+  hits that had no child matches, don't throw IllegalArgumentEx when
+  the child query has no hits, more aggressively catch cases where childQuery
+  incorrectly matches parent documents (Mike McCandless)
+
+* LUCENE-4970: Fix boost value of rewritten NGramPhraseQuery.
+  (Shingo Sasaki via Adrien Grand)
+
+* LUCENE-4974: CommitIndexTask was broken if no params were set. (Shai Erera)
+
+* LUCENE-4986: Fixed case where a newly opened near-real-time reader
+  fails to reflect a delete from IndexWriter.tryDeleteDocument (Reg,
+  Mike McCandless)
+
+* LUCENE-4994: Fix PatternKeywordMarkerFilter to have public constructor.
+  (Uwe Schindler)
+
+* LUCENE-4993: Fix BeiderMorseFilter to preserve custom attributes when
+  inserting tokens with position increment 0.  (Uwe Schindler)
+
+* LUCENE-4991: Fix handling of synonyms in classic QueryParser.getFieldQuery for
+  terms not separated by whitespace. PositionIncrementAttribute was ignored, so with
+  default AND synonyms wrongly became mandatory clauses, and with OR, the
+  coordination factor was wrong.  (李威, Robert Muir)
+
+* LUCENE-5002: IndexWriter#deleteAll() caused a deadlock in DWPT / DWSC if a
+  DwPT was flushing concurrently while deleteAll() aborted all DWPT. The IW
+  should never wait on DWPT via the flush control while holding on to the IW
+  Lock. (Simon Willnauer)
+
+Optimizations
+
+* LUCENE-4938: Don't use an unnecessarily large priority queue in IndexSearcher
+  methods that take top-N.  (Uwe Schindler, Mike McCandless, Robert Muir)
+
 
 ======================= Lucene 4.3.0 =======================
 

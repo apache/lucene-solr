@@ -18,10 +18,11 @@ package org.apache.lucene.index;
  *
  */
 
-import java.io.BufferedInputStream;
 import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
+import java.io.OutputStream;
+import java.io.PrintStream;
 import java.lang.reflect.Field;
 import java.lang.reflect.Method;
 import java.util.ArrayList;
@@ -49,10 +50,6 @@ public class TestIndexWriterOnJRECrash extends TestNRTThreads {
   
   @Override @Nightly
   public void testNRTThreads() throws Exception {
-    String vendor = Constants.JAVA_VENDOR;
-    assumeTrue(vendor + " JRE not supported.", 
-        vendor.startsWith("Oracle") || vendor.startsWith("Sun") || vendor.startsWith("Apple"));
-    
     // if we are not the fork
     if (System.getProperty("tests.crashmode") == null) {
       // try up to 10 times to create an index
@@ -112,18 +109,40 @@ public class TestIndexWriterOnJRECrash extends TestNRTThreads {
     pb.directory(tempDir);
     pb.redirectErrorStream(true);
     Process p = pb.start();
-    InputStream is = p.getInputStream();
-    BufferedInputStream isl = new BufferedInputStream(is);
-    byte buffer[] = new byte[1024];
-    int len = 0;
-    if (VERBOSE) System.err.println(">>> Begin subprocess output");
-    while ((len = isl.read(buffer)) != -1) {
-      if (VERBOSE) {
-        System.err.write(buffer, 0, len);
-      }
-    }
-    if (VERBOSE) System.err.println("<<< End subprocess output");
+
+    // We pump everything to stderr.
+    PrintStream childOut = System.err; 
+    Thread stdoutPumper = ThreadPumper.start(p.getInputStream(), childOut);
+    Thread stderrPumper = ThreadPumper.start(p.getErrorStream(), childOut);
+    if (VERBOSE) childOut.println(">>> Begin subprocess output");
     p.waitFor();
+    stdoutPumper.join();
+    stderrPumper.join();
+    if (VERBOSE) childOut.println("<<< End subprocess output");
+  }
+
+  /** A pipe thread. It'd be nice to reuse guava's implementation for this... */
+  static class ThreadPumper {
+    public static Thread start(final InputStream from, final OutputStream to) {
+      Thread t = new Thread() {
+        @Override
+        public void run() {
+          try {
+            byte [] buffer = new byte [1024];
+            int len;
+            while ((len = from.read(buffer)) != -1) {
+              if (VERBOSE) {
+                to.write(buffer, 0, len);
+              }
+            }
+          } catch (IOException e) {
+            System.err.println("Couldn't pipe from the forked process: " + e.toString());
+          }
+        }
+      };
+      t.start();
+      return t;
+    }
   }
   
   /**
@@ -155,20 +174,40 @@ public class TestIndexWriterOnJRECrash extends TestNRTThreads {
     }
     return false;
   }
-  
+
   /**
    * currently, this only works/tested on Sun and IBM.
    */
   public void crashJRE() {
-    try {
-      Class<?> clazz = Class.forName("sun.misc.Unsafe");
-      // we should use getUnsafe instead, harmony implements it, etc.
-      Field field = clazz.getDeclaredField("theUnsafe");
-      field.setAccessible(true);
-      Object o = field.get(null);
-      Method m = clazz.getMethod("putAddress", long.class, long.class);
-      m.invoke(o, 0L, 0L);
-    } catch (Exception e) { e.printStackTrace(); }
-    fail();
+    final String vendor = Constants.JAVA_VENDOR;
+    final boolean supportsUnsafeNpeDereference = 
+        vendor.startsWith("Oracle") || 
+        vendor.startsWith("Sun") || 
+        vendor.startsWith("Apple");
+
+      try {
+        if (supportsUnsafeNpeDereference) {
+          try {
+            Class<?> clazz = Class.forName("sun.misc.Unsafe");
+            Field field = clazz.getDeclaredField("theUnsafe");
+            field.setAccessible(true);
+            Object o = field.get(null);
+            Method m = clazz.getMethod("putAddress", long.class, long.class);
+            m.invoke(o, 0L, 0L);
+          } catch (Throwable e) {
+            System.out.println("Couldn't kill the JVM via Unsafe.");
+            e.printStackTrace(System.out); 
+          }
+        }
+
+        // Fallback attempt to Runtime.halt();
+        Runtime.getRuntime().halt(-1);
+      } catch (Exception e) {
+        System.out.println("Couldn't kill the JVM.");
+        e.printStackTrace(System.out); 
+      }
+
+      // We couldn't get the JVM to crash for some reason.
+      fail();
   }
 }

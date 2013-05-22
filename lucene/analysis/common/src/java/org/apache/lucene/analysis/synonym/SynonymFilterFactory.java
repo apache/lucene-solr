@@ -26,6 +26,7 @@ import java.nio.charset.CharsetDecoder;
 import java.nio.charset.CodingErrorAction;
 import java.text.ParseException;
 import java.util.HashMap;
+import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 
@@ -48,9 +49,18 @@ import org.apache.lucene.util.Version;
  *     &lt;tokenizer class="solr.WhitespaceTokenizerFactory"/&gt;
  *     &lt;filter class="solr.SynonymFilterFactory" synonyms="synonyms.txt" 
  *             format="solr" ignoreCase="false" expand="true" 
- *             tokenizerFactory="solr.WhitespaceTokenizerFactory"/&gt;
+ *             tokenizerFactory="solr.WhitespaceTokenizerFactory"
+ *             [optional tokenizer factory parameters]/&gt;
  *   &lt;/analyzer&gt;
  * &lt;/fieldType&gt;</pre>
+ * 
+ * <p>
+ * An optional param name prefix of "tokenizerFactory." may be used for any 
+ * init params that the SynonymFilterFactory needs to pass to the specified 
+ * TokenizerFactory.  If the TokenizerFactory expects an init parameters with 
+ * the same name as an init param used by the SynonymFilterFactory, the prefix 
+ * is mandatory.
+ * </p>
  */
 public class SynonymFilterFactory extends TokenFilterFactory implements ResourceLoaderAware {
   private final boolean ignoreCase;
@@ -58,19 +68,27 @@ public class SynonymFilterFactory extends TokenFilterFactory implements Resource
   private final String synonyms;
   private final String format;
   private final boolean expand;
+  private final Map<String, String> tokArgs = new HashMap<String, String>();
 
   private SynonymMap map;
   
   public SynonymFilterFactory(Map<String,String> args) {
     super(args);
     ignoreCase = getBoolean(args, "ignoreCase", false);
-    tokenizerFactory = get(args, "tokenizerFactory");
-    if (tokenizerFactory != null) {
-      assureMatchVersion();
-    }
     synonyms = require(args, "synonyms");
     format = get(args, "format");
     expand = getBoolean(args, "expand", true);
+
+    tokenizerFactory = get(args, "tokenizerFactory");
+    if (tokenizerFactory != null) {
+      assureMatchVersion();
+      tokArgs.put("luceneMatchVersion", getLuceneMatchVersion().toString());
+      for (Iterator<String> itr = args.keySet().iterator(); itr.hasNext();) {
+        String key = itr.next();
+        tokArgs.put(key.replaceAll("^tokenizerFactory\\.",""), args.get(key));
+        itr.remove();
+      }
+    }
     if (!args.isEmpty()) {
       throw new IllegalArgumentException("Unknown parameters: " + args);
     }
@@ -159,11 +177,9 @@ public class SynonymFilterFactory extends TokenFilterFactory implements Resource
   
   // (there are no tests for this functionality)
   private TokenizerFactory loadTokenizerFactory(ResourceLoader loader, String cname) throws IOException {
-    Map<String,String> args = new HashMap<String,String>();
-    args.put("luceneMatchVersion", getLuceneMatchVersion().toString());
     Class<? extends TokenizerFactory> clazz = loader.findClass(cname, TokenizerFactory.class);
     try {
-      TokenizerFactory tokFactory = clazz.getConstructor(Map.class).newInstance(args);
+      TokenizerFactory tokFactory = clazz.getConstructor(Map.class).newInstance(tokArgs);
       if (tokFactory instanceof ResourceLoaderAware) {
         ((ResourceLoaderAware) tokFactory).inform(loader);
       }

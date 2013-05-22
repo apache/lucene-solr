@@ -66,22 +66,15 @@ import org.apache.lucene.analysis.compound.hyphenation.HyphenationTree;
 import org.apache.lucene.analysis.hunspell.HunspellDictionary;
 import org.apache.lucene.analysis.hunspell.HunspellDictionaryTest;
 import org.apache.lucene.analysis.miscellaneous.HyphenatedWordsFilter;
-import org.apache.lucene.analysis.miscellaneous.KeepWordFilter;
-import org.apache.lucene.analysis.miscellaneous.LengthFilter;
 import org.apache.lucene.analysis.miscellaneous.LimitTokenCountFilter;
 import org.apache.lucene.analysis.miscellaneous.LimitTokenPositionFilter;
 import org.apache.lucene.analysis.miscellaneous.StemmerOverrideFilter;
 import org.apache.lucene.analysis.miscellaneous.StemmerOverrideFilter.StemmerOverrideMap;
-import org.apache.lucene.analysis.miscellaneous.TrimFilter;
 import org.apache.lucene.analysis.miscellaneous.WordDelimiterFilter;
-import org.apache.lucene.analysis.ngram.EdgeNGramTokenFilter;
-import org.apache.lucene.analysis.ngram.EdgeNGramTokenizer;
-import org.apache.lucene.analysis.ngram.Lucene43NGramTokenizer;
 import org.apache.lucene.analysis.path.PathHierarchyTokenizer;
 import org.apache.lucene.analysis.path.ReversePathHierarchyTokenizer;
 import org.apache.lucene.analysis.payloads.IdentityEncoder;
 import org.apache.lucene.analysis.payloads.PayloadEncoder;
-import org.apache.lucene.analysis.position.PositionFilter;
 import org.apache.lucene.analysis.snowball.TestSnowball;
 import org.apache.lucene.analysis.standard.StandardTokenizer;
 import org.apache.lucene.analysis.synonym.SynonymMap;
@@ -153,17 +146,6 @@ public class TestRandomChains extends BaseTokenStreamTestCase {
           // Not broken: we forcefully add this, so we shouldn't
           // also randomly pick it:
           ValidatingTokenFilter.class,
-          // NOTE: these by themselves won't cause any 'basic assertions' to fail.
-          // but see https://issues.apache.org/jira/browse/LUCENE-3920, if any 
-          // tokenfilter that combines words (e.g. shingles) comes after them,
-          // this will create bogus offsets because their 'offsets go backwards',
-          // causing shingle or whatever to make a single token with a 
-          // startOffset thats > its endOffset
-          // (see LUCENE-3738 for a list of other offenders here)
-          // broken!
-          EdgeNGramTokenizer.class,
-          // broken!
-          EdgeNGramTokenFilter.class,
           // broken!
           WordDelimiterFilter.class)) {
         for (Constructor<?> ctor : c.getConstructors()) {
@@ -185,8 +167,6 @@ public class TestRandomChains extends BaseTokenStreamTestCase {
           PathHierarchyTokenizer.class,
           HyphenationCompoundWordTokenFilter.class,
           DictionaryCompoundWordTokenFilter.class,
-          // TODO: corrumpts graphs (offset consistency check):
-          PositionFilter.class,
           // TODO: it seems to mess up offsets!?
           WikipediaTokenizer.class,
           // TODO: doesn't handle graph inputs
@@ -195,6 +175,8 @@ public class TestRandomChains extends BaseTokenStreamTestCase {
           CJKBigramFilter.class,
           // TODO: doesn't handle graph inputs (or even look at positionIncrement)
           HyphenatedWordsFilter.class,
+          // TODO: LUCENE-4983
+          CommonGramsFilter.class,
           // TODO: doesn't handle graph inputs
           CommonGramsQueryFilter.class)) {
         for (Constructor<?> ctor : c.getConstructors()) {
@@ -438,20 +420,6 @@ public class TestRandomChains extends BaseTokenStreamTestCase {
           Rethrow.rethrow(ex);
           return null; // unreachable code
         }
-      }
-    });
-    put(EdgeNGramTokenizer.Side.class, new ArgProducer() {
-      @Override public Object create(Random random) {
-        return random.nextBoolean() 
-            ? EdgeNGramTokenizer.Side.FRONT 
-            : EdgeNGramTokenizer.Side.BACK;
-      }
-    });
-    put(EdgeNGramTokenFilter.Side.class, new ArgProducer() {
-      @Override public Object create(Random random) {
-        return random.nextBoolean() 
-            ? EdgeNGramTokenFilter.Side.FRONT 
-            : EdgeNGramTokenFilter.Side.BACK;
       }
     });
     put(HyphenationTree.class, new ArgProducer() {

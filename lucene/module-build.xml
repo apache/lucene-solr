@@ -220,7 +220,29 @@
     </ant>
     <property name="facet-javadocs.uptodate" value="true"/>
   </target>
- 
+
+  <property name="replicator.jar" value="${common.dir}/build/replicator/lucene-replicator-${version}.jar"/>
+  <target name="check-replicator-uptodate" unless="replicator.uptodate">
+    <module-uptodate name="replicator" jarfile="${replicator.jar}" property="replicator.uptodate"/>
+  </target>
+  <target name="jar-replicator" unless="replicator.uptodate" depends="check-replicator-uptodate">
+    <ant dir="${common.dir}/replicator" target="jar-core" inheritall="false">
+      <propertyset refid="uptodate.and.compiled.properties"/>
+    </ant>
+    <property name="replicator.uptodate" value="true"/>
+  </target>
+
+  <property name="replicator-javadoc.jar" value="${common.dir}/build/replicator/lucene-replicator-${version}-javadoc.jar"/>
+  <target name="check-replicator-javadocs-uptodate" unless="replicator-javadocs.uptodate">
+    <module-uptodate name="replicator" jarfile="${replicator-javadoc.jar}" property="replicator-javadocs.uptodate"/>
+  </target>
+  <target name="javadocs-replicator" unless="replicator-javadocs.uptodate" depends="check-replicator-javadocs-uptodate">
+    <ant dir="${common.dir}/replicator" target="javadocs" inheritAll="false">
+      <propertyset refid="uptodate.and.compiled.properties"/>
+    </ant>
+    <property name="replicator-javadocs.uptodate" value="true"/>
+  </target>
+
   <property name="analyzers-icu.jar" value="${common.dir}/build/analysis/icu/lucene-analyzers-icu-${version}.jar"/>
   <target name="check-analyzers-icu-uptodate" unless="analyzers-icu.uptodate">
     <module-uptodate name="analysis/icu" jarfile="${analyzers-icu.jar}" property="analyzers-icu.uptodate"/>

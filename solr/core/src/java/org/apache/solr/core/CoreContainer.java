@@ -270,7 +270,7 @@ public class CoreContainer
     if (libDir != null) {
       File f = FileUtils.resolvePath(new File(dir), libDir);
       log.info("loading shared library: " + f.getAbsolutePath());
-      loader.addToClassLoader(libDir);
+      loader.addToClassLoader(libDir, null, false);
       loader.reloadLuceneSPI();
     }
 
@@ -289,6 +289,7 @@ public class CoreContainer
       adminPath = cfg.get(ConfigSolr.CfgProp.SOLR_ADMINPATH, "/admin/cores");
     } else {
       adminPath = "/admin/cores";
+      defaultCoreName = DEFAULT_DEFAULT_CORE_NAME;
     }
     zkHost = cfg.get(ConfigSolr.CfgProp.SOLR_ZKHOST, null);
     coreLoadThreads = cfg.getInt(ConfigSolr.CfgProp.SOLR_CORELOADTHREADS, CORE_LOAD_THREADS);
@@ -580,6 +581,7 @@ public class CoreContainer
       zkSys.close();
 
     }
+    org.apache.lucene.util.IOUtils.closeWhileHandlingException(loader); // best effort
   }
 
   public void cancelCoreRecoveries() {
@@ -1113,12 +1115,12 @@ public class CoreContainer
       coresAttribs.put("defaultCoreName", defaultCoreName);
     }
 
-    addCoresAttrib(coresAttribs, ConfigSolr.CfgProp.SOLR_HOSTPORT, "hostPort",zkSys.getHostPort(), ZkContainer.DEFAULT_HOST_PORT);
+    addCoresAttrib(coresAttribs, ConfigSolr.CfgProp.SOLR_HOSTPORT, "hostPort",zkSys.getHostPort(), null);
     addCoresAttrib(coresAttribs, ConfigSolr.CfgProp.SOLR_ZKCLIENTTIMEOUT, "zkClientTimeout",
         intToString(this.zkClientTimeout),
         Integer.toString(DEFAULT_ZK_CLIENT_TIMEOUT));
     addCoresAttrib(coresAttribs, ConfigSolr.CfgProp.SOLR_HOSTCONTEXT, "hostContext",
-        zkSys.getHostContext(), ZkContainer.DEFAULT_HOST_CONTEXT);
+        zkSys.getHostContext(), null);
     addCoresAttrib(coresAttribs, ConfigSolr.CfgProp.SOLR_LEADERVOTEWAIT, "leaderVoteWait",
         zkSys.getLeaderVoteWait(), LEADER_VOTE_WAIT);
     addCoresAttrib(coresAttribs, ConfigSolr.CfgProp.SOLR_CORELOADTHREADS, "coreLoadThreads",

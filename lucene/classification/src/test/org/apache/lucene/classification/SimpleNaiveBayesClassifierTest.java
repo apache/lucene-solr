@@ -18,9 +18,14 @@ package org.apache.lucene.classification;
 
 import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.analysis.MockAnalyzer;
+import org.apache.lucene.analysis.Tokenizer;
+import org.apache.lucene.analysis.core.KeywordTokenizer;
+import org.apache.lucene.analysis.ngram.EdgeNGramTokenFilter;
 import org.apache.lucene.analysis.ngram.EdgeNGramTokenizer;
+import org.apache.lucene.analysis.reverse.ReverseStringFilter;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.LuceneTestCase;
+import org.apache.lucene.util.Version;
 import org.junit.Test;
 
 import java.io.Reader;
@@ -46,8 +51,8 @@ public class SimpleNaiveBayesClassifierTest extends ClassificationTestBase<Bytes
   private class NGramAnalyzer extends Analyzer {
     @Override
     protected TokenStreamComponents createComponents(String fieldName, Reader reader) {
-      return new TokenStreamComponents(new EdgeNGramTokenizer(reader, EdgeNGramTokenizer.Side.BACK,
-          10, 20));
+      final Tokenizer tokenizer = new KeywordTokenizer(reader);
+      return new TokenStreamComponents(tokenizer, new ReverseStringFilter(TEST_VERSION_CURRENT, new EdgeNGramTokenFilter(TEST_VERSION_CURRENT, new ReverseStringFilter(TEST_VERSION_CURRENT, tokenizer), 10, 20)));
     }
   }
 

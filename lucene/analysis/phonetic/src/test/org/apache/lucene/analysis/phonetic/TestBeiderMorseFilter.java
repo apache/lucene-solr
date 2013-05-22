@@ -19,7 +19,9 @@ package org.apache.lucene.analysis.phonetic;
 
 import java.io.IOException;
 import java.io.Reader;
+import java.io.StringReader;
 import java.util.HashSet;
+import java.util.regex.Pattern;
 
 import org.apache.commons.codec.language.bm.NameType;
 import org.apache.commons.codec.language.bm.PhoneticEngine;
@@ -29,7 +31,10 @@ import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.analysis.BaseTokenStreamTestCase;
 import org.apache.lucene.analysis.MockTokenizer;
 import org.apache.lucene.analysis.Tokenizer;
+import org.apache.lucene.analysis.TokenStream;
 import org.apache.lucene.analysis.core.KeywordTokenizer;
+import org.apache.lucene.analysis.miscellaneous.PatternKeywordMarkerFilter;
+import org.apache.lucene.analysis.tokenattributes.KeywordAttribute;
 import org.junit.Ignore;
 
 /** Tests {@link BeiderMorseFilter} */
@@ -102,5 +107,21 @@ public class TestBeiderMorseFilter extends BaseTokenStreamTestCase {
       }
     };
     checkOneTermReuse(a, "", "");
+  }
+  
+  public void testCustomAttribute() throws IOException {
+    TokenStream stream = new KeywordTokenizer(new StringReader("D'Angelo"));
+    stream = new PatternKeywordMarkerFilter(stream, Pattern.compile(".*"));
+    stream = new BeiderMorseFilter(stream, new PhoneticEngine(NameType.GENERIC, RuleType.EXACT, true));
+    KeywordAttribute keyAtt = stream.addAttribute(KeywordAttribute.class);
+    stream.reset();
+    int i = 0;
+    while(stream.incrementToken()) {
+      assertTrue(keyAtt.isKeyword());
+      i++;
+    }
+    assertEquals(12, i);
+    stream.end();
+    stream.close();
   }
 }

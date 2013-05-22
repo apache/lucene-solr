@@ -27,6 +27,7 @@
     <buildFile url="file://$PROJECT_DIR$/lucene/misc/build.xml" />
     <buildFile url="file://$PROJECT_DIR$/lucene/queries/build.xml" />
     <buildFile url="file://$PROJECT_DIR$/lucene/queryparser/build.xml" />
+    <buildFile url="file://$PROJECT_DIR$/lucene/replicator/build.xml" />
     <buildFile url="file://$PROJECT_DIR$/lucene/sandbox/build.xml" />
     <buildFile url="file://$PROJECT_DIR$/lucene/spatial/build.xml" />
     <buildFile url="file://$PROJECT_DIR$/lucene/suggest/build.xml" />

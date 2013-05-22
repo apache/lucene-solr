@@ -97,17 +97,6 @@ public class TestNGramFilters extends BaseTokenStreamFactoryTestCase {
   }
 
   /**
-   * Test EdgeNGramTokenizerFactory with side option
-   */
-  public void testEdgeNGramTokenizer3() throws Exception {
-    Reader reader = new StringReader("ready");
-    TokenStream stream = tokenizerFactory("EdgeNGram",
-        "side", "back").create(reader);
-    assertTokenStreamContents(stream, 
-        new String[] { "y" });
-  }
-
-  /**
    * Test EdgeNGramFilterFactory
    */
   public void testEdgeNGramFilter() throws Exception {
@@ -129,18 +118,6 @@ public class TestNGramFilters extends BaseTokenStreamFactoryTestCase {
         "maxGramSize", "2").create(stream);
     assertTokenStreamContents(stream, 
         new String[] { "t", "te" });
-  }
-
-  /**
-   * Test EdgeNGramFilterFactory with side option
-   */
-  public void testEdgeNGramFilter3() throws Exception {
-    Reader reader = new StringReader("ready");
-    TokenStream stream = new MockTokenizer(reader, MockTokenizer.WHITESPACE, false);
-    stream = tokenFilterFactory("EdgeNGram",
-        "side", "back").create(stream);
-    assertTokenStreamContents(stream, 
-        new String[] { "y" });
   }
   
   /** Test that bogus arguments result in exception */

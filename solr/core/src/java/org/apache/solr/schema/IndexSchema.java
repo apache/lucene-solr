@@ -432,11 +432,25 @@ public class IndexSchema {
       final XPath xpath = schemaConf.getXPath();
       String expression = stepsToPath(SCHEMA, AT + NAME);
       Node nd = (Node) xpath.evaluate(expression, document, XPathConstants.NODE);
+      StringBuilder sb = new StringBuilder();
+      // Another case where the initialization from the test harness is different than the "real world"
+      sb.append("[");
+      if (loader.getCoreProperties() != null) {
+        sb.append(loader.getCoreProperties().getProperty(NAME));
+      } else {
+        sb.append("null");
+      }
+      sb.append("] ");
       if (nd==null) {
-        log.warn("schema has no name!");
+        sb.append("schema has no name!");
+        log.warn(sb.toString());
       } else {
         name = nd.getNodeValue();
-        log.info("Schema " + NAME + "=" + name);
+        sb.append("Schema ");
+        sb.append(NAME);
+        sb.append("=");
+        sb.append(name);
+        log.info(sb.toString());
       }
 
       //                      /schema/@version

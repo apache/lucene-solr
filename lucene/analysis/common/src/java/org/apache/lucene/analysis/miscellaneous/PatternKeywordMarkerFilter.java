@@ -42,7 +42,7 @@ public final class PatternKeywordMarkerFilter extends KeywordMarkerFilter {
    * @param pattern
    *          the pattern to apply to the incoming term buffer
    **/
-  protected PatternKeywordMarkerFilter(TokenStream in, Pattern pattern) {
+  public PatternKeywordMarkerFilter(TokenStream in, Pattern pattern) {
     super(in);
     this.matcher = pattern.matcher("");
   }

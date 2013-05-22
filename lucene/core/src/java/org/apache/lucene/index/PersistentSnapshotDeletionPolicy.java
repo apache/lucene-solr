@@ -19,6 +19,7 @@ package org.apache.lucene.index;
 
 import java.io.IOException;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map.Entry;
@@ -198,6 +199,15 @@ public class PersistentSnapshotDeletionPolicy extends SnapshotDeletionPolicy {
         }
       } else {
         IOUtils.close(out);
+      }
+    }
+
+    dir.sync(Collections.singletonList(fileName));
+    
+    if (nextWriteGen > 0) {
+      String lastSaveFile = SNAPSHOTS_PREFIX + (nextWriteGen-1);
+      if (dir.fileExists(lastSaveFile)) {
+        dir.deleteFile(lastSaveFile);
       }
     }
 
