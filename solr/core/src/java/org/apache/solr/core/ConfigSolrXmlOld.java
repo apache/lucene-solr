@@ -18,9 +18,7 @@ package org.apache.solr.core;
  */
 
 import java.io.File;
-import java.io.FileInputStream;
 import java.io.IOException;
-import java.io.InputStream;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -34,9 +32,9 @@ import javax.xml.parsers.ParserConfigurationException;
 import javax.xml.xpath.XPathConstants;
 import javax.xml.xpath.XPathExpressionException;
 
-import org.apache.commons.io.IOUtils;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.util.DOMUtil;
+import org.apache.solr.util.PropertiesUtil;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.w3c.dom.NamedNodeMap;
@@ -168,7 +166,9 @@ public class ConfigSolrXmlOld extends ConfigSolr {
     for (int idx = 0; idx < coreNodes.getLength(); ++idx) {
       Node node = coreNodes.item(idx);
       String name = DOMUtil.getAttr(node, CoreDescriptor.CORE_NAME, null);
+
       String dataDir = DOMUtil.getAttr(node, CoreDescriptor.CORE_DATADIR, null);
+      if (dataDir != null) dataDir = PropertiesUtil.substituteProperty(dataDir, null);
       if (name != null) {
         if (!names.contains(name)) {
           names.add(name);
@@ -180,18 +180,28 @@ public class ConfigSolrXmlOld extends ConfigSolr {
       }
 
       String instDir = DOMUtil.getAttr(node, CoreDescriptor.CORE_INSTDIR, null);
-      if (dataDir != null && instDir != null) { // this won't load anyway if instDir not specified.
+      if (instDir != null) instDir = PropertiesUtil.substituteProperty(instDir, null);
 
-        String absData = new File(instDir, dataDir).getCanonicalPath();
-        if (!dirs.containsKey(absData)) {
-          dirs.put(absData, name);
-        } else {
-          String msg = String
-              .format(
-                  Locale.ROOT,
-                  "More than one core points to data dir %s. They are in %s and %s",
-                  absData, dirs.get(absData), name);
-          log.warn(msg);
+      if (dataDir != null) {
+        String absData = null;
+        File dataFile = new File(dataDir);
+        if (dataFile.isAbsolute()) {
+          absData = dataFile.getCanonicalPath();
+        } else if (instDir != null) {
+          File instFile = new File(instDir);
+          absData = new File(instFile, dataDir).getCanonicalPath();
+        }
+        if (absData != null) {
+          if (!dirs.containsKey(absData)) {
+            dirs.put(absData, name);
+          } else {
+            String msg = String
+                .format(
+                    Locale.ROOT,
+                    "More than one core points to data dir %s. They are in %s and %s",
+                    absData, dirs.get(absData), name);
+            log.warn(msg);
+          }
         }
       }
     }
@@ -273,29 +283,6 @@ public class ConfigSolrXmlOld extends ConfigSolr {
     }
     
     return null;
-  }
-
-  static Properties getCoreProperties(String instanceDir, CoreDescriptor dcore) {
-    String file = dcore.getPropertiesName();
-    if (file == null) file = "conf" + File.separator + "solrcore.properties";
-    File corePropsFile = new File(file);
-    if (!corePropsFile.isAbsolute()) {
-      corePropsFile = new File(instanceDir, file);
-    }
-    Properties p = dcore.getCoreProperties();
-    if (corePropsFile.exists() && corePropsFile.isFile()) {
-      p = new Properties(dcore.getCoreProperties());
-      InputStream is = null;
-      try {
-        is = new FileInputStream(corePropsFile);
-        p.load(is);
-      } catch (IOException e) {
-        log.warn("Error loading properties ", e);
-      } finally {
-        IOUtils.closeQuietly(is);
-      }
-    }
-    return p;
   }
 
   public static final String DEF_SOLR_XML = "<?xml version=\"1.0\" encoding=\"UTF-8\" ?>\n"
