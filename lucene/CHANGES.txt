@@ -106,6 +106,10 @@ Bug Fixes
 * LUCENE-4996: Ensure DocInverterPerField always includes field name
   in exception messages.  (Markus Jelsma via Robert Muir)
 
+* LUCENE-4992: Fix constructor of CustomScoreQuery to take FunctionQuery
+  for scoringQueries. Instead use QueryValueSource to safely wrap arbitrary 
+  queries and use them with CustomScoreQuery.  (John Wang, Robert Muir)
+
 Optimizations
 
 * LUCENE-4936: Improve numeric doc values compression in case all values share
