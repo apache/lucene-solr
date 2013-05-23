@@ -1277,12 +1277,9 @@ public final class ZkController {
     downloadFromZK(zkClient, ZkController.CONFIGS_ZKNODE + "/" + configName, dir);
   }
 
-  public void preRegister(SolrCore core) throws KeeperException, InterruptedException {
-    CoreDescriptor cd = core.getCoreDescriptor();
-    if (Slice.CONSTRUCTION.equals(cd.getCloudDescriptor().getShardState())) {
-      // set update log to buffer before publishing the core
-      core.getUpdateHandler().getUpdateLog().bufferUpdates();
-    }
+  public void preRegister(CoreDescriptor cd) throws KeeperException, InterruptedException {
+
+
     // before becoming available, make sure we are not live and active
     // this also gets us our assigned shard id if it was not specified
     publish(cd, ZkStateReader.DOWN, false);
