@@ -426,6 +426,16 @@ public class CoreContainer
                   c = create(p);
                   registerCore(p.isTransient(), name, c, false);
                 } catch (Throwable t) {
+                  if (isZooKeeperAware()) {
+                    try {
+                      zkSys.zkController.unregister(name, p);
+                    } catch (InterruptedException e) {
+                      Thread.currentThread().interrupt();
+                      SolrException.log(log, null, e);
+                    } catch (KeeperException e) {
+                      SolrException.log(log, null, e);
+                    }
+                  }
                   SolrException.log(log, null, t);
                   if (c != null) {
                     c.close();
@@ -988,6 +998,19 @@ public class CoreContainer
         core.open();
       }
     } catch(Exception ex){
+      // remains to be seen how transient cores and such
+      // will work in SolrCloud mode, but just to be future 
+      // proof...
+      if (isZooKeeperAware()) {
+        try {
+          getZkController().unregister(name, desc);
+        } catch (InterruptedException e) {
+          Thread.currentThread().interrupt();
+          SolrException.log(log, null, e);
+        } catch (KeeperException e) {
+          SolrException.log(log, null, e);
+        }
+      }
       throw recordAndThrow(name, "Unable to create core: " + name, ex);
     } finally {
       solrCores.removeFromPendingOps(name);

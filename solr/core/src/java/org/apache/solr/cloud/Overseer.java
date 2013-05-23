@@ -537,6 +537,15 @@ public class Overseer {
         DocCollection coll = newCollections.get(collection);
         if (coll == null) {
           // TODO: log/error that we didn't find it?
+          // just in case, remove the zk collection node
+          try {
+            zkClient.clean("/collections/" + collection);
+          } catch (InterruptedException e) {
+            SolrException.log(log, "Cleaning up collection in zk was interrupted:" + collection, e);
+            Thread.currentThread().interrupt();
+          } catch (KeeperException e) {
+            SolrException.log(log, "Problem cleaning up collection in zk:" + collection, e);
+          }
           return clusterState;
         }
 
