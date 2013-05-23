@@ -39,8 +39,7 @@
     <dependency org="org.eclipse.jetty" name="jetty-io" rev="&jetty.version;" transitive="false" conf="jetty->default"/>
     <dependency org="org.eclipse.jetty" name="jetty-continuation" rev="&jetty.version;" transitive="false" conf="jetty->default"/>
     <dependency org="org.eclipse.jetty" name="jetty-http" rev="&jetty.version;" transitive="false" conf="jetty->default"/>
-    <dependency org="org.slf4j" name="slf4j-api" rev="1.6.6" transitive="false" conf="logging->default"/>
-    <dependency org="org.slf4j" name="jcl-over-slf4j" rev="1.6.6" transitive="false" conf="logging->default"/>
+    <dependency org="commons-logging" name="commons-logging" rev="1.1.3" transitive="false" conf="logging->default"/>
     <dependency org="org.eclipse.jetty.orbit" name="javax.servlet" rev="3.0.0.v201112011016" transitive="false" conf="servlet->default">
       <artifact name="javax.servlet" type="orbit" ext="jar"/>
     </dependency>
