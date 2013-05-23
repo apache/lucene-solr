@@ -105,6 +105,9 @@ Bug Fixes
 * SOLR-4842: Fix facet.field local params from affecting other facet.field's.
   (ehatcher, hossman)
 
+* SOLR-4814: If a SolrCore cannot be created it should remove any information it 
+  published about itself from ZooKeeper. (Mark Miller)
+
 Other Changes
 ----------------------
 

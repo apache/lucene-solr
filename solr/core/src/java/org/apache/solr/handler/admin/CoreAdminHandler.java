@@ -414,6 +414,7 @@ public class CoreAdminHandler extends RequestHandlerBase {
       throw new SolrException(SolrException.ErrorCode.BAD_REQUEST,
                               "Core name is mandatory to CREATE a SolrCore");
     }
+    CoreDescriptor dcore = null;
     try {
       
       if (coreContainer.getAllCoreNames().contains(name)) {
@@ -428,7 +429,7 @@ public class CoreAdminHandler extends RequestHandlerBase {
         instanceDir = name; // bare name is already relative to solr home
       }
 
-      CoreDescriptor dcore = new CoreDescriptor(coreContainer, name, instanceDir);
+      dcore = new CoreDescriptor(coreContainer, name, instanceDir);
 
       //  fillup optional parameters
       String opts = params.get(CoreAdminParams.CONFIG);
@@ -511,6 +512,16 @@ public class CoreAdminHandler extends RequestHandlerBase {
       rsp.add("core", core.getName());
       return coreContainer.isPersistent();
     } catch (Exception ex) {
+      if (coreContainer.isZooKeeperAware() && dcore != null) {
+        try {
+          coreContainer.getZkController().unregister(name, dcore);
+        } catch (InterruptedException e) {
+          Thread.currentThread().interrupt();
+          SolrException.log(log, null, e);
+        } catch (KeeperException e) {
+          SolrException.log(log, null, e);
+        }
+      }
       throw new SolrException(SolrException.ErrorCode.BAD_REQUEST,
                               "Error CREATEing SolrCore '" + name + "': " +
                               ex.getMessage(), ex);
