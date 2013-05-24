@@ -17,11 +17,13 @@ package org.apache.lucene.search.grouping;
  * limitations under the License.
  */
 
-import java.io.IOException;
-import java.util.*;
-
 import org.apache.lucene.analysis.MockAnalyzer;
-import org.apache.lucene.document.*;
+import org.apache.lucene.document.BinaryDocValuesField;
+import org.apache.lucene.document.Document;
+import org.apache.lucene.document.Field;
+import org.apache.lucene.document.IntField;
+import org.apache.lucene.document.SortedDocValuesField;
+import org.apache.lucene.document.TextField;
 import org.apache.lucene.index.DirectoryReader;
 import org.apache.lucene.index.FieldInfo.DocValuesType;
 import org.apache.lucene.index.IndexReader;
@@ -30,7 +32,14 @@ import org.apache.lucene.index.SlowCompositeReaderWrapper;
 import org.apache.lucene.index.Term;
 import org.apache.lucene.queries.function.ValueSource;
 import org.apache.lucene.queries.function.valuesource.BytesRefFieldSource;
-import org.apache.lucene.search.*;
+import org.apache.lucene.search.DocIdSetIterator;
+import org.apache.lucene.search.FieldCache;
+import org.apache.lucene.search.IndexSearcher;
+import org.apache.lucene.search.QueryUtils;
+import org.apache.lucene.search.ScoreDoc;
+import org.apache.lucene.search.Sort;
+import org.apache.lucene.search.SortField;
+import org.apache.lucene.search.TermQuery;
 import org.apache.lucene.search.grouping.function.FunctionAllGroupHeadsCollector;
 import org.apache.lucene.search.grouping.term.TermAllGroupHeadsCollector;
 import org.apache.lucene.store.Directory;
@@ -38,6 +47,16 @@ import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.FixedBitSet;
 import org.apache.lucene.util.LuceneTestCase;
 import org.apache.lucene.util._TestUtil;
+
+import java.io.IOException;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Collections;
+import java.util.Comparator;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Locale;
+import java.util.Map;
 
 public class AllGroupHeadsCollectorTest extends LuceneTestCase {
 
@@ -59,68 +78,73 @@ public class AllGroupHeadsCollectorTest extends LuceneTestCase {
     // 0
     Document doc = new Document();
     addGroupField(doc, groupField, "author1", canUseIDV, valueType);
-    doc.add(newTextField("content", "random text", Field.Store.YES));
-    doc.add(newStringField("id", "1", Field.Store.YES));
+    doc.add(newTextField("content", "random text", Field.Store.NO));
+    doc.add(newStringField("id_1", "1", Field.Store.NO));
+    doc.add(newStringField("id_2", "1", Field.Store.NO));
     w.addDocument(doc);
 
     // 1
     doc = new Document();
     addGroupField(doc, groupField, "author1", canUseIDV, valueType);
-    doc.add(newTextField("content", "some more random text blob", Field.Store.YES));
-    doc.add(newStringField("id", "2", Field.Store.YES));
+    doc.add(newTextField("content", "some more random text blob", Field.Store.NO));
+    doc.add(newStringField("id_1", "2", Field.Store.NO));
+    doc.add(newStringField("id_2", "2", Field.Store.NO));
     w.addDocument(doc);
 
     // 2
     doc = new Document();
     addGroupField(doc, groupField, "author1", canUseIDV, valueType);
-    doc.add(newTextField("content", "some more random textual data", Field.Store.YES));
-    doc.add(newStringField("id", "3", Field.Store.YES));
+    doc.add(newTextField("content", "some more random textual data", Field.Store.NO));
+    doc.add(newStringField("id_1", "3", Field.Store.NO));
+    doc.add(newStringField("id_2", "3", Field.Store.NO));
     w.addDocument(doc);
     w.commit(); // To ensure a second segment
 
     // 3
     doc = new Document();
     addGroupField(doc, groupField, "author2", canUseIDV, valueType);
-    doc.add(newTextField("content", "some random text", Field.Store.YES));
-    doc.add(newStringField("id", "4", Field.Store.YES));
+    doc.add(newTextField("content", "some random text", Field.Store.NO));
+    doc.add(newStringField("id_1", "4", Field.Store.NO));
+    doc.add(newStringField("id_2", "4", Field.Store.NO));
     w.addDocument(doc);
 
     // 4
     doc = new Document();
     addGroupField(doc, groupField, "author3", canUseIDV, valueType);
-    doc.add(newTextField("content", "some more random text", Field.Store.YES));
-    doc.add(newStringField("id", "5", Field.Store.YES));
+    doc.add(newTextField("content", "some more random text", Field.Store.NO));
+    doc.add(newStringField("id_1", "5", Field.Store.NO));
+    doc.add(newStringField("id_2", "5", Field.Store.NO));
     w.addDocument(doc);
 
     // 5
     doc = new Document();
     addGroupField(doc, groupField, "author3", canUseIDV, valueType);
-    doc.add(newTextField("content", "random blob", Field.Store.YES));
-    doc.add(newStringField("id", "6", Field.Store.YES));
+    doc.add(newTextField("content", "random blob", Field.Store.NO));
+    doc.add(newStringField("id_1", "6", Field.Store.NO));
+    doc.add(newStringField("id_2", "6", Field.Store.NO));
     w.addDocument(doc);
 
     // 6 -- no author field
     doc = new Document();
-    doc.add(newTextField("content", "random word stuck in alot of other text", Field.Store.YES));
-    doc.add(newStringField("id", "6", Field.Store.YES));
+    doc.add(newTextField("content", "random word stuck in alot of other text", Field.Store.NO));
+    doc.add(newStringField("id_1", "6", Field.Store.NO));
+    doc.add(newStringField("id_2", "6", Field.Store.NO));
     w.addDocument(doc);
 
     // 7 -- no author field
     doc = new Document();
-    doc.add(newTextField("content", "random word stuck in alot of other text", Field.Store.YES));
-    doc.add(newStringField("id", "7", Field.Store.YES));
+    doc.add(newTextField("content", "random word stuck in alot of other text", Field.Store.NO));
+    doc.add(newStringField("id_1", "7", Field.Store.NO));
+    doc.add(newStringField("id_2", "7", Field.Store.NO));
     w.addDocument(doc);
 
     IndexReader reader = w.getReader();
     IndexSearcher indexSearcher = newSearcher(reader);
-    if (SlowCompositeReaderWrapper.class.isAssignableFrom(reader.getClass())) {
-      canUseIDV = false;
-    }
 
     w.close();
     int maxDoc = reader.maxDoc();
 
-    Sort sortWithinGroup = new Sort(new SortField("id", SortField.Type.INT, true));
+    Sort sortWithinGroup = new Sort(new SortField("id_1", SortField.Type.INT, true));
     AbstractAllGroupHeadsCollector<?> allGroupHeadsCollector = createRandomCollector(groupField, sortWithinGroup, canUseIDV, valueType);
     indexSearcher.search(new TermQuery(new Term("content", "random")), allGroupHeadsCollector);
     assertTrue(arrayContains(new int[]{2, 3, 5, 7}, allGroupHeadsCollector.retrieveGroupHeads()));
@@ -137,13 +161,13 @@ public class AllGroupHeadsCollectorTest extends LuceneTestCase {
     assertTrue(openBitSetContains(new int[]{1, 5}, allGroupHeadsCollector.retrieveGroupHeads(maxDoc), maxDoc));
 
     // STRING sort type triggers different implementation
-    Sort sortWithinGroup2 = new Sort(new SortField("id", SortField.Type.STRING, true));
+    Sort sortWithinGroup2 = new Sort(new SortField("id_2", SortField.Type.STRING, true));
     allGroupHeadsCollector = createRandomCollector(groupField, sortWithinGroup2, canUseIDV, valueType);
     indexSearcher.search(new TermQuery(new Term("content", "random")), allGroupHeadsCollector);
     assertTrue(arrayContains(new int[]{2, 3, 5, 7}, allGroupHeadsCollector.retrieveGroupHeads()));
     assertTrue(openBitSetContains(new int[]{2, 3, 5, 7}, allGroupHeadsCollector.retrieveGroupHeads(maxDoc), maxDoc));
 
-    Sort sortWithinGroup3 = new Sort(new SortField("id", SortField.Type.STRING, false));
+    Sort sortWithinGroup3 = new Sort(new SortField("id_2", SortField.Type.STRING, false));
     allGroupHeadsCollector = createRandomCollector(groupField, sortWithinGroup3, canUseIDV, valueType);
     indexSearcher.search(new TermQuery(new Term("content", "random")), allGroupHeadsCollector);
     // 7 b/c higher doc id wins, even if order of field is in not in reverse.
