@@ -72,74 +72,78 @@ public class AllGroupHeadsCollectorTest extends LuceneTestCase {
         dir,
         newIndexWriterConfig(TEST_VERSION_CURRENT,
             new MockAnalyzer(random())).setMergePolicy(newLogMergePolicy()));
-    boolean canUseIDV = true;
     DocValuesType valueType = vts[random().nextInt(vts.length)];
 
     // 0
     Document doc = new Document();
-    addGroupField(doc, groupField, "author1", canUseIDV, valueType);
-    doc.add(newTextField("content", "random text", Field.Store.YES));
-    doc.add(newStringField("id", "1", Field.Store.YES));
+    addGroupField(doc, groupField, "author1", valueType);
+    doc.add(newTextField("content", "random text", Field.Store.NO));
+    doc.add(newStringField("id_1", "1", Field.Store.NO));
+    doc.add(newStringField("id_2", "1", Field.Store.NO));
     w.addDocument(doc);
 
     // 1
     doc = new Document();
-    addGroupField(doc, groupField, "author1", canUseIDV, valueType);
-    doc.add(newTextField("content", "some more random text blob", Field.Store.YES));
-    doc.add(newStringField("id", "2", Field.Store.YES));
+    addGroupField(doc, groupField, "author1", valueType);
+    doc.add(newTextField("content", "some more random text blob", Field.Store.NO));
+    doc.add(newStringField("id_1", "2", Field.Store.NO));
+    doc.add(newStringField("id_2", "2", Field.Store.NO));
     w.addDocument(doc);
 
     // 2
     doc = new Document();
-    addGroupField(doc, groupField, "author1", canUseIDV, valueType);
-    doc.add(newTextField("content", "some more random textual data", Field.Store.YES));
-    doc.add(newStringField("id", "3", Field.Store.YES));
+    addGroupField(doc, groupField, "author1", valueType);
+    doc.add(newTextField("content", "some more random textual data", Field.Store.NO));
+    doc.add(newStringField("id_1", "3", Field.Store.NO));
+    doc.add(newStringField("id_2", "3", Field.Store.NO));
     w.addDocument(doc);
     w.commit(); // To ensure a second segment
 
     // 3
     doc = new Document();
-    addGroupField(doc, groupField, "author2", canUseIDV, valueType);
-    doc.add(newTextField("content", "some random text", Field.Store.YES));
-    doc.add(newStringField("id", "4", Field.Store.YES));
+    addGroupField(doc, groupField, "author2", valueType);
+    doc.add(newTextField("content", "some random text", Field.Store.NO));
+    doc.add(newStringField("id_1", "4", Field.Store.NO));
+    doc.add(newStringField("id_2", "4", Field.Store.NO));
     w.addDocument(doc);
 
     // 4
     doc = new Document();
-    addGroupField(doc, groupField, "author3", canUseIDV, valueType);
-    doc.add(newTextField("content", "some more random text", Field.Store.YES));
-    doc.add(newStringField("id", "5", Field.Store.YES));
+    addGroupField(doc, groupField, "author3", valueType);
+    doc.add(newTextField("content", "some more random text", Field.Store.NO));
+    doc.add(newStringField("id_1", "5", Field.Store.NO));
+    doc.add(newStringField("id_2", "5", Field.Store.NO));
     w.addDocument(doc);
 
     // 5
     doc = new Document();
-    addGroupField(doc, groupField, "author3", canUseIDV, valueType);
-    doc.add(newTextField("content", "random blob", Field.Store.YES));
-    doc.add(newStringField("id", "6", Field.Store.YES));
+    addGroupField(doc, groupField, "author3", valueType);
+    doc.add(newTextField("content", "random blob", Field.Store.NO));
+    doc.add(newStringField("id_1", "6", Field.Store.NO));
+    doc.add(newStringField("id_2", "6", Field.Store.NO));
     w.addDocument(doc);
 
     // 6 -- no author field
     doc = new Document();
-    doc.add(newTextField("content", "random word stuck in alot of other text", Field.Store.YES));
-    doc.add(newStringField("id", "6", Field.Store.YES));
+    doc.add(newTextField("content", "random word stuck in alot of other text", Field.Store.NO));
+    doc.add(newStringField("id_1", "6", Field.Store.NO));
+    doc.add(newStringField("id_2", "6", Field.Store.NO));
     w.addDocument(doc);
 
     // 7 -- no author field
     doc = new Document();
-    doc.add(newTextField("content", "random word stuck in alot of other text", Field.Store.YES));
-    doc.add(newStringField("id", "7", Field.Store.YES));
+    doc.add(newTextField("content", "random word stuck in alot of other text", Field.Store.NO));
+    doc.add(newStringField("id_1", "7", Field.Store.NO));
+    doc.add(newStringField("id_2", "7", Field.Store.NO));
     w.addDocument(doc);
 
     IndexReader reader = w.getReader();
     IndexSearcher indexSearcher = newSearcher(reader);
-    if (SlowCompositeReaderWrapper.class.isAssignableFrom(reader.getClass())) {
-      canUseIDV = false;
-    }
 
     w.close();
     int maxDoc = reader.maxDoc();
 
-    Sort sortWithinGroup = new Sort(new SortField("id", SortField.Type.INT, true));
+    Sort sortWithinGroup = new Sort(new SortField("id_1", SortField.Type.INT, true));
     AbstractAllGroupHeadsCollector<?> allGroupHeadsCollector = createRandomCollector(groupField, sortWithinGroup);
     indexSearcher.search(new TermQuery(new Term("content", "random")), allGroupHeadsCollector);
     assertTrue(arrayContains(new int[]{2, 3, 5, 7}, allGroupHeadsCollector.retrieveGroupHeads()));
@@ -156,13 +160,13 @@ public class AllGroupHeadsCollectorTest extends LuceneTestCase {
     assertTrue(openBitSetContains(new int[]{1, 5}, allGroupHeadsCollector.retrieveGroupHeads(maxDoc), maxDoc));
 
     // STRING sort type triggers different implementation
-    Sort sortWithinGroup2 = new Sort(new SortField("id", SortField.Type.STRING, true));
+    Sort sortWithinGroup2 = new Sort(new SortField("id_2", SortField.Type.STRING, true));
     allGroupHeadsCollector = createRandomCollector(groupField, sortWithinGroup2);
     indexSearcher.search(new TermQuery(new Term("content", "random")), allGroupHeadsCollector);
     assertTrue(arrayContains(new int[]{2, 3, 5, 7}, allGroupHeadsCollector.retrieveGroupHeads()));
     assertTrue(openBitSetContains(new int[]{2, 3, 5, 7}, allGroupHeadsCollector.retrieveGroupHeads(maxDoc), maxDoc));
 
-    Sort sortWithinGroup3 = new Sort(new SortField("id", SortField.Type.STRING, false));
+    Sort sortWithinGroup3 = new Sort(new SortField("id_2", SortField.Type.STRING, false));
     allGroupHeadsCollector = createRandomCollector(groupField, sortWithinGroup3);
     indexSearcher.search(new TermQuery(new Term("content", "random")), allGroupHeadsCollector);
     // 7 b/c higher doc id wins, even if order of field is in not in reverse.
@@ -539,11 +543,10 @@ public class AllGroupHeadsCollectorTest extends LuceneTestCase {
     return collector;
   }
 
-  private void addGroupField(Document doc, String groupField, String value, boolean canUseIDV, DocValuesType valueType) {
-    doc.add(new TextField(groupField, value, Field.Store.YES));
-    if (canUseIDV) {
-      Field valuesField = null;
-      switch(valueType) {
+  private void addGroupField(Document doc, String groupField, String value, DocValuesType valueType) {
+    doc.add(new TextField(groupField, value, Field.Store.NO));
+    Field valuesField = null;
+    switch(valueType) {
       case BINARY:
         valuesField = new BinaryDocValuesField(groupField + "_dv", new BytesRef(value));
         break;
@@ -552,9 +555,8 @@ public class AllGroupHeadsCollectorTest extends LuceneTestCase {
         break;
       default:
         fail("unhandled type");
-      }
-      doc.add(valuesField);
     }
+    doc.add(valuesField);
   }
 
   private static class GroupDoc {
