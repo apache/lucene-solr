@@ -98,6 +98,9 @@ public class AutomatonStage extends Stage {
     if (prevStage.next()) {
       BytesRef term = termAtt.getBytesRef();
       termAtt.fillBytesRef();
+      if (term.length == 0) {
+        throw new IllegalStateException("cannot handle empty-string term");
+      }
       State lastState = getFromState(arcAtt.from());
       for(int i=0;i<term.length;i++) {
         State toState;

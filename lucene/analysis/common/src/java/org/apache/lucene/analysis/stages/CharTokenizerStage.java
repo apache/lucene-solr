@@ -21,11 +21,8 @@ import java.io.IOException;
 import java.io.Reader;
 
 import org.apache.lucene.analysis.tokenattributes.ArcAttribute;
-import org.apache.lucene.analysis.tokenattributes.ArcAttributeImpl;
 import org.apache.lucene.analysis.tokenattributes.CharTermAttribute;
-import org.apache.lucene.analysis.tokenattributes.CharTermAttributeImpl;
 import org.apache.lucene.analysis.tokenattributes.OffsetAttribute;
-import org.apache.lucene.analysis.tokenattributes.OffsetAttributeImpl;
 import org.apache.lucene.analysis.util.CharacterUtils.CharacterBuffer;
 import org.apache.lucene.analysis.util.CharacterUtils;
 import org.apache.lucene.util.Attribute;
@@ -86,9 +83,7 @@ public abstract class CharTokenizerStage extends Stage {
             break;
           } else {
             // set final offset
-            // nocommit -- get charfilter working:
-            //final int finalOffset = correctOffset(offset);
-            final int finalOffset = offset;
+            final int finalOffset = correctOffset(offset);
             offsetAtt.setOffset(finalOffset, finalOffset);
             return false;
           }
@@ -117,9 +112,7 @@ public abstract class CharTokenizerStage extends Stage {
 
     termAtt.setLength(length);
 
-    // nocommit -- get charfilter working:
-    //offsetAtt.setOffset(correctOffset(start), correctOffset(start+length));
-    offsetAtt.setOffset(start, start+length);
+    offsetAtt.setOffset(correctOffset(start), correctOffset(start+length));
 
     int node = nodes.newNode();
     arcAtt.set(lastNode, node);

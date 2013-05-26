@@ -18,20 +18,20 @@ package org.apache.lucene.analysis.stages;
  */
 
 import java.io.IOException;
+import java.io.Reader;
 import java.io.StringReader;
 import java.util.ArrayList;
 import java.util.List;
 
 import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.analysis.BaseTokenStreamTestCase;
+import org.apache.lucene.analysis.CharFilter;
 import org.apache.lucene.analysis.synonym.SynonymMap;
 import org.apache.lucene.analysis.tokenattributes.ArcAttribute;
 import org.apache.lucene.analysis.tokenattributes.CharTermAttribute;
-import org.apache.lucene.analysis.tokenattributes.OffsetAttribute;
 import org.apache.lucene.analysis.util.CharArraySet;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.CharsRef;
-import org.apache.lucene.util.LuceneTestCase;
 import org.apache.lucene.util.automaton.Automaton;
 import org.apache.lucene.util.automaton.BasicOperations;
 import org.apache.lucene.util.automaton.State;
@@ -78,14 +78,15 @@ public class TestStages extends BaseTokenStreamTestCase {
   private void assertMatches(String text, Stage end, String... expectedStrings) throws IOException {
     AutomatonStage a = new AutomatonStage(new AssertingStage(end));
     CharTermAttribute termAtt = a.get(CharTermAttribute.class);
+    ArcAttribute arcAtt = a.get(ArcAttribute.class);
     for(int i=0;i<2;i++) {
       a.reset(new StringReader(text));
       while (a.next()) {
-        System.out.println("token=" + termAtt);
+        //System.out.println("token=" + termAtt + " from=" + arcAtt.from() + " to=" + arcAtt.to());
       }
       assertMatches(a.getAutomaton(), expectedStrings);
+      assertFalse(a.anyNodesCanChange());
     }
-    assertFalse(a.anyNodesCanChange());
   }
 
   public void testBasic() throws Exception {
@@ -120,6 +121,14 @@ public class TestStages extends BaseTokenStreamTestCase {
     assertMatches("a b c foo",
                   new SynonymFilterStage(new WhitespaceTokenizerStage(), b.build(), true),
                   "a b c foo", "x foo");
+  }
+
+  public void testSyn2() throws Exception {
+    SynonymMap.Builder b = new SynonymMap.Builder(true);
+    add(b, "a b c", "x");
+    assertMatches("a b c",
+                  new SynonymFilterStage(new WhitespaceTokenizerStage(), b.build(), true),
+                  "a b c", "x");
   }
 
   public void testSynAfterDecompound() throws Exception {
@@ -228,5 +237,68 @@ public class TestStages extends BaseTokenStreamTestCase {
                      new int[] {7, 7, 13},
                      null,
                      new int[] {1, 1, 1});
+  }
+
+  public class SillyCharFilter extends CharFilter {
+    public SillyCharFilter(Reader input) {
+      super(input);
+    }
+
+    @Override
+    public int read(char[] buffer, int offset, int length) throws IOException {
+      return input.read(buffer, offset, length);
+    }
+
+    @Override
+    protected int correct(int currentOff) {
+      return currentOff+1;
+    }
+  }
+
+  public void testCharFilter() throws Exception {
+    Analyzer a = new StageAnalyzer() {
+        @Override
+        protected Stage getStages() {
+          return new LowerCaseFilterStage(TEST_VERSION_CURRENT, new WhitespaceTokenizerStage());
+        }
+
+        @Override
+        protected Reader initReader(String fieldName, Reader input) {
+          return new SillyCharFilter(input);
+        }
+      };
+
+    // Same as testBasic, but all offsets
+    // (incl. finalOffset) have been "corrected" by +1:
+    assertTokenStreamContents(a.tokenStream("dummy", new StringReader("This is a test")),
+                              new String[] {"this", "is", "a", "test"},
+                              new int[] {1, 6, 9, 11},
+                              new int[] {5, 8, 10, 15},
+                              null,
+                              new int[] {1, 1, 1, 1},
+                              null,
+                              15);
+  }
+
+  static class WhitespaceOrPunctTokenizerStage extends CharTokenizerStage {
+    @Override
+    protected boolean isTokenChar(int c) {
+      return !Character.isWhitespace(c) && c != ',';
+    }
+  }
+
+  public void testInsertDeletedPunctuation() throws Exception {
+    SynonymMap.Builder b = new SynonymMap.Builder(true);
+    add(b, "a b c", "x");
+
+    Stage s = new SynonymFilterStage(new InsertDeletedPunctuationStage(new LowerCaseFilterStage(TEST_VERSION_CURRENT, new WhitespaceOrPunctTokenizerStage()), "p"),
+                                     b.build(), true);
+
+    // comma prevents syn match, even though tokenizer
+    // skipped it:
+    assertMatches("a, b c", s, "a p b c");
+
+    // no comma allows syn match:
+    assertMatches("a b c", s, "a b c", "x");
   }
 }

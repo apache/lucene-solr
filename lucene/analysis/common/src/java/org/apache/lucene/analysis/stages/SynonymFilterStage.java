@@ -25,12 +25,8 @@ import java.util.List;
 
 import org.apache.lucene.analysis.synonym.SynonymMap;
 import org.apache.lucene.analysis.tokenattributes.ArcAttribute;
-import org.apache.lucene.analysis.tokenattributes.ArcAttributeImpl;
 import org.apache.lucene.analysis.tokenattributes.CharTermAttribute;
-import org.apache.lucene.analysis.tokenattributes.CharTermAttributeImpl;
 import org.apache.lucene.analysis.tokenattributes.OffsetAttribute;
-import org.apache.lucene.analysis.tokenattributes.OffsetAttributeImpl;
-import org.apache.lucene.analysis.util.CharacterUtils;
 import org.apache.lucene.store.ByteArrayDataInput;
 import org.apache.lucene.util.Attribute;
 import org.apache.lucene.util.BytesRef;
@@ -135,7 +131,12 @@ public class SynonymFilterStage extends Stage {
 
   // nocommit we need reset!  make test that fails if only
   // partial consume
-
+  @Override
+  public void reset(Reader reader) {
+    super.reset(reader);
+    pending.clear();
+    pendingOutputs.clear();
+  }
 
   /** Extends all pending paths, and starts new paths,
    *  matching the current token. */
@@ -327,6 +328,11 @@ public class SynonymFilterStage extends Stage {
                     arcAttIn.to());
       return true;
     } else {
+      // Prune any remaining partial matches:
+      for(int i=0;i<pending.size();i++) {
+        nodes.wontChange(pending.get(i).fromNode);
+      }
+      pending.clear();
       return false;
     }
   }

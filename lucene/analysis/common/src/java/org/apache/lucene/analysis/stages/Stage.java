@@ -20,12 +20,11 @@ package org.apache.lucene.analysis.stages;
 import java.io.IOException;
 import java.io.Reader;
 import java.lang.ref.WeakReference;
-import java.util.ArrayList;
 import java.util.LinkedHashMap;
 import java.util.LinkedList;
-import java.util.List;
 import java.util.Map;
 
+import org.apache.lucene.analysis.CharFilter;
 import org.apache.lucene.util.Attribute;
 import org.apache.lucene.util.AttributeImpl;
 import org.apache.lucene.util.WeakIdentityMap;
@@ -39,7 +38,8 @@ public abstract class Stage {
   protected final NodeTracker nodes;
 
   // nocommit is all this hair really worth the separation
-  // of interface from impl?
+  // of interface from impl?  can we just have concrete
+  // attrs?
 
   private static final WeakIdentityMap<Class<? extends Attribute>, WeakReference<Class<? extends AttributeImpl>>> attClassImplMap =
     WeakIdentityMap.newConcurrentHashMap(false);
@@ -173,16 +173,30 @@ public abstract class Stage {
 
   public abstract boolean next() throws IOException;
 
+  // Only set for first Stage in a chain:
+  private Reader input;
+
   public void reset(Reader reader) {
     if (prevStage != null) {
       prevStage.reset(reader);
     } else {
       nodes.reset();
+      input = reader;
     }
   }
 
+  protected final int correctOffset(int currentOff) {
+    // nocommit should we strongly type this (like
+    // Tokenizer/TokenFilter today)?
+    if (input == null) {
+      throw new IllegalStateException("only first Stage can call correctOffset");
+    }
+    return (input instanceof CharFilter) ? ((CharFilter) input).correctOffset(currentOff) : currentOff;
+  }
+
+  // nocommit should we impl close()?  why?
+
   public boolean anyNodesCanChange() {
-    System.out.println("    nodes=" + nodes);
     return nodes.anyNodesCanChange();
   }
 }

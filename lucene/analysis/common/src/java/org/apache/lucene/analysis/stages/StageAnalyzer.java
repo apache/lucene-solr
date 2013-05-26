@@ -26,12 +26,13 @@ import org.apache.lucene.analysis.Analyzer;
 public abstract class StageAnalyzer extends Analyzer {
 
   @Override
-  protected TokenStreamComponents createComponents(String fieldName, Reader reader) {
+  protected TokenStreamComponents createComponents(String fieldName, Reader firstReader) {
     final Stage stage = getStages();
     // NOTE: it's really weird that this method takes a
     // reader in!  Building up the pipeline, and resetting
     // it w/ new Reader should be decoupled...
-    stage.reset(reader);
+    stage.reset(firstReader);
+
     return new TokenStreamComponents(null, new StageToTokenStream(stage)) {
       @Override
       protected void setReader(final Reader reader) throws IOException {
