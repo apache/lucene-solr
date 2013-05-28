@@ -99,17 +99,20 @@ var logging_handler = function( response, text_status, xhr )
         logger_content += '<span class="ns">' + logger_name.join( '.' ).esc() + '.</span>';
       }
 
-      logger_content += '<span class="name">' + display_name.esc() + '</span>' + "\n";
+      logger_content += '<span class="name">' + ( display_name ? display_name.esc() : '<em>empty</em>' ) + '</span>' + "\n";
       logger_content += '</a>';
 
       logger_content += levels;
 
-      var child_logger_content = logger_tree( logger.name );
-      if( child_logger_content )
+      if( !!logger.name )
       {
-        logger_content += '<ul>';
-        logger_content += child_logger_content;
-        logger_content += '</ul>';
+        var child_logger_content = logger_tree( logger.name );
+        if( child_logger_content )
+        {
+          logger_content += '<ul>';
+          logger_content += child_logger_content;
+          logger_content += '</ul>';
+        }
       }
 
       logger_content += '</li>';

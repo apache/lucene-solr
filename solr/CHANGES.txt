@@ -108,6 +108,8 @@ Bug Fixes
 * SOLR-4814: If a SolrCore cannot be created it should remove any information it 
   published about itself from ZooKeeper. (Mark Miller)
 
+* SOLR-4867: Admin UI - setting loglevel on root throws RangeError (steffkes)
+
 Other Changes
 ----------------------
 
