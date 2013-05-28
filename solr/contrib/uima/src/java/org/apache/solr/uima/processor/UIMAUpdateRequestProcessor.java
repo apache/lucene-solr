@@ -111,9 +111,9 @@ public class UIMAUpdateRequestProcessor extends UpdateRequestProcessor {
         debugString = " null text";
       }
       if (solrUIMAConfiguration.isIgnoreErrors()) {
-        log.warn(new StringBuilder("skip the text processing due to ")
+        log.warn("skip the text processing due to {}",new StringBuilder()
           .append(e.getLocalizedMessage()).append(optionalFieldInfo)
-          .append(debugString).toString());
+          .append(debugString));
       } else {
         throw new SolrException(ErrorCode.SERVER_ERROR,
             new StringBuilder("processing error ")
@@ -150,7 +150,9 @@ public class UIMAUpdateRequestProcessor extends UpdateRequestProcessor {
   /* process a field value executing UIMA the CAS containing it as document text */
   private JCas processText(String textFieldValue) throws ResourceInitializationException,
           AnalysisEngineProcessException {
-    log.info(new StringBuilder("Analyzing text").toString());
+    if (log.isDebugEnabled()) {
+      log.debug("Analyzing text");
+    }
     /* get the UIMA analysis engine */
     AnalysisEngine ae = aeProvider.getAE();
 
@@ -160,7 +162,9 @@ public class UIMAUpdateRequestProcessor extends UpdateRequestProcessor {
 
     /* perform analysis on text field */
     ae.process(jcas);
-    log.info("Text processing completed");
+    if (log.isDebugEnabled()) {
+      log.debug("Text processing completed");
+    }
     return jcas;
   }
 
