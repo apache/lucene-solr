@@ -17,8 +17,6 @@ package org.apache.solr.uima.processor;
  * limitations under the License.
  */
 
-import java.util.Map;
-
 import org.apache.solr.common.SolrInputDocument;
 import org.apache.solr.uima.processor.SolrUIMAConfiguration.MapField;
 import org.apache.uima.cas.FSIterator;
@@ -28,6 +26,8 @@ import org.apache.uima.jcas.JCas;
 import org.apache.uima.jcas.tcas.Annotation;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
+import java.util.Map;
 
 /**
  * Map UIMA types and features over fields of a Solr document
@@ -64,16 +64,18 @@ public class UIMAToSolrMapper {
           String fieldNameFeatureValue = fieldNameFeature == null ? null :
               fs.getFeatureValueAsString(type.getFeatureByBaseName(fieldNameFeature));
           String fieldName = mapField.getFieldName(fieldNameFeatureValue);
-          log.info(new StringBuffer("mapping ").append(typeName).append("@").append(featureName)
-              .append(" to ").append(fieldName).toString());
+          if (log.isInfoEnabled()) {
+            log.info("mapping {}@{} to {}", new Object[]{typeName, featureName, fieldName});
+          }
           String featureValue = null;
           if (fs instanceof Annotation && "coveredText".equals(featureName)) {
             featureValue = ((Annotation) fs).getCoveredText();
           } else {
             featureValue = fs.getFeatureValueAsString(type.getFeatureByBaseName(featureName));
           }
-          log.info(new StringBuffer("writing ").append(featureValue).append(" in ").append(
-              fieldName).toString());
+          if (log.isDebugEnabled()) {
+            log.debug("writing {} in {}", new Object[]{featureValue, fieldName});
+          }
           document.addField(fieldName, featureValue, 1.0f);
         }
       }
