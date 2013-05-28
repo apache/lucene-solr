@@ -193,6 +193,13 @@
   padding-right: 21px;
 }
 
+#content #logging .jstree a span.name em
+{
+  color: #f00;
+  font-style: normal;
+  text-transform: uppercase;
+}
+
 #content #logging .jstree a.trigger.set
 {
   font-weight: bold;
@@ -224,6 +231,7 @@
 #content #logging .jstree li li li li li .selector-holder { left: 368px; }
 #content #logging .jstree li li li li li li .selector-holder { left: 350px; }
 #content #logging .jstree li li li li li li li .selector-holder { left: 332px; }
+#content #logging .jstree li li li li li li li li .selector-holder { left: 314px; }
 
 #content #logging .jstree .selector
 {
