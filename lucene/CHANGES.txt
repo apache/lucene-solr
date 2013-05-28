@@ -50,6 +50,10 @@ Changes in backwards compatibility policy
   QueryParser.setAutoGeneratePhraseQueries(false) (for simple cases) or to
   override QueryParser.newFieldQuery. (Adrien Grand, Steve Rowe)
 
+* LUCENE-5018: CompoundWordTokenFilterBase and its children
+  DictionaryCompoundWordTokenFilter and HyphenationCompoundWordTokenFilter don't
+  update offsets anymore. (Adrien Grand)
+
 Bug Fixes
 
 * LUCENE-4997: Internal test framework's tests are sensitive to previous 
