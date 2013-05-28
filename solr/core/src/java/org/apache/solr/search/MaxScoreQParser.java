@@ -78,6 +78,7 @@ public class MaxScoreQParser extends LuceneQParser {
     for(BooleanClause c : prohibOrReq) {
       newq.add(c);
     }
+    newq.setBoost(obq.getBoost());
     return newq;
   }
 }

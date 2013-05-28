@@ -26,6 +26,7 @@ import org.junit.Test;
 
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.List;
 
 public class TestMaxScoreQueryParser extends AbstractSolrTestCase {
   Query q;
@@ -39,6 +40,9 @@ public class TestMaxScoreQueryParser extends AbstractSolrTestCase {
   @Test
   public void testFallbackToLucene() {
     q = parse("foo");
+    assertTrue(q instanceof TermQuery);
+
+    q = parse("foo^3.0");
     assertTrue(q instanceof TermQuery);
 
     q = parse("price:[0 TO 10]");
@@ -90,6 +94,38 @@ public class TestMaxScoreQueryParser extends AbstractSolrTestCase {
     assertEquals(1, clauses.length);
     assertTrue(clauses[0].getQuery() instanceof DisjunctionMaxQuery);
     assertEquals(0.5, ((DisjunctionMaxQuery) clauses[0].getQuery()).getTieBreakerMultiplier(), 1e-15);
+  }
+
+  @Test
+  public void testBoost() {
+    // Simple term query
+    q = parse("foo^3.0");
+    assertEquals(3.0, q.getBoost(), 1e-15);
+
+    // Some DMQ and one plain required
+    q = parse("foo^5.0 bar^6.0 +baz^7");
+    clauses = clauses(q);
+    assertEquals(2, clauses.length);
+    assertTrue(clauses[0].getQuery() instanceof DisjunctionMaxQuery);
+    DisjunctionMaxQuery dmq = ((DisjunctionMaxQuery) clauses[0].getQuery());
+    float fooClause = ((BooleanQuery)dmq.getDisjuncts().get(0)).clauses().get(0).getQuery().getBoost();
+    assertEquals(5.0, fooClause, 1e-15);
+    float barClause = ((BooleanQuery)dmq.getDisjuncts().get(1)).clauses().get(0).getQuery().getBoost();
+    assertEquals(6.0, barClause, 1e-15);
+    assertEquals(7.0, clauses[1].getQuery().getBoost(), 1e-15);
+    assertEquals(1.0, q.getBoost(), 1e-15);
+
+    // Grouped with parens on top level
+    q = parse("(foo^2.0 bar)^3.0");
+    clauses = clauses(q);
+    assertEquals(1, clauses.length);
+    assertTrue(clauses[0].getQuery() instanceof DisjunctionMaxQuery);
+    dmq = ((DisjunctionMaxQuery) clauses[0].getQuery());
+    fooClause = ((BooleanQuery)dmq.getDisjuncts().get(0)).clauses().get(0).getQuery().getBoost();
+    assertEquals(2.0, fooClause, 1e-15);
+    barClause = ((BooleanQuery)dmq.getDisjuncts().get(1)).clauses().get(0).getQuery().getBoost();
+    assertEquals(1.0, barClause, 1e-15);
+    assertEquals(3.0, q.getBoost(), 1e-15);
   }
 
   //
