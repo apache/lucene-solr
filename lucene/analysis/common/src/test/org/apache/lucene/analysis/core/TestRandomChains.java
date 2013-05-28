@@ -59,7 +59,6 @@ import org.apache.lucene.analysis.charfilter.NormalizeCharMap;
 import org.apache.lucene.analysis.cjk.CJKBigramFilter;
 import org.apache.lucene.analysis.commongrams.CommonGramsFilter;
 import org.apache.lucene.analysis.commongrams.CommonGramsQueryFilter;
-import org.apache.lucene.analysis.compound.DictionaryCompoundWordTokenFilter;
 import org.apache.lucene.analysis.compound.HyphenationCompoundWordTokenFilter;
 import org.apache.lucene.analysis.compound.TestCompoundWordTokenFilter;
 import org.apache.lucene.analysis.compound.hyphenation.HyphenationTree;
@@ -165,8 +164,6 @@ public class TestRandomChains extends BaseTokenStreamTestCase {
       for (Class<?> c : Arrays.<Class<?>>asList(
           ReversePathHierarchyTokenizer.class,
           PathHierarchyTokenizer.class,
-          HyphenationCompoundWordTokenFilter.class,
-          DictionaryCompoundWordTokenFilter.class,
           // TODO: it seems to mess up offsets!?
           WikipediaTokenizer.class,
           // TODO: doesn't handle graph inputs
