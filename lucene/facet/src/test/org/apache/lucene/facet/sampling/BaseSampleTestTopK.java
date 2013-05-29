@@ -94,7 +94,7 @@ public abstract class BaseSampleTestTopK extends BaseTestTopK {
         for (int nTrial = 0; nTrial < RETRIES; nTrial++) {
           try {
             // complement with sampling!
-            final Sampler sampler = createSampler(nTrial, useRandomSampler);
+            final Sampler sampler = createSampler(nTrial, useRandomSampler, samplingSearchParams);
             
             assertSampling(expectedResults, q, sampler, samplingSearchParams, false);
             assertSampling(expectedResults, q, sampler, samplingSearchParams, true);
@@ -128,14 +128,20 @@ public abstract class BaseSampleTestTopK extends BaseTestTopK {
     return FacetsCollector.create(sfa);
   }
   
-  private Sampler createSampler(int nTrial, boolean useRandomSampler) {
+  private Sampler createSampler(int nTrial, boolean useRandomSampler, FacetSearchParams sParams) {
     SamplingParams samplingParams = new SamplingParams();
     
+    /*
+     * Set sampling to Exact fixing with TakmiSampleFixer as it is not easy to
+     * validate results with amortized results. 
+     */
+    samplingParams.setSampleFixer(new TakmiSampleFixer(indexReader, taxoReader, sParams));
+        
     final double retryFactor = Math.pow(1.01, nTrial);
+    samplingParams.setOversampleFactor(5.0 * retryFactor); // Oversampling 
     samplingParams.setSampleRatio(0.8 * retryFactor);
     samplingParams.setMinSampleSize((int) (100 * retryFactor));
     samplingParams.setMaxSampleSize((int) (10000 * retryFactor));
-    samplingParams.setOversampleFactor(5.0 * retryFactor);
     samplingParams.setSamplingThreshold(11000); //force sampling
 
     Sampler sampler = useRandomSampler ? 

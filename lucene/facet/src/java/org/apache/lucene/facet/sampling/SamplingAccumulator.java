@@ -79,7 +79,11 @@ public class SamplingAccumulator extends StandardFacetsAccumulator {
   public List<FacetResult> accumulate(ScoredDocIDs docids) throws IOException {
     // Replacing the original searchParams with the over-sampled
     FacetSearchParams original = searchParams;
-    searchParams = sampler.overSampledSearchParams(original);
+    SampleFixer samplerFixer = sampler.samplingParams.getSampleFixer();
+    final boolean shouldOversample = sampler.samplingParams.shouldOverSample();
+    if (shouldOversample) {
+      searchParams = sampler.overSampledSearchParams(original);
+    }
     
     List<FacetResult> sampleRes = super.accumulate(docids);
     
@@ -87,14 +91,18 @@ public class SamplingAccumulator extends StandardFacetsAccumulator {
     for (FacetResult fres : sampleRes) {
       // for sure fres is not null because this is guaranteed by the delegee.
       PartitionsFacetResultsHandler frh = createFacetResultsHandler(fres.getFacetRequest());
-      // fix the result of current request
-      sampler.getSampleFixer(indexReader, taxonomyReader, searchParams).fixResult(docids, fres);
+      if (samplerFixer != null) {
+        // fix the result of current request
+        samplerFixer.fixResult(docids, fres, samplingRatio);
+        
+        fres = frh.rearrangeFacetResult(fres); // let delegee's handler do any arranging it needs to
+
+        if (shouldOversample) {
+          // Using the sampler to trim the extra (over-sampled) results
+          fres = sampler.trimResult(fres);
+        }
+      }
       
-      fres = frh.rearrangeFacetResult(fres); // let delegee's handler do any arranging it needs to
-
-      // Using the sampler to trim the extra (over-sampled) results
-      fres = sampler.trimResult(fres);
-
       // final labeling if allowed (because labeling is a costly operation)
       frh.labelResult(fres);
       fixedRes.add(fres); // add to final results
