@@ -72,18 +72,18 @@ public class FacetResult {
    */
   public static List<FacetResult> mergeHierarchies(List<FacetResult> results, TaxonomyReader taxoReader,
       Map<String, FacetArrays> dimArrays) throws IOException {
-    final Map<String, List<FacetResult>> dims = new HashMap<>();
+    final Map<String, List<FacetResult>> dims = new HashMap<String,List<FacetResult>>();
     for (FacetResult fr : results) {
       String dim = fr.getFacetRequest().categoryPath.components[0];
       List<FacetResult> frs = dims.get(dim);
       if (frs == null) {
-        frs = new ArrayList<>();
+        frs = new ArrayList<FacetResult>();
         dims.put(dim, frs);
       }
       frs.add(fr);
     }
 
-    final List<FacetResult> res = new ArrayList<>();
+    final List<FacetResult> res = new ArrayList<FacetResult>();
     for (List<FacetResult> frs : dims.values()) {
       FacetResult mergedResult = frs.get(0);
       if (frs.size() > 1) {
@@ -93,7 +93,7 @@ public class FacetResult {
             return fr1.getFacetRequest().categoryPath.compareTo(fr2.getFacetRequest().categoryPath);
           }
         });
-        Map<CategoryPath, FacetResultNode> mergedNodes = new HashMap<>();
+        Map<CategoryPath, FacetResultNode> mergedNodes = new HashMap<CategoryPath,FacetResultNode>();
         FacetArrays arrays = dimArrays != null ? dimArrays.get(frs.get(0).getFacetRequest().categoryPath.components[0]) : null;
         for (FacetResult fr : frs) {
           FacetResultNode frn = fr.getFacetResultNode();
@@ -107,7 +107,7 @@ public class FacetResult {
               double parentValue = arrays != null ? fr.getFacetRequest().getValueOf(arrays, parentOrd) : -1;
               parentNode = new FacetResultNode(parentOrd, parentValue);
               parentNode.label = parent;
-              parentNode.subResults = new ArrayList<>();
+              parentNode.subResults = new ArrayList<FacetResultNode>();
               parentNode.subResults.add(childNode);
               mergedNodes.put(parent, parentNode);
               childNode = parentNode;
@@ -118,7 +118,7 @@ public class FacetResult {
             // parent with the child
             if (parent.length > 0) {
               if (!(parentNode.subResults instanceof ArrayList)) {
-                parentNode.subResults = new ArrayList<>(parentNode.subResults);
+                parentNode.subResults = new ArrayList<FacetResultNode>(parentNode.subResults);
               }
               parentNode.subResults.add(childNode);
             }
@@ -132,7 +132,7 @@ public class FacetResult {
             }
           } else {
             if (!(merged.subResults instanceof ArrayList)) {
-              merged.subResults = new ArrayList<>(merged.subResults);
+              merged.subResults = new ArrayList<FacetResultNode>(merged.subResults);
             }
             for (FacetResultNode sub : frn.subResults) {
               // make sure sub wasn't already added
