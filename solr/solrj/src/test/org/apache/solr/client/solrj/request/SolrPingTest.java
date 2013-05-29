@@ -34,10 +34,7 @@ public class SolrPingTest extends SolrJettyTestBase {
   
   @BeforeClass
   public static void beforeClass() throws Exception {
-    // The following works, but it seems like it's probably the wrong way to do
-    // this.
-    initCore("solrconfig.xml", "schema.xml", "../../test-files/solrj/solr",
-        "collection1");
+    initCore("solrconfig.xml", "schema.xml", "solrj/solr", "collection1");
   }
   
   @Before

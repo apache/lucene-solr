@@ -85,7 +85,7 @@ New Features
 * SOLR-4048: Add findRecursive method to NamedList. (Shawn Heisey)
 
 * SOLR-4228: SolrJ's SolrPing object has new methods for ping, enable, and
-  disable. (Shawn Heisey)
+  disable. (Shawn Heisey, hossman, Steve Rowe)
 
 Bug Fixes
 ----------------------
