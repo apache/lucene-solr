@@ -111,8 +111,6 @@ Bug Fixes
 * SOLR-4814: If a SolrCore cannot be created it should remove any information it 
   published about itself from ZooKeeper. (Mark Miller)
 
-* SOLR-4867: Admin UI - setting loglevel on root throws RangeError (steffkes)
-
 * SOLR-4863: Removed non-existent attribute sourceId from dynamic JMX stats
   to fix AttributeNotFoundException (suganuma, hossman via shalin)
 
@@ -208,6 +206,8 @@ Bug Fixes
   adding a new category, the empty string. (Shawn Heisey)
 
 * SOLR-4855: DistributedUpdateProcessor doesn't check for peer sync requests (shalin)
+
+* SOLR-4867: Admin UI - setting loglevel on root throws RangeError (steffkes)
 
 Other Changes
 ----------------------
