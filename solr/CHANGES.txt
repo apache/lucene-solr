@@ -88,6 +88,8 @@ Bug Fixes
 
 * SOLR-4855: DistributedUpdateProcessor doesn't check for peer sync requests (shalin)
 
+* SOLR-4867: Admin UI - setting loglevel on root throws RangeError (steffkes)
+
 Other Changes
 ----------------------
 
