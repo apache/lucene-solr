@@ -210,7 +210,6 @@ public class JmxMonitoredMap<K, V> extends
       staticStats.add("version");
       staticStats.add("description");
       staticStats.add("category");
-      staticStats.add("sourceId");
       staticStats.add("source");
       this.coreHashCode = coreHashCode;
     }
