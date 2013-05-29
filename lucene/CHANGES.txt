@@ -129,6 +129,10 @@ New Features
 * LUCENE-4975: Added a new Replicator module which can replicate index 
   revisions between server and client. (Shai Erera, Mike McCandless)
 
+* LUCENE-5022: Added FacetResult.mergeHierarchies to merge multiple
+  FacetResult of the same dimension into a single one with the reconstructed
+  hierarchy. (Shai Erera)
+  
 Build
 
 * LUCENE-4987: Upgrade randomized testing to version 2.0.10: 
