@@ -116,8 +116,6 @@ Bug Fixes
 * SOLR-4863: Removed non-existent attribute sourceId from dynamic JMX stats
   to fix AttributeNotFoundException (suganuma, hossman via shalin)
 
-* SOLR-4855: DistributedUpdateProcessor doesn't check for peer sync requests (shalin)
-
 Other Changes
 ----------------------
 
@@ -208,6 +206,8 @@ Bug Fixes
 
 * SOLR-4868: Setting the log level for the log4j root category results in
   adding a new category, the empty string. (Shawn Heisey)
+
+* SOLR-4855: DistributedUpdateProcessor doesn't check for peer sync requests (shalin)
 
 Other Changes
 ----------------------
