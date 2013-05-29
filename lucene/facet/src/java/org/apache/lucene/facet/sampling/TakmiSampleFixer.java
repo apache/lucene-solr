@@ -2,21 +2,19 @@ package org.apache.lucene.facet.sampling;
 
 import java.io.IOException;
 
-import org.apache.lucene.index.IndexReader;
-import org.apache.lucene.index.MultiFields;
-import org.apache.lucene.index.Term;
-import org.apache.lucene.index.DocsEnum;
-import org.apache.lucene.search.DocIdSetIterator;
-import org.apache.lucene.util.Bits;
-
 import org.apache.lucene.facet.params.FacetSearchParams;
 import org.apache.lucene.facet.search.DrillDownQuery;
-import org.apache.lucene.facet.search.FacetResult;
 import org.apache.lucene.facet.search.FacetResultNode;
 import org.apache.lucene.facet.search.ScoredDocIDs;
 import org.apache.lucene.facet.search.ScoredDocIDsIterator;
 import org.apache.lucene.facet.taxonomy.CategoryPath;
 import org.apache.lucene.facet.taxonomy.TaxonomyReader;
+import org.apache.lucene.index.DocsEnum;
+import org.apache.lucene.index.IndexReader;
+import org.apache.lucene.index.MultiFields;
+import org.apache.lucene.index.Term;
+import org.apache.lucene.search.DocIdSetIterator;
+import org.apache.lucene.util.Bits;
 
 /*
  * Licensed to the Apache Software Foundation (ASF) under one or more
@@ -36,16 +34,21 @@ import org.apache.lucene.facet.taxonomy.TaxonomyReader;
  */
 
 /**
- * Fix sampling results by counting the intersection between two lists: a
- * TermDocs (list of documents in a certain category) and a DocIdSetIterator
- * (list of documents matching the query).
- * 
+ * Fix sampling results by correct results, by counting the intersection between
+ * two lists: a TermDocs (list of documents in a certain category) and a
+ * DocIdSetIterator (list of documents matching the query).
+ * <p>
+ * This fixer is suitable for scenarios which prioritize accuracy over
+ * performance. 
+ * <p>
+ * <b>Note:</b> for statistically more accurate top-k selection, set
+ * {@link SamplingParams#setOversampleFactor(double) oversampleFactor} to at
+ * least 2, so that the top-k categories would have better chance of showing up
+ * in the sampled top-cK results (see {@link SamplingParams#getOversampleFactor}
  * 
  * @lucene.experimental
  */
-// TODO (Facet): implement also an estimated fixing by ratio (taking into
-// account "translation" of counts!)
-class TakmiSampleFixer implements SampleFixer {
+public class TakmiSampleFixer extends SampleFixer {
   
   private TaxonomyReader taxonomyReader;
   private IndexReader indexReader;
@@ -59,28 +62,10 @@ class TakmiSampleFixer implements SampleFixer {
   }
 
   @Override
-  public void fixResult(ScoredDocIDs origDocIds, FacetResult fres)
-      throws IOException {
-    FacetResultNode topRes = fres.getFacetResultNode();
-    fixResultNode(topRes, origDocIds);
+  public void singleNodeFix(FacetResultNode facetResNode, ScoredDocIDs docIds, double samplingRatio) throws IOException {
+    recount(facetResNode, docIds);
   }
   
-  /**
-   * Fix result node count, and, recursively, fix all its children
-   * 
-   * @param facetResNode
-   *          result node to be fixed
-   * @param docIds
-   *          docids in effect
-   * @throws IOException If there is a low-level I/O error.
-   */
-  private void fixResultNode(FacetResultNode facetResNode, ScoredDocIDs docIds) throws IOException {
-    recount(facetResNode, docIds);
-    for (FacetResultNode frn : facetResNode.subResults) {
-      fixResultNode(frn, docIds);
-    }
-  }
-
   /**
    * Internal utility: recount for a facet result node
    * 
@@ -179,4 +164,5 @@ class TakmiSampleFixer implements SampleFixer {
     }
     return false; // exhausted
   }
+
 }
