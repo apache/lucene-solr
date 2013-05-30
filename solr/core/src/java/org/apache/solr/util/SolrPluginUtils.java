@@ -19,8 +19,13 @@ package org.apache.solr.util;
 
 import org.apache.lucene.index.StorableField;
 import org.apache.lucene.index.StoredDocument;
-import org.apache.lucene.search.*;
+import org.apache.lucene.search.BooleanClause;
 import org.apache.lucene.search.BooleanClause.Occur;
+import org.apache.lucene.search.BooleanQuery;
+import org.apache.lucene.search.DisjunctionMaxQuery;
+import org.apache.lucene.search.Explanation;
+import org.apache.lucene.search.Query;
+import org.apache.lucene.search.Sort;
 import org.apache.solr.common.SolrDocument;
 import org.apache.solr.common.SolrDocumentList;
 import org.apache.solr.common.SolrException;
@@ -38,10 +43,27 @@ import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.response.SolrQueryResponse;
 import org.apache.solr.schema.IndexSchema;
 import org.apache.solr.schema.SchemaField;
-import org.apache.solr.search.*;
+import org.apache.solr.search.CacheRegenerator;
+import org.apache.solr.search.DocIterator;
+import org.apache.solr.search.DocList;
+import org.apache.solr.search.DocSet;
+import org.apache.solr.search.FieldParams;
+import org.apache.solr.search.QParser;
+import org.apache.solr.search.QueryParsing;
+import org.apache.solr.search.ReturnFields;
+import org.apache.solr.search.SolrCache;
+import org.apache.solr.search.SolrIndexSearcher;
+import org.apache.solr.search.SolrQueryParser;
+import org.apache.solr.search.SyntaxError;
 
 import java.io.IOException;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.Iterator;
+import java.util.List;
+import java.util.Map;
+import java.util.Set;
 import java.util.regex.Pattern;
 import java.lang.reflect.Method;
 import java.lang.reflect.InvocationTargetException;
@@ -152,7 +174,7 @@ public class SolrPluginUtils {
           fieldFilter.add(field);
 
         // fetch unique key if one exists.
-        SchemaField keyField = req.getSearcher().getSchema().getUniqueKeyField();
+        SchemaField keyField = searcher.getSchema().getUniqueKeyField();
         if(null != keyField)
           fieldFilter.add(keyField.getName());
       }
@@ -270,7 +292,7 @@ public class SolrPluginUtils {
   {
     if (dbgResults) {
       SolrIndexSearcher searcher = req.getSearcher();
-      IndexSchema schema = req.getSchema();
+      IndexSchema schema = searcher.getSchema();
       boolean explainStruct = req.getParams().getBool(CommonParams.EXPLAIN_STRUCT, false);
 
       NamedList<Explanation> explain = getExplanations(query, results, searcher, schema);

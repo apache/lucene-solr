@@ -28,6 +28,37 @@ import java.io.IOException;
  */
 public abstract class DocIdSetIterator {
   
+  /** An empty {@code DocIdSetIterator} instance */
+  public static final DocIdSetIterator empty() {
+    return new DocIdSetIterator() {
+      boolean exhausted = false;
+      
+      @Override
+      public int advance(int target) {
+        assert !exhausted;
+        assert target >= 0;
+        exhausted = true;
+        return NO_MORE_DOCS;
+      }
+      
+      @Override
+      public int docID() {
+        return exhausted ? NO_MORE_DOCS : -1;
+      }
+      @Override
+      public int nextDoc() {
+        assert !exhausted;
+        exhausted = true;
+        return NO_MORE_DOCS;
+      }
+      
+      @Override
+      public long cost() {
+        return 0;
+      }
+    };
+  }
+  
   /**
    * When returned by {@link #nextDoc()}, {@link #advance(int)} and
    * {@link #docID()} it means there are no more docs in the iterator.
@@ -37,7 +68,7 @@ public abstract class DocIdSetIterator {
   /**
    * Returns the following:
    * <ul>
-   * <li>-1 or {@link #NO_MORE_DOCS} if {@link #nextDoc()} or
+   * <li><code>-1</code> if {@link #nextDoc()} or
    * {@link #advance(int)} were not called yet.
    * <li>{@link #NO_MORE_DOCS} if the iterator has exhausted.
    * <li>Otherwise it should return the doc ID it is currently on.
@@ -93,4 +124,23 @@ public abstract class DocIdSetIterator {
    */
   public abstract int advance(int target) throws IOException;
 
+  /** Slow (linear) implementation of {@link #advance} relying on
+   *  {@link #nextDoc()} to advance beyond the target position. */
+  protected final int slowAdvance(int target) throws IOException {
+    assert docID() < target;
+    int doc;
+    do {
+      doc = nextDoc();
+    } while (doc < target);
+    return doc;
+  }
+
+  /**
+   * Returns the estimated cost of this {@link DocIdSetIterator}.
+   * <p>
+   * This is generally an upper bound of the number of documents this iterator
+   * might match, but may be a rough heuristic, hardcoded value, or otherwise
+   * completely inaccurate.
+   */
+  public abstract long cost();
 }

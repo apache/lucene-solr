@@ -204,7 +204,7 @@
     <fieldtype name="lowerpunctfilt" class="solr.TextField">
       <analyzer>
         <tokenizer class="solr.MockTokenizerFactory"/>
-        <filter name="syn" class="solr.SynonymFilterFactory" synonyms="synonyms.txt" expand="true"/>
+        <filter class="solr.SynonymFilterFactory" synonyms="synonyms.txt" expand="true"/>
         <filter class="solr.WordDelimiterFilterFactory" generateWordParts="1" generateNumberParts="1" catenateWords="1" catenateNumbers="1" catenateAll="1" splitOnCaseChange="1"/>
         <filter class="solr.LowerCaseFilterFactory"/>
       </analyzer>
@@ -355,7 +355,7 @@
     <fieldtype name="syn" class="solr.TextField">
       <analyzer>
           <tokenizer class="solr.MockTokenizerFactory"/>
-          <filter name="syn" class="solr.SynonymFilterFactory" synonyms="old_synonyms.txt"/>
+          <filter class="solr.SynonymFilterFactory" synonyms="old_synonyms.txt"/>
       </analyzer>
     </fieldtype>
 
@@ -506,22 +506,22 @@
    <!-- indexed=false should not prevent omit___=true -->
    <field name="pint_i_norm" type="pint" omitNorms="true"
           indexed="false" />
-   <field name="pint_i_tf"   type="pint" omitOmitTermFreqAndPositions="true"
+   <field name="pint_i_tf"   type="pint" omitTermFreqAndPositions="true"
           indexed="false" />
    <field name="pint_i_pos"  type="pint" omitPositions="true"
           indexed="false" />
    <field name="pint_i_all"  type="pint" 
           indexed="false" 
           omitNorms="true"
-          omitOmitTermFreqAndPositions="true"
+          omitTermFreqAndPositions="true"
           omitPositions="true" />
-   <!-- omitOmitTermFreqAndPositions=false and omitPositions=true are ok -->
+   <!-- omitTermFreqAndPositions=false and omitPositions=true are ok -->
    <field name="pint_tf_pos" type="pint" indexed="true" 
-          omitOmitTermFreqAndPositions="false" omitPositions="true" />
+          omitTermFreqAndPositions="false" omitPositions="true" />
 
    <!-- test highlit field settings -->
-   <field name="test_hlt" type="highlittext" indexed="true" compressed="true"/>
-   <field name="test_hlt_off" type="highlittext" indexed="true" compressed="false"/>
+   <field name="test_hlt" type="highlittext" indexed="true"/>
+   <field name="test_hlt_off" type="highlittext" indexed="true"/>
 
    <!-- fields to test individual tokenizers and tokenfilters -->
    <field name="teststop" type="teststop" indexed="true" stored="true"/>
@@ -581,6 +581,8 @@
    <field name="title_stringNoNorms" type="string" omitNorms="true" indexed="true" stored="true"/>
    
    <field name="store" type="location" indexed="true" stored="true" omitNorms="false"/>
+
+   <field name="lower" type="lowertok" indexed="false" stored="true" multiValued="true" />
 
    <!-- Dynamic field definitions.  If a field name is not found, dynamicFields
         will be used if the name matches any of the patterns.

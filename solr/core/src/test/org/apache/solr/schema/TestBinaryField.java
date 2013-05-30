@@ -76,6 +76,7 @@ public class TestBinaryField extends LuceneTestCase {
     System.setProperty("solr.data.dir", dataDir.getAbsolutePath());
     System.setProperty("solr.test.sys.prop1", "propone");
     System.setProperty("solr.test.sys.prop2", "proptwo");
+    System.setProperty("tests.shardhandler.randomSeed", Long.toString(random().nextLong()));
 
     jetty = new JettySolrRunner(homeDir.getAbsolutePath(), context, 0);
     jetty.start();
@@ -182,6 +183,7 @@ public class TestBinaryField extends LuceneTestCase {
   @Override
   public void tearDown() throws Exception {
     jetty.stop();
+    System.clearProperty("tests.shardhandler.randomSeed");
     super.tearDown();
   }
 }

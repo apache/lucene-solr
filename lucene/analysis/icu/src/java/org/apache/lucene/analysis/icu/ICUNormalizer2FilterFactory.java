@@ -17,10 +17,10 @@ package org.apache.lucene.analysis.icu;
  * limitations under the License.
  */
 
+import java.util.Arrays;
 import java.util.Map;
 
 import org.apache.lucene.analysis.TokenStream;
-import org.apache.lucene.analysis.icu.ICUNormalizer2Filter;
 import org.apache.lucene.analysis.util.AbstractAnalysisFactory; // javadocs
 import org.apache.lucene.analysis.util.MultiTermAwareComponent;
 import org.apache.lucene.analysis.util.TokenFilterFactory;
@@ -46,30 +46,17 @@ import com.ibm.icu.text.UnicodeSet;
  * @see FilteredNormalizer2
  */
 public class ICUNormalizer2FilterFactory extends TokenFilterFactory implements MultiTermAwareComponent {
-  private Normalizer2 normalizer;
+  private final Normalizer2 normalizer;
 
-  /** Sole constructor. See {@link AbstractAnalysisFactory} for initialization lifecycle. */
-  public ICUNormalizer2FilterFactory() {}
-
-  // TODO: support custom normalization
-  @Override
-  public void init(Map<String,String> args) {
-    super.init(args);
-    String name = args.get("name");
-    if (name == null)
-      name = "nfkc_cf";
-    String mode = args.get("mode");
-    if (mode == null)
-      mode = "compose";
+  /** Creates a new ICUNormalizer2FilterFactory */
+  public ICUNormalizer2FilterFactory(Map<String,String> args) {
+    super(args);
+    String name = get(args, "name", "nfkc_cf");
+    String mode = get(args, "mode", Arrays.asList("compose", "decompose"), "compose");
+    Normalizer2 normalizer = Normalizer2.getInstance
+        (null, name, "compose".equals(mode) ? Normalizer2.Mode.COMPOSE : Normalizer2.Mode.DECOMPOSE);
     
-    if (mode.equals("compose"))
-      normalizer = Normalizer2.getInstance(null, name, Normalizer2.Mode.COMPOSE);
-    else if (mode.equals("decompose"))
-      normalizer = Normalizer2.getInstance(null, name, Normalizer2.Mode.DECOMPOSE);
-    else 
-      throw new IllegalArgumentException("Invalid mode: " + mode);
-    
-    String filter = args.get("filter");
+    String filter = get(args, "filter");
     if (filter != null) {
       UnicodeSet set = new UnicodeSet(filter);
       if (!set.isEmpty()) {
@@ -77,7 +64,13 @@ public class ICUNormalizer2FilterFactory extends TokenFilterFactory implements M
         normalizer = new FilteredNormalizer2(normalizer, set);
       }
     }
+    if (!args.isEmpty()) {
+      throw new IllegalArgumentException("Unknown parameters: " + args);
+    }
+    this.normalizer = normalizer;
   }
+
+  // TODO: support custom normalization
   
   @Override
   public TokenStream create(TokenStream input) {

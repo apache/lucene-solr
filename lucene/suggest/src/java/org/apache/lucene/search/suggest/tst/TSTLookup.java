@@ -25,9 +25,10 @@ import java.io.OutputStream;
 import java.util.ArrayList;
 import java.util.List;
 
+import org.apache.lucene.search.spell.TermFreqIterator;
+import org.apache.lucene.search.spell.TermFreqPayloadIterator;
 import org.apache.lucene.search.suggest.Lookup;
 import org.apache.lucene.search.suggest.SortedTermFreqIteratorWrapper;
-import org.apache.lucene.search.spell.TermFreqIterator;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.CharsRef;
 import org.apache.lucene.util.IOUtils;
@@ -51,6 +52,9 @@ public class TSTLookup extends Lookup {
 
   @Override
   public void build(TermFreqIterator tfit) throws IOException {
+    if (tfit instanceof TermFreqPayloadIterator) {
+      throw new IllegalArgumentException("this suggester doesn't support payloads");
+    }
     root = new TernaryTreeNode();
     // buffer first
     if (tfit.getComparator() != BytesRef.getUTF8SortedAsUTF16Comparator()) {

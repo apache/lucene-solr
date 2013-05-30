@@ -18,8 +18,10 @@ package org.apache.lucene.analysis.util;
  */
 
 import org.apache.lucene.analysis.Tokenizer;
+import org.apache.lucene.util.AttributeSource.AttributeFactory;
 
 import java.io.Reader;
+import java.util.Map;
 import java.util.Set;
 
 /**
@@ -32,8 +34,8 @@ public abstract class TokenizerFactory extends AbstractAnalysisFactory {
       new AnalysisSPILoader<TokenizerFactory>(TokenizerFactory.class);
   
   /** looks up a tokenizer by name from context classpath */
-  public static TokenizerFactory forName(String name) {
-    return loader.newInstance(name);
+  public static TokenizerFactory forName(String name, Map<String,String> args) {
+    return loader.newInstance(name, args);
   }
   
   /** looks up a tokenizer class by name from context classpath */
@@ -60,7 +62,19 @@ public abstract class TokenizerFactory extends AbstractAnalysisFactory {
   public static void reloadTokenizers(ClassLoader classloader) {
     loader.reload(classloader);
   }
+  
+  /**
+   * Initialize this factory via a set of key-value pairs.
+   */
+  protected TokenizerFactory(Map<String,String> args) {
+    super(args);
+  }
 
-  /** Creates a TokenStream of the specified input */
-  public abstract Tokenizer create(Reader input);
+  /** Creates a TokenStream of the specified input using the default attribute factory. */
+  public final Tokenizer create(Reader input) {
+    return create(AttributeFactory.DEFAULT_ATTRIBUTE_FACTORY, input);
+  }
+  
+  /** Creates a TokenStream of the specified input using the given AttributeFactory */
+  abstract public Tokenizer create(AttributeFactory factory, Reader input);
 }

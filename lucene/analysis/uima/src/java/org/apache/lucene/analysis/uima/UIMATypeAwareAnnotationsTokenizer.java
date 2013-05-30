@@ -53,7 +53,12 @@ public final class UIMATypeAwareAnnotationsTokenizer extends BaseUIMATokenizer {
   private int finalOffset = 0;
 
   public UIMATypeAwareAnnotationsTokenizer(String descriptorPath, String tokenType, String typeAttributeFeaturePath, Map<String, Object> configurationParameters, Reader input) {
-    super(input, descriptorPath, configurationParameters);
+    this(descriptorPath, tokenType, typeAttributeFeaturePath, configurationParameters, AttributeFactory.DEFAULT_ATTRIBUTE_FACTORY, input);
+  }
+
+  public UIMATypeAwareAnnotationsTokenizer(String descriptorPath, String tokenType, String typeAttributeFeaturePath, 
+                                           Map<String, Object> configurationParameters, AttributeFactory factory, Reader input) {
+    super(factory, input, descriptorPath, configurationParameters);
     this.tokenTypeString = tokenType;
     this.termAttr = addAttribute(CharTermAttribute.class);
     this.typeAttr = addAttribute(TypeAttribute.class);

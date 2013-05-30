@@ -400,11 +400,8 @@ public final class RAMOnlyPostingsFormat extends PostingsFormat {
     }
 
     @Override
-    public int advance(int targetDocID) {
-      do {
-        nextDoc();
-      } while (upto < ramTerm.docs.size() && current.docID < targetDocID);
-      return NO_MORE_DOCS;
+    public int advance(int targetDocID) throws IOException {
+      return slowAdvance(targetDocID);
     }
 
     // TODO: override bulk read, for better perf
@@ -433,6 +430,11 @@ public final class RAMOnlyPostingsFormat extends PostingsFormat {
     public int docID() {
       return current.docID;
     }
+    
+    @Override
+    public long cost() {
+      return ramTerm.docs.size();
+    } 
   }
 
   private static class RAMDocsAndPositionsEnum extends DocsAndPositionsEnum {
@@ -448,11 +450,8 @@ public final class RAMOnlyPostingsFormat extends PostingsFormat {
     }
 
     @Override
-    public int advance(int targetDocID) {
-      do {
-        nextDoc();
-      } while (upto < ramTerm.docs.size() && current.docID < targetDocID);
-      return NO_MORE_DOCS;
+    public int advance(int targetDocID) throws IOException {
+      return slowAdvance(targetDocID);
     }
 
     // TODO: override bulk read, for better perf
@@ -505,6 +504,11 @@ public final class RAMOnlyPostingsFormat extends PostingsFormat {
         return null;
       }
     }
+    
+    @Override
+    public long cost() {
+      return ramTerm.docs.size();
+    } 
   }
 
   // Holds all indexes created, keyed by the ID assigned in fieldsConsumer

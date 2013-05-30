@@ -51,6 +51,7 @@ import org.apache.solr.response.SolrQueryResponse;
 import org.apache.solr.update.processor.DistributedUpdateProcessorFactory;
 import org.apache.solr.update.processor.RunUpdateProcessorFactory;
 import org.apache.solr.update.processor.UpdateRequestProcessor;
+import org.apache.solr.update.processor.UpdateRequestProcessorChain;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -447,13 +448,8 @@ public class PeerSync  {
     SolrQueryRequest req = new LocalSolrQueryRequest(uhandler.core, params);
     SolrQueryResponse rsp = new SolrQueryResponse();
 
-    // TODO: use the standard update processor chain now that it has support to skip processors before the DistributedUpdateProcessor?
-    RunUpdateProcessorFactory runFac = new RunUpdateProcessorFactory();
-    DistributedUpdateProcessorFactory magicFac = new DistributedUpdateProcessorFactory();
-    runFac.init(new NamedList());
-    magicFac.init(new NamedList());
-
-    UpdateRequestProcessor proc = magicFac.getInstance(req, rsp, runFac.getInstance(req, rsp, null));
+    UpdateRequestProcessorChain processorChain = req.getCore().getUpdateProcessingChain(null);
+    UpdateRequestProcessor proc = processorChain.createProcessor(req, rsp);
 
     Collections.sort(updates, updateRecordComparator);
 

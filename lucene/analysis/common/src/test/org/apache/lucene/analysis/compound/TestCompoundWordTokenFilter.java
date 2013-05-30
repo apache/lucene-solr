@@ -151,12 +151,12 @@ public class TestCompoundWordTokenFilter extends BaseTokenStreamTestCase {
         "fiol", "fodral", "Basfiolsfodralmakaregesäll", "Bas", "fiol",
         "fodral", "makare", "gesäll", "Skomakare", "Sko", "makare",
         "Vindrutetorkare", "Vind", "rute", "torkare", "Vindrutetorkarblad",
-        "Vind", "rute", "blad", "abba" }, new int[] { 0, 0, 3, 8, 8, 11, 17,
-        17, 20, 24, 24, 28, 33, 33, 39, 44, 44, 49, 54, 54, 58, 62, 69, 69, 72,
-        77, 84, 84, 87, 92, 98, 104, 111, 111, 114, 121, 121, 125, 129, 137,
-        137, 141, 151, 156 }, new int[] { 7, 3, 7, 16, 11, 16, 23, 20, 23, 32,
-        28, 32, 43, 39, 43, 53, 49, 53, 68, 58, 62, 68, 83, 72, 76, 83, 110,
-        87, 91, 98, 104, 110, 120, 114, 120, 136, 125, 129, 136, 155, 141, 145,
+        "Vind", "rute", "blad", "abba" }, new int[] { 0, 0, 0, 8, 8, 8, 17,
+        17, 17, 24, 24, 24, 33, 33, 33, 44, 44, 44, 54, 54, 54, 54, 69, 69, 69,
+        69, 84, 84, 84, 84, 84, 84, 111, 111, 111, 121, 121, 121, 121, 137,
+        137, 137, 137, 156 }, new int[] { 7, 7, 7, 16, 16, 16, 23, 23, 23, 32,
+        32, 32, 43, 43, 43, 53, 53, 53, 68, 68, 68, 68, 83, 83, 83, 83, 110,
+        110, 110, 110, 110, 110, 120, 120, 120, 136, 136, 136, 136, 155, 155, 155,
         155, 160 }, new int[] { 1, 0, 0, 1, 0, 0, 1, 0, 0, 1, 0, 0, 1, 0, 0, 1,
         0, 0, 1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, 0, 0, 0, 1, 0, 0, 1, 0, 0, 0, 1,
         0, 0, 0, 1 });
@@ -174,8 +174,8 @@ public class TestCompoundWordTokenFilter extends BaseTokenStreamTestCase {
         CompoundWordTokenFilterBase.DEFAULT_MAX_SUBWORD_SIZE, true);
 
     assertTokenStreamContents(tf, new String[] { "Basfiolsfodralmakaregesäll", "Bas",
-        "fiolsfodral", "fodral", "makare", "gesäll" }, new int[] { 0, 0, 3, 8,
-        14, 20 }, new int[] { 26, 3, 14, 14, 20, 26 }, new int[] { 1, 0, 0, 0,
+        "fiolsfodral", "fodral", "makare", "gesäll" }, new int[] { 0, 0, 0, 0,
+        0, 0 }, new int[] { 26, 26, 26, 26, 26, 26 }, new int[] { 1, 0, 0, 0,
         0, 0 });
   }
 
@@ -194,8 +194,8 @@ public class TestCompoundWordTokenFilter extends BaseTokenStreamTestCase {
 
     assertTokenStreamContents(tf,
       new String[] { "abcdef", "ab", "cd", "ef" },
-      new int[] { 0, 0, 2, 4},
-      new int[] { 6, 2, 4, 6},
+      new int[] { 0, 0, 0, 0},
+      new int[] { 6, 6, 6, 6},
       new int[] { 1, 0, 0, 0}
       );
   }
@@ -216,8 +216,8 @@ public class TestCompoundWordTokenFilter extends BaseTokenStreamTestCase {
   // since "d" is shorter than the minimum subword size, it should not be added to the token stream
     assertTokenStreamContents(tf,
       new String[] { "abcdefg", "abc", "efg" },
-      new int[] { 0, 0, 4},
-      new int[] { 7, 3, 7},
+      new int[] { 0, 0, 0},
+      new int[] { 7, 7, 7},
       new int[] { 1, 0, 0}
       );
   }

@@ -58,7 +58,7 @@ public class CustomScoreQuery extends Query {
    * @param subQuery the sub query whose scored is being customized. Must not be null. 
    */
   public CustomScoreQuery(Query subQuery) {
-    this(subQuery, new Query[0]);
+    this(subQuery, new FunctionQuery[0]);
   }
 
   /**
@@ -67,9 +67,9 @@ public class CustomScoreQuery extends Query {
    * @param scoringQuery a value source query whose scores are used in the custom score
    * computation.  This parameter is optional - it can be null.
    */
-  public CustomScoreQuery(Query subQuery, Query scoringQuery) {
+  public CustomScoreQuery(Query subQuery, FunctionQuery scoringQuery) {
     this(subQuery, scoringQuery!=null ? // don't want an array that contains a single null..
-        new Query[] {scoringQuery} : new Query[0]);
+        new FunctionQuery[] {scoringQuery} : new FunctionQuery[0]);
   }
 
   /**
@@ -78,7 +78,7 @@ public class CustomScoreQuery extends Query {
    * @param scoringQueries value source queries whose scores are used in the custom score
    * computation.  This parameter is optional - it can be null or even an empty array.
    */
-  public CustomScoreQuery(Query subQuery, Query... scoringQueries) {
+  public CustomScoreQuery(Query subQuery, FunctionQuery... scoringQueries) {
     this.subQuery = subQuery;
     this.scoringQueries = scoringQueries !=null?
         scoringQueries : new Query[0];
@@ -184,6 +184,7 @@ public class CustomScoreQuery extends Query {
     Weight subQueryWeight;
     Weight[] valSrcWeights;
     boolean qStrict;
+    float queryWeight;
 
     public CustomWeight(IndexSearcher searcher) throws IOException {
       this.subQueryWeight = subQuery.createWeight(searcher);
@@ -210,22 +211,26 @@ public class CustomScoreQuery extends Query {
           sum += valSrcWeight.getValueForNormalization();
         }
       }
-      sum *= getBoost() * getBoost(); // boost each sub-weight
-      return sum ;
+      return sum;
     }
 
     /*(non-Javadoc) @see org.apache.lucene.search.Weight#normalize(float) */
     @Override
     public void normalize(float norm, float topLevelBoost) {
-      topLevelBoost *= getBoost(); // incorporate boost
-      subQueryWeight.normalize(norm, topLevelBoost);
+      // note we DONT incorporate our boost, nor pass down any topLevelBoost 
+      // (e.g. from outer BQ), as there is no guarantee that the CustomScoreProvider's 
+      // function obeys the distributive law... it might call sqrt() on the subQuery score
+      // or some other arbitrary function other than multiplication.
+      // so, instead boosts are applied directly in score()
+      subQueryWeight.normalize(norm, 1f);
       for (Weight valSrcWeight : valSrcWeights) {
         if (qStrict) {
           valSrcWeight.normalize(1, 1); // do not normalize the ValueSource part
         } else {
-          valSrcWeight.normalize(norm, topLevelBoost);
+          valSrcWeight.normalize(norm, 1f);
         }
       }
+      queryWeight = topLevelBoost * getBoost();
     }
 
     @Override
@@ -244,7 +249,7 @@ public class CustomScoreQuery extends Query {
       for(int i = 0; i < valSrcScorers.length; i++) {
          valSrcScorers[i] = valSrcWeights[i].scorer(context, true, topScorer, acceptDocs);
       }
-      return new CustomScorer(CustomScoreQuery.this.getCustomScoreProvider(context), this, getBoost(), subQueryScorer, valSrcScorers);
+      return new CustomScorer(CustomScoreQuery.this.getCustomScoreProvider(context), this, queryWeight, subQueryScorer, valSrcScorers);
     }
 
     @Override
@@ -348,6 +353,11 @@ public class CustomScoreQuery extends Query {
       }
       return doc;
     }
+
+    @Override
+    public long cost() {
+      return subQueryScorer.cost();
+    }
   }
 
   @Override
@@ -375,6 +385,16 @@ public class CustomScoreQuery extends Query {
    */
   public void setStrict(boolean strict) {
     this.strict = strict;
+  }
+
+  /** The sub-query that CustomScoreQuery wraps, affecting both the score and which documents match. */
+  public Query getSubQuery() {
+    return subQuery;
+  }
+
+  /** The scoring queries that only affect the score of CustomScoreQuery. */
+  public Query[] getScoringQueries() {
+    return scoringQueries;
   }
 
   /**

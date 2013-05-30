@@ -8,5 +8,4 @@ REM  Find location of this script
 set SDIR=%~dp0
 if "%SDIR:~-1%"=="\" set SDIR=%SDIR:~0,-1%
 
-     
-"%JVM%" -classpath "%SDIR%\..\solr-webapp\webapp\WEB-INF\lib\*" org.apache.solr.cloud.ZkCLI %*
+"%JVM%" -Dlog4j.configuration=file:%SDIR%\log4j.properties -classpath "%SDIR%\..\solr-webapp\webapp\WEB-INF\lib\*;%SDIR%\..\lib\ext\*" org.apache.solr.cloud.ZkCLI %*

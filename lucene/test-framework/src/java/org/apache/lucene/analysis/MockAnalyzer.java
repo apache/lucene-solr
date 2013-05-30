@@ -17,7 +17,6 @@ package org.apache.lucene.analysis;
  * limitations under the License.
  */
 
-import java.io.IOException;
 import java.io.Reader;
 import java.util.HashMap;
 import java.util.Map;
@@ -46,7 +45,6 @@ public final class MockAnalyzer extends Analyzer {
   private final CharacterRunAutomaton runAutomaton;
   private final boolean lowerCase;
   private final CharacterRunAutomaton filter;
-  private final boolean enablePositionIncrements;
   private int positionIncrementGap;
   private final Random random;
   private Map<String,Integer> previousMappings = new HashMap<String,Integer>();
@@ -60,30 +58,28 @@ public final class MockAnalyzer extends Analyzer {
    * @param runAutomaton DFA describing how tokenization should happen (e.g. [a-zA-Z]+)
    * @param lowerCase true if the tokenizer should lowercase terms
    * @param filter DFA describing how terms should be filtered (set of stopwords, etc)
-   * @param enablePositionIncrements true if position increments should reflect filtered terms.
    */
-  public MockAnalyzer(Random random, CharacterRunAutomaton runAutomaton, boolean lowerCase, CharacterRunAutomaton filter, boolean enablePositionIncrements) {
+  public MockAnalyzer(Random random, CharacterRunAutomaton runAutomaton, boolean lowerCase, CharacterRunAutomaton filter) {
     super(new PerFieldReuseStrategy());
     // TODO: this should be solved in a different way; Random should not be shared (!).
     this.random = new Random(random.nextLong());
     this.runAutomaton = runAutomaton;
     this.lowerCase = lowerCase;
     this.filter = filter;
-    this.enablePositionIncrements = enablePositionIncrements;
   }
 
   /**
-   * Calls {@link #MockAnalyzer(Random, CharacterRunAutomaton, boolean, CharacterRunAutomaton, boolean) 
+   * Calls {@link #MockAnalyzer(Random, CharacterRunAutomaton, boolean, CharacterRunAutomaton) 
    * MockAnalyzer(random, runAutomaton, lowerCase, MockTokenFilter.EMPTY_STOPSET, false}).
    */
   public MockAnalyzer(Random random, CharacterRunAutomaton runAutomaton, boolean lowerCase) {
-    this(random, runAutomaton, lowerCase, MockTokenFilter.EMPTY_STOPSET, true);
+    this(random, runAutomaton, lowerCase, MockTokenFilter.EMPTY_STOPSET);
   }
 
   /** 
    * Create a Whitespace-lowercasing analyzer with no stopwords removal.
    * <p>
-   * Calls {@link #MockAnalyzer(Random, CharacterRunAutomaton, boolean, CharacterRunAutomaton, boolean) 
+   * Calls {@link #MockAnalyzer(Random, CharacterRunAutomaton, boolean, CharacterRunAutomaton) 
    * MockAnalyzer(random, MockTokenizer.WHITESPACE, true, MockTokenFilter.EMPTY_STOPSET, false}).
    */
   public MockAnalyzer(Random random) {
@@ -95,7 +91,6 @@ public final class MockAnalyzer extends Analyzer {
     MockTokenizer tokenizer = new MockTokenizer(reader, runAutomaton, lowerCase, maxTokenLength);
     tokenizer.setEnableChecks(enableChecks);
     MockTokenFilter filt = new MockTokenFilter(tokenizer, filter);
-    filt.setEnablePositionIncrements(enablePositionIncrements);
     return new TokenStreamComponents(tokenizer, maybePayload(filt, fieldName));
   }
   

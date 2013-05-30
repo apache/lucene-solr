@@ -159,6 +159,11 @@ public class FunctionQuery extends Query {
     }
 
     @Override
+    public long cost() {
+      return maxDoc;
+    }
+
+    @Override
     public int freq() throws IOException {
       return 1;
     }

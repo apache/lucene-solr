@@ -893,37 +893,24 @@ public void testFilesOpenClose() throws IOException {
   // LUCENE-2753
   public void testListCommits() throws Exception {
     Directory dir = newDirectory();
-    SnapshotDeletionPolicy sdp = new SnapshotDeletionPolicy(new KeepOnlyLastCommitDeletionPolicy());
-    IndexWriter writer = new IndexWriter(dir, newIndexWriterConfig( 
-        TEST_VERSION_CURRENT, null).setIndexDeletionPolicy(sdp));
+    IndexWriter writer = new IndexWriter(dir, newIndexWriterConfig(TEST_VERSION_CURRENT, null)
+        .setIndexDeletionPolicy(new SnapshotDeletionPolicy(new KeepOnlyLastCommitDeletionPolicy())));
+    SnapshotDeletionPolicy sdp = (SnapshotDeletionPolicy) writer.getConfig().getIndexDeletionPolicy();
     writer.addDocument(new Document());
     writer.commit();
-    sdp.snapshot("c1");
+    sdp.snapshot();
     writer.addDocument(new Document());
     writer.commit();
-    sdp.snapshot("c2");
+    sdp.snapshot();
     writer.addDocument(new Document());
     writer.commit();
-    sdp.snapshot("c3");
+    sdp.snapshot();
     writer.close();
     long currentGen = 0;
     for (IndexCommit ic : DirectoryReader.listCommits(dir)) {
       assertTrue("currentGen=" + currentGen + " commitGen=" + ic.getGeneration(), currentGen < ic.getGeneration());
       currentGen = ic.getGeneration();
     }
-    dir.close();
-  }
-  
-  // LUCENE-2812
-  public void testIndexExists() throws Exception {
-    Directory dir = newDirectory();
-    IndexWriter writer = new IndexWriter(dir, newIndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer(random())));
-    writer.addDocument(new Document());
-    writer.prepareCommit();
-    assertFalse(DirectoryReader.indexExists(dir));
-    writer.commit();
-    writer.close();
-    assertTrue(DirectoryReader.indexExists(dir));
     dir.close();
   }
   
@@ -939,10 +926,73 @@ public void testFilesOpenClose() throws IOException {
     writer.close();
     try {
       // Make sure codec impls totalTermFreq (eg PreFlex doesn't)
-      Assume.assumeTrue(MultiFields.totalTermFreq(r, "f", new BytesRef("b")) != -1);
-      assertEquals(1, MultiFields.totalTermFreq(r, "f", new BytesRef("b")));
-      assertEquals(2, MultiFields.totalTermFreq(r, "f", new BytesRef("a")));
-      assertEquals(1, MultiFields.totalTermFreq(r, "f", new BytesRef("b")));
+      Assume.assumeTrue(r.totalTermFreq(new Term("f", new BytesRef("b"))) != -1);
+      assertEquals(1, r.totalTermFreq(new Term("f", new BytesRef("b"))));
+      assertEquals(2, r.totalTermFreq(new Term("f", new BytesRef("a"))));
+      assertEquals(1, r.totalTermFreq(new Term("f", new BytesRef("b"))));
+    } finally {
+      r.close();
+      dir.close();
+    }
+  }
+  
+  public void testGetSumDocFreq() throws Exception {
+    Directory dir = newDirectory();
+    IndexWriter writer = new IndexWriter(dir, newIndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer(random())));
+    Document d = new Document();
+    d.add(newTextField("f", "a", Field.Store.NO));
+    writer.addDocument(d);
+    d = new Document();
+    d.add(newTextField("f", "b", Field.Store.NO));
+    writer.addDocument(d);
+    DirectoryReader r = writer.getReader();
+    writer.close();
+    try {
+      // Make sure codec impls getSumDocFreq (eg PreFlex doesn't)
+      Assume.assumeTrue(r.getSumDocFreq("f") != -1);
+      assertEquals(2, r.getSumDocFreq("f"));
+    } finally {
+      r.close();
+      dir.close();
+    }
+  }
+  
+  public void testGetDocCount() throws Exception {
+    Directory dir = newDirectory();
+    IndexWriter writer = new IndexWriter(dir, newIndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer(random())));
+    Document d = new Document();
+    d.add(newTextField("f", "a", Field.Store.NO));
+    writer.addDocument(d);
+    d = new Document();
+    d.add(newTextField("f", "a", Field.Store.NO));
+    writer.addDocument(d);
+    DirectoryReader r = writer.getReader();
+    writer.close();
+    try {
+      // Make sure codec impls getSumDocFreq (eg PreFlex doesn't)
+      Assume.assumeTrue(r.getDocCount("f") != -1);
+      assertEquals(2, r.getDocCount("f"));
+    } finally {
+      r.close();
+      dir.close();
+    }
+  }
+  
+  public void testGetSumTotalTermFreq() throws Exception {
+    Directory dir = newDirectory();
+    IndexWriter writer = new IndexWriter(dir, newIndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer(random())));
+    Document d = new Document();
+    d.add(newTextField("f", "a b b", Field.Store.NO));
+    writer.addDocument(d);
+    d = new Document();
+    d.add(newTextField("f", "a a b", Field.Store.NO));
+    writer.addDocument(d);
+    DirectoryReader r = writer.getReader();
+    writer.close();
+    try {
+      // Make sure codec impls getSumDocFreq (eg PreFlex doesn't)
+      Assume.assumeTrue(r.getSumTotalTermFreq("f") != -1);
+      assertEquals(6, r.getSumTotalTermFreq("f"));
     } finally {
       r.close();
       dir.close();
@@ -1086,4 +1136,12 @@ public void testFilesOpenClose() throws IOException {
     dir.close();
   }
 
+  public void testIndexExistsOnNonExistentDirectory() throws Exception {
+    File tempDir = _TestUtil.getTempDir("testIndexExistsOnNonExistentDirectory");
+    tempDir.delete();
+    Directory dir = newFSDirectory(tempDir);
+    System.out.println("dir=" + dir);
+    assertFalse(DirectoryReader.indexExists(dir));
+    dir.close();
+  }
 }

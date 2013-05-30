@@ -51,4 +51,42 @@ public class TestMockDirectoryWrapper extends LuceneTestCase {
     iw.close();
     dir.close();
   }
+  
+  public void testDiskFull() throws IOException {
+    // test writeBytes
+    MockDirectoryWrapper dir = newMockDirectory();
+    dir.setMaxSizeInBytes(3);
+    final byte[] bytes = new byte[] { 1, 2};
+    IndexOutput out = dir.createOutput("foo", IOContext.DEFAULT);
+    out.writeBytes(bytes, bytes.length); // first write should succeed
+    // flush() to ensure the written bytes are not buffered and counted
+    // against the directory size
+    out.flush();
+    try {
+      out.writeBytes(bytes, bytes.length);
+      fail("should have failed on disk full");
+    } catch (IOException e) {
+      // expected
+    }
+    out.close();
+    dir.close();
+    
+    // test copyBytes
+    dir = newMockDirectory();
+    dir.setMaxSizeInBytes(3);
+    out = dir.createOutput("foo", IOContext.DEFAULT);
+    out.copyBytes(new ByteArrayDataInput(bytes), bytes.length); // first copy should succeed
+    // flush() to ensure the written bytes are not buffered and counted
+    // against the directory size
+    out.flush();
+    try {
+      out.copyBytes(new ByteArrayDataInput(bytes), bytes.length);
+      fail("should have failed on disk full");
+    } catch (IOException e) {
+      // expected
+    }
+    out.close();
+    dir.close();
+  }
+  
 }

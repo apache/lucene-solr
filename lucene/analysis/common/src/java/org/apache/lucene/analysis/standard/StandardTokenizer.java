@@ -118,14 +118,6 @@ public final class StandardTokenizer extends Tokenizer {
   }
 
   /**
-   * Creates a new StandardTokenizer with a given {@link AttributeSource}. 
-   */
-  public StandardTokenizer(Version matchVersion, AttributeSource source, Reader input) {
-    super(source, input);
-    init(matchVersion);
-  }
-
-  /**
    * Creates a new StandardTokenizer with a given {@link org.apache.lucene.util.AttributeSource.AttributeFactory} 
    */
   public StandardTokenizer(Version matchVersion, AttributeFactory factory, Reader input) {

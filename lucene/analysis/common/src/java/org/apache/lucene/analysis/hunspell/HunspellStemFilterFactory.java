@@ -22,10 +22,9 @@ import java.io.InputStream;
 import java.text.ParseException;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 
 import org.apache.lucene.analysis.TokenStream;
-import org.apache.lucene.analysis.hunspell.HunspellDictionary;
-import org.apache.lucene.analysis.hunspell.HunspellStemFilter;
 import org.apache.lucene.analysis.util.ResourceLoader;
 import org.apache.lucene.analysis.util.ResourceLoaderAware;
 import org.apache.lucene.analysis.util.TokenFilterFactory;
@@ -34,7 +33,7 @@ import org.apache.lucene.util.IOUtils;
 /**
  * TokenFilterFactory that creates instances of {@link org.apache.lucene.analysis.hunspell.HunspellStemFilter}.
  * Example config for British English including a custom dictionary, case insensitive matching:
- * <pre class="prettyprint" >
+ * <pre class="prettyprint">
  * &lt;filter class=&quot;solr.HunspellStemFilterFactory&quot;
  *    dictionary=&quot;en_GB.dic,my_custom.dic&quot;
  *    affix=&quot;en_GB.aff&quot;
@@ -51,16 +50,29 @@ import org.apache.lucene.util.IOUtils;
  * See <a href="http://wiki.apache.org/solr/Hunspell">http://wiki.apache.org/solr/Hunspell</a>
  */
 public class HunspellStemFilterFactory extends TokenFilterFactory implements ResourceLoaderAware {
-  
   private static final String PARAM_DICTIONARY = "dictionary";
   private static final String PARAM_AFFIX = "affix";
   private static final String PARAM_IGNORE_CASE = "ignoreCase";
   private static final String PARAM_STRICT_AFFIX_PARSING = "strictAffixParsing";
-  private static final String TRUE = "true";
-  private static final String FALSE = "false";
-  
+
+  private final String dictionaryArg;
+  private final String affixFile;
+  private final boolean ignoreCase;
+  private final boolean strictAffixParsing;
   private HunspellDictionary dictionary;
-  private boolean ignoreCase = false;
+  
+  /** Creates a new HunspellStemFilterFactory */
+  public HunspellStemFilterFactory(Map<String,String> args) {
+    super(args);
+    assureMatchVersion();
+    dictionaryArg = require(args, PARAM_DICTIONARY);
+    affixFile = get(args, PARAM_AFFIX);
+    ignoreCase = getBoolean(args, PARAM_IGNORE_CASE, false);
+    strictAffixParsing = getBoolean(args, PARAM_STRICT_AFFIX_PARSING, true);
+    if (!args.isEmpty()) {
+      throw new IllegalArgumentException("Unknown parameters: " + args);
+    }
+  }
 
   /**
    * Loads the hunspell dictionary and affix files defined in the configuration
@@ -69,27 +81,7 @@ public class HunspellStemFilterFactory extends TokenFilterFactory implements Res
    */
   @Override
   public void inform(ResourceLoader loader) throws IOException {
-    assureMatchVersion();
-    String dictionaryArg = args.get(PARAM_DICTIONARY);
-    if (dictionaryArg == null) {
-      throw new IllegalArgumentException("Parameter " + PARAM_DICTIONARY + " is mandatory.");
-    }
-    String dictionaryFiles[] = args.get(PARAM_DICTIONARY).split(",");
-    String affixFile = args.get(PARAM_AFFIX);
-    String pic = args.get(PARAM_IGNORE_CASE);
-    if(pic != null) {
-      if(pic.equalsIgnoreCase(TRUE)) ignoreCase = true;
-      else if(pic.equalsIgnoreCase(FALSE)) ignoreCase = false;
-      else throw new IllegalArgumentException("Unknown value for " + PARAM_IGNORE_CASE + ": " + pic + ". Must be true or false");
-    }
-
-    String strictAffixParsingParam = args.get(PARAM_STRICT_AFFIX_PARSING);
-    boolean strictAffixParsing = true;
-    if(strictAffixParsingParam != null) {
-      if(strictAffixParsingParam.equalsIgnoreCase(FALSE)) strictAffixParsing = false;
-      else if(strictAffixParsingParam.equalsIgnoreCase(TRUE)) strictAffixParsing = true;
-      else throw new IllegalArgumentException("Unknown value for " + PARAM_STRICT_AFFIX_PARSING + ": " + strictAffixParsingParam + ". Must be true or false");
-    }
+    String dictionaryFiles[] = dictionaryArg.split(",");
 
     InputStream affix = null;
     List<InputStream> dictionaries = new ArrayList<InputStream>();
@@ -103,7 +95,7 @@ public class HunspellStemFilterFactory extends TokenFilterFactory implements Res
 
       this.dictionary = new HunspellDictionary(affix, dictionaries, luceneMatchVersion, ignoreCase, strictAffixParsing);
     } catch (ParseException e) {
-      throw new IOException("Unable to load hunspell data! [dictionary=" + args.get("dictionary") + ",affix=" + affixFile + "]", e);
+      throw new IOException("Unable to load hunspell data! [dictionary=" + dictionaryArg + ",affix=" + affixFile + "]", e);
     } finally {
       IOUtils.closeWhileHandlingException(affix);
       IOUtils.closeWhileHandlingException(dictionaries);

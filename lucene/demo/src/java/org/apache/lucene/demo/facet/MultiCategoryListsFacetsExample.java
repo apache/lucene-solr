@@ -78,7 +78,7 @@ public class MultiCategoryListsFacetsExample {
         new WhitespaceAnalyzer(FacetExamples.EXAMPLES_VER)));
 
     // Writes facet ords to a separate directory from the main index
-    DirectoryTaxonomyWriter taxoWriter = new DirectoryTaxonomyWriter(taxoDir, IndexWriterConfig.OpenMode.CREATE);
+    DirectoryTaxonomyWriter taxoWriter = new DirectoryTaxonomyWriter(taxoDir);
 
     // Reused across documents, to add the necessary facet fields
     FacetFields facetFields = new FacetFields(taxoWriter, indexingParams);

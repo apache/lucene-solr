@@ -26,7 +26,7 @@ import org.apache.lucene.analysis.BaseTokenStreamTestCase;
 import org.apache.lucene.analysis.MockTokenizer;
 import org.apache.lucene.analysis.Tokenizer;
 import org.apache.lucene.analysis.core.KeywordTokenizer;
-import org.apache.lucene.analysis.miscellaneous.KeywordMarkerFilter;
+import org.apache.lucene.analysis.miscellaneous.SetKeywordMarkerFilter;
 import org.apache.lucene.analysis.util.CharArraySet;
 import org.apache.lucene.util.Version;
 
@@ -222,7 +222,7 @@ public class TestBulgarianStemmer extends BaseTokenStreamTestCase {
     MockTokenizer tokenStream = new MockTokenizer(new StringReader("строевете строеве"), MockTokenizer.WHITESPACE, false);
 
     BulgarianStemFilter filter = new BulgarianStemFilter(
-        new KeywordMarkerFilter(tokenStream, set));
+        new SetKeywordMarkerFilter(tokenStream, set));
     assertTokenStreamContents(filter, new String[] { "строй", "строеве" });
   }
   

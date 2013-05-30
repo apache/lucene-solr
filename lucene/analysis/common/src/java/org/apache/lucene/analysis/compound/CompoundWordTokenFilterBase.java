@@ -19,7 +19,6 @@ package org.apache.lucene.analysis.compound;
 
 import java.io.IOException;
 import java.util.LinkedList;
-import java.util.Set;
 
 import org.apache.lucene.analysis.TokenFilter;
 import org.apache.lucene.analysis.TokenStream;
@@ -41,6 +40,7 @@ import org.apache.lucene.util.Version;
  * <li>As of 3.1, CompoundWordTokenFilterBase correctly handles Unicode 4.0
  * supplementary characters in strings and char arrays provided as compound word
  * dictionaries.
+ * <li>As of 4.4, {@link CompoundWordTokenFilterBase} doesn't update offsets.
  * </ul>
  */
 public abstract class CompoundWordTokenFilterBase extends TokenFilter {
@@ -58,7 +58,8 @@ public abstract class CompoundWordTokenFilterBase extends TokenFilter {
    * The default for maximal length of subwords that get propagated to the output of this filter
    */
   public static final int DEFAULT_MAX_SUBWORD_SIZE = 15;
-  
+
+  protected final Version matchVersion;
   protected final CharArraySet dictionary;
   protected final LinkedList<CompoundToken> tokens;
   protected final int minWordSize;
@@ -82,7 +83,7 @@ public abstract class CompoundWordTokenFilterBase extends TokenFilter {
 
   protected CompoundWordTokenFilterBase(Version matchVersion, TokenStream input, CharArraySet dictionary, int minWordSize, int minSubwordSize, int maxSubwordSize, boolean onlyLongestMatch) {
     super(input);
-    
+    this.matchVersion = matchVersion;
     this.tokens=new LinkedList<CompoundToken>();
     if (minWordSize < 0) {
       throw new IllegalArgumentException("minWordSize cannot be negative");
@@ -156,7 +157,8 @@ public abstract class CompoundWordTokenFilterBase extends TokenFilter {
       int startOff = CompoundWordTokenFilterBase.this.offsetAtt.startOffset();
       int endOff = CompoundWordTokenFilterBase.this.offsetAtt.endOffset();
       
-      if (endOff - startOff != CompoundWordTokenFilterBase.this.termAtt.length()) {
+      if (matchVersion.onOrAfter(Version.LUCENE_44) ||
+          endOff - startOff != CompoundWordTokenFilterBase.this.termAtt.length()) {
         // if length by start + end offsets doesn't match the term text then assume
         // this is a synonym and don't adjust the offsets.
         this.startOffset = startOff;

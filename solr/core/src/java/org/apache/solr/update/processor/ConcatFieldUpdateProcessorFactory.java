@@ -95,10 +95,10 @@ public final class ConcatFieldUpdateProcessorFactory extends FieldMutatingUpdate
   public FieldMutatingUpdateProcessor.FieldNameSelector 
     getDefaultSelector(final SolrCore core) {
 
-    final IndexSchema schema = core.getSchema();
     return new FieldMutatingUpdateProcessor.FieldNameSelector() {
       @Override
       public boolean shouldMutate(final String fieldName) {
+        final IndexSchema schema = core.getLatestSchema();
 
         // first check type since it should be fastest
         FieldType type = schema.getFieldTypeNoEx(fieldName);

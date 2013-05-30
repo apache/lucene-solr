@@ -32,6 +32,18 @@ import org.apache.lucene.analysis.tokenattributes.KeywordAttribute;
  * Conference on Research and Development in Information Retrieval, 191-203, 1993).
  * <p/>
  * All terms must already be lowercased for this filter to work correctly.
+ *
+ * <p>
+ * Note: This filter is aware of the {@link KeywordAttribute}. To prevent
+ * certain terms from being passed to the stemmer
+ * {@link KeywordAttribute#isKeyword()} should be set to <code>true</code>
+ * in a previous {@link TokenStream}.
+ *
+ * Note: For including the original term as well as the stemmed version, see
+ * {@link org.apache.lucene.analysis.miscellaneous.KeywordRepeatFilterFactory}
+ * </p>
+ *
+ *
  */
 
 public final class KStemFilter extends TokenFilter {

@@ -17,12 +17,9 @@ package org.apache.lucene.analysis;
  * limitations under the License.
  */
 
-import java.io.FileOutputStream;
 import java.io.IOException;
-import java.io.OutputStreamWriter;
-import java.io.Writer;
 
-import org.apache.lucene.analysis.tokenattributes.CharTermAttribute;
+import org.apache.lucene.analysis.tokenattributes.OffsetAttribute;
 import org.apache.lucene.analysis.tokenattributes.PositionIncrementAttribute;
 import org.apache.lucene.analysis.tokenattributes.PositionLengthAttribute;
 import org.apache.lucene.analysis.tokenattributes.TermToBytesRefAttribute;
@@ -37,11 +34,21 @@ import org.apache.lucene.util.automaton.Transition;
 /** Consumes a TokenStream and creates an {@link Automaton}
  *  where the transition labels are UTF8 bytes from the {@link
  *  TermToBytesRefAttribute}.  Between tokens we insert
- *  POS_SEP and for holes we insert HOLE.  */
+ *  POS_SEP and for holes we insert HOLE.
+ *
+ * @lucene.experimental */
 public class TokenStreamToAutomaton {
+
+  private boolean preservePositionIncrements;
 
   /** Sole constructor. */
   public TokenStreamToAutomaton() {
+    this.preservePositionIncrements = true;
+  }
+
+  /** Whether to generate holes in the automaton for missing positions, <code>true</code> by default. */
+  public void setPreservePositionIncrements(boolean enablePositionIncrements) {
+    this.preservePositionIncrements = enablePositionIncrements;
   }
 
   private static class Position implements RollingBuffer.Resettable {
@@ -89,6 +96,7 @@ public class TokenStreamToAutomaton {
     final TermToBytesRefAttribute termBytesAtt = in.addAttribute(TermToBytesRefAttribute.class);
     final PositionIncrementAttribute posIncAtt = in.addAttribute(PositionIncrementAttribute.class);
     final PositionLengthAttribute posLengthAtt = in.addAttribute(PositionLengthAttribute.class);
+    final OffsetAttribute offsetAtt = in.addAttribute(OffsetAttribute.class);
 
     final BytesRef term = termBytesAtt.getBytesRef();
 
@@ -101,9 +109,12 @@ public class TokenStreamToAutomaton {
 
     int pos = -1;
     Position posData = null;
-
+    int maxOffset = 0;
     while (in.incrementToken()) {
       int posInc = posIncAtt.getPositionIncrement();
+      if (!preservePositionIncrements && posInc > 1) {
+        posInc = 1;
+      }
       assert pos > -1 || posInc > 0;
 
       if (posInc > 0) {
@@ -157,13 +168,26 @@ public class TokenStreamToAutomaton {
         state.addTransition(new Transition(term2.bytes[term2.offset + byteIDX] & 0xff, nextState));
         state = nextState;
       }
+
+      maxOffset = Math.max(maxOffset, offsetAtt.endOffset());
+    }
+
+    in.end();
+    State endState = null;
+    if (offsetAtt.endOffset() > maxOffset) {
+      endState = new State();
+      endState.setAccept(true);
     }
 
     pos++;
     while (pos <= positions.getMaxPos()) {
       posData = positions.get(pos);
       if (posData.arriving != null) {
-        posData.arriving.setAccept(true);
+        if (endState != null) {
+          posData.arriving.addTransition(new Transition(POS_SEP, endState));
+        } else {
+          posData.arriving.setAccept(true);
+        }
       }
       pos++;
     }

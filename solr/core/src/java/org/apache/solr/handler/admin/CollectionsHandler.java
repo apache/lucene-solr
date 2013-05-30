@@ -40,6 +40,7 @@ import org.apache.solr.common.params.CoreAdminParams;
 import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.common.util.NamedList;
+import org.apache.solr.common.util.SimpleOrderedMap;
 import org.apache.solr.core.CoreContainer;
 import org.apache.solr.handler.RequestHandlerBase;
 import org.apache.solr.request.SolrQueryRequest;
@@ -102,28 +103,42 @@ public class CollectionsHandler extends RequestHandlerBase {
     if (a != null) {
       action = CollectionAction.get(a);
     }
-    if (action != null) {
-      switch (action) {
-        case CREATE: {
-          this.handleCreateAction(req, rsp);
+    if (action == null) {
+      throw new SolrException(ErrorCode.BAD_REQUEST, "Unknown action: " + a);
+    }
+    
+    switch (action) {
+      case CREATE: {
+        this.handleCreateAction(req, rsp);
+        break;
+      }
+      case DELETE: {
+        this.handleDeleteAction(req, rsp);
+        break;
+      }
+      case RELOAD: {
+        this.handleReloadAction(req, rsp);
+        break;
+      }
+      case SYNCSHARD: {
+        this.handleSyncShardAction(req, rsp);
+        break;
+      }
+      case CREATEALIAS: {
+        this.handleCreateAliasAction(req, rsp);
+        break;
+      }
+      case DELETEALIAS: {
+        this.handleDeleteAliasAction(req, rsp);
+        break;
+      }
+        case SPLITSHARD:  {
+          this.handleSplitShardAction(req, rsp);
           break;
         }
-        case DELETE: {
-          this.handleDeleteAction(req, rsp);
-          break;
-        }
-        case RELOAD: {
-          this.handleReloadAction(req, rsp);
-          break;
-        }
-        case SYNCSHARD: {
-          this.handleSyncShardAction(req, rsp);
-          break;
-        }
-        
-        default: {
+
+      default: {
           throw new RuntimeException("Unknown action: " + action);
-        }
       }
     }
 
@@ -141,6 +156,11 @@ public class CollectionsHandler extends RequestHandlerBase {
     if (event.getBytes() != null) {
       SolrResponse response = SolrResponse.deserialize(event.getBytes());
       rsp.getValues().addAll(response.getResponse());
+      SimpleOrderedMap exp = (SimpleOrderedMap) response.getResponse().get("exception");
+      if (exp != null) {
+        Integer code = (Integer) exp.get("rspCode");
+        rsp.setException(new SolrException(code != null && code != -1 ? ErrorCode.getErrorCode(code) : ErrorCode.SERVER_ERROR, (String)exp.get("msg")));
+      }
     } else {
       if (System.currentTimeMillis() - time >= DEFAULT_ZK_TIMEOUT) {
         throw new SolrException(ErrorCode.SERVER_ERROR, operation
@@ -187,7 +207,30 @@ public class CollectionsHandler extends RequestHandlerBase {
     reqSyncShard.setCoreName(nodeProps.getCoreName());
     server.request(reqSyncShard);
   }
-
+  
+  private void handleCreateAliasAction(SolrQueryRequest req,
+      SolrQueryResponse rsp) throws Exception {
+    log.info("Create alias action : " + req.getParamString());
+    String name = req.getParams().required().get("name");
+    String collections = req.getParams().required().get("collections");
+    
+    ZkNodeProps m = new ZkNodeProps(Overseer.QUEUE_OPERATION,
+        OverseerCollectionProcessor.CREATEALIAS, "name", name, "collections",
+        collections);
+    
+    handleResponse(OverseerCollectionProcessor.CREATEALIAS, m, rsp);
+  }
+  
+  private void handleDeleteAliasAction(SolrQueryRequest req,
+      SolrQueryResponse rsp) throws Exception {
+    log.info("Delete alias action : " + req.getParamString());
+    String name = req.getParams().required().get("name");
+    
+    ZkNodeProps m = new ZkNodeProps(Overseer.QUEUE_OPERATION,
+        OverseerCollectionProcessor.DELETEALIAS, "name", name);
+    
+    handleResponse(OverseerCollectionProcessor.CREATEALIAS, m, rsp);
+  }
 
   private void handleDeleteAction(SolrQueryRequest req, SolrQueryResponse rsp) throws KeeperException, InterruptedException {
     log.info("Deleting Collection : " + req.getParamString());
@@ -199,7 +242,6 @@ public class CollectionsHandler extends RequestHandlerBase {
 
     handleResponse(OverseerCollectionProcessor.DELETECOLLECTION, m, rsp);
   }
-
 
   // very simple currently, you can pass a template collection, and the new collection is created on
   // every node the template collection is on
@@ -237,6 +279,26 @@ public class CollectionsHandler extends RequestHandlerBase {
     ZkNodeProps m = new ZkNodeProps(props);
 
     handleResponse(OverseerCollectionProcessor.CREATECOLLECTION, m, rsp);
+  }
+
+  private void handleSplitShardAction(SolrQueryRequest req, SolrQueryResponse rsp) throws KeeperException, InterruptedException {
+    log.info("Splitting shard : " + req.getParamString());
+    String name = req.getParams().required().get("collection");
+    // TODO : add support for multiple shards
+    String shard = req.getParams().required().get("shard");
+    // TODO : add support for shard range
+
+    Map<String,Object> props = new HashMap<String,Object>();
+    props.put(Overseer.QUEUE_OPERATION, OverseerCollectionProcessor.SPLITSHARD);
+    props.put("collection", name);
+    props.put(ZkStateReader.SHARD_ID_PROP, shard);
+
+    ZkNodeProps m = new ZkNodeProps(props);
+
+    // todo remove this hack
+    DEFAULT_ZK_TIMEOUT *= 5;
+    handleResponse(OverseerCollectionProcessor.SPLITSHARD, m, rsp);
+    DEFAULT_ZK_TIMEOUT /= 5;
   }
 
   public static ModifiableSolrParams params(String... params) {

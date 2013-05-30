@@ -546,7 +546,7 @@ public class TestPrecedenceQueryParser extends LuceneTestCase {
 
   public void testBoost() throws Exception {
     CharacterRunAutomaton stopSet = new CharacterRunAutomaton(BasicAutomata.makeString("on"));
-    Analyzer oneStopAnalyzer = new MockAnalyzer(random(), MockTokenizer.SIMPLE, true, stopSet, true);
+    Analyzer oneStopAnalyzer = new MockAnalyzer(random(), MockTokenizer.SIMPLE, true, stopSet);
 
     PrecedenceQueryParser qp = new PrecedenceQueryParser();
     qp.setAnalyzer(oneStopAnalyzer);
@@ -561,7 +561,7 @@ public class TestPrecedenceQueryParser extends LuceneTestCase {
     q = qp.parse("\"on\"^1.0", "field");
     assertNotNull(q);
 
-    q = getParser(new MockAnalyzer(random(), MockTokenizer.SIMPLE, true, MockTokenFilter.ENGLISH_STOPSET, true)).parse("the^3",
+    q = getParser(new MockAnalyzer(random(), MockTokenizer.SIMPLE, true, MockTokenFilter.ENGLISH_STOPSET)).parse("the^3",
         "field");
     assertNotNull(q);
   }

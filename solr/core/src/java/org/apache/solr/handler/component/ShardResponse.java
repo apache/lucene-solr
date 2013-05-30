@@ -22,6 +22,7 @@ import org.apache.solr.common.SolrException;
 public final class ShardResponse {
   private ShardRequest req;
   private String shard;
+  private String nodeName;
   private String shardAddress;  // the specific shard that this response was received from
   private int rspCode;
   private Throwable exception;
@@ -56,6 +57,11 @@ public final class ShardResponse {
     return shard;
   }
 
+  public String getNodeName()
+  {
+    return nodeName;
+  }
+  
   public void setShardRequest(ShardRequest rsp)
   {
     this.req = rsp;
@@ -80,9 +86,15 @@ public final class ShardResponse {
   {
     this.rspCode = rspCode;
   }
+  
+  void setNodeName(String nodeName) 
+  {
+    this.nodeName = nodeName;
+  }
 
   /** What was the shard address that returned this response.  Example:  "http://localhost:8983/solr" */
   public String getShardAddress() { return this.shardAddress; }
 
   void setShardAddress(String addr) { this.shardAddress = addr; }
+
 }

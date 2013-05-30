@@ -216,5 +216,63 @@ public class TestCategoryPath extends FacetTestCase {
     assertNotNull(new CategoryPath("test/", '/'));
     
   }
+
+  @Test
+  public void testInvalidDelimChar() throws Exception {
+    // Make sure CategoryPath doesn't silently corrupt:
+    char[] buf = new char[100];
+    CategoryPath cp = new CategoryPath("foo/bar");
+    try {
+      cp.toString();
+      fail("expected exception");
+    } catch (IllegalArgumentException iae) {
+      // expected
+    }
+    try {
+      cp.copyFullPath(buf, 0, '/');
+      fail("expected exception");
+    } catch (IllegalArgumentException iae) {
+      // expected
+    }
+    cp = new CategoryPath("abc", "foo/bar");
+    try {
+      cp.toString();
+      fail("expected exception");
+    } catch (IllegalArgumentException iae) {
+      // expected
+    }
+    try {
+      cp.copyFullPath(buf, 0, '/');
+      fail("expected exception");
+    } catch (IllegalArgumentException iae) {
+      // expected
+    }
+    cp = new CategoryPath("foo:bar");
+    try {
+      cp.toString(':');
+      fail("expected exception");
+    } catch (IllegalArgumentException iae) {
+      // expected
+    }
+    try {
+      cp.copyFullPath(buf, 0, ':');
+      fail("expected exception");
+    } catch (IllegalArgumentException iae) {
+      // expected
+    }
+    cp = new CategoryPath("abc", "foo:bar");
+    try {
+      cp.toString(':');
+      fail("expected exception");
+    } catch (IllegalArgumentException iae) {
+      // expected
+    }
+    try {
+      cp.copyFullPath(buf, 0, ':');
+      fail("expected exception");
+    } catch (IllegalArgumentException iae) {
+      // expected
+    }
+  }
   
 }

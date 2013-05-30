@@ -476,7 +476,7 @@ public class LukeRequestHandler extends RequestHandlerBase
         Map<String, Object> tok = new HashMap<String, Object>();
         String className = cfiltfac.getClass().getName();
         tok.put("className", className);
-        tok.put("args", cfiltfac.getArgs());
+        tok.put("args", cfiltfac.getOriginalArgs());
         cfilters.add(className.substring(className.lastIndexOf('.')+1), tok);
       }
       if (cfilters.size() > 0) {
@@ -486,7 +486,7 @@ public class LukeRequestHandler extends RequestHandlerBase
       SimpleOrderedMap<Object> tokenizer = new SimpleOrderedMap<Object>();
       TokenizerFactory tfac = tchain.getTokenizerFactory();
       tokenizer.add("className", tfac.getClass().getName());
-      tokenizer.add("args", tfac.getArgs());
+      tokenizer.add("args", tfac.getOriginalArgs());
       aninfo.add("tokenizer", tokenizer);
 
       TokenFilterFactory[] filtfacs = tchain.getTokenFilterFactories();
@@ -495,7 +495,7 @@ public class LukeRequestHandler extends RequestHandlerBase
         Map<String, Object> tok = new HashMap<String, Object>();
         String className = filtfac.getClass().getName();
         tok.put("className", className);
-        tok.put("args", filtfac.getArgs());
+        tok.put("args", filtfac.getOriginalArgs());
         filters.add(className.substring(className.lastIndexOf('.')+1), tok);
       }
       if (filters.size() > 0) {
@@ -525,7 +525,7 @@ public class LukeRequestHandler extends RequestHandlerBase
       field.add("positionIncrementGap", ft.getAnalyzer().getPositionIncrementGap(f.getName()));
     }
     field.add("copyDests", toListOfStringDests(schema.getCopyFieldsList(f.getName())));
-    field.add("copySources", toListOfStrings(schema.getCopySources(f.getName())));
+    field.add("copySources", schema.getCopySources(f.getName()));
 
 
     fields.put( f.getName(), field );

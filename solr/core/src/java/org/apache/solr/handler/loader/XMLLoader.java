@@ -438,6 +438,7 @@ public class XMLLoader extends ContentStreamLoader {
           }
           boost = 1.0f;
           update = null;
+          isNull = false;
           String attrVal = "";
           for (int i = 0; i < parser.getAttributeCount(); i++) {
             attrName = parser.getAttributeLocalName(i);

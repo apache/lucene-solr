@@ -239,6 +239,9 @@
   </requestHandler>
   
   <requestHandler name="/dataimport" class="org.apache.solr.handler.dataimport.DataImportHandler">
+  	<lst name="defaults">
+      <str name="dots.in.hsqldb.driver">org.hsqldb.jdbcDriver</str>
+    </lst>
   </requestHandler>
     
   <!--

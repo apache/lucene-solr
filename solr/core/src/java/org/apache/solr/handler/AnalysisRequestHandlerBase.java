@@ -211,7 +211,7 @@ public abstract class AnalysisRequestHandlerBase extends RequestHandlerBase {
     final AttributeSource[] tokens = tokenList.toArray(new AttributeSource[tokenList.size()]);
     
     // sort the tokens by absoulte position
-    ArrayUtil.mergeSort(tokens, new Comparator<AttributeSource>() {
+    ArrayUtil.timSort(tokens, new Comparator<AttributeSource>() {
       @Override
       public int compare(AttributeSource a, AttributeSource b) {
         return arrayCompare(

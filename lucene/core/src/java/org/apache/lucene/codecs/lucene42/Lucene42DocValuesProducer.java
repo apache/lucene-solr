@@ -17,7 +17,13 @@ package org.apache.lucene.codecs.lucene42;
  * limitations under the License.
  */
 
+import static org.apache.lucene.codecs.lucene42.Lucene42DocValuesConsumer.DELTA_COMPRESSED;
+import static org.apache.lucene.codecs.lucene42.Lucene42DocValuesConsumer.GCD_COMPRESSED;
+import static org.apache.lucene.codecs.lucene42.Lucene42DocValuesConsumer.TABLE_COMPRESSED;
+import static org.apache.lucene.codecs.lucene42.Lucene42DocValuesConsumer.UNCOMPRESSED;
+
 import java.io.IOException;
+import java.util.Comparator;
 import java.util.HashMap;
 import java.util.Map;
 
@@ -25,6 +31,8 @@ import org.apache.lucene.codecs.CodecUtil;
 import org.apache.lucene.codecs.DocValuesProducer;
 import org.apache.lucene.index.BinaryDocValues;
 import org.apache.lucene.index.CorruptIndexException;
+import org.apache.lucene.index.DocsAndPositionsEnum;
+import org.apache.lucene.index.DocsEnum;
 import org.apache.lucene.index.FieldInfo;
 import org.apache.lucene.index.FieldInfos;
 import org.apache.lucene.index.IndexFileNames;
@@ -32,8 +40,10 @@ import org.apache.lucene.index.NumericDocValues;
 import org.apache.lucene.index.SegmentReadState;
 import org.apache.lucene.index.SortedDocValues;
 import org.apache.lucene.index.SortedSetDocValues;
+import org.apache.lucene.index.TermsEnum;
 import org.apache.lucene.store.ByteArrayDataInput;
 import org.apache.lucene.store.IndexInput;
+import org.apache.lucene.util.Bits;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.IOUtils;
 import org.apache.lucene.util.IntsRef;
@@ -75,14 +85,16 @@ class Lucene42DocValuesProducer extends DocValuesProducer {
     // read in the entries from the metadata file.
     IndexInput in = state.directory.openInput(metaName, state.context);
     boolean success = false;
+    final int version;
     try {
-      CodecUtil.checkHeader(in, metaCodec, 
-                                Lucene42DocValuesConsumer.VERSION_START,
-                                Lucene42DocValuesConsumer.VERSION_START);
+      version = CodecUtil.checkHeader(in, metaCodec, 
+                                      Lucene42DocValuesConsumer.VERSION_START,
+                                      Lucene42DocValuesConsumer.VERSION_CURRENT);
       numerics = new HashMap<Integer,NumericEntry>();
       binaries = new HashMap<Integer,BinaryEntry>();
       fsts = new HashMap<Integer,FSTEntry>();
       readFields(in, state.fieldInfos);
+
       success = true;
     } finally {
       if (success) {
@@ -91,12 +103,24 @@ class Lucene42DocValuesProducer extends DocValuesProducer {
         IOUtils.closeWhileHandlingException(in);
       }
     }
-    
-    String dataName = IndexFileNames.segmentFileName(state.segmentInfo.name, state.segmentSuffix, dataExtension);
-    data = state.directory.openInput(dataName, state.context);
-    CodecUtil.checkHeader(data, dataCodec, 
-                                Lucene42DocValuesConsumer.VERSION_START,
-                                Lucene42DocValuesConsumer.VERSION_START);
+
+    success = false;
+    try {
+      String dataName = IndexFileNames.segmentFileName(state.segmentInfo.name, state.segmentSuffix, dataExtension);
+      data = state.directory.openInput(dataName, state.context);
+      final int version2 = CodecUtil.checkHeader(data, dataCodec, 
+                                                 Lucene42DocValuesConsumer.VERSION_START,
+                                                 Lucene42DocValuesConsumer.VERSION_CURRENT);
+      if (version != version2) {
+        throw new CorruptIndexException("Format versions mismatch");
+      }
+
+      success = true;
+    } finally {
+      if (!success) {
+        IOUtils.closeWhileHandlingException(this.data);
+      }
+    }
   }
   
   private void readFields(IndexInput meta, FieldInfos infos) throws IOException {
@@ -107,6 +131,15 @@ class Lucene42DocValuesProducer extends DocValuesProducer {
         NumericEntry entry = new NumericEntry();
         entry.offset = meta.readLong();
         entry.format = meta.readByte();
+        switch(entry.format) {
+          case DELTA_COMPRESSED:
+          case TABLE_COMPRESSED:
+          case GCD_COMPRESSED:
+          case UNCOMPRESSED:
+               break;
+          default:
+               throw new CorruptIndexException("Unknown format: " + entry.format + ", input=" + meta);
+        }
         if (entry.format != Lucene42DocValuesConsumer.UNCOMPRESSED) {
           entry.packedIntsVersion = meta.readVInt();
         }
@@ -147,41 +180,56 @@ class Lucene42DocValuesProducer extends DocValuesProducer {
   private NumericDocValues loadNumeric(FieldInfo field) throws IOException {
     NumericEntry entry = numerics.get(field.number);
     data.seek(entry.offset);
-    if (entry.format == Lucene42DocValuesConsumer.TABLE_COMPRESSED) {
-      int size = data.readVInt();
-      final long decode[] = new long[size];
-      for (int i = 0; i < decode.length; i++) {
-        decode[i] = data.readLong();
-      }
-      final int formatID = data.readVInt();
-      final int bitsPerValue = data.readVInt();
-      final PackedInts.Reader reader = PackedInts.getReaderNoHeader(data, PackedInts.Format.byId(formatID), entry.packedIntsVersion, maxDoc, bitsPerValue);
-      return new NumericDocValues() {
-        @Override
-        public long get(int docID) {
-          return decode[(int)reader.get(docID)];
+    switch (entry.format) {
+      case TABLE_COMPRESSED:
+        int size = data.readVInt();
+        if (size > 256) {
+          throw new CorruptIndexException("TABLE_COMPRESSED cannot have more than 256 distinct values, input=" + data);
         }
-      };
-    } else if (entry.format == Lucene42DocValuesConsumer.DELTA_COMPRESSED) {
-      final int blockSize = data.readVInt();
-      final BlockPackedReader reader = new BlockPackedReader(data, entry.packedIntsVersion, blockSize, maxDoc, false);
-      return new NumericDocValues() {
-        @Override
-        public long get(int docID) {
-          return reader.get(docID);
+        final long decode[] = new long[size];
+        for (int i = 0; i < decode.length; i++) {
+          decode[i] = data.readLong();
         }
-      };
-    } else if (entry.format == Lucene42DocValuesConsumer.UNCOMPRESSED) {
-      final byte bytes[] = new byte[maxDoc];
-      data.readBytes(bytes, 0, bytes.length);
-      return new NumericDocValues() {
-        @Override
-        public long get(int docID) {
-          return bytes[docID];
-        }
-      };
-    } else {
-      throw new IllegalStateException();
+        final int formatID = data.readVInt();
+        final int bitsPerValue = data.readVInt();
+        final PackedInts.Reader ordsReader = PackedInts.getReaderNoHeader(data, PackedInts.Format.byId(formatID), entry.packedIntsVersion, maxDoc, bitsPerValue);
+        return new NumericDocValues() {
+          @Override
+          public long get(int docID) {
+            return decode[(int)ordsReader.get(docID)];
+          }
+        };
+      case DELTA_COMPRESSED:
+        final int blockSize = data.readVInt();
+        final BlockPackedReader reader = new BlockPackedReader(data, entry.packedIntsVersion, blockSize, maxDoc, false);
+        return new NumericDocValues() {
+          @Override
+          public long get(int docID) {
+            return reader.get(docID);
+          }
+        };
+      case UNCOMPRESSED:
+        final byte bytes[] = new byte[maxDoc];
+        data.readBytes(bytes, 0, bytes.length);
+        return new NumericDocValues() {
+          @Override
+          public long get(int docID) {
+            return bytes[docID];
+          }
+        };
+      case GCD_COMPRESSED:
+        final long min = data.readLong();
+        final long mult = data.readLong();
+        final int quotientBlockSize = data.readVInt();
+        final BlockPackedReader quotientReader = new BlockPackedReader(data, entry.packedIntsVersion, quotientBlockSize, maxDoc, false);
+        return new NumericDocValues() {
+          @Override
+          public long get(int docID) {
+            return min + mult * quotientReader.get(docID);
+          }
+        };
+      default:
+        throw new AssertionError();
     }
   }
 
@@ -285,6 +333,11 @@ class Lucene42DocValuesProducer extends DocValuesProducer {
       public int getValueCount() {
         return (int)entry.numOrds;
       }
+
+      @Override
+      public TermsEnum termsEnum() {
+        return new FSTTermsEnum(fst);
+      }
     };
   }
   
@@ -369,6 +422,11 @@ class Lucene42DocValuesProducer extends DocValuesProducer {
       public long getValueCount() {
         return entry.numOrds;
       }
+
+      @Override
+      public TermsEnum termsEnum() {
+        return new FSTTermsEnum(fst);
+      }
     };
   }
 
@@ -395,5 +453,107 @@ class Lucene42DocValuesProducer extends DocValuesProducer {
   static class FSTEntry {
     long offset;
     long numOrds;
+  }
+  
+  // exposes FSTEnum directly as a TermsEnum: avoids binary-search next()
+  static class FSTTermsEnum extends TermsEnum {
+    final BytesRefFSTEnum<Long> in;
+    
+    // this is all for the complicated seek(ord)...
+    // maybe we should add a FSTEnum that supports this operation?
+    final FST<Long> fst;
+    final FST.BytesReader bytesReader;
+    final Arc<Long> firstArc = new Arc<Long>();
+    final Arc<Long> scratchArc = new Arc<Long>();
+    final IntsRef scratchInts = new IntsRef();
+    final BytesRef scratchBytes = new BytesRef();
+    
+    FSTTermsEnum(FST<Long> fst) {
+      this.fst = fst;
+      in = new BytesRefFSTEnum<Long>(fst);
+      bytesReader = fst.getBytesReader();
+    }
+
+    @Override
+    public BytesRef next() throws IOException {
+      InputOutput<Long> io = in.next();
+      if (io == null) {
+        return null;
+      } else {
+        return io.input;
+      }
+    }
+
+    @Override
+    public Comparator<BytesRef> getComparator() {
+      return BytesRef.getUTF8SortedAsUnicodeComparator();
+    }
+
+    @Override
+    public SeekStatus seekCeil(BytesRef text, boolean useCache) throws IOException {
+      if (in.seekCeil(text) == null) {
+        return SeekStatus.END;
+      } else if (term().equals(text)) {
+        // TODO: add SeekStatus to FSTEnum like in https://issues.apache.org/jira/browse/LUCENE-3729
+        // to remove this comparision?
+        return SeekStatus.FOUND;
+      } else {
+        return SeekStatus.NOT_FOUND;
+      }
+    }
+
+    @Override
+    public boolean seekExact(BytesRef text, boolean useCache) throws IOException {
+      if (in.seekExact(text) == null) {
+        return false;
+      } else {
+        return true;
+      }
+    }
+
+    @Override
+    public void seekExact(long ord) throws IOException {
+      // TODO: would be better to make this simpler and faster.
+      // but we dont want to introduce a bug that corrupts our enum state!
+      bytesReader.setPosition(0);
+      fst.getFirstArc(firstArc);
+      IntsRef output = Util.getByOutput(fst, ord, bytesReader, firstArc, scratchArc, scratchInts);
+      scratchBytes.bytes = new byte[output.length];
+      scratchBytes.offset = 0;
+      scratchBytes.length = 0;
+      Util.toBytesRef(output, scratchBytes);
+      // TODO: we could do this lazily, better to try to push into FSTEnum though?
+      in.seekExact(scratchBytes);
+    }
+
+    @Override
+    public BytesRef term() throws IOException {
+      return in.current().input;
+    }
+
+    @Override
+    public long ord() throws IOException {
+      return in.current().output;
+    }
+
+    @Override
+    public int docFreq() throws IOException {
+      throw new UnsupportedOperationException();
+    }
+
+    @Override
+    public long totalTermFreq() throws IOException {
+      throw new UnsupportedOperationException();
+    }
+
+    @Override
+    public DocsEnum docs(Bits liveDocs, DocsEnum reuse, int flags) throws IOException {
+      throw new UnsupportedOperationException();
+    }
+
+    @Override
+    public DocsAndPositionsEnum docsAndPositions(Bits liveDocs, DocsAndPositionsEnum reuse, int flags) throws IOException {
+      throw new UnsupportedOperationException();
+    }
   }
 }

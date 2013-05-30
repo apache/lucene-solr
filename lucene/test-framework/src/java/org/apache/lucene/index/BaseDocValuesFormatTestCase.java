@@ -25,15 +25,13 @@ import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Map.Entry;
 import java.util.Set;
 import java.util.TreeSet;
-import java.util.Map.Entry;
 
 import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.analysis.MockAnalyzer;
 import org.apache.lucene.codecs.Codec;
-import org.apache.lucene.codecs.DocValuesFormat;
-import org.apache.lucene.codecs.lucene42.Lucene42Codec;
 import org.apache.lucene.document.BinaryDocValuesField;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
@@ -44,7 +42,7 @@ import org.apache.lucene.document.SortedSetDocValuesField;
 import org.apache.lucene.document.StoredField;
 import org.apache.lucene.document.StringField;
 import org.apache.lucene.document.TextField;
-import org.apache.lucene.index.FieldInfo.DocValuesType;
+import org.apache.lucene.index.TermsEnum.SeekStatus;
 import org.apache.lucene.search.BooleanClause;
 import org.apache.lucene.search.BooleanQuery;
 import org.apache.lucene.search.FieldCache;
@@ -702,6 +700,77 @@ public abstract class BaseDocValuesFormatTestCase extends LuceneTestCase {
     directory.close();
   }
   
+  public void testSortedTermsEnum() throws IOException {
+    Directory directory = newDirectory();
+    Analyzer analyzer = new MockAnalyzer(random());
+    IndexWriterConfig iwconfig = newIndexWriterConfig(TEST_VERSION_CURRENT, analyzer);
+    iwconfig.setMergePolicy(newLogMergePolicy());
+    RandomIndexWriter iwriter = new RandomIndexWriter(random(), directory, iwconfig);
+    
+    Document doc = new Document();
+    doc.add(new SortedDocValuesField("field", new BytesRef("hello")));
+    iwriter.addDocument(doc);
+    
+    doc = new Document();
+    doc.add(new SortedDocValuesField("field", new BytesRef("world")));
+    iwriter.addDocument(doc);
+
+    doc = new Document();
+    doc.add(new SortedDocValuesField("field", new BytesRef("beer")));
+    iwriter.addDocument(doc);
+    iwriter.forceMerge(1);
+    
+    DirectoryReader ireader = iwriter.getReader();
+    iwriter.close();
+
+    SortedDocValues dv = getOnlySegmentReader(ireader).getSortedDocValues("field");
+    assertEquals(3, dv.getValueCount());
+    
+    TermsEnum termsEnum = dv.termsEnum();
+    
+    // next()
+    assertEquals("beer", termsEnum.next().utf8ToString());
+    assertEquals(0, termsEnum.ord());
+    assertEquals("hello", termsEnum.next().utf8ToString());
+    assertEquals(1, termsEnum.ord());
+    assertEquals("world", termsEnum.next().utf8ToString());
+    assertEquals(2, termsEnum.ord());
+    
+    // seekCeil()
+    assertEquals(SeekStatus.NOT_FOUND, termsEnum.seekCeil(new BytesRef("ha!")));
+    assertEquals("hello", termsEnum.term().utf8ToString());
+    assertEquals(1, termsEnum.ord());
+    assertEquals(SeekStatus.FOUND, termsEnum.seekCeil(new BytesRef("beer")));
+    assertEquals("beer", termsEnum.term().utf8ToString());
+    assertEquals(0, termsEnum.ord());
+    assertEquals(SeekStatus.END, termsEnum.seekCeil(new BytesRef("zzz")));
+    
+    // seekExact()
+    assertTrue(termsEnum.seekExact(new BytesRef("beer"), true));
+    assertEquals("beer", termsEnum.term().utf8ToString());
+    assertEquals(0, termsEnum.ord());
+    assertTrue(termsEnum.seekExact(new BytesRef("hello"), true));
+    assertEquals(Codec.getDefault().toString(), "hello", termsEnum.term().utf8ToString());
+    assertEquals(1, termsEnum.ord());
+    assertTrue(termsEnum.seekExact(new BytesRef("world"), true));
+    assertEquals("world", termsEnum.term().utf8ToString());
+    assertEquals(2, termsEnum.ord());
+    assertFalse(termsEnum.seekExact(new BytesRef("bogus"), true));
+
+    // seek(ord)
+    termsEnum.seekExact(0);
+    assertEquals("beer", termsEnum.term().utf8ToString());
+    assertEquals(0, termsEnum.ord());
+    termsEnum.seekExact(1);
+    assertEquals("hello", termsEnum.term().utf8ToString());
+    assertEquals(1, termsEnum.ord());
+    termsEnum.seekExact(2);
+    assertEquals("world", termsEnum.term().utf8ToString());
+    assertEquals(2, termsEnum.ord());
+    ireader.close();
+    directory.close();
+  }
+  
   public void testEmptySortedBytes() throws IOException {
     Analyzer analyzer = new MockAnalyzer(random());
 
@@ -1050,8 +1119,21 @@ public abstract class BaseDocValuesFormatTestCase extends LuceneTestCase {
     w.close();
     dir.close();
   }
-  
-  private void doTestNumericsVsStoredFields(long minValue, long maxValue) throws Exception {
+
+  static abstract class LongProducer {
+    abstract long next();
+  }
+
+  private void doTestNumericsVsStoredFields(final long minValue, final long maxValue) throws Exception {
+    doTestNumericsVsStoredFields(new LongProducer() {
+      @Override
+      long next() {
+        return _TestUtil.nextLong(random(), minValue, maxValue);
+      }
+    });
+  }
+
+  private void doTestNumericsVsStoredFields(LongProducer longs) throws Exception {
     Directory dir = newDirectory();
     IndexWriterConfig conf = newIndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer(random()));
     RandomIndexWriter writer = new RandomIndexWriter(random(), dir, conf);
@@ -1064,10 +1146,13 @@ public abstract class BaseDocValuesFormatTestCase extends LuceneTestCase {
     doc.add(dvField);
     
     // index some docs
-    int numDocs = atLeast(1000);
+    int numDocs = atLeast(300);
+    // numDocs should be always > 256 so that in case of a codec that optimizes
+    // for numbers of values <= 256, all storage layouts are tested
+    assert numDocs > 256;
     for (int i = 0; i < numDocs; i++) {
       idField.setStringValue(Integer.toString(i));
-      long value = _TestUtil.nextLong(random(), minValue, maxValue);
+      long value = longs.next();
       storedField.setStringValue(Long.toString(value));
       dvField.setLongValue(value);
       writer.addDocument(doc);
@@ -1082,6 +1167,11 @@ public abstract class BaseDocValuesFormatTestCase extends LuceneTestCase {
       int id = random().nextInt(numDocs);
       writer.deleteDocuments(new Term("id", Integer.toString(id)));
     }
+
+    // merge some segments and ensure that at least one of them has more than
+    // 256 values
+    writer.forceMerge(numDocs / 256);
+
     writer.close();
     
     // compare
@@ -1146,7 +1236,7 @@ public abstract class BaseDocValuesFormatTestCase extends LuceneTestCase {
     doc.add(dvField);
     
     // index some docs
-    int numDocs = atLeast(1000);
+    int numDocs = atLeast(300);
     for (int i = 0; i < numDocs; i++) {
       idField.setStringValue(Integer.toString(i));
       final int length;
@@ -1217,7 +1307,7 @@ public abstract class BaseDocValuesFormatTestCase extends LuceneTestCase {
     doc.add(dvField);
     
     // index some docs
-    int numDocs = atLeast(1000);
+    int numDocs = atLeast(300);
     for (int i = 0; i < numDocs; i++) {
       idField.setStringValue(Integer.toString(i));
       final int length;
@@ -1658,13 +1748,78 @@ public abstract class BaseDocValuesFormatTestCase extends LuceneTestCase {
     directory.close();
   }
   
+  public void testSortedSetTermsEnum() throws IOException {
+    assumeTrue("Codec does not support SORTED_SET", defaultCodecSupportsSortedSet());
+    Directory directory = newDirectory();
+    Analyzer analyzer = new MockAnalyzer(random());
+    IndexWriterConfig iwconfig = newIndexWriterConfig(TEST_VERSION_CURRENT, analyzer);
+    iwconfig.setMergePolicy(newLogMergePolicy());
+    RandomIndexWriter iwriter = new RandomIndexWriter(random(), directory, iwconfig);
+    
+    Document doc = new Document();
+    doc.add(new SortedSetDocValuesField("field", new BytesRef("hello")));
+    doc.add(new SortedSetDocValuesField("field", new BytesRef("world")));
+    doc.add(new SortedSetDocValuesField("field", new BytesRef("beer")));
+    iwriter.addDocument(doc);
+    
+    DirectoryReader ireader = iwriter.getReader();
+    iwriter.close();
+
+    SortedSetDocValues dv = getOnlySegmentReader(ireader).getSortedSetDocValues("field");
+    assertEquals(3, dv.getValueCount());
+    
+    TermsEnum termsEnum = dv.termsEnum();
+    
+    // next()
+    assertEquals("beer", termsEnum.next().utf8ToString());
+    assertEquals(0, termsEnum.ord());
+    assertEquals("hello", termsEnum.next().utf8ToString());
+    assertEquals(1, termsEnum.ord());
+    assertEquals("world", termsEnum.next().utf8ToString());
+    assertEquals(2, termsEnum.ord());
+    
+    // seekCeil()
+    assertEquals(SeekStatus.NOT_FOUND, termsEnum.seekCeil(new BytesRef("ha!")));
+    assertEquals("hello", termsEnum.term().utf8ToString());
+    assertEquals(1, termsEnum.ord());
+    assertEquals(SeekStatus.FOUND, termsEnum.seekCeil(new BytesRef("beer")));
+    assertEquals("beer", termsEnum.term().utf8ToString());
+    assertEquals(0, termsEnum.ord());
+    assertEquals(SeekStatus.END, termsEnum.seekCeil(new BytesRef("zzz")));
+    
+    // seekExact()
+    assertTrue(termsEnum.seekExact(new BytesRef("beer"), true));
+    assertEquals("beer", termsEnum.term().utf8ToString());
+    assertEquals(0, termsEnum.ord());
+    assertTrue(termsEnum.seekExact(new BytesRef("hello"), true));
+    assertEquals("hello", termsEnum.term().utf8ToString());
+    assertEquals(1, termsEnum.ord());
+    assertTrue(termsEnum.seekExact(new BytesRef("world"), true));
+    assertEquals("world", termsEnum.term().utf8ToString());
+    assertEquals(2, termsEnum.ord());
+    assertFalse(termsEnum.seekExact(new BytesRef("bogus"), true));
+
+    // seek(ord)
+    termsEnum.seekExact(0);
+    assertEquals("beer", termsEnum.term().utf8ToString());
+    assertEquals(0, termsEnum.ord());
+    termsEnum.seekExact(1);
+    assertEquals("hello", termsEnum.term().utf8ToString());
+    assertEquals(1, termsEnum.ord());
+    termsEnum.seekExact(2);
+    assertEquals("world", termsEnum.term().utf8ToString());
+    assertEquals(2, termsEnum.ord());
+    ireader.close();
+    directory.close();
+  }
+  
   private void doTestSortedSetVsStoredFields(int minLength, int maxLength) throws Exception {
     Directory dir = newDirectory();
     IndexWriterConfig conf = new IndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer(random()));
     RandomIndexWriter writer = new RandomIndexWriter(random(), dir, conf);
     
     // index some docs
-    int numDocs = atLeast(1000);
+    int numDocs = atLeast(300);
     for (int i = 0; i < numDocs; i++) {
       Document doc = new Document();
       Field idField = new StringField("id", Integer.toString(i), Field.Store.NO);
@@ -1785,7 +1940,7 @@ public abstract class BaseDocValuesFormatTestCase extends LuceneTestCase {
     RandomIndexWriter writer = new RandomIndexWriter(random(), dir, conf);
     
     // index some docs
-    int numDocs = atLeast(1000);
+    int numDocs = atLeast(300);
     for (int i = 0; i < numDocs; i++) {
       Document doc = new Document();
       Field idField = new StringField("id", Integer.toString(i), Field.Store.NO);
@@ -1870,4 +2025,39 @@ public abstract class BaseDocValuesFormatTestCase extends LuceneTestCase {
       doTestSortedSetVsUninvertedField(1, 10);
     }
   }
+
+  public void testGCDCompression() throws Exception {
+    int numIterations = atLeast(1);
+    for (int i = 0; i < numIterations; i++) {
+      final long min = - (((long) random().nextInt(1 << 30)) << 32);
+      final long mul = random().nextInt() & 0xFFFFFFFFL;
+      final LongProducer longs = new LongProducer() {
+        @Override
+        long next() {
+          return min + mul * random().nextInt(1 << 20);
+        }
+      };
+      doTestNumericsVsStoredFields(longs);
+    }
+  }
+
+  public void testZeros() throws Exception {
+    doTestNumericsVsStoredFields(0, 0);
+  }
+
+  public void testZeroOrMin() throws Exception {
+    // try to make GCD compression fail if the format did not anticipate that
+    // the GCD of 0 and MIN_VALUE is negative
+    int numIterations = atLeast(1);
+    for (int i = 0; i < numIterations; i++) {
+      final LongProducer longs = new LongProducer() {
+        @Override
+        long next() {
+          return random().nextBoolean() ? 0 : Long.MIN_VALUE;
+        }
+      };
+      doTestNumericsVsStoredFields(longs);
+    }
+  }
+
 }

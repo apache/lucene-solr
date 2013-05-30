@@ -120,13 +120,7 @@ public class SortedTermFreqIteratorWrapper implements TermFreqIterator {
       if (cmp != 0) {
         return cmp;
       }
-      if (leftCost < rightCost) {
-        return -1;
-      } else if (rightCost < leftCost) {
-        return 1;
-      } else {
-        return 0;
-      }
+      return Long.compare(leftCost, rightCost);
     }
   };
   

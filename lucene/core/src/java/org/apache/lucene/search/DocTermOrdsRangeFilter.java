@@ -90,7 +90,7 @@ public abstract class DocTermOrdsRangeFilter extends Filter {
         }      
 
         if (inclusiveUpperPoint < 0 || inclusiveLowerPoint > inclusiveUpperPoint) {
-          return DocIdSet.EMPTY_DOCIDSET;
+          return null;
         }
         
         assert inclusiveLowerPoint >= 0 && inclusiveUpperPoint >= 0;

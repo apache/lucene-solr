@@ -23,8 +23,10 @@ import java.util.Random;
 import org.apache.lucene.analysis.MockAnalyzer;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
+import org.apache.lucene.index.IndexReader.ReaderClosedListener;
 import org.apache.lucene.search.BooleanClause.Occur;
 import org.apache.lucene.search.*;
+import org.apache.lucene.store.AlreadyClosedException;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.util.LuceneTestCase;
 
@@ -82,12 +84,15 @@ public class TestParallelCompositeReader extends LuceneTestCase {
     // close subreaders, ParallelReader will not change refCounts, but close on its own close
     ParallelCompositeReader pr = new ParallelCompositeReader(ir1 = DirectoryReader.open(dir1),
                                                              ir2 = DirectoryReader.open(dir2));
+    IndexReader psub1 = pr.getSequentialSubReaders().get(0);
     // check RefCounts
     assertEquals(1, ir1.getRefCount());
     assertEquals(1, ir2.getRefCount());
+    assertEquals(1, psub1.getRefCount());
     pr.close();
     assertEquals(0, ir1.getRefCount());
     assertEquals(0, ir2.getRefCount());
+    assertEquals(0, psub1.getRefCount());
     dir1.close();
     dir2.close();    
   }
@@ -100,20 +105,115 @@ public class TestParallelCompositeReader extends LuceneTestCase {
 
     // don't close subreaders, so ParallelReader will increment refcounts
     ParallelCompositeReader pr = new ParallelCompositeReader(false, ir1, ir2);
+    IndexReader psub1 = pr.getSequentialSubReaders().get(0);
     // check RefCounts
     assertEquals(2, ir1.getRefCount());
     assertEquals(2, ir2.getRefCount());
+    assertEquals("refCount must be 1, as the synthetic reader was created by ParallelCompositeReader", 1, psub1.getRefCount());
     pr.close();
     assertEquals(1, ir1.getRefCount());
     assertEquals(1, ir2.getRefCount());
+    assertEquals("refcount must be 0 because parent was closed", 0, psub1.getRefCount());
     ir1.close();
     ir2.close();
     assertEquals(0, ir1.getRefCount());
     assertEquals(0, ir2.getRefCount());
+    assertEquals("refcount should not change anymore", 0, psub1.getRefCount());
     dir1.close();
     dir2.close();    
   }
   
+  // closeSubreaders=false
+  public void testReaderClosedListener1() throws Exception {
+    Directory dir1 = getDir1(random());
+    CompositeReader ir1 = DirectoryReader.open(dir1);
+    
+    // with overlapping
+    ParallelCompositeReader pr = new ParallelCompositeReader(false,
+     new CompositeReader[] {ir1},
+     new CompositeReader[] {ir1});
+
+    final int[] listenerClosedCount = new int[1];
+
+    assertEquals(3, pr.leaves().size());
+
+    for(AtomicReaderContext cxt : pr.leaves()) {
+      cxt.reader().addReaderClosedListener(new ReaderClosedListener() {
+          @Override
+          public void onClose(IndexReader reader) {
+            listenerClosedCount[0]++;
+          }
+        });
+    }
+    pr.close();
+    ir1.close();
+    assertEquals(3, listenerClosedCount[0]);
+    dir1.close();
+  }
+
+  // closeSubreaders=true
+  public void testReaderClosedListener2() throws Exception {
+    Directory dir1 = getDir1(random());
+    CompositeReader ir1 = DirectoryReader.open(dir1);
+    
+    // with overlapping
+    ParallelCompositeReader pr = new ParallelCompositeReader(true,
+     new CompositeReader[] {ir1},
+     new CompositeReader[] {ir1});
+
+    final int[] listenerClosedCount = new int[1];
+
+    assertEquals(3, pr.leaves().size());
+
+    for(AtomicReaderContext cxt : pr.leaves()) {
+      cxt.reader().addReaderClosedListener(new ReaderClosedListener() {
+          @Override
+          public void onClose(IndexReader reader) {
+            listenerClosedCount[0]++;
+          }
+        });
+    }
+    pr.close();
+    assertEquals(3, listenerClosedCount[0]);
+    dir1.close();
+  }
+
+  public void testCloseInnerReader() throws Exception {
+    Directory dir1 = getDir1(random());
+    CompositeReader ir1 = DirectoryReader.open(dir1);
+    assertEquals(1, ir1.getSequentialSubReaders().get(0).getRefCount());
+    
+    // with overlapping
+    ParallelCompositeReader pr = new ParallelCompositeReader(true,
+     new CompositeReader[] {ir1},
+     new CompositeReader[] {ir1});
+
+    IndexReader psub = pr.getSequentialSubReaders().get(0);
+    assertEquals(1, psub.getRefCount());
+
+    ir1.close();
+
+    assertEquals("refCount of synthetic subreader should be unchanged", 1, psub.getRefCount());
+    try {
+      psub.document(0);
+      fail("Subreader should be already closed because inner reader was closed!");
+    } catch (AlreadyClosedException e) {
+      // pass
+    }
+    
+    try {
+      pr.document(0);
+      fail("ParallelCompositeReader should be already closed because inner reader was closed!");
+    } catch (AlreadyClosedException e) {
+      // pass
+    }
+    
+    // noop:
+    pr.close();
+    assertEquals(0, psub.getRefCount());
+    dir1.close();
+  }
+
   public void testIncompatibleIndexes1() throws IOException {
     // two documents:
     Directory dir1 = getDir1(random());
@@ -275,6 +375,30 @@ public class TestParallelCompositeReader extends LuceneTestCase {
     
     dir1.close();
     dir2.close();
+  }
+  
+  public void testToString() throws IOException {
+    Directory dir1 = getDir1(random());
+    CompositeReader ir1 = DirectoryReader.open(dir1);
+    ParallelCompositeReader pr = new ParallelCompositeReader(new CompositeReader[] {ir1});
+    
+    final String s = pr.toString();
+    assertTrue("toString incorrect: " + s, s.startsWith("ParallelCompositeReader(ParallelAtomicReader("));
+
+    pr.close();
+    dir1.close();
+  }
+  
+  public void testToStringCompositeComposite() throws IOException {
+    Directory dir1 = getDir1(random());
+    CompositeReader ir1 = DirectoryReader.open(dir1);
+    ParallelCompositeReader pr = new ParallelCompositeReader(new CompositeReader[] {new MultiReader(ir1)});
+    
+    final String s = pr.toString();
+    assertTrue("toString incorrect: " + s, s.startsWith("ParallelCompositeReader(ParallelCompositeReader(ParallelAtomicReader("));
+
+    pr.close();
+    dir1.close();
   }
   
   private void queryTest(Query query) throws IOException {

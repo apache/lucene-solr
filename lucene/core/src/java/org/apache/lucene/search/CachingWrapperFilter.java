@@ -18,15 +18,17 @@ package org.apache.lucene.search;
  */
 
 import java.io.IOException;
+import java.util.ArrayList;
 import java.util.Collections;
+import java.util.List;
 import java.util.Map;
 import java.util.WeakHashMap;
 
 import org.apache.lucene.index.AtomicReader;
 import org.apache.lucene.index.AtomicReaderContext;
-import org.apache.lucene.index.DirectoryReader; // javadocs
-import org.apache.lucene.util.FixedBitSet;
 import org.apache.lucene.util.Bits;
+import org.apache.lucene.util.FixedBitSet;
+import org.apache.lucene.util.RamUsageEstimator;
 
 /**
  * Wraps another {@link Filter}'s result and caches it.  The purpose is to allow
@@ -47,25 +49,28 @@ public class CachingWrapperFilter extends Filter {
     this.filter = filter;
   }
 
-  /** Provide the DocIdSet to be cached, using the DocIdSet provided
-   *  by the wrapped Filter.
-   *  <p>This implementation returns the given {@link DocIdSet}, if {@link DocIdSet#isCacheable}
-   *  returns <code>true</code>, else it copies the {@link DocIdSetIterator} into
-   *  a {@link FixedBitSet}.
+  /** 
+   *  Provide the DocIdSet to be cached, using the DocIdSet provided
+   *  by the wrapped Filter. <p>This implementation returns the given {@link DocIdSet},
+   *  if {@link DocIdSet#isCacheable} returns <code>true</code>, else it copies the 
+   *  {@link DocIdSetIterator} into a {@link FixedBitSet}.
+   *  <p>Note: This method returns {@linkplain #EMPTY_DOCIDSET} if the given docIdSet
+   *  is <code>null</code> or if {@link DocIdSet#iterator()} return <code>null</code>. The empty
+   *  instance is use as a placeholder in the cache instead of the <code>null</code> value.
    */
   protected DocIdSet docIdSetToCache(DocIdSet docIdSet, AtomicReader reader) throws IOException {
     if (docIdSet == null) {
       // this is better than returning null, as the nonnull result can be cached
-      return DocIdSet.EMPTY_DOCIDSET;
+      return EMPTY_DOCIDSET;
     } else if (docIdSet.isCacheable()) {
       return docIdSet;
     } else {
       final DocIdSetIterator it = docIdSet.iterator();
       // null is allowed to be returned by iterator(),
-      // in this case we wrap with the empty set,
+      // in this case we wrap with the sentinel set,
       // which is cacheable.
       if (it == null) {
-        return DocIdSet.EMPTY_DOCIDSET;
+        return EMPTY_DOCIDSET;
       } else {
         final FixedBitSet bits = new FixedBitSet(reader.maxDoc());
         bits.or(it);
@@ -91,9 +96,9 @@ public class CachingWrapperFilter extends Filter {
       cache.put(key, docIdSet);
     }
 
-    return BitsFilteredDocIdSet.wrap(docIdSet, acceptDocs);
+    return docIdSet == EMPTY_DOCIDSET ? null : BitsFilteredDocIdSet.wrap(docIdSet, acceptDocs);
   }
-
+  
   @Override
   public String toString() {
     return "CachingWrapperFilter("+filter+")";
@@ -109,5 +114,42 @@ public class CachingWrapperFilter extends Filter {
   @Override
   public int hashCode() {
     return (filter.hashCode() ^ 0x1117BF25);
+  }
+  
+  /** An empty {@code DocIdSet} instance */
+  protected static final DocIdSet EMPTY_DOCIDSET = new DocIdSet() {
+    
+    @Override
+    public DocIdSetIterator iterator() {
+      return DocIdSetIterator.empty();
+    }
+    
+    @Override
+    public boolean isCacheable() {
+      return true;
+    }
+    
+    // we explicitly provide no random access, as this filter is 100% sparse and iterator exits faster
+    @Override
+    public Bits bits() {
+      return null;
+    }
+  };
+
+  /** Returns total byte size used by cached filters. */
+  public long sizeInBytes() {
+
+    // Sync only to pull the current set of values:
+    List<DocIdSet> docIdSets;
+    synchronized(cache) {
+      docIdSets = new ArrayList<DocIdSet>(cache.values());
+    }
+
+    long total = 0;
+    for(DocIdSet dis : docIdSets) {
+      total += RamUsageEstimator.sizeOf(dis);
+    }
+
+    return total;
   }
 }

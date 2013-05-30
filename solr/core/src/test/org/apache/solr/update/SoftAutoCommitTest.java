@@ -133,7 +133,7 @@ public class SoftAutoCommitTest extends AbstractSolrTestCase {
 
     // however slow the machine was to do the soft commit compared to expected,
     // assume newSearcher had some magnitude of that much overhead as well 
-    long slowTestFudge = Math.max(200, 12 * (soft529 - add529 - softCommitWaitMillis));
+    long slowTestFudge = Math.max(300, 12 * (soft529 - add529 - softCommitWaitMillis));
     assertTrue("searcher529 wasn't soon enough after soft529: " +
                searcher529 + " !< " + soft529 + " + " + slowTestFudge + " (fudge)",
                searcher529 < soft529 + slowTestFudge );
@@ -261,7 +261,7 @@ public class SoftAutoCommitTest extends AbstractSolrTestCase {
 
     // however slow the machine was to do the soft commit compared to expected,
     // assume newSearcher had some magnitude of that much overhead as well 
-    long slowTestFudge = Math.max(100, 3 * (soft529 - del529 - softCommitWaitMillis));
+    long slowTestFudge = Math.max(150, 3 * (soft529 - del529 - softCommitWaitMillis));
     assertTrue("searcher529 wasn't soon enough after soft529: " +
                searcher529 + " !< " + soft529 + " + " + slowTestFudge + " (fudge)",
                searcher529 < soft529 + slowTestFudge );

@@ -215,12 +215,9 @@ public class CharArrayMap<V> extends AbstractMap<Object,V> {
    * The user should never modify this text array after calling this method.
    */
   public V put(char[] text, V value) {
-    if (ignoreCase)
-      for(int i=0;i<text.length;){
-        i += Character.toChars(
-              Character.toLowerCase(
-                  charUtils.codePointAt(text, i)), text, i);
-      }
+    if (ignoreCase) {
+      charUtils.toLowerCase(text, 0, text.length);
+    }
     int slot = getSlot(text, 0, text.length);
     if (keys[slot] != null) {
       final V oldValue = values[slot];

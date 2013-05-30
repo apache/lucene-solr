@@ -7,8 +7,8 @@ import java.util.Collections;
 import java.util.Comparator;
 
 import org.apache.lucene.facet.search.FacetRequest.SortOrder;
+import org.apache.lucene.facet.taxonomy.ParallelTaxonomyArrays;
 import org.apache.lucene.facet.taxonomy.TaxonomyReader;
-import org.apache.lucene.facet.taxonomy.directory.ParallelTaxonomyArrays;
 import org.apache.lucene.util.PriorityQueue;
 
 /*
@@ -46,7 +46,7 @@ public abstract class DepthOneFacetResultsHandler extends FacetResultsHandler {
     
     @Override
     protected FacetResultNode getSentinelObject() {
-      return new FacetResultNode();
+      return new FacetResultNode(TaxonomyReader.INVALID_ORDINAL, 0);
     }
     
     @Override
@@ -80,7 +80,8 @@ public abstract class DepthOneFacetResultsHandler extends FacetResultsHandler {
    * Add the siblings of {@code ordinal} to the given {@link PriorityQueue}. The
    * given {@link PriorityQueue} is already filled with sentinel objects, so
    * implementations are encouraged to use {@link PriorityQueue#top()} and
-   * {@link PriorityQueue#updateTop()} for best performance.
+   * {@link PriorityQueue#updateTop()} for best performance.  Returns the total
+   * number of siblings.
    */
   protected abstract int addSiblings(int ordinal, int[] siblings, PriorityQueue<FacetResultNode> pq);
   
@@ -92,10 +93,8 @@ public abstract class DepthOneFacetResultsHandler extends FacetResultsHandler {
     
     int rootOrd = taxonomyReader.getOrdinal(facetRequest.categoryPath);
         
-    FacetResultNode root = new FacetResultNode();
-    root.ordinal = rootOrd;
+    FacetResultNode root = new FacetResultNode(rootOrd, valueOf(rootOrd));
     root.label = facetRequest.categoryPath;
-    root.value = valueOf(rootOrd);
     if (facetRequest.numResults > taxonomyReader.getSize()) {
       // specialize this case, user is interested in all available results
       ArrayList<FacetResultNode> nodes = new ArrayList<FacetResultNode>();
@@ -118,11 +117,11 @@ public abstract class DepthOneFacetResultsHandler extends FacetResultsHandler {
     
     // since we use sentinel objects, we cannot reuse PQ. but that's ok because it's not big
     PriorityQueue<FacetResultNode> pq = new FacetResultNodeQueue(facetRequest.numResults, true);
-    int numResults = addSiblings(children[rootOrd], siblings, pq);
+    int numSiblings = addSiblings(children[rootOrd], siblings, pq);
 
     // pop() the least (sentinel) elements
     int pqsize = pq.size();
-    int size = numResults < pqsize ? numResults : pqsize;
+    int size = numSiblings < pqsize ? numSiblings : pqsize;
     for (int i = pqsize - size; i > 0; i--) { pq.pop(); }
 
     // create the FacetResultNodes.
@@ -133,7 +132,7 @@ public abstract class DepthOneFacetResultsHandler extends FacetResultsHandler {
       subResults[i] = node;
     }
     root.subResults = Arrays.asList(subResults);
-    return new FacetResult(facetRequest, root, size);
+    return new FacetResult(facetRequest, root, numSiblings);
   }
   
 }

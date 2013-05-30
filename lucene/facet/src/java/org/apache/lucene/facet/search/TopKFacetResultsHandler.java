@@ -5,8 +5,8 @@ import java.util.ArrayList;
 
 import org.apache.lucene.facet.partitions.IntermediateFacetResult;
 import org.apache.lucene.facet.partitions.PartitionsFacetResultsHandler;
+import org.apache.lucene.facet.taxonomy.ParallelTaxonomyArrays;
 import org.apache.lucene.facet.taxonomy.TaxonomyReader;
-import org.apache.lucene.facet.taxonomy.directory.ParallelTaxonomyArrays;
 import org.apache.lucene.facet.util.ResultSortUtils;
 
 /*
@@ -256,7 +256,6 @@ public class TopKFacetResultsHandler extends PartitionsFacetResultsHandler {
      * Create a Facet Result.
      * @param facetRequest Request for which this result was obtained.
      * @param facetResultNode top result node for this facet result.
-     * @param totalFacets - number of children of the targetFacet, up till the requested depth.
      */
     TopKFacetResult(FacetRequest facetRequest, FacetResultNode facetResultNode, int totalFacets) {
       super(facetRequest, facetResultNode, totalFacets);

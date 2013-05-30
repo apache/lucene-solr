@@ -17,9 +17,8 @@ package org.apache.lucene.analysis.uima;
  * limitations under the License.
  */
 
-import org.apache.lucene.analysis.Tokenizer;
 import org.apache.lucene.analysis.util.TokenizerFactory;
-import org.apache.lucene.analysis.uima.UIMAAnnotationsTokenizer;
+import org.apache.lucene.util.AttributeSource.AttributeFactory;
 
 import java.io.Reader;
 import java.util.HashMap;
@@ -32,29 +31,18 @@ public class UIMAAnnotationsTokenizerFactory extends TokenizerFactory {
 
   private String descriptorPath;
   private String tokenType;
-  private Map<String, Object> configurationParameters;
+  private final Map<String,Object> configurationParameters = new HashMap<String,Object>();
 
-  @Override
-  public void init(Map<String, String> args) {
-    super.init(args);
-    configurationParameters = new HashMap<String, Object>();
-    for (String k : args.keySet()) {
-      if (k.equals("tokenType")) {
-        tokenType = args.get("tokenType");
-      } else if (k.equals("descriptorPath")) {
-        descriptorPath = args.get("descriptorPath");
-      } else {
-        configurationParameters.put(k, args.get(k));
-      }
-    }
-    if (descriptorPath == null || tokenType == null ) {
-      throw new IllegalArgumentException("descriptorPath and tokenType are mandatory");
-    }
-
+  /** Creates a new UIMAAnnotationsTokenizerFactory */
+  public UIMAAnnotationsTokenizerFactory(Map<String,String> args) {
+    super(args);
+    tokenType = require(args, "tokenType");
+    descriptorPath = require(args, "descriptorPath");
+    configurationParameters.putAll(args);
   }
 
   @Override
-  public Tokenizer create(Reader input) {
-    return new UIMAAnnotationsTokenizer(descriptorPath, tokenType, configurationParameters, input);
+  public UIMAAnnotationsTokenizer create(AttributeFactory factory, Reader input) {
+    return new UIMAAnnotationsTokenizer(descriptorPath, tokenType, configurationParameters, factory, input);
   }
 }

@@ -33,6 +33,7 @@ final class ExactPhraseScorer extends Scorer {
   private final int[] gens = new int[CHUNK];
 
   boolean noDocs;
+  private final long cost;
 
   private final static class ChunkState {
     final DocsAndPositionsEnum posEnum;
@@ -65,6 +66,9 @@ final class ExactPhraseScorer extends Scorer {
     chunkStates = new ChunkState[postings.length];
 
     endMinus1 = postings.length-1;
+    
+    // min(cost)
+    cost = postings[0].postings.cost();
 
     for(int i=0;i<postings.length;i++) {
 
@@ -314,5 +318,10 @@ final class ExactPhraseScorer extends Scorer {
     }
 
     return freq;
+  }
+
+  @Override
+  public long cost() {
+    return cost;
   }
 }

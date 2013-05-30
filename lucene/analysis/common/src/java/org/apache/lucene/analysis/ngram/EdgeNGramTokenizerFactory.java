@@ -17,46 +17,37 @@ package org.apache.lucene.analysis.ngram;
  * limitations under the License.
  */
 
-import org.apache.lucene.analysis.ngram.EdgeNGramTokenizer;
 import org.apache.lucene.analysis.util.TokenizerFactory;
+import org.apache.lucene.util.AttributeSource.AttributeFactory;
 
 import java.io.Reader;
 import java.util.Map;
 
 /**
  * Creates new instances of {@link EdgeNGramTokenizer}.
- * <pre class="prettyprint" >
+ * <pre class="prettyprint">
  * &lt;fieldType name="text_edgngrm" class="solr.TextField" positionIncrementGap="100"&gt;
  *   &lt;analyzer&gt;
- *     &lt;tokenizer class="solr.EdgeNGramTokenizerFactory" side="front" minGramSize="1" maxGramSize="1"/&gt;
+ *     &lt;tokenizer class="solr.EdgeNGramTokenizerFactory" minGramSize="1" maxGramSize="1"/&gt;
  *   &lt;/analyzer&gt;
  * &lt;/fieldType&gt;</pre>
- *
  */
 public class EdgeNGramTokenizerFactory extends TokenizerFactory {
-  private int maxGramSize = 0;
-  
-  private int minGramSize = 0;
-  
-  private String side;
-  
-  @Override
-  public void init(Map<String, String> args) {
-    super.init(args);
-    String maxArg = args.get("maxGramSize");
-    maxGramSize = (maxArg != null ? Integer.parseInt(maxArg) : EdgeNGramTokenizer.DEFAULT_MAX_GRAM_SIZE);
-    
-    String minArg = args.get("minGramSize");
-    minGramSize = (minArg != null ? Integer.parseInt(minArg) : EdgeNGramTokenizer.DEFAULT_MIN_GRAM_SIZE);
-    
-    side = args.get("side");
-    if (side == null) {
-      side = EdgeNGramTokenizer.Side.FRONT.getLabel();
+  private final int maxGramSize;
+  private final int minGramSize;
+
+  /** Creates a new EdgeNGramTokenizerFactory */
+  public EdgeNGramTokenizerFactory(Map<String, String> args) {
+    super(args);
+    minGramSize = getInt(args, "minGramSize", EdgeNGramTokenizer.DEFAULT_MIN_GRAM_SIZE);
+    maxGramSize = getInt(args, "maxGramSize", EdgeNGramTokenizer.DEFAULT_MAX_GRAM_SIZE);
+    if (!args.isEmpty()) {
+      throw new IllegalArgumentException("Unknown parameters: " + args);
     }
   }
   
   @Override
-  public EdgeNGramTokenizer create(Reader input) {
-    return new EdgeNGramTokenizer(input, side, minGramSize, maxGramSize);
+  public EdgeNGramTokenizer create(AttributeFactory factory, Reader input) {
+    return new EdgeNGramTokenizer(luceneMatchVersion, factory, input, minGramSize, maxGramSize);
   }
 }

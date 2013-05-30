@@ -112,7 +112,7 @@ public class TestRollingUpdates extends LuceneTestCase {
 
         r = w.getReader(applyDeletions);
         if (applyDeletions) {
-          s = new IndexSearcher(r);
+          s = newSearcher(r);
         } else {
           s = null;
         }

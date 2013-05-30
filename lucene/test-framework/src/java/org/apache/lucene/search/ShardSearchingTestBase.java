@@ -448,7 +448,7 @@ public abstract class ShardSearchingTestBase extends LuceneTestCase {
       currentNodeVersions = new long[numNodes];
     }
 
-    public void initSearcher(long[] nodeVersions) {
+    public void initSearcher(long[] nodeVersions) throws IOException {
       assert currentShardSearcher == null;
       System.arraycopy(nodeVersions, 0, currentNodeVersions, 0, currentNodeVersions.length);
       currentShardSearcher = new ShardIndexSearcher(currentNodeVersions.clone(),

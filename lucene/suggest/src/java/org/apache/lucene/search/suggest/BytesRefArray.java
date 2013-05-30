@@ -21,12 +21,12 @@ import java.util.Arrays;
 import java.util.Comparator;
 
 import org.apache.lucene.util.ArrayUtil;
-import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.ByteBlockPool;
+import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.BytesRefIterator;
 import org.apache.lucene.util.Counter;
+import org.apache.lucene.util.IntroSorter;
 import org.apache.lucene.util.RamUsageEstimator;
-import org.apache.lucene.util.SorterTemplate;
 
 /**
  * A simple append only random-access {@link BytesRef} array that stores full
@@ -70,7 +70,7 @@ public final class BytesRefArray {
   /**
    * Appends a copy of the given {@link BytesRef} to this {@link BytesRefArray}.
    * @param bytes the bytes to append
-   * @return the ordinal of the appended bytes
+   * @return the index of the appended bytes
    */
   public int append(BytesRef bytes) {
     if (lastElement >= offsets.length) {
@@ -82,7 +82,7 @@ public final class BytesRefArray {
     pool.append(bytes);
     offsets[lastElement++] = currentOffset;
     currentOffset += bytes.length;
-    return lastElement;
+    return lastElement-1;
   }
   
   /**
@@ -96,21 +96,21 @@ public final class BytesRefArray {
   /**
    * Returns the <i>n'th</i> element of this {@link BytesRefArray}
    * @param spare a spare {@link BytesRef} instance
-   * @param ord the elements ordinal to retrieve 
+   * @param index the elements index to retrieve 
    * @return the <i>n'th</i> element of this {@link BytesRefArray}
    */
-  public BytesRef get(BytesRef spare, int ord) {
-    if (lastElement > ord) {
-      int offset = offsets[ord];
-      int length = ord == lastElement - 1 ? currentOffset - offset
-          : offsets[ord + 1] - offset;
+  public BytesRef get(BytesRef spare, int index) {
+    if (lastElement > index) {
+      int offset = offsets[index];
+      int length = index == lastElement - 1 ? currentOffset - offset
+          : offsets[index + 1] - offset;
       assert spare.offset == 0;
       spare.grow(length);
       spare.length = length;
       pool.readBytes(offset, spare.bytes, spare.offset, spare.length);
       return spare;
     }
-    throw new IndexOutOfBoundsException("index " + ord
+    throw new IndexOutOfBoundsException("index " + index
         + " must be less than the size: " + lastElement);
     
   }
@@ -120,7 +120,7 @@ public final class BytesRefArray {
     for (int i = 0; i < orderedEntries.length; i++) {
       orderedEntries[i] = i;
     }
-    new SorterTemplate() {
+    new IntroSorter() {
       @Override
       protected void swap(int i, int j) {
         final int o = orderedEntries[i];
@@ -130,25 +130,25 @@ public final class BytesRefArray {
       
       @Override
       protected int compare(int i, int j) {
-        final int ord1 = orderedEntries[i], ord2 = orderedEntries[j];
-        return comp.compare(get(scratch1, ord1), get(scratch2, ord2));
+        final int idx1 = orderedEntries[i], idx2 = orderedEntries[j];
+        return comp.compare(get(scratch1, idx1), get(scratch2, idx2));
       }
       
       @Override
       protected void setPivot(int i) {
-        final int ord = orderedEntries[i];
-        get(pivot, ord);
+        final int index = orderedEntries[i];
+        get(pivot, index);
       }
       
       @Override
       protected int comparePivot(int j) {
-        final int ord = orderedEntries[j];
-        return comp.compare(pivot, get(scratch2, ord));
+        final int index = orderedEntries[j];
+        return comp.compare(pivot, get(scratch2, index));
       }
       
       private final BytesRef pivot = new BytesRef(), scratch1 = new BytesRef(),
           scratch2 = new BytesRef();
-    }.quickSort(0, size() - 1);
+    }.sort(0, size());
     return orderedEntries;
   }
   
@@ -176,14 +176,14 @@ public final class BytesRefArray {
   public BytesRefIterator iterator(final Comparator<BytesRef> comp) {
     final BytesRef spare = new BytesRef();
     final int size = size();
-    final int[] ords = comp == null ? null : sort(comp);
+    final int[] indices = comp == null ? null : sort(comp);
     return new BytesRefIterator() {
       int pos = 0;
       
       @Override
       public BytesRef next() {
         if (pos < size) {
-          return get(spare, ords == null ? pos++ : ords[pos++]);
+          return get(spare, indices == null ? pos++ : indices[pos++]);
         }
         return null;
       }

@@ -36,7 +36,7 @@ public class CompositeIdRouter extends HashBasedRouter {
   private int separator = '!';
 
   // separator used to optionally specify number of bits to allocate toward first part.
-  private int bitsSepartor = '/';
+  private int bitsSeparator = '/';
   private int bits = 16;
   private int mask1 = 0xffff0000;
   private int mask2 = 0x0000ffff;
@@ -59,7 +59,7 @@ public class CompositeIdRouter extends HashBasedRouter {
   }
 
   @Override
-  protected int sliceHash(String id, SolrInputDocument doc, SolrParams params) {
+  public int sliceHash(String id, SolrInputDocument doc, SolrParams params) {
     int idx = id.indexOf(separator);
     if (idx < 0) {
       return Hash.murmurhash3_x86_32(id, 0, id.length(), 0);
@@ -69,7 +69,7 @@ public class CompositeIdRouter extends HashBasedRouter {
     int m2 = mask2;
 
     String part1 = id.substring(0,idx);
-    int commaIdx = part1.indexOf(bitsSepartor);
+    int commaIdx = part1.indexOf(bitsSeparator);
     if (commaIdx > 0) {
       int firstBits = getBits(part1, commaIdx);
       if (firstBits >= 0) {
@@ -91,7 +91,7 @@ public class CompositeIdRouter extends HashBasedRouter {
     if (shardKey == null) {
       // search across whole collection
       // TODO: this may need modification in the future when shard splitting could cause an overlap
-      return collection.getSlices();
+      return collection.getActiveSlices();
     }
     String id = shardKey;
 
@@ -105,7 +105,7 @@ public class CompositeIdRouter extends HashBasedRouter {
     int m2 = mask2;
 
     String part1 = id.substring(0,idx);
-    int bitsSepIdx = part1.indexOf(bitsSepartor);
+    int bitsSepIdx = part1.indexOf(bitsSeparator);
     if (bitsSepIdx > 0) {
       int firstBits = getBits(part1, bitsSepIdx);
       if (firstBits >= 0) {
@@ -132,7 +132,7 @@ public class CompositeIdRouter extends HashBasedRouter {
     Range completeRange = new Range(lowerBound, upperBound);
 
     List<Slice> targetSlices = new ArrayList<Slice>(1);
-    for (Slice slice : collection.getSlices()) {
+    for (Slice slice : collection.getActiveSlices()) {
       Range range = slice.getRange();
       if (range != null && range.overlaps(completeRange)) {
         targetSlices.add(slice);

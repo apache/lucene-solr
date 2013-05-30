@@ -199,7 +199,10 @@ public final class IndexFileNames {
     return filename;
   }  
 
-  // All files created by codecs much match this pattern (we
-  // check this in SegmentInfo.java):
-  static final Pattern CODEC_FILE_PATTERN = Pattern.compile("_[a-z0-9]+(_.*)?\\..*");
+  /**
+   * All files created by codecs much match this pattern (checked in
+   * SegmentInfo).
+   */
+  public static final Pattern CODEC_FILE_PATTERN = Pattern.compile("_[a-z0-9]+(_.*)?\\..*");
+  
 }

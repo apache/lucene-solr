@@ -33,14 +33,14 @@ import java.util.concurrent.ConcurrentHashMap;
  *  the same time by two threads, because in this case you
  *  cannot in general know which thread "won". */
 
-public abstract class LiveFieldValues<T> implements ReferenceManager.RefreshListener, Closeable {
+public abstract class LiveFieldValues<S,T> implements ReferenceManager.RefreshListener, Closeable {
 
   private volatile Map<String,T> current = new ConcurrentHashMap<String,T>();
   private volatile Map<String,T> old = new ConcurrentHashMap<String,T>();
-  private final ReferenceManager<IndexSearcher> mgr;
+  private final ReferenceManager<S> mgr;
   private final T missingValue;
 
-  public LiveFieldValues(ReferenceManager<IndexSearcher> mgr, T missingValue) {
+  public LiveFieldValues(ReferenceManager<S> mgr, T missingValue) {
     this.missingValue = missingValue;
     this.mgr = mgr;
     mgr.addListener(this);
@@ -114,7 +114,7 @@ public abstract class LiveFieldValues<T> implements ReferenceManager.RefreshList
         // It either does not exist in the index, or, it was
         // already flushed & NRT reader was opened on the
         // segment, so fallback to current searcher:
-        IndexSearcher s = mgr.acquire();
+        S s = mgr.acquire();
         try {
           return lookupFromSearcher(s, id);
         } finally {
@@ -128,6 +128,6 @@ public abstract class LiveFieldValues<T> implements ReferenceManager.RefreshList
    *  in an NRT IndexSearcher.  You must implement this to
    *  go look up the value (eg, via doc values, field cache,
    *  stored fields, etc.). */
-  protected abstract T lookupFromSearcher(IndexSearcher s, String id) throws IOException;
+  protected abstract T lookupFromSearcher(S s, String id) throws IOException;
 }
 

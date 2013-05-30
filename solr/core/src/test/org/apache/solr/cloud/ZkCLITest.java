@@ -18,8 +18,12 @@ package org.apache.solr.cloud;
  */
 
 import java.io.File;
+import java.util.Collection;
 import java.util.List;
 
+import org.apache.commons.io.FileUtils;
+import org.apache.commons.io.filefilter.RegexFileFilter;
+import org.apache.commons.io.filefilter.TrueFileFilter;
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.common.cloud.SolrZkClient;
 import org.apache.solr.common.cloud.ZkNodeProps;
@@ -42,6 +46,8 @@ public class ZkCLITest extends SolrTestCaseJ4 {
   protected ZkTestServer zkServer;
   
   protected String zkDir;
+  
+  private String solrHome;
 
   private SolrZkClient zkClient;
   
@@ -61,6 +67,18 @@ public class ZkCLITest extends SolrTestCaseJ4 {
     super.setUp();
     log.info("####SETUP_START " + getTestName());
     createTempDir();
+    
+    boolean useNewSolrXml = random().nextBoolean();
+    
+    if (useNewSolrXml) {
+      solrHome = ExternalPaths.EXAMPLE_HOME;
+    } else {
+      File tmpSolrHome = new File(dataDir, "tmp-solr-home");
+      FileUtils.copyDirectory(new File(ExternalPaths.EXAMPLE_HOME), tmpSolrHome);
+      FileUtils.copyFile(new File(ExternalPaths.SOURCE_HOME, "core/src/test-files/old-solr-example/solr.xml"), new File(tmpSolrHome, "solr.xml"));
+      solrHome = tmpSolrHome.getAbsolutePath();
+    }
+    
     
     zkDir = dataDir.getAbsolutePath() + File.separator
         + "zookeeper/server1/data";
@@ -83,7 +101,7 @@ public class ZkCLITest extends SolrTestCaseJ4 {
   public void testBootstrap() throws Exception {
     // test bootstrap_conf
     String[] args = new String[] {"-zkhost", zkServer.getZkAddress(), "-cmd",
-        "bootstrap", "-solrhome", ExternalPaths.EXAMPLE_HOME};
+        "bootstrap", "-solrhome", this.solrHome};
     ZkCLI.main(args);
     
     assertTrue(zkClient.exists(ZkController.CONFIGS_ZKNODE + "/collection1", true));
@@ -102,7 +120,7 @@ public class ZkCLITest extends SolrTestCaseJ4 {
     assertFalse(zkClient.exists(chroot, true));
     
     String[] args = new String[] {"-zkhost", zkServer.getZkAddress() + chroot,
-        "-cmd", "bootstrap", "-solrhome", ExternalPaths.EXAMPLE_HOME};
+        "-cmd", "bootstrap", "-solrhome", this.solrHome};
     
     ZkCLI.main(args);
     
@@ -171,6 +189,19 @@ public class ZkCLITest extends SolrTestCaseJ4 {
     List<String> zkFiles = zkClient.getChildren(ZkController.CONFIGS_ZKNODE + "/" + confsetname, null, true);
     assertEquals(files.length, zkFiles.size());
     
+    File sourceConfDir = new File(ExternalPaths.EXAMPLE_HOME + File.separator + "collection1"
+            + File.separator + "conf");
+    // filter out all directories starting with . (e.g. .svn)
+    Collection<File> sourceFiles = FileUtils.listFiles(sourceConfDir, TrueFileFilter.INSTANCE, new RegexFileFilter("[^\\.].*"));
+    for (File sourceFile :sourceFiles){
+        int indexOfRelativePath = sourceFile.getAbsolutePath().lastIndexOf("collection1" + File.separator + "conf");
+        String relativePathofFile = sourceFile.getAbsolutePath().substring(indexOfRelativePath + 17, sourceFile.getAbsolutePath().length());
+        File downloadedFile = new File(confDir,relativePathofFile);
+        assertTrue(downloadedFile.getAbsolutePath() + " does not exist source:" + sourceFile.getAbsolutePath(), downloadedFile.exists());
+        assertTrue("Content didn't change",FileUtils.contentEquals(sourceFile,downloadedFile));
+    }
+    
+   
     // test reset zk
     args = new String[] {"-zkhost", zkServer.getZkAddress(), "-cmd",
         "clear", "/"};

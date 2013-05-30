@@ -114,12 +114,6 @@ public final class SegmentReader extends AtomicReader {
   }
 
   @Override
-  public boolean hasDeletions() {
-    // Don't call ensureOpen() here (it could affect performance)
-    return liveDocs != null;
-  }
-
-  @Override
   public FieldInfos getFieldInfos() {
     ensureOpen();
     return core.fieldInfos;
@@ -198,7 +192,7 @@ public final class SegmentReader extends AtomicReader {
   /**
    * Return the SegmentInfoPerCommit of the segment this reader is reading.
    */
-  SegmentInfoPerCommit getSegmentInfo() {
+  public SegmentInfoPerCommit getSegmentInfo() {
     return si;
   }
 

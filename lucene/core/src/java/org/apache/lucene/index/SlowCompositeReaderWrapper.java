@@ -219,12 +219,6 @@ public final class SlowCompositeReaderWrapper extends AtomicReader {
     ensureOpen();
     return MultiFields.getMergedFieldInfos(in);
   }
-  
-  @Override
-  public boolean hasDeletions() {
-    ensureOpen();
-    return liveDocs != null;
-  }
 
   @Override
   public Object getCoreCacheKey() {

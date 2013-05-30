@@ -1481,12 +1481,15 @@ public final class DirectPostingsFormat extends PostingsFormat {
     }
 
     @Override
-    public int advance(int target) {
+    public int advance(int target) throws IOException {
       // Linear scan, but this is low-freq term so it won't
       // be costly:
-      while(nextDoc() < target) {
-      }
-      return docID();
+      return slowAdvance(target);
+    }
+    
+    @Override
+    public long cost() {
+      return postings.length;
     }
   }
 
@@ -1546,12 +1549,15 @@ public final class DirectPostingsFormat extends PostingsFormat {
     }
 
     @Override
-    public int advance(int target) {
+    public int advance(int target) throws IOException {
       // Linear scan, but this is low-freq term so it won't
       // be costly:
-      while(nextDoc() < target) {
-      }
-      return docID();
+      return slowAdvance(target);
+    }
+    
+    @Override
+    public long cost() {
+      return postings.length / 2;
     }
   }
 
@@ -1627,12 +1633,16 @@ public final class DirectPostingsFormat extends PostingsFormat {
     }
 
     @Override
-    public int advance(int target) {
+    public int advance(int target) throws IOException {
       // Linear scan, but this is low-freq term so it won't
       // be costly:
-      while(nextDoc() < target) {
-      }
-      return docID();
+      return slowAdvance(target);
+    }
+    
+    @Override
+    public long cost() {
+      // TODO: could do a better estimate
+      return postings.length / 2;
     }
   }
 
@@ -1767,12 +1777,8 @@ public final class DirectPostingsFormat extends PostingsFormat {
     }
 
     @Override
-    public int advance(int target) {
-      // Linear scan, but this is low-freq term so it won't
-      // be costly:
-      while (nextDoc() < target) {
-      }
-      return docID;
+    public int advance(int target) throws IOException {
+      return slowAdvance(target);
     }
 
     @Override
@@ -1785,6 +1791,12 @@ public final class DirectPostingsFormat extends PostingsFormat {
       } else {
         return null;
       }
+    }
+    
+    @Override
+    public long cost() {
+      // TODO: could do a better estimate
+      return postings.length / 2;
     }
   }
 
@@ -1958,6 +1970,11 @@ public final class DirectPostingsFormat extends PostingsFormat {
         //System.out.println("    return docID=" + docIDs[upto] + " upto=" + upto);
         return docID = docIDs[upto];
       }
+    }
+    
+    @Override
+    public long cost() {
+      return docIDs.length;
     }
   }
 
@@ -2191,6 +2208,11 @@ public final class DirectPostingsFormat extends PostingsFormat {
         payload.offset = 0;
         return payload;
       }
+    }
+    
+    @Override
+    public long cost() {
+      return docIDs.length;
     }
   }
 }

@@ -51,20 +51,6 @@ public final class WhitespaceTokenizer extends CharTokenizer {
   }
 
   /**
-   * Construct a new WhitespaceTokenizer using a given {@link AttributeSource}.
-   * 
-   * @param matchVersion
-   *          Lucene version to match See {@link <a href="#version">above</a>}
-   * @param source
-   *          the attribute source to use for this {@link Tokenizer}
-   * @param in
-   *          the input to split up into tokens
-   */
-  public WhitespaceTokenizer(Version matchVersion, AttributeSource source, Reader in) {
-    super(matchVersion, source, in);
-  }
-
-  /**
    * Construct a new WhitespaceTokenizer using a given
    * {@link org.apache.lucene.util.AttributeSource.AttributeFactory}.
    *

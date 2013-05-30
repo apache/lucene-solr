@@ -17,23 +17,33 @@ package org.apache.lucene.analysis.de;
  * limitations under the License.
  */
 
+import java.util.Map;
+
 import org.apache.lucene.analysis.de.GermanStemFilter;
 import org.apache.lucene.analysis.TokenStream;
 import org.apache.lucene.analysis.util.TokenFilterFactory;
 
 /** 
  * Factory for {@link GermanStemFilter}. 
- * <pre class="prettyprint" >
+ * <pre class="prettyprint">
  * &lt;fieldType name="text_destem" class="solr.TextField" positionIncrementGap="100"&gt;
  *   &lt;analyzer&gt;
  *     &lt;tokenizer class="solr.StandardTokenizerFactory"/&gt;
  *     &lt;filter class="solr.LowerCaseFilterFactory"/&gt;
  *     &lt;filter class="solr.GermanStemFilterFactory"/&gt;
  *   &lt;/analyzer&gt;
- * &lt;/fieldType&gt;</pre> 
- *
+ * &lt;/fieldType&gt;</pre>
  */
 public class GermanStemFilterFactory extends TokenFilterFactory {
+  
+  /** Creates a new GermanStemFilterFactory */
+  public GermanStemFilterFactory(Map<String,String> args) {
+    super(args);
+    if (!args.isEmpty()) {
+      throw new IllegalArgumentException("Unknown parameters: " + args);
+    }
+  }
+  
   @Override
   public GermanStemFilter create(TokenStream in) {
     return new GermanStemFilter(in);

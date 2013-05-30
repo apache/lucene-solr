@@ -27,25 +27,23 @@ import org.apache.lucene.analysis.util.TokenFilterFactory;
 
 /** 
  * Factory for {@link GreekLowerCaseFilter}. 
- * <pre class="prettyprint" >
+ * <pre class="prettyprint">
  * &lt;fieldType name="text_glc" class="solr.TextField" positionIncrementGap="100"&gt;
  *   &lt;analyzer&gt;
  *     &lt;tokenizer class="solr.StandardTokenizerFactory"/&gt;
  *     &lt;filter class="solr.GreekLowerCaseFilterFactory"/&gt;
  *   &lt;/analyzer&gt;
- * &lt;/fieldType&gt;</pre> 
- *
+ * &lt;/fieldType&gt;</pre>
  */
 public class GreekLowerCaseFilterFactory extends TokenFilterFactory implements MultiTermAwareComponent {
  
-  @Override
-  public void init(Map<String, String> args) {
-    super.init(args);
+  /** Creates a new GreekLowerCaseFilterFactory */
+  public GreekLowerCaseFilterFactory(Map<String,String> args) {
+    super(args);
     assureMatchVersion();
-    if (args.containsKey("charset"))
-      throw new IllegalArgumentException(
-          "The charset parameter is no longer supported.  "
-          + "Please process your documents as Unicode instead.");
+    if (!args.isEmpty()) {
+      throw new IllegalArgumentException("Unknown parameters: " + args);
+    }
   }
 
   @Override

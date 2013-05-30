@@ -248,8 +248,10 @@ public abstract class MultiTermQuery extends Query {
    * Term.
    */
   public MultiTermQuery(final String field) {
+    if (field == null) {
+      throw new IllegalArgumentException("field must not be null");
+    }
     this.field = field;
-    assert field != null;
   }
 
   /** Returns the field name for this query */

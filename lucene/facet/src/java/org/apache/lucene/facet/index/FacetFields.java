@@ -48,18 +48,6 @@ import org.apache.lucene.util.IntsRef;
  */
 public class FacetFields {
 
-  // The counting list is written in a payload, but we don't store it
-  // nor need norms.
-  private static final FieldType COUNTING_LIST_PAYLOAD_TYPE = new FieldType();
-  static {
-    COUNTING_LIST_PAYLOAD_TYPE.setIndexed(true);
-    COUNTING_LIST_PAYLOAD_TYPE.setTokenized(true);
-    COUNTING_LIST_PAYLOAD_TYPE.setIndexOptions(IndexOptions.DOCS_AND_FREQS_AND_POSITIONS);
-    COUNTING_LIST_PAYLOAD_TYPE.setStored(false);
-    COUNTING_LIST_PAYLOAD_TYPE.setOmitNorms(true);
-    COUNTING_LIST_PAYLOAD_TYPE.freeze();
-  }
-  
   // The drill-down field is added with a TokenStream, hence why it's based on
   // TextField type. However in practice, it is added just like StringField.
   // Therefore we set its IndexOptions to DOCS_ONLY.

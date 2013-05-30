@@ -38,7 +38,6 @@ import java.io.IOException;
  * @see Pattern
  */
 public final class PatternReplaceFilter extends TokenFilter {
-  private final Pattern p;
   private final String replacement;
   private final boolean all;
   private final CharTermAttribute termAtt = addAttribute(CharTermAttribute.class);
@@ -60,7 +59,6 @@ public final class PatternReplaceFilter extends TokenFilter {
                               String replacement,
                               boolean all) {
     super(in);
-    this.p=p;
     this.replacement = (null == replacement) ? "" : replacement;
     this.all=all;
     this.m = p.matcher(termAtt);

@@ -21,22 +21,26 @@ import org.apache.lucene.analysis.TokenFilter;
 import org.apache.lucene.analysis.TokenStream;
 import org.apache.lucene.analysis.tokenattributes.CharTermAttribute;
 import org.apache.lucene.analysis.tokenattributes.OffsetAttribute;
+import org.apache.lucene.util.Version;
 
 import java.io.IOException;
 
 /**
  * Trims leading and trailing whitespace from Tokens in the stream.
+ * <p>As of Lucene 4.4, this filter does not support updateOffsets=true anymore
+ * as it can lead to broken token streams.
  */
 public final class TrimFilter extends TokenFilter {
 
-  final boolean updateOffsets;
   private final CharTermAttribute termAtt = addAttribute(CharTermAttribute.class);
-  private final OffsetAttribute offsetAtt = addAttribute(OffsetAttribute.class);
 
-
-  public TrimFilter(TokenStream in, boolean updateOffsets) {
+  /**
+   * Create a new {@link TrimFilter}.
+   * @param version       the Lucene match version
+   * @param in            the stream to consume
+   */
+  public TrimFilter(Version version, TokenStream in) {
     super(in);
-    this.updateOffsets = updateOffsets;
   }
 
   @Override
@@ -52,26 +56,18 @@ public final class TrimFilter extends TokenFilter {
     }
     int start = 0;
     int end = 0;
-    int endOff = 0;
 
     // eat the first characters
-    //QUESTION: Should we use Character.isWhitespace() instead?
-    for (start = 0; start < len && termBuffer[start] <= ' '; start++) {
+    for (start = 0; start < len && Character.isWhitespace(termBuffer[start]); start++) {
     }
     // eat the end characters
-    for (end = len; end >= start && termBuffer[end - 1] <= ' '; end--) {
-      endOff++;
+    for (end = len; end >= start && Character.isWhitespace(termBuffer[end - 1]); end--) {
     }
     if (start > 0 || end < len) {
       if (start < end) {
         termAtt.copyBuffer(termBuffer, start, (end - start));
       } else {
         termAtt.setEmpty();
-      }
-      if (updateOffsets && len == offsetAtt.endOffset() - offsetAtt.startOffset()) {
-        int newStart = offsetAtt.startOffset()+start;
-        int newEnd = offsetAtt.endOffset() - (start<end ? endOff:0);
-        offsetAtt.setOffset(newStart, newEnd);
       }
     }
 

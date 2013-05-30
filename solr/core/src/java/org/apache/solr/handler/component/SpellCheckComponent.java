@@ -19,29 +19,35 @@ package org.apache.solr.handler.component;
 
 import java.io.IOException;
 import java.io.StringReader;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Collection;
+import java.util.Collections;
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.Iterator;
+import java.util.LinkedHashMap;
+import java.util.List;
+import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
-
-import org.apache.lucene.search.spell.SuggestMode;
-import org.apache.lucene.search.spell.SuggestWord;
-import org.apache.solr.client.solrj.response.SpellCheckResponse;
-import org.apache.solr.common.params.ModifiableSolrParams;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.analysis.Token;
 import org.apache.lucene.analysis.TokenStream;
 import org.apache.lucene.analysis.core.WhitespaceAnalyzer;
+import org.apache.lucene.analysis.tokenattributes.CharTermAttribute;
 import org.apache.lucene.analysis.tokenattributes.FlagsAttribute;
 import org.apache.lucene.analysis.tokenattributes.OffsetAttribute;
 import org.apache.lucene.analysis.tokenattributes.PayloadAttribute;
 import org.apache.lucene.analysis.tokenattributes.PositionIncrementAttribute;
-import org.apache.lucene.analysis.tokenattributes.CharTermAttribute;
 import org.apache.lucene.analysis.tokenattributes.TypeAttribute;
 import org.apache.lucene.index.IndexReader;
+import org.apache.lucene.search.spell.SuggestMode;
+import org.apache.lucene.search.spell.SuggestWord;
+import org.apache.solr.client.solrj.response.SpellCheckResponse;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.params.CommonParams;
+import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.common.params.ShardParams;
 import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.common.params.SpellingParams;
@@ -53,8 +59,19 @@ import org.apache.solr.core.SolrResourceLoader;
 import org.apache.solr.schema.FieldType;
 import org.apache.solr.schema.IndexSchema;
 import org.apache.solr.search.SolrIndexSearcher;
-import org.apache.solr.spelling.*;
+import org.apache.solr.spelling.AbstractLuceneSpellChecker;
+import org.apache.solr.spelling.ConjunctionSolrSpellChecker;
+import org.apache.solr.spelling.IndexBasedSpellChecker;
+import org.apache.solr.spelling.QueryConverter;
+import org.apache.solr.spelling.SolrSpellChecker;
+import org.apache.solr.spelling.SpellCheckCollation;
+import org.apache.solr.spelling.SpellCheckCollator;
+import org.apache.solr.spelling.SpellingOptions;
+import org.apache.solr.spelling.SpellingQueryConverter;
+import org.apache.solr.spelling.SpellingResult;
 import org.apache.solr.util.plugin.SolrCoreAware;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  * A SearchComponent implementation which provides support for spell checking
@@ -197,10 +214,20 @@ public class SpellCheckComponent extends SearchComponent implements SolrCoreAwar
     int maxCollationTries = params.getInt(SPELLCHECK_MAX_COLLATION_TRIES, 0);
     int maxCollationEvaluations = params.getInt(SPELLCHECK_MAX_COLLATION_EVALUATIONS, 10000);
     boolean collationExtendedResults = params.getBool(SPELLCHECK_COLLATE_EXTENDED_RESULTS, false);
+    int maxCollationCollectDocs = params.getInt(SPELLCHECK_COLLATE_MAX_COLLECT_DOCS, 0);
+    // If not reporting hits counts, don't bother collecting more than 1 document per try.
+    if (!collationExtendedResults) {
+      maxCollationCollectDocs = 1;
+    }
     boolean shard = params.getBool(ShardParams.IS_SHARD, false);
-
-    SpellCheckCollator collator = new SpellCheckCollator();
-    List<SpellCheckCollation> collations = collator.collate(spellingResult, q, rb, maxCollations, maxCollationTries, maxCollationEvaluations, suggestionsMayOverlap);
+    SpellCheckCollator collator = new SpellCheckCollator()
+        .setMaxCollations(maxCollations)
+        .setMaxCollationTries(maxCollationTries)
+        .setMaxCollationEvaluations(maxCollationEvaluations)
+        .setSuggestionsMayOverlap(suggestionsMayOverlap)
+        .setDocCollectionLimit(maxCollationCollectDocs)
+    ;
+    List<SpellCheckCollation> collations = collator.collate(spellingResult, q, rb);
     //by sorting here we guarantee a non-distributed request returns all 
     //results in the same order as a distributed request would,
     //even in cases when the internal rank is the same.
@@ -250,9 +277,9 @@ public class SpellCheckComponent extends SearchComponent implements SolrCoreAwar
   @Override
   public void modifyRequest(ResponseBuilder rb, SearchComponent who, ShardRequest sreq) {
     SolrParams params = rb.req.getParams();
-    // Turn on spellcheck only only when retrieving fields
     if (!params.getBool(COMPONENT_NAME, false)) return;
-    if ((sreq.purpose & ShardRequest.PURPOSE_GET_TOP_IDS) != 0) {
+    int purpose = rb.grouping() ? ShardRequest.PURPOSE_GET_TOP_GROUPS : ShardRequest.PURPOSE_GET_TOP_IDS;   
+    if ((sreq.purpose & purpose) != 0) {
       // fetch at least 5 suggestions from each shard
       int count = sreq.params.getInt(SPELLCHECK_COUNT, 1);
       if (count < 5)  count = 5;
@@ -287,7 +314,7 @@ public class SpellCheckComponent extends SearchComponent implements SolrCoreAwar
       }
     }
     
-    long hits = rb.getNumberDocumentsFound();
+    long hits = rb.grouping() ? rb.totalHitCount : rb.getNumberDocumentsFound();
     boolean isCorrectlySpelled = hits > (maxResultsForSuggest==null ? 0 : maxResultsForSuggest);
     
     SpellCheckMergeData mergeData = new SpellCheckMergeData();  
@@ -637,7 +664,7 @@ public class SpellCheckComponent extends SearchComponent implements SolrCoreAwar
       //there should only be one
       if (queryConverters.size() == 1) {
         queryConverter = queryConverters.values().iterator().next();
-        IndexSchema schema = core.getSchema();
+        IndexSchema schema = core.getLatestSchema();
         String fieldTypeName = (String) initParams.get("queryAnalyzerFieldType");
         FieldType fieldType = schema.getFieldTypes().get(fieldTypeName);
         Analyzer analyzer = fieldType == null ? new WhitespaceAnalyzer(core.getSolrConfig().luceneMatchVersion)

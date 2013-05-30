@@ -390,4 +390,30 @@
     </processor>
   </updateRequestProcessorChain>
 
+  <updateRequestProcessorChain name="pre-analyzed-simple">
+    <processor class="solr.PreAnalyzedUpdateProcessorFactory">
+      <str name="fieldName">subject</str>
+      <str name="fieldName">title</str>
+      <str name="fieldName">teststop</str>
+      <str name="fieldName">nonexistent</str>
+      <str name="fieldName">ssto</str>
+      <str name="fieldName">sind</str>
+      <str name="parser">simple</str>
+    </processor>
+    <processor class="solr.RunUpdateProcessorFactory" />
+  </updateRequestProcessorChain>
+
+  <updateRequestProcessorChain name="pre-analyzed-json">
+    <processor class="solr.PreAnalyzedUpdateProcessorFactory">
+      <str name="fieldName">subject</str>
+      <str name="fieldName">title</str>
+      <str name="fieldName">teststop</str>
+      <str name="fieldName">nonexistent</str>
+      <str name="fieldName">ssto</str>
+      <str name="fieldName">sind</str>
+      <str name="parser">json</str>
+    </processor>
+    <processor class="solr.RunUpdateProcessorFactory" />
+  </updateRequestProcessorChain>
+
 </config>

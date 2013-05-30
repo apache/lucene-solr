@@ -330,12 +330,5 @@ public class ChaosMonkeyNothingIsSafeTest extends AbstractFullDistribZkTestBase 
     SolrInputDocument doc = getDoc(fields);
     indexDoc(doc);
   }
-
-  SolrInputDocument getDoc(Object... fields) throws Exception {
-    SolrInputDocument doc = new SolrInputDocument();
-    addFields(doc, fields);
-    addFields(doc, "rnd_b", true);
-    return doc;
-  }
   
 }

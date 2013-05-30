@@ -349,7 +349,7 @@ public class TestLockFactory extends LuceneTestCase {
             for(int i=0;i<this.numIteration;i++) {
                 try{
                     reader = DirectoryReader.open(dir);
-                    searcher = new IndexSearcher(reader);
+                    searcher = newSearcher(reader);
                 } catch (Exception e) {
                     hitException = true;
                     System.out.println("Stress Test Index Searcher: create hit unexpected exception: " + e.toString());

@@ -23,8 +23,8 @@ import java.io.PrintStream;
 
 import org.apache.lucene.facet.taxonomy.CategoryPath;
 import org.apache.lucene.facet.taxonomy.TaxonomyReader;
+import org.apache.lucene.facet.taxonomy.TaxonomyReader.ChildrenIterator;
 import org.apache.lucene.facet.taxonomy.directory.DirectoryTaxonomyReader;
-import org.apache.lucene.facet.taxonomy.directory.ParallelTaxonomyArrays;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.FSDirectory;
 
@@ -55,45 +55,40 @@ public class PrintTaxonomyStats {
   }
 
   public static void printStats(TaxonomyReader r, PrintStream out, boolean printTree) throws IOException {
-    ParallelTaxonomyArrays arrays = r.getParallelTaxonomyArrays();
-    //int[] parents = arrays.parents();
-    int[] children = arrays.children();
-    int[] siblings = arrays.siblings();
     out.println(r.getSize() + " total categories.");
 
-    int childOrd = children[TaxonomyReader.ROOT_ORDINAL];
-    while(childOrd != -1) {
-      CategoryPath cp = r.getPath(childOrd);
-      int childOrd2 = children[childOrd];
+    ChildrenIterator it = r.getChildren(TaxonomyReader.ROOT_ORDINAL);
+    int child;
+    while ((child = it.next()) != TaxonomyReader.INVALID_ORDINAL) {
+      ChildrenIterator chilrenIt = r.getChildren(child);
       int numImmediateChildren = 0;
-      while(childOrd2 != -1) {
+      while (chilrenIt.next() != TaxonomyReader.INVALID_ORDINAL) {
         numImmediateChildren++;
-        childOrd2 = siblings[childOrd2];
       }
-      out.println("/" + cp + ": " + numImmediateChildren + " immediate children; " + (1+countAllChildren(r, childOrd, children, siblings)) + " total categories");
+      CategoryPath cp = r.getPath(child);
+      out.println("/" + cp + ": " + numImmediateChildren + " immediate children; " + (1+countAllChildren(r, child)) + " total categories");
       if (printTree) {
-        printAllChildren(out, r, childOrd, children, siblings, "  ", 1);
+        printAllChildren(out, r, child, "  ", 1);
       }
-      childOrd = siblings[childOrd];
     }
   }
 
-  private static int countAllChildren(TaxonomyReader r, int ord, int[] children, int[] siblings) throws IOException {
-    int childOrd = children[ord];
+  private static int countAllChildren(TaxonomyReader r, int ord) throws IOException {
     int count = 0;
-    while(childOrd != -1) {
-      count += 1+countAllChildren(r, childOrd, children, siblings);
-      childOrd = siblings[childOrd];
+    ChildrenIterator it = r.getChildren(ord);
+    int child;
+    while ((child = it.next()) != TaxonomyReader.INVALID_ORDINAL) {
+      count += 1 + countAllChildren(r, child);
     }
     return count;
   }
 
-  private static void printAllChildren(PrintStream out, TaxonomyReader r, int ord, int[] children, int[] siblings, String indent, int depth) throws IOException {
-    int childOrd = children[ord];
-    while(childOrd != -1) {
-      out.println(indent + "/" + r.getPath(childOrd).components[depth]);
-      printAllChildren(out, r, childOrd, children, siblings, indent + "  ", depth+1);
-      childOrd = siblings[childOrd];
+  private static void printAllChildren(PrintStream out, TaxonomyReader r, int ord, String indent, int depth) throws IOException {
+    ChildrenIterator it = r.getChildren(ord);
+    int child;
+    while ((child = it.next()) != TaxonomyReader.INVALID_ORDINAL) {
+      out.println(indent + "/" + r.getPath(child).components[depth]);
+      printAllChildren(out, r, child, indent + "  ", depth+1);
     }
   }
 }

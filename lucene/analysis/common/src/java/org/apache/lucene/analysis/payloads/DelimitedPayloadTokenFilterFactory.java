@@ -18,11 +18,6 @@ package org.apache.lucene.analysis.payloads;
  */
 
 import org.apache.lucene.analysis.TokenStream;
-import org.apache.lucene.analysis.payloads.DelimitedPayloadTokenFilter;
-import org.apache.lucene.analysis.payloads.PayloadEncoder;
-import org.apache.lucene.analysis.payloads.FloatEncoder;
-import org.apache.lucene.analysis.payloads.IntegerEncoder;
-import org.apache.lucene.analysis.payloads.IdentityEncoder;
 import org.apache.lucene.analysis.util.ResourceLoader;
 import org.apache.lucene.analysis.util.ResourceLoaderAware;
 import org.apache.lucene.analysis.util.TokenFilterFactory;
@@ -30,24 +25,33 @@ import org.apache.lucene.analysis.util.TokenFilterFactory;
 import java.util.Map;
 
 /**
- *
  * Factory for {@link DelimitedPayloadTokenFilter}.
- * <pre class="prettyprint" >
+ * <pre class="prettyprint">
  * &lt;fieldType name="text_dlmtd" class="solr.TextField" positionIncrementGap="100"&gt;
  *   &lt;analyzer&gt;
  *     &lt;tokenizer class="solr.WhitespaceTokenizerFactory"/&gt;
  *     &lt;filter class="solr.DelimitedPayloadTokenFilterFactory" encoder="float" delimiter="|"/&gt;
  *   &lt;/analyzer&gt;
  * &lt;/fieldType&gt;</pre>
- *
- * 
  */
 public class DelimitedPayloadTokenFilterFactory extends TokenFilterFactory implements ResourceLoaderAware {
   public static final String ENCODER_ATTR = "encoder";
   public static final String DELIMITER_ATTR = "delimiter";
 
+  private final String encoderClass;
+  private final char delimiter;
+
   private PayloadEncoder encoder;
-  private char delimiter = '|';
+  
+  /** Creates a new DelimitedPayloadTokenFilterFactory */
+  public DelimitedPayloadTokenFilterFactory(Map<String, String> args) {
+    super(args);
+    encoderClass = require(args, ENCODER_ATTR);
+    delimiter = getChar(args, DELIMITER_ATTR, '|');
+    if (!args.isEmpty()) {
+      throw new IllegalArgumentException("Unknown parameters: " + args);
+    }
+  }
 
   @Override
   public DelimitedPayloadTokenFilter create(TokenStream input) {
@@ -55,16 +59,7 @@ public class DelimitedPayloadTokenFilterFactory extends TokenFilterFactory imple
   }
 
   @Override
-  public void init(Map<String, String> args) {
-    super.init(args);
-  }
-
-  @Override
   public void inform(ResourceLoader loader) {
-    String encoderClass = args.get(ENCODER_ATTR);
-    if (encoderClass == null) {
-      throw new IllegalArgumentException("Parameter " + ENCODER_ATTR + " is mandatory");
-    }
     if (encoderClass.equals("float")){
       encoder = new FloatEncoder();
     } else if (encoderClass.equals("integer")){
@@ -73,15 +68,6 @@ public class DelimitedPayloadTokenFilterFactory extends TokenFilterFactory imple
       encoder = new IdentityEncoder();
     } else {
       encoder = loader.newInstance(encoderClass, PayloadEncoder.class);
-    }
-
-    String delim = args.get(DELIMITER_ATTR);
-    if (delim != null){
-      if (delim.length() == 1) {
-        delimiter = delim.charAt(0);
-      } else{
-        throw new IllegalArgumentException("Delimiter must be one character only");
-      }
     }
   }
 }

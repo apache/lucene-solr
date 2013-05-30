@@ -20,7 +20,7 @@
 
   <import file="../common-build.xml"/>
 
-	<property name="exclude.from.war" value="" />
+  <property name="exclude.from.war" value="*slf4j*,log4j-*" />
   <property name="solr.war.suffix" value="" />
 	
   <target name="test" depends="compile-test-solr-core">
@@ -42,7 +42,7 @@
           depends="test, init-dist, dist-core, dist-solrj, lucene-jars-to-solr">
     <build-manifest title="Apache Solr Search Server"
                     implementation.title="org.apache.solr"
-                    spec.version="${solr.spec.version}"/>
+                    spec.version="${spec.version}"/>
     <ant dir="${common-solr.dir}" inheritall="false" target="contribs-add-to-war"/>
     <war destfile="${dist}/solr-${version}${solr.war.suffix}.war"
          webxml="web/WEB-INF/web.xml"
@@ -50,6 +50,8 @@
       <lib dir="${common-solr.dir}/core/lib" excludes="${exclude.from.war},${common.classpath.excludes}">
         <exclude name="*servlet-api*.jar" />
         <exclude name="easymock-*.jar" />
+        <exclude name="cglib-nodep-*.jar" />
+        <exclude name="objenesis-*.jar" />
       </lib>
       <lib dir="${common-solr.dir}/solrj/lib" excludes="${exclude.from.war},${common.classpath.excludes}"/>
       <lib dir="${lucene-libs}" excludes="${exclude.from.war},${common.classpath.excludes}" />

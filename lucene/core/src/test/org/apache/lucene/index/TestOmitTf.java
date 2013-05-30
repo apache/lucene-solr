@@ -18,6 +18,7 @@ package org.apache.lucene.index;
  */
 
 import java.io.IOException;
+import java.util.concurrent.ExecutionException;
 
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.LuceneTestCase;
@@ -281,7 +282,7 @@ public class TestOmitTf extends LuceneTestCase {
      * Verify the index
      */         
     IndexReader reader = DirectoryReader.open(dir);
-    IndexSearcher searcher = new IndexSearcher(reader);
+    IndexSearcher searcher = newSearcher(reader);
     searcher.setSimilarity(new SimpleSimilarity());
         
     Term a = new Term("noTf", term);
@@ -299,8 +300,13 @@ public class TestOmitTf extends LuceneTestCase {
     try {
       searcher.search(pq, 10);
       fail("did not hit expected exception");
-    } catch (IllegalStateException ise) {
-      // expected
+    } catch (Exception e) {
+      Throwable cause = e;
+      // If the searcher uses an executor service, the IAE is wrapped into other exceptions
+      while (cause.getCause() != null) {
+        cause = cause.getCause();
+      }
+      assertTrue("Expected an IAE, got " + cause, cause instanceof IllegalStateException);
     }
         
     searcher.search(q1,
@@ -439,9 +445,8 @@ public class TestOmitTf extends LuceneTestCase {
     iw.addDocument(doc);
     IndexReader ir = iw.getReader();
     iw.close();
-    Terms terms = MultiFields.getTerms(ir, "foo");
-    assertEquals(-1, MultiFields.totalTermFreq(ir, "foo", new BytesRef("bar")));
-    assertEquals(-1, terms.getSumTotalTermFreq());
+    assertEquals(-1, ir.totalTermFreq(new Term("foo", new BytesRef("bar"))));
+    assertEquals(-1, ir.getSumTotalTermFreq("foo"));
     ir.close();
     dir.close();
   }

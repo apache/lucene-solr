@@ -430,12 +430,8 @@ public class SimpleTextTermVectorsReader extends TermVectorsReader {
     }
 
     @Override
-    public int advance(int target) {
-      if (!didNext && target == 0) {
-        return nextDoc();
-      } else {
-        return (doc = NO_MORE_DOCS);
-      }
+    public int advance(int target) throws IOException {
+      return slowAdvance(target);
     }
 
     public void reset(Bits liveDocs, int freq) {
@@ -443,6 +439,11 @@ public class SimpleTextTermVectorsReader extends TermVectorsReader {
       this.freq = freq;
       this.doc = -1;
       didNext = false;
+    }
+    
+    @Override
+    public long cost() {
+      return 1;
     }
   }
   
@@ -482,12 +483,8 @@ public class SimpleTextTermVectorsReader extends TermVectorsReader {
     }
 
     @Override
-    public int advance(int target) {
-      if (!didNext && target == 0) {
-        return nextDoc();
-      } else {
-        return (doc = NO_MORE_DOCS);
-      }
+    public int advance(int target) throws IOException {
+      return slowAdvance(target);
     }
 
     public void reset(Bits liveDocs, int[] positions, int[] startOffsets, int[] endOffsets, BytesRef payloads[]) {
@@ -534,6 +531,11 @@ public class SimpleTextTermVectorsReader extends TermVectorsReader {
       } else {
         return endOffsets[nextPos-1];
       }
+    }
+    
+    @Override
+    public long cost() {
+      return 1;
     }
   }
 }

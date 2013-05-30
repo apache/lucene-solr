@@ -284,6 +284,10 @@ public class LeaderElectionIntegrationTest extends SolrTestCaseJ4 {
       zkClient.close();
     }
     
+    if (reader != null) {
+      reader.close();
+    }
+    
     for (CoreContainer cc : containerMap.values()) {
       if (!cc.isShutDown()) {
         cc.shutdown();

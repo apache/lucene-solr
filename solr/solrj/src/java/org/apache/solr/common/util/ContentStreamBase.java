@@ -233,4 +233,27 @@ public abstract class ContentStreamBase implements ContentStream
   public void setSourceInfo(String sourceInfo) {
     this.sourceInfo = sourceInfo;
   }
+  
+  /**
+   * Construct a <code>ContentStream</code> from a <code>File</code>
+   */
+  public static class ByteArrayStream extends ContentStreamBase
+  {
+    private final byte[] bytes;
+    
+    public ByteArrayStream( byte[] bytes, String source ) {
+      this.bytes = bytes; 
+      
+      this.contentType = null;
+      name = source;
+      size = new Long(bytes.length);
+      sourceInfo = source;
+    }
+
+
+    @Override
+    public InputStream getStream() throws IOException {
+      return new ByteArrayInputStream( bytes );
+    }
+  }  
 }

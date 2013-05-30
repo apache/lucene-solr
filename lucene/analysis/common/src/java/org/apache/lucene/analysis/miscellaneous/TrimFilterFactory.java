@@ -25,11 +25,11 @@ import org.apache.lucene.analysis.util.TokenFilterFactory;
 
 /**
  * Factory for {@link TrimFilter}.
- * <pre class="prettyprint" >
+ * <pre class="prettyprint">
  * &lt;fieldType name="text_trm" class="solr.TextField" positionIncrementGap="100"&gt;
  *   &lt;analyzer&gt;
  *     &lt;tokenizer class="solr.NGramTokenizerFactory"/&gt;
- *     &lt;filter class="solr.TrimFilterFactory" updateOffsets="false"/&gt;
+ *     &lt;filter class="solr.TrimFilterFactory" /&gt;
  *   &lt;/analyzer&gt;
  * &lt;/fieldType&gt;</pre>
  *
@@ -37,20 +37,17 @@ import org.apache.lucene.analysis.util.TokenFilterFactory;
  */
 public class TrimFilterFactory extends TokenFilterFactory {
   
-  protected boolean updateOffsets = false;
-  
-  @Override
-  public void init(Map<String,String> args) {
-    super.init( args );
-    
-    String v = args.get( "updateOffsets" );
-    if (v != null) {
-      updateOffsets = Boolean.valueOf( v );
+  /** Creates a new TrimFilterFactory */
+  public TrimFilterFactory(Map<String,String> args) {
+    super(args);
+    if (!args.isEmpty()) {
+      throw new IllegalArgumentException("Unknown parameters: " + args);
     }
   }
   
   @Override
   public TrimFilter create(TokenStream input) {
-    return new TrimFilter(input, updateOffsets);
+    final TrimFilter filter = new TrimFilter(luceneMatchVersion, input);
+    return filter;
   }
 }

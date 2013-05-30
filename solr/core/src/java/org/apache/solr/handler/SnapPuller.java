@@ -84,7 +84,6 @@ import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.common.util.ExecutorUtil;
 import org.apache.solr.common.util.FastInputStream;
 import org.apache.solr.common.util.NamedList;
-import org.apache.solr.core.CachingDirectoryFactory.CloseListener;
 import org.apache.solr.core.DirectoryFactory;
 import org.apache.solr.core.DirectoryFactory.DirContext;
 import org.apache.solr.core.IndexDeletionPolicyWrapper;
@@ -219,6 +218,7 @@ public class SnapPuller {
           return;
         }
         try {
+          LOG.debug("Polling for index modifications");
           executorStartTime = System.currentTimeMillis();
           replicationHandler.doFetch(null, false);
         } catch (Exception e) {
@@ -382,10 +382,9 @@ public class SnapPuller {
 
       tmpIndexDir = core.getDirectoryFactory().get(tmpIndex, DirContext.DEFAULT, core.getSolrConfig().indexConfig.lockType);
       
-      // make sure it's the newest known index dir...
-      indexDirPath = core.getNewIndexDir();
+      // cindex dir...
+      indexDirPath = core.getIndexDir();
       indexDir = core.getDirectoryFactory().get(indexDirPath, DirContext.DEFAULT, core.getSolrConfig().indexConfig.lockType);
-      Directory oldDirectory = null;
 
       try {
         
@@ -407,6 +406,16 @@ public class SnapPuller {
             successfulInstall = moveIndexFiles(tmpIndexDir, indexDir);
           }
           if (successfulInstall) {
+            if (isFullCopyNeeded) {
+              // let the system know we are changing dir's and the old one
+              // may be closed
+              if (indexDir != null) {
+                LOG.info("removing old index directory " + indexDir);
+                core.getDirectoryFactory().doneWithDirectory(indexDir);
+                core.getDirectoryFactory().remove(indexDir);
+              }
+            }
+            
             LOG.info("Configuration files are modified, core will be reloaded");
             logReplicationTimeAndConfFiles(modifiedConfFiles, successfulInstall);//write to a file time of replication and conf files.
             reloadCore();
@@ -416,12 +425,6 @@ public class SnapPuller {
           if (isFullCopyNeeded) {
             successfulInstall = modifyIndexProps(tmpIdxDirName);
             deleteTmpIdxDir =  false;
-            RefCounted<IndexWriter> iw = core.getUpdateHandler().getSolrCoreState().getIndexWriter(core);
-            try {
-               oldDirectory = iw.get().getDirectory();
-            } finally {
-              iw.decref();
-            }
           } else {
             successfulInstall = moveIndexFiles(tmpIndexDir, indexDir);
           }
@@ -429,39 +432,16 @@ public class SnapPuller {
             logReplicationTimeAndConfFiles(modifiedConfFiles, successfulInstall);
           }
         }
-        
-        if (isFullCopyNeeded) {
-          // we have to do this before commit
-          final Directory freezeIndexDir = indexDir;
-          final String freezeIndexDirPath = indexDirPath;
-          core.getDirectoryFactory().addCloseListener(oldDirectory, new CloseListener(){
-
-            @Override
-            public void preClose() {
-              LOG.info("removing old index files " + freezeIndexDir);
-              if (core.getDirectoryFactory().exists(freezeIndexDirPath)) {
-                DirectoryFactory.empty(freezeIndexDir);
-              }
-            }
-            
-            @Override
-            public void postClose() {
-              LOG.info("removing old index directory " + freezeIndexDir);
-              try {
-                core.getDirectoryFactory().remove(freezeIndexDir);
-              } catch (IOException e) {
-                SolrException.log(LOG, "Error removing directory " + freezeIndexDir, e);
-              }
-            }
-            
-          });
-        }
 
         if (successfulInstall) {
           if (isFullCopyNeeded) {
             // let the system know we are changing dir's and the old one
             // may be closed
-            core.getDirectoryFactory().doneWithDirectory(oldDirectory);
+            if (indexDir != null) {
+              LOG.info("removing old index directory " + indexDir);
+              core.getDirectoryFactory().doneWithDirectory(indexDir);
+              core.getDirectoryFactory().remove(indexDir);
+            }
           }
           openNewWriterAndSearcher(isFullCopyNeeded);
         }
@@ -477,13 +457,6 @@ public class SnapPuller {
         throw new InterruptedException("Index fetch interrupted");
       } catch (Exception e) {
         throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, "Index fetch failed : ", e);
-      } finally {
-        if (deleteTmpIdxDir) {
-          LOG.info("removing temporary index download directory files " + tmpIndexDir);
-          if (tmpIndex != null && core.getDirectoryFactory().exists(tmpIndex)) {
-            DirectoryFactory.empty(tmpIndexDir);
-          }
-        } 
       }
     } finally {
       try {
@@ -500,16 +473,19 @@ public class SnapPuller {
         stop = false;
         fsyncException = null;
       } finally {
-        if (tmpIndexDir != null) {
-          core.getDirectoryFactory().release(tmpIndexDir);
-        }
         if (deleteTmpIdxDir && tmpIndexDir != null) {
           try {
+            core.getDirectoryFactory().doneWithDirectory(tmpIndexDir);
             core.getDirectoryFactory().remove(tmpIndexDir);
           } catch (IOException e) {
             SolrException.log(LOG, "Error removing directory " + tmpIndexDir, e);
           }
         }
+        
+        if (tmpIndexDir != null) {
+          core.getDirectoryFactory().release(tmpIndexDir);
+        }
+        
         if (indexDir != null) {
           core.getDirectoryFactory().release(indexDir);
         }
@@ -643,13 +619,11 @@ public class SnapPuller {
     SolrQueryRequest req = new LocalSolrQueryRequest(solrCore,
         new ModifiableSolrParams());
     // reboot the writer on the new index and get a new searcher
-    solrCore.getUpdateHandler().newIndexWriter(isFullCopyNeeded, false);
+    solrCore.getUpdateHandler().newIndexWriter(isFullCopyNeeded);
     
     RefCounted<SolrIndexSearcher> searcher = null;
     IndexCommit commitPoint;
     try {
-      // first try to open an NRT searcher so that the new
-      // IndexWriter is registered with the reader
       Future[] waitSearcher = new Future[1];
       searcher = solrCore.getSearcher(true, true, waitSearcher, true);
       if (waitSearcher[0] != null) {
@@ -674,13 +648,14 @@ public class SnapPuller {
     
   }
 
-
   /**
    * All the files are copied to a temp dir first
    */
   private String createTempindexDir(SolrCore core, String tmpIdxDirName) {
-    File tmpIdxDir = new File(core.getDataDir(), tmpIdxDirName);
-    return tmpIdxDir.toString();
+    // TODO: there should probably be a DirectoryFactory#concatPath(parent, name)
+    // or something
+    String tmpIdxDir = core.getDataDir() + tmpIdxDirName;
+    return tmpIdxDir;
   }
 
   private void reloadCore() {
@@ -690,7 +665,7 @@ public class SnapPuller {
         try {
           solrCore.getCoreDescriptor().getCoreContainer().reload(solrCore.getName());
         } catch (Exception e) {
-          LOG.error("Could not restart core ", e);
+          LOG.error("Could not reload core ", e);
         }
       }
     }.start();
@@ -823,21 +798,53 @@ public class SnapPuller {
   }
 
   /**
+   * Make file list 
+   */
+  private List<File> makeTmpConfDirFileList(File dir, List<File> fileList) {
+    File[] files = dir.listFiles();
+    for (File file : files) {
+      if (file.isFile()) {
+        fileList.add(file);
+      } else if (file.isDirectory()) {
+        fileList = makeTmpConfDirFileList(file, fileList);
+      }
+    }
+    return fileList;
+  }
+  
+  /**
    * The conf files are copied to the tmp dir to the conf dir. A backup of the old file is maintained
    */
   private void copyTmpConfFiles2Conf(File tmpconfDir) {
+    boolean status = false;
     File confDir = new File(solrCore.getResourceLoader().getConfigDir());
-    for (File file : tmpconfDir.listFiles()) {
-      File oldFile = new File(confDir, file.getName());
+    for (File file : makeTmpConfDirFileList(tmpconfDir, new ArrayList<File>())) {
+      File oldFile = new File(confDir, file.getPath().substring(tmpconfDir.getPath().length(), file.getPath().length()));
+      if (!oldFile.getParentFile().exists()) {
+        status = oldFile.getParentFile().mkdirs();
+        if (status) {
+        } else {
+          throw new SolrException(SolrException.ErrorCode.SERVER_ERROR,
+                  "Unable to mkdirs: " + oldFile.getParentFile());
+        }
+      }
       if (oldFile.exists()) {
-        File backupFile = new File(confDir, oldFile.getName() + "." + getDateAsStr(new Date(oldFile.lastModified())));
-        boolean status = oldFile.renameTo(backupFile);
+        File backupFile = new File(oldFile.getPath() + "." + getDateAsStr(new Date(oldFile.lastModified())));
+        if (!backupFile.getParentFile().exists()) {
+          status = backupFile.getParentFile().mkdirs();
+          if (status) {
+          } else {
+            throw new SolrException(SolrException.ErrorCode.SERVER_ERROR,
+                    "Unable to mkdirs: " + backupFile.getParentFile());
+          }
+        }
+        status = oldFile.renameTo(backupFile);
         if (!status) {
           throw new SolrException(SolrException.ErrorCode.SERVER_ERROR,
                   "Unable to rename: " + oldFile + " to: " + backupFile);
         }
       }
-      boolean status = file.renameTo(oldFile);
+      status = file.renameTo(oldFile);
       if (status) {
       } else {
         throw new SolrException(SolrException.ErrorCode.SERVER_ERROR,

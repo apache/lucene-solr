@@ -32,4 +32,20 @@ public class TestVersion extends LuceneTestCase {
     assertEquals(Version.LUCENE_40, Version.parseLeniently("LUCENE_40"));
     assertEquals(Version.LUCENE_CURRENT, Version.parseLeniently("LUCENE_CURRENT"));
   }
+  
+  public void testDeprecations() throws Exception {
+    Version values[] = Version.values();
+    // all but the latest version should be deprecated
+    for (int i = 0; i < values.length; i++) {
+      if (i + 1 == values.length) {
+        assertSame("Last constant must be LUCENE_CURRENT", Version.LUCENE_CURRENT, values[i]);
+      }
+      final boolean dep = Version.class.getField(values[i].name()).isAnnotationPresent(Deprecated.class);
+      if (i + 2 != values.length) {
+        assertTrue(values[i].name() + " should be deprecated", dep);
+      } else {
+        assertFalse(values[i].name() + " should not be deprecated", dep);
+      }
+    }
+  }
 }

@@ -1,3 +1,5 @@
+package org.apache.lucene.spatial.prefix.tree;
+
 /*
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
@@ -14,8 +16,6 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-
-package org.apache.lucene.spatial.prefix.tree;
 
 import com.spatial4j.core.context.SpatialContext;
 import com.spatial4j.core.shape.Point;
@@ -49,20 +49,20 @@ public class SpatialPrefixTreeTest extends SpatialTestCase {
   }
 
   @Test
-  public void testNodeTraverse() {
+  public void testCellTraverse() {
     trie = new GeohashPrefixTree(ctx,4);
 
-    Node prevN = null;
-    Node n = trie.getWorldNode();
-    assertEquals(0,n.getLevel());
-    assertEquals(ctx.getWorldBounds(),n.getShape());
-    while(n.getLevel() < trie.getMaxLevels()) {
-      prevN = n;
-      n = n.getSubCells().iterator().next();//TODO random which one?
+    Cell prevC = null;
+    Cell c = trie.getWorldCell();
+    assertEquals(0, c.getLevel());
+    assertEquals(ctx.getWorldBounds(), c.getShape());
+    while(c.getLevel() < trie.getMaxLevels()) {
+      prevC = c;
+      c = c.getSubCells().iterator().next();//TODO random which one?
       
-      assertEquals(prevN.getLevel()+1,n.getLevel());
-      Rectangle prevNShape = (Rectangle) prevN.getShape();
-      Shape s = n.getShape();
+      assertEquals(prevC.getLevel()+1,c.getLevel());
+      Rectangle prevNShape = (Rectangle) prevC.getShape();
+      Shape s = c.getShape();
       Rectangle sbox = s.getBoundingBox();
       assertTrue(prevNShape.getWidth() > sbox.getWidth());
       assertTrue(prevNShape.getHeight() > sbox.getHeight());

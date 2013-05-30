@@ -17,7 +17,10 @@ package org.apache.solr.handler.clustering.carrot2;
  * limitations under the License.
  */
 
-import java.io.*;
+import java.io.ByteArrayInputStream;
+import java.io.File;
+import java.io.IOException;
+import java.io.InputStream;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
@@ -278,8 +281,8 @@ public class CarrotClusteringEngine extends SearchClusteringEngine {
       attributeBuilder.stemmerFactory(LuceneCarrot2StemmerFactory.class);
     }
 
-    // Pass the schema to SolrStopwordsCarrot2LexicalDataFactory.
-    initAttributes.put("solrIndexSchema", core.getSchema());
+    // Pass the schema (via the core) to SolrStopwordsCarrot2LexicalDataFactory.
+    initAttributes.put("solrCore", core);
 
     // Customize Carrot2's resource lookup to first look for resources
     // using Solr's resource loader. If that fails, try loading from the classpath.
@@ -303,7 +306,7 @@ public class CarrotClusteringEngine extends SearchClusteringEngine {
       ct.setContextClassLoader(prev);
     }
 
-    SchemaField uniqueField = core.getSchema().getUniqueKeyField();
+    SchemaField uniqueField = core.getLatestSchema().getUniqueKeyField();
     if (uniqueField == null) {
       throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, 
           CarrotClusteringEngine.class.getSimpleName() + " requires the schema to have a uniqueKeyField");

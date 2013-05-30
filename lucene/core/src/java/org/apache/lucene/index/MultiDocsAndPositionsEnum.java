@@ -89,9 +89,16 @@ public final class MultiDocsAndPositionsEnum extends DocsAndPositionsEnum {
 
   @Override
   public int advance(int target) throws IOException {
+    assert target > doc;
     while(true) {
       if (current != null) {
-        final int doc = current.advance(target-currentBase);
+        final int doc;
+        if (target < currentBase) {
+          // target was in the previous slice but there was no matching doc after it
+          doc = current.nextDoc();
+        } else {
+          doc = current.advance(target-currentBase);
+        }
         if (doc == NO_MORE_DOCS) {
           current = null;
         } else {
@@ -167,6 +174,15 @@ public final class MultiDocsAndPositionsEnum extends DocsAndPositionsEnum {
     public String toString() {
       return slice.toString()+":"+docsAndPositionsEnum;
     }
+  }
+  
+  @Override
+  public long cost() {
+    long cost = 0;
+    for (int i = 0; i < numSubs; i++) {
+      cost += subs[i].docsAndPositionsEnum.cost();
+    }
+    return cost;
   }
   
   @Override

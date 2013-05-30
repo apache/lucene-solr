@@ -71,7 +71,7 @@ public interface SolrQueryRequest {
   /** The solr core (coordinator, etc) associated with this request */
   public SolrCore getCore();
 
-  /** The index schema associated with this request */
+  /** The schema snapshot from core.getLatestSchema() at request creation. */
   public IndexSchema getSchema();
 
   /**

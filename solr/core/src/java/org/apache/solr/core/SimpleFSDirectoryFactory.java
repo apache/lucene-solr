@@ -16,12 +16,11 @@ package org.apache.solr.core;
  * limitations under the License.
  */
 
-import org.apache.lucene.store.Directory;
-import org.apache.lucene.store.SimpleFSDirectory;
-import org.apache.solr.core.DirectoryFactory.DirContext;
-
 import java.io.File;
 import java.io.IOException;
+
+import org.apache.lucene.store.Directory;
+import org.apache.lucene.store.SimpleFSDirectory;
 
 
 /**
@@ -35,4 +34,8 @@ public class SimpleFSDirectoryFactory extends StandardDirectoryFactory {
     return new SimpleFSDirectory(new File(path));
   }
 
+  @Override
+  public boolean isAbsolute(String path) {
+    return new File(path).isAbsolute();
+  }
 }

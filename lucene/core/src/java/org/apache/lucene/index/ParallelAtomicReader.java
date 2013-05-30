@@ -47,7 +47,7 @@ import org.apache.lucene.util.Bits;
  * same order to the other indexes. <em>Failure to do so will result in
  * undefined behavior</em>.
  */
-public final class ParallelAtomicReader extends AtomicReader {
+public class ParallelAtomicReader extends AtomicReader {
   private final FieldInfos fieldInfos;
   private final ParallelFields fields = new ParallelFields();
   private final AtomicReader[] parallelReaders, storedFieldsReaders;
@@ -211,12 +211,6 @@ public final class ParallelAtomicReader extends AtomicReader {
   public int maxDoc() {
     // Don't call ensureOpen() here (it could affect performance)
     return maxDoc;
-  }
-  
-  @Override
-  public boolean hasDeletions() {
-    ensureOpen();
-    return hasDeletions;
   }
   
   @Override

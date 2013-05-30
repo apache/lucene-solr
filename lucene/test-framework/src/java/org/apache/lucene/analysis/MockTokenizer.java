@@ -100,12 +100,21 @@ public class MockTokenizer extends Tokenizer {
   public MockTokenizer(Reader input, CharacterRunAutomaton runAutomaton, boolean lowerCase) {
     this(input, runAutomaton, lowerCase, DEFAULT_MAX_TOKEN_LENGTH);
   }
-  
   /** Calls {@link #MockTokenizer(Reader, CharacterRunAutomaton, boolean) MockTokenizer(Reader, WHITESPACE, true)} */
   public MockTokenizer(Reader input) {
     this(input, WHITESPACE, true);
   }
-  
+
+  public MockTokenizer(AttributeFactory factory, Reader input, CharacterRunAutomaton runAutomaton, boolean lowerCase) {
+    this(factory, input, runAutomaton, lowerCase, DEFAULT_MAX_TOKEN_LENGTH);
+  }
+
+  /** Calls {@link #MockTokenizer(org.apache.lucene.util.AttributeSource.AttributeFactory,Reader,CharacterRunAutomaton,boolean)
+   *                MockTokenizer(AttributeFactory, Reader, WHITESPACE, true)} */
+  public MockTokenizer(AttributeFactory factory, Reader input) {
+    this(input, WHITESPACE, true);
+  }
+
   @Override
   public final boolean incrementToken() throws IOException {
     assert !enableChecks || (streamState == State.RESET || streamState == State.INCREMENT) 

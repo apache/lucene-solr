@@ -21,19 +21,17 @@ import java.util.Map;
 
 import org.apache.lucene.analysis.TokenStream;
 import org.apache.lucene.analysis.phonetic.DoubleMetaphoneFilter;
-import org.apache.lucene.analysis.util.AbstractAnalysisFactory; // javadocs
 import org.apache.lucene.analysis.util.TokenFilterFactory;
 
 /**
  * Factory for {@link DoubleMetaphoneFilter}.
- * <pre class="prettyprint" >
+ * <pre class="prettyprint">
  * &lt;fieldType name="text_dblmtphn" class="solr.TextField" positionIncrementGap="100"&gt;
  *   &lt;analyzer&gt;
  *     &lt;tokenizer class="solr.WhitespaceTokenizerFactory"/&gt;
  *     &lt;filter class="solr.DoubleMetaphoneFilterFactory" inject="true" maxCodeLength="4"/&gt;
  *   &lt;/analyzer&gt;
  * &lt;/fieldType&gt;</pre>
- *
  */
 public class DoubleMetaphoneFilterFactory extends TokenFilterFactory
 {
@@ -44,20 +42,16 @@ public class DoubleMetaphoneFilterFactory extends TokenFilterFactory
   /** default maxCodeLength if not specified */
   public static final int DEFAULT_MAX_CODE_LENGTH = 4;
 
-  private boolean inject = true;
-  private int maxCodeLength = DEFAULT_MAX_CODE_LENGTH;
+  private final boolean inject;
+  private final int maxCodeLength;
 
-  /** Sole constructor. See {@link AbstractAnalysisFactory} for initialization lifecycle. */
-  public DoubleMetaphoneFilterFactory() {}
-
-  @Override
-  public void init(Map<String, String> args) {
-    super.init(args);
-
-    inject = getBoolean(INJECT, true);
-
-    if (args.get(MAX_CODE_LENGTH) != null) {
-      maxCodeLength = Integer.parseInt(args.get(MAX_CODE_LENGTH));
+  /** Creates a new DoubleMetaphoneFilterFactory */
+  public DoubleMetaphoneFilterFactory(Map<String,String> args) {
+    super(args);
+    inject = getBoolean(args, INJECT, true);
+    maxCodeLength = getInt(args, MAX_CODE_LENGTH, DEFAULT_MAX_CODE_LENGTH);
+    if (!args.isEmpty()) {
+      throw new IllegalArgumentException("Unknown parameters: " + args);
     }
   }
 

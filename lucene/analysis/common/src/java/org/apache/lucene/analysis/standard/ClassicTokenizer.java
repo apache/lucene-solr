@@ -104,14 +104,6 @@ public final class ClassicTokenizer extends Tokenizer {
   }
 
   /**
-   * Creates a new ClassicTokenizer with a given {@link AttributeSource}. 
-   */
-  public ClassicTokenizer(Version matchVersion, AttributeSource source, Reader input) {
-    super(source, input);
-    init(matchVersion);
-  }
-
-  /**
    * Creates a new ClassicTokenizer with a given {@link org.apache.lucene.util.AttributeSource.AttributeFactory} 
    */
   public ClassicTokenizer(Version matchVersion, AttributeFactory factory, Reader input) {

@@ -162,6 +162,10 @@ public class ScoredDocIdsUtils {
                 return docids[next];
               }
 
+              @Override
+              public long cost() {
+                return size;
+              }
             };
           }
         };
@@ -298,6 +302,10 @@ public class ScoredDocIdsUtils {
               return ++next < maxDoc ? next : NO_MORE_DOCS;
             }
 
+            @Override
+            public long cost() {
+              return maxDoc;
+            }
           };
         }
       };
@@ -394,6 +402,10 @@ public class ScoredDocIdsUtils {
               return next < maxDoc ? next : NO_MORE_DOCS;
             }
 
+            @Override
+            public long cost() {
+              return maxDoc;
+            }
           };
         }
       };

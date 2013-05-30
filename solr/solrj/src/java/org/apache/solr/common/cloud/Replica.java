@@ -17,7 +17,7 @@ package org.apache.solr.common.cloud;
  * limitations under the License.
  */
 
-import org.apache.noggit.JSONUtil;
+import org.noggit.JSONUtil;
 
 import java.util.Map;
 

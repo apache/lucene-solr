@@ -22,6 +22,7 @@ import org.apache.lucene.analysis.TokenStream;
 import org.apache.lucene.analysis.core.WhitespaceAnalyzer;
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.handler.component.HighlightComponent;
+import org.apache.solr.request.LocalSolrQueryRequest;
 import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.util.*;
 import org.apache.solr.common.params.HighlightParams;
@@ -63,7 +64,7 @@ public class HighlighterTest extends SolrTestCaseJ4 {
   @Test
   public void testConfig()
   {
-    SolrHighlighter highlighter = HighlightComponent.getHighlighter(h.getCore());
+    DefaultSolrHighlighter highlighter = (DefaultSolrHighlighter) HighlightComponent.getHighlighter(h.getCore());
 
     // Make sure we loaded the one formatter
     SolrFormatter fmt1 = highlighter.formatters.get( null );
@@ -848,5 +849,176 @@ public class HighlighterTest extends SolrTestCaseJ4 {
         req("q", "title:Apache", "hl", "true", "hl.fl", "title", "hl.q", "{!v=$qq}", "qq", "title:Foundation"),
         "//lst[@name='highlighting']/lst[@name='1']" +
         "/arr[@name='title']/str='Apache Software <em>Foundation</em>'");
+  }
+
+  @Test
+  public void testMaxMvParams() {
+    assertU(adoc("title", "Apache Software Foundation", "id", "1000",
+        "lower", "gap1 target",
+        "lower", "gap2 target",
+        "lower", "gap3 nothing",
+        "lower", "gap4 nothing",
+        "lower", "gap5 target",
+        "lower", "gap6 target",
+        "lower", "gap7 nothing",
+        "lower", "gap8 nothing",
+        "lower", "gap9 target",
+        "lower", "gap10 target" ));
+
+    assertU(commit());
+
+    // First insure we can count all six
+    assertQ("Counting all MV pairs failed",
+        req(
+            "q", "id:1000",
+            HighlightParams.HIGHLIGHT, "true",
+            HighlightParams.FIELDS, "lower",
+            HighlightParams.Q, "target",
+            HighlightParams.SNIPPETS, "100"
+        ),
+        "//lst[@name='highlighting']/lst[@name='1000']/arr[@name='lower' and count(*)=6]"
+    );
+
+    // NOTE: These tests seem repeated, but we're testing for off-by-one errors
+    // Now we should see exactly 2 by limiting the number of values searched to 4
+    assertQ("Off by one by going too far",
+        req(
+            "q", "id:1000",
+            HighlightParams.HIGHLIGHT, "true",
+            HighlightParams.FIELDS, "lower",
+            HighlightParams.Q, "target",
+            HighlightParams.SNIPPETS, "100",
+            HighlightParams.MAX_MULTIVALUED_TO_EXAMINE, "4"
+        ),
+        "//lst[@name='highlighting']/lst[@name='1000']/arr[@name='lower' and count(*)=2]"
+    );
+
+
+    // Does 0 work?
+    assertQ("Off by one by going too far",
+        req(
+            "q", "id:1000",
+            HighlightParams.HIGHLIGHT, "true",
+            HighlightParams.FIELDS, "lower",
+            HighlightParams.Q, "target",
+            HighlightParams.SNIPPETS, "100",
+            HighlightParams.MAX_MULTIVALUED_TO_EXAMINE, "0"
+        ),
+        "//lst[@name='highlighting']/lst[@name='1000' and count(child::*) = 0]"
+    );
+
+
+    // Now we should see exactly 2 by limiting the number of values searched to 2
+    assertQ("Off by one by not going far enough",
+        req(
+            "q", "id:1000",
+            HighlightParams.HIGHLIGHT, "true",
+            HighlightParams.FIELDS, "lower",
+            HighlightParams.Q, "target",
+            HighlightParams.SNIPPETS, "100",
+            HighlightParams.MAX_MULTIVALUED_TO_EXAMINE, "2"
+        ),
+        "//lst[@name='highlighting']/lst[@name='1000']/arr[@name='lower' and count(*)=2]"
+    );
+
+
+    // Now we should see exactly 1 by limiting the number of values searched to 1
+    assertQ("Not counting exactly 1",
+        req(
+            "q", "id:1000",
+            HighlightParams.HIGHLIGHT, "true",
+            HighlightParams.FIELDS, "lower",
+            HighlightParams.Q, "target",
+            HighlightParams.SNIPPETS, "100",
+            HighlightParams.MAX_MULTIVALUED_TO_EXAMINE, "1"
+        ),
+        "//lst[@name='highlighting']/lst[@name='1000']/arr[@name='lower' and count(*)=1]"
+    );
+
+
+    // Now we should see exactly 4 by limiting the number of values found to 4
+    assertQ("Matching 4 should exactly match 4",
+        req(
+            "q", "id:1000",
+            HighlightParams.HIGHLIGHT, "true",
+            HighlightParams.FIELDS, "lower",
+            HighlightParams.Q, "target",
+            HighlightParams.SNIPPETS, "100",
+            HighlightParams.MAX_MULTIVALUED_TO_MATCH, "4"
+        ),
+        "//lst[@name='highlighting']/lst[@name='1000']/arr[@name='lower' and count(*)=4]"
+    );
+
+
+    // Now we should see exactly 2 by limiting the number of values found to 2
+    assertQ("Matching 6 should exactly search them all",
+        req(
+            "q", "id:1000",
+            HighlightParams.HIGHLIGHT, "true",
+            HighlightParams.FIELDS, "lower",
+            HighlightParams.Q, "target",
+            HighlightParams.SNIPPETS, "100",
+            HighlightParams.MAX_MULTIVALUED_TO_MATCH, "6"
+        ),
+        "//lst[@name='highlighting']/lst[@name='1000']/arr[@name='lower' and count(*)=6]"
+    );
+
+
+    // Now we should see exactly 1 by limiting the number of values found to 1
+    assertQ("Matching 6 should exactly match them all",
+        req(
+            "q", "id:1000",
+            HighlightParams.HIGHLIGHT, "true",
+            HighlightParams.FIELDS, "lower",
+            HighlightParams.Q, "target",
+            HighlightParams.SNIPPETS, "100",
+            HighlightParams.MAX_MULTIVALUED_TO_MATCH, "1"
+        ),
+        "//lst[@name='highlighting']/lst[@name='1000']/arr[@name='lower' and count(*)=1]"
+    );
+
+    // Now we should see exactly 0 by limiting the number of values found to 0
+    assertQ("Matching 6 should exactly match them all",
+        req(
+            "q", "id:1000",
+            HighlightParams.HIGHLIGHT, "true",
+            HighlightParams.FIELDS, "lower",
+            HighlightParams.Q, "target",
+            HighlightParams.SNIPPETS, "100",
+            HighlightParams.MAX_MULTIVALUED_TO_MATCH, "0"
+        ),
+        "//lst[@name='highlighting']/lst[@name='1000' and count(child::*) = 0]"
+    );
+
+
+
+    // Should bail at the first parameter matched.
+    assertQ("Matching 6 should exactly match them all",
+        req(
+            "q", "id:1000",
+            HighlightParams.HIGHLIGHT, "true",
+            HighlightParams.FIELDS, "lower",
+            HighlightParams.Q, "target",
+            HighlightParams.SNIPPETS, "100",
+            HighlightParams.MAX_MULTIVALUED_TO_MATCH, "2",
+            HighlightParams.MAX_MULTIVALUED_TO_EXAMINE, "10"
+        ),
+        "//lst[@name='highlighting']/lst[@name='1000']/arr[@name='lower' and count(*)=2]"
+    );
+
+    // Should bail at the first parameter matched.
+    assertQ("Matching 6 should exactly match them all",
+        req(
+            "q", "id:1000",
+            HighlightParams.HIGHLIGHT, "true",
+            HighlightParams.FIELDS, "lower",
+            HighlightParams.Q, "target",
+            HighlightParams.SNIPPETS, "100",
+            HighlightParams.MAX_MULTIVALUED_TO_MATCH, "10",
+            HighlightParams.MAX_MULTIVALUED_TO_EXAMINE, "2"
+        ),
+        "//lst[@name='highlighting']/lst[@name='1000']/arr[@name='lower' and count(*)=2]"
+    );
+
   }
 }

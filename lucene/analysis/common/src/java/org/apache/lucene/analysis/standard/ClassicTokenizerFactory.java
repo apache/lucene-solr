@@ -17,41 +17,37 @@ package org.apache.lucene.analysis.standard;
  * limitations under the License.
  */
 
-import org.apache.lucene.analysis.Tokenizer;
-import org.apache.lucene.analysis.standard.ClassicTokenizer;
-import org.apache.lucene.analysis.standard.StandardAnalyzer;
 import org.apache.lucene.analysis.util.TokenizerFactory;
+import org.apache.lucene.util.AttributeSource.AttributeFactory;
 
 import java.io.Reader;
 import java.util.Map;
 
 /**
  * Factory for {@link ClassicTokenizer}.
- * <pre class="prettyprint" >
+ * <pre class="prettyprint">
  * &lt;fieldType name="text_clssc" class="solr.TextField" positionIncrementGap="100"&gt;
  *   &lt;analyzer&gt;
  *     &lt;tokenizer class="solr.ClassicTokenizerFactory" maxTokenLength="120"/&gt;
  *   &lt;/analyzer&gt;
  * &lt;/fieldType&gt;</pre>
- *
- *
  */
-
 public class ClassicTokenizerFactory extends TokenizerFactory {
+  private final int maxTokenLength;
 
-  private int maxTokenLength;
-
-  @Override
-  public void init(Map<String,String> args) {
-    super.init(args);
+  /** Creates a new ClassicTokenizerFactory */
+  public ClassicTokenizerFactory(Map<String,String> args) {
+    super(args);
     assureMatchVersion();
-    maxTokenLength = getInt("maxTokenLength", 
-                            StandardAnalyzer.DEFAULT_MAX_TOKEN_LENGTH);
+    maxTokenLength = getInt(args, "maxTokenLength", StandardAnalyzer.DEFAULT_MAX_TOKEN_LENGTH);
+    if (!args.isEmpty()) {
+      throw new IllegalArgumentException("Unknown parameters: " + args);
+    }
   }
 
   @Override
-  public Tokenizer create(Reader input) {
-    ClassicTokenizer tokenizer = new ClassicTokenizer(luceneMatchVersion, input); 
+  public ClassicTokenizer create(AttributeFactory factory, Reader input) {
+    ClassicTokenizer tokenizer = new ClassicTokenizer(luceneMatchVersion, factory, input); 
     tokenizer.setMaxTokenLength(maxTokenLength);
     return tokenizer;
   }

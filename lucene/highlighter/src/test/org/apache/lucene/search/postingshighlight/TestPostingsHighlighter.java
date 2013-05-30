@@ -17,6 +17,10 @@ package org.apache.lucene.search.postingshighlight;
  * limitations under the License.
  */
 
+import java.io.BufferedReader;
+import java.io.IOException;
+import java.io.InputStreamReader;
+import java.text.BreakIterator;
 import java.util.Map;
 
 import org.apache.lucene.analysis.Analyzer;
@@ -31,12 +35,14 @@ import org.apache.lucene.index.FieldInfo.IndexOptions;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.IndexWriterConfig;
 import org.apache.lucene.index.RandomIndexWriter;
+import org.apache.lucene.index.StoredDocument;
 import org.apache.lucene.index.Term;
 import org.apache.lucene.search.BooleanClause;
 import org.apache.lucene.search.BooleanQuery;
 import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.search.PhraseQuery;
 import org.apache.lucene.search.Query;
+import org.apache.lucene.search.ScoreDoc;
 import org.apache.lucene.search.Sort;
 import org.apache.lucene.search.TermQuery;
 import org.apache.lucene.search.TopDocs;
@@ -337,6 +343,545 @@ public class TestPostingsHighlighter extends LuceneTestCase {
     String snippets[] = highlighter.highlight("body", query, searcher, topDocs, 2);
     assertEquals(1, snippets.length);
     assertFalse(snippets[0].contains("<b>Curious</b>Curious"));
+    ir.close();
+    dir.close();
+  }
+
+  public void testCambridgeMA() throws Exception {
+    BufferedReader r = new BufferedReader(new InputStreamReader(
+                     this.getClass().getResourceAsStream("CambridgeMA.utf8"), "UTF-8"));
+    String text = r.readLine();
+    r.close();
+    Directory dir = newDirectory();
+    Analyzer analyzer = new MockAnalyzer(random(), MockTokenizer.SIMPLE, true);
+    RandomIndexWriter iw = new RandomIndexWriter(random(), dir, analyzer);
+    FieldType positionsType = new FieldType(TextField.TYPE_STORED);
+    positionsType.setIndexOptions(IndexOptions.DOCS_AND_FREQS_AND_POSITIONS_AND_OFFSETS);
+    Field body = new Field("body", text, positionsType);
+    Document document = new Document();
+    document.add(body);
+    iw.addDocument(document);
+    IndexReader ir = iw.getReader();
+    iw.close();
+    IndexSearcher searcher = newSearcher(ir);
+    BooleanQuery query = new BooleanQuery();
+    query.add(new TermQuery(new Term("body", "porter")), BooleanClause.Occur.SHOULD);
+    query.add(new TermQuery(new Term("body", "square")), BooleanClause.Occur.SHOULD);
+    query.add(new TermQuery(new Term("body", "massachusetts")), BooleanClause.Occur.SHOULD);
+    TopDocs topDocs = searcher.search(query, 10);
+    assertEquals(1, topDocs.totalHits);
+    PostingsHighlighter highlighter = new PostingsHighlighter(Integer.MAX_VALUE-1);
+    String snippets[] = highlighter.highlight("body", query, searcher, topDocs, 2);
+    assertEquals(1, snippets.length);
+    assertTrue(snippets[0].contains("<b>Square</b>"));
+    assertTrue(snippets[0].contains("<b>Porter</b>"));
+    ir.close();
+    dir.close();
+  }
+  
+  public void testPassageRanking() throws Exception {
+    Directory dir = newDirectory();
+    IndexWriterConfig iwc = newIndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer(random(), MockTokenizer.SIMPLE, true));
+    iwc.setMergePolicy(newLogMergePolicy());
+    RandomIndexWriter iw = new RandomIndexWriter(random(), dir, iwc);
+    
+    FieldType offsetsType = new FieldType(TextField.TYPE_STORED);
+    offsetsType.setIndexOptions(IndexOptions.DOCS_AND_FREQS_AND_POSITIONS_AND_OFFSETS);
+    Field body = new Field("body", "", offsetsType);
+    Document doc = new Document();
+    doc.add(body);
+    
+    body.setStringValue("This is a test.  Just highlighting from postings. This is also a much sillier test.  Feel free to test test test test test test test.");
+    iw.addDocument(doc);
+    
+    IndexReader ir = iw.getReader();
+    iw.close();
+    
+    IndexSearcher searcher = newSearcher(ir);
+    PostingsHighlighter highlighter = new PostingsHighlighter();
+    Query query = new TermQuery(new Term("body", "test"));
+    TopDocs topDocs = searcher.search(query, null, 10, Sort.INDEXORDER);
+    assertEquals(1, topDocs.totalHits);
+    String snippets[] = highlighter.highlight("body", query, searcher, topDocs, 2);
+    assertEquals(1, snippets.length);
+    assertEquals("This is a <b>test</b>.  ... Feel free to <b>test</b> <b>test</b> <b>test</b> <b>test</b> <b>test</b> <b>test</b> <b>test</b>.", snippets[0]);
+    
+    ir.close();
+    dir.close();
+  }
+
+  public void testBooleanMustNot() throws Exception {
+    Directory dir = newDirectory();
+    Analyzer analyzer = new MockAnalyzer(random(), MockTokenizer.SIMPLE, true);
+    RandomIndexWriter iw = new RandomIndexWriter(random(), dir, analyzer);
+    FieldType positionsType = new FieldType(TextField.TYPE_STORED);
+    positionsType.setIndexOptions(IndexOptions.DOCS_AND_FREQS_AND_POSITIONS_AND_OFFSETS);
+    Field body = new Field("body", "This sentence has both terms.  This sentence has only terms.", positionsType);
+    Document document = new Document();
+    document.add(body);
+    iw.addDocument(document);
+    IndexReader ir = iw.getReader();
+    iw.close();
+    IndexSearcher searcher = newSearcher(ir);
+    BooleanQuery query = new BooleanQuery();
+    query.add(new TermQuery(new Term("body", "terms")), BooleanClause.Occur.SHOULD);
+    BooleanQuery query2 = new BooleanQuery();
+    query.add(query2, BooleanClause.Occur.SHOULD);
+    query2.add(new TermQuery(new Term("body", "both")), BooleanClause.Occur.MUST_NOT);
+    TopDocs topDocs = searcher.search(query, 10);
+    assertEquals(1, topDocs.totalHits);
+    PostingsHighlighter highlighter = new PostingsHighlighter(Integer.MAX_VALUE-1);
+    String snippets[] = highlighter.highlight("body", query, searcher, topDocs, 2);
+    assertEquals(1, snippets.length);
+    assertFalse(snippets[0].contains("<b>both</b>"));
+    ir.close();
+    dir.close();
+  }
+
+  public void testHighlightAllText() throws Exception {
+    Directory dir = newDirectory();
+    IndexWriterConfig iwc = newIndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer(random(), MockTokenizer.SIMPLE, true));
+    iwc.setMergePolicy(newLogMergePolicy());
+    RandomIndexWriter iw = new RandomIndexWriter(random(), dir, iwc);
+    
+    FieldType offsetsType = new FieldType(TextField.TYPE_STORED);
+    offsetsType.setIndexOptions(IndexOptions.DOCS_AND_FREQS_AND_POSITIONS_AND_OFFSETS);
+    Field body = new Field("body", "", offsetsType);
+    Document doc = new Document();
+    doc.add(body);
+    
+    body.setStringValue("This is a test.  Just highlighting from postings. This is also a much sillier test.  Feel free to test test test test test test test.");
+    iw.addDocument(doc);
+    
+    IndexReader ir = iw.getReader();
+    iw.close();
+    
+    IndexSearcher searcher = newSearcher(ir);
+    PostingsHighlighter highlighter = new PostingsHighlighter(10000) {
+      @Override
+      protected BreakIterator getBreakIterator(String field) {
+        return new WholeBreakIterator();
+      }
+    };
+    Query query = new TermQuery(new Term("body", "test"));
+    TopDocs topDocs = searcher.search(query, null, 10, Sort.INDEXORDER);
+    assertEquals(1, topDocs.totalHits);
+    String snippets[] = highlighter.highlight("body", query, searcher, topDocs, 2);
+    assertEquals(1, snippets.length);
+    assertEquals("This is a <b>test</b>.  Just highlighting from postings. This is also a much sillier <b>test</b>.  Feel free to <b>test</b> <b>test</b> <b>test</b> <b>test</b> <b>test</b> <b>test</b> <b>test</b>.", snippets[0]);
+    
+    ir.close();
+    dir.close();
+  }
+
+  public void testSpecificDocIDs() throws Exception {
+    Directory dir = newDirectory();
+    IndexWriterConfig iwc = newIndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer(random()));
+    iwc.setMergePolicy(newLogMergePolicy());
+    RandomIndexWriter iw = new RandomIndexWriter(random(), dir, iwc);
+    
+    FieldType offsetsType = new FieldType(TextField.TYPE_STORED);
+    offsetsType.setIndexOptions(IndexOptions.DOCS_AND_FREQS_AND_POSITIONS_AND_OFFSETS);
+    Field body = new Field("body", "", offsetsType);
+    Document doc = new Document();
+    doc.add(body);
+    
+    body.setStringValue("This is a test. Just a test highlighting from postings. Feel free to ignore.");
+    iw.addDocument(doc);
+    body.setStringValue("Highlighting the first term. Hope it works.");
+    iw.addDocument(doc);
+    
+    IndexReader ir = iw.getReader();
+    iw.close();
+    
+    IndexSearcher searcher = newSearcher(ir);
+    PostingsHighlighter highlighter = new PostingsHighlighter();
+    Query query = new TermQuery(new Term("body", "highlighting"));
+    TopDocs topDocs = searcher.search(query, null, 10, Sort.INDEXORDER);
+    assertEquals(2, topDocs.totalHits);
+    ScoreDoc[] hits = topDocs.scoreDocs;
+    int[] docIDs = new int[2];
+    docIDs[0] = hits[0].doc;
+    docIDs[1] = hits[1].doc;
+    String snippets[] = highlighter.highlightFields(new String[] {"body"}, query, searcher, docIDs, new int[] { 1 }).get("body");
+    assertEquals(2, snippets.length);
+    assertEquals("Just a test <b>highlighting</b> from postings. ", snippets[0]);
+    assertEquals("<b>Highlighting</b> the first term. ", snippets[1]);
+    
+    ir.close();
+    dir.close();
+  }
+
+  public void testCustomFieldValueSource() throws Exception {
+    Directory dir = newDirectory();
+    IndexWriterConfig iwc = newIndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer(random(), MockTokenizer.SIMPLE, true));
+    iwc.setMergePolicy(newLogMergePolicy());
+    RandomIndexWriter iw = new RandomIndexWriter(random(), dir, iwc);
+    
+    Document doc = new Document();
+
+    FieldType offsetsType = new FieldType(TextField.TYPE_NOT_STORED);
+    offsetsType.setIndexOptions(IndexOptions.DOCS_AND_FREQS_AND_POSITIONS_AND_OFFSETS);
+    final String text = "This is a test.  Just highlighting from postings. This is also a much sillier test.  Feel free to test test test test test test test.";
+    Field body = new Field("body", text, offsetsType);
+    doc.add(body);
+    iw.addDocument(doc);
+    
+    IndexReader ir = iw.getReader();
+    iw.close();
+    
+    IndexSearcher searcher = newSearcher(ir);
+
+    PostingsHighlighter highlighter = new PostingsHighlighter(10000) {
+        @Override
+        protected String[][] loadFieldValues(IndexSearcher searcher, String[] fields, int[] docids, int maxLength) throws IOException {
+          assert fields.length == 1;
+          assert docids.length == 1;
+          String[][] contents = new String[1][1];
+          contents[0][0] = text;
+          return contents;
+        }
+
+        @Override
+        protected BreakIterator getBreakIterator(String field) {
+          return new WholeBreakIterator();
+        }
+      };
+
+    Query query = new TermQuery(new Term("body", "test"));
+    TopDocs topDocs = searcher.search(query, null, 10, Sort.INDEXORDER);
+    assertEquals(1, topDocs.totalHits);
+    String snippets[] = highlighter.highlight("body", query, searcher, topDocs, 2);
+    assertEquals(1, snippets.length);
+    assertEquals("This is a <b>test</b>.  Just highlighting from postings. This is also a much sillier <b>test</b>.  Feel free to <b>test</b> <b>test</b> <b>test</b> <b>test</b> <b>test</b> <b>test</b> <b>test</b>.", snippets[0]);
+    
+    ir.close();
+    dir.close();
+  }
+
+  /** Make sure highlighter returns first N sentences if
+   *  there were no hits. */
+  public void testEmptyHighlights() throws Exception {
+    Directory dir = newDirectory();
+    IndexWriterConfig iwc = newIndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer(random()));
+    iwc.setMergePolicy(newLogMergePolicy());
+    RandomIndexWriter iw = new RandomIndexWriter(random(), dir, iwc);
+    
+    FieldType offsetsType = new FieldType(TextField.TYPE_STORED);
+    offsetsType.setIndexOptions(IndexOptions.DOCS_AND_FREQS_AND_POSITIONS_AND_OFFSETS);
+    Document doc = new Document();
+
+    Field body = new Field("body", "test this is.  another sentence this test has.  far away is that planet.", offsetsType);
+    doc.add(body);
+    iw.addDocument(doc);
+    
+    IndexReader ir = iw.getReader();
+    iw.close();
+    
+    IndexSearcher searcher = newSearcher(ir);
+    PostingsHighlighter highlighter = new PostingsHighlighter();
+    Query query = new TermQuery(new Term("body", "highlighting"));
+    int[] docIDs = new int[] {0};
+    String snippets[] = highlighter.highlightFields(new String[] {"body"}, query, searcher, docIDs, new int[] { 2 }).get("body");
+    assertEquals(1, snippets.length);
+    assertEquals("test this is.  another sentence this test has.  ", snippets[0]);
+
+    ir.close();
+    dir.close();
+  }
+
+  /** Make sure highlighter we can customize how emtpy
+   *  highlight is returned. */
+  public void testCustomEmptyHighlights() throws Exception {
+    Directory dir = newDirectory();
+    IndexWriterConfig iwc = newIndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer(random()));
+    iwc.setMergePolicy(newLogMergePolicy());
+    RandomIndexWriter iw = new RandomIndexWriter(random(), dir, iwc);
+    
+    FieldType offsetsType = new FieldType(TextField.TYPE_STORED);
+    offsetsType.setIndexOptions(IndexOptions.DOCS_AND_FREQS_AND_POSITIONS_AND_OFFSETS);
+    Document doc = new Document();
+
+    Field body = new Field("body", "test this is.  another sentence this test has.  far away is that planet.", offsetsType);
+    doc.add(body);
+    iw.addDocument(doc);
+    
+    IndexReader ir = iw.getReader();
+    iw.close();
+    
+    IndexSearcher searcher = newSearcher(ir);
+    PostingsHighlighter highlighter = new PostingsHighlighter() {
+        @Override
+        public Passage[] getEmptyHighlight(String fieldName, BreakIterator bi, int maxPassages) {
+          return new Passage[0];
+        }
+      };
+    Query query = new TermQuery(new Term("body", "highlighting"));
+    int[] docIDs = new int[] {0};
+    String snippets[] = highlighter.highlightFields(new String[] {"body"}, query, searcher, docIDs, new int[] { 2 }).get("body");
+    assertEquals(1, snippets.length);
+    assertNull(snippets[0]);
+
+    ir.close();
+    dir.close();
+  }
+
+  /** Make sure highlighter returns whole text when there
+   *  are no hits and BreakIterator is null. */
+  public void testEmptyHighlightsWhole() throws Exception {
+    Directory dir = newDirectory();
+    IndexWriterConfig iwc = newIndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer(random()));
+    iwc.setMergePolicy(newLogMergePolicy());
+    RandomIndexWriter iw = new RandomIndexWriter(random(), dir, iwc);
+    
+    FieldType offsetsType = new FieldType(TextField.TYPE_STORED);
+    offsetsType.setIndexOptions(IndexOptions.DOCS_AND_FREQS_AND_POSITIONS_AND_OFFSETS);
+    Document doc = new Document();
+
+    Field body = new Field("body", "test this is.  another sentence this test has.  far away is that planet.", offsetsType);
+    doc.add(body);
+    iw.addDocument(doc);
+    
+    IndexReader ir = iw.getReader();
+    iw.close();
+    
+    IndexSearcher searcher = newSearcher(ir);
+    PostingsHighlighter highlighter = new PostingsHighlighter(10000) {
+      @Override
+      protected BreakIterator getBreakIterator(String field) {
+        return new WholeBreakIterator();
+      }
+    };
+    Query query = new TermQuery(new Term("body", "highlighting"));
+    int[] docIDs = new int[] {0};
+    String snippets[] = highlighter.highlightFields(new String[] {"body"}, query, searcher, docIDs, new int[] { 2 }).get("body");
+    assertEquals(1, snippets.length);
+    assertEquals("test this is.  another sentence this test has.  far away is that planet.", snippets[0]);
+
+    ir.close();
+    dir.close();
+  }
+
+  /** Make sure highlighter is OK with entirely missing
+   *  field. */
+  public void testFieldIsMissing() throws Exception {
+    Directory dir = newDirectory();
+    IndexWriterConfig iwc = newIndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer(random()));
+    iwc.setMergePolicy(newLogMergePolicy());
+    RandomIndexWriter iw = new RandomIndexWriter(random(), dir, iwc);
+    
+    FieldType offsetsType = new FieldType(TextField.TYPE_STORED);
+    offsetsType.setIndexOptions(IndexOptions.DOCS_AND_FREQS_AND_POSITIONS_AND_OFFSETS);
+    Document doc = new Document();
+
+    Field body = new Field("body", "test this is.  another sentence this test has.  far away is that planet.", offsetsType);
+    doc.add(body);
+    iw.addDocument(doc);
+    
+    IndexReader ir = iw.getReader();
+    iw.close();
+    
+    IndexSearcher searcher = newSearcher(ir);
+    PostingsHighlighter highlighter = new PostingsHighlighter();
+    Query query = new TermQuery(new Term("bogus", "highlighting"));
+    int[] docIDs = new int[] {0};
+    String snippets[] = highlighter.highlightFields(new String[] {"bogus"}, query, searcher, docIDs, new int[] { 2 }).get("bogus");
+    assertEquals(1, snippets.length);
+    assertNull(snippets[0]);
+
+    ir.close();
+    dir.close();
+  }
+
+  public void testFieldIsJustSpace() throws Exception {
+    Directory dir = newDirectory();
+    IndexWriterConfig iwc = newIndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer(random()));
+    iwc.setMergePolicy(newLogMergePolicy());
+    RandomIndexWriter iw = new RandomIndexWriter(random(), dir, iwc);
+    
+    FieldType offsetsType = new FieldType(TextField.TYPE_STORED);
+    offsetsType.setIndexOptions(IndexOptions.DOCS_AND_FREQS_AND_POSITIONS_AND_OFFSETS);
+
+    Document doc = new Document();
+    doc.add(new Field("body", "   ", offsetsType));
+    doc.add(new Field("id", "id", offsetsType));
+    iw.addDocument(doc);
+
+    doc = new Document();
+    doc.add(new Field("body", "something", offsetsType));
+    iw.addDocument(doc);
+    
+    IndexReader ir = iw.getReader();
+    iw.close();
+    
+    IndexSearcher searcher = newSearcher(ir);
+    PostingsHighlighter highlighter = new PostingsHighlighter();
+    int docID = searcher.search(new TermQuery(new Term("id", "id")), 1).scoreDocs[0].doc;
+
+    Query query = new TermQuery(new Term("body", "highlighting"));
+    int[] docIDs = new int[1];
+    docIDs[0] = docID;
+    String snippets[] = highlighter.highlightFields(new String[] {"body"}, query, searcher, docIDs, new int[] { 2 }).get("body");
+    assertEquals(1, snippets.length);
+    assertEquals("   ", snippets[0]);
+
+    ir.close();
+    dir.close();
+  }
+
+  public void testFieldIsEmptyString() throws Exception {
+    Directory dir = newDirectory();
+    IndexWriterConfig iwc = newIndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer(random()));
+    iwc.setMergePolicy(newLogMergePolicy());
+    RandomIndexWriter iw = new RandomIndexWriter(random(), dir, iwc);
+    
+    FieldType offsetsType = new FieldType(TextField.TYPE_STORED);
+    offsetsType.setIndexOptions(IndexOptions.DOCS_AND_FREQS_AND_POSITIONS_AND_OFFSETS);
+
+    Document doc = new Document();
+    doc.add(new Field("body", "", offsetsType));
+    doc.add(new Field("id", "id", offsetsType));
+    iw.addDocument(doc);
+
+    doc = new Document();
+    doc.add(new Field("body", "something", offsetsType));
+    iw.addDocument(doc);
+    
+    IndexReader ir = iw.getReader();
+    iw.close();
+    
+    IndexSearcher searcher = newSearcher(ir);
+    PostingsHighlighter highlighter = new PostingsHighlighter();
+    int docID = searcher.search(new TermQuery(new Term("id", "id")), 1).scoreDocs[0].doc;
+
+    Query query = new TermQuery(new Term("body", "highlighting"));
+    int[] docIDs = new int[1];
+    docIDs[0] = docID;
+    String snippets[] = highlighter.highlightFields(new String[] {"body"}, query, searcher, docIDs, new int[] { 2 }).get("body");
+    assertEquals(1, snippets.length);
+    assertNull(snippets[0]);
+
+    ir.close();
+    dir.close();
+  }
+
+  public void testMultipleDocs() throws Exception {
+    Directory dir = newDirectory();
+    IndexWriterConfig iwc = newIndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer(random()));
+    iwc.setMergePolicy(newLogMergePolicy());
+    RandomIndexWriter iw = new RandomIndexWriter(random(), dir, iwc);
+    
+    FieldType offsetsType = new FieldType(TextField.TYPE_STORED);
+    offsetsType.setIndexOptions(IndexOptions.DOCS_AND_FREQS_AND_POSITIONS_AND_OFFSETS);
+
+    int numDocs = atLeast(100);
+    for(int i=0;i<numDocs;i++) {
+      Document doc = new Document();
+      String content = "the answer is " + i;
+      if ((i & 1) == 0) {
+        content += " some more terms";
+      }
+      doc.add(new Field("body", content, offsetsType));
+      doc.add(newStringField("id", ""+i, Field.Store.YES));
+      iw.addDocument(doc);
+
+      if (random().nextInt(10) == 2) {
+        iw.commit();
+      }
+    }
+
+    IndexReader ir = iw.getReader();
+    iw.close();
+    
+    IndexSearcher searcher = newSearcher(ir);
+    PostingsHighlighter highlighter = new PostingsHighlighter();
+    Query query = new TermQuery(new Term("body", "answer"));
+    TopDocs hits = searcher.search(query, numDocs);
+    assertEquals(numDocs, hits.totalHits);
+
+    String snippets[] = highlighter.highlight("body", query, searcher, hits);
+    assertEquals(numDocs, snippets.length);
+    for(int hit=0;hit<numDocs;hit++) {
+      StoredDocument doc = searcher.doc(hits.scoreDocs[hit].doc);
+      int id = Integer.parseInt(doc.get("id"));
+      String expected = "the <b>answer</b> is " + id;
+      if ((id  & 1) == 0) {
+        expected += " some more terms";
+      }
+      assertEquals(expected, snippets[hit]);
+    }
+
+    ir.close();
+    dir.close();
+  }
+  
+  public void testMultipleSnippetSizes() throws Exception {
+    Directory dir = newDirectory();
+    IndexWriterConfig iwc = newIndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer(random(), MockTokenizer.SIMPLE, true));
+    iwc.setMergePolicy(newLogMergePolicy());
+    RandomIndexWriter iw = new RandomIndexWriter(random(), dir, iwc);
+    
+    FieldType offsetsType = new FieldType(TextField.TYPE_STORED);
+    offsetsType.setIndexOptions(IndexOptions.DOCS_AND_FREQS_AND_POSITIONS_AND_OFFSETS);
+    Field body = new Field("body", "", offsetsType);
+    Field title = new Field("title", "", offsetsType);
+    Document doc = new Document();
+    doc.add(body);
+    doc.add(title);
+    
+    body.setStringValue("This is a test. Just a test highlighting from postings. Feel free to ignore.");
+    title.setStringValue("This is a test. Just a test highlighting from postings. Feel free to ignore.");
+    iw.addDocument(doc);
+    
+    IndexReader ir = iw.getReader();
+    iw.close();
+    
+    IndexSearcher searcher = newSearcher(ir);
+    PostingsHighlighter highlighter = new PostingsHighlighter();
+    BooleanQuery query = new BooleanQuery();
+    query.add(new TermQuery(new Term("body", "test")), BooleanClause.Occur.SHOULD);
+    query.add(new TermQuery(new Term("title", "test")), BooleanClause.Occur.SHOULD);
+    Map<String,String[]> snippets = highlighter.highlightFields(new String[] { "title", "body" }, query, searcher, new int[] { 0 }, new int[] { 1, 2 });
+    String titleHighlight = snippets.get("title")[0];
+    String bodyHighlight = snippets.get("body")[0];
+    assertEquals("This is a <b>test</b>. ", titleHighlight);
+    assertEquals("This is a <b>test</b>. Just a <b>test</b> highlighting from postings. ", bodyHighlight);
+    ir.close();
+    dir.close();
+  }
+  
+  public void testEncode() throws Exception {
+    Directory dir = newDirectory();
+    IndexWriterConfig iwc = newIndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer(random()));
+    iwc.setMergePolicy(newLogMergePolicy());
+    RandomIndexWriter iw = new RandomIndexWriter(random(), dir, iwc);
+    
+    FieldType offsetsType = new FieldType(TextField.TYPE_STORED);
+    offsetsType.setIndexOptions(IndexOptions.DOCS_AND_FREQS_AND_POSITIONS_AND_OFFSETS);
+    Field body = new Field("body", "", offsetsType);
+    Document doc = new Document();
+    doc.add(body);
+    
+    body.setStringValue("This is a test. Just a test highlighting from <i>postings</i>. Feel free to ignore.");
+    iw.addDocument(doc);
+    
+    IndexReader ir = iw.getReader();
+    iw.close();
+    
+    IndexSearcher searcher = newSearcher(ir);
+    PostingsHighlighter highlighter = new PostingsHighlighter() {
+      @Override
+      protected PassageFormatter getFormatter(String field) {
+        return new DefaultPassageFormatter("<b>", "</b>", "... ", true);
+      }
+    };
+    Query query = new TermQuery(new Term("body", "highlighting"));
+    TopDocs topDocs = searcher.search(query, null, 10, Sort.INDEXORDER);
+    assertEquals(1, topDocs.totalHits);
+    String snippets[] = highlighter.highlight("body", query, searcher, topDocs);
+    assertEquals(1, snippets.length);
+    assertEquals("Just&#32;a&#32;test&#32;<b>highlighting</b>&#32;from&#32;&lt;i&gt;postings&lt;&#x2F;i&gt;&#46;&#32;", snippets[0]);
+    
     ir.close();
     dir.close();
   }

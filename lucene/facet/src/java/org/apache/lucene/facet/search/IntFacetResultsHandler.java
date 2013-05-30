@@ -49,11 +49,13 @@ public final class IntFacetResultsHandler extends DepthOneFacetResultsHandler {
     int numResults = 0;
     while (ordinal != TaxonomyReader.INVALID_ORDINAL) {
       int value = values[ordinal];
-      if (value > top.value) {
-        top.value = value;
-        top.ordinal = ordinal;
-        top = pq.updateTop();
+      if (value > 0) {
         ++numResults;
+        if (value > top.value) {
+          top.value = value;
+          top.ordinal = ordinal;
+          top = pq.updateTop();
+        }
       }
       ordinal = siblings[ordinal];
     }
@@ -65,9 +67,8 @@ public final class IntFacetResultsHandler extends DepthOneFacetResultsHandler {
     while (ordinal != TaxonomyReader.INVALID_ORDINAL) {
       int value = values[ordinal];
       if (value > 0) {
-        FacetResultNode node = new FacetResultNode();
+        FacetResultNode node = new FacetResultNode(ordinal, value);
         node.label = taxonomyReader.getPath(ordinal);
-        node.value = value;
         nodes.add(node);
       }
       ordinal = siblings[ordinal];

@@ -66,9 +66,6 @@ import org.junit.BeforeClass;
 
 // TODO test when you reuse after skipping a term or two, eg the block reuse case
 
-// TODO hmm contract says .doc() can return NO_MORE_DOCS
-// before nextDoc too...?
-
 /* TODO
   - threads
   - assert doc=-1 before any nextDoc
@@ -275,11 +272,14 @@ public abstract class BasePostingsFormatTestCase extends LuceneTestCase {
     }
 
     @Override
-    public int advance(int target) {
-      while(nextDoc() < target) {
-      }
-      return docID;
+    public int advance(int target) throws IOException {
+      return slowAdvance(target);
     }
+    
+    @Override
+    public long cost() {
+      return docFreq;
+    } 
   }
   
   private static class FieldAndTerm {
@@ -696,7 +696,7 @@ public abstract class BasePostingsFormatTestCase extends LuceneTestCase {
 
     assertNotNull("null DocsEnum", docsEnum);
     int initialDocID = docsEnum.docID();
-    assertTrue("inital docID should be -1 or NO_MORE_DOCS: " + docsEnum, initialDocID == -1 || initialDocID == DocsEnum.NO_MORE_DOCS);
+    assertEquals("inital docID should be -1" + docsEnum, -1, initialDocID);
 
     if (VERBOSE) {
       if (prevDocsEnum == null) {

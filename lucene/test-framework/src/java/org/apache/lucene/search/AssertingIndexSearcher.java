@@ -17,20 +17,19 @@ package org.apache.lucene.search;
  * limitations under the License.
  */
 
+import java.io.IOException;
+import java.util.List;
 import java.util.Random;
 import java.util.concurrent.ExecutorService;
-import java.io.IOException;
 
 import org.apache.lucene.index.AtomicReaderContext;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.IndexReaderContext;
-import org.apache.lucene.util.Bits;
 import org.apache.lucene.util._TestUtil;
 
-/** 
+/**
  * Helper class that adds some extra checks to ensure correct
  * usage of {@code IndexSearcher} and {@code Weight}.
- * TODO: Extend this by more checks, that's just a start.
  */
 public class AssertingIndexSearcher extends IndexSearcher {
   final Random random;
@@ -58,16 +57,7 @@ public class AssertingIndexSearcher extends IndexSearcher {
   @Override
   public Weight createNormalizedWeight(Query query) throws IOException {
     final Weight w = super.createNormalizedWeight(query);
-    return new Weight() {
-      @Override
-      public Explanation explain(AtomicReaderContext context, int doc) throws IOException {
-        return w.explain(context, doc);
-      }
-
-      @Override
-      public Query getQuery() {
-        return w.getQuery();
-      }
+    return new AssertingWeight(random, w) {
 
       @Override
       public void normalize(float norm, float topLevelBoost) {
@@ -75,41 +65,37 @@ public class AssertingIndexSearcher extends IndexSearcher {
       }
 
       @Override
-      public Scorer scorer(AtomicReaderContext context, boolean scoreDocsInOrder,
-          boolean topScorer, Bits acceptDocs) throws IOException {
-        Scorer scorer = w.scorer(context, scoreDocsInOrder, topScorer, acceptDocs);
-        if (scorer != null) {
-          // check that scorer obeys disi contract for docID() before next()/advance
-          try {
-            int docid = scorer.docID();
-            assert docid == -1 || docid == DocIdSetIterator.NO_MORE_DOCS;
-          } catch (UnsupportedOperationException ignored) {
-            // from a top-level BS1
-            assert topScorer;
-          }
-        }
-        return scorer;
-      }
-
-      @Override
       public float getValueForNormalization() {
         throw new IllegalStateException("Weight already normalized.");
       }
 
-      @Override
-      public boolean scoresDocsOutOfOrder() {
-        // TODO: if this returns false, we should wrap
-        // Scorer with AssertingScorer that confirms docIDs
-        // are in order?
-        return w.scoresDocsOutOfOrder();
-      }
     };
   }
-  
+
+  @Override
+  public Query rewrite(Query original) throws IOException {
+    // TODO: use the more sophisticated QueryUtils.check sometimes!
+    QueryUtils.check(original);
+    Query rewritten = super.rewrite(original);
+    QueryUtils.check(rewritten);
+    return rewritten;
+  }
+
   @Override
   protected Query wrapFilter(Query query, Filter filter) {
     if (random.nextBoolean())
       return super.wrapFilter(query, filter);
     return (filter == null) ? query : new FilteredQuery(query, filter, _TestUtil.randomFilterStrategy(random));
   }
+
+  @Override
+  protected void search(List<AtomicReaderContext> leaves, Weight weight, Collector collector) throws IOException {
+    super.search(leaves, AssertingWeight.wrap(random, weight), collector);
+  }
+
+  @Override
+  public String toString() {
+    return "AssertingIndexSearcher(" + super.toString() + ")";
+  }
+
 }

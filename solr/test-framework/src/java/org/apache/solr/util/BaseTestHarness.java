@@ -178,7 +178,7 @@ abstract public class BaseTestHarness {
     return simpleTag("optimize", args);
   }
 
-  private static String simpleTag(String tag, String... args) {
+  public static String simpleTag(String tag, String... args) {
     try {
       StringWriter r = new StringWriter();
 

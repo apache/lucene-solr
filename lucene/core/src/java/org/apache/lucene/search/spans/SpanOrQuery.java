@@ -172,12 +172,14 @@ public class SpanOrQuery extends SpanQuery implements Cloneable {
 
     return new Spans() {
         private SpanQueue queue = null;
+        private long cost;
 
         private boolean initSpanQueue(int target) throws IOException {
           queue = new SpanQueue(clauses.size());
           Iterator<SpanQuery> i = clauses.iterator();
           while (i.hasNext()) {
             Spans spans = i.next().getSpans(context, acceptDocs, termContexts);
+            cost += spans.cost();
             if (   ((target == -1) && spans.next())
                 || ((target != -1) && spans.skipTo(target))) {
               queue.add(spans);
@@ -259,6 +261,11 @@ public class SpanOrQuery extends SpanQuery implements Cloneable {
              :(queue.size()>0?(doc()+":"+start()+"-"+end()):"END"));
         }
 
+      @Override
+      public long cost() {
+        return cost;
+      }
+      
       };
   }
 

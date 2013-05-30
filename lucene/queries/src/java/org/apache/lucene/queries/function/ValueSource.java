@@ -139,28 +139,12 @@ public abstract class ValueSource {
 
     @Override
     public int compare(int slot1, int slot2) {
-      final double v1 = values[slot1];
-      final double v2 = values[slot2];
-      if (v1 > v2) {
-        return 1;
-      } else if (v1 < v2) {
-        return -1;
-      } else {
-        return 0;
-      }
-
+      return Double.compare(values[slot1], values[slot2]);
     }
 
     @Override
     public int compareBottom(int doc) {
-      final double v2 = docVals.doubleVal(doc);
-      if (bottom > v2) {
-        return 1;
-      } else if (bottom < v2) {
-        return -1;
-      } else {
-        return 0;
-      }
+      return Double.compare(bottom, docVals.doubleVal(doc));
     }
 
     @Override
@@ -188,13 +172,7 @@ public abstract class ValueSource {
     public int compareDocToValue(int doc, Double valueObj) {
       final double value = valueObj;
       final double docValue = docVals.doubleVal(doc);
-      if (docValue < value) {
-        return -1;
-      } else if (docValue > value) {
-        return 1;
-      } else {
-        return 0;
-      }
+      return Double.compare(docValue, value);
     }
   }
 }

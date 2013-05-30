@@ -557,8 +557,8 @@ final public class BasicOperations {
     }
 
     public void sort() {
-      // mergesort seems to perform better on already sorted arrays:
-      if (count > 1) ArrayUtil.mergeSort(points, 0, count);
+      // Tim sort performs well on already sorted arrays:
+      if (count > 1) ArrayUtil.timSort(points, 0, count);
     }
 
     public void add(Transition t) {

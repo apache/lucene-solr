@@ -416,20 +416,22 @@ public final class MemoryPostingsFormat extends PostingsFormat {
     }
 
     @Override
-    public int advance(int target) {
+    public int advance(int target) throws IOException {
       // TODO: we could make more efficient version, but, it
       // should be rare that this will matter in practice
       // since usually apps will not store "big" fields in
       // this codec!
-      //System.out.println("advance start docID=" + docID + " target=" + target);
-      while(nextDoc() < target) {
-      }
-      return docID;
+      return slowAdvance(target);
     }
 
     @Override
     public int freq() {
       return freq;
+    }
+    
+    @Override
+    public long cost() {
+      return numDocs;
     }
   }
 
@@ -602,21 +604,22 @@ public final class MemoryPostingsFormat extends PostingsFormat {
     }
 
     @Override
-    public int advance(int target) {
+    public int advance(int target) throws IOException {
       // TODO: we could make more efficient version, but, it
       // should be rare that this will matter in practice
       // since usually apps will not store "big" fields in
       // this codec!
-      //System.out.println("advance target=" + target);
-      while(nextDoc() < target) {
-      }
-      //System.out.println("  return " + docID);
-      return docID;
+      return slowAdvance(target);
     }
 
     @Override
     public int freq() {
       return freq;
+    }
+    
+    @Override
+    public long cost() {
+      return numDocs;
     }
   }
 

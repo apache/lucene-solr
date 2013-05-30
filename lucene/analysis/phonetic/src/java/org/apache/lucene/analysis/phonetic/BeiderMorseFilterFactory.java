@@ -17,22 +17,19 @@ package org.apache.lucene.analysis.phonetic;
  * limitations under the License.
  */
 
-import java.util.Arrays;
-import java.util.HashSet;
 import java.util.Map;
+import java.util.Set;
 
 import org.apache.commons.codec.language.bm.Languages.LanguageSet;
 import org.apache.commons.codec.language.bm.NameType;
 import org.apache.commons.codec.language.bm.PhoneticEngine;
 import org.apache.commons.codec.language.bm.RuleType;
 import org.apache.lucene.analysis.TokenStream;
-import org.apache.lucene.analysis.phonetic.BeiderMorseFilter;
-import org.apache.lucene.analysis.util.AbstractAnalysisFactory; // javadocs
 import org.apache.lucene.analysis.util.TokenFilterFactory;
 
 /** 
  * Factory for {@link BeiderMorseFilter}.
- * <pre class="prettyprint" >
+ * <pre class="prettyprint">
  * &lt;fieldType name="text_bm" class="solr.TextField" positionIncrementGap="100"&gt;
  *   &lt;analyzer&gt;
  *     &lt;tokenizer class="solr.StandardTokenizerFactory"/&gt;
@@ -42,36 +39,27 @@ import org.apache.lucene.analysis.util.TokenFilterFactory;
  *     &lt;/filter&gt;
  *   &lt;/analyzer&gt;
  * &lt;/fieldType&gt;</pre>
- *
  */
 public class BeiderMorseFilterFactory extends TokenFilterFactory {
-  private PhoneticEngine engine;
-  private LanguageSet languageSet;
+  private final PhoneticEngine engine;
+  private final LanguageSet languageSet;
   
-  /** Sole constructor. See {@link AbstractAnalysisFactory} for initialization lifecycle. */
-  public BeiderMorseFilterFactory() {}
-  
-  @Override
-  public void init(Map<String,String> args) {
-    super.init(args);
-    
+  /** Creates a new BeiderMorseFilterFactory */
+  public BeiderMorseFilterFactory(Map<String,String> args) {
+    super(args);
     // PhoneticEngine = NameType + RuleType + concat
     // we use common-codec's defaults: GENERIC + APPROX + true
-    String nameTypeArg = args.get("nameType");
-    NameType nameType = (nameTypeArg == null) ? NameType.GENERIC : NameType.valueOf(nameTypeArg);
-
-    String ruleTypeArg = args.get("ruleType");
-    RuleType ruleType = (ruleTypeArg == null) ? RuleType.APPROX : RuleType.valueOf(ruleTypeArg);
+    NameType nameType = NameType.valueOf(get(args, "nameType", NameType.GENERIC.toString()));
+    RuleType ruleType = RuleType.valueOf(get(args, "ruleType", RuleType.APPROX.toString()));
     
-    boolean concat = getBoolean("concat", true);
+    boolean concat = getBoolean(args, "concat", true);
     engine = new PhoneticEngine(nameType, ruleType, concat);
     
     // LanguageSet: defaults to automagic, otherwise a comma-separated list.
-    String languageSetArg = args.get("languageSet");
-    if (languageSetArg == null || languageSetArg.equals("auto")) {
-      languageSet = null;
-    } else {
-      languageSet = LanguageSet.from(new HashSet<String>(Arrays.asList(languageSetArg.split(","))));
+    Set<String> langs = getSet(args, "languageSet");
+    languageSet = (null == langs || (1 == langs.size() && langs.contains("auto"))) ? null : LanguageSet.from(langs);
+    if (!args.isEmpty()) {
+      throw new IllegalArgumentException("Unknown parameters: " + args);
     }
   }
 

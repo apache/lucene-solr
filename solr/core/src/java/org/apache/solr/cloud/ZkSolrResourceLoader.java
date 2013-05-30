@@ -125,4 +125,7 @@ public class ZkSolrResourceLoader extends SolrResourceLoader {
     return collectionZkPath;
   }
   
+  public ZkController getZkController() {
+    return zkController;
+  }
 }

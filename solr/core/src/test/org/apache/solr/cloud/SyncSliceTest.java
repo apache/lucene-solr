@@ -50,6 +50,7 @@ import org.junit.BeforeClass;
  */
 @Slow
 public class SyncSliceTest extends AbstractFullDistribZkTestBase {
+  private boolean success = false;
   
   @BeforeClass
   public static void beforeSuperClass() throws Exception {
@@ -66,13 +67,16 @@ public class SyncSliceTest extends AbstractFullDistribZkTestBase {
     super.setUp();
     // we expect this time of exception as shards go up and down...
     //ignoreException(".*");
-    
+    useFactory(null);
     System.setProperty("numShards", Integer.toString(sliceCount));
   }
   
   @Override
   @After
   public void tearDown() throws Exception {
+    if (!success) {
+      printLayoutOnTearDown = true;
+    }
     super.tearDown();
     resetExceptionIgnores();
   }
@@ -188,8 +192,9 @@ public class SyncSliceTest extends AbstractFullDistribZkTestBase {
     skipServers.addAll( getRandomOtherJetty(leaderJetty, deadJetty));
     // skip list should be 
     
-    //System.out.println("leader:" + leaderJetty.url);
-    //System.out.println("skip list:" + skipServers);
+//    System.out.println("leader:" + leaderJetty.url);
+//    System.out.println("dead:" + deadJetty.url);
+//    System.out.println("skip list:" + skipServers);
     
     // we are skipping  2 nodes
     assertEquals(2, skipServers.size());
@@ -210,9 +215,8 @@ public class SyncSliceTest extends AbstractFullDistribZkTestBase {
     shardFailMessage = waitTillInconsistent();
     
     assertNotNull(
-        "Test Setup Failure: shard1 should have just been set up to be inconsistent - but it's still consistent. Leader:" + leaderJetty.url +
-        "skip list:" + skipServers,
-        shardFailMessage); 
+        "Test Setup Failure: shard1 should have just been set up to be inconsistent - but it's still consistent. Leader:"
+            + leaderJetty.url + " Dead Guy:" + deadJetty.url + "skip list:" + skipServers, shardFailMessage);
     
     jetties = new HashSet<CloudJettyRunner>();
     jetties.addAll(shardToJetty.get("shard1"));
@@ -233,6 +237,7 @@ public class SyncSliceTest extends AbstractFullDistribZkTestBase {
 
     checkShardConsistency(true, true);
     
+    success = true;
   }
 
   private void waitTillRecovered() throws Exception {

@@ -19,11 +19,11 @@ package org.apache.lucene.analysis.icu;
 
 import java.io.Reader;
 import java.io.StringReader;
+import java.util.HashMap;
 
 import org.apache.lucene.analysis.BaseTokenStreamTestCase;
 import org.apache.lucene.analysis.TokenStream;
-import org.apache.lucene.analysis.Tokenizer;
-import org.apache.lucene.analysis.core.WhitespaceTokenizer;
+import org.apache.lucene.analysis.MockTokenizer;
 
 /** basic tests for {@link ICUFoldingFilterFactory} */
 public class TestICUFoldingFilterFactory extends BaseTokenStreamTestCase {
@@ -31,10 +31,21 @@ public class TestICUFoldingFilterFactory extends BaseTokenStreamTestCase {
   /** basic tests to ensure the folding is working */
   public void test() throws Exception {
     Reader reader = new StringReader("Résumé");
-    ICUFoldingFilterFactory factory = new ICUFoldingFilterFactory();
-    factory.setLuceneMatchVersion(TEST_VERSION_CURRENT);
-    Tokenizer tokenizer = new WhitespaceTokenizer(TEST_VERSION_CURRENT, reader);
-    TokenStream stream = factory.create(tokenizer);
+    ICUFoldingFilterFactory factory = new ICUFoldingFilterFactory(new HashMap<String,String>());
+    TokenStream stream = new MockTokenizer(reader, MockTokenizer.WHITESPACE, false);
+    stream = factory.create(stream);
     assertTokenStreamContents(stream, new String[] { "resume" });
+  }
+  
+  /** Test that bogus arguments result in exception */
+  public void testBogusArguments() throws Exception {
+    try {
+      new ICUFoldingFilterFactory(new HashMap<String,String>() {{
+        put("bogusArg", "bogusValue");
+      }});
+      fail();
+    } catch (IllegalArgumentException expected) {
+      assertTrue(expected.getMessage().contains("Unknown parameters"));
+    }
   }
 }

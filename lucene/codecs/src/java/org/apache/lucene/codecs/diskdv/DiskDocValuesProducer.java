@@ -17,6 +17,10 @@ package org.apache.lucene.codecs.diskdv;
  * limitations under the License.
  */
 
+import static org.apache.lucene.codecs.diskdv.DiskDocValuesConsumer.DELTA_COMPRESSED;
+import static org.apache.lucene.codecs.diskdv.DiskDocValuesConsumer.GCD_COMPRESSED;
+import static org.apache.lucene.codecs.diskdv.DiskDocValuesConsumer.TABLE_COMPRESSED;
+
 import java.io.IOException;
 import java.util.HashMap;
 import java.util.Map;
@@ -37,6 +41,7 @@ import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.IOUtils;
 import org.apache.lucene.util.packed.BlockPackedReader;
 import org.apache.lucene.util.packed.MonotonicBlockPackedReader;
+import org.apache.lucene.util.packed.PackedInts;
 
 class DiskDocValuesProducer extends DocValuesProducer {
   private final Map<Integer,NumericEntry> numerics;
@@ -55,15 +60,17 @@ class DiskDocValuesProducer extends DocValuesProducer {
     // read in the entries from the metadata file.
     IndexInput in = state.directory.openInput(metaName, state.context);
     boolean success = false;
+    final int version;
     try {
-      CodecUtil.checkHeader(in, metaCodec, 
-                                DiskDocValuesFormat.VERSION_START,
-                                DiskDocValuesFormat.VERSION_START);
+      version = CodecUtil.checkHeader(in, metaCodec, 
+                                      DiskDocValuesFormat.VERSION_START,
+                                      DiskDocValuesFormat.VERSION_CURRENT);
       numerics = new HashMap<Integer,NumericEntry>();
       ords = new HashMap<Integer,NumericEntry>();
       ordIndexes = new HashMap<Integer,NumericEntry>();
       binaries = new HashMap<Integer,BinaryEntry>();
       readFields(in, state.fieldInfos);
+
       success = true;
     } finally {
       if (success) {
@@ -72,12 +79,24 @@ class DiskDocValuesProducer extends DocValuesProducer {
         IOUtils.closeWhileHandlingException(in);
       }
     }
-    
-    String dataName = IndexFileNames.segmentFileName(state.segmentInfo.name, state.segmentSuffix, dataExtension);
-    data = state.directory.openInput(dataName, state.context);
-    CodecUtil.checkHeader(data, dataCodec, 
-                                DiskDocValuesFormat.VERSION_START,
-                                DiskDocValuesFormat.VERSION_START);
+
+    success = false;
+    try {
+      String dataName = IndexFileNames.segmentFileName(state.segmentInfo.name, state.segmentSuffix, dataExtension);
+      data = state.directory.openInput(dataName, state.context);
+      final int version2 = CodecUtil.checkHeader(data, dataCodec, 
+                                                 DiskDocValuesFormat.VERSION_START,
+                                                 DiskDocValuesFormat.VERSION_CURRENT);
+      if (version != version2) {
+        throw new CorruptIndexException("Format versions mismatch");
+      }
+
+      success = true;
+    } finally {
+      if (!success) {
+        IOUtils.closeWhileHandlingException(this.data);
+      }
+    }
   }
   
   private void readFields(IndexInput meta, FieldInfos infos) throws IOException {
@@ -92,47 +111,47 @@ class DiskDocValuesProducer extends DocValuesProducer {
       } else if (type == DiskDocValuesFormat.SORTED) {
         // sorted = binary + numeric
         if (meta.readVInt() != fieldNumber) {
-          throw new CorruptIndexException("sorted entry for field: " + fieldNumber + " is corrupt");
+          throw new CorruptIndexException("sorted entry for field: " + fieldNumber + " is corrupt (resource=" + meta + ")");
         }
         if (meta.readByte() != DiskDocValuesFormat.BINARY) {
-          throw new CorruptIndexException("sorted entry for field: " + fieldNumber + " is corrupt");
+          throw new CorruptIndexException("sorted entry for field: " + fieldNumber + " is corrupt (resource=" + meta + ")");
         }
         BinaryEntry b = readBinaryEntry(meta);
         binaries.put(fieldNumber, b);
         
         if (meta.readVInt() != fieldNumber) {
-          throw new CorruptIndexException("sorted entry for field: " + fieldNumber + " is corrupt");
+          throw new CorruptIndexException("sorted entry for field: " + fieldNumber + " is corrupt (resource=" + meta + ")");
         }
         if (meta.readByte() != DiskDocValuesFormat.NUMERIC) {
-          throw new CorruptIndexException("sorted entry for field: " + fieldNumber + " is corrupt");
+          throw new CorruptIndexException("sorted entry for field: " + fieldNumber + " is corrupt (resource=" + meta + ")");
         }
         NumericEntry n = readNumericEntry(meta);
         ords.put(fieldNumber, n);
       } else if (type == DiskDocValuesFormat.SORTED_SET) {
         // sortedset = binary + numeric + ordIndex
         if (meta.readVInt() != fieldNumber) {
-          throw new CorruptIndexException("sortedset entry for field: " + fieldNumber + " is corrupt");
+          throw new CorruptIndexException("sortedset entry for field: " + fieldNumber + " is corrupt (resource=" + meta + ")");
         }
         if (meta.readByte() != DiskDocValuesFormat.BINARY) {
-          throw new CorruptIndexException("sortedset entry for field: " + fieldNumber + " is corrupt");
+          throw new CorruptIndexException("sortedset entry for field: " + fieldNumber + " is corrupt (resource=" + meta + ")");
         }
         BinaryEntry b = readBinaryEntry(meta);
         binaries.put(fieldNumber, b);
         
         if (meta.readVInt() != fieldNumber) {
-          throw new CorruptIndexException("sortedset entry for field: " + fieldNumber + " is corrupt");
+          throw new CorruptIndexException("sortedset entry for field: " + fieldNumber + " is corrupt (resource=" + meta + ")");
         }
         if (meta.readByte() != DiskDocValuesFormat.NUMERIC) {
-          throw new CorruptIndexException("sortedset entry for field: " + fieldNumber + " is corrupt");
+          throw new CorruptIndexException("sortedset entry for field: " + fieldNumber + " is corrupt (resource=" + meta + ")");
         }
         NumericEntry n1 = readNumericEntry(meta);
         ords.put(fieldNumber, n1);
         
         if (meta.readVInt() != fieldNumber) {
-          throw new CorruptIndexException("sortedset entry for field: " + fieldNumber + " is corrupt");
+          throw new CorruptIndexException("sortedset entry for field: " + fieldNumber + " is corrupt (resource=" + meta + ")");
         }
         if (meta.readByte() != DiskDocValuesFormat.NUMERIC) {
-          throw new CorruptIndexException("sortedset entry for field: " + fieldNumber + " is corrupt");
+          throw new CorruptIndexException("sortedset entry for field: " + fieldNumber + " is corrupt (resource=" + meta + ")");
         }
         NumericEntry n2 = readNumericEntry(meta);
         ordIndexes.put(fieldNumber, n2);
@@ -145,10 +164,34 @@ class DiskDocValuesProducer extends DocValuesProducer {
   
   static NumericEntry readNumericEntry(IndexInput meta) throws IOException {
     NumericEntry entry = new NumericEntry();
+    entry.format = meta.readVInt();
     entry.packedIntsVersion = meta.readVInt();
     entry.offset = meta.readLong();
     entry.count = meta.readVLong();
     entry.blockSize = meta.readVInt();
+    switch(entry.format) {
+      case GCD_COMPRESSED:
+        entry.minValue = meta.readLong();
+        entry.gcd = meta.readLong();
+        break;
+      case TABLE_COMPRESSED:
+        if (entry.count > Integer.MAX_VALUE) {
+          throw new CorruptIndexException("Cannot use TABLE_COMPRESSED with more than MAX_VALUE values, input=" + meta);
+        }
+        final int uniqueValues = meta.readVInt();
+        if (uniqueValues > 256) {
+          throw new CorruptIndexException("TABLE_COMPRESSED cannot have more than 256 distinct values, input=" + meta);
+        }
+        entry.table = new long[uniqueValues];
+        for (int i = 0; i < uniqueValues; ++i) {
+          entry.table[i] = meta.readLong();
+        }
+        break;
+      case DELTA_COMPRESSED:
+        break;
+      default:
+        throw new CorruptIndexException("Unknown format: " + entry.format + ", input=" + meta);
+    }
     return entry;
   }
   
@@ -176,13 +219,38 @@ class DiskDocValuesProducer extends DocValuesProducer {
     final IndexInput data = this.data.clone();
     data.seek(entry.offset);
 
-    final BlockPackedReader reader = new BlockPackedReader(data, entry.packedIntsVersion, entry.blockSize, entry.count, true);
-    return new LongNumericDocValues() {
-      @Override
-      public long get(long id) {
-        return reader.get(id);
-      }
-    };
+    switch (entry.format) {
+      case DELTA_COMPRESSED:
+        final BlockPackedReader reader = new BlockPackedReader(data, entry.packedIntsVersion, entry.blockSize, entry.count, true);
+        return new LongNumericDocValues() {
+          @Override
+          public long get(long id) {
+            return reader.get(id);
+          }
+        };
+      case GCD_COMPRESSED:
+        final long min = entry.minValue;
+        final long mult = entry.gcd;
+        final BlockPackedReader quotientReader = new BlockPackedReader(data, entry.packedIntsVersion, entry.blockSize, entry.count, true);
+        return new LongNumericDocValues() {
+          @Override
+          public long get(long id) {
+            return min + mult * quotientReader.get(id);
+          }
+        };
+      case TABLE_COMPRESSED:
+        final long table[] = entry.table;
+        final int bitsRequired = PackedInts.bitsRequired(table.length - 1);
+        final PackedInts.Reader ords = PackedInts.getDirectReaderNoHeader(data, PackedInts.Format.PACKED, entry.packedIntsVersion, (int) entry.count, bitsRequired);
+        return new LongNumericDocValues() {
+          @Override
+          public long get(long id) {
+            return table[(int) ords.get((int) id)];
+          }
+        };
+      default:
+        throw new AssertionError();
+    }
   }
 
   @Override
@@ -350,9 +418,14 @@ class DiskDocValuesProducer extends DocValuesProducer {
   static class NumericEntry {
     long offset;
 
+    int format;
     int packedIntsVersion;
     long count;
     int blockSize;
+    
+    long minValue;
+    long gcd;
+    long table[];
   }
   
   static class BinaryEntry {

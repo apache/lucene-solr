@@ -25,6 +25,7 @@ import java.util.List;
 
 import org.apache.lucene.search.SearcherManager; // javadocs
 import org.apache.lucene.store.Directory;
+import org.apache.lucene.store.NoSuchDirectoryException;
 
 /** DirectoryReader is an implementation of {@link CompositeReader}
  that can read indexes in a {@link Directory}. 
@@ -313,17 +314,45 @@ public abstract class DirectoryReader extends BaseCompositeReader<AtomicReader> 
   }
   
   /**
-   * Returns <code>true</code> if an index exists at the specified directory.
+   * Returns <code>true</code> if an index likely exists at
+   * the specified directory.  Note that if a corrupt index
+   * exists, or if an index in the process of committing 
    * @param  directory the directory to check for an index
    * @return <code>true</code> if an index exists; <code>false</code> otherwise
    */
-  public static boolean indexExists(Directory directory) {
+  public static boolean indexExists(Directory directory) throws IOException {
+    // LUCENE-2812, LUCENE-2727, LUCENE-4738: this logic will
+    // return true in cases that should arguably be false,
+    // such as only IW.prepareCommit has been called, or a
+    // corrupt first commit, but it's too deadly to make
+    // this logic "smarter" and risk accidentally returning
+    // false due to various cases like file description
+    // exhaustion, access denied, etc., because in that
+    // case IndexWriter may delete the entire index.  It's
+    // safer to err towards "index exists" than try to be
+    // smart about detecting not-yet-fully-committed or
+    // corrupt indices.  This means that IndexWriter will
+    // throw an exception on such indices and the app must
+    // resolve the situation manually:
+    String[] files;
     try {
-      new SegmentInfos().read(directory);
-      return true;
-    } catch (IOException ioe) {
+      files = directory.listAll();
+    } catch (NoSuchDirectoryException nsde) {
+      // Directory does not exist --> no index exists
       return false;
     }
+
+    // Defensive: maybe a Directory impl returns null
+    // instead of throwing NoSuchDirectoryException:
+    if (files != null) {
+      String prefix = IndexFileNames.SEGMENTS + "_";
+      for(String file : files) {
+        if (file.startsWith(prefix) || file.equals(IndexFileNames.SEGMENTS_GEN)) {
+          return true;
+        }
+      }
+    }
+    return false;
   }
 
   /**

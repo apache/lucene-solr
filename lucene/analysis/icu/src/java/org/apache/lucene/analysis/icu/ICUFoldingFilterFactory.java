@@ -1,11 +1,5 @@
 package org.apache.lucene.analysis.icu;
 
-import org.apache.lucene.analysis.TokenStream;
-import org.apache.lucene.analysis.icu.ICUFoldingFilter;
-import org.apache.lucene.analysis.util.AbstractAnalysisFactory; // javadocs
-import org.apache.lucene.analysis.util.MultiTermAwareComponent;
-import org.apache.lucene.analysis.util.TokenFilterFactory;
-
 /*
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
@@ -23,11 +17,33 @@ import org.apache.lucene.analysis.util.TokenFilterFactory;
  * limitations under the License.
  */
 
-/** Factory for {@link ICUFoldingFilter} */
+import java.util.Map;
+
+import org.apache.lucene.analysis.TokenStream;
+import org.apache.lucene.analysis.icu.ICUFoldingFilter;
+import org.apache.lucene.analysis.util.AbstractAnalysisFactory; // javadocs
+import org.apache.lucene.analysis.util.MultiTermAwareComponent;
+import org.apache.lucene.analysis.util.TokenFilterFactory;
+
+/** 
+ * Factory for {@link ICUFoldingFilter}.
+ * <pre class="prettyprint">
+ * &lt;fieldType name="text_folded" class="solr.TextField" positionIncrementGap="100"&gt;
+ *   &lt;analyzer&gt;
+ *     &lt;tokenizer class="solr.WhitespaceTokenizerFactory"/&gt;
+ *     &lt;filter class="solr.ICUFoldingFilterFactory"/&gt;
+ *   &lt;/analyzer&gt;
+ * &lt;/fieldType&gt;</pre>
+ */
 public class ICUFoldingFilterFactory extends TokenFilterFactory implements MultiTermAwareComponent {
 
-  /** Sole constructor. See {@link AbstractAnalysisFactory} for initialization lifecycle. */
-  public ICUFoldingFilterFactory() {}
+  /** Creates a new ICUFoldingFilterFactory */
+  public ICUFoldingFilterFactory(Map<String,String> args) {
+    super(args);
+    if (!args.isEmpty()) {
+      throw new IllegalArgumentException("Unknown parameters: " + args);
+    }
+  }
 
   @Override
   public TokenStream create(TokenStream input) {

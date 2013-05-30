@@ -17,35 +17,34 @@ package org.apache.lucene.analysis.payloads;
  * limitations under the License.
  */
 
-import org.apache.lucene.analysis.payloads.NumericPayloadTokenFilter;
 import org.apache.lucene.analysis.TokenStream;
 import org.apache.lucene.analysis.util.TokenFilterFactory;
 import java.util.Map;
 
 /** 
  * Factory for {@link NumericPayloadTokenFilter}.
- * <pre class="prettyprint" >
+ * <pre class="prettyprint">
  * &lt;fieldType name="text_numpayload" class="solr.TextField" positionIncrementGap="100"&gt;
  *   &lt;analyzer&gt;
  *     &lt;tokenizer class="solr.WhitespaceTokenizerFactory"/&gt;
  *     &lt;filter class="solr.NumericPayloadTokenFilterFactory" payload="24" typeMatch="word"/&gt;
  *   &lt;/analyzer&gt;
  * &lt;/fieldType&gt;</pre>
- *
  */
 public class NumericPayloadTokenFilterFactory extends TokenFilterFactory {
-  private float payload;
-  private String typeMatch;
-  @Override
-  public void init(Map<String, String> args) {
-    super.init(args);
-    String payloadArg = args.get("payload");
-    typeMatch = args.get("typeMatch");
-    if (payloadArg == null || typeMatch == null) {
-      throw new IllegalArgumentException("Both payload and typeMatch are required");
+  private final float payload;
+  private final String typeMatch;
+  
+  /** Creates a new NumericPayloadTokenFilterFactory */
+  public NumericPayloadTokenFilterFactory(Map<String, String> args) {
+    super(args);
+    payload = requireFloat(args, "payload");
+    typeMatch = require(args, "typeMatch");
+    if (!args.isEmpty()) {
+      throw new IllegalArgumentException("Unknown parameters: " + args);
     }
-    payload = Float.parseFloat(payloadArg);
   }
+
   @Override
   public NumericPayloadTokenFilter create(TokenStream input) {
     return new NumericPayloadTokenFilter(input,payload,typeMatch);

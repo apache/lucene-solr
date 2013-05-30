@@ -17,13 +17,15 @@ package org.apache.lucene.analysis.cz;
  * limitations under the License.
  */
 
+import java.util.Map;
+
 import org.apache.lucene.analysis.TokenStream;
 import org.apache.lucene.analysis.cz.CzechStemFilter;
 import org.apache.lucene.analysis.util.TokenFilterFactory;
 
 /**
- *  Factory for {@link CzechStemFilter}.
- * <pre class="prettyprint" >
+ * Factory for {@link CzechStemFilter}.
+ * <pre class="prettyprint">
  * &lt;fieldType name="text_czstem" class="solr.TextField" positionIncrementGap="100"&gt;
  *   &lt;analyzer&gt;
  *     &lt;tokenizer class="solr.StandardTokenizerFactory"/&gt;
@@ -33,6 +35,15 @@ import org.apache.lucene.analysis.util.TokenFilterFactory;
  * &lt;/fieldType&gt;</pre>
  */
 public class CzechStemFilterFactory extends TokenFilterFactory {
+  
+  /** Creates a new CzechStemFilterFactory */
+  public CzechStemFilterFactory(Map<String,String> args) {
+    super(args);
+    if (!args.isEmpty()) {
+      throw new IllegalArgumentException("Unknown parameters: " + args);
+    }
+  }
+  
   @Override
   public TokenStream create(TokenStream input) {
     return new CzechStemFilter(input);

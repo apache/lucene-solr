@@ -153,6 +153,11 @@ public class MatchingDocsAsScoredDocIDs implements ScoredDocIDs {
           }
           
           @Override
+          public long cost() {
+            return size;
+          }
+
+          @Override
           public int advance(int target) throws IOException {
             throw new UnsupportedOperationException("not supported");
           }

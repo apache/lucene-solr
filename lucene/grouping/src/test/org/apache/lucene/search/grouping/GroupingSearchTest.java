@@ -60,7 +60,7 @@ public class GroupingSearchTest extends LuceneTestCase {
         newIndexWriterConfig(TEST_VERSION_CURRENT,
             new MockAnalyzer(random())).setMergePolicy(newLogMergePolicy()));
     boolean canUseIDV = true;
-    List<Document> documents = new ArrayList<Document>();
+    List<Document> documents = new ArrayList<>();
     // 0
     Document doc = new Document();
     addGroupField(doc, groupField, "author1", canUseIDV);
@@ -118,7 +118,7 @@ public class GroupingSearchTest extends LuceneTestCase {
 
     w.addDocument(doc);
 
-    IndexSearcher indexSearcher = new IndexSearcher(w.getReader());
+    IndexSearcher indexSearcher = newSearcher(w.getReader());
     w.close();
 
     Sort groupSort = Sort.RELEVANCE;
@@ -207,7 +207,7 @@ public class GroupingSearchTest extends LuceneTestCase {
     GroupingSearch groupingSearch;
     if (random().nextBoolean()) {
       ValueSource vs = new BytesRefFieldSource(groupField);
-      groupingSearch = new GroupingSearch(vs, new HashMap<Object, Object>());
+      groupingSearch = new GroupingSearch(vs, new HashMap<>());
     } else {
       groupingSearch = new GroupingSearch(groupField);
     }
@@ -233,7 +233,7 @@ public class GroupingSearchTest extends LuceneTestCase {
     doc.add(newField("group", "foo", StringField.TYPE_NOT_STORED));
     w.addDocument(doc);
 
-    IndexSearcher indexSearcher = new IndexSearcher(w.getReader());
+    IndexSearcher indexSearcher = newSearcher(w.getReader());
     w.close();
 
     GroupingSearch gs = new GroupingSearch("group");

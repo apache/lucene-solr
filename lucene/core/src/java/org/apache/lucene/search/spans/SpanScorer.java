@@ -42,12 +42,8 @@ public class SpanScorer extends Scorer {
     this.docScorer = docScorer;
     this.spans = spans;
 
-    if (this.spans.next()) {
-      doc = -1;
-    } else {
-      doc = NO_MORE_DOCS;
-      more = false;
-    }
+    doc = -1;
+    more = spans.next();
   }
 
   @Override
@@ -106,5 +102,10 @@ public class SpanScorer extends Scorer {
   // only public so .payloads can see it.
   public float sloppyFreq() throws IOException {
     return freq;
+  }
+  
+  @Override
+  public long cost() {
+    return spans.cost();
   }
 }

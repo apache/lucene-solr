@@ -22,24 +22,24 @@ limitations under the License.
     
   <title>Solr Admin</title>
     
-  <link rel="icon" type="image/ico" href="img/favicon.ico">
+  <link rel="icon" type="image/ico" href="img/favicon.ico?_=${version}">
 
-  <link rel="stylesheet" type="text/css" href="css/styles/common.css">
-  <link rel="stylesheet" type="text/css" href="css/styles/analysis.css">
-  <link rel="stylesheet" type="text/css" href="css/styles/cloud.css">
-  <link rel="stylesheet" type="text/css" href="css/styles/cores.css">
-  <link rel="stylesheet" type="text/css" href="css/styles/dashboard.css">
-  <link rel="stylesheet" type="text/css" href="css/styles/dataimport.css">
-  <link rel="stylesheet" type="text/css" href="css/styles/index.css">
-  <link rel="stylesheet" type="text/css" href="css/styles/java-properties.css">
-  <link rel="stylesheet" type="text/css" href="css/styles/logging.css">
-  <link rel="stylesheet" type="text/css" href="css/styles/menu.css">
-  <link rel="stylesheet" type="text/css" href="css/styles/plugins.css">
-  <link rel="stylesheet" type="text/css" href="css/styles/query.css">
-  <link rel="stylesheet" type="text/css" href="css/styles/replication.css">
-  <link rel="stylesheet" type="text/css" href="css/styles/schema-browser.css">
-  <link rel="stylesheet" type="text/css" href="css/styles/threads.css">
-  <link rel="stylesheet" type="text/css" href="css/chosen.css">
+  <link rel="stylesheet" type="text/css" href="css/styles/common.css?_=${version}">
+  <link rel="stylesheet" type="text/css" href="css/styles/analysis.css?_=${version}">
+  <link rel="stylesheet" type="text/css" href="css/styles/cloud.css?_=${version}">
+  <link rel="stylesheet" type="text/css" href="css/styles/cores.css?_=${version}">
+  <link rel="stylesheet" type="text/css" href="css/styles/dashboard.css?_=${version}">
+  <link rel="stylesheet" type="text/css" href="css/styles/dataimport.css?_=${version}">
+  <link rel="stylesheet" type="text/css" href="css/styles/index.css?_=${version}">
+  <link rel="stylesheet" type="text/css" href="css/styles/java-properties.css?_=${version}">
+  <link rel="stylesheet" type="text/css" href="css/styles/logging.css?_=${version}">
+  <link rel="stylesheet" type="text/css" href="css/styles/menu.css?_=${version}">
+  <link rel="stylesheet" type="text/css" href="css/styles/plugins.css?_=${version}">
+  <link rel="stylesheet" type="text/css" href="css/styles/query.css?_=${version}">
+  <link rel="stylesheet" type="text/css" href="css/styles/replication.css?_=${version}">
+  <link rel="stylesheet" type="text/css" href="css/styles/schema-browser.css?_=${version}">
+  <link rel="stylesheet" type="text/css" href="css/styles/threads.css?_=${version}">
+  <link rel="stylesheet" type="text/css" href="css/chosen.css?_=${version}">
     
   <script type="text/javascript">
     
@@ -138,8 +138,9 @@ limitations under the License.
     </div>
     
   </div>
-    
-  <script src="js/require.js" data-main="js/main"></script>
+  
+  <script type="text/javascript"> var require = { urlArgs: '_=${version}' }; </script>
+  <script src="js/require.js?_=${version}" data-main="js/main"></script>
 
 </body>
 </html>

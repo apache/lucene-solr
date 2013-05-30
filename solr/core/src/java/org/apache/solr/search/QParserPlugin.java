@@ -43,6 +43,7 @@ public abstract class QParserPlugin implements NamedListInitializedPlugin {
     JoinQParserPlugin.NAME, JoinQParserPlugin.class,
     SurroundQParserPlugin.NAME, SurroundQParserPlugin.class,
     SwitchQParserPlugin.NAME, SwitchQParserPlugin.class,
+    MaxScoreQParserPlugin.NAME, MaxScoreQParserPlugin.class
   };
 
   /** return a {@link QParser} */

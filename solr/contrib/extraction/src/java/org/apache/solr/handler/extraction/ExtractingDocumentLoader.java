@@ -28,10 +28,10 @@ import org.apache.solr.common.params.UpdateParams;
 import org.apache.solr.common.util.ContentStream;
 import org.apache.solr.common.util.ContentStreamBase;
 import org.apache.solr.common.util.NamedList;
+import org.apache.solr.core.SolrCore;
 import org.apache.solr.handler.loader.ContentStreamLoader;
 import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.response.SolrQueryResponse;
-import org.apache.solr.schema.IndexSchema;
 import org.apache.solr.update.AddUpdateCommand;
 import org.apache.solr.update.processor.UpdateRequestProcessor;
 import org.apache.tika.config.TikaConfig;
@@ -81,7 +81,7 @@ public class ExtractingDocumentLoader extends ContentStreamLoader {
   private static final XPathParser PARSER =
           new XPathParser("xhtml", XHTMLContentHandler.XHTML);
 
-  final IndexSchema schema;
+  final SolrCore core;
   final SolrParams params;
   final UpdateRequestProcessor processor;
   final boolean ignoreTikaException;
@@ -95,7 +95,7 @@ public class ExtractingDocumentLoader extends ContentStreamLoader {
   public ExtractingDocumentLoader(SolrQueryRequest req, UpdateRequestProcessor processor,
                            TikaConfig config, SolrContentHandlerFactory factory) {
     this.params = req.getParams();
-    schema = req.getSchema();
+    this.core = req.getCore();
     this.config = config;
     this.processor = processor;
 
@@ -167,7 +167,7 @@ public class ExtractingDocumentLoader extends ContentStreamLoader {
 
         String xpathExpr = params.get(ExtractingParams.XPATH_EXPRESSION);
         boolean extractOnly = params.getBool(ExtractingParams.EXTRACT_ONLY, false);
-        SolrContentHandler handler = factory.createSolrContentHandler(metadata, params, schema);
+        SolrContentHandler handler = factory.createSolrContentHandler(metadata, params, req.getSchema());
         ContentHandler parsingHandler = handler;
 
         StringWriter writer = null;

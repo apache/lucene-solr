@@ -22,6 +22,7 @@ import java.io.IOException;
 import org.apache.lucene.analysis.TokenFilter;
 import org.apache.lucene.analysis.TokenStream;
 import org.apache.lucene.analysis.tokenattributes.PositionIncrementAttribute;
+import org.apache.lucene.util.Version;
 
 /**
  * Abstract base class for TokenFilters that may remove tokens.
@@ -31,13 +32,17 @@ import org.apache.lucene.analysis.tokenattributes.PositionIncrementAttribute;
  */
 public abstract class FilteringTokenFilter extends TokenFilter {
 
+  protected final Version version;
   private final PositionIncrementAttribute posIncrAtt = addAttribute(PositionIncrementAttribute.class);
-  private boolean enablePositionIncrements; // no init needed, as ctor enforces setting value!
-  private boolean first = true; // only used when not preserving gaps
 
-  public FilteringTokenFilter(boolean enablePositionIncrements, TokenStream input){
-    super(input);
-    this.enablePositionIncrements = enablePositionIncrements;
+  /**
+   * Create a new {@link FilteringTokenFilter}.
+   * @param version the Lucene match version
+   * @param in      the {@link TokenStream} to consume
+   */
+  public FilteringTokenFilter(Version version, TokenStream in) {
+    super(in);
+    this.version = version;
   }
 
   /** Override this method and return if the current input token should be returned by {@link #incrementToken}. */
@@ -45,31 +50,17 @@ public abstract class FilteringTokenFilter extends TokenFilter {
 
   @Override
   public final boolean incrementToken() throws IOException {
-    if (enablePositionIncrements) {
-      int skippedPositions = 0;
-      while (input.incrementToken()) {
-        if (accept()) {
-          if (skippedPositions != 0) {
-            posIncrAtt.setPositionIncrement(posIncrAtt.getPositionIncrement() + skippedPositions);
-          }
-          return true;
+    int skippedPositions = 0;
+    while (input.incrementToken()) {
+      if (accept()) {
+        if (skippedPositions != 0) {
+          posIncrAtt.setPositionIncrement(posIncrAtt.getPositionIncrement() + skippedPositions);
         }
-        skippedPositions += posIncrAtt.getPositionIncrement();
+        return true;
       }
-    } else {
-      while (input.incrementToken()) {
-        if (accept()) {
-          if (first) {
-            // first token having posinc=0 is illegal.
-            if (posIncrAtt.getPositionIncrement() == 0) {
-              posIncrAtt.setPositionIncrement(1);
-            }
-            first = false;
-          }
-          return true;
-        }
-      }
+      skippedPositions += posIncrAtt.getPositionIncrement();
     }
+
     // reached EOS -- return false
     return false;
   }
@@ -77,33 +68,6 @@ public abstract class FilteringTokenFilter extends TokenFilter {
   @Override
   public void reset() throws IOException {
     super.reset();
-    first = true;
   }
 
-  /**
-   * @see #setEnablePositionIncrements(boolean)
-   */
-  public boolean getEnablePositionIncrements() {
-    return enablePositionIncrements;
-  }
-
-  /**
-   * If <code>true</code>, this TokenFilter will preserve
-   * positions of the incoming tokens (ie, accumulate and
-   * set position increments of the removed tokens).
-   * Generally, <code>true</code> is best as it does not
-   * lose information (positions of the original tokens)
-   * during indexing.
-   * 
-   * <p> When set, when a token is stopped
-   * (omitted), the position increment of the following
-   * token is incremented.
-   *
-   * <p> <b>NOTE</b>: be sure to also
-   * set org.apache.lucene.queryparser.classic.QueryParser#setEnablePositionIncrements if
-   * you use QueryParser to create queries.
-   */
-  public void setEnablePositionIncrements(boolean enable) {
-    this.enablePositionIncrements = enable;
-  }
 }

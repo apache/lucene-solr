@@ -211,13 +211,7 @@ final class TotalTermFreqComparatorSortDescending implements Comparator<TermStat
   
   @Override
   public int compare(TermStats a, TermStats b) {
-    if (a.totalTermFreq < b.totalTermFreq) {
-      return 1;
-    } else if (a.totalTermFreq > b.totalTermFreq) {
-      return -1;
-    } else {
-      return 0;
-    }
+    return Long.compare(b.totalTermFreq, a.totalTermFreq);
   }
 }
 

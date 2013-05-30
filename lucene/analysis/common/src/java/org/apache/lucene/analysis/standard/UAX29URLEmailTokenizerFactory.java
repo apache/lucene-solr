@@ -17,40 +17,37 @@ package org.apache.lucene.analysis.standard;
  * limitations under the License.
  */
 
-import org.apache.lucene.analysis.standard.StandardAnalyzer;
-import org.apache.lucene.analysis.standard.UAX29URLEmailTokenizer;
 import org.apache.lucene.analysis.util.TokenizerFactory;
+import org.apache.lucene.util.AttributeSource.AttributeFactory;
 
 import java.io.Reader;
 import java.util.Map;
 
 /**
  * Factory for {@link UAX29URLEmailTokenizer}. 
- * <pre class="prettyprint" >
+ * <pre class="prettyprint">
  * &lt;fieldType name="text_urlemail" class="solr.TextField" positionIncrementGap="100"&gt;
  *   &lt;analyzer&gt;
  *     &lt;tokenizer class="solr.UAX29URLEmailTokenizerFactory" maxTokenLength="255"/&gt;
  *   &lt;/analyzer&gt;
  * &lt;/fieldType&gt;</pre> 
- *
- * 
  */
-
 public class UAX29URLEmailTokenizerFactory extends TokenizerFactory {
+  private final int maxTokenLength;
 
-  private int maxTokenLength;
-
-  @Override
-  public void init(Map<String,String> args) {
-    super.init(args);
+  /** Creates a new UAX29URLEmailTokenizerFactory */
+  public UAX29URLEmailTokenizerFactory(Map<String,String> args) {
+    super(args);
     assureMatchVersion();
-    maxTokenLength = getInt("maxTokenLength",
-                            StandardAnalyzer.DEFAULT_MAX_TOKEN_LENGTH);
+    maxTokenLength = getInt(args, "maxTokenLength", StandardAnalyzer.DEFAULT_MAX_TOKEN_LENGTH);
+    if (!args.isEmpty()) {
+      throw new IllegalArgumentException("Unknown parameters: " + args);
+    }
   }
 
   @Override
-  public UAX29URLEmailTokenizer create(Reader input) {
-    UAX29URLEmailTokenizer tokenizer = new UAX29URLEmailTokenizer(luceneMatchVersion, input); 
+  public UAX29URLEmailTokenizer create(AttributeFactory factory, Reader input) {
+    UAX29URLEmailTokenizer tokenizer = new UAX29URLEmailTokenizer(luceneMatchVersion, factory, input); 
     tokenizer.setMaxTokenLength(maxTokenLength);
     return tokenizer;
   }

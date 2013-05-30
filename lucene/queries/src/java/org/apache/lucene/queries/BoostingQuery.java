@@ -84,7 +84,7 @@ public class BoostingQuery extends Query {
     @Override
     public int hashCode() {
       final int prime = 31;
-      int result = 1;
+      int result = super.hashCode();
       result = prime * result + Float.floatToIntBits(boost);
       result = prime * result + ((context == null) ? 0 : context.hashCode());
       result = prime * result + ((match == null) ? 0 : match.hashCode());
@@ -100,6 +100,10 @@ public class BoostingQuery extends Query {
         return false;
       }
       if (getClass() != obj.getClass()) {
+        return false;
+      }
+      
+      if (!super.equals(obj)) {
         return false;
       }
 

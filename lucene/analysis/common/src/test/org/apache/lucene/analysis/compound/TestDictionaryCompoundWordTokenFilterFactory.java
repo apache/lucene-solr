@@ -19,36 +19,36 @@ package org.apache.lucene.analysis.compound;
 
 import java.io.Reader;
 import java.io.StringReader;
-import java.util.HashMap;
-import java.util.Map;
 
-import org.apache.lucene.analysis.BaseTokenStreamTestCase;
 import org.apache.lucene.analysis.MockTokenizer;
 import org.apache.lucene.analysis.TokenStream;
-import org.apache.lucene.analysis.Tokenizer;
-import org.apache.lucene.analysis.util.ClasspathResourceLoader;
-import org.apache.lucene.analysis.util.ResourceLoader;
+import org.apache.lucene.analysis.util.BaseTokenStreamFactoryTestCase;
 
 /**
  * Simple tests to ensure the Dictionary compound filter factory is working.
  */
-public class TestDictionaryCompoundWordTokenFilterFactory extends BaseTokenStreamTestCase {
+public class TestDictionaryCompoundWordTokenFilterFactory extends BaseTokenStreamFactoryTestCase {
   /**
    * Ensure the filter actually decompounds text.
    */
   public void testDecompounding() throws Exception {
     Reader reader = new StringReader("I like to play softball");
-    Tokenizer tokenizer = new MockTokenizer(reader, MockTokenizer.WHITESPACE, false);
-    DictionaryCompoundWordTokenFilterFactory factory = new DictionaryCompoundWordTokenFilterFactory();
-    ResourceLoader loader = new ClasspathResourceLoader(getClass());
-    Map<String,String> args = new HashMap<String,String>();
-    args.put("dictionary", "compoundDictionary.txt");
-    factory.setLuceneMatchVersion(TEST_VERSION_CURRENT);
-    factory.init(args);
-    factory.inform(loader);
-    TokenStream stream = factory.create(tokenizer);
+    TokenStream stream = new MockTokenizer(reader, MockTokenizer.WHITESPACE, false);
+    stream = tokenFilterFactory("DictionaryCompoundWord", 
+        "dictionary", "compoundDictionary.txt").create(stream);
     assertTokenStreamContents(stream, 
         new String[] { "I", "like", "to", "play", "softball", "soft", "ball" });
   }
   
+  /** Test that bogus arguments result in exception */
+  public void testBogusArguments() throws Exception {
+    try {
+      tokenFilterFactory("DictionaryCompoundWord", 
+          "dictionary", "compoundDictionary.txt", 
+          "bogusArg", "bogusValue");
+      fail();
+    } catch (IllegalArgumentException expected) {
+      assertTrue(expected.getMessage().contains("Unknown parameters"));
+    }
+  }
 }

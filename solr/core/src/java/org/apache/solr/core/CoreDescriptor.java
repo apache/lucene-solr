@@ -22,6 +22,7 @@ import java.io.File;
 
 import org.apache.commons.lang.StringUtils;
 import org.apache.solr.cloud.CloudDescriptor;
+import org.apache.solr.core.ConfigSolr.CfgProp;
 
 /**
  * A Solr core descriptor
@@ -33,7 +34,7 @@ public class CoreDescriptor {
   // Properties file name constants
   public static final String CORE_NAME = "name";
   public static final String CORE_CONFIG = "config";
-  public static final String CORE_INSTDIR = "instanceDir";
+  public static final String CORE_INSTDIR = "instanceDir"; // should probably be removed after 4x
   public static final String CORE_DATADIR = "dataDir";
   public static final String CORE_ULOGDIR = "ulogDir";
   public static final String CORE_SCHEMA = "schema";
@@ -64,6 +65,8 @@ public class CoreDescriptor {
   // them individually.
   private Properties coreProperties = new Properties();
 
+  private boolean loadedImplicit = false;
+
   private final CoreContainer coreContainer;
 
   private CloudDescriptor cloudDesc;
@@ -75,6 +78,7 @@ public class CoreDescriptor {
     coreProperties.put(CORE_TRANSIENT, "false");
 
   }
+  
   public CoreDescriptor(CoreContainer container, String name, String instanceDir) {
     this(container);
     doInit(name, instanceDir);
@@ -132,12 +136,16 @@ public class CoreDescriptor {
   }
 
   public Properties initImplicitProperties() {
-    Properties implicitProperties = new Properties(coreContainer.getContainerProperties());
-    implicitProperties.setProperty(CORE_NAME, getName());
-    implicitProperties.setProperty(CORE_INSTDIR, getInstanceDir());
-    implicitProperties.setProperty(CORE_DATADIR, getDataDir());
-    implicitProperties.setProperty(CORE_CONFIG, getConfigName());
-    implicitProperties.setProperty(CORE_SCHEMA, getSchemaName());
+
+    Properties implicitProperties = new Properties();
+    if (coreContainer != null && coreContainer.getContainerProperties() != null){
+      implicitProperties.putAll(coreContainer.getContainerProperties());
+    }
+    implicitProperties.setProperty("solr.core.name", getName());
+    implicitProperties.setProperty("solr.core.instanceDir", getInstanceDir());
+    implicitProperties.setProperty("solr.core.dataDir", getDataDir());
+    implicitProperties.setProperty("solr.core.configName", getConfigName());
+    implicitProperties.setProperty("solr.core.schemaName", getSchemaName());
     return implicitProperties;
   }
 
@@ -166,19 +174,8 @@ public class CoreDescriptor {
 
   public String getDataDir() {
     String dataDir = coreProperties.getProperty(CORE_DATADIR);
-    if (dataDir == null) {
-      dataDir = getDefaultDataDir();
-    }
-    if (new File(dataDir).isAbsolute()) {
-      return dataDir;
-    } else {
-      if (new File(getInstanceDir()).isAbsolute()) {
-        return SolrResourceLoader.normalizeDir(SolrResourceLoader.normalizeDir(getInstanceDir()) + dataDir);
-      } else  {
-        return SolrResourceLoader.normalizeDir(coreContainer.getSolrHome() +
-                SolrResourceLoader.normalizeDir(getRawInstanceDir()) + dataDir);
-      }
-    }
+    if (dataDir == null) dataDir = getDefaultDataDir();
+    return dataDir;
   }
 
   public void setDataDir(String s) {
@@ -206,11 +203,21 @@ public class CoreDescriptor {
    */
   public String getInstanceDir() {
     String instDir = coreProperties.getProperty(CORE_INSTDIR);
-    if (instDir == null) return null; // No worse than before.
+    if (instDir == null) return null;
 
     if (new File(instDir).isAbsolute()) {
       return SolrResourceLoader.normalizeDir(
           SolrResourceLoader.normalizeDir(instDir));
+    }
+
+    if (coreContainer == null) return null;
+    if( coreContainer.cfg != null) {
+      String coreRootDir = coreContainer.cfg.get(
+          CfgProp.SOLR_COREROOTDIRECTORY, null);
+      if (coreRootDir != null) {
+        return SolrResourceLoader.normalizeDir(coreRootDir
+            + SolrResourceLoader.normalizeDir(instDir));
+      }
     }
     return SolrResourceLoader.normalizeDir(coreContainer.getSolrHome() +
         SolrResourceLoader.normalizeDir(instDir));
@@ -262,13 +269,14 @@ public class CoreDescriptor {
    * Under any circumstance, the properties passed in will override any already present.Merge
    */
   public void setCoreProperties(Properties coreProperties) {
-    if (this.coreProperties == null) {
+    if (! loadedImplicit) {
+      loadedImplicit = true;
       Properties p = initImplicitProperties();
-      this.coreProperties = new Properties(p);
-    }
-    // The caller presumably wants whatever properties passed in to override the current core props, so just add them.
-    if(coreProperties != null) {
-      this.coreProperties.putAll(coreProperties);
+      this.coreProperties.putAll(p);
+      // The caller presumably wants whatever properties passed in to override the current core props, so just add them.
+      if (coreProperties != null) {
+        this.coreProperties.putAll(coreProperties);
+      }
     }
   }
 

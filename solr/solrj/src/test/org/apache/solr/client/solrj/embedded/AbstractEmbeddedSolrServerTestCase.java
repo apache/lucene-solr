@@ -60,7 +60,7 @@ public abstract class AbstractEmbeddedSolrServerTestCase extends LuceneTestCase 
     System.setProperty("dataDir1", dataDir.getAbsolutePath());
     System.setProperty("dataDir2", dataDir2.getAbsolutePath());
     System.setProperty("tempDir", tempDir.getAbsolutePath());
-
+    System.setProperty("tests.shardhandler.randomSeed", Long.toString(random().nextLong()));
     cores = new CoreContainer(SOLR_HOME.getAbsolutePath(), getSolrXml());
   }
   
@@ -74,7 +74,8 @@ public abstract class AbstractEmbeddedSolrServerTestCase extends LuceneTestCase 
 
     System.clearProperty("dataDir1");
     System.clearProperty("dataDir2");
-    
+    System.clearProperty("tests.shardhandler.randomSeed");
+
     deleteAdditionalFiles();
 
     File dataDir = new File(tempDir,"data");

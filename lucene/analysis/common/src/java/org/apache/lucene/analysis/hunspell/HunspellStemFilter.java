@@ -30,6 +30,18 @@ import org.apache.lucene.analysis.tokenattributes.PositionIncrementAttribute;
 /**
  * TokenFilter that uses hunspell affix rules and words to stem tokens.  Since hunspell supports a word having multiple
  * stems, this filter can emit multiple tokens for each consumed token
+ *
+ * <p>
+ * Note: This filter is aware of the {@link KeywordAttribute}. To prevent
+ * certain terms from being passed to the stemmer
+ * {@link KeywordAttribute#isKeyword()} should be set to <code>true</code>
+ * in a previous {@link TokenStream}.
+ *
+ * Note: For including the original term as well as the stemmed version, see
+ * {@link org.apache.lucene.analysis.miscellaneous.KeywordRepeatFilterFactory}
+ * </p>
+ *
+ *
  */
 public final class HunspellStemFilter extends TokenFilter {
   

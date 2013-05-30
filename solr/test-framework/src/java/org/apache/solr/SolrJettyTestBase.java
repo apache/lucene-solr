@@ -17,25 +17,19 @@ package org.apache.solr;
  * limitations under the License.
  */
 
+import java.io.File;
+import java.util.HashMap;
+import java.util.Map;
+import java.util.SortedMap;
+
 import org.apache.solr.client.solrj.SolrServer;
 import org.apache.solr.client.solrj.embedded.EmbeddedSolrServer;
 import org.apache.solr.client.solrj.embedded.JettySolrRunner;
 import org.apache.solr.client.solrj.impl.HttpSolrServer;
 import org.apache.solr.util.ExternalPaths;
-
-import java.io.File;
-import java.util.Collections;
-import java.util.Map;
-import java.util.HashMap;
-import java.util.SortedMap;
-import java.util.TreeMap;
-
-import org.apache.solr.util.RESTfulServerProvider;
-import org.apache.solr.util.RestTestHarness;
 import org.eclipse.jetty.servlet.ServletHolder;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
-import org.restlet.ext.servlet.ServerServlet;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -159,7 +153,7 @@ abstract public class SolrJettyTestBase extends SolrTestCaseJ4
     if (jetty != null) {
       try {
         // setup the server...
-        String url = jetty.getBaseUrl().toString();
+        String url = jetty.getBaseUrl().toString() + "/" + "collection1";
         HttpSolrServer s = new HttpSolrServer( url );
         s.setConnectionTimeout(DEFAULT_CONNECTION_TIMEOUT);
         s.setDefaultMaxConnectionsPerHost(100);

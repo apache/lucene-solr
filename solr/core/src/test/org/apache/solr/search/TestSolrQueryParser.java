@@ -104,7 +104,61 @@ public class TestSolrQueryParser extends SolrTestCaseJ4 {
     );
     assertJQ(req("q","doesnotexist_s:( * * * )")
         ,"/response/numFound==0"   // nothing should be found
+     );
+
+    // length of date math caused issues...
+    assertJQ(req("q","foo_dt:\"2013-03-08T00:46:15Z/DAY+000MILLISECONDS+00SECONDS+00MINUTES+00HOURS+0000000000YEARS+6MONTHS+3DAYS\"", "debug","query")
+        ,"/debug/parsedquery=='foo_dt:2013-09-11T00:00:00Z'"
     );
+  }
+
+  @Test
+  public void testNestedQueryModifiers() throws Exception {
+    // One previous error was that for nested queries, outer parameters overrode nested parameters.
+    // For example _query_:"\"a b\"~2" was parsed as "a b"
+
+    String subqq="_query_:\"{!v=$qq}\"";
+
+    assertJQ(req("q","_query_:\"\\\"how brown\\\"~2\""
+        , "debug","query"
+    )
+        ,"/response/docs/[0]/id=='1'"
+    );
+
+    assertJQ(req("q",subqq, "qq","\"how brown\"~2"
+        , "debug","query"
+    )
+        ,"/response/docs/[0]/id=='1'"
+    );
+
+    // Should explicit slop override?  It currently does not, but that could be considered a bug.
+    assertJQ(req("q",subqq+"~1", "qq","\"how brown\"~2"
+        , "debug","query"
+    )
+        ,"/response/docs/[0]/id=='1'"
+    );
+
+    // Should explicit slop override?  It currently does not, but that could be considered a bug.
+    assertJQ(req("q","  {!v=$qq}~1", "qq","\"how brown\"~2"
+        , "debug","query"
+    )
+        ,"/response/docs/[0]/id=='1'"
+    );
+
+    // boost should multiply
+    assertJQ(req("fq","id:1", "fl","id,score", "q", subqq+"^3", "qq","text:x^2"
+        , "debug","query"
+    )
+        ,"/debug/parsedquery=='text:x^6.0'"
+    );
+
+    // boost should multiply
+    assertJQ(req("fq","id:1", "fl","id,score", "q", "  {!v=$qq}^3", "qq","text:x^2"
+        , "debug","query"
+    )
+        ,"/debug/parsedquery=='text:x^6.0'"
+    );
+
   }
 
 }

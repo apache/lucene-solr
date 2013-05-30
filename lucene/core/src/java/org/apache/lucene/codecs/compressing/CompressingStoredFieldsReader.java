@@ -202,7 +202,7 @@ public final class CompressingStoredFieldsReader extends StoredFieldsReader {
         || docBase + chunkDocs > numDocs) {
       throw new CorruptIndexException("Corrupted: docID=" + docID
           + ", docBase=" + docBase + ", chunkDocs=" + chunkDocs
-          + ", numDocs=" + numDocs);
+          + ", numDocs=" + numDocs + " (resource=" + fieldsStream + ")");
     }
 
     final int numStoredFields, offset, length, totalLength;
@@ -216,7 +216,7 @@ public final class CompressingStoredFieldsReader extends StoredFieldsReader {
       if (bitsPerStoredFields == 0) {
         numStoredFields = fieldsStream.readVInt();
       } else if (bitsPerStoredFields > 31) {
-        throw new CorruptIndexException("bitsPerStoredFields=" + bitsPerStoredFields);
+        throw new CorruptIndexException("bitsPerStoredFields=" + bitsPerStoredFields + " (resource=" + fieldsStream + ")");
       } else {
         final long filePointer = fieldsStream.getFilePointer();
         final PackedInts.Reader reader = PackedInts.getDirectReaderNoHeader(fieldsStream, PackedInts.Format.PACKED, packedIntsVersion, chunkDocs, bitsPerStoredFields);
@@ -230,7 +230,7 @@ public final class CompressingStoredFieldsReader extends StoredFieldsReader {
         offset = (docID - docBase) * length;
         totalLength = chunkDocs * length;
       } else if (bitsPerStoredFields > 31) {
-        throw new CorruptIndexException("bitsPerLength=" + bitsPerLength);
+        throw new CorruptIndexException("bitsPerLength=" + bitsPerLength + " (resource=" + fieldsStream + ")");
       } else {
         final PackedInts.ReaderIterator it = PackedInts.getReaderIteratorNoHeader(fieldsStream, PackedInts.Format.PACKED, packedIntsVersion, chunkDocs, bitsPerLength, 1);
         int off = 0;
@@ -248,7 +248,7 @@ public final class CompressingStoredFieldsReader extends StoredFieldsReader {
     }
 
     if ((length == 0) != (numStoredFields == 0)) {
-      throw new CorruptIndexException("length=" + length + ", numStoredFields=" + numStoredFields);
+      throw new CorruptIndexException("length=" + length + ", numStoredFields=" + numStoredFields + " (resource=" + fieldsStream + ")");
     }
     if (numStoredFields == 0) {
       // nothing to do
@@ -338,7 +338,7 @@ public final class CompressingStoredFieldsReader extends StoredFieldsReader {
           || docBase + chunkDocs > numDocs) {
         throw new CorruptIndexException("Corrupted: current docBase=" + this.docBase
             + ", current numDocs=" + this.chunkDocs + ", new docBase=" + docBase
-            + ", new numDocs=" + chunkDocs);
+            + ", new numDocs=" + chunkDocs + " (resource=" + fieldsStream + ")");
       }
       this.docBase = docBase;
       this.chunkDocs = chunkDocs;
@@ -357,7 +357,7 @@ public final class CompressingStoredFieldsReader extends StoredFieldsReader {
         if (bitsPerStoredFields == 0) {
           Arrays.fill(numStoredFields, 0, chunkDocs, fieldsStream.readVInt());
         } else if (bitsPerStoredFields > 31) {
-          throw new CorruptIndexException("bitsPerStoredFields=" + bitsPerStoredFields);
+          throw new CorruptIndexException("bitsPerStoredFields=" + bitsPerStoredFields + " (resource=" + fieldsStream + ")");
         } else {
           final PackedInts.ReaderIterator it = PackedInts.getReaderIteratorNoHeader(fieldsStream, PackedInts.Format.PACKED, packedIntsVersion, chunkDocs, bitsPerStoredFields, 1);
           for (int i = 0; i < chunkDocs; ++i) {
@@ -387,7 +387,7 @@ public final class CompressingStoredFieldsReader extends StoredFieldsReader {
       final int chunkSize = chunkSize();
       decompressor.decompress(fieldsStream, chunkSize, 0, chunkSize, bytes);
       if (bytes.length != chunkSize) {
-        throw new CorruptIndexException("Corrupted: expected chunk size = " + chunkSize() + ", got " + bytes.length);
+        throw new CorruptIndexException("Corrupted: expected chunk size = " + chunkSize() + ", got " + bytes.length + " (resource=" + fieldsStream + ")");
       }
     }
 

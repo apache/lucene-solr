@@ -19,6 +19,7 @@ package org.apache.solr.client.solrj;
 
 import java.io.File;
 import java.io.IOException;
+import java.util.Arrays;
 
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.client.solrj.request.AbstractUpdateRequest;
@@ -26,6 +27,8 @@ import org.apache.solr.client.solrj.request.CoreAdminRequest;
 import org.apache.solr.client.solrj.request.QueryRequest;
 import org.apache.solr.client.solrj.request.UpdateRequest;
 import org.apache.solr.common.SolrInputDocument;
+import org.apache.solr.common.params.CoreAdminParams;
+import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.core.CoreContainer;
 import org.apache.solr.core.SolrCore;
 import org.apache.solr.util.ExternalPaths;
@@ -189,5 +192,15 @@ public abstract class MergeIndexesExampleTestBase extends SolrExampleTestBase {
         getSolrCore0().query(new SolrQuery("id:AAA")).getResults().size());
     assertEquals(1,
         getSolrCore0().query(new SolrQuery("id:BBB")).getResults().size());
+  }
+
+  public void testMergeMultipleRequest() throws Exception {
+    CoreAdminRequest.MergeIndexes req = new CoreAdminRequest.MergeIndexes();
+    req.setCoreName("core0");
+    req.setIndexDirs(Arrays.asList("/path/1", "/path/2"));
+    req.setSrcCores(Arrays.asList("core1", "core2"));
+    SolrParams params = req.getParams();
+    assertEquals(2, params.getParams(CoreAdminParams.SRC_CORE).length);
+    assertEquals(2, params.getParams(CoreAdminParams.INDEX_DIR).length);
   }
 }

@@ -132,6 +132,9 @@ final class ShardLeaderElectionContext extends ShardLeaderElectionContextBase {
     syncStrategy.close();
   }
   
+  /* 
+   * weAreReplacement: has someone else been the leader already?
+   */
   @Override
   void runLeaderProcess(boolean weAreReplacement) throws KeeperException,
       InterruptedException, IOException {
@@ -169,8 +172,6 @@ final class ShardLeaderElectionContext extends ShardLeaderElectionContextBase {
       }
       
       log.info("I may be the new leader - try and sync");
-      
-      UpdateLog ulog = core.getUpdateHandler().getUpdateLog();
  
       
       // we are going to attempt to be the leader
@@ -184,14 +185,30 @@ final class ShardLeaderElectionContext extends ShardLeaderElectionContextBase {
         success = false;
       }
       
-      if (!success && ulog.getRecentUpdates().getVersions(1).isEmpty()) {
-        // we failed sync, but we have no versions - we can't sync in that case
-        // - we were active
-        // before, so become leader anyway
-        log.info("We failed sync, but we have no versions - we can't sync in that case - we were active before, so become leader anyway");
-        success = true;
+      UpdateLog ulog = core.getUpdateHandler().getUpdateLog();
+
+      if (!success) {
+        boolean hasRecentUpdates = false;
+        if (ulog != null) {
+          // TODO: we could optimize this if necessary
+          UpdateLog.RecentUpdates recentUpdates = ulog.getRecentUpdates();
+          try {
+            hasRecentUpdates = !recentUpdates.getVersions(1).isEmpty();
+          } finally {
+            recentUpdates.close();
+          }
+        }
+
+        if (!hasRecentUpdates) {
+          // we failed sync, but we have no versions - we can't sync in that case
+          // - we were active
+          // before, so become leader anyway
+          log.info("We failed sync, but we have no versions - we can't sync in that case - we were active before, so become leader anyway");
+          success = true;
+        }
       }
-      
+
+
       // if !success but no one else is in active mode,
       // we are the leader anyway
       // TODO: should we also be leader if there is only one other active?
@@ -265,6 +282,10 @@ final class ShardLeaderElectionContext extends ShardLeaderElectionContextBase {
         .getClusterState();
     Map<String,Slice> slices = clusterState.getSlicesMap(collection);
     Slice slice = slices.get(shardId);
+    if (!slice.getState().equals(Slice.ACTIVE)) {
+      //Return false if the Slice is not active yet.
+      return false;
+    }
     Map<String,Replica> replicasMap = slice.getReplicasMap();
     for (Map.Entry<String,Replica> shard : replicasMap.entrySet()) {
       String state = shard.getValue().getStr(ZkStateReader.STATE_PROP);
@@ -302,7 +323,7 @@ final class ShardLeaderElectionContext extends ShardLeaderElectionContextBase {
           found = zkClient.getChildren(shardsElectZkPath, null, true).size();
         } catch (KeeperException e) {
           SolrException.log(log,
-              "Errir checking for the number of election participants", e);
+              "Error checking for the number of election participants", e);
         }
         
         // on startup and after connection timeout, wait for all known shards
@@ -321,6 +342,11 @@ final class ShardLeaderElectionContext extends ShardLeaderElectionContextBase {
           log.info("Was waiting for replicas to come up, but they are taking too long - assuming they won't come back till later");
           return;
         }
+      } else {
+        log.warn("Shard not found: " + shardId + " for collection " + collection);
+
+        return;
+
       }
       
       Thread.sleep(500);

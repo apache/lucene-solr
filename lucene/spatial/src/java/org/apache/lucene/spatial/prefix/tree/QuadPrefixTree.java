@@ -33,7 +33,7 @@ import java.util.Locale;
 /**
  * A {@link SpatialPrefixTree} which uses a
  * <a href="http://en.wikipedia.org/wiki/Quadtree">quad tree</a> in which an
- * indexed term will be generated for each node, 'A', 'B', 'C', 'D'.
+ * indexed term will be generated for each cell, 'A', 'B', 'C', 'D'.
  *
  * @lucene.experimental
  */
@@ -140,19 +140,19 @@ public class QuadPrefixTree extends SpatialPrefixTree {
   }
 
   @Override
-  public Node getNode(Point p, int level) {
-    List<Node> cells = new ArrayList<Node>(1);
+  public Cell getCell(Point p, int level) {
+    List<Cell> cells = new ArrayList<Cell>(1);
     build(xmid, ymid, 0, cells, new StringBuilder(), ctx.makePoint(p.getX(),p.getY()), level);
     return cells.get(0);//note cells could be longer if p on edge
   }
 
   @Override
-  public Node getNode(String token) {
+  public Cell getCell(String token) {
     return new QuadCell(token);
   }
 
   @Override
-  public Node getNode(byte[] bytes, int offset, int len) {
+  public Cell getCell(byte[] bytes, int offset, int len) {
     return new QuadCell(bytes, offset, len);
   }
 
@@ -160,7 +160,7 @@ public class QuadPrefixTree extends SpatialPrefixTree {
       double x,
       double y,
       int level,
-      List<Node> matches,
+      List<Cell> matches,
       StringBuilder str,
       Shape shape,
       int maxLevel) {
@@ -186,7 +186,7 @@ public class QuadPrefixTree extends SpatialPrefixTree {
       double cx,
       double cy,
       int level,
-      List<Node> matches,
+      List<Cell> matches,
       StringBuilder str,
       Shape shape,
       int maxLevel) {
@@ -217,7 +217,7 @@ public class QuadPrefixTree extends SpatialPrefixTree {
     str.setLength(strlen);
   }
 
-  class QuadCell extends Node {
+  class QuadCell extends Cell {
 
     public QuadCell(String token) {
       super(token);
@@ -239,8 +239,8 @@ public class QuadPrefixTree extends SpatialPrefixTree {
     }
 
     @Override
-    public Collection<Node> getSubCells() {
-      List<Node> cells = new ArrayList<Node>(4);
+    public Collection<Cell> getSubCells() {
+      List<Cell> cells = new ArrayList<Cell>(4);
       cells.add(new QuadCell(getTokenString()+"A"));
       cells.add(new QuadCell(getTokenString()+"B"));
       cells.add(new QuadCell(getTokenString()+"C"));
@@ -254,8 +254,8 @@ public class QuadPrefixTree extends SpatialPrefixTree {
     }
 
     @Override
-    public Node getSubCell(Point p) {
-      return QuadPrefixTree.this.getNode(p,getLevel()+1);//not performant!
+    public Cell getSubCell(Point p) {
+      return QuadPrefixTree.this.getCell(p, getLevel() + 1);//not performant!
     }
 
     private Shape shape;//cache

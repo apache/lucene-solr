@@ -25,6 +25,7 @@ import java.util.List;
 
 import org.apache.lucene.search.spell.Dictionary;
 import org.apache.lucene.search.spell.TermFreqIterator;
+import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.BytesRefIterator;
 import org.apache.lucene.util.PriorityQueue;
 
@@ -39,17 +40,29 @@ public abstract class Lookup {
   public static final class LookupResult implements Comparable<LookupResult> {
     /** the key's text */
     public final CharSequence key;
+
     /** the key's weight */
     public final long value;
+
+    /** the key's payload (null if not present) */
+    public final BytesRef payload;
     
     /**
      * Create a new result from a key+weight pair.
      */
     public LookupResult(CharSequence key, long value) {
+      this(key, value, null);
+    }
+
+    /**
+     * Create a new result from a key+weight+payload triple.
+     */
+    public LookupResult(CharSequence key, long value, BytesRef payload) {
       this.key = key;
       this.value = value;
+      this.payload = payload;
     }
-    
+
     @Override
     public String toString() {
       return key + "/" + value;

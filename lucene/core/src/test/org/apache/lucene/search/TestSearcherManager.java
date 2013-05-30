@@ -39,6 +39,7 @@ import org.apache.lucene.index.Term;
 import org.apache.lucene.index.ThreadedIndexingAndSearchingTestCase;
 import org.apache.lucene.store.AlreadyClosedException;
 import org.apache.lucene.store.Directory;
+import org.apache.lucene.util.LuceneTestCase;
 import org.apache.lucene.util.LuceneTestCase.SuppressCodecs;
 import org.apache.lucene.util.NamedThreadFactory;
 import org.apache.lucene.util._TestUtil;
@@ -361,7 +362,7 @@ public class TestSearcherManager extends ThreadedIndexingAndSearchingTestCase {
     final SearcherFactory theEvilOne = new SearcherFactory() {
       @Override
       public IndexSearcher newSearcher(IndexReader ignored) {
-        return new IndexSearcher(other);
+        return LuceneTestCase.newSearcher(other);
       }
       };
 

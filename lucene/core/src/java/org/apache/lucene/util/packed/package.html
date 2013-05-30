@@ -19,7 +19,7 @@
 <head></head>
 <body bgcolor="white">
 
-<p>Packed integer arrays and streams.</p>
+<h2>Packed integer arrays and streams.</h2>
 
 <p>
     The packed package provides
@@ -34,6 +34,51 @@
 </p><p>
     The main access point is the {@link org.apache.lucene.util.packed.PackedInts} factory.
 </p>
+
+<h3>In-memory structures</h3>
+
+<ul>
+    <li><b>{@link org.apache.lucene.util.packed.PackedInts.Mutable}</b><ul>
+        <li>Only supports positive longs.</li>
+        <li>Requires the number of bits per value to be known in advance.</li>
+        <li>Random-access for both writing and reading.</li>
+    </ul></li>
+    <li><b>{@link org.apache.lucene.util.packed.GrowableWriter}</b><ul>
+        <li>Same as PackedInts.Mutable but grows the number of bits per values when needed.</li>
+        <li>Useful to build a PackedInts.Mutable from a read-once stream of longs.</li>
+    </ul></li>
+    <li><b>{@link org.apache.lucene.util.packed.AppendingLongBuffer}</b><ul>
+        <li>Can store any sequence of longs.</li>
+        <li>Compression is good when values are close to each other.</li>
+        <li>Supports random reads, but only sequential writes.</li>
+        <li>Can address up to 2^42 values.</li>
+    </ul></li>
+    <li><b>{@link org.apache.lucene.util.packed.MonotonicAppendingLongBuffer}</b><ul>
+        <li>Same as AppendingLongBuffer except that compression is good when the stream is a succession of affine functions.</li>
+    </ul></li>
+</ul>
+
+<h3>Disk-based structures</h3>
+
+<ul>
+    <li><b>{@link org.apache.lucene.util.packed.PackedInts.Writer}, {@link org.apache.lucene.util.packed.PackedInts.Reader}, {@link org.apache.lucene.util.packed.PackedInts.ReaderIterator}</b><ul>
+        <li>Only supports positive longs.</li>
+        <li>Requires the number of bits per value to be known in advance.</li>
+        <li>Supports both fast sequential access with low memory footprint with ReaderIterator and random-access by either loading values in memory or leaving them on disk with Reader.</li>
+    </ul></li>
+    <li><b>{@link org.apache.lucene.util.packed.BlockPackedWriter}, {@link org.apache.lucene.util.packed.BlockPackedReader}, {@link org.apache.lucene.util.packed.BlockPackedReaderIterator}</b><ul>
+        <li>Splits the stream into fixed-size blocks.</li>
+        <li>Compression is good when values are close to each other.</li>
+        <li>Can address up to 2B * blockSize values.</li>
+    </ul></li>
+    <li><b>{@link org.apache.lucene.util.packed.MonotonicBlockPackedWriter}, {@link org.apache.lucene.util.packed.MonotonicBlockPackedReader}</b><ul>
+        <li>Same as the non-monotonic variants except that compression is good when the stream is a succession of affine functions.</li>
+        <li>The reason why there is no sequential access is that if you need sequential access, you should rather delta-encode and use BlockPackedWriter.</li>
+    </ul></li>
+    <li><b>{@link org.apache.lucene.util.packed.PackedDataOutput}, {@link org.apache.lucene.util.packed.PackedDataInput}</b><ul>
+        <li>Writes sequences of longs where each long can use any number of bits.</li>
+    </ul></li>
+</ul>
 
 </body>
 </html>

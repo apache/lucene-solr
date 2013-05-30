@@ -43,6 +43,14 @@ public class SpatialPointVectorFieldType extends AbstractSpatialFieldType<PointV
 
   }
 
+  /**
+   * Adds X and Y fields to the given schema for each field with this class as its field type.
+   * 
+   * {@inheritDoc}
+   * 
+   * @param schema {@inheritDoc}
+   *
+   */
   @Override
   public void inform(IndexSchema schema) {
     FieldType fieldType = schema.getFieldTypeByName(numberFieldName);

@@ -24,14 +24,10 @@
   <dirname file="${ant.file.common-solr}" property="common-solr.dir"/>
   
   <property name="Name" value="Solr" />
-  <property name="version" value="5.0-SNAPSHOT"/>
-  <property name="fullname" value="${ant.project.name}"/>
-  <property name="fullnamever" value="${fullname}-${version}"/>
-  <property name="final.name" value="${fullnamever}"/>
   
-  <!-- solr uses 1.6 -->
-  <property name="javac.source" value="1.6"/>
-  <property name="javac.target" value="1.6"/>
+  <!-- solr uses 1.7 -->
+  <property name="javac.source" value="1.7"/>
+  <property name="javac.target" value="1.7"/>
   <property name="javac.args" value=""/>
   
   <property name="dest" location="${common-solr.dir}/build" />
@@ -43,13 +39,15 @@
   <property name="tests.userdir" location="src/test-files"/>
   <property name="example" location="${common-solr.dir}/example" />
   <property name="javadoc.dir" location="${dest}/docs"/>
-  <property name="tests.loggingfile" location="${common-solr.dir}/testlogging.properties"/>
   <property name="tests.cleanthreads.sysprop" value="perClass"/>
 
   <property name="changes.target.dir" location="${dest}/docs/changes"/>
   <property name="license.dir" location="${common-solr.dir}/licenses"/>
 
   <import file="${common-solr.dir}/../lucene/module-build.xml"/>
+
+  <!-- backwards compatibility with existing targets/tasks; TODO: remove this! -->
+  <property name="fullnamever" value="${final.name}"/>
 
   <path id="additional.dependencies">
   	<fileset dir="${common-solr.dir}/core/lib" excludes="${common.classpath.excludes}"/>
@@ -59,16 +57,6 @@
   	<fileset dir="lib" excludes="${common.classpath.excludes}" erroronmissingdir="false"/>
   </path>
 
-  <!-- Solr Specification Version
-
-       This will be used in the Manifest file, and therefore must
-       match the pattern "digit+{.digit+}*"
-
-       By default, this should be set to "X.Y.M.${dateversion}"
-       where X.Y.M is the last version released (on this branch).
-    -->
-  <property name="solr.spec.version" value="5.0.0.${dateversion}" />
-  
   <!-- defined here to be able to make the forbidden-api checker correctly
    reference it. 'ivy.xml' is also referencing this property. -->
   <property name="commons-io.version" value="2.1" />
@@ -170,7 +158,7 @@
     <attribute name="excludes" default="**/pom.xml,**/*.iml"/>
     <attribute name="metainf.source.dir" default="${common-solr.dir}"/>
     <attribute name="implementation.title" default="org.apache.solr"/>
-    <attribute name="spec.version" default="${solr.spec.version}"/>
+    <attribute name="spec.version" default="${spec.version}"/>
     <attribute name="manifest.file" default="${manifest.file}"/>
     <element name="nested" optional="true" implicit="true"/>
     <sequential>

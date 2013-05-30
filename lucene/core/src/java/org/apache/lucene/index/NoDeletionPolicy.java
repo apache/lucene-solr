@@ -24,7 +24,7 @@ import java.util.List;
  * deleting them. This class is a singleton and can be accessed by referencing
  * {@link #INSTANCE}.
  */
-public final class NoDeletionPolicy implements IndexDeletionPolicy {
+public final class NoDeletionPolicy extends IndexDeletionPolicy {
 
   /** The single instance of this class. */
   public static final IndexDeletionPolicy INSTANCE = new NoDeletionPolicy();
@@ -38,5 +38,10 @@ public final class NoDeletionPolicy implements IndexDeletionPolicy {
 
   @Override
   public void onInit(List<? extends IndexCommit> commits) {}
-  
+
+  @Override
+  public IndexDeletionPolicy clone() {
+    return this;
+  }
+
 }

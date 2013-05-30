@@ -89,6 +89,10 @@ final class StandardDirectoryReader extends DirectoryReader {
       IOException prior = null;
       boolean success = false;
       try {
+        // NOTE: important that we use infos not
+        // segmentInfos here, so that we are passing the
+        // actual instance of SegmentInfoPerCommit in
+        // IndexWriter's segmentInfos:
         final SegmentInfoPerCommit info = infos.info(i);
         assert info.info.dir == dir;
         final ReadersAndLiveDocs rld = writer.readerPool.get(info, true);
@@ -118,9 +122,10 @@ final class StandardDirectoryReader extends DirectoryReader {
       writer, segmentInfos, writer.getConfig().getReaderTermsIndexDivisor(), applyAllDeletes);
   }
 
-  /** This constructor is only used for {@link #doOpenIfChanged(SegmentInfos, IndexWriter)} */
-  private static DirectoryReader open(Directory directory, IndexWriter writer, SegmentInfos infos, List<? extends AtomicReader> oldReaders,
+  /** This constructor is only used for {@link #doOpenIfChanged(SegmentInfos)} */
+  private static DirectoryReader open(Directory directory, SegmentInfos infos, List<? extends AtomicReader> oldReaders,
     int termInfosIndexDivisor) throws IOException {
+
     // we put the old SegmentReaders in a map, that allows us
     // to lookup a reader using its segment name
     final Map<String,Integer> segmentReaders = new HashMap<String,Integer>();
@@ -207,7 +212,7 @@ final class StandardDirectoryReader extends DirectoryReader {
         }
       }
     }    
-    return new StandardDirectoryReader(directory, newReaders, writer, infos, termInfosIndexDivisor, false);
+    return new StandardDirectoryReader(directory, newReaders, null, infos, termInfosIndexDivisor, false);
   }
 
   @Override
@@ -232,7 +237,7 @@ final class StandardDirectoryReader extends DirectoryReader {
 
   @Override
   protected DirectoryReader doOpenIfChanged() throws IOException {
-    return doOpenIfChanged(null);
+    return doOpenIfChanged((IndexCommit) null);
   }
 
   @Override
@@ -260,7 +265,7 @@ final class StandardDirectoryReader extends DirectoryReader {
 
   private DirectoryReader doOpenFromWriter(IndexCommit commit) throws IOException {
     if (commit != null) {
-      throw new IllegalArgumentException("a reader obtained from IndexWriter.getReader() cannot currently accept a commit");
+      return doOpenFromCommit(commit);
     }
 
     if (writer.nrtIsCurrent(segmentInfos)) {
@@ -293,18 +298,22 @@ final class StandardDirectoryReader extends DirectoryReader {
       }
     }
 
+    return doOpenFromCommit(commit);
+  }
+
+  private DirectoryReader doOpenFromCommit(IndexCommit commit) throws IOException {
     return (DirectoryReader) new SegmentInfos.FindSegmentsFile(directory) {
       @Override
       protected Object doBody(String segmentFileName) throws IOException {
         final SegmentInfos infos = new SegmentInfos();
         infos.read(directory, segmentFileName);
-        return doOpenIfChanged(infos, null);
+        return doOpenIfChanged(infos);
       }
     }.run(commit);
   }
 
-  DirectoryReader doOpenIfChanged(SegmentInfos infos, IndexWriter writer) throws IOException {
-    return StandardDirectoryReader.open(directory, writer, infos, getSequentialSubReaders(), termInfosIndexDivisor);
+  DirectoryReader doOpenIfChanged(SegmentInfos infos) throws IOException {
+    return StandardDirectoryReader.open(directory, infos, getSequentialSubReaders(), termInfosIndexDivisor);
   }
 
   @Override

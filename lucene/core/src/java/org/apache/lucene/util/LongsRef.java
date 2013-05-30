@@ -55,6 +55,13 @@ public final class LongsRef implements Comparable<LongsRef>, Cloneable {
     assert isValid();
   }
 
+  /**
+   * Returns a shallow clone of this instance (the underlying longs are
+   * <b>not</b> copied and will be shared by both the returned object and this
+   * object.
+   * 
+   * @see #deepCopyOf
+   */  
   @Override
   public LongsRef clone() {
     return new LongsRef(longs, offset, length);

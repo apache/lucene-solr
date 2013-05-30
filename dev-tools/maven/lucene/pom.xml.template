@@ -55,6 +55,7 @@
     <module>misc</module>
     <module>queries</module>
     <module>queryparser</module>
+    <module>replicator</module>
     <module>sandbox</module>
     <module>spatial</module>
     <module>suggest</module>

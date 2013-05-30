@@ -18,7 +18,6 @@
 package org.apache.lucene.util;
 
 import java.util.Iterator;
-import java.util.Map;
 import java.util.NoSuchElementException;
 import java.util.Random;
 import java.util.concurrent.atomic.AtomicReferenceArray;
@@ -30,7 +29,7 @@ public class TestWeakIdentityMap extends LuceneTestCase {
 
   public void testSimpleHashMap() {
     final WeakIdentityMap<String,String> map =
-      WeakIdentityMap.newHashMap();
+      WeakIdentityMap.newHashMap(random().nextBoolean());
     // we keep strong references to the keys,
     // so WeakIdentityMap will not forget about them:
     String key1 = new String("foo");
@@ -165,7 +164,7 @@ public class TestWeakIdentityMap extends LuceneTestCase {
     final int threadCount = 8, keyCount = 1024;
     final ExecutorService exec = Executors.newFixedThreadPool(threadCount, new NamedThreadFactory("testConcurrentHashMap"));
     final WeakIdentityMap<Object,Integer> map =
-      WeakIdentityMap.newConcurrentHashMap();
+      WeakIdentityMap.newConcurrentHashMap(random().nextBoolean());
     // we keep strong references to the keys,
     // so WeakIdentityMap will not forget about them:
     final AtomicReferenceArray<Object> keys = new AtomicReferenceArray<Object>(keyCount);

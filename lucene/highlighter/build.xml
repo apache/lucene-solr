@@ -23,6 +23,9 @@
     Highlights search keywords in results
   </description>
 
+  <!-- some files for testing that do not have license headers -->
+  <property name="rat.excludes" value="**/*.utf8"/>
+
   <import file="../module-build.xml"/>
 
   <path id="classpath">

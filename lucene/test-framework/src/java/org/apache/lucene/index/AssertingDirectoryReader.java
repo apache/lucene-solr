@@ -17,67 +17,28 @@ package org.apache.lucene.index;
  * limitations under the License.
  */
 
-import java.io.IOException;
-import java.util.List;
-
 /**
  * A {@link DirectoryReader} that wraps all its subreaders with
  * {@link AssertingAtomicReader}
  */
-public class AssertingDirectoryReader extends DirectoryReader {
-  protected DirectoryReader in;
+public class AssertingDirectoryReader extends FilterDirectoryReader {
+
+  static class AssertingSubReaderWrapper extends SubReaderWrapper {
+    @Override
+    public AtomicReader wrap(AtomicReader reader) {
+      return new AssertingAtomicReader(reader);
+    }
+  }
 
   public AssertingDirectoryReader(DirectoryReader in) {
-    super(in.directory(), wrap(in.getSequentialSubReaders()));
-    this.in = in;
-  }
-  
-  private static AtomicReader[] wrap(List<? extends AtomicReader> readers) {
-    AtomicReader[] wrapped = new AtomicReader[readers.size()];
-    for (int i = 0; i < readers.size(); i++) {
-      wrapped[i] = new AssertingAtomicReader(readers.get(i));
-    }
-    return wrapped;
+    super(in, new AssertingSubReaderWrapper());
   }
 
   @Override
-  protected DirectoryReader doOpenIfChanged() throws IOException {
-    DirectoryReader d = in.doOpenIfChanged();
-    return d == null ? null : new AssertingDirectoryReader(d);
+  protected DirectoryReader doWrapDirectoryReader(DirectoryReader in) {
+    return new AssertingDirectoryReader(in);
   }
 
-  @Override
-  protected DirectoryReader doOpenIfChanged(IndexCommit commit) throws IOException {
-    DirectoryReader d = in.doOpenIfChanged(commit);
-    return d == null ? null : new AssertingDirectoryReader(d);
-  }
-
-  @Override
-  protected DirectoryReader doOpenIfChanged(IndexWriter writer, boolean applyAllDeletes) throws IOException {
-    DirectoryReader d = in.doOpenIfChanged(writer, applyAllDeletes);
-    return d == null ? null : new AssertingDirectoryReader(d);
-  }
-
-  @Override
-  public long getVersion() {
-    return in.getVersion();
-  }
-
-  @Override
-  public boolean isCurrent() throws IOException {
-    return in.isCurrent();
-  }
-
-  @Override
-  public IndexCommit getIndexCommit() throws IOException {
-    return in.getIndexCommit();
-  }
-
-  @Override
-  protected void doClose() throws IOException {
-    in.doClose();
-  }
-  
   @Override
   public Object getCoreCacheKey() {
     return in.getCoreCacheKey();
@@ -87,4 +48,5 @@ public class AssertingDirectoryReader extends DirectoryReader {
   public Object getCombinedCoreAndDeletesKey() {
     return in.getCombinedCoreAndDeletesKey();
   }
+
 }

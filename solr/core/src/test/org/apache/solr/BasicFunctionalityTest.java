@@ -29,6 +29,7 @@ import javax.xml.parsers.DocumentBuilder;
 import javax.xml.parsers.DocumentBuilderFactory;
 
 import org.apache.lucene.document.Field;
+import org.apache.lucene.document.LazyDocument;
 import org.apache.lucene.index.IndexWriter;
 import org.apache.lucene.index.LogMergePolicy;
 import org.apache.lucene.index.StorableField;
@@ -52,6 +53,7 @@ import org.apache.solr.response.ResultContext;
 import org.apache.solr.response.SolrQueryResponse;
 import org.apache.solr.response.XMLWriter;
 import org.apache.solr.schema.IndexSchema;
+import org.apache.solr.schema.IndexSchemaFactory;
 import org.apache.solr.schema.SchemaField;
 import org.apache.solr.search.DocIterator;
 import org.apache.solr.search.DocList;
@@ -250,6 +252,9 @@ public class BasicFunctionalityTest extends SolrTestCaseJ4 {
     assertQ(req("id:[100 TO 110]")
             ,"//*[@numFound='0']"
             );
+    
+    assertU(h.simpleTag("rollback"));
+    assertU(commit());
   }
 
 
@@ -526,7 +531,7 @@ public class BasicFunctionalityTest extends SolrTestCaseJ4 {
   @Test
   public void testTermVectorFields() {
     
-    IndexSchema ischema = new IndexSchema(solrConfig, getSchemaFile(), null);
+    IndexSchema ischema = IndexSchemaFactory.buildIndexSchema(getSchemaFile(), solrConfig);
     SchemaField f; // Solr field type
     StorableField luf; // Lucene field
 
@@ -717,21 +722,21 @@ public class BasicFunctionalityTest extends SolrTestCaseJ4 {
 
   @Test
   public void testNotLazyField() throws IOException {
-    for(int i = 0; i < 10; i++) {
-      assertU(adoc("id", new Integer(i).toString(), 
-                   "title", "keyword",
-                   "test_hlt", mkstr(20000)));
-    }
+
+    assertU(adoc("id", "7777",
+                 "title", "keyword",
+                 "test_hlt", mkstr(20000)));
+
     assertU(commit());
     SolrCore core = h.getCore();
    
-    SolrQueryRequest req = req("q", "title:keyword", "fl", "id,title,test_hlt");
+    SolrQueryRequest req = req("q", "id:7777", "fl", "id,title,test_hlt");
     SolrQueryResponse rsp = new SolrQueryResponse();
     core.execute(core.getRequestHandler(req.getParams().get(CommonParams.QT)), req, rsp);
 
     DocList dl = ((ResultContext) rsp.getValues().get("response")).docs;
     StoredDocument d = req.getSearcher().doc(dl.iterator().nextDoc());
-    // ensure field is not lazy, only works for Non-Numeric fields currently (if you change schema behind test, this may fail)
+    // ensure field in fl is not lazy
     assertFalse( ((Field) d.getField("test_hlt")).getClass().getSimpleName().equals("LazyField"));
     assertFalse( ((Field) d.getField("title")).getClass().getSimpleName().equals("LazyField"));
     req.close();
@@ -739,24 +744,65 @@ public class BasicFunctionalityTest extends SolrTestCaseJ4 {
 
   @Test
   public void testLazyField() throws IOException {
-    for(int i = 0; i < 10; i++) {
-      assertU(adoc("id", new Integer(i).toString(), 
-                   "title", "keyword",
-                   "test_hlt", mkstr(20000)));
-    }
+    assertU(adoc("id", "7777",
+                 "title", "keyword",
+                 "test_hlt", mkstr(10000),
+                 "test_hlt", mkstr(20000),
+                 "test_hlt", mkstr(30000),
+                 "test_hlt", mkstr(40000)));
+
     assertU(commit());
     SolrCore core = h.getCore();
     
-    SolrQueryRequest req = req("q", "title:keyword", "fl", "id,title");
+    // initial request
+    SolrQueryRequest req = req("q", "id:7777", "fl", "id,title");
     SolrQueryResponse rsp = new SolrQueryResponse();
     core.execute(core.getRequestHandler(req.getParams().get(CommonParams.QT)), req, rsp);
 
     DocList dl = ((ResultContext) rsp.getValues().get("response")).docs;
     DocIterator di = dl.iterator();    
-    StoredDocument d = req.getSearcher().doc(di.nextDoc());
-    // ensure field is lazy
-    assertTrue( (d.getField("test_hlt")).getClass().getSimpleName().equals("LazyField"));
-    assertFalse( (d.getField("title")).getClass().getSimpleName().equals("LazyField"));
+    StoredDocument d1 = req.getSearcher().doc(di.nextDoc());
+    StorableField[] values1 = null;
+
+    // ensure fl field is non lazy, and non-fl field is lazy
+    assertFalse( d1.getField("title") instanceof LazyDocument.LazyField);
+    assertFalse( d1.getField("id") instanceof LazyDocument.LazyField);
+    values1 = d1.getFields("test_hlt");
+    assertEquals(4, values1.length);
+    for (int i = 0; i < values1.length; i++) {
+      assertTrue( values1[i] instanceof LazyDocument.LazyField );
+      LazyDocument.LazyField f = (LazyDocument.LazyField) values1[i];
+      assertFalse( f.hasBeenLoaded() );
+    }
+    req.close();
+
+    // followup request, different fl
+    req = req("q", "id:7777", "fl", "id,test_hlt");
+    rsp = new SolrQueryResponse();
+    core.execute(core.getRequestHandler(req.getParams().get(CommonParams.QT)), req, rsp);
+
+    dl = ((ResultContext) rsp.getValues().get("response")).docs;
+    di = dl.iterator();    
+    StoredDocument d2 = req.getSearcher().doc(di.nextDoc());
+    // ensure same doc, same lazy field now
+    assertTrue("Doc was not cached", d1 == d2);
+    StorableField[] values2 = d2.getFields("test_hlt");
+    assertEquals(values1.length, values2.length);
+    for (int i = 0; i < values1.length; i++) {
+      assertSame("LazyField wasn't reused", 
+                 values1[i], values2[i]);
+      LazyDocument.LazyField f = (LazyDocument.LazyField) values1[i];
+      // still not a real boy, no response writer in play
+      assertFalse(f.hasBeenLoaded()); 
+    }
+
+    assertNotNull(values2[0].stringValue()); // actuallize one value
+    for (int i = 0; i < values2.length; i++) {
+      // now all values for this field should be loaded & cached
+      LazyDocument.LazyField f = (LazyDocument.LazyField) values2[i];
+      assertTrue(f.hasBeenLoaded());
+    }
+
     req.close();
   } 
             
@@ -781,7 +827,35 @@ public class BasicFunctionalityTest extends SolrTestCaseJ4 {
     assertU(adoc("id", "5",  "bday", "NOW+30MINUTES"));
     assertU(adoc("id", "6",  "bday", "NOW+2YEARS"));
     assertU(commit());
+    
+    // a ridiculoulsy long date math expression that's still equivilent to july4
+    final StringBuilder july4Long = new StringBuilder(july4);
+    final int iters = atLeast(10);
+    for (int i = 0; i < iters; i++) {
+      final String val = String.valueOf(atLeast(1));
+      july4Long.append("+" + val + "SECONDS-" + val + "SECONDS");
+    }
 
+    // term queries using date math (all of these should match doc#1)
+    for (String q : 
+           new String[] {
+             "bday:1976-07-04T12\\:08\\:56.45Z/SECOND+235MILLIS",
+             "bday:1976-07-04T12\\:08\\:56.123Z/MINUTE+56SECONDS+235MILLIS",
+             "bday:\"1976-07-04T12:08:56.45Z/SECOND+235MILLIS\"",
+             "bday:\"1976-07-04T12:08:56.123Z/MINUTE+56SECONDS+235MILLIS\"",
+             "{!term f=bday}1976-07-04T12:08:56.45Z/SECOND+235MILLIS",
+             "{!term f=bday}1976-07-04T12:08:56.123Z/MINUTE+56SECONDS+235MILLIS",             
+             "{!term f=bday}"+july4,
+             "{!term f=bday}"+july4Long,
+             "bday:\"" + july4Long + "\""
+           }) {
+      assertQ("check math on field query: " + q,
+              req("q", q),
+              "*[count(//doc)=1]",
+              "//int[@name='id'][.='1']");
+    }
+
+    // range queries using date math
     assertQ("check math on absolute date#1",
             req("q", "bday:[* TO "+july4+"/SECOND]"),
             "*[count(//doc)=0]");

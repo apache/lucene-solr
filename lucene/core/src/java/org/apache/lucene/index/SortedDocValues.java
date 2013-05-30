@@ -114,4 +114,12 @@ public abstract class SortedDocValues extends BinaryDocValues {
 
     return -(low + 1);  // key not found.
   }
+  
+  /** 
+   * Returns a {@link TermsEnum} over the values.
+   * The enum supports {@link TermsEnum#ord()} and {@link TermsEnum#seekExact(long)}.
+   */
+  public TermsEnum termsEnum() {
+    return new SortedDocValuesTermsEnum(this);
+  }
 }

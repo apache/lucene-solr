@@ -17,10 +17,10 @@ package org.apache.lucene.search.postingshighlight;
  * limitations under the License.
  */
 
-import org.apache.lucene.index.Term;
 import org.apache.lucene.util.ArrayUtil;
+import org.apache.lucene.util.BytesRef;
+import org.apache.lucene.util.InPlaceMergeSorter;
 import org.apache.lucene.util.RamUsageEstimator;
-import org.apache.lucene.util.SorterTemplate;
 
 /**
  * Represents a passage (typically a sentence of the document). 
@@ -36,18 +36,24 @@ public final class Passage {
 
   int matchStarts[] = new int[8];
   int matchEnds[] = new int[8];
-  Term matchTerms[] = new Term[8];
+  BytesRef matchTerms[] = new BytesRef[8];
   int numMatches = 0;
   
-  void addMatch(int startOffset, int endOffset, Term term) {
+  void addMatch(int startOffset, int endOffset, BytesRef term) {
     assert startOffset >= this.startOffset && startOffset <= this.endOffset;
     if (numMatches == matchStarts.length) {
-      matchStarts = ArrayUtil.grow(matchStarts, numMatches+1);
-      matchEnds = ArrayUtil.grow(matchEnds, numMatches+1);
-      Term newMatchTerms[] = new Term[ArrayUtil.oversize(numMatches+1, RamUsageEstimator.NUM_BYTES_OBJECT_REF)];
+      int newLength = ArrayUtil.oversize(numMatches+1, RamUsageEstimator.NUM_BYTES_OBJECT_REF);
+      int newMatchStarts[] = new int[newLength];
+      int newMatchEnds[] = new int[newLength];
+      BytesRef newMatchTerms[] = new BytesRef[newLength];
+      System.arraycopy(matchStarts, 0, newMatchStarts, 0, numMatches);
+      System.arraycopy(matchEnds, 0, newMatchEnds, 0, numMatches);
       System.arraycopy(matchTerms, 0, newMatchTerms, 0, numMatches);
+      matchStarts = newMatchStarts;
+      matchEnds = newMatchEnds;
       matchTerms = newMatchTerms;
     }
+    assert matchStarts.length == matchEnds.length && matchEnds.length == matchTerms.length;
     matchStarts[numMatches] = startOffset;
     matchEnds[numMatches] = endOffset;
     matchTerms[numMatches] = term;
@@ -57,8 +63,8 @@ public final class Passage {
   void sort() {
     final int starts[] = matchStarts;
     final int ends[] = matchEnds;
-    final Term terms[] = matchTerms;
-    new SorterTemplate() {
+    final BytesRef terms[] = matchTerms;
+    new InPlaceMergeSorter() {
       @Override
       protected void swap(int i, int j) {
         int temp = starts[i];
@@ -69,30 +75,17 @@ public final class Passage {
         ends[i] = ends[j];
         ends[j] = temp;
         
-        Term tempTerm = terms[i];
+        BytesRef tempTerm = terms[i];
         terms[i] = terms[j];
         terms[j] = tempTerm;
       }
 
       @Override
       protected int compare(int i, int j) {
-        // TODO: java7 use Integer.compare(starts[i], starts[j])
-        return Long.signum(((long)starts[i]) - starts[j]);
+        return Integer.compare(starts[i], starts[j]);
       }
 
-      @Override
-      protected void setPivot(int i) {
-        pivot = starts[i];
-      }
-
-      @Override
-      protected int comparePivot(int j) {
-        // TODO: java7 use Integer.compare(pivot, starts[j])
-        return Long.signum(((long)pivot) - starts[j]);
-      }
-      
-      int pivot;
-    }.mergeSort(0, numMatches-1);
+    }.sort(0, numMatches);
   }
   
   void reset() {
@@ -157,11 +150,11 @@ public final class Passage {
   }
 
   /**
-   * Term of the matches, corresponding with {@link #getMatchStarts()}.
+   * BytesRef (term text) of the matches, corresponding with {@link #getMatchStarts()}.
    * <p>
    * Only {@link #getNumMatches()} are valid.
    */
-  public Term[] getMatchTerms() {
+  public BytesRef[] getMatchTerms() {
     return matchTerms;
   }
 }

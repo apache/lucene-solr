@@ -37,14 +37,17 @@ import java.util.Map;
  */
 public class JapaneseKatakanaStemFilterFactory extends TokenFilterFactory {
   private static final String MINIMUM_LENGTH_PARAM = "minimumLength";
-  private int minimumLength;
+  private final int minimumLength;
   
-  @Override
-  public void init(Map<String, String> args) {
-    super.init(args);
-    minimumLength = getInt(MINIMUM_LENGTH_PARAM, JapaneseKatakanaStemFilter.DEFAULT_MINIMUM_LENGTH);
+  /** Creates a new JapaneseKatakanaStemFilterFactory */
+  public JapaneseKatakanaStemFilterFactory(Map<String,String> args) {
+    super(args);
+    minimumLength = getInt(args, MINIMUM_LENGTH_PARAM, JapaneseKatakanaStemFilter.DEFAULT_MINIMUM_LENGTH);
     if (minimumLength < 2) {
       throw new IllegalArgumentException("Illegal " + MINIMUM_LENGTH_PARAM + " " + minimumLength + " (must be 2 or greater)");
+    }
+    if (!args.isEmpty()) {
+      throw new IllegalArgumentException("Unknown parameters: " + args);
     }
   }
 

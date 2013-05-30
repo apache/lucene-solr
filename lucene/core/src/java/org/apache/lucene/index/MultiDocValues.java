@@ -217,7 +217,7 @@ public class MultiDocValues {
     } else {
       TermsEnum enums[] = new TermsEnum[values.length];
       for (int i = 0; i < values.length; i++) {
-        enums[i] = new SortedDocValuesTermsEnum(values[i]);
+        enums[i] = values[i].termsEnum();
       }
       OrdinalMap mapping = new OrdinalMap(r.getCoreCacheKey(), enums);
       return new MultiSortedDocValues(values, starts, mapping);
@@ -261,7 +261,7 @@ public class MultiDocValues {
     } else {
       TermsEnum enums[] = new TermsEnum[values.length];
       for (int i = 0; i < values.length; i++) {
-        enums[i] = new SortedSetDocValuesTermsEnum(values[i]);
+        enums[i] = values[i].termsEnum();
       }
       OrdinalMap mapping = new OrdinalMap(r.getCoreCacheKey(), enums);
       return new MultiSortedSetDocValues(values, starts, mapping);

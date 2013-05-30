@@ -7,7 +7,6 @@ import org.apache.lucene.facet.search.FacetArrays;
 import org.apache.lucene.facet.search.FacetRequest;
 import org.apache.lucene.facet.search.FacetsAggregator;
 import org.apache.lucene.facet.search.FacetsCollector.MatchingDocs;
-import org.apache.lucene.facet.taxonomy.TaxonomyReader;
 import org.apache.lucene.index.BinaryDocValues;
 import org.apache.lucene.util.BytesRef;
 
@@ -32,6 +31,10 @@ import org.apache.lucene.util.BytesRef;
  * A {@link FacetsAggregator} which computes the weight of a category as the sum
  * of the float values associated with it in the result documents. Assumes that
  * the association encoded for each ordinal is {@link CategoryFloatAssociation}.
+ * <p>
+ * <b>NOTE:</b> this aggregator does not support
+ * {@link #rollupValues(FacetRequest, int, int[], int[], FacetArrays)}. It only
+ * aggregates the categories for which you added a {@link CategoryAssociation}.
  * 
  * @lucene.experimental
  */
@@ -77,22 +80,9 @@ public class SumFloatAssociationFacetsAggregator implements FacetsAggregator {
     return false;
   }
 
-  private float rollupValues(int ordinal, int[] children, int[] siblings, float[] scores) {
-    float Value = 0f;
-    while (ordinal != TaxonomyReader.INVALID_ORDINAL) {
-      float childValue = scores[ordinal];
-      childValue += rollupValues(children[ordinal], children, siblings, scores);
-      scores[ordinal] = childValue;
-      Value += childValue;
-      ordinal = siblings[ordinal];
-    }
-    return Value;
-  }
-
   @Override
   public void rollupValues(FacetRequest fr, int ordinal, int[] children, int[] siblings, FacetArrays facetArrays) {
-    float[] values = facetArrays.getFloatArray();
-    values[ordinal] += rollupValues(children[ordinal], children, siblings, values);
+    // NO-OP: this aggregator does no rollup values to the parents.
   }
   
 }

@@ -27,6 +27,7 @@ import org.apache.solr.common.params.ShardParams;
 import org.apache.solr.handler.component.ResponseBuilder;
 import org.apache.solr.handler.component.ShardRequest;
 import org.apache.solr.schema.FieldType;
+import org.apache.solr.schema.IndexSchema;
 import org.apache.solr.search.Grouping;
 import org.apache.solr.search.SolrIndexSearcher;
 import org.apache.solr.search.grouping.distributed.ShardRequestFactory;
@@ -112,12 +113,13 @@ public class TopGroupsShardRequestFactory implements ShardRequestFactory {
     }
 
     sreq.params.set(GroupParams.GROUP_DISTRIBUTED_SECOND, "true");
+    final IndexSchema schema = rb.req.getSearcher().getSchema();
     for (Map.Entry<String, Collection<SearchGroup<BytesRef>>> entry : rb.mergedSearchGroups.entrySet()) {
       for (SearchGroup<BytesRef> searchGroup : entry.getValue()) {
         String groupValue;
         if (searchGroup.groupValue != null) {
           String rawGroupValue = searchGroup.groupValue.utf8ToString();
-          FieldType fieldType = rb.req.getSearcher().getSchema().getField(entry.getKey()).getType();
+          FieldType fieldType = schema.getField(entry.getKey()).getType();
           groupValue = fieldType.indexedToReadable(rawGroupValue);
         } else {
           groupValue = GROUP_NULL_VALUE;
@@ -127,9 +129,9 @@ public class TopGroupsShardRequestFactory implements ShardRequestFactory {
     }
 
     if ((rb.getFieldFlags() & SolrIndexSearcher.GET_SCORES) != 0 || rb.getSortSpec().includesScore()) {
-      sreq.params.set(CommonParams.FL, rb.req.getSchema().getUniqueKeyField().getName() + ",score");
+      sreq.params.set(CommonParams.FL, schema.getUniqueKeyField().getName() + ",score");
     } else {
-      sreq.params.set(CommonParams.FL, rb.req.getSchema().getUniqueKeyField().getName());
+      sreq.params.set(CommonParams.FL, schema.getUniqueKeyField().getName());
     }
     
     int origTimeAllowed = sreq.params.getInt(CommonParams.TIME_ALLOWED, -1);

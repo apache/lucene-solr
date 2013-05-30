@@ -242,6 +242,39 @@ public final class SegmentInfos implements Cloneable, Iterable<SegmentInfoPerCom
     }
   }
 
+  /**
+   * A utility for writing the {@link IndexFileNames#SEGMENTS_GEN} file to a
+   * {@link Directory}.
+   * 
+   * <p>
+   * <b>NOTE:</b> this is an internal utility which is kept public so that it's
+   * accessible by code from other packages. You should avoid calling this
+   * method unless you're absolutely sure what you're doing!
+   * 
+   * @lucene.internal
+   */
+  public static void writeSegmentsGen(Directory dir, long generation) {
+    try {
+      IndexOutput genOutput = dir.createOutput(IndexFileNames.SEGMENTS_GEN, IOContext.READONCE);
+      try {
+        genOutput.writeInt(FORMAT_SEGMENTS_GEN_CURRENT);
+        genOutput.writeLong(generation);
+        genOutput.writeLong(generation);
+      } finally {
+        genOutput.close();
+        dir.sync(Collections.singleton(IndexFileNames.SEGMENTS_GEN));
+      }
+    } catch (Throwable t) {
+      // It's OK if we fail to write this file since it's
+      // used only as one of the retry fallbacks.
+      try {
+        dir.deleteFile(IndexFileNames.SEGMENTS_GEN);
+      } catch (Throwable t2) {
+        // Ignore; this file is only used in a retry
+        // fallback on init.
+      }
+    }
+  }
 
   /**
    * Get the next segments_N filename that will be written.
@@ -848,27 +881,7 @@ public final class SegmentInfos implements Cloneable, Iterable<SegmentInfoPerCom
     }
 
     lastGeneration = generation;
-
-    try {
-      IndexOutput genOutput = dir.createOutput(IndexFileNames.SEGMENTS_GEN, IOContext.READONCE);
-      try {
-        genOutput.writeInt(FORMAT_SEGMENTS_GEN_CURRENT);
-        genOutput.writeLong(generation);
-        genOutput.writeLong(generation);
-      } finally {
-        genOutput.close();
-        dir.sync(Collections.singleton(IndexFileNames.SEGMENTS_GEN));
-      }
-    } catch (Throwable t) {
-      // It's OK if we fail to write this file since it's
-      // used only as one of the retry fallbacks.
-      try {
-        dir.deleteFile(IndexFileNames.SEGMENTS_GEN);
-      } catch (Throwable t2) {
-        // Ignore; this file is only used in a retry
-        // fallback on init.
-      }
-    }
+    writeSegmentsGen(dir, generation);
   }
 
   /** Writes & syncs to the Directory dir, taking care to

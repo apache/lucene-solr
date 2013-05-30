@@ -23,6 +23,9 @@ import org.apache.solr.SolrIgnoredThreadsFilter;
 import org.apache.solr.client.solrj.SolrServer;
 import org.apache.solr.client.solrj.embedded.AbstractEmbeddedSolrServerTestCase;
 import org.apache.solr.client.solrj.embedded.EmbeddedSolrServer;
+import org.apache.solr.common.SolrException;
+import org.apache.solr.common.params.ModifiableSolrParams;
+import org.apache.solr.common.util.NamedList;
 import org.apache.solr.core.SolrCore;
 import org.apache.commons.io.FileUtils;
 import org.junit.After;
@@ -80,18 +83,54 @@ public class TestCoreAdmin extends AbstractEmbeddedSolrServerTestCase {
     req.setInstanceDir(newCoreInstanceDir.getAbsolutePath() + File.separator + "newcore");
     req.setDataDir(dataDir.getAbsolutePath());
     req.setUlogDir(new File(dataDir, "ulog").getAbsolutePath());
+
+    // These should be the inverse of defaults.
+    req.setIsLoadOnStartup(false);
+    req.setIsTransient(true);
     req.process(server);
-    
+
+    // Show that the newly-created core has values for load on startup and transient different than defaults due to the
+    // above.
+
+    SolrCore coreProveIt = cores.getCore("collection1");
     SolrCore core = cores.getCore("newcore");
+
+    assertTrue(core.getCoreDescriptor().isTransient());
+    assertFalse(coreProveIt.getCoreDescriptor().isTransient());
+
+    assertFalse(core.getCoreDescriptor().isLoadOnStartup());
+    assertTrue(coreProveIt.getCoreDescriptor().isLoadOnStartup());
+
     File logDir;
     try {
       logDir = core.getUpdateHandler().getUpdateLog().getLogDir();
     } finally {
+      coreProveIt.close();
       core.close();
     }
     assertEquals(new File(dataDir, "ulog" + File.separator + "tlog").getAbsolutePath(), logDir.getAbsolutePath());
     server.shutdown();
     
+  }
+  
+  @Test
+  public void testErrorCases() throws Exception {
+    
+    ModifiableSolrParams params = new ModifiableSolrParams();
+    params.set("action", "BADACTION");
+    String collectionName = "badactioncollection";
+    params.set("name", collectionName);
+    QueryRequest request = new QueryRequest(params);
+    request.setPath("/admin/cores");
+    boolean gotExp = false;
+    NamedList<Object> resp = null;
+    try {
+      resp = getSolrAdmin().request(request);
+    } catch (SolrException e) {
+      gotExp = true;
+    }
+    
+    assertTrue(gotExp);
   }
   
   @BeforeClass

@@ -30,6 +30,7 @@ import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Vector;
 
 import javax.servlet.ServletInputStream;
 import javax.servlet.http.HttpServletRequest;
@@ -313,5 +314,33 @@ public class SolrRequestParserTest extends SolrTestCaseJ4 {
       assertTrue(solre.getMessage().startsWith("Solr requires that request parameters"));
       assertEquals(500, solre.code());
     }
+  }
+  
+  @Test
+  public void testAddHttpRequestToContext() throws Exception {
+    HttpServletRequest request = createMock(HttpServletRequest.class);
+    expect(request.getMethod()).andReturn("GET").anyTimes();
+    expect(request.getContentType()).andReturn( "application/x-www-form-urlencoded" ).anyTimes();
+    expect(request.getQueryString()).andReturn("q=title:solr").anyTimes();
+    Map<String, String> headers = new HashMap<String,String>();
+    headers.put("X-Forwarded-For", "10.0.0.1");
+    expect(request.getHeaderNames()).andReturn(new Vector<String>(headers.keySet()).elements()).anyTimes();
+    for(Map.Entry<String,String> entry:headers.entrySet()) {
+      Vector<String> v = new Vector<String>();
+      v.add(entry.getValue());
+      expect(request.getHeaders(entry.getKey())).andReturn(v.elements()).anyTimes();
+    }
+    replay(request);
+    
+    SolrRequestParsers parsers = new SolrRequestParsers(h.getCore().getSolrConfig());
+    assertFalse(parsers.isAddRequestHeadersToContext());
+    SolrQueryRequest solrReq = parsers.parse(h.getCore(), "/select", request);
+    assertFalse(solrReq.getContext().containsKey("httpRequest"));
+    
+    parsers.setAddRequestHeadersToContext(true);
+    solrReq = parsers.parse(h.getCore(), "/select", request);
+    assertEquals(request, solrReq.getContext().get("httpRequest"));
+    assertEquals("10.0.0.1", ((HttpServletRequest)solrReq.getContext().get("httpRequest")).getHeaders("X-Forwarded-For").nextElement());
+    
   }
 }

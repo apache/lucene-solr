@@ -103,7 +103,7 @@ public class SimpleNaiveBayesClassifier implements Classifier<BytesRef> {
   @Override
   public ClassificationResult<BytesRef> assignClass(String inputDocument) throws IOException {
     if (atomicReader == null) {
-      throw new RuntimeException("need to train the classifier first");
+      throw new IOException("You must first call Classifier#train first");
     }
     double max = 0d;
     BytesRef foundClass = new BytesRef();
@@ -117,7 +117,7 @@ public class SimpleNaiveBayesClassifier implements Classifier<BytesRef> {
       double clVal = calculatePrior(next) * calculateLikelihood(tokenizedDoc, next);
       if (clVal > max) {
         max = clVal;
-        foundClass = next.clone();
+        foundClass = BytesRef.deepCopyOf(next);
       }
     }
     return new ClassificationResult<BytesRef>(foundClass, max);

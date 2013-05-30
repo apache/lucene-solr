@@ -26,7 +26,6 @@ import org.apache.lucene.queries.function.FunctionValues;
 import org.apache.lucene.queries.function.ValueSource;
 import org.apache.lucene.queries.function.ValueSourceScorer;
 import org.apache.lucene.search.FieldCache;
-import org.apache.lucene.util.Bits;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.CharsRef;
 import org.apache.lucene.util.UnicodeUtil;
@@ -39,7 +38,6 @@ import org.apache.lucene.util.mutable.MutableValueStr;
  */
 public abstract class DocTermsIndexDocValues extends FunctionValues {
   protected final SortedDocValues termsIndex;
-  protected final Bits valid;
   protected final ValueSource vs;
   protected final MutableValueStr val = new MutableValueStr();
   protected final BytesRef spare = new BytesRef();
@@ -48,7 +46,6 @@ public abstract class DocTermsIndexDocValues extends FunctionValues {
   public DocTermsIndexDocValues(ValueSource vs, AtomicReaderContext context, String field) throws IOException {
     try {
       termsIndex = FieldCache.DEFAULT.getTermsIndex(context.reader(), field);
-      valid = FieldCache.DEFAULT.getDocsWithField(context.reader(), field);
     } catch (RuntimeException e) {
       throw new DocTermsIndexException(field, e);
     }
@@ -59,7 +56,7 @@ public abstract class DocTermsIndexDocValues extends FunctionValues {
 
   @Override
   public boolean exists(int doc) {
-    return valid.get(doc);
+    return ordVal(doc) >= 0;
   }
 
   @Override

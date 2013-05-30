@@ -135,6 +135,9 @@ final class BooleanScorer extends Scorer {
     @Override
     public float score() { return (float)score; }
     
+    @Override
+    public long cost() { return 1; }
+
   }
 
   static final class Bucket {
@@ -324,6 +327,11 @@ final class BooleanScorer extends Scorer {
   @Override
   public int freq() throws IOException {
     throw new UnsupportedOperationException();
+  }
+
+  @Override
+  public long cost() {
+    return Integer.MAX_VALUE;
   }
 
   @Override

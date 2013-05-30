@@ -162,6 +162,11 @@ public class SpanNotQuery extends SpanQuery implements Cloneable {
       }
 
       @Override
+      public long cost() {
+        return includeSpans.cost();
+      }
+
+      @Override
       public String toString() {
           return "spans(" + SpanNotQuery.this.toString() + ")";
         }

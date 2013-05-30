@@ -23,10 +23,10 @@ import java.util.logging.*;
 
 import javax.xml.xpath.XPathExpressionException;
 
+import org.apache.commons.io.FileUtils;
 import org.apache.lucene.util.Constants;
 import org.apache.lucene.util.LuceneTestCase;
 import org.apache.lucene.util.QuickPatchThreadsFilter;
-import org.apache.noggit.*;
 import org.apache.solr.client.solrj.util.ClientUtils;
 import org.apache.solr.common.*;
 import org.apache.solr.common.cloud.SolrZkClient;
@@ -47,6 +47,9 @@ import org.apache.solr.util.TestHarness;
 import org.junit.*;
 import org.junit.rules.RuleChain;
 import org.junit.rules.TestRule;
+import org.noggit.CharArr;
+import org.noggit.JSONUtil;
+import org.noggit.ObjectBuilder;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.xml.sax.SAXException;
@@ -83,6 +86,7 @@ public abstract class SolrTestCaseJ4 extends LuceneTestCase {
   @SuppressWarnings("unused")
   private static void beforeClass() {
     System.setProperty("jetty.testMode", "true");
+    System.setProperty("tests.shardhandler.randomSeed", Long.toString(random().nextLong()));
     setupLogging();
     startTrackingSearchers();
     startTrackingZkClients();
@@ -97,7 +101,9 @@ public abstract class SolrTestCaseJ4 extends LuceneTestCase {
     endTrackingSearchers();
     endTrackingZkClients();
     resetFactory();
+    coreName = CoreContainer.DEFAULT_DEFAULT_CORE_NAME;
     System.clearProperty("jetty.testMode");
+    System.clearProperty("tests.shardhandler.randomSeed");
   }
 
   private static boolean changedFactory = false;
@@ -384,7 +390,8 @@ public abstract class SolrTestCaseJ4 extends LuceneTestCase {
   public static void createCore() {
     assertNotNull(testSolrHome);
     solrConfig = TestHarness.createConfig(testSolrHome, coreName, getSolrConfigFile());
-    h = new TestHarness( dataDir.getAbsolutePath(),
+    h = new TestHarness( coreName,
+            dataDir.getAbsolutePath(),
             solrConfig,
             getSchemaFile());
     lrf = h.getRequestFactory
@@ -1436,4 +1443,30 @@ public abstract class SolrTestCaseJ4 extends LuceneTestCase {
     }
     return result;
   }
+
+  public void assertXmlFile(final File file, String... xpath)
+      throws IOException, SAXException {
+
+    try {
+      String xml = FileUtils.readFileToString(file, "UTF-8");
+      String results = h.validateXPath(xml, xpath);
+      if (null != results) {
+        String msg = "File XPath failure: file=" + file.getPath() + " xpath="
+            + results + "\n\nxml was: " + xml;
+        fail(msg);
+      }
+    } catch (XPathExpressionException e2) {
+      throw new RuntimeException("XPath is invalid", e2);
+    }
+  }
+  // Creates a mininmal conf dir.
+  public void copyMinConf(File dstRoot) throws IOException {
+
+    File subHome = new File(dstRoot, "conf");
+    assertTrue("Failed to make subdirectory ", dstRoot.mkdirs());
+    String top = SolrTestCaseJ4.TEST_HOME() + "/collection1/conf";
+    FileUtils.copyFile(new File(top, "schema-tiny.xml"), new File(subHome, "schema-tiny.xml"));
+    FileUtils.copyFile(new File(top, "solrconfig-minimal.xml"), new File(subHome, "solrconfig-minimal.xml"));
+  }
+
 }

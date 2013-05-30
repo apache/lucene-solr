@@ -67,10 +67,6 @@ public class FacetResultNode {
    */
   public List<FacetResultNode> subResults = EMPTY_SUB_RESULTS;
 
-  public FacetResultNode() {
-    // empty constructor
-  }
-  
   public FacetResultNode(int ordinal, double value) {
     this.ordinal = ordinal;
     this.value = value;

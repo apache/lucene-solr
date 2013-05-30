@@ -119,12 +119,6 @@ public abstract class IndexCommit implements Comparable<IndexCommit> {
 
     long gen = getGeneration();
     long comgen = commit.getGeneration();
-    if (gen < comgen) {
-      return -1;
-    } else if (gen > comgen) {
-      return 1;
-    } else {
-      return 0;
-    }
+    return Long.compare(gen, comgen);
   }
 }

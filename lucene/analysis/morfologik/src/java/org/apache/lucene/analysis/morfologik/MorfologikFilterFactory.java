@@ -24,8 +24,6 @@ import java.util.Map;
 import morfologik.stemming.PolishStemmer.DICTIONARY;
 
 import org.apache.lucene.analysis.TokenStream;
-import org.apache.lucene.analysis.morfologik.MorfologikFilter;
-import org.apache.lucene.analysis.util.AbstractAnalysisFactory; // javadocs
 import org.apache.lucene.analysis.util.TokenFilterFactory;
 
 /**
@@ -52,24 +50,10 @@ public class MorfologikFilterFactory extends TokenFilterFactory {
   /** Schema attribute. */
   public static final String DICTIONARY_SCHEMA_ATTRIBUTE = "dictionary";
   
-  /** Sole constructor. See {@link AbstractAnalysisFactory} for initialization lifecycle. */
-  public MorfologikFilterFactory() {}
-
-  /**
-   * {@inheritDoc}
-   */
-  @Override
-  public TokenStream create(TokenStream ts) {
-    return new MorfologikFilter(ts, dictionary, luceneMatchVersion);
-  }
-
-  /**
-   * {@inheritDoc}
-   */
-  @Override
-  public void init(Map<String,String> args) {
-    super.init(args);
-    String dictionaryName = args.get(DICTIONARY_SCHEMA_ATTRIBUTE);
+  /** Creates a new MorfologikFilterFactory */
+  public MorfologikFilterFactory(Map<String,String> args) {
+    super(args);
+    String dictionaryName = get(args, DICTIONARY_SCHEMA_ATTRIBUTE);
     if (dictionaryName != null && !dictionaryName.isEmpty()) {
       try {
         DICTIONARY dictionary = DICTIONARY.valueOf(dictionaryName.toUpperCase(Locale.ROOT));
@@ -81,5 +65,13 @@ public class MorfologikFilterFactory extends TokenFilterFactory {
             + dictionaryName);
       }
     }
+    if (!args.isEmpty()) {
+      throw new IllegalArgumentException("Unknown parameters: " + args);
+    }
+  }
+
+  @Override
+  public TokenStream create(TokenStream ts) {
+    return new MorfologikFilter(ts, dictionary, luceneMatchVersion);
   }
 }

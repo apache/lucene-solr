@@ -63,7 +63,7 @@ public class DocValuesTest extends SolrTestCaseJ4 {
         assertEquals(Double.doubleToLongBits(3), reader.getNumericDocValues("doubledv").get(0));
         assertEquals(4L, reader.getNumericDocValues("longdv").get(0));
 
-        final IndexSchema schema = core.getSchema();
+        final IndexSchema schema = core.getLatestSchema();
         final SchemaField floatDv = schema.getField("floatdv");
         final SchemaField intDv = schema.getField("intdv");
         final SchemaField doubleDv = schema.getField("doubledv");
@@ -119,6 +119,26 @@ public class DocValuesTest extends SolrTestCaseJ4 {
         "//str[@name='id'][.='1']");
     assertQ(req("q", "*:*", "sort", "stringdv asc", "rows", "1", "fl", "id"),
         "//str[@name='id'][.='2']");
+  }
+  
+  public void testDocValuesSorting2() {
+    assertU(adoc("id", "1", "doubledv", "12"));
+    assertU(adoc("id", "2", "doubledv", "50.567"));
+    assertU(adoc("id", "3", "doubledv", "+0"));
+    assertU(adoc("id", "4", "doubledv", "4.9E-324"));
+    assertU(adoc("id", "5", "doubledv", "-0"));
+    assertU(adoc("id", "6", "doubledv", "-5.123"));
+    assertU(adoc("id", "7", "doubledv", "1.7976931348623157E308"));
+    assertU(commit());
+    assertQ(req("fl", "id", "q", "*:*", "sort", "doubledv asc"),
+        "//result/doc[1]/str[@name='id'][.='6']",
+        "//result/doc[2]/str[@name='id'][.='5']",
+        "//result/doc[3]/str[@name='id'][.='3']",
+        "//result/doc[4]/str[@name='id'][.='4']",
+        "//result/doc[5]/str[@name='id'][.='1']",
+        "//result/doc[6]/str[@name='id'][.='2']",
+        "//result/doc[7]/str[@name='id'][.='7']"
+        );
   }
 
   public void testDocValuesFaceting() {

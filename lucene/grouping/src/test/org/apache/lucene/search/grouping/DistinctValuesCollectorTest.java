@@ -17,13 +17,19 @@ package org.apache.lucene.search.grouping;
  * limitations under the License.
  */
 
-import java.io.IOException;
-import java.util.*;
-
 import org.apache.lucene.analysis.MockAnalyzer;
-import org.apache.lucene.document.*;
-import org.apache.lucene.index.*;
+import org.apache.lucene.document.BinaryDocValuesField;
+import org.apache.lucene.document.Document;
+import org.apache.lucene.document.Field;
+import org.apache.lucene.document.NumericDocValuesField;
+import org.apache.lucene.document.SortedDocValuesField;
+import org.apache.lucene.document.StringField;
+import org.apache.lucene.document.TextField;
+import org.apache.lucene.index.DirectoryReader;
 import org.apache.lucene.index.FieldInfo.DocValuesType;
+import org.apache.lucene.index.RandomIndexWriter;
+import org.apache.lucene.index.StoredDocument;
+import org.apache.lucene.index.Term;
 import org.apache.lucene.queries.function.valuesource.BytesRefFieldSource;
 import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.search.Sort;
@@ -38,6 +44,20 @@ import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util._TestUtil;
 import org.apache.lucene.util.mutable.MutableValue;
 import org.apache.lucene.util.mutable.MutableValueStr;
+
+import java.io.IOException;
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.Collections;
+import java.util.Comparator;
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.LinkedHashMap;
+import java.util.List;
+import java.util.Locale;
+import java.util.Map;
+import java.util.Random;
+import java.util.Set;
 
 public class DistinctValuesCollectorTest extends AbstractGroupingTestCase {
 
@@ -267,9 +287,9 @@ public class DistinctValuesCollectorTest extends AbstractGroupingTestCase {
           AbstractDistinctValuesCollector.GroupCount<Comparable<?>> actual = actualResult.get(i);
           assertValues(expected.groupValue, actual.groupValue);
           assertEquals(expected.uniqueValues.size(), actual.uniqueValues.size());
-          List<Comparable<?>> expectedUniqueValues = new ArrayList<Comparable<?>>(expected.uniqueValues);
+          List<Comparable<?>> expectedUniqueValues = new ArrayList<>(expected.uniqueValues);
           Collections.sort(expectedUniqueValues, nullComparator);
-          List<Comparable<?>> actualUniqueValues = new ArrayList<Comparable<?>>(actual.uniqueValues);
+          List<Comparable<?>> actualUniqueValues = new ArrayList<>(actual.uniqueValues);
           Collections.sort(actualUniqueValues, nullComparator);
           for (int j = 0; j < expectedUniqueValues.size(); j++) {
             assertValues(expectedUniqueValues.get(j), actualUniqueValues.get(j));
@@ -373,7 +393,7 @@ public class DistinctValuesCollectorTest extends AbstractGroupingTestCase {
     Random random = random();
     Collection<SearchGroup<T>> searchGroups = firstPassGroupingCollector.getTopGroups(0, false);
     if (FunctionFirstPassGroupingCollector.class.isAssignableFrom(firstPassGroupingCollector.getClass())) {
-      return (AbstractDistinctValuesCollector) new FunctionDistinctValuesCollector(new HashMap<Object, Object>(), new BytesRefFieldSource(groupField), new BytesRefFieldSource(countField), (Collection) searchGroups);
+      return (AbstractDistinctValuesCollector) new FunctionDistinctValuesCollector(new HashMap<>(), new BytesRefFieldSource(groupField), new BytesRefFieldSource(countField), (Collection) searchGroups);
     } else {
       return (AbstractDistinctValuesCollector) new TermDistinctValuesCollector(groupField, countField, (Collection) searchGroups);
     }
@@ -384,13 +404,13 @@ public class DistinctValuesCollectorTest extends AbstractGroupingTestCase {
     Random random = random();
     if (dvType != null) {
       if (random.nextBoolean()) {
-        return (AbstractFirstPassGroupingCollector<T>) new FunctionFirstPassGroupingCollector(new BytesRefFieldSource(groupField), new HashMap<Object, Object>(), groupSort, topNGroups);
+        return (AbstractFirstPassGroupingCollector<T>) new FunctionFirstPassGroupingCollector(new BytesRefFieldSource(groupField), new HashMap<>(), groupSort, topNGroups);
       } else {
         return (AbstractFirstPassGroupingCollector<T>) new TermFirstPassGroupingCollector(groupField, groupSort, topNGroups);
       }
     } else {
       if (random.nextBoolean()) {
-        return (AbstractFirstPassGroupingCollector<T>) new FunctionFirstPassGroupingCollector(new BytesRefFieldSource(groupField), new HashMap<Object, Object>(), groupSort, topNGroups);
+        return (AbstractFirstPassGroupingCollector<T>) new FunctionFirstPassGroupingCollector(new BytesRefFieldSource(groupField), new HashMap<>(), groupSort, topNGroups);
       } else {
         return (AbstractFirstPassGroupingCollector<T>) new TermFirstPassGroupingCollector(groupField, groupSort, topNGroups);
       }
@@ -413,7 +433,7 @@ public class DistinctValuesCollectorTest extends AbstractGroupingTestCase {
       if (topN <= i++) {
         break;
       }
-      Set<BytesRef> uniqueValues = new HashSet<BytesRef>();
+      Set<BytesRef> uniqueValues = new HashSet<>();
       for (String val : groupCounts.get(group)) {
         uniqueValues.add(val != null ? new BytesRef(val) : null);
       }
@@ -450,8 +470,8 @@ public class DistinctValuesCollectorTest extends AbstractGroupingTestCase {
       countValues[i] = generateRandomNonEmptyString();
     }
     
-    List<String> contentStrings = new ArrayList<String>();
-    Map<String, Map<String, Set<String>>> searchTermToGroupCounts = new HashMap<String, Map<String, Set<String>>>();
+    List<String> contentStrings = new ArrayList<>();
+    Map<String, Map<String, Set<String>>> searchTermToGroupCounts = new HashMap<>();
     for (int i = 1; i <= numDocs; i++) {
       String groupValue = random.nextInt(23) == 14 ? null : groupValues[random.nextInt(groupValues.length)];
       String countValue = random.nextInt(21) == 13 ? null : countValues[random.nextInt(countValues.length)];
@@ -459,13 +479,13 @@ public class DistinctValuesCollectorTest extends AbstractGroupingTestCase {
       Map<String, Set<String>> groupToCounts = searchTermToGroupCounts.get(content);
       if (groupToCounts == null) {
         // Groups sort always DOCID asc...
-        searchTermToGroupCounts.put(content, groupToCounts = new LinkedHashMap<String, Set<String>>());
+        searchTermToGroupCounts.put(content, groupToCounts = new LinkedHashMap<>());
         contentStrings.add(content);
       }
 
       Set<String> countsVals = groupToCounts.get(groupValue);
       if (countsVals == null) {
-        groupToCounts.put(groupValue, countsVals = new HashSet<String>());
+        groupToCounts.put(groupValue, countsVals = new HashSet<>());
       }
       countsVals.add(countValue);
 

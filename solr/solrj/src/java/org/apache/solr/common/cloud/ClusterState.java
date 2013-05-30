@@ -17,21 +17,18 @@ package org.apache.solr.common.cloud;
  * limitations under the License.
  */
 
-import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.LinkedHashMap;
-import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Set;
 
-import org.apache.noggit.JSONWriter;
+import org.noggit.JSONWriter;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.SolrException.ErrorCode;
-import org.apache.solr.common.cloud.DocRouter.Range;
 import org.apache.zookeeper.KeeperException;
 import org.apache.zookeeper.data.Stat;
 import org.slf4j.Logger;
@@ -118,16 +115,22 @@ public class ClusterState implements JSONWriter.Writable {
     return coll.getSlicesMap();
   }
   
-  public Map<String, Slice> getAllSlicesMap(String collection) {
+  public Map<String, Slice> getActiveSlicesMap(String collection) {
     DocCollection coll = collectionStates.get(collection);
     if (coll == null) return null;
-    return coll.getAllSlicesMap();
+    return coll.getActiveSlicesMap();
   }
 
   public Collection<Slice> getSlices(String collection) {
     DocCollection coll = collectionStates.get(collection);
     if (coll == null) return null;
     return coll.getSlices();
+  }
+
+  public Collection<Slice> getActiveSlices(String collection) {
+    DocCollection coll = collectionStates.get(collection);
+    if (coll == null) return null;
+    return coll.getActiveSlices();
   }
 
   /**
@@ -228,6 +231,15 @@ public class ClusterState implements JSONWriter.Writable {
 
     // System.out.println("######## ClusterState.load result:" + collections);
     return new ClusterState(version, liveNodes, collections);
+  }
+  
+  public static Aliases load(byte[] bytes) {
+    if (bytes == null || bytes.length == 0) {
+      return new Aliases();
+    }
+    Map<String,Map<String,String>> aliasMap = (Map<String,Map<String,String>>) ZkStateReader.fromJSON(bytes);
+
+    return new Aliases(aliasMap);
   }
 
   private static DocCollection collectionFromObjects(String name, Map<String,Object> objs) {

@@ -19,11 +19,14 @@ package org.apache.lucene.analysis.ja;
 
 import java.io.IOException;
 import java.util.HashSet;
+import java.util.Map;
 import java.util.Set;
 
 import org.apache.lucene.analysis.TokenStream;
-import org.apache.lucene.analysis.ja.JapanesePartOfSpeechStopFilter;
-import org.apache.lucene.analysis.util.*;
+import org.apache.lucene.analysis.util.CharArraySet;
+import org.apache.lucene.analysis.util.ResourceLoader;
+import org.apache.lucene.analysis.util.ResourceLoaderAware;
+import org.apache.lucene.analysis.util.TokenFilterFactory;
 
 /**
  * Factory for {@link org.apache.lucene.analysis.ja.JapanesePartOfSpeechStopFilter}.
@@ -32,20 +35,26 @@ import org.apache.lucene.analysis.util.*;
  *   &lt;analyzer&gt;
  *     &lt;tokenizer class="solr.JapaneseTokenizerFactory"/&gt;
  *     &lt;filter class="solr.JapanesePartOfSpeechStopFilterFactory"
- *             tags="stopTags.txt" 
- *             enablePositionIncrements="true"/&gt;
+ *             tags="stopTags.txt"/&gt;
  *   &lt;/analyzer&gt;
  * &lt;/fieldType&gt;
  * </pre>
  */
-public class JapanesePartOfSpeechStopFilterFactory extends TokenFilterFactory implements ResourceLoaderAware  {
-  private boolean enablePositionIncrements;
+public class JapanesePartOfSpeechStopFilterFactory extends TokenFilterFactory implements ResourceLoaderAware {
+  private final String stopTagFiles;
   private Set<String> stopTags;
 
+  /** Creates a new JapanesePartOfSpeechStopFilterFactory */
+  public JapanesePartOfSpeechStopFilterFactory(Map<String,String> args) {
+    super(args);
+    stopTagFiles = get(args, "tags");
+    if (!args.isEmpty()) {
+      throw new IllegalArgumentException("Unknown parameters: " + args);
+    }
+  }
+  
   @Override
   public void inform(ResourceLoader loader) throws IOException {
-    String stopTagFiles = args.get("tags");
-    enablePositionIncrements = getBoolean("enablePositionIncrements", false);
     stopTags = null;
     CharArraySet cas = getWordSet(loader, stopTagFiles, false);
     if (cas != null) {
@@ -60,6 +69,11 @@ public class JapanesePartOfSpeechStopFilterFactory extends TokenFilterFactory im
   @Override
   public TokenStream create(TokenStream stream) {
     // if stoptags is null, it means the file is empty
-    return stopTags == null ? stream : new JapanesePartOfSpeechStopFilter(enablePositionIncrements, stream, stopTags);
+    if (stopTags != null) {
+      final TokenStream filter = new JapanesePartOfSpeechStopFilter(luceneMatchVersion, stream, stopTags);
+      return filter;
+    } else {
+      return stream;
+    }
   }
 }

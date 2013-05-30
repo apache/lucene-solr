@@ -24,6 +24,7 @@ import java.util.Comparator;
 import java.util.List;
 
 import org.apache.lucene.codecs.PostingsFormat; // javadocs
+import org.apache.lucene.index.TermsEnum.SeekStatus;
 import org.apache.lucene.search.DocIdSetIterator;
 import org.apache.lucene.util.Bits;
 import org.apache.lucene.util.BytesRef;
@@ -632,7 +633,9 @@ public class DocTermOrds {
 
     @Override
     public BytesRef next() throws IOException {
-      ord++;
+      if (++ord < 0) {
+        ord = 0;
+      }
       if (termsEnum.next() == null) {
         term = null;
         return null;
@@ -763,16 +766,17 @@ public class DocTermOrds {
   }
   
   /** Returns a SortedSetDocValues view of this instance */
-  public SortedSetDocValues iterator(TermsEnum termsEnum) throws IOException {
+  public SortedSetDocValues iterator(AtomicReader reader) throws IOException {
     if (isEmpty()) {
       return SortedSetDocValues.EMPTY;
     } else {
-      return new Iterator(termsEnum);
+      return new Iterator(reader);
     }
   }
   
   private class Iterator extends SortedSetDocValues {
-    final TermsEnum te;
+    final AtomicReader reader;
+    final TermsEnum te;  // used internally for lookupOrd() and lookupTerm()
     // currently we read 5 at a time (using the logic of the old iterator)
     final int buffer[] = new int[5];
     int bufferUpto;
@@ -782,8 +786,9 @@ public class DocTermOrds {
     private int upto;
     private byte[] arr;
     
-    Iterator(TermsEnum te) {
-      this.te = te;
+    Iterator(AtomicReader reader) throws IOException {
+      this.reader = reader;
+      this.te = termsEnum();
     }
     
     @Override
@@ -879,6 +884,28 @@ public class DocTermOrds {
     @Override
     public long getValueCount() {
       return numTerms();
+    }
+
+    @Override
+    public long lookupTerm(BytesRef key) {
+      try {
+        if (te.seekCeil(key) == SeekStatus.FOUND) {
+          return te.ord();
+        } else {
+          return -te.ord()-1;
+        }
+      } catch (IOException e) {
+        throw new RuntimeException(e);
+      }
+    }
+    
+    @Override
+    public TermsEnum termsEnum() {    
+      try {
+        return getOrdTermsEnum(reader);
+      } catch (IOException e) {
+        throw new RuntimeException();
+      }
     }
   }
 }

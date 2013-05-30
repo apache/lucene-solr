@@ -53,7 +53,6 @@ public class MultiSpansWrapper extends Spans { // can't be package private due t
     this.leaves = leaves;
     this.numLeaves = leaves.size();
     this.termContexts = termContexts;
-
   }
   
   public static Spans wrap(IndexReaderContext topLevelReaderContext, SpanQuery query) throws IOException {
@@ -112,7 +111,12 @@ public class MultiSpansWrapper extends Spans { // can't be package private due t
       current = query.getSpans(ctx, ctx.reader().getLiveDocs(), termContexts);
     }
     while (true) {
-      if (current.skipTo(target - leaves.get(leafOrd).docBase)) {
+      if (target < leaves.get(leafOrd).docBase) {
+        // target was in the previous slice
+        if (current.next()) {
+          return true;
+        }
+      } else if (current.skipTo(target - leaves.get(leafOrd).docBase)) {
         return true;
       }
       if (++leafOrd < numLeaves) {
@@ -165,6 +169,11 @@ public class MultiSpansWrapper extends Spans { // can't be package private due t
       return false;
     }
     return current.isPayloadAvailable();
+  }
+
+  @Override
+  public long cost() {
+    return Integer.MAX_VALUE; // just for tests
   }
 
 }

@@ -260,6 +260,7 @@ public class PulsingPostingsReader extends PostingsReaderBase {
     private int accum;
     private int freq;
     private int payloadLength;
+    private int cost;
 
     public PulsingDocsEnum(FieldInfo fieldInfo) {
       indexOptions = fieldInfo.getIndexOptions();
@@ -283,6 +284,7 @@ public class PulsingPostingsReader extends PostingsReaderBase {
       docID = -1;
       accum = 0;
       freq = 1;
+      cost = termState.docFreq;
       payloadLength = 0;
       this.liveDocs = liveDocs;
       return this;
@@ -360,12 +362,12 @@ public class PulsingPostingsReader extends PostingsReaderBase {
 
     @Override
     public int advance(int target) throws IOException {
-      int doc;
-      while((doc=nextDoc()) != NO_MORE_DOCS) {
-        if (doc >= target)
-          return doc;
-      }
-      return docID = NO_MORE_DOCS;
+      return docID = slowAdvance(target);
+    }
+    
+    @Override
+    public long cost() {
+      return cost;
     }
   }
 
@@ -390,6 +392,7 @@ public class PulsingPostingsReader extends PostingsReaderBase {
     private int offsetLength;
 
     private boolean payloadRetrieved;
+    private int cost;
 
     public PulsingDocsAndPositionsEnum(FieldInfo fieldInfo) {
       indexOptions = fieldInfo.getIndexOptions();
@@ -415,6 +418,7 @@ public class PulsingPostingsReader extends PostingsReaderBase {
       posPending = 0;
       docID = -1;
       accum = 0;
+      cost = termState.docFreq;
       startOffset = storeOffsets ? 0 : -1; // always return -1 if no offsets are stored
       offsetLength = 0;
       //System.out.println("PR d&p reset storesPayloads=" + storePayloads + " bytes=" + bytes.length + " this=" + this);
@@ -465,13 +469,7 @@ public class PulsingPostingsReader extends PostingsReaderBase {
 
     @Override
     public int advance(int target) throws IOException {
-      int doc;
-      while((doc=nextDoc()) != NO_MORE_DOCS) {
-        if (doc >= target) {
-          return docID = doc;
-        }
-      }
-      return docID = NO_MORE_DOCS;
+      return docID = slowAdvance(target);
     }
 
     @Override
@@ -550,6 +548,11 @@ public class PulsingPostingsReader extends PostingsReaderBase {
       } else {
         return null;
       }
+    }
+    
+    @Override
+    public long cost() {
+      return cost;
     }
   }
 

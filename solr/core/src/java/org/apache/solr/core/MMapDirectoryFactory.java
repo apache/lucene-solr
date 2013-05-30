@@ -66,4 +66,9 @@ public class MMapDirectoryFactory extends StandardDirectoryFactory {
     }
     return mapDirectory;
   }
+  
+  @Override
+  public boolean isAbsolute(String path) {
+    return new File(path).isAbsolute();
+  }
 }

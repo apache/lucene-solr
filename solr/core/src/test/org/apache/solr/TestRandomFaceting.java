@@ -55,15 +55,17 @@ public class TestRandomFaceting extends SolrTestCaseJ4 {
     types = new ArrayList<FldType>();
     types.add(new FldType("id",ONE_ONE, new SVal('A','Z',4,4)));
     types.add(new FldType("score_f",ONE_ONE, new FVal(1,100)));
-    types.add(new FldType("foo_i",ZERO_ONE, new IRange(0,indexSize)));
+    types.add(new FldType("small_f",ONE_ONE, new FVal(-4,5)));
+    types.add(new FldType("small_d",ONE_ONE, new FVal(-4,5)));
+    types.add(new FldType("foo_i",ZERO_ONE, new IRange(-2,indexSize)));
     types.add(new FldType("small_s",ZERO_ONE, new SVal('a',(char)('c'+indexSize/3),1,1)));
     types.add(new FldType("small2_s",ZERO_ONE, new SVal('a',(char)('c'+indexSize/3),1,1)));
     types.add(new FldType("small2_ss",ZERO_TWO, new SVal('a',(char)('c'+indexSize/3),1,1)));
     types.add(new FldType("small3_ss",new IRange(0,25), new SVal('A','z',1,1)));
-    types.add(new FldType("small_i",ZERO_ONE, new IRange(0,5+indexSize/3)));
-    types.add(new FldType("small2_i",ZERO_ONE, new IRange(0,5+indexSize/3)));
-    types.add(new FldType("small2_is",ZERO_TWO, new IRange(0,5+indexSize/3)));
-    types.add(new FldType("small3_is",new IRange(0,25), new IRange(0,100)));
+    types.add(new FldType("small_i",ZERO_ONE, new IRange(-2,5+indexSize/3)));
+    types.add(new FldType("small2_i",ZERO_ONE, new IRange(-1,5+indexSize/3)));
+    types.add(new FldType("small2_is",ZERO_TWO, new IRange(-2,5+indexSize/3)));
+    types.add(new FldType("small3_is",new IRange(0,25), new IRange(-50,50)));
 
     types.add(new FldType("missing_i",new IRange(0,0), new IRange(0,100)));
     types.add(new FldType("missing_is",new IRange(0,0), new IRange(0,100)));

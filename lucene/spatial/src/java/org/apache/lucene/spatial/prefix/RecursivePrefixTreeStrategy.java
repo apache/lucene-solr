@@ -19,6 +19,7 @@ package org.apache.lucene.spatial.prefix;
 
 import com.spatial4j.core.shape.Shape;
 import org.apache.lucene.search.Filter;
+import org.apache.lucene.spatial.DisjointSpatialFilter;
 import org.apache.lucene.spatial.prefix.tree.SpatialPrefixTree;
 import org.apache.lucene.spatial.query.SpatialArgs;
 import org.apache.lucene.spatial.query.SpatialOperation;
@@ -63,16 +64,25 @@ public class RecursivePrefixTreeStrategy extends PrefixTreeStrategy {
   @Override
   public Filter makeFilter(SpatialArgs args) {
     final SpatialOperation op = args.getOperation();
-    if (op != SpatialOperation.Intersects)
-      throw new UnsupportedSpatialOperation(op);
+    if (op == SpatialOperation.IsDisjointTo)
+      return new DisjointSpatialFilter(this, args, getFieldName());
 
     Shape shape = args.getShape();
-
     int detailLevel = grid.getLevelForDistance(args.resolveDistErr(ctx, distErrPct));
+    final boolean hasIndexedLeaves = true;
 
-    return new IntersectsPrefixTreeFilter(
-        shape, getFieldName(), grid, detailLevel, prefixGridScanLevel,
-        true);//hasIndexedLeaves
+    if (op == SpatialOperation.Intersects) {
+      return new IntersectsPrefixTreeFilter(
+          shape, getFieldName(), grid, detailLevel, prefixGridScanLevel,
+          hasIndexedLeaves);
+    } else if (op == SpatialOperation.IsWithin) {
+      return new WithinPrefixTreeFilter(
+          shape, getFieldName(), grid, detailLevel, prefixGridScanLevel,
+          -1);//-1 flag is slower but ensures correct results
+    } else if (op == SpatialOperation.Contains) {
+      return new ContainsPrefixTreeFilter(shape, getFieldName(), grid, detailLevel);
+    }
+    throw new UnsupportedSpatialOperation(op);
   }
 }
 

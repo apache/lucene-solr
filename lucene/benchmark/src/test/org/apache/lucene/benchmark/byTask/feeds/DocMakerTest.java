@@ -90,7 +90,7 @@ public class DocMakerTest extends BenchmarkTestCase {
     tasks.doLogic();
     
     IndexReader reader = DirectoryReader.open(runData.getDirectory());
-    IndexSearcher searcher = new IndexSearcher(reader);
+    IndexSearcher searcher = newSearcher(reader);
     TopDocs td = searcher.search(new TermQuery(new Term("key", "value")), 10);
     assertEquals(numExpectedResults, td.totalHits);
     reader.close();

@@ -17,11 +17,12 @@ package org.apache.lucene.analysis.stempel;
  * limitations under the License.
  */
 
+import java.util.Map;
+
 import org.apache.lucene.analysis.TokenStream;
 import org.apache.lucene.analysis.pl.PolishAnalyzer;
 import org.apache.lucene.analysis.stempel.StempelFilter;
 import org.apache.lucene.analysis.stempel.StempelStemmer;
-import org.apache.lucene.analysis.util.AbstractAnalysisFactory; // javadocs
 import org.apache.lucene.analysis.util.TokenFilterFactory;
 
 /**
@@ -29,8 +30,13 @@ import org.apache.lucene.analysis.util.TokenFilterFactory;
  */
 public class StempelPolishStemFilterFactory extends TokenFilterFactory {  
   
-  /** Sole constructor. See {@link AbstractAnalysisFactory} for initialization lifecycle. */
-  public StempelPolishStemFilterFactory() {}
+  /** Creates a new StempelPolishStemFilterFactory */
+  public StempelPolishStemFilterFactory(Map<String,String> args) {
+    super(args);
+    if (!args.isEmpty()) {
+      throw new IllegalArgumentException("Unknown parameters: " + args);
+    }
+  }
 
   @Override
   public TokenStream create(TokenStream input) {

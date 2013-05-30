@@ -18,9 +18,10 @@ package org.apache.lucene.analysis.miscellaneous;
  */
 
 import org.apache.lucene.analysis.TokenStream;
-import org.apache.lucene.analysis.miscellaneous.WordDelimiterFilter;
-import org.apache.lucene.analysis.miscellaneous.WordDelimiterIterator;
-import org.apache.lucene.analysis.util.*;
+import org.apache.lucene.analysis.util.CharArraySet;
+import org.apache.lucene.analysis.util.ResourceLoader;
+import org.apache.lucene.analysis.util.ResourceLoaderAware;
+import org.apache.lucene.analysis.util.TokenFilterFactory;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -33,10 +34,9 @@ import java.io.IOException;
 
 import static org.apache.lucene.analysis.miscellaneous.WordDelimiterFilter.*;
 
-
 /**
  * Factory for {@link WordDelimiterFilter}.
- * <pre class="prettyprint" >
+ * <pre class="prettyprint">
  * &lt;fieldType name="text_wd" class="solr.TextField" positionIncrementGap="100"&gt;
  *   &lt;analyzer&gt;
  *     &lt;tokenizer class="solr.WhitespaceTokenizerFactory"/&gt;
@@ -46,20 +46,62 @@ import static org.apache.lucene.analysis.miscellaneous.WordDelimiterFilter.*;
  *             generateWordParts="1" generateNumberParts="1" stemEnglishPossessive="1"
  *             types="wdfftypes.txt" /&gt;
  *   &lt;/analyzer&gt;
- * &lt;/fieldType&gt;</pre> 
- *
+ * &lt;/fieldType&gt;</pre>
  */
 public class WordDelimiterFilterFactory extends TokenFilterFactory implements ResourceLoaderAware {
   public static final String PROTECTED_TOKENS = "protected";
   public static final String TYPES = "types";
+
+  private final String wordFiles;
+  private final String types;
+  private final int flags;
+  byte[] typeTable = null;
+  private CharArraySet protectedWords = null;
+  
+  /** Creates a new WordDelimiterFilterFactory */
+  public WordDelimiterFilterFactory(Map<String, String> args) {
+    super(args);
+    int flags = 0;
+    if (getInt(args, "generateWordParts", 1) != 0) {
+      flags |= GENERATE_WORD_PARTS;
+    }
+    if (getInt(args, "generateNumberParts", 1) != 0) {
+      flags |= GENERATE_NUMBER_PARTS;
+    }
+    if (getInt(args, "catenateWords", 0) != 0) {
+      flags |= CATENATE_WORDS;
+    }
+    if (getInt(args, "catenateNumbers", 0) != 0) {
+      flags |= CATENATE_NUMBERS;
+    }
+    if (getInt(args, "catenateAll", 0) != 0) {
+      flags |= CATENATE_ALL;
+    }
+    if (getInt(args, "splitOnCaseChange", 1) != 0) {
+      flags |= SPLIT_ON_CASE_CHANGE;
+    }
+    if (getInt(args, "splitOnNumerics", 1) != 0) {
+      flags |= SPLIT_ON_NUMERICS;
+    }
+    if (getInt(args, "preserveOriginal", 0) != 0) {
+      flags |= PRESERVE_ORIGINAL;
+    }
+    if (getInt(args, "stemEnglishPossessive", 1) != 0) {
+      flags |= STEM_ENGLISH_POSSESSIVE;
+    }
+    wordFiles = get(args, PROTECTED_TOKENS);
+    types = get(args, TYPES);
+    this.flags = flags;
+    if (!args.isEmpty()) {
+      throw new IllegalArgumentException("Unknown parameters: " + args);
+    }
+  }
   
   @Override
   public void inform(ResourceLoader loader) throws IOException {
-    String wordFiles = args.get(PROTECTED_TOKENS);
     if (wordFiles != null) {  
       protectedWords = getWordSet(loader, wordFiles, false);
     }
-    String types = args.get(TYPES);
     if (types != null) {
       List<String> files = splitFileNames( types );
       List<String> wlist = new ArrayList<String>();
@@ -68,42 +110,6 @@ public class WordDelimiterFilterFactory extends TokenFilterFactory implements Re
         wlist.addAll( lines );
       }
       typeTable = parseTypes(wlist);
-    }
-  }
-
-  private CharArraySet protectedWords = null;
-  private int flags;
-  byte[] typeTable = null;
-
-  @Override
-  public void init(Map<String, String> args) {
-    super.init(args);
-    if (getInt("generateWordParts", 1) != 0) {
-      flags |= GENERATE_WORD_PARTS;
-    }
-    if (getInt("generateNumberParts", 1) != 0) {
-      flags |= GENERATE_NUMBER_PARTS;
-    }
-    if (getInt("catenateWords", 0) != 0) {
-      flags |= CATENATE_WORDS;
-    }
-    if (getInt("catenateNumbers", 0) != 0) {
-      flags |= CATENATE_NUMBERS;
-    }
-    if (getInt("catenateAll", 0) != 0) {
-      flags |= CATENATE_ALL;
-    }
-    if (getInt("splitOnCaseChange", 1) != 0) {
-      flags |= SPLIT_ON_CASE_CHANGE;
-    }
-    if (getInt("splitOnNumerics", 1) != 0) {
-      flags |= SPLIT_ON_NUMERICS;
-    }
-    if (getInt("preserveOriginal", 0) != 0) {
-      flags |= PRESERVE_ORIGINAL;
-    }
-    if (getInt("stemEnglishPossessive", 1) != 0) {
-      flags |= STEM_ENGLISH_POSSESSIVE;
     }
   }
 

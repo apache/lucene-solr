@@ -229,7 +229,7 @@ public class TestPayloadTermQuery extends LuceneTestCase {
             new MaxPayloadFunction(), false);
 
     IndexReader reader = DirectoryReader.open(directory);
-    IndexSearcher theSearcher = new IndexSearcher(reader);
+    IndexSearcher theSearcher = newSearcher(reader);
     theSearcher.setSimilarity(new FullSimilarity());
     TopDocs hits = searcher.search(query, null, 100);
     assertTrue("hits is null and it shouldn't be", hits != null);

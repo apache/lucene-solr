@@ -64,6 +64,7 @@ public class NGramPhraseQuery extends PhraseQuery {
 
     // now create the new optimized phrase query for n-gram
     PhraseQuery optimized = new PhraseQuery();
+    optimized.setBoost(getBoost());
     int pos = 0;
     final int lastPos = terms.length - 1;
     for(int i = 0; i < terms.length; i++){

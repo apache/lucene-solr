@@ -116,6 +116,21 @@ public class CoreContainerCoreInitFailuresTest extends SolrTestCaseJ4 {
     assertTrue("init failure doesn't mention problem: " + fail.getCause().getMessage(),
                0 < fail.getCause().getMessage().indexOf("bogus_path"));
 
+    // check that we get null accessing a non-existent core
+    assertNull(cc.getCore("does_not_exist"));
+    // check that we get a 500 accessing the core with an init failure
+    try {
+      SolrCore c = cc.getCore("bogus");
+      fail("Failed to get Exception on accessing core with init failure");
+    } catch (SolrException ex) {
+      assertEquals(500, ex.code());
+      // double wrapped
+      String cause = ex.getCause().getCause().getMessage();
+      assertTrue("getCore() ex cause doesn't mention init fail: " + cause,
+                 0 < cause.indexOf("bogus_path"));
+      
+    }
+
     // let the test end here, with some recorded failures, and let cleanUp()
     // verify that there is no problem shuting down CoreContainer with known 
     // SolrCore failures
@@ -167,6 +182,19 @@ public class CoreContainerCoreInitFailuresTest extends SolrTestCaseJ4 {
     assertTrue("init failure doesn't mention problem: " + fail.getMessage(),
                0 < fail.getMessage().indexOf("DummyMergePolicy"));
 
+    // check that we get null accessing a non-existent core
+    assertNull(cc.getCore("does_not_exist"));
+    // check that we get a 500 accessing the core with an init failure
+    try {
+      SolrCore c = cc.getCore("col_bad");
+      fail("Failed to get Exception on accessing core with init failure");
+    } catch (SolrException ex) {
+      assertEquals(500, ex.code());
+      // double wrapped
+      String cause = ex.getCause().getCause().getMessage();
+      assertTrue("getCore() ex cause doesn't mention init fail: " + cause,
+                 0 < cause.indexOf("DummyMergePolicy"));
+    }
 
     // -----
     // "fix" the bad collection
@@ -217,6 +245,19 @@ public class CoreContainerCoreInitFailuresTest extends SolrTestCaseJ4 {
     assertTrue("init failure doesn't mention problem: " + fail.getCause().getMessage(),
                0 < fail.getCause().getMessage().indexOf("bogus_path"));
 
+    // check that we get null accessing a non-existent core
+    assertNull(cc.getCore("does_not_exist"));
+    // check that we get a 500 accessing the core with an init failure
+    try {
+      SolrCore c = cc.getCore("bogus");
+      fail("Failed to get Exception on accessing core with init failure");
+    } catch (SolrException ex) {
+      assertEquals(500, ex.code());
+      // double wrapped
+      String cause = ex.getCause().getCause().getMessage();
+      assertTrue("getCore() ex cause doesn't mention init fail: " + cause,
+                 0 < cause.indexOf("bogus_path"));
+    }
 
     // -----
     // register bogus as an alias for col_ok and confirm failure goes away
@@ -280,7 +321,6 @@ public class CoreContainerCoreInitFailuresTest extends SolrTestCaseJ4 {
                fail instanceof SAXParseException);
     assertTrue("init failure doesn't mention problem: " + fail.toString(),
                0 < ((SAXParseException)fail).getSystemId().indexOf("solrconfig.xml"));
-
 
     // ----
     // fix col_bad's config (again) and RELOAD to fix failure

@@ -134,6 +134,15 @@ public class NearSpansOrdered extends Spans {
     return matchPayload.isEmpty() == false;
   }
 
+  @Override
+  public long cost() {
+    long minCost = Long.MAX_VALUE;
+    for (int i = 0; i < subSpans.length; i++) {
+      minCost = Math.min(minCost, subSpans[i].cost());
+    }
+    return minCost;
+  }
+
   // inherit javadocs
   @Override
   public boolean next() throws IOException {
@@ -195,7 +204,7 @@ public class NearSpansOrdered extends Spans {
 
   /** Advance the subSpans to the same document */
   private boolean toSameDoc() throws IOException {
-    ArrayUtil.mergeSort(subSpansByDoc, spanDocComparator);
+    ArrayUtil.timSort(subSpansByDoc, spanDocComparator);
     int firstIndex = 0;
     int maxDoc = subSpansByDoc[subSpansByDoc.length - 1].doc();
     while (subSpansByDoc[firstIndex].doc() != maxDoc) {

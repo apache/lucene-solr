@@ -587,7 +587,13 @@ public class TestFSTs extends LuceneTestCase {
     }
   }
 
-  // java -cp ../build/codecs/classes/java:../test-framework/lib/randomizedtesting-runner-2.0.8.jar:../build/core/classes/test:../build/core/classes/test-framework:../build/core/classes/java:../build/test-framework/classes/java:../test-framework/lib/junit-4.10.jar org.apache.lucene.util.fst.TestFSTs /xold/tmp/allTerms3.txt out
+  // TODO: try experiment: reverse terms before
+  // compressing -- how much smaller?
+
+  // TODO: can FST be used to index all internal substrings,
+  // mapping to term?
+
+  // java -cp ../build/codecs/classes/java:../test-framework/lib/randomizedtesting-runner-2.0.10.jar:../build/core/classes/test:../build/core/classes/test-framework:../build/core/classes/java:../build/test-framework/classes/java:../test-framework/lib/junit-4.10.jar org.apache.lucene.util.fst.TestFSTs /xold/tmp/allTerms3.txt out
   public static void main(String[] args) throws IOException {
     int prune = 0;
     int limit = Integer.MAX_VALUE;
@@ -703,6 +709,29 @@ public class TestFSTs extends LuceneTestCase {
     final BytesRefFSTEnum<Object> fstEnum = new BytesRefFSTEnum<Object>(b.finish());
     assertNull(fstEnum.seekFloor(new BytesRef("foo")));
     assertNull(fstEnum.seekCeil(new BytesRef("foobaz")));
+  }
+  
+
+  public void testDuplicateFSAString() throws Exception {
+    String str = "foobar";
+    final Outputs<Object> outputs = NoOutputs.getSingleton();
+    final Builder<Object> b = new Builder<Object>(FST.INPUT_TYPE.BYTE1, outputs);
+    IntsRef ints = new IntsRef();
+    for(int i=0; i<10; i++) {
+      b.add(Util.toIntsRef(new BytesRef(str), ints), outputs.getNoOutput());
+    }
+    FST<Object> fst = b.finish();
+    
+    // count the input paths
+    int count = 0; 
+    final BytesRefFSTEnum<Object> fstEnum = new BytesRefFSTEnum<Object>(fst);
+    while(fstEnum.next()!=null) {
+      count++;  
+    }
+    assertEquals(1, count);
+    
+    assertNotNull(Util.get(fst, new BytesRef(str)));
+    assertNull(Util.get(fst, new BytesRef("foobaz")));
   }
 
   /*
@@ -839,7 +868,7 @@ public class TestFSTs extends LuceneTestCase {
 
       // turn writer into reader:
       final IndexReader r = w.getReader();
-      final IndexSearcher s = new IndexSearcher(r);
+      final IndexSearcher s = newSearcher(r);
       w.close();
 
       final List<String> allIDsList = new ArrayList<String>(allIDs);
@@ -968,7 +997,7 @@ public class TestFSTs extends LuceneTestCase {
     if (VERBOSE) {
       System.out.println("TEST: got reader=" + r);
     }
-    IndexSearcher s = new IndexSearcher(r);
+    IndexSearcher s = newSearcher(r);
     w.close();
 
     final List<String> allTermsList = new ArrayList<String>(allTerms);

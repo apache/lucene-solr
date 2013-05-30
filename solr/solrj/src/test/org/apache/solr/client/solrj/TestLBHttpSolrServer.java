@@ -72,6 +72,7 @@ public class TestLBHttpSolrServer extends LuceneTestCase {
   public static void beforeClass() {
     savedFactory = System.getProperty("solr.DirectoryFactory");
     System.setProperty("solr.directoryFactory", "org.apache.solr.core.MockFSDirectoryFactory");
+    System.setProperty("tests.shardhandler.randomSeed", Long.toString(random().nextLong()));
   }
 
   @AfterClass
@@ -81,6 +82,7 @@ public class TestLBHttpSolrServer extends LuceneTestCase {
     } else {
       System.setProperty("solr.directoryFactory", savedFactory);
     }
+    System.clearProperty("tests.shardhandler.randomSeed");
   }
   
   @Override

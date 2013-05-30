@@ -134,7 +134,7 @@ public abstract class CompressionMode {
       }
       final int decompressedLength = LZ4.decompress(in, offset + length, bytes.bytes, 0);
       if (decompressedLength > originalLength) {
-        throw new CorruptIndexException("Corrupted: lengths mismatch: " + decompressedLength + " > " + originalLength);
+        throw new CorruptIndexException("Corrupted: lengths mismatch: " + decompressedLength + " > " + originalLength + " (resource=" + in + ")");
       }
       bytes.offset = offset;
       bytes.length = length;
@@ -222,7 +222,7 @@ public abstract class CompressionMode {
         }
       }
       if (bytes.length != originalLength) {
-        throw new CorruptIndexException("Lengths mismatch: " + bytes.length + " != " + originalLength);
+        throw new CorruptIndexException("Lengths mismatch: " + bytes.length + " != " + originalLength + " (resource=" + in + ")");
       }
       bytes.offset = offset;
       bytes.length = length;

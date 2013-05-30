@@ -213,6 +213,22 @@ public class MultiFieldQueryParser extends QueryParser
     }
     return super.getRangeQuery(field, part1, part2, startInclusive, endInclusive);
   }
+  
+  
+
+  @Override
+  protected Query getRegexpQuery(String field, String termStr)
+      throws ParseException {
+    if (field == null) {
+      List<BooleanClause> clauses = new ArrayList<BooleanClause>();
+      for (int i = 0; i < fields.length; i++) {
+        clauses.add(new BooleanClause(getRegexpQuery(fields[i], termStr),
+            BooleanClause.Occur.SHOULD));
+      }
+      return getBooleanQuery(clauses, true);
+    }
+    return super.getRegexpQuery(field, termStr);
+  }
 
   /**
    * Parses a query which searches on the fields specified.

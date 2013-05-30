@@ -30,9 +30,10 @@ import org.apache.solr.schema.FieldType;
 import org.apache.solr.schema.IndexSchema;
 import org.apache.commons.io.IOUtils;
 
-import java.util.*;
 import java.io.Reader;
 import java.io.IOException;
+import java.util.Arrays;
+import java.util.Set;
 
 /**
  * Provides the ability to specify multiple field types and field names in the same request. Expected parameters:
@@ -96,7 +97,7 @@ public class FieldAnalysisRequestHandler extends AnalysisRequestHandlerBase {
   @Override
   protected NamedList doAnalysis(SolrQueryRequest req) throws Exception {
     FieldAnalysisRequest analysisRequest = resolveAnalysisRequest(req);
-    IndexSchema indexSchema = req.getCore().getSchema();
+    IndexSchema indexSchema = req.getSchema();
     return handleAnalysisRequest(analysisRequest, indexSchema);
   }
 

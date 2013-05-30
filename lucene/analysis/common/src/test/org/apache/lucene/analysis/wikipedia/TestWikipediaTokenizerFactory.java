@@ -17,27 +17,35 @@ package org.apache.lucene.analysis.wikipedia;
  * limitations under the License.
  */
 
-import java.io.IOException;
 import java.io.Reader;
 import java.io.StringReader;
 
-import org.apache.lucene.analysis.BaseTokenStreamTestCase;
 import org.apache.lucene.analysis.Tokenizer;
+import org.apache.lucene.analysis.util.BaseTokenStreamFactoryTestCase;
 import org.apache.lucene.analysis.wikipedia.WikipediaTokenizer;
 
 /**
  * Simple tests to ensure the wikipedia tokenizer is working.
  */
-public class TestWikipediaTokenizerFactory extends BaseTokenStreamTestCase {
-  public void testTokenizer() throws IOException {
+public class TestWikipediaTokenizerFactory extends BaseTokenStreamFactoryTestCase {
+  public void testTokenizer() throws Exception {
     Reader reader = new StringReader("This is a [[Category:foo]]");
-    WikipediaTokenizerFactory factory = new WikipediaTokenizerFactory();
-    Tokenizer tokenizer = factory.create(reader);
+    Tokenizer tokenizer = tokenizerFactory("Wikipedia").create(reader);
     assertTokenStreamContents(tokenizer,
         new String[] { "This", "is", "a", "foo" },
         new int[] { 0, 5, 8, 21 },
         new int[] { 4, 7, 9, 24 },
         new String[] { "<ALPHANUM>", "<ALPHANUM>", "<ALPHANUM>", WikipediaTokenizer.CATEGORY },
         new int[] { 1, 1, 1, 1, });
+  }
+  
+  /** Test that bogus arguments result in exception */
+  public void testBogusArguments() throws Exception {
+    try {
+      tokenizerFactory("Wikipedia", "bogusArg", "bogusValue");
+      fail();
+    } catch (IllegalArgumentException expected) {
+      assertTrue(expected.getMessage().contains("Unknown parameters"));
+    }
   }
 }

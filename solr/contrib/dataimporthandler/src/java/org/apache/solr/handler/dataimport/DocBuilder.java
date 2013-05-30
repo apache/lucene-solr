@@ -26,7 +26,9 @@ import org.apache.solr.handler.dataimport.config.Entity;
 import org.apache.solr.handler.dataimport.config.EntityField;
 
 import static org.apache.solr.handler.dataimport.SolrWriter.LAST_INDEX_KEY;
-import static org.apache.solr.handler.dataimport.DataImportHandlerException.*;
+import static org.apache.solr.handler.dataimport.DataImportHandlerException.SEVERE;
+import static org.apache.solr.handler.dataimport.DataImportHandlerException.wrapAndThrow;
+import org.apache.solr.schema.IndexSchema;
 import org.apache.solr.schema.SchemaField;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -130,7 +132,7 @@ public class DocBuilder {
         indexerNamespace.put(LAST_INDEX_TIME, EPOCH);
       }
       indexerNamespace.put(INDEX_START_TIME, dataImporter.getIndexStartTime());
-      indexerNamespace.put("request", reqParams.getRawParams());
+      indexerNamespace.put("request", new HashMap<String,Object>(reqParams.getRawParams()));
       for (Entity entity : dataImporter.getConfig().getEntities()) {
         String key = entity.getName() + "." + SolrWriter.LAST_INDEX_KEY;
         Object lastIndex = persistedProperties.get(key);
@@ -625,11 +627,12 @@ public class DocBuilder {
       if (value == null)  continue;
       if (key.startsWith("$")) continue;
       Set<EntityField> field = entity.getColNameVsField().get(key);
-      if (field == null && dataImporter.getSchema() != null) {
+      IndexSchema schema = null == reqParams.getRequest() ? null : reqParams.getRequest().getSchema();
+      if (field == null && schema != null) {
         // This can be a dynamic field or a field which does not have an entry in data-config ( an implicit field)
-        SchemaField sf = dataImporter.getSchema().getFieldOrNull(key);
+        SchemaField sf = schema.getFieldOrNull(key);
         if (sf == null) {
-          sf = dataImporter.getSchemaField(key);
+          sf = config.getSchemaField(key);
         }
         if (sf != null) {
           addFieldToDoc(entry.getValue(), sf.getName(), 1.0f, sf.multiValued(), doc);
@@ -643,7 +646,7 @@ public class DocBuilder {
             boolean toWrite = f.isToWrite();
             if(f.isDynamicName()){
               name =  vr.replaceTokens(name);
-              SchemaField schemaField = dataImporter.getSchemaField(name);
+              SchemaField schemaField = config.getSchemaField(name);
               if(schemaField == null) {
                 toWrite = false;
               } else {

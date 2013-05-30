@@ -55,9 +55,15 @@ public class ImplicitDocRouter extends DocRouter {
   }
 
   @Override
+  public boolean isTargetSlice(String id, SolrInputDocument sdoc, SolrParams params, String shardId, DocCollection collection) {
+    // todo : how to handle this?
+    return false;
+  }
+
+  @Override
   public Collection<Slice> getSearchSlicesSingle(String shardKey, SolrParams params, DocCollection collection) {
     if (shardKey == null) {
-      return collection.getSlices();
+      return collection.getActiveSlices();
     }
 
     // assume the shardKey is just a slice name

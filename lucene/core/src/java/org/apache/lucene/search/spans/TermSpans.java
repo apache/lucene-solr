@@ -71,6 +71,7 @@ public class TermSpans extends Spans {
 
   @Override
   public boolean skipTo(int target) throws IOException {
+    assert target > doc;
     doc = postings.advance(target);
     if (doc == DocIdSetIterator.NO_MORE_DOCS) {
       return false;
@@ -97,6 +98,11 @@ public class TermSpans extends Spans {
   @Override
   public int end() {
     return position + 1;
+  }
+
+  @Override
+  public long cost() {
+    return postings.cost();
   }
 
   // TODO: Remove warning after API has been finalized
@@ -165,6 +171,11 @@ public class TermSpans extends Spans {
     @Override
     public boolean isPayloadAvailable() {
       return false;
+    }
+
+    @Override
+    public long cost() {
+      return 0;
     }
   }
 

@@ -44,8 +44,9 @@ public abstract class BaseUIMATokenizer extends Tokenizer {
   protected AnalysisEngine ae;
   protected CAS cas;
 
-  protected BaseUIMATokenizer(Reader reader, String descriptorPath, Map<String, Object> configurationParameters) {
-    super(reader);
+  protected BaseUIMATokenizer
+      (AttributeFactory factory, Reader reader, String descriptorPath, Map<String, Object> configurationParameters) {
+    super(factory, reader);
     this.descriptorPath = descriptorPath;
     this.configurationParameters = configurationParameters;
   }

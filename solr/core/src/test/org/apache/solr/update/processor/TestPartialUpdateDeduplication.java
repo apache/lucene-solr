@@ -18,7 +18,7 @@ package org.apache.solr.update.processor;
  */
 
 import com.google.common.collect.Maps;
-import org.apache.noggit.ObjectBuilder;
+import org.noggit.ObjectBuilder;
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.client.solrj.request.UpdateRequest;
 import org.apache.solr.common.SolrInputDocument;

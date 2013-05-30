@@ -127,11 +127,11 @@
   </servlet>
 
   <servlet>
-    <servlet-name>SchemaRestApi</servlet-name>
+    <servlet-name>SolrRestApi</servlet-name>
     <servlet-class>org.restlet.ext.servlet.ServerServlet</servlet-class>
     <init-param>
       <param-name>org.restlet.application</param-name>
-      <param-value>org.apache.solr.rest.SchemaRestApi</param-value>
+      <param-value>org.apache.solr.rest.SolrRestApi</param-value>
     </init-param>
   </servlet>
   
@@ -164,7 +164,7 @@
   </servlet-mapping>
 
   <servlet-mapping>
-    <servlet-name>SchemaRestApi</servlet-name>
+    <servlet-name>SolrRestApi</servlet-name>
     <url-pattern>/schema/*</url-pattern>
   </servlet-mapping>
   

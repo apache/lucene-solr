@@ -1388,7 +1388,7 @@ class FieldCacheImpl implements FieldCache {
     }
     
     DocTermOrds dto = (DocTermOrds) caches.get(DocTermOrds.class).get(reader, new CacheKey(field, null), false);
-    return dto.iterator(dto.getOrdTermsEnum(reader));
+    return dto.iterator(reader);
   }
 
   static final class DocTermOrdsCache extends Cache {

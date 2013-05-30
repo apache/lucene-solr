@@ -29,7 +29,11 @@ public abstract class Spans {
   public abstract boolean next() throws IOException;
 
   /** Skips to the first match beyond the current, whose document number is
-   * greater than or equal to <i>target</i>. <p>Returns true iff there is such
+   * greater than or equal to <i>target</i>.
+   * <p>The behavior of this method is <b>undefined</b> when called with
+   * <code> target &le; current</code>, or after the iterator has exhausted.
+   * Both cases may result in unpredicted behavior.
+   * <p>Returns true iff there is such
    * a match.  <p>Behaves as if written: <pre class="prettyprint">
    *   boolean skipTo(int target) {
    *     do {
@@ -84,4 +88,12 @@ public abstract class Spans {
    */
   public abstract boolean isPayloadAvailable() throws IOException;
   
+  /**
+   * Returns the estimated cost of this spans.
+   * <p>
+   * This is generally an upper bound of the number of documents this iterator
+   * might match, but may be a rough heuristic, hardcoded value, or otherwise
+   * completely inaccurate.
+   */
+  public abstract long cost();
 }

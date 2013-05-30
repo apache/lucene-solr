@@ -18,7 +18,6 @@
 package org.apache.solr.handler;
 
 import org.apache.lucene.analysis.MockTokenizer;
-import org.apache.lucene.analysis.core.KeywordTokenizer;
 import org.apache.lucene.analysis.core.WhitespaceTokenizer;
 import org.apache.solr.common.params.AnalysisParams;
 import org.apache.solr.common.params.CommonParams;
@@ -126,7 +125,7 @@ public class FieldAnalysisRequestHandlerTest extends AnalysisRequestHandlerTestB
     request.setQuery("fox brown");
     request.setShowMatch(true);
 
-    NamedList<NamedList> result = handler.handleAnalysisRequest(request, h.getCore().getSchema());
+    NamedList<NamedList> result = handler.handleAnalysisRequest(request, h.getCore().getLatestSchema());
     assertTrue("result is null and it shouldn't be", result != null);
 
     NamedList<NamedList> fieldTypes = result.get("field_types");
@@ -179,25 +178,25 @@ public class FieldAnalysisRequestHandlerTest extends AnalysisRequestHandlerTestB
     tokenList = indexPart.get("org.apache.lucene.analysis.core.StopFilter");
     assertNotNull("Expcting StopFilter analysis breakdown", tokenList);
     assertEquals(tokenList.size(), 8);
-    assertToken(tokenList.get(0), new TokenInfo("quick", null, "<ALPHANUM>", 4, 9, 1, new int[]{2,2,2,1}, null, false));
-    assertToken(tokenList.get(1), new TokenInfo("red", null, "<ALPHANUM>", 10, 13, 2, new int[]{3,3,3,2}, null, false));
-    assertToken(tokenList.get(2), new TokenInfo("fox", null, "<ALPHANUM>", 14, 17, 3, new int[]{4,4,4,3}, null, true));
-    assertToken(tokenList.get(3), new TokenInfo("jumped", null, "<ALPHANUM>", 18, 24, 4, new int[]{5,5,5,4}, null, false));
-    assertToken(tokenList.get(4), new TokenInfo("over", null, "<ALPHANUM>", 25, 29, 5, new int[]{6,6,6,5}, null, false));
-    assertToken(tokenList.get(5), new TokenInfo("lazy", null, "<ALPHANUM>", 34, 38, 6, new int[]{8,8,8,6}, null, false));
-    assertToken(tokenList.get(6), new TokenInfo("brown", null, "<ALPHANUM>", 39, 44, 7, new int[]{9,9,9,7}, null, true));
-    assertToken(tokenList.get(7), new TokenInfo("dogs", null, "<ALPHANUM>", 45, 49, 8, new int[]{10,10,10,8}, null, false));
+    assertToken(tokenList.get(0), new TokenInfo("quick", null, "<ALPHANUM>", 4, 9, 2, new int[]{2,2,2,2}, null, false));
+    assertToken(tokenList.get(1), new TokenInfo("red", null, "<ALPHANUM>", 10, 13, 3, new int[]{3,3,3,3}, null, false));
+    assertToken(tokenList.get(2), new TokenInfo("fox", null, "<ALPHANUM>", 14, 17, 4, new int[]{4,4,4,4}, null, true));
+    assertToken(tokenList.get(3), new TokenInfo("jumped", null, "<ALPHANUM>", 18, 24, 5, new int[]{5,5,5,5}, null, false));
+    assertToken(tokenList.get(4), new TokenInfo("over", null, "<ALPHANUM>", 25, 29, 6, new int[]{6,6,6,6}, null, false));
+    assertToken(tokenList.get(5), new TokenInfo("lazy", null, "<ALPHANUM>", 34, 38, 8, new int[]{8,8,8,8}, null, false));
+    assertToken(tokenList.get(6), new TokenInfo("brown", null, "<ALPHANUM>", 39, 44, 9, new int[]{9,9,9,9}, null, true));
+    assertToken(tokenList.get(7), new TokenInfo("dogs", null, "<ALPHANUM>", 45, 49, 10, new int[]{10,10,10,10}, null, false));
     tokenList = indexPart.get("org.apache.lucene.analysis.en.PorterStemFilter");
     assertNotNull("Expcting PorterStemFilter analysis breakdown", tokenList);
     assertEquals(tokenList.size(), 8);
-    assertToken(tokenList.get(0), new TokenInfo("quick", null, "<ALPHANUM>", 4, 9, 1, new int[]{2,2,2,1,1}, null, false));
-    assertToken(tokenList.get(1), new TokenInfo("red", null, "<ALPHANUM>", 10, 13, 2, new int[]{3,3,3,2,2}, null, false));
-    assertToken(tokenList.get(2), new TokenInfo("fox", null, "<ALPHANUM>", 14, 17, 3, new int[]{4,4,4,3,3}, null, true));
-    assertToken(tokenList.get(3), new TokenInfo("jump", null, "<ALPHANUM>", 18, 24, 4, new int[]{5,5,5,4,4}, null, false));
-    assertToken(tokenList.get(4), new TokenInfo("over", null, "<ALPHANUM>", 25, 29, 5, new int[]{6,6,6,5,5}, null, false));
-    assertToken(tokenList.get(5), new TokenInfo("lazi", null, "<ALPHANUM>", 34, 38, 6, new int[]{8,8,8,6,6}, null, false));
-    assertToken(tokenList.get(6), new TokenInfo("brown", null, "<ALPHANUM>", 39, 44, 7, new int[]{9,9,9,7,7}, null, true));
-    assertToken(tokenList.get(7), new TokenInfo("dog", null, "<ALPHANUM>", 45, 49, 8, new int[]{10,10,10,8,8}, null, false));
+    assertToken(tokenList.get(0), new TokenInfo("quick", null, "<ALPHANUM>", 4, 9, 2, new int[]{2,2,2,2,2}, null, false));
+    assertToken(tokenList.get(1), new TokenInfo("red", null, "<ALPHANUM>", 10, 13, 3, new int[]{3,3,3,3,3}, null, false));
+    assertToken(tokenList.get(2), new TokenInfo("fox", null, "<ALPHANUM>", 14, 17, 4, new int[]{4,4,4,4,4}, null, true));
+    assertToken(tokenList.get(3), new TokenInfo("jump", null, "<ALPHANUM>", 18, 24, 5, new int[]{5,5,5,5,5}, null, false));
+    assertToken(tokenList.get(4), new TokenInfo("over", null, "<ALPHANUM>", 25, 29, 6, new int[]{6,6,6,6,6}, null, false));
+    assertToken(tokenList.get(5), new TokenInfo("lazi", null, "<ALPHANUM>", 34, 38, 8, new int[]{8,8,8,8,8}, null, false));
+    assertToken(tokenList.get(6), new TokenInfo("brown", null, "<ALPHANUM>", 39, 44, 9, new int[]{9,9,9,9,9}, null, true));
+    assertToken(tokenList.get(7), new TokenInfo("dog", null, "<ALPHANUM>", 45, 49, 10, new int[]{10,10,10,10,10}, null, false));
 
     NamedList<List<NamedList>> queryPart = textType.get("query");
     assertNotNull("expecting a query token analysis for field type 'text'", queryPart);
@@ -315,7 +314,7 @@ public class FieldAnalysisRequestHandlerTest extends AnalysisRequestHandlerTestB
     request.setFieldValue("<html><body>whátëvêr</body></html>");
     request.setShowMatch(false);
 
-    NamedList<NamedList> result = handler.handleAnalysisRequest(request, h.getCore().getSchema());
+    NamedList<NamedList> result = handler.handleAnalysisRequest(request, h.getCore().getLatestSchema());
     assertTrue("result is null and it shouldn't be", result != null);
 
     NamedList<NamedList> fieldTypes = result.get("field_types");
@@ -343,7 +342,7 @@ public class FieldAnalysisRequestHandlerTest extends AnalysisRequestHandlerTestB
     request.setFieldValue("hi, 3456-12 a Test");
     request.setShowMatch(false);
 
-    NamedList<NamedList> result = handler.handleAnalysisRequest(request, h.getCore().getSchema());
+    NamedList<NamedList> result = handler.handleAnalysisRequest(request, h.getCore().getLatestSchema());
     assertTrue("result is null and it shouldn't be", result != null);
 
     NamedList<NamedList> fieldTypes = result.get("field_types");

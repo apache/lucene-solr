@@ -23,11 +23,13 @@ import java.io.UnsupportedEncodingException;
 import java.util.List;
 
 import org.apache.lucene.util.LuceneTestCase;
+import org.apache.lucene.util.TestRuleIgnoreAfterMaxFailures;
 import org.apache.lucene.util.TestRuleIgnoreTestSuites;
 import org.apache.lucene.util.TestRuleMarkFailure;
 import org.junit.After;
 import org.junit.Assert;
 import org.junit.Before;
+import org.junit.ClassRule;
 import org.junit.Rule;
 import org.junit.rules.RuleChain;
 import org.junit.rules.TestRule;
@@ -66,6 +68,22 @@ public abstract class WithNestedTests {
   private ByteArrayOutputStream sysout;
   private ByteArrayOutputStream syserr;
 
+  @ClassRule
+  public static final TestRule classRules = RuleChain.outerRule(new TestRuleAdapter() {
+    private TestRuleIgnoreAfterMaxFailures prevRule;
+
+    protected void before() throws Throwable {
+      TestRuleIgnoreAfterMaxFailures newRule = new TestRuleIgnoreAfterMaxFailures(Integer.MAX_VALUE);
+      prevRule = LuceneTestCase.replaceMaxFailureRule(newRule);
+    }
+
+    protected void afterAlways(List<Throwable> errors) throws Throwable {
+      if (prevRule != null) {
+        LuceneTestCase.replaceMaxFailureRule(prevRule);
+      }
+    }
+  }); 
+
   /**
    * Restore properties after test.
    */
@@ -86,7 +104,7 @@ public abstract class WithNestedTests {
       })
       .around(marker);
   }
-      
+
   @Before
   public final void before() {
     if (suppressOutputStreams) {

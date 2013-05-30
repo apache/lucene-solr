@@ -147,35 +147,41 @@ class BooleanScorer2 extends Scorer {
     public int advance(int target) throws IOException {
       return scorer.advance(target);
     }
+
+    @Override
+    public long cost() {
+      return scorer.cost();
+    }
   }
 
   private Scorer countingDisjunctionSumScorer(final List<Scorer> scorers,
       int minNrShouldMatch) throws IOException {
     // each scorer from the list counted as a single matcher
-    return new DisjunctionSumScorer(weight, scorers, minNrShouldMatch) {
-      private int lastScoredDoc = -1;
-      // Save the score of lastScoredDoc, so that we don't compute it more than
-      // once in score().
-      private float lastDocScore = Float.NaN;
-      @Override public float score() throws IOException {
-        int doc = docID();
-        if (doc >= lastScoredDoc) {
-          if (doc > lastScoredDoc) {
-            lastDocScore = super.score();
-            lastScoredDoc = doc;
-          }
+    if (minNrShouldMatch > 1) {
+      return new MinShouldMatchSumScorer(weight, scorers, minNrShouldMatch) {
+        @Override 
+        public float score() throws IOException {
           coordinator.nrMatchers += super.nrMatchers;
+          return super.score();
         }
-        return lastDocScore;
-      }
-    };
+      };
+    } else {
+      // we pass null for coord[] since we coordinate ourselves and override score()
+      return new DisjunctionSumScorer(weight, scorers.toArray(new Scorer[scorers.size()]), null) {
+        @Override 
+        public float score() throws IOException {
+          coordinator.nrMatchers += super.nrMatchers;
+          return (float) super.score;
+        }
+      };
+    }
   }
 
   private Scorer countingConjunctionSumScorer(boolean disableCoord,
                                               List<Scorer> requiredScorers) throws IOException {
     // each scorer from the list counted as a single matcher
     final int requiredNrMatchers = requiredScorers.size();
-    return new ConjunctionScorer(weight, requiredScorers) {
+    return new ConjunctionScorer(weight, requiredScorers.toArray(new Scorer[requiredScorers.size()])) {
       private int lastScoredDoc = -1;
       // Save the score of lastScoredDoc, so that we don't compute it more than
       // once in score().
@@ -200,7 +206,7 @@ class BooleanScorer2 extends Scorer {
 
   private Scorer dualConjunctionSumScorer(boolean disableCoord,
                                                 Scorer req1, Scorer req2) throws IOException { // non counting.
-    return new ConjunctionScorer(weight, req1, req2);
+    return new ConjunctionScorer(weight, new Scorer[] { req1, req2 });
     // All scorers match, so defaultSimilarity always has 1 as
     // the coordination factor.
     // Therefore the sum of the scores of two scorers
@@ -270,7 +276,7 @@ class BooleanScorer2 extends Scorer {
           : new ReqExclScorer(requiredCountingSumScorer,
                               ((prohibitedScorers.size() == 1)
                                 ? prohibitedScorers.get(0)
-                                : new DisjunctionSumScorer(weight, prohibitedScorers)));
+                                : new MinShouldMatchSumScorer(weight, prohibitedScorers)));
   }
 
   /** Scores and collects all matching documents.
@@ -320,6 +326,11 @@ class BooleanScorer2 extends Scorer {
   @Override
   public int advance(int target) throws IOException {
     return doc = countingSumScorer.advance(target);
+  }
+  
+  @Override
+  public long cost() {
+    return countingSumScorer.cost();
   }
 
   @Override

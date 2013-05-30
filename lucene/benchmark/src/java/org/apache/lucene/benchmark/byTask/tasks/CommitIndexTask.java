@@ -1,4 +1,5 @@
 package org.apache.lucene.benchmark.byTask.tasks;
+
 /*
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
@@ -49,7 +50,9 @@ public class CommitIndexTask extends PerfTask {
   public int doLogic() throws Exception {
     IndexWriter iw = getRunData().getIndexWriter();
     if (iw != null) {
-      iw.setCommitData(commitUserData);
+      if (commitUserData != null) {
+        iw.setCommitData(commitUserData);
+      }
       iw.commit();
     }
     

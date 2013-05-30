@@ -16,7 +16,7 @@
  */
 package org.apache.solr.common.util;
 
-import org.apache.noggit.CharArr;
+import org.noggit.CharArr;
 import org.apache.solr.common.SolrDocument;
 import org.apache.solr.common.SolrDocumentList;
 import org.apache.solr.common.SolrInputDocument;

@@ -26,7 +26,7 @@ import org.apache.lucene.util.BytesRef;
 /** Implements a {@link TermsEnum} wrapping a provided
  * {@link SortedDocValues}. */
 
-public class SortedDocValuesTermsEnum extends TermsEnum {
+class SortedDocValuesTermsEnum extends TermsEnum {
   private final SortedDocValues values;
   private int currentOrd = -1;
   private final BytesRef term = new BytesRef();
@@ -64,6 +64,12 @@ public class SortedDocValuesTermsEnum extends TermsEnum {
   public boolean seekExact(BytesRef text, boolean useCache) throws IOException {
     int ord = values.lookupTerm(text);
     if (ord >= 0) {
+      term.offset = 0;
+      // TODO: is there a cleaner way?
+      // term.bytes may be pointing to codec-private byte[]
+      // storage, so we must force new byte[] allocation:
+      term.bytes = new byte[text.length];
+      term.copyBytes(text);
       currentOrd = ord;
       return true;
     } else {

@@ -161,11 +161,11 @@ public class SolrConstantScoreQuery extends ConstantScoreQuery implements Extend
       this.acceptDocs = acceptDocs;
       DocIdSet docIdSet = filter instanceof SolrFilter ? ((SolrFilter)filter).getDocIdSet(w.context, context, acceptDocs) : filter.getDocIdSet(context, acceptDocs);
       if (docIdSet == null) {
-        docIdSetIterator = DocIdSet.EMPTY_DOCIDSET.iterator();
+        docIdSetIterator = DocIdSetIterator.empty();
       } else {
         DocIdSetIterator iter = docIdSet.iterator();
         if (iter == null) {
-          docIdSetIterator = DocIdSet.EMPTY_DOCIDSET.iterator();
+          docIdSetIterator = DocIdSetIterator.empty();
         } else {
           docIdSetIterator = iter;
         }
@@ -195,6 +195,11 @@ public class SolrConstantScoreQuery extends ConstantScoreQuery implements Extend
     @Override
     public int advance(int target) throws IOException {
       return docIdSetIterator.advance(target);
+    }
+
+    @Override
+    public long cost() {
+      return docIdSetIterator.cost();
     }
   }
 

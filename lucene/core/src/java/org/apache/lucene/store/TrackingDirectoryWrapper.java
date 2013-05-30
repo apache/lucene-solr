@@ -123,4 +123,8 @@ public final class TrackingDirectoryWrapper extends Directory implements Closeab
   public Set<String> getCreatedFiles() {
     return createdFileNames;
   }
+
+  public Directory getDelegate() {
+    return other;
+  }
 }

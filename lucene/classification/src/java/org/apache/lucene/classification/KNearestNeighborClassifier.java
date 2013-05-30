@@ -58,6 +58,9 @@ public class KNearestNeighborClassifier implements Classifier<BytesRef> {
    */
   @Override
   public ClassificationResult<BytesRef> assignClass(String text) throws IOException {
+    if (mlt == null) {
+      throw new IOException("You must first call Classifier#train first");
+    }
     Query q = mlt.like(new StringReader(text), textFieldName);
     TopDocs topDocs = indexSearcher.search(q, k);
     return selectClassFromNeighbors(topDocs);

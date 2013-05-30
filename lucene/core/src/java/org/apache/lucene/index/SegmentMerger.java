@@ -34,12 +34,11 @@ import org.apache.lucene.util.IOUtils;
 import org.apache.lucene.util.InfoStream;
 
 /**
- * The SegmentMerger class combines two or more Segments, represented by an IndexReader ({@link #add},
- * into a single Segment.  After adding the appropriate readers, call the merge method to combine the
+ * The SegmentMerger class combines two or more Segments, represented by an
+ * IndexReader, into a single Segment.  Call the merge method to combine the
  * segments.
  *
  * @see #merge
- * @see #add
  */
 final class SegmentMerger {
   private final Directory directory;
@@ -49,16 +48,13 @@ final class SegmentMerger {
   
   private final IOContext context;
   
-  private final MergeState mergeState = new MergeState();
+  private final MergeState mergeState;
   private final FieldInfos.Builder fieldInfosBuilder;
 
   // note, just like in codec apis Directory 'dir' is NOT the same as segmentInfo.dir!!
-  SegmentMerger(SegmentInfo segmentInfo, InfoStream infoStream, Directory dir, int termIndexInterval,
+  SegmentMerger(List<AtomicReader> readers, SegmentInfo segmentInfo, InfoStream infoStream, Directory dir, int termIndexInterval,
                 MergeState.CheckAbort checkAbort, FieldInfos.FieldNumbers fieldNumbers, IOContext context) {
-    mergeState.segmentInfo = segmentInfo;
-    mergeState.infoStream = infoStream;
-    mergeState.readers = new ArrayList<AtomicReader>();
-    mergeState.checkAbort = checkAbort;
+    mergeState = new MergeState(readers, segmentInfo, infoStream, checkAbort);
     directory = dir;
     this.termIndexInterval = termIndexInterval;
     this.codec = segmentInfo.getCodec();
@@ -67,21 +63,7 @@ final class SegmentMerger {
   }
 
   /**
-   * Add an IndexReader to the collection of readers that are to be merged
-   */
-  void add(IndexReader reader) {
-    for (final AtomicReaderContext ctx : reader.leaves()) {
-      final AtomicReader r = ctx.reader();
-      mergeState.readers.add(r);
-    }
-  }
-
-  void add(SegmentReader reader) {
-    mergeState.readers.add(reader);
-  }
-
-  /**
-   * Merges the readers specified by the {@link #add} method into the directory passed to the constructor
+   * Merges the readers into the directory passed to the constructor
    * @return The number of documents that were merged
    * @throws CorruptIndexException if the index is corrupt
    * @throws IOException if there is a low-level IO error

@@ -88,13 +88,13 @@ public class MultiTermQueryWrapperFilter<Q extends MultiTermQuery> extends Filte
     final Fields fields = reader.fields();
     if (fields == null) {
       // reader has no fields
-      return DocIdSet.EMPTY_DOCIDSET;
+      return null;
     }
 
     final Terms terms = fields.terms(query.field);
     if (terms == null) {
       // field does not exist
-      return DocIdSet.EMPTY_DOCIDSET;
+      return null;
     }
 
     final TermsEnum termsEnum = query.getTermsEnum(terms);
@@ -116,7 +116,7 @@ public class MultiTermQueryWrapperFilter<Q extends MultiTermQuery> extends Filte
 
       return bitSet;
     } else {
-      return DocIdSet.EMPTY_DOCIDSET;
+      return null;
     }
   }
 }

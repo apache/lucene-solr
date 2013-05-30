@@ -25,9 +25,10 @@ import java.util.ArrayList;
 import java.util.List;
 
 import org.apache.lucene.search.spell.TermFreqIterator;
+import org.apache.lucene.search.spell.TermFreqPayloadIterator;
 import org.apache.lucene.search.suggest.Lookup;
-import org.apache.lucene.search.suggest.Sort;
 import org.apache.lucene.search.suggest.Sort.SortInfo;
+import org.apache.lucene.search.suggest.Sort;
 import org.apache.lucene.search.suggest.fst.FSTCompletion.Completion;
 import org.apache.lucene.search.suggest.tst.TSTLookup;
 import org.apache.lucene.store.ByteArrayDataInput;
@@ -141,6 +142,9 @@ public class FSTCompletionLookup extends Lookup {
 
   @Override
   public void build(TermFreqIterator tfit) throws IOException {
+    if (tfit instanceof TermFreqPayloadIterator) {
+      throw new IllegalArgumentException("this suggester doesn't support payloads");
+    }
     File tempInput = File.createTempFile(
         FSTCompletionLookup.class.getSimpleName(), ".input", Sort.defaultTempDir());
     File tempSorted = File.createTempFile(

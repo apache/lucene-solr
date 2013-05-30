@@ -19,6 +19,7 @@ package org.apache.lucene.facet.search;
 
 import java.io.IOException;
 import java.util.LinkedHashMap;
+import java.util.List;
 import java.util.Map;
 
 import org.apache.lucene.facet.params.CategoryListParams;
@@ -61,7 +62,7 @@ public final class DrillDownQuery extends Query {
   
   private final BooleanQuery query;
   private final Map<String,Integer> drillDownDims = new LinkedHashMap<String,Integer>();
-  private final FacetIndexingParams fip;
+  final FacetIndexingParams fip;
 
   /** Used by clone() */
   DrillDownQuery(FacetIndexingParams fip, BooleanQuery query, Map<String,Integer> drillDownDims) {
@@ -85,6 +86,19 @@ public final class DrillDownQuery extends Query {
       query.add(clauses[i].getQuery(), Occur.MUST);
     }
     fip = other.fip;
+  }
+
+  /** Used by DrillSideways */
+  DrillDownQuery(FacetIndexingParams fip, Query baseQuery, List<Query> clauses, Map<String,Integer> drillDownDims) {
+    this.fip = fip;
+    this.query = new BooleanQuery(true);
+    if (baseQuery != null) {
+      query.add(baseQuery, Occur.MUST);      
+    }
+    for(Query clause : clauses) {
+      query.add(clause, Occur.MUST);
+    }
+    this.drillDownDims.putAll(drillDownDims);
   }
 
   /**
@@ -139,11 +153,25 @@ public final class DrillDownQuery extends Query {
       }
       q = bq;
     }
-    drillDownDims.put(dim, drillDownDims.size());
 
-    final ConstantScoreQuery drillDownQuery = new ConstantScoreQuery(q);
+    add(dim, q);
+  }
+
+  /** Expert: add a custom drill-down subQuery.  Use this
+   *  when you have a separate way to drill-down on the
+   *  dimension than the indexed facet ordinals. */
+  public void add(String dim, Query subQuery) {
+
+    // TODO: we should use FilteredQuery?
+
+    // So scores of the drill-down query don't have an
+    // effect:
+    final ConstantScoreQuery drillDownQuery = new ConstantScoreQuery(subQuery);
     drillDownQuery.setBoost(0.0f);
+
     query.add(drillDownQuery, Occur.MUST);
+
+    drillDownDims.put(dim, drillDownDims.size());
   }
 
   @Override
@@ -153,7 +181,9 @@ public final class DrillDownQuery extends Query {
   
   @Override
   public int hashCode() {
-    return query.hashCode();
+    final int prime = 31;
+    int result = super.hashCode();
+    return prime * result + query.hashCode();
   }
   
   @Override
@@ -163,7 +193,7 @@ public final class DrillDownQuery extends Query {
     }
     
     DrillDownQuery other = (DrillDownQuery) obj;
-    return query.equals(other.query);
+    return query.equals(other.query) && super.equals(other);
   }
   
   @Override

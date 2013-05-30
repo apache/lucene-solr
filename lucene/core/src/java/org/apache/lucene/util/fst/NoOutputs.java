@@ -74,6 +74,13 @@ public final class NoOutputs extends Outputs<Object> {
   }
 
   @Override
+  public Object merge(Object first, Object second) {
+    assert first == NO_OUTPUT;
+    assert second == NO_OUTPUT;
+    return NO_OUTPUT;
+  }
+
+  @Override
   public void write(Object prefix, DataOutput out) {
     //assert false;
   }

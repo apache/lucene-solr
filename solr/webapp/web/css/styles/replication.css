@@ -283,6 +283,7 @@
 
 #content #replication #details table
 {
+  margin-left: 20px;
   border-collapse: collapse;
 }
 
@@ -339,6 +340,7 @@
 {
   padding-right: 10px;
   text-align: right;
+  white-space: nowrap;
 }
 
 #content #replication #details table tbody .size

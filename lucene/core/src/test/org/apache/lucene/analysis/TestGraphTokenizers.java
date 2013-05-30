@@ -319,7 +319,7 @@ public class TestGraphTokenizers extends BaseTokenStreamTestCase {
         };
       
       Random random = random();
-      checkRandomData(random, a, 5, atLeast(1000));
+      checkRandomData(random, a, 5, atLeast(100));
     }
   }
 
@@ -344,7 +344,7 @@ public class TestGraphTokenizers extends BaseTokenStreamTestCase {
         };
       
       Random random = random();
-      checkRandomData(random, a, 5, atLeast(1000));
+      checkRandomData(random, a, 5, atLeast(100));
     }
   }
 
@@ -368,7 +368,7 @@ public class TestGraphTokenizers extends BaseTokenStreamTestCase {
         };
       
       Random random = random();
-      checkRandomData(random, a, 5, atLeast(1000));
+      checkRandomData(random, a, 5, atLeast(100));
     }
   }
 
@@ -392,7 +392,7 @@ public class TestGraphTokenizers extends BaseTokenStreamTestCase {
         };
       
       Random random = random();
-      checkRandomData(random, a, 5, atLeast(1000));
+      checkRandomData(random, a, 5, atLeast(100));
     }
   }
 

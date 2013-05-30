@@ -77,6 +77,11 @@ public class MatchAllDocsQuery extends Query {
       doc = target-1;
       return nextDoc();
     }
+
+    @Override
+    public long cost() {
+      return maxDoc;
+    }
   }
 
   private class MatchAllDocsWeight extends Weight {

@@ -22,8 +22,11 @@
   <luceneMatchVersion>${tests.luceneMatchVersion:LUCENE_CURRENT}</luceneMatchVersion>
   <dataDir>${solr.data.dir:}</dataDir>
   <directoryFactory name="DirectoryFactory" class="${solr.directoryFactory:solr.RAMDirectoryFactory}"/>
-  <requestHandler name="standard" class="solr.StandardRequestHandler"></requestHandler>
-
+  <requestHandler name="standard" class="solr.StandardRequestHandler">
+    <lst name="defaults">
+      <bool name="hl.defaultSummary">false</bool>
+    </lst>
+  </requestHandler>
   <searchComponent class="solr.HighlightComponent" name="highlight">
     <highlighting class="org.apache.solr.highlight.PostingsSolrHighlighter"/>
   </searchComponent>

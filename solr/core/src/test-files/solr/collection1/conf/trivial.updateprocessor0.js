@@ -1,12 +1,14 @@
+var Assert = Packages.org.junit.Assert;
+
 function processAdd(cmd) {
     functionMessages.add("processAdd0");
-    testCase.assertNotNull(req);
-    testCase.assertNotNull(rsp);
-    testCase.assertNotNull(logger);
-    testCase.assertNotNull(cmd);
-    testCase.assertNotNull(params);
-    testCase.assertTrue(1 == params.get('intValue').intValue());  // had issues with assertTrue(1, params.get('intValue').intValue()) casting to wrong variant
-    testCase.assertTrue(params.get('boolValue').booleanValue());
+    Assert.assertNotNull(req);
+    Assert.assertNotNull(rsp);
+    Assert.assertNotNull(logger);
+    Assert.assertNotNull(cmd);
+    Assert.assertNotNull(params);
+    Assert.assertTrue(1 == params.get('intValue').intValue());  // had issues with assertTrue(1, params.get('intValue').intValue()) casting to wrong variant
+    Assert.assertTrue(params.get('boolValue').booleanValue());
 
     // Integer.valueOf is needed here to get a tru java object, because 
     // all javascript numbers are floating point (ie: java.lang.Double)
@@ -18,40 +20,40 @@ function processAdd(cmd) {
 
 function processDelete(cmd) {
     functionMessages.add("processDelete0");
-    testCase.assertNotNull(req);
-    testCase.assertNotNull(rsp);
-    testCase.assertNotNull(logger);
-    testCase.assertNotNull(cmd);
+    Assert.assertNotNull(req);
+    Assert.assertNotNull(rsp);
+    Assert.assertNotNull(logger);
+    Assert.assertNotNull(cmd);
 }
 
 function processMergeIndexes(cmd) {
     functionMessages.add("processMergeIndexes0");
-    testCase.assertNotNull(req);
-    testCase.assertNotNull(rsp);
-    testCase.assertNotNull(logger);
-    testCase.assertNotNull(cmd);
+    Assert.assertNotNull(req);
+    Assert.assertNotNull(rsp);
+    Assert.assertNotNull(logger);
+    Assert.assertNotNull(cmd);
 }
 
 function processCommit(cmd) {
     functionMessages.add("processCommit0");
-    testCase.assertNotNull(req);
-    testCase.assertNotNull(rsp);
-    testCase.assertNotNull(logger);
-    testCase.assertNotNull(cmd);
+    Assert.assertNotNull(req);
+    Assert.assertNotNull(rsp);
+    Assert.assertNotNull(logger);
+    Assert.assertNotNull(cmd);
 }
 
 function processRollback(cmd) {
     functionMessages.add("processRollback0");
-    testCase.assertNotNull(req);
-    testCase.assertNotNull(rsp);
-    testCase.assertNotNull(logger);
-    testCase.assertNotNull(cmd);
+    Assert.assertNotNull(req);
+    Assert.assertNotNull(rsp);
+    Assert.assertNotNull(logger);
+    Assert.assertNotNull(cmd);
 }
 
 function finish() {
     functionMessages.add("finish0");
-    testCase.assertNotNull(req);
-    testCase.assertNotNull(rsp);
-    testCase.assertNotNull(logger);
+    Assert.assertNotNull(req);
+    Assert.assertNotNull(rsp);
+    Assert.assertNotNull(logger);
 }
 

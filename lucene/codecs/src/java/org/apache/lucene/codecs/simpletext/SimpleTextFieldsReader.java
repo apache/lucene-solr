@@ -199,7 +199,7 @@ class SimpleTextFieldsReader extends FieldsProducer {
       } else {
         docsEnum = new SimpleTextDocsEnum();
       }
-      return docsEnum.reset(docsStart, liveDocs, indexOptions == IndexOptions.DOCS_ONLY);
+      return docsEnum.reset(docsStart, liveDocs, indexOptions == IndexOptions.DOCS_ONLY, docFreq);
     }
 
     @Override
@@ -216,7 +216,7 @@ class SimpleTextFieldsReader extends FieldsProducer {
       } else {
         docsAndPositionsEnum = new SimpleTextDocsAndPositionsEnum();
       } 
-      return docsAndPositionsEnum.reset(docsStart, liveDocs, indexOptions);
+      return docsAndPositionsEnum.reset(docsStart, liveDocs, indexOptions, docFreq);
     }
     
     @Override
@@ -234,6 +234,7 @@ class SimpleTextFieldsReader extends FieldsProducer {
     private Bits liveDocs;
     private final BytesRef scratch = new BytesRef(10);
     private final CharsRef scratchUTF16 = new CharsRef(10);
+    private int cost;
     
     public SimpleTextDocsEnum() {
       this.inStart = SimpleTextFieldsReader.this.in;
@@ -244,12 +245,13 @@ class SimpleTextFieldsReader extends FieldsProducer {
       return in == inStart;
     }
 
-    public SimpleTextDocsEnum reset(long fp, Bits liveDocs, boolean omitTF) throws IOException {
+    public SimpleTextDocsEnum reset(long fp, Bits liveDocs, boolean omitTF, int docFreq) throws IOException {
       this.liveDocs = liveDocs;
       in.seek(fp);
       this.omitTF = omitTF;
       docID = -1;
       tf = 1;
+      cost = docFreq;
       return this;
     }
 
@@ -313,8 +315,12 @@ class SimpleTextFieldsReader extends FieldsProducer {
     @Override
     public int advance(int target) throws IOException {
       // Naive -- better to index skip data
-      while(nextDoc() < target);
-      return docID;
+      return slowAdvance(target);
+    }
+    
+    @Override
+    public long cost() {
+      return cost;
     }
   }
 
@@ -334,6 +340,7 @@ class SimpleTextFieldsReader extends FieldsProducer {
     private boolean readPositions;
     private int startOffset;
     private int endOffset;
+    private int cost;
 
     public SimpleTextDocsAndPositionsEnum() {
       this.inStart = SimpleTextFieldsReader.this.in;
@@ -344,7 +351,7 @@ class SimpleTextFieldsReader extends FieldsProducer {
       return in == inStart;
     }
 
-    public SimpleTextDocsAndPositionsEnum reset(long fp, Bits liveDocs, IndexOptions indexOptions) {
+    public SimpleTextDocsAndPositionsEnum reset(long fp, Bits liveDocs, IndexOptions indexOptions, int docFreq) {
       this.liveDocs = liveDocs;
       nextDocStart = fp;
       docID = -1;
@@ -354,6 +361,7 @@ class SimpleTextFieldsReader extends FieldsProducer {
         startOffset = -1;
         endOffset = -1;
       }
+      cost = docFreq;
       return this;
     }
 
@@ -413,8 +421,7 @@ class SimpleTextFieldsReader extends FieldsProducer {
     @Override
     public int advance(int target) throws IOException {
       // Naive -- better to index skip data
-      while(nextDoc() < target);
-      return docID;
+      return slowAdvance(target);
     }
 
     @Override
@@ -470,6 +477,11 @@ class SimpleTextFieldsReader extends FieldsProducer {
     @Override
     public BytesRef getPayload() {
       return payload;
+    }
+    
+    @Override
+    public long cost() {
+      return cost;
     }
   }
 

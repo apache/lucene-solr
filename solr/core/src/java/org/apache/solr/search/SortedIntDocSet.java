@@ -755,6 +755,10 @@ public class SortedIntDocSet extends DocSetBase {
                 }
               }
 
+              @Override
+              public long cost() {
+                return docs.length;
+              }
             };
           }
 

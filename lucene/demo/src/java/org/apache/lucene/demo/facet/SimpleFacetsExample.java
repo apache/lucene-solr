@@ -67,7 +67,7 @@ public class SimpleFacetsExample {
         new WhitespaceAnalyzer(FacetExamples.EXAMPLES_VER)));
 
     // Writes facet ords to a separate directory from the main index
-    DirectoryTaxonomyWriter taxoWriter = new DirectoryTaxonomyWriter(taxoDir, IndexWriterConfig.OpenMode.CREATE);
+    DirectoryTaxonomyWriter taxoWriter = new DirectoryTaxonomyWriter(taxoDir);
 
     // Reused across documents, to add the necessary facet fields
     FacetFields facetFields = new FacetFields(taxoWriter);
@@ -111,7 +111,7 @@ public class SimpleFacetsExample {
     return facetResults;
   }
   
-  /** User drills down on 'Publish date/2010'. */
+  /** User drills down on 'Publish Date/2010'. */
   private List<FacetResult> drillDown() throws IOException {
     DirectoryReader indexReader = DirectoryReader.open(indexDir);
     IndexSearcher searcher = new IndexSearcher(indexReader);
@@ -119,7 +119,10 @@ public class SimpleFacetsExample {
 
     // Now user drills down on Publish Date/2010:
     FacetSearchParams fsp = new FacetSearchParams(new CountFacetRequest(new CategoryPath("Author"), 10));
-    DrillDownQuery q = new DrillDownQuery(fsp.indexingParams, new MatchAllDocsQuery());
+
+    // Passing no baseQuery means we drill down on all
+    // documents ("browse only"):
+    DrillDownQuery q = new DrillDownQuery(fsp.indexingParams);
     q.add(new CategoryPath("Publish Date/2010", '/'));
     FacetsCollector fc = FacetsCollector.create(fsp, searcher.getIndexReader(), taxoReader);
     searcher.search(q, fc);

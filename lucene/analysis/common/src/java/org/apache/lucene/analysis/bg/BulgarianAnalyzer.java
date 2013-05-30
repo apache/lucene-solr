@@ -24,7 +24,7 @@ import java.util.Set;
 import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.analysis.core.LowerCaseFilter;
 import org.apache.lucene.analysis.core.StopFilter;
-import org.apache.lucene.analysis.miscellaneous.KeywordMarkerFilter;
+import org.apache.lucene.analysis.miscellaneous.SetKeywordMarkerFilter;
 import org.apache.lucene.analysis.TokenStream;
 import org.apache.lucene.analysis.Tokenizer;
 import org.apache.lucene.analysis.standard.StandardFilter;
@@ -97,7 +97,7 @@ public final class BulgarianAnalyzer extends StopwordAnalyzerBase {
   
   /**
    * Builds an analyzer with the given stop words and a stem exclusion set.
-   * If a stem exclusion set is provided this analyzer will add a {@link KeywordMarkerFilter} 
+   * If a stem exclusion set is provided this analyzer will add a {@link SetKeywordMarkerFilter} 
    * before {@link BulgarianStemFilter}.
    */
   public BulgarianAnalyzer(Version matchVersion, CharArraySet stopwords, CharArraySet stemExclusionSet) {
@@ -114,7 +114,7 @@ public final class BulgarianAnalyzer extends StopwordAnalyzerBase {
    *         {@link org.apache.lucene.analysis.Analyzer.TokenStreamComponents}
    *         built from an {@link StandardTokenizer} filtered with
    *         {@link StandardFilter}, {@link LowerCaseFilter}, {@link StopFilter}
-   *         , {@link KeywordMarkerFilter} if a stem exclusion set is
+   *         , {@link SetKeywordMarkerFilter} if a stem exclusion set is
    *         provided and {@link BulgarianStemFilter}.
    */
   @Override
@@ -124,7 +124,7 @@ public final class BulgarianAnalyzer extends StopwordAnalyzerBase {
     result = new LowerCaseFilter(matchVersion, result);
     result = new StopFilter(matchVersion, result, stopwords);
     if(!stemExclusionSet.isEmpty())
-      result = new KeywordMarkerFilter(result, stemExclusionSet);
+      result = new SetKeywordMarkerFilter(result, stemExclusionSet);
     result = new BulgarianStemFilter(result);
     return new TokenStreamComponents(source, result);
   }

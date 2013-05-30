@@ -75,7 +75,7 @@ public class TestQuerySenderListener extends SolrTestCaseJ4 {
     assertNotNull("Event is null", evt);
     assertTrue(evt + " is not equal to " + EventParams.FIRST_SEARCHER, evt.equals(EventParams.FIRST_SEARCHER) == true);
 
-    SolrIndexSearcher newSearcher = new SolrIndexSearcher(core, core.getNewIndexDir(), core.getSchema(), core.getSolrConfig().indexConfig, "testQuerySenderListener", false, core.getDirectoryFactory());
+    SolrIndexSearcher newSearcher = new SolrIndexSearcher(core, core.getNewIndexDir(), core.getLatestSchema(), core.getSolrConfig().indexConfig, "testQuerySenderListener", false, core.getDirectoryFactory());
 
     qsl.newSearcher(newSearcher, currentSearcher);
     evt = mock.req.getParams().get(EventParams.EVENT);

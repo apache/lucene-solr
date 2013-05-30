@@ -63,8 +63,17 @@ public class PathHierarchyTokenizer extends Tokenizer {
     this(input, DEFAULT_BUFFER_SIZE, delimiter, replacement, skip);
   }
 
+  public PathHierarchyTokenizer(AttributeFactory factory, Reader input, char delimiter, char replacement, int skip) {
+    this(factory, input, DEFAULT_BUFFER_SIZE, delimiter, replacement, skip);
+  }
+
   public PathHierarchyTokenizer(Reader input, int bufferSize, char delimiter, char replacement, int skip) {
-    super(input);
+    this(AttributeFactory.DEFAULT_ATTRIBUTE_FACTORY, input, bufferSize, delimiter, replacement, skip);
+  }
+
+  public PathHierarchyTokenizer
+      (AttributeFactory factory, Reader input, int bufferSize, char delimiter, char replacement, int skip) {
+    super(factory, input);
     if (bufferSize < 0) {
       throw new IllegalArgumentException("bufferSize cannot be negative");
     }

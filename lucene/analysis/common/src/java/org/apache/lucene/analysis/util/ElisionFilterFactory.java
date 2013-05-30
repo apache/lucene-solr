@@ -18,12 +18,14 @@ package org.apache.lucene.analysis.util;
  */
 
 import java.io.IOException;
+import java.util.Map;
+
 import org.apache.lucene.analysis.TokenStream;
 import org.apache.lucene.analysis.fr.FrenchAnalyzer;
 
 /**
  * Factory for {@link ElisionFilter}.
- * <pre class="prettyprint" >
+ * <pre class="prettyprint">
  * &lt;fieldType name="text_elsn" class="solr.TextField" positionIncrementGap="100"&gt;
  *   &lt;analyzer&gt;
  *     &lt;tokenizer class="solr.StandardTokenizerFactory"/&gt;
@@ -32,22 +34,28 @@ import org.apache.lucene.analysis.fr.FrenchAnalyzer;
  *       articles="stopwordarticles.txt" ignoreCase="true"/&gt;
  *   &lt;/analyzer&gt;
  * &lt;/fieldType&gt;</pre>
- *
  */
 public class ElisionFilterFactory extends TokenFilterFactory implements ResourceLoaderAware, MultiTermAwareComponent {
-
+  private final String articlesFile;
+  private final boolean ignoreCase;
   private CharArraySet articles;
+
+  /** Creates a new ElisionFilterFactory */
+  public ElisionFilterFactory(Map<String,String> args) {
+    super(args);
+    articlesFile = get(args, "articles");
+    ignoreCase = getBoolean(args, "ignoreCase", false);
+    if (!args.isEmpty()) {
+      throw new IllegalArgumentException("Unknown parameters: " + args);
+    }
+  }
 
   @Override
   public void inform(ResourceLoader loader) throws IOException {
-    String articlesFile = args.get("articles");
-    boolean ignoreCase = getBoolean("ignoreCase", false);
-
-    if (articlesFile != null) {
-      articles = getWordSet(loader, articlesFile, ignoreCase);
-    }
-    if (articles == null) {
+    if (articlesFile == null) {
       articles = FrenchAnalyzer.DEFAULT_ARTICLES;
+    } else {
+      articles = getWordSet(loader, articlesFile, ignoreCase);
     }
   }
 

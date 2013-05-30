@@ -34,6 +34,7 @@ import org.apache.solr.common.util.SimpleOrderedMap;
 import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.request.UnInvertedField;
 import org.apache.solr.schema.FieldType;
+import org.apache.solr.schema.IndexSchema;
 import org.apache.solr.schema.SchemaField;
 import org.apache.solr.search.DocIterator;
 import org.apache.solr.search.DocSet;
@@ -204,12 +205,13 @@ class SimpleStats {
     String[] statsFs = params.getParams(StatsParams.STATS_FIELD);
     boolean isShard = params.getBool(ShardParams.IS_SHARD, false);
     if (null != statsFs) {
+      final IndexSchema schema = searcher.getSchema();
       for (String f : statsFs) {
         String[] facets = params.getFieldParams(f, StatsParams.STATS_FACET);
         if (facets == null) {
           facets = new String[0]; // make sure it is something...
         }
-        SchemaField sf = searcher.getSchema().getField(f);
+        SchemaField sf = schema.getField(f);
         FieldType ft = sf.getType();
         NamedList<?> stv;
 
@@ -231,13 +233,14 @@ class SimpleStats {
   }
 
   public NamedList<?> getFieldCacheStats(String fieldName, String[] facet) throws IOException {
-    final SchemaField sf = searcher.getSchema().getField(fieldName);
+    IndexSchema schema = searcher.getSchema();
+    final SchemaField sf = schema.getField(fieldName);
 
     final StatsValues allstats = StatsValuesFactory.createStatsValues(sf);
 
     List<FieldFacetStats> facetStats = new ArrayList<FieldFacetStats>();
     for( String facetField : facet ) {
-      SchemaField fsf = searcher.getSchema().getField(facetField);
+      SchemaField fsf = schema.getField(facetField);
 
       if ( fsf.multiValued()) {
         throw new SolrException(SolrException.ErrorCode.BAD_REQUEST,

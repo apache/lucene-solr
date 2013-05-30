@@ -13,10 +13,10 @@
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
 
-# These methods spawn threads with vague names. Use a custom thread factory and name
-# threads so that you can tell (by its name) which executor it is associated with.
 # see Solr's DefaultSolrThreadFactory
 # see Lucene's NamedThreadFactory
+
+@defaultMessage spawns threads with vague names; use a custom thread factory and name threads so that you can tell (by its name) which executor it is associated with
 
 java.util.concurrent.Executors#newFixedThreadPool(int)
 java.util.concurrent.Executors#newSingleThreadExecutor()

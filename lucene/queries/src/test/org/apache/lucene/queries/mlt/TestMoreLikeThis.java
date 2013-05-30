@@ -23,6 +23,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
+import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.analysis.MockAnalyzer;
 import org.apache.lucene.analysis.MockTokenizer;
 import org.apache.lucene.document.Document;
@@ -32,6 +33,8 @@ import org.apache.lucene.index.RandomIndexWriter;
 import org.apache.lucene.search.BooleanClause;
 import org.apache.lucene.search.BooleanQuery;
 import org.apache.lucene.search.IndexSearcher;
+import org.apache.lucene.search.Query;
+import org.apache.lucene.search.QueryUtils;
 import org.apache.lucene.search.TermQuery;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.util.LuceneTestCase;
@@ -134,4 +137,11 @@ public class TestMoreLikeThis extends LuceneTestCase {
     mlt.setFieldNames(new String[] {"text", "foobar"});
     mlt.like(new StringReader("this is a test"), "foobar");
   }
+  
+  // just basic equals/hashcode etc
+  public void testMoreLikeThisQuery() throws Exception {
+    Query query = new MoreLikeThisQuery("this is a test", new String[] { "text" }, new MockAnalyzer(random()), "text");
+    QueryUtils.check(random(), query, searcher);
+  }
+  // TODO: add tests for the MoreLikeThisQuery
 }

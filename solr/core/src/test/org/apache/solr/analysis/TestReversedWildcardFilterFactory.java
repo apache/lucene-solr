@@ -34,6 +34,7 @@ import org.apache.lucene.util.automaton.SpecialOperations;
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.schema.IndexSchema;
+import org.apache.solr.schema.IndexSchemaFactory;
 import org.apache.solr.search.QParser;
 import org.apache.solr.search.SolrQueryParser;
 import org.junit.Before;
@@ -44,7 +45,6 @@ import static org.apache.lucene.analysis.BaseTokenStreamTestCase.*;
 
 public class TestReversedWildcardFilterFactory extends SolrTestCaseJ4 {
   Map<String,String> args = new HashMap<String, String>();
-  ReversedWildcardFilterFactory factory = new ReversedWildcardFilterFactory();
   IndexSchema schema;
 
   @BeforeClass
@@ -56,7 +56,7 @@ public class TestReversedWildcardFilterFactory extends SolrTestCaseJ4 {
   @Before
   public void setUp() throws Exception {
     super.setUp();
-    schema = new IndexSchema(solrConfig, getSchemaFile(), null);
+    schema = IndexSchemaFactory.buildIndexSchema(getSchemaFile(), solrConfig);
     clearIndex();
     assertU(commit());
   }
@@ -65,7 +65,7 @@ public class TestReversedWildcardFilterFactory extends SolrTestCaseJ4 {
   public void testReversedTokens() throws IOException {
     String text = "simple text";
     args.put("withOriginal", "true");
-    factory.init(args);
+    ReversedWildcardFilterFactory factory = new ReversedWildcardFilterFactory(args);
     TokenStream input = factory.create(new MockTokenizer(new StringReader(text), MockTokenizer.WHITESPACE, false));
     assertTokenStreamContents(input, 
         new String[] { "\u0001elpmis", "simple", "\u0001txet", "text" },
@@ -73,7 +73,7 @@ public class TestReversedWildcardFilterFactory extends SolrTestCaseJ4 {
 
     // now without original tokens
     args.put("withOriginal", "false");
-    factory.init(args);
+    factory = new ReversedWildcardFilterFactory(args);
     input = factory.create(new MockTokenizer(new StringReader(text), MockTokenizer.WHITESPACE, false));
     assertTokenStreamContents(input,
         new String[] { "\u0001elpmis", "\u0001txet" },

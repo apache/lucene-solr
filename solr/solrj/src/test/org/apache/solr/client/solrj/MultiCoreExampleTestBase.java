@@ -19,9 +19,9 @@ package org.apache.solr.client.solrj;
 
 import java.io.File;
 
-import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.client.solrj.request.AbstractUpdateRequest.ACTION;
 import org.apache.solr.client.solrj.request.CoreAdminRequest;
+import org.apache.solr.client.solrj.request.CoreAdminRequest.Unload;
 import org.apache.solr.client.solrj.request.QueryRequest;
 import org.apache.solr.client.solrj.request.UpdateRequest;
 import org.apache.solr.client.solrj.response.CoreAdminResponse;
@@ -44,6 +44,7 @@ public abstract class MultiCoreExampleTestBase extends SolrExampleTestBase
   protected static CoreContainer cores;
 
   private File dataDir2;
+  private File dataDir1;
 
   @Override public String getSolrHome() { return ExternalPaths.EXAMPLE_MULTICORE_HOME; }
 
@@ -64,11 +65,15 @@ public abstract class MultiCoreExampleTestBase extends SolrExampleTestBase
     SolrCore.log.info("CORES=" + cores + " : " + cores.getCoreNames());
     cores.setPersistent(false);
     
+    dataDir1 = new File(TEMP_DIR, getClass().getName() + "-core0-"
+        + System.currentTimeMillis());
+    dataDir1.mkdirs();
+    
     dataDir2 = new File(TEMP_DIR, getClass().getName() + "-core1-"
         + System.currentTimeMillis());
     dataDir2.mkdirs();
     
-    System.setProperty( "solr.core0.data.dir", SolrTestCaseJ4.dataDir.getCanonicalPath() ); 
+    System.setProperty( "solr.core0.data.dir", this.dataDir1.getCanonicalPath() ); 
     System.setProperty( "solr.core1.data.dir", this.dataDir2.getCanonicalPath() ); 
   }
   
@@ -219,13 +224,24 @@ public abstract class MultiCoreExampleTestBase extends SolrExampleTestBase
     String indexDir = (String) ((NamedList<Object>) coreInfo.get("directory")).get("index");
     
     
+    response = getSolrCore("core0").query(new SolrQuery().setRequestHandler("/admin/system")).getResponse();
+    coreInfo = (NamedList<Object>) response.get("core");
+    String dataDir = (String) ((NamedList<Object>) coreInfo.get("directory")).get("data");
+    
 
     System.out.println( (String) ((NamedList<Object>) coreInfo.get("directory")).get("dirimpl"));
 
-    
     // test delete index on core
     CoreAdminRequest.unloadCore("corefoo", true, coreadmin);
     File dir = new File(indexDir);
     assertFalse("Index directory exists after core unload with deleteIndex=true", dir.exists());
+    
+    Unload req = new Unload(false);
+    req.setDeleteDataDir(true);
+    req.setCoreName("core0");
+    req.process(coreadmin);
+    
+    dir = new File(dataDir);
+    assertFalse("Data directory exists after core unload with deleteDataDir=true : " + dir, dir.exists());
   }
 }
