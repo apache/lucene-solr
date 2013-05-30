@@ -64,7 +64,7 @@ public class RangeAccumulator extends FacetsAccumulator {
         throw new IllegalArgumentException("only flat (dimension only) CategoryPath is allowed");
       }
 
-      RangeFacetRequest<?> rfr = (RangeFacetRequest) fr;
+      RangeFacetRequest<?> rfr = (RangeFacetRequest<?>) fr;
 
       requests.add(new RangeSet(rfr.ranges, rfr.categoryPath.components[0]));
     }
@@ -86,8 +86,11 @@ public class RangeAccumulator extends FacetsAccumulator {
       RangeSet ranges = requests.get(i);
 
       int[] counts = new int[ranges.ranges.length];
-      for(MatchingDocs hits : matchingDocs) {
+      for (MatchingDocs hits : matchingDocs) {
         NumericDocValues ndv = hits.context.reader().getNumericDocValues(ranges.field);
+        if (ndv == null) {
+          continue; // no numeric values for this field in this reader
+        }
         final int length = hits.bits.length();
         int doc = 0;
         while (doc < length && (doc = hits.bits.nextSetBit(doc)) != -1) {
