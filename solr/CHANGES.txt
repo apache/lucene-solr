@@ -216,6 +216,10 @@ Bug Fixes
   case for handling TermQuery to prevent NullPointerException if reader does
   not have fields.  (Bao Yang Yang, Uwe Schindler)
 
+* SOLR-4881: Fix DocumentAnalysisRequestHandler to correctly use
+  EmptyEntityResolver to prevent loading of external entities like
+  UpdateRequestHandler does.  (Hossman, Uwe Schindler)
+
 Other Changes
 ----------------------
 
