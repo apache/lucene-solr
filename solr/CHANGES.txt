@@ -209,6 +209,9 @@ Bug Fixes
 
 * SOLR-4867: Admin UI - setting loglevel on root throws RangeError (steffkes)
 
+* SOLR-4870: RecentUpdates.update() does not increment numUpdates loop counter
+  (Alexey Kudinov via shalin)
+
 Other Changes
 ----------------------
 
