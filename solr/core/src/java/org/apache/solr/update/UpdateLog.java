@@ -968,6 +968,8 @@ public class UpdateLog implements PluginInfoInitialized {
               log.warn("Exception reverse reading log", ex);
               break;
             }
+
+            numUpdates++;
           }
 
         } catch (IOException e) {
