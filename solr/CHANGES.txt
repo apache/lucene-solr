@@ -212,6 +212,10 @@ Bug Fixes
 * SOLR-4870: RecentUpdates.update() does not increment numUpdates loop counter
   (Alexey Kudinov via shalin)
 
+* SOLR-4877, LUCENE-5023: Removed SolrIndexSearcher#getDocSetNC()'s special
+  case for handling TermQuery to prevent NullPointerException if reader does
+  not have fields.  (Bao Yang Yang, Uwe Schindler)
+
 Other Changes
 ----------------------
 

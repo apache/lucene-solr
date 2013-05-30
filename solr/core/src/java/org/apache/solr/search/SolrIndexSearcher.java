@@ -1095,41 +1095,12 @@ public class SolrIndexSearcher extends IndexSearcher implements Closeable,SolrIn
     DocSetCollector collector = new DocSetCollector(maxDoc()>>6, maxDoc());
 
     if (filter==null) {
-      if (query instanceof TermQuery) {
-        Term t = ((TermQuery)query).getTerm();
-        for (final AtomicReaderContext leaf : leafContexts) {
-          final AtomicReader reader = leaf.reader();
-          collector.setNextReader(leaf);
-          Fields fields = reader.fields();
-          Terms terms = fields.terms(t.field());
-          BytesRef termBytes = t.bytes();
-          
-          Bits liveDocs = reader.getLiveDocs();
-          DocsEnum docsEnum = null;
-          if (terms != null) {
-            final TermsEnum termsEnum = terms.iterator(null);
-            if (termsEnum.seekExact(termBytes, false)) {
-              docsEnum = termsEnum.docs(liveDocs, null, DocsEnum.FLAG_NONE);
-            }
-          }
-
-          if (docsEnum != null) {
-            int docid;
-            while ((docid = docsEnum.nextDoc()) != DocIdSetIterator.NO_MORE_DOCS) {
-              collector.collect(docid);
-            }
-          }
-        }
-      } else {
-        super.search(query,null,collector);
-      }
-      return collector.getDocSet();
-
+      super.search(query,null,collector);
     } else {
       Filter luceneFilter = filter.getTopFilter();
       super.search(query, luceneFilter, collector);
-      return collector.getDocSet();
     }
+    return collector.getDocSet();
   }
 
 
