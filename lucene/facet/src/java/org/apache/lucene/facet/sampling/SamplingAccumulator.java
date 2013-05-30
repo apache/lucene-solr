@@ -87,7 +87,7 @@ public class SamplingAccumulator extends StandardFacetsAccumulator {
     
     List<FacetResult> sampleRes = super.accumulate(docids);
     
-    List<FacetResult> fixedRes = new ArrayList<FacetResult>();
+    List<FacetResult> results = new ArrayList<FacetResult>();
     for (FacetResult fres : sampleRes) {
       // for sure fres is not null because this is guaranteed by the delegee.
       PartitionsFacetResultsHandler frh = createFacetResultsHandler(fres.getFacetRequest());
@@ -104,13 +104,18 @@ public class SamplingAccumulator extends StandardFacetsAccumulator {
       }
       
       // final labeling if allowed (because labeling is a costly operation)
-      frh.labelResult(fres);
-      fixedRes.add(fres); // add to final results
+      if (fres.getFacetResultNode().ordinal == TaxonomyReader.INVALID_ORDINAL) {
+        // category does not exist, add an empty result
+        results.add(emptyResult(fres.getFacetResultNode().ordinal, fres.getFacetRequest()));
+      } else {
+        frh.labelResult(fres);
+        results.add(fres);
+      }
     }
     
     searchParams = original; // Back to original params
     
-    return fixedRes; 
+    return results; 
   }
 
   @Override

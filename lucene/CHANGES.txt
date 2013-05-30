@@ -118,6 +118,11 @@ Bug Fixes
   for scoringQueries. Instead use QueryValueSource to safely wrap arbitrary 
   queries and use them with CustomScoreQuery.  (John Wang, Robert Muir)
 
+* LUCENE-5016: SamplingAccumulator returned inconsistent label if asked to
+  aggregate a non-existing category. Also fixed a bug in RangeAccumulator if
+  some readers did not have the requested numeric DV field.
+  (Rob Audenaerde, Shai Erera)
+
 Optimizations
 
 * LUCENE-4936: Improve numeric doc values compression in case all values share

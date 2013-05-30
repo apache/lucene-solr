@@ -209,7 +209,7 @@ public abstract class Sampler {
       super(orig.categoryPath, num);
       this.orig = orig;
       setDepth(orig.getDepth());
-      setNumLabel(orig.getNumLabel());
+      setNumLabel(0); // don't label anything as we're over-sampling
       setResultMode(orig.getResultMode());
       setSortOrder(orig.getSortOrder());
     }

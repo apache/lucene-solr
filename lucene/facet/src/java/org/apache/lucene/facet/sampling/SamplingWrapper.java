@@ -10,6 +10,7 @@ import org.apache.lucene.facet.sampling.Sampler.SampleResult;
 import org.apache.lucene.facet.search.FacetResult;
 import org.apache.lucene.facet.search.ScoredDocIDs;
 import org.apache.lucene.facet.search.StandardFacetsAccumulator;
+import org.apache.lucene.facet.taxonomy.TaxonomyReader;
 
 /*
  * Licensed to the Apache Software Foundation (ASF) under one or more
@@ -62,7 +63,7 @@ public class SamplingWrapper extends StandardFacetsAccumulator {
 
     List<FacetResult> sampleRes = delegee.accumulate(sampleSet.docids);
 
-    List<FacetResult> fixedRes = new ArrayList<FacetResult>();
+    List<FacetResult> results = new ArrayList<FacetResult>();
     SampleFixer sampleFixer = sampler.samplingParams.getSampleFixer();
     
     for (FacetResult fres : sampleRes) {
@@ -80,15 +81,20 @@ public class SamplingWrapper extends StandardFacetsAccumulator {
       }
       
       // final labeling if allowed (because labeling is a costly operation)
-      frh.labelResult(fres);
-      fixedRes.add(fres); // add to final results
+      if (fres.getFacetResultNode().ordinal == TaxonomyReader.INVALID_ORDINAL) {
+        // category does not exist, add an empty result
+        results.add(emptyResult(fres.getFacetResultNode().ordinal, fres.getFacetRequest()));
+      } else {
+        frh.labelResult(fres);
+        results.add(fres);
+      }
     }
 
     if (shouldOversample) {
       delegee.searchParams = original; // Back to original params
     }
     
-    return fixedRes; 
+    return results; 
   }
 
   @Override
