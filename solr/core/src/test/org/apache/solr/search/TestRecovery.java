@@ -17,6 +17,7 @@
 package org.apache.solr.search;
 
 
+import org.apache.solr.common.SolrException;
 import org.noggit.ObjectBuilder;
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.request.SolrQueryRequest;
@@ -487,7 +488,40 @@ public class TestRecovery extends SolrTestCaseJ4 {
   }
 
 
+
+  // we need to make sure that the log is informed of a core reload
   @Test
+  public void testReload() throws Exception {
+    long version = addAndGetVersion(sdoc("id","reload1") , null);
+
+    h.reload();
+
+    version = addAndGetVersion(sdoc("id","reload1", "_version_", Long.toString(version)), null);
+
+    assertU(commit());
+
+    // if we try the optimistic concurrency again, the tlog lookup maps should be clear
+    // and we should go to the index to check the version.  This indirectly tests that
+    // the update log was informed of the reload.  See SOLR-4858
+
+    version = addAndGetVersion(sdoc("id","reload1", "_version_", Long.toString(version)), null);
+
+    // a deleteByQuery currently forces open a new realtime reader via the update log.
+    // This also tests that the update log was informed of the new udpate handler.
+
+    deleteByQueryAndGetVersion("foo_t:hownowbrowncow", null);
+
+    version = addAndGetVersion(sdoc("id","reload1", "_version_", Long.toString(version)), null);
+
+    // if the update log was not informed of the new update handler, then the old core will
+    // incorrectly be used for some of the operations above and opened searchers
+    // will never be closed.  This used to cause the test framework to fail because of unclosed directory checks.
+    // SolrCore.openNewSearcher was modified to throw an error if the core is closed, resulting in
+    // a faster fail.
+  }
+
+
+    @Test
   public void testBufferingFlags() throws Exception {
 
     DirectUpdateHandler2.commitOnClose = false;
