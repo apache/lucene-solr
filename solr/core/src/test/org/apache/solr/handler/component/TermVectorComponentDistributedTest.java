@@ -31,6 +31,7 @@ public class TermVectorComponentDistributedTest extends BaseDistributedSearchTes
     handle.put("maxScore", SKIPVAL);
     handle.put("score", SKIPVAL);
     handle.put("[docid]", SKIPVAL);
+    handle.put("_version_", SKIPVAL); // not a cloud test, but may use updateLog
 
     // SOLR-3720: TODO: TVC doesn't "merge" df and idf .. should it?
     handle.put("df", SKIPVAL);

@@ -394,6 +394,7 @@
       termVectors="true" termPositions="true" termOffsets="true"/>
    <field name="signatureField" type="string" indexed="true" stored="false"/>
    
+   <field name="_version_" type="long" indexed="true" stored="true" multiValued="false" />
 
    
    <!-- Dynamic field definitions.  If a field name is not found, dynamicFields
