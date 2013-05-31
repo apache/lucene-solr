@@ -139,8 +139,8 @@ final class TermVectorsConsumer extends TermsHashConsumer {
   TermVectorsConsumerPerField[] perFields;
 
   void reset() {
+    perFields = null; // don't hang onto stuff from previous doc
     numVectorFields = 0;
-    perFields = new TermVectorsConsumerPerField[1];
   }
 
   @Override
@@ -149,7 +149,9 @@ final class TermVectorsConsumer extends TermsHashConsumer {
   }
 
   void addFieldToFlush(TermVectorsConsumerPerField fieldToFlush) {
-    if (numVectorFields == perFields.length) {
+    if (perFields == null) {
+      perFields = new TermVectorsConsumerPerField[1];
+    } else if (numVectorFields == perFields.length) {
       int newSize = ArrayUtil.oversize(numVectorFields + 1, RamUsageEstimator.NUM_BYTES_OBJECT_REF);
       TermVectorsConsumerPerField[] newArray = new TermVectorsConsumerPerField[newSize];
       System.arraycopy(perFields, 0, newArray, 0, numVectorFields);
