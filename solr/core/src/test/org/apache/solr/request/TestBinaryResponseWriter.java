@@ -45,6 +45,7 @@ public class TestBinaryResponseWriter extends AbstractSolrTestCase {
   
   @BeforeClass
   public static void beforeClass() throws Exception {
+    System.setProperty("enable.update.log", "false"); // schema12 doesn't support _version_
     initCore("solrconfig.xml", "schema12.xml");
   }
 

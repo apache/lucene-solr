@@ -123,6 +123,7 @@ public class TestDistributedSearch extends BaseDistributedSearchTestCase {
     handle.clear();
     handle.put("QTime", SKIPVAL);
     handle.put("timestamp", SKIPVAL);
+    handle.put("_version_", SKIPVAL); // not a cloud test, but may use updateLog
 
     // random value sort
     for (String f : fieldNames) {

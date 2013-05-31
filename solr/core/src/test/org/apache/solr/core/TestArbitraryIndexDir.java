@@ -50,6 +50,7 @@ public class TestArbitraryIndexDir extends AbstractSolrTestCase{
   static String savedFactory;
   @BeforeClass
   public static void beforeClass() {
+    System.setProperty("enable.update.log", "false"); // schema12 doesn't support _version_
     savedFactory = System.getProperty("solr.DirectoryFactory");
     System.setProperty("solr.directoryFactory", "org.apache.solr.core.MockFSDirectoryFactory");
   }
