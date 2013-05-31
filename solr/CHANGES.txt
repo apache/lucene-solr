@@ -220,6 +220,10 @@ Bug Fixes
   EmptyEntityResolver to prevent loading of external entities like
   UpdateRequestHandler does.  (Hossman, Uwe Schindler)
 
+* SOLR-4858: SolrCore reloading was broken when the UpdateLog
+  was enabled.  (Hossman, Anshum Gupta, Alexey Serba, Mark Miller, yonik)
+
+
 Other Changes
 ----------------------
 
