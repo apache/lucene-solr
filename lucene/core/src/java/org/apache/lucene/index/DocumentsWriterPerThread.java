@@ -427,7 +427,6 @@ class DocumentsWriterPerThread {
   /** Reset after a flush */
   private void doAfterFlush() {
     segmentInfo = null;
-    consumer.doAfterFlush();
     directory.getCreatedFiles().clear();
     fieldInfos = new FieldInfos.Builder(fieldInfos.globalFieldNumbers);
     parent.subtractFlushedNumDocs(numDocsInRAM);

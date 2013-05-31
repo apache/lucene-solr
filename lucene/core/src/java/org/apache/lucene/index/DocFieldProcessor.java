@@ -144,15 +144,6 @@ final class DocFieldProcessor extends DocConsumer {
     return fields;
   }
 
-  /** In flush we reset the fieldHash to not maintain per-field state
-   *  across segments */
-  @Override
-  void doAfterFlush() {
-    fieldHash = new DocFieldProcessorPerField[2];
-    hashMask = 1;
-    totalFieldCount = 0;
-  }
-
   private void rehash() {
     final int newHashSize = (fieldHash.length*2);
     assert newHashSize > fieldHash.length;
