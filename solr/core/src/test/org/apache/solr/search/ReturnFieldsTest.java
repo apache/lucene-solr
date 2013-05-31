@@ -47,6 +47,7 @@ public class ReturnFieldsTest extends SolrTestCaseJ4 {
 
   @BeforeClass
   public static void beforeClass() throws Exception {
+    System.setProperty("enable.update.log", "false"); // schema12 doesn't support _version_
     initCore("solrconfig.xml", "schema12.xml");
     String v = "how now brown cow";
     assertU(adoc("id","1", "text",v,  "text_np", v, "#foo_s", v));

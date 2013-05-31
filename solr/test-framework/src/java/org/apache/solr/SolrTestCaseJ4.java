@@ -86,6 +86,8 @@ public abstract class SolrTestCaseJ4 extends LuceneTestCase {
   @SuppressWarnings("unused")
   private static void beforeClass() {
     System.setProperty("jetty.testMode", "true");
+    System.setProperty("enable.update.log", usually() ? "true" : "false");
+    System.setProperty("enable.update.log", "true"); // :nocommit:
     System.setProperty("tests.shardhandler.randomSeed", Long.toString(random().nextLong()));
     setupLogging();
     startTrackingSearchers();
@@ -104,6 +106,7 @@ public abstract class SolrTestCaseJ4 extends LuceneTestCase {
     coreName = CoreContainer.DEFAULT_DEFAULT_CORE_NAME;
     System.clearProperty("jetty.testMode");
     System.clearProperty("tests.shardhandler.randomSeed");
+    System.clearProperty("enable.update.log");
   }
 
   private static boolean changedFactory = false;

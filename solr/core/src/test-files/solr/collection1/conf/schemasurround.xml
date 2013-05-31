@@ -539,6 +539,8 @@
    <field name="uniq3" type="string" indexed="true" stored="true"/>
    <field name="nouniq" type="string" indexed="true" stored="true" multiValued="true"/>
 
+   <field name="_version_" type="long" indexed="true" stored="true" multiValued="false" />
+
    <dynamicField name="*_coordinate"  type="tdouble" indexed="true"  stored="false"/>
 
 
