@@ -87,7 +87,6 @@ public abstract class SolrTestCaseJ4 extends LuceneTestCase {
   private static void beforeClass() {
     System.setProperty("jetty.testMode", "true");
     System.setProperty("enable.update.log", usually() ? "true" : "false");
-    System.setProperty("enable.update.log", "true"); // :nocommit:
     System.setProperty("tests.shardhandler.randomSeed", Long.toString(random().nextLong()));
     setupLogging();
     startTrackingSearchers();
