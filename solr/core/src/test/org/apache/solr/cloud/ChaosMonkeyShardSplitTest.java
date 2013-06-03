@@ -78,7 +78,7 @@ public class ChaosMonkeyShardSplitTest extends ShardSplitTest {
     try {
       del("*:*");
       for (int id = 0; id < 100; id++) {
-        indexAndUpdateCount(router, ranges, docCounts, String.valueOf(id));
+        indexAndUpdateCount(router, ranges, docCounts, String.valueOf(id), id);
       }
       commit();
 
@@ -88,7 +88,7 @@ public class ChaosMonkeyShardSplitTest extends ShardSplitTest {
           int max = atLeast(401);
           for (int id = 101; id < max; id++) {
             try {
-              indexAndUpdateCount(router, ranges, docCounts, String.valueOf(id));
+              indexAndUpdateCount(router, ranges, docCounts, String.valueOf(id), id);
               Thread.sleep(atLeast(25));
             } catch (Exception e) {
               log.error("Exception while adding doc", e);

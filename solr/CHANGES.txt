@@ -226,6 +226,9 @@ Bug Fixes
 * SOLR-4853: Fixed SolrJettyTestBase so it may be reused by end users
   (hossman)
 
+* SOLR-4744: Update failure on sub shard is not propagated to clients by parent
+  shard (Anshum Gupta, yonik, shalin)
+
 Other Changes
 ----------------------
 
