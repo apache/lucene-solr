@@ -114,11 +114,11 @@ public class SolrCmdDistributor {
     
     // make sure any pending deletes are flushed
     flushDeletes(1);
-    
+
     // TODO: this is brittle
     // need to make a clone since these commands may be reused
     AddUpdateCommand clone = new AddUpdateCommand(null);
-    
+
     clone.solrDoc = cmd.solrDoc;
     clone.commitWithin = cmd.commitWithin;
     clone.overwrite = cmd.overwrite;
@@ -135,10 +135,79 @@ public class SolrCmdDistributor {
       }
       alist.add(addRequest);
     }
-    
+
     flushAdds(maxBufferedAddsPerServer);
   }
-  
+
+  /**
+   * Synchronous (blocking) add to specified node. Any error returned from node is propagated.
+   */
+  public void syncAdd(AddUpdateCommand cmd, Node node, ModifiableSolrParams params) throws IOException {
+    log.info("SYNCADD on {} : {}", node, cmd.getPrintableId());
+    checkResponses(false);
+    // flush all pending deletes
+    flushDeletes(1);
+    // flush all pending adds
+    flushAdds(1);
+    // finish with the pending requests
+    checkResponses(false);
+
+    UpdateRequestExt ureq = new UpdateRequestExt();
+    ureq.add(cmd.solrDoc, cmd.commitWithin, cmd.overwrite);
+    ureq.setParams(params);
+    syncRequest(node, ureq);
+  }
+
+  public void syncDelete(DeleteUpdateCommand cmd, List<Node> nodes, ModifiableSolrParams params) throws IOException {
+    log.info("SYNCDELETE on {} : ", nodes, cmd);
+    checkResponses(false);
+    // flush all pending adds
+    flushAdds(1);
+    // flush all pending deletes
+    flushDeletes(1);
+    // finish pending requests
+    checkResponses(false);
+
+    DeleteUpdateCommand clonedCmd = clone(cmd);
+    DeleteRequest deleteRequest = new DeleteRequest();
+    deleteRequest.cmd = clonedCmd;
+    deleteRequest.params = params;
+
+    UpdateRequestExt ureq = new UpdateRequestExt();
+    if (cmd.isDeleteById()) {
+      ureq.deleteById(cmd.getId(), cmd.getVersion());
+    } else {
+      ureq.deleteByQuery(cmd.query);
+    }
+    ureq.setParams(params);
+    for (Node node : nodes) {
+      syncRequest(node, ureq);
+    }
+  }
+
+  private void syncRequest(Node node, UpdateRequestExt ureq) {
+    Request sreq = new Request();
+    sreq.node = node;
+    sreq.ureq = ureq;
+
+    String url = node.getUrl();
+    String fullUrl;
+    if (!url.startsWith("http://") && !url.startsWith("https://")) {
+      fullUrl = "http://" + url;
+    } else {
+      fullUrl = url;
+    }
+
+    HttpSolrServer server = new HttpSolrServer(fullUrl,
+        updateShardHandler.getHttpClient());
+
+    try {
+      sreq.ursp = server.request(ureq);
+    } catch (Exception e) {
+      throw new SolrException(ErrorCode.SERVER_ERROR, "Failed synchronous update on shard " + sreq.node, sreq.exception);
+    }
+  }
+
   public void distribCommit(CommitUpdateCommand cmd, List<Node> nodes,
       ModifiableSolrParams params) throws IOException {
     

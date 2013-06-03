@@ -28,10 +28,8 @@ import org.apache.solr.client.solrj.request.QueryRequest;
 import org.apache.solr.client.solrj.response.QueryResponse;
 import org.apache.solr.common.SolrDocument;
 import org.apache.solr.common.cloud.ClusterState;
-import org.apache.solr.common.cloud.CompositeIdRouter;
 import org.apache.solr.common.cloud.DocRouter;
 import org.apache.solr.common.cloud.HashBasedRouter;
-import org.apache.solr.common.cloud.PlainIdRouter;
 import org.apache.solr.common.cloud.Slice;
 import org.apache.solr.common.cloud.ZkCoreNodeProps;
 import org.apache.solr.common.cloud.ZkStateReader;
@@ -45,9 +43,13 @@ import org.junit.Before;
 
 import java.io.IOException;
 import java.net.MalformedURLException;
+import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Random;
+import java.util.Set;
 
 public class ShardSplitTest extends BasicDistributedZkTest {
 
@@ -110,35 +112,53 @@ public class ShardSplitTest extends BasicDistributedZkTest {
     del("*:*");
     for (int id = 0; id <= 100; id++) {
       String shardKey = "" + (char)('a' + (id % 26)); // See comment in ShardRoutingTest for hash distribution
-      indexAndUpdateCount(router, ranges, docCounts, shardKey + "!" + String.valueOf(id));
+      indexAndUpdateCount(router, ranges, docCounts, shardKey + "!" + String.valueOf(id), id);
     }
     commit();
 
     Thread indexThread = new Thread() {
       @Override
       public void run() {
-        int max = atLeast(401);
+        Random random = random();
+        int max = atLeast(random, 401);
+        int sleep = atLeast(random, 25);
+        log.info("SHARDSPLITTEST: Going to add " + max + " number of docs at 1 doc per " + sleep + "ms");
+        Set<String> deleted = new HashSet<String>();
         for (int id = 101; id < max; id++) {
           try {
-            indexAndUpdateCount(router, ranges, docCounts, String.valueOf(id));
-            Thread.sleep(atLeast(25));
+            indexAndUpdateCount(router, ranges, docCounts, String.valueOf(id), id);
+            Thread.sleep(sleep);
+            if (usually(random))  {
+              String delId = String.valueOf(random.nextInt(id - 101 + 1) + 101);
+              if (deleted.contains(delId))  continue;
+              try {
+                deleteAndUpdateCount(router, ranges, docCounts, delId);
+                deleted.add(delId);
+              } catch (Exception e) {
+                log.error("Exception while deleting docs", e);
+              }
+            }
           } catch (Exception e) {
-            log.error("Exception while adding doc", e);
+            log.error("Exception while adding docs", e);
           }
         }
       }
     };
     indexThread.start();
 
-    splitShard(SHARD1);
-
-    log.info("Layout after split: \n");
-    printLayout();
-
-    indexThread.join();
+    try {
+      splitShard(SHARD1);
+      log.info("Layout after split: \n");
+      printLayout();
+    } finally {
+      try {
+        indexThread.join();
+      } catch (InterruptedException e) {
+        log.error("Indexing thread interrupted", e);
+      }
+    }
 
     commit();
-
     checkDocCountsAndShardStates(docCounts, numReplicas);
 
     // todo can't call waitForThingsToLevelOut because it looks for jettys of all shards
@@ -148,24 +168,6 @@ public class ShardSplitTest extends BasicDistributedZkTest {
   }
 
   protected void checkDocCountsAndShardStates(int[] docCounts, int numReplicas) throws SolrServerException, KeeperException, InterruptedException {
-    SolrQuery query = new SolrQuery("*:*").setRows(1000).setFields("id", "_version_");
-    query.set("distrib", false);
-
-    ZkCoreNodeProps shard1_0 = getLeaderUrlFromZk(AbstractDistribZkTestBase.DEFAULT_COLLECTION, SHARD1_0);
-    HttpSolrServer shard1_0Server = new HttpSolrServer(shard1_0.getCoreUrl());
-    QueryResponse response = shard1_0Server.query(query);
-    long shard10Count = response.getResults().getNumFound();
-
-    ZkCoreNodeProps shard1_1 = getLeaderUrlFromZk(AbstractDistribZkTestBase.DEFAULT_COLLECTION, SHARD1_1);
-    HttpSolrServer shard1_1Server = new HttpSolrServer(shard1_1.getCoreUrl());
-    QueryResponse response2 = shard1_1Server.query(query);
-    long shard11Count = response2.getResults().getNumFound();
-
-    logDebugHelp(docCounts, response, shard10Count, response2, shard11Count);
-
-    assertEquals("Wrong doc count on shard1_0", docCounts[0], shard10Count);
-    assertEquals("Wrong doc count on shard1_1", docCounts[1], shard11Count);
-
     ClusterState clusterState = null;
     Slice slice1_0 = null, slice1_1 = null;
     int i = 0;
@@ -188,6 +190,24 @@ public class ShardSplitTest extends BasicDistributedZkTest {
     assertEquals("shard1_1 is not active", Slice.ACTIVE, slice1_1.getState());
     assertEquals("Wrong number of replicas created for shard1_0", numReplicas, slice1_0.getReplicas().size());
     assertEquals("Wrong number of replicas created for shard1_1", numReplicas, slice1_1.getReplicas().size());
+
+    SolrQuery query = new SolrQuery("*:*").setRows(1000).setFields("id", "_version_");
+    query.set("distrib", false);
+
+    ZkCoreNodeProps shard1_0 = getLeaderUrlFromZk(AbstractDistribZkTestBase.DEFAULT_COLLECTION, SHARD1_0);
+    HttpSolrServer shard1_0Server = new HttpSolrServer(shard1_0.getCoreUrl());
+    QueryResponse response = shard1_0Server.query(query);
+    long shard10Count = response.getResults().getNumFound();
+
+    ZkCoreNodeProps shard1_1 = getLeaderUrlFromZk(AbstractDistribZkTestBase.DEFAULT_COLLECTION, SHARD1_1);
+    HttpSolrServer shard1_1Server = new HttpSolrServer(shard1_1.getCoreUrl());
+    QueryResponse response2 = shard1_1Server.query(query);
+    long shard11Count = response2.getResults().getNumFound();
+
+    logDebugHelp(docCounts, response, shard10Count, response2, shard11Count);
+
+    assertEquals("Wrong doc count on shard1_0", docCounts[0], shard10Count);
+    assertEquals("Wrong doc count on shard1_1", docCounts[1], shard11Count);
   }
 
   protected void splitShard(String shardId) throws SolrServerException, IOException {
@@ -208,9 +228,26 @@ public class ShardSplitTest extends BasicDistributedZkTest {
     baseServer.request(request);
   }
 
-  protected void indexAndUpdateCount(DocRouter router, List<DocRouter.Range> ranges, int[] docCounts, String id) throws Exception {
-    index("id", id);
+  protected void indexAndUpdateCount(DocRouter router, List<DocRouter.Range> ranges, int[] docCounts, String id, int n) throws Exception {
+    index("id", id, "n_ti", n);
 
+    int idx = getHashRangeIdx(router, ranges, docCounts, id);
+    if (idx != -1)  {
+      docCounts[idx]++;
+    }
+  }
+
+  protected void deleteAndUpdateCount(DocRouter router, List<DocRouter.Range> ranges, int[] docCounts, String id) throws Exception {
+    controlClient.deleteById(id);
+    cloudClient.deleteById(id);
+
+    int idx = getHashRangeIdx(router, ranges, docCounts, id);
+    if (idx != -1)  {
+      docCounts[idx]--;
+    }
+  }
+
+  private int getHashRangeIdx(DocRouter router, List<DocRouter.Range> ranges, int[] docCounts, String id) {
     int hash = 0;
     if (router instanceof HashBasedRouter) {
       HashBasedRouter hashBasedRouter = (HashBasedRouter) router;
@@ -219,8 +256,9 @@ public class ShardSplitTest extends BasicDistributedZkTest {
     for (int i = 0; i < ranges.size(); i++) {
       DocRouter.Range range = ranges.get(i);
       if (range.includes(hash))
-        docCounts[i]++;
+        return i;
     }
+    return -1;
   }
 
   protected void logDebugHelp(int[] docCounts, QueryResponse response, long shard10Count, QueryResponse response2, long shard11Count) {
