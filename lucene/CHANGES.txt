@@ -148,6 +148,10 @@ New Features
 * LUCENE-5026: Added PagedGrowableWriter, a new internal packed-ints structure
   that grows the number of bits per value on demand, can store more than 2B
   values and supports random write and read access. (Adrien Grand)
+
+* LUCENE-5025: FST's Builder can now handle more than 2.1 billion
+  "tail nodes" while building a minimal FST.  (Aaron Binns, Adrien
+  Grand, Mike McCandless)
   
 Build
 
