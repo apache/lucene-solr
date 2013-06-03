@@ -869,7 +869,8 @@ public class DistributedUpdateProcessor extends UpdateRequestProcessor {
     DistribPhase phase = 
     DistribPhase.parseParam(req.getParams().get(DISTRIB_UPDATE_PARAM));
 
-    DocCollection coll = zkController.getClusterState().getCollection(collection);
+    DocCollection coll = zkEnabled 
+      ? zkController.getClusterState().getCollection(collection) : null;
 
     if (zkEnabled && DistribPhase.NONE == phase) {
       boolean leaderForAnyShard = false;  // start off by assuming we are not a leader for any shard
@@ -984,10 +985,10 @@ public class DistributedUpdateProcessor extends UpdateRequestProcessor {
       vinfo.unblockUpdates();
     }
 
-    List<Node> subShardLeaders = getSubShardLeaders(coll, cloudDesc.getShardId(), null, null);
-
     // forward to all replicas
-    if (leaderLogic) {
+    if (leaderLogic && zkEnabled) {
+      List<Node> subShardLeaders = getSubShardLeaders(coll, cloudDesc.getShardId(), null, null);
+
       ModifiableSolrParams params = new ModifiableSolrParams(filterParams(req.getParams()));
       params.set(VERSION_FIELD, Long.toString(cmd.getVersion()));
       params.set(DISTRIB_UPDATE_PARAM, DistribPhase.FROMLEADER.toString());
