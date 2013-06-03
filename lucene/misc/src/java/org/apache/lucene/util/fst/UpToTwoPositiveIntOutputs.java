@@ -26,7 +26,16 @@ package org.apache.lucene.util.fst;
  * second.  You cannot store 0 output with this (that's
  * reserved to mean "no output")!
  *
- * NOTE: the resulting FST is not guaranteed to be minimal!
+ * <p>NOTE: the only way to create a TwoLongs output is to
+ * add the same input to the FST twice in a row.  This is
+ * how the FST maps a single input to two outputs (e.g. you
+ * cannot pass a TwoLongs to {@link Builder#add}.  If you
+ * need more than two then use {@link ListOfOutputs}, but if
+ * you only have at most 2 then this implementation will
+ * require fewer bytes as it steals one bit from each long
+ * value.
+ *
+ * <p>NOTE: the resulting FST is not guaranteed to be minimal!
  * See {@link Builder}.
  *
  * @lucene.experimental
