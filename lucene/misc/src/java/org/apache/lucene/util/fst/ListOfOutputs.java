@@ -38,6 +38,15 @@ import org.apache.lucene.util.IntsRef; // javadocs
  * more than one output, as this requires pushing all
  * multi-output values to a final state.
  *
+ * <p>NOTE: the only way to create multiple outputs is to
+ * add the same input to the FST multiple times in a row.  This is
+ * how the FST maps a single input to multiple outputs (e.g. you
+ * cannot pass a List&lt;Object&gt; to {@link Builder#add}).  If
+ * your outputs are longs, and you need at most 2, then use
+ * {@link UpToTwoPositiveIntOutputs} instead since it stores
+ * the outputs more compactly (by stealing a bit from each
+ * long value).
+ *
  * <p>NOTE: this cannot wrap itself (ie you cannot make an
  * FST with List&lt;List&lt;Object&gt;&gt; outputs using this).
  *
