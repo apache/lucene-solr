@@ -44,7 +44,7 @@ import org.apache.lucene.util.fst.Util; // for toDot
  * @lucene.experimental */
 public class VariableGapTermsIndexReader extends TermsIndexReaderBase {
 
-  private final PositiveIntOutputs fstOutputs = PositiveIntOutputs.getSingleton(true);
+  private final PositiveIntOutputs fstOutputs = PositiveIntOutputs.getSingleton();
   private int indexDivisor;
 
   // Closed if indexLoaded is true:
@@ -199,7 +199,7 @@ public class VariableGapTermsIndexReader extends TermsIndexReaderBase {
         if (indexDivisor > 1) {
           // subsample
           final IntsRef scratchIntsRef = new IntsRef();
-          final PositiveIntOutputs outputs = PositiveIntOutputs.getSingleton(true);
+          final PositiveIntOutputs outputs = PositiveIntOutputs.getSingleton();
           final Builder<Long> builder = new Builder<Long>(FST.INPUT_TYPE.BYTE1, outputs);
           final BytesRefFSTEnum<Long> fstEnum = new BytesRefFSTEnum<Long>(fst);
           BytesRefFSTEnum.InputOutput<Long> result;

@@ -88,7 +88,7 @@ public final class UserDictionary implements Dictionary {
     List<String> data = new ArrayList<String>(featureEntries.size());
     List<int[]> segmentations = new ArrayList<int[]>(featureEntries.size());
     
-    PositiveIntOutputs fstOutput = PositiveIntOutputs.getSingleton(true);
+    PositiveIntOutputs fstOutput = PositiveIntOutputs.getSingleton();
     Builder<Long> fstBuilder = new Builder<Long>(FST.INPUT_TYPE.BYTE2, fstOutput);
     IntsRef scratch = new IntsRef();
     long ord = 0;

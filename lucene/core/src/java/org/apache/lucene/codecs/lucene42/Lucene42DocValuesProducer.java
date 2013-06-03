@@ -278,7 +278,7 @@ class Lucene42DocValuesProducer extends DocValuesProducer {
       instance = fstInstances.get(field.number);
       if (instance == null) {
         data.seek(entry.offset);
-        instance = new FST<Long>(data, PositiveIntOutputs.getSingleton(true));
+        instance = new FST<Long>(data, PositiveIntOutputs.getSingleton());
         fstInstances.put(field.number, instance);
       }
     }
@@ -352,7 +352,7 @@ class Lucene42DocValuesProducer extends DocValuesProducer {
       instance = fstInstances.get(field.number);
       if (instance == null) {
         data.seek(entry.offset);
-        instance = new FST<Long>(data, PositiveIntOutputs.getSingleton(true));
+        instance = new FST<Long>(data, PositiveIntOutputs.getSingleton());
         fstInstances.put(field.number, instance);
       }
     }
