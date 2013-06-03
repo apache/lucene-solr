@@ -669,7 +669,7 @@ public class PostingsHighlighter {
     public void stringField(FieldInfo fieldInfo, String value) throws IOException {
       assert currentField >= 0;
       StringBuilder builder = builders[currentField];
-      if (builder.length() > 0) {
+      if (builder.length() > 0 && builder.length() < maxLength) {
         builder.append(' '); // for the offset gap, TODO: make this configurable
       }
       if (builder.length() + value.length() > maxLength) {

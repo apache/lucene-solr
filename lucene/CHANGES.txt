@@ -94,6 +94,10 @@ Bug Fixes
 * LUCENE-5028: Remove pointless and confusing doShare option in FST's
   PositiveIntOutputs (Han Jiang via Mike McCandless)
 
+* LUCENE-5032: Fix IndexOutOfBoundsExc in PostingsHighlighter when
+  multi-valued fields exceed maxLength (Tomás Fernández Löbbe
+  via Mike McCandless)
+
 Optimizations
 
 * LUCENE-4936: Improve numeric doc values compression in case all values share
