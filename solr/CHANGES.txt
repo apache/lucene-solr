@@ -223,6 +223,8 @@ Bug Fixes
 * SOLR-4858: SolrCore reloading was broken when the UpdateLog
   was enabled.  (Hossman, Anshum Gupta, Alexey Serba, Mark Miller, yonik)
 
+* SOLR-4853: Fixed SolrJettyTestBase so it may be reused by end users
+  (hossman)
 
 Other Changes
 ----------------------

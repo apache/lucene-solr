@@ -495,6 +495,22 @@ public class BasicHttpSolrServerTest extends SolrJettyTestBase {
     client.getConnectionManager().shutdown();
   }
 
+  /**
+   * A trivial test that verifies the example keystore used for SSL testing can be 
+   * found using the base class. this helps future-proof against hte possibility of 
+   * something moving/breaking thekeystore path in a way that results in the SSL 
+   * randomization logic being forced to silently never use SSL.  (We can't enforce 
+   * this type of check in the base class because then it would not be usable by client 
+   * code depending on the test framework
+   */
+  public void testExampleKeystorePath() {
+    assertNotNull("Example keystore is null, meaning that something has changed in the " +
+                  "structure of the example configs and/or ExternalPaths.java - " + 
+                  "SSL randomization is broken",
+                  getExampleKeystoreFile());
+  }
+
+
   private int findUnusedPort() {
     for (int port = 0; port < 65535; port++) {
       Socket s = new Socket();
