@@ -91,6 +91,9 @@ Bug Fixes
   some readers did not have the requested numeric DV field.
   (Rob Audenaerde, Shai Erera)
 
+* LUCENE-5028: Remove pointless and confusing doShare option in FST's
+  PositiveIntOutputs (Han Jiang via Mike McCandless)
+
 Optimizations
 
 * LUCENE-4936: Improve numeric doc values compression in case all values share

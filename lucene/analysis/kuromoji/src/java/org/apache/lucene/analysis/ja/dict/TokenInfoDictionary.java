@@ -44,7 +44,7 @@ public final class TokenInfoDictionary extends BinaryDictionary {
     try {
       is = getResource(FST_FILENAME_SUFFIX);
       is = new BufferedInputStream(is);
-      fst = new FST<Long>(new InputStreamDataInput(is), PositiveIntOutputs.getSingleton(true));
+      fst = new FST<Long>(new InputStreamDataInput(is), PositiveIntOutputs.getSingleton());
     } catch (IOException ioe) {
       priorE = ioe;
     } finally {
