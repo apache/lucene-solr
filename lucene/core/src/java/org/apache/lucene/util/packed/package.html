@@ -47,6 +47,11 @@
         <li>Same as PackedInts.Mutable but grows the number of bits per values when needed.</li>
         <li>Useful to build a PackedInts.Mutable from a read-once stream of longs.</li>
     </ul></li>
+    <li><b>{@link org.apache.lucene.util.packed.PagedGrowableWriter}</b><ul>
+        <li>Slices data into fixed-size blocks stored in GrowableWriters.</li>
+        <li>Supports more than 2B values.</li>
+        <li>You should use AppendingLongBuffer instead if you don't need random write access.</li>
+    </ul></li>
     <li><b>{@link org.apache.lucene.util.packed.AppendingLongBuffer}</b><ul>
         <li>Can store any sequence of longs.</li>
         <li>Compression is good when values are close to each other.</li>

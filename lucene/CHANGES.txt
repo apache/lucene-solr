@@ -140,6 +140,10 @@ New Features
 * LUCENE-5022: Added FacetResult.mergeHierarchies to merge multiple
   FacetResult of the same dimension into a single one with the reconstructed
   hierarchy. (Shai Erera)
+
+* LUCENE-5026: Added PagedGrowableWriter, a new internal packed-ints structure
+  that grows the number of bits per value on demand, can store more than 2B
+  values and supports random write and read access. (Adrien Grand)
   
 Build
 
