@@ -34,7 +34,7 @@ import org.apache.lucene.util.packed.PackedInts;
 import org.junit.Ignore;
 import com.carrotsearch.randomizedtesting.annotations.TimeoutSuite;
 
-@Ignore("Requires tons of heap to run (10G works)")
+@Ignore("Requires tons of heap to run (420G works)")
 @TimeoutSuite(millis = 100 * TimeUnits.HOUR)
 public class Test2BFST extends LuceneTestCase {
 
@@ -50,12 +50,12 @@ public class Test2BFST extends LuceneTestCase {
     for(int doPackIter=0;doPackIter<2;doPackIter++) {
       boolean doPack = doPackIter == 1;
 
-      // Build FST w/ NoOutputs and stop when nodeCount > 3B
+      // Build FST w/ NoOutputs and stop when nodeCount > 2.2B
       if (!doPack) {
         System.out.println("\nTEST: 3B nodes; doPack=false output=NO_OUTPUTS");
         Outputs<Object> outputs = NoOutputs.getSingleton();
         Object NO_OUTPUT = outputs.getNoOutput();
-        final Builder<Object> b = new Builder<Object>(FST.INPUT_TYPE.BYTE1, 0, 0, false, false, Integer.MAX_VALUE, outputs,
+        final Builder<Object> b = new Builder<Object>(FST.INPUT_TYPE.BYTE1, 0, 0, true, true, Integer.MAX_VALUE, outputs,
                                                       null, doPack, PackedInts.COMPACT, true, 15);
 
         int count = 0;
@@ -72,7 +72,7 @@ public class Test2BFST extends LuceneTestCase {
           if (count % 100000 == 0) {
             System.out.println(count + ": " + b.fstSizeInBytes() + " bytes; " + b.getTotStateCount() + " nodes");
           }
-          if (b.getTotStateCount() > LIMIT) {
+          if (b.getTotStateCount() > Integer.MAX_VALUE + 100L * 1024 * 1024) {
             break;
           }
           nextInput(r, ints2);
