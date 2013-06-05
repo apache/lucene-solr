@@ -45,6 +45,7 @@ import org.apache.lucene.util.FieldCacheSanityChecker;
 import org.apache.lucene.util.FixedBitSet;
 import org.apache.lucene.util.PagedBytes;
 import org.apache.lucene.util.packed.GrowableWriter;
+import org.apache.lucene.util.packed.MonotonicAppendingLongBuffer;
 import org.apache.lucene.util.packed.PackedInts;
 
 /**
@@ -1069,11 +1070,11 @@ class FieldCacheImpl implements FieldCache {
 
   public static class SortedDocValuesImpl extends SortedDocValues {
     private final PagedBytes.Reader bytes;
-    private final PackedInts.Reader termOrdToBytesOffset;
+    private final MonotonicAppendingLongBuffer termOrdToBytesOffset;
     private final PackedInts.Reader docToTermOrd;
     private final int numOrd;
 
-    public SortedDocValuesImpl(PagedBytes.Reader bytes, PackedInts.Reader termOrdToBytesOffset, PackedInts.Reader docToTermOrd, int numOrd) {
+    public SortedDocValuesImpl(PagedBytes.Reader bytes, MonotonicAppendingLongBuffer termOrdToBytesOffset, PackedInts.Reader docToTermOrd, int numOrd) {
       this.bytes = bytes;
       this.docToTermOrd = docToTermOrd;
       this.termOrdToBytesOffset = termOrdToBytesOffset;
@@ -1144,7 +1145,6 @@ class FieldCacheImpl implements FieldCache {
 
       final PagedBytes bytes = new PagedBytes(15);
 
-      int startBytesBPV;
       int startTermsBPV;
       int startNumUniqueTerms;
 
@@ -1169,22 +1169,19 @@ class FieldCacheImpl implements FieldCache {
             numUniqueTerms = termCountHardLimit;
           }
 
-          startBytesBPV = PackedInts.bitsRequired(numUniqueTerms*4);
           startTermsBPV = PackedInts.bitsRequired(numUniqueTerms);
 
           startNumUniqueTerms = (int) numUniqueTerms;
         } else {
-          startBytesBPV = 1;
           startTermsBPV = 1;
           startNumUniqueTerms = 1;
         }
       } else {
-        startBytesBPV = 1;
         startTermsBPV = 1;
         startNumUniqueTerms = 1;
       }
 
-      GrowableWriter termOrdToBytesOffset = new GrowableWriter(startBytesBPV, 1+startNumUniqueTerms, acceptableOverheadRatio);
+      MonotonicAppendingLongBuffer termOrdToBytesOffset = new MonotonicAppendingLongBuffer();
       final GrowableWriter docToTermOrd = new GrowableWriter(startTermsBPV, maxDoc, acceptableOverheadRatio);
 
       int termOrd = 0;
@@ -1204,13 +1201,7 @@ class FieldCacheImpl implements FieldCache {
             break;
           }
 
-          if (termOrd == termOrdToBytesOffset.size()) {
-            // NOTE: this code only runs if the incoming
-            // reader impl doesn't implement
-            // size (which should be uncommon)
-            termOrdToBytesOffset = termOrdToBytesOffset.resize(ArrayUtil.oversize(1+termOrd, 1));
-          }
-          termOrdToBytesOffset.set(termOrd, bytes.copyUsingLengthPrefix(term));
+          termOrdToBytesOffset.add(bytes.copyUsingLengthPrefix(term));
           docs = termsEnum.docs(null, docs, DocsEnum.FLAG_NONE);
           while (true) {
             final int docID = docs.nextDoc();
@@ -1222,14 +1213,10 @@ class FieldCacheImpl implements FieldCache {
           }
           termOrd++;
         }
-
-        if (termOrdToBytesOffset.size() > termOrd) {
-          termOrdToBytesOffset = termOrdToBytesOffset.resize(termOrd);
-        }
       }
 
       // maybe an int-only impl?
-      return new SortedDocValuesImpl(bytes.freeze(true), termOrdToBytesOffset.getMutable(), docToTermOrd.getMutable(), termOrd);
+      return new SortedDocValuesImpl(bytes.freeze(true), termOrdToBytesOffset, docToTermOrd.getMutable(), termOrd);
     }
   }
 

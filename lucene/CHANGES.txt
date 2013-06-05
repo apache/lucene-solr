@@ -144,6 +144,9 @@ Optimizations
   single snapshots_N file, and no longer requires closing (Mike
   McCandless, Shai Erera)
 
+* LUCENE-5035: Compress addresses in FieldCacheImpl.SortedDocValuesImpl more
+  efficiently. (Adrien Grand, Robert Muir)
+
 New Features
 
 * LUCENE-4766: Added a PatternCaptureGroupTokenFilter that uses Java regexes to 
