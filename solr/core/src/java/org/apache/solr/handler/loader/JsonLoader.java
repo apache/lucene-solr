@@ -512,11 +512,13 @@ public class JsonLoader extends ContentStreamLoader {
         case JSONParser.STRING:
           return parser.getString();
         case JSONParser.LONG:
+          return parser.getLong();
         case JSONParser.NUMBER:
+          return parser.getDouble();
         case JSONParser.BIGNUMBER:
-          return parser.getNumberChars().toString();
+          return (new ObjectBuilder(parser)).getBigNumber();
         case JSONParser.BOOLEAN:
-          return Boolean.toString(parser.getBoolean()); // for legacy reasons, single values s are expected to be strings
+          return parser.getBoolean();
         case JSONParser.NULL:
           parser.getNull();
           return null;
