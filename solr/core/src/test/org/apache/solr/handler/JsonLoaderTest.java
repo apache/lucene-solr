@@ -18,6 +18,7 @@
 package org.apache.solr.handler;
 
 import org.apache.solr.SolrTestCaseJ4;
+import org.apache.solr.common.SolrException;
 import org.apache.solr.common.SolrInputDocument;
 import org.apache.solr.common.SolrInputField;
 import org.apache.solr.common.util.ContentStreamBase;
@@ -30,6 +31,7 @@ import org.apache.solr.update.DeleteUpdateCommand;
 import org.apache.solr.update.processor.BufferingRequestProcessor;
 import org.junit.BeforeClass;
 import org.junit.Test;
+import org.xml.sax.SAXException;
 
 import java.math.BigDecimal;
 import java.math.BigInteger;
@@ -334,15 +336,15 @@ public class JsonLoaderTest extends SolrTestCaseJ4 {
     AddUpdateCommand add = p.addCommands.get(0);
     SolrInputDocument d = add.solrDoc;
     SolrInputField f = d.getField("bd1");                        
-    assertTrue(f.getValue() instanceof BigDecimal);
-    assertEquals(new BigDecimal("0.12345678901234567890123456789012345"), f.getValue());
+    assertTrue(f.getValue() instanceof String);
+    assertEquals("0.12345678901234567890123456789012345", f.getValue());
     f = d.getField("bd2");
-    assertTrue(f.getValue() instanceof BigDecimal);
-    assertEquals(new BigDecimal("12345678901234567890.12345678901234567890"), f.getValue());
+    assertTrue(f.getValue() instanceof String);
+    assertEquals("12345678901234567890.12345678901234567890", f.getValue());
     f = d.getField("bd3");
     assertEquals(2, ((List)f.getValue()).size());
-    assertTrue(((List)f.getValue()).contains(new BigDecimal("0.012345678901234567890123456789012345")));
-    assertTrue(((List)f.getValue()).contains(new BigDecimal("123456789012345678900.012345678901234567890")));
+    assertTrue(((List)f.getValue()).contains("0.012345678901234567890123456789012345"));
+    assertTrue(((List)f.getValue()).contains("123456789012345678900.012345678901234567890"));
 
     req.close();
   }
@@ -362,15 +364,15 @@ public class JsonLoaderTest extends SolrTestCaseJ4 {
     AddUpdateCommand add = p.addCommands.get(0);
     SolrInputDocument d = add.solrDoc;
     SolrInputField f = d.getField("bi1");
-    assertTrue(f.getValue() instanceof BigInteger);
-    assertEquals(new BigInteger("123456789012345678901"), f.getValue());
+    assertTrue(f.getValue() instanceof String);
+    assertEquals("123456789012345678901", f.getValue());
     f = d.getField("bi2");
-    assertTrue(f.getValue() instanceof BigInteger);
-    assertEquals(new BigInteger("1098765432109876543210"), f.getValue());
+    assertTrue(f.getValue() instanceof String);
+    assertEquals("1098765432109876543210", f.getValue());
     f = d.getField("bi3");
     assertEquals(2, ((List)f.getValue()).size());
-    assertTrue(((List)f.getValue()).contains(new BigInteger("1234567890123456789012")));
-    assertTrue(((List)f.getValue()).contains(new BigInteger("10987654321098765432109")));
+    assertTrue(((List)f.getValue()).contains("1234567890123456789012"));
+    assertTrue(((List)f.getValue()).contains("10987654321098765432109"));
 
     req.close();
   }
@@ -388,6 +390,49 @@ public class JsonLoaderTest extends SolrTestCaseJ4 {
     );
   }
 
+
+  @Test
+  public void testAddBigIntegerValueToTrieField() throws Exception {
+    // Adding a BigInteger to a long field should fail
+    // BigInteger.longValue() returns only the low-order 64 bits.
+    try {
+      updateJ(("[{'id':'1','big_integer_tl':12345678901234567890}]").replace('\'', '"'), null);
+      fail("A BigInteger value should overflow a long field");
+    } catch (SolrException e) {
+      if ( ! (e.getCause() instanceof NumberFormatException)) {
+        throw e;
+      }
+    }
+
+    // Adding a BigInteger to an integer field should fail
+    // BigInteger.intValue() returns only the low-order 32 bits.
+    try {
+      updateJ(("[{'id':'1','big_integer_ti':12345678901234567890}]").replace('\'', '"'), null);
+      fail("A BigInteger value should overflow an integer field");
+    } catch (SolrException e) {
+      if ( ! (e.getCause() instanceof NumberFormatException)) {
+        throw e;
+      }
+    }
+
+  }
+
+  @Test
+  public void testAddBigDecimalValueToTrieField() throws Exception {
+    // Adding a BigDecimal to a double field should succeed by reducing precision
+    updateJ(("[{'id':'1','big_decimal_td':100000000000000000000000000001234567890.0987654321}]").replace('\'', '"'),
+            params("commit", "true"));
+    assertJQ(req("q","id:1", "fl","big_decimal_td"), 
+             "/response/docs/[0]=={'big_decimal_td':[1.0E38]}"
+    );
+
+    // Adding a BigDecimal to a float field should succeed by reducing precision
+    updateJ(("[{'id':'2','big_decimal_tf':100000000000000000000000000001234567890.0987654321}]").replace('\'', '"'),
+            params("commit", "true"));
+    assertJQ(req("q","id:2", "fl","big_decimal_tf"),
+             "/response/docs/[0]=={'big_decimal_tf':[1.0E38]}"
+    );
+  }
 
   // The delete syntax was both extended for simplification in 4.0
   @Test
