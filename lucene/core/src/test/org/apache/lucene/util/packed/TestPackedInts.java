@@ -863,13 +863,15 @@ public class TestPackedInts extends LuceneTestCase {
     final long[] arr = new long[RandomInts.randomIntBetween(random(), 1, 1000000)];
     for (int bpv : new int[] {0, 1, 63, 64, RandomInts.randomIntBetween(random(), 2, 62)}) {
       for (boolean monotonic : new boolean[] {true, false}) {
+        final int pageSize = 1 << _TestUtil.nextInt(random(), 6, 20);
+        final int initialPageCount = _TestUtil.nextInt(random(), 0, 16);
         AbstractAppendingLongBuffer buf;
         final int inc;
         if (monotonic) {
-          buf = new MonotonicAppendingLongBuffer();
+          buf = new MonotonicAppendingLongBuffer(initialPageCount, pageSize);
           inc = _TestUtil.nextInt(random(), -1000, 1000);
         } else {
-          buf = new AppendingLongBuffer();
+          buf = new AppendingLongBuffer(initialPageCount, pageSize);
           inc = 0;
         }
         if (bpv == 0) {
