@@ -242,8 +242,8 @@ public final class Lucene40TermVectorsWriter extends TermVectorsWriter {
       if (payloads) {
         tvf.writeBytes(payloadData.bytes, payloadData.offset, payloadData.length);
       }
-      for (int i = 0; i < bufferedIndex; i++) {
-        if (offsets) {
+      if (offsets) {
+        for (int i = 0; i < bufferedIndex; i++) {
           tvf.writeVInt(offsetStartBuffer[i] - lastOffset);
           tvf.writeVInt(offsetEndBuffer[i] - offsetStartBuffer[i]);
           lastOffset = offsetEndBuffer[i];
