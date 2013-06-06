@@ -465,11 +465,11 @@ public class CheckIndex {
 
     if (onlySegments != null) {
       result.partial = true;
-      if (infoStream != null)
+      if (infoStream != null) {
         infoStream.print("\nChecking only these segments:");
-      for (String s : onlySegments) {
-        if (infoStream != null)
+        for (String s : onlySegments) {
           infoStream.print(" " + s);
+        }
       }
       result.segmentsChecked.addAll(onlySegments);
       msg(infoStream, ":");
