@@ -103,7 +103,7 @@ public class HttpReplicatorTest extends ReplicatorTestCase {
   
   @Test
   public void testBasic() throws Exception {
-    Replicator replicator = new HttpReplicator("localhost", port, ReplicationService.REPLICATION_CONTEXT + "/s1", 
+    Replicator replicator = new HttpReplicator("127.0.0.1", port, ReplicationService.REPLICATION_CONTEXT + "/s1", 
         getClientConnectionManager());
     ReplicationClient client = new ReplicationClient(replicator, new IndexReplicationHandler(handlerIndexDir, null), 
         new PerSessionDirectoryFactory(clientWorkDir));
