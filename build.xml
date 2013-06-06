@@ -130,7 +130,7 @@
   
   <target name="get-maven-poms"
           description="Copy Maven POMs from dev-tools/maven/ to maven-build/">
-    <copy todir="${maven-build-dir}" overwrite="true">
+    <copy todir="${maven-build-dir}" overwrite="true" encoding="UTF-8">
       <fileset dir="${basedir}/dev-tools/maven"/>
       <filterset begintoken="@" endtoken="@">
         <filter token="version" value="${version}"/>
@@ -185,7 +185,12 @@
   </target>
 
   <target name="eclipse" depends="resolve" description="Setup Eclipse configuration">
-    <copy file="dev-tools/eclipse/dot.project" tofile=".project" overwrite="false"/>
+    <basename file="${basedir}" property="eclipseprojectname"/>
+      <copy file="dev-tools/eclipse/dot.project" tofile=".project" overwrite="false" encoding="UTF-8">
+      <filterset>
+        <filter token="ECLIPSEPROJECTNAME" value="${eclipseprojectname}"/>
+      </filterset>
+    </copy>
     <mkdir dir=".settings"/>
     <copy todir=".settings/" overwrite="true">
       <fileset dir="dev-tools/eclipse/dot.settings" includes="*.prefs" />

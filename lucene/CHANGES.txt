@@ -194,6 +194,10 @@ Build
   Test framework may fail internally due to overly aggresive J9 optimizations. 
   (Dawid Weiss, Shai Erera)
 
+* LUCENE-5043: The eclipse target now uses the containing directory for the
+  project name.  This also enforces UTF-8 encoding when files are copied with
+  filtering.
+
 Tests
 
 * LUCENE-4901: TestIndexWriterOnJRECrash should work on any 
