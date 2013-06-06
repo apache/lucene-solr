@@ -27,9 +27,16 @@ import java.util.Arrays;
  */
 public final class AppendingLongBuffer extends AbstractAppendingLongBuffer {
 
-  /** Sole constructor. */
+  /** @param initialPageCount the initial number of pages
+   *  @param pageSize         the size of a single page */
+  public AppendingLongBuffer(int initialPageCount, int pageSize) {
+    super(initialPageCount, pageSize);
+  }
+
+  /** Create an {@link AppendingLongBuffer} with initialPageCount=16 and
+   *  pageSize=1024. */
   public AppendingLongBuffer() {
-    super(16);
+    this(16, 1024);
   }
 
   @Override
@@ -43,8 +50,9 @@ public final class AppendingLongBuffer extends AbstractAppendingLongBuffer {
     }
   }
 
+  @Override
   void packPendingValues() {
-    assert pendingOff == MAX_PENDING_COUNT;
+    assert pendingOff == pending.length;
 
     // compute max delta
     long minValue = pending[0];
@@ -71,6 +79,7 @@ public final class AppendingLongBuffer extends AbstractAppendingLongBuffer {
   }
 
   /** Return an iterator over the values of this buffer. */
+  @Override
   public Iterator iterator() {
     return new Iterator();
   }
@@ -78,20 +87,21 @@ public final class AppendingLongBuffer extends AbstractAppendingLongBuffer {
   /** A long iterator. */
   public final class Iterator extends AbstractAppendingLongBuffer.Iterator {
 
-    private Iterator() {
+    Iterator() {
       super();
     }
 
+    @Override
     void fillValues() {
       if (vOff == valuesOff) {
         currentValues = pending;
       } else if (deltas[vOff] == null) {
         Arrays.fill(currentValues, minValues[vOff]);
       } else {
-        for (int k = 0; k < MAX_PENDING_COUNT; ) {
-          k += deltas[vOff].get(k, currentValues, k, MAX_PENDING_COUNT - k);
+        for (int k = 0; k < pending.length; ) {
+          k += deltas[vOff].get(k, currentValues, k, pending.length - k);
         }
-        for (int k = 0; k < MAX_PENDING_COUNT; ++k) {
+        for (int k = 0; k < pending.length; ++k) {
           currentValues[k] += minValues[vOff];
         }
       }

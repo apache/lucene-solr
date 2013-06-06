@@ -17,6 +17,8 @@ package org.apache.lucene.util.packed;
  * limitations under the License.
  */
 
+import static org.apache.lucene.util.packed.PackedInts.checkBlockSize;
+
 import java.util.Arrays;
 
 import org.apache.lucene.util.ArrayUtil;
@@ -25,33 +27,37 @@ import org.apache.lucene.util.RamUsageEstimator;
 /** Common functionality shared by {@link AppendingLongBuffer} and {@link MonotonicAppendingLongBuffer}. */
 abstract class AbstractAppendingLongBuffer {
 
-  static final int BLOCK_BITS = 10;
-  static final int MAX_PENDING_COUNT = 1 << BLOCK_BITS;
-  static final int BLOCK_MASK = MAX_PENDING_COUNT - 1;
+  static final int MIN_PAGE_SIZE = 64;
+  // More than 1M doesn't really makes sense with these appending buffers
+  // since their goal is to try to have small numbers of bits per value
+  static final int MAX_PAGE_SIZE = 1 << 20;
 
+  final int pageShift, pageMask;
   long[] minValues;
   PackedInts.Reader[] deltas;
   private long deltasBytes;
   int valuesOff;
-  long[] pending;
+  final long[] pending;
   int pendingOff;
 
-  AbstractAppendingLongBuffer(int initialBlockCount) {
-    minValues = new long[16];
-    deltas = new PackedInts.Reader[16];
-    pending = new long[MAX_PENDING_COUNT];
+  AbstractAppendingLongBuffer(int initialBlockCount, int pageSize) {
+    minValues = new long[initialBlockCount];
+    deltas = new PackedInts.Reader[initialBlockCount];
+    pending = new long[pageSize];
+    pageShift = checkBlockSize(pageSize, MIN_PAGE_SIZE, MAX_PAGE_SIZE);
+    pageMask = pageSize - 1;
     valuesOff = 0;
     pendingOff = 0;
   }
 
   /** Get the number of values that have been added to the buffer. */
   public final long size() {
-    return valuesOff * (long) MAX_PENDING_COUNT + pendingOff;
+    return valuesOff * (long) pending.length + pendingOff;
   }
 
   /** Append a value to this buffer. */
   public final void add(long l) {
-    if (pendingOff == MAX_PENDING_COUNT) {
+    if (pendingOff == pending.length) {
       // check size
       if (deltas.length == valuesOff) {
         final int newLength = ArrayUtil.oversize(valuesOff + 1, 8);
@@ -80,8 +86,8 @@ abstract class AbstractAppendingLongBuffer {
     if (index < 0 || index >= size()) {
       throw new IndexOutOfBoundsException("" + index);
     }
-    int block = (int) (index >> BLOCK_BITS);
-    int element = (int) (index & BLOCK_MASK);
+    final int block = (int) (index >> pageShift);
+    final int element = (int) (index & pageMask);
     return get(block, element);
   }
 
@@ -99,7 +105,7 @@ abstract class AbstractAppendingLongBuffer {
       if (valuesOff == 0) {
         currentValues = pending;
       } else {
-        currentValues = new long[MAX_PENDING_COUNT];
+        currentValues = new long[pending.length];
         fillValues();
       }
     }
@@ -115,7 +121,7 @@ abstract class AbstractAppendingLongBuffer {
     public final long next() {
       assert hasNext();
       long result = currentValues[pOff++];
-      if (pOff == MAX_PENDING_COUNT) {
+      if (pOff == pending.length) {
         vOff += 1;
         pOff = 0;
         if (vOff <= valuesOff) {
@@ -139,6 +145,7 @@ abstract class AbstractAppendingLongBuffer {
   public long ramBytesUsed() {
     // TODO: this is called per-doc-per-norms/dv-field, can we optimize this?
     long bytesUsed = RamUsageEstimator.alignObjectSize(baseRamBytesUsed())
+        + 2 * RamUsageEstimator.NUM_BYTES_INT // pageShift, pageMask
         + RamUsageEstimator.NUM_BYTES_LONG // valuesBytes
         + RamUsageEstimator.sizeOf(pending)
         + RamUsageEstimator.sizeOf(minValues)
