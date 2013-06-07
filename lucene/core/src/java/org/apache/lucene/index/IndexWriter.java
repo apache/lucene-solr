@@ -4207,7 +4207,10 @@ public class IndexWriter implements Closeable, TwoPhaseCommit {
   //   startCommitMergeDeletes
   //   startMergeInit
   //   DocumentsWriter.ThreadState.init start
-  boolean testPoint(String name) {
+  private final boolean testPoint(String message) {
+    if (infoStream.isEnabled("TP")) {
+      infoStream.message("TP", message);
+    }
     return true;
   }
 

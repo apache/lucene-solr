@@ -114,7 +114,7 @@ final class StoredFieldsProcessor extends StoredFieldsConsumer {
 
   @Override
   void finishDocument() throws IOException {
-    assert docWriter.writer.testPoint("StoredFieldsWriter.finishDocument start");
+    assert docWriter.testPoint("StoredFieldsWriter.finishDocument start");
 
     initFieldsWriter(IOContext.DEFAULT);
     fill(docState.docID);
@@ -129,7 +129,7 @@ final class StoredFieldsProcessor extends StoredFieldsConsumer {
     }
 
     reset();
-    assert docWriter.writer.testPoint("StoredFieldsWriter.finishDocument end");
+    assert docWriter.testPoint("StoredFieldsWriter.finishDocument end");
   }
 
   @Override
