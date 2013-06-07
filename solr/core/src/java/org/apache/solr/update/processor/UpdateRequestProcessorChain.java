@@ -34,23 +34,48 @@ import java.util.ArrayList;
 /**
  * Manages a chain of UpdateRequestProcessorFactories.
  * <p>
- * Chain can be configured via solrconfig.xml:
+ * Chains can be configured via solrconfig.xml using the following syntax...
  * </p>
  * <pre class="prettyprint">
- * &lt;updateRequestProcessors name="key" default="true"&gt;
- *   &lt;processor class="PathToClass1" /&gt;
- *   &lt;processor class="PathToClass2" /&gt;
+ * &lt;updateRequestProcessorChain name="key" default="true"&gt;
+ *   &lt;processor class="package.Class1" /&gt;
+ *   &lt;processor class="package.Class2" &gt;
+ *     &lt;str name="someInitParam1"&gt;value&lt;/str&gt;
+ *     &lt;int name="someInitParam2"&gt;42&lt;/int&gt;
+ *   &lt;/processor&gt;
  *   &lt;processor class="solr.LogUpdateProcessorFactory" &gt;
  *     &lt;int name="maxNumToLog"&gt;100&lt;/int&gt;
  *   &lt;/processor&gt;
  *   &lt;processor class="solr.RunUpdateProcessorFactory" /&gt;
- * &lt;/updateRequestProcessors&gt;
+ * &lt;/updateRequestProcessorChain&gt;
  * </pre>
  * <p>
+ * Multiple Chains can be defined, each with a distinct name.  The name of 
+ * a chain used to handle an update request may be specified using the request 
+ * param <code>update.chain</code>.  If no chain is explicitly selected 
+ * by name, then Solr will attempt to determine a default chain:
+ * </p>
+ * <ul>
+ *  <li>A single configured chain may explicitly be declared with 
+ *      <code>default="true"</code> (see example above)</li>
+ *  <li>If no chain is explicitly declared as the default, Solr will look for
+ *      any chain that does not have a name, and treat it as the default</li>
+ *  <li>As a last resort, Solr will create an implicit default chain 
+ *      consisting of:<ul>
+ *        <li>{@link LogUpdateProcessorFactory}</li>
+ *        <li>{@link DistributedUpdateProcessorFactory}</li>
+ *        <li>{@link RunUpdateProcessorFactory}</li>
+ *      </ul></li>
+ * </ul>
+ *
+ * <p>
  * Allmost all processor chains should end with an instance of 
- * {@link RunUpdateProcessorFactory} unless the user is explicitly 
+ * <code>RunUpdateProcessorFactory</code> unless the user is explicitly 
  * executing the update commands in an alternative custom 
- * <code>UpdateRequestProcessorFactory</code>.
+ * <code>UpdateRequestProcessorFactory</code>.  If a chain includes 
+ * <code>RunUpdateProcessorFactory</code> but does not include a 
+ * <code>DistributingUpdateProcessorFactory</code>, it will be added 
+ * automaticly by {@link #init init()}.
  * </p>
  *
  * @see UpdateRequestProcessorFactory
