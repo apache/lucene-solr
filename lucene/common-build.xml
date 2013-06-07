@@ -1457,7 +1457,7 @@ ${tests-output}/junit4-*.suites     - per-JVM executed suites
 
   <target name="filter-pom-templates" unless="filtered.pom.templates.uptodate">
     <mkdir dir="${filtered.pom.templates.dir}"/>
-    <copy todir="${common.dir}/build/poms" overwrite="true">
+    <copy todir="${common.dir}/build/poms" overwrite="true" encoding="UTF-8">
       <fileset dir="${common.dir}/../dev-tools/maven"/>
       <filterset begintoken="@" endtoken="@">
         <filter token="version" value="${version}"/>
@@ -2032,7 +2032,7 @@ ${tests-output}/junit4-*.suites     - per-JVM executed suites
     <element name="nested" optional="false" implicit="true"/>
     <sequential>
       <copy todir="@{todir}" flatten="@{flatten}" overwrite="@{overwrite}" verbose="true"
-        preservelastmodified="false" encoding="UTF-8" outputencoding="UTF-8" taskname="pegdown"
+        preservelastmodified="false" encoding="UTF-8" taskname="pegdown"
       >
         <filterchain>
           <tokenfilter>
