@@ -115,6 +115,9 @@ Optimizations
 * LUCENE-5035: Compress addresses in FieldCacheImpl.SortedDocValuesImpl more
   efficiently. (Adrien Grand, Robert Muir)
 
+* LUCENE-4941: Sort "from" terms only once when using JoinUtil.
+  (Martijn van Groningen)
+
 New Features
 
 * LUCENE-4766: Added a PatternCaptureGroupTokenFilter that uses Java regexes to 
