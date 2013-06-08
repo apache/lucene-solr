@@ -138,6 +138,9 @@ Bug Fixes
 * LUCENE-4933: SweetSpotSimilarity didn't apply its tf function to some
   queries (SloppyPhraseQuery, SpanQueries).  (Robert Muir)
 
+* LUCENE-5033: SlowFuzzyQuery was accepting too many terms (documents) when
+  provided minSimilarity is an int > 1 (Tim Allison via Mike McCandless)
+
 Optimizations
 
 * LUCENE-4936: Improve numeric doc values compression in case all values share
