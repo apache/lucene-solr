@@ -46,7 +46,7 @@ def run(command):
     raise RuntimeError(msg)
 
 def runAndSendGPGPassword(command, password):
-  p = subprocess.Popen(command, shell=True, stdout=subprocess.PIPE, stderr=subprocess.STDOUT, stdin=subprocess.PIPE)
+  p = subprocess.Popen(command, shell=True, bufsize=0, stdout=subprocess.PIPE, stderr=subprocess.STDOUT, stdin=subprocess.PIPE)
   f = open(LOG, 'ab')
   while True:
     line = p.stdout.readline()
