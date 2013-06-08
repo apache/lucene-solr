@@ -20,11 +20,11 @@ package org.apache.solr.update.processor;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Collection;
-import java.util.Set;
 import java.util.regex.Pattern;
 
 import static org.apache.solr.common.SolrException.ErrorCode.BAD_REQUEST;
 import static org.apache.solr.common.SolrException.ErrorCode.SERVER_ERROR;
+import static org.apache.solr.update.processor.FieldMutatingUpdateProcessorFactory.SelectorParams;
 
 import org.apache.solr.common.SolrInputDocument;
 import org.apache.solr.common.SolrInputField;
@@ -192,79 +192,75 @@ public abstract class FieldMutatingUpdateProcessor
   public static FieldNameSelector createFieldNameSelector
     (final SolrResourceLoader loader,
      final SolrCore core,
-     final Set<String> fields,
-     final Set<String> typeNames,
-     final Collection<String> typeClasses,
-     final Collection<Pattern> regexes,
+     final SelectorParams params,
      final FieldNameSelector defSelector) {
-    
-    final Collection<Class> classes 
-      = new ArrayList<Class>(typeClasses.size());
-    
-    for (String t : typeClasses) {
-      try {
-        classes.add(loader.findClass(t, Object.class));
-      } catch (Exception e) {
-        throw new SolrException(SERVER_ERROR,
-                                "Can't resolve typeClass: " + t, e);
-      }
-    }
-    
-    if (classes.isEmpty() && 
-        typeNames.isEmpty() && 
-        regexes.isEmpty() && 
-        fields.isEmpty()) {
+
+    if (params.noSelectorsSpecified()) {
       return defSelector;
     }
     
-    return new ConfigurableFieldNameSelector(core, fields, typeNames, classes, regexes); 
+    return new ConfigurableFieldNameSelector(loader, core, params); 
   }
+  
+  
   
   private static final class ConfigurableFieldNameSelector 
     implements FieldNameSelector {
 
     final SolrCore core;
-    final Set<String> fields;
-    final Set<String> typeNames;
+    final SelectorParams params;
     final Collection<Class> classes;
-    final Collection<Pattern> regexes;
 
-    private ConfigurableFieldNameSelector(final SolrCore core,
-                                          final Set<String> fields,
-                                          final Set<String> typeNames,
-                                          final Collection<Class> classes,
-                                          final Collection<Pattern> regexes) {
+    private ConfigurableFieldNameSelector(final SolrResourceLoader loader,
+                                          final SolrCore core,
+                                          final SelectorParams params) {
       this.core = core;
-      this.fields = fields;
-      this.typeNames = typeNames;
+      this.params = params;
+
+      final Collection<Class> classes = new ArrayList<Class>(params.typeClass.size());
+
+      for (String t : params.typeClass) {
+        try {
+          classes.add(loader.findClass(t, Object.class));
+        } catch (Exception e) {
+          throw new SolrException(SERVER_ERROR, "Can't resolve typeClass: " + t, e);
+        }
+      }
       this.classes = classes;
-      this.regexes = regexes;
     }
 
     @Override
     public boolean shouldMutate(final String fieldName) {
       
-      // order of checks is bsaed on what should be quicker 
+      // order of checks is based on what should be quicker
       // (ie: set lookups faster the looping over instanceOf / matches tests
       
-      if ( ! (fields.isEmpty() || fields.contains(fieldName)) ) {
+      if ( ! (params.fieldName.isEmpty() || params.fieldName.contains(fieldName)) ) {
         return false;
       }
       
       // do not consider it an error if the fieldName has no type
       // there might be another processor dealing with it later
       FieldType t =  core.getLatestSchema().getFieldTypeNoEx(fieldName);
-      if (null != t) {
-        if (! (typeNames.isEmpty() || typeNames.contains(t.getTypeName())) ) {
+      final boolean fieldExists = (null != t);
+
+      if ( (null != params.fieldNameMatchesSchemaField) &&
+           (fieldExists != params.fieldNameMatchesSchemaField) ) {
+        return false;
+      }
+
+      if (fieldExists) { 
+
+        if (! (params.typeName.isEmpty() || params.typeName.contains(t.getTypeName())) ) {
           return false;
         }
         
         if (! (classes.isEmpty() || instanceOfAny(t, classes)) ) {
           return false;
-          }
-      }
+        }
+      } 
       
-      if (! (regexes.isEmpty() || matchesAny(fieldName, regexes)) ) {
+      if (! (params.fieldRegex.isEmpty() || matchesAny(fieldName, params.fieldRegex)) ) {
         return false;
       }
       
