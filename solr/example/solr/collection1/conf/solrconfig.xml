@@ -66,6 +66,9 @@
        files in that directory which completely match the regex
        (anchored on both ends) will be included.
 
+       If a 'dir' option (with or without a regex) is used and nothing
+       is found that matches, a warning will be logged.
+
        The examples below can be used to load some solr-contribs along 
        with their external dependencies.
     -->
@@ -80,11 +83,6 @@
 
   <lib dir="../../../contrib/velocity/lib" regex=".*\.jar" />
   <lib dir="../../../dist/" regex="solr-velocity-\d.*\.jar" />
-
-  <!-- If a 'dir' option (with or without a regex) is used and nothing
-       is found that matches, a warning will be logged.
-    -->
-  <lib dir="/non/existent/dir/yields/warning" /> 
 
   <!-- an exact 'path' can be used instead of a 'dir' to specify a 
        specific jar file.  This will cause a serious error to be logged 
