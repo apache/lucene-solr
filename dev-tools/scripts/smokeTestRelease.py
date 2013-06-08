@@ -970,10 +970,6 @@ def getDistributionsForMavenChecks(tmpDir, version, baseURL):
     print('    unpack %s...' % distribution)
     unpackLogFile = '%s/unpack-%s-maven-checks.log' % (tmpDir, distribution)
     run('tar xzf %s/%s' % (tmpDir, distribution), unpackLogFile)
-    if project == 'solr': # unpack the Solr war
-      unpackLogFile = '%s/unpack-solr-war-maven-checks.log' % tmpDir
-      print('        unpack Solr war...')
-      run('jar xvf */dist/*.war', unpackLogFile)
     distributionFiles[project] = []
     for root, dirs, files in os.walk(destDir):
       distributionFiles[project].extend([os.path.join(root, file) for file in files])

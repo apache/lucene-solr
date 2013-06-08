@@ -25,7 +25,7 @@
     <echo message="And for developers:"/>
     <echo message="Use 'ant clean' to clean compiled files." />
     <echo message="Use 'ant compile' to compile the source code." />
-    <echo message="Use 'ant dist' to build the project WAR and JAR files." />
+    <echo message="Use 'ant dist' to build the project JAR files." />
     <echo message="Use 'ant documentation' to build documentation." />
     <echo message="Use 'ant generate-maven-artifacts' to generate maven artifacts." />
     <echo message="Use 'ant package' to generate zip, tgz for distribution." />
@@ -476,7 +476,7 @@
                   includes="example/**/*.sh example/**/bin/" />
       <tarfileset dir="."
                   prefix="${fullnamever}"
-                  includes="dist/*.jar dist/*.war 
+                  includes="dist/*.jar
                             dist/solrj-lib/*
                             dist/test-framework/**"
                   excludes="**/*.tgz **/*.zip **/*.md5 **/*src*.jar **/*docs*.jar **/*.sha1" />

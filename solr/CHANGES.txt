@@ -44,6 +44,8 @@ Other Changes
 * SOLR-4622: Hardcoded SolrCloud defaults for hostContext and hostPort that
   were deprecated in 4.3 have been removed completely. (hossman)
 
+* SOLR-4792: Stop shipping a .war. (Robert Muir)
+
 ==================  4.4.0 ==================
 
 Versions of Major Components

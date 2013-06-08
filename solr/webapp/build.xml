@@ -65,8 +65,7 @@
     </war>
   </target>
 
-  <target name="dist-maven" depends="dist, filter-pom-templates, install-maven-tasks, m2-deploy-solr-parent-pom">
-    <m2-deploy jar.file="${dist}/solr-${version}.war"
-               pom.xml="${filtered.pom.templates.dir}/solr/webapp/pom.xml"/>
+  <!-- nothing to do -->
+  <target name="dist-maven">
   </target>
 </project>
