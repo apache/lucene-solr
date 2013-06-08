@@ -31,9 +31,12 @@ import org.apache.lucene.util.IntsRef;
 import org.apache.lucene.util.StringHelper;
 import org.apache.lucene.util.UnicodeUtil;
 
-/** Classic fuzzy TermsEnum for enumerating all terms that are similar
+/** Potentially slow fuzzy TermsEnum for enumerating all terms that are similar
  * to the specified filter term.
- *
+ * <p> If the minSimilarity or maxEdits is greater than the Automaton's
+ * allowable range, this backs off to the classic (brute force)
+ * fuzzy terms enum method by calling FuzzyTermsEnum's getAutomatonEnum.
+ * </p>
  * <p>Term enumerations are always ordered by
  * {@link #getComparator}.  Each term in the enumeration is
  * greater than all that precede it.</p>
@@ -103,18 +106,43 @@ public final class SlowFuzzyTermsEnum extends FuzzyTermsEnum {
     private final IntsRef utf32 = new IntsRef(20);
     
     /**
-     * The termCompare method in FuzzyTermEnum uses Levenshtein distance to 
+     * <p>The termCompare method in FuzzyTermEnum uses Levenshtein distance to 
      * calculate the distance between the given term and the comparing term. 
+     * </p>
+     * <p>If the minSimilarity is >= 1.0, this uses the maxEdits as the comparison.
+     * Otherwise, this method uses the following logic to calculate similarity.
+     * <pre>
+     *   similarity = 1 - ((float)distance / (float) (prefixLength + Math.min(textlen, targetlen)));
+     *   </pre>
+     * where distance is the Levenshtein distance for the two words.
+     * </p>
+     * 
      */
     @Override
     protected final AcceptStatus accept(BytesRef term) {
       if (StringHelper.startsWith(term, prefixBytesRef)) {
         UnicodeUtil.UTF8toUTF32(term, utf32);
-        final float similarity = similarity(utf32.ints, realPrefixLength, utf32.length - realPrefixLength);
-        if (similarity > minSimilarity) {
+        final int distance = calcDistance(utf32.ints, realPrefixLength, utf32.length - realPrefixLength);
+       
+        //Integer.MIN_VALUE is the sentinel that Levenshtein stopped early
+        if (distance == Integer.MIN_VALUE){
+           return AcceptStatus.NO;
+        }
+        //no need to calc similarity, if raw is true and distance > maxEdits
+        if (raw == true && distance > maxEdits){
+              return AcceptStatus.NO;
+        } 
+        final float similarity = calcSimilarity(distance, (utf32.length - realPrefixLength), text.length);
+        
+        //if raw is true, then distance must also be <= maxEdits by now
+        //given the previous if statement
+        if (raw == true ||
+              (raw == false && similarity > minSimilarity)) {
           boostAtt.setBoost((similarity - minSimilarity) * scale_factor);
           return AcceptStatus.YES;
-        } else return AcceptStatus.NO;
+        } else {
+           return AcceptStatus.NO;
+        }
       } else {
         return AcceptStatus.END;
       }
@@ -125,52 +153,34 @@ public final class SlowFuzzyTermsEnum extends FuzzyTermsEnum {
      ******************************/
     
     /**
-     * <p>Similarity returns a number that is 1.0f or less (including negative numbers)
-     * based on how similar the Term is compared to a target term.  It returns
-     * exactly 0.0f when
-     * <pre>
-     *    editDistance &gt; maximumEditDistance</pre>
-     * Otherwise it returns:
-     * <pre>
-     *    1 - (editDistance / length)</pre>
-     * where length is the length of the shortest term (text or target) including a
-     * prefix that are identical and editDistance is the Levenshtein distance for
-     * the two words.</p>
-     *
+     * <p>calcDistance returns the Levenshtein distance between the query term
+     * and the target term.</p>
+     * 
      * <p>Embedded within this algorithm is a fail-fast Levenshtein distance
      * algorithm.  The fail-fast algorithm differs from the standard Levenshtein
      * distance algorithm in that it is aborted if it is discovered that the
      * minimum distance between the words is greater than some threshold.
-     *
-     * <p>To calculate the maximum distance threshold we use the following formula:
-     * <pre>
-     *     (1 - minimumSimilarity) * length</pre>
-     * where length is the shortest term including any prefix that is not part of the
-     * similarity comparison.  This formula was derived by solving for what maximum value
-     * of distance returns false for the following statements:
-     * <pre>
-     *   similarity = 1 - ((float)distance / (float) (prefixLength + Math.min(textlen, targetlen)));
-     *   return (similarity > minimumSimilarity);</pre>
-     * where distance is the Levenshtein distance for the two words.
-     * </p>
+
      * <p>Levenshtein distance (also known as edit distance) is a measure of similarity
      * between two strings where the distance is measured as the number of character
      * deletions, insertions or substitutions required to transform one string to
      * the other string.
      * @param target the target word or phrase
-     * @return the similarity,  0.0 or less indicates that it matches less than the required
-     * threshold and 1.0 indicates that the text and target are identical
+     * @param offset the offset at which to start the comparison
+     * @param length the length of what's left of the string to compare
+     * @return the number of edits or Integer.MIN_VALUE if the edit distance is
+     * greater than maxDistance.
      */
-    private final float similarity(final int[] target, int offset, int length) {
+    private final int calcDistance(final int[] target, int offset, int length) {
       final int m = length;
       final int n = text.length;
       if (n == 0)  {
         //we don't have anything to compare.  That means if we just add
         //the letters for m we get the new word
-        return realPrefixLength == 0 ? 0.0f : 1.0f - ((float) m / realPrefixLength);
+        return m;
       }
       if (m == 0) {
-        return realPrefixLength == 0 ? 0.0f : 1.0f - ((float) n / realPrefixLength);
+        return n;
       }
       
       final int maxDistance = calculateMaxDistance(m);
@@ -183,7 +193,7 @@ public final class SlowFuzzyTermsEnum extends FuzzyTermsEnum {
         //which is 8-3 or more precisely Math.abs(3-8).
         //if our maximum edit distance is 4, then we can discard this word
         //without looking at it.
-        return Float.NEGATIVE_INFINITY;
+        return Integer.MIN_VALUE;
       }
       
       // init matrix d
@@ -214,7 +224,7 @@ public final class SlowFuzzyTermsEnum extends FuzzyTermsEnum {
         if (j > maxDistance && bestPossibleEditDistance > maxDistance) {  //equal is okay, but not greater
           //the closest the target can be to the text is just too far away.
           //this target is leaving the party early.
-          return Float.NEGATIVE_INFINITY;
+          return Integer.MIN_VALUE;
         }
 
         // copy current distance counts to 'previous row' distance counts: swap p and d
@@ -226,12 +236,17 @@ public final class SlowFuzzyTermsEnum extends FuzzyTermsEnum {
       // our last action in the above loop was to switch d and p, so p now
       // actually has the most recent cost counts
 
+      return p[n];
+    }
+    
+    private float calcSimilarity(int edits, int m, int n){
       // this will return less than 0.0 when the edit distance is
       // greater than the number of characters in the shorter word.
       // but this was the formula that was previously used in FuzzyTermEnum,
       // so it has not been changed (even though minimumSimilarity must be
       // greater than 0.0)
-      return 1.0f - ((float)p[n] / (float) (realPrefixLength + Math.min(n, m)));
+      
+      return 1.0f - ((float)edits / (float) (realPrefixLength + Math.min(n, m)));
     }
     
     /**
