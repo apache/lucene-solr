@@ -90,6 +90,11 @@ Changes in backwards compatibility policy
   categories. You should set TakmiSampleFixer on SamplingParams if required (but 
   notice that this means slower search). (Rob Audenaerde, Gilad Barkai, Shai Erera)
 
+* LUCENE-4933: Replace ExactSimScorer/SloppySimScorer with just SimScorer. Previously
+  there were 2 implementations as a performance hack to support tableization of
+  sqrt(), but this caching is removed, as sqrt is implemented in hardware with modern 
+  jvms and its faster not to cache.  (Robert Muir)
+
 Bug Fixes
 
 * LUCENE-4997: Internal test framework's tests are sensitive to previous 
@@ -129,6 +134,9 @@ Bug Fixes
 * LUCENE-5032: Fix IndexOutOfBoundsExc in PostingsHighlighter when
   multi-valued fields exceed maxLength (Tomás Fernández Löbbe
   via Mike McCandless)
+
+* LUCENE-4933: SweetSpotSimilarity didn't apply its tf function to some
+  queries (SloppyPhraseQuery, SpanQueries).  (Robert Muir)
 
 Optimizations
 

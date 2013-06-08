@@ -23,7 +23,7 @@ import org.apache.lucene.index.Term;
 import org.apache.lucene.index.TermContext;
 import org.apache.lucene.search.*;
 import org.apache.lucene.search.similarities.Similarity;
-import org.apache.lucene.search.similarities.Similarity.SloppySimScorer;
+import org.apache.lucene.search.similarities.Similarity.SimScorer;
 import org.apache.lucene.util.Bits;
 
 import java.io.IOException;
@@ -86,7 +86,7 @@ public class SpanWeight extends Weight {
     if (stats == null) {
       return null;
     } else {
-      return new SpanScorer(query.getSpans(context, acceptDocs, termContexts), this, similarity.sloppySimScorer(stats, context));
+      return new SpanScorer(query.getSpans(context, acceptDocs, termContexts), this, similarity.simScorer(stats, context));
     }
   }
 
@@ -97,7 +97,7 @@ public class SpanWeight extends Weight {
       int newDoc = scorer.advance(doc);
       if (newDoc == doc) {
         float freq = scorer.sloppyFreq();
-        SloppySimScorer docScorer = similarity.sloppySimScorer(stats, context);
+        SimScorer docScorer = similarity.simScorer(stats, context);
         ComplexExplanation result = new ComplexExplanation();
         result.setDescription("weight("+getQuery()+" in "+doc+") [" + similarity.getClass().getSimpleName() + "], result of:");
         Explanation scoreExplanation = docScorer.explain(doc, new Explanation(freq, "phraseFreq=" + freq));

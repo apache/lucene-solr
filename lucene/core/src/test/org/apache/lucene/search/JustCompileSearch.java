@@ -270,12 +270,7 @@ final class JustCompileSearch {
     }
 
     @Override
-    public ExactSimScorer exactSimScorer(SimWeight stats, AtomicReaderContext context) {
-      throw new UnsupportedOperationException(UNSUPPORTED_MSG);
-    }
-
-    @Override
-    public SloppySimScorer sloppySimScorer(SimWeight stats, AtomicReaderContext context) {
+    public SimScorer simScorer(SimWeight stats, AtomicReaderContext context) {
       throw new UnsupportedOperationException(UNSUPPORTED_MSG);
     }
 

@@ -190,38 +190,20 @@ public abstract class SimilarityBase extends Similarity {
   }
   
   @Override
-  public ExactSimScorer exactSimScorer(SimWeight stats, AtomicReaderContext context) throws IOException {
+  public SimScorer simScorer(SimWeight stats, AtomicReaderContext context) throws IOException {
     if (stats instanceof MultiSimilarity.MultiStats) {
       // a multi term query (e.g. phrase). return the summation, 
       // scoring almost as if it were boolean query
       SimWeight subStats[] = ((MultiSimilarity.MultiStats) stats).subStats;
-      ExactSimScorer subScorers[] = new ExactSimScorer[subStats.length];
+      SimScorer subScorers[] = new SimScorer[subStats.length];
       for (int i = 0; i < subScorers.length; i++) {
         BasicStats basicstats = (BasicStats) subStats[i];
-        subScorers[i] = new BasicExactDocScorer(basicstats, context.reader().getNormValues(basicstats.field));
+        subScorers[i] = new BasicSimScorer(basicstats, context.reader().getNormValues(basicstats.field));
       }
-      return new MultiSimilarity.MultiExactDocScorer(subScorers);
+      return new MultiSimilarity.MultiSimScorer(subScorers);
     } else {
       BasicStats basicstats = (BasicStats) stats;
-      return new BasicExactDocScorer(basicstats, context.reader().getNormValues(basicstats.field));
-    }
-  }
-  
-  @Override
-  public SloppySimScorer sloppySimScorer(SimWeight stats, AtomicReaderContext context) throws IOException {
-    if (stats instanceof MultiSimilarity.MultiStats) {
-      // a multi term query (e.g. phrase). return the summation, 
-      // scoring almost as if it were boolean query
-      SimWeight subStats[] = ((MultiSimilarity.MultiStats) stats).subStats;
-      SloppySimScorer subScorers[] = new SloppySimScorer[subStats.length];
-      for (int i = 0; i < subScorers.length; i++) {
-        BasicStats basicstats = (BasicStats) subStats[i];
-        subScorers[i] = new BasicSloppyDocScorer(basicstats, context.reader().getNormValues(basicstats.field));
-      }
-      return new MultiSimilarity.MultiSloppyDocScorer(subScorers);
-    } else {
-      BasicStats basicstats = (BasicStats) stats;
-      return new BasicSloppyDocScorer(basicstats, context.reader().getNormValues(basicstats.field));
+      return new BasicSimScorer(basicstats, context.reader().getNormValues(basicstats.field));
     }
   }
   
@@ -277,46 +259,17 @@ public abstract class SimilarityBase extends Similarity {
   
   // --------------------------------- Classes ---------------------------------
   
-  /** Delegates the {@link #score(int, int)} and
-   * {@link #explain(int, Explanation)} methods to
-   * {@link SimilarityBase#score(BasicStats, float, float)} and
-   * {@link SimilarityBase#explain(BasicStats, int, Explanation, float)},
-   * respectively.
-   */
-  private class BasicExactDocScorer extends ExactSimScorer {
-    private final BasicStats stats;
-    private final NumericDocValues norms;
-    
-    BasicExactDocScorer(BasicStats stats, NumericDocValues norms) throws IOException {
-      this.stats = stats;
-      this.norms = norms;
-    }
-    
-    @Override
-    public float score(int doc, int freq) {
-      // We have to supply something in case norms are omitted
-      return SimilarityBase.this.score(stats, freq,
-          norms == null ? 1F : decodeNormValue((byte)norms.get(doc)));
-    }
-    
-    @Override
-    public Explanation explain(int doc, Explanation freq) {
-      return SimilarityBase.this.explain(stats, doc, freq,
-          norms == null ? 1F : decodeNormValue((byte)norms.get(doc)));
-    }
-  }
-  
   /** Delegates the {@link #score(int, float)} and
    * {@link #explain(int, Explanation)} methods to
    * {@link SimilarityBase#score(BasicStats, float, float)} and
    * {@link SimilarityBase#explain(BasicStats, int, Explanation, float)},
    * respectively.
    */
-  private class BasicSloppyDocScorer extends SloppySimScorer {
+  private class BasicSimScorer extends SimScorer {
     private final BasicStats stats;
     private final NumericDocValues norms;
     
-    BasicSloppyDocScorer(BasicStats stats, NumericDocValues norms) throws IOException {
+    BasicSimScorer(BasicStats stats, NumericDocValues norms) throws IOException {
       this.stats = stats;
       this.norms = norms;
     }
