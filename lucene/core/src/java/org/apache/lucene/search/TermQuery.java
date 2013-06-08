@@ -29,7 +29,7 @@ import org.apache.lucene.index.Term;
 import org.apache.lucene.index.TermContext;
 import org.apache.lucene.index.TermState;
 import org.apache.lucene.index.TermsEnum;
-import org.apache.lucene.search.similarities.Similarity.ExactSimScorer;
+import org.apache.lucene.search.similarities.Similarity.SimScorer;
 import org.apache.lucene.search.similarities.Similarity;
 import org.apache.lucene.util.Bits;
 import org.apache.lucene.util.ToStringUtils;
@@ -84,7 +84,7 @@ public class TermQuery extends Query {
       }
       DocsEnum docs = termsEnum.docs(acceptDocs, null);
       assert docs != null;
-      return new TermScorer(this, docs, similarity.exactSimScorer(stats, context));
+      return new TermScorer(this, docs, similarity.simScorer(stats, context));
     }
     
     /**
@@ -116,7 +116,7 @@ public class TermQuery extends Query {
         int newDoc = scorer.advance(doc);
         if (newDoc == doc) {
           float freq = scorer.freq();
-          ExactSimScorer docScorer = similarity.exactSimScorer(stats, context);
+          SimScorer docScorer = similarity.simScorer(stats, context);
           ComplexExplanation result = new ComplexExplanation();
           result.setDescription("weight("+getQuery()+" in "+doc+") [" + similarity.getClass().getSimpleName() + "], result of:");
           Explanation scoreExplanation = docScorer.explain(doc, new Explanation(freq, "termFreq=" + freq));

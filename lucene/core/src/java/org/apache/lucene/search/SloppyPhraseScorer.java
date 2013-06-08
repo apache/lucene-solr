@@ -34,7 +34,7 @@ final class SloppyPhraseScorer extends Scorer {
 
   private float sloppyFreq; //phrase frequency in current doc as computed by phraseFreq().
 
-  private final Similarity.SloppySimScorer docScorer;
+  private final Similarity.SimScorer docScorer;
   
   private final int slop;
   private final int numPostings;
@@ -52,7 +52,7 @@ final class SloppyPhraseScorer extends Scorer {
   private final long cost;
   
   SloppyPhraseScorer(Weight weight, PhraseQuery.PostingsAndFreq[] postings,
-      int slop, Similarity.SloppySimScorer docScorer) {
+      int slop, Similarity.SimScorer docScorer) {
     super(weight);
     this.docScorer = docScorer;
     this.slop = slop;

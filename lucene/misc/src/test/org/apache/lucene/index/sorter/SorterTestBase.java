@@ -100,13 +100,8 @@ public abstract class SorterTestBase extends LuceneTestCase {
     }
     
     @Override
-    public ExactSimScorer exactSimScorer(SimWeight weight, AtomicReaderContext context) throws IOException {
-      return in.exactSimScorer(weight, context);
-    }
-    
-    @Override
-    public SloppySimScorer sloppySimScorer(SimWeight weight, AtomicReaderContext context) throws IOException {
-      return in.sloppySimScorer(weight, context);
+    public SimScorer simScorer(SimWeight weight, AtomicReaderContext context) throws IOException {
+      return in.simScorer(weight, context);
     }
     
   }

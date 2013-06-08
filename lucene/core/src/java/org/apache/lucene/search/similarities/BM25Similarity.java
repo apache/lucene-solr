@@ -212,80 +212,18 @@ public class BM25Similarity extends Similarity {
   }
 
   @Override
-  public final ExactSimScorer exactSimScorer(SimWeight stats, AtomicReaderContext context) throws IOException {
+  public final SimScorer simScorer(SimWeight stats, AtomicReaderContext context) throws IOException {
     BM25Stats bm25stats = (BM25Stats) stats;
-    final NumericDocValues norms = context.reader().getNormValues(bm25stats.field);
-    return norms == null 
-      ? new ExactBM25DocScorerNoNorms(bm25stats)
-      : new ExactBM25DocScorer(bm25stats, norms);
-  }
-
-  @Override
-  public final SloppySimScorer sloppySimScorer(SimWeight stats, AtomicReaderContext context) throws IOException {
-    BM25Stats bm25stats = (BM25Stats) stats;
-    return new SloppyBM25DocScorer(bm25stats, context.reader().getNormValues(bm25stats.field));
+    return new BM25DocScorer(bm25stats, context.reader().getNormValues(bm25stats.field));
   }
   
-  private class ExactBM25DocScorer extends ExactSimScorer {
-    private final BM25Stats stats;
-    private final float weightValue;
-    private final NumericDocValues norms;
-    private final float[] cache;
-    
-    ExactBM25DocScorer(BM25Stats stats, NumericDocValues norms) throws IOException {
-      assert norms != null;
-      this.stats = stats;
-      this.weightValue = stats.weight * (k1 + 1); // boost * idf * (k1 + 1)
-      this.cache = stats.cache;
-      this.norms = norms;
-    }
-    
-    @Override
-    public float score(int doc, int freq) {
-      return weightValue * freq / (freq + cache[(byte)norms.get(doc) & 0xFF]);
-    }
-    
-    @Override
-    public Explanation explain(int doc, Explanation freq) {
-      return explainScore(doc, freq, stats, norms);
-    }
-  }
-  
-  /** there are no norms, we act as if b=0 */
-  private class ExactBM25DocScorerNoNorms extends ExactSimScorer {
-    private final BM25Stats stats;
-    private final float weightValue;
-    private static final int SCORE_CACHE_SIZE = 32;
-    private float[] scoreCache = new float[SCORE_CACHE_SIZE];
-
-    ExactBM25DocScorerNoNorms(BM25Stats stats) {
-      this.stats = stats;
-      this.weightValue = stats.weight * (k1 + 1); // boost * idf * (k1 + 1)
-      for (int i = 0; i < SCORE_CACHE_SIZE; i++)
-        scoreCache[i] = weightValue * i / (i + k1);
-    }
-    
-    @Override
-    public float score(int doc, int freq) {
-      // TODO: maybe score cache is more trouble than its worth?
-      return freq < SCORE_CACHE_SIZE        // check cache
-        ? scoreCache[freq]                  // cache hit
-        : weightValue * freq / (freq + k1); // cache miss
-    }
-    
-    @Override
-    public Explanation explain(int doc, Explanation freq) {
-      return explainScore(doc, freq, stats, null);
-    }
-  }
-  
-  private class SloppyBM25DocScorer extends SloppySimScorer {
+  private class BM25DocScorer extends SimScorer {
     private final BM25Stats stats;
     private final float weightValue; // boost * idf * (k1 + 1)
     private final NumericDocValues norms;
     private final float[] cache;
     
-    SloppyBM25DocScorer(BM25Stats stats, NumericDocValues norms) throws IOException {
+    BM25DocScorer(BM25Stats stats, NumericDocValues norms) throws IOException {
       this.stats = stats;
       this.weightValue = stats.weight * (k1 + 1);
       this.cache = stats.cache;

@@ -572,25 +572,6 @@ public abstract class TFIDFSimilarity extends Similarity {
    * when <code>freq</code> is large, and smaller values when <code>freq</code>
    * is small.
    *
-   * <p>The default implementation calls {@link #tf(float)}.
-   *
-   * @param freq the frequency of a term within a document
-   * @return a score factor based on a term's within-document frequency
-   */
-  public float tf(int freq) {
-    return tf((float)freq);
-  }
-
-  /** Computes a score factor based on a term or phrase's frequency in a
-   * document.  This value is multiplied by the {@link #idf(long, long)}
-   * factor for each term in the query and these products are then summed to
-   * form the initial score for a document.
-   *
-   * <p>Terms and phrases repeated in a document indicate the topic of the
-   * document, so implementations of this method usually return larger values
-   * when <code>freq</code> is large, and smaller values when <code>freq</code>
-   * is small.
-   *
    * @param freq the frequency of a term within a document
    * @return a score factor based on a term's within-document frequency
    */
@@ -655,7 +636,7 @@ public abstract class TFIDFSimilarity extends Similarity {
 
   /** Computes a score factor based on a term's document frequency (the number
    * of documents which contain the term).  This value is multiplied by the
-   * {@link #tf(int)} factor for each term in the query and these products are
+   * {@link #tf(float)} factor for each term in the query and these products are
    * then summed to form the initial score for a document.
    *
    * <p>Terms that occur in fewer documents are better indicators of topic, so
@@ -755,49 +736,17 @@ public abstract class TFIDFSimilarity extends Similarity {
   }
 
   @Override
-  public final ExactSimScorer exactSimScorer(SimWeight stats, AtomicReaderContext context) throws IOException {
+  public final SimScorer simScorer(SimWeight stats, AtomicReaderContext context) throws IOException {
     IDFStats idfstats = (IDFStats) stats;
-    return new ExactTFIDFDocScorer(idfstats, context.reader().getNormValues(idfstats.field));
-  }
-
-  @Override
-  public final SloppySimScorer sloppySimScorer(SimWeight stats, AtomicReaderContext context) throws IOException {
-    IDFStats idfstats = (IDFStats) stats;
-    return new SloppyTFIDFDocScorer(idfstats, context.reader().getNormValues(idfstats.field));
+    return new TFIDFSimScorer(idfstats, context.reader().getNormValues(idfstats.field));
   }
   
-  // TODO: we can specialize these for omitNorms up front, but we should test that it doesn't confuse stupid hotspot.
-
-  private final class ExactTFIDFDocScorer extends ExactSimScorer {
+  private final class TFIDFSimScorer extends SimScorer {
     private final IDFStats stats;
     private final float weightValue;
     private final NumericDocValues norms;
     
-    ExactTFIDFDocScorer(IDFStats stats, NumericDocValues norms) throws IOException {
-      this.stats = stats;
-      this.weightValue = stats.value;
-      this.norms = norms; 
-    }
-    
-    @Override
-    public float score(int doc, int freq) {
-      final float raw = tf(freq)*weightValue;  // compute tf(f)*weight
-
-      return norms == null ? raw : raw * decodeNormValue((byte)norms.get(doc)); // normalize for field
-    }
-
-    @Override
-    public Explanation explain(int doc, Explanation freq) {
-      return explainScore(doc, freq, stats, norms);
-    }
-  }
-  
-  private final class SloppyTFIDFDocScorer extends SloppySimScorer {
-    private final IDFStats stats;
-    private final float weightValue;
-    private final NumericDocValues norms;
-    
-    SloppyTFIDFDocScorer(IDFStats stats, NumericDocValues norms) throws IOException {
+    TFIDFSimScorer(IDFStats stats, NumericDocValues norms) throws IOException {
       this.stats = stats;
       this.weightValue = stats.value;
       this.norms = norms;
