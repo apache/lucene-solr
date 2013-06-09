@@ -195,25 +195,13 @@ public class CloneFieldUpdateProcessorFactory
     
     srcSelector = 
       FieldMutatingUpdateProcessor.createFieldNameSelector
-      (core.getResourceLoader(),
-       core,
-       srcInclusions.fieldName,
-       srcInclusions.typeName,
-       srcInclusions.typeClass,
-       srcInclusions.fieldRegex,
-       FieldMutatingUpdateProcessor.SELECT_NO_FIELDS);
+          (core.getResourceLoader(), core, srcInclusions, FieldMutatingUpdateProcessor.SELECT_NO_FIELDS);
 
     for (SelectorParams exc : srcExclusions) {
       srcSelector = FieldMutatingUpdateProcessor.wrap
         (srcSelector,
          FieldMutatingUpdateProcessor.createFieldNameSelector
-         (core.getResourceLoader(),
-          core,
-          exc.fieldName,
-          exc.typeName,
-          exc.typeClass,
-          exc.fieldRegex,
-          FieldMutatingUpdateProcessor.SELECT_NO_FIELDS));
+             (core.getResourceLoader(), core, exc, FieldMutatingUpdateProcessor.SELECT_NO_FIELDS));
     }
   }
 
