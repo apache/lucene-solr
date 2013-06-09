@@ -379,11 +379,11 @@ public class TestPayloadSpans extends LuceneTestCase {
     PayloadSpanUtil psu = new PayloadSpanUtil(searcher.getTopReaderContext());
     
     Collection<byte[]> payloads = psu.getPayloadsForQuery(new TermQuery(new Term(PayloadHelper.FIELD, "rr")));
-    if(VERBOSE)
+    if(VERBOSE) {
       System.out.println("Num payloads:" + payloads.size());
-    for (final byte [] bytes : payloads) {
-      if(VERBOSE)
+      for (final byte [] bytes : payloads) {
         System.out.println(new String(bytes, "UTF-8"));
+      }
     }
     reader.close();
     directory.close();
@@ -451,12 +451,12 @@ public class TestPayloadSpans extends LuceneTestCase {
         System.out.println("\nSpans Dump --");
       if (spans.isPayloadAvailable()) {
         Collection<byte[]> payload = spans.getPayload();
-        if(VERBOSE)
+        if(VERBOSE) {
           System.out.println("payloads for span:" + payload.size());
-        for (final byte [] bytes : payload) {
-          if(VERBOSE)
+          for (final byte [] bytes : payload) {
             System.out.println("doc:" + spans.doc() + " s:" + spans.start() + " e:" + spans.end() + " "
               + new String(bytes, "UTF-8"));
+          }
         }
 
         assertEquals(numPayloads[cnt],payload.size());

@@ -360,6 +360,9 @@ public class TestIndexWriterWithThreads extends LuceneTestCase {
         boolean sawClose = false;
         boolean sawMerge = false;
         for (int i = 0; i < trace.length; i++) {
+          if (sawAbortOrFlushDoc && sawMerge && sawClose) {
+            break;
+          }
           if ("abort".equals(trace[i].getMethodName()) ||
               "finishDocument".equals(trace[i].getMethodName())) {
             sawAbortOrFlushDoc = true;
@@ -372,8 +375,9 @@ public class TestIndexWriterWithThreads extends LuceneTestCase {
           }
         }
         if (sawAbortOrFlushDoc && !sawClose && !sawMerge) {
-          if (onlyOnce)
+          if (onlyOnce) {
             doFail = false;
+          }
           //System.out.println(Thread.currentThread().getName() + ": now fail");
           //new Throwable().printStackTrace(System.out);
           throw new IOException("now failing on purpose");

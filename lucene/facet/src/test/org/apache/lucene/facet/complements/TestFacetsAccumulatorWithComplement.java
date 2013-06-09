@@ -121,8 +121,8 @@ public class TestFacetsAccumulatorWithComplement extends FacetTestBase {
     
     // Results are ready, printing them...
     int i = 0;
-    for (FacetResult facetResult : res) {
-      if (VERBOSE) {
+    if (VERBOSE) {
+      for (FacetResult facetResult : res) {
         System.out.println("Res "+(i++)+": "+facetResult);
       }
     }

@@ -831,12 +831,14 @@ public class TestGrouping extends LuceneTestCase {
           for(SortField sf : docSort.getSort()) {
             if (sf.getType() == SortField.Type.SCORE) {
               getScores = true;
+              break;
             }
           }
 
           for(SortField sf : groupSort.getSort()) {
             if (sf.getType() == SortField.Type.SCORE) {
               getScores = true;
+              break;
             }
           }
 

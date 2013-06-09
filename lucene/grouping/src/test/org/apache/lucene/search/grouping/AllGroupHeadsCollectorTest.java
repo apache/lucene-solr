@@ -418,6 +418,7 @@ public class AllGroupHeadsCollectorTest extends LuceneTestCase {
       for (int a : actual) {
         if (e == a) {
           found = true;
+          break;
         }
       }
 
