@@ -402,8 +402,13 @@ public class DrillSideways {
       query = new DrillDownQuery(filter, query);
     }
     if (sort != null) {
+      int limit = searcher.getIndexReader().maxDoc();
+      if (limit == 0) {
+        limit = 1; // the collector does not alow numHits = 0
+      }
+      topN = Math.min(topN, limit);
       final TopFieldCollector hitCollector = TopFieldCollector.create(sort,
-                                                                      Math.min(topN, searcher.getIndexReader().maxDoc()),
+                                                                      topN,
                                                                       after,
                                                                       true,
                                                                       doDocScores,
@@ -422,7 +427,12 @@ public class DrillSideways {
    */
   public DrillSidewaysResult search(ScoreDoc after,
                                     DrillDownQuery query, int topN, FacetSearchParams fsp) throws IOException {
-    TopScoreDocCollector hitCollector = TopScoreDocCollector.create(Math.min(topN, searcher.getIndexReader().maxDoc()), after, true);
+    int limit = searcher.getIndexReader().maxDoc();
+    if (limit == 0) {
+      limit = 1; // the collector does not alow numHits = 0
+    }
+    topN = Math.min(topN, limit);
+    TopScoreDocCollector hitCollector = TopScoreDocCollector.create(topN, after, true);
     DrillSidewaysResult r = search(query, hitCollector, fsp);
     return new DrillSidewaysResult(r.facetResults, hitCollector.topDocs());
   }
