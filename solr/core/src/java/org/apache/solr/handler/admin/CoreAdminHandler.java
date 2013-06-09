@@ -505,7 +505,9 @@ public class CoreAdminHandler extends RequestHandlerBase {
           }
       }
       dcore.setCoreProperties(coreProperties);
-      
+      if (coreContainer.getZkController() != null) {
+        coreContainer.preRegisterInZk(dcore);
+      }
       SolrCore core = coreContainer.create(dcore);
 
       coreContainer.register(name, core, false);

@@ -207,6 +207,11 @@ public class TestHarness extends BaseTestHarness {
       CoreDescriptor dcore = new CoreDescriptor(container, coreName, solrConfig.getResourceLoader().getInstanceDir());
       dcore.setConfigName(solrConfig.getResourceName());
       dcore.setSchemaName(indexSchema.getResourceName());
+      
+      if (container.getZkController() != null) {
+        container.preRegisterInZk(dcore);
+      }
+      
       SolrCore core = new SolrCore(coreName, dataDirectory, solrConfig, indexSchema, dcore);
       container.register(coreName, core, false);
 

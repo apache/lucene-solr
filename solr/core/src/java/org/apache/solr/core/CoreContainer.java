@@ -423,6 +423,9 @@ public class CoreContainer
               public SolrCore call() {
                 SolrCore c = null;
                 try {
+                  if (zkSys.getZkController() != null) {
+                    preRegisterInZk(p);
+                  }
                   c = create(p);
                   registerCore(p.isTransient(), name, c, false);
                 } catch (Throwable t) {
@@ -628,22 +631,6 @@ public class CoreContainer
         name.indexOf( '/'  ) >= 0 ||
         name.indexOf( '\\' ) >= 0 ){
       throw new RuntimeException( "Invalid core name: "+name );
-    }
-
-    if (zkSys.getZkController() != null) {
-      // this happens before we can receive requests
-      try {
-        zkSys.getZkController().preRegister(core.getCoreDescriptor());
-      } catch (KeeperException e) {
-        log.error("", e);
-        throw new ZooKeeperException(SolrException.ErrorCode.SERVER_ERROR,
-            "", e);
-      } catch (InterruptedException e) {
-        Thread.currentThread().interrupt();
-        log.error("", e);
-        throw new ZooKeeperException(SolrException.ErrorCode.SERVER_ERROR,
-            "", e);
-      }
     }
     
     SolrCore old = null;
@@ -991,6 +978,9 @@ public class CoreContainer
                                  // the wait as a consequence of shutting down.
     try {
       if (core == null) {
+        if (zkSys.getZkController() != null) {
+          preRegisterInZk(desc);
+        }
         core = create(desc); // This should throw an error if it fails.
         core.open();
         registerCore(desc.isTransient(), name, core, false);
@@ -1183,6 +1173,21 @@ public class CoreContainer
       } else {
         coresAttribs.put(attribName, attribValue);
       }
+    }
+  }
+  
+  public void preRegisterInZk(final CoreDescriptor p) {
+    try {
+      zkSys.getZkController().preRegister(p);
+    } catch (KeeperException e) {
+      log.error("", e);
+      throw new ZooKeeperException(
+          SolrException.ErrorCode.SERVER_ERROR, "", e);
+    } catch (InterruptedException e) {
+      Thread.currentThread().interrupt();
+      log.error("", e);
+      throw new ZooKeeperException(
+          SolrException.ErrorCode.SERVER_ERROR, "", e);
     }
   }
 

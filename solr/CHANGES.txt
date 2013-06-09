@@ -124,6 +124,9 @@ Bug Fixes
 
 * SOLR-4891: JsonLoader should preserve field value types from the JSON content stream.
   (Steve Rowe)
+ 
+* SOLR-4805: SolreCore#reload should not call preRegister and publish a DOWN state to
+  ZooKeeper. (Mark Miller, Jared Rodriguez)
 
 Other Changes
 ----------------------
