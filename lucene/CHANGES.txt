@@ -141,6 +141,8 @@ Bug Fixes
 * LUCENE-5033: SlowFuzzyQuery was accepting too many terms (documents) when
   provided minSimilarity is an int > 1 (Tim Allison via Mike McCandless)
 
+* LUCENE-5045: DrillSideways.search did not work on an empty index. (Shai Erera)
+
 Optimizations
 
 * LUCENE-4936: Improve numeric doc values compression in case all values share
