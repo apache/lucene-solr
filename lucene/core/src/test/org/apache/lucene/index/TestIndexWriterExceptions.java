@@ -539,10 +539,15 @@ public class TestIndexWriterExceptions extends LuceneTestCase {
         boolean sawAppend = false;
         boolean sawFlush = false;
         for (int i = 0; i < trace.length; i++) {
-          if (FreqProxTermsWriterPerField.class.getName().equals(trace[i].getClassName()) && "flush".equals(trace[i].getMethodName()))
+          if (sawAppend && sawFlush) {
+            break;
+          }
+          if (FreqProxTermsWriterPerField.class.getName().equals(trace[i].getClassName()) && "flush".equals(trace[i].getMethodName())) {
             sawAppend = true;
-          if ("flush".equals(trace[i].getMethodName()))
+          }
+          if ("flush".equals(trace[i].getMethodName())) {
             sawFlush = true;
+          }
         }
 
         if (sawAppend && sawFlush && count++ >= 30) {
@@ -876,12 +881,18 @@ public class TestIndexWriterExceptions extends LuceneTestCase {
       boolean isDelete = false;
       boolean isInGlobalFieldMap = false;
       for (int i = 0; i < trace.length; i++) {
-        if (SegmentInfos.class.getName().equals(trace[i].getClassName()) && stage.equals(trace[i].getMethodName()))
+        if (isCommit && isDelete && isInGlobalFieldMap) {
+          break;
+        }
+        if (SegmentInfos.class.getName().equals(trace[i].getClassName()) && stage.equals(trace[i].getMethodName())) {
           isCommit = true;
-        if (MockDirectoryWrapper.class.getName().equals(trace[i].getClassName()) && "deleteFile".equals(trace[i].getMethodName()))
+        }
+        if (MockDirectoryWrapper.class.getName().equals(trace[i].getClassName()) && "deleteFile".equals(trace[i].getMethodName())) {
           isDelete = true;
-        if (SegmentInfos.class.getName().equals(trace[i].getClassName()) && "writeGlobalFieldMap".equals(trace[i].getMethodName()))
+        }
+        if (SegmentInfos.class.getName().equals(trace[i].getClassName()) && "writeGlobalFieldMap".equals(trace[i].getMethodName())) {
           isInGlobalFieldMap = true;
+        }
           
       }
       if (isInGlobalFieldMap && dontFailDuringGlobalFieldMap) {
@@ -1323,6 +1334,7 @@ public class TestIndexWriterExceptions extends LuceneTestCase {
       for (int i = 0; i < trace.length; i++) {
         if (TermVectorsConsumer.class.getName().equals(trace[i].getClassName()) && stage.equals(trace[i].getMethodName())) {
           fail = true;
+          break;
         }
       }
       
