@@ -49,6 +49,7 @@ def runAndSendGPGPassword(command, password):
   p = subprocess.Popen(command, shell=True, bufsize=0, stdout=subprocess.PIPE, stderr=subprocess.STDOUT, stdin=subprocess.PIPE)
   f = open(LOG, 'ab')
   while True:
+    p.stdout.flush()
     line = p.stdout.readline()
     if len(line) == 0:
       break
