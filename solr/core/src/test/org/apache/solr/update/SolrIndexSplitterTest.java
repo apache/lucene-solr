@@ -136,12 +136,21 @@ public class SolrIndexSplitterTest extends SolrTestCaseJ4 {
       CoreDescriptor dcore1 = new CoreDescriptor(h.getCoreContainer(), "split1", h.getCore().getCoreDescriptor().getInstanceDir());
       dcore1.setDataDir(indexDir1.getAbsolutePath());
       dcore1.setSchemaName("schema12.xml");
+      
+      if (h.getCoreContainer().getZkController() != null) {
+        h.getCoreContainer().preRegisterInZk(dcore1);
+      }
+      
       core1 = h.getCoreContainer().create(dcore1);
       h.getCoreContainer().register(core1, false);
 
       CoreDescriptor dcore2 = new CoreDescriptor(h.getCoreContainer(), "split2", h.getCore().getCoreDescriptor().getInstanceDir());
       dcore2.setDataDir(indexDir2.getAbsolutePath());
       dcore2.setSchemaName("schema12.xml");
+      
+      if (h.getCoreContainer().getZkController() != null) {
+        h.getCoreContainer().preRegisterInZk(dcore2);
+      }
       core2 = h.getCoreContainer().create(dcore2);
       h.getCoreContainer().register(core2, false);
 

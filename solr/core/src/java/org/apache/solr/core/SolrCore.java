@@ -851,6 +851,10 @@ public final class SolrCore implements SolrInfoMBean {
     if (cc != null && cc.isZooKeeperAware() && Slice.CONSTRUCTION.equals(cd.getCloudDescriptor().getShardState())) {
       // set update log to buffer before publishing the core
       getUpdateHandler().getUpdateLog().bufferUpdates();
+      
+      cd.getCloudDescriptor().setShardState(null);
+      cd.getCloudDescriptor().setShardRange(null);
+      
     }
     // For debugging   
 //    numOpens.incrementAndGet();

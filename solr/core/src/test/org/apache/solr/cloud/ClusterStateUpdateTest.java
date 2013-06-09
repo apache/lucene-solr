@@ -157,6 +157,10 @@ public class ClusterStateUpdateTest extends SolrTestCaseJ4  {
     
     dcore.setDataDir(dataDir4.getAbsolutePath());
 
+    if (container1.getZkController() != null) {
+      container1.preRegisterInZk(dcore);
+    }
+    
     SolrCore core = container1.create(dcore);
     
     container1.register(core, false);

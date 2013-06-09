@@ -1283,11 +1283,7 @@ public final class ZkController {
     // before becoming available, make sure we are not live and active
     // this also gets us our assigned shard id if it was not specified
     publish(cd, ZkStateReader.DOWN, false);
-    // shardState and shardRange are for one-time use only, thereafter the actual values in the Slice should be used
-    if (Slice.CONSTRUCTION.equals(cd.getCloudDescriptor().getShardState())) {
-      cd.getCloudDescriptor().setShardState(null);
-      cd.getCloudDescriptor().setShardRange(null);
-    }
+
     String coreNodeName = getCoreNodeName(cd);
     
     // make sure the node name is set on the descriptor
