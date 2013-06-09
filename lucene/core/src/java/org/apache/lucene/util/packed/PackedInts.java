@@ -213,6 +213,11 @@ public class PackedInts {
       this.format = format;
       this.bitsPerValue = bitsPerValue;
     }
+
+    @Override
+    public String toString() {
+      return "FormatAndBits(format=" + format + " bitsPerValue=" + bitsPerValue + ")";
+    }
   }
 
   /**
