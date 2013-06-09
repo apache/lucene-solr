@@ -19,6 +19,7 @@ package org.apache.lucene.replicator;
 
 import java.io.FileNotFoundException;
 import java.io.IOException;
+import java.nio.file.NoSuchFileException;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map.Entry;
@@ -156,6 +157,8 @@ public class LocalReplicatorTest extends ReplicatorTestCase {
       fail("should have failed obtaining an unrecognized file");
     } catch (FileNotFoundException e) {
       // expected
+    } catch (NoSuchFileException e) {
+      // expected (only java 1.7)
     }
   }
   
