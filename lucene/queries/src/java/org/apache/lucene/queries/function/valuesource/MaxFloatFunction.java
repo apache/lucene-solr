@@ -27,23 +27,18 @@ public class MaxFloatFunction extends MultiFloatFunction {
   public MaxFloatFunction(ValueSource[] sources) {
     super(sources);
   }
-
-  @Override  
+  
+  @Override
   protected String name() {
     return "max";
   }
 
   @Override
   protected float func(int doc, FunctionValues[] valsArr) {
-    boolean first = true;
-    float val = 0.0f;
+    if (valsArr.length == 0) return 0.0f;
+    float val = Float.NEGATIVE_INFINITY;
     for (FunctionValues vals : valsArr) {
-      if (first) {
-        first = false;
-        val = vals.floatVal(doc);
-      } else {
-        val = Math.max(vals.floatVal(doc),val);
-      }
+      val = Math.max(vals.floatVal(doc), val);
     }
     return val;
   }
