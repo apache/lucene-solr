@@ -18,8 +18,10 @@
 package org.apache.solr.core;
 
 import java.io.File;
+import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
+import java.io.OutputStream;
 import java.io.Writer;
 import java.lang.reflect.Constructor;
 import java.net.URL;
@@ -62,6 +64,7 @@ import org.apache.lucene.store.IndexInput;
 import org.apache.lucene.store.LockObtainFailedException;
 import org.apache.solr.cloud.CloudDescriptor;
 import org.apache.solr.common.SolrException;
+import org.apache.solr.common.SolrException.ErrorCode;
 import org.apache.solr.common.cloud.Slice;
 import org.apache.solr.common.params.CommonParams;
 import org.apache.solr.common.params.CommonParams.EchoParamStyle;
@@ -848,6 +851,12 @@ public final class SolrCore implements SolrInfoMBean {
     
     CoreContainer cc = cd.getCoreContainer();
     
+    if (cc != null) {
+      if (cc.cfg != null && cc.cfg instanceof ConfigSolrXml) {
+        writePropFile(cd, cc);
+      }
+    }
+
     if (cc != null && cc.isZooKeeperAware() && Slice.CONSTRUCTION.equals(cd.getCloudDescriptor().getShardState())) {
       // set update log to buffer before publishing the core
       getUpdateHandler().getUpdateLog().bufferUpdates();
@@ -861,6 +870,44 @@ public final class SolrCore implements SolrInfoMBean {
 //    openHandles.put(this, new RuntimeException("unclosed core - name:" + getName() + " refs: " + refCount.get()));
   }
 
+  private void writePropFile(CoreDescriptor cd, CoreContainer cc) {
+    File propFile = new File(cd.getInstanceDir(), "core.properties");
+    if (!propFile.exists()) {
+      propFile.getParentFile().mkdirs();
+      Properties props = new Properties();
+      props.put("name", cd.getName());
+      if (cc.isZooKeeperAware()) {
+        String collection = cd.getCloudDescriptor().getCollectionName();
+        if (collection != null) {
+          props.put("collection", collection);
+        }
+        String coreNodeName = cd.getCloudDescriptor().getCoreNodeName();
+        if (coreNodeName != null) {
+          props.put("coreNodeName", coreNodeName);
+        }
+        String roles = cd.getCloudDescriptor().getRoles();
+        if (roles != null) {
+          props.put("roles", roles);
+        }
+        String shardId = cd.getCloudDescriptor().getShardId();
+        if (shardId != null) {
+          props.put("shard", shardId);
+        }
+      }
+      OutputStream out = null;
+      try {
+        out = new FileOutputStream(propFile);
+        props.store(out, "");
+      } catch (IOException e) {
+        throw new SolrException(ErrorCode.SERVER_ERROR, null, e);
+      } finally {
+        if (out != null) {
+          IOUtils.closeQuietly(out);
+        }
+      }
+    }
+  }
+    
   private Codec initCodec(SolrConfig solrConfig, final IndexSchema schema) {
     final PluginInfo info = solrConfig.getPluginInfo(CodecFactory.class.getName());
     final CodecFactory factory;
