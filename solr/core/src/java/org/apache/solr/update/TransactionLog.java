@@ -17,15 +17,6 @@
 
 package org.apache.solr.update;
 
-import org.apache.lucene.util.BytesRef;
-import org.apache.solr.common.SolrException;
-import org.apache.solr.common.SolrInputDocument;
-import org.apache.solr.common.util.FastInputStream;
-import org.apache.solr.common.util.FastOutputStream;
-import org.apache.solr.common.util.JavaBinCodec;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
 import java.io.File;
 import java.io.IOException;
 import java.io.OutputStream;
@@ -34,14 +25,22 @@ import java.nio.ByteBuffer;
 import java.nio.channels.Channels;
 import java.nio.channels.FileChannel;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.Collection;
 import java.util.HashMap;
 import java.util.LinkedHashMap;
-import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.atomic.AtomicInteger;
+
+import org.apache.lucene.util.BytesRef;
+import org.apache.solr.common.SolrException;
+import org.apache.solr.common.SolrInputDocument;
+import org.apache.solr.common.util.DataInputInputStream;
+import org.apache.solr.common.util.FastInputStream;
+import org.apache.solr.common.util.FastOutputStream;
+import org.apache.solr.common.util.JavaBinCodec;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  *  Log Format: List{Operation, Version, ...}
@@ -121,7 +120,7 @@ public class TransactionLog {
     }
 
     @Override
-    public String readExternString(FastInputStream fis) throws IOException {
+    public String readExternString(DataInputInputStream fis) throws IOException {
       int idx = readSize(fis);
       if (idx != 0) {// idx != 0 is the index of the extern string
       // no need to synchronize globalStringList - it's only updated before the first record is written to the log
@@ -642,7 +641,7 @@ public class TransactionLog {
     ChannelFastInputStream fis;
     private LogCodec codec = new LogCodec() {
       @Override
-      public SolrInputDocument readSolrInputDocument(FastInputStream dis) {
+      public SolrInputDocument readSolrInputDocument(DataInputInputStream dis) {
         // Given that the SolrInputDocument is last in an add record, it's OK to just skip
         // reading it completely.
         return null;
