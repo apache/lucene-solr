@@ -148,6 +148,12 @@ Bug Fixes
   into out-of-memory errors when working with large stored fields.
   (Adrien Grand)
 
+* LUCENE-5048: CategoryPath with a long path could result in hitting 
+  NegativeArraySizeException, categories being added multiple times to the 
+  taxonomy or drill-down terms silently discarded by the indexer. CategoryPath 
+  is now limited to MAX_CATEGORY_PATH_LENGTH characters.
+  (Colton Jamieson, Mike McCandless, Shai Erera)
+
 Optimizations
 
 * LUCENE-4936: Improve numeric doc values compression in case all values share

@@ -1,13 +1,19 @@
 package org.apache.lucene.facet.taxonomy.directory;
 
 import java.io.IOException;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Random;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicInteger;
 
+import org.apache.lucene.analysis.MockAnalyzer;
+import org.apache.lucene.document.Document;
 import org.apache.lucene.facet.FacetTestCase;
+import org.apache.lucene.facet.index.FacetFields;
+import org.apache.lucene.facet.params.FacetIndexingParams;
+import org.apache.lucene.facet.search.DrillDownQuery;
 import org.apache.lucene.facet.taxonomy.CategoryPath;
 import org.apache.lucene.facet.taxonomy.TaxonomyReader;
 import org.apache.lucene.facet.taxonomy.directory.DirectoryTaxonomyWriter.MemoryOrdinalMap;
@@ -20,8 +26,11 @@ import org.apache.lucene.index.IndexWriter;
 import org.apache.lucene.index.IndexWriterConfig;
 import org.apache.lucene.index.IndexWriterConfig.OpenMode;
 import org.apache.lucene.index.SegmentInfos;
+import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.store.AlreadyClosedException;
 import org.apache.lucene.store.Directory;
+import org.apache.lucene.util.IOUtils;
+import org.apache.lucene.util._TestUtil;
 import org.junit.Test;
 
 /*
@@ -412,5 +421,52 @@ public class TestDirectoryTaxonomyWriter extends FacetTestCase {
     taxoWriter.close();
     dir.close();
   }
-  
+
+  @Test
+  public void testHugeLabel() throws Exception {
+    Directory indexDir = newDirectory(), taxoDir = newDirectory();
+    IndexWriter indexWriter = new IndexWriter(indexDir, newIndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer(random())));
+    DirectoryTaxonomyWriter taxoWriter = new DirectoryTaxonomyWriter(taxoDir, OpenMode.CREATE, new Cl2oTaxonomyWriterCache(2, 1f, 1));
+    FacetFields facetFields = new FacetFields(taxoWriter);
+    
+    // Add one huge label:
+    String bigs = null;
+    int ordinal = -1;
+    CategoryPath cp = null;
+    while (true) {
+      int len = CategoryPath.MAX_CATEGORY_PATH_LENGTH - 4; // for the dimension and separator
+      bigs = _TestUtil.randomSimpleString(random(), len, len);
+      cp = new CategoryPath("dim", bigs);
+      ordinal = taxoWriter.addCategory(cp);
+      Document doc = new Document();
+      facetFields.addFields(doc, Collections.singletonList(cp));
+      indexWriter.addDocument(doc);
+      break;
+    }
+
+    // Add tiny ones to cause a re-hash
+    for (int i = 0; i < 3; i++) {
+      String s = _TestUtil.randomSimpleString(random(), 1, 10);
+      taxoWriter.addCategory(new CategoryPath("dim", s));
+      Document doc = new Document();
+      facetFields.addFields(doc, Collections.singletonList(new CategoryPath("dim", s)));
+      indexWriter.addDocument(doc);
+    }
+
+    // when too large components were allowed to be added, this resulted in a new added category
+    assertEquals(ordinal, taxoWriter.addCategory(cp));
+    
+    IOUtils.close(indexWriter, taxoWriter);
+    
+    DirectoryReader indexReader = DirectoryReader.open(indexDir);
+    TaxonomyReader taxoReader = new DirectoryTaxonomyReader(taxoDir);
+    IndexSearcher searcher = new IndexSearcher(indexReader);
+    DrillDownQuery ddq = new DrillDownQuery(FacetIndexingParams.DEFAULT);
+    ddq.add(cp);
+    assertEquals(1, searcher.search(ddq, 10).totalHits);
+    
+    IOUtils.close(indexReader, taxoReader);
+    
+    IOUtils.close(indexDir, taxoDir);
+  }
 }

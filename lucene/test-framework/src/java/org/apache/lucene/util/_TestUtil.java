@@ -293,7 +293,11 @@ public class _TestUtil {
   }
 
   public static String randomSimpleString(Random r, int maxLength) {
-    final int end = nextInt(r, 0, maxLength);
+    return randomSimpleString(r, 0, maxLength);
+  }
+  
+  public static String randomSimpleString(Random r, int minLength, int maxLength) {
+    final int end = nextInt(r, minLength, maxLength);
     if (end == 0) {
       // allow 0 length
       return "";
@@ -319,7 +323,7 @@ public class _TestUtil {
   }
 
   public static String randomSimpleString(Random r) {
-    return randomSimpleString(r, 10);
+    return randomSimpleString(r, 0, 10);
   }
 
   /** Returns random string, including full unicode range. */
