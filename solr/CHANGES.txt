@@ -128,6 +128,9 @@ Bug Fixes
 * SOLR-4805: SolreCore#reload should not call preRegister and publish a DOWN state to
   ZooKeeper. (Mark Miller, Jared Rodriguez)
 
+* SOLR-4899: When reconnecting after ZooKeeper expiration, we need to be willing to wait 
+  forever, not just for 30 seconds. (Mark Miller)
+
 Other Changes
 ----------------------
 
