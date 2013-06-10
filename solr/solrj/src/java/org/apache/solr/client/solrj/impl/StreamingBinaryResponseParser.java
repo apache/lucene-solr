@@ -16,17 +16,17 @@
  */
 package org.apache.solr.client.solrj.impl;
 
+import java.io.IOException;
+import java.io.InputStream;
+import java.util.List;
+
 import org.apache.solr.client.solrj.StreamingResponseCallback;
 import org.apache.solr.common.SolrDocument;
 import org.apache.solr.common.SolrDocumentList;
 import org.apache.solr.common.SolrException;
-import org.apache.solr.common.util.FastInputStream;
-import org.apache.solr.common.util.NamedList;
+import org.apache.solr.common.util.DataInputInputStream;
 import org.apache.solr.common.util.JavaBinCodec;
-
-import java.io.IOException;
-import java.io.InputStream;
-import java.util.List;
+import org.apache.solr.common.util.NamedList;
 
 /**
  * A BinaryResponseParser that sends callback events rather then build
@@ -49,14 +49,14 @@ public class StreamingBinaryResponseParser extends BinaryResponseParser {
       JavaBinCodec codec = new JavaBinCodec() {
 
         @Override
-        public SolrDocument readSolrDocument(FastInputStream dis) throws IOException {
+        public SolrDocument readSolrDocument(DataInputInputStream dis) throws IOException {
           SolrDocument doc = super.readSolrDocument(dis);
           callback.streamSolrDocument( doc );
           return null;
         }
 
         @Override
-        public SolrDocumentList readSolrDocumentList(FastInputStream dis) throws IOException {
+        public SolrDocumentList readSolrDocumentList(DataInputInputStream dis) throws IOException {
           SolrDocumentList solrDocs = new SolrDocumentList();
           List list = (List) readVal(dis);
           solrDocs.setNumFound((Long) list.get(0));
