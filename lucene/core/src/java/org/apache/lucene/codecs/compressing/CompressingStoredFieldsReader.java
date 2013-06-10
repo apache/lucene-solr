@@ -60,6 +60,9 @@ import org.apache.lucene.util.packed.PackedInts;
  */
 public final class CompressingStoredFieldsReader extends StoredFieldsReader {
 
+  // Do not reuse the decompression buffer when there is more than 32kb to decompress
+  private static final int BUFFER_REUSE_THRESHOLD = 1 << 15;
+
   private final FieldInfos fieldInfos;
   private final CompressingStoredFieldsIndexReader indexReader;
   private final IndexInput fieldsStream;
@@ -255,6 +258,7 @@ public final class CompressingStoredFieldsReader extends StoredFieldsReader {
       return;
     }
 
+    final BytesRef bytes = totalLength <= BUFFER_REUSE_THRESHOLD ? this.bytes : new BytesRef();
     decompressor.decompress(fieldsStream, totalLength, offset, length, bytes);
     assert bytes.length == length;
 

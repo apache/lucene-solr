@@ -111,6 +111,11 @@ Bug Fixes
 
 * LUCENE-5045: DrillSideways.search did not work on an empty index. (Shai Erera)
 
+* LUCENE-4995: CompressingStoredFieldsReader now only reuses an internal buffer
+  when there is no more than 32kb to decompress. This prevents from running
+  into out-of-memory errors when working with large stored fields.
+  (Adrien Grand)
+
 Optimizations
 
 * LUCENE-4936: Improve numeric doc values compression in case all values share
