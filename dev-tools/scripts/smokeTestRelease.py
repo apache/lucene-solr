@@ -1305,7 +1305,7 @@ def main():
 
   if len(sys.argv) < 5:
     print()
-    print('Usage python -u %s BaseURL SvnRevision version tmpDir [ isSigned ] [ -testArgs "-Dwhat=ever [ ... ]" ]'
+    print('Usage python -u %s BaseURL SvnRevision version tmpDir [ isSigned(True|False) ] [ -testArgs "-Dwhat=ever [ ... ]" ]'
           % sys.argv[0])
     print()
     print('  example: python3.2 -u dev-tools/scripts/smokeTestRelease.py http://people.apache.org/~whoever/staging_area/lucene-solr-4.3.0-RC1-rev1469340 1469340 4.3.0 /path/to/a/tmp/dir')
