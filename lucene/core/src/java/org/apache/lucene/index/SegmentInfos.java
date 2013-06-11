@@ -613,10 +613,6 @@ public final class SegmentInfos implements Cloneable, Iterable<SegmentInfoPerCom
           IndexInput genInput = null;
           try {
             genInput = directory.openInput(IndexFileNames.SEGMENTS_GEN, IOContext.READONCE);
-          } catch (FileNotFoundException e) {
-            if (infoStream != null) {
-              message("segments.gen open: FileNotFoundException " + e);
-            }
           } catch (IOException e) {
             if (infoStream != null) {
               message("segments.gen open: IOException " + e);
