@@ -66,6 +66,8 @@
   </target>
 
   <!-- nothing to do -->
-  <target name="dist-maven">
-  </target>
+  <target name="dist-maven"/>
+
+  <!-- nothing to do -->
+  <target name="-validate-maven-dependencies"/>
 </project>
