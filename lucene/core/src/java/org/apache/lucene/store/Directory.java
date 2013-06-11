@@ -70,12 +70,12 @@ public abstract class Directory implements Closeable {
    * Returns the length of a file in the directory. This method follows the
    * following contract:
    * <ul>
-   * <li>Throws {@link FileNotFoundException} if the file does not exist
+   * <li>Must throw {@link FileNotFoundException} if the file does not exist
+   * (not {@code java.nio.file.NoSuchFileException} of Java 7).
    * <li>Returns a value &ge;0 if the file exists, which specifies its length.
    * </ul>
    * 
    * @param name the name of the file for which to return the length.
-   * @throws FileNotFoundException if the file does not exist.
    * @throws IOException if there was an IO error while retrieving the file's
    *         length.
    */
@@ -106,7 +106,9 @@ public abstract class Directory implements Closeable {
    * the only Directory implementations that respect this
    * parameter are {@link FSDirectory} and {@link
    * CompoundFileDirectory}.
-  */
+   * <li>Must throw {@link FileNotFoundException} if the file does not exist
+   * (not {@code java.nio.file.NoSuchFileException} of Java 7).
+   */
   public abstract IndexInput openInput(String name, IOContext context) throws IOException; 
   
   /** Construct a {@link Lock}.
@@ -223,6 +225,8 @@ public abstract class Directory implements Closeable {
    * efficiently open one or more sliced {@link IndexInput} instances from a
    * single file handle. The underlying file handle is kept open until the
    * {@link IndexInputSlicer} is closed.
+   * <li>Must throw {@link FileNotFoundException} if the file does not exist
+   * (not {@code java.nio.file.NoSuchFileException} of Java 7).
    *
    * @throws IOException
    *           if an {@link IOException} occurs
