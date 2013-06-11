@@ -20,6 +20,7 @@ package org.apache.lucene.index;
 import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.IOException;
+import java.nio.file.NoSuchFileException;
 import java.util.Collection;
 import java.util.HashSet;
 import java.util.Iterator;
@@ -428,8 +429,8 @@ void assertTermDocsCount(String msg,
     }
     try {
       DirectoryReader.open(fileDirName);
-      fail("opening DirectoryReader on empty directory failed to produce FileNotFoundException");
-    } catch (FileNotFoundException e) {
+      fail("opening DirectoryReader on empty directory failed to produce FileNotFoundException/NoSuchFileException");
+    } catch (FileNotFoundException | NoSuchFileException e) {
       // GOOD
     }
     rmDir(fileDirName);
@@ -470,8 +471,8 @@ public void testFilesOpenClose() throws IOException {
     Directory dir = newFSDirectory(dirFile);
     try {
       DirectoryReader.open(dir);
-      fail("expected FileNotFoundException");
-    } catch (FileNotFoundException e) {
+      fail("expected FileNotFoundException/NoSuchFileException");
+    } catch (FileNotFoundException | NoSuchFileException e) {
       // expected
     }
 
@@ -480,8 +481,8 @@ public void testFilesOpenClose() throws IOException {
     // Make sure we still get a CorruptIndexException (not NPE):
     try {
       DirectoryReader.open(dir);
-      fail("expected FileNotFoundException");
-    } catch (FileNotFoundException e) {
+      fail("expected FileNotFoundException/NoSuchFileException");
+    } catch (FileNotFoundException | NoSuchFileException e) {
       // expected
     }
     

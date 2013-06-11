@@ -155,10 +155,8 @@ public class LocalReplicatorTest extends ReplicatorTestCase {
     try {
       replicator.obtainFile(res.id, res.sourceFiles.keySet().iterator().next(), "madeUpFile");
       fail("should have failed obtaining an unrecognized file");
-    } catch (FileNotFoundException e) {
+    } catch (FileNotFoundException | NoSuchFileException e) {
       // expected
-    } catch (NoSuchFileException e) {
-      // expected (only java 1.7)
     }
   }
   
