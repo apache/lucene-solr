@@ -136,6 +136,9 @@ Optimizations
 * LUCENE-4941: Sort "from" terms only once when using JoinUtil.
   (Martijn van Groningen)
 
+* LUCENE-5050: Close the stored fields and term vectors index files as soon as
+  the index has been loaded into memory to save file descriptors. (Adrien Grand)
+
 New Features
 
 * LUCENE-4766: Added a PatternCaptureGroupTokenFilter that uses Java regexes to 
