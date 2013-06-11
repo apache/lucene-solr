@@ -102,19 +102,22 @@ public final class CompressingTermVectorsReader extends TermVectorsReader implem
     numDocs = si.getDocCount();
     IndexInput indexStream = null;
     try {
-      vectorsStream = d.openInput(IndexFileNames.segmentFileName(segment, segmentSuffix, VECTORS_EXTENSION), context);
+      // Load the index into memory
       final String indexStreamFN = IndexFileNames.segmentFileName(segment, segmentSuffix, VECTORS_INDEX_EXTENSION);
       indexStream = d.openInput(indexStreamFN, context);
-
       final String codecNameIdx = formatName + CODEC_SFX_IDX;
-      final String codecNameDat = formatName + CODEC_SFX_DAT;
       CodecUtil.checkHeader(indexStream, codecNameIdx, VERSION_START, VERSION_CURRENT);
+      assert CodecUtil.headerLength(codecNameIdx) == indexStream.getFilePointer();
+      indexReader = new CompressingStoredFieldsIndexReader(indexStream, si);
+      indexStream.close();
+      indexStream = null;
+
+      // Open the data file and read metadata
+      final String vectorsStreamFN = IndexFileNames.segmentFileName(segment, segmentSuffix, VECTORS_EXTENSION);
+      vectorsStream = d.openInput(vectorsStreamFN, context);
+      final String codecNameDat = formatName + CODEC_SFX_DAT;
       CodecUtil.checkHeader(vectorsStream, codecNameDat, VERSION_START, VERSION_CURRENT);
       assert CodecUtil.headerLength(codecNameDat) == vectorsStream.getFilePointer();
-      assert CodecUtil.headerLength(codecNameIdx) == indexStream.getFilePointer();
-
-      indexReader = new CompressingStoredFieldsIndexReader(indexStream, si);
-      indexStream = null;
 
       packedIntsVersion = vectorsStream.readVInt();
       chunkSize = vectorsStream.readVInt();
@@ -161,7 +164,7 @@ public final class CompressingTermVectorsReader extends TermVectorsReader implem
   @Override
   public void close() throws IOException {
     if (!closed) {
-      IOUtils.close(vectorsStream, indexReader);
+      IOUtils.close(vectorsStream);
       closed = true;
     }
   }
