@@ -20,6 +20,8 @@ package org.apache.lucene.util.packed;
 import static org.apache.lucene.util.packed.PackedInts.checkBlockSize;
 import static org.apache.lucene.util.packed.PackedInts.numBlocks;
 
+import org.apache.lucene.util.RamUsageEstimator;
+
 /**
  * A {@link PagedGrowableWriter}. This class slices data into fixed-size blocks
  * which have independent numbers of bits per value and grow on-demand.
@@ -126,6 +128,21 @@ public final class PagedGrowableWriter {
       }
     }
     return newWriter;
+  }
+
+  /** Return the number of bytes used by this object. */
+  public long ramBytesUsed() {
+    long bytesUsed = RamUsageEstimator.alignObjectSize(
+        RamUsageEstimator.NUM_BYTES_OBJECT_HEADER
+        + RamUsageEstimator.NUM_BYTES_OBJECT_REF
+        + RamUsageEstimator.NUM_BYTES_LONG
+        + 3 * RamUsageEstimator.NUM_BYTES_INT
+        + RamUsageEstimator.NUM_BYTES_FLOAT);
+    bytesUsed += RamUsageEstimator.alignObjectSize(RamUsageEstimator.NUM_BYTES_ARRAY_HEADER + (long) RamUsageEstimator.NUM_BYTES_OBJECT_REF * subWriters.length);
+    for (GrowableWriter gw : subWriters) {
+      bytesUsed += gw.ramBytesUsed();
+    }
+    return bytesUsed;
   }
 
   @Override
