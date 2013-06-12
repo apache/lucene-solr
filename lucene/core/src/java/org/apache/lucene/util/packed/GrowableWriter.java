@@ -20,6 +20,7 @@ package org.apache.lucene.util.packed;
 import java.io.IOException;
 
 import org.apache.lucene.store.DataOutput;
+import org.apache.lucene.util.RamUsageEstimator;
 
 /**     
  * Implements {@link PackedInts.Mutable}, but grows the
@@ -123,7 +124,12 @@ public class GrowableWriter implements PackedInts.Mutable {
 
   @Override
   public long ramBytesUsed() {
-    return current.ramBytesUsed();
+    return RamUsageEstimator.alignObjectSize(
+        RamUsageEstimator.NUM_BYTES_OBJECT_HEADER
+        + RamUsageEstimator.NUM_BYTES_OBJECT_REF
+        + RamUsageEstimator.NUM_BYTES_LONG
+        + RamUsageEstimator.NUM_BYTES_FLOAT)
+        + current.ramBytesUsed();
   }
 
   @Override
