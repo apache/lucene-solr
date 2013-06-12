@@ -18,9 +18,12 @@ package org.apache.lucene.analysis.ngram;
  */
 
 
+import static org.apache.lucene.analysis.ngram.NGramTokenizerTest.isTokenChar;
+
 import java.io.IOException;
 import java.io.Reader;
 import java.io.StringReader;
+import java.util.Arrays;
 
 import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.analysis.BaseTokenStreamTestCase;
@@ -115,23 +118,74 @@ public class NGramTokenizerTest extends BaseTokenStreamTestCase {
     checkRandomData(random(), a, 50*RANDOM_MULTIPLIER, 1027, false, false);
   }
 
-  private void testNGrams(int minGram, int maxGram, int length) throws IOException {
+  private static void testNGrams(int minGram, int maxGram, int length, final String nonTokenChars) throws IOException {
     final String s = RandomStrings.randomAsciiOfLength(random(), length);
-    final TokenStream grams = new NGramTokenizer(TEST_VERSION_CURRENT, new StringReader(s), minGram, maxGram);
+    testNGrams(minGram, maxGram, s, nonTokenChars);
+  }
+
+  private static void testNGrams(int minGram, int maxGram, String s, String nonTokenChars) throws IOException {
+    testNGrams(minGram, maxGram, s, nonTokenChars, false);
+  }
+
+  static int[] toCodePoints(CharSequence s) {
+    final int[] codePoints = new int[Character.codePointCount(s, 0, s.length())];
+    for (int i = 0, j = 0; i < s.length(); ++j) {
+      codePoints[j] = Character.codePointAt(s, i);
+      i += Character.charCount(codePoints[j]);
+    }
+    return codePoints;
+  }
+
+  static boolean isTokenChar(String nonTokenChars, int codePoint) {
+    for (int i = 0; i < nonTokenChars.length(); ) {
+      final int cp = nonTokenChars.codePointAt(i);
+      if (cp == codePoint) {
+        return false;
+      }
+      i += Character.charCount(cp);
+    }
+    return true;
+  }
+
+  static void testNGrams(int minGram, int maxGram, String s, final String nonTokenChars, boolean edgesOnly) throws IOException {
+    // convert the string to code points
+    final int[] codePoints = toCodePoints(s);
+    final int[] offsets = new int[codePoints.length + 1];
+    for (int i = 0; i < codePoints.length; ++i) {
+      offsets[i+1] = offsets[i] + Character.charCount(codePoints[i]);
+    }
+    final TokenStream grams = new NGramTokenizer(TEST_VERSION_CURRENT, new StringReader(s), minGram, maxGram, edgesOnly) {
+      @Override
+      protected boolean isTokenChar(int chr) {
+        return nonTokenChars.indexOf(chr) < 0;
+      }
+    };
     final CharTermAttribute termAtt = grams.addAttribute(CharTermAttribute.class);
     final PositionIncrementAttribute posIncAtt = grams.addAttribute(PositionIncrementAttribute.class);
     final PositionLengthAttribute posLenAtt = grams.addAttribute(PositionLengthAttribute.class);
     final OffsetAttribute offsetAtt = grams.addAttribute(OffsetAttribute.class);
     grams.reset();
-    for (int start = 0; start < s.length(); ++start) {
-      for (int end = start + minGram; end <= start + maxGram && end <= s.length(); ++end) {
+    for (int start = 0; start < codePoints.length; ++start) {
+      nextGram:
+      for (int end = start + minGram; end <= start + maxGram && end <= codePoints.length; ++end) {
+        if (edgesOnly && start > 0 && isTokenChar(nonTokenChars, codePoints[start - 1])) {
+          // not on an edge
+          continue nextGram;
+        }
+        for (int j = start; j < end; ++j) {
+          if (!isTokenChar(nonTokenChars, codePoints[j])) {
+            continue nextGram;
+          }
+        }
         assertTrue(grams.incrementToken());
-        assertEquals(s.substring(start, end), termAtt.toString());
+        assertArrayEquals(Arrays.copyOfRange(codePoints, start, end), toCodePoints(termAtt));
         assertEquals(1, posIncAtt.getPositionIncrement());
-        assertEquals(start, offsetAtt.startOffset());
-        assertEquals(end, offsetAtt.endOffset());
+        assertEquals(1, posLenAtt.getPositionLength());
+        assertEquals(offsets[start], offsetAtt.startOffset());
+        assertEquals(offsets[end], offsetAtt.endOffset());
       }
     }
+    assertFalse(grams.incrementToken());
     grams.end();
     assertEquals(s.length(), offsetAtt.startOffset());
     assertEquals(s.length(), offsetAtt.endOffset());
@@ -141,14 +195,47 @@ public class NGramTokenizerTest extends BaseTokenStreamTestCase {
     // test sliding
     final int minGram = _TestUtil.nextInt(random(), 1, 100);
     final int maxGram = _TestUtil.nextInt(random(), minGram, 100);
-    testNGrams(minGram, maxGram, _TestUtil.nextInt(random(), 3 * 1024, 4 * 1024));
+    testNGrams(minGram, maxGram, _TestUtil.nextInt(random(), 3 * 1024, 4 * 1024), "");
   }
 
   public void testLargeMaxGram() throws IOException {
     // test sliding with maxGram > 1024
-    final int minGram = _TestUtil.nextInt(random(), 1200, 1300);
+    final int minGram = _TestUtil.nextInt(random(), 1290, 1300);
     final int maxGram = _TestUtil.nextInt(random(), minGram, 1300);
-    testNGrams(minGram, maxGram, _TestUtil.nextInt(random(), 3 * 1024, 4 * 1024));
+    testNGrams(minGram, maxGram, _TestUtil.nextInt(random(), 3 * 1024, 4 * 1024), "");
+  }
+
+  public void testPreTokenization() throws IOException {
+    final int minGram = _TestUtil.nextInt(random(), 1, 100);
+    final int maxGram = _TestUtil.nextInt(random(), minGram, 100);
+    testNGrams(minGram, maxGram, _TestUtil.nextInt(random(), 0, 4 * 1024), "a");
+  }
+
+  public void testHeavyPreTokenization() throws IOException {
+    final int minGram = _TestUtil.nextInt(random(), 1, 100);
+    final int maxGram = _TestUtil.nextInt(random(), minGram, 100);
+    testNGrams(minGram, maxGram, _TestUtil.nextInt(random(), 0, 4 * 1024), "abcdef");
+  }
+
+  public void testFewTokenChars() throws IOException {
+    final char[] chrs = new char[_TestUtil.nextInt(random(), 4000, 5000)];
+    Arrays.fill(chrs, ' ');
+    for (int i = 0; i < chrs.length; ++i) {
+      if (random().nextFloat() < 0.1) {
+        chrs[i] = 'a';
+      }
+    }
+    final int minGram = _TestUtil.nextInt(random(), 1, 2);
+    final int maxGram = _TestUtil.nextInt(random(), minGram, 2);
+    testNGrams(minGram, maxGram, new String(chrs), " ");
+  }
+
+  public void testFullUTF8Range() throws IOException {
+    final int minGram = _TestUtil.nextInt(random(), 1, 100);
+    final int maxGram = _TestUtil.nextInt(random(), minGram, 100);
+    final String s = _TestUtil.randomUnicodeString(random(), 4 * 1024);
+    testNGrams(minGram, maxGram, s, "");
+    testNGrams(minGram, maxGram, s, "abcdef");
   }
 
 }

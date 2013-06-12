@@ -171,8 +171,6 @@ public class TestAnalyzers extends BaseTokenStreamTestCase {
     char[] termBuffer = filter.getAttribute(CharTermAttribute.class).buffer();
     int length = highSurEndingLower.length();
     assertEquals('\ud801', termBuffer[length - 1]);
-    assertEquals('\udc3e', termBuffer[length]);
-    
   }
   
   public void testLowerCaseTokenizer() throws IOException {

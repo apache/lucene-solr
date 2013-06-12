@@ -808,7 +808,7 @@ public final class Util {
     final int charLimit = offset + length;
     while(charIdx < charLimit) {
       scratch.grow(intIdx+1);
-      final int utf32 = Character.codePointAt(s, charIdx);
+      final int utf32 = Character.codePointAt(s, charIdx, charLimit);
       scratch.ints[intIdx] = utf32;
       charIdx += Character.charCount(utf32);
       intIdx++;

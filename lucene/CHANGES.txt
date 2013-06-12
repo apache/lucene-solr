@@ -15,6 +15,10 @@ Changes in backwards compatibility policy
   (a, ab, b, bc, c) instead of (a, b, c, ab, bc) and doesn't trim trailing
   whitespaces. (Adrien Grand)
 
+* LUCENE-5042: The n-gram and edge n-gram tokenizers and filters now correctly
+  handle supplementary characters, and the tokenizers have the ability to
+  pre-tokenize the input stream similarly to CharTokenizer. (Adrien Grand)
+
 * LUCENE-4967: NRTManager is replaced by
   ControlledRealTimeReopenThread, for controlling which requests must
   see which indexing changes, so that it can work with any

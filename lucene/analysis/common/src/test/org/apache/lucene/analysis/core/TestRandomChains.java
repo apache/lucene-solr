@@ -65,22 +65,17 @@ import org.apache.lucene.analysis.compound.hyphenation.HyphenationTree;
 import org.apache.lucene.analysis.hunspell.HunspellDictionary;
 import org.apache.lucene.analysis.hunspell.HunspellDictionaryTest;
 import org.apache.lucene.analysis.miscellaneous.HyphenatedWordsFilter;
-import org.apache.lucene.analysis.miscellaneous.KeepWordFilter;
-import org.apache.lucene.analysis.miscellaneous.LengthFilter;
 import org.apache.lucene.analysis.miscellaneous.LimitTokenCountFilter;
 import org.apache.lucene.analysis.miscellaneous.LimitTokenPositionFilter;
 import org.apache.lucene.analysis.miscellaneous.StemmerOverrideFilter;
 import org.apache.lucene.analysis.miscellaneous.StemmerOverrideFilter.StemmerOverrideMap;
-import org.apache.lucene.analysis.miscellaneous.TrimFilter;
 import org.apache.lucene.analysis.miscellaneous.WordDelimiterFilter;
 import org.apache.lucene.analysis.ngram.EdgeNGramTokenFilter;
-import org.apache.lucene.analysis.ngram.EdgeNGramTokenizer;
-import org.apache.lucene.analysis.ngram.Lucene43NGramTokenizer;
+import org.apache.lucene.analysis.ngram.Lucene43EdgeNGramTokenizer;
 import org.apache.lucene.analysis.path.PathHierarchyTokenizer;
 import org.apache.lucene.analysis.path.ReversePathHierarchyTokenizer;
 import org.apache.lucene.analysis.payloads.IdentityEncoder;
 import org.apache.lucene.analysis.payloads.PayloadEncoder;
-import org.apache.lucene.analysis.position.PositionFilter;
 import org.apache.lucene.analysis.snowball.TestSnowball;
 import org.apache.lucene.analysis.standard.StandardTokenizer;
 import org.apache.lucene.analysis.synonym.SynonymMap;
@@ -426,11 +421,11 @@ public class TestRandomChains extends BaseTokenStreamTestCase {
         }
       }
     });
-    put(EdgeNGramTokenizer.Side.class, new ArgProducer() {
+    put(Lucene43EdgeNGramTokenizer.Side.class, new ArgProducer() {
       @Override public Object create(Random random) {
         return random.nextBoolean() 
-            ? EdgeNGramTokenizer.Side.FRONT 
-            : EdgeNGramTokenizer.Side.BACK;
+            ? Lucene43EdgeNGramTokenizer.Side.FRONT 
+            : Lucene43EdgeNGramTokenizer.Side.BACK;
       }
     });
     put(EdgeNGramTokenFilter.Side.class, new ArgProducer() {
