@@ -235,5 +235,6 @@ public class NGramTokenizer extends Tokenizer {
     offset = 0;
     gramSize = minGram;
     exhausted = false;
+    charBuffer.reset();
   }
 }
