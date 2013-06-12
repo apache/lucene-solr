@@ -96,6 +96,7 @@
               </bundledSignatures>
               <signaturesFiles>
                 <signaturesFile>${top-level}/lucene/tools/forbiddenApis/executors.txt</signaturesFile>
+                <signaturesFile>${top-level}/lucene/tools/forbiddenApis/chars.txt</signaturesFile>
               </signaturesFiles>
             </configuration>
             <goals>
