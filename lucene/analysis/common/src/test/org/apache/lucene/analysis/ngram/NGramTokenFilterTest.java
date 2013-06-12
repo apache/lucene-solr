@@ -26,7 +26,10 @@ import org.apache.lucene.analysis.Tokenizer;
 import org.apache.lucene.analysis.core.KeywordTokenizer;
 import org.apache.lucene.analysis.core.WhitespaceTokenizer;
 import org.apache.lucene.analysis.miscellaneous.ASCIIFoldingFilter;
+import org.apache.lucene.analysis.tokenattributes.CharTermAttribute;
+import org.apache.lucene.analysis.tokenattributes.OffsetAttribute;
 import org.apache.lucene.util.Version;
+import org.apache.lucene.util._TestUtil;
 
 import java.io.IOException;
 import java.io.Reader;
@@ -175,6 +178,29 @@ public class NGramTokenFilterTest extends BaseTokenStreamTestCase {
         new int[]{1,1,1,1,1,1,1},
         null, null, false
         );
+  }
+
+  public void testSupplementaryCharacters() throws IOException {
+    final String s = _TestUtil.randomUnicodeString(random(), 10);
+    final int codePointCount = s.codePointCount(0, s.length());
+    final int minGram = _TestUtil.nextInt(random(), 1, 3);
+    final int maxGram = _TestUtil.nextInt(random(), minGram, 10);
+    TokenStream tk = new KeywordTokenizer(new StringReader(s));
+    tk = new NGramTokenFilter(TEST_VERSION_CURRENT, tk, minGram, maxGram);
+    final CharTermAttribute termAtt = tk.addAttribute(CharTermAttribute.class);
+    final OffsetAttribute offsetAtt = tk.addAttribute(OffsetAttribute.class);
+    tk.reset();
+    for (int start = 0; start < codePointCount; ++start) {
+      for (int end = start + minGram; end <= Math.min(codePointCount, start + maxGram); ++end) {
+        assertTrue(tk.incrementToken());
+        assertEquals(0, offsetAtt.startOffset());
+        assertEquals(s.length(), offsetAtt.endOffset());
+        final int startIndex = Character.offsetByCodePoints(s, 0, start);
+        final int endIndex = Character.offsetByCodePoints(s, 0, end);
+        assertEquals(s.substring(startIndex, endIndex), termAtt.toString());
+      }
+    }
+    assertFalse(tk.incrementToken());
   }
 
 }

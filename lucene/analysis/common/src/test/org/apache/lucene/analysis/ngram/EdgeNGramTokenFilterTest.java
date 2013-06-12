@@ -32,8 +32,10 @@ import org.apache.lucene.analysis.core.KeywordTokenizer;
 import org.apache.lucene.analysis.core.LetterTokenizer;
 import org.apache.lucene.analysis.core.WhitespaceTokenizer;
 import org.apache.lucene.analysis.shingle.ShingleFilter;
+import org.apache.lucene.analysis.tokenattributes.CharTermAttribute;
+import org.apache.lucene.analysis.tokenattributes.OffsetAttribute;
 import org.apache.lucene.analysis.tokenattributes.PositionIncrementAttribute;
-import org.apache.lucene.util.Version;
+import org.apache.lucene.util._TestUtil;
 
 /**
  * Tests {@link EdgeNGramTokenFilter} for correctness.
@@ -192,9 +194,9 @@ public class EdgeNGramTokenFilterTest extends BaseTokenStreamTestCase {
   }
 
   public void testGraphs() throws IOException {
-    TokenStream tk = new LetterTokenizer(Version.LUCENE_44, new StringReader("abc d efgh ij klmno p q"));
+    TokenStream tk = new LetterTokenizer(TEST_VERSION_CURRENT, new StringReader("abc d efgh ij klmno p q"));
     tk = new ShingleFilter(tk);
-    tk = new EdgeNGramTokenFilter(Version.LUCENE_44, tk, 7, 10);
+    tk = new EdgeNGramTokenFilter(TEST_VERSION_CURRENT, tk, 7, 10);
     tk.reset();
     assertTokenStreamContents(tk,
         new String[] { "efgh ij", "ij klmn", "ij klmno", "klmno p" },
@@ -205,4 +207,25 @@ public class EdgeNGramTokenFilterTest extends BaseTokenStreamTestCase {
         23
     );
   }
+
+  public void testSupplementaryCharacters() throws IOException {
+    final String s = _TestUtil.randomUnicodeString(random(), 10);
+    final int codePointCount = s.codePointCount(0, s.length());
+    final int minGram = _TestUtil.nextInt(random(), 1, 3);
+    final int maxGram = _TestUtil.nextInt(random(), minGram, 10);
+    TokenStream tk = new KeywordTokenizer(new StringReader(s));
+    tk = new EdgeNGramTokenFilter(TEST_VERSION_CURRENT, tk, minGram, maxGram);
+    final CharTermAttribute termAtt = tk.addAttribute(CharTermAttribute.class);
+    final OffsetAttribute offsetAtt = tk.addAttribute(OffsetAttribute.class);
+    tk.reset();
+    for (int i = minGram; i <= Math.min(codePointCount, maxGram); ++i) {
+      assertTrue(tk.incrementToken());
+      assertEquals(0, offsetAtt.startOffset());
+      assertEquals(s.length(), offsetAtt.endOffset());
+      final int end = Character.offsetByCodePoints(s, 0, i);
+      assertEquals(s.substring(0, end), termAtt.toString());
+    }
+    assertFalse(tk.incrementToken());
+  }
+
 }

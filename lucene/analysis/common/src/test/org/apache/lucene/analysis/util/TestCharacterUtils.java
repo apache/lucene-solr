@@ -20,42 +20,19 @@ package org.apache.lucene.analysis.util;
 import java.io.IOException;
 import java.io.Reader;
 import java.io.StringReader;
+import java.util.Arrays;
 
 import org.apache.lucene.analysis.util.CharacterUtils.CharacterBuffer;
+import org.apache.lucene.store.IndexOutput;
 import org.apache.lucene.util.LuceneTestCase;
 import org.apache.lucene.util.Version;
+import org.apache.lucene.util._TestUtil;
 import org.junit.Test;
 
 /**
  * TestCase for the {@link CharacterUtils} class.
  */
 public class TestCharacterUtils extends LuceneTestCase {
-
-  @Test
-  public void testCodePointAtCharArrayInt() {
-    CharacterUtils java4 = CharacterUtils.getJava4Instance();
-    char[] cpAt3 = "Abc\ud801\udc1c".toCharArray();
-    char[] highSurrogateAt3 = "Abc\ud801".toCharArray();
-    assertEquals((int) 'A', java4.codePointAt(cpAt3, 0));
-    assertEquals((int) '\ud801', java4.codePointAt(cpAt3, 3));
-    assertEquals((int) '\ud801', java4.codePointAt(highSurrogateAt3, 3));
-    try {
-      java4.codePointAt(highSurrogateAt3, 4);
-      fail("array index out of bounds");
-    } catch (IndexOutOfBoundsException e) {
-    }
-
-    CharacterUtils java5 = CharacterUtils.getInstance(TEST_VERSION_CURRENT);
-    assertEquals((int) 'A', java5.codePointAt(cpAt3, 0));
-    assertEquals(Character.toCodePoint('\ud801', '\udc1c'), java5.codePointAt(
-        cpAt3, 3));
-    assertEquals((int) '\ud801', java5.codePointAt(highSurrogateAt3, 3));
-    try {
-      java5.codePointAt(highSurrogateAt3, 4);
-      fail("array index out of bounds");
-    } catch (IndexOutOfBoundsException e) {
-    }
-  }
 
   @Test
   public void testCodePointAtCharSequenceInt() {
@@ -98,7 +75,68 @@ public class TestCharacterUtils extends LuceneTestCase {
     assertEquals(Character.toCodePoint('\ud801', '\udc1c'), java5.codePointAt(
         cpAt3, 3, 5));
     assertEquals((int) '\ud801', java5.codePointAt(highSurrogateAt3, 3, 4));
+  }
 
+  @Test
+  public void testCodePointCount() {
+    CharacterUtils java4 = CharacterUtils.getJava4Instance();
+    CharacterUtils java5 = CharacterUtils.getInstance(TEST_VERSION_CURRENT);
+    final String s = _TestUtil.randomUnicodeString(random());
+    assertEquals(s.length(), java4.codePointCount(s));
+    assertEquals(Character.codePointCount(s, 0, s.length()), java5.codePointCount(s));
+  }
+
+  @Test
+  public void testOffsetByCodePoint() {
+    CharacterUtils java4 = CharacterUtils.getJava4Instance();
+    CharacterUtils java5 = CharacterUtils.getInstance(TEST_VERSION_CURRENT);
+    for (int i = 0; i < 10; ++i) {
+      final char[] s = _TestUtil.randomUnicodeString(random()).toCharArray();
+      final int index = _TestUtil.nextInt(random(), 0, s.length);
+      final int offset = random().nextInt(7) - 3;
+      try {
+        final int o = java4.offsetByCodePoints(s, 0, s.length, index, offset);
+        assertEquals(o, index + offset);
+      } catch (IndexOutOfBoundsException e) {
+        assertTrue((index + offset) < 0 || (index + offset) > s.length);
+      }
+  
+      int o;
+      try {
+        o = java5.offsetByCodePoints(s, 0, s.length, index, offset);
+      } catch (IndexOutOfBoundsException e) {
+        try {
+          Character.offsetByCodePoints(s, 0, s.length, index, offset);
+          fail();
+        } catch (IndexOutOfBoundsException e2) {
+          // OK
+        }
+        o = -1;
+      }
+      if (o >= 0) {
+        assertEquals(Character.offsetByCodePoints(s, 0, s.length, index, offset), o);
+      }
+    }
+  }
+
+  public void testConversions() {
+    CharacterUtils java4 = CharacterUtils.getJava4Instance();
+    CharacterUtils java5 = CharacterUtils.getInstance(TEST_VERSION_CURRENT);
+    testConversions(java4);
+    testConversions(java5);
+  }
+
+  private void testConversions(CharacterUtils charUtils) {
+    final char[] orig = _TestUtil.randomUnicodeString(random(), 100).toCharArray();
+    final int[] buf = new int[orig.length];
+    final char[] restored = new char[buf.length];
+    final int o1 = random().nextInt(5);
+    final int o2 = _TestUtil.nextInt(random(), 0, o1);
+    final int o3 = _TestUtil.nextInt(random(), 0, o1);
+    final int codePointCount = charUtils.toCodePoints(orig, o1, orig.length - o1, buf, o2);
+    final int charCount = charUtils.toChars(buf, o2, codePointCount, restored, o3);
+    assertEquals(orig.length - o1, charCount);
+    assertArrayEquals(Arrays.copyOfRange(orig, o1, o1 + charCount), Arrays.copyOfRange(restored, o3, o3 + charCount));
   }
 
   @Test
@@ -132,7 +170,7 @@ public class TestCharacterUtils extends LuceneTestCase {
       assertEquals(0, buffer.getOffset());
       assertEquals(6, buffer.getLength());
       assertEquals("hellow", new String(buffer.getBuffer()));
-      assertTrue(instance.fill(buffer,reader));
+      assertFalse(instance.fill(buffer,reader));
       assertEquals(4, buffer.getLength());
       assertEquals(0, buffer.getOffset());
 
@@ -159,15 +197,12 @@ public class TestCharacterUtils extends LuceneTestCase {
     assertEquals(4, buffer.getLength());
     assertEquals("123\ud801", new String(buffer.getBuffer(),
         buffer.getOffset(), buffer.getLength()));
-    assertTrue(instance.fill(buffer, reader));
-    assertEquals(2, buffer.getLength());
-    assertEquals("\ud801\udc1c", new String(buffer.getBuffer(), buffer
-        .getOffset(), buffer.getLength()));
-    assertTrue(instance.fill(buffer, reader));
-    assertEquals(1, buffer.getLength());
-    assertEquals("\ud801", new String(buffer.getBuffer(), buffer
+    assertFalse(instance.fill(buffer, reader));
+    assertEquals(3, buffer.getLength());
+    assertEquals("\ud801\udc1c\ud801", new String(buffer.getBuffer(), buffer
         .getOffset(), buffer.getLength()));
     assertFalse(instance.fill(buffer, reader));
+    assertEquals(0, buffer.getLength());
   }
 
   @Test

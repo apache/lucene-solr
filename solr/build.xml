@@ -266,6 +266,7 @@
       <bundledSignatures name="commons-io-unsafe-${commons-io.version}"/>
       <signaturesFileSet dir="${common.dir}/tools/forbiddenApis">
         <include name="executors.txt" />
+        <include name="chars.txt" />
         <include name="servlet-api.txt" />
       </signaturesFileSet>
       <fileset dir="${basedir}/build">
