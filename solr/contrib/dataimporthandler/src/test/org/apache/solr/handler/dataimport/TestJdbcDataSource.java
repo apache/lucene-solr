@@ -19,6 +19,7 @@ package org.apache.solr.handler.dataimport;
 import java.sql.Connection;
 import java.sql.Driver;
 import java.sql.DriverManager;
+import java.sql.SQLException;
 import java.util.*;
 
 import javax.sql.DataSource;
@@ -126,6 +127,48 @@ public class TestJdbcDataSource extends AbstractDataImportHandlerTestCase {
     assertSame("connection", conn, connection);
   }
 
+  @Test
+  public void testRetrieveFromJndiFailureNotHidden() throws Exception {
+    MockInitialContextFactory.bind("java:comp/env/jdbc/JndiDB", dataSource);
+
+    props.put(JdbcDataSource.JNDI_NAME, "java:comp/env/jdbc/JndiDB");
+
+    SQLException sqlException = new SQLException("fake");
+    EasyMock.expect(dataSource.getConnection()).andThrow(sqlException);
+
+    mockControl.replay();
+    
+    try {
+      jdbcDataSource.createConnectionFactory(context, props).call();
+    } catch (SQLException ex) {
+      assertSame(sqlException, ex);
+    }
+    
+    mockControl.verify();
+  }
+  
+  @Test
+  public void testClosesConnectionWhenExceptionThrownOnSetAutocommit() throws Exception {
+    MockInitialContextFactory.bind("java:comp/env/jdbc/JndiDB", dataSource);
+
+    props.put(JdbcDataSource.JNDI_NAME, "java:comp/env/jdbc/JndiDB");
+
+    SQLException sqlException = new SQLException("fake");
+    EasyMock.expect(dataSource.getConnection()).andReturn(connection);
+    connection.setAutoCommit(false);
+    EasyMock.expectLastCall().andThrow(sqlException);
+    connection.close();
+    mockControl.replay();
+    
+    try {
+      jdbcDataSource.createConnectionFactory(context, props).call();
+    } catch (DataImportHandlerException ex) {
+      assertSame(sqlException, ex.getCause());
+    }
+    
+    mockControl.verify();
+  }
+  
   @Test
   public void testRetrieveFromDriverManager() throws Exception {
     DriverManager.registerDriver(driver);
