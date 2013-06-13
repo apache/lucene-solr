@@ -131,6 +131,11 @@ Bug Fixes
 * SOLR-4899: When reconnecting after ZooKeeper expiration, we need to be willing to wait 
   forever, not just for 30 seconds. (Mark Miller)
 
+* SOLR-4920: JdbcDataSource incorrectly suppresses exceptions when retrieving a connection from
+  a JNDI context and falls back to trying to use DriverManager to obtain a connection. Additionally,
+  if a SQLException is thrown while initializing a connection, such as in setAutoCommit(), the
+  connection will not be closed. (Chris Eldredge via shalin)
+
 Other Changes
 ----------------------
 
