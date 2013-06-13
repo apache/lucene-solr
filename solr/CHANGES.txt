@@ -136,6 +136,9 @@ Bug Fixes
   if a SQLException is thrown while initializing a connection, such as in setAutoCommit(), the
   connection will not be closed. (Chris Eldredge via shalin)
 
+* SOLR-4915: The root cause should be returned to the user when a SolrCore create call fails.
+  (Mark Miller)
+
 Other Changes
 ----------------------
 

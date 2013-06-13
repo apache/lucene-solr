@@ -524,9 +524,24 @@ public class CoreAdminHandler extends RequestHandlerBase {
           SolrException.log(log, null, e);
         }
       }
+      
+      Throwable tc = ex;
+      Throwable c = null;
+      do {
+        tc = tc.getCause();
+        if (tc != null) {
+          c = tc;
+        }
+      } while (tc != null);
+      
+      String rootMsg = "";
+      if (c != null) {
+        rootMsg = " Caused by: " + c.getMessage();
+      }
+      
       throw new SolrException(SolrException.ErrorCode.BAD_REQUEST,
                               "Error CREATEing SolrCore '" + name + "': " +
-                              ex.getMessage(), ex);
+                              ex.getMessage() + rootMsg, ex);
     }
   }
 
