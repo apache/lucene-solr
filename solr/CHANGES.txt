@@ -139,6 +139,8 @@ Bug Fixes
 * SOLR-4915: The root cause should be returned to the user when a SolrCore create call fails.
   (Mark Miller)
 
+* SOLR-4925 : Collection create throws NPE when 'numShards' param is missing (Noble Paul)
+
 Other Changes
 ----------------------
 
