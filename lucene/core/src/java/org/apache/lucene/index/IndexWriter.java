@@ -2269,10 +2269,6 @@ public class IndexWriter implements Closeable, TwoPhaseCommit {
     }
   }
 
-  synchronized boolean useCompoundFile(SegmentInfoPerCommit segmentInfo) throws IOException {
-    return mergePolicy.useCompoundFile(segmentInfos, segmentInfo);
-  }
-
   private synchronized void resetMergeExceptions() {
     mergeExceptions = new ArrayList<MergePolicy.OneMerge>();
     mergeGen++;

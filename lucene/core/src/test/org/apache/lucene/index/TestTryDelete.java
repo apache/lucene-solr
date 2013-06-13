@@ -40,7 +40,7 @@ public class TestTryDelete extends LuceneTestCase
   private static IndexWriter getWriter (Directory directory)
     throws IOException
   {
-    LogMergePolicy policy = new LogByteSizeMergePolicy();
+    MergePolicy policy = new LogByteSizeMergePolicy();
     IndexWriterConfig conf = new IndexWriterConfig(TEST_VERSION_CURRENT,
                                                    new MockAnalyzer(random()));
     conf.setMergePolicy(policy);

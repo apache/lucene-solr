@@ -260,17 +260,6 @@ public class _TestUtil {
     }
   }
 
-  // NOTE: only works for TMP and LMP!!
-  public static void setUseCompoundFile(MergePolicy mp, boolean v) {
-    if (mp instanceof TieredMergePolicy) {
-      ((TieredMergePolicy) mp).setUseCompoundFile(v);
-    } else if (mp instanceof LogMergePolicy) {
-      ((LogMergePolicy) mp).setUseCompoundFile(v);
-    } else {
-      throw new IllegalArgumentException("cannot set compound file for MergePolicy " + mp);
-    }
-  }
-
   /** start and end are BOTH inclusive */
   public static int nextInt(Random r, int start, int end) {
     return RandomInts.randomIntBetween(r, start, end);
@@ -766,12 +755,12 @@ public class _TestUtil {
     if (mp instanceof LogMergePolicy) {
       LogMergePolicy lmp = (LogMergePolicy) mp;
       lmp.setMergeFactor(Math.min(5, lmp.getMergeFactor()));
-      lmp.setUseCompoundFile(true);
+      lmp.setNoCFSRatio(1.0);
     } else if (mp instanceof TieredMergePolicy) {
       TieredMergePolicy tmp = (TieredMergePolicy) mp;
       tmp.setMaxMergeAtOnce(Math.min(5, tmp.getMaxMergeAtOnce()));
       tmp.setSegmentsPerTier(Math.min(5, tmp.getSegmentsPerTier()));
-      tmp.setUseCompoundFile(true);
+      tmp.setNoCFSRatio(1.0);
     }
     MergeScheduler ms = w.getConfig().getMergeScheduler();
     if (ms instanceof ConcurrentMergeScheduler) {

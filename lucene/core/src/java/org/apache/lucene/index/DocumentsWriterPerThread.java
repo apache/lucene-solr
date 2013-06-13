@@ -194,6 +194,7 @@ class DocumentsWriterPerThread {
   private final NumberFormat nf = NumberFormat.getInstance(Locale.ROOT);
   final Allocator byteBlockAllocator;
   final IntBlockPool.Allocator intBlockAllocator;
+  private final LiveIndexWriterConfig indexWriterConfig;
 
   
   public DocumentsWriterPerThread(Directory directory, DocumentsWriter parent,
@@ -203,6 +204,7 @@ class DocumentsWriterPerThread {
     this.parent = parent;
     this.fieldInfos = fieldInfos;
     this.writer = parent.indexWriter;
+    this.indexWriterConfig = parent.indexWriterConfig;
     this.infoStream = parent.infoStream;
     this.codec = parent.codec;
     this.docState = new DocState(this, infoStream);
@@ -567,7 +569,7 @@ class DocumentsWriterPerThread {
 
     boolean success = false;
     try {
-      if (writer.useCompoundFile(newSegment)) {
+      if (indexWriterConfig.getUseCompoundFile()) {
 
         // Now build compound file
         Collection<String> oldFiles = IndexWriter.createCompoundFile(infoStream, directory, MergeState.CheckAbort.NONE, newSegment.info, context);

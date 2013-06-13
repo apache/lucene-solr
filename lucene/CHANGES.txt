@@ -99,6 +99,10 @@ Changes in backwards compatibility policy
   sqrt(), but this caching is removed, as sqrt is implemented in hardware with modern 
   jvms and its faster not to cache.  (Robert Muir)
 
+* LUCENE-5038: MergePolicy now has a default implementation for useCompoundFile based
+  on segment size and noCFSRatio. The default implemantion was pulled up from
+  TieredMergePolicy. (Simon Willnauer)
+
 Bug Fixes
 
 * LUCENE-4997: Internal test framework's tests are sensitive to previous 
@@ -237,6 +241,13 @@ Tests
 * LUCENE-4901: TestIndexWriterOnJRECrash should work on any 
   JRE vendor via Runtime.halt().
   (Mike McCandless, Robert Muir, Uwe Schindler, Rodrigo Trujillo, Dawid Weiss)
+
+Changes in runtime behavior
+
+* LUCENE-5038: New segments written by IndexWriter are now wrapped into CFS
+  by default. DocumentsWriterPerThread doesn't consult MergePolicy anymore 
+  to decide if a CFS must be written, instead IndexWriterConfig now has a
+  property to enable / disable CFS for newly created segments. (Simon Willnauer)
 
 ======================= Lucene 4.3.1 =======================
 

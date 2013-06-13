@@ -49,6 +49,7 @@ import org.apache.lucene.index.IndexWriterConfig.OpenMode;
 import org.apache.lucene.index.IndexWriterConfig;
 import org.apache.lucene.index.LogDocMergePolicy;
 import org.apache.lucene.index.LogMergePolicy;
+import org.apache.lucene.index.MergePolicy;
 import org.apache.lucene.index.MultiFields;
 import org.apache.lucene.index.SegmentInfos;
 import org.apache.lucene.index.SerialMergeScheduler;
@@ -754,7 +755,7 @@ public class TestPerfTasksLogic extends BenchmarkTestCase {
     assertEquals(2, writer.getConfig().getMaxBufferedDocs());
     assertEquals(IndexWriterConfig.DISABLE_AUTO_FLUSH, (int) writer.getConfig().getRAMBufferSizeMB());
     assertEquals(3, ((LogMergePolicy) writer.getConfig().getMergePolicy()).getMergeFactor());
-    assertFalse(((LogMergePolicy) writer.getConfig().getMergePolicy()).getUseCompoundFile());
+    assertEquals(0.0d, writer.getConfig().getMergePolicy().getNoCFSRatio(), 0.0);
     writer.close();
     Directory dir = benchmark.getRunData().getDirectory();
     IndexReader reader = DirectoryReader.open(dir);
