@@ -135,6 +135,9 @@ public abstract class CharacterUtils {
   /** Converts a sequence of Java characters to a sequence of unicode code points.
    *  @return the number of code points written to the destination buffer */
   public final int toCodePoints(char[] src, int srcOff, int srcLen, int[] dest, int destOff) {
+    if (srcLen < 0) {
+      throw new IllegalArgumentException("srcLen must be >= 0");
+    }
     int codePointCount = 0;
     for (int i = 0; i < srcLen; ) {
       final int cp = codePointAt(src, srcOff + i, srcOff + srcLen);
@@ -148,6 +151,9 @@ public abstract class CharacterUtils {
   /** Converts a sequence of unicode code points to a sequence of Java characters.
    *  @return the number of chars written to the destination buffer */
   public final int toChars(int[] src, int srcOff, int srcLen, char[] dest, int destOff) {
+    if (srcLen < 0) {
+      throw new IllegalArgumentException("srcLen must be >= 0");
+    }
     int written = 0;
     for (int i = 0; i < srcLen; ++i) {
       written += Character.toChars(src[srcOff + i], dest, destOff + written);
