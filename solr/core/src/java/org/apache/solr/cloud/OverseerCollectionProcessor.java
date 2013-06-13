@@ -779,7 +779,7 @@ public class OverseerCollectionProcessor implements Runnable, ClosableThread {
       throws Exception {
     String str = message.getStr(key);
     try {
-      return str == null ? def : Integer.parseInt(str);
+      return str == null ? def : Integer.valueOf(str);
     } catch (Exception ex) {
       SolrException.log(log, "Could not parse " + key, ex);
       throw ex;
