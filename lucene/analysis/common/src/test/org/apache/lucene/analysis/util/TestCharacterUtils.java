@@ -23,9 +23,7 @@ import java.io.StringReader;
 import java.util.Arrays;
 
 import org.apache.lucene.analysis.util.CharacterUtils.CharacterBuffer;
-import org.apache.lucene.store.IndexOutput;
 import org.apache.lucene.util.LuceneTestCase;
-import org.apache.lucene.util.Version;
 import org.apache.lucene.util._TestUtil;
 import org.junit.Test;
 
@@ -130,7 +128,7 @@ public class TestCharacterUtils extends LuceneTestCase {
     final char[] orig = _TestUtil.randomUnicodeString(random(), 100).toCharArray();
     final int[] buf = new int[orig.length];
     final char[] restored = new char[buf.length];
-    final int o1 = random().nextInt(5);
+    final int o1 = _TestUtil.nextInt(random(), 0, Math.min(5, orig.length));
     final int o2 = _TestUtil.nextInt(random(), 0, o1);
     final int o3 = _TestUtil.nextInt(random(), 0, o1);
     final int codePointCount = charUtils.toCodePoints(orig, o1, orig.length - o1, buf, o2);
