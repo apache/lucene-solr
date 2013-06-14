@@ -20,11 +20,14 @@ package org.apache.lucene.index;
 import java.lang.reflect.Field;
 import java.lang.reflect.Method;
 import java.lang.reflect.Modifier;
+import java.util.Arrays;
 import java.util.HashSet;
 import java.util.Set;
 
 import org.apache.lucene.analysis.MockAnalyzer;
 import org.apache.lucene.codecs.Codec;
+import org.apache.lucene.codecs.FieldInfosFormat;
+import org.apache.lucene.codecs.StoredFieldsFormat;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field.Store;
 import org.apache.lucene.index.DocumentsWriterPerThread.IndexingChain;
@@ -373,25 +376,36 @@ public class TestIndexWriterConfig extends LuceneTestCase {
     Directory dir = newDirectory();
     IndexWriterConfig iwc = new IndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer(random()));
     iwc.setMergePolicy(newLogMergePolicy(true));
-
     // Start false:
-    iwc.getMergePolicy().setNoCFSRatio(0.0); 
+    iwc.setUseCompoundFile(false); 
+    iwc.getMergePolicy().setNoCFSRatio(0.0d);
     IndexWriter w = new IndexWriter(dir, iwc);
-
     // Change to true:
-    MergePolicy lmp = w.getConfig().getMergePolicy();
-    lmp.setNoCFSRatio(1.0);
-    lmp.setMaxCFSSegmentSizeMB(Double.POSITIVE_INFINITY);
+    w.getConfig().setUseCompoundFile(true);
 
     Document doc = new Document();
     doc.add(newStringField("field", "foo", Store.NO));
     w.addDocument(doc);
     w.commit();
-
-    for(String file : dir.listAll()) {
-      // frq file should be stuck into CFS
-      assertFalse(file.endsWith(".frq"));
-    }
+    assertTrue("Expected CFS after commit", w.newestSegment().info.getUseCompoundFile());
+    
+    doc.add(newStringField("field", "foo", Store.NO));
+    w.addDocument(doc);
+    w.commit();
+    w.forceMerge(1);
+    w.commit();
+   
+    // no compound files after merge
+    assertFalse("Expected Non-CFS after merge", w.newestSegment().info.getUseCompoundFile());
+    
+    MergePolicy lmp = w.getConfig().getMergePolicy();
+    lmp.setNoCFSRatio(1.0);
+    lmp.setMaxCFSSegmentSizeMB(Double.POSITIVE_INFINITY);
+    
+    w.addDocument(doc);
+    w.forceMerge(1);
+    w.commit();
+    assertTrue("Expected CFS after merge", w.newestSegment().info.getUseCompoundFile());
     w.close();
     dir.close();
   }
