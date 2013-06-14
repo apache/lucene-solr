@@ -193,7 +193,7 @@ public class TestOmitNorms extends LuceneTestCase {
             TEST_VERSION_CURRENT, analyzer).setMaxBufferedDocs(3).setMergePolicy(newLogMergePolicy()));
     LogMergePolicy lmp = (LogMergePolicy) writer.getConfig().getMergePolicy();
     lmp.setMergeFactor(2);
-    lmp.setUseCompoundFile(false);
+    lmp.setNoCFSRatio(0.0);
     Document d = new Document();
 
     FieldType customType = new FieldType(TextField.TYPE_NOT_STORED);

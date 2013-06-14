@@ -94,7 +94,7 @@ public abstract class BaseStoredFieldsFormatTestCase extends LuceneTestCase {
     Directory dir = newDirectory();
     Random rand = random();
     RandomIndexWriter w = new RandomIndexWriter(rand, dir, newIndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer(random())).setMaxBufferedDocs(_TestUtil.nextInt(rand, 5, 20)));
-    //w.w.setUseCompoundFile(false);
+    //w.w.setNoCFSRatio(0.0);
     final int docCount = atLeast(200);
     final int fieldCount = _TestUtil.nextInt(rand, 1, 5);
 

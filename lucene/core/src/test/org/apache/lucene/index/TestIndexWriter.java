@@ -704,7 +704,7 @@ public class TestIndexWriter extends LuceneTestCase {
       IndexWriter writer = new IndexWriter(dir, newIndexWriterConfig( TEST_VERSION_CURRENT, new MockAnalyzer(random())).setMaxBufferedDocs(2).setMergePolicy(newLogMergePolicy()));
       //LogMergePolicy lmp = (LogMergePolicy) writer.getConfig().getMergePolicy();
       //lmp.setMergeFactor(2);
-      //lmp.setUseCompoundFile(false);
+      //lmp.setNoCFSRatio(0.0);
       Document doc = new Document();
       String contents = "aa bb cc dd ee ff gg hh ii jj kk";
 
@@ -732,7 +732,7 @@ public class TestIndexWriter extends LuceneTestCase {
       if (0 == i % 4) {
         writer = new IndexWriter(dir, newIndexWriterConfig( TEST_VERSION_CURRENT, new MockAnalyzer(random())));
         //LogMergePolicy lmp2 = (LogMergePolicy) writer.getConfig().getMergePolicy();
-        //lmp2.setUseCompoundFile(false);
+        //lmp2.setNoCFSRatio(0.0);
         writer.forceMerge(1);
         writer.close();
       }
@@ -1350,7 +1350,7 @@ public class TestIndexWriter extends LuceneTestCase {
     for(int iter=0;iter<2;iter++) {
       Directory dir = newMockDirectory(); // relies on windows semantics
 
-      LogMergePolicy mergePolicy = newLogMergePolicy(true);
+      MergePolicy mergePolicy = newLogMergePolicy(true);
       
       // This test expects all of its segments to be in CFS
       mergePolicy.setNoCFSRatio(1.0);
@@ -1359,7 +1359,7 @@ public class TestIndexWriter extends LuceneTestCase {
       IndexWriter w = new IndexWriter(
           dir,
           newIndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer(random())).
-              setMergePolicy(mergePolicy)
+              setMergePolicy(mergePolicy).setUseCompoundFile(true)
       );
       Document doc = new Document();
       doc.add(newTextField("field", "go", Field.Store.NO));
@@ -1479,7 +1479,7 @@ public class TestIndexWriter extends LuceneTestCase {
     Directory dir = newDirectory();
     IndexWriter writer = new IndexWriter(dir, newIndexWriterConfig(
         TEST_VERSION_CURRENT, new MockAnalyzer(random()))
-                                         .setMaxBufferedDocs(2).setMergePolicy(newLogMergePolicy()));
+                                         .setMaxBufferedDocs(2).setMergePolicy(newLogMergePolicy()).setUseCompoundFile(false));
     String[] files = dir.listAll();
 
     // Creating over empty dir should not create any files,
@@ -1561,7 +1561,7 @@ public class TestIndexWriter extends LuceneTestCase {
 
     Directory dir = newDirectory();
     IndexWriter indexWriter = new IndexWriter(dir, newIndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer(random())).setRAMBufferSizeMB(0.01).setMergePolicy(newLogMergePolicy()));
-    ((LogMergePolicy) indexWriter.getConfig().getMergePolicy()).setUseCompoundFile(false);
+    indexWriter.getConfig().getMergePolicy().setNoCFSRatio(0.0);
 
     String BIG="alskjhlaksjghlaksjfhalksvjepgjioefgjnsdfjgefgjhelkgjhqewlrkhgwlekgrhwelkgjhwelkgrhwlkejg";
     BIG=BIG+BIG+BIG+BIG;

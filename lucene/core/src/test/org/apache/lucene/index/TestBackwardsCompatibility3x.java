@@ -554,8 +554,7 @@ public class TestBackwardsCompatibility3x extends LuceneTestCase {
     _TestUtil.rmDir(indexDir);
     Directory dir = newFSDirectory(indexDir);
     LogByteSizeMergePolicy mp = new LogByteSizeMergePolicy();
-    mp.setUseCompoundFile(doCFS);
-    mp.setNoCFSRatio(1.0);
+    mp.setNoCFSRatio(doCFS ? 1.0 : 0.0);
     mp.setMaxCFSSegmentSizeMB(Double.POSITIVE_INFINITY);
     // TODO: remove randomness
     IndexWriterConfig conf = new IndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer(random()))
@@ -574,8 +573,7 @@ public class TestBackwardsCompatibility3x extends LuceneTestCase {
     if (!fullyMerged) {
       // open fresh writer so we get no prx file in the added segment
       mp = new LogByteSizeMergePolicy();
-      mp.setUseCompoundFile(doCFS);
-      mp.setNoCFSRatio(1.0);
+      mp.setNoCFSRatio(doCFS ? 1.0 : 0.0);
       // TODO: remove randomness
       conf = new IndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer(random()))
         .setMaxBufferedDocs(10).setMergePolicy(mp);
@@ -607,7 +605,7 @@ public class TestBackwardsCompatibility3x extends LuceneTestCase {
     try {
       Directory dir = newFSDirectory(outputDir);
 
-      LogMergePolicy mergePolicy = newLogMergePolicy(true, 10);
+      MergePolicy mergePolicy = newLogMergePolicy(true, 10);
       
       // This test expects all of its segments to be in CFS:
       mergePolicy.setNoCFSRatio(1.0); 

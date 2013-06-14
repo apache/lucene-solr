@@ -29,15 +29,11 @@ import org.apache.lucene.index.DocumentsWriterPerThread.FlushedSegment;
 import org.apache.lucene.index.DocumentsWriterPerThread.IndexingChain;
 import org.apache.lucene.index.DocumentsWriterPerThreadPool.ThreadState;
 import org.apache.lucene.index.FieldInfos.FieldNumbers;
-import org.apache.lucene.search.MatchAllDocsQuery;
 import org.apache.lucene.search.Query;
 import org.apache.lucene.search.similarities.Similarity;
 import org.apache.lucene.store.AlreadyClosedException;
 import org.apache.lucene.store.Directory;
-import org.apache.lucene.store.FlushInfo;
-import org.apache.lucene.store.IOContext;
 import org.apache.lucene.util.InfoStream;
-import org.apache.lucene.util.MutableBits;
 
 /**
  * This class accepts multiple added documents and directly
@@ -114,6 +110,7 @@ final class DocumentsWriter {
   List<String> newFiles;
 
   final IndexWriter indexWriter;
+  final LiveIndexWriterConfig indexWriterConfig;
 
   private AtomicInteger numDocsInRAM = new AtomicInteger(0);
 
@@ -144,6 +141,7 @@ final class DocumentsWriter {
     this.indexWriter = writer;
     this.infoStream = config.getInfoStream();
     this.similarity = config.getSimilarity();
+    this.indexWriterConfig = writer.getConfig();
     this.perThreadPool = config.getIndexerThreadPool();
     this.chain = config.getIndexingChain();
     this.perThreadPool.initialize(this, globalFieldNumbers, config);
@@ -517,7 +515,7 @@ final class DocumentsWriter {
     // buffer, force them all to apply now. This is to
     // prevent too-frequent flushing of a long tail of
     // tiny segments:
-    final double ramBufferSizeMB = indexWriter.getConfig().getRAMBufferSizeMB();
+    final double ramBufferSizeMB = indexWriterConfig.getRAMBufferSizeMB();
     if (ramBufferSizeMB != IndexWriterConfig.DISABLE_AUTO_FLUSH &&
         flushControl.getDeleteBytesUsed() > (1024*1024*ramBufferSizeMB/2)) {
       if (infoStream.isEnabled("DW")) {

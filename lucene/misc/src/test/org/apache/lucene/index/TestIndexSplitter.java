@@ -41,7 +41,7 @@ public class TestIndexSplitter extends LuceneTestCase {
       ((MockDirectoryWrapper)fsDir).setAssertNoUnrefencedFilesOnClose(false);
     }
 
-    LogMergePolicy mergePolicy = new LogByteSizeMergePolicy();
+    MergePolicy mergePolicy = new LogByteSizeMergePolicy();
     mergePolicy.setNoCFSRatio(1.0);
     mergePolicy.setMaxCFSSegmentSizeMB(Double.POSITIVE_INFINITY);
     IndexWriter iw = new IndexWriter(

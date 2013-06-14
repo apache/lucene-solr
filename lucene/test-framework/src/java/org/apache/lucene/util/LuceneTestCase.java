@@ -808,6 +808,7 @@ public abstract class LuceneTestCase extends Assert {
     if (rarely(r)) {
       c.setMergedSegmentWarmer(new SimpleMergedSegmentWarmer(c.getInfoStream()));
     }
+    c.setUseCompoundFile(r.nextBoolean());
     c.setReaderPooling(r.nextBoolean());
     c.setReaderTermsIndexDivisor(_TestUtil.nextInt(r, 1, 4));
     return c;
@@ -831,19 +832,28 @@ public abstract class LuceneTestCase extends Assert {
 
   public static LogMergePolicy newLogMergePolicy(Random r) {
     LogMergePolicy logmp = r.nextBoolean() ? new LogDocMergePolicy() : new LogByteSizeMergePolicy();
-    logmp.setUseCompoundFile(r.nextBoolean());
     logmp.setCalibrateSizeByDeletes(r.nextBoolean());
     if (rarely(r)) {
       logmp.setMergeFactor(_TestUtil.nextInt(r, 2, 9));
     } else {
       logmp.setMergeFactor(_TestUtil.nextInt(r, 10, 50));
     }
-    logmp.setUseCompoundFile(r.nextBoolean());
-    logmp.setNoCFSRatio(0.1 + r.nextDouble()*0.8);
-    if (rarely()) {
-      logmp.setMaxCFSSegmentSizeMB(0.2 + r.nextDouble() * 2.0);
-    }
+    configureRandom(r, logmp);
     return logmp;
+  }
+  
+  private static void configureRandom(Random r, MergePolicy mergePolicy) {
+    if (r.nextBoolean()) {
+      mergePolicy.setNoCFSRatio(0.1 + r.nextDouble()*0.8);
+    } else {
+      mergePolicy.setNoCFSRatio(r.nextBoolean() ? 1.0 : 0.0);
+    }
+    
+    if (rarely()) {
+      mergePolicy.setMaxCFSSegmentSizeMB(0.2 + r.nextDouble() * 2.0);
+    } else {
+      mergePolicy.setMaxCFSSegmentSizeMB(Double.POSITIVE_INFINITY);
+    }
   }
 
   public static TieredMergePolicy newTieredMergePolicy(Random r) {
@@ -867,29 +877,25 @@ public abstract class LuceneTestCase extends Assert {
     } else {
       tmp.setSegmentsPerTier(_TestUtil.nextInt(r, 10, 50));
     }
-    tmp.setUseCompoundFile(r.nextBoolean());
-    tmp.setNoCFSRatio(0.1 + r.nextDouble()*0.8);
-    if (rarely()) {
-      tmp.setMaxCFSSegmentSizeMB(0.2 + r.nextDouble() * 2.0);
-    }
+    configureRandom(r, tmp);
     tmp.setReclaimDeletesWeight(r.nextDouble()*4);
     return tmp;
   }
 
-  public static LogMergePolicy newLogMergePolicy(boolean useCFS) {
-    LogMergePolicy logmp = newLogMergePolicy();
-    logmp.setUseCompoundFile(useCFS);
+  public static MergePolicy newLogMergePolicy(boolean useCFS) {
+    MergePolicy logmp = newLogMergePolicy();
+    logmp.setNoCFSRatio(useCFS ? 1.0 : 0.0);
     return logmp;
   }
 
-  public static LogMergePolicy newLogMergePolicy(boolean useCFS, int mergeFactor) {
+  public static MergePolicy newLogMergePolicy(boolean useCFS, int mergeFactor) {
     LogMergePolicy logmp = newLogMergePolicy();
-    logmp.setUseCompoundFile(useCFS);
+    logmp.setNoCFSRatio(useCFS ? 1.0 : 0.0);
     logmp.setMergeFactor(mergeFactor);
     return logmp;
   }
 
-  public static LogMergePolicy newLogMergePolicy(int mergeFactor) {
+  public static MergePolicy newLogMergePolicy(int mergeFactor) {
     LogMergePolicy logmp = newLogMergePolicy();
     logmp.setMergeFactor(mergeFactor);
     return logmp;

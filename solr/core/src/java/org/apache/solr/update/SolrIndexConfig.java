@@ -217,14 +217,14 @@ public class SolrIndexConfig {
       if (maxMergeDocs != -1)
         logMergePolicy.setMaxMergeDocs(maxMergeDocs);
 
-      logMergePolicy.setUseCompoundFile(useCompoundFile);
+      logMergePolicy.setNoCFSRatio(useCompoundFile ? 1.0 : 0.0);
 
       if (mergeFactor != -1)
         logMergePolicy.setMergeFactor(mergeFactor);
     } else if (policy instanceof TieredMergePolicy) {
       TieredMergePolicy tieredMergePolicy = (TieredMergePolicy) policy;
       
-      tieredMergePolicy.setUseCompoundFile(useCompoundFile);
+      tieredMergePolicy.setNoCFSRatio(useCompoundFile ? 1.0 : 0.0);
       
       if (mergeFactor != -1) {
         tieredMergePolicy.setMaxMergeAtOnce(mergeFactor);

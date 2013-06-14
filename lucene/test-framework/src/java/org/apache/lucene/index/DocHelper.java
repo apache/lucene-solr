@@ -272,7 +272,7 @@ class DocHelper {
   public static SegmentInfoPerCommit writeDoc(Random random, Directory dir, Analyzer analyzer, Similarity similarity, Document doc) throws IOException {
     IndexWriter writer = new IndexWriter(dir, new IndexWriterConfig( /* LuceneTestCase.newIndexWriterConfig(random, */ 
         TEST_VERSION_CURRENT, analyzer).setSimilarity(similarity == null ? IndexSearcher.getDefaultSimilarity() : similarity));
-    //writer.setUseCompoundFile(false);
+    //writer.setNoCFSRatio(0.0);
     writer.addDocument(doc);
     writer.commit();
     SegmentInfoPerCommit info = writer.newestSegment();

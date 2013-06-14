@@ -565,8 +565,7 @@ public class TestBackwardsCompatibility extends LuceneTestCase {
     _TestUtil.rmDir(indexDir);
     Directory dir = newFSDirectory(indexDir);
     LogByteSizeMergePolicy mp = new LogByteSizeMergePolicy();
-    mp.setUseCompoundFile(doCFS);
-    mp.setNoCFSRatio(1.0);
+    mp.setNoCFSRatio(doCFS ? 1.0 : 0.0);
     mp.setMaxCFSSegmentSizeMB(Double.POSITIVE_INFINITY);
     // TODO: remove randomness
     IndexWriterConfig conf = new IndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer(random()))
@@ -585,8 +584,7 @@ public class TestBackwardsCompatibility extends LuceneTestCase {
     if (!fullyMerged) {
       // open fresh writer so we get no prx file in the added segment
       mp = new LogByteSizeMergePolicy();
-      mp.setUseCompoundFile(doCFS);
-      mp.setNoCFSRatio(1.0);
+      mp.setNoCFSRatio(doCFS ? 1.0 : 0.0);
       // TODO: remove randomness
       conf = new IndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer(random()))
         .setMaxBufferedDocs(10).setMergePolicy(mp);
@@ -618,7 +616,7 @@ public class TestBackwardsCompatibility extends LuceneTestCase {
     try {
       Directory dir = newFSDirectory(outputDir);
 
-      LogMergePolicy mergePolicy = newLogMergePolicy(true, 10);
+      MergePolicy mergePolicy = newLogMergePolicy(true, 10);
       
       // This test expects all of its segments to be in CFS:
       mergePolicy.setNoCFSRatio(1.0); 
@@ -629,7 +627,7 @@ public class TestBackwardsCompatibility extends LuceneTestCase {
           newIndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer(random())).
               setMaxBufferedDocs(-1).
               setRAMBufferSizeMB(16.0).
-              setMergePolicy(mergePolicy)
+              setMergePolicy(mergePolicy).setUseCompoundFile(true)
       );
       for(int i=0;i<35;i++) {
         addDoc(writer, i);
@@ -641,7 +639,7 @@ public class TestBackwardsCompatibility extends LuceneTestCase {
       writer = new IndexWriter(
           dir,
           newIndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer(random()))
-            .setMergePolicy(NoMergePolicy.NO_COMPOUND_FILES)
+            .setMergePolicy(NoMergePolicy.NO_COMPOUND_FILES).setUseCompoundFile(true)
       );
       Term searchTerm = new Term("id", "7");
       writer.deleteDocuments(searchTerm);

@@ -72,9 +72,7 @@ public class TestSearchForDuplicates extends LuceneTestCase {
       Analyzer analyzer = new MockAnalyzer(random);
       IndexWriterConfig conf = newIndexWriterConfig(TEST_VERSION_CURRENT, analyzer);
       final MergePolicy mp = conf.getMergePolicy();
-      if (mp instanceof LogMergePolicy) {
-        ((LogMergePolicy) mp).setUseCompoundFile(useCompoundFiles);
-      }
+      mp.setNoCFSRatio(useCompoundFiles ? 1.0 : 0.0);
       IndexWriter writer = new IndexWriter(directory, conf);
       if (VERBOSE) {
         System.out.println("TEST: now build index MAX_DOCS=" + MAX_DOCS);

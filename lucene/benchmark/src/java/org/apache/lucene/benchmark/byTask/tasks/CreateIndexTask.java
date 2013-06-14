@@ -151,13 +151,10 @@ public class CreateIndexTask extends PerfTask {
       } catch (Exception e) {
         throw new RuntimeException("unable to instantiate class '" + mergePolicy + "' as merge policy", e);
       }
+      iwConf.getMergePolicy().setNoCFSRatio(isCompound ? 1.0 : 0.0);
       if(iwConf.getMergePolicy() instanceof LogMergePolicy) {
         LogMergePolicy logMergePolicy = (LogMergePolicy) iwConf.getMergePolicy();
-        logMergePolicy.setUseCompoundFile(isCompound);
         logMergePolicy.setMergeFactor(config.get("merge.factor",OpenIndexTask.DEFAULT_MERGE_PFACTOR));
-      } else if(iwConf.getMergePolicy() instanceof TieredMergePolicy) {
-        TieredMergePolicy tieredMergePolicy = (TieredMergePolicy) iwConf.getMergePolicy();
-        tieredMergePolicy.setUseCompoundFile(isCompound);
       }
     }
     final double ramBuffer = config.get("ram.flush.mb",OpenIndexTask.DEFAULT_RAM_FLUSH_MB);

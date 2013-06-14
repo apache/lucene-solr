@@ -84,7 +84,7 @@ public class TestTermInfosReaderIndex extends LuceneTestCase {
     config.setCodec(new PreFlexRWCodec());
     LogMergePolicy mp = newLogMergePolicy();
     // turn off compound file, this test will open some index files directly.
-    mp.setUseCompoundFile(false);
+    mp.setNoCFSRatio(0.0);
     config.setMergePolicy(mp);
 
     

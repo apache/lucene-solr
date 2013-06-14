@@ -64,15 +64,8 @@ public abstract class LogMergePolicy extends MergePolicy {
 
   /** Default noCFSRatio.  If a merge's size is >= 10% of
    *  the index, then we disable compound file for it.
-   *  @see #setNoCFSRatio */
+   *  @see MergePolicy#setNoCFSRatio */
   public static final double DEFAULT_NO_CFS_RATIO = 0.1;
-
-  /** Default maxCFSSegmentSize value allows compound file
-   * for a segment of any size. The actual file format is
-   * still subject to noCFSRatio.
-   * @see #setMaxCFSSegmentSizeMB(double)
-   */
-  public static final long DEFAULT_MAX_CFS_SEGMENT_SIZE = Long.MAX_VALUE;
 
   /** How many segments to merge at a time. */
   protected int mergeFactor = DEFAULT_MERGE_FACTOR;
@@ -96,30 +89,14 @@ public abstract class LogMergePolicy extends MergePolicy {
    *  will never be merged. */
   protected int maxMergeDocs = DEFAULT_MAX_MERGE_DOCS;
 
-  /** If the size of the merge segment exceeds this ratio of
-   *  the total index size then it will remain in
-   *  non-compound format even if {@link
-   *  #setUseCompoundFile} is {@code true}. */
-  protected double noCFSRatio = DEFAULT_NO_CFS_RATIO;
-
-  /** If the size of the merged segment exceeds
-   *  this value then it will not use compound file format. */
-  protected long maxCFSSegmentSize = DEFAULT_MAX_CFS_SEGMENT_SIZE;
-
   /** If true, we pro-rate a segment's size by the
    *  percentage of non-deleted documents. */
   protected boolean calibrateSizeByDeletes = true;
 
-  /** True if new segments (flushed or merged) should use
-   *  the compound file format.  Note that large segments
-   *  may sometimes still use non-compound format (see
-   *  {@link #setNoCFSRatio}. */
-  protected boolean useCompoundFile = true;
-
   /** Sole constructor. (For invocation by subclass 
    *  constructors, typically implicit.) */
   public LogMergePolicy() {
-    super();
+    super(DEFAULT_NO_CFS_RATIO, MergePolicy.DEFAULT_MAX_CFS_SEGMENT_SIZE);
   }
 
   /** Returns true if {@code LMP} is enabled in {@link
@@ -127,25 +104,6 @@ public abstract class LogMergePolicy extends MergePolicy {
   protected boolean verbose() {
     final IndexWriter w = writer.get();
     return w != null && w.infoStream.isEnabled("LMP");
-  }
-
-  /** Returns current {@code noCFSRatio}.
-   *
-   *  @see #setNoCFSRatio */
-  public double getNoCFSRatio() {
-    return noCFSRatio;
-  }
-
-  /** If a merged segment will be more than this percentage
-   *  of the total size of the index, leave the segment as
-   *  non-compound file even if compound file is enabled.
-   *  Set to 1.0 to always use CFS regardless of merge
-   *  size. */
-  public void setNoCFSRatio(double noCFSRatio) {
-    if (noCFSRatio < 0.0 || noCFSRatio > 1.0) {
-      throw new IllegalArgumentException("noCFSRatio must be 0.0 to 1.0 inclusive; got " + noCFSRatio);
-    }
-    this.noCFSRatio = noCFSRatio;
   }
 
   /** Print a debug message to {@link IndexWriter}'s {@code
@@ -178,39 +136,6 @@ public abstract class LogMergePolicy extends MergePolicy {
     this.mergeFactor = mergeFactor;
   }
 
-  // Javadoc inherited
-  @Override
-  public boolean useCompoundFile(SegmentInfos infos, SegmentInfoPerCommit mergedInfo) throws IOException {
-    if (!getUseCompoundFile()) {
-      return false;
-    }
-    long mergedInfoSize = size(mergedInfo);
-    if (mergedInfoSize > maxCFSSegmentSize) {
-      return false;
-    }
-    if (getNoCFSRatio() >= 1.0) {
-      return true;
-    }
-    long totalSize = 0;
-    for (SegmentInfoPerCommit info : infos) {
-      totalSize += size(info);
-    }
-    return mergedInfoSize <= getNoCFSRatio() * totalSize;
-  }
-
-  /** Sets whether compound file format should be used for
-   *  newly flushed and newly merged segments. */
-  public void setUseCompoundFile(boolean useCompoundFile) {
-    this.useCompoundFile = useCompoundFile;
-  }
-
-  /** Returns true if newly flushed and newly merge segments
-   *  are written in compound file format. @see
-   *  #setUseCompoundFile */
-  public boolean getUseCompoundFile() {
-    return useCompoundFile;
-  }
-
   /** Sets whether the segment size should be calibrated by
    *  the number of deletes when choosing segments for merge. */
   public void setCalibrateSizeByDeletes(boolean calibrateSizeByDeletes) {
@@ -226,9 +151,6 @@ public abstract class LogMergePolicy extends MergePolicy {
   @Override
   public void close() {}
 
-  /** Return the size of the provided {@link
-   *  SegmentInfoPerCommit}. */
-  abstract protected long size(SegmentInfoPerCommit info) throws IOException;
 
   /** Return the number of documents in the provided {@link
    *  SegmentInfoPerCommit}, pro-rated by percentage of
@@ -249,15 +171,10 @@ public abstract class LogMergePolicy extends MergePolicy {
    *  non-deleted documents if {@link
    *  #setCalibrateSizeByDeletes} is set. */
   protected long sizeBytes(SegmentInfoPerCommit info) throws IOException {
-    long byteSize = info.sizeInBytes();
     if (calibrateSizeByDeletes) {
-      int delCount = writer.get().numDeletedDocs(info);
-      double delRatio = (info.info.getDocCount() <= 0 ? 0.0f : ((float)delCount / (float)info.info.getDocCount()));
-      assert delRatio <= 1.0;
-      return (info.info.getDocCount() <= 0 ?  byteSize : (long)(byteSize * (1.0 - delRatio)));
-    } else {
-      return byteSize;
+      return super.size(info);
     }
+    return info.sizeInBytes();
   }
   
   /** Returns true if the number of segments eligible for
@@ -280,20 +197,6 @@ public abstract class LogMergePolicy extends MergePolicy {
 
     return numToMerge <= maxNumSegments &&
       (numToMerge != 1 || !segmentIsOriginal || isMerged(mergeInfo));
-  }
-
-  /** Returns true if this single info is already fully merged (has no
-   *  pending norms or deletes, is in the same dir as the
-   *  writer, and matches the current compound file setting */
-  protected boolean isMerged(SegmentInfoPerCommit info)
-    throws IOException {
-    IndexWriter w = writer.get();
-    assert w != null;
-    boolean hasDeletions = w.numDeletedDocs(info) > 0;
-    return !hasDeletions &&
-      !info.info.hasSeparateNorms() &&
-      info.info.dir == w.getDirectory() &&
-      (info.info.getUseCompoundFile() == useCompoundFile || noCFSRatio < 1.0);
   }
 
   /**
@@ -727,29 +630,10 @@ public abstract class LogMergePolicy extends MergePolicy {
     sb.append("maxMergeSizeForForcedMerge=").append(maxMergeSizeForForcedMerge).append(", ");
     sb.append("calibrateSizeByDeletes=").append(calibrateSizeByDeletes).append(", ");
     sb.append("maxMergeDocs=").append(maxMergeDocs).append(", ");
-    sb.append("useCompoundFile=").append(useCompoundFile).append(", ");
     sb.append("maxCFSSegmentSizeMB=").append(getMaxCFSSegmentSizeMB()).append(", ");
     sb.append("noCFSRatio=").append(noCFSRatio);
     sb.append("]");
     return sb.toString();
-  }
-
-  /** Returns the largest size allowed for a compound file segment */
-  public final double getMaxCFSSegmentSizeMB() {
-    return maxCFSSegmentSize/1024/1024.;
-  }
-
-  /** If a merged segment will be more than this value,
-   *  leave the segment as
-   *  non-compound file even if compound file is enabled.
-   *  Set this to Double.POSITIVE_INFINITY (default) and noCFSRatio to 1.0
-   *  to always use CFS regardless of merge size. */
-  public final void setMaxCFSSegmentSizeMB(double v) {
-    if (v < 0.0) {
-      throw new IllegalArgumentException("maxCFSSegmentSizeMB must be >=0 (got " + v + ")");
-    }
-    v *= 1024 * 1024;
-    this.maxCFSSegmentSize = (v > Long.MAX_VALUE) ? Long.MAX_VALUE : (long) v;
   }
 
 }

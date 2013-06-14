@@ -27,9 +27,6 @@ import java.util.Comparator;
 import java.util.List;
 import java.util.ArrayList;
 
-import org.apache.lucene.index.MergePolicy.MergeTrigger;
-
-
 /**
  *  Merges segments of approximately equal size, subject to
  *  an allowed number of segments per tier.  This is similar
@@ -76,7 +73,11 @@ import org.apache.lucene.index.MergePolicy.MergeTrigger;
 //     maybe CMS should do so)
 
 public class TieredMergePolicy extends MergePolicy {
-
+  /** Default noCFSRatio.  If a merge's size is >= 10% of
+   *  the index, then we disable compound file for it.
+   *  @see MergePolicy#setNoCFSRatio */
+  public static final double DEFAULT_NO_CFS_RATIO = 0.1;
+  
   private int maxMergeAtOnce = 10;
   private long maxMergedSegmentBytes = 5*1024*1024*1024L;
   private int maxMergeAtOnceExplicit = 30;
@@ -84,14 +85,12 @@ public class TieredMergePolicy extends MergePolicy {
   private long floorSegmentBytes = 2*1024*1024L;
   private double segsPerTier = 10.0;
   private double forceMergeDeletesPctAllowed = 10.0;
-  private boolean useCompoundFile = true;
-  private double noCFSRatio = 0.1;
-  private long maxCFSSegmentSize = Long.MAX_VALUE;
   private double reclaimDeletesWeight = 2.0;
 
   /** Sole constructor, setting all settings to their
    *  defaults. */
   public TieredMergePolicy() {
+    super(DEFAULT_NO_CFS_RATIO, MergePolicy.DEFAULT_MAX_CFS_SEGMENT_SIZE);
   }
 
   /** Maximum number of segments to be merged at a time
@@ -231,41 +230,6 @@ public class TieredMergePolicy extends MergePolicy {
    * @see #setSegmentsPerTier */
   public double getSegmentsPerTier() {
     return segsPerTier;
-  }
-
-  /** Sets whether compound file format should be used for
-   *  newly flushed and newly merged segments.  Default
-   *  true. */
-  public TieredMergePolicy setUseCompoundFile(boolean useCompoundFile) {
-    this.useCompoundFile = useCompoundFile;
-    return this;
-  }
-
-  /** Returns the current useCompoundFile setting.
-   *
-   * @see  #setUseCompoundFile */
-  public boolean getUseCompoundFile() {
-    return useCompoundFile;
-  }
-
-  /** If a merged segment will be more than this percentage
-   *  of the total size of the index, leave the segment as
-   *  non-compound file even if compound file is enabled.
-   *  Set to 1.0 to always use CFS regardless of merge
-   *  size.  Default is 0.1. */
-  public TieredMergePolicy setNoCFSRatio(double noCFSRatio) {
-    if (noCFSRatio < 0.0 || noCFSRatio > 1.0) {
-      throw new IllegalArgumentException("noCFSRatio must be 0.0 to 1.0 inclusive; got " + noCFSRatio);
-    }
-    this.noCFSRatio = noCFSRatio;
-    return this;
-  }
-  
-  /** Returns the current noCFSRatio setting.
-   *
-   * @see #setNoCFSRatio */
-  public double getNoCFSRatio() {
-    return noCFSRatio;
   }
 
   private class SegmentByteSizeDescending implements Comparator<SegmentInfoPerCommit> {
@@ -637,45 +601,7 @@ public class TieredMergePolicy extends MergePolicy {
   }
 
   @Override
-  public boolean useCompoundFile(SegmentInfos infos, SegmentInfoPerCommit mergedInfo) throws IOException {
-    if (!getUseCompoundFile()) {
-        return false;
-    }
-    long mergedInfoSize = size(mergedInfo);
-    if (mergedInfoSize > maxCFSSegmentSize) {
-        return false;
-    }
-    if (getNoCFSRatio() >= 1.0) {
-        return true;
-    }
-    long totalSize = 0;
-    for (SegmentInfoPerCommit info : infos) {
-        totalSize += size(info);
-    }
-    return mergedInfoSize <= getNoCFSRatio() * totalSize;
-  }
-
-  @Override
   public void close() {
-  }
-
-  private boolean isMerged(SegmentInfoPerCommit info) {
-    IndexWriter w = writer.get();
-    assert w != null;
-    boolean hasDeletions = w.numDeletedDocs(info) > 0;
-    return !hasDeletions &&
-      !info.info.hasSeparateNorms() &&
-      info.info.dir == w.getDirectory() &&
-      (info.info.getUseCompoundFile() == useCompoundFile || noCFSRatio < 1.0 || maxCFSSegmentSize < Long.MAX_VALUE);
-  }
-
-  // Segment size in bytes, pro-rated by % deleted
-  private long size(SegmentInfoPerCommit info) throws IOException {
-    final long byteSize = info.sizeInBytes();    
-    final int delCount = writer.get().numDeletedDocs(info);
-    final double delRatio = (info.info.getDocCount() <= 0 ? 0.0f : ((double)delCount / (double)info.info.getDocCount()));    
-    assert delRatio <= 1.0;
-    return (long) (byteSize * (1.0-delRatio));
   }
 
   private long floorSize(long bytes) {
@@ -700,28 +626,8 @@ public class TieredMergePolicy extends MergePolicy {
     sb.append("floorSegmentMB=").append(floorSegmentBytes/1024/1024.).append(", ");
     sb.append("forceMergeDeletesPctAllowed=").append(forceMergeDeletesPctAllowed).append(", ");
     sb.append("segmentsPerTier=").append(segsPerTier).append(", ");
-    sb.append("useCompoundFile=").append(useCompoundFile).append(", ");
     sb.append("maxCFSSegmentSizeMB=").append(getMaxCFSSegmentSizeMB()).append(", ");
     sb.append("noCFSRatio=").append(noCFSRatio);
     return sb.toString();
-  }
-
-  /** Returns the largest size allowed for a compound file segment */
-  public final double getMaxCFSSegmentSizeMB() {
-    return maxCFSSegmentSize/1024/1024.;
-  }
-
-  /** If a merged segment will be more than this value,
-   *  leave the segment as
-   *  non-compound file even if compound file is enabled.
-   *  Set this to Double.POSITIVE_INFINITY (default) and noCFSRatio to 1.0
-   *  to always use CFS regardless of merge size. */
-  public final TieredMergePolicy setMaxCFSSegmentSizeMB(double v) {
-    if (v < 0.0) {
-      throw new IllegalArgumentException("maxCFSSegmentSizeMB must be >=0 (got " + v + ")");
-    }
-    v *= 1024 * 1024;
-    this.maxCFSSegmentSize = (v > Long.MAX_VALUE) ? Long.MAX_VALUE : (long) v;
-    return this;
   }
 }

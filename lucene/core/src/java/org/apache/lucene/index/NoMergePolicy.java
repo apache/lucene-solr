@@ -20,8 +20,6 @@ package org.apache.lucene.index;
 import java.io.IOException;
 import java.util.Map;
 
-import org.apache.lucene.index.MergePolicy.MergeTrigger;
-import org.apache.lucene.index.MergePolicy.MergeSpecification;
 
 /**
  * A {@link MergePolicy} which never returns merges to execute (hence it's
@@ -49,6 +47,7 @@ public final class NoMergePolicy extends MergePolicy {
   private final boolean useCompoundFile;
   
   private NoMergePolicy(boolean useCompoundFile) {
+    super(useCompoundFile ? 1.0 : 0.0, 0);
     // prevent instantiation
     this.useCompoundFile = useCompoundFile;
   }
@@ -71,6 +70,11 @@ public final class NoMergePolicy extends MergePolicy {
 
   @Override
   public void setIndexWriter(IndexWriter writer) {}
+  
+  @Override
+  protected long size(SegmentInfoPerCommit info) throws IOException {
+      return Long.MAX_VALUE;
+  }
 
   @Override
   public String toString() {
