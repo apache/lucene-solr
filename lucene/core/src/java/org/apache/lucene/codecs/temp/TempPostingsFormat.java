@@ -1,4 +1,4 @@
-package org.apache.lucene.codecs.lucene41;
+package org.apache.lucene.codecs.temp;
 
 
 /*
@@ -20,15 +20,13 @@ package org.apache.lucene.codecs.lucene41;
 
 import java.io.IOException;
 
-import org.apache.lucene.codecs.BlockTreeTermsReader;
-import org.apache.lucene.codecs.BlockTreeTermsWriter;
 import org.apache.lucene.codecs.CodecUtil;
 import org.apache.lucene.codecs.FieldsConsumer;
 import org.apache.lucene.codecs.FieldsProducer;
 import org.apache.lucene.codecs.MultiLevelSkipListWriter;
 import org.apache.lucene.codecs.PostingsFormat;
-import org.apache.lucene.codecs.PostingsReaderBase;
-import org.apache.lucene.codecs.PostingsWriterBase;
+import org.apache.lucene.codecs.TempPostingsReaderBase;
+import org.apache.lucene.codecs.TempPostingsWriterBase;
 import org.apache.lucene.index.DocsEnum;
 import org.apache.lucene.index.FieldInfo.IndexOptions;
 import org.apache.lucene.index.SegmentReadState;
@@ -58,7 +56,7 @@ import org.apache.lucene.util.packed.PackedInts;
  *
  *   <li> 
  *   <b>Block structure</b>: 
- *   <p>When the postings are long enough, Lucene41PostingsFormat will try to encode most integer data 
+ *   <p>When the postings are long enough, TempPostingsFormat will try to encode most integer data 
  *      as a packed block.</p> 
  *   <p>Take a term with 259 documents as an example, the first 256 document ids are encoded as two packed 
  *      blocks, while the remaining 3 are encoded as one VInt block. </p>
@@ -118,7 +116,7 @@ import org.apache.lucene.util.packed.PackedInts;
  * field along with per-term statistics (such as docfreq)
  * and pointers to the frequencies, positions, payload and
  * skip data in the .doc, .pos, and .pay files.
- * See {@link BlockTreeTermsWriter} for more details on the format.
+ * See {@link TempBlockTermsWriter} for more details on the format.
  * </p>
  *
  * <p>NOTE: The term dictionary can plug into different postings implementations:
@@ -161,7 +159,7 @@ import org.apache.lucene.util.packed.PackedInts;
  *    <li>SkipFPDelta determines the position of this term's SkipData within the .doc
  *        file. In particular, it is the length of the TermFreq data.
  *        SkipDelta is only stored if DocFreq is not smaller than SkipMinimum
- *        (i.e. 8 in Lucene41PostingsFormat).</li>
+ *        (i.e. 8 in TempPostingsFormat).</li>
  *    <li>SingletonDocID is an optimization when a term only appears in one document. In this case, instead
  *        of writing a file pointer to the .doc file (DocFPDelta), and then a VIntBlock at that location, the 
  *        single document ID is written to the term dictionary.</li>
@@ -174,7 +172,7 @@ import org.apache.lucene.util.packed.PackedInts;
  * <dd>
  * <b>Term Index</b>
  * <p>The .tip file contains an index into the term dictionary, so that it can be 
- * accessed randomly.  See {@link BlockTreeTermsWriter} for more details on the format.</p>
+ * accessed randomly.  See {@link TempBlockTermsWriter} for more details on the format.</p>
  * </dd>
  * </dl>
  *
@@ -241,10 +239,10 @@ import org.apache.lucene.util.packed.PackedInts;
  *       We use this trick since the definition of skip entry is a little different from base interface.
  *       In {@link MultiLevelSkipListWriter}, skip data is assumed to be saved for
  *       skipInterval<sup>th</sup>, 2*skipInterval<sup>th</sup> ... posting in the list. However, 
- *       in Lucene41PostingsFormat, the skip data is saved for skipInterval+1<sup>th</sup>, 
+ *       in TempPostingsFormat, the skip data is saved for skipInterval+1<sup>th</sup>, 
  *       2*skipInterval+1<sup>th</sup> ... posting (skipInterval==PackedBlockSize in this case). 
  *       When DocFreq is multiple of PackedBlockSize, MultiLevelSkipListWriter will expect one 
- *       more skip data than Lucene41SkipWriter. </li>
+ *       more skip data than TempSkipWriter. </li>
  *   <li>SkipDatum is the metadata of one skip entry.
  *      For the first block (no matter packed or VInt), it is omitted.</li>
  *   <li>DocSkip records the document number of every PackedBlockSize<sup>th</sup> document number in
@@ -354,7 +352,7 @@ import org.apache.lucene.util.packed.PackedInts;
  * @lucene.experimental
  */
 
-public final class Lucene41PostingsFormat extends PostingsFormat {
+public final class TempPostingsFormat extends PostingsFormat {
   /**
    * Filename extension for document number, frequencies, and skip data.
    * See chapter: <a href="#Frequencies">Frequencies and Skip Data</a>
@@ -383,18 +381,18 @@ public final class Lucene41PostingsFormat extends PostingsFormat {
   // NOTE: must be multiple of 64 because of PackedInts long-aligned encoding/decoding
   public final static int BLOCK_SIZE = 128;
 
-  /** Creates {@code Lucene41PostingsFormat} with default
+  /** Creates {@code TempPostingsFormat} with default
    *  settings. */
-  public Lucene41PostingsFormat() {
-    this(BlockTreeTermsWriter.DEFAULT_MIN_BLOCK_SIZE, BlockTreeTermsWriter.DEFAULT_MAX_BLOCK_SIZE);
+  public TempPostingsFormat() {
+    this(TempBlockTermsWriter.DEFAULT_MIN_BLOCK_SIZE, TempBlockTermsWriter.DEFAULT_MAX_BLOCK_SIZE);
   }
 
-  /** Creates {@code Lucene41PostingsFormat} with custom
+  /** Creates {@code TempPostingsFormat} with custom
    *  values for {@code minBlockSize} and {@code
    *  maxBlockSize} passed to block terms dictionary.
-   *  @see BlockTreeTermsWriter#BlockTreeTermsWriter(SegmentWriteState,PostingsWriterBase,int,int) */
-  public Lucene41PostingsFormat(int minTermBlockSize, int maxTermBlockSize) {
-    super("Lucene41");
+   *  @see TempBlockTermsWriter#TempBlockTermsWriter(SegmentWriteState,PostingsWriterBase,int,int) */
+  public TempPostingsFormat(int minTermBlockSize, int maxTermBlockSize) {
+    super("TempBlock");
     this.minTermBlockSize = minTermBlockSize;
     assert minTermBlockSize > 1;
     this.maxTermBlockSize = maxTermBlockSize;
@@ -408,11 +406,11 @@ public final class Lucene41PostingsFormat extends PostingsFormat {
 
   @Override
   public FieldsConsumer fieldsConsumer(SegmentWriteState state) throws IOException {
-    PostingsWriterBase postingsWriter = new Lucene41PostingsWriter(state);
+    TempPostingsWriterBase postingsWriter = new TempPostingsWriter(state);
 
     boolean success = false;
     try {
-      FieldsConsumer ret = new BlockTreeTermsWriter(state, 
+      FieldsConsumer ret = new TempBlockTermsWriter(state, 
                                                     postingsWriter,
                                                     minTermBlockSize, 
                                                     maxTermBlockSize);
@@ -427,14 +425,14 @@ public final class Lucene41PostingsFormat extends PostingsFormat {
 
   @Override
   public FieldsProducer fieldsProducer(SegmentReadState state) throws IOException {
-    PostingsReaderBase postingsReader = new Lucene41PostingsReader(state.directory,
+    TempPostingsReaderBase postingsReader = new TempPostingsReader(state.directory,
                                                                 state.fieldInfos,
                                                                 state.segmentInfo,
                                                                 state.context,
                                                                 state.segmentSuffix);
     boolean success = false;
     try {
-      FieldsProducer ret = new BlockTreeTermsReader(state.directory,
+      FieldsProducer ret = new TempBlockTermsReader(state.directory,
                                                     state.fieldInfos,
                                                     state.segmentInfo,
                                                     postingsReader,

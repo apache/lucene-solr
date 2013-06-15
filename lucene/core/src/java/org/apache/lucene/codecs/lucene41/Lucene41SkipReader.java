@@ -50,7 +50,7 @@ import org.apache.lucene.store.IndexInput;
  * Therefore, we'll trim df before passing it to the interface. see trim(int)
  *
  */
-final class Lucene41SkipReader extends MultiLevelSkipListReader {
+public final class Lucene41SkipReader extends MultiLevelSkipListReader {
   // private boolean DEBUG = Lucene41PostingsReader.DEBUG;
   private final int blockSize;
 
