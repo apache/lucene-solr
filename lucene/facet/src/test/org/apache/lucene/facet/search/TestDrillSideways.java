@@ -1175,6 +1175,5 @@ public class TestDrillSideways extends FacetTestCase {
     
     IOUtils.close(searcher.getIndexReader(), taxoReader, dir, taxoDir);
   }
-  
 }
 
