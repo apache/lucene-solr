@@ -70,9 +70,10 @@ public class TestTermInfosReaderIndex extends LuceneTestCase {
   /** we will manually instantiate preflex-rw here */
   @BeforeClass
   public static void beforeClass() throws Exception {
+    // NOTE: turn off compound file, this test will open some index files directly.
     LuceneTestCase.PREFLEX_IMPERSONATION_IS_ACTIVE = true;
     IndexWriterConfig config = newIndexWriterConfig(TEST_VERSION_CURRENT, 
-        new MockAnalyzer(random(), MockTokenizer.KEYWORD, false));
+        new MockAnalyzer(random(), MockTokenizer.KEYWORD, false)).setUseCompoundFile(false);
     
     termIndexInterval = config.getTermIndexInterval();
     indexDivisor = _TestUtil.nextInt(random(), 1, 10);
@@ -83,7 +84,7 @@ public class TestTermInfosReaderIndex extends LuceneTestCase {
 
     config.setCodec(new PreFlexRWCodec());
     LogMergePolicy mp = newLogMergePolicy();
-    // turn off compound file, this test will open some index files directly.
+    // NOTE: turn off compound file, this test will open some index files directly.
     mp.setNoCFSRatio(0.0);
     config.setMergePolicy(mp);
 
