@@ -26,6 +26,7 @@
   <!-- currently whether rat detects this as binary or not
        is platform dependent?! -->
   <property name="rat.excludes" value="**/*.txt,**/bocchan.utf-8"/>
+  <property name="rat.additional-includes" value="src/tools/**"/>
 
   <!-- we don't want to pull in ipadic/naist etc -->
   <property name="ivy.default.configuration" value="default"/>
@@ -45,7 +46,7 @@
   <property name="dict.encoding" value="euc-jp"/>
   <property name="dict.format" value="ipadic"/>
   <property name="dict.normalize" value="false"/>
-  <property name="dict.target.dir" location="./src/resources"/>
+  <property name="dict.target.dir" location="${resources.dir}"/>
 
 
   <available type="dir" file="${build.dir}/${ipadic.version}" property="dict.available"/>
@@ -83,7 +84,7 @@
   <target name="build-dict" depends="compile-tools, download-dict">
     <sequential>
       <delete verbose="true">
-        <fileset dir="src/resources/org/apache/lucene/analysis/ja/dict" includes="**/*"/>
+        <fileset dir="${resources.dir}/org/apache/lucene/analysis/ja/dict" includes="**/*"/>
       </delete>
       <!-- TODO: optimize the dictionary construction a bit so that you don't need 1G -->
       <java fork="true" failonerror="true" maxmemory="1g" classname="org.apache.lucene.analysis.ja.util.DictionaryBuilder">

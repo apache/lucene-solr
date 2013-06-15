@@ -186,6 +186,7 @@
   <property name="build.encoding" value="utf-8"/>
 
   <property name="src.dir" location="src/java"/>
+  <property name="resources.dir" location="${src.dir}/../resources"/>
   <property name="tests.src.dir" location="src/test"/>
   <available property="module.has.tests" type="dir" file="${tests.src.dir}"/>
   <property name="build.dir" location="build"/>
@@ -255,6 +256,8 @@
 
   <!-- a reasonable default exclusion set, can be overridden for special cases -->
   <property name="rat.excludes" value="**/TODO,**/*.txt,**/*.iml"/>
+  <!-- This pattern can be defined to add additional files for checks, relative to module's home dir -->
+  <property name="rat.additional-includes" value=""/>
 
   <propertyset id="uptodate.and.compiled.properties" dynamic="true">
     <propertyref regex=".*\.uptodate$$"/>
@@ -489,7 +492,7 @@
 
     <!-- Copy the resources folder (if existent) -->
     <copy todir="${build.dir}/classes/java">
-      <fileset dir="${src.dir}/../resources" erroronmissingdir="no"/>
+      <fileset dir="${resources.dir}" erroronmissingdir="no"/>
     </copy>
   </target>
 
@@ -1339,7 +1342,7 @@ ${tests-output}/junit4-*.suites     - per-JVM executed suites
     <sequential>
       <mkdir dir="${build.dir}" />
       <jarify basedir="${src.dir}" destfile="${build.dir}/${final.name}-src.jar">
-        <fileset dir="${src.dir}/../resources" erroronmissingdir="no"/>
+        <fileset dir="${resources.dir}" erroronmissingdir="no"/>
       </jarify>
     </sequential>
   </target>
@@ -1515,7 +1518,6 @@ ${tests-output}/junit4-*.suites     - per-JVM executed suites
 
   <target name="rat-sources" depends="rat-sources-typedef"
 	  description="runs the tasks over source and test files">
-    <sequential>
     <!-- create a temp file for the log to go to -->
     <tempfile property="rat.sources.logfile"
               prefix="rat"
@@ -1523,11 +1525,12 @@ ${tests-output}/junit4-*.suites     - per-JVM executed suites
     <!-- run rat, going to the file -->
     <rat:report xmlns:rat="antlib:org.apache.rat.anttasks" 
                 reportFile="${rat.sources.logfile}">
-      <fileset dir="${src.dir}" excludes="${rat.excludes}"/>
+      <fileset dir="." includes="*.xml ${rat.additional-includes}"/>
+      <fileset dir="${src.dir}" excludes="${rat.excludes}" erroronmissingdir="false"/>
       <fileset dir="${tests.src.dir}" excludes="${rat.excludes}" erroronmissingdir="false"/>
-      <!-- some modules have a src/tools/[java,test] -->
-      <fileset dir="src/tools/java" excludes="${rat.excludes}" erroronmissingdir="false"/>
-      <fileset dir="src/tools/test" excludes="${rat.excludes}" erroronmissingdir="false"/>
+
+      <!-- TODO: Check all resource files. Currently not all stopword and similar files have no header! -->
+      <fileset dir="${resources.dir}" includes="META-INF/**" erroronmissingdir="false"/>
       
       <!-- bsd-like stuff -->
       <rat:substringMatcher licenseFamilyCategory="BSD  "
@@ -1594,7 +1597,6 @@ ${tests-output}/junit4-*.suites     - per-JVM executed suites
         <available file="${rat.sources.logfile}"/>
       </condition>
     </fail>
-    </sequential>
   </target>
 
   <!--+

@@ -21,6 +21,9 @@
   <description>Lucene Tools</description>
 
   <property name="build.dir" location="../build/tools"/>
+  
+  <!-- TODO: Add prettify ASF license header. Currently they have no header because they were compressed without License header! -->
+  <property name="rat.additional-includes" value="forbiddenApis/**"/>
 
   <import file="../common-build.xml"/>
 

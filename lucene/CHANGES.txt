@@ -236,6 +236,10 @@ Build
   project name.  This also enforces UTF-8 encoding when files are copied with
   filtering.
 
+* LUCENE-5055: "rat-sources" target now checks also build.xml, ivy.xml,
+  forbidden-api signatures, and parts of resources folders.  (Ryan Ernst,
+  Uwe Schindler)
+
 Tests
 
 * LUCENE-4901: TestIndexWriterOnJRECrash should work on any 
