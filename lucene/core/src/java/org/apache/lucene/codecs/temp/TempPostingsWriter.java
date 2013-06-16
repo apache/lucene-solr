@@ -198,13 +198,18 @@ public final class TempPostingsWriter extends TempPostingsWriterBase {
   // nocommit better name?
 
   @Override
-  public void setField(FieldInfo fieldInfo) {
+  public int setField(FieldInfo fieldInfo) {
     IndexOptions indexOptions = fieldInfo.getIndexOptions();
     fieldHasFreqs = indexOptions.compareTo(IndexOptions.DOCS_AND_FREQS) >= 0;
     fieldHasPositions = indexOptions.compareTo(IndexOptions.DOCS_AND_FREQS_AND_POSITIONS) >= 0;
     fieldHasOffsets = indexOptions.compareTo(IndexOptions.DOCS_AND_FREQS_AND_POSITIONS_AND_OFFSETS) >= 0;
     fieldHasPayloads = fieldInfo.hasPayloads();
     skipWriter.setField(fieldHasPositions, fieldHasOffsets, fieldHasPayloads);
+    if (fieldHasPositions) {
+      return 3;  // doc + pos + pay FP
+    } else {
+      return 1;  // docFP
+    }
   }
 
   @Override
@@ -347,14 +352,6 @@ public final class TempPostingsWriter extends TempPostingsWriterBase {
       //   System.out.println("  docBufferUpto="+docBufferUpto+" now get lastBlockDocID="+lastBlockDocID+" lastBlockPosFP=" + lastBlockPosFP + " lastBlockPosBufferUpto=" +  lastBlockPosBufferUpto + " lastBlockPayloadByteUpto=" + lastBlockPayloadByteUpto);
       // }
       docBufferUpto = 0;
-    }
-  }
-
-  public int longsSize() {
-    if (fieldHasPositions) {
-      return 3;  // doc + pos + pay FP
-    } else {
-      return 1;  // docFP
     }
   }
 

@@ -496,6 +496,7 @@ public class TempBlockTermsWriter extends FieldsConsumer {
 
   class TermsWriter extends TermsConsumer {
     private final FieldInfo fieldInfo;
+    private final int longsSize;
     private long numTerms;
     long sumTotalTermFreq;
     long sumDocFreq;
@@ -856,8 +857,7 @@ public class TempBlockTermsWriter extends FieldsConsumer {
 
       int termCount;
 
-      final int size = postingsWriter.longsSize();
-      long[] lastLongs = new long[size];
+      long[] lastLongs = new long[longsSize];
       Arrays.fill(lastLongs, 0);
 
       if (isLeafBlock) {
@@ -884,7 +884,7 @@ public class TempBlockTermsWriter extends FieldsConsumer {
           }
 
           // Write term meta data
-          for (int pos = 0; pos < size; pos++) {
+          for (int pos = 0; pos < longsSize; pos++) {
             assert term.longs[pos] >= 0;
             metaWriter.writeVLong(term.longs[pos] - lastLongs[pos]);
           }
@@ -926,7 +926,7 @@ public class TempBlockTermsWriter extends FieldsConsumer {
             // separate anymore:
 
             // Write term meta data
-            for (int pos = 0; pos < size; pos++) {
+            for (int pos = 0; pos < longsSize; pos++) {
               assert term.longs[pos] >= 0;
               metaWriter.writeVLong(term.longs[pos] - lastLongs[pos]);
             }
@@ -1014,7 +1014,7 @@ public class TempBlockTermsWriter extends FieldsConsumer {
                                          PackedInts.COMPACT,
                                          true, 15);
 
-      postingsWriter.setField(fieldInfo);
+      this.longsSize = postingsWriter.setField(fieldInfo);
     }
     
     @Override
@@ -1046,7 +1046,7 @@ public class TempBlockTermsWriter extends FieldsConsumer {
 
       blockBuilder.add(Util.toIntsRef(text, scratchIntsRef), noOutputs.getNoOutput());
 
-      long[] longs = new long[postingsWriter.longsSize()];
+      long[] longs = new long[longsSize];
       postingsWriter.finishTerm(longs, metaWriter, stats);
       byte[] bytes = new byte[(int)metaWriter.getFilePointer()];
       metaWriter.writeTo(bytes, 0);
@@ -1093,7 +1093,7 @@ public class TempBlockTermsWriter extends FieldsConsumer {
                                      sumTotalTermFreq,
                                      sumDocFreq,
                                      docCount,
-                                     postingsWriter.longsSize()));
+                                     longsSize));
       } else {
         assert sumTotalTermFreq == 0 || fieldInfo.getIndexOptions() == IndexOptions.DOCS_ONLY && sumTotalTermFreq == -1;
         assert sumDocFreq == 0;
