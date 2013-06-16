@@ -917,6 +917,14 @@ public class TempBlockTermsWriter extends FieldsConsumer {
               statsWriter.writeVLong(term.stats.totalTermFreq - term.stats.docFreq);
             }
 
+            // TODO: now that terms dict "sees" these longs,
+            // we can explore better column-stride encodings
+            // to encode all long[0]s for this block at
+            // once, all long[1]s, etc., e.g. using
+            // Simple64.  Alternatively, we could interleave
+            // stats + meta ... no reason to have them
+            // separate anymore:
+
             // Write term meta data
             for (int pos = 0; pos < size; pos++) {
               assert term.longs[pos] >= 0;

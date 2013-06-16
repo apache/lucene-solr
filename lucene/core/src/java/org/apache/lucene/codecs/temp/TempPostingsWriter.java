@@ -195,6 +195,8 @@ public final class TempPostingsWriter extends TempPostingsWriterBase {
     termsOut.writeVInt(BLOCK_SIZE);
   }
 
+  // nocommit better name?
+
   @Override
   public void setField(FieldInfo fieldInfo) {
     IndexOptions indexOptions = fieldInfo.getIndexOptions();
@@ -355,6 +357,8 @@ public final class TempPostingsWriter extends TempPostingsWriterBase {
       return 1;  // docFP
     }
   }
+
+  // nocommit explain about the "don't care" values
 
   /** Called when we are done adding docs to this term */
   @Override
