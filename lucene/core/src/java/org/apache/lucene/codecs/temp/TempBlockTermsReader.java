@@ -26,6 +26,7 @@ import java.util.Comparator;
 import java.util.Iterator;
 import java.util.Locale;
 import java.util.TreeMap;
+import java.util.Arrays;
 
 import org.apache.lucene.index.CorruptIndexException;
 import org.apache.lucene.index.DocsAndPositionsEnum;
@@ -621,6 +622,12 @@ public class TempBlockTermsReader extends FieldsProducer {
         FST.Arc<BytesRef> arc;
 
         final TempTermState termState;
+  
+        // metadata buffer, holding monotonical values
+        public long[] longs;
+        // metadata buffer, holding general values
+        public byte[] bytes;
+        ByteArrayDataInput bytesReader;
 
         // Cumulative output so far
         BytesRef outputPrefix;
@@ -630,8 +637,9 @@ public class TempBlockTermsReader extends FieldsProducer {
 
         public Frame(int ord) throws IOException {
           this.ord = ord;
-          termState = postingsReader.newTermState();
-          termState.totalTermFreq = -1;
+          this.termState = postingsReader.newTermState();
+          this.termState.totalTermFreq = -1;
+          this.longs = new long[postingsReader.longsSize(fieldInfo)];
         }
 
         void loadNextFloorBlock() throws IOException {
@@ -729,8 +737,17 @@ public class TempBlockTermsReader extends FieldsProducer {
 
           termState.termBlockOrd = 0;
           nextEnt = 0;
-          
-          postingsReader.readTermsBlock(in, fieldInfo, termState);
+         
+          // metadata
+          numBytes = in.readVInt();
+          if (bytes == null) {
+            bytes = new byte[ArrayUtil.oversize(numBytes, 1)];
+            bytesReader = new ByteArrayDataInput();
+          } else if (bytes.length < numBytes) {
+            bytes = new byte[ArrayUtil.oversize(numBytes, 1)];
+          }
+          in.readBytes(bytes, 0, numBytes);
+          bytesReader.reset(bytes, 0, numBytes);
 
           if (!isLastInFloor) {
             // Sub-blocks of a single floor block are always
@@ -785,9 +802,10 @@ public class TempBlockTermsReader extends FieldsProducer {
           final int limit = getTermBlockOrd();
           assert limit > 0;
 
-          // We must set/incr state.termCount because
-          // postings impl can look at this
-          termState.termBlockOrd = metaDataUpto;
+          if (metaDataUpto == 0) {
+            Arrays.fill(longs, 0);
+          }
+          final int longSize = longs.length;
       
           // TODO: better API would be "jump straight to term=N"???
           while (metaDataUpto < limit) {
@@ -800,17 +818,21 @@ public class TempBlockTermsReader extends FieldsProducer {
 
             // TODO: if docFreq were bulk decoded we could
             // just skipN here:
+
+            // stats
             termState.docFreq = statsReader.readVInt();
-            //if (DEBUG) System.out.println("    dF=" + state.docFreq);
             if (fieldInfo.getIndexOptions() != IndexOptions.DOCS_ONLY) {
               termState.totalTermFreq = termState.docFreq + statsReader.readVLong();
-              //if (DEBUG) System.out.println("    totTF=" + state.totalTermFreq);
             }
+            // metadata 
+            for (int i = 0; i < longSize; i++) {
+              longs[i] += bytesReader.readVLong();
+            }
+            postingsReader.nextTerm(longs, bytesReader, fieldInfo, termState);
 
-            postingsReader.nextTerm(fieldInfo, termState);
             metaDataUpto++;
-            termState.termBlockOrd++;
           }
+          termState.termBlockOrd = metaDataUpto;
         }
       }
 
@@ -2300,10 +2322,17 @@ public class TempBlockTermsReader extends FieldsProducer {
 
         final TempTermState state;
 
+        // metadata buffer, holding monotonical values
+        public long[] longs;
+        // metadata buffer, holding general values
+        public byte[] bytes;
+        ByteArrayDataInput bytesReader;
+
         public Frame(int ord) throws IOException {
           this.ord = ord;
-          state = postingsReader.newTermState();
-          state.totalTermFreq = -1;
+          this.state = postingsReader.newTermState();
+          this.state.totalTermFreq = -1;
+          this.longs = new long[postingsReader.longsSize(fieldInfo)];
         }
 
         public void setFloorData(ByteArrayDataInput in, BytesRef source) {
@@ -2401,7 +2430,17 @@ public class TempBlockTermsReader extends FieldsProducer {
 
           // TODO: we could skip this if !hasTerms; but
           // that's rare so won't help much
-          postingsReader.readTermsBlock(in, fieldInfo, state);
+          // metadata
+          numBytes = in.readVInt();
+          if (bytes == null) {
+            bytes = new byte[ArrayUtil.oversize(numBytes, 1)];
+            bytesReader = new ByteArrayDataInput();
+          } else if (bytes.length < numBytes) {
+            bytes = new byte[ArrayUtil.oversize(numBytes, 1)];
+          }
+          in.readBytes(bytes, 0, numBytes);
+          bytesReader.reset(bytes, 0, numBytes);
+
 
           // Sub-blocks of a single floor block are always
           // written one after another -- tail recurse:
@@ -2587,9 +2626,10 @@ public class TempBlockTermsReader extends FieldsProducer {
           final int limit = getTermBlockOrd();
           assert limit > 0;
 
-          // We must set/incr state.termCount because
-          // postings impl can look at this
-          state.termBlockOrd = metaDataUpto;
+          if (metaDataUpto == 0) {
+            Arrays.fill(longs, 0);
+          }
+          final int longSize = longs.length;
       
           // TODO: better API would be "jump straight to term=N"???
           while (metaDataUpto < limit) {
@@ -2602,17 +2642,21 @@ public class TempBlockTermsReader extends FieldsProducer {
 
             // TODO: if docFreq were bulk decoded we could
             // just skipN here:
+
+            // stats
             state.docFreq = statsReader.readVInt();
-            //if (DEBUG) System.out.println("    dF=" + state.docFreq);
             if (fieldInfo.getIndexOptions() != IndexOptions.DOCS_ONLY) {
               state.totalTermFreq = state.docFreq + statsReader.readVLong();
-              //if (DEBUG) System.out.println("    totTF=" + state.totalTermFreq);
             }
+            // metadata 
+            for (int i = 0; i < longSize; i++) {
+              longs[i] += bytesReader.readVLong();
+            }
+            postingsReader.nextTerm(longs, bytesReader, fieldInfo, state);
 
-            postingsReader.nextTerm(fieldInfo, state);
             metaDataUpto++;
-            state.termBlockOrd++;
           }
+          state.termBlockOrd = metaDataUpto;
         }
 
         // Used only by assert

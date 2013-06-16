@@ -16,8 +16,11 @@ package org.apache.lucene.codecs.temp;
  * limitations under the License.
  */
 
+import java.util.Arrays;
+
 import org.apache.lucene.index.DocsEnum; // javadocs
 import org.apache.lucene.index.TermState;
+import org.apache.lucene.store.ByteArrayDataInput;
 
 /**
  * Holds all state required for {@link PostingsReaderBase}

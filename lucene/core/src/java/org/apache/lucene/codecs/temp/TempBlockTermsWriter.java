@@ -21,6 +21,7 @@ import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.List;
+import java.util.Arrays;
 
 import org.apache.lucene.index.FieldInfo.IndexOptions;
 import org.apache.lucene.index.FieldInfo;
@@ -481,6 +482,15 @@ public class TempBlockTermsWriter extends FieldsConsumer {
       }
     }
   }
+  
+  private static final class PendingMetaData {
+    public long[] longs;
+    public RAMOutputStream bytesWriter;
+    public PendingMetaData(int length) {
+      longs = new long[length];
+      bytesWriter = new RAMOutputStream();
+    }
+  }
 
   final RAMOutputStream scratchBytes = new RAMOutputStream();
 
@@ -936,8 +946,8 @@ public class TempBlockTermsWriter extends FieldsConsumer {
       bytesWriter2.writeTo(out);
       bytesWriter2.reset();
 
-      // Have postings writer write block
-      postingsWriter.flushTermsBlock(futureTermCount+termCount, termCount);
+      // Write term metadata block
+      flushTermsBlock(futureTermCount+termCount, termCount);
 
       // Remove slice replaced by block:
       slice.clear();
@@ -955,6 +965,46 @@ public class TempBlockTermsWriter extends FieldsConsumer {
       // }
 
       return new PendingBlock(prefix, startFP, termCount != 0, isFloor, floorLeadByte, subIndices);
+    }
+
+    /** Flush count terms starting at start "backwards", as a
+     *  block. start is a negative offset from the end of the
+     *  terms stack, ie bigger start means further back in
+     *  the stack. */
+    void flushTermsBlock(int start, int count) throws IOException {
+      if (count == 0) {
+        out.writeByte((byte) 0);
+        return;
+      }
+
+      assert start <= pendingMetaData.size();
+      assert count <= start;
+
+      final int limit = pendingMetaData.size() - start + count;
+      final int size = postingsWriter.longsSize(fieldInfo);
+
+      long[] lastLongs = new long[size];
+      Arrays.fill(lastLongs, 0);
+      for(int idx=limit-count; idx<limit; idx++) {
+        PendingMetaData meta = pendingMetaData.get(idx);
+        for (int pos = 0; pos < size; pos++) {
+          if (meta.longs[pos] < 0) {
+            // nocommit: this -1 padding is implicit (maybe we need javadocs, or better
+            // an API to tell PostingsBase that: every time you meet a 'don't care', just put -1 on it?
+            meta.longs[pos] = lastLongs[pos];
+          }
+          bytesWriter3.writeVLong(meta.longs[pos] - lastLongs[pos]);
+        }
+        lastLongs = meta.longs;
+        meta.bytesWriter.writeTo(bytesWriter3);
+      }
+
+      out.writeVInt((int) bytesWriter3.getFilePointer());
+      bytesWriter3.writeTo(out);
+      bytesWriter3.reset();
+
+      // Remove the terms we just wrote:
+      pendingMetaData.subList(limit-count, limit).clear();
     }
 
     TermsWriter(FieldInfo fieldInfo) {
@@ -997,6 +1047,9 @@ public class TempBlockTermsWriter extends FieldsConsumer {
 
     private final IntsRef scratchIntsRef = new IntsRef();
 
+    private final List<PendingMetaData> pendingMetaData = new ArrayList<PendingMetaData>();
+    private final RAMOutputStream bytesWriter3 = new RAMOutputStream();
+
     @Override
     public void finishTerm(BytesRef text, TermStats stats) throws IOException {
 
@@ -1004,8 +1057,11 @@ public class TempBlockTermsWriter extends FieldsConsumer {
       //if (DEBUG) System.out.println("BTTW.finishTerm term=" + fieldInfo.name + ":" + toString(text) + " seg=" + segment + " df=" + stats.docFreq);
 
       blockBuilder.add(Util.toIntsRef(text, scratchIntsRef), noOutputs.getNoOutput());
-      pending.add(new PendingTerm(BytesRef.deepCopyOf(text), stats));
-      postingsWriter.finishTerm(stats);
+      PendingTerm term = new PendingTerm(BytesRef.deepCopyOf(text), stats);
+      PendingMetaData meta = new PendingMetaData(postingsWriter.longsSize(fieldInfo));
+      pending.add(term);
+      postingsWriter.finishTerm(meta.longs, meta.bytesWriter, stats);
+      pendingMetaData.add(meta);
       numTerms++;
     }
 

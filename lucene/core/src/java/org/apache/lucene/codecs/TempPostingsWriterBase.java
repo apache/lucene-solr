@@ -20,6 +20,7 @@ package org.apache.lucene.codecs;
 import java.io.IOException;
 import java.io.Closeable;
 
+import org.apache.lucene.store.DataOutput;
 import org.apache.lucene.store.IndexOutput;
 import org.apache.lucene.index.FieldInfo;
 
@@ -55,15 +56,12 @@ public abstract class TempPostingsWriterBase extends PostingsConsumer implements
    *  document. */
   public abstract void startTerm() throws IOException;
 
-  /** Flush count terms starting at start "backwards", as a
-   *  block. start is a negative offset from the end of the
-   *  terms stack, ie bigger start means further back in
-   *  the stack. */
-  public abstract void flushTermsBlock(int start, int count) throws IOException;
-
   /** Finishes the current term.  The provided {@link
    *  TermStats} contains the term's summary statistics. */
-  public abstract void finishTerm(TermStats stats) throws IOException;
+  public abstract void finishTerm(long[] longs, DataOutput out, TermStats stats) throws IOException;
+
+  /** Return the fixed length of longs */
+  public abstract int longsSize(FieldInfo fieldInfo);
 
   /** Called when the writing switches to another field. */
   public abstract void setField(FieldInfo fieldInfo);

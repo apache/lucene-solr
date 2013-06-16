@@ -35,6 +35,7 @@ import org.apache.lucene.index.FieldInfo;
 import org.apache.lucene.index.FieldInfo.IndexOptions;
 import org.apache.lucene.index.IndexFileNames;
 import org.apache.lucene.index.SegmentWriteState;
+import org.apache.lucene.store.DataOutput;
 import org.apache.lucene.store.IndexOutput;
 import org.apache.lucene.store.RAMOutputStream;
 import org.apache.lucene.util.ArrayUtil;
@@ -72,8 +73,6 @@ public final class TempPostingsWriter extends TempPostingsWriterBase {
   final IndexOutput docOut;
   final IndexOutput posOut;
   final IndexOutput payOut;
-
-  private IndexOutput termsOut;
 
   // How current field indexes postings:
   private boolean fieldHasFreqs;
@@ -192,7 +191,6 @@ public final class TempPostingsWriter extends TempPostingsWriterBase {
 
   @Override
   public void start(IndexOutput termsOut) throws IOException {
-    this.termsOut = termsOut;
     CodecUtil.writeHeader(termsOut, TERMS_CODEC, VERSION_CURRENT);
     termsOut.writeVInt(BLOCK_SIZE);
   }
@@ -350,29 +348,17 @@ public final class TempPostingsWriter extends TempPostingsWriterBase {
     }
   }
 
-  private static class PendingTerm {
-    public final long docStartFP;
-    public final long posStartFP;
-    public final long payStartFP;
-    public final long skipOffset;
-    public final long lastPosBlockOffset;
-    public final int singletonDocID;
-
-    public PendingTerm(long docStartFP, long posStartFP, long payStartFP, long skipOffset, long lastPosBlockOffset, int singletonDocID) {
-      this.docStartFP = docStartFP;
-      this.posStartFP = posStartFP;
-      this.payStartFP = payStartFP;
-      this.skipOffset = skipOffset;
-      this.lastPosBlockOffset = lastPosBlockOffset;
-      this.singletonDocID = singletonDocID;
+  public int longsSize(FieldInfo info) {
+    if (fieldHasPositions) {
+      return 3;  // doc + pos + pay FP
+    } else {
+      return 1;  // docFP
     }
   }
 
-  private final List<PendingTerm> pendingTerms = new ArrayList<PendingTerm>();
-
   /** Called when we are done adding docs to this term */
   @Override
-  public void finishTerm(TermStats stats) throws IOException {
+  public void finishTerm(long[] longs, DataOutput out, TermStats stats) throws IOException {
     assert stats.docFreq > 0;
 
     // TODO: wasteful we are counting this (counting # docs
@@ -514,69 +500,32 @@ public final class TempPostingsWriter extends TempPostingsWriterBase {
     } else {
       payStartFP = -1;
     }
-
     // if (DEBUG) {
     //   System.out.println("  payStartFP=" + payStartFP);
     // }
 
-    pendingTerms.add(new PendingTerm(docTermStartFP, posTermStartFP, payStartFP, skipOffset, lastPosBlockOffset, singletonDocID));
+    // write metadata
+    longs[0] = docTermStartFP;
+    if (fieldHasPositions) {
+      longs[1] = posTermStartFP;
+      longs[2] = payStartFP;
+    }
+    if (singletonDocID != -1) {
+      out.writeVInt(singletonDocID);
+    }
+    if (fieldHasPositions) {
+      if (lastPosBlockOffset != -1) {
+        out.writeVLong(lastPosBlockOffset);
+      }
+    }
+    if (skipOffset != -1) {
+      out.writeVLong(skipOffset);
+    }
+
     docBufferUpto = 0;
     posBufferUpto = 0;
     lastDocID = 0;
     docCount = 0;
-  }
-
-  private final RAMOutputStream bytesWriter = new RAMOutputStream();
-
-  @Override
-  public void flushTermsBlock(int start, int count) throws IOException {
-
-    if (count == 0) {
-      termsOut.writeByte((byte) 0);
-      return;
-    }
-
-    assert start <= pendingTerms.size();
-    assert count <= start;
-
-    final int limit = pendingTerms.size() - start + count;
-
-    long lastDocStartFP = 0;
-    long lastPosStartFP = 0;
-    long lastPayStartFP = 0;
-    for(int idx=limit-count; idx<limit; idx++) {
-      PendingTerm term = pendingTerms.get(idx);
-
-      if (term.singletonDocID == -1) {
-        bytesWriter.writeVLong(term.docStartFP - lastDocStartFP);
-        lastDocStartFP = term.docStartFP;
-      } else {
-        bytesWriter.writeVInt(term.singletonDocID);
-      }
-
-      if (fieldHasPositions) {
-        bytesWriter.writeVLong(term.posStartFP - lastPosStartFP);
-        lastPosStartFP = term.posStartFP;
-        if (term.lastPosBlockOffset != -1) {
-          bytesWriter.writeVLong(term.lastPosBlockOffset);
-        }
-        if ((fieldHasPayloads || fieldHasOffsets) && term.payStartFP != -1) {
-          bytesWriter.writeVLong(term.payStartFP - lastPayStartFP);
-          lastPayStartFP = term.payStartFP;
-        }
-      }
-
-      if (term.skipOffset != -1) {
-        bytesWriter.writeVLong(term.skipOffset);
-      }
-    }
-
-    termsOut.writeVInt((int) bytesWriter.getFilePointer());
-    bytesWriter.writeTo(termsOut);
-    bytesWriter.reset();
-
-    // Remove the terms we just wrote:
-    pendingTerms.subList(limit-count, limit).clear();
   }
 
   @Override

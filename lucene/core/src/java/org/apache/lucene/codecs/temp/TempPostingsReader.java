@@ -199,78 +199,40 @@ public final class TempPostingsReader extends TempPostingsReaderBase {
     IOUtils.close(docIn, posIn, payIn);
   }
 
-  /* Reads but does not decode the byte[] blob holding
-     metadata for the current terms block */
   @Override
-  public void readTermsBlock(IndexInput termsIn, FieldInfo fieldInfo, TempTermState _termState) throws IOException {
-    final IntBlockTermState termState = (IntBlockTermState) _termState;
-
-    final int numBytes = termsIn.readVInt();
-
-    if (termState.bytes == null) {
-      termState.bytes = new byte[ArrayUtil.oversize(numBytes, 1)];
-      termState.bytesReader = new ByteArrayDataInput();
-    } else if (termState.bytes.length < numBytes) {
-      termState.bytes = new byte[ArrayUtil.oversize(numBytes, 1)];
+  public int longsSize(FieldInfo fieldInfo) {
+    final boolean fieldHasPositions = fieldInfo.getIndexOptions().compareTo(IndexOptions.DOCS_AND_FREQS_AND_POSITIONS) >= 0;
+    if (fieldHasPositions) {
+      return 3;
+    } else {
+      return 1;
     }
-
-    termsIn.readBytes(termState.bytes, 0, numBytes);
-    termState.bytesReader.reset(termState.bytes, 0, numBytes);
   }
 
   @Override
-  public void nextTerm(FieldInfo fieldInfo, TempTermState _termState)
+  public void nextTerm(long[] longs, DataInput in, FieldInfo fieldInfo, TempTermState _termState)
     throws IOException {
     final IntBlockTermState termState = (IntBlockTermState) _termState;
-    final boolean isFirstTerm = termState.termBlockOrd == 0;
     final boolean fieldHasPositions = fieldInfo.getIndexOptions().compareTo(IndexOptions.DOCS_AND_FREQS_AND_POSITIONS) >= 0;
     final boolean fieldHasOffsets = fieldInfo.getIndexOptions().compareTo(IndexOptions.DOCS_AND_FREQS_AND_POSITIONS_AND_OFFSETS) >= 0;
     final boolean fieldHasPayloads = fieldInfo.hasPayloads();
+    
+    termState.docStartFP = longs[0];
+    if (fieldHasPositions) {
+      termState.posStartFP = longs[1];
+      termState.payStartFP = longs[2];
+    }
 
-    final DataInput in = termState.bytesReader;
-    if (isFirstTerm) {
-      if (termState.docFreq == 1) {
-        termState.singletonDocID = in.readVInt();
-        termState.docStartFP = 0;
-      } else {
-        termState.singletonDocID = -1;
-        termState.docStartFP = in.readVLong();
-      }
-      if (fieldHasPositions) {
-        termState.posStartFP = in.readVLong();
-        if (termState.totalTermFreq > BLOCK_SIZE) {
-          termState.lastPosBlockOffset = in.readVLong();
-        } else {
-          termState.lastPosBlockOffset = -1;
-        }
-        if ((fieldHasPayloads || fieldHasOffsets) && termState.totalTermFreq >= BLOCK_SIZE) {
-          termState.payStartFP = in.readVLong();
-        } else {
-          termState.payStartFP = -1;
-        }
-      }
+    if (termState.docFreq == 1) {
+      termState.singletonDocID = in.readVInt();
     } else {
-      if (termState.docFreq == 1) {
-        termState.singletonDocID = in.readVInt();
+      termState.singletonDocID = -1;
+    }
+    if (fieldHasPositions) {
+      if (termState.totalTermFreq > BLOCK_SIZE) {
+        termState.lastPosBlockOffset = in.readVLong();
       } else {
-        termState.singletonDocID = -1;
-        termState.docStartFP += in.readVLong();
-      }
-      if (fieldHasPositions) {
-        termState.posStartFP += in.readVLong();
-        if (termState.totalTermFreq > BLOCK_SIZE) {
-          termState.lastPosBlockOffset = in.readVLong();
-        } else {
-          termState.lastPosBlockOffset = -1;
-        }
-        if ((fieldHasPayloads || fieldHasOffsets) && termState.totalTermFreq >= BLOCK_SIZE) {
-          long delta = in.readVLong();
-          if (termState.payStartFP == -1) {
-            termState.payStartFP = delta;
-          } else {
-            termState.payStartFP += delta;
-          }
-        }
+        termState.lastPosBlockOffset = -1;
       }
     }
 
