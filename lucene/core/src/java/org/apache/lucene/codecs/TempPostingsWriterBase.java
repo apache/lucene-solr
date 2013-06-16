@@ -52,7 +52,7 @@ public abstract class TempPostingsWriterBase extends PostingsConsumer implements
   public abstract void start(IndexOutput termsOut) throws IOException;
 
   /** Start a new term.  Note that a matching call to {@link
-   *  #finishTerm(TermStats)} is done, only if the term has at least one
+   *  #finishTerm(long[], DataOutput, TermStats)} is done, only if the term has at least one
    *  document. */
   public abstract void startTerm() throws IOException;
 
@@ -60,11 +60,10 @@ public abstract class TempPostingsWriterBase extends PostingsConsumer implements
    *  TermStats} contains the term's summary statistics. */
   public abstract void finishTerm(long[] longs, DataOutput out, TermStats stats) throws IOException;
 
-  /** Return the fixed length of longs */
-  public abstract int longsSize();
-
-  /** Called when the writing switches to another field. */
-  public abstract void setField(FieldInfo fieldInfo);
+  /** 
+   * Return the fixed length of longs,
+   * called when the writing switches to another field. */
+  public abstract int setField(FieldInfo fieldInfo);
 
   @Override
   public abstract void close() throws IOException;
