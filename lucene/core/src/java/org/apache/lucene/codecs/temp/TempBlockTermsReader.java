@@ -166,6 +166,7 @@ public class TempBlockTermsReader extends FieldsProducer {
         final long sumTotalTermFreq = fieldInfo.getIndexOptions() == IndexOptions.DOCS_ONLY ? -1 : in.readVLong();
         final long sumDocFreq = in.readVLong();
         final int docCount = in.readVInt();
+        final int longsSize = in.readVInt();
         if (docCount < 0 || docCount > info.getDocCount()) { // #docs with field must be <= #docs
           throw new CorruptIndexException("invalid docCount: " + docCount + " maxDoc: " + info.getDocCount() + " (resource=" + in + ")");
         }
@@ -176,7 +177,7 @@ public class TempBlockTermsReader extends FieldsProducer {
           throw new CorruptIndexException("invalid sumTotalTermFreq: " + sumTotalTermFreq + " sumDocFreq: " + sumDocFreq + " (resource=" + in + ")");
         }
         final long indexStartFP = indexDivisor != -1 ? indexIn.readVLong() : 0;
-        FieldReader previous = fields.put(fieldInfo.name, new FieldReader(fieldInfo, numTerms, rootCode, sumTotalTermFreq, sumDocFreq, docCount, indexStartFP, indexIn));
+        FieldReader previous = fields.put(fieldInfo.name, new FieldReader(fieldInfo, numTerms, rootCode, sumTotalTermFreq, sumDocFreq, docCount, indexStartFP, longsSize, indexIn));
         if (previous != null) {
           throw new CorruptIndexException("duplicate field: " + fieldInfo.name + " (resource=" + in + ")");
         }
@@ -458,11 +459,12 @@ public class TempBlockTermsReader extends FieldsProducer {
     final long indexStartFP;
     final long rootBlockFP;
     final BytesRef rootCode;
-    private final FST<BytesRef> index;
+    final int longsSize;
 
+    private final FST<BytesRef> index;
     //private boolean DEBUG;
 
-    FieldReader(FieldInfo fieldInfo, long numTerms, BytesRef rootCode, long sumTotalTermFreq, long sumDocFreq, int docCount, long indexStartFP, IndexInput indexIn) throws IOException {
+    FieldReader(FieldInfo fieldInfo, long numTerms, BytesRef rootCode, long sumTotalTermFreq, long sumDocFreq, int docCount, long indexStartFP, int longsSize, IndexInput indexIn) throws IOException {
       assert numTerms > 0;
       this.fieldInfo = fieldInfo;
       //DEBUG = TempBlockTermsReader.DEBUG && fieldInfo.name.equals("id");
@@ -472,6 +474,7 @@ public class TempBlockTermsReader extends FieldsProducer {
       this.docCount = docCount;
       this.indexStartFP = indexStartFP;
       this.rootCode = rootCode;
+      this.longsSize = longsSize;
       // if (DEBUG) {
       //   System.out.println("BTTR: seg=" + segment + " field=" + fieldInfo.name + " rootBlockCode=" + rootCode + " divisor=" + indexDivisor);
       // }
@@ -639,7 +642,7 @@ public class TempBlockTermsReader extends FieldsProducer {
           this.ord = ord;
           this.termState = postingsReader.newTermState();
           this.termState.totalTermFreq = -1;
-          this.longs = new long[postingsReader.longsSize(fieldInfo)];
+          this.longs = new long[longsSize];
         }
 
         void loadNextFloorBlock() throws IOException {
@@ -828,7 +831,7 @@ public class TempBlockTermsReader extends FieldsProducer {
             for (int i = 0; i < longSize; i++) {
               longs[i] += bytesReader.readVLong();
             }
-            postingsReader.nextTerm(longs, bytesReader, fieldInfo, termState);
+            postingsReader.decodeTerm(longs, bytesReader, fieldInfo, termState);
 
             metaDataUpto++;
           }
@@ -2332,7 +2335,7 @@ public class TempBlockTermsReader extends FieldsProducer {
           this.ord = ord;
           this.state = postingsReader.newTermState();
           this.state.totalTermFreq = -1;
-          this.longs = new long[postingsReader.longsSize(fieldInfo)];
+          this.longs = new long[longsSize];
         }
 
         public void setFloorData(ByteArrayDataInput in, BytesRef source) {
@@ -2652,7 +2655,7 @@ public class TempBlockTermsReader extends FieldsProducer {
             for (int i = 0; i < longSize; i++) {
               longs[i] += bytesReader.readVLong();
             }
-            postingsReader.nextTerm(longs, bytesReader, fieldInfo, state);
+            postingsReader.decodeTerm(longs, bytesReader, fieldInfo, state);
 
             metaDataUpto++;
           }

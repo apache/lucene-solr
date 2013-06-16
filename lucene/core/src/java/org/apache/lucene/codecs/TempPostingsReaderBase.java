@@ -58,10 +58,7 @@ public abstract class TempPostingsReaderBase implements Closeable {
 
   /** Actually decode metadata for next term */
   // nocommit: remove the 'fieldInfo' ? I suppose for a given postingsPBR, this should be fixed?
-  public abstract void nextTerm(long[] longs, DataInput in, FieldInfo fieldInfo, TempTermState state) throws IOException;
-
-  /** Return the fixed length of longs */
-  public abstract int longsSize(FieldInfo fieldInfo);
+  public abstract void decodeTerm(long[] longs, DataInput in, FieldInfo fieldInfo, TempTermState state) throws IOException;
 
   /** Must fully consume state, since after this call that
    *  TermState may be reused. */

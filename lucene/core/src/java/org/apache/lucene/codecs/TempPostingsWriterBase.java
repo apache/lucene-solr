@@ -61,7 +61,7 @@ public abstract class TempPostingsWriterBase extends PostingsConsumer implements
   public abstract void finishTerm(long[] longs, DataOutput out, TermStats stats) throws IOException;
 
   /** Return the fixed length of longs */
-  public abstract int longsSize(FieldInfo fieldInfo);
+  public abstract int longsSize();
 
   /** Called when the writing switches to another field. */
   public abstract void setField(FieldInfo fieldInfo);

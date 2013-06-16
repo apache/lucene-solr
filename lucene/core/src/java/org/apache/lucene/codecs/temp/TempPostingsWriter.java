@@ -348,7 +348,7 @@ public final class TempPostingsWriter extends TempPostingsWriterBase {
     }
   }
 
-  public int longsSize(FieldInfo info) {
+  public int longsSize() {
     if (fieldHasPositions) {
       return 3;  // doc + pos + pay FP
     } else {
@@ -494,12 +494,6 @@ public final class TempPostingsWriter extends TempPostingsWriterBase {
       // }
     }
 
-    long payStartFP;
-    if (stats.totalTermFreq >= BLOCK_SIZE) {
-      payStartFP = payTermStartFP;
-    } else {
-      payStartFP = -1;
-    }
     // if (DEBUG) {
     //   System.out.println("  payStartFP=" + payStartFP);
     // }
@@ -508,7 +502,7 @@ public final class TempPostingsWriter extends TempPostingsWriterBase {
     longs[0] = docTermStartFP;
     if (fieldHasPositions) {
       longs[1] = posTermStartFP;
-      longs[2] = payStartFP;
+      longs[2] = payTermStartFP;
     }
     if (singletonDocID != -1) {
       out.writeVInt(singletonDocID);

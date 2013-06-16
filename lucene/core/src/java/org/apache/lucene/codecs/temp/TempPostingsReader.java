@@ -200,17 +200,7 @@ public final class TempPostingsReader extends TempPostingsReaderBase {
   }
 
   @Override
-  public int longsSize(FieldInfo fieldInfo) {
-    final boolean fieldHasPositions = fieldInfo.getIndexOptions().compareTo(IndexOptions.DOCS_AND_FREQS_AND_POSITIONS) >= 0;
-    if (fieldHasPositions) {
-      return 3;
-    } else {
-      return 1;
-    }
-  }
-
-  @Override
-  public void nextTerm(long[] longs, DataInput in, FieldInfo fieldInfo, TempTermState _termState)
+  public void decodeTerm(long[] longs, DataInput in, FieldInfo fieldInfo, TempTermState _termState)
     throws IOException {
     final IntBlockTermState termState = (IntBlockTermState) _termState;
     final boolean fieldHasPositions = fieldInfo.getIndexOptions().compareTo(IndexOptions.DOCS_AND_FREQS_AND_POSITIONS) >= 0;

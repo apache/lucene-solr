@@ -244,8 +244,9 @@ public class TempBlockTermsWriter extends FieldsConsumer {
     public final long sumTotalTermFreq;
     public final long sumDocFreq;
     public final int docCount;
+    private final int longsSize;
 
-    public FieldMetaData(FieldInfo fieldInfo, BytesRef rootCode, long numTerms, long indexStartFP, long sumTotalTermFreq, long sumDocFreq, int docCount) {
+    public FieldMetaData(FieldInfo fieldInfo, BytesRef rootCode, long numTerms, long indexStartFP, long sumTotalTermFreq, long sumDocFreq, int docCount, int longsSize) {
       assert numTerms > 0;
       this.fieldInfo = fieldInfo;
       assert rootCode != null: "field=" + fieldInfo.name + " numTerms=" + numTerms;
@@ -255,6 +256,7 @@ public class TempBlockTermsWriter extends FieldsConsumer {
       this.sumTotalTermFreq = sumTotalTermFreq;
       this.sumDocFreq = sumDocFreq;
       this.docCount = docCount;
+      this.longsSize = longsSize;
     }
   }
 
@@ -981,18 +983,14 @@ public class TempBlockTermsWriter extends FieldsConsumer {
       assert count <= start;
 
       final int limit = pendingMetaData.size() - start + count;
-      final int size = postingsWriter.longsSize(fieldInfo);
+      final int size = postingsWriter.longsSize();
 
       long[] lastLongs = new long[size];
       Arrays.fill(lastLongs, 0);
       for(int idx=limit-count; idx<limit; idx++) {
         PendingMetaData meta = pendingMetaData.get(idx);
         for (int pos = 0; pos < size; pos++) {
-          if (meta.longs[pos] < 0) {
-            // nocommit: this -1 padding is implicit (maybe we need javadocs, or better
-            // an API to tell PostingsBase that: every time you meet a 'don't care', just put -1 on it?
-            meta.longs[pos] = lastLongs[pos];
-          }
+          assert meta.longs[pos] >= 0;
           bytesWriter3.writeVLong(meta.longs[pos] - lastLongs[pos]);
         }
         lastLongs = meta.longs;
@@ -1058,7 +1056,7 @@ public class TempBlockTermsWriter extends FieldsConsumer {
 
       blockBuilder.add(Util.toIntsRef(text, scratchIntsRef), noOutputs.getNoOutput());
       PendingTerm term = new PendingTerm(BytesRef.deepCopyOf(text), stats);
-      PendingMetaData meta = new PendingMetaData(postingsWriter.longsSize(fieldInfo));
+      PendingMetaData meta = new PendingMetaData(postingsWriter.longsSize());
       pending.add(term);
       postingsWriter.finishTerm(meta.longs, meta.bytesWriter, stats);
       pendingMetaData.add(meta);
@@ -1100,7 +1098,8 @@ public class TempBlockTermsWriter extends FieldsConsumer {
                                      indexStartFP,
                                      sumTotalTermFreq,
                                      sumDocFreq,
-                                     docCount));
+                                     docCount,
+                                     postingsWriter.longsSize()));
       } else {
         assert sumTotalTermFreq == 0 || fieldInfo.getIndexOptions() == IndexOptions.DOCS_ONLY && sumTotalTermFreq == -1;
         assert sumDocFreq == 0;
@@ -1134,6 +1133,7 @@ public class TempBlockTermsWriter extends FieldsConsumer {
         }
         out.writeVLong(field.sumDocFreq);
         out.writeVInt(field.docCount);
+        out.writeVInt(field.longsSize);
         indexOut.writeVLong(field.indexStartFP);
       }
       writeTrailer(out, dirStart);
