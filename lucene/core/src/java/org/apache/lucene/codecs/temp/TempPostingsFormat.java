@@ -390,7 +390,7 @@ public final class TempPostingsFormat extends PostingsFormat {
   /** Creates {@code TempPostingsFormat} with custom
    *  values for {@code minBlockSize} and {@code
    *  maxBlockSize} passed to block terms dictionary.
-   *  @see TempBlockTermsWriter#TempBlockTermsWriter(SegmentWriteState,PostingsWriterBase,int,int) */
+   *  @see TempBlockTermsWriter#TempBlockTermsWriter(SegmentWriteState,TempPostingsWriterBase,int,int) */
   public TempPostingsFormat(int minTermBlockSize, int maxTermBlockSize) {
     super("TempBlock");
     this.minTermBlockSize = minTermBlockSize;

@@ -111,13 +111,12 @@ import org.apache.lucene.codecs.CodecUtil;
  * and decoding the Postings Metadata and Term Metadata sections.</p>
  *
  * <ul>
- * <!-- TODO: expand on this, its not really correct and doesnt explain sub-blocks etc -->
- *    <li>TermsDict (.tim) --&gt; Header, <i>Postings Metadata</i>, Block<sup>NumBlocks</sup>,
+ *    <li>TermsDict (.tim) --&gt; Header, <i>Postings Header</i>, NodeBlock<sup>NumBlocks</sup>,
  *                               FieldSummary, DirOffset</li>
- *    <li>Block --&gt; SuffixBlock, StatsBlock, MetadataBlock</li>
- *    <li>SuffixBlock --&gt; EntryCount, SuffixLength, Byte<sup>SuffixLength</sup></li>
- *    <li>StatsBlock --&gt; StatsLength, &lt;DocFreq, TotalTermFreq&gt;<sup>EntryCount</sup></li>
- *    <li>MetadataBlock --&gt; MetaLength, &lt;<i>Term Metadata</i>&gt;<sup>EntryCount</sup></li>
+ *    <li>NodeBlock --&gt; (OuterNode | InnerNode)</li>
+ *    <li>OuterNode --&gt; EntryCount, SuffixLength, Byte<sup>SuffixLength</sup>, StatsLength, &lt; TermStats &gt;<sup>EntryCount</sup>, MetaLength, &lt;<i>Term Metadata</i>&gt;<sup>EntryCount</sup></li>
+ *    <li>InnerNode --&gt; EntryCount, SuffixLength[,Sub?], Byte<sup>SuffixLength</sup>, StatsLength, &lt; TermStats ? &gt;<sup>EntryCount</sup>, MetaLength, &lt;<i>Term Metadata ? </i>&gt;<sup>EntryCount</sup></li>
+ *    <li>TermStats --&gt; DocFreq, TotalTermFreq </li>
  *    <li>FieldSummary --&gt; NumFields, &lt;FieldNumber, NumTerms, RootCodeLength, Byte<sup>RootCodeLength</sup>,
  *                            SumDocFreq, DocCount&gt;<sup>NumFields</sup></li>
  *    <li>Header --&gt; {@link CodecUtil#writeHeader CodecHeader}</li>
@@ -143,7 +142,9 @@ import org.apache.lucene.codecs.CodecUtil;
  *    <li>DocCount is the number of documents that have at least one posting for this field.</li>
  *    <li>PostingsMetadata and TermMetadata are plugged into by the specific postings implementation:
  *        these contain arbitrary per-file data (such as parameters or versioning information) 
- *        and per-term data (such as pointers to inverted files).
+ *        and per-term data (such as pointers to inverted files).</li>
+ *    <li>For inner nodes of the tree, every entry will steal one bit to mark whether it points
+ *        to child nodes(sub-block). If so, the corresponding TermStats and TermMetaData are omitted </li>
  * </ul>
  * <a name="Termindex" id="Termindex"></a>
  * <h3>Term Index</h3>
@@ -177,7 +178,7 @@ import org.apache.lucene.codecs.CodecUtil;
  *       sub-block, and its file pointer.
  * </ul>
  *
- * @see BlockTreeTermsReader
+ * @see TempBlockTermsReader
  * @lucene.experimental
  */
 

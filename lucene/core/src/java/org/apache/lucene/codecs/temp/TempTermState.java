@@ -19,11 +19,12 @@ package org.apache.lucene.codecs.temp;
 import java.util.Arrays;
 
 import org.apache.lucene.index.DocsEnum; // javadocs
+import org.apache.lucene.codecs.TempPostingsReaderBase; // javadocs
 import org.apache.lucene.index.TermState;
 import org.apache.lucene.store.ByteArrayDataInput;
 
 /**
- * Holds all state required for {@link PostingsReaderBase}
+ * Holds all state required for {@link TempPostingsReaderBase}
  * to produce a {@link DocsEnum} without re-seeking the
  * terms dict.
  */

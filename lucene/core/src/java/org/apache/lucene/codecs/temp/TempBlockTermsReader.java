@@ -59,6 +59,7 @@ import org.apache.lucene.util.fst.Util;
 import org.apache.lucene.codecs.FieldsProducer;
 import org.apache.lucene.codecs.TempPostingsReaderBase;
 import org.apache.lucene.codecs.CodecUtil;
+import org.apache.lucene.codecs.PostingsBaseFormat;  // javadoc
 
 /** A block-based terms index and dictionary that assigns
  *  terms to variable length blocks according to how they
