@@ -122,11 +122,11 @@ class DrillSidewaysQuery extends Query {
             }
             lastField = field;
           }
+          dims[dim].docsEnums = new DocsEnum[drillDownTerms[dim].length];
           if (termsEnum == null) {
             nullCount++;
             continue;
           }
-          dims[dim].docsEnums = new DocsEnum[drillDownTerms[dim].length];
           for(int i=0;i<drillDownTerms[dim].length;i++) {
             if (termsEnum.seekExact(drillDownTerms[dim][i].bytes(), false)) {
               DocsEnum docsEnum = termsEnum.docs(null, null);
@@ -138,7 +138,7 @@ class DrillSidewaysQuery extends Query {
           }
         }
 
-        if (nullCount > 1) {
+        if (nullCount > 1 || (nullCount == 1 && dims.length == 1)) {
           return null;
         }
 
