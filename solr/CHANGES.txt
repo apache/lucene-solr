@@ -158,13 +158,13 @@ Bug Fixes
   (Erick Erickson)
 
 * SOLR-4923: Commits to non leaders as part of a request that also contain updates
-  can execute out of order. (hossman, Mark Miller)
+  can execute out of order. (hossman, Ricardo Merizalde, Mark Miller)
 
 Optimizations
 ----------------------
 
 * SOLR-4923: Commit to all nodes in a collection in parallel rather than locally and
-  then to all other nodes. (hossman, Mark Miller)
+  then to all other nodes. (hossman, Ricardo Merizalde, Mark Miller)
 
 Other Changes
 ----------------------
