@@ -58,6 +58,8 @@ import static com.spatial4j.core.shape.SpatialRelation.WITHIN;
 
 public class SpatialOpRecursivePrefixTreeTest extends StrategyTestCase {
 
+  static final int ITERATIONS = 10;//Test Iterations
+
   private SpatialPrefixTree grid;
 
   @Before
@@ -81,28 +83,28 @@ public class SpatialOpRecursivePrefixTreeTest extends StrategyTestCase {
   }
 
   @Test
-  @Repeat(iterations = 10)
+  @Repeat(iterations = ITERATIONS)
   public void testIntersects() throws IOException {
     mySetup(-1);
     doTest(SpatialOperation.Intersects);
   }
 
   @Test
-  @Repeat(iterations = 10)
+  @Repeat(iterations = ITERATIONS)
   public void testWithin() throws IOException {
     mySetup(-1);
     doTest(SpatialOperation.IsWithin);
   }
 
   @Test
-  @Repeat(iterations = 10)
+  @Repeat(iterations = ITERATIONS)
   public void testContains() throws IOException {
     mySetup(-1);
     doTest(SpatialOperation.Contains);
   }
 
   @Test
-  @Repeat(iterations = 10)
+  @Repeat(iterations = ITERATIONS)
   public void testDisjoint() throws IOException {
     mySetup(-1);
     doTest(SpatialOperation.IsDisjointTo);
@@ -334,9 +336,10 @@ public class SpatialOpRecursivePrefixTreeTest extends StrategyTestCase {
     @Override
     public SpatialRelation relate(Shape other) {
       SpatialRelation r = relateApprox(other);
-      if (r != INTERSECTS)
+      if (r != INTERSECTS && !(r == WITHIN && biasContainsThenWithin))
         return r;
-      //See if the correct answer is actually Contains
+      //See if the correct answer is actually Contains, when the indexed shapes are adjacent,
+      // creating a larger shape that contains the input shape.
       Rectangle oRect = (Rectangle)other;
       boolean pairTouches = shape1.relate(shape2).intersects();
       if (!pairTouches)
