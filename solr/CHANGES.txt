@@ -196,7 +196,10 @@ Other Changes
   (Philip Hoy via Robert Muir)
   
 * SOLR-4224: Refactor JavaBinCodec input stream definition to enhance reuse.
-  (phunt via Mark Miller)  
+  (phunt via Mark Miller)
+
+* SOLR-4931: SolrDeletionPolicy onInit and onCommit methods changed to override
+  exact signatures (with generics) from IndexDeletionPolicy (shalin)
 
 ==================  4.3.1 ==================
 
