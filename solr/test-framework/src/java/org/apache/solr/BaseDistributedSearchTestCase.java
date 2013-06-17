@@ -45,6 +45,7 @@ import org.apache.solr.client.solrj.impl.HttpSolrServer;
 import org.apache.solr.client.solrj.request.UpdateRequest;
 import org.apache.solr.client.solrj.response.QueryResponse;
 import org.apache.solr.client.solrj.response.UpdateResponse;
+import org.apache.solr.client.solrj.SolrResponse;
 import org.apache.solr.common.SolrDocument;
 import org.apache.solr.common.SolrDocumentList;
 import org.apache.solr.common.SolrInputDocument;
@@ -424,6 +425,9 @@ public abstract class BaseDistributedSearchTestCase extends SolrTestCaseJ4 {
     indexDoc(doc);
   }
 
+  /**
+   * Indexes the document in both the control client, and a randomly selected client
+   */
   protected void indexDoc(SolrInputDocument doc) throws IOException, SolrServerException {
     controlClient.add(doc);
 
@@ -432,6 +436,17 @@ public abstract class BaseDistributedSearchTestCase extends SolrTestCaseJ4 {
     client.add(doc);
   }
   
+  /**
+   * Indexes the document in both the control client and the specified client asserting
+   * that the respones are equivilent
+   */
+  protected UpdateResponse indexDoc(SolrServer server, SolrParams params, SolrInputDocument... sdocs) throws IOException, SolrServerException {
+    UpdateResponse controlRsp = add(controlClient, params, sdocs);
+    UpdateResponse specificRsp = add(server, params, sdocs);
+    compareSolrResponses(specificRsp, controlRsp);
+    return specificRsp;
+  }
+
   protected UpdateResponse add(SolrServer server, SolrParams params, SolrInputDocument... sdocs) throws IOException, SolrServerException {
     UpdateRequest ureq = new UpdateRequest();
     ureq.setParams(new ModifiableSolrParams(params));
@@ -546,6 +561,9 @@ public abstract class BaseDistributedSearchTestCase extends SolrTestCaseJ4 {
   }
   
   public QueryResponse queryAndCompare(SolrParams params, SolrServer... servers) throws SolrServerException {
+    return queryAndCompare(params, Arrays.<SolrServer>asList(servers));
+  }
+  public QueryResponse queryAndCompare(SolrParams params, Iterable<SolrServer> servers) throws SolrServerException {
     QueryResponse first = null;
     for (SolrServer server : servers) {
       QueryResponse rsp = server.query(new ModifiableSolrParams(params));
@@ -783,8 +801,14 @@ public abstract class BaseDistributedSearchTestCase extends SolrTestCaseJ4 {
     return null;
   }
 
+  protected void compareSolrResponses(SolrResponse a, SolrResponse b) {
+    String cmp = compare(a.getResponse(), b.getResponse(), flags, handle);
+    if (cmp != null) {
+      log.error("Mismatched responses:\n" + a + "\n" + b);
+      Assert.fail(cmp);
+    }
+  }
   protected void compareResponses(QueryResponse a, QueryResponse b) {
-    String cmp;
     if (System.getProperty("remove.version.field") != null) {
       // we don't care if one has a version and the other doesnt -
       // control vs distrib
@@ -800,11 +824,7 @@ public abstract class BaseDistributedSearchTestCase extends SolrTestCaseJ4 {
         }
       }
     }
-    cmp = compare(a.getResponse(), b.getResponse(), flags, handle);
-    if (cmp != null) {
-      log.error("Mismatched responses:\n" + a + "\n" + b);
-      Assert.fail(cmp);
-    }
+    compareSolrResponses(a, b);
   }
 
   @Test

@@ -1131,15 +1131,37 @@ public class DistributedUpdateProcessor extends UpdateRequestProcessor {
     }
   }
 
-
   @Override
   public void processCommit(CommitUpdateCommand cmd) throws IOException {
     updateCommand = cmd;
-
+    List<Node> nodes = null;
+    boolean singleLeader = false;
     if (zkEnabled) {
       zkCheck();
+      
+      nodes = getCollectionUrls(req, req.getCore().getCoreDescriptor()
+          .getCloudDescriptor().getCollectionName());
+      if (isLeader && nodes.size() == 1) {
+        singleLeader = true;
+      }
     }
     
+    if (!zkEnabled || req.getParams().getBool(COMMIT_END_POINT, false) || singleLeader) {
+      doLocalCommit(cmd);
+    } else if (zkEnabled) {
+      ModifiableSolrParams params = new ModifiableSolrParams(filterParams(req.getParams()));
+      if (!req.getParams().getBool(COMMIT_END_POINT, false)) {
+        params.set(COMMIT_END_POINT, true);
+
+        if (nodes != null) {
+          cmdDistrib.distribCommit(cmd, nodes, params);
+          finish();
+        }
+      }
+    }
+  }
+
+  private void doLocalCommit(CommitUpdateCommand cmd) throws IOException {
     if (vinfo != null) {
       vinfo.lockForUpdate();
     }
@@ -1156,23 +1178,6 @@ public class DistributedUpdateProcessor extends UpdateRequestProcessor {
         vinfo.unlockForUpdate();
       }
     }
-    // TODO: we should consider this? commit everyone in the current collection
-
-    if (zkEnabled) {
-      ModifiableSolrParams params = new ModifiableSolrParams(filterParams(req.getParams()));
-      if (!req.getParams().getBool(COMMIT_END_POINT, false)) {
-        params.set(COMMIT_END_POINT, true);
-
-        String coreNodeName = zkController.getCoreNodeName(req.getCore().getCoreDescriptor());
-        List<Node> nodes = getCollectionUrls(req, req.getCore().getCoreDescriptor()
-            .getCloudDescriptor().getCollectionName(), coreNodeName);
-
-        if (nodes != null) {
-          cmdDistrib.distribCommit(cmd, nodes, params);
-          finish();
-        }
-      }
-    }
   }
   
   @Override
@@ -1184,7 +1189,7 @@ public class DistributedUpdateProcessor extends UpdateRequestProcessor {
  
 
   
-  private List<Node> getCollectionUrls(SolrQueryRequest req, String collection, String coreNodeName) {
+  private List<Node> getCollectionUrls(SolrQueryRequest req, String collection) {
     ClusterState clusterState = req.getCore().getCoreDescriptor()
         .getCoreContainer().getZkController().getClusterState();
     List<Node> urls = new ArrayList<Node>();
@@ -1200,7 +1205,7 @@ public class DistributedUpdateProcessor extends UpdateRequestProcessor {
       
       for (Entry<String,Replica> entry : shardMap.entrySet()) {
         ZkCoreNodeProps nodeProps = new ZkCoreNodeProps(entry.getValue());
-        if (clusterState.liveNodesContain(nodeProps.getNodeName()) && !entry.getKey().equals(coreNodeName)) {
+        if (clusterState.liveNodesContain(nodeProps.getNodeName())) {
           urls.add(new StdNode(nodeProps));
         }
       }
