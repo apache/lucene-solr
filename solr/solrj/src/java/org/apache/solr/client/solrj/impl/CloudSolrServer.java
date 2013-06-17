@@ -355,6 +355,10 @@ public class CloudSolrServer extends SolrServer {
   public LBHttpSolrServer getLbServer() {
     return lbServer;
   }
+  
+  public boolean isUpdatesToLeaders() {
+    return updatesToLeaders;
+  }
 
   // for tests
   Map<String,List<String>> getUrlLists() {
