@@ -244,7 +244,7 @@ public class TestSolrProperties extends AbstractEmbeddedSolrServerTestCase {
     fis = new FileInputStream(new File(tempDir, SOLR_PERSIST_XML));
     try {
       Document document = builder.parse(fis);
-      assertTrue(exists("/solr/cores/core[@name='collection1' and (@instanceDir='./' or @instanceDir='.\\')]", document));
+      assertTrue(exists("/solr/cores/core[@name='collection1' and @instanceDir='.']", document));
     } finally {
       fis.close();
     }

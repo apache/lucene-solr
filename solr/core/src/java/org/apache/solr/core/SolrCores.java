@@ -35,6 +35,7 @@ import javax.xml.xpath.XPathExpressionException;
 import org.apache.commons.lang.StringUtils;
 import org.apache.solr.cloud.CloudDescriptor;
 import org.apache.solr.common.SolrException;
+import org.apache.solr.common.params.CoreAdminParams;
 import org.apache.solr.core.SolrXMLSerializer.SolrCoreXMLDef;
 import org.apache.solr.util.DOMUtil;
 import org.w3c.dom.Node;
@@ -246,10 +247,18 @@ class SolrCores {
     synchronized (modifyLock) {
       SolrCore c0 = cores.get(n0);
       SolrCore c1 = cores.get(n1);
-      if (c0 == null)
-        throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, "No such core: " + n0);
-      if (c1 == null)
-        throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, "No such core: " + n1);
+      if (c0 == null) { // Might be an unloaded transient core
+        c0 = container.getCore(n0);
+        if (c0 == null) {
+          throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, "No such core: " + n0);
+        }
+      }
+      if (c1 == null) { // Might be an unloaded transient core
+        c1 = container.getCore(n1);
+        if (c1 == null) {
+          throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, "No such core: " + n1);
+        }
+      }
       cores.put(n0, c1);
       cores.put(n1, c0);
 
@@ -351,15 +360,17 @@ class SolrCores {
       return coreToOrigName.get(solrCore);
     }
   }
-  
+
   public void persistCores(Config cfg, Properties containerProperties,
       Map<String,String> rootSolrAttribs, Map<String,String> coresAttribs,
-      File file, File configFile, SolrResourceLoader loader) throws XPathExpressionException {
+      Map<String, String> loggingAttribs, Map<String,String> watcherAttribs,
+      Map<String, String> shardHandlerAttrib, Map<String,String> shardHandlerProps,
+      File file, SolrResourceLoader loader) throws XPathExpressionException {
 
-    
+
     List<SolrXMLSerializer.SolrCoreXMLDef> solrCoreXMLDefs = new ArrayList<SolrXMLSerializer.SolrCoreXMLDef>();
     synchronized (modifyLock) {
-      
+
       persistCores(cfg, cores, loader, solrCoreXMLDefs);
       persistCores(cfg, transientCores, loader, solrCoreXMLDefs);
       // add back all the cores that aren't loaded, either in cores or transient
@@ -384,9 +395,13 @@ class SolrCores {
       solrXMLDef.containerProperties = containerProperties;
       solrXMLDef.solrAttribs = rootSolrAttribs;
       solrXMLDef.coresAttribs = coresAttribs;
+      solrXMLDef.loggingAttribs = loggingAttribs;
+      solrXMLDef.watcherAttribs = watcherAttribs;
+      solrXMLDef.shardHandlerAttribs = shardHandlerAttrib;
+      solrXMLDef.shardHandlerProps = shardHandlerProps;
       SOLR_XML_SERIALIZER.persistFile(file, solrXMLDef);
     }
-    
+
   }
   // Wait here until any pending operations (load, unload or reload) are completed on this core.
   protected SolrCore waitAddPendingCoreOps(String name) {
@@ -442,95 +457,155 @@ class SolrCores {
       addCoreToPersistList(cfg, loader, solrCore.getCoreDescriptor(), getCoreToOrigName(solrCore), solrCoreXMLDefs);
     }
   }
-  
-  private void addCoreProperty(Map<String,String> coreAttribs, SolrResourceLoader loader, Node node, String name,
+
+  private void addCoreProperty(Map<String,String> propMap, SolrResourceLoader loader, Node node, String name,
+                               String value) {
+    addCoreProperty(propMap, loader, node, name, value, null);
+  }
+
+  private void addCoreProperty(Map<String,String> propMap, SolrResourceLoader loader, Node node, String name,
       String value, String defaultValue) {
-    
+
     if (node == null) {
-      coreAttribs.put(name, value);
+      propMap.put(name, value);
       return;
     }
-    
+
     if (node != null) {
       String rawAttribValue = DOMUtil.getAttr(node, name, null);
 
+      if (rawAttribValue == null) {
+        return; // It was never in the original definition.
+      }
+
       if (value == null) {
-        coreAttribs.put(name, rawAttribValue);
+        propMap.put(name, rawAttribValue);
         return;
       }
-      if (rawAttribValue == null && defaultValue != null && value.equals(defaultValue)) {
+
+      // There are some _really stupid_ additions/subtractions of the slash that we should look out for. I'm (EOE)
+      // ashamed of this but it fixes some things and we're throwing persistence away anyway (although
+      // maybe not for core.properties files).
+      String defComp = regularizeAttr(defaultValue);
+
+      if (defComp != null && regularizeAttr(value).equals(defComp)) {
         return;
       }
-      if (rawAttribValue != null && value.equals(DOMUtil.substituteProperty(rawAttribValue, loader.getCoreProperties()))){
-        coreAttribs.put(name, rawAttribValue);
+      String rawComp = regularizeAttr(rawAttribValue);
+      if (rawComp != null && regularizeAttr(value).equals(
+          regularizeAttr(DOMUtil.substituteProperty(rawAttribValue, loader.getCoreProperties())))) {
+        propMap.put(name, rawAttribValue);
       } else {
-        coreAttribs.put(name, value);
+        propMap.put(name, value);
       }
     }
-
   }
 
+  protected String regularizeAttr(String path) {
+    if (path == null)
+      return null;
+    path = path.replace('/', File.separatorChar);
+    path = path.replace('\\', File.separatorChar);
+    if (path.endsWith(File.separator)) {
+      path = path.substring(0, path.length() - 1);
+    }
+    return path;
+  }
   protected void addCoreToPersistList(Config cfg, SolrResourceLoader loader,
       CoreDescriptor dcore, String origCoreName,
       List<SolrCoreXMLDef> solrCoreXMLDefs) throws XPathExpressionException {
-    
-    String coreName = dcore.getProperty(CoreDescriptor.CORE_NAME);
-    
+
     Map<String,String> coreAttribs = new HashMap<String,String>();
+    Properties newProps = new Properties();
 
-    CloudDescriptor cd = dcore.getCloudDescriptor();
-    String collection = null;
-    if (cd != null) collection = cd.getCollectionName();
+    // This is simple, just take anything sent in and saved away in at core creation and write it out.
+    if (dcore.getCreatedProperties().size() > 0) {
+      for (String key : dcore.getCreatedProperties().stringPropertyNames()) {
+        if (CoreAdminParams.ACTION.toString().equals(key)) continue; // Don't persist the "action" verb
+        if (key.indexOf(CoreAdminParams.PROPERTY_PREFIX) == 0) {
+          newProps.put(key.substring(CoreAdminParams.PROPERTY_PREFIX.length()), dcore.getCreatedProperties().getProperty(key));
+        } else {
+          coreAttribs.put(key, dcore.getCreatedProperties().getProperty(key));
+        }
+      }
+    } else {
 
-    if (origCoreName == null) {
-      origCoreName = coreName;
+      String coreName = dcore.getProperty(CoreDescriptor.CORE_NAME);
+
+      CloudDescriptor cd = dcore.getCloudDescriptor();
+      String collection = null;
+      if (cd != null) collection = cd.getCollectionName();
+
+      if (origCoreName == null) {
+        origCoreName = coreName;
+      }
+
+      Node node = null;
+      if (cfg != null) {
+        node = cfg.getNode("/solr/cores/core[@name='" + origCoreName + "']",
+            false);
+      }
+
+      coreAttribs.put(CoreDescriptor.CORE_NAME, coreName);
+
+      addCoreProperty(coreAttribs, loader, node, CoreDescriptor.CORE_INSTDIR, dcore.getRawInstanceDir(), null);
+
+      addCoreProperty(coreAttribs, loader, node, CoreDescriptor.CORE_COLLECTION,
+          StringUtils.isNotBlank(collection) ? collection : dcore.getName());
+
+      addCoreProperty(coreAttribs, loader, node, CoreDescriptor.CORE_DATADIR,
+          dcore.getDataDir());
+      addCoreProperty(coreAttribs, loader, node, CoreDescriptor.CORE_ULOGDIR,
+          dcore.getUlogDir());
+      addCoreProperty(coreAttribs, loader, node, CoreDescriptor.CORE_TRANSIENT,
+          Boolean.toString(dcore.isTransient()));
+      addCoreProperty(coreAttribs, loader, node, CoreDescriptor.CORE_LOADONSTARTUP,
+          Boolean.toString(dcore.isLoadOnStartup()));
+      addCoreProperty(coreAttribs, loader, node, CoreDescriptor.CORE_CONFIG,
+          dcore.getConfigName());
+      addCoreProperty(coreAttribs, loader, node, CoreDescriptor.CORE_SCHEMA,
+          dcore.getSchemaName());
+
+      addCoreProperty(coreAttribs, loader, node, CoreDescriptor.CORE_COLLECTION,
+          collection, dcore.getName());
+
+      String shard = null;
+      String roles = null;
+      String node_name = null;
+      if (cd != null) {
+        shard = cd.getShardId();
+        roles = cd.getRoles();
+        node_name = cd.getCoreNodeName();
+      }
+      addCoreProperty(coreAttribs, loader, node, CoreDescriptor.CORE_SHARD,
+          shard);
+
+      addCoreProperty(coreAttribs, loader, node, CoreDescriptor.CORE_ROLES,
+          roles);
+
+      addCoreProperty(coreAttribs, loader, node, CoreDescriptor.CORE_NODE_NAME,
+          node_name);
+
+
+      for (Object key : dcore.getCoreProperties().keySet()) {
+
+        if (cfg != null) {
+          Node propNode = cfg.getNode("/solr/cores/core[@name='" + origCoreName + "']/property[@name='" + key + "']",
+              false);
+
+          if (propNode != null) { // This means it was in the original DOM element, so just copy it.
+            newProps.put(DOMUtil.getAttr(propNode, "name", null), DOMUtil.getAttr(propNode, "value", null));
+          }
+        }
+      }
     }
-    
-    Properties properties = dcore.getCoreProperties();
-    Node node = null;
-    if (cfg != null) {
-      node = cfg.getNode("/solr/cores/core[@name='" + origCoreName + "']",
-          false);
-    }
-    
-    coreAttribs.put(CoreDescriptor.CORE_NAME, coreName);
-    
-    addCoreProperty(coreAttribs, loader, node, CoreDescriptor.CORE_INSTDIR, dcore.getRawInstanceDir(), null);
 
-    coreAttribs.put(CoreDescriptor.CORE_COLLECTION,
-        StringUtils.isNotBlank(collection) ? collection : dcore.getName());
-    
-    addCoreProperty(coreAttribs, loader, node, CoreDescriptor.CORE_DATADIR, dcore.getDataDir(), null);
-    addCoreProperty(coreAttribs, loader, node, CoreDescriptor.CORE_ULOGDIR, dcore.getUlogDir(), null);
-    addCoreProperty(coreAttribs, loader, node, CoreDescriptor.CORE_TRANSIENT, Boolean.toString(dcore.isTransient()), null);
-    addCoreProperty(coreAttribs, loader, node, CoreDescriptor.CORE_LOADONSTARTUP, Boolean.toString(dcore.isLoadOnStartup()), null);
-    
-    addCoreProperty(coreAttribs, loader, node, CoreDescriptor.CORE_COLLECTION,
-        collection, dcore.getName());
-    
-    String shard = null;
-    String roles = null;
-    if (cd != null) {
-      shard = cd.getShardId();
-      roles = cd.getRoles();
-    }
-    addCoreProperty(coreAttribs, loader, node, CoreDescriptor.CORE_SHARD,
-        shard, null);
-    
-    addCoreProperty(coreAttribs, loader, node, CoreDescriptor.CORE_ROLES,
-        roles, null);
 
-    coreAttribs.put(CoreDescriptor.CORE_LOADONSTARTUP,
-        Boolean.toString(dcore.isLoadOnStartup()));
-    coreAttribs.put(CoreDescriptor.CORE_TRANSIENT,
-        Boolean.toString(dcore.isTransient()));
-    
 
     SolrXMLSerializer.SolrCoreXMLDef solrCoreXMLDef = new SolrXMLSerializer.SolrCoreXMLDef();
     solrCoreXMLDef.coreAttribs = coreAttribs;
-    solrCoreXMLDef.coreProperties = properties;
+    solrCoreXMLDef.coreProperties = newProps;
     solrCoreXMLDefs.add(solrCoreXMLDef);
-
   }
 
   protected Object getModifyLock() {

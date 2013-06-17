@@ -138,9 +138,9 @@ public class ConfigSolrXmlOld extends ConfigSolr {
     propMap.put(CfgProp.SOLR_SHARDHANDLERFACTORY_NAME,
         config.getVal("solr/shardHandlerFactory/@name", false));
     propMap.put(CfgProp.SOLR_SHARDHANDLERFACTORY_CONNTIMEOUT,
-        config.getVal("solr/shardHandlerFactory/int[@connTimeout]", false));
+        config.getVal("solr/shardHandlerFactory/int[@name='connTimeout']", false));
     propMap.put(CfgProp.SOLR_SHARDHANDLERFACTORY_SOCKETTIMEOUT,
-        config.getVal("solr/shardHandlerFactory/int[@socketTimeout]", false));
+        config.getVal("solr/shardHandlerFactory/int[@name='socketTimeout']", false));
     
     // These have no counterpart in 5.0, asking, for any of these in Solr 5.0
     // will result in an error being

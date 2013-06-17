@@ -61,7 +61,7 @@ public class ConfigSolrXml extends ConfigSolr {
     
     // Do sanity checks - we don't want to find old style config
     failIfFound("solr/@coreLoadThreads");
-    failIfFound("solr/@persist");
+    failIfFound("solr/@persistent");
     failIfFound("solr/@sharedLib");
     failIfFound("solr/@zkHost");
     
