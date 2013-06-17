@@ -230,7 +230,7 @@ public abstract class AbstractFullDistribZkTestBase extends AbstractDistribZkTes
   
   protected CloudSolrServer createCloudClient(String defaultCollection)
       throws MalformedURLException {
-    CloudSolrServer server = new CloudSolrServer(zkServer.getZkAddress());
+    CloudSolrServer server = new CloudSolrServer(zkServer.getZkAddress(), random().nextBoolean());
     if (defaultCollection != null) server.setDefaultCollection(defaultCollection);
     server.getLbServer().getHttpClient().getParams()
         .setParameter(CoreConnectionPNames.CONNECTION_TIMEOUT, 5000);
@@ -803,13 +803,68 @@ public abstract class AbstractFullDistribZkTestBase extends AbstractDistribZkTes
     }
   }
   
+  /**
+   * Executes a query against each live and active replica of the specified shard 
+   * and aserts that the results are identical.
+   *
+   * @see #queryAndCompare
+   */
+  public QueryResponse queryAndCompareReplicas(SolrParams params, String shard) 
+    throws Exception {
+
+    ArrayList<SolrServer> shardClients = new ArrayList<SolrServer>(7);
+
+    updateMappingsFromZk(jettys, clients);
+    ZkStateReader zkStateReader = cloudClient.getZkStateReader();
+    List<CloudJettyRunner> solrJetties = shardToJetty.get(shard);
+    assertNotNull("no jetties found for shard: " + shard, solrJetties);
+
+
+    for (CloudJettyRunner cjetty : solrJetties) {
+      ZkNodeProps props = cjetty.info;
+      String nodeName = props.getStr(ZkStateReader.NODE_NAME_PROP);
+      boolean active = props.getStr(ZkStateReader.STATE_PROP).equals(ZkStateReader.ACTIVE);
+      boolean live = zkStateReader.getClusterState().liveNodesContain(nodeName);
+      if (active && live) {
+        shardClients.add(cjetty.client.solrClient);
+      }
+    }
+    return queryAndCompare(params, shardClients);
+  }
+
+  /**
+   * For each Shard, executes a query against each live and active replica of that shard
+   * and asserts that the results are identical for each replica of the same shard.  
+   * Because results are not compared between replicas of different shards, this method 
+   * should be safe for comparing the results of any query, even if it contains 
+   * "distrib=false", because the replicas should all be identical.
+   *
+   * @see AbstractFullDistribZkTestBase#queryAndCompareReplicas(SolrParams, String)
+   */
+  public void queryAndCompareShards(SolrParams params) throws Exception {
+
+    updateMappingsFromZk(jettys, clients);
+    List<String> shards = new ArrayList<String>(shardToJetty.keySet());
+    for (String shard : shards) {
+      queryAndCompareReplicas(params, shard);
+    }
+  }
+
+  /** 
+   * Returns a non-null string if replicas within the same shard do not have a 
+   * consistent number of documents. 
+   */
   protected void checkShardConsistency(String shard) throws Exception {
     checkShardConsistency(shard, false, false);
   }
 
-  /* Returns a non-null string if replicas within the same shard are not consistent.
-   * If expectFailure==false, the exact differences found will be logged since this would be an unexpected failure.
-   * verbose causes extra debugging into to be displayed, even if everything is consistent.
+  /** 
+   * Returns a non-null string if replicas within the same shard do not have a 
+   * consistent number of documents.
+   * If expectFailure==false, the exact differences found will be logged since 
+   * this would be an unexpected failure.
+   * verbose causes extra debugging into to be displayed, even if everything is 
+   * consistent.
    */
   protected String checkShardConsistency(String shard, boolean expectFailure, boolean verbose)
       throws Exception {
@@ -1505,7 +1560,7 @@ public abstract class AbstractFullDistribZkTestBase extends AbstractDistribZkTes
     if (commondCloudSolrServer == null) {
       synchronized(this) {
         try {
-          commondCloudSolrServer = new CloudSolrServer(zkServer.getZkAddress());
+          commondCloudSolrServer = new CloudSolrServer(zkServer.getZkAddress(), random().nextBoolean());
           commondCloudSolrServer.setDefaultCollection(DEFAULT_COLLECTION);
           commondCloudSolrServer.connect();
         } catch (MalformedURLException e) {

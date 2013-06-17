@@ -91,6 +91,13 @@ public class CloudSolrServer extends SolrServer {
       this.lbServer = new LBHttpSolrServer(myClient);
       this.updatesToLeaders = true;
   }
+  
+  public CloudSolrServer(String zkHost, boolean updatesToLeaders) throws MalformedURLException {
+    this.zkHost = zkHost;
+    this.myClient = HttpClientUtil.createClient(null);
+    this.lbServer = new LBHttpSolrServer(myClient);
+    this.updatesToLeaders = updatesToLeaders;
+}
 
   /**
    * @param zkHost The client endpoint of the zookeeper quorum containing the cloud state,

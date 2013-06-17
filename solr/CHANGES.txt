@@ -157,6 +157,8 @@ Bug Fixes
   > SOLR-4850, cores defined as loadOnStartup=true, transient=false can't be searched
   (Erick Erickson)
 
+* SOLR-4923: Commits to non leaders as part of a request that also contain updates
+  can execute out of order. (hossman, Mark Miller)
 
 Other Changes
 ----------------------
