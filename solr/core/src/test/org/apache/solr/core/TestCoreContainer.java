@@ -392,22 +392,4 @@ public class TestCoreContainer extends SolrTestCaseJ4 {
       "  <cores adminPath=\"/admin/cores\" transientCacheSize=\"32\" >\n" +
       "  </cores>\n" +
       "</solr>";
-
-  private static final String SOLR_XML_SAME_NAME ="<?xml version=\"1.0\" encoding=\"UTF-8\" ?>\n" +
-      "<solr persistent=\"false\">\n" +
-      "  <cores adminPath=\"/admin/cores\" transientCacheSize=\"32\" >\n" +
-      "    <core name=\"core1\" instanceDir=\"core1\" dataDir=\"core1\"/> \n" +
-      "    <core name=\"core1\" instanceDir=\"core2\" dataDir=\"core2\"/> \n " +
-      "  </cores>\n" +
-      "</solr>";
-
-  private static final String SOLR_XML_SAME_DATADIR ="<?xml version=\"1.0\" encoding=\"UTF-8\" ?>\n" +
-      "<solr persistent=\"false\">\n" +
-      "  <cores adminPath=\"/admin/cores\" transientCacheSize=\"32\" >\n" +
-      "    <core name=\"core2\" instanceDir=\"core2\" dataDir=\"../samedatadir\" schema=\"schema-tiny.xml\" config=\"solrconfig-minimal.xml\" /> \n" +
-      "    <core name=\"core1\" instanceDir=\"core2\" dataDir=\"../samedatadir\" schema=\"schema-tiny.xml\" config=\"solrconfig-minimal.xml\"  /> \n " +
-      "  </cores>\n" +
-      "</solr>";
-
-
 }

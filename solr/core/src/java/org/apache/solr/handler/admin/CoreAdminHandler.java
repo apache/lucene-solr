@@ -498,10 +498,12 @@ public class CoreAdminHandler extends RequestHandlerBase {
       Iterator<String> parameterNamesIterator = params.getParameterNamesIterator();
       while (parameterNamesIterator.hasNext()) {
           String parameterName = parameterNamesIterator.next();
+          String parameterValue = params.get(parameterName);
+          dcore.addCreatedProperty(parameterName, parameterValue); // Need this junk for silly persistence
+
           if(parameterName.startsWith(CoreAdminParams.PROPERTY_PREFIX)) {
-              String parameterValue = params.get(parameterName);
-              String propertyName = parameterName.substring(CoreAdminParams.PROPERTY_PREFIX.length()); // skip prefix
-              coreProperties.put(propertyName, parameterValue);
+            String propertyName = parameterName.substring(CoreAdminParams.PROPERTY_PREFIX.length()); // skip prefix
+            coreProperties.put(propertyName, parameterValue);
           }
       }
       dcore.setCoreProperties(coreProperties);

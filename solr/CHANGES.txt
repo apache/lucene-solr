@@ -141,6 +141,21 @@ Bug Fixes
 
 * SOLR-4925 : Collection create throws NPE when 'numShards' param is missing (Noble Paul)
 
+* SOLR-4910: persisting solr.xml is broken. More stringent testing of persistence fixed
+  up a number of issues and several bugs with persistence. Among them are
+  > don't persisting implicit properties
+  > should persist zkHost in the <solr> tag (user's list)
+  > reloading a core that has transient="true" returned an error. reload should load
+    a transient core if it's not yet loaded.
+  > No longer persisting loadOnStartup or transient core properties if they were not
+    specified in the original solr.xml
+  > Testing flushed out the fact that you couldn't swap a core marked transient=true
+    loadOnStartup=false because it hadn't been loaded yet.
+  > SOLR-4862, CREATE fails to persist schema, config, and dataDir
+  > SOLR-4363, not persisting coreLoadThreads in <solr> tag
+  > SOLR-3900, logWatcher properties not persisted
+  > SOLR-4852, cores defined as loadOnStartup=true, transient=false can't be searched
+
 Other Changes
 ----------------------
 

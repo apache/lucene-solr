@@ -143,6 +143,11 @@ public class TestSolrXMLSerializer extends LuceneTestCase {
     solrXMLDef.containerProperties = containerProperties ;
     solrXMLDef.solrAttribs = rootSolrAttribs;
     solrXMLDef.coresAttribs = coresAttribs;
+    solrXMLDef.loggingAttribs = new HashMap<String, String>();
+    solrXMLDef.shardHandlerProps = new HashMap<String, String>();
+    solrXMLDef.shardHandlerAttribs = new HashMap<String, String>();
+    solrXMLDef.loggingAttribs = new HashMap<String, String>();
+    solrXMLDef.watcherAttribs = new HashMap<String, String>();
     return solrXMLDef;
   }
   
