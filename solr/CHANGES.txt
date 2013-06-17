@@ -154,7 +154,9 @@ Bug Fixes
   > SOLR-4862, CREATE fails to persist schema, config, and dataDir
   > SOLR-4363, not persisting coreLoadThreads in <solr> tag
   > SOLR-3900, logWatcher properties not persisted
-  > SOLR-4852, cores defined as loadOnStartup=true, transient=false can't be searched
+  > SOLR-4850, cores defined as loadOnStartup=true, transient=false can't be searched
+  (Erick Erickson)
+
 
 Other Changes
 ----------------------
