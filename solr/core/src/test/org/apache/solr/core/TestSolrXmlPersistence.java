@@ -84,8 +84,8 @@ public class TestSolrXmlPersistence extends SolrTestCaseJ4 {
   public void testSystemVars() throws Exception {
     //Set these system props in order to insure that we don't write out the values rather than the ${} syntax.
     System.setProperty("solr.zkclienttimeout", "93");
-    System.setProperty("solrconfig", "solrconfig-minimal.xml");
-    System.setProperty("schema", "schema-tiny.xml");
+    System.setProperty("solrconfig", "solrconfig.xml");
+    System.setProperty("schema", "schema.xml");
     System.setProperty("zkHostSet", "localhost:9983");
 
     CoreContainer cc = init(SOLR_XML_LOTS_SYSVARS, "SystemVars1", "SystemVars2");
@@ -179,6 +179,7 @@ public class TestSolrXmlPersistence extends SolrTestCaseJ4 {
       // Now the other way, If I replace the original name in the original XML file with "RenamedCore", does it match
       // what was persisted?
       persistList = getAllNodes(origXml);
+      expressions = new String[persistList.length];
       for (int idx = 0; idx < persistList.length; ++idx) {
         // /solr/cores/core[@name='SystemVars1' and @collection='${collection:collection1}']
         expressions[idx] = persistList[idx].replace("@name='" + which + "'", "@name='RenamedCore'");
@@ -241,6 +242,21 @@ public class TestSolrXmlPersistence extends SolrTestCaseJ4 {
   }
 
   @Test
+  public void testMinimalXml() throws Exception {
+    CoreContainer cc = init(SOLR_XML_MINIMAL, "SystemVars1");
+    try {
+      origMatchesPersist(cc, new File(solrHomeDirectory, "minimal.solr.xml"));
+    } finally {
+      cc.shutdown();
+      if (solrHomeDirectory.exists()) {
+        FileUtils.deleteDirectory(solrHomeDirectory);
+      }
+    }
+  }
+
+
+
+  @Test
   public void testUnloadCreate() throws Exception {
     doTestUnloadCreate("SystemVars1");
     doTestUnloadCreate("SystemVars2");
@@ -266,8 +282,6 @@ public class TestSolrXmlPersistence extends SolrTestCaseJ4 {
           (req(CoreAdminParams.ACTION,
               CoreAdminParams.CoreAdminAction.CREATE.toString(),
               CoreAdminParams.INSTANCE_DIR, instPath,
-              CoreAdminParams.CONFIG, "solrconfig-minimal.xml",
-              CoreAdminParams.SCHEMA, "schema-tiny.xml",
               CoreAdminParams.NAME, which),
               resp);
       assertNull("Exception on create", resp.getException());
@@ -284,10 +298,10 @@ public class TestSolrXmlPersistence extends SolrTestCaseJ4 {
         String name = "@name='" + which + "'";
 
         if (persistList[idx].contains(name)) {
-          if (persistList[idx].contains("@schema='schema-tiny.xml'")) {
-            expressions[idx] = persistList[idx].replace("schema-tiny.xml", "${schema:schema-tiny.xml}");
-          } else if (persistList[idx].contains("@config='solrconfig-minimal.xml'")) {
-            expressions[idx] = persistList[idx].replace("solrconfig-minimal.xml", "${solrconfig:solrconfig-minimal.xml}");
+          if (persistList[idx].contains("@schema='schema.xml'")) {
+            expressions[idx] = persistList[idx].replace("schema.xml", "${schema:schema.xml}");
+          } else if (persistList[idx].contains("@config='solrconfig.xml'")) {
+            expressions[idx] = persistList[idx].replace("solrconfig.xml", "${solrconfig:solrconfig.xml}");
           } else if (persistList[idx].contains("@instanceDir=")) {
             expressions[idx] = persistList[idx].replaceFirst("instanceDir\\='.*?'", "instanceDir='" + which + "'");
           } else {
@@ -333,9 +347,7 @@ public class TestSolrXmlPersistence extends SolrTestCaseJ4 {
               CoreAdminParams.TRANSIENT, "true",
               CoreAdminParams.LOAD_ON_STARTUP, "true",
               CoreAdminParams.PROPERTY_PREFIX + "prefix1", "valuep1",
-              CoreAdminParams.PROPERTY_PREFIX + "prefix2", "valueP2",
-              CoreAdminParams.CONFIG, "solrconfig-minimal.xml",
-              CoreAdminParams.SCHEMA, "schema-tiny.xml"),
+              CoreAdminParams.PROPERTY_PREFIX + "prefix2", "valueP2"),
               resp);
       assertNull("Exception on create", resp.getException());
 
@@ -347,17 +359,16 @@ public class TestSolrXmlPersistence extends SolrTestCaseJ4 {
               CoreAdminParams.NAME, "props2",
               CoreAdminParams.PROPERTY_PREFIX + "prefix2_1", "valuep2_1",
               CoreAdminParams.PROPERTY_PREFIX + "prefix2_2", "valueP2_2",
-              CoreAdminParams.CONFIG, "solrconfig-minimal.xml",
+              CoreAdminParams.CONFIG, "solrconfig.xml",
               CoreAdminParams.DATA_DIR, "./dataDirTest",
-              CoreAdminParams.SCHEMA, "schema-tiny.xml"),
+              CoreAdminParams.SCHEMA, "schema.xml"),
               resp);
       assertNull("Exception on create", resp.getException());
 
       // Everything that was in the original XML file should be in the persisted one.
       final File persistXml = new File(solrHomeDirectory, "persist_create_core.solr.xml");
       cc.persistFile(persistXml);
-      String[] expressions = getAllNodes(new File(solrHomeDirectory, "solr.xml"));
-      assertXmlFile(persistXml, expressions);
+      assertXmlFile(persistXml, getAllNodes(new File(solrHomeDirectory, "solr.xml")));
 
 
       // And the params for the new core should be in the persisted file.
@@ -365,14 +376,12 @@ public class TestSolrXmlPersistence extends SolrTestCaseJ4 {
           (persistXml
               , "/solr/cores/core[@name='props1']/property[@name='prefix1' and @value='valuep1']"
               , "/solr/cores/core[@name='props1']/property[@name='prefix2' and @value='valueP2']"
-              , "/solr/cores/core[@name='props1' and @config='solrconfig-minimal.xml']"
-              , "/solr/cores/core[@name='props1' and @schema='schema-tiny.xml']"
               , "/solr/cores/core[@name='props1' and @transient='true']"
               , "/solr/cores/core[@name='props1' and @loadOnStartup='true']"
               , "/solr/cores/core[@name='props2']/property[@name='prefix2_1' and @value='valuep2_1']"
               , "/solr/cores/core[@name='props2']/property[@name='prefix2_2' and @value='valueP2_2']"
-              , "/solr/cores/core[@name='props2' and @config='solrconfig-minimal.xml']"
-              , "/solr/cores/core[@name='props2' and @schema='schema-tiny.xml']"
+              , "/solr/cores/core[@name='props2' and @config='solrconfig.xml']"
+              , "/solr/cores/core[@name='props2' and @schema='schema.xml']"
               , "/solr/cores/core[@name='props2' and not(@loadOnStartup)]"
               , "/solr/cores/core[@name='props2' and not(@transient)]"
               , "/solr/cores/core[@name='props2' and @dataDir='./dataDirTest']"
@@ -490,21 +499,28 @@ public class TestSolrXmlPersistence extends SolrTestCaseJ4 {
           "       distribUpdateSoTimeout=\"${distribUpdateSoTimeout:120000}\" \n" +
           "       leaderVoteWait=\"${leadVoteWait:32}\" managementPath=\"${manpath:/var/lib/path}\" transientCacheSize=\"${tranSize:128}\"> \n" +
           "     <core name=\"SystemVars1\" instanceDir=\"SystemVars1\" shard=\"${shard:32}\" \n" +
-          "          collection=\"${collection:collection1}\" config=\"${solrconfig:solrconfig-minimal.xml}\" \n" +
-          "          schema=\"${schema:schema-tiny.xml}\" ulogDir=\"${ulog:./}\" roles=\"${myrole:boss}\" \n" +
+          "          collection=\"${collection:collection1}\" config=\"${solrconfig:solrconfig.xml}\" \n" +
+          "          schema=\"${schema:schema.xml}\" ulogDir=\"${ulog:./}\" roles=\"${myrole:boss}\" \n" +
           "          dataDir=\"${data:./}\" loadOnStartup=\"${onStart:true}\" transient=\"${tran:true}\" \n" +
           "          coreNodeName=\"${coreNode:utterlyridiculous}\" \n" +
           "       >\n" +
           "     </core>\n" +
           "     <core name=\"SystemVars2\" instanceDir=\"SystemVars2\" shard=\"${shard:32}\" \n" +
-          "          collection=\"${collection:collection2}\" config=\"${solrconfig:solrconfig-minimal.xml}\" \n" +
-          "          coreNodeName=\"${coreNodeName:}\" schema=\"${schema:schema-tiny.xml}\">\n" +
+          "          collection=\"${collection:collection2}\" config=\"${solrconfig:solrconfig.xml}\" \n" +
+          "          coreNodeName=\"${coreNodeName:}\" schema=\"${schema:schema.xml}\">\n" +
           "      <property name=\"collection\" value=\"{collection:collection2}\"/>\n" +
-          "      <property name=\"schema\" value=\"${schema:schema-tiny.xml}\"/>\n" +
+          "      <property name=\"schema\" value=\"${schema:schema.xml}\"/>\n" +
           "      <property name=\"coreNodeName\" value=\"EricksCore\"/>\n" +
           "     </core>\n" +
           "   </cores>\n" +
           "</solr>";
 
+
+  private static String SOLR_XML_MINIMAL =
+          "<solr >\n" +
+          "  <cores> \n" +
+          "     <core name=\"SystemVars1\" instanceDir=\"SystemVars1\" />\n" +
+          "   </cores>\n" +
+          "</solr>";
 
 }

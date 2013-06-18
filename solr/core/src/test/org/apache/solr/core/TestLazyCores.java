@@ -285,8 +285,8 @@ public class TestLazyCores extends SolrTestCaseJ4 {
           CoreAdminParams.CoreAdminAction.CREATE.toString(),
           CoreAdminParams.DATA_DIR, dataDir,
           CoreAdminParams.NAME, name,
-          "schema", "schema-tiny.xml",
-          "config", "solrconfig-minimal.xml");
+          "schema", "schema.xml",
+          "config", "solrconfig.xml");
 
       admin.handleRequestBody(request, resp);
       fail("Should have thrown an error");
@@ -347,29 +347,29 @@ public class TestLazyCores extends SolrTestCaseJ4 {
       CoreDescriptor d1 = new CoreDescriptor(cc, "core1", "./core1");
       d1.setTransient(true);
       d1.setLoadOnStartup(true);
-      d1.setSchemaName("schema-tiny.xml");
-      d1.setConfigName("solrconfig-minimal.xml");
+      d1.setSchemaName("schema.xml");
+      d1.setConfigName("solrconfig.xml");
       SolrCore core1 = cc.create(d1);
 
       CoreDescriptor d2 = new CoreDescriptor(cc, "core2", "./core2");
       d2.setTransient(true);
       d2.setLoadOnStartup(false);
-      d2.setSchemaName("schema-tiny.xml");
-      d2.setConfigName("solrconfig-minimal.xml");
+      d2.setSchemaName("schema.xml");
+      d2.setConfigName("solrconfig.xml");
       SolrCore core2 = cc.create(d2);
 
       CoreDescriptor d3 = new CoreDescriptor(cc, "core3", "./core3");
       d3.setTransient(false);
       d3.setLoadOnStartup(true);
-      d3.setSchemaName("schema-tiny.xml");
-      d3.setConfigName("solrconfig-minimal.xml");
+      d3.setSchemaName("schema.xml");
+      d3.setConfigName("solrconfig.xml");
       SolrCore core3 = cc.create(d3);
 
       CoreDescriptor d4 = new CoreDescriptor(cc, "core4", "./core4");
       d4.setTransient(false);
       d4.setLoadOnStartup(false);
-      d4.setSchemaName("schema-tiny.xml");
-      d4.setConfigName("solrconfig-minimal.xml");
+      d4.setSchemaName("schema.xml");
+      d4.setConfigName("solrconfig.xml");
       SolrCore core4 = cc.create(d4);
 
       final File oneXml = new File(solrHomeDirectory, "lazy1.solr.xml");
@@ -455,31 +455,23 @@ public class TestLazyCores extends SolrTestCaseJ4 {
 
   private final static String LOTS_SOLR_XML = " <solr persistent=\"false\"> " +
       "<cores adminPath=\"/admin/cores\" defaultCoreName=\"collectionLazy2\" transientCacheSize=\"4\">  " +
-      "<core name=\"collection1\" instanceDir=\"collection1\" config=\"solrconfig-minimal.xml\" schema=\"schema-tiny.xml\" /> " +
+      "<core name=\"collection1\" instanceDir=\"collection1\"  /> " +
 
-      "<core name=\"collectionLazy2\" instanceDir=\"collection2\" transient=\"true\" loadOnStartup=\"true\"  " +
-      " config=\"solrconfig-minimal.xml\" schema=\"schema-tiny.xml\" /> " +
+      "<core name=\"collectionLazy2\" instanceDir=\"collection2\" transient=\"true\" loadOnStartup=\"true\"   /> " +
 
-      "<core name=\"collectionLazy3\" instanceDir=\"collection3\" transient=\"on\" loadOnStartup=\"false\" " +
-      "config=\"solrconfig-minimal.xml\" schema=\"schema-tiny.xml\"  /> " +
+      "<core name=\"collectionLazy3\" instanceDir=\"collection3\" transient=\"on\" loadOnStartup=\"false\"    /> " +
 
-      "<core name=\"collectionLazy4\" instanceDir=\"collection4\" transient=\"false\" loadOnStartup=\"false\" " +
-      "config=\"solrconfig-minimal.xml\" schema=\"schema-tiny.xml\"  /> " +
+      "<core name=\"collectionLazy4\" instanceDir=\"collection4\" transient=\"false\" loadOnStartup=\"false\" /> " +
 
-      "<core name=\"collectionLazy5\" instanceDir=\"collection5\" transient=\"false\" loadOnStartup=\"true\" " +
-      "config=\"solrconfig-minimal.xml\" schema=\"schema-tiny.xml\"  /> " +
+      "<core name=\"collectionLazy5\" instanceDir=\"collection5\" transient=\"false\" loadOnStartup=\"true\" /> " +
 
-      "<core name=\"collectionLazy6\" instanceDir=\"collection6\" transient=\"true\" loadOnStartup=\"false\" " +
-      "config=\"solrconfig-minimal.xml\" schema=\"schema-tiny.xml\"  /> " +
+      "<core name=\"collectionLazy6\" instanceDir=\"collection6\" transient=\"true\" loadOnStartup=\"false\" /> " +
 
-      "<core name=\"collectionLazy7\" instanceDir=\"collection7\" transient=\"true\" loadOnStartup=\"false\" " +
-      "config=\"solrconfig-minimal.xml\" schema=\"schema-tiny.xml\"  /> " +
+      "<core name=\"collectionLazy7\" instanceDir=\"collection7\" transient=\"true\" loadOnStartup=\"false\" /> " +
 
-      "<core name=\"collectionLazy8\" instanceDir=\"collection8\" transient=\"true\" loadOnStartup=\"false\" " +
-      "config=\"solrconfig-minimal.xml\" schema=\"schema-tiny.xml\"  /> " +
+      "<core name=\"collectionLazy8\" instanceDir=\"collection8\" transient=\"true\" loadOnStartup=\"false\" /> " +
 
-      "<core name=\"collectionLazy9\" instanceDir=\"collection9\" transient=\"true\" loadOnStartup=\"false\" " +
-      "config=\"solrconfig-minimal.xml\" schema=\"schema-tiny.xml\"  /> " +
+      "<core name=\"collectionLazy9\" instanceDir=\"collection9\" transient=\"true\" loadOnStartup=\"false\" /> " +
 
       "</cores> " +
       "</solr>";
