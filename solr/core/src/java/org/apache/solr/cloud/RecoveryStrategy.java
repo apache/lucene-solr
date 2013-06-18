@@ -118,44 +118,40 @@ public class RecoveryStrategy extends Thread implements ClosableThread {
     }
   }
   
-  private void replicate(String nodeName, SolrCore core, ZkNodeProps leaderprops, String baseUrl)
+  private void replicate(String nodeName, SolrCore core, ZkNodeProps leaderprops)
       throws SolrServerException, IOException {
-   
-    String leaderBaseUrl = leaderprops.getStr(ZkStateReader.BASE_URL_PROP);
+
     ZkCoreNodeProps leaderCNodeProps = new ZkCoreNodeProps(leaderprops);
     String leaderUrl = leaderCNodeProps.getCoreUrl();
     
     log.info("Attempting to replicate from " + leaderUrl + ". core=" + coreName);
     
-    // if we are the leader, either we are trying to recover faster
-    // then our ephemeral timed out or we are the only node
-    if (!leaderBaseUrl.equals(baseUrl)) {
-      
-      // send commit
-      commitOnLeader(leaderUrl);
-      
-      // use rep handler directly, so we can do this sync rather than async
-      SolrRequestHandler handler = core.getRequestHandler(REPLICATION_HANDLER);
-      if (handler instanceof LazyRequestHandlerWrapper) {
-        handler = ((LazyRequestHandlerWrapper)handler).getWrappedHandler();
-      }
-      ReplicationHandler replicationHandler = (ReplicationHandler) handler;
-      
-      if (replicationHandler == null) {
-        throw new SolrException(ErrorCode.SERVICE_UNAVAILABLE,
-            "Skipping recovery, no " + REPLICATION_HANDLER + " handler found");
-      }
-      
-      ModifiableSolrParams solrParams = new ModifiableSolrParams();
-      solrParams.set(ReplicationHandler.MASTER_URL, leaderUrl);
-      
-      if (isClosed()) retries = INTERRUPTED;
-      boolean success = replicationHandler.doFetch(solrParams, false);
+    // send commit
+    commitOnLeader(leaderUrl);
+    
+    // use rep handler directly, so we can do this sync rather than async
+    SolrRequestHandler handler = core.getRequestHandler(REPLICATION_HANDLER);
+    if (handler instanceof LazyRequestHandlerWrapper) {
+      handler = ((LazyRequestHandlerWrapper) handler).getWrappedHandler();
+    }
+    ReplicationHandler replicationHandler = (ReplicationHandler) handler;
+    
+    if (replicationHandler == null) {
+      throw new SolrException(ErrorCode.SERVICE_UNAVAILABLE,
+          "Skipping recovery, no " + REPLICATION_HANDLER + " handler found");
+    }
+    
+    ModifiableSolrParams solrParams = new ModifiableSolrParams();
+    solrParams.set(ReplicationHandler.MASTER_URL, leaderUrl);
+    
+    if (isClosed()) retries = INTERRUPTED;
+    boolean success = replicationHandler.doFetch(solrParams, false);
+    
+    if (!success) {
+      throw new SolrException(ErrorCode.SERVER_ERROR,
+          "Replication for recovery failed.");
+    }
 
-      if (!success) {
-        throw new SolrException(ErrorCode.SERVER_ERROR, "Replication for recovery failed.");
-      }
-      
       // solrcloud_debug
 //      try {
 //        RefCounted<SolrIndexSearcher> searchHolder = core.getNewestSearcher(false);
@@ -169,7 +165,7 @@ public class RecoveryStrategy extends Thread implements ClosableThread {
 //      } catch (Exception e) {
 //        
 //      }
-    }
+    
   }
 
   private void commitOnLeader(String leaderUrl) throws SolrServerException, IOException {
@@ -406,8 +402,7 @@ public class RecoveryStrategy extends Thread implements ClosableThread {
         
         try {
 
-          replicate(zkController.getNodeName(), core,
-              leaderprops, leaderUrl);
+          replicate(zkController.getNodeName(), core, leaderprops);
 
           replay(ulog);
           replayed = true;
