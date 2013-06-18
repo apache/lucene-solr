@@ -59,6 +59,16 @@ Apache ZooKeeper 3.4.5
 Upgrading from Solr 4.3.0
 ----------------------
 
+* TieredMergePolicy and the various subtypes of LogMergePolicy no longer have 
+  an explicit "setUseCompoundFile" method.  Instead this behavior is now driven
+  entirely by the value of "setNoCFSRatio".  If you have explicitly configured 
+  one of these classes using <mergePolicy> and include an init arg like this...
+     <bool name="useCompoundFile">true</bool>
+  ...this will now be ignored and a warning will be logged.  Users with an 
+  explicitly declared <mergePolicy> are encouraged to review the current 
+  javadocs for their MergePolicy subclass and review their configured options 
+  carefully.  See SOLR-4934 and LUCENE-5038 for more information.
+
 * SOLR-4778: The signature of LogWatcher.registerListener has changed, from
   (ListenerConfig, CoreContainer) to (ListenerConfig).  Users implementing their
   own LogWatcher classes will need to change their code accordingly.
@@ -163,6 +173,10 @@ Bug Fixes
 * SOLR-4932: persisting solr.xml saves some parameters it shouldn't when they weren't
   defined in the original. Benign since the default values are saved, but still incorrect.
   (Erick Erickson, thanks Shawn Heisey for helping test!)
+
+* SOLR-4934: Fix handling of <mergePolicy> init arg "useCompoundFile" needed 
+  after changes in LUCENE-5038 (hossman)
+
 
 Optimizations
 ----------------------
