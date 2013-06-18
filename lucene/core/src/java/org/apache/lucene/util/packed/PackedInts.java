@@ -1041,14 +1041,21 @@ public class PackedInts {
    */
   public static Mutable getMutable(int valueCount,
       int bitsPerValue, float acceptableOverheadRatio) {
-    assert valueCount >= 0;
-
     final FormatAndBits formatAndBits = fastestFormatAndBits(valueCount, bitsPerValue, acceptableOverheadRatio);
-    switch (formatAndBits.format) {
+    return getMutable(valueCount, formatAndBits.bitsPerValue, formatAndBits.format);
+  }
+
+  /** Same as {@link #getMutable(int, int, float)} with a pre-computed number
+   *  of bits per value and format.
+   *  @lucene.internal */
+  public static Mutable getMutable(int valueCount,
+      int bitsPerValue, PackedInts.Format format) {
+    assert valueCount >= 0;
+    switch (format) {
       case PACKED_SINGLE_BLOCK:
-        return Packed64SingleBlock.create(valueCount, formatAndBits.bitsPerValue);
+        return Packed64SingleBlock.create(valueCount, bitsPerValue);
       case PACKED:
-        switch (formatAndBits.bitsPerValue) {
+        switch (bitsPerValue) {
           case 8:
             return new Direct8(valueCount);
           case 16:
@@ -1068,7 +1075,7 @@ public class PackedInts {
             }
             break;
         }
-        return new Packed64(valueCount, formatAndBits.bitsPerValue);
+        return new Packed64(valueCount, bitsPerValue);
       default:
         throw new AssertionError();
     }
