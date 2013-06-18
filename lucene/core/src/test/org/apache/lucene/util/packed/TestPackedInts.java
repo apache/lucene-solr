@@ -686,7 +686,7 @@ public class TestPackedInts extends LuceneTestCase {
     }
 
     // test ramBytesUsed
-    assertEquals(RamUsageEstimator.sizeOf(writer), writer.ramBytesUsed());
+    assertEquals(RamUsageEstimator.sizeOf(writer), writer.ramBytesUsed(), 8);
 
     // test copy
     PagedGrowableWriter copy = writer.resize(_TestUtil.nextLong(random(), writer.size() / 2, writer.size() * 3 / 2));
