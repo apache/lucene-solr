@@ -1467,8 +1467,8 @@ public abstract class SolrTestCaseJ4 extends LuceneTestCase {
     File subHome = new File(dstRoot, "conf");
     assertTrue("Failed to make subdirectory ", dstRoot.mkdirs());
     String top = SolrTestCaseJ4.TEST_HOME() + "/collection1/conf";
-    FileUtils.copyFile(new File(top, "schema-tiny.xml"), new File(subHome, "schema-tiny.xml"));
-    FileUtils.copyFile(new File(top, "solrconfig-minimal.xml"), new File(subHome, "solrconfig-minimal.xml"));
+    FileUtils.copyFile(new File(top, "schema-tiny.xml"), new File(subHome, "schema.xml"));
+    FileUtils.copyFile(new File(top, "solrconfig-minimal.xml"), new File(subHome, "solrconfig.xml"));
   }
 
 }

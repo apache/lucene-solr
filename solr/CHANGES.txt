@@ -160,6 +160,10 @@ Bug Fixes
 * SOLR-4923: Commits to non leaders as part of a request that also contain updates
   can execute out of order. (hossman, Ricardo Merizalde, Mark Miller)
 
+* SOLR-4932: persisting solr.xml saves some parameters it shouldn't when they weren't
+  defined in the original. Benign since the default values are saved, but still incorrect.
+  (Erick Erickson, thanks Shawn Heisey for helping test!)
+
 Optimizations
 ----------------------
 
