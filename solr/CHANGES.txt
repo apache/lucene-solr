@@ -184,6 +184,8 @@ Optimizations
 * SOLR-4923: Commit to all nodes in a collection in parallel rather than locally and
   then to all other nodes. (hossman, Ricardo Merizalde, Mark Miller)
 
+* SOLR-3838: Admin UI - Multiple filter queries are not supported in Query UI (steffkes)
+
 Other Changes
 ----------------------
 
