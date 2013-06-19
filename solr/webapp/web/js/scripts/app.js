@@ -585,5 +585,74 @@ var solr_admin = function( app_config )
 
 };
 
+var connection_check_delay = 1000;
+var connection_working = true;
+
+var connection_check = function connection_check()
+{
+  $.ajax
+  (
+    {
+      url : config.solr_path + config.core_admin_path + '?wt=json&indexInfo=false',
+      dataType : 'json',
+      context : $( '.blockUI #connection_status span' ),
+      beforeSend : function( arr, form, options )
+      {               
+        this
+          .addClass( 'loader' );
+      },
+      success : function( response )
+      {
+        connection_working = true;
+
+        this
+          .html( 'Instance is available - <a href="javascript:location.reload();">Reload the page</a>' );
+
+        this.parents( '#connection_status' )
+          .addClass( 'online' );
+
+        this.parents( '.blockUI' )
+          .css( 'borderColor', '#080' );
+      },
+      error : function()
+      {
+        connection_check_delay += connection_check_delay;
+        window.setTimeout( connection_check, connection_check_delay );
+      },
+      complete : function()
+      {
+        this
+          .removeClass( 'loader' );
+      }
+    }
+  );
+};
+
+var connection_error = function connection_error()
+{
+  connection_working = false;
+
+  $.blockUI
+  (
+    {
+      message: $( '#connection_status' ),
+      css: { width: '450px', borderColor: '#f00' }
+    }
+  );
+
+  window.setTimeout( connection_check, connection_check_delay );
+}
+
+$( document ).ajaxError
+(
+  function( event, xhr, settings, thrownError )
+  {
+    if( connection_working && 0 === xhr.status )
+    {
+      connection_error();
+    }
+  }
+);
+
 $.ajaxSetup( { cache: false } );
 var app = new solr_admin( app_config );
