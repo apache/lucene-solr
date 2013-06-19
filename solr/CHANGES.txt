@@ -187,6 +187,8 @@ Optimizations
 
 * SOLR-3838: Admin UI - Multiple filter queries are not supported in Query UI (steffkes)
 
+* SOLR-4719 : Admin UI - Default to wt=json on Query-Screen (steffkes)
+
 Other Changes
 ----------------------
 
