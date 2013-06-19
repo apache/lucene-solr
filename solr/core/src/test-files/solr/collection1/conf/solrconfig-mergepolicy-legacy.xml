@@ -23,17 +23,7 @@
 
   <indexConfig>
     <mergeFactor>7</mergeFactor>
-    <mergePolicy class="org.apache.lucene.index.TieredMergePolicy">
-      <int name="maxMergeAtOnceExplicit">19</int>
-      <int name="segmentsPerTier">9</int>
-      <double name="noCFSRatio">0.6</double>
-
-      <!-- Setter for this was removed in Lucene 4.4, but we should
-           ignore it with a warning if users have it in their configs
-      -->
-      <bool name="useCompoundFile">true</bool>
-
-    </mergePolicy>
+    <useCompoundFile>true</useCompoundFile>
   </indexConfig>
 
   <requestHandler name="standard" class="solr.StandardRequestHandler"></requestHandler>

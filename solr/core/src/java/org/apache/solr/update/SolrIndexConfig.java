@@ -221,6 +221,9 @@ public class SolrIndexConfig {
 
       if (mergeFactor != -1)
         logMergePolicy.setMergeFactor(mergeFactor);
+
+      fixUseCFInitArg(LogMergePolicy.class);
+
     } else if (policy instanceof TieredMergePolicy) {
       TieredMergePolicy tieredMergePolicy = (TieredMergePolicy) policy;
       
@@ -230,8 +233,11 @@ public class SolrIndexConfig {
         tieredMergePolicy.setMaxMergeAtOnce(mergeFactor);
         tieredMergePolicy.setSegmentsPerTier(mergeFactor);
       }
-    } else {
-      log.warn("Use of compound file format or mergefactor cannot be configured if merge policy is not an instance of LogMergePolicy or TieredMergePolicy. The configured policy's defaults will be used.");
+
+      fixUseCFInitArg(TieredMergePolicy.class);
+
+    } else if (useCompoundFile && (mergeFactor != -1)) {
+      log.warn("Use of <useCompoundFile> or <mergeFactor> cannot be configured if merge policy is not an instance of LogMergePolicy or TieredMergePolicy. The configured policy's defaults will be used.");
     }
 
     if (mergePolicyInfo != null)
@@ -248,5 +254,21 @@ public class SolrIndexConfig {
       SolrPluginUtils.invokeSetters(scheduler, mergeSchedulerInfo.initArgs);
 
     return scheduler;
+  }
+
+  /**
+   * Lucene 4.4 removed the setUseCompoundFile(boolean) method from the two 
+   * conrete MergePolicies provided with Lucene/Solr.  In the event that users 
+   * have a value explicitly configured for this setter in their mergePolicy 
+   * init args, we remove it for them and warn about it.
+   */
+  private void fixUseCFInitArg(Class c) {
+
+    if (null == mergePolicyInfo || null == mergePolicyInfo.initArgs) return;
+
+    Object useCFSArg = mergePolicyInfo.initArgs.remove("useCompoundFile");
+    if (null != useCFSArg) {
+      log.warn("Ignoring 'useCompoundFile' specified as an init arg for the <mergePolicy> since it is no longer supported by " + c.getSimpleName());
+    }
   }
 }
