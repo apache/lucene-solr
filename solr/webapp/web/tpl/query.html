@@ -37,12 +37,20 @@ limitations under the License.
         <label for="fq">
           <a rel="help">fq</a>
         </label>
-        <input type="text" id="fq" name="fq" class="multiple" title="Filter query.">
+        <div class="multiple">
+          <div class="row clearfix">
+            <input type="text" id="fq" name="fq" title="Filter query.">
+            <div class="buttons">
+              <a class="rem" data-action="0"><span>[-]</span></a>
+              <a class="add" data-action="1"><span>[+]</span></a>
+            </div>
+          </div>
+        </div>
 
         <label for="sort">
           <a rel="help">sort</a>
         </label>
-        <input type="text" id="sort" name="sort" class="multiple" title="Sort field or function with asc|desc.">
+        <input type="text" id="sort" name="sort" title="Sort field or function with asc|desc.">
 
         <label for="start">
           <a rel="help">start</a>,

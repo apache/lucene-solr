@@ -32,6 +32,44 @@
   width: 98%;
 }
 
+#content #query #form .multiple input
+{
+  float: left;
+  width: 80%
+}
+
+#content #query #form .multiple .buttons
+{
+  float: right;
+  width: 16%;
+}
+
+
+#content #query #form .multiple a
+{
+  background-position: 50% 50%;
+  display: block;
+  height: 25px;
+  width: 49%;
+}
+
+#content #query #form .multiple a span
+{
+  display: none;
+}
+
+#content #query #form .multiple a.add
+{
+  background-image: url( ../../img/ico/plus-button.png );
+  float: right;
+}
+
+#content #query #form .multiple a.rem
+{
+  background-image: url( ../../img/ico/minus-button.png );
+  float: left;
+}
+
 #content #query #form #start
 {
   float: left;
