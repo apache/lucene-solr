@@ -29,6 +29,7 @@ import org.apache.lucene.search.FieldCache;
  * using <code>getShorts()</code>
  * and makes those values available as other numeric types, casting as needed.
  **/
+@Deprecated
 public class ShortFieldSource extends FieldCacheSource {
 
   final FieldCache.ShortParser parser;

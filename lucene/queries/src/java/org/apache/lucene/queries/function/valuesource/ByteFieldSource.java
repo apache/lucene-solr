@@ -30,7 +30,7 @@ import org.apache.lucene.search.FieldCache;
  *
  *
  */
-
+@Deprecated
 public class ByteFieldSource extends FieldCacheSource {
 
   private final FieldCache.ByteParser parser;

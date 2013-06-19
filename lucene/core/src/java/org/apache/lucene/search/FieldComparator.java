@@ -220,6 +220,7 @@ public abstract class FieldComparator<T> {
 
   /** Parses field's values as byte (using {@link
    *  FieldCache#getBytes} and sorts by ascending value */
+  @Deprecated
   public static final class ByteComparator extends NumericComparator<Byte> {
     private final byte[] values;
     private final ByteParser parser;
@@ -441,6 +442,7 @@ public abstract class FieldComparator<T> {
 
   /** Parses field's values as short (using {@link
    *  FieldCache#getShorts} and sorts by ascending value */
+  @Deprecated
   public static final class ShortComparator extends NumericComparator<Short> {
     private final short[] values;
     private final ShortParser parser;

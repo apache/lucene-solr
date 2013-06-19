@@ -181,6 +181,7 @@ public interface FieldCache {
   /** Interface to parse bytes from document fields.
    * @see FieldCache#getBytes(AtomicReader, String, FieldCache.ByteParser, boolean)
    */
+  @Deprecated
   public interface ByteParser extends Parser {
     /** Return a single Byte representation of this field's value. */
     public byte parseByte(BytesRef term);
@@ -189,6 +190,7 @@ public interface FieldCache {
   /** Interface to parse shorts from document fields.
    * @see FieldCache#getShorts(AtomicReader, String, FieldCache.ShortParser, boolean)
    */
+  @Deprecated
   public interface ShortParser extends Parser {
     /** Return a short representation of this field's value. */
     public short parseShort(BytesRef term);
@@ -230,6 +232,7 @@ public interface FieldCache {
   public static FieldCache DEFAULT = new FieldCacheImpl();
 
   /** The default parser for byte values, which are encoded by {@link Byte#toString(byte)} */
+  @Deprecated
   public static final ByteParser DEFAULT_BYTE_PARSER = new ByteParser() {
     @Override
     public byte parseByte(BytesRef term) {
@@ -250,6 +253,7 @@ public interface FieldCache {
   };
 
   /** The default parser for short values, which are encoded by {@link Short#toString(short)} */
+  @Deprecated
   public static final ShortParser DEFAULT_SHORT_PARSER = new ShortParser() {
     @Override
     public short parseShort(BytesRef term) {
@@ -271,6 +275,7 @@ public interface FieldCache {
   };
 
   /** The default parser for int values, which are encoded by {@link Integer#toString(int)} */
+  @Deprecated
   public static final IntParser DEFAULT_INT_PARSER = new IntParser() {
     @Override
     public int parseInt(BytesRef term) {
@@ -293,6 +298,7 @@ public interface FieldCache {
   };
 
   /** The default parser for float values, which are encoded by {@link Float#toString(float)} */
+  @Deprecated
   public static final FloatParser DEFAULT_FLOAT_PARSER = new FloatParser() {
     @Override
     public float parseFloat(BytesRef term) {
@@ -315,6 +321,7 @@ public interface FieldCache {
   };
 
   /** The default parser for long values, which are encoded by {@link Long#toString(long)} */
+  @Deprecated
   public static final LongParser DEFAULT_LONG_PARSER = new LongParser() {
     @Override
     public long parseLong(BytesRef term) {
@@ -337,6 +344,7 @@ public interface FieldCache {
   };
 
   /** The default parser for double values, which are encoded by {@link Double#toString(double)} */
+  @Deprecated
   public static final DoubleParser DEFAULT_DOUBLE_PARSER = new DoubleParser() {
     @Override
     public double parseDouble(BytesRef term) {
@@ -459,7 +467,9 @@ public interface FieldCache {
    *        also be computed and stored in the FieldCache.
    * @return The values in the given field for each document.
    * @throws IOException  If any error occurs.
+   * @deprecated (4.4) Index as a numeric field using {@link IntField} and then use {@link #getInts(AtomicReader, String, boolean)} instead.
    */
+  @Deprecated
   public Bytes getBytes(AtomicReader reader, String field, boolean setDocsWithField) throws IOException;
 
   /** Checks the internal cache for an appropriate entry, and if none is found,
@@ -473,7 +483,9 @@ public interface FieldCache {
    *        also be computed and stored in the FieldCache.
    * @return The values in the given field for each document.
    * @throws IOException  If any error occurs.
+   * @deprecated (4.4) Index as a numeric field using {@link IntField} and then use {@link #getInts(AtomicReader, String, boolean)} instead.
    */
+  @Deprecated
   public Bytes getBytes(AtomicReader reader, String field, ByteParser parser, boolean setDocsWithField) throws IOException;
 
   /** Checks the internal cache for an appropriate entry, and if none is
@@ -486,7 +498,9 @@ public interface FieldCache {
    *        also be computed and stored in the FieldCache.
    * @return The values in the given field for each document.
    * @throws IOException  If any error occurs.
+   * @deprecated (4.4) Index as a numeric field using {@link IntField} and then use {@link #getInts(AtomicReader, String, boolean)} instead.
    */
+  @Deprecated
   public Shorts getShorts (AtomicReader reader, String field, boolean setDocsWithField) throws IOException;
 
   /** Checks the internal cache for an appropriate entry, and if none is found,
@@ -500,7 +514,9 @@ public interface FieldCache {
    *        also be computed and stored in the FieldCache.
    * @return The values in the given field for each document.
    * @throws IOException  If any error occurs.
+   * @deprecated (4.4) Index as a numeric field using {@link IntField} and then use {@link #getInts(AtomicReader, String, boolean)} instead.
    */
+  @Deprecated
   public Shorts getShorts (AtomicReader reader, String field, ShortParser parser, boolean setDocsWithField) throws IOException;
   
   /** Checks the internal cache for an appropriate entry, and if none is

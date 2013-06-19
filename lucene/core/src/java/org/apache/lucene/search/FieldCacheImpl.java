@@ -38,7 +38,6 @@ import org.apache.lucene.index.SortedDocValues;
 import org.apache.lucene.index.SortedSetDocValues;
 import org.apache.lucene.index.Terms;
 import org.apache.lucene.index.TermsEnum;
-import org.apache.lucene.util.ArrayUtil;
 import org.apache.lucene.util.Bits;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.FieldCacheSanityChecker;
@@ -574,15 +573,19 @@ class FieldCacheImpl implements FieldCache {
   }
 
   static class IntsFromArray extends Ints {
-    private final int[] values;
+    private final PackedInts.Reader values;
+    private final int minValue;
 
-    public IntsFromArray(int[] values) {
+    public IntsFromArray(PackedInts.Reader values, int minValue) {
+      assert values.getBitsPerValue() <= 32;
       this.values = values;
+      this.minValue = minValue;
     }
     
     @Override
     public int get(int docID) {
-      return values[docID];
+      final long delta = values.get(docID);
+      return minValue + (int) delta;
     }
   }
 
@@ -596,6 +599,15 @@ class FieldCacheImpl implements FieldCache {
     public T get() {
       return it;
     }
+  }
+
+  private static class GrowableWriterAndMinValue {
+    GrowableWriterAndMinValue(GrowableWriter array, long minValue) {
+      this.writer = array;
+      this.minValue = minValue;
+    }
+    public GrowableWriter writer;
+    public long minValue;
   }
 
   static final class IntCache extends Cache {
@@ -621,11 +633,12 @@ class FieldCacheImpl implements FieldCache {
         }
       }
 
-      final HoldsOneThing<int[]> valuesRef = new HoldsOneThing<int[]>();
+      final HoldsOneThing<GrowableWriterAndMinValue> valuesRef = new HoldsOneThing<GrowableWriterAndMinValue>();
 
       Uninvert u = new Uninvert() {
+          private int minValue;
           private int currentValue;
-          private int[] values;
+          private GrowableWriter values;
 
           @Override
           public void visitTerm(BytesRef term) {
@@ -635,16 +648,29 @@ class FieldCacheImpl implements FieldCache {
               // (which will hit a NumberFormatException
               // when we first try the DEFAULT_INT_PARSER),
               // we don't double-alloc:
-              values = new int[reader.maxDoc()];
-              valuesRef.set(values);
+              int startBitsPerValue;
+              // Make sure than missing values (0) can be stored without resizing
+              if (currentValue < 0) {
+                minValue = currentValue;
+                startBitsPerValue = PackedInts.bitsRequired((-minValue) & 0xFFFFFFFFL);
+              } else {
+                minValue = 0;
+                startBitsPerValue = PackedInts.bitsRequired(currentValue);
+              }
+              startBitsPerValue = Math.max(startBitsPerValue, 4);
+              values = new GrowableWriter(startBitsPerValue, reader.maxDoc(), PackedInts.FAST);
+              if (minValue != 0) {
+                values.fill(0, values.size(), (-minValue) & 0xFFFFFFFFL); // default value must be 0
+              }
+              valuesRef.set(new GrowableWriterAndMinValue(values, minValue));
             }
           }
 
           @Override
           public void visitDoc(int docID) {
-            values[docID] = currentValue;
+            values.set(docID, (currentValue - minValue) & 0xFFFFFFFFL);
           }
-          
+
           @Override
           protected TermsEnum termsEnum(Terms terms) throws IOException {
             return parser.termsEnum(terms);
@@ -656,11 +682,11 @@ class FieldCacheImpl implements FieldCache {
       if (setDocsWithField) {
         wrapper.setDocsWithField(reader, key.field, u.docsWithField);
       }
-      int[] values = valuesRef.get();
+      GrowableWriterAndMinValue values = valuesRef.get();
       if (values == null) {
-        values = new int[reader.maxDoc()];
+        return new IntsFromArray(new PackedInts.NullReader(reader.maxDoc()), 0);
       }
-      return new IntsFromArray(values);
+      return new IntsFromArray(values.writer.getMutable(), (int) values.minValue);
     }
   }
 
@@ -879,15 +905,17 @@ class FieldCacheImpl implements FieldCache {
   }
 
   static class LongsFromArray extends Longs {
-    private final long[] values;
+    private final PackedInts.Reader values;
+    private final long minValue;
 
-    public LongsFromArray(long[] values) {
+    public LongsFromArray(PackedInts.Reader values, long minValue) {
       this.values = values;
+      this.minValue = minValue;
     }
     
     @Override
     public long get(int docID) {
-      return values[docID];
+      return minValue + values.get(docID);
     }
   }
 
@@ -914,11 +942,12 @@ class FieldCacheImpl implements FieldCache {
         }
       }
 
-      final HoldsOneThing<long[]> valuesRef = new HoldsOneThing<long[]>();
+      final HoldsOneThing<GrowableWriterAndMinValue> valuesRef = new HoldsOneThing<GrowableWriterAndMinValue>();
 
       Uninvert u = new Uninvert() {
+          private long minValue;
           private long currentValue;
-          private long[] values;
+          private GrowableWriter values;
 
           @Override
           public void visitTerm(BytesRef term) {
@@ -928,14 +957,27 @@ class FieldCacheImpl implements FieldCache {
               // (which will hit a NumberFormatException
               // when we first try the DEFAULT_INT_PARSER),
               // we don't double-alloc:
-              values = new long[reader.maxDoc()];
-              valuesRef.set(values);
+              int startBitsPerValue;
+              // Make sure than missing values (0) can be stored without resizing
+              if (currentValue < 0) {
+                minValue = currentValue;
+                startBitsPerValue = minValue == Long.MIN_VALUE ? 64 : PackedInts.bitsRequired(-minValue);
+              } else {
+                minValue = 0;
+                startBitsPerValue = PackedInts.bitsRequired(currentValue);
+              }
+              startBitsPerValue = Math.max(startBitsPerValue, 4);
+              values = new GrowableWriter(startBitsPerValue, reader.maxDoc(), PackedInts.FAST);
+              if (minValue != 0) {
+                values.fill(0, values.size(), -minValue); // default value must be 0
+              }
+              valuesRef.set(new GrowableWriterAndMinValue(values, minValue));
             }
           }
 
           @Override
           public void visitDoc(int docID) {
-            values[docID] = currentValue;
+            values.set(docID, currentValue - minValue);
           }
           
           @Override
@@ -949,11 +991,11 @@ class FieldCacheImpl implements FieldCache {
       if (setDocsWithField) {
         wrapper.setDocsWithField(reader, key.field, u.docsWithField);
       }
-      long[] values = valuesRef.get();
+      GrowableWriterAndMinValue values = valuesRef.get();
       if (values == null) {
-        values = new long[reader.maxDoc()];
+        return new LongsFromArray(new PackedInts.NullReader(reader.maxDoc()), 0L);
       }
-      return new LongsFromArray(values);
+      return new LongsFromArray(values.writer.getMutable(), values.minValue);
     }
   }
 
@@ -1146,7 +1188,6 @@ class FieldCacheImpl implements FieldCache {
       final PagedBytes bytes = new PagedBytes(15);
 
       int startTermsBPV;
-      int startNumUniqueTerms;
 
       final int termCountHardLimit;
       if (maxDoc == Integer.MAX_VALUE) {
@@ -1170,15 +1211,11 @@ class FieldCacheImpl implements FieldCache {
           }
 
           startTermsBPV = PackedInts.bitsRequired(numUniqueTerms);
-
-          startNumUniqueTerms = (int) numUniqueTerms;
         } else {
           startTermsBPV = 1;
-          startNumUniqueTerms = 1;
         }
       } else {
         startTermsBPV = 1;
-        startNumUniqueTerms = 1;
       }
 
       MonotonicAppendingLongBuffer termOrdToBytesOffset = new MonotonicAppendingLongBuffer();

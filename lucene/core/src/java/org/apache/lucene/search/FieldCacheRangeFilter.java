@@ -199,6 +199,7 @@ public abstract class FieldCacheRangeFilter<T> extends Filter {
    * byte fields containing exactly one numeric term in the field. The range can be half-open by setting one
    * of the values to <code>null</code>.
    */
+  @Deprecated
   public static FieldCacheRangeFilter<Byte> newByteRange(String field, Byte lowerVal, Byte upperVal, boolean includeLower, boolean includeUpper) {
     return newByteRange(field, null, lowerVal, upperVal, includeLower, includeUpper);
   }
@@ -208,6 +209,7 @@ public abstract class FieldCacheRangeFilter<T> extends Filter {
    * byte fields containing exactly one numeric term in the field. The range can be half-open by setting one
    * of the values to <code>null</code>.
    */
+  @Deprecated
   public static FieldCacheRangeFilter<Byte> newByteRange(String field, FieldCache.ByteParser parser, Byte lowerVal, Byte upperVal, boolean includeLower, boolean includeUpper) {
     return new FieldCacheRangeFilter<Byte>(field, parser, lowerVal, upperVal, includeLower, includeUpper) {
       @Override
@@ -250,6 +252,7 @@ public abstract class FieldCacheRangeFilter<T> extends Filter {
    * short fields containing exactly one numeric term in the field. The range can be half-open by setting one
    * of the values to <code>null</code>.
    */
+  @Deprecated
   public static FieldCacheRangeFilter<Short> newShortRange(String field, Short lowerVal, Short upperVal, boolean includeLower, boolean includeUpper) {
     return newShortRange(field, null, lowerVal, upperVal, includeLower, includeUpper);
   }
@@ -259,6 +262,7 @@ public abstract class FieldCacheRangeFilter<T> extends Filter {
    * short fields containing exactly one numeric term in the field. The range can be half-open by setting one
    * of the values to <code>null</code>.
    */
+  @Deprecated
   public static FieldCacheRangeFilter<Short> newShortRange(String field, FieldCache.ShortParser parser, Short lowerVal, Short upperVal, boolean includeLower, boolean includeUpper) {
     return new FieldCacheRangeFilter<Short>(field, parser, lowerVal, upperVal, includeLower, includeUpper) {
       @Override

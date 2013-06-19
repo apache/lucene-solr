@@ -23,23 +23,33 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.LinkedHashSet;
 import java.util.List;
-import java.util.Locale;
 import java.util.concurrent.CyclicBarrier;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 
 import org.apache.lucene.analysis.MockAnalyzer;
-import org.apache.lucene.codecs.DocValuesFormat;
 import org.apache.lucene.document.BinaryDocValuesField;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
+import org.apache.lucene.document.Field.Store;
 import org.apache.lucene.document.IntField;
+import org.apache.lucene.document.LongField;
 import org.apache.lucene.document.NumericDocValuesField;
 import org.apache.lucene.document.SortedDocValuesField;
 import org.apache.lucene.document.SortedSetDocValuesField;
 import org.apache.lucene.document.StoredField;
-import org.apache.lucene.document.StringField;
-import org.apache.lucene.index.*;
+import org.apache.lucene.index.AtomicReader;
+import org.apache.lucene.index.BinaryDocValues;
+import org.apache.lucene.index.DirectoryReader;
+import org.apache.lucene.index.DocTermOrds;
+import org.apache.lucene.index.IndexReader;
+import org.apache.lucene.index.IndexWriter;
+import org.apache.lucene.index.IndexWriterConfig;
+import org.apache.lucene.index.RandomIndexWriter;
+import org.apache.lucene.index.SlowCompositeReaderWrapper;
+import org.apache.lucene.index.SortedDocValues;
+import org.apache.lucene.index.SortedSetDocValues;
+import org.apache.lucene.index.TermsEnum;
 import org.apache.lucene.search.FieldCache.Bytes;
 import org.apache.lucene.search.FieldCache.Doubles;
 import org.apache.lucene.search.FieldCache.Floats;
@@ -693,4 +703,97 @@ public class TestFieldCache extends LuceneTestCase {
     ir.close();
     dir.close();
   }
+
+  // Make sure that the use of GrowableWriter doesn't prevent from using the full long range
+  public void testLongFieldCache() throws IOException {
+    Directory dir = newDirectory();
+    IndexWriterConfig cfg = newIndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer(random()));
+    cfg.setMergePolicy(newLogMergePolicy());
+    RandomIndexWriter iw = new RandomIndexWriter(random(), dir);
+    Document doc = new Document();
+    LongField field = new LongField("f", 0L, Store.YES);
+    doc.add(field);
+    final long[] values = new long[_TestUtil.nextInt(random(), 1, 10)];
+    for (int i = 0; i < values.length; ++i) {
+      final long v;
+      switch (random().nextInt(10)) {
+        case 0:
+          v = Long.MIN_VALUE;
+          break;
+        case 1:
+          v = 0;
+          break;
+        case 2:
+          v = Long.MAX_VALUE;
+          break;
+        default:
+          v = _TestUtil.nextLong(random(), -10, 10);
+          break;
+      }
+      values[i] = v;
+      if (v == 0 && random().nextBoolean()) {
+        // missing
+        iw.addDocument(new Document());
+      } else {
+        field.setLongValue(v);
+        iw.addDocument(doc);
+      }
+    }
+    iw.forceMerge(1);
+    final DirectoryReader reader = iw.getReader();
+    final FieldCache.Longs longs = FieldCache.DEFAULT.getLongs(getOnlySegmentReader(reader), "f", false);
+    for (int i = 0; i < values.length; ++i) {
+      assertEquals(values[i], longs.get(i));
+    }
+    reader.close();
+    iw.close();
+    dir.close();
+  }
+
+  // Make sure that the use of GrowableWriter doesn't prevent from using the full int range
+  public void testIntFieldCache() throws IOException {
+    Directory dir = newDirectory();
+    IndexWriterConfig cfg = newIndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer(random()));
+    cfg.setMergePolicy(newLogMergePolicy());
+    RandomIndexWriter iw = new RandomIndexWriter(random(), dir);
+    Document doc = new Document();
+    IntField field = new IntField("f", 0, Store.YES);
+    doc.add(field);
+    final int[] values = new int[_TestUtil.nextInt(random(), 1, 10)];
+    for (int i = 0; i < values.length; ++i) {
+      final int v;
+      switch (random().nextInt(10)) {
+        case 0:
+          v = Integer.MIN_VALUE;
+          break;
+        case 1:
+          v = 0;
+          break;
+        case 2:
+          v = Integer.MAX_VALUE;
+          break;
+        default:
+          v = _TestUtil.nextInt(random(), -10, 10);
+          break;
+      }
+      values[i] = v;
+      if (v == 0 && random().nextBoolean()) {
+        // missing
+        iw.addDocument(new Document());
+      } else {
+        field.setIntValue(v);
+        iw.addDocument(doc);
+      }
+    }
+    iw.forceMerge(1);
+    final DirectoryReader reader = iw.getReader();
+    final FieldCache.Ints ints = FieldCache.DEFAULT.getInts(getOnlySegmentReader(reader), "f", false);
+    for (int i = 0; i < values.length; ++i) {
+      assertEquals(values[i], ints.get(i));
+    }
+    reader.close();
+    iw.close();
+    dir.close();
+  }
+
 }

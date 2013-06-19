@@ -44,7 +44,9 @@ import java.util.Map;
  * </ul>
  *
  * @see Short
+ * @deprecated Use {@link TrieIntField} instead.
  **/
+@Deprecated
 public class ShortField extends PrimitiveFieldType {
   @Override
   protected void init(IndexSchema schema, Map<String, String> args) {

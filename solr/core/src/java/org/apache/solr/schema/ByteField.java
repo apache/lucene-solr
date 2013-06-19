@@ -43,7 +43,9 @@ import java.util.Map;
  * </ul>
  *
  * @see Byte
+ * @deprecated Use {@link TrieIntField} instead.
  */
+@Deprecated
 public class ByteField extends PrimitiveFieldType {
   @Override
   protected void init(IndexSchema schema, Map<String, String> args) {

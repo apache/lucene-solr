@@ -73,6 +73,7 @@ public class SortField {
 
     /** Sort using term values as encoded Shorts.  Sort values are Short and
      * lower values are at the front. */
+    @Deprecated
     SHORT,
 
     /** Sort using a custom Comparator.  Sort values are any Comparable and
@@ -81,6 +82,7 @@ public class SortField {
 
     /** Sort using term values as encoded Bytes.  Sort values are Byte and
      * lower values are at the front. */
+    @Deprecated
     BYTE,
 
     /** Sort using term values as Strings, but comparing by
