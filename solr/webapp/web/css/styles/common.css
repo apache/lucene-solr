@@ -606,3 +606,38 @@ pre.syntax .tex .formula
 {
   color:aqua;
 }
+
+#connection_status
+{
+  display: none;
+  padding: 30px;
+}
+
+#connection_status span
+{
+  background-image: url( ../../img/ico/network-status-busy.png );
+  background-position: 0 50%;
+  color: #800;
+  padding-left: 26px;
+}
+
+#connection_status.online span,
+#connection_status.online span a
+{
+  color: #080;
+}
+
+#connection_status.online span
+{
+  background-image: url( ../../img/ico/network-status.png );
+}
+
+#connection_status.online span a
+{
+  text-decoration: underline;
+}
+
+#connection_status.online span a:hover
+{
+  text-decoration: none;
+}

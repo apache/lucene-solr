@@ -177,6 +177,7 @@ Bug Fixes
 * SOLR-4934: Fix handling of <mergePolicy> init arg "useCompoundFile" needed 
   after changes in LUCENE-5038 (hossman)
 
+* SOLR-4456: Admin UI: Displays dashboard even if Solr is down (steffkes)
 
 Optimizations
 ----------------------
