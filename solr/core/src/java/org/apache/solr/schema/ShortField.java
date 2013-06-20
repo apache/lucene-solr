@@ -23,6 +23,8 @@ import org.apache.lucene.search.SortField;
 
 import org.apache.solr.response.TextResponseWriter;
 import org.apache.solr.search.QParser;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
 import java.util.Map;
@@ -48,10 +50,14 @@ import java.util.Map;
  **/
 @Deprecated
 public class ShortField extends PrimitiveFieldType {
+
+  private static final Logger LOGGER = LoggerFactory.getLogger(ShortField.class);
+
   @Override
   protected void init(IndexSchema schema, Map<String, String> args) {
     super.init(schema, args);
     restrictProps(SORT_MISSING_FIRST | SORT_MISSING_LAST);
+    LOGGER.warn("ShortField is deprecated and will be removed in 5.0. You should use TrieIntField instead.");
   }
 
   /////////////////////////////////////////////////////////////

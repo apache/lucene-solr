@@ -657,7 +657,6 @@ class FieldCacheImpl implements FieldCache {
                 minValue = 0;
                 startBitsPerValue = PackedInts.bitsRequired(currentValue);
               }
-              startBitsPerValue = Math.max(startBitsPerValue, 4);
               values = new GrowableWriter(startBitsPerValue, reader.maxDoc(), PackedInts.FAST);
               if (minValue != 0) {
                 values.fill(0, values.size(), (-minValue) & 0xFFFFFFFFL); // default value must be 0
@@ -966,7 +965,6 @@ class FieldCacheImpl implements FieldCache {
                 minValue = 0;
                 startBitsPerValue = PackedInts.bitsRequired(currentValue);
               }
-              startBitsPerValue = Math.max(startBitsPerValue, 4);
               values = new GrowableWriter(startBitsPerValue, reader.maxDoc(), PackedInts.FAST);
               if (minValue != 0) {
                 values.fill(0, values.size(), -minValue); // default value must be 0
