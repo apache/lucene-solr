@@ -173,6 +173,9 @@ Bug Fixes
   when the sum of those shapes contain the query shape but none do individually.
   A flag was added to use the original faster algorithm. (David Smiley)
 
+* LUCENE-4971: Fixed NPE in AnalyzingSuggester when there are too many
+  graph expansions.  (Alexey Kudinov via Mike McCandless)
+
 Optimizations
 
 * LUCENE-4936: Improve numeric doc values compression in case all values share
