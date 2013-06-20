@@ -130,6 +130,11 @@ Bug Fixes
   into out-of-memory errors when working with large stored fields.
   (Adrien Grand)
 
+* LUCENE-5062: If the spatial data for a document was comprised of multiple
+  overlapping or adjacent parts then a CONTAINS predicate query might not match
+  when the sum of those shapes contain the query shape but none do individually.
+  A flag was added to use the original faster algorithm. (David Smiley)
+
 Optimizations
 
 * LUCENE-4936: Improve numeric doc values compression in case all values share
