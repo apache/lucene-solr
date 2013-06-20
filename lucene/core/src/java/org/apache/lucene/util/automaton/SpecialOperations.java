@@ -219,7 +219,7 @@ final public class SpecialOperations {
   /**
    * Returns the set of accepted strings, assuming that at most
    * <code>limit</code> strings are accepted. If more than <code>limit</code> 
-   * strings are accepted, null is returned. If <code>limit</code>&lt;0, then 
+   * strings are accepted, the first limit strings found are returned. If <code>limit</code>&lt;0, then 
    * the limit is infinite.
    */
   public static Set<IntsRef> getFiniteStrings(Automaton a, int limit) {
@@ -227,11 +227,9 @@ final public class SpecialOperations {
     if (a.isSingleton()) {
       if (limit > 0) {
         strings.add(Util.toUTF32(a.singleton, new IntsRef()));
-      } else {
-        return null;
       }
     } else if (!getFiniteStrings(a.initial, new HashSet<State>(), strings, new IntsRef(), limit)) {
-      return null;
+      return strings;
     }
     return strings;
   }
