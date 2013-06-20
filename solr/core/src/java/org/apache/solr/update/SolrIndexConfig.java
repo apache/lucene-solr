@@ -43,7 +43,14 @@ public class SolrIndexConfig {
   public static final String DEFAULT_MERGE_SCHEDULER_CLASSNAME = ConcurrentMergeScheduler.class.getName();
   public final Version luceneVersion;
   
+  /**
+   * The explicit value of &lt;useCompoundFile&gt; specified on this index config
+   * @deprecated use {@link #getUseCompoundFile}
+   */
+  @Deprecated
   public final boolean useCompoundFile;
+  private boolean effectiveUseCompountFileSetting;
+
   public final int maxBufferedDocs;
   public final int maxMergeDocs;
   public final int maxIndexingThreads;
@@ -73,7 +80,7 @@ public class SolrIndexConfig {
   @SuppressWarnings("deprecation")
   private SolrIndexConfig(SolrConfig solrConfig) {
     luceneVersion = solrConfig.luceneMatchVersion;
-    useCompoundFile = false;
+    useCompoundFile = effectiveUseCompountFileSetting = false;
     maxBufferedDocs = -1;
     maxMergeDocs = -1;
     maxIndexingThreads = IndexWriterConfig.DEFAULT_MAX_THREAD_STATES;
@@ -121,6 +128,7 @@ public class SolrIndexConfig {
 
     defaultMergePolicyClassName = def.defaultMergePolicyClassName;
     useCompoundFile=solrConfig.getBool(prefix+"/useCompoundFile", def.useCompoundFile);
+    effectiveUseCompountFileSetting = useCompoundFile;
     maxBufferedDocs=solrConfig.getInt(prefix+"/maxBufferedDocs",def.maxBufferedDocs);
     maxMergeDocs=solrConfig.getInt(prefix+"/maxMergeDocs",def.maxMergeDocs);
     maxIndexingThreads=solrConfig.getInt(prefix+"/maxIndexingThreads",def.maxIndexingThreads);
@@ -189,6 +197,10 @@ public class SolrIndexConfig {
     iwc.setMergePolicy(buildMergePolicy(schema));
     iwc.setMergeScheduler(buildMergeScheduler(schema));
 
+    // do this after buildMergePolicy since the backcompat logic 
+    // there may modify the effective useCompoundFile
+    iwc.setUseCompoundFile(getUseCompoundFile());
+
     if (maxIndexingThreads != -1) {
       iwc.setMaxThreadStates(maxIndexingThreads);
     }
@@ -206,6 +218,15 @@ public class SolrIndexConfig {
     return iwc;
   }
 
+  /**
+   * Builds a MergePolicy, may also modify the value returned by
+   * getUseCompoundFile() for use by the IndexWriterConfig if 
+   * "useCompoundFile" is specified as an init arg for 
+   * an out of the box MergePolicy that no longer supports it
+   *
+   * @see #fixUseCFMergePolicyInitArg
+   * @see #getUseCompoundFile
+   */
   private MergePolicy buildMergePolicy(IndexSchema schema) {
     String mpClassName = mergePolicyInfo == null ? defaultMergePolicyClassName : mergePolicyInfo.className;
 
@@ -213,31 +234,31 @@ public class SolrIndexConfig {
 
     if (policy instanceof LogMergePolicy) {
       LogMergePolicy logMergePolicy = (LogMergePolicy) policy;
+      fixUseCFMergePolicyInitArg(LogMergePolicy.class);
 
       if (maxMergeDocs != -1)
         logMergePolicy.setMaxMergeDocs(maxMergeDocs);
 
-      logMergePolicy.setNoCFSRatio(useCompoundFile ? 1.0 : 0.0);
+      logMergePolicy.setNoCFSRatio(getUseCompoundFile() ? 1.0 : 0.0);
 
       if (mergeFactor != -1)
         logMergePolicy.setMergeFactor(mergeFactor);
 
-      fixUseCFInitArg(LogMergePolicy.class);
 
     } else if (policy instanceof TieredMergePolicy) {
       TieredMergePolicy tieredMergePolicy = (TieredMergePolicy) policy;
+      fixUseCFMergePolicyInitArg(TieredMergePolicy.class);
       
-      tieredMergePolicy.setNoCFSRatio(useCompoundFile ? 1.0 : 0.0);
+      tieredMergePolicy.setNoCFSRatio(getUseCompoundFile() ? 1.0 : 0.0);
       
       if (mergeFactor != -1) {
         tieredMergePolicy.setMaxMergeAtOnce(mergeFactor);
         tieredMergePolicy.setSegmentsPerTier(mergeFactor);
       }
 
-      fixUseCFInitArg(TieredMergePolicy.class);
 
-    } else if (useCompoundFile && (mergeFactor != -1)) {
-      log.warn("Use of <useCompoundFile> or <mergeFactor> cannot be configured if merge policy is not an instance of LogMergePolicy or TieredMergePolicy. The configured policy's defaults will be used.");
+    } else if (mergeFactor != -1) {
+      log.warn("Use of <mergeFactor> cannot be configured if merge policy is not an instance of LogMergePolicy or TieredMergePolicy. The configured policy's defaults will be used.");
     }
 
     if (mergePolicyInfo != null)
@@ -256,19 +277,35 @@ public class SolrIndexConfig {
     return scheduler;
   }
 
+  public boolean getUseCompoundFile() {
+    return effectiveUseCompountFileSetting;
+  }
+
   /**
    * Lucene 4.4 removed the setUseCompoundFile(boolean) method from the two 
-   * conrete MergePolicies provided with Lucene/Solr.  In the event that users 
-   * have a value explicitly configured for this setter in their mergePolicy 
-   * init args, we remove it for them and warn about it.
+   * conrete MergePolicies provided with Lucene/Solr and added it to the 
+   * IndexWRiterConfig.  
+   * In the event that users have a value explicitly configured for this 
+   * setter in their MergePolicy init args, we remove it from the MergePolicy 
+   * init args, update the 'effective' useCompoundFile setting used by the 
+   * IndexWriterConfig, and warn about discontinuing to use this init arg.
+   * 
+   * @see #getUseCompoundFile
    */
-  private void fixUseCFInitArg(Class c) {
+  private void fixUseCFMergePolicyInitArg(Class c) {
 
     if (null == mergePolicyInfo || null == mergePolicyInfo.initArgs) return;
 
     Object useCFSArg = mergePolicyInfo.initArgs.remove("useCompoundFile");
     if (null != useCFSArg) {
-      log.warn("Ignoring 'useCompoundFile' specified as an init arg for the <mergePolicy> since it is no longer supported by " + c.getSimpleName());
+      log.warn("Ignoring 'useCompoundFile' specified as an init arg for the <mergePolicy> since it is no directly longer supported by " + c.getSimpleName());
+      if (useCFSArg instanceof Boolean) {
+        boolean cfs = ((Boolean)useCFSArg).booleanValue();
+        log.warn("Please update your config to specify <useCompoundFile>"+cfs+"</useCompoundFile> directly in your <indexConfig> settings.");
+        effectiveUseCompountFileSetting = cfs;
+      } else {
+        log.error("MergePolicy's 'useCompoundFile' init arg is not a boolean, can not apply back compat logic to apply to the IndexWriterConfig: " + useCFSArg.toString());
+      }
     }
   }
 }
