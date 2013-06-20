@@ -60,14 +60,21 @@ Upgrading from Solr 4.3.0
 ----------------------
 
 * TieredMergePolicy and the various subtypes of LogMergePolicy no longer have 
-  an explicit "setUseCompoundFile" method.  Instead this behavior is now driven
-  entirely by the value of "setNoCFSRatio".  If you have explicitly configured 
-  one of these classes using <mergePolicy> and include an init arg like this...
+  an explicit "setUseCompoundFile" method.  Instead the behavior of new 
+  segments is determined by the IndexWriter configuration, and the MergePolicy 
+  is only consulted to determine if merge segements should use the compound 
+  file format (based on the value of "setNoCFSRatio").  If you have explicitly 
+  configured one of these classes using <mergePolicy> and include an init arg 
+  like this...
      <bool name="useCompoundFile">true</bool>
-  ...this will now be ignored and a warning will be logged.  Users with an 
-  explicitly declared <mergePolicy> are encouraged to review the current 
-  javadocs for their MergePolicy subclass and review their configured options 
-  carefully.  See SOLR-4934 and LUCENE-5038 for more information.
+  ...this will now be treated as if you specified...
+     <useCompoundFile>true</useCompoundFile> 
+  ...directly on the <indexConfig> (overriding any value already set using that
+  syntax) and a warning will be logged to updated your configuration.  Users 
+  with an explicitly declared <mergePolicy> are encouraged to review the 
+  current javadocs for their MergePolicy subclass and review their configured 
+  options carefully.  See SOLR-4941, SOLR-4934 and LUCENE-5038 for more 
+  information.
 
 * SOLR-4778: The signature of LogWatcher.registerListener has changed, from
   (ListenerConfig, CoreContainer) to (ListenerConfig).  Users implementing their
@@ -174,8 +181,8 @@ Bug Fixes
   defined in the original. Benign since the default values are saved, but still incorrect.
   (Erick Erickson, thanks Shawn Heisey for helping test!)
 
-* SOLR-4934: Fix handling of <mergePolicy> init arg "useCompoundFile" needed 
-  after changes in LUCENE-5038 (hossman)
+* SOLR-4934, SOLR-4941: Fix handling of <mergePolicy> init arg 
+  "useCompoundFile" needed after changes in LUCENE-5038 (hossman)
 
 * SOLR-4456: Admin UI: Displays dashboard even if Solr is down (steffkes)
 
