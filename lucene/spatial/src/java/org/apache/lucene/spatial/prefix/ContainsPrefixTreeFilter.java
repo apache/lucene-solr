@@ -41,8 +41,35 @@ import java.util.Collection;
  */
 public class ContainsPrefixTreeFilter extends AbstractPrefixTreeFilter {
 
-  public ContainsPrefixTreeFilter(Shape queryShape, String fieldName, SpatialPrefixTree grid, int detailLevel) {
+  /*
+  Future optimizations:
+    Instead of seekExact, use seekCeil with some leap-frogging, like Intersects does.
+  */
+
+  /**
+   * If the spatial data for a document is comprised of multiple overlapping or adjacent parts,
+   * it might fail to match a query shape when doing the CONTAINS predicate when the sum of
+   * those shapes contain the query shape but none do individually.  Set this to false to
+   * increase performance if you don't care about that circumstance (such as if your indexed
+   * data doesn't even have such conditions).  See LUCENE-5062.
+   */
+  protected final boolean multiOverlappingIndexedShapes;
+
+  public ContainsPrefixTreeFilter(Shape queryShape, String fieldName, SpatialPrefixTree grid, int detailLevel, boolean multiOverlappingIndexedShapes) {
     super(queryShape, fieldName, grid, detailLevel);
+    this.multiOverlappingIndexedShapes = multiOverlappingIndexedShapes;
+  }
+
+  @Override
+  public boolean equals(Object o) {
+    if (!super.equals(o))
+      return false;
+    return multiOverlappingIndexedShapes == ((ContainsPrefixTreeFilter)o).multiOverlappingIndexedShapes;
+  }
+
+  @Override
+  public int hashCode() {
+    return super.hashCode() + (multiOverlappingIndexedShapes ? 1 : 0);
   }
 
   @Override
@@ -65,18 +92,25 @@ public class ContainsPrefixTreeFilter extends AbstractPrefixTreeFilter {
       if (termsEnum == null)//signals all done
         return null;
 
-      //Leaf docs match all query shape
+      // Leaf docs match all query shape
       SmallDocSet leafDocs = getLeafDocs(cell, acceptContains);
 
-      // Get the AND of all child results
+      // Get the AND of all child results (into combinedSubResults)
       SmallDocSet combinedSubResults = null;
-      Collection<Cell> subCells = cell.getSubCells(queryShape);
+      //   Optimization: use null subCellsFilter when we know cell is within the query shape.
+      Shape subCellsFilter = queryShape;
+      if (cell.getLevel() != 0 && ((cell.getShapeRel() == null || cell.getShapeRel() == SpatialRelation.WITHIN))) {
+        subCellsFilter = null;
+        assert cell.getShape().relate(queryShape) == SpatialRelation.WITHIN;
+      }
+      Collection <Cell> subCells = cell.getSubCells(subCellsFilter);
       for (Cell subCell : subCells) {
         if (!seekExact(subCell))
           combinedSubResults = null;
         else if (subCell.getLevel() == detailLevel)
           combinedSubResults = getDocs(subCell, acceptContains);
-        else if (subCell.getShapeRel() == SpatialRelation.WITHIN)
+        else if (!multiOverlappingIndexedShapes &&
+            subCell.getShapeRel() == SpatialRelation.WITHIN)
           combinedSubResults = getLeafDocs(subCell, acceptContains);
         else
           combinedSubResults = visit(subCell, acceptContains); //recursion
@@ -90,7 +124,7 @@ public class ContainsPrefixTreeFilter extends AbstractPrefixTreeFilter {
       if (combinedSubResults != null) {
         if (leafDocs == null)
           return combinedSubResults;
-        return leafDocs.union(combinedSubResults);
+        return leafDocs.union(combinedSubResults);//union is 'or'
       }
       return leafDocs;
     }
@@ -109,8 +143,12 @@ public class ContainsPrefixTreeFilter extends AbstractPrefixTreeFilter {
       return collectDocs(acceptContains);
     }
 
+    private Cell lastLeaf = null;//just for assertion
+
     private SmallDocSet getLeafDocs(Cell leafCell, Bits acceptContains) throws IOException {
       assert new BytesRef(leafCell.getTokenBytes()).equals(termBytes);
+      assert ! leafCell.equals(lastLeaf);//don't call for same leaf again
+      lastLeaf = leafCell;
 
       BytesRef nextTerm = termsEnum.next();
       if (nextTerm == null) {

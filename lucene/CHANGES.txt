@@ -162,6 +162,11 @@ Bug Fixes
   is now limited to MAX_CATEGORY_PATH_LENGTH characters.
   (Colton Jamieson, Mike McCandless, Shai Erera)
 
+* LUCENE-5062: If the spatial data for a document was comprised of multiple
+  overlapping or adjacent parts then a CONTAINS predicate query might not match
+  when the sum of those shapes contain the query shape but none do individually.
+  A flag was added to use the original faster algorithm. (David Smiley)
+
 Optimizations
 
 * LUCENE-4936: Improve numeric doc values compression in case all values share
