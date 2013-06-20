@@ -111,8 +111,6 @@ public class TestSearchAfter extends LuceneTestCase {
     assertQuery(query, filter, Sort.INDEXORDER);
     for(int rev=0;rev<2;rev++) {
       boolean reversed = rev == 1;
-      assertQuery(query, filter, new Sort(new SortField[] {new SortField("byte", SortField.Type.BYTE, reversed)}));
-      assertQuery(query, filter, new Sort(new SortField[] {new SortField("short", SortField.Type.SHORT, reversed)}));
       assertQuery(query, filter, new Sort(new SortField[] {new SortField("int", SortField.Type.INT, reversed)}));
       assertQuery(query, filter, new Sort(new SortField[] {new SortField("long", SortField.Type.LONG, reversed)}));
       assertQuery(query, filter, new Sort(new SortField[] {new SortField("float", SortField.Type.FLOAT, reversed)}));

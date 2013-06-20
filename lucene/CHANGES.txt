@@ -103,6 +103,12 @@ Changes in backwards compatibility policy
   on segment size and noCFSRatio. The default implemantion was pulled up from
   TieredMergePolicy. (Simon Willnauer)
 
+* LUCENE-5063: FieldCache.get(Bytes|Shorts), SortField.Type.(BYTE|SHORT) and
+  FieldCache.DEFAULT_(BYTE|SHORT|INT|LONG|FLOAT|DOUBLE)_PARSER are now
+  deprecated. These methods/types assume that data is stored as strings although
+  Lucene has much better support for numeric data through (Int|Long)Field,
+  NumericRangeQuery and FieldCache.get(Int|Long)s. (Adrien Grand)
+
 Bug Fixes
 
 * LUCENE-4997: Internal test framework's tests are sensitive to previous 
@@ -233,6 +239,9 @@ New Features
 * LUCENE-5025: FST's Builder can now handle more than 2.1 billion
   "tail nodes" while building a minimal FST.  (Aaron Binns, Adrien
   Grand, Mike McCandless)
+
+* LUCENE-5063: FieldCache.DEFAULT.get(Ints|Longs) now uses bit-packing to save
+  memory. (Adrien Grand)
   
 Build
 

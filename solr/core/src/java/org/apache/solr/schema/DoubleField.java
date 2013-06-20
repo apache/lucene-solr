@@ -17,17 +17,19 @@
 
 package org.apache.solr.schema;
 
-import org.apache.lucene.queries.function.ValueSource;
-import org.apache.lucene.queries.function.valuesource.DoubleFieldSource;
-import org.apache.lucene.index.GeneralField;
-import org.apache.lucene.index.IndexableField;
-import org.apache.lucene.index.StorableField;
-import org.apache.lucene.search.SortField;
-import org.apache.solr.response.TextResponseWriter;
-import org.apache.solr.search.QParser;
-
 import java.io.IOException;
 import java.util.Map;
+
+import org.apache.lucene.index.StorableField;
+import org.apache.lucene.index.Terms;
+import org.apache.lucene.index.TermsEnum;
+import org.apache.lucene.queries.function.ValueSource;
+import org.apache.lucene.queries.function.valuesource.DoubleFieldSource;
+import org.apache.lucene.search.FieldCache;
+import org.apache.lucene.search.SortField;
+import org.apache.lucene.util.BytesRef;
+import org.apache.solr.response.TextResponseWriter;
+import org.apache.solr.search.QParser;
 
 /**
  * A legacy numeric field type that encodes "Double" values as simple Strings.
@@ -44,6 +46,20 @@ import java.util.Map;
  * @see TrieDoubleField
  */
 public class DoubleField extends PrimitiveFieldType {
+
+  private static final FieldCache.DoubleParser PARSER = new FieldCache.DoubleParser() {
+    
+    @Override
+    public TermsEnum termsEnum(Terms terms) throws IOException {
+      return terms.iterator(null);
+    }
+
+    @Override
+    public double parseDouble(BytesRef term) {
+      return Double.parseDouble(term.utf8ToString());
+    }
+  };
+
   @Override
   protected void init(IndexSchema schema, Map<String, String> args) {
     super.init(schema, args);
@@ -54,13 +70,13 @@ public class DoubleField extends PrimitiveFieldType {
   @Override
   public SortField getSortField(SchemaField field, boolean reverse) {
     field.checkSortability();
-    return new SortField(field.name, SortField.Type.DOUBLE, reverse);
+    return new SortField(field.name, PARSER, reverse);
   }
 
   @Override
   public ValueSource getValueSource(SchemaField field, QParser qparser) {
     field.checkFieldCacheSource(qparser);
-    return new DoubleFieldSource(field.name);
+    return new DoubleFieldSource(field.name, PARSER);
   }
 
   @Override

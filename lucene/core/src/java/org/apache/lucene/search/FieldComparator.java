@@ -22,12 +22,10 @@ import java.io.IOException;
 import org.apache.lucene.index.AtomicReaderContext;
 import org.apache.lucene.index.BinaryDocValues;
 import org.apache.lucene.index.SortedDocValues;
-import org.apache.lucene.search.FieldCache.ByteParser;
 import org.apache.lucene.search.FieldCache.DoubleParser;
 import org.apache.lucene.search.FieldCache.FloatParser;
 import org.apache.lucene.search.FieldCache.IntParser;
 import org.apache.lucene.search.FieldCache.LongParser;
-import org.apache.lucene.search.FieldCache.ShortParser;
 import org.apache.lucene.util.Bits;
 import org.apache.lucene.util.BytesRef;
 
@@ -218,78 +216,6 @@ public abstract class FieldComparator<T> {
     }
   }
 
-  /** Parses field's values as byte (using {@link
-   *  FieldCache#getBytes} and sorts by ascending value */
-  public static final class ByteComparator extends NumericComparator<Byte> {
-    private final byte[] values;
-    private final ByteParser parser;
-    private FieldCache.Bytes currentReaderValues;
-    private byte bottom;
-
-    ByteComparator(int numHits, String field, FieldCache.Parser parser, Byte missingValue) {
-      super(field, missingValue);
-      values = new byte[numHits];
-      this.parser = (ByteParser) parser;
-    }
-
-    @Override
-    public int compare(int slot1, int slot2) {
-      return Byte.compare(values[slot1], values[slot2]);
-    }
-
-    @Override
-    public int compareBottom(int doc) {
-      byte v2 = currentReaderValues.get(doc);
-      // Test for v2 == 0 to save Bits.get method call for
-      // the common case (doc has value and value is non-zero):
-      if (docsWithField != null && v2 == 0 && !docsWithField.get(doc)) {
-        v2 = missingValue;
-      }
-
-      return Byte.compare(bottom, v2);
-    }
-
-    @Override
-    public void copy(int slot, int doc) {
-      byte v2 = currentReaderValues.get(doc);
-      // Test for v2 == 0 to save Bits.get method call for
-      // the common case (doc has value and value is non-zero):
-      if (docsWithField != null && v2 == 0 && !docsWithField.get(doc)) {
-        v2 = missingValue;
-      }
-      values[slot] = v2;
-    }
-
-    @Override
-    public FieldComparator<Byte> setNextReader(AtomicReaderContext context) throws IOException {
-      // NOTE: must do this before calling super otherwise
-      // we compute the docsWithField Bits twice!
-      currentReaderValues = FieldCache.DEFAULT.getBytes(context.reader(), field, parser, missingValue != null);
-      return super.setNextReader(context);
-    }
-    
-    @Override
-    public void setBottom(final int bottom) {
-      this.bottom = values[bottom];
-    }
-
-    @Override
-    public Byte value(int slot) {
-      return Byte.valueOf(values[slot]);
-    }
-
-    @Override
-    public int compareDocToValue(int doc, Byte value) {
-      byte docValue = currentReaderValues.get(doc);
-      // Test for docValue == 0 to save Bits.get method call for
-      // the common case (doc has value and value is non-zero):
-      if (docsWithField != null && docValue == 0 && !docsWithField.get(doc)) {
-        docValue = missingValue;
-      }
-      return Byte.compare(docValue, value.byteValue());
-    }
-  }
-
   /** Parses field's values as double (using {@link
    *  FieldCache#getDoubles} and sorts by ascending value */
   public static final class DoubleComparator extends NumericComparator<Double> {
@@ -436,80 +362,6 @@ public abstract class FieldComparator<T> {
         docValue = missingValue;
       }
       return Float.compare(docValue, value);
-    }
-  }
-
-  /** Parses field's values as short (using {@link
-   *  FieldCache#getShorts} and sorts by ascending value */
-  public static final class ShortComparator extends NumericComparator<Short> {
-    private final short[] values;
-    private final ShortParser parser;
-    private FieldCache.Shorts currentReaderValues;
-    private short bottom;
-
-    ShortComparator(int numHits, String field, FieldCache.Parser parser, Short missingValue) {
-      super(field, missingValue);
-      values = new short[numHits];
-      this.parser = (ShortParser) parser;
-    }
-
-    @Override
-    public int compare(int slot1, int slot2) {
-      return Short.compare(values[slot1], values[slot2]);
-    }
-
-    @Override
-    public int compareBottom(int doc) {
-      short v2 = currentReaderValues.get(doc);
-      // Test for v2 == 0 to save Bits.get method call for
-      // the common case (doc has value and value is non-zero):
-      if (docsWithField != null && v2 == 0 && !docsWithField.get(doc)) {
-        v2 = missingValue;
-      }
-
-      return Short.compare(bottom, v2);
-    }
-
-    @Override
-    public void copy(int slot, int doc) {
-      short v2 = currentReaderValues.get(doc);
-      // Test for v2 == 0 to save Bits.get method call for
-      // the common case (doc has value and value is non-zero):
-      if (docsWithField != null && v2 == 0 && !docsWithField.get(doc)) {
-        v2 = missingValue;
-      }
-
-      values[slot] = v2;
-    }
-
-    @Override
-    public FieldComparator<Short> setNextReader(AtomicReaderContext context) throws IOException {
-      // NOTE: must do this before calling super otherwise
-      // we compute the docsWithField Bits twice!
-      currentReaderValues = FieldCache.DEFAULT.getShorts(context.reader(), field, parser, missingValue != null);
-      return super.setNextReader(context);
-    }
-
-    @Override
-    public void setBottom(final int bottom) {
-      this.bottom = values[bottom];
-    }
-
-    @Override
-    public Short value(int slot) {
-      return Short.valueOf(values[slot]);
-    }
-
-    @Override
-    public int compareDocToValue(int doc, Short valueObj) {
-      final short value = valueObj.shortValue();
-      short docValue = currentReaderValues.get(doc);
-      // Test for docValue == 0 to save Bits.get method call for
-      // the common case (doc has value and value is non-zero):
-      if (docsWithField != null && docValue == 0 && !docsWithField.get(doc)) {
-        docValue = missingValue;
-      }
-      return Short.compare(docValue, value);
     }
   }
 

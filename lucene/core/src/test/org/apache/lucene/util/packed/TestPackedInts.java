@@ -650,8 +650,11 @@ public class TestPackedInts extends LuceneTestCase {
     wrt.set(99, (1 << 23) - 1);
     assertEquals(1 << 10, wrt.get(valueCount - 1));
     wrt.set(1, Long.MAX_VALUE);
+    wrt.set(2, -3);
+    assertEquals(64, wrt.getBitsPerValue());
     assertEquals(1 << 10, wrt.get(valueCount - 1));
     assertEquals(Long.MAX_VALUE, wrt.get(1));
+    assertEquals(-3L, wrt.get(2));
     assertEquals(2, wrt.get(4));
     assertEquals((1 << 23) - 1, wrt.get(99));
     assertEquals(10, wrt.get(7));

@@ -78,7 +78,7 @@ public class AllGroupHeadsCollectorTest extends LuceneTestCase {
     Document doc = new Document();
     addGroupField(doc, groupField, "author1", valueType);
     doc.add(newTextField("content", "random text", Field.Store.NO));
-    doc.add(newStringField("id_1", "1", Field.Store.NO));
+    doc.add(new IntField("id_1", 1, Field.Store.NO));
     doc.add(newStringField("id_2", "1", Field.Store.NO));
     w.addDocument(doc);
 
@@ -86,7 +86,7 @@ public class AllGroupHeadsCollectorTest extends LuceneTestCase {
     doc = new Document();
     addGroupField(doc, groupField, "author1", valueType);
     doc.add(newTextField("content", "some more random text blob", Field.Store.NO));
-    doc.add(newStringField("id_1", "2", Field.Store.NO));
+    doc.add(new IntField("id_1", 2, Field.Store.NO));
     doc.add(newStringField("id_2", "2", Field.Store.NO));
     w.addDocument(doc);
 
@@ -94,7 +94,7 @@ public class AllGroupHeadsCollectorTest extends LuceneTestCase {
     doc = new Document();
     addGroupField(doc, groupField, "author1", valueType);
     doc.add(newTextField("content", "some more random textual data", Field.Store.NO));
-    doc.add(newStringField("id_1", "3", Field.Store.NO));
+    doc.add(new IntField("id_1", 3, Field.Store.NO));
     doc.add(newStringField("id_2", "3", Field.Store.NO));
     w.addDocument(doc);
     w.commit(); // To ensure a second segment
@@ -103,7 +103,7 @@ public class AllGroupHeadsCollectorTest extends LuceneTestCase {
     doc = new Document();
     addGroupField(doc, groupField, "author2", valueType);
     doc.add(newTextField("content", "some random text", Field.Store.NO));
-    doc.add(newStringField("id_1", "4", Field.Store.NO));
+    doc.add(new IntField("id_1", 4, Field.Store.NO));
     doc.add(newStringField("id_2", "4", Field.Store.NO));
     w.addDocument(doc);
 
@@ -111,7 +111,7 @@ public class AllGroupHeadsCollectorTest extends LuceneTestCase {
     doc = new Document();
     addGroupField(doc, groupField, "author3", valueType);
     doc.add(newTextField("content", "some more random text", Field.Store.NO));
-    doc.add(newStringField("id_1", "5", Field.Store.NO));
+    doc.add(new IntField("id_1", 5, Field.Store.NO));
     doc.add(newStringField("id_2", "5", Field.Store.NO));
     w.addDocument(doc);
 
@@ -119,21 +119,21 @@ public class AllGroupHeadsCollectorTest extends LuceneTestCase {
     doc = new Document();
     addGroupField(doc, groupField, "author3", valueType);
     doc.add(newTextField("content", "random blob", Field.Store.NO));
-    doc.add(newStringField("id_1", "6", Field.Store.NO));
+    doc.add(new IntField("id_1", 6, Field.Store.NO));
     doc.add(newStringField("id_2", "6", Field.Store.NO));
     w.addDocument(doc);
 
     // 6 -- no author field
     doc = new Document();
     doc.add(newTextField("content", "random word stuck in alot of other text", Field.Store.NO));
-    doc.add(newStringField("id_1", "6", Field.Store.NO));
+    doc.add(new IntField("id_1", 6, Field.Store.NO));
     doc.add(newStringField("id_2", "6", Field.Store.NO));
     w.addDocument(doc);
 
     // 7 -- no author field
     doc = new Document();
     doc.add(newTextField("content", "random word stuck in alot of other text", Field.Store.NO));
-    doc.add(newStringField("id_1", "7", Field.Store.NO));
+    doc.add(new IntField("id_1", 7, Field.Store.NO));
     doc.add(newStringField("id_2", "7", Field.Store.NO));
     w.addDocument(doc);
 

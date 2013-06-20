@@ -33,6 +33,7 @@ import org.apache.lucene.codecs.lucene41.Lucene41PostingsFormat;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
 import org.apache.lucene.document.FieldType;
+import org.apache.lucene.document.IntField;
 import org.apache.lucene.document.StoredField;
 import org.apache.lucene.document.StringField;
 import org.apache.lucene.document.TextField;
@@ -764,7 +765,7 @@ public void testFilesOpenClose() throws IOException {
             setMergePolicy(newLogMergePolicy(10))
     );
     Document doc = new Document();
-    doc.add(newStringField("number", "17", Field.Store.NO));
+    doc.add(new IntField("number", 17, Field.Store.NO));
     writer.addDocument(doc);
     writer.commit();
   

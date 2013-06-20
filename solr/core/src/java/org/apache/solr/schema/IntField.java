@@ -19,11 +19,15 @@ package org.apache.solr.schema;
 
 import org.apache.lucene.queries.function.ValueSource;
 import org.apache.lucene.queries.function.valuesource.IntFieldSource;
+import org.apache.lucene.search.FieldCache;
 import org.apache.lucene.search.SortField;
+import org.apache.lucene.util.BytesRef;
 import org.apache.solr.search.QParser;
 import org.apache.lucene.index.GeneralField;
 import org.apache.lucene.index.IndexableField;
 import org.apache.lucene.index.StorableField;
+import org.apache.lucene.index.Terms;
+import org.apache.lucene.index.TermsEnum;
 import org.apache.solr.response.TextResponseWriter;
 
 import java.util.Map;
@@ -43,6 +47,20 @@ import java.io.IOException;
  * @see TrieIntField
  */
 public class IntField extends PrimitiveFieldType {
+
+  private static final FieldCache.IntParser PARSER = new FieldCache.IntParser() {
+    
+    @Override
+    public TermsEnum termsEnum(Terms terms) throws IOException {
+      return terms.iterator(null);
+    }
+
+    @Override
+    public int parseInt(BytesRef term) {
+      return Integer.parseInt(term.utf8ToString());
+    }
+  };
+
   @Override
   protected void init(IndexSchema schema, Map<String,String> args) {
     super.init(schema, args);
@@ -52,13 +70,13 @@ public class IntField extends PrimitiveFieldType {
   @Override
   public SortField getSortField(SchemaField field,boolean reverse) {
     field.checkSortability();
-    return new SortField(field.name,SortField.Type.INT, reverse);
+    return new SortField(field.name, PARSER, reverse);
   }
 
   @Override
   public ValueSource getValueSource(SchemaField field, QParser qparser) {
     field.checkFieldCacheSource(qparser);
-    return new IntFieldSource(field.name);
+    return new IntFieldSource(field.name, PARSER);
   }
 
   @Override

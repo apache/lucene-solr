@@ -79,6 +79,10 @@ Upgrading from Solr 4.3.0
 * SOLR-4778: The signature of LogWatcher.registerListener has changed, from
   (ListenerConfig, CoreContainer) to (ListenerConfig).  Users implementing their
   own LogWatcher classes will need to change their code accordingly.
+
+* LUCENE-5063: ByteField and ShortField have been deprecated and will be removed
+  in 5.0. If you are still using these field types, you should migrate your
+  fields to TrieIntField.
   
 Detailed Change List
 ----------------------

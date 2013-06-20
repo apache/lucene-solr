@@ -22,7 +22,12 @@ import java.util.Random;
 
 import org.apache.lucene.analysis.MockAnalyzer;
 import org.apache.lucene.document.Document;
+import org.apache.lucene.document.DoubleField;
 import org.apache.lucene.document.Field;
+import org.apache.lucene.document.Field.Store;
+import org.apache.lucene.document.FloatField;
+import org.apache.lucene.document.IntField;
+import org.apache.lucene.document.LongField;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.IndexWriterConfig.OpenMode;
 import org.apache.lucene.index.RandomIndexWriter;
@@ -115,9 +120,17 @@ public class BaseTestRangeFilter extends LuceneTestCase {
     
     Document doc = new Document();
     Field idField = newStringField(random, "id", "", Field.Store.YES);
+    Field intIdField = new IntField("id_int", 0, Store.YES);
+    Field floatIdField = new FloatField("id_float", 0, Store.YES);
+    Field longIdField = new LongField("id_long", 0, Store.YES);
+    Field doubleIdField = new DoubleField("id_double", 0, Store.YES);
     Field randField = newStringField(random, "rand", "", Field.Store.YES);
     Field bodyField = newStringField(random, "body", "", Field.Store.NO);
     doc.add(idField);
+    doc.add(intIdField);
+    doc.add(floatIdField);
+    doc.add(longIdField);
+    doc.add(doubleIdField);
     doc.add(randField);
     doc.add(bodyField);
 
@@ -133,6 +146,10 @@ public class BaseTestRangeFilter extends LuceneTestCase {
 
       for (int d = minId; d <= maxId; d++) {
         idField.setStringValue(pad(d));
+        intIdField.setIntValue(d);
+        floatIdField.setFloatValue(d);
+        longIdField.setLongValue(d);
+        doubleIdField.setDoubleValue(d);
         int r = index.allowNegativeRandomInts ? random.nextInt() : random
           .nextInt(Integer.MAX_VALUE);
         if (index.maxR < r) {
