@@ -31,6 +31,7 @@ import org.apache.solr.handler.component.HttpShardHandlerFactory;
 import org.apache.zookeeper.KeeperException;
 import org.junit.After;
 import org.junit.Before;
+import org.junit.Ignore;
 
 import java.io.IOException;
 import java.util.Collection;
@@ -41,6 +42,7 @@ import java.util.concurrent.atomic.AtomicInteger;
  * Test split phase that occurs when a Collection API split call is made.
  */
 @Slow
+@Ignore("SOLR-4944")
 public class ChaosMonkeyShardSplitTest extends ShardSplitTest {
 
   static final int TIMEOUT = 10000;
