@@ -19,6 +19,7 @@ package org.apache.solr.core;
 
 import java.io.File;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collection;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -520,13 +521,20 @@ class SolrCores {
 
     // This is simple, just take anything sent in and saved away in at core creation and write it out.
     if (dcore.getCreatedProperties().size() > 0) {
+      final List<String> stdNames = new ArrayList<String>(Arrays.asList(CoreDescriptor.standardPropNames));
+      coreAttribs.put(CoreDescriptor.CORE_NAME, dcore.getName()); // NOTE: may have been swapped or renamed!
       for (String key : dcore.getCreatedProperties().stringPropertyNames()) {
-        if (CoreAdminParams.ACTION.toString().equals(key)) continue; // Don't persist the "action" verb
+        if (! stdNames.contains(key) && ! key.startsWith(CoreAdminParams.PROPERTY_PREFIX)) continue;
         if (key.indexOf(CoreAdminParams.PROPERTY_PREFIX) == 0) {
           newProps.put(key.substring(CoreAdminParams.PROPERTY_PREFIX.length()), dcore.getCreatedProperties().getProperty(key));
-        } else {
+        } else if (! CoreDescriptor.CORE_NAME.equals(key)) {
           coreAttribs.put(key, dcore.getCreatedProperties().getProperty(key));
         }
+      }
+      // Insure instdir is persisted if it's the default since it's checked at startup even if not specified on the
+      // create command.
+      if (! dcore.getCreatedProperties().containsKey(CoreDescriptor.CORE_INSTDIR)) {
+        coreAttribs.put(CoreDescriptor.CORE_INSTDIR, dcore.getProperty(CoreDescriptor.CORE_INSTDIR));
       }
     } else {
 

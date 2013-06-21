@@ -92,12 +92,12 @@ public class TestSolrXmlPersistence extends SolrTestCaseJ4 {
     try {
 
       // This seems odd, but it's just a little self check to see if the comparison strings are being created correctly
-      origMatchesPersist(cc, new File(solrHomeDirectory, "solr_copy.xml"));
+      persistContainedInOrig(cc, new File(solrHomeDirectory, "solr_copy.xml"));
 
       // Is everything in the persisted file identical to the original?
       final File persistXml = new File(solrHomeDirectory, "sysvars.solr.xml");
       // Side effect here is that the new file is persisted and available later.
-      origMatchesPersist(cc, persistXml);
+      persistContainedInOrig(cc, persistXml);
 
       // Is everything in the original contained in the persisted one?
       assertXmlFile(persistXml, getAllNodes(new File(solrHomeDirectory, "solr.xml")));
@@ -131,7 +131,7 @@ public class TestSolrXmlPersistence extends SolrTestCaseJ4 {
               resp);
       assertNull("Exception on reload", resp.getException());
 
-      origMatchesPersist(cc, new File(solrHomeDirectory, "reload1.solr.xml"));
+      persistContainedInOrig(cc, new File(solrHomeDirectory, "reload1.solr.xml"));
 
     } finally {
       cc.shutdown();
@@ -245,7 +245,8 @@ public class TestSolrXmlPersistence extends SolrTestCaseJ4 {
   public void testMinimalXml() throws Exception {
     CoreContainer cc = init(SOLR_XML_MINIMAL, "SystemVars1");
     try {
-      origMatchesPersist(cc, new File(solrHomeDirectory, "minimal.solr.xml"));
+      persistContainedInOrig(cc, new File(solrHomeDirectory, "minimal.solr.xml"));
+      origContainedInPersist(cc, new File(solrHomeDirectory, "minimal.solr.xml"));
     } finally {
       cc.shutdown();
       if (solrHomeDirectory.exists()) {
@@ -275,7 +276,7 @@ public class TestSolrXmlPersistence extends SolrTestCaseJ4 {
               resp);
       assertNull("Exception on unload", resp.getException());
 
-      origMatchesPersist(cc, new File(solrHomeDirectory, "unloadcreate1.solr.xml"));
+      persistContainedInOrig(cc, new File(solrHomeDirectory, "unloadcreate1.solr.xml"));
 
       String instPath = new File(solrHomeDirectory, which).getAbsolutePath();
       admin.handleRequestBody
@@ -323,13 +324,126 @@ public class TestSolrXmlPersistence extends SolrTestCaseJ4 {
     }
   }
 
-  private void origMatchesPersist(CoreContainer cc, File persistXml) throws IOException, SAXException, ParserConfigurationException {
+  private void persistContainedInOrig(CoreContainer cc, File persistXml) throws IOException,
+      SAXException, ParserConfigurationException {
     cc.persistFile(persistXml);
     // Is everything that's in the original file persisted?
     String[] expressions = getAllNodes(persistXml);
     assertXmlFile(new File(solrHomeDirectory, "solr.xml"), expressions);
   }
 
+  private void origContainedInPersist(CoreContainer cc, File persistXml) throws IOException,
+      SAXException, ParserConfigurationException {
+    cc.persistFile(persistXml);
+    // Is everything that's in the original file persisted?
+    String[] expressions = getAllNodes(new File(solrHomeDirectory, "solr.xml"));
+    assertXmlFile(persistXml, expressions);
+  }
+
+
+  @Test
+  public void testCreateAndManipulateCores() throws Exception {
+    CoreContainer cc = init(SOLR_XML_LOTS_SYSVARS, "SystemVars1", "SystemVars2", "new_one", "new_two");
+    try {
+      final CoreAdminHandler admin = new CoreAdminHandler(cc);
+      String instPathOne = new File(solrHomeDirectory, "new_one").getAbsolutePath();
+      SolrQueryResponse resp = new SolrQueryResponse();
+      admin.handleRequestBody
+          (req(CoreAdminParams.ACTION,
+              CoreAdminParams.CoreAdminAction.CREATE.toString(),
+              CoreAdminParams.INSTANCE_DIR, instPathOne,
+              CoreAdminParams.NAME, "new_one"),
+              resp);
+      assertNull("Exception on create", resp.getException());
+
+      admin.handleRequestBody
+          (req(CoreAdminParams.ACTION,
+              CoreAdminParams.CoreAdminAction.CREATE.toString(),
+              CoreAdminParams.NAME, "new_two"),
+              resp);
+      assertNull("Exception on create", resp.getException());
+
+      File persistXml1 = new File(solrHomeDirectory, "create_man_1.xml");
+      origContainedInPersist(cc, persistXml1);
+
+      // We know all the original data is in persist, now check for newly-created files.
+      String[] expressions = new  String[2];
+      String instHome = new File(solrHomeDirectory, "new_one").getAbsolutePath();
+      expressions[0] = "/solr/cores/core[@name='new_one' and @instanceDir='" + instHome + "']";
+      expressions[1] = "/solr/cores/core[@name='new_two' and @instanceDir='new_two/']";
+
+      assertXmlFile(persistXml1, expressions);
+
+      // Next, swap a created core and check
+      resp = new SolrQueryResponse();
+      admin.handleRequestBody
+          (req(CoreAdminParams.ACTION,
+              CoreAdminParams.CoreAdminAction.SWAP.toString(),
+              CoreAdminParams.CORE, "new_one",
+              CoreAdminParams.OTHER, "SystemVars2"),
+              resp);
+      assertNull("Exception on swap", resp.getException());
+
+      File persistXml2 = new File(solrHomeDirectory, "create_man_2.xml");
+
+      cc.persistFile(persistXml2);
+      String[] persistList = getAllNodes(persistXml2);
+      expressions = new String[persistList.length];
+
+      // Now manually change the names back and it should match exactly to the original XML.
+      for (int idx = 0; idx < persistList.length; ++idx) {
+        String fromName = "@name='new_one'";
+        String toName = "@name='SystemVars2'";
+        if (persistList[idx].contains(fromName)) {
+          expressions[idx] = persistList[idx].replace(fromName, toName);
+        } else {
+          expressions[idx] = persistList[idx].replace(toName, fromName);
+        }
+      }
+
+      assertXmlFile(persistXml1, expressions);
+
+      // Then rename the other created core and check
+      admin.handleRequestBody
+          (req(CoreAdminParams.ACTION,
+              CoreAdminParams.CoreAdminAction.RENAME.toString(),
+              CoreAdminParams.CORE, "new_two",
+              CoreAdminParams.OTHER, "RenamedCore"),
+              resp);
+      assertNull("Exception on rename", resp.getException());
+
+      File persistXml3 = new File(solrHomeDirectory, "create_man_3.xml");
+
+      // OK, Assure that if I change everything that has been renamed with the original value for the core, it matches
+      // the old list
+      cc.persistFile(persistXml3);
+      persistList = getAllNodes(persistXml3);
+      expressions = new String[persistList.length];
+
+      for (int idx = 0; idx < persistList.length; ++idx) {
+        expressions[idx] = persistList[idx].replaceAll("RenamedCore", "new_two");
+      }
+      assertXmlFile(persistXml2, expressions);
+
+      // Now the other way, If I replace the original name in the original XML file with "RenamedCore", does it match
+      // what was persisted?
+      persistList = getAllNodes(persistXml2);
+      expressions = new String[persistList.length];
+      for (int idx = 0; idx < persistList.length; ++idx) {
+        // /solr/cores/core[@name='SystemVars1' and @collection='${collection:collection1}']
+        expressions[idx] = persistList[idx].replace("@name='new_two'", "@name='RenamedCore'");
+      }
+      assertXmlFile(persistXml3, expressions);
+
+    } finally {
+      cc.shutdown();
+      if (solrHomeDirectory.exists()) {
+        FileUtils.deleteDirectory(solrHomeDirectory);
+      }
+    }
+
+
+  }
   @Test
   public void testCreatePersistCore() throws Exception {
     // Template for creating a core.
@@ -342,12 +456,13 @@ public class TestSolrXmlPersistence extends SolrTestCaseJ4 {
       admin.handleRequestBody
           (req(CoreAdminParams.ACTION,
               CoreAdminParams.CoreAdminAction.CREATE.toString(),
-              CoreAdminParams.INSTANCE_DIR, instPath1,
               CoreAdminParams.NAME, "props1",
               CoreAdminParams.TRANSIENT, "true",
               CoreAdminParams.LOAD_ON_STARTUP, "true",
               CoreAdminParams.PROPERTY_PREFIX + "prefix1", "valuep1",
-              CoreAdminParams.PROPERTY_PREFIX + "prefix2", "valueP2"),
+              CoreAdminParams.PROPERTY_PREFIX + "prefix2", "valueP2",
+              "wt", "json", // need to insure that extra parameters are _not_ preserved (actually happened).
+              "qt", "admin/cores"),
               resp);
       assertNull("Exception on create", resp.getException());
 
@@ -378,12 +493,14 @@ public class TestSolrXmlPersistence extends SolrTestCaseJ4 {
               , "/solr/cores/core[@name='props1']/property[@name='prefix2' and @value='valueP2']"
               , "/solr/cores/core[@name='props1' and @transient='true']"
               , "/solr/cores/core[@name='props1' and @loadOnStartup='true']"
+              , "/solr/cores/core[@name='props1' and @instanceDir='props1/']"
               , "/solr/cores/core[@name='props2']/property[@name='prefix2_1' and @value='valuep2_1']"
               , "/solr/cores/core[@name='props2']/property[@name='prefix2_2' and @value='valueP2_2']"
               , "/solr/cores/core[@name='props2' and @config='solrconfig.xml']"
               , "/solr/cores/core[@name='props2' and @schema='schema.xml']"
               , "/solr/cores/core[@name='props2' and not(@loadOnStartup)]"
               , "/solr/cores/core[@name='props2' and not(@transient)]"
+              , "/solr/cores/core[@name='props2' and @instanceDir='" + instPath2 + "']"
               , "/solr/cores/core[@name='props2' and @dataDir='./dataDirTest']"
           );
 
@@ -394,9 +511,6 @@ public class TestSolrXmlPersistence extends SolrTestCaseJ4 {
       }
 
     }
-    // / insure that after you create a core and persist solr.xml the created core has
-    // all expected and no extraneous values, both attribs and <property> tags.
-    // How to create this core with sysprops?
   }
 
   private String[] getAllNodes(File xmlFile) throws ParserConfigurationException, IOException, SAXException {
