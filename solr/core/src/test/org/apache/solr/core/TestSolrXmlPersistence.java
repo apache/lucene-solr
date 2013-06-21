@@ -485,7 +485,6 @@ public class TestSolrXmlPersistence extends SolrTestCaseJ4 {
       cc.persistFile(persistXml);
       assertXmlFile(persistXml, getAllNodes(new File(solrHomeDirectory, "solr.xml")));
 
-
       // And the params for the new core should be in the persisted file.
       assertXmlFile
           (persistXml
@@ -493,7 +492,7 @@ public class TestSolrXmlPersistence extends SolrTestCaseJ4 {
               , "/solr/cores/core[@name='props1']/property[@name='prefix2' and @value='valueP2']"
               , "/solr/cores/core[@name='props1' and @transient='true']"
               , "/solr/cores/core[@name='props1' and @loadOnStartup='true']"
-              , "/solr/cores/core[@name='props1' and @instanceDir='props1/']"
+              , "/solr/cores/core[@name='props1' and @instanceDir='props1" + File.separator + "']"
               , "/solr/cores/core[@name='props2']/property[@name='prefix2_1' and @value='valuep2_1']"
               , "/solr/cores/core[@name='props2']/property[@name='prefix2_2' and @value='valueP2_2']"
               , "/solr/cores/core[@name='props2' and @config='solrconfig.xml']"
