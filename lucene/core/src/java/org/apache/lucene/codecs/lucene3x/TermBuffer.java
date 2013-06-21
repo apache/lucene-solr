@@ -17,6 +17,8 @@ package org.apache.lucene.codecs.lucene3x;
  * limitations under the License.
  */
 
+import static org.apache.lucene.util.ByteBlockPool.BYTE_BLOCK_SIZE;
+
 import java.io.IOException;
 import java.util.Comparator;
 
@@ -59,6 +61,7 @@ final class TermBuffer implements Cloneable {
     newSuffixStart = input.readVInt();
     int length = input.readVInt();
     int totalLength = newSuffixStart + length;
+    assert totalLength <= BYTE_BLOCK_SIZE-2 : "termLength=" + totalLength + ",resource=" + input;
     if (bytes.bytes.length < totalLength) {
       bytes.grow(totalLength);
     }
