@@ -25,6 +25,9 @@
   -->
 <config xmlns:xi="http://www.w3.org/2001/XInclude">
   <luceneMatchVersion>${tests.luceneMatchVersion:LUCENE_CURRENT}</luceneMatchVersion>
+  <indexConfig>
+    <useCompoundFile>${useCompoundFile:false}</useCompoundFile>
+  </indexConfig>
   <!--
     lib directives can be used to instruct Solr to load an Jars
     identified and use them to resolve any "plugins" specified in your
@@ -68,7 +71,6 @@
   -->
   <dataDir>${solr.data.dir:}</dataDir>
 
-  <!-- <indexConfig> section could go here, but we want the defaults -->
 
   <!--
     Enables JMX if and only if an existing MBeanServer is found, use

@@ -16,16 +16,11 @@
  See the License for the specific language governing permissions and
  limitations under the License.
 -->
+<!-- 
 
-<config>
-  <luceneMatchVersion>${tests.luceneMatchVersion:LUCENE_CURRENT}</luceneMatchVersion>
-  <directoryFactory name="DirectoryFactory" class="${solr.directoryFactory:solr.RAMDirectoryFactory}"/>
+A solrconfig.xml snippet containing indexConfig settings for randomized testing.
 
-  <indexConfig>
-    <mergeFactor>7</mergeFactor>
-    <useCompoundFile>${useCompoundFile:false}</useCompoundFile>
-  </indexConfig>
-
-  <requestHandler name="standard" class="solr.StandardRequestHandler"></requestHandler>
-
-</config>
+-->
+<indexConfig>
+  <useCompoundFile>${useCompoundFile:false}</useCompoundFile>
+</indexConfig>

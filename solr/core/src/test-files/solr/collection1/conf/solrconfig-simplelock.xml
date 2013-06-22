@@ -28,6 +28,7 @@
   <luceneMatchVersion>${tests.luceneMatchVersion:LUCENE_CURRENT}</luceneMatchVersion>
 
   <indexConfig>
+    <useCompoundFile>${useCompoundFile:false}</useCompoundFile>
     <lockType>simple</lockType>
   </indexConfig>
 </config>

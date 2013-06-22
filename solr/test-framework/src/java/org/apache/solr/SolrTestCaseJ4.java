@@ -86,6 +86,8 @@ public abstract class SolrTestCaseJ4 extends LuceneTestCase {
   @SuppressWarnings("unused")
   private static void beforeClass() {
     System.setProperty("jetty.testMode", "true");
+    
+    System.setProperty("useCompoundFile", Boolean.toString(random().nextBoolean()));
     System.setProperty("enable.update.log", usually() ? "true" : "false");
     System.setProperty("tests.shardhandler.randomSeed", Long.toString(random().nextLong()));
     setupLogging();
@@ -106,6 +108,7 @@ public abstract class SolrTestCaseJ4 extends LuceneTestCase {
     System.clearProperty("jetty.testMode");
     System.clearProperty("tests.shardhandler.randomSeed");
     System.clearProperty("enable.update.log");
+    System.clearProperty("useCompoundFile");
   }
 
   private static boolean changedFactory = false;
@@ -1469,6 +1472,7 @@ public abstract class SolrTestCaseJ4 extends LuceneTestCase {
     String top = SolrTestCaseJ4.TEST_HOME() + "/collection1/conf";
     FileUtils.copyFile(new File(top, "schema-tiny.xml"), new File(subHome, "schema.xml"));
     FileUtils.copyFile(new File(top, "solrconfig-minimal.xml"), new File(subHome, "solrconfig.xml"));
+    FileUtils.copyFile(new File(top, "solrconfig.snippet.randomindexconfig.xml"), new File(subHome, "solrconfig.snippet.randomindexconfig.xml"));
   }
 
 }

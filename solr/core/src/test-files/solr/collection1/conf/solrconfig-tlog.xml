@@ -31,6 +31,7 @@
 
   <indexConfig>
     <lockType>${solr.lock.type:native}</lockType>
+    <useCompoundFile>${useCompoundFile:false}</useCompoundFile>
   </indexConfig>
 
   <!-- an update processor the explicitly excludes distrib to test

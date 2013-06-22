@@ -17,7 +17,6 @@
  limitations under the License.
 -->
 
-
 <config>
   <luceneMatchVersion>${tests.luceneMatchVersion:LUCENE_CURRENT}</luceneMatchVersion>
   <directoryFactory name="DirectoryFactory" class="${solr.directoryFactory:solr.RAMDirectoryFactory}"/>
@@ -26,6 +25,7 @@
   <requestHandler name="standard" class="solr.StandardRequestHandler"/>
 
   <indexConfig>
+   <useCompoundFile>${useCompoundFile:false}</useCompoundFile>
    <deletionPolicy class="solr.SolrDeletionPolicy">
     <str name="keepOptimizedOnly">true</str>
     <str name="maxCommitsToKeep">3</str>

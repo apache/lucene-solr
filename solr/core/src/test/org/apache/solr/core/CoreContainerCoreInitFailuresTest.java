@@ -150,7 +150,7 @@ public class CoreContainerCoreInitFailuresTest extends SolrTestCaseJ4 {
     FileUtils.write(solrXml, BAD_SOLR_XML, IOUtils.CHARSET_UTF_8.toString());
 
     // our "ok" collection
-    FileUtils.copyFile(getFile("solr/collection1/conf/solrconfig-basic.xml"),
+    FileUtils.copyFile(getFile("solr/collection1/conf/solrconfig-defaults.xml"),
                        FileUtils.getFile(solrHome, "col_ok", "conf", "solrconfig.xml"));
     FileUtils.copyFile(getFile("solr/collection1/conf/schema-minimal.xml"),
                        FileUtils.getFile(solrHome, "col_ok", "conf", "schema.xml"));
@@ -198,7 +198,7 @@ public class CoreContainerCoreInitFailuresTest extends SolrTestCaseJ4 {
 
     // -----
     // "fix" the bad collection
-    FileUtils.copyFile(getFile("solr/collection1/conf/solrconfig-basic.xml"),
+    FileUtils.copyFile(getFile("solr/collection1/conf/solrconfig-defaults.xml"),
                        FileUtils.getFile(solrHome, "col_bad", "conf", "solrconfig.xml"));
     final CoreDescriptor fixed = new CoreDescriptor(cc, "col_bad", "col_bad");
     cc.register("col_bad", cc.create(fixed), false);
@@ -324,7 +324,7 @@ public class CoreContainerCoreInitFailuresTest extends SolrTestCaseJ4 {
 
     // ----
     // fix col_bad's config (again) and RELOAD to fix failure
-    FileUtils.copyFile(getFile("solr/collection1/conf/solrconfig-basic.xml"),
+    FileUtils.copyFile(getFile("solr/collection1/conf/solrconfig-defaults.xml"),
                        FileUtils.getFile(solrHome, "col_bad", "conf", "solrconfig.xml"));
     cc.reload("col_bad");
     
