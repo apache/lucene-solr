@@ -22,6 +22,8 @@ import junit.framework.Assert;
 import org.apache.lucene.queryparser.flexible.core.QueryNodeException;
 import org.apache.lucene.queryparser.flexible.core.nodes.FieldQueryNode;
 import org.apache.lucene.queryparser.flexible.core.nodes.QueryNode;
+import org.apache.lucene.queryparser.flexible.core.nodes.QueryNodeImpl;
+import org.apache.lucene.queryparser.flexible.core.parser.EscapeQuerySyntax;
 import org.apache.lucene.queryparser.flexible.core.util.UnescapedCharSequence;
 import org.apache.lucene.util.LuceneTestCase;
 import org.junit.Test;
@@ -34,6 +36,27 @@ public class TestQueryTreeBuilder extends LuceneTestCase {
     qtb.setBuilder("field", new DummyBuilder());
     Object result = qtb.build(new FieldQueryNode(new UnescapedCharSequence("field"), "foo", 0, 0));
     Assert.assertEquals("OK", result);
+    
+    qtb = new QueryTreeBuilder();
+    qtb.setBuilder(DummyQueryNodeInterface.class, new DummyBuilder());
+    result = qtb.build(new DummyQueryNode());
+    Assert.assertEquals("OK", result);
+  }
+  
+  private static interface DummyQueryNodeInterface extends QueryNode {
+    
+  }
+  
+  private static abstract class AbstractDummyQueryNode extends QueryNodeImpl implements DummyQueryNodeInterface {
+    
+  }
+  
+  private static class DummyQueryNode extends AbstractDummyQueryNode {
+
+    @Override
+    public CharSequence toQueryString(EscapeQuerySyntax escapeSyntaxParser) {
+      return "DummyQueryNode";
+    }
     
   }
   
