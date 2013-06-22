@@ -22,6 +22,9 @@
 -->
 <config>
   <luceneMatchVersion>${tests.luceneMatchVersion:LUCENE_CURRENT}</luceneMatchVersion>
+  <indexConfig>
+    <useCompoundFile>${useCompoundFile:false}</useCompoundFile>
+  </indexConfig>
 
   <lib dir="../../contrib/velocity/lib" />
   <lib dir="../../dist/" regex="solr-velocity-\d.*\.jar" />
@@ -30,9 +33,6 @@
 
   <directoryFactory name="DirectoryFactory"
                     class="${solr.directoryFactory:solr.StandardDirectoryFactory}"/>
-
-
-  <!-- <indexConfig> section could go here, but we want the defaults -->
 
   <updateHandler class="solr.DirectUpdateHandler2">
   </updateHandler>

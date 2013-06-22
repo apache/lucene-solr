@@ -33,7 +33,7 @@
            setting and log a warning (instead of failing because the setter is 
            gone).
       -->
-      <bool name="useCompoundFile">true</bool>
+      <bool name="useCompoundFile">${useCompoundFile:false}</bool>
 
     </mergePolicy>
   </indexConfig>

@@ -235,6 +235,8 @@ Other Changes
 * SOLR-4931: SolrDeletionPolicy onInit and onCommit methods changed to override
   exact signatures (with generics) from IndexDeletionPolicy (shalin)
 
+* SOLR-4942: test improvements to randomize use of compound files (hosman)
+
 ==================  4.3.1 ==================
 
 Versions of Major Components

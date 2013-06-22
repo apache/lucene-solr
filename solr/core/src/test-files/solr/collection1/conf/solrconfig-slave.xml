@@ -24,6 +24,7 @@
 
   <indexConfig>
     <lockType>single</lockType>
+    <useCompoundFile>${useCompoundFile:false}</useCompoundFile>
   </indexConfig>
 
   <updateHandler class="solr.DirectUpdateHandler2">
@@ -51,7 +52,6 @@
         <str name="compression">COMPRESSION</str>
      </lst>
   </requestHandler>
-
 
   <!-- enable streaming for testing... -->
   <requestDispatcher handleSelect="true">

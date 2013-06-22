@@ -55,9 +55,12 @@ public class TestMergePolicyConfig extends SolrTestCaseJ4 {
   }
 
   public void testLegacyMergePolicyConfig() throws Exception {
+    final boolean expectCFS 
+      = Boolean.parseBoolean(System.getProperty("useCompoundFile"));
+
     initCore("solrconfig-mergepolicy-legacy.xml","schema-minimal.xml");
     IndexWriterConfig iwc = solrConfig.indexConfig.toIndexWriterConfig(h.getCore().getLatestSchema());
-    assertEquals(true, iwc.getUseCompoundFile());
+    assertEquals(expectCFS, iwc.getUseCompoundFile());
 
 
     TieredMergePolicy tieredMP = assertAndCast(TieredMergePolicy.class,
@@ -65,16 +68,19 @@ public class TestMergePolicyConfig extends SolrTestCaseJ4 {
 
     assertEquals(7, tieredMP.getMaxMergeAtOnce());
     assertEquals(7.0D, tieredMP.getSegmentsPerTier(), 0.0D);
-    assertEquals(1.0D, tieredMP.getNoCFSRatio(), 0.0D);
+    assertEquals(expectCFS ? 1.0D : 0.0D, tieredMP.getNoCFSRatio(), 0.0D);
 
     assertCommitSomeNewDocs();
-    assertCompoundSegments(h.getCore(), true);
+    assertCompoundSegments(h.getCore(), expectCFS);
   }
   
   public void testTieredMergePolicyConfig() throws Exception {
+    final boolean expectCFS 
+      = Boolean.parseBoolean(System.getProperty("useCompoundFile"));
+
     initCore("solrconfig-mergepolicy.xml","schema-minimal.xml");
     IndexWriterConfig iwc = solrConfig.indexConfig.toIndexWriterConfig(h.getCore().getLatestSchema());
-    assertEquals(true, iwc.getUseCompoundFile());
+    assertEquals(expectCFS, iwc.getUseCompoundFile());
 
 
     TieredMergePolicy tieredMP = assertAndCast(TieredMergePolicy.class,
@@ -94,11 +100,11 @@ public class TestMergePolicyConfig extends SolrTestCaseJ4 {
     // even though we have a single segment (which is 100% of the size of 
     // the index which is higher then our 0.6D threashold) the
     // compound ratio doesn't matter because the segment was never merged
-    assertCompoundSegments(h.getCore(), true);
+    assertCompoundSegments(h.getCore(), expectCFS);
 
     assertCommitSomeNewDocs();
     assertNumSegments(h.getCore(), 2);
-    assertCompoundSegments(h.getCore(), true);
+    assertCompoundSegments(h.getCore(), expectCFS);
 
     assertU(optimize());
     assertNumSegments(h.getCore(), 1);

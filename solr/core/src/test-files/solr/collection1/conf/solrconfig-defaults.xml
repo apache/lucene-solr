@@ -17,15 +17,27 @@
  limitations under the License.
 -->
 
+<!-- 
+
+ an "empty" solrconfig for testing default behavior
+
+ DO NOT ADD THINGS TO THIS CONFIG! 
+
+ NOTE: Most tests should not use this config unless the *explicitly* want
+ to test default behavior.  Most tests should use either...
+
+     solrconfig-minimal.xml
+     solrconfig-basic.xml
+     solrconfig.xml
+
+ ...in order to get better randomization of various config options.
+
+-->
 <config>
-  <luceneMatchVersion>${tests.luceneMatchVersion:LUCENE_CURRENT}</luceneMatchVersion>
-  <directoryFactory name="DirectoryFactory" class="${solr.directoryFactory:solr.RAMDirectoryFactory}"/>
+  <luceneMatchVersion>${tests.luceneMatchVersion:LUCENE_CURRENT}</luceneMatchVersion><!--
 
-  <indexConfig>
-    <mergeFactor>7</mergeFactor>
-    <useCompoundFile>${useCompoundFile:false}</useCompoundFile>
-  </indexConfig>
 
-  <requestHandler name="standard" class="solr.StandardRequestHandler"></requestHandler>
+                DO NOT ADD THINGS TO THIS CONFIG! 
 
-</config>
+
+--></config>
