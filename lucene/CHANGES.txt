@@ -79,6 +79,9 @@ Changes in backwards compatibility policy
 
 Bug Fixes
 
+* LUCENE-4890: QueryTreeBuilder.getBuilder() only finds interfaces on the 
+  most derived class. (Adriano Crestani)
+
 * LUCENE-4997: Internal test framework's tests are sensitive to previous 
   test failures and tests.failfast. (Dawid Weiss, Shai Erera)
 
