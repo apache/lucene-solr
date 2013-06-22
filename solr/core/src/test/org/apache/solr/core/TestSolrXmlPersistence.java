@@ -370,7 +370,7 @@ public class TestSolrXmlPersistence extends SolrTestCaseJ4 {
       String[] expressions = new  String[2];
       String instHome = new File(solrHomeDirectory, "new_one").getAbsolutePath();
       expressions[0] = "/solr/cores/core[@name='new_one' and @instanceDir='" + instHome + "']";
-      expressions[1] = "/solr/cores/core[@name='new_two' and @instanceDir='new_two/']";
+      expressions[1] = "/solr/cores/core[@name='new_two' and @instanceDir='new_two" + File.separator + "']";
 
       assertXmlFile(persistXml1, expressions);
 
