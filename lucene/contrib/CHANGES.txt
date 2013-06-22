@@ -5,7 +5,10 @@ http://s.apache.org/luceneversions
 
 ======================= Lucene 3.6.3 =======================
 
-(No Changes)
+Bug Fixes
+
+* LUCENE-4890: QueryTreeBuilder.getBuilder() only finds interfaces on the 
+  most derived class. (Adriano Crestani)
 
 ======================= Lucene 3.6.2 =======================
 

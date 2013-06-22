@@ -1,6 +1,6 @@
-package org.apache.lucene.queryParser.core.builders;
+package org.apache.lucene.queryparser.flexible.core.builders;
 
-/**
+/*
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
  * this work for additional information regarding copyright ownership.
@@ -20,8 +20,12 @@ package org.apache.lucene.queryParser.core.builders;
 import junit.framework.Assert;
 
 import org.apache.lucene.queryParser.core.QueryNodeException;
+import org.apache.lucene.queryParser.core.builders.QueryBuilder;
+import org.apache.lucene.queryParser.core.builders.QueryTreeBuilder;
 import org.apache.lucene.queryParser.core.nodes.FieldQueryNode;
 import org.apache.lucene.queryParser.core.nodes.QueryNode;
+import org.apache.lucene.queryParser.core.nodes.QueryNodeImpl;
+import org.apache.lucene.queryParser.core.parser.EscapeQuerySyntax;
 import org.apache.lucene.queryParser.core.util.UnescapedCharSequence;
 import org.apache.lucene.util.LuceneTestCase;
 import org.junit.Test;
@@ -34,6 +38,27 @@ public class TestQueryTreeBuilder extends LuceneTestCase {
     qtb.setBuilder("field", new DummyBuilder());
     Object result = qtb.build(new FieldQueryNode(new UnescapedCharSequence("field"), "foo", 0, 0));
     Assert.assertEquals("OK", result);
+    
+    // LUCENE-4890
+    qtb = new QueryTreeBuilder();
+    qtb.setBuilder(DummyQueryNodeInterface.class, new DummyBuilder());
+    result = qtb.build(new DummyQueryNode());
+    Assert.assertEquals("OK", result);
+  }
+  
+  private static interface DummyQueryNodeInterface extends QueryNode {
+    
+  }
+  
+  private static abstract class AbstractDummyQueryNode extends QueryNodeImpl implements DummyQueryNodeInterface {
+    
+  }
+  
+  private static class DummyQueryNode extends AbstractDummyQueryNode {
+
+    public CharSequence toQueryString(EscapeQuerySyntax escapeSyntaxParser) {
+      return "DummyQueryNode";
+    }
     
   }
   
