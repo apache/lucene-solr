@@ -251,7 +251,7 @@ sammy.get
                             .replace( /[\w\.]+=\+*(&)/g, '$1' ) // remove empty parameters
                             .replace( /(&)+/, '$1' )            // reduce multiple ampersands
                             .replace( /^&/, '' )                // remove leading ampersand
-                            .replace( /\+/, '%20' );            // replace plus-signs with encoded whitespaces
+                            .replace( /\+/g, '%20' );           // replace plus-signs with encoded whitespaces
 
               context.redirect( context.path.split( '?' ).shift() + '?' + params );
               return false;
