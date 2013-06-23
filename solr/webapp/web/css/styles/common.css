@@ -641,3 +641,30 @@ pre.syntax .tex .formula
 {
   text-decoration: none;
 }
+
+#content .address-bar
+{
+  margin-bottom: 10px;
+  background-image: url( ../../img/ico/ui-address-bar.png );
+  background-position: 5px 50%;
+  border: 1px solid #f0f0f0;
+  box-shadow: 1px 1px 0 #f0f0f0;
+  -moz-box-shadow: 1px 1px 0 #f0f0f0;
+  -webkit-box-shadow: 1px 1px 0 #f0f0f0;
+  color: #c0c0c0;
+  display: block;
+  overflow: hidden;
+  padding: 5px;
+  padding-left: 26px;
+  white-space: nowrap;
+}
+
+#content .address-bar:focus,
+#content .address-bar:hover
+{
+  border-color: #c0c0c0;
+  box-shadow: 1px 1px 0 #d8d8d8;
+  -moz-box-shadow: 1px 1px 0 #d8d8d8;
+  -webkit-box-shadow: 1px 1px 0 #d8d8d8;
+  color: #333;
+}

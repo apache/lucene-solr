@@ -205,6 +205,8 @@ Optimizations
 * SOLR-4611: Admin UI - Analysis-Urls with empty parameters create empty result table
   (steffkes)
 
+* SOLR-4955: Admin UI - Show address bar on top for Schema + Config (steffkes)
+
 Other Changes
 ----------------------
 
