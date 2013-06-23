@@ -190,6 +190,8 @@ Bug Fixes
 
 * SOLR-4456: Admin UI: Displays dashboard even if Solr is down (steffkes)
 
+* SOLR-4949: UI Analysis page dropping characters from input box (steffkes)
+
 Optimizations
 ----------------------
 
