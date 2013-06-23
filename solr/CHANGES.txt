@@ -202,6 +202,9 @@ Optimizations
 
 * SOLR-4719 : Admin UI - Default to wt=json on Query-Screen (steffkes)
 
+* SOLR-4611: Admin UI - Analysis-Urls with empty parameters create empty result table
+  (steffkes)
+
 Other Changes
 ----------------------
 
