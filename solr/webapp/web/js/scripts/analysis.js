@@ -125,7 +125,7 @@ sammy.get
               var fields = 0;
               for( var key in context.params )
               {
-                if( 'string' === typeof context.params[key] )
+                if( 'string' === typeof context.params[key] && 0 !== context.params[key].length )
                 {
                   fields++;
                   $( '[name="' + key + '"]', analysis_form )
