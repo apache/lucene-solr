@@ -109,6 +109,11 @@ Changes in backwards compatibility policy
   Lucene has much better support for numeric data through (Int|Long)Field,
   NumericRangeQuery and FieldCache.get(Int|Long)s. (Adrien Grand)
 
+* LUCENE-5078: TfIDFSimilarity lets you encode the norm value as any arbitrary long.
+  As a result, encode/decodeNormValue were made abstract with their signatures changed.
+  The default implementation was moved to DefaultSimilarity, which encodes the norm as
+  a single-byte value. (Shai Erera)
+
 Bug Fixes
 
 * LUCENE-4890: QueryTreeBuilder.getBuilder() only finds interfaces on the 
