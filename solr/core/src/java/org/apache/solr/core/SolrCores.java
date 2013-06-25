@@ -100,7 +100,7 @@ class SolrCores {
   // We are shutting down. You can't hold the lock on the various lists of cores while they shut down, so we need to
   // make a temporary copy of the names and shut them down outside the lock.
   protected void close() {
-    List<String> coreNames;
+    Collection<SolrCore> coreList;
     List<String> transientNames;
     List<SolrCore> pendingToClose;
 
@@ -110,27 +110,21 @@ class SolrCores {
 
     while (true) {
       synchronized (modifyLock) {
-        coreNames = new ArrayList<String>(cores.keySet());
+        // make a copy of the cores then clear the map so the core isn't handed out to a request again
+        coreList = new ArrayList<SolrCore>(cores.values());
+        cores.clear();
+
         transientNames = new ArrayList<String>(transientCores.keySet());
         pendingToClose = new ArrayList<SolrCore>(pendingCloses);
       }
 
-      if (coreNames.size() == 0 && transientNames.size() == 0 && pendingToClose.size() == 0) break;
+      if (coreList.size() == 0 && transientNames.size() == 0 && pendingToClose.size() == 0) break;
 
-      for (String coreName : coreNames) {
-        SolrCore core = cores.get(coreName);
-        if (core == null) {
-          CoreContainer.log.info("Core " + coreName + " moved from core container list before closing.");
-        } else {
-          try {
-            core.close();
-          } catch (Throwable t) {
-            SolrException.log(CoreContainer.log, "Error shutting down core", t);
-          } finally {
-            synchronized (modifyLock) {
-              cores.remove(coreName);
-            }
-          }
+      for (SolrCore core : coreList) {
+        try {
+          core.close();
+        } catch (Throwable t) {
+          SolrException.log(CoreContainer.log, "Error shutting down core", t);
         }
       }
 
