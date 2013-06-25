@@ -25,6 +25,7 @@ import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.common.params.CoreAdminParams;
 import org.apache.solr.handler.admin.CoreAdminHandler;
 import org.apache.solr.response.SolrQueryResponse;
+import org.junit.BeforeClass;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.RuleChain;
@@ -45,14 +46,12 @@ import java.util.List;
 
 public class TestSolrXmlPersistence extends SolrTestCaseJ4 {
 
-  private File solrHomeDirectory = new File(TEMP_DIR, this.getClass().getName());
+  private final File solrHomeDirectory = new File(TEMP_DIR, this.getClass().getName());
 
-  /*
   @BeforeClass
   public static void beforeClass() throws Exception {
     initCore("solrconfig-minimal.xml", "schema-tiny.xml");
   }
-  */
 
   @Rule
   public TestRule solrTestRules =
@@ -60,9 +59,9 @@ public class TestSolrXmlPersistence extends SolrTestCaseJ4 {
 
 
   private CoreContainer init(String solrXmlString, String... subDirs) throws Exception {
-
-    createTempDir();
-    solrHomeDirectory = dataDir;
+    if (solrHomeDirectory.exists()) {
+      FileUtils.deleteDirectory(solrHomeDirectory);
+    }
 
     for (String s : subDirs) {
       copyMinConf(new File(solrHomeDirectory, s));
@@ -70,8 +69,10 @@ public class TestSolrXmlPersistence extends SolrTestCaseJ4 {
 
     File solrXml = new File(solrHomeDirectory, "solr.xml");
     FileUtils.write(solrXml, solrXmlString, IOUtils.CHARSET_UTF_8.toString());
+    final CoreContainer cores = new CoreContainer(solrHomeDirectory.getAbsolutePath());
+    cores.load(solrHomeDirectory.getAbsolutePath(), solrXml);
 
-    final CoreContainer cores = createCoreContainer(solrHomeDirectory.getAbsolutePath(), solrXmlString);
+    cores.setPersistent(false);
     return cores;
   }
 
@@ -303,7 +304,7 @@ public class TestSolrXmlPersistence extends SolrTestCaseJ4 {
           } else if (persistList[idx].contains("@config='solrconfig.xml'")) {
             expressions[idx] = persistList[idx].replace("solrconfig.xml", "${solrconfig:solrconfig.xml}");
           } else if (persistList[idx].contains("@instanceDir=")) {
-            expressions[idx] = persistList[idx].replaceFirst("instanceDir\\='.*?'", "instanceDir='" + which + "/'");
+            expressions[idx] = persistList[idx].replaceFirst("instanceDir\\='.*?'", "instanceDir='" + which + "'");
           } else {
             expressions[idx] = persistList[idx];
           }
@@ -610,14 +611,14 @@ public class TestSolrXmlPersistence extends SolrTestCaseJ4 {
           "       shareSchema=\"${shareSchema:false}\" distribUpdateConnTimeout=\"${distribUpdateConnTimeout:15000}\" \n" +
           "       distribUpdateSoTimeout=\"${distribUpdateSoTimeout:120000}\" \n" +
           "       leaderVoteWait=\"${leadVoteWait:32}\" managementPath=\"${manpath:/var/lib/path}\" transientCacheSize=\"${tranSize:128}\"> \n" +
-          "     <core name=\"SystemVars1\" instanceDir=\"SystemVars1/\" shard=\"${shard:32}\" \n" +
+          "     <core name=\"SystemVars1\" instanceDir=\"SystemVars1\" shard=\"${shard:32}\" \n" +
           "          collection=\"${collection:collection1}\" config=\"${solrconfig:solrconfig.xml}\" \n" +
           "          schema=\"${schema:schema.xml}\" ulogDir=\"${ulog:./}\" roles=\"${myrole:boss}\" \n" +
           "          dataDir=\"${data:./}\" loadOnStartup=\"${onStart:true}\" transient=\"${tran:true}\" \n" +
           "          coreNodeName=\"${coreNode:utterlyridiculous}\" \n" +
           "       >\n" +
           "     </core>\n" +
-          "     <core name=\"SystemVars2\" instanceDir=\"SystemVars2/\" shard=\"${shard:32}\" \n" +
+          "     <core name=\"SystemVars2\" instanceDir=\"SystemVars2\" shard=\"${shard:32}\" \n" +
           "          collection=\"${collection:collection2}\" config=\"${solrconfig:solrconfig.xml}\" \n" +
           "          coreNodeName=\"${coreNodeName:}\" schema=\"${schema:schema.xml}\">\n" +
           "      <property name=\"collection\" value=\"{collection:collection2}\"/>\n" +
@@ -631,7 +632,7 @@ public class TestSolrXmlPersistence extends SolrTestCaseJ4 {
   private static String SOLR_XML_MINIMAL =
           "<solr >\n" +
           "  <cores> \n" +
-          "     <core name=\"SystemVars1\" instanceDir=\"SystemVars1/\" />\n" +
+          "     <core name=\"SystemVars1\" instanceDir=\"SystemVars1\" />\n" +
           "   </cores>\n" +
           "</solr>";
 

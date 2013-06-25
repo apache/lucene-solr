@@ -17,6 +17,11 @@ package org.apache.solr.cloud;
  * the License.
  */
 
+import java.io.File;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+
 import org.apache.lucene.util.LuceneTestCase.Slow;
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.common.cloud.SolrZkClient;
@@ -28,11 +33,6 @@ import org.apache.solr.util.ExternalPaths;
 import org.apache.zookeeper.CreateMode;
 import org.junit.BeforeClass;
 import org.junit.Test;
-
-import java.io.File;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
 
 @Slow
 public class ZkControllerTest extends SolrTestCaseJ4 {
@@ -240,8 +240,12 @@ public class ZkControllerTest extends SolrTestCaseJ4 {
   }
 
   private CoreContainer getCoreContainer() {
-    CoreContainer cc = new CoreContainer(TEMP_DIR.getAbsolutePath());
-    cc.load();
+    CoreContainer cc = new CoreContainer(TEMP_DIR.getAbsolutePath()) {
+      {
+        initShardHandler();
+      }
+    };
+    
     return cc;
   }
 

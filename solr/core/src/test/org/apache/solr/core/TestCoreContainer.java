@@ -17,16 +17,6 @@
 
 package org.apache.solr.core;
 
-import org.apache.commons.io.FileUtils;
-import org.apache.lucene.util.IOUtils;
-import org.apache.lucene.util._TestUtil;
-import org.apache.solr.SolrTestCaseJ4;
-import org.junit.AfterClass;
-import org.junit.BeforeClass;
-import org.junit.Test;
-import org.xml.sax.SAXException;
-
-import javax.xml.parsers.ParserConfigurationException;
 import java.io.BufferedWriter;
 import java.io.File;
 import java.io.FileOutputStream;
@@ -36,6 +26,17 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.jar.JarEntry;
 import java.util.jar.JarOutputStream;
+
+import javax.xml.parsers.ParserConfigurationException;
+
+import org.apache.commons.io.FileUtils;
+import org.apache.lucene.util.IOUtils;
+import org.apache.lucene.util._TestUtil;
+import org.apache.solr.SolrTestCaseJ4;
+import org.junit.AfterClass;
+import org.junit.BeforeClass;
+import org.junit.Test;
+import org.xml.sax.SAXException;
 
 public class TestCoreContainer extends SolrTestCaseJ4 {
 
@@ -71,7 +72,7 @@ public class TestCoreContainer extends SolrTestCaseJ4 {
     FileUtils.copyDirectory(new File(SolrTestCaseJ4.TEST_HOME()), solrHomeDirectory);
 
     CoreContainer ret = new CoreContainer(solrHomeDirectory.getAbsolutePath());
-    ret.load();
+    ret.load(solrHomeDirectory.getAbsolutePath(), new File(solrHomeDirectory, "solr.xml"));
     return ret;
   }
 
@@ -160,13 +161,13 @@ public class TestCoreContainer extends SolrTestCaseJ4 {
       SolrCore template = null;
       try {
         template = cores.getCore("collection1");
-        instDir = template.getCoreDescriptor().getRawInstanceDir();
+        instDir = template.getCoreDescriptor().getInstanceDir();
       } finally {
         if (null != template) template.close();
       }
     }
     
-    final File instDirFile = new File(cores.getSolrHome(), instDir);
+    final File instDirFile = new File(instDir);
     assertTrue("instDir doesn't exist: " + instDir, instDirFile.exists());
     
     // sanity check the basic persistence of the default init
@@ -261,8 +262,14 @@ public class TestCoreContainer extends SolrTestCaseJ4 {
     File solrHomeDirectory = new File(TEMP_DIR, this.getClass().getName()
         + "_noCores");
     SetUpHome(solrHomeDirectory, EMPTY_SOLR_XML);
-    CoreContainer cores = new CoreContainer(solrHomeDirectory.getAbsolutePath());
-    cores.load();
+    CoreContainer.Initializer init = new CoreContainer.Initializer();
+    CoreContainer cores = null;
+    try {
+      cores = init.initialize();
+    }
+    catch(Exception e) {
+      fail("CoreContainer not created" + e.getMessage());
+    }
     try {
       //assert zero cores
       assertEquals("There should not be cores", 0, cores.getCores().size());
@@ -355,21 +362,24 @@ public class TestCoreContainer extends SolrTestCaseJ4 {
     FileUtils.writeStringToFile(new File(tmpRoot, "explicit-lib-solr.xml"), "<solr sharedLib=\"lib\"><cores/></solr>", "UTF-8");
     FileUtils.writeStringToFile(new File(tmpRoot, "custom-lib-solr.xml"), "<solr sharedLib=\"customLib\"><cores/></solr>", "UTF-8");
 
-    final CoreContainer cc1 = CoreContainer.createAndLoad(tmpRoot.getAbsolutePath(), new File(tmpRoot, "default-lib-solr.xml"));
+    final CoreContainer cc1 = new CoreContainer(tmpRoot.getAbsolutePath());
+    cc1.load(tmpRoot.getAbsolutePath(), new File(tmpRoot, "default-lib-solr.xml"));
     try {
       cc1.loader.openResource("defaultSharedLibFile").close();
     } finally {
       cc1.shutdown();
     }
 
-    final CoreContainer cc2 = CoreContainer.createAndLoad(tmpRoot.getAbsolutePath(), new File(tmpRoot, "explicit-lib-solr.xml"));
+    final CoreContainer cc2 = new CoreContainer(tmpRoot.getAbsolutePath());
+    cc2.load(tmpRoot.getAbsolutePath(), new File(tmpRoot, "explicit-lib-solr.xml"));
     try {
       cc2.loader.openResource("defaultSharedLibFile").close();
     } finally {
       cc2.shutdown();
     }
 
-    final CoreContainer cc3 = CoreContainer.createAndLoad(tmpRoot.getAbsolutePath(), new File(tmpRoot, "custom-lib-solr.xml"));
+    final CoreContainer cc3 = new CoreContainer(tmpRoot.getAbsolutePath());
+    cc3.load(tmpRoot.getAbsolutePath(), new File(tmpRoot, "custom-lib-solr.xml"));
     try {
       cc3.loader.openResource("customSharedLibFile").close();
     } finally {

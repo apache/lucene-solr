@@ -29,7 +29,8 @@ import java.io.File;
 public class TestShardHandlerFactory extends SolrTestCaseJ4 {
 
   public void testXML() throws Exception {
-    CoreContainer cc = CoreContainer.createAndLoad(TEST_HOME(), new File(TEST_HOME(), "solr-shardhandler.xml"));
+    CoreContainer cc = new CoreContainer(TEST_HOME());
+    cc.load(TEST_HOME(), new File(TEST_HOME(), "solr-shardhandler.xml"));
     ShardHandlerFactory factory = cc.getShardHandlerFactory();
     assertTrue(factory instanceof MockShardHandlerFactory);
     NamedList args = ((MockShardHandlerFactory)factory).args;

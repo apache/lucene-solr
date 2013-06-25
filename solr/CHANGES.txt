@@ -46,8 +46,6 @@ Other Changes
 
 * SOLR-4792: Stop shipping a .war. (Robert Muir)
 
-* SOLR-4948: Tidied up CoreContainer construction logic.  (Alan Woodward)
-
 ==================  4.4.0 ==================
 
 Versions of Major Components

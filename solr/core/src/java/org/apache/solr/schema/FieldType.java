@@ -17,6 +17,18 @@
 
 package org.apache.solr.schema;
 
+import java.io.IOException;
+import java.io.Reader;
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Map;
+import java.util.Set;
+
+import static org.apache.lucene.analysis.util.AbstractAnalysisFactory.LUCENE_MATCH_VERSION_PARAM; 
+
 import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.analysis.Tokenizer;
 import org.apache.lucene.analysis.tokenattributes.CharTermAttribute;
@@ -54,18 +66,6 @@ import org.apache.solr.search.QParser;
 import org.apache.solr.search.Sorting;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-
-import java.io.IOException;
-import java.io.Reader;
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Map;
-import java.util.Set;
-
-import static org.apache.lucene.analysis.util.AbstractAnalysisFactory.LUCENE_MATCH_VERSION_PARAM;
 
 /**
  * Base class for all field types used by an index schema.
@@ -799,15 +799,6 @@ public abstract class FieldType extends FieldProperties {
       namedPropertyValues.add(getPropertyName(TOKENIZED), isTokenized());
       // The BINARY property is always false
       // namedPropertyValues.add(getPropertyName(BINARY), hasProperty(BINARY));
-      if (null != getSimilarityFactory()) {
-        namedPropertyValues.add(SIMILARITY, getSimilarityFactory().getNamedPropertyValues());
-      }
-      if (null != getPostingsFormat()) {
-        namedPropertyValues.add(POSTINGS_FORMAT, getPostingsFormat());
-      }
-      if (null != getDocValuesFormat()) {
-        namedPropertyValues.add(DOC_VALUES_FORMAT, getDocValuesFormat());
-      }
     } else { // Don't show defaults
       Set<String> fieldProperties = new HashSet<String>();
       for (String propertyName : FieldProperties.propertyNames) {
@@ -835,7 +826,15 @@ public abstract class FieldType extends FieldProperties {
         namedPropertyValues.add(MULTI_TERM_ANALYZER, getAnalyzerProperties(((TextField) this).getMultiTermAnalyzer()));
       }
     }
-
+    if (null != getSimilarityFactory()) {
+      namedPropertyValues.add(SIMILARITY, getSimilarityFactory().getNamedPropertyValues());
+    }
+    if (null != getPostingsFormat()) {
+      namedPropertyValues.add(POSTINGS_FORMAT, getPostingsFormat());
+    }
+    if (null != getDocValuesFormat()) {
+      namedPropertyValues.add(DOC_VALUES_FORMAT, getDocValuesFormat());
+    }
     return namedPropertyValues;
   }
 

@@ -17,9 +17,10 @@
 
 package org.apache.solr.client.solrj.embedded;
 
+import java.io.File;
+
 import org.apache.solr.client.solrj.MultiCoreExampleTestBase;
 import org.apache.solr.client.solrj.SolrServer;
-import org.apache.solr.core.CoreContainer;
 
 /**
  * This runs SolrServer test using 
@@ -34,11 +35,10 @@ public class MultiCoreEmbeddedTest extends MultiCoreExampleTestBase {
     // TODO: fix this test to use MockDirectoryFactory
     System.clearProperty("solr.directoryFactory");
     super.setUp();
-  }
-
-  protected void setupCoreContainer() {
-    cores = new CoreContainer(getSolrHome());
-    cores.load();
+    
+    File home = new File( getSolrHome() );
+    File f = new File( home, "solr.xml" );
+    cores.load( getSolrHome(), f );
   }
 
   @Override

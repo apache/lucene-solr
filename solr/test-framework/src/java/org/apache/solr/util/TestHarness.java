@@ -17,17 +17,20 @@
 
 package org.apache.solr.util;
 
-import com.google.common.base.Charsets;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.params.CommonParams;
 import org.apache.solr.common.util.NamedList;
-import org.apache.solr.common.util.NamedList.NamedListEntry;
-import org.apache.solr.core.ConfigSolr;
-import org.apache.solr.core.CoreContainer;
+import org.apache.solr.core.Config;
+import org.apache.solr.core.ConfigSolrXmlOld;
 import org.apache.solr.core.SolrConfig;
 import org.apache.solr.core.SolrCore;
+import org.apache.solr.core.CoreContainer;
+import org.apache.solr.core.CoreDescriptor;
 import org.apache.solr.core.SolrResourceLoader;
 import org.apache.solr.handler.UpdateRequestHandler;
+import org.apache.solr.logging.ListenerConfig;
+import org.apache.solr.logging.LogWatcher;
+import org.apache.solr.logging.jul.JulWatcher;
 import org.apache.solr.request.LocalSolrQueryRequest;
 import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.request.SolrRequestHandler;
@@ -37,6 +40,9 @@ import org.apache.solr.response.SolrQueryResponse;
 import org.apache.solr.schema.IndexSchema;
 import org.apache.solr.schema.IndexSchemaFactory;
 import org.apache.solr.servlet.DirectSolrConnection;
+import org.apache.solr.common.util.NamedList.NamedListEntry;
+import org.xml.sax.InputSource;
+import org.xml.sax.SAXException;
 
 import java.io.ByteArrayInputStream;
 import java.io.File;
@@ -44,6 +50,8 @@ import java.io.IOException;
 import java.io.StringWriter;
 import java.util.HashMap;
 import java.util.Map;
+
+import javax.xml.parsers.ParserConfigurationException;
 
 
 /**
@@ -98,8 +106,19 @@ public class TestHarness extends BaseTestHarness {
                          SolrConfig solrConfig,
                          String schemaFile) {
     this( coreName, dataDirectory, solrConfig, IndexSchemaFactory.buildIndexSchema(schemaFile, solrConfig));
-  }
-
+  } 
+  /**
+   * @param coreName to initialize
+   * @param dataDirectory path for index data, will not be cleaned up
+   * @param solrConfig solrconfig instance
+   * @param indexSchema schema instance
+   */
+    public TestHarness( String coreName,
+                        String dataDirectory,
+                        SolrConfig solrConfig,
+                        IndexSchema indexSchema) {
+        this(coreName, new Initializer(coreName, dataDirectory, solrConfig, indexSchema));
+    }
    /**
     * @param dataDirectory path for index data, will not be cleaned up
     * @param solrConfig solronfig instance
@@ -118,25 +137,17 @@ public class TestHarness extends BaseTestHarness {
   public TestHarness( String dataDirectory,
                       SolrConfig solrConfig,
                       IndexSchema indexSchema) {
-      this(CoreContainer.DEFAULT_DEFAULT_CORE_NAME, dataDirectory, solrConfig, indexSchema);
+      this(null, new Initializer(null, dataDirectory, solrConfig, indexSchema));
   }
-
-  /**
-   * @param coreName to initialize
-   * @param dataDir path for index data, will not be cleaned up
-   * @param solrConfig solrconfig instance
-   * @param indexSchema schema instance
-   */
-  public TestHarness(String coreName, String dataDir, SolrConfig solrConfig, IndexSchema indexSchema) {
+  
+  public TestHarness(String coreName, CoreContainer.Initializer init) {
     try {
+
+      container = init.initialize();
       if (coreName == null)
         coreName = CoreContainer.DEFAULT_DEFAULT_CORE_NAME;
-      this.coreName = coreName;
 
-      SolrResourceLoader loader = new SolrResourceLoader(SolrResourceLoader.locateSolrHome());
-      ConfigSolr config = getTestHarnessConfig(coreName, dataDir, solrConfig, indexSchema);
-      container = new CoreContainer(loader, config);
-      container.load();
+      this.coreName = coreName;
 
       updater = new UpdateRequestHandler();
       updater.init( null );
@@ -145,46 +156,72 @@ public class TestHarness extends BaseTestHarness {
     }
   }
 
-  /**
-   * Create a TestHarness using a specific solr home directory and solr xml
-   * @param solrHome the solr home directory
-   * @param solrXml a File pointing to a solr.xml configuration
-   */
-  public TestHarness(String solrHome, String solrXml) {
-    this(new SolrResourceLoader(solrHome),
-          ConfigSolr.fromInputStream(null, new ByteArrayInputStream(solrXml.getBytes(Charsets.UTF_8))));
-  }
+  // Creates a container based on infos needed to create one core
+  static class Initializer extends CoreContainer.Initializer {
+    String coreName;
+    String dataDirectory;
+    SolrConfig solrConfig;
+    IndexSchema indexSchema;
+    public Initializer(String coreName,
+                      String dataDirectory,
+                      SolrConfig solrConfig,
+                      IndexSchema indexSchema) {
+      if (coreName == null)
+        coreName = CoreContainer.DEFAULT_DEFAULT_CORE_NAME;
+      this.coreName = coreName;
+      this.dataDirectory = dataDirectory;
+      this.solrConfig = solrConfig;
+      this.indexSchema = indexSchema;
+    }
+    public String getCoreName() {
+      return coreName;
+    }
+    @Override
+    public CoreContainer initialize() {
+      CoreContainer container;
+      try {
+        String solrHome = SolrResourceLoader.locateSolrHome();
+        container = new CoreContainer(new SolrResourceLoader(solrHome)) {
+          {
+            String hostPort = System.getProperty("hostPort", "8983");
+            String hostContext = System.getProperty("hostContext", "solr");
+            defaultCoreName = CoreContainer.DEFAULT_DEFAULT_CORE_NAME;
+            initShardHandler();
+            zkSys.initZooKeeper(this, solrHome, System.getProperty("zkHost"), 30000, hostPort, hostContext, null, "30000", 30000, 30000);
+            ByteArrayInputStream is = new ByteArrayInputStream(ConfigSolrXmlOld.DEF_SOLR_XML.getBytes("UTF-8"));
+            Config config = new Config(loader, null, new InputSource(is), null, false);
+            cfg = new ConfigSolrXmlOld(config, this);
+          }
+        };
+      } catch (ParserConfigurationException e) {
+        throw new RuntimeException(e);
+      } catch (IOException e) {
+        throw new RuntimeException(e);
+      } catch (SAXException e) {
+        throw new RuntimeException(e);
+      }
+      LogWatcher<?> logging = new JulWatcher("test");
+      logging.registerListener(new ListenerConfig());
+      container.setLogging(logging);
+      
+      CoreDescriptor dcore = new CoreDescriptor(container, coreName, solrConfig.getResourceLoader().getInstanceDir());
+      dcore.setConfigName(solrConfig.getResourceName());
+      dcore.setSchemaName(indexSchema.getResourceName());
+      
+      if (container.getZkController() != null) {
+        container.preRegisterInZk(dcore);
+      }
+      
+      SolrCore core = new SolrCore(coreName, dataDirectory, solrConfig, indexSchema, dcore);
+      container.register(coreName, core, false);
 
-  /**
-   * Create a TestHarness using a specific resource loader and config
-   * @param loader the SolrResourceLoader to use
-   * @param config the ConfigSolr to use
-   */
-  public TestHarness(SolrResourceLoader loader, ConfigSolr config) {
-    container = new CoreContainer(loader, config);
-    container.load();
-    updater = new UpdateRequestHandler();
-    updater.init(null);
-  }
-
-  private static ConfigSolr getTestHarnessConfig(String coreName, String dataDir,
-                                                 SolrConfig solrConfig, IndexSchema schema) {
-    String solrxml = "<?xml version=\"1.0\" encoding=\"UTF-8\" ?>\n"
-        + "<solr persistent=\"false\">\n"
-        + "  <logging enabled=\"true\"/>\n"
-        + "  <cores adminPath=\"/admin/cores\" defaultCoreName=\""
-        + CoreContainer.DEFAULT_DEFAULT_CORE_NAME
-        + "\""
-        + " host=\"${host:}\" hostPort=\"${hostPort:}\" hostContext=\"${hostContext:}\""
-        + " distribUpdateSoTimeout=\"30000\""
-        + " zkClientTimeout=\"${zkClientTimeout:30000}\" distribUpdateConnTimeout=\"30000\""
-        + ">\n"
-        + "    <core name=\"" + coreName + "\" config=\"" + solrConfig.getResourceName()
-        + "\" schema=\"" + schema.getResourceName() + "\" dataDir=\"" + dataDir
-        + "\" transient=\"false\" loadOnStartup=\"true\""
-        + " shard=\"${shard:shard1}\" collection=\"${collection:collection1}\" instanceDir=\"" + coreName + "\" />\n"
-        + "  </cores>\n" + "</solr>";
-    return ConfigSolr.fromString(new SolrResourceLoader(dataDir), solrxml);
+      // TODO: we should be exercising the *same* core container initialization code, not equivalent code!
+      if (container.getZkController() == null && core.getUpdateHandler().getUpdateLog() != null) {
+        // always kick off recovery if we are in standalone mode.
+        core.getUpdateHandler().getUpdateLog().recoverFromLog();
+      }
+      return container;
+    }
   }
   
   public CoreContainer getCoreContainer() {

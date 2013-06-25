@@ -17,6 +17,7 @@
 
 package org.apache.solr.core;
 
+import org.apache.commons.io.IOUtils;
 import org.apache.solr.cloud.ZkController;
 import org.apache.solr.cloud.ZkSolrResourceLoader;
 import org.apache.solr.common.SolrException;
@@ -38,10 +39,21 @@ import org.apache.solr.util.plugin.PluginInfoInitialized;
 import org.apache.zookeeper.KeeperException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.w3c.dom.Document;
 import org.w3c.dom.Node;
+import org.xml.sax.InputSource;
 
+import javax.xml.transform.Transformer;
+import javax.xml.transform.TransformerException;
+import javax.xml.transform.TransformerFactory;
+import javax.xml.transform.dom.DOMResult;
+import javax.xml.transform.dom.DOMSource;
 import javax.xml.xpath.XPathExpressionException;
+import java.io.ByteArrayInputStream;
 import java.io.File;
+import java.io.FileInputStream;
+import java.io.FileNotFoundException;
+import java.io.InputStream;
 import java.text.SimpleDateFormat;
 import java.util.Collection;
 import java.util.Collections;
@@ -63,8 +75,6 @@ import java.util.concurrent.Future;
 import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.ThreadPoolExecutor;
 import java.util.concurrent.TimeUnit;
-
-import static com.google.common.base.Preconditions.checkNotNull;
 
 
 /**
@@ -94,13 +104,15 @@ public class CoreContainer
 
   protected CoreAdminHandler coreAdminHandler = null;
   protected CollectionsHandler collectionsHandler = null;
+  protected File configFile = null;
   protected String libDir = null;
-
+  protected SolrResourceLoader loader = null;
   protected Properties containerProperties;
   protected Map<String ,IndexSchema> indexSchemaCache;
   protected String adminHandler;
   protected boolean shareSchema;
   protected Integer zkClientTimeout;
+  protected String solrHome;
   protected String defaultCoreName = null;
   protected int distribUpdateConnTimeout = 0;
   protected int distribUpdateSoTimeout = 0;
@@ -114,90 +126,151 @@ public class CoreContainer
 
   private int coreLoadThreads;
   private CloserThread backgroundCloser = null;
-
-  protected final ConfigSolr cfg;
-  protected final SolrResourceLoader loader;
-  protected final String solrHome;
+  protected volatile ConfigSolr cfg;
+  private Config origCfg;
   
   {
     log.info("New CoreContainer " + System.identityHashCode(this));
   }
 
   /**
-   * Create a new CoreContainer using system properties to detect the solr home
-   * directory.  The container's cores are not loaded.
-   * @see #load()
+   * Deprecated
+   * @deprecated use the single arg constructor with locateSolrHome()
+   * @see SolrResourceLoader#locateSolrHome
    */
+  @Deprecated
   public CoreContainer() {
     this(SolrResourceLoader.locateSolrHome());
   }
 
   /**
-   * Create a new CoreContainer using the given SolrResourceLoader.  The container's
-   * cores are not loaded.
-   * @param loader the SolrResourceLoader
-   * @see #load()
+   * Initalize CoreContainer directly from the constructor
+   */
+  public CoreContainer(String dir, File configFile) throws FileNotFoundException {
+    this(dir);
+    this.load(dir, configFile);
+  }
+
+  /**
+   * Minimal CoreContainer constructor.
+   * @param loader the CoreContainer resource loader
    */
   public CoreContainer(SolrResourceLoader loader) {
-    this(loader, ConfigSolr.fromSolrHome(loader.getInstanceDir()));
+    this(loader.getInstanceDir());
+    this.loader = loader;
   }
 
-  /**
-   * Create a new CoreContainer using the given solr home directory.  The container's
-   * cores are not loaded.
-   * @param solrHome a String containing the path to the solr home directory
-   * @see #load()
-   */
   public CoreContainer(String solrHome) {
-    this(new SolrResourceLoader(solrHome), ConfigSolr.fromSolrHome(solrHome));
-  }
-
-  /**
-   * Create a new CoreContainer using the given SolrResourceLoader and
-   * configuration.  The container's cores are not loaded.
-   * @param loader the SolrResourceLoader
-   * @param config a ConfigSolr representation of this container's configuration
-   * @see #load()
-   */
-  public CoreContainer(SolrResourceLoader loader, ConfigSolr config) {
-    this.loader = checkNotNull(loader);
-    this.solrHome = loader.getInstanceDir();
-    this.cfg = checkNotNull(config);
-  }
-
-  /**
-   * Create a new CoreContainer and load its cores
-   * @param solrHome the solr home directory
-   * @param configFile the file containing this container's configuration
-   * @return a loaded CoreContainer
-   */
-  public static CoreContainer createAndLoad(String solrHome, File configFile) {
-    CoreContainer cc = new CoreContainer(new SolrResourceLoader(solrHome), ConfigSolr.fromFile(configFile));
-    cc.load();
-    return cc;
+    this.solrHome = solrHome;
   }
   
   public Properties getContainerProperties() {
     return containerProperties;
   }
 
+  // Helper class to initialize the CoreContainer
+  public static class Initializer {
+
+    // core container instantiation
+    public CoreContainer initialize() throws FileNotFoundException {
+      CoreContainer cores = null;
+      String solrHome = SolrResourceLoader.locateSolrHome();
+      // ContainerConfigFilename could  could be a properties file
+      File fconf = new File(solrHome, "solr.xml");
+
+      log.info("looking for solr config file: " + fconf.getAbsolutePath());
+      cores = new CoreContainer(solrHome);
+
+      // first we find zkhost, then we check for solr.xml in zk
+      // 1. look for zkhost from sys prop 2. look for zkhost in {solr.home}/solr.properties
+      
+      // Either we have a config file or not.
+      
+      if (fconf.exists()) {
+        cores.load(solrHome, fconf);
+      } else {
+        // Back compart support
+        log.info("no solr.xml found. using default old-style solr.xml");
+        try {
+          cores.load(solrHome, new ByteArrayInputStream(ConfigSolrXmlOld.DEF_SOLR_XML.getBytes("UTF-8")), null);
+        } catch (Exception e) {
+          throw new SolrException(ErrorCode.SERVER_ERROR,
+              "CoreContainer.Initialize failed when trying to load default solr.xml file", e);
+        }
+        cores.configFile = fconf;
+      }
+      
+      return cores;
+    }
+  }
+
+
   //-------------------------------------------------------------------
   // Initialization / Cleanup
   //-------------------------------------------------------------------
+  
+  /**
+   * Load a config file listing the available solr cores.
+   * @param dir the home directory of all resources.
+   * @param configFile the configuration file
+   */
+  public void load(String dir, File configFile) throws FileNotFoundException {
+    this.configFile = configFile;
+    InputStream in = new FileInputStream(configFile);
+    try {
+      this.load(dir, in,  configFile.getName());
+    } finally {
+      IOUtils.closeQuietly(in);
+    }
+  } 
 
   /**
-   * Load the cores defined for this CoreContainer
+   * Load a config file listing the available solr cores.
+   * 
+   * @param dir the home directory of all resources.
+   * @param is the configuration file InputStream. May be a properties file or an xml file
    */
-  public void load()  {
 
-    log.info("Loading cores into CoreContainer {}", System.identityHashCode(this));
-
+  // Let's keep this ugly boolean out of public circulation.
+  protected void load(String dir, InputStream is, String fileName)  {
     ThreadPoolExecutor coreLoadExecutor = null;
+    if (null == dir) {
+      // don't rely on SolrResourceLoader(), determine explicitly first
+      dir = SolrResourceLoader.locateSolrHome();
+    }
+    log.info("Loading CoreContainer using Solr Home: '{}'", dir);
+    
+    this.loader = new SolrResourceLoader(dir);
+    solrHome = loader.getInstanceDir();
+
+    try {
+      Config config = new Config(loader, null, new InputSource(is), null, false);
+
+      // old style defines cores in solr.xml, new style disovers them by 
+      // directory structure
+      boolean oldStyle = (config.getNode("solr/cores", false) != null);
+      
+      if (oldStyle) {
+        // ConfigSolr handles keep orig values around for non solrcore level items,
+        // but this is still how original core lvl attributes are kept around
+        this.origCfg = new Config(loader, null, copyDoc(config.getDocument()));
+        
+        this.cfg = new ConfigSolrXmlOld(config, this);
+      } else {
+        this.cfg = new ConfigSolrXml(config, this);
+
+      }
+    } catch (Exception e) {
+      throw new SolrException(ErrorCode.SERVER_ERROR, "", e);
+    }
+    // Since the cores var is now initialized to null, let's set it up right
+    // now.
+    cfg.substituteProperties();
 
     // add the sharedLib to the shared resource loader before initializing cfg based plugins
     libDir = cfg.get(ConfigSolr.CfgProp.SOLR_SHAREDLIB , null);
     if (libDir != null) {
-      File f = FileUtils.resolvePath(new File(solrHome), libDir);
+      File f = FileUtils.resolvePath(new File(dir), libDir);
       log.info("loading shared library: " + f.getAbsolutePath());
       loader.addToClassLoader(libDir, null, false);
       loader.reloadLuceneSPI();
@@ -1003,7 +1076,7 @@ public class CoreContainer
   }
   
   public File getConfigFile() {
-    return new File(solrHome, ConfigSolr.SOLR_XML_FILE);
+    return configFile;
   }
 
   /**
@@ -1017,7 +1090,7 @@ public class CoreContainer
   /** Persists the cores config file in cores.xml. */
   @Deprecated
   public void persist() {
-    persistFile(getConfigFile());
+    persistFile(configFile);
   }
 
   /**
@@ -1038,7 +1111,7 @@ public class CoreContainer
     // only the old solrxml persists
     if (cfg != null && !(cfg instanceof ConfigSolrXmlOld)) return;
 
-    log.info("Persisting cores config to " + (file == null ? getConfigFile() : file));
+    log.info("Persisting cores config to " + (file == null ? configFile : file));
 
     // <solr attrib="value">
     Map<String,String> rootSolrAttribs = new HashMap<String,String>();
@@ -1110,7 +1183,7 @@ public class CoreContainer
         cfg.get(ConfigSolr.CfgProp.SOLR_SHARDHANDLERFACTORY_SOCKETTIMEOUT, null));
 
     try {
-      solrCores.persistCores(cfg.config.getOriginalConfig(), containerProperties, rootSolrAttribs,coresAttribs,
+      solrCores.persistCores(origCfg, containerProperties, rootSolrAttribs,coresAttribs,
           loggingAttribs, watcherAttribs, shardHandlerAttrib, shardHandlerProps, file, loader);
     } catch (XPathExpressionException e) {
       throw new SolrException(ErrorCode.SERVER_ERROR, null, e);
@@ -1197,7 +1270,14 @@ public class CoreContainer
     return solrCores.getCoreToOrigName(core);
   }
   
-
+  private Document copyDoc(Document document) throws TransformerException {
+    TransformerFactory tfactory = TransformerFactory.newInstance();
+    Transformer tx   = tfactory.newTransformer();
+    DOMSource source = new DOMSource(document);
+    DOMResult result = new DOMResult();
+    tx.transform(source,result);
+    return (Document)result.getNode();
+  }
 }
 
 class CloserThread extends Thread {

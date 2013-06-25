@@ -17,28 +17,26 @@
 
 package org.apache.solr;
 
-import com.carrotsearch.randomizedtesting.RandomizedContext;
-import com.carrotsearch.randomizedtesting.annotations.ThreadLeakFilters;
-import com.carrotsearch.randomizedtesting.rules.SystemPropertiesRestoreRule;
+import java.io.*;
+import java.util.*;
+import java.util.logging.*;
+
+import javax.xml.xpath.XPathExpressionException;
+
 import org.apache.commons.io.FileUtils;
+import org.apache.lucene.util.Constants;
 import org.apache.lucene.util.LuceneTestCase;
 import org.apache.lucene.util.QuickPatchThreadsFilter;
 import org.apache.solr.client.solrj.util.ClientUtils;
-import org.apache.solr.common.SolrException;
-import org.apache.solr.common.SolrInputDocument;
-import org.apache.solr.common.SolrInputField;
+import org.apache.solr.common.*;
 import org.apache.solr.common.cloud.SolrZkClient;
-import org.apache.solr.common.params.CommonParams;
-import org.apache.solr.common.params.ModifiableSolrParams;
-import org.apache.solr.common.params.SolrParams;
+import org.apache.solr.common.params.*;
 import org.apache.solr.common.util.XML;
 import org.apache.solr.core.CoreContainer;
 import org.apache.solr.core.SolrConfig;
 import org.apache.solr.core.SolrCore;
 import org.apache.solr.handler.JsonUpdateRequestHandler;
-import org.apache.solr.request.LocalSolrQueryRequest;
-import org.apache.solr.request.SolrQueryRequest;
-import org.apache.solr.request.SolrRequestHandler;
+import org.apache.solr.request.*;
 import org.apache.solr.schema.IndexSchema;
 import org.apache.solr.schema.SchemaField;
 import org.apache.solr.search.SolrIndexSearcher;
@@ -46,10 +44,7 @@ import org.apache.solr.servlet.DirectSolrConnection;
 import org.apache.solr.util.AbstractSolrTestCase;
 import org.apache.solr.util.RevertDefaultThreadHandlerRule;
 import org.apache.solr.util.TestHarness;
-import org.junit.AfterClass;
-import org.junit.BeforeClass;
-import org.junit.ClassRule;
-import org.junit.Rule;
+import org.junit.*;
 import org.junit.rules.RuleChain;
 import org.junit.rules.TestRule;
 import org.noggit.CharArr;
@@ -59,22 +54,9 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.xml.sax.SAXException;
 
-import javax.xml.xpath.XPathExpressionException;
-import java.io.File;
-import java.io.IOException;
-import java.io.StringWriter;
-import java.util.ArrayList;
-import java.util.Comparator;
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.LinkedHashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.logging.ConsoleHandler;
-import java.util.logging.Handler;
-import java.util.logging.Level;
-
-import static com.google.common.base.Preconditions.checkNotNull;
+import com.carrotsearch.randomizedtesting.RandomizedContext;
+import com.carrotsearch.randomizedtesting.annotations.ThreadLeakFilters;
+import com.carrotsearch.randomizedtesting.rules.SystemPropertiesRestoreRule;
 
 /**
  * A junit4 Solr test harness that extends LuceneTestCaseJ4. To change which core is used when loading the schema and solrconfig.xml, simply
@@ -419,29 +401,6 @@ public abstract class SolrTestCaseJ4 extends LuceneTestCase {
             getSchemaFile());
     lrf = h.getRequestFactory
             ("standard",0,20,CommonParams.VERSION,"2.2");
-  }
-
-  public static CoreContainer createCoreContainer(String solrHome, String solrXML) {
-    testSolrHome = checkNotNull(solrHome);
-    h = new TestHarness(solrHome, solrXML);
-    lrf = h.getRequestFactory("standard", 0, 20, CommonParams.VERSION, "2.2");
-    return h.getCoreContainer();
-  }
-
-  public static boolean hasInitException(String message) {
-    for (Map.Entry<String, Exception> entry : h.getCoreContainer().getCoreInitFailures().entrySet()) {
-      if (entry.getValue().getMessage().indexOf(message) != -1)
-        return true;
-    }
-    return false;
-  }
-
-  public static boolean hasInitException(Class<? extends Exception> exceptionType) {
-    for (Map.Entry<String, Exception> entry : h.getCoreContainer().getCoreInitFailures().entrySet()) {
-      if (exceptionType.isAssignableFrom(entry.getValue().getClass()))
-        return true;
-    }
-    return false;
   }
 
   /** Subclasses that override setUp can optionally call this method
@@ -1490,12 +1449,12 @@ public abstract class SolrTestCaseJ4 extends LuceneTestCase {
     return result;
   }
 
-  public static void assertXmlFile(final File file, String... xpath)
+  public void assertXmlFile(final File file, String... xpath)
       throws IOException, SAXException {
 
     try {
       String xml = FileUtils.readFileToString(file, "UTF-8");
-      String results = TestHarness.validateXPath(xml, xpath);
+      String results = h.validateXPath(xml, xpath);
       if (null != results) {
         String msg = "File XPath failure: file=" + file.getPath() + " xpath="
             + results + "\n\nxml was: " + xml;

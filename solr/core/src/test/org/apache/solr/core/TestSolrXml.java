@@ -44,7 +44,7 @@ public class TestSolrXml extends SolrTestCaseJ4 {
       boolean oldStyle = (config.getNode("solr/cores", false) != null);
       ConfigSolr cfg;
       if (oldStyle) {
-        cfg = new ConfigSolrXmlOld(config);
+        cfg = new ConfigSolrXmlOld(config, cc);
       } else {
         cfg = new ConfigSolrXml(config, cc);
       }
@@ -103,7 +103,7 @@ public class TestSolrXml extends SolrTestCaseJ4 {
       boolean oldStyle = (config.getNode("solr/cores", false) != null);
       ConfigSolr cfg;
       if (oldStyle) {
-        cfg = new ConfigSolrXmlOld(config);
+        cfg = new ConfigSolrXmlOld(config, cc);
       } else {
         cfg = new ConfigSolrXml(config, cc);
       }

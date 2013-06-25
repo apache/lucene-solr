@@ -33,10 +33,10 @@ import java.io.StringWriter;
 import java.io.UnsupportedEncodingException;
 
 abstract public class BaseTestHarness {
-  private static final ThreadLocal<DocumentBuilder> builderTL = new ThreadLocal<DocumentBuilder>();
-  private static final ThreadLocal<XPath> xpathTL = new ThreadLocal<XPath>();
+  private final ThreadLocal<DocumentBuilder> builderTL = new ThreadLocal<DocumentBuilder>();
+  private final ThreadLocal<XPath> xpathTL = new ThreadLocal<XPath>();
 
-  public static DocumentBuilder getXmlDocumentBuilder() {
+  public DocumentBuilder getXmlDocumentBuilder() {
     try {
       DocumentBuilder builder = builderTL.get();
       if (builder == null) {
@@ -49,7 +49,7 @@ abstract public class BaseTestHarness {
     }
   }
 
-  public static XPath getXpath() {
+  public XPath getXpath() {
     try {
       XPath xpath = xpathTL.get();
       if (xpath == null) {
@@ -71,7 +71,7 @@ abstract public class BaseTestHarness {
    * @param tests Array of XPath strings to test (in boolean mode) on the xml
    * @return null if all good, otherwise the first test that fails.
    */
-  public static String validateXPath(String xml, String... tests)
+  public String validateXPath(String xml, String... tests)
       throws XPathExpressionException, SAXException {
 
     if (tests==null || tests.length == 0) return null;

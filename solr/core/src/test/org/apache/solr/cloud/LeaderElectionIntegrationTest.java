@@ -17,20 +17,6 @@ package org.apache.solr.cloud;
  * limitations under the License.
  */
 
-import org.apache.lucene.util.LuceneTestCase.Slow;
-import org.apache.solr.SolrTestCaseJ4;
-import org.apache.solr.common.cloud.SolrZkClient;
-import org.apache.solr.common.cloud.ZkNodeProps;
-import org.apache.solr.common.cloud.ZkStateReader;
-import org.apache.solr.core.CoreContainer;
-import org.junit.AfterClass;
-import org.junit.BeforeClass;
-import org.junit.Test;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-import org.xml.sax.SAXException;
-
-import javax.xml.parsers.ParserConfigurationException;
 import java.io.File;
 import java.io.IOException;
 import java.util.HashMap;
@@ -40,6 +26,22 @@ import java.util.Map;
 import java.util.Set;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
+
+import javax.xml.parsers.ParserConfigurationException;
+
+import org.apache.lucene.util.LuceneTestCase.Slow;
+import org.apache.solr.SolrTestCaseJ4;
+import org.apache.solr.common.cloud.SolrZkClient;
+import org.apache.solr.common.cloud.ZkNodeProps;
+import org.apache.solr.common.cloud.ZkStateReader;
+import org.apache.solr.core.CoreContainer;
+import org.apache.solr.core.CoreContainer.Initializer;
+import org.junit.AfterClass;
+import org.junit.BeforeClass;
+import org.junit.Test;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import org.xml.sax.SAXException;
 
 @Slow
 public class LeaderElectionIntegrationTest extends SolrTestCaseJ4 {
@@ -138,6 +140,7 @@ public class LeaderElectionIntegrationTest extends SolrTestCaseJ4 {
     
     System.setProperty("hostPort", Integer.toString(port));
     System.setProperty("shard", shard);
+    Initializer init = new CoreContainer.Initializer();
     System.setProperty("solr.data.dir", data.getAbsolutePath());
     System.setProperty("solr.solr.home", TEST_HOME());
     Set<Integer> ports = shardPorts.get(shard);
@@ -146,8 +149,7 @@ public class LeaderElectionIntegrationTest extends SolrTestCaseJ4 {
       shardPorts.put(shard, ports);
     }
     ports.add(port);
-    CoreContainer container = new CoreContainer();
-    container.load();
+    CoreContainer container = init.initialize();
     assertTrue("Container " + port + " has no cores!", container.getCores()
         .size() > 0);
     containerMap.put(port, container);

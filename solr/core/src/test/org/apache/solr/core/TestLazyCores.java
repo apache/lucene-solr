@@ -66,7 +66,7 @@ public class TestLazyCores extends SolrTestCaseJ4 {
     File solrXml = new File(solrHomeDirectory, "solr.xml");
     FileUtils.write(solrXml, LOTS_SOLR_XML, IOUtils.CHARSET_UTF_8.toString());
     final CoreContainer cores = new CoreContainer(solrHomeDirectory.getAbsolutePath());
-    cores.load();
+    cores.load(solrHomeDirectory.getAbsolutePath(), solrXml);
     //  h.getCoreContainer().load(solrHomeDirectory.getAbsolutePath(), new File(solrHomeDirectory, "solr.xml"));
 
     cores.setPersistent(false);
