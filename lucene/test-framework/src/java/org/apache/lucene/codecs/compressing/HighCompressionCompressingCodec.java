@@ -1,5 +1,9 @@
 package org.apache.lucene.codecs.compressing;
 
+import org.apache.lucene.codecs.NormsFormat;
+import org.apache.lucene.codecs.lucene42.Lucene42NormsFormat;
+import org.apache.lucene.util.packed.PackedInts;
+
 /*
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
@@ -32,4 +36,8 @@ public class HighCompressionCompressingCodec extends CompressingCodec {
     this(1 << 14, false);
   }
 
+  @Override
+  public NormsFormat normsFormat() {
+    return new Lucene42NormsFormat(PackedInts.COMPACT);
+  }
 }

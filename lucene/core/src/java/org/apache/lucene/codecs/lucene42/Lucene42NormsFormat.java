@@ -42,14 +42,32 @@ import org.apache.lucene.util.packed.PackedInts;
  * @see Lucene42DocValuesFormat
  */
 public final class Lucene42NormsFormat extends NormsFormat {
+  final float acceptableOverheadRatio;
 
-  /** Sole constructor */
-  public Lucene42NormsFormat() {}
+  /** 
+   * Calls {@link #Lucene42NormsFormat(float) 
+   * Lucene42DocValuesFormat(PackedInts.FASTEST)} 
+   */
+  public Lucene42NormsFormat() {
+    // note: we choose FASTEST here (otherwise our norms are half as big but 15% slower than previous lucene)
+    this(PackedInts.FASTEST);
+  }
+  
+  /**
+   * Creates a new Lucene42DocValuesFormat with the specified
+   * <code>acceptableOverheadRatio</code> for NumericDocValues.
+   * @param acceptableOverheadRatio compression parameter for numerics. 
+   *        Currently this is only used when the number of unique values is small.
+   *        
+   * @lucene.experimental
+   */
+  public Lucene42NormsFormat(float acceptableOverheadRatio) {
+    this.acceptableOverheadRatio = acceptableOverheadRatio;
+  }
   
   @Override
   public DocValuesConsumer normsConsumer(SegmentWriteState state) throws IOException {
-    // note: we choose FASTEST here (otherwise our norms are half as big but 15% slower than previous lucene)
-    return new Lucene42DocValuesConsumer(state, DATA_CODEC, DATA_EXTENSION, METADATA_CODEC, METADATA_EXTENSION, PackedInts.FASTEST);
+    return new Lucene42DocValuesConsumer(state, DATA_CODEC, DATA_EXTENSION, METADATA_CODEC, METADATA_EXTENSION, acceptableOverheadRatio);
   }
   
   @Override

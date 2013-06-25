@@ -248,6 +248,12 @@ New Features
 
 * LUCENE-5063: FieldCache.DEFAULT.get(Ints|Longs) now uses bit-packing to save
   memory. (Adrien Grand)
+
+API Changes
+
+* LUCENE-5077: Make it easier to use compressed norms. Lucene42NormsFormat takes
+  an overhead parameter, so you can easily pass a different value other than
+  PackedInts.FASTEST from your own codec.  (Robert Muir)
   
 Build
 
