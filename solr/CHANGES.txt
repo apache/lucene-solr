@@ -192,7 +192,10 @@ Bug Fixes
 
 * SOLR-4949: UI Analysis page dropping characters from input box (steffkes)
 
-* SOLR-4960: race condition in shutdown of CoreContainer. (yonik)
+* SOLR-4960: Fix race conditions in shutdown of CoreContainer
+  and getCore that could cause a request to attempt to use a core that
+  has shut down. (yonik)
+
 
 Optimizations
 ----------------------
