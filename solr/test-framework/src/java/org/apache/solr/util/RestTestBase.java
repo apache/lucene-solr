@@ -127,7 +127,7 @@ abstract public class RestTestBase extends SolrJettyTestBase {
       }
       */
 
-      String results = restTestHarness.validateXPath(response, tests);
+      String results = TestHarness.validateXPath(response, tests);
 
       if (null != results) {
         String msg = "REQUEST FAILED: xpath=" + results

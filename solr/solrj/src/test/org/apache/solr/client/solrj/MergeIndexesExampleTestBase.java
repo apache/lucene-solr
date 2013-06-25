@@ -17,10 +17,6 @@
 
 package org.apache.solr.client.solrj;
 
-import java.io.File;
-import java.io.IOException;
-import java.util.Arrays;
-
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.client.solrj.request.AbstractUpdateRequest;
 import org.apache.solr.client.solrj.request.CoreAdminRequest;
@@ -32,8 +28,11 @@ import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.core.CoreContainer;
 import org.apache.solr.core.SolrCore;
 import org.apache.solr.util.ExternalPaths;
-import org.junit.AfterClass;
 import org.junit.BeforeClass;
+
+import java.io.File;
+import java.io.IOException;
+import java.util.Arrays;
 
 /**
  * Abstract base class for testing merge indexes command
@@ -42,7 +41,8 @@ import org.junit.BeforeClass;
  *
  */
 public abstract class MergeIndexesExampleTestBase extends SolrExampleTestBase {
-  protected static CoreContainer cores;
+
+  protected CoreContainer cores;
   private String saveProp;
   private File dataDir2;
 
@@ -56,13 +56,11 @@ public abstract class MergeIndexesExampleTestBase extends SolrExampleTestBase {
     if (dataDir == null) {
       createTempDir();
     }
-    cores = new CoreContainer();
   }
-  
-  @AfterClass
-  public static void afterClass() {
-    cores.shutdown();
-    cores = null;
+
+  protected void setupCoreContainer() {
+    cores = new CoreContainer();
+    cores.load();
   }
   
   @Override
@@ -70,6 +68,8 @@ public abstract class MergeIndexesExampleTestBase extends SolrExampleTestBase {
     saveProp = System.getProperty("solr.directoryFactory");
     System.setProperty("solr.directoryFactory", "solr.StandardDirectoryFactory");
     super.setUp();
+
+    setupCoreContainer();
 
     SolrCore.log.info("CORES=" + cores + " : " + cores.getCoreNames());
     cores.setPersistent(false);
@@ -96,6 +96,8 @@ public abstract class MergeIndexesExampleTestBase extends SolrExampleTestBase {
         System.err.println("!!!! WARNING: best effort to remove " + dataDir2.getAbsolutePath() + " FAILED !!!!!");
       }
     }
+
+    cores.shutdown();
     
     if (saveProp == null) System.clearProperty("solr.directoryFactory");
     else System.setProperty("solr.directoryFactory", saveProp);

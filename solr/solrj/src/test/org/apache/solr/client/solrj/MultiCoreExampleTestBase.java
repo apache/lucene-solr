@@ -17,8 +17,6 @@
 
 package org.apache.solr.client.solrj;
 
-import java.io.File;
-
 import org.apache.solr.client.solrj.request.AbstractUpdateRequest.ACTION;
 import org.apache.solr.client.solrj.request.CoreAdminRequest;
 import org.apache.solr.client.solrj.request.CoreAdminRequest.Unload;
@@ -30,9 +28,9 @@ import org.apache.solr.common.util.NamedList;
 import org.apache.solr.core.CoreContainer;
 import org.apache.solr.core.SolrCore;
 import org.apache.solr.util.ExternalPaths;
-import org.junit.AfterClass;
-import org.junit.BeforeClass;
 import org.junit.Test;
+
+import java.io.File;
 
 
 /**
@@ -41,26 +39,22 @@ import org.junit.Test;
  */
 public abstract class MultiCoreExampleTestBase extends SolrExampleTestBase 
 {
-  protected static CoreContainer cores;
+  protected CoreContainer cores;
 
   private File dataDir2;
   private File dataDir1;
 
   @Override public String getSolrHome() { return ExternalPaths.EXAMPLE_MULTICORE_HOME; }
 
-  
-  @BeforeClass
-  public static void beforeThisClass2() throws Exception {
+  protected void setupCoreContainer() {
     cores = new CoreContainer();
-  }
-  
-  @AfterClass
-  public static void afterClass() {
-    cores.shutdown();
+    cores.load();
   }
   
   @Override public void setUp() throws Exception {
     super.setUp();
+
+    setupCoreContainer();
 
     SolrCore.log.info("CORES=" + cores + " : " + cores.getCoreNames());
     cores.setPersistent(false);
@@ -89,6 +83,8 @@ public abstract class MultiCoreExampleTestBase extends SolrExampleTestBase
         System.err.println("!!!! WARNING: best effort to remove " + dataDir2.getAbsolutePath() + " FAILED !!!!!");
       }
     }
+
+    cores.shutdown();
   }
 
   @Override

@@ -17,10 +17,6 @@ package org.apache.solr.core;
  * limitations under the License.
  */
 
-import java.io.File;
-import java.io.FileOutputStream;
-import java.util.Properties;
-
 import org.apache.commons.io.FileUtils;
 import org.apache.lucene.util.IOUtils;
 import org.apache.solr.SolrTestCaseJ4;
@@ -28,6 +24,10 @@ import org.apache.solr.common.SolrException;
 import org.junit.After;
 import org.junit.BeforeClass;
 import org.junit.Test;
+
+import java.io.File;
+import java.io.FileOutputStream;
+import java.util.Properties;
 
 public class TestCoreDiscovery extends SolrTestCaseJ4 {
 
@@ -106,11 +106,8 @@ public class TestCoreDiscovery extends SolrTestCaseJ4 {
   }
 
   private CoreContainer init() throws Exception {
-
-    CoreContainer.Initializer init = new CoreContainer.Initializer();
-
-    final CoreContainer cores = init.initialize();
-    cores.setPersistent(false);
+    final CoreContainer cores = new CoreContainer();
+    cores.load();
     return cores;
   }
 
@@ -183,10 +180,12 @@ public class TestCoreDiscovery extends SolrTestCaseJ4 {
       cc = init();
       fail("Should have thrown exception in testDuplicateNames");
     } catch (SolrException se) {
+      Throwable cause = se.getCause();
+      String message = cause.getMessage();
       assertTrue("Should have seen an exception because two cores had the same name",
-          "Core  + desc.getName() + \" defined twice".indexOf(se.getMessage()) != -1);
-      assertTrue("/core1 should have been mentioned in the message", "/core1".indexOf(se.getMessage()) != -1);
-      assertTrue("/core2 should have been mentioned in the message", "/core2".indexOf(se.getMessage()) != -1);
+          message.indexOf("Core core1 defined more than once") != -1);
+      assertTrue("/core1 should have been mentioned in the message", message.indexOf("/core1") != -1);
+      assertTrue("/core2 should have been mentioned in the message", message.indexOf("/core2") != -1);
     } finally {
       if (cc != null) {
         cc.shutdown();

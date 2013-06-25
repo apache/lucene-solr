@@ -17,15 +17,8 @@ package org.apache.solr.core;
  * limitations under the License.
  */
 
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.Properties;
-
-import javax.xml.xpath.XPath;
-import javax.xml.xpath.XPathConstants;
-import javax.xml.xpath.XPathExpressionException;
-
+import com.google.common.base.Charsets;
+import org.apache.commons.io.IOUtils;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.util.DOMUtil;
 import org.apache.solr.util.PropertiesUtil;
@@ -33,13 +26,77 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.w3c.dom.Node;
 import org.w3c.dom.NodeList;
+import org.xml.sax.InputSource;
+
+import javax.xml.xpath.XPath;
+import javax.xml.xpath.XPathConstants;
+import javax.xml.xpath.XPathExpressionException;
+import java.io.ByteArrayInputStream;
+import java.io.File;
+import java.io.FileInputStream;
+import java.io.InputStream;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.Properties;
 
 
 public abstract class ConfigSolr {
   protected static Logger log = LoggerFactory.getLogger(ConfigSolr.class);
   
   public final static String SOLR_XML_FILE = "solr.xml";
-  
+
+  public static ConfigSolr fromFile(File configFile) {
+    log.info("Loading container configuration from {}", configFile.getAbsolutePath());
+
+    String solrHome = configFile.getParent();
+    SolrResourceLoader loader = new SolrResourceLoader(solrHome);
+    InputStream inputStream = null;
+
+    try {
+      if (!configFile.exists()) {
+        log.info("{} does not exist, using default configuration", configFile.getAbsolutePath());
+        inputStream = new ByteArrayInputStream(ConfigSolrXmlOld.DEF_SOLR_XML.getBytes(Charsets.UTF_8));
+      }
+      else {
+        inputStream = new FileInputStream(configFile);
+      }
+      return fromInputStream(loader, inputStream);
+    }
+    catch (Exception e) {
+      throw new SolrException(SolrException.ErrorCode.SERVER_ERROR,
+          "Could not load SOLR configuration", e);
+    }
+    finally {
+      IOUtils.closeQuietly(inputStream);
+    }
+  }
+
+  public static ConfigSolr fromString(SolrResourceLoader loader, String xml) {
+    return fromInputStream(loader, new ByteArrayInputStream(xml.getBytes(Charsets.UTF_8)));
+  }
+
+  public static ConfigSolr fromInputStream(SolrResourceLoader loader, InputStream is) {
+    try {
+      Config config = new Config(loader, null, new InputSource(is), null, false);
+      //config.substituteProperties();
+      return fromConfig(config);
+    }
+    catch (Exception e) {
+      throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, e);
+    }
+  }
+
+  public static ConfigSolr fromSolrHome(String solrHome) {
+    return fromFile(new File(solrHome, SOLR_XML_FILE));
+  }
+
+  public static ConfigSolr fromConfig(Config config) {
+    boolean oldStyle = (config.getNode("solr/cores", false) != null);
+    return oldStyle ? new ConfigSolrXmlOld(config)
+                    : new ConfigSolrXml(config, null);
+  }
+
   // Ugly for now, but we'll at least be able to centralize all of the differences between 4x and 5x.
   public static enum CfgProp {
     SOLR_ADMINHANDLER,
@@ -77,6 +134,11 @@ public abstract class ConfigSolr {
 
   public ConfigSolr(Config config) {
     this.config = config;
+  }
+
+  // for extension & testing.
+  protected ConfigSolr() {
+
   }
   
   public Config getConfig() {
@@ -124,7 +186,8 @@ public abstract class ConfigSolr {
     Properties properties = new Properties();
     for (int i = 0; i < props.getLength(); i++) {
       Node prop = props.item(i);
-      properties.setProperty(DOMUtil.getAttr(prop, "name"), DOMUtil.getAttr(prop, "value"));
+      properties.setProperty(DOMUtil.getAttr(prop, "name"),
+          PropertiesUtil.substituteProperty(DOMUtil.getAttr(prop, "value"), null));
     }
     return properties;
   }

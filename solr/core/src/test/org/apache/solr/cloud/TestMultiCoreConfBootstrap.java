@@ -17,8 +17,6 @@
 
 package org.apache.solr.cloud;
 
-import java.io.File;
-
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.common.cloud.SolrZkClient;
 import org.apache.solr.core.CoreContainer;
@@ -29,6 +27,8 @@ import org.junit.Before;
 import org.junit.Test;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
+import java.io.File;
 
 public class TestMultiCoreConfBootstrap extends SolrTestCaseJ4 {
   protected static Logger log = LoggerFactory.getLogger(TestMultiCoreConfBootstrap.class);
@@ -99,7 +99,7 @@ public class TestMultiCoreConfBootstrap extends SolrTestCaseJ4 {
   @Test
   public void testMultiCoreConfBootstrap() throws Exception {
     System.setProperty("bootstrap_conf", "true");
-    cores = new CoreContainer(home, new File(home, "solr.xml"));
+    cores = CoreContainer.createAndLoad(home, new File(home, "solr.xml"));
     SolrZkClient zkclient = cores.getZkController().getZkClient();
     // zkclient.printLayoutToStdOut();
     

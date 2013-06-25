@@ -28,7 +28,6 @@ import org.apache.solr.common.cloud.SolrZkClient;
 import org.apache.solr.common.cloud.ZkNodeProps;
 import org.apache.solr.common.cloud.ZkStateReader;
 import org.apache.solr.core.CoreContainer;
-import org.apache.solr.core.CoreContainer.Initializer;
 import org.apache.zookeeper.CreateMode;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
@@ -61,8 +60,6 @@ public class SliceStateUpdateTest extends SolrTestCaseJ4 {
   private File dataDir2;
 
   private File dataDir3;
-
-  private Initializer init2;
 
   @BeforeClass
   public static void beforeClass() {
@@ -117,19 +114,20 @@ public class SliceStateUpdateTest extends SolrTestCaseJ4 {
 
     System.setProperty("solr.solr.home", TEST_HOME());
     System.setProperty("hostPort", "1661");
-    CoreContainer.Initializer init1 = new CoreContainer.Initializer();
     System.setProperty("solr.data.dir", SliceStateUpdateTest.this.dataDir1.getAbsolutePath());
-    container1 = init1.initialize();
+    container1 = new CoreContainer();
 
     System.clearProperty("hostPort");
 
     System.setProperty("hostPort", "1662");
-    init2 = new CoreContainer.Initializer();
     System.setProperty("solr.data.dir", SliceStateUpdateTest.this.dataDir2.getAbsolutePath());
-    container2 = init2.initialize();
+    container2 = new CoreContainer();
     System.clearProperty("hostPort");
 
     System.clearProperty("solr.solr.home");
+
+    container1.load();
+    container2.load();
 
     log.info("####SETUP_END " + getTestName());
 

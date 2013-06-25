@@ -17,6 +17,15 @@ package org.apache.solr.core;
  * limitations under the License.
  */
 
+import org.apache.commons.lang.StringUtils;
+import org.apache.solr.cloud.CloudDescriptor;
+import org.apache.solr.common.SolrException;
+import org.apache.solr.common.params.CoreAdminParams;
+import org.apache.solr.core.SolrXMLSerializer.SolrCoreXMLDef;
+import org.apache.solr.util.DOMUtil;
+import org.w3c.dom.Node;
+
+import javax.xml.xpath.XPathExpressionException;
 import java.io.File;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -30,16 +39,6 @@ import java.util.Properties;
 import java.util.Set;
 import java.util.TreeSet;
 import java.util.concurrent.ConcurrentHashMap;
-
-import javax.xml.xpath.XPathExpressionException;
-
-import org.apache.commons.lang.StringUtils;
-import org.apache.solr.cloud.CloudDescriptor;
-import org.apache.solr.common.SolrException;
-import org.apache.solr.common.params.CoreAdminParams;
-import org.apache.solr.core.SolrXMLSerializer.SolrCoreXMLDef;
-import org.apache.solr.util.DOMUtil;
-import org.w3c.dom.Node;
 
 
 class SolrCores {
@@ -534,7 +533,7 @@ class SolrCores {
       // Insure instdir is persisted if it's the default since it's checked at startup even if not specified on the
       // create command.
       if (! dcore.getCreatedProperties().containsKey(CoreDescriptor.CORE_INSTDIR)) {
-        coreAttribs.put(CoreDescriptor.CORE_INSTDIR, dcore.getProperty(CoreDescriptor.CORE_INSTDIR));
+        coreAttribs.put(CoreDescriptor.CORE_INSTDIR, dcore.getRawInstanceDir());
       }
     } else {
 
@@ -555,8 +554,8 @@ class SolrCores {
       }
 
       coreAttribs.put(CoreDescriptor.CORE_NAME, coreName);
-
-      addCoreProperty(coreAttribs, loader, node, CoreDescriptor.CORE_INSTDIR, dcore.getRawInstanceDir(), null);
+      coreAttribs.put(CoreDescriptor.CORE_INSTDIR, dcore.getRawInstanceDir());
+      //addCoreProperty(coreAttribs, loader, node, CoreDescriptor.CORE_INSTDIR, dcore.getRawInstanceDir(), null);
 
       addCoreProperty(coreAttribs, loader, node, CoreDescriptor.CORE_COLLECTION,
           StringUtils.isNotBlank(collection) ? collection : dcore.getName());

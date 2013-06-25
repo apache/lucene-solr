@@ -17,6 +17,12 @@ package org.apache.solr.core;
  * limitations under the License.
  */
 
+import org.apache.commons.io.IOUtils;
+import org.apache.solr.common.SolrException;
+import org.apache.solr.util.PropertiesUtil;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.IOException;
@@ -26,15 +32,6 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Properties;
-
-import javax.xml.parsers.ParserConfigurationException;
-
-import org.apache.commons.io.IOUtils;
-import org.apache.solr.common.SolrException;
-import org.apache.solr.util.PropertiesUtil;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-import org.xml.sax.SAXException;
 
 
 /**
@@ -46,15 +43,18 @@ public class ConfigSolrXml extends ConfigSolr {
   private SolrCoreDiscoverer solrCoreDiscoverer = new SolrCoreDiscoverer();
   private final Map<String, CoreDescriptor> coreDescriptorMap;
 
-  public ConfigSolrXml(Config config, CoreContainer container)
-      throws ParserConfigurationException, IOException, SAXException {
+  public ConfigSolrXml(Config config, CoreContainer container) {
     super(config);
-    checkForIllegalConfig();
-    
-    fillPropMap();
-    
-    String coreRoot = get(CfgProp.SOLR_COREROOTDIRECTORY, (container == null ? config.getResourceLoader().getInstanceDir() : container.getSolrHome()));
-    coreDescriptorMap = solrCoreDiscoverer.discover(container, new File(coreRoot));
+    try {
+      checkForIllegalConfig();
+      fillPropMap();
+      config.substituteProperties();
+      String coreRoot = get(CfgProp.SOLR_COREROOTDIRECTORY, (container == null ? config.getResourceLoader().getInstanceDir() : container.getSolrHome()));
+      coreDescriptorMap = solrCoreDiscoverer.discover(container, new File(coreRoot));
+    }
+    catch (IOException e) {
+      throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, e);
+    }
   }
   
   private void checkForIllegalConfig() throws IOException {

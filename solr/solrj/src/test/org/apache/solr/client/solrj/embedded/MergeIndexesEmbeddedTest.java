@@ -17,10 +17,9 @@
 
 package org.apache.solr.client.solrj.embedded;
 
-import java.io.File;
-
 import org.apache.solr.client.solrj.MergeIndexesExampleTestBase;
 import org.apache.solr.client.solrj.SolrServer;
+import org.apache.solr.core.CoreContainer;
 import org.apache.solr.core.SolrCore;
 
 /**
@@ -36,10 +35,12 @@ public class MergeIndexesEmbeddedTest extends MergeIndexesExampleTestBase {
     // TODO: fix this test to use MockDirectoryFactory
     System.clearProperty("solr.directoryFactory");
     super.setUp();
+  }
 
-    File home = new File(getSolrHome());
-    File f = new File(home, "solr.xml");
-    cores.load(getSolrHome(), f);
+  @Override
+  protected void setupCoreContainer() {
+    cores = new CoreContainer(getSolrHome());
+    cores.load();
   }
 
   @Override

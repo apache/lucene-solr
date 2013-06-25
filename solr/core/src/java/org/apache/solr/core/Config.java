@@ -68,6 +68,7 @@ public class Config {
   static final XPathFactory xpathFactory = XPathFactory.newInstance();
 
   private final Document doc;
+  private final Document origDoc; // with unsubstituted properties
   private final String prefix;
   private final String name;
   private final SolrResourceLoader loader;
@@ -131,6 +132,7 @@ public class Config {
       db.setErrorHandler(xmllog);
       try {
         doc = db.parse(is);
+        origDoc = copyDoc(doc);
       } finally {
         // some XML parsers are broken and don't close the byte stream (but they should according to spec)
         IOUtils.closeQuietly(is.getByteStream());
@@ -140,19 +142,24 @@ public class Config {
       }
     } catch (ParserConfigurationException e)  {
       SolrException.log(log, "Exception during parsing file: " + name, e);
-      throw e;
+      throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, e);
     } catch (SAXException e)  {
       SolrException.log(log, "Exception during parsing file: " + name, e);
-      throw e;
-    } catch( SolrException e ){
-      SolrException.log(log,"Error in "+name,e);
-      throw e;
+      throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, e);
+    } catch (TransformerException e) {
+      SolrException.log(log, "Exception during parsing file: " + name, e);
+      throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, e);
     }
   }
   
   public Config(SolrResourceLoader loader, String name, Document doc) {
     this.prefix = null;
     this.doc = doc;
+    try {
+      this.origDoc = copyDoc(doc);
+    } catch (TransformerException e) {
+      throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, e);
+    }
     this.name = name;
     this.loader = loader;
   }
@@ -441,4 +448,9 @@ public class Config {
     
     return version;
   }
+
+  public Config getOriginalConfig() {
+    return new Config(loader, null, origDoc);
+  }
+
 }
