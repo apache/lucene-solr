@@ -357,9 +357,7 @@ public class DocumentBuilderTest extends SolrTestCaseJ4 {
    */
   private static byte expectedNorm(final DefaultSimilarity sim,
                                    final int length, final float boost) {
-    
-    return sim.encodeNormValue(boost / ((float) Math.sqrt(length)));
-
+    return (byte) sim.encodeNormValue(boost / ((float) Math.sqrt(length)));
   }
     
 
