@@ -107,7 +107,7 @@ public class TestMaxTermFrequency extends LuceneTestCase {
 
     @Override
     public long encodeNormValue(float f) {
-      return (long) f;
+      return (byte) f;
     }
 
     @Override
