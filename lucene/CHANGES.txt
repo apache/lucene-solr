@@ -254,6 +254,9 @@ New Features
 * LUCENE-5063: FieldCache.DEFAULT.get(Ints|Longs) now uses bit-packing to save
   memory. (Adrien Grand)
 
+* LUCENE-5079: IndexWriter.hasUncommittedChanges() returns true if there are
+  changes that have not been committed. (yonik, Mike McCandless, Uwe Schindler)
+
 API Changes
 
 * LUCENE-5077: Make it easier to use compressed norms. Lucene42NormsFormat takes
