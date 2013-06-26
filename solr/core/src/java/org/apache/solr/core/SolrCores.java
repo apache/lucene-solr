@@ -303,20 +303,20 @@ class SolrCores {
     }
   }
 
-  protected SolrCore getCoreFromAnyList(String name) {
-    SolrCore core;
-
+  /* If you don't increment the reference count, someone could close the core before you use it. */
+  protected SolrCore getCoreFromAnyList(String name, boolean incRefCount) {
     synchronized (modifyLock) {
-      core = cores.get(name);
-      if (core != null) {
-        return core;
+      SolrCore core = cores.get(name);
+
+      if (core == null) {
+        core = transientCores.get(name);
       }
 
-      if (dynamicDescriptors.size() == 0) {
-        return null; // Nobody even tried to define any transient cores, so we're done.
+      if (core != null && incRefCount) {
+        core.open();
       }
-      // Now look for already loaded transient cores.
-      return transientCores.get(name);
+
+      return core;
     }
   }
 
@@ -429,7 +429,7 @@ class SolrCores {
         if (! pendingCoreOps.add(name)) {
           CoreContainer.log.warn("Replaced an entry in pendingCoreOps {}, we should not be doing this", name);
         }
-        return getCoreFromAnyList(name); // we might have been _unloading_ the core, so return the core if it was loaded.
+        return getCoreFromAnyList(name, false); // we might have been _unloading_ the core, so return the core if it was loaded.
       }
     }
     return null;

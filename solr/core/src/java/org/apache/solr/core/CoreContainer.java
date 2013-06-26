@@ -844,7 +844,7 @@ public class CoreContainer
     try {
       name = checkDefault(name);
 
-      SolrCore core = solrCores.getCoreFromAnyList(name);
+      SolrCore core = solrCores.getCoreFromAnyList(name, false);
       if (core == null)
         throw new SolrException( SolrException.ErrorCode.BAD_REQUEST, "No such core: " + name );
 
@@ -952,10 +952,9 @@ public class CoreContainer
     name = checkDefault(name);
 
     // Do this in two phases since we don't want to lock access to the cores over a load.
-    SolrCore core = solrCores.getCoreFromAnyList(name);
+    SolrCore core = solrCores.getCoreFromAnyList(name, true);
 
     if (core != null) {
-      core.open();
       return core;
     }
 
