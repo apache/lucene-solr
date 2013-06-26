@@ -540,11 +540,17 @@ public class DirectUpdateHandler2 extends UpdateHandler implements SolrCoreState
           }
           
           // SolrCore.verbose("writer.commit() start writer=",writer);
-          final Map<String,String> commitData = new HashMap<String,String>();
-          commitData.put(SolrIndexWriter.COMMIT_TIME_MSEC_KEY,
-              String.valueOf(System.currentTimeMillis()));
-          writer.setCommitData(commitData);
-          writer.commit();
+
+          if (writer.hasUncommittedChanges()) {
+            final Map<String,String> commitData = new HashMap<String,String>();
+            commitData.put(SolrIndexWriter.COMMIT_TIME_MSEC_KEY,
+                String.valueOf(System.currentTimeMillis()));
+            writer.setCommitData(commitData);
+            writer.commit();
+          } else {
+            log.info("No uncommitted changes. Skipping IW.commit.");
+          }
+
           // SolrCore.verbose("writer.commit() end");
           numDocsPending.set(0);
           callPostCommitCallbacks();
