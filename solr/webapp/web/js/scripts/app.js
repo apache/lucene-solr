@@ -351,23 +351,25 @@ var solr_admin = function( app_config )
               {
                 var core_name = $( 'option:selected', this ).text();
 
-                if( core_name )
-                {
-                  that.core_menu
+                that.core_menu
                     .html
-                    (
-                      '<li class="overview"><a href="#/' + core_name + '"><span>Overview</span></a></li>' + "\n" +
-                      '<li class="ping"><a rel="' + that.config.solr_path + '/' + core_name + '/admin/ping"><span>Ping</span></a></li>' + "\n" +
-                      '<li class="query"><a href="#/' + core_name + '/query"><span>Query</span></a></li>' + "\n" +
-                      '<li class="schema"><a href="#/' + core_name + '/schema"><span>Schema</span></a></li>' + "\n" +
-                      '<li class="config"><a href="#/' + core_name + '/config"><span>Config</span></a></li>' + "\n" +
-                      '<li class="replication"><a href="#/' + core_name + '/replication"><span>Replication</span></a></li>' + "\n" +
-                      '<li class="analysis"><a href="#/' + core_name + '/analysis"><span>Analysis</span></a></li>' + "\n" +
-                      '<li class="schema-browser"><a href="#/' + core_name + '/schema-browser"><span>Schema Browser</span></a></li>' + "\n" + 
-                      '<li class="plugins"><a href="#/' + core_name + '/plugins"><span>Plugins / Stats</span></a></li>' + "\n" +
-                      '<li class="dataimport"><a href="#/' + core_name + '/dataimport"><span>Dataimport</span></a></li>' + "\n"
+                    (//Keep this in alphabetical order after the overview
+                        '<li class="overview"><a href="#/' + core_name + '"><span>Overview</span></a></li>' + "\n" +
+                            '<li class="analysis"><a href="#/' + core_name + '/analysis"><span>Analysis</span></a></li>' + "\n" +
+                            '<li class="config"><a href="#/' + core_name + '/config"><span>Config</span></a></li>' + "\n" +
+                            '<li class="dataimport"><a href="#/' + core_name + '/dataimport"><span>Dataimport</span></a></li>' + "\n" +
+                            '<li class="documents"><a href="#/' + core_name + '/documents"><span>Documents</span></a></li>' + "\n" +
+                            '<li class="ping"><a rel="' + that.config.solr_path + '/' + core_name + '/admin/ping"><span>Ping</span></a></li>' + "\n" +
+                            '<li class="plugins"><a href="#/' + core_name + '/plugins"><span>Plugins / Stats</span></a></li>' + "\n" +
+                            '<li class="query"><a href="#/' + core_name + '/query"><span>Query</span></a></li>' + "\n" +
+                            '<li class="replication"><a href="#/' + core_name + '/replication"><span>Replication</span></a></li>' + "\n" +
+                            '<li class="schema"><a href="#/' + core_name + '/schema"><span>Schema</span></a></li>' + "\n" +
+                            '<li class="schema-browser"><a href="#/' + core_name + '/schema-browser"><span>Schema Browser</span></a></li>' + "\n"
+
                     )
                     .show();
+                if( core_name )
+                {
                 }
                 else
                 {

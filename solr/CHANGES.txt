@@ -116,6 +116,8 @@ New Features
   <bool name="fieldNameMatchesSchemaField">false</bool> to an update
   processor's configuration in solrconfig.xml.  (Steve Rowe, hossman)
 
+* SOLR-4921: Admin UI now supports adding documents to Solr (gsingers, steffkes)
+
 Bug Fixes
 ----------------------
 
