@@ -403,7 +403,14 @@ public class SnapPuller {
             successfulInstall = modifyIndexProps(tmpIdxDirName);
             deleteTmpIdxDir  =  false;
           } else {
-            successfulInstall = moveIndexFiles(tmpIndexDir, indexDir);
+            solrCore.getUpdateHandler().getSolrCoreState()
+                .closeIndexWriter(core, true);
+            try {
+              successfulInstall = moveIndexFiles(tmpIndexDir, indexDir);
+            } finally {
+              solrCore.getUpdateHandler().getSolrCoreState()
+                  .openIndexWriter(core);
+            }
           }
           if (successfulInstall) {
             if (isFullCopyNeeded) {
@@ -426,7 +433,12 @@ public class SnapPuller {
             successfulInstall = modifyIndexProps(tmpIdxDirName);
             deleteTmpIdxDir =  false;
           } else {
-            successfulInstall = moveIndexFiles(tmpIndexDir, indexDir);
+            solrCore.getUpdateHandler().getSolrCoreState().closeIndexWriter(core, true);
+            try {
+              successfulInstall = moveIndexFiles(tmpIndexDir, indexDir);
+            } finally {
+              solrCore.getUpdateHandler().getSolrCoreState().openIndexWriter(core);
+            }
           }
           if (successfulInstall) {
             logReplicationTimeAndConfFiles(modifiedConfFiles, successfulInstall);
@@ -443,7 +455,11 @@ public class SnapPuller {
               core.getDirectoryFactory().remove(indexDir);
             }
           }
-          openNewWriterAndSearcher(isFullCopyNeeded);
+          if (isFullCopyNeeded) {
+            solrCore.getUpdateHandler().newIndexWriter(isFullCopyNeeded);
+          }
+          
+          openNewSearcherAndUpdateCommitPoint(isFullCopyNeeded);
         }
         
         replicationStartTime = 0;
@@ -615,11 +631,9 @@ public class SnapPuller {
     return sb;
   }
 
-  private void openNewWriterAndSearcher(boolean isFullCopyNeeded) throws IOException {
+  private void openNewSearcherAndUpdateCommitPoint(boolean isFullCopyNeeded) throws IOException {
     SolrQueryRequest req = new LocalSolrQueryRequest(solrCore,
         new ModifiableSolrParams());
-    // reboot the writer on the new index and get a new searcher
-    solrCore.getUpdateHandler().newIndexWriter(isFullCopyNeeded);
     
     RefCounted<SolrIndexSearcher> searcher = null;
     IndexCommit commitPoint;
