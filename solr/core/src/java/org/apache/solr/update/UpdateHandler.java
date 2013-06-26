@@ -18,10 +18,11 @@
 package org.apache.solr.update;
 
 
-import java.io.File;
 import java.io.IOException;
 import java.util.Vector;
 
+import org.apache.solr.core.DirectoryFactory;
+import org.apache.solr.core.HdfsDirectoryFactory;
 import org.apache.solr.core.PluginInfo;
 import org.apache.solr.core.SolrCore;
 import org.apache.solr.core.SolrEventListener;
@@ -71,24 +72,6 @@ public abstract class UpdateHandler implements SolrInfoMBean {
     }
   }
 
-  // not thread safe - for startup
-  private void clearLog(PluginInfo ulogPluginInfo) {
-    if (ulogPluginInfo == null) return;
-    File tlogDir = UpdateLog.getTlogDir(core, ulogPluginInfo);
-    log.info("Clearing tlog files, tlogDir=" + tlogDir);
-    if (tlogDir.exists()) {
-      String[] files = UpdateLog.getLogList(tlogDir);
-      for (String file : files) {
-        File f = new File(tlogDir, file);
-        boolean s = f.delete();
-        if (!s) {
-          log.error("Could not remove tlog file:" + f.getAbsolutePath());
-          //throw new SolrException(ErrorCode.SERVER_ERROR, "Could not remove tlog file:" + f.getAbsolutePath());
-        }
-      }
-    }
-  }
-
   protected void callPostCommitCallbacks() {
     for (SolrEventListener listener : commitCallbacks) {
       listener.postCommit();
@@ -117,19 +100,43 @@ public abstract class UpdateHandler implements SolrInfoMBean {
     idFieldType = idField!=null ? idField.getType() : null;
     parseEventListeners();
     PluginInfo ulogPluginInfo = core.getSolrConfig().getPluginInfo(UpdateLog.class.getName());
-    if (!core.isReloaded() && !core.getDirectoryFactory().isPersistent()) {
-      clearLog(ulogPluginInfo);
-    }
+    
 
     if (updateLog == null && ulogPluginInfo != null && ulogPluginInfo.isEnabled()) {
-      ulog = new UpdateLog();
+      String dataDir = (String)ulogPluginInfo.initArgs.get("dir");
+      
+      String ulogDir = core.getCoreDescriptor().getUlogDir();
+      if (ulogDir != null) {
+        dataDir = ulogDir;
+      }
+      if (dataDir == null || dataDir.length()==0) {
+        dataDir = core.getDataDir();
+      }
+           
+      if (dataDir != null && dataDir.startsWith("hdfs:/")) {
+        DirectoryFactory dirFactory = core.getDirectoryFactory();
+        if (dirFactory instanceof HdfsDirectoryFactory) {
+          ulog = new HdfsUpdateLog(((HdfsDirectoryFactory)dirFactory).getConfDir());
+        } else {
+          ulog = new HdfsUpdateLog();
+        }
+        
+      } else {
+        ulog = new UpdateLog();
+      }
+      
+      if (!core.isReloaded() && !core.getDirectoryFactory().isPersistent()) {
+        ulog.clearLog(core, ulogPluginInfo);
+      }
+      
       ulog.init(ulogPluginInfo);
-      // ulog = core.createInitInstance(ulogPluginInfo, UpdateLog.class, "update log", "solr.NullUpdateLog");
+
       ulog.init(this, core);
     } else {
       ulog = updateLog;
     }
     // ulog.init() when reusing an existing log is deferred (currently at the end of the DUH2 constructor
+
   }
 
   /**

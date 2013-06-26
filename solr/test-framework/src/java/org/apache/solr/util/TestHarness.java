@@ -18,6 +18,7 @@
 package org.apache.solr.util;
 
 import org.apache.solr.common.SolrException;
+import org.apache.solr.common.cloud.Slice;
 import org.apache.solr.common.params.CommonParams;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.core.Config;
@@ -187,7 +188,7 @@ public class TestHarness extends BaseTestHarness {
             String hostContext = System.getProperty("hostContext", "solr");
             defaultCoreName = CoreContainer.DEFAULT_DEFAULT_CORE_NAME;
             initShardHandler();
-            zkSys.initZooKeeper(this, solrHome, System.getProperty("zkHost"), 30000, hostPort, hostContext, null, "30000", 30000, 30000);
+            zkSys.initZooKeeper(this, solrHome, System.getProperty("zkHost"), 30000, hostPort, hostContext, null, "30000", true, 30000, 30000);
             ByteArrayInputStream is = new ByteArrayInputStream(ConfigSolrXmlOld.DEF_SOLR_XML.getBytes("UTF-8"));
             Config config = new Config(loader, null, new InputSource(is), null, false);
             cfg = new ConfigSolrXmlOld(config, this);
@@ -205,6 +206,9 @@ public class TestHarness extends BaseTestHarness {
       container.setLogging(logging);
       
       CoreDescriptor dcore = new CoreDescriptor(container, coreName, solrConfig.getResourceLoader().getInstanceDir());
+      if (container.isZooKeeperAware()) {
+        container.getZkController().preRegister(dcore);
+      }
       dcore.setConfigName(solrConfig.getResourceName());
       dcore.setSchemaName(indexSchema.getResourceName());
       
@@ -213,6 +217,12 @@ public class TestHarness extends BaseTestHarness {
       }
       
       SolrCore core = new SolrCore(coreName, dataDirectory, solrConfig, indexSchema, dcore);
+      
+      if (container.isZooKeeperAware() && Slice.CONSTRUCTION.equals(dcore.getCloudDescriptor().getShardState())) {
+        // set update log to buffer before publishing the core
+        core.getUpdateHandler().getUpdateLog().bufferUpdates();
+      }
+      
       container.register(coreName, core, false);
 
       // TODO: we should be exercising the *same* core container initialization code, not equivalent code!

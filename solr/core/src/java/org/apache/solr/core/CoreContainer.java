@@ -182,7 +182,7 @@ public class CoreContainer
       cores = new CoreContainer(solrHome);
 
       // first we find zkhost, then we check for solr.xml in zk
-      // 1. look for zkhost from sys prop 2. look for zkhost in {solr.home}/solr.properties
+      // 1. look for zkhost from sys prop 2. TODO: look for zkhost in {solr.home}/solr.properties
       
       // Either we have a config file or not.
       
@@ -317,13 +317,15 @@ public class CoreContainer
 
     transientCacheSize = cfg.getInt(ConfigSolr.CfgProp.SOLR_TRANSIENTCACHESIZE, Integer.MAX_VALUE);
 
+    boolean genericCoreNodeNames = cfg.getBool(ConfigSolr.CfgProp.SOLR_GENERICCORENODENAMES, false);
+
     if (shareSchema) {
       indexSchemaCache = new ConcurrentHashMap<String,IndexSchema>();
     }
 
     zkClientTimeout = Integer.parseInt(System.getProperty("zkClientTimeout",
         Integer.toString(zkClientTimeout)));
-    zkSys.initZooKeeper(this, solrHome, zkHost, zkClientTimeout, hostPort, hostContext, host, leaderVoteWait, distribUpdateConnTimeout, distribUpdateSoTimeout);
+    zkSys.initZooKeeper(this, solrHome, zkHost, zkClientTimeout, hostPort, hostContext, host, leaderVoteWait, genericCoreNodeNames, distribUpdateConnTimeout, distribUpdateSoTimeout);
     
     if (isZooKeeperAware() && coreLoadThreads <= 1) {
       throw new SolrException(ErrorCode.SERVER_ERROR,
@@ -1143,6 +1145,8 @@ public class CoreContainer
         zkSys.getHostContext());
     addAttrib(coresAttribs, ConfigSolr.CfgProp.SOLR_LEADERVOTEWAIT, "leaderVoteWait",
         zkSys.getLeaderVoteWait(), LEADER_VOTE_WAIT);
+    addAttrib(coresAttribs, ConfigSolr.CfgProp.SOLR_GENERICCORENODENAMES, "genericCoreNodeNames",
+        Boolean.toString(zkSys.getGenericCoreNodeNames()), "false");
     if (transientCacheSize != Integer.MAX_VALUE) { // This test
     // is a consequence of testing. I really hate it.
       addAttrib(coresAttribs, ConfigSolr.CfgProp.SOLR_TRANSIENTCACHESIZE, "transientCacheSize",
@@ -1220,18 +1224,7 @@ public class CoreContainer
   }
 
   public void preRegisterInZk(final CoreDescriptor p) {
-    try {
-      zkSys.getZkController().preRegister(p);
-    } catch (KeeperException e) {
-      log.error("", e);
-      throw new ZooKeeperException(
-          SolrException.ErrorCode.SERVER_ERROR, "", e);
-    } catch (InterruptedException e) {
-      Thread.currentThread().interrupt();
-      log.error("", e);
-      throw new ZooKeeperException(
-          SolrException.ErrorCode.SERVER_ERROR, "", e);
-    }
+    zkSys.getZkController().preRegister(p);
   }
 
   public String getSolrHome() {

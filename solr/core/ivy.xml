@@ -16,6 +16,9 @@
    specific language governing permissions and limitations
    under the License.    
 -->
+<!DOCTYPE ivy-module [
+  <!ENTITY hadoop.version "2.0.5-alpha">
+]>
 <ivy-module version="2.0">
     <info organisation="org.apache.solr" module="core"/>
 
@@ -32,6 +35,14 @@
       <dependency org="javax.servlet" name="javax.servlet-api" rev="3.0.1" transitive="false"/>
       <dependency org="org.restlet.jee" name="org.restlet" rev="2.1.1" transitive="false"/>
       <dependency org="org.restlet.jee" name="org.restlet.ext.servlet" rev="2.1.1" transitive="false"/>
-      <exclude org="*" ext="*" matcher="regexp" type="${ivy.exclude.types}"/>
+      
+      <dependency org="org.apache.hadoop" name="hadoop-common" rev="&hadoop.version;" transitive="false"/>
+      <dependency org="org.apache.hadoop" name="hadoop-hdfs" rev="&hadoop.version;" transitive="false"/>
+      <dependency org="org.apache.hadoop" name="hadoop-annotations" rev="&hadoop.version;" transitive="false"/>
+      <dependency org="org.apache.hadoop" name="hadoop-auth" rev="&hadoop.version;" transitive="false"/>
+      <dependency org="commons-configuration" name="commons-configuration" rev="1.6" transitive="false"/>
+      <dependency org="com.google.protobuf" name="protobuf-java" rev="2.4.0a" transitive="false"/>
+      <dependency org="com.googlecode.concurrentlinkedhashmap" name="concurrentlinkedhashmap-lru" rev="1.2" transitive="false"/>
+      <exclude org="*" ext="*" matcher="regexp" type="${ivy.exclude.types}"/> 
     </dependencies>
 </ivy-module>

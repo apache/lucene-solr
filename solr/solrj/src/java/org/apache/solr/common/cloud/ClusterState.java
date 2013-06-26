@@ -165,15 +165,18 @@ public class ClusterState implements JSONWriter.Writable {
     return Collections.unmodifiableSet(liveNodes);
   }
 
-  /**
-   * Get the slice/shardId for a core.
-   * @param coreNodeName in the form of nodeName_coreName (the name of the replica)
-   */
-  public String getShardId(String coreNodeName) {
-    //  System.out.println("###### getShardId("+coreNodeName+") in " + collectionStates);
+  public String getShardId(String baseUrl, String coreName) {
+    // System.out.println("###### getShardId(" + baseUrl + "," + coreName + ") in " + collectionStates);
     for (DocCollection coll : collectionStates.values()) {
       for (Slice slice : coll.getSlices()) {
-        if (slice.getReplicasMap().containsKey(coreNodeName)) return slice.getName();
+        for (Replica replica : slice.getReplicas()) {
+          // TODO: for really large clusters, we could 'index' on this
+          String rbaseUrl = replica.getStr(ZkStateReader.BASE_URL_PROP);
+          String rcore = replica.getStr(ZkStateReader.CORE_NAME_PROP);
+          if (baseUrl.equals(rbaseUrl) && coreName.equals(rcore)) {
+            return slice.getName();
+          }
+        }
       }
     }
     return null;

@@ -52,6 +52,7 @@ including, but not limited to:
  - Apache Jakarta Regexp
  - Apache Commons
  - Apache Xerces
+ - Apache Blur
 
 ICU4J, (under analysis/icu) is licensed under an MIT styles license
 and Copyright (c) 1995-2008 International Business Machines Corporation and others
@@ -71,6 +72,9 @@ http://bitbucket.org/jpbarrette/moman/overview/
 
 The class org.apache.lucene.util.WeakIdentityMap was derived from
 the Apache CXF project and is Apache License 2.0.
+
+The HdfsDirectory and BlockDirectory were derived from
+the Apache Blur incubating project and are Apache License 2.0.
 
 The Google Code Prettify is Apache License 2.0.
 See http://code.google.com/p/google-code-prettify/

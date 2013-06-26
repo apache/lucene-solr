@@ -91,7 +91,7 @@ public class RecoveryStrategy extends Thread implements ClosableThread {
     zkController = cc.getZkController();
     zkStateReader = zkController.getZkStateReader();
     baseUrl = zkController.getBaseUrl();
-    coreZkNodeName = zkController.getCoreNodeName(cd);
+    coreZkNodeName = cd.getCloudDescriptor().getCoreNodeName();
   }
 
   public void setRecoveringAfterStartup(boolean recoveringAfterStartup) {
@@ -325,10 +325,10 @@ public class RecoveryStrategy extends Thread implements ClosableThread {
         String ourUrl = ZkCoreNodeProps.getCoreUrl(baseUrl, coreName);
 
         boolean isLeader = leaderUrl.equals(ourUrl);
-        if (isLeader && !cloudDesc.isLeader) {
+        if (isLeader && !cloudDesc.isLeader()) {
           throw new SolrException(ErrorCode.SERVER_ERROR, "Cloud state still says we are leader.");
         }
-        if (cloudDesc.isLeader) {
+        if (cloudDesc.isLeader()) {
           // we are now the leader - no one else must have been suitable
           log.warn("We have not yet recovered - but we are now the leader! core=" + coreName);
           log.info("Finished recovery process. core=" + coreName);

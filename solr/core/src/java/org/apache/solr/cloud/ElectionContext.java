@@ -47,9 +47,9 @@ public abstract class ElectionContext {
   String leaderSeqPath;
   private SolrZkClient zkClient;
   
-  public ElectionContext(final String shardZkNodeName,
+  public ElectionContext(final String coreNodeName,
       final String electionPath, final String leaderPath, final ZkNodeProps leaderProps, final SolrZkClient zkClient) {
-    this.id = shardZkNodeName;
+    this.id = coreNodeName;
     this.electionPath = electionPath;
     this.leaderPath = leaderPath;
     this.leaderProps = leaderProps;
@@ -78,8 +78,8 @@ class ShardLeaderElectionContextBase extends ElectionContext {
   protected LeaderElector leaderElector;
 
   public ShardLeaderElectionContextBase(LeaderElector leaderElector, final String shardId,
-      final String collection, final String shardZkNodeName, ZkNodeProps props, ZkStateReader zkStateReader) {
-    super(shardZkNodeName, ZkStateReader.COLLECTIONS_ZKNODE + "/" + collection + "/leader_elect/"
+      final String collection, final String coreNodeName, ZkNodeProps props, ZkStateReader zkStateReader) {
+    super(coreNodeName, ZkStateReader.COLLECTIONS_ZKNODE + "/" + collection + "/leader_elect/"
         + shardId, ZkStateReader.getShardLeadersPath(collection, shardId),
         props, zkStateReader.getZkClient());
     this.leaderElector = leaderElector;
@@ -95,7 +95,7 @@ class ShardLeaderElectionContextBase extends ElectionContext {
     zkClient.makePath(leaderPath, ZkStateReader.toJSON(leaderProps),
         CreateMode.EPHEMERAL, true);
     assert shardId != null;
-    ZkNodeProps m = ZkNodeProps.fromKeyVals(Overseer.QUEUE_OPERATION, "leader",
+    ZkNodeProps m = ZkNodeProps.fromKeyVals(Overseer.QUEUE_OPERATION, ZkStateReader.LEADER_PROP,
         ZkStateReader.SHARD_ID_PROP, shardId, ZkStateReader.COLLECTION_PROP,
         collection, ZkStateReader.BASE_URL_PROP, leaderProps.getProperties()
             .get(ZkStateReader.BASE_URL_PROP), ZkStateReader.CORE_NAME_PROP,
@@ -119,8 +119,8 @@ final class ShardLeaderElectionContext extends ShardLeaderElectionContextBase {
   
   public ShardLeaderElectionContext(LeaderElector leaderElector, 
       final String shardId, final String collection,
-      final String shardZkNodeName, ZkNodeProps props, ZkController zkController, CoreContainer cc) {
-    super(leaderElector, shardId, collection, shardZkNodeName, props,
+      final String coreNodeName, ZkNodeProps props, ZkController zkController, CoreContainer cc) {
+    super(leaderElector, shardId, collection, coreNodeName, props,
         zkController.getZkStateReader());
     this.zkController = zkController;
     this.cc = cc;
@@ -138,12 +138,12 @@ final class ShardLeaderElectionContext extends ShardLeaderElectionContextBase {
   @Override
   void runLeaderProcess(boolean weAreReplacement) throws KeeperException,
       InterruptedException, IOException {
-    log.info("Running the leader process.");
+    log.info("Running the leader process for shard " + shardId);
     
     String coreName = leaderProps.getStr(ZkStateReader.CORE_NAME_PROP);
     
     // clear the leader in clusterstate
-    ZkNodeProps m = new ZkNodeProps(Overseer.QUEUE_OPERATION, "leader",
+    ZkNodeProps m = new ZkNodeProps(Overseer.QUEUE_OPERATION, ZkStateReader.LEADER_PROP,
         ZkStateReader.SHARD_ID_PROP, shardId, ZkStateReader.COLLECTION_PROP,
         collection);
     Overseer.getInQueue(zkClient).offer(ZkStateReader.toJSON(m));
@@ -243,8 +243,8 @@ final class ShardLeaderElectionContext extends ShardLeaderElectionContextBase {
       }
 
       log.info("I am the new leader: "
-          + ZkCoreNodeProps.getCoreUrl(leaderProps));
-      core.getCoreDescriptor().getCloudDescriptor().isLeader = true;
+          + ZkCoreNodeProps.getCoreUrl(leaderProps) + " " + shardId);
+      core.getCoreDescriptor().getCloudDescriptor().setLeader(true);
     } finally {
       if (core != null) {
         core.close();
@@ -254,16 +254,17 @@ final class ShardLeaderElectionContext extends ShardLeaderElectionContextBase {
     try {
       super.runLeaderProcess(weAreReplacement);
     } catch (Throwable t) {
+      SolrException.log(log, "There was a problem trying to register as the leader", t);
+      cancelElection();
       try {
         core = cc.getCore(coreName);
         if (core == null) {
-          cancelElection();
           throw new SolrException(ErrorCode.SERVER_ERROR,
               "Fatal Error, SolrCore not found:" + coreName + " in "
                   + cc.getCoreNames());
         }
         
-        core.getCoreDescriptor().getCloudDescriptor().isLeader = false;
+        core.getCoreDescriptor().getCloudDescriptor().setLeader(false);
         
         // we could not publish ourselves as leader - rejoin election
         rejoinLeaderElection(leaderSeqPath, core);
@@ -332,7 +333,7 @@ final class ShardLeaderElectionContext extends ShardLeaderElectionContextBase {
           return;
         } else {
           if (cnt % 40 == 0) {
-            log.info("Waiting until we see more replicas up: total="
+            log.info("Waiting until we see more replicas up for shard " + shardId + ": total="
               + slices.getReplicasMap().size() + " found=" + found
               + " timeoutin=" + (timeoutAt - System.currentTimeMillis()));
           }

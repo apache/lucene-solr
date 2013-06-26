@@ -118,6 +118,9 @@ New Features
 
 * SOLR-4921: Admin UI now supports adding documents to Solr (gsingers, steffkes)
 
+* SOLR-4916: Add support to write and read Solr index files and transaction log
+  files to and from HDFS. (phunt, Mark Miller, Greg Chanan)
+
 Bug Fixes
 ----------------------
 

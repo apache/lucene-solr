@@ -85,6 +85,7 @@ public class JettySolrRunner {
   private String shards;
 
   private String dataDir;
+  private String solrUlogDir;
   
   private volatile boolean startedBefore = false;
 
@@ -359,6 +360,9 @@ public class JettySolrRunner {
     if( dataDir != null) {
       System.setProperty("solr.data.dir", dataDir);
     }
+    if( solrUlogDir != null) {
+      System.setProperty("solr.ulog.dir", solrUlogDir);
+    }
     if(shards != null) {
       System.setProperty("shard", shards);
     }
@@ -382,6 +386,8 @@ public class JettySolrRunner {
     System.clearProperty("shard");
     System.clearProperty("solr.data.dir");
     System.clearProperty("coreNodeName");
+    System.clearProperty("solr.ulog.dir");
+
   }
 
   public void stop() throws Exception {
@@ -484,6 +490,10 @@ public class JettySolrRunner {
 
   public void setDataDir(String dataDir) {
     this.dataDir = dataDir;
+  }
+  
+  public void setUlogDir(String ulogDir) {
+    this.solrUlogDir = ulogDir;
   }
 
   public void setCoreNodeName(String coreNodeName) {

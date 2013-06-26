@@ -197,6 +197,7 @@ public abstract class AbstractFullDistribZkTestBase extends AbstractDistribZkTes
   @AfterClass
   public static void afterClass() {
     System.clearProperty("solrcloud.update.delay");
+    System.clearProperty("genericCoreNodeNames");
   }
   
   public AbstractFullDistribZkTestBase() {
@@ -209,6 +210,10 @@ public abstract class AbstractFullDistribZkTestBase extends AbstractDistribZkTes
     stress = 0;
     
     useExplicitNodeNames = random().nextBoolean();
+  }
+  
+  protected String getDataDir(String dataDir) throws IOException {
+    return dataDir;
   }
   
   protected void initCloud() throws Exception {
@@ -328,8 +333,8 @@ public abstract class AbstractFullDistribZkTestBase extends AbstractDistribZkTes
           getClass().getName() + "-jetty" + cnt + "-" + System.currentTimeMillis());
       jettyDir.mkdirs();
       setupJettySolrHome(jettyDir);
-      JettySolrRunner j = createJetty(jettyDir, testDir + "/jetty"
-          + cnt, null, "solrconfig.xml", null);
+      JettySolrRunner j = createJetty(jettyDir, getDataDir(testDir + "/jetty"
+          + cnt), null, "solrconfig.xml", null);
       jettys.add(j);
       SolrServer client = createNewSolrServer(j.getLocalPort());
       clients.add(client);
@@ -428,6 +433,28 @@ public abstract class AbstractFullDistribZkTestBase extends AbstractDistribZkTes
     return cnt;
   }
   
+  public JettySolrRunner createJetty(String dataDir, String ulogDir, String shardList,
+      String solrConfigOverride) throws Exception {
+    
+    JettySolrRunner jetty = new JettySolrRunner(getSolrHome(), context, 0,
+        solrConfigOverride, null, false, getExtraServlets());
+    jetty.setShards(shardList);
+    jetty.setDataDir(getDataDir(dataDir));
+    jetty.start();
+    
+    return jetty;
+  }
+  
+  public JettySolrRunner createJetty(File solrHome, String dataDir, String shardList, String solrConfigOverride, String schemaOverride) throws Exception {
+
+    JettySolrRunner jetty = new JettySolrRunner(solrHome.getAbsolutePath(), context, 0, solrConfigOverride, schemaOverride, false, getExtraServlets());
+    jetty.setShards(shardList);
+    jetty.setDataDir(getDataDir(dataDir));
+    jetty.start();
+    
+    return jetty;
+  }
+  
   protected void updateMappingsFromZk(List<JettySolrRunner> jettys,
       List<SolrServer> clients) throws Exception {
     ZkStateReader zkStateReader = cloudClient.getZkStateReader();
@@ -483,7 +510,7 @@ public abstract class AbstractFullDistribZkTestBase extends AbstractDistribZkTes
             cjr.jetty = jetty;
             cjr.info = replica;
             cjr.nodeName = replica.getStr(ZkStateReader.NODE_NAME_PROP);
-            cjr.coreNodeName = replica.getName();
+            cjr.coreNodeName = replica.getNodeName();
             cjr.url = replica.getStr(ZkStateReader.BASE_URL_PROP) + "/" + replica.getStr(ZkStateReader.CORE_NAME_PROP);
             cjr.client = findClientByPort(port, theClients);
             list.add(cjr);
@@ -1519,7 +1546,7 @@ public abstract class AbstractFullDistribZkTestBase extends AbstractDistribZkTes
       for (String sliceName : slices.keySet()) {
         for (Replica replica : slices.get(sliceName).getReplicas()) {
           if (nodesAllowedToRunShards != null && !nodesAllowedToRunShards.contains(replica.getStr(ZkStateReader.NODE_NAME_PROP))) {
-            return "Shard " + replica.getName() + " created on node " + replica.getStr(ZkStateReader.NODE_NAME_PROP) + " not allowed to run shards for the created collection " + collectionName;
+            return "Shard " + replica.getName() + " created on node " + replica.getNodeName() + " not allowed to run shards for the created collection " + collectionName;
           }
         }
         totalShards += slices.get(sliceName).getReplicas().size();

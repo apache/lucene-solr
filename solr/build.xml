@@ -40,7 +40,7 @@
   <!-- ========================================================================= -->
  
   <target name="example" description="Creates a runnable example configuration."
-          depends="dist-contrib,dist-war">
+          depends="dist-contrib,dist-war,setup-alt-examples">
     <copy file="${dist}/${fullnamever}.war"
           tofile="${example}/webapps/${ant.project.name}.war"/>
     <jar destfile="${example}/exampledocs/post.jar"
@@ -56,6 +56,15 @@
     <echo>See ${example}/README.txt for how to run the Solr example configuration.</echo>
   </target>
 
+  <target name="setup-alt-examples">
+    <copy todir="${example}/hdfs" overwrite="true">
+      <fileset dir="${example}/solr"/>
+    </copy>
+    <copy todir="${example}/hdfs/collection1/conf" overwrite="true">
+      <fileset dir="${example}/alt-configs/hdfs"/>
+    </copy>
+  </target>
+  
   <target name="run-example" depends="example"
           description="Run Solr interactively, via Jetty.  -Dexample.debug=true to enable JVM debugger">
     <property name="example.solr.home" location="example/solr"/>

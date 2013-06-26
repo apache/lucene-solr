@@ -538,11 +538,13 @@ public class BasicDistributedZkTest extends AbstractFullDistribZkTestBase {
           Create createCmd = new Create();
           createCmd.setCoreName(collection + freezeI);
           createCmd.setCollection(collection);
-          String core3dataDir = dataDir.getAbsolutePath() + File.separator
-              + System.currentTimeMillis() + collection + "_3n" + freezeI;
-          createCmd.setDataDir(core3dataDir);
+
           createCmd.setNumShards(numShards);
           try {
+            String core3dataDir = dataDir.getAbsolutePath() + File.separator
+                + System.currentTimeMillis() + collection + "_3n" + freezeI;
+            createCmd.setDataDir(getDataDir(core3dataDir));
+
             server.request(createCmd);
           } catch (SolrServerException e) {
             throw new RuntimeException(e);
@@ -574,11 +576,13 @@ public class BasicDistributedZkTest extends AbstractFullDistribZkTestBase {
     params.set(OverseerCollectionProcessor.MAX_SHARDS_PER_NODE, maxShardsPerNode);
     if (createNodeSetStr != null) params.set(OverseerCollectionProcessor.CREATE_NODE_SET, createNodeSetStr);
 
-    int clientIndex = random().nextInt(2);
+    int clientIndex = clients.size() > 1 ? random().nextInt(2) : 0;
     List<Integer> list = new ArrayList<Integer>();
     list.add(numShards);
     list.add(numReplicas);
-    collectionInfos.put(collectionName, list);
+    if (collectionInfos != null) {
+      collectionInfos.put(collectionName, list);
+    }
     params.set("name", collectionName);
     SolrRequest request = new QueryRequest(params);
     request.setPath("/admin/collections");
@@ -932,8 +936,8 @@ public class BasicDistributedZkTest extends AbstractFullDistribZkTestBase {
           if (shardId == null) {
             createCmd.setNumShards(2);
           }
-          createCmd.setDataDir(dataDir.getAbsolutePath() + File.separator
-              + collection + num);
+          createCmd.setDataDir(getDataDir(dataDir.getAbsolutePath() + File.separator
+              + collection + num));
           if (shardId != null) {
             createCmd.setShardId(shardId);
           }
@@ -1056,8 +1060,9 @@ public class BasicDistributedZkTest extends AbstractFullDistribZkTestBase {
             server.setSoTimeout(30000);
             Create createCmd = new Create();
             createCmd.setCoreName(collection);
-            createCmd.setDataDir(dataDir.getAbsolutePath() + File.separator
-                + collection + frozeUnique);
+            createCmd.setDataDir(getDataDir(dataDir.getAbsolutePath() + File.separator
+                + collection + frozeUnique));
+
             server.request(createCmd);
 
           } catch (Exception e) {

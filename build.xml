@@ -205,7 +205,7 @@
     <!-- TODO: find a better way to exclude duplicate JAR files & fix the servlet-api mess! -->
     <pathconvert property="eclipse.fileset.libs" pathsep="|" dirsep="/">
       <fileset dir="${basedir}/lucene" includes="**/lib/*.jar" excludes="**/*servlet-api*.jar, analysis/uima/**, tools/**, build/**"/>
-      <fileset dir="${basedir}/solr" includes="**/lib/*.jar" excludes="core/lib/*servlet-api*.jar, contrib/analysis-extras/**, test-framework/**, build/**, dist/**, package/**" />
+      <fileset dir="${basedir}/solr" includes="**/lib/*.jar" excludes="core/lib/*servlet-api*.jar, contrib/analysis-extras/**, test-framework/lib/junit*, test-framework/lib/ant*, test-framework/lib/randomizedtesting*, build/**, dist/**, package/**" />
       <map from="${basedir}/" to=""/>
     </pathconvert>
     <xslt in="${ant.file}" out=".classpath" style="dev-tools/eclipse/dot.classpath.xsl" force="true">

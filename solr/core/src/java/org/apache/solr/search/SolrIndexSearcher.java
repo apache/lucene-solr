@@ -193,7 +193,13 @@ public class SolrIndexSearcher extends IndexSearcher implements Closeable,SolrIn
     this.name = "Searcher@" + Integer.toHexString(hashCode()) + (name!=null ? " "+name : "");
     log.info("Opening " + this.name);
 
-    Directory dir = this.reader.directory();
+    if (directoryFactory.searchersReserveCommitPoints()) {
+      // reserve commit point for life of searcher
+      core.getDeletionPolicy().saveCommitPoint(
+          reader.getIndexCommit().getGeneration());
+    }
+    
+    Directory dir = getIndexReader().directory();
     
     this.reserveDirectory = reserveDirectory;
     this.createdDirectory = r == null;
@@ -331,10 +337,16 @@ public class SolrIndexSearcher extends IndexSearcher implements Closeable,SolrIn
     // super.close();
     // can't use super.close() since it just calls reader.close() and that may only be called once
     // per reader (even if incRef() was previously called).
+    
+    long cpg = reader.getIndexCommit().getGeneration();
     try {
       if (closeReader) reader.decRef();
     } catch (Throwable t) {
       SolrException.log(log, "Problem dec ref'ing reader", t);
+    }
+
+    if (directoryFactory.searchersReserveCommitPoints()) {
+      core.getDeletionPolicy().releaseCommitPoint(cpg);
     }
 
     for (SolrCache cache : cacheList) {

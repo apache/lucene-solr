@@ -73,6 +73,7 @@ public class ConfigSolrXmlOld extends ConfigSolr {
     failIfFound("solr/solrcloud/str[@name='hostContext']");
     failIfFound("solr/solrcloud/int[@name='hostPort']");
     failIfFound("solr/solrcloud/int[@name='leaderVoteWait']");
+    failIfFound("solr/solrcloud/int[@name='genericCoreNodeNames']");
     failIfFound("solr/str[@name='managementPath']");
     failIfFound("solr/str[@name='sharedLib']");
     failIfFound("solr/str[@name='shareSchema']");
@@ -125,6 +126,8 @@ public class ConfigSolrXmlOld extends ConfigSolr {
         config.getVal("solr/cores/@hostPort", false));
     propMap.put(CfgProp.SOLR_LEADERVOTEWAIT,
         config.getVal("solr/cores/@leaderVoteWait", false));
+    propMap.put(CfgProp.SOLR_GENERICCORENODENAMES,
+        config.getVal("solr/cores/@genericCoreNodeNames", false));
     propMap.put(CfgProp.SOLR_MANAGEMENTPATH,
         config.getVal("solr/cores/@managementPath", false));
     propMap.put(CfgProp.SOLR_SHARESCHEMA,

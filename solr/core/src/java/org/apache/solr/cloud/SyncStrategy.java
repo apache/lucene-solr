@@ -160,8 +160,7 @@ public class SyncStrategy {
   private boolean syncWithReplicas(ZkController zkController, SolrCore core,
       ZkNodeProps props, String collection, String shardId) {
     List<ZkCoreNodeProps> nodes = zkController.getZkStateReader()
-        .getReplicaProps(collection, shardId,
-            zkController.getCoreNodeName(core.getCoreDescriptor()),
+        .getReplicaProps(collection, shardId,core.getCoreDescriptor().getCloudDescriptor().getCoreNodeName(),
             props.getStr(ZkStateReader.CORE_NAME_PROP));
     
     if (nodes == null) {
@@ -189,7 +188,7 @@ public class SyncStrategy {
     List<ZkCoreNodeProps> nodes = zkController
         .getZkStateReader()
         .getReplicaProps(collection, shardId,
-            zkController.getCoreNodeName(cd),
+            cd.getCloudDescriptor().getCoreNodeName(),
             leaderProps.getStr(ZkStateReader.CORE_NAME_PROP));
     if (nodes == null) {
       log.info(ZkCoreNodeProps.getCoreUrl(leaderProps) + " has no replicas");
