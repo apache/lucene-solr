@@ -198,6 +198,8 @@ Bug Fixes
   and getCore that could cause a request to attempt to use a core that
   has shut down. (yonik)
 
+* SOLR-4926: Fixed rare replication bug that normally only manifested when 
+  using compound file format. (yonik, Mark Miller)
 
 Optimizations
 ----------------------
