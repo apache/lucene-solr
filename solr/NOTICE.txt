@@ -11,6 +11,8 @@ including, but not limited to:
   - Apache Lucene Java
   - Apache Commons
   - Apache Geronimo (stax API)
+  - Apache Blur
+  - Apache Hadoop
 
 This product includes the JQuery JavaScript library created by John Resig.
 Copyright (c) 2010 John Resig, http://jquery.com/
@@ -36,6 +38,9 @@ License: Common Development and Distribution License (CDDL) v1.0 (https://glassf
 HSQL Database (HSQLDB): http://hsqldb.org/
 License: http://hsqldb.org/web/hsqlLicense.html
 
+Jersey Core: https://jersey.java.net/
+License: Common Development and Distribution License (CDDL) v1.0 (https://glassfish.dev.java.net/public/CDDLv1.0.html)
+
 =========================================================================
 ==  Apache Lucene Notice                                               ==
 =========================================================================
@@ -52,7 +57,6 @@ including, but not limited to:
  - Apache Jakarta Regexp
  - Apache Commons
  - Apache Xerces
- - Apache Blur
 
 ICU4J, (under analysis/icu) is licensed under an MIT styles license
 and Copyright (c) 1995-2008 International Business Machines Corporation and others
@@ -514,3 +518,11 @@ Restlet is a registered trademark of Restlet S.A.S.
 This product contains software developed by the Restlet project.
 
 See http://www.restlet.org/
+
+=========================================================================
+==     Protocol Buffers Notice                                         ==
+=========================================================================
+
+Protocol Buffers - Google's data interchange format
+Copyright 2008 Google Inc.
+http://code.google.com/apis/protocolbuffers/
