@@ -208,9 +208,9 @@ public class DrillSideways {
           requests.add(fr);
         }
       }
-      if (requests.isEmpty()) {
-        throw new IllegalArgumentException("could not find FacetRequest for drill-sideways dimension \"" + dim + "\"");
-      }
+      // We already moved all drill-downs that didn't have a
+      // FacetRequest, in moveDrillDownOnlyClauses above:
+      assert !requests.isEmpty();
       drillSidewaysCollectors[idx++] = FacetsCollector.create(getDrillSidewaysAccumulator(dim, new FacetSearchParams(fsp.indexingParams, requests)));
     }
 
