@@ -1548,6 +1548,10 @@ ${tests-output}/junit4-*.suites     - per-JVM executed suites
         <pattern substring="Egothor Software License version 1.00"/>
       <!-- JaSpell -->
         <pattern substring="Copyright (c) 2005 Bruno Martins"/>
+      <!-- d3.js -->
+        <pattern substring="THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS"/>
+      <!-- highlight.js -->
+        <pattern substring="THIS SOFTWARE IS PROVIDED BY THE REGENTS AND CONTRIBUTORS"/>
       </rat:substringMatcher>
 
       <!-- mit-like -->

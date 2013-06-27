@@ -20,7 +20,6 @@ require
   [
     'lib/order!lib/console',
     'lib/order!jquery',
-    'lib/order!lib/jquery.autogrow',
     'lib/order!lib/jquery.cookie',
     'lib/order!lib/jquery.form',
     'lib/order!lib/jquery.jstree',

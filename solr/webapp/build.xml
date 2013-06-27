@@ -18,6 +18,8 @@
 <project name="solr-webapp" default="default">
   <description>Solr webapp</description>
 
+  <property name="rat.additional-includes" value="**"/>
+
   <import file="../common-build.xml"/>
 
   <property name="exclude.from.war" value="*slf4j*,log4j-*" />
