@@ -131,6 +131,11 @@ public class CloudSolrServer extends SolrServer {
     this.defaultCollection = collection;
   }
 
+  /** Gets the default collection for request */
+  public String getDefaultCollection() {
+    return defaultCollection;
+  }
+
   /** Set the connect timeout to the zookeeper ensemble in ms */
   public void setZkConnectTimeout(int zkConnectTimeout) {
     this.zkConnectTimeout = zkConnectTimeout;
