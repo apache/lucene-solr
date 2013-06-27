@@ -40,7 +40,7 @@ import java.io.IOException;
  * 
  * @see TrieIntField
  */
-public class IntField extends PrimitiveFieldType {
+public class IntField extends PrimitiveFieldType implements IntValueFieldType {
   @Override
   protected void init(IndexSchema schema, Map<String,String> args) {
     super.init(schema, args);

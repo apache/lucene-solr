@@ -40,7 +40,7 @@ import java.util.Map;
  * 
  * @see TrieLongField
  */
-public class LongField extends PrimitiveFieldType {
+public class LongField extends PrimitiveFieldType implements LongValueFieldType {
   @Override
   protected void init(IndexSchema schema, Map<String,String> args) {
     super.init(schema, args);

@@ -108,7 +108,7 @@ public abstract class FieldMutatingUpdateProcessor
         // for now, don't allow it.
         if (! fname.equals(dest.getName()) ) {
           throw new SolrException(SERVER_ERROR,
-                                  "mutute returned field with different name: " 
+                                  "mutate returned field with different name: " 
                                   + fname + " => " + dest.getName());
         }
         doc.put(dest.getName(), dest);
@@ -118,7 +118,7 @@ public abstract class FieldMutatingUpdateProcessor
   }
   
   /**
-   * Interface for idenfifying which fileds should be mutated
+   * Interface for identifying which fields should be mutated
    */
   public static interface FieldNameSelector {
     public boolean shouldMutate(final String fieldName);

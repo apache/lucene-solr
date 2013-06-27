@@ -40,7 +40,7 @@ import java.io.IOException;
  * 
  * @see TrieFloatField
  */
-public class FloatField extends PrimitiveFieldType {
+public class FloatField extends PrimitiveFieldType implements FloatValueFieldType {
   @Override
   protected void init(IndexSchema schema, Map<String,String> args) {
     super.init(schema, args);

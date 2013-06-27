@@ -109,7 +109,7 @@ import java.util.*;
  * @see <a href="http://www.w3.org/TR/xmlschema-2/#dateTime">XML schema part 2</a>
  * @deprecated {@link TrieDateField} is recomended for all new schemas
  */
-public class DateField extends PrimitiveFieldType {
+public class DateField extends PrimitiveFieldType implements DateValueFieldType {
 
   public static TimeZone UTC = TimeZone.getTimeZone("UTC");
 
