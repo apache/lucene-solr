@@ -120,6 +120,18 @@ New Features
 
 * SOLR-4916: Add support to write and read Solr index files and transaction log
   files to and from HDFS. (phunt, Mark Miller, Greg Chanan)
+  
+* SOLR-4892: Add FieldMutatingUpdateProcessorFactory subclasses 
+  Parse{Date,Integer,Long,Float,Double,Boolean}UpdateProcessorFactory. These
+  factories have a default selector that matches all fields that either don’t
+  match any schema field, or are in the schema with the corresponding
+  typeClass. If they see a value that is not a CharSequence, or can't parse
+  the value, they leave it as is. For multi-valued fields, these processors
+  will not convert any values unless all are first successfully parsed, or 
+  already are instances of the target class. Ordering the processors, e.g.
+  [Boolean, Long, Double, Date] will allow e.g. values ["2", "5", "8.6"] to
+  be left alone by the Boolean and Long processors, but then converted by the
+  Double processor.  (Steve Rowe, hossman) 
 
 Bug Fixes
 ----------------------

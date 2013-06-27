@@ -65,7 +65,6 @@ import org.apache.solr.util.plugin.SolrCoreAware;
  * </p>
  * <ul>
  *   <li><code>fieldNameMatchesSchemaField</code> - selecting specific fields based on whether or not they match a schema field</li>
- </li>
  * </ul>
  * <p>
  * One or more <code>excludes</code> &lt;lst&gt; params may also be specified, 

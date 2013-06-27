@@ -35,6 +35,7 @@
       <dependency org="javax.servlet" name="javax.servlet-api" rev="3.0.1" transitive="false"/>
       <dependency org="org.restlet.jee" name="org.restlet" rev="2.1.1" transitive="false"/>
       <dependency org="org.restlet.jee" name="org.restlet.ext.servlet" rev="2.1.1" transitive="false"/>
+      <dependency org="joda-time" name="joda-time" rev="2.2" transitive="false"/>
       
       <dependency org="org.apache.hadoop" name="hadoop-common" rev="&hadoop.version;" transitive="false"/>
       <dependency org="org.apache.hadoop" name="hadoop-hdfs" rev="&hadoop.version;" transitive="false"/>

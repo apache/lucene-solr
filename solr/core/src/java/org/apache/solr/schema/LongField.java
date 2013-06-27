@@ -46,7 +46,7 @@ import java.util.Map;
  * 
  * @see TrieLongField
  */
-public class LongField extends PrimitiveFieldType {
+public class LongField extends PrimitiveFieldType implements LongValueFieldType {
 
   private static final FieldCache.LongParser PARSER = new FieldCache.LongParser() {
     

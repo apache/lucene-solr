@@ -46,7 +46,7 @@ import java.io.IOException;
  * 
  * @see TrieIntField
  */
-public class IntField extends PrimitiveFieldType {
+public class IntField extends PrimitiveFieldType implements IntValueFieldType {
 
   private static final FieldCache.IntParser PARSER = new FieldCache.IntParser() {
     

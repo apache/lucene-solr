@@ -46,7 +46,7 @@ import java.io.IOException;
  * 
  * @see TrieFloatField
  */
-public class FloatField extends PrimitiveFieldType {
+public class FloatField extends PrimitiveFieldType implements FloatValueFieldType {
 
   private static final FieldCache.FloatParser PARSER = new FieldCache.FloatParser() {
     
