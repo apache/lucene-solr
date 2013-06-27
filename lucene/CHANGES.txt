@@ -219,6 +219,9 @@ New Features
 * LUCENE-5079: IndexWriter.hasUncommittedChanges() returns true if there are
   changes that have not been committed. (yonik, Mike McCandless, Uwe Schindler)
 
+* SOLR-4565: Extend NorwegianLightStemFilter and NorwegianMinimalStemFilter 
+  to handle "nynorsk" (Erlend Garåsen, janhoy via Robert Muir)
+
 API Changes
 
 * LUCENE-5077: Make it easier to use compressed norms. Lucene42NormsFormat takes

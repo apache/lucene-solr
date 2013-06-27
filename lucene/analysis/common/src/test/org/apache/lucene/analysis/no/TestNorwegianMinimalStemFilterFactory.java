@@ -35,6 +35,22 @@ public class TestNorwegianMinimalStemFilterFactory extends BaseTokenStreamFactor
     assertTokenStreamContents(stream, new String[] { "epl", "epl", "epl", "epl", "epl", "epl" });
   }
   
+  /** Test stemming with variant set explicitly to Bokmål */
+  public void testBokmaalStemming() throws Exception {
+    Reader reader = new StringReader("eple eplet epler eplene eplets eplenes");
+    TokenStream stream = new MockTokenizer(reader, MockTokenizer.WHITESPACE, false);
+    stream = tokenFilterFactory("NorwegianMinimalStem", "variant", "nb").create(stream);
+    assertTokenStreamContents(stream, new String[] { "epl", "epl", "epl", "epl", "epl", "epl" });
+  }
+  
+  /** Test stemming with variant set explicitly to Nynorsk */
+  public void testNynorskStemming() throws Exception {
+    Reader reader = new StringReader("gut guten gutar gutane gutens gutanes");
+    TokenStream stream = new MockTokenizer(reader, MockTokenizer.WHITESPACE, false);
+    stream = tokenFilterFactory("NorwegianMinimalStem", "variant", "nn").create(stream);
+    assertTokenStreamContents(stream, new String[] { "gut", "gut", "gut", "gut", "gut", "gut" });
+  }
+  
   /** Test that bogus arguments result in exception */
   public void testBogusArguments() throws Exception {
     try {
