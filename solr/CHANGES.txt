@@ -135,6 +135,9 @@ New Features
 
 * SOLR-4972: Add PUT command to ZkCli tool. (Roman Shaposhnik via Mark Miller)
 
+* SOLR-4973: Adding getter method for defaultCollection on CloudSolrServer.
+  (Furkan KAMACI via Mark Miller)
+
 Bug Fixes
 ----------------------
 
