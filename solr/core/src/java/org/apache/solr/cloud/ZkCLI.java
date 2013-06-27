@@ -25,7 +25,10 @@ import org.apache.solr.core.ConfigSolr;
 import org.apache.solr.core.ConfigSolrXml;
 import org.apache.solr.core.ConfigSolrXmlOld;
 import org.apache.solr.core.SolrResourceLoader;
+import org.apache.zookeeper.CreateMode;
 import org.apache.zookeeper.KeeperException;
+import org.apache.zookeeper.ZooDefs;
+import org.apache.zookeeper.data.ACL;
 import org.xml.sax.InputSource;
 import org.xml.sax.SAXException;
 
@@ -49,6 +52,7 @@ import org.xml.sax.SAXException;
 public class ZkCLI {
   
   private static final String MAKEPATH = "makepath";
+  private static final String PUT = "put";
   private static final String DOWNCONFIG = "downconfig";
   private static final String ZK_CLI_NAME = "ZkCLI";
   private static final String HELP = "help";
@@ -92,7 +96,7 @@ public class ZkCLI {
         .hasArg(true)
         .withDescription(
             "cmd to run: " + BOOTSTRAP + ", " + UPCONFIG + ", " + DOWNCONFIG
-                + ", " + LINKCONFIG + ", " + MAKEPATH + ", "+ LIST + ", " +CLEAR).create(CMD));
+                + ", " + LINKCONFIG + ", " + MAKEPATH + ", "+ PUT + ", "+ LIST + ", " + CLEAR).create(CMD));
 
     Option zkHostOption = new Option("z", ZKHOST, true,
         "ZooKeeper host address");
@@ -134,7 +138,8 @@ public class ZkCLI {
         System.out.println("zkcli.sh -zkhost localhost:9983 -cmd " + UPCONFIG + " -" + CONFDIR + " /opt/solr/collection1/conf" + " -" + CONFNAME + " myconf");
         System.out.println("zkcli.sh -zkhost localhost:9983 -cmd " + DOWNCONFIG + " -" + CONFDIR + " /opt/solr/collection1/conf" + " -" + CONFNAME + " myconf");
         System.out.println("zkcli.sh -zkhost localhost:9983 -cmd " + LINKCONFIG + " -" + COLLECTION + " collection1" + " -" + CONFNAME + " myconf");
-        System.out.println("zkcli.sh -zkhost localhost:9983 -cmd " + MAKEPATH + " /apache/solr");
+        System.out.println("zkcli.sh -zkhost localhost:9983 -cmd " + MAKEPATH + " /apache/solr/data.txt 'config data'");
+        System.out.println("zkcli.sh -zkhost localhost:9983 -cmd " + PUT + " /solr.conf 'conf data'");
         System.out.println("zkcli.sh -zkhost localhost:9983 -cmd " + CLEAR + " /solr");
         System.out.println("zkcli.sh -zkhost localhost:9983 -cmd " + LIST);
         return;
@@ -256,6 +261,15 @@ public class ZkCLI {
             System.exit(1);
           }
           zkClient.makePath(arglist.get(0).toString(), true);
+        } else if (line.getOptionValue(CMD).equals(PUT)) {
+          List<ACL> acl = ZooDefs.Ids.OPEN_ACL_UNSAFE;
+          List arglist = line.getArgList();
+          if (arglist.size() != 2) {
+            System.out.println("-" + PUT + " requires two args - the path to create and the data string");
+            System.exit(1);
+          }
+          zkClient.create(arglist.get(0).toString(), arglist.get(1).toString().getBytes("UTF-8"),
+                          acl, CreateMode.PERSISTENT, true);
         }
       } finally {
         if (solrPort != null) {

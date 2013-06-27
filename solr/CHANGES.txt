@@ -131,7 +131,9 @@ New Features
   already are instances of the target class. Ordering the processors, e.g.
   [Boolean, Long, Double, Date] will allow e.g. values ["2", "5", "8.6"] to
   be left alone by the Boolean and Long processors, but then converted by the
-  Double processor.  (Steve Rowe, hossman) 
+  Double processor.  (Steve Rowe, hossman)
+
+* SOLR-4972: Add PUT command to ZkCli tool. (Roman Shaposhnik via Mark Miller)
 
 Bug Fixes
 ----------------------
