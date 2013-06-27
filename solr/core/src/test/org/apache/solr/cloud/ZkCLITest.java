@@ -138,6 +138,19 @@ public class ZkCLITest extends SolrTestCaseJ4 {
 
     assertTrue(zkClient.exists("/path/mynewpath", true));
   }
+
+  @Test
+  public void testPut() throws Exception {
+    // test bootstrap_conf
+    String data = "my data";
+    String[] args = new String[] {"-zkhost", zkServer.getZkAddress(), "-cmd",
+        "put", "/data.txt", data};
+    ZkCLI.main(args);
+
+    zkClient.getData("/data.txt", null, null, true);
+
+    assertArrayEquals(zkClient.getData("/data.txt", null, null, true), data.getBytes("UTF-8"));
+  }
   
   @Test
   public void testList() throws Exception {
