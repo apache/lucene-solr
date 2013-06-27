@@ -1580,7 +1580,7 @@ ${tests-output}/junit4-*.suites     - per-JVM executed suites
     </rat:report>
     <!-- now print the output, for review -->
     <loadfile property="rat.output" srcFile="${rat.sources.logfile}"/>
-    <echo>${rat.output}</echo>
+    <echo taskname="rat">${rat.output}</echo>
     <delete>
       <fileset file="${rat.sources.logfile}">
         <and>
