@@ -307,6 +307,7 @@
       <fileset dir="core" includes="build.xml"/>
       <fileset dir="solrj" includes="build.xml"/>
       <fileset dir="test-framework" includes="build.xml"/>
+      <fileset dir="webapp" includes="build.xml"/>
     </subant>
     <contrib-crawl target="rat-sources" failonerror="true"/>
   </target>
