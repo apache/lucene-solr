@@ -1837,11 +1837,10 @@ ${tests-output}/junit4-*.suites     - per-JVM executed suites
     <attribute name="docencoding" default="${file.encoding}"/>
     <sequential>
       <replace encoding="@{docencoding}" summary="true" taskname="patch-javadoc">
-        <restrict>
-          <fileset dir="@{dir}" casesensitive="false" includes="**/index.html,**/index.htm,**/toc.html,**/toc.htm"/>
+        <fileset dir="@{dir}" casesensitive="false" includes="**/index.html,**/index.htm,**/toc.html,**/toc.htm">
           <!-- TODO: add encoding="@{docencoding}" to contains check, when we are on ANT 1.9.0: -->
           <not><contains text="function validURL(url) {" casesensitive="true" /></not>
-        </restrict>
+        </fileset>
         <replacetoken><![CDATA[function loadFrames() {]]></replacetoken>
         <replacevalue expandProperties="false"><![CDATA[if (targetPage != "" && !validURL(targetPage))
         targetPage = "undefined";
