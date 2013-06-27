@@ -35,6 +35,8 @@ public class HdfsTestUtil {
 
   public static MiniDFSCluster setupClass(String dataDir) throws Exception {
     LuceneTestCase.assumeFalse("HDFS tests on Windows require Cygwin", Constants.WINDOWS);
+    LuceneTestCase.assumeFalse("HDFS do not work well with FreeBSD blackhole setup", Constants.FREE_BSD);
+   // LuceneTestCase.assumeFalse("HDFS tests on Windows require Cygwin", Constants.F);
     File dir = new File(dataDir);
     new File(dataDir).mkdirs();
 
