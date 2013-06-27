@@ -1524,7 +1524,7 @@ ${tests-output}/junit4-*.suites     - per-JVM executed suites
               destdir="${java.io.tmpdir}"/>
     <!-- run rat, going to the file -->
     <rat:report xmlns:rat="antlib:org.apache.rat.anttasks" 
-                reportFile="${rat.sources.logfile}">
+                reportFile="${rat.sources.logfile}" addDefaultLicenseMatchers="true">
       <fileset dir="." includes="*.xml ${rat.additional-includes}"/>
       <fileset dir="${src.dir}" excludes="${rat.excludes}" erroronmissingdir="false"/>
       <fileset dir="${tests.src.dir}" excludes="${rat.excludes}" erroronmissingdir="false"/>
@@ -1532,7 +1532,13 @@ ${tests-output}/junit4-*.suites     - per-JVM executed suites
       <!-- TODO: Check all resource files. Currently not all stopword and similar files have no header! -->
       <fileset dir="${resources.dir}" includes="META-INF/**" erroronmissingdir="false"/>
       
-      <!-- bsd-like stuff -->
+      <!-- BSD 4-clause stuff (is disallowed below) -->
+      <rat:substringMatcher licenseFamilyCategory="BSD4 "
+             licenseFamilyName="Original BSD License (with advertising clause)">
+        <pattern substring="All advertising materials"/>
+      </rat:substringMatcher>
+
+      <!-- BSD-like stuff -->
       <rat:substringMatcher licenseFamilyCategory="BSD  "
              licenseFamilyName="Modified BSD License">
       <!-- brics automaton -->
@@ -1551,14 +1557,14 @@ ${tests-output}/junit4-*.suites     - per-JVM executed suites
         <pattern substring="THIS SOFTWARE IS PROVIDED BY THE REGENTS AND CONTRIBUTORS"/>
       </rat:substringMatcher>
 
-      <!-- mit-like -->
+      <!-- MIT-like -->
       <rat:substringMatcher licenseFamilyCategory="MIT  "
              licenseFamilyName="The MIT License">
       <!-- ICU license -->
         <pattern substring="Permission is hereby granted, free of charge, to any person obtaining a copy"/>
       </rat:substringMatcher>
 
-      <!-- apache -->
+      <!-- Apache -->
       <rat:substringMatcher licenseFamilyCategory="AL   "
              licenseFamilyName="Apache">
         <pattern substring="Licensed to the Apache Software Foundation (ASF) under"/>
@@ -1590,7 +1596,7 @@ ${tests-output}/junit4-*.suites     - per-JVM executed suites
         <and>
           <containsregexp expression="^0 Unknown Licenses"/>
           <not>
-            <containsregexp expression="^\s+!AL"/>
+            <containsregexp expression="^\s+!"/>
           </not>
         </and>
       </fileset>
