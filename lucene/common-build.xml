@@ -256,8 +256,10 @@
 
   <!-- a reasonable default exclusion set, can be overridden for special cases -->
   <property name="rat.excludes" value="**/TODO,**/*.txt,**/*.iml"/>
-  <!-- This pattern can be defined to add additional files for checks, relative to module's home dir -->
+  
+  <!-- These patterns can be defined to add additional files for checks, relative to module's home dir -->
   <property name="rat.additional-includes" value=""/>
+  <property name="rat.additional-excludes" value=""/>
 
   <propertyset id="uptodate.and.compiled.properties" dynamic="true">
     <propertyref regex=".*\.uptodate$$"/>
@@ -1514,7 +1516,7 @@ ${tests-output}/junit4-*.suites     - per-JVM executed suites
   </target>
 
   <target name="rat-sources-typedef" unless="rat.loaded">
-    <ivy:cachepath organisation="org.apache.rat" module="apache-rat" revision="0.8" transitive="false" inline="true" conf="master" type="jar" pathid="rat.classpath"/>
+    <ivy:cachepath organisation="org.apache.rat" module="apache-rat" revision="0.9" transitive="false" inline="true" conf="master" type="jar" pathid="rat.classpath"/>
     <typedef resource="org/apache/rat/anttasks/antlib.xml" uri="antlib:org.apache.rat.anttasks" classpathref="rat.classpath"/>
     <property name="rat.loaded" value="true"/>
   </target>
@@ -1528,7 +1530,7 @@ ${tests-output}/junit4-*.suites     - per-JVM executed suites
     <!-- run rat, going to the file -->
     <rat:report xmlns:rat="antlib:org.apache.rat.anttasks" 
                 reportFile="${rat.sources.logfile}" addDefaultLicenseMatchers="true">
-      <fileset dir="." includes="*.xml ${rat.additional-includes}"/>
+      <fileset dir="." includes="*.xml ${rat.additional-includes}" excludes="${rat.additional-excludes}"/>
       <fileset dir="${src.dir}" excludes="${rat.excludes}" erroronmissingdir="false"/>
       <fileset dir="${tests.src.dir}" excludes="${rat.excludes}" erroronmissingdir="false"/>
 
