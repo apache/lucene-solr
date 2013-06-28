@@ -844,9 +844,11 @@ public class DistributedUpdateProcessor extends UpdateRequestProcessor {
   }
 
   private void passParam(SolrParams params, ModifiableSolrParams fparams, String param) {
-    String value = params.get(param);
-    if (value != null) {
-      fparams.add(param, value);
+    String[] values = params.getParams(param);
+    if (values != null) {
+      for (String value : values) {
+        fparams.add(param, value);
+      }
     }
   }
 

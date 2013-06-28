@@ -971,6 +971,46 @@ public abstract class AbstractFullDistribZkTestBase extends AbstractDistribZkTes
     
   }
   
+  public void showCounts() {
+    Set<String> theShards = shardToJetty.keySet();
+    
+    for (String shard : theShards) {
+      List<CloudJettyRunner> solrJetties = shardToJetty.get(shard);
+      
+      for (CloudJettyRunner cjetty : solrJetties) {
+        ZkNodeProps props = cjetty.info;
+        System.err.println("PROPS:" + props);
+        
+        try {
+          SolrParams query = params("q", "*:*", "rows", "0", "distrib",
+              "false", "tests", "checkShardConsistency"); // "tests" is just a
+                                                          // tag that won't do
+                                                          // anything except be
+                                                          // echoed in logs
+          long num = cjetty.client.solrClient.query(query).getResults()
+              .getNumFound();
+          System.err.println("DOCS:" + num);
+        } catch (SolrServerException e) {
+          System.err.println("error contacting client: " + e.getMessage()
+              + "\n");
+          continue;
+        } catch (SolrException e) {
+          System.err.println("error contacting client: " + e.getMessage()
+              + "\n");
+          continue;
+        }
+        boolean live = false;
+        String nodeName = props.getStr(ZkStateReader.NODE_NAME_PROP);
+        ZkStateReader zkStateReader = cloudClient.getZkStateReader();
+        if (zkStateReader.getClusterState().liveNodesContain(nodeName)) {
+          live = true;
+        }
+        System.err.println(" live:" + live);
+        
+      }
+    }
+  }
+  
   private String toStr(SolrDocumentList lst, int maxSz) {
     if (lst.size() <= maxSz) return lst.toString();
 
