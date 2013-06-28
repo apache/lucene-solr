@@ -146,7 +146,7 @@ public class SyncStrategy {
         syncToMe(zkController, collection, shardId, leaderProps, core.getCoreDescriptor());
         
       } else {
-        log.info("Leader's attempt to sync with shard failed, moving to the next canidate");
+        log.info("Leader's attempt to sync with shard failed, moving to the next candidate");
         // lets see who seems ahead...
       }
       
