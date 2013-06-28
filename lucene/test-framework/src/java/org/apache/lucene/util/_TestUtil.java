@@ -770,8 +770,9 @@ public class _TestUtil {
     }
     MergeScheduler ms = w.getConfig().getMergeScheduler();
     if (ms instanceof ConcurrentMergeScheduler) {
-      ((ConcurrentMergeScheduler) ms).setMaxThreadCount(2);
+      // wtf... shouldnt it be even lower since its 1 by default?!?!
       ((ConcurrentMergeScheduler) ms).setMaxMergeCount(3);
+      ((ConcurrentMergeScheduler) ms).setMaxThreadCount(2);
     }
   }
 
