@@ -221,6 +221,9 @@ Bug Fixes
 
 * SOLR-4926: Fixed rare replication bug that normally only manifested when 
   using compound file format. (yonik, Mark Miller)
+  
+* SOLR-4974: Outgrowth of SOLR-4960 that includes transient cores and pending cores
+  (Erick Erickson)
 
 Optimizations
 ----------------------

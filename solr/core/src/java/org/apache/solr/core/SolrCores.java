@@ -101,25 +101,25 @@ class SolrCores {
   // We are shutting down. You can't hold the lock on the various lists of cores while they shut down, so we need to
   // make a temporary copy of the names and shut them down outside the lock.
   protected void close() {
-    Collection<SolrCore> coreList;
-    List<String> transientNames;
-    List<SolrCore> pendingToClose;
+    Collection<SolrCore> coreList = new ArrayList<SolrCore>();
 
     // It might be possible for one of the cores to move from one list to another while we're closing them. So
     // loop through the lists until they're all empty. In particular, the core could have moved from the transient
     // list to the pendingCloses list.
 
-    while (true) {
+    do {
+      coreList.clear();
       synchronized (modifyLock) {
         // make a copy of the cores then clear the map so the core isn't handed out to a request again
-        coreList = new ArrayList<SolrCore>(cores.values());
+        coreList.addAll(cores.values());
         cores.clear();
 
-        transientNames = new ArrayList<String>(transientCores.keySet());
-        pendingToClose = new ArrayList<SolrCore>(pendingCloses);
-      }
+        coreList.addAll(transientCores.values());
+        transientCores.clear();
 
-      if (coreList.size() == 0 && transientNames.size() == 0 && pendingToClose.size() == 0) break;
+        coreList.addAll(pendingCloses);
+        pendingCloses.clear();
+      }
 
       for (SolrCore core : coreList) {
         try {
@@ -128,37 +128,7 @@ class SolrCores {
           SolrException.log(CoreContainer.log, "Error shutting down core", t);
         }
       }
-
-      for (String coreName : transientNames) {
-        SolrCore core = transientCores.get(coreName);
-        if (core == null) {
-          CoreContainer.log.info("Core " + coreName + " moved from transient core container list before closing.");
-        } else {
-          try {
-            core.close();
-          } catch (Throwable t) {
-            SolrException.log(CoreContainer.log, "Error shutting down core", t);
-          } finally {
-            synchronized (modifyLock) {
-              transientCores.remove(coreName);
-            }
-          }
-        }
-      }
-
-      // We might have some cores that we were _thinking_ about shutting down, so take care of those too.
-      for (SolrCore core : pendingToClose) {
-        try {
-          core.close();
-        } catch (Throwable t) {
-          SolrException.log(CoreContainer.log, "Error shutting down core", t);
-        } finally {
-          synchronized (modifyLock) {
-            pendingCloses.remove(core);
-          }
-        }
-      }
-    }
+    } while (coreList.size() > 0);
   }
 
   //WARNING! This should be the _only_ place you put anything into the list of transient cores!
@@ -304,7 +274,7 @@ class SolrCores {
   }
 
   /* If you don't increment the reference count, someone could close the core before you use it. */
-  protected SolrCore getCoreFromAnyList(String name, boolean incRefCount) {
+  protected SolrCore  getCoreFromAnyList(String name, boolean incRefCount) {
     synchronized (modifyLock) {
       SolrCore core = cores.get(name);
 
