@@ -30,12 +30,11 @@ import java.util.Comparator;
  *  separate thread.
  *
  *  <p>Specify the max number of threads that may run at
- *  once with {@link #setMaxThreadCount}.</p>
+ *  once, and the maximum number of simultaneous merges
+ *  with {@link #setMaxMergesAndThreads}.</p>
  *
- *  <p>Separately specify the maximum number of simultaneous
- *  merges with {@link #setMaxMergeCount}.  If the number of
- *  merges exceeds the max number of threads then the
- *  largest merges are paused until one of the smaller
+ *  <p>If the number of merges exceeds the max number of threads 
+ *  then the largest merges are paused until one of the smaller
  *  merges completes.</p>
  *
  *  <p>If more than {@link #getMaxMergeCount} merges are
@@ -49,21 +48,29 @@ public class ConcurrentMergeScheduler extends MergeScheduler {
 
   /** List of currently active {@link MergeThread}s. */
   protected List<MergeThread> mergeThreads = new ArrayList<MergeThread>();
+  
+  /** 
+   * Default {@code maxThreadCount}.
+   * We default to 1: tests on spinning-magnet drives showed slower
+   * indexing performance if more than one merge thread runs at
+   * once (though on an SSD it was faster)
+   */
+  public static final int DEFAULT_MAX_THREAD_COUNT = 1;
+  
+  /** Default {@code maxMergeCount}. */
+  public static final int DEFAULT_MAX_MERGE_COUNT = 2;
 
   // Max number of merge threads allowed to be running at
   // once.  When there are more merges then this, we
   // forcefully pause the larger ones, letting the smaller
   // ones run, up until maxMergeCount merges at which point
   // we forcefully pause incoming threads (that presumably
-  // are the ones causing so much merging).  We default to 1
-  // here: tests on spinning-magnet drives showed slower
-  // indexing perf if more than one merge thread runs at
-  // once (though on an SSD it was faster):
-  private int maxThreadCount = 1;
+  // are the ones causing so much merging).
+  private int maxThreadCount = DEFAULT_MAX_THREAD_COUNT;
 
   // Max number of merges we accept before forcefully
   // throttling the incoming threads
-  private int maxMergeCount = 2;
+  private int maxMergeCount = DEFAULT_MAX_MERGE_COUNT;
 
   /** {@link Directory} that holds the index. */
   protected Directory dir;
@@ -80,43 +87,40 @@ public class ConcurrentMergeScheduler extends MergeScheduler {
   public ConcurrentMergeScheduler() {
   }
 
-  /** Sets the max # simultaneous merge threads that should
-   *  be running at once.  This must be <= {@link
-   *  #setMaxMergeCount}. */
-  public void setMaxThreadCount(int count) {
-    if (count < 1) {
-      throw new IllegalArgumentException("count should be at least 1");
+  /**
+   * Sets the maximum number of merge threads and simultaneous merges allowed.
+   * 
+   * @param maxMergeCount the max # simultaneous merges that are allowed.
+   *       If a merge is necessary yet we already have this many
+   *       threads running, the incoming thread (that is calling
+   *       add/updateDocument) will block until a merge thread
+   *       has completed.  Note that we will only run the
+   *       smallest <code>maxThreadCount</code> merges at a time.
+   * @param maxThreadCount the max # simultaneous merge threads that should
+   *       be running at once.  This must be &lt;= <code>maxMergeCount</code>
+   */
+  public void setMaxMergesAndThreads(int maxMergeCount, int maxThreadCount) {
+    if (maxThreadCount < 1) {
+      throw new IllegalArgumentException("maxThreadCount should be at least 1");
     }
-    if (count > maxMergeCount) {
-      throw new IllegalArgumentException("count should be <= maxMergeCount (= " + maxMergeCount + ")");
+    if (maxMergeCount < 1) {
+      throw new IllegalArgumentException("maxMergeCount should be at least 1");
     }
-    maxThreadCount = count;
+    if (maxThreadCount > maxMergeCount) {
+      throw new IllegalArgumentException("maxThreadCount should be <= maxMergeCount (= " + maxMergeCount + ")");
+    }
+    this.maxThreadCount = maxThreadCount;
+    this.maxMergeCount = maxMergeCount;
   }
 
   /** Returns {@code maxThreadCount}.
    *
-   * @see #setMaxThreadCount(int) */
+   * @see #setMaxMergesAndThreads(int, int) */
   public int getMaxThreadCount() {
     return maxThreadCount;
   }
 
-  /** Sets the max # simultaneous merges that are allowed.
-   *  If a merge is necessary yet we already have this many
-   *  threads running, the incoming thread (that is calling
-   *  add/updateDocument) will block until a merge thread
-   *  has completed.  Note that we will only run the
-   *  smallest {@link #setMaxThreadCount} merges at a time. */
-  public void setMaxMergeCount(int count) {
-    if (count < 1) {
-      throw new IllegalArgumentException("count should be at least 1");
-    }
-    if (count < maxThreadCount) {
-      throw new IllegalArgumentException("count should be >= maxThreadCount (= " + maxThreadCount + ")");
-    }
-    maxMergeCount = count;
-  }
-
-  /** See {@link #setMaxMergeCount}. */
+  /** See {@link #setMaxMergesAndThreads}. */
   public int getMaxMergeCount() {
     return maxMergeCount;
   }

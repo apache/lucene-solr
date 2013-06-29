@@ -146,6 +146,11 @@ Bug Fixes
 * LUCENE-4971: Fixed NPE in AnalyzingSuggester when there are too many
   graph expansions.  (Alexey Kudinov via Mike McCandless)
 
+* LUCENE-5080: Combined setMaxMergeCount and setMaxThreadCount into one
+  setter in ConcurrentMergePolicy: setMaxMergesAndThreads.  Previously these
+  setters would not work unless you invoked them very carefully.
+  (Robert Muir, Shai Erera)
+
 Optimizations
 
 * LUCENE-4936: Improve numeric doc values compression in case all values share
