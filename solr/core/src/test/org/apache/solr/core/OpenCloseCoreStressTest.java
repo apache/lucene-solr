@@ -206,9 +206,10 @@ public class OpenCloseCoreStressTest extends SolrTestCaseJ4 {
         }
       } while (secondsRemaining > 0);
 
-      assertTrue("We didn't index any documents, somethings really messsed up", cumulativeDocs > 0);
+      assertTrue("We didn't index any documents, somethings really messed up", cumulativeDocs > 0);
     } catch (Exception e) {
       e.printStackTrace();
+      fail("Caught unexpected exception");
     }
   }
 
@@ -240,6 +241,8 @@ public class OpenCloseCoreStressTest extends SolrTestCaseJ4 {
     FileUtils.copyFile(new File(testConf, "schema-tiny.xml"), new File(conf, "schema-tiny.xml"));
 
     FileUtils.copyFile(new File(testConf, "solrconfig-minimal.xml"), new File(conf, "solrconfig-minimal.xml"));
+    FileUtils.copyFile(new File(testConf, "solrconfig.snippet.randomindexconfig.xml"),
+        new File(conf, "solrconfig.snippet.randomindexconfig.xml"));
 
     FileUtils.copyFile(new File(testSrcRoot, "conf/core.properties"), new File(coreDir, "core.properties"));
   }
@@ -476,7 +479,7 @@ class Queries {
     try {
       QueryResponse response = server.query(params);
       numFound = response.getResults().getNumFound();
-    } catch (SolrServerException e) {
+    } catch (Exception e) {
       e.printStackTrace();
     }
     return numFound;
