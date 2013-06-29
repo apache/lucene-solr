@@ -119,14 +119,9 @@ public class CreateIndexTask extends PerfTask {
       
       if (mergeScheduler.equals("org.apache.lucene.index.ConcurrentMergeScheduler")) {
         ConcurrentMergeScheduler cms = (ConcurrentMergeScheduler) iwConf.getMergeScheduler();
-        int v = config.get("concurrent.merge.scheduler.max.thread.count", -1);
-        if (v != -1) {
-          cms.setMaxThreadCount(v);
-        }
-        v = config.get("concurrent.merge.scheduler.max.merge.count", -1);
-        if (v != -1) {
-          cms.setMaxMergeCount(v);
-        }
+        int maxThreadCount = config.get("concurrent.merge.scheduler.max.thread.count", ConcurrentMergeScheduler.DEFAULT_MAX_THREAD_COUNT);
+        int maxMergeCount = config.get("concurrent.merge.scheduler.max.merge.count", ConcurrentMergeScheduler.DEFAULT_MAX_MERGE_COUNT);
+        cms.setMaxMergesAndThreads(maxMergeCount, maxThreadCount);
       }
     }
 
