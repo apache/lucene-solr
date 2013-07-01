@@ -96,6 +96,12 @@
 
   <path id="solr.test.base.classpath">
     <pathelement path="${common-solr.dir}/build/solr-test-framework/classes/java"/>
+    <fileset dir="${common-solr.dir}/test-framework/lib">
+      <include name="*.jar"/>
+      <exclude name="junit-*.jar" />
+      <exclude name="randomizedtesting-runner-*.jar" />
+      <exclude name="ant*.jar" />
+    </fileset>
   	<pathelement path="${build.dir}/test-files"/>
   	<path refid="test.base.classpath"/>
   </path>

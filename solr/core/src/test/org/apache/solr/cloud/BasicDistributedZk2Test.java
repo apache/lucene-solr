@@ -46,9 +46,7 @@ import org.apache.solr.common.cloud.ZkStateReader;
 import org.apache.solr.common.params.CommonParams;
 import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.common.util.NamedList;
-import org.apache.solr.core.SolrCore;
 import org.apache.solr.handler.ReplicationHandler;
-import org.apache.solr.servlet.SolrDispatchFilter;
 import org.apache.solr.util.AbstractSolrTestCase;
 import org.junit.BeforeClass;
 
@@ -176,8 +174,8 @@ public class BasicDistributedZk2Test extends AbstractFullDistribZkTestBase {
       createCmd.setCoreName(ONE_NODE_COLLECTION + "core");
       createCmd.setCollection(ONE_NODE_COLLECTION);
       createCmd.setNumShards(1);
-      createCmd.setDataDir(dataDir.getAbsolutePath() + File.separator
-          + ONE_NODE_COLLECTION);
+      createCmd.setDataDir(getDataDir(dataDir.getAbsolutePath() + File.separator
+          + ONE_NODE_COLLECTION));
       server.request(createCmd);
     } catch (Exception e) {
       e.printStackTrace();
@@ -331,7 +329,7 @@ public class BasicDistributedZk2Test extends AbstractFullDistribZkTestBase {
       ureq.process(cloudClient);
     } catch(SolrServerException e){
       // try again
-      Thread.sleep(500);
+      Thread.sleep(3500);
       ureq.process(cloudClient);
     }
     
@@ -415,14 +413,16 @@ public class BasicDistributedZk2Test extends AbstractFullDistribZkTestBase {
     ModifiableSolrParams params = new ModifiableSolrParams();
     params.set("qt", "/replication");
     params.set("command", "backup");
+    File location = new File(TEMP_DIR, BasicDistributedZk2Test.class.getName() + "-backupdir-" + System.currentTimeMillis());
+    params.set("location", location.getAbsolutePath());
 
     QueryRequest request = new QueryRequest(params);
     NamedList<Object> results = client.request(request );
     
-    checkForBackupSuccess(client);
+    checkForBackupSuccess(client, location);
     
   }
-  private void checkForBackupSuccess(final HttpSolrServer client)
+  private void checkForBackupSuccess(final HttpSolrServer client, File location)
       throws InterruptedException, IOException {
     class CheckStatus extends Thread {
       volatile String fail = null;
@@ -461,16 +461,6 @@ public class BasicDistributedZk2Test extends AbstractFullDistribZkTestBase {
         
       };
     }
-    ;
-    SolrCore core = ((SolrDispatchFilter) shardToJetty.get(SHARD2).get(0).jetty
-        .getDispatchFilter().getFilter()).getCores().getCore("collection1");
-    String ddir;
-    try {
-      ddir = core.getDataDir(); 
-    } finally {
-      core.close();
-    }
-    File dataDir = new File(ddir);
     
     int waitCnt = 0;
     CheckStatus checkStatus = new CheckStatus();
@@ -482,14 +472,14 @@ public class BasicDistributedZk2Test extends AbstractFullDistribZkTestBase {
       if (checkStatus.success) {
         break;
       }
-      Thread.sleep(200);
-      if (waitCnt == 20) {
+      Thread.sleep(500);
+      if (waitCnt == 90) {
         fail("Backup success not detected:" + checkStatus.response);
       }
       waitCnt++;
     }
     
-    File[] files = dataDir.listFiles(new FilenameFilter() {
+    File[] files = location.listFiles(new FilenameFilter() {
       
       @Override
       public boolean accept(File dir, String name) {

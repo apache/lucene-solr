@@ -17,20 +17,24 @@ package org.apache.solr;
  * limitations under the License.
  */
 
-import org.apache.solr.cloud.ZkController;
-import org.apache.solr.common.SolrException;
-import org.apache.solr.common.cloud.Replica;
-import org.apache.solr.common.cloud.ZkStateReader;
-import org.apache.solr.core.SolrCore;
-import org.apache.solr.request.SolrQueryRequest;
-import org.apache.solr.request.SolrRequestInfo;
-import org.slf4j.LoggerFactory;
-
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.WeakHashMap;
-import java.util.logging.*;
+import java.util.logging.ConsoleHandler;
+import java.util.logging.Formatter;
+import java.util.logging.Handler;
+import java.util.logging.Level;
+import java.util.logging.LogRecord;
+import java.util.logging.Logger;
+
+import org.apache.solr.cloud.ZkController;
+import org.apache.solr.common.SolrException;
+import org.apache.solr.common.cloud.Replica;
+import org.apache.solr.core.SolrCore;
+import org.apache.solr.request.SolrQueryRequest;
+import org.apache.solr.request.SolrRequestInfo;
+import org.slf4j.LoggerFactory;
 
 public class SolrLogFormatter extends Formatter {
 
@@ -259,7 +263,7 @@ sb.append("(group_name=").append(tg.getName()).append(")");
 
   private Map<String,Object> getReplicaProps(ZkController zkController, SolrCore core) {
     final String collection = core.getCoreDescriptor().getCloudDescriptor().getCollectionName();
-    Replica replica = zkController.getClusterState().getReplica(collection, zkController.getCoreNodeName(core.getCoreDescriptor()));
+    Replica replica = zkController.getClusterState().getReplica(collection, core.getCoreDescriptor().getCloudDescriptor().getCoreNodeName());
     if(replica!=null) {
       return replica.getProperties();
     }

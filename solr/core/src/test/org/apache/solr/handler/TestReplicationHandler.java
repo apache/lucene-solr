@@ -1522,7 +1522,7 @@ public class TestReplicationHandler extends SolrTestCaseJ4 {
     }
 
     public String getDataDir() {
-      return dataDir.toString();
+      return dataDir.getAbsolutePath();
     }
 
     public String getSolrConfigFile() {

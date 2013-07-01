@@ -103,7 +103,7 @@ public class TestCoreAdmin extends AbstractEmbeddedSolrServerTestCase {
 
     File logDir;
     try {
-      logDir = core.getUpdateHandler().getUpdateLog().getLogDir();
+      logDir = new File(core.getUpdateHandler().getUpdateLog().getLogDir());
     } finally {
       coreProveIt.close();
       core.close();

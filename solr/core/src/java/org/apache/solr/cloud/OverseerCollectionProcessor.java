@@ -400,10 +400,11 @@ public class OverseerCollectionProcessor implements Runnable, ClosableThread {
 
         // wait for parent leader to acknowledge the sub-shard core
         log.info("Asking parent leader to wait for: " + subShardName + " to be alive on: " + nodeName);
+        String coreNodeName = waitForCoreNodeName(collection, zkStateReader.getZkClient().getBaseUrlForNodeName(nodeName), subShardName);
         CoreAdminRequest.WaitForState cmd = new CoreAdminRequest.WaitForState();
         cmd.setCoreName(subShardName);
         cmd.setNodeName(nodeName);
-        cmd.setCoreNodeName(nodeName + "_" + subShardName);
+        cmd.setCoreNodeName(coreNodeName);
         cmd.setState(ZkStateReader.ACTIVE);
         cmd.setCheckLive(true);
         cmd.setOnlyIfLeader(true);
@@ -506,12 +507,13 @@ public class OverseerCollectionProcessor implements Runnable, ClosableThread {
 
           sendShardRequest(subShardNodeName, params);
 
+          String coreNodeName = waitForCoreNodeName(collection, zkStateReader.getZkClient().getBaseUrlForNodeName(subShardNodeName), shardName);
           // wait for the replicas to be seen as active on sub shard leader
           log.info("Asking sub shard leader to wait for: " + shardName + " to be alive on: " + subShardNodeName);
           CoreAdminRequest.WaitForState cmd = new CoreAdminRequest.WaitForState();
           cmd.setCoreName(subShardNames.get(i-1));
           cmd.setNodeName(subShardNodeName);
-          cmd.setCoreNodeName(subShardNodeName + "_" + shardName);
+          cmd.setCoreNodeName(coreNodeName);
           cmd.setState(ZkStateReader.ACTIVE);
           cmd.setCheckLive(true);
           cmd.setOnlyIfLeader(true);
@@ -544,6 +546,35 @@ public class OverseerCollectionProcessor implements Runnable, ClosableThread {
       log.error("Error executing split operation for collection: " + collectionName + " parent shard: " + slice, e);
       throw new SolrException(ErrorCode.SERVER_ERROR, null, e);
     }
+  }
+  
+  private String waitForCoreNodeName(DocCollection collection, String msgBaseUrl, String msgCore) {
+    int retryCount = 320;
+    while (retryCount-- > 0) {
+      Map<String,Slice> slicesMap = zkStateReader.getClusterState()
+          .getSlicesMap(collection.getName());
+      if (slicesMap != null) {
+        
+        for (Slice slice : slicesMap.values()) {
+          for (Replica replica : slice.getReplicas()) {
+            // TODO: for really large clusters, we could 'index' on this
+            
+            String baseUrl = replica.getStr(ZkStateReader.BASE_URL_PROP);
+            String core = replica.getStr(ZkStateReader.CORE_NAME_PROP);
+            
+            if (baseUrl.equals(msgBaseUrl) && core.equals(msgCore)) {
+              return replica.getName();
+            }
+          }
+        }
+      }
+      try {
+        Thread.sleep(1000);
+      } catch (InterruptedException e) {
+        Thread.currentThread().interrupt();
+      }
+    }
+    throw new SolrException(ErrorCode.SERVER_ERROR, "Could not find coreNodeName");
   }
 
   private void collectShardResponses(NamedList results, boolean abortOnError, String msgOnError) {

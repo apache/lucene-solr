@@ -673,11 +673,10 @@ public final class SolrCore implements SolrInfoMBean {
     if (dataDir == null) {
       if (cd.usingDefaultDataDir()) dataDir = config.getDataDir();
       if (dataDir == null) {
-        dataDir = cd.getDataDir();
         try {
+          dataDir = cd.getDataDir();
           if (!directoryFactory.isAbsolute(dataDir)) {
-            dataDir = directoryFactory.normalize(SolrResourceLoader
-                .normalizeDir(cd.getInstanceDir()) + dataDir);
+            dataDir = directoryFactory.getDataHome(cd);
           }
         } catch (IOException e) {
           throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, null, e);
@@ -748,7 +747,6 @@ public final class SolrCore implements SolrInfoMBean {
       this.codec = initCodec(solrConfig, schema);
       
       if (updateHandler == null) {
-        initDirectoryFactory();
         solrCoreState = new DefaultSolrCoreState(getDirectoryFactory());
       } else {
         solrCoreState = updateHandler.getSolrCoreState();

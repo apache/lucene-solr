@@ -67,7 +67,6 @@ public class SyncSliceTest extends AbstractFullDistribZkTestBase {
     super.setUp();
     // we expect this time of exception as shards go up and down...
     //ignoreException(".*");
-    useFactory(null);
     System.setProperty("numShards", Integer.toString(sliceCount));
   }
   
@@ -94,7 +93,7 @@ public class SyncSliceTest extends AbstractFullDistribZkTestBase {
     handle.put("QTime", SKIPVAL);
     handle.put("timestamp", SKIPVAL);
     
-    waitForThingsToLevelOut(15);
+    waitForThingsToLevelOut(30);
 
     del("*:*");
     List<CloudJettyRunner> skipServers = new ArrayList<CloudJettyRunner>();

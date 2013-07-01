@@ -36,6 +36,7 @@ import org.apache.lucene.util.LuceneTestCase.Slow;
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.common.cloud.ClusterState;
 import org.apache.solr.common.cloud.DocCollection;
+import org.apache.solr.common.cloud.Replica;
 import org.apache.solr.common.cloud.Slice;
 import org.apache.solr.common.cloud.SolrZkClient;
 import org.apache.solr.common.cloud.ZkNodeProps;
@@ -98,7 +99,7 @@ public class OverseerTest extends SolrTestCaseJ4 {
       zkClient.close();
     }
     
-    public String publishState(String coreName, String stateName, int numShards)
+    public String publishState(String coreName, String coreNodeName, String stateName, int numShards)
         throws KeeperException, InterruptedException, IOException {
       if (stateName == null) {
         ElectionContext ec = electionContext.remove(coreName);
@@ -108,6 +109,7 @@ public class OverseerTest extends SolrTestCaseJ4 {
         ZkNodeProps m = new ZkNodeProps(Overseer.QUEUE_OPERATION, "deletecore",
             ZkStateReader.NODE_NAME_PROP, nodeName,
             ZkStateReader.CORE_NAME_PROP, coreName,
+            ZkStateReader.CORE_NODE_NAME_PROP, coreNodeName,
             ZkStateReader.COLLECTION_PROP, collection);
             DistributedQueue q = Overseer.getInQueue(zkClient);
             q.offer(ZkStateReader.toJSON(m));
@@ -117,6 +119,7 @@ public class OverseerTest extends SolrTestCaseJ4 {
         ZkStateReader.STATE_PROP, stateName,
         ZkStateReader.NODE_NAME_PROP, nodeName,
         ZkStateReader.CORE_NAME_PROP, coreName,
+        ZkStateReader.CORE_NODE_NAME_PROP, coreNodeName,
         ZkStateReader.COLLECTION_PROP, collection,
         ZkStateReader.NUM_SHARDS_PROP, Integer.toString(numShards),
         ZkStateReader.BASE_URL_PROP, "http://" + nodeName
@@ -126,7 +129,8 @@ public class OverseerTest extends SolrTestCaseJ4 {
       }
       
       for (int i = 0; i < 120; i++) {
-        String shardId = getShardId(coreName);
+        String shardId = getShardId("http://" + nodeName
+            + "/solr/", coreName);
         if (shardId != null) {
           try {
             zkClient.makePath("/collections/" + collection + "/leader_elect/"
@@ -136,7 +140,8 @@ public class OverseerTest extends SolrTestCaseJ4 {
               "http://" + nodeName + "/solr/", ZkStateReader.NODE_NAME_PROP,
               nodeName, ZkStateReader.CORE_NAME_PROP, coreName,
               ZkStateReader.SHARD_ID_PROP, shardId,
-              ZkStateReader.COLLECTION_PROP, collection);
+              ZkStateReader.COLLECTION_PROP, collection,
+              ZkStateReader.CORE_NODE_NAME_PROP, coreNodeName);
           ShardLeaderElectionContextBase ctx = new ShardLeaderElectionContextBase(
               elector, shardId, collection, nodeName + "_" + coreName, props,
               zkStateReader);
@@ -148,13 +153,18 @@ public class OverseerTest extends SolrTestCaseJ4 {
       return null;
     }
     
-    private String getShardId(final String coreName) {
+    private String getShardId(final String baseUrl, final String coreName) {
       Map<String,Slice> slices = zkStateReader.getClusterState().getSlicesMap(
           collection);
       if (slices != null) {
         for (Slice slice : slices.values()) {
-          if (slice.getReplicasMap().containsKey(nodeName + "_" + coreName)) {
-            return slice.getName();
+          for (Replica replica : slice.getReplicas()) {
+            // TODO: for really large clusters, we could 'index' on this
+            String rbaseUrl = replica.getStr(ZkStateReader.BASE_URL_PROP);
+            String rcore = replica.getStr(ZkStateReader.CORE_NAME_PROP);
+            if (baseUrl.equals(rbaseUrl) && coreName.equals(rcore)) {
+              return slice.getName();
+            }
           }
         }
       }
@@ -202,7 +212,7 @@ public class OverseerTest extends SolrTestCaseJ4 {
       final int numShards=6;
       
       for (int i = 0; i < numShards; i++) {
-        assertNotNull("shard got no id?", zkController.publishState("core" + (i+1), ZkStateReader.ACTIVE, 3));
+        assertNotNull("shard got no id?", zkController.publishState("core" + (i+1), "node" + (i+1), ZkStateReader.ACTIVE, 3));
       }
 
       assertEquals(2, reader.getClusterState().getSlice("collection1", "shard1").getReplicasMap().size());
@@ -277,7 +287,7 @@ public class OverseerTest extends SolrTestCaseJ4 {
             final String coreName = "core" + slot;
             
             try {
-              ids[slot]=controllers[slot % nodeCount].publishState(coreName, ZkStateReader.ACTIVE, sliceCount);
+              ids[slot]=controllers[slot % nodeCount].publishState(coreName, "node" + slot, ZkStateReader.ACTIVE, sliceCount);
             } catch (Throwable e) {
               e.printStackTrace();
               fail("register threw exception:" + e.getClass());
@@ -440,7 +450,7 @@ public class OverseerTest extends SolrTestCaseJ4 {
 
       assertEquals(reader.getClusterState().toString(), ZkStateReader.RECOVERING,
           reader.getClusterState().getSlice("collection1", "shard1").getReplicasMap()
-              .get("node1_core1").getStr(ZkStateReader.STATE_PROP));
+              .get("core_node1").getStr(ZkStateReader.STATE_PROP));
 
       //publish node state (active)
       m = new ZkNodeProps(Overseer.QUEUE_OPERATION, "state",
@@ -471,7 +481,7 @@ public class OverseerTest extends SolrTestCaseJ4 {
     while(maxIterations-->0) {
       Slice slice = reader.getClusterState().getSlice("collection1", "shard1");
       if(slice!=null) {
-        coreState = slice.getReplicasMap().get("node1_core1").getStr(ZkStateReader.STATE_PROP);
+        coreState = slice.getReplicasMap().get("core_node1").getStr(ZkStateReader.STATE_PROP);
         if(coreState.equals(expectedState)) {
           return;
         }
@@ -523,14 +533,14 @@ public class OverseerTest extends SolrTestCaseJ4 {
       overseerClient = electNewOverseer(server.getZkAddress());
 
       Thread.sleep(1000);
-      mockController.publishState("core1", ZkStateReader.RECOVERING, 1);
+      mockController.publishState("core1", "core_node1", ZkStateReader.RECOVERING, 1);
 
       waitForCollections(reader, "collection1");
       verifyStatus(reader, ZkStateReader.RECOVERING);
 
       int version = getClusterStateVersion(controllerClient);
       
-      mockController.publishState("core1", ZkStateReader.ACTIVE, 1);
+      mockController.publishState("core1", "core_node1", ZkStateReader.ACTIVE, 1);
       
       while(version == getClusterStateVersion(controllerClient));
 
@@ -539,7 +549,7 @@ public class OverseerTest extends SolrTestCaseJ4 {
       overseerClient.close();
       Thread.sleep(1000); //wait for overseer to get killed
 
-      mockController.publishState("core1", ZkStateReader.RECOVERING, 1);
+      mockController.publishState("core1",  "core_node1", ZkStateReader.RECOVERING, 1);
       version = getClusterStateVersion(controllerClient);
       
       overseerClient = electNewOverseer(server.getZkAddress());
@@ -553,7 +563,7 @@ public class OverseerTest extends SolrTestCaseJ4 {
       assertEquals("Shard count does not match", 1, reader.getClusterState()
           .getSlice("collection1", "shard1").getReplicasMap().size());
       version = getClusterStateVersion(controllerClient);
-      mockController.publishState("core1", null,1);
+      mockController.publishState("core1", "core_node1", null,1);
       while(version == getClusterStateVersion(controllerClient));
       Thread.sleep(500);
       assertFalse("collection1 should be gone after publishing the null state", reader.getClusterState().getCollections().contains("collection1"));
@@ -641,16 +651,16 @@ public class OverseerTest extends SolrTestCaseJ4 {
       for (int i = 0; i < atLeast(4); i++) {
         killCounter.incrementAndGet(); //for each round allow 1 kill
         mockController = new MockZKController(server.getZkAddress(), "node1", "collection1");
-        mockController.publishState("core1", "state1",1);
+        mockController.publishState("core1", "node1", "state1",1);
         if(mockController2!=null) {
           mockController2.close();
           mockController2 = null;
         }
-        mockController.publishState("core1", "state2",1);
+        mockController.publishState("core1", "node1","state2",1);
         mockController2 = new MockZKController(server.getZkAddress(), "node2", "collection1");
-        mockController.publishState("core1", "state1",1);
+        mockController.publishState("core1", "node1", "state1",1);
         verifyShardLeader(reader, "collection1", "shard1", "core1");
-        mockController2.publishState("core4", "state2" ,1);
+        mockController2.publishState("core4", "node2", "state2" ,1);
         mockController.close();
         mockController = null;
         verifyShardLeader(reader, "collection1", "shard1", "core4");
@@ -697,7 +707,7 @@ public class OverseerTest extends SolrTestCaseJ4 {
       
       overseerClient = electNewOverseer(server.getZkAddress());
 
-      mockController.publishState("core1", ZkStateReader.RECOVERING, 1);
+      mockController.publishState("core1", "core_node1", ZkStateReader.RECOVERING, 1);
 
       waitForCollections(reader, "collection1");
       
@@ -708,7 +718,7 @@ public class OverseerTest extends SolrTestCaseJ4 {
       int version = getClusterStateVersion(controllerClient);
       
       mockController = new MockZKController(server.getZkAddress(), "node1", "collection1");
-      mockController.publishState("core1", ZkStateReader.RECOVERING, 1);
+      mockController.publishState("core1", "core_node1", ZkStateReader.RECOVERING, 1);
 
       while (version == getClusterStateVersion(controllerClient));
       
@@ -718,7 +728,7 @@ public class OverseerTest extends SolrTestCaseJ4 {
       int numFound = 0;
       for (DocCollection collection : state.getCollectionStates().values()) {
         for (Slice slice : collection.getSlices()) {
-          if (slice.getReplicasMap().get("node1_core1") != null) {
+          if (slice.getReplicasMap().get("core_node1") != null) {
             numFound++;
           }
         }
@@ -761,7 +771,7 @@ public class OverseerTest extends SolrTestCaseJ4 {
       
       overseerClient = electNewOverseer(server.getZkAddress());
 
-      mockController.publishState("core1", ZkStateReader.RECOVERING, 12);
+      mockController.publishState("core1", "node1", ZkStateReader.RECOVERING, 12);
 
       waitForCollections(reader, "collection1");
       

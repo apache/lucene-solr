@@ -508,6 +508,7 @@ public class ZkStateReader {
   
   public List<ZkCoreNodeProps> getReplicaProps(String collection,
       String shardId, String thisCoreNodeName, String coreName, String mustMatchStateFilter, String mustNotMatchStateFilter) {
+    assert thisCoreNodeName != null;
     ClusterState clusterState = this.clusterState;
     if (clusterState == null) {
       return null;
@@ -540,7 +541,7 @@ public class ZkStateReader {
       }
     }
     if (nodes.size() == 0) {
-      // no replicas - go local
+      // no replicas
       return null;
     }
 

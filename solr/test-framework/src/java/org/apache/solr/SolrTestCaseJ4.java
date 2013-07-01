@@ -345,6 +345,9 @@ public abstract class SolrTestCaseJ4 extends LuceneTestCase {
    * The directory used to story the index managed by the TestHarness h
    */
   protected static File dataDir;
+  
+  // hack due to File dataDir
+  protected static String hdfsDataDir;
 
   /**
    * Initializes things your test might need
@@ -395,8 +398,7 @@ public abstract class SolrTestCaseJ4 extends LuceneTestCase {
   public static void createCore() {
     assertNotNull(testSolrHome);
     solrConfig = TestHarness.createConfig(testSolrHome, coreName, getSolrConfigFile());
-    h = new TestHarness( coreName,
-            dataDir.getAbsolutePath(),
+    h = new TestHarness( coreName, hdfsDataDir == null ? dataDir.getAbsolutePath() : hdfsDataDir,
             solrConfig,
             getSchemaFile());
     lrf = h.getRequestFactory

@@ -196,7 +196,8 @@ public class TestSolrProperties extends AbstractEmbeddedSolrServerTestCase {
                  exists("/solr/cores[@zkClientTimeout='8000']", document));
       assertTrue("\"/solr/cores[@hostContext='${hostContext:solr}']\" doesn't match in:\n" + solrPersistXml,
                  exists("/solr/cores[@hostContext='${hostContext:solr}']", document));
-      
+      assertTrue("\"/solr/cores[@genericCoreNodeNames='${genericCoreNodeNames:true}']\" doesn't match in:\n" + solrPersistXml,
+          exists("/solr/cores[@genericCoreNodeNames='${genericCoreNodeNames:true}']", document));
     } finally {
       fis.close();
     }

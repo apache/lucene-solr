@@ -23,12 +23,36 @@ import java.util.Comparator;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 import org.apache.solr.common.cloud.ClusterState;
+import org.apache.solr.common.cloud.Replica;
 import org.apache.solr.common.cloud.Slice;
 
-public class AssignShard {
 
+public class Assign {
+  private static Pattern COUNT = Pattern.compile("core_node(\\d+)");
+
+  public static String assignNode(String collection, ClusterState state) {
+    Map<String, Slice> sliceMap = state.getSlicesMap(collection);
+    if (sliceMap == null) {
+      return "core_node1";
+    }
+
+    int max = 0;
+    for (Slice slice : sliceMap.values()) {
+      for (Replica replica : slice.getReplicas()) {
+        Matcher m = COUNT.matcher(replica.getName());
+        if (m.matches()) {
+          max = Math.max(max, Integer.parseInt(m.group(1)));
+        }
+      }
+    }
+
+    return "core_node" + (max + 1);
+  }
+  
   /**
    * Assign a new unique id up to slices count - then add replicas evenly.
    * 

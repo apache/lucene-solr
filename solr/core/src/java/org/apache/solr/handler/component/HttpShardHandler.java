@@ -362,20 +362,18 @@ public class HttpShardHandler extends ShardHandler {
             Map<String, Replica> sliceShards = slice.getReplicasMap();
 
             // For now, recreate the | delimited list of equivalent servers
-            Set<String> liveNodes = clusterState.getLiveNodes();
             StringBuilder sliceShardsStr = new StringBuilder();
             boolean first = true;
-            for (ZkNodeProps nodeProps : sliceShards.values()) {
-              ZkCoreNodeProps coreNodeProps = new ZkCoreNodeProps(nodeProps);
-              if (!liveNodes.contains(coreNodeProps.getNodeName())
-                  || !coreNodeProps.getState().equals(
+            for (Replica replica : sliceShards.values()) {
+              if (!clusterState.liveNodesContain(replica.getNodeName())
+                  || !replica.getStr(ZkStateReader.STATE_PROP).equals(
                       ZkStateReader.ACTIVE)) continue;
               if (first) {
                 first = false;
               } else {
                 sliceShardsStr.append('|');
               }
-              String url = coreNodeProps.getCoreUrl();
+              String url = ZkCoreNodeProps.getCoreUrl(replica);
               if (url.startsWith("http://"))
                 url = url.substring(7);
               sliceShardsStr.append(url);

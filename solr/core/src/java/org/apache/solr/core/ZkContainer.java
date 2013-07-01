@@ -55,6 +55,7 @@ public class ZkContainer {
   private String hostContext;
   private String host;
   private String leaderVoteWait;
+  private Boolean genericCoreNodeNames;
   private int distribUpdateConnTimeout;
 
   public SolrZkServer getZkServer() {
@@ -80,6 +81,10 @@ public class ZkContainer {
   public String getLeaderVoteWait() {
     return leaderVoteWait;
   }
+  
+  public boolean getGenericCoreNodeNames() {
+    return genericCoreNodeNames;
+  }
 
   public int getDistribUpdateConnTimeout() {
     return distribUpdateConnTimeout;
@@ -95,7 +100,7 @@ public class ZkContainer {
     
   }
   
-  public void initZooKeeper(final CoreContainer cc, String solrHome, String zkHost, int zkClientTimeout, String hostPort, String hostContext, String host, String leaderVoteWait, int distribUpdateConnTimeout, int distribUpdateSoTimeout) {
+  public void initZooKeeper(final CoreContainer cc, String solrHome, String zkHost, int zkClientTimeout, String hostPort, String hostContext, String host, String leaderVoteWait, boolean genericCoreNodeNames, int distribUpdateConnTimeout, int distribUpdateSoTimeout) {
     ZkController zkController = null;
     
     // if zkHost sys property is not set, we are not using ZooKeeper
@@ -113,6 +118,7 @@ public class ZkContainer {
     this.hostContext = hostContext;
     this.host = host;
     this.leaderVoteWait = leaderVoteWait;
+    this.genericCoreNodeNames = genericCoreNodeNames;
     this.distribUpdateConnTimeout = distribUpdateConnTimeout;
     this.distribUpdateSoTimeout = distribUpdateSoTimeout;
     
@@ -175,7 +181,7 @@ public class ZkContainer {
         }
         zkController = new ZkController(cc, zookeeperHost, zkClientTimeout,
             zkClientConnectTimeout, host, hostPort, hostContext,
-            leaderVoteWait, distribUpdateConnTimeout, distribUpdateSoTimeout,
+            leaderVoteWait, genericCoreNodeNames, distribUpdateConnTimeout, distribUpdateSoTimeout,
             new CurrentCoreDescriptorProvider() {
 
               @Override

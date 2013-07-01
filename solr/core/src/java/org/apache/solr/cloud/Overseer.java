@@ -50,15 +50,16 @@ import org.slf4j.LoggerFactory;
  */
 public class Overseer {
   public static final String QUEUE_OPERATION = "operation";
+  public static final String DELETECORE = "deletecore";
   public static final String REMOVECOLLECTION = "removecollection";
   
   private static final int STATE_UPDATE_DELAY = 1500;  // delay between cloud state updates
+
 
   private static Logger log = LoggerFactory.getLogger(Overseer.class);
   
   private class ClusterStateUpdater implements Runnable, ClosableThread {
     
-    private static final String DELETECORE = "deletecore";
     private final ZkStateReader reader;
     private final SolrZkClient zkClient;
     private final String myId;
@@ -267,8 +268,14 @@ public class Overseer {
         final String collection = message.getStr(ZkStateReader.COLLECTION_PROP);
         String coreNodeName = message.getStr(ZkStateReader.CORE_NODE_NAME_PROP);
         if (coreNodeName == null) {
-          // it must be the default then
-          coreNodeName = message.getStr(ZkStateReader.NODE_NAME_PROP) + "_" + message.getStr(ZkStateReader.CORE_NAME_PROP);
+          coreNodeName = getAssignedCoreNodeName(state, message);
+          if (coreNodeName != null) {
+            log.info("node=" + coreNodeName + " is already registered");
+          } else {
+            // if coreNodeName is null, auto assign one
+            coreNodeName = Assign.assignNode(collection, state);
+          }
+          message.getProperties().put(ZkStateReader.CORE_NODE_NAME_PROP, coreNodeName);
         }
         Integer numShards = message.getStr(ZkStateReader.NUM_SHARDS_PROP)!=null?Integer.parseInt(message.getStr(ZkStateReader.NUM_SHARDS_PROP)):null;
         log.info("Update state numShards={} message={}", numShards, message);
@@ -281,7 +288,6 @@ public class Overseer {
         // use the provided non null shardId
         String sliceName = message.getStr(ZkStateReader.SHARD_ID_PROP);
         if (sliceName == null) {
-          //String nodeName = message.getStr(ZkStateReader.NODE_NAME_PROP);
           //get shardId from ClusterState
           sliceName = getAssignedId(state, coreNodeName, message);
           if (sliceName != null) {
@@ -295,8 +301,8 @@ public class Overseer {
             numShards = state.getCollectionStates().get(collection).getSlices().size();
             log.info("Collection already exists with " + ZkStateReader.NUM_SHARDS_PROP + "=" + numShards);
           }
-          sliceName = AssignShard.assignShard(collection, state, numShards);
-          log.info("Assigning new node to shard=" + sliceName);
+          sliceName = Assign.assignShard(collection, state, numShards);
+          log.info("Assigning new node to shard shard=" + sliceName);
         }
 
         Slice slice = state.getSlice(collection, sliceName);
@@ -320,8 +326,11 @@ public class Overseer {
           }
         }
 
-        // we don't put num_shards in the clusterstate
+        // we don't put these in the clusterstate
           replicaProps.remove(ZkStateReader.NUM_SHARDS_PROP);
+          replicaProps.remove(ZkStateReader.CORE_NODE_NAME_PROP);
+          replicaProps.remove(ZkStateReader.SHARD_ID_PROP);
+          replicaProps.remove(ZkStateReader.COLLECTION_PROP);
           replicaProps.remove(QUEUE_OPERATION);
           
           // remove any props with null values
@@ -411,6 +420,26 @@ public class Overseer {
           for (Slice slice : slices) {
             if (slice.getReplicasMap().get(nodeName) != null) {
               return slice.getName();
+            }
+          }
+        }
+        return null;
+      }
+      
+      private String getAssignedCoreNodeName(ClusterState state, ZkNodeProps message) {
+        Collection<Slice> slices = state.getSlices(message.getStr(ZkStateReader.COLLECTION_PROP));
+        if (slices != null) {
+          for (Slice slice : slices) {
+            for (Replica replica : slice.getReplicas()) {
+              String baseUrl = replica.getStr(ZkStateReader.BASE_URL_PROP);
+              String core = replica.getStr(ZkStateReader.CORE_NAME_PROP);
+              
+              String msgBaseUrl = message.getStr(ZkStateReader.BASE_URL_PROP);
+              String msgCore = message.getStr(ZkStateReader.CORE_NAME_PROP);
+              
+              if (baseUrl.equals(msgBaseUrl) && core.equals(msgCore)) {
+                return replica.getName();
+              }
             }
           }
         }
@@ -526,10 +555,6 @@ public class Overseer {
       private ClusterState removeCore(final ClusterState clusterState, ZkNodeProps message) {
         
         String cnn = message.getStr(ZkStateReader.CORE_NODE_NAME_PROP);
-        if (cnn == null) {
-          // it must be the default then
-          cnn = message.getStr(ZkStateReader.NODE_NAME_PROP) + "_" + message.getStr(ZkStateReader.CORE_NAME_PROP);
-        }
 
         final String collection = message.getStr(ZkStateReader.COLLECTION_PROP);
 
