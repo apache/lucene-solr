@@ -103,7 +103,7 @@ public class TestReplicationHandler extends SolrTestCaseJ4 {
     super.setUp();
 //    System.setProperty("solr.directoryFactory", "solr.StandardDirectoryFactory");
     // For manual testing only
-    // useFactory(null); // force an FS factory
+    useFactory(null); // force an FS factory.  currently MockDirectoryFactory causes SolrCore.initIndex to detect no index and create a new one.
     master = new SolrInstance("master", null);
     master.setUp();
     masterJetty = createJetty(master);
@@ -337,6 +337,21 @@ public class TestReplicationHandler extends SolrTestCaseJ4 {
         if (repeater != null) repeater.tearDown();
       } catch (Exception e) { /* :NOOP: */ }
     }
+  }
+
+
+  /**
+   * Verify that things still work if an IW has not been opened (and hence the CommitPoints have not been communicated to the deletion policy)
+   */
+  public void testNoWriter() throws Exception {
+    index(slaveClient, "id", "123456");
+    slaveClient.commit();
+    slaveJetty.stop();
+    // System.err.println("############ starting jetty");
+    slaveJetty = createJetty(slave);
+    // System.err.println("############ done starting jetty");
+    slaveClient = createNewSolrServer(slaveJetty.getLocalPort());
+    pullFromMasterToSlave();
   }
 
   /**
