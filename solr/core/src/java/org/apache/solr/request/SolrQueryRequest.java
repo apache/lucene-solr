@@ -73,6 +73,9 @@ public interface SolrQueryRequest {
 
   /** The schema snapshot from core.getLatestSchema() at request creation. */
   public IndexSchema getSchema();
+  
+  /** Replaces the current schema snapshot with the latest from the core. */
+  public void updateSchemaToLatest();
 
   /**
    * Returns a string representing all the important parameters.

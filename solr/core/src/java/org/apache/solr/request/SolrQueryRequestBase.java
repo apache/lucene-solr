@@ -42,8 +42,8 @@ import java.util.HashMap;
  */
 public abstract class SolrQueryRequestBase implements SolrQueryRequest {
   protected final SolrCore core;
-  protected final IndexSchema schema;
   protected final SolrParams origParams;
+  protected volatile IndexSchema schema;
   protected SolrParams params;
   protected Map<Object,Object> context;
   protected Iterable<ContentStream> streams;
@@ -110,6 +110,11 @@ public abstract class SolrQueryRequestBase implements SolrQueryRequest {
   public IndexSchema getSchema() {
     //a request for a core admin will no have a core
     return schema;
+  }
+
+  @Override
+  public void updateSchemaToLatest() {
+    schema = core.getLatestSchema();
   }
 
   /**
