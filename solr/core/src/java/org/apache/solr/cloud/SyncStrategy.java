@@ -279,7 +279,6 @@ public class SyncStrategy {
   }
   
   private void requestRecovery(final ZkNodeProps leaderProps, final String baseUrl, final String coreName) throws SolrServerException, IOException {
-    // TODO: do this in background threads
     Thread thread = new Thread() {
       {
         setDaemon(true);
