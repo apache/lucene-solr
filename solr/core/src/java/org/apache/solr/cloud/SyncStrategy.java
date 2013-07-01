@@ -62,8 +62,8 @@ public class SyncStrategy {
 
   private volatile boolean isClosed;
   
-  private final static HttpClient client;
-  static {
+  private final HttpClient client;
+  {
     ModifiableSolrParams params = new ModifiableSolrParams();
     params.set(HttpClientUtil.PROP_MAX_CONNECTIONS, 10000);
     params.set(HttpClientUtil.PROP_MAX_CONNECTIONS_PER_HOST, 20);
@@ -112,20 +112,6 @@ public class SyncStrategy {
       log.info("We have been closed, won't sync with replicas");
       return false;
     }
-    // if no one that is up is active, we are willing to wait...
-    // we don't want a recovering node to become leader and then
-    // a better candidate pops up a second later.
-//    int tries = 20;
-//    while (!areAnyReplicasActive(zkController, collection, shardId)) {
-//      if (tries-- == 0) {
-//        break;
-//      }
-//      try {
-//        Thread.sleep(500);
-//      } catch (InterruptedException e) {
-//        Thread.currentThread().interrupt();
-//      }
-//    }
     
     // first sync ourselves - we are the potential leader after all
     try {
@@ -272,6 +258,11 @@ public class SyncStrategy {
   public void close() {
     this.isClosed = true;
     try {
+      client.getConnectionManager().shutdown();
+    } catch (Throwable e) {
+      SolrException.log(log, e);
+    }
+    try {
       ExecutorUtil.shutdownNowAndAwaitTermination(recoveryCmdExecutor);
     } catch (Throwable e) {
       SolrException.log(log, e);
@@ -289,7 +280,7 @@ public class SyncStrategy {
         recoverRequestCmd.setAction(CoreAdminAction.REQUESTRECOVERY);
         recoverRequestCmd.setCoreName(coreName);
         
-        HttpSolrServer server = new HttpSolrServer(baseUrl);
+        HttpSolrServer server = new HttpSolrServer(baseUrl, client);
         server.setConnectionTimeout(45000);
         server.setSoTimeout(45000);
         try {
