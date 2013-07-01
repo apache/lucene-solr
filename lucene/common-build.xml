@@ -869,6 +869,7 @@
         <mkdir dir="${tests.cachedir}/${name}" />
 
         <junit4:junit4
+            taskName="junit4"
             dir="@{workDir}"
             tempdir="@{workDir}/temp"
             maxmemory="${tests.heapsize}" 
