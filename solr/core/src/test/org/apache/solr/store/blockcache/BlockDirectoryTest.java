@@ -115,6 +115,7 @@ public class BlockDirectoryTest extends LuceneTestCase {
   @After
   public void tearDown() throws Exception {
     super.tearDown();
+    directory.close();
     FileUtils.deleteDirectory(file);
   }
 
@@ -128,15 +129,20 @@ public class BlockDirectoryTest extends LuceneTestCase {
     assertEquals(fsLength, hdfsLength);
     testEof(name, fsDir, fsLength);
     testEof(name, directory, hdfsLength);
+    fsDir.close();
   }
 
   private void testEof(String name, Directory directory, long length) throws IOException {
     IndexInput input = directory.openInput(name, new IOContext());
-    input.seek(length);
     try {
-      input.readByte();
-      fail("should throw eof");
-    } catch (IOException e) {
+    input.seek(length);
+      try {
+        input.readByte();
+        fail("should throw eof");
+      } catch (IOException e) {
+      }
+    } finally {
+      input.close();
     }
   }
 
