@@ -7,7 +7,10 @@ import java.util.Locale;
 
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.hdfs.MiniDFSCluster;
+import org.apache.lucene.util.Constants;
+import org.apache.lucene.util.LuceneTestCase;
 import org.apache.solr.SolrTestCaseJ4;
+import org.junit.Assert;
 
 /*
  * Licensed to the Apache Software Foundation (ASF) under one or more
@@ -31,6 +34,10 @@ public class HdfsTestUtil {
   private static Locale savedLocale;
 
   public static MiniDFSCluster setupClass(String dataDir) throws Exception {
+    LuceneTestCase.assumeFalse("HDFS tests on Windows require Cygwin", Constants.WINDOWS);
+    File dir = new File(dataDir);
+    new File(dataDir).mkdirs();
+
     savedLocale = Locale.getDefault();
     // TODO: we HACK around HADOOP-9643
     Locale.setDefault(Locale.ENGLISH);
@@ -41,12 +48,12 @@ public class HdfsTestUtil {
     conf.set("dfs.block.access.token.enable", "false");
     conf.set("dfs.permissions.enabled", "false");
     conf.set("hadoop.security.authentication", "simple");
-    conf.set("hdfs.minidfs.basedir", dataDir + File.separator + "hdfsBaseDir");
-    conf.set("dfs.namenode.name.dir", dataDir + File.separator + "nameNodeNameDir");
+    conf.set("hdfs.minidfs.basedir", dir.getAbsolutePath() + File.separator + "hdfsBaseDir");
+    conf.set("dfs.namenode.name.dir", dir.getAbsolutePath() + File.separator + "nameNodeNameDir");
     
     
-    System.setProperty("test.build.data", dataDir + File.separator + "hdfs" + File.separator + "build");
-    System.setProperty("test.cache.data", dataDir + File.separator + "hdfs" + File.separator + "cache");
+    System.setProperty("test.build.data", dir.getAbsolutePath() + File.separator + "hdfs" + File.separator + "build");
+    System.setProperty("test.cache.data", dir.getAbsolutePath() + File.separator + "hdfs" + File.separator + "cache");
     System.setProperty("solr.lock.type", "hdfs");
     
     MiniDFSCluster dfsCluster = new MiniDFSCluster(conf, dataNodes, true, null);
@@ -66,7 +73,9 @@ public class HdfsTestUtil {
     }
     
     // TODO: we HACK around HADOOP-9643
-    Locale.setDefault(savedLocale);
+    if (savedLocale != null) {
+      Locale.setDefault(savedLocale);
+    }
   }
   
   public static String getDataDir(MiniDFSCluster dfsCluster, String dataDir)
