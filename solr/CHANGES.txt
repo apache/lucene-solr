@@ -138,6 +138,9 @@ New Features
 
 * SOLR-4973: Adding getter method for defaultCollection on CloudSolrServer.
   (Furkan KAMACI via Mark Miller)
+  
+* SOLR-4897: Add solr/example/example-schemaless/, an example config set
+  for schemaless mode. (Steve Rowe)
 
 Bug Fixes
 ----------------------
