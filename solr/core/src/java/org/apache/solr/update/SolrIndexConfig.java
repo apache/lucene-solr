@@ -153,8 +153,12 @@ public class SolrIndexConfig {
     boolean infoStreamEnabled = solrConfig.getBool(prefix + "/infoStream", false);
     if(infoStreamEnabled) {
       String infoStreamFile = solrConfig.get(prefix + "/infoStream/@file", null);
-      if (infoStreamFile != null) {
-        log.info("IndexWriter infoStream debug log is enabled: " + infoStreamFile);
+      if (infoStreamFile == null) {
+        log.info("IndexWriter infoStream solr logging is enabled");
+        infoStream = new LoggingInfoStream();
+      } else {
+        log.warn("IndexWriter infoStream file log is enabled: " + infoStreamFile +
+                 "\nThis feature is deprecated. Remove @file from <infoStream> to output messages to solr's logfile");
         File f = new File(infoStreamFile);
         File parent = f.getParentFile();
         if (parent != null) parent.mkdirs();

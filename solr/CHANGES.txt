@@ -145,6 +145,9 @@ New Features
 * SOLR-4655: Add option to have Overseer assign generic node names so that
   new addresses can host shards without naming confusion. (Mark Miller, Anshum Gupta)
 
+* SOLR-4977: Add option to send IndexWriter's infostream to the logging system.
+  (Ryan Ernst via Robert Muir)
+
 Bug Fixes
 ----------------------
 
