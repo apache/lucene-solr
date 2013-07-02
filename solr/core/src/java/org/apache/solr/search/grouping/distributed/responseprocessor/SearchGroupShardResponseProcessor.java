@@ -20,8 +20,11 @@ package org.apache.solr.search.grouping.distributed.responseprocessor;
 import org.apache.lucene.search.Sort;
 import org.apache.lucene.search.grouping.SearchGroup;
 import org.apache.lucene.util.BytesRef;
+import org.apache.solr.client.solrj.SolrServerException;
 import org.apache.solr.common.SolrException;
+import org.apache.solr.common.params.ShardParams;
 import org.apache.solr.common.util.NamedList;
+import org.apache.solr.common.util.SimpleOrderedMap;
 import org.apache.solr.handler.component.ResponseBuilder;
 import org.apache.solr.handler.component.ShardRequest;
 import org.apache.solr.handler.component.ShardResponse;
@@ -31,6 +34,8 @@ import org.apache.solr.search.grouping.distributed.command.Pair;
 import org.apache.solr.search.grouping.distributed.shardresultserializer.SearchGroupsResultTransformer;
 
 import java.io.IOException;
+import java.io.PrintWriter;
+import java.io.StringWriter;
 import java.util.*;
 
 /**
@@ -61,7 +66,38 @@ public class SearchGroupShardResponseProcessor implements ShardResponseProcessor
     try {
       int maxElapsedTime = 0;
       int hitCountDuringFirstPhase = 0;
+
+      NamedList<Object> shardInfo = null;
+      if (rb.req.getParams().getBool(ShardParams.SHARDS_INFO, false)) {
+        shardInfo = new SimpleOrderedMap<Object>();
+        rb.rsp.getValues().add(ShardParams.SHARDS_INFO + ".firstPhase", shardInfo);
+      }
+
       for (ShardResponse srsp : shardRequest.responses) {
+        if (shardInfo != null) {
+          SimpleOrderedMap<Object> nl = new SimpleOrderedMap<Object>();
+
+          if (srsp.getException() != null) {
+            Throwable t = srsp.getException();
+            if (t instanceof SolrServerException) {
+              t = ((SolrServerException) t).getCause();
+            }
+            nl.add("error", t.toString());
+            StringWriter trace = new StringWriter();
+            t.printStackTrace(new PrintWriter(trace));
+            nl.add("trace", trace.toString());
+          } else {
+            nl.add("numFound", (Integer) srsp.getSolrResponse().getResponse().get("totalHitCount"));
+          }
+          if (srsp.getSolrResponse() != null) {
+            nl.add("time", srsp.getSolrResponse().getElapsedTime());
+          }
+
+          shardInfo.add(srsp.getShard(), nl);
+        }
+        if (rb.req.getParams().getBool(ShardParams.SHARDS_TOLERANT, false) && srsp.getException() != null) {
+          continue; // continue if there was an error and we're tolerant.  
+        }
         maxElapsedTime = (int) Math.max(maxElapsedTime, srsp.getSolrResponse().getElapsedTime());
         @SuppressWarnings("unchecked")
         NamedList<NamedList> firstPhaseResult = (NamedList<NamedList>) srsp.getSolrResponse().getResponse().get("firstPhase");

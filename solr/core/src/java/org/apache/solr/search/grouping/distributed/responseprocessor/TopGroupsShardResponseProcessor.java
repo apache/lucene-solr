@@ -23,8 +23,11 @@ import org.apache.lucene.search.TopDocs;
 import org.apache.lucene.search.grouping.GroupDocs;
 import org.apache.lucene.search.grouping.TopGroups;
 import org.apache.lucene.util.BytesRef;
+import org.apache.solr.client.solrj.SolrServerException;
 import org.apache.solr.common.SolrException;
+import org.apache.solr.common.params.ShardParams;
 import org.apache.solr.common.util.NamedList;
+import org.apache.solr.common.util.SimpleOrderedMap;
 import org.apache.solr.handler.component.ResponseBuilder;
 import org.apache.solr.handler.component.ShardDoc;
 import org.apache.solr.handler.component.ShardRequest;
@@ -35,6 +38,8 @@ import org.apache.solr.search.grouping.distributed.command.QueryCommandResult;
 import org.apache.solr.search.grouping.distributed.shardresultserializer.TopGroupsResultTransformer;
 
 import java.io.IOException;
+import java.io.PrintWriter;
+import java.io.StringWriter;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
@@ -76,18 +81,66 @@ public class TopGroupsShardResponseProcessor implements ShardResponseProcessor {
     }
 
     TopGroupsResultTransformer serializer = new TopGroupsResultTransformer(rb);
+
+    NamedList<Object> shardInfo = null;
+    if (rb.req.getParams().getBool(ShardParams.SHARDS_INFO, false)) {
+      shardInfo = new SimpleOrderedMap<Object>();
+      rb.rsp.getValues().add(ShardParams.SHARDS_INFO, shardInfo);
+    }
+
     for (ShardResponse srsp : shardRequest.responses) {
+      SimpleOrderedMap<Object> individualShardInfo = null;
+      if (shardInfo != null) {
+        individualShardInfo = new SimpleOrderedMap<Object>();
+
+        if (srsp.getException() != null) {
+          Throwable t = srsp.getException();
+          if (t instanceof SolrServerException) {
+            t = ((SolrServerException) t).getCause();
+          }
+          individualShardInfo.add("error", t.toString());
+          StringWriter trace = new StringWriter();
+          t.printStackTrace(new PrintWriter(trace));
+          individualShardInfo.add("trace", trace.toString());
+        } else {
+          // summary for successful shard response is added down below
+        }
+        if (srsp.getSolrResponse() != null) {
+          individualShardInfo.add("time", srsp.getSolrResponse().getElapsedTime());
+        }
+
+        shardInfo.add(srsp.getShard(), individualShardInfo);
+      }
+      if (rb.req.getParams().getBool(ShardParams.SHARDS_TOLERANT, false) && srsp.getException() != null) {
+        continue; // continue if there was an error and we're tolerant.  
+      }
       NamedList<NamedList> secondPhaseResult = (NamedList<NamedList>) srsp.getSolrResponse().getResponse().get("secondPhase");
       Map<String, ?> result = serializer.transformToNative(secondPhaseResult, groupSort, sortWithinGroup, srsp.getShard());
+      int numFound = 0;
+      float maxScore = Float.NaN;
       for (String field : commandTopGroups.keySet()) {
         TopGroups<BytesRef> topGroups = (TopGroups<BytesRef>) result.get(field);
         if (topGroups == null) {
           continue;
         }
+        if (individualShardInfo != null) { // keep track of this when shards.info=true
+          numFound += topGroups.totalHitCount;
+          if (Float.isNaN(maxScore) || topGroups.maxScore > maxScore) maxScore = topGroups.maxScore;
+        }
         commandTopGroups.get(field).add(topGroups);
       }
       for (String query : queries) {
-        commandTopDocs.get(query).add((QueryCommandResult) result.get(query));
+        QueryCommandResult queryCommandResult = (QueryCommandResult) result.get(query);
+        if (individualShardInfo != null) { // keep track of this when shards.info=true
+          numFound += queryCommandResult.getMatches();
+          float thisMax = queryCommandResult.getTopDocs().getMaxScore();
+          if (Float.isNaN(maxScore) || thisMax > maxScore) maxScore = thisMax;
+        }
+        commandTopDocs.get(query).add(queryCommandResult);
+      }
+      if (individualShardInfo != null) { // when shards.info=true
+        individualShardInfo.add("numFound", numFound);
+        individualShardInfo.add("maxScore", maxScore);
       }
     }
     try {
