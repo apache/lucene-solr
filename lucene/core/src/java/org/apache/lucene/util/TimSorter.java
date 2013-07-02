@@ -205,9 +205,9 @@ public abstract class TimSorter extends Sorter {
   }
 
   @Override
-  void rotate(int lo, int mid, int hi) {
-    int len1 = mid - lo;
-    int len2 = hi - mid;
+  void doRotate(int lo, int mid, int hi) {
+    final int len1 = mid - lo;
+    final int len2 = hi - mid;
     if (len1 == len2) {
       while (mid < hi) {
         swap(lo++, mid++);

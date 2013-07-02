@@ -30,7 +30,8 @@ import java.util.Map;
 
 import org.apache.lucene.codecs.BlockTreeTermsReader;
 import org.apache.lucene.codecs.Codec;
-import org.apache.lucene.codecs.PostingsFormat;
+import org.apache.lucene.codecs.PostingsFormat; // javadocs
+import org.apache.lucene.document.FieldType; // for javadocs
 import org.apache.lucene.index.FieldInfo.IndexOptions;
 import org.apache.lucene.search.DocIdSetIterator;
 import org.apache.lucene.store.Directory;
@@ -43,8 +44,6 @@ import org.apache.lucene.util.CommandLineUtil;
 import org.apache.lucene.util.FixedBitSet;
 import org.apache.lucene.util.OpenBitSet;
 import org.apache.lucene.util.StringHelper;
-// javadocs
-// for javadocs
 
 /**
  * Basic tool and API to check the health of an index and
@@ -464,11 +463,11 @@ public class CheckIndex {
 
     if (onlySegments != null) {
       result.partial = true;
-      if (infoStream != null)
+      if (infoStream != null) {
         infoStream.print("\nChecking only these segments:");
-      for (String s : onlySegments) {
-        if (infoStream != null)
+        for (String s : onlySegments) {
           infoStream.print(" " + s);
+        }
       }
       result.segmentsChecked.addAll(onlySegments);
       msg(infoStream, ":");

@@ -94,7 +94,7 @@ public class StandardFacetsAccumulator extends FacetsAccumulator {
 
   private Object accumulateGuard;
 
-  private double complementThreshold;
+  private double complementThreshold = DEFAULT_COMPLEMENT_THRESHOLD;
   
   public StandardFacetsAccumulator(FacetSearchParams searchParams, IndexReader indexReader, 
       TaxonomyReader taxonomyReader) {

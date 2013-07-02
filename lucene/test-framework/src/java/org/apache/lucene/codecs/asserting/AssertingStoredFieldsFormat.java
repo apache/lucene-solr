@@ -63,7 +63,8 @@ public class AssertingStoredFieldsFormat extends StoredFieldsFormat {
     }
 
     @Override
-    public void visitDocument(int n, StoredFieldVisitor visitor, Set<String> ignoreFields) throws IOException {
+    public void visitDocument(int n, StoredFieldVisitor visitor,
+        Set<String> ignoreFields) throws IOException {
       assert n >= 0 && n < maxDoc;
       in.visitDocument(n, visitor, ignoreFields);
     }

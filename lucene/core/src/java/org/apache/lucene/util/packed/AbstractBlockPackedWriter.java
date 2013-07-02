@@ -17,6 +17,8 @@ package org.apache.lucene.util.packed;
  * limitations under the License.
  */
 
+import static org.apache.lucene.util.packed.PackedInts.checkBlockSize;
+
 import java.io.IOException;
 import java.util.Arrays;
 
@@ -24,21 +26,10 @@ import org.apache.lucene.store.DataOutput;
 
 abstract class AbstractBlockPackedWriter {
 
+  static final int MIN_BLOCK_SIZE = 64;
   static final int MAX_BLOCK_SIZE = 1 << (30 - 3);
   static final int MIN_VALUE_EQUALS_0 = 1 << 0;
   static final int BPV_SHIFT = 1;
-
-  static void checkBlockSize(int blockSize) {
-    if (blockSize <= 0 || blockSize > MAX_BLOCK_SIZE) {
-      throw new IllegalArgumentException("blockSize must be > 0 and < " + MAX_BLOCK_SIZE + ", got " + blockSize);
-    }
-    if (blockSize < 64) {
-      throw new IllegalArgumentException("blockSize must be >= 64, got " + blockSize);
-    }
-    if ((blockSize & (blockSize - 1)) != 0) {
-      throw new IllegalArgumentException("blockSize must be a power of two, got " + blockSize);
-    }
-  }
 
   static long zigZagEncode(long n) {
     return (n >> 63) ^ (n << 1);
@@ -66,7 +57,7 @@ abstract class AbstractBlockPackedWriter {
    * @param blockSize the number of values of a single block, must be a multiple of <tt>64</tt>
    */
   public AbstractBlockPackedWriter(DataOutput out, int blockSize) {
-    checkBlockSize(blockSize);
+    checkBlockSize(blockSize, MIN_BLOCK_SIZE, MAX_BLOCK_SIZE);
     reset(out);
     values = new long[blockSize];
   }

@@ -242,7 +242,7 @@ public final class IndexFileNames {
    * All files created by codecs much match this pattern (checked in
    * SegmentInfo).
    */
-  public static final Pattern CODEC_FILE_PATTERN = Pattern.compile("_[a-z0-9]+(_.*)?\\..*");
+  public static final Pattern CODEC_FILE_PATTERN = Pattern.compile("_[_]?[a-z0-9]+(_.*)?\\..*");
 
   /** Returns true if the file denotes an updated segment. */
   public static boolean isUpdatedSegmentFile(String file) {

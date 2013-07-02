@@ -402,16 +402,20 @@ public class DrillSideways {
       query = new DrillDownQuery(filter, query);
     }
     if (sort != null) {
+      int limit = searcher.getIndexReader().maxDoc();
+      if (limit == 0) {
+        limit = 1; // the collector does not alow numHits = 0
+      }
+      topN = Math.min(topN, limit);
       final TopFieldCollector hitCollector = TopFieldCollector.create(sort,
-                                                                      Math.min(topN, searcher.getIndexReader().maxDoc()),
+                                                                      topN,
                                                                       after,
                                                                       true,
                                                                       doDocScores,
                                                                       doMaxScore,
                                                                       true);
       DrillSidewaysResult r = search(query, hitCollector, fsp);
-      r.hits = hitCollector.topDocs();
-      return r;
+      return new DrillSidewaysResult(r.facetResults, hitCollector.topDocs());
     } else {
       return search(after, query, topN, fsp);
     }
@@ -423,10 +427,14 @@ public class DrillSideways {
    */
   public DrillSidewaysResult search(ScoreDoc after,
                                     DrillDownQuery query, int topN, FacetSearchParams fsp) throws IOException {
-    TopScoreDocCollector hitCollector = TopScoreDocCollector.create(Math.min(topN, searcher.getIndexReader().maxDoc()), after, true);
+    int limit = searcher.getIndexReader().maxDoc();
+    if (limit == 0) {
+      limit = 1; // the collector does not alow numHits = 0
+    }
+    topN = Math.min(topN, limit);
+    TopScoreDocCollector hitCollector = TopScoreDocCollector.create(topN, after, true);
     DrillSidewaysResult r = search(query, hitCollector, fsp);
-    r.hits = hitCollector.topDocs();
-    return r;
+    return new DrillSidewaysResult(r.facetResults, hitCollector.topDocs());
   }
 
   /** Override this to use a custom drill-down {@link
@@ -454,16 +462,20 @@ public class DrillSideways {
     return false;
   }
 
-  /** Represents the returned result from a drill sideways
-   *  search. */
+  /**
+   * Represents the returned result from a drill sideways search. Note that if
+   * you called
+   * {@link DrillSideways#search(DrillDownQuery, Collector, FacetSearchParams)},
+   * then {@link #hits} will be {@code null}.
+   */
   public static class DrillSidewaysResult {
     /** Combined drill down & sideways results. */
     public final List<FacetResult> facetResults;
 
     /** Hits. */
-    public TopDocs hits;
+    public final TopDocs hits;
 
-    DrillSidewaysResult(List<FacetResult> facetResults, TopDocs hits) {
+    public DrillSidewaysResult(List<FacetResult> facetResults, TopDocs hits) {
       this.facetResults = facetResults;
       this.hits = hits;
     }

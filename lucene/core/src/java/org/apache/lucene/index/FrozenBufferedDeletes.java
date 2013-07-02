@@ -55,13 +55,17 @@ class FrozenBufferedDeletes {
                                    // a segment private deletes. in that case is should
                                    // only have Queries 
   
-  // An sorted set of updates
+  // A sorted set of updates
   final SortedSet<FieldsUpdate> allUpdates;
 
-  public FrozenBufferedDeletes(BufferedDeletes deletes, BufferedUpdates updates, boolean isSegmentPrivate) {
+  public FrozenBufferedDeletes(BufferedDeletes deletes,
+      BufferedUpdates updates, boolean isSegmentPrivate) {
     this.isSegmentPrivate = isSegmentPrivate;
     int localBytesUsed = 0;
+
+    // freeze deletes
     if (deletes != null) {
+      // arrange terms and queries in arrays
       assert !isSegmentPrivate || deletes.terms.size() == 0 : "segment private package should only have del queries";
       Term termsArray[] = deletes.terms.keySet().toArray(
           new Term[deletes.terms.size()]);
@@ -97,10 +101,10 @@ class FrozenBufferedDeletes {
       allUpdates = null;
     } else {
       allUpdates = new TreeSet<>();
-      for (SortedSet<FieldsUpdate> list : updates.terms.values()) {
+      for (List<FieldsUpdate> list : updates.terms.values()) {
         allUpdates.addAll(list);
       }
-      localBytesUsed += 100;
+      localBytesUsed += updates.bytesUsed.get();
     }
     
     bytesUsed = localBytesUsed;

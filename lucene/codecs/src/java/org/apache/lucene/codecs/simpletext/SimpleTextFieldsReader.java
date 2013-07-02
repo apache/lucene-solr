@@ -513,7 +513,7 @@ class SimpleTextFieldsReader extends FieldsProducer {
     }
 
     private void loadTerms() throws IOException {
-      PositiveIntOutputs posIntOutputs = PositiveIntOutputs.getSingleton(false);
+      PositiveIntOutputs posIntOutputs = PositiveIntOutputs.getSingleton();
       final Builder<PairOutputs.Pair<Long,PairOutputs.Pair<Long,Long>>> b;
       final PairOutputs<Long,Long> outputsInner = new PairOutputs<Long,Long>(posIntOutputs, posIntOutputs);
       final PairOutputs<Long,PairOutputs.Pair<Long,Long>> outputs = new PairOutputs<Long,PairOutputs.Pair<Long,Long>>(posIntOutputs,

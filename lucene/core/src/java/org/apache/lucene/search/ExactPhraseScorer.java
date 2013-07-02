@@ -56,10 +56,10 @@ final class ExactPhraseScorer extends Scorer {
   private int docID = -1;
   private int freq;
 
-  private final Similarity.ExactSimScorer docScorer;
+  private final Similarity.SimScorer docScorer;
   
   ExactPhraseScorer(Weight weight, PhraseQuery.PostingsAndFreq[] postings,
-                    Similarity.ExactSimScorer docScorer) throws IOException {
+                    Similarity.SimScorer docScorer) throws IOException {
     super(weight);
     this.docScorer = docScorer;
 

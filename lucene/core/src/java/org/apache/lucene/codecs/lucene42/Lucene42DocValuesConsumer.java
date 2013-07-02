@@ -245,7 +245,7 @@ class Lucene42DocValuesConsumer extends DocValuesConsumer {
     meta.writeVInt(field.number);
     meta.writeByte(FST);
     meta.writeLong(data.getFilePointer());
-    PositiveIntOutputs outputs = PositiveIntOutputs.getSingleton(true);
+    PositiveIntOutputs outputs = PositiveIntOutputs.getSingleton();
     Builder<Long> builder = new Builder<Long>(INPUT_TYPE.BYTE1, outputs);
     IntsRef scratch = new IntsRef();
     long ord = 0;

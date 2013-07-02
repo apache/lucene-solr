@@ -50,6 +50,7 @@ public class HttpReplicatorTest extends ReplicatorTestCase {
   private DirectoryReader reader;
   private Server server;
   private int port;
+  private String host;
   private Directory serverIndexDir, handlerIndexDir;
   
   private void startServer() throws Exception {
@@ -59,12 +60,14 @@ public class HttpReplicatorTest extends ReplicatorTestCase {
     replicationHandler.addServletWithMapping(servlet, ReplicationService.REPLICATION_CONTEXT + "/*");
     server = newHttpServer(replicationHandler);
     port = serverPort(server);
+    host = serverHost(server);
   }
   
   @Before
   @Override
   public void setUp() throws Exception {
     super.setUp();
+    System.setProperty("org.eclipse.jetty.LEVEL", "DEBUG"); // sets stderr logging to DEBUG level
     clientWorkDir = _TestUtil.getTempDir("httpReplicatorTest");
     handlerIndexDir = newDirectory();
     serverIndexDir = newDirectory();
@@ -81,6 +84,7 @@ public class HttpReplicatorTest extends ReplicatorTestCase {
   public void tearDown() throws Exception {
     stopHttpServer(server);
     IOUtils.close(reader, writer, handlerIndexDir, serverIndexDir);
+    System.clearProperty("org.eclipse.jetty.LEVEL");
     super.tearDown();
   }
   
@@ -101,7 +105,7 @@ public class HttpReplicatorTest extends ReplicatorTestCase {
   
   @Test
   public void testBasic() throws Exception {
-    Replicator replicator = new HttpReplicator("localhost", port, ReplicationService.REPLICATION_CONTEXT + "/s1", 
+    Replicator replicator = new HttpReplicator(host, port, ReplicationService.REPLICATION_CONTEXT + "/s1", 
         getClientConnectionManager());
     ReplicationClient client = new ReplicationClient(replicator, new IndexReplicationHandler(handlerIndexDir, null), 
         new PerSessionDirectoryFactory(clientWorkDir));

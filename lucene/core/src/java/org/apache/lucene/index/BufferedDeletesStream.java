@@ -21,9 +21,7 @@ import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Comparator;
-import java.util.HashSet;
 import java.util.List;
-import java.util.Set;
 import java.util.SortedSet;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;
@@ -86,12 +84,16 @@ class BufferedDeletesStream {
     assert packet.anyDeletes() || packet.anyUpdates();
     assert checkDeleteStats();
     assert packet.delGen() < nextGen;
-    assert deletes.isEmpty() || deletes.get(deletes.size()-1).delGen() < packet.delGen() : "Delete packets must be in order";
+    assert deletes.isEmpty()
+        || deletes.get(deletes.size() - 1).delGen() < packet.delGen() : "Delete packets must be in order";
     deletes.add(packet);
     numTerms.addAndGet(packet.numTermDeletes);
     bytesUsed.addAndGet(packet.bytesUsed);
     if (infoStream.isEnabled("BD")) {
-      infoStream.message("BD", "push deletes " + packet + " delGen=" + packet.delGen() + " packetCount=" + deletes.size() + " totBytesUsed=" + bytesUsed.get());
+      infoStream.message("BD",
+          "push deletes " + packet + " delGen=" + packet.delGen()
+              + " packetCount=" + deletes.size() + " totBytesUsed="
+              + bytesUsed.get());
     }
     assert checkDeleteStats();
     return packet.delGen();
@@ -169,25 +171,51 @@ class BufferedDeletesStream {
     List<SegmentInfoPerCommit> infos2 = new ArrayList<SegmentInfoPerCommit>();
     infos2.addAll(infos);
     Collections.sort(infos2, sortSegInfoByDelGen);
-
+    
+    boolean anyNewDeletes = false;
+    List<SegmentInfoPerCommit> allDeleted = new ArrayList<SegmentInfoPerCommit>();
+    // go through packets forward and apply deletes and updates
+    anyNewDeletes |= handleUpdates(readerPool, infos2);
+    // go through packets backwards and apply deletes
+    anyNewDeletes |= handleDeletes(readerPool, infos2, allDeleted);
+    
+    // mark all advanced segment infos
+    for (SegmentInfoPerCommit info : infos2) {
+      info.setBufferedDeletesGen(gen);
+    }
+    
+    assert checkDeleteStats();
+    if (infoStream.isEnabled("BD")) {
+      infoStream.message("BD",
+          "applyDeletes took " + (System.currentTimeMillis() - t0) + " msec");
+    }
+    // assert infos != segmentInfos || !any() : "infos=" + infos +
+    // " segmentInfos=" + segmentInfos + " any=" + any;
+    
+    if (allDeleted.size() == 0) {
+      allDeleted = null;
+    }
+    
+    return new ApplyDeletesResult(anyNewDeletes, gen, allDeleted);
+  }
+  
+  private boolean handleDeletes(IndexWriter.ReaderPool readerPool,
+      List<SegmentInfoPerCommit> infos2, List<SegmentInfoPerCommit> allDeleted) throws IOException {
     CoalescedDeletes coalescedDeletes = null;
     boolean anyNewDeletes = false;
-
-    int infosIDX = infos2.size()-1;
-    int delIDX = deletes.size()-1;
-
-    List<SegmentInfoPerCommit> allDeleted = null;
-    Set<SegmentInfoPerCommit> advanced = null;
-
+    
+    int infosIDX = infos2.size() - 1;
+    int delIDX = deletes.size() - 1;
+    
     while (infosIDX >= 0) {
       //System.out.println("BD: cycle delIDX=" + delIDX + " infoIDX=" + infosIDX);
 
       final FrozenBufferedDeletes packet = delIDX >= 0 ? deletes.get(delIDX) : null;
       final SegmentInfoPerCommit info = infos2.get(infosIDX);
       final long segGen = info.getBufferedDeletesGen();
-
+      
       if (packet != null && packet.anyDeletes() && segGen < packet.delGen()) {
-        //System.out.println("  coalesce");
+        // System.out.println("  coalesce");
         if (coalescedDeletes == null) {
           coalescedDeletes = new CoalescedDeletes();
         }
@@ -203,10 +231,12 @@ class BufferedDeletesStream {
         }
 
         delIDX--;
-      } else if (packet != null && packet.anyDeletes() && segGen == packet.delGen()) {
-        assert packet.isSegmentPrivate : "Packet and Segments deletegen can only match on a segment private del packet gen=" + segGen;
-        //System.out.println("  eq");
-
+      } else if (packet != null && packet.anyDeletes()
+          && segGen == packet.delGen()) {
+        assert packet.isSegmentPrivate : "Packet and Segments deletegen can only match on a segment private del packet gen="
+            + segGen;
+        // System.out.println("  eq");
+        
         // Lock order: IW -> BD -> RP
         assert readerPool.infoIsLive(info);
         final ReadersAndLiveDocs rld = readerPool.get(info, true);
@@ -230,17 +260,20 @@ class BufferedDeletesStream {
           rld.release(reader);
           readerPool.release(rld);
         }
-        anyNewDeletes |= delCount > 0;
-
+        if (delCount > 0) {
+          anyNewDeletes = true;
+        }
+        
         if (segAllDeletes) {
-          if (allDeleted == null) {
-            allDeleted = new ArrayList<SegmentInfoPerCommit>();
-          }
           allDeleted.add(info);
         }
 
         if (infoStream.isEnabled("BD")) {
-          infoStream.message("BD", "seg=" + info + " segGen=" + segGen + " segDeletes=[" + packet + "]; coalesced deletes=[" + (coalescedDeletes == null ? "null" : coalescedDeletes) + "] newDelCount=" + delCount + (segAllDeletes ? " 100% deleted" : ""));
+          infoStream.message("BD", "seg=" + info + " segGen=" + segGen
+              + " segDeletes=[" + packet + "]; coalesced deletes=["
+              + (coalescedDeletes == null ? "null" : coalescedDeletes)
+              + "] newDelCount=" + delCount
+              + (segAllDeletes ? " 100% deleted" : ""));
         }
 
         if (coalescedDeletes == null) {
@@ -254,11 +287,6 @@ class BufferedDeletesStream {
          */
         delIDX--;
         infosIDX--;
-        if (advanced == null) {
-          advanced = new HashSet<SegmentInfoPerCommit>();
-        }
-        advanced.add(info);
-
       } else if (packet != null && !packet.anyDeletes() && packet.anyUpdates()) {
         // ignore updates only packets
         delIDX--;
@@ -282,68 +310,58 @@ class BufferedDeletesStream {
             rld.release(reader);
             readerPool.release(rld);
           }
-          anyNewDeletes |= delCount > 0;
-
+          if (delCount > 0) {
+            anyNewDeletes = true;
+          }
           if (segAllDeletes) {
-            if (allDeleted == null) {
-              allDeleted = new ArrayList<SegmentInfoPerCommit>();
-            }
             allDeleted.add(info);
           }
 
           if (infoStream.isEnabled("BD")) {
-            infoStream.message("BD", "seg=" + info + " segGen=" + segGen + " coalesced deletes=[" + (coalescedDeletes == null ? "null" : coalescedDeletes) + "] newDelCount=" + delCount + (segAllDeletes ? " 100% deleted" : ""));
+            infoStream.message("BD", "seg=" + info + " segGen=" + segGen
+                + " coalesced deletes=["
+                + (coalescedDeletes == null ? "null" : coalescedDeletes)
+                + "] newDelCount=" + delCount
+                + (segAllDeletes ? " 100% deleted" : ""));
           }
-        if (advanced == null) {
-          advanced = new HashSet<SegmentInfoPerCommit>();
-        }
-        advanced.add(info);
         }
 
         infosIDX--;
       }
     }
+    return anyNewDeletes;
+  }
+  
+  private boolean handleUpdates(IndexWriter.ReaderPool readerPool,
+      List<SegmentInfoPerCommit> infos2)
+      throws IOException {
+    boolean anyNewDeletes = false;
     
-    // go through deletes forward and apply updates
-    for (SegmentInfoPerCommit updateInfo : infos2) {
-      final long updateSegGen = updateInfo.getBufferedDeletesGen();
+    for (SegmentInfoPerCommit info : infos2) {
+      final long segGen = info.getBufferedDeletesGen();
       
-      for (FrozenBufferedDeletes updatePacket : deletes) {
-        if (updatePacket.anyUpdates() && updateSegGen <= updatePacket.delGen()) {
-          assert readerPool.infoIsLive(updateInfo);
+      for (int delIdx = 0; delIdx < deletes.size(); delIdx++) {
+        FrozenBufferedDeletes packet = deletes.get(delIdx);
+        assert readerPool.infoIsLive(info);
+        if (segGen <= packet.delGen() && packet.anyUpdates()) {
           // we need to reopen the reader every time, to include previous
-          // updates when applying new ones
-          final ReadersAndLiveDocs rld = readerPool.get(updateInfo, true);
+          // changes when applying new ones
+          final ReadersAndLiveDocs rld = readerPool.get(info, true);
           final SegmentReader reader = rld.getReader(IOContext.READ);
-          final boolean exactGen = updateSegGen == updatePacket.delGen();
           try {
-            anyNewDeletes |= applyTermUpdates(updatePacket.allUpdates, rld,
-                reader, exactGen);
+            final boolean exactGen = (segGen == packet.delGen());
+            if (applyTermUpdates(packet.allUpdates, rld, reader, exactGen)) {
+              anyNewDeletes = true;
+            }
           } finally {
             rld.release(reader);
             readerPool.release(rld);
           }
-          if (advanced == null) {
-            advanced = new HashSet<SegmentInfoPerCommit>();
-          }
-          advanced.add(updateInfo);
         }
       }
+      
     }
-
-    if (advanced != null) {
-      for (SegmentInfoPerCommit info : advanced) {
-        info.setBufferedDeletesGen(gen);
-      }
-    }
-    
-    assert checkDeleteStats();
-    if (infoStream.isEnabled("BD")) {
-      infoStream.message("BD", "applyDeletes took " + (System.currentTimeMillis()-t0) + " msec");
-    }
-    // assert infos != segmentInfos || !any() : "infos=" + infos + " segmentInfos=" + segmentInfos + " any=" + any;
-
-    return new ApplyDeletesResult(anyNewDeletes, gen, allDeleted);
+    return anyNewDeletes;
   }
 
   synchronized long getNextGen() {
@@ -467,7 +485,7 @@ class BufferedDeletesStream {
 
     return delCount;
   }
-
+  
   private synchronized boolean applyTermUpdates(
       SortedSet<FieldsUpdate> packetUpdates, ReadersAndLiveDocs rld,
       SegmentReader reader, boolean exactSegment) throws IOException {
@@ -478,9 +496,9 @@ class BufferedDeletesStream {
     }
     
     assert checkDeleteTerm(null);
-
+    
     UpdatedSegmentData updatedSegmentData = new UpdatedSegmentData(reader,
-        packetUpdates, exactSegment);
+        packetUpdates, exactSegment, infoStream);
     
     if (updatedSegmentData.hasUpdates()) {
       rld.setLiveUpdates(updatedSegmentData);
@@ -489,7 +507,7 @@ class BufferedDeletesStream {
     
     return false;
   }
-
+  
   public static class QueryAndLimit {
     public final Query query;
     public final int limit;

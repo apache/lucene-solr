@@ -41,7 +41,6 @@
               excludes="build/**,site/**,tools/**,**/lib/*servlet-api*.jar"
   />
 
-
   <!-- ================================================================== -->
   <!-- Prepares the build directory                                       -->
   <!-- ================================================================== -->
@@ -164,6 +163,7 @@
       <additional-filters>
         <replaceregex pattern="jetty([^/]+)$" replace="jetty" flags="gi" />
         <replaceregex pattern="slf4j-([^/]+)$" replace="slf4j" flags="gi" />
+        <replaceregex pattern="javax\.servlet([^/]+)$" replace="javax.servlet" flags="gi" />
         <replaceregex pattern="(bcmail|bcprov)-([^/]+)$" replace="\1" flags="gi" />
       </additional-filters>
     </license-check-macro>
@@ -302,7 +302,7 @@
     <check-missing-javadocs dir="build/docs/core/org/apache/lucene/codecs" level="method"/>
   </target>
   
-  <target name="-ecj-javadoc-lint" depends="compile,compile-test,-ecj-resolve">
+  <target name="-ecj-javadoc-lint" depends="compile,compile-test,-ecj-javadoc-lint-unsupported,-ecj-resolve" if="ecj-javadoc-lint.supported">
     <subant target="-ecj-javadoc-lint" failonerror="true" inheritall="false">
       <propertyset refid="uptodate.and.compiled.properties"/>
       <fileset dir="core" includes="build.xml"/>

@@ -773,8 +773,9 @@ public class TestFieldReplacements extends LuceneTestCase {
   }
   
   public void testReplaceLayers() throws IOException {
-    IndexWriter writer = new IndexWriter(dir, newIndexWriterConfig(
-        TEST_VERSION_CURRENT, new MockAnalyzer(random())));
+    IndexWriterConfig indexWriterConfig = newIndexWriterConfig(
+        TEST_VERSION_CURRENT, new MockAnalyzer(random()));
+    IndexWriter writer = new IndexWriter(dir, indexWriterConfig);
     
     FieldType fieldType = new FieldType();
     fieldType.setIndexed(true);
@@ -784,6 +785,7 @@ public class TestFieldReplacements extends LuceneTestCase {
     
     Document doc0 = new Document();
     doc0.add(new StoredField("f1", "a", fieldType));
+    doc0.add(new StoredField("f2", "a", fieldType));
     writer.addDocument(doc0);
 
     // add f2:b
@@ -791,7 +793,7 @@ public class TestFieldReplacements extends LuceneTestCase {
     fields1.add(new StoredField("f2", "b", fieldType));
     writer.updateFields(Operation.ADD_FIELDS, new Term("f1", "a"), fields1);
     
-    // remove f2:b and add f2:c
+    // remove f2:a and f2:b, add f2:c
     Document fields2 = new Document();
     fields2.add(new StoredField("f2", "c", fieldType));
     writer.updateFields(Operation.REPLACE_FIELDS, new Term("f2", "b"), fields2);
@@ -801,11 +803,16 @@ public class TestFieldReplacements extends LuceneTestCase {
     fields3.add(new StoredField("f2", "d", fieldType));
     writer.updateFields(Operation.ADD_FIELDS, new Term("f2", "b"), fields3);
     
+    // do nothing since f2:a was removed
+    writer.deleteDocuments(new Term("f2", "a"));
+    
     writer.close();
     
     DirectoryReader directoryReader = DirectoryReader.open(dir);
     final AtomicReader atomicReader = directoryReader.leaves().get(0).reader();
     printField(atomicReader, "f1");
+    
+    assertEquals("wrong number of documents", 1, directoryReader.numDocs());
     
     // check indexed fields
     final DocsAndPositionsEnum termPositionsA = atomicReader
@@ -815,6 +822,12 @@ public class TestFieldReplacements extends LuceneTestCase {
     assertEquals("wrong position", 0, termPositionsA.nextPosition());
     assertEquals("wrong doc id", DocIdSetIterator.NO_MORE_DOCS,
         termPositionsA.nextDoc());
+    
+    final DocsAndPositionsEnum termPositionsA2 = atomicReader
+        .termPositionsEnum(new Term("f2", "a"));
+    assertNotNull("no positions for term", termPositionsA2);
+    assertEquals("wrong doc id", DocIdSetIterator.NO_MORE_DOCS,
+        termPositionsA2.nextDoc());
     
     final DocsAndPositionsEnum termPositionsB = atomicReader
         .termPositionsEnum(new Term("f2", "b"));
@@ -826,6 +839,7 @@ public class TestFieldReplacements extends LuceneTestCase {
         .termPositionsEnum(new Term("f2", "c"));
     assertNotNull("no positions for term", termPositionsC);
     assertEquals("wrong doc id", 0, termPositionsC.nextDoc());
+    // 100000 == 2 * StackedDocsEnum.STACKED_SEGMENT_POSITION_INCREMENT
     assertEquals("wrong position", 100000, termPositionsC.nextPosition());
     assertEquals("wrong doc id", DocIdSetIterator.NO_MORE_DOCS,
         termPositionsC.nextDoc());
@@ -872,7 +886,7 @@ public class TestFieldReplacements extends LuceneTestCase {
   }
   
   public void printIndexes() throws IOException {
-    File outDir = new File("D:/temp/ifu/compare/scenario/b");
+    File outDir = new File("D:/temp/ifu/compare/scenario/a");
     outDir.mkdirs();
     
     for (int i = 0; i < 42; i++) {

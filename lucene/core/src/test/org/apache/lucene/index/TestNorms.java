@@ -179,12 +179,7 @@ public class TestNorms extends LuceneTestCase {
     }
 
     @Override
-    public ExactSimScorer exactSimScorer(SimWeight weight, AtomicReaderContext context) throws IOException {
-      throw new UnsupportedOperationException();
-    }
-
-    @Override
-    public SloppySimScorer sloppySimScorer(SimWeight weight, AtomicReaderContext context) throws IOException {
+    public SimScorer simScorer(SimWeight weight, AtomicReaderContext context) throws IOException {
       throw new UnsupportedOperationException();
     }
   } 

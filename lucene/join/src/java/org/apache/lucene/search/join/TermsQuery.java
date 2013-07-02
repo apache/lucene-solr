@@ -38,6 +38,7 @@ import java.util.Comparator;
 class TermsQuery extends MultiTermQuery {
 
   private final BytesRefHash terms;
+  private final int[] ords;
   private final Query fromQuery; // Used for equals() only
 
   /**
@@ -48,6 +49,7 @@ class TermsQuery extends MultiTermQuery {
     super(field);
     this.fromQuery = fromQuery;
     this.terms = terms;
+    ords = terms.sort(BytesRef.getUTF8SortedAsUnicodeComparator());
   }
 
   @Override
@@ -56,7 +58,7 @@ class TermsQuery extends MultiTermQuery {
       return TermsEnum.EMPTY;
     }
 
-    return new SeekingTermSetTermsEnum(terms.iterator(null), this.terms);
+    return new SeekingTermSetTermsEnum(terms.iterator(null), this.terms, ords);
   }
 
   @Override
@@ -104,12 +106,12 @@ class TermsQuery extends MultiTermQuery {
     private BytesRef seekTerm;
     private int upto = 0;
 
-    SeekingTermSetTermsEnum(TermsEnum tenum, BytesRefHash terms) {
+    SeekingTermSetTermsEnum(TermsEnum tenum, BytesRefHash terms, int[] ords) {
       super(tenum);
       this.terms = terms;
-
+      this.ords = ords;
+      comparator = BytesRef.getUTF8SortedAsUnicodeComparator();
       lastElement = terms.size() - 1;
-      ords = terms.sort(comparator = tenum.getComparator());
       lastTerm = terms.get(ords[lastElement], new BytesRef());
       seekTerm = terms.get(ords[upto], spare);
     }

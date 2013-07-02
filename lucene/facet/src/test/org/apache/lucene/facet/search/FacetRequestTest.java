@@ -23,7 +23,7 @@ import org.junit.Test;
  */
 
 public class FacetRequestTest extends FacetTestCase {
-
+  
   @Test(expected=IllegalArgumentException.class)
   public void testIllegalNumResults() throws Exception {
     assertNotNull(new CountFacetRequest(new CategoryPath("a", "b"), 0));
@@ -33,7 +33,7 @@ public class FacetRequestTest extends FacetTestCase {
   public void testIllegalCategoryPath() throws Exception {
     assertNotNull(new CountFacetRequest(null, 1));
   }
-
+  
   @Test
   public void testHashAndEquals() {
     CountFacetRequest fr1 = new CountFacetRequest(new CategoryPath("a"), 8);

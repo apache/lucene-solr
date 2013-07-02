@@ -17,8 +17,9 @@ package org.apache.lucene.index;
  * limitations under the License.
  */
 
-import java.util.SortedSet;
-import java.util.TreeSet;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.concurrent.ConcurrentSkipListMap;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;
 
@@ -37,7 +38,7 @@ import org.apache.lucene.util.RamUsageEstimator;
 class BufferedUpdates {
 
   final AtomicInteger numTermUpdates = new AtomicInteger();
-  final SortedFieldsUpdates terms = new SortedFieldsUpdates();
+  final ConcurrentSkipListMap<Term,List<FieldsUpdate>> terms = new ConcurrentSkipListMap<Term,List<FieldsUpdate>>();
 
   public static final Integer MAX_INT = Integer.valueOf(Integer.MAX_VALUE);
 
@@ -73,21 +74,11 @@ class BufferedUpdates {
     }
   }
 
-  public void addTerm(Term term, FieldsUpdate update) {
-    SortedSet<FieldsUpdate> current = terms.get(term);
-    //if (current != null && update.docIDUpto < current.peek().docIDUpto) {
-      // Only record the new number if it's greater than the
-      // current one.  This is important because if multiple
-      // threads are replacing the same doc at nearly the
-      // same time, it's possible that one thread that got a
-      // higher docID is scheduled before the other
-      // threads.  If we blindly replace than we can
-      // incorrectly get both docs indexed.
-      //return;
-    //}
+  public synchronized void addTerm(Term term, FieldsUpdate update) {
+    List<FieldsUpdate> current = terms.get(term);
 
     if (current == null) {
-      current = new TreeSet<FieldsUpdate>();
+      current = new ArrayList<FieldsUpdate>(1);
       terms.put(term, current);
       bytesUsed.addAndGet(BufferedDeletes.BYTES_PER_DEL_TERM
           + term.bytes.length

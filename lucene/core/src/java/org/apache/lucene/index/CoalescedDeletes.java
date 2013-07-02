@@ -38,10 +38,12 @@ class CoalescedDeletes {
 
   void update(FrozenBufferedDeletes in) {
     iterables.add(in.termsIterable());
-
-    for(int queryIdx=0;queryIdx<in.queries.length;queryIdx++) {
-      final Query query = in.queries[queryIdx];
-      queries.put(query, BufferedDeletes.MAX_INT);
+    
+    if (in.queries != null) {
+      for (int queryIdx = 0; queryIdx < in.queries.length; queryIdx++) {
+        final Query query = in.queries[queryIdx];
+        queries.put(query, BufferedDeletes.MAX_INT);
+      }
     }
   }
 

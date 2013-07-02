@@ -119,4 +119,17 @@ public class SegmentWriteState {
     segUpdates = state.segUpdates;
     delCountOnFlush = state.delCountOnFlush;
   }
+  
+  public boolean hasDeletesWithoutUpdates() {
+    if (segDeletes == null) {
+      return false;
+    }
+    if (segUpdates == null) {
+      return true;
+    }
+    if (segUpdates.any()) {
+      return false;
+    }
+    return true;
+  }
 }

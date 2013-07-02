@@ -54,6 +54,7 @@ grant {
 
   // Solr needs those:
   permission java.net.NetPermission "*";
+  permission java.sql.SQLPermission "*";
   permission java.util.logging.LoggingPermission "control";
   permission javax.management.MBeanPermission "*", "*";
   permission javax.management.MBeanServerPermission "*";

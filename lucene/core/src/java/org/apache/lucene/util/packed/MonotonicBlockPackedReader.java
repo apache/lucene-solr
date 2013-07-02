@@ -17,8 +17,11 @@ package org.apache.lucene.util.packed;
  * limitations under the License.
  */
 
-import static org.apache.lucene.util.packed.AbstractBlockPackedWriter.checkBlockSize;
+import static org.apache.lucene.util.packed.AbstractBlockPackedWriter.MAX_BLOCK_SIZE;
+import static org.apache.lucene.util.packed.AbstractBlockPackedWriter.MIN_BLOCK_SIZE;
 import static org.apache.lucene.util.packed.BlockPackedReaderIterator.zigZagDecode;
+import static org.apache.lucene.util.packed.PackedInts.checkBlockSize;
+import static org.apache.lucene.util.packed.PackedInts.numBlocks;
 
 import java.io.IOException;
 
@@ -39,14 +42,10 @@ public final class MonotonicBlockPackedReader {
 
   /** Sole constructor. */
   public MonotonicBlockPackedReader(IndexInput in, int packedIntsVersion, int blockSize, long valueCount, boolean direct) throws IOException {
-    checkBlockSize(blockSize);
     this.valueCount = valueCount;
-    blockShift = Integer.numberOfTrailingZeros(blockSize);
+    blockShift = checkBlockSize(blockSize, MIN_BLOCK_SIZE, MAX_BLOCK_SIZE);
     blockMask = blockSize - 1;
-    final int numBlocks = (int) (valueCount / blockSize) + (valueCount % blockSize == 0 ? 0 : 1);
-    if ((long) numBlocks * blockSize < valueCount) {
-      throw new IllegalArgumentException("valueCount is too large for this block size");
-    }
+    final int numBlocks = numBlocks(valueCount, blockSize);
     minValues = new long[numBlocks];
     averages = new float[numBlocks];
     subReaders = new PackedInts.Reader[numBlocks];

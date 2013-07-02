@@ -117,9 +117,9 @@ public class Builder<T> {
    * 
    * @param doShareSuffix 
    *    If <code>true</code>, the shared suffixes will be compacted into unique paths.
-   *    This requires an additional hash map for lookups in memory. Setting this parameter to
-   *    <code>false</code> creates a single path for all input sequences. This will result in a larger
-   *    graph, but may require less memory and will speed up construction.  
+   *    This requires an additional RAM-intensive hash map for lookups in memory. Setting this parameter to
+   *    <code>false</code> creates a single suffix path for all input sequences. This will result in a larger
+   *    FST, but requires substantially less memory and CPU during building.  
    *
    * @param doShareNonSingletonNodes
    *    Only used if doShareSuffix is true.  Set this to

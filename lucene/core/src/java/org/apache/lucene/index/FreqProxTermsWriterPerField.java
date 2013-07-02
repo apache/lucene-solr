@@ -359,12 +359,12 @@ final class FreqProxTermsWriterPerField extends TermsHashConsumerPerField implem
     assert !writeOffsets || writePositions;
 
     final Map<Term,Integer> segDeletes;
-    if (state.segDeletes != null && state.segDeletes.terms.size() > 0) {
+    if (state.hasDeletesWithoutUpdates() && state.segDeletes.terms.size() > 0) {
       segDeletes = state.segDeletes.terms;
     } else {
       segDeletes = null;
     }
-    
+
     final int[] termIDs = termsHashPerField.sortPostings(termComp);
     final int numTerms = termsHashPerField.bytesHash.size();
     final BytesRef text = new BytesRef();
@@ -476,7 +476,7 @@ final class FreqProxTermsWriterPerField extends TermsHashConsumerPerField implem
           if (state.liveDocs == null) {
             state.liveDocs = docState.docWriter.codec.liveDocsFormat().newLiveDocs(state.segmentInfo.getDocCount());
           }
-          if (state.liveDocs.get(docID)) {
+          if (state.hasDeletesWithoutUpdates() && state.liveDocs.get(docID)) {
             state.delCountOnFlush++;
             state.liveDocs.clear(docID);
           }

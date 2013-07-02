@@ -10,6 +10,7 @@ import org.apache.lucene.facet.sampling.Sampler.SampleResult;
 import org.apache.lucene.facet.search.FacetResult;
 import org.apache.lucene.facet.search.ScoredDocIDs;
 import org.apache.lucene.facet.search.StandardFacetsAccumulator;
+import org.apache.lucene.facet.taxonomy.TaxonomyReader;
 
 /*
  * Licensed to the Apache Software Foundation (ASF) under one or more
@@ -52,31 +53,48 @@ public class SamplingWrapper extends StandardFacetsAccumulator {
   public List<FacetResult> accumulate(ScoredDocIDs docids) throws IOException {
     // Replacing the original searchParams with the over-sampled (and without statistics-compute)
     FacetSearchParams original = delegee.searchParams;
-    delegee.searchParams = sampler.overSampledSearchParams(original);
+    boolean shouldOversample = sampler.samplingParams.shouldOverSample();
+   
+    if (shouldOversample) {
+      delegee.searchParams = sampler.overSampledSearchParams(original);
+    }
     
     SampleResult sampleSet = sampler.getSampleSet(docids);
 
     List<FacetResult> sampleRes = delegee.accumulate(sampleSet.docids);
 
-    List<FacetResult> fixedRes = new ArrayList<FacetResult>();
+    List<FacetResult> results = new ArrayList<FacetResult>();
+    SampleFixer sampleFixer = sampler.samplingParams.getSampleFixer();
+    
     for (FacetResult fres : sampleRes) {
       // for sure fres is not null because this is guaranteed by the delegee.
       PartitionsFacetResultsHandler frh = createFacetResultsHandler(fres.getFacetRequest());
-      // fix the result of current request
-      sampler.getSampleFixer(indexReader, taxonomyReader, searchParams).fixResult(docids, fres); 
-      fres = frh.rearrangeFacetResult(fres); // let delegee's handler do any
+      if (sampleFixer != null) {
+        // fix the result of current request
+        sampleFixer.fixResult(docids, fres, sampleSet.actualSampleRatio); 
+        fres = frh.rearrangeFacetResult(fres); // let delegee's handler do any
+      }
       
-      // Using the sampler to trim the extra (over-sampled) results
-      fres = sampler.trimResult(fres);
+      if (shouldOversample) {
+        // Using the sampler to trim the extra (over-sampled) results
+        fres = sampler.trimResult(fres);
+      }
       
       // final labeling if allowed (because labeling is a costly operation)
-      frh.labelResult(fres);
-      fixedRes.add(fres); // add to final results
+      if (fres.getFacetResultNode().ordinal == TaxonomyReader.INVALID_ORDINAL) {
+        // category does not exist, add an empty result
+        results.add(emptyResult(fres.getFacetResultNode().ordinal, fres.getFacetRequest()));
+      } else {
+        frh.labelResult(fres);
+        results.add(fres);
+      }
     }
 
-    delegee.searchParams = original; // Back to original params
+    if (shouldOversample) {
+      delegee.searchParams = original; // Back to original params
+    }
     
-    return fixedRes; 
+    return results; 
   }
 
   @Override

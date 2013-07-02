@@ -47,7 +47,7 @@ public class FieldsUpdate implements Comparable<FieldsUpdate> {
   final Set<String> replacedFields;
   final Analyzer analyzer;
   final int docIdUpto;
-  final long timeStamp;
+  final int updateNumber;
 
   IndexDocument fields;
   Directory directory;
@@ -64,11 +64,13 @@ public class FieldsUpdate implements Comparable<FieldsUpdate> {
    *          The fields to use in the update operation.
    * @param analyzer
    *          The analyzer to use in the update.
-   * @param docIDUpto
-   *          Document ID of the last document added before this field update
+   * @param docIdUpto
+   *          The doc ID of the last document added before this update.
+   * @param updateNumber
+   *          The running number of this update for the current segment.
    */
   public FieldsUpdate(Term term, Operation operation, IndexDocument fields,
-      Analyzer analyzer, int docIDUpto, long timeStamp) {
+      Analyzer analyzer, int docIdUpto, int updateNumber) {
     this.term = term;
     this.fields = fields;
     this.operation = operation;
@@ -84,8 +86,8 @@ public class FieldsUpdate implements Comparable<FieldsUpdate> {
       }
     }
     this.analyzer = analyzer;
-    this.docIdUpto = docIDUpto;
-    this.timeStamp = timeStamp;
+    this.docIdUpto = docIdUpto;
+    this.updateNumber = updateNumber;
   }
   
   /**
@@ -100,23 +102,20 @@ public class FieldsUpdate implements Comparable<FieldsUpdate> {
     this.replacedFields = other.replacedFields;
     this.analyzer = other.analyzer;
     this.docIdUpto = other.docIdUpto;
-    this.timeStamp = other.timeStamp;
+    this.updateNumber = other.updateNumber;
     this.directory = other.directory;
     this.segmentInfo = other.segmentInfo;
   }
   
-  /* Order FrieldsUpdate by increasing docIDUpto */
   @Override
   public int compareTo(FieldsUpdate other) {
-    int diff = this.docIdUpto - other.docIdUpto;
-    if (diff == 0) {
-      if (this.timeStamp < other.timeStamp) {
-        return -1;
-      } else if (this.timeStamp > other.timeStamp) {
-        return 1;
-      }
-    }
-    return diff;
+    return this.updateNumber - other.updateNumber;
   }
-  
+
+  @Override
+  public String toString() {
+    return "FieldsUpdate [term=" + term + ", operation=" + operation
+        + ", docIdUpto=" + docIdUpto + ", updateNumber=" + updateNumber + "]";
+  }
+
 }

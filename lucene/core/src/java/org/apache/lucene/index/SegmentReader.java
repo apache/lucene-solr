@@ -33,23 +33,22 @@ import org.apache.lucene.util.Bits;
 // javadocs
 
 /**
- * IndexReader implementation over a single segment.
+ * IndexReader implementation over a single segment. 
  * <p>
- * Instances pointing to the same segment (but with different deletes, etc) may
- * share the same core data.
- * 
+ * Instances pointing to the same segment (but with different deletes, etc)
+ * may share the same core data.
  * @lucene.experimental
  */
 public final class SegmentReader extends AtomicReader {
-  
+
   private final SegmentInfoPerCommit si;
   private final Bits liveDocs;
-  
+
   // Normally set to si.docCount - si.delDocCount, unless we
   // were created as an NRT reader from IW, in which case IW
   // tells us the docCount:
   private final int numDocs;
-  
+
   final SegmentCoreReaders core;
   final SegmentCoreReaders[] updates;
   
@@ -62,15 +61,11 @@ public final class SegmentReader extends AtomicReader {
   
   /**
    * Constructs a new SegmentReader with a new core.
-   * 
-   * @throws CorruptIndexException
-   *           if the index is corrupt
-   * @throws IOException
-   *           if there is a low-level IO error
+   * @throws CorruptIndexException if the index is corrupt
+   * @throws IOException if there is a low-level IO error
    */
   // TODO: why is this public?
-  public SegmentReader(SegmentInfoPerCommit si, int termInfosIndexDivisor,
-      IOContext context) throws IOException {
+  public SegmentReader(SegmentInfoPerCommit si, int termInfosIndexDivisor, IOContext context) throws IOException {
     this.si = si;
     this.context = context;
     core = new SegmentCoreReaders(this, si.info, -1, context, termInfosIndexDivisor);
@@ -79,8 +74,7 @@ public final class SegmentReader extends AtomicReader {
     try {
       if (si.hasDeletions()) {
         // NOTE: the bitvector is stored using the regular directory, not cfs
-        liveDocs = si.info.getCodec().liveDocsFormat()
-            .readLiveDocs(directory(), si, new IOContext(IOContext.READ, true));
+        liveDocs = si.info.getCodec().liveDocsFormat().readLiveDocs(directory(), si, new IOContext(IOContext.READ, true));
       } else {
         assert si.getDelCount() == 0;
         liveDocs = null;
@@ -89,7 +83,7 @@ public final class SegmentReader extends AtomicReader {
       success = true;
     } finally {
       // With lock-less commits, it's entirely possible (and
-      // fine) to hit a FileNotFound exception above. In
+      // fine) to hit a FileNotFound exception above.  In
       // this case, we want to explicitly close any subset
       // of things that were opened so that we don't have to
       // wait for a GC to do so.
@@ -131,7 +125,7 @@ public final class SegmentReader extends AtomicReader {
     
     assert liveDocs != null;
     this.liveDocs = liveDocs;
-    
+
     this.numDocs = numDocs;
   }
   
@@ -154,10 +148,10 @@ public final class SegmentReader extends AtomicReader {
     ensureOpen();
     return liveDocs;
   }
-  
+
   @Override
   protected void doClose() throws IOException {
-    // System.out.println("SR.close seg=" + si);
+    //System.out.println("SR.close seg=" + si);
     core.decRef();
     if (updates != null) {
       for (int i = 0; i < updates.length; i++) {
@@ -165,7 +159,7 @@ public final class SegmentReader extends AtomicReader {
       }
     }
   }
-  
+
   @Override
   public FieldInfos getFieldInfos() {
     ensureOpen();
@@ -245,12 +239,11 @@ public final class SegmentReader extends AtomicReader {
   }
   
   @Override
-  public void document(int docID, StoredFieldVisitor visitor)
-      throws IOException {
+  public void document(int docID, StoredFieldVisitor visitor) throws IOException {
     checkBounds(docID);
     getFieldsReader().visitDocument(docID, visitor, null);
   }
-  
+
   @Override
   public Fields fields() throws IOException {
     ensureOpen();
@@ -275,13 +268,13 @@ public final class SegmentReader extends AtomicReader {
     }
     return fields;
   }
-  
+
   @Override
   public int numDocs() {
     // Don't call ensureOpen() here (it could affect performance)
     return numDocs;
   }
-  
+
   @Override
   public int maxDoc() {
     // Don't call ensureOpen() here (it could affect performance)
@@ -365,13 +358,12 @@ public final class SegmentReader extends AtomicReader {
     
     return new StackedFields(fields, replacementsMap, docID);
   }
-  
+
   @Override
   public String toString() {
     // SegmentInfo.toString takes dir and number of
     // *pending* deletions; so we reverse compute that here:
-    return si.toString(si.info.dir,
-        si.info.getDocCount() - numDocs - si.getDelCount());
+    return si.toString(si.info.dir, si.info.getDocCount() - numDocs - si.getDelCount());
   }
   
   /**
@@ -387,7 +379,7 @@ public final class SegmentReader extends AtomicReader {
   public SegmentInfoPerCommit getSegmentInfo() {
     return si;
   }
-  
+
   /** Returns the directory this index resides in. */
   public Directory directory() {
     // Don't ensureOpen here -- in certain cases, when a
@@ -395,30 +387,29 @@ public final class SegmentReader extends AtomicReader {
     // this method on the closed original reader
     return si.info.dir;
   }
-  
+
   // This is necessary so that cloned SegmentReaders (which
   // share the underlying postings data) will map to the
-  // same entry in the FieldCache. See LUCENE-1579.
+  // same entry in the FieldCache.  See LUCENE-1579.
   @Override
   public Object getCoreCacheKey() {
     return core;
   }
-  
+
   @Override
   public Object getCombinedCoreAndDeletesKey() {
     return this;
   }
-  
-  /**
-   * Returns term infos index divisor originally passed to
-   * {@link #SegmentReader(SegmentInfoPerCommit, int, IOContext)}.
-   */
+
+  /** Returns term infos index divisor originally passed to
+   *  {@link #SegmentReader(SegmentInfoPerCommit, int, IOContext)}. */
   public int getTermInfosIndexDivisor() {
     return core.termsIndexDivisor;
   }
 
   @Override
   public NumericDocValues getNumericDocValues(String field) throws IOException {
+    ensureOpen();
     return core.getNumericDocValues(field);
   }
 
@@ -427,7 +418,7 @@ public final class SegmentReader extends AtomicReader {
     ensureOpen();
     return core.getBinaryDocValues(field);
   }
-  
+
   @Override
   public SortedDocValues getSortedDocValues(String field) throws IOException {
     ensureOpen();
@@ -456,21 +447,21 @@ public final class SegmentReader extends AtomicReader {
   }
 
   /**
-   * Called when the shared core for this SegmentReader is closed.
+   * Called when the shared core for this SegmentReader
+   * is closed.
    * <p>
-   * This listener is called only once all SegmentReaders sharing the same core
-   * are closed. At this point it is safe for apps to evict this reader from any
-   * caches keyed on {@link #getCoreCacheKey}. This is the same interface that
-   * {@link FieldCache} uses, internally, to evict entries.
-   * </p>
+   * This listener is called only once all SegmentReaders 
+   * sharing the same core are closed.  At this point it 
+   * is safe for apps to evict this reader from any caches 
+   * keyed on {@link #getCoreCacheKey}.  This is the same 
+   * interface that {@link FieldCache} uses, internally, 
+   * to evict entries.</p>
    * 
    * @lucene.experimental
    */
   public static interface CoreClosedListener {
-    /**
-     * Invoked when the shared core of the provided {@link SegmentReader} has
-     * closed.
-     */
+    /** Invoked when the shared core of the provided {@link
+     *  SegmentReader} has closed. */
     public void onClose(SegmentReader owner);
   }
   

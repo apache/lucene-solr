@@ -17,18 +17,23 @@ package org.apache.lucene.analysis.ngram;
  * limitations under the License.
  */
 
-import org.apache.lucene.analysis.Analyzer;
-import org.apache.lucene.analysis.MockTokenizer;
-import org.apache.lucene.analysis.TokenStream;
-import org.apache.lucene.analysis.BaseTokenStreamTestCase;
-import org.apache.lucene.analysis.Tokenizer;
-import org.apache.lucene.analysis.core.KeywordTokenizer;
-import org.apache.lucene.analysis.core.WhitespaceTokenizer;
-import org.apache.lucene.analysis.position.PositionFilter;
-
+import java.io.IOException;
 import java.io.Reader;
 import java.io.StringReader;
 import java.util.Random;
+
+import org.apache.lucene.analysis.Analyzer;
+import org.apache.lucene.analysis.BaseTokenStreamTestCase;
+import org.apache.lucene.analysis.MockTokenizer;
+import org.apache.lucene.analysis.TokenFilter;
+import org.apache.lucene.analysis.TokenStream;
+import org.apache.lucene.analysis.Tokenizer;
+import org.apache.lucene.analysis.core.KeywordTokenizer;
+import org.apache.lucene.analysis.core.LetterTokenizer;
+import org.apache.lucene.analysis.core.WhitespaceTokenizer;
+import org.apache.lucene.analysis.shingle.ShingleFilter;
+import org.apache.lucene.analysis.tokenattributes.PositionIncrementAttribute;
+import org.apache.lucene.util.Version;
 
 /**
  * Tests {@link EdgeNGramTokenFilter} for correctness.
@@ -101,9 +106,39 @@ public class EdgeNGramTokenFilterTest extends BaseTokenStreamTestCase {
                               false);
   }
 
+  private static class PositionFilter extends TokenFilter {
+    
+    private final PositionIncrementAttribute posIncrAtt = addAttribute(PositionIncrementAttribute.class);
+    private boolean started;
+    
+    PositionFilter(final TokenStream input) {
+      super(input);
+    }
+    
+    @Override
+    public final boolean incrementToken() throws IOException {
+      if (input.incrementToken()) {
+        if (started) {
+          posIncrAtt.setPositionIncrement(0);
+        } else {
+          started = true;
+        }
+        return true;
+      } else {
+        return false;
+      }
+    }
+    
+    @Override
+    public void reset() throws IOException {
+      super.reset();
+      started = false;
+    }
+  }
+
   public void testFirstTokenPositionIncrement() throws Exception {
     TokenStream ts = new MockTokenizer(new StringReader("a abc"), MockTokenizer.WHITESPACE, false);
-    ts = new PositionFilter(ts, 0); // All but first token will get 0 position increment
+    ts = new PositionFilter(ts); // All but first token will get 0 position increment
     EdgeNGramTokenFilter filter = new EdgeNGramTokenFilter(TEST_VERSION_CURRENT, ts, 2, 3);
     // The first token "a" will not be output, since it's smaller than the mingram size of 2.
     // The second token on input to EdgeNGramTokenFilter will have position increment of 0,
@@ -154,5 +189,20 @@ public class EdgeNGramTokenFilterTest extends BaseTokenStreamTestCase {
       }    
     };
     checkAnalysisConsistency(random, a, random.nextBoolean(), "");
+  }
+
+  public void testGraphs() throws IOException {
+    TokenStream tk = new LetterTokenizer(Version.LUCENE_44, new StringReader("abc d efgh ij klmno p q"));
+    tk = new ShingleFilter(tk);
+    tk = new EdgeNGramTokenFilter(Version.LUCENE_44, tk, 7, 10);
+    tk.reset();
+    assertTokenStreamContents(tk,
+        new String[] { "efgh ij", "ij klmn", "ij klmno", "klmno p" },
+        new int[]    { 6,11,11,14 },
+        new int[]    { 13,19,19,21 },
+        new int[]    { 3,1,0,1 },
+        new int[]    { 2,2,2,2 },
+        23
+    );
   }
 }

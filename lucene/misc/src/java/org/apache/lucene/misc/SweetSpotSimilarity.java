@@ -158,7 +158,7 @@ public class SweetSpotSimilarity extends DefaultSimilarity {
    * @see #baselineTf
    */
   @Override
-  public float tf(int freq) {
+  public float tf(float freq) {
     return baselineTf(freq);
   }
   

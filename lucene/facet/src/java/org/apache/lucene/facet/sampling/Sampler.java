@@ -12,7 +12,6 @@ import org.apache.lucene.facet.search.FacetResult;
 import org.apache.lucene.facet.search.FacetResultNode;
 import org.apache.lucene.facet.search.ScoredDocIDs;
 import org.apache.lucene.facet.taxonomy.TaxonomyReader;
-import org.apache.lucene.index.IndexReader;
 
 /*
  * Licensed to the Apache Software Foundation (ASF) under one or more
@@ -110,16 +109,6 @@ public abstract class Sampler {
   protected abstract SampleResult createSample(ScoredDocIDs docids, int actualSize, int sampleSetSize) 
       throws IOException;
 
-  /**
-   * Get a fixer of sample facet accumulation results. Default implementation
-   * returns a <code>TakmiSampleFixer</code> which is adequate only for
-   * counting. For any other accumulator, provide a different fixer.
-   */
-  public SampleFixer getSampleFixer(IndexReader indexReader, TaxonomyReader taxonomyReader,
-      FacetSearchParams searchParams) {
-    return new TakmiSampleFixer(indexReader, taxonomyReader, searchParams);
-  }
-  
   /**
    * Result of sample computation
    */
@@ -220,7 +209,7 @@ public abstract class Sampler {
       super(orig.categoryPath, num);
       this.orig = orig;
       setDepth(orig.getDepth());
-      setNumLabel(orig.getNumLabel());
+      setNumLabel(0); // don't label anything as we're over-sampling
       setResultMode(orig.getResultMode());
       setSortOrder(orig.getSortOrder());
     }
