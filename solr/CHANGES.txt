@@ -142,6 +142,9 @@ New Features
 * SOLR-4897: Add solr/example/example-schemaless/, an example config set
   for schemaless mode. (Steve Rowe)
 
+* SOLR-4655: Add option to have Overseer assign generic node names so that
+  new addresses can host shards without naming confusion. (Mark Miller, Anshum Gupta)
+
 Bug Fixes
 ----------------------
 
