@@ -33,7 +33,8 @@ Apache ZooKeeper 3.4.5
 Upgrading from Solr 4.x
 ----------------------
 
-TBD...
+The "file" attribute of infoStream in solrconfig.xml is removed. Control this 
+via your logging configuration (org.apache.solr.update.LoggingInfoStream) instead.
 
 Detailed Change List
 ----------------------

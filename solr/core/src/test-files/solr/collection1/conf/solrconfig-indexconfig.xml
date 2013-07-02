@@ -24,6 +24,6 @@
   <indexConfig>
     <useCompoundFile>${useCompoundFile:false}</useCompoundFile>
     <maxIndexingThreads>123</maxIndexingThreads>
-    <infoStream file="infostream.txt">true</infoStream>
+    <infoStream>true</infoStream>
   </indexConfig>
 </config>

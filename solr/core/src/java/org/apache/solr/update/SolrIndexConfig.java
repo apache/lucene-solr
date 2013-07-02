@@ -157,17 +157,7 @@ public class SolrIndexConfig {
         log.info("IndexWriter infoStream solr logging is enabled");
         infoStream = new LoggingInfoStream();
       } else {
-        log.warn("IndexWriter infoStream file log is enabled: " + infoStreamFile +
-                 "\nThis feature is deprecated. Remove @file from <infoStream> to output messages to solr's logfile");
-        File f = new File(infoStreamFile);
-        File parent = f.getParentFile();
-        if (parent != null) parent.mkdirs();
-        try {
-          FileOutputStream fos = new FileOutputStream(f, true);
-          infoStream = new PrintStreamInfoStream(new PrintStream(fos, true, "UTF-8"));
-        } catch (Exception e) {
-          log.error("Could not create info stream for file " + infoStreamFile, e);
-        }
+        throw new IllegalArgumentException("Remove @file from <infoStream> to output messages to solr's logfile");
       }
     }
     mergedSegmentWarmerInfo = getPluginInfo(prefix + "/mergedSegmentWarmer", solrConfig, def.mergedSegmentWarmerInfo);
