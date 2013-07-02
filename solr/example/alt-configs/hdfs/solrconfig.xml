@@ -298,10 +298,10 @@
          To aid in advanced debugging, Lucene provides an "InfoStream"
          of detailed information when indexing.
 
-         Setting The value to true will instruct the underlying Lucene
-         IndexWriter to write its debugging info the specified file
+         Setting the value to true will instruct the underlying Lucene
+         IndexWriter to write its info stream to solr's log.
       -->
-     <!-- <infoStream file="INFOSTREAM.txt">false</infoStream> --> 
+     <!-- <infoStream>false</infoStream> -->
   </indexConfig>
 
 
