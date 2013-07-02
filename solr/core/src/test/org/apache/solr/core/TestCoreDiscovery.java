@@ -184,8 +184,10 @@ public class TestCoreDiscovery extends SolrTestCaseJ4 {
       String message = cause.getMessage();
       assertTrue("Should have seen an exception because two cores had the same name",
           message.indexOf("Core core1 defined more than once") != -1);
-      assertTrue("/core1 should have been mentioned in the message", message.indexOf("/core1") != -1);
-      assertTrue("/core2 should have been mentioned in the message", message.indexOf("/core2") != -1);
+      assertTrue(File.separator + "core1 should have been mentioned in the message: " + message,
+          message.indexOf(File.separator + "core1") != -1);
+      assertTrue(File.separator + "core2 should have been mentioned in the message:" + message,
+          message.indexOf(File.separator + "core2") != -1);
     } finally {
       if (cc != null) {
         cc.shutdown();
