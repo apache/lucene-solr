@@ -150,6 +150,9 @@ Bug Fixes
   setter in ConcurrentMergePolicy: setMaxMergesAndThreads.  Previously these
   setters would not work unless you invoked them very carefully.
   (Robert Muir, Shai Erera)
+  
+* LUCENE-5068: QueryParserUtil.escape() does not escape forward slash.
+  (Matias Holte via Steve Rowe)
 
 Optimizations
 
