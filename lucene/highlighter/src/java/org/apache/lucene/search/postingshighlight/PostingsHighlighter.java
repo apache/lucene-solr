@@ -369,7 +369,11 @@ public class PostingsHighlighter {
    *  identical to what was indexed. */
   protected String[][] loadFieldValues(IndexSearcher searcher, String[] fields, int[] docids, int maxLength) throws IOException {
     String contents[][] = new String[fields.length][docids.length];
-    LimitedStoredFieldVisitor visitor = new LimitedStoredFieldVisitor(fields, maxLength);
+    char valueSeparators[] = new char[fields.length];
+    for (int i = 0; i < fields.length; i++) {
+      valueSeparators[i] = getMultiValuedSeparator(fields[i]);
+    }
+    LimitedStoredFieldVisitor visitor = new LimitedStoredFieldVisitor(fields, valueSeparators, maxLength);
     for (int i = 0; i < docids.length; i++) {
       searcher.doc(docids[i], visitor);
       for (int j = 0; j < fields.length; j++) {
@@ -378,6 +382,16 @@ public class PostingsHighlighter {
       visitor.reset();
     }
     return contents;
+  }
+  
+  /** 
+   * Returns the logical separator between values for multi-valued fields.
+   * The default value is a space character, which means passages can span across values,
+   * but a subclass can override, for example with {@code U+2029 PARAGRAPH SEPARATOR (PS)}
+   * if each value holds a discrete passage for highlighting.
+   */
+  protected char getMultiValuedSeparator(String field) {
+    return ' ';
   }
     
   private Map<Integer,String> highlightField(String field, String contents[], BreakIterator bi, BytesRef terms[], int[] docids, List<AtomicReaderContext> leaves, int maxPassages) throws IOException {  
@@ -652,12 +666,15 @@ public class PostingsHighlighter {
   
   private static class LimitedStoredFieldVisitor extends StoredFieldVisitor {
     private final String fields[];
+    private final char valueSeparators[];
     private final int maxLength;
     private final StringBuilder builders[];
     private int currentField = -1;
     
-    public LimitedStoredFieldVisitor(String fields[], int maxLength) {
+    public LimitedStoredFieldVisitor(String fields[], char valueSeparators[], int maxLength) {
+      assert fields.length == valueSeparators.length;
       this.fields = fields;
+      this.valueSeparators = valueSeparators;
       this.maxLength = maxLength;
       builders = new StringBuilder[fields.length];
       for (int i = 0; i < builders.length; i++) {
@@ -670,7 +687,7 @@ public class PostingsHighlighter {
       assert currentField >= 0;
       StringBuilder builder = builders[currentField];
       if (builder.length() > 0 && builder.length() < maxLength) {
-        builder.append(' '); // for the offset gap, TODO: make this configurable
+        builder.append(valueSeparators[currentField]);
       }
       if (builder.length() + value.length() > maxLength) {
         builder.append(value, 0, maxLength - builder.length());

@@ -230,6 +230,11 @@ New Features
 * SOLR-4565: Extend NorwegianLightStemFilter and NorwegianMinimalStemFilter 
   to handle "nynorsk" (Erlend Garåsen, janhoy via Robert Muir)
 
+* LUCENE-5087: Add getMultiValuedSeparator to PostingsHighlighter, for cases
+  where you want a different logical separator between field values. This can
+  be set to e.g. U+2029 PARAGRAPH SEPARATOR if you never want passes to span
+  values. (Mike McCandless, Robert Muir)
+
 API Changes
 
 * LUCENE-5077: Make it easier to use compressed norms. Lucene42NormsFormat takes
