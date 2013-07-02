@@ -116,6 +116,9 @@ New Features
 * SOLR-4916: Add support to write and read Solr index files and transaction log
   files to and from HDFS. (phunt, Mark Miller, Greg Chanan)
 
+* SOLR-4655: Add option to have Overseer assign generic node names so that
+  new addresses can host shards without naming confusion. (Mark Miller, Anshum Gupta)
+
 Bug Fixes
 ----------------------
 
