@@ -146,9 +146,22 @@ public class ShardSplitTest extends BasicDistributedZkTest {
     indexThread.start();
 
     try {
-      splitShard(SHARD1);
-      log.info("Layout after split: \n");
-      printLayout();
+      for (int i = 0; i < 3; i++) {
+        try {
+          splitShard(SHARD1);
+          log.info("Layout after split: \n");
+          printLayout();
+          break;
+        } catch (HttpSolrServer.RemoteSolrException e) {
+          if (e.code() != 500)  {
+            throw e;
+          }
+          log.error("SPLITSHARD failed. " + (i < 2 ? " Retring split" : ""), e);
+          if (i == 2) {
+            fail("SPLITSHARD was not successful even after three tries");
+          }
+        }
+      }
     } finally {
       try {
         indexThread.join();
@@ -158,33 +171,7 @@ public class ShardSplitTest extends BasicDistributedZkTest {
     }
 
     commit();
-    
-    try {
-      checkDocCountsAndShardStates(docCounts, numReplicas);
-    } catch (HttpSolrServer.RemoteSolrException e) {
-      if (e.code() != 500) {
-        throw e;
-      }
-      
-      // if we get a 500 error, the split should be retried ... let's wait and see if it works...
-      Slice slice1_0 = null, slice1_1 = null;
-      int i = 0;
-      for (i = 0; i < 60; i++) {
-        ZkStateReader zkStateReader = cloudClient.getZkStateReader();
-        zkStateReader.updateClusterState(true);
-        clusterState = zkStateReader.getClusterState();
-        slice1_0 = clusterState.getSlice(AbstractDistribZkTestBase.DEFAULT_COLLECTION, "shard1_0");
-        slice1_1 = clusterState.getSlice(AbstractDistribZkTestBase.DEFAULT_COLLECTION, "shard1_1");
-        if (slice1_0 != null  && slice1_1 != null) {
-          break;
-        }
-        Thread.sleep(500);
-      }
-
-      if (slice1_0 == null  || slice1_1 == null) {
-        throw e;
-      }
-    }
+    checkDocCountsAndShardStates(docCounts, numReplicas);
 
     // todo can't call waitForThingsToLevelOut because it looks for jettys of all shards
     // and the new sub-shards don't have any.

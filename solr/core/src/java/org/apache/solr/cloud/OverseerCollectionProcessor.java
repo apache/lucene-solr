@@ -360,13 +360,17 @@ public class OverseerCollectionProcessor implements Runnable, ClosableThread {
             throw new SolrException(ErrorCode.BAD_REQUEST, "Sub-shard: " + subSlice + " exists in active state. Aborting split shard.");
           } else if (Slice.CONSTRUCTION.equals(oSlice.getState()))  {
             for (Replica replica : oSlice.getReplicas()) {
-              String core = replica.getStr("core");
-              log.info("Unloading core: " + core + " from node: " + replica.getNodeName());
-              ModifiableSolrParams params = new ModifiableSolrParams();
-              params.set(CoreAdminParams.ACTION, CoreAdminAction.UNLOAD.toString());
-              params.set(CoreAdminParams.CORE, core);
-              params.set(CoreAdminParams.DELETE_INDEX, "true");
-              sendShardRequest(replica.getNodeName(), params);
+              if (clusterState.liveNodesContain(replica.getNodeName())) {
+                String core = replica.getStr("core");
+                log.info("Unloading core: " + core + " from node: " + replica.getNodeName());
+                ModifiableSolrParams params = new ModifiableSolrParams();
+                params.set(CoreAdminParams.ACTION, CoreAdminAction.UNLOAD.toString());
+                params.set(CoreAdminParams.CORE, core);
+                params.set(CoreAdminParams.DELETE_INDEX, "true");
+                sendShardRequest(replica.getNodeName(), params);
+              } else  {
+                log.warn("Replica {} exists in shard {} but is not live and cannot be unloaded", replica, oSlice);
+              }
             }
           }
         }
@@ -397,7 +401,12 @@ public class OverseerCollectionProcessor implements Runnable, ClosableThread {
         //params.set(ZkStateReader.NUM_SHARDS_PROP, numSlices); todo: is it necessary, we're not creating collections?
 
         sendShardRequest(nodeName, params);
+      }
 
+      collectShardResponses(results, true,
+          "SPLTSHARD failed to create subshard leaders");
+
+      for (String subShardName : subShardNames) {
         // wait for parent leader to acknowledge the sub-shard core
         log.info("Asking parent leader to wait for: " + subShardName + " to be alive on: " + nodeName);
         String coreNodeName = waitForCoreNodeName(collection, zkStateReader.getZkClient().getBaseUrlForNodeName(nodeName), subShardName);
@@ -412,7 +421,7 @@ public class OverseerCollectionProcessor implements Runnable, ClosableThread {
       }
 
       collectShardResponses(results, true,
-          "SPLTSHARD failed to create subshard leaders or timed out waiting for them to come up");
+          "SPLTSHARD timed out waiting for subshard leaders to come up");
       
       log.info("Successfully created all sub-shards for collection "
           + collectionName + " parent shard: " + slice + " on: " + parentShardLeader);
@@ -583,8 +592,13 @@ public class OverseerCollectionProcessor implements Runnable, ClosableThread {
       srsp = shardHandler.takeCompletedOrError();
       if (srsp != null) {
         processResponse(results, srsp);
-        if (abortOnError && srsp.getException() != null)  {
-          throw new SolrException(ErrorCode.SERVER_ERROR, msgOnError, srsp.getException());
+        Throwable exception = srsp.getException();
+        if (abortOnError && exception != null)  {
+          // drain pending requests
+          while (srsp != null)  {
+            srsp = shardHandler.takeCompletedOrError();
+          }
+          throw new SolrException(ErrorCode.SERVER_ERROR, msgOnError, exception);
         }
       }
     } while (srsp != null);
