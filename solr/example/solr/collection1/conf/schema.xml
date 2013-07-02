@@ -1031,8 +1031,9 @@
         <filter class="solr.LowerCaseFilterFactory"/>
         <filter class="solr.StopFilterFactory" ignoreCase="true" words="lang/stopwords_no.txt" format="snowball" />
         <filter class="solr.SnowballPorterFilterFactory" language="Norwegian"/>
-        <!-- less aggressive: <filter class="solr.NorwegianLightStemFilterFactory"/> -->
-        <!-- singular/plural: <filter class="solr.NorwegianMinimalStemFilterFactory"/> -->
+        <!-- less aggressive: <filter class="solr.NorwegianLightStemFilterFactory" variant="nb"/> -->
+        <!-- singular/plural: <filter class="solr.NorwegianMinimalStemFilterFactory" variant="nb"/> -->
+        <!-- The "light" and "minimal" stemmers support variants: nb=Bokmål, nn=Nynorsk, no=Both -->
       </analyzer>
     </fieldType>
     
