@@ -147,7 +147,9 @@ public class SolrIndexWriter extends IndexWriter {
         break;
       }
     } finally {
-      infoStream.close();
+      if (infoStream != null) {
+        infoStream.close();
+      }
       isClosed = true;
       directoryFactory.release(directory);
       numCloses.incrementAndGet();
