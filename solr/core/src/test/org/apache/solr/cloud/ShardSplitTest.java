@@ -17,6 +17,15 @@ package org.apache.solr.cloud;
  * limitations under the License.
  */
 
+import java.io.IOException;
+import java.net.MalformedURLException;
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Map;
+import java.util.Random;
+import java.util.Set;
+
 import org.apache.http.params.CoreConnectionPNames;
 import org.apache.solr.client.solrj.SolrQuery;
 import org.apache.solr.client.solrj.SolrRequest;
@@ -40,16 +49,6 @@ import org.apache.solr.update.DirectUpdateHandler2;
 import org.apache.zookeeper.KeeperException;
 import org.junit.After;
 import org.junit.Before;
-
-import java.io.IOException;
-import java.net.MalformedURLException;
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Map;
-import java.util.Random;
-import java.util.Set;
 
 public class ShardSplitTest extends BasicDistributedZkTest {
 
@@ -159,7 +158,33 @@ public class ShardSplitTest extends BasicDistributedZkTest {
     }
 
     commit();
-    checkDocCountsAndShardStates(docCounts, numReplicas);
+    
+    try {
+      checkDocCountsAndShardStates(docCounts, numReplicas);
+    } catch (HttpSolrServer.RemoteSolrException e) {
+      if (e.code() != 500) {
+        throw e;
+      }
+      
+      // if we get a 500 error, the split should be retried ... let's wait and see if it works...
+      Slice slice1_0 = null, slice1_1 = null;
+      int i = 0;
+      for (i = 0; i < 60; i++) {
+        ZkStateReader zkStateReader = cloudClient.getZkStateReader();
+        zkStateReader.updateClusterState(true);
+        clusterState = zkStateReader.getClusterState();
+        slice1_0 = clusterState.getSlice(AbstractDistribZkTestBase.DEFAULT_COLLECTION, "shard1_0");
+        slice1_1 = clusterState.getSlice(AbstractDistribZkTestBase.DEFAULT_COLLECTION, "shard1_1");
+        if (slice1_0 != null  && slice1_1 != null) {
+          break;
+        }
+        Thread.sleep(500);
+      }
+
+      if (slice1_0 == null  || slice1_1 == null) {
+        throw e;
+      }
+    }
 
     // todo can't call waitForThingsToLevelOut because it looks for jettys of all shards
     // and the new sub-shards don't have any.
