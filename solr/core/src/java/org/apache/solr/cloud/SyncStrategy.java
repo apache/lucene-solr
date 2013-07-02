@@ -87,6 +87,10 @@ public class SyncStrategy {
     if (SKIP_AUTO_RECOVERY) {
       return true;
     }
+    if (isClosed) {
+      log.warn("Closed, skipping sync up.");
+      return false;
+    }
     log.info("Sync replicas to " + ZkCoreNodeProps.getCoreUrl(leaderProps));
     // TODO: look at our state usage of sync
     // zkController.publish(core, ZkStateReader.SYNC);
