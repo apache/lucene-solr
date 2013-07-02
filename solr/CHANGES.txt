@@ -237,6 +237,9 @@ Bug Fixes
 * SOLR-4974: Outgrowth of SOLR-4960 that includes transient cores and pending cores
   (Erick Erickson)
 
+* SOLR-3369: shards.tolerant=true is broken for group queries
+  (Russell Black, Martijn van Groningen, Jabouille jean Charles, Ryan McKinley via shalin)
+
 Optimizations
 ----------------------
 

@@ -351,7 +351,7 @@ public class TestDistributedSearch extends BaseDistributedSearchTestCase {
         ChaosMonkey.stop(downJetty);
         downJettys.add(downJetty);
       }
-      
+
       queryPartialResults(upShards, upClients, 
           "q","*:*",
           "facet","true", 
@@ -359,7 +359,27 @@ public class TestDistributedSearch extends BaseDistributedSearchTestCase {
           "facet.limit",5,
           ShardParams.SHARDS_INFO,"true",
           ShardParams.SHARDS_TOLERANT,"true");
-      
+
+      queryPartialResults(upShards, upClients,
+          "q", "*:*",
+          "facet", "true",
+          "facet.query", i1 + ":[1 TO 50]",
+          ShardParams.SHARDS_INFO, "true",
+          ShardParams.SHARDS_TOLERANT, "true");
+
+      // test group query
+      queryPartialResults(upShards, upClients,
+          "q", "*:*",
+          "rows", 100,
+          "fl", "id," + i1,
+          "group", "true",
+          "group.query", t1 + ":kings OR " + t1 + ":eggs",
+          "group.limit", 10,
+          "sort", i1 + " asc, id asc",
+          CommonParams.TIME_ALLOWED, 1,
+          ShardParams.SHARDS_INFO, "true",
+          ShardParams.SHARDS_TOLERANT, "true");
+
       // restart the jettys
       for (JettySolrRunner downJetty : downJettys) {
         downJetty.start();
