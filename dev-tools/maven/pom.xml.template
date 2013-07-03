@@ -355,8 +355,8 @@
             <artifactId>vorbis-java-core</artifactId>
           </exclusion>
           <exclusion>
-            <groupId>asm</groupId>
-            <artifactId>asm</artifactId>
+            <groupId>org.ow2.asm</groupId>
+            <artifactId>asm-debug-all</artifactId>
           </exclusion>
           <exclusion>
             <groupId>org.aspectj</groupId>
