@@ -383,12 +383,9 @@ public class HunspellDictionary {
         }
       }
       
-      List<HunspellWord> entries = words.get(entry);
-      if (entries == null) {
-        entries = new ArrayList<HunspellWord>();
-        words.put(entry, entries);
-      }
+      List<HunspellWord> entries = new ArrayList<HunspellWord>();
       entries.add(wordForm);
+      words.put(entry, entries);
     }
   }
 
