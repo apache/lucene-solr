@@ -17,7 +17,12 @@ package org.apache.lucene.analysis.miscellaneous;
  * limitations under the License.
  */
 
-import org.apache.lucene.analysis.*;
+import org.apache.lucene.analysis.Analyzer;
+import org.apache.lucene.analysis.BaseTokenStreamTestCase;
+import org.apache.lucene.analysis.MockTokenizer;
+import org.apache.lucene.analysis.TokenStream;
+import org.apache.lucene.analysis.Tokenizer;
+import org.apache.lucene.analysis.core.KeywordTokenizer;
 
 import java.io.Reader;
 
@@ -100,7 +105,22 @@ public class TestScandinavianFoldingFilter extends BaseTokenStreamTestCase {
     checkOneTerm(analyzer, "Oe", "O");
     checkOneTerm(analyzer, "OO", "O");
     checkOneTerm(analyzer, "OE", "O");
-
-
+  }
+  
+  /** check that the empty string doesn't cause issues */
+  public void testEmptyTerm() throws Exception {
+    Analyzer a = new Analyzer() {
+      @Override
+      protected TokenStreamComponents createComponents(String fieldName, Reader reader) {
+        Tokenizer tokenizer = new KeywordTokenizer(reader);
+        return new TokenStreamComponents(tokenizer, new ScandinavianFoldingFilter(tokenizer));
+      } 
+    };
+    checkOneTerm(a, "", "");
+  }
+  
+  /** blast some random strings through the analyzer */
+  public void testRandomData() throws Exception {
+    checkRandomData(random(), analyzer, 1000*RANDOM_MULTIPLIER);
   }
 }
