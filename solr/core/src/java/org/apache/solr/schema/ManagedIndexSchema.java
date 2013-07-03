@@ -169,6 +169,12 @@ public final class ManagedIndexSchema extends IndexSchema {
     return addFields(Arrays.asList(newField));
   }
 
+  public class FieldExistsException extends SolrException {
+    public FieldExistsException(ErrorCode code, String msg) {
+      super(code, msg);
+    }
+  }
+  
   @Override
   public ManagedIndexSchema addFields(Collection<SchemaField> newFields) {
     ManagedIndexSchema newSchema = null;
@@ -183,7 +189,7 @@ public final class ManagedIndexSchema extends IndexSchema {
           for (SchemaField newField : newFields) {
             if (null != newSchema.getFieldOrNull(newField.getName())) {
               String msg = "Field '" + newField.getName() + "' already exists.";
-              throw new SolrException(ErrorCode.BAD_REQUEST, msg);
+              throw new FieldExistsException(ErrorCode.BAD_REQUEST, msg);
             }
             newSchema.fields.put(newField.getName(), newField);
 
@@ -328,6 +334,8 @@ public final class ManagedIndexSchema extends IndexSchema {
     newSchema.similarityFactory = similarityFactory;
     newSchema.isExplicitSimilarity = isExplicitSimilarity;
     newSchema.uniqueKeyField = uniqueKeyField;
+    newSchema.uniqueKeyFieldName = uniqueKeyFieldName;
+    newSchema.uniqueKeyFieldType = uniqueKeyFieldType;
 
     if (includeFieldDataStructures) {
       // These need new collections, since addFields() can add members to them

@@ -213,6 +213,11 @@ public class PackedInts {
       this.format = format;
       this.bitsPerValue = bitsPerValue;
     }
+
+    @Override
+    public String toString() {
+      return "FormatAndBits(format=" + format + " bitsPerValue=" + bitsPerValue + ")";
+    }
   }
 
   /**
@@ -1036,14 +1041,21 @@ public class PackedInts {
    */
   public static Mutable getMutable(int valueCount,
       int bitsPerValue, float acceptableOverheadRatio) {
-    assert valueCount >= 0;
-
     final FormatAndBits formatAndBits = fastestFormatAndBits(valueCount, bitsPerValue, acceptableOverheadRatio);
-    switch (formatAndBits.format) {
+    return getMutable(valueCount, formatAndBits.bitsPerValue, formatAndBits.format);
+  }
+
+  /** Same as {@link #getMutable(int, int, float)} with a pre-computed number
+   *  of bits per value and format.
+   *  @lucene.internal */
+  public static Mutable getMutable(int valueCount,
+      int bitsPerValue, PackedInts.Format format) {
+    assert valueCount >= 0;
+    switch (format) {
       case PACKED_SINGLE_BLOCK:
-        return Packed64SingleBlock.create(valueCount, formatAndBits.bitsPerValue);
+        return Packed64SingleBlock.create(valueCount, bitsPerValue);
       case PACKED:
-        switch (formatAndBits.bitsPerValue) {
+        switch (bitsPerValue) {
           case 8:
             return new Direct8(valueCount);
           case 16:
@@ -1063,7 +1075,7 @@ public class PackedInts {
             }
             break;
         }
-        return new Packed64(valueCount, formatAndBits.bitsPerValue);
+        return new Packed64(valueCount, bitsPerValue);
       default:
         throw new AssertionError();
     }
@@ -1198,33 +1210,39 @@ public class PackedInts {
       for (int i = 0; i < len; ++i) {
         dest.set(destPos++, src.get(srcPos++));
       }
-    } else {
+    } else if (len > 0) {
       // use bulk operations
-      long[] buf = new long[Math.min(capacity, len)];
-      int remaining = 0;
-      while (len > 0) {
-        final int read = src.get(srcPos, buf, remaining, Math.min(len, buf.length - remaining));
-        assert read > 0;
-        srcPos += read;
-        len -= read;
-        remaining += read;
-        final int written = dest.set(destPos, buf, 0, remaining);
-        assert written > 0;
-        destPos += written;
-        if (written < remaining) {
-          System.arraycopy(buf, written, buf, 0, remaining - written);
-        }
-        remaining -= written;
-      }
-      while (remaining > 0) {
-        final int written = dest.set(destPos, buf, 0, remaining);
-        destPos += written;
-        remaining -= written;
-        System.arraycopy(buf, written, buf, 0, remaining);
-      }
+      final long[] buf = new long[Math.min(capacity, len)];
+      copy(src, srcPos, dest, destPos, len, buf);
     }
   }
-  
+
+  /** Same as {@link #copy(Reader, int, Mutable, int, int, int)} but using a pre-allocated buffer. */
+  static void copy(Reader src, int srcPos, Mutable dest, int destPos, int len, long[] buf) {
+    assert buf.length > 0;
+    int remaining = 0;
+    while (len > 0) {
+      final int read = src.get(srcPos, buf, remaining, Math.min(len, buf.length - remaining));
+      assert read > 0;
+      srcPos += read;
+      len -= read;
+      remaining += read;
+      final int written = dest.set(destPos, buf, 0, remaining);
+      assert written > 0;
+      destPos += written;
+      if (written < remaining) {
+        System.arraycopy(buf, written, buf, 0, remaining - written);
+      }
+      remaining -= written;
+    }
+    while (remaining > 0) {
+      final int written = dest.set(destPos, buf, 0, remaining);
+      destPos += written;
+      remaining -= written;
+      System.arraycopy(buf, written, buf, 0, remaining);
+    }
+  }
+
   /**
    * Expert: reads only the metadata from a stream. This is useful to later
    * restore a stream or open a direct reader via 
@@ -1259,6 +1277,28 @@ public class PackedInts {
       this.bitsPerValue = bitsPerValue;
       this.version = version;
     }    
+  }
+
+  /** Check that the block size is a power of 2, in the right bounds, and return
+   *  its log in base 2. */
+  static int checkBlockSize(int blockSize, int minBlockSize, int maxBlockSize) {
+    if (blockSize < minBlockSize || blockSize > maxBlockSize) {
+      throw new IllegalArgumentException("blockSize must be >= " + minBlockSize + " and <= " + maxBlockSize + ", got " + blockSize);
+    }
+    if ((blockSize & (blockSize - 1)) != 0) {
+      throw new IllegalArgumentException("blockSize must be a power of two, got " + blockSize);
+    }
+    return Integer.numberOfTrailingZeros(blockSize);
+  }
+
+  /** Return the number of blocks required to store <code>size</code> values on
+   *  <code>blockSize</code>. */
+  static int numBlocks(long size, int blockSize) {
+    final int numBlocks = (int) (size / blockSize) + (size % blockSize == 0 ? 0 : 1);
+    if ((long) numBlocks * blockSize < size) {
+      throw new IllegalArgumentException("size is too large for this block size");
+    }
+    return numBlocks;
   }
 
 }

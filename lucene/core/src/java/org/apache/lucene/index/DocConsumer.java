@@ -24,5 +24,4 @@ abstract class DocConsumer {
   abstract void finishDocument() throws IOException;
   abstract void flush(final SegmentWriteState state) throws IOException;
   abstract void abort();
-  abstract void doAfterFlush();
 }

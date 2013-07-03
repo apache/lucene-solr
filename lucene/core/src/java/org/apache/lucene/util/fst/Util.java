@@ -93,9 +93,7 @@ public final class Util {
    *
    *  <p>NOTE: this only works with {@code FST<Long>}, only
    *  works when the outputs are ascending in order with
-   *  the inputs and only works when you shared
-   *  the outputs (pass doShare=true to {@link
-   *  PositiveIntOutputs#getSingleton}).
+   *  the inputs.
    *  For example, simple ordinals (0, 1,
    *  2, ...), or file offets (when appending to a file)
    *  fit this. */
@@ -517,11 +515,7 @@ public final class Util {
   }
 
   /** Starting from node, find the top N min cost 
-   *  completions to a final node.
-   *
-   *  <p>NOTE: you must share the outputs when you build the
-   *  FST (pass doShare=true to {@link
-   *  PositiveIntOutputs#getSingleton}). */
+   *  completions to a final node. */
   public static <T> MinResult<T>[] shortestPaths(FST<T> fst, FST.Arc<T> fromNode, T startOutput, Comparator<T> comparator, int topN,
                                                  boolean allowEmptyString) throws IOException {
 
@@ -814,7 +808,7 @@ public final class Util {
     final int charLimit = offset + length;
     while(charIdx < charLimit) {
       scratch.grow(intIdx+1);
-      final int utf32 = Character.codePointAt(s, charIdx);
+      final int utf32 = Character.codePointAt(s, charIdx, charLimit);
       scratch.ints[intIdx] = utf32;
       charIdx += Character.charCount(utf32);
       intIdx++;

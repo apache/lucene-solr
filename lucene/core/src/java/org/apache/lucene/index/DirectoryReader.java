@@ -19,6 +19,7 @@ package org.apache.lucene.index;
 
 import java.io.FileNotFoundException;
 import java.io.IOException;
+import java.nio.file.NoSuchFileException;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
@@ -291,7 +292,7 @@ public abstract class DirectoryReader extends BaseCompositeReader<AtomicReader> 
           // IOException allowed to throw there, in case
           // segments_N is corrupt
           sis.read(dir, fileName);
-        } catch (FileNotFoundException fnfe) {
+        } catch (FileNotFoundException | NoSuchFileException fnfe) {
           // LUCENE-948: on NFS (and maybe others), if
           // you have writers switching back and forth
           // between machines, it's very likely that the

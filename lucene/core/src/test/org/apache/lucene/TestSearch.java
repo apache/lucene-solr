@@ -112,10 +112,7 @@ public class TestSearch extends LuceneTestCase {
       Analyzer analyzer = new MockAnalyzer(random);
       IndexWriterConfig conf = newIndexWriterConfig(TEST_VERSION_CURRENT, analyzer);
       MergePolicy mp = conf.getMergePolicy();
-      if (mp instanceof LogMergePolicy) {
-        ((LogMergePolicy) mp).setUseCompoundFile(useCompoundFile);
-      }
-      
+      mp.setNoCFSRatio(useCompoundFile ? 1.0 : 0.0);
       IndexWriter writer = new IndexWriter(directory, conf);
 
       String[] docs = {
@@ -130,7 +127,7 @@ public class TestSearch extends LuceneTestCase {
       for (int j = 0; j < docs.length; j++) {
         Document d = new Document();
         d.add(newTextField("contents", docs[j], Field.Store.YES));
-        d.add(newStringField("id", ""+j, Field.Store.NO));
+        d.add(new IntField("id", j, Field.Store.NO));
         writer.addDocument(d);
       }
       writer.close();

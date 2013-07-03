@@ -119,17 +119,19 @@ class DrillSidewaysQuery extends Query {
             Terms terms = reader.terms(field);
             if (terms != null) {
               termsEnum = terms.iterator(null);
+            } else {
+              termsEnum = null;
             }
             lastField = field;
           }
+          dims[dim].docsEnums = new DocsEnum[drillDownTerms[dim].length];
           if (termsEnum == null) {
             nullCount++;
             continue;
           }
-          dims[dim].docsEnums = new DocsEnum[drillDownTerms[dim].length];
           for(int i=0;i<drillDownTerms[dim].length;i++) {
             if (termsEnum.seekExact(drillDownTerms[dim][i].bytes(), false)) {
-              DocsEnum docsEnum = termsEnum.docs(null, null);
+              DocsEnum docsEnum = termsEnum.docs(null, null, 0);
               if (docsEnum != null) {
                 dims[dim].docsEnums[i] = docsEnum;
                 dims[dim].maxCost = Math.max(dims[dim].maxCost, docsEnum.cost());
@@ -138,7 +140,7 @@ class DrillSidewaysQuery extends Query {
           }
         }
 
-        if (nullCount > 1) {
+        if (nullCount > 1 || (nullCount == 1 && dims.length == 1)) {
           return null;
         }
 

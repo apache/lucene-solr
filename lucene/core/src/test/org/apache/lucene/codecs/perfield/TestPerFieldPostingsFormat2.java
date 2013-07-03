@@ -58,7 +58,7 @@ public class TestPerFieldPostingsFormat2 extends LuceneTestCase {
   private IndexWriter newWriter(Directory dir, IndexWriterConfig conf)
       throws IOException {
     LogDocMergePolicy logByteSizeMergePolicy = new LogDocMergePolicy();
-    logByteSizeMergePolicy.setUseCompoundFile(false); // make sure we use plain
+    logByteSizeMergePolicy.setNoCFSRatio(0.0); // make sure we use plain
     // files
     conf.setMergePolicy(logByteSizeMergePolicy);
 
@@ -146,7 +146,7 @@ public class TestPerFieldPostingsFormat2 extends LuceneTestCase {
 
     iwconf = newIndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer(random()))
         .setOpenMode(OpenMode.APPEND).setCodec(codec);
-    //((LogMergePolicy) iwconf.getMergePolicy()).setUseCompoundFile(false);
+    //((LogMergePolicy) iwconf.getMergePolicy()).setNoCFSRatio(0.0);
     //((LogMergePolicy) iwconf.getMergePolicy()).setMergeFactor(10);
     iwconf.setMaxBufferedDocs(IndexWriterConfig.DISABLE_AUTO_FLUSH);
 

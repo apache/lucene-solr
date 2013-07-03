@@ -110,6 +110,18 @@ public class SpatialOpRecursivePrefixTreeTest extends StrategyTestCase {
     doTest(SpatialOperation.IsDisjointTo);
   }
 
+  /** See LUCENE-5062, {@link ContainsPrefixTreeFilter#multiOverlappingIndexedShapes}. */
+  @Test
+  public void testContainsPairOverlap() throws IOException {
+    mySetup(3);
+    adoc("0", new ShapePair(ctx.makeRectangle(0, 33, -128, 128), ctx.makeRectangle(33, 128, -128, 128), true));
+    commit();
+    Query query = strategy.makeQuery(new SpatialArgs(SpatialOperation.Contains,
+        ctx.makeRectangle(0, 128, -16, 128)));
+    SearchResults searchResults = executeQuery(query, 1);
+    assertEquals(1, searchResults.numFound);
+  }
+
   @Test
   public void testWithinDisjointParts() throws IOException {
     mySetup(7);
@@ -184,10 +196,10 @@ public class SpatialOpRecursivePrefixTreeTest extends StrategyTestCase {
       Shape indexedShape;
       Shape indexedShapeGS; //(grid-snapped)
       int R = random().nextInt(12);
-      if (R == 0) {//1 in 10
+      if (R == 0) {//1 in 12
         indexedShape = null; //no shape for this doc
         indexedShapeGS = null;
-      } else if (R % 4 == 0) {//3 in 12
+      } else if (R % 3 == 0) {//4-1 in 12
         //comprised of more than one shape
         Rectangle shape1 = randomRectangle();
         Rectangle shape2 = randomRectangle();

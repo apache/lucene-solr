@@ -95,7 +95,7 @@ class ConnectionManager implements Watcher {
                 // if keeper does not replace oldKeeper we must be sure to close it
                 synchronized (connectionUpdateLock) {
                   try {
-                    waitForConnected(SolrZkClient.DEFAULT_CLIENT_CONNECT_TIMEOUT);
+                    waitForConnected(Long.MAX_VALUE);
                   } catch (Exception e1) {
                     closeKeeper(keeper);
                     throw new RuntimeException(e1);

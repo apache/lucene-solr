@@ -60,6 +60,9 @@ import org.apache.lucene.util.packed.PackedInts;
  */
 public final class CompressingStoredFieldsReader extends StoredFieldsReader {
 
+  // Do not reuse the decompression buffer when there is more than 32kb to decompress
+  private static final int BUFFER_REUSE_THRESHOLD = 1 << 15;
+
   private final FieldInfos fieldInfos;
   private final CompressingStoredFieldsIndexReader indexReader;
   private final IndexInput fieldsStream;
@@ -93,19 +96,22 @@ public final class CompressingStoredFieldsReader extends StoredFieldsReader {
     numDocs = si.getDocCount();
     IndexInput indexStream = null;
     try {
-      fieldsStream = d.openInput(IndexFileNames.segmentFileName(segment, segmentSuffix, FIELDS_EXTENSION), context);
+      // Load the index into memory
       final String indexStreamFN = IndexFileNames.segmentFileName(segment, segmentSuffix, FIELDS_INDEX_EXTENSION);
       indexStream = d.openInput(indexStreamFN, context);
-
       final String codecNameIdx = formatName + CODEC_SFX_IDX;
-      final String codecNameDat = formatName + CODEC_SFX_DAT;
       CodecUtil.checkHeader(indexStream, codecNameIdx, VERSION_START, VERSION_CURRENT);
+      assert CodecUtil.headerLength(codecNameIdx) == indexStream.getFilePointer();
+      indexReader = new CompressingStoredFieldsIndexReader(indexStream, si);
+      indexStream.close();
+      indexStream = null;
+
+      // Open the data file and read metadata
+      final String fieldsStreamFN = IndexFileNames.segmentFileName(segment, segmentSuffix, FIELDS_EXTENSION);
+      fieldsStream = d.openInput(fieldsStreamFN, context);
+      final String codecNameDat = formatName + CODEC_SFX_DAT;
       CodecUtil.checkHeader(fieldsStream, codecNameDat, VERSION_START, VERSION_CURRENT);
       assert CodecUtil.headerLength(codecNameDat) == fieldsStream.getFilePointer();
-      assert CodecUtil.headerLength(codecNameIdx) == indexStream.getFilePointer();
-
-      indexReader = new CompressingStoredFieldsIndexReader(indexStream, si);
-      indexStream = null;
 
       packedIntsVersion = fieldsStream.readVInt();
       decompressor = compressionMode.newDecompressor();
@@ -134,7 +140,7 @@ public final class CompressingStoredFieldsReader extends StoredFieldsReader {
   @Override
   public void close() throws IOException {
     if (!closed) {
-      IOUtils.close(fieldsStream, indexReader);
+      IOUtils.close(fieldsStream);
       closed = true;
     }
   }
@@ -255,6 +261,7 @@ public final class CompressingStoredFieldsReader extends StoredFieldsReader {
       return;
     }
 
+    final BytesRef bytes = totalLength <= BUFFER_REUSE_THRESHOLD ? this.bytes : new BytesRef();
     decompressor.decompress(fieldsStream, totalLength, offset, length, bytes);
     assert bytes.length == length;
 

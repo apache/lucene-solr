@@ -25,7 +25,7 @@ cp -r -f example example4
 cp -r -f example example5
 cp -r -f example example6
 
-java -classpath "example/solr-webapp/webapp/WEB-INF/lib/*:example/lib/ext/" org.apache.solr.cloud.ZkCLI -cmd bootstrap -zkhost 127.0.0.1:9983 -solrhome example/solr -runzk 8983
+java -classpath "example/solr-webapp/webapp/WEB-INF/lib/*:example/lib/ext/*" org.apache.solr.cloud.ZkCLI -cmd bootstrap -zkhost 127.0.0.1:9983 -solrhome example/solr -runzk 8983
 
 cd example
 java -DzkRun -DnumShards=2 -DSTOP.PORT=7983 -DSTOP.KEY=key -jar start.jar 1>example.log 2>&1 &

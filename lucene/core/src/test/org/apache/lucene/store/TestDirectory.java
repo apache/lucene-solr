@@ -20,6 +20,7 @@ package org.apache.lucene.store;
 import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.IOException;
+import java.nio.file.NoSuchFileException;
 import java.util.Arrays;
 
 import org.apache.lucene.store.MockDirectoryWrapper.Throttling;
@@ -98,7 +99,7 @@ public class TestDirectory extends LuceneTestCase {
              try {
               IndexInput input = dir.openInput(file, newIOContext(random()));
               input.close();
-              } catch (FileNotFoundException e) {
+              } catch (FileNotFoundException | NoSuchFileException e) {
                 // ignore
               } catch (IOException e) {
                 if (e.getMessage().contains("still open for writing")) {

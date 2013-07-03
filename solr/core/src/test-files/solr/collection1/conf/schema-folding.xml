@@ -221,8 +221,6 @@
     <fieldType name="float" class="solr.TrieFloatField" precisionStep="4" omitNorms="true" positionIncrementGap="0"/>
     <fieldType name="long" class="solr.TrieLongField" precisionStep="4" omitNorms="true" positionIncrementGap="0"/>
     <fieldType name="double" class="solr.TrieDoubleField" precisionStep="4" omitNorms="true" positionIncrementGap="0"/>
-    <fieldType name="byte" class="solr.ByteField" omitNorms="true" positionIncrementGap="0"/>
-    <fieldType name="short" class="solr.ShortField" omitNorms="true" positionIncrementGap="0"/>
     <fieldtype name="boolean" class="solr.BoolField" sortMissingLast="true"/>
     <fieldtype name="date" class="solr.TrieDateField" precisionStep="0"/>
   </types>
@@ -233,8 +231,6 @@
     <field name="float_f" type="float"/>
     <field name="long_f" type="long"/>
     <field name="double_f" type="double"/>
-    <field name="byte_f" type="byte"/>
-    <field name="short_f" type="short"/>
     <field name="bool_f" type="boolean"/>
     <field name="date_f" type="date"/>
 

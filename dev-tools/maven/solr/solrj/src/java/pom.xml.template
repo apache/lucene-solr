@@ -155,6 +155,7 @@
               </bundledSignatures>
               <signaturesFiles>
                 <signaturesFile>${top-level}/lucene/tools/forbiddenApis/executors.txt</signaturesFile>
+                <signaturesFile>${top-level}/lucene/tools/forbiddenApis/chars.txt</signaturesFile>
                 <!-- Solr-J does NOT depend on servlet-api -->
                 <!-- <signaturesFile>${top-level}/lucene/tools/forbiddenApis/servlet-api.txt</signaturesFile> -->
               </signaturesFiles>

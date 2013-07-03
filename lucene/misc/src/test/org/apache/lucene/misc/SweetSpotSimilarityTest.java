@@ -246,7 +246,7 @@ public class SweetSpotSimilarityTest extends LuceneTestCase {
   
     SweetSpotSimilarity ss = new SweetSpotSimilarity() {
         @Override
-        public float tf(int freq) {
+        public float tf(float freq) {
           return hyperbolicTf(freq);
         }
       };

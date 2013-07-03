@@ -48,8 +48,6 @@
     <fieldType name="float" class="solr.TrieFloatField" precisionStep="0" omitNorms="true" positionIncrementGap="0"/>
     <fieldType name="long" class="solr.TrieLongField" precisionStep="0" omitNorms="true" positionIncrementGap="0"/>
     <fieldType name="double" class="solr.TrieDoubleField" precisionStep="0" omitNorms="true" positionIncrementGap="0"/>
-    <fieldType name="byte" class="solr.ByteField" omitNorms="true" positionIncrementGap="0"/>
-    <fieldType name="short" class="solr.ShortField" omitNorms="true" positionIncrementGap="0"/>
 
 
     <fieldType name="tint" class="solr.TrieIntField" precisionStep="8" omitNorms="true" positionIncrementGap="0"/>
@@ -609,10 +607,6 @@
    <dynamicField name="*_dt" type="date"    indexed="true"  stored="true"/>
    <dynamicField name="*_dt1" type="date"    indexed="true"  stored="true" multiValued="false"/>
    <dynamicField name="*_bcd" type="bcdstr" indexed="true"  stored="true"/>
-   <dynamicField name="*_by"  type="byte"  indexed="true" stored="true"/>
-   <dynamicField name="*_by1" type="byte"  indexed="true" stored="true" multiValued="false"/>
-   <dynamicField name="*_sh" type="short"  indexed="true" stored="true"/>
-   <dynamicField name="*_sh1" type="short"  indexed="true" stored="true" multiValued="false"/>
 
 
       <!-- some trie-coded dynamic fields for faster range queries -->

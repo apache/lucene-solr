@@ -19,15 +19,20 @@ package org.apache.solr.handler.loader;
 import java.io.IOException;
 import java.io.Reader;
 import java.io.StringReader;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.Iterator;
+import java.util.List;
+import java.util.Map;
 
 import org.apache.commons.io.IOUtils;
+import org.apache.solr.common.params.SolrParams;
+import org.apache.solr.common.params.UpdateParams;
 import org.noggit.JSONParser;
 import org.noggit.ObjectBuilder;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.SolrInputDocument;
 import org.apache.solr.common.SolrInputField;
-import org.apache.solr.common.params.*;
 import org.apache.solr.common.util.ContentStream;
 import org.apache.solr.handler.RequestHandlerUtils;
 import org.apache.solr.handler.UpdateRequestHandler;
@@ -512,11 +517,13 @@ public class JsonLoader extends ContentStreamLoader {
         case JSONParser.STRING:
           return parser.getString();
         case JSONParser.LONG:
+          return parser.getLong();
         case JSONParser.NUMBER:
+          return parser.getDouble();
         case JSONParser.BIGNUMBER:
           return parser.getNumberChars().toString();
         case JSONParser.BOOLEAN:
-          return Boolean.toString(parser.getBoolean()); // for legacy reasons, single values s are expected to be strings
+          return parser.getBoolean();
         case JSONParser.NULL:
           parser.getNull();
           return null;

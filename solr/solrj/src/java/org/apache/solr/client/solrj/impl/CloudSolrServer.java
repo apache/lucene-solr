@@ -91,6 +91,13 @@ public class CloudSolrServer extends SolrServer {
       this.lbServer = new LBHttpSolrServer(myClient);
       this.updatesToLeaders = true;
   }
+  
+  public CloudSolrServer(String zkHost, boolean updatesToLeaders) throws MalformedURLException {
+    this.zkHost = zkHost;
+    this.myClient = HttpClientUtil.createClient(null);
+    this.lbServer = new LBHttpSolrServer(myClient);
+    this.updatesToLeaders = updatesToLeaders;
+}
 
   /**
    * @param zkHost The client endpoint of the zookeeper quorum containing the cloud state,
@@ -122,6 +129,11 @@ public class CloudSolrServer extends SolrServer {
   /** Sets the default collection for request */
   public void setDefaultCollection(String collection) {
     this.defaultCollection = collection;
+  }
+
+  /** Gets the default collection for request */
+  public String getDefaultCollection() {
+    return defaultCollection;
   }
 
   /** Set the connect timeout to the zookeeper ensemble in ms */
@@ -347,6 +359,10 @@ public class CloudSolrServer extends SolrServer {
 
   public LBHttpSolrServer getLbServer() {
     return lbServer;
+  }
+  
+  public boolean isUpdatesToLeaders() {
+    return updatesToLeaders;
   }
 
   // for tests

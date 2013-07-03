@@ -59,7 +59,7 @@ public class TestRollingUpdates extends LuceneTestCase {
     // TODO: sometimes update ids not in order...
     for(int docIter=0;docIter<numUpdates;docIter++) {
       final Document doc = docs.nextDoc();
-      final String myID = ""+id;
+      final String myID = Integer.toString(id);
       if (id == SIZE-1) {
         id = 0;
       } else {

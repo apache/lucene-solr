@@ -17,7 +17,6 @@ package org.apache.lucene.codecs.compressing;
  * limitations under the License.
  */
 
-import java.io.Closeable;
 import java.io.IOException;
 import java.util.Arrays;
 
@@ -25,16 +24,13 @@ import org.apache.lucene.index.CorruptIndexException;
 import org.apache.lucene.index.SegmentInfo;
 import org.apache.lucene.store.IndexInput;
 import org.apache.lucene.util.ArrayUtil;
-import org.apache.lucene.util.IOUtils;
 import org.apache.lucene.util.packed.PackedInts;
 
 /**
  * Random-access reader for {@link CompressingStoredFieldsIndexWriter}.
  * @lucene.internal
  */
-public final class CompressingStoredFieldsIndexReader implements Closeable, Cloneable {
-
-  final IndexInput fieldsIndexIn;
+public final class CompressingStoredFieldsIndexReader implements Cloneable {
 
   static long moveLowOrderBitToSign(long n) {
     return ((n >>> 1) ^ -(n & 1));
@@ -48,8 +44,9 @@ public final class CompressingStoredFieldsIndexReader implements Closeable, Clon
   final PackedInts.Reader[] docBasesDeltas; // delta from the avg
   final PackedInts.Reader[] startPointersDeltas; // delta from the avg
 
+  // It is the responsibility of the caller to close fieldsIndexIn after this constructor
+  // has been called
   CompressingStoredFieldsIndexReader(IndexInput fieldsIndexIn, SegmentInfo si) throws IOException {
-    this.fieldsIndexIn = fieldsIndexIn;
     maxDoc = si.getDocCount();
     int[] docBases = new int[16];
     long[] startPointers = new long[16];
@@ -104,17 +101,6 @@ public final class CompressingStoredFieldsIndexReader implements Closeable, Clon
     this.avgChunkSizes = Arrays.copyOf(avgChunkSizes, blockCount);
     this.docBasesDeltas = Arrays.copyOf(docBasesDeltas, blockCount);
     this.startPointersDeltas = Arrays.copyOf(startPointersDeltas, blockCount);
-  }
-
-  private CompressingStoredFieldsIndexReader(CompressingStoredFieldsIndexReader other) {
-    this.fieldsIndexIn = null;
-    this.maxDoc = other.maxDoc;
-    this.docBases = other.docBases;
-    this.startPointers = other.startPointers;
-    this.avgChunkDocs = other.avgChunkDocs;
-    this.avgChunkSizes = other.avgChunkSizes;
-    this.docBasesDeltas = other.docBasesDeltas;
-    this.startPointersDeltas = other.startPointersDeltas;
   }
 
   private int block(int docID) {
@@ -172,16 +158,7 @@ public final class CompressingStoredFieldsIndexReader implements Closeable, Clon
 
   @Override
   public CompressingStoredFieldsIndexReader clone() {
-    if (fieldsIndexIn == null) {
-      return this;
-    } else {
-      return new CompressingStoredFieldsIndexReader(this);
-    }
-  }
-
-  @Override
-  public void close() throws IOException {
-    IOUtils.close(fieldsIndexIn);
+    return this;
   }
 
 }

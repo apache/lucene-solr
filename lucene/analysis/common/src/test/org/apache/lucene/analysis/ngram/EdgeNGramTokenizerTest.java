@@ -21,14 +21,14 @@ package org.apache.lucene.analysis.ngram;
 import java.io.IOException;
 import java.io.Reader;
 import java.io.StringReader;
+import java.util.Arrays;
 
 import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.analysis.BaseTokenStreamTestCase;
 import org.apache.lucene.analysis.Tokenizer;
-import org.apache.lucene.analysis.tokenattributes.CharTermAttribute;
-import org.apache.lucene.analysis.tokenattributes.OffsetAttribute;
-import org.apache.lucene.analysis.tokenattributes.PositionIncrementAttribute;
 import org.apache.lucene.util._TestUtil;
+
+import com.carrotsearch.randomizedtesting.generators.RandomStrings;
 
 /**
  * Tests {@link EdgeNGramTokenizer} for correctness.
@@ -120,25 +120,60 @@ public class EdgeNGramTokenizerTest extends BaseTokenStreamTestCase {
                               false);
   }
 
+  private static void testNGrams(int minGram, int maxGram, int length, final String nonTokenChars) throws IOException {
+    final String s = RandomStrings.randomAsciiOfLength(random(), length);
+    testNGrams(minGram, maxGram, s, nonTokenChars);
+  }
+
+  private static void testNGrams(int minGram, int maxGram, String s, String nonTokenChars) throws IOException {
+    NGramTokenizerTest.testNGrams(minGram, maxGram, s, nonTokenChars, true);
+  }
+
   public void testLargeInput() throws IOException {
-    final String input = _TestUtil.randomSimpleString(random(), 1024 * 5);
-    final int minGram = _TestUtil.nextInt(random(), 1, 1024);
-    final int maxGram = _TestUtil.nextInt(random(), minGram, 5 * 1024);
-    EdgeNGramTokenizer tk = new EdgeNGramTokenizer(TEST_VERSION_CURRENT, new StringReader(input), minGram, maxGram);
-    final CharTermAttribute charTermAtt = tk.addAttribute(CharTermAttribute.class);
-    final OffsetAttribute offsetAtt = tk.addAttribute(OffsetAttribute.class);
-    final PositionIncrementAttribute posIncAtt = tk.addAttribute(PositionIncrementAttribute.class);
-    tk.reset();
-    for (int i = minGram; i <= maxGram && i <= input.length(); ++i) {
-      assertTrue(tk.incrementToken());
-      assertEquals(0, offsetAtt.startOffset());
-      assertEquals(i, offsetAtt.endOffset());
-      assertEquals(1, posIncAtt.getPositionIncrement());
-      assertEquals(input.substring(0, i), charTermAtt.toString());
+    // test sliding
+    final int minGram = _TestUtil.nextInt(random(), 1, 100);
+    final int maxGram = _TestUtil.nextInt(random(), minGram, 100);
+    testNGrams(minGram, maxGram, _TestUtil.nextInt(random(), 3 * 1024, 4 * 1024), "");
+  }
+
+  public void testLargeMaxGram() throws IOException {
+    // test sliding with maxGram > 1024
+    final int minGram = _TestUtil.nextInt(random(), 1290, 1300);
+    final int maxGram = _TestUtil.nextInt(random(), minGram, 1300);
+    testNGrams(minGram, maxGram, _TestUtil.nextInt(random(), 3 * 1024, 4 * 1024), "");
+  }
+
+  public void testPreTokenization() throws IOException {
+    final int minGram = _TestUtil.nextInt(random(), 1, 100);
+    final int maxGram = _TestUtil.nextInt(random(), minGram, 100);
+    testNGrams(minGram, maxGram, _TestUtil.nextInt(random(), 0, 4 * 1024), "a");
+  }
+
+  public void testHeavyPreTokenization() throws IOException {
+    final int minGram = _TestUtil.nextInt(random(), 1, 100);
+    final int maxGram = _TestUtil.nextInt(random(), minGram, 100);
+    testNGrams(minGram, maxGram, _TestUtil.nextInt(random(), 0, 4 * 1024), "abcdef");
+  }
+
+  public void testFewTokenChars() throws IOException {
+    final char[] chrs = new char[_TestUtil.nextInt(random(), 4000, 5000)];
+    Arrays.fill(chrs, ' ');
+    for (int i = 0; i < chrs.length; ++i) {
+      if (random().nextFloat() < 0.1) {
+        chrs[i] = 'a';
+      }
     }
-    assertFalse(tk.incrementToken());
-    tk.end();
-    assertEquals(input.length(), offsetAtt.startOffset());
+    final int minGram = _TestUtil.nextInt(random(), 1, 2);
+    final int maxGram = _TestUtil.nextInt(random(), minGram, 2);
+    testNGrams(minGram, maxGram, new String(chrs), " ");
+  }
+
+  public void testFullUTF8Range() throws IOException {
+    final int minGram = _TestUtil.nextInt(random(), 1, 100);
+    final int maxGram = _TestUtil.nextInt(random(), minGram, 100);
+    final String s = _TestUtil.randomUnicodeString(random(), 4 * 1024);
+    testNGrams(minGram, maxGram, s, "");
+    testNGrams(minGram, maxGram, s, "abcdef");
   }
 
 }

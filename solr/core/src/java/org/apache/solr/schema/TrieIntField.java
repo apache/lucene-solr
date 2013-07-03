@@ -27,7 +27,7 @@ package org.apache.solr.schema;
  * 
  * @see Integer
  */
-public class TrieIntField extends TrieField {
+public class TrieIntField extends TrieField implements IntValueFieldType {
   {
     type=TrieTypes.INTEGER;
   }

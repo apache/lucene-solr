@@ -17,6 +17,12 @@ package org.apache.solr.core;
  * limitations under the License.
  */
 
+import org.apache.commons.io.IOUtils;
+import org.apache.solr.common.SolrException;
+import org.apache.solr.util.PropertiesUtil;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.IOException;
@@ -26,15 +32,6 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Properties;
-
-import javax.xml.parsers.ParserConfigurationException;
-
-import org.apache.commons.io.IOUtils;
-import org.apache.solr.common.SolrException;
-import org.apache.solr.util.PropertiesUtil;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-import org.xml.sax.SAXException;
 
 
 /**
@@ -46,22 +43,25 @@ public class ConfigSolrXml extends ConfigSolr {
   private SolrCoreDiscoverer solrCoreDiscoverer = new SolrCoreDiscoverer();
   private final Map<String, CoreDescriptor> coreDescriptorMap;
 
-  public ConfigSolrXml(Config config, CoreContainer container)
-      throws ParserConfigurationException, IOException, SAXException {
+  public ConfigSolrXml(Config config, CoreContainer container) {
     super(config);
-    checkForIllegalConfig();
-    
-    fillPropMap();
-    
-    String coreRoot = get(CfgProp.SOLR_COREROOTDIRECTORY, (container == null ? config.getResourceLoader().getInstanceDir() : container.getSolrHome()));
-    coreDescriptorMap = solrCoreDiscoverer.discover(container, new File(coreRoot));
+    try {
+      checkForIllegalConfig();
+      fillPropMap();
+      config.substituteProperties();
+      String coreRoot = get(CfgProp.SOLR_COREROOTDIRECTORY, (container == null ? config.getResourceLoader().getInstanceDir() : container.getSolrHome()));
+      coreDescriptorMap = solrCoreDiscoverer.discover(container, new File(coreRoot));
+    }
+    catch (IOException e) {
+      throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, e);
+    }
   }
   
   private void checkForIllegalConfig() throws IOException {
     
     // Do sanity checks - we don't want to find old style config
     failIfFound("solr/@coreLoadThreads");
-    failIfFound("solr/@persist");
+    failIfFound("solr/@persistent");
     failIfFound("solr/@sharedLib");
     failIfFound("solr/@zkHost");
     
@@ -77,6 +77,7 @@ public class ConfigSolrXml extends ConfigSolr {
     failIfFound("solr/cores/@hostContext");
     failIfFound("solr/cores/@hostPort");
     failIfFound("solr/cores/@leaderVoteWait");
+    failIfFound("solr/cores/@genericCoreNodeNames");
     failIfFound("solr/cores/@managementPath");
     failIfFound("solr/cores/@shareSchema");
     failIfFound("solr/cores/@transientCacheSize");
@@ -118,6 +119,7 @@ public class ConfigSolrXml extends ConfigSolr {
     propMap.put(CfgProp.SOLR_HOSTCONTEXT, doSub("solr/solrcloud/str[@name='hostContext']"));
     propMap.put(CfgProp.SOLR_HOSTPORT, doSub("solr/solrcloud/int[@name='hostPort']"));
     propMap.put(CfgProp.SOLR_LEADERVOTEWAIT, doSub("solr/solrcloud/int[@name='leaderVoteWait']"));
+    propMap.put(CfgProp.SOLR_GENERICCORENODENAMES, doSub("solr/solrcloud/bool[@name='genericCoreNodeNames']"));
     propMap.put(CfgProp.SOLR_MANAGEMENTPATH, doSub("solr/str[@name='managementPath']"));
     propMap.put(CfgProp.SOLR_SHAREDLIB, doSub("solr/str[@name='sharedLib']"));
     propMap.put(CfgProp.SOLR_SHARESCHEMA, doSub("solr/str[@name='shareSchema']"));

@@ -80,7 +80,7 @@ class DrillSidewaysScorer extends Scorer {
     // Position all scorers to their first matching doc:
     baseScorer.nextDoc();
     for(DocsEnumsAndFreq dim : dims) {
-      for(DocsEnum docsEnum : dim.docsEnums) {
+      for (DocsEnum docsEnum : dim.docsEnums) {
         if (docsEnum != null) {
           docsEnum.nextDoc();
         }
@@ -95,7 +95,7 @@ class DrillSidewaysScorer extends Scorer {
     for(int dim=0;dim<numDims;dim++) {
       docsEnums[dim] = dims[dim].docsEnums;
       sidewaysCollectors[dim] = dims[dim].sidewaysCollector;
-      for(DocsEnum de : dims[dim].docsEnums) {
+      for (DocsEnum de : dims[dim].docsEnums) {
         if (de != null) {
           drillDownCost += de.cost();
         }

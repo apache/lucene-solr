@@ -18,9 +18,8 @@
 package org.apache.solr.core;
 
 import org.apache.solr.SolrTestCaseJ4;
-import org.apache.solr.common.SolrException;
-import org.apache.solr.common.SolrException.ErrorCode;
 
+import java.util.Map;
 import java.util.regex.Pattern;
 
 public abstract class AbstractBadConfigTestBase extends SolrTestCaseJ4 {
@@ -50,26 +49,37 @@ public abstract class AbstractBadConfigTestBase extends SolrTestCaseJ4 {
 
     ignoreException(Pattern.quote(errString));
     try {
+
       if (null == solrHome) {
         initCore( solrconfigFile, schemaFile );
       } else {
         initCore( solrconfigFile, schemaFile, solrHome );
       }
-    } catch (Exception e) {
-      for (Throwable t = e; t != null; t = t.getCause()) {
-        // short circuit out if we found what we expected
-        if (t.getMessage() != null && -1 != t.getMessage().indexOf(errString)) return;
-      }
 
-      // otherwise, rethrow it, possibly completley unrelated
-      throw new SolrException
-        (ErrorCode.SERVER_ERROR, 
-         "Unexpected error, expected error matching: " + errString, e);
-    } finally {
+      CoreContainer cc = h.getCoreContainer();
+      for (Map.Entry<String, Exception> entry : cc.getCoreInitFailures().entrySet()) {
+        if (matches(entry.getValue(), errString))
+          return;
+      }
+    }
+    catch (Exception e) {
+      if (matches(e, errString))
+        return;
+      throw e;
+    }
+    finally {
       deleteCore();
       resetExceptionIgnores();
     }
     fail("Did not encounter any exception from: " + solrconfigFile + " using " + schemaFile);
+  }
+
+  private static boolean matches(Exception e, String errString) {
+    for (Throwable t = e; t != null; t = t.getCause()) {
+      if (t.getMessage() != null && -1 != t.getMessage().indexOf(errString))
+        return true;
+    }
+    return false;
   }
 
 }

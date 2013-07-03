@@ -187,6 +187,76 @@ public final class DefaultSolrCoreState extends SolrCoreState implements Recover
       }
     }
   }
+  
+  @Override
+  public synchronized void closeIndexWriter(SolrCore core, boolean rollback)
+      throws IOException {
+    log.info("Closing IndexWriter...");
+    String coreName = core.getName();
+    synchronized (writerPauseLock) {
+      if (closed) {
+        throw new SolrException(ErrorCode.SERVICE_UNAVAILABLE, "Already closed");
+      }
+      
+      // we need to wait for the Writer to fall out of use
+      // first lets stop it from being lent out
+      pauseWriter = true;
+      // then lets wait until its out of use
+      log.info("Waiting until IndexWriter is unused... core=" + coreName);
+      
+      while (!writerFree) {
+        try {
+          writerPauseLock.wait(100);
+        } catch (InterruptedException e) {}
+        
+        if (closed) {
+          throw new SolrException(ErrorCode.SERVICE_UNAVAILABLE,
+              "SolrCoreState already closed");
+        }
+      }
+      
+      if (indexWriter != null) {
+        if (!rollback) {
+          try {
+            log.info("Closing old IndexWriter... core=" + coreName);
+            indexWriter.close();
+          } catch (Throwable t) {
+            SolrException.log(log, "Error closing old IndexWriter. core="
+                + coreName, t);
+          }
+        } else {
+          try {
+            log.info("Rollback old IndexWriter... core=" + coreName);
+            indexWriter.rollback();
+          } catch (Throwable t) {
+            SolrException.log(log, "Error rolling back old IndexWriter. core="
+                + coreName, t);
+          }
+        }
+      }
+      
+    }
+  }
+  
+  @Override
+  public synchronized void openIndexWriter(SolrCore core) throws IOException {
+    log.info("Creating new IndexWriter...");
+    synchronized (writerPauseLock) {
+      if (closed) {
+        throw new SolrException(ErrorCode.SERVICE_UNAVAILABLE, "Already closed");
+      }
+      
+      try {
+        indexWriter = createMainIndexWriter(core, "DirectUpdateHandler2");
+        log.info("New IndexWriter is ready to be used.");
+        // we need to null this so it picks up the new writer next get call
+        refCntWriter = null;
+      } finally {
+        pauseWriter = false;
+        writerPauseLock.notifyAll();
+      }
+    }
+  }
 
   @Override
   public synchronized void rollbackIndexWriter(SolrCore core) throws IOException {

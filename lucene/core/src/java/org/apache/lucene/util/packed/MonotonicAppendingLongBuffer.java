@@ -37,14 +37,22 @@ public final class MonotonicAppendingLongBuffer extends AbstractAppendingLongBuf
     return (n >> 63) ^ (n << 1);
   }
 
-  private float[] averages;
+  float[] averages;
 
-  /** Sole constructor. */
-  public MonotonicAppendingLongBuffer() {
-    super(16);
-    averages = new float[16];
+  /** @param initialPageCount the initial number of pages
+   *  @param pageSize         the size of a single page */
+  public MonotonicAppendingLongBuffer(int initialPageCount, int pageSize) {
+    super(initialPageCount, pageSize);
+    averages = new float[pending.length];
   }
-  
+
+  /** Create an {@link MonotonicAppendingLongBuffer} with initialPageCount=16
+   *  and pageSize=1024. */
+  public MonotonicAppendingLongBuffer() {
+    this(16, 1024);
+  }
+
+  @Override
   long get(int block, int element) {
     if (block == valuesOff) {
       return pending[element];
@@ -66,16 +74,16 @@ public final class MonotonicAppendingLongBuffer extends AbstractAppendingLongBuf
 
   @Override
   void packPendingValues() {
-    assert pendingOff == MAX_PENDING_COUNT;
+    assert pendingOff == pending.length;
 
     minValues[valuesOff] = pending[0];
-    averages[valuesOff] = (float) (pending[BLOCK_MASK] - pending[0]) / BLOCK_MASK;
+    averages[valuesOff] = (float) (pending[pending.length - 1] - pending[0]) / (pending.length - 1);
 
-    for (int i = 0; i < MAX_PENDING_COUNT; ++i) {
+    for (int i = 0; i < pending.length; ++i) {
       pending[i] = zigZagEncode(pending[i] - minValues[valuesOff] - (long) (averages[valuesOff] * (long) i));
     }
     long maxDelta = 0;
-    for (int i = 0; i < MAX_PENDING_COUNT; ++i) {
+    for (int i = 0; i < pending.length; ++i) {
       if (pending[i] < 0) {
         maxDelta = -1;
         break;
@@ -94,6 +102,7 @@ public final class MonotonicAppendingLongBuffer extends AbstractAppendingLongBuf
   }
 
   /** Return an iterator over the values of this buffer. */
+  @Override
   public Iterator iterator() {
     return new Iterator();
   }
@@ -105,18 +114,19 @@ public final class MonotonicAppendingLongBuffer extends AbstractAppendingLongBuf
       super();
     }
 
+    @Override
     void fillValues() {
       if (vOff == valuesOff) {
         currentValues = pending;
       } else if (deltas[vOff] == null) {
-        for (int k = 0; k < MAX_PENDING_COUNT; ++k) {
+        for (int k = 0; k < pending.length; ++k) {
           currentValues[k] = minValues[vOff] + (long) (averages[vOff] * (long) k);
         }
       } else {
-        for (int k = 0; k < MAX_PENDING_COUNT; ) {
-          k += deltas[vOff].get(k, currentValues, k, MAX_PENDING_COUNT - k);
+        for (int k = 0; k < pending.length; ) {
+          k += deltas[vOff].get(k, currentValues, k, pending.length - k);
         }
-        for (int k = 0; k < MAX_PENDING_COUNT; ++k) {
+        for (int k = 0; k < pending.length; ++k) {
           currentValues[k] = minValues[vOff] + (long) (averages[vOff] * (long) k) + zigZagDecode(currentValues[k]);
         }
       }

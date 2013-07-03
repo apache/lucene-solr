@@ -138,11 +138,26 @@ public class TestConfig extends SolrTestCaseJ4 {
   // If defaults change, add test methods to cover each version
   @Test
   public void testDefaults() throws Exception {
+
+    SolrConfig sc = new SolrConfig(new SolrResourceLoader("solr/collection1"), "solrconfig-defaults.xml", null);
+    SolrIndexConfig sic = sc.indexConfig;
+    assertEquals("default ramBufferSizeMB", 100.0D, sic.ramBufferSizeMB, 0.0D);
+    assertEquals("default LockType", SolrIndexConfig.LOCK_TYPE_NATIVE, sic.lockType);
+    assertEquals("default useCompoundFile", false, sic.useCompoundFile);
+
+  }
+
+
+  // sanity check that sys propertis are working as expected
+  public void testSanityCheckTestSysPropsAreUsed() throws Exception {
+    final boolean expectCFS 
+      = Boolean.parseBoolean(System.getProperty("useCompoundFile"));
+
     SolrConfig sc = new SolrConfig(new SolrResourceLoader("solr/collection1"), "solrconfig-basic.xml", null);
     SolrIndexConfig sic = sc.indexConfig;
-    assertTrue("default ramBufferSizeMB should be 100", sic.ramBufferSizeMB == 100);
-    assertTrue("default useCompoundFile should be false", sic.useCompoundFile == false);
-    assertTrue("default LockType should be native", sic.lockType.equals(SolrIndexConfig.LOCK_TYPE_NATIVE));
+    assertEquals("default ramBufferSizeMB", 100.0D, sic.ramBufferSizeMB, 0.0D);
+    assertEquals("default LockType", SolrIndexConfig.LOCK_TYPE_NATIVE, sic.lockType);
+    assertEquals("useCompoundFile sysprop", expectCFS, sic.useCompoundFile);
   }
 
 }

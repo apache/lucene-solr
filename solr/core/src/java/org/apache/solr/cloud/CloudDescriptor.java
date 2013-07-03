@@ -44,6 +44,10 @@ public class CloudDescriptor {
   public boolean isLeader() {
     return isLeader;
   }
+  
+  public void setLeader(boolean isLeader) {
+    this.isLeader = isLeader;
+  }
 
   public void setShardId(String shardId) {
     this.shardId = shardId;

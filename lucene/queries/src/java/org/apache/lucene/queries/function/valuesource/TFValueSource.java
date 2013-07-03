@@ -29,7 +29,7 @@ import java.io.IOException;
 import java.util.Map;
 
 /** 
- * Function that returns {@link TFIDFSimilarity#tf(int)}
+ * Function that returns {@link TFIDFSimilarity#tf(float)}
  * for every document.
  * <p>
  * Note that the configured Similarity for the field must be

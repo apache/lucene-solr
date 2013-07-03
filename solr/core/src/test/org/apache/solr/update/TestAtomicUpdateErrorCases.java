@@ -24,6 +24,7 @@ public class TestAtomicUpdateErrorCases extends SolrTestCaseJ4 {
 
   public void testUpdateNoTLog() throws Exception {
     try {
+      System.setProperty("enable.update.log", "false");
       initCore("solrconfig.xml","schema15.xml");
       
       UpdateHandler uh = h.getCore().getUpdateHandler();
@@ -56,6 +57,7 @@ public class TestAtomicUpdateErrorCases extends SolrTestCaseJ4 {
       }
 
     } finally {
+      System.clearProperty("enable.update.log");
       deleteCore();
     }
   }

@@ -67,6 +67,7 @@ import org.apache.solr.util.plugin.PluginInfoInitialized;
  *       &lt;str name="hl.bs.variant"&gt;&lt;/str&gt;
  *       &lt;str name="hl.bs.type"&gt;SENTENCE&lt;/str&gt;
  *       &lt;int name="hl.maxAnalyzedChars"&gt;10000&lt;/int&gt;
+ *       &lt;str name="hl.multiValuedSeparatorChar"&gt; &lt;/str&gt;
  *     &lt;/lst&gt;
  *   &lt;/requestHandler&gt;
  * </pre>
@@ -96,6 +97,7 @@ import org.apache.solr.util.plugin.PluginInfoInitialized;
  *    <li>hl.bs.country (string) specifies country code for BreakIterator. default is empty string (root locale)
  *    <li>hl.bs.variant (string) specifies country code for BreakIterator. default is empty string (root locale)
  *    <li>hl.maxAnalyzedChars specifies how many characters at most will be processed in a document.
+ *    <li>hl.multiValuedSeparatorChar specifies the logical separator between values for multi-valued fields.
  *        NOTE: currently hl.maxAnalyzedChars cannot yet be specified per-field
  *  </ul>
  *  
@@ -166,6 +168,15 @@ public class PostingsSolrHighlighter extends SolrHighlighter implements PluginIn
           Locale locale = parseLocale(language, country, variant);
           String type = params.getFieldParam(field, HighlightParams.BS_TYPE);
           return parseBreakIterator(type, locale);
+        }
+
+        @Override
+        protected char getMultiValuedSeparator(String field) {
+          String sep = params.getFieldParam(field, HighlightParams.MULTI_VALUED_SEPARATOR, " ");
+          if (sep.length() != 1) {
+            throw new IllegalArgumentException(HighlightParams.MULTI_VALUED_SEPARATOR + " must be exactly one character.");
+          }
+          return sep.charAt(0);
         }
       };
       

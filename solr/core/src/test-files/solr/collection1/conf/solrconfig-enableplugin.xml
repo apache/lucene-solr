@@ -28,6 +28,7 @@
 
   <indexConfig>
     <lockType>single</lockType>
+    <useCompoundFile>${useCompoundFile:false}</useCompoundFile>
   </indexConfig>
 
   <updateHandler class="solr.DirectUpdateHandler2">
@@ -44,7 +45,6 @@
 
   <requestHandler name="disabled" class="solr.StandardRequestHandler" enable="false"/>
   <requestHandler name="enabled" class="solr.StandardRequestHandler" enable="true"/>
-
 
   <!-- test query parameter defaults -->
   <requestHandler name="lazy" class="solr.StandardRequestHandler" startup="lazy">

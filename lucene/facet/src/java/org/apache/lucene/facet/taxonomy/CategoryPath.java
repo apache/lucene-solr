@@ -17,6 +17,8 @@ package org.apache.lucene.facet.taxonomy;
  * limitations under the License.
  */
 
+import static org.apache.lucene.util.ByteBlockPool.BYTE_BLOCK_SIZE;
+
 import java.util.Arrays;
 import java.util.regex.Pattern;
 
@@ -27,6 +29,18 @@ import java.util.regex.Pattern;
  * @lucene.experimental
  */
 public class CategoryPath implements Comparable<CategoryPath> {
+
+  /*
+   * copied from DocumentWriterPerThread -- if a CategoryPath is resolved to a
+   * drill-down term which is encoded to a larger term than that length, it is
+   * silently dropped! Therefore we limit the number of characters to MAX/4 to
+   * be on the safe side.
+   */
+  /**
+   * The maximum number of characters a {@link CategoryPath} can have. That is
+   * {@link CategoryPath#toString(char)} length must not exceed that limit.
+   */
+  public final static int MAX_CATEGORY_PATH_LENGTH = (BYTE_BLOCK_SIZE - 2) / 4;
 
   /** An empty {@link CategoryPath} */
   public static final CategoryPath EMPTY = new CategoryPath();
@@ -63,10 +77,18 @@ public class CategoryPath implements Comparable<CategoryPath> {
   /** Construct from the given path components. */
   public CategoryPath(final String... components) {
     assert components.length > 0 : "use CategoryPath.EMPTY to create an empty path";
+    long len = 0;
     for (String comp : components) {
       if (comp == null || comp.isEmpty()) {
         throw new IllegalArgumentException("empty or null components not allowed: " + Arrays.toString(components));
       }
+      len += comp.length();
+    }
+    len += components.length - 1; // add separators
+    if (len > MAX_CATEGORY_PATH_LENGTH) {
+      throw new IllegalArgumentException("category path exceeds maximum allowed path length: max="
+          + MAX_CATEGORY_PATH_LENGTH + " len=" + len
+          + " path=" + Arrays.toString(components).substring(0, 30) + "...");
     }
     this.components = components;
     length = components.length;
@@ -74,6 +96,12 @@ public class CategoryPath implements Comparable<CategoryPath> {
 
   /** Construct from a given path, separating path components with {@code delimiter}. */
   public CategoryPath(final String pathString, final char delimiter) {
+    if (pathString.length() > MAX_CATEGORY_PATH_LENGTH) {
+      throw new IllegalArgumentException("category path exceeds maximum allowed path length: max="
+              + MAX_CATEGORY_PATH_LENGTH + " len=" + pathString.length()
+              + " path=" + pathString.substring(0, 30) + "...");
+    }
+
     String[] comps = pathString.split(Pattern.quote(Character.toString(delimiter)));
     if (comps.length == 1 && comps[0].isEmpty()) {
       components = null;

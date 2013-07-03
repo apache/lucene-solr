@@ -19,21 +19,21 @@ package org.apache.lucene.util.fst;
 
 import java.io.IOException;
 
-import org.apache.lucene.util.packed.GrowableWriter;
 import org.apache.lucene.util.packed.PackedInts;
+import org.apache.lucene.util.packed.PagedGrowableWriter;
 
 // Used to dedup states (lookup already-frozen states)
 final class NodeHash<T> {
 
-  private GrowableWriter table;
-  private int count;
-  private int mask;
+  private PagedGrowableWriter table;
+  private long count;
+  private long mask;
   private final FST<T> fst;
   private final FST.Arc<T> scratchArc = new FST.Arc<T>();
   private final FST.BytesReader in;
 
   public NodeHash(FST<T> fst, FST.BytesReader in) {
-    table = new GrowableWriter(8, 16, PackedInts.COMPACT);
+    table = new PagedGrowableWriter(16, 1<<30, 8, PackedInts.COMPACT);
     mask = 15;
     this.fst = fst;
     this.in = in;
@@ -69,10 +69,10 @@ final class NodeHash<T> {
 
   // hash code for an unfrozen node.  This must be identical
   // to the un-frozen case (below)!!
-  private int hash(Builder.UnCompiledNode<T> node) {
+  private long hash(Builder.UnCompiledNode<T> node) {
     final int PRIME = 31;
     //System.out.println("hash unfrozen");
-    int h = 0;
+    long h = 0;
     // TODO: maybe if number of arcs is high we can safely subsample?
     for(int arcIdx=0;arcIdx<node.numArcs;arcIdx++) {
       final Builder.Arc<T> arc = node.arcs[arcIdx];
@@ -87,14 +87,14 @@ final class NodeHash<T> {
       }
     }
     //System.out.println("  ret " + (h&Integer.MAX_VALUE));
-    return h & Integer.MAX_VALUE;
+    return h & Long.MAX_VALUE;
   }
 
   // hash code for a frozen node
-  private int hash(long node) throws IOException {
+  private long hash(long node) throws IOException {
     final int PRIME = 31;
     //System.out.println("hash frozen node=" + node);
-    int h = 0;
+    long h = 0;
     fst.readFirstRealTargetArc(node, scratchArc, in);
     while(true) {
       //System.out.println("  label=" + scratchArc.label + " target=" + scratchArc.target + " h=" + h + " output=" + fst.outputs.outputToString(scratchArc.output) + " next?=" + scratchArc.flag(4) + " final?=" + scratchArc.isFinal() + " pos=" + in.getPosition());
@@ -111,13 +111,13 @@ final class NodeHash<T> {
       fst.readNextRealArc(scratchArc, in);
     }
     //System.out.println("  ret " + (h&Integer.MAX_VALUE));
-    return h & Integer.MAX_VALUE;
+    return h & Long.MAX_VALUE;
   }
 
   public long add(Builder.UnCompiledNode<T> nodeIn) throws IOException {
-    // System.out.println("hash: add count=" + count + " vs " + table.size());
-    final int h = hash(nodeIn);
-    int pos = h & mask;
+    //System.out.println("hash: add count=" + count + " vs " + table.size() + " mask=" + mask);
+    final long h = hash(nodeIn);
+    long pos = h & mask;
     int c = 0;
     while(true) {
       final long v = table.get(pos);
@@ -128,7 +128,8 @@ final class NodeHash<T> {
         assert hash(node) == h : "frozenHash=" + hash(node) + " vs h=" + h;
         count++;
         table.set(pos, node);
-        if (table.size() < 2*count) {
+        // Rehash at 2/3 occupancy:
+        if (count > 2*table.size()/3) {
           rehash();
         }
         return node;
@@ -144,7 +145,7 @@ final class NodeHash<T> {
 
   // called only by rehash
   private void addNew(long address) throws IOException {
-    int pos = hash(address) & mask;
+    long pos = hash(address) & mask;
     int c = 0;
     while(true) {
       if (table.get(pos) == 0) {
@@ -158,23 +159,15 @@ final class NodeHash<T> {
   }
 
   private void rehash() throws IOException {
-    final GrowableWriter oldTable = table;
+    final PagedGrowableWriter oldTable = table;
 
-    if (oldTable.size() >= Integer.MAX_VALUE/2) {
-      throw new IllegalStateException("FST too large (> 2.1 GB)");
-    }
-
-    table = new GrowableWriter(oldTable.getBitsPerValue(), 2*oldTable.size(), PackedInts.COMPACT);
+    table = new PagedGrowableWriter(2*oldTable.size(), 1<<30, PackedInts.bitsRequired(count), PackedInts.COMPACT);
     mask = table.size()-1;
-    for(int idx=0;idx<oldTable.size();idx++) {
+    for(long idx=0;idx<oldTable.size();idx++) {
       final long address = oldTable.get(idx);
       if (address != 0) {
         addNew(address);
       }
     }
-  }
-
-  public int count() {
-    return count;
   }
 }

@@ -24,6 +24,7 @@
 
   <indexConfig>
     <lockType>single</lockType>
+    <useCompoundFile>${useCompoundFile:false}</useCompoundFile>
   </indexConfig>
 
   <updateHandler class="solr.DirectUpdateHandler2">
@@ -53,7 +54,6 @@
       <str name="masterUrl">http://127.0.0.1:TEST_PORT/solr/replication</str>
     </lst>
   </requestHandler>
-
 
   <!-- enable streaming for testing... -->
   <requestDispatcher handleSelect="true">

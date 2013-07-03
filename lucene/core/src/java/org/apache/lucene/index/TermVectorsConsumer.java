@@ -18,6 +18,7 @@ package org.apache.lucene.index;
  */
 
 import java.io.IOException;
+import java.util.Arrays;
 import java.util.Map;
 
 import org.apache.lucene.codecs.TermVectorsWriter;
@@ -32,9 +33,6 @@ final class TermVectorsConsumer extends TermsHashConsumer {
 
   TermVectorsWriter writer;
   final DocumentsWriterPerThread docWriter;
-  int freeCount;
-  int lastDocID;
-
   final DocumentsWriterPerThread.DocState docState;
   final BytesRef flushTerm = new BytesRef();
 
@@ -42,6 +40,9 @@ final class TermVectorsConsumer extends TermsHashConsumer {
   final ByteSliceReader vectorSliceReaderPos = new ByteSliceReader();
   final ByteSliceReader vectorSliceReaderOff = new ByteSliceReader();
   boolean hasVectors;
+  int numVectorFields;
+  int lastDocID;
+  private TermVectorsConsumerPerField[] perFields = new TermVectorsConsumerPerField[1];
 
   public TermVectorsConsumer(DocumentsWriterPerThread docWriter) {
     this.docWriter = docWriter;
@@ -52,6 +53,7 @@ final class TermVectorsConsumer extends TermsHashConsumer {
   void flush(Map<String, TermsHashConsumerPerField> fieldsToFlush, final SegmentWriteState state) throws IOException {
     if (writer != null) {
       int numDocs = state.segmentInfo.getDocCount();
+      assert numDocs > 0;
       // At least one doc in this run had term vectors enabled
       try {
         fill(numDocs);
@@ -60,7 +62,6 @@ final class TermVectorsConsumer extends TermsHashConsumer {
       } finally {
         IOUtils.close(writer);
         writer = null;
-
         lastDocID = 0;
         hasVectors = false;
       }
@@ -94,7 +95,7 @@ final class TermVectorsConsumer extends TermsHashConsumer {
   @Override
   void finishDocument(TermsHash termsHash) throws IOException {
 
-    assert docWriter.writer.testPoint("TermVectorsTermsWriter.finishDocument start");
+    assert docWriter.testPoint("TermVectorsTermsWriter.finishDocument start");
 
     if (!hasVectors) {
       return;
@@ -117,7 +118,7 @@ final class TermVectorsConsumer extends TermsHashConsumer {
 
     termsHash.reset();
     reset();
-    assert docWriter.writer.testPoint("TermVectorsTermsWriter.finishDocument end");
+    assert docWriter.testPoint("TermVectorsTermsWriter.finishDocument end");
   }
 
   @Override
@@ -130,17 +131,12 @@ final class TermVectorsConsumer extends TermsHashConsumer {
     }
 
     lastDocID = 0;
-
     reset();
   }
 
-  int numVectorFields;
-
-  TermVectorsConsumerPerField[] perFields;
-
   void reset() {
+    Arrays.fill(perFields, null);// don't hang onto stuff from previous doc
     numVectorFields = 0;
-    perFields = new TermVectorsConsumerPerField[1];
   }
 
   @Override
@@ -175,10 +171,7 @@ final class TermVectorsConsumer extends TermsHashConsumer {
   String lastVectorFieldName;
   final boolean vectorFieldsInOrder(FieldInfo fi) {
     try {
-      if (lastVectorFieldName != null)
-        return lastVectorFieldName.compareTo(fi.name) < 0;
-      else
-        return true;
+      return lastVectorFieldName != null ? lastVectorFieldName.compareTo(fi.name) < 0 : true; 
     } finally {
       lastVectorFieldName = fi.name;
     }

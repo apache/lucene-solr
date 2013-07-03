@@ -32,6 +32,8 @@ import org.apache.lucene.analysis.miscellaneous.SetKeywordMarkerFilter;
 import org.apache.lucene.analysis.util.CharArraySet;
 
 import static org.apache.lucene.analysis.VocabularyAssert.*;
+import static org.apache.lucene.analysis.no.NorwegianLightStemmer.BOKMAAL;
+import static org.apache.lucene.analysis.no.NorwegianLightStemmer.NYNORSK;
 
 /**
  * Simple tests for {@link NorwegianMinimalStemFilter}
@@ -42,13 +44,25 @@ public class TestNorwegianMinimalStemFilter extends BaseTokenStreamTestCase {
     protected TokenStreamComponents createComponents(String fieldName,
         Reader reader) {
       Tokenizer source = new MockTokenizer(reader, MockTokenizer.WHITESPACE, false);
-      return new TokenStreamComponents(source, new NorwegianMinimalStemFilter(source));
+      return new TokenStreamComponents(source, new NorwegianMinimalStemFilter(source, BOKMAAL));
     }
   };
   
-  /** Test against a vocabulary file */
+  /** Test against a Bokmål vocabulary file */
   public void testVocabulary() throws IOException {
     assertVocabulary(analyzer, new FileInputStream(getDataFile("nb_minimal.txt")));
+  }
+  
+  /** Test against a Nynorsk vocabulary file */
+  public void testNynorskVocabulary() throws IOException {  
+    Analyzer analyzer = new Analyzer() {
+      @Override
+      protected TokenStreamComponents createComponents(String fieldName, Reader reader) {
+        Tokenizer source = new MockTokenizer(reader, MockTokenizer.WHITESPACE, false);
+        return new TokenStreamComponents(source, new NorwegianMinimalStemFilter(source, NYNORSK));
+      }
+    };
+    assertVocabulary(analyzer, new FileInputStream(getDataFile("nn_minimal.txt")));
   }
   
   public void testKeyword() throws IOException {

@@ -17,8 +17,8 @@
 
 package org.apache.solr.client.solrj.request;
 
-import java.io.File;
-
+import com.carrotsearch.randomizedtesting.annotations.ThreadLeakFilters;
+import org.apache.commons.io.FileUtils;
 import org.apache.solr.SolrIgnoredThreadsFilter;
 import org.apache.solr.client.solrj.SolrServer;
 import org.apache.solr.client.solrj.embedded.AbstractEmbeddedSolrServerTestCase;
@@ -27,14 +27,13 @@ import org.apache.solr.common.SolrException;
 import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.core.SolrCore;
-import org.apache.commons.io.FileUtils;
 import org.junit.After;
 import org.junit.BeforeClass;
 import org.junit.Test;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import com.carrotsearch.randomizedtesting.annotations.ThreadLeakFilters;
+import java.io.File;
 
 @ThreadLeakFilters(defaultFilters = true, filters = {SolrIgnoredThreadsFilter.class})
 public class TestCoreAdmin extends AbstractEmbeddedSolrServerTestCase {
@@ -67,6 +66,8 @@ public class TestCoreAdmin extends AbstractEmbeddedSolrServerTestCase {
     
     File tmp = new File(TEMP_DIR, "solrtest-" + getTestClass().getSimpleName() + "-" + System.currentTimeMillis());
     tmp.mkdirs();
+
+    log.info("Creating cores underneath {}", tmp);
     
     File dataDir = new File(tmp, this.getTestName()
         + System.currentTimeMillis() + "-" + "data");
@@ -103,7 +104,7 @@ public class TestCoreAdmin extends AbstractEmbeddedSolrServerTestCase {
 
     File logDir;
     try {
-      logDir = core.getUpdateHandler().getUpdateLog().getLogDir();
+      logDir = new File(core.getUpdateHandler().getUpdateLog().getLogDir());
     } finally {
       coreProveIt.close();
       core.close();

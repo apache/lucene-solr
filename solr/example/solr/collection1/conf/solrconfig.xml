@@ -66,6 +66,9 @@
        files in that directory which completely match the regex
        (anchored on both ends) will be included.
 
+       If a 'dir' option (with or without a regex) is used and nothing
+       is found that matches, a warning will be logged.
+
        The examples below can be used to load some solr-contribs along 
        with their external dependencies.
     -->
@@ -80,11 +83,6 @@
 
   <lib dir="../../../contrib/velocity/lib" regex=".*\.jar" />
   <lib dir="../../../dist/" regex="solr-velocity-\d.*\.jar" />
-
-  <!-- If a 'dir' option (with or without a regex) is used and nothing
-       is found that matches, a warning will be logged.
-    -->
-  <lib dir="/non/existent/dir/yields/warning" /> 
 
   <!-- an exact 'path' can be used instead of a 'dir' to specify a 
        specific jar file.  This will cause a serious error to be logged 
@@ -186,7 +184,8 @@
          maxBufferedDocs sets a limit on the number of documents buffered
          before flushing.
          If both ramBufferSizeMB and maxBufferedDocs is set, then
-         Lucene will flush based on whichever limit is hit first.  -->
+         Lucene will flush based on whichever limit is hit first.
+         The default is 100 MB.  -->
     <!-- <ramBufferSizeMB>100</ramBufferSizeMB> -->
     <!-- <maxBufferedDocs>1000</maxBufferedDocs> -->
 
@@ -306,10 +305,11 @@
          To aid in advanced debugging, Lucene provides an "InfoStream"
          of detailed information when indexing.
 
-         Setting The value to true will instruct the underlying Lucene
-         IndexWriter to write its debugging info the specified file
+         Setting the value to true will instruct the underlying Lucene
+         IndexWriter to write its info stream to solr's log. By default,
+         this is enabled here, and controlled through log4j.properties.
       -->
-     <!-- <infoStream file="INFOSTREAM.txt">false</infoStream> --> 
+     <infoStream>true</infoStream>
   </indexConfig>
 
 
@@ -366,7 +366,7 @@
          have some sort of hard autoCommit to limit the log size.
       -->
      <autoCommit> 
-       <maxTime>15000</maxTime> 
+       <maxTime>${solr.autoCommit.maxTime:15000}</maxTime> 
        <openSearcher>false</openSearcher> 
      </autoCommit>
 
@@ -375,11 +375,10 @@
          but does not ensure that data is synced to disk.  This is
          faster and more near-realtime friendly than a hard commit.
       -->
-     <!--
-       <autoSoftCommit> 
-         <maxTime>1000</maxTime> 
-       </autoSoftCommit>
-      -->
+
+     <autoSoftCommit> 
+       <maxTime>${solr.autoSoftCommit.maxTime:-1}</maxTime> 
+     </autoSoftCommit>
 
     <!-- Update Related Event Listeners
          

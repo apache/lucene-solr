@@ -19,6 +19,7 @@ package org.apache.lucene.index;
 
 import java.io.FileNotFoundException;
 import java.io.IOException;
+import java.nio.file.NoSuchFileException;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
@@ -596,7 +597,7 @@ public class TestAddIndexes extends LuceneTestCase {
 
     Directory dir = newDirectory();
     LogByteSizeMergePolicy lmp = new LogByteSizeMergePolicy();
-    lmp.setUseCompoundFile(false);
+    lmp.setNoCFSRatio(0.0);
     lmp.setMergeFactor(100);
     IndexWriter writer = new IndexWriter(dir, newIndexWriterConfig(
         TEST_VERSION_CURRENT, new MockAnalyzer(random()))
@@ -625,7 +626,7 @@ public class TestAddIndexes extends LuceneTestCase {
     Directory dir2 = newDirectory();
     lmp = new LogByteSizeMergePolicy();
     lmp.setMinMergeMB(0.0001);
-    lmp.setUseCompoundFile(false);
+    lmp.setNoCFSRatio(0.0);
     lmp.setMergeFactor(4);
     writer = new IndexWriter(dir2, newIndexWriterConfig(TEST_VERSION_CURRENT,
         new MockAnalyzer(random()))
@@ -888,7 +889,7 @@ public class TestAddIndexes extends LuceneTestCase {
 
       if (t instanceof AlreadyClosedException || t instanceof MergePolicy.MergeAbortedException || t instanceof NullPointerException) {
         report = !didClose;
-      } else if (t instanceof FileNotFoundException)  {
+      } else if (t instanceof FileNotFoundException || t instanceof NoSuchFileException)  {
         report = !didClose;
       } else if (t instanceof IOException)  {
         Throwable t2 = t.getCause();
@@ -1094,7 +1095,7 @@ public class TestAddIndexes extends LuceneTestCase {
     
     Directory dir = new MockDirectoryWrapper(random(), new RAMDirectory());
     IndexWriterConfig conf = new IndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer(random())).setMergePolicy(newLogMergePolicy(true));
-    LogMergePolicy lmp = (LogMergePolicy) conf.getMergePolicy();
+    MergePolicy lmp = conf.getMergePolicy();
     // Force creation of CFS:
     lmp.setNoCFSRatio(1.0);
     lmp.setMaxCFSSegmentSizeMB(Double.POSITIVE_INFINITY);

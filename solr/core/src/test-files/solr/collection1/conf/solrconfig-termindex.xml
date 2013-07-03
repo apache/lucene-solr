@@ -31,6 +31,7 @@
   <directoryFactory name="DirectoryFactory" class="${solr.directoryFactory:solr.RAMDirectoryFactory}"/>
 
   <indexConfig>
+    <useCompoundFile>${useCompoundFile:false}</useCompoundFile>
     <termIndexInterval>256</termIndexInterval>
     <mergePolicy class="org.apache.lucene.index.TieredMergePolicy"/>
     <mergeScheduler class="org.apache.lucene.index.ConcurrentMergeScheduler"/>

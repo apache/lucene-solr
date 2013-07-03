@@ -26,6 +26,7 @@
   <requestHandler name="standard" class="solr.StandardRequestHandler"></requestHandler>
   
   <indexConfig>
+    <useCompoundFile>${useCompoundFile:false}</useCompoundFile>
     <mergedSegmentWarmer class="org.apache.lucene.index.SimpleMergedSegmentWarmer"/>
   </indexConfig>
 </config>

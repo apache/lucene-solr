@@ -49,9 +49,7 @@ public class StatsValuesFactory {
     if (DoubleField.class.isInstance(fieldType) ||
         IntField.class.isInstance(fieldType) ||
         LongField.class.isInstance(fieldType) ||
-        ShortField.class.isInstance(fieldType) ||
         FloatField.class.isInstance(fieldType) ||
-        ByteField.class.isInstance(fieldType) ||
         TrieField.class.isInstance(fieldType) ||
         SortableDoubleField.class.isInstance(fieldType) ||
         SortableIntField.class.isInstance(fieldType) ||

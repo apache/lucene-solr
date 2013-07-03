@@ -110,6 +110,10 @@ public final class IndexWriterConfig extends LiveIndexWriterConfig implements Cl
    *  others to finish. Default value is 8. */
   public final static int DEFAULT_MAX_THREAD_STATES = 8;
   
+  /** Default value for compound file system for newly written segments
+   *  (set to <code>true</code>). For batch indexing with very large 
+   *  ram buffers use <code>false</code> */
+  public final static boolean DEFAULT_USE_COMPOUND_FILE_SYSTEM = true;
   /**
    * Sets the default (for any instance) maximum time to wait for a write lock
    * (in milliseconds).
@@ -539,6 +543,10 @@ public final class IndexWriterConfig extends LiveIndexWriterConfig implements Cl
   @Override
   public IndexWriterConfig setTermIndexInterval(int interval) {
     return (IndexWriterConfig) super.setTermIndexInterval(interval);
+  }
+  
+  public IndexWriterConfig setUseCompoundFile(boolean useCompoundFile) {
+    return (IndexWriterConfig) super.setUseCompoundFile(useCompoundFile);
   }
 
 }

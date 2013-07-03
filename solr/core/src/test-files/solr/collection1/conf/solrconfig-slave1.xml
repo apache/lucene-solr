@@ -24,6 +24,7 @@
 
   <indexConfig>
     <lockType>single</lockType>
+    <useCompoundFile>${useCompoundFile:false}</useCompoundFile>
   </indexConfig>
 
   <updateHandler class="solr.DirectUpdateHandler2">
@@ -47,7 +48,6 @@
   <requestHandler name="/replication" class="solr.ReplicationHandler">
 
   </requestHandler>
-
 
   <!-- enable streaming for testing... -->
   <requestDispatcher handleSelect="true">

@@ -50,7 +50,7 @@ public class TestTermVectors extends LuceneTestCase {
   public static void beforeClass() throws Exception {                  
     directory = newDirectory();
     RandomIndexWriter writer = new RandomIndexWriter(random(), directory, newIndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer(random(), MockTokenizer.SIMPLE, true)).setMergePolicy(newLogMergePolicy()));
-    //writer.setUseCompoundFile(true);
+    //writer.setNoCFSRatio(1.0);
     //writer.infoStream = System.out;
     for (int i = 0; i < 1000; i++) {
       Document doc = new Document();

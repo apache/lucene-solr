@@ -128,7 +128,7 @@ public abstract class AbstractDistribZkTestBase extends BaseDistributedSearchTes
   
   protected void waitForRecoveriesToFinish(String collection, ZkStateReader zkStateReader, boolean verbose, boolean failOnTimeout)
       throws Exception {
-    waitForRecoveriesToFinish(collection, zkStateReader, verbose, failOnTimeout, 230);
+    waitForRecoveriesToFinish(collection, zkStateReader, verbose, failOnTimeout, 330);
   }
   
   protected void waitForRecoveriesToFinish(String collection,
@@ -151,8 +151,7 @@ public abstract class AbstractDistribZkTestBase extends BaseDistributedSearchTes
           if (verbose) System.out.println("rstate:"
               + shard.getValue().getStr(ZkStateReader.STATE_PROP)
               + " live:"
-              + clusterState.liveNodesContain(shard.getValue().getStr(
-              ZkStateReader.NODE_NAME_PROP)));
+              + clusterState.liveNodesContain(shard.getValue().getNodeName()));
           String state = shard.getValue().getStr(ZkStateReader.STATE_PROP);
           if ((state.equals(ZkStateReader.RECOVERING) || state
               .equals(ZkStateReader.SYNC) || state.equals(ZkStateReader.DOWN))

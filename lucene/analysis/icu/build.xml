@@ -23,6 +23,8 @@
    Analysis integration with ICU (International Components for Unicode).
   </description>
 
+  <property name="rat.additional-includes" value="src/tools/**"/>
+
   <import file="../analysis-module-build.xml"/>
 
   <path id="icujar">
@@ -59,7 +61,7 @@
   <property name="gennorm2.src.files"
   	value="nfc.txt nfkc.txt nfkc_cf.txt BasicFoldings.txt DiacriticFolding.txt DingbatFolding.txt HanRadicalFolding.txt NativeDigitFolding.txt"/>
   <property name="gennorm2.tmp" value="${build.dir}/gennorm2/utr30.tmp"/>
-  <property name="gennorm2.dst" value="src/resources/org/apache/lucene/analysis/icu/utr30.nrm"/>
+  <property name="gennorm2.dst" value="${resources.dir}/org/apache/lucene/analysis/icu/utr30.nrm"/>
   <target name="gennorm2" depends="gen-utr30-data-files">
     <echo>Note that the gennorm2 and icupkg tools must be on your PATH. These tools
 are part of the ICU4C package. See http://site.icu-project.org/ </echo>
@@ -82,7 +84,7 @@ are part of the ICU4C package. See http://site.icu-project.org/ </echo>
   </target>
   
   <property name="rbbi.src.dir" location="src/data/uax29"/>
-  <property name="rbbi.dst.dir" location="src/resources/org/apache/lucene/analysis/icu/segmentation"/>
+  <property name="rbbi.dst.dir" location="${resources.dir}/org/apache/lucene/analysis/icu/segmentation"/>
 		
   <target name="genrbbi" depends="compile-tools">
     <mkdir dir="${rbbi.dst.dir}"/>

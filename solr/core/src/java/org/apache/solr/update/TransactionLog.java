@@ -17,15 +17,6 @@
 
 package org.apache.solr.update;
 
-import org.apache.lucene.util.BytesRef;
-import org.apache.solr.common.SolrException;
-import org.apache.solr.common.SolrInputDocument;
-import org.apache.solr.common.util.FastInputStream;
-import org.apache.solr.common.util.FastOutputStream;
-import org.apache.solr.common.util.JavaBinCodec;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
 import java.io.File;
 import java.io.IOException;
 import java.io.OutputStream;
@@ -34,14 +25,22 @@ import java.nio.ByteBuffer;
 import java.nio.channels.Channels;
 import java.nio.channels.FileChannel;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.Collection;
 import java.util.HashMap;
 import java.util.LinkedHashMap;
-import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.atomic.AtomicInteger;
+
+import org.apache.lucene.util.BytesRef;
+import org.apache.solr.common.SolrException;
+import org.apache.solr.common.SolrInputDocument;
+import org.apache.solr.common.util.DataInputInputStream;
+import org.apache.solr.common.util.FastInputStream;
+import org.apache.solr.common.util.FastOutputStream;
+import org.apache.solr.common.util.JavaBinCodec;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  *  Log Format: List{Operation, Version, ...}
@@ -75,7 +74,7 @@ public class TransactionLog {
   FastOutputStream fos;    // all accesses to this stream should be synchronized on "this" (The TransactionLog)
   int numRecords;
   
-  volatile boolean deleteOnClose = true;  // we can delete old tlogs since they are currently only used for real-time-get (and in the future, recovery)
+  protected volatile boolean deleteOnClose = true;  // we can delete old tlogs since they are currently only used for real-time-get (and in the future, recovery)
 
   AtomicInteger refcount = new AtomicInteger(1);
   Map<String,Integer> globalStringMap = new HashMap<String, Integer>();
@@ -98,7 +97,7 @@ public class TransactionLog {
   };
 
   public class LogCodec extends JavaBinCodec {
-    public LogCodec() {
+    public LogCodec(JavaBinCodec.ObjectResolver resolver) {
       super(resolver);
     }
 
@@ -121,7 +120,7 @@ public class TransactionLog {
     }
 
     @Override
-    public String readExternString(FastInputStream fis) throws IOException {
+    public String readExternString(DataInputInputStream fis) throws IOException {
       int idx = readSize(fis);
       if (idx != 0) {// idx != 0 is the index of the extern string
       // no need to synchronize globalStringList - it's only updated before the first record is written to the log
@@ -191,6 +190,9 @@ public class TransactionLog {
     }
   }
 
+  // for subclasses
+  protected TransactionLog() {}
+
   /** Returns the number of records in the log (currently includes the header and an optional commit).
    * Note: currently returns 0 for reopened existing log files.
    */
@@ -245,7 +247,7 @@ public class TransactionLog {
 
 
   public long writeData(Object o) {
-    LogCodec codec = new LogCodec();
+    LogCodec codec = new LogCodec(resolver);
     try {
       long pos = fos.size();   // if we had flushed, this should be equal to channel.position()
       codec.init(fos);
@@ -260,7 +262,7 @@ public class TransactionLog {
   private void readHeader(FastInputStream fis) throws IOException {
     // read existing header
     fis = fis != null ? fis : new ChannelFastInputStream(channel, 0);
-    LogCodec codec = new LogCodec();
+    LogCodec codec = new LogCodec(resolver);
     Map header = (Map)codec.unmarshal(fis);
 
     fis.readInt(); // skip size
@@ -276,7 +278,7 @@ public class TransactionLog {
     }
   }
 
-  private void addGlobalStrings(Collection<String> strings) {
+  protected void addGlobalStrings(Collection<String> strings) {
     if (strings == null) return;
     int origSize = globalStringMap.size();
     for (String s : strings) {
@@ -297,7 +299,7 @@ public class TransactionLog {
     }
   }
 
-  private void writeLogHeader(LogCodec codec) throws IOException {
+  protected void writeLogHeader(LogCodec codec) throws IOException {
     long pos = fos.size();
     assert pos == 0;
 
@@ -309,7 +311,7 @@ public class TransactionLog {
     endRecord(pos);
   }
 
-  private void endRecord(long startRecordPosition) throws IOException {
+  protected void endRecord(long startRecordPosition) throws IOException {
     fos.writeInt((int)(fos.size() - startRecordPosition));
     numRecords++;
   }
@@ -333,7 +335,7 @@ public class TransactionLog {
   int lastAddSize;
 
   public long write(AddUpdateCommand cmd, int flags) {
-    LogCodec codec = new LogCodec();
+    LogCodec codec = new LogCodec(resolver);
     SolrInputDocument sdoc = cmd.getSolrInputDocument();
 
     try {
@@ -375,7 +377,7 @@ public class TransactionLog {
   }
 
   public long writeDelete(DeleteUpdateCommand cmd, int flags) {
-    LogCodec codec = new LogCodec();
+    LogCodec codec = new LogCodec(resolver);
 
     try {
       checkWriteHeader(codec, null);
@@ -405,7 +407,7 @@ public class TransactionLog {
   }
 
   public long writeDeleteByQuery(DeleteUpdateCommand cmd, int flags) {
-    LogCodec codec = new LogCodec();
+    LogCodec codec = new LogCodec(resolver);
     try {
       checkWriteHeader(codec, null);
 
@@ -431,7 +433,7 @@ public class TransactionLog {
 
 
   public long writeCommit(CommitUpdateCommand cmd, int flags) {
-    LogCodec codec = new LogCodec();
+    LogCodec codec = new LogCodec(resolver);
     synchronized (this) {
       try {
         long pos = fos.size();   // if we had flushed, this should be equal to channel.position()
@@ -479,7 +481,7 @@ public class TransactionLog {
       }
 
       ChannelFastInputStream fis = new ChannelFastInputStream(channel, pos);
-      LogCodec codec = new LogCodec();
+      LogCodec codec = new LogCodec(resolver);
       return codec.readVal(fis);
     } catch (IOException e) {
       throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, e);
@@ -529,7 +531,7 @@ public class TransactionLog {
     }
   }
 
-  private void close() {
+  protected void close() {
     try {
       if (debug) {
         log.debug("Closing tlog" + this);
@@ -570,18 +572,21 @@ public class TransactionLog {
 
   /** Returns a single threaded reverse reader */
   public ReverseReader getReverseReader() throws IOException {
-    return new ReverseReader();
+    return new FSReverseReader();
   }
 
 
   public class LogReader {
-    ChannelFastInputStream fis;
-    private LogCodec codec = new LogCodec();
+    private ChannelFastInputStream fis;
+    private LogCodec codec = new LogCodec(resolver);
 
     public LogReader(long startingPos) {
       incref();
       fis = new ChannelFastInputStream(channel, startingPos);
     }
+
+    // for classes that extend
+    protected LogReader() {}
 
     /** Returns the next object from the log, or null if none available.
      *
@@ -638,11 +643,32 @@ public class TransactionLog {
 
   }
 
-  public class ReverseReader {
+  public abstract class ReverseReader {
+
+
+
+    /** Returns the next object from the log, or null if none available.
+     *
+     * @return The log record, or null if EOF
+     * @throws IOException If there is a low-level I/O error.
+     */
+    public abstract Object next() throws IOException;
+
+    /* returns the position in the log file of the last record returned by next() */
+    public abstract long position();
+    public abstract void close();
+
+    @Override
+    public abstract String toString() ;
+
+
+  }
+  
+  public class FSReverseReader extends ReverseReader {
     ChannelFastInputStream fis;
-    private LogCodec codec = new LogCodec() {
+    private LogCodec codec = new LogCodec(resolver) {
       @Override
-      public SolrInputDocument readSolrInputDocument(FastInputStream dis) {
+      public SolrInputDocument readSolrInputDocument(DataInputInputStream dis) {
         // Given that the SolrInputDocument is last in an add record, it's OK to just skip
         // reading it completely.
         return null;
@@ -652,7 +678,7 @@ public class TransactionLog {
     int nextLength;  // length of the next record (the next one closer to the start of the log file)
     long prevPos;    // where we started reading from last time (so prevPos - nextLength == start of next record)
 
-    public ReverseReader() throws IOException {
+    public FSReverseReader() throws IOException {
       incref();
 
       long sz;

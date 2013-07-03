@@ -25,7 +25,7 @@
     <echo message="And for developers:"/>
     <echo message="Use 'ant clean' to clean compiled files." />
     <echo message="Use 'ant compile' to compile the source code." />
-    <echo message="Use 'ant dist' to build the project WAR and JAR files." />
+    <echo message="Use 'ant dist' to build the project JAR files." />
     <echo message="Use 'ant documentation' to build documentation." />
     <echo message="Use 'ant generate-maven-artifacts' to generate maven artifacts." />
     <echo message="Use 'ant package' to generate zip, tgz for distribution." />
@@ -55,7 +55,7 @@
     </delete>
     <echo>See ${example}/README.txt for how to run the Solr example configuration.</echo>
   </target>
-
+  
   <target name="run-example" depends="example"
           description="Run Solr interactively, via Jetty.  -Dexample.debug=true to enable JVM debugger">
     <property name="example.solr.home" location="example/solr"/>
@@ -266,6 +266,7 @@
       <bundledSignatures name="commons-io-unsafe-${commons-io.version}"/>
       <signaturesFileSet dir="${common.dir}/tools/forbiddenApis">
         <include name="executors.txt" />
+        <include name="chars.txt" />
         <include name="servlet-api.txt" />
       </signaturesFileSet>
       <fileset dir="${basedir}/build">
@@ -291,12 +292,13 @@
 
   <!-- rat sources -->
   <!-- rat-sources-typedef is *not* a useless dependency. do not remove -->
-  <target name="rat-sources" depends="rat-sources-typedef">
+  <target name="rat-sources" depends="rat-sources-typedef,common.rat-sources">
     <subant target="rat-sources" inheritall="false" >
       <propertyset refid="uptodate.and.compiled.properties"/>
       <fileset dir="core" includes="build.xml"/>
       <fileset dir="solrj" includes="build.xml"/>
       <fileset dir="test-framework" includes="build.xml"/>
+      <fileset dir="webapp" includes="build.xml"/>
     </subant>
     <contrib-crawl target="rat-sources" failonerror="true"/>
   </target>
@@ -476,7 +478,7 @@
                   includes="example/**/*.sh example/**/bin/" />
       <tarfileset dir="."
                   prefix="${fullnamever}"
-                  includes="dist/*.jar dist/*.war 
+                  includes="dist/*.jar
                             dist/solrj-lib/*
                             dist/test-framework/**"
                   excludes="**/*.tgz **/*.zip **/*.md5 **/*src*.jar **/*docs*.jar **/*.sha1" />

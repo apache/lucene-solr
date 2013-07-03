@@ -24,6 +24,7 @@
   -->
 <config>
   <luceneMatchVersion>${tests.luceneMatchVersion:LUCENE_CURRENT}</luceneMatchVersion>
+  <xi:include href="solrconfig.snippet.randomindexconfig.xml" xmlns:xi="http://www.w3.org/2001/XInclude"/>
   <requestHandler name="standard" class="solr.StandardRequestHandler"></requestHandler>
   <directoryFactory name="DirectoryFactory" class="${solr.directoryFactory:solr.RAMDirectoryFactory}"/>
 
@@ -53,7 +54,6 @@
     <processor class="solr.RunUpdateProcessorFactory" />
   </updateRequestProcessorChain>
 
-
   <updateRequestProcessorChain name="trim-all">
     <!-- no specific src field configs, so all fields should get trimmed -->
     <processor class="solr.TrimFieldUpdateProcessorFactory">
@@ -65,7 +65,6 @@
       <str name="fieldName">foo_t</str>
     </processor>
   </updateRequestProcessorChain>
-
 
   <updateRequestProcessorChain name="trim-most">
     <!-- all fields except the exclusions should be trimmed -->
@@ -239,6 +238,46 @@
 
   <updateRequestProcessorChain name="ignore-not-in-schema">
     <processor class="solr.IgnoreFieldUpdateProcessorFactory" />
+  </updateRequestProcessorChain>
+
+  <updateRequestProcessorChain name="ignore-not-in-schema-explicit-selector">
+    <processor class="solr.IgnoreFieldUpdateProcessorFactory">
+      <bool name="fieldNameMatchesSchemaField">false</bool>
+    </processor>
+  </updateRequestProcessorChain>
+
+  <updateRequestProcessorChain name="ignore-in-schema">
+    <processor class="solr.IgnoreFieldUpdateProcessorFactory">
+      <bool name="fieldNameMatchesSchemaField">true</bool>
+    </processor>
+  </updateRequestProcessorChain>
+  
+  <updateRequestProcessorChain name="ignore-not-in-schema-and-foo-name-prefix">
+    <processor class="solr.IgnoreFieldUpdateProcessorFactory">
+      <str name="fieldRegex">foo.*</str>
+      <bool name="fieldNameMatchesSchemaField">false</bool>
+    </processor>
+  </updateRequestProcessorChain>
+
+  <updateRequestProcessorChain name="ignore-foo-name-prefix-except-not-schema">
+    <processor class="solr.IgnoreFieldUpdateProcessorFactory">
+      <str name="fieldRegex">foo.*</str>
+      <lst name="exclude">
+        <bool name="fieldNameMatchesSchemaField">false</bool>
+      </lst>
+    </processor>
+  </updateRequestProcessorChain>
+
+  <updateRequestProcessorChain name="ignore-not-in-schema-explicit-str-selector">
+    <processor class="solr.IgnoreFieldUpdateProcessorFactory">
+      <str name="fieldNameMatchesSchemaField">false</str>
+    </processor>
+  </updateRequestProcessorChain>
+
+  <updateRequestProcessorChain name="ignore-in-schema-str-selector">
+    <processor class="solr.IgnoreFieldUpdateProcessorFactory">
+      <str name="fieldNameMatchesSchemaField">true</str>
+    </processor>
   </updateRequestProcessorChain>
 
   <updateRequestProcessorChain name="ignore-some">

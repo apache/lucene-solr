@@ -77,7 +77,7 @@ public class SolrDeletionPolicy extends IndexDeletionPolicy implements NamedList
    * Internal use for Lucene... do not explicitly call.
    */
   @Override
-  public void onInit(List commits) throws IOException {
+  public void onInit(List<? extends IndexCommit> commits) throws IOException {
     // SOLR-4547: log basic data at INFO, add filenames at DEBUG.
     if (commits.isEmpty()) {
       return;
@@ -86,26 +86,26 @@ public class SolrDeletionPolicy extends IndexDeletionPolicy implements NamedList
         new CommitsLoggingInfo(commits));
     log.debug("SolrDeletionPolicy.onInit: commits: {}",
         new CommitsLoggingDebug(commits));
-    updateCommits((List<IndexCommit>) commits);
+    updateCommits(commits);
   }
 
   /**
    * Internal use for Lucene... do not explicitly call.
    */
   @Override
-  public void onCommit(List commits) throws IOException {
+  public void onCommit(List<? extends IndexCommit> commits) throws IOException {
     // SOLR-4547: log basic data at INFO, add filenames at DEBUG.
     log.info("SolrDeletionPolicy.onCommit: commits: {}",
         new CommitsLoggingInfo(commits));
     log.debug("SolrDeletionPolicy.onCommit: commits: {}",
         new CommitsLoggingDebug(commits));
-    updateCommits((List<IndexCommit>) commits);
+    updateCommits(commits);
   }
 
   private static class CommitsLoggingInfo {
-    private List<IndexCommit> commits;
+    private List<? extends IndexCommit> commits;
 
-    public CommitsLoggingInfo(List<IndexCommit> commits) {
+    public CommitsLoggingInfo(List<? extends IndexCommit> commits) {
       this.commits = commits;
     }
 
@@ -135,7 +135,7 @@ public class SolrDeletionPolicy extends IndexDeletionPolicy implements NamedList
   }
 
   private static class CommitsLoggingDebug extends CommitsLoggingInfo {
-    public CommitsLoggingDebug(List<IndexCommit> commits) {
+    public CommitsLoggingDebug(List<? extends IndexCommit> commits) {
       super(commits);
     }
 
@@ -150,7 +150,7 @@ public class SolrDeletionPolicy extends IndexDeletionPolicy implements NamedList
     }
   }
 
-  private void updateCommits(List<IndexCommit> commits) {
+  private void updateCommits(List<? extends IndexCommit> commits) {
     // to be safe, we should only call delete on a commit point passed to us
     // in this specific call (may be across diff IndexWriter instances).
     // this will happen rarely, so just synchronize everything

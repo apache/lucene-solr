@@ -77,7 +77,7 @@ public class SolrIndexWriter extends IndexWriter {
     super(directory,
           config.toIndexWriterConfig(schema).
           setOpenMode(create ? IndexWriterConfig.OpenMode.CREATE : IndexWriterConfig.OpenMode.APPEND).
-          setIndexDeletionPolicy(delPolicy).setCodec(codec).setInfoStream(toInfoStream(config))
+          setIndexDeletionPolicy(delPolicy).setCodec(codec)
           );
     log.debug("Opened Writer " + name);
     this.name = name;
@@ -87,20 +87,6 @@ public class SolrIndexWriter extends IndexWriter {
   private void setDirectoryFactory(DirectoryFactory factory) {
     this.directoryFactory = factory;
   }
-
-  private static InfoStream toInfoStream(SolrIndexConfig config) throws IOException {
-    String infoStreamFile = config.infoStreamFile;
-    if (infoStreamFile != null) {
-      File f = new File(infoStreamFile);
-      File parent = f.getParentFile();
-      if (parent != null) parent.mkdirs();
-      FileOutputStream fos = new FileOutputStream(f, true);
-      return new PrintStreamInfoStream(new PrintStream(fos, true, "UTF-8"));
-    } else {
-      return InfoStream.NO_OUTPUT;
-    }
-  }
-
 
   /**
    * use DocumentBuilder now...
@@ -164,11 +150,8 @@ public class SolrIndexWriter extends IndexWriter {
       if (infoStream != null) {
         infoStream.close();
       }
-      
       isClosed = true;
-      
       directoryFactory.release(directory);
-      
       numCloses.incrementAndGet();
     }
   }

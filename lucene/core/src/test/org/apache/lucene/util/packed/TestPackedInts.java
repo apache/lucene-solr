@@ -650,13 +650,133 @@ public class TestPackedInts extends LuceneTestCase {
     wrt.set(99, (1 << 23) - 1);
     assertEquals(1 << 10, wrt.get(valueCount - 1));
     wrt.set(1, Long.MAX_VALUE);
+    wrt.set(2, -3);
+    assertEquals(64, wrt.getBitsPerValue());
     assertEquals(1 << 10, wrt.get(valueCount - 1));
     assertEquals(Long.MAX_VALUE, wrt.get(1));
+    assertEquals(-3L, wrt.get(2));
     assertEquals(2, wrt.get(4));
     assertEquals((1 << 23) - 1, wrt.get(99));
     assertEquals(10, wrt.get(7));
     assertEquals(99, wrt.get(valueCount - 10));
     assertEquals(1 << 10, wrt.get(valueCount - 1));
+    assertEquals(RamUsageEstimator.sizeOf(wrt), wrt.ramBytesUsed());
+  }
+
+  public void testPagedGrowableWriter() {
+    int pageSize = 1 << (_TestUtil.nextInt(random(), 6, 30));
+    // supports 0 values?
+    PagedGrowableWriter writer = new PagedGrowableWriter(0, pageSize, _TestUtil.nextInt(random(), 1, 64), random().nextFloat());
+    assertEquals(0, writer.size());
+
+    // compare against AppendingLongBuffer
+    AppendingLongBuffer buf = new AppendingLongBuffer();
+    int size = random().nextInt(1000000);
+    long max = 5;
+    for (int i = 0; i < size; ++i) {
+      buf.add(_TestUtil.nextLong(random(), 0, max));
+      if (rarely()) {
+        max = PackedInts.maxValue(rarely() ? _TestUtil.nextInt(random(), 0, 63) : _TestUtil.nextInt(random(), 0, 31));
+      }
+    }
+    writer = new PagedGrowableWriter(size, pageSize, _TestUtil.nextInt(random(), 1, 64), random().nextFloat());
+    assertEquals(size, writer.size());
+    for (int i = size - 1; i >= 0; --i) {
+      writer.set(i, buf.get(i));
+    }
+    for (int i = 0; i < size; ++i) {
+      assertEquals(buf.get(i), writer.get(i));
+    }
+
+    // test ramBytesUsed
+    assertEquals(RamUsageEstimator.sizeOf(writer), writer.ramBytesUsed(), 8);
+
+    // test copy
+    PagedGrowableWriter copy = writer.resize(_TestUtil.nextLong(random(), writer.size() / 2, writer.size() * 3 / 2));
+    for (long i = 0; i < copy.size(); ++i) {
+      if (i < writer.size()) {
+        assertEquals(writer.get(i), copy.get(i));
+      } else {
+        assertEquals(0, copy.get(i));
+      }
+    }
+
+    // test grow
+    PagedGrowableWriter grow = writer.grow(_TestUtil.nextLong(random(), writer.size() / 2, writer.size() * 3 / 2));
+    for (long i = 0; i < grow.size(); ++i) {
+      if (i < writer.size()) {
+        assertEquals(writer.get(i), grow.get(i));
+      } else {
+        assertEquals(0, grow.get(i));
+      }
+    }
+  }
+
+  public void testPagedMutable() {
+    final int bitsPerValue = _TestUtil.nextInt(random(), 1, 64);
+    final long max = PackedInts.maxValue(bitsPerValue);
+    int pageSize = 1 << (_TestUtil.nextInt(random(), 6, 30));
+    // supports 0 values?
+    PagedMutable writer = new PagedMutable(0, pageSize, bitsPerValue, random().nextFloat() / 2);
+    assertEquals(0, writer.size());
+
+    // compare against AppendingLongBuffer
+    AppendingLongBuffer buf = new AppendingLongBuffer();
+    int size = random().nextInt(1000000);
+    
+    for (int i = 0; i < size; ++i) {
+      buf.add(bitsPerValue == 64 ? random().nextLong() : _TestUtil.nextLong(random(), 0, max));
+    }
+    writer = new PagedMutable(size, pageSize, bitsPerValue, random().nextFloat());
+    assertEquals(size, writer.size());
+    for (int i = size - 1; i >= 0; --i) {
+      writer.set(i, buf.get(i));
+    }
+    for (int i = 0; i < size; ++i) {
+      assertEquals(buf.get(i), writer.get(i));
+    }
+
+    // test ramBytesUsed
+    assertEquals(RamUsageEstimator.sizeOf(writer) - RamUsageEstimator.sizeOf(writer.format), writer.ramBytesUsed());
+
+    // test copy
+    PagedMutable copy = writer.resize(_TestUtil.nextLong(random(), writer.size() / 2, writer.size() * 3 / 2));
+    for (long i = 0; i < copy.size(); ++i) {
+      if (i < writer.size()) {
+        assertEquals(writer.get(i), copy.get(i));
+      } else {
+        assertEquals(0, copy.get(i));
+      }
+    }
+
+    // test grow
+    PagedMutable grow = writer.grow(_TestUtil.nextLong(random(), writer.size() / 2, writer.size() * 3 / 2));
+    for (long i = 0; i < grow.size(); ++i) {
+      if (i < writer.size()) {
+        assertEquals(writer.get(i), grow.get(i));
+      } else {
+        assertEquals(0, grow.get(i));
+      }
+    }
+  }
+
+  // memory hole
+  @Ignore
+  public void testPagedGrowableWriterOverflow() {
+    final long size = _TestUtil.nextLong(random(), 2 * (long) Integer.MAX_VALUE, 3 * (long) Integer.MAX_VALUE);
+    final int pageSize = 1 << (_TestUtil.nextInt(random(), 16, 30));
+    final PagedGrowableWriter writer = new PagedGrowableWriter(size, pageSize, 1, random().nextFloat());
+    final long index = _TestUtil.nextLong(random(), (long) Integer.MAX_VALUE, size - 1);
+    writer.set(index, 2);
+    assertEquals(2, writer.get(index));
+    for (int i = 0; i < 1000000; ++i) {
+      final long idx = _TestUtil.nextLong(random(), 0, size);
+      if (idx == index) {
+        assertEquals(2, writer.get(idx));
+      } else {
+        assertEquals(0, writer.get(idx));
+      }
+    }
   }
 
   public void testSave() throws IOException {
@@ -808,13 +928,15 @@ public class TestPackedInts extends LuceneTestCase {
     final long[] arr = new long[RandomInts.randomIntBetween(random(), 1, 1000000)];
     for (int bpv : new int[] {0, 1, 63, 64, RandomInts.randomIntBetween(random(), 2, 62)}) {
       for (boolean monotonic : new boolean[] {true, false}) {
+        final int pageSize = 1 << _TestUtil.nextInt(random(), 6, 20);
+        final int initialPageCount = _TestUtil.nextInt(random(), 0, 16);
         AbstractAppendingLongBuffer buf;
         final int inc;
         if (monotonic) {
-          buf = new MonotonicAppendingLongBuffer();
+          buf = new MonotonicAppendingLongBuffer(initialPageCount, pageSize);
           inc = _TestUtil.nextInt(random(), -1000, 1000);
         } else {
-          buf = new AppendingLongBuffer();
+          buf = new AppendingLongBuffer(initialPageCount, pageSize);
           inc = 0;
         }
         if (bpv == 0) {

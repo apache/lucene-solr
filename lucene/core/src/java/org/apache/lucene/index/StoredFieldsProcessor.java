@@ -18,11 +18,13 @@ package org.apache.lucene.index;
  */
 
 import java.io.IOException;
+import java.util.Arrays;
 
 import org.apache.lucene.codecs.Codec;
 import org.apache.lucene.codecs.StoredFieldsWriter;
 import org.apache.lucene.store.IOContext;
 import org.apache.lucene.util.ArrayUtil;
+import org.apache.lucene.util.IOUtils;
 import org.apache.lucene.util.RamUsageEstimator;
 
 /** This is a StoredFieldsConsumer that writes stored fields. */
@@ -31,8 +33,6 @@ final class StoredFieldsProcessor extends StoredFieldsConsumer {
   StoredFieldsWriter fieldsWriter;
   final DocumentsWriterPerThread docWriter;
   int lastDocID;
-
-  int freeCount;
 
   final DocumentsWriterPerThread.DocState docState;
   final Codec codec;
@@ -44,13 +44,13 @@ final class StoredFieldsProcessor extends StoredFieldsConsumer {
   }
 
   private int numStoredFields;
-  private StorableField[] storedFields;
-  private FieldInfo[] fieldInfos;
+  private StorableField[] storedFields = new StorableField[1];
+  private FieldInfo[] fieldInfos = new FieldInfo[1];
 
   public void reset() {
     numStoredFields = 0;
-    storedFields = new StorableField[1];
-    fieldInfos = new FieldInfo[1];
+    Arrays.fill(storedFields, null);
+    Arrays.fill(fieldInfos, null);
   }
   
   @Override
@@ -61,7 +61,6 @@ final class StoredFieldsProcessor extends StoredFieldsConsumer {
   @Override
   public void flush(SegmentWriteState state) throws IOException {
     int numDocs = state.segmentInfo.getDocCount();
-
     if (numDocs > 0) {
       // It's possible that all documents seen in this segment
       // hit non-aborting exceptions, in which case we will
@@ -69,14 +68,17 @@ final class StoredFieldsProcessor extends StoredFieldsConsumer {
       initFieldsWriter(state.context);
       fill(numDocs);
     }
-
     if (fieldsWriter != null) {
-      try {
-        fieldsWriter.finish(state.fieldInfos, numDocs);
-      } finally {
-        fieldsWriter.close();
-        fieldsWriter = null;
-        lastDocID = 0;
+        boolean success = false;
+        try {
+          fieldsWriter.finish(state.fieldInfos, numDocs);
+          success = true;
+        } finally {
+          if (success) {
+            IOUtils.close(fieldsWriter);
+          } else {
+            IOUtils.closeWhileHandlingException(fieldsWriter);
+          }
       }
     }
   }
@@ -88,7 +90,6 @@ final class StoredFieldsProcessor extends StoredFieldsConsumer {
     }
   }
 
-  int allocCount;
 
   @Override
   void abort() {
@@ -114,7 +115,7 @@ final class StoredFieldsProcessor extends StoredFieldsConsumer {
 
   @Override
   void finishDocument() throws IOException {
-    assert docWriter.writer.testPoint("StoredFieldsWriter.finishDocument start");
+    assert docWriter.testPoint("StoredFieldsWriter.finishDocument start");
 
     initFieldsWriter(IOContext.DEFAULT);
     fill(docState.docID);
@@ -129,7 +130,7 @@ final class StoredFieldsProcessor extends StoredFieldsConsumer {
     }
 
     reset();
-    assert docWriter.writer.testPoint("StoredFieldsWriter.finishDocument end");
+    assert docWriter.testPoint("StoredFieldsWriter.finishDocument end");
   }
 
   @Override

@@ -123,6 +123,43 @@ public class TestPostingsHighlighter extends LuceneTestCase {
     dir.close();
   }
   
+  // simple test with multiple values that make a result longer than maxLength.
+  public void testMaxLengthWithMultivalue() throws Exception {
+    Directory dir = newDirectory();
+    // use simpleanalyzer for more natural tokenization (else "test." is a token)
+    IndexWriterConfig iwc = newIndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer(random(), MockTokenizer.SIMPLE, true));
+    iwc.setMergePolicy(newLogMergePolicy());
+    RandomIndexWriter iw = new RandomIndexWriter(random(), dir, iwc);
+    
+    FieldType offsetsType = new FieldType(TextField.TYPE_STORED);
+    offsetsType.setIndexOptions(IndexOptions.DOCS_AND_FREQS_AND_POSITIONS_AND_OFFSETS);
+    Document doc = new Document();
+    
+    for(int i = 0; i < 3 ; i++) {
+      Field body = new Field("body", "", offsetsType);
+      body.setStringValue("This is a multivalued field");
+      doc.add(body);
+    }
+    
+    iw.addDocument(doc);
+    
+    IndexReader ir = iw.getReader();
+    iw.close();
+    
+    IndexSearcher searcher = newSearcher(ir);
+    PostingsHighlighter highlighter = new PostingsHighlighter(40);
+    Query query = new TermQuery(new Term("body", "field"));
+    TopDocs topDocs = searcher.search(query, null, 10, Sort.INDEXORDER);
+    assertEquals(1, topDocs.totalHits);
+    String snippets[] = highlighter.highlight("body", query, searcher, topDocs);
+    assertEquals(1, snippets.length);
+    assertTrue("Snippet should have maximum 40 characters plus the pre and post tags",
+        snippets[0].length() == (40 + "<b></b>".length()));
+    
+    ir.close();
+    dir.close();
+  }
+  
   public void testMultipleFields() throws Exception {
     Directory dir = newDirectory();
     IndexWriterConfig iwc = newIndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer(random(), MockTokenizer.SIMPLE, true));
@@ -881,6 +918,50 @@ public class TestPostingsHighlighter extends LuceneTestCase {
     String snippets[] = highlighter.highlight("body", query, searcher, topDocs);
     assertEquals(1, snippets.length);
     assertEquals("Just&#32;a&#32;test&#32;<b>highlighting</b>&#32;from&#32;&lt;i&gt;postings&lt;&#x2F;i&gt;&#46;&#32;", snippets[0]);
+    
+    ir.close();
+    dir.close();
+  }
+  
+  /** customizing the gap separator to force a sentence break */
+  public void testGapSeparator() throws Exception {
+    Directory dir = newDirectory();
+    // use simpleanalyzer for more natural tokenization (else "test." is a token)
+    IndexWriterConfig iwc = newIndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer(random(), MockTokenizer.SIMPLE, true));
+    iwc.setMergePolicy(newLogMergePolicy());
+    RandomIndexWriter iw = new RandomIndexWriter(random(), dir, iwc);
+    
+    FieldType offsetsType = new FieldType(TextField.TYPE_STORED);
+    offsetsType.setIndexOptions(IndexOptions.DOCS_AND_FREQS_AND_POSITIONS_AND_OFFSETS);
+    Document doc = new Document();
+    
+    Field body1 = new Field("body", "", offsetsType);
+    body1.setStringValue("This is a multivalued field");
+    doc.add(body1);
+    
+    Field body2 = new Field("body", "", offsetsType);
+    body2.setStringValue("This is something different");
+    doc.add(body2);
+    
+    iw.addDocument(doc);
+    
+    IndexReader ir = iw.getReader();
+    iw.close();
+    
+    IndexSearcher searcher = newSearcher(ir);
+    PostingsHighlighter highlighter = new PostingsHighlighter() {
+      @Override
+      protected char getMultiValuedSeparator(String field) {
+        assert field.equals("body");
+        return '\u2029';
+      }
+    };
+    Query query = new TermQuery(new Term("body", "field"));
+    TopDocs topDocs = searcher.search(query, null, 10, Sort.INDEXORDER);
+    assertEquals(1, topDocs.totalHits);
+    String snippets[] = highlighter.highlight("body", query, searcher, topDocs);
+    assertEquals(1, snippets.length);
+    assertEquals("This is a multivalued <b>field</b>\u2029", snippets[0]);
     
     ir.close();
     dir.close();

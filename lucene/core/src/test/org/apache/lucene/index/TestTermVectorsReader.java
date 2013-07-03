@@ -93,7 +93,7 @@ public class TestTermVectorsReader extends LuceneTestCase {
         dir,
         newIndexWriterConfig(TEST_VERSION_CURRENT, new MyAnalyzer()).
             setMaxBufferedDocs(-1).
-            setMergePolicy(newLogMergePolicy(false, 10))
+            setMergePolicy(newLogMergePolicy(false, 10)).setUseCompoundFile(false)
     );
 
     Document doc = new Document();

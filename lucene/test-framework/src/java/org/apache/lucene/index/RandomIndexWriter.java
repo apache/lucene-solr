@@ -25,17 +25,12 @@ import java.util.Random;
 import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.analysis.MockAnalyzer;
 import org.apache.lucene.codecs.Codec;
-import org.apache.lucene.document.BinaryDocValuesField;
-import org.apache.lucene.document.Document;
-import org.apache.lucene.document.Field;
-import org.apache.lucene.document.NumericDocValuesField; 
-import org.apache.lucene.document.SortedDocValuesField; 
-import org.apache.lucene.index.FieldInfo.DocValuesType;
 import org.apache.lucene.index.IndexWriter; // javadoc
 import org.apache.lucene.search.Query;
 import org.apache.lucene.store.Directory;
-import org.apache.lucene.util.BytesRef;
+import org.apache.lucene.util.InfoStream;
 import org.apache.lucene.util.LuceneTestCase;
+import org.apache.lucene.util.NullInfoStream;
 import org.apache.lucene.util.Version;
 import org.apache.lucene.util._TestUtil;
 
@@ -55,23 +50,22 @@ public class RandomIndexWriter implements Closeable {
   private boolean getReaderCalled;
   private final Codec codec; // sugar
 
-  // Randomly calls Thread.yield so we mixup thread scheduling
-  private static final class MockIndexWriter extends IndexWriter {
-
-    private final Random r;
-
-    public MockIndexWriter(Random r, Directory dir, IndexWriterConfig conf) throws IOException {
-      super(dir, conf);
-      // TODO: this should be solved in a different way; Random should not be shared (!).
-      this.r = new Random(r.nextLong());
-    }
-
-    @Override
-    boolean testPoint(String name) {
-      if (r.nextInt(4) == 2)
-        Thread.yield();
-      return true;
-    }
+  
+  public static IndexWriter mockIndexWriter(Directory dir, IndexWriterConfig conf, Random r) throws IOException {
+    // Randomly calls Thread.yield so we mixup thread scheduling
+    final Random random = new Random(r.nextLong());
+    return mockIndexWriter(dir, conf,  new TestPoint() {
+      @Override
+      public void apply(String message) {
+        if (random.nextInt(4) == 2)
+          Thread.yield();
+      }
+    });
+  }
+  
+  public static IndexWriter mockIndexWriter(Directory dir, IndexWriterConfig conf, TestPoint testPoint) throws IOException {
+    conf.setInfoStream(new TestPointInfoStream(conf.getInfoStream(), testPoint));
+    return new IndexWriter(dir, conf);
   }
 
   /** create a RandomIndexWriter with a random config: Uses TEST_VERSION_CURRENT and MockAnalyzer */
@@ -93,7 +87,7 @@ public class RandomIndexWriter implements Closeable {
   public RandomIndexWriter(Random r, Directory dir, IndexWriterConfig c) throws IOException {
     // TODO: this should be solved in a different way; Random should not be shared (!).
     this.r = new Random(r.nextLong());
-    w = new MockIndexWriter(r, dir, c);
+    w = mockIndexWriter(dir, c, r);
     flushAt = _TestUtil.nextInt(r, 10, 1000);
     codec = w.getConfig().getCodec();
     if (LuceneTestCase.VERBOSE) {
@@ -344,5 +338,43 @@ public class RandomIndexWriter implements Closeable {
    */
   public void forceMerge(int maxSegmentCount) throws IOException {
     w.forceMerge(maxSegmentCount);
+  }
+  
+  private static final class TestPointInfoStream extends InfoStream {
+    private final InfoStream delegate;
+    private final TestPoint testPoint;
+    
+    public TestPointInfoStream(InfoStream delegate, TestPoint testPoint) {
+      this.delegate = delegate == null ? new NullInfoStream(): delegate;
+      this.testPoint = testPoint;
+    }
+
+    @Override
+    public void close() throws IOException {
+      delegate.close();
+    }
+
+    @Override
+    public void message(String component, String message) {
+      if ("TP".equals(component)) {
+        testPoint.apply(message);
+      }
+      if (delegate.isEnabled(component)) {
+        delegate.message(component, message);
+      }
+    }
+    
+    @Override
+    public boolean isEnabled(String component) {
+      return "TP".equals(component) || delegate.isEnabled(component);
+    }
+  }
+  
+  /**
+   * Simple interface that is executed for each <tt>TP</tt> {@link InfoStream} component
+   * message. See also {@link RandomIndexWriter#mockIndexWriter(Directory, IndexWriterConfig, TestPoint)}
+   */
+  public static interface TestPoint {
+    public abstract void apply(String message);
   }
 }

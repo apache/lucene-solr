@@ -193,7 +193,13 @@ public class SolrIndexSearcher extends IndexSearcher implements Closeable,SolrIn
     this.name = "Searcher@" + Integer.toHexString(hashCode()) + (name!=null ? " "+name : "");
     log.info("Opening " + this.name);
 
-    Directory dir = this.reader.directory();
+    if (directoryFactory.searchersReserveCommitPoints()) {
+      // reserve commit point for life of searcher
+      core.getDeletionPolicy().saveCommitPoint(
+          reader.getIndexCommit().getGeneration());
+    }
+    
+    Directory dir = getIndexReader().directory();
     
     this.reserveDirectory = reserveDirectory;
     this.createdDirectory = r == null;
@@ -331,10 +337,16 @@ public class SolrIndexSearcher extends IndexSearcher implements Closeable,SolrIn
     // super.close();
     // can't use super.close() since it just calls reader.close() and that may only be called once
     // per reader (even if incRef() was previously called).
+    
+    long cpg = reader.getIndexCommit().getGeneration();
     try {
       if (closeReader) reader.decRef();
     } catch (Throwable t) {
       SolrException.log(log, "Problem dec ref'ing reader", t);
+    }
+
+    if (directoryFactory.searchersReserveCommitPoints()) {
+      core.getDeletionPolicy().releaseCommitPoint(cpg);
     }
 
     for (SolrCache cache : cacheList) {
@@ -1095,41 +1107,12 @@ public class SolrIndexSearcher extends IndexSearcher implements Closeable,SolrIn
     DocSetCollector collector = new DocSetCollector(maxDoc()>>6, maxDoc());
 
     if (filter==null) {
-      if (query instanceof TermQuery) {
-        Term t = ((TermQuery)query).getTerm();
-        for (final AtomicReaderContext leaf : leafContexts) {
-          final AtomicReader reader = leaf.reader();
-          collector.setNextReader(leaf);
-          Fields fields = reader.fields();
-          Terms terms = fields.terms(t.field());
-          BytesRef termBytes = t.bytes();
-          
-          Bits liveDocs = reader.getLiveDocs();
-          DocsEnum docsEnum = null;
-          if (terms != null) {
-            final TermsEnum termsEnum = terms.iterator(null);
-            if (termsEnum.seekExact(termBytes, false)) {
-              docsEnum = termsEnum.docs(liveDocs, null, DocsEnum.FLAG_NONE);
-            }
-          }
-
-          if (docsEnum != null) {
-            int docid;
-            while ((docid = docsEnum.nextDoc()) != DocIdSetIterator.NO_MORE_DOCS) {
-              collector.collect(docid);
-            }
-          }
-        }
-      } else {
-        super.search(query,null,collector);
-      }
-      return collector.getDocSet();
-
+      super.search(query,null,collector);
     } else {
       Filter luceneFilter = filter.getTopFilter();
       super.search(query, luceneFilter, collector);
-      return collector.getDocSet();
     }
+    return collector.getDocSet();
   }
 
 

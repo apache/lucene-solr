@@ -21,6 +21,7 @@ import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.io.Reader;
 import java.io.StringReader;
+import java.nio.file.NoSuchFileException;
 import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.List;
@@ -210,15 +211,10 @@ public class TestIndexWriterExceptions extends LuceneTestCase {
 
   ThreadLocal<Thread> doFail = new ThreadLocal<Thread>();
 
-  private class MockIndexWriter extends IndexWriter {
+  private class TestPoint1 implements RandomIndexWriter.TestPoint {
     Random r = new Random(random().nextLong());
-
-    public MockIndexWriter(Directory dir, IndexWriterConfig conf) throws IOException {
-      super(dir, conf);
-    }
-
     @Override
-    boolean testPoint(String name) {
+    public void apply(String name) {
       if (doFail.get() != null && !name.equals("startDoFlush") && r.nextInt(40) == 17) {
         if (VERBOSE) {
           System.out.println(Thread.currentThread().getName() + ": NOW FAIL: " + name);
@@ -226,7 +222,6 @@ public class TestIndexWriterExceptions extends LuceneTestCase {
         }
         throw new RuntimeException(Thread.currentThread().getName() + ": intentionally failing at " + name);
       }
-      return true;
     }
   }
 
@@ -238,8 +233,9 @@ public class TestIndexWriterExceptions extends LuceneTestCase {
 
     MockAnalyzer analyzer = new MockAnalyzer(random());
     analyzer.setEnableChecks(false); // disable workflow checking as we forcefully close() in exceptional cases.
-    MockIndexWriter writer  = new MockIndexWriter(dir, newIndexWriterConfig( TEST_VERSION_CURRENT, analyzer)
-        .setRAMBufferSizeMB(0.1).setMergeScheduler(new ConcurrentMergeScheduler()));
+    
+    IndexWriter writer  = RandomIndexWriter.mockIndexWriter(dir, newIndexWriterConfig( TEST_VERSION_CURRENT, analyzer)
+        .setRAMBufferSizeMB(0.1).setMergeScheduler(new ConcurrentMergeScheduler()), new TestPoint1());
     ((ConcurrentMergeScheduler) writer.getConfig().getMergeScheduler()).setSuppressExceptions();
     //writer.setMaxBufferedDocs(10);
     if (VERBOSE) {
@@ -281,8 +277,8 @@ public class TestIndexWriterExceptions extends LuceneTestCase {
     Directory dir = newDirectory();
     MockAnalyzer analyzer = new MockAnalyzer(random());
     analyzer.setEnableChecks(false); // disable workflow checking as we forcefully close() in exceptional cases.
-    MockIndexWriter writer  = new MockIndexWriter(dir, newIndexWriterConfig( TEST_VERSION_CURRENT, analyzer)
-        .setRAMBufferSizeMB(0.2).setMergeScheduler(new ConcurrentMergeScheduler()));
+    IndexWriter writer  = RandomIndexWriter.mockIndexWriter(dir, newIndexWriterConfig( TEST_VERSION_CURRENT, analyzer)
+        .setRAMBufferSizeMB(0.2).setMergeScheduler(new ConcurrentMergeScheduler()), new TestPoint1());
     ((ConcurrentMergeScheduler) writer.getConfig().getMergeScheduler()).setSuppressExceptions();
     //writer.setMaxBufferedDocs(10);
     writer.commit();
@@ -324,19 +320,13 @@ public class TestIndexWriterExceptions extends LuceneTestCase {
   }
 
   // LUCENE-1198
-  private static final class MockIndexWriter2 extends IndexWriter {
-
-    public MockIndexWriter2(Directory dir, IndexWriterConfig conf) throws IOException {
-      super(dir, conf);
-    }
-
+  private static final class TestPoint2 implements RandomIndexWriter.TestPoint {
     boolean doFail;
 
     @Override
-    boolean testPoint(String name) {
+    public void apply(String name) {
       if (doFail && name.equals("DocumentsWriterPerThread addDocument start"))
         throw new RuntimeException("intentionally failing");
-      return true;
     }
   }
 
@@ -367,11 +357,12 @@ public class TestIndexWriterExceptions extends LuceneTestCase {
 
   public void testExceptionDocumentsWriterInit() throws IOException {
     Directory dir = newDirectory();
-    MockIndexWriter2 w = new MockIndexWriter2(dir, newIndexWriterConfig( TEST_VERSION_CURRENT, new MockAnalyzer(random())));
+    TestPoint2 testPoint = new TestPoint2();
+    IndexWriter w = RandomIndexWriter.mockIndexWriter(dir, newIndexWriterConfig( TEST_VERSION_CURRENT, new MockAnalyzer(random())), testPoint);
     Document doc = new Document();
     doc.add(newTextField("field", "a field", Field.Store.YES));
     w.addDocument(doc);
-    w.doFail = true;
+    testPoint.doFail = true;
     try {
       w.addDocument(doc);
       fail("did not hit exception");
@@ -385,7 +376,7 @@ public class TestIndexWriterExceptions extends LuceneTestCase {
   // LUCENE-1208
   public void testExceptionJustBeforeFlush() throws IOException {
     Directory dir = newDirectory();
-    MockIndexWriter w = new MockIndexWriter(dir, newIndexWriterConfig( TEST_VERSION_CURRENT, new MockAnalyzer(random())).setMaxBufferedDocs(2));
+    IndexWriter w = RandomIndexWriter.mockIndexWriter(dir, newIndexWriterConfig( TEST_VERSION_CURRENT, new MockAnalyzer(random())).setMaxBufferedDocs(2), new TestPoint1());
     Document doc = new Document();
     doc.add(newTextField("field", "a field", Field.Store.YES));
     w.addDocument(doc);
@@ -412,22 +403,15 @@ public class TestIndexWriterExceptions extends LuceneTestCase {
     dir.close();
   }
 
-  private static final class MockIndexWriter3 extends IndexWriter {
-
-    public MockIndexWriter3(Directory dir, IndexWriterConfig conf) throws IOException {
-      super(dir, conf);
-    }
-
+  private static final class TestPoint3 implements RandomIndexWriter.TestPoint {
     boolean doFail;
     boolean failed;
-
     @Override
-    boolean testPoint(String name) {
+    public void apply(String name) {
       if (doFail && name.equals("startMergeInit")) {
         failed = true;
         throw new RuntimeException("intentionally failing");
       }
-      return true;
     }
   }
 
@@ -441,8 +425,9 @@ public class TestIndexWriterExceptions extends LuceneTestCase {
     cms.setSuppressExceptions();
     conf.setMergeScheduler(cms);
     ((LogMergePolicy) conf.getMergePolicy()).setMergeFactor(2);
-    MockIndexWriter3 w = new MockIndexWriter3(dir, conf);
-    w.doFail = true;
+    TestPoint3 testPoint = new TestPoint3();
+    IndexWriter w = RandomIndexWriter.mockIndexWriter(dir, conf, testPoint);
+    testPoint.doFail = true;
     Document doc = new Document();
     doc.add(newTextField("field", "a field", Field.Store.YES));
     for(int i=0;i<10;i++)
@@ -453,7 +438,7 @@ public class TestIndexWriterExceptions extends LuceneTestCase {
       }
 
     ((ConcurrentMergeScheduler) w.getConfig().getMergeScheduler()).sync();
-    assertTrue(w.failed);
+    assertTrue(testPoint.failed);
     w.close();
     dir.close();
   }
@@ -555,10 +540,15 @@ public class TestIndexWriterExceptions extends LuceneTestCase {
         boolean sawAppend = false;
         boolean sawFlush = false;
         for (int i = 0; i < trace.length; i++) {
-          if (FreqProxTermsWriterPerField.class.getName().equals(trace[i].getClassName()) && "flush".equals(trace[i].getMethodName()))
+          if (sawAppend && sawFlush) {
+            break;
+          }
+          if (FreqProxTermsWriterPerField.class.getName().equals(trace[i].getClassName()) && "flush".equals(trace[i].getMethodName())) {
             sawAppend = true;
-          if ("flush".equals(trace[i].getMethodName()))
+          }
+          if ("flush".equals(trace[i].getMethodName())) {
             sawFlush = true;
+          }
         }
 
         if (sawAppend && sawFlush && count++ >= 30) {
@@ -892,12 +882,18 @@ public class TestIndexWriterExceptions extends LuceneTestCase {
       boolean isDelete = false;
       boolean isInGlobalFieldMap = false;
       for (int i = 0; i < trace.length; i++) {
-        if (SegmentInfos.class.getName().equals(trace[i].getClassName()) && stage.equals(trace[i].getMethodName()))
+        if (isCommit && isDelete && isInGlobalFieldMap) {
+          break;
+        }
+        if (SegmentInfos.class.getName().equals(trace[i].getClassName()) && stage.equals(trace[i].getMethodName())) {
           isCommit = true;
-        if (MockDirectoryWrapper.class.getName().equals(trace[i].getClassName()) && "deleteFile".equals(trace[i].getMethodName()))
+        }
+        if (MockDirectoryWrapper.class.getName().equals(trace[i].getClassName()) && "deleteFile".equals(trace[i].getMethodName())) {
           isDelete = true;
-        if (SegmentInfos.class.getName().equals(trace[i].getClassName()) && "writeGlobalFieldMap".equals(trace[i].getMethodName()))
+        }
+        if (SegmentInfos.class.getName().equals(trace[i].getClassName()) && "writeGlobalFieldMap".equals(trace[i].getMethodName())) {
           isInGlobalFieldMap = true;
+        }
           
       }
       if (isInGlobalFieldMap && dontFailDuringGlobalFieldMap) {
@@ -1014,29 +1010,26 @@ public class TestIndexWriterExceptions extends LuceneTestCase {
   }
 
   // LUCENE-1347
-  private static final class MockIndexWriter4 extends IndexWriter {
-
-    public MockIndexWriter4(Directory dir, IndexWriterConfig conf) throws IOException {
-      super(dir, conf);
-    }
+  private static final class TestPoint4 implements RandomIndexWriter.TestPoint {
 
     boolean doFail;
 
     @Override
-    boolean testPoint(String name) {
+    public void apply(String name) {
       if (doFail && name.equals("rollback before checkpoint"))
         throw new RuntimeException("intentionally failing");
-      return true;
     }
   }
 
   // LUCENE-1347
   public void testRollbackExceptionHang() throws Throwable {
     Directory dir = newDirectory();
-    MockIndexWriter4 w = new MockIndexWriter4(dir, newIndexWriterConfig( TEST_VERSION_CURRENT, new MockAnalyzer(random())));
+    TestPoint4 testPoint = new TestPoint4();
+    IndexWriter w = RandomIndexWriter.mockIndexWriter(dir, newIndexWriterConfig( TEST_VERSION_CURRENT, new MockAnalyzer(random())), testPoint);
+    
 
     addDoc(w);
-    w.doFail = true;
+    testPoint.doFail = true;
     try {
       w.rollback();
       fail("did not hit intentional RuntimeException");
@@ -1044,7 +1037,7 @@ public class TestIndexWriterExceptions extends LuceneTestCase {
       // expected
     }
 
-    w.doFail = false;
+    testPoint.doFail = false;
     w.rollback();
     dir.close();
   }
@@ -1150,9 +1143,9 @@ public class TestIndexWriterExceptions extends LuceneTestCase {
     writer  = new IndexWriter(
                               dir,
                               newIndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer(random())).
-                              setMergePolicy(newLogMergePolicy(true))
+                              setMergePolicy(newLogMergePolicy(true)).setUseCompoundFile(true)
                               );
-    LogMergePolicy lmp = (LogMergePolicy) writer.getConfig().getMergePolicy();
+    MergePolicy lmp = writer.getConfig().getMergePolicy();
     // Force creation of CFS:
     lmp.setNoCFSRatio(1.0);
     lmp.setMaxCFSSegmentSizeMB(Double.POSITIVE_INFINITY);
@@ -1342,6 +1335,7 @@ public class TestIndexWriterExceptions extends LuceneTestCase {
       for (int i = 0; i < trace.length; i++) {
         if (TermVectorsConsumer.class.getName().equals(trace[i].getClassName()) && stage.equals(trace[i].getMethodName())) {
           fail = true;
+          break;
         }
       }
       
@@ -1678,7 +1672,7 @@ public class TestIndexWriterExceptions extends LuceneTestCase {
       } catch (CorruptIndexException ex) {
         // Exceptions are fine - we are running out of file handlers here
         continue;
-      } catch (FileNotFoundException ex) {
+      } catch (FileNotFoundException | NoSuchFileException ex) {
         continue;
       }
       failure.clearDoFail();

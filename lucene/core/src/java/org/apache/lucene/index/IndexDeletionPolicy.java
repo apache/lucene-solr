@@ -20,6 +20,8 @@ package org.apache.lucene.index;
 import java.util.List;
 import java.io.IOException;
 
+import org.apache.lucene.store.Directory;
+
 /**
  * <p>Expert: policy for deletion of stale {@link IndexCommit index commits}. 
  * 
@@ -46,6 +48,10 @@ import java.io.IOException;
  * target="top"
  * href="http://issues.apache.org/jira/browse/LUCENE-710">LUCENE-710</a>
  * for details.</p>
+ *
+ * <p>Implementers of sub-classes should make sure that {@link #clone()}
+ * returns an independent instance able to work with any other {@link IndexWriter}
+ * or {@link Directory} instance.</p>
  */
 
 public abstract class IndexDeletionPolicy implements Cloneable {

@@ -95,6 +95,10 @@ public class RangeAccumulator extends FacetsAccumulator {
         int doc = 0;
         while (doc < length && (doc = hits.bits.nextSetBit(doc)) != -1) {
           long v = ndv.get(doc);
+          // TODO: if all ranges are non-overlapping, we
+          // should instead do a bin-search up front
+          // (really, a specialized case of the interval
+          // tree)
           // TODO: use interval tree instead of linear search:
           for(int j=0;j<ranges.ranges.length;j++) {
             if (ranges.ranges[j].accept(v)) {

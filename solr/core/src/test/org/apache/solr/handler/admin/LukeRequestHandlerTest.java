@@ -17,16 +17,17 @@
 
 package org.apache.solr.handler.admin;
 
-import java.util.Arrays;
-import java.util.EnumSet;
-
 import org.apache.solr.common.luke.FieldFlag;
 import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.schema.IndexSchema;
 import org.apache.solr.util.AbstractSolrTestCase;
+import org.apache.solr.util.TestHarness;
 import org.junit.Before;
 import org.junit.BeforeClass;
 import org.junit.Test;
+
+import java.util.Arrays;
+import java.util.EnumSet;
 
 /**
  * :TODO: currently only tests some of the utilities in the LukeRequestHandler
@@ -35,6 +36,7 @@ public class LukeRequestHandlerTest extends AbstractSolrTestCase {
 
   @BeforeClass
   public static void beforeClass() throws Exception {
+    System.setProperty("enable.update.log", "false"); // schema12 doesn't support _version_
     initCore("solrconfig.xml", "schema12.xml");
   }
 
@@ -155,7 +157,7 @@ public class LukeRequestHandlerTest extends AbstractSolrTestCase {
     try {
       // First, determine that the two fields ARE there
       String response = h.query(req);
-      assertNull(h.validateXPath(response,
+      assertNull(TestHarness.validateXPath(response,
           getFieldXPathPrefix("solr_t") + "[@name='index']",
           getFieldXPathPrefix("solr_s") + "[@name='index']"
       ));
@@ -164,7 +166,7 @@ public class LukeRequestHandlerTest extends AbstractSolrTestCase {
       for (String f : Arrays.asList("solr_ti",
           "solr_td", "solr_pl", "solr_dt", "solr_b")) {
 
-        assertNotNull(h.validateXPath(response,
+        assertNotNull(TestHarness.validateXPath(response,
             getFieldXPathPrefix(f) + "[@name='index']"));
 
       }
@@ -174,7 +176,7 @@ public class LukeRequestHandlerTest extends AbstractSolrTestCase {
       for (String f : Arrays.asList("solr_t", "solr_s", "solr_ti",
           "solr_td", "solr_pl", "solr_dt", "solr_b")) {
 
-        assertNull(h.validateXPath(response,
+        assertNull(TestHarness.validateXPath(response,
             getFieldXPathPrefix(f) + "[@name='index']"));
       }
     } catch (Exception e) {
@@ -186,7 +188,7 @@ public class LukeRequestHandlerTest extends AbstractSolrTestCase {
     SolrQueryRequest req = req("qt", "/admin/luke", "show", "schema");
 
     String xml = h.query(req);
-    String r = h.validateXPath
+    String r = TestHarness.validateXPath
       (xml,
        field("text") + "/arr[@name='copySources']/str[.='title']",
        field("text") + "/arr[@name='copySources']/str[.='subject']",
@@ -216,7 +218,7 @@ public class LukeRequestHandlerTest extends AbstractSolrTestCase {
 
     SolrQueryRequest req = req("qt", "/admin/luke", "show", "schema", "indent", "on");
     String xml = h.query(req);
-    String result = h.validateXPath(xml, field("bday") + "/arr[@name='copyDests']/str[.='catchall_t']");
+    String result = TestHarness.validateXPath(xml, field("bday") + "/arr[@name='copyDests']/str[.='catchall_t']");
     assertNull(xml, result);
 
     // Put back the configuration expected by the rest of the tests in this suite

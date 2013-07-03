@@ -28,11 +28,15 @@ import java.util.Map;
 import java.util.Set;
 
 import org.apache.lucene.analysis.MockAnalyzer;
+import org.apache.lucene.codecs.Codec;
+import org.apache.lucene.codecs.DocValuesFormat;
+import org.apache.lucene.codecs.perfield.PerFieldDocValuesFormat;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
 import org.apache.lucene.document.StringField;
 import org.apache.lucene.facet.FacetTestCase;
 import org.apache.lucene.facet.FacetTestUtils;
+import org.apache.lucene.facet.codecs.facet42.Facet42DocValuesFormat;
 import org.apache.lucene.facet.index.FacetFields;
 import org.apache.lucene.facet.params.FacetIndexingParams;
 import org.apache.lucene.facet.params.FacetSearchParams;
@@ -58,6 +62,7 @@ import org.apache.lucene.search.Query;
 import org.apache.lucene.search.ScoreDoc;
 import org.apache.lucene.search.Scorer;
 import org.apache.lucene.search.Sort;
+import org.apache.lucene.search.SortField.Type;
 import org.apache.lucene.search.SortField;
 import org.apache.lucene.search.TermQuery;
 import org.apache.lucene.search.TopDocs;
@@ -65,9 +70,11 @@ import org.apache.lucene.store.Directory;
 import org.apache.lucene.util.Bits;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.FixedBitSet;
+import org.apache.lucene.util.IOUtils;
 import org.apache.lucene.util.InPlaceMergeSorter;
 import org.apache.lucene.util.InfoStream;
 import org.apache.lucene.util._TestUtil;
+import org.junit.Test;
 
 public class TestDrillSideways extends FacetTestCase {
 
@@ -425,6 +432,16 @@ public class TestDrillSideways extends FacetTestCase {
   public void testRandom() throws Exception {
 
     boolean canUseDV = defaultCodecSupportsSortedSet();
+
+    // TestRuleSetupAndRestoreClassEnv can sometimes
+    // randomly pick the non-general Facet42DocValuesFormat:
+    DocValuesFormat dvf = Codec.getDefault().docValuesFormat();
+    if (dvf instanceof PerFieldDocValuesFormat) {
+      dvf = ((PerFieldDocValuesFormat) dvf).getDocValuesFormatForField("$facets");
+    }
+    if (dvf instanceof Facet42DocValuesFormat) {
+      canUseDV = false;
+    }
 
     while (aChance == 0.0) {
       aChance = random().nextDouble();
@@ -1143,6 +1160,34 @@ public class TestDrillSideways extends FacetTestCase {
       b.append((int) childNode.value);
     }
     return b.toString();
+  }
+  
+  @Test
+  public void testEmptyIndex() throws Exception {
+    // LUCENE-5045: make sure DrillSideways works with an empty index
+    Directory dir = newDirectory();
+    Directory taxoDir = newDirectory();
+    writer = new RandomIndexWriter(random(), dir);
+    taxoWriter = new DirectoryTaxonomyWriter(taxoDir, IndexWriterConfig.OpenMode.CREATE);
+    IndexSearcher searcher = newSearcher(writer.getReader());
+    writer.close();
+    TaxonomyReader taxoReader = new DirectoryTaxonomyReader(taxoWriter);
+    taxoWriter.close();
+
+    // Count "Author"
+    FacetSearchParams fsp = new FacetSearchParams(new CountFacetRequest(new CategoryPath("Author"), 10));
+
+    DrillSideways ds = new DrillSideways(searcher, taxoReader);
+    DrillDownQuery ddq = new DrillDownQuery(fsp.indexingParams, new MatchAllDocsQuery());
+    ddq.add(new CategoryPath("Author", "Lisa"));
+    
+    DrillSidewaysResult r = ds.search(null, ddq, 10, fsp); // this used to fail on IllegalArgEx
+    assertEquals(0, r.hits.totalHits);
+
+    r = ds.search(ddq, null, null, 10, new Sort(new SortField("foo", Type.INT)), false, false, fsp); // this used to fail on IllegalArgEx
+    assertEquals(0, r.hits.totalHits);
+    
+    IOUtils.close(searcher.getIndexReader(), taxoReader, dir, taxoDir);
   }
 }
 

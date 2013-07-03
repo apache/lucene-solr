@@ -34,7 +34,6 @@
   <modules>
     <module>core</module>
     <module>solrj</module>
-    <module>webapp</module>
     <module>test-framework</module>
     <module>contrib</module>
   </modules>
@@ -149,6 +148,7 @@
               </bundledSignatures>
               <signaturesFiles>
                 <signaturesFile>${top-level}/lucene/tools/forbiddenApis/executors.txt</signaturesFile>
+                <signaturesFile>${top-level}/lucene/tools/forbiddenApis/chars.txt</signaturesFile>
               </signaturesFiles>
             </configuration>
             <goals>
@@ -169,6 +169,7 @@
               <signaturesFiles>
                 <signaturesFile>${top-level}/lucene/tools/forbiddenApis/tests.txt</signaturesFile>
                 <signaturesFile>${top-level}/lucene/tools/forbiddenApis/executors.txt</signaturesFile>
+                <signaturesFile>${top-level}/lucene/tools/forbiddenApis/chars.txt</signaturesFile>
               </signaturesFiles>
             </configuration>
             <goals>

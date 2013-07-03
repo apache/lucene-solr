@@ -26,7 +26,15 @@
     <mergePolicy class="org.apache.lucene.index.TieredMergePolicy">
       <int name="maxMergeAtOnceExplicit">19</int>
       <int name="segmentsPerTier">9</int>
-      <double name="noCFSRatio">1.0</double>
+      <double name="noCFSRatio">0.1</double>
+
+      <!-- Setter for this was moved from the MergePolicies to IndexWriterConfig
+           in Lucene 4.4, so we should treat it the same as a <useCompoundFile>
+           setting and log a warning (instead of failing because the setter is 
+           gone).
+      -->
+      <bool name="useCompoundFile">${useCompoundFile:false}</bool>
+
     </mergePolicy>
   </indexConfig>
 

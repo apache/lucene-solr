@@ -271,7 +271,7 @@ public class TestIndexWriterMergePolicy extends LuceneTestCase {
     assertSetters(new LogDocMergePolicy());
   }
 
-  private void assertSetters(LogMergePolicy lmp) {
+  private void assertSetters(MergePolicy lmp) {
     lmp.setMaxCFSSegmentSizeMB(2.0);
     assertEquals(2.0, lmp.getMaxCFSSegmentSizeMB(), EPSILON);
     

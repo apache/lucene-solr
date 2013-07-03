@@ -17,35 +17,6 @@
 
 package org.apache.solr.servlet;
 
-import java.io.IOException;
-import java.io.InputStream;
-import java.io.OutputStream;
-import java.io.OutputStreamWriter;
-import java.io.Writer;
-import java.net.HttpURLConnection;
-import java.net.URL;
-import java.nio.charset.Charset;
-import java.util.ArrayList;
-import java.util.Collection;
-import java.util.Collections;
-import java.util.Enumeration;
-import java.util.HashSet;
-import java.util.Iterator;
-import java.util.List;
-import java.util.Map;
-import java.util.Map.Entry;
-import java.util.Set;
-import java.util.WeakHashMap;
-
-import javax.servlet.Filter;
-import javax.servlet.FilterChain;
-import javax.servlet.FilterConfig;
-import javax.servlet.ServletException;
-import javax.servlet.ServletRequest;
-import javax.servlet.ServletResponse;
-import javax.servlet.http.HttpServletRequest;
-import javax.servlet.http.HttpServletResponse;
-
 import org.apache.commons.io.IOUtils;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.SolrException.ErrorCode;
@@ -80,6 +51,34 @@ import org.apache.solr.servlet.cache.Method;
 import org.apache.solr.util.FastWriter;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
+import javax.servlet.Filter;
+import javax.servlet.FilterChain;
+import javax.servlet.FilterConfig;
+import javax.servlet.ServletException;
+import javax.servlet.ServletRequest;
+import javax.servlet.ServletResponse;
+import javax.servlet.http.HttpServletRequest;
+import javax.servlet.http.HttpServletResponse;
+import java.io.IOException;
+import java.io.InputStream;
+import java.io.OutputStream;
+import java.io.OutputStreamWriter;
+import java.io.Writer;
+import java.net.HttpURLConnection;
+import java.net.URL;
+import java.nio.charset.Charset;
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.Collections;
+import java.util.Enumeration;
+import java.util.HashSet;
+import java.util.Iterator;
+import java.util.List;
+import java.util.Map;
+import java.util.Map.Entry;
+import java.util.Set;
+import java.util.WeakHashMap;
 
 /**
  * This filter looks at the incoming URL maps them to handlers defined in solrconfig.xml
@@ -116,12 +115,11 @@ public class SolrDispatchFilter implements Filter
   {
     log.info("SolrDispatchFilter.init()");
 
-    CoreContainer.Initializer init = createInitializer();
     try {
       // web.xml configuration
       this.pathPrefix = config.getInitParameter( "path-prefix" );
 
-      this.cores = init.initialize();
+      this.cores = createCoreContainer();
       log.info("user.dir=" + System.getProperty("user.dir"));
     }
     catch( Throwable t ) {
@@ -132,14 +130,19 @@ public class SolrDispatchFilter implements Filter
 
     log.info("SolrDispatchFilter.init() done");
   }
+
+  /**
+   * Override this to change CoreContainer initialization
+   * @return a CoreContainer to hold this server's cores
+   */
+  protected CoreContainer createCoreContainer() {
+    CoreContainer cores = new CoreContainer();
+    cores.load();
+    return cores;
+  }
   
   public CoreContainer getCores() {
     return cores;
-  }
-
-  /** Method to override to change how CoreContainer initialization is performed. */
-  protected CoreContainer.Initializer createInitializer() {
-    return new CoreContainer.Initializer();
   }
   
   @Override

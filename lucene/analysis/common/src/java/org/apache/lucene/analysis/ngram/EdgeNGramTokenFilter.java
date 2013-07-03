@@ -25,21 +25,26 @@ import org.apache.lucene.analysis.tokenattributes.CharTermAttribute;
 import org.apache.lucene.analysis.tokenattributes.OffsetAttribute;
 import org.apache.lucene.analysis.tokenattributes.PositionIncrementAttribute;
 import org.apache.lucene.analysis.tokenattributes.PositionLengthAttribute;
+import org.apache.lucene.analysis.util.CharacterUtils;
 import org.apache.lucene.util.Version;
 
 /**
  * Tokenizes the given token into n-grams of given size(s).
  * <p>
  * This {@link TokenFilter} create n-grams from the beginning edge of a input token.
+ * <p><a name="match_version" />As of Lucene 4.4, this filter handles correctly
+ * supplementary characters.
  */
 public final class EdgeNGramTokenFilter extends TokenFilter {
   public static final int DEFAULT_MAX_GRAM_SIZE = 1;
   public static final int DEFAULT_MIN_GRAM_SIZE = 1;
 
+  private final CharacterUtils charUtils;
   private final int minGram;
   private final int maxGram;
   private char[] curTermBuffer;
   private int curTermLength;
+  private int curCodePointCount;
   private int curGramSize;
   private int tokStart;
   private int tokEnd; // only used if the length changed before this filter
@@ -74,6 +79,9 @@ public final class EdgeNGramTokenFilter extends TokenFilter {
       throw new IllegalArgumentException("minGram must not be greater than maxGram");
     }
 
+    this.charUtils = version.onOrAfter(Version.LUCENE_44)
+        ? CharacterUtils.getInstance(version)
+        : CharacterUtils.getJava4Instance();
     this.minGram = minGram;
     this.maxGram = maxGram;
   }
@@ -87,6 +95,7 @@ public final class EdgeNGramTokenFilter extends TokenFilter {
         } else {
           curTermBuffer = termAtt.buffer().clone();
           curTermLength = termAtt.length();
+          curCodePointCount = charUtils.codePointCount(termAtt);
           curGramSize = minGram;
           tokStart = offsetAtt.startOffset();
           tokEnd = offsetAtt.endOffset();
@@ -95,7 +104,7 @@ public final class EdgeNGramTokenFilter extends TokenFilter {
         }
       }
       if (curGramSize <= maxGram) {         // if we have hit the end of our n-gram size range, quit
-        if (curGramSize <= curTermLength) { // if the remaining input is too short, we can't generate any n-grams
+        if (curGramSize <= curCodePointCount) { // if the remaining input is too short, we can't generate any n-grams
           // grab gramSize chars from front or back
           clearAttributes();
           offsetAtt.setOffset(tokStart, tokEnd);
@@ -107,7 +116,8 @@ public final class EdgeNGramTokenFilter extends TokenFilter {
             posIncrAtt.setPositionIncrement(0);
           }
           posLenAtt.setPositionLength(savePosLen);
-          termAtt.copyBuffer(curTermBuffer, 0, curGramSize);
+          final int charLength = charUtils.offsetByCodePoints(curTermBuffer, 0, curTermLength, 0, curGramSize);
+          termAtt.copyBuffer(curTermBuffer, 0, charLength);
           curGramSize++;
           return true;
         }

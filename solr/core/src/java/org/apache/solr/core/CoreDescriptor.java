@@ -65,6 +65,9 @@ public class CoreDescriptor {
   // them individually.
   private Properties coreProperties = new Properties();
 
+  //TODO: 5.0 remove this, this is solely a hack for persistence.
+  private Properties createdProperties = new Properties();
+
   private boolean loadedImplicit = false;
 
   private final CoreContainer coreContainer;
@@ -278,6 +281,14 @@ public class CoreDescriptor {
         this.coreProperties.putAll(coreProperties);
       }
     }
+  }
+
+  public void addCreatedProperty(String key, String value) {
+    createdProperties.put(key, value);
+  }
+
+  public final Properties getCreatedProperties() {
+    return createdProperties;
   }
 
   public CloudDescriptor getCloudDescriptor() {

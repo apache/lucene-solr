@@ -84,6 +84,9 @@ final class TestRuleSetupAndRestoreClassEnv extends AbstractBeforeAfterRule {
 
     @Override
     public void message(String component, String message) {
+      if ("TP".equals(component)) {
+        return; // ignore test points!
+      }
       final String name;
       if (Thread.currentThread().getName().startsWith("TEST-")) {
         // The name of the main thread is way too

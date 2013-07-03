@@ -49,34 +49,6 @@ import org.apache.lucene.util.RamUsageEstimator;
  */
 public interface FieldCache {
 
-  /** Field values as 8-bit signed bytes */
-  public static abstract class Bytes {
-    /** Return a single Byte representation of this field's value. */
-    public abstract byte get(int docID);
-    
-    /** Zero value for every document */
-    public static final Bytes EMPTY = new Bytes() {
-      @Override
-      public byte get(int docID) {
-        return 0;
-      }
-    };
-  }
-
-  /** Field values as 16-bit signed shorts */
-  public static abstract class Shorts {
-    /** Return a short representation of this field's value. */
-    public abstract short get(int docID);
-    
-    /** Zero value for every document */
-    public static final Shorts EMPTY = new Shorts() {
-      @Override
-      public short get(int docID) {
-        return 0;
-      }
-    };
-  }
-
   /** Field values as 32-bit signed integers */
   public static abstract class Ints {
     /** Return an integer representation of this field's value. */
@@ -178,22 +150,6 @@ public interface FieldCache {
     public TermsEnum termsEnum(Terms terms) throws IOException;
   }
 
-  /** Interface to parse bytes from document fields.
-   * @see FieldCache#getBytes(AtomicReader, String, FieldCache.ByteParser, boolean)
-   */
-  public interface ByteParser extends Parser {
-    /** Return a single Byte representation of this field's value. */
-    public byte parseByte(BytesRef term);
-  }
-
-  /** Interface to parse shorts from document fields.
-   * @see FieldCache#getShorts(AtomicReader, String, FieldCache.ShortParser, boolean)
-   */
-  public interface ShortParser extends Parser {
-    /** Return a short representation of this field's value. */
-    public short parseShort(BytesRef term);
-  }
-
   /** Interface to parse ints from document fields.
    * @see FieldCache#getInts(AtomicReader, String, FieldCache.IntParser, boolean)
    */
@@ -228,135 +184,6 @@ public interface FieldCache {
 
   /** Expert: The cache used internally by sorting and range query classes. */
   public static FieldCache DEFAULT = new FieldCacheImpl();
-
-  /** The default parser for byte values, which are encoded by {@link Byte#toString(byte)} */
-  public static final ByteParser DEFAULT_BYTE_PARSER = new ByteParser() {
-    @Override
-    public byte parseByte(BytesRef term) {
-      // TODO: would be far better to directly parse from
-      // UTF8 bytes... but really users should use
-      // IntField, instead, which already decodes
-      // directly from byte[]
-      return Byte.parseByte(term.utf8ToString());
-    }
-    @Override
-    public String toString() { 
-      return FieldCache.class.getName()+".DEFAULT_BYTE_PARSER"; 
-    }
-    @Override
-    public TermsEnum termsEnum(Terms terms) throws IOException {
-      return terms.iterator(null);
-    }
-  };
-
-  /** The default parser for short values, which are encoded by {@link Short#toString(short)} */
-  public static final ShortParser DEFAULT_SHORT_PARSER = new ShortParser() {
-    @Override
-    public short parseShort(BytesRef term) {
-      // TODO: would be far better to directly parse from
-      // UTF8 bytes... but really users should use
-      // IntField, instead, which already decodes
-      // directly from byte[]
-      return Short.parseShort(term.utf8ToString());
-    }
-    @Override
-    public String toString() { 
-      return FieldCache.class.getName()+".DEFAULT_SHORT_PARSER"; 
-    }
-    
-    @Override
-    public TermsEnum termsEnum(Terms terms) throws IOException {
-      return terms.iterator(null);
-    }
-  };
-
-  /** The default parser for int values, which are encoded by {@link Integer#toString(int)} */
-  public static final IntParser DEFAULT_INT_PARSER = new IntParser() {
-    @Override
-    public int parseInt(BytesRef term) {
-      // TODO: would be far better to directly parse from
-      // UTF8 bytes... but really users should use
-      // IntField, instead, which already decodes
-      // directly from byte[]
-      return Integer.parseInt(term.utf8ToString());
-    }
-    
-    @Override
-    public TermsEnum termsEnum(Terms terms) throws IOException {
-      return terms.iterator(null);
-    }
-    
-    @Override
-    public String toString() { 
-      return FieldCache.class.getName()+".DEFAULT_INT_PARSER"; 
-    }
-  };
-
-  /** The default parser for float values, which are encoded by {@link Float#toString(float)} */
-  public static final FloatParser DEFAULT_FLOAT_PARSER = new FloatParser() {
-    @Override
-    public float parseFloat(BytesRef term) {
-      // TODO: would be far better to directly parse from
-      // UTF8 bytes... but really users should use
-      // FloatField, instead, which already decodes
-      // directly from byte[]
-      return Float.parseFloat(term.utf8ToString());
-    }
-    
-    @Override
-    public TermsEnum termsEnum(Terms terms) throws IOException {
-      return terms.iterator(null);
-    }
-    
-    @Override
-    public String toString() { 
-      return FieldCache.class.getName()+".DEFAULT_FLOAT_PARSER"; 
-    }
-  };
-
-  /** The default parser for long values, which are encoded by {@link Long#toString(long)} */
-  public static final LongParser DEFAULT_LONG_PARSER = new LongParser() {
-    @Override
-    public long parseLong(BytesRef term) {
-      // TODO: would be far better to directly parse from
-      // UTF8 bytes... but really users should use
-      // LongField, instead, which already decodes
-      // directly from byte[]
-      return Long.parseLong(term.utf8ToString());
-    }
-    
-    @Override
-    public TermsEnum termsEnum(Terms terms) throws IOException {
-      return terms.iterator(null);
-    }
-    
-    @Override
-    public String toString() { 
-      return FieldCache.class.getName()+".DEFAULT_LONG_PARSER"; 
-    }
-  };
-
-  /** The default parser for double values, which are encoded by {@link Double#toString(double)} */
-  public static final DoubleParser DEFAULT_DOUBLE_PARSER = new DoubleParser() {
-    @Override
-    public double parseDouble(BytesRef term) {
-      // TODO: would be far better to directly parse from
-      // UTF8 bytes... but really users should use
-      // DoubleField, instead, which already decodes
-      // directly from byte[]
-      return Double.parseDouble(term.utf8ToString());
-    }
-    
-    @Override
-    public TermsEnum termsEnum(Terms terms) throws IOException {
-      return terms.iterator(null);
-    }
-    
-    @Override
-    public String toString() { 
-      return FieldCache.class.getName()+".DEFAULT_DOUBLE_PARSER"; 
-    }
-  };
 
   /**
    * A parser instance for int values encoded by {@link NumericUtils}, e.g. when indexed
@@ -449,60 +276,6 @@ public interface FieldCache {
    */
   public Bits getDocsWithField(AtomicReader reader, String field) throws IOException;
 
-  /** Checks the internal cache for an appropriate entry, and if none is
-   * found, reads the terms in <code>field</code> as a single byte and returns an array
-   * of size <code>reader.maxDoc()</code> of the value each document
-   * has in the given field.
-   * @param reader  Used to get field values.
-   * @param field   Which field contains the single byte values.
-   * @param setDocsWithField  If true then {@link #getDocsWithField} will
-   *        also be computed and stored in the FieldCache.
-   * @return The values in the given field for each document.
-   * @throws IOException  If any error occurs.
-   */
-  public Bytes getBytes(AtomicReader reader, String field, boolean setDocsWithField) throws IOException;
-
-  /** Checks the internal cache for an appropriate entry, and if none is found,
-   * reads the terms in <code>field</code> as bytes and returns an array of
-   * size <code>reader.maxDoc()</code> of the value each document has in the
-   * given field.
-   * @param reader  Used to get field values.
-   * @param field   Which field contains the bytes.
-   * @param parser  Computes byte for string values.
-   * @param setDocsWithField  If true then {@link #getDocsWithField} will
-   *        also be computed and stored in the FieldCache.
-   * @return The values in the given field for each document.
-   * @throws IOException  If any error occurs.
-   */
-  public Bytes getBytes(AtomicReader reader, String field, ByteParser parser, boolean setDocsWithField) throws IOException;
-
-  /** Checks the internal cache for an appropriate entry, and if none is
-   * found, reads the terms in <code>field</code> as shorts and returns an array
-   * of size <code>reader.maxDoc()</code> of the value each document
-   * has in the given field.
-   * @param reader  Used to get field values.
-   * @param field   Which field contains the shorts.
-   * @param setDocsWithField  If true then {@link #getDocsWithField} will
-   *        also be computed and stored in the FieldCache.
-   * @return The values in the given field for each document.
-   * @throws IOException  If any error occurs.
-   */
-  public Shorts getShorts (AtomicReader reader, String field, boolean setDocsWithField) throws IOException;
-
-  /** Checks the internal cache for an appropriate entry, and if none is found,
-   * reads the terms in <code>field</code> as shorts and returns an array of
-   * size <code>reader.maxDoc()</code> of the value each document has in the
-   * given field.
-   * @param reader  Used to get field values.
-   * @param field   Which field contains the shorts.
-   * @param parser  Computes short for string values.
-   * @param setDocsWithField  If true then {@link #getDocsWithField} will
-   *        also be computed and stored in the FieldCache.
-   * @return The values in the given field for each document.
-   * @throws IOException  If any error occurs.
-   */
-  public Shorts getShorts (AtomicReader reader, String field, ShortParser parser, boolean setDocsWithField) throws IOException;
-  
   /** Checks the internal cache for an appropriate entry, and if none is
    * found, reads the terms in <code>field</code> as integers and returns an array
    * of size <code>reader.maxDoc()</code> of the value each document

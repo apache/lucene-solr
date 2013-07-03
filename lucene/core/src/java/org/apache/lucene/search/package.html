@@ -441,9 +441,8 @@ on the built-in available scoring models and extending or changing Similarity.
                   explain(AtomicReaderContext context, int doc)} &mdash; Provide a means for explaining why a given document was
                 scored the way it was.
                 Typically a weight such as TermWeight
-                that scores via a {@link org.apache.lucene.search.similarities.Similarity Similarity} will make use of the Similarity's implementations:
-                {@link org.apache.lucene.search.similarities.Similarity.ExactSimScorer#explain(int, Explanation) ExactSimScorer#explain(int doc, Explanation freq)},
-                and {@link org.apache.lucene.search.similarities.Similarity.SloppySimScorer#explain(int, Explanation) SloppySimScorer#explain(int doc, Explanation freq)}
+                that scores via a {@link org.apache.lucene.search.similarities.Similarity Similarity} will make use of the Similarity's implementation:
+                {@link org.apache.lucene.search.similarities.Similarity.SimScorer#explain(int, Explanation) SimScorer#explain(int doc, Explanation freq)}.
                 </li>
              </li>
         </ol>
@@ -468,7 +467,7 @@ on the built-in available scoring models and extending or changing Similarity.
                 {@link org.apache.lucene.search.Scorer#score score()} &mdash; Return the score of the
                 current document. This value can be determined in any appropriate way for an application. For instance, the
                 {@link org.apache.lucene.search.TermScorer TermScorer} simply defers to the configured Similarity:
-                {@link org.apache.lucene.search.similarities.Similarity.ExactSimScorer#score(int, int) ExactSimScorer.score(int doc, int freq)}.
+                {@link org.apache.lucene.search.similarities.Similarity.SimScorer#score(int, float) SimScorer.score(int doc, float freq)}.
             </li>
             <li>
                 {@link org.apache.lucene.search.Scorer#freq freq()} &mdash; Returns the number of matches
