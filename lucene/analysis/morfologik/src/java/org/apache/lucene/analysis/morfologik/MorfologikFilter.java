@@ -95,7 +95,7 @@ public class MorfologikFilter extends TokenFilter {
       termAtt.setEmpty().append(lemma.getStem());
       CharSequence tag = lemma.getTag();
       if (tag != null) {
-        String[] tags = tag.toString().split("\\+");
+        String[] tags = tag.toString().split("\\+|\\|");
         for (int i = 0; i < tags.length; i++) {
           if (tagsList.size() <= i) {
             tagsList.add(new StringBuilder());
