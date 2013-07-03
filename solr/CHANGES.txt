@@ -240,6 +240,8 @@ Bug Fixes
 * SOLR-3369: shards.tolerant=true is broken for group queries
   (Russell Black, Martijn van Groningen, Jabouille jean Charles, Ryan McKinley via shalin)
 
+* SOLR-4452: Hunspell stemmer should not merge duplicate dictionary entries (janhoy)
+
 Optimizations
 ----------------------
 
