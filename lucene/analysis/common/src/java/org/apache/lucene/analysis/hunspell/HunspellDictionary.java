@@ -378,11 +378,11 @@ public class HunspellDictionary {
         wordForm = new HunspellWord(flagParsingStrategy.parseFlags(flagPart));
         Arrays.sort(wordForm.getFlags());
         entry = line.substring(0, flagSep);
-        if(ignoreCase) {
-          entry = entry.toLowerCase(Locale.ROOT);
-        }
       }
-      
+      if(ignoreCase) {
+        entry = entry.toLowerCase(Locale.ROOT);
+      }
+
       List<HunspellWord> entries = new ArrayList<HunspellWord>();
       entries.add(wordForm);
       words.put(entry, entries);
