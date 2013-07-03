@@ -311,8 +311,8 @@ public class IndexSchema {
    */
   public SchemaField getUniqueKeyField() { return uniqueKeyField; }
 
-  private String uniqueKeyFieldName;
-  private FieldType uniqueKeyFieldType;
+  protected String uniqueKeyFieldName;
+  protected FieldType uniqueKeyFieldType;
 
   /**
    * The raw (field type encoded) value of the Unique Key field for

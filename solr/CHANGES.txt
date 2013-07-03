@@ -242,6 +242,9 @@ Bug Fixes
 
 * SOLR-4452: Hunspell stemmer should not merge duplicate dictionary entries (janhoy)
 
+* SOLR-5000: ManagedIndexSchema doesn't persist uniqueKey tag after calling addFields
+  method. (Jun Ohtani, Steve Rowe)
+
 Optimizations
 ----------------------
 
