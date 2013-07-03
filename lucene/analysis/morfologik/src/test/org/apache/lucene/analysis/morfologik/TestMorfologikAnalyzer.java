@@ -22,8 +22,6 @@ import java.io.Reader;
 import java.io.StringReader;
 import java.util.TreeSet;
 
-import morfologik.stemming.PolishStemmer.DICTIONARY;
-
 import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.analysis.BaseTokenStreamTestCase;
 import org.apache.lucene.analysis.TokenStream;
@@ -67,10 +65,22 @@ public class TestMorfologikAnalyzer extends BaseTokenStreamTestCase {
     assertAnalyzesToReuse(
         a,
         "T. Gl\u00FCcksberg",
-        new String[] { "to", "tom", "tona", "Gl\u00FCcksberg" },
-        new int[] { 0, 0, 0, 3  },
-        new int[] { 1, 1, 1, 13 },
-        new int[] { 1, 0, 0, 1  });
+        new String[] { "tom", "tona", "Gl\u00FCcksberg" },
+        new int[] { 0, 0, 3  },
+        new int[] { 1, 1, 13 },
+        new int[] { 1, 0, 1  });
+  }
+
+  @SuppressWarnings("unused")
+  private void dumpTokens(String input) throws IOException {
+    TokenStream ts = getTestAnalyzer().tokenStream("dummy", new StringReader(input));
+    ts.reset();
+
+    MorphosyntacticTagsAttribute attribute = ts.getAttribute(MorphosyntacticTagsAttribute.class);
+    CharTermAttribute charTerm = ts.getAttribute(CharTermAttribute.class);
+    while (ts.incrementToken()) {
+      System.out.println(charTerm.toString() + " => " + attribute.getTags());
+    }
   }
 
   /** Test reuse of MorfologikFilter with leftover stems. */
@@ -158,9 +168,8 @@ public class TestMorfologikAnalyzer extends BaseTokenStreamTestCase {
   /** */
   public final void testKeywordAttrTokens() throws IOException {
     final Version version = TEST_VERSION_CURRENT;
-    final DICTIONARY dictionary = DICTIONARY.COMBINED;
 
-    Analyzer a = new MorfologikAnalyzer(version, dictionary) {
+    Analyzer a = new MorfologikAnalyzer(version) {
       @Override
       protected TokenStreamComponents createComponents(String field, Reader reader) {
         final CharArraySet keywords = new CharArraySet(version, 1, false);
@@ -169,7 +178,7 @@ public class TestMorfologikAnalyzer extends BaseTokenStreamTestCase {
         final Tokenizer src = new StandardTokenizer(TEST_VERSION_CURRENT, reader);
         TokenStream result = new StandardFilter(TEST_VERSION_CURRENT, src);
         result = new SetKeywordMarkerFilter(result, keywords);
-        result = new MorfologikFilter(result, dictionary, TEST_VERSION_CURRENT); 
+        result = new MorfologikFilter(result, TEST_VERSION_CURRENT); 
 
         return new TokenStreamComponents(src, result);
       }

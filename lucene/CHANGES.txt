@@ -23,10 +23,18 @@ Changes in backwards compatibility policy
   not positioned. This change affects all classes that inherit from
   DocIdSetIterator, including DocsEnum and DocsAndPositionsEnum. (Adrien Grand)
 
+* LUCENE-5089: Update to Morfologik 1.6.0. MorfologikAnalyzer and MorfologikFilter 
+  no longer support multiple "dictionaries" as there is only one dictionary available.
+  (Dawid Weiss)
+
 New Features
 
 * LUCENE-4747: Move to Java 7 as minimum Java version.
   (Robert Muir, Uwe Schindler)
+
+* LUCENE-5089: Update to Morfologik 1.6.0. MorfologikAnalyzer and MorfologikFilter 
+  no longer support multiple "dictionaries" as there is only one dictionary available.
+  (Dawid Weiss)
 
 Optimizations
 
