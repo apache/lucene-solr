@@ -287,6 +287,9 @@ New Features
   be set to e.g. U+2029 PARAGRAPH SEPARATOR if you never want passes to span
   values. (Mike McCandless, Robert Muir)
 
+* LUCENE-5013: Added ScandinavianFoldingFilterFactory and
+  ScandinavianNormalizationFilterFactory (Karl Wettin via janhoy)
+
 API Changes
 
 * LUCENE-5077: Make it easier to use compressed norms. Lucene42NormsFormat takes
