@@ -334,6 +334,8 @@ public final class ManagedIndexSchema extends IndexSchema {
     newSchema.similarityFactory = similarityFactory;
     newSchema.isExplicitSimilarity = isExplicitSimilarity;
     newSchema.uniqueKeyField = uniqueKeyField;
+    newSchema.uniqueKeyFieldName = uniqueKeyFieldName;
+    newSchema.uniqueKeyFieldType = uniqueKeyFieldType;
 
     if (includeFieldDataStructures) {
       // These need new collections, since addFields() can add members to them
