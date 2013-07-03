@@ -60,6 +60,7 @@ public class MorfologikFilter extends TokenFilter {
   private int lemmaListIndex;
 
   /**
+   * Creates MorfologikFilter
    * @param in   input token stream
    * @param version Lucene version compatibility for lowercasing.
    */
