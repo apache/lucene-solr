@@ -260,6 +260,8 @@ Optimizations
 * SOLR-4412: New parameter langid.lcmap to map detected language code to be placed 
   in "language" field (janhoy)
 
+* SOLR-4815: Admin-UI - DIH: Let "commit" be checked by default (steffkes)
+
 Other Changes
 ----------------------
 
