@@ -18,11 +18,22 @@ package org.apache.lucene.analysis.morfologik;
  */
 
 import java.io.IOException;
+import java.io.Reader;
 import java.io.StringReader;
 import java.util.TreeSet;
 
-import org.apache.lucene.analysis.*;
+import morfologik.stemming.PolishStemmer.DICTIONARY;
+
+import org.apache.lucene.analysis.Analyzer;
+import org.apache.lucene.analysis.BaseTokenStreamTestCase;
+import org.apache.lucene.analysis.TokenStream;
+import org.apache.lucene.analysis.Tokenizer;
+import org.apache.lucene.analysis.miscellaneous.SetKeywordMarkerFilter;
+import org.apache.lucene.analysis.standard.StandardFilter;
+import org.apache.lucene.analysis.standard.StandardTokenizer;
 import org.apache.lucene.analysis.tokenattributes.CharTermAttribute;
+import org.apache.lucene.analysis.util.CharArraySet;
+import org.apache.lucene.util.Version;
 
 /**
  * TODO: The tests below rely on the order of returned lemmas, which is probably not good. 
@@ -142,6 +153,35 @@ public class TestMorfologikAnalyzer extends BaseTokenStreamTestCase {
         "subst:sg:loc:f");
     ts.end();
     ts.close();
+  }
+
+  /** */
+  public final void testKeywordAttrTokens() throws IOException {
+    final Version version = TEST_VERSION_CURRENT;
+    final DICTIONARY dictionary = DICTIONARY.COMBINED;
+
+    Analyzer a = new MorfologikAnalyzer(version, dictionary) {
+      @Override
+      protected TokenStreamComponents createComponents(String field, Reader reader) {
+        final CharArraySet keywords = new CharArraySet(version, 1, false);
+        keywords.add("liście");
+
+        final Tokenizer src = new StandardTokenizer(TEST_VERSION_CURRENT, reader);
+        TokenStream result = new StandardFilter(TEST_VERSION_CURRENT, src);
+        result = new SetKeywordMarkerFilter(result, keywords);
+        result = new MorfologikFilter(result, dictionary, TEST_VERSION_CURRENT); 
+
+        return new TokenStreamComponents(src, result);
+      }
+    };
+
+    assertAnalyzesToReuse(
+      a,
+      "liście danych",
+      new String[] { "liście", "dany", "dana", "dane", "dać" },
+      new int[] { 0, 7, 7, 7, 7 },
+      new int[] { 6, 13, 13, 13, 13 },
+      new int[] { 1, 1, 0, 0, 0 });
   }
 
   /** blast some random strings through the analyzer */

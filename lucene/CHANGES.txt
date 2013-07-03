@@ -7,6 +7,9 @@ http://s.apache.org/luceneversions
 
 Changes in backwards compatibility policy
 
+* LUCENE-5085: MorfologikFilter will no longer stem words marked as keywords
+  (Dawid Weiss, Grzegorz Sobczyk)
+
 * LUCENE-4955: NGramTokenFilter now emits all n-grams for the same token at the
   same position and preserves the position length and the offsets of the
   original token. (Simon Willnauer, Adrien Grand)
@@ -178,6 +181,9 @@ Optimizations
   the index has been loaded into memory to save file descriptors. (Adrien Grand)
 
 New Features
+
+* LUCENE-5085: MorfologikFilter will no longer stem words marked as keywords
+  (Dawid Weiss, Grzegorz Sobczyk)
 
 * LUCENE-5064: Added PagedMutable (internal), a paged extension of
   PackedInts.Mutable which allows for storing more than 2B values. (Adrien Grand)

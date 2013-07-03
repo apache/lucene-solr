@@ -27,6 +27,7 @@ import morfologik.stemming.PolishStemmer.DICTIONARY;
 import org.apache.lucene.analysis.TokenFilter;
 import org.apache.lucene.analysis.TokenStream;
 import org.apache.lucene.analysis.tokenattributes.CharTermAttribute;
+import org.apache.lucene.analysis.tokenattributes.KeywordAttribute;
 import org.apache.lucene.analysis.tokenattributes.PositionIncrementAttribute;
 import org.apache.lucene.analysis.util.CharacterUtils;
 import org.apache.lucene.util.*;
@@ -44,6 +45,7 @@ public class MorfologikFilter extends TokenFilter {
   private final CharTermAttribute termAtt = addAttribute(CharTermAttribute.class);
   private final MorphosyntacticTagsAttribute tagsAtt = addAttribute(MorphosyntacticTagsAttribute.class);
   private final PositionIncrementAttribute posIncrAtt = addAttribute(PositionIncrementAttribute.class);
+  private final KeywordAttribute keywordAttr = addAttribute(KeywordAttribute.class);
 
   private final CharsRef scratch = new CharsRef(0);
   private final CharacterUtils charUtils;
@@ -140,7 +142,8 @@ public class MorfologikFilter extends TokenFilter {
       popNextLemma();
       return true;
     } else if (this.input.incrementToken()) {
-      if (lookupSurfaceForm(termAtt) || lookupSurfaceForm(toLowercase(termAtt))) {
+      if (!keywordAttr.isKeyword() && 
+          (lookupSurfaceForm(termAtt) || lookupSurfaceForm(toLowercase(termAtt)))) {
         current = captureState();
         popNextLemma();
       } else {
