@@ -47,7 +47,7 @@
     <jetty.version>8.1.10.v20130312</jetty.version>
     <slf4j.version>1.6.6</slf4j.version>
     <log4j.version>1.2.16</log4j.version>
-    <tika.version>1.3</tika.version>
+    <tika.version>1.4</tika.version>
     <httpcomponents.version>4.2.3</httpcomponents.version>
     <commons-io.version>2.1</commons-io.version>
     <restlet.version>2.1.1</restlet.version>
