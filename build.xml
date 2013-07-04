@@ -292,6 +292,9 @@
   <target name="nightly-smoke" description="Builds an unsigned release and smoke tests it" depends="clean,-env-JAVA6_HOME,-env-JAVA7_HOME">
    <fail unless="JAVA6_HOME">JAVA6_HOME property or environment variable is not defined.</fail>
    <fail unless="JAVA7_HOME">JAVA7_HOME property or environment variable is not defined.</fail>
+   <exec executable="${python32.exe}" failonerror="true">
+      <arg value="-V"/>
+   </exec>
    <property name="svnversion.exe" value="svnversion" />
    <subant target="prepare-release-no-sign" inheritall="false" failonerror="true">
      <fileset dir="lucene" includes="build.xml" />
