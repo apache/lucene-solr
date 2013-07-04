@@ -12,7 +12,7 @@
 /velocity.log
 /build.properties
 /.idea
-/*.iml
+*.iml
 /*.ipr
 /*.iws
 /.project
