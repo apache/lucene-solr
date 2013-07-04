@@ -77,6 +77,9 @@ License: http://hsqldb.org/web/hsqlLicense.html
 Jersey Core: https://jersey.java.net/
 License: Common Development and Distribution License (CDDL) v1.0 (https://glassfish.dev.java.net/public/CDDLv1.0.html)
 
+The HdfsDirectory and BlockDirectory were derived from
+the Apache Blur incubating project and are Apache License 2.0.
+
 =========================================================================
 ==  Apache Lucene Notice                                               ==
 =========================================================================
@@ -112,9 +115,6 @@ http://bitbucket.org/jpbarrette/moman/overview/
 
 The class org.apache.lucene.util.WeakIdentityMap was derived from
 the Apache CXF project and is Apache License 2.0.
-
-The HdfsDirectory and BlockDirectory were derived from
-the Apache Blur incubating project and are Apache License 2.0.
 
 The Google Code Prettify is Apache License 2.0.
 See http://code.google.com/p/google-code-prettify/
