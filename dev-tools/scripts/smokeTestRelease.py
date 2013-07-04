@@ -271,7 +271,7 @@ def checkAllJARs(topDir, project, svnRevision, version):
     for file in files:
       if file.lower().endswith('.jar'):
         if project == 'solr':
-          if normRoot.endswith('/contrib/dataimporthandler/lib') and (file.startswith('mail-') or file.startswith('activation-')):
+          if (normRoot.endswith('/contrib/dataimporthandler/lib') and (file.startswith('mail-') or file.startswith('activation-'))) or (normRoot.endswith('/test-framework/lib') and file.startswith('jersey-')):
             print('      **WARNING**: skipping check of %s/%s: it has javax.* classes' % (root, file))
             continue
         else:
