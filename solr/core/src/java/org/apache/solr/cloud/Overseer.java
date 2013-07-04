@@ -52,6 +52,7 @@ public class Overseer {
   public static final String QUEUE_OPERATION = "operation";
   public static final String DELETECORE = "deletecore";
   public static final String REMOVECOLLECTION = "removecollection";
+  public static final String REMOVESHARD = "removeshard";
   
   private static final int STATE_UPDATE_DELAY = 1500;  // delay between cloud state updates
 
@@ -181,6 +182,8 @@ public class Overseer {
         clusterState = removeCore(clusterState, message);
       } else if (REMOVECOLLECTION.equals(operation)) {
         clusterState = removeCollection(clusterState, message);
+      } else if (REMOVESHARD.equals(operation)) {
+        clusterState = removeShard(clusterState, message);
       } else if (ZkStateReader.LEADER_PROP.equals(operation)) {
 
         StringBuilder sb = new StringBuilder();
@@ -548,8 +551,28 @@ public class Overseer {
         ClusterState newState = new ClusterState(clusterState.getLiveNodes(), newCollections);
         return newState;
       }
-      
-      /*
+
+    /*
+     * Remove collection slice from cloudstate
+     */
+    private ClusterState removeShard(final ClusterState clusterState, ZkNodeProps message) {
+
+      final String collection = message.getStr(ZkStateReader.COLLECTION_PROP);
+      final String sliceId = message.getStr(ZkStateReader.SHARD_ID_PROP);
+
+      final Map<String, DocCollection> newCollections = new LinkedHashMap<String,DocCollection>(clusterState.getCollectionStates()); // shallow copy
+      DocCollection coll = newCollections.get(collection);
+
+      Map<String, Slice> newSlices = new LinkedHashMap<String, Slice>(coll.getSlicesMap());
+      newSlices.remove(sliceId);
+
+      DocCollection newCollection = new DocCollection(coll.getName(), newSlices, coll.getProperties(), coll.getRouter());
+      newCollections.put(newCollection.getName(), newCollection);
+
+      return new ClusterState(clusterState.getLiveNodes(), newCollections);
+    }
+
+    /*
        * Remove core from cloudstate
        */
       private ClusterState removeCore(final ClusterState clusterState, ZkNodeProps message) {

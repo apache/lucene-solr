@@ -132,10 +132,14 @@ public class CollectionsHandler extends RequestHandlerBase {
         this.handleDeleteAliasAction(req, rsp);
         break;
       }
-        case SPLITSHARD:  {
-          this.handleSplitShardAction(req, rsp);
-          break;
-        }
+      case SPLITSHARD:  {
+        this.handleSplitShardAction(req, rsp);
+        break;
+      }
+      case DELETESHARD: {
+        this.handleDeleteShardAction(req, rsp);
+        break;
+      }
 
       default: {
           throw new RuntimeException("Unknown action: " + action);
@@ -146,13 +150,18 @@ public class CollectionsHandler extends RequestHandlerBase {
   }
   
   public static long DEFAULT_ZK_TIMEOUT = 60*1000;
+
+  private void handleResponse(String operation, ZkNodeProps m,
+                              SolrQueryResponse rsp) throws KeeperException, InterruptedException {
+    handleResponse(operation, m, rsp, DEFAULT_ZK_TIMEOUT);
+  }
   
   private void handleResponse(String operation, ZkNodeProps m,
-      SolrQueryResponse rsp) throws KeeperException, InterruptedException {
+      SolrQueryResponse rsp, long timeout) throws KeeperException, InterruptedException {
     long time = System.currentTimeMillis();
     QueueEvent event = coreContainer.getZkController()
         .getOverseerCollectionQueue()
-        .offer(ZkStateReader.toJSON(m), DEFAULT_ZK_TIMEOUT);
+        .offer(ZkStateReader.toJSON(m), timeout);
     if (event.getBytes() != null) {
       SolrResponse response = SolrResponse.deserialize(event.getBytes());
       rsp.getValues().addAll(response.getResponse());
@@ -162,9 +171,9 @@ public class CollectionsHandler extends RequestHandlerBase {
         rsp.setException(new SolrException(code != null && code != -1 ? ErrorCode.getErrorCode(code) : ErrorCode.SERVER_ERROR, (String)exp.get("msg")));
       }
     } else {
-      if (System.currentTimeMillis() - time >= DEFAULT_ZK_TIMEOUT) {
+      if (System.currentTimeMillis() - time >= timeout) {
         throw new SolrException(ErrorCode.SERVER_ERROR, operation
-            + " the collection time out:" + DEFAULT_ZK_TIMEOUT / 1000 + "s");
+            + " the collection time out:" + timeout / 1000 + "s");
       } else if (event.getWatchedEvent() != null) {
         throw new SolrException(ErrorCode.SERVER_ERROR, operation
             + " the collection error [Watcher fired on path: "
@@ -280,6 +289,21 @@ public class CollectionsHandler extends RequestHandlerBase {
 
     handleResponse(OverseerCollectionProcessor.CREATECOLLECTION, m, rsp);
   }
+  
+  private void handleDeleteShardAction(SolrQueryRequest req,
+      SolrQueryResponse rsp) throws InterruptedException, KeeperException {
+    log.info("Deleting Shard : " + req.getParamString());
+    String name = req.getParams().required().get("collection");
+    String shard = req.getParams().required().get("shard");
+    
+    Map<String,Object> props = new HashMap<String,Object>();
+    props.put("collection", name);
+    props.put(Overseer.QUEUE_OPERATION, OverseerCollectionProcessor.DELETESHARD);
+    props.put(ZkStateReader.SHARD_ID_PROP, shard);
+
+    ZkNodeProps m = new ZkNodeProps(props);
+    handleResponse(OverseerCollectionProcessor.DELETESHARD, m, rsp);
+  }
 
   private void handleSplitShardAction(SolrQueryRequest req, SolrQueryResponse rsp) throws KeeperException, InterruptedException {
     log.info("Splitting shard : " + req.getParamString());
@@ -295,10 +319,7 @@ public class CollectionsHandler extends RequestHandlerBase {
 
     ZkNodeProps m = new ZkNodeProps(props);
 
-    // todo remove this hack
-    DEFAULT_ZK_TIMEOUT *= 5;
-    handleResponse(OverseerCollectionProcessor.SPLITSHARD, m, rsp);
-    DEFAULT_ZK_TIMEOUT /= 5;
+    handleResponse(OverseerCollectionProcessor.SPLITSHARD, m, rsp, DEFAULT_ZK_TIMEOUT * 5);
   }
 
   public static ModifiableSolrParams params(String... params) {

@@ -151,6 +151,11 @@ New Features
 * SOLR-4977: Add option to send IndexWriter's infostream to the logging system.
   (Ryan Ernst via Robert Muir)
 
+* SOLR-4693: A "deleteshard" collections API that unloads all replicas of a given
+  shard and then removes it from the cluster state. It will remove only those shards
+  which are INACTIVE or have no range (created for custom sharding).
+  (Anshum Gupta, shalin)
+
 Bug Fixes
 ----------------------
 
