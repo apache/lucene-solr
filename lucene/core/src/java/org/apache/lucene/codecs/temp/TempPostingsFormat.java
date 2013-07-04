@@ -384,7 +384,10 @@ public final class TempPostingsFormat extends PostingsFormat {
   /** Creates {@code TempPostingsFormat} with default
    *  settings. */
   public TempPostingsFormat() {
-    this(TempBlockTermsWriter.DEFAULT_MIN_BLOCK_SIZE, TempBlockTermsWriter.DEFAULT_MAX_BLOCK_SIZE);
+    super("TempFST");
+    minTermBlockSize = 0;
+    maxTermBlockSize = 0;
+    //this(TempBlockTermsWriter.DEFAULT_MIN_BLOCK_SIZE, TempBlockTermsWriter.DEFAULT_MAX_BLOCK_SIZE);
   }
 
   /** Creates {@code TempPostingsFormat} with custom
@@ -410,10 +413,11 @@ public final class TempPostingsFormat extends PostingsFormat {
 
     boolean success = false;
     try {
-      FieldsConsumer ret = new TempBlockTermsWriter(state, 
-                                                    postingsWriter,
-                                                    minTermBlockSize, 
-                                                    maxTermBlockSize);
+      //FieldsConsumer ret = new TempBlockTermsWriter(state, 
+      //                                              postingsWriter,
+      //                                              minTermBlockSize, 
+      //                                              maxTermBlockSize);
+      FieldsConsumer ret = new TempFSTTermsWriter(state, postingsWriter);
       success = true;
       return ret;
     } finally {
@@ -432,13 +436,14 @@ public final class TempPostingsFormat extends PostingsFormat {
                                                                 state.segmentSuffix);
     boolean success = false;
     try {
-      FieldsProducer ret = new TempBlockTermsReader(state.directory,
-                                                    state.fieldInfos,
-                                                    state.segmentInfo,
-                                                    postingsReader,
-                                                    state.context,
-                                                    state.segmentSuffix,
-                                                    state.termsIndexDivisor);
+      //FieldsProducer ret = new TempBlockTermsReader(state.directory,
+      //                                              state.fieldInfos,
+      //                                              state.segmentInfo,
+      //                                              postingsReader,
+      //                                              state.context,
+      //                                              state.segmentSuffix,
+      //                                              state.termsIndexDivisor);
+      FieldsProducer ret = new TempFSTTermsReader(state, postingsReader);
       success = true;
       return ret;
     } finally {
