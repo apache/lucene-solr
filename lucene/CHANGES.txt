@@ -226,6 +226,10 @@ Optimizations
 * LUCENE-5050: Close the stored fields and term vectors index files as soon as
   the index has been loaded into memory to save file descriptors. (Adrien Grand)
 
+* LUCENE-5086: RamUsageEstimator now uses official Java 7 API or a proprietary
+  Oracle Java 6 API to get Hotspot MX bean, preventing AWT classes to be
+  loaded on MacOSX.  (Shay Banon, Dawid Weiss, Uwe Schindler)
+
 New Features
 
 * LUCENE-5085: MorfologikFilter will no longer stem words marked as keywords
