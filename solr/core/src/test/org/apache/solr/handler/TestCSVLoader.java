@@ -116,6 +116,14 @@ public class TestCSVLoader extends SolrTestCaseJ4 {
     assertQ(req("rowid_i:1"),"//*[@numFound='1']");
     assertQ(req("rowid_i:2"),"//*[@numFound='1']");
     assertQ(req("rowid_i:100"),"//*[@numFound='0']");
+
+    makeFile("id\n200\n201\n202");
+    loadLocal("rowid", "rowid_i", "rowidOffset", "100");//add a special field
+    // check default commit of false
+    assertU(commit());
+    assertQ(req("rowid_i:101"),"//*[@numFound='1']");
+    assertQ(req("rowid_i:102"),"//*[@numFound='1']");
+    assertQ(req("rowid_i:10000"),"//*[@numFound='0']");
   }
 
   @Test
