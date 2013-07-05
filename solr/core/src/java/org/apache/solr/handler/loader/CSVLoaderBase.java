@@ -55,6 +55,7 @@ abstract class CSVLoaderBase extends ContentStreamLoader {
   public static final String ESCAPE="escape";
   public static final String OVERWRITE="overwrite";
   public static final String LITERALS_PREFIX = "literal.";
+  public static final String ROW_ID = "rowid";
 
   private static Pattern colonSplit = Pattern.compile(":");
   private static Pattern commaSplit = Pattern.compile(",");
@@ -65,12 +66,14 @@ abstract class CSVLoaderBase extends ContentStreamLoader {
   final SolrParams params;
   final CSVStrategy strategy;
   final UpdateRequestProcessor processor;
-
   // hashmap to save any literal fields and their values
   HashMap <SchemaField, String> literals;
+
   String[] fieldnames;
   SchemaField[] fields;
   CSVLoaderBase.FieldAdder[] adders;
+
+  String rowId = null;// if not null, add a special field by the name given with the line number/row id as the value
 
   int skipLines;    // number of lines to skip at start of file
 
@@ -186,6 +189,7 @@ abstract class CSVLoaderBase extends ContentStreamLoader {
     if (escape!=null) {
       if (escape.length()!=1) throw new SolrException( SolrException.ErrorCode.BAD_REQUEST,"Invalid escape:'"+escape+"'");
     }
+    rowId = params.get(ROW_ID);
 
     // if only encapsulator or escape is set, disable the other escaping mechanism
     if (encapsulator == null && escape != null) {
@@ -290,6 +294,7 @@ abstract class CSVLoaderBase extends ContentStreamLoader {
       if (!pname.startsWith(LITERALS_PREFIX)) continue;
 
       String name = pname.substring(LITERALS_PREFIX.length());
+      //TODO: need to look at this in light of schemaless
       SchemaField sf = schema.getFieldOrNull(name);
       if(sf == null)
         throw new SolrException( SolrException.ErrorCode.BAD_REQUEST,"Invalid field name for literal:'"+ name +"'");
@@ -378,7 +383,7 @@ abstract class CSVLoaderBase extends ContentStreamLoader {
 
   /** this must be MT safe... may be called concurrently from multiple threads. */
   void doAdd(int line, String[] vals, SolrInputDocument doc, AddUpdateCommand template) throws IOException {
-    // the line number is passed simply for error reporting in MT mode.
+    // the line number is passed for error reporting in MT mode as well as for optional rowId.
     // first, create the lucene document
     for (int i=0; i<vals.length; i++) {
       if (fields[i]==null) continue;  // ignore this field
@@ -392,7 +397,9 @@ abstract class CSVLoaderBase extends ContentStreamLoader {
       String val = literals.get(sf);
       doc.addField(fn, val);
     }
-   
+    if (rowId != null){
+      doc.addField(rowId, line);
+    }
     template.solrDoc = doc;
     processor.processAdd(template);
   }

@@ -156,6 +156,9 @@ New Features
   which are INACTIVE or have no range (created for custom sharding).
   (Anshum Gupta, shalin)
 
+* SOLR-5003: CSV Update Handler supports optionally adding the line number/row id to 
+  a document (gsingers)
+
 Bug Fixes
 ----------------------
 
