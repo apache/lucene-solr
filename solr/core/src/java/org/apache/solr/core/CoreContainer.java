@@ -129,7 +129,7 @@ public class CoreContainer
    * @see #load()
    */
   public CoreContainer() {
-    this(SolrResourceLoader.locateSolrHome());
+    this(new SolrResourceLoader(SolrResourceLoader.locateSolrHome()));
   }
 
   /**
@@ -139,7 +139,7 @@ public class CoreContainer
    * @see #load()
    */
   public CoreContainer(SolrResourceLoader loader) {
-    this(loader, ConfigSolr.fromSolrHome(loader.getInstanceDir()));
+    this(loader, ConfigSolr.fromSolrHome(loader, loader.getInstanceDir()));
   }
 
   /**
@@ -149,7 +149,7 @@ public class CoreContainer
    * @see #load()
    */
   public CoreContainer(String solrHome) {
-    this(new SolrResourceLoader(solrHome), ConfigSolr.fromSolrHome(solrHome));
+    this(new SolrResourceLoader(solrHome));
   }
 
   /**
@@ -172,7 +172,8 @@ public class CoreContainer
    * @return a loaded CoreContainer
    */
   public static CoreContainer createAndLoad(String solrHome, File configFile) {
-    CoreContainer cc = new CoreContainer(new SolrResourceLoader(solrHome), ConfigSolr.fromFile(configFile));
+    SolrResourceLoader loader = new SolrResourceLoader(solrHome);
+    CoreContainer cc = new CoreContainer(loader, ConfigSolr.fromFile(loader, configFile));
     cc.load();
     return cc;
   }

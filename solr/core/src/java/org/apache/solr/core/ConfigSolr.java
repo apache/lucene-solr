@@ -46,11 +46,9 @@ public abstract class ConfigSolr {
   
   public final static String SOLR_XML_FILE = "solr.xml";
 
-  public static ConfigSolr fromFile(File configFile) {
+  public static ConfigSolr fromFile(SolrResourceLoader loader, File configFile) {
     log.info("Loading container configuration from {}", configFile.getAbsolutePath());
 
-    String solrHome = configFile.getParent();
-    SolrResourceLoader loader = new SolrResourceLoader(solrHome);
     InputStream inputStream = null;
 
     try {
@@ -87,8 +85,8 @@ public abstract class ConfigSolr {
     }
   }
 
-  public static ConfigSolr fromSolrHome(String solrHome) {
-    return fromFile(new File(solrHome, SOLR_XML_FILE));
+  public static ConfigSolr fromSolrHome(SolrResourceLoader loader, String solrHome) {
+    return fromFile(loader, new File(solrHome, SOLR_XML_FILE));
   }
 
   public static ConfigSolr fromConfig(Config config) {

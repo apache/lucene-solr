@@ -176,7 +176,7 @@ public class ZkCLI {
           SolrResourceLoader loader = new SolrResourceLoader(solrHome);
           solrHome = loader.getInstanceDir();
 
-          ConfigSolr cfg = ConfigSolr.fromSolrHome(solrHome);
+          ConfigSolr cfg = ConfigSolr.fromSolrHome(loader, solrHome);
 
           if(!ZkController.checkChrootPath(zkServerAddress, true)) {
             System.out.println("A chroot was specified in zkHost but the znode doesn't exist. ");
