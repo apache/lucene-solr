@@ -213,17 +213,34 @@ public final class RamUsageEstimator {
     int objectAlignment = 8;
     try {
       final Class<?> beanClazz = Class.forName("com.sun.management.HotSpotDiagnosticMXBean");
-      final Object hotSpotBean = ManagementFactory.newPlatformMXBeanProxy(
-        ManagementFactory.getPlatformMBeanServer(),
-        "com.sun.management:type=HotSpotDiagnostic",
-        beanClazz
-      );
-      final Method getVMOptionMethod = beanClazz.getMethod("getVMOption", String.class);
-      final Object vmOption = getVMOptionMethod.invoke(hotSpotBean, "ObjectAlignmentInBytes");
-      objectAlignment = Integer.parseInt(
-          vmOption.getClass().getMethod("getValue").invoke(vmOption).toString()
-      );
-      supportedFeatures.add(JvmFeature.OBJECT_ALIGNMENT);
+      // Try to get the diagnostic mxbean without calling {@link ManagementFactory#getPlatformMBeanServer()}
+      // which starts AWT thread (and shows junk in the dock) on a Mac:
+      Object hotSpotBean;
+      // Java 7+, HotSpot
+      try {
+        hotSpotBean = ManagementFactory.class
+          .getMethod("getPlatformMXBean", Class.class)
+          .invoke(null, beanClazz);
+      } catch (Exception e1) {
+        // Java 6, HotSpot
+        try {
+          Class<?> sunMF = Class.forName("sun.management.ManagementFactory");
+          hotSpotBean = sunMF.getMethod("getDiagnosticMXBean").invoke(null);
+        } catch (Exception e2) {
+          // Last resort option is an attempt to get it from ManagementFactory's server anyway (may start AWT).
+          hotSpotBean = ManagementFactory.newPlatformMXBeanProxy(
+              ManagementFactory.getPlatformMBeanServer(), 
+              "com.sun.management:type=HotSpotDiagnostic", beanClazz);
+        }
+      }
+      if (hotSpotBean != null) {
+        final Method getVMOptionMethod = beanClazz.getMethod("getVMOption", String.class);
+        final Object vmOption = getVMOptionMethod.invoke(hotSpotBean, "ObjectAlignmentInBytes");
+        objectAlignment = Integer.parseInt(
+            vmOption.getClass().getMethod("getValue").invoke(vmOption).toString()
+        );
+        supportedFeatures.add(JvmFeature.OBJECT_ALIGNMENT);
+      }
     } catch (Exception e) {
       // Ignore.
     }
