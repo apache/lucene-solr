@@ -273,6 +273,8 @@ Optimizations
 
 * SOLR-4815: Admin-UI - DIH: Let "commit" be checked by default (steffkes)
 
+* SOLR-5002: optimize numDocs(Query,DocSet) when filterCache is null (Robert Muir)
+
 Other Changes
 ----------------------
 
