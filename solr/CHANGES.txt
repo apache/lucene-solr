@@ -253,7 +253,7 @@ Bug Fixes
 * SOLR-5000: ManagedIndexSchema doesn't persist uniqueKey tag after calling addFields
   method. (Jun Ohtani, Steve Rowe)
 
-* SOLR-5002: Don't create multiple SolrResourceLoaders for same Solr home, wasting 
+* SOLR-5009: Don't create multiple SolrResourceLoaders for same Solr home, wasting 
   resources and slowing down startup. This fixes the problem where the loader was
   not correctly closed, making tests fail on Windows.  (Steve Rowe, Uwe Schindler)
 
