@@ -49,19 +49,18 @@ import org.apache.solr.update.HdfsUpdateLog;
 import org.apache.solr.update.UpdateHandler;
 import org.apache.solr.update.UpdateLog;
 import org.apache.solr.update.processor.DistributedUpdateProcessor.DistribPhase;
+import org.apache.solr.util.IOUtils;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.junit.Ignore;
 import org.junit.Test;
 import org.noggit.ObjectBuilder;
 
-import com.carrotsearch.randomizedtesting.annotations.ThreadLeakLingering;
 import com.carrotsearch.randomizedtesting.annotations.ThreadLeakScope;
 import com.carrotsearch.randomizedtesting.annotations.ThreadLeakScope.Scope;
 
 @ThreadLeakScope(Scope.NONE) // hdfs mini cluster currently leaks threads
-@ThreadLeakLingering(linger = 0)
-// TODO: longer term this should be combined with TestRecovery somehow
+// TODO: longer term this should be combined with TestRecovery somehow ??
 public class TestRecoveryHdfs extends SolrTestCaseJ4 {
 
   // means that we've seen the leader and have version info (i.e. we are a non-leader replica)
@@ -73,12 +72,23 @@ public class TestRecoveryHdfs extends SolrTestCaseJ4 {
 
   private static String hdfsUri;
   
+  private static FileSystem fs;
+  
   @BeforeClass
   public static void beforeClass() throws Exception {
     dfsCluster = HdfsTestUtil.setupClass(new File(TEMP_DIR,
         HdfsBasicDistributedZk2Test.class.getName() + "_"
             + System.currentTimeMillis()).getAbsolutePath());
     hdfsUri = dfsCluster.getFileSystem().getUri().toString();
+    
+    try {
+      URI uri = new URI(hdfsUri);
+      fs = FileSystem.newInstance(uri, new Configuration());
+    } catch (IOException e) {
+      throw new RuntimeException(e);
+    } catch (URISyntaxException e) {
+      throw new RuntimeException(e);
+    }
     
     hdfsDataDir = hdfsUri + "/solr/shard1";
     System.setProperty("solr.data.dir", hdfsUri + "/solr/shard1");
@@ -93,10 +103,13 @@ public class TestRecoveryHdfs extends SolrTestCaseJ4 {
     System.clearProperty("solr.data.dir");
     System.clearProperty("test.build.data");
     System.clearProperty("test.cache.data");
+    deleteCore();
+    IOUtils.closeQuietly(fs);
+    fs = null;
+    HdfsTestUtil.teardownClass(dfsCluster);
+    
     hdfsDataDir = null;
     dfsCluster = null;
-    HdfsTestUtil.teardownClass(dfsCluster);
-    FileSystem.closeAll();
   }
 
   // since we make up fake versions in these tests, we can get messed up by a DBQ with a real version
@@ -740,19 +753,6 @@ public class TestRecoveryHdfs extends SolrTestCaseJ4 {
       assertU(commit());
 
       String logDir = h.getCore().getUpdateHandler().getUpdateLog().getLogDir();
- 
-      
-      Configuration conf = new Configuration();
-      conf.setBoolean("fs.hdfs.impl.disable.cache", true);
-      FileSystem fs;
-      try {
-        URI uri = new URI(hdfsUri);
-        fs = FileSystem.newInstance(uri, conf);
-      } catch (IOException e) {
-        throw new RuntimeException(e);
-      } catch (URISyntaxException e) {
-        throw new RuntimeException(e);
-      }
       
       h.close();
 
@@ -872,18 +872,6 @@ public class TestRecoveryHdfs extends SolrTestCaseJ4 {
       assertU(adoc("id","F1"));
       assertU(adoc("id","F2"));
       assertU(adoc("id","F3"));
-
-      Configuration conf = new Configuration();
-      conf.setBoolean("fs.hdfs.impl.disable.cache", true);
-      FileSystem fs;
-      try {
-        URI uri = new URI(hdfsUri);
-        fs = FileSystem.newInstance(uri, conf);
-      } catch (IOException e) {
-        throw new RuntimeException(e);
-      } catch (URISyntaxException e) {
-        throw new RuntimeException(e);
-      }
       
       h.close();
       
@@ -944,17 +932,6 @@ public class TestRecoveryHdfs extends SolrTestCaseJ4 {
       assertU(adoc("id","G3"));
 
       h.close();
-      Configuration conf = new Configuration();
-      conf.setBoolean("fs.hdfs.impl.disable.cache", true);
-      FileSystem fs;
-      try {
-        URI uri = new URI(hdfsUri);
-        fs = FileSystem.newInstance(uri, conf);
-      } catch (IOException e) {
-        throw new RuntimeException(e);
-      } catch (URISyntaxException e) {
-        throw new RuntimeException(e);
-      }
 
       String[] files = HdfsUpdateLog.getLogList(fs, new Path(logDir));
       Arrays.sort(files);
@@ -1027,17 +1004,7 @@ public class TestRecoveryHdfs extends SolrTestCaseJ4 {
       };
 
       String logDir = h.getCore().getUpdateHandler().getUpdateLog().getLogDir();
-      Configuration conf = new Configuration();
-      conf.setBoolean("fs.hdfs.impl.disable.cache", true);
-      FileSystem fs;
-      try {
-        URI uri = new URI(hdfsUri);
-        fs = FileSystem.newInstance(uri, conf);
-      } catch (IOException e) {
-        throw new RuntimeException(e);
-      } catch (URISyntaxException e) {
-        throw new RuntimeException(e);
-      }
+
       clearIndex();
       assertU(commit());
 
@@ -1120,17 +1087,7 @@ public class TestRecoveryHdfs extends SolrTestCaseJ4 {
   // stops the core, removes the transaction logs, restarts the core.
   void deleteLogs() throws Exception {
     String logDir = h.getCore().getUpdateHandler().getUpdateLog().getLogDir();
-    Configuration conf = new Configuration();
-    conf.setBoolean("fs.hdfs.impl.disable.cache", true);
-    FileSystem fs;
-    try {
-      URI uri = new URI(hdfsUri);
-      fs = FileSystem.newInstance(uri, conf);
-    } catch (IOException e) {
-      throw new RuntimeException(e);
-    } catch (URISyntaxException e) {
-      throw new RuntimeException(e);
-    }
+
     h.close();
 
     try {
