@@ -47,7 +47,8 @@ Other Changes
 
 * SOLR-4792: Stop shipping a .war. (Robert Muir)
 
-* SOLR-4948: Tidied up CoreContainer construction logic.  (Alan Woodward)
+* SOLR-4948, SOLR-5009: Tidied up CoreContainer construction logic.
+  (Alan Woodward, Uwe Schindler, Steve Rowe)
 
 ==================  4.4.0 ==================
 
@@ -252,10 +253,6 @@ Bug Fixes
 
 * SOLR-5000: ManagedIndexSchema doesn't persist uniqueKey tag after calling addFields
   method. (Jun Ohtani, Steve Rowe)
-
-* SOLR-5009: Don't create multiple SolrResourceLoaders for same Solr home, wasting 
-  resources and slowing down startup. This fixes the problem where the loader was
-  not correctly closed, making tests fail on Windows.  (Steve Rowe, Uwe Schindler)
 
 Optimizations
 ----------------------
