@@ -56,6 +56,7 @@ abstract class CSVLoaderBase extends ContentStreamLoader {
   public static final String OVERWRITE="overwrite";
   public static final String LITERALS_PREFIX = "literal.";
   public static final String ROW_ID = "rowid";
+  public static final String ROW_ID_OFFSET = "rowidOffset";
 
   private static Pattern colonSplit = Pattern.compile(":");
   private static Pattern commaSplit = Pattern.compile(",");
@@ -74,6 +75,7 @@ abstract class CSVLoaderBase extends ContentStreamLoader {
   CSVLoaderBase.FieldAdder[] adders;
 
   String rowId = null;// if not null, add a special field by the name given with the line number/row id as the value
+  int rowIdOffset = 0; //add to line/rowid before creating the field
 
   int skipLines;    // number of lines to skip at start of file
 
@@ -190,6 +192,7 @@ abstract class CSVLoaderBase extends ContentStreamLoader {
       if (escape.length()!=1) throw new SolrException( SolrException.ErrorCode.BAD_REQUEST,"Invalid escape:'"+escape+"'");
     }
     rowId = params.get(ROW_ID);
+    rowIdOffset = params.getInt(ROW_ID_OFFSET, 0);
 
     // if only encapsulator or escape is set, disable the other escaping mechanism
     if (encapsulator == null && escape != null) {
@@ -398,7 +401,7 @@ abstract class CSVLoaderBase extends ContentStreamLoader {
       doc.addField(fn, val);
     }
     if (rowId != null){
-      doc.addField(rowId, line);
+      doc.addField(rowId, line + rowIdOffset);
     }
     template.solrDoc = doc;
     processor.processAdd(template);
