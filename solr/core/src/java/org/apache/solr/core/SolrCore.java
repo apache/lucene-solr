@@ -26,6 +26,7 @@ import java.io.Writer;
 import java.lang.reflect.Constructor;
 import java.net.URL;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.Date;
@@ -873,6 +874,18 @@ public final class SolrCore implements SolrInfoMBean {
       propFile.getParentFile().mkdirs();
       Properties props = new Properties();
       props.put("name", cd.getName());
+
+      // This must be being created since there's no file here already. So write out all of the params we were
+      // created with. This _may_ overwrite the name above, but that's OK.
+      Collection<String> stds = new HashSet(Arrays.asList(CoreDescriptor.standardPropNames));
+      for (String prop : cd.getCreatedProperties().stringPropertyNames()) {
+        // Only preserve things that are legal, and let's just keep instDir right out of the persisted file even
+        // though it's part of the create properties on the URL.
+        if (! CoreDescriptor.CORE_INSTDIR.equals(prop) && stds.contains(prop)) {
+          props.put(prop, cd.getCreatedProperties().getProperty(prop));
+        }
+      }
+
       if (cc.isZooKeeperAware()) {
         String collection = cd.getCloudDescriptor().getCollectionName();
         if (collection != null) {

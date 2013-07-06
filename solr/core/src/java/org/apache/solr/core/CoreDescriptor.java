@@ -46,7 +46,7 @@ public class CoreDescriptor {
   public static final String CORE_TRANSIENT = "transient";
   public static final String CORE_NODE_NAME = "coreNodeName";
 
-  static final String[] standardPropNames = {
+  public static final String[] standardPropNames = {
       CORE_NAME,
       CORE_CONFIG,
       CORE_INSTDIR,
@@ -65,7 +65,7 @@ public class CoreDescriptor {
   // them individually.
   private Properties coreProperties = new Properties();
 
-  //TODO: 5.0 remove this, this is solely a hack for persistence.
+  //TODO: 5.0 remove this, this is solely a hack for persistence. And perhaps creating cores in discovery mode?
   private Properties createdProperties = new Properties();
 
   private boolean loadedImplicit = false;

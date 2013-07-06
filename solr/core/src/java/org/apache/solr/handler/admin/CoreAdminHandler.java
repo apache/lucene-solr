@@ -57,6 +57,7 @@ import org.apache.solr.update.UpdateLog;
 import org.apache.solr.update.processor.UpdateRequestProcessor;
 import org.apache.solr.update.processor.UpdateRequestProcessorChain;
 import org.apache.solr.util.NumberUtils;
+import org.apache.solr.util.PropertiesUtil;
 import org.apache.solr.util.RefCounted;
 import org.apache.zookeeper.KeeperException;
 import org.slf4j.Logger;
@@ -414,6 +415,7 @@ public class CoreAdminHandler extends RequestHandlerBase {
       throw new SolrException(SolrException.ErrorCode.BAD_REQUEST,
                               "Core name is mandatory to CREATE a SolrCore");
     }
+
     CoreDescriptor dcore = null;
     try {
       
@@ -427,22 +429,30 @@ public class CoreAdminHandler extends RequestHandlerBase {
       if (instanceDir == null) {
         // instanceDir = coreContainer.getSolrHome() + "/" + name;
         instanceDir = name; // bare name is already relative to solr home
+      } else {
+        instanceDir = PropertiesUtil.substituteProperty(instanceDir, null);
       }
 
       dcore = new CoreDescriptor(coreContainer, name, instanceDir);
 
       //  fillup optional parameters
       String opts = params.get(CoreAdminParams.CONFIG);
-      if (opts != null)
+      if (opts != null) {
+        opts = PropertiesUtil.substituteProperty(opts, null);
         dcore.setConfigName(opts);
+      }
 
       opts = params.get(CoreAdminParams.SCHEMA);
-      if (opts != null)
+      if (opts != null) {
+        opts = PropertiesUtil.substituteProperty(opts, null);
         dcore.setSchemaName(opts);
+      }
 
       opts = params.get(CoreAdminParams.DATA_DIR);
-      if (opts != null)
+      if (opts != null) {
+        opts = PropertiesUtil.substituteProperty(opts, null);
         dcore.setDataDir(opts);
+      }
 
       opts = params.get(CoreAdminParams.ULOG_DIR);
       if (opts != null)

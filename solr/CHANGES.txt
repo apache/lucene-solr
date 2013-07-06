@@ -253,6 +253,12 @@ Bug Fixes
 
 * SOLR-5000: ManagedIndexSchema doesn't persist uniqueKey tag after calling addFields
   method. (Jun Ohtani, Steve Rowe)
+  
+* SOLR-4982: Creating a core while referencing system properties looks like it loses files
+  Actually, instanceDir, config, dataDir and schema are not dereferenced properly
+  when creating cores that reference sys vars (e.g. &dataDir=${dir}). In the dataDir
+  case in particular this leads to the index being put in a directory literally named
+  ${dir} but on restart the sysvar will be properly dereferenced.
 
 Optimizations
 ----------------------

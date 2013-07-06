@@ -17,9 +17,9 @@
 
 package org.apache.solr.handler.admin;
 
+import com.carrotsearch.randomizedtesting.rules.SystemPropertiesRestoreRule;
 import org.apache.solr.core.CoreContainer;
 import org.apache.solr.core.SolrCore;
-import org.apache.solr.handler.admin.CoreAdminHandler;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.params.CoreAdminParams;
 import org.apache.solr.common.util.NamedList;
@@ -28,15 +28,14 @@ import org.apache.solr.SolrTestCaseJ4;
 
 import java.util.Map;
 import java.io.File;
-import java.io.IOException;
-
-import javax.xml.xpath.XPathExpressionException;
 
 import org.apache.commons.io.FileUtils;
 
 import org.junit.BeforeClass;
+import org.junit.Rule;
 import org.junit.Test;
-import org.xml.sax.SAXException;
+import org.junit.rules.RuleChain;
+import org.junit.rules.TestRule;
 
 public class CoreAdminHandlerTest extends SolrTestCaseJ4 {
   
@@ -44,7 +43,93 @@ public class CoreAdminHandlerTest extends SolrTestCaseJ4 {
   public static void beforeClass() throws Exception {
     initCore("solrconfig.xml", "schema.xml");
   }
-  
+
+  @Rule
+  public TestRule solrTestRules = RuleChain.outerRule(new SystemPropertiesRestoreRule());
+
+  public String getCoreName() { return this.getClass().getName() + "_sys_vars"; }
+
+  @Test
+  public void testCreateWithSysVars() throws Exception {
+    useFactory(null); // I require FS-based indexes for this test.
+
+    final File workDir = new File(TEMP_DIR, getCoreName());
+
+    if (workDir.exists()) {
+      FileUtils.deleteDirectory(workDir);
+    }
+    assertTrue("Failed to mkdirs workDir", workDir.mkdirs());
+    String coreName = "with_sys_vars";
+    File instDir = new File(workDir, coreName);
+    File subHome = new File(instDir, "conf");
+    assertTrue("Failed to make subdirectory ", subHome.mkdirs());
+
+    // Be sure we pick up sysvars when we create this
+    String srcDir = SolrTestCaseJ4.TEST_HOME() + "/collection1/conf";
+    FileUtils.copyFile(new File(srcDir, "schema-tiny.xml"), new File(subHome, "schema_ren.xml"));
+    FileUtils.copyFile(new File(srcDir, "solrconfig-minimal.xml"), new File(subHome, "solrconfig_ren.xml"));
+    FileUtils.copyFile(new File(srcDir, "solrconfig.snippet.randomindexconfig.xml"),
+        new File(subHome, "solrconfig.snippet.randomindexconfig.xml"));
+
+    final CoreContainer cores = h.getCoreContainer();
+    cores.setPersistent(false); // we'll do this explicitly as needed
+
+    final CoreAdminHandler admin = new CoreAdminHandler(cores);
+
+    // create a new core (using CoreAdminHandler) w/ properties
+    System.setProperty("INSTDIR_TEST", instDir.getAbsolutePath());
+    System.setProperty("CONFIG_TEST", "solrconfig_ren.xml");
+    System.setProperty("SCHEMA_TEST", "schema_ren.xml");
+
+    File dataDir = new File(workDir.getAbsolutePath(), "data_diff");
+    System.setProperty("DATA_TEST", dataDir.getAbsolutePath());
+
+    SolrQueryResponse resp = new SolrQueryResponse();
+    admin.handleRequestBody
+        (req(CoreAdminParams.ACTION,
+            CoreAdminParams.CoreAdminAction.CREATE.toString(),
+            CoreAdminParams.NAME, getCoreName(),
+            CoreAdminParams.INSTANCE_DIR, "${INSTDIR_TEST}",
+            CoreAdminParams.CONFIG, "${CONFIG_TEST}",
+            CoreAdminParams.SCHEMA, "${SCHEMA_TEST}",
+            CoreAdminParams.DATA_DIR, "${DATA_TEST}"),
+            resp);
+    assertNull("Exception on create", resp.getException());
+
+    // verify props are in persisted file
+
+    final File xml = new File(workDir, "persist-solr.xml");
+    cores.persistFile(xml);
+
+    // First assert that these values are persisted.
+    assertXmlFile
+        (xml
+            ,"/solr/cores/core[@name='" + getCoreName() + "' and @instanceDir='${INSTDIR_TEST}']"
+            ,"/solr/cores/core[@name='" + getCoreName() + "' and @dataDir='${DATA_TEST}']"
+            ,"/solr/cores/core[@name='" + getCoreName() + "' and @schema='${SCHEMA_TEST}']"
+            ,"/solr/cores/core[@name='" + getCoreName() + "' and @config='${CONFIG_TEST}']"
+        );
+
+    // Now assert that certain values are properly dereferenced in the process of creating the core, see
+    // SOLR-4982.
+
+    // Should NOT be a datadir named ${DATA_TEST} (literal). This is the bug after all
+    File badDir = new File(instDir, "${DATA_TEST}");
+    assertFalse("Should have substituted the sys var, found file " + badDir.getAbsolutePath(), badDir.exists());
+
+    // For the other 3 vars, we couldn't get past creating the core fi dereferencing didn't work correctly.
+
+    // Should have segments in the directory pointed to by the ${DATA_TEST}.
+    File test = new File(dataDir, "index");
+    assertTrue("Should have found index dir at " + test.getAbsolutePath(), test.exists());
+    test = new File(test,"segments.gen");
+    assertTrue("Should have found segments.gen at " + test.getAbsolutePath(), test.exists());
+
+    // Cleanup
+    FileUtils.deleteDirectory(workDir);
+
+  }
+
   @Test
   public void testCoreAdminHandler() throws Exception {
     final File workDir = new File(TEMP_DIR, this.getClass().getName());
@@ -141,6 +226,8 @@ public class CoreAdminHandlerTest extends SolrTestCaseJ4 {
                
     // :TODO: because of SOLR-3665 we can't ask for status from all cores
 
-  }
+    // cleanup
+    FileUtils.deleteDirectory(workDir);
 
+  }
 }
