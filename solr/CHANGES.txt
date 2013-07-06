@@ -47,9 +47,6 @@ Other Changes
 
 * SOLR-4792: Stop shipping a .war. (Robert Muir)
 
-* SOLR-4948, SOLR-5009: Tidied up CoreContainer construction logic.
-  (Alan Woodward, Uwe Schindler, Steve Rowe)
-
 ==================  4.4.0 ==================
 
 Versions of Major Components
@@ -323,6 +320,9 @@ Other Changes
   steffkes)
 
 * SOLR-4986: Upgrade to Tika 1.4 (Markus Jelsma via janhoy)
+
+* SOLR-4948, SOLR-5009: Tidied up CoreContainer construction logic.
+  (Alan Woodward, Uwe Schindler, Steve Rowe)
 
 ==================  4.3.1 ==================
 
