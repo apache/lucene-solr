@@ -79,11 +79,10 @@ public final class RequestHandlers {
   /**
    * @return a Map of all registered handlers of the specified type.
    */
-  public Map<String,SolrRequestHandler> getAll(Class clazz) {
-    Map<String,SolrRequestHandler> result 
-      = new HashMap<String,SolrRequestHandler>(7);
+  public <T extends SolrRequestHandler> Map<String,T> getAll(Class<T> clazz) {
+    Map<String,T> result = new HashMap<String,T>(7);
     for (Map.Entry<String,SolrRequestHandler> e : handlers.entrySet()) {
-      if(clazz.isInstance(e.getValue())) result.put(e.getKey(), e.getValue());
+      if(clazz.isInstance(e.getValue())) result.put(e.getKey(), clazz.cast(e.getValue()));
     }
     return result;
   }

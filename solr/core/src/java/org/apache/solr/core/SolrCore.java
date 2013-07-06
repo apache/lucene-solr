@@ -525,13 +525,13 @@ public final class SolrCore implements SolrInfoMBean {
     if (msg == null) msg = "SolrCore Object";
     try {
         clazz = getResourceLoader().findClass(className, cast);
-      //most of the classes do not have constructors which takes SolrCore argument. It is recommended to obtain SolrCore by implementing SolrCoreAware.
-      // So invariably always it will cause a  NoSuchMethodException. So iterate though the list of available constructors
-        Constructor[] cons =  clazz.getConstructors();
-        for (Constructor con : cons) {
-          Class[] types = con.getParameterTypes();
+        //most of the classes do not have constructors which takes SolrCore argument. It is recommended to obtain SolrCore by implementing SolrCoreAware.
+        // So invariably always it will cause a  NoSuchMethodException. So iterate though the list of available constructors
+        Constructor<?>[] cons =  clazz.getConstructors();
+        for (Constructor<?> con : cons) {
+          Class<?>[] types = con.getParameterTypes();
           if(types.length == 1 && types[0] == SolrCore.class){
-            return (T)con.newInstance(this);
+            return cast.cast(con.newInstance(this));
           }
         }
         return getResourceLoader().newInstance(className, cast);//use the empty constructor
@@ -554,14 +554,13 @@ public final class SolrCore implements SolrInfoMBean {
     if (msg == null) msg = "SolrCore Object";
     try {
         clazz = getResourceLoader().findClass(className, UpdateHandler.class);
-      //most of the classes do not have constructors which takes SolrCore argument. It is recommended to obtain SolrCore by implementing SolrCoreAware.
-      // So invariably always it will cause a  NoSuchMethodException. So iterate though the list of available constructors
-        Constructor justSolrCoreCon = null;
-        Constructor[] cons =  clazz.getConstructors();
-        for (Constructor con : cons) {
-          Class[] types = con.getParameterTypes();
+        //most of the classes do not have constructors which takes SolrCore argument. It is recommended to obtain SolrCore by implementing SolrCoreAware.
+        // So invariably always it will cause a  NoSuchMethodException. So iterate though the list of available constructors
+        Constructor<?>[] cons =  clazz.getConstructors();
+        for (Constructor<?> con : cons) {
+          Class<?>[] types = con.getParameterTypes();
           if(types.length == 2 && types[0] == SolrCore.class && types[1] == UpdateHandler.class){
-            return (UpdateHandler) con.newInstance(this, updateHandler);
+            return UpdateHandler.class.cast(con.newInstance(this, updateHandler));
           } 
         }
         throw new SolrException(SolrException.ErrorCode.SERVER_ERROR,"Error Instantiating "+msg+", "+className+ " could not find proper constructor for " + UpdateHandler.class.getName());
@@ -698,7 +697,7 @@ public final class SolrCore implements SolrInfoMBean {
       // mode as well, and can't assert version field support on init.
 
       try {
-        Object ignored = VersionInfo.getAndCheckVersionField(schema);
+        VersionInfo.getAndCheckVersionField(schema);
       } catch (SolrException e) {
         throw new SolrException(SolrException.ErrorCode.SERVER_ERROR,
                                 "Schema will not work with SolrCloud mode: " +
@@ -775,9 +774,9 @@ public final class SolrCore implements SolrInfoMBean {
       // cause the executor to stall so firstSearcher events won't fire
       // until after inform() has been called for all components.
       // searchExecutor must be single-threaded for this to work
-      searcherExecutor.submit(new Callable() {
+      searcherExecutor.submit(new Callable<Void>() {
         @Override
-        public Object call() throws Exception {
+        public Void call() throws Exception {
           latch.await();
           return null;
         }
@@ -1176,7 +1175,7 @@ public final class SolrCore implements SolrInfoMBean {
   /**
    * Returns an unmodifiable Map containing the registered handlers of the specified type.
    */
-  public Map<String,SolrRequestHandler> getRequestHandlers(Class clazz) {
+  public <T extends SolrRequestHandler> Map<String,T> getRequestHandlers(Class<T> clazz) {
     return reqHandlers.getAll(clazz);
   }
   
