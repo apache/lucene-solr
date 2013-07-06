@@ -17,6 +17,11 @@ package org.apache.solr.core;
  * limitations under the License.
  */
 
+import org.apache.solr.common.SolrException;
+import org.apache.solr.common.util.XML;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 import java.io.BufferedWriter;
 import java.io.File;
 import java.io.FileInputStream;
@@ -29,11 +34,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.Properties;
 import java.util.Set;
-
-import org.apache.solr.common.SolrException;
-import org.apache.solr.common.util.XML;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 public class SolrXMLSerializer {
   protected static Logger log = LoggerFactory
@@ -151,7 +151,7 @@ public class SolrXMLSerializer {
   }
   
   void persistFile(File file, SolrXMLDef solrXMLDef) {
-    log.info("Persisting cores config to " + file);
+    log.info("Persisting cores config to " + file.getAbsolutePath());
     
     File tmpFile = null;
     try {

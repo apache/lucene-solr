@@ -137,7 +137,7 @@ public abstract class LogWatcher<E> {
       v.size = config.getInt(ConfigSolr.CfgProp.SOLR_LOGGING_WATCHER_SIZE, 50);
       v.threshold = config.get(ConfigSolr.CfgProp.SOLR_LOGGING_WATCHER_THRESHOLD, null);
       if (v.size > 0) {
-        log.info("Registering Log Listener");
+        log.info("Registering Log Listener [{}]", logWatcher.getName());
         logWatcher.registerListener(v);
       }
     }

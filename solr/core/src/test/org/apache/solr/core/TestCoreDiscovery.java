@@ -17,10 +17,6 @@ package org.apache.solr.core;
  * limitations under the License.
  */
 
-import java.io.File;
-import java.io.FileOutputStream;
-import java.util.Properties;
-
 import org.apache.commons.io.FileUtils;
 import org.apache.lucene.util.IOUtils;
 import org.apache.solr.SolrTestCaseJ4;
@@ -28,6 +24,10 @@ import org.apache.solr.common.SolrException;
 import org.junit.After;
 import org.junit.BeforeClass;
 import org.junit.Test;
+
+import java.io.File;
+import java.io.FileOutputStream;
+import java.util.Properties;
 
 public class TestCoreDiscovery extends SolrTestCaseJ4 {
 
@@ -106,11 +106,8 @@ public class TestCoreDiscovery extends SolrTestCaseJ4 {
   }
 
   private CoreContainer init() throws Exception {
-
-    CoreContainer.Initializer init = new CoreContainer.Initializer();
-
-    final CoreContainer cores = init.initialize();
-    cores.setPersistent(false);
+    final CoreContainer cores = new CoreContainer();
+    cores.load();
     return cores;
   }
 

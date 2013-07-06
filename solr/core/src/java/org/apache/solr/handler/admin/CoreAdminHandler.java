@@ -17,19 +17,6 @@
 
 package org.apache.solr.handler.admin;
 
-import java.io.File;
-import java.io.IOException;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Collections;
-import java.util.Date;
-import java.util.HashMap;
-import java.util.Iterator;
-import java.util.List;
-import java.util.Map;
-import java.util.Properties;
-import java.util.concurrent.Future;
-
 import org.apache.commons.io.FileUtils;
 import org.apache.commons.lang.StringUtils;
 import org.apache.lucene.index.DirectoryReader;
@@ -57,8 +44,8 @@ import org.apache.solr.core.CloseHook;
 import org.apache.solr.core.CoreContainer;
 import org.apache.solr.core.CoreDescriptor;
 import org.apache.solr.core.DirectoryFactory;
-import org.apache.solr.core.SolrCore;
 import org.apache.solr.core.DirectoryFactory.DirContext;
+import org.apache.solr.core.SolrCore;
 import org.apache.solr.handler.RequestHandlerBase;
 import org.apache.solr.request.LocalSolrQueryRequest;
 import org.apache.solr.request.SolrQueryRequest;
@@ -74,6 +61,19 @@ import org.apache.solr.util.RefCounted;
 import org.apache.zookeeper.KeeperException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
+import java.io.File;
+import java.io.IOException;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Collections;
+import java.util.Date;
+import java.util.HashMap;
+import java.util.Iterator;
+import java.util.List;
+import java.util.Map;
+import java.util.Properties;
+import java.util.concurrent.Future;
 
 /**
  *
@@ -732,7 +732,9 @@ public class CoreAdminHandler extends RequestHandlerBase {
     boolean doPersist = false;
     String fileName = params.get(CoreAdminParams.FILE);
     if (fileName != null) {
-      File file = new File(coreContainer.getConfigFile().getParentFile(), fileName);
+      File file = new File(fileName);
+      if (!file.isAbsolute())
+        file = new File(coreContainer.getConfigFile().getParentFile(), fileName);
       coreContainer.persistFile(file);
       rsp.add("saved", file.getAbsolutePath());
       doPersist = false;
