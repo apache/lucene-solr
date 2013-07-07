@@ -21,6 +21,7 @@ import com.carrotsearch.randomizedtesting.RandomizedContext;
 import com.carrotsearch.randomizedtesting.annotations.ThreadLeakFilters;
 import com.carrotsearch.randomizedtesting.rules.SystemPropertiesRestoreRule;
 import org.apache.commons.io.FileUtils;
+import org.apache.lucene.util.IOUtils;
 import org.apache.lucene.util.LuceneTestCase;
 import org.apache.lucene.util.QuickPatchThreadsFilter;
 import org.apache.solr.client.solrj.util.ClientUtils;
@@ -32,9 +33,11 @@ import org.apache.solr.common.params.CommonParams;
 import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.common.util.XML;
+import org.apache.solr.core.ConfigSolr;
 import org.apache.solr.core.CoreContainer;
 import org.apache.solr.core.SolrConfig;
 import org.apache.solr.core.SolrCore;
+import org.apache.solr.core.SolrResourceLoader;
 import org.apache.solr.handler.JsonUpdateRequestHandler;
 import org.apache.solr.request.LocalSolrQueryRequest;
 import org.apache.solr.request.SolrQueryRequest;
@@ -155,6 +158,25 @@ public abstract class SolrTestCaseJ4 extends LuceneTestCase {
     }
   }
 
+  /**
+   * Call this from @BeforeClass to set up the test harness and update handler with no cores.
+   *
+   * @param solrHome The solr home directory.
+   * @param xmlStr - the text of an XML file to use. If null, use the what's the absolute minimal file.
+   * @throws Exception Lost of file-type things can go wrong.
+   */
+  public static void setupNoCoreTest(File solrHome, String xmlStr) throws Exception {
+
+    File tmpFile = new File(solrHome, ConfigSolr.SOLR_XML_FILE);
+    if (xmlStr == null) {
+      xmlStr = "<solr></solr>";
+    }
+    FileUtils.write(tmpFile, xmlStr, IOUtils.CHARSET_UTF_8.toString());
+
+    SolrResourceLoader loader = new SolrResourceLoader(solrHome.getAbsolutePath());
+    h = new TestHarness(loader, ConfigSolr.fromFile(loader, new File(solrHome, "solr.xml")));
+    lrf = h.getRequestFactory("standard", 0, 20, CommonParams.VERSION, "2.2");
+  }
 
   @Override
   public void setUp() throws Exception {
