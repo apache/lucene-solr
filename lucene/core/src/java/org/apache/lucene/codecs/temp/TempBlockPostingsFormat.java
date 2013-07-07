@@ -56,7 +56,7 @@ import org.apache.lucene.util.packed.PackedInts;
  *
  *   <li> 
  *   <b>Block structure</b>: 
- *   <p>When the postings are long enough, TempPostingsFormat will try to encode most integer data 
+ *   <p>When the postings are long enough, TempBlockPostingsFormat will try to encode most integer data 
  *      as a packed block.</p> 
  *   <p>Take a term with 259 documents as an example, the first 256 document ids are encoded as two packed 
  *      blocks, while the remaining 3 are encoded as one VInt block. </p>
@@ -159,7 +159,7 @@ import org.apache.lucene.util.packed.PackedInts;
  *    <li>SkipFPDelta determines the position of this term's SkipData within the .doc
  *        file. In particular, it is the length of the TermFreq data.
  *        SkipDelta is only stored if DocFreq is not smaller than SkipMinimum
- *        (i.e. 8 in TempPostingsFormat).</li>
+ *        (i.e. 8 in TempBlockPostingsFormat).</li>
  *    <li>SingletonDocID is an optimization when a term only appears in one document. In this case, instead
  *        of writing a file pointer to the .doc file (DocFPDelta), and then a VIntBlock at that location, the 
  *        single document ID is written to the term dictionary.</li>
@@ -239,7 +239,7 @@ import org.apache.lucene.util.packed.PackedInts;
  *       We use this trick since the definition of skip entry is a little different from base interface.
  *       In {@link MultiLevelSkipListWriter}, skip data is assumed to be saved for
  *       skipInterval<sup>th</sup>, 2*skipInterval<sup>th</sup> ... posting in the list. However, 
- *       in TempPostingsFormat, the skip data is saved for skipInterval+1<sup>th</sup>, 
+ *       in TempBlockPostingsFormat, the skip data is saved for skipInterval+1<sup>th</sup>, 
  *       2*skipInterval+1<sup>th</sup> ... posting (skipInterval==PackedBlockSize in this case). 
  *       When DocFreq is multiple of PackedBlockSize, MultiLevelSkipListWriter will expect one 
  *       more skip data than TempSkipWriter. </li>
@@ -352,7 +352,7 @@ import org.apache.lucene.util.packed.PackedInts;
  * @lucene.experimental
  */
 
-public final class TempPostingsFormat extends PostingsFormat {
+public final class TempBlockPostingsFormat extends PostingsFormat {
   /**
    * Filename extension for document number, frequencies, and skip data.
    * See chapter: <a href="#Frequencies">Frequencies and Skip Data</a>
@@ -381,20 +381,17 @@ public final class TempPostingsFormat extends PostingsFormat {
   // NOTE: must be multiple of 64 because of PackedInts long-aligned encoding/decoding
   public final static int BLOCK_SIZE = 128;
 
-  /** Creates {@code TempPostingsFormat} with default
+  /** Creates {@code TempBlockPostingsFormat} with default
    *  settings. */
-  public TempPostingsFormat() {
-    super("TempFST");
-    minTermBlockSize = 0;
-    maxTermBlockSize = 0;
-    //this(TempBlockTermsWriter.DEFAULT_MIN_BLOCK_SIZE, TempBlockTermsWriter.DEFAULT_MAX_BLOCK_SIZE);
+  public TempBlockPostingsFormat() {
+    this(TempBlockTermsWriter.DEFAULT_MIN_BLOCK_SIZE, TempBlockTermsWriter.DEFAULT_MAX_BLOCK_SIZE);
   }
 
-  /** Creates {@code TempPostingsFormat} with custom
+  /** Creates {@code TempBlockPostingsFormat} with custom
    *  values for {@code minBlockSize} and {@code
    *  maxBlockSize} passed to block terms dictionary.
    *  @see TempBlockTermsWriter#TempBlockTermsWriter(SegmentWriteState,TempPostingsWriterBase,int,int) */
-  public TempPostingsFormat(int minTermBlockSize, int maxTermBlockSize) {
+  public TempBlockPostingsFormat(int minTermBlockSize, int maxTermBlockSize) {
     super("TempBlock");
     this.minTermBlockSize = minTermBlockSize;
     assert minTermBlockSize > 1;
@@ -413,11 +410,10 @@ public final class TempPostingsFormat extends PostingsFormat {
 
     boolean success = false;
     try {
-      //FieldsConsumer ret = new TempBlockTermsWriter(state, 
-      //                                              postingsWriter,
-      //                                              minTermBlockSize, 
-      //                                              maxTermBlockSize);
-      FieldsConsumer ret = new TempFSTTermsWriter(state, postingsWriter);
+      FieldsConsumer ret = new TempBlockTermsWriter(state, 
+                                                    postingsWriter,
+                                                    minTermBlockSize, 
+                                                    maxTermBlockSize);
       success = true;
       return ret;
     } finally {
@@ -436,14 +432,13 @@ public final class TempPostingsFormat extends PostingsFormat {
                                                                 state.segmentSuffix);
     boolean success = false;
     try {
-      //FieldsProducer ret = new TempBlockTermsReader(state.directory,
-      //                                              state.fieldInfos,
-      //                                              state.segmentInfo,
-      //                                              postingsReader,
-      //                                              state.context,
-      //                                              state.segmentSuffix,
-      //                                              state.termsIndexDivisor);
-      FieldsProducer ret = new TempFSTTermsReader(state, postingsReader);
+      FieldsProducer ret = new TempBlockTermsReader(state.directory,
+                                                    state.fieldInfos,
+                                                    state.segmentInfo,
+                                                    postingsReader,
+                                                    state.context,
+                                                    state.segmentSuffix,
+                                                    state.termsIndexDivisor);
       success = true;
       return ret;
     } finally {

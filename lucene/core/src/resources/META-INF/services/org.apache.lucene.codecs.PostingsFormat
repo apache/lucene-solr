@@ -15,4 +15,5 @@
 
 org.apache.lucene.codecs.lucene40.Lucene40PostingsFormat
 org.apache.lucene.codecs.lucene41.Lucene41PostingsFormat
-org.apache.lucene.codecs.temp.TempPostingsFormat
+org.apache.lucene.codecs.temp.TempBlockPostingsFormat
+org.apache.lucene.codecs.temp.TempFSTPostingsFormat

@@ -20,6 +20,8 @@ package org.apache.lucene.codecs.temp;
 import java.io.IOException;
 import java.util.Arrays;
 
+import org.apache.lucene.index.FieldInfo;
+import org.apache.lucene.index.FieldInfo.IndexOptions;
 import org.apache.lucene.store.DataInput;
 import org.apache.lucene.store.DataOutput;
 import org.apache.lucene.util.fst.Outputs;
@@ -31,18 +33,25 @@ import org.apache.lucene.util.LongsRef;
 public class TempTermOutputs extends Outputs<TempTermOutputs.TempMetaData> {
   private final static TempMetaData NO_OUTPUT = new TempMetaData();
   private static boolean DEBUG = false;
+  private FieldInfo fieldInfo;
   private int longsSize;
 
   public static class TempMetaData {
     public long[] longs;
     public byte[] bytes;
+    int docFreq;
+    long totalTermFreq;
     TempMetaData() {
       this.longs = null;
       this.bytes = null;
+      this.docFreq = 0;
+      this.totalTermFreq = -1;
     }
-    TempMetaData(long[] longs, byte[] bytes) {
+    TempMetaData(long[] longs, byte[] bytes, int docFreq, long totalTermFreq) {
       this.longs = longs;
       this.bytes = bytes;
+      this.docFreq = docFreq;
+      this.totalTermFreq = totalTermFreq;
     }
     @Override
     public int hashCode() {
@@ -79,12 +88,14 @@ public class TempTermOutputs extends Outputs<TempTermOutputs.TempMetaData> {
       if (bytes != null) {
         sb.append(" [ ");
         for (int i = 0; i < bytes.length; i++) {
-          sb.append(bytes[i]+" ");
+          sb.append(Integer.toHexString((int)bytes[i] & 0xff)+" ");
         }
         sb.append("]");
       } else {
         sb.append(" null");
       }
+      sb.append(" "+docFreq);
+      sb.append(" "+totalTermFreq);
       return sb.toString();
     }
   }
@@ -92,7 +103,8 @@ public class TempTermOutputs extends Outputs<TempTermOutputs.TempMetaData> {
   private TempTermOutputs() {
   }
 
-  protected TempTermOutputs(int longsSize) {
+  protected TempTermOutputs(FieldInfo fieldInfo, int longsSize) {
+    this.fieldInfo = fieldInfo;
     this.longsSize = longsSize;
   }
 
@@ -102,13 +114,13 @@ public class TempTermOutputs extends Outputs<TempTermOutputs.TempMetaData> {
   // i.e. when every value in long[] fits the same ordering, the smaller one 
   // will be the result.
   //
-  // NOTE: only long[] is 'shared', i.e. after sharing common value,
-  // the output of smaller one will be a all-zero long[] with original byte[] blob.
+  // NOTE: only long[] is 'shared', i.e. if there are two byte[] on the successive
+  // arcs, only the last byte[] is valid. (this somewhat saves nodes, but might affect
+  // compression, since we'll have to load metadata block for other terms as well, currently,
+  // we don't support this)
   //
-  // nocommit: Builder.add() doesn't immediatelly consumes the output data, 
-  // which means, the longs after one add() should all be deeply copied 
-  // instead of being reused? quite hairly to detect it here, so the caller 
-  // must be careful about this.
+  // nocommit: get the byte[] from smaller one as well, so that
+  // byte[] is actually inherited
   //
   public TempMetaData common(TempMetaData t1, TempMetaData t2) {
     if (DEBUG) System.out.print("common("+t1+", "+t2+") = ");
@@ -148,18 +160,18 @@ public class TempTermOutputs extends Outputs<TempTermOutputs.TempMetaData> {
       if (pos < longsSize || accum == 0) {
         ret = NO_OUTPUT;
       } else if (order) {
-        ret = new TempMetaData(longs2, null);
+        ret = new TempMetaData(longs2, null, 0, -1);
       } else {
-        ret = new TempMetaData(longs1, null);
+        ret = new TempMetaData(longs1, null, 0, -1);
       }
     } else {
       // equal
-      if (t1.bytes!= null && Arrays.equals(t1.bytes, t2.bytes)) {  // all fields are equal
+      if (t1.bytes!= null && bytesEqual(t1, t2) && statsEqual(t1, t2)) {  // all fields are equal
         ret = t1;
       } else if (accum == 0) { // all zero case
         ret = NO_OUTPUT;
       } else {
-        ret = new TempMetaData(longs1, null);
+        ret = new TempMetaData(longs1, null, 0, -1);
       }
     }
     if (DEBUG) System.out.println("ret:"+ret);
@@ -189,13 +201,20 @@ public class TempTermOutputs extends Outputs<TempTermOutputs.TempMetaData> {
     }
 
     TempMetaData ret;
-    if (diff == 0 && (t1.bytes == null || t1.bytes.length == 0)) {
+    if (diff == 0 && bytesEqual(t1, t2) && statsEqual(t1, t2)) {
       ret = NO_OUTPUT;
     } else {
-      ret = new TempMetaData(share, t1.bytes);
+      ret = new TempMetaData(share, t1.bytes, t1.docFreq, t1.totalTermFreq);
     }
     if (DEBUG) System.out.println("ret:"+ret);
     return ret;
+  }
+
+  static boolean statsEqual(final TempMetaData t1, final TempMetaData t2) {
+    return t1.docFreq == t2.docFreq && t1.totalTermFreq == t2.totalTermFreq;
+  }
+  static boolean bytesEqual(final TempMetaData t1, final TempMetaData t2) {
+    return Arrays.equals(t1.bytes, t2.bytes);
   }
 
   @Override
@@ -203,7 +222,6 @@ public class TempTermOutputs extends Outputs<TempTermOutputs.TempMetaData> {
   // so we can reuse one long[] 
   public TempMetaData add(TempMetaData t1, TempMetaData t2) {
     if (DEBUG) System.out.print("add("+t1+", "+t2+") = ");
-    // nocommit: necessary?
     if (t1 == NO_OUTPUT) {
       if (DEBUG) System.out.println("ret:"+t2);
       return t2;
@@ -215,17 +233,17 @@ public class TempTermOutputs extends Outputs<TempTermOutputs.TempMetaData> {
     assert t2.longs != null;
 
     int pos = 0;
-    long[] accum = new long[longsSize];  // nocommit: reuse
+    long[] accum = new long[longsSize];  // nocommit: reuse?
     while (pos < longsSize) {
       accum[pos] = t1.longs[pos] + t2.longs[pos];
       assert(accum[pos] >= 0);
       pos++;
     }
     TempMetaData ret;
-    if (t2.bytes != null) {
-      ret = new TempMetaData(accum, t2.bytes);
+    if (t2.bytes != null || t2.docFreq > 0) {
+      ret = new TempMetaData(accum, t2.bytes, t2.docFreq, t2.totalTermFreq);
     } else {
-      ret = new TempMetaData(accum, t1.bytes);
+      ret = new TempMetaData(accum, t1.bytes, t1.docFreq, t1.totalTermFreq);
     }
     if (DEBUG) System.out.println("ret:"+ret);
     return ret;
@@ -236,14 +254,20 @@ public class TempTermOutputs extends Outputs<TempTermOutputs.TempMetaData> {
     for (int pos = 0; pos < longsSize; pos++) {
       out.writeVLong(data.longs[pos]);
     }
+    int code = data.docFreq == 0 ? 0 : 1;
     if (data.bytes != null) {
-      out.writeVInt(data.bytes.length);
+      out.writeVInt((data.bytes.length << 1) | code);
       out.writeBytes(data.bytes, 0, data.bytes.length);
     } else {
-      out.writeVInt(0);
+      out.writeVInt(code);
+    }
+    if (data.docFreq > 0) {
+      out.writeVInt(data.docFreq);
+      if (fieldInfo.getIndexOptions() != IndexOptions.DOCS_ONLY) {
+        out.writeVLong(data.totalTermFreq - data.docFreq);
+      }
     }
   }
-  // nocommit: can this non-null byte case be used in Final Output?
 
   @Override
   public TempMetaData read(DataInput in) throws IOException {
@@ -251,13 +275,22 @@ public class TempTermOutputs extends Outputs<TempTermOutputs.TempMetaData> {
     for (int pos = 0; pos < longsSize; pos++) {
       longs[pos] = in.readVLong();
     }
-    int bytesSize = in.readVInt();
+    int code = in.readVInt();
+    int bytesSize = code >>> 1;
+    int docFreq = 0;
+    long totalTermFreq = -1;
     byte[] bytes = null;
     if (bytesSize > 0) {
       bytes = new byte[bytesSize];
       in.readBytes(bytes, 0, bytes.length);
     }
-    TempMetaData meta = new TempMetaData(longs, bytes);
+    if ((code & 1) == 1) {
+      docFreq = in.readVInt();
+      if (fieldInfo.getIndexOptions() != IndexOptions.DOCS_ONLY) {
+        totalTermFreq = docFreq + in.readVLong();
+      }
+    }
+    TempMetaData meta = new TempMetaData(longs, bytes, docFreq, totalTermFreq);
     return meta;
   }
 

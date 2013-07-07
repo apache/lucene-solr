@@ -46,6 +46,7 @@ import org.apache.lucene.codecs.CodecUtil;
 /** FST based term dict, all the metadata held
  *  as output of FST */
 
+// nocommit: where is 'TermStats' ???
 public class TempFSTTermsWriter extends FieldsConsumer {
   static final String TERMS_EXTENSION = "tmp";
   static final String TERMS_CODEC_NAME = "FST_TERMS_DICT";
@@ -135,7 +136,7 @@ public class TempFSTTermsWriter extends FieldsConsumer {
     }
   }
 
-  class TermsWriter extends TermsConsumer {
+  final class TermsWriter extends TermsConsumer {
     private final Builder<TempTermOutputs.TempMetaData> builder;
     private final TempTermOutputs outputs;
     private final FieldInfo fieldInfo;
@@ -143,13 +144,14 @@ public class TempFSTTermsWriter extends FieldsConsumer {
     private long numTerms;
 
     private final IntsRef scratchTerm = new IntsRef();
+    private final RAMOutputStream statsWriter = new RAMOutputStream();
     private final RAMOutputStream metaWriter = new RAMOutputStream();
 
     TermsWriter(FieldInfo fieldInfo) {
       this.numTerms = 0;
       this.fieldInfo = fieldInfo;
       this.longsSize = postingsWriter.setField(fieldInfo);
-      this.outputs = new TempTermOutputs(longsSize);
+      this.outputs = new TempTermOutputs(fieldInfo, longsSize);
       this.builder = new Builder<TempTermOutputs.TempMetaData>(FST.INPUT_TYPE.BYTE1, outputs);
     }
 
@@ -166,16 +168,14 @@ public class TempFSTTermsWriter extends FieldsConsumer {
 
     @Override
     public void finishTerm(BytesRef text, TermStats stats) throws IOException {
+      // write term meta data into fst
       final TempTermOutputs.TempMetaData meta = new TempTermOutputs.TempMetaData();
       meta.longs = new long[longsSize];
       meta.bytes = null;
+      meta.docFreq = stats.docFreq;
+      meta.totalTermFreq = stats.totalTermFreq;
       postingsWriter.finishTerm(meta.longs, metaWriter, stats);
-      /*
-      meta.bytes = new byte[(int)metaWriter.getFilePointer()];
-      metaWriter.writeTo(meta.bytes, 0);
-      metaWriter.reset();
-      */
-      int bytesSize = (int)metaWriter.getFilePointer();
+      final int bytesSize = (int)metaWriter.getFilePointer();
       if (bytesSize > 0) {
         meta.bytes = new byte[bytesSize];
         metaWriter.writeTo(meta.bytes, 0);
@@ -191,6 +191,7 @@ public class TempFSTTermsWriter extends FieldsConsumer {
       // save FST dict
       if (numTerms > 0) {
         final FST<TempTermOutputs.TempMetaData> fst = builder.finish();
+        //fst.dump();
         fields.add(new FieldMetaData(fieldInfo, numTerms, sumTotalTermFreq, sumDocFreq, docCount, longsSize, fst));
       }
     }

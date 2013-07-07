@@ -119,7 +119,7 @@ public final class TempPostingsWriter extends TempPostingsWriterBase {
   public TempPostingsWriter(SegmentWriteState state, float acceptableOverheadRatio) throws IOException {
     super();
 
-    docOut = state.directory.createOutput(IndexFileNames.segmentFileName(state.segmentInfo.name, state.segmentSuffix, TempPostingsFormat.DOC_EXTENSION),
+    docOut = state.directory.createOutput(IndexFileNames.segmentFileName(state.segmentInfo.name, state.segmentSuffix, TempBlockPostingsFormat.DOC_EXTENSION),
                                           state.context);
     IndexOutput posOut = null;
     IndexOutput payOut = null;
@@ -129,7 +129,7 @@ public final class TempPostingsWriter extends TempPostingsWriterBase {
       forUtil = new ForUtil(acceptableOverheadRatio, docOut);
       if (state.fieldInfos.hasProx()) {
         posDeltaBuffer = new int[MAX_DATA_SIZE];
-        posOut = state.directory.createOutput(IndexFileNames.segmentFileName(state.segmentInfo.name, state.segmentSuffix, TempPostingsFormat.POS_EXTENSION),
+        posOut = state.directory.createOutput(IndexFileNames.segmentFileName(state.segmentInfo.name, state.segmentSuffix, TempBlockPostingsFormat.POS_EXTENSION),
                                               state.context);
         CodecUtil.writeHeader(posOut, POS_CODEC, VERSION_CURRENT);
 
@@ -150,7 +150,7 @@ public final class TempPostingsWriter extends TempPostingsWriterBase {
         }
 
         if (state.fieldInfos.hasPayloads() || state.fieldInfos.hasOffsets()) {
-          payOut = state.directory.createOutput(IndexFileNames.segmentFileName(state.segmentInfo.name, state.segmentSuffix, TempPostingsFormat.PAY_EXTENSION),
+          payOut = state.directory.createOutput(IndexFileNames.segmentFileName(state.segmentInfo.name, state.segmentSuffix, TempBlockPostingsFormat.PAY_EXTENSION),
                                                 state.context);
           CodecUtil.writeHeader(payOut, PAY_CODEC, VERSION_CURRENT);
         }

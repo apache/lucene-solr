@@ -18,8 +18,6 @@ package org.apache.lucene.codecs.temp;
  */
 
 import java.io.IOException;
-import java.io.PrintWriter;
-import java.io.File;
 import java.util.Collections;
 import java.util.Comparator;
 import java.util.Iterator;
@@ -43,23 +41,19 @@ import org.apache.lucene.store.IndexInput;
 import org.apache.lucene.util.Bits;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.IOUtils;
-import org.apache.lucene.util.automaton.CompiledAutomaton;
-import org.apache.lucene.util.automaton.RunAutomaton;
-import org.apache.lucene.util.automaton.Transition;
-import org.apache.lucene.util.fst.ByteSequenceOutputs;
+import org.apache.lucene.util.fst.BytesRefFSTEnum;
+import org.apache.lucene.util.fst.BytesRefFSTEnum.InputOutput;
 import org.apache.lucene.util.fst.FST;
 import org.apache.lucene.util.fst.Outputs;
-import org.apache.lucene.util.fst.Util;
 import org.apache.lucene.codecs.FieldsProducer;
 import org.apache.lucene.codecs.TempPostingsReaderBase;
 import org.apache.lucene.codecs.CodecUtil;
 
-
 public class TempFSTTermsReader extends FieldsProducer {
   final TempPostingsReaderBase postingsReader;
   final IndexInput in;
-  final TreeMap<String, FieldReader> fields = new TreeMap<String, FieldReader>();
-
+  final TreeMap<String, TermsReader> fields = new TreeMap<String, TermsReader>();
+  boolean DEBUG = false;
 
   public TempFSTTermsReader(SegmentReadState state, TempPostingsReaderBase postingsReader) throws IOException {
     final String termsFileName = IndexFileNames.segmentFileName(state.segmentInfo.name, state.segmentSuffix, TempFSTTermsWriter.TERMS_EXTENSION);
@@ -83,8 +77,8 @@ public class TempFSTTermsReader extends FieldsProducer {
         long sumDocFreq = in.readVLong();
         int docCount = in.readVInt();
         int longsSize = in.readVInt();
-        FieldReader current = new FieldReader(fieldInfo, numTerms, sumTotalTermFreq, sumDocFreq, docCount, longsSize);
-        FieldReader previous = fields.put(fieldInfo.name, current);
+        TermsReader current = new TermsReader(fieldInfo, numTerms, sumTotalTermFreq, sumDocFreq, docCount, longsSize);
+        TermsReader previous = fields.put(fieldInfo.name, current);
         checkFieldSummary(state.segmentInfo, current, previous);
       }
       success = true;
@@ -96,7 +90,8 @@ public class TempFSTTermsReader extends FieldsProducer {
   }
 
   private int readHeader(IndexInput in) throws IOException {
-    return CodecUtil.checkHeader(in, TempFSTTermsWriter.TERMS_CODEC_NAME,
+    return CodecUtil.checkHeader(in, 
+                                 TempFSTTermsWriter.TERMS_CODEC_NAME,
                                  TempFSTTermsWriter.TERMS_VERSION_START,
                                  TempFSTTermsWriter.TERMS_VERSION_CURRENT);
   }
@@ -104,7 +99,7 @@ public class TempFSTTermsReader extends FieldsProducer {
     in.seek(in.length() - 8);
     in.seek(in.readLong());
   }
-  private void checkFieldSummary(SegmentInfo info, FieldReader field, FieldReader previous) throws IOException {
+  private void checkFieldSummary(SegmentInfo info, TermsReader field, TermsReader previous) throws IOException {
     // #docs with field must be <= #docs
     if (field.docCount < 0 || field.docCount > info.getDocCount()) { 
       throw new CorruptIndexException("invalid docCount: " + field.docCount + " maxDoc: " + info.getDocCount() + " (resource=" + in + ")");
@@ -147,7 +142,7 @@ public class TempFSTTermsReader extends FieldsProducer {
     }
   }
 
-  final class FieldReader extends Terms {
+  final class TermsReader extends Terms {
     final FieldInfo fieldInfo;
     final long numTerms;
     final long sumTotalTermFreq;
@@ -156,16 +151,14 @@ public class TempFSTTermsReader extends FieldsProducer {
     final int longsSize;
     final FST<TempTermOutputs.TempMetaData> dict;
 
-    FieldReader(FieldInfo fieldInfo, long numTerms, long sumTotalTermFreq, long sumDocFreq, int docCount, int longsSize) throws IOException {
+    TermsReader(FieldInfo fieldInfo, long numTerms, long sumTotalTermFreq, long sumDocFreq, int docCount, int longsSize) throws IOException {
       this.fieldInfo = fieldInfo;
       this.numTerms = numTerms;
       this.sumTotalTermFreq = sumTotalTermFreq;
       this.sumDocFreq = sumDocFreq;
       this.docCount = docCount;
       this.longsSize = longsSize;
-      this.dict = new FST<TempTermOutputs.TempMetaData>(in, new TempTermOutputs(longsSize));
-      //PrintWriter pw = new PrintWriter(new File("../temp/xxx.txt"));
-      //Util.toDot(dict, pw, false, false);
+      this.dict = new FST<TempTermOutputs.TempMetaData>(in, new TempTermOutputs(fieldInfo, longsSize));
     }
 
     // nocommit: implement intersect
@@ -216,8 +209,32 @@ public class TempFSTTermsReader extends FieldsProducer {
     }
 
     // Iterates through terms in this field
-    private final class SegmentTermsEnum extends TermsEnum {
-      SegmentTermsEnum() {
+    final class SegmentTermsEnum extends TermsEnum {
+      final BytesRefFSTEnum<TempTermOutputs.TempMetaData> fstEnum;
+
+      /* Current term, null when enum ends or unpositioned */
+      BytesRef term;
+
+      /* Current term stats + decoded metadata (customized by PBF) */
+      final TempTermState state;
+
+      /* Current term stats + undecoded metadata (long[] & byte[]) */
+      TempTermOutputs.TempMetaData meta;
+      ByteArrayDataInput bytesReader;
+
+      /* True when current term's metadata is decoded */
+      boolean decoded;
+
+      /* True when current enum is 'positioned' by seekExact(TermState) */
+      boolean seekPending;
+
+      SegmentTermsEnum() throws IOException {
+        this.fstEnum = new BytesRefFSTEnum<TempTermOutputs.TempMetaData>(dict);
+        this.state = postingsReader.newTermState();
+        this.bytesReader = new ByteArrayDataInput();
+        this.term = null;
+        this.decoded = false;
+        this.seekPending = false;
       }
 
       @Override
@@ -226,56 +243,115 @@ public class TempFSTTermsReader extends FieldsProducer {
       }
 
       @Override
-      public SeekStatus seekCeil(final BytesRef target, final boolean useCache) throws IOException {
-        return null;
-      }
-
-      @Override
-      public BytesRef next() throws IOException {
-        return null;
+      public TermState termState() throws IOException {
+        decodeMetaData();
+        return state.clone();
       }
 
       @Override
       public BytesRef term() {
-        return null;
+        return term;
       }
       
       @Override
       public int docFreq() throws IOException {
-        return 0;
+        return state.docFreq;
       }
 
       @Override
       public long totalTermFreq() throws IOException {
-        return 0;
+        return state.totalTermFreq;
       }
 
+      // Let PBF decodes metadata from long[] and byte[]
+      private void decodeMetaData() throws IOException {
+        if (!decoded && !seekPending) {
+          if (meta.bytes != null) {
+            bytesReader.reset(meta.bytes, 0, meta.bytes.length);
+          }
+          postingsReader.decodeTerm(meta.longs, bytesReader, fieldInfo, state);
+          decoded = true;
+        }
+      }
+
+      // Update current enum according to FSTEnum
+      private void updateEnum(final InputOutput<TempTermOutputs.TempMetaData> pair) {
+        if (pair == null) {
+          term = null;
+        } else {
+          term = pair.input;
+          meta = pair.output;
+          state.docFreq = meta.docFreq;
+          state.totalTermFreq = meta.totalTermFreq;
+        }
+        decoded = false;
+        seekPending = false;
+      }
+
+      // nocommit: reuse?
       @Override
       public DocsEnum docs(Bits liveDocs, DocsEnum reuse, int flags) throws IOException {
-        return null;
+        decodeMetaData();
+        return postingsReader.docs(fieldInfo, state, liveDocs, reuse, flags);
       }
 
       @Override
       public DocsAndPositionsEnum docsAndPositions(Bits liveDocs, DocsAndPositionsEnum reuse, int flags) throws IOException {
-        return null;
+        if (fieldInfo.getIndexOptions().compareTo(IndexOptions.DOCS_AND_FREQS_AND_POSITIONS) < 0) {
+          return null;
+        }
+        decodeMetaData();
+        return postingsReader.docsAndPositions(fieldInfo, state, liveDocs, reuse, flags);
       }
 
+      @Override
+      public BytesRef next() throws IOException {
+        if (seekPending) {  // previously positioned, but termOutputs not fetched
+          seekPending = false;
+          if (seekCeil(term, false) != SeekStatus.FOUND) {
+            return term;
+          }
+        }
+        updateEnum(fstEnum.next());
+        return term;
+      }
+
+      @Override
+      public boolean seekExact(final BytesRef target, final boolean useCache) throws IOException {
+        updateEnum(fstEnum.seekExact(target));
+        return term != null;
+      }
+
+      // nocommit: when will we useCache?
+      @Override
+      public SeekStatus seekCeil(final BytesRef target, final boolean useCache) throws IOException {
+        updateEnum(fstEnum.seekCeil(target));
+        if (term == null) {
+          return SeekStatus.END;
+        } else {
+          return term.equals(target) ? SeekStatus.FOUND : SeekStatus.NOT_FOUND;
+        }
+      }
+
+      // nocommit: this method doesn't act as 'seekExact' right?
       @Override
       public void seekExact(BytesRef target, TermState otherState) {
+        if (term == null || target.compareTo(term) != 0) {
+          state.copyFrom(otherState);
+          term = BytesRef.deepCopyOf(target);
+          seekPending = true;
+        }
       }
 
-      @Override
-      public TermState termState() throws IOException {
-        return null;
-      }
-
+      // nocommit: do we need this?
       @Override
       public void seekExact(long ord) throws IOException {
+        throw new UnsupportedOperationException();
       }
 
       @Override
       public long ord() {
-        return 0;
+        throw new UnsupportedOperationException();
       }
     }
   }
