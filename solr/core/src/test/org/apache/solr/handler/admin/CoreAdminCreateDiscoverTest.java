@@ -40,13 +40,12 @@ public class CoreAdminCreateDiscoverTest extends SolrTestCaseJ4 {
   private static File solrHomeDirectory = null;
 
   private static CoreAdminHandler admin = null;
-//  private static CoreContainer cc = null;
 
   private static String coreNormal = "normal";
   private static String coreSysProps = "sys_props";
 
   @BeforeClass
-  public static void before() throws Exception {
+  public static void beforeClass() throws Exception {
     useFactory(null); // I require FS-based indexes for this test.
 
     solrHomeDirectory = new File(TEMP_DIR, "solrHome/" + CoreAdminCreateDiscoverTest.getClassName());
@@ -61,8 +60,8 @@ public class CoreAdminCreateDiscoverTest extends SolrTestCaseJ4 {
   }
 
   @AfterClass
-  public static void after() throws Exception {
-    h.close();
+  public static void afterClass() throws Exception {
+    admin = null; // Release it or the test harness complains.
     if (solrHomeDirectory.exists()) {
       FileUtils.deleteDirectory(solrHomeDirectory);
     }
