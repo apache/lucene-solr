@@ -152,9 +152,8 @@ public class QueryComponent extends SearchComponent
       String[] fqs = req.getParams().getParams(CommonParams.FQ);
       if (fqs!=null && fqs.length!=0) {
         List<Query> filters = rb.getFilters();
-        if (filters==null) {
-          filters = new ArrayList<Query>(fqs.length);
-        }
+        // if filters already exists, make a copy instead of modifying the original
+        filters = filters == null ? new ArrayList<Query>(fqs.length) : new ArrayList<Query>(filters);
         for (String fq : fqs) {
           if (fq != null && fq.trim().length()!=0) {
             QParser fqp = QParser.getParser(fq, null, req);
