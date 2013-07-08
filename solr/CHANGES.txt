@@ -157,6 +157,8 @@ New Features
 * SOLR-5003: CSV Update Handler supports optionally adding the line number/row id to 
   a document (gsingers)
 
+* SOLR-5010: Add support for creating copy fields to the Fields REST API (gsingers)
+
 Bug Fixes
 ----------------------
 

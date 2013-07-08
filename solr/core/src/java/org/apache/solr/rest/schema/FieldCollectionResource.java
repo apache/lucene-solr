@@ -33,6 +33,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.SortedSet;
@@ -126,6 +127,7 @@ public class FieldCollectionResource extends BaseFieldResource implements GETabl
           throw new SolrException(ErrorCode.BAD_REQUEST, message);
         } else {
           Object object = ObjectBuilder.fromJSON(entity.getText());
+          Map<String, String> copyFields = new HashMap<>();
           if ( ! (object instanceof List)) {
             String message = "Invalid JSON type " + object.getClass().getName() + ", expected List of the form"
                 + " (ignore the backslashes): [{\"name\":\"foo\",\"type\":\"text_general\", ...}, {...}, ...]";
@@ -148,9 +150,24 @@ public class FieldCollectionResource extends BaseFieldResource implements GETabl
                 log.error(message);
                 throw new SolrException(ErrorCode.BAD_REQUEST, message);
               }
+              // copyFields:"comma separated list of destination fields"
+              String copyTo = (String)map.get(IndexSchema.COPY_FIELDS);
+              if (copyTo != null){
+                map.remove(IndexSchema.COPY_FIELDS);
+                copyFields.put(fieldName, copyTo);
+              }
               newFields.add(oldSchema.newField(fieldName, fieldType, map));
             }
             IndexSchema newSchema = oldSchema.addFields(newFields);
+            for (Map.Entry<String, String> entry : copyFields.entrySet()) {
+              //key is the source, value is a comma separated list of targets
+              String [] splits = entry.getValue().split(",");
+              if (splits != null && splits.length > 0){
+                for (int i = 0; i < splits.length; i++) {
+                  newSchema.registerCopyField(entry.getKey(), splits[i].trim());
+                }
+              }
+            }
             getSolrCore().setLatestSchema(newSchema);
           }
         }
