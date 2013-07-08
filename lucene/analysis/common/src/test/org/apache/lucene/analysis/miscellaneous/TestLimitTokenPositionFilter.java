@@ -43,17 +43,17 @@ public class TestLimitTokenPositionFilter extends BaseTokenStreamTestCase {
       };
 
       // dont use assertAnalyzesTo here, as the end offset is not the end of the string (unless consumeAll is true, in which case its correct)!
-      assertTokenStreamContents(a.tokenStream("dummy", new StringReader("1  2     3  4  5")), 
+      assertTokenStreamContents(a.tokenStream("dummy", "1  2     3  4  5"), 
                                 new String[] { "1", "2" }, new int[] { 0, 3 }, new int[] { 1, 4 }, consumeAll ? 16 : null);
       assertTokenStreamContents(a.tokenStream("dummy", new StringReader("1 2 3 4 5")), 
                                 new String[] { "1", "2" }, new int[] { 0, 2 }, new int[] { 1, 3 }, consumeAll ? 9 : null);
 
       // less than the limit, ensure we behave correctly
-      assertTokenStreamContents(a.tokenStream("dummy", new StringReader("1  ")),
+      assertTokenStreamContents(a.tokenStream("dummy", "1  "),
                                 new String[] { "1" }, new int[] { 0 }, new int[] { 1 }, consumeAll ? 3 : null);
                                                                                    
       // equal to limit
-      assertTokenStreamContents(a.tokenStream("dummy", new StringReader("1  2  ")), 
+      assertTokenStreamContents(a.tokenStream("dummy", "1  2  "), 
                                 new String[] { "1", "2" }, new int[] { 0, 3 }, new int[] { 1, 4 }, consumeAll ? 6 : null);
     }
   }

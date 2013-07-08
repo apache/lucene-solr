@@ -91,7 +91,7 @@ public class TestTeeSinkTokenFilter extends BaseTokenStreamTestCase {
     Analyzer analyzer = new MockAnalyzer(random(), MockTokenizer.WHITESPACE, false);
     IndexWriter w = new IndexWriter(dir, newIndexWriterConfig(TEST_VERSION_CURRENT, analyzer));
     Document doc = new Document();
-    TokenStream tokenStream = analyzer.tokenStream("field", new StringReader("abcd   "));
+    TokenStream tokenStream = analyzer.tokenStream("field", "abcd   ");
     TeeSinkTokenFilter tee = new TeeSinkTokenFilter(tokenStream);
     TokenStream sink = tee.newSinkTokenStream();
     FieldType ft = new FieldType(TextField.TYPE_NOT_STORED);

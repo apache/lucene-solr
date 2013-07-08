@@ -18,8 +18,6 @@ package org.apache.lucene.index;
  */
 
 import java.io.IOException;
-import java.io.StringReader;
-
 import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.analysis.CachingTokenFilter;
 import org.apache.lucene.analysis.MockAnalyzer;
@@ -176,7 +174,7 @@ public class TestTermVectorsWriter extends LuceneTestCase {
     Analyzer analyzer = new MockAnalyzer(random());
     IndexWriter w = new IndexWriter(dir, newIndexWriterConfig( TEST_VERSION_CURRENT, analyzer));
     Document doc = new Document();
-    TokenStream stream = analyzer.tokenStream("field", new StringReader("abcd   "));
+    TokenStream stream = analyzer.tokenStream("field", "abcd   ");
     stream.reset(); // TODO: weird to reset before wrapping with CachingTokenFilter... correct?
     stream = new CachingTokenFilter(stream);
     FieldType customType = new FieldType(TextField.TYPE_NOT_STORED);

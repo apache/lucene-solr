@@ -19,7 +19,6 @@ package org.apache.solr.schema;
 
 import java.io.IOException;
 import java.io.InputStream;
-import java.io.StringReader;
 import java.util.Map;
 
 import org.apache.commons.io.IOUtils;
@@ -27,8 +26,6 @@ import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.analysis.TokenStream;
 import org.apache.lucene.analysis.tokenattributes.TermToBytesRefAttribute;
 import org.apache.lucene.collation.ICUCollationKeyAnalyzer;
-import org.apache.lucene.index.GeneralField;
-import org.apache.lucene.index.IndexableField;
 import org.apache.lucene.index.StorableField;
 import org.apache.lucene.search.Query;
 import org.apache.lucene.search.SortField;
@@ -240,7 +237,7 @@ public class ICUCollationField extends FieldType {
     TokenStream source;
       
     try {
-      source = analyzer.tokenStream(field, new StringReader(part));
+      source = analyzer.tokenStream(field, part);
       source.reset();
     } catch (IOException e) {
       throw new RuntimeException("Unable to initialize TokenStream to analyze range part: " + part, e);

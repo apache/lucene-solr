@@ -29,7 +29,6 @@ import org.apache.lucene.util.Version;
 
 import java.util.Collection;
 import java.util.HashSet;
-import java.io.StringReader;
 import java.io.IOException;
 
 
@@ -44,7 +43,7 @@ class SimpleQueryConverter extends SpellingQueryConverter {
     try {
       Collection<Token> result = new HashSet<Token>();
       WhitespaceAnalyzer analyzer = new WhitespaceAnalyzer(Version.LUCENE_40);
-      TokenStream ts = analyzer.tokenStream("", new StringReader(origQuery));
+      TokenStream ts = analyzer.tokenStream("", origQuery);
       // TODO: support custom attributes
       CharTermAttribute termAtt = ts.addAttribute(CharTermAttribute.class);
       OffsetAttribute offsetAtt = ts.addAttribute(OffsetAttribute.class);

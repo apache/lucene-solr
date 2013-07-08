@@ -17,8 +17,6 @@ package org.apache.lucene.analysis.shingle;
  * limitations under the License.
  */
 
-import java.io.StringReader;
-
 import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.analysis.BaseTokenStreamTestCase;
 import org.apache.lucene.analysis.MockAnalyzer;
@@ -97,7 +95,7 @@ public class ShingleAnalyzerWrapperTest extends BaseTokenStreamTestCase {
   public void testShingleAnalyzerWrapperPhraseQuery() throws Exception {
     PhraseQuery q = new PhraseQuery();
 
-    TokenStream ts = analyzer.tokenStream("content", new StringReader("this sentence"));
+    TokenStream ts = analyzer.tokenStream("content", "this sentence");
     int j = -1;
     
     PositionIncrementAttribute posIncrAtt = ts.addAttribute(PositionIncrementAttribute.class);
@@ -123,7 +121,7 @@ public class ShingleAnalyzerWrapperTest extends BaseTokenStreamTestCase {
   public void testShingleAnalyzerWrapperBooleanQuery() throws Exception {
     BooleanQuery q = new BooleanQuery();
 
-    TokenStream ts = analyzer.tokenStream("content", new StringReader("test sentence"));
+    TokenStream ts = analyzer.tokenStream("content", "test sentence");
     
     CharTermAttribute termAtt = ts.addAttribute(CharTermAttribute.class);
     

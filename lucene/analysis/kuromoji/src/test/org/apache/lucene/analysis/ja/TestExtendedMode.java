@@ -19,7 +19,6 @@ package org.apache.lucene.analysis.ja;
 
 import java.io.IOException;
 import java.io.Reader;
-import java.io.StringReader;
 import java.util.Random;
 
 import org.apache.lucene.analysis.Analyzer;
@@ -54,7 +53,7 @@ public class TestExtendedMode extends BaseTokenStreamTestCase {
     int numIterations = atLeast(1000);
     for (int i = 0; i < numIterations; i++) {
       String s = _TestUtil.randomUnicodeString(random(), 100);
-      TokenStream ts = analyzer.tokenStream("foo", new StringReader(s));
+      TokenStream ts = analyzer.tokenStream("foo", s);
       CharTermAttribute termAtt = ts.addAttribute(CharTermAttribute.class);
       ts.reset();
       while (ts.incrementToken()) {

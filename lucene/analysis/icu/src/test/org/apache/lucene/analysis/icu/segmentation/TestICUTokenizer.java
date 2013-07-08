@@ -249,7 +249,7 @@ public class TestICUTokenizer extends BaseTokenStreamTestCase {
   }
   
   public void testTokenAttributes() throws Exception {
-    TokenStream ts = a.tokenStream("dummy", new StringReader("This is a test"));
+    TokenStream ts = a.tokenStream("dummy", "This is a test");
     ScriptAttribute scriptAtt = ts.addAttribute(ScriptAttribute.class);
     ts.reset();
     while (ts.incrementToken()) {

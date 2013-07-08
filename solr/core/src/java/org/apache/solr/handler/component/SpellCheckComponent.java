@@ -18,7 +18,6 @@
 package org.apache.solr.handler.component;
 
 import java.io.IOException;
-import java.io.StringReader;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
@@ -464,7 +463,7 @@ public class SpellCheckComponent extends SearchComponent implements SolrCoreAwar
   private Collection<Token> getTokens(String q, Analyzer analyzer) throws IOException {
     Collection<Token> result = new ArrayList<Token>();
     assert analyzer != null;
-    TokenStream ts = analyzer.tokenStream("", new StringReader(q));
+    TokenStream ts = analyzer.tokenStream("", q);
     ts.reset();
     // TODO: support custom attributes
     CharTermAttribute termAtt = ts.addAttribute(CharTermAttribute.class);

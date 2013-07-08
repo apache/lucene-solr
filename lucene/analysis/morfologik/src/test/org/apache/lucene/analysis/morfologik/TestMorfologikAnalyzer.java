@@ -19,7 +19,6 @@ package org.apache.lucene.analysis.morfologik;
 
 import java.io.IOException;
 import java.io.Reader;
-import java.io.StringReader;
 import java.util.TreeSet;
 
 import org.apache.lucene.analysis.Analyzer;
@@ -73,7 +72,7 @@ public class TestMorfologikAnalyzer extends BaseTokenStreamTestCase {
 
   @SuppressWarnings("unused")
   private void dumpTokens(String input) throws IOException {
-    TokenStream ts = getTestAnalyzer().tokenStream("dummy", new StringReader(input));
+    TokenStream ts = getTestAnalyzer().tokenStream("dummy", input);
     ts.reset();
 
     MorphosyntacticTagsAttribute attribute = ts.getAttribute(MorphosyntacticTagsAttribute.class);
@@ -86,7 +85,7 @@ public class TestMorfologikAnalyzer extends BaseTokenStreamTestCase {
   /** Test reuse of MorfologikFilter with leftover stems. */
   public final void testLeftoverStems() throws IOException {
     Analyzer a = getTestAnalyzer();
-    TokenStream ts_1 = a.tokenStream("dummy", new StringReader("liście"));
+    TokenStream ts_1 = a.tokenStream("dummy", "liście");
     CharTermAttribute termAtt_1 = ts_1.getAttribute(CharTermAttribute.class);
     ts_1.reset();
     ts_1.incrementToken();
@@ -94,7 +93,7 @@ public class TestMorfologikAnalyzer extends BaseTokenStreamTestCase {
     ts_1.end();
     ts_1.close();
 
-    TokenStream ts_2 = a.tokenStream("dummy", new StringReader("danych"));
+    TokenStream ts_2 = a.tokenStream("dummy", "danych");
     CharTermAttribute termAtt_2 = ts_2.getAttribute(CharTermAttribute.class);
     ts_2.reset();
     ts_2.incrementToken();
@@ -141,7 +140,7 @@ public class TestMorfologikAnalyzer extends BaseTokenStreamTestCase {
 
   /** Test morphosyntactic annotations. */
   public final void testPOSAttribute() throws IOException {
-    TokenStream ts = getTestAnalyzer().tokenStream("dummy", new StringReader("liście"));
+    TokenStream ts = getTestAnalyzer().tokenStream("dummy", "liście");
 
     ts.reset();
     assertPOSToken(ts, "liście",  
