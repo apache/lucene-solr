@@ -504,7 +504,7 @@ public abstract class QueryParserBase implements CommonQueryParserConfiguration 
 
     TokenStream source;
     try {
-      source = analyzer.tokenStream(field, new StringReader(queryText));
+      source = analyzer.tokenStream(field, queryText);
       source.reset();
     } catch (IOException e) {
       ParseException p = new ParseException("Unable to initialize TokenStream to analyze query text");
@@ -848,7 +848,7 @@ public abstract class QueryParserBase implements CommonQueryParserConfiguration 
     if (analyzerIn == null) analyzerIn = analyzer;
 
     try {
-      source = analyzerIn.tokenStream(field, new StringReader(part));
+      source = analyzerIn.tokenStream(field, part);
       source.reset();
     } catch (IOException e) {
       throw new RuntimeException("Unable to initialize TokenStream to analyze multiTerm term: " + part, e);

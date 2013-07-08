@@ -19,7 +19,6 @@ package org.apache.solr.schema;
 
 import java.io.IOException;
 import java.io.InputStream;
-import java.io.StringReader;
 import java.util.Map;
 
 import org.apache.commons.io.IOUtils;
@@ -238,7 +237,7 @@ public class ICUCollationField extends FieldType {
     TokenStream source;
       
     try {
-      source = analyzer.tokenStream(field, new StringReader(part));
+      source = analyzer.tokenStream(field, part);
       source.reset();
     } catch (IOException e) {
       throw new RuntimeException("Unable to initialize TokenStream to analyze range part: " + part, e);

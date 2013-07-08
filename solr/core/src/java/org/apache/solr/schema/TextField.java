@@ -35,7 +35,6 @@ import java.util.Map;
 import java.util.List;
 import java.util.ArrayList;
 import java.io.IOException;
-import java.io.StringReader;
 
 /** <code>TextField</code> is the basic type for configurable text analysis.
  * Analyzers for field types using this implementation should be defined in the schema.
@@ -141,7 +140,7 @@ public class TextField extends FieldType {
 
     TokenStream source;
     try {
-      source = analyzerIn.tokenStream(field, new StringReader(part));
+      source = analyzerIn.tokenStream(field, part);
       source.reset();
     } catch (IOException e) {
       throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, "Unable to initialize TokenStream to analyze multiTerm term: " + part, e);
@@ -181,7 +180,7 @@ public class TextField extends FieldType {
 
     TokenStream source;
     try {
-      source = analyzer.tokenStream(field, new StringReader(queryText));
+      source = analyzer.tokenStream(field, queryText);
       source.reset();
     } catch (IOException e) {
       throw new RuntimeException("Unable to initialize TokenStream to analyze query text", e);

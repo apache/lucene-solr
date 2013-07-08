@@ -18,7 +18,6 @@ package org.apache.lucene.analysis.ja;
  */
 
 import java.io.IOException;
-import java.io.StringReader;
 import java.util.Random;
 
 import org.apache.lucene.analysis.Analyzer;
@@ -151,7 +150,7 @@ public class TestJapaneseAnalyzer extends BaseTokenStreamTestCase {
                                             Mode.SEARCH,
                                             JapaneseAnalyzer.getDefaultStopSet(),
                                             JapaneseAnalyzer.getDefaultStopTags());
-    assertTokenStreamContents(a.tokenStream("foo", new StringReader("abcd")),
+    assertTokenStreamContents(a.tokenStream("foo", "abcd"),
                               new String[] { "a", "b", "cd"  },
                               new int[] { 0, 1, 2 },
                               new int[] { 1, 2, 4 },

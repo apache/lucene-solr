@@ -19,7 +19,6 @@ package org.apache.lucene.analysis.th;
 
 import java.io.IOException;
 import java.io.Reader;
-import java.io.StringReader;
 import java.util.Random;
 
 import org.apache.lucene.analysis.Analyzer;
@@ -183,10 +182,10 @@ public class TestThaiAnalyzer extends BaseTokenStreamTestCase {
   public void testAttributeReuse() throws Exception {
     ThaiAnalyzer analyzer = new ThaiAnalyzer(Version.LUCENE_30);
     // just consume
-    TokenStream ts = analyzer.tokenStream("dummy", new StringReader("ภาษาไทย"));
+    TokenStream ts = analyzer.tokenStream("dummy", "ภาษาไทย");
     assertTokenStreamContents(ts, new String[] { "ภาษา", "ไทย" });
     // this consumer adds flagsAtt, which this analyzer does not use. 
-    ts = analyzer.tokenStream("dummy", new StringReader("ภาษาไทย"));
+    ts = analyzer.tokenStream("dummy", "ภาษาไทย");
     ts.addAttribute(FlagsAttribute.class);
     assertTokenStreamContents(ts, new String[] { "ภาษา", "ไทย" });
   }

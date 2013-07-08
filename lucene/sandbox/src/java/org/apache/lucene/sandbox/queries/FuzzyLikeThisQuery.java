@@ -18,7 +18,6 @@ package org.apache.lucene.sandbox.queries;
  */
 
 import java.io.IOException;
-import java.io.StringReader;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -194,7 +193,7 @@ public class FuzzyLikeThisQuery extends Query
 
   private void addTerms(IndexReader reader, FieldVals f) throws IOException {
     if (f.queryString == null) return;
-    TokenStream ts = analyzer.tokenStream(f.fieldName, new StringReader(f.queryString));
+    TokenStream ts = analyzer.tokenStream(f.fieldName, f.queryString);
     CharTermAttribute termAtt = ts.addAttribute(CharTermAttribute.class);
 
     int corpusNumDocs = reader.numDocs();

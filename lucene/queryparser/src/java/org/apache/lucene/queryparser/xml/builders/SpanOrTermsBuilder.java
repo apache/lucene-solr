@@ -13,9 +13,9 @@ import org.apache.lucene.queryparser.xml.ParserException;
 import org.w3c.dom.Element;
 
 import java.io.IOException;
-import java.io.StringReader;
 import java.util.ArrayList;
 import java.util.List;
+
 /*
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
@@ -51,7 +51,7 @@ public class SpanOrTermsBuilder extends SpanBuilderBase {
 
     try {
       List<SpanQuery> clausesList = new ArrayList<SpanQuery>();
-      TokenStream ts = analyzer.tokenStream(fieldName, new StringReader(value));
+      TokenStream ts = analyzer.tokenStream(fieldName, value);
       TermToBytesRefAttribute termAtt = ts.addAttribute(TermToBytesRefAttribute.class);
       BytesRef bytes = termAtt.getBytesRef();
       ts.reset();

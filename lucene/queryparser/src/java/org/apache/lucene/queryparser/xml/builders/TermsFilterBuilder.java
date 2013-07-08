@@ -3,7 +3,6 @@ package org.apache.lucene.queryparser.xml.builders;
 import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.analysis.TokenStream;
 import org.apache.lucene.analysis.tokenattributes.TermToBytesRefAttribute;
-import org.apache.lucene.index.Term;
 import org.apache.lucene.search.Filter;
 import org.apache.lucene.queries.TermsFilter;
 import org.apache.lucene.util.BytesRef;
@@ -13,7 +12,6 @@ import org.apache.lucene.queryparser.xml.ParserException;
 import org.w3c.dom.Element;
 
 import java.io.IOException;
-import java.io.StringReader;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -57,9 +55,8 @@ public class TermsFilterBuilder implements FilterBuilder {
     String fieldName = DOMUtils.getAttributeWithInheritanceOrFail(e, "fieldName");
 
     try {
-      TokenStream ts = analyzer.tokenStream(fieldName, new StringReader(text));
+      TokenStream ts = analyzer.tokenStream(fieldName, text);
       TermToBytesRefAttribute termAtt = ts.addAttribute(TermToBytesRefAttribute.class);
-      Term term = null;
       BytesRef bytes = termAtt.getBytesRef();
       ts.reset();
       while (ts.incrementToken()) {

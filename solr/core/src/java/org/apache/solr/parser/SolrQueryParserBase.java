@@ -405,7 +405,7 @@ public abstract class SolrQueryParserBase {
 
     TokenStream source;
     try {
-      source = analyzer.tokenStream(field, new StringReader(queryText));
+      source = analyzer.tokenStream(field, queryText);
       source.reset();
     } catch (IOException e) {
       throw new SyntaxError("Unable to initialize TokenStream to analyze query text", e);

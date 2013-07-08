@@ -19,7 +19,6 @@ package org.apache.lucene.search.vectorhighlight;
 
 import java.io.IOException;
 import java.io.Reader;
-import java.io.StringReader;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
@@ -171,7 +170,7 @@ public abstract class AbstractTestCase extends LuceneTestCase {
   protected List<BytesRef> analyze(String text, String field, Analyzer analyzer) throws IOException {
     List<BytesRef> bytesRefs = new ArrayList<BytesRef>();
 
-    TokenStream tokenStream = analyzer.tokenStream(field, new StringReader(text));
+    TokenStream tokenStream = analyzer.tokenStream(field, text);
     TermToBytesRefAttribute termAttribute = tokenStream.getAttribute(TermToBytesRefAttribute.class);
 
     BytesRef bytesRef = termAttribute.getBytesRef();

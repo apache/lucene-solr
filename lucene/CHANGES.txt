@@ -254,6 +254,11 @@ API Changes
   an overhead parameter, so you can easily pass a different value other than
   PackedInts.FASTEST from your own codec.  (Robert Muir)
   
+* LUCENE-5097: Analyzer now has an additional tokenStream(String fieldName,
+  String text) method, so wrapping by StringReader for common use is no
+  longer needed. This method uses an internal reuseable reader, which was
+  previously only used by the Field class.  (Uwe Schindler, Robert Muir)
+  
 Build
 
 * LUCENE-4987: Upgrade randomized testing to version 2.0.10: 

@@ -1,7 +1,6 @@
 package org.apache.lucene.analysis.miscellaneous;
 
 import java.io.Reader;
-import java.io.StringReader;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
@@ -38,8 +37,7 @@ public class TestPerFieldAnalyzerWrapper extends BaseTokenStreamTestCase {
     PerFieldAnalyzerWrapper analyzer =
               new PerFieldAnalyzerWrapper(new WhitespaceAnalyzer(TEST_VERSION_CURRENT), analyzerPerField);
 
-    TokenStream tokenStream = analyzer.tokenStream("field",
-        new StringReader(text));
+    TokenStream tokenStream = analyzer.tokenStream("field", text);
     CharTermAttribute termAtt = tokenStream.getAttribute(CharTermAttribute.class);
     tokenStream.reset();
 
@@ -48,8 +46,7 @@ public class TestPerFieldAnalyzerWrapper extends BaseTokenStreamTestCase {
                  "Qwerty",
                  termAtt.toString());
 
-    tokenStream = analyzer.tokenStream("special",
-        new StringReader(text));
+    tokenStream = analyzer.tokenStream("special", text);
     termAtt = tokenStream.getAttribute(CharTermAttribute.class);
     tokenStream.reset();
 

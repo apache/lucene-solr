@@ -46,7 +46,6 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
-import java.io.StringReader;
 import java.util.*;
 
 /**
@@ -636,7 +635,7 @@ public class DefaultSolrHighlighter extends SolrHighlighter implements PluginInf
   private TokenStream createAnalyzerTStream(IndexSchema schema, String fieldName, String docText) throws IOException {
 
     TokenStream tstream;
-    TokenStream ts = schema.getAnalyzer().tokenStream(fieldName, new StringReader(docText));
+    TokenStream ts = schema.getAnalyzer().tokenStream(fieldName, docText);
     ts.reset();
     tstream = new TokenOrderingFilter(ts, 10);
     return tstream;
