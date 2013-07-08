@@ -265,6 +265,10 @@ Bug Fixes
 * SOLR-4978: Time is stripped from datetime column when imported into Solr date field
   if convertType=true. (Bill Au, shalin)
 
+* SOLR-5019: spurious ConcurrentModificationException when spell check component
+  was in use with filters. (yonik)
+  
+
 Optimizations
 ----------------------
 
