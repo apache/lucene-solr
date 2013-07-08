@@ -46,7 +46,6 @@ import org.apache.lucene.codecs.CodecUtil;
 /** FST based term dict, all the metadata held
  *  as output of FST */
 
-// nocommit: where is 'TermStats' ???
 public class TempFSTTermsWriter extends FieldsConsumer {
   static final String TERMS_EXTENSION = "tmp";
   static final String TERMS_CODEC_NAME = "FST_TERMS_DICT";
