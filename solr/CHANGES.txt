@@ -234,6 +234,9 @@ Bug Fixes
   resources and slowing down startup. This fixes the problem where the loader was
   not correctly closed, making tests fail on Windows.  (Steve Rowe, Uwe Schindler)
 
+* SOLR-4788: Multiple Entities DIH delta import: dataimporter.[entityName].last_index_time
+  is empty. (chakming wong, James Dyer via shalin)
+
 Optimizations
 ----------------------
 
