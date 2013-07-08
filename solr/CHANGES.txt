@@ -257,6 +257,9 @@ Bug Fixes
   case in particular this leads to the index being put in a directory literally named
   ${dir} but on restart the sysvar will be properly dereferenced.
 
+* SOLR-4788: Multiple Entities DIH delta import: dataimporter.[entityName].last_index_time
+  is empty. (chakming wong, James Dyer via shalin)
+
 Optimizations
 ----------------------
 
