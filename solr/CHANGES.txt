@@ -93,6 +93,9 @@ New Features
 
 * SOLR-4921: Admin UI now supports adding documents to Solr (gsingers, steffkes)
 
+* SOLR-4916: Add support to write and read Solr index files and transaction log
+  files to and from HDFS. (phunt, Mark Miller, Greg Chanan)
+  
 * SOLR-4892: Add FieldMutatingUpdateProcessorFactory subclasses 
   Parse{Date,Integer,Long,Float,Double,Boolean}UpdateProcessorFactory. These
   factories have a default selector that matches all fields that either don’t
@@ -112,9 +115,6 @@ New Features
   
 * SOLR-4897: Add solr/example/example-schemaless/, an example config set
   for schemaless mode. (Steve Rowe)
-
-* SOLR-4916: Add support to write and read Solr index files and transaction log
-  files to and from HDFS. (phunt, Mark Miller, Greg Chanan)
 
 * SOLR-4655: Add option to have Overseer assign generic node names so that
   new addresses can host shards without naming confusion. (Mark Miller, Anshum Gupta)
@@ -229,10 +229,6 @@ Bug Fixes
   when creating cores that reference sys vars (e.g. &dataDir=${dir}). In the dataDir
   case in particular this leads to the index being put in a directory literally named
   ${dir} but on restart the sysvar will be properly dereferenced.
-
-* SOLR-????: Don't create multiple SolrResourceLoaders for same Solr home, wasting 
-  resources and slowing down startup. This fixes the problem where the loader was
-  not correctly closed, making tests fail on Windows.  (Steve Rowe, Uwe Schindler)
 
 * SOLR-4788: Multiple Entities DIH delta import: dataimporter.[entityName].last_index_time
   is empty. (chakming wong, James Dyer via shalin)
