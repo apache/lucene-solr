@@ -230,7 +230,7 @@ Bug Fixes
   case in particular this leads to the index being put in a directory literally named
   ${dir} but on restart the sysvar will be properly dereferenced.
 
-* SOLR-5002: Don't create multiple SolrResourceLoaders for same Solr home, wasting 
+* SOLR-????: Don't create multiple SolrResourceLoaders for same Solr home, wasting 
   resources and slowing down startup. This fixes the problem where the loader was
   not correctly closed, making tests fail on Windows.  (Steve Rowe, Uwe Schindler)
 
