@@ -291,6 +291,8 @@ Optimizations
 
 * SOLR-5002: optimize numDocs(Query,DocSet) when filterCache is null (Robert Muir)
 
+* SOLR-5012: optimize search with filter when filterCache is null (Robert Muir)
+
 Other Changes
 ----------------------
 
