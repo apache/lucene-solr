@@ -260,6 +260,9 @@ Bug Fixes
 * SOLR-4788: Multiple Entities DIH delta import: dataimporter.[entityName].last_index_time
   is empty. (chakming wong, James Dyer via shalin)
 
+* SOLR-4978: Time is stripped from datetime column when imported into Solr date field
+  if convertType=true. (Bill Au, shalin)
+
 Optimizations
 ----------------------
 
