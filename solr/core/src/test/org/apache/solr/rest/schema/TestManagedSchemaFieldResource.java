@@ -103,6 +103,29 @@ public class TestManagedSchemaFieldResource extends RestTestBase {
   }
 
   @Test
+  public void testAddCopyField() throws Exception {
+    assertQ("/schema/fields/newfield2?indent=on&wt=xml",
+            "count(/response/lst[@name='field']) = 0",
+            "/response/lst[@name='responseHeader']/int[@name='status'] = '404'",
+            "/response/lst[@name='error']/int[@name='code'] = '404'");
+
+    assertJPut("/schema/fields/fieldA",
+        "{\"type\":\"text\",\"stored\":\"false\"}",
+        "/responseHeader/status==0");
+    assertJPut("/schema/fields/fieldB",
+        "{\"type\":\"text\",\"stored\":\"false\", \"copyFields\":\"fieldA\"}",
+        "/responseHeader/status==0");
+
+    assertQ("/schema/fields/fieldB?indent=on&wt=xml",
+            "count(/response/lst[@name='field']) = 1",
+            "/response/lst[@name='responseHeader']/int[@name='status'] = '0'");
+    assertQ("/schema/copyfields/?indent=on&wt=xml&source.fl=fieldB",
+        "count(/response/arr[@name='copyFields']/lst) = 1"
+    );
+
+  }
+
+  @Test
   public void testPostMultipleFields() throws Exception {
     assertQ("/schema/fields/newfield1?indent=on&wt=xml",
             "count(/response/lst[@name='field']) = 0",
@@ -142,5 +165,35 @@ public class TestManagedSchemaFieldResource extends RestTestBase {
         "count(/response/result[@name='response']/doc/*) = 1",
         "/response/result[@name='response']/doc/str[@name='id'][.='456']");
   }
+
+  @Test
+  public void testPostCopy() throws Exception {
+    assertJPost("/schema/fields",
+              "[{\"name\":\"fieldA\",\"type\":\"text\",\"stored\":\"false\"},"
+               + "{\"name\":\"fieldB\",\"type\":\"text\",\"stored\":\"false\"},"
+               + " {\"name\":\"fieldC\",\"type\":\"text\",\"stored\":\"false\", \"copyFields\":\"fieldB\"}]",
+                "/responseHeader/status==0");
+    assertQ("/schema/copyfields/?indent=on&wt=xml&source.fl=fieldC",
+        "count(/response/arr[@name='copyFields']/lst) = 1"
+    );
+    assertJPost("/schema/fields",
+              "[{\"name\":\"fieldD\",\"type\":\"text\",\"stored\":\"false\"},"
+               + "{\"name\":\"fieldE\",\"type\":\"text\",\"stored\":\"false\"},"
+               + " {\"name\":\"fieldF\",\"type\":\"text\",\"stored\":\"false\", \"copyFields\":\"fieldD,fieldE\"}]",
+                "/responseHeader/status==0");
+    assertQ("/schema/copyfields/?indent=on&wt=xml&source.fl=fieldF",
+        "count(/response/arr[@name='copyFields']/lst) = 2"
+    );
+    assertJPost("/schema/fields",
+              "[{\"name\":\"fieldG\",\"type\":\"text\",\"stored\":\"false\"},"
+               + "{\"name\":\"fieldH\",\"type\":\"text\",\"stored\":\"false\"},"
+               + " {\"name\":\"fieldI\",\"type\":\"text\",\"stored\":\"false\", \"copyFields\":\"fieldG,   fieldH   \"}]",
+                "/responseHeader/status==0");
+    assertQ("/schema/copyfields/?indent=on&wt=xml&source.fl=fieldF",
+        "count(/response/arr[@name='copyFields']/lst) = 2"
+    );
+
+  }
+
 }
 

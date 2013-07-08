@@ -40,6 +40,7 @@ import java.io.OutputStreamWriter;
 import java.io.StringWriter;
 import java.util.Arrays;
 import java.util.Collection;
+import java.util.Collections;
 import java.util.Map;
 
 /** Solr-managed schema - non-user-editable, but can be mutable via internal and external REST API requests. */
@@ -165,8 +166,13 @@ public final class ManagedIndexSchema extends IndexSchema {
   }
 
   @Override
-  public ManagedIndexSchema addField(SchemaField newField) {
+  public IndexSchema addField(SchemaField newField) {
     return addFields(Arrays.asList(newField));
+  }
+
+  @Override
+  public IndexSchema addField(SchemaField newField, Collection<String> copyFieldNames) {
+    return addFields(Arrays.asList(newField), Collections.singletonMap(newField.getName(), copyFieldNames));
   }
 
   public class FieldExistsException extends SolrException {
@@ -174,18 +180,26 @@ public final class ManagedIndexSchema extends IndexSchema {
       super(code, msg);
     }
   }
-  
+
   @Override
-  public ManagedIndexSchema addFields(Collection<SchemaField> newFields) {
+  public IndexSchema addFields(Collection<SchemaField> newFields) {
+    return addFields(newFields, Collections.<String, Collection<String>>emptyMap());
+  }
+
+  @Override
+  public IndexSchema addFields(Collection<SchemaField> newFields, Map<String, Collection<String>> copyFieldNames) {
     ManagedIndexSchema newSchema = null;
     if (isMutable) {
       boolean success = false;
+      if (copyFieldNames == null){
+        copyFieldNames = Collections.emptyMap();
+      }
       while ( ! success) { // optimistic concurrency
         // even though fields is volatile, we need to synchronize to avoid two addFields
         // happening concurrently (and ending up missing one of them)
         synchronized (getSchemaUpdateLock()) {
           newSchema = shallowCopy(true);
-          
+
           for (SchemaField newField : newFields) {
             if (null != newSchema.getFieldOrNull(newField.getName())) {
               String msg = "Field '" + newField.getName() + "' already exists.";
@@ -200,6 +214,12 @@ public final class ManagedIndexSchema extends IndexSchema {
             if (newField.isRequired()) {
               log.debug("{} is required in this schema", newField.getName());
               newSchema.requiredFields.add(newField);
+            }
+            Collection<String> copyFields = copyFieldNames.get(newField.getName());
+            if (copyFields != null) {
+              for (String copyField : copyFields) {
+                newSchema.registerCopyField(newField.getName(), copyField);
+              }
             }
           }
           // Run the callbacks on SchemaAware now that everything else is done
