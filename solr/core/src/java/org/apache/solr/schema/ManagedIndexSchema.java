@@ -166,12 +166,12 @@ public final class ManagedIndexSchema extends IndexSchema {
   }
 
   @Override
-  public IndexSchema addField(SchemaField newField) {
+  public ManagedIndexSchema addField(SchemaField newField) {
     return addFields(Arrays.asList(newField));
   }
 
   @Override
-  public IndexSchema addField(SchemaField newField, Collection<String> copyFieldNames) {
+  public ManagedIndexSchema addField(SchemaField newField, Collection<String> copyFieldNames) {
     return addFields(Arrays.asList(newField), Collections.singletonMap(newField.getName(), copyFieldNames));
   }
 
@@ -182,12 +182,12 @@ public final class ManagedIndexSchema extends IndexSchema {
   }
 
   @Override
-  public IndexSchema addFields(Collection<SchemaField> newFields) {
+  public ManagedIndexSchema addFields(Collection<SchemaField> newFields) {
     return addFields(newFields, Collections.<String, Collection<String>>emptyMap());
   }
 
   @Override
-  public IndexSchema addFields(Collection<SchemaField> newFields, Map<String, Collection<String>> copyFieldNames) {
+  public ManagedIndexSchema addFields(Collection<SchemaField> newFields, Map<String, Collection<String>> copyFieldNames) {
     ManagedIndexSchema newSchema = null;
     if (isMutable) {
       boolean success = false;
@@ -238,6 +238,39 @@ public final class ManagedIndexSchema extends IndexSchema {
       String msg = "This ManagedIndexSchema is not mutable.";
       log.error(msg);
       throw new SolrException(ErrorCode.SERVER_ERROR, msg);
+    }
+    return newSchema;
+  }
+
+  @Override
+  public ManagedIndexSchema addCopyFields(Map<String, Collection<String>> copyFields) {
+    ManagedIndexSchema newSchema = null;
+    if (isMutable) {
+      boolean success = false;
+      while (!success) { // optimistic concurrency
+        // even though fields is volatile, we need to synchronize to avoid two addCopyFields
+        // happening concurrently (and ending up missing one of them)
+        synchronized (getSchemaUpdateLock()) {
+          newSchema = shallowCopy(true);
+          for (Map.Entry<String, Collection<String>> entry : copyFields.entrySet()) {
+            //Key is the name of the field, values are the destinations
+
+            for (String destination : entry.getValue()) {
+              newSchema.registerCopyField(entry.getKey(), destination);
+            }
+          }
+          //TODO: move this common stuff out to shared methods
+           // Run the callbacks on SchemaAware now that everything else is done
+          for (SchemaAware aware : newSchema.schemaAware) {
+            aware.inform(newSchema);
+          }
+          newSchema.refreshAnalyzers();
+          success = newSchema.persistManagedSchema(false); // don't just create - update it if it already exists
+          if (success) {
+            log.debug("Added copy fields for {} sources", copyFields.size());
+          }
+        }
+      }
     }
     return newSchema;
   }
