@@ -17,37 +17,46 @@ package org.apache.solr.rest.schema;
  */
 
 
+import org.apache.solr.common.SolrException;
 import org.apache.solr.common.params.CommonParams;
 import org.apache.solr.rest.GETable;
+import org.apache.solr.rest.POSTable;
 import org.apache.solr.schema.IndexSchema;
+import org.apache.solr.schema.ManagedIndexSchema;
+import org.noggit.ObjectBuilder;
+import org.restlet.data.MediaType;
 import org.restlet.representation.Representation;
 import org.restlet.resource.ResourceException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.io.IOException;
 import java.util.Arrays;
+import java.util.Collection;
+import java.util.HashMap;
 import java.util.HashSet;
+import java.util.List;
+import java.util.Map;
 import java.util.Set;
 
 /**
  * This class responds to requests at /solr/(corename)/schema/copyfields
- * 
  * <p/>
- * 
+ *
  * To restrict the set of copyFields in the response, specify one or both
  * of the following as query parameters, with values as space and/or comma
  * separated dynamic or explicit field names:
- * 
+ *
  * <ul>
  *   <li>dest.fl: include copyFields that have one of these as a destination</li>
  *   <li>source.fl: include copyFields that have one of these as a source</li>
  * </ul>
- * 
+ *
  * If both dest.fl and source.fl are given as query parameters, the copyfields
  * in the response will be restricted to those that match any of the destinations
  * in dest.fl and also match any of the sources in source.fl.
  */
-public class CopyFieldCollectionResource extends BaseFieldResource implements GETable {
+public class CopyFieldCollectionResource extends BaseFieldResource implements GETable, POSTable {
   private static final Logger log = LoggerFactory.getLogger(CopyFieldCollectionResource.class);
   private static final String SOURCE_FIELD_LIST = IndexSchema.SOURCE + "." + CommonParams.FL;
   private static final String DESTINATION_FIELD_LIST = IndexSchema.DESTINATION + "." + CommonParams.FL;
@@ -92,6 +101,80 @@ public class CopyFieldCollectionResource extends BaseFieldResource implements GE
     }
     handlePostExecution(log);
 
+    return new SolrOutputRepresentation();
+  }
+
+  @Override
+  public Representation post(Representation entity) throws ResourceException {
+    try {
+      if (!getSchema().isMutable()) {
+        final String message = "This IndexSchema is not mutable.";
+        throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, message);
+      } else {
+        if (!entity.getMediaType().equals(MediaType.APPLICATION_JSON, true)) {
+          String message = "Only media type " + MediaType.APPLICATION_JSON.toString() + " is accepted."
+              + "  Request has media type " + entity.getMediaType().toString() + ".";
+          log.error(message);
+          throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, message);
+        } else {
+          Object object = ObjectBuilder.fromJSON(entity.getText());
+
+          if (!(object instanceof List)) {
+            String message = "Invalid JSON type " + object.getClass().getName() + ", expected List of the form"
+                + " (ignore the backslashes): [{\"source\":\"foo\",\"dest\":\"comma-separated list of targets\"}, {...}, ...]";
+            log.error(message);
+            throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, message);
+          } else {
+            List<Map<String, Object>> list = (List<Map<String, Object>>) object;
+            Map<String, Collection<String>> fieldsToCopy = new HashMap<>();
+            ManagedIndexSchema oldSchema = (ManagedIndexSchema) getSchema();
+            Set<String> malformed = new HashSet<>();
+            for (Map<String,Object> map : list) {
+              String fieldName = (String)map.get(IndexSchema.SOURCE);
+              if (null == fieldName) {
+                String message = "Missing '" + IndexSchema.SOURCE + "' mapping.";
+                log.error(message);
+                throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, message);
+              }
+              String destinations = (String)map.get(IndexSchema.DESTINATION);
+              if (destinations == null) {
+                String message = "Missing '" + IndexSchema.DESTINATION + "' mapping.";
+                log.error(message);
+                throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, message);
+              }
+              String [] splits = destinations.split(",");
+              Set<String> destinationSet = new HashSet<>();
+              if (splits != null && splits.length > 0){
+                for (int i = 0; i < splits.length; i++) {
+                  destinationSet.add(splits[i].trim());
+                }
+                fieldsToCopy.put(fieldName, destinationSet);
+              } else {
+                malformed.add(fieldName);
+              }
+            }
+            if (malformed.size() > 0){
+              StringBuilder message = new StringBuilder("Malformed destination(s) for: ");
+              for (String s : malformed) {
+                message.append(s).append(", ");
+              }
+              if (message.length() > 2) {
+                message.setLength(message.length() - 2);//drop the last ,
+              }
+              log.error(message.toString().trim());
+              throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, message.toString().trim());
+            }
+            IndexSchema newSchema = oldSchema.addCopyFields(fieldsToCopy);
+            if (newSchema != null) {
+              getSolrCore().setLatestSchema(newSchema);
+            }
+          }
+        }
+      }
+    } catch (Exception e) {
+      getSolrResponse().setException(e);
+    }
+    handlePostExecution(log);
     return new SolrOutputRepresentation();
   }
 }

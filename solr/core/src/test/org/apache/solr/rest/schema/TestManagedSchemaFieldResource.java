@@ -122,7 +122,13 @@ public class TestManagedSchemaFieldResource extends RestTestBase {
     assertQ("/schema/copyfields/?indent=on&wt=xml&source.fl=fieldB",
         "count(/response/arr[@name='copyFields']/lst) = 1"
     );
-
+    //some bad usages
+    assertJPut("/schema/fields/fieldB",
+        "{\"type\":\"text\",\"stored\":\"false\", \"copyFields\":\",,,\"}",
+        "/error/msg==\"Invalid copyFields for field: fieldB\"");
+    assertJPut("/schema/fields/fieldC",
+        "{\"type\":\"text\",\"stored\":\"false\", \"copyFields\":\"some_nonexistent_field\"}",
+        "/error/msg==\"copyField dest :\\'some_nonexistent_field\\' is not an explicit field and doesn\\'t match a dynamicField.\"");
   }
 
   @Test
@@ -192,7 +198,37 @@ public class TestManagedSchemaFieldResource extends RestTestBase {
     assertQ("/schema/copyfields/?indent=on&wt=xml&source.fl=fieldF",
         "count(/response/arr[@name='copyFields']/lst) = 2"
     );
+    //some bad usages
+    assertJPost("/schema/fields",
+              "[{\"name\":\"fieldX\",\"type\":\"text\",\"stored\":\"false\"},"
+               + "{\"name\":\"fieldY\",\"type\":\"text\",\"stored\":\"false\"},"
+               + " {\"name\":\"fieldZ\",\"type\":\"text\",\"stored\":\"false\", \"copyFields\":\",,,\"}]",
+                "/error/msg==\"Malformed destination(s) for: fieldZ\"");
 
+    assertJPost("/schema/fields",
+              "[{\"name\":\"fieldX\",\"type\":\"text\",\"stored\":\"false\"},"
+               + "{\"name\":\"fieldY\",\"type\":\"text\",\"stored\":\"false\"},"
+               + " {\"name\":\"fieldZ\",\"type\":\"text\",\"stored\":\"false\", \"copyFields\":\"some_nonexistent_field\"}]",
+                "/error/msg==\"copyField dest :\\'some_nonexistent_field\\' is not an explicit field and doesn\\'t match a dynamicField.\"");
+  }
+
+  @Test
+  public void testPostCopyFields() throws Exception {
+    assertJPost("/schema/fields",
+              "[{\"name\":\"fieldA\",\"type\":\"text\",\"stored\":\"false\"},"
+               + "{\"name\":\"fieldB\",\"type\":\"text\",\"stored\":\"false\"},"
+               + "{\"name\":\"fieldC\",\"type\":\"text\",\"stored\":\"false\"},"
+                  + "{\"name\":\"fieldD\",\"type\":\"text\",\"stored\":\"false\"},"
+               + " {\"name\":\"fieldE\",\"type\":\"text\",\"stored\":\"false\"}]",
+                "/responseHeader/status==0");
+    assertJPost("/schema/copyfields", "[{\"source\":\"fieldA\", \"dest\":\"fieldB\"},{\"source\":\"fieldD\", \"dest\":\"fieldC,   fieldE\"}]", "/responseHeader/status==0");
+    assertQ("/schema/copyfields/?indent=on&wt=xml&source.fl=fieldA",
+        "count(/response/arr[@name='copyFields']/lst) = 1");
+    assertQ("/schema/copyfields/?indent=on&wt=xml&source.fl=fieldD",
+        "count(/response/arr[@name='copyFields']/lst) = 2");
+    assertJPost("/schema/copyfields", "[{\"source\":\"fieldD\", \"dest\":\",,,\"}]", "/error/msg==\"Malformed destination(s) for: fieldD\"");
+    assertJPost("/schema/copyfields", "[{\"source\":\"some_nonexistent_field\", \"dest\":\"fieldA\"}]", "/error/msg==\"copyField source :\\'some_nonexistent_field\\' is not a glob and doesn\\'t match any explicit field or dynamicField.\"");
+    assertJPost("/schema/copyfields", "[{\"source\":\"fieldD\", \"dest\":\"some_nonexistent_field\"}]", "/error/msg==\"copyField dest :\\'some_nonexistent_field\\' is not an explicit field and doesn\\'t match a dynamicField.\"");
   }
 
 }

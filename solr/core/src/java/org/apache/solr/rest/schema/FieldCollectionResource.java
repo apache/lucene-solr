@@ -33,9 +33,12 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.SortedSet;
 import java.util.TreeSet;
 
@@ -44,22 +47,22 @@ import java.util.TreeSet;
  * <p/>
  * Two query parameters are supported:
  * <ul>
- *   <li>
- *     "fl": a comma- and/or space-separated list of fields to send properties
- *     for in the response, rather than the default: all of them.
- *   </li>
- *   <li>
- *     "includeDynamic": if the "fl" parameter is specified, matching dynamic
- *     fields are included in the response and identified with the "dynamicBase"
- *     property.  If the "fl" parameter is not specified, the "includeDynamic"
- *     query parameter is ignored.
- *   </li>
+ * <li>
+ * "fl": a comma- and/or space-separated list of fields to send properties
+ * for in the response, rather than the default: all of them.
+ * </li>
+ * <li>
+ * "includeDynamic": if the "fl" parameter is specified, matching dynamic
+ * fields are included in the response and identified with the "dynamicBase"
+ * property.  If the "fl" parameter is not specified, the "includeDynamic"
+ * query parameter is ignored.
+ * </li>
  * </ul>
  */
-public class FieldCollectionResource extends BaseFieldResource implements GETable,POSTable {
+public class FieldCollectionResource extends BaseFieldResource implements GETable, POSTable {
   private static final Logger log = LoggerFactory.getLogger(FieldCollectionResource.class);
   private boolean includeDynamic;
-  
+
   public FieldCollectionResource() {
     super();
   }
@@ -109,65 +112,78 @@ public class FieldCollectionResource extends BaseFieldResource implements GETabl
 
     return new SolrOutputRepresentation();
   }
-  
+
   @Override
   public Representation post(Representation entity) {
     try {
-      if ( ! getSchema().isMutable()) {
+      if (!getSchema().isMutable()) {
         final String message = "This IndexSchema is not mutable.";
         throw new SolrException(ErrorCode.BAD_REQUEST, message);
       } else {
         if (null == entity.getMediaType()) {
           entity.setMediaType(MediaType.APPLICATION_JSON);
         }
-        if ( ! entity.getMediaType().equals(MediaType.APPLICATION_JSON, true)) {
+        if (!entity.getMediaType().equals(MediaType.APPLICATION_JSON, true)) {
           String message = "Only media type " + MediaType.APPLICATION_JSON.toString() + " is accepted."
               + "  Request has media type " + entity.getMediaType().toString() + ".";
           log.error(message);
           throw new SolrException(ErrorCode.BAD_REQUEST, message);
         } else {
           Object object = ObjectBuilder.fromJSON(entity.getText());
-          Map<String, String> copyFields = new HashMap<>();
-          if ( ! (object instanceof List)) {
+          if (!(object instanceof List)) {
             String message = "Invalid JSON type " + object.getClass().getName() + ", expected List of the form"
                 + " (ignore the backslashes): [{\"name\":\"foo\",\"type\":\"text_general\", ...}, {...}, ...]";
             log.error(message);
             throw new SolrException(ErrorCode.BAD_REQUEST, message);
           } else {
-            List<Map<String,Object>> list = (List<Map<String,Object>>)object;
+            List<Map<String, Object>> list = (List<Map<String, Object>>) object;
             List<SchemaField> newFields = new ArrayList<SchemaField>();
             IndexSchema oldSchema = getSchema();
-            for (Map<String,Object> map : list) {
-              String fieldName = (String)map.remove(IndexSchema.NAME);
+            Map<String, Collection<String>> copyFields = new HashMap<>();
+            Set<String> malformed = new HashSet<>();
+            for (Map<String, Object> map : list) {
+              String fieldName = (String) map.remove(IndexSchema.NAME);
               if (null == fieldName) {
                 String message = "Missing '" + IndexSchema.NAME + "' mapping.";
                 log.error(message);
                 throw new SolrException(ErrorCode.BAD_REQUEST, message);
               }
-              String fieldType = (String)map.remove(IndexSchema.TYPE);
+              String fieldType = (String) map.remove(IndexSchema.TYPE);
               if (null == fieldType) {
                 String message = "Missing '" + IndexSchema.TYPE + "' mapping.";
                 log.error(message);
                 throw new SolrException(ErrorCode.BAD_REQUEST, message);
               }
               // copyFields:"comma separated list of destination fields"
-              String copyTo = (String)map.get(IndexSchema.COPY_FIELDS);
-              if (copyTo != null){
+              String copyTo = (String) map.get(IndexSchema.COPY_FIELDS);
+              if (copyTo != null) {
                 map.remove(IndexSchema.COPY_FIELDS);
-                copyFields.put(fieldName, copyTo);
+                String[] splits = copyTo.split(",");
+                Set<String> destinations = new HashSet<>();
+                if (splits != null && splits.length > 0) {
+                  for (int i = 0; i < splits.length; i++) {
+                    destinations.add(splits[i].trim());
+                  }
+                  copyFields.put(fieldName, destinations);
+                } else{
+                  malformed.add(fieldName);
+                }
               }
               newFields.add(oldSchema.newField(fieldName, fieldType, map));
             }
-            IndexSchema newSchema = oldSchema.addFields(newFields);
-            for (Map.Entry<String, String> entry : copyFields.entrySet()) {
-              //key is the source, value is a comma separated list of targets
-              String [] splits = entry.getValue().split(",");
-              if (splits != null && splits.length > 0){
-                for (int i = 0; i < splits.length; i++) {
-                  newSchema.registerCopyField(entry.getKey(), splits[i].trim());
-                }
+            if (malformed.size() > 0){
+              StringBuilder message = new StringBuilder("Malformed destination(s) for: ");
+              for (String s : malformed) {
+                message.append(s).append(", ");
               }
+              if (message.length() > 2) {
+                message.setLength(message.length() - 2);//drop the last ,
+              }
+              log.error(message.toString().trim());
+              throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, message.toString().trim());
             }
+            IndexSchema newSchema = oldSchema.addFields(newFields, copyFields);
+
             getSolrCore().setLatestSchema(newSchema);
           }
         }

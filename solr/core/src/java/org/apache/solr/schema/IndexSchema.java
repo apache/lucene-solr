@@ -1440,7 +1440,7 @@ public class IndexSchema {
    * Copies this schema, adds the given field to the copy, then persists the new schema.
    *
    * @param newField the SchemaField to add
-   * @param copyFieldNames 0 or more names of targets to copy this field to
+   * @param copyFieldNames 0 or more names of targets to copy this field to.  The targets must already exist.
    * @return a new IndexSchema based on this schema with newField added
    * @see #newField(String, String, Map)
    */
@@ -1467,11 +1467,22 @@ public class IndexSchema {
    * Copies this schema, adds the given fields to the copy, then persists the new schema.
    *
    * @param newFields the SchemaFields to add
-   * @param copyFieldNames 0 or more names of targets to copy this field to
+   * @param copyFieldNames 0 or more names of targets to copy this field to.  The target fields must already exist.
    * @return a new IndexSchema based on this schema with newFields added
    * @see #newField(String, String, Map)
    */
   public IndexSchema addFields(Collection<SchemaField> newFields, Map<String, Collection<String>> copyFieldNames) {
+    String msg = "This IndexSchema is not mutable.";
+    log.error(msg);
+    throw new SolrException(ErrorCode.SERVER_ERROR, msg);
+  }
+
+  /**
+   * Copies this schema and adds the new copy fields to the copy, then persists the new schema
+   * @param copyFields Key is the name of the source field name, value is a collection of target field names.  Fields must exist.
+   * @return The new Schema with the copy fields added
+   */
+  public IndexSchema addCopyFields(Map<String, Collection<String>> copyFields){
     String msg = "This IndexSchema is not mutable.";
     log.error(msg);
     throw new SolrException(ErrorCode.SERVER_ERROR, msg);

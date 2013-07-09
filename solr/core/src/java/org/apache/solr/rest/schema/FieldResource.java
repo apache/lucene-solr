@@ -150,8 +150,17 @@ public class FieldResource extends BaseFieldResource implements GETable, PUTable
                 if (copyTo != null) {
                   map.remove(IndexSchema.COPY_FIELDS);
                   String [] tmp = copyTo.split(",");
-                  copyFieldNames = new HashSet<>(tmp.length);
-                  Collections.addAll(copyFieldNames, tmp);
+                  if (tmp != null && tmp.length > 0) {
+                    copyFieldNames = new HashSet<>(tmp.length);
+                    for (int i = 0; i < tmp.length; i++) {
+                      copyFieldNames.add(tmp[i].trim());
+                    }
+                  } else {
+                    //the user specified copy fields, but then passed in something invalid
+                    String msg = "Invalid " + IndexSchema.COPY_FIELDS + " for field: " + fieldName;
+                    log.error(msg);
+                    throw new SolrException(ErrorCode.BAD_REQUEST, msg);
+                  }
                 }
                 SchemaField newField = oldSchema.newField(fieldName, fieldType, map);
                 IndexSchema newSchema = oldSchema.addField(newField, copyFieldNames);
