@@ -127,8 +127,8 @@ public class TestManagedSchemaFieldResource extends RestTestBase {
         "{\"type\":\"text\",\"stored\":\"false\", \"copyFields\":\",,,\"}",
         "/error/msg==\"Invalid copyFields for field: fieldB\"");
     assertJPut("/schema/fields/fieldC",
-        "{\"type\":\"text\",\"stored\":\"false\", \"copyFields\":\"some_nonexistent_field\"}",
-        "/error/msg==\"copyField dest :\\'some_nonexistent_field\\' is not an explicit field and doesn\\'t match a dynamicField.\"");
+        "{\"type\":\"text\",\"stored\":\"false\", \"copyFields\":\"some_nonexistent_field_ignore_exception\"}",
+        "/error/msg==\"copyField dest :\\'some_nonexistent_field_ignore_exception\\' is not an explicit field and doesn\\'t match a dynamicField.\"");
   }
 
   @Test
@@ -208,8 +208,8 @@ public class TestManagedSchemaFieldResource extends RestTestBase {
     assertJPost("/schema/fields",
               "[{\"name\":\"fieldX\",\"type\":\"text\",\"stored\":\"false\"},"
                + "{\"name\":\"fieldY\",\"type\":\"text\",\"stored\":\"false\"},"
-               + " {\"name\":\"fieldZ\",\"type\":\"text\",\"stored\":\"false\", \"copyFields\":\"some_nonexistent_field\"}]",
-                "/error/msg==\"copyField dest :\\'some_nonexistent_field\\' is not an explicit field and doesn\\'t match a dynamicField.\"");
+               + " {\"name\":\"fieldZ\",\"type\":\"text\",\"stored\":\"false\", \"copyFields\":\"some_nonexistent_field_ignore_exception\"}]",
+                "/error/msg==\"copyField dest :\\'some_nonexistent_field_ignore_exception\\' is not an explicit field and doesn\\'t match a dynamicField.\"");
   }
 
   @Test
@@ -227,8 +227,8 @@ public class TestManagedSchemaFieldResource extends RestTestBase {
     assertQ("/schema/copyfields/?indent=on&wt=xml&source.fl=fieldD",
         "count(/response/arr[@name='copyFields']/lst) = 2");
     assertJPost("/schema/copyfields", "[{\"source\":\"fieldD\", \"dest\":\",,,\"}]", "/error/msg==\"Malformed destination(s) for: fieldD\"");
-    assertJPost("/schema/copyfields", "[{\"source\":\"some_nonexistent_field\", \"dest\":\"fieldA\"}]", "/error/msg==\"copyField source :\\'some_nonexistent_field\\' is not a glob and doesn\\'t match any explicit field or dynamicField.\"");
-    assertJPost("/schema/copyfields", "[{\"source\":\"fieldD\", \"dest\":\"some_nonexistent_field\"}]", "/error/msg==\"copyField dest :\\'some_nonexistent_field\\' is not an explicit field and doesn\\'t match a dynamicField.\"");
+    assertJPost("/schema/copyfields", "[{\"source\":\"some_nonexistent_field_ignore_exception\", \"dest\":\"fieldA\"}]", "/error/msg==\"copyField source :\\'some_nonexistent_field_ignore_exception\\' is not a glob and doesn\\'t match any explicit field or dynamicField.\"");
+    assertJPost("/schema/copyfields", "[{\"source\":\"fieldD\", \"dest\":\"some_nonexistent_field_ignore_exception\"}]", "/error/msg==\"copyField dest :\\'some_nonexistent_field_ignore_exception\\' is not an explicit field and doesn\\'t match a dynamicField.\"");
   }
 
 }
