@@ -46,6 +46,10 @@ Optimizations
 
 ======================= Lucene 4.5.0 =======================
 
+New features
+
+* LUCENE-5084: Added new Elias-Fano encoder, decoder and DocIdSet
+  implementations. (Paul Elschot via Adrien Grand)
 
 ======================= Lucene 4.4.0 =======================
 
@@ -297,9 +301,6 @@ New Features
 
 * LUCENE-5013: Added ScandinavianFoldingFilterFactory and
   ScandinavianNormalizationFilterFactory (Karl Wettin via janhoy)
-
-* LUCENE-5084: Added new Elias-Fano encoder, decoder and DocIdSet
-  implementations. (Paul Elschot via Adrien Grand)
 
 API Changes
 
