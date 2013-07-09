@@ -112,7 +112,15 @@ public enum Version {
    *  Use this to get the latest &amp; greatest settings, bug
    *  fixes, etc, for Lucene.
    */
+  @Deprecated
   LUCENE_44,
+
+  /** Match settings and bugs in Lucene's 4.5 release.
+   *  <p>
+   *  Use this to get the latest &amp; greatest settings, bug
+   *  fixes, etc, for Lucene.
+   */
+  LUCENE_45,
 
   /* Add new constants for later versions **here** to respect order! */
 
