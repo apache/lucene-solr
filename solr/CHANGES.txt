@@ -47,6 +47,24 @@ Other Changes
 
 * SOLR-4792: Stop shipping a .war. (Robert Muir)
 
+
+==================  4.5.0 ==================
+
+Versions of Major Components
+---------------------
+Apache Tika 1.4
+Carrot2 3.6.2
+Velocity 1.7 and Velocity Tools 2.0
+Apache UIMA 2.3.1
+Apache ZooKeeper 3.4.5
+
+Upgrading from Solr 4.4.0
+----------------------
+
+Detailed Change List
+----------------------
+
+
 ==================  4.4.0 ==================
 
 Versions of Major Components
