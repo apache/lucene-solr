@@ -912,6 +912,10 @@ public class SolrIndexSearcher extends IndexSearcher implements Closeable,SolrIn
       }
     }
 
+    if(collector instanceof DelegatingCollector) {
+      ((DelegatingCollector) collector).finish();
+    }
+
     return setCollector.getDocSet();
   }
 
@@ -1456,6 +1460,9 @@ public class SolrIndexSearcher extends IndexSearcher implements Closeable,SolrIn
 
       try {
         super.search(query, luceneFilter, collector);
+        if(collector instanceof DelegatingCollector) {
+          ((DelegatingCollector)collector).finish();
+        }
       }
       catch( TimeLimitingCollector.TimeExceededException x ) {
         log.warn( "Query: " + query + "; " + x.getMessage() );
@@ -1492,6 +1499,9 @@ public class SolrIndexSearcher extends IndexSearcher implements Closeable,SolrIn
       }
       try {
         super.search(query, luceneFilter, collector);
+        if(collector instanceof DelegatingCollector) {
+          ((DelegatingCollector)collector).finish();
+        }
       }
       catch( TimeLimitingCollector.TimeExceededException x ) {
         log.warn( "Query: " + query + "; " + x.getMessage() );
@@ -1584,6 +1594,9 @@ public class SolrIndexSearcher extends IndexSearcher implements Closeable,SolrIn
 
        try {
          super.search(query, luceneFilter, collector);
+         if(collector instanceof DelegatingCollector) {
+           ((DelegatingCollector)collector).finish();
+         }
        }
        catch( TimeLimitingCollector.TimeExceededException x ) {
          log.warn( "Query: " + query + "; " + x.getMessage() );
@@ -1621,6 +1634,9 @@ public class SolrIndexSearcher extends IndexSearcher implements Closeable,SolrIn
       }
       try {
         super.search(query, luceneFilter, collector);
+        if(collector instanceof DelegatingCollector) {
+          ((DelegatingCollector)collector).finish();
+        }
       }
       catch( TimeLimitingCollector.TimeExceededException x ) {
         log.warn( "Query: " + query + "; " + x.getMessage() );
