@@ -5,6 +5,10 @@ http://s.apache.org/luceneversions
 
 ======================= Lucene 4.5.0 =======================
 
+New features
+
+* LUCENE-5084: Added new Elias-Fano encoder, decoder and DocIdSet
+  implementations. (Paul Elschot via Adrien Grand)
 
 ======================= Lucene 4.4.0 =======================
 
