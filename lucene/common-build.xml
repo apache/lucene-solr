@@ -971,6 +971,7 @@
                 <propertyref prefix="tests.badapples" />
                 <propertyref prefix="tests.timeoutSuite" />
                 <propertyref prefix="tests.jettyConnector" />
+                <propertyref prefix="tests.disableHdfs" />
             </syspropertyset>
 
             <!-- Pass randomized settings to the forked JVM. -->

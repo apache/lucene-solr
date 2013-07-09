@@ -123,6 +123,12 @@
     </sequential>
   </macrodef>
 
+  <!-- we don't want to run HDFS tests on Windows, because they require Cygwin.
+    If you have Cygwin, you can override this property on command line: -->
+  <condition property="tests.disableHdfs" value="true">
+    <os family="windows"/>
+  </condition>
+
   <target name="validate" depends="compile-tools">
   </target>
 

@@ -7,7 +7,6 @@ import java.util.Locale;
 
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.hdfs.MiniDFSCluster;
-import org.apache.lucene.util.Constants;
 import org.apache.lucene.util.LuceneTestCase;
 import org.apache.solr.SolrTestCaseJ4;
 import org.junit.Assert;
@@ -34,9 +33,8 @@ public class HdfsTestUtil {
   private static Locale savedLocale;
 
   public static MiniDFSCluster setupClass(String dataDir) throws Exception {
-    LuceneTestCase.assumeFalse("HDFS tests on Windows require Cygwin", Constants.WINDOWS);
-    LuceneTestCase.assumeFalse("HDFS do not work well with FreeBSD blackhole setup", Constants.FREE_BSD);
-   // LuceneTestCase.assumeFalse("HDFS tests on Windows require Cygwin", Constants.F);
+    LuceneTestCase.assumeFalse("HDFS tests were disabled by -Dtests.disableHdfs",
+      Boolean.parseBoolean(System.getProperty("tests.disableHdfs", "false")));
     File dir = new File(dataDir);
     new File(dataDir).mkdirs();
 
