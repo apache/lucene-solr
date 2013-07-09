@@ -298,6 +298,9 @@ New Features
 * LUCENE-5013: Added ScandinavianFoldingFilterFactory and
   ScandinavianNormalizationFilterFactory (Karl Wettin via janhoy)
 
+* LUCENE-5084: Added new Elias-Fano encoder, decoder and DocIdSet
+  implementations. (Paul Elschot via Adrien Grand)
+
 API Changes
 
 * LUCENE-5077: Make it easier to use compressed norms. Lucene42NormsFormat takes
