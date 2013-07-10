@@ -58,14 +58,14 @@ public class TestManagedSchemaFieldResource extends RestTestBase {
   @Test
   public void testAddFieldBadFieldType() throws Exception {
     assertJPut("/schema/fields/newfield",
-        "{\"type\":\"not_in_there_at_all\",\"stored\":\"false\"}",
+        json( "{'type':'not_in_there_at_all','stored':'false'}" ),
         "/error/msg==\"Field \\'newfield\\': Field type \\'not_in_there_at_all\\' not found.\"");
   }
 
   @Test
   public void testAddFieldMismatchedName() throws Exception {
     assertJPut("/schema/fields/newfield",
-        "{\"name\":\"something_else\",\"type\":\"text\",\"stored\":\"false\"}",
+        json( "{'name':'something_else','type':'text','stored':'false'}" ),
         "/error/msg==\"Field name in the request body \\'something_else\\'"
             + " doesn\\'t match field name in the request URL \\'newfield\\'\"");
   }
@@ -73,7 +73,7 @@ public class TestManagedSchemaFieldResource extends RestTestBase {
   @Test
   public void testAddFieldBadProperty() throws Exception {
     assertJPut("/schema/fields/newfield",
-        "{\"type\":\"text\",\"no_property_with_this_name\":\"false\"}",
+        json( "{'type':'text','no_property_with_this_name':'false'}" ),
         "/error/msg==\"java.lang.IllegalArgumentException: Invalid field property: no_property_with_this_name\"");
   }
   
@@ -85,7 +85,7 @@ public class TestManagedSchemaFieldResource extends RestTestBase {
             "/response/lst[@name='error']/int[@name='code'] = '404'");
     
     assertJPut("/schema/fields/newfield",
-        "{\"type\":\"text\",\"stored\":\"false\"}",
+        json( "{'type':'text','stored':'false'}" ),
         "/responseHeader/status==0");
     
     assertQ("/schema/fields/newfield?indent=on&wt=xml",
@@ -176,9 +176,9 @@ public class TestManagedSchemaFieldResource extends RestTestBase {
   @Test
   public void testPostCopy() throws Exception {
     assertJPost("/schema/fields",
-              "[{\"name\":\"fieldA\",\"type\":\"text\",\"stored\":\"false\"},"
-               + "{\"name\":\"fieldB\",\"type\":\"text\",\"stored\":\"false\"},"
-               + " {\"name\":\"fieldC\",\"type\":\"text\",\"stored\":\"false\", \"copyFields\":[\"fieldB\"]}]",
+        json(    "[{'name':'fieldA','type':'text','stored':'false'},"
+               + " {'name':'fieldB','type':'text','stored':'false'},"
+               + " {'name':'fieldC','type':'text','stored':'false', 'copyFields':['fieldB']}]" ),
                 "/responseHeader/status==0");
     assertQ("/schema/copyfields/?indent=on&wt=xml&source.fl=fieldC",
         "count(/response/arr[@name='copyFields']/lst) = 1"
