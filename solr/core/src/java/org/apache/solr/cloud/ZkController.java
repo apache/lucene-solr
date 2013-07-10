@@ -990,6 +990,9 @@ public final class ZkController {
       numShards = Integer.getInteger(ZkStateReader.NUM_SHARDS_PROP);
     }
     
+    assert cd.getCloudDescriptor().getCollectionName() != null && cd.getCloudDescriptor()
+        .getCollectionName().length() > 0;
+    
     String coreNodeName = cd.getCloudDescriptor().getCoreNodeName();
     //assert cd.getCloudDescriptor().getShardId() != null;
     ZkNodeProps m = new ZkNodeProps(Overseer.QUEUE_OPERATION, "state", 

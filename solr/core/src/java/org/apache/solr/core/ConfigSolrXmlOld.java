@@ -298,7 +298,7 @@ public class ConfigSolrXmlOld extends ConfigSolr {
         + ">\n"
         + "    <core name=\""
         + CoreContainer.DEFAULT_DEFAULT_CORE_NAME
-        + "\" shard=\"${shard:}\" collection=\"${collection:}\" instanceDir=\"collection1\" />\n"
+        + "\" shard=\"${shard:}\" collection=\"${collection:collection1}\" instanceDir=\"collection1\" />\n"
         + "  </cores>\n" + "</solr>";
 
   @Override

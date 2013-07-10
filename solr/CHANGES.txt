@@ -291,6 +291,8 @@ Bug Fixes
 * SOLR-5019: spurious ConcurrentModificationException when spell check component
   was in use with filters. (yonik)
   
+* SOLR-5018: The Overseer should avoid publishing the state for collections that do not 
+  exist under the /collections zk node. (Mark Miller)
 
 Optimizations
 ----------------------
