@@ -34,6 +34,7 @@ import java.io.UnsupportedEncodingException;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.HashSet;
+import java.util.List;
 import java.util.Map;
 
 /**
@@ -145,22 +146,9 @@ public class FieldResource extends BaseFieldResource implements GETable, PUTable
                 throw new SolrException(ErrorCode.BAD_REQUEST, message);
               } else {
                 ManagedIndexSchema oldSchema = (ManagedIndexSchema) getSchema();
-                String copyTo = (String) map.get(IndexSchema.COPY_FIELDS);
-                Collection<String> copyFieldNames = Collections.emptySet();
-                if (copyTo != null) {
+                List<String> copyFieldNames = (List<String>) map.get(IndexSchema.COPY_FIELDS);
+                if (copyFieldNames != null) {
                   map.remove(IndexSchema.COPY_FIELDS);
-                  String [] tmp = copyTo.split(",");
-                  if (tmp != null && tmp.length > 0) {
-                    copyFieldNames = new HashSet<>(tmp.length);
-                    for (int i = 0; i < tmp.length; i++) {
-                      copyFieldNames.add(tmp[i].trim());
-                    }
-                  } else {
-                    //the user specified copy fields, but then passed in something invalid
-                    String msg = "Invalid " + IndexSchema.COPY_FIELDS + " for field: " + fieldName;
-                    log.error(msg);
-                    throw new SolrException(ErrorCode.BAD_REQUEST, msg);
-                  }
                 }
                 SchemaField newField = oldSchema.newField(fieldName, fieldType, map);
                 IndexSchema newSchema = oldSchema.addField(newField, copyFieldNames);

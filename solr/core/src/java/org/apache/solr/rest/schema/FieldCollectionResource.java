@@ -155,32 +155,12 @@ public class FieldCollectionResource extends BaseFieldResource implements GETabl
                 throw new SolrException(ErrorCode.BAD_REQUEST, message);
               }
               // copyFields:"comma separated list of destination fields"
-              String copyTo = (String) map.get(IndexSchema.COPY_FIELDS);
+              List<String> copyTo = (List<String>) map.get(IndexSchema.COPY_FIELDS);
               if (copyTo != null) {
                 map.remove(IndexSchema.COPY_FIELDS);
-                String[] splits = copyTo.split(",");
-                Set<String> destinations = new HashSet<>();
-                if (splits != null && splits.length > 0) {
-                  for (int i = 0; i < splits.length; i++) {
-                    destinations.add(splits[i].trim());
-                  }
-                  copyFields.put(fieldName, destinations);
-                } else{
-                  malformed.add(fieldName);
-                }
+                copyFields.put(fieldName, copyTo);
               }
               newFields.add(oldSchema.newField(fieldName, fieldType, map));
-            }
-            if (malformed.size() > 0){
-              StringBuilder message = new StringBuilder("Malformed destination(s) for: ");
-              for (String s : malformed) {
-                message.append(s).append(", ");
-              }
-              if (message.length() > 2) {
-                message.setLength(message.length() - 2);//drop the last ,
-              }
-              log.error(message.toString().trim());
-              throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, message.toString().trim());
             }
             IndexSchema newSchema = oldSchema.addFields(newFields, copyFields);
 

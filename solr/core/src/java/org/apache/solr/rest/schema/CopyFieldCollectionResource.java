@@ -136,21 +136,11 @@ public class CopyFieldCollectionResource extends BaseFieldResource implements GE
                 log.error(message);
                 throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, message);
               }
-              String destinations = (String)map.get(IndexSchema.DESTINATION);
+              List<String> destinations = (List<String>)map.get(IndexSchema.DESTINATION);
               if (destinations == null) {
-                String message = "Missing '" + IndexSchema.DESTINATION + "' mapping.";
-                log.error(message);
-                throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, message);
-              }
-              String [] splits = destinations.split(",");
-              Set<String> destinationSet = new HashSet<>();
-              if (splits != null && splits.length > 0){
-                for (int i = 0; i < splits.length; i++) {
-                  destinationSet.add(splits[i].trim());
-                }
-                fieldsToCopy.put(fieldName, destinationSet);
-              } else {
                 malformed.add(fieldName);
+              } else {
+                fieldsToCopy.put(fieldName, destinations);
               }
             }
             if (malformed.size() > 0){

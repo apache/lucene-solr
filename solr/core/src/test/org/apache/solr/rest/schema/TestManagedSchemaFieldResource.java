@@ -113,7 +113,7 @@ public class TestManagedSchemaFieldResource extends RestTestBase {
         "{\"type\":\"text\",\"stored\":\"false\"}",
         "/responseHeader/status==0");
     assertJPut("/schema/fields/fieldB",
-        "{\"type\":\"text\",\"stored\":\"false\", \"copyFields\":\"fieldA\"}",
+        "{\"type\":\"text\",\"stored\":\"false\", \"copyFields\":[\"fieldA\"]}",
         "/responseHeader/status==0");
 
     assertQ("/schema/fields/fieldB?indent=on&wt=xml",
@@ -122,12 +122,13 @@ public class TestManagedSchemaFieldResource extends RestTestBase {
     assertQ("/schema/copyfields/?indent=on&wt=xml&source.fl=fieldB",
         "count(/response/arr[@name='copyFields']/lst) = 1"
     );
+    //fine to pass in empty list, just won't do anything
+    assertJPut("/schema/fields/fieldD",
+        "{\"type\":\"text\",\"stored\":\"false\", \"copyFields\":[]}",
+        "/responseHeader/status==0");
     //some bad usages
-    assertJPut("/schema/fields/fieldB",
-        "{\"type\":\"text\",\"stored\":\"false\", \"copyFields\":\",,,\"}",
-        "/error/msg==\"Invalid copyFields for field: fieldB\"");
     assertJPut("/schema/fields/fieldC",
-        "{\"type\":\"text\",\"stored\":\"false\", \"copyFields\":\"some_nonexistent_field_ignore_exception\"}",
+        "{\"type\":\"text\",\"stored\":\"false\", \"copyFields\":[\"some_nonexistent_field_ignore_exception\"]}",
         "/error/msg==\"copyField dest :\\'some_nonexistent_field_ignore_exception\\' is not an explicit field and doesn\\'t match a dynamicField.\"");
   }
 
@@ -177,7 +178,7 @@ public class TestManagedSchemaFieldResource extends RestTestBase {
     assertJPost("/schema/fields",
               "[{\"name\":\"fieldA\",\"type\":\"text\",\"stored\":\"false\"},"
                + "{\"name\":\"fieldB\",\"type\":\"text\",\"stored\":\"false\"},"
-               + " {\"name\":\"fieldC\",\"type\":\"text\",\"stored\":\"false\", \"copyFields\":\"fieldB\"}]",
+               + " {\"name\":\"fieldC\",\"type\":\"text\",\"stored\":\"false\", \"copyFields\":[\"fieldB\"]}]",
                 "/responseHeader/status==0");
     assertQ("/schema/copyfields/?indent=on&wt=xml&source.fl=fieldC",
         "count(/response/arr[@name='copyFields']/lst) = 1"
@@ -185,30 +186,23 @@ public class TestManagedSchemaFieldResource extends RestTestBase {
     assertJPost("/schema/fields",
               "[{\"name\":\"fieldD\",\"type\":\"text\",\"stored\":\"false\"},"
                + "{\"name\":\"fieldE\",\"type\":\"text\",\"stored\":\"false\"},"
-               + " {\"name\":\"fieldF\",\"type\":\"text\",\"stored\":\"false\", \"copyFields\":\"fieldD,fieldE\"}]",
+               + " {\"name\":\"fieldF\",\"type\":\"text\",\"stored\":\"false\", \"copyFields\":[\"fieldD\",\"fieldE\"]}]",
                 "/responseHeader/status==0");
     assertQ("/schema/copyfields/?indent=on&wt=xml&source.fl=fieldF",
         "count(/response/arr[@name='copyFields']/lst) = 2"
     );
+    //passing in an empty list is perfectly acceptable, it just won't do anything
     assertJPost("/schema/fields",
-              "[{\"name\":\"fieldG\",\"type\":\"text\",\"stored\":\"false\"},"
-               + "{\"name\":\"fieldH\",\"type\":\"text\",\"stored\":\"false\"},"
-               + " {\"name\":\"fieldI\",\"type\":\"text\",\"stored\":\"false\", \"copyFields\":\"fieldG,   fieldH   \"}]",
-                "/responseHeader/status==0");
-    assertQ("/schema/copyfields/?indent=on&wt=xml&source.fl=fieldF",
-        "count(/response/arr[@name='copyFields']/lst) = 2"
-    );
+        "[{\"name\":\"fieldX\",\"type\":\"text\",\"stored\":\"false\"},"
+            + "{\"name\":\"fieldY\",\"type\":\"text\",\"stored\":\"false\"},"
+            + " {\"name\":\"fieldZ\",\"type\":\"text\",\"stored\":\"false\", \"copyFields\":[]}]",
+        "/responseHeader/status==0");
     //some bad usages
-    assertJPost("/schema/fields",
-              "[{\"name\":\"fieldX\",\"type\":\"text\",\"stored\":\"false\"},"
-               + "{\"name\":\"fieldY\",\"type\":\"text\",\"stored\":\"false\"},"
-               + " {\"name\":\"fieldZ\",\"type\":\"text\",\"stored\":\"false\", \"copyFields\":\",,,\"}]",
-                "/error/msg==\"Malformed destination(s) for: fieldZ\"");
 
     assertJPost("/schema/fields",
-              "[{\"name\":\"fieldX\",\"type\":\"text\",\"stored\":\"false\"},"
-               + "{\"name\":\"fieldY\",\"type\":\"text\",\"stored\":\"false\"},"
-               + " {\"name\":\"fieldZ\",\"type\":\"text\",\"stored\":\"false\", \"copyFields\":\"some_nonexistent_field_ignore_exception\"}]",
+              "[{\"name\":\"fieldH\",\"type\":\"text\",\"stored\":\"false\"},"
+               + "{\"name\":\"fieldI\",\"type\":\"text\",\"stored\":\"false\"},"
+               + " {\"name\":\"fieldJ\",\"type\":\"text\",\"stored\":\"false\", \"copyFields\":[\"some_nonexistent_field_ignore_exception\"]}]",
                 "/error/msg==\"copyField dest :\\'some_nonexistent_field_ignore_exception\\' is not an explicit field and doesn\\'t match a dynamicField.\"");
   }
 
@@ -221,14 +215,13 @@ public class TestManagedSchemaFieldResource extends RestTestBase {
                   + "{\"name\":\"fieldD\",\"type\":\"text\",\"stored\":\"false\"},"
                + " {\"name\":\"fieldE\",\"type\":\"text\",\"stored\":\"false\"}]",
                 "/responseHeader/status==0");
-    assertJPost("/schema/copyfields", "[{\"source\":\"fieldA\", \"dest\":\"fieldB\"},{\"source\":\"fieldD\", \"dest\":\"fieldC,   fieldE\"}]", "/responseHeader/status==0");
+    assertJPost("/schema/copyfields", "[{\"source\":\"fieldA\", \"dest\":[\"fieldB\"]},{\"source\":\"fieldD\", \"dest\":[\"fieldC\", \"fieldE\"]}]", "/responseHeader/status==0");
     assertQ("/schema/copyfields/?indent=on&wt=xml&source.fl=fieldA",
         "count(/response/arr[@name='copyFields']/lst) = 1");
     assertQ("/schema/copyfields/?indent=on&wt=xml&source.fl=fieldD",
         "count(/response/arr[@name='copyFields']/lst) = 2");
-    assertJPost("/schema/copyfields", "[{\"source\":\"fieldD\", \"dest\":\",,,\"}]", "/error/msg==\"Malformed destination(s) for: fieldD\"");
-    assertJPost("/schema/copyfields", "[{\"source\":\"some_nonexistent_field_ignore_exception\", \"dest\":\"fieldA\"}]", "/error/msg==\"copyField source :\\'some_nonexistent_field_ignore_exception\\' is not a glob and doesn\\'t match any explicit field or dynamicField.\"");
-    assertJPost("/schema/copyfields", "[{\"source\":\"fieldD\", \"dest\":\"some_nonexistent_field_ignore_exception\"}]", "/error/msg==\"copyField dest :\\'some_nonexistent_field_ignore_exception\\' is not an explicit field and doesn\\'t match a dynamicField.\"");
+    assertJPost("/schema/copyfields", "[{\"source\":\"some_nonexistent_field_ignore_exception\", \"dest\":[\"fieldA\"]}]", "/error/msg==\"copyField source :\\'some_nonexistent_field_ignore_exception\\' is not a glob and doesn\\'t match any explicit field or dynamicField.\"");
+    assertJPost("/schema/copyfields", "[{\"source\":\"fieldD\", \"dest\":[\"some_nonexistent_field_ignore_exception\"]}]", "/error/msg==\"copyField dest :\\'some_nonexistent_field_ignore_exception\\' is not an explicit field and doesn\\'t match a dynamicField.\"");
   }
 
 }
