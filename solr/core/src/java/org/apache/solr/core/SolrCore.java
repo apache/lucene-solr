@@ -2091,6 +2091,7 @@ public final class SolrCore implements SolrInfoMBean {
          QParserPlugin plugin = clazz.newInstance();
          qParserPlugins.put(name, plugin);
          plugin.init(null);
+         infoRegistry.put(name, plugin);
        }
      } catch (Exception e) {
        throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, e);
