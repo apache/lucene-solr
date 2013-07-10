@@ -76,6 +76,8 @@ import java.util.Map;
 import java.util.logging.ConsoleHandler;
 import java.util.logging.Handler;
 import java.util.logging.Level;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 import static com.google.common.base.Preconditions.checkNotNull;
 
@@ -642,7 +644,7 @@ public abstract class SolrTestCaseJ4 extends LuceneTestCase {
   /**
    * Validates a query matches some JSON test expressions and closes the
    * query. The text expression is of the form path:JSON.  To facilitate
-   * easy embedding in Java strings, the JSON can have double quotes
+   * easy embedding in Java strings, the JSON tests can have double quotes
    * replaced with single quotes.
    * <p>
    * Please use this with care: this makes it easy to match complete
@@ -677,7 +679,7 @@ public abstract class SolrTestCaseJ4 extends LuceneTestCase {
 
       for (String test : tests) {
         if (test == null || test.length()==0) continue;
-        String testJSON = test.replace('\'', '"');
+        String testJSON = json(test);
 
         try {
           failed = true;
@@ -933,6 +935,24 @@ public abstract class SolrTestCaseJ4 extends LuceneTestCase {
     }
     return sd;
   }
+
+  /** Converts "test JSON" and returns standard JSON.
+   *  Currently this only consists of changing unescaped single quotes to double quotes,
+   *  and escaped single quotes to single quotes.
+   *
+   * The primary purpose is to be able to easily embed JSON strings in a JAVA string
+   * with the best readability.
+   *
+   * This transformation is automatically applied to JSON test srings (like assertJQ).
+   */
+  public static String json(String testJSON) {
+    testJSON = nonEscapedSingleQuotePattern.matcher(testJSON).replaceAll("\"");
+    testJSON = escapedSingleQuotePattern.matcher(testJSON).replaceAll("'");
+    return testJSON;
+  }
+  private static Pattern nonEscapedSingleQuotePattern = Pattern.compile("(?<!\\\\)\'");
+  private static Pattern escapedSingleQuotePattern = Pattern.compile("\\\\\'");
+
 
   /** Creates JSON from a SolrInputDocument.  Doesn't currently handle boosts. */
   public static String json(SolrInputDocument doc) {

@@ -229,8 +229,7 @@ abstract public class RestTestBase extends SolrJettyTestBase {
 
     for (String test : tests) {
       if (null == test || 0 == test.length()) continue;
-      String testJSON = test.replaceAll("(?<!\\\\)\'", "\"");
-      testJSON = testJSON.replaceAll("\\\\\'", "'");
+      String testJSON = json(test);
 
       try {
         failed = true;
@@ -311,8 +310,7 @@ abstract public class RestTestBase extends SolrJettyTestBase {
 
     for (String test : tests) {
       if (null == test || 0 == test.length()) continue;
-      String testJSON = test.replaceAll("(?<!\\\\)\'", "\"");
-      testJSON = testJSON.replaceAll("\\\\\'", "'");
+      String testJSON = json(test);
 
       try {
         failed = true;
@@ -391,8 +389,7 @@ abstract public class RestTestBase extends SolrJettyTestBase {
 
     for (String test : tests) {
       if (null == test || 0 == test.length()) continue;
-      String testJSON = test.replaceAll("(?<!\\\\)\'", "\"");
-      testJSON = testJSON.replaceAll("\\\\\'", "'");
+      String testJSON = json(test);
 
       try {
         failed = true;
