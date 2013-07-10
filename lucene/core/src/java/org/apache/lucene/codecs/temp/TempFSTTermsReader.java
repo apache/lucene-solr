@@ -18,6 +18,8 @@ package org.apache.lucene.codecs.temp;
  */
 
 import java.io.IOException;
+import java.io.PrintWriter;
+import java.io.File;
 import java.util.Collections;
 import java.util.Comparator;
 import java.util.Iterator;
@@ -45,18 +47,21 @@ import org.apache.lucene.util.fst.BytesRefFSTEnum;
 import org.apache.lucene.util.fst.BytesRefFSTEnum.InputOutput;
 import org.apache.lucene.util.fst.FST;
 import org.apache.lucene.util.fst.Outputs;
+import org.apache.lucene.util.fst.Util;
 import org.apache.lucene.codecs.FieldsProducer;
 import org.apache.lucene.codecs.TempPostingsReaderBase;
 import org.apache.lucene.codecs.CodecUtil;
 
 public class TempFSTTermsReader extends FieldsProducer {
+  final TreeMap<String, TermsReader> fields = new TreeMap<String, TermsReader>();
   final TempPostingsReaderBase postingsReader;
   final IndexInput in;
-  final TreeMap<String, TermsReader> fields = new TreeMap<String, TermsReader>();
   boolean DEBUG = false;
+  //String tmpname;
 
   public TempFSTTermsReader(SegmentReadState state, TempPostingsReaderBase postingsReader) throws IOException {
     final String termsFileName = IndexFileNames.segmentFileName(state.segmentInfo.name, state.segmentSuffix, TempFSTTermsWriter.TERMS_EXTENSION);
+    //tmpname = termsFileName;
 
     this.postingsReader = postingsReader;
     this.in = state.directory.openInput(termsFileName, state.context);
@@ -159,6 +164,9 @@ public class TempFSTTermsReader extends FieldsProducer {
       this.docCount = docCount;
       this.longsSize = longsSize;
       this.dict = new FST<TempTermOutputs.TempMetaData>(in, new TempTermOutputs(fieldInfo, longsSize));
+      //PrintWriter pw = new PrintWriter(new File("../graphs/ohohoh."+tmpname+".xxx.txt"));
+      //Util.toDot(dict, pw, false, false);
+      //pw.close();
     }
 
     // nocommit: implement intersect

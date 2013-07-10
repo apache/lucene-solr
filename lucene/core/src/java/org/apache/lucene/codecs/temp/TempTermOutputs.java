@@ -22,6 +22,8 @@ import java.util.Arrays;
 
 import org.apache.lucene.index.FieldInfo;
 import org.apache.lucene.index.FieldInfo.IndexOptions;
+import org.apache.lucene.store.IndexInput;
+import org.apache.lucene.store.IndexOutput;
 import org.apache.lucene.store.DataInput;
 import org.apache.lucene.store.DataOutput;
 import org.apache.lucene.util.fst.Outputs;
@@ -37,8 +39,8 @@ public class TempTermOutputs extends Outputs<TempTermOutputs.TempMetaData> {
   private int longsSize;
 
   public static class TempMetaData {
-    public long[] longs;
-    public byte[] bytes;
+    long[] longs;
+    byte[] bytes;
     int docFreq;
     long totalTermFreq;
     TempMetaData() {
@@ -114,16 +116,8 @@ public class TempTermOutputs extends Outputs<TempTermOutputs.TempMetaData> {
   // 'comparable', i.e. every value in long[] fits the same ordering.
   //
   // NOTE: 
-  // Only long[] is 'shared', byte[] and term stats simply act 
-  // as 'attachment': when walking on the FST, if we see two byte[] on 
-  // successive arcs, only the second byte[] is valid. 
-  //
-  // Therefore, during building, we always make sure that, for most nodes, 
-  // the first output is 'pushed' one step towards root and reduced to 
-  // be NO_OUTPUT, so that we get rid of the 'all zero' long[], and netly
-  // get smaller amount of total outputs. 
-  //
-  // However, when decoding, terms might have to load redundant byte[] blob.
+  // Only long[] part is 'shared' and pushed towards root.
+  // byte[] and term stats will be on deeper arcs.
   //
   public TempMetaData common(TempMetaData t1, TempMetaData t2) {
     if (DEBUG) System.out.print("common("+t1+", "+t2+") = ");
@@ -133,38 +127,35 @@ public class TempTermOutputs extends Outputs<TempTermOutputs.TempMetaData> {
     }
     assert t1.longs.length == t2.longs.length;
 
-    long[] longs1 = t1.longs, longs2 = t2.longs;
+    long[] min = t1.longs, max = t2.longs;
     int pos = 0;
-    boolean smaller = true;
     TempMetaData ret;
 
-    while (pos < longsSize && longs1[pos] == longs2[pos]) {
+    while (pos < longsSize && min[pos] == max[pos]) {
       pos++;
     }
-    if (pos < longsSize) {
-      // unequal
-      smaller = (longs1[pos] < longs2[pos]);
-      if (smaller) {
-        // check whether strictly longs1 <= longs2 
-        while (pos < longsSize && longs1[pos] <= longs2[pos]) {
-          pos++;
-        }
-      } else {
-        // check whether strictly longs1 >= longs2 
-        while (pos < longsSize && longs1[pos] >= longs2[pos]) {
-          pos++;
-        }
+    if (pos < longsSize) {  // unequal long[]
+      if (min[pos] > max[pos]) {
+        min = t2.longs;
+        max = t1.longs;
       }
-      if (pos < longsSize) {  // not fully 'comparable'
+      // check whether strictly smaller
+      while (pos < longsSize && min[pos] <= max[pos]) {
+        pos++;
+      }
+      if (pos < longsSize || allZero(min)) {  // not comparable or all-zero
         ret = NO_OUTPUT;
-      } else if (smaller) {
-        ret = t1;
       } else {
-        ret = t2;
+        ret = new TempMetaData(min, null, 0, -1);
       }
-    } else {
-      // equal, we won't check byte[] and docFreq
-      ret = t1;
+    } else {  // equal long[]
+      if (statsEqual(t1, t2) && (t1.bytes == null || bytesEqual(t1, t2))) {
+        ret = t1;
+      } else if (allZero(min)) {
+        ret = NO_OUTPUT;
+      } else {
+        ret = new TempMetaData(min, null, 0, -1);
+      }
     }
     if (DEBUG) System.out.println("ret:"+ret);
     return ret;
@@ -213,29 +204,48 @@ public class TempTermOutputs extends Outputs<TempTermOutputs.TempMetaData> {
 
     int pos = 0;
     long[] accum = new long[longsSize];
+
     while (pos < longsSize) {
       accum[pos] = t1.longs[pos] + t2.longs[pos];
       pos++;
     }
+
     TempMetaData ret;
-    ret = new TempMetaData(accum, t2.bytes, t2.docFreq, t2.totalTermFreq);
+    if (t2.bytes != null || t2.docFreq > 0) {
+      ret = new TempMetaData(accum, t2.bytes, t2.docFreq, t2.totalTermFreq);
+    } else {
+      ret = new TempMetaData(accum, t1.bytes, t1.docFreq, t1.totalTermFreq);
+    }
     if (DEBUG) System.out.println("ret:"+ret);
     return ret;
   }
 
   @Override
   public void write(TempMetaData data, DataOutput out) throws IOException {
-    for (int pos = 0; pos < longsSize; pos++) {
-      out.writeVLong(data.longs[pos]);
-    }
-    int code = data.docFreq == 0 ? 0 : 1;
-    if (data.bytes != null) {
-      out.writeVInt((data.bytes.length << 1) | code);
-      out.writeBytes(data.bytes, 0, data.bytes.length);
+    int bit0 = allZero(data.longs) ? 0 : 1;
+    int bit1 = ((data.bytes == null || data.bytes.length == 0) ? 0 : 1) << 1;
+    int bit2 = ((data.docFreq == 0)  ? 0 : 1) << 2;
+    int bits = bit0 | bit1 | bit2;
+    if (bit1 > 0) {  // determine extra length
+      if (data.bytes.length < 32) {
+        bits |= (data.bytes.length << 3);
+        out.writeByte((byte)bits);
+      } else {
+        out.writeByte((byte)bits);
+        out.writeVInt(data.bytes.length);
+      }
     } else {
-      out.writeVInt(code);
+      out.writeByte((byte)bits);
     }
-    if (data.docFreq > 0) {
+    if (bit0 > 0) {  // not all-zero case
+      for (int pos = 0; pos < longsSize; pos++) {
+        out.writeVLong(data.longs[pos]);
+      }
+    }
+    if (bit1 > 0) {  // bytes exists
+      out.writeBytes(data.bytes, 0, data.bytes.length);
+    }
+    if (bit2 > 0) {  // stats exist
       out.writeVInt(data.docFreq);
       if (hasPos) {
         out.writeVLong(data.totalTermFreq - data.docFreq);
@@ -249,16 +259,24 @@ public class TempTermOutputs extends Outputs<TempTermOutputs.TempMetaData> {
     byte[] bytes = null;
     int docFreq = 0;
     long totalTermFreq = -1;
-    for (int pos = 0; pos < longsSize; pos++) {
-      longs[pos] = in.readVLong();
+    int bits = in.readByte() & 0xff;
+    int bit0 = bits & 1;
+    int bit1 = bits & 2;
+    int bit2 = bits & 4;
+    int bytesSize = (bits >>> 3);
+    if (bit1 > 0 && bytesSize == 0) {  // determine extra length
+      bytesSize = in.readVInt();
     }
-    int code = in.readVInt();
-    int bytesSize = code >>> 1;
-    if (bytesSize > 0) {
+    if (bit0 > 0) {  // not all-zero case
+      for (int pos = 0; pos < longsSize; pos++) {
+        longs[pos] = in.readVLong();
+      }
+    }
+    if (bit1 > 0) {  // bytes exists
       bytes = new byte[bytesSize];
-      in.readBytes(bytes, 0, bytes.length);
+      in.readBytes(bytes, 0, bytesSize);
     }
-    if ((code & 1) == 1) {
+    if (bit2 > 0) {  // stats exist
       docFreq = in.readVInt();
       if (hasPos) {
         totalTermFreq = docFreq + in.readVLong();
@@ -282,5 +300,13 @@ public class TempTermOutputs extends Outputs<TempTermOutputs.TempMetaData> {
   }
   static boolean bytesEqual(final TempMetaData t1, final TempMetaData t2) {
     return Arrays.equals(t1.bytes, t2.bytes);
+  }
+  static boolean allZero(final long[] l) {
+    for (int i = 0; i < l.length; i++) {
+      if (l[i] != 0) {
+        return false;
+      }
+    }
+    return true;
   }
 }
