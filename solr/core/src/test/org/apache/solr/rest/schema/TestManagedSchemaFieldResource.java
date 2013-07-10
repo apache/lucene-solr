@@ -66,8 +66,7 @@ public class TestManagedSchemaFieldResource extends RestTestBase {
   public void testAddFieldMismatchedName() throws Exception {
     assertJPut("/schema/fields/newfield",
         json( "{'name':'something_else','type':'text','stored':'false'}" ),
-        "/error/msg==\"Field name in the request body \\'something_else\\'"
-            + " doesn\\'t match field name in the request URL \\'newfield\\'\"");
+        "/error/msg=='///regex:newfield///'");
   }
   
   @Test
