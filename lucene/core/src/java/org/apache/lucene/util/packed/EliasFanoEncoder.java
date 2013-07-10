@@ -220,7 +220,7 @@ public class EliasFanoEncoder {
   }
 
   /**
-   * @return An {@link EliasFanoDecoder} to access the encoded values.
+   * Returns an {@link EliasFanoDecoder} to access the encoded values.
    * Perform all calls to {@link #encodeNext} before calling {@link #getDecoder}.
    */
   public EliasFanoDecoder getDecoder() {

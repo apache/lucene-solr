@@ -38,13 +38,13 @@ public class EliasFanoDecoder {
     this.numEncoded = efEncoder.numEncoded; // numEncoded is not final in EliasFanoEncoder
   }
 
-  /** @return The Elias-Fano encoder that is decoded. */
+  /** Return the Elias-Fano encoder that is decoded. */
   public EliasFanoEncoder getEliasFanoEncoder() {
     return efEncoder;
   }
 
 
-  /** @return The index of the last decoded value.
+  /** Return the index of the last decoded value.
    * The first value encoded by {@link EliasFanoEncoder#encodeNext} has index 0.
    * Only valid directly after
    * {@link #nextValue}, {@link #advanceToValue},
@@ -61,12 +61,12 @@ public class EliasFanoDecoder {
     return efIndex;
   }
 
-  /**  @return The high value for the current decoding index. */
+  /** Return the high value for the current decoding index. */
   private long currentHighValue() {
     return setBitForIndex - efIndex; // sequence of unary gaps
   }
 
-  /**  @return The low value for the current decoding index. */
+  /**  Return the low value for the current decoding index. */
   private long currentLowValue() {
     assert efIndex >= 0;
     assert efIndex < numEncoded;
@@ -84,7 +84,7 @@ public class EliasFanoDecoder {
     return lowValue;
   }
 
-  /**  @return The given highValue shifted left by the number of low bits from by the EliasFanoSequence,
+  /**  Return the given highValue shifted left by the number of low bits from by the EliasFanoSequence,
    *           logically OR-ed with the given lowValue.
    */
   private long combineHighLowValues(long highValue, long lowValue) {
@@ -116,7 +116,7 @@ public class EliasFanoDecoder {
     setBitForIndex = -1;
   }
 
-  /** @return the number of bits in a long after (setBitForIndex modulo Long.SIZE) */
+  /** Return the number of bits in a long after (setBitForIndex modulo Long.SIZE) */
   private int getCurrentRightShift() {
     int s = (int) (setBitForIndex & (Long.SIZE-1));
     return s;
@@ -275,7 +275,7 @@ public class EliasFanoDecoder {
     setBitForIndex = (efEncoder.lastEncoded >>> efEncoder.numLowBits) + numEncoded;
   }
 
-  /** @return the number of bits in a long before (setBitForIndex modulo Long.SIZE) */
+  /** Return the number of bits in a long before (setBitForIndex modulo Long.SIZE) */
   private int getCurrentLeftShift() {
     int s = Long.SIZE - 1 - (int) (setBitForIndex & (Long.SIZE-1));
     return s;
