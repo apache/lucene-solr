@@ -190,4 +190,15 @@
       </plugin>
     </plugins>
   </build>
+  <profiles>
+    <profile>
+      <id>windows-tests-disableHdfs</id>
+      <activation>
+        <os><family>windows</family></os>
+      </activation>
+      <properties>
+        <tests.disableHdfs>true</tests.disableHdfs>
+      </properties>
+    </profile>
+  </profiles>
 </project>
