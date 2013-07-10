@@ -1,4 +1,4 @@
-package org.apache.lucene.codecs.compressing;
+package org.apache.lucene.util;
 
 /*
  * Licensed to the Apache Software Foundation (ASF) under one or more
@@ -17,26 +17,27 @@ package org.apache.lucene.codecs.compressing;
  * limitations under the License.
  */
 
-import java.io.IOException;
-
 import org.apache.lucene.store.DataOutput;
-import org.apache.lucene.util.ArrayUtil;
 
 /**
  * A {@link DataOutput} that can be used to build a byte[].
+ * @lucene.internal
  */
-final class GrowableByteArrayDataOutput extends DataOutput {
+public final class GrowableByteArrayDataOutput extends DataOutput {
 
-  byte[] bytes;
-  int length;
+  /** The bytes */
+  public byte[] bytes;
+  /** The length */
+  public int length;
 
-  GrowableByteArrayDataOutput(int cp) {
+  /** Create a {@link GrowableByteArrayDataOutput} with the given initial capacity. */
+  public GrowableByteArrayDataOutput(int cp) {
     this.bytes = new byte[ArrayUtil.oversize(cp, 1)];
     this.length = 0;
   }
 
   @Override
-  public void writeByte(byte b) throws IOException {
+  public void writeByte(byte b) {
     if (length >= bytes.length) {
       bytes = ArrayUtil.grow(bytes);
     }
@@ -44,7 +45,7 @@ final class GrowableByteArrayDataOutput extends DataOutput {
   }
 
   @Override
-  public void writeBytes(byte[] b, int off, int len) throws IOException {
+  public void writeBytes(byte[] b, int off, int len) {
     final int newLength = length + len;
     if (newLength > bytes.length) {
       bytes = ArrayUtil.grow(bytes, newLength);

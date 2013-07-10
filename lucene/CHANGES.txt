@@ -10,6 +10,9 @@ New features
 * LUCENE-5084: Added new Elias-Fano encoder, decoder and DocIdSet
   implementations. (Paul Elschot via Adrien Grand)
 
+* LUCENE-5081: Added WAH8DocIdSet, an in-memory doc id set implementation based
+  on word-aligned hybrid encoding. (Adrien Grand)
+
 ======================= Lucene 4.4.0 =======================
 
 Changes in backwards compatibility policy
