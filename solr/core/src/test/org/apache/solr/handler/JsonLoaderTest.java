@@ -44,7 +44,7 @@ public class JsonLoaderTest extends SolrTestCaseJ4 {
     initCore("solrconfig.xml","schema.xml");
   }
   
-  static String input = ("{\n" +
+  static String input = json("{\n" +
       "\n" +
       "'add': {\n" +
       "  'doc': {\n" +
@@ -82,7 +82,7 @@ public class JsonLoaderTest extends SolrTestCaseJ4 {
       "'rollback': {}\n" +
       "\n" +
       "}\n" +
-      "").replace('\'', '"');
+      "");
 
 
   public void testParsing() throws Exception
@@ -395,6 +395,9 @@ public class JsonLoaderTest extends SolrTestCaseJ4 {
   public void testAddBigIntegerValueToTrieField() throws Exception {
     // Adding a BigInteger to a long field should fail
     // BigInteger.longValue() returns only the low-order 64 bits.
+
+    ignoreException("big_integer_t");
+
     try {
       updateJ(json( "[{'id':'1','big_integer_tl':12345678901234567890}]" ), null);
       fail("A BigInteger value should overflow a long field");
@@ -415,6 +418,7 @@ public class JsonLoaderTest extends SolrTestCaseJ4 {
       }
     }
 
+    unIgnoreException("big_integer_t");
   }
 
   @Test
