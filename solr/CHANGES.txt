@@ -177,6 +177,8 @@ New Features
 
 * SOLR-5010: Add support for creating copy fields to the Schema REST API (gsingers)
 
+* SOLR-4991: Register QParserPlugins as SolrInfoMBeans (ehatcher)
+
 Bug Fixes
 ----------------------
 
