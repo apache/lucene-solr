@@ -60,6 +60,7 @@ public class SolrCoreCheckLockOnStartupTest extends SolrTestCaseJ4 {
     //creates a new IndexWriter without releasing the lock yet
     IndexWriter indexWriter = new IndexWriter(directory, new IndexWriterConfig(Version.LUCENE_40, null));
 
+    ignoreException("locked");
     try {
       //opening a new core on the same index
       initCore("solrconfig-simplelock.xml", "schema.xml");
@@ -67,6 +68,7 @@ public class SolrCoreCheckLockOnStartupTest extends SolrTestCaseJ4 {
         return;
       fail("Expected " + LockObtainFailedException.class.getSimpleName());
     } finally {
+      unIgnoreException("locked");
       indexWriter.close();
       directory.close();
       deleteCore();
@@ -82,6 +84,7 @@ public class SolrCoreCheckLockOnStartupTest extends SolrTestCaseJ4 {
     //creates a new IndexWriter without releasing the lock yet
     IndexWriter indexWriter = new IndexWriter(directory, new IndexWriterConfig(Version.LUCENE_40, null));
 
+    ignoreException("locked");
     try {
       //opening a new core on the same index
       initCore("solrconfig-nativelock.xml", "schema.xml");
@@ -90,6 +93,7 @@ public class SolrCoreCheckLockOnStartupTest extends SolrTestCaseJ4 {
         return;
       fail("Expected " + LockObtainFailedException.class.getSimpleName());
     } finally {
+      unIgnoreException("locked");
       indexWriter.close();
       directory.close();
       deleteCore();
