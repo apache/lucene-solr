@@ -37,6 +37,7 @@ import org.apache.commons.io.IOUtils;
 import org.apache.lucene.LucenePackage;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.common.util.SimpleOrderedMap;
+import org.apache.solr.core.CoreContainer;
 import org.apache.solr.core.SolrCore;
 import org.apache.solr.handler.RequestHandlerBase;
 import org.apache.solr.request.SolrQueryRequest;
@@ -62,8 +63,20 @@ public class SystemInfoHandler extends RequestHandlerBase
   //(ie: not static, so core reload will refresh)
   private String hostname = null;
 
+  private CoreContainer cc;
+
   public SystemInfoHandler() {
     super();
+    init();
+  }
+
+  public SystemInfoHandler(CoreContainer cc) {
+    super();
+    this.cc = cc;
+    init();
+  }
+  
+  private void init() {
     try {
       InetAddress addr = InetAddress.getLocalHost();
       hostname = addr.getCanonicalHostName();
@@ -75,13 +88,24 @@ public class SystemInfoHandler extends RequestHandlerBase
   @Override
   public void handleRequestBody(SolrQueryRequest req, SolrQueryResponse rsp) throws Exception
   {
-    rsp.add( "core", getCoreInfo( req.getCore(), req.getSchema() ) );
-    boolean solrCloudMode = req.getCore().getCoreDescriptor().getCoreContainer().isZooKeeperAware();
+    SolrCore core = req.getCore();
+    if (core != null) rsp.add( "core", getCoreInfo( core, req.getSchema() ) );
+    boolean solrCloudMode =  getCoreContainer(req, core).isZooKeeperAware();
     rsp.add( "mode", solrCloudMode ? "solrcloud" : "std");
     rsp.add( "lucene", getLuceneInfo() );
     rsp.add( "jvm", getJvmInfo() );
     rsp.add( "system", getSystemInfo() );
     rsp.setHttpCaching(false);
+  }
+
+  private CoreContainer getCoreContainer(SolrQueryRequest req, SolrCore core) {
+    CoreContainer coreContainer;
+    if (core != null) {
+       coreContainer = req.getCore().getCoreDescriptor().getCoreContainer();
+    } else {
+      coreContainer = cc;
+    }
+    return coreContainer;
   }
   
   /**

@@ -179,6 +179,9 @@ New Features
 
 * SOLR-4991: Register QParserPlugins as SolrInfoMBeans (ehatcher)
 
+* SOLR-4943: Add a new system wide info admin handler that exposes the system info
+  that could previously only be retrieved using a SolrCore. (Mark Miller)
+
 Bug Fixes
 ----------------------
 
