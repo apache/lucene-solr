@@ -713,23 +713,29 @@ public abstract class SolrTestCaseJ4 extends LuceneTestCase {
   /** Makes sure a query throws a SolrException with the listed response code */
   public static void assertQEx(String message, SolrQueryRequest req, int code ) {
     try {
+      ignoreException(".");
       h.query(req);
       fail( message );
     } catch (SolrException sex) {
       assertEquals( code, sex.code() );
     } catch (Exception e2) {
       throw new RuntimeException("Exception during query", e2);
+    } finally {
+      unIgnoreException(".");
     }
   }
 
   public static void assertQEx(String message, SolrQueryRequest req, SolrException.ErrorCode code ) {
     try {
+      ignoreException(".");
       h.query(req);
       fail( message );
     } catch (SolrException e) {
       assertEquals( code.code, e.code() );
     } catch (Exception e2) {
       throw new RuntimeException("Exception during query", e2);
+    } finally {
+      unIgnoreException(".");
     }
   }
 
