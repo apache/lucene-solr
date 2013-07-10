@@ -31,6 +31,7 @@ import java.util.concurrent.atomic.AtomicInteger;
 
 import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
+
 import junit.framework.Assert;
 
 import org.apache.lucene.util._TestUtil;
@@ -209,6 +210,17 @@ abstract public class SolrExampleTests extends SolrJettyTestBase
     Assert.assertEquals("price:[* TO 2]", values.get(0));
     Assert.assertEquals("price:[2 TO 4]", values.get(1));
     
+    
+    if (jetty != null) {
+      // check system wide system handler + "/admin/info/system"
+      String url = jetty.getBaseUrl().toString();
+      HttpSolrServer client = new HttpSolrServer(url);
+      SolrQuery q = new SolrQuery();
+      q.set("qt", "/admin/info/system");
+      QueryResponse rsp = client.query(q);
+      assertNotNull(rsp.getResponse().get("mode"));
+      assertNotNull(rsp.getResponse().get("lucene"));
+    }
   }
 
 
