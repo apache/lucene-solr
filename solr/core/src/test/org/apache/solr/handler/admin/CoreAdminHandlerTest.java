@@ -185,6 +185,7 @@ public class CoreAdminHandlerTest extends SolrTestCaseJ4 {
        );
 
     // attempt to create a bogus core and confirm failure
+    ignoreException("Could not load config");
     try {
       resp = new SolrQueryResponse();
       admin.handleRequestBody
@@ -198,6 +199,7 @@ public class CoreAdminHandlerTest extends SolrTestCaseJ4 {
       // :NOOP:
       // :TODO: CoreAdminHandler's exception messages are terrible, otherwise we could assert something useful here
     }
+    unIgnoreException("Could not load config");
 
     // check specifically for status of the failed core name
     resp = new SolrQueryResponse();
