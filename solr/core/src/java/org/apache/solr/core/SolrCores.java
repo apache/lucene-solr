@@ -328,7 +328,7 @@ class SolrCores {
   public void persistCores(Config cfg, Properties containerProperties,
       Map<String,String> rootSolrAttribs, Map<String,String> coresAttribs,
       Map<String, String> loggingAttribs, Map<String,String> watcherAttribs,
-      Map<String, String> shardHandlerAttrib, Map<String,String> shardHandlerProps,
+      Node shardHandlerNode,
       File file, SolrResourceLoader loader) throws XPathExpressionException {
 
 
@@ -361,8 +361,7 @@ class SolrCores {
       solrXMLDef.coresAttribs = coresAttribs;
       solrXMLDef.loggingAttribs = loggingAttribs;
       solrXMLDef.watcherAttribs = watcherAttribs;
-      solrXMLDef.shardHandlerAttribs = shardHandlerAttrib;
-      solrXMLDef.shardHandlerProps = shardHandlerProps;
+      solrXMLDef.shardHandlerNode = shardHandlerNode;
       SOLR_XML_SERIALIZER.persistFile(file, solrXMLDef);
     }
 
