@@ -33,6 +33,7 @@ import org.slf4j.LoggerFactory;
 import java.io.IOException;
 import java.util.Arrays;
 import java.util.Collection;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
@@ -136,7 +137,19 @@ public class CopyFieldCollectionResource extends BaseFieldResource implements GE
                 log.error(message);
                 throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, message);
               }
-              List<String> destinations = (List<String>)map.get(IndexSchema.DESTINATION);
+              Object dest = map.get(IndexSchema.DESTINATION);
+              List<String> destinations = null;
+              if (dest != null) {
+                if (dest instanceof List){
+                  destinations = (List<String>)dest;
+                } else if (dest instanceof String){
+                  destinations = Collections.singletonList(dest.toString());
+                } else {
+                  String message = "Invalid '" + IndexSchema.DESTINATION + "' type.";
+                  log.error(message);
+                  throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, message);
+                }
+              }
               if (destinations == null) {
                 malformed.add(fieldName);
               } else {

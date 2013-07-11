@@ -146,7 +146,19 @@ public class FieldResource extends BaseFieldResource implements GETable, PUTable
                 throw new SolrException(ErrorCode.BAD_REQUEST, message);
               } else {
                 ManagedIndexSchema oldSchema = (ManagedIndexSchema) getSchema();
-                List<String> copyFieldNames = (List<String>) map.get(IndexSchema.COPY_FIELDS);
+                Object copies = map.get(IndexSchema.COPY_FIELDS);
+                List<String> copyFieldNames = null;
+                if (copies != null) {
+                  if (copies instanceof List) {
+                    copyFieldNames = (List<String>) copies;
+                  } else if (copies instanceof String) {
+                    copyFieldNames = Collections.singletonList(copies.toString());
+                  } else {
+                    String message = "Invalid '" + IndexSchema.COPY_FIELDS + "' type.";
+                    log.error(message);
+                    throw new SolrException(ErrorCode.BAD_REQUEST, message);
+                  }
+                }
                 if (copyFieldNames != null) {
                   map.remove(IndexSchema.COPY_FIELDS);
                 }

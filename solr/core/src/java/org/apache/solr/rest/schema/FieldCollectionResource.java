@@ -34,6 +34,7 @@ import org.slf4j.LoggerFactory;
 
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
@@ -155,7 +156,19 @@ public class FieldCollectionResource extends BaseFieldResource implements GETabl
                 throw new SolrException(ErrorCode.BAD_REQUEST, message);
               }
               // copyFields:"comma separated list of destination fields"
-              List<String> copyTo = (List<String>) map.get(IndexSchema.COPY_FIELDS);
+              Object copies = map.get(IndexSchema.COPY_FIELDS);
+              List<String> copyTo = null;
+              if (copies != null) {
+                if (copies instanceof List){
+                  copyTo = (List<String>) copies;
+                } else if (copies instanceof String){
+                  copyTo = Collections.singletonList(copies.toString());
+                } else {
+                  String message = "Invalid '" + IndexSchema.COPY_FIELDS + "' type.";
+                  log.error(message);
+                  throw new SolrException(ErrorCode.BAD_REQUEST, message);
+                }
+              }
               if (copyTo != null) {
                 map.remove(IndexSchema.COPY_FIELDS);
                 copyFields.put(fieldName, copyTo);
