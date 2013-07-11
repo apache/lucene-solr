@@ -133,21 +133,18 @@ public class SolrIndexSplitterTest extends SolrTestCaseJ4 {
 
     SolrCore core1 = null, core2 = null;
     try {
-      CoreDescriptor dcore1 = new CoreDescriptor(h.getCoreContainer(), "split1", h.getCore().getCoreDescriptor().getInstanceDir());
-      dcore1.setDataDir(indexDir1.getAbsolutePath());
-      dcore1.setSchemaName("schema12.xml");
-      
+      String instanceDir = h.getCore().getCoreDescriptor().getInstanceDir();
+
+      CoreDescriptor dcore1 = buildCoreDescriptor(h.getCoreContainer(), "split1", instanceDir)
+          .withDataDir(indexDir1.getAbsolutePath()).withSchema("schema12.xml").build();
       if (h.getCoreContainer().getZkController() != null) {
         h.getCoreContainer().preRegisterInZk(dcore1);
       }
-      
       core1 = h.getCoreContainer().create(dcore1);
       h.getCoreContainer().register(core1, false);
 
-      CoreDescriptor dcore2 = new CoreDescriptor(h.getCoreContainer(), "split2", h.getCore().getCoreDescriptor().getInstanceDir());
-      dcore2.setDataDir(indexDir2.getAbsolutePath());
-      dcore2.setSchemaName("schema12.xml");
-      
+      CoreDescriptor dcore2 = buildCoreDescriptor(h.getCoreContainer(), "split2", instanceDir)
+          .withDataDir(indexDir2.getAbsolutePath()).withSchema("schema12.xml").build();
       if (h.getCoreContainer().getZkController() != null) {
         h.getCoreContainer().preRegisterInZk(dcore2);
       }

@@ -215,7 +215,7 @@ public class ZkContainer {
 
         
         if(boostrapConf) {
-          ZkController.bootstrapConf(zkController.getZkClient(), cc.cfg, solrHome);
+          ZkController.bootstrapConf(zkController.getZkClient(), cc, solrHome);
         }
         
       } catch (InterruptedException e) {
@@ -261,8 +261,7 @@ public class ZkContainer {
             "Could not find config name for collection:" + collection);
       }
       solrLoader = new ZkSolrResourceLoader(instanceDir, zkConfigName,
-          loader.getClassLoader(), ConfigSolrXml.getCoreProperties(instanceDir,
-              dcore), zkController);
+          loader.getClassLoader(), dcore.getCoreProperties(), zkController);
       config = getSolrConfigFromZk(zkConfigName, dcore.getConfigName(),
           solrLoader);
       schema = IndexSchemaFactory.buildIndexSchema(dcore.getSchemaName(),

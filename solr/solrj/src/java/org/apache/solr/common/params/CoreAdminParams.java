@@ -23,7 +23,7 @@ import java.util.Locale;
 /**
  * @since solr 1.3
  */
-public interface CoreAdminParams 
+public abstract class CoreAdminParams
 {
   /** What Core are we talking about **/
   public final static String CORE = "core";

@@ -17,37 +17,34 @@ package org.apache.solr.core;
  * limitations under the License.
  */
 
+import com.carrotsearch.randomizedtesting.rules.SystemPropertiesRestoreRule;
 import org.apache.commons.io.FileUtils;
 import org.apache.solr.SolrTestCaseJ4;
+import org.junit.Rule;
 import org.junit.Test;
-import org.xml.sax.InputSource;
-import org.xml.sax.SAXException;
-
-import javax.xml.parsers.ParserConfigurationException;
+import org.junit.rules.RuleChain;
+import org.junit.rules.TestRule;
 
 import java.io.File;
-import java.io.FileInputStream;
 import java.io.IOException;
-import java.io.InputStream;
 
 public class TestSolrXml extends SolrTestCaseJ4 {
+
+  @Rule
+  public TestRule solrTestRules = RuleChain.outerRule(new SystemPropertiesRestoreRule());
+
   private final File solrHome = new File(TEMP_DIR, TestSolrXml.getClassName() + File.separator + "solrHome");
 
   @Test
-  public void testAllInfoPresent() throws IOException, ParserConfigurationException, SAXException {
-    CoreContainer cc = null;
+  public void testAllInfoPresent() throws IOException {
+
     File testSrcRoot = new File(SolrTestCaseJ4.TEST_HOME());
     FileUtils.copyFile(new File(testSrcRoot, "solr-50-all.xml"), new File(solrHome, "solr.xml"));
+
+    SolrResourceLoader loader = null;
     try {
-      InputStream is = new FileInputStream(new File(solrHome, "solr.xml"));
-      Config config = new Config(new SolrResourceLoader("solr/collection1"), null, new InputSource(is), null, false);
-      boolean oldStyle = (config.getNode("solr/cores", false) != null);
-      ConfigSolr cfg;
-      if (oldStyle) {
-        cfg = new ConfigSolrXmlOld(config);
-      } else {
-        cfg = new ConfigSolrXml(config, cc);
-      }
+      loader = new SolrResourceLoader(solrHome.getAbsolutePath());
+      ConfigSolr cfg = ConfigSolr.fromSolrHome(loader, solrHome.getAbsolutePath());
 
       assertEquals("Did not find expected value", cfg.get(ConfigSolr.CfgProp.SOLR_ADMINHANDLER, null), "testAdminHandler");
       assertEquals("Did not find expected value", cfg.getInt(ConfigSolr.CfgProp.SOLR_CORELOADTHREADS, 0), 11);
@@ -71,59 +68,35 @@ public class TestSolrXml extends SolrTestCaseJ4 {
       assertNull("Did not find expected value", cfg.get(ConfigSolr.CfgProp.SOLR_PERSISTENT, null));
       assertNull("Did not find expected value", cfg.get(ConfigSolr.CfgProp.SOLR_CORES_DEFAULT_CORE_NAME, null));
       assertNull("Did not find expected value", cfg.get(ConfigSolr.CfgProp.SOLR_ADMINPATH, null));
-    } finally {
-      if (cc != null) cc.shutdown();
     }
+    finally {
+      loader.close();
+    }
+
   }
 
   // Test  a few property substitutions that happen to be in solr-50-all.xml.
-  public void testPropretySub() throws IOException, ParserConfigurationException, SAXException {
+  public void testPropertySub() throws IOException {
 
-    String coreRoot = System.getProperty("coreRootDirectory");
-    String hostPort = System.getProperty("hostPort");
-    String shareSchema = System.getProperty("shareSchema");
-    String socketTimeout = System.getProperty("socketTimeout");
-    String connTimeout = System.getProperty("connTimeout");
     System.setProperty("coreRootDirectory", "myCoreRoot");
     System.setProperty("hostPort", "8888");
     System.setProperty("shareSchema", "newShareSchema");
     System.setProperty("socketTimeout", "220");
     System.setProperty("connTimeout", "200");
 
-    CoreContainer cc = null;
     File testSrcRoot = new File(SolrTestCaseJ4.TEST_HOME());
     FileUtils.copyFile(new File(testSrcRoot, "solr-50-all.xml"), new File(solrHome, "solr.xml"));
+
+    SolrResourceLoader loader = null;
     try {
-      InputStream is = new FileInputStream(new File(solrHome, "solr.xml"));
-      Config config = new Config(new SolrResourceLoader("solr/collection1"), null, new InputSource(is), null, false);
-      boolean oldStyle = (config.getNode("solr/cores", false) != null);
-      ConfigSolr cfg;
-      if (oldStyle) {
-        cfg = new ConfigSolrXmlOld(config);
-      } else {
-        cfg = new ConfigSolrXml(config, cc);
-      }
+      loader = new SolrResourceLoader(solrHome.getAbsolutePath());
+      ConfigSolr cfg = ConfigSolr.fromSolrHome(loader, solrHome.getAbsolutePath());
       assertEquals("Did not find expected value", cfg.get(ConfigSolr.CfgProp.SOLR_COREROOTDIRECTORY, null), "myCoreRoot");
       assertEquals("Did not find expected value", cfg.getInt(ConfigSolr.CfgProp.SOLR_HOSTPORT, 0), 8888);
       assertEquals("Did not find expected value", cfg.get(ConfigSolr.CfgProp.SOLR_SHARESCHEMA, null), "newShareSchema");
-
-    } finally {
-      if (cc != null) cc.shutdown();
-      if (coreRoot != null) System.setProperty("coreRootDirectory", coreRoot);
-      else System.clearProperty("coreRootDirectory");
-
-      if (hostPort != null) System.setProperty("hostPort", hostPort);
-      else System.clearProperty("hostPort");
-
-      if (shareSchema != null) System.setProperty("shareSchema", shareSchema);
-      else System.clearProperty("shareSchema");
-
-      if (socketTimeout != null) System.setProperty("socketTimeout", socketTimeout);
-      else System.clearProperty("socketTimeout");
-
-      if (connTimeout != null) System.setProperty("connTimeout", connTimeout);
-      else System.clearProperty("connTimeout");
-
+    }
+    finally {
+      loader.close();
     }
   }
 }

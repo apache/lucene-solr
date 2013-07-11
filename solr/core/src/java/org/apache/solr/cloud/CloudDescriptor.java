@@ -17,11 +17,16 @@ package org.apache.solr.cloud;
  * limitations under the License.
  */
 
-import org.apache.solr.common.cloud.ZkStateReader;
 import org.apache.solr.common.cloud.Slice;
+import org.apache.solr.common.cloud.ZkStateReader;
 import org.apache.solr.common.params.SolrParams;
+import org.apache.solr.core.CoreDescriptor;
+import org.apache.solr.util.PropertiesUtil;
+
+import java.util.Properties;
 
 public class CloudDescriptor {
+
   private String shardId;
   private String collectionName;
   private SolrParams params;
@@ -36,6 +41,21 @@ public class CloudDescriptor {
 
   volatile boolean isLeader = false;
   volatile String lastPublished = ZkStateReader.ACTIVE;
+
+  public static final String SHARD_STATE = "shardState";
+  public static final String NUM_SHARDS = "numShards";
+  public static final String SHARD_RANGE = "shardRange";
+
+  public CloudDescriptor(String coreName, Properties props) {
+    this.shardId = props.getProperty(CoreDescriptor.CORE_SHARD, null);
+    // If no collection name is specified, we default to the core name
+    this.collectionName = props.getProperty(CoreDescriptor.CORE_COLLECTION, coreName);
+    this.roles = props.getProperty(CoreDescriptor.CORE_ROLES, null);
+    this.nodeName = props.getProperty(CoreDescriptor.CORE_NODE_NAME);
+    this.shardState = props.getProperty(CloudDescriptor.SHARD_STATE, Slice.ACTIVE);
+    this.numShards = PropertiesUtil.toInteger(props.getProperty(CloudDescriptor.NUM_SHARDS), null);
+    this.shardRange = props.getProperty(CloudDescriptor.SHARD_RANGE, null);
+  }
   
   public String getLastPublished() {
     return lastPublished;
