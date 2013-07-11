@@ -18,8 +18,6 @@
 package org.apache.solr.client.solrj.embedded;
 
 import com.carrotsearch.randomizedtesting.rules.SystemPropertiesRestoreRule;
-import com.google.common.io.ByteStreams;
-import org.apache.commons.io.IOUtils;
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.client.solrj.SolrQuery;
 import org.apache.solr.client.solrj.SolrServer;
@@ -29,30 +27,16 @@ import org.apache.solr.client.solrj.request.QueryRequest;
 import org.apache.solr.client.solrj.request.UpdateRequest;
 import org.apache.solr.client.solrj.response.CoreAdminResponse;
 import org.apache.solr.common.SolrInputDocument;
-import org.apache.solr.core.CoreContainer;
-import org.apache.solr.util.FileUtils;
-import org.junit.After;
-import org.junit.Before;
+import org.apache.solr.core.SolrXMLCoresLocator;
+import org.apache.solr.util.TestHarness;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.RuleChain;
 import org.junit.rules.TestRule;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.w3c.dom.Document;
-import org.w3c.dom.Node;
 
-import javax.xml.parsers.DocumentBuilder;
-import javax.xml.parsers.DocumentBuilderFactory;
-import javax.xml.xpath.XPath;
-import javax.xml.xpath.XPathConstants;
-import javax.xml.xpath.XPathExpressionException;
-import javax.xml.xpath.XPathFactory;
 import java.io.File;
-import java.io.FileInputStream;
-import java.io.IOException;
-import java.io.InputStream;
-import java.io.InputStreamReader;
 
 /**
  *
@@ -62,56 +46,14 @@ public class TestSolrProperties extends AbstractEmbeddedSolrServerTestCase {
   protected static Logger log = LoggerFactory.getLogger(TestSolrProperties.class);
 
   private static final String SOLR_XML = "solr.xml";
-  private static final String SOLR_PERSIST_XML = "solr-persist.xml";
 
   @Rule
   public TestRule solrTestRules = 
     RuleChain.outerRule(new SystemPropertiesRestoreRule());
 
-  private static final XPathFactory xpathFactory = XPathFactory.newInstance();
-
-  @Override
-  @Before
-  public void setUp() throws Exception {
-    super.setUp();
-  }
-  
-  @Override
-  @After
-  public void tearDown() throws Exception {
-   super.tearDown(); 
-  }
-
-  private static void dumpFile(File fileToDump) throws IOException {
-    System.out.println("Dumping " + fileToDump.getAbsolutePath());
-    InputStream is = new FileInputStream(fileToDump);
-    try {
-      ByteStreams.copy(is, System.out);
-    }
-    finally {
-      IOUtils.closeQuietly(is);
-    }
-  }
-  
   @Override
   protected File getSolrXml() throws Exception {
-    //This test writes on the directory where the solr.xml is located. Better to copy the solr.xml to
-    //the temporary directory where we store the index
-    File origSolrXml = new File(SOLR_HOME, SOLR_XML);
-    File solrXml = new File(tempDir, SOLR_XML);
-    FileUtils.copyFile(origSolrXml, solrXml);
-    return solrXml;
-  }
-
-  @Override
-  protected void deleteAdditionalFiles() {
-    super.deleteAdditionalFiles();
-
-    //Cleans the solr.xml persisted while testing and the solr.xml copied to the temporary directory
-    File persistedFile = new File(tempDir, SOLR_PERSIST_XML);
-    assertTrue("Failed to delete "+persistedFile, persistedFile.delete());
-    File solrXml = new File(tempDir, SOLR_XML);
-    assertTrue("Failed to delete "+ solrXml, solrXml.delete());
+    return new File(SOLR_HOME, SOLR_XML);
   }
 
   protected SolrServer getSolrAdmin() {
@@ -125,8 +67,8 @@ public class TestSolrProperties extends AbstractEmbeddedSolrServerTestCase {
   @Test
   public void testProperties() throws Exception {
 
-    String persistedSolrXml = new File(tempDir, SOLR_PERSIST_XML).getAbsolutePath();
-    log.info("persistedSolrXml: {}", persistedSolrXml);
+    SolrXMLCoresLocator.NonPersistingLocator locator
+        = (SolrXMLCoresLocator.NonPersistingLocator) cores.getCoresLocator();
 
     UpdateRequest up = new UpdateRequest();
     up.setAction(ACTION.COMMIT, true, true);
@@ -197,51 +139,22 @@ public class TestSolrProperties extends AbstractEmbeddedSolrServerTestCase {
     long after = mcr.getStartTime(name).getTime();
     assertTrue("should have more recent time: " + after + "," + before, after > before);
 
-    mcr = CoreAdminRequest.persist(persistedSolrXml, coreadmin);
-
-    DocumentBuilder builder = DocumentBuilderFactory.newInstance().newDocumentBuilder();
-    FileInputStream fis = new FileInputStream(new File(persistedSolrXml));
-    try {
-      Document document = builder.parse(fis);
-      fis.close();
-      fis = new FileInputStream(new File(persistedSolrXml));
-      String solrPersistXml = IOUtils.toString(new InputStreamReader(fis, "UTF-8"));
-      //System.out.println("xml:" + solrPersistXml);
-      assertTrue("\"/solr/cores[@defaultCoreName='core0']\" doesn't match in:\n" + solrPersistXml,
-                 exists("/solr/cores[@defaultCoreName='core0']", document));
-      assertTrue("\"/solr/cores[@host='127.0.0.1']\" doesn't match in:\n" + solrPersistXml,
-                 exists("/solr/cores[@host='127.0.0.1']", document));
-      assertTrue("\"/solr/cores[@hostPort='${hostPort:8983}']\" doesn't match in:\n" + solrPersistXml,
-                 exists("/solr/cores[@hostPort='${hostPort:8983}']", document));
-      assertTrue("\"/solr/cores[@zkClientTimeout='8000']\" doesn't match in:\n" + solrPersistXml,
-                 exists("/solr/cores[@zkClientTimeout='8000']", document));
-      assertTrue("\"/solr/cores[@hostContext='${hostContext:solr}']\" doesn't match in:\n" + solrPersistXml,
-                 exists("/solr/cores[@hostContext='${hostContext:solr}']", document));
-      assertTrue("\"/solr/cores[@genericCoreNodeNames='${genericCoreNodeNames:true}']\" doesn't match in:\n" + solrPersistXml,
-          exists("/solr/cores[@genericCoreNodeNames='${genericCoreNodeNames:true}']", document));
-    } finally {
-      fis.close();
-    }
+    TestHarness.validateXPath(locator.xml,
+        "/solr/cores[@defaultCoreName='core0']",
+        "/solr/cores[@host='127.0.0.1']",
+        "/solr/cores[@hostPort='${hostPort:8983}']",
+        "/solr/cores[@zkClientTimeout='8000']",
+        "/solr/cores[@hostContext='${hostContext:solr}']",
+        "/solr/cores[@genericCoreNodeNames='${genericCoreNodeNames:true}']"
+        );
     
     CoreAdminRequest.renameCore(name, "renamed_core", coreadmin);
-    
-    mcr = CoreAdminRequest.persist(persistedSolrXml, getRenamedSolrAdmin());
-    
-//    fis = new FileInputStream(new File(tempDir, SOLR_PERSIST_XML));
-//    String solrPersistXml = IOUtils.toString(fis);
-//    System.out.println("xml:" + solrPersistXml);
-//    fis.close();
-    
-    fis = new FileInputStream(new File(persistedSolrXml));
-    try {
-      Document document = builder.parse(fis);
-      assertTrue(exists("/solr/cores/core[@name='renamed_core']", document));
-      assertTrue(exists("/solr/cores/core[@instanceDir='${theInstanceDir:./}']", document));
-      assertTrue(exists("/solr/cores/core[@collection='${collection:acollection}']", document));
-      
-    } finally {
-      fis.close();
-    }
+
+    TestHarness.validateXPath(locator.xml,
+        "/solr/cores/core[@name='renamed_core']",
+        "/solr/cores/core[@instanceDir='${theInstanceDir:./}']",
+        "/solr/cores/core[@collection='${collection:acollection}']"
+        );
     
     coreadmin = getRenamedSolrAdmin();
     File dataDir = new File(tempDir,"data3");
@@ -251,49 +164,8 @@ public class TestSolrProperties extends AbstractEmbeddedSolrServerTestCase {
         coreadmin, null, null, dataDir.getAbsolutePath(),
         tlogDir.getAbsolutePath());
 
-//    fis = new FileInputStream(new File(solrXml.getParent(), SOLR_PERSIST_XML));
-//    solrPersistXml = IOUtils.toString(fis);
-//    System.out.println("xml:" + solrPersistXml);
-//    fis.close();
-    
-    mcr = CoreAdminRequest.persist(persistedSolrXml, getRenamedSolrAdmin());
-    
-//    fis = new FileInputStream(new File(solrXml.getParent(), SOLR_PERSIST_XML));
-//    solrPersistXml = IOUtils.toString(fis);
-//    System.out.println("xml:" + solrPersistXml);
-//    fis.close();
-    
-    fis = new FileInputStream(new File(persistedSolrXml));
-    try {
-      Document document = builder.parse(fis);
-      assertTrue(exists("/solr/cores/core[@name='collection1' and @instanceDir='.']", document));
-    } finally {
-      fis.close();
-    }
-    
-    // test reload and parse
-    cores.shutdown();
-    
-//   fis = new FileInputStream(new File(getSolrXml().getParent(),
-//   SOLR_PERSIST_XML));
-//   String solrPersistXml = IOUtils.toString(fis);
-//   System.out.println("xml:" + solrPersistXml);
-//   fis.close();
-    
-    cores = CoreContainer.createAndLoad(SOLR_HOME.getAbsolutePath(), new File(persistedSolrXml));
- 
-    //mcr = CoreAdminRequest.persist(SOLR_PERSIST_XML, getRenamedSolrAdmin());
-    
-//     fis = new FileInputStream(new File(solrXml.getParent(),
-//     SOLR_PERSIST_XML));
-//     solrPersistXml = IOUtils.toString(fis);
-//     System.out.println("xml:" + solrPersistXml);
-//     fis.close();
+    TestHarness.validateXPath(locator.xml, "/solr/cores/core[@name='collection1' and @instanceDir='.']");
+
   }
-  
-  public static boolean exists(String xpathStr, Node node)
-      throws XPathExpressionException {
-    XPath xpath = xpathFactory.newXPath();
-    return (Boolean) xpath.evaluate(xpathStr, node, XPathConstants.BOOLEAN);
-  }
+
 }

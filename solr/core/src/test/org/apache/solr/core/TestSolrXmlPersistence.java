@@ -18,6 +18,7 @@
 package org.apache.solr.core;
 
 import com.carrotsearch.randomizedtesting.rules.SystemPropertiesRestoreRule;
+import com.google.common.base.Charsets;
 import org.apache.commons.io.FileUtils;
 import org.apache.commons.lang.StringUtils;
 import org.apache.lucene.util.IOUtils;
@@ -25,6 +26,7 @@ import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.common.params.CoreAdminParams;
 import org.apache.solr.handler.admin.CoreAdminHandler;
 import org.apache.solr.response.SolrQueryResponse;
+import org.apache.solr.util.TestHarness;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.RuleChain;
@@ -38,21 +40,17 @@ import org.xml.sax.SAXException;
 import javax.xml.parsers.DocumentBuilder;
 import javax.xml.parsers.DocumentBuilderFactory;
 import javax.xml.parsers.ParserConfigurationException;
+import java.io.ByteArrayInputStream;
 import java.io.File;
+import java.io.FileInputStream;
 import java.io.IOException;
+import java.io.InputStream;
 import java.util.ArrayList;
 import java.util.List;
 
 public class TestSolrXmlPersistence extends SolrTestCaseJ4 {
 
   private File solrHomeDirectory = new File(TEMP_DIR, this.getClass().getName());
-
-  /*
-  @BeforeClass
-  public static void beforeClass() throws Exception {
-    initCore("solrconfig-minimal.xml", "schema-tiny.xml");
-  }
-  */
 
   @Rule
   public TestRule solrTestRules =
@@ -89,18 +87,7 @@ public class TestSolrXmlPersistence extends SolrTestCaseJ4 {
 
     CoreContainer cc = init(SOLR_XML_LOTS_SYSVARS, "SystemVars1", "SystemVars2");
     try {
-
-      // This seems odd, but it's just a little self check to see if the comparison strings are being created correctly
-      persistContainedInOrig(cc, new File(solrHomeDirectory, "solr_copy.xml"));
-
-      // Is everything in the persisted file identical to the original?
-      final File persistXml = new File(solrHomeDirectory, "sysvars.solr.xml");
-      // Side effect here is that the new file is persisted and available later.
-      persistContainedInOrig(cc, persistXml);
-
-      // Is everything in the original contained in the persisted one?
-      assertXmlFile(persistXml, getAllNodes(new File(solrHomeDirectory, "solr.xml")));
-
+      origMatchesPersist(cc, SOLR_XML_LOTS_SYSVARS);
     } finally {
       cc.shutdown();
       if (solrHomeDirectory.exists()) {
@@ -130,8 +117,7 @@ public class TestSolrXmlPersistence extends SolrTestCaseJ4 {
               resp);
       assertNull("Exception on reload", resp.getException());
 
-      persistContainedInOrig(cc, new File(solrHomeDirectory, "reload1.solr.xml"));
-
+      origMatchesPersist(cc, SOLR_XML_LOTS_SYSVARS);
     } finally {
       cc.shutdown();
       if (solrHomeDirectory.exists()) {
@@ -149,6 +135,9 @@ public class TestSolrXmlPersistence extends SolrTestCaseJ4 {
 
   private void doTestRename(String which) throws Exception {
     CoreContainer cc = init(SOLR_XML_LOTS_SYSVARS, "SystemVars1", "SystemVars2");
+    SolrXMLCoresLocator.NonPersistingLocator locator
+        = (SolrXMLCoresLocator.NonPersistingLocator) cc.getCoresLocator();
+
     try {
       final CoreAdminHandler admin = new CoreAdminHandler(cc);
       SolrQueryResponse resp = new SolrQueryResponse();
@@ -160,31 +149,29 @@ public class TestSolrXmlPersistence extends SolrTestCaseJ4 {
               resp);
       assertNull("Exception on rename", resp.getException());
 
-      File persistXml = new File(solrHomeDirectory, "rename.solr.xml");
-      File origXml = new File(solrHomeDirectory, "solr.xml");
-
       // OK, Assure that if I change everything that has been renamed with the original value for the core, it matches
       // the old list
-      cc.persistFile(persistXml);
-      String[] persistList = getAllNodes(persistXml);
+      String[] persistList = getAllNodes();
       String[] expressions = new String[persistList.length];
 
       for (int idx = 0; idx < persistList.length; ++idx) {
         expressions[idx] = persistList[idx].replaceAll("RenamedCore", which);
       }
 
-      assertXmlFile(origXml, expressions);
+      //assertXmlFile(origXml, expressions);
+      TestHarness.validateXPath(SOLR_XML_LOTS_SYSVARS, expressions);
 
       // Now the other way, If I replace the original name in the original XML file with "RenamedCore", does it match
       // what was persisted?
-      persistList = getAllNodes(origXml);
+      persistList = getAllNodes(SOLR_XML_LOTS_SYSVARS);
       expressions = new String[persistList.length];
       for (int idx = 0; idx < persistList.length; ++idx) {
         // /solr/cores/core[@name='SystemVars1' and @collection='${collection:collection1}']
         expressions[idx] = persistList[idx].replace("@name='" + which + "'", "@name='RenamedCore'");
       }
 
-      assertXmlFile(persistXml, expressions);
+      TestHarness.validateXPath(locator.xml, expressions);
+
     } finally {
       cc.shutdown();
       if (solrHomeDirectory.exists()) {
@@ -212,11 +199,7 @@ public class TestSolrXmlPersistence extends SolrTestCaseJ4 {
               resp);
       assertNull("Exception on swap", resp.getException());
 
-      File persistXml = new File(solrHomeDirectory, "rename.solr.xml");
-      File origXml = new File(solrHomeDirectory, "solr.xml");
-
-      cc.persistFile(persistXml);
-      String[] persistList = getAllNodes(persistXml);
+      String[] persistList = getAllNodes();
       String[] expressions = new String[persistList.length];
 
       // Now manually change the names back and it should match exactly to the original XML.
@@ -230,7 +213,8 @@ public class TestSolrXmlPersistence extends SolrTestCaseJ4 {
         }
       }
 
-      assertXmlFile(origXml, expressions);
+      //assertXmlFile(origXml, expressions);
+      TestHarness.validateXPath(SOLR_XML_LOTS_SYSVARS, expressions);
 
     } finally {
       cc.shutdown();
@@ -244,8 +228,8 @@ public class TestSolrXmlPersistence extends SolrTestCaseJ4 {
   public void testMinimalXml() throws Exception {
     CoreContainer cc = init(SOLR_XML_MINIMAL, "SystemVars1");
     try {
-      persistContainedInOrig(cc, new File(solrHomeDirectory, "minimal.solr.xml"));
-      origContainedInPersist(cc, new File(solrHomeDirectory, "minimal.solr.xml"));
+      cc.shutdown();
+      origMatchesPersist(cc, SOLR_XML_MINIMAL);
     } finally {
       cc.shutdown();
       if (solrHomeDirectory.exists()) {
@@ -254,7 +238,13 @@ public class TestSolrXmlPersistence extends SolrTestCaseJ4 {
     }
   }
 
+  private void origMatchesPersist(CoreContainer cc, String originalSolrXML) throws Exception  {
+    String[] expressions = getAllNodes(originalSolrXML);
+    SolrXMLCoresLocator.NonPersistingLocator locator
+        = (SolrXMLCoresLocator.NonPersistingLocator) cc.getCoresLocator();
 
+    TestHarness.validateXPath(locator.xml, expressions);
+  }
 
   @Test
   public void testUnloadCreate() throws Exception {
@@ -275,7 +265,7 @@ public class TestSolrXmlPersistence extends SolrTestCaseJ4 {
               resp);
       assertNull("Exception on unload", resp.getException());
 
-      persistContainedInOrig(cc, new File(solrHomeDirectory, "unloadcreate1.solr.xml"));
+      //origMatchesPersist(cc, new File(solrHomeDirectory, "unloadcreate1.solr.xml"));
 
       String instPath = new File(solrHomeDirectory, which).getAbsolutePath();
       admin.handleRequestBody
@@ -286,11 +276,7 @@ public class TestSolrXmlPersistence extends SolrTestCaseJ4 {
               resp);
       assertNull("Exception on create", resp.getException());
 
-      File persistXml = new File(solrHomeDirectory, "rename.solr.xml");
-      File origXml = new File(solrHomeDirectory, "solr.xml");
-
-      cc.persistFile(persistXml);
-      String[] persistList = getAllNodes(persistXml);
+      String[] persistList = getAllNodes();
       String[] expressions = new String[persistList.length];
 
       // Now manually change the names back and it should match exactly to the original XML.
@@ -312,127 +298,8 @@ public class TestSolrXmlPersistence extends SolrTestCaseJ4 {
         }
       }
 
-      assertXmlFile(origXml, expressions);
-
-
-    } finally {
-      cc.shutdown();
-      if (solrHomeDirectory.exists()) {
-        FileUtils.deleteDirectory(solrHomeDirectory);
-      }
-    }
-  }
-
-  private void persistContainedInOrig(CoreContainer cc, File persistXml) throws IOException,
-      SAXException, ParserConfigurationException {
-    cc.persistFile(persistXml);
-    // Is everything that's in the original file persisted?
-    String[] expressions = getAllNodes(persistXml);
-    assertXmlFile(new File(solrHomeDirectory, "solr.xml"), expressions);
-  }
-
-  private void origContainedInPersist(CoreContainer cc, File persistXml) throws IOException,
-      SAXException, ParserConfigurationException {
-    cc.persistFile(persistXml);
-    // Is everything that's in the original file persisted?
-    String[] expressions = getAllNodes(new File(solrHomeDirectory, "solr.xml"));
-    assertXmlFile(persistXml, expressions);
-  }
-
-
-  @Test
-  public void testCreateAndManipulateCores() throws Exception {
-    CoreContainer cc = init(SOLR_XML_LOTS_SYSVARS, "SystemVars1", "SystemVars2", "new_one", "new_two");
-    try {
-      final CoreAdminHandler admin = new CoreAdminHandler(cc);
-      String instPathOne = new File(solrHomeDirectory, "new_one").getAbsolutePath();
-      SolrQueryResponse resp = new SolrQueryResponse();
-      admin.handleRequestBody
-          (req(CoreAdminParams.ACTION,
-              CoreAdminParams.CoreAdminAction.CREATE.toString(),
-              CoreAdminParams.INSTANCE_DIR, instPathOne,
-              CoreAdminParams.NAME, "new_one"),
-              resp);
-      assertNull("Exception on create", resp.getException());
-
-      admin.handleRequestBody
-          (req(CoreAdminParams.ACTION,
-              CoreAdminParams.CoreAdminAction.CREATE.toString(),
-              CoreAdminParams.NAME, "new_two"),
-              resp);
-      assertNull("Exception on create", resp.getException());
-
-      File persistXml1 = new File(solrHomeDirectory, "create_man_1.xml");
-      origContainedInPersist(cc, persistXml1);
-
-      // We know all the original data is in persist, now check for newly-created files.
-      String[] expressions = new  String[2];
-      String instHome = new File(solrHomeDirectory, "new_one").getAbsolutePath();
-      expressions[0] = "/solr/cores/core[@name='new_one' and @instanceDir='" + instHome + "']";
-      expressions[1] = "/solr/cores/core[@name='new_two' and @instanceDir='new_two" + File.separator + "']";
-
-      assertXmlFile(persistXml1, expressions);
-
-      // Next, swap a created core and check
-      resp = new SolrQueryResponse();
-      admin.handleRequestBody
-          (req(CoreAdminParams.ACTION,
-              CoreAdminParams.CoreAdminAction.SWAP.toString(),
-              CoreAdminParams.CORE, "new_one",
-              CoreAdminParams.OTHER, "SystemVars2"),
-              resp);
-      assertNull("Exception on swap", resp.getException());
-
-      File persistXml2 = new File(solrHomeDirectory, "create_man_2.xml");
-
-      cc.persistFile(persistXml2);
-      String[] persistList = getAllNodes(persistXml2);
-      expressions = new String[persistList.length];
-
-      // Now manually change the names back and it should match exactly to the original XML.
-      for (int idx = 0; idx < persistList.length; ++idx) {
-        String fromName = "@name='new_one'";
-        String toName = "@name='SystemVars2'";
-        if (persistList[idx].contains(fromName)) {
-          expressions[idx] = persistList[idx].replace(fromName, toName);
-        } else {
-          expressions[idx] = persistList[idx].replace(toName, fromName);
-        }
-      }
-
-      assertXmlFile(persistXml1, expressions);
-
-      // Then rename the other created core and check
-      admin.handleRequestBody
-          (req(CoreAdminParams.ACTION,
-              CoreAdminParams.CoreAdminAction.RENAME.toString(),
-              CoreAdminParams.CORE, "new_two",
-              CoreAdminParams.OTHER, "RenamedCore"),
-              resp);
-      assertNull("Exception on rename", resp.getException());
-
-      File persistXml3 = new File(solrHomeDirectory, "create_man_3.xml");
-
-      // OK, Assure that if I change everything that has been renamed with the original value for the core, it matches
-      // the old list
-      cc.persistFile(persistXml3);
-      persistList = getAllNodes(persistXml3);
-      expressions = new String[persistList.length];
-
-      for (int idx = 0; idx < persistList.length; ++idx) {
-        expressions[idx] = persistList[idx].replaceAll("RenamedCore", "new_two");
-      }
-      assertXmlFile(persistXml2, expressions);
-
-      // Now the other way, If I replace the original name in the original XML file with "RenamedCore", does it match
-      // what was persisted?
-      persistList = getAllNodes(persistXml2);
-      expressions = new String[persistList.length];
-      for (int idx = 0; idx < persistList.length; ++idx) {
-        // /solr/cores/core[@name='SystemVars1' and @collection='${collection:collection1}']
-        expressions[idx] = persistList[idx].replace("@name='new_two'", "@name='RenamedCore'");
-      }
-      assertXmlFile(persistXml3, expressions);
+      //assertXmlFile(origXml, expressions);
+      TestHarness.validateXPath(SOLR_XML_LOTS_SYSVARS, expressions);
 
     } finally {
       cc.shutdown();
@@ -440,17 +307,19 @@ public class TestSolrXmlPersistence extends SolrTestCaseJ4 {
         FileUtils.deleteDirectory(solrHomeDirectory);
       }
     }
-
-
   }
+
   @Test
   public void testCreatePersistCore() throws Exception {
     // Template for creating a core.
     CoreContainer cc = init(SOLR_XML_LOTS_SYSVARS, "SystemVars1", "SystemVars2", "props1", "props2");
+    SolrXMLCoresLocator.NonPersistingLocator locator
+        = (SolrXMLCoresLocator.NonPersistingLocator) cc.getCoresLocator();
+
     try {
       final CoreAdminHandler admin = new CoreAdminHandler(cc);
       // create a new core (using CoreAdminHandler) w/ properties
-      String instPath1 = new File(solrHomeDirectory, "props1").getAbsolutePath();
+
       SolrQueryResponse resp = new SolrQueryResponse();
       admin.handleRequestBody
           (req(CoreAdminParams.ACTION,
@@ -480,14 +349,13 @@ public class TestSolrXmlPersistence extends SolrTestCaseJ4 {
       assertNull("Exception on create", resp.getException());
 
       // Everything that was in the original XML file should be in the persisted one.
-      final File persistXml = new File(solrHomeDirectory, "persist_create_core.solr.xml");
-      cc.persistFile(persistXml);
-      assertXmlFile(persistXml, getAllNodes(new File(solrHomeDirectory, "solr.xml")));
+      TestHarness.validateXPath(locator.xml, getAllNodes(SOLR_XML_LOTS_SYSVARS));
 
       // And the params for the new core should be in the persisted file.
-      assertXmlFile
-          (persistXml
-              , "/solr/cores/core[@name='props1']/property[@name='prefix1' and @value='valuep1']"
+      TestHarness.validateXPath
+          (
+              locator.xml,
+              "/solr/cores/core[@name='props1']/property[@name='prefix1' and @value='valuep1']"
               , "/solr/cores/core[@name='props1']/property[@name='prefix2' and @value='valueP2']"
               , "/solr/cores/core[@name='props1' and @transient='true']"
               , "/solr/cores/core[@name='props1' and @loadOnStartup='true']"
@@ -511,18 +379,124 @@ public class TestSolrXmlPersistence extends SolrTestCaseJ4 {
     }
   }
 
-  private String[] getAllNodes(File xmlFile) throws ParserConfigurationException, IOException, SAXException {
+  @Test
+  public void testPersist() throws Exception {
+
+    final CoreContainer cores = init(ConfigSolrXmlOld.DEF_SOLR_XML, "collection1");
+    SolrXMLCoresLocator.NonPersistingLocator locator
+        = (SolrXMLCoresLocator.NonPersistingLocator) cores.getCoresLocator();
+
+    String instDir = null;
+    {
+      SolrCore template = null;
+      try {
+        template = cores.getCore("collection1");
+        instDir = template.getCoreDescriptor().getRawInstanceDir();
+      } finally {
+        if (null != template) template.close();
+      }
+    }
+
+    final File instDirFile = new File(cores.getSolrHome(), instDir);
+    assertTrue("instDir doesn't exist: " + instDir, instDirFile.exists());
+
+    // sanity check the basic persistence of the default init
+    TestHarness.validateXPath(locator.xml,
+        "/solr[@persistent='true']",
+        "/solr/cores[@defaultCoreName='collection1' and not(@transientCacheSize)]",
+        "/solr/cores/core[@name='collection1' and @instanceDir='" + instDir +
+            "' and @transient='false' and @loadOnStartup='true' ]",
+        "1=count(/solr/cores/core)");
+
+    // create some new cores and sanity check the persistence
+
+    final File dataXfile = new File(solrHomeDirectory, "dataX");
+    final String dataX = dataXfile.getAbsolutePath();
+    assertTrue("dataXfile mkdirs failed: " + dataX, dataXfile.mkdirs());
+
+    final File instYfile = new File(solrHomeDirectory, "instY");
+    FileUtils.copyDirectory(instDirFile, instYfile);
+
+    // :HACK: dataDir leaves off trailing "/", but instanceDir uses it
+    final String instY = instYfile.getAbsolutePath() + "/";
+
+    final CoreDescriptor xd = buildCoreDescriptor(cores, "X", instDir)
+        .withDataDir(dataX).build();
+
+    final CoreDescriptor yd = new CoreDescriptor(cores, "Y", instY);
+
+    SolrCore x = null;
+    SolrCore y = null;
+    try {
+      x = cores.create(xd);
+      y = cores.create(yd);
+      cores.register(x, false);
+      cores.register(y, false);
+
+      assertEquals("cores not added?", 3, cores.getCoreNames().size());
+
+      TestHarness.validateXPath(locator.xml,
+          "/solr[@persistent='true']",
+          "/solr/cores[@defaultCoreName='collection1']",
+          "/solr/cores/core[@name='collection1' and @instanceDir='" + instDir
+              + "']", "/solr/cores/core[@name='X' and @instanceDir='" + instDir
+              + "' and @dataDir='" + dataX + "']",
+          "/solr/cores/core[@name='Y' and @instanceDir='" + instY + "']",
+          "3=count(/solr/cores/core)");
+
+      // Test for saving implicit properties, we should not do this.
+      TestHarness.validateXPath(locator.xml,
+          "/solr/cores/core[@name='X' and not(@solr.core.instanceDir) and not (@solr.core.configName)]");
+
+      // delete a core, check persistence again
+      assertNotNull("removing X returned null", cores.remove("X"));
+
+      TestHarness.validateXPath(locator.xml, "/solr[@persistent='true']",
+          "/solr/cores[@defaultCoreName='collection1']",
+          "/solr/cores/core[@name='collection1' and @instanceDir='" + instDir + "']",
+          "/solr/cores/core[@name='Y' and @instanceDir='" + instY + "']",
+          "2=count(/solr/cores/core)");
+
+    } finally {
+      // y is closed by the container, but
+      // x has been removed from the container
+      if (x != null) {
+        try {
+          x.close();
+        } catch (Exception e) {
+          log.error("", e);
+        }
+      }
+      cores.shutdown();
+    }
+  }
+
+
+  private String[] getAllNodes(InputStream is) throws ParserConfigurationException, IOException, SAXException {
     List<String> expressions = new ArrayList<String>(); // XPATH and value for all elements in the indicated XML
     DocumentBuilderFactory docBuilderFactory = DocumentBuilderFactory
         .newInstance();
     DocumentBuilder docBuilder = docBuilderFactory.newDocumentBuilder();
-    Document document = docBuilder.parse(xmlFile);
+    Document document = docBuilder.parse(is);
 
     Node root = document.getDocumentElement();
     gatherNodes(root, expressions, "");
     return expressions.toArray(new String[expressions.size()]);
   }
 
+  private String[] getAllNodes() throws ParserConfigurationException, IOException, SAXException {
+    return getAllNodes(new FileInputStream(new File(solrHomeDirectory, "solr.xml")));
+  }
+
+  private String[] getAllNodes(String xmlString) throws ParserConfigurationException, IOException, SAXException {
+    return getAllNodes(new ByteArrayInputStream(xmlString.getBytes(Charsets.UTF_8)));
+  }
+
+  /*
+  private void assertSolrXmlFile(String... xpathExpressions) throws IOException, SAXException {
+    assertXmlFile(new File(solrHomeDirectory, "solr.xml"), xpathExpressions);
+  }
+  */
 
   // Note this is pretty specialized for a solr.xml file because working with the DOM is such a pain.
 
@@ -595,7 +569,7 @@ public class TestSolrXmlPersistence extends SolrTestCaseJ4 {
     }
   }
 
-  private static String SOLR_XML_LOTS_SYSVARS =
+  public static String SOLR_XML_LOTS_SYSVARS =
       "<solr persistent=\"${solr.xml.persist:false}\" coreLoadThreads=\"12\" sharedLib=\"${something:.}\" >\n" +
           "  <logging class=\"${logclass:log4j.class}\" enabled=\"{logenable:true}\">\n" +
           "     <watcher size=\"{watchSize:13}\" threshold=\"${logThresh:54}\" />\n" +

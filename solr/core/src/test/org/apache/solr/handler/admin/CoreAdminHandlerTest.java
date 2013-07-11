@@ -18,24 +18,24 @@
 package org.apache.solr.handler.admin;
 
 import com.carrotsearch.randomizedtesting.rules.SystemPropertiesRestoreRule;
-import org.apache.solr.core.CoreContainer;
-import org.apache.solr.core.SolrCore;
+import org.apache.commons.io.FileUtils;
+import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.params.CoreAdminParams;
 import org.apache.solr.common.util.NamedList;
+import org.apache.solr.core.CoreContainer;
+import org.apache.solr.core.CoreDescriptor;
+import org.apache.solr.core.SolrCore;
+import org.apache.solr.core.SolrXMLCoresLocator;
 import org.apache.solr.response.SolrQueryResponse;
-import org.apache.solr.SolrTestCaseJ4;
-
-import java.util.Map;
-import java.io.File;
-
-import org.apache.commons.io.FileUtils;
-
 import org.junit.BeforeClass;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.RuleChain;
 import org.junit.rules.TestRule;
+
+import java.io.File;
+import java.util.Map;
 
 public class CoreAdminHandlerTest extends SolrTestCaseJ4 {
   
@@ -72,7 +72,8 @@ public class CoreAdminHandlerTest extends SolrTestCaseJ4 {
         new File(subHome, "solrconfig.snippet.randomindexconfig.xml"));
 
     final CoreContainer cores = h.getCoreContainer();
-    cores.setPersistent(false); // we'll do this explicitly as needed
+    SolrXMLCoresLocator.NonPersistingLocator locator
+        = (SolrXMLCoresLocator.NonPersistingLocator) cores.getCoresLocator();
 
     final CoreAdminHandler admin = new CoreAdminHandler(cores);
 
@@ -96,14 +97,9 @@ public class CoreAdminHandlerTest extends SolrTestCaseJ4 {
             resp);
     assertNull("Exception on create", resp.getException());
 
-    // verify props are in persisted file
-
-    final File xml = new File(workDir, "persist-solr.xml");
-    cores.persistFile(xml);
-
     // First assert that these values are persisted.
-    assertXmlFile
-        (xml
+    h.validateXPath
+        (locator.xml
             ,"/solr/cores/core[@name='" + getCoreName() + "' and @instanceDir='${INSTDIR_TEST}']"
             ,"/solr/cores/core[@name='" + getCoreName() + "' and @dataDir='${DATA_TEST}']"
             ,"/solr/cores/core[@name='" + getCoreName() + "' and @schema='${SCHEMA_TEST}']"
@@ -140,7 +136,6 @@ public class CoreAdminHandlerTest extends SolrTestCaseJ4 {
     assertTrue("Failed to mkdirs workDir", workDir.mkdirs());
     
     final CoreContainer cores = h.getCoreContainer();
-    cores.setPersistent(false); // we'll do this explicitly as needed
 
     final CoreAdminHandler admin = new CoreAdminHandler(cores);
 
@@ -173,16 +168,10 @@ public class CoreAdminHandlerTest extends SolrTestCaseJ4 {
        resp);
     assertNull("Exception on create", resp.getException());
 
-    // verify props are in persisted file
-
-    final File xml = new File(workDir, "persist-solr.xml");
-    cores.persistFile(xml);
-    
-    assertXmlFile
-      (xml
-       ,"/solr/cores/core[@name='props']/property[@name='hoss' and @value='man']"
-       ,"/solr/cores/core[@name='props']/property[@name='foo' and @value='baz']"
-       );
+    CoreDescriptor cd = cores.getCoreDescriptor("props");
+    assertNotNull("Core not added!", cd);
+    assertEquals(cd.getCoreProperty("hoss", null), "man");
+    assertEquals(cd.getCoreProperty("foo", null), "baz");
 
     // attempt to create a bogus core and confirm failure
     ignoreException("Could not load config");

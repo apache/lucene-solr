@@ -17,42 +17,6 @@
 
 package org.apache.solr.core;
 
-import java.io.File;
-import java.io.FileOutputStream;
-import java.io.IOException;
-import java.io.InputStream;
-import java.io.OutputStream;
-import java.io.Writer;
-import java.lang.reflect.Constructor;
-import java.net.URL;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Collection;
-import java.util.Collections;
-import java.util.Date;
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.IdentityHashMap;
-import java.util.LinkedHashMap;
-import java.util.LinkedList;
-import java.util.List;
-import java.util.Locale;
-import java.util.Map;
-import java.util.Properties;
-import java.util.Set;
-import java.util.StringTokenizer;
-import java.util.concurrent.Callable;
-import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.CountDownLatch;
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
-import java.util.concurrent.Future;
-import java.util.concurrent.atomic.AtomicInteger;
-import java.util.concurrent.atomic.AtomicLong;
-import java.util.concurrent.locks.ReentrantLock;
-
-import javax.xml.parsers.ParserConfigurationException;
-
 import org.apache.commons.io.IOUtils;
 import org.apache.lucene.codecs.Codec;
 import org.apache.lucene.index.DirectoryReader;
@@ -65,7 +29,6 @@ import org.apache.lucene.store.IndexInput;
 import org.apache.lucene.store.LockObtainFailedException;
 import org.apache.solr.cloud.CloudDescriptor;
 import org.apache.solr.common.SolrException;
-import org.apache.solr.common.SolrException.ErrorCode;
 import org.apache.solr.common.cloud.Slice;
 import org.apache.solr.common.params.CommonParams;
 import org.apache.solr.common.params.CommonParams.EchoParamStyle;
@@ -129,6 +92,38 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.xml.sax.SAXException;
 
+import javax.xml.parsers.ParserConfigurationException;
+import java.io.File;
+import java.io.IOException;
+import java.io.InputStream;
+import java.io.Writer;
+import java.lang.reflect.Constructor;
+import java.net.URL;
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.Collections;
+import java.util.Date;
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.IdentityHashMap;
+import java.util.LinkedHashMap;
+import java.util.LinkedList;
+import java.util.List;
+import java.util.Locale;
+import java.util.Map;
+import java.util.Properties;
+import java.util.Set;
+import java.util.StringTokenizer;
+import java.util.concurrent.Callable;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+import java.util.concurrent.Future;
+import java.util.concurrent.atomic.AtomicInteger;
+import java.util.concurrent.atomic.AtomicLong;
+import java.util.concurrent.locks.ReentrantLock;
+
 
 /**
  *
@@ -146,7 +141,7 @@ public final class SolrCore implements SolrInfoMBean {
 
   private String name;
   private String logid; // used to show what name is set
-  private final CoreDescriptor coreDescriptor;
+  private CoreDescriptor coreDescriptor;
 
   private boolean isReloaded = false;
 
@@ -306,6 +301,7 @@ public final class SolrCore implements SolrInfoMBean {
   public void setName(String v) {
     this.name = v;
     this.logid = (v==null)?"":("["+v+"] ");
+    this.coreDescriptor = new CoreDescriptor(v, this.coreDescriptor);
   }
 
   public String getLogId()
@@ -848,12 +844,6 @@ public final class SolrCore implements SolrInfoMBean {
     resourceLoader.inform(infoRegistry);
     
     CoreContainer cc = cd.getCoreContainer();
-    
-    if (cc != null) {
-      if (cc.cfg != null && cc.cfg instanceof ConfigSolrXml) {
-        writePropFile(cd, cc);
-      }
-    }
 
     if (cc != null && cc.isZooKeeperAware() && Slice.CONSTRUCTION.equals(cd.getCloudDescriptor().getShardState())) {
       // set update log to buffer before publishing the core
@@ -866,56 +856,6 @@ public final class SolrCore implements SolrInfoMBean {
     // For debugging   
 //    numOpens.incrementAndGet();
 //    openHandles.put(this, new RuntimeException("unclosed core - name:" + getName() + " refs: " + refCount.get()));
-  }
-
-  private void writePropFile(CoreDescriptor cd, CoreContainer cc) {
-    File propFile = new File(cd.getInstanceDir(), "core.properties");
-    if (!propFile.exists()) {
-      propFile.getParentFile().mkdirs();
-      Properties props = new Properties();
-      props.put("name", cd.getName());
-
-      // This must be being created since there's no file here already. So write out all of the params we were
-      // created with. This _may_ overwrite the name above, but that's OK.
-      Collection<String> stds = new HashSet(Arrays.asList(CoreDescriptor.standardPropNames));
-      for (String prop : cd.getCreatedProperties().stringPropertyNames()) {
-        // Only preserve things that are legal, and let's just keep instDir right out of the persisted file even
-        // though it's part of the create properties on the URL.
-        if (! CoreDescriptor.CORE_INSTDIR.equals(prop) && stds.contains(prop)) {
-          props.put(prop, cd.getCreatedProperties().getProperty(prop));
-        }
-      }
-
-      if (cc.isZooKeeperAware()) {
-        String collection = cd.getCloudDescriptor().getCollectionName();
-        if (collection != null) {
-          props.put("collection", collection);
-        }
-        String coreNodeName = cd.getCloudDescriptor().getCoreNodeName();
-        if (coreNodeName != null) {
-          props.put("coreNodeName", coreNodeName);
-        }
-        String roles = cd.getCloudDescriptor().getRoles();
-        if (roles != null) {
-          props.put("roles", roles);
-        }
-        String shardId = cd.getCloudDescriptor().getShardId();
-        if (shardId != null) {
-          props.put("shard", shardId);
-        }
-      }
-      OutputStream out = null;
-      try {
-        out = new FileOutputStream(propFile);
-        props.store(out, "");
-      } catch (IOException e) {
-        throw new SolrException(ErrorCode.SERVER_ERROR, null, e);
-      } finally {
-        if (out != null) {
-          IOUtils.closeQuietly(out);
-        }
-      }
-    }
   }
     
   private Codec initCodec(SolrConfig solrConfig, final IndexSchema schema) {

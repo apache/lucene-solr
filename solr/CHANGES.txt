@@ -64,6 +64,11 @@ Upgrading from Solr 4.4.0
 Detailed Change List
 ----------------------
 
+Other Changes
+----------------------
+
+* SOLR-4914: Factor out core list persistence and discovery into a
+  new CoresLocator interface. (Alan Woodward)
 
 ==================  4.4.0 ==================
 

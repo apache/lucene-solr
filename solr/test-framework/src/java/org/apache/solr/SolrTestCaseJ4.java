@@ -35,6 +35,7 @@ import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.common.util.XML;
 import org.apache.solr.core.ConfigSolr;
 import org.apache.solr.core.CoreContainer;
+import org.apache.solr.core.CoreDescriptor;
 import org.apache.solr.core.SolrConfig;
 import org.apache.solr.core.SolrCore;
 import org.apache.solr.core.SolrResourceLoader;
@@ -73,6 +74,7 @@ import java.util.HashSet;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Properties;
 import java.util.logging.ConsoleHandler;
 import java.util.logging.Handler;
 import java.util.logging.Level;
@@ -1574,6 +1576,53 @@ public abstract class SolrTestCaseJ4 extends LuceneTestCase {
     FileUtils.copyFile(new File(top, "schema-tiny.xml"), new File(subHome, "schema.xml"));
     FileUtils.copyFile(new File(top, "solrconfig-minimal.xml"), new File(subHome, "solrconfig.xml"));
     FileUtils.copyFile(new File(top, "solrconfig.snippet.randomindexconfig.xml"), new File(subHome, "solrconfig.snippet.randomindexconfig.xml"));
+  }
+
+  public static CoreDescriptorBuilder buildCoreDescriptor(CoreContainer container, String name, String instancedir) {
+    return new CoreDescriptorBuilder(container, name, instancedir);
+  }
+
+  public static class CoreDescriptorBuilder {
+
+    final String name;
+    final String instanceDir;
+    final CoreContainer container;
+    final Properties properties = new Properties();
+
+    public CoreDescriptorBuilder(CoreContainer container, String name, String instancedir) {
+      this.name = name;
+      this.instanceDir = instancedir;
+      this.container = container;
+    }
+
+    public CoreDescriptorBuilder withSchema(String schema) {
+      properties.setProperty(CoreDescriptor.CORE_SCHEMA, schema);
+      return this;
+    }
+
+    public CoreDescriptorBuilder withConfig(String config) {
+      properties.setProperty(CoreDescriptor.CORE_CONFIG, config);
+      return this;
+    }
+
+    public CoreDescriptorBuilder withDataDir(String datadir) {
+      properties.setProperty(CoreDescriptor.CORE_DATADIR, datadir);
+      return this;
+    }
+
+    public CoreDescriptor build() {
+      return new CoreDescriptor(container, name, instanceDir, properties);
+    }
+
+    public CoreDescriptorBuilder isTransient(boolean isTransient) {
+      properties.setProperty(CoreDescriptor.CORE_TRANSIENT, Boolean.toString(isTransient));
+      return this;
+    }
+
+    public CoreDescriptorBuilder loadOnStartup(boolean loadOnStartup) {
+      properties.setProperty(CoreDescriptor.CORE_LOADONSTARTUP, Boolean.toString(loadOnStartup));
+      return this;
+    }
   }
 
 }

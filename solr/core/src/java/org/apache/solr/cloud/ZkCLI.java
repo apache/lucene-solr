@@ -10,13 +10,11 @@ import org.apache.commons.cli.ParseException;
 import org.apache.commons.cli.PosixParser;
 import org.apache.solr.common.cloud.OnReconnect;
 import org.apache.solr.common.cloud.SolrZkClient;
-import org.apache.solr.core.ConfigSolr;
-import org.apache.solr.core.SolrResourceLoader;
+import org.apache.solr.core.CoreContainer;
 import org.apache.zookeeper.CreateMode;
 import org.apache.zookeeper.KeeperException;
 import org.apache.zookeeper.ZooDefs;
 import org.apache.zookeeper.data.ACL;
-import org.xml.sax.InputSource;
 import org.xml.sax.SAXException;
 
 import javax.xml.parsers.ParserConfigurationException;
@@ -173,17 +171,18 @@ public class ZkCLI {
                 + " is required for " + BOOTSTRAP);
             System.exit(1);
           }
-          SolrResourceLoader loader = new SolrResourceLoader(solrHome);
-          solrHome = loader.getInstanceDir();
 
-          ConfigSolr cfg = ConfigSolr.fromSolrHome(loader, solrHome);
+          CoreContainer cc = new CoreContainer(solrHome);
 
           if(!ZkController.checkChrootPath(zkServerAddress, true)) {
             System.out.println("A chroot was specified in zkHost but the znode doesn't exist. ");
             System.exit(1);
           }
 
-          ZkController.bootstrapConf(zkClient, cfg, solrHome);
+          ZkController.bootstrapConf(zkClient, cc, solrHome);
+
+          // No need to shutdown the CoreContainer, as it wasn't started
+          // up in the first place...
           
         } else if (line.getOptionValue(CMD).equals(UPCONFIG)) {
           if (!line.hasOption(CONFDIR) || !line.hasOption(CONFNAME)) {

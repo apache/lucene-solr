@@ -22,7 +22,6 @@ import org.apache.solr.util.DOMUtil;
 import org.apache.solr.util.PropertiesUtil;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.w3c.dom.NamedNodeMap;
 import org.w3c.dom.Node;
 import org.w3c.dom.NodeList;
 
@@ -44,26 +43,36 @@ import java.util.Set;
  *
  */
 public class ConfigSolrXmlOld extends ConfigSolr {
+
   protected static Logger log = LoggerFactory.getLogger(ConfigSolrXmlOld.class);
 
   private NodeList coreNodes = null;
+  
+  private final CoresLocator persistor;
 
   @Override
   protected String getShardHandlerFactoryConfigPath() {
     return "solr/cores/shardHandlerFactory";
   }
 
-  public ConfigSolrXmlOld(Config config) {
+  public ConfigSolrXmlOld(Config config, File configFile, String originalXML) {
     super(config);
     try {
       checkForIllegalConfig();
       fillPropMap();
       config.substituteProperties();
       initCoreList();
+      this.persistor = isPersistent() ? new SolrXMLCoresLocator(configFile, originalXML, this)
+                                      : new SolrXMLCoresLocator.NonPersistingLocator(configFile, originalXML, this);
     }
     catch (IOException e) {
       throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, e);
     }
+  }
+
+  @Override
+  public CoresLocator getCoresLocator() {
+    return this.persistor;
   }
   
   private void checkForIllegalConfig() throws IOException {
@@ -99,6 +108,10 @@ public class ConfigSolrXmlOld extends ConfigSolr {
       throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, "Should not have found " + xPath +
           " solr.xml may be a mix of old and new style formats.");
     }
+  }
+
+  public boolean isPersistent() {
+    return config.getBool("solr/@persistent", false);
   }
   
   private void fillPropMap() {
@@ -208,34 +221,6 @@ public class ConfigSolrXmlOld extends ConfigSolr {
     
   }
 
-  @Override
-  public Map<String, String> readCoreAttributes(String coreName) {
-    Map<String, String> attrs = new HashMap<String, String>();
-
-    synchronized (coreNodes) {
-      for (int idx = 0; idx < coreNodes.getLength(); ++idx) {
-        Node node = coreNodes.item(idx);
-        if (coreName.equals(DOMUtil.getAttr(node, CoreDescriptor.CORE_NAME, null))) {
-          NamedNodeMap attributes = node.getAttributes();
-          for (int i = 0; i < attributes.getLength(); i++) {
-            Node attribute = attributes.item(i);
-            String val = PropertiesUtil.substituteProperty(attribute.getNodeValue(), null);
-            if (CoreDescriptor.CORE_DATADIR.equals(attribute.getNodeName()) ||
-                CoreDescriptor.CORE_INSTDIR.equals(attribute.getNodeName())) {
-              if (val.indexOf('$') == -1) {
-                val = (val != null && !val.endsWith("/")) ? val + '/' : val;
-              }
-            }
-            attrs.put(attribute.getNodeName(), val);
-          }
-          return attrs;
-        }
-      }
-    }
-    return attrs;
-  }
-
-  @Override
   public List<String> getAllCoreNames() {
     List<String> ret = new ArrayList<String>();
     
@@ -249,7 +234,6 @@ public class ConfigSolrXmlOld extends ConfigSolr {
     return ret;
   }
 
-  @Override
   public String getProperty(String coreName, String property, String defaultVal) {
     
     synchronized (coreNodes) {
@@ -257,7 +241,9 @@ public class ConfigSolrXmlOld extends ConfigSolr {
         Node node = coreNodes.item(idx);
         if (coreName.equals(DOMUtil.getAttr(node, CoreDescriptor.CORE_NAME,
             null))) {
-          String propVal = DOMUtil.getAttr(node, property, defaultVal);
+          String propVal = DOMUtil.getAttr(node, property);
+          if (propVal == null)
+            propVal = defaultVal;
           return PropertiesUtil.substituteProperty(propVal, null);
         }
       }
@@ -266,24 +252,20 @@ public class ConfigSolrXmlOld extends ConfigSolr {
     
   }
 
-  @Override
-  public Properties readCoreProperties(String coreName) {
-    
+  public Properties getCoreProperties(String coreName) {
     synchronized (coreNodes) {
-      for (int idx = 0; idx < coreNodes.getLength(); ++idx) {
+      for (int idx = 0; idx < coreNodes.getLength(); idx++) {
         Node node = coreNodes.item(idx);
-        if (coreName.equals(DOMUtil.getAttr(node, CoreDescriptor.CORE_NAME,
-            null))) {
+        if (coreName.equals(DOMUtil.getAttr(node, CoreDescriptor.CORE_NAME, null))) {
           try {
             return readProperties(node);
           } catch (XPathExpressionException e) {
-            return null;
+            SolrException.log(log, e);
           }
         }
       }
     }
-    
-    return null;
+    return new Properties();
   }
 
   public static final String DEF_SOLR_XML = "<?xml version=\"1.0\" encoding=\"UTF-8\" ?>\n"
@@ -297,10 +279,5 @@ public class ConfigSolrXmlOld extends ConfigSolr {
         + CoreContainer.DEFAULT_DEFAULT_CORE_NAME
         + "\" shard=\"${shard:}\" collection=\"${collection:collection1}\" instanceDir=\"collection1\" />\n"
         + "  </cores>\n" + "</solr>";
-
-  @Override
-  public void substituteProperties() {
-    config.substituteProperties();
-  }
 
 }

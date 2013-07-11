@@ -150,14 +150,8 @@ public class ClusterStateUpdateTest extends SolrTestCaseJ4  {
         CreateMode.PERSISTENT, true);
     zkClient.close();
 
-    CoreDescriptor dcore = new CoreDescriptor(container1, "testcore",
-        "testcore");
-    
-    dcore.setDataDir(dataDir4.getAbsolutePath());
-    
-    CloudDescriptor cloudDesc = new CloudDescriptor();
-    cloudDesc.setCollectionName("testcore");
-    dcore.setCloudDescriptor(cloudDesc);
+    CoreDescriptor dcore = buildCoreDescriptor(container1, "testcore", "testcore")
+                              .withDataDir(dataDir4.getAbsolutePath()).build();
 
     if (container1.getZkController() != null) {
       container1.preRegisterInZk(dcore);

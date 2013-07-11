@@ -18,6 +18,7 @@ package org.apache.solr.core;
  */
 
 import com.google.common.base.Charsets;
+import com.google.common.io.ByteStreams;
 import org.apache.commons.io.IOUtils;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.util.DOMUtil;
@@ -32,11 +33,11 @@ import javax.xml.xpath.XPath;
 import javax.xml.xpath.XPathConstants;
 import javax.xml.xpath.XPathExpressionException;
 import java.io.ByteArrayInputStream;
+import java.io.ByteArrayOutputStream;
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.InputStream;
 import java.util.HashMap;
-import java.util.List;
 import java.util.Map;
 import java.util.Properties;
 
@@ -59,7 +60,10 @@ public abstract class ConfigSolr {
       else {
         inputStream = new FileInputStream(configFile);
       }
-      return fromInputStream(loader, inputStream);
+      ByteArrayOutputStream baos = new ByteArrayOutputStream();
+      ByteStreams.copy(inputStream, baos);
+      String originalXml = IOUtils.toString(new ByteArrayInputStream(baos.toByteArray()), "UTF-8");
+      return fromInputStream(loader, new ByteArrayInputStream(baos.toByteArray()), configFile, originalXml);
     }
     catch (Exception e) {
       throw new SolrException(SolrException.ErrorCode.SERVER_ERROR,
@@ -70,15 +74,14 @@ public abstract class ConfigSolr {
     }
   }
 
-  public static ConfigSolr fromString(SolrResourceLoader loader, String xml) {
-    return fromInputStream(loader, new ByteArrayInputStream(xml.getBytes(Charsets.UTF_8)));
+  public static ConfigSolr fromString(String xml) {
+    return fromInputStream(null, new ByteArrayInputStream(xml.getBytes(Charsets.UTF_8)), null, xml);
   }
 
-  public static ConfigSolr fromInputStream(SolrResourceLoader loader, InputStream is) {
+  public static ConfigSolr fromInputStream(SolrResourceLoader loader, InputStream is, File file, String originalXml) {
     try {
       Config config = new Config(loader, null, new InputSource(is), null, false);
-      //config.substituteProperties();
-      return fromConfig(config);
+      return fromConfig(config, file, originalXml);
     }
     catch (Exception e) {
       throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, e);
@@ -89,11 +92,13 @@ public abstract class ConfigSolr {
     return fromFile(loader, new File(solrHome, SOLR_XML_FILE));
   }
 
-  public static ConfigSolr fromConfig(Config config) {
+  public static ConfigSolr fromConfig(Config config, File file, String originalXml) {
     boolean oldStyle = (config.getNode("solr/cores", false) != null);
-    return oldStyle ? new ConfigSolrXmlOld(config)
-                    : new ConfigSolrXml(config, null);
+    return oldStyle ? new ConfigSolrXmlOld(config, file, originalXml)
+                    : new ConfigSolrXml(config);
   }
+  
+  public abstract CoresLocator getCoresLocator();
 
 
   public PluginInfo getShardHandlerFactoryPluginInfo() {
@@ -171,12 +176,6 @@ public abstract class ConfigSolr {
     return (val == null) ? def : val;
   }
 
-  // For saving the original property, ${} syntax and all.
-  public String getOrigProp(CfgProp prop, String def) {
-    String val = propMap.get(prop);
-    return (val == null) ? def : val;
-  }
-
   public Properties getSolrProperties(String path) {
     try {
       return readProperties(((NodeList) config.evaluate(
@@ -199,16 +198,6 @@ public abstract class ConfigSolr {
     }
     return properties;
   }
-
-  public abstract void substituteProperties();
-
-  public abstract List<String> getAllCoreNames();
-
-  public abstract String getProperty(String coreName, String property, String defaultVal);
-
-  public abstract Properties readCoreProperties(String coreName);
-
-  public abstract Map<String, String> readCoreAttributes(String coreName);
 
 }
 
