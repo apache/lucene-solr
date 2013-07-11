@@ -19,31 +19,54 @@
 <!DOCTYPE ivy-module [
   <!ENTITY hadoop.version "2.0.5-alpha">
 ]>
-<ivy-module version="2.0">
-    <info organisation="org.apache.solr" module="core"/>
+<ivy-module version="2.0"  xmlns:maven="http://ant.apache.org/ivy/maven">
+  <info organisation="org.apache.solr" module="core"/>
+  
+  <configurations>
+    <!-- artifacts in the "compile" and "compile.hadoop" configurations will go into solr/core/lib/ -->
+    <conf name="compile" transitive="false"/>
+    <conf name="test" transitive="false"/>
+    <conf name="compile.hadoop" transitive="false"/>
+    <!-- artifacts in the "test" and "test.DfsMiniCluster" configuration will go into solr/core/test-lib/ -->
+    <conf name="test.DfsMiniCluster" transitive="false"/>
+  </configurations>
 
-    <dependencies>
-      <dependency org="commons-codec" name="commons-codec" rev="1.7" transitive="false"/>
-      <dependency org="commons-fileupload" name="commons-fileupload" rev="1.2.1" transitive="false"/>
-      <dependency org="commons-cli" name="commons-cli" rev="1.2" transitive="false"/>
-      <dependency org="commons-lang" name="commons-lang" rev="2.6" transitive="false"/>
-      <dependency org="com.google.guava" name="guava" rev="14.0.1" transitive="false"/>
-      <dependency org="org.easymock" name="easymock" rev="3.0" transitive="false"/>
-      <dependency org="cglib" name="cglib-nodep" rev="2.2" transitive="false"/>
-      <dependency org="org.objenesis" name="objenesis" rev="1.2" transitive="false"/>
-      <dependency org="com.spatial4j" name="spatial4j" rev="0.3" transitive="false"/>
-      <dependency org="javax.servlet" name="javax.servlet-api" rev="3.0.1" transitive="false"/>
-      <dependency org="org.restlet.jee" name="org.restlet" rev="2.1.1" transitive="false"/>
-      <dependency org="org.restlet.jee" name="org.restlet.ext.servlet" rev="2.1.1" transitive="false"/>
-      <dependency org="joda-time" name="joda-time" rev="2.2" transitive="false"/>
-      
-      <dependency org="org.apache.hadoop" name="hadoop-common" rev="&hadoop.version;" transitive="false"/>
-      <dependency org="org.apache.hadoop" name="hadoop-hdfs" rev="&hadoop.version;" transitive="false"/>
-      <dependency org="org.apache.hadoop" name="hadoop-annotations" rev="&hadoop.version;" transitive="false"/>
-      <dependency org="org.apache.hadoop" name="hadoop-auth" rev="&hadoop.version;" transitive="false"/>
-      <dependency org="commons-configuration" name="commons-configuration" rev="1.6" transitive="false"/>
-      <dependency org="com.google.protobuf" name="protobuf-java" rev="2.4.0a" transitive="false"/>
-      <dependency org="com.googlecode.concurrentlinkedhashmap" name="concurrentlinkedhashmap-lru" rev="1.2" transitive="false"/>
-      <exclude org="*" ext="*" matcher="regexp" type="${ivy.exclude.types}"/> 
-    </dependencies>
+  <dependencies>
+    <dependency org="commons-codec" name="commons-codec" rev="1.7" conf="compile->*"/>
+    <dependency org="commons-fileupload" name="commons-fileupload" rev="1.2.1" conf="compile->*"/>
+    <dependency org="commons-cli" name="commons-cli" rev="1.2" conf="compile->*"/>
+    <dependency org="commons-lang" name="commons-lang" rev="2.6" conf="compile->*"/>
+    <dependency org="com.google.guava" name="guava" rev="14.0.1" conf="compile->*"/>
+    <dependency org="com.spatial4j" name="spatial4j" rev="0.3" conf="compile->*"/>
+    <dependency org="org.restlet.jee" name="org.restlet" rev="2.1.1" conf="compile->*"/>
+    <dependency org="org.restlet.jee" name="org.restlet.ext.servlet" rev="2.1.1" conf="compile->*"/>
+    <dependency org="joda-time" name="joda-time" rev="2.2" conf="compile->*"/>
+
+    <dependency org="javax.servlet" name="javax.servlet-api" rev="3.0.1" conf="test->*"/>
+    <dependency org="org.easymock" name="easymock" rev="3.0" conf="test->*"/>
+    <dependency org="cglib" name="cglib-nodep" rev="2.2" conf="test->*"/>
+    <dependency org="org.objenesis" name="objenesis" rev="1.2" conf="test->*"/>
+
+    <dependency org="org.apache.hadoop" name="hadoop-common" rev="&hadoop.version;" conf="compile.hadoop->*"/>
+    <dependency org="org.apache.hadoop" name="hadoop-hdfs" rev="&hadoop.version;" conf="compile.hadoop->*"/>
+    <dependency org="org.apache.hadoop" name="hadoop-annotations" rev="&hadoop.version;" conf="compile.hadoop->*"/>
+    <dependency org="org.apache.hadoop" name="hadoop-auth" rev="&hadoop.version;" conf="compile.hadoop->*"/>
+    <dependency org="commons-configuration" name="commons-configuration" rev="1.6" conf="compile.hadoop->*"/>
+    <dependency org="com.google.protobuf" name="protobuf-java" rev="2.4.0a" conf="compile.hadoop->*"/>
+    <dependency org="com.googlecode.concurrentlinkedhashmap" name="concurrentlinkedhashmap-lru" rev="1.2" conf="compile.hadoop->*"/>
+
+    <!-- Hadoop DfsMiniCluster Dependencies-->
+    <dependency org="org.apache.hadoop" name="hadoop-common" rev="&hadoop.version;" conf="test.DfsMiniCluster->*">
+      <artifact name="hadoop-common" type="test" ext="jar" maven:classifier="tests" />
+    </dependency>
+    <dependency org="org.apache.hadoop" name="hadoop-hdfs" rev="&hadoop.version;" conf="test.DfsMiniCluster->*">
+      <artifact name="hadoop-hdfs" type="test" ext="jar" maven:classifier="tests" />
+    </dependency>
+    <dependency org="org.mortbay.jetty" name="jetty" rev="6.1.26" conf="test.DfsMiniCluster->*"/>
+    <dependency org="org.mortbay.jetty" name="jetty-util" rev="6.1.26" conf="test.DfsMiniCluster->*"/>
+    <dependency org="com.sun.jersey" name="jersey-core" rev="1.16" conf="test.DfsMiniCluster->*"/>
+    <dependency org="commons-collections" name="commons-collections" rev="3.2.1" conf="test.DfsMiniCluster->*"/>
+
+    <exclude org="*" ext="*" matcher="regexp" type="${ivy.exclude.types}"/> 
+  </dependencies>
 </ivy-module>

@@ -15,6 +15,7 @@
     <orderEntry type="library" scope="TEST" name="JUnit" level="project" />
     <orderEntry type="library" scope="TEST" name="HSQLDB" level="project" />
     <orderEntry type="library" scope="TEST" name="Derby" level="project" />
+    <orderEntry type="library" scope="TEST" name="Solr DIH test library" level="project" />
     <orderEntry type="library" name="Solr core library" level="project" />
     <orderEntry type="library" name="Solrj library" level="project" />
     <orderEntry type="library" name="Solr DIH library" level="project" />

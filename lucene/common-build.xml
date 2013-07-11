@@ -356,7 +356,7 @@
   <target name="resolve" depends="ivy-availability-check,ivy-configure">
     <!-- todo, make this a property or something. 
          only special cases need bundles -->
-    <ivy:retrieve type="jar,bundle,tests" log="download-only" 
+    <ivy:retrieve type="jar,bundle,tests" 
                   conf="${ivy.default.configuration}" sync="${ivy.sync}"/>
   </target>
 
