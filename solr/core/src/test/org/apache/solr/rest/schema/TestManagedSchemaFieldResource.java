@@ -114,6 +114,9 @@ public class TestManagedSchemaFieldResource extends RestTestBase {
     assertJPut("/schema/fields/fieldB",
         "{\"type\":\"text\",\"stored\":\"false\", \"copyFields\":[\"fieldA\"]}",
         "/responseHeader/status==0");
+    assertJPut("/schema/fields/fieldC",
+        "{\"type\":\"text\",\"stored\":\"false\", \"copyFields\":\"fieldA\"}",
+        "/responseHeader/status==0");
 
     assertQ("/schema/fields/fieldB?indent=on&wt=xml",
             "count(/response/lst[@name='field']) = 1",
@@ -121,12 +124,15 @@ public class TestManagedSchemaFieldResource extends RestTestBase {
     assertQ("/schema/copyfields/?indent=on&wt=xml&source.fl=fieldB",
         "count(/response/arr[@name='copyFields']/lst) = 1"
     );
+    assertQ("/schema/copyfields/?indent=on&wt=xml&source.fl=fieldC",
+        "count(/response/arr[@name='copyFields']/lst) = 1"
+    );
     //fine to pass in empty list, just won't do anything
     assertJPut("/schema/fields/fieldD",
         "{\"type\":\"text\",\"stored\":\"false\", \"copyFields\":[]}",
         "/responseHeader/status==0");
     //some bad usages
-    assertJPut("/schema/fields/fieldC",
+    assertJPut("/schema/fields/fieldF",
         "{\"type\":\"text\",\"stored\":\"false\", \"copyFields\":[\"some_nonexistent_field_ignore_exception\"]}",
         "/error/msg==\"copyField dest :\\'some_nonexistent_field_ignore_exception\\' is not an explicit field and doesn\\'t match a dynamicField.\"");
   }
@@ -185,7 +191,9 @@ public class TestManagedSchemaFieldResource extends RestTestBase {
     assertJPost("/schema/fields",
               "[{\"name\":\"fieldD\",\"type\":\"text\",\"stored\":\"false\"},"
                + "{\"name\":\"fieldE\",\"type\":\"text\",\"stored\":\"false\"},"
-               + " {\"name\":\"fieldF\",\"type\":\"text\",\"stored\":\"false\", \"copyFields\":[\"fieldD\",\"fieldE\"]}]",
+               + " {\"name\":\"fieldF\",\"type\":\"text\",\"stored\":\"false\", \"copyFields\":[\"fieldD\",\"fieldE\"]},"
+               + " {\"name\":\"fieldG\",\"type\":\"text\",\"stored\":\"false\", \"copyFields\":\"fieldD\"}"//single
+               + "]",
                 "/responseHeader/status==0");
     assertQ("/schema/copyfields/?indent=on&wt=xml&source.fl=fieldF",
         "count(/response/arr[@name='copyFields']/lst) = 2"
@@ -214,7 +222,7 @@ public class TestManagedSchemaFieldResource extends RestTestBase {
                   + "{\"name\":\"fieldD\",\"type\":\"text\",\"stored\":\"false\"},"
                + " {\"name\":\"fieldE\",\"type\":\"text\",\"stored\":\"false\"}]",
                 "/responseHeader/status==0");
-    assertJPost("/schema/copyfields", "[{\"source\":\"fieldA\", \"dest\":[\"fieldB\"]},{\"source\":\"fieldD\", \"dest\":[\"fieldC\", \"fieldE\"]}]", "/responseHeader/status==0");
+    assertJPost("/schema/copyfields", "[{\"source\":\"fieldA\", \"dest\":\"fieldB\"},{\"source\":\"fieldD\", \"dest\":[\"fieldC\", \"fieldE\"]}]", "/responseHeader/status==0");
     assertQ("/schema/copyfields/?indent=on&wt=xml&source.fl=fieldA",
         "count(/response/arr[@name='copyFields']/lst) = 1");
     assertQ("/schema/copyfields/?indent=on&wt=xml&source.fl=fieldD",
