@@ -294,6 +294,10 @@ Bug Fixes
 * SOLR-5018: The Overseer should avoid publishing the state for collections that do not 
   exist under the /collections zk node. (Mark Miller)
 
+* SOLR-5028,SOLR-5029: ShardHandlerFactory was not being created properly when
+  using new-style solr.xml, and was not being persisted properly when using
+  old-style.  (Tomás Fernández Löbbe, Ryan Ernst, Alan Woodward)
+
 Optimizations
 ----------------------
 

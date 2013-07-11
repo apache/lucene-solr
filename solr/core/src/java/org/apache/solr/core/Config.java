@@ -224,7 +224,15 @@ public class Config {
     }
   }
 
-  public Node getNode(String path, boolean errIfMissing) {
+  public Node getNode(String path, boolean errifMissing) {
+    return getNode(path, doc, errifMissing);
+  }
+
+  public Node getUnsubstitutedNode(String path, boolean errIfMissing) {
+    return getNode(path, origDoc, errIfMissing);
+  }
+
+  public Node getNode(String path, Document doc, boolean errIfMissing) {
    XPath xpath = xpathFactory.newXPath();
    Node nd = null;
    String xstr = normalize(path);

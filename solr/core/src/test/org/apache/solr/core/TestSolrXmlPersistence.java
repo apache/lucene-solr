@@ -600,10 +600,6 @@ public class TestSolrXmlPersistence extends SolrTestCaseJ4 {
           "  <logging class=\"${logclass:log4j.class}\" enabled=\"{logenable:true}\">\n" +
           "     <watcher size=\"{watchSize:13}\" threshold=\"${logThresh:54}\" />\n" +
           "  </logging>\n" +
-          "  <shardHandlerFactory name=\"${shhandler:shardHandlerFactory}\" class=\"${handlefac:HttpShardHandlerFactory}\">\n" +
-          "     <int name=\"socketTimeout\">${socketTimeout:120000}</int> \n" +
-          "     <int name=\"connTimeout\">${connTimeout:15000}</int> \n" +
-          "  </shardHandlerFactory> \n" +
           "  <cores adminPath=\"/admin/cores\" defaultCoreName=\"SystemVars1\" host=\"127.0.0.1\" \n" +
           "       hostPort=\"${hostPort:8983}\" hostContext=\"${hostContext:solr}\" \n" +
           "       zkClientTimeout=\"${solr.zkclienttimeout:30000}\" \n" +
@@ -624,6 +620,11 @@ public class TestSolrXmlPersistence extends SolrTestCaseJ4 {
           "      <property name=\"schema\" value=\"${schema:schema.xml}\"/>\n" +
           "      <property name=\"coreNodeName\" value=\"EricksCore\"/>\n" +
           "     </core>\n" +
+          "     <shardHandlerFactory name=\"${shhandler:shardHandlerFactory}\" class=\"${handlefac:HttpShardHandlerFactory}\">\n" +
+          "         <int name=\"socketTimeout\">${socketTimeout:120000}</int> \n" +
+          "         <int name=\"connTimeout\">${connTimeout:15000}</int> \n" +
+          "         <str name=\"arbitraryName\">${arbitrarySysValue:foobar}</str>\n" +
+          "     </shardHandlerFactory> \n" +
           "   </cores>\n" +
           "</solr>";
 

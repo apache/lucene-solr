@@ -26,7 +26,6 @@ import org.apache.solr.common.util.ExecutorUtil;
 import org.apache.solr.handler.admin.CollectionsHandler;
 import org.apache.solr.handler.admin.CoreAdminHandler;
 import org.apache.solr.handler.admin.InfoHandler;
-import org.apache.solr.handler.component.HttpShardHandlerFactory;
 import org.apache.solr.handler.component.ShardHandlerFactory;
 import org.apache.solr.logging.LogWatcher;
 import org.apache.solr.logging.jul.JulWatcher;
@@ -35,14 +34,11 @@ import org.apache.solr.schema.IndexSchemaFactory;
 import org.apache.solr.util.DefaultSolrThreadFactory;
 import org.apache.solr.util.FileUtils;
 import org.apache.solr.util.PropertiesUtil;
-import org.apache.solr.util.plugin.PluginInfoInitialized;
 import org.apache.zookeeper.KeeperException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.w3c.dom.Node;
 
 import javax.xml.xpath.XPathExpressionException;
-
 import java.io.File;
 import java.text.SimpleDateFormat;
 import java.util.Collection;
@@ -207,7 +203,7 @@ public class CoreContainer
       loader.reloadLuceneSPI();
     }
 
-    shardHandlerFactory = initShardHandler(cfg);
+    shardHandlerFactory = ShardHandlerFactory.newInstance(cfg.getShardHandlerFactoryPluginInfo(), loader);
 
     solrCores.allocateLazyCores(cfg, loader);
 
@@ -428,42 +424,6 @@ public class CoreContainer
       if (coreLoadExecutor != null) {
         ExecutorUtil.shutdownNowAndAwaitTermination(coreLoadExecutor);
       }
-    }
-  }
-  
-  private ShardHandlerFactory initShardHandler(ConfigSolr configSolr) {
-    PluginInfo info = null;
-    Node shfn = configSolr.getConfig().getNode("solr/cores/shardHandlerFactory", false);
-
-    if (shfn != null) {
-      info = new PluginInfo(shfn, "shardHandlerFactory", false, true);
-    } else {
-      Map m = new HashMap();
-      m.put("class", HttpShardHandlerFactory.class.getName());
-      info = new PluginInfo("shardHandlerFactory", m, null, Collections.<PluginInfo>emptyList());
-    }
-
-    ShardHandlerFactory fac;
-    try {
-       fac = configSolr.getConfig().getResourceLoader().findClass(info.className, ShardHandlerFactory.class).newInstance();
-    } catch (Exception e) {
-      throw new SolrException(SolrException.ErrorCode.SERVER_ERROR,
-                              "Error instantiating shardHandlerFactory class " + info.className);
-    }
-    if (fac instanceof PluginInfoInitialized) {
-      ((PluginInfoInitialized) fac).init(info);
-    }
-    return fac;
-  }
-
-  // To make this available to TestHarness.
-  protected void initShardHandler() {
-    if (cfg != null) {
-      initShardHandler(cfg);
-    } else {
-      // Cough! Hack! But tests run this way.
-      HttpShardHandlerFactory fac = new HttpShardHandlerFactory();
-      shardHandlerFactory = fac;
     }
   }
 
@@ -1109,6 +1069,7 @@ public class CoreContainer
         cfg.get(ConfigSolr.CfgProp.SOLR_LOGGING_WATCHER_THRESHOLD, null));
 
 
+    /*
     Map<String, String> shardHandlerAttrib = new HashMap<String, String>();
     addAttrib(shardHandlerAttrib, ConfigSolr.CfgProp.SOLR_SHARDHANDLERFACTORY_CLASS, "class",
         cfg.get(ConfigSolr.CfgProp.SOLR_SHARDHANDLERFACTORY_CLASS, null));
@@ -1120,10 +1081,11 @@ public class CoreContainer
         cfg.get(ConfigSolr.CfgProp.SOLR_SHARDHANDLERFACTORY_CONNTIMEOUT, null));
     addAttrib(shardHandlerProps, ConfigSolr.CfgProp.SOLR_SHARDHANDLERFACTORY_SOCKETTIMEOUT, "socketTimeout",
         cfg.get(ConfigSolr.CfgProp.SOLR_SHARDHANDLERFACTORY_SOCKETTIMEOUT, null));
+    */
 
     try {
       solrCores.persistCores(cfg.config.getOriginalConfig(), containerProperties, rootSolrAttribs,coresAttribs,
-          loggingAttribs, watcherAttribs, shardHandlerAttrib, shardHandlerProps, file, loader);
+          loggingAttribs, watcherAttribs, cfg.getUnsubsititutedShardHandlerFactoryPluginNode(), file, loader);
     } catch (XPathExpressionException e) {
       throw new SolrException(ErrorCode.SERVER_ERROR, null, e);
     }

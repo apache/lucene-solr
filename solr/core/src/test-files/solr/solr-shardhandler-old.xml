@@ -17,13 +17,13 @@
 -->
 
 <!--
- solr.xml specifying a custom shardHandlerFactory
+ old-style solr.xml specifying a custom shardHandlerFactory
 -->
 <solr>
-
-    <shardHandlerFactory name="shardHandlerFactory" 
+  <cores>
+    <shardHandlerFactory name="shardHandlerFactory"
                          class="org.apache.solr.core.MockShardHandlerFactory">
       <str name="myMagicRequiredParameter">myMagicRequiredValue</str>
     </shardHandlerFactory>
-
+  </cores>
 </solr>

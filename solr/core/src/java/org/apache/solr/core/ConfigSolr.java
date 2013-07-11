@@ -95,6 +95,18 @@ public abstract class ConfigSolr {
                     : new ConfigSolrXml(config, null);
   }
 
+
+  public PluginInfo getShardHandlerFactoryPluginInfo() {
+    Node node = config.getNode(getShardHandlerFactoryConfigPath(), false);
+    return (node == null) ? null : new PluginInfo(node, "shardHandlerFactory", false, true);
+  }
+
+  public Node getUnsubsititutedShardHandlerFactoryPluginNode() {
+    return config.getUnsubstitutedNode(getShardHandlerFactoryConfigPath(), false);
+  }
+
+  protected abstract String getShardHandlerFactoryConfigPath();
+
   // Ugly for now, but we'll at least be able to centralize all of the differences between 4x and 5x.
   public static enum CfgProp {
     SOLR_ADMINHANDLER,
@@ -112,10 +124,6 @@ public abstract class ConfigSolr {
     SOLR_LOGGING_WATCHER_THRESHOLD,
     SOLR_MANAGEMENTPATH,
     SOLR_SHAREDLIB,
-    SOLR_SHARDHANDLERFACTORY_CLASS,
-    SOLR_SHARDHANDLERFACTORY_CONNTIMEOUT,
-    SOLR_SHARDHANDLERFACTORY_NAME,
-    SOLR_SHARDHANDLERFACTORY_SOCKETTIMEOUT,
     SOLR_SHARESCHEMA,
     SOLR_TRANSIENTCACHESIZE,
     SOLR_GENERICCORENODENAMES,
@@ -133,6 +141,7 @@ public abstract class ConfigSolr {
 
   public ConfigSolr(Config config) {
     this.config = config;
+
   }
 
   // for extension & testing.

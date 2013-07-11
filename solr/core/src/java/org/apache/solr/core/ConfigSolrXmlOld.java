@@ -48,6 +48,11 @@ public class ConfigSolrXmlOld extends ConfigSolr {
 
   private NodeList coreNodes = null;
 
+  @Override
+  protected String getShardHandlerFactoryConfigPath() {
+    return "solr/cores/shardHandlerFactory";
+  }
+
   public ConfigSolrXmlOld(Config config) {
     super(config);
     try {
@@ -136,15 +141,7 @@ public class ConfigSolrXmlOld extends ConfigSolr {
         config.getVal("solr/cores/@transientCacheSize", false));
     propMap.put(CfgProp.SOLR_ZKCLIENTTIMEOUT,
         config.getVal("solr/cores/@zkClientTimeout", false));
-    propMap.put(CfgProp.SOLR_SHARDHANDLERFACTORY_CLASS,
-        config.getVal("solr/shardHandlerFactory/@class", false));
-    propMap.put(CfgProp.SOLR_SHARDHANDLERFACTORY_NAME,
-        config.getVal("solr/shardHandlerFactory/@name", false));
-    propMap.put(CfgProp.SOLR_SHARDHANDLERFACTORY_CONNTIMEOUT,
-        config.getVal("solr/shardHandlerFactory/int[@name='connTimeout']", false));
-    propMap.put(CfgProp.SOLR_SHARDHANDLERFACTORY_SOCKETTIMEOUT,
-        config.getVal("solr/shardHandlerFactory/int[@name='socketTimeout']", false));
-    
+
     // These have no counterpart in 5.0, asking, for any of these in Solr 5.0
     // will result in an error being
     // thrown.
