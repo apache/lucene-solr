@@ -21,13 +21,20 @@ import org.apache.solr.common.SolrException;
 import org.apache.solr.common.util.XML;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.w3c.dom.Node;
 
+import javax.xml.transform.OutputKeys;
+import javax.xml.transform.Transformer;
+import javax.xml.transform.TransformerFactory;
+import javax.xml.transform.dom.DOMSource;
+import javax.xml.transform.stream.StreamResult;
 import java.io.BufferedWriter;
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.OutputStreamWriter;
+import java.io.StringWriter;
 import java.io.Writer;
 import java.nio.channels.FileChannel;
 import java.util.List;
@@ -81,22 +88,6 @@ public class SolrXMLSerializer {
       w.write(INDENT + "</logging>\n");
     }
 
-    // Output shard handler section if any
-    if (solrXMLDef.shardHandlerAttribs.size() > 0 || solrXMLDef.shardHandlerProps.size() > 0) {
-      w.write(INDENT + "<shardHandlerFactory");
-      for (Map.Entry<String, String> ent : solrXMLDef.shardHandlerAttribs.entrySet()) {
-        writeAttribute(w, ent.getKey(), ent.getValue());
-      }
-      w.write(">\n");
-      if (solrXMLDef.shardHandlerProps.size() > 0) {
-        for (Map.Entry<String, String> ent : solrXMLDef.shardHandlerProps.entrySet()) {
-          w.write(INDENT + INDENT + "<int name=\"" + ent.getKey() + "\"" + ">" + ent.getValue() + "</int>\n");
-        }
-      }
-      w.write(INDENT + "</shardHandlerFactory>\n");
-    }
-
-
     w.write(INDENT + "<cores");
     Map<String,String> coresAttribs = solrXMLDef.coresAttribs;
     Set<String> coreAttribKeys = coresAttribs.keySet();
@@ -110,8 +101,27 @@ public class SolrXMLSerializer {
       persist(w, coreDef);
     }
 
+    // Shard handler section
+    if (solrXMLDef.shardHandlerNode != null) {
+      w.write(nodeToXML(solrXMLDef.shardHandlerNode));
+    }
+
     w.write(INDENT + "</cores>\n");
     w.write("</solr>\n");
+  }
+
+  private String nodeToXML(Node node) {
+    try {
+      TransformerFactory tfactory = TransformerFactory.newInstance();
+      Transformer tx = tfactory.newTransformer();
+      StringWriter buffer = new StringWriter();
+      tx.setOutputProperty(OutputKeys.OMIT_XML_DECLARATION, "yes");
+      tx.transform(new DOMSource(node), new StreamResult(buffer));
+      return buffer.toString();
+    }
+    catch (Exception e) {
+      throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, "Error transforming XML: " + e.getMessage());
+    }
   }
   
   /** Writes the cores configuration node for a given core. */
@@ -235,8 +245,7 @@ public class SolrXMLSerializer {
     Map<String,String> coresAttribs;
     Map<String, String> loggingAttribs;
     Map<String, String> watcherAttribs;
-    Map<String, String> shardHandlerAttribs;
-    Map<String, String> shardHandlerProps;
+    Node shardHandlerNode;
     List<SolrCoreXMLDef> coresDefs;
   }
   
