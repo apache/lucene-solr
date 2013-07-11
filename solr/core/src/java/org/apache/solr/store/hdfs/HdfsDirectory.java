@@ -45,7 +45,6 @@ public class HdfsDirectory extends Directory {
   
   private static final String LF_EXT = ".lf";
   protected static final String SEGMENTS_GEN = "segments.gen";
-  protected static final IndexOutput NULL_WRITER = new NullIndexOutput();
   protected Path hdfsDirPath;
   protected Configuration configuration;
   
@@ -79,7 +78,7 @@ public class HdfsDirectory extends Directory {
   public IndexOutput createOutput(String name, IOContext context)
       throws IOException {
     if (SEGMENTS_GEN.equals(name)) {
-      return NULL_WRITER;
+      return new NullIndexOutput();
     }
     HdfsFileWriter writer = new HdfsFileWriter(getFileSystem(), new Path(
         hdfsDirPath, name));
