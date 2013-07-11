@@ -20,6 +20,8 @@ package org.apache.lucene.codecs.temp;
 import java.io.IOException;
 import java.io.PrintWriter;
 import java.io.File;
+import java.util.ArrayList;
+import java.util.BitSet;
 import java.util.Collections;
 import java.util.Comparator;
 import java.util.Iterator;
@@ -164,7 +166,7 @@ public class TempFSTTermsReader extends FieldsProducer {
       this.docCount = docCount;
       this.longsSize = longsSize;
       this.dict = new FST<TempTermOutputs.TempMetaData>(in, new TempTermOutputs(fieldInfo, longsSize));
-      //PrintWriter pw = new PrintWriter(new File("../graphs/ohohoh."+tmpname+".xxx.txt"));
+      //PrintWriter pw = new PrintWriter(new File("ohohoh."+tmpname+".xxx.txt"));
       //Util.toDot(dict, pw, false, false);
       //pw.close();
     }
@@ -296,7 +298,6 @@ public class TempFSTTermsReader extends FieldsProducer {
         seekPending = false;
       }
 
-      // nocommit: reuse?
       @Override
       public DocsEnum docs(Bits liveDocs, DocsEnum reuse, int flags) throws IOException {
         decodeMetaData();
@@ -360,6 +361,30 @@ public class TempFSTTermsReader extends FieldsProducer {
       @Override
       public long ord() {
         throw new UnsupportedOperationException();
+      }
+    }
+  }
+  static<T> void walk(FST<T> fst) throws IOException {
+    final ArrayList<FST.Arc<T>> queue = new ArrayList<FST.Arc<T>>();
+    final BitSet seen = new BitSet();
+    final FST.BytesReader reader = fst.getBytesReader();
+    final FST.Arc<T> startArc = fst.getFirstArc(new FST.Arc<T>());
+    queue.add(startArc);
+    while (!queue.isEmpty()) {
+      final FST.Arc<T> arc = queue.remove(0);
+      final long node = arc.target;
+      //System.out.println(arc);
+      if (FST.targetHasArcs(arc) && !seen.get((int) node)) {
+        //seen.set((int) node);
+        fst.readFirstRealTargetArc(node, arc, reader);
+        while (true) {
+          queue.add(new FST.Arc<T>().copyFrom(arc));
+          if (arc.isLast()) {
+            break;
+          } else {
+            fst.readNextRealArc(arc, reader);
+          }
+        }
       }
     }
   }

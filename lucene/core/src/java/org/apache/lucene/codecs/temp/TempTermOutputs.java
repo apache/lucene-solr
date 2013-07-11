@@ -246,9 +246,15 @@ public class TempTermOutputs extends Outputs<TempTermOutputs.TempMetaData> {
       out.writeBytes(data.bytes, 0, data.bytes.length);
     }
     if (bit2 > 0) {  // stats exist
-      out.writeVInt(data.docFreq);
       if (hasPos) {
-        out.writeVLong(data.totalTermFreq - data.docFreq);
+        if (data.docFreq == data.totalTermFreq) {
+          out.writeVInt((data.docFreq << 1) | 1);
+        } else {
+          out.writeVInt((data.docFreq << 1));
+          out.writeVLong(data.totalTermFreq - data.docFreq);
+        }
+      } else {
+        out.writeVInt(data.docFreq);
       }
     }
   }
@@ -277,9 +283,14 @@ public class TempTermOutputs extends Outputs<TempTermOutputs.TempMetaData> {
       in.readBytes(bytes, 0, bytesSize);
     }
     if (bit2 > 0) {  // stats exist
-      docFreq = in.readVInt();
+      int code = in.readVInt();
       if (hasPos) {
-        totalTermFreq = docFreq + in.readVLong();
+        totalTermFreq = docFreq = code >>> 1;
+        if ((code & 1) == 0) {
+          totalTermFreq += in.readVLong();
+        }
+      } else {
+        docFreq = code;
       }
     }
     return new TempMetaData(longs, bytes, docFreq, totalTermFreq);
