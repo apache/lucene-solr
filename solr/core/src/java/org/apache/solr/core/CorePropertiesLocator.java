@@ -17,7 +17,6 @@ package org.apache.solr.core;
  * limitations under the License.
  */
 
-import com.google.common.base.Charsets;
 import com.google.common.collect.Lists;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.util.IOUtils;
@@ -29,8 +28,6 @@ import java.io.FileInputStream;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.OutputStream;
-import java.io.OutputStreamWriter;
-import java.io.Writer;
 import java.util.Date;
 import java.util.List;
 import java.util.Properties;
@@ -79,9 +76,7 @@ public class CorePropertiesLocator implements CoresLocator {
     OutputStream os = null;
     try {
       os = new FileOutputStream(propfile);
-      Writer writer = new OutputStreamWriter(os, Charsets.UTF_8);
-      p.store(writer, "Written by CorePropertiesLocator on " + new Date());
-      writer.close();
+      p.store(os, "Written by CorePropertiesLocator on " + new Date());
     }
     catch (IOException e) {
       logger.error("Couldn't persist core properties to {}: {}", propfile.getAbsolutePath(), e);
