@@ -20,6 +20,7 @@ import java.io.File;
 import java.io.FileInputStream;
 import java.io.IOException;
 import java.io.InputStream;
+import java.io.InputStreamReader;
 import java.io.OutputStream;
 import java.io.Writer;
 import java.nio.ByteBuffer;
@@ -48,6 +49,7 @@ import org.apache.lucene.index.IndexWriter;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.IOContext;
 import org.apache.lucene.store.IndexInput;
+import static org.apache.lucene.util.IOUtils.CHARSET_UTF_8;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.SolrException.ErrorCode;
 import org.apache.solr.common.params.CommonParams;
@@ -813,7 +815,7 @@ public class ReplicationHandler extends RequestHandlerBase implements SolrCoreAw
         try {
           final InputStream is = new PropertiesInputStream(input);
           Properties props = new Properties();
-          props.load(is);
+          props.load(new InputStreamReader(is, CHARSET_UTF_8));
           return props;
         } finally {
           input.close();

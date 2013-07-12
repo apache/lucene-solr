@@ -18,6 +18,7 @@
 package org.apache.solr.handler.admin;
 
 import org.apache.commons.io.FileUtils;
+import org.apache.lucene.util.IOUtils;
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.params.CoreAdminParams;
@@ -30,6 +31,7 @@ import org.junit.Test;
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.IOException;
+import java.io.InputStreamReader;
 import java.util.Properties;
 
 public class CoreAdminCreateDiscoverTest extends SolrTestCaseJ4 {
@@ -112,7 +114,7 @@ public class CoreAdminCreateDiscoverTest extends SolrTestCaseJ4 {
     File propFile = new File(solrHomeDirectory, coreSysProps + "/" + CorePropertiesLocator.PROPERTIES_FILENAME);
     FileInputStream is = new FileInputStream(propFile);
     try {
-      props.load(is);
+      props.load(new InputStreamReader(is, IOUtils.CHARSET_UTF_8));
     } finally {
       org.apache.commons.io.IOUtils.closeQuietly(is);
     }
@@ -217,7 +219,7 @@ public class CoreAdminCreateDiscoverTest extends SolrTestCaseJ4 {
     File propFile = new File(solrHomeDirectory, coreNormal + "/" + CorePropertiesLocator.PROPERTIES_FILENAME);
     FileInputStream is = new FileInputStream(propFile);
     try {
-      props.load(is);
+      props.load(new InputStreamReader(is, IOUtils.CHARSET_UTF_8));
     } finally {
       org.apache.commons.io.IOUtils.closeQuietly(is);
     }

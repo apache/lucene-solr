@@ -27,6 +27,8 @@ import org.junit.Test;
 
 import java.io.File;
 import java.io.FileOutputStream;
+import java.io.OutputStreamWriter;
+import java.io.Writer;
 import java.util.Properties;
 
 public class TestCoreDiscovery extends SolrTestCaseJ4 {
@@ -78,7 +80,7 @@ public class TestCoreDiscovery extends SolrTestCaseJ4 {
 
   private void addCoreWithProps(Properties stockProps, File propFile) throws Exception {
     if (!propFile.getParentFile().exists()) propFile.getParentFile().mkdirs();
-    FileOutputStream out = new FileOutputStream(propFile);
+    Writer out = new OutputStreamWriter(new FileOutputStream(propFile), IOUtils.CHARSET_UTF_8);
     try {
       stockProps.store(out, null);
     } finally {

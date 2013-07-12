@@ -22,11 +22,13 @@ import com.google.common.collect.ImmutableMap;
 import org.apache.commons.lang.StringUtils;
 import org.apache.solr.cloud.CloudDescriptor;
 import org.apache.solr.common.SolrException;
+import org.apache.solr.util.IOUtils;
 import org.apache.solr.util.PropertiesUtil;
 
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.IOException;
+import java.io.InputStreamReader;
 import java.util.Locale;
 import java.util.Properties;
 
@@ -183,15 +185,18 @@ public class CoreDescriptor {
     String filename = coreProperties.getProperty(CORE_PROPERTIES, DEFAULT_EXTERNAL_PROPERTIES_FILE);
     File propertiesFile = resolvePaths(filename);
     if (propertiesFile.exists()) {
+      FileInputStream in = null;
       try {
+        in = new FileInputStream(propertiesFile);
         Properties externalProps = new Properties();
-        externalProps.load(new FileInputStream(propertiesFile));
+        externalProps.load(new InputStreamReader(in, "UTF-8"));
         coreProperties.putAll(externalProps);
-      }
-      catch (IOException e) {
+      } catch (IOException e) {
         String message = String.format(Locale.ROOT, "Could not load properties from %s: %s:",
             propertiesFile.getAbsoluteFile(), e.toString());
         throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, message);
+      } finally {
+        IOUtils.closeQuietly(in);
       }
     }
   }
