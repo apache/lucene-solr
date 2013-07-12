@@ -124,7 +124,7 @@ public class TestSolrCoreProperties extends LuceneTestCase {
     Properties p = new Properties();
     p.setProperty("foo.foo1", "f1");
     p.setProperty("foo.foo2", "f2");
-    FileOutputStream fos = new FileOutputStream(confDir + File.separator + "solrcore.properties");
+    Writer fos = new OutputStreamWriter(new FileOutputStream(confDir + File.separator + "solrcore.properties"), IOUtils.CHARSET_UTF_8);
     p.store(fos, null);
     IOUtils.close(fos);
   }

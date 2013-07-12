@@ -17,6 +17,7 @@ package org.apache.solr.core;
  * limitations under the License.
  */
 
+import com.google.common.base.Charsets;
 import com.google.common.collect.Lists;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.util.IOUtils;
@@ -27,7 +28,9 @@ import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileOutputStream;
 import java.io.IOException;
-import java.io.OutputStream;
+import java.io.InputStreamReader;
+import java.io.OutputStreamWriter;
+import java.io.Writer;
 import java.util.Date;
 import java.util.List;
 import java.util.Properties;
@@ -73,10 +76,10 @@ public class CorePropertiesLocator implements CoresLocator {
 
   private void writePropertiesFile(CoreDescriptor cd, File propfile)  {
     Properties p = buildCoreProperties(cd);
-    OutputStream os = null;
+    Writer os = null;
     try {
-      os = new FileOutputStream(propfile);
-      p.store(os, "Written by CorePropertiesLocator on " + new Date());
+      os = new OutputStreamWriter(new FileOutputStream(propfile), Charsets.UTF_8);
+      p.store(os, "Written by CorePropertiesLocator");
     }
     catch (IOException e) {
       logger.error("Couldn't persist core properties to {}: {}", propfile.getAbsolutePath(), e);
@@ -134,7 +137,7 @@ public class CorePropertiesLocator implements CoresLocator {
       File instanceDir = propertiesFile.getParentFile();
       Properties coreProperties = new Properties();
       fis = new FileInputStream(propertiesFile);
-      coreProperties.load(fis);
+      coreProperties.load(new InputStreamReader(fis, Charsets.UTF_8));
       String name = createName(coreProperties, instanceDir);
       return new CoreDescriptor(cc, name, instanceDir.getAbsolutePath(), coreProperties);
     }

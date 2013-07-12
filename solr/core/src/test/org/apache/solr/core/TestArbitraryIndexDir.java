@@ -19,6 +19,8 @@ package org.apache.solr.core;
 import java.io.File;
 import java.io.FileOutputStream;
 import java.io.IOException;
+import java.io.OutputStreamWriter;
+import java.io.Writer;
 import java.util.Properties;
 
 import javax.xml.parsers.ParserConfigurationException;
@@ -30,6 +32,7 @@ import org.apache.lucene.document.TextField;
 import org.apache.lucene.index.IndexWriter;
 import org.apache.lucene.index.IndexWriterConfig;
 import org.apache.lucene.store.Directory;
+import org.apache.lucene.util.IOUtils;
 import org.apache.lucene.util.Version;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.params.CommonParams;
@@ -97,15 +100,15 @@ public class TestArbitraryIndexDir extends AbstractSolrTestCase{
     File newDir = new File(h.getCore().getDataDir() + "index_temp");
     newDir.mkdirs();
     p.put("index", newDir.getName());
-    FileOutputStream os = null;
+    Writer os = null;
     try {
-      os = new FileOutputStream(idxprops);
+      os = new OutputStreamWriter(new FileOutputStream(idxprops), IOUtils.CHARSET_UTF_8);
       p.store(os, "index properties");
     } catch (Exception e) {
       throw new SolrException(SolrException.ErrorCode.SERVER_ERROR,
           "Unable to write " + SnapPuller.INDEX_PROPERTIES, e);
     } finally {
-      if (os != null) os.close();
+      IOUtils.closeWhileHandlingException(os);
     }
 
     //add a doc in the new index dir

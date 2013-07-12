@@ -376,6 +376,10 @@ Other Changes
 * SOLR-4948, SOLR-5009: Tidied up CoreContainer construction logic.
   (Alan Woodward, Uwe Schindler, Steve Rowe)
 
+* LUCENE-5107: Properties files by Solr are now written in UTF-8 encoding,
+  Unicode is no longer escaped. Reading of legacy properties files with
+  \u escapes is still possible.  (Uwe Schindler, Robert Muir)
+
 ==================  4.3.1 ==================
 
 Versions of Major Components

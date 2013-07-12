@@ -40,7 +40,9 @@ import java.io.File;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
-import java.io.OutputStream;
+import java.io.InputStreamReader;
+import java.io.OutputStreamWriter;
+import java.io.Writer;
 import java.nio.ByteBuffer;
 import java.nio.channels.FileChannel;
 import java.text.SimpleDateFormat;
@@ -73,6 +75,7 @@ import org.apache.lucene.index.IndexWriter;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.IndexInput;
 import org.apache.lucene.store.IndexOutput;
+import static org.apache.lucene.util.IOUtils.CHARSET_UTF_8;
 import org.apache.solr.client.solrj.SolrServerException;
 import org.apache.solr.client.solrj.impl.HttpClientUtil;
 import org.apache.solr.client.solrj.impl.HttpSolrServer;
@@ -578,7 +581,7 @@ public class SnapPuller {
       }
 
       final IndexOutput out = dir.createOutput(REPLICATION_PROPERTIES, DirectoryFactory.IOCONTEXT_NO_CACHE);
-      OutputStream outFile = new PropertiesOutputStream(out);
+      Writer outFile = new OutputStreamWriter(new PropertiesOutputStream(out), CHARSET_UTF_8);
       try {
         props.store(outFile, "Replication details");
         dir.sync(Collections.singleton(REPLICATION_PROPERTIES));
@@ -890,7 +893,7 @@ public class SnapPuller {
   
         final InputStream is = new PropertiesInputStream(input);
         try {
-          p.load(is);
+          p.load(new InputStreamReader(is, CHARSET_UTF_8));
         } catch (Exception e) {
           LOG.error("Unable to load " + SnapPuller.INDEX_PROPERTIES, e);
         } finally {
@@ -904,9 +907,9 @@ public class SnapPuller {
       }
       final IndexOutput out = dir.createOutput(SnapPuller.INDEX_PROPERTIES, DirectoryFactory.IOCONTEXT_NO_CACHE);
       p.put("index", tmpIdxDirName);
-      OutputStream os = null;
+      Writer os = null;
       try {
-        os = new PropertiesOutputStream(out);
+        os = new OutputStreamWriter(new PropertiesOutputStream(out), CHARSET_UTF_8);
         p.store(os, SnapPuller.INDEX_PROPERTIES);
         dir.sync(Collections.singleton(INDEX_PROPERTIES));
       } catch (Exception e) {
