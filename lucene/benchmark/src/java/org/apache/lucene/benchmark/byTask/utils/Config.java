@@ -18,9 +18,9 @@ package org.apache.lucene.benchmark.byTask.utils;
  */
 
 import java.io.BufferedReader;
-import java.io.ByteArrayInputStream;
 import java.io.IOException;
 import java.io.Reader;
+import java.io.StringReader;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
@@ -80,8 +80,7 @@ public class Config {
     }
     // read props from string
     this.props = new Properties();
-    // props.load always assumes iso8859-1...
-    props.load(new ByteArrayInputStream(sb.toString().getBytes("ISO-8859-1")));
+    props.load(new StringReader(sb.toString()));
 
     // make sure work dir is set properly 
     if (props.get("work.dir") == null) {

@@ -179,7 +179,7 @@ class SolrZkServerProps extends QuorumPeerConfig {
       Properties cfg = new Properties();
       FileInputStream in = new FileInputStream(configFile);
       try {
-        cfg.load(in);
+        cfg.load(new InputStreamReader(in, IOUtils.CHARSET_UTF_8));
       } finally {
         in.close();
       }

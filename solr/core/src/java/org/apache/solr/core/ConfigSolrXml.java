@@ -17,7 +17,7 @@ package org.apache.solr.core;
  * limitations under the License.
  */
 
-import org.apache.commons.io.IOUtils;
+import org.apache.lucene.util.IOUtils;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.util.PropertiesUtil;
 import org.slf4j.Logger;
@@ -27,6 +27,7 @@ import java.io.File;
 import java.io.FileInputStream;
 import java.io.IOException;
 import java.io.InputStream;
+import java.io.InputStreamReader;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
@@ -177,11 +178,11 @@ public class ConfigSolrXml extends ConfigSolr {
       InputStream is = null;
       try {
         is = new FileInputStream(corePropsFile);
-        p.load(is);
+        p.load(new InputStreamReader(is, IOUtils.CHARSET_UTF_8));
       } catch (IOException e) {
         log.warn("Error loading properties ", e);
       } finally {
-        IOUtils.closeQuietly(is);
+        IOUtils.closeWhileHandlingException(is);
       }
     }
     return p;

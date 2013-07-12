@@ -290,6 +290,10 @@ Changes in runtime behavior
   to decide if a CFS must be written, instead IndexWriterConfig now has a
   property to enable / disable CFS for newly created segments. (Simon Willnauer)
 
+* LUCENE-5107: Properties files by Lucene are now written in UTF-8 encoding,
+  Unicode is no longer escaped. Reading of legacy properties files with
+  \u escapes is still possible.  (Uwe Schindler, Robert Muir)
+
 ======================= Lucene 4.3.1 =======================
 
 Bug Fixes

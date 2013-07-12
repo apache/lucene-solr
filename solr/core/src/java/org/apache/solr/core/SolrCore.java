@@ -21,7 +21,9 @@ import java.io.File;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
+import java.io.InputStreamReader;
 import java.io.OutputStream;
+import java.io.OutputStreamWriter;
 import java.io.Writer;
 import java.lang.reflect.Constructor;
 import java.net.URL;
@@ -53,7 +55,6 @@ import java.util.concurrent.locks.ReentrantLock;
 
 import javax.xml.parsers.ParserConfigurationException;
 
-import org.apache.commons.io.IOUtils;
 import org.apache.lucene.codecs.Codec;
 import org.apache.lucene.index.DirectoryReader;
 import org.apache.lucene.index.IndexDeletionPolicy;
@@ -63,6 +64,7 @@ import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.IOContext;
 import org.apache.lucene.store.IndexInput;
 import org.apache.lucene.store.LockObtainFailedException;
+import org.apache.lucene.util.IOUtils;
 import org.apache.solr.cloud.CloudDescriptor;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.SolrException.ErrorCode;
@@ -257,7 +259,7 @@ public final class SolrCore implements SolrInfoMBean {
   
         final InputStream is = new PropertiesInputStream(input);
         try {
-          p.load(is);
+          p.load(new InputStreamReader(is, "UTF-8"));
           
           String s = p.getProperty("index");
           if (s != null && s.trim().length() > 0) {
@@ -267,7 +269,7 @@ public final class SolrCore implements SolrInfoMBean {
         } catch (Exception e) {
           log.error("Unable to load " + SnapPuller.INDEX_PROPERTIES, e);
         } finally {
-          IOUtils.closeQuietly(is);
+          IOUtils.closeWhileHandlingException(is);
         }
       }
     } catch (IOException e) {
@@ -904,16 +906,14 @@ public final class SolrCore implements SolrInfoMBean {
           props.put("shard", shardId);
         }
       }
-      OutputStream out = null;
+      Writer out = null;
       try {
-        out = new FileOutputStream(propFile);
-        props.store(out, "");
+        out = new OutputStreamWriter(new FileOutputStream(propFile), IOUtils.CHARSET_UTF_8);
+        props.store(out, null);
       } catch (IOException e) {
         throw new SolrException(ErrorCode.SERVER_ERROR, null, e);
       } finally {
-        if (out != null) {
-          IOUtils.closeQuietly(out);
-        }
+        IOUtils.closeWhileHandlingException(out);
       }
     }
   }

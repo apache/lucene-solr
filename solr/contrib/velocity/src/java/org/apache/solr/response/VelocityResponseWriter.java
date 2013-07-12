@@ -17,6 +17,7 @@
 
 package org.apache.solr.response;
 
+import org.apache.lucene.util.IOUtils;
 import org.apache.solr.client.solrj.SolrResponse;
 import org.apache.solr.client.solrj.response.QueryResponse;
 import org.apache.solr.client.solrj.response.SolrResponseBase;
@@ -150,7 +151,7 @@ public class VelocityResponseWriter implements QueryResponseWriter {
         try {
           is = resourceLoader.getResourceStream(propFile);
           Properties props = new Properties();
-          props.load(is);
+          props.load(new InputStreamReader(is, IOUtils.CHARSET_UTF_8));
           engine.init(props);
         }
         finally {
