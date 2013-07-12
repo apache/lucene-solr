@@ -82,8 +82,7 @@ public class CorePropertiesLocator implements CoresLocator {
       logger.error("Couldn't persist core properties to {}: {}", propfile.getAbsolutePath(), e);
     }
     finally {
-      if (os != null)
-        IOUtils.closeQuietly(os);
+      IOUtils.closeQuietly(os);
     }
   }
 
@@ -130,15 +129,21 @@ public class CorePropertiesLocator implements CoresLocator {
   }
 
   protected CoreDescriptor buildCoreDescriptor(File propertiesFile, CoreContainer cc) {
+    FileInputStream fis = null;
     try {
       File instanceDir = propertiesFile.getParentFile();
       Properties coreProperties = new Properties();
-      coreProperties.load(new FileInputStream(propertiesFile));
+      fis = new FileInputStream(propertiesFile);
+      coreProperties.load(fis);
       String name = createName(coreProperties, instanceDir);
       return new CoreDescriptor(cc, name, instanceDir.getAbsolutePath(), coreProperties);
-    } catch (IOException e) {
+    }
+    catch (IOException e) {
       logger.error("Couldn't load core descriptor from {}:{}", propertiesFile.getAbsolutePath(), e.toString());
       return null;
+    }
+    finally {
+      IOUtils.closeQuietly(fis);
     }
   }
 
