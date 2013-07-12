@@ -119,7 +119,7 @@ public class EliasFanoEncoder {
     if ((numValues > 0L) && (upperBound < 0L)) {
       throw new IllegalArgumentException("upperBound should not be negative: " + upperBound + " when numValues > 0");
     }
-    this.upperBound = upperBound;
+    this.upperBound = numValues > 0 ? upperBound : -1L; // if there is no value, -1 is the best upper bound
     int nLowBits = 0;
     if (this.numValues > 0) { // nLowBits = max(0; floor(2log(upperBound/numValues)))
       long lowBitsFac = this.upperBound / this.numValues;

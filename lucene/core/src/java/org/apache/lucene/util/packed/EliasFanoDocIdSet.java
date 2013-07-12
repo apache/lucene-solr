@@ -33,7 +33,7 @@ public class EliasFanoDocIdSet extends DocIdSet {
    * @param numValues The number of values that can be encoded.
    * @param upperBound  At least the highest value that will be encoded.
    */
-  public EliasFanoDocIdSet(long numValues, long upperBound) {
+  public EliasFanoDocIdSet(int numValues, int upperBound) {
     efEncoder = new EliasFanoEncoder(numValues, upperBound);
   }
 
