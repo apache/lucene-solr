@@ -19,93 +19,44 @@ package org.apache.lucene.util;
 
 import java.io.IOException;
 import java.util.ArrayList;
+import java.util.BitSet;
 import java.util.List;
 
-import org.apache.lucene.search.DocIdSet;
-import org.apache.lucene.search.DocIdSetIterator;
+public class TestWAH8DocIdSet extends BaseDocIdSetTestCase<WAH8DocIdSet> {
 
-public class TestWAH8DocIdSet extends LuceneTestCase {
-
-  private static FixedBitSet randomSet(int numBits, int numBitsSet) {
-    assert numBitsSet <= numBits;
-    final FixedBitSet set = new FixedBitSet(numBits);
-    if (numBitsSet == numBits) {
-      set.set(0, set.length());
-    } else {
-      for (int i = 0; i < numBitsSet; ++i) {
-        while (true) {
-          final int o = random().nextInt(numBits);
-          if (!set.get(o)) {
-            set.set(o);
-            break;
-          }
-        }
-      }
+  @Override
+  public WAH8DocIdSet copyOf(BitSet bs, int length) throws IOException {
+    final int indexInterval = _TestUtil.nextInt(random(), 8, 256);
+    final WAH8DocIdSet.Builder builder = new WAH8DocIdSet.Builder().setIndexInterval(indexInterval);
+    for (int i = bs.nextSetBit(0); i != -1; i = bs.nextSetBit(i + 1)) {
+      builder.add(i);
     }
-    return set;
+    return builder.build();
   }
 
-  private static FixedBitSet randomSet(int numBits, float percentSet) {
-    return randomSet(numBits, (int) (percentSet * numBits));
-  }
-
-  public void testAgainstFixedBitSet() throws IOException {
-    final int numBits = _TestUtil.nextInt(random(), 100, 1 << 20);
-    for (float percentSet : new float[] {0f, 0.0001f, random().nextFloat() / 2, 0.9f, 1f}) {
-      final FixedBitSet set = randomSet(numBits, percentSet);
-      final WAH8DocIdSet copy = WAH8DocIdSet.copyOf(set.iterator());
-      assertEquals(numBits, set, copy);
-    }
-  }
-
-  public void assertEquals(int numBits, FixedBitSet ds1, WAH8DocIdSet ds2) throws IOException {
+  @Override
+  public void assertEquals(int numBits, BitSet ds1, WAH8DocIdSet ds2)
+      throws IOException {
+    super.assertEquals(numBits, ds1, ds2);
     assertEquals(ds1.cardinality(), ds2.cardinality());
-
-    // nextDoc
-    DocIdSetIterator it1 = ds1.iterator();
-    DocIdSetIterator it2 = ds2.iterator();
-    assertEquals(it1.docID(), it2.docID());
-    for (int doc = it1.nextDoc(); doc != DocIdSetIterator.NO_MORE_DOCS; doc = it1.nextDoc()) {
-      assertEquals(doc, it2.nextDoc());
-      assertEquals(it1.docID(), it2.docID());
-    }
-    assertEquals(DocIdSetIterator.NO_MORE_DOCS, it2.nextDoc());
-    assertEquals(it1.docID(), it2.docID());
-
-    // nextDoc / advance
-    it1 = ds1.iterator();
-    it2 = ds2.iterator();
-    for (int doc = -1; doc != DocIdSetIterator.NO_MORE_DOCS;) {
-      if (random().nextBoolean()) {
-        doc = it1.nextDoc();
-        assertEquals(doc, it2.nextDoc());
-        assertEquals(it1.docID(), it2.docID());
-      } else {
-        final int target = doc + 1 + random().nextInt(random().nextBoolean() ? 64 : numBits / 64);
-        doc = it1.advance(target);
-        assertEquals(doc, it2.advance(target));
-        assertEquals(it1.docID(), it2.docID());
-      }
-    }
   }
 
   public void testUnion() throws IOException {
     final int numBits = _TestUtil.nextInt(random(), 100, 1 << 20);
     final int numDocIdSets = _TestUtil.nextInt(random(), 0, 4);
-    final List<FixedBitSet> fixedSets = new ArrayList<FixedBitSet>(numDocIdSets);
+    final List<BitSet> fixedSets = new ArrayList<BitSet>(numDocIdSets);
     for (int i = 0; i < numDocIdSets; ++i) {
       fixedSets.add(randomSet(numBits, random().nextFloat() / 16));
     }
     final List<WAH8DocIdSet> compressedSets = new ArrayList<WAH8DocIdSet>(numDocIdSets);
-    for (FixedBitSet set : fixedSets) {
-      compressedSets.add(WAH8DocIdSet.copyOf(set.iterator()));
+    for (BitSet set : fixedSets) {
+      compressedSets.add(copyOf(set, numBits));
     }
 
     final WAH8DocIdSet union = WAH8DocIdSet.union(compressedSets);
-    final FixedBitSet expected = new FixedBitSet(numBits);
-    for (DocIdSet set : fixedSets) {
-      final DocIdSetIterator it = set.iterator();
-      for (int doc = it.nextDoc(); doc != DocIdSetIterator.NO_MORE_DOCS; doc = it.nextDoc()) {
+    final BitSet expected = new BitSet(numBits);
+    for (BitSet set : fixedSets) {
+      for (int doc = set.nextSetBit(0); doc != -1; doc = set.nextSetBit(doc + 1)) {
         expected.set(doc);
       }
     }
@@ -115,27 +66,26 @@ public class TestWAH8DocIdSet extends LuceneTestCase {
   public void testIntersection() throws IOException {
     final int numBits = _TestUtil.nextInt(random(), 100, 1 << 20);
     final int numDocIdSets = _TestUtil.nextInt(random(), 1, 4);
-    final List<FixedBitSet> fixedSets = new ArrayList<FixedBitSet>(numDocIdSets);
+    final List<BitSet> fixedSets = new ArrayList<BitSet>(numDocIdSets);
     for (int i = 0; i < numDocIdSets; ++i) {
       fixedSets.add(randomSet(numBits, random().nextFloat()));
     }
     final List<WAH8DocIdSet> compressedSets = new ArrayList<WAH8DocIdSet>(numDocIdSets);
-    for (FixedBitSet set : fixedSets) {
-      compressedSets.add(WAH8DocIdSet.copyOf(set.iterator()));
+    for (BitSet set : fixedSets) {
+      compressedSets.add(copyOf(set, numBits));
     }
 
     final WAH8DocIdSet union = WAH8DocIdSet.intersect(compressedSets);
-    final FixedBitSet expected = new FixedBitSet(numBits);
-    expected.set(0, expected.length());
-    for (DocIdSet set : fixedSets) {
-      final DocIdSetIterator it = set.iterator();
-      int lastDoc = -1;
-      for (int doc = it.nextDoc(); doc != DocIdSetIterator.NO_MORE_DOCS; doc = it.nextDoc()) {
-        expected.clear(lastDoc + 1, doc);
-        lastDoc = doc;
-      }
-      if (lastDoc + 1 < expected.length()) {
-        expected.clear(lastDoc + 1, expected.length());
+    final BitSet expected = new BitSet(numBits);
+    expected.set(0, expected.size());
+    for (BitSet set : fixedSets) {
+      for (int previousDoc = -1, doc = set.nextSetBit(0); ; previousDoc = doc, doc = set.nextSetBit(doc + 1)) {
+        if (doc == -1) {
+          expected.clear(previousDoc + 1, set.size());
+          break;
+        } else {
+          expected.clear(previousDoc + 1, doc);
+        }
       }
     }
     assertEquals(numBits, expected, union);

@@ -17,11 +17,21 @@
 
 package org.apache.lucene.util;
 
+import java.io.IOException;
 import java.util.BitSet;
 
 import org.apache.lucene.search.DocIdSetIterator;
 
-public class TestOpenBitSet extends LuceneTestCase {
+public class TestOpenBitSet extends BaseDocIdSetTestCase<OpenBitSet> {
+
+  @Override
+  public OpenBitSet copyOf(BitSet bs, int length) throws IOException {
+    final OpenBitSet set = new OpenBitSet(length);
+    for (int doc = bs.nextSetBit(0); doc != -1; doc = bs.nextSetBit(doc + 1)) {
+      set.set(doc);
+    }
+    return set;
+  }
 
   void doGet(BitSet a, OpenBitSet b) {
     int max = a.size();
@@ -320,6 +330,7 @@ public class TestOpenBitSet extends LuceneTestCase {
     checkPrevSetBitArray(new int[] {0});
     checkPrevSetBitArray(new int[] {0,2});
   }
+
 }
 
 
