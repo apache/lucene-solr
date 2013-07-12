@@ -17,6 +17,7 @@ package org.apache.solr.cloud;
  * limitations under the License.
  */
 
+import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
@@ -25,7 +26,12 @@ import java.util.Map;
 import java.util.Set;
 
 import org.apache.solr.client.solrj.SolrResponse;
+import org.apache.solr.client.solrj.SolrServerException;
+import org.apache.solr.client.solrj.impl.HttpSolrServer;
+import org.apache.solr.client.solrj.request.AbstractUpdateRequest;
 import org.apache.solr.client.solrj.request.CoreAdminRequest;
+import org.apache.solr.client.solrj.request.UpdateRequest;
+import org.apache.solr.client.solrj.response.UpdateResponse;
 import org.apache.solr.cloud.DistributedQueue.QueueEvent;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.SolrException.ErrorCode;
@@ -37,12 +43,14 @@ import org.apache.solr.common.cloud.DocRouter;
 import org.apache.solr.common.cloud.PlainIdRouter;
 import org.apache.solr.common.cloud.Replica;
 import org.apache.solr.common.cloud.Slice;
+import org.apache.solr.common.cloud.ZkCoreNodeProps;
 import org.apache.solr.common.cloud.ZkNodeProps;
 import org.apache.solr.common.cloud.ZkStateReader;
 import org.apache.solr.common.cloud.ZooKeeperException;
 import org.apache.solr.common.params.CoreAdminParams;
 import org.apache.solr.common.params.CoreAdminParams.CoreAdminAction;
 import org.apache.solr.common.params.ModifiableSolrParams;
+import org.apache.solr.common.params.UpdateParams;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.common.util.SimpleOrderedMap;
 import org.apache.solr.common.util.StrUtils;
@@ -541,6 +549,18 @@ public class OverseerCollectionProcessor implements Runnable, ClosableThread {
       collectShardResponses(results, true,
           "SPLTSHARD failed to create subshard replicas or timed out waiting for them to come up");
 
+      String coreUrl = new ZkCoreNodeProps(parentShardLeader).getCoreUrl();
+      // HttpShardHandler is hard coded to send a QueryRequest hence we go direct
+      // and we force open a searcher so that we have documents to show upon switching states
+      UpdateResponse updateResponse = null;
+      try {
+        updateResponse = commit(coreUrl, true);
+        processResponse(results, null, coreUrl, updateResponse, slice);
+      } catch (Exception e) {
+        processResponse(results, e, coreUrl, updateResponse, slice);
+        throw new SolrException(ErrorCode.SERVER_ERROR, "Unable to call distrib commit on: " + coreUrl, e);
+      }
+
       log.info("Successfully created all replica shards for all sub-slices "
           + subSlices);
 
@@ -562,6 +582,24 @@ public class OverseerCollectionProcessor implements Runnable, ClosableThread {
     } catch (Exception e) {
       log.error("Error executing split operation for collection: " + collectionName + " parent shard: " + slice, e);
       throw new SolrException(ErrorCode.SERVER_ERROR, null, e);
+    }
+  }
+
+  static UpdateResponse commit(String url, boolean openSearcher) throws SolrServerException, IOException {
+    HttpSolrServer server = null;
+    try {
+      server = new HttpSolrServer(url);
+      server.setConnectionTimeout(30000);
+      server.setSoTimeout(60000);
+      UpdateRequest ureq = new UpdateRequest();
+      ureq.setParams(new ModifiableSolrParams());
+      ureq.getParams().set(UpdateParams.OPEN_SEARCHER, openSearcher);
+      ureq.setAction(AbstractUpdateRequest.ACTION.COMMIT, false, true);
+      return ureq.process(server);
+    } finally {
+      if (server != null) {
+        server.shutdown();
+      }
     }
   }
   
@@ -693,7 +731,7 @@ public class OverseerCollectionProcessor implements Runnable, ClosableThread {
 
     shardHandler.submit(sreq, replica, sreq.params);
   }
-  
+
   private void createCollection(ClusterState clusterState, ZkNodeProps message, NamedList results) {
     String collectionName = message.getStr("name");
     if (clusterState.getCollections().contains(collectionName)) {
@@ -878,29 +916,37 @@ public class OverseerCollectionProcessor implements Runnable, ClosableThread {
 
   private void processResponse(NamedList results, ShardResponse srsp) {
     Throwable e = srsp.getException();
+    String nodeName = srsp.getNodeName();
+    SolrResponse solrResponse = srsp.getSolrResponse();
+    String shard = srsp.getShard();
+
+    processResponse(results, e, nodeName, solrResponse, shard);
+  }
+
+  private void processResponse(NamedList results, Throwable e, String nodeName, SolrResponse solrResponse, String shard) {
     if (e != null) {
-      log.error("Error from shard: " + srsp.getShard(), e);
-      
+      log.error("Error from shard: " + shard, e);
+
       SimpleOrderedMap failure = (SimpleOrderedMap) results.get("failure");
       if (failure == null) {
         failure = new SimpleOrderedMap();
         results.add("failure", failure);
       }
 
-      failure.add(srsp.getNodeName(), e.getClass().getName() + ":" + e.getMessage());
-      
+      failure.add(nodeName, e.getClass().getName() + ":" + e.getMessage());
+
     } else {
-      
+
       SimpleOrderedMap success = (SimpleOrderedMap) results.get("success");
       if (success == null) {
         success = new SimpleOrderedMap();
         results.add("success", success);
       }
-      
-      success.add(srsp.getNodeName(), srsp.getSolrResponse().getResponse());
+
+      success.add(nodeName, solrResponse.getResponse());
     }
   }
-  
+
   private Integer msgStrToInt(ZkNodeProps message, String key, Integer def)
       throws Exception {
     String str = message.getStr(key);

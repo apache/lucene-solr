@@ -794,9 +794,7 @@ public final class ZkController {
       if (!core.isReloaded() && ulog != null) {
         // disable recovery in case shard is in construction state (for shard splits)
         Slice slice = getClusterState().getSlice(collection, shardId);
-        if (Slice.CONSTRUCTION.equals(slice.getState())) {
-          publish(desc, ZkStateReader.ACTIVE);
-        } else {
+        if (!Slice.CONSTRUCTION.equals(slice.getState()) && !isLeader) {
           Future<UpdateLog.RecoveryInfo> recoveryFuture = core.getUpdateHandler()
               .getUpdateLog().recoverFromLog();
           if (recoveryFuture != null) {
@@ -807,11 +805,11 @@ public final class ZkController {
           } else {
             log.info("No LogReplay needed for core=" + core.getName() + " baseURL=" + baseUrl);
           }
-          boolean didRecovery = checkRecovery(coreName, desc, recoverReloadedCores, isLeader, cloudDesc,
-              collection, coreZkNodeName, shardId, leaderProps, core, cc);
-          if (!didRecovery) {
-            publish(desc, ZkStateReader.ACTIVE);
-          }
+        }
+        boolean didRecovery = checkRecovery(coreName, desc, recoverReloadedCores, isLeader, cloudDesc,
+            collection, coreZkNodeName, shardId, leaderProps, core, cc);
+        if (!didRecovery) {
+          publish(desc, ZkStateReader.ACTIVE);
         }
       }
     } finally {

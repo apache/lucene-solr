@@ -303,6 +303,10 @@ Bug Fixes
   using new-style solr.xml, and was not being persisted properly when using
   old-style.  (Tomás Fernández Löbbe, Ryan Ernst, Alan Woodward)
 
+* SOLR-4997: The splitshard api doesn't call commit on new sub shards before
+  switching shard states. Multiple bugs related to sub shard recovery and
+  replication are also fixed. (shalin)
+
 Optimizations
 ----------------------
 
