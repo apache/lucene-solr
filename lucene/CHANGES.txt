@@ -16,6 +16,11 @@ New features
 * LUCENE-5098: New broadword utility methods in oal.util.BroadWord.
   (Paul Elschot via Adrien Grand, Dawid Weiss)
 
+API Changes
+
+* LUCENE-5094: Add ramBytesUsed() to MultiDocValues.OrdinalMap.
+  (Robert Muir)
+
 ======================= Lucene 4.4.0 =======================
 
 Changes in backwards compatibility policy
