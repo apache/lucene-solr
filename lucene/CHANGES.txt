@@ -13,6 +13,9 @@ New features
 * LUCENE-5081: Added WAH8DocIdSet, an in-memory doc id set implementation based
   on word-aligned hybrid encoding. (Adrien Grand)
 
+* LUCENE-5098: New broadword utility methods in oal.util.BroadWord.
+  (Paul Elschot via Adrien Grand, Dawid Weiss)
+
 ======================= Lucene 4.4.0 =======================
 
 Changes in backwards compatibility policy
