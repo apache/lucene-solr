@@ -20,6 +20,7 @@ package org.apache.solr.core;
 import com.google.common.base.Charsets;
 import com.google.common.collect.Lists;
 import org.apache.solr.common.SolrException;
+import org.apache.solr.util.IOUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -27,6 +28,7 @@ import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileOutputStream;
 import java.io.IOException;
+import java.io.OutputStream;
 import java.io.OutputStreamWriter;
 import java.io.Writer;
 import java.util.Date;
@@ -56,14 +58,7 @@ public class CorePropertiesLocator implements CoresLocator {
         throw new SolrException(SolrException.ErrorCode.BAD_REQUEST,
                                 "Could not create a new core in " + cd.getInstanceDir()
                               + "as another core is already defined there");
-      try {
-        Properties p = buildCoreProperties(cd);
-        Writer writer = new OutputStreamWriter(new FileOutputStream(propFile), Charsets.UTF_8);
-        p.store(writer, "Written by CorePropertiesLocator on " + new Date());
-      }
-      catch (IOException e) {
-        logger.error("Couldn't persist core properties to {}: {}", propFile.getAbsolutePath(), e);
-      }
+      writePropertiesFile(cd, propFile);
     }
   }
 
@@ -75,14 +70,25 @@ public class CorePropertiesLocator implements CoresLocator {
   public void persist(CoreContainer cc, CoreDescriptor... coreDescriptors) {
     for (CoreDescriptor cd : coreDescriptors) {
       File propFile = new File(new File(cd.getInstanceDir()), PROPERTIES_FILENAME);
-      try {
-        Properties p = buildCoreProperties(cd);
-        Writer writer = new OutputStreamWriter(new FileOutputStream(propFile), Charsets.UTF_8);
-        p.store(writer, "Written by CorePropertiesLocator on " + new Date());
-      }
-      catch (IOException e) {
-        logger.error("Couldn't persist core properties to {}: {}", propFile.getAbsolutePath(), e);
-      }
+      writePropertiesFile(cd, propFile);
+    }
+  }
+
+  private void writePropertiesFile(CoreDescriptor cd, File propfile)  {
+    Properties p = buildCoreProperties(cd);
+    OutputStream os = null;
+    try {
+      os = new FileOutputStream(propfile);
+      Writer writer = new OutputStreamWriter(os, Charsets.UTF_8);
+      p.store(writer, "Written by CorePropertiesLocator on " + new Date());
+      writer.close();
+    }
+    catch (IOException e) {
+      logger.error("Couldn't persist core properties to {}: {}", propfile.getAbsolutePath(), e);
+    }
+    finally {
+      if (os != null)
+        IOUtils.closeQuietly(os);
     }
   }
 
