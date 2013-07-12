@@ -70,8 +70,8 @@ public class TestSolrXmlPersistor {
 
     SolrXMLCoresLocator persistor = new SolrXMLCoresLocator(new File("testfile.xml"), solrxml, null);
     assertEquals(persistor.buildSolrXML(cds),
-          "<solr><cores>\n"
-        + "    <core name=\"testcore\" instanceDir=\"instance/dir/\"/>\n"
+          "<solr><cores>" + SolrXMLCoresLocator.NEWLINE
+        + "    <core name=\"testcore\" instanceDir=\"instance/dir/\"/>" + SolrXMLCoresLocator.NEWLINE
         + "</cores></solr>");
   }
 
