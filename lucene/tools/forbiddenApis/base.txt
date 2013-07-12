@@ -13,11 +13,7 @@
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
 
-# see Solr's DefaultSolrThreadFactory
-# see Lucene's NamedThreadFactory
-
-@defaultMessage spawns threads with vague names; use a custom thread factory and name threads so that you can tell (by its name) which executor it is associated with
-
+@defaultMessage Spawns threads with vague names; use a custom thread factory (Lucene's NamedThreadFactory, Solr's DefaultSolrThreadFactory) and name threads so that you can tell (by its name) which executor it is associated with
 java.util.concurrent.Executors#newFixedThreadPool(int)
 java.util.concurrent.Executors#newSingleThreadExecutor()
 java.util.concurrent.Executors#newCachedThreadPool()
@@ -25,3 +21,10 @@ java.util.concurrent.Executors#newSingleThreadScheduledExecutor()
 java.util.concurrent.Executors#newScheduledThreadPool(int)
 java.util.concurrent.Executors#defaultThreadFactory()
 java.util.concurrent.Executors#privilegedThreadFactory()
+
+@defaultMessage Properties files should be read/written with InputStream/OutputStream for maximum compatibility, as it uses the official "properties file format" with unicode escapes and properly defined encoding
+java.util.Properties#load(java.io.Reader)
+java.util.Properties#store(java.io.Writer,java.lang.String)
+
+java.lang.Character#codePointBefore(char[],int) @ Implicit start offset is error-prone when the char[] is a buffer and the first chars are random chars
+java.lang.Character#codePointAt(char[],int) @ Implicit end offset is error-prone when the char[] is a buffer and the last chars are random chars
