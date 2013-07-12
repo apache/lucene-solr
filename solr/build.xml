@@ -251,7 +251,7 @@
   <!-- TODO: Make the forbidden API checks per module! Also remove failOnMissingClasses="false" below!!! -->
   <target name="-forbidden-apis-classpath">
     <path id="forbidden-apis.classpath">
-      <fileset dir="${basedir}" includes="**/lib/*.jar"/>
+      <fileset dir="${basedir}" includes="**/lib/*.jar,**/test-lib/*.jar"/>
       <dirset dir="${basedir}/build" includes="**/classes/*"/>
       <path refid="solr.lucene.libs"/>
       <path refid="classpath"/>
