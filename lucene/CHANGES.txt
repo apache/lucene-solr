@@ -222,6 +222,9 @@ Bug Fixes
 * LUCENE-5068: QueryParserUtil.escape() does not escape forward slash.
   (Matias Holte via Steve Rowe)
 
+* LUCENE-5103: A join on A single-valued field with deleted docs scored too few
+  docs. (David Smiley)
+
 Optimizations
 
 * LUCENE-4936: Improve numeric doc values compression in case all values share
