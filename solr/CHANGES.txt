@@ -248,6 +248,9 @@ Bug Fixes
   using new-style solr.xml, and was not being persisted properly when using
   old-style.  (Tomás Fernández Löbbe, Ryan Ernst, Alan Woodward)
 
+* SOLR-5034: A facet.query that parses or analyzes down to a null Query would
+  throw a NPE. Fixed. (David Smiley)
+
 Optimizations
 ----------------------
 
