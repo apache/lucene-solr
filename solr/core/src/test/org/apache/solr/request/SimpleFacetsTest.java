@@ -621,6 +621,13 @@ public class SimpleFacetsTest extends SolrTestCaseJ4 {
                 )
             ,"*[count(//lst[@name='zerolen_s']/int)=1]"
      );
+
+    assertQ("a facet.query that analyzes to no query shoud not NPE",
+        req("q", "*:*",
+            "facet", "true",
+            "facet.query", "{!field key=k f=lengthfilt}a"),//2 char minimum
+        "//lst[@name='facet_queries']/int[@name='k'][.='0']"
+    );
   }
 
   public static void indexDateFacets() {

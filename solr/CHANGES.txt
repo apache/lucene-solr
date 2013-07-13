@@ -307,6 +307,9 @@ Bug Fixes
   switching shard states. Multiple bugs related to sub shard recovery and
   replication are also fixed. (shalin)
 
+* SOLR-5034: A facet.query that parses or analyzes down to a null Query would
+  throw a NPE. Fixed. (David Smiley)
+
 Optimizations
 ----------------------
 
