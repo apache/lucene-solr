@@ -596,13 +596,13 @@ public class LukeRequestHandler extends RequestHandlerBase
     BytesRef text;
     int[] buckets = new int[HIST_ARRAY_SIZE];
     while ((text = termsEnum.next()) != null) {
+      ++tiq.distinctTerms;
       int freq = termsEnum.docFreq();  // This calculation seems odd, but it gives the same results as it used to.
       int slot = 32 - Integer.numberOfLeadingZeros(Math.max(0, freq - 1));
       buckets[slot] = buckets[slot] + 1;
       if (freq > tiq.minFreq) {
         UnicodeUtil.UTF8toUTF16(text, spare);
         String t = spare.toString();
-        tiq.distinctTerms = new Long(terms.size()).intValue();
 
         tiq.add(new TopTermQueue.TermInfo(new Term(field, t), termsEnum.docFreq()));
         if (tiq.size() > numTerms) { // if tiq full
