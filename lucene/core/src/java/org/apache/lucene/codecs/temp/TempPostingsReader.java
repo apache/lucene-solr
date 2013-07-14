@@ -210,7 +210,9 @@ public final class TempPostingsReader extends TempPostingsReaderBase {
     termState.docStartFP = longs[0];
     if (fieldHasPositions) {
       termState.posStartFP = longs[1];
-      termState.payStartFP = longs[2];
+      if (fieldHasOffsets || fieldHasPayloads) {
+        termState.payStartFP = longs[2];
+      }
     }
 
     if (termState.docFreq == 1) {

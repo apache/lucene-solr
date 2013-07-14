@@ -206,9 +206,13 @@ public final class TempPostingsWriter extends TempPostingsWriterBase {
     fieldHasPayloads = fieldInfo.hasPayloads();
     skipWriter.setField(fieldHasPositions, fieldHasOffsets, fieldHasPayloads);
     if (fieldHasPositions) {
-      return 3;  // doc + pos + pay FP
+      if (fieldHasPayloads || fieldHasOffsets) {
+        return 3;  // doc + pos + pay FP
+      } else {
+        return 2;  // doc + pos FP
+      }
     } else {
-      return 1;  // docFP
+      return 1;    // doc FP
     }
   }
 
@@ -503,7 +507,9 @@ public final class TempPostingsWriter extends TempPostingsWriterBase {
     longs[0] = docTermStartFP;
     if (fieldHasPositions) {
       longs[1] = posTermStartFP;
-      longs[2] = payTermStartFP;
+      if (fieldHasPayloads || fieldHasOffsets) {
+        longs[2] = payTermStartFP;
+      }
     }
     if (singletonDocID != -1) {
       out.writeVInt(singletonDocID);
