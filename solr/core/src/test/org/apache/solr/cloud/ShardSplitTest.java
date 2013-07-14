@@ -202,11 +202,11 @@ public class ShardSplitTest extends BasicDistributedZkTest {
     assertEquals("Wrong number of replicas created for shard1_0", numReplicas, slice1_0.getReplicas().size());
     assertEquals("Wrong number of replicas created for shard1_1", numReplicas, slice1_1.getReplicas().size());
 
+    commit();
+
     // can't use checkShardConsistency because it insists on jettys and clients for each shard
     checkSubShardConsistency(SHARD1_0);
     checkSubShardConsistency(SHARD1_1);
-
-    commit();
 
     SolrQuery query = new SolrQuery("*:*").setRows(1000).setFields("id", "_version_");
     query.set("distrib", false);
@@ -224,7 +224,7 @@ public class ShardSplitTest extends BasicDistributedZkTest {
     logDebugHelp(docCounts, response, shard10Count, response2, shard11Count);
 
     assertEquals("Wrong doc count on shard1_0", docCounts[0], shard10Count);
-    //assertEquals("Wrong doc count on shard1_1", docCounts[1], shard11Count);
+    assertEquals("Wrong doc count on shard1_1", docCounts[1], shard11Count);
   }
 
   protected void checkSubShardConsistency(String shard) throws SolrServerException {
