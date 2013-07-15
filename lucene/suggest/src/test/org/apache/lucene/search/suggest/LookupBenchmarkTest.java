@@ -30,18 +30,18 @@ import java.util.Locale;
 import java.util.Random;
 import java.util.concurrent.Callable;
 
-import org.apache.lucene.util.*;
 import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.analysis.MockAnalyzer;
 import org.apache.lucene.analysis.MockTokenizer;
 import org.apache.lucene.search.suggest.Lookup; // javadocs
+import org.apache.lucene.search.suggest.analyzing.AnalyzingInfixSuggester;
 import org.apache.lucene.search.suggest.analyzing.AnalyzingSuggester;
 import org.apache.lucene.search.suggest.analyzing.FuzzySuggester;
 import org.apache.lucene.search.suggest.fst.FSTCompletionLookup;
 import org.apache.lucene.search.suggest.fst.WFSTCompletionLookup;
 import org.apache.lucene.search.suggest.jaspell.JaspellLookup;
 import org.apache.lucene.search.suggest.tst.TSTLookup;
-
+import org.apache.lucene.util.*;
 import org.junit.BeforeClass;
 import org.junit.Ignore;
 
@@ -54,11 +54,11 @@ public class LookupBenchmarkTest extends LuceneTestCase {
   private final List<Class<? extends Lookup>> benchmarkClasses = Arrays.asList(
       FuzzySuggester.class,
       AnalyzingSuggester.class,
+      AnalyzingInfixSuggester.class,
       JaspellLookup.class, 
       TSTLookup.class,
       FSTCompletionLookup.class,
       WFSTCompletionLookup.class
-      
       );
 
   private final static int rounds = 15;
@@ -168,8 +168,13 @@ public class LookupBenchmarkTest extends LuceneTestCase {
     try {
       lookup = cls.newInstance();
     } catch (InstantiationException e) {
-      Constructor<? extends Lookup> ctor = cls.getConstructor(Analyzer.class);
-      lookup = ctor.newInstance(new MockAnalyzer(random, MockTokenizer.KEYWORD, false));
+      Analyzer a = new MockAnalyzer(random, MockTokenizer.KEYWORD, false);
+      if (cls == AnalyzingInfixSuggester.class) {
+        lookup = new AnalyzingInfixSuggester(TEST_VERSION_CURRENT, _TestUtil.getTempDir("LookupBenchmarkTest"), a);
+      } else {
+        Constructor<? extends Lookup> ctor = cls.getConstructor(Analyzer.class);
+        lookup = ctor.newInstance(a);
+      }
     }
     lookup.build(new TermFreqArrayIterator(input));
     return lookup;
