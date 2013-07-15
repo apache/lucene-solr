@@ -59,6 +59,11 @@
       <artifactId>lucene-analyzers-common</artifactId>
       <version>${project.version}</version>
     </dependency>
+    <dependency>
+      <groupId>${project.groupId}</groupId>
+      <artifactId>lucene-misc</artifactId>
+      <version>${project.version}</version>
+    </dependency>
   </dependencies>
   <build>
     <sourceDirectory>${module-path}/src/java</sourceDirectory>
