@@ -254,6 +254,8 @@ Bug Fixes
 * SOLR-4997: The splitshard api doesn't call commit on new sub shards before
   switching shard states. Multiple bugs related to sub shard recovery and
   replication are also fixed. (shalin)
+  
+* SOLR-5039: Admin/Schema Browser displays -1 for term counts for multiValued fields.
 
 Optimizations
 ----------------------
@@ -278,7 +280,7 @@ Optimizations
 * SOLR-5002: optimize numDocs(Query,DocSet) when filterCache is null (Robert Muir)
 
 * SOLR-5012: optimize search with filter when filterCache is null (Robert Muir)
-
+  
 Other Changes
 ----------------------
 
@@ -410,8 +412,6 @@ Bug Fixes
 
 * SOLR-4744: Update failure on sub shard is not propagated to clients by parent
   shard (Anshum Gupta, yonik, shalin)
-  
-* SOLR-5039: Admin/Schema Browser displays -1 for term counts for multiValued fields.
 
 Other Changes
 ----------------------
