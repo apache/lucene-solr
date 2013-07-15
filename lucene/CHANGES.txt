@@ -160,6 +160,10 @@ Bug Fixes
 * LUCENE-5103: A join on A single-valued field with deleted docs scored too few
   docs. (David Smiley)
 
+* LUCENE-5090: Detect mismatched readers passed to
+  SortedSetDocValuesReaderState and SortedSetDocValuesAccumulator.
+  (Robert Muir, Mike McCandless)
+
 Optimizations
 
 * LUCENE-4936: Improve numeric doc values compression in case all values share
