@@ -51,6 +51,7 @@ public final class SortedSetDocValuesReaderState {
   private final String field;
   private final AtomicReader topReader;
   private final int valueCount;
+  final IndexReader origReader;
   final char separator;
   final String separatorRegex;
 
@@ -91,6 +92,7 @@ public final class SortedSetDocValuesReaderState {
     this.field = fip.getCategoryListParams(null).field + FACET_FIELD_EXTENSION;
     this.separator = fip.getFacetDelimChar();
     this.separatorRegex = Pattern.quote(Character.toString(separator));
+    this.origReader = reader;
 
     // We need this to create thread-safe MultiSortedSetDV
     // per collector:

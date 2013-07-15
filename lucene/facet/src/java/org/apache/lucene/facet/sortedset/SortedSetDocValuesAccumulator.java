@@ -35,9 +35,11 @@ import org.apache.lucene.facet.search.FacetsAccumulator;
 import org.apache.lucene.facet.search.FacetsAggregator;
 import org.apache.lucene.facet.search.FacetsCollector.MatchingDocs;
 import org.apache.lucene.facet.taxonomy.CategoryPath;
+import org.apache.lucene.index.AtomicReader;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.MultiDocValues.MultiSortedSetDocValues;
 import org.apache.lucene.index.MultiDocValues;
+import org.apache.lucene.index.ReaderUtil;
 import org.apache.lucene.index.SortedSetDocValues;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.PriorityQueue;
@@ -57,7 +59,7 @@ public class SortedSetDocValuesAccumulator extends FacetsAccumulator {
   final String field;
 
   public SortedSetDocValuesAccumulator(FacetSearchParams fsp, SortedSetDocValuesReaderState state) throws IOException {
-    super(fsp, null, null, new FacetArrays((int) state.getDocValues().getValueCount()));
+    super(fsp, null, null, new FacetArrays(state.getSize()));
     this.state = state;
     this.field = state.getField();
     dv = state.getDocValues();
@@ -90,13 +92,23 @@ public class SortedSetDocValuesAccumulator extends FacetsAccumulator {
       @Override
       public void aggregate(MatchingDocs matchingDocs, CategoryListParams clp, FacetArrays facetArrays) throws IOException {
 
-        SortedSetDocValues segValues = matchingDocs.context.reader().getSortedSetDocValues(field);
+        AtomicReader reader = matchingDocs.context.reader();
+
+        // LUCENE-5090: make sure the provided reader context "matches"
+        // the top-level reader passed to the
+        // SortedSetDocValuesReaderState, else cryptic
+        // AIOOBE can happen:
+        if (ReaderUtil.getTopLevelContext(matchingDocs.context).reader() != state.origReader) {
+          throw new IllegalStateException("the SortedSetDocValuesReaderState provided to this class does not match the reader being searched; you must create a new SortedSetDocValuesReaderState every time you open a new IndexReader");
+        }
+        
+        SortedSetDocValues segValues = reader.getSortedSetDocValues(field);
         if (segValues == null) {
           return;
         }
 
         final int[] counts = facetArrays.getIntArray();
-        final int maxDoc = matchingDocs.context.reader().maxDoc();
+        final int maxDoc = reader.maxDoc();
         assert maxDoc == matchingDocs.bits.length();
 
         if (dv instanceof MultiSortedSetDocValues) {
