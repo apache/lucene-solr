@@ -212,7 +212,7 @@ public class AddSchemaFieldsUpdateProcessorFactory extends UpdateRequestProcesso
       }
       if (null != typeMappingNamedList.get(FIELD_TYPE_PARAM)) {
         throw new SolrException(SERVER_ERROR,
-            "Each '" + TYPE_MAPPING_PARAM + "' <lst/> must contain a '" + FIELD_TYPE_PARAM + "' <str>");
+            "Each '" + TYPE_MAPPING_PARAM + "' <lst/> may contain only one '" + FIELD_TYPE_PARAM + "' <str>");
       }
       String fieldType = fieldTypeObj.toString();
 
