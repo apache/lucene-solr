@@ -139,7 +139,7 @@ public class DistributedUpdateProcessor extends UpdateRequestProcessor {
   // method in this update processor
   private boolean isLeader = true;
   private boolean forwardToLeader = false;
-  private boolean forwardToSubShard = false;
+  private boolean isSubShardLeader = false;
   private List<Node> nodes;
 
   private int numNodes;
@@ -226,16 +226,27 @@ public class DistributedUpdateProcessor extends UpdateRequestProcessor {
             req.getCore().getCoreDescriptor().getCloudDescriptor()
                 .getCoreNodeName());
 
+        if (!isLeader) {
+          isSubShardLeader = amISubShardLeader(coll, slice, id, doc);
+          if (isSubShardLeader) {
+            String myShardId = req.getCore().getCoreDescriptor().getCloudDescriptor().getShardId();
+            slice = coll.getSlice(myShardId);
+            shardId = myShardId;
+            leaderReplica = zkController.getZkStateReader().getLeaderRetry(collection, myShardId);
+            List<ZkCoreNodeProps> myReplicas = zkController.getZkStateReader().getReplicaProps(collection, shardId, leaderReplica.getName(), coreName, null, ZkStateReader.DOWN);
+          }
+        }
+
         DistribPhase phase =
             DistribPhase.parseParam(req.getParams().get(DISTRIB_UPDATE_PARAM));
 
         doDefensiveChecks(phase);
 
 
-        if (DistribPhase.FROMLEADER == phase) {
+        if (DistribPhase.FROMLEADER == phase && !isSubShardLeader) {
           // we are coming from the leader, just go local - add no urls
           forwardToLeader = false;
-        } else if (isLeader) {
+        } else if (isLeader || isSubShardLeader) {
           // that means I want to forward onto my replicas...
           // so get the replicas...
           forwardToLeader = false;
@@ -286,6 +297,31 @@ public class DistributedUpdateProcessor extends UpdateRequestProcessor {
     return nodes;
   }
 
+  private boolean amISubShardLeader(DocCollection coll, Slice parentSlice, String id, SolrInputDocument doc) throws InterruptedException {
+    // Am I the leader of a shard in "construction" state?
+    String myShardId = req.getCore().getCoreDescriptor().getCloudDescriptor().getShardId();
+    Slice mySlice = coll.getSlice(myShardId);
+    if (Slice.CONSTRUCTION.equals(mySlice.getState())) {
+      Replica myLeader = zkController.getZkStateReader().getLeaderRetry(collection, myShardId);
+      boolean amILeader = myLeader.getName().equals(
+          req.getCore().getCoreDescriptor().getCloudDescriptor()
+              .getCoreNodeName());
+      if (amILeader) {
+        // Does the document belong to my hash range as well?
+        DocRouter.Range myRange = mySlice.getRange();
+        if (myRange == null) myRange = new DocRouter.Range(Integer.MIN_VALUE, Integer.MAX_VALUE);
+        if (parentSlice != null)  {
+          boolean isSubset = parentSlice.getRange() != null && myRange.isSubsetOf(parentSlice.getRange());
+          return isSubset && coll.getRouter().isTargetSlice(id, doc, req.getParams(), myShardId, coll);
+        } else  {
+          // delete by query case -- as long as I am a sub shard leader we're fine
+          return true;
+        }
+      }
+    }
+    return false;
+  }
+
   private List<Node> getSubShardLeaders(DocCollection coll, String shardId, String docId, SolrInputDocument doc) {
     Collection<Slice> allSlices = coll.getSlices();
     List<Node> nodes = null;
@@ -303,7 +339,6 @@ public class DistributedUpdateProcessor extends UpdateRequestProcessor {
             if (nodes == null) nodes = new ArrayList<Node>();
             ZkCoreNodeProps nodeProps = new ZkCoreNodeProps(sliceLeader);
             nodes.add(new StdNode(nodeProps));
-            forwardToSubShard = true;
           }
         }
       }
@@ -341,7 +376,7 @@ public class DistributedUpdateProcessor extends UpdateRequestProcessor {
       }
     }
 
-    if (isLeader && !localIsLeader) {
+    if ((isLeader && !localIsLeader) || (isSubShardLeader && !localIsLeader)) {
       log.error("ClusterState says we are the leader, but locally we don't think so");
       throw new SolrException(ErrorCode.SERVICE_UNAVAILABLE,
           "ClusterState says we are the leader (" + zkController.getBaseUrl()
@@ -405,7 +440,7 @@ public class DistributedUpdateProcessor extends UpdateRequestProcessor {
       return;
     }
 
-    if (zkEnabled && isLeader)  {
+    if (zkEnabled && isLeader && !isSubShardLeader)  {
       DocCollection coll = zkController.getClusterState().getCollection(collection);
       List<Node> subShardLeaders = getSubShardLeaders(coll, cloudDesc.getShardId(), cmd.getHashableId(), cmd.getSolrInputDocument());
       // the list<node> will actually have only one element for an add request
@@ -426,10 +461,10 @@ public class DistributedUpdateProcessor extends UpdateRequestProcessor {
 
       params = new ModifiableSolrParams(filterParams(req.getParams()));
       params.set(DISTRIB_UPDATE_PARAM,
-                 (isLeader ?
+                 (isLeader || isSubShardLeader ?
                   DistribPhase.FROMLEADER.toString() :
                   DistribPhase.TOLEADER.toString()));
-      if (isLeader) {
+      if (isLeader || isSubShardLeader) {
         params.set("distrib.from", ZkCoreNodeProps.getCoreUrl(
             zkController.getBaseUrl(), req.getCore().getName()));
       }
@@ -793,7 +828,7 @@ public class DistributedUpdateProcessor extends UpdateRequestProcessor {
       return;
     }
 
-    if (zkEnabled && isLeader)  {
+    if (zkEnabled && isLeader && !isSubShardLeader)  {
       DocCollection coll = zkController.getClusterState().getCollection(collection);
       List<Node> subShardLeaders = getSubShardLeaders(coll, cloudDesc.getShardId(), null, null);
       // the list<node> will actually have only one element for an add request
@@ -813,10 +848,10 @@ public class DistributedUpdateProcessor extends UpdateRequestProcessor {
 
       params = new ModifiableSolrParams(filterParams(req.getParams()));
       params.set(DISTRIB_UPDATE_PARAM,
-                 (isLeader ?
+                 (isLeader || isSubShardLeader ?
                   DistribPhase.FROMLEADER.toString() :
                   DistribPhase.TOLEADER.toString()));
-      if (isLeader) {
+      if (isLeader || isSubShardLeader) {
         params.set("distrib.from", ZkCoreNodeProps.getCoreUrl(
             zkController.getBaseUrl(), req.getCore().getName()));
       }
@@ -988,20 +1023,51 @@ public class DistributedUpdateProcessor extends UpdateRequestProcessor {
       vinfo.unblockUpdates();
     }
 
-    // forward to all replicas
-    if (leaderLogic && zkEnabled) {
-      List<Node> subShardLeaders = getSubShardLeaders(coll, cloudDesc.getShardId(), null, null);
-
+    if (zkEnabled)  {
+      // forward to all replicas
       ModifiableSolrParams params = new ModifiableSolrParams(filterParams(req.getParams()));
       params.set(VERSION_FIELD, Long.toString(cmd.getVersion()));
       params.set(DISTRIB_UPDATE_PARAM, DistribPhase.FROMLEADER.toString());
       params.set("update.from", ZkCoreNodeProps.getCoreUrl(
           zkController.getBaseUrl(), req.getCore().getName()));
-      if (subShardLeaders != null)  {
-        cmdDistrib.syncDelete(cmd, subShardLeaders, params);
+
+      boolean someReplicas = false;
+      boolean subShardLeader = false;
+      try {
+        subShardLeader = amISubShardLeader(coll, null, null, null);
+        if (subShardLeader)  {
+          String myShardId = req.getCore().getCoreDescriptor().getCloudDescriptor().getShardId();
+          Replica leaderReplica = zkController.getZkStateReader().getLeaderRetry(
+              collection, myShardId);
+          List<ZkCoreNodeProps> replicaProps = zkController.getZkStateReader()
+              .getReplicaProps(collection, myShardId, leaderReplica.getName(),
+                  req.getCore().getName(), null, ZkStateReader.DOWN);
+          if (replicaProps != null) {
+            List<Node> myReplicas = new ArrayList<Node>();
+            for (ZkCoreNodeProps replicaProp : replicaProps) {
+              myReplicas.add(new StdNode(replicaProp));
+            }
+            cmdDistrib.distribDelete(cmd, myReplicas, params);
+            someReplicas = true;
+          }
+        }
+      } catch (InterruptedException e) {
+        Thread.currentThread().interrupt();
+        throw new ZooKeeperException(ErrorCode.SERVER_ERROR, "", e);
       }
-      if (replicas != null) {
-        cmdDistrib.distribDelete(cmd, replicas, params);
+
+      if (leaderLogic) {
+        List<Node> subShardLeaders = getSubShardLeaders(coll, cloudDesc.getShardId(), null, null);
+        if (subShardLeaders != null)  {
+          cmdDistrib.syncDelete(cmd, subShardLeaders, params);
+        }
+        if (replicas != null) {
+          cmdDistrib.distribDelete(cmd, replicas, params);
+          someReplicas = true;
+        }
+      }
+
+      if (someReplicas)  {
         cmdDistrib.finish();
       }
     }

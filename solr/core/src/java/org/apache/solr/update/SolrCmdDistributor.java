@@ -204,7 +204,7 @@ public class SolrCmdDistributor {
     try {
       sreq.ursp = server.request(ureq);
     } catch (Exception e) {
-      throw new SolrException(ErrorCode.SERVER_ERROR, "Failed synchronous update on shard " + sreq.node, sreq.exception);
+      throw new SolrException(ErrorCode.SERVER_ERROR, "Failed synchronous update on shard " + sreq.node + " update: " + ureq , e);
     }
   }
 
