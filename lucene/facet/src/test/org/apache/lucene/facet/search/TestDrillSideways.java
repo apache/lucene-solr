@@ -611,8 +611,9 @@ public class TestDrillSideways extends FacetTestCase {
     w.close();
 
     final SortedSetDocValuesReaderState sortedSetDVState;
+    IndexSearcher s = newSearcher(r);
     if (doUseDV) {
-      sortedSetDVState = new SortedSetDocValuesReaderState(r);
+      sortedSetDVState = new SortedSetDocValuesReaderState(s.getIndexReader());
     } else {
       sortedSetDVState = null;
     }
@@ -624,8 +625,6 @@ public class TestDrillSideways extends FacetTestCase {
     // NRT open
     TaxonomyReader tr = new DirectoryTaxonomyReader(tw);
     tw.close();
-
-    IndexSearcher s = newSearcher(r);
 
     int numIters = atLeast(10);
 
