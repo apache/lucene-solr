@@ -100,10 +100,10 @@ public class AnalyzingInfixSuggester extends Lookup implements Closeable {
 
   private final Analyzer queryAnalyzer;
   private final Analyzer indexAnalyzer;
-  private final Directory dir;
   private final Version matchVersion;
   private final File indexPath;
   private final int minPrefixChars;
+  private Directory dir;
 
   /** {@link IndexSearcher} used for lookups. */
   protected IndexSearcher searcher;
@@ -143,7 +143,7 @@ public class AnalyzingInfixSuggester extends Lookup implements Closeable {
     this.matchVersion = matchVersion;
     this.indexPath = indexPath;
     this.minPrefixChars = minPrefixChars;
-    dir = FSDirectory.open(indexPath);
+    dir = getDirectory(indexPath);
 
     if (DirectoryReader.indexExists(dir)) {
       // Already built; open it:
@@ -166,8 +166,19 @@ public class AnalyzingInfixSuggester extends Lookup implements Closeable {
     return iwc;
   }
 
+  /** Subclass can override to choose a specific {@link
+   *  Directory} implementation. */
+  protected Directory getDirectory(File path) throws IOException {
+    return FSDirectory.open(path);
+  }
+
   @Override
   public void build(TermFreqIterator iter) throws IOException {
+
+    if (searcher != null) {
+      searcher.getIndexReader().close();
+      searcher = null;
+    }
 
     TermFreqPayloadIterator payloads;
     if (iter instanceof TermFreqPayloadIterator) {
@@ -175,34 +186,34 @@ public class AnalyzingInfixSuggester extends Lookup implements Closeable {
     } else {
       payloads = null;
     }
-    Directory dirTmp = FSDirectory.open(new File(indexPath.toString() + ".tmp"));
+    Directory dirTmp = getDirectory(new File(indexPath.toString() + ".tmp"));
 
-    Analyzer gramAnalyzer = new AnalyzerWrapper() {
-        @Override
-        protected Analyzer getWrappedAnalyzer(String fieldName) {
-          return indexAnalyzer;
-        }
-
-        @Override
-        protected TokenStreamComponents wrapComponents(String fieldName, TokenStreamComponents components) {
-          if (fieldName.equals("textgrams") && minPrefixChars > 0) {
-            return new TokenStreamComponents(components.getTokenizer(),
-                                             new EdgeNGramTokenFilter(matchVersion,
-                                                                      components.getTokenStream(),
-                                                                      1, minPrefixChars));
-          } else {
-            return components;
-          }
-        }
-      };
-
-    IndexWriter w = new IndexWriter(dirTmp,
-                                    getIndexWriterConfig(matchVersion, gramAnalyzer));
+    IndexWriter w = null;
     IndexWriter w2 = null;
     AtomicReader r = null;
     boolean success = false;
     try {
-      
+      Analyzer gramAnalyzer = new AnalyzerWrapper() {
+          @Override
+          protected Analyzer getWrappedAnalyzer(String fieldName) {
+            return indexAnalyzer;
+          }
+
+          @Override
+          protected TokenStreamComponents wrapComponents(String fieldName, TokenStreamComponents components) {
+            if (fieldName.equals("textgrams") && minPrefixChars > 0) {
+              return new TokenStreamComponents(components.getTokenizer(),
+                                               new EdgeNGramTokenFilter(matchVersion,
+                                                                        components.getTokenStream(),
+                                                                        1, minPrefixChars));
+            } else {
+              return components;
+            }
+          }
+        };
+
+      w = new IndexWriter(dirTmp,
+                          getIndexWriterConfig(matchVersion, gramAnalyzer));
       BytesRef text;
       Document doc = new Document();
       FieldType ft = new FieldType(TextField.TYPE_NOT_STORED);
@@ -298,9 +309,9 @@ public class AnalyzingInfixSuggester extends Lookup implements Closeable {
       success = true;
     } finally {
       if (success) {
-        IOUtils.close(w, w2, r);
+        IOUtils.close(w, w2, r, dirTmp);
       } else {
-        IOUtils.closeWhileHandlingException(w, w2, r);
+        IOUtils.closeWhileHandlingException(w, w2, r, dirTmp);
       }
     }
   }
@@ -326,6 +337,10 @@ public class AnalyzingInfixSuggester extends Lookup implements Closeable {
    *  must match ({@code allTermsRequired}) and whether the hits
    *  should be highlighted ({@code doHighlight}). */
   public List<LookupResult> lookup(CharSequence key, int num, boolean allTermsRequired, boolean doHighlight) {
+
+    if (searcher == null) {
+      throw new IllegalStateException("suggester was not built");
+    }
 
     final BooleanClause.Occur occur;
     if (allTermsRequired) {
@@ -563,7 +578,10 @@ public class AnalyzingInfixSuggester extends Lookup implements Closeable {
     if (searcher != null) {
       searcher.getIndexReader().close();
       searcher = null;
+    }
+    if (dir != null) {
       dir.close();
+      dir = null;
     }
   }
 };
