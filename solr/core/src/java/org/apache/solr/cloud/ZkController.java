@@ -794,7 +794,7 @@ public final class ZkController {
       if (!core.isReloaded() && ulog != null) {
         // disable recovery in case shard is in construction state (for shard splits)
         Slice slice = getClusterState().getSlice(collection, shardId);
-        if (!Slice.CONSTRUCTION.equals(slice.getState()) && !isLeader) {
+        if (!Slice.CONSTRUCTION.equals(slice.getState()) || !isLeader) {
           Future<UpdateLog.RecoveryInfo> recoveryFuture = core.getUpdateHandler()
               .getUpdateLog().recoverFromLog();
           if (recoveryFuture != null) {
