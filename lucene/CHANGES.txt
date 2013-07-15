@@ -255,6 +255,10 @@ New Features
 * LUCENE-5013: Added ScandinavianFoldingFilterFactory and
   ScandinavianNormalizationFilterFactory (Karl Wettin via janhoy)
 
+* LUCENE-4845: AnalyzingInfixSuggester finds suggestions based on
+  matches to any tokens in the suggestion, not just based on pure
+  prefix matching.  (Mike McCandless, Robert Muir)
+
 API Changes
 
 * LUCENE-5077: Make it easier to use compressed norms. Lucene42NormsFormat takes
