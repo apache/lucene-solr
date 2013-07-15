@@ -309,6 +309,8 @@ Bug Fixes
 
 * SOLR-5034: A facet.query that parses or analyzes down to a null Query would
   throw a NPE. Fixed. (David Smiley)
+  
+* SOLR-5039: Admin/Schema Browser displays -1 for term counts for multiValued fields.
 
 Optimizations
 ----------------------
@@ -469,8 +471,6 @@ Bug Fixes
 * SOLR-4744: Update failure on sub shard is not propagated to clients by parent
   shard (Anshum Gupta, yonik, shalin)
   
-* SOLR-5039: Admin/Schema Browser displays -1 for term counts for multiValued fields.
-
 Other Changes
 ----------------------
 
