@@ -64,7 +64,6 @@ public class TempFSTTermsWriter extends FieldsConsumer {
     this.fieldInfos = state.fieldInfos;
     this.out = state.directory.createOutput(termsFileName, state.context);
 
-    // nocommit: why try catch here? not catching createOutput?
     boolean success = false;
     try {
       writeHeader(out);

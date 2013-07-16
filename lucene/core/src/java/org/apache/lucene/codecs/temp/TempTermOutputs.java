@@ -29,14 +29,13 @@ import org.apache.lucene.store.DataOutput;
 import org.apache.lucene.util.fst.Outputs;
 import org.apache.lucene.util.LongsRef;
 
-
 // NOTE: outputs should be per-field, since
 // longsSize is fixed for each field
 public class TempTermOutputs extends Outputs<TempTermOutputs.TempMetaData> {
   private final static TempMetaData NO_OUTPUT = new TempMetaData();
   private static boolean DEBUG = false;
-  private boolean hasPos;
-  private int longsSize;
+  private final boolean hasPos;
+  private final int longsSize;
 
   public static class TempMetaData {
     long[] longs;
@@ -55,6 +54,10 @@ public class TempTermOutputs extends Outputs<TempTermOutputs.TempMetaData> {
       this.docFreq = docFreq;
       this.totalTermFreq = totalTermFreq;
     }
+
+    // NOTE: actually, FST nodes are seldom 
+    // identical when outputs on their arcs 
+    // aren't NO_OUTPUTs.
     @Override
     public int hashCode() {
       int hash = 0;
@@ -71,7 +74,22 @@ public class TempTermOutputs extends Outputs<TempTermOutputs.TempMetaData> {
           hash += bytes[i];
         }
       }
+      hash += docFreq + totalTermFreq;
       return hash;
+    }
+
+    @Override
+    public boolean equals(Object other_) {
+      if (other_ == this) {
+        return true;
+      } else if (!(other_ instanceof TempTermOutputs.TempMetaData)) {
+        return false;
+      }
+      TempMetaData other = (TempMetaData) other_;
+      return statsEqual(this, other) && 
+             longsEqual(this, other) && 
+             bytesEqual(this, other);
+
     }
     public String toString() {
       if (this == NO_OUTPUT) {
@@ -102,9 +120,6 @@ public class TempTermOutputs extends Outputs<TempTermOutputs.TempMetaData> {
     }
   }
   
-  private TempTermOutputs() {
-  }
-
   protected TempTermOutputs(FieldInfo fieldInfo, int longsSize) {
     this.hasPos = (fieldInfo.getIndexOptions() != IndexOptions.DOCS_ONLY);
     this.longsSize = longsSize;
@@ -149,7 +164,7 @@ public class TempTermOutputs extends Outputs<TempTermOutputs.TempMetaData> {
         ret = new TempMetaData(min, null, 0, -1);
       }
     } else {  // equal long[]
-      if (statsEqual(t1, t2) && (t1.bytes == null || bytesEqual(t1, t2))) {
+      if (statsEqual(t1, t2) && bytesEqual(t1, t2)) {
         ret = t1;
       } else if (allZero(min)) {
         ret = NO_OUTPUT;
@@ -310,7 +325,16 @@ public class TempTermOutputs extends Outputs<TempTermOutputs.TempMetaData> {
     return t1.docFreq == t2.docFreq && t1.totalTermFreq == t2.totalTermFreq;
   }
   static boolean bytesEqual(final TempMetaData t1, final TempMetaData t2) {
-    return Arrays.equals(t1.bytes, t2.bytes);
+    if (t1.bytes == null && t2.bytes == null) {
+      return true;
+    }
+    return t1.bytes != null && t2.bytes !=null && Arrays.equals(t1.bytes, t2.bytes);
+  }
+  static boolean longsEqual(final TempMetaData t1, final TempMetaData t2) {
+    if (t1.longs == null && t2.longs == null) {
+      return true;
+    }
+    return t1.longs != null && t2.longs !=null && Arrays.equals(t1.longs, t2.longs);
   }
   static boolean allZero(final long[] l) {
     for (int i = 0; i < l.length; i++) {

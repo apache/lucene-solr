@@ -317,9 +317,8 @@ public class TempFSTTermsReader extends FieldsProducer {
       public BytesRef next() throws IOException {
         if (seekPending) {  // previously positioned, but termOutputs not fetched
           seekPending = false;
-          if (seekCeil(term, false) != SeekStatus.FOUND) {
-            return term;
-          }
+          SeekStatus status = seekCeil(term, false);
+          assert status == SeekStatus.FOUND;  // must positioned on valid term
         }
         updateEnum(fstEnum.next());
         return term;
@@ -331,7 +330,6 @@ public class TempFSTTermsReader extends FieldsProducer {
         return term != null;
       }
 
-      // nocommit: when will we useCache?
       @Override
       public SeekStatus seekCeil(final BytesRef target, final boolean useCache) throws IOException {
         updateEnum(fstEnum.seekCeil(target));
