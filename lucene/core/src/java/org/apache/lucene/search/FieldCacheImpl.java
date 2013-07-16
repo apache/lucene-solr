@@ -1037,6 +1037,7 @@ class FieldCacheImpl implements FieldCache {
           termOrd++;
         }
       }
+      termOrdToBytesOffset.freeze();
 
       // maybe an int-only impl?
       return new SortedDocValuesImpl(bytes.freeze(true), termOrdToBytesOffset, docToTermOrd.getMutable(), termOrd);
