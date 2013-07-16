@@ -98,7 +98,7 @@ sammy.get
                 .show()
                 .html( 'Loading ...' );
                             
-              $( '.content' )
+              $( '.content', this )
                 .hide();
             },
             success : function( response, text_status, xhr )
@@ -347,9 +347,9 @@ sammy.get
         $.ajax
         (
           {
-            url : core_basepath + '/dataimport?command=details&wt=json',
+            url : core_basepath + '/admin/system?wt=json',
             dataType : 'json',
-            context : $( '#dataimport', dashboard_element ),
+            context : $( '#instance', dashboard_element ),
             beforeSend : function( xhr, settings )
             {
               $( 'h2', this )
@@ -358,19 +358,28 @@ sammy.get
               $( '.message', this )
                 .show()
                 .html( 'Loading' );
+
+              $( '.content', this )
+                .hide();
             },
             success : function( response, text_status, xhr )
             {
               $( '.message', this )
                 .empty()
                 .hide();
+
+              $( '.content', this )
+                .show();
                             
               $( 'dl', this )
                 .show();
                             
               var data = {
-                'status' : response['status'],
-                'info' : response['statusMessages']['']
+                'dir_cwd' : response.core.directory.cwd,
+                'dir_instance' : response.core.directory.instance,
+                'dir_data' : response.core.directory.data,
+                'dir_index' : response.core.directory.index,
+                'dir_impl' : response.core.directory.dirimpl
               };
                             
               for( var key in data )
@@ -389,7 +398,7 @@ sammy.get
                             
               $( '.message', this )
                 .show()
-                .html( 'Dataimport is not configured' );
+                .html( '/admin/system Handler is not configured' );
             },
             complete : function( xhr, text_status )
             {

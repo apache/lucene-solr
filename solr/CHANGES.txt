@@ -64,6 +64,12 @@ Upgrading from Solr 4.4.0
 Detailed Change List
 ----------------------
 
+Bug Fixes
+----------------------
+
+* SOLR-3633 - web UI reports an error if CoreAdminHandler says there are no 
+  SolrCores (steffkes)
+
 Other Changes
 ----------------------
 

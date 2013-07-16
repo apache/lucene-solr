@@ -158,7 +158,6 @@ var solr_admin = function( app_config )
   is_multicore = null,
   cores_data = null,
   active_core = null,
-  environment_basepath = null,
     
   config = app_config,
   params = null,
@@ -238,11 +237,6 @@ var solr_admin = function( app_config )
       var core_path = config.solr_path + '/' + core_name;
       var classes = [];
 
-      if( !environment_basepath )
-      {
-        environment_basepath = core_path;
-      }
-
       if( cores.status[core_name]['isDefaultCore'] )
       {
         classes.push( 'default' );
@@ -263,8 +257,29 @@ var solr_admin = function( app_config )
       core_list.push( core_tpl );
     }
 
-    that.menu_element
-      .append( core_list.join( "\n" ) );
+    var has_cores = 0 !== core_count;
+    if( has_cores )
+    {
+      that.menu_element
+        .append( core_list.join( "\n" ) )
+        .trigger( 'liszt:updated' );
+    }
+
+    var core_selector = $( '#core-selector' );
+    core_selector.find( '#has-cores' ).toggle( has_cores );
+    core_selector.find( '#has-no-cores' ).toggle( !has_cores );
+
+    if( has_cores )
+    {
+      var cores_element = core_selector.find( '#has-cores' );
+      var selector_width = cores_element.width();
+
+      cores_element.find( '.chzn-container' )
+        .css( 'width', selector_width + 'px' );
+      
+      cores_element.find( '.chzn-drop' )
+        .css( 'width', ( selector_width - 2 ) + 'px' );
+    }
 
     if( cores.initFailures )
     {
@@ -288,14 +303,6 @@ var solr_admin = function( app_config )
         $( 'ul', init_failures ).html( failures.join( "\n" ) );
       }
     }
-
-    if( 0 === core_count )
-    {
-      show_global_error
-      ( 
-        '<div class="message">There are no SolrCores running. <br/> Using the Solr Admin UI currently requires at least one SolrCore.</div>'
-      );
-    } // else: we have at least one core....
   };
 
   this.run = function()
@@ -352,26 +359,24 @@ var solr_admin = function( app_config )
                 var core_name = $( 'option:selected', this ).text();
 
                 that.core_menu
-                    .html
-                    (//Keep this in alphabetical order after the overview
-                        '<li class="overview"><a href="#/' + core_name + '"><span>Overview</span></a></li>' + "\n" +
-                            '<li class="analysis"><a href="#/' + core_name + '/analysis"><span>Analysis</span></a></li>' + "\n" +
-                            '<li class="config"><a href="#/' + core_name + '/config"><span>Config</span></a></li>' + "\n" +
-                            '<li class="dataimport"><a href="#/' + core_name + '/dataimport"><span>Dataimport</span></a></li>' + "\n" +
-                            '<li class="documents"><a href="#/' + core_name + '/documents"><span>Documents</span></a></li>' + "\n" +
-                            '<li class="ping"><a rel="' + that.config.solr_path + '/' + core_name + '/admin/ping"><span>Ping</span></a></li>' + "\n" +
-                            '<li class="plugins"><a href="#/' + core_name + '/plugins"><span>Plugins / Stats</span></a></li>' + "\n" +
-                            '<li class="query"><a href="#/' + core_name + '/query"><span>Query</span></a></li>' + "\n" +
-                            '<li class="replication"><a href="#/' + core_name + '/replication"><span>Replication</span></a></li>' + "\n" +
-                            '<li class="schema"><a href="#/' + core_name + '/schema"><span>Schema</span></a></li>' + "\n" +
-                            '<li class="schema-browser"><a href="#/' + core_name + '/schema-browser"><span>Schema Browser</span></a></li>' + "\n"
+                  .html
+                  (
+                    //Keep this in alphabetical order after the overview
+                    '<li class="overview"><a href="#/' + core_name + '"><span>Overview</span></a></li>' + "\n" +
+                    '<li class="analysis"><a href="#/' + core_name + '/analysis"><span>Analysis</span></a></li>' + "\n" +
+                    '<li class="config"><a href="#/' + core_name + '/config"><span>Config</span></a></li>' + "\n" +
+                    '<li class="dataimport"><a href="#/' + core_name + '/dataimport"><span>Dataimport</span></a></li>' + "\n" +
+                    '<li class="documents"><a href="#/' + core_name + '/documents"><span>Documents</span></a></li>' + "\n" +
+                    '<li class="ping"><a rel="' + that.config.solr_path + '/' + core_name + '/admin/ping"><span>Ping</span></a></li>' + "\n" +
+                    '<li class="plugins"><a href="#/' + core_name + '/plugins"><span>Plugins / Stats</span></a></li>' + "\n" +
+                    '<li class="query"><a href="#/' + core_name + '/query"><span>Query</span></a></li>' + "\n" +
+                    '<li class="replication"><a href="#/' + core_name + '/replication"><span>Replication</span></a></li>' + "\n" +
+                    '<li class="schema"><a href="#/' + core_name + '/schema"><span>Schema</span></a></li>' + "\n" +
+                    '<li class="schema-browser"><a href="#/' + core_name + '/schema-browser"><span>Schema Browser</span></a></li>'
+                  )
+                  .show();
 
-                    )
-                    .show();
-                if( core_name )
-                {
-                }
-                else
+                if( !core_name )
                 {
                   that.core_menu
                     .hide()
@@ -380,16 +385,7 @@ var solr_admin = function( app_config )
               }
             );
 
-          for( var core_name in response.status )
-          {
-            var core_path = config.solr_path + '/' + core_name;
-            if( !environment_basepath )
-            {
-              environment_basepath = core_path;
-            }
-          }
-
-          var system_url = environment_basepath + '/admin/system?wt=json';
+          var system_url = config.solr_path + '/admin/info/system?wt=json';
           $.ajax
           (
             {
@@ -416,11 +412,6 @@ var solr_admin = function( app_config )
                 {
                   cloud_args = response.mode.match( /solrcloud/i );
                 }
-                
-                // title
-
-                $( 'title', document )
-                  .append( ' (' + response.core.host + ')' );
 
                 // environment
 

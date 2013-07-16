@@ -33,6 +33,11 @@ limitations under the License.
   width: 500px;
 }
 
+#content #cores.empty .requires-core
+{
+  display: none;
+}
+
 #content #cores #frame
 {
   float: right;
@@ -53,6 +58,7 @@ limitations under the License.
 #content #cores #frame .actions
 {
   margin-bottom: 20px;
+  min-height: 30px;
 }
 
 #content #cores .actions div.action
@@ -170,7 +176,7 @@ limitations under the License.
   display: none;
   position: absolute;
   left: -50px;
-  top: 40;
+  top: 40px;
   padding: 10px;
 }
 
