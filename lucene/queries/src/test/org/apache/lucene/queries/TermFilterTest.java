@@ -139,8 +139,6 @@ public class TermFilterTest extends LuceneTestCase {
             assertEquals(termFilter.hashCode(), otherTermFilter.hashCode());
             assertTrue(termFilter.equals(otherTermFilter));
           } else {
-            System.out.println(termFilter);
-            System.out.println(otherTermFilter);
             assertFalse(termFilter.equals(otherTermFilter));
           }
         }
