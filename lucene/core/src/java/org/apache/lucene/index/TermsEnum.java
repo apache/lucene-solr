@@ -101,9 +101,8 @@ public abstract class TermsEnum implements BytesRefIterator {
    * use this method. Low-level implementations may position the TermsEnum
    * without re-seeking the term dictionary.
    * <p>
-   * Seeking by {@link TermState} should only be used iff the enum the state was
-   * obtained from and the enum the state is used for seeking are obtained from
-   * the same {@link IndexReader}.
+   * Seeking by {@link TermState} should only be used iff the state was obtained 
+   * from the same {@link TermsEnum} instance. 
    * <p>
    * NOTE: Using this method with an incompatible {@link TermState} might leave
    * this {@link TermsEnum} in undefined state. On a segment level
