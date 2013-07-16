@@ -95,9 +95,7 @@ abstract class AbstractAppendingLongBuffer {
 
   /** Get a value from this buffer. */
   public final long get(long index) {
-    if (index < 0 || index >= size()) {
-      throw new IndexOutOfBoundsException("" + index);
-    }
+    assert index >= 0 && index < size();
     final int block = (int) (index >> pageShift);
     final int element = (int) (index & pageMask);
     return get(block, element);
