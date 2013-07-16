@@ -87,8 +87,6 @@ public final class Lucene41WithOrds extends PostingsFormat {
     }
   }
 
-  public final static int TERMS_CACHE_SIZE = 1024;
-
   @Override
   public FieldsProducer fieldsProducer(SegmentReadState state) throws IOException {
     PostingsReaderBase postings = new Lucene41PostingsReader(state.directory, state.fieldInfos, state.segmentInfo, state.context, state.segmentSuffix);
@@ -117,7 +115,6 @@ public final class Lucene41WithOrds extends PostingsFormat {
                                                 state.segmentInfo,
                                                 postings,
                                                 state.context,
-                                                TERMS_CACHE_SIZE,
                                                 state.segmentSuffix);
       success = true;
       return ret;

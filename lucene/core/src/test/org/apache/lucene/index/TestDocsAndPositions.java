@@ -95,7 +95,7 @@ public class TestDocsAndPositions extends LuceneTestCase {
     Terms terms = reader.terms(fieldName);
     if (terms != null) {
       TermsEnum te = terms.iterator(null);
-      if (te.seekExact(bytes, true)) {
+      if (te.seekExact(bytes)) {
         return te.docsAndPositions(liveDocs, null);
       }
     }
@@ -341,7 +341,7 @@ public class TestDocsAndPositions extends LuceneTestCase {
     
     // now reuse and check again
     TermsEnum te = r.terms("foo").iterator(null);
-    assertTrue(te.seekExact(new BytesRef("bar"), true));
+    assertTrue(te.seekExact(new BytesRef("bar")));
     disi = _TestUtil.docs(random(), te, null, disi, DocsEnum.FLAG_NONE);
     docid = disi.docID();
     assertEquals(-1, docid);
@@ -366,7 +366,7 @@ public class TestDocsAndPositions extends LuceneTestCase {
     
     // now reuse and check again
     TermsEnum te = r.terms("foo").iterator(null);
-    assertTrue(te.seekExact(new BytesRef("bar"), true));
+    assertTrue(te.seekExact(new BytesRef("bar")));
     disi = te.docsAndPositions(null, disi);
     docid = disi.docID();
     assertEquals(-1, docid);

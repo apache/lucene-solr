@@ -684,7 +684,7 @@ public final class DirectPostingsFormat extends PostingsFormat {
       }
 
       @Override
-      public SeekStatus seekCeil(BytesRef term, boolean useCache) {
+      public SeekStatus seekCeil(BytesRef term) {
         // TODO: we should use the skip pointers; should be
         // faster than bin search; we should also hold
         // & reuse current state so seeking forwards is
@@ -707,7 +707,7 @@ public final class DirectPostingsFormat extends PostingsFormat {
       }
 
       @Override
-      public boolean seekExact(BytesRef term, boolean useCache) {
+      public boolean seekExact(BytesRef term) {
         // TODO: we should use the skip pointers; should be
         // faster than bin search; we should also hold
         // & reuse current state so seeking forwards is
@@ -1413,7 +1413,7 @@ public final class DirectPostingsFormat extends PostingsFormat {
       }
 
       @Override
-      public SeekStatus seekCeil(BytesRef term, boolean useCache) {
+      public SeekStatus seekCeil(BytesRef term) {
         throw new UnsupportedOperationException();
       }
 

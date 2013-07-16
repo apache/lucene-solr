@@ -37,7 +37,7 @@ class SortedSetDocValuesTermsEnum extends TermsEnum {
   }
 
   @Override
-  public SeekStatus seekCeil(BytesRef text, boolean useCache /* ignored */) throws IOException {
+  public SeekStatus seekCeil(BytesRef text) throws IOException {
     long ord = values.lookupTerm(text);
     if (ord >= 0) {
       currentOrd = ord;
@@ -61,7 +61,7 @@ class SortedSetDocValuesTermsEnum extends TermsEnum {
   }
 
   @Override
-  public boolean seekExact(BytesRef text, boolean useCache) throws IOException {
+  public boolean seekExact(BytesRef text) throws IOException {
     long ord = values.lookupTerm(text);
     if (ord >= 0) {
       term.offset = 0;

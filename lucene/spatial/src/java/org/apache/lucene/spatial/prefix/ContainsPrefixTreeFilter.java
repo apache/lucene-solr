@@ -134,7 +134,7 @@ public class ContainsPrefixTreeFilter extends AbstractPrefixTreeFilter {
 
       termBytes.bytes = cell.getTokenBytes();
       termBytes.length = termBytes.bytes.length;
-      return termsEnum.seekExact(termBytes, cell.getLevel() <= 2);
+      return termsEnum.seekExact(termBytes);
     }
 
     private SmallDocSet getDocs(Cell cell, Bits acceptContains) throws IOException {

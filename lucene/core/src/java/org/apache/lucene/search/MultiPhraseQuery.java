@@ -149,7 +149,7 @@ public class MultiPhraseQuery extends Query {
         for (Term term: terms) {
           TermContext termContext = termContexts.get(term);
           if (termContext == null) {
-            termContext = TermContext.build(context, term, true);
+            termContext = TermContext.build(context, term);
             termContexts.put(term, termContext);
           }
           allTermStats.add(searcher.termStatistics(term, termContext));

@@ -62,6 +62,9 @@ API Changes
 * LUCENE-5094: Add ramBytesUsed() to MultiDocValues.OrdinalMap.
   (Robert Muir)
 
+* LUCENE-5114: Remove unused boolean useCache parameter from
+  TermsEnum.seekCeil and .seekExact (Mike McCandless)
+
 ======================= Lucene 4.4.0 =======================
 
 Changes in backwards compatibility policy

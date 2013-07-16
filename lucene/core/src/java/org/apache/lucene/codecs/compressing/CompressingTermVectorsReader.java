@@ -824,7 +824,7 @@ public final class CompressingTermVectorsReader extends TermVectorsReader implem
     }
 
     @Override
-    public SeekStatus seekCeil(BytesRef text, boolean useCache)
+    public SeekStatus seekCeil(BytesRef text)
         throws IOException {
       if (ord < numTerms && ord >= 0) {
         final int cmp = term().compareTo(text);

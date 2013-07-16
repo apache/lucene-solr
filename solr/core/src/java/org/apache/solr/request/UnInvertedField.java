@@ -231,13 +231,13 @@ public class UnInvertedField extends DocTermOrds {
       TermsEnum te = getOrdTermsEnum(searcher.getAtomicReader());
       if (te != null && prefix != null && prefix.length() > 0) {
         final BytesRef prefixBr = new BytesRef(prefix);
-        if (te.seekCeil(prefixBr, true) == TermsEnum.SeekStatus.END) {
+        if (te.seekCeil(prefixBr) == TermsEnum.SeekStatus.END) {
           startTerm = numTermsInField;
         } else {
           startTerm = (int) te.ord();
         }
         prefixBr.append(UnicodeUtil.BIG_TERM);
-        if (te.seekCeil(prefixBr, true) == TermsEnum.SeekStatus.END) {
+        if (te.seekCeil(prefixBr) == TermsEnum.SeekStatus.END) {
           endTerm = numTermsInField;
         } else {
           endTerm = (int) te.ord();

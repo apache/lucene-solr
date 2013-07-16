@@ -78,7 +78,7 @@ public abstract class AtomicReader extends IndexReader {
       return 0;
     }
     final TermsEnum termsEnum = terms.iterator(null);
-    if (termsEnum.seekExact(term.bytes(), true)) {
+    if (termsEnum.seekExact(term.bytes())) {
       return termsEnum.docFreq();
     } else {
       return 0;
@@ -101,7 +101,7 @@ public abstract class AtomicReader extends IndexReader {
       return 0;
     }
     final TermsEnum termsEnum = terms.iterator(null);
-    if (termsEnum.seekExact(term.bytes(), true)) {
+    if (termsEnum.seekExact(term.bytes())) {
       return termsEnum.totalTermFreq();
     } else {
       return 0;
@@ -156,7 +156,7 @@ public abstract class AtomicReader extends IndexReader {
       final Terms terms = fields.terms(term.field());
       if (terms != null) {
         final TermsEnum termsEnum = terms.iterator(null);
-        if (termsEnum.seekExact(term.bytes(), true)) {
+        if (termsEnum.seekExact(term.bytes())) {
           return termsEnum.docs(getLiveDocs(), null);
         }
       }
@@ -176,7 +176,7 @@ public abstract class AtomicReader extends IndexReader {
       final Terms terms = fields.terms(term.field());
       if (terms != null) {
         final TermsEnum termsEnum = terms.iterator(null);
-        if (termsEnum.seekExact(term.bytes(), true)) {
+        if (termsEnum.seekExact(term.bytes())) {
           return termsEnum.docsAndPositions(getLiveDocs(), null);
         }
       }

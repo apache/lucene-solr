@@ -400,8 +400,6 @@ public final class MockRandomPostingsFormat extends PostingsFormat {
         }
       }
 
-      final int termsCacheSize = _TestUtil.nextInt(random, 1, 1024);
-
       success = false;
       try {
         fields = new BlockTermsReader(indexReader,
@@ -410,7 +408,6 @@ public final class MockRandomPostingsFormat extends PostingsFormat {
                                       state.segmentInfo,
                                       postingsReader,
                                       state.context,
-                                      termsCacheSize,
                                       state.segmentSuffix);
         success = true;
       } finally {

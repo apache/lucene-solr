@@ -654,7 +654,7 @@ public final class MemoryPostingsFormat extends PostingsFormat {
     }
 
     @Override
-    public boolean seekExact(BytesRef text, boolean useCache /* ignored */) throws IOException {
+    public boolean seekExact(BytesRef text) throws IOException {
       //System.out.println("te.seekExact text=" + field.name + ":" + text.utf8ToString() + " this=" + this);
       current = fstEnum.seekExact(text);
       didDecode = false;
@@ -662,7 +662,7 @@ public final class MemoryPostingsFormat extends PostingsFormat {
     }
 
     @Override
-    public SeekStatus seekCeil(BytesRef text, boolean useCache /* ignored */) throws IOException {
+    public SeekStatus seekCeil(BytesRef text) throws IOException {
       //System.out.println("te.seek text=" + field.name + ":" + text.utf8ToString() + " this=" + this);
       current = fstEnum.seekCeil(text);
       if (current == null) {

@@ -117,10 +117,10 @@ public class TestTermsEnum2 extends LuceneTestCase {
           // term is accepted
           if (random().nextBoolean()) {
             // seek exact
-            assertTrue(te.seekExact(term, random().nextBoolean()));
+            assertTrue(te.seekExact(term));
           } else {
             // seek ceil
-            assertEquals(SeekStatus.FOUND, te.seekCeil(term, random().nextBoolean()));
+            assertEquals(SeekStatus.FOUND, te.seekCeil(term));
             assertEquals(term, te.term());
           }
         }
@@ -138,10 +138,10 @@ public class TestTermsEnum2 extends LuceneTestCase {
         if (c == 0) {
           assertEquals(term, te.next());
         } else if (c == 1) {
-          assertEquals(SeekStatus.FOUND, te.seekCeil(term, random().nextBoolean()));
+          assertEquals(SeekStatus.FOUND, te.seekCeil(term));
           assertEquals(term, te.term());
         } else {
-          assertTrue(te.seekExact(term, random().nextBoolean()));
+          assertTrue(te.seekExact(term));
         }
       }
     }

@@ -490,7 +490,7 @@ class Lucene42DocValuesProducer extends DocValuesProducer {
     }
 
     @Override
-    public SeekStatus seekCeil(BytesRef text, boolean useCache) throws IOException {
+    public SeekStatus seekCeil(BytesRef text) throws IOException {
       if (in.seekCeil(text) == null) {
         return SeekStatus.END;
       } else if (term().equals(text)) {
@@ -503,7 +503,7 @@ class Lucene42DocValuesProducer extends DocValuesProducer {
     }
 
     @Override
-    public boolean seekExact(BytesRef text, boolean useCache) throws IOException {
+    public boolean seekExact(BytesRef text) throws IOException {
       if (in.seekExact(text) == null) {
         return false;
       } else {

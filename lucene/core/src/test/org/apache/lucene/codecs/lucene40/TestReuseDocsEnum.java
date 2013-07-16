@@ -162,7 +162,7 @@ public class TestReuseDocsEnum extends LuceneTestCase {
       return null;
     }
     TermsEnum iterator = terms.iterator(null);
-    if (iterator.seekExact(term, true)) {
+    if (iterator.seekExact(term)) {
       return iterator.docs(bits, null, random().nextBoolean() ? DocsEnum.FLAG_FREQS : DocsEnum.FLAG_NONE);
     }
     return null;

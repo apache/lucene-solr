@@ -282,7 +282,7 @@ public class WeightedSpanTermExtractor {
       TreeSet<Term> extractedTerms = new TreeSet<Term>();
       q.extractTerms(extractedTerms);
       for (Term term : extractedTerms) {
-        termContexts.put(term, TermContext.build(context, term, true));
+        termContexts.put(term, TermContext.build(context, term));
       }
       Bits acceptDocs = context.reader().getLiveDocs();
       final Spans spans = q.getSpans(context, acceptDocs, termContexts);

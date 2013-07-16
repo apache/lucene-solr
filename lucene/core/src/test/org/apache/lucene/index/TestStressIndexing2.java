@@ -354,7 +354,7 @@ public class TestStressIndexing2 extends LuceneTestCase {
       }
 
       termDocs1 = _TestUtil.docs(random(), termsEnum, liveDocs1, termDocs1, DocsEnum.FLAG_NONE);
-      if (termsEnum2.seekExact(term, false)) {
+      if (termsEnum2.seekExact(term)) {
         termDocs2 = _TestUtil.docs(random(), termsEnum2, liveDocs2, termDocs2, DocsEnum.FLAG_NONE);
       } else {
         termDocs2 = null;

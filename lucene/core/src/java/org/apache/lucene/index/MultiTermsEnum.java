@@ -144,7 +144,7 @@ public final class MultiTermsEnum extends TermsEnum {
   }
 
   @Override
-  public boolean seekExact(BytesRef term, boolean useCache) throws IOException {
+  public boolean seekExact(BytesRef term) throws IOException {
     queue.clear();
     numTop = 0;
 
@@ -173,13 +173,13 @@ public final class MultiTermsEnum extends TermsEnum {
           } else if (cmp < 0) {
             status = false;
           } else {
-            status = currentSubs[i].terms.seekExact(term, useCache);
+            status = currentSubs[i].terms.seekExact(term);
           }
         } else {
           status = false;
         }
       } else {
-        status = currentSubs[i].terms.seekExact(term, useCache);
+        status = currentSubs[i].terms.seekExact(term);
       }
 
       if (status) {
@@ -195,7 +195,7 @@ public final class MultiTermsEnum extends TermsEnum {
   }
 
   @Override
-  public SeekStatus seekCeil(BytesRef term, boolean useCache) throws IOException {
+  public SeekStatus seekCeil(BytesRef term) throws IOException {
     queue.clear();
     numTop = 0;
     lastSeekExact = false;
@@ -225,13 +225,13 @@ public final class MultiTermsEnum extends TermsEnum {
           } else if (cmp < 0) {
             status = SeekStatus.NOT_FOUND;
           } else {
-            status = currentSubs[i].terms.seekCeil(term, useCache);
+            status = currentSubs[i].terms.seekCeil(term);
           }
         } else {
           status = SeekStatus.END;
         }
       } else {
-        status = currentSubs[i].terms.seekCeil(term, useCache);
+        status = currentSubs[i].terms.seekCeil(term);
       }
 
       if (status == SeekStatus.FOUND) {

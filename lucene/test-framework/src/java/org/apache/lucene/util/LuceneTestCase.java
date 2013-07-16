@@ -1751,14 +1751,13 @@ public abstract class LuceneTestCase extends Assert {
         rightEnum = rightTerms.iterator(rightEnum);
       }
 
-      final boolean useCache = random().nextBoolean();
       final boolean seekExact = random().nextBoolean();
 
       if (seekExact) {
-        assertEquals(info, leftEnum.seekExact(b, useCache), rightEnum.seekExact(b, useCache));
+        assertEquals(info, leftEnum.seekExact(b), rightEnum.seekExact(b));
       } else {
-        SeekStatus leftStatus = leftEnum.seekCeil(b, useCache);
-        SeekStatus rightStatus = rightEnum.seekCeil(b, useCache);
+        SeekStatus leftStatus = leftEnum.seekCeil(b);
+        SeekStatus rightStatus = rightEnum.seekCeil(b);
         assertEquals(info, leftStatus, rightStatus);
         if (leftStatus != SeekStatus.END) {
           assertEquals(info, leftEnum.term(), rightEnum.term());

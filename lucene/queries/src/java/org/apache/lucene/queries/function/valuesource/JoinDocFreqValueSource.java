@@ -69,7 +69,7 @@ public class JoinDocFreqValueSource extends FieldCacheSource {
       {
         try {
           terms.get(doc, ref);
-          if (termsEnum.seekExact(ref, true)) {
+          if (termsEnum.seekExact(ref)) {
             return termsEnum.docFreq();
           } else {
             return 0;

@@ -111,7 +111,7 @@ public class TestTermsEnum extends LuceneTestCase {
             System.out.println("TEST: iter seekCeil target=" + target.utf8ToString() + " exists=" + exists);
           }
           // seekCeil
-          final TermsEnum.SeekStatus status = termsEnum.seekCeil(target, random().nextBoolean());
+          final TermsEnum.SeekStatus status = termsEnum.seekCeil(target);
           if (VERBOSE) {
             System.out.println("  got " + status);
           }
@@ -134,7 +134,7 @@ public class TestTermsEnum extends LuceneTestCase {
             System.out.println("TEST: iter seekExact target=" + target.utf8ToString() + " exists=" + exists);
           }
           // seekExact
-          final boolean result = termsEnum.seekExact(target, false);
+          final boolean result = termsEnum.seekExact(target);
           if (VERBOSE) {
             System.out.println("  got " + result);
           }
@@ -571,7 +571,7 @@ public class TestTermsEnum extends LuceneTestCase {
 
   // sugar
   private boolean seekExact(TermsEnum te, String term) throws IOException {
-    return te.seekExact(new BytesRef(term), random().nextBoolean());
+    return te.seekExact(new BytesRef(term));
   }
 
   // sugar
@@ -666,13 +666,13 @@ public class TestTermsEnum extends LuceneTestCase {
         if (VERBOSE) {
           System.out.println("  seekExact");
         }
-        assertEquals(loc >= 0, te.seekExact(t, random().nextBoolean()));
+        assertEquals(loc >= 0, te.seekExact(t));
       } else {
         if (VERBOSE) {
           System.out.println("  seekCeil");
         }
 
-        final TermsEnum.SeekStatus result = te.seekCeil(t, random().nextBoolean());
+        final TermsEnum.SeekStatus result = te.seekCeil(t);
         if (VERBOSE) {
           System.out.println("  got " + result);
         }

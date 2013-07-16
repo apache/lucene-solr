@@ -69,9 +69,6 @@ public class BlockTermsReader extends FieldsProducer {
 
   private final TreeMap<String,FieldReader> fields = new TreeMap<String,FieldReader>();
 
-  // Caches the most recently looked-up field + terms:
-  private final DoubleBarrelLRUCache<FieldAndTerm,BlockTermState> termsCache;
-
   // Reads the terms index
   private TermsIndexReaderBase indexReader;
 
@@ -113,11 +110,10 @@ public class BlockTermsReader extends FieldsProducer {
   // private String segment;
   
   public BlockTermsReader(TermsIndexReaderBase indexReader, Directory dir, FieldInfos fieldInfos, SegmentInfo info, PostingsReaderBase postingsReader, IOContext context,
-                          int termsCacheSize, String segmentSuffix)
+                          String segmentSuffix)
     throws IOException {
     
     this.postingsReader = postingsReader;
-    termsCache = new DoubleBarrelLRUCache<FieldAndTerm,BlockTermState>(termsCacheSize);
 
     // this.segment = segment;
     in = dir.openInput(IndexFileNames.segmentFileName(info.name, segmentSuffix, BlockTermsWriter.TERMS_EXTENSION),
@@ -362,35 +358,18 @@ public class BlockTermsReader extends FieldsProducer {
       // return NOT_FOUND so it's a waste for us to fill in
       // the term that was actually NOT_FOUND
       @Override
-      public SeekStatus seekCeil(final BytesRef target, final boolean useCache) throws IOException {
+      public SeekStatus seekCeil(final BytesRef target) throws IOException {
 
         if (indexEnum == null) {
           throw new IllegalStateException("terms index was not loaded");
         }
    
-        //System.out.println("BTR.seek seg=" + segment + " target=" + fieldInfo.name + ":" + target.utf8ToString() + " " + target + " current=" + term().utf8ToString() + " " + term() + " useCache=" + useCache + " indexIsCurrent=" + indexIsCurrent + " didIndexNext=" + didIndexNext + " seekPending=" + seekPending + " divisor=" + indexReader.getDivisor() + " this="  + this);
+        //System.out.println("BTR.seek seg=" + segment + " target=" + fieldInfo.name + ":" + target.utf8ToString() + " " + target + " current=" + term().utf8ToString() + " " + term() + " indexIsCurrent=" + indexIsCurrent + " didIndexNext=" + didIndexNext + " seekPending=" + seekPending + " divisor=" + indexReader.getDivisor() + " this="  + this);
         if (didIndexNext) {
           if (nextIndexTerm == null) {
             //System.out.println("  nextIndexTerm=null");
           } else {
             //System.out.println("  nextIndexTerm=" + nextIndexTerm.utf8ToString());
-          }
-        }
-
-        // Check cache
-        if (useCache) {
-          fieldTerm.term = target;
-          // TODO: should we differentiate "frozen"
-          // TermState (ie one that was cloned and
-          // cached/returned by termState()) from the
-          // malleable (primary) one?
-          final TermState cachedState = termsCache.get(fieldTerm);
-          if (cachedState != null) {
-            seekPending = true;
-            //System.out.println("  cached!");
-            seekExact(target, cachedState);
-            //System.out.println("  term=" + term.utf8ToString());
-            return SeekStatus.FOUND;
           }
         }
 
@@ -574,14 +553,6 @@ public class BlockTermsReader extends FieldsProducer {
                 // Done!  Exact match.  Stop here, fill in
                 // real term, return FOUND.
                 //System.out.println("  FOUND");
-
-                if (useCache) {
-                  // Store in cache
-                  decodeMetaData();
-                  //System.out.println("  cache! state=" + state);
-                  termsCache.put(new FieldAndTerm(fieldTerm), (BlockTermState) state.clone());
-                }
-
                 return SeekStatus.FOUND;
               } else {
                 //System.out.println("  NOT_FOUND");

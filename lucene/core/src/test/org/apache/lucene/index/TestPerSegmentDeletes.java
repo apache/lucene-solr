@@ -227,7 +227,7 @@ public class TestPerSegmentDeletes extends LuceneTestCase {
     Fields fields = MultiFields.getFields(reader);
     Terms cterms = fields.terms(term.field);
     TermsEnum ctermsEnum = cterms.iterator(null);
-    if (ctermsEnum.seekExact(new BytesRef(term.text()), false)) {
+    if (ctermsEnum.seekExact(new BytesRef(term.text()))) {
       DocsEnum docsEnum = _TestUtil.docs(random(), ctermsEnum, bits, null, DocsEnum.FLAG_NONE);
       return toArray(docsEnum);
     }

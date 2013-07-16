@@ -336,7 +336,7 @@ public final class RAMOnlyPostingsFormat extends PostingsFormat {
     }
 
     @Override
-    public SeekStatus seekCeil(BytesRef term, boolean useCache) {
+    public SeekStatus seekCeil(BytesRef term) {
       current = term.utf8ToString();
       it = null;
       if (ramField.termToDocs.containsKey(current)) {

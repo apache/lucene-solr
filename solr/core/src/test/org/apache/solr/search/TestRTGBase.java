@@ -132,7 +132,7 @@ public class TestRTGBase extends SolrTestCaseJ4 {
     if (terms == null) return -1;
     BytesRef termBytes = t.bytes();
     final TermsEnum termsEnum = terms.iterator(null);
-    if (!termsEnum.seekExact(termBytes, false)) {
+    if (!termsEnum.seekExact(termBytes)) {
       return -1;
     }
     DocsEnum docs = termsEnum.docs(MultiFields.getLiveDocs(r), null, DocsEnum.FLAG_NONE);

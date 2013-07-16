@@ -303,13 +303,13 @@ public class FuzzyTermsEnum extends TermsEnum {
   }
   
   @Override
-  public boolean seekExact(BytesRef text, boolean useCache) throws IOException {
-    return actualEnum.seekExact(text, useCache);
+  public boolean seekExact(BytesRef text) throws IOException {
+    return actualEnum.seekExact(text);
   }
 
   @Override
-  public SeekStatus seekCeil(BytesRef text, boolean useCache) throws IOException {
-    return actualEnum.seekCeil(text, useCache);
+  public SeekStatus seekCeil(BytesRef text) throws IOException {
+    return actualEnum.seekCeil(text);
   }
   
   @Override
