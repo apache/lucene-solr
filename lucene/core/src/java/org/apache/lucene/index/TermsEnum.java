@@ -26,7 +26,7 @@ import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.BytesRefIterator;
 
 /** Iterator to seek ({@link #seekCeil(BytesRef)}, {@link
- * #seekExact(BytesRef,boolean)}) or step through ({@link
+ * #seekExact(BytesRef)}) or step through ({@link
  * #next} terms to obtain frequency information ({@link
  * #docFreq}), {@link DocsEnum} or {@link
  * DocsAndPositionsEnum} for the current term ({@link
@@ -70,14 +70,9 @@ public abstract class TermsEnum implements BytesRefIterator {
    *  true if the term is found.  If this returns false, the
    *  enum is unpositioned.  For some codecs, seekExact may
    *  be substantially faster than {@link #seekCeil}. */
-  public boolean seekExact(BytesRef text, boolean useCache) throws IOException {
-    return seekCeil(text, useCache) == SeekStatus.FOUND;
+  public boolean seekExact(BytesRef text) throws IOException {
+    return seekCeil(text) == SeekStatus.FOUND;
   }
-
-  /** Expert: just like {@link #seekCeil(BytesRef)} but allows
-   *  you to control whether the implementation should
-   *  attempt to use its term cache (if it uses one). */
-  public abstract SeekStatus seekCeil(BytesRef text, boolean useCache) throws IOException;
 
   /** Seeks to the specified term, if it exists, or to the
    *  next (ceiling) term.  Returns SeekStatus to
@@ -85,9 +80,7 @@ public abstract class TermsEnum implements BytesRefIterator {
    *  term was found, or EOF was hit.  The target term may
    *  be before or after the current term.  If this returns
    *  SeekStatus.END, the enum is unpositioned. */
-  public final SeekStatus seekCeil(BytesRef text) throws IOException {
-    return seekCeil(text, true);
-  }
+  public abstract SeekStatus seekCeil(BytesRef text) throws IOException;
 
   /** Seeks to the specified term by ordinal (position) as
    *  previously returned by {@link #ord}.  The target ord
@@ -117,7 +110,7 @@ public abstract class TermsEnum implements BytesRefIterator {
    * @param state the {@link TermState}
    * */
   public void seekExact(BytesRef term, TermState state) throws IOException {
-    if (!seekExact(term, true)) {
+    if (!seekExact(term)) {
       throw new IllegalArgumentException("term=" + term + " does not exist");
     }
   }
@@ -226,7 +219,7 @@ public abstract class TermsEnum implements BytesRefIterator {
    */
   public static final TermsEnum EMPTY = new TermsEnum() {    
     @Override
-    public SeekStatus seekCeil(BytesRef term, boolean useCache) { return SeekStatus.END; }
+    public SeekStatus seekCeil(BytesRef term) { return SeekStatus.END; }
     
     @Override
     public void seekExact(long ord) {}

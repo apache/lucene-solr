@@ -932,20 +932,15 @@ public class TestFSTs extends LuceneTestCase {
           }
         }
 
-        final boolean useCache = random().nextBoolean();
-        if (VERBOSE) {
-          System.out.println("  useCache=" + useCache);
-        }
-
         final TermsEnum.SeekStatus status;
         if (nextID == null) {
-          if (termsEnum.seekExact(new BytesRef(id), useCache)) {
+          if (termsEnum.seekExact(new BytesRef(id))) {
             status = TermsEnum.SeekStatus.FOUND;
           } else {
             status = TermsEnum.SeekStatus.NOT_FOUND;
           }
         } else {
-          status = termsEnum.seekCeil(new BytesRef(id), useCache);
+          status = termsEnum.seekCeil(new BytesRef(id));
         }
 
         if (nextID != null) {

@@ -718,7 +718,7 @@ class Lucene3xFields extends FieldsProducer {
     }
 
     @Override
-    public SeekStatus seekCeil(BytesRef term, boolean useCache) throws IOException {
+    public SeekStatus seekCeil(BytesRef term) throws IOException {
       if (DEBUG_SURROGATES) {
         System.out.println("TE.seek target=" + UnicodeUtil.toHexString(term.utf8ToString()));
       }
@@ -728,7 +728,7 @@ class Lucene3xFields extends FieldsProducer {
 
       assert termEnum != null;
 
-      tis.seekEnum(termEnum, t0, useCache);
+      tis.seekEnum(termEnum, t0, false);
 
       final Term t = termEnum.term();
 
@@ -764,7 +764,7 @@ class Lucene3xFields extends FieldsProducer {
             if (seekToNonBMP(seekTermEnum, scratchTerm, i)) {
 
               scratchTerm.copyBytes(seekTermEnum.term().bytes());
-              getTermsDict().seekEnum(termEnum, seekTermEnum.term(), useCache);
+              getTermsDict().seekEnum(termEnum, seekTermEnum.term(), false);
 
               newSuffixStart = 1+i;
 

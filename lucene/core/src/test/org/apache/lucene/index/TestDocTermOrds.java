@@ -332,7 +332,7 @@ public class TestDocTermOrds extends LuceneTestCase {
         Terms terms = MultiFields.getTerms(r, "field");
         if (terms != null) {
           TermsEnum termsEnum = terms.iterator(null);
-          TermsEnum.SeekStatus result = termsEnum.seekCeil(prefixRef, false);
+          TermsEnum.SeekStatus result = termsEnum.seekCeil(prefixRef);
           if (result != TermsEnum.SeekStatus.END) {
             assertFalse("term=" + termsEnum.term().utf8ToString() + " matches prefix=" + prefixRef.utf8ToString(), StringHelper.startsWith(termsEnum.term(), prefixRef));
           } else {
@@ -454,16 +454,16 @@ public class TestDocTermOrds extends LuceneTestCase {
     assertEquals(SeekStatus.END, termsEnum.seekCeil(new BytesRef("zzz")));
     
     // seekExact()
-    assertTrue(termsEnum.seekExact(new BytesRef("beer"), true));
+    assertTrue(termsEnum.seekExact(new BytesRef("beer")));
     assertEquals("beer", termsEnum.term().utf8ToString());
     assertEquals(0, termsEnum.ord());
-    assertTrue(termsEnum.seekExact(new BytesRef("hello"), true));
+    assertTrue(termsEnum.seekExact(new BytesRef("hello")));
     assertEquals("hello", termsEnum.term().utf8ToString());
     assertEquals(1, termsEnum.ord());
-    assertTrue(termsEnum.seekExact(new BytesRef("world"), true));
+    assertTrue(termsEnum.seekExact(new BytesRef("world")));
     assertEquals("world", termsEnum.term().utf8ToString());
     assertEquals(2, termsEnum.ord());
-    assertFalse(termsEnum.seekExact(new BytesRef("bogus"), true));
+    assertFalse(termsEnum.seekExact(new BytesRef("bogus")));
     
     // seek(ord)
     termsEnum.seekExact(0);

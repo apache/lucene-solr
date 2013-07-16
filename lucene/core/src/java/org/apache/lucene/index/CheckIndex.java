@@ -1124,7 +1124,7 @@ public class CheckIndex {
             long totDocCountNoDeletes = 0;
             long totDocFreq = 0;
             for(int i=0;i<seekCount;i++) {
-              if (!termsEnum.seekExact(seekTerms[i], true)) {
+              if (!termsEnum.seekExact(seekTerms[i])) {
                 throw new RuntimeException("seek to existing term " + seekTerms[i] + " failed");
               }
               
@@ -1559,7 +1559,7 @@ public class CheckIndex {
                 }
 
                 final DocsEnum postingsDocs2;
-                if (!postingsTermsEnum.seekExact(term, true)) {
+                if (!postingsTermsEnum.seekExact(term)) {
                   throw new RuntimeException("vector term=" + term + " field=" + field + " does not exist in postings; doc=" + j);
                 }
                 postingsPostings = postingsTermsEnum.docsAndPositions(null, postingsPostings);

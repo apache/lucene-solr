@@ -500,9 +500,9 @@ public abstract class BaseTermVectorsFormatTestCase extends LuceneTestCase {
     assertNull(termsEnum.next());
     for (int i = 0; i < 5; ++i) {
       if (random().nextBoolean()) {
-        assertTrue(termsEnum.seekExact(RandomPicks.randomFrom(random(), tk.termBytes), random().nextBoolean()));
+        assertTrue(termsEnum.seekExact(RandomPicks.randomFrom(random(), tk.termBytes)));
       } else {
-        assertEquals(SeekStatus.FOUND, termsEnum.seekCeil(RandomPicks.randomFrom(random(), tk.termBytes), random().nextBoolean()));
+        assertEquals(SeekStatus.FOUND, termsEnum.seekCeil(RandomPicks.randomFrom(random(), tk.termBytes)));
       }
     }
   }

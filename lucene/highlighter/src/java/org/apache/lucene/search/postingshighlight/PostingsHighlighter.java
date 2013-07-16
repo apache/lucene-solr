@@ -459,7 +459,7 @@ public class PostingsHighlighter {
         continue;
       } else if (de == null) {
         postings[i] = EMPTY; // initially
-        if (!termsEnum.seekExact(terms[i], true)) {
+        if (!termsEnum.seekExact(terms[i])) {
           continue; // term not found
         }
         de = postings[i] = termsEnum.docsAndPositions(null, null, DocsAndPositionsEnum.FLAG_OFFSETS);

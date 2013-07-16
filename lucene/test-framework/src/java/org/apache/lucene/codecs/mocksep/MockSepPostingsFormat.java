@@ -110,7 +110,6 @@ public final class MockSepPostingsFormat extends PostingsFormat {
                                                 state.segmentInfo,
                                                 postingsReader,
                                                 state.context,
-                                                1024,
                                                 state.segmentSuffix);
       success = true;
       return ret;

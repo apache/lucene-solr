@@ -302,7 +302,7 @@ public abstract class TermGroupFacetCollector extends AbstractGroupFacetCollecto
 
         int facetOrd;
         if (groupedFacetHit.facetValue != null) {
-          if (facetOrdTermsEnum == null || !facetOrdTermsEnum.seekExact(groupedFacetHit.facetValue, true)) {
+          if (facetOrdTermsEnum == null || !facetOrdTermsEnum.seekExact(groupedFacetHit.facetValue)) {
             continue;
           }
           facetOrd = (int) facetOrdTermsEnum.ord();
@@ -318,7 +318,7 @@ public abstract class TermGroupFacetCollector extends AbstractGroupFacetCollecto
       if (facetPrefix != null) {
         TermsEnum.SeekStatus seekStatus;
         if (facetOrdTermsEnum != null) {
-          seekStatus = facetOrdTermsEnum.seekCeil(facetPrefix, true);
+          seekStatus = facetOrdTermsEnum.seekCeil(facetPrefix);
         } else {
           seekStatus = TermsEnum.SeekStatus.END;
         }
@@ -333,7 +333,7 @@ public abstract class TermGroupFacetCollector extends AbstractGroupFacetCollecto
 
         BytesRef facetEndPrefix = BytesRef.deepCopyOf(facetPrefix);
         facetEndPrefix.append(UnicodeUtil.BIG_TERM);
-        seekStatus = facetOrdTermsEnum.seekCeil(facetEndPrefix, true);
+        seekStatus = facetOrdTermsEnum.seekCeil(facetEndPrefix);
         if (seekStatus != TermsEnum.SeekStatus.END) {
           endFacetOrd = (int) facetOrdTermsEnum.ord();
         } else {

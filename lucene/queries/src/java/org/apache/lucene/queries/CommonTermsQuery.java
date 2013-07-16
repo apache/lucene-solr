@@ -246,7 +246,7 @@ public class CommonTermsQuery extends Query {
         assert termsEnum != null;
         
         if (termsEnum == TermsEnum.EMPTY) continue;
-        if (termsEnum.seekExact(term.bytes(), false)) {
+        if (termsEnum.seekExact(term.bytes())) {
           if (termContext == null) {
             contextArray[i] = new TermContext(reader.getContext(),
                 termsEnum.termState(), context.ord, termsEnum.docFreq(),

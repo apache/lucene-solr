@@ -235,21 +235,21 @@ public class TestBlockPostingsFormat3 extends LuceneTestCase {
       leftEnum = leftTerms.iterator(leftEnum);
       rightEnum = rightTerms.iterator(rightEnum);
       
-      assertEquals(leftEnum.seekExact(b, false), rightEnum.seekExact(b, false));
-      assertEquals(leftEnum.seekExact(b, true), rightEnum.seekExact(b, true));
+      assertEquals(leftEnum.seekExact(b), rightEnum.seekExact(b));
+      assertEquals(leftEnum.seekExact(b), rightEnum.seekExact(b));
       
       SeekStatus leftStatus;
       SeekStatus rightStatus;
       
-      leftStatus = leftEnum.seekCeil(b, false);
-      rightStatus = rightEnum.seekCeil(b, false);
+      leftStatus = leftEnum.seekCeil(b);
+      rightStatus = rightEnum.seekCeil(b);
       assertEquals(leftStatus, rightStatus);
       if (leftStatus != SeekStatus.END) {
         assertEquals(leftEnum.term(), rightEnum.term());
       }
       
-      leftStatus = leftEnum.seekCeil(b, true);
-      rightStatus = rightEnum.seekCeil(b, true);
+      leftStatus = leftEnum.seekCeil(b);
+      rightStatus = rightEnum.seekCeil(b);
       assertEquals(leftStatus, rightStatus);
       if (leftStatus != SeekStatus.END) {
         assertEquals(leftEnum.term(), rightEnum.term());

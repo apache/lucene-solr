@@ -1222,7 +1222,7 @@ public class BlockTreeTermsReader extends FieldsProducer {
       }
 
       @Override
-      public boolean seekExact(BytesRef text, boolean useCache) {
+      public boolean seekExact(BytesRef text) {
         throw new UnsupportedOperationException();
       }
 
@@ -1237,7 +1237,7 @@ public class BlockTreeTermsReader extends FieldsProducer {
       }
 
       @Override
-      public SeekStatus seekCeil(BytesRef text, boolean useCache) {
+      public SeekStatus seekCeil(BytesRef text) {
         throw new UnsupportedOperationException();
       }
     }
@@ -1499,7 +1499,7 @@ public class BlockTreeTermsReader extends FieldsProducer {
       }
 
       @Override
-      public boolean seekExact(final BytesRef target, final boolean useCache) throws IOException {
+      public boolean seekExact(final BytesRef target) throws IOException {
 
         if (index == null) {
           throw new IllegalStateException("terms index was not loaded");
@@ -1760,7 +1760,7 @@ public class BlockTreeTermsReader extends FieldsProducer {
       }
 
       @Override
-      public SeekStatus seekCeil(final BytesRef target, final boolean useCache) throws IOException {
+      public SeekStatus seekCeil(final BytesRef target) throws IOException {
         if (index == null) {
           throw new IllegalStateException("terms index was not loaded");
         }
@@ -2096,7 +2096,7 @@ public class BlockTreeTermsReader extends FieldsProducer {
           // this method catches up all internal state so next()
           // works properly:
           //if (DEBUG) System.out.println("  re-seek to pending term=" + term.utf8ToString() + " " + term);
-          final boolean result = seekExact(term, false);
+          final boolean result = seekExact(term);
           assert result;
         }
 

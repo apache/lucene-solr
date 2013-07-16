@@ -983,7 +983,7 @@ public abstract class BasePostingsFormatTestCase extends LuceneTestCase {
       termsEnum = terms.iterator(null);
 
       if (!useTermState) {
-        assertTrue(termsEnum.seekExact(fieldAndTerm.term, true));
+        assertTrue(termsEnum.seekExact(fieldAndTerm.term));
       } else {
         termsEnum.seekExact(fieldAndTerm.term, termState);
       }

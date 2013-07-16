@@ -457,7 +457,7 @@ class Lucene3xTermVectorsReader extends TermVectorsReader {
 
     // NOTE: slow!  (linear scan)
     @Override
-    public SeekStatus seekCeil(BytesRef text, boolean useCache) throws IOException {
+    public SeekStatus seekCeil(BytesRef text) throws IOException {
       Comparator<BytesRef> comparator = getComparator();
       for (int i = 0; i < numTerms; i++) {
         int cmp = comparator.compare(text, termAndPostings[i].term);

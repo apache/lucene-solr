@@ -187,7 +187,6 @@ public final class MockFixedIntBlockPostingsFormat extends PostingsFormat {
                                                 state.segmentInfo,
                                                 postingsReader,
                                                 state.context,
-                                                1024,
                                                 state.segmentSuffix);
       success = true;
       return ret;

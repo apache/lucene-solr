@@ -171,11 +171,11 @@ public abstract class AbstractVisitingPrefixTreeFilter extends AbstractPrefixTre
         int compare = termsEnum.getComparator().compare(thisTerm, curVNodeTerm);
         if (compare > 0) {
           // leap frog (termsEnum is beyond where we would otherwise seek)
-          assert ! context.reader().terms(fieldName).iterator(null).seekExact(curVNodeTerm, false) : "should be absent";
+          assert ! context.reader().terms(fieldName).iterator(null).seekExact(curVNodeTerm) : "should be absent";
         } else {
           if (compare < 0) {
             // Seek !
-            TermsEnum.SeekStatus seekStatus = termsEnum.seekCeil(curVNodeTerm, true);
+            TermsEnum.SeekStatus seekStatus = termsEnum.seekCeil(curVNodeTerm);
             if (seekStatus == TermsEnum.SeekStatus.END)
               break; // all done
             thisTerm = termsEnum.term();

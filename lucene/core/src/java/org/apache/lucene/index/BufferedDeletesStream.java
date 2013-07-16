@@ -397,7 +397,7 @@ class BufferedDeletesStream {
 
       // System.out.println("  term=" + term);
 
-      if (termsEnum.seekExact(term.bytes(), false)) {
+      if (termsEnum.seekExact(term.bytes())) {
         // we don't need term frequencies for this
         DocsEnum docsEnum = termsEnum.docs(rld.getLiveDocs(), docs, DocsEnum.FLAG_NONE);
         //System.out.println("BDS: got docsEnum=" + docsEnum);

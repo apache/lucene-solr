@@ -241,7 +241,7 @@ class TermsIncludingScoreQuery extends Query {
         }
 
         scoreUpto = upto;
-        if (termsEnum.seekExact(terms.get(ords[upto++], spare), true)) {
+        if (termsEnum.seekExact(terms.get(ords[upto++], spare))) {
           docsEnum = reuse = termsEnum.docs(acceptDocs, reuse, DocsEnum.FLAG_NONE);
         }
       }
@@ -337,7 +337,7 @@ class TermsIncludingScoreQuery extends Query {
       BytesRef spare = new BytesRef();
       DocsEnum docsEnum = null;
       for (int i = 0; i < terms.size(); i++) {
-        if (termsEnum.seekExact(terms.get(ords[i], spare), true)) {
+        if (termsEnum.seekExact(terms.get(ords[i], spare))) {
           docsEnum = termsEnum.docs(acceptDocs, docsEnum, DocsEnum.FLAG_NONE);
           float score = TermsIncludingScoreQuery.this.scores[ords[i]];
           for (int doc = docsEnum.nextDoc(); doc != DocIdSetIterator.NO_MORE_DOCS; doc = docsEnum.nextDoc()) {
@@ -393,7 +393,7 @@ class TermsIncludingScoreQuery extends Query {
       BytesRef spare = new BytesRef();
       DocsEnum docsEnum = null;
       for (int i = 0; i < terms.size(); i++) {
-        if (termsEnum.seekExact(terms.get(ords[i], spare), true)) {
+        if (termsEnum.seekExact(terms.get(ords[i], spare))) {
           docsEnum = termsEnum.docs(acceptDocs, docsEnum, DocsEnum.FLAG_NONE);
           float score = TermsIncludingScoreQuery.this.scores[ords[i]];
           for (int doc = docsEnum.nextDoc(); doc != DocIdSetIterator.NO_MORE_DOCS; doc = docsEnum.nextDoc()) {

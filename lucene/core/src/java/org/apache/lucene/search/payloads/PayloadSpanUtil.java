@@ -182,7 +182,7 @@ public class PayloadSpanUtil {
     TreeSet<Term> terms = new TreeSet<Term>();
     query.extractTerms(terms);
     for (Term term : terms) {
-      termContexts.put(term, TermContext.build(context, term, true));
+      termContexts.put(term, TermContext.build(context, term));
     }
     for (AtomicReaderContext atomicReaderContext : context.leaves()) {
       final Spans spans = query.getSpans(atomicReaderContext, atomicReaderContext.reader().getLiveDocs(), termContexts);
