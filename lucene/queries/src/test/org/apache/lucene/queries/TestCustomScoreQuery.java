@@ -53,26 +53,6 @@ public class TestCustomScoreQuery extends FunctionTestSetup {
   }
 
   /**
-   * Test that CustomScoreQuery of Type.BYTE returns the expected scores.
-   */
-  @Test
-  public void testCustomScoreByte() throws Exception {
-    // INT field values are small enough to be parsed as byte
-    doTestCustomScore(BYTE_VALUESOURCE, 1.0);
-    doTestCustomScore(BYTE_VALUESOURCE, 2.0);
-  }
-
-  /**
-   * Test that CustomScoreQuery of Type.SHORT returns the expected scores.
-   */
-  @Test
-  public void testCustomScoreShort() throws Exception {
-    // INT field values are small enough to be parsed as short
-    doTestCustomScore(SHORT_VALUESOURCE, 1.0);
-    doTestCustomScore(SHORT_VALUESOURCE, 3.0);
-  }
-
-  /**
    * Test that CustomScoreQuery of Type.INT returns the expected scores.
    */
   @Test

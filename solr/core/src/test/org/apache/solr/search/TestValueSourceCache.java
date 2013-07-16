@@ -78,8 +78,6 @@ public class TestValueSourceCache extends SolrTestCaseJ4 {
         "val1_i1",
         "val1_l1",
         "val1_b1",
-        "val1_by1",
-        "val1_sh1"
     };
     for (String template : templates) {
       for (String nums : numbers) {

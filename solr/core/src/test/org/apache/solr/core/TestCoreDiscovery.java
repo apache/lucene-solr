@@ -17,10 +17,6 @@ package org.apache.solr.core;
  * limitations under the License.
  */
 
-import java.io.File;
-import java.io.FileOutputStream;
-import java.util.Properties;
-
 import org.apache.commons.io.FileUtils;
 import org.apache.lucene.util.IOUtils;
 import org.apache.solr.SolrTestCaseJ4;
@@ -28,6 +24,12 @@ import org.apache.solr.common.SolrException;
 import org.junit.After;
 import org.junit.BeforeClass;
 import org.junit.Test;
+
+import java.io.File;
+import java.io.FileOutputStream;
+import java.io.OutputStreamWriter;
+import java.io.Writer;
+import java.util.Properties;
 
 public class TestCoreDiscovery extends SolrTestCaseJ4 {
 
@@ -78,7 +80,7 @@ public class TestCoreDiscovery extends SolrTestCaseJ4 {
 
   private void addCoreWithProps(Properties stockProps, File propFile) throws Exception {
     if (!propFile.getParentFile().exists()) propFile.getParentFile().mkdirs();
-    FileOutputStream out = new FileOutputStream(propFile);
+    Writer out = new OutputStreamWriter(new FileOutputStream(propFile), IOUtils.CHARSET_UTF_8);
     try {
       stockProps.store(out, null);
     } finally {
@@ -91,7 +93,7 @@ public class TestCoreDiscovery extends SolrTestCaseJ4 {
 
   private void addCoreWithProps(String name, Properties stockProps) throws Exception {
 
-    File propFile = new File(new File(solrHomeDirectory, name), SolrCoreDiscoverer.CORE_PROP_FILE);
+    File propFile = new File(new File(solrHomeDirectory, name), CorePropertiesLocator.PROPERTIES_FILENAME);
     File parent = propFile.getParentFile();
     assertTrue("Failed to mkdirs for " + parent.getAbsolutePath(), parent.mkdirs());
     addCoreWithProps(stockProps, propFile);
@@ -102,14 +104,12 @@ public class TestCoreDiscovery extends SolrTestCaseJ4 {
     assertTrue("Failed to mkdirs for " + confDir.getAbsolutePath(), confDir.mkdirs());
     FileUtils.copyFile(new File(top, "schema-tiny.xml"), new File(confDir, "schema-tiny.xml"));
     FileUtils.copyFile(new File(top, "solrconfig-minimal.xml"), new File(confDir, "solrconfig-minimal.xml"));
+    FileUtils.copyFile(new File(top, "solrconfig.snippet.randomindexconfig.xml"), new File(confDir, "solrconfig.snippet.randomindexconfig.xml"));
   }
 
   private CoreContainer init() throws Exception {
-
-    CoreContainer.Initializer init = new CoreContainer.Initializer();
-
-    final CoreContainer cores = init.initialize();
-    cores.setPersistent(false);
+    final CoreContainer cores = new CoreContainer();
+    cores.load();
     return cores;
   }
 
@@ -146,17 +146,17 @@ public class TestCoreDiscovery extends SolrTestCaseJ4 {
 
       // Let's assert we did the right thing for implicit properties too.
       CoreDescriptor desc = core1.getCoreDescriptor();
-      assertEquals("core1", desc.getProperty("solr.core.name"));
-
-      // Prove we're ignoring this even though it's set in the properties file
-      assertFalse("InstanceDir should be ignored", desc.getProperty("solr.core.instanceDir").contains("totallybogus"));
+      assertEquals("core1", desc.getName());
 
       // This is too long and ugly to put in. Besides, it varies.
-      assertNotNull(desc.getProperty("solr.core.instanceDir"));
+      assertNotNull(desc.getInstanceDir());
 
-      assertEquals("core1", desc.getProperty("solr.core.dataDir"));
-      assertEquals("solrconfig-minimal.xml", desc.getProperty("solr.core.configName"));
-      assertEquals("schema-tiny.xml", desc.getProperty("solr.core.schemaName"));
+      // Prove we're ignoring this even though it's set in the properties file
+      assertFalse("InstanceDir should be ignored", desc.getInstanceDir().contains("totallybogus"));
+
+      assertEquals("core1", desc.getDataDir());
+      assertEquals("solrconfig-minimal.xml", desc.getConfigName());
+      assertEquals("schema-tiny.xml", desc.getSchemaName());
 
       SolrCore core2 = cc.getCore("core2");
       SolrCore lazy1 = cc.getCore("lazy1");
@@ -182,10 +182,13 @@ public class TestCoreDiscovery extends SolrTestCaseJ4 {
       cc = init();
       fail("Should have thrown exception in testDuplicateNames");
     } catch (SolrException se) {
-      assertTrue("Should have seen an exception because two cores had the same name",
-          "Core  + desc.getName() + \" defined twice".indexOf(se.getMessage()) != -1);
-      assertTrue("/core1 should have been mentioned in the message", "/core1".indexOf(se.getMessage()) != -1);
-      assertTrue("/core2 should have been mentioned in the message", "/core2".indexOf(se.getMessage()) != -1);
+      String message = se.getMessage();
+      assertTrue("Wrong exception thrown on duplicate core names",
+          message.indexOf("Found multiple cores with the name [core1]") != -1);
+      assertTrue(File.separator + "core1 should have been mentioned in the message: " + message,
+          message.indexOf(File.separator + "core1") != -1);
+      assertTrue(File.separator + "core2 should have been mentioned in the message:" + message,
+          message.indexOf(File.separator + "core2") != -1);
     } finally {
       if (cc != null) {
         cc.shutdown();
@@ -201,9 +204,9 @@ public class TestCoreDiscovery extends SolrTestCaseJ4 {
     alt.mkdirs();
     setMeUp(alt.getAbsolutePath());
     addCoreWithProps(makeCorePropFile("core1", false, true, "dataDir=core1"),
-        new File(alt, "core1" + File.separator + SolrCoreDiscoverer.CORE_PROP_FILE));
+        new File(alt, "core1" + File.separator + CorePropertiesLocator.PROPERTIES_FILENAME));
     addCoreWithProps(makeCorePropFile("core2", false, false, "dataDir=core2"),
-        new File(alt, "core2" + File.separator + SolrCoreDiscoverer.CORE_PROP_FILE));
+        new File(alt, "core2" + File.separator + CorePropertiesLocator.PROPERTIES_FILENAME));
     CoreContainer cc = init();
     try {
       SolrCore core1 = cc.getCore("core1");
@@ -224,9 +227,9 @@ public class TestCoreDiscovery extends SolrTestCaseJ4 {
     noCoreDir.mkdirs();
     setMeUp(noCoreDir.getAbsolutePath());
     addCoreWithProps(makeCorePropFile("core1", false, true),
-        new File(noCoreDir, "core1" + File.separator + SolrCoreDiscoverer.CORE_PROP_FILE));
+        new File(noCoreDir, "core1" + File.separator + CorePropertiesLocator.PROPERTIES_FILENAME));
     addCoreWithProps(makeCorePropFile("core2", false, false),
-        new File(noCoreDir, "core2" + File.separator + SolrCoreDiscoverer.CORE_PROP_FILE));
+        new File(noCoreDir, "core2" + File.separator + CorePropertiesLocator.PROPERTIES_FILENAME));
     CoreContainer cc = init();
     try {
       SolrCore core1 = cc.getCore("core1");

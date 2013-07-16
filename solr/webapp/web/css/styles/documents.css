@@ -1,0 +1,197 @@
+/*
+
+Licensed to the Apache Software Foundation (ASF) under one or more
+contributor license agreements.  See the NOTICE file distributed with
+this work for additional information regarding copyright ownership.
+The ASF licenses this file to You under the Apache License, Version 2.0
+(the "License"); you may not use this file except in compliance with
+the License.  You may obtain a copy of the License at
+
+http://www.apache.org/licenses/LICENSE-2.0
+
+Unless required by applicable law or agreed to in writing, software
+distributed under the License is distributed on an "AS IS" BASIS,
+WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+See the License for the specific language governing permissions and
+limitations under the License.
+
+*/
+
+#content #documents
+{
+  background-image: url( ../../img/div.gif );
+  background-position: 45% 0;
+  background-repeat: repeat-y;
+}
+
+#content #documents #form
+{
+  float: left;
+  /*width: 21%;*/
+}
+
+#content #documents #form label
+{
+  cursor: pointer;
+  display: block;
+  margin-top: 5px;
+}
+
+#content #documents #form input,
+#content #documents #form select,
+#content #documents #form textarea
+{
+  margin-bottom: 2px;
+  /*width: 100%;*/
+}
+
+#content #documents #form input,
+#content #documents #form textarea
+{
+  margin-bottom: 2px;
+  /*width: 98%;*/
+}
+
+#content #documents #form #start
+{
+  float: left;
+  /*width: 45%;*/
+}
+
+#content #documents #form #rows
+{
+  float: right;
+ /* width: 45%;*/
+}
+
+#content #documents #form .checkbox input
+{
+  margin-bottom: 0;
+  width: auto;
+}
+
+#content #documents #form fieldset,
+#content #documents #form .optional.expanded
+{
+  border: 1px solid #fff;
+  border-top: 1px solid #c0c0c0;
+  margin-bottom: 5px;
+}
+
+#content #documents #form fieldset.common
+{
+  margin-top: 10px;
+}
+
+#content #documents #form fieldset legend,
+#content #documents #form .optional.expanded legend
+{
+  display: block;
+  margin-left: 10px;
+  padding: 0px 5px;
+}
+
+#content #documents #form fieldset legend label
+{
+  margin-top: 0;
+}
+
+#content #documents #form fieldset .fieldset
+{
+  border-bottom: 1px solid #f0f0f0;
+  margin-bottom: 5px;
+  padding-bottom: 10px;
+}
+
+#content #documents #form .optional
+{
+  border: 0;
+}
+
+#content #documents #form .optional .fieldset
+{
+  display: none;
+}
+
+#content #documents #form .optional legend
+{
+  margin-left: 0;
+  padding-left: 0;
+}
+
+#content #documents #form .optional.expanded .fieldset
+{
+  display: block;
+}
+
+#content #documents #file-upload{
+  display: none;
+}
+
+#content #documents #result
+{
+  display: none;
+  float: right;
+  width: 54%;
+}
+
+#content #documents #result #url
+{
+  margin-bottom: 10px;
+  background-image: url( ../../img/ico/ui-address-bar.png );
+  background-position: 5px 50%;
+  border: 1px solid #f0f0f0;
+  box-shadow: 1px 1px 0 #f0f0f0;
+  -moz-box-shadow: 1px 1px 0 #f0f0f0;
+  -webkit-box-shadow: 1px 1px 0 #f0f0f0;
+  color: #c0c0c0;
+  display: block;
+  overflow: hidden;
+  padding: 5px;
+  padding-left: 26px;
+  white-space: nowrap;
+}
+
+#content #documents #result #url:focus,
+#content #documents #result #url:hover
+{
+  border-color: #c0c0c0;
+  box-shadow: 1px 1px 0 #d8d8d8;
+  -moz-box-shadow: 1px 1px 0 #d8d8d8;
+  -webkit-box-shadow: 1px 1px 0 #d8d8d8;
+  color: #333;
+}
+
+#content #documents #result #response
+{
+}
+
+#content #documents #result #response pre
+{
+  padding-left: 20px;
+}
+
+.description{
+  font-weight: bold;
+}
+
+#upload-only{
+  display: none;
+}
+
+#document-type{
+  padding-bottom: 5px;
+}
+
+#wizard{
+  display: none;
+}
+
+#wizard-fields div{
+  padding-top: 5px;
+  padding-bottom: 5px;
+}
+
+#wiz-field-data, #wiz-field-data span{
+  vertical-align: top;
+}

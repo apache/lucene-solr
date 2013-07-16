@@ -922,4 +922,48 @@ public class TestPostingsHighlighter extends LuceneTestCase {
     ir.close();
     dir.close();
   }
+  
+  /** customizing the gap separator to force a sentence break */
+  public void testGapSeparator() throws Exception {
+    Directory dir = newDirectory();
+    // use simpleanalyzer for more natural tokenization (else "test." is a token)
+    IndexWriterConfig iwc = newIndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer(random(), MockTokenizer.SIMPLE, true));
+    iwc.setMergePolicy(newLogMergePolicy());
+    RandomIndexWriter iw = new RandomIndexWriter(random(), dir, iwc);
+    
+    FieldType offsetsType = new FieldType(TextField.TYPE_STORED);
+    offsetsType.setIndexOptions(IndexOptions.DOCS_AND_FREQS_AND_POSITIONS_AND_OFFSETS);
+    Document doc = new Document();
+    
+    Field body1 = new Field("body", "", offsetsType);
+    body1.setStringValue("This is a multivalued field");
+    doc.add(body1);
+    
+    Field body2 = new Field("body", "", offsetsType);
+    body2.setStringValue("This is something different");
+    doc.add(body2);
+    
+    iw.addDocument(doc);
+    
+    IndexReader ir = iw.getReader();
+    iw.close();
+    
+    IndexSearcher searcher = newSearcher(ir);
+    PostingsHighlighter highlighter = new PostingsHighlighter() {
+      @Override
+      protected char getMultiValuedSeparator(String field) {
+        assert field.equals("body");
+        return '\u2029';
+      }
+    };
+    Query query = new TermQuery(new Term("body", "field"));
+    TopDocs topDocs = searcher.search(query, null, 10, Sort.INDEXORDER);
+    assertEquals(1, topDocs.totalHits);
+    String snippets[] = highlighter.highlight("body", query, searcher, topDocs);
+    assertEquals(1, snippets.length);
+    assertEquals("This is a multivalued <b>field</b>\u2029", snippets[0]);
+    
+    ir.close();
+    dir.close();
+  }
 }

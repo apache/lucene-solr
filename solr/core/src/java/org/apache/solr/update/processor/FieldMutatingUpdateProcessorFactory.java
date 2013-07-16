@@ -58,6 +58,15 @@ import org.apache.solr.util.plugin.SolrCoreAware;
  * <b>at least one of each</b> to be selected.
  * </p>
  * <p>
+ * The following additional selector may be specified as a &lt;bool&gt; - when specified
+ * as false, only fields that <b>do not</b> match a schema field/dynamic field are selected;
+ * when specified as true, only fields that <b>do</b> match a schema field/dynamic field are
+ * selected:
+ * </p>
+ * <ul>
+ *   <li><code>fieldNameMatchesSchemaField</code> - selecting specific fields based on whether or not they match a schema field</li>
+ * </ul>
+ * <p>
  * One or more <code>excludes</code> &lt;lst&gt; params may also be specified, 
  * containing any of the above criteria, identifying fields to be excluded 
  * from seelction even if they match the selection criteria.  As with the main 
@@ -71,7 +80,7 @@ import org.apache.solr.util.plugin.SolrCoreAware;
  * fields will be mutated if the name starts with "foo" <i>or</i> "bar"; 
  * <b>unless</b> the field name contains the substring "SKIP" <i>or</i> 
  * the fieldType is (or subclasses) DateField.  Meaning a field named 
- * "foo_SKIP" is gaurunteed not to be selected, but a field named "bar_smith" 
+ * "foo_SKIP" is guaranteed not to be selected, but a field named "bar_smith" 
  * that uses StrField will be selected.
  * </p>
  * <pre class="prettyprint">
@@ -156,7 +165,32 @@ public abstract class FieldMutatingUpdateProcessorFactory
     
     return params;
   }
-                                                            
+                               
+  public static Collection<SelectorParams> parseSelectorExclusionParams(NamedList args) {
+    Collection<SelectorParams> exclusions = new ArrayList<SelectorParams>();
+    List<Object> excList = args.getAll("exclude");
+    for (Object excObj : excList) {
+      if (null == excObj) {
+        throw new SolrException
+            (SERVER_ERROR, "'exclude' init param can not be null");
+      }
+      if (! (excObj instanceof NamedList) ) {
+        throw new SolrException
+            (SERVER_ERROR, "'exclude' init param must be <lst/>");
+      }
+      NamedList exc = (NamedList) excObj;
+      exclusions.add(parseSelectorParams(exc));
+      if (0 < exc.size()) {
+        throw new SolrException(SERVER_ERROR,
+            "Unexpected 'exclude' init sub-param(s): '" +
+                args.getName(0) + "'");
+      }
+      // call once per instance
+      args.remove("exclude");
+    }
+    return exclusions;
+  }
+  
 
   /**
    * Handles common initialization related to source fields for 
@@ -170,27 +204,8 @@ public abstract class FieldMutatingUpdateProcessorFactory
   public void init(NamedList args) {
 
     inclusions = parseSelectorParams(args);
+    exclusions = parseSelectorExclusionParams(args);
 
-    List<Object> excList = args.getAll("exclude");
-    for (Object excObj : excList) {
-      if (null == excObj) {
-        throw new SolrException
-          (SERVER_ERROR, "'exclude' init param can not be null"); 
-      }
-      if (! (excObj instanceof NamedList) ) {
-        throw new SolrException
-          (SERVER_ERROR, "'exclude' init param must be <lst/>"); 
-      }
-      NamedList exc = (NamedList) excObj;
-      exclusions.add(parseSelectorParams(exc));
-      if (0 < exc.size()) {
-        throw new SolrException(SERVER_ERROR, 
-                                "Unexpected 'exclude' init sub-param(s): '" + 
-                                args.getName(0) + "'");
-      }
-      // call once per instance
-      args.remove("exclude");
-    }
     if (0 < args.size()) {
       throw new SolrException(SERVER_ERROR, 
                               "Unexpected init param(s): '" + 

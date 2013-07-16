@@ -18,11 +18,19 @@ package org.apache.lucene.analysis.morfologik;
  */
 
 import java.io.IOException;
-import java.io.StringReader;
+import java.io.Reader;
 import java.util.TreeSet;
 
-import org.apache.lucene.analysis.*;
+import org.apache.lucene.analysis.Analyzer;
+import org.apache.lucene.analysis.BaseTokenStreamTestCase;
+import org.apache.lucene.analysis.TokenStream;
+import org.apache.lucene.analysis.Tokenizer;
+import org.apache.lucene.analysis.miscellaneous.SetKeywordMarkerFilter;
+import org.apache.lucene.analysis.standard.StandardFilter;
+import org.apache.lucene.analysis.standard.StandardTokenizer;
 import org.apache.lucene.analysis.tokenattributes.CharTermAttribute;
+import org.apache.lucene.analysis.util.CharArraySet;
+import org.apache.lucene.util.Version;
 
 /**
  * TODO: The tests below rely on the order of returned lemmas, which is probably not good. 
@@ -56,16 +64,28 @@ public class TestMorfologikAnalyzer extends BaseTokenStreamTestCase {
     assertAnalyzesToReuse(
         a,
         "T. Gl\u00FCcksberg",
-        new String[] { "to", "tom", "tona", "Gl\u00FCcksberg" },
-        new int[] { 0, 0, 0, 3  },
-        new int[] { 1, 1, 1, 13 },
-        new int[] { 1, 0, 0, 1  });
+        new String[] { "tom", "tona", "Gl\u00FCcksberg" },
+        new int[] { 0, 0, 3  },
+        new int[] { 1, 1, 13 },
+        new int[] { 1, 0, 1  });
+  }
+
+  @SuppressWarnings("unused")
+  private void dumpTokens(String input) throws IOException {
+    TokenStream ts = getTestAnalyzer().tokenStream("dummy", input);
+    ts.reset();
+
+    MorphosyntacticTagsAttribute attribute = ts.getAttribute(MorphosyntacticTagsAttribute.class);
+    CharTermAttribute charTerm = ts.getAttribute(CharTermAttribute.class);
+    while (ts.incrementToken()) {
+      System.out.println(charTerm.toString() + " => " + attribute.getTags());
+    }
   }
 
   /** Test reuse of MorfologikFilter with leftover stems. */
   public final void testLeftoverStems() throws IOException {
     Analyzer a = getTestAnalyzer();
-    TokenStream ts_1 = a.tokenStream("dummy", new StringReader("liście"));
+    TokenStream ts_1 = a.tokenStream("dummy", "liście");
     CharTermAttribute termAtt_1 = ts_1.getAttribute(CharTermAttribute.class);
     ts_1.reset();
     ts_1.incrementToken();
@@ -73,7 +93,7 @@ public class TestMorfologikAnalyzer extends BaseTokenStreamTestCase {
     ts_1.end();
     ts_1.close();
 
-    TokenStream ts_2 = a.tokenStream("dummy", new StringReader("danych"));
+    TokenStream ts_2 = a.tokenStream("dummy", "danych");
     CharTermAttribute termAtt_2 = ts_2.getAttribute(CharTermAttribute.class);
     ts_2.reset();
     ts_2.incrementToken();
@@ -120,7 +140,7 @@ public class TestMorfologikAnalyzer extends BaseTokenStreamTestCase {
 
   /** Test morphosyntactic annotations. */
   public final void testPOSAttribute() throws IOException {
-    TokenStream ts = getTestAnalyzer().tokenStream("dummy", new StringReader("liście"));
+    TokenStream ts = getTestAnalyzer().tokenStream("dummy", "liście");
 
     ts.reset();
     assertPOSToken(ts, "liście",  
@@ -142,6 +162,34 @@ public class TestMorfologikAnalyzer extends BaseTokenStreamTestCase {
         "subst:sg:loc:f");
     ts.end();
     ts.close();
+  }
+
+  /** */
+  public final void testKeywordAttrTokens() throws IOException {
+    final Version version = TEST_VERSION_CURRENT;
+
+    Analyzer a = new MorfologikAnalyzer(version) {
+      @Override
+      protected TokenStreamComponents createComponents(String field, Reader reader) {
+        final CharArraySet keywords = new CharArraySet(version, 1, false);
+        keywords.add("liście");
+
+        final Tokenizer src = new StandardTokenizer(TEST_VERSION_CURRENT, reader);
+        TokenStream result = new StandardFilter(TEST_VERSION_CURRENT, src);
+        result = new SetKeywordMarkerFilter(result, keywords);
+        result = new MorfologikFilter(result, TEST_VERSION_CURRENT); 
+
+        return new TokenStreamComponents(src, result);
+      }
+    };
+
+    assertAnalyzesToReuse(
+      a,
+      "liście danych",
+      new String[] { "liście", "dany", "dana", "dane", "dać" },
+      new int[] { 0, 7, 7, 7, 7 },
+      new int[] { 6, 13, 13, 13, 13 },
+      new int[] { 1, 1, 0, 0, 0 });
   }
 
   /** blast some random strings through the analyzer */

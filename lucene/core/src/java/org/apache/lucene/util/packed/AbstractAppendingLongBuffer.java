@@ -37,7 +37,7 @@ abstract class AbstractAppendingLongBuffer {
   PackedInts.Reader[] deltas;
   private long deltasBytes;
   int valuesOff;
-  final long[] pending;
+  long[] pending;
   int pendingOff;
 
   AbstractAppendingLongBuffer(int initialBlockCount, int pageSize) {
@@ -50,13 +50,27 @@ abstract class AbstractAppendingLongBuffer {
     pendingOff = 0;
   }
 
+  final int pageSize() {
+    return pageMask + 1;
+  }
+
   /** Get the number of values that have been added to the buffer. */
   public final long size() {
-    return valuesOff * (long) pending.length + pendingOff;
+    long size = pendingOff;
+    if (valuesOff > 0) {
+      size += deltas[valuesOff - 1].size();
+    }
+    if (valuesOff > 1) {
+      size += (long) (valuesOff - 1) * pageSize();
+    }
+    return size;
   }
 
   /** Append a value to this buffer. */
   public final void add(long l) {
+    if (pending == null) {
+      throw new IllegalStateException("This buffer is frozen");
+    }
     if (pendingOff == pending.length) {
       // check size
       if (deltas.length == valuesOff) {
@@ -64,9 +78,7 @@ abstract class AbstractAppendingLongBuffer {
         grow(newLength);
       }
       packPendingValues();
-      if (deltas[valuesOff] != null) {
-        deltasBytes += deltas[valuesOff].ramBytesUsed();
-      }
+      deltasBytes += deltas[valuesOff].ramBytesUsed();
       ++valuesOff;
       // reset pending buffer
       pendingOff = 0;
@@ -83,9 +95,7 @@ abstract class AbstractAppendingLongBuffer {
 
   /** Get a value from this buffer. */
   public final long get(long index) {
-    if (index < 0 || index >= size()) {
-      throw new IndexOutOfBoundsException("" + index);
-    }
+    assert index >= 0 && index < size();
     final int block = (int) (index >> pageShift);
     final int element = (int) (index & pageMask);
     return get(block, element);
@@ -99,13 +109,15 @@ abstract class AbstractAppendingLongBuffer {
 
     long[] currentValues;
     int vOff, pOff;
+    int currentCount; // number of entries of the current page
 
     Iterator() {
       vOff = pOff = 0;
       if (valuesOff == 0) {
         currentValues = pending;
+        currentCount = pendingOff;
       } else {
-        currentValues = new long[pending.length];
+        currentValues = new long[deltas[0].size()];
         fillValues();
       }
     }
@@ -114,18 +126,20 @@ abstract class AbstractAppendingLongBuffer {
 
     /** Whether or not there are remaining values. */
     public final boolean hasNext() {
-      return vOff < valuesOff || (vOff == valuesOff && pOff < pendingOff);
+      return pOff < currentCount;
     }
 
     /** Return the next long in the buffer. */
     public final long next() {
       assert hasNext();
       long result = currentValues[pOff++];
-      if (pOff == pending.length) {
+      if (pOff == currentCount) {
         vOff += 1;
         pOff = 0;
         if (vOff <= valuesOff) {
           fillValues();
+        } else {
+          currentCount = 0;
         }
       }
       return result;
@@ -136,7 +150,9 @@ abstract class AbstractAppendingLongBuffer {
   long baseRamBytesUsed() {
     return RamUsageEstimator.NUM_BYTES_OBJECT_HEADER
         + 3 * RamUsageEstimator.NUM_BYTES_OBJECT_REF // the 3 arrays
-        + 2 * RamUsageEstimator.NUM_BYTES_INT; // the 2 offsets
+        + 2 * RamUsageEstimator.NUM_BYTES_INT // the 2 offsets
+        + 2 * RamUsageEstimator.NUM_BYTES_INT // pageShift, pageMask
+        + RamUsageEstimator.NUM_BYTES_LONG; // deltasBytes
   }
 
   /**
@@ -145,13 +161,25 @@ abstract class AbstractAppendingLongBuffer {
   public long ramBytesUsed() {
     // TODO: this is called per-doc-per-norms/dv-field, can we optimize this?
     long bytesUsed = RamUsageEstimator.alignObjectSize(baseRamBytesUsed())
-        + 2 * RamUsageEstimator.NUM_BYTES_INT // pageShift, pageMask
-        + RamUsageEstimator.NUM_BYTES_LONG // valuesBytes
-        + RamUsageEstimator.sizeOf(pending)
+        + (pending != null ? RamUsageEstimator.sizeOf(pending) : 0L)
         + RamUsageEstimator.sizeOf(minValues)
         + RamUsageEstimator.alignObjectSize(RamUsageEstimator.NUM_BYTES_ARRAY_HEADER + (long) RamUsageEstimator.NUM_BYTES_OBJECT_REF * deltas.length); // values
 
     return bytesUsed + deltasBytes;
+  }
+
+  /** Pack all pending values in this buffer. Subsequent calls to {@link #add(long)} will fail. */
+  public void freeze() {
+    if (pendingOff > 0) {
+      if (deltas.length == valuesOff) {
+        grow(valuesOff + 1); // don't oversize!
+      }
+      packPendingValues();
+      deltasBytes += deltas[valuesOff].ramBytesUsed();
+      ++valuesOff;
+      pendingOff = 0;
+    }
+    pending = null;
   }
 
 }

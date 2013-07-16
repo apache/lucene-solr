@@ -120,16 +120,33 @@ import org.apache.lucene.util.packed.BlockPackedWriter;
  * </ol>
  */
 public final class Lucene42DocValuesFormat extends DocValuesFormat {
-
-  /** Sole constructor */
+  final float acceptableOverheadRatio;
+  
+  /** 
+   * Calls {@link #Lucene42DocValuesFormat(float) 
+   * Lucene42DocValuesFormat(PackedInts.DEFAULT)} 
+   */
   public Lucene42DocValuesFormat() {
+    this(PackedInts.DEFAULT);
+  }
+  
+  /**
+   * Creates a new Lucene42DocValuesFormat with the specified
+   * <code>acceptableOverheadRatio</code> for NumericDocValues.
+   * @param acceptableOverheadRatio compression parameter for numerics. 
+   *        Currently this is only used when the number of unique values is small.
+   *        
+   * @lucene.experimental
+   */
+  public Lucene42DocValuesFormat(float acceptableOverheadRatio) {
     super("Lucene42");
+    this.acceptableOverheadRatio = acceptableOverheadRatio;
   }
 
   @Override
   public DocValuesConsumer fieldsConsumer(SegmentWriteState state) throws IOException {
     // note: we choose DEFAULT here (its reasonably fast, and for small bpv has tiny waste)
-    return new Lucene42DocValuesConsumer(state, DATA_CODEC, DATA_EXTENSION, METADATA_CODEC, METADATA_EXTENSION, PackedInts.DEFAULT);
+    return new Lucene42DocValuesConsumer(state, DATA_CODEC, DATA_EXTENSION, METADATA_CODEC, METADATA_EXTENSION, acceptableOverheadRatio);
   }
   
   @Override

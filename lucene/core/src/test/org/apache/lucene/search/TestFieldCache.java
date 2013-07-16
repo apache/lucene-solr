@@ -23,33 +23,45 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.LinkedHashSet;
 import java.util.List;
-import java.util.Locale;
 import java.util.concurrent.CyclicBarrier;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 
 import org.apache.lucene.analysis.MockAnalyzer;
-import org.apache.lucene.codecs.DocValuesFormat;
 import org.apache.lucene.document.BinaryDocValuesField;
 import org.apache.lucene.document.Document;
+import org.apache.lucene.document.DoubleField;
 import org.apache.lucene.document.Field;
+import org.apache.lucene.document.Field.Store;
+import org.apache.lucene.document.FloatField;
 import org.apache.lucene.document.IntField;
+import org.apache.lucene.document.LongField;
 import org.apache.lucene.document.NumericDocValuesField;
 import org.apache.lucene.document.SortedDocValuesField;
 import org.apache.lucene.document.SortedSetDocValuesField;
 import org.apache.lucene.document.StoredField;
-import org.apache.lucene.document.StringField;
-import org.apache.lucene.index.*;
-import org.apache.lucene.search.FieldCache.Bytes;
+import org.apache.lucene.index.AtomicReader;
+import org.apache.lucene.index.BinaryDocValues;
+import org.apache.lucene.index.DirectoryReader;
+import org.apache.lucene.index.DocTermOrds;
+import org.apache.lucene.index.IndexReader;
+import org.apache.lucene.index.IndexWriter;
+import org.apache.lucene.index.IndexWriterConfig;
+import org.apache.lucene.index.RandomIndexWriter;
+import org.apache.lucene.index.SlowCompositeReaderWrapper;
+import org.apache.lucene.index.SortedDocValues;
+import org.apache.lucene.index.SortedSetDocValues;
+import org.apache.lucene.index.Terms;
+import org.apache.lucene.index.TermsEnum;
 import org.apache.lucene.search.FieldCache.Doubles;
 import org.apache.lucene.search.FieldCache.Floats;
 import org.apache.lucene.search.FieldCache.Ints;
 import org.apache.lucene.search.FieldCache.Longs;
-import org.apache.lucene.search.FieldCache.Shorts;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.util.Bits;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.LuceneTestCase;
+import org.apache.lucene.util.NumericUtils;
 import org.apache.lucene.util._TestUtil;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
@@ -70,8 +82,6 @@ public class TestFieldCache extends LuceneTestCase {
     RandomIndexWriter writer= new RandomIndexWriter(random(), directory, newIndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer(random())).setMergePolicy(newLogMergePolicy()));
     long theLong = Long.MAX_VALUE;
     double theDouble = Double.MAX_VALUE;
-    byte theByte = Byte.MAX_VALUE;
-    short theShort = Short.MAX_VALUE;
     int theInt = Integer.MAX_VALUE;
     float theFloat = Float.MAX_VALUE;
     unicodeStrings = new String[NUM_DOCS];
@@ -81,14 +91,12 @@ public class TestFieldCache extends LuceneTestCase {
     }
     for (int i = 0; i < NUM_DOCS; i++){
       Document doc = new Document();
-      doc.add(newStringField("theLong", String.valueOf(theLong--), Field.Store.NO));
-      doc.add(newStringField("theDouble", String.valueOf(theDouble--), Field.Store.NO));
-      doc.add(newStringField("theByte", String.valueOf(theByte--), Field.Store.NO));
-      doc.add(newStringField("theShort", String.valueOf(theShort--), Field.Store.NO));
-      doc.add(newStringField("theInt", String.valueOf(theInt--), Field.Store.NO));
-      doc.add(newStringField("theFloat", String.valueOf(theFloat--), Field.Store.NO));
+      doc.add(new LongField("theLong", theLong--, Field.Store.NO));
+      doc.add(new DoubleField("theDouble", theDouble--, Field.Store.NO));
+      doc.add(new IntField("theInt", theInt--, Field.Store.NO));
+      doc.add(new FloatField("theFloat", theFloat--, Field.Store.NO));
       if (i%2 == 0) {
-        doc.add(newStringField("sparse", String.valueOf(i), Field.Store.NO));
+        doc.add(new IntField("sparse", i, Field.Store.NO));
       }
 
       if (i%2 == 0) {
@@ -133,7 +141,16 @@ public class TestFieldCache extends LuceneTestCase {
       ByteArrayOutputStream bos = new ByteArrayOutputStream(1024);
       cache.setInfoStream(new PrintStream(bos, false, "UTF-8"));
       cache.getDoubles(reader, "theDouble", false);
-      cache.getFloats(reader, "theDouble", false);
+      cache.getFloats(reader, "theDouble", new FieldCache.FloatParser() {
+        @Override
+        public TermsEnum termsEnum(Terms terms) throws IOException {
+          return NumericUtils.filterPrefixCodedLongs(terms.iterator(null));
+        }
+        @Override
+        public float parseFloat(BytesRef term) {
+          return NumericUtils.sortableIntToFloat((int) NumericUtils.prefixCodedToLong(term));
+        }
+      }, false);
       assertTrue(bos.toString("UTF-8").indexOf("WARNING") != -1);
     } finally {
       FieldCache.DEFAULT.purgeAllCaches();
@@ -144,42 +161,28 @@ public class TestFieldCache extends LuceneTestCase {
     FieldCache cache = FieldCache.DEFAULT;
     FieldCache.Doubles doubles = cache.getDoubles(reader, "theDouble", random().nextBoolean());
     assertSame("Second request to cache return same array", doubles, cache.getDoubles(reader, "theDouble", random().nextBoolean()));
-    assertSame("Second request with explicit parser return same array", doubles, cache.getDoubles(reader, "theDouble", FieldCache.DEFAULT_DOUBLE_PARSER, random().nextBoolean()));
+    assertSame("Second request with explicit parser return same array", doubles, cache.getDoubles(reader, "theDouble", FieldCache.NUMERIC_UTILS_DOUBLE_PARSER, random().nextBoolean()));
     for (int i = 0; i < NUM_DOCS; i++) {
       assertTrue(doubles.get(i) + " does not equal: " + (Double.MAX_VALUE - i), doubles.get(i) == (Double.MAX_VALUE - i));
     }
     
     FieldCache.Longs longs = cache.getLongs(reader, "theLong", random().nextBoolean());
     assertSame("Second request to cache return same array", longs, cache.getLongs(reader, "theLong", random().nextBoolean()));
-    assertSame("Second request with explicit parser return same array", longs, cache.getLongs(reader, "theLong", FieldCache.DEFAULT_LONG_PARSER, random().nextBoolean()));
+    assertSame("Second request with explicit parser return same array", longs, cache.getLongs(reader, "theLong", FieldCache.NUMERIC_UTILS_LONG_PARSER, random().nextBoolean()));
     for (int i = 0; i < NUM_DOCS; i++) {
       assertTrue(longs.get(i) + " does not equal: " + (Long.MAX_VALUE - i) + " i=" + i, longs.get(i) == (Long.MAX_VALUE - i));
     }
-    
-    FieldCache.Bytes bytes = cache.getBytes(reader, "theByte", random().nextBoolean());
-    assertSame("Second request to cache return same array", bytes, cache.getBytes(reader, "theByte", random().nextBoolean()));
-    assertSame("Second request with explicit parser return same array", bytes, cache.getBytes(reader, "theByte", FieldCache.DEFAULT_BYTE_PARSER, random().nextBoolean()));
-    for (int i = 0; i < NUM_DOCS; i++) {
-      assertTrue(bytes.get(i) + " does not equal: " + (Byte.MAX_VALUE - i), bytes.get(i) == (byte) (Byte.MAX_VALUE - i));
-    }
-    
-    FieldCache.Shorts shorts = cache.getShorts(reader, "theShort", random().nextBoolean());
-    assertSame("Second request to cache return same array", shorts, cache.getShorts(reader, "theShort", random().nextBoolean()));
-    assertSame("Second request with explicit parser return same array", shorts, cache.getShorts(reader, "theShort", FieldCache.DEFAULT_SHORT_PARSER, random().nextBoolean()));
-    for (int i = 0; i < NUM_DOCS; i++) {
-      assertTrue(shorts.get(i) + " does not equal: " + (Short.MAX_VALUE - i), shorts.get(i) == (short) (Short.MAX_VALUE - i));
-    }
-    
+
     FieldCache.Ints ints = cache.getInts(reader, "theInt", random().nextBoolean());
     assertSame("Second request to cache return same array", ints, cache.getInts(reader, "theInt", random().nextBoolean()));
-    assertSame("Second request with explicit parser return same array", ints, cache.getInts(reader, "theInt", FieldCache.DEFAULT_INT_PARSER, random().nextBoolean()));
+    assertSame("Second request with explicit parser return same array", ints, cache.getInts(reader, "theInt", FieldCache.NUMERIC_UTILS_INT_PARSER, random().nextBoolean()));
     for (int i = 0; i < NUM_DOCS; i++) {
       assertTrue(ints.get(i) + " does not equal: " + (Integer.MAX_VALUE - i), ints.get(i) == (Integer.MAX_VALUE - i));
     }
     
     FieldCache.Floats floats = cache.getFloats(reader, "theFloat", random().nextBoolean());
     assertSame("Second request to cache return same array", floats, cache.getFloats(reader, "theFloat", random().nextBoolean()));
-    assertSame("Second request with explicit parser return same array", floats, cache.getFloats(reader, "theFloat", FieldCache.DEFAULT_FLOAT_PARSER, random().nextBoolean()));
+    assertSame("Second request with explicit parser return same array", floats, cache.getFloats(reader, "theFloat", FieldCache.NUMERIC_UTILS_FLOAT_PARSER, random().nextBoolean()));
     for (int i = 0; i < NUM_DOCS; i++) {
       assertTrue(floats.get(i) + " does not equal: " + (Float.MAX_VALUE - i), floats.get(i) == (Float.MAX_VALUE - i));
     }
@@ -587,12 +590,6 @@ public class TestFieldCache extends LuceneTestCase {
     cache.purgeAllCaches();
     assertEquals(0, cache.getCacheEntries().length);
     
-    Bytes bytes = cache.getBytes(ar, "bogusbytes", true);
-    assertEquals(0, bytes.get(0));
-
-    Shorts shorts = cache.getShorts(ar, "bogusshorts", true);
-    assertEquals(0, shorts.get(0));
-    
     Ints ints = cache.getInts(ar, "bogusints", true);
     assertEquals(0, ints.get(0));
     
@@ -652,12 +649,6 @@ public class TestFieldCache extends LuceneTestCase {
     cache.purgeAllCaches();
     assertEquals(0, cache.getCacheEntries().length);
     
-    Bytes bytes = cache.getBytes(ar, "bogusbytes", true);
-    assertEquals(0, bytes.get(0));
-
-    Shorts shorts = cache.getShorts(ar, "bogusshorts", true);
-    assertEquals(0, shorts.get(0));
-    
     Ints ints = cache.getInts(ar, "bogusints", true);
     assertEquals(0, ints.get(0));
     
@@ -692,4 +683,97 @@ public class TestFieldCache extends LuceneTestCase {
     ir.close();
     dir.close();
   }
+
+  // Make sure that the use of GrowableWriter doesn't prevent from using the full long range
+  public void testLongFieldCache() throws IOException {
+    Directory dir = newDirectory();
+    IndexWriterConfig cfg = newIndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer(random()));
+    cfg.setMergePolicy(newLogMergePolicy());
+    RandomIndexWriter iw = new RandomIndexWriter(random(), dir, cfg);
+    Document doc = new Document();
+    LongField field = new LongField("f", 0L, Store.YES);
+    doc.add(field);
+    final long[] values = new long[_TestUtil.nextInt(random(), 1, 10)];
+    for (int i = 0; i < values.length; ++i) {
+      final long v;
+      switch (random().nextInt(10)) {
+        case 0:
+          v = Long.MIN_VALUE;
+          break;
+        case 1:
+          v = 0;
+          break;
+        case 2:
+          v = Long.MAX_VALUE;
+          break;
+        default:
+          v = _TestUtil.nextLong(random(), -10, 10);
+          break;
+      }
+      values[i] = v;
+      if (v == 0 && random().nextBoolean()) {
+        // missing
+        iw.addDocument(new Document());
+      } else {
+        field.setLongValue(v);
+        iw.addDocument(doc);
+      }
+    }
+    iw.forceMerge(1);
+    final DirectoryReader reader = iw.getReader();
+    final FieldCache.Longs longs = FieldCache.DEFAULT.getLongs(getOnlySegmentReader(reader), "f", false);
+    for (int i = 0; i < values.length; ++i) {
+      assertEquals(values[i], longs.get(i));
+    }
+    reader.close();
+    iw.close();
+    dir.close();
+  }
+
+  // Make sure that the use of GrowableWriter doesn't prevent from using the full int range
+  public void testIntFieldCache() throws IOException {
+    Directory dir = newDirectory();
+    IndexWriterConfig cfg = newIndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer(random()));
+    cfg.setMergePolicy(newLogMergePolicy());
+    RandomIndexWriter iw = new RandomIndexWriter(random(), dir);
+    Document doc = new Document();
+    IntField field = new IntField("f", 0, Store.YES);
+    doc.add(field);
+    final int[] values = new int[_TestUtil.nextInt(random(), 1, 10)];
+    for (int i = 0; i < values.length; ++i) {
+      final int v;
+      switch (random().nextInt(10)) {
+        case 0:
+          v = Integer.MIN_VALUE;
+          break;
+        case 1:
+          v = 0;
+          break;
+        case 2:
+          v = Integer.MAX_VALUE;
+          break;
+        default:
+          v = _TestUtil.nextInt(random(), -10, 10);
+          break;
+      }
+      values[i] = v;
+      if (v == 0 && random().nextBoolean()) {
+        // missing
+        iw.addDocument(new Document());
+      } else {
+        field.setIntValue(v);
+        iw.addDocument(doc);
+      }
+    }
+    iw.forceMerge(1);
+    final DirectoryReader reader = iw.getReader();
+    final FieldCache.Ints ints = FieldCache.DEFAULT.getInts(getOnlySegmentReader(reader), "f", false);
+    for (int i = 0; i < values.length; ++i) {
+      assertEquals(values[i], ints.get(i));
+    }
+    reader.close();
+    iw.close();
+    dir.close();
+  }
+
 }

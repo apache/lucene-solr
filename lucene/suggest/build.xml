@@ -25,5 +25,15 @@
 	
   <!-- just a list of words for testing suggesters -->
   <property name="rat.excludes" value="**/Top50KWiki.utf8"/>
+
   <import file="../module-build.xml"/>
+
+  <path id="classpath">
+    <pathelement path="${analyzers-common.jar}"/>
+    <pathelement path="${misc.jar}"/>
+    <path refid="base.classpath"/>
+  </path>
+
+  <target name="compile-core" depends="jar-misc, jar-analyzers-common, common.compile-core" />
+
 </project>

@@ -1164,4 +1164,33 @@ public class AnalyzingSuggesterTest extends LuceneTestCase {
     assertEquals("[isla de muerta/8, i love lucy/7]", suggester.lookup("i", false, 3).toString());
     assertEquals("[i love lucy/7]", suggester.lookup("i ", false, 3).toString());
   }
+
+  public void testTooManyExpansions() throws Exception {
+
+    final Analyzer a = new Analyzer() {
+        @Override
+        protected TokenStreamComponents createComponents(String fieldName, Reader reader) {
+          Tokenizer tokenizer = new MockTokenizer(reader, MockTokenizer.SIMPLE, true);
+        
+          return new TokenStreamComponents(tokenizer) {
+            @Override
+            public TokenStream getTokenStream() {
+              Token a = new Token("a", 0, 1);
+              a.setPositionIncrement(1);
+              Token b = new Token("b", 0, 1);
+              b.setPositionIncrement(0);
+              return new CannedTokenStream(new Token[] {a, b});
+            }
+         
+            @Override
+            protected void setReader(final Reader reader) throws IOException {
+            }
+          };
+        }
+      };
+
+    AnalyzingSuggester suggester = new AnalyzingSuggester(a, a, 0, 256, 1);
+    suggester.build(new TermFreqArrayIterator(new TermFreq[] {new TermFreq("a", 1)}));
+    assertEquals("[a/1]", suggester.lookup("a", false, 1).toString());
+  }
 }

@@ -24,7 +24,11 @@ import java.util.List;
 
 import org.apache.lucene.analysis.MockAnalyzer;
 import org.apache.lucene.document.Document;
+import org.apache.lucene.document.DoubleField;
 import org.apache.lucene.document.Field;
+import org.apache.lucene.document.FloatField;
+import org.apache.lucene.document.IntField;
+import org.apache.lucene.document.LongField;
 import org.apache.lucene.document.StringField;
 import org.apache.lucene.index.DirectoryReader;
 import org.apache.lucene.index.IndexReader;
@@ -329,259 +333,19 @@ public class TestSort extends LuceneTestCase {
     ir.close();
     dir.close();
   }
-  
-  /** Tests sorting on type byte */
-  public void testByte() throws IOException {
-    Directory dir = newDirectory();
-    RandomIndexWriter writer = new RandomIndexWriter(random(), dir);
-    Document doc = new Document();
-    doc.add(newStringField("value", "23", Field.Store.YES));
-    writer.addDocument(doc);
-    doc = new Document();
-    doc.add(newStringField("value", "-1", Field.Store.YES));
-    writer.addDocument(doc);
-    doc = new Document();
-    doc.add(newStringField("value", "4", Field.Store.YES));
-    writer.addDocument(doc);
-    IndexReader ir = writer.getReader();
-    writer.close();
-    
-    IndexSearcher searcher = newSearcher(ir);
-    Sort sort = new Sort(new SortField("value", SortField.Type.BYTE));
 
-    TopDocs td = searcher.search(new MatchAllDocsQuery(), 10, sort);
-    assertEquals(3, td.totalHits);
-    // numeric order
-    assertEquals("-1", searcher.doc(td.scoreDocs[0].doc).get("value"));
-    assertEquals("4", searcher.doc(td.scoreDocs[1].doc).get("value"));
-    assertEquals("23", searcher.doc(td.scoreDocs[2].doc).get("value"));
-
-    ir.close();
-    dir.close();
-  }
-  
-  /** Tests sorting on type byte with a missing value */
-  public void testByteMissing() throws IOException {
-    Directory dir = newDirectory();
-    RandomIndexWriter writer = new RandomIndexWriter(random(), dir);
-    Document doc = new Document();
-    writer.addDocument(doc);
-    doc = new Document();
-    doc.add(newStringField("value", "-1", Field.Store.YES));
-    writer.addDocument(doc);
-    doc = new Document();
-    doc.add(newStringField("value", "4", Field.Store.YES));
-    writer.addDocument(doc);
-    IndexReader ir = writer.getReader();
-    writer.close();
-    
-    IndexSearcher searcher = newSearcher(ir);
-    Sort sort = new Sort(new SortField("value", SortField.Type.BYTE));
-
-    TopDocs td = searcher.search(new MatchAllDocsQuery(), 10, sort);
-    assertEquals(3, td.totalHits);
-    // null value is treated as a 0
-    assertEquals("-1", searcher.doc(td.scoreDocs[0].doc).get("value"));
-    assertNull(searcher.doc(td.scoreDocs[1].doc).get("value"));
-    assertEquals("4", searcher.doc(td.scoreDocs[2].doc).get("value"));
-
-    ir.close();
-    dir.close();
-  }
-  
-  /** Tests sorting on type byte, specifying the missing value should be treated as Byte.MAX_VALUE */
-  public void testByteMissingLast() throws IOException {
-    Directory dir = newDirectory();
-    RandomIndexWriter writer = new RandomIndexWriter(random(), dir);
-    Document doc = new Document();
-    writer.addDocument(doc);
-    doc = new Document();
-    doc.add(newStringField("value", "-1", Field.Store.YES));
-    writer.addDocument(doc);
-    doc = new Document();
-    doc.add(newStringField("value", "4", Field.Store.YES));
-    writer.addDocument(doc);
-    IndexReader ir = writer.getReader();
-    writer.close();
-    
-    IndexSearcher searcher = newSearcher(ir);
-    SortField sortField = new SortField("value", SortField.Type.BYTE);
-    sortField.setMissingValue(Byte.MAX_VALUE);
-    Sort sort = new Sort(sortField);
-
-    TopDocs td = searcher.search(new MatchAllDocsQuery(), 10, sort);
-    assertEquals(3, td.totalHits);
-    // null value is treated Byte.MAX_VALUE
-    assertEquals("-1", searcher.doc(td.scoreDocs[0].doc).get("value"));
-    assertEquals("4", searcher.doc(td.scoreDocs[1].doc).get("value"));
-    assertNull(searcher.doc(td.scoreDocs[2].doc).get("value"));
-
-    ir.close();
-    dir.close();
-  }
-  
-  /** Tests sorting on type byte in reverse */
-  public void testByteReverse() throws IOException {
-    Directory dir = newDirectory();
-    RandomIndexWriter writer = new RandomIndexWriter(random(), dir);
-    Document doc = new Document();
-    doc.add(newStringField("value", "23", Field.Store.YES));
-    writer.addDocument(doc);
-    doc = new Document();
-    doc.add(newStringField("value", "-1", Field.Store.YES));
-    writer.addDocument(doc);
-    doc = new Document();
-    doc.add(newStringField("value", "4", Field.Store.YES));
-    writer.addDocument(doc);
-    IndexReader ir = writer.getReader();
-    writer.close();
-    
-    IndexSearcher searcher = newSearcher(ir);
-    Sort sort = new Sort(new SortField("value", SortField.Type.BYTE, true));
-
-    TopDocs td = searcher.search(new MatchAllDocsQuery(), 10, sort);
-    assertEquals(3, td.totalHits);
-    // reverse numeric order
-    assertEquals("23", searcher.doc(td.scoreDocs[0].doc).get("value"));
-    assertEquals("4", searcher.doc(td.scoreDocs[1].doc).get("value"));
-    assertEquals("-1", searcher.doc(td.scoreDocs[2].doc).get("value"));
-
-    ir.close();
-    dir.close();
-  }
-  
-  /** Tests sorting on type short */
-  public void testShort() throws IOException {
-    Directory dir = newDirectory();
-    RandomIndexWriter writer = new RandomIndexWriter(random(), dir);
-    Document doc = new Document();
-    doc.add(newStringField("value", "300", Field.Store.YES));
-    writer.addDocument(doc);
-    doc = new Document();
-    doc.add(newStringField("value", "-1", Field.Store.YES));
-    writer.addDocument(doc);
-    doc = new Document();
-    doc.add(newStringField("value", "4", Field.Store.YES));
-    writer.addDocument(doc);
-    IndexReader ir = writer.getReader();
-    writer.close();
-    
-    IndexSearcher searcher = newSearcher(ir);
-    Sort sort = new Sort(new SortField("value", SortField.Type.SHORT));
-
-    TopDocs td = searcher.search(new MatchAllDocsQuery(), 10, sort);
-    assertEquals(3, td.totalHits);
-    // numeric order
-    assertEquals("-1", searcher.doc(td.scoreDocs[0].doc).get("value"));
-    assertEquals("4", searcher.doc(td.scoreDocs[1].doc).get("value"));
-    assertEquals("300", searcher.doc(td.scoreDocs[2].doc).get("value"));
-
-    ir.close();
-    dir.close();
-  }
-  
-  /** Tests sorting on type short with a missing value */
-  public void testShortMissing() throws IOException {
-    Directory dir = newDirectory();
-    RandomIndexWriter writer = new RandomIndexWriter(random(), dir);
-    Document doc = new Document();
-    writer.addDocument(doc);
-    doc = new Document();
-    doc.add(newStringField("value", "-1", Field.Store.YES));
-    writer.addDocument(doc);
-    doc = new Document();
-    doc.add(newStringField("value", "4", Field.Store.YES));
-    writer.addDocument(doc);
-    IndexReader ir = writer.getReader();
-    writer.close();
-    
-    IndexSearcher searcher = newSearcher(ir);
-    Sort sort = new Sort(new SortField("value", SortField.Type.SHORT));
-
-    TopDocs td = searcher.search(new MatchAllDocsQuery(), 10, sort);
-    assertEquals(3, td.totalHits);
-    // null is treated as a 0
-    assertEquals("-1", searcher.doc(td.scoreDocs[0].doc).get("value"));
-    assertNull(searcher.doc(td.scoreDocs[1].doc).get("value"));
-    assertEquals("4", searcher.doc(td.scoreDocs[2].doc).get("value"));
-
-    ir.close();
-    dir.close();
-  }
-  
-  /** Tests sorting on type short, specifying the missing value should be treated as Short.MAX_VALUE */
-  public void testShortMissingLast() throws IOException {
-    Directory dir = newDirectory();
-    RandomIndexWriter writer = new RandomIndexWriter(random(), dir);
-    Document doc = new Document();
-    writer.addDocument(doc);
-    doc = new Document();
-    doc.add(newStringField("value", "-1", Field.Store.YES));
-    writer.addDocument(doc);
-    doc = new Document();
-    doc.add(newStringField("value", "4", Field.Store.YES));
-    writer.addDocument(doc);
-    IndexReader ir = writer.getReader();
-    writer.close();
-    
-    IndexSearcher searcher = newSearcher(ir);
-    SortField sortField = new SortField("value", SortField.Type.SHORT);
-    sortField.setMissingValue(Short.MAX_VALUE);
-    Sort sort = new Sort(sortField);
-
-    TopDocs td = searcher.search(new MatchAllDocsQuery(), 10, sort);
-    assertEquals(3, td.totalHits);
-    // null is treated as Short.MAX_VALUE
-    assertEquals("-1", searcher.doc(td.scoreDocs[0].doc).get("value"));
-    assertEquals("4", searcher.doc(td.scoreDocs[1].doc).get("value"));
-    assertNull(searcher.doc(td.scoreDocs[2].doc).get("value"));
-
-    ir.close();
-    dir.close();
-  }
-  
-  /** Tests sorting on type short in reverse */
-  public void testShortReverse() throws IOException {
-    Directory dir = newDirectory();
-    RandomIndexWriter writer = new RandomIndexWriter(random(), dir);
-    Document doc = new Document();
-    doc.add(newStringField("value", "300", Field.Store.YES));
-    writer.addDocument(doc);
-    doc = new Document();
-    doc.add(newStringField("value", "-1", Field.Store.YES));
-    writer.addDocument(doc);
-    doc = new Document();
-    doc.add(newStringField("value", "4", Field.Store.YES));
-    writer.addDocument(doc);
-    IndexReader ir = writer.getReader();
-    writer.close();
-    
-    IndexSearcher searcher = newSearcher(ir);
-    Sort sort = new Sort(new SortField("value", SortField.Type.SHORT, true));
-
-    TopDocs td = searcher.search(new MatchAllDocsQuery(), 10, sort);
-    assertEquals(3, td.totalHits);
-    // reverse numeric order
-    assertEquals("300", searcher.doc(td.scoreDocs[0].doc).get("value"));
-    assertEquals("4", searcher.doc(td.scoreDocs[1].doc).get("value"));
-    assertEquals("-1", searcher.doc(td.scoreDocs[2].doc).get("value"));
-
-    ir.close();
-    dir.close();
-  }
-  
   /** Tests sorting on type int */
   public void testInt() throws IOException {
     Directory dir = newDirectory();
     RandomIndexWriter writer = new RandomIndexWriter(random(), dir);
     Document doc = new Document();
-    doc.add(newStringField("value", "300000", Field.Store.YES));
+    doc.add(new IntField("value", 300000, Field.Store.YES));
     writer.addDocument(doc);
     doc = new Document();
-    doc.add(newStringField("value", "-1", Field.Store.YES));
+    doc.add(new IntField("value", -1, Field.Store.YES));
     writer.addDocument(doc);
     doc = new Document();
-    doc.add(newStringField("value", "4", Field.Store.YES));
+    doc.add(new IntField("value", 4, Field.Store.YES));
     writer.addDocument(doc);
     IndexReader ir = writer.getReader();
     writer.close();
@@ -607,10 +371,10 @@ public class TestSort extends LuceneTestCase {
     Document doc = new Document();
     writer.addDocument(doc);
     doc = new Document();
-    doc.add(newStringField("value", "-1", Field.Store.YES));
+    doc.add(new IntField("value", -1, Field.Store.YES));
     writer.addDocument(doc);
     doc = new Document();
-    doc.add(newStringField("value", "4", Field.Store.YES));
+    doc.add(new IntField("value", 4, Field.Store.YES));
     writer.addDocument(doc);
     IndexReader ir = writer.getReader();
     writer.close();
@@ -636,10 +400,10 @@ public class TestSort extends LuceneTestCase {
     Document doc = new Document();
     writer.addDocument(doc);
     doc = new Document();
-    doc.add(newStringField("value", "-1", Field.Store.YES));
+    doc.add(new IntField("value", -1, Field.Store.YES));
     writer.addDocument(doc);
     doc = new Document();
-    doc.add(newStringField("value", "4", Field.Store.YES));
+    doc.add(new IntField("value", 4, Field.Store.YES));
     writer.addDocument(doc);
     IndexReader ir = writer.getReader();
     writer.close();
@@ -665,13 +429,13 @@ public class TestSort extends LuceneTestCase {
     Directory dir = newDirectory();
     RandomIndexWriter writer = new RandomIndexWriter(random(), dir);
     Document doc = new Document();
-    doc.add(newStringField("value", "300000", Field.Store.YES));
+    doc.add(new IntField("value", 300000, Field.Store.YES));
     writer.addDocument(doc);
     doc = new Document();
-    doc.add(newStringField("value", "-1", Field.Store.YES));
+    doc.add(new IntField("value", -1, Field.Store.YES));
     writer.addDocument(doc);
     doc = new Document();
-    doc.add(newStringField("value", "4", Field.Store.YES));
+    doc.add(new IntField("value", 4, Field.Store.YES));
     writer.addDocument(doc);
     IndexReader ir = writer.getReader();
     writer.close();
@@ -695,13 +459,13 @@ public class TestSort extends LuceneTestCase {
     Directory dir = newDirectory();
     RandomIndexWriter writer = new RandomIndexWriter(random(), dir);
     Document doc = new Document();
-    doc.add(newStringField("value", "3000000000", Field.Store.YES));
+    doc.add(new LongField("value", 3000000000L, Field.Store.YES));
     writer.addDocument(doc);
     doc = new Document();
-    doc.add(newStringField("value", "-1", Field.Store.YES));
+    doc.add(new LongField("value", -1, Field.Store.YES));
     writer.addDocument(doc);
     doc = new Document();
-    doc.add(newStringField("value", "4", Field.Store.YES));
+    doc.add(new LongField("value", 4, Field.Store.YES));
     writer.addDocument(doc);
     IndexReader ir = writer.getReader();
     writer.close();
@@ -727,10 +491,10 @@ public class TestSort extends LuceneTestCase {
     Document doc = new Document();
     writer.addDocument(doc);
     doc = new Document();
-    doc.add(newStringField("value", "-1", Field.Store.YES));
+    doc.add(new LongField("value", -1, Field.Store.YES));
     writer.addDocument(doc);
     doc = new Document();
-    doc.add(newStringField("value", "4", Field.Store.YES));
+    doc.add(new LongField("value", 4, Field.Store.YES));
     writer.addDocument(doc);
     IndexReader ir = writer.getReader();
     writer.close();
@@ -756,10 +520,10 @@ public class TestSort extends LuceneTestCase {
     Document doc = new Document();
     writer.addDocument(doc);
     doc = new Document();
-    doc.add(newStringField("value", "-1", Field.Store.YES));
+    doc.add(new LongField("value", -1, Field.Store.YES));
     writer.addDocument(doc);
     doc = new Document();
-    doc.add(newStringField("value", "4", Field.Store.YES));
+    doc.add(new LongField("value", 4, Field.Store.YES));
     writer.addDocument(doc);
     IndexReader ir = writer.getReader();
     writer.close();
@@ -785,13 +549,13 @@ public class TestSort extends LuceneTestCase {
     Directory dir = newDirectory();
     RandomIndexWriter writer = new RandomIndexWriter(random(), dir);
     Document doc = new Document();
-    doc.add(newStringField("value", "3000000000", Field.Store.YES));
+    doc.add(new LongField("value", 3000000000L, Field.Store.YES));
     writer.addDocument(doc);
     doc = new Document();
-    doc.add(newStringField("value", "-1", Field.Store.YES));
+    doc.add(new LongField("value", -1, Field.Store.YES));
     writer.addDocument(doc);
     doc = new Document();
-    doc.add(newStringField("value", "4", Field.Store.YES));
+    doc.add(new LongField("value", 4, Field.Store.YES));
     writer.addDocument(doc);
     IndexReader ir = writer.getReader();
     writer.close();
@@ -815,13 +579,13 @@ public class TestSort extends LuceneTestCase {
     Directory dir = newDirectory();
     RandomIndexWriter writer = new RandomIndexWriter(random(), dir);
     Document doc = new Document();
-    doc.add(newStringField("value", "30.1", Field.Store.YES));
+    doc.add(new FloatField("value", 30.1f, Field.Store.YES));
     writer.addDocument(doc);
     doc = new Document();
-    doc.add(newStringField("value", "-1.3", Field.Store.YES));
+    doc.add(new FloatField("value", -1.3f, Field.Store.YES));
     writer.addDocument(doc);
     doc = new Document();
-    doc.add(newStringField("value", "4.2", Field.Store.YES));
+    doc.add(new FloatField("value", 4.2f, Field.Store.YES));
     writer.addDocument(doc);
     IndexReader ir = writer.getReader();
     writer.close();
@@ -847,10 +611,10 @@ public class TestSort extends LuceneTestCase {
     Document doc = new Document();
     writer.addDocument(doc);
     doc = new Document();
-    doc.add(newStringField("value", "-1.3", Field.Store.YES));
+    doc.add(new FloatField("value", -1.3f, Field.Store.YES));
     writer.addDocument(doc);
     doc = new Document();
-    doc.add(newStringField("value", "4.2", Field.Store.YES));
+    doc.add(new FloatField("value", 4.2f, Field.Store.YES));
     writer.addDocument(doc);
     IndexReader ir = writer.getReader();
     writer.close();
@@ -876,10 +640,10 @@ public class TestSort extends LuceneTestCase {
     Document doc = new Document();
     writer.addDocument(doc);
     doc = new Document();
-    doc.add(newStringField("value", "-1.3", Field.Store.YES));
+    doc.add(new FloatField("value", -1.3f, Field.Store.YES));
     writer.addDocument(doc);
     doc = new Document();
-    doc.add(newStringField("value", "4.2", Field.Store.YES));
+    doc.add(new FloatField("value", 4.2f, Field.Store.YES));
     writer.addDocument(doc);
     IndexReader ir = writer.getReader();
     writer.close();
@@ -905,13 +669,13 @@ public class TestSort extends LuceneTestCase {
     Directory dir = newDirectory();
     RandomIndexWriter writer = new RandomIndexWriter(random(), dir);
     Document doc = new Document();
-    doc.add(newStringField("value", "30.1", Field.Store.YES));
+    doc.add(new FloatField("value", 30.1f, Field.Store.YES));
     writer.addDocument(doc);
     doc = new Document();
-    doc.add(newStringField("value", "-1.3", Field.Store.YES));
+    doc.add(new FloatField("value", -1.3f, Field.Store.YES));
     writer.addDocument(doc);
     doc = new Document();
-    doc.add(newStringField("value", "4.2", Field.Store.YES));
+    doc.add(new FloatField("value", 4.2f, Field.Store.YES));
     writer.addDocument(doc);
     IndexReader ir = writer.getReader();
     writer.close();
@@ -935,16 +699,16 @@ public class TestSort extends LuceneTestCase {
     Directory dir = newDirectory();
     RandomIndexWriter writer = new RandomIndexWriter(random(), dir);
     Document doc = new Document();
-    doc.add(newStringField("value", "30.1", Field.Store.YES));
+    doc.add(new DoubleField("value", 30.1, Field.Store.YES));
     writer.addDocument(doc);
     doc = new Document();
-    doc.add(newStringField("value", "-1.3", Field.Store.YES));
+    doc.add(new DoubleField("value", -1.3, Field.Store.YES));
     writer.addDocument(doc);
     doc = new Document();
-    doc.add(newStringField("value", "4.2333333333333", Field.Store.YES));
+    doc.add(new DoubleField("value", 4.2333333333333, Field.Store.YES));
     writer.addDocument(doc);
     doc = new Document();
-    doc.add(newStringField("value", "4.2333333333332", Field.Store.YES));
+    doc.add(new DoubleField("value", 4.2333333333332, Field.Store.YES));
     writer.addDocument(doc);
     IndexReader ir = writer.getReader();
     writer.close();
@@ -969,10 +733,10 @@ public class TestSort extends LuceneTestCase {
     Directory dir = newDirectory();
     RandomIndexWriter writer = new RandomIndexWriter(random(), dir);
     Document doc = new Document();
-    doc.add(newStringField("value", "+0", Field.Store.YES));
+    doc.add(new DoubleField("value", +0d, Field.Store.YES));
     writer.addDocument(doc);
     doc = new Document();
-    doc.add(newStringField("value", "-0", Field.Store.YES));
+    doc.add(new DoubleField("value", -0d, Field.Store.YES));
     writer.addDocument(doc);
     doc = new Document();
     IndexReader ir = writer.getReader();
@@ -984,8 +748,13 @@ public class TestSort extends LuceneTestCase {
     TopDocs td = searcher.search(new MatchAllDocsQuery(), 10, sort);
     assertEquals(2, td.totalHits);
     // numeric order
-    assertEquals("-0", searcher.doc(td.scoreDocs[0].doc).get("value"));
-    assertEquals("+0", searcher.doc(td.scoreDocs[1].doc).get("value"));
+    double v0 = searcher.doc(td.scoreDocs[0].doc).getField("value").numericValue().doubleValue();
+    double v1 = searcher.doc(td.scoreDocs[1].doc).getField("value").numericValue().doubleValue();
+    assertEquals(0, v0, 0d);
+    assertEquals(0, v1, 0d);
+    // check sign bits
+    assertEquals(1, Double.doubleToLongBits(v0) >>> 63);
+    assertEquals(0, Double.doubleToLongBits(v1) >>> 63);
 
     ir.close();
     dir.close();
@@ -998,13 +767,13 @@ public class TestSort extends LuceneTestCase {
     Document doc = new Document();
     writer.addDocument(doc);
     doc = new Document();
-    doc.add(newStringField("value", "-1.3", Field.Store.YES));
+    doc.add(new DoubleField("value", -1.3, Field.Store.YES));
     writer.addDocument(doc);
     doc = new Document();
-    doc.add(newStringField("value", "4.2333333333333", Field.Store.YES));
+    doc.add(new DoubleField("value", 4.2333333333333, Field.Store.YES));
     writer.addDocument(doc);
     doc = new Document();
-    doc.add(newStringField("value", "4.2333333333332", Field.Store.YES));
+    doc.add(new DoubleField("value", 4.2333333333332, Field.Store.YES));
     writer.addDocument(doc);
     IndexReader ir = writer.getReader();
     writer.close();
@@ -1031,13 +800,13 @@ public class TestSort extends LuceneTestCase {
     Document doc = new Document();
     writer.addDocument(doc);
     doc = new Document();
-    doc.add(newStringField("value", "-1.3", Field.Store.YES));
+    doc.add(new DoubleField("value", -1.3, Field.Store.YES));
     writer.addDocument(doc);
     doc = new Document();
-    doc.add(newStringField("value", "4.2333333333333", Field.Store.YES));
+    doc.add(new DoubleField("value", 4.2333333333333, Field.Store.YES));
     writer.addDocument(doc);
     doc = new Document();
-    doc.add(newStringField("value", "4.2333333333332", Field.Store.YES));
+    doc.add(new DoubleField("value", 4.2333333333332, Field.Store.YES));
     writer.addDocument(doc);
     IndexReader ir = writer.getReader();
     writer.close();
@@ -1064,16 +833,16 @@ public class TestSort extends LuceneTestCase {
     Directory dir = newDirectory();
     RandomIndexWriter writer = new RandomIndexWriter(random(), dir);
     Document doc = new Document();
-    doc.add(newStringField("value", "30.1", Field.Store.YES));
+    doc.add(new DoubleField("value", 30.1, Field.Store.YES));
     writer.addDocument(doc);
     doc = new Document();
-    doc.add(newStringField("value", "-1.3", Field.Store.YES));
+    doc.add(new DoubleField("value", -1.3, Field.Store.YES));
     writer.addDocument(doc);
     doc = new Document();
-    doc.add(newStringField("value", "4.2333333333333", Field.Store.YES));
+    doc.add(new DoubleField("value", 4.2333333333333, Field.Store.YES));
     writer.addDocument(doc);
     doc = new Document();
-    doc.add(newStringField("value", "4.2333333333332", Field.Store.YES));
+    doc.add(new DoubleField("value", 4.2333333333332, Field.Store.YES));
     writer.addDocument(doc);
     IndexReader ir = writer.getReader();
     writer.close();
@@ -1150,7 +919,7 @@ public class TestSort extends LuceneTestCase {
     for(int seg=0;seg<2;seg++) {
       for(int docIDX=0;docIDX<10;docIDX++) {
         Document doc = new Document();
-        doc.add(newStringField("id", ""+docIDX, Field.Store.YES));
+        doc.add(new IntField("id", docIDX, Field.Store.YES));
         StringBuilder sb = new StringBuilder();
         for(int i=0;i<id;i++) {
           sb.append(' ');
@@ -1229,94 +998,6 @@ public class TestSort extends LuceneTestCase {
       @Override
       public int parseInt(BytesRef term) {
         return (term.bytes[term.offset]-'A') * 123456;
-      }
-      
-      @Override
-      public TermsEnum termsEnum(Terms terms) throws IOException {
-        return terms.iterator(null);
-      }
-    }), SortField.FIELD_DOC );
-    
-    TopDocs td = searcher.search(new MatchAllDocsQuery(), 10, sort);
-
-    // results should be in alphabetical order
-    assertEquals(10, td.totalHits);
-    Collections.sort(letters);
-    for (int i = 0; i < letters.size(); i++) {
-      assertEquals(letters.get(i), searcher.doc(td.scoreDocs[i].doc).get("parser"));
-    }
-
-    ir.close();
-    dir.close();
-  }
-  
-  /** 
-   * test sorts for a custom byte parser that uses a simple char encoding 
-   */
-  public void testCustomByteParser() throws Exception {
-    List<String> letters = Arrays.asList(new String[] { "A", "B", "C", "D", "E", "F", "G", "H", "I", "J" });
-    Collections.shuffle(letters, random());
-
-    Directory dir = newDirectory();
-    RandomIndexWriter iw = new RandomIndexWriter(random(), dir);
-    for (String letter : letters) {
-      Document doc = new Document();
-      doc.add(newStringField("parser", letter, Field.Store.YES));
-      iw.addDocument(doc);
-    }
-    
-    IndexReader ir = iw.getReader();
-    iw.close();
-    
-    IndexSearcher searcher = newSearcher(ir);
-    Sort sort = new Sort(new SortField("parser", new FieldCache.ByteParser() {
-      @Override
-      public byte parseByte(BytesRef term) {
-        return (byte) (term.bytes[term.offset]-'A');
-      }
-      
-      @Override
-      public TermsEnum termsEnum(Terms terms) throws IOException {
-        return terms.iterator(null);
-      }
-    }), SortField.FIELD_DOC );
-    
-    TopDocs td = searcher.search(new MatchAllDocsQuery(), 10, sort);
-
-    // results should be in alphabetical order
-    assertEquals(10, td.totalHits);
-    Collections.sort(letters);
-    for (int i = 0; i < letters.size(); i++) {
-      assertEquals(letters.get(i), searcher.doc(td.scoreDocs[i].doc).get("parser"));
-    }
-
-    ir.close();
-    dir.close();
-  }
-  
-  /** 
-   * test sorts for a custom short parser that uses a simple char encoding 
-   */
-  public void testCustomShortParser() throws Exception {
-    List<String> letters = Arrays.asList(new String[] { "A", "B", "C", "D", "E", "F", "G", "H", "I", "J" });
-    Collections.shuffle(letters, random());
-
-    Directory dir = newDirectory();
-    RandomIndexWriter iw = new RandomIndexWriter(random(), dir);
-    for (String letter : letters) {
-      Document doc = new Document();
-      doc.add(newStringField("parser", letter, Field.Store.YES));
-      iw.addDocument(doc);
-    }
-    
-    IndexReader ir = iw.getReader();
-    iw.close();
-    
-    IndexSearcher searcher = newSearcher(ir);
-    Sort sort = new Sort(new SortField("parser", new FieldCache.ShortParser() {
-      @Override
-      public short parseShort(BytesRef term) {
-        return (short) (term.bytes[term.offset]-'A');
       }
       
       @Override

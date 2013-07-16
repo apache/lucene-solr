@@ -567,7 +567,7 @@ public class LiveIndexWriterConfig {
   }
   
   /**
-   * Retruns <code>true</code> iff the {@link IndexWriter} packs
+   * Returns <code>true</code> iff the {@link IndexWriter} packs
    * newly written segments in a compound file. Default is <code>true</code>.
    */
   public boolean getUseCompoundFile() {

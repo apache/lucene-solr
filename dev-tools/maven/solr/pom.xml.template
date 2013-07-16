@@ -127,6 +127,7 @@
           <configuration>
             <systemPropertyVariables>
               <tests.jettyConnector>${tests.jettyConnector}</tests.jettyConnector>
+              <tests.disableHdfs>${tests.disableHdfs}</tests.disableHdfs>
             </systemPropertyVariables>
           </configuration>
         </plugin>
@@ -147,8 +148,7 @@
                 <bundledSignature>jdk-deprecated</bundledSignature>
               </bundledSignatures>
               <signaturesFiles>
-                <signaturesFile>${top-level}/lucene/tools/forbiddenApis/executors.txt</signaturesFile>
-                <signaturesFile>${top-level}/lucene/tools/forbiddenApis/chars.txt</signaturesFile>
+                <signaturesFile>${top-level}/lucene/tools/forbiddenApis/base.txt</signaturesFile>
               </signaturesFiles>
             </configuration>
             <goals>
@@ -168,8 +168,7 @@
               </bundledSignatures>
               <signaturesFiles>
                 <signaturesFile>${top-level}/lucene/tools/forbiddenApis/tests.txt</signaturesFile>
-                <signaturesFile>${top-level}/lucene/tools/forbiddenApis/executors.txt</signaturesFile>
-                <signaturesFile>${top-level}/lucene/tools/forbiddenApis/chars.txt</signaturesFile>
+                <signaturesFile>${top-level}/lucene/tools/forbiddenApis/base.txt</signaturesFile>
               </signaturesFiles>
             </configuration>
             <goals>
@@ -189,4 +188,15 @@
       </plugin>
     </plugins>
   </build>
+  <profiles>
+    <profile>
+      <id>windows-tests-disableHdfs</id>
+      <activation>
+        <os><family>windows</family></os>
+      </activation>
+      <properties>
+        <tests.disableHdfs>true</tests.disableHdfs>
+      </properties>
+    </profile>
+  </profiles>
 </project>

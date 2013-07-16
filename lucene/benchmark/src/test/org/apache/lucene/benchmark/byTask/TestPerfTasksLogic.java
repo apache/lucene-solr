@@ -21,7 +21,6 @@ import java.io.BufferedReader;
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.InputStreamReader;
-import java.io.StringReader;
 import java.text.Collator;
 import java.util.List;
 import java.util.Locale;
@@ -979,8 +978,8 @@ public class TestPerfTasksLogic extends BenchmarkTestCase {
   
   private void assertEqualCollation(Analyzer a1, Analyzer a2, String text)
       throws Exception {
-    TokenStream ts1 = a1.tokenStream("bogus", new StringReader(text));
-    TokenStream ts2 = a2.tokenStream("bogus", new StringReader(text));
+    TokenStream ts1 = a1.tokenStream("bogus", text);
+    TokenStream ts2 = a2.tokenStream("bogus", text);
     ts1.reset();
     ts2.reset();
     TermToBytesRefAttribute termAtt1 = ts1.addAttribute(TermToBytesRefAttribute.class);
@@ -1030,7 +1029,7 @@ public class TestPerfTasksLogic extends BenchmarkTestCase {
     Benchmark benchmark = execBenchmark(getAnalyzerFactoryConfig
         ("shingle-analyzer", "StandardTokenizer,ShingleFilter"));
     benchmark.getRunData().getAnalyzer().tokenStream
-        ("bogus", new StringReader(text)).close();
+        ("bogus", text).close();
     BaseTokenStreamTestCase.assertAnalyzesTo(benchmark.getRunData().getAnalyzer(), text,
                                              new String[] { "one", "one two", "two", "two three",
                                                             "three", "three four", "four", "four five",

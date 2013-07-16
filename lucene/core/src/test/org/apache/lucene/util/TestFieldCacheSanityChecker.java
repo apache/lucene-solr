@@ -16,20 +16,24 @@ package org.apache.lucene.util;
  * limitations under the License.
  */
 
+import java.io.IOException;
+
 import org.apache.lucene.analysis.MockAnalyzer;
 import org.apache.lucene.document.Document;
+import org.apache.lucene.document.DoubleField;
 import org.apache.lucene.document.Field;
-import org.apache.lucene.search.FieldCache;
+import org.apache.lucene.document.FloatField;
+import org.apache.lucene.document.IntField;
+import org.apache.lucene.document.LongField;
 import org.apache.lucene.index.AtomicReader;
 import org.apache.lucene.index.DirectoryReader;
-import org.apache.lucene.index.MultiReader;
 import org.apache.lucene.index.IndexWriter;
+import org.apache.lucene.index.MultiReader;
 import org.apache.lucene.index.SlowCompositeReaderWrapper;
+import org.apache.lucene.search.FieldCache;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.util.FieldCacheSanityChecker.Insanity;
 import org.apache.lucene.util.FieldCacheSanityChecker.InsanityType;
-
-import java.io.IOException;
 
 public class TestFieldCacheSanityChecker extends LuceneTestCase {
 
@@ -51,18 +55,14 @@ public class TestFieldCacheSanityChecker extends LuceneTestCase {
 
     long theLong = Long.MAX_VALUE;
     double theDouble = Double.MAX_VALUE;
-    byte theByte = Byte.MAX_VALUE;
-    short theShort = Short.MAX_VALUE;
     int theInt = Integer.MAX_VALUE;
     float theFloat = Float.MAX_VALUE;
     for (int i = 0; i < NUM_DOCS; i++){
       Document doc = new Document();
-      doc.add(newStringField("theLong", String.valueOf(theLong--), Field.Store.NO));
-      doc.add(newStringField("theDouble", String.valueOf(theDouble--), Field.Store.NO));
-      doc.add(newStringField("theByte", String.valueOf(theByte--), Field.Store.NO));
-      doc.add(newStringField("theShort", String.valueOf(theShort--), Field.Store.NO));
-      doc.add(newStringField("theInt", String.valueOf(theInt--), Field.Store.NO));
-      doc.add(newStringField("theFloat", String.valueOf(theFloat--), Field.Store.NO));
+      doc.add(new LongField("theLong", theLong--, Field.Store.NO));
+      doc.add(new DoubleField("theDouble", theDouble--, Field.Store.NO));
+      doc.add(new IntField("theInt", theInt--, Field.Store.NO));
+      doc.add(new FloatField("theFloat", theFloat--, Field.Store.NO));
       if (0 == i % 3) {
         wA.addDocument(doc);
       } else {
@@ -95,12 +95,12 @@ public class TestFieldCacheSanityChecker extends LuceneTestCase {
     cache.purgeAllCaches();
 
     cache.getDoubles(readerA, "theDouble", false);
-    cache.getDoubles(readerA, "theDouble", FieldCache.DEFAULT_DOUBLE_PARSER, false);
-    cache.getDoubles(readerAclone, "theDouble", FieldCache.DEFAULT_DOUBLE_PARSER, false);
-    cache.getDoubles(readerB, "theDouble", FieldCache.DEFAULT_DOUBLE_PARSER, false);
+    cache.getDoubles(readerA, "theDouble", FieldCache.NUMERIC_UTILS_DOUBLE_PARSER, false);
+    cache.getDoubles(readerAclone, "theDouble", FieldCache.NUMERIC_UTILS_DOUBLE_PARSER, false);
+    cache.getDoubles(readerB, "theDouble", FieldCache.NUMERIC_UTILS_DOUBLE_PARSER, false);
 
     cache.getInts(readerX, "theInt", false);
-    cache.getInts(readerX, "theInt", FieldCache.DEFAULT_INT_PARSER, false);
+    cache.getInts(readerX, "theInt", FieldCache.NUMERIC_UTILS_INT_PARSER, false);
 
     // // // 
 
@@ -119,9 +119,8 @@ public class TestFieldCacheSanityChecker extends LuceneTestCase {
     FieldCache cache = FieldCache.DEFAULT;
     cache.purgeAllCaches();
 
-    cache.getInts(readerX, "theInt", FieldCache.DEFAULT_INT_PARSER, false);
+    cache.getInts(readerX, "theInt", FieldCache.NUMERIC_UTILS_INT_PARSER, false);
     cache.getTerms(readerX, "theInt");
-    cache.getBytes(readerX, "theByte", false);
 
     // // // 
 
@@ -146,8 +145,6 @@ public class TestFieldCacheSanityChecker extends LuceneTestCase {
     cache.getTerms(readerA, "theInt");
     cache.getTerms(readerB, "theInt");
     cache.getTerms(readerX, "theInt");
-
-    cache.getBytes(readerX, "theByte", false);
 
 
     // // // 

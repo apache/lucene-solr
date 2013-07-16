@@ -658,7 +658,7 @@ public class HttpSolrServer extends SolrServer {
    * status code that may have been returned by the remote server or a 
    * proxy along the way.
    */
-  protected static class RemoteSolrException extends SolrException {
+  public static class RemoteSolrException extends SolrException {
     /**
      * @param code Arbitrary HTTP status code
      * @param msg Exception Message

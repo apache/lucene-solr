@@ -20,7 +20,9 @@ package org.apache.lucene.analysis.hunspell;
 import java.io.IOException;
 import java.io.InputStream;
 import java.text.ParseException;
+import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.List;
 
 import org.apache.lucene.util.LuceneTestCase;
 import org.junit.Assert;
@@ -131,9 +133,27 @@ public class HunspellDictionaryTest extends LuceneTestCase {
     assertEquals(3, dictionary.lookupSuffix(new char[]{'e'}, 0, 1).size());
     assertEquals(1, dictionary.lookupPrefix(new char[]{'s'}, 0, 1).size());
     assertEquals(1, dictionary.lookupWord(new char[]{'o', 'l', 'r'}, 0, 3).size());
-    
+    assertEquals("Wrong number of flags for lucen", 1, dictionary.lookupWord(new char[]{'l', 'u', 'c', 'e', 'n'}, 0, 5).get(0).getFlags().length);
+
     affixStream.close();
     dictStream.close();
+  }
+
+  @Test
+  public void testHunspellDictionary_multipleDictWithOverride() throws IOException, ParseException {
+    InputStream affixStream = getClass().getResourceAsStream("test.aff");
+    List<InputStream> dictStreams = new ArrayList<InputStream>();
+    dictStreams.add(getClass().getResourceAsStream("test.dic"));
+    dictStreams.add(getClass().getResourceAsStream("testOverride.dic"));
+
+    HunspellDictionary dictionary = new HunspellDictionary(affixStream, dictStreams, TEST_VERSION_CURRENT, false);
+    assertEquals("Wrong number of flags for lucen", 3, dictionary.lookupWord(new char[]{'l', 'u', 'c', 'e', 'n'}, 0, 5).get(0).getFlags().length);
+    assertEquals("Wrong number of flags for bar", 1, dictionary.lookupWord(new char[]{'b', 'a', 'r'}, 0, 3).get(0).getFlags().length);
+
+    affixStream.close();
+    for(InputStream dstream : dictStreams) {
+      dstream.close();
+    }
   }
 
   @Test

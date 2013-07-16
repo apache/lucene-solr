@@ -18,8 +18,6 @@
 package org.apache.solr.spelling;
 
 import java.io.IOException;
-import java.io.Reader;
-import java.io.StringReader;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
@@ -28,11 +26,10 @@ import java.util.regex.Pattern;
 
 import org.apache.lucene.analysis.Token;
 import org.apache.lucene.analysis.TokenStream;
-import org.apache.lucene.analysis.tokenattributes.FlagsAttribute;
+import org.apache.lucene.analysis.tokenattributes.CharTermAttribute;
 import org.apache.lucene.analysis.tokenattributes.OffsetAttribute;
 import org.apache.lucene.analysis.tokenattributes.PayloadAttribute;
 import org.apache.lucene.analysis.tokenattributes.PositionIncrementAttribute;
-import org.apache.lucene.analysis.tokenattributes.CharTermAttribute;
 import org.apache.lucene.analysis.tokenattributes.TypeAttribute;
 
 
@@ -160,7 +157,7 @@ public class SpellingQueryConverter extends QueryConverter  {
         flagValue = TERM_PRECEDES_NEW_BOOLEAN_OPERATOR_FLAG;
       }
       try {
-        analyze(result, new StringReader(word), startIndex, flagValue);
+        analyze(result, word, startIndex, flagValue);
       } catch (IOException e) {
         // TODO: shouldn't we log something?
       }   
@@ -174,7 +171,7 @@ public class SpellingQueryConverter extends QueryConverter  {
     return result;
   }
   
-  protected void analyze(Collection<Token> result, Reader text, int offset, int flagsAttValue) throws IOException {
+  protected void analyze(Collection<Token> result, String text, int offset, int flagsAttValue) throws IOException {
     TokenStream stream = analyzer.tokenStream("", text);
     // TODO: support custom attributes
     CharTermAttribute termAtt = stream.addAttribute(CharTermAttribute.class);

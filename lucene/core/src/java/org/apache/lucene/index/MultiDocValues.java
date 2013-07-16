@@ -328,6 +328,11 @@ public class MultiDocValues {
         }
         globalOrd++;
       }
+      subIndexes.freeze();
+      globalOrdDeltas.freeze();
+      for (int i = 0; i < ordDeltas.length; ++i) {
+        ordDeltas[i].freeze();
+      }
     }
     
     /** 
@@ -359,6 +364,17 @@ public class MultiDocValues {
      */
     public long getValueCount() {
       return globalOrdDeltas.size();
+    }
+    
+    /** 
+     * Returns total byte size used by this ordinal map. 
+     */
+    public long ramBytesUsed() {
+      long size = globalOrdDeltas.ramBytesUsed() + subIndexes.ramBytesUsed();
+      for (int i = 0; i < ordDeltas.length; i++) {
+        size += ordDeltas[i].ramBytesUsed();
+      }
+      return size;
     }
   }
   

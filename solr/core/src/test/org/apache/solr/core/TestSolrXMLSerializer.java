@@ -17,6 +17,23 @@ package org.apache.solr.core;
  * limitations under the License.
  */
 
+import org.apache.commons.io.FileUtils;
+import org.apache.lucene.util.LuceneTestCase;
+import org.apache.lucene.util._TestUtil;
+import org.apache.solr.core.SolrXMLSerializer.SolrCoreXMLDef;
+import org.apache.solr.core.SolrXMLSerializer.SolrXMLDef;
+import org.junit.Test;
+import org.w3c.dom.Document;
+import org.w3c.dom.Node;
+import org.xml.sax.SAXException;
+
+import javax.xml.parsers.DocumentBuilder;
+import javax.xml.parsers.DocumentBuilderFactory;
+import javax.xml.parsers.ParserConfigurationException;
+import javax.xml.xpath.XPath;
+import javax.xml.xpath.XPathConstants;
+import javax.xml.xpath.XPathExpressionException;
+import javax.xml.xpath.XPathFactory;
 import java.io.BufferedInputStream;
 import java.io.ByteArrayInputStream;
 import java.io.File;
@@ -28,24 +45,6 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Properties;
-
-import javax.xml.parsers.DocumentBuilder;
-import javax.xml.parsers.DocumentBuilderFactory;
-import javax.xml.parsers.ParserConfigurationException;
-import javax.xml.xpath.XPath;
-import javax.xml.xpath.XPathConstants;
-import javax.xml.xpath.XPathExpressionException;
-import javax.xml.xpath.XPathFactory;
-
-import org.apache.commons.io.FileUtils;
-import org.apache.lucene.util.LuceneTestCase;
-import org.apache.lucene.util._TestUtil;
-import org.apache.solr.core.SolrXMLSerializer.SolrCoreXMLDef;
-import org.apache.solr.core.SolrXMLSerializer.SolrXMLDef;
-import org.junit.Test;
-import org.w3c.dom.Document;
-import org.w3c.dom.Node;
-import org.xml.sax.SAXException;
 
 
 public class TestSolrXMLSerializer extends LuceneTestCase {
@@ -143,6 +142,9 @@ public class TestSolrXMLSerializer extends LuceneTestCase {
     solrXMLDef.containerProperties = containerProperties ;
     solrXMLDef.solrAttribs = rootSolrAttribs;
     solrXMLDef.coresAttribs = coresAttribs;
+    solrXMLDef.loggingAttribs = new HashMap<String, String>();
+    solrXMLDef.loggingAttribs = new HashMap<String, String>();
+    solrXMLDef.watcherAttribs = new HashMap<String, String>();
     return solrXMLDef;
   }
   

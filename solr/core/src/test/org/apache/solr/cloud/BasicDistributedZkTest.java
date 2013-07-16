@@ -160,7 +160,26 @@ public class BasicDistributedZkTest extends AbstractFullDistribZkTestBase {
     
     waitForRecoveriesToFinish(false);
     
+    handle.clear();
+    handle.put("QTime", SKIPVAL);
+    handle.put("timestamp", SKIPVAL);
+
     del("*:*");
+    queryAndCompareShards(params("q", "*:*", "distrib", "false", "sanity_check", "is_empty"));
+
+    // ask every individual replica of every shard to update+commit the same doc id
+    // with an incrementing counter on each update+commit
+    int foo_i_counter = 0;
+    for (SolrServer server : clients) {
+      foo_i_counter++;
+      indexDoc(server, params("commit", "true"), // SOLR-4923
+               sdoc(id,1, i1,100, tlong,100, "foo_i", foo_i_counter));
+      // after every update+commit, check all the shards consistency
+      queryAndCompareShards(params("q", "id:1", "distrib", "false", 
+                                   "sanity_check", "non_distrib_id_1_lookup"));
+      queryAndCompareShards(params("q", "id:1", 
+                                   "sanity_check", "distrib_id_1_lookup"));
+    }
 
     indexr(id,1, i1, 100, tlong, 100,t1,"now is the time for all good men"
             ,"foo_f", 1.414f, "foo_b", "true", "foo_d", 1.414d);
@@ -195,10 +214,10 @@ public class BasicDistributedZkTest extends AbstractFullDistribZkTestBase {
     }
 
     commit();
-
-    handle.clear();
-    handle.put("QTime", SKIPVAL);
-    handle.put("timestamp", SKIPVAL);
+    queryAndCompareShards(params("q", "*:*", 
+                                 "sort", "id desc",
+                                 "distrib", "false", 
+                                 "sanity_check", "is_empty"));
 
     // random value sort
     for (String f : fieldNames) {
@@ -519,11 +538,13 @@ public class BasicDistributedZkTest extends AbstractFullDistribZkTestBase {
           Create createCmd = new Create();
           createCmd.setCoreName(collection + freezeI);
           createCmd.setCollection(collection);
-          String core3dataDir = dataDir.getAbsolutePath() + File.separator
-              + System.currentTimeMillis() + collection + "_3n" + freezeI;
-          createCmd.setDataDir(core3dataDir);
+
           createCmd.setNumShards(numShards);
           try {
+            String core3dataDir = dataDir.getAbsolutePath() + File.separator
+                + System.currentTimeMillis() + collection + "_3n" + freezeI;
+            createCmd.setDataDir(getDataDir(core3dataDir));
+
             server.request(createCmd);
           } catch (SolrServerException e) {
             throw new RuntimeException(e);
@@ -555,11 +576,13 @@ public class BasicDistributedZkTest extends AbstractFullDistribZkTestBase {
     params.set(OverseerCollectionProcessor.MAX_SHARDS_PER_NODE, maxShardsPerNode);
     if (createNodeSetStr != null) params.set(OverseerCollectionProcessor.CREATE_NODE_SET, createNodeSetStr);
 
-    int clientIndex = random().nextInt(2);
+    int clientIndex = clients.size() > 1 ? random().nextInt(2) : 0;
     List<Integer> list = new ArrayList<Integer>();
     list.add(numShards);
     list.add(numReplicas);
-    collectionInfos.put(collectionName, list);
+    if (collectionInfos != null) {
+      collectionInfos.put(collectionName, list);
+    }
     params.set("name", collectionName);
     SolrRequest request = new QueryRequest(params);
     request.setPath("/admin/collections");
@@ -913,8 +936,8 @@ public class BasicDistributedZkTest extends AbstractFullDistribZkTestBase {
           if (shardId == null) {
             createCmd.setNumShards(2);
           }
-          createCmd.setDataDir(dataDir.getAbsolutePath() + File.separator
-              + collection + num);
+          createCmd.setDataDir(getDataDir(dataDir.getAbsolutePath() + File.separator
+              + collection + num));
           if (shardId != null) {
             createCmd.setShardId(shardId);
           }
@@ -1037,8 +1060,9 @@ public class BasicDistributedZkTest extends AbstractFullDistribZkTestBase {
             server.setSoTimeout(30000);
             Create createCmd = new Create();
             createCmd.setCoreName(collection);
-            createCmd.setDataDir(dataDir.getAbsolutePath() + File.separator
-                + collection + frozeUnique);
+            createCmd.setDataDir(getDataDir(dataDir.getAbsolutePath() + File.separator
+                + collection + frozeUnique));
+
             server.request(createCmd);
 
           } catch (Exception e) {
@@ -1079,7 +1103,7 @@ public class BasicDistributedZkTest extends AbstractFullDistribZkTestBase {
     if (commondCloudSolrServer == null) {
       synchronized(this) {
         try {
-          commondCloudSolrServer = new CloudSolrServer(zkServer.getZkAddress());
+          commondCloudSolrServer = new CloudSolrServer(zkServer.getZkAddress(), random().nextBoolean());
           commondCloudSolrServer.setDefaultCollection(DEFAULT_COLLECTION);
           commondCloudSolrServer.getLbServer().setConnectionTimeout(15000);
           commondCloudSolrServer.getLbServer().setSoTimeout(30000);

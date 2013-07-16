@@ -108,6 +108,16 @@ public class TestSimilarityProvider extends LuceneTestCase {
   private class Sim1 extends TFIDFSimilarity {
     
     @Override
+    public long encodeNormValue(float f) {
+      return (long) f;
+    }
+    
+    @Override
+    public float decodeNormValue(long norm) {
+      return norm;
+    }
+    
+    @Override
     public float coord(int overlap, int maxOverlap) {
       return 1f;
     }
@@ -144,6 +154,16 @@ public class TestSimilarityProvider extends LuceneTestCase {
   }
   
   private class Sim2 extends TFIDFSimilarity {
+    
+    @Override
+    public long encodeNormValue(float f) {
+      return (long) f;
+    }
+    
+    @Override
+    public float decodeNormValue(long norm) {
+      return norm;
+    }
     
     @Override
     public float coord(int overlap, int maxOverlap) {

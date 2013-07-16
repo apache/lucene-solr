@@ -120,11 +120,16 @@ public abstract class Analyzer implements Closeable {
    * See the {@link org.apache.lucene.analysis Analysis package documentation} for
    * some examples demonstrating this.
    * 
+   * <b>NOTE:</b> If your data is available as a {@code String}, use
+   * {@link #tokenStream(String, String)} which reuses a {@code StringReader}-like
+   * instance internally.
+   * 
    * @param fieldName the name of the field the created TokenStream is used for
    * @param reader the reader the streams source reads from
    * @return TokenStream for iterating the analyzed content of <code>reader</code>
    * @throws AlreadyClosedException if the Analyzer is closed.
    * @throws IOException if an i/o error occurs.
+   * @see #tokenStream(String, String)
    */
   public final TokenStream tokenStream(final String fieldName,
                                        final Reader reader) throws IOException {
@@ -139,6 +144,45 @@ public abstract class Analyzer implements Closeable {
     return components.getTokenStream();
   }
   
+  /**
+   * Returns a TokenStream suitable for <code>fieldName</code>, tokenizing
+   * the contents of <code>text</code>.
+   * <p>
+   * This method uses {@link #createComponents(String, Reader)} to obtain an
+   * instance of {@link TokenStreamComponents}. It returns the sink of the
+   * components and stores the components internally. Subsequent calls to this
+   * method will reuse the previously stored components after resetting them
+   * through {@link TokenStreamComponents#setReader(Reader)}.
+   * <p>
+   * <b>NOTE:</b> After calling this method, the consumer must follow the 
+   * workflow described in {@link TokenStream} to properly consume its contents.
+   * See the {@link org.apache.lucene.analysis Analysis package documentation} for
+   * some examples demonstrating this.
+   * 
+   * @param fieldName the name of the field the created TokenStream is used for
+   * @param text the String the streams source reads from
+   * @return TokenStream for iterating the analyzed content of <code>reader</code>
+   * @throws AlreadyClosedException if the Analyzer is closed.
+   * @throws IOException if an i/o error occurs (may rarely happen for strings).
+   * @see #tokenStream(String, Reader)
+   */
+  public final TokenStream tokenStream(final String fieldName, final String text) throws IOException {
+    TokenStreamComponents components = reuseStrategy.getReusableComponents(fieldName);
+    @SuppressWarnings("resource") final ReusableStringReader strReader = 
+        (components == null || components.reusableStringReader == null) ?
+        new ReusableStringReader() : components.reusableStringReader;
+    strReader.setValue(text);
+    final Reader r = initReader(fieldName, strReader);
+    if (components == null) {
+      components = createComponents(fieldName, r);
+      reuseStrategy.setReusableComponents(fieldName, components);
+    } else {
+      components.setReader(r);
+    }
+    components.reusableStringReader = strReader;
+    return components.getTokenStream();
+  }
+    
   /**
    * Override this if you want to add a CharFilter chain.
    * <p>
@@ -208,6 +252,9 @@ public abstract class Analyzer implements Closeable {
      * the chain. This can be the source if there are no filters.
      */
     protected final TokenStream sink;
+    
+    /** Internal cache only used by {@link Analyzer#tokenStream(String, String)}. */
+    transient ReusableStringReader reusableStringReader;
 
     /**
      * Creates a new {@link TokenStreamComponents} instance.

@@ -2209,4 +2209,27 @@ public class TestIndexWriter extends LuceneTestCase {
       dir.close();
     }
   }
+
+  public void testHasUncommittedChanges() throws IOException {
+    Directory dir = newDirectory();
+    IndexWriter writer = new IndexWriter(dir, newIndexWriterConfig( TEST_VERSION_CURRENT, new MockAnalyzer(random())));
+    assertTrue(writer.hasUncommittedChanges());  // this will be true because a commit will create an empty index
+    Document doc = new Document();
+    doc.add(newTextField("myfield", "a b c", Field.Store.NO));
+    writer.addDocument(doc);
+    assertTrue(writer.hasUncommittedChanges());
+    writer.commit();
+    assertFalse(writer.hasUncommittedChanges());
+    writer.addDocument(doc);
+    assertTrue(writer.hasUncommittedChanges());
+    writer.close();
+
+    writer = new IndexWriter(dir, newIndexWriterConfig( TEST_VERSION_CURRENT, new MockAnalyzer(random())));
+    assertFalse(writer.hasUncommittedChanges());
+    writer.addDocument(doc);
+    assertTrue(writer.hasUncommittedChanges());
+
+    writer.close();
+    dir.close();
+  }
 }

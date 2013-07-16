@@ -55,7 +55,7 @@
     </delete>
     <echo>See ${example}/README.txt for how to run the Solr example configuration.</echo>
   </target>
-
+  
   <target name="run-example" depends="example"
           description="Run Solr interactively, via Jetty.  -Dexample.debug=true to enable JVM debugger">
     <property name="example.solr.home" location="example/solr"/>
@@ -251,7 +251,7 @@
   <!-- TODO: Make the forbidden API checks per module! Also remove failOnMissingClasses="false" below!!! -->
   <target name="-forbidden-apis-classpath">
     <path id="forbidden-apis.classpath">
-      <fileset dir="${basedir}" includes="**/lib/*.jar"/>
+      <fileset dir="${basedir}" includes="**/lib/*.jar,**/test-lib/*.jar"/>
       <dirset dir="${basedir}/build" includes="**/classes/*"/>
       <path refid="solr.lucene.libs"/>
       <path refid="classpath"/>
@@ -265,8 +265,7 @@
       <bundledSignatures name="jdk-deprecated-${javac.target}"/>
       <bundledSignatures name="commons-io-unsafe-${commons-io.version}"/>
       <signaturesFileSet dir="${common.dir}/tools/forbiddenApis">
-        <include name="executors.txt" />
-        <include name="chars.txt" />
+        <include name="base.txt" />
         <include name="servlet-api.txt" />
       </signaturesFileSet>
       <fileset dir="${basedir}/build">
@@ -292,12 +291,13 @@
 
   <!-- rat sources -->
   <!-- rat-sources-typedef is *not* a useless dependency. do not remove -->
-  <target name="rat-sources" depends="rat-sources-typedef">
+  <target name="rat-sources" depends="rat-sources-typedef,common.rat-sources">
     <subant target="rat-sources" inheritall="false" >
       <propertyset refid="uptodate.and.compiled.properties"/>
       <fileset dir="core" includes="build.xml"/>
       <fileset dir="solrj" includes="build.xml"/>
       <fileset dir="test-framework" includes="build.xml"/>
+      <fileset dir="webapp" includes="build.xml"/>
     </subant>
     <contrib-crawl target="rat-sources" failonerror="true"/>
   </target>

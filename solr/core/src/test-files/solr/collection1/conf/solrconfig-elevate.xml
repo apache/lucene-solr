@@ -32,6 +32,7 @@
   <directoryFactory name="DirectoryFactory" class="${solr.directoryFactory:solr.RAMDirectoryFactory}"/>
 
   <indexConfig>
+    <useCompoundFile>${useCompoundFile:false}</useCompoundFile>
     <lockType>single</lockType>
   </indexConfig>
   
@@ -66,9 +67,7 @@
     </listener>
     -->
 
-
   </updateHandler>
-
 
   <query>
     <!-- Maximum number of clauses in a boolean query... can affect
@@ -76,7 +75,6 @@
         queries.  An exception is thrown if exceeded.
     -->
     <maxBooleanClauses>1024</maxBooleanClauses>
-
 
     <!-- Cache specification for Filters or DocSets - unordered set of *all* documents
          that match a particular query.
@@ -108,18 +106,15 @@
     <!-- set maxSize artificially low to exercise both types of sets -->
     <HashDocSet maxSize="3" loadFactor="0.75"/>
 
-
     <!-- boolToFilterOptimizer converts boolean clauses with zero boost
          into cached filters if the number of docs selected by the clause exceeds
          the threshold (represented as a fraction of the total index)
     -->
     <boolTofilterOptimizer enabled="false" cacheSize="32" threshold=".05"/>
 
-
   </query>
 
   <requestHandler name="/update" class="solr.UpdateRequestHandler"  />
-
 
   <!-- test elevation -->
   <searchComponent name="elevate" class="org.apache.solr.handler.component.QueryElevationComponent" >

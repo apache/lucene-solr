@@ -214,7 +214,7 @@ public class IndexWriter implements Closeable, TwoPhaseCommit {
   private final Analyzer analyzer;    // how to analyze text
 
   private volatile long changeCount; // increments every time a change is completed
-  private long lastCommitChangeCount; // last changeCount that was committed
+  private volatile long lastCommitChangeCount; // last changeCount that was committed
 
   private List<SegmentInfoPerCommit> rollbackSegments;      // list of segmentInfo we will fallback to if the commit fails
 
@@ -631,7 +631,12 @@ public class IndexWriter implements Closeable, TwoPhaseCommit {
   /**
    * Constructs a new IndexWriter per the settings given in <code>conf</code>.
    * Note that the passed in {@link IndexWriterConfig} is
-   * privately cloned; if you need to make subsequent "live"
+   * privately cloned, which, in-turn, clones the
+   * {@link IndexWriterConfig#getFlushPolicy() flush policy},
+   * {@link IndexWriterConfig#getIndexDeletionPolicy() deletion policy},
+   * {@link IndexWriterConfig#getMergePolicy() merge policy},
+   * and {@link IndexWriterConfig#getMergeScheduler() merge scheduler}.
+   * If you need to make subsequent "live"
    * changes to the configuration use {@link #getConfig}.
    * <p>
    * 
@@ -2822,6 +2827,11 @@ public class IndexWriter implements Closeable, TwoPhaseCommit {
     commitInternal();
   }
 
+  /** Returns true if there are changes that have not been committed */
+  public final boolean hasUncommittedChanges() {
+    return changeCount != lastCommitChangeCount;
+  }
+
   private final void commitInternal() throws IOException {
 
     if (infoStream.isEnabled("IW")) {
@@ -2861,8 +2871,8 @@ public class IndexWriter implements Closeable, TwoPhaseCommit {
         if (infoStream.isEnabled("IW")) {
           infoStream.message("IW", "commit: wrote segments file \"" + pendingCommit.getSegmentsFileName() + "\"");
         }
-        lastCommitChangeCount = pendingCommitChangeCount;
         segmentInfos.updateGeneration(pendingCommit);
+        lastCommitChangeCount = pendingCommitChangeCount;
         rollbackSegments = pendingCommit.createBackupSegmentInfos();
         deleter.checkpoint(pendingCommit, true);
       } finally {

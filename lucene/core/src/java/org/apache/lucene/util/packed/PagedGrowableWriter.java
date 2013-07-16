@@ -17,10 +17,8 @@ package org.apache.lucene.util.packed;
  * limitations under the License.
  */
 
-import static org.apache.lucene.util.packed.PackedInts.checkBlockSize;
-import static org.apache.lucene.util.packed.PackedInts.numBlocks;
-
 import org.apache.lucene.util.RamUsageEstimator;
+import org.apache.lucene.util.packed.PackedInts.Mutable;
 
 /**
  * A {@link PagedGrowableWriter}. This class slices data into fixed-size blocks
@@ -30,16 +28,8 @@ import org.apache.lucene.util.RamUsageEstimator;
  * less memory-efficient.
  * @lucene.internal
  */
-public final class PagedGrowableWriter {
+public final class PagedGrowableWriter extends AbstractPagedMutable<PagedGrowableWriter> {
 
-  static final int MIN_BLOCK_SIZE = 1 << 6;
-  static final int MAX_BLOCK_SIZE = 1 << 30;
-
-  final long size;
-  final int pageShift;
-  final int pageMask;
-  final GrowableWriter[] subWriters;
-  final int startBitsPerValue;
   final float acceptableOverheadRatio;
 
   /**
@@ -56,98 +46,26 @@ public final class PagedGrowableWriter {
   }
 
   PagedGrowableWriter(long size, int pageSize,int startBitsPerValue, float acceptableOverheadRatio, boolean fillPages) {
-    this.size = size;
-    this.startBitsPerValue = startBitsPerValue;
+    super(startBitsPerValue, size, pageSize);
     this.acceptableOverheadRatio = acceptableOverheadRatio;
-    pageShift = checkBlockSize(pageSize, MIN_BLOCK_SIZE, MAX_BLOCK_SIZE);
-    pageMask = pageSize - 1;
-    final int numPages = numBlocks(size, pageSize);
-    subWriters = new GrowableWriter[numPages];
     if (fillPages) {
-      for (int i = 0; i < numPages; ++i) {
-        // do not allocate for more entries than necessary on the last page
-        final int valueCount = i == numPages - 1 ? lastPageSize(size) : pageSize;
-        subWriters[i] = new GrowableWriter(startBitsPerValue, valueCount, acceptableOverheadRatio);
-      }
+      fillPages();
     }
-  }
-
-  private int lastPageSize(long size) {
-    final int sz = indexInPage(size);
-    return sz == 0 ? pageSize() : sz;
-  }
-
-  private int pageSize() {
-    return pageMask + 1;
-  }
-
-  /** The number of values. */
-  public long size() {
-    return size;
-  }
-
-  int pageIndex(long index) {
-    return (int) (index >>> pageShift);
-  }
-
-  int indexInPage(long index) {
-    return (int) index & pageMask;
-  }
-
-  /** Get value at <code>index</code>. */
-  public long get(long index) {
-    assert index >= 0 && index < size;
-    final int pageIndex = pageIndex(index);
-    final int indexInPage = indexInPage(index);
-    return subWriters[pageIndex].get(indexInPage);
-  }
-
-  /** Set value at <code>index</code>. */
-  public void set(long index, long value) {
-    assert index >= 0 && index < size;
-    final int pageIndex = pageIndex(index);
-    final int indexInPage = indexInPage(index);
-    subWriters[pageIndex].set(indexInPage, value);
-  }
-
-  /** Create a new {@link PagedGrowableWriter} of size <code>newSize</code>
-   *  based on the content of this buffer. This method is much more efficient
-   *  than creating a new {@link PagedGrowableWriter} and copying values one by
-   *  one. */
-  public PagedGrowableWriter resize(long newSize) {
-    final PagedGrowableWriter newWriter = new PagedGrowableWriter(newSize, pageSize(), startBitsPerValue, acceptableOverheadRatio, false);
-    final int numCommonPages = Math.min(newWriter.subWriters.length, subWriters.length);
-    final long[] copyBuffer = new long[1024];
-    for (int i = 0; i < newWriter.subWriters.length; ++i) {
-      final int valueCount = i == newWriter.subWriters.length - 1 ? lastPageSize(newSize) : pageSize();
-      final int bpv = i < numCommonPages ? subWriters[i].getBitsPerValue() : startBitsPerValue;
-      newWriter.subWriters[i] = new GrowableWriter(bpv, valueCount, acceptableOverheadRatio);
-      if (i < numCommonPages) {
-        final int copyLength = Math.min(valueCount, subWriters[i].size());
-        PackedInts.copy(subWriters[i], 0, newWriter.subWriters[i].getMutable(), 0, copyLength, copyBuffer);
-      }
-    }
-    return newWriter;
-  }
-
-  /** Return the number of bytes used by this object. */
-  public long ramBytesUsed() {
-    long bytesUsed = RamUsageEstimator.alignObjectSize(
-        RamUsageEstimator.NUM_BYTES_OBJECT_HEADER
-        + RamUsageEstimator.NUM_BYTES_OBJECT_REF
-        + RamUsageEstimator.NUM_BYTES_LONG
-        + 3 * RamUsageEstimator.NUM_BYTES_INT
-        + RamUsageEstimator.NUM_BYTES_FLOAT);
-    bytesUsed += RamUsageEstimator.alignObjectSize(RamUsageEstimator.NUM_BYTES_ARRAY_HEADER + (long) RamUsageEstimator.NUM_BYTES_OBJECT_REF * subWriters.length);
-    for (GrowableWriter gw : subWriters) {
-      bytesUsed += gw.ramBytesUsed();
-    }
-    return bytesUsed;
   }
 
   @Override
-  public String toString() {
-    return getClass().getSimpleName() + "(size=" + size() + ",pageSize=" + pageSize() + ")";
+  protected Mutable newMutable(int valueCount, int bitsPerValue) {
+    return new GrowableWriter(bitsPerValue, valueCount, acceptableOverheadRatio);
+  }
+
+  @Override
+  protected PagedGrowableWriter newUnfilledCopy(long newSize) {
+    return new PagedGrowableWriter(newSize, pageSize(), bitsPerValue, acceptableOverheadRatio, false);
+  }
+
+  @Override
+  protected long baseRamBytesUsed() {
+    return super.baseRamBytesUsed() + RamUsageEstimator.NUM_BYTES_FLOAT;
   }
 
 }

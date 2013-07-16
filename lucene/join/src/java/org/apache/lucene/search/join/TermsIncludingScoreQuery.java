@@ -216,7 +216,7 @@ class TermsIncludingScoreQuery extends Query {
       return scores[ords[scoreUpto]];
     }
 
-    public Explanation explain() throws IOException {
+    Explanation explain() throws IOException {
       return new ComplexExplanation(true, score(), "Score based on join value " + termsEnum.term().utf8ToString());
     }
 
@@ -226,16 +226,16 @@ class TermsIncludingScoreQuery extends Query {
     }
 
     int nextDocOutOfOrder() throws IOException {
-      if (docsEnum != null) {
-        int docId = docsEnum.nextDoc();
-        if (docId == DocIdSetIterator.NO_MORE_DOCS) {
-          docsEnum = null;
-        } else {
-          return doc = docId;
+      while (true) {
+        if (docsEnum != null) {
+          int docId = docsEnumNextDoc();
+          if (docId == DocIdSetIterator.NO_MORE_DOCS) {
+            docsEnum = null;
+          } else {
+            return doc = docId;
+          }
         }
-      }
 
-      do {
         if (upto == terms.size()) {
           return doc = DocIdSetIterator.NO_MORE_DOCS;
         }
@@ -244,9 +244,11 @@ class TermsIncludingScoreQuery extends Query {
         if (termsEnum.seekExact(terms.get(ords[upto++], spare), true)) {
           docsEnum = reuse = termsEnum.docs(acceptDocs, reuse, DocsEnum.FLAG_NONE);
         }
-      } while (docsEnum == null);
+      }
+    }
 
-      return doc = docsEnum.nextDoc();
+    protected int docsEnumNextDoc() throws IOException {
+      return docsEnum.nextDoc();
     }
 
     @Override
@@ -301,47 +303,14 @@ class TermsIncludingScoreQuery extends Query {
     }
 
     @Override
-    int nextDocOutOfOrder() throws IOException {
-      if (docsEnum != null) {
-        int docId;
-        do {
-          docId = docsEnum.nextDoc();
-          if (docId == DocIdSetIterator.NO_MORE_DOCS) {
-            break;
-          }
-        } while (alreadyEmittedDocs.get(docId));
+    protected int docsEnumNextDoc() throws IOException {
+      while (true) {
+        int docId = docsEnum.nextDoc();
         if (docId == DocIdSetIterator.NO_MORE_DOCS) {
-          docsEnum = null;
-        } else {
-          alreadyEmittedDocs.set(docId);
           return docId;
         }
-      }
-
-      for (;;) {
-        do {
-          if (upto == terms.size()) {
-            return DocIdSetIterator.NO_MORE_DOCS;
-          }
-
-          scoreUpto = upto;
-          if (termsEnum.seekExact(terms.get(ords[upto++], spare), true)) {
-            docsEnum = reuse = termsEnum.docs(acceptDocs, reuse, DocsEnum.FLAG_NONE);
-          }
-        } while (docsEnum == null);
-
-        int docId;
-        do {
-          docId = docsEnum.nextDoc();
-          if (docId == DocIdSetIterator.NO_MORE_DOCS) {
-            break;
-          }
-        } while (alreadyEmittedDocs.get(docId));
-        if (docId == DocIdSetIterator.NO_MORE_DOCS) {
-          docsEnum = null;
-        } else {
-          alreadyEmittedDocs.set(docId);
-          return docId;
+        if (!alreadyEmittedDocs.getAndSet(docId)) {
+          return docId;//if it wasn't previously set, return it
         }
       }
     }

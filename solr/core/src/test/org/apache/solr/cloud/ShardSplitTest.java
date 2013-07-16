@@ -17,6 +17,15 @@ package org.apache.solr.cloud;
  * limitations under the License.
  */
 
+import java.io.IOException;
+import java.net.MalformedURLException;
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Map;
+import java.util.Random;
+import java.util.Set;
+
 import org.apache.http.params.CoreConnectionPNames;
 import org.apache.solr.client.solrj.SolrQuery;
 import org.apache.solr.client.solrj.SolrRequest;
@@ -30,6 +39,7 @@ import org.apache.solr.common.SolrDocument;
 import org.apache.solr.common.cloud.ClusterState;
 import org.apache.solr.common.cloud.DocRouter;
 import org.apache.solr.common.cloud.HashBasedRouter;
+import org.apache.solr.common.cloud.Replica;
 import org.apache.solr.common.cloud.Slice;
 import org.apache.solr.common.cloud.ZkCoreNodeProps;
 import org.apache.solr.common.cloud.ZkStateReader;
@@ -37,19 +47,8 @@ import org.apache.solr.common.params.CollectionParams;
 import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.handler.admin.CollectionsHandler;
 import org.apache.solr.update.DirectUpdateHandler2;
-import org.apache.zookeeper.KeeperException;
 import org.junit.After;
 import org.junit.Before;
-
-import java.io.IOException;
-import java.net.MalformedURLException;
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Map;
-import java.util.Random;
-import java.util.Set;
 
 public class ShardSplitTest extends BasicDistributedZkTest {
 
@@ -147,9 +146,22 @@ public class ShardSplitTest extends BasicDistributedZkTest {
     indexThread.start();
 
     try {
-      splitShard(SHARD1);
-      log.info("Layout after split: \n");
-      printLayout();
+      for (int i = 0; i < 3; i++) {
+        try {
+          splitShard(SHARD1);
+          log.info("Layout after split: \n");
+          printLayout();
+          break;
+        } catch (HttpSolrServer.RemoteSolrException e) {
+          if (e.code() != 500)  {
+            throw e;
+          }
+          log.error("SPLITSHARD failed. " + (i < 2 ? " Retring split" : ""), e);
+          if (i == 2) {
+            fail("SPLITSHARD was not successful even after three tries");
+          }
+        }
+      }
     } finally {
       try {
         indexThread.join();
@@ -158,7 +170,6 @@ public class ShardSplitTest extends BasicDistributedZkTest {
       }
     }
 
-    commit();
     checkDocCountsAndShardStates(docCounts, numReplicas);
 
     // todo can't call waitForThingsToLevelOut because it looks for jettys of all shards
@@ -167,7 +178,7 @@ public class ShardSplitTest extends BasicDistributedZkTest {
     //waitForThingsToLevelOut(15);
   }
 
-  protected void checkDocCountsAndShardStates(int[] docCounts, int numReplicas) throws SolrServerException, KeeperException, InterruptedException {
+  protected void checkDocCountsAndShardStates(int[] docCounts, int numReplicas) throws Exception {
     ClusterState clusterState = null;
     Slice slice1_0 = null, slice1_1 = null;
     int i = 0;
@@ -191,6 +202,12 @@ public class ShardSplitTest extends BasicDistributedZkTest {
     assertEquals("Wrong number of replicas created for shard1_0", numReplicas, slice1_0.getReplicas().size());
     assertEquals("Wrong number of replicas created for shard1_1", numReplicas, slice1_1.getReplicas().size());
 
+    commit();
+
+    // can't use checkShardConsistency because it insists on jettys and clients for each shard
+    checkSubShardConsistency(SHARD1_0);
+    checkSubShardConsistency(SHARD1_1);
+
     SolrQuery query = new SolrQuery("*:*").setRows(1000).setFields("id", "_version_");
     query.set("distrib", false);
 
@@ -208,6 +225,27 @@ public class ShardSplitTest extends BasicDistributedZkTest {
 
     assertEquals("Wrong doc count on shard1_0", docCounts[0], shard10Count);
     assertEquals("Wrong doc count on shard1_1", docCounts[1], shard11Count);
+  }
+
+  protected void checkSubShardConsistency(String shard) throws SolrServerException {
+    SolrQuery query = new SolrQuery("*:*").setRows(1000).setFields("id", "_version_");
+    query.set("distrib", false);
+
+    ClusterState clusterState = cloudClient.getZkStateReader().getClusterState();
+    Slice slice = clusterState.getSlice(AbstractDistribZkTestBase.DEFAULT_COLLECTION, shard);
+    long[] numFound = new long[slice.getReplicasMap().size()];
+    int c = 0;
+    for (Replica replica : slice.getReplicas()) {
+      String coreUrl = new ZkCoreNodeProps(replica).getCoreUrl();
+      HttpSolrServer server = new HttpSolrServer(coreUrl);
+      QueryResponse response = server.query(query);
+      numFound[c++] = response.getResults().getNumFound();
+      log.info("Shard: " + shard + " Replica: {} has {} docs", coreUrl, String.valueOf(response.getResults().getNumFound()));
+      assertTrue("Shard: " + shard + " Replica: " + coreUrl + " has 0 docs", response.getResults().getNumFound() > 0);
+    }
+    for (int i = 0; i < slice.getReplicasMap().size(); i++) {
+      assertEquals(shard + " is not consistent", numFound[0], numFound[i]);
+    }
   }
 
   protected void splitShard(String shardId) throws SolrServerException, IOException {

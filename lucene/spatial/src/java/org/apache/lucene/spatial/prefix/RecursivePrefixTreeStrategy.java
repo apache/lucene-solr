@@ -38,6 +38,13 @@ public class RecursivePrefixTreeStrategy extends PrefixTreeStrategy {
 
   private int prefixGridScanLevel;
 
+  /** True if only indexed points shall be supported.  See
+   *  {@link IntersectsPrefixTreeFilter#hasIndexedLeaves}. */
+  protected boolean pointsOnly = false;
+
+  /** See {@link ContainsPrefixTreeFilter#multiOverlappingIndexedShapes}. */
+  protected boolean multiOverlappingIndexedShapes = true;
+
   public RecursivePrefixTreeStrategy(SpatialPrefixTree grid, String fieldName) {
     super(grid, fieldName,
         true);//simplify indexed cells
@@ -69,18 +76,17 @@ public class RecursivePrefixTreeStrategy extends PrefixTreeStrategy {
 
     Shape shape = args.getShape();
     int detailLevel = grid.getLevelForDistance(args.resolveDistErr(ctx, distErrPct));
-    final boolean hasIndexedLeaves = true;
 
-    if (op == SpatialOperation.Intersects) {
+    if (pointsOnly || op == SpatialOperation.Intersects) {
       return new IntersectsPrefixTreeFilter(
-          shape, getFieldName(), grid, detailLevel, prefixGridScanLevel,
-          hasIndexedLeaves);
+          shape, getFieldName(), grid, detailLevel, prefixGridScanLevel, !pointsOnly);
     } else if (op == SpatialOperation.IsWithin) {
       return new WithinPrefixTreeFilter(
           shape, getFieldName(), grid, detailLevel, prefixGridScanLevel,
           -1);//-1 flag is slower but ensures correct results
     } else if (op == SpatialOperation.Contains) {
-      return new ContainsPrefixTreeFilter(shape, getFieldName(), grid, detailLevel);
+      return new ContainsPrefixTreeFilter(shape, getFieldName(), grid, detailLevel,
+          multiOverlappingIndexedShapes);
     }
     throw new UnsupportedSpatialOperation(op);
   }

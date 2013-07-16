@@ -96,6 +96,12 @@
 
   <path id="solr.test.base.classpath">
     <pathelement path="${common-solr.dir}/build/solr-test-framework/classes/java"/>
+    <fileset dir="${common-solr.dir}/test-framework/lib">
+      <include name="*.jar"/>
+      <exclude name="junit-*.jar" />
+      <exclude name="randomizedtesting-runner-*.jar" />
+      <exclude name="ant*.jar" />
+    </fileset>
   	<pathelement path="${build.dir}/test-files"/>
   	<path refid="test.base.classpath"/>
   </path>
@@ -116,6 +122,12 @@
       </uptodate>
     </sequential>
   </macrodef>
+
+  <!-- we don't want to run HDFS tests on Windows, because they require Cygwin.
+    If you have Cygwin, you can override this property on command line: -->
+  <condition property="tests.disableHdfs" value="true">
+    <os family="windows"/>
+  </condition>
 
   <target name="validate" depends="compile-tools">
   </target>

@@ -17,6 +17,16 @@ package org.apache.solr.core;
  * limitations under the License.
  */
 
+import org.apache.solr.common.SolrException;
+import org.apache.solr.util.DOMUtil;
+import org.apache.solr.util.PropertiesUtil;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import org.w3c.dom.Node;
+import org.w3c.dom.NodeList;
+
+import javax.xml.xpath.XPathConstants;
+import javax.xml.xpath.XPathExpressionException;
 import java.io.File;
 import java.io.IOException;
 import java.util.ArrayList;
@@ -28,40 +38,44 @@ import java.util.Map;
 import java.util.Properties;
 import java.util.Set;
 
-import javax.xml.parsers.ParserConfigurationException;
-import javax.xml.xpath.XPathConstants;
-import javax.xml.xpath.XPathExpressionException;
-
-import org.apache.solr.common.SolrException;
-import org.apache.solr.util.DOMUtil;
-import org.apache.solr.util.PropertiesUtil;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-import org.w3c.dom.NamedNodeMap;
-import org.w3c.dom.Node;
-import org.w3c.dom.NodeList;
-import org.xml.sax.SAXException;
-
 
 /**
  *
  */
 public class ConfigSolrXmlOld extends ConfigSolr {
+
   protected static Logger log = LoggerFactory.getLogger(ConfigSolrXmlOld.class);
 
   private NodeList coreNodes = null;
+  
+  private final CoresLocator persistor;
 
-  public ConfigSolrXmlOld(Config config, CoreContainer container)
-      throws ParserConfigurationException, IOException, SAXException {
+  @Override
+  protected String getShardHandlerFactoryConfigPath() {
+    return "solr/cores/shardHandlerFactory";
+  }
 
+  public ConfigSolrXmlOld(Config config, File configFile, String originalXML) {
     super(config);
-    checkForIllegalConfig(container);
-    
-    fillPropMap();
-    initCoreList(container);
+    try {
+      checkForIllegalConfig();
+      fillPropMap();
+      config.substituteProperties();
+      initCoreList();
+      this.persistor = isPersistent() ? new SolrXMLCoresLocator(configFile, originalXML, this)
+                                      : new SolrXMLCoresLocator.NonPersistingLocator(configFile, originalXML, this);
+    }
+    catch (IOException e) {
+      throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, e);
+    }
+  }
+
+  @Override
+  public CoresLocator getCoresLocator() {
+    return this.persistor;
   }
   
-  private void checkForIllegalConfig(CoreContainer container) throws IOException {
+  private void checkForIllegalConfig() throws IOException {
     // Do sanity checks - we don't want to find new style
     // config
     failIfFound("solr/str[@name='adminHandler']");
@@ -73,6 +87,7 @@ public class ConfigSolrXmlOld extends ConfigSolr {
     failIfFound("solr/solrcloud/str[@name='hostContext']");
     failIfFound("solr/solrcloud/int[@name='hostPort']");
     failIfFound("solr/solrcloud/int[@name='leaderVoteWait']");
+    failIfFound("solr/solrcloud/int[@name='genericCoreNodeNames']");
     failIfFound("solr/str[@name='managementPath']");
     failIfFound("solr/str[@name='sharedLib']");
     failIfFound("solr/str[@name='shareSchema']");
@@ -93,6 +108,10 @@ public class ConfigSolrXmlOld extends ConfigSolr {
       throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, "Should not have found " + xPath +
           " solr.xml may be a mix of old and new style formats.");
     }
+  }
+
+  public boolean isPersistent() {
+    return config.getBool("solr/@persistent", false);
   }
   
   private void fillPropMap() {
@@ -125,6 +144,8 @@ public class ConfigSolrXmlOld extends ConfigSolr {
         config.getVal("solr/cores/@hostPort", false));
     propMap.put(CfgProp.SOLR_LEADERVOTEWAIT,
         config.getVal("solr/cores/@leaderVoteWait", false));
+    propMap.put(CfgProp.SOLR_GENERICCORENODENAMES,
+        config.getVal("solr/cores/@genericCoreNodeNames", false));
     propMap.put(CfgProp.SOLR_MANAGEMENTPATH,
         config.getVal("solr/cores/@managementPath", false));
     propMap.put(CfgProp.SOLR_SHARESCHEMA,
@@ -133,15 +154,7 @@ public class ConfigSolrXmlOld extends ConfigSolr {
         config.getVal("solr/cores/@transientCacheSize", false));
     propMap.put(CfgProp.SOLR_ZKCLIENTTIMEOUT,
         config.getVal("solr/cores/@zkClientTimeout", false));
-    propMap.put(CfgProp.SOLR_SHARDHANDLERFACTORY_CLASS,
-        config.getVal("solr/shardHandlerFactory/@class", false));
-    propMap.put(CfgProp.SOLR_SHARDHANDLERFACTORY_NAME,
-        config.getVal("solr/shardHandlerFactory/@name", false));
-    propMap.put(CfgProp.SOLR_SHARDHANDLERFACTORY_CONNTIMEOUT,
-        config.getVal("solr/shardHandlerFactory/int[@connTimeout]", false));
-    propMap.put(CfgProp.SOLR_SHARDHANDLERFACTORY_SOCKETTIMEOUT,
-        config.getVal("solr/shardHandlerFactory/int[@socketTimeout]", false));
-    
+
     // These have no counterpart in 5.0, asking, for any of these in Solr 5.0
     // will result in an error being
     // thrown.
@@ -154,7 +167,7 @@ public class ConfigSolrXmlOld extends ConfigSolr {
     
   }
 
-  private void initCoreList(CoreContainer container) throws IOException {
+  private void initCoreList() throws IOException {
     
     coreNodes = (NodeList) config.evaluate("solr/cores/core",
         XPathConstants.NODESET);
@@ -208,34 +221,6 @@ public class ConfigSolrXmlOld extends ConfigSolr {
     
   }
 
-  @Override
-  public Map<String, String> readCoreAttributes(String coreName) {
-    Map<String, String> attrs = new HashMap<String, String>();
-
-    synchronized (coreNodes) {
-      for (int idx = 0; idx < coreNodes.getLength(); ++idx) {
-        Node node = coreNodes.item(idx);
-        if (coreName.equals(DOMUtil.getAttr(node, CoreDescriptor.CORE_NAME, null))) {
-          NamedNodeMap attributes = node.getAttributes();
-          for (int i = 0; i < attributes.getLength(); i++) {
-            Node attribute = attributes.item(i);
-            String val = attribute.getNodeValue();
-            if (CoreDescriptor.CORE_DATADIR.equals(attribute.getNodeName()) ||
-                CoreDescriptor.CORE_INSTDIR.equals(attribute.getNodeName())) {
-              if (val.indexOf('$') == -1) {
-                val = (val != null && !val.endsWith("/")) ? val + '/' : val;
-              }
-            }
-            attrs.put(attribute.getNodeName(), val);
-          }
-          return attrs;
-        }
-      }
-    }
-    return attrs;
-  }
-
-  @Override
   public List<String> getAllCoreNames() {
     List<String> ret = new ArrayList<String>();
     
@@ -249,7 +234,6 @@ public class ConfigSolrXmlOld extends ConfigSolr {
     return ret;
   }
 
-  @Override
   public String getProperty(String coreName, String property, String defaultVal) {
     
     synchronized (coreNodes) {
@@ -257,7 +241,10 @@ public class ConfigSolrXmlOld extends ConfigSolr {
         Node node = coreNodes.item(idx);
         if (coreName.equals(DOMUtil.getAttr(node, CoreDescriptor.CORE_NAME,
             null))) {
-          return DOMUtil.getAttr(node, property, defaultVal);
+          String propVal = DOMUtil.getAttr(node, property);
+          if (propVal == null)
+            propVal = defaultVal;
+          return PropertiesUtil.substituteProperty(propVal, null);
         }
       }
     }
@@ -265,41 +252,32 @@ public class ConfigSolrXmlOld extends ConfigSolr {
     
   }
 
-  @Override
-  public Properties readCoreProperties(String coreName) {
-    
+  public Properties getCoreProperties(String coreName) {
     synchronized (coreNodes) {
-      for (int idx = 0; idx < coreNodes.getLength(); ++idx) {
+      for (int idx = 0; idx < coreNodes.getLength(); idx++) {
         Node node = coreNodes.item(idx);
-        if (coreName.equals(DOMUtil.getAttr(node, CoreDescriptor.CORE_NAME,
-            null))) {
+        if (coreName.equals(DOMUtil.getAttr(node, CoreDescriptor.CORE_NAME, null))) {
           try {
             return readProperties(node);
           } catch (XPathExpressionException e) {
-            return null;
+            SolrException.log(log, e);
           }
         }
       }
     }
-    
-    return null;
+    return new Properties();
   }
 
   public static final String DEF_SOLR_XML = "<?xml version=\"1.0\" encoding=\"UTF-8\" ?>\n"
-      + "<solr persistent=\"false\">\n"
-      + "  <cores adminPath=\"/admin/cores\" defaultCoreName=\""
-      + CoreContainer.DEFAULT_DEFAULT_CORE_NAME
-      + "\""
-      + " host=\"${host:}\" hostPort=\"${hostPort:}\" hostContext=\"${hostContext:}\" zkClientTimeout=\"${zkClientTimeout:15000}\""
-      + ">\n"
-      + "    <core name=\""
-      + CoreContainer.DEFAULT_DEFAULT_CORE_NAME
-      + "\" shard=\"${shard:}\" collection=\"${collection:}\" instanceDir=\"collection1\" />\n"
-      + "  </cores>\n" + "</solr>";
-
-  @Override
-  public void substituteProperties() {
-    config.substituteProperties();
-  }
+        + "<solr persistent=\"false\">\n"
+        + "  <cores adminPath=\"/admin/cores\" defaultCoreName=\""
+        + CoreContainer.DEFAULT_DEFAULT_CORE_NAME
+        + "\""
+        + " host=\"${host:}\" hostPort=\"${hostPort:}\" hostContext=\"${hostContext:}\" zkClientTimeout=\"${zkClientTimeout:15000}\""
+        + ">\n"
+        + "    <core name=\""
+        + CoreContainer.DEFAULT_DEFAULT_CORE_NAME
+        + "\" shard=\"${shard:}\" collection=\"${collection:collection1}\" instanceDir=\"collection1\" />\n"
+        + "  </cores>\n" + "</solr>";
 
 }

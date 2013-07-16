@@ -59,7 +59,10 @@ import org.apache.lucene.index.StoredFieldVisitor;
 import org.apache.lucene.index.Term;
 import org.apache.lucene.index.Terms;
 import org.apache.lucene.index.TermsEnum;
+import org.apache.lucene.search.BooleanClause;
+import org.apache.lucene.search.BooleanQuery;
 import org.apache.lucene.search.Collector;
+import org.apache.lucene.search.ConstantScoreQuery;
 import org.apache.lucene.search.DocIdSet;
 import org.apache.lucene.search.DocIdSetIterator;
 import org.apache.lucene.search.Explanation;
@@ -77,6 +80,7 @@ import org.apache.lucene.search.TopDocs;
 import org.apache.lucene.search.TopDocsCollector;
 import org.apache.lucene.search.TopFieldCollector;
 import org.apache.lucene.search.TopScoreDocCollector;
+import org.apache.lucene.search.TotalHitCountCollector;
 import org.apache.lucene.search.Weight;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.util.Bits;
@@ -193,7 +197,13 @@ public class SolrIndexSearcher extends IndexSearcher implements Closeable,SolrIn
     this.name = "Searcher@" + Integer.toHexString(hashCode()) + (name!=null ? " "+name : "");
     log.info("Opening " + this.name);
 
-    Directory dir = this.reader.directory();
+    if (directoryFactory.searchersReserveCommitPoints()) {
+      // reserve commit point for life of searcher
+      core.getDeletionPolicy().saveCommitPoint(
+          reader.getIndexCommit().getGeneration());
+    }
+    
+    Directory dir = getIndexReader().directory();
     
     this.reserveDirectory = reserveDirectory;
     this.createdDirectory = r == null;
@@ -331,10 +341,16 @@ public class SolrIndexSearcher extends IndexSearcher implements Closeable,SolrIn
     // super.close();
     // can't use super.close() since it just calls reader.close() and that may only be called once
     // per reader (even if incRef() was previously called).
+    
+    long cpg = reader.getIndexCommit().getGeneration();
     try {
       if (closeReader) reader.decRef();
     } catch (Throwable t) {
       SolrException.log(log, "Problem dec ref'ing reader", t);
+    }
+
+    if (directoryFactory.searchersReserveCommitPoints()) {
+      core.getDeletionPolicy().releaseCommitPoint(cpg);
     }
 
     for (SolrCache cache : cacheList) {
@@ -897,6 +913,10 @@ public class SolrIndexSearcher extends IndexSearcher implements Closeable,SolrIn
       }
     }
 
+    if(collector instanceof DelegatingCollector) {
+      ((DelegatingCollector) collector).finish();
+    }
+
     return setCollector.getDocSet();
   }
 
@@ -938,6 +958,15 @@ public class SolrIndexSearcher extends IndexSearcher implements Closeable,SolrIn
           }
           continue;
         }
+      } 
+      
+      if (filterCache == null) {
+        // there is no cache: don't pull bitsets
+        if (notCached == null) notCached = new ArrayList<Query>(sets.length-end);
+        WrappedQuery uncached = new WrappedQuery(q);
+        uncached.setCache(false);
+        notCached.add(uncached);
+        continue;
       }
 
       Query posQuery = QueryUtils.getAbs(q);
@@ -1432,6 +1461,9 @@ public class SolrIndexSearcher extends IndexSearcher implements Closeable,SolrIn
 
       try {
         super.search(query, luceneFilter, collector);
+        if(collector instanceof DelegatingCollector) {
+          ((DelegatingCollector)collector).finish();
+        }
       }
       catch( TimeLimitingCollector.TimeExceededException x ) {
         log.warn( "Query: " + query + "; " + x.getMessage() );
@@ -1468,6 +1500,9 @@ public class SolrIndexSearcher extends IndexSearcher implements Closeable,SolrIn
       }
       try {
         super.search(query, luceneFilter, collector);
+        if(collector instanceof DelegatingCollector) {
+          ((DelegatingCollector)collector).finish();
+        }
       }
       catch( TimeLimitingCollector.TimeExceededException x ) {
         log.warn( "Query: " + query + "; " + x.getMessage() );
@@ -1560,6 +1595,9 @@ public class SolrIndexSearcher extends IndexSearcher implements Closeable,SolrIn
 
        try {
          super.search(query, luceneFilter, collector);
+         if(collector instanceof DelegatingCollector) {
+           ((DelegatingCollector)collector).finish();
+         }
        }
        catch( TimeLimitingCollector.TimeExceededException x ) {
          log.warn( "Query: " + query + "; " + x.getMessage() );
@@ -1597,6 +1635,9 @@ public class SolrIndexSearcher extends IndexSearcher implements Closeable,SolrIn
       }
       try {
         super.search(query, luceneFilter, collector);
+        if(collector instanceof DelegatingCollector) {
+          ((DelegatingCollector)collector).finish();
+        }
       }
       catch( TimeLimitingCollector.TimeExceededException x ) {
         log.warn( "Query: " + query + "; " + x.getMessage() );
@@ -1909,10 +1950,22 @@ public class SolrIndexSearcher extends IndexSearcher implements Closeable,SolrIn
    * @throws IOException If there is a low-level I/O error.
    */
   public int numDocs(Query a, DocSet b) throws IOException {
-    // Negative query if absolute value different from original
-    Query absQ = QueryUtils.getAbs(a);
-    DocSet positiveA = getPositiveDocSet(absQ);
-    return a==absQ ? b.intersectionSize(positiveA) : b.andNotSize(positiveA);
+    if (filterCache != null) {
+      // Negative query if absolute value different from original
+      Query absQ = QueryUtils.getAbs(a);
+      DocSet positiveA = getPositiveDocSet(absQ);
+      return a==absQ ? b.intersectionSize(positiveA) : b.andNotSize(positiveA);
+    } else {
+      // If there isn't a cache, then do a single filtered query
+      // NOTE: we cannot use FilteredQuery, because BitDocSet assumes it will never 
+      // have deleted documents, but UninvertedField's doNegative has sets with deleted docs
+      TotalHitCountCollector collector = new TotalHitCountCollector();
+      BooleanQuery bq = new BooleanQuery();
+      bq.add(QueryUtils.makeQueryable(a), BooleanClause.Occur.MUST);
+      bq.add(new ConstantScoreQuery(b.getTopFilter()), BooleanClause.Occur.MUST);
+      super.search(bq, null, collector);
+      return collector.getTotalHits();
+    }
   }
 
   /** @lucene.internal */

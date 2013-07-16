@@ -28,7 +28,6 @@ import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.search.PhraseQuery;
 import org.apache.lucene.search.TermStatistics;
 import org.apache.lucene.util.BytesRef;
-import org.apache.lucene.util.SmallFloat;
 
 
 /**
@@ -496,27 +495,8 @@ import org.apache.lucene.util.SmallFloat;
  *          <td></td>
  *        </tr>
  *      </table>
- *      <br>&nbsp;<br>
- *      However the resulted <i>norm</i> value is {@link #encodeNormValue(float) encoded} as a single byte
- *      before being stored.
- *      At search time, the norm byte value is read from the index
- *      {@link org.apache.lucene.store.Directory directory} and
- *      {@link #decodeNormValue(byte) decoded} back to a float <i>norm</i> value.
- *      This encoding/decoding, while reducing index size, comes with the price of
- *      precision loss - it is not guaranteed that <i>decode(encode(x)) = x</i>.
- *      For instance, <i>decode(encode(0.89)) = 0.75</i>.
- *      <br>&nbsp;<br>
- *      Compression of norm values to a single byte saves memory at search time, 
- *      because once a field is referenced at search time, its norms - for 
- *      all documents - are maintained in memory.
- *      <br>&nbsp;<br>
- *      The rationale supporting such lossy compression of norm values is that
- *      given the difficulty (and inaccuracy) of users to express their true information
- *      need by a query, only big differences matter.
- *      <br>&nbsp;<br>
- *      Last, note that search time is too late to modify this <i>norm</i> part of scoring, e.g. by
- *      using a different {@link Similarity} for search.
- *      <br>&nbsp;<br>
+ *      Note that search time is too late to modify this <i>norm</i> part of scoring, 
+ *      e.g. by using a different {@link Similarity} for search.
  *    </li>
  * </ol>
  *
@@ -666,38 +646,15 @@ public abstract class TFIDFSimilarity extends Similarity {
     return encodeNormValue(normValue);
   }
   
-  /** Cache of decoded bytes. */
-  private static final float[] NORM_TABLE = new float[256];
-
-  static {
-    for (int i = 0; i < 256; i++) {
-      NORM_TABLE[i] = SmallFloat.byte315ToFloat((byte)i);
-    }
-  }
-
-  /** Decodes a normalization factor stored in an index.
+  /**
+   * Decodes a normalization factor stored in an index.
+   * 
    * @see #encodeNormValue(float)
    */
-  public float decodeNormValue(byte b) {
-    return NORM_TABLE[b & 0xFF];  // & 0xFF maps negative bytes to positive above 127
-  }
+  public abstract float decodeNormValue(long norm);
 
-  /** Encodes a normalization factor for storage in an index.
-  *
-  * <p>The encoding uses a three-bit mantissa, a five-bit exponent, and
-  * the zero-exponent point at 15, thus
-  * representing values from around 7x10^9 to 2x10^-9 with about one
-  * significant decimal digit of accuracy.  Zero is also represented.
-  * Negative numbers are rounded up to zero.  Values too large to represent
-  * are rounded down to the largest representable value.  Positive values too
-  * small to represent are rounded up to the smallest positive representable
-  * value.
-  * @see org.apache.lucene.document.Field#setBoost(float)
-  * @see org.apache.lucene.util.SmallFloat
-  */
-  public byte encodeNormValue(float f) {
-    return SmallFloat.floatToByte315(f);
-  }
+  /** Encodes a normalization factor for storage in an index. */
+  public abstract long encodeNormValue(float f);
  
   /** Computes the amount of a sloppy phrase match, based on an edit distance.
    * This value is summed for each sloppy phrase match in a document to form
@@ -756,7 +713,7 @@ public abstract class TFIDFSimilarity extends Similarity {
     public float score(int doc, float freq) {
       final float raw = tf(freq) * weightValue; // compute tf(f)*weight
       
-      return norms == null ? raw : raw * decodeNormValue((byte)norms.get(doc));  // normalize for field
+      return norms == null ? raw : raw * decodeNormValue(norms.get(doc));  // normalize for field
     }
     
     @Override
@@ -843,8 +800,7 @@ public abstract class TFIDFSimilarity extends Similarity {
     fieldExpl.addDetail(stats.idf);
 
     Explanation fieldNormExpl = new Explanation();
-    float fieldNorm =
-      norms!=null ? decodeNormValue((byte) norms.get(doc)) : 1.0f;
+    float fieldNorm = norms != null ? decodeNormValue(norms.get(doc)) : 1.0f;
     fieldNormExpl.setValue(fieldNorm);
     fieldNormExpl.setDescription("fieldNorm(doc="+doc+")");
     fieldExpl.addDetail(fieldNormExpl);

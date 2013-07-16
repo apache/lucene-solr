@@ -18,7 +18,6 @@ package org.apache.lucene.analysis.synonym;
  */
 
 import java.io.IOException;
-import java.io.StringReader;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashMap;
@@ -112,7 +111,7 @@ public class SynonymMap {
      *  separates by {@link SynonymMap#WORD_SEPARATOR}.
      *  reuse and its chars must not be null. */
     public static CharsRef analyze(Analyzer analyzer, String text, CharsRef reuse) throws IOException {
-      TokenStream ts = analyzer.tokenStream("", new StringReader(text));
+      TokenStream ts = analyzer.tokenStream("", text);
       CharTermAttribute termAtt = ts.addAttribute(CharTermAttribute.class);
       PositionIncrementAttribute posIncAtt = ts.addAttribute(PositionIncrementAttribute.class);
       ts.reset();

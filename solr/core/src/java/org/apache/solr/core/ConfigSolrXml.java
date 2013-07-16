@@ -17,51 +17,43 @@ package org.apache.solr.core;
  * limitations under the License.
  */
 
-import java.io.File;
-import java.io.FileInputStream;
-import java.io.IOException;
-import java.io.InputStream;
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.Properties;
-
-import javax.xml.parsers.ParserConfigurationException;
-
-import org.apache.commons.io.IOUtils;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.util.PropertiesUtil;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.xml.sax.SAXException;
+
+import java.io.IOException;
 
 
 /**
  *
  */
 public class ConfigSolrXml extends ConfigSolr {
+
   protected static Logger log = LoggerFactory.getLogger(ConfigSolrXml.class);
 
-  private SolrCoreDiscoverer solrCoreDiscoverer = new SolrCoreDiscoverer();
-  private final Map<String, CoreDescriptor> coreDescriptorMap;
+  private final CoresLocator coresLocator;
 
-  public ConfigSolrXml(Config config, CoreContainer container)
-      throws ParserConfigurationException, IOException, SAXException {
+  public ConfigSolrXml(Config config) {
     super(config);
-    checkForIllegalConfig();
-    
-    fillPropMap();
-    
-    String coreRoot = get(CfgProp.SOLR_COREROOTDIRECTORY, (container == null ? config.getResourceLoader().getInstanceDir() : container.getSolrHome()));
-    coreDescriptorMap = solrCoreDiscoverer.discover(container, new File(coreRoot));
+    try {
+      checkForIllegalConfig();
+      fillPropMap();
+      config.substituteProperties();
+      log.info("Config-defined core root directory: {}", get(CfgProp.SOLR_COREROOTDIRECTORY, ""));
+      String coreRoot = get(CfgProp.SOLR_COREROOTDIRECTORY, config.getResourceLoader().getInstanceDir());
+      coresLocator = new CorePropertiesLocator(coreRoot);
+    }
+    catch (IOException e) {
+      throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, e);
+    }
   }
   
   private void checkForIllegalConfig() throws IOException {
     
     // Do sanity checks - we don't want to find old style config
     failIfFound("solr/@coreLoadThreads");
-    failIfFound("solr/@persist");
+    failIfFound("solr/@persistent");
     failIfFound("solr/@sharedLib");
     failIfFound("solr/@zkHost");
     
@@ -77,6 +69,7 @@ public class ConfigSolrXml extends ConfigSolr {
     failIfFound("solr/cores/@hostContext");
     failIfFound("solr/cores/@hostPort");
     failIfFound("solr/cores/@leaderVoteWait");
+    failIfFound("solr/cores/@genericCoreNodeNames");
     failIfFound("solr/cores/@managementPath");
     failIfFound("solr/cores/@shareSchema");
     failIfFound("solr/cores/@transientCacheSize");
@@ -118,6 +111,7 @@ public class ConfigSolrXml extends ConfigSolr {
     propMap.put(CfgProp.SOLR_HOSTCONTEXT, doSub("solr/solrcloud/str[@name='hostContext']"));
     propMap.put(CfgProp.SOLR_HOSTPORT, doSub("solr/solrcloud/int[@name='hostPort']"));
     propMap.put(CfgProp.SOLR_LEADERVOTEWAIT, doSub("solr/solrcloud/int[@name='leaderVoteWait']"));
+    propMap.put(CfgProp.SOLR_GENERICCORENODENAMES, doSub("solr/solrcloud/bool[@name='genericCoreNodeNames']"));
     propMap.put(CfgProp.SOLR_MANAGEMENTPATH, doSub("solr/str[@name='managementPath']"));
     propMap.put(CfgProp.SOLR_SHAREDLIB, doSub("solr/str[@name='sharedLib']"));
     propMap.put(CfgProp.SOLR_SHARESCHEMA, doSub("solr/str[@name='shareSchema']"));
@@ -129,69 +123,16 @@ public class ConfigSolrXml extends ConfigSolr {
     propMap.put(CfgProp.SOLR_LOGGING_ENABLED, doSub("solr/logging/str[@name='enabled']"));
     propMap.put(CfgProp.SOLR_LOGGING_WATCHER_SIZE, doSub("solr/logging/watcher/int[@name='size']"));
     propMap.put(CfgProp.SOLR_LOGGING_WATCHER_THRESHOLD, doSub("solr/logging/watcher/int[@name='threshold']"));
-    propMap.put(CfgProp.SOLR_SHARDHANDLERFACTORY_CLASS, doSub("solr/shardHandlerFactory/@class"));
-    propMap.put(CfgProp.SOLR_SHARDHANDLERFACTORY_NAME, doSub("solr/shardHandlerFactory/@name"));
-    propMap.put(CfgProp.SOLR_SHARDHANDLERFACTORY_CONNTIMEOUT, doSub("solr/shardHandlerFactory/int[@name='connTimeout']"));
-    propMap.put(CfgProp.SOLR_SHARDHANDLERFACTORY_SOCKETTIMEOUT, doSub("solr/shardHandlerFactory/int[@name='socketTimeout']"));
-  }
-
-
-
-  @Override
-  public Map<String,String> readCoreAttributes(String coreName) {
-    Map<String,String> attrs = new HashMap<String,String>();
-    
-    return attrs; // this is a no-op.... intentionally
   }
 
   @Override
-  public List<String> getAllCoreNames() {
-    List<String> ret = new ArrayList<String>(coreDescriptorMap.keySet());
-    
-    return ret;
-  }
-  
-  @Override
-  public String getProperty(String coreName, String property, String defaultVal) {
-    CoreDescriptor cd = coreDescriptorMap.get(coreName);
-    if (cd == null) return defaultVal;
-
-    return cd.getProperty(property, defaultVal);
+  protected String getShardHandlerFactoryConfigPath() {
+    return "solr/shardHandlerFactory";
   }
 
   @Override
-  public Properties readCoreProperties(String coreName) {
-    CoreDescriptor cd = coreDescriptorMap.get(coreName);
-    if (cd == null) return null;
-    return new Properties(cd.getCoreProperties());
-  }
-
-  static Properties getCoreProperties(String instanceDir, CoreDescriptor dcore) {
-    String file = dcore.getPropertiesName();
-    if (file == null) file = "conf" + File.separator + "solrcore.properties";
-    File corePropsFile = new File(file);
-    if (!corePropsFile.isAbsolute()) {
-      corePropsFile = new File(instanceDir, file);
-    }
-    Properties p = dcore.getCoreProperties();
-    if (corePropsFile.exists() && corePropsFile.isFile()) {
-      p = new Properties(dcore.getCoreProperties());
-      InputStream is = null;
-      try {
-        is = new FileInputStream(corePropsFile);
-        p.load(is);
-      } catch (IOException e) {
-        log.warn("Error loading properties ", e);
-      } finally {
-        IOUtils.closeQuietly(is);
-      }
-    }
-    return p;
-  }
-
-  @Override
-  public void substituteProperties() {
-    config.substituteProperties();
+  public CoresLocator getCoresLocator() {
+    return coresLocator;
   }
 
 }

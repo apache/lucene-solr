@@ -32,6 +32,7 @@ import java.util.Set;
 import org.apache.lucene.store.AlreadyClosedException;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.IOContext.Context;
+import org.apache.lucene.store.NRTCachingDirectory;
 import org.apache.lucene.store.NativeFSLockFactory;
 import org.apache.lucene.store.NoLockFactory;
 import org.apache.lucene.store.RateLimitedDirectoryWrapper;
@@ -40,6 +41,9 @@ import org.apache.lucene.store.SingleInstanceLockFactory;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.SolrException.ErrorCode;
 import org.apache.solr.common.util.NamedList;
+import org.apache.solr.store.blockcache.BlockDirectory;
+import org.apache.solr.store.hdfs.HdfsDirectory;
+import org.apache.solr.store.hdfs.HdfsLockFactory;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -498,6 +502,24 @@ public abstract class CachingDirectoryFactory extends DirectoryFactory {
     } else if ("single".equals(lockType)) {
       if (!(dir.getLockFactory() instanceof SingleInstanceLockFactory)) dir
           .setLockFactory(new SingleInstanceLockFactory());
+    } else if ("hdfs".equals(lockType)) {
+      Directory del = dir;
+      
+      if (dir instanceof NRTCachingDirectory) {
+        del = ((NRTCachingDirectory) del).getDelegate();
+      }
+      
+      if (del instanceof BlockDirectory) {
+        del = ((BlockDirectory) del).getDirectory();
+      }
+      
+      if (!(del instanceof HdfsDirectory)) {
+        throw new SolrException(ErrorCode.FORBIDDEN, "Directory: "
+            + del.getClass().getName()
+            + ", but hdfs lock factory can only be used with HdfsDirectory");
+      }
+
+      dir.setLockFactory(new HdfsLockFactory(((HdfsDirectory)del).getHdfsDirPath(), ((HdfsDirectory)del).getConfiguration()));
     } else if ("none".equals(lockType)) {
       // Recipe for disaster
       log.error("CONFIGURATION WARNING: locks are disabled on " + dir);
@@ -519,7 +541,7 @@ public abstract class CachingDirectoryFactory extends DirectoryFactory {
     return path;
   }
   
-  private String stripTrailingSlash(String path) {
+  protected String stripTrailingSlash(String path) {
     if (path.endsWith("/")) {
       path = path.substring(0, path.length() - 1);
     }

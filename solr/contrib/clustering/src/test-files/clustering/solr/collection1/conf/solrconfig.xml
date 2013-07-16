@@ -28,6 +28,7 @@
 
   <indexConfig>
     <lockType>single</lockType>
+    <useCompoundFile>${useCompoundFile:false}</useCompoundFile>
   </indexConfig>
   
   <!--	Enables JMX if and only if an existing MBeanServer is found, use 

@@ -23,10 +23,18 @@ Changes in backwards compatibility policy
   not positioned. This change affects all classes that inherit from
   DocIdSetIterator, including DocsEnum and DocsAndPositionsEnum. (Adrien Grand)
 
+* LUCENE-5089: Update to Morfologik 1.6.0. MorfologikAnalyzer and MorfologikFilter 
+  no longer support multiple "dictionaries" as there is only one dictionary available.
+  (Dawid Weiss)
+
 New Features
 
 * LUCENE-4747: Move to Java 7 as minimum Java version.
   (Robert Muir, Uwe Schindler)
+
+* LUCENE-5089: Update to Morfologik 1.6.0. MorfologikAnalyzer and MorfologikFilter 
+  no longer support multiple "dictionaries" as there is only one dictionary available.
+  (Dawid Weiss)
 
 Optimizations
 
@@ -35,9 +43,31 @@ Optimizations
   on Windows if NIOFSDirectory is used, mmapped files are still locked.
   (Michael Poindexter, Robert Muir, Uwe Schindler)
 
+
+======================= Lucene 4.5.0 =======================
+
+New features
+
+* LUCENE-5084: Added new Elias-Fano encoder, decoder and DocIdSet
+  implementations. (Paul Elschot via Adrien Grand)
+
+* LUCENE-5081: Added WAH8DocIdSet, an in-memory doc id set implementation based
+  on word-aligned hybrid encoding. (Adrien Grand)
+
+* LUCENE-5098: New broadword utility methods in oal.util.BroadWord.
+  (Paul Elschot via Adrien Grand, Dawid Weiss)
+
+API Changes
+
+* LUCENE-5094: Add ramBytesUsed() to MultiDocValues.OrdinalMap.
+  (Robert Muir)
+
 ======================= Lucene 4.4.0 =======================
 
 Changes in backwards compatibility policy
+
+* LUCENE-5085: MorfologikFilter will no longer stem words marked as keywords
+  (Dawid Weiss, Grzegorz Sobczyk)
 
 * LUCENE-4955: NGramTokenFilter now emits all n-grams for the same token at the
   same position and preserves the position length and the offsets of the
@@ -103,7 +133,21 @@ Changes in backwards compatibility policy
   on segment size and noCFSRatio. The default implemantion was pulled up from
   TieredMergePolicy. (Simon Willnauer)
 
+* LUCENE-5063: FieldCache.get(Bytes|Shorts), SortField.Type.(BYTE|SHORT) and
+  FieldCache.DEFAULT_(BYTE|SHORT|INT|LONG|FLOAT|DOUBLE)_PARSER are now
+  deprecated. These methods/types assume that data is stored as strings although
+  Lucene has much better support for numeric data through (Int|Long)Field,
+  NumericRangeQuery and FieldCache.get(Int|Long)s. (Adrien Grand)
+
+* LUCENE-5078: TfIDFSimilarity lets you encode the norm value as any arbitrary long.
+  As a result, encode/decodeNormValue were made abstract with their signatures changed.
+  The default implementation was moved to DefaultSimilarity, which encodes the norm as
+  a single-byte value. (Shai Erera)
+
 Bug Fixes
+
+* LUCENE-4890: QueryTreeBuilder.getBuilder() only finds interfaces on the 
+  most derived class. (Adriano Crestani)
 
 * LUCENE-4997: Internal test framework's tests are sensitive to previous 
   test failures and tests.failfast. (Dawid Weiss, Shai Erera)
@@ -162,6 +206,29 @@ Bug Fixes
   is now limited to MAX_CATEGORY_PATH_LENGTH characters.
   (Colton Jamieson, Mike McCandless, Shai Erera)
 
+* LUCENE-5062: If the spatial data for a document was comprised of multiple
+  overlapping or adjacent parts then a CONTAINS predicate query might not match
+  when the sum of those shapes contain the query shape but none do individually.
+  A flag was added to use the original faster algorithm. (David Smiley)
+
+* LUCENE-4971: Fixed NPE in AnalyzingSuggester when there are too many
+  graph expansions.  (Alexey Kudinov via Mike McCandless)
+
+* LUCENE-5080: Combined setMaxMergeCount and setMaxThreadCount into one
+  setter in ConcurrentMergePolicy: setMaxMergesAndThreads.  Previously these
+  setters would not work unless you invoked them very carefully.
+  (Robert Muir, Shai Erera)
+  
+* LUCENE-5068: QueryParserUtil.escape() does not escape forward slash.
+  (Matias Holte via Steve Rowe)
+
+* LUCENE-5103: A join on A single-valued field with deleted docs scored too few
+  docs. (David Smiley)
+
+* LUCENE-5090: Detect mismatched readers passed to
+  SortedSetDocValuesReaderState and SortedSetDocValuesAccumulator.
+  (Robert Muir, Mike McCandless)
+
 Optimizations
 
 * LUCENE-4936: Improve numeric doc values compression in case all values share
@@ -185,7 +252,17 @@ Optimizations
 * LUCENE-5050: Close the stored fields and term vectors index files as soon as
   the index has been loaded into memory to save file descriptors. (Adrien Grand)
 
+* LUCENE-5086: RamUsageEstimator now uses official Java 7 API or a proprietary
+  Oracle Java 6 API to get Hotspot MX bean, preventing AWT classes to be
+  loaded on MacOSX.  (Shay Banon, Dawid Weiss, Uwe Schindler)
+
 New Features
+
+* LUCENE-5085: MorfologikFilter will no longer stem words marked as keywords
+  (Dawid Weiss, Grzegorz Sobczyk)
+
+* LUCENE-5064: Added PagedMutable (internal), a paged extension of
+  PackedInts.Mutable which allows for storing more than 2B values. (Adrien Grand)
 
 * LUCENE-4766: Added a PatternCaptureGroupTokenFilter that uses Java regexes to 
   emit multiple tokens one for each capture group in one or more patterns.
@@ -225,6 +302,38 @@ New Features
 * LUCENE-5025: FST's Builder can now handle more than 2.1 billion
   "tail nodes" while building a minimal FST.  (Aaron Binns, Adrien
   Grand, Mike McCandless)
+
+* LUCENE-5063: FieldCache.DEFAULT.get(Ints|Longs) now uses bit-packing to save
+  memory. (Adrien Grand)
+
+* LUCENE-5079: IndexWriter.hasUncommittedChanges() returns true if there are
+  changes that have not been committed. (yonik, Mike McCandless, Uwe Schindler)
+
+* SOLR-4565: Extend NorwegianLightStemFilter and NorwegianMinimalStemFilter 
+  to handle "nynorsk" (Erlend Garåsen, janhoy via Robert Muir)
+
+* LUCENE-5087: Add getMultiValuedSeparator to PostingsHighlighter, for cases
+  where you want a different logical separator between field values. This can
+  be set to e.g. U+2029 PARAGRAPH SEPARATOR if you never want passes to span
+  values. (Mike McCandless, Robert Muir)
+
+* LUCENE-5013: Added ScandinavianFoldingFilterFactory and
+  ScandinavianNormalizationFilterFactory (Karl Wettin via janhoy)
+
+* LUCENE-4845: AnalyzingInfixSuggester finds suggestions based on
+  matches to any tokens in the suggestion, not just based on pure
+  prefix matching.  (Mike McCandless, Robert Muir)
+
+API Changes
+
+* LUCENE-5077: Make it easier to use compressed norms. Lucene42NormsFormat takes
+  an overhead parameter, so you can easily pass a different value other than
+  PackedInts.FASTEST from your own codec.  (Robert Muir)
+  
+* LUCENE-5097: Analyzer now has an additional tokenStream(String fieldName,
+  String text) method, so wrapping by StringReader for common use is no
+  longer needed. This method uses an internal reuseable reader, which was
+  previously only used by the Field class.  (Uwe Schindler, Robert Muir)
   
 Build
 
@@ -240,6 +349,10 @@ Build
   forbidden-api signatures, and parts of resources folders.  (Ryan Ernst,
   Uwe Schindler)
 
+* LUCENE-5072: Automatically patch javadocs generated by JDK versions
+  before 7u25 to work around the frame injection vulnerability (CVE-2013-1571,
+  VU#225657).  (Uwe Schindler)
+
 Tests
 
 * LUCENE-4901: TestIndexWriterOnJRECrash should work on any 
@@ -252,6 +365,10 @@ Changes in runtime behavior
   by default. DocumentsWriterPerThread doesn't consult MergePolicy anymore 
   to decide if a CFS must be written, instead IndexWriterConfig now has a
   property to enable / disable CFS for newly created segments. (Simon Willnauer)
+
+* LUCENE-5107: Properties files by Lucene are now written in UTF-8 encoding,
+  Unicode is no longer escaped. Reading of legacy properties files with
+  \u escapes is still possible.  (Uwe Schindler, Robert Muir)
 
 ======================= Lucene 4.3.1 =======================
 

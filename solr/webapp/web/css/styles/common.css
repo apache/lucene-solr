@@ -1,3 +1,22 @@
+/*
+
+Licensed to the Apache Software Foundation (ASF) under one or more
+contributor license agreements.  See the NOTICE file distributed with
+this work for additional information regarding copyright ownership.
+The ASF licenses this file to You under the Apache License, Version 2.0
+(the "License"); you may not use this file except in compliance with
+the License.  You may obtain a copy of the License at
+
+http://www.apache.org/licenses/LICENSE-2.0
+
+Unless required by applicable law or agreed to in writing, software
+distributed under the License is distributed on an "AS IS" BASIS,
+WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+See the License for the specific language governing permissions and
+limitations under the License.
+
+*/
+
 *
 {
   background-repeat: no-repeat;
@@ -605,4 +624,66 @@ pre.syntax .tex .formula
 #content .tree a.jstree-search
 {
   color:aqua;
+}
+
+#connection_status
+{
+  display: none;
+  padding: 30px;
+}
+
+#connection_status span
+{
+  background-image: url( ../../img/ico/network-status-busy.png );
+  background-position: 0 50%;
+  color: #800;
+  padding-left: 26px;
+}
+
+#connection_status.online span,
+#connection_status.online span a
+{
+  color: #080;
+}
+
+#connection_status.online span
+{
+  background-image: url( ../../img/ico/network-status.png );
+}
+
+#connection_status.online span a
+{
+  text-decoration: underline;
+}
+
+#connection_status.online span a:hover
+{
+  text-decoration: none;
+}
+
+#content .address-bar
+{
+  margin-bottom: 10px;
+  background-image: url( ../../img/ico/ui-address-bar.png );
+  background-position: 5px 50%;
+  border: 1px solid #f0f0f0;
+  box-shadow: 1px 1px 0 #f0f0f0;
+  -moz-box-shadow: 1px 1px 0 #f0f0f0;
+  -webkit-box-shadow: 1px 1px 0 #f0f0f0;
+  color: #c0c0c0;
+  display: block;
+  overflow: hidden;
+  padding: 5px;
+  padding-left: 26px;
+  white-space: nowrap;
+}
+
+#content .address-bar:focus,
+#content .address-bar:hover
+{
+  border-color: #c0c0c0;
+  box-shadow: 1px 1px 0 #d8d8d8;
+  -moz-box-shadow: 1px 1px 0 #d8d8d8;
+  -webkit-box-shadow: 1px 1px 0 #d8d8d8;
+  color: #333;
 }

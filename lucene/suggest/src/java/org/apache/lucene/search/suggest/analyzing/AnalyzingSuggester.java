@@ -21,7 +21,6 @@ import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
-import java.io.StringReader;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Comparator;
@@ -856,7 +855,7 @@ public class AnalyzingSuggester extends Lookup {
   
   final Set<IntsRef> toFiniteStrings(final BytesRef surfaceForm, final TokenStreamToAutomaton ts2a) throws IOException {
  // Analyze surface form:
-    TokenStream ts = indexAnalyzer.tokenStream("", new StringReader(surfaceForm.utf8ToString()));
+    TokenStream ts = indexAnalyzer.tokenStream("", surfaceForm.utf8ToString());
 
     // Create corresponding automaton: labels are bytes
     // from each analyzed token, with byte 0 used as
@@ -881,7 +880,7 @@ public class AnalyzingSuggester extends Lookup {
   final Automaton toLookupAutomaton(final CharSequence key) throws IOException {
     // TODO: is there a Reader from a CharSequence?
     // Turn tokenstream into automaton:
-    TokenStream ts = queryAnalyzer.tokenStream("", new StringReader(key.toString()));
+    TokenStream ts = queryAnalyzer.tokenStream("", key.toString());
     Automaton automaton = (getTokenStreamToAutomaton()).toAutomaton(ts);
     ts.close();
 

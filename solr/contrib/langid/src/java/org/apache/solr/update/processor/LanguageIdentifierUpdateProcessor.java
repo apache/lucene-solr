@@ -75,6 +75,7 @@ public abstract class LanguageIdentifierUpdateProcessor extends UpdateRequestPro
   protected HashSet<String> mapIndividualFieldsSet;
   protected HashSet<String> allMapFieldsSet;
   protected HashMap<String,String> lcMap;
+  protected HashMap<String,String> mapLcMap;
   protected IndexSchema schema;
 
   // Regex patterns
@@ -138,13 +139,26 @@ public abstract class LanguageIdentifierUpdateProcessor extends UpdateRequestPro
         allMapFieldsSet.addAll(mapIndividualFieldsSet);
       }
 
-      // Language Code mapping
+      // Normalize detected langcode onto normalized langcode
       lcMap = new HashMap<String,String>();
+      if(params.get(LCMAP) != null) {
+        for(String mapping : params.get(LCMAP).split("[, ]")) {
+          String[] keyVal = mapping.split(":");
+          if(keyVal.length == 2) {
+            lcMap.put(keyVal[0], keyVal[1]);
+          } else {
+            log.error("Unsupported format for langid.lcmap: "+mapping+". Skipping this mapping.");
+          }
+        }
+      }
+
+      // Language Code mapping
+      mapLcMap = new HashMap<String,String>();
       if(params.get(MAP_LCMAP) != null) {
         for(String mapping : params.get(MAP_LCMAP).split("[, ]")) {
           String[] keyVal = mapping.split(":");
           if(keyVal.length == 2) {
-            lcMap.put(keyVal[0], keyVal[1]);
+            mapLcMap.put(keyVal[0], keyVal[1]);
           } else {
             log.error("Unsupported format for langid.map.lcmap: "+mapping+". Skipping this mapping.");
           }
@@ -322,10 +336,11 @@ public abstract class LanguageIdentifierUpdateProcessor extends UpdateRequestPro
       langStr = fallbackLang;
     } else {
       DetectedLanguage lang = languages.get(0);
-      if(langWhitelist.isEmpty() || langWhitelist.contains(lang.getLangCode())) {
-        log.debug("Language detected {} with certainty {}", lang.getLangCode(), lang.getCertainty());
+      String normalizedLang = normalizeLangCode(lang.getLangCode());
+      if(langWhitelist.isEmpty() || langWhitelist.contains(normalizedLang)) {
+        log.debug("Language detected {} with certainty {}", normalizedLang, lang.getCertainty());
         if(lang.getCertainty() >= threshold) {
-          langStr = lang.getLangCode();
+          langStr = normalizedLang;
         } else {
           log.debug("Detected language below threshold {}, using fallback {}", threshold, fallbackLang);
           langStr = fallbackLang;
@@ -345,6 +360,20 @@ public abstract class LanguageIdentifierUpdateProcessor extends UpdateRequestPro
   }
 
   /**
+   * Looks up language code in map (langid.lcmap) and returns mapped value
+   * @param langCode the language code string returned from detector
+   * @return the normalized/mapped language code
+   */
+  protected String normalizeLangCode(String langCode) {
+    if (lcMap.containsKey(langCode)) {
+      String lc = lcMap.get(langCode);
+      log.debug("Doing langcode normalization mapping from "+langCode+" to "+lc);
+      return lc;
+    }
+    return langCode;
+  }
+
+  /**
    * Returns the name of the field to map the current contents into, so that they are properly analyzed.  For instance
    * if the currentField is "text" and the code is "en", the new field would by default be "text_en".
    * This method also performs custom regex pattern replace if configured. If enforceSchema=true
@@ -355,7 +384,7 @@ public abstract class LanguageIdentifierUpdateProcessor extends UpdateRequestPro
    * @return The new schema field name, based on pattern and replace, or null if illegal
    */
   protected String getMappedField(String currentField, String language) {
-    String lc = lcMap.containsKey(language) ? lcMap.get(language) : language;
+    String lc = mapLcMap.containsKey(language) ? mapLcMap.get(language) : language;
     String newFieldName = langPattern.matcher(mapPattern.matcher(currentField).replaceFirst(mapReplaceStr)).replaceFirst(lc);
     if(enforceSchema && schema.getFieldOrNull(newFieldName) == null) {
       log.warn("Unsuccessful field name mapping from {} to {}, field does not exist and enforceSchema=true; skipping mapping.", currentField, newFieldName);

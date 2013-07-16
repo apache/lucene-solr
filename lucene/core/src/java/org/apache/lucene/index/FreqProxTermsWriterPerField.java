@@ -415,7 +415,7 @@ final class FreqProxTermsWriterPerField extends TermsHashConsumerPerField implem
       // which all share the same term.  Now we must
       // interleave the docID streams.
       int docFreq = 0;
-      long totTF = 0;
+      long totalTermFreq = 0;
       int docID = 0;
 
       while(true) {
@@ -483,7 +483,7 @@ final class FreqProxTermsWriterPerField extends TermsHashConsumerPerField implem
           }
         }
 
-        totTF += termFreq;
+        totalTermFreq += termFreq;
         
         // Carefully copy over the prox + payload info,
         // changing the format to match Lucene's segment
@@ -540,8 +540,8 @@ final class FreqProxTermsWriterPerField extends TermsHashConsumerPerField implem
         }
         postingsConsumer.finishDoc();
       }
-      termsConsumer.finishTerm(text, new TermStats(docFreq, writeTermFreq ? totTF : -1));
-      sumTotalTermFreq += totTF;
+      termsConsumer.finishTerm(text, new TermStats(docFreq, writeTermFreq ? totalTermFreq : -1));
+      sumTotalTermFreq += totalTermFreq;
       sumDocFreq += docFreq;
     }
 

@@ -66,6 +66,8 @@ org.apache.lucene.analysis.miscellaneous.RemoveDuplicatesTokenFilterFactory
 org.apache.lucene.analysis.miscellaneous.StemmerOverrideFilterFactory
 org.apache.lucene.analysis.miscellaneous.TrimFilterFactory
 org.apache.lucene.analysis.miscellaneous.WordDelimiterFilterFactory
+org.apache.lucene.analysis.miscellaneous.ScandinavianFoldingFilterFactory
+org.apache.lucene.analysis.miscellaneous.ScandinavianNormalizationFilterFactory
 org.apache.lucene.analysis.ngram.EdgeNGramFilterFactory
 org.apache.lucene.analysis.ngram.NGramFilterFactory
 org.apache.lucene.analysis.no.NorwegianLightStemFilterFactory

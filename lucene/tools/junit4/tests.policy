@@ -59,6 +59,10 @@ grant {
   permission javax.management.MBeanPermission "*", "*";
   permission javax.management.MBeanServerPermission "*";
   permission javax.management.MBeanTrustPermission "*";
+  permission javax.security.auth.AuthPermission "*";
+  permission javax.security.auth.PrivateCredentialPermission "org.apache.hadoop.security.Credentials * \"*\"", "read";
+  permission java.security.SecurityPermission "putProviderProperty.SaslPlainServer";
+  permission java.security.SecurityPermission "insertProvider.SaslPlainServer";
   
   // TIKA uses BouncyCastle and that registers new provider for PDF parsing + MSOffice parsing. Maybe report as bug!
   permission java.security.SecurityPermission "putProviderProperty.BC";

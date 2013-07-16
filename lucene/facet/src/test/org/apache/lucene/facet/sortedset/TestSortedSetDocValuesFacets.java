@@ -33,6 +33,7 @@ import org.apache.lucene.facet.search.FacetRequest;
 import org.apache.lucene.facet.search.FacetResult;
 import org.apache.lucene.facet.search.FacetsCollector;
 import org.apache.lucene.facet.taxonomy.CategoryPath;
+import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.RandomIndexWriter;
 import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.search.MatchAllDocsQuery;
@@ -142,6 +143,53 @@ public class TestSortedSetDocValuesFacets extends FacetTestCase {
     hits = searcher.search(q, 1);
     assertEquals(2, hits.totalHits);
 
+    searcher.getIndexReader().close();
+    dir.close();
+  }
+
+  // LUCENE-5090
+  public void testStaleState() throws Exception {
+    assumeTrue("Test requires SortedSetDV support", defaultCodecSupportsSortedSet());
+    Directory dir = newDirectory();
+    RandomIndexWriter writer = new RandomIndexWriter(random(), dir);
+
+    SortedSetDocValuesFacetFields dvFields = new SortedSetDocValuesFacetFields();
+
+    Document doc = new Document();
+    dvFields.addFields(doc, Collections.singletonList(new CategoryPath("a", "foo")));
+    writer.addDocument(doc);
+
+    IndexReader r = writer.getReader();
+    SortedSetDocValuesReaderState state = new SortedSetDocValuesReaderState(r);
+
+    doc = new Document();
+    dvFields.addFields(doc, Collections.singletonList(new CategoryPath("a", "bar")));
+    writer.addDocument(doc);
+
+    doc = new Document();
+    dvFields.addFields(doc, Collections.singletonList(new CategoryPath("a", "baz")));
+    writer.addDocument(doc);
+
+    IndexSearcher searcher = newSearcher(writer.getReader());
+
+    List<FacetRequest> requests = new ArrayList<FacetRequest>();
+    requests.add(new CountFacetRequest(new CategoryPath("a"), 10));
+
+    FacetSearchParams fsp = new FacetSearchParams(requests);
+    
+    FacetsCollector c = FacetsCollector.create(new SortedSetDocValuesAccumulator(fsp, state));
+
+    searcher.search(new MatchAllDocsQuery(), c);
+
+    try {
+      c.getFacetResults();
+      fail("did not hit expected exception");
+    } catch (IllegalStateException ise) {
+      // expected
+    }
+
+    r.close();
+    writer.close();
     searcher.getIndexReader().close();
     dir.close();
   }

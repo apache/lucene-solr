@@ -36,6 +36,7 @@ import java.util.zip.GZIPInputStream;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
 import org.apache.lucene.document.FieldType;
+import org.apache.lucene.document.IntField;
 import org.apache.lucene.document.SortedDocValuesField;
 import org.apache.lucene.document.StringField;
 import org.apache.lucene.document.TextField;
@@ -158,6 +159,7 @@ public class LineFileDocs implements Closeable {
     final Field titleDV;
     final Field body;
     final Field id;
+    final Field idNum;
     final Field date;
 
     public DocState(boolean useDocValues) {
@@ -179,6 +181,9 @@ public class LineFileDocs implements Closeable {
 
       id = new StringField("docid", "", Field.Store.YES);
       doc.add(id);
+
+      idNum = new IntField("docid_int", 0, Field.Store.NO);
+      doc.add(idNum);
 
       date = new StringField("date", "", Field.Store.YES);
       doc.add(date);
@@ -233,7 +238,9 @@ public class LineFileDocs implements Closeable {
     }
     docState.titleTokenized.setStringValue(title);
     docState.date.setStringValue(line.substring(1+spot, spot2));
-    docState.id.setStringValue(Integer.toString(id.getAndIncrement()));
+    final int i = id.getAndIncrement();
+    docState.id.setStringValue(Integer.toString(i));
+    docState.idNum.setIntValue(i);
     return docState.doc;
   }
 }

@@ -17,21 +17,6 @@
  limitations under the License.
 -->
 
-<!-- 
-
-     This is a "kitchen sink" config file that tests can use.
-     When writting a new test, feel free to add *new* items (plugins,
-     config options, etc...) as long as they don't break any existing
-     tests.  if you need to test something esoteric please add a new
-     "solrconfig-your-esoteric-purpose.xml" config file.
-
-     Note in particular that this test is used by MinimalSchemaTest so
-     Anything added to this file needs to work correctly even if there
-     is now uniqueKey or defaultSearch Field.
-
-
-  -->
-
 <config>
   <luceneMatchVersion>${tests.luceneMatchVersion:LUCENE_CURRENT}</luceneMatchVersion>
 
@@ -41,6 +26,7 @@
   <directoryFactory name="DirectoryFactory" class="${solr.directoryFactory:solr.RAMDirectoryFactory}"/>
 
   <indexConfig>
+    <useCompoundFile>${useCompoundFile:false}</useCompoundFile>
     <mergePolicy class="org.apache.lucene.index.LogByteSizeMergePolicy">
       <double name="maxMergeMB">32.0</double>
     </mergePolicy>

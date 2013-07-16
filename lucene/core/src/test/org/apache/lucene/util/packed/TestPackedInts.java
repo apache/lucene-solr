@@ -650,8 +650,11 @@ public class TestPackedInts extends LuceneTestCase {
     wrt.set(99, (1 << 23) - 1);
     assertEquals(1 << 10, wrt.get(valueCount - 1));
     wrt.set(1, Long.MAX_VALUE);
+    wrt.set(2, -3);
+    assertEquals(64, wrt.getBitsPerValue());
     assertEquals(1 << 10, wrt.get(valueCount - 1));
     assertEquals(Long.MAX_VALUE, wrt.get(1));
+    assertEquals(-3L, wrt.get(2));
     assertEquals(2, wrt.get(4));
     assertEquals((1 << 23) - 1, wrt.get(99));
     assertEquals(10, wrt.get(7));
@@ -686,7 +689,7 @@ public class TestPackedInts extends LuceneTestCase {
     }
 
     // test ramBytesUsed
-    assertEquals(RamUsageEstimator.sizeOf(writer), writer.ramBytesUsed());
+    assertEquals(RamUsageEstimator.sizeOf(writer), writer.ramBytesUsed(), 8);
 
     // test copy
     PagedGrowableWriter copy = writer.resize(_TestUtil.nextLong(random(), writer.size() / 2, writer.size() * 3 / 2));
@@ -695,6 +698,64 @@ public class TestPackedInts extends LuceneTestCase {
         assertEquals(writer.get(i), copy.get(i));
       } else {
         assertEquals(0, copy.get(i));
+      }
+    }
+
+    // test grow
+    PagedGrowableWriter grow = writer.grow(_TestUtil.nextLong(random(), writer.size() / 2, writer.size() * 3 / 2));
+    for (long i = 0; i < grow.size(); ++i) {
+      if (i < writer.size()) {
+        assertEquals(writer.get(i), grow.get(i));
+      } else {
+        assertEquals(0, grow.get(i));
+      }
+    }
+  }
+
+  public void testPagedMutable() {
+    final int bitsPerValue = _TestUtil.nextInt(random(), 1, 64);
+    final long max = PackedInts.maxValue(bitsPerValue);
+    int pageSize = 1 << (_TestUtil.nextInt(random(), 6, 30));
+    // supports 0 values?
+    PagedMutable writer = new PagedMutable(0, pageSize, bitsPerValue, random().nextFloat() / 2);
+    assertEquals(0, writer.size());
+
+    // compare against AppendingLongBuffer
+    AppendingLongBuffer buf = new AppendingLongBuffer();
+    int size = random().nextInt(1000000);
+    
+    for (int i = 0; i < size; ++i) {
+      buf.add(bitsPerValue == 64 ? random().nextLong() : _TestUtil.nextLong(random(), 0, max));
+    }
+    writer = new PagedMutable(size, pageSize, bitsPerValue, random().nextFloat());
+    assertEquals(size, writer.size());
+    for (int i = size - 1; i >= 0; --i) {
+      writer.set(i, buf.get(i));
+    }
+    for (int i = 0; i < size; ++i) {
+      assertEquals(buf.get(i), writer.get(i));
+    }
+
+    // test ramBytesUsed
+    assertEquals(RamUsageEstimator.sizeOf(writer) - RamUsageEstimator.sizeOf(writer.format), writer.ramBytesUsed());
+
+    // test copy
+    PagedMutable copy = writer.resize(_TestUtil.nextLong(random(), writer.size() / 2, writer.size() * 3 / 2));
+    for (long i = 0; i < copy.size(); ++i) {
+      if (i < writer.size()) {
+        assertEquals(writer.get(i), copy.get(i));
+      } else {
+        assertEquals(0, copy.get(i));
+      }
+    }
+
+    // test grow
+    PagedMutable grow = writer.grow(_TestUtil.nextLong(random(), writer.size() / 2, writer.size() * 3 / 2));
+    for (long i = 0; i < grow.size(); ++i) {
+      if (i < writer.size()) {
+        assertEquals(writer.get(i), grow.get(i));
+      } else {
+        assertEquals(0, grow.get(i));
       }
     }
   }
@@ -897,6 +958,14 @@ public class TestPackedInts extends LuceneTestCase {
           buf.add(arr[i]);
         }
         assertEquals(arr.length, buf.size());
+        if (random().nextBoolean()) {
+          buf.freeze();
+          if (random().nextBoolean()) {
+            // Make sure double freeze doesn't break anything
+            buf.freeze();
+          }
+        }
+        assertEquals(arr.length, buf.size());
         final AbstractAppendingLongBuffer.Iterator it = buf.iterator();
         for (int i = 0; i < arr.length; ++i) {
           if (random().nextBoolean()) {
@@ -912,8 +981,7 @@ public class TestPackedInts extends LuceneTestCase {
   
         final long expectedBytesUsed = RamUsageEstimator.sizeOf(buf);
         final long computedBytesUsed = buf.ramBytesUsed();
-        assertEquals("got " + computedBytesUsed + ", expected: " + expectedBytesUsed,
-            expectedBytesUsed, computedBytesUsed);
+        assertEquals(expectedBytesUsed, computedBytesUsed);
       }
     }
   }

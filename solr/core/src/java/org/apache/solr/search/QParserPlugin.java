@@ -17,10 +17,14 @@
 package org.apache.solr.search;
 
 import org.apache.solr.common.params.SolrParams;
+import org.apache.solr.common.util.NamedList;
+import org.apache.solr.core.SolrInfoMBean;
 import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.util.plugin.NamedListInitializedPlugin;
 
-public abstract class QParserPlugin implements NamedListInitializedPlugin {
+import java.net.URL;
+
+public abstract class QParserPlugin implements NamedListInitializedPlugin, SolrInfoMBean {
   /** internal use - name of the default parser */
   public static String DEFAULT_QTYPE = LuceneQParserPlugin.NAME;
 
@@ -48,6 +52,43 @@ public abstract class QParserPlugin implements NamedListInitializedPlugin {
 
   /** return a {@link QParser} */
   public abstract QParser createParser(String qstr, SolrParams localParams, SolrParams params, SolrQueryRequest req);
+
+  @Override
+  public String getName() {
+    // TODO: ideally use the NAME property that each qparser plugin has
+
+    return this.getClass().getName();
+  }
+
+  @Override
+  public String getVersion() {
+    return null;
+  }
+
+  @Override
+  public String getDescription() {
+    return "";  // UI required non-null to work
+  }
+
+  @Override
+  public Category getCategory() {
+    return Category.QUERYPARSER;
+  }
+
+  @Override
+  public String getSource() {
+    return "$URL$";
+  }
+
+  @Override
+  public URL[] getDocs() {
+    return new URL[0];
+  }
+
+  @Override
+  public NamedList getStatistics() {
+    return null;
+  }
 }
 
 

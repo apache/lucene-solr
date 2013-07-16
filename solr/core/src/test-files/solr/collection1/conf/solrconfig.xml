@@ -53,7 +53,7 @@
     <mergeScheduler class="org.apache.lucene.index.ConcurrentMergeScheduler"/>
     <writeLockTimeout>1000</writeLockTimeout>
     <mergeFactor>8</mergeFactor>
-
+    <useCompoundFile>${useCompoundFile:false}</useCompoundFile>
     <!-- for better multi-segment testing, we are using slower
     indexing properties of maxBufferedDocs=10 and LogDocMergePolicy.
     -->
@@ -104,14 +104,12 @@
 
   </updateHandler>
 
-
   <query>
     <!-- Maximum number of clauses in a boolean query... can affect
         range or wildcard queries that expand to big boolean
         queries.  An exception is thrown if exceeded.
     -->
     <maxBooleanClauses>1024</maxBooleanClauses>
-
 
     <!-- Cache specification for Filters or DocSets - unordered set of *all* documents
          that match a particular query.
@@ -149,7 +147,6 @@
       />
     -->
 
-
     <!--
     <useFilterForSortedQuery>true</useFilterForSortedQuery>
     -->
@@ -159,13 +156,11 @@
     <!-- set maxSize artificially low to exercise both types of sets -->
     <HashDocSet maxSize="3" loadFactor="0.75"/>
 
-
     <!-- boolToFilterOptimizer converts boolean clauses with zero boost
          into cached filters if the number of docs selected by the clause exceeds
          the threshold (represented as a fraction of the total index)
     -->
     <boolTofilterOptimizer enabled="false" cacheSize="32" threshold=".05"/>
-
 
     <!-- a newSearcher event is fired whenever a new searcher is being prepared
          and there is a current searcher handling requests (aka registered). -->
@@ -190,7 +185,6 @@
       </arr>
     </listener>
     -->
-
 
   </query>
   
@@ -218,7 +212,6 @@
        <str name="omitHeader">true</str>
      </lst>
   </requestHandler>
-
 
   <requestHandler name="dismax" class="solr.SearchHandler" >
     <lst name="defaults">
@@ -264,7 +257,6 @@
   </requestHandler>
 
   <requestHandler name="/update" class="solr.UpdateRequestHandler"  />
-
 
   <searchComponent name="spellcheck" class="org.apache.solr.handler.component.SpellCheckComponent">
     <!-- This is slightly different from the field value so we can test dealing with token offset changes -->
@@ -470,7 +462,6 @@
    </boundaryScanner>
   </highlighting>
   </searchComponent>
-
 
   <!-- enable streaming for testing... -->
   <requestDispatcher handleSelect="true" >

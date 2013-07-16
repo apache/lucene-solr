@@ -72,7 +72,6 @@ import javax.xml.xpath.XPathFactory;
 import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
-import java.io.StringReader;
 import java.net.MalformedURLException;
 import java.net.URL;
 import java.util.ArrayList;
@@ -344,7 +343,7 @@ public class QueryElevationComponent extends SearchComponent implements SolrCore
       return query;
     }
     StringBuilder norm = new StringBuilder();
-    TokenStream tokens = analyzer.tokenStream("", new StringReader(query));
+    TokenStream tokens = analyzer.tokenStream("", query);
     tokens.reset();
 
     CharTermAttribute termAtt = tokens.addAttribute(CharTermAttribute.class);

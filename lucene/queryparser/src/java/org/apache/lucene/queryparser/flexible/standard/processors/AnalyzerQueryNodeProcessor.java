@@ -18,7 +18,6 @@ package org.apache.lucene.queryparser.flexible.standard.processors;
  */
 
 import java.io.IOException;
-import java.io.StringReader;
 import java.util.ArrayList;
 import java.util.LinkedList;
 import java.util.List;
@@ -116,7 +115,7 @@ public class AnalyzerQueryNodeProcessor extends QueryNodeProcessorImpl {
 
       TokenStream source;
       try {
-        source = this.analyzer.tokenStream(field, new StringReader(text));
+        source = this.analyzer.tokenStream(field, text);
         source.reset();
       } catch (IOException e1) {
         throw new RuntimeException(e1);

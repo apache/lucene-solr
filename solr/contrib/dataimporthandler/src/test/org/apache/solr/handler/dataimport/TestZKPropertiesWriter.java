@@ -60,7 +60,8 @@ public class TestZKPropertiesWriter extends AbstractDataImportHandlerTestCase {
     AbstractZkTestCase.buildZooKeeper(zkServer.getZkHost(), zkServer.getZkAddress(), getFile("dih/solr"),
         "dataimport-solrconfig.xml", "dataimport-schema.xml");
 
-    initCore("dataimport-solrconfig.xml", "dataimport-schema.xml", getFile("dih/solr").getAbsolutePath());
+    //initCore("solrconfig.xml", "schema.xml", getFile("dih/solr").getAbsolutePath());
+    createDefaultCoreContainer(getFile("dih/solr").getAbsolutePath());
   }
 
   @Before

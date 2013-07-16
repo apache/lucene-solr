@@ -737,6 +737,12 @@ public abstract class LuceneTestCase extends Assert {
 
     if (r.nextBoolean()) {
       c.setMergeScheduler(new SerialMergeScheduler());
+    } else if (rarely(r)) {
+      int maxThreadCount = _TestUtil.nextInt(random(), 1, 4);
+      int maxMergeCount = _TestUtil.nextInt(random(), maxThreadCount, maxThreadCount+4);
+      ConcurrentMergeScheduler cms = new ConcurrentMergeScheduler();
+      cms.setMaxMergesAndThreads(maxMergeCount, maxThreadCount);
+      c.setMergeScheduler(cms);
     }
     if (r.nextBoolean()) {
       if (rarely(r)) {

@@ -40,7 +40,9 @@ import java.io.File;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
-import java.io.OutputStream;
+import java.io.InputStreamReader;
+import java.io.OutputStreamWriter;
+import java.io.Writer;
 import java.nio.ByteBuffer;
 import java.nio.channels.FileChannel;
 import java.text.SimpleDateFormat;
@@ -73,6 +75,7 @@ import org.apache.lucene.index.IndexWriter;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.IndexInput;
 import org.apache.lucene.store.IndexOutput;
+import static org.apache.lucene.util.IOUtils.CHARSET_UTF_8;
 import org.apache.solr.client.solrj.SolrServerException;
 import org.apache.solr.client.solrj.impl.HttpClientUtil;
 import org.apache.solr.client.solrj.impl.HttpSolrServer;
@@ -318,20 +321,25 @@ public class SnapPuller {
       long latestVersion = (Long) response.get(CMD_INDEX_VERSION);
       long latestGeneration = (Long) response.get(GENERATION);
 
-      IndexCommit commit;
-      RefCounted<SolrIndexSearcher> searcherRefCounted = null;
-      try {
-        searcherRefCounted = core.getNewestSearcher(false);
-        if (searcherRefCounted == null) {
-          SolrException.log(LOG, "No open searcher found - fetch aborted");
-          return false;
+      // TODO: make sure that getLatestCommit only returns commit points for the main index (i.e. no side-car indexes)
+      IndexCommit commit = core.getDeletionPolicy().getLatestCommit();
+      if (commit == null) {
+        // Presumably the IndexWriter hasn't been opened yet, and hence the deletion policy hasn't been updated with commit points
+        RefCounted<SolrIndexSearcher> searcherRefCounted = null;
+        try {
+          searcherRefCounted = core.getNewestSearcher(false);
+          if (searcherRefCounted == null) {
+            LOG.warn("No open searcher found - fetch aborted");
+            return false;
+          }
+          commit = searcherRefCounted.get().getIndexReader().getIndexCommit();
+        } finally {
+          if (searcherRefCounted != null)
+            searcherRefCounted.decref();
         }
-        commit = searcherRefCounted.get().getIndexReader().getIndexCommit();
-      } finally {
-        if (searcherRefCounted != null)
-          searcherRefCounted.decref();
       }
-      
+
+
       if (latestVersion == 0L) {
         if (forceReplication && commit.getGeneration() != 0) {
           // since we won't get the files for an empty index,
@@ -403,7 +411,14 @@ public class SnapPuller {
             successfulInstall = modifyIndexProps(tmpIdxDirName);
             deleteTmpIdxDir  =  false;
           } else {
-            successfulInstall = moveIndexFiles(tmpIndexDir, indexDir);
+            solrCore.getUpdateHandler().getSolrCoreState()
+                .closeIndexWriter(core, true);
+            try {
+              successfulInstall = moveIndexFiles(tmpIndexDir, indexDir);
+            } finally {
+              solrCore.getUpdateHandler().getSolrCoreState()
+                  .openIndexWriter(core);
+            }
           }
           if (successfulInstall) {
             if (isFullCopyNeeded) {
@@ -426,7 +441,12 @@ public class SnapPuller {
             successfulInstall = modifyIndexProps(tmpIdxDirName);
             deleteTmpIdxDir =  false;
           } else {
-            successfulInstall = moveIndexFiles(tmpIndexDir, indexDir);
+            solrCore.getUpdateHandler().getSolrCoreState().closeIndexWriter(core, true);
+            try {
+              successfulInstall = moveIndexFiles(tmpIndexDir, indexDir);
+            } finally {
+              solrCore.getUpdateHandler().getSolrCoreState().openIndexWriter(core);
+            }
           }
           if (successfulInstall) {
             logReplicationTimeAndConfFiles(modifiedConfFiles, successfulInstall);
@@ -443,7 +463,11 @@ public class SnapPuller {
               core.getDirectoryFactory().remove(indexDir);
             }
           }
-          openNewWriterAndSearcher(isFullCopyNeeded);
+          if (isFullCopyNeeded) {
+            solrCore.getUpdateHandler().newIndexWriter(isFullCopyNeeded);
+          }
+          
+          openNewSearcherAndUpdateCommitPoint(isFullCopyNeeded);
         }
         
         replicationStartTime = 0;
@@ -557,7 +581,7 @@ public class SnapPuller {
       }
 
       final IndexOutput out = dir.createOutput(REPLICATION_PROPERTIES, DirectoryFactory.IOCONTEXT_NO_CACHE);
-      OutputStream outFile = new PropertiesOutputStream(out);
+      Writer outFile = new OutputStreamWriter(new PropertiesOutputStream(out), CHARSET_UTF_8);
       try {
         props.store(outFile, "Replication details");
         dir.sync(Collections.singleton(REPLICATION_PROPERTIES));
@@ -615,11 +639,9 @@ public class SnapPuller {
     return sb;
   }
 
-  private void openNewWriterAndSearcher(boolean isFullCopyNeeded) throws IOException {
+  private void openNewSearcherAndUpdateCommitPoint(boolean isFullCopyNeeded) throws IOException {
     SolrQueryRequest req = new LocalSolrQueryRequest(solrCore,
         new ModifiableSolrParams());
-    // reboot the writer on the new index and get a new searcher
-    solrCore.getUpdateHandler().newIndexWriter(isFullCopyNeeded);
     
     RefCounted<SolrIndexSearcher> searcher = null;
     IndexCommit commitPoint;
@@ -871,7 +893,7 @@ public class SnapPuller {
   
         final InputStream is = new PropertiesInputStream(input);
         try {
-          p.load(is);
+          p.load(new InputStreamReader(is, CHARSET_UTF_8));
         } catch (Exception e) {
           LOG.error("Unable to load " + SnapPuller.INDEX_PROPERTIES, e);
         } finally {
@@ -885,9 +907,9 @@ public class SnapPuller {
       }
       final IndexOutput out = dir.createOutput(SnapPuller.INDEX_PROPERTIES, DirectoryFactory.IOCONTEXT_NO_CACHE);
       p.put("index", tmpIdxDirName);
-      OutputStream os = null;
+      Writer os = null;
       try {
-        os = new PropertiesOutputStream(out);
+        os = new OutputStreamWriter(new PropertiesOutputStream(out), CHARSET_UTF_8);
         p.store(os, SnapPuller.INDEX_PROPERTIES);
         dir.sync(Collections.singleton(INDEX_PROPERTIES));
       } catch (Exception e) {
