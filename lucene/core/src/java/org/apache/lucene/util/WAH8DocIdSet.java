@@ -26,7 +26,7 @@ import org.apache.lucene.search.DocIdSet;
 import org.apache.lucene.search.DocIdSetIterator;
 import org.apache.lucene.store.ByteArrayDataInput;
 import org.apache.lucene.store.DataInput;
-import org.apache.lucene.util.packed.PackedInts;
+import org.apache.lucene.util.packed.MonotonicAppendingLongBuffer;
 
 /**
  * {@link DocIdSet} implementation based on word-aligned hybrid encoding on
@@ -82,15 +82,15 @@ public final class WAH8DocIdSet extends DocIdSet {
   private static final int MIN_INDEX_INTERVAL = 8;
 
   /** Default index interval. */
-  // To compute this default value, I created a rather dense set (0.1% load
-  // factor, which is close to the worst case regarding both compression and
-  // speed for this DocIdSet impl since sequences are going to be short) and I
-  // started with interval=1 and doubled it at each iteration until advance
-  // became slower
-  public static final int DEFAULT_INDEX_INTERVAL = 16;
+  public static final int DEFAULT_INDEX_INTERVAL = MIN_INDEX_INTERVAL;
 
-  private static final PackedInts.Reader EMPTY_READER = new PackedInts.NullReader(1);
-  private static WAH8DocIdSet EMPTY = new WAH8DocIdSet(new byte[0], EMPTY_READER, EMPTY_READER);
+  private static final MonotonicAppendingLongBuffer SINGLE_ZERO_BUFFER = new MonotonicAppendingLongBuffer();
+  private static WAH8DocIdSet EMPTY = new WAH8DocIdSet(new byte[0], 0, 1, SINGLE_ZERO_BUFFER, SINGLE_ZERO_BUFFER);
+
+  static {
+    SINGLE_ZERO_BUFFER.add(0L);
+    SINGLE_ZERO_BUFFER.freeze();
+  }
 
   private static final Comparator<Iterator> SERIALIZED_LENGTH_COMPARATOR = new Comparator<Iterator>() {
     @Override
@@ -98,20 +98,6 @@ public final class WAH8DocIdSet extends DocIdSet {
       return wi1.in.length() - wi2.in.length();
     }
   };
-
-  /** Same as {@link #copyOf(DocIdSetIterator, int)} with the default index interval. */
-  public static WAH8DocIdSet copyOf(DocIdSetIterator it) throws IOException {
-    return copyOf(it, DEFAULT_INDEX_INTERVAL);
-  }
-
-  /** Return a copy of the provided iterator. */
-  public static WAH8DocIdSet copyOf(DocIdSetIterator it, int indexInterval) throws IOException {
-    Builder builder = new Builder().setIndexInterval(indexInterval);
-    for (int doc = it.nextDoc(); doc != DocIdSetIterator.NO_MORE_DOCS; doc = it.nextDoc()) {
-      builder.add(doc);
-    }
-    return builder.build();
-  }
 
   /** Same as {@link #intersect(Collection, int)} with the default index interval. */
   public static WAH8DocIdSet intersect(Collection<WAH8DocIdSet> docIdSets) {
@@ -242,6 +228,7 @@ public final class WAH8DocIdSet extends DocIdSet {
     int lastWordNum;
     int numSequences;
     int indexInterval;
+    int cardinality;
 
     WordBuilder() {
       out = new GrowableByteArrayDataOutput(1024);
@@ -250,14 +237,15 @@ public final class WAH8DocIdSet extends DocIdSet {
       lastWordNum = -1;
       numSequences = 0;
       indexInterval = DEFAULT_INDEX_INTERVAL;
+      cardinality = 0;
     }
 
     /** Set the index interval. Smaller index intervals improve performance of
      *  {@link DocIdSetIterator#advance(int)} but make the {@link DocIdSet}
      *  larger. An index interval <code>i</code> makes the index add an overhead
      *  which is at most <code>4/i</code>, but likely much less.The default index
-     *  interval is <code>16</code>, meaning the index has an overhead of at most
-     *  25%. To disable indexing, you can pass {@link Integer#MAX_VALUE} as an
+     *  interval is <code>8</code>, meaning the index has an overhead of at most
+     *  50%. To disable indexing, you can pass {@link Integer#MAX_VALUE} as an
      *  index interval. */
     public WordBuilder setIndexInterval(int indexInterval) {
       if (indexInterval < MIN_INDEX_INTERVAL) {
@@ -322,11 +310,13 @@ public final class WAH8DocIdSet extends DocIdSet {
         }
       }
       lastWordNum = wordNum;
+      cardinality += BitUtil.bitCount(word);
     }
 
     /** Build a new {@link WAH8DocIdSet}. */
     public WAH8DocIdSet build() {
-      if (lastWordNum == -1) {
+      if (cardinality == 0) {
+        assert lastWordNum == -1;
         return EMPTY;
       }
       writeSequence(clean);
@@ -334,16 +324,18 @@ public final class WAH8DocIdSet extends DocIdSet {
 
       // Now build the index
       final int valueCount = (numSequences - 1) / indexInterval + 1;
-      final PackedInts.Reader indexPositions;
-      final PackedInts.Reader indexWordNums;
+      final MonotonicAppendingLongBuffer indexPositions, indexWordNums;
       if (valueCount <= 1) {
-        indexPositions = indexWordNums = EMPTY_READER;
+        indexPositions = indexWordNums = SINGLE_ZERO_BUFFER;
       } else {
-        // From the tests I ran, there is no need to expose acceptableOverheadRatio, these packed ints are never the bottleneck
-        final PackedInts.Mutable positions = PackedInts.getMutable(valueCount, PackedInts.bitsRequired(data.length - 1), PackedInts.COMPACT);
-        final PackedInts.Mutable wordNums = PackedInts.getMutable(valueCount, PackedInts.bitsRequired(lastWordNum), PackedInts.COMPACT);
-  
-        final Iterator it = new Iterator(data, null, null);
+        final int pageSize = 128;
+        final int initialPageCount = (valueCount + pageSize - 1) / pageSize;
+        final MonotonicAppendingLongBuffer positions = new MonotonicAppendingLongBuffer(initialPageCount, pageSize);
+        final MonotonicAppendingLongBuffer wordNums = new MonotonicAppendingLongBuffer(initialPageCount, pageSize);
+ 
+        positions.add(0L);
+        wordNums.add(0L);
+        final Iterator it = new Iterator(data, cardinality, Integer.MAX_VALUE, SINGLE_ZERO_BUFFER, SINGLE_ZERO_BUFFER);
         assert it.in.getPosition() == 0;
         assert it.wordNum == -1;
         for (int i = 1; i < valueCount; ++i) {
@@ -355,14 +347,16 @@ public final class WAH8DocIdSet extends DocIdSet {
           }
           final int position = it.in.getPosition();
           final int wordNum = it.wordNum;
-          positions.set(i, position);
-          wordNums.set(i, wordNum + 1);
+          positions.add(position);
+          wordNums.add(wordNum + 1);
         }
+        positions.freeze();
+        wordNums.freeze();
         indexPositions = positions;
         indexWordNums = wordNums;
       }
 
-      return new WAH8DocIdSet(data, indexPositions, indexWordNums);
+      return new WAH8DocIdSet(data, cardinality, indexInterval, indexPositions, indexWordNums);
     }
 
   }
@@ -401,6 +395,14 @@ public final class WAH8DocIdSet extends DocIdSet {
       return this;
     }
 
+    /** Add the content of the provided {@link DocIdSetIterator}. */
+    public Builder add(DocIdSetIterator disi) throws IOException {
+      for (int doc = disi.nextDoc(); doc != DocIdSetIterator.NO_MORE_DOCS; doc = disi.nextDoc()) {
+        add(doc);
+      }
+      return this;
+    }
+
     @Override
     public Builder setIndexInterval(int indexInterval) {
       return (Builder) super.setIndexInterval(indexInterval);
@@ -418,11 +420,15 @@ public final class WAH8DocIdSet extends DocIdSet {
 
   // where the doc IDs are stored
   private final byte[] data;
+  private final int cardinality;
+  private final int indexInterval;
   // index for advance(int)
-  private final PackedInts.Reader positions, wordNums; // wordNums[i] starts at the sequence at positions[i]
+  private final MonotonicAppendingLongBuffer positions, wordNums; // wordNums[i] starts at the sequence at positions[i]
 
-  WAH8DocIdSet(byte[] data, PackedInts.Reader positions, PackedInts.Reader wordNums) {
+  WAH8DocIdSet(byte[] data, int cardinality, int indexInterval, MonotonicAppendingLongBuffer positions, MonotonicAppendingLongBuffer wordNums) {
     this.data = data;
+    this.cardinality = cardinality;
+    this.indexInterval = indexInterval;
     this.positions = positions;
     this.wordNums = wordNums;
   }
@@ -434,7 +440,7 @@ public final class WAH8DocIdSet extends DocIdSet {
 
   @Override
   public Iterator iterator() {
-    return new Iterator(data, positions, wordNums);
+    return new Iterator(data, cardinality, indexInterval, positions, wordNums);
   }
 
   static int readLength(ByteArrayDataInput in, int len) {
@@ -448,22 +454,28 @@ public final class WAH8DocIdSet extends DocIdSet {
   static class Iterator extends DocIdSetIterator {
 
     final ByteArrayDataInput in;
-    final PackedInts.Reader positions, wordNums;
+    final int cardinality;
+    final int indexInterval;
+    final MonotonicAppendingLongBuffer positions, wordNums;
     int dirtyLength;
 
     int wordNum; // byte offset
     byte word; // current word
     int bitList; // list of bits set in the current word
+    int sequenceNum; // in which sequence are we?
 
     int docID;
 
-    Iterator(byte[] data, PackedInts.Reader positions, PackedInts.Reader wordNums) {
+    Iterator(byte[] data, int cardinality, int indexInterval, MonotonicAppendingLongBuffer positions, MonotonicAppendingLongBuffer wordNums) {
       this.in = new ByteArrayDataInput(data);
+      this.cardinality = cardinality;
+      this.indexInterval = indexInterval;
       this.positions = positions;
       this.wordNums = wordNums;
       wordNum = -1;
       word = 0;
       bitList = 0;
+      sequenceNum = -1;
       docID = -1;
     }
 
@@ -476,6 +488,7 @@ public final class WAH8DocIdSet extends DocIdSet {
       final int cleanLength = (in.getPosition() == 1 ? 0 : 2) + readLength(in, token >>> 4);
       wordNum += cleanLength;
       dirtyLength = 1 + readLength(in, token & 0x0F);
+      ++sequenceNum;
       return true;
     }
 
@@ -508,8 +521,25 @@ public final class WAH8DocIdSet extends DocIdSet {
       --dirtyLength;
     }
 
-    int binarySearch(int targetWordNum) {
-      int lo = 0, hi = positions.size() - 1;
+    int forwardBinarySearch(int targetWordNum) {
+      // advance forward and double the window at each step
+      final int indexSize = (int) wordNums.size();
+      int lo = sequenceNum / indexInterval, hi = lo + 1;
+      assert sequenceNum == -1 || wordNums.get(lo) <= wordNum;
+      assert lo + 1 == wordNums.size() || wordNums.get(lo + 1) > wordNum;
+      while (true) {
+        if (hi >= indexSize) {
+          hi = indexSize - 1;
+          break;
+        } else if (wordNums.get(hi) >= targetWordNum) {
+          break;
+        }
+        final int newLo = hi;
+        hi += (hi - lo) << 1;
+        lo = newLo;
+      }
+
+      // we found a window containing our target, let's binary search now
       while (lo <= hi) {
         final int mid = (lo + hi) >>> 1;
         final int midWordNum = (int) wordNums.get(mid);
@@ -526,9 +556,6 @@ public final class WAH8DocIdSet extends DocIdSet {
 
     void advanceWord(int targetWordNum) {
       assert targetWordNum > wordNum;
-      if (dirtyLength == 0 && !readSequence()) {
-        return;
-      }
       int delta = targetWordNum - wordNum;
       if (delta <= dirtyLength + 1) {
         if (delta > 1) {
@@ -538,11 +565,12 @@ public final class WAH8DocIdSet extends DocIdSet {
         skipDirtyBytes();
         assert dirtyLength == 0;
         // use the index
-        final int i = binarySearch(targetWordNum);
+        final int i = forwardBinarySearch(targetWordNum);
         final int position = (int) positions.get(i);
         if (position > in.getPosition()) { // if the binary search returned a backward offset, don't move
           wordNum = (int) wordNums.get(i) - 1;
           in.setPosition(position);
+          sequenceNum = i * indexInterval - 1;
         }
 
         while (true) {
@@ -599,24 +627,19 @@ public final class WAH8DocIdSet extends DocIdSet {
 
     @Override
     public long cost() {
-      return in.length(); // good estimation of the cost of iterating over all docs
+      return cardinality;
     }
 
   }
 
-  /** Return the number of documents in this {@link DocIdSet}. This method
-   *  runs in linear time but is much faster than counting documents. */
+  /** Return the number of documents in this {@link DocIdSet} in constant time. */
   public int cardinality() {
-    int cardinality = 0;
-    for (Iterator it = iterator(); it.wordNum != Integer.MAX_VALUE; it.nextWord()) {
-      cardinality += BitUtil.bitCount(it.word);
-    }
     return cardinality;
   }
 
   /** Return the memory usage of this class in bytes. */
   public long ramBytesUsed() {
-    return RamUsageEstimator.alignObjectSize(3 * RamUsageEstimator.NUM_BYTES_OBJECT_REF)
+    return RamUsageEstimator.alignObjectSize(3 * RamUsageEstimator.NUM_BYTES_OBJECT_REF + 2 * RamUsageEstimator.NUM_BYTES_INT)
         + RamUsageEstimator.sizeOf(data)
         + positions.ramBytesUsed()
         + wordNums.ramBytesUsed();
