@@ -78,6 +78,8 @@ public abstract class IndexDeletionPolicy implements Cloneable {
    * @param commits List of current 
    * {@link IndexCommit point-in-time commits},
    *  sorted by age (the 0th one is the oldest commit).
+   *  Note that for a new index this method is invoked with
+   *  an empty list.
    */
   public abstract void onInit(List<? extends IndexCommit> commits) throws IOException;
 
