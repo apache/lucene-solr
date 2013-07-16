@@ -18,12 +18,14 @@ package org.apache.lucene.util.packed;
  */
 
 import java.io.IOException;
+import java.util.Arrays;
 
 import org.apache.lucene.codecs.CodecUtil;
 import org.apache.lucene.store.DataInput;
 import org.apache.lucene.store.DataOutput;
 import org.apache.lucene.store.IndexInput;
 import org.apache.lucene.util.LongsRef;
+import org.apache.lucene.util.RamUsageEstimator;
 
 /**
  * Simplistic compression for array of unsigned long values.
@@ -703,7 +705,8 @@ public class PackedInts {
 
     @Override
     public int get(int index, long[] arr, int off, int len) {
-      return 0;
+      Arrays.fill(arr, off, off + len, 0);
+      return len;
     }
 
     @Override
@@ -718,7 +721,7 @@ public class PackedInts {
 
     @Override
     public long ramBytesUsed() {
-      return 0;
+      return RamUsageEstimator.alignObjectSize(RamUsageEstimator.NUM_BYTES_OBJECT_HEADER + RamUsageEstimator.NUM_BYTES_INT);
     }
 
     @Override

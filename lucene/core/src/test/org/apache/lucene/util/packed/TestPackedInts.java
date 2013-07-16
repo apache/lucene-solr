@@ -958,6 +958,14 @@ public class TestPackedInts extends LuceneTestCase {
           buf.add(arr[i]);
         }
         assertEquals(arr.length, buf.size());
+        if (random().nextBoolean()) {
+          buf.freeze();
+          if (random().nextBoolean()) {
+            // Make sure double freeze doesn't break anything
+            buf.freeze();
+          }
+        }
+        assertEquals(arr.length, buf.size());
         final AbstractAppendingLongBuffer.Iterator it = buf.iterator();
         for (int i = 0; i < arr.length; ++i) {
           if (random().nextBoolean()) {
@@ -973,8 +981,7 @@ public class TestPackedInts extends LuceneTestCase {
   
         final long expectedBytesUsed = RamUsageEstimator.sizeOf(buf);
         final long computedBytesUsed = buf.ramBytesUsed();
-        assertEquals("got " + computedBytesUsed + ", expected: " + expectedBytesUsed,
-            expectedBytesUsed, computedBytesUsed);
+        assertEquals(expectedBytesUsed, computedBytesUsed);
       }
     }
   }

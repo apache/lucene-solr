@@ -43,7 +43,7 @@ public final class MonotonicAppendingLongBuffer extends AbstractAppendingLongBuf
    *  @param pageSize         the size of a single page */
   public MonotonicAppendingLongBuffer(int initialPageCount, int pageSize) {
     super(initialPageCount, pageSize);
-    averages = new float[pending.length];
+    averages = new float[pageSize];
   }
 
   /** Create an {@link MonotonicAppendingLongBuffer} with initialPageCount=16
@@ -74,16 +74,15 @@ public final class MonotonicAppendingLongBuffer extends AbstractAppendingLongBuf
 
   @Override
   void packPendingValues() {
-    assert pendingOff == pending.length;
-
+    assert pendingOff > 0;
     minValues[valuesOff] = pending[0];
-    averages[valuesOff] = (float) (pending[pending.length - 1] - pending[0]) / (pending.length - 1);
+    averages[valuesOff] = pendingOff == 1 ? 0 : (float) (pending[pendingOff - 1] - pending[0]) / (pendingOff - 1);
 
-    for (int i = 0; i < pending.length; ++i) {
+    for (int i = 0; i < pendingOff; ++i) {
       pending[i] = zigZagEncode(pending[i] - minValues[valuesOff] - (long) (averages[valuesOff] * (long) i));
     }
     long maxDelta = 0;
-    for (int i = 0; i < pending.length; ++i) {
+    for (int i = 0; i < pendingOff; ++i) {
       if (pending[i] < 0) {
         maxDelta = -1;
         break;
@@ -91,7 +90,9 @@ public final class MonotonicAppendingLongBuffer extends AbstractAppendingLongBuf
         maxDelta = Math.max(maxDelta, pending[i]);
       }
     }
-    if (maxDelta != 0) {
+    if (maxDelta == 0) {
+      deltas[valuesOff] = new  PackedInts.NullReader(pendingOff);
+    } else {
       final int bitsRequired = maxDelta < 0 ? 64 : PackedInts.bitsRequired(maxDelta);
       final PackedInts.Mutable mutable = PackedInts.getMutable(pendingOff, bitsRequired, PackedInts.COMPACT);
       for (int i = 0; i < pendingOff; ) {
@@ -118,15 +119,13 @@ public final class MonotonicAppendingLongBuffer extends AbstractAppendingLongBuf
     void fillValues() {
       if (vOff == valuesOff) {
         currentValues = pending;
-      } else if (deltas[vOff] == null) {
-        for (int k = 0; k < pending.length; ++k) {
-          currentValues[k] = minValues[vOff] + (long) (averages[vOff] * (long) k);
-        }
+        currentCount = pendingOff;
       } else {
-        for (int k = 0; k < pending.length; ) {
-          k += deltas[vOff].get(k, currentValues, k, pending.length - k);
+        currentCount = deltas[vOff].size();
+        for (int k = 0; k < currentCount; ) {
+          k += deltas[vOff].get(k, currentValues, k, currentCount - k);
         }
-        for (int k = 0; k < pending.length; ++k) {
+        for (int k = 0; k < currentCount; ++k) {
           currentValues[k] = minValues[vOff] + (long) (averages[vOff] * (long) k) + zigZagDecode(currentValues[k]);
         }
       }

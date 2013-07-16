@@ -191,6 +191,7 @@ public abstract class Sorter {
     for (int i = 0; i < maxDoc; ++i) {
       newToOld.add(docs[i]);
     }
+    newToOld.freeze();
 
     for (int i = 0; i < maxDoc; ++i) {
       docs[(int) newToOld.get(i)] = i;
@@ -200,6 +201,7 @@ public abstract class Sorter {
     for (int i = 0; i < maxDoc; ++i) {
       oldToNew.add(docs[i]);
     }
+    oldToNew.freeze();
     
     return new Sorter.DocMap() {
 

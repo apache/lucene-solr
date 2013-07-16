@@ -328,6 +328,11 @@ public class MultiDocValues {
         }
         globalOrd++;
       }
+      subIndexes.freeze();
+      globalOrdDeltas.freeze();
+      for (int i = 0; i < ordDeltas.length; ++i) {
+        ordDeltas[i].freeze();
+      }
     }
     
     /** 

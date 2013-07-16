@@ -17,7 +17,6 @@ package org.apache.lucene.util.packed;
  * limitations under the License.
  */
 
-import java.util.Arrays;
 
 /**
  * Utility class to buffer a list of signed longs in memory. This class only
@@ -52,8 +51,6 @@ public final class AppendingLongBuffer extends AbstractAppendingLongBuffer {
 
   @Override
   void packPendingValues() {
-    assert pendingOff == pending.length;
-
     // compute max delta
     long minValue = pending[0];
     long maxValue = pending[0];
@@ -64,7 +61,9 @@ public final class AppendingLongBuffer extends AbstractAppendingLongBuffer {
     final long delta = maxValue - minValue;
 
     minValues[valuesOff] = minValue;
-    if (delta != 0) {
+    if (delta == 0) {
+      deltas[valuesOff] = new PackedInts.NullReader(pendingOff);
+    } else {
       // build a new packed reader
       final int bitsRequired = delta < 0 ? 64 : PackedInts.bitsRequired(delta);
       for (int i = 0; i < pendingOff; ++i) {
@@ -95,13 +94,13 @@ public final class AppendingLongBuffer extends AbstractAppendingLongBuffer {
     void fillValues() {
       if (vOff == valuesOff) {
         currentValues = pending;
-      } else if (deltas[vOff] == null) {
-        Arrays.fill(currentValues, minValues[vOff]);
+        currentCount = pendingOff;
       } else {
-        for (int k = 0; k < pending.length; ) {
-          k += deltas[vOff].get(k, currentValues, k, pending.length - k);
+        currentCount = deltas[vOff].size();
+        for (int k = 0; k < currentCount; ) {
+          k += deltas[vOff].get(k, currentValues, k, currentCount - k);
         }
-        for (int k = 0; k < pending.length; ++k) {
+        for (int k = 0; k < currentCount; ++k) {
           currentValues[k] += minValues[vOff];
         }
       }
