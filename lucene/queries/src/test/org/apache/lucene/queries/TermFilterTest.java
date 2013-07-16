@@ -123,7 +123,7 @@ public class TermFilterTest extends LuceneTestCase {
       String field1 = "field" + i;
       String field2 = "field" + i + num;
       String value1 = _TestUtil.randomRealisticUnicodeString(random());
-      String value2 = _TestUtil.randomRealisticUnicodeString(random());
+      String value2 = _TestUtil.randomRealisticUnicodeString(random()) + "x"; // this must be not equal to value1
 
       TermFilter filter1 = termFilter(field1, value1);
       TermFilter filter2 = termFilter(field1, value2);
@@ -139,6 +139,8 @@ public class TermFilterTest extends LuceneTestCase {
             assertEquals(termFilter.hashCode(), otherTermFilter.hashCode());
             assertTrue(termFilter.equals(otherTermFilter));
           } else {
+            System.out.println(termFilter);
+            System.out.println(otherTermFilter);
             assertFalse(termFilter.equals(otherTermFilter));
           }
         }
