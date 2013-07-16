@@ -30,8 +30,22 @@ sammy.bind
         },
         success : function( response, text_status, xhr )
         {
+          var has_cores = false;
+          for( core in response.status )
+          {
+            has_cores = true; break;
+          }
+
           app.set_cores_data( response );
-          params.callback( app.cores_data );
+          
+          if( has_cores )
+          {
+            params.success( app.cores_data );
+          }
+          else
+          {
+            params.error();
+          }
         },
         error : function( xhr, text_status, error_thrown)
         {
@@ -102,12 +116,13 @@ sammy.get
   function( context )
   {
     delete app.cores_template;
+    var content_element = $( '#content' );
 
     sammy.trigger
     (
       'cores_load_data',
       {
-        callback :  function( cores )
+        success : function( cores )
         {
           var first_core = null;
           for( var key in cores )
@@ -119,6 +134,146 @@ sammy.get
             continue;
           }
           context.redirect( context.path + '/' + first_core );
+        },
+        error : function()
+        {
+          sammy.trigger
+          (
+            'cores_load_template',
+            {
+              content_element : content_element,
+              callback : function()
+              {
+                var cores_element = $( '#cores', content_element );
+                var navigation_element = $( '#navigation', cores_element );
+                var data_element = $( '#data', cores_element );
+                var core_data_element = $( '#core-data', data_element );
+                var index_data_element = $( '#index-data', data_element );
+
+                // layout
+
+                var ui_block = $( '#ui-block' );
+                var actions_element = $( '.actions', cores_element );
+                var div_action = $( 'div.action', actions_element );
+
+                ui_block
+                  .css( 'opacity', 0.7 )
+                  .width( cores_element.width() + 10 )
+                  .height( cores_element.height() );
+
+                if( $( '#cloud.global' ).is( ':visible' ) )
+                {
+                  $( '.cloud', div_action )
+                    .show();
+                }
+
+                $( 'button.action', actions_element )
+                  .die( 'click' )
+                  .live
+                  (
+                    'click',
+                    function( event )
+                    {
+                      var self = $( this );
+
+                      self
+                        .toggleClass( 'open' );
+
+                      $( '.action.' + self.attr( 'id' ), actions_element )
+                        .trigger( 'open' );
+
+                      return false;
+                    }
+                  );
+
+                div_action
+                  .die( 'close' )
+                  .live
+                  (
+                    'close',
+                    function( event )
+                    {
+                      div_action.hide();
+                      ui_block.hide();
+                    }
+                  )
+                  .die( 'open' )
+                  .live
+                  (
+                    'open',
+                    function( event )
+                    {
+                      var self = $( this );
+                      var rel = $( '#' + self.data( 'rel' ) );
+
+                      self
+                        .trigger( 'close' )
+                        .show()
+                        .css( 'left', rel.position().left );
+                      
+                      ui_block
+                        .show();
+                    }
+                  );
+
+                $( 'form button.reset', actions_element )
+                  .die( 'click' )
+                  .live
+                  (
+                    'click',
+                    function( event )
+                    {
+                      $( this ).closest( 'div.action' )
+                        .trigger( 'close' );
+                    }
+                  );
+
+                $( 'form', div_action )
+                  .ajaxForm
+                  (
+                    {
+                      url : app.config.solr_path + app.config.core_admin_path + '?wt=json&indexInfo=false',
+                      dataType : 'json',
+                      beforeSubmit : function( array, form, options )
+                      {
+                        $( 'button[type="submit"] span', form )
+                          .addClass( 'loader' );
+                      },
+                      success : function( response, status_text, xhr, form )
+                      {
+                        delete app.cores_data;
+                        sammy.refresh();
+
+                        $( 'button.reset', form )
+                          .trigger( 'click' );
+                      },
+                      error : function( xhr, text_status, error_thrown )
+                      {
+                        var response = null;
+                        eval( 'response = ' + xhr.responseText + ';' );
+
+                        var error_elem = $( '.error', div_action.filter( ':visible' ) );
+                        error_elem.show();
+                        $( 'span', error_elem ).text( response.error.msg );
+                      },
+                      complete : function()
+                      {
+                        $( 'button span.loader', actions_element )
+                          .removeClass( 'loader' );
+                      }
+                    }
+                  );
+
+                // --
+
+                $( '#add', content_element )
+                  .trigger( 'click' );
+
+                $( '[data-rel="add"] input[type="text"]:first', content_element )
+                  .focus();
+              }
+            }
+          );
         }
       }
     );
@@ -140,7 +295,11 @@ sammy.get
     (
       'cores_load_data',
       {
-        callback : function( cores )
+        error : function()
+        {
+          context.redirect( '#/' + context.params.splat[0] );
+        },
+        success : function( cores )
         {
           sammy.trigger
           (
@@ -154,6 +313,9 @@ sammy.get
                 var data_element = $( '#data', cores_element );
                 var core_data_element = $( '#core-data', data_element );
                 var index_data_element = $( '#index-data', data_element );
+
+                cores_element
+                  .removeClass( 'empty' );
 
                 sammy.trigger
                 (

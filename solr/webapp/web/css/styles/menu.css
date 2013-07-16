@@ -54,6 +54,22 @@ limitations under the License.
   width: 100%;
 }
 
+#core-selector #has-no-cores
+{
+  display: none;
+}
+
+#core-selector #has-no-cores a
+{
+  background-image: url( ../../img/ico/database--plus.png );
+}
+
+#core-selector #has-no-cores span
+{
+  color: #c0c0c0;
+  display: block;
+}
+
 #menu-wrapper .active p
 {
   background-color: #fafafa;
