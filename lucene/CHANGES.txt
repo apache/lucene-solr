@@ -36,6 +36,9 @@ New Features
   no longer support multiple "dictionaries" as there is only one dictionary available.
   (Dawid Weiss)
 
+* SOLR-3359: Added analyzer attribute/property to SynonymFilterFactory.
+  (Ryo Onodera via Koji Sekiguchi)
+
 Optimizations
 
 * LUCENE-4848: Use Java 7 NIO2-FileChannel instead of RandomAccessFile
@@ -56,9 +59,6 @@ New features
 
 * LUCENE-5098: New broadword utility methods in oal.util.BroadWord.
   (Paul Elschot via Adrien Grand, Dawid Weiss)
-
-* SOLR-3359: Added analyzer attribute/property to SynonymFilterFactory.
-  (Ryo Onodera via Koji Sekiguchi)
 
 API Changes
 
