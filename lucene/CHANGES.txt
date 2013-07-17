@@ -57,6 +57,9 @@ New features
 * LUCENE-5098: New broadword utility methods in oal.util.BroadWord.
   (Paul Elschot via Adrien Grand, Dawid Weiss)
 
+* SOLR-3359: Added analyzer attribute/property to SynonymFilterFactory.
+  (Ryo Onodera via Koji Sekiguchi)
+
 API Changes
 
 * LUCENE-5094: Add ramBytesUsed() to MultiDocValues.OrdinalMap.

@@ -29,6 +29,7 @@ import org.apache.lucene.analysis.util.TokenFilterFactory;
 import org.apache.lucene.analysis.util.BaseTokenStreamFactoryTestCase;
 import org.apache.lucene.analysis.util.ClasspathResourceLoader;
 import org.apache.lucene.analysis.util.StringMockResourceLoader;
+import org.apache.lucene.analysis.cjk.CJKAnalyzer;
 
 public class TestSynonymFilterFactory extends BaseTokenStreamFactoryTestCase {
   /** test that we can parse and use the solr syn file */
@@ -61,6 +62,28 @@ public class TestSynonymFilterFactory extends BaseTokenStreamFactoryTestCase {
       fail();
     } catch (IllegalArgumentException expected) {
       assertTrue(expected.getMessage().contains("Unknown parameters"));
+    }
+  }
+
+  /** Test that analyzer and tokenizerFactory is both specified */
+  public void testAnalyzer() throws Exception {
+    final String analyzer = CJKAnalyzer.class.getName();
+    final String tokenizerFactory = PatternTokenizerFactory.class.getName();
+    TokenFilterFactory factory = null;
+
+    factory = tokenFilterFactory("Synonym",
+        "synonyms", "synonyms2.txt",
+        "analyzer", analyzer);
+    assertNotNull(factory);
+
+    try {
+      tokenFilterFactory("Synonym",
+          "synonyms", "synonyms.txt",
+          "analyzer", analyzer,
+          "tokenizerFactory", tokenizerFactory);
+      fail();
+    } catch (IllegalArgumentException expected) {
+      assertTrue(expected.getMessage().contains("Analyzer and TokenizerFactory can't be specified both"));
     }
   }
 
