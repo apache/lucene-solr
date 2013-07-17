@@ -70,6 +70,12 @@ Bug Fixes
 * SOLR-3633 - web UI reports an error if CoreAdminHandler says there are no 
   SolrCores (steffkes)
 
+Optimizations
+----------------------
+
+* SOLR-5044: Admin UI - Note on Core-Admin about directories while creating 
+  core (seffkes)
+
 Other Changes
 ----------------------
 
