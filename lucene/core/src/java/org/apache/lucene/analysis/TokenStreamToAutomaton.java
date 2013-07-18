@@ -32,7 +32,8 @@ import org.apache.lucene.util.automaton.Transition;
 // TODO: maybe also toFST?  then we can translate atts into FST outputs/weights
 
 /** Consumes a TokenStream and creates an {@link Automaton}
- *  where the transition labels are UTF8 bytes from the {@link
+ *  where the transition labels are UTF8 bytes (or Unicode 
+ *  code points if unicodeArcs is true) from the {@link
  *  TermToBytesRefAttribute}.  Between tokens we insert
  *  POS_SEP and for holes we insert HOLE.
  *
@@ -40,6 +41,7 @@ import org.apache.lucene.util.automaton.Transition;
 public class TokenStreamToAutomaton {
 
   private boolean preservePositionIncrements;
+  private boolean unicodeArcs;
 
   /** Sole constructor. */
   public TokenStreamToAutomaton() {
@@ -49,6 +51,12 @@ public class TokenStreamToAutomaton {
   /** Whether to generate holes in the automaton for missing positions, <code>true</code> by default. */
   public void setPreservePositionIncrements(boolean enablePositionIncrements) {
     this.preservePositionIncrements = enablePositionIncrements;
+  }
+
+  /** Whether to make transition labels Unicode code points instead of UTF8 bytes, 
+   *  <code>false</code> by default */
+  public void setUnicodeArcs(boolean unicodeArcs) {
+    this.unicodeArcs = unicodeArcs;
   }
 
   private static class Position implements RollingBuffer.Resettable {
@@ -80,15 +88,16 @@ public class TokenStreamToAutomaton {
   }
 
   /** We create transition between two adjacent tokens. */
-  public static final int POS_SEP = 256;
+  public static final int POS_SEP = 0x001f;
 
   /** We add this arc to represent a hole. */
-  public static final int HOLE = 257;
+  public static final int HOLE = 0x001e;
 
   /** Pulls the graph (including {@link
    *  PositionLengthAttribute}) from the provided {@link
    *  TokenStream}, and creates the corresponding
-   *  automaton where arcs are bytes from each term. */
+   *  automaton where arcs are bytes (or Unicode code points 
+   *  if unicodeArcs = true) from each term. */
   public Automaton toAutomaton(TokenStream in) throws IOException {
     final Automaton a = new Automaton();
     boolean deterministic = true;
@@ -156,16 +165,34 @@ public class TokenStreamToAutomaton {
       final int endPos = pos + posLengthAtt.getPositionLength();
 
       termBytesAtt.fillBytesRef();
-      final BytesRef term2 = changeToken(term);
+      final BytesRef termUTF8 = changeToken(term);
+      int[] termUnicode = null;
       final Position endPosData = positions.get(endPos);
       if (endPosData.arriving == null) {
         endPosData.arriving = new State();
       }
 
       State state = posData.leaving;
-      for(int byteIDX=0;byteIDX<term2.length;byteIDX++) {
-        final State nextState = byteIDX == term2.length-1 ? endPosData.arriving : new State();
-        state.addTransition(new Transition(term2.bytes[term2.offset + byteIDX] & 0xff, nextState));
+      int termLen;
+      if (unicodeArcs) {
+        final String utf16 = termUTF8.utf8ToString();
+        termUnicode = new int[utf16.codePointCount(0, utf16.length())];
+        termLen = termUnicode.length;
+        for (int cp, i = 0, j = 0; i < utf16.length(); i += Character.charCount(cp))
+          termUnicode[j++] = cp = utf16.codePointAt(i);
+      } else {
+        termLen = termUTF8.length;
+      }
+
+      for(int byteIDX=0;byteIDX<termLen;byteIDX++) {
+        final State nextState = byteIDX == termLen-1 ? endPosData.arriving : new State();
+        int c;
+        if (unicodeArcs) {
+          c = termUnicode[byteIDX];
+        } else {
+          c = termUTF8.bytes[termUTF8.offset + byteIDX] & 0xff;
+        }
+        state.addTransition(new Transition(c, nextState));
         state = nextState;
       }
 
