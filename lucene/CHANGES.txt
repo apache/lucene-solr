@@ -164,6 +164,10 @@ Bug Fixes
   SortedSetDocValuesReaderState and SortedSetDocValuesAccumulator.
   (Robert Muir, Mike McCandless)
 
+* LUCENE-5120: AnalyzingSuggester modifed it's FST's cached root arc if payloads
+  are used and the entire output resided on the root arc on the first access. This
+  caused subsequent suggest calls to fail. (Simon Willnauer)
+
 Optimizations
 
 * LUCENE-4936: Improve numeric doc values compression in case all values share
