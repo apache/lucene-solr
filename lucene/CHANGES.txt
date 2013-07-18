@@ -270,6 +270,9 @@ API Changes
   longer needed. This method uses an internal reuseable reader, which was
   previously only used by the Field class.  (Uwe Schindler, Robert Muir)
   
+* LUCENE-4542: HunspellStemFilter's maximum recursion level is now configurable.
+  (Piotr, Rafał Kuć via Adrien Grand)
+  
 Build
 
 * LUCENE-4987: Upgrade randomized testing to version 2.0.10: 
