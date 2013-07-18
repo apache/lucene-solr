@@ -72,6 +72,9 @@ API Changes
 * LUCENE-5114: Remove unused boolean useCache parameter from
   TermsEnum.seekCeil and .seekExact (Mike McCandless)
 
+* LUCENE-4542: HunspellStemFilter's maximum recursion level is now configurable.
+  (Piotr, Rafał Kuć via Adrien Grand)
+
 Optimizations
 
 * LUCENE-5088: Added TermFilter to filter docs by a specific term.
