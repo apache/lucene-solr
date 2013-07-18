@@ -624,9 +624,8 @@ public class AnalyzingSuggester extends Lookup {
       }
       assert sepIndex != -1;
       spare.grow(sepIndex);
-      int payloadLen = output2.length - sepIndex - 1;
-      output2.length = sepIndex;
-      UnicodeUtil.UTF8toUTF16(output2, spare);
+      final int payloadLen = output2.length - sepIndex - 1;
+      UnicodeUtil.UTF8toUTF16(output2.bytes, output2.offset, sepIndex, spare);
       BytesRef payload = new BytesRef(payloadLen);
       System.arraycopy(output2.bytes, sepIndex+1, payload.bytes, 0, payloadLen);
       payload.length = payloadLen;
