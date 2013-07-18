@@ -60,7 +60,9 @@ public class FuzzySuggesterTest extends LuceneTestCase {
       keys.add(new TermFreq("boo" + _TestUtil.randomSimpleString(random()), 1 + random().nextInt(100)));
     }
     keys.add(new TermFreq("foo bar boo far", 12));
-    FuzzySuggester suggester = new FuzzySuggester(new MockAnalyzer(random(), MockTokenizer.KEYWORD, false));
+    MockAnalyzer analyzer = new MockAnalyzer(random(), MockTokenizer.KEYWORD, false);
+    FuzzySuggester suggester = new FuzzySuggester(analyzer, analyzer, FuzzySuggester.EXACT_FIRST | FuzzySuggester.PRESERVE_SEP, 256, -1, FuzzySuggester.DEFAULT_MAX_EDITS, FuzzySuggester.DEFAULT_TRANSPOSITIONS,
+                                                  0, FuzzySuggester.DEFAULT_MIN_FUZZY_LENGTH, FuzzySuggester.DEFAULT_UNICODE_AWARE);
     suggester.build(new TermFreqArrayIterator(keys));
     int numIters = atLeast(10);
     for (int i = 0; i < numIters; i++) {
@@ -72,6 +74,27 @@ public class FuzzySuggesterTest extends LuceneTestCase {
     }
   }
   
+  public void testNonLatinRandomEdits() throws IOException {
+    List<TermFreq> keys = new ArrayList<TermFreq>();
+    int numTerms = atLeast(100);
+    for (int i = 0; i < numTerms; i++) {
+      keys.add(new TermFreq("буу" + _TestUtil.randomSimpleString(random()), 1 + random().nextInt(100)));
+    }
+    keys.add(new TermFreq("фуу бар буу фар", 12));
+    MockAnalyzer analyzer = new MockAnalyzer(random(), MockTokenizer.KEYWORD, false);
+    FuzzySuggester suggester = new FuzzySuggester(analyzer, analyzer, FuzzySuggester.EXACT_FIRST | FuzzySuggester.PRESERVE_SEP, 256, -1, FuzzySuggester.DEFAULT_MAX_EDITS, FuzzySuggester.DEFAULT_TRANSPOSITIONS,
+        0, FuzzySuggester.DEFAULT_MIN_FUZZY_LENGTH, true);
+    suggester.build(new TermFreqArrayIterator(keys));
+    int numIters = atLeast(10);
+    for (int i = 0; i < numIters; i++) {
+      String addRandomEdit = addRandomEdit("фуу бар буу", 0);
+      List<LookupResult> results = suggester.lookup(_TestUtil.stringToCharSequence(addRandomEdit, random()), false, 2);
+      assertEquals(addRandomEdit, 1, results.size());
+      assertEquals("фуу бар буу фар", results.get(0).key.toString());
+      assertEquals(12, results.get(0).value, 0.01F);
+    }
+  }
+
   /** this is basically the WFST test ported to KeywordAnalyzer. so it acts the same */
   public void testKeyword() throws Exception {
     TermFreq keys[] = new TermFreq[] {
@@ -185,7 +208,7 @@ public class FuzzySuggesterTest extends LuceneTestCase {
     int options = 0;
 
     Analyzer a = new MockAnalyzer(random());
-    FuzzySuggester suggester = new FuzzySuggester(a, a, options, 256, -1, 1, true, 1, 3);
+    FuzzySuggester suggester = new FuzzySuggester(a, a, options, 256, -1, 1, true, 1, 3, false);
     suggester.build(new TermFreqArrayIterator(keys));
     // TODO: would be nice if "ab " would allow the test to
     // pass, and more generally if the analyzer can know
@@ -394,7 +417,7 @@ public class FuzzySuggesterTest extends LuceneTestCase {
   public void testExactFirst() throws Exception {
 
     Analyzer a = getUnusualAnalyzer();
-    FuzzySuggester suggester = new FuzzySuggester(a, a, AnalyzingSuggester.EXACT_FIRST | AnalyzingSuggester.PRESERVE_SEP, 256, -1, 1, true, 1, 3);
+    FuzzySuggester suggester = new FuzzySuggester(a, a, AnalyzingSuggester.EXACT_FIRST | AnalyzingSuggester.PRESERVE_SEP, 256, -1, 1, true, 1, 3, false);
     suggester.build(new TermFreqArrayIterator(new TermFreq[] {
           new TermFreq("x y", 1),
           new TermFreq("x y z", 3),
@@ -433,7 +456,7 @@ public class FuzzySuggesterTest extends LuceneTestCase {
   public void testNonExactFirst() throws Exception {
 
     Analyzer a = getUnusualAnalyzer();
-    FuzzySuggester suggester = new FuzzySuggester(a, a, AnalyzingSuggester.PRESERVE_SEP, 256, -1, 1, true, 1, 3);
+    FuzzySuggester suggester = new FuzzySuggester(a, a, AnalyzingSuggester.PRESERVE_SEP, 256, -1, 1, true, 1, 3, false);
 
     suggester.build(new TermFreqArrayIterator(new TermFreq[] {
           new TermFreq("x y", 1),
@@ -580,12 +603,13 @@ public class FuzzySuggesterTest extends LuceneTestCase {
     TermFreq[] keys = new TermFreq[numQueries];
 
     boolean preserveSep = random().nextBoolean();
+    boolean unicodeAware = random().nextBoolean();
 
     final int numStopChars = random().nextInt(10);
     final boolean preserveHoles = random().nextBoolean();
 
     if (VERBOSE) {
-      System.out.println("TEST: " + numQueries + " words; preserveSep=" + preserveSep + " numStopChars=" + numStopChars + " preserveHoles=" + preserveHoles);
+      System.out.println("TEST: " + numQueries + " words; preserveSep=" + preserveSep + " ; unicodeAware=" + unicodeAware + " numStopChars=" + numStopChars + " preserveHoles=" + preserveHoles);
     }
     
     for (int i = 0; i < numQueries; i++) {
@@ -606,7 +630,7 @@ public class FuzzySuggesterTest extends LuceneTestCase {
               if (token > 0) {
                 key += " ";
               }
-              if (preserveSep && analyzedKey.length() > 0 && analyzedKey.charAt(analyzedKey.length()-1) != ' ') {
+              if (preserveSep && analyzedKey.length() > 0 && (unicodeAware ? analyzedKey.codePointAt(analyzedKey.codePointCount(0, analyzedKey.length())-1) != ' ' : analyzedKey.charAt(analyzedKey.length()-1) != ' ')) {
                 analyzedKey += " ";
               }
               key += s;
@@ -659,7 +683,7 @@ public class FuzzySuggesterTest extends LuceneTestCase {
 
     Analyzer a = new MockTokenEatingAnalyzer(numStopChars, preserveHoles);
     FuzzySuggester suggester = new FuzzySuggester(a, a,
-                                                  preserveSep ? AnalyzingSuggester.PRESERVE_SEP : 0, 256, -1, 1, false, 1, 3);
+                                                  preserveSep ? AnalyzingSuggester.PRESERVE_SEP : 0, 256, -1, 1, false, 1, 3, unicodeAware);
     suggester.build(new TermFreqArrayIterator(keys));
 
     for (String prefix : allPrefixes) {
@@ -728,7 +752,7 @@ public class FuzzySuggesterTest extends LuceneTestCase {
       // us the "answer key" (ie maybe we have a bug in
       // suggester.toLevA ...) ... but testRandom2() fixes
       // this:
-      Automaton automaton = suggester.toLevenshteinAutomata(suggester.toLookupAutomaton(analyzedKey));
+      Automaton automaton = suggester.convertAutomaton(suggester.toLevenshteinAutomata(suggester.toLookupAutomaton(analyzedKey)));
       assertTrue(automaton.isDeterministic());
       // TODO: could be faster... but its slowCompletor for a reason
       BytesRef spare = new BytesRef();
@@ -799,7 +823,7 @@ public class FuzzySuggesterTest extends LuceneTestCase {
 
   public void testMaxSurfaceFormsPerAnalyzedForm() throws Exception {
     Analyzer a = new MockAnalyzer(random());
-    FuzzySuggester suggester = new FuzzySuggester(a, a, 0, 2, -1, 1, true, 1, 3);
+    FuzzySuggester suggester = new FuzzySuggester(a, a, 0, 2, -1, 1, true, 1, 3, false);
 
     List<TermFreq> keys = Arrays.asList(new TermFreq[] {
         new TermFreq("a", 40),
@@ -820,7 +844,7 @@ public class FuzzySuggesterTest extends LuceneTestCase {
 
   public void testEditSeps() throws Exception {
     Analyzer a = new MockAnalyzer(random());
-    FuzzySuggester suggester = new FuzzySuggester(a, a, FuzzySuggester.PRESERVE_SEP, 2, -1, 2, true, 1, 3);
+    FuzzySuggester suggester = new FuzzySuggester(a, a, FuzzySuggester.PRESERVE_SEP, 2, -1, 2, true, 1, 3, false);
 
     List<TermFreq> keys = Arrays.asList(new TermFreq[] {
         new TermFreq("foo bar", 40),
@@ -878,7 +902,8 @@ public class FuzzySuggesterTest extends LuceneTestCase {
             // NOTE: can only use ascii here so that, in
             // UTF8 byte space it's still a single
             // insertion:
-            int x = random().nextInt(128);
+            // bytes 0x1e and 0x1f are reserved
+            int x = random().nextBoolean() ? random().nextInt(30) :  32 + random().nextInt(128 - 32);
             builder.append((char) x);
             for (int j = i; j < input.length; j++) {
               builder.append(input[j]);  
@@ -933,7 +958,7 @@ public class FuzzySuggesterTest extends LuceneTestCase {
     boolean transpositions = random().nextBoolean();
     // TODO: test graph analyzers
     // TODO: test exactFirst / preserveSep permutations
-    FuzzySuggester suggest = new FuzzySuggester(a, a, 0, 256, -1, maxEdits, transpositions, prefixLen, prefixLen);
+    FuzzySuggester suggest = new FuzzySuggester(a, a, 0, 256, -1, maxEdits, transpositions, prefixLen, prefixLen, false);
 
     if (VERBOSE) {
       System.out.println("TEST: maxEdits=" + maxEdits + " prefixLen=" + prefixLen + " transpositions=" + transpositions + " num=" + NUM);

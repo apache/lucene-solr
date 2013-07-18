@@ -33,23 +33,33 @@ import org.apache.solr.spelling.suggest.LookupFactory;
 public class FuzzyLookupFactory extends LookupFactory {
 
   /**
+   * If <code>true</code>, maxEdits, minFuzzyLength, transpositions and nonFuzzyPrefix 
+   * will be measured in Unicode code points (actual letters) instead of bytes.
+   */
+  public static final String UNICODE_AWARE = "unicodeAware";
+
+  /**
    * Maximum number of edits allowed, used by {@link LevenshteinAutomata#toAutomaton(int)}
+   * in bytes or Unicode code points (if {@link #UNICODE_AWARE} option is set to true).
    */
   public static final String MAX_EDITS = "maxEdits";
   
   /**
    * If transpositions are allowed, Fuzzy suggestions will be computed based on a primitive 
    * edit operation. If it is false, it will be based on the classic Levenshtein algorithm.
+   * Transpositions of bytes or Unicode code points (if {@link #UNICODE_AWARE} option is set to true).
    */
   public static final String TRANSPOSITIONS = "transpositions";
   
   /**
    * Length of common (non-fuzzy) prefix for the suggestions
+   * in bytes or Unicode code points (if {@link #UNICODE_AWARE} option is set to true).
    */
   public static final String NON_FUZZY_PREFIX = "nonFuzzyPrefix";
   
   /**
    * Minimum length of lookup key before any edits are allowed for the suggestions
+   * in bytes or Unicode code points (if {@link #UNICODE_AWARE} option is set to true).
    */
   public static final String MIN_FUZZY_LENGTH = "minFuzzyLength";
   
@@ -113,9 +123,13 @@ public class FuzzyLookupFactory extends LookupFactory {
     ? Integer.parseInt(params.get(MIN_FUZZY_LENGTH).toString())
     :FuzzySuggester.DEFAULT_MIN_FUZZY_LENGTH;
     
+    boolean unicodeAware = (params.get(UNICODE_AWARE) != null)
+    ? Boolean.valueOf(params.get(UNICODE_AWARE).toString())
+    : FuzzySuggester.DEFAULT_UNICODE_AWARE;
+    
     return new FuzzySuggester(indexAnalyzer, queryAnalyzer, options, 
         maxSurfaceFormsPerAnalyzedForm, maxGraphExpansions, maxEdits, 
-        transpositions, nonFuzzyPrefix, minFuzzyLength);
+        transpositions, nonFuzzyPrefix, minFuzzyLength, unicodeAware);
   }
 
   @Override

@@ -159,7 +159,7 @@ public class AnalyzingSuggester extends Lookup {
 
   /** Represents the separation between tokens, if
    *  PRESERVE_SEP was specified */
-  private static final int SEP_LABEL = 0xff;
+  private static final int SEP_LABEL = '\u001F';
 
   /** Marks end of the analyzed input and start of dedup
    *  byte. */
@@ -306,44 +306,14 @@ public class AnalyzingSuggester extends Lookup {
     }
   }
 
-  /** Just escapes the 0xff byte (which we still for SEP). */
-  private static final class  EscapingTokenStreamToAutomaton extends TokenStreamToAutomaton {
-
-    final BytesRef spare = new BytesRef();
-
-    @Override
-    protected BytesRef changeToken(BytesRef in) {
-      int upto = 0;
-      for(int i=0;i<in.length;i++) {
-        byte b = in.bytes[in.offset+i];
-        if (b == (byte) 0xff) {
-          if (spare.bytes.length == upto) {
-            spare.grow(upto+2);
-          }
-          spare.bytes[upto++] = (byte) 0xff;
-          spare.bytes[upto++] = b;
-        } else {
-          if (spare.bytes.length == upto) {
-            spare.grow(upto+1);
-          }
-          spare.bytes[upto++] = b;
-        }
-      }
-      spare.offset = 0;
-      spare.length = upto;
-      return spare;
-    }
+  /** Used by subclass to change the lookup automaton, if
+   *  necessary. */
+  protected Automaton convertAutomaton(Automaton a) {
+    return a;
   }
-
+  
   TokenStreamToAutomaton getTokenStreamToAutomaton() {
-    final TokenStreamToAutomaton tsta;
-    if (preserveSep) {
-      tsta = new EscapingTokenStreamToAutomaton();
-    } else {
-      // When we're not preserving sep, we don't steal 0xff
-      // byte, so we don't need to do any escaping:
-      tsta = new TokenStreamToAutomaton();
-    }
+    final TokenStreamToAutomaton tsta = new TokenStreamToAutomaton();
     tsta.setPreservePositionIncrements(preservePositionIncrements);
     return tsta;
   }
@@ -412,7 +382,7 @@ public class AnalyzingSuggester extends Lookup {
 
       return 0;
     }
-  };
+  }
 
   @Override
   public void build(TermFreqIterator iterator) throws IOException {
@@ -699,6 +669,14 @@ public class AnalyzingSuggester extends Lookup {
     }
 
     //System.out.println("lookup key=" + key + " num=" + num);
+    for (int i = 0; i < key.length(); i++) {
+      if (key.charAt(i) == 0x1E) {
+        throw new IllegalArgumentException("lookup key cannot contain HOLE character U+001E; this character is reserved");
+      }
+      if (key.charAt(i) == 0x1F) {
+        throw new IllegalArgumentException("lookup key cannot contain unit separator character U+001F; this character is reserved");
+      }
+    }
     final BytesRef utf8Key = new BytesRef(key);
     try {
 
@@ -720,7 +698,7 @@ public class AnalyzingSuggester extends Lookup {
 
       final List<LookupResult> results = new ArrayList<LookupResult>();
 
-      List<FSTUtil.Path<Pair<Long,BytesRef>>> prefixPaths = FSTUtil.intersectPrefixPaths(lookupAutomaton, fst);
+      List<FSTUtil.Path<Pair<Long,BytesRef>>> prefixPaths = FSTUtil.intersectPrefixPaths(convertAutomaton(lookupAutomaton), fst);
 
       if (exactFirst) {
 
@@ -864,6 +842,7 @@ public class AnalyzingSuggester extends Lookup {
     ts.close();
 
     replaceSep(automaton);
+    automaton = convertAutomaton(automaton);
 
     assert SpecialOperations.isFinite(automaton);
 
