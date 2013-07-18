@@ -17,16 +17,10 @@ package org.apache.lucene.analysis.hunspell;
  * limitations under the License.
  */
 
-import java.io.FileInputStream;
-import java.io.IOException;
-import java.io.InputStream;
-import java.nio.charset.Charset;
-import java.text.ParseException;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
-import java.util.Scanner;
 
 import org.apache.lucene.analysis.util.CharArraySet;
 import org.apache.lucene.analysis.util.CharacterUtils;
@@ -37,22 +31,32 @@ import org.apache.lucene.util.Version;
  * conforms to the algorithm in the original hunspell algorithm, including recursive suffix stripping.
  */
 public class HunspellStemmer {
-
-  private static final int RECURSION_CAP = 2;
-  
+  private final int recursionCap;
   private final HunspellDictionary dictionary;
   private final StringBuilder segment = new StringBuilder();
   private CharacterUtils charUtils = CharacterUtils.getInstance(Version.LUCENE_40);
 
   /**
-   * Constructs a new HunspellStemmer which will use the provided HunspellDictionary to create its stems
+   * Constructs a new HunspellStemmer which will use the provided HunspellDictionary to create its stems. Uses the 
+   * default recursion cap of <code>2</code> (based on Hunspell documentation). 
    *
    * @param dictionary HunspellDictionary that will be used to create the stems
    */
   public HunspellStemmer(HunspellDictionary dictionary) {
-    this.dictionary = dictionary;
+    this(dictionary, 2);
   }
 
+  /**
+   * Constructs a new HunspellStemmer which will use the provided HunspellDictionary to create its stems
+   *
+   * @param dictionary HunspellDictionary that will be used to create the stems
+   * @param recursionCap maximum level of recursion stemmer can go into
+   */
+  public HunspellStemmer(HunspellDictionary dictionary, int recursionCap) {
+    this.dictionary = dictionary;
+    this.recursionCap = recursionCap;
+  } 
+  
   /**
    * Find the stem(s) of the provided word
    * 
@@ -194,7 +198,7 @@ public class HunspellStemmer {
       }
     }
 
-    if (affix.isCrossProduct() && recursionDepth < RECURSION_CAP) {
+    if (affix.isCrossProduct() && recursionDepth < recursionCap) {
       stems.addAll(stem(strippedWord, length, affix.getAppendFlags(), ++recursionDepth));
     }
 
