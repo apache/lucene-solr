@@ -43,6 +43,7 @@ import org.apache.lucene.store.BaseDirectoryWrapper;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.MockDirectoryWrapper;
 import org.apache.lucene.store.RAMDirectory;
+import org.apache.lucene.util.Bits;
 import org.apache.lucene.util.LuceneTestCase;
 import org.apache.lucene.util._TestUtil;
 
@@ -1205,4 +1206,53 @@ public class TestAddIndexes extends LuceneTestCase {
     r3.close();
     d3.close();
   }
+  
+  public void testAddEmpty() throws Exception {
+    Directory d1 = newDirectory();
+    RandomIndexWriter w = new RandomIndexWriter(random(), d1);
+    MultiReader empty = new MultiReader();
+    w.addIndexes(empty);
+    w.close();
+    DirectoryReader dr = DirectoryReader.open(d1);
+    for (AtomicReaderContext ctx : dr.leaves()) {
+      assertTrue("empty segments should be dropped by addIndexes", ctx.reader().maxDoc() > 0);
+    }
+    dr.close();
+    d1.close();
+  }
+
+  // Currently it's impossible to end up with a segment with all documents
+  // deleted, as such segments are dropped. Still, to validate that addIndexes
+  // works with such segments, or readers that end up in such state, we fake an
+  // all deleted segment.
+  public void testFakeAllDeleted() throws Exception {
+    Directory src = newDirectory(), dest = newDirectory();
+    RandomIndexWriter w = new RandomIndexWriter(random(), src);
+    w.addDocument(new Document());
+    IndexReader allDeletedReader = new FilterAtomicReader(w.getReader().leaves().get(0).reader()) {
+      @Override
+      public Bits getLiveDocs() {
+        return new Bits() {
+          @Override public int length() { return 1; }
+          @Override public boolean get(int index) { return false; }
+        };
+      }
+      @Override public boolean hasDeletions() { return true; }
+      @Override public int numDocs() { return 0; }
+    };
+    w.close();
+    
+    w = new RandomIndexWriter(random(), dest);
+    w.addIndexes(allDeletedReader);
+    w.close();
+    DirectoryReader dr = DirectoryReader.open(src);
+    for (AtomicReaderContext ctx : dr.leaves()) {
+      assertTrue("empty segments should be dropped by addIndexes", ctx.reader().maxDoc() > 0);
+    }
+    dr.close();
+    allDeletedReader.close();
+    src.close();
+    dest.close();
+  }
+
 }

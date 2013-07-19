@@ -2429,6 +2429,10 @@ public class IndexWriter implements Closeable, TwoPhaseCommit {
    * close the writer. See <a href="#OOME">above</a> for details.
    * 
    * <p>
+   * <b>NOTE:</b> empty segments are dropped by this method and not added to this
+   * index.
+   * 
+   * <p>
    * <b>NOTE:</b> this method merges all given {@link IndexReader}s in one
    * merge. If you intend to merge a large number of readers, it may be better
    * to call this method multiple times, each time with a small set of readers.
@@ -2462,11 +2466,20 @@ public class IndexWriter implements Closeable, TwoPhaseCommit {
       String mergedName = newSegmentName();
       final List<AtomicReader> mergeReaders = new ArrayList<AtomicReader>();
       for (IndexReader indexReader : readers) {
-        numDocs += indexReader.numDocs();
-        for (AtomicReaderContext ctx : indexReader.leaves()) {
-          mergeReaders.add(ctx.reader());
+        if (indexReader.numDocs() > 0) {
+          numDocs += indexReader.numDocs();
+          for (AtomicReaderContext ctx : indexReader.leaves()) {
+            if (ctx.reader().numDocs() > 0) { // drop empty (or all deleted) segments
+              mergeReaders.add(ctx.reader());
+            }
+          }
         }
       }
+      
+      if (mergeReaders.isEmpty()) { // no segments with documents to add
+        return;
+      }
+      
       final IOContext context = new IOContext(new MergeInfo(numDocs, -1, true, -1));
 
       // TODO: somehow we should fix this merge so it's

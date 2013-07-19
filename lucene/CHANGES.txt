@@ -64,6 +64,11 @@ New features
   (default is false).  If true then edits are measured in Unicode code
   points instead of UTF8 bytes.  (Artem Lukanin via Mike McCandless)
 
+Bug Fixes
+
+* LUCENE-5116: IndexWriter.addIndexes(IndexReader...) should drop empty (or all
+  deleted) segments. (Robert Muir, Shai Erera)
+
 API Changes
 
 * LUCENE-5094: Add ramBytesUsed() to MultiDocValues.OrdinalMap.
