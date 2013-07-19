@@ -23,9 +23,6 @@
     Faceted indexing and search capabilities
   </description>
 
-  <!-- prettify.css/js -->
-  <property name="rat.excludes" value="**/prettify.css,**/prettify.js"/>
-  
   <import file="../module-build.xml"/>
 
   <target name="run-encoding-benchmark" depends="compile-test">

@@ -36,6 +36,7 @@ public class RangeFacetRequest<T extends Range> extends FacetRequest {
 
   public final Range[] ranges;
 
+  @SuppressWarnings("unchecked")
   public RangeFacetRequest(String field, T...ranges) {
     super(new CategoryPath(field), 1);
     this.ranges = ranges;

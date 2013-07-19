@@ -25,6 +25,9 @@ Bug Fixes
 * LUCENE-5116: IndexWriter.addIndexes(IndexReader...) should drop empty (or all
   deleted) segments. (Robert Muir, Shai Erera)
 
+* LUCENE-4734: Add FastVectorHighlighter support for proximity queries and
+  phrase queries with gaps or overlapping terms. (Ryan Lauck, Adrien Grand)
+
 API Changes
 
 * LUCENE-5094: Add ramBytesUsed() to MultiDocValues.OrdinalMap.
@@ -41,10 +44,10 @@ Optimizations
 * LUCENE-5119: DiskDV keeps the document-to-ordinal mapping on disk for 
   SortedDocValues.  (Robert Muir)
 
-Bug fixes
+Documentation
 
-* LUCENE-4734: Add FastVectorHighlighter support for proximity queries and
-  phrase queries with gaps or overlapping terms. (Ryan Lauck, Adrien Grand)
+* LUCENE-4894: remove facet userguide as it was outdated. Partially absorbed into
+  package's documentation and classes javadocs. (Shai Erera)
 
 ======================= Lucene 4.4.0 =======================
 
