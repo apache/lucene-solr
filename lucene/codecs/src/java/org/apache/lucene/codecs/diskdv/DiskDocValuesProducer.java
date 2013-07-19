@@ -51,7 +51,6 @@ class DiskDocValuesProducer extends DocValuesProducer {
   private final IndexInput data;
 
   // memory-resident structures
-  private final Map<Integer,BlockPackedReader> ordinalInstances = new HashMap<Integer,BlockPackedReader>();
   private final Map<Integer,MonotonicBlockPackedReader> addressInstances = new HashMap<Integer,MonotonicBlockPackedReader>();
   private final Map<Integer,MonotonicBlockPackedReader> ordIndexInstances = new HashMap<Integer,MonotonicBlockPackedReader>();
   
@@ -326,18 +325,11 @@ class DiskDocValuesProducer extends DocValuesProducer {
   public SortedDocValues getSorted(FieldInfo field) throws IOException {
     final int valueCount = (int) binaries.get(field.number).count;
     final BinaryDocValues binary = getBinary(field);
-    final BlockPackedReader ordinals;
-    synchronized (ordinalInstances) {
-      BlockPackedReader ordsInstance = ordinalInstances.get(field.number);
-      if (ordsInstance == null) {
-        NumericEntry entry = ords.get(field.number);
-        IndexInput data = this.data.clone();
-        data.seek(entry.offset);
-        ordsInstance = new BlockPackedReader(data, entry.packedIntsVersion, entry.blockSize, entry.count, false);
-        ordinalInstances.put(field.number, ordsInstance);
-      }
-      ordinals = ordsInstance;
-    }
+    NumericEntry entry = ords.get(field.number);
+    IndexInput data = this.data.clone();
+    data.seek(entry.offset);
+    final BlockPackedReader ordinals = new BlockPackedReader(data, entry.packedIntsVersion, entry.blockSize, entry.count, true);
+    
     return new SortedDocValues() {
 
       @Override

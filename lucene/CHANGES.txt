@@ -82,6 +82,9 @@ Optimizations
 * LUCENE-5088: Added TermFilter to filter docs by a specific term.
   (Martijn van Groningen)
 
+* LUCENE-5119: DiskDV keeps the document-to-ordinal mapping on disk for 
+  SortedDocValues.  (Robert Muir)
+
 Bug fixes
 
 * LUCENE-4734: Add FastVectorHighlighter support for proximity queries and
