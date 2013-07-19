@@ -28,8 +28,7 @@ import org.apache.lucene.index.SegmentWriteState;
 /**
  * DocValues format that keeps most things on disk.
  * <p>
- * Things like ordinals and disk offsets are loaded into ram,
- * for single-seek access to all the types.
+ * Only things like disk offsets are loaded into ram.
  * <p>
  * @lucene.experimental
  */
