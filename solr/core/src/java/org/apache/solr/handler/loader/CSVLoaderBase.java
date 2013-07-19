@@ -25,8 +25,6 @@ import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.common.params.UpdateParams;
 import org.apache.solr.common.util.StrUtils;
 import org.apache.solr.common.util.ContentStream;
-import org.apache.solr.schema.IndexSchema;
-import org.apache.solr.schema.SchemaField;
 import org.apache.solr.update.*;
 import org.apache.solr.update.processor.UpdateRequestProcessor;
 import org.apache.solr.internal.csv.CSVStrategy;
@@ -63,15 +61,13 @@ abstract class CSVLoaderBase extends ContentStreamLoader {
   
   public static Logger log = LoggerFactory.getLogger(CSVLoaderBase.class);
 
-  final IndexSchema schema;
   final SolrParams params;
   final CSVStrategy strategy;
   final UpdateRequestProcessor processor;
   // hashmap to save any literal fields and their values
-  HashMap <SchemaField, String> literals;
+  HashMap <String, String> literals;
 
   String[] fieldnames;
-  SchemaField[] fields;
   CSVLoaderBase.FieldAdder[] adders;
 
   String rowId = null;// if not null, add a special field by the name given with the line number/row id as the value
@@ -92,7 +88,7 @@ abstract class CSVLoaderBase extends ContentStreamLoader {
   private class FieldAdder {
     void add(SolrInputDocument doc, int line, int column, String val) {
       if (val.length() > 0) {
-        doc.addField(fields[column].getName(),val,1.0f);
+        doc.addField(fieldnames[column],val,1.0f);
       }
     }
   }
@@ -101,7 +97,7 @@ abstract class CSVLoaderBase extends ContentStreamLoader {
   private class FieldAdderEmpty extends CSVLoaderBase.FieldAdder {
     @Override
     void add(SolrInputDocument doc, int line, int column, String val) {
-      doc.addField(fields[column].getName(),val,1.0f);
+      doc.addField(fieldnames[column],val,1.0f);
     }
   }
 
@@ -168,8 +164,7 @@ abstract class CSVLoaderBase extends ContentStreamLoader {
   CSVLoaderBase(SolrQueryRequest req, UpdateRequestProcessor processor) {
     this.processor = processor;
     this.params = req.getParams();
-    schema = req.getSchema();
-    this.literals = new HashMap<SchemaField, String>();
+    this.literals = new HashMap<String, String>();
 
     templateAdd = new AddUpdateCommand(req);
     templateAdd.overwrite=params.getBool(OVERWRITE,true);
@@ -243,7 +238,6 @@ abstract class CSVLoaderBase extends ContentStreamLoader {
     // from a POST, one could cache all of this setup info based on the params.
     // The link from FieldAdder to this would need to be severed for that to happen.
 
-    fields = new SchemaField[fieldnames.length];
     adders = new CSVLoaderBase.FieldAdder[fieldnames.length];
     String skipStr = params.get(SKIP);
     List<String> skipFields = skipStr==null ? null : StrUtils.splitSmart(skipStr,',');
@@ -251,12 +245,11 @@ abstract class CSVLoaderBase extends ContentStreamLoader {
     CSVLoaderBase.FieldAdder adder = new CSVLoaderBase.FieldAdder();
     CSVLoaderBase.FieldAdder adderKeepEmpty = new CSVLoaderBase.FieldAdderEmpty();
 
-    for (int i=0; i<fields.length; i++) {
+    for (int i=0; i<fieldnames.length; i++) {
       String fname = fieldnames[i];
       // to skip a field, leave the entries in fields and addrs null
       if (fname.length()==0 || (skipFields!=null && skipFields.contains(fname))) continue;
 
-      fields[i] = schema.getField(fname);
       boolean keepEmpty = params.getFieldBool(fname,EMPTY,false);
       adders[i] = keepEmpty ? adderKeepEmpty : adder;
 
@@ -297,11 +290,7 @@ abstract class CSVLoaderBase extends ContentStreamLoader {
       if (!pname.startsWith(LITERALS_PREFIX)) continue;
 
       String name = pname.substring(LITERALS_PREFIX.length());
-      //TODO: need to look at this in light of schemaless
-      SchemaField sf = schema.getFieldOrNull(name);
-      if(sf == null)
-        throw new SolrException( SolrException.ErrorCode.BAD_REQUEST,"Invalid field name for literal:'"+ name +"'");
-      literals.put(sf, params.get(pname));
+      literals.put(name, params.get(pname));
     }
   }
 
@@ -368,8 +357,8 @@ abstract class CSVLoaderBase extends ContentStreamLoader {
         }
         if (vals==null) break;
 
-        if (vals.length != fields.length) {
-          input_err("expected "+fields.length+" values but got "+vals.length, vals, line);
+        if (vals.length != fieldnames.length) {
+          input_err("expected "+fieldnames.length+" values but got "+vals.length, vals, line);
         }
 
         addDoc(line,vals);
@@ -389,16 +378,15 @@ abstract class CSVLoaderBase extends ContentStreamLoader {
     // the line number is passed for error reporting in MT mode as well as for optional rowId.
     // first, create the lucene document
     for (int i=0; i<vals.length; i++) {
-      if (fields[i]==null) continue;  // ignore this field
+      if (adders[i]==null) continue;  // skip this field
       String val = vals[i];
       adders[i].add(doc, line, i, val);
     }
 
     // add any literals
-    for (SchemaField sf : literals.keySet()) {
-      String fn = sf.getName();
-      String val = literals.get(sf);
-      doc.addField(fn, val);
+    for (String fname : literals.keySet()) {
+      String val = literals.get(fname);
+      doc.addField(fname, val);
     }
     if (rowId != null){
       doc.addField(rowId, line + rowIdOffset);
