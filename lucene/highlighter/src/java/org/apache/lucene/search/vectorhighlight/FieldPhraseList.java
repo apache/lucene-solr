@@ -16,7 +16,9 @@ package org.apache.lucene.search.vectorhighlight;
  * limitations under the License.
  */
 
+import java.util.ArrayDeque;
 import java.util.ArrayList;
+import java.util.Deque;
 import java.util.LinkedList;
 import java.util.List;
 
@@ -60,49 +62,73 @@ public class FieldPhraseList {
   public FieldPhraseList( FieldTermStack fieldTermStack, FieldQuery fieldQuery, int phraseLimit ){
     final String field = fieldTermStack.getFieldName();
 
-    LinkedList<TermInfo> phraseCandidate = new LinkedList<TermInfo>();
-    QueryPhraseMap currMap = null;
-    QueryPhraseMap nextMap = null;
-    while( !fieldTermStack.isEmpty() && (phraseList.size() < phraseLimit) )
-    {      
-      phraseCandidate.clear();
-
-      TermInfo ti = fieldTermStack.pop();
-      currMap = fieldQuery.getFieldTermMap( field, ti.getText() );
-
-      // if not found, discard top TermInfo from stack, then try next element
-      if( currMap == null ) continue;
-      
-      // if found, search the longest phrase
-      phraseCandidate.add( ti );
-      while( true ){
-        ti = fieldTermStack.pop();
-        nextMap = null;
-        if( ti != null )
-          nextMap = currMap.getTermMap( ti.getText() );
-        if( ti == null || nextMap == null ){
-          if( ti != null ) 
-            fieldTermStack.push( ti );
-          if( currMap.isValidTermOrPhrase( phraseCandidate ) ){
-            addIfNoOverlap( new WeightedPhraseInfo( phraseCandidate, currMap.getBoost(), currMap.getTermOrPhraseNumber() ) );
-          }
-          else{
-            while( phraseCandidate.size() > 1 ){
-              fieldTermStack.push( phraseCandidate.removeLast() );
-              currMap = fieldQuery.searchPhrase( field, phraseCandidate );
-              if( currMap != null ){
-                addIfNoOverlap( new WeightedPhraseInfo( phraseCandidate, currMap.getBoost(), currMap.getTermOrPhraseNumber() ) );
-                break;
-              }
-            }
-          }
-          break;
+    @SuppressWarnings("unchecked")
+    Deque<TermInfo>[] termStacks = new Deque[] {new ArrayDeque<TermInfo>()};
+    for (TermInfo ti = fieldTermStack.pop(); ti != null; ti = fieldTermStack.pop()) {
+      // If there are tokens at the same position, compute all combinations
+      if (!fieldTermStack.isEmpty() && fieldTermStack.peek().getPosition() == ti.getPosition()) {
+        List<TermInfo> samePositionTermInfos = new ArrayList<>(2);
+        samePositionTermInfos.add(ti);
+        samePositionTermInfos.add(fieldTermStack.pop());
+        while (!fieldTermStack.isEmpty() && fieldTermStack.peek().getPosition() == ti.getPosition()) {
+          samePositionTermInfos.add(fieldTermStack.pop());
         }
-        else{
-          phraseCandidate.add( ti );
-          currMap = nextMap;
+        final int numTokensAtSamePosition = samePositionTermInfos.size();
+        @SuppressWarnings("unchecked")
+        Deque<TermInfo>[] newTermStacks = new Deque[termStacks.length * numTokensAtSamePosition];
+        for (int i = 0, k = 0; i < termStacks.length; ++i) {
+          for (int j = 0; j < numTokensAtSamePosition; ++j) {
+            if (j == numTokensAtSamePosition - 1) {
+              newTermStacks[k] = termStacks[i];
+            } else {
+              newTermStacks[k] = new ArrayDeque<>(termStacks[i]);
+            }
+            newTermStacks[k++].offer(samePositionTermInfos.get(j));
+          }
+        }
+        termStacks = newTermStacks;
+      } else {
+        for (Deque<TermInfo> d : termStacks) {
+          d.offer(ti);
         }
       }
+    }
+
+    for (Deque<TermInfo> d : termStacks) {
+      extractPhrases(field, d, fieldQuery, phraseLimit);
+    }
+  }
+
+  void extractPhrases(String field, Deque<TermInfo> fieldTermStack, FieldQuery fieldQuery, int phraseLimit) {
+    LinkedList<TermInfo> phraseCandidate = new LinkedList<TermInfo>();
+    while( !fieldTermStack.isEmpty() && (phraseList.size() < phraseLimit) ) {
+
+      int longest = 0;
+      phraseCandidate.clear();
+      QueryPhraseMap currMap = null;
+      for (TermInfo ti : fieldTermStack) {
+        QueryPhraseMap nextMap = null;
+        if (currMap == null) {
+          nextMap = fieldQuery.getFieldTermMap(field, ti.getText());
+          if (nextMap == null) {
+            break;
+          }
+        } else {
+          nextMap = currMap.getTermMap(ti.getText());
+        }
+        if (nextMap != null) {
+          currMap = nextMap;
+          phraseCandidate.add(ti);
+          if( currMap.isValidTermOrPhrase( phraseCandidate ) ){
+            longest = phraseCandidate.size();
+          }
+        }
+      }
+
+      if (longest > 0) {
+        addIfNoOverlap( new WeightedPhraseInfo( phraseCandidate.subList(0, longest), currMap.getBoost(), currMap.getTermOrPhraseNumber() ) );
+      }
+      fieldTermStack.pop();
     }
   }
 
@@ -159,11 +185,11 @@ public class FieldPhraseList {
       return termsInfos;
     }
 
-    public WeightedPhraseInfo( LinkedList<TermInfo> terms, float boost ){
+    public WeightedPhraseInfo( List<TermInfo> terms, float boost ){
       this( terms, boost, 0 );
     }
     
-    public WeightedPhraseInfo( LinkedList<TermInfo> terms, float boost, int seqnum ){
+    public WeightedPhraseInfo( List<TermInfo> terms, float boost, int seqnum ){
       this.boost = boost;
       this.seqnum = seqnum;
       
