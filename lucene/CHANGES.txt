@@ -33,6 +33,11 @@ Optimizations
 * LUCENE-5088: Added TermFilter to filter docs by a specific term.
   (Martijn van Groningen)
 
+Bug fixes
+
+* LUCENE-4734: Add FastVectorHighlighter support for proximity queries and
+  phrase queries with gaps or overlapping terms. (Ryan Lauck, Adrien Grand)
+
 ======================= Lucene 4.4.0 =======================
 
 Changes in backwards compatibility policy

@@ -120,7 +120,31 @@ public class FieldPhraseListTest extends AbstractTestCase {
     assertEquals( 4, fpl.phraseList.get( 0 ).getStartOffset() );
     assertEquals( 9, fpl.phraseList.get( 0 ).getEndOffset() );
   }
-  
+
+  public void testProximityPhraseReverse() throws Exception {
+    make1d1fIndex( "z a a b c" );
+    
+    FieldQuery fq = new FieldQuery( pqF( 2F, 3, "c", "a" ), true, true );
+    FieldTermStack stack = new FieldTermStack( reader, 0, F, fq );
+    FieldPhraseList fpl = new FieldPhraseList( stack, fq );
+    assertEquals( 1, fpl.phraseList.size() );
+    assertEquals( "ac(2.0)((4,5)(8,9))", fpl.phraseList.get( 0 ).toString() );
+    assertEquals( 4, fpl.phraseList.get( 0 ).getStartOffset() );
+    assertEquals( 9, fpl.phraseList.get( 0 ).getEndOffset() );
+  }
+
+  public void testProximityPhraseWithRepeatedTerms() throws Exception {
+    make1d1fIndex( "z a a b b z d" );
+    
+    FieldQuery fq = new FieldQuery( pqF( 2F, 2, "a", "b", "d" ), true, true );
+    FieldTermStack stack = new FieldTermStack( reader, 0, F, fq );
+    FieldPhraseList fpl = new FieldPhraseList( stack, fq );
+    assertEquals( 1, fpl.phraseList.size() );
+    assertEquals( "abd(2.0)((4,7)(12,13))", fpl.phraseList.get( 0 ).toString() );
+    assertEquals( 4, fpl.phraseList.get( 0 ).getStartOffset() );
+    assertEquals( 13, fpl.phraseList.get( 0 ).getEndOffset() );
+  }
+
   public void test2PhrasesOverlap() throws Exception {
     make1d1fIndex( "d a b c d" );
 
