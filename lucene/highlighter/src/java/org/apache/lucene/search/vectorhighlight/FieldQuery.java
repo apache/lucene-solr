@@ -333,7 +333,8 @@ public class FieldQuery {
     return root.searchPhrase( phraseCandidate );
   }
   
-  private QueryPhraseMap getRootMap( String fieldName ){
+  /** Get the root map for the given field name. */
+  public QueryPhraseMap getRootMap( String fieldName ){
     return rootMaps.get( fieldMatch ? fieldName : null );
   }
   
