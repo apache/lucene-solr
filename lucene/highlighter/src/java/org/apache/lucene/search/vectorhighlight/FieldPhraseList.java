@@ -16,9 +16,7 @@ package org.apache.lucene.search.vectorhighlight;
  * limitations under the License.
  */
 
-import java.util.ArrayDeque;
 import java.util.ArrayList;
-import java.util.Deque;
 import java.util.LinkedList;
 import java.util.List;
 
@@ -62,73 +60,46 @@ public class FieldPhraseList {
   public FieldPhraseList( FieldTermStack fieldTermStack, FieldQuery fieldQuery, int phraseLimit ){
     final String field = fieldTermStack.getFieldName();
 
-    @SuppressWarnings("unchecked")
-    Deque<TermInfo>[] termStacks = new Deque[] {new ArrayDeque<TermInfo>()};
-    for (TermInfo ti = fieldTermStack.pop(); ti != null; ti = fieldTermStack.pop()) {
-      // If there are tokens at the same position, compute all combinations
-      if (!fieldTermStack.isEmpty() && fieldTermStack.peek().getPosition() == ti.getPosition()) {
-        List<TermInfo> samePositionTermInfos = new ArrayList<>(2);
-        samePositionTermInfos.add(ti);
-        samePositionTermInfos.add(fieldTermStack.pop());
-        while (!fieldTermStack.isEmpty() && fieldTermStack.peek().getPosition() == ti.getPosition()) {
-          samePositionTermInfos.add(fieldTermStack.pop());
-        }
-        final int numTokensAtSamePosition = samePositionTermInfos.size();
-        @SuppressWarnings("unchecked")
-        Deque<TermInfo>[] newTermStacks = new Deque[termStacks.length * numTokensAtSamePosition];
-        for (int i = 0, k = 0; i < termStacks.length; ++i) {
-          for (int j = 0; j < numTokensAtSamePosition; ++j) {
-            if (j == numTokensAtSamePosition - 1) {
-              newTermStacks[k] = termStacks[i];
-            } else {
-              newTermStacks[k] = new ArrayDeque<>(termStacks[i]);
-            }
-            newTermStacks[k++].offer(samePositionTermInfos.get(j));
-          }
-        }
-        termStacks = newTermStacks;
-      } else {
-        for (Deque<TermInfo> d : termStacks) {
-          d.offer(ti);
-        }
-      }
-    }
-
-    for (Deque<TermInfo> d : termStacks) {
-      extractPhrases(field, d, fieldQuery, phraseLimit);
+    QueryPhraseMap qpm = fieldQuery.getRootMap(field);
+    if (qpm != null) {
+      LinkedList<TermInfo> phraseCandidate = new LinkedList<TermInfo>();
+      extractPhrases(fieldTermStack.termList, qpm, phraseCandidate, 0);
+      assert phraseCandidate.size() == 0;
     }
   }
 
-  void extractPhrases(String field, Deque<TermInfo> fieldTermStack, FieldQuery fieldQuery, int phraseLimit) {
-    LinkedList<TermInfo> phraseCandidate = new LinkedList<TermInfo>();
-    while( !fieldTermStack.isEmpty() && (phraseList.size() < phraseLimit) ) {
-
-      int longest = 0;
-      phraseCandidate.clear();
-      QueryPhraseMap currMap = null;
-      for (TermInfo ti : fieldTermStack) {
-        QueryPhraseMap nextMap = null;
-        if (currMap == null) {
-          nextMap = fieldQuery.getFieldTermMap(field, ti.getText());
-          if (nextMap == null) {
-            break;
-          }
-        } else {
-          nextMap = currMap.getTermMap(ti.getText());
-        }
-        if (nextMap != null) {
-          currMap = nextMap;
-          phraseCandidate.add(ti);
-          if( currMap.isValidTermOrPhrase( phraseCandidate ) ){
-            longest = phraseCandidate.size();
-          }
-        }
-      }
-
+  void extractPhrases(LinkedList<TermInfo> terms, QueryPhraseMap currMap, LinkedList<TermInfo> phraseCandidate, int longest) {
+    if (terms.isEmpty()) {
       if (longest > 0) {
         addIfNoOverlap( new WeightedPhraseInfo( phraseCandidate.subList(0, longest), currMap.getBoost(), currMap.getTermOrPhraseNumber() ) );
       }
-      fieldTermStack.pop();
+      return;
+    }
+    ArrayList<TermInfo> samePositionTerms = new ArrayList<TermInfo>();
+    do {
+      samePositionTerms.add(terms.pop());
+    } while (!terms.isEmpty() && terms.get(0).getPosition() == samePositionTerms.get(0).getPosition());
+
+    // try all next terms at the same position
+    for (TermInfo nextTerm : samePositionTerms) {
+      QueryPhraseMap nextMap = currMap.getTermMap(nextTerm.getText());
+      if (nextMap != null) {
+        phraseCandidate.add(nextTerm);
+        int l = longest;
+        if(nextMap.isValidTermOrPhrase( phraseCandidate ) ){
+          l = phraseCandidate.size();
+        }
+        extractPhrases(terms, nextMap, phraseCandidate, l);
+        phraseCandidate.removeLast();
+      }
+    }
+
+    // ignore the next term
+    extractPhrases(terms, currMap, phraseCandidate, longest);
+
+    // add terms back
+    for (TermInfo nextTerm : samePositionTerms) {
+      terms.push(nextTerm);
     }
   }
 
