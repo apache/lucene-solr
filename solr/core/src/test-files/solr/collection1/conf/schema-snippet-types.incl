@@ -1,7 +1,3 @@
-<?xml version="1.0" encoding="UTF-8" ?>
-<!DOCTYPE schema [
-        <!ENTITY schema_entity_include SYSTEM "schema-snippet-types.incl">
-]>
 <!--
  Licensed to the Apache Software Foundation (ASF) under one or more
  contributor license agreements.  See the NOTICE file distributed with
@@ -18,13 +14,6 @@
  See the License for the specific language governing permissions and
  limitations under the License.
 -->
-<schema name="xinclude" version="1.5" xmlns:xi="http://www.w3.org/2001/XInclude">
- <types>
-  <fieldType name="string" class="solr.StrField"/>
-  <xi:include href="schema-snippet-type.xml" />
-  &schema_entity_include;
- </types>
- <fields>
-   <xi:include href="schema-snippet-field.xml" />
- </fields>
-</schema>
+<!-- example of a snippet of xml for use with xml entity includes -->
+<fieldType name="ft-entity-include1" class="solr.StrField" />
+<fieldType name="ft-entity-include2" class="solr.StrField" />
