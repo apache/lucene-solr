@@ -115,7 +115,7 @@ def prepare(root, version, gpgKeyID, gpgPassword, doTest):
   
   print('  lucene prepare-release')
   os.chdir('lucene')
-  cmd = 'ant -Dversion=%s -Dspecversion=%s' % (version, version)
+  cmd = 'ant -Dversion=%s' % version
   if gpgKeyID is not None:
     cmd += ' -Dgpg.key=%s prepare-release' % gpgKeyID
   else:
@@ -128,7 +128,7 @@ def prepare(root, version, gpgKeyID, gpgPassword, doTest):
   
   print('  solr prepare-release')
   os.chdir('../solr')
-  cmd = 'ant -Dversion=%s -Dspecversion=%s' % (version, version)
+  cmd = 'ant -Dversion=%s' % version
   if gpgKeyID is not None:
     cmd += ' -Dgpg.key=%s prepare-release' % gpgKeyID
   else:
