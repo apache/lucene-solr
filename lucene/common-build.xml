@@ -457,7 +457,7 @@
       Please install the jFlex 1.5 version (currently not released)
       from its SVN repository:
 
-       svn co http://jflex.svn.sourceforge.net/svnroot/jflex/trunk jflex
+       svn co -r 623 http://jflex.svn.sourceforge.net/svnroot/jflex/trunk jflex
        cd jflex
        mvn install
 
