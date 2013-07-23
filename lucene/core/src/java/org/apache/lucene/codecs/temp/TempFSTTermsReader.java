@@ -273,7 +273,7 @@ public class TempFSTTermsReader extends FieldsProducer {
         return state.totalTermFreq;
       }
 
-      // Let PBF decodes metadata from long[] and byte[]
+      // Let PBF decode metadata from long[] and byte[]
       private void decodeMetaData() throws IOException {
         if (!decoded && !seekPending) {
           if (meta.bytes != null) {
