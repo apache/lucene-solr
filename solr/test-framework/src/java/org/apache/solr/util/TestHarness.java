@@ -22,6 +22,7 @@ import org.apache.solr.common.params.CommonParams;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.common.util.NamedList.NamedListEntry;
 import org.apache.solr.core.ConfigSolr;
+import org.apache.solr.core.ConfigSolrXmlOld;
 import org.apache.solr.core.CoreContainer;
 import org.apache.solr.core.SolrConfig;
 import org.apache.solr.core.SolrCore;
@@ -78,10 +79,10 @@ public class TestHarness extends BaseTestHarness {
   
   /**
    * Creates a SolrConfig object for the 
-   * {@link CoreContainer#DEFAULT_DEFAULT_CORE_NAME} core using {@link #createConfig(String,String,String)}
+   * {@link ConfigSolrXmlOld#DEFAULT_DEFAULT_CORE_NAME} core using {@link #createConfig(String,String,String)}
    */
   public static SolrConfig createConfig(String solrHome, String confFile) {
-    return createConfig(solrHome, CoreContainer.DEFAULT_DEFAULT_CORE_NAME, confFile);
+    return createConfig(solrHome, ConfigSolrXmlOld.DEFAULT_DEFAULT_CORE_NAME, confFile);
   }
 
   /**
@@ -115,7 +116,7 @@ public class TestHarness extends BaseTestHarness {
   public TestHarness( String dataDirectory,
                       SolrConfig solrConfig,
                       IndexSchema indexSchema) {
-      this(CoreContainer.DEFAULT_DEFAULT_CORE_NAME, dataDirectory, solrConfig, indexSchema);
+      this(ConfigSolrXmlOld.DEFAULT_DEFAULT_CORE_NAME, dataDirectory, solrConfig, indexSchema);
   }
 
   /**
@@ -127,7 +128,7 @@ public class TestHarness extends BaseTestHarness {
   public TestHarness(String coreName, String dataDir, String solrConfig, String indexSchema) {
     try {
       if (coreName == null)
-        coreName = CoreContainer.DEFAULT_DEFAULT_CORE_NAME;
+        coreName = ConfigSolrXmlOld.DEFAULT_DEFAULT_CORE_NAME;
       this.coreName = coreName;
 
       SolrResourceLoader loader = new SolrResourceLoader(SolrResourceLoader.locateSolrHome());
@@ -174,7 +175,7 @@ public class TestHarness extends BaseTestHarness {
         + "<solr persistent=\"false\">\n"
         + "  <logging enabled=\"true\"/>\n"
         + "  <cores adminPath=\"/admin/cores\" defaultCoreName=\""
-        + CoreContainer.DEFAULT_DEFAULT_CORE_NAME
+        + ConfigSolrXmlOld.DEFAULT_DEFAULT_CORE_NAME
         + "\""
         + " host=\"${host:}\" hostPort=\"${hostPort:}\" hostContext=\"${hostContext:}\""
         + " distribUpdateSoTimeout=\"30000\""

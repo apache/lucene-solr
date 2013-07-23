@@ -572,7 +572,7 @@ public class TestSolrXmlPersistence extends SolrTestCaseJ4 {
   public static String SOLR_XML_LOTS_SYSVARS =
       "<solr persistent=\"${solr.xml.persist:false}\" coreLoadThreads=\"12\" sharedLib=\"${something:.}\" >\n" +
           "  <logging class=\"${logclass:log4j.class}\" enabled=\"{logenable:true}\">\n" +
-          "     <watcher size=\"{watchSize:13}\" threshold=\"${logThresh:54}\" />\n" +
+          "     <watcher size=\"${watchSize:13}\" threshold=\"${logThresh:54}\" />\n" +
           "  </logging>\n" +
           "  <cores adminPath=\"/admin/cores\" defaultCoreName=\"SystemVars1\" host=\"127.0.0.1\" \n" +
           "       hostPort=\"${hostPort:8983}\" hostContext=\"${hostContext:solr}\" \n" +

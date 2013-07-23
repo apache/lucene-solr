@@ -1,8 +1,5 @@
 package org.apache.solr.cloud;
 
-import java.io.IOException;
-import java.util.Map;
-
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.SolrException.ErrorCode;
 import org.apache.solr.common.cloud.ClusterState;
@@ -20,6 +17,9 @@ import org.apache.zookeeper.KeeperException;
 import org.apache.zookeeper.KeeperException.NoNodeException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
+import java.io.IOException;
+import java.util.Map;
 
 /*
  * Licensed to the Apache Software Foundation (ASF) under one or more
@@ -148,8 +148,8 @@ final class ShardLeaderElectionContext extends ShardLeaderElectionContextBase {
         collection);
     Overseer.getInQueue(zkClient).offer(ZkStateReader.toJSON(m));
     
-    String leaderVoteWait = cc.getZkController().getLeaderVoteWait();
-    if (!weAreReplacement && leaderVoteWait != null) {
+    int leaderVoteWait = cc.getZkController().getLeaderVoteWait();
+    if (!weAreReplacement) {
       waitForReplicasToComeUp(weAreReplacement, leaderVoteWait);
     }
     
@@ -309,8 +309,7 @@ final class ShardLeaderElectionContext extends ShardLeaderElectionContextBase {
   }
 
   private void waitForReplicasToComeUp(boolean weAreReplacement,
-      String leaderVoteWait) throws InterruptedException {
-    int timeout = Integer.parseInt(leaderVoteWait);
+      int timeout) throws InterruptedException {
     long timeoutAt = System.currentTimeMillis() + timeout;
     final String shardsElectZkPath = electionPath + LeaderElector.ELECTION_NODE;
     
