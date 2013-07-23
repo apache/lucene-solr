@@ -19,7 +19,6 @@ package org.apache.solr.logging;
 
 import org.apache.solr.common.SolrDocument;
 import org.apache.solr.common.SolrDocumentList;
-import org.apache.solr.core.ConfigSolr;
 import org.apache.solr.core.SolrResourceLoader;
 import org.apache.solr.logging.jul.JulWatcher;
 import org.apache.solr.logging.log4j.Log4jWatcher;
@@ -119,35 +118,32 @@ public abstract class LogWatcher<E> {
    * JUL and Log4j watchers are supported out-of-the-box.  You can register your own
    * LogWatcher implementation via the plugins architecture
    *
-   * @param config the CoreContainer's config, with logging configuration details
+   * @param config a LogWatcherConfig object, containing the configuration for this LogWatcher.
    * @param loader a SolrResourceLoader, to be used to load plugin LogWatcher implementations.
    *               Can be null if
    *
    * @return a LogWatcher configured for the container's logging framework
    */
-  public static LogWatcher newRegisteredLogWatcher(ConfigSolr config, SolrResourceLoader loader) {
+  public static LogWatcher newRegisteredLogWatcher(LogWatcherConfig config, SolrResourceLoader loader) {
 
-    if (!config.getBool(ConfigSolr.CfgProp.SOLR_LOGGING_ENABLED, true))
+    if (!config.isEnabled())
       return null;
 
     LogWatcher logWatcher = createWatcher(config, loader);
 
     if (logWatcher != null) {
-      ListenerConfig v = new ListenerConfig();
-      v.size = config.getInt(ConfigSolr.CfgProp.SOLR_LOGGING_WATCHER_SIZE, 50);
-      v.threshold = config.get(ConfigSolr.CfgProp.SOLR_LOGGING_WATCHER_THRESHOLD, null);
-      if (v.size > 0) {
+      if (config.getWatcherSize() > 0) {
         log.info("Registering Log Listener [{}]", logWatcher.getName());
-        logWatcher.registerListener(v);
+        logWatcher.registerListener(config.asListenerConfig());
       }
     }
 
     return logWatcher;
   }
 
-  private static LogWatcher createWatcher(ConfigSolr config, SolrResourceLoader loader) {
+  private static LogWatcher createWatcher(LogWatcherConfig config, SolrResourceLoader loader) {
 
-    String fname = config.get(ConfigSolr.CfgProp.SOLR_LOGGING_CLASS, null);
+    String fname = config.getLoggingClass();
     String slf4jImpl;
 
     try {

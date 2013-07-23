@@ -65,14 +65,13 @@ class SolrCores {
 
   // Trivial helper method for load, note it implements LRU on transient cores. Also note, if
   // there is no setting for max size, nothing is done and all cores go in the regular "cores" list
-  protected void allocateLazyCores(final ConfigSolr cfg, final SolrResourceLoader loader) {
-    final int transientCacheSize = cfg.getInt(ConfigSolr.CfgProp.SOLR_TRANSIENTCACHESIZE, Integer.MAX_VALUE);
-    if (transientCacheSize != Integer.MAX_VALUE) {
-      CoreContainer.log.info("Allocating transient cache for {} transient cores", transientCacheSize);
-      transientCores = new LinkedHashMap<String, SolrCore>(transientCacheSize, 0.75f, true) {
+  protected void allocateLazyCores(final int cacheSize, final SolrResourceLoader loader) {
+    if (cacheSize != Integer.MAX_VALUE) {
+      CoreContainer.log.info("Allocating transient cache for {} transient cores", cacheSize);
+      transientCores = new LinkedHashMap<String, SolrCore>(cacheSize, 0.75f, true) {
         @Override
         protected boolean removeEldestEntry(Map.Entry<String, SolrCore> eldest) {
-          if (size() > transientCacheSize) {
+          if (size() > cacheSize) {
             synchronized (modifyLock) {
               SolrCore coreToClose = eldest.getValue();
               logger.info("Closing transient core [{}]", coreToClose.getName());

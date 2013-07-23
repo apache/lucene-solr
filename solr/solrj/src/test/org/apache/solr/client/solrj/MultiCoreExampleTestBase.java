@@ -68,7 +68,6 @@ public abstract class MultiCoreExampleTestBase extends SolrExampleTestBase
     setupCoreContainer();
 
     SolrCore.log.info("CORES=" + cores + " : " + cores.getCoreNames());
-    cores.setPersistent(false);
 
 
   }

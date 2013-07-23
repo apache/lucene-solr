@@ -130,7 +130,7 @@ public final class ZkController {
 
   protected volatile Overseer overseer;
 
-  private String leaderVoteWait;
+  private int leaderVoteWait;
   
   private boolean genericCoreNodeNames;
 
@@ -141,7 +141,7 @@ public final class ZkController {
   private UpdateShardHandler updateShardHandler;
 
   public ZkController(final CoreContainer cc, String zkServerAddress, int zkClientTimeout, int zkClientConnectTimeout, String localHost, String locaHostPort,
-      String localHostContext, String leaderVoteWait, boolean genericCoreNodeNames, int distribUpdateConnTimeout, int distribUpdateSoTimeout, final CurrentCoreDescriptorProvider registerOnReconnect) throws InterruptedException,
+      String localHostContext, int leaderVoteWait, boolean genericCoreNodeNames, int distribUpdateConnTimeout, int distribUpdateSoTimeout, final CurrentCoreDescriptorProvider registerOnReconnect) throws InterruptedException,
       TimeoutException, IOException {
     if (cc == null) throw new IllegalArgumentException("CoreContainer cannot be null.");
     this.cc = cc;
@@ -242,7 +242,7 @@ public final class ZkController {
     init(registerOnReconnect);
   }
 
-  public String getLeaderVoteWait() {
+  public int getLeaderVoteWait() {
     return leaderVoteWait;
   }
 
@@ -769,7 +769,7 @@ public final class ZkController {
     // in this case, we want to wait for the leader as long as the leader might 
     // wait for a vote, at least - but also long enough that a large cluster has
     // time to get its act together
-    String leaderUrl = getLeader(cloudDesc, Integer.parseInt(leaderVoteWait) + 600000);
+    String leaderUrl = getLeader(cloudDesc, leaderVoteWait + 600000);
     
     String ourUrl = ZkCoreNodeProps.getCoreUrl(baseUrl, coreName);
     log.info("We are " + ourUrl + " and leader is " + leaderUrl);

@@ -136,7 +136,7 @@ public class TestCoreDiscovery extends SolrTestCaseJ4 {
 
     CoreContainer cc = init();
     try {
-      assertEquals(CoreContainer.DEFAULT_DEFAULT_CORE_NAME,
+      assertEquals(ConfigSolrXmlOld.DEFAULT_DEFAULT_CORE_NAME,
                    cc.getDefaultCoreName());
 
       TestLazyCores.checkInCores(cc, "core1");

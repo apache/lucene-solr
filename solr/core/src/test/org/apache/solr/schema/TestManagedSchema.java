@@ -16,13 +16,6 @@ package org.apache.solr.schema;
  * limitations under the License.
  */
 
-import java.io.File;
-import java.io.FileInputStream;
-import java.util.Collections;
-import java.util.HashMap;
-import java.util.Map;
-import java.util.regex.Pattern;
-
 import org.apache.commons.io.FileUtils;
 import org.apache.commons.io.IOUtils;
 import org.apache.solr.common.SolrException;
@@ -35,6 +28,13 @@ import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.response.SolrQueryResponse;
 import org.junit.After;
 import org.junit.Before;
+
+import java.io.File;
+import java.io.FileInputStream;
+import java.util.Collections;
+import java.util.HashMap;
+import java.util.Map;
+import java.util.regex.Pattern;
 
 public class TestManagedSchema extends AbstractBadConfigTestBase {
 
@@ -122,7 +122,6 @@ public class TestManagedSchema extends AbstractBadConfigTestBase {
   
   private void assertSchemaResource(String collection, String expectedSchemaResource) throws Exception {
     final CoreContainer cores = h.getCoreContainer();
-    cores.setPersistent(false);
     final CoreAdminHandler admin = new CoreAdminHandler(cores);
     SolrQueryRequest request = req(CoreAdminParams.ACTION, CoreAdminParams.CoreAdminAction.STATUS.toString());
     SolrQueryResponse response = new SolrQueryResponse();
