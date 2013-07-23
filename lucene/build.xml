@@ -611,6 +611,11 @@
   </target>
 
   <target name="regenerate">
+    <subant target="regenerate" failonerror="true" inheritall="false">
+      <propertyset refid="uptodate.and.compiled.properties"/>
+      <fileset dir="core" includes="build.xml"/>
+      <fileset dir="test-framework" includes="build.xml"/>
+    </subant>
     <modules-crawl target="regenerate"/>
   </target>
 
