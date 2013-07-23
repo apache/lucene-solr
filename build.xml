@@ -33,7 +33,7 @@
   <property name="tests.heap-dump-dir" location="heapdumps"/>
   
   <target name="precommit" description="Run basic checks before committing"
-          depends="regenerate,check-svn-working-copy,validate,documentation-lint"/>
+          depends="check-svn-working-copy,validate,documentation-lint"/>
 
   <target name="test" description="Test both Lucene and Solr">
     <subant target="test" inheritall="false" failonerror="true">
