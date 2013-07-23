@@ -2100,6 +2100,8 @@ ${tests-output}/junit4-*.suites     - per-JVM executed suites
     <property name="pegdown.loaded" value="true"/>
   </target>
   
+  <target name="regenerate"/>
+	
   <macrodef name="pegdown">
     <attribute name="todir"/>
     <attribute name="flatten" default="false"/>
