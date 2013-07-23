@@ -29,8 +29,6 @@
 
   <import file="../analysis-module-build.xml"/>
 	
-  <target name="compile-core" depends="jflex-notice, common.compile-core"/>
-
   <target name="jflex" depends="jflex-check,clean-jflex,gen-uax29-supp-macros,
                                 jflex-StandardAnalyzer,jflex-UAX29URLEmailTokenizer,
                                 jflex-wiki-tokenizer,jflex-HTMLStripCharFilter"/>

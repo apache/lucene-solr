@@ -445,20 +445,6 @@
     </sequential>
   </macrodef>
 
-  <target name="jflex-uptodate-check">
-    <uptodate property="jflex.files.uptodate">
-      <srcfiles dir="${src.dir}" includes="**/*.jflex" />
-      <mapper type="glob" from="*.jflex" to="*.java"/>
-    </uptodate>
-  </target>
- 
-  <target name="jflex-notice" depends="jflex-uptodate-check" unless="jflex.files.uptodate">
-    <echo>
-      One or more of the JFlex .jflex files is newer than its corresponding
-      .java file.  Run the "jflex" target to regenerate the artifacts.
-    </echo>
-  </target>
-
   <target name="jflex-check">
     <available property="jflex.present" classname="jflex.anttask.JFlexTask">
       <classpath refid="jflex.classpath"/>
