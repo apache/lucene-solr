@@ -143,4 +143,6 @@
   </target>
 
   <target name="javadocs" depends="module-build.javadocs"/>
+
+  <target name="regenerate" depends="jflex"/>
 </project>

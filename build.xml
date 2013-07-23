@@ -33,7 +33,7 @@
   <property name="tests.heap-dump-dir" location="heapdumps"/>
   
   <target name="precommit" description="Run basic checks before committing"
-          depends="check-svn-working-copy,validate,documentation-lint"/>
+          depends="regenerate,check-svn-working-copy,validate,documentation-lint"/>
 
   <target name="test" description="Test both Lucene and Solr">
     <subant target="test" inheritall="false" failonerror="true">
@@ -423,4 +423,12 @@
     </antcall>
   </target>
   
+  <target name="regenerate" description="Run all code generators">
+    <subant target="regenerate" inheritall="false" failonerror="false">
+      <fileset dir="lucene" includes="build.xml" />
+      <!-- todo:
+      <fileset dir="solr" includes="build.xml" />-->
+    </subant>
+  </target>
+
 </project>

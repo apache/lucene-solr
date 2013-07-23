@@ -139,4 +139,6 @@
   <!-- TODO: not until we properly make 'test-tools' work with clover etc
   <target name="test" depends="module-build.test, test-tools"/> -->
 
+  <target name="regenerate" depends="build-dict"/>
+
 </project>

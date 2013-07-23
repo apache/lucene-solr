@@ -141,4 +141,7 @@
       <arg value="${moman.rev}"/>
     </exec>
   </target>
+
+  <target name="regenerate" depends="createLevAutomata,createPackedIntSources"/>
+
 </project>

@@ -610,4 +610,8 @@
     <jar-checksum-macro srcdir="${common.dir}" dstdir="${common.dir}/licenses"/>
   </target>
 
+  <target name="regenerate">
+    <modules-crawl target="regenerate"/>
+  </target>
+
 </project>
