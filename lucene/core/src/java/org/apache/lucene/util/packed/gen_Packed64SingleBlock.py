@@ -77,8 +77,13 @@ abstract class Packed64SingleBlock extends PackedInts.MutableImpl {
     Arrays.fill(blocks, 0L);
   }
 
+  @Override
   public long ramBytesUsed() {
-    return RamUsageEstimator.sizeOf(blocks);
+    return RamUsageEstimator.alignObjectSize(
+        RamUsageEstimator.NUM_BYTES_OBJECT_HEADER
+        + 2 * RamUsageEstimator.NUM_BYTES_INT     // valueCount,bitsPerValue
+        + RamUsageEstimator.NUM_BYTES_OBJECT_REF) // blocks ref
+        + RamUsageEstimator.sizeOf(blocks);
   }
 
   @Override
@@ -106,8 +111,8 @@ abstract class Packed64SingleBlock extends PackedInts.MutableImpl {
     // bulk get
     assert index %% valuesPerBlock == 0;
     final PackedInts.Decoder decoder = BulkOperation.of(PackedInts.Format.PACKED_SINGLE_BLOCK, bitsPerValue);
-    assert decoder.blockCount() == 1;
-    assert decoder.valueCount() == valuesPerBlock;
+    assert decoder.longBlockCount() == 1;
+    assert decoder.longValueCount() == valuesPerBlock;
     final int blockIndex = index / valuesPerBlock;
     final int nblocks = (index + len) / valuesPerBlock - blockIndex;
     decoder.decode(blocks, blockIndex, arr, off, nblocks);
@@ -150,8 +155,8 @@ abstract class Packed64SingleBlock extends PackedInts.MutableImpl {
     // bulk set
     assert index %% valuesPerBlock == 0;
     final BulkOperation op = BulkOperation.of(PackedInts.Format.PACKED_SINGLE_BLOCK, bitsPerValue);
-    assert op.blockCount() == 1;
-    assert op.valueCount() == valuesPerBlock;
+    assert op.longBlockCount() == 1;
+    assert op.longValueCount() == valuesPerBlock;
     final int blockIndex = index / valuesPerBlock;
     final int nblocks = (index + len) / valuesPerBlock - blockIndex;
     op.encode(arr, off, blocks, blockIndex, nblocks);
