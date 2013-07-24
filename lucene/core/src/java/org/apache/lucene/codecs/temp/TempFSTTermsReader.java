@@ -286,6 +286,8 @@ public class TempFSTTermsReader extends FieldsProducer {
       // a stack to record how current term is constructed on FST, (and ord on each alphabet)
       // so that during seek we don't have to start from the first arc.
       // however, we'll be implementing a new fstEnum instead of wrapping current one.
+      //
+      // nocommit: this can also be achieved by making use of Util.getByOutput()
       @Override
       public void seekExact(long ord) throws IOException {
         throw new UnsupportedOperationException();
@@ -400,12 +402,10 @@ public class TempFSTTermsReader extends FieldsProducer {
 
       /* query automaton to intersect with */
       final ByteRunAutomaton fsa;
-      final BytesRef fsaCommonSuffix;
 
       private final class Frame {
         /* fst stats */
         FST.Arc<TempTermOutputs.TempMetaData> fstArc;
-        long fstPos;
 
         /* automaton stats */
         int fsaState;
@@ -427,7 +427,6 @@ public class TempFSTTermsReader extends FieldsProducer {
         this.fstReader = fst.getBytesReader();
         this.fstOutputs = dict.outputs;
         this.fsa = compiled.runAutomaton;
-        this.fsaCommonSuffix = compiled.commonSuffixRef;
         /*
         PrintWriter pw1 = new PrintWriter(new File("../temp/fst.txt"));
         Util.toDot(dict,pw1, false, false);
@@ -479,7 +478,6 @@ public class TempFSTTermsReader extends FieldsProducer {
         }
       }
 
-      // nocommit: make use of extra info, like commonSuffixRef
       @Override
       public BytesRef next() throws IOException {
         //if (DEBUG) System.out.println("Enum next()");
@@ -515,7 +513,6 @@ public class TempFSTTermsReader extends FieldsProducer {
       }
 
       private BytesRef doSeekCeil(BytesRef target) throws IOException {
-        //while (next() != null && term.compareTo(target) < 0) {} if (true) return term;
         //if (DEBUG) System.out.println("Enum doSeekCeil()");
         Frame frame= null;
         int label, upto = 0, limit = target.length;
@@ -556,7 +553,6 @@ public class TempFSTTermsReader extends FieldsProducer {
       Frame loadVirtualFrame(Frame frame) throws IOException {
         frame.fstArc.output = fstOutputs.getNoOutput();
         frame.fstArc.nextFinalOutput = fstOutputs.getNoOutput();
-        frame.fstPos = -1;
         frame.fsaState = -1;
         return frame;
       }
@@ -564,7 +560,6 @@ public class TempFSTTermsReader extends FieldsProducer {
       /** Load frame for start arc(node) on fst */
       Frame loadFirstFrame(Frame frame) throws IOException {
         frame.fstArc = fst.getFirstArc(frame.fstArc);
-        frame.fstPos = fstReader.getPosition();
         frame.fsaState = fsa.getInitialState();
         return frame;
       }
@@ -582,11 +577,10 @@ public class TempFSTTermsReader extends FieldsProducer {
         if (frame.fsaState == -1) {
           return loadNextFrame(top, frame);
         }
-        frame.fstPos = fstReader.getPosition();
         return frame;
       }
 
-      // nocommit: actually, here we're looking for an valid state for fsa, 
+      // nocommit: actually, here we're looking for a valid state for fsa, 
       //           so if numArcs is large in fst, we should try a reverse lookup?
       //           but we don have methods like advance(label) in fst, even 
       //           binary search hurts. 
@@ -596,7 +590,6 @@ public class TempFSTTermsReader extends FieldsProducer {
         if (!canRewind(frame)) {
           return null;
         }
-        fstReader.setPosition(frame.fstPos);
         while (!frame.fstArc.isLast()) {
           frame.fstArc = fst.readNextRealArc(frame.fstArc, fstReader);
           frame.fsaState = fsa.step(top.fsaState, frame.fstArc.label);
@@ -608,7 +601,6 @@ public class TempFSTTermsReader extends FieldsProducer {
         if (frame.fsaState == -1) {
           return null;
         }
-        frame.fstPos = fstReader.getPosition();
         return frame;
       }
 
@@ -625,7 +617,6 @@ public class TempFSTTermsReader extends FieldsProducer {
         if (frame.fsaState == -1) {
           return loadNextFrame(top, frame);
         }
-        frame.fstPos = fstReader.getPosition();
         return frame;
       }
 
@@ -633,7 +624,7 @@ public class TempFSTTermsReader extends FieldsProducer {
         return fsa.isAccept(frame.fsaState) && frame.fstArc.isFinal();
       }
       boolean isValid(Frame frame) {   // reach a prefix both fst&fsa won't reject
-        return frame.fsaState != -1;// && frame != null;
+        return /*frame != null &&*/ frame.fsaState != -1;
       }
       boolean canGrow(Frame frame) {   // can walk forward on both fst&fsa
         return frame.fsaState != -1 && FST.targetHasArcs(frame.fstArc);
