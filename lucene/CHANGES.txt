@@ -64,6 +64,9 @@ New features
   (default is false).  If true then edits are measured in Unicode code
   points instead of UTF8 bytes.  (Artem Lukanin via Mike McCandless)
 
+* LUCENE-5118: SpatialStrategy.makeDistanceValueSource() now has an optional
+  multiplier for scaling degrees to another unit. (David Smiley)
+
 Bug Fixes
 
 * LUCENE-5116: IndexWriter.addIndexes(IndexReader...) should drop empty (or all
