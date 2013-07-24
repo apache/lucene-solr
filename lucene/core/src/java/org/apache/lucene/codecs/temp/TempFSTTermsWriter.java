@@ -179,7 +179,6 @@ public class TempFSTTermsWriter extends FieldsConsumer {
         metaWriter.writeTo(meta.bytes, 0);
         metaWriter.reset();
       }
-      //System.out.println("add term:<"+text.utf8ToString()+", "+meta+">");
       builder.add(Util.toIntsRef(text, scratchTerm), meta);
       numTerms++;
     }
@@ -189,7 +188,6 @@ public class TempFSTTermsWriter extends FieldsConsumer {
       // save FST dict
       if (numTerms > 0) {
         final FST<TempTermOutputs.TempMetaData> fst = builder.finish();
-        //fst.dump();
         fields.add(new FieldMetaData(fieldInfo, numTerms, sumTotalTermFreq, sumDocFreq, docCount, longsSize, fst));
       }
     }

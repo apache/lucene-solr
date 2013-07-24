@@ -24,6 +24,7 @@ import java.util.ArrayList;
 import java.util.BitSet;
 import java.util.Collections;
 import java.util.Comparator;
+import java.util.Stack;
 import java.util.Iterator;
 import java.util.TreeMap;
 
@@ -42,6 +43,9 @@ import org.apache.lucene.index.TermsEnum;
 import org.apache.lucene.store.ByteArrayDataInput;
 import org.apache.lucene.store.IOContext;
 import org.apache.lucene.store.IndexInput;
+import org.apache.lucene.util.ArrayUtil;
+import org.apache.lucene.util.automaton.ByteRunAutomaton;
+import org.apache.lucene.util.automaton.CompiledAutomaton;
 import org.apache.lucene.util.Bits;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.IOUtils;
@@ -58,12 +62,10 @@ public class TempFSTTermsReader extends FieldsProducer {
   final TreeMap<String, TermsReader> fields = new TreeMap<String, TermsReader>();
   final TempPostingsReaderBase postingsReader;
   final IndexInput in;
-  boolean DEBUG = false;
-  //String tmpname;
+  //static boolean DEBUG = false;
 
   public TempFSTTermsReader(SegmentReadState state, TempPostingsReaderBase postingsReader) throws IOException {
     final String termsFileName = IndexFileNames.segmentFileName(state.segmentInfo.name, state.segmentSuffix, TempFSTTermsWriter.TERMS_EXTENSION);
-    //tmpname = termsFileName;
 
     this.postingsReader = postingsReader;
     this.in = state.directory.openInput(termsFileName, state.context);
@@ -79,7 +81,7 @@ public class TempFSTTermsReader extends FieldsProducer {
       for (int i = 0; i < numFields; i++) {
         int fieldNumber = in.readVInt();
         FieldInfo fieldInfo = fieldInfos.fieldInfo(fieldNumber);
-        long numTerms = in.readVLong(); 
+        long numTerms = in.readVLong();
         long sumTotalTermFreq = fieldInfo.getIndexOptions() == IndexOptions.DOCS_ONLY ? -1 : in.readVLong();
         long sumDocFreq = in.readVLong();
         int docCount = in.readVInt();
@@ -97,10 +99,9 @@ public class TempFSTTermsReader extends FieldsProducer {
   }
 
   private int readHeader(IndexInput in) throws IOException {
-    return CodecUtil.checkHeader(in, 
-                                 TempFSTTermsWriter.TERMS_CODEC_NAME,
-                                 TempFSTTermsWriter.TERMS_VERSION_START,
-                                 TempFSTTermsWriter.TERMS_VERSION_CURRENT);
+    return CodecUtil.checkHeader(in, TempFSTTermsWriter.TERMS_CODEC_NAME,
+                                     TempFSTTermsWriter.TERMS_VERSION_START,
+                                     TempFSTTermsWriter.TERMS_VERSION_CURRENT);
   }
   private void seekDir(IndexInput in) throws IOException {
     in.seek(in.length() - 8);
@@ -108,15 +109,15 @@ public class TempFSTTermsReader extends FieldsProducer {
   }
   private void checkFieldSummary(SegmentInfo info, TermsReader field, TermsReader previous) throws IOException {
     // #docs with field must be <= #docs
-    if (field.docCount < 0 || field.docCount > info.getDocCount()) { 
+    if (field.docCount < 0 || field.docCount > info.getDocCount()) {
       throw new CorruptIndexException("invalid docCount: " + field.docCount + " maxDoc: " + info.getDocCount() + " (resource=" + in + ")");
     }
     // #postings must be >= #docs with field
-    if (field.sumDocFreq < field.docCount) {  
+    if (field.sumDocFreq < field.docCount) {
       throw new CorruptIndexException("invalid sumDocFreq: " + field.sumDocFreq + " docCount: " + field.docCount + " (resource=" + in + ")");
     }
     // #positions must be >= #postings
-    if (field.sumTotalTermFreq != -1 && field.sumTotalTermFreq < field.sumDocFreq) { 
+    if (field.sumTotalTermFreq != -1 && field.sumTotalTermFreq < field.sumDocFreq) {
       throw new CorruptIndexException("invalid sumTotalTermFreq: " + field.sumTotalTermFreq + " sumDocFreq: " + field.sumDocFreq + " (resource=" + in + ")");
     }
     if (previous != null) {
@@ -166,21 +167,11 @@ public class TempFSTTermsReader extends FieldsProducer {
       this.docCount = docCount;
       this.longsSize = longsSize;
       this.dict = new FST<TempTermOutputs.TempMetaData>(in, new TempTermOutputs(fieldInfo, longsSize));
-      //PrintWriter pw = new PrintWriter(new File("ohohoh."+tmpname+".xxx.txt"));
-      //Util.toDot(dict, pw, false, false);
-      //pw.close();
     }
 
-    // nocommit: implement intersect
-    // nocommit: why do we need this comparator overridden again and again?
     @Override
     public Comparator<BytesRef> getComparator() {
       return BytesRef.getUTF8SortedAsUnicodeComparator();
-    }
-
-    @Override
-    public TermsEnum iterator(TermsEnum reuse) throws IOException {
-      return new SegmentTermsEnum();
     }
 
     @Override
@@ -192,7 +183,7 @@ public class TempFSTTermsReader extends FieldsProducer {
     public boolean hasPositions() {
       return fieldInfo.getIndexOptions().compareTo(IndexOptions.DOCS_AND_FREQS_AND_POSITIONS) >= 0;
     }
-    
+
     @Override
     public boolean hasPayloads() {
       return fieldInfo.hasPayloads();
@@ -218,10 +209,18 @@ public class TempFSTTermsReader extends FieldsProducer {
       return docCount;
     }
 
-    // Iterates through terms in this field
-    final class SegmentTermsEnum extends TermsEnum {
-      final BytesRefFSTEnum<TempTermOutputs.TempMetaData> fstEnum;
+    @Override
+    public TermsEnum iterator(TermsEnum reuse) throws IOException {
+      return new SegmentTermsEnum();
+    }
 
+    @Override
+    public TermsEnum intersect(CompiledAutomaton compiled, BytesRef startTerm) throws IOException {
+      return new IntersectTermsEnum(compiled, startTerm);
+    }
+
+    // Only wraps common operations for PBF interact
+    abstract class BaseTermsEnum extends TermsEnum {
       /* Current term, null when enum ends or unpositioned */
       BytesRef term;
 
@@ -232,19 +231,14 @@ public class TempFSTTermsReader extends FieldsProducer {
       TempTermOutputs.TempMetaData meta;
       ByteArrayDataInput bytesReader;
 
-      /* True when current term's metadata is decoded */
-      boolean decoded;
+      /** Decodes metadata into customized term state */
+      abstract void decodeMetaData() throws IOException;
 
-      /* True when current enum is 'positioned' by seekExact(TermState) */
-      boolean seekPending;
-
-      SegmentTermsEnum() throws IOException {
-        this.fstEnum = new BytesRefFSTEnum<TempTermOutputs.TempMetaData>(dict);
+      BaseTermsEnum() throws IOException {
         this.state = postingsReader.newTermState();
         this.bytesReader = new ByteArrayDataInput();
         this.term = null;
-        this.decoded = false;
-        this.seekPending = false;
+        // NOTE: metadata will only be initialized in child class
       }
 
       @Override
@@ -262,7 +256,7 @@ public class TempFSTTermsReader extends FieldsProducer {
       public BytesRef term() {
         return term;
       }
-      
+
       @Override
       public int docFreq() throws IOException {
         return state.docFreq;
@@ -273,8 +267,58 @@ public class TempFSTTermsReader extends FieldsProducer {
         return state.totalTermFreq;
       }
 
+      @Override
+      public DocsEnum docs(Bits liveDocs, DocsEnum reuse, int flags) throws IOException {
+        decodeMetaData();
+        return postingsReader.docs(fieldInfo, state, liveDocs, reuse, flags);
+      }
+
+      @Override
+      public DocsAndPositionsEnum docsAndPositions(Bits liveDocs, DocsAndPositionsEnum reuse, int flags) throws IOException {
+        if (!hasPositions()) {
+          return null;
+        }
+        decodeMetaData();
+        return postingsReader.docsAndPositions(fieldInfo, state, liveDocs, reuse, flags);
+      }
+
+      // nocommit: do we need this? for SegmentTermsEnum, we can maintain
+      // a stack to record how current term is constructed on FST, (and ord on each alphabet)
+      // so that during seek we don't have to start from the first arc.
+      // however, we'll be implementing a new fstEnum instead of wrapping current one.
+      @Override
+      public void seekExact(long ord) throws IOException {
+        throw new UnsupportedOperationException();
+      }
+
+      @Override
+      public long ord() {
+        throw new UnsupportedOperationException();
+      }
+    }
+
+
+    // Iterates through all terms in this field
+    private final class SegmentTermsEnum extends BaseTermsEnum {
+      final BytesRefFSTEnum<TempTermOutputs.TempMetaData> fstEnum;
+
+      /* True when current term's metadata is decoded */
+      boolean decoded;
+
+      /* True when current enum is 'positioned' by seekExact(TermState) */
+      boolean seekPending;
+
+      SegmentTermsEnum() throws IOException {
+        super();
+        this.fstEnum = new BytesRefFSTEnum<TempTermOutputs.TempMetaData>(dict);
+        this.decoded = false;
+        this.seekPending = false;
+        this.meta = null;
+      }
+
       // Let PBF decode metadata from long[] and byte[]
-      private void decodeMetaData() throws IOException {
+      @Override
+      void decodeMetaData() throws IOException {
         if (!decoded && !seekPending) {
           if (meta.bytes != null) {
             bytesReader.reset(meta.bytes, 0, meta.bytes.length);
@@ -285,7 +329,7 @@ public class TempFSTTermsReader extends FieldsProducer {
       }
 
       // Update current enum according to FSTEnum
-      private void updateEnum(final InputOutput<TempTermOutputs.TempMetaData> pair) {
+      void updateEnum(final InputOutput<TempTermOutputs.TempMetaData> pair) {
         if (pair == null) {
           term = null;
         } else {
@@ -296,21 +340,6 @@ public class TempFSTTermsReader extends FieldsProducer {
         }
         decoded = false;
         seekPending = false;
-      }
-
-      @Override
-      public DocsEnum docs(Bits liveDocs, DocsEnum reuse, int flags) throws IOException {
-        decodeMetaData();
-        return postingsReader.docs(fieldInfo, state, liveDocs, reuse, flags);
-      }
-
-      @Override
-      public DocsAndPositionsEnum docsAndPositions(Bits liveDocs, DocsAndPositionsEnum reuse, int flags) throws IOException {
-        if (fieldInfo.getIndexOptions().compareTo(IndexOptions.DOCS_AND_FREQS_AND_POSITIONS) < 0) {
-          return null;
-        }
-        decodeMetaData();
-        return postingsReader.docsAndPositions(fieldInfo, state, liveDocs, reuse, flags);
       }
 
       @Override
@@ -325,13 +354,13 @@ public class TempFSTTermsReader extends FieldsProducer {
       }
 
       @Override
-      public boolean seekExact(final BytesRef target, final boolean useCache) throws IOException {
+      public boolean seekExact(BytesRef target, boolean useCache) throws IOException {
         updateEnum(fstEnum.seekExact(target));
         return term != null;
       }
 
       @Override
-      public SeekStatus seekCeil(final BytesRef target, final boolean useCache) throws IOException {
+      public SeekStatus seekCeil(BytesRef target, boolean useCache) throws IOException {
         updateEnum(fstEnum.seekCeil(target));
         if (term == null) {
           return SeekStatus.END;
@@ -340,28 +369,338 @@ public class TempFSTTermsReader extends FieldsProducer {
         }
       }
 
-      // nocommit: this method doesn't act as 'seekExact' right?
       @Override
       public void seekExact(BytesRef target, TermState otherState) {
-        if (term == null || target.compareTo(term) != 0) {
+        if (!target.equals(term)) {
           state.copyFrom(otherState);
           term = BytesRef.deepCopyOf(target);
           seekPending = true;
         }
       }
+    }
 
-      // nocommit: do we need this?
-      @Override
-      public void seekExact(long ord) throws IOException {
-        throw new UnsupportedOperationException();
+    // Iterates intersect result with automaton (cannot seek!)
+    private final class IntersectTermsEnum extends BaseTermsEnum {
+      /* True when current term's metadata is decoded */
+      boolean decoded;
+
+      /* True when there is pending term when calling next() */
+      boolean pending;
+
+      /* stack to record how current term is constructed, used to accumulate
+       * metadata or rewind term:
+       *   stack.size() == term.length + 2,
+       *                == 1 when term is null */
+      final Stack<Frame> stack;
+
+      /* term dict fst */
+      final FST<TempTermOutputs.TempMetaData> fst;
+      final FST.BytesReader fstReader;
+      final Outputs<TempTermOutputs.TempMetaData> fstOutputs;
+
+      /* query automaton to intersect with */
+      final ByteRunAutomaton fsa;
+      final BytesRef fsaCommonSuffix;
+
+      private final class Frame {
+        /* fst stats */
+        FST.Arc<TempTermOutputs.TempMetaData> fstArc;
+        long fstPos;
+
+        /* automaton stats */
+        int fsaState;
+
+        Frame() {
+          this.fstArc = new FST.Arc<TempTermOutputs.TempMetaData>();
+          this.fsaState = -1;
+        }
+
+        public String toString() {
+          return "arc=" + fstArc + " state=" + fsaState;
+        }
+      }
+
+      IntersectTermsEnum(CompiledAutomaton compiled, BytesRef startTerm) throws IOException {
+        super();
+        //if (DEBUG) System.out.println("Enum init, startTerm=" + startTerm);
+        this.fst = dict;
+        this.fstReader = fst.getBytesReader();
+        this.fstOutputs = dict.outputs;
+        this.fsa = compiled.runAutomaton;
+        this.fsaCommonSuffix = compiled.commonSuffixRef;
+        /*
+        PrintWriter pw1 = new PrintWriter(new File("../temp/fst.txt"));
+        Util.toDot(dict,pw1, false, false);
+        pw1.close();
+        PrintWriter pw2 = new PrintWriter(new File("../temp/fsa.txt"));
+        pw2.write(compiled.toDot());
+        pw2.close();
+        */
+        this.meta = fstOutputs.getNoOutput();
+        this.stack = new Stack<Frame>();
+
+        Frame frame;
+        frame = loadVirtualFrame(newFrame());
+        stack.push(frame);
+        frame = loadFirstFrame(newFrame());
+        pushFrame(frame);
+
+        this.decoded = false;
+        this.pending = false;
+
+        if (startTerm == null) {
+          pending = isAccept(topFrame());
+        } else {
+          doSeekCeil(startTerm);
+          pending = !startTerm.equals(term) && isValid(topFrame()) && isAccept(topFrame());
+        }
       }
 
       @Override
-      public long ord() {
-        throw new UnsupportedOperationException();
+      void decodeMetaData() throws IOException {
+        assert term != null;
+        if (!decoded) {
+          if (meta.bytes != null) {
+            bytesReader.reset(meta.bytes, 0, meta.bytes.length);
+          }
+          postingsReader.decodeTerm(meta.longs, bytesReader, fieldInfo, state);
+          decoded = true;
+        }
+      }
+
+      @Override
+      public SeekStatus seekCeil(BytesRef target, boolean useCache) throws IOException {
+        decoded = false;
+        term = doSeekCeil(target);
+        if (term == null) {
+          return SeekStatus.END;
+        } else {
+          return term.equals(target) ? SeekStatus.FOUND : SeekStatus.NOT_FOUND;
+        }
+      }
+
+      // nocommit: make use of extra info, like commonSuffixRef
+      @Override
+      public BytesRef next() throws IOException {
+        //if (DEBUG) System.out.println("Enum next()");
+        if (pending) {
+          pending = false;
+          return term;
+        }
+        decoded = false;
+      DFS:
+        while (stack.size() > 1) {
+          Frame frame = newFrame();
+          if (loadExpandFrame(topFrame(), frame) != null) {  // has valid target
+            pushFrame(frame);
+            if (isAccept(frame)) {  // gotcha
+              return term;
+            }
+            continue;  // check next target
+          } 
+          frame = popFrame();
+          while(stack.size() > 1) {
+            if (loadNextFrame(topFrame(), frame) != null) {  // has valid sibling 
+              pushFrame(frame);
+              if (isAccept(frame)) {  // gotcha
+                return term;
+              }
+              continue DFS;   // check next target 
+            }
+            frame = popFrame();
+          }
+          return null;
+        }
+        return null;
+      }
+
+      private BytesRef doSeekCeil(BytesRef target) throws IOException {
+        //while (next() != null && term.compareTo(target) < 0) {} if (true) return term;
+        //if (DEBUG) System.out.println("Enum doSeekCeil()");
+        Frame frame= null;
+        int label, upto = 0, limit = target.length;
+        while (upto < limit) {  // to target prefix, or ceil label (rewind prefix)
+          frame = newFrame();
+          label = target.bytes[upto] & 0xff;
+          frame = loadCeilFrame(label, topFrame(), frame);
+          if (frame == null || frame.fstArc.label != label) {
+            break;
+          }
+          assert isValid(frame);  // target must be fetched from automaton
+          pushFrame(frame);
+          upto++;
+        }
+        if (upto == limit) {  // got target
+          return term;
+        }
+        if (frame != null) {  // got larger term('s prefix)
+          pushFrame(frame);
+          return isAccept(frame) ? term : next();
+        }
+        while (stack.size() > 1) {  // got target's prefix, advance to larger term
+          frame = popFrame();
+          while (stack.size() > 1 && !canRewind(frame)) {
+            frame = popFrame();
+          }
+          if (loadNextFrame(topFrame(), frame) != null) {
+            pushFrame(frame);
+            return isAccept(frame) ? term : next();
+          }
+        }
+        return null;
+      }
+
+      // nocommit: might be great if we can set flag BIT_LAST_ARC
+
+      /** Virtual frame, never pop */
+      Frame loadVirtualFrame(Frame frame) throws IOException {
+        frame.fstArc.output = fstOutputs.getNoOutput();
+        frame.fstArc.nextFinalOutput = fstOutputs.getNoOutput();
+        frame.fstPos = -1;
+        frame.fsaState = -1;
+        return frame;
+      }
+
+      /** Load frame for start arc(node) on fst */
+      Frame loadFirstFrame(Frame frame) throws IOException {
+        frame.fstArc = fst.getFirstArc(frame.fstArc);
+        frame.fstPos = fstReader.getPosition();
+        frame.fsaState = fsa.getInitialState();
+        return frame;
+      }
+
+      // nocommit: expected to use readFirstTargetArc here?
+
+      /** Load frame for target arc(node) on fst */
+      Frame loadExpandFrame(Frame top, Frame frame) throws IOException {
+        if (!canGrow(top)) {
+          return null;
+        }
+        frame.fstArc = fst.readFirstRealTargetArc(top.fstArc.target, frame.fstArc, fstReader);
+        frame.fsaState = fsa.step(top.fsaState, frame.fstArc.label);
+        //if (DEBUG) System.out.println(" loadExpand frame="+frame);
+        if (frame.fsaState == -1) {
+          return loadNextFrame(top, frame);
+        }
+        frame.fstPos = fstReader.getPosition();
+        return frame;
+      }
+
+      // nocommit: actually, here we're looking for an valid state for fsa, 
+      //           so if numArcs is large in fst, we should try a reverse lookup?
+      //           but we don have methods like advance(label) in fst, even 
+      //           binary search hurts. 
+      
+      /** Load frame for sibling arc(node) on fst */
+      Frame loadNextFrame(Frame top, Frame frame) throws IOException {
+        if (!canRewind(frame)) {
+          return null;
+        }
+        fstReader.setPosition(frame.fstPos);
+        while (!frame.fstArc.isLast()) {
+          frame.fstArc = fst.readNextRealArc(frame.fstArc, fstReader);
+          frame.fsaState = fsa.step(top.fsaState, frame.fstArc.label);
+          if (frame.fsaState != -1) {
+            break;
+          }
+        }
+        //if (DEBUG) System.out.println(" loadNext frame="+frame);
+        if (frame.fsaState == -1) {
+          return null;
+        }
+        frame.fstPos = fstReader.getPosition();
+        return frame;
+      }
+
+      /** Load frame for target arc(node) on fst, so that 
+       *  arc.label >= label and !fsa.reject(arc.label) */
+      Frame loadCeilFrame(int label, Frame top, Frame frame) throws IOException {
+        FST.Arc<TempTermOutputs.TempMetaData> arc = frame.fstArc;
+        arc = Util.readCeilArc(label, fst, top.fstArc, arc, fstReader);
+        if (arc == null) {
+          return null;
+        }
+        frame.fsaState = fsa.step(top.fsaState, arc.label);
+        //if (DEBUG) System.out.println(" loadCeil frame="+frame);
+        if (frame.fsaState == -1) {
+          return loadNextFrame(top, frame);
+        }
+        frame.fstPos = fstReader.getPosition();
+        return frame;
+      }
+
+      boolean isAccept(Frame frame) {  // reach a term both fst&fsa accepts
+        return fsa.isAccept(frame.fsaState) && frame.fstArc.isFinal();
+      }
+      boolean isValid(Frame frame) {   // reach a prefix both fst&fsa won't reject
+        return frame.fsaState != -1;// && frame != null;
+      }
+      boolean canGrow(Frame frame) {   // can walk forward on both fst&fsa
+        return frame.fsaState != -1 && FST.targetHasArcs(frame.fstArc);
+      }
+      boolean canRewind(Frame frame) { // can jump to sibling
+        return !frame.fstArc.isLast();
+      }
+
+      void pushFrame(Frame frame) throws IOException {
+        final FST.Arc<TempTermOutputs.TempMetaData> arc = frame.fstArc;
+        arc.output = fstOutputs.add(topFrame().fstArc.output, arc.output);
+        if (arc.isFinal()) {
+          arc.nextFinalOutput = fstOutputs.add(arc.output, arc.nextFinalOutput);
+          meta = arc.nextFinalOutput;
+        } else {
+          meta = arc.output;
+        }
+        term = grow(arc.label);
+        state.docFreq = meta.docFreq;
+        state.totalTermFreq = meta.totalTermFreq;
+        stack.push(frame);
+        //if (DEBUG) System.out.println("  term=" + term + " stack=" + stack.size());
+      }
+
+      Frame popFrame() throws IOException {
+        final Frame pop = stack.pop(), top = topFrame();
+        if (top.fstArc.isFinal()) {
+          meta = top.fstArc.nextFinalOutput;
+        } else {
+          meta = top.fstArc.output;
+        }
+        term = shrink();
+        //if (DEBUG) System.out.println("  term=" + term + " stack=" + stack.size());
+        return pop;
+      }
+
+      Frame newFrame() throws IOException {
+        return new Frame();
+      }
+
+      Frame topFrame() throws IOException {
+        return stack.peek();
+      }
+
+      BytesRef grow(int label) {
+        if (term == null) {
+          term = new BytesRef(new byte[16], 0, 0);
+        } else {
+          if (term.length == term.bytes.length) {
+            term.grow(term.length+1);
+          }
+          term.bytes[term.length++] = (byte)label;
+        }
+        return term;
+      }
+
+      BytesRef shrink() {
+        if (term.length == 0) {
+          term = null;
+        } else {
+          term.length--;
+        }
+        return term;
       }
     }
   }
+
   static<T> void walk(FST<T> fst) throws IOException {
     final ArrayList<FST.Arc<T>> queue = new ArrayList<FST.Arc<T>>();
     final BitSet seen = new BitSet();
@@ -371,9 +710,11 @@ public class TempFSTTermsReader extends FieldsProducer {
     while (!queue.isEmpty()) {
       final FST.Arc<T> arc = queue.remove(0);
       final long node = arc.target;
+      // nocommit: hmm... for startArc, Arc.toString() is broken???
+      //           BIT_ARC_HAS_FINAL_OUTPUT never set
       //System.out.println(arc);
       if (FST.targetHasArcs(arc) && !seen.get((int) node)) {
-        //seen.set((int) node);
+        seen.set((int) node);
         fst.readFirstRealTargetArc(node, arc, reader);
         while (true) {
           queue.add(new FST.Arc<T>().copyFrom(arc));

@@ -205,6 +205,8 @@ public class TempTermOutputs extends Outputs<TempTermOutputs.TempMetaData> {
     return ret;
   }
 
+  // nocommit: we might refactor out an 'addSelf' later, 
+  // which improves 5~7% for fuzzy queries
   @Override
   public TempMetaData add(TempMetaData t1, TempMetaData t2) {
     if (DEBUG) System.out.print("add("+t1+", "+t2+") = ");
@@ -328,13 +330,13 @@ public class TempTermOutputs extends Outputs<TempTermOutputs.TempMetaData> {
     if (t1.bytes == null && t2.bytes == null) {
       return true;
     }
-    return t1.bytes != null && t2.bytes !=null && Arrays.equals(t1.bytes, t2.bytes);
+    return t1.bytes != null && t2.bytes != null && Arrays.equals(t1.bytes, t2.bytes);
   }
   static boolean longsEqual(final TempMetaData t1, final TempMetaData t2) {
     if (t1.longs == null && t2.longs == null) {
       return true;
     }
-    return t1.longs != null && t2.longs !=null && Arrays.equals(t1.longs, t2.longs);
+    return t1.longs != null && t2.longs != null && Arrays.equals(t1.longs, t2.longs);
   }
   static boolean allZero(final long[] l) {
     for (int i = 0; i < l.length; i++) {
