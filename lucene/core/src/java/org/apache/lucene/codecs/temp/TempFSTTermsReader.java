@@ -389,12 +389,16 @@ public class TempFSTTermsReader extends FieldsProducer {
       /* True when there is pending term when calling next() */
       boolean pending;
 
-      /* stack to record how current term is constructed, used to accumulate
-       * metadata or rewind term:
+      /* stack to record how current term is constructed, 
+       * used to accumulate metadata or rewind term:
        *   level == term.length + 1,
        *         == 0 when term is null */
       Frame[] stack;
       int level;
+
+      /* to which level the metadata is accumulated 
+       * so that we can accumulate metadata lazily */
+      int metaUpto;
 
       /* term dict fst */
       final FST<TempTermOutputs.TempMetaData> fst;
@@ -436,7 +440,6 @@ public class TempFSTTermsReader extends FieldsProducer {
         pw2.write(compiled.toDot());
         pw2.close();
         */
-        this.meta = fstOutputs.getNoOutput();
         this.level = -1;
         this.stack = new Frame[16];
         for (int i = 0 ; i < stack.length; i++) {
@@ -449,6 +452,8 @@ public class TempFSTTermsReader extends FieldsProducer {
         frame = loadFirstFrame(newFrame());
         pushFrame(frame);
 
+        this.meta = null;
+        this.metaUpto = 1;
         this.decoded = false;
         this.pending = false;
 
@@ -472,10 +477,30 @@ public class TempFSTTermsReader extends FieldsProducer {
         }
       }
 
+      /** Lazily accumulate meta data, when we got a accepted term */
+      void loadMetaData() throws IOException {
+        FST.Arc<TempTermOutputs.TempMetaData> last, next;
+        last = stack[metaUpto].fstArc;
+        while (metaUpto != level) {
+          metaUpto++;
+          next = stack[metaUpto].fstArc;
+          next.output = fstOutputs.add(next.output, last.output);
+          last = next;
+        }
+        if (last.isFinal()) {
+          meta = fstOutputs.add(last.output, last.nextFinalOutput);
+        } else {
+          meta = last.output;
+        }
+        state.docFreq = meta.docFreq;
+        state.totalTermFreq = meta.totalTermFreq;
+      }
+
       @Override
       public SeekStatus seekCeil(BytesRef target, boolean useCache) throws IOException {
         decoded = false;
         term = doSeekCeil(target);
+        loadMetaData();
         if (term == null) {
           return SeekStatus.END;
         } else {
@@ -488,6 +513,7 @@ public class TempFSTTermsReader extends FieldsProducer {
         //if (DEBUG) System.out.println("Enum next()");
         if (pending) {
           pending = false;
+          loadMetaData();
           return term;
         }
         decoded = false;
@@ -497,7 +523,7 @@ public class TempFSTTermsReader extends FieldsProducer {
           if (loadExpandFrame(topFrame(), frame) != null) {  // has valid target
             pushFrame(frame);
             if (isAccept(frame)) {  // gotcha
-              return term;
+              break;
             }
             continue;  // check next target
           } 
@@ -506,7 +532,7 @@ public class TempFSTTermsReader extends FieldsProducer {
             if (loadNextFrame(topFrame(), frame) != null) {  // has valid sibling 
               pushFrame(frame);
               if (isAccept(frame)) {  // gotcha
-                return term;
+                break DFS;
               }
               continue DFS;   // check next target 
             }
@@ -514,7 +540,8 @@ public class TempFSTTermsReader extends FieldsProducer {
           }
           return null;
         }
-        return null;
+        loadMetaData();
+        return term;
       }
 
       private BytesRef doSeekCeil(BytesRef target) throws IOException {
@@ -642,47 +669,33 @@ public class TempFSTTermsReader extends FieldsProducer {
         return !frame.fstArc.isLast();
       }
 
-      void pushFrame(Frame frame) throws IOException {
-        final FST.Arc<TempTermOutputs.TempMetaData> arc = frame.fstArc;
-        arc.output = fstOutputs.add(topFrame().fstArc.output, arc.output);
-        if (arc.isFinal()) {
-          arc.nextFinalOutput = fstOutputs.add(arc.output, arc.nextFinalOutput);
-          meta = arc.nextFinalOutput;
-        } else {
-          meta = arc.output;
-        }
-        term = grow(arc.label);
-        state.docFreq = meta.docFreq;
-        state.totalTermFreq = meta.totalTermFreq;
+      void pushFrame(Frame frame) {
+        term = grow(frame.fstArc.label);
         level++;
         //if (DEBUG) System.out.println("  term=" + term + " level=" + level);
       }
 
-      Frame popFrame() throws IOException {
-        final Frame pop = stack[level--], top = topFrame();
-        if (top.fstArc.isFinal()) {
-          meta = top.fstArc.nextFinalOutput;
-        } else {
-          meta = top.fstArc.output;
-        }
+      Frame popFrame() {
         term = shrink();
+        level--;
+        metaUpto = metaUpto > level ? level : metaUpto;
         //if (DEBUG) System.out.println("  term=" + term + " level=" + level);
-        return pop;
+        return stack[level+1];
       }
 
-      Frame newFrame() throws IOException {
+      Frame newFrame() {
         if (level+1 == stack.length) {
-          final Frame[] next = new Frame[ArrayUtil.oversize(level+2, RamUsageEstimator.NUM_BYTES_OBJECT_REF)];
-          System.arraycopy(stack, 0, next, 0, stack.length);
-          for (int i = stack.length; i < next.length; i++) {
-            next[i] = new Frame();
+          final Frame[] temp = new Frame[ArrayUtil.oversize(level+2, RamUsageEstimator.NUM_BYTES_OBJECT_REF)];
+          System.arraycopy(stack, 0, temp, 0, stack.length);
+          for (int i = stack.length; i < temp.length; i++) {
+            temp[i] = new Frame();
           }
-          stack = next;
+          stack = temp;
         }
         return stack[level+1];
       }
 
-      Frame topFrame() throws IOException {
+      Frame topFrame() {
         return stack[level];
       }
 
