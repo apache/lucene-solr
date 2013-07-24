@@ -108,9 +108,11 @@
         } else if (status.getKind() == SVNNodeKind.FILE && nodeStatus != SVNStatusType.STATUS_DELETED) {
           missingProps.add(convertRelative(status.getFile()));
         }
-        if (nodeStatus == SVNStatusType.STATUS_MODIFIED || nodeStatus == SVNStatusType.STATUS_REPLACED ||
-            nodeStatus == SVNStatusType.STATUS_DELETED  || nodeStatus == SVNStatusType.STATUS_ADDED) {
-          changed.add(convertRelative(status.getFile()));
+        if (status.getKind() == SVNNodeKind.FILE) {
+          if (nodeStatus == SVNStatusType.STATUS_MODIFIED || nodeStatus == SVNStatusType.STATUS_REPLACED ||
+              nodeStatus == SVNStatusType.STATUS_DELETED  || nodeStatus == SVNStatusType.STATUS_ADDED) {
+            changed.add(convertRelative(status.getFile()));
+          }
         }
       } as ISVNStatusHandler, null);
 
