@@ -159,19 +159,6 @@ public class CheckIndex {
        *  segment. */
       public double sizeMB;
 
-      /** Doc store offset, if this segment shares the doc
-       *  store files (stored fields and term vectors) with
-       *  other segments.  This is -1 if it does not share. */
-      public int docStoreOffset = -1;
-    
-      /** String of the shared doc store segment, or null if
-       *  this segment does not share the doc store files. */
-      public String docStoreSegment;
-
-      /** True if the shared doc store files are compound file
-       *  format. */
-      public boolean docStoreCompoundFile;
-
       /** True if this segment has pending deletions. */
       public boolean hasDeletions;
 
