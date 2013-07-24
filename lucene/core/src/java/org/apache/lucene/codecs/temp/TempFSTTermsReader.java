@@ -24,7 +24,6 @@ import java.util.ArrayList;
 import java.util.BitSet;
 import java.util.Collections;
 import java.util.Comparator;
-import java.util.Stack;
 import java.util.Iterator;
 import java.util.TreeMap;
 
@@ -49,6 +48,7 @@ import org.apache.lucene.util.automaton.CompiledAutomaton;
 import org.apache.lucene.util.Bits;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.IOUtils;
+import org.apache.lucene.util.RamUsageEstimator;
 import org.apache.lucene.util.fst.BytesRefFSTEnum;
 import org.apache.lucene.util.fst.BytesRefFSTEnum.InputOutput;
 import org.apache.lucene.util.fst.FST;
@@ -391,9 +391,10 @@ public class TempFSTTermsReader extends FieldsProducer {
 
       /* stack to record how current term is constructed, used to accumulate
        * metadata or rewind term:
-       *   stack.size() == term.length + 2,
-       *                == 1 when term is null */
-      final Stack<Frame> stack;
+       *   level == term.length + 1,
+       *         == 0 when term is null */
+      Frame[] stack;
+      int level;
 
       /* term dict fst */
       final FST<TempTermOutputs.TempMetaData> fst;
@@ -436,11 +437,15 @@ public class TempFSTTermsReader extends FieldsProducer {
         pw2.close();
         */
         this.meta = fstOutputs.getNoOutput();
-        this.stack = new Stack<Frame>();
+        this.level = -1;
+        this.stack = new Frame[16];
+        for (int i = 0 ; i < stack.length; i++) {
+          this.stack[i] = new Frame();
+        }
 
         Frame frame;
         frame = loadVirtualFrame(newFrame());
-        stack.push(frame);
+        this.level++;
         frame = loadFirstFrame(newFrame());
         pushFrame(frame);
 
@@ -487,7 +492,7 @@ public class TempFSTTermsReader extends FieldsProducer {
         }
         decoded = false;
       DFS:
-        while (stack.size() > 1) {
+        while (level > 0) {
           Frame frame = newFrame();
           if (loadExpandFrame(topFrame(), frame) != null) {  // has valid target
             pushFrame(frame);
@@ -497,7 +502,7 @@ public class TempFSTTermsReader extends FieldsProducer {
             continue;  // check next target
           } 
           frame = popFrame();
-          while(stack.size() > 1) {
+          while(level > 0) {
             if (loadNextFrame(topFrame(), frame) != null) {  // has valid sibling 
               pushFrame(frame);
               if (isAccept(frame)) {  // gotcha
@@ -534,9 +539,9 @@ public class TempFSTTermsReader extends FieldsProducer {
           pushFrame(frame);
           return isAccept(frame) ? term : next();
         }
-        while (stack.size() > 1) {  // got target's prefix, advance to larger term
+        while (level > 0) {  // got target's prefix, advance to larger term
           frame = popFrame();
-          while (stack.size() > 1 && !canRewind(frame)) {
+          while (level > 0 && !canRewind(frame)) {
             frame = popFrame();
           }
           if (loadNextFrame(topFrame(), frame) != null) {
@@ -649,28 +654,36 @@ public class TempFSTTermsReader extends FieldsProducer {
         term = grow(arc.label);
         state.docFreq = meta.docFreq;
         state.totalTermFreq = meta.totalTermFreq;
-        stack.push(frame);
-        //if (DEBUG) System.out.println("  term=" + term + " stack=" + stack.size());
+        level++;
+        //if (DEBUG) System.out.println("  term=" + term + " level=" + level);
       }
 
       Frame popFrame() throws IOException {
-        final Frame pop = stack.pop(), top = topFrame();
+        final Frame pop = stack[level--], top = topFrame();
         if (top.fstArc.isFinal()) {
           meta = top.fstArc.nextFinalOutput;
         } else {
           meta = top.fstArc.output;
         }
         term = shrink();
-        //if (DEBUG) System.out.println("  term=" + term + " stack=" + stack.size());
+        //if (DEBUG) System.out.println("  term=" + term + " level=" + level);
         return pop;
       }
 
       Frame newFrame() throws IOException {
-        return new Frame();
+        if (level+1 == stack.length) {
+          final Frame[] next = new Frame[ArrayUtil.oversize(level+2, RamUsageEstimator.NUM_BYTES_OBJECT_REF)];
+          System.arraycopy(stack, 0, next, 0, stack.length);
+          for (int i = stack.length; i < next.length; i++) {
+            next[i] = new Frame();
+          }
+          stack = next;
+        }
+        return stack[level+1];
       }
 
       Frame topFrame() throws IOException {
-        return stack.peek();
+        return stack[level];
       }
 
       BytesRef grow(int label) {
