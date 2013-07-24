@@ -84,6 +84,10 @@ API Changes
   searchAfter exceeds the number of documents in the reader. 
   (Crocket via Shai Erera)
 
+* LUCENE-5129: CategoryAssociationsContainer no longer supports null
+  association values for categories. If you want to index categories without
+  associations, you should add them using FacetFields. (Shai Erera)
+  
 Optimizations
 
 * LUCENE-5088: Added TermFilter to filter docs by a specific term.
