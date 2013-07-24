@@ -150,4 +150,6 @@ are part of the ICU4C package. See http://site.icu-project.org/ </echo>
     </compile>
   </target>
 
+  <target name="regenerate" depends="gen-html-strip-charfilter-supp-macros,gen-uax29-supp-macros,gen-utr30-data-files,gennorm2,genrbbi"/>
+
 </project>
