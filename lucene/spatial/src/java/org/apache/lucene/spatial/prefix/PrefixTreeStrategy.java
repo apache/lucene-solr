@@ -57,7 +57,7 @@ import java.util.concurrent.ConcurrentHashMap;
  * <li>Only {@link org.apache.lucene.spatial.query.SpatialOperation#Intersects}
  * is supported.  If only points are indexed then this is effectively equivalent
  * to IsWithin.</li>
- * <li>The strategy supports {@link #makeDistanceValueSource(com.spatial4j.core.shape.Point)}
+ * <li>The strategy supports {@link #makeDistanceValueSource(com.spatial4j.core.shape.Point,double)}
  * even for multi-valued data, so long as the indexed data is all points; the
  * behavior is undefined otherwise.  However, <em>it will likely be removed in
  * the future</em> in lieu of using another strategy with a more scalable
@@ -183,7 +183,7 @@ public abstract class PrefixTreeStrategy extends SpatialStrategy {
   }
 
   @Override
-  public ValueSource makeDistanceValueSource(Point queryPoint) {
+  public ValueSource makeDistanceValueSource(Point queryPoint, double multiplier) {
     PointPrefixTreeFieldCacheProvider p = provider.get( getFieldName() );
     if( p == null ) {
       synchronized (this) {//double checked locking idiom is okay since provider is threadsafe
@@ -195,7 +195,7 @@ public abstract class PrefixTreeStrategy extends SpatialStrategy {
       }
     }
 
-    return new ShapeFieldCacheDistanceValueSource(ctx, p, queryPoint);
+    return new ShapeFieldCacheDistanceValueSource(ctx, p, queryPoint, multiplier);
   }
 
   public SpatialPrefixTree getGrid() {

@@ -241,12 +241,14 @@ public abstract class AbstractSpatialFieldType<T extends SpatialStrategy> extend
 
     //We get the valueSource for the score then the filter and combine them.
     ValueSource valueSource;
-    if ("distance".equals(score))
-      valueSource = strategy.makeDistanceValueSource(spatialArgs.getShape().getCenter());
-    else if ("recipDistance".equals(score))
+    if ("distance".equals(score)) {
+      double multiplier = 1.0;//TODO support units=kilometers
+      valueSource = strategy.makeDistanceValueSource(spatialArgs.getShape().getCenter(), multiplier);
+    } else if ("recipDistance".equals(score)) {
       valueSource = strategy.makeRecipDistanceValueSource(spatialArgs.getShape());
-    else
+    } else {
       throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, "'score' local-param must be one of 'none', 'distance', or 'recipDistance'");
+    }
     FunctionQuery functionQuery = new FunctionQuery(valueSource);
 
     if (localParams != null && !localParams.getBool(FILTER_PARAM, true))

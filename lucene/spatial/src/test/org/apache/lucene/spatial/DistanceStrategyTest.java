@@ -32,6 +32,7 @@ import org.junit.Test;
 
 import java.io.IOException;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 
 public class DistanceStrategyTest extends StrategyTestCase {
@@ -116,6 +117,11 @@ public class DistanceStrategyTest extends StrategyTestCase {
 
   void checkDistValueSource(String ptStr, float... distances) throws IOException {
     Point pt = (Point) ctx.readShape(ptStr);
-    checkValueSource(strategy.makeDistanceValueSource(pt), distances, 1.0e-4f);
+    float multiplier = random().nextFloat() * 100f;
+    float[] dists2 = Arrays.copyOf(distances, distances.length);
+    for (int i = 0; i < dists2.length; i++) {
+      dists2[i] *= multiplier;
+    }
+    checkValueSource(strategy.makeDistanceValueSource(pt, multiplier), dists2, 1.0e-3f);
   }
 }

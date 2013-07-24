@@ -39,13 +39,15 @@ public class DistanceValueSource extends ValueSource {
 
   private PointVectorStrategy strategy;
   private final Point from;
+  private final double multiplier;
 
   /**
    * Constructor.
    */
-  public DistanceValueSource(PointVectorStrategy strategy, Point from) {
+  public DistanceValueSource(PointVectorStrategy strategy, Point from, double multiplier) {
     this.strategy = strategy;
     this.from = from;
+    this.multiplier = multiplier;
   }
 
   /**
@@ -72,7 +74,8 @@ public class DistanceValueSource extends ValueSource {
 
       private final Point from = DistanceValueSource.this.from;
       private final DistanceCalculator calculator = strategy.getSpatialContext().getDistCalc();
-      private final double nullValue = (strategy.getSpatialContext().isGeo() ? 180 : Double.MAX_VALUE);
+      private final double nullValue =
+          (strategy.getSpatialContext().isGeo() ? 180 * multiplier : Double.MAX_VALUE);
 
       @Override
       public float floatVal(int doc) {
@@ -84,7 +87,7 @@ public class DistanceValueSource extends ValueSource {
         // make sure it has minX and area
         if (validX.get(doc)) {
           assert validY.get(doc);
-          return calculator.distance(from, ptX.get(doc), ptY.get(doc));
+          return calculator.distance(from, ptX.get(doc), ptY.get(doc)) * multiplier;
         }
         return nullValue;
       }
@@ -105,6 +108,7 @@ public class DistanceValueSource extends ValueSource {
 
     if (!from.equals(that.from)) return false;
     if (!strategy.equals(that.strategy)) return false;
+    if (multiplier != that.multiplier) return false;
 
     return true;
   }
