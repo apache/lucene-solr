@@ -31,7 +31,6 @@ import org.apache.lucene.analysis.util.CharArrayMap;
 import org.apache.lucene.analysis.util.CharArraySet;
 import org.apache.lucene.analysis.util.OpenStringBuilder;
 
-@SuppressWarnings("fallthrough")
 /**
  * A CharFilter that wraps another Reader and attempts to strip out HTML constructs.
  */
