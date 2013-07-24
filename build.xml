@@ -428,5 +428,20 @@
       <target name="run-clover"/>
     </antcall>
   </target>
-  
+
+  <target name="regenerate" description="Runs all code regenerators">
+    <subant target="regenerate" inheritall="false" failonerror="false">
+      <fileset dir="lucene" includes="build.xml" />
+      <!-- todo:
+      <fileset dir="solr" includes="build.xml" />-->
+    </subant>
+  </target>
+
+  <target name="-check-after-regeneration">
+    <subant buildpath="." antfile="extra-targets.xml" target="-check-after-regeneration" inheritall="false" failonerror="true"/>
+  </target>
+
+  <!-- TODO: remove me when jenkins works -->
+  <target name="regenerateAndCheck" depends="regenerate,-check-after-regeneration"/>
+
 </project>
