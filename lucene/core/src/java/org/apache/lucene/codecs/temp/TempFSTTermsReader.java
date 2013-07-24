@@ -548,6 +548,10 @@ public class TempFSTTermsReader extends FieldsProducer {
       }
 
       // nocommit: might be great if we can set flag BIT_LAST_ARC
+      // nocommit: actually we can use first arc as candidate...
+      // it always has NO_OUTPUT as output, and BIT_LAST_ARC set.
+      // but we'll have problem if later FST supports output sharing
+      // on first arc!
 
       /** Virtual frame, never pop */
       Frame loadVirtualFrame(Frame frame) throws IOException {
@@ -701,8 +705,6 @@ public class TempFSTTermsReader extends FieldsProducer {
     while (!queue.isEmpty()) {
       final FST.Arc<T> arc = queue.remove(0);
       final long node = arc.target;
-      // nocommit: hmm... for startArc, Arc.toString() is broken???
-      //           BIT_ARC_HAS_FINAL_OUTPUT never set
       //System.out.println(arc);
       if (FST.targetHasArcs(arc) && !seen.get((int) node)) {
         seen.set((int) node);

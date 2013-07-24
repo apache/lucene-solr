@@ -796,6 +796,9 @@ public final class FST<T> {
     if (emptyOutput != null) {
       arc.flags = BIT_FINAL_ARC | BIT_LAST_ARC;
       arc.nextFinalOutput = emptyOutput;
+      if (emptyOutput != NO_OUTPUT) {
+        arc.flags |= BIT_ARC_HAS_FINAL_OUTPUT;
+      }
     } else {
       arc.flags = BIT_LAST_ARC;
       arc.nextFinalOutput = NO_OUTPUT;
