@@ -383,7 +383,7 @@
   </target>
 
   <!-- Jenkins tasks -->
-  <target name="-jenkins-base" depends="clean,regenerate,test-with-heapdumps,validate,documentation-lint,jar-checksums,-check-after-regeneration"/>
+  <target name="-jenkins-base" depends="clean,test-with-heapdumps,validate,documentation-lint,jar-checksums,check-svn-working-copy"/>
   
   <target name="jenkins-hourly">
     <antcall>
@@ -435,7 +435,7 @@
     <subant buildpath="." antfile="extra-targets.xml" target="-check-after-regeneration" inheritall="false" failonerror="true"/>
   </target>
 
-  <!-- nocommit: remove me, just for quickly iterating until we fix the issues -->
+  <!-- TODO: remove me when jenkins works -->
   <target name="regenerateAndCheck" depends="regenerate,-check-after-regeneration"/>
 
 </project>
