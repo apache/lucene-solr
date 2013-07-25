@@ -50,11 +50,6 @@ public class FixedGapTermsIndexReader extends TermsIndexReaderBase {
   // having to upgrade each multiple to long in multiple
   // places (error prone), we use long here:
   private final long indexInterval;
-  private final int indexDivisor;
-
-  // Closed if indexLoaded is true:
-  private IndexInput in;
-  private volatile boolean indexLoaded;
 
   private final Comparator<BytesRef> termComp;
 
@@ -73,10 +68,8 @@ public class FixedGapTermsIndexReader extends TermsIndexReaderBase {
     throws IOException {
 
     this.termComp = termComp;
-
-    this.indexDivisor = 1; // nocommit
     
-    in = dir.openInput(IndexFileNames.segmentFileName(segment, segmentSuffix, FixedGapTermsIndexWriter.TERMS_INDEX_EXTENSION), context);
+    final IndexInput in = dir.openInput(IndexFileNames.segmentFileName(segment, segmentSuffix, FixedGapTermsIndexWriter.TERMS_INDEX_EXTENSION), context);
     
     boolean success = false;
 
@@ -98,7 +91,7 @@ public class FixedGapTermsIndexReader extends TermsIndexReaderBase {
       //System.out.println("FGR: init seg=" + segment + " div=" + indexDivisor + " nF=" + numFields);
       for(int i=0;i<numFields;i++) {
         final int field = in.readVInt();
-        final int numIndexTerms = in.readVInt();
+        final long numIndexTerms = in.readVInt(); // TODO: change this to a vLong if we fix writer to support > 2B index terms
         if (numIndexTerms < 0) {
           throw new CorruptIndexException("invalid numIndexTerms: " + numIndexTerms + " (resource=" + in + ")");
         }
@@ -110,24 +103,19 @@ public class FixedGapTermsIndexReader extends TermsIndexReaderBase {
           throw new CorruptIndexException("invalid packedIndexStart: " + packedIndexStart + " indexStart: " + indexStart + "numIndexTerms: " + numIndexTerms + " (resource=" + in + ")");
         }
         final FieldInfo fieldInfo = fieldInfos.fieldInfo(field);
-        FieldIndexData previous = fields.put(fieldInfo, new FieldIndexData(fieldInfo, numIndexTerms, indexStart, termsStart, packedIndexStart, packedOffsetsStart));
+        FieldIndexData previous = fields.put(fieldInfo, new FieldIndexData(in, indexStart, termsStart, packedIndexStart, packedOffsetsStart, numIndexTerms));
         if (previous != null) {
           throw new CorruptIndexException("duplicate field: " + fieldInfo.name + " (resource=" + in + ")");
         }
       }
       success = true;
     } finally {
-      if (!success) {
+      if (success) {
+        IOUtils.close(in);
+      } else {
         IOUtils.closeWhileHandlingException(in);
       }
-      if (indexDivisor > 0) {
-        in.close();
-        in = null;
-        if (success) {
-          indexLoaded = true;
-        }
-        termBytesReader = termBytes.freeze(true);
-      }
+      termBytesReader = termBytes.freeze(true);
     }
   }
 
@@ -137,11 +125,11 @@ public class FixedGapTermsIndexReader extends TermsIndexReaderBase {
   }
 
   private class IndexEnum extends FieldIndexEnum {
-    private final FieldIndexData.CoreFieldIndex fieldIndex;
+    private final FieldIndexData fieldIndex;
     private final BytesRef term = new BytesRef();
     private long ord;
 
-    public IndexEnum(FieldIndexData.CoreFieldIndex fieldIndex) {
+    public IndexEnum(FieldIndexData fieldIndex) {
       this.fieldIndex = fieldIndex;
     }
 
@@ -152,11 +140,11 @@ public class FixedGapTermsIndexReader extends TermsIndexReaderBase {
 
     @Override
     public long seek(BytesRef target) {
-      int lo = 0;          // binary search
-      int hi = fieldIndex.numIndexTerms - 1;
+      long lo = 0;          // binary search
+      long hi = fieldIndex.numIndexTerms - 1;
 
       while (hi >= lo) {
-        int mid = (lo + hi) >>> 1;
+        long mid = (lo + hi) >>> 1;
 
         final long offset = fieldIndex.termOffsets.get(mid);
         final int length = (int) (fieldIndex.termOffsets.get(1+mid) - offset);
@@ -189,7 +177,7 @@ public class FixedGapTermsIndexReader extends TermsIndexReaderBase {
 
     @Override
     public long next() {
-      final int idx = 1 + (int) (ord / indexInterval);
+      final long idx = 1 + (ord / indexInterval);
       if (idx >= fieldIndex.numIndexTerms) {
         return -1;
       }
@@ -208,7 +196,7 @@ public class FixedGapTermsIndexReader extends TermsIndexReaderBase {
 
     @Override
     public long seek(long ord) {
-      int idx = (int) (ord / indexInterval);
+      long idx = ord / indexInterval;
       // caller must ensure ord is in bounds
       assert idx < fieldIndex.numIndexTerms;
       final long offset = fieldIndex.termOffsets.get(idx);
@@ -225,38 +213,6 @@ public class FixedGapTermsIndexReader extends TermsIndexReaderBase {
   }
 
   private final class FieldIndexData {
-
-    volatile CoreFieldIndex coreIndex;
-
-    private final long indexStart;
-    private final long termsStart;
-    private final long packedIndexStart;
-    private final long packedOffsetsStart;
-
-    private final int numIndexTerms;
-
-    public FieldIndexData(FieldInfo fieldInfo, int numIndexTerms, long indexStart, long termsStart, long packedIndexStart,
-                          long packedOffsetsStart) throws IOException {
-
-      this.termsStart = termsStart;
-      this.indexStart = indexStart;
-      this.packedIndexStart = packedIndexStart;
-      this.packedOffsetsStart = packedOffsetsStart;
-      this.numIndexTerms = numIndexTerms;
-
-      if (indexDivisor > 0) {
-        loadTermsIndex();
-      }
-    }
-
-    private void loadTermsIndex() throws IOException {
-      if (coreIndex == null) {
-        coreIndex = new CoreFieldIndex(indexStart, termsStart, packedIndexStart, packedOffsetsStart, numIndexTerms);
-      }
-    }
-
-    private final class CoreFieldIndex {
-
       // where this field's terms begin in the packed byte[]
       // data
       final long termBytesStart;
@@ -267,10 +223,10 @@ public class FixedGapTermsIndexReader extends TermsIndexReaderBase {
       // index pointers into main terms dict
       final MonotonicBlockPackedReader termsDictOffsets;
 
-      final int numIndexTerms;
+      final long numIndexTerms;
       final long termsStart;
 
-      public CoreFieldIndex(long indexStart, long termsStart, long packedIndexStart, long packedOffsetsStart, int numIndexTerms) throws IOException {
+      public FieldIndexData(IndexInput in, long indexStart, long termsStart, long packedIndexStart, long packedOffsetsStart, long numIndexTerms) throws IOException {
 
         this.termsStart = termsStart;
         termBytesStart = termBytes.getPointer();
@@ -278,14 +234,8 @@ public class FixedGapTermsIndexReader extends TermsIndexReaderBase {
         IndexInput clone = in.clone();
         clone.seek(indexStart);
 
-        // -1 is passed to mean "don't load term index", but
-        // if we are then later loaded it's overwritten with
-        // a real value
-        assert indexDivisor > 0;
-
-        this.numIndexTerms = 1+(numIndexTerms-1) / indexDivisor;
-
-        assert this.numIndexTerms  > 0: "numIndexTerms=" + numIndexTerms + " indexDivisor=" + indexDivisor;
+        this.numIndexTerms = numIndexTerms;
+        assert this.numIndexTerms  > 0: "numIndexTerms=" + numIndexTerms;
 
         // slurp in the images from disk:
           
@@ -305,24 +255,20 @@ public class FixedGapTermsIndexReader extends TermsIndexReaderBase {
         }
       }
     }
-  }
 
   @Override
   public FieldIndexEnum getFieldEnum(FieldInfo fieldInfo) {
     final FieldIndexData fieldData = fields.get(fieldInfo);
-    if (fieldData.coreIndex == null) {
+    // nocommit: can fieldData ever be null?
+    if (fieldData == null) {
       return null;
     } else {
-      return new IndexEnum(fieldData.coreIndex);
+      return new IndexEnum(fieldData);
     }
   }
 
   @Override
-  public void close() throws IOException {
-    if (in != null && !indexLoaded) {
-      in.close();
-    }
-  }
+  public void close() throws IOException {}
 
   private void seekDir(IndexInput input, long dirOffset) throws IOException {
     input.seek(input.length() - 8);
