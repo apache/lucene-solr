@@ -3668,7 +3668,7 @@ public class IndexWriter implements Closeable, TwoPhaseCommit {
         // Hold onto the "live" reader; we will use this to
         // commit merged deletes
         final ReadersAndLiveDocs rld = readerPool.get(info, true);
-        SegmentReader reader = rld.getMergeReader(context);
+        SegmentReader reader = rld.getReader(context);
         assert reader != null;
 
         // Carefully pull the most recent live docs:

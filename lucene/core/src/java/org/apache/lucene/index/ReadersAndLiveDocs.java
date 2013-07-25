@@ -43,16 +43,6 @@ class ReadersAndLiveDocs {
   // Set once (null, and then maybe set, and never set again):
   private SegmentReader reader;
 
-  // TODO: it's sometimes wasteful that we hold open two
-  // separate SRs (one for merging one for
-  // reading)... maybe just use a single SR?  The gains of
-  // not loading the terms index (for merging in the
-  // non-NRT case) are far less now... and if the app has
-  // any deletes it'll open real readers anyway.
-
-  // Set once (null, and then maybe set, and never set again):
-  private SegmentReader mergeReader;
-
   // Holds the current shared (readable and writable
   // liveDocs).  This is null when there are no deleted
   // docs, and it's copy-on-write (cloned whenever we need
@@ -131,37 +121,6 @@ class ReadersAndLiveDocs {
     return reader;
   }
 
-  // Get reader for merging (does not load the terms
-  // index):
-  public synchronized SegmentReader getMergeReader(IOContext context) throws IOException {
-    //System.out.println("  livedocs=" + rld.liveDocs);
-
-    if (mergeReader == null) {
-
-      if (reader != null) {
-        // Just use the already opened non-merge reader
-        // for merging.  In the NRT case this saves us
-        // pointless double-open:
-        //System.out.println("PROMOTE non-merge reader seg=" + rld.info);
-        // Ref for us:
-        reader.incRef();
-        mergeReader = reader;
-        //System.out.println(Thread.currentThread().getName() + ": getMergeReader share seg=" + info.name);
-      } else {
-        //System.out.println(Thread.currentThread().getName() + ": getMergeReader seg=" + info.name);
-        // We steal returned ref:
-        mergeReader = new SegmentReader(info, context);
-        if (liveDocs == null) {
-          liveDocs = mergeReader.getLiveDocs();
-        }
-      }
-    }
-
-    // Ref for caller
-    mergeReader.incRef();
-    return mergeReader;
-  }
-
   public synchronized void release(SegmentReader sr) throws IOException {
     assert info == sr.getSegmentInfo();
     sr.decRef();
@@ -185,23 +144,12 @@ class ReadersAndLiveDocs {
   public synchronized void dropReaders() throws IOException {
     // TODO: can we somehow use IOUtils here...?  problem is
     // we are calling .decRef not .close)...
-    try {
-      if (reader != null) {
-        //System.out.println("  pool.drop info=" + info + " rc=" + reader.getRefCount());
-        try {
-          reader.decRef();
-        } finally {
-          reader = null;
-        }
-      }
-    } finally {
-      if (mergeReader != null) {
-        //System.out.println("  pool.drop info=" + info + " merge rc=" + mergeReader.getRefCount());
-        try {
-          mergeReader.decRef();
-        } finally {
-          mergeReader = null;
-        }
+    if (reader != null) {
+      //System.out.println("  pool.drop info=" + info + " rc=" + reader.getRefCount());
+      try {
+        reader.decRef();
+      } finally {
+        reader = null;
       }
     }
 
