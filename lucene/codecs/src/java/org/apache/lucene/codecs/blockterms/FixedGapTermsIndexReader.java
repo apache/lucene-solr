@@ -213,48 +213,48 @@ public class FixedGapTermsIndexReader extends TermsIndexReaderBase {
   }
 
   private final class FieldIndexData {
-      // where this field's terms begin in the packed byte[]
-      // data
-      final long termBytesStart;
-
-      // offset into index termBytes
-      final MonotonicBlockPackedReader termOffsets;
-
-      // index pointers into main terms dict
-      final MonotonicBlockPackedReader termsDictOffsets;
-
-      final long numIndexTerms;
-      final long termsStart;
-
-      public FieldIndexData(IndexInput in, long indexStart, long termsStart, long packedIndexStart, long packedOffsetsStart, long numIndexTerms) throws IOException {
-
-        this.termsStart = termsStart;
-        termBytesStart = termBytes.getPointer();
-
-        IndexInput clone = in.clone();
-        clone.seek(indexStart);
-
-        this.numIndexTerms = numIndexTerms;
-        assert this.numIndexTerms  > 0: "numIndexTerms=" + numIndexTerms;
-
-        // slurp in the images from disk:
-          
-        try {
-          final long numTermBytes = packedIndexStart - indexStart;
-          termBytes.copy(clone, numTermBytes);
-
-          // records offsets into main terms dict file
-          // nocommit: actually write these params
-          termsDictOffsets = new MonotonicBlockPackedReader(clone, PackedInts.VERSION_CURRENT, FixedGapTermsIndexWriter.BLOCKSIZE, numIndexTerms, false);
-
-          // records offsets into byte[] term data
-          // nocommit: actually write these params
-          termOffsets = new MonotonicBlockPackedReader(clone, PackedInts.VERSION_CURRENT, FixedGapTermsIndexWriter.BLOCKSIZE, 1+numIndexTerms, false);
-        } finally {
-          clone.close();
-        }
+    // where this field's terms begin in the packed byte[]
+    // data
+    final long termBytesStart;
+    
+    // offset into index termBytes
+    final MonotonicBlockPackedReader termOffsets;
+    
+    // index pointers into main terms dict
+    final MonotonicBlockPackedReader termsDictOffsets;
+    
+    final long numIndexTerms;
+    final long termsStart;
+    
+    public FieldIndexData(IndexInput in, long indexStart, long termsStart, long packedIndexStart, long packedOffsetsStart, long numIndexTerms) throws IOException {
+      
+      this.termsStart = termsStart;
+      termBytesStart = termBytes.getPointer();
+      
+      IndexInput clone = in.clone();
+      clone.seek(indexStart);
+      
+      this.numIndexTerms = numIndexTerms;
+      assert this.numIndexTerms  > 0: "numIndexTerms=" + numIndexTerms;
+      
+      // slurp in the images from disk:
+      
+      try {
+        final long numTermBytes = packedIndexStart - indexStart;
+        termBytes.copy(clone, numTermBytes);
+        
+        // records offsets into main terms dict file
+        // nocommit: actually write these params
+        termsDictOffsets = new MonotonicBlockPackedReader(clone, PackedInts.VERSION_CURRENT, FixedGapTermsIndexWriter.BLOCKSIZE, numIndexTerms, false);
+        
+        // records offsets into byte[] term data
+        // nocommit: actually write these params
+        termOffsets = new MonotonicBlockPackedReader(clone, PackedInts.VERSION_CURRENT, FixedGapTermsIndexWriter.BLOCKSIZE, 1+numIndexTerms, false);
+      } finally {
+        clone.close();
       }
     }
+  }
 
   @Override
   public FieldIndexEnum getFieldEnum(FieldInfo fieldInfo) {
