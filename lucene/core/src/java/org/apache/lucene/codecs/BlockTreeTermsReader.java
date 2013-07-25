@@ -67,9 +67,9 @@ import org.apache.lucene.util.fst.Util;
  *  does not support a pluggable terms index
  *  implementation).
  *
- *  <p><b>NOTE</b>: this terms dictionary does not support
- *  index divisor when opening an IndexReader.  Instead, you
- *  can change the min/maxItemsPerBlock during indexing.</p>
+ *  <p><b>NOTE</b>: this terms dictionary supports
+ *  min/maxItemsPerBlock during indexing to control how
+ *  much memory the terms index uses.</p>
  *
  *  <p>The data structure used by this implementation is very
  *  similar to a burst trie
