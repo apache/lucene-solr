@@ -18,15 +18,16 @@ package org.apache.lucene.codecs.blockterms;
  */
 
 import org.apache.lucene.codecs.Codec;
-import org.apache.lucene.codecs.lucene41ords.Lucene41WithOrds;
+import org.apache.lucene.codecs.lucene41vargap.Lucene41VarGapFixedInterval;
 import org.apache.lucene.index.BasePostingsFormatTestCase;
 import org.apache.lucene.util._TestUtil;
 
 /**
- * Basic tests of a PF using FixedGap terms dictionary
+ * Basic tests of a PF using VariableGap terms dictionary (fixed interval)
  */
-public class TestFixedGapPostingsFormat extends BasePostingsFormatTestCase {
-  private final Codec codec = _TestUtil.alwaysPostingsFormat(new Lucene41WithOrds(_TestUtil.nextInt(random(), 1, 1000)));
+// nocommit: one for the other selector
+public class TestVarGapFixedIntervalPostingsFormat extends BasePostingsFormatTestCase {
+  private final Codec codec = _TestUtil.alwaysPostingsFormat(new Lucene41VarGapFixedInterval(_TestUtil.nextInt(random(), 1, 1000)));
 
   @Override
   protected Codec getCodec() {
