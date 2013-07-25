@@ -19,7 +19,6 @@ package org.apache.lucene.index;
 
 import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.codecs.Codec;
-import org.apache.lucene.codecs.lucene41.Lucene41PostingsFormat; // javadocs
 import org.apache.lucene.index.DocumentsWriterPerThread.IndexingChain;
 import org.apache.lucene.index.IndexWriter.IndexReaderWarmer;
 import org.apache.lucene.index.IndexWriterConfig.OpenMode;
@@ -42,7 +41,6 @@ public class LiveIndexWriterConfig {
   private volatile double ramBufferSizeMB;
   private volatile int maxBufferedDeleteTerms;
   private volatile IndexReaderWarmer mergedSegmentWarmer;
-  private volatile int termIndexInterval; // TODO: this should be private to the codec, not settable here
 
   // modified by IndexWriterConfig
   /** {@link IndexDeletionPolicy} controlling when commit

@@ -89,7 +89,6 @@ public class TestIndexWriterConfig extends LuceneTestCase {
     getters.add("getMergeScheduler");
     getters.add("getOpenMode");
     getters.add("getSimilarity");
-    getters.add("getTermIndexInterval");
     getters.add("getWriteLockTimeout");
     getters.add("getDefaultWriteLockTimeout");
     getters.add("getMaxBufferedDeleteTerms");
@@ -101,7 +100,6 @@ public class TestIndexWriterConfig extends LuceneTestCase {
     getters.add("getMaxThreadStates");
     getters.add("getReaderPooling");
     getters.add("getIndexerThreadPool");
-    getters.add("getReaderTermsIndexDivisor");
     getters.add("getFlushPolicy");
     getters.add("getRAMPerThreadHardLimitMB");
     getters.add("getCodec");
