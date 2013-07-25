@@ -31,6 +31,9 @@ Bug Fixes
 * LUCENE-4734: Add FastVectorHighlighter support for proximity queries and
   phrase queries with gaps or overlapping terms. (Ryan Lauck, Adrien Grand)
 
+* LUCENE-5132: Spatial RecursivePrefixTree Contains predicate will throw an NPE
+  when there's no indexed data and maybe in other circumstances too. (David Smiley)
+
 API Changes
 
 * LUCENE-5094: Add ramBytesUsed() to MultiDocValues.OrdinalMap.

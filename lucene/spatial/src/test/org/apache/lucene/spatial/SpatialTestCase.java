@@ -57,6 +57,8 @@ public abstract class SpatialTestCase extends LuceneTestCase {
 
     directory = newDirectory();
     indexWriter = new RandomIndexWriter(random(),directory);
+    indexReader = indexWriter.getReader();
+    indexSearcher = newSearcher(indexReader);
   }
 
   @Override
