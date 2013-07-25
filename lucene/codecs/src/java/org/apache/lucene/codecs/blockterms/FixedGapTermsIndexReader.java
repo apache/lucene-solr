@@ -28,7 +28,6 @@ import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.IOUtils;
 import org.apache.lucene.util.PagedBytes;
 import org.apache.lucene.util.packed.MonotonicBlockPackedReader;
-import org.apache.lucene.util.packed.PackedInts;
 
 import java.util.HashMap;
 import java.util.Comparator;
@@ -50,6 +49,9 @@ public class FixedGapTermsIndexReader extends TermsIndexReaderBase {
   // having to upgrade each multiple to long in multiple
   // places (error prone), we use long here:
   private final long indexInterval;
+  
+  private final int packedIntsVersion;
+  private final int blocksize;
 
   private final Comparator<BytesRef> termComp;
 
@@ -76,10 +78,12 @@ public class FixedGapTermsIndexReader extends TermsIndexReaderBase {
     try {
       
       readHeader(in);
-      indexInterval = in.readInt();
+      indexInterval = in.readVInt();
       if (indexInterval < 1) {
         throw new CorruptIndexException("invalid indexInterval: " + indexInterval + " (resource=" + in + ")");
       }
+      packedIntsVersion = in.readVInt();
+      blocksize = in.readVInt();
       
       seekDir(in, dirOffset);
 
@@ -244,12 +248,10 @@ public class FixedGapTermsIndexReader extends TermsIndexReaderBase {
         termBytes.copy(clone, numTermBytes);
         
         // records offsets into main terms dict file
-        // nocommit: actually write these params
-        termsDictOffsets = new MonotonicBlockPackedReader(clone, PackedInts.VERSION_CURRENT, FixedGapTermsIndexWriter.BLOCKSIZE, numIndexTerms, false);
+        termsDictOffsets = new MonotonicBlockPackedReader(clone, packedIntsVersion, blocksize, numIndexTerms, false);
         
         // records offsets into byte[] term data
-        // nocommit: actually write these params
-        termOffsets = new MonotonicBlockPackedReader(clone, PackedInts.VERSION_CURRENT, FixedGapTermsIndexWriter.BLOCKSIZE, 1+numIndexTerms, false);
+        termOffsets = new MonotonicBlockPackedReader(clone, packedIntsVersion, blocksize, 1+numIndexTerms, false);
       } finally {
         clone.close();
       }
@@ -258,13 +260,7 @@ public class FixedGapTermsIndexReader extends TermsIndexReaderBase {
 
   @Override
   public FieldIndexEnum getFieldEnum(FieldInfo fieldInfo) {
-    final FieldIndexData fieldData = fields.get(fieldInfo);
-    // nocommit: can fieldData ever be null?
-    if (fieldData == null) {
-      return null;
-    } else {
-      return new IndexEnum(fieldData);
-    }
+    return new IndexEnum(fields.get(fieldInfo));
   }
 
   @Override

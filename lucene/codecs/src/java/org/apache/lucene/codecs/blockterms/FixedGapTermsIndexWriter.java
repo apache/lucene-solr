@@ -27,6 +27,7 @@ import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.ArrayUtil;
 import org.apache.lucene.util.IOUtils;
 import org.apache.lucene.util.packed.MonotonicBlockPackedWriter;
+import org.apache.lucene.util.packed.PackedInts;
 
 import java.util.List;
 import java.util.ArrayList;
@@ -72,7 +73,9 @@ public class FixedGapTermsIndexWriter extends TermsIndexWriterBase {
     boolean success = false;
     try {
       writeHeader(out);
-      out.writeInt(termIndexInterval);
+      out.writeVInt(termIndexInterval);
+      out.writeVInt(PackedInts.VERSION_CURRENT);
+      out.writeVInt(BLOCKSIZE);
       success = true;
     } finally {
       if (!success) {
