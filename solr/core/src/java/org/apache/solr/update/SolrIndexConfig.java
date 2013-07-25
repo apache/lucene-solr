@@ -148,7 +148,7 @@ public class SolrIndexConfig {
     
     String val = solrConfig.get(prefix + "/termIndexInterval", null);
     if (val != null) {
-      throw new IllegalArgumentException("termIndexInterval has not done anything for a long time...");
+      throw new IllegalArgumentException("Illegal parameter 'termIndexInterval'");
     }
 
     boolean infoStreamEnabled = solrConfig.getBool(prefix + "/infoStream", false);
