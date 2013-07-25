@@ -803,7 +803,7 @@ public class BlockTermsReader extends FieldsProducer {
         postingsReader.readTermsBlock(in, fieldInfo, state);
 
         blocksSinceSeek++;
-        indexIsCurrent = indexIsCurrent && (blocksSinceSeek < indexReader.getDivisor());
+        indexIsCurrent = indexIsCurrent && (blocksSinceSeek < 1); // nocommit
         //System.out.println("  indexIsCurrent=" + indexIsCurrent);
 
         return true;

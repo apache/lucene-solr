@@ -118,7 +118,7 @@ class ReadersAndLiveDocs {
 
     if (reader == null) {
       // We steal returned ref:
-      reader = new SegmentReader(info, writer.getConfig().getReaderTermsIndexDivisor(), context);
+      reader = new SegmentReader(info, context);
       if (liveDocs == null) {
         liveDocs = reader.getLiveDocs();
       }
@@ -150,7 +150,7 @@ class ReadersAndLiveDocs {
       } else {
         //System.out.println(Thread.currentThread().getName() + ": getMergeReader seg=" + info.name);
         // We steal returned ref:
-        mergeReader = new SegmentReader(info, -1, context);
+        mergeReader = new SegmentReader(info, context);
         if (liveDocs == null) {
           liveDocs = mergeReader.getLiveDocs();
         }

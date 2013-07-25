@@ -754,15 +754,6 @@ public abstract class LuceneTestCase extends Assert {
       }
     }
     if (r.nextBoolean()) {
-      if (rarely(r)) {
-        // crazy value
-        c.setTermIndexInterval(r.nextBoolean() ? _TestUtil.nextInt(r, 1, 31) : _TestUtil.nextInt(r, 129, 1000));
-      } else {
-        // reasonable value
-        c.setTermIndexInterval(_TestUtil.nextInt(r, 32, 128));
-      }
-    }
-    if (r.nextBoolean()) {
       int maxNumThreadStates = rarely(r) ? _TestUtil.nextInt(r, 5, 20) // crazy value
           : _TestUtil.nextInt(r, 1, 4); // reasonable value
 
@@ -816,7 +807,6 @@ public abstract class LuceneTestCase extends Assert {
     }
     c.setUseCompoundFile(r.nextBoolean());
     c.setReaderPooling(r.nextBoolean());
-    c.setReaderTermsIndexDivisor(_TestUtil.nextInt(r, 1, 4));
     return c;
   }
 

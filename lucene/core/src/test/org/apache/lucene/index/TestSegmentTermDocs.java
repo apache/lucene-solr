@@ -50,16 +50,11 @@ public class TestSegmentTermDocs extends LuceneTestCase {
   public void test() {
     assertTrue(dir != null);
   }
-  
-  public void testTermDocs() throws IOException {
-    testTermDocs(1);
-  }
 
-  public void testTermDocs(int indexDivisor) throws IOException {
+  public void testTermDocs() throws IOException {
     //After adding the document, we should be able to read it back in
-    SegmentReader reader = new SegmentReader(info, indexDivisor, newIOContext(random()));
+    SegmentReader reader = new SegmentReader(info, newIOContext(random()));
     assertTrue(reader != null);
-    assertEquals(indexDivisor, reader.getTermInfosIndexDivisor());
 
     TermsEnum terms = reader.fields().terms(DocHelper.TEXT_FIELD_2_KEY).iterator(null);
     terms.seekCeil(new BytesRef("field"));
@@ -74,13 +69,9 @@ public class TestSegmentTermDocs extends LuceneTestCase {
   }  
   
   public void testBadSeek() throws IOException {
-    testBadSeek(1);
-  }
-
-  public void testBadSeek(int indexDivisor) throws IOException {
     {
       //After adding the document, we should be able to read it back in
-      SegmentReader reader = new SegmentReader(info, indexDivisor, newIOContext(random()));
+      SegmentReader reader = new SegmentReader(info, newIOContext(random()));
       assertTrue(reader != null);
       DocsEnum termDocs = _TestUtil.docs(random(), reader,
                                          "textField2",
@@ -94,7 +85,7 @@ public class TestSegmentTermDocs extends LuceneTestCase {
     }
     {
       //After adding the document, we should be able to read it back in
-      SegmentReader reader = new SegmentReader(info, indexDivisor, newIOContext(random()));
+      SegmentReader reader = new SegmentReader(info, newIOContext(random()));
       assertTrue(reader != null);
       DocsEnum termDocs = _TestUtil.docs(random(), reader,
                                          "junk",
@@ -108,10 +99,6 @@ public class TestSegmentTermDocs extends LuceneTestCase {
   }
   
   public void testSkipTo() throws IOException {
-    testSkipTo(1);
-  }
-
-  public void testSkipTo(int indexDivisor) throws IOException {
     Directory dir = newDirectory();
     IndexWriter writer = new IndexWriter(dir, newIndexWriterConfig( TEST_VERSION_CURRENT, new MockAnalyzer(random())).setMergePolicy(newLogMergePolicy()));
     
@@ -131,7 +118,7 @@ public class TestSegmentTermDocs extends LuceneTestCase {
     writer.forceMerge(1);
     writer.close();
     
-    IndexReader reader = DirectoryReader.open(dir, indexDivisor);
+    IndexReader reader = DirectoryReader.open(dir);
 
     DocsEnum tdocs = _TestUtil.docs(random(), reader,
                                     ta.field(),
@@ -267,15 +254,7 @@ public class TestSegmentTermDocs extends LuceneTestCase {
     reader.close();
     dir.close();
   }
-  
-  public void testIndexDivisor() throws IOException {
-    testDoc = new Document();
-    DocHelper.setupDoc(testDoc);
-    DocHelper.writeDoc(random(), dir, testDoc);
-    testTermDocs(2);
-    testBadSeek(2);
-    testSkipTo(2);
-  }
+
 
   private void addDoc(IndexWriter writer, String value) throws IOException
   {

@@ -66,13 +66,6 @@ public class SegmentWriteState {
    *  write/read must be derived using this suffix (use
    *  {@link IndexFileNames#segmentFileName(String,String,String)}). */
   public final String segmentSuffix;
-
-  /** Expert: The fraction of terms in the "dictionary" which should be stored
-   * in RAM.  Smaller values use more memory, but make searching slightly
-   * faster, while larger values use less memory and make searching slightly
-   * slower.  Searching is typically not dominated by dictionary lookup, so
-   * tweaking this is rarely useful.*/
-  public int termIndexInterval;                   // TODO: this should be private to the codec, not settable here or in IWC
   
   /** {@link IOContext} for all writes; you should pass this
    *  to {@link Directory#createOutput(String,IOContext)}. */
@@ -80,13 +73,12 @@ public class SegmentWriteState {
 
   /** Sole constructor. */
   public SegmentWriteState(InfoStream infoStream, Directory directory, SegmentInfo segmentInfo, FieldInfos fieldInfos,
-      int termIndexInterval, BufferedDeletes segDeletes, IOContext context) {
+      BufferedDeletes segDeletes, IOContext context) {
     this.infoStream = infoStream;
     this.segDeletes = segDeletes;
     this.directory = directory;
     this.segmentInfo = segmentInfo;
     this.fieldInfos = fieldInfos;
-    this.termIndexInterval = termIndexInterval;
     segmentSuffix = "";
     this.context = context;
   }
@@ -99,7 +91,6 @@ public class SegmentWriteState {
     directory = state.directory;
     segmentInfo = state.segmentInfo;
     fieldInfos = state.fieldInfos;
-    termIndexInterval = state.termIndexInterval;
     context = state.context;
     this.segmentSuffix = segmentSuffix;
     segDeletes = state.segDeletes;

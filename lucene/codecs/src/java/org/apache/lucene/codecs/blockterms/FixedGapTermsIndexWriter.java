@@ -20,14 +20,13 @@ package org.apache.lucene.codecs.blockterms;
 import org.apache.lucene.store.IndexOutput;
 import org.apache.lucene.codecs.CodecUtil;
 import org.apache.lucene.codecs.TermStats;
-import org.apache.lucene.index.FieldInfos;
 import org.apache.lucene.index.FieldInfo;
 import org.apache.lucene.index.IndexFileNames;
 import org.apache.lucene.index.SegmentWriteState;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.ArrayUtil;
 import org.apache.lucene.util.IOUtils;
-import org.apache.lucene.util.packed.PackedInts;
+import org.apache.lucene.util.packed.MonotonicBlockPackedWriter;
 
 import java.util.List;
 import java.util.ArrayList;
@@ -50,21 +49,28 @@ public class FixedGapTermsIndexWriter extends TermsIndexWriterBase {
   final static String CODEC_NAME = "SIMPLE_STANDARD_TERMS_INDEX";
   final static int VERSION_START = 0;
   final static int VERSION_APPEND_ONLY = 1;
-  final static int VERSION_CURRENT = VERSION_APPEND_ONLY;
+  final static int VERSION_MONOTONIC_ADDRESSING = 2;
+  final static int VERSION_CURRENT = VERSION_MONOTONIC_ADDRESSING;
 
+  final static int BLOCKSIZE = 4096;
   final private int termIndexInterval;
+  public static final int DEFAULT_TERM_INDEX_INTERVAL = 32;
 
   private final List<SimpleFieldWriter> fields = new ArrayList<SimpleFieldWriter>();
   
-  @SuppressWarnings("unused") private final FieldInfos fieldInfos; // unread
-
   public FixedGapTermsIndexWriter(SegmentWriteState state) throws IOException {
+    this(state, DEFAULT_TERM_INDEX_INTERVAL);
+  }
+  
+  public FixedGapTermsIndexWriter(SegmentWriteState state, int termIndexInterval) throws IOException {
+    if (termIndexInterval <= 0) {
+      throw new IllegalArgumentException("invalid termIndexInterval: " + termIndexInterval);
+    }
+    this.termIndexInterval = termIndexInterval;
     final String indexFileName = IndexFileNames.segmentFileName(state.segmentInfo.name, state.segmentSuffix, TERMS_INDEX_EXTENSION);
-    termIndexInterval = state.termIndexInterval;
     out = state.directory.createOutput(indexFileName, state.context);
     boolean success = false;
     try {
-      fieldInfos = state.fieldInfos;
       writeHeader(out);
       out.writeInt(termIndexInterval);
       success = true;
@@ -120,7 +126,6 @@ public class FixedGapTermsIndexWriter extends TermsIndexWriterBase {
     private short[] termLengths;
     private int[] termsPointerDeltas;
     private long lastTermsPointer;
-    private long totTermLength;
 
     private final BytesRef lastTerm = new BytesRef();
 
@@ -171,7 +176,6 @@ public class FixedGapTermsIndexWriter extends TermsIndexWriterBase {
       // save term length (in bytes)
       assert indexedTermLength <= Short.MAX_VALUE;
       termLengths[numIndexTerms] = (short) indexedTermLength;
-      totTermLength += indexedTermLength;
 
       lastTerm.copyBytes(text);
       numIndexTerms++;
@@ -183,7 +187,7 @@ public class FixedGapTermsIndexWriter extends TermsIndexWriterBase {
       // write primary terms dict offsets
       packedIndexStart = out.getFilePointer();
 
-      PackedInts.Writer w = PackedInts.getWriter(out, numIndexTerms, PackedInts.bitsRequired(termsFilePointer), PackedInts.DEFAULT);
+      MonotonicBlockPackedWriter w = new MonotonicBlockPackedWriter(out, BLOCKSIZE);
 
       // relative to our indexStart
       long upto = 0;
@@ -196,7 +200,7 @@ public class FixedGapTermsIndexWriter extends TermsIndexWriterBase {
       packedOffsetsStart = out.getFilePointer();
 
       // write offsets into the byte[] terms
-      w = PackedInts.getWriter(out, 1+numIndexTerms, PackedInts.bitsRequired(totTermLength), PackedInts.DEFAULT);
+      w = new MonotonicBlockPackedWriter(out, BLOCKSIZE);
       upto = 0;
       for(int i=0;i<numIndexTerms;i++) {
         w.add(upto);

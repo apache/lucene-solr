@@ -1022,7 +1022,7 @@ public abstract class BaseDocValuesFormatTestCase extends LuceneTestCase {
 
     writer.close(true);
 
-    DirectoryReader reader = DirectoryReader.open(dir, 1);
+    DirectoryReader reader = DirectoryReader.open(dir);
     assertEquals(1, reader.leaves().size());
   
     IndexSearcher searcher = new IndexSearcher(reader);

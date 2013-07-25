@@ -483,7 +483,7 @@ public abstract class BasePostingsFormatTestCase extends LuceneTestCase {
 
     SegmentWriteState writeState = new SegmentWriteState(null, dir,
                                                          segmentInfo, newFieldInfos,
-                                                         32, null, new IOContext(new FlushInfo(maxDoc, bytes)));
+                                                         null, new IOContext(new FlushInfo(maxDoc, bytes)));
     FieldsConsumer fieldsConsumer = codec.postingsFormat().fieldsConsumer(writeState);
 
     for(Map.Entry<String,Map<BytesRef,Long>> fieldEnt : fields.entrySet()) {
@@ -567,7 +567,7 @@ public abstract class BasePostingsFormatTestCase extends LuceneTestCase {
 
     currentFieldInfos = newFieldInfos;
 
-    SegmentReadState readState = new SegmentReadState(dir, segmentInfo, newFieldInfos, IOContext.DEFAULT, 1);
+    SegmentReadState readState = new SegmentReadState(dir, segmentInfo, newFieldInfos, IOContext.DEFAULT);
 
     return codec.postingsFormat().fieldsProducer(readState);
   }

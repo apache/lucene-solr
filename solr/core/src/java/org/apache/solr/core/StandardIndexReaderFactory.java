@@ -31,6 +31,6 @@ public class StandardIndexReaderFactory extends IndexReaderFactory {
   
   @Override
   public DirectoryReader newReader(Directory indexDir, SolrCore core) throws IOException {
-    return DirectoryReader.open(indexDir, termInfosIndexDivisor);
+    return DirectoryReader.open(indexDir);
   }
 }

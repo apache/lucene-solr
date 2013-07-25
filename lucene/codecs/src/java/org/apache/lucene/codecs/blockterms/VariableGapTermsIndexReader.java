@@ -59,17 +59,16 @@ public class VariableGapTermsIndexReader extends TermsIndexReaderBase {
   private final int version;
 
   final String segment;
-  public VariableGapTermsIndexReader(Directory dir, FieldInfos fieldInfos, String segment, int indexDivisor, String segmentSuffix, IOContext context)
+  public VariableGapTermsIndexReader(Directory dir, FieldInfos fieldInfos, String segment, String segmentSuffix, IOContext context)
     throws IOException {
     in = dir.openInput(IndexFileNames.segmentFileName(segment, segmentSuffix, VariableGapTermsIndexWriter.TERMS_INDEX_EXTENSION), new IOContext(context, true));
     this.segment = segment;
     boolean success = false;
-    assert indexDivisor == -1 || indexDivisor > 0;
+    this.indexDivisor = 1; // nocommit
 
     try {
       
       version = readHeader(in);
-      this.indexDivisor = indexDivisor;
 
       seekDir(in, dirOffset);
 
@@ -98,11 +97,6 @@ public class VariableGapTermsIndexReader extends TermsIndexReaderBase {
         }
       }
     }
-  }
-
-  @Override
-  public int getDivisor() {
-    return indexDivisor;
   }
   
   private int readHeader(IndexInput input) throws IOException {

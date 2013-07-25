@@ -308,7 +308,7 @@ public class RandomIndexWriter implements Closeable {
       }
       w.commit();
       if (r.nextBoolean()) {
-        return DirectoryReader.open(w.getDirectory(), _TestUtil.nextInt(r, 1, 10));
+        return DirectoryReader.open(w.getDirectory());
       } else {
         return w.getReader(applyDeletions);
       }

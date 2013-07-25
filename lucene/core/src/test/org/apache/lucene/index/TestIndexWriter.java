@@ -1305,36 +1305,6 @@ public class TestIndexWriter extends LuceneTestCase {
     dir.close();
   }
 
-  public void testIndexDivisor() throws Exception {
-    Directory dir = newDirectory();
-    IndexWriterConfig config = new IndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer(random()));
-    config.setTermIndexInterval(2);
-    IndexWriter w = new IndexWriter(dir, config);
-    StringBuilder s = new StringBuilder();
-    // must be > 256
-    for(int i=0;i<300;i++) {
-      s.append(' ').append(i);
-    }
-    Document d = new Document();
-    Field f = newTextField("field", s.toString(), Field.Store.NO);
-    d.add(f);
-    w.addDocument(d);
-
-    AtomicReader r = getOnlySegmentReader(w.getReader());
-    TermsEnum t = r.fields().terms("field").iterator(null);
-    int count = 0;
-    while(t.next() != null) {
-      final DocsEnum docs = _TestUtil.docs(random(), t, null, null, DocsEnum.FLAG_NONE);
-      assertEquals(0, docs.nextDoc());
-      assertEquals(DocIdSetIterator.NO_MORE_DOCS, docs.nextDoc());
-      count++;
-    }
-    assertEquals(300, count);
-    r.close();
-    w.close();
-    dir.close();
-  }
-
   public void testDeleteUnusedFiles() throws Exception {
     for(int iter=0;iter<2;iter++) {
       Directory dir = newMockDirectory(); // relies on windows semantics
@@ -1713,20 +1683,6 @@ public class TestIndexWriter extends LuceneTestCase {
     dti.lookupOrd(2, br);
     assertEquals(bigTermBytesRef, br);
     reader.close();
-    dir.close();
-  }
-
-  // LUCENE-3183
-  public void testEmptyFieldNameTIIOne() throws IOException {
-    Directory dir = newDirectory();
-    IndexWriterConfig iwc = newIndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer(random()));
-    iwc.setTermIndexInterval(1);
-    iwc.setReaderTermsIndexDivisor(1);
-    IndexWriter writer = new IndexWriter(dir, iwc);
-    Document doc = new Document();
-    doc.add(newTextField("", "a b c", Field.Store.NO));
-    writer.addDocument(doc);
-    writer.close();
     dir.close();
   }
 
