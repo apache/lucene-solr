@@ -1197,8 +1197,9 @@ public abstract class BasePostingsFormatTestCase extends LuceneTestCase {
     DirectoryReader ir = iw.getReader();
     AtomicReader ar = getOnlySegmentReader(ir);
     Fields fields = ar.fields();
-    assertTrue(fields.size() == 1);
-    Terms terms = ar.terms("ghostField");
+    // Ghost busting terms dict impls will have
+    // fields.size() == 0; all others must be == 1:
+    assertTrue(fields.size() <= 1);
     if (terms != null) {
       TermsEnum termsEnum = terms.iterator(null);
       BytesRef term = termsEnum.next();
