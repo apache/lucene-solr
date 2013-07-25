@@ -32,6 +32,7 @@ import org.apache.lucene.codecs.BlockTreeTermsReader;
 import org.apache.lucene.codecs.Codec;
 import org.apache.lucene.codecs.PostingsFormat; // javadocs
 import org.apache.lucene.document.FieldType; // for javadocs
+import org.apache.lucene.index.CheckIndex.Status.DocValuesStatus;
 import org.apache.lucene.index.FieldInfo.IndexOptions;
 import org.apache.lucene.search.DocIdSetIterator;
 import org.apache.lucene.store.Directory;
@@ -284,10 +285,21 @@ public class CheckIndex {
       DocValuesStatus() {
       }
 
-      /** Number of documents tested. */
-      public int docCount;
       /** Total number of docValues tested. */
       public long totalValueFields;
+      
+      /** Total number of numeric fields */
+      public long totalNumericFields;
+      
+      /** Total number of binary fields */
+      public long totalBinaryFields;
+      
+      /** Total number of sorted fields */
+      public long totalSortedFields;
+      
+      /** Total number of sortedset fields */
+      public long totalSortedSetFields;
+      
       /** Exception thrown during doc values test (null on success) */
       public Throwable error = null;
     }
@@ -1259,7 +1271,7 @@ public class CheckIndex {
       for (FieldInfo fieldInfo : reader.getFieldInfos()) {
         if (fieldInfo.hasDocValues()) {
           status.totalValueFields++;
-          checkDocValues(fieldInfo, reader, infoStream);
+          checkDocValues(fieldInfo, reader, infoStream, status);
         } else {
           if (reader.getBinaryDocValues(fieldInfo.name) != null ||
               reader.getNumericDocValues(fieldInfo.name) != null ||
@@ -1270,7 +1282,11 @@ public class CheckIndex {
         }
       }
 
-      msg(infoStream, "OK [" + status.docCount + " total doc count; " + status.totalValueFields + " docvalues fields]");
+      msg(infoStream, "OK [" + status.totalValueFields + " docvalues fields; "
+                             + status.totalBinaryFields + " BINARY; " 
+                             + status.totalNumericFields + " NUMERIC; "
+                             + status.totalSortedFields + " SORTED; "
+                             + status.totalSortedSetFields + " SORTED_SET]");
     } catch (Throwable e) {
       msg(infoStream, "ERROR [" + String.valueOf(e.getMessage()) + "]");
       status.error = e;
@@ -1369,9 +1385,10 @@ public class CheckIndex {
     }
   }
   
-  private static void checkDocValues(FieldInfo fi, AtomicReader reader, PrintStream infoStream) throws Exception {
+  private static void checkDocValues(FieldInfo fi, AtomicReader reader, PrintStream infoStream, DocValuesStatus status) throws Exception {
     switch(fi.getDocValuesType()) {
       case SORTED:
+        status.totalSortedFields++;
         checkSortedDocValues(fi.name, reader, reader.getSortedDocValues(fi.name));
         if (reader.getBinaryDocValues(fi.name) != null ||
             reader.getNumericDocValues(fi.name) != null ||
@@ -1380,6 +1397,7 @@ public class CheckIndex {
         }
         break;
       case SORTED_SET:
+        status.totalSortedSetFields++;
         checkSortedSetDocValues(fi.name, reader, reader.getSortedSetDocValues(fi.name));
         if (reader.getBinaryDocValues(fi.name) != null ||
             reader.getNumericDocValues(fi.name) != null ||
@@ -1388,6 +1406,7 @@ public class CheckIndex {
         }
         break;
       case BINARY:
+        status.totalBinaryFields++;
         checkBinaryDocValues(fi.name, reader, reader.getBinaryDocValues(fi.name));
         if (reader.getNumericDocValues(fi.name) != null ||
             reader.getSortedDocValues(fi.name) != null ||
@@ -1396,6 +1415,7 @@ public class CheckIndex {
         }
         break;
       case NUMERIC:
+        status.totalNumericFields++;
         checkNumericDocValues(fi.name, reader, reader.getNumericDocValues(fi.name));
         if (reader.getBinaryDocValues(fi.name) != null ||
             reader.getSortedDocValues(fi.name) != null ||
