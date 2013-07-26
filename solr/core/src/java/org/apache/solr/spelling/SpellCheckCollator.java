@@ -202,7 +202,7 @@ public class SpellCheckCollator {
       //then be sure all of the new words have the same optional/required/prohibited status in the query.
       while(indexOfSpace>-1 && indexOfSpace<corr.length()-1) {
         addParenthesis = true;
-        char previousChar = tok.startOffset()>0 ? collation.charAt(tok.startOffset()-1) : ' ';
+        char previousChar = tok.startOffset()>0 ? origQuery.charAt(tok.startOffset()-1) : ' ';
         if(previousChar=='-' || previousChar=='+') {
           corrSb.insert(indexOfSpace + bump, previousChar);
           if(requiredOrProhibited==null) {
