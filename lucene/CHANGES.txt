@@ -23,6 +23,9 @@ New features
 * LUCENE-5118: SpatialStrategy.makeDistanceValueSource() now has an optional
   multiplier for scaling degrees to another unit. (David Smiley)
 
+* LUCENE-5091: SpanNotQuery can now be configured with pre and post slop to act
+  as a hypothetical SpanNotNearQuery. (Tim Allison via David Smiley)
+
 Bug Fixes
 
 * LUCENE-5116: IndexWriter.addIndexes(IndexReader...) should drop empty (or all
