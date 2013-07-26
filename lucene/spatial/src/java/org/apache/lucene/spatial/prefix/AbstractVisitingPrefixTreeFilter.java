@@ -107,6 +107,14 @@ public abstract class AbstractVisitingPrefixTreeFilter extends AbstractPrefixTre
     this depth.  It would be nice if termsEnum knew how many terms
     start with the current term without having to repeatedly next() & test to find out.
 
+  * Perhaps don't do intermediate seek()'s to cells above detailLevel that have Intersects
+    relation because we won't be collecting those docs any way.  However seeking
+    does act as a short-circuit.  So maybe do some percent of the time or when the level
+    is above some threshold.
+
+  * Each shape.relate(otherShape) result could be cached since much of the same relations
+    will be invoked when multiple segments are involved.
+
   */
 
     protected final boolean hasIndexedLeaves;//if false then we can skip looking for them
@@ -339,7 +347,7 @@ public abstract class AbstractVisitingPrefixTreeFilter extends AbstractPrefixTre
   }//class VisitorTemplate
 
   /**
-   * A Visitor Cell/Cell found via the query shape for {@link VisitorTemplate}.
+   * A visitor node/cell found via the query shape for {@link VisitorTemplate}.
    * Sometimes these are reset(cell). It's like a LinkedList node but forms a
    * tree.
    *
