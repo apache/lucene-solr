@@ -424,6 +424,9 @@
    <fieldType name="point" class="solr.PointType" dimension="2" subFieldSuffix="_d"/>
     <!-- A specialized field for geospatial search. If indexed, this fieldType must not be multivalued. -->
     <fieldType name="location" class="solr.LatLonType" subFieldSuffix="_coordinate"/>
+    <!-- sub-centimeter accuracy for RPT; distance calcs -->
+    <fieldType name="location_rpt" class="solr.SpatialRecursivePrefixTreeFieldType"
+      geo="true" distErrPct="0.025" maxDistErr="0.00000009" units="degrees" />
 
   <fieldType name="currency" class="solr.CurrencyField" currencyConfig="currency.xml" multiValued="false" />
  </types>
@@ -521,6 +524,7 @@
    <field name="pointD" type="xyd" indexed="true" stored="true" multiValued="false"/>
    <field name="point_hash" type="geohash" indexed="true" stored="true" multiValued="false"/>
    <field name="store" type="location" indexed="true" stored="true"/>
+   <field name="store_rpt" type="location_rpt" indexed="true" stored="false" />
    
    <!-- Test currency field -->
    <field name="amount_c" type="currency" indexed="true" stored="true" multiValued="false"/>
@@ -613,5 +617,6 @@
    <copyField source="subject" dest="text"/>
 
    <copyField source="foo_copysource_*" dest="bar_copydest_*" />
+   <copyField source="store" dest="store_rpt" />
  
 </schema>
