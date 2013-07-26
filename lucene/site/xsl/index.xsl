@@ -36,7 +36,15 @@
       </head>
       <body>
         <div><a href="http://lucene.apache.org/core/"><img src="lucene_green_300.gif" title="Apache Lucene Logo" alt="Lucene" border="0"/></a></div>
-        <h1><xsl:text>Apache Lucene </xsl:text><xsl:value-of select="$version"/><xsl:text> Documentation</xsl:text></h1>
+        <h1>
+          <xsl:text>Apache Lucene</xsl:text>
+          <span style="vertical-align: top; font-size: x-small">
+            <xsl:text>TM</xsl:text>
+          </span>
+          <xsl:text> </xsl:text>
+          <xsl:value-of select="$version"/>
+          <xsl:text> Documentation</xsl:text>
+        </h1>
         <p>Lucene is a Java full-text search engine. Lucene is not a complete application, 
         but rather a code library and API that can easily be used to add search capabilities
         to applications.</p>
