@@ -64,13 +64,20 @@ Upgrading from Solr 4.4.0
 Detailed Change List
 ----------------------
 
+New Features
+----------------------
+
+* SOLR-2345: Enhanced geodist() to work with an RPT field, provided that the
+  field is referenced via 'sfield' and the query point is constant.
+  (David Smiley)
+
 Bug Fixes
 ----------------------
 
-* SOLR-3633 - web UI reports an error if CoreAdminHandler says there are no 
+* SOLR-3633: web UI reports an error if CoreAdminHandler says there are no
   SolrCores (steffkes)
   
-* SOLR-4489 - SpellCheckComponent can throw StringIndexOutOfBoundsException
+* SOLR-4489: SpellCheckComponent can throw StringIndexOutOfBoundsException
   when generating collations involving multiple word-break corrections.
   (James Dyer)
 
