@@ -24,8 +24,8 @@ import org.apache.lucene.index.FieldInfo;
 import org.apache.lucene.index.IndexFileNames;
 import org.apache.lucene.index.SegmentWriteState;
 import org.apache.lucene.util.BytesRef;
-import org.apache.lucene.util.ArrayUtil;
 import org.apache.lucene.util.IOUtils;
+import org.apache.lucene.util.packed.MonotonicAppendingLongBuffer;
 import org.apache.lucene.util.packed.MonotonicBlockPackedWriter;
 import org.apache.lucene.util.packed.PackedInts;
 
@@ -123,21 +123,19 @@ public class FixedGapTermsIndexWriter extends TermsIndexWriterBase {
     long packedOffsetsStart;
     private long numTerms;
 
-    // TODO: we could conceivably make a PackedInts wrapper
-    // that auto-grows... then we wouldn't force 6 bytes RAM
-    // per index term:
-    private short[] termLengths;
-    private int[] termsPointerDeltas;
-    private long lastTermsPointer;
+    // TODO: probably better not to recompress, but for now at least save RAM
+    private MonotonicAppendingLongBuffer termOffsets = new MonotonicAppendingLongBuffer();
+    private long currentOffset;
+    private MonotonicAppendingLongBuffer termAddresses = new MonotonicAppendingLongBuffer();
 
     private final BytesRef lastTerm = new BytesRef();
 
     SimpleFieldWriter(FieldInfo fieldInfo, long termsFilePointer) {
       this.fieldInfo = fieldInfo;
       indexStart = out.getFilePointer();
-      termsStart = lastTermsPointer = termsFilePointer;
-      termLengths = new short[0];
-      termsPointerDeltas = new int[0];
+      termsStart = termsFilePointer;
+      // we write terms+1 offsets, term n's length is n+1 - n
+      termOffsets.add(0L);
     }
 
     @Override
@@ -165,20 +163,13 @@ public class FixedGapTermsIndexWriter extends TermsIndexWriterBase {
       // against prior term
       out.writeBytes(text.bytes, text.offset, indexedTermLength);
 
-      if (termLengths.length == numIndexTerms) {
-        termLengths = ArrayUtil.grow(termLengths);
-      }
-      if (termsPointerDeltas.length == numIndexTerms) {
-        termsPointerDeltas = ArrayUtil.grow(termsPointerDeltas);
-      }
-
       // save delta terms pointer
-      termsPointerDeltas[numIndexTerms] = (int) (termsFilePointer - lastTermsPointer);
-      lastTermsPointer = termsFilePointer;
+      termAddresses.add(termsFilePointer - termsStart);
 
       // save term length (in bytes)
       assert indexedTermLength <= Short.MAX_VALUE;
-      termLengths[numIndexTerms] = (short) indexedTermLength;
+      currentOffset += indexedTermLength;
+      termOffsets.add(currentOffset);
 
       lastTerm.copyBytes(text);
       numIndexTerms++;
@@ -190,13 +181,10 @@ public class FixedGapTermsIndexWriter extends TermsIndexWriterBase {
       // write primary terms dict offsets
       packedIndexStart = out.getFilePointer();
 
-      MonotonicBlockPackedWriter w = new MonotonicBlockPackedWriter(out, BLOCKSIZE);
-
       // relative to our indexStart
-      long upto = 0;
-      for(int i=0;i<numIndexTerms;i++) {
-        upto += termsPointerDeltas[i];
-        w.add(upto);
+      MonotonicBlockPackedWriter w = new MonotonicBlockPackedWriter(out, BLOCKSIZE);
+      for (MonotonicAppendingLongBuffer.Iterator iterator = termAddresses.iterator(); iterator.hasNext(); ) {
+        w.add(iterator.next());
       }
       w.finish();
 
@@ -204,18 +192,15 @@ public class FixedGapTermsIndexWriter extends TermsIndexWriterBase {
 
       // write offsets into the byte[] terms
       w = new MonotonicBlockPackedWriter(out, BLOCKSIZE);
-      upto = 0;
-      for(int i=0;i<numIndexTerms;i++) {
-        w.add(upto);
-        upto += termLengths[i];
+      for (MonotonicAppendingLongBuffer.Iterator iterator = termOffsets.iterator(); iterator.hasNext(); ) {
+        w.add(iterator.next());
       }
-      w.add(upto);
       w.finish();
 
       // our referrer holds onto us, while other fields are
       // being written, so don't tie up this RAM:
-      termLengths = null;
-      termsPointerDeltas = null;
+      termOffsets = null;
+      termAddresses = null;
     }
   }
 
