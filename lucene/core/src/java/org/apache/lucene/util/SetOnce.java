@@ -28,7 +28,7 @@ import java.util.concurrent.atomic.AtomicBoolean;
  *
  * @lucene.experimental
  */
-public final class SetOnce<T> {
+public final class SetOnce<T> implements Cloneable {
 
   /** Thrown when {@link SetOnce#set(Object)} is called more than once. */
   public static final class AlreadySetException extends IllegalStateException {
@@ -74,4 +74,10 @@ public final class SetOnce<T> {
   public final T get() {
     return obj;
   }
+  
+  @Override
+  public SetOnce<T> clone() {
+    return obj == null ? new SetOnce<T>() : new SetOnce<T>(obj);
+  }
+  
 }

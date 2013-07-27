@@ -47,7 +47,7 @@ public class TestBlockPostingsFormat2 extends LuceneTestCase {
     dir = newFSDirectory(_TestUtil.getTempDir("testDFBlockSize"));
     iwc = newIndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer(random()));
     iwc.setCodec(_TestUtil.alwaysPostingsFormat(new Lucene41PostingsFormat()));
-    iw = new RandomIndexWriter(random(), dir, iwc);
+    iw = new RandomIndexWriter(random(), dir, iwc.clone());
     iw.setDoRandomForceMerge(false); // we will ourselves
   }
   
@@ -56,7 +56,7 @@ public class TestBlockPostingsFormat2 extends LuceneTestCase {
     iw.close();
     _TestUtil.checkIndex(dir); // for some extra coverage, checkIndex before we forceMerge
     iwc.setOpenMode(OpenMode.APPEND);
-    IndexWriter iw = new IndexWriter(dir, iwc);
+    IndexWriter iw = new IndexWriter(dir, iwc.clone());
     iw.forceMerge(1);
     iw.close();
     dir.close(); // just force a checkindex for now
