@@ -630,15 +630,13 @@ public class IndexWriter implements Closeable, TwoPhaseCommit {
 
   /**
    * Constructs a new IndexWriter per the settings given in <code>conf</code>.
-   * Note that the passed in {@link IndexWriterConfig} is
-   * privately cloned, which, in-turn, clones the
-   * {@link IndexWriterConfig#getFlushPolicy() flush policy},
-   * {@link IndexWriterConfig#getIndexDeletionPolicy() deletion policy},
-   * {@link IndexWriterConfig#getMergePolicy() merge policy},
-   * and {@link IndexWriterConfig#getMergeScheduler() merge scheduler}.
-   * If you need to make subsequent "live"
-   * changes to the configuration use {@link #getConfig}.
+   * If you want to make "live" changes to this writer instance, use
+   * {@link #getConfig()}.
+   * 
    * <p>
+   * <b>NOTE:</b> after ths writer is created, the given configuration instance
+   * cannot be passed to another writer. If you intend to do so, you should
+   * {@link IndexWriterConfig#clone() clone} it beforehand.
    * 
    * @param d
    *          the index directory. The index is either created or appended
@@ -653,7 +651,8 @@ public class IndexWriter implements Closeable, TwoPhaseCommit {
    *           IO error
    */
   public IndexWriter(Directory d, IndexWriterConfig conf) throws IOException {
-    config = new LiveIndexWriterConfig(conf.clone());
+    conf.setIndexWriter(this); // prevent reuse by other instances
+    config = new LiveIndexWriterConfig(conf);
     directory = d;
     analyzer = config.getAnalyzer();
     infoStream = config.getInfoStream();

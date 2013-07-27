@@ -96,6 +96,11 @@ API Changes
 * LUCENE-5129: CategoryAssociationsContainer no longer supports null
   association values for categories. If you want to index categories without
   associations, you should add them using FacetFields. (Shai Erera)
+
+* LUCENE-4876: IndexWriter no longer clones the given IndexWriterConfig. If you
+  need to use the same config more than once, e.g. when sharing between multiple 
+  writers, make sure to clone it before passing to each writer.
+  (Shai Erera, Mike McCandless)
   
 Optimizations
 

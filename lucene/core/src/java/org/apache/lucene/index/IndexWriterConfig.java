@@ -26,6 +26,8 @@ import org.apache.lucene.index.IndexWriter.IndexReaderWarmer;
 import org.apache.lucene.search.similarities.Similarity;
 import org.apache.lucene.util.InfoStream;
 import org.apache.lucene.util.PrintStreamInfoStream;
+import org.apache.lucene.util.SetOnce;
+import org.apache.lucene.util.SetOnce.AlreadySetException;
 import org.apache.lucene.util.Version;
 
 /**
@@ -132,6 +134,21 @@ public final class IndexWriterConfig extends LiveIndexWriterConfig implements Cl
     return WRITE_LOCK_TIMEOUT;
   }
 
+  // indicates whether this config instance is already attached to a writer.
+  // not final so that it can be cloned properly.
+  private SetOnce<IndexWriter> writer = new SetOnce<IndexWriter>();
+  
+  /**
+   * Sets the {@link IndexWriter} this config is attached to.
+   * 
+   * @throws AlreadySetException
+   *           if this config is already attached to a writer.
+   */
+  IndexWriterConfig setIndexWriter(IndexWriter writer) {
+    this.writer.set(writer);
+    return this;
+  }
+  
   /**
    * Creates a new config that with defaults that match the specified
    * {@link Version} as well as the default {@link
@@ -151,6 +168,8 @@ public final class IndexWriterConfig extends LiveIndexWriterConfig implements Cl
   public IndexWriterConfig clone() {
     try {
       IndexWriterConfig clone = (IndexWriterConfig) super.clone();
+      
+      clone.writer = writer.clone();
       
       // Mostly shallow clone, but do a deepish clone of
       // certain objects that have state that cannot be shared
@@ -545,8 +564,16 @@ public final class IndexWriterConfig extends LiveIndexWriterConfig implements Cl
     return (IndexWriterConfig) super.setTermIndexInterval(interval);
   }
   
+  @Override
   public IndexWriterConfig setUseCompoundFile(boolean useCompoundFile) {
     return (IndexWriterConfig) super.setUseCompoundFile(useCompoundFile);
   }
 
+  @Override
+  public String toString() {
+    StringBuilder sb = new StringBuilder(super.toString());
+    sb.append("writer=").append(writer).append("\n");
+    return sb.toString();
+  }
+  
 }

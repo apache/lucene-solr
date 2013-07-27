@@ -37,6 +37,7 @@ import org.apache.lucene.search.similarities.DefaultSimilarity;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.util.InfoStream;
 import org.apache.lucene.util.LuceneTestCase;
+import org.apache.lucene.util.SetOnce.AlreadySetException;
 import org.junit.Test;
 
 public class TestIndexWriterConfig extends LuceneTestCase {
@@ -145,18 +146,30 @@ public class TestIndexWriterConfig extends LuceneTestCase {
   @Test
   public void testReuse() throws Exception {
     Directory dir = newDirectory();
-    // test that if the same IWC is reused across two IWs, it is cloned by each.
+    // test that IWC cannot be reused across two IWs
     IndexWriterConfig conf = newIndexWriterConfig(TEST_VERSION_CURRENT, null);
-    RandomIndexWriter iw = new RandomIndexWriter(random(), dir, conf);
-    LiveIndexWriterConfig liveConf1 = iw.w.getConfig();
-    iw.close();
+    new RandomIndexWriter(random(), dir, conf).close();
+
+    // this should fail
+    try {
+      assertNotNull(new RandomIndexWriter(random(), dir, conf));
+      fail("should have hit AlreadySetException");
+    } catch (AlreadySetException e) {
+      // expected
+    }
+
+    // also cloning it won't help, after it has been used already
+    try {
+      assertNotNull(new RandomIndexWriter(random(), dir, conf.clone()));
+      fail("should have hit AlreadySetException");
+    } catch (AlreadySetException e) {
+      // expected
+    }
     
-    iw = new RandomIndexWriter(random(), dir, conf);
-    LiveIndexWriterConfig liveConf2 = iw.w.getConfig();
-    iw.close();
-    
-    // LiveIndexWriterConfig's "copy" constructor doesn't clone objects.
-    assertNotSame("IndexWriterConfig should have been cloned", liveConf1.getMergePolicy(), liveConf2.getMergePolicy());
+    // if it's cloned in advance, it should be ok
+    conf = newIndexWriterConfig(TEST_VERSION_CURRENT, null);
+    new RandomIndexWriter(random(), dir, conf.clone()).close();
+    new RandomIndexWriter(random(), dir, conf.clone()).close();
     
     dir.close();
   }

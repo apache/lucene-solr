@@ -147,7 +147,10 @@ abstract class DocumentsWriterPerThreadPool implements Cloneable {
   @Override
   public DocumentsWriterPerThreadPool clone() {
     // We should only be cloned before being used:
-    assert numThreadStatesActive == 0;
+    if (numThreadStatesActive != 0) {
+      throw new IllegalStateException("clone this object before it is used!");
+    }
+    
     DocumentsWriterPerThreadPool clone;
     try {
       clone = (DocumentsWriterPerThreadPool) super.clone();

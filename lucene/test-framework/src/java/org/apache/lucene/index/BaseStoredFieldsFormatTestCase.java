@@ -509,7 +509,7 @@ public abstract class BaseStoredFieldsFormatTestCase extends LuceneTestCase {
     Directory dir = newDirectory();
     IndexWriterConfig iwConf = newIndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer(random()));
     iwConf.setMaxBufferedDocs(RandomInts.randomIntBetween(random(), 2, 30));
-    RandomIndexWriter iw = new RandomIndexWriter(random(), dir, iwConf);
+    RandomIndexWriter iw = new RandomIndexWriter(random(), dir, iwConf.clone());
     
     final int docCount = atLeast(200);
     final byte[][][] data = new byte [docCount][][];
@@ -548,7 +548,7 @@ public abstract class BaseStoredFieldsFormatTestCase extends LuceneTestCase {
         } else {
           iwConf.setCodec(otherCodec);
         }
-        iw = new RandomIndexWriter(random(), dir, iwConf);
+        iw = new RandomIndexWriter(random(), dir, iwConf.clone());
       }
     }
 
