@@ -30,8 +30,7 @@ import java.util.Map;
 
 import org.apache.lucene.codecs.BlockTreeTermsReader;
 import org.apache.lucene.codecs.Codec;
-import org.apache.lucene.codecs.PostingsFormat; // javadocs
-import org.apache.lucene.document.FieldType; // for javadocs
+import org.apache.lucene.codecs.PostingsFormat;
 import org.apache.lucene.index.CheckIndex.Status.DocValuesStatus;
 import org.apache.lucene.index.FieldInfo.IndexOptions;
 import org.apache.lucene.search.DocIdSetIterator;
@@ -1684,7 +1683,7 @@ public class CheckIndex {
    *
    * <p><b>WARNING</b>: Make sure you only call this when the
    *  index is not opened  by any writer. */
-  public void fixIndex(Status result, Codec codec) throws IOException {
+  public void fixIndex(Status result) throws IOException {
     if (result.partial)
       throw new IllegalArgumentException("can only fix an index that was fully checked (this status checked a subset of segments)");
     result.newSegments.changed();
@@ -1739,7 +1738,6 @@ public class CheckIndex {
 
     boolean doFix = false;
     boolean doCrossCheckTermVectors = false;
-    Codec codec = Codec.getDefault(); // only used when fixing
     boolean verbose = false;
     List<String> onlySegments = new ArrayList<String>();
     String indexPath = null;
@@ -1751,13 +1749,6 @@ public class CheckIndex {
         doFix = true;
       } else if ("-crossCheckTermVectors".equals(arg)) {
         doCrossCheckTermVectors = true;
-      } else if ("-codec".equals(arg)) {
-        if (i == args.length-1) {
-          System.out.println("ERROR: missing name for -codec option");
-          System.exit(1);
-        }
-        i++;
-        codec = Codec.forName(args[i]);
       } else if (arg.equals("-verbose")) {
         verbose = true;
       } else if (arg.equals("-segment")) {
@@ -1858,7 +1849,7 @@ public class CheckIndex {
           System.out.println("  " + (5-s) + "...");
         }
         System.out.println("Writing...");
-        checker.fixIndex(result, codec);
+        checker.fixIndex(result);
         System.out.println("OK");
         System.out.println("Wrote new segments file \"" + result.newSegments.getSegmentsFileName() + "\"");
       }

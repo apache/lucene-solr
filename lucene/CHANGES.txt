@@ -115,6 +115,12 @@ Documentation
 * LUCENE-4894: remove facet userguide as it was outdated. Partially absorbed into
   package's documentation and classes javadocs. (Shai Erera)
 
+Changes in backwards compatibility policy
+
+* LUCENE-5141: CheckIndex.fixIndex(Status,Codec) is now
+  CheckIndex.fixIndex(Status). If you used to pass a codec to this method, just
+  remove it from the arguments. (Adrien Grand)
+
 ======================= Lucene 4.4.0 =======================
 
 Changes in backwards compatibility policy
