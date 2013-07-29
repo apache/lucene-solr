@@ -41,7 +41,6 @@ import org.apache.lucene.facet.index.FacetFields;
 import org.apache.lucene.facet.params.FacetIndexingParams;
 import org.apache.lucene.facet.params.FacetSearchParams;
 import org.apache.lucene.facet.search.DrillSideways.DrillSidewaysResult;
-import org.apache.lucene.facet.sortedset.SortedSetDocValuesAccumulator;
 import org.apache.lucene.facet.sortedset.SortedSetDocValuesFacetFields;
 import org.apache.lucene.facet.sortedset.SortedSetDocValuesReaderState;
 import org.apache.lucene.facet.taxonomy.CategoryPath;
@@ -62,8 +61,8 @@ import org.apache.lucene.search.Query;
 import org.apache.lucene.search.ScoreDoc;
 import org.apache.lucene.search.Scorer;
 import org.apache.lucene.search.Sort;
-import org.apache.lucene.search.SortField.Type;
 import org.apache.lucene.search.SortField;
+import org.apache.lucene.search.SortField.Type;
 import org.apache.lucene.search.TermQuery;
 import org.apache.lucene.search.TopDocs;
 import org.apache.lucene.store.Directory;
@@ -336,6 +335,8 @@ public class TestDrillSideways extends FacetTestCase {
     String id;
     String contentToken;
 
+    public Doc() {}
+    
     // -1 if the doc is missing this dim, else the index
     // -into the values for this dim:
     int[] dims;
@@ -790,17 +791,7 @@ public class TestDrillSideways extends FacetTestCase {
       Sort sort = new Sort(new SortField("id", SortField.Type.STRING));
       DrillSideways ds;
       if (doUseDV) {
-        ds = new DrillSideways(s, null) {
-            @Override
-            protected FacetsAccumulator getDrillDownAccumulator(FacetSearchParams fsp) throws IOException {
-              return new SortedSetDocValuesAccumulator(fsp, sortedSetDVState);
-            }
-
-            @Override
-            protected FacetsAccumulator getDrillSidewaysAccumulator(String dim, FacetSearchParams fsp) throws IOException {
-              return new SortedSetDocValuesAccumulator(fsp, sortedSetDVState);
-            }
-          };
+        ds = new DrillSideways(s, sortedSetDVState);
       } else {
         ds = new DrillSideways(s, tr);
       }
@@ -881,6 +872,7 @@ public class TestDrillSideways extends FacetTestCase {
     List<Doc> hits;
     int[][] counts;
     int[] uniqueCounts;
+    public SimpleFacetResult() {}
   }
   
   private int[] getTopNOrds(final int[] counts, final String[] values, int topN) {

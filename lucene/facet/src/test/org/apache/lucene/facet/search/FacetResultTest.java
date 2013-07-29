@@ -116,7 +116,7 @@ public class FacetResultTest extends FacetTestCase {
         @Override
         protected FacetsAccumulator getDrillSidewaysAccumulator(String dim, FacetSearchParams fsp) throws IOException {
           FacetsAccumulator fa = super.getDrillSidewaysAccumulator(dim, fsp);
-          dimArrays.put(dim, fa.facetArrays);
+          dimArrays.put(dim, ((TaxonomyFacetsAccumulator) fa).facetArrays);
           return fa;
         }
       };

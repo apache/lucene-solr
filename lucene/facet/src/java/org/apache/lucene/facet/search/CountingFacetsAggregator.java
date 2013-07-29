@@ -2,6 +2,7 @@ package org.apache.lucene.facet.search;
 
 import java.io.IOException;
 
+import org.apache.lucene.facet.encoding.DGapVInt8IntDecoder;
 import org.apache.lucene.facet.params.CategoryListParams;
 import org.apache.lucene.facet.search.FacetsCollector.MatchingDocs;
 import org.apache.lucene.util.IntsRef;
@@ -34,6 +35,18 @@ import org.apache.lucene.util.IntsRef;
  */
 public class CountingFacetsAggregator extends IntRollupFacetsAggregator {
   
+  /**
+   * Returns a {@link FacetsAggregator} suitable for counting categories given
+   * the {@link CategoryListParams}.
+   */
+  public static FacetsAggregator create(CategoryListParams clp) {
+    if (clp.createEncoder().createMatchingDecoder().getClass() == DGapVInt8IntDecoder.class) {
+      return new FastCountingFacetsAggregator();
+    } else {
+      return new CountingFacetsAggregator();
+    }
+  }
+
   private final IntsRef ordinals = new IntsRef(32);
   
   @Override

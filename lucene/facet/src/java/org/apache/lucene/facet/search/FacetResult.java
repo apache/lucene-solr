@@ -7,6 +7,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
+import org.apache.lucene.facet.params.FacetIndexingParams;
 import org.apache.lucene.facet.taxonomy.CategoryPath;
 import org.apache.lucene.facet.taxonomy.TaxonomyReader;
 import org.apache.lucene.util.CollectionUtil;
@@ -152,6 +153,11 @@ public class FacetResult {
           }
         }
         FacetRequest dummy = new FacetRequest(min, frs.get(0).getFacetRequest().numResults) {
+          @Override
+          public FacetsAggregator createFacetsAggregator(FacetIndexingParams fip) {
+            throw new UnsupportedOperationException("not supported by this request");
+          }
+          
           @Override
           public double getValueOf(FacetArrays arrays, int idx) {
             throw new UnsupportedOperationException("not supported by this request");

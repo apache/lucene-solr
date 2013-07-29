@@ -1,7 +1,9 @@
 package org.apache.lucene.facet.associations;
 
+import org.apache.lucene.facet.params.FacetIndexingParams;
 import org.apache.lucene.facet.search.FacetArrays;
 import org.apache.lucene.facet.search.FacetRequest;
+import org.apache.lucene.facet.search.FacetsAggregator;
 import org.apache.lucene.facet.taxonomy.CategoryPath;
 
 /*
@@ -27,16 +29,21 @@ import org.apache.lucene.facet.taxonomy.CategoryPath;
  * 
  * @lucene.experimental
  */
-public class AssociationFloatSumFacetRequest extends FacetRequest {
+public class SumFloatAssociationFacetRequest extends FacetRequest {
 
   /**
    * Create a float association facet request for a given node in the
    * taxonomy.
    */
-  public AssociationFloatSumFacetRequest(CategoryPath path, int num) {
+  public SumFloatAssociationFacetRequest(CategoryPath path, int num) {
     super(path, num);
   }
 
+  @Override
+  public FacetsAggregator createFacetsAggregator(FacetIndexingParams fip) {
+    return new SumFloatAssociationFacetsAggregator();
+  }
+  
   @Override
   public double getValueOf(FacetArrays arrays, int ordinal) {
     return arrays.getFloatArray()[ordinal];

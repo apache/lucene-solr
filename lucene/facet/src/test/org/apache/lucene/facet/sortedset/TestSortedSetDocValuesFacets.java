@@ -112,7 +112,7 @@ public class TestSortedSetDocValuesFacets extends FacetTestCase {
     //SortedSetDocValuesCollector c = new SortedSetDocValuesCollector(state);
     //SortedSetDocValuesCollectorMergeBySeg c = new SortedSetDocValuesCollectorMergeBySeg(state);
 
-    FacetsCollector c = FacetsCollector.create(new SortedSetDocValuesAccumulator(fsp, state));
+    FacetsCollector c = FacetsCollector.create(new SortedSetDocValuesAccumulator(state, fsp));
 
     searcher.search(new MatchAllDocsQuery(), c);
 
@@ -177,7 +177,7 @@ public class TestSortedSetDocValuesFacets extends FacetTestCase {
 
     FacetSearchParams fsp = new FacetSearchParams(requests);
     
-    FacetsCollector c = FacetsCollector.create(new SortedSetDocValuesAccumulator(fsp, state));
+    FacetsCollector c = FacetsCollector.create(new SortedSetDocValuesAccumulator(state, fsp));
 
     searcher.search(new MatchAllDocsQuery(), c);
 

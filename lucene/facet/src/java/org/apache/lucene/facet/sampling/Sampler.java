@@ -4,12 +4,14 @@ import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
 
+import org.apache.lucene.facet.params.FacetIndexingParams;
 import org.apache.lucene.facet.params.FacetSearchParams;
 import org.apache.lucene.facet.search.Aggregator;
 import org.apache.lucene.facet.search.FacetArrays;
 import org.apache.lucene.facet.search.FacetRequest;
 import org.apache.lucene.facet.search.FacetResult;
 import org.apache.lucene.facet.search.FacetResultNode;
+import org.apache.lucene.facet.search.FacetsAggregator;
 import org.apache.lucene.facet.search.ScoredDocIDs;
 import org.apache.lucene.facet.taxonomy.TaxonomyReader;
 
@@ -212,6 +214,11 @@ public abstract class Sampler {
       setNumLabel(0); // don't label anything as we're over-sampling
       setResultMode(orig.getResultMode());
       setSortOrder(orig.getSortOrder());
+    }
+    
+    @Override
+    public FacetsAggregator createFacetsAggregator(FacetIndexingParams fip) {
+      return orig.createFacetsAggregator(fip);
     }
     
     @Override
