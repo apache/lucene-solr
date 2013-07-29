@@ -1,4 +1,8 @@
-package org.apache.lucene.facet.search;
+package org.apache.lucene.facet.old;
+
+import java.io.IOException;
+
+import org.apache.lucene.util.IntsRef;
 
 /*
  * Licensed to the Apache Software Foundation (ASF) under one or more
@@ -18,26 +22,23 @@ package org.apache.lucene.facet.search;
  */
 
 /**
- * Iterator over document IDs and their scores. Each {@link #next()} retrieves
- * the next docID and its score which can be later be retrieved by
- * {@link #getDocID()} and {@link #getScore()}. <b>NOTE:</b> you must call
- * {@link #next()} before {@link #getDocID()} and/or {@link #getScore()}, or
- * otherwise the returned values are unexpected.
+ * A {@link CountingAggregator} used during complement counting.
  * 
  * @lucene.experimental
  */
-public interface ScoredDocIDsIterator {
+public class ComplementCountingAggregator extends CountingAggregator {
 
-  /** Default score used in case scoring is disabled. */
-  public static final float DEFAULT_SCORE = 1.0f;
+  public ComplementCountingAggregator(int[] counterArray) {
+    super(counterArray);
+  }
 
-  /** Iterate to the next document/score pair. Returns true iff there is such a pair. */
-  public abstract boolean next();
-
-  /** Returns the ID of the current document. */
-  public abstract int getDocID();
-
-  /** Returns the score of the current document. */
-  public abstract float getScore();
+  @Override
+  public void aggregate(int docID, float score, IntsRef ordinals) throws IOException {
+    for (int i = 0; i < ordinals.length; i++) {
+      int ord = ordinals.ints[i];
+      assert counterArray[ord] != 0 : "complement aggregation: count is about to become negative for ordinal " + ord;
+      --counterArray[ord];
+    }
+  }
 
 }

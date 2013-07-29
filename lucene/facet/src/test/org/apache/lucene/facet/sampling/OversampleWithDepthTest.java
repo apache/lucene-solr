@@ -6,19 +6,15 @@ import java.util.Collections;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.facet.FacetTestCase;
 import org.apache.lucene.facet.index.FacetFields;
+import org.apache.lucene.facet.old.OldFacetsAccumulator;
 import org.apache.lucene.facet.params.FacetIndexingParams;
 import org.apache.lucene.facet.params.FacetSearchParams;
-import org.apache.lucene.facet.sampling.RandomSampler;
-import org.apache.lucene.facet.sampling.Sampler;
-import org.apache.lucene.facet.sampling.SamplingAccumulator;
-import org.apache.lucene.facet.sampling.SamplingParams;
 import org.apache.lucene.facet.search.CountFacetRequest;
 import org.apache.lucene.facet.search.FacetRequest;
+import org.apache.lucene.facet.search.FacetRequest.ResultMode;
 import org.apache.lucene.facet.search.FacetResult;
 import org.apache.lucene.facet.search.FacetResultNode;
 import org.apache.lucene.facet.search.FacetsCollector;
-import org.apache.lucene.facet.search.StandardFacetsAccumulator;
-import org.apache.lucene.facet.search.FacetRequest.ResultMode;
 import org.apache.lucene.facet.taxonomy.CategoryPath;
 import org.apache.lucene.facet.taxonomy.TaxonomyReader;
 import org.apache.lucene.facet.taxonomy.TaxonomyWriter;
@@ -116,7 +112,7 @@ public class OversampleWithDepthTest extends FacetTestCase {
       final SamplingParams params) throws IOException {
     // a FacetsCollector with a sampling accumulator
     Sampler sampler = new RandomSampler(params, random());
-    StandardFacetsAccumulator sfa = new SamplingAccumulator(sampler, fsp, r, tr);
+    OldFacetsAccumulator sfa = new SamplingAccumulator(sampler, fsp, r, tr);
     FacetsCollector fcWithSampling = FacetsCollector.create(sfa);
     
     IndexSearcher s = newSearcher(r);

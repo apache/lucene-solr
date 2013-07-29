@@ -1,4 +1,4 @@
-package org.apache.lucene.facet.search;
+package org.apache.lucene.facet.old;
 
 import java.io.IOException;
 import java.util.ArrayList;
@@ -7,8 +7,6 @@ import java.util.HashSet;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map.Entry;
-import java.util.logging.Level;
-import java.util.logging.Logger;
 
 import org.apache.lucene.facet.complements.TotalFacetCounts;
 import org.apache.lucene.facet.complements.TotalFacetCountsCache;
@@ -16,11 +14,22 @@ import org.apache.lucene.facet.params.FacetIndexingParams;
 import org.apache.lucene.facet.params.FacetSearchParams;
 import org.apache.lucene.facet.partitions.IntermediateFacetResult;
 import org.apache.lucene.facet.partitions.PartitionsFacetResultsHandler;
+import org.apache.lucene.facet.sampling.Sampler.OverSampledFacetRequest;
+import org.apache.lucene.facet.search.CategoryListIterator;
+import org.apache.lucene.facet.search.CountFacetRequest;
+import org.apache.lucene.facet.search.FacetArrays;
+import org.apache.lucene.facet.search.FacetRequest;
 import org.apache.lucene.facet.search.FacetRequest.ResultMode;
+import org.apache.lucene.facet.search.FacetResult;
+import org.apache.lucene.facet.search.FacetsAccumulator;
+import org.apache.lucene.facet.search.FacetsAggregator;
 import org.apache.lucene.facet.search.FacetsCollector.MatchingDocs;
+import org.apache.lucene.facet.search.SumScoreFacetRequest;
+import org.apache.lucene.facet.search.TaxonomyFacetsAccumulator;
+import org.apache.lucene.facet.search.TopKFacetResultsHandler;
+import org.apache.lucene.facet.search.TopKInEachNodeHandler;
 import org.apache.lucene.facet.taxonomy.TaxonomyReader;
 import org.apache.lucene.facet.util.PartitionsUtils;
-import org.apache.lucene.facet.util.ScoredDocIdsUtils;
 import org.apache.lucene.index.AtomicReaderContext;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.util.IntsRef;
@@ -43,30 +52,20 @@ import org.apache.lucene.util.IntsRef;
  */
 
 /**
- * Standard implementation for {@link TaxonomyFacetsAccumulator}, utilizing partitions to save on memory.
+ * A {@link FacetsAccumulator} which supports partitions, sampling and
+ * complement counting.
  * <p>
- * Why partitions? Because if there are say 100M categories out of which 
- * only top K are required, we must first compute value for all 100M categories
- * (going over all documents) and only then could we select top K. 
- * This is made easier on memory by working in partitions of distinct categories: 
- * Once a values for a partition are found, we take the top K for that 
- * partition and work on the next partition, them merge the top K of both, 
- * and so forth, thereby computing top K with RAM needs for the size of 
- * a single partition rather than for the size of all the 100M categories.
- * <p>
- * Decision on partitions size is done at indexing time, and the facet information
- * for each partition is maintained separately.
- * <p>
- * <u>Implementation detail:</u> Since facets information of each partition is 
- * maintained in a separate "category list", we can be more efficient
- * at search time, because only the facet info for a single partition 
- * need to be read while processing that partition. 
+ * <b>NOTE:</b> this accumulator still uses the old API and will be removed
+ * eventually in favor of dedicated accumulators which support the above
+ * features ovee the new {@link FacetsAggregator} API. It provides
+ * {@link Aggregator} implementations for {@link CountFacetRequest},
+ * {@link SumScoreFacetRequest} and {@link OverSampledFacetRequest}. If you need
+ * to use it in conjunction with other facet requests, you should override
+ * {@link #createAggregator(FacetRequest, FacetArrays)}.
  * 
  * @lucene.experimental
  */
-public class StandardFacetsAccumulator extends TaxonomyFacetsAccumulator {
-
-  private static final Logger logger = Logger.getLogger(StandardFacetsAccumulator.class.getName());
+public class OldFacetsAccumulator extends TaxonomyFacetsAccumulator {
 
   /**
    * Default threshold for using the complements optimization.
@@ -100,12 +99,12 @@ public class StandardFacetsAccumulator extends TaxonomyFacetsAccumulator {
     return new FacetArrays(PartitionsUtils.partitionSize(searchParams.indexingParams, taxoReader)); 
   }
   
-  public StandardFacetsAccumulator(FacetSearchParams searchParams, IndexReader indexReader,  
+  public OldFacetsAccumulator(FacetSearchParams searchParams, IndexReader indexReader,  
       TaxonomyReader taxonomyReader) {
     this(searchParams, indexReader, taxonomyReader, null);
   }
 
-  public StandardFacetsAccumulator(FacetSearchParams searchParams, IndexReader indexReader,
+  public OldFacetsAccumulator(FacetSearchParams searchParams, IndexReader indexReader,
       TaxonomyReader taxonomyReader, FacetArrays facetArrays) {
     super(searchParams, indexReader, taxonomyReader, facetArrays == null ? createFacetArrays(searchParams, taxonomyReader) : facetArrays);
     
@@ -143,14 +142,8 @@ public class StandardFacetsAccumulator extends TaxonomyFacetsAccumulator {
           // MultiReader, which might be problematic for several applications.
           // We could, for example, base our "isCurrent" logic on something else
           // than the reader's version. Need to think more deeply about it.
-          if (logger.isLoggable(Level.FINEST)) {
-            logger.log(Level.FINEST, "IndexReader used does not support completents: ", e);
-          }
           isUsingComplements = false;
         } catch (IOException e) {
-          if (logger.isLoggable(Level.FINEST)) {
-            logger.log(Level.FINEST, "Failed to load/calculate total counts (complement counting disabled): ", e);
-          }
           // silently fail if for some reason failed to load/save from/to dir 
           isUsingComplements = false;
         } catch (Exception e) {
@@ -224,7 +217,7 @@ public class StandardFacetsAccumulator extends TaxonomyFacetsAccumulator {
   }
 
   @Override
-  protected PartitionsFacetResultsHandler createFacetResultsHandler(FacetRequest fr) {
+  public PartitionsFacetResultsHandler createFacetResultsHandler(FacetRequest fr) {
     if (fr.getResultMode() == ResultMode.PER_NODE_IN_TREE) {
       return new TopKInEachNodeHandler(taxonomyReader, fr, facetArrays);
     } else {
@@ -340,6 +333,28 @@ public class StandardFacetsAccumulator extends TaxonomyFacetsAccumulator {
     return 1;
   }
 
+  protected Aggregator createAggregator(FacetRequest fr, FacetArrays facetArrays) {
+    if (fr instanceof CountFacetRequest) {
+      // we rely on that, if needed, result is cleared by arrays!
+      int[] a = facetArrays.getIntArray();
+      if (isUsingComplements) {
+        return new ComplementCountingAggregator(a);
+      } else {
+        return new CountingAggregator(a);
+      }
+    } else if (fr instanceof SumScoreFacetRequest) {
+      if (isUsingComplements) {
+        throw new IllegalArgumentException("complements are not supported by this SumScoreFacetRequest");
+      } else {
+        return new ScoringAggregator(facetArrays.getFloatArray());
+      }
+    } else if (fr instanceof OverSampledFacetRequest) {
+      return createAggregator(((OverSampledFacetRequest) fr).orig, facetArrays);
+    } else {
+      throw new IllegalArgumentException("unknown Aggregator implementation for request " + fr.getClass());
+    }
+  }
+  
   /**
    * Create an {@link Aggregator} and a {@link CategoryListIterator} for each
    * and every {@link FacetRequest}. Generating a map, matching each
@@ -359,7 +374,7 @@ public class StandardFacetsAccumulator extends TaxonomyFacetsAccumulator {
 
     FacetIndexingParams indexingParams = searchParams.indexingParams;
     for (FacetRequest facetRequest : searchParams.facetRequests) {
-      Aggregator categoryAggregator = facetRequest.createAggregator(isUsingComplements, facetArrays, taxonomyReader);
+      Aggregator categoryAggregator = createAggregator(facetRequest, facetArrays); // nocommit remove! facetRequest.createAggregator(isUsingComplements, facetArrays, taxonomyReader);
 
       CategoryListIterator cli = indexingParams.getCategoryListParams(facetRequest.categoryPath).createCategoryListIterator(partition);
       

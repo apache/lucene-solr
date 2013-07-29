@@ -1,12 +1,9 @@
 package org.apache.lucene.facet.search;
 
-import java.io.IOException;
-
 import org.apache.lucene.facet.params.CategoryListParams.OrdinalPolicy;
 import org.apache.lucene.facet.params.FacetIndexingParams;
 import org.apache.lucene.facet.range.RangeFacetRequest;
 import org.apache.lucene.facet.taxonomy.CategoryPath;
-import org.apache.lucene.facet.taxonomy.TaxonomyReader;
 
 /*
  * Licensed to the Apache Software Foundation (ASF) under one or more
@@ -119,26 +116,6 @@ public abstract class FacetRequest {
     this.numResults = numResults;
     numLabel = numResults;
     hashCode = categoryPath.hashCode() ^ this.numResults;
-  }
-  
-  /**
-   * Create an aggregator for this facet request. Aggregator action depends on
-   * request definition. For a count request, it will usually increment the
-   * count for that facet.
-   * 
-   * @param useComplements
-   *          whether the complements optimization is being used for current
-   *          computation.
-   * @param arrays
-   *          provider for facet arrays in use for current computation.
-   * @param taxonomy
-   *          reader of taxonomy in effect.
-   * @throws IOException If there is a low-level I/O error.
-   */
-  public Aggregator createAggregator(boolean useComplements, FacetArrays arrays, TaxonomyReader taxonomy) 
-      throws IOException {
-    throw new UnsupportedOperationException("this FacetRequest does not support this type of Aggregator anymore; " +
-        "you should override FacetsAccumulator to return the proper FacetsAggregator");
   }
   
   /**

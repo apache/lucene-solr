@@ -5,11 +5,10 @@ import java.util.Arrays;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
+import org.apache.lucene.facet.old.ScoredDocIDs;
+import org.apache.lucene.facet.old.ScoredDocIDsIterator;
+import org.apache.lucene.facet.old.ScoredDocIdsUtils;
 import org.apache.lucene.util.PriorityQueue;
-
-import org.apache.lucene.facet.search.ScoredDocIDs;
-import org.apache.lucene.facet.search.ScoredDocIDsIterator;
-import org.apache.lucene.facet.util.ScoredDocIdsUtils;
 
 /*
  * Licensed to the Apache Software Foundation (ASF) under one or more

@@ -4,12 +4,12 @@ import java.util.ArrayList;
 import java.util.List;
 
 import org.apache.lucene.facet.FacetTestBase;
+import org.apache.lucene.facet.old.OldFacetsAccumulator;
 import org.apache.lucene.facet.params.FacetIndexingParams;
 import org.apache.lucene.facet.params.FacetSearchParams;
 import org.apache.lucene.facet.search.CountFacetRequest;
 import org.apache.lucene.facet.search.FacetResultNode;
 import org.apache.lucene.facet.search.FacetsCollector;
-import org.apache.lucene.facet.search.StandardFacetsAccumulator;
 import org.apache.lucene.facet.taxonomy.CategoryPath;
 import org.apache.lucene.search.MatchAllDocsQuery;
 import org.junit.After;
@@ -99,7 +99,7 @@ public class SamplerTest extends FacetTestBase {
     
     // Make sure no complements are in action
     accumulator
-        .setComplementThreshold(StandardFacetsAccumulator.DISABLE_COMPLEMENT);
+        .setComplementThreshold(OldFacetsAccumulator.DISABLE_COMPLEMENT);
     
     FacetsCollector fc = FacetsCollector.create(accumulator);
     

@@ -1,10 +1,10 @@
-package org.apache.lucene.facet.util;
+package org.apache.lucene.facet.old;
 
 import java.io.IOException;
 import java.util.Arrays;
 
-import org.apache.lucene.facet.search.ScoredDocIDs;
-import org.apache.lucene.facet.search.ScoredDocIDsIterator;
+import org.apache.lucene.facet.old.ScoredDocIDs;
+import org.apache.lucene.facet.old.ScoredDocIDsIterator;
 import org.apache.lucene.index.AtomicReader;
 import org.apache.lucene.index.AtomicReaderContext;
 import org.apache.lucene.index.IndexReader;

@@ -4,12 +4,12 @@ import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
 
+import org.apache.lucene.facet.old.OldFacetsAccumulator;
+import org.apache.lucene.facet.old.ScoredDocIDs;
 import org.apache.lucene.facet.params.FacetSearchParams;
 import org.apache.lucene.facet.partitions.PartitionsFacetResultsHandler;
 import org.apache.lucene.facet.sampling.Sampler.SampleResult;
 import org.apache.lucene.facet.search.FacetResult;
-import org.apache.lucene.facet.search.ScoredDocIDs;
-import org.apache.lucene.facet.search.StandardFacetsAccumulator;
 import org.apache.lucene.facet.taxonomy.TaxonomyReader;
 
 /*
@@ -38,12 +38,12 @@ import org.apache.lucene.facet.taxonomy.TaxonomyReader;
  * 
  * @lucene.experimental
  */
-public class SamplingWrapper extends StandardFacetsAccumulator {
+public class SamplingWrapper extends OldFacetsAccumulator {
 
-  private StandardFacetsAccumulator delegee;
+  private OldFacetsAccumulator delegee;
   private Sampler sampler;
 
-  public SamplingWrapper(StandardFacetsAccumulator delegee, Sampler sampler) {
+  public SamplingWrapper(OldFacetsAccumulator delegee, Sampler sampler) {
     super(delegee.searchParams, delegee.indexReader, delegee.taxonomyReader);
     this.delegee = delegee;
     this.sampler = sampler;

@@ -2,11 +2,11 @@ package org.apache.lucene.facet.sampling;
 
 import java.io.IOException;
 
+import org.apache.lucene.facet.old.ScoredDocIDs;
+import org.apache.lucene.facet.old.ScoredDocIDsIterator;
 import org.apache.lucene.facet.params.FacetSearchParams;
 import org.apache.lucene.facet.search.DrillDownQuery;
 import org.apache.lucene.facet.search.FacetResultNode;
-import org.apache.lucene.facet.search.ScoredDocIDs;
-import org.apache.lucene.facet.search.ScoredDocIDsIterator;
 import org.apache.lucene.facet.taxonomy.CategoryPath;
 import org.apache.lucene.facet.taxonomy.TaxonomyReader;
 import org.apache.lucene.index.DocsEnum;
