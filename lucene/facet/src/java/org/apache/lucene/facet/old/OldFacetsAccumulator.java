@@ -374,7 +374,7 @@ public class OldFacetsAccumulator extends TaxonomyFacetsAccumulator {
 
     FacetIndexingParams indexingParams = searchParams.indexingParams;
     for (FacetRequest facetRequest : searchParams.facetRequests) {
-      Aggregator categoryAggregator = createAggregator(facetRequest, facetArrays); // TODO: remove! facetRequest.createAggregator(isUsingComplements, facetArrays, taxonomyReader);
+      Aggregator categoryAggregator = createAggregator(facetRequest, facetArrays);
 
       CategoryListIterator cli = indexingParams.getCategoryListParams(facetRequest.categoryPath).createCategoryListIterator(partition);
       
