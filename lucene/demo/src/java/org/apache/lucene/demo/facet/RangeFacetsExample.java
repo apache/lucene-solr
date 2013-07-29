@@ -27,7 +27,6 @@ import org.apache.lucene.document.Field;
 import org.apache.lucene.document.LongField;
 import org.apache.lucene.document.NumericDocValuesField;
 import org.apache.lucene.facet.params.FacetIndexingParams;
-import org.apache.lucene.facet.params.FacetSearchParams;
 import org.apache.lucene.facet.range.LongRange;
 import org.apache.lucene.facet.range.RangeAccumulator;
 import org.apache.lucene.facet.range.RangeFacetRequest;
@@ -80,13 +79,12 @@ public class RangeFacetsExample implements Closeable {
   /** User runs a query and counts facets. */
   public List<FacetResult> search() throws IOException {
 
-    FacetSearchParams fsp = new FacetSearchParams(
-                                new RangeFacetRequest<LongRange>("timestamp",
-                                                                 new LongRange("Past hour", nowSec-3600, true, nowSec, true),
-                                                                 new LongRange("Past six hours", nowSec-6*3600, true, nowSec, true),
-                                                                 new LongRange("Past day", nowSec-24*3600, true, nowSec, true)));
+    RangeFacetRequest<LongRange> rangeFacetRequest = new RangeFacetRequest<LongRange>("timestamp",
+                                     new LongRange("Past hour", nowSec-3600, true, nowSec, true),
+                                     new LongRange("Past six hours", nowSec-6*3600, true, nowSec, true),
+                                     new LongRange("Past day", nowSec-24*3600, true, nowSec, true));
     // Aggregatses the facet counts
-    FacetsCollector fc = FacetsCollector.create(new RangeAccumulator(fsp, searcher.getIndexReader()));
+    FacetsCollector fc = FacetsCollector.create(new RangeAccumulator(rangeFacetRequest));
 
     // MatchAllDocsQuery is for "browsing" (counts facets
     // for all non-deleted docs in the index); normally
@@ -112,6 +110,7 @@ public class RangeFacetsExample implements Closeable {
     return searcher.search(q, 10);
   }
 
+  @Override
   public void close() throws IOException {
     searcher.getIndexReader().close();
     indexDir.close();

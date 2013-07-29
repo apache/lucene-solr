@@ -27,6 +27,9 @@ import org.apache.lucene.facet.search.FacetsCollector.MatchingDocs;
 /**
  * A {@link FacetsAggregator} which invokes the proper aggregator per
  * {@link CategoryListParams}.
+ * {@link #rollupValues(FacetRequest, int, int[], int[], FacetArrays)} is
+ * delegated to the proper aggregator which handles the
+ * {@link CategoryListParams} the given {@link FacetRequest} belongs to.
  */
 public class PerCategoryListAggregator implements FacetsAggregator {
   

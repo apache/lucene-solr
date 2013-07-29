@@ -1,6 +1,7 @@
 package org.apache.lucene.facet.search;
 
 import org.apache.lucene.facet.complements.ComplementCountingAggregator;
+import org.apache.lucene.facet.params.FacetIndexingParams;
 import org.apache.lucene.facet.taxonomy.CategoryPath;
 import org.apache.lucene.facet.taxonomy.TaxonomyReader;
 
@@ -32,6 +33,7 @@ public class CountFacetRequest extends FacetRequest {
     super(path, num);
   }
 
+  // TODO nuke Aggregator and move this logic to StandardFacetsAccumulator -- it should only be used for counting
   @Override
   public Aggregator createAggregator(boolean useComplements, FacetArrays arrays, TaxonomyReader taxonomy) {
     // we rely on that, if needed, result is cleared by arrays!
@@ -42,6 +44,11 @@ public class CountFacetRequest extends FacetRequest {
     return new CountingAggregator(a);
   }
 
+  @Override
+  public FacetsAggregator createFacetsAggregator(FacetIndexingParams fip) {
+    return CountingFacetsAggregator.create(fip.getCategoryListParams(categoryPath));
+  }
+  
   @Override
   public double getValueOf(FacetArrays arrays, int ordinal) {
     return arrays.getIntArray()[ordinal];

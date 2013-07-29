@@ -43,7 +43,7 @@ import org.apache.lucene.util.IntsRef;
  */
 
 /**
- * Standard implementation for {@link FacetsAccumulator}, utilizing partitions to save on memory.
+ * Standard implementation for {@link TaxonomyFacetsAccumulator}, utilizing partitions to save on memory.
  * <p>
  * Why partitions? Because if there are say 100M categories out of which 
  * only top K are required, we must first compute value for all 100M categories
@@ -64,7 +64,7 @@ import org.apache.lucene.util.IntsRef;
  * 
  * @lucene.experimental
  */
-public class StandardFacetsAccumulator extends FacetsAccumulator {
+public class StandardFacetsAccumulator extends TaxonomyFacetsAccumulator {
 
   private static final Logger logger = Logger.getLogger(StandardFacetsAccumulator.class.getName());
 
@@ -96,15 +96,18 @@ public class StandardFacetsAccumulator extends FacetsAccumulator {
 
   private double complementThreshold = DEFAULT_COMPLEMENT_THRESHOLD;
   
-  public StandardFacetsAccumulator(FacetSearchParams searchParams, IndexReader indexReader, 
+  private static FacetArrays createFacetArrays(FacetSearchParams searchParams, TaxonomyReader taxoReader) {
+    return new FacetArrays(PartitionsUtils.partitionSize(searchParams.indexingParams, taxoReader)); 
+  }
+  
+  public StandardFacetsAccumulator(FacetSearchParams searchParams, IndexReader indexReader,  
       TaxonomyReader taxonomyReader) {
-    this(searchParams, indexReader, taxonomyReader, new FacetArrays(
-        PartitionsUtils.partitionSize(searchParams.indexingParams, taxonomyReader)));
+    this(searchParams, indexReader, taxonomyReader, null);
   }
 
   public StandardFacetsAccumulator(FacetSearchParams searchParams, IndexReader indexReader,
       TaxonomyReader taxonomyReader, FacetArrays facetArrays) {
-    super(searchParams, indexReader, taxonomyReader, facetArrays);
+    super(searchParams, indexReader, taxonomyReader, facetArrays == null ? createFacetArrays(searchParams, taxonomyReader) : facetArrays);
     
     // can only be computed later when docids size is known
     isUsingComplements = false;
@@ -126,8 +129,7 @@ public class StandardFacetsAccumulator extends FacetsAccumulator {
 
       if (isUsingComplements) {
         try {
-          totalFacetCounts = TotalFacetCountsCache.getSingleton().getTotalCounts(indexReader, taxonomyReader, 
-              searchParams.indexingParams);
+          totalFacetCounts = TotalFacetCountsCache.getSingleton().getTotalCounts(indexReader, taxonomyReader, searchParams.indexingParams);
           if (totalFacetCounts != null) {
             docids = ScoredDocIdsUtils.getComplementSet(docids, indexReader);
           } else {

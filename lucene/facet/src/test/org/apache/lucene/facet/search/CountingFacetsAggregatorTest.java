@@ -269,7 +269,7 @@ public class CountingFacetsAggregatorTest extends FacetTestCase {
     IOUtils.close(indexWriter, taxoWriter);
   }
   
-  private FacetsAccumulator randomAccumulator(FacetSearchParams fsp, IndexReader indexReader, TaxonomyReader taxoReader) {
+  private TaxonomyFacetsAccumulator randomAccumulator(FacetSearchParams fsp, IndexReader indexReader, TaxonomyReader taxoReader) {
     final FacetsAggregator aggregator;
     double val = random().nextDouble();
     if (val < 0.6) {
@@ -279,7 +279,7 @@ public class CountingFacetsAggregatorTest extends FacetTestCase {
     } else {
       aggregator = new CachedOrdsCountingFacetsAggregator();
     }
-    return new FacetsAccumulator(fsp, indexReader, taxoReader) {
+    return new TaxonomyFacetsAccumulator(fsp, indexReader, taxoReader) {
       @Override
       public FacetsAggregator getAggregator() {
         return aggregator;

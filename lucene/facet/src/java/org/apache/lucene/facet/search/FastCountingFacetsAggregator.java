@@ -5,7 +5,6 @@ import java.io.IOException;
 import org.apache.lucene.facet.encoding.DGapVInt8IntDecoder;
 import org.apache.lucene.facet.encoding.DGapVInt8IntEncoder;
 import org.apache.lucene.facet.params.CategoryListParams;
-import org.apache.lucene.facet.params.FacetSearchParams;
 import org.apache.lucene.facet.search.FacetsCollector.MatchingDocs;
 import org.apache.lucene.index.BinaryDocValues;
 import org.apache.lucene.util.BytesRef;
@@ -40,23 +39,6 @@ public final class FastCountingFacetsAggregator extends IntRollupFacetsAggregato
   
   private final BytesRef buf = new BytesRef(32);
   
-  /**
-   * Asserts that this {@link FacetsCollector} can handle the given
-   * {@link FacetSearchParams}. Returns {@code null} if true, otherwise an error
-   * message.
-   */
-  final static boolean verifySearchParams(FacetSearchParams fsp) {
-    // verify that all category lists were encoded with DGapVInt
-    for (FacetRequest fr : fsp.facetRequests) {
-      CategoryListParams clp = fsp.indexingParams.getCategoryListParams(fr.categoryPath);
-      if (clp.createEncoder().createMatchingDecoder().getClass() != DGapVInt8IntDecoder.class) {
-        return false;
-      }
-    }
-    
-    return true;
-  }
-
   @Override
   public final void aggregate(MatchingDocs matchingDocs, CategoryListParams clp, FacetArrays facetArrays) 
       throws IOException {

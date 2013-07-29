@@ -91,7 +91,7 @@ public class SimpleSortedSetFacetsExample {
         new CountFacetRequest(new CategoryPath("Author"), 10));
 
     // Aggregatses the facet counts
-    FacetsCollector fc = FacetsCollector.create(new SortedSetDocValuesAccumulator(fsp, state));
+    FacetsCollector fc = FacetsCollector.create(new SortedSetDocValuesAccumulator(state, fsp));
 
     // MatchAllDocsQuery is for "browsing" (counts facets
     // for all non-deleted docs in the index); normally
@@ -117,7 +117,7 @@ public class SimpleSortedSetFacetsExample {
     FacetSearchParams fsp = new FacetSearchParams(new CountFacetRequest(new CategoryPath("Author"), 10));
     DrillDownQuery q = new DrillDownQuery(fsp.indexingParams, new MatchAllDocsQuery());
     q.add(new CategoryPath("Publish Year/2010", '/'));
-    FacetsCollector fc = FacetsCollector.create(new SortedSetDocValuesAccumulator(fsp, state));
+    FacetsCollector fc = FacetsCollector.create(new SortedSetDocValuesAccumulator(state, fsp));
     searcher.search(q, fc);
 
     // Retrieve results

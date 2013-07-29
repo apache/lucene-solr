@@ -23,13 +23,9 @@ import org.apache.lucene.facet.search.FacetRequest;
  */
 
 /**
- * Defines parameters that are needed for faceted search. The list of
- * {@link FacetRequest facet requests} denotes the facets for which aggregated
- * should be done.
- * <p>
- * One can pass {@link FacetIndexingParams} in order to tell the search code how
- * to read the facets information. Note that you must use the same
- * {@link FacetIndexingParams} that were used for indexing.
+ * Defines parameters that are needed for faceted search: the list of facet
+ * {@link FacetRequest facet requests} which should be aggregated as well as the
+ * {@link FacetIndexingParams indexing params} that were used to index them.
  * 
  * @lucene.experimental
  */

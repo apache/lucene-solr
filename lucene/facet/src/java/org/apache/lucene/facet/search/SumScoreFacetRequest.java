@@ -1,5 +1,6 @@
 package org.apache.lucene.facet.search;
 
+import org.apache.lucene.facet.params.FacetIndexingParams;
 import org.apache.lucene.facet.taxonomy.CategoryPath;
 import org.apache.lucene.facet.taxonomy.TaxonomyReader;
 
@@ -33,6 +34,11 @@ public class SumScoreFacetRequest extends FacetRequest {
     super(path, num);
   }
 
+  @Override
+  public FacetsAggregator createFacetsAggregator(FacetIndexingParams fip) {
+    return new SumScoreFacetsAggregator();
+  }
+  
   @Override
   public Aggregator createAggregator(boolean useComplements, FacetArrays arrays, TaxonomyReader taxonomy) {
     assert !useComplements : "complements are not supported by this FacetRequest";

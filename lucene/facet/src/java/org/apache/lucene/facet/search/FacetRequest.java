@@ -3,6 +3,8 @@ package org.apache.lucene.facet.search;
 import java.io.IOException;
 
 import org.apache.lucene.facet.params.CategoryListParams.OrdinalPolicy;
+import org.apache.lucene.facet.params.FacetIndexingParams;
+import org.apache.lucene.facet.range.RangeFacetRequest;
 import org.apache.lucene.facet.taxonomy.CategoryPath;
 import org.apache.lucene.facet.taxonomy.TaxonomyReader;
 
@@ -138,6 +140,15 @@ public abstract class FacetRequest {
     throw new UnsupportedOperationException("this FacetRequest does not support this type of Aggregator anymore; " +
         "you should override FacetsAccumulator to return the proper FacetsAggregator");
   }
+  
+  /**
+   * Returns the {@link FacetsAggregator} which can aggregate the categories of
+   * this facet request. The aggregator is expected to aggregate category values
+   * into {@link FacetArrays}. If the facet request does not support that, e.g.
+   * {@link RangeFacetRequest}, it can return {@code null}. Note though that
+   * such requests require a dedicated {@link FacetsAccumulator}.
+   */
+  public abstract FacetsAggregator createFacetsAggregator(FacetIndexingParams fip);
   
   @Override
   public boolean equals(Object o) {
