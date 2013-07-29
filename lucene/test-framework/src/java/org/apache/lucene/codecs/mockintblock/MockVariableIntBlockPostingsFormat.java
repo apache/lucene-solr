@@ -194,7 +194,6 @@ public final class MockVariableIntBlockPostingsFormat extends PostingsFormat {
       indexReader = new FixedGapTermsIndexReader(state.directory,
                                                        state.fieldInfos,
                                                        state.segmentInfo.name,
-                                                       state.termsIndexDivisor,
                                                        BytesRef.getUTF8SortedAsUnicodeComparator(),
                                                        state.segmentSuffix, state.context);
       success = true;

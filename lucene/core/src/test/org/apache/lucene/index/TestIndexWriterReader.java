@@ -314,7 +314,7 @@ public class TestIndexWriterReader extends LuceneTestCase {
     boolean doFullMerge = true;
 
     Directory dir1 = newDirectory();
-    IndexWriter writer = new IndexWriter(dir1, newIndexWriterConfig( TEST_VERSION_CURRENT, new MockAnalyzer(random())).setReaderTermsIndexDivisor(2));
+    IndexWriter writer = new IndexWriter(dir1, newIndexWriterConfig( TEST_VERSION_CURRENT, new MockAnalyzer(random())));
     // create the index
     createIndexNoClose(!doFullMerge, "index1", writer);
     writer.flush(false, true);
@@ -1004,35 +1004,6 @@ public class TestIndexWriterReader extends LuceneTestCase {
     w.close();
     dir.close();
     assertTrue(didWarm.get());
-  }
-  
-  public void testNoTermsIndex() throws Exception {
-    // Some Codecs don't honor the ReaderTermsIndexDivisor, so skip the test if
-    // they're picked.
-    IndexWriterConfig conf = newIndexWriterConfig(TEST_VERSION_CURRENT,
-        new MockAnalyzer(random())).setReaderTermsIndexDivisor(-1);
-    
-    // Don't proceed if picked Codec is in the list of illegal ones.
-    final String format = _TestUtil.getPostingsFormat("f");
-    assumeFalse("Format: " + format + " does not support ReaderTermsIndexDivisor!",
-                (format.equals("SimpleText") || format.equals("Memory") || format.equals("Direct")));
-
-    Directory dir = newDirectory();
-    IndexWriter w = new IndexWriter(dir, conf);
-    Document doc = new Document();
-    doc.add(new TextField("f", "val", Field.Store.NO));
-    w.addDocument(doc);
-    SegmentReader r = getOnlySegmentReader(DirectoryReader.open(w, true));
-    try {
-      _TestUtil.docs(random(), r, "f", new BytesRef("val"), null, null, DocsEnum.FLAG_NONE);
-      fail("should have failed to seek since terms index was not loaded.");
-    } catch (IllegalStateException e) {
-      // expected - we didn't load the term index
-    } finally {
-      r.close();
-      w.close();
-      dir.close();
-    }
   }
   
   public void testReopenAfterNoRealChange() throws Exception {

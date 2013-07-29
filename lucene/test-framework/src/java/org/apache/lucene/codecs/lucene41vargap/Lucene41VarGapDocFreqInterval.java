@@ -1,4 +1,4 @@
-package org.apache.lucene.codecs.lucene41ords;
+package org.apache.lucene.codecs.lucene41vargap;
 
 /*
  * Licensed to the Apache Software Foundation (ASF) under one or more
@@ -26,34 +26,37 @@ import org.apache.lucene.codecs.PostingsReaderBase;
 import org.apache.lucene.codecs.PostingsWriterBase;
 import org.apache.lucene.codecs.blockterms.BlockTermsReader;
 import org.apache.lucene.codecs.blockterms.BlockTermsWriter;
-import org.apache.lucene.codecs.blockterms.FixedGapTermsIndexReader;
 import org.apache.lucene.codecs.blockterms.FixedGapTermsIndexWriter;
 import org.apache.lucene.codecs.blockterms.TermsIndexReaderBase;
 import org.apache.lucene.codecs.blockterms.TermsIndexWriterBase;
+import org.apache.lucene.codecs.blockterms.VariableGapTermsIndexReader;
+import org.apache.lucene.codecs.blockterms.VariableGapTermsIndexWriter;
 import org.apache.lucene.codecs.lucene41.Lucene41PostingsFormat; // javadocs
 import org.apache.lucene.codecs.lucene41.Lucene41PostingsReader;
 import org.apache.lucene.codecs.lucene41.Lucene41PostingsWriter;
 import org.apache.lucene.index.SegmentReadState;
 import org.apache.lucene.index.SegmentWriteState;
-import org.apache.lucene.util.BytesRef;
 
 // TODO: we could make separate base class that can wrapp
 // any PostingsBaseFormat and make it ord-able...
 
 /**
  * Customized version of {@link Lucene41PostingsFormat} that uses
- * {@link FixedGapTermsIndexWriter}.
+ * {@link VariableGapTermsIndexWriter} with a fixed interval, but
+ * forcing high docfreq terms to be indexed terms.
  */
-public final class Lucene41WithOrds extends PostingsFormat {
+public final class Lucene41VarGapDocFreqInterval extends PostingsFormat {
   final int termIndexInterval;
+  final int docFreqThreshold;
   
-  public Lucene41WithOrds() {
-    this(FixedGapTermsIndexWriter.DEFAULT_TERM_INDEX_INTERVAL);
+  public Lucene41VarGapDocFreqInterval() {
+    this(1000000, FixedGapTermsIndexWriter.DEFAULT_TERM_INDEX_INTERVAL);
   }
   
-  public Lucene41WithOrds(int termIndexInterval) {
-    super("Lucene41WithOrds");
+  public Lucene41VarGapDocFreqInterval(int docFreqThreshold, int termIndexInterval) {
+    super("Lucene41VarGapFixedInterval");
     this.termIndexInterval = termIndexInterval;
+    this.docFreqThreshold = docFreqThreshold;
   }
 
   @Override
@@ -67,7 +70,7 @@ public final class Lucene41WithOrds extends PostingsFormat {
     TermsIndexWriterBase indexWriter;
     boolean success = false;
     try {
-      indexWriter = new FixedGapTermsIndexWriter(state, termIndexInterval);
+      indexWriter = new VariableGapTermsIndexWriter(state, new VariableGapTermsIndexWriter.EveryNOrDocFreqTermSelector(docFreqThreshold, termIndexInterval));
       success = true;
     } finally {
       if (!success) {
@@ -100,10 +103,9 @@ public final class Lucene41WithOrds extends PostingsFormat {
 
     boolean success = false;
     try {
-      indexReader = new FixedGapTermsIndexReader(state.directory,
+      indexReader = new VariableGapTermsIndexReader(state.directory,
                                                  state.fieldInfos,
                                                  state.segmentInfo.name,
-                                                 BytesRef.getUTF8SortedAsUnicodeComparator(),
                                                  state.segmentSuffix, state.context);
       success = true;
     } finally {

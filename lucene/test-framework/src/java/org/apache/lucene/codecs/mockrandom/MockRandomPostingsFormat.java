@@ -220,11 +220,11 @@ public final class MockRandomPostingsFormat extends PostingsFormat {
       final TermsIndexWriterBase indexWriter;
       try {
         if (random.nextBoolean()) {
-          state.termIndexInterval = _TestUtil.nextInt(random, 1, 100);
+          int termIndexInterval = _TestUtil.nextInt(random, 1, 100);
           if (LuceneTestCase.VERBOSE) {
-            System.out.println("MockRandomCodec: fixed-gap terms index (tii=" + state.termIndexInterval + ")");
+            System.out.println("MockRandomCodec: fixed-gap terms index (tii=" + termIndexInterval + ")");
           }
-          indexWriter = new FixedGapTermsIndexWriter(state);
+          indexWriter = new FixedGapTermsIndexWriter(state, termIndexInterval);
         } else {
           final VariableGapTermsIndexWriter.IndexTermSelector selector;
           final int n2 = random.nextInt(3);
@@ -340,8 +340,7 @@ public final class MockRandomPostingsFormat extends PostingsFormat {
                                           state.segmentInfo,
                                           postingsReader,
                                           state.context,
-                                          state.segmentSuffix,
-                                          state.termsIndexDivisor);
+                                          state.segmentSuffix);
         success = true;
       } finally {
         if (!success) {
@@ -359,20 +358,14 @@ public final class MockRandomPostingsFormat extends PostingsFormat {
         final boolean doFixedGap = random.nextBoolean();
 
         // randomness diverges from writer, here:
-        if (state.termsIndexDivisor != -1) {
-          state.termsIndexDivisor = _TestUtil.nextInt(random, 1, 10);
-        }
 
         if (doFixedGap) {
-          // if termsIndexDivisor is set to -1, we should not touch it. It means a
-          // test explicitly instructed not to load the terms index.
           if (LuceneTestCase.VERBOSE) {
-            System.out.println("MockRandomCodec: fixed-gap terms index (divisor=" + state.termsIndexDivisor + ")");
+            System.out.println("MockRandomCodec: fixed-gap terms index");
           }
           indexReader = new FixedGapTermsIndexReader(state.directory,
                                                      state.fieldInfos,
                                                      state.segmentInfo.name,
-                                                     state.termsIndexDivisor,
                                                      BytesRef.getUTF8SortedAsUnicodeComparator(),
                                                      state.segmentSuffix, state.context);
         } else {
@@ -383,12 +376,11 @@ public final class MockRandomPostingsFormat extends PostingsFormat {
             random.nextLong();
           }
           if (LuceneTestCase.VERBOSE) {
-            System.out.println("MockRandomCodec: variable-gap terms index (divisor=" + state.termsIndexDivisor + ")");
+            System.out.println("MockRandomCodec: variable-gap terms index");
           }
           indexReader = new VariableGapTermsIndexReader(state.directory,
                                                         state.fieldInfos,
                                                         state.segmentInfo.name,
-                                                        state.termsIndexDivisor,
                                                         state.segmentSuffix, state.context);
 
         }

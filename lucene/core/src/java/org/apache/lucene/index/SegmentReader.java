@@ -51,9 +51,9 @@ public final class SegmentReader extends AtomicReader {
    * @throws IOException if there is a low-level IO error
    */
   // TODO: why is this public?
-  public SegmentReader(SegmentInfoPerCommit si, int termInfosIndexDivisor, IOContext context) throws IOException {
+  public SegmentReader(SegmentInfoPerCommit si, IOContext context) throws IOException {
     this.si = si;
-    core = new SegmentCoreReaders(this, si.info.dir, si, context, termInfosIndexDivisor);
+    core = new SegmentCoreReaders(this, si.info.dir, si, context);
     boolean success = false;
     try {
       if (si.hasDeletions()) {
@@ -215,12 +215,6 @@ public final class SegmentReader extends AtomicReader {
   @Override
   public Object getCombinedCoreAndDeletesKey() {
     return this;
-  }
-
-  /** Returns term infos index divisor originally passed to
-   *  {@link #SegmentReader(SegmentInfoPerCommit, int, IOContext)}. */
-  public int getTermInfosIndexDivisor() {
-    return core.termsIndexDivisor;
   }
 
   @Override

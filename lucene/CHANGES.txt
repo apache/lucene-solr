@@ -27,6 +27,13 @@ Changes in backwards compatibility policy
   no longer support multiple "dictionaries" as there is only one dictionary available.
   (Dawid Weiss)
 
+* LUCENE-5127: Reduce RAM usage of FixedGapTermsIndex. Remove 
+  IndexWriterConfig.setTermIndexInterval, IndexWriterConfig.setReaderTermsIndexDivisor,
+  and termsIndexDivisor from StandardDirectoryReader. These options have been no-ops
+  with the default codec since Lucene 4.0. If you want to configure the interval for
+  this term index, pass it directly in your codec, where it can also be configured
+  per-field. (Robert Muir)
+
 New Features
 
 * LUCENE-4747: Move to Java 7 as minimum Java version.

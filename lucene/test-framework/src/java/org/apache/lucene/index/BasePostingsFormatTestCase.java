@@ -38,6 +38,8 @@ import org.apache.lucene.codecs.FieldsProducer;
 import org.apache.lucene.codecs.PostingsConsumer;
 import org.apache.lucene.codecs.TermStats;
 import org.apache.lucene.codecs.TermsConsumer;
+import org.apache.lucene.document.Document;
+import org.apache.lucene.document.Field;
 import org.apache.lucene.index.FieldInfo.DocValuesType;
 import org.apache.lucene.index.FieldInfo.IndexOptions;
 import org.apache.lucene.store.Directory;
@@ -483,7 +485,7 @@ public abstract class BasePostingsFormatTestCase extends LuceneTestCase {
 
     SegmentWriteState writeState = new SegmentWriteState(null, dir,
                                                          segmentInfo, newFieldInfos,
-                                                         32, null, new IOContext(new FlushInfo(maxDoc, bytes)));
+                                                         null, new IOContext(new FlushInfo(maxDoc, bytes)));
     FieldsConsumer fieldsConsumer = codec.postingsFormat().fieldsConsumer(writeState);
 
     for(Map.Entry<String,Map<BytesRef,Long>> fieldEnt : fields.entrySet()) {
@@ -567,7 +569,7 @@ public abstract class BasePostingsFormatTestCase extends LuceneTestCase {
 
     currentFieldInfos = newFieldInfos;
 
-    SegmentReadState readState = new SegmentReadState(dir, segmentInfo, newFieldInfos, IOContext.DEFAULT, 1);
+    SegmentReadState readState = new SegmentReadState(dir, segmentInfo, newFieldInfos, IOContext.DEFAULT);
 
     return codec.postingsFormat().fieldsProducer(readState);
   }
@@ -1129,5 +1131,86 @@ public abstract class BasePostingsFormatTestCase extends LuceneTestCase {
       dir.close();
       _TestUtil.rmDir(path);
     }
+  }
+  
+  public void testEmptyField() throws Exception {
+    Directory dir = newDirectory();
+    IndexWriterConfig iwc = newIndexWriterConfig(TEST_VERSION_CURRENT, null);
+    iwc.setCodec(getCodec());
+    RandomIndexWriter iw = new RandomIndexWriter(random(), dir, iwc);
+    Document doc = new Document();
+    doc.add(newStringField("", "something", Field.Store.NO));
+    iw.addDocument(doc);
+    DirectoryReader ir = iw.getReader();
+    AtomicReader ar = getOnlySegmentReader(ir);
+    Fields fields = ar.fields();
+    assertTrue(fields.size() == 1);
+    Terms terms = ar.terms("");
+    assertNotNull(terms);
+    TermsEnum termsEnum = terms.iterator(null);
+    assertNotNull(termsEnum.next());
+    assertEquals(termsEnum.term(), new BytesRef("something"));
+    assertNull(termsEnum.next());
+    ir.close();
+    iw.close();
+    dir.close();
+  }
+  
+  public void testEmptyFieldAndEmptyTerm() throws Exception {
+    Directory dir = newDirectory();
+    IndexWriterConfig iwc = newIndexWriterConfig(TEST_VERSION_CURRENT, null);
+    iwc.setCodec(getCodec());
+    RandomIndexWriter iw = new RandomIndexWriter(random(), dir, iwc);
+    Document doc = new Document();
+    doc.add(newStringField("", "", Field.Store.NO));
+    iw.addDocument(doc);
+    DirectoryReader ir = iw.getReader();
+    AtomicReader ar = getOnlySegmentReader(ir);
+    Fields fields = ar.fields();
+    assertTrue(fields.size() == 1);
+    Terms terms = ar.terms("");
+    assertNotNull(terms);
+    TermsEnum termsEnum = terms.iterator(null);
+    assertNotNull(termsEnum.next());
+    assertEquals(termsEnum.term(), new BytesRef(""));
+    assertNull(termsEnum.next());
+    ir.close();
+    iw.close();
+    dir.close();
+  }
+  
+  // tests that ghost fields still work
+  // TODO: can this be improved?
+  public void testGhosts() throws Exception {
+    Directory dir = newDirectory();
+    IndexWriterConfig iwc = newIndexWriterConfig(TEST_VERSION_CURRENT, null);
+    iwc.setCodec(getCodec());
+    iwc.setMergePolicy(newLogMergePolicy());
+    RandomIndexWriter iw = new RandomIndexWriter(random(), dir, iwc);
+    Document doc = new Document();
+    iw.addDocument(doc);
+    doc.add(newStringField("ghostField", "something", Field.Store.NO));
+    iw.addDocument(doc);
+    iw.forceMerge(1);
+    iw.deleteDocuments(new Term("ghostField", "something")); // delete the only term for the field
+    iw.forceMerge(1);
+    DirectoryReader ir = iw.getReader();
+    AtomicReader ar = getOnlySegmentReader(ir);
+    Fields fields = ar.fields();
+    // Ghost busting terms dict impls will have
+    // fields.size() == 0; all others must be == 1:
+    assertTrue(fields.size() <= 1);
+    Terms terms = fields.terms("ghostField");
+    if (terms != null) {
+      TermsEnum termsEnum = terms.iterator(null);
+      BytesRef term = termsEnum.next();
+      if (term != null) {
+        DocsEnum docsEnum = termsEnum.docs(null, null);
+        assertTrue(docsEnum.nextDoc() == DocsEnum.NO_MORE_DOCS);
+      }
+    }
+    ir.close();
+    iw.close();
+    dir.close();
   }
 }

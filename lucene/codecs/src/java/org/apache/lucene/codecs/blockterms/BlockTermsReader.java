@@ -313,11 +313,6 @@ public class BlockTermsReader extends FieldsProducer {
          calls next() (which is not "typical"), then we'll do the real seek */
       private boolean seekPending;
 
-      /* How many blocks we've read since last seek.  Once this
-         is >= indexEnum.getDivisor() we set indexIsCurrent to false (since
-         the index can no long bracket seek-within-block). */
-      private int blocksSinceSeek;
-
       private byte[] termSuffixes;
       private ByteArrayDataInput termSuffixesReader = new ByteArrayDataInput();
 
@@ -420,8 +415,7 @@ public class BlockTermsReader extends FieldsProducer {
           assert result;
 
           indexIsCurrent = true;
-          didIndexNext = false;
-          blocksSinceSeek = 0;          
+          didIndexNext = false;      
 
           if (doOrd) {
             state.ord = indexEnum.ord()-1;
@@ -729,7 +723,6 @@ public class BlockTermsReader extends FieldsProducer {
 
         indexIsCurrent = true;
         didIndexNext = false;
-        blocksSinceSeek = 0;
         seekPending = false;
 
         state.ord = indexEnum.ord()-1;
@@ -802,8 +795,7 @@ public class BlockTermsReader extends FieldsProducer {
 
         postingsReader.readTermsBlock(in, fieldInfo, state);
 
-        blocksSinceSeek++;
-        indexIsCurrent = indexIsCurrent && (blocksSinceSeek < indexReader.getDivisor());
+        indexIsCurrent = false;
         //System.out.println("  indexIsCurrent=" + indexIsCurrent);
 
         return true;

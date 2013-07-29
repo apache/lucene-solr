@@ -1,4 +1,5 @@
-package org.apache.solr.core;
+package org.apache.lucene.codecs.blockterms;
+
 /*
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
@@ -16,22 +17,19 @@ package org.apache.solr.core;
  * limitations under the License.
  */
 
-import org.apache.solr.util.AbstractSolrTestCase;
-import org.junit.BeforeClass;
+import org.apache.lucene.codecs.Codec;
+import org.apache.lucene.codecs.lucene41vargap.Lucene41VarGapFixedInterval;
+import org.apache.lucene.index.BasePostingsFormatTestCase;
+import org.apache.lucene.util._TestUtil;
 
-public class IndexReaderFactoryTest extends AbstractSolrTestCase {
+/**
+ * Basic tests of a PF using VariableGap terms dictionary (fixed interval)
+ */
+public class TestVarGapDocFreqIntervalPostingsFormat extends BasePostingsFormatTestCase {
+  private final Codec codec = _TestUtil.alwaysPostingsFormat(new Lucene41VarGapFixedInterval(_TestUtil.nextInt(random(), 1, 1000)));
 
-  @BeforeClass
-  public static void beforeClass() throws Exception {
-    initCore("solrconfig-termindex.xml", "schema.xml");
-  }
-
-  /**
-   * Simple test to ensure that alternate IndexReaderFactory is being used.
-   */
-  public void testAltReaderUsed() throws Exception {
-    IndexReaderFactory readerFactory = h.getCore().getIndexReaderFactory();
-    assertNotNull("Factory is null", readerFactory);
-    assertTrue("readerFactory is not an instanceof " + AlternateDirectoryTest.TestIndexReaderFactory.class, readerFactory instanceof StandardIndexReaderFactory);
+  @Override
+  protected Codec getCodec() {
+    return codec;
   }
 }

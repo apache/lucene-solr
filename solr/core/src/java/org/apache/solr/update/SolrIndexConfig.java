@@ -69,7 +69,6 @@ public class SolrIndexConfig {
   public final String lockType;
   public final PluginInfo mergePolicyInfo;
   public final PluginInfo mergeSchedulerInfo;
-  public final int termIndexInterval;
   
   public final PluginInfo mergedSegmentWarmerInfo;
   
@@ -95,7 +94,6 @@ public class SolrIndexConfig {
     ramBufferSizeMB = 100;
     writeLockTimeout = -1;
     lockType = LOCK_TYPE_NATIVE;
-    termIndexInterval = IndexWriterConfig.DEFAULT_TERM_INDEX_INTERVAL;
     mergePolicyInfo = null;
     mergeSchedulerInfo = null;
     defaultMergePolicyClassName = TieredMergePolicy.class.getName();
@@ -148,7 +146,10 @@ public class SolrIndexConfig {
     mergeSchedulerInfo = getPluginInfo(prefix + "/mergeScheduler", solrConfig, def.mergeSchedulerInfo);
     mergePolicyInfo = getPluginInfo(prefix + "/mergePolicy", solrConfig, def.mergePolicyInfo);
     
-    termIndexInterval = solrConfig.getInt(prefix + "/termIndexInterval", def.termIndexInterval);
+    String val = solrConfig.get(prefix + "/termIndexInterval", null);
+    if (val != null) {
+      throw new IllegalArgumentException("Illegal parameter 'termIndexInterval'");
+    }
 
     boolean infoStreamEnabled = solrConfig.getBool(prefix + "/infoStream", false);
     if(infoStreamEnabled) {
@@ -197,9 +198,6 @@ public class SolrIndexConfig {
 
     if (ramBufferSizeMB != -1)
       iwc.setRAMBufferSizeMB(ramBufferSizeMB);
-
-    if (termIndexInterval != -1)
-      iwc.setTermIndexInterval(termIndexInterval);
 
     if (writeLockTimeout != -1)
       iwc.setWriteLockTimeout(writeLockTimeout);

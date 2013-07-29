@@ -72,9 +72,6 @@ public final class IndexWriterConfig extends LiveIndexWriterConfig implements Cl
     CREATE_OR_APPEND 
   }
 
-  /** Default value is 32. Change using {@link #setTermIndexInterval(int)}. */
-  public static final int DEFAULT_TERM_INDEX_INTERVAL = 32; // TODO: this should be private to the codec, not settable here
-
   /** Denotes a flush trigger is disabled. */
   public final static int DISABLE_AUTO_FLUSH = -1;
 
@@ -99,9 +96,6 @@ public final class IndexWriterConfig extends LiveIndexWriterConfig implements Cl
 
   /** Default setting for {@link #setReaderPooling}. */
   public final static boolean DEFAULT_READER_POOLING = false;
-
-  /** Default value is 1. Change using {@link #setReaderTermsIndexDivisor(int)}. */
-  public static final int DEFAULT_READER_TERMS_INDEX_DIVISOR = DirectoryReader.DEFAULT_TERMS_INDEX_DIVISOR;
 
   /** Default value is 1945. Change using {@link #setRAMPerThreadHardLimitMB(int)} */
   public static final int DEFAULT_RAM_PER_THREAD_HARD_LIMIT_MB = 1945;
@@ -503,16 +497,6 @@ public final class IndexWriterConfig extends LiveIndexWriterConfig implements Cl
     return super.getRAMBufferSizeMB();
   }
   
-  @Override
-  public int getReaderTermsIndexDivisor() {
-    return super.getReaderTermsIndexDivisor();
-  }
-  
-  @Override
-  public int getTermIndexInterval() {
-    return super.getTermIndexInterval();
-  }
-  
   /** If non-null, information about merges, deletes and a
    * message when maxFieldLength is reached will be printed
    * to this.
@@ -552,16 +536,6 @@ public final class IndexWriterConfig extends LiveIndexWriterConfig implements Cl
   @Override
   public IndexWriterConfig setRAMBufferSizeMB(double ramBufferSizeMB) {
     return (IndexWriterConfig) super.setRAMBufferSizeMB(ramBufferSizeMB);
-  }
-  
-  @Override
-  public IndexWriterConfig setReaderTermsIndexDivisor(int divisor) {
-    return (IndexWriterConfig) super.setReaderTermsIndexDivisor(divisor);
-  }
-  
-  @Override
-  public IndexWriterConfig setTermIndexInterval(int interval) {
-    return (IndexWriterConfig) super.setTermIndexInterval(interval);
   }
   
   @Override
