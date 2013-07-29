@@ -28,9 +28,11 @@ import java.nio.charset.CharsetDecoder;
 import java.nio.charset.CodingErrorAction;
 import java.net.URL;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collection;
 import java.util.HashMap;
 import java.util.Iterator;
+import java.util.LinkedList;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
@@ -68,6 +70,11 @@ public class SolrRequestParsers
   public static final String SIMPLE = "simple";
   public static final String STANDARD = "standard";
   
+  private static final Charset CHARSET_US_ASCII = Charset.forName("US-ASCII");
+  
+  public static final String INPUT_ENCODING_KEY = "ie";
+  private static final byte[] INPUT_ENCODING_BYTES = INPUT_ENCODING_KEY.getBytes(CHARSET_US_ASCII);
+
   private final HashMap<String, SolrRequestParser> parsers =
       new HashMap<String, SolrRequestParser>();
   private final boolean enableRemoteStreams;
@@ -242,7 +249,7 @@ public class SolrRequestParsers
             }
           }
         };
-        parseFormDataContent(in, Long.MAX_VALUE, IOUtils.CHARSET_UTF_8, map);
+        parseFormDataContent(in, Long.MAX_VALUE, IOUtils.CHARSET_UTF_8, map, true);
       } catch (IOException ioe) {
         throw new SolrException(ErrorCode.BAD_REQUEST, ioe);
       }
@@ -256,23 +263,53 @@ public class SolrRequestParsers
    * @param charset to be used to decode resulting bytes after %-decoding
    * @param map place all parameters in this map
    */
-  @SuppressWarnings("fallthrough")
-  static long parseFormDataContent(final InputStream postContent, final long maxLen, final Charset charset, final Map<String,String[]> map) throws IOException {
-    final CharsetDecoder charsetDecoder = charset.newDecoder()
-      .onMalformedInput(CodingErrorAction.REPORT)
-      .onUnmappableCharacter(CodingErrorAction.REPORT);
+  @SuppressWarnings({"fallthrough", "resource"})
+  static long parseFormDataContent(final InputStream postContent, final long maxLen, Charset charset, final Map<String,String[]> map, boolean supportCharsetParam) throws IOException {
+    CharsetDecoder charsetDecoder = supportCharsetParam ? null : getCharsetDecoder(charset);
+    final LinkedList<Object> buffer = supportCharsetParam ? new LinkedList<Object>() : null;
     long len = 0L, keyPos = 0L, valuePos = 0L;
-    final ByteArrayOutputStream2 keyStream = new ByteArrayOutputStream2(),
-      valueStream = new ByteArrayOutputStream2();
-    ByteArrayOutputStream2 currentStream = keyStream;
+    final ByteArrayOutputStream keyStream = new ByteArrayOutputStream(),
+      valueStream = new ByteArrayOutputStream();
+    ByteArrayOutputStream currentStream = keyStream;
     for(;;) {
       int b = postContent.read();
       switch (b) {
         case -1: // end of stream
         case '&': // separator
           if (keyStream.size() > 0) {
-            final String key = decodeChars(keyStream, keyPos, charsetDecoder), value = decodeChars(valueStream, valuePos, charsetDecoder);
-            MultiMapSolrParams.addParam(key, value, map);
+            final byte[] keyBytes = keyStream.toByteArray(), valueBytes = valueStream.toByteArray();
+            if (Arrays.equals(keyBytes, INPUT_ENCODING_BYTES)) {
+              // we found a charset declaration in the raw bytes
+              if (charsetDecoder != null) {
+                throw new SolrException(ErrorCode.BAD_REQUEST,
+                  supportCharsetParam ? (
+                    "Query string invalid: duplicate '"+
+                    INPUT_ENCODING_KEY + "' (input encoding) key."
+                  ) : (
+                    "Key '" + INPUT_ENCODING_KEY + "' (input encoding) cannot "+
+                    "be used in POSTed application/x-www-form-urlencoded form data. "+
+                    "To set the input encoding of POSTed form data, use the "+
+                    "'Content-Type' header and provide a charset!"
+                  )
+                );
+              }
+              // decode the charset from raw bytes
+              charset = Charset.forName(decodeChars(valueBytes, keyPos, getCharsetDecoder(CHARSET_US_ASCII)));
+              charsetDecoder = getCharsetDecoder(charset);
+              // finally decode all buffered tokens
+              decodeBuffer(buffer, map, charsetDecoder);
+            } else if (charsetDecoder == null) {
+              // we have no charset decoder until now, buffer the keys / values for later processing:
+              buffer.add(keyBytes);
+              buffer.add(Long.valueOf(keyPos));
+              buffer.add(valueBytes);
+              buffer.add(Long.valueOf(valuePos));
+            } else {
+              // we already have a charsetDecoder, so we can directly decode without buffering:
+              final String key = decodeChars(keyBytes, keyPos, charsetDecoder),
+                  value = decodeChars(valueBytes, valuePos, charsetDecoder);
+              MultiMapSolrParams.addParam(key, value, map);
+            }
           } else if (valueStream.size() > 0) {
             throw new SolrException(ErrorCode.BAD_REQUEST, "application/x-www-form-urlencoded invalid: missing key");
           }
@@ -309,12 +346,23 @@ public class SolrRequestParsers
         throw new SolrException(ErrorCode.BAD_REQUEST, "application/x-www-form-urlencoded content exceeds upload limit of " + (maxLen/1024L) + " KB");
       }
     }
+    // if we have not seen a charset declaration, decode the buffer now using the default one (UTF-8 or given via Content-Type):
+    if (buffer != null && !buffer.isEmpty()) {
+      assert charsetDecoder == null;
+      decodeBuffer(buffer, map, getCharsetDecoder(charset));
+    }
     return len;
   }
   
-  private static String decodeChars(ByteArrayOutputStream2 stream, long position, CharsetDecoder charsetDecoder) {
+  private static CharsetDecoder getCharsetDecoder(Charset charset) {
+    return charset.newDecoder()
+      .onMalformedInput(CodingErrorAction.REPORT)
+      .onUnmappableCharacter(CodingErrorAction.REPORT);
+  }
+  
+  private static String decodeChars(byte[] bytes, long position, CharsetDecoder charsetDecoder) {
     try {
-      return charsetDecoder.decode(ByteBuffer.wrap(stream.buffer(), 0, stream.size())).toString();
+      return charsetDecoder.decode(ByteBuffer.wrap(bytes)).toString();
     } catch (CharacterCodingException cce) {
       throw new SolrException(ErrorCode.BAD_REQUEST,
         "URLDecoder: Invalid character encoding detected after position " + position +
@@ -323,10 +371,18 @@ public class SolrRequestParsers
     }
   }
   
-  /** Makes the buffer of ByteArrayOutputStream available without copy. */
-  static final class ByteArrayOutputStream2 extends ByteArrayOutputStream {
-    byte[] buffer() {
-      return buf;
+  private static void decodeBuffer(final LinkedList<Object> input, final Map<String,String[]> map, CharsetDecoder charsetDecoder) {
+    for (final Iterator<Object> it = input.iterator(); it.hasNext(); ) {
+      final byte[] keyBytes = (byte[]) it.next();
+      it.remove();
+      final Long keyPos = (Long) it.next();
+      it.remove();
+      final byte[] valueBytes = (byte[]) it.next();
+      it.remove();
+      final Long valuePos = (Long) it.next();
+      it.remove();
+      MultiMapSolrParams.addParam(decodeChars(keyBytes, keyPos.longValue(), charsetDecoder),
+          decodeChars(valueBytes, valuePos.longValue(), charsetDecoder), map);
     }
   }
   
@@ -551,7 +607,7 @@ public class SolrRequestParsers
       InputStream in = null;
       try {
         in = req.getInputStream();
-        final long bytesRead = parseFormDataContent(FastInputStream.wrap(in), maxLength, charset, map);
+        final long bytesRead = parseFormDataContent(FastInputStream.wrap(in), maxLength, charset, map, false);
         if (bytesRead == 0L && totalLength > 0L) {
           throw getParameterIncompatibilityException();
         }
