@@ -4,6 +4,7 @@ import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
 
+import org.apache.lucene.facet.old.OldFacetsAccumulator;
 import org.apache.lucene.facet.params.FacetIndexingParams;
 import org.apache.lucene.facet.params.FacetSearchParams;
 import org.apache.lucene.facet.range.RangeAccumulator;
@@ -72,7 +73,7 @@ public abstract class FacetsAccumulator {
   public static FacetsAccumulator create(FacetSearchParams fsp, IndexReader indexReader, TaxonomyReader taxoReader, 
       FacetArrays arrays) {
     if (fsp.indexingParams.getPartitionSize() != Integer.MAX_VALUE) {
-      return new StandardFacetsAccumulator(fsp, indexReader, taxoReader, arrays);
+      return new OldFacetsAccumulator(fsp, indexReader, taxoReader, arrays);
     }
     
     List<FacetRequest> rangeRequests = new ArrayList<FacetRequest>();

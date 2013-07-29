@@ -11,6 +11,7 @@ import org.apache.lucene.document.Field;
 import org.apache.lucene.document.TextField;
 import org.apache.lucene.facet.FacetTestCase;
 import org.apache.lucene.facet.index.FacetFields;
+import org.apache.lucene.facet.old.OldFacetsAccumulator;
 import org.apache.lucene.facet.params.FacetIndexingParams;
 import org.apache.lucene.facet.params.FacetSearchParams;
 import org.apache.lucene.facet.search.FacetRequest.ResultMode;
@@ -150,8 +151,8 @@ public class TestTopKInEachNodeResultHandler extends FacetTestCase {
       FacetSearchParams facetSearchParams = new FacetSearchParams(iParams, facetRequests);
       
       FacetArrays facetArrays = new FacetArrays(PartitionsUtils.partitionSize(facetSearchParams.indexingParams, tr));
-      StandardFacetsAccumulator sfa = new StandardFacetsAccumulator(facetSearchParams, is.getIndexReader(), tr, facetArrays);
-      sfa.setComplementThreshold(StandardFacetsAccumulator.DISABLE_COMPLEMENT);
+      OldFacetsAccumulator sfa = new OldFacetsAccumulator(facetSearchParams, is.getIndexReader(), tr, facetArrays);
+      sfa.setComplementThreshold(OldFacetsAccumulator.DISABLE_COMPLEMENT);
       FacetsCollector fc = FacetsCollector.create(sfa);
       
       is.search(q, fc);

@@ -4,16 +4,14 @@ import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
 
+import org.apache.lucene.facet.old.ScoredDocIDs;
 import org.apache.lucene.facet.params.FacetIndexingParams;
 import org.apache.lucene.facet.params.FacetSearchParams;
-import org.apache.lucene.facet.search.Aggregator;
 import org.apache.lucene.facet.search.FacetArrays;
 import org.apache.lucene.facet.search.FacetRequest;
 import org.apache.lucene.facet.search.FacetResult;
 import org.apache.lucene.facet.search.FacetResultNode;
 import org.apache.lucene.facet.search.FacetsAggregator;
-import org.apache.lucene.facet.search.ScoredDocIDs;
-import org.apache.lucene.facet.taxonomy.TaxonomyReader;
 
 /*
  * Licensed to the Apache Software Foundation (ASF) under one or more
@@ -198,15 +196,9 @@ public abstract class Sampler {
     return res;
   }
   
-  /**
-   * Wrapping a facet request for over sampling.
-   * Implementation detail: even if the original request is a count request, no 
-   * statistics will be computed for it as the wrapping is not a count request.
-   * This is ok, as the sampling accumulator is later computing the statistics
-   * over the original requests.
-   */
-  private static class OverSampledFacetRequest extends FacetRequest {
-    final FacetRequest orig;
+  /** Wrapping a facet request for over sampling. */
+  public static class OverSampledFacetRequest extends FacetRequest {
+    public final FacetRequest orig;
     public OverSampledFacetRequest(FacetRequest orig, int num) {
       super(orig.categoryPath, num);
       this.orig = orig;
@@ -221,12 +213,6 @@ public abstract class Sampler {
       return orig.createFacetsAggregator(fip);
     }
     
-    @Override
-    public Aggregator createAggregator(boolean useComplements, FacetArrays arrays, TaxonomyReader taxonomy) 
-        throws IOException {
-      return orig.createAggregator(useComplements, arrays, taxonomy);
-    }
-
     @Override
     public FacetArraysSource getFacetArraysSource() {
       return orig.getFacetArraysSource();

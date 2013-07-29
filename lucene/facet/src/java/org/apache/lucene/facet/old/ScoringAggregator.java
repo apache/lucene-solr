@@ -1,4 +1,4 @@
-package org.apache.lucene.facet.search;
+package org.apache.lucene.facet.old;
 
 import java.io.IOException;
 

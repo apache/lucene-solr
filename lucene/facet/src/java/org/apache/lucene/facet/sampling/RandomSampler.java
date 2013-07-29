@@ -3,9 +3,9 @@ package org.apache.lucene.facet.sampling;
 import java.io.IOException;
 import java.util.Random;
 
-import org.apache.lucene.facet.search.ScoredDocIDs;
-import org.apache.lucene.facet.search.ScoredDocIDsIterator;
-import org.apache.lucene.facet.util.ScoredDocIdsUtils;
+import org.apache.lucene.facet.old.ScoredDocIDs;
+import org.apache.lucene.facet.old.ScoredDocIDsIterator;
+import org.apache.lucene.facet.old.ScoredDocIdsUtils;
 
 /*
  * Licensed to the Apache Software Foundation (ASF) under one or more

@@ -11,20 +11,20 @@ import java.io.IOException;
 import java.util.HashMap;
 import java.util.concurrent.atomic.AtomicInteger;
 
+import org.apache.lucene.facet.old.Aggregator;
+import org.apache.lucene.facet.old.CountingAggregator;
+import org.apache.lucene.facet.old.OldFacetsAccumulator;
+import org.apache.lucene.facet.old.ScoredDocIdsUtils;
 import org.apache.lucene.facet.params.CategoryListParams;
 import org.apache.lucene.facet.params.FacetIndexingParams;
 import org.apache.lucene.facet.params.FacetSearchParams;
-import org.apache.lucene.facet.search.Aggregator;
 import org.apache.lucene.facet.search.CategoryListIterator;
 import org.apache.lucene.facet.search.CountFacetRequest;
-import org.apache.lucene.facet.search.CountingAggregator;
 import org.apache.lucene.facet.search.FacetArrays;
 import org.apache.lucene.facet.search.FacetRequest;
-import org.apache.lucene.facet.search.StandardFacetsAccumulator;
 import org.apache.lucene.facet.taxonomy.CategoryPath;
 import org.apache.lucene.facet.taxonomy.TaxonomyReader;
 import org.apache.lucene.facet.util.PartitionsUtils;
-import org.apache.lucene.facet.util.ScoredDocIdsUtils;
 import org.apache.lucene.index.IndexReader;
 
 /*
@@ -159,7 +159,7 @@ public class TotalFacetCounts {
     final int[][] counts = new int[(int) Math.ceil(taxonomy.getSize()  /(float) partitionSize)][partitionSize];
     FacetSearchParams newSearchParams = new FacetSearchParams(facetIndexingParams, DUMMY_REQ); 
       //createAllListsSearchParams(facetIndexingParams,  this.totalCounts);
-    StandardFacetsAccumulator sfa = new StandardFacetsAccumulator(newSearchParams, indexReader, taxonomy) {
+    OldFacetsAccumulator sfa = new OldFacetsAccumulator(newSearchParams, indexReader, taxonomy) {
       @Override
       protected HashMap<CategoryListIterator, Aggregator> getCategoryListMap(
           FacetArrays facetArrays, int partition) throws IOException {
@@ -172,7 +172,7 @@ public class TotalFacetCounts {
         return map;
       }
     };
-    sfa.setComplementThreshold(StandardFacetsAccumulator.DISABLE_COMPLEMENT);
+    sfa.setComplementThreshold(OldFacetsAccumulator.DISABLE_COMPLEMENT);
     sfa.accumulate(ScoredDocIdsUtils.createAllDocsScoredDocIDs(indexReader));
     return new TotalFacetCounts(taxonomy, facetIndexingParams, counts, CreationType.Computed);
   }

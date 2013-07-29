@@ -1,4 +1,4 @@
-package org.apache.lucene.facet.search;
+package org.apache.lucene.facet.old;
 
 import java.io.IOException;
 import java.util.List;
@@ -7,6 +7,9 @@ import org.apache.lucene.facet.params.FacetSearchParams;
 import org.apache.lucene.facet.sampling.RandomSampler;
 import org.apache.lucene.facet.sampling.Sampler;
 import org.apache.lucene.facet.sampling.SamplingAccumulator;
+import org.apache.lucene.facet.search.FacetArrays;
+import org.apache.lucene.facet.search.FacetResult;
+import org.apache.lucene.facet.search.FacetsAccumulator;
 import org.apache.lucene.facet.taxonomy.TaxonomyReader;
 import org.apache.lucene.index.IndexReader;
 
@@ -39,13 +42,13 @@ import org.apache.lucene.index.IndexReader;
  * 
  * @lucene.experimental
  */
-public final class AdaptiveFacetsAccumulator extends StandardFacetsAccumulator {
+public final class AdaptiveFacetsAccumulator extends OldFacetsAccumulator {
   
   private Sampler sampler = new RandomSampler();
 
   /**
    * Create an {@link AdaptiveFacetsAccumulator} 
-   * @see StandardFacetsAccumulator#StandardFacetsAccumulator(FacetSearchParams, IndexReader, TaxonomyReader)
+   * @see OldFacetsAccumulator#OldFacetsAccumulator(FacetSearchParams, IndexReader, TaxonomyReader)
    */
   public AdaptiveFacetsAccumulator(FacetSearchParams searchParams, IndexReader indexReader, 
       TaxonomyReader taxonomyReader) {
@@ -55,7 +58,7 @@ public final class AdaptiveFacetsAccumulator extends StandardFacetsAccumulator {
   /**
    * Create an {@link AdaptiveFacetsAccumulator}
    * 
-   * @see StandardFacetsAccumulator#StandardFacetsAccumulator(FacetSearchParams,
+   * @see OldFacetsAccumulator#OldFacetsAccumulator(FacetSearchParams,
    *      IndexReader, TaxonomyReader, FacetArrays)
    */
   public AdaptiveFacetsAccumulator(FacetSearchParams searchParams, IndexReader indexReader,
@@ -73,7 +76,7 @@ public final class AdaptiveFacetsAccumulator extends StandardFacetsAccumulator {
   
   @Override
   public List<FacetResult> accumulate(ScoredDocIDs docids) throws IOException {
-    StandardFacetsAccumulator delegee = appropriateFacetCountingAccumulator(docids);
+    OldFacetsAccumulator delegee = appropriateFacetCountingAccumulator(docids);
 
     if (delegee == this) {
       return super.accumulate(docids);
@@ -86,7 +89,7 @@ public final class AdaptiveFacetsAccumulator extends StandardFacetsAccumulator {
    * Compute the appropriate facet accumulator to use.
    * If no special/clever adaptation is possible/needed return this (self).
    */
-  private StandardFacetsAccumulator appropriateFacetCountingAccumulator(ScoredDocIDs docids) {
+  private OldFacetsAccumulator appropriateFacetCountingAccumulator(ScoredDocIDs docids) {
     // Verify that searchPareams permit sampling/complement/etc... otherwise do default
     if (!mayComplement()) {
       return this;

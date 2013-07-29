@@ -1,4 +1,4 @@
-package org.apache.lucene.facet.search;
+package org.apache.lucene.facet.old;
 
 import java.io.IOException;
 
@@ -23,9 +23,9 @@ import org.apache.lucene.util.IntsRef;
  */
 
 /**
- * A CountingAggregator updates a counter array with the size of the whole
- * taxonomy, counting the number of times each category appears in the given set
- * of documents.
+ * An {@link Aggregator} which updates a counter array with the size of the
+ * whole taxonomy, counting the number of times each category appears in the
+ * given set of documents.
  * 
  * @lucene.experimental
  */

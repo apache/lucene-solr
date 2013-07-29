@@ -1,8 +1,11 @@
-package org.apache.lucene.facet.search;
+package org.apache.lucene.facet.old;
 
-import java.io.IOException;
-
-import org.apache.lucene.search.DocIdSet;
+import org.apache.lucene.facet.params.FacetSearchParams;
+import org.apache.lucene.facet.sampling.BaseSampleTestTopK;
+import org.apache.lucene.facet.sampling.Sampler;
+import org.apache.lucene.facet.taxonomy.TaxonomyReader;
+import org.apache.lucene.index.IndexReader;
+import org.apache.lucene.util.LuceneTestCase.Slow;
 
 /*
  * Licensed to the Apache Software Foundation (ASF) under one or more
@@ -21,22 +24,15 @@ import org.apache.lucene.search.DocIdSet;
  * limitations under the License.
  */
 
-/**
- * Document IDs with scores for each, driving facets accumulation. Document
- * scores are optionally used in the process of facets scoring.
- * 
- * @see StandardFacetsAccumulator#accumulate(ScoredDocIDs)
- * @lucene.experimental
- */
-public interface ScoredDocIDs {
+@Slow
+public class AdaptiveAccumulatorTest extends BaseSampleTestTopK {
 
-  /** Returns an iterator over the document IDs and their scores. */
-  public ScoredDocIDsIterator iterator() throws IOException;
-
-  /** Returns the set of doc IDs. */
-  public DocIdSet getDocIDs();
-
-  /** Returns the number of scored documents. */
-  public int size();
-
+  @Override
+  protected OldFacetsAccumulator getSamplingAccumulator(Sampler sampler, TaxonomyReader taxoReader, 
+      IndexReader indexReader, FacetSearchParams searchParams) {
+    AdaptiveFacetsAccumulator res = new AdaptiveFacetsAccumulator(searchParams, indexReader, taxoReader);
+    res.setSampler(sampler);
+    return res;
+  }
+  
 }

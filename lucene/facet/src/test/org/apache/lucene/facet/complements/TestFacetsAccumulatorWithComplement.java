@@ -4,13 +4,13 @@ import java.io.IOException;
 import java.util.List;
 
 import org.apache.lucene.facet.FacetTestBase;
+import org.apache.lucene.facet.old.OldFacetsAccumulator;
 import org.apache.lucene.facet.params.FacetIndexingParams;
 import org.apache.lucene.facet.params.FacetSearchParams;
 import org.apache.lucene.facet.search.CountFacetRequest;
 import org.apache.lucene.facet.search.FacetResult;
 import org.apache.lucene.facet.search.FacetResultNode;
 import org.apache.lucene.facet.search.FacetsCollector;
-import org.apache.lucene.facet.search.StandardFacetsAccumulator;
 import org.apache.lucene.facet.taxonomy.CategoryPath;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.MultiReader;
@@ -112,8 +112,8 @@ public class TestFacetsAccumulatorWithComplement extends FacetTestBase {
   /** compute facets with certain facet requests and docs */
   private List<FacetResult> findFacets(boolean withComplement) throws IOException {
     FacetSearchParams fsp = new FacetSearchParams(fip, new CountFacetRequest(new CategoryPath("root","a"), 10));
-    StandardFacetsAccumulator sfa = new StandardFacetsAccumulator(fsp, indexReader, taxoReader);
-    sfa.setComplementThreshold(withComplement ? StandardFacetsAccumulator.FORCE_COMPLEMENT : StandardFacetsAccumulator.DISABLE_COMPLEMENT);
+    OldFacetsAccumulator sfa = new OldFacetsAccumulator(fsp, indexReader, taxoReader);
+    sfa.setComplementThreshold(withComplement ? OldFacetsAccumulator.FORCE_COMPLEMENT : OldFacetsAccumulator.DISABLE_COMPLEMENT);
     FacetsCollector fc = FacetsCollector.create(sfa);
     searcher.search(new MatchAllDocsQuery(), fc);
     

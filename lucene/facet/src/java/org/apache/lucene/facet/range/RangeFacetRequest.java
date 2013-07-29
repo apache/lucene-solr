@@ -20,12 +20,10 @@ package org.apache.lucene.facet.range;
 import java.util.List;
 
 import org.apache.lucene.facet.params.FacetIndexingParams;
-import org.apache.lucene.facet.search.Aggregator;
 import org.apache.lucene.facet.search.FacetArrays;
 import org.apache.lucene.facet.search.FacetRequest;
 import org.apache.lucene.facet.search.FacetsAggregator;
 import org.apache.lucene.facet.taxonomy.CategoryPath;
-import org.apache.lucene.facet.taxonomy.TaxonomyReader;
 
 /**
  * Facet request for dynamic ranges based on a
@@ -47,11 +45,6 @@ public class RangeFacetRequest<T extends Range> extends FacetRequest {
   @SuppressWarnings("unchecked")
   public RangeFacetRequest(String field, List<T> ranges) {
     this(field, (T[]) ranges.toArray(new Range[ranges.size()]));
-  }
-
-  @Override
-  public Aggregator createAggregator(boolean useComplements, FacetArrays arrays, TaxonomyReader taxonomy) {
-    throw new UnsupportedOperationException();
   }
 
   @Override

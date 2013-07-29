@@ -2,13 +2,13 @@ package org.apache.lucene.facet.partitions;
 
 import java.io.IOException;
 
+import org.apache.lucene.facet.old.OldFacetsAccumulator;
+import org.apache.lucene.facet.old.ScoredDocIDs;
 import org.apache.lucene.facet.search.FacetArrays;
 import org.apache.lucene.facet.search.FacetRequest;
 import org.apache.lucene.facet.search.FacetResult;
 import org.apache.lucene.facet.search.FacetResultNode;
 import org.apache.lucene.facet.search.FacetResultsHandler;
-import org.apache.lucene.facet.search.ScoredDocIDs;
-import org.apache.lucene.facet.search.StandardFacetsAccumulator;
 import org.apache.lucene.facet.taxonomy.TaxonomyReader;
 
 /*
@@ -103,7 +103,7 @@ public abstract class PartitionsFacetResultsHandler extends FacetResultsHandler 
   /**
    * Label results according to settings in {@link FacetRequest}, such as
    * {@link FacetRequest#getNumLabel()}. Usually invoked by
-   * {@link StandardFacetsAccumulator#accumulate(ScoredDocIDs)}
+   * {@link OldFacetsAccumulator#accumulate(ScoredDocIDs)}
    * 
    * @param facetResult
    *          facet result to be labeled.

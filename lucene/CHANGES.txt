@@ -64,6 +64,13 @@ API Changes
   need to use the same config more than once, e.g. when sharing between multiple 
   writers, make sure to clone it before passing to each writer.
   (Shai Erera, Mike McCandless)
+
+* LUCENE-5144: StandardFacetsAccumulator renamed to OldFacetsAccumulator, and all
+  associated classes were moved under o.a.l.facet.old. The intention to remove it
+  one day, when the features it covers (complements, partitiona, sampling) will be
+  migrated to the new FacetsAggregator and FacetsAccumulator API. Also,
+  FacetRequest.createAggregator was replaced by OldFacetsAccumulator.createAggregator.
+  (Shai Erera)
   
 Optimizations
 

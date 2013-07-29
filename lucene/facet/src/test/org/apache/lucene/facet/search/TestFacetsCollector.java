@@ -11,6 +11,8 @@ import org.apache.lucene.document.Field.Store;
 import org.apache.lucene.document.StringField;
 import org.apache.lucene.facet.FacetTestCase;
 import org.apache.lucene.facet.index.FacetFields;
+import org.apache.lucene.facet.old.AdaptiveFacetsAccumulator;
+import org.apache.lucene.facet.old.OldFacetsAccumulator;
 import org.apache.lucene.facet.params.CategoryListParams;
 import org.apache.lucene.facet.params.FacetIndexingParams;
 import org.apache.lucene.facet.params.FacetSearchParams;
@@ -218,7 +220,7 @@ public class TestFacetsCollector extends FacetTestCase {
     
     FacetSearchParams fsp = new FacetSearchParams(new CountFacetRequest(CategoryPath.EMPTY, 10));
     
-    final TaxonomyFacetsAccumulator fa = random().nextBoolean() ? new TaxonomyFacetsAccumulator(fsp, r, taxo) : new StandardFacetsAccumulator(fsp, r, taxo);
+    final TaxonomyFacetsAccumulator fa = random().nextBoolean() ? new TaxonomyFacetsAccumulator(fsp, r, taxo) : new OldFacetsAccumulator(fsp, r, taxo);
     FacetsCollector fc = FacetsCollector.create(fa);
     newSearcher(r).search(new MatchAllDocsQuery(), fc);
     
@@ -252,7 +254,7 @@ public class TestFacetsCollector extends FacetTestCase {
     FacetSearchParams fsp = new FacetSearchParams(
         new CountFacetRequest(new CategoryPath("a"), 10), 
         new CountFacetRequest(new CategoryPath("b"), 10));
-    final TaxonomyFacetsAccumulator fa = random().nextBoolean() ? new TaxonomyFacetsAccumulator(fsp, r, taxo) : new StandardFacetsAccumulator(fsp, r, taxo);
+    final TaxonomyFacetsAccumulator fa = random().nextBoolean() ? new TaxonomyFacetsAccumulator(fsp, r, taxo) : new OldFacetsAccumulator(fsp, r, taxo);
     final FacetsCollector fc = FacetsCollector.create(fa);
     newSearcher(r).search(new MatchAllDocsQuery(), fc);
     
@@ -284,7 +286,7 @@ public class TestFacetsCollector extends FacetTestCase {
     FacetSearchParams fsp = new FacetSearchParams(
         new CountFacetRequest(new CategoryPath("a"), 10), 
         new CountFacetRequest(new CategoryPath("b"), 10));
-    final TaxonomyFacetsAccumulator fa = random().nextBoolean() ? new TaxonomyFacetsAccumulator(fsp, r, taxo) : new StandardFacetsAccumulator(fsp, r, taxo);
+    final TaxonomyFacetsAccumulator fa = random().nextBoolean() ? new TaxonomyFacetsAccumulator(fsp, r, taxo) : new OldFacetsAccumulator(fsp, r, taxo);
     final FacetsCollector fc = FacetsCollector.create(fa);
     // this should populate the cached results, but doing search should clear the cache
     fc.getFacetResults();
@@ -325,7 +327,7 @@ public class TestFacetsCollector extends FacetTestCase {
 
     // assert IntFacetResultHandler
     FacetSearchParams fsp = new FacetSearchParams(new CountFacetRequest(new CategoryPath("a"), 10));
-    TaxonomyFacetsAccumulator fa = random().nextBoolean() ? new TaxonomyFacetsAccumulator(fsp, r, taxo) : new StandardFacetsAccumulator(fsp, r, taxo);
+    TaxonomyFacetsAccumulator fa = random().nextBoolean() ? new TaxonomyFacetsAccumulator(fsp, r, taxo) : new OldFacetsAccumulator(fsp, r, taxo);
     FacetsCollector fc = FacetsCollector.create(fa);
     newSearcher(r).search(new MatchAllDocsQuery(), fc);
     assertTrue("invalid ordinal for child node: 0", 0 != fc.getFacetResults().get(0).getFacetResultNode().subResults.get(0).ordinal);
@@ -340,7 +342,7 @@ public class TestFacetsCollector extends FacetTestCase {
         }
       };
     } else {
-      fa = new StandardFacetsAccumulator(fsp, r, taxo);
+      fa = new OldFacetsAccumulator(fsp, r, taxo);
     }
     fc = FacetsCollector.create(fa);
     newSearcher(r).search(new MatchAllDocsQuery(), fc);
@@ -374,7 +376,7 @@ public class TestFacetsCollector extends FacetTestCase {
     CountFacetRequest cfr = new CountFacetRequest(new CategoryPath("a"), 2);
     cfr.setResultMode(random().nextBoolean() ? ResultMode.GLOBAL_FLAT : ResultMode.PER_NODE_IN_TREE);
     FacetSearchParams fsp = new FacetSearchParams(cfr);
-    final TaxonomyFacetsAccumulator fa = random().nextBoolean() ? new TaxonomyFacetsAccumulator(fsp, r, taxo) : new StandardFacetsAccumulator(fsp, r, taxo);
+    final TaxonomyFacetsAccumulator fa = random().nextBoolean() ? new TaxonomyFacetsAccumulator(fsp, r, taxo) : new OldFacetsAccumulator(fsp, r, taxo);
     FacetsCollector fc = FacetsCollector.create(fa);
     newSearcher(r).search(new MatchAllDocsQuery(), fc);
     
@@ -415,10 +417,10 @@ public class TestFacetsCollector extends FacetTestCase {
     
     TaxonomyFacetsAccumulator[] accumulators = new TaxonomyFacetsAccumulator[] {
       new TaxonomyFacetsAccumulator(fsp, indexReader, taxoReader),
-      new StandardFacetsAccumulator(fsp, indexReader, taxoReader),
+      new OldFacetsAccumulator(fsp, indexReader, taxoReader),
       new SamplingAccumulator(sampler, fsp, indexReader, taxoReader),
       new AdaptiveFacetsAccumulator(fsp, indexReader, taxoReader),
-      new SamplingWrapper(new StandardFacetsAccumulator(fsp, indexReader, taxoReader), sampler)
+      new SamplingWrapper(new OldFacetsAccumulator(fsp, indexReader, taxoReader), sampler)
     };
     
     for (TaxonomyFacetsAccumulator fa : accumulators) {

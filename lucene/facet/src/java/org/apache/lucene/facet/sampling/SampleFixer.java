@@ -2,9 +2,9 @@ package org.apache.lucene.facet.sampling;
 
 import java.io.IOException;
 
+import org.apache.lucene.facet.old.ScoredDocIDs;
 import org.apache.lucene.facet.search.FacetResult;
 import org.apache.lucene.facet.search.FacetResultNode;
-import org.apache.lucene.facet.search.ScoredDocIDs;
 
 /*
  * Licensed to the Apache Software Foundation (ASF) under one or more
