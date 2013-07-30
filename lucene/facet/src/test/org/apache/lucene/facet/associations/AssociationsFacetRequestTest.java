@@ -67,14 +67,18 @@ public class AssociationsFacetRequestTest extends FacetTestCase {
     AssociationsFacetFields assocFacetFields = new AssociationsFacetFields(taxoWriter);
     
     // index documents, 50% have only 'b' and all have 'a'
-    for (int i = 0; i < 100; i++) {
+    for (int i = 0; i < 110; i++) {
       Document doc = new Document();
       CategoryAssociationsContainer associations = new CategoryAssociationsContainer();
-      associations.setAssociation(aint, new CategoryIntAssociation(2));
-      associations.setAssociation(afloat, new CategoryFloatAssociation(0.5f));
-      if (i % 2 == 0) { // 50
-        associations.setAssociation(bint, new CategoryIntAssociation(3));
-        associations.setAssociation(bfloat, new CategoryFloatAssociation(0.2f));
+      // every 11th document is added empty, this used to cause the association
+      // aggregators to go into an infinite loop
+      if (i % 11 != 0) {
+        associations.setAssociation(aint, new CategoryIntAssociation(2));
+        associations.setAssociation(afloat, new CategoryFloatAssociation(0.5f));
+        if (i % 2 == 0) { // 50
+          associations.setAssociation(bint, new CategoryIntAssociation(3));
+          associations.setAssociation(bfloat, new CategoryFloatAssociation(0.2f));
+        }
       }
       assocFacetFields.addFields(doc, associations);
       writer.addDocument(doc);
@@ -185,6 +189,6 @@ public class AssociationsFacetRequestTest extends FacetTestCase {
     assertEquals("Wrong count for category 'b'!",10f, (float) res.get(3).getFacetResultNode().value, 0.00001);
     
     taxo.close();
-  }  
+  }
   
 }

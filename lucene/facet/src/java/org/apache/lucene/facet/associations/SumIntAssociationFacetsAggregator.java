@@ -53,23 +53,20 @@ public class SumIntAssociationFacetsAggregator implements FacetsAggregator {
     int doc = 0;
     while (doc < length && (doc = matchingDocs.bits.nextSetBit(doc)) != -1) {
       dv.get(doc, bytes);
-      if (bytes.length == 0) {
-        continue; // no associations for this document
+      if (bytes.length > 0) {
+        // aggreate association values for ordinals
+        int bytesUpto = bytes.offset + bytes.length;
+        int pos = bytes.offset;
+        while (pos < bytesUpto) {
+          int ordinal = ((bytes.bytes[pos++] & 0xFF) << 24) | ((bytes.bytes[pos++] & 0xFF) << 16)
+              | ((bytes.bytes[pos++] & 0xFF) <<  8) | (bytes.bytes[pos++] & 0xFF);
+          
+          int value = ((bytes.bytes[pos++] & 0xFF) << 24) | ((bytes.bytes[pos++] & 0xFF) << 16)
+              | ((bytes.bytes[pos++] & 0xFF) <<  8) | (bytes.bytes[pos++] & 0xFF);
+          
+          values[ordinal] += value;
+        }
       }
-
-      // aggreate association values for ordinals
-      int bytesUpto = bytes.offset + bytes.length;
-      int pos = bytes.offset;
-      while (pos < bytesUpto) {
-        int ordinal = ((bytes.bytes[pos++] & 0xFF) << 24) | ((bytes.bytes[pos++] & 0xFF) << 16)
-            | ((bytes.bytes[pos++] & 0xFF) <<  8) | (bytes.bytes[pos++] & 0xFF);
-        
-        int value = ((bytes.bytes[pos++] & 0xFF) << 24) | ((bytes.bytes[pos++] & 0xFF) << 16)
-            | ((bytes.bytes[pos++] & 0xFF) <<  8) | (bytes.bytes[pos++] & 0xFF);
-
-        values[ordinal] += value;
-      }
-      
       ++doc;
     }
   }
