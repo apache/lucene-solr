@@ -23,7 +23,7 @@ import org.apache.lucene.util.packed.PackedInts.Mutable;
 /**
  * A {@link PagedGrowableWriter}. This class slices data into fixed-size blocks
  * which have independent numbers of bits per value and grow on-demand.
- * <p>You should use this class instead of {@link AppendingLongBuffer} only when
+ * <p>You should use this class instead of the {@link AbstractAppendingLongBuffer} related ones only when
  * you need random write-access. Otherwise this class will likely be slower and
  * less memory-efficient.
  * @lucene.internal
