@@ -57,6 +57,9 @@ Bug Fixes
 * SOLR-4489: SpellCheckComponent can throw StringIndexOutOfBoundsException
   when generating collations involving multiple word-break corrections.
   (James Dyer)
+  
+* SOLR-5087 - CoreAdminHandler.handleMergeAction generating NullPointerException
+ (Patrick Hunt via Erick Erickson)
 
 Optimizations
 ----------------------
