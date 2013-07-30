@@ -100,6 +100,9 @@ Bug Fixes
   considered if the input is equal causing the malformed weight to be identical as well.
   (Simon Willnauer)
 
+* LUCENE-5151: Associations FacetsAggregators could enter an infinite loop when
+  some result documents were missing category associations. (Shai Erera)
+
 API Changes
 
 * LUCENE-5094: Add ramBytesUsed() to MultiDocValues.OrdinalMap.
