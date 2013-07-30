@@ -802,15 +802,8 @@ public abstract class LuceneTestCase extends Assert {
       }
     }
 
-    if (rarely(r)) {
-      c.setMergePolicy(new MockRandomMergePolicy(r));
-    } else if (r.nextBoolean()) {
-      c.setMergePolicy(newTieredMergePolicy());
-    } else if (r.nextInt(5) == 0) { 
-      c.setMergePolicy(newAlcoholicMergePolicy());
-    } else {
-      c.setMergePolicy(newLogMergePolicy());
-    }
+    c.setMergePolicy(newMergePolicy(r));
+
     if (rarely(r)) {
       c.setMergedSegmentWarmer(new SimpleMergedSegmentWarmer(c.getInfoStream()));
     }
@@ -818,6 +811,21 @@ public abstract class LuceneTestCase extends Assert {
     c.setReaderPooling(r.nextBoolean());
     c.setReaderTermsIndexDivisor(_TestUtil.nextInt(r, 1, 4));
     return c;
+  }
+
+  public static MergePolicy newMergePolicy(Random r) {
+    if (rarely(r)) {
+      return new MockRandomMergePolicy(r);
+    } else if (r.nextBoolean()) {
+      return newTieredMergePolicy(r);
+    } else if (r.nextInt(5) == 0) { 
+      return newAlcoholicMergePolicy(r, classEnvRule.timeZone);
+    }
+    return newLogMergePolicy(r);
+  }
+
+  public static MergePolicy newMergePolicy() {
+    return newMergePolicy(random());
   }
 
   public static LogMergePolicy newLogMergePolicy() {

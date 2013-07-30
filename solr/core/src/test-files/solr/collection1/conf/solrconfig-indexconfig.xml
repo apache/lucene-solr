@@ -25,5 +25,6 @@
     <useCompoundFile>${useCompoundFile:false}</useCompoundFile>
     <maxIndexingThreads>123</maxIndexingThreads>
     <infoStream file="infostream.txt">true</infoStream>
+    <mergePolicy class="org.apache.solr.util.RandomMergePolicy" />
   </indexConfig>
 </config>

@@ -17,9 +17,15 @@ package org.apache.solr.core;
  * limitations under the License.
  */
 
+import org.apache.lucene.index.IndexWriter;
 import org.apache.lucene.index.IndexWriterConfig;
+import org.apache.lucene.index.LiveIndexWriterConfig;
 import org.apache.lucene.util.PrintStreamInfoStream;
 import org.apache.solr.SolrTestCaseJ4;
+import org.apache.solr.core.SolrCore;
+import org.apache.solr.util.RefCounted;
+import org.apache.solr.util.RandomMergePolicy;
+import org.apache.solr.update.LoggingInfoStream;
 import org.junit.BeforeClass;
 
 public class TestSolrIndexConfig extends SolrTestCaseJ4 {
@@ -28,11 +34,31 @@ public class TestSolrIndexConfig extends SolrTestCaseJ4 {
   public static void beforeClass() throws Exception {
     initCore("solrconfig-indexconfig.xml","schema.xml");
   }
+
+  public void testLiveWriter() throws Exception {
+    SolrCore core = h.getCore();
+    RefCounted<IndexWriter> iw = core.getUpdateHandler().getSolrCoreState().getIndexWriter(core);
+    try {
+      checkIndexWriterConfig(iw.get().getConfig());
+    } finally {
+      if (null != iw) iw.decref();
+    }
+  }
+
   
-  public void testIndexConfig() throws Exception {
+  public void testIndexConfigParsing() throws Exception {
     IndexWriterConfig iwc = solrConfig.indexConfig.toIndexWriterConfig(h.getCore().getLatestSchema());
+
+    checkIndexWriterConfig(iwc);
+  }
+
+  private void checkIndexWriterConfig(LiveIndexWriterConfig iwc) {
 
     assertEquals(123, iwc.getMaxThreadStates());
     assertTrue(iwc.getInfoStream() instanceof PrintStreamInfoStream);
+    assertTrue(iwc.getMergePolicy().getClass().toString(),
+               iwc.getMergePolicy() instanceof RandomMergePolicy);
+
   }
+
 }
