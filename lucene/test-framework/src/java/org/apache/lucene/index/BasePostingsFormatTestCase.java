@@ -1151,7 +1151,9 @@ public abstract class BasePostingsFormatTestCase extends LuceneTestCase {
     DirectoryReader ir = iw.getReader();
     AtomicReader ar = getOnlySegmentReader(ir);
     Fields fields = ar.fields();
-    assertTrue(fields.size() == 1);
+    int fieldCount = fields.size();
+    // -1 is allowed, if the codec doesn't implement fields.size():
+    assertTrue(fieldCount == 1 || fieldCount == -1);
     Terms terms = ar.terms("");
     assertNotNull(terms);
     TermsEnum termsEnum = terms.iterator(null);
@@ -1174,7 +1176,9 @@ public abstract class BasePostingsFormatTestCase extends LuceneTestCase {
     DirectoryReader ir = iw.getReader();
     AtomicReader ar = getOnlySegmentReader(ir);
     Fields fields = ar.fields();
-    assertTrue(fields.size() == 1);
+    int fieldCount = fields.size();
+    // -1 is allowed, if the codec doesn't implement fields.size():
+    assertTrue(fieldCount == 1 || fieldCount == -1);
     Terms terms = ar.terms("");
     assertNotNull(terms);
     TermsEnum termsEnum = terms.iterator(null);
