@@ -31,6 +31,7 @@ import java.util.concurrent.Future;
 import java.util.concurrent.atomic.AtomicLong;
 
 import org.apache.lucene.document.Document;
+import org.apache.lucene.index.DirectoryReader;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.IndexWriter;
 import org.apache.lucene.index.Term;
@@ -432,11 +433,11 @@ public class DirectUpdateHandler2 extends UpdateHandler implements SolrCoreState
 
     log.info("start " + cmd);
     
-    IndexReader[] readers = cmd.readers;
-    if (readers != null && readers.length > 0) {
+    List<DirectoryReader> readers = cmd.readers;
+    if (readers != null && readers.size() > 0) {
       RefCounted<IndexWriter> iw = solrCoreState.getIndexWriter(core);
       try {
-        iw.get().addIndexes(readers);
+        iw.get().addIndexes(readers.toArray(new IndexReader[readers.size()]));
       } finally {
         iw.decref();
       }
