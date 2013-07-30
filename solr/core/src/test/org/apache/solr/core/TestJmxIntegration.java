@@ -23,9 +23,8 @@ import javax.management.*;
 import org.apache.lucene.util.Constants;
 import org.apache.solr.core.JmxMonitoredMap.SolrDynamicMBean;
 import org.apache.solr.util.AbstractSolrTestCase;
-import org.junit.After;
 import org.junit.Assume;
-import org.junit.Before;
+import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.junit.Ignore;
 import org.junit.Test;
@@ -38,34 +37,47 @@ import org.junit.Test;
  */
 public class TestJmxIntegration extends AbstractSolrTestCase {
 
-  
+  private static MBeanServer mbeanServer = null;
+
   @BeforeClass
   public static void beforeClass() throws Exception {
-    initCore("solrconfig.xml", "schema.xml");
-  }
-
-  @Override
-  @Before
-  public void setUp() throws Exception {
     // Make sure that at least one MBeanServer is available
-    MBeanServer mbeanServer = ManagementFactory.getPlatformMBeanServer();
-    super.setUp();
+    // prior to initializing the core
+    //
+    // (test configs are setup to use existing server if any, 
+    // otherwise skip JMX)
+    MBeanServer platformServer = ManagementFactory.getPlatformMBeanServer();
+
+    initCore("solrconfig.xml", "schema.xml");
+
+    // we should be able to se that the core has JmxIntegration enabled
+    assertTrue("JMX not enabled",
+               h.getCore().getSolrConfig().jmxConfig.enabled);
+    // and we should be able to see that the the monitor map found 
+    // a JMX server to use, which refers to the server we started
+
+    Map registry = h.getCore().getInfoRegistry();
+    assertTrue("info registry is not a JMX monitored map",
+               registry instanceof JmxMonitoredMap);
+    mbeanServer = ((JmxMonitoredMap)registry).getServer();
+
+    assertNotNull("No JMX server found by monitor map",
+                  mbeanServer);
+
+    // NOTE: we can't garuntee that "mbeanServer == platformServer"
+    // the JVM may have mutiple MBean servers funning when the test started
+    // and the contract of not specifying one when configuring solr with
+    // <jmx /> is that it will use whatever the "first" MBean server 
+    // returned by the JVM is.
   }
 
-  @Override
-  @After
-  public void tearDown() throws Exception {
-    super.tearDown();
+  @AfterClass
+  public static void afterClass() throws Exception {
+    mbeanServer = null;
   }
 
   @Test
   public void testJmxRegistration() throws Exception {
-    List<MBeanServer> servers = MBeanServerFactory.findMBeanServer(null);
-    log.info("Servers in testJmxRegistration: " + servers);
-    assertNotNull("MBeanServers were null", servers);
-    assertFalse("No MBeanServer was found", servers.isEmpty());
-
-    MBeanServer mbeanServer = servers.get(0);
     assertTrue("No MBeans found in server", mbeanServer.getMBeanCount() > 0);
 
     Set<ObjectInstance> objects = mbeanServer.queryMBeans(null, null);
@@ -97,14 +109,6 @@ public class TestJmxIntegration extends AbstractSolrTestCase {
   @Test
   public void testJmxUpdate() throws Exception {
 
-    // Workaround for SOLR-4418 (this test fails with "No
-    // mbean found for SolrIndexSearcher" on IBM J9 6.0 and 7.0):
-    Assume.assumeTrue(!"IBM Corporation".equals(Constants.JVM_VENDOR));
-
-    List<MBeanServer> servers = MBeanServerFactory.findMBeanServer(null);
-    log.info("Servers in testJmxUpdate: " + servers);
-    log.info(h.getCore().getInfoRegistry().toString());
-
     SolrInfoMBean bean = null;
     // wait until searcher is registered
     for (int i=0; i<100; i++) {
@@ -114,7 +118,7 @@ public class TestJmxIntegration extends AbstractSolrTestCase {
     }
     if (bean==null) throw new RuntimeException("searcher was never registered");
     ObjectName searcher = getObjectName("searcher", bean);
-    MBeanServer mbeanServer = servers.get(0);
+
     log.info("Mbeans in server: " + mbeanServer.queryNames(null, null));
 
     assertFalse("No mbean found for SolrIndexSearcher", mbeanServer.queryMBeans(searcher, null).isEmpty());
@@ -129,8 +133,6 @@ public class TestJmxIntegration extends AbstractSolrTestCase {
 
   @Test @Ignore("timing problem? https://issues.apache.org/jira/browse/SOLR-2715")
   public void testJmxOnCoreReload() throws Exception {
-    List<MBeanServer> servers = MBeanServerFactory.findMBeanServer(null);
-    MBeanServer mbeanServer = servers.get(0);
 
     String coreName = h.getCore().getName();
 
