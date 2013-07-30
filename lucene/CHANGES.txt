@@ -95,6 +95,11 @@ Bug Fixes
 * LUCENE-5132: Spatial RecursivePrefixTree Contains predicate will throw an NPE
   when there's no indexed data and maybe in other circumstances too. (David Smiley)
 
+* LUCENE-5146: AnalyzingSuggester sort comparator read part of the input key as the
+  weight that caused the sorter to never sort by weight first since the weight is only
+  considered if the input is equal causing the malformed weight to be identical as well.
+  (Simon Willnauer)
+
 API Changes
 
 * LUCENE-5094: Add ramBytesUsed() to MultiDocValues.OrdinalMap.

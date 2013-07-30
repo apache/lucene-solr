@@ -349,11 +349,14 @@ public class AnalyzingSuggester extends Lookup {
       if (cmp != 0) {
         return cmp;
       }
+      readerA.skipBytes(scratchA.length);
+      readerB.skipBytes(scratchB.length);
 
       // Next by cost:
       long aCost = readerA.readInt();
       long bCost = readerB.readInt();
-
+      assert decodeWeight(aCost) >= 0;
+      assert decodeWeight(bCost) >= 0;
       if (aCost < bCost) {
         return -1;
       } else if (aCost > bCost) {
@@ -362,25 +365,18 @@ public class AnalyzingSuggester extends Lookup {
 
       // Finally by surface form:
       if (hasPayloads) {
-        readerA.setPosition(readerA.getPosition() + scratchA.length);
         scratchA.length = readerA.readShort();
-        scratchA.offset = readerA.getPosition();
-        readerB.setPosition(readerB.getPosition() + scratchB.length);
         scratchB.length = readerB.readShort();
+        scratchA.offset = readerA.getPosition();
         scratchB.offset = readerB.getPosition();
       } else {
         scratchA.offset = readerA.getPosition();
-        scratchA.length = a.length - scratchA.offset;
         scratchB.offset = readerB.getPosition();
+        scratchA.length = a.length - scratchA.offset;
         scratchB.length = b.length - scratchB.offset;
       }
-
-      cmp = scratchA.compareTo(scratchB);
-      if (cmp != 0) {
-        return cmp;
-      }
-
-      return 0;
+   
+      return scratchA.compareTo(scratchB);
     }
   }
 
