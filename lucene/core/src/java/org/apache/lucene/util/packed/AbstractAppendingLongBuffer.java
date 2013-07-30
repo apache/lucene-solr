@@ -17,14 +17,14 @@ package org.apache.lucene.util.packed;
  * limitations under the License.
  */
 
-import static org.apache.lucene.util.packed.PackedInts.checkBlockSize;
-
-import java.util.Arrays;
-
 import org.apache.lucene.util.ArrayUtil;
 import org.apache.lucene.util.RamUsageEstimator;
 
-/** Common functionality shared by {@link AppendingLongBuffer} and {@link MonotonicAppendingLongBuffer}. */
+import java.util.Arrays;
+
+import static org.apache.lucene.util.packed.PackedInts.checkBlockSize;
+
+/** Common functionality shared by {@link AppendingDeltaPackedLongBuffer} and {@link MonotonicAppendingLongBuffer}. */
 abstract class AbstractAppendingLongBuffer {
 
   static final int MIN_PAGE_SIZE = 64;
@@ -33,21 +33,21 @@ abstract class AbstractAppendingLongBuffer {
   static final int MAX_PAGE_SIZE = 1 << 20;
 
   final int pageShift, pageMask;
-  long[] minValues;
-  PackedInts.Reader[] deltas;
-  private long deltasBytes;
+  PackedInts.Reader[] values;
+  private long valuesBytes;
   int valuesOff;
   long[] pending;
   int pendingOff;
+  float acceptableOverheadRatio;
 
-  AbstractAppendingLongBuffer(int initialBlockCount, int pageSize) {
-    minValues = new long[initialBlockCount];
-    deltas = new PackedInts.Reader[initialBlockCount];
+  AbstractAppendingLongBuffer(int initialBlockCount, int pageSize, float acceptableOverheadRatio) {
+    values = new PackedInts.Reader[initialBlockCount];
     pending = new long[pageSize];
     pageShift = checkBlockSize(pageSize, MIN_PAGE_SIZE, MAX_PAGE_SIZE);
     pageMask = pageSize - 1;
     valuesOff = 0;
     pendingOff = 0;
+    this.acceptableOverheadRatio = acceptableOverheadRatio;
   }
 
   final int pageSize() {
@@ -58,7 +58,7 @@ abstract class AbstractAppendingLongBuffer {
   public final long size() {
     long size = pendingOff;
     if (valuesOff > 0) {
-      size += deltas[valuesOff - 1].size();
+      size += values[valuesOff - 1].size();
     }
     if (valuesOff > 1) {
       size += (long) (valuesOff - 1) * pageSize();
@@ -73,12 +73,12 @@ abstract class AbstractAppendingLongBuffer {
     }
     if (pendingOff == pending.length) {
       // check size
-      if (deltas.length == valuesOff) {
+      if (values.length == valuesOff) {
         final int newLength = ArrayUtil.oversize(valuesOff + 1, 8);
         grow(newLength);
       }
       packPendingValues();
-      deltasBytes += deltas[valuesOff].ramBytesUsed();
+      valuesBytes += values[valuesOff].ramBytesUsed();
       ++valuesOff;
       // reset pending buffer
       pendingOff = 0;
@@ -87,8 +87,7 @@ abstract class AbstractAppendingLongBuffer {
   }
 
   void grow(int newBlockCount) {
-    minValues = Arrays.copyOf(minValues, newBlockCount);
-    deltas = Arrays.copyOf(deltas, newBlockCount);
+    values = Arrays.copyOf(values, newBlockCount);
   }
 
   abstract void packPendingValues();
@@ -101,11 +100,33 @@ abstract class AbstractAppendingLongBuffer {
     return get(block, element);
   }
 
+  /**
+   * Bulk get: read at least one and at most <code>len</code> longs starting
+   * from <code>index</code> into <code>arr[off:off+len]</code> and return
+   * the actual number of values that have been read.
+   */
+  public final int get(long index, long[] arr, int off, int len) {
+    assert len > 0 : "len must be > 0 (got " + len + ")";
+    assert index >= 0 && index < size();
+    assert off + len <= arr.length;
+
+    int block = (int) (index >> pageShift);
+    int element = (int) (index & pageMask);
+    return get(block, element, arr, off, len);
+  }
+
+
   abstract long get(int block, int element);
 
-  abstract Iterator iterator();
+  abstract int get(int block, int element, long[] arr, int off, int len);
 
-  abstract class Iterator {
+
+  /** Return an iterator over the values of this buffer. */
+  public Iterator iterator() {
+    return new Iterator();
+  }
+
+  final public class Iterator {
 
     long[] currentValues;
     int vOff, pOff;
@@ -117,12 +138,22 @@ abstract class AbstractAppendingLongBuffer {
         currentValues = pending;
         currentCount = pendingOff;
       } else {
-        currentValues = new long[deltas[0].size()];
+        currentValues = new long[values[0].size()];
         fillValues();
       }
     }
 
-    abstract void fillValues();
+    void fillValues() {
+      if (vOff == valuesOff) {
+        currentValues = pending;
+        currentCount = pendingOff;
+      } else {
+        currentCount = values[vOff].size();
+        for (int k = 0; k < currentCount; ) {
+          k += get(vOff, k, currentValues, k, currentCount - k);
+        }
+      }
+    }
 
     /** Whether or not there are remaining values. */
     public final boolean hasNext() {
@@ -149,33 +180,31 @@ abstract class AbstractAppendingLongBuffer {
 
   long baseRamBytesUsed() {
     return RamUsageEstimator.NUM_BYTES_OBJECT_HEADER
-        + 3 * RamUsageEstimator.NUM_BYTES_OBJECT_REF // the 3 arrays
+        + 2 * RamUsageEstimator.NUM_BYTES_OBJECT_REF // the 2 arrays
         + 2 * RamUsageEstimator.NUM_BYTES_INT // the 2 offsets
         + 2 * RamUsageEstimator.NUM_BYTES_INT // pageShift, pageMask
-        + RamUsageEstimator.NUM_BYTES_LONG; // deltasBytes
+        + RamUsageEstimator.NUM_BYTES_FLOAT   // acceptable overhead
+        + RamUsageEstimator.NUM_BYTES_LONG; // valuesBytes
   }
 
-  /**
-   * Return the number of bytes used by this instance.
-   */
+  /** Return the number of bytes used by this instance. */
   public long ramBytesUsed() {
     // TODO: this is called per-doc-per-norms/dv-field, can we optimize this?
     long bytesUsed = RamUsageEstimator.alignObjectSize(baseRamBytesUsed())
         + (pending != null ? RamUsageEstimator.sizeOf(pending) : 0L)
-        + RamUsageEstimator.sizeOf(minValues)
-        + RamUsageEstimator.alignObjectSize(RamUsageEstimator.NUM_BYTES_ARRAY_HEADER + (long) RamUsageEstimator.NUM_BYTES_OBJECT_REF * deltas.length); // values
+        + RamUsageEstimator.alignObjectSize(RamUsageEstimator.NUM_BYTES_ARRAY_HEADER + (long) RamUsageEstimator.NUM_BYTES_OBJECT_REF * values.length); // values
 
-    return bytesUsed + deltasBytes;
+    return bytesUsed + valuesBytes;
   }
 
   /** Pack all pending values in this buffer. Subsequent calls to {@link #add(long)} will fail. */
   public void freeze() {
     if (pendingOff > 0) {
-      if (deltas.length == valuesOff) {
+      if (values.length == valuesOff) {
         grow(valuesOff + 1); // don't oversize!
       }
       packPendingValues();
-      deltasBytes += deltas[valuesOff].ramBytesUsed();
+      valuesBytes += values[valuesOff].ramBytesUsed();
       ++valuesOff;
       pendingOff = 0;
     }

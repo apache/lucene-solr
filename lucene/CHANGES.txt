@@ -85,6 +85,13 @@ Optimizations
 * LUCENE-5119: DiskDV keeps the document-to-ordinal mapping on disk for 
   SortedDocValues.  (Robert Muir)
 
+* LUCENE-5145: New AppendingPackedLongBuffer, a new variant of the former
+  AppendingLongBuffer which assumes values are 0-based.
+  (Boaz Leskes via Adrien Grand)
+
+* LUCENE-5145: All Appending*Buffer now support bulk get.
+  (Boaz Leskes via Adrien Grand)
+
 Documentation
 
 * LUCENE-4894: remove facet userguide as it was outdated. Partially absorbed into
