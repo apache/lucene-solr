@@ -79,7 +79,11 @@ API Changes
   migrated to the new FacetsAggregator and FacetsAccumulator API. Also,
   FacetRequest.createAggregator was replaced by OldFacetsAccumulator.createAggregator.
   (Shai Erera)
-  
+
+* LUCENE-5149: CommonTermsQuery now allows to set the minimum number of terms that 
+  should match for its high and low frequent sub-queries. Previously this was only
+  supported on the low frequent terms query. (Simon Willnauer)  
+
 Optimizations
 
 * LUCENE-5088: Added TermFilter to filter docs by a specific term.
