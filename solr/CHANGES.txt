@@ -100,6 +100,8 @@ Other Changes
 
 * SOLR-5056: Improve type safety of ConfigSolr class. (Alan Woodward)
 
+* SOLR-4951: Better randomization of MergePolicy in Solr tests (hossman)
+
 ==================  4.4.0 ==================
 
 Versions of Major Components

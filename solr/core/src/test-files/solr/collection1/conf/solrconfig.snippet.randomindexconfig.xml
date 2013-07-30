@@ -23,4 +23,5 @@ A solrconfig.xml snippet containing indexConfig settings for randomized testing.
 -->
 <indexConfig>
   <useCompoundFile>${useCompoundFile:false}</useCompoundFile>
+  <mergePolicy class="org.apache.solr.util.RandomMergePolicy" />
 </indexConfig>
