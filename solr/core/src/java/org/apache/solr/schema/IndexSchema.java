@@ -397,10 +397,6 @@ public class IndexSchema {
       return analyzer != null ? analyzer : getDynamicFieldType(fieldName).getAnalyzer();
     }
 
-    @Override
-    protected TokenStreamComponents wrapComponents(String fieldName, TokenStreamComponents components) {
-      return components;
-    }
   }
 
   private class SolrQueryAnalyzer extends SolrIndexAnalyzer {

@@ -51,16 +51,35 @@ public abstract class AnalyzerWrapper extends Analyzer {
 
   /**
    * Wraps / alters the given TokenStreamComponents, taken from the wrapped
-   * Analyzer, to form new components.  It is through this method that new
-   * TokenFilters can be added by AnalyzerWrappers.
-   *
-   *
-   * @param fieldName Name of the field which is to be analyzed
-   * @param components TokenStreamComponents taken from the wrapped Analyzer
+   * Analyzer, to form new components. It is through this method that new
+   * TokenFilters can be added by AnalyzerWrappers. By default, the given
+   * components are returned.
+   * 
+   * @param fieldName
+   *          Name of the field which is to be analyzed
+   * @param components
+   *          TokenStreamComponents taken from the wrapped Analyzer
    * @return Wrapped / altered TokenStreamComponents.
    */
-  protected abstract TokenStreamComponents wrapComponents(String fieldName, TokenStreamComponents components);
+  protected TokenStreamComponents wrapComponents(String fieldName, TokenStreamComponents components) {
+    return components;
+  }
 
+  /**
+   * Wraps / alters the given Reader. Through this method AnalyzerWrappers can
+   * implement {@link #initReader(String, Reader)}. By default, the given reader
+   * is returned.
+   * 
+   * @param fieldName
+   *          name of the field which is to be analyzed
+   * @param reader
+   *          the reader to wrap
+   * @return the wrapped reader
+   */
+  protected Reader wrapReader(String fieldName, Reader reader) {
+    return reader;
+  }
+  
   @Override
   protected final TokenStreamComponents createComponents(String fieldName, Reader aReader) {
     return wrapComponents(fieldName, getWrappedAnalyzer(fieldName).createComponents(fieldName, aReader));
@@ -78,6 +97,6 @@ public abstract class AnalyzerWrapper extends Analyzer {
 
   @Override
   public final Reader initReader(String fieldName, Reader reader) {
-    return getWrappedAnalyzer(fieldName).initReader(fieldName, reader);
+    return getWrappedAnalyzer(fieldName).initReader(fieldName, wrapReader(fieldName, reader));
   }
 }

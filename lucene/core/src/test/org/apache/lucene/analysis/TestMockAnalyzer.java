@@ -1,7 +1,9 @@
 package org.apache.lucene.analysis;
 
+import java.io.Reader;
 import java.io.StringReader;
 import java.util.Arrays;
+import java.util.Random;
 
 import org.apache.lucene.util._TestUtil;
 import org.apache.lucene.util.automaton.Automaton;
@@ -127,5 +129,30 @@ public class TestMockAnalyzer extends BaseTokenStreamTestCase {
       ts.end();
       ts.close();
     }
+  }
+  
+  public void testWrapReader() throws Exception {
+    // LUCENE-5153: test that wrapping an analyzer's reader is allowed
+    final Random random = random();
+    
+    Analyzer a = new AnalyzerWrapper() {
+      
+      @Override
+      protected Reader wrapReader(String fieldName, Reader reader) {
+        return new MockCharFilter(reader, 7);
+      }
+      
+      @Override
+      protected TokenStreamComponents wrapComponents(String fieldName, TokenStreamComponents components) {
+        return components;
+      }
+      
+      @Override
+      protected Analyzer getWrappedAnalyzer(String fieldName) {
+        return new MockAnalyzer(random);
+      }
+    };
+    
+    checkOneTerm(a, "abc", "aabc");
   }
 }
