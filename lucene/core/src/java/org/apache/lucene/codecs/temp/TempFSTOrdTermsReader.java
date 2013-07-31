@@ -297,6 +297,9 @@ public class TempFSTOrdTermsReader extends FieldsProducer {
         this.totalTermFreq = new long[INTERVAL];
         this.statsBlockOrd = -1;
         this.metaBlockOrd = -1;
+        if (!hasFreqs()) {
+          Arrays.fill(totalTermFreq, -1);
+        }
       }
 
       /** Decodes stats data into term state */
@@ -328,9 +331,6 @@ public class TempFSTOrdTermsReader extends FieldsProducer {
         final int offset = statsBlockOrd * numSkipInfo;
         final int statsFP = (int)skipInfo[offset];
         statsReader.setPosition(statsFP);
-        if (!hasFreqs()) {
-          Arrays.fill(totalTermFreq, -1);
-        }
         for (int i = 0; i < INTERVAL && !statsReader.eof(); i++) {
           int code = statsReader.readVInt();
           if (hasFreqs()) {
@@ -352,16 +352,16 @@ public class TempFSTOrdTermsReader extends FieldsProducer {
         final int metaLongsFP = (int)skipInfo[offset + 1];
         final int metaBytesFP = (int)skipInfo[offset + 2];
         metaLongsReader.setPosition(metaLongsFP);
-        bytesStart[0] = metaBytesFP; 
         for (int j = 0; j < longsSize; j++) {
           longs[0][j] = skipInfo[offset + 3 + j] + metaLongsReader.readVLong();
         }
+        bytesStart[0] = metaBytesFP; 
         bytesLength[0] = (int)metaLongsReader.readVLong();
         for (int i = 1; i < INTERVAL && !metaLongsReader.eof(); i++) {
-          bytesStart[i] = bytesStart[i-1] + bytesLength[i-1];
           for (int j = 0; j < longsSize; j++) {
             longs[i][j] = longs[i-1][j] + metaLongsReader.readVLong();
           }
+          bytesStart[i] = bytesStart[i-1] + bytesLength[i-1];
           bytesLength[i] = (int)metaLongsReader.readVLong();
         }
       }
@@ -418,9 +418,7 @@ public class TempFSTOrdTermsReader extends FieldsProducer {
       public long ord() {
         throw new UnsupportedOperationException();
       }
-
     }
-
 
     // Iterates through all terms in this field
     private final class SegmentTermsEnum extends BaseTermsEnum {
@@ -584,11 +582,8 @@ public class TempFSTOrdTermsReader extends FieldsProducer {
       @Override
       void decodeStats() throws IOException {
         final FST.Arc<Long> arc = topFrame().arc;
-        if (arc.isFinal()) {
-          ord = fstOutputs.add(arc.output, arc.nextFinalOutput);
-        } else {
-          ord = arc.output;
-        }
+        assert arc.nextFinalOutput == fstOutputs.getNoOutput();
+        ord = arc.output;
         super.decodeStats();
       }
 
@@ -663,7 +658,7 @@ public class TempFSTOrdTermsReader extends FieldsProducer {
           pushFrame(frame);
           return isAccept(frame) ? term : next();
         }
-        while (level > 0) {  // got target's prefix, advance to larger term
+        while (level > 0) {   // got target's prefix, advance to larger term
           frame = popFrame();
           while (level > 0 && !canRewind(frame)) {
             frame = popFrame();
@@ -761,12 +756,12 @@ public class TempFSTOrdTermsReader extends FieldsProducer {
         arc.output = fstOutputs.add(topFrame().arc.output, arc.output);
         term = grow(arc.label);
         level++;
+        assert frame == stack[level];
       }
 
       Frame popFrame() {
         term = shrink();
-        level--;
-        return stack[level+1];
+        return stack[level--];
       }
 
       Frame newFrame() {

@@ -54,7 +54,7 @@ public class TempFSTOrdTermsWriter extends FieldsConsumer {
   public static final int TERMS_VERSION_START = 0;
   public static final int TERMS_VERSION_CURRENT = TERMS_VERSION_START;
   public static final int SKIP_INTERVAL = 8;
-  static final boolean TEST = false;
+  //static final boolean TEST = false;
   
   final TempPostingsWriterBase postingsWriter;
   final FieldInfos fieldInfos;
@@ -229,7 +229,6 @@ public class TempFSTOrdTermsWriter extends FieldsConsumer {
 
       lastMetaBytesFP = metaBytesOut.getFilePointer();
       lastLongs = longs;
-
     }
 
     @Override
