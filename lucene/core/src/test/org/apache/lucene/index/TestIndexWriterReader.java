@@ -1015,7 +1015,8 @@ public class TestIndexWriterReader extends LuceneTestCase {
     // Don't proceed if picked Codec is in the list of illegal ones.
     final String format = _TestUtil.getPostingsFormat("f");
     assumeFalse("Format: " + format + " does not support ReaderTermsIndexDivisor!",
-                (format.equals("SimpleText") || format.equals("Memory") || format.equals("Direct") || format.equals("TempFST")));
+                (format.equals("SimpleText") || format.equals("Memory") || format.equals("Direct") || 
+                 format.equals("TempFST") || format.equals("TempFSTOrd")));
 
     Directory dir = newDirectory();
     IndexWriter w = new IndexWriter(dir, conf);
