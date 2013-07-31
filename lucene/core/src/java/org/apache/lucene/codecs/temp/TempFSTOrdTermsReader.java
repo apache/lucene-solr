@@ -66,7 +66,7 @@ public class TempFSTOrdTermsReader extends FieldsProducer {
   final TempPostingsReaderBase postingsReader;
   IndexInput indexIn = null;
   IndexInput blockIn = null;
-  static final boolean TEST = false;
+  //static final boolean TEST = false;
 
   public TempFSTOrdTermsReader(SegmentReadState state, TempPostingsReaderBase postingsReader) throws IOException {
     final String termsIndexFileName = IndexFileNames.segmentFileName(state.segmentInfo.name, state.segmentSuffix, TempFSTOrdTermsWriter.TERMS_INDEX_EXTENSION);
@@ -251,7 +251,7 @@ public class TempFSTOrdTermsReader extends FieldsProducer {
 
     @Override
     public TermsEnum intersect(CompiledAutomaton compiled, BytesRef startTerm) throws IOException {
-      return super.intersect(compiled, startTerm);
+      return new IntersectTermsEnum(compiled, startTerm);
     }
 
     // Only wraps common operations for PBF interact
@@ -297,7 +297,6 @@ public class TempFSTOrdTermsReader extends FieldsProducer {
         this.totalTermFreq = new long[INTERVAL];
         this.statsBlockOrd = -1;
         this.metaBlockOrd = -1;
-
       }
 
       /** Decodes stats data into term state */
@@ -394,11 +393,6 @@ public class TempFSTOrdTermsReader extends FieldsProducer {
       }
 
       @Override
-      public long ord() {
-        return ord;
-      }
-
-      @Override
       public DocsEnum docs(Bits liveDocs, DocsEnum reuse, int flags) throws IOException {
         decodeMetaData();
         return postingsReader.docs(fieldInfo, state, liveDocs, reuse, flags);
@@ -419,6 +413,12 @@ public class TempFSTOrdTermsReader extends FieldsProducer {
       public void seekExact(long ord) throws IOException {
         throw new UnsupportedOperationException();
       }
+
+      @Override
+      public long ord() {
+        throw new UnsupportedOperationException();
+      }
+
     }
 
 
@@ -493,6 +493,317 @@ public class TempFSTOrdTermsReader extends FieldsProducer {
           term = BytesRef.deepCopyOf(target);
           seekPending = true;
         }
+      }
+    }
+
+    // Iterates intersect result with automaton (cannot seek!)
+    private final class IntersectTermsEnum extends BaseTermsEnum {
+      /* True when current term's metadata is decoded */
+      boolean decoded;
+
+      /* True when there is pending term when calling next() */
+      boolean pending;
+
+      /* stack to record how current term is constructed, 
+       * used to accumulate metadata or rewind term:
+       *   level == term.length + 1,
+       *         == 0 when term is null */
+      Frame[] stack;
+      int level;
+
+      /* term dict fst */
+      final FST<Long> fst;
+      final FST.BytesReader fstReader;
+      final Outputs<Long> fstOutputs;
+
+      /* query automaton to intersect with */
+      final ByteRunAutomaton fsa;
+
+      private final class Frame {
+        /* fst stats */
+        FST.Arc<Long> arc;
+
+        /* automaton stats */
+        int state;
+
+        Frame() {
+          this.arc = new FST.Arc<Long>();
+          this.state = -1;
+        }
+
+        public String toString() {
+          return "arc=" + arc + " state=" + state;
+        }
+      }
+
+      IntersectTermsEnum(CompiledAutomaton compiled, BytesRef startTerm) throws IOException {
+        //if (TEST) System.out.println("Enum init, startTerm=" + startTerm);
+        this.fst = index;
+        this.fstReader = fst.getBytesReader();
+        this.fstOutputs = index.outputs;
+        this.fsa = compiled.runAutomaton;
+        /*
+        PrintWriter pw1 = new PrintWriter(new File("../temp/fst.txt"));
+        Util.toDot(dict,pw1, false, false);
+        pw1.close();
+        PrintWriter pw2 = new PrintWriter(new File("../temp/fsa.txt"));
+        pw2.write(compiled.toDot());
+        pw2.close();
+        */
+        this.level = -1;
+        this.stack = new Frame[16];
+        for (int i = 0 ; i < stack.length; i++) {
+          this.stack[i] = new Frame();
+        }
+
+        Frame frame;
+        frame = loadVirtualFrame(newFrame());
+        this.level++;
+        frame = loadFirstFrame(newFrame());
+        pushFrame(frame);
+
+        this.decoded = false;
+        this.pending = false;
+
+        if (startTerm == null) {
+          pending = isAccept(topFrame());
+        } else {
+          doSeekCeil(startTerm);
+          pending = !startTerm.equals(term) && isValid(topFrame()) && isAccept(topFrame());
+        }
+      }
+
+      @Override
+      void decodeMetaData() throws IOException {
+        if (!decoded) {
+          super.decodeMetaData();
+          decoded = true;
+        }
+      }
+
+      @Override
+      void decodeStats() throws IOException {
+        final FST.Arc<Long> arc = topFrame().arc;
+        if (arc.isFinal()) {
+          ord = fstOutputs.add(arc.output, arc.nextFinalOutput);
+        } else {
+          ord = arc.output;
+        }
+        super.decodeStats();
+      }
+
+      // nocommit: need testcase for this
+      @Override
+      public SeekStatus seekCeil(BytesRef target, boolean useCache) throws IOException {
+        decoded = false;
+        term = doSeekCeil(target);
+        decodeStats();
+        if (term == null) {
+          return SeekStatus.END;
+        } else {
+          return term.equals(target) ? SeekStatus.FOUND : SeekStatus.NOT_FOUND;
+        }
+      }
+
+      @Override
+      public BytesRef next() throws IOException {
+        //if (TEST) System.out.println("Enum next()");
+        if (pending) {
+          pending = false;
+          decodeStats();
+          return term;
+        }
+        decoded = false;
+      DFS:
+        while (level > 0) {
+          Frame frame = newFrame();
+          if (loadExpandFrame(topFrame(), frame) != null) {  // has valid target
+            pushFrame(frame);
+            if (isAccept(frame)) {  // gotcha
+              break;
+            }
+            continue;  // check next target
+          } 
+          frame = popFrame();
+          while(level > 0) {
+            if (loadNextFrame(topFrame(), frame) != null) {  // has valid sibling 
+              pushFrame(frame);
+              if (isAccept(frame)) {  // gotcha
+                break DFS;
+              }
+              continue DFS;   // check next target 
+            }
+            frame = popFrame();
+          }
+          return null;
+        }
+        decodeStats();
+        return term;
+      }
+
+      BytesRef doSeekCeil(BytesRef target) throws IOException {
+        //if (TEST) System.out.println("Enum doSeekCeil()");
+        Frame frame= null;
+        int label, upto = 0, limit = target.length;
+        while (upto < limit) {  // to target prefix, or ceil label (rewind prefix)
+          frame = newFrame();
+          label = target.bytes[upto] & 0xff;
+          frame = loadCeilFrame(label, topFrame(), frame);
+          if (frame == null || frame.arc.label != label) {
+            break;
+          }
+          assert isValid(frame);  // target must be fetched from automaton
+          pushFrame(frame);
+          upto++;
+        }
+        if (upto == limit) {  // got target
+          return term;
+        }
+        if (frame != null) {  // got larger term('s prefix)
+          pushFrame(frame);
+          return isAccept(frame) ? term : next();
+        }
+        while (level > 0) {  // got target's prefix, advance to larger term
+          frame = popFrame();
+          while (level > 0 && !canRewind(frame)) {
+            frame = popFrame();
+          }
+          if (loadNextFrame(topFrame(), frame) != null) {
+            pushFrame(frame);
+            return isAccept(frame) ? term : next();
+          }
+        }
+        return null;
+      }
+
+      /** Virtual frame, never pop */
+      Frame loadVirtualFrame(Frame frame) throws IOException {
+        frame.arc.output = fstOutputs.getNoOutput();
+        frame.arc.nextFinalOutput = fstOutputs.getNoOutput();
+        frame.state = -1;
+        return frame;
+      }
+
+      /** Load frame for start arc(node) on fst */
+      Frame loadFirstFrame(Frame frame) throws IOException {
+        frame.arc = fst.getFirstArc(frame.arc);
+        frame.state = fsa.getInitialState();
+        return frame;
+      }
+
+      // nocommit: expected to use readFirstTargetArc here?
+
+      /** Load frame for target arc(node) on fst */
+      Frame loadExpandFrame(Frame top, Frame frame) throws IOException {
+        if (!canGrow(top)) {
+          return null;
+        }
+        frame.arc = fst.readFirstRealTargetArc(top.arc.target, frame.arc, fstReader);
+        frame.state = fsa.step(top.state, frame.arc.label);
+        //if (TEST) System.out.println(" loadExpand frame="+frame);
+        if (frame.state == -1) {
+          return loadNextFrame(top, frame);
+        }
+        return frame;
+      }
+
+      /** Load frame for sibling arc(node) on fst */
+      Frame loadNextFrame(Frame top, Frame frame) throws IOException {
+        if (!canRewind(frame)) {
+          return null;
+        }
+        while (!frame.arc.isLast()) {
+          frame.arc = fst.readNextRealArc(frame.arc, fstReader);
+          frame.state = fsa.step(top.state, frame.arc.label);
+          if (frame.state != -1) {
+            break;
+          }
+        }
+        //if (TEST) System.out.println(" loadNext frame="+frame);
+        if (frame.state == -1) {
+          return null;
+        }
+        return frame;
+      }
+
+      /** Load frame for target arc(node) on fst, so that 
+       *  arc.label >= label and !fsa.reject(arc.label) */
+      Frame loadCeilFrame(int label, Frame top, Frame frame) throws IOException {
+        FST.Arc<Long> arc = frame.arc;
+        arc = Util.readCeilArc(label, fst, top.arc, arc, fstReader);
+        if (arc == null) {
+          return null;
+        }
+        frame.state = fsa.step(top.state, arc.label);
+        //if (TEST) System.out.println(" loadCeil frame="+frame);
+        if (frame.state == -1) {
+          return loadNextFrame(top, frame);
+        }
+        return frame;
+      }
+
+      boolean isAccept(Frame frame) {  // reach a term both fst&fsa accepts
+        return fsa.isAccept(frame.state) && frame.arc.isFinal();
+      }
+      boolean isValid(Frame frame) {   // reach a prefix both fst&fsa won't reject
+        return /*frame != null &&*/ frame.state != -1;
+      }
+      boolean canGrow(Frame frame) {   // can walk forward on both fst&fsa
+        return frame.state != -1 && FST.targetHasArcs(frame.arc);
+      }
+      boolean canRewind(Frame frame) { // can jump to sibling
+        return !frame.arc.isLast();
+      }
+
+      // nocommit: need to load ord lazily?
+      void pushFrame(Frame frame) {
+        final FST.Arc<Long> arc = frame.arc;
+        arc.output = fstOutputs.add(topFrame().arc.output, arc.output);
+        term = grow(arc.label);
+        level++;
+      }
+
+      Frame popFrame() {
+        term = shrink();
+        level--;
+        return stack[level+1];
+      }
+
+      Frame newFrame() {
+        if (level+1 == stack.length) {
+          final Frame[] temp = new Frame[ArrayUtil.oversize(level+2, RamUsageEstimator.NUM_BYTES_OBJECT_REF)];
+          System.arraycopy(stack, 0, temp, 0, stack.length);
+          for (int i = stack.length; i < temp.length; i++) {
+            temp[i] = new Frame();
+          }
+          stack = temp;
+        }
+        return stack[level+1];
+      }
+
+      Frame topFrame() {
+        return stack[level];
+      }
+
+      BytesRef grow(int label) {
+        if (term == null) {
+          term = new BytesRef(new byte[16], 0, 0);
+        } else {
+          if (term.length == term.bytes.length) {
+            term.grow(term.length+1);
+          }
+          term.bytes[term.length++] = (byte)label;
+        }
+        return term;
+      }
+
+      BytesRef shrink() {
+        if (term.length == 0) {
+          term = null;
+        } else {
+          term.length--;
+        }
+        return term;
       }
     }
   }
