@@ -581,6 +581,7 @@
    <field name="store" type="location" indexed="true" stored="true" omitNorms="false"/>
 
    <field name="lower" type="lowertok" indexed="false" stored="true" multiValued="true" />
+   <field name="_route_" type="string" indexed="true" stored="true" multiValued="false" />
 
    <!-- Dynamic field definitions.  If a field name is not found, dynamicFields
         will be used if the name matches any of the patterns.
