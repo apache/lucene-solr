@@ -102,6 +102,9 @@ Optimizations
 * LUCENE-5145: All Appending*Buffer now support bulk get.
   (Boaz Leskes via Adrien Grand)
 
+* LUCENE-5140: Fixed a performance regression of span queries caused by
+  LUCENE-4946. (Alan Woodward, Adrien Grand)
+
 Documentation
 
 * LUCENE-4894: remove facet userguide as it was outdated. Partially absorbed into
