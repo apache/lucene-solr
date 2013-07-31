@@ -148,7 +148,7 @@ public class TempFSTOrdTermsWriter extends FieldsConsumer {
     // (so that we'll have metaLongsOut[])
     public RAMOutputStream skipOut;       // vint encode next skip point (all values start from 0, fully decoded when reading)
     public RAMOutputStream statsOut;      // vint encode df, (ttf-df)
-    public RAMOutputStream metaLongsOut;  // vint encode metalongs[0~(fieldSize-1)] and metaBytes[startFPdelta, len]
+    public RAMOutputStream metaLongsOut;  // vint encode monotonic long[] and length for corresponding byte[]
     public RAMOutputStream metaBytesOut;  // put all bytes blob here
   }
 

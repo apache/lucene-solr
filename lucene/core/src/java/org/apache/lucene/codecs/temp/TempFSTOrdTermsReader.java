@@ -270,8 +270,18 @@ public class TempFSTOrdTermsReader extends FieldsProducer {
       final ByteArrayDataInput metaLongsReader = new ByteArrayDataInput();
       final ByteArrayDataInput metaBytesReader = new ByteArrayDataInput();
 
-      /** Decodes metadata into customized term state */
-      abstract void decodeMetaData() throws IOException;
+      /* To which block is buffered */ 
+      int statsBlockOrd;
+      int metaBlockOrd;
+
+      /* Current buffered metadata (long[] & byte[]) */
+      long[][] longs;
+      int[] bytesStart;
+      int[] bytesLength;
+
+      /* Current buffered stats (df & ttf) */
+      int[] docFreq;
+      long[] totalTermFreq;
 
       BaseTermsEnum() throws IOException {
         this.state = postingsReader.newTermState();
@@ -279,6 +289,82 @@ public class TempFSTOrdTermsReader extends FieldsProducer {
         this.statsReader.reset(statsBlock);
         this.metaLongsReader.reset(metaLongsBlock);
         this.metaBytesReader.reset(metaBytesBlock);
+
+        this.longs = new long[INTERVAL][longsSize];
+        this.bytesStart = new int[INTERVAL];
+        this.bytesLength = new int[INTERVAL];
+        this.docFreq = new int[INTERVAL];
+        this.totalTermFreq = new long[INTERVAL];
+        this.statsBlockOrd = -1;
+        this.metaBlockOrd = -1;
+
+      }
+
+      /** Decodes stats data into term state */
+      void decodeStats() throws IOException {
+        final int upto = (int)ord % INTERVAL;
+        final int oldBlockOrd = statsBlockOrd;
+        statsBlockOrd = (int)ord / INTERVAL;
+        if (oldBlockOrd != statsBlockOrd) {
+          refillStats();
+        }
+        state.docFreq = docFreq[upto];
+        state.totalTermFreq = totalTermFreq[upto];
+      }
+
+      /** Let PBF decode metadata */
+      void decodeMetaData() throws IOException {
+        final int upto = (int)ord % INTERVAL;
+        final int oldBlockOrd = metaBlockOrd;
+        metaBlockOrd = (int)ord / INTERVAL;
+        if (metaBlockOrd != oldBlockOrd) {
+          refillMetadata();
+        }
+        metaBytesReader.reset(metaBytesBlock, bytesStart[upto], bytesLength[upto]);
+        postingsReader.decodeTerm(longs[upto], metaBytesReader, fieldInfo, state);
+      }
+
+      /** Load current stats shard */
+      final void refillStats() throws IOException {
+        final int offset = statsBlockOrd * numSkipInfo;
+        final int statsFP = (int)skipInfo[offset];
+        statsReader.setPosition(statsFP);
+        if (!hasFreqs()) {
+          Arrays.fill(totalTermFreq, -1);
+        }
+        for (int i = 0; i < INTERVAL && !statsReader.eof(); i++) {
+          int code = statsReader.readVInt();
+          if (hasFreqs()) {
+            docFreq[i] = (code >>> 1);
+            if ((code & 1) == 1) {
+              totalTermFreq[i] = docFreq[i];
+            } else {
+              totalTermFreq[i] = docFreq[i] + statsReader.readVLong();
+            }
+          } else {
+            docFreq[i] = code;
+          }
+        }
+      }
+
+      /** Load current metadata shard */
+      final void refillMetadata() throws IOException {
+        final int offset = metaBlockOrd * numSkipInfo;
+        final int metaLongsFP = (int)skipInfo[offset + 1];
+        final int metaBytesFP = (int)skipInfo[offset + 2];
+        metaLongsReader.setPosition(metaLongsFP);
+        bytesStart[0] = metaBytesFP; 
+        for (int j = 0; j < longsSize; j++) {
+          longs[0][j] = skipInfo[offset + 3 + j] + metaLongsReader.readVLong();
+        }
+        bytesLength[0] = (int)metaLongsReader.readVLong();
+        for (int i = 1; i < INTERVAL && !metaLongsReader.eof(); i++) {
+          bytesStart[i] = bytesStart[i-1] + bytesLength[i-1];
+          for (int j = 0; j < longsSize; j++) {
+            longs[i][j] = longs[i-1][j] + metaLongsReader.readVLong();
+          }
+          bytesLength[i] = (int)metaLongsReader.readVLong();
+        }
       }
 
       @Override
@@ -308,6 +394,11 @@ public class TempFSTOrdTermsReader extends FieldsProducer {
       }
 
       @Override
+      public long ord() {
+        return ord;
+      }
+
+      @Override
       public DocsEnum docs(Bits liveDocs, DocsEnum reuse, int flags) throws IOException {
         decodeMetaData();
         return postingsReader.docs(fieldInfo, state, liveDocs, reuse, flags);
@@ -322,19 +413,10 @@ public class TempFSTOrdTermsReader extends FieldsProducer {
         return postingsReader.docsAndPositions(fieldInfo, state, liveDocs, reuse, flags);
       }
 
-      // nocommit: do we need this? for SegmentTermsEnum, we can maintain
-      // a stack to record how current term is constructed on FST, (and ord on each alphabet)
-      // so that during seek we don't have to start from the first arc.
-      // however, we'll be implementing a new fstEnum instead of wrapping current one.
-      //
-      // nocommit: this can also be achieved by making use of Util.getByOutput()
+      // nocommit: this can be achieved by making use of Util.getByOutput()
+      //           and should have related tests
       @Override
       public void seekExact(long ord) throws IOException {
-        throw new UnsupportedOperationException();
-      }
-
-      @Override
-      public long ord() {
         throw new UnsupportedOperationException();
       }
     }
@@ -350,97 +432,16 @@ public class TempFSTOrdTermsReader extends FieldsProducer {
       /* True when current enum is 'positioned' by seekExact(TermState) */
       boolean seekPending;
 
-      /* To which block is buffered */ 
-      int statsBlockOrd;
-      int metaBlockOrd;
-
-      /* Current buffered metadata (long[] & byte[]) */
-      long[][] longs;
-      int[] bytesStart;
-      int[] bytesLength;
-
-      /* Current buffered stats (df & ttf) */
-      int[] docFreq;
-      long[] totalTermFreq;
-
       SegmentTermsEnum() throws IOException {
-        super();
         this.fstEnum = new BytesRefFSTEnum<Long>(index);
         this.decoded = false;
         this.seekPending = false;
-        this.longs = new long[INTERVAL][longsSize];
-        this.bytesStart = new int[INTERVAL];
-        this.bytesLength = new int[INTERVAL];
-        this.docFreq = new int[INTERVAL];
-        this.totalTermFreq = new long[INTERVAL];
-        this.statsBlockOrd = -1;
-        this.metaBlockOrd = -1;
       }
 
-      void refillStats() throws IOException {
-        final int offset = statsBlockOrd * numSkipInfo;
-        final int statsFP = (int)skipInfo[offset];
-        statsReader.setPosition(statsFP);
-        if (!hasFreqs()) {
-          Arrays.fill(totalTermFreq, -1);
-        }
-        for (int i = 0; i < INTERVAL && !statsReader.eof(); i++) {
-          int code = statsReader.readVInt();
-          if (hasFreqs()) {
-            docFreq[i] = (code >>> 1);
-            if ((code & 1) == 1) {
-              totalTermFreq[i] = docFreq[i];
-            } else {
-              totalTermFreq[i] = docFreq[i] + statsReader.readVLong();
-            }
-          } else {
-            docFreq[i] = code;
-          }
-        }
-      }
-
-      void refillMetadata() throws IOException {
-        final int offset = metaBlockOrd * numSkipInfo;
-        final int metaLongsFP = (int)skipInfo[offset + 1];
-        final int metaBytesFP = (int)skipInfo[offset + 2];
-        metaLongsReader.setPosition(metaLongsFP);
-        bytesStart[0] = metaBytesFP; 
-        for (int j = 0; j < longsSize; j++) {
-          longs[0][j] = skipInfo[offset + 3 + j] + metaLongsReader.readVLong();
-        }
-        bytesLength[0] = (int)metaLongsReader.readVLong();
-        for (int i = 1; i < INTERVAL && !metaLongsReader.eof(); i++) {
-          bytesStart[i] = bytesStart[i-1] + bytesLength[i-1];
-          for (int j = 0; j < longsSize; j++) {
-            longs[i][j] = longs[i-1][j] + metaLongsReader.readVLong();
-          }
-          bytesLength[i] = (int)metaLongsReader.readVLong();
-        }
-      }
-
-      void decodeStats() throws IOException {
-        final int upto = (int)ord % INTERVAL;
-        final int oldBlockOrd = statsBlockOrd;
-        statsBlockOrd = (int)ord / INTERVAL;
-        if (oldBlockOrd != statsBlockOrd) {
-          refillStats();
-        }
-        state.docFreq = docFreq[upto];
-        state.totalTermFreq = totalTermFreq[upto];
-      }
-
-      // Let PBF decode metadata from long[] and byte[]
       @Override
       void decodeMetaData() throws IOException {
-        final int upto = (int)ord % INTERVAL;
-        final int oldBlockOrd = metaBlockOrd;
-        metaBlockOrd = (int)ord / INTERVAL;
-        if (metaBlockOrd != oldBlockOrd) {
-          refillMetadata();
-        }
         if (!decoded && !seekPending) {
-          metaBytesReader.reset(metaBytesBlock, bytesStart[upto], bytesLength[upto]);
-          postingsReader.decodeTerm(longs[upto], metaBytesReader, fieldInfo, state);
+          super.decodeMetaData();
           decoded = true;
         }
       }
@@ -505,6 +506,7 @@ public class TempFSTOrdTermsReader extends FieldsProducer {
     while (!queue.isEmpty()) {
       final FST.Arc<T> arc = queue.remove(0);
       final long node = arc.target;
+      //System.out.println(arc);
       if (FST.targetHasArcs(arc) && !seen.get((int) node)) {
         seen.set((int) node);
         fst.readFirstRealTargetArc(node, arc, reader);
