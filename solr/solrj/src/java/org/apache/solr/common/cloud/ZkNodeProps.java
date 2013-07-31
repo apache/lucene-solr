@@ -20,11 +20,9 @@ package org.apache.solr.common.cloud;
 import org.noggit.JSONUtil;
 import org.noggit.JSONWriter;
 
-import java.util.Collections;
 import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.Map;
-import java.util.Map.Entry;
 import java.util.Set;
 
 /**
@@ -106,6 +104,22 @@ public class ZkNodeProps implements JSONWriter.Writable {
   public String getStr(String key) {
     Object o = propMap.get(key);
     return o == null ? null : o.toString();
+  }
+
+  /**
+   * Get a string property value.
+   */
+  public Integer getInt(String key, Integer def) {
+    Object o = propMap.get(key);
+    return o == null ? def : Integer.valueOf(o.toString());
+  }
+
+  /**
+   * Get a string property value.
+   */
+  public String getStr(String key,String def) {
+    Object o = propMap.get(key);
+    return o == null ? def : o.toString();
   }
 
   public Object get(String key) {

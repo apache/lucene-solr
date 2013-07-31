@@ -17,19 +17,6 @@ package org.apache.solr.cloud;
  * limitations under the License.
  */
 
-import java.io.File;
-import java.io.IOException;
-import java.net.MalformedURLException;
-import java.net.URI;
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Map;
-import java.util.Random;
-import java.util.Set;
-import java.util.concurrent.atomic.AtomicInteger;
-
 import org.apache.http.params.CoreConnectionPNames;
 import org.apache.lucene.util.LuceneTestCase.Slow;
 import org.apache.solr.client.solrj.SolrQuery;
@@ -56,12 +43,32 @@ import org.apache.solr.common.cloud.ZkStateReader;
 import org.apache.solr.common.params.CollectionParams.CollectionAction;
 import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.common.params.SolrParams;
+import org.apache.solr.common.util.StrUtils;
 import org.junit.After;
 import org.junit.AfterClass;
 import org.junit.Before;
 import org.junit.BeforeClass;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
+import java.io.File;
+import java.io.IOException;
+import java.net.MalformedURLException;
+import java.net.URI;
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Map;
+import java.util.Random;
+import java.util.Set;
+import java.util.concurrent.atomic.AtomicInteger;
+
+import static org.apache.solr.cloud.OverseerCollectionProcessor.CREATE_NODE_SET;
+import static org.apache.solr.cloud.OverseerCollectionProcessor.MAX_SHARDS_PER_NODE;
+import static org.apache.solr.cloud.OverseerCollectionProcessor.NUM_SLICES;
+import static org.apache.solr.cloud.OverseerCollectionProcessor.REPLICATION_FACTOR;
+import static org.apache.solr.cloud.OverseerCollectionProcessor.SHARDS_PROP;
 
 /**
  * TODO: we should still test this works as a custom update chain as well as
@@ -304,7 +311,9 @@ public abstract class AbstractFullDistribZkTestBase extends AbstractDistribZkTes
     cnt = 30;
     while (reader.getClusterState().getSlices(collection).size() < slices) {
       if (cnt == 0) {
-        throw new RuntimeException("timeout waiting for collection shards to come up: collection="+collection + "nSlices="+slices);
+        throw new RuntimeException("timeout waiting for collection shards to come up: collection="+collection
+            + ", slices.expected="+slices+ " slices.actual= " + reader.getClusterState().getSlices(collection).size()
+            + " slices : "+ reader.getClusterState().getSlices(collection) );
       }
       cnt--;
       Thread.sleep(500);
@@ -1492,16 +1501,22 @@ public abstract class AbstractFullDistribZkTestBase extends AbstractDistribZkTes
   protected void createCollection(String collectionName, int numShards, int numReplicas, int maxShardsPerNode) throws SolrServerException, IOException {
     createCollection(null, collectionName, numShards, numReplicas, maxShardsPerNode, null, null);
   }
-  
-  protected void createCollection(Map<String,List<Integer>> collectionInfos,
-      String collectionName, int numShards, int numReplicas, int maxShardsPerNode, SolrServer client, String createNodeSetStr) throws SolrServerException, IOException {
+
+  protected void createCollection(Map<String,List<Integer>> collectionInfos, String collectionName, Map<String,Object> collectionProps, SolrServer client )  throws SolrServerException, IOException{
     ModifiableSolrParams params = new ModifiableSolrParams();
     params.set("action", CollectionAction.CREATE.toString());
-
-    params.set(OverseerCollectionProcessor.NUM_SLICES, numShards);
-    params.set(OverseerCollectionProcessor.REPLICATION_FACTOR, numReplicas);
-    params.set(OverseerCollectionProcessor.MAX_SHARDS_PER_NODE, maxShardsPerNode);
-    if (createNodeSetStr != null) params.set(OverseerCollectionProcessor.CREATE_NODE_SET, createNodeSetStr);
+    for (Map.Entry<String, Object> entry : collectionProps.entrySet()) {
+      if(entry.getValue() !=null) params.set(entry.getKey(), String.valueOf(entry.getValue()));
+    }
+    Integer numShards = (Integer) collectionProps.get(NUM_SLICES);
+    if(numShards==null){
+      String shardNames = (String) collectionProps.get(SHARDS_PROP);
+      numShards = StrUtils.splitSmart(shardNames,',').size();
+    }
+    Integer numReplicas = (Integer) collectionProps.get(REPLICATION_FACTOR);
+    if(numShards==null){
+      numShards = (Integer) OverseerCollectionProcessor.COLL_PROPS.get(REPLICATION_FACTOR);
+    }
 
     int clientIndex = random().nextInt(2);
     List<Integer> list = new ArrayList<Integer>();
@@ -1513,16 +1528,35 @@ public abstract class AbstractFullDistribZkTestBase extends AbstractDistribZkTes
     params.set("name", collectionName);
     SolrRequest request = new QueryRequest(params);
     request.setPath("/admin/collections");
-  
+
     if (client == null) {
       final String baseUrl = getBaseUrl((HttpSolrServer) clients.get(clientIndex));
-      
+
       createNewSolrServer("", baseUrl).request(request);
     } else {
       client.request(request);
     }
+
   }
-  
+
+  protected void runCollectionAdminCommand(ModifiableSolrParams params){
+
+   ;
+
+  }
+
+  protected void createCollection(Map<String,List<Integer>> collectionInfos,
+      String collectionName, int numShards, int numReplicas, int maxShardsPerNode, SolrServer client, String createNodeSetStr) throws SolrServerException, IOException {
+
+    createCollection(collectionInfos, collectionName,
+        OverseerCollectionProcessor.asMap(
+        NUM_SLICES, numShards,
+        REPLICATION_FACTOR, numReplicas,
+        CREATE_NODE_SET, createNodeSetStr,
+        MAX_SHARDS_PER_NODE, maxShardsPerNode),
+        client);
+  }
+
   @Override
   protected SolrServer createNewSolrServer(int port) {
     try {
