@@ -849,7 +849,7 @@ public class OverseerCollectionProcessor implements Runnable, ClosableThread {
       int repFactor = message.getInt( REPLICATION_FACTOR, 1);
       Integer numSlices = message.getInt(NUM_SLICES, null);
       String router = message.getStr(ROUTER, DocRouter.DEFAULT_NAME);
-      List<String> shardNames = new ArrayList<>();
+      List<String> shardNames = new ArrayList<String>();
       if(ImplicitDocRouter.NAME.equals(router)){
         Overseer.getShardNames(shardNames, message.getStr("shards",null));
         numSlices = shardNames.size();
