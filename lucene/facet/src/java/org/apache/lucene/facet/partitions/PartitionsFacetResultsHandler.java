@@ -9,6 +9,7 @@ import org.apache.lucene.facet.search.FacetRequest;
 import org.apache.lucene.facet.search.FacetResult;
 import org.apache.lucene.facet.search.FacetResultNode;
 import org.apache.lucene.facet.search.FacetResultsHandler;
+import org.apache.lucene.facet.search.OrdinalValueResolver;
 import org.apache.lucene.facet.taxonomy.TaxonomyReader;
 
 /*
@@ -36,10 +37,9 @@ import org.apache.lucene.facet.taxonomy.TaxonomyReader;
 public abstract class PartitionsFacetResultsHandler extends FacetResultsHandler {
   
   public PartitionsFacetResultsHandler(TaxonomyReader taxonomyReader, FacetRequest facetRequest, 
-      FacetArrays facetArrays) {
-    super(taxonomyReader, facetRequest, facetArrays);
+      OrdinalValueResolver resolver, FacetArrays facetArrays) {
+    super(taxonomyReader, facetRequest, resolver, facetArrays);
   }
-
 
   /**
    * Fetch results of a single partition, given facet arrays for that partition,

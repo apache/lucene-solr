@@ -38,14 +38,4 @@ public class SumScoreFacetRequest extends FacetRequest {
     return new SumScoreFacetsAggregator();
   }
   
-  @Override
-  public double getValueOf(FacetArrays arrays, int ordinal) {
-    return arrays.getFloatArray()[ordinal];
-  }
-
-  @Override
-  public FacetArraysSource getFacetArraysSource() {
-    return FacetArraysSource.FLOAT;
-  }
-
 }

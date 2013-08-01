@@ -61,5 +61,11 @@ public class PerCategoryListAggregator implements FacetsAggregator {
     }
     return false;
   }
+
+  @Override
+  public OrdinalValueResolver createOrdinalValueResolver(FacetRequest facetRequest, FacetArrays arrays) {
+    CategoryListParams clp = fip.getCategoryListParams(facetRequest.categoryPath);
+    return aggregators.get(clp).createOrdinalValueResolver(facetRequest, arrays);
+  }
   
 }

@@ -88,4 +88,9 @@ public class MultiFacetsAggregator implements FacetsAggregator {
     return false;
   }
   
+  @Override
+  public OrdinalValueResolver createOrdinalValueResolver(FacetRequest facetRequest, FacetArrays arrays) {
+    return categoryAggregators.get(facetRequest.categoryPath).createOrdinalValueResolver(facetRequest, arrays);
+  }
+  
 }

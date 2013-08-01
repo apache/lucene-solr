@@ -28,10 +28,13 @@ import org.apache.lucene.facet.taxonomy.TaxonomyReader;
  * Result of faceted search for a certain taxonomy node. This class serves as a
  * bin of different attributes of the result node, such as its {@link #ordinal}
  * as well as {@link #label}. You are not expected to modify those values.
+ * <p>
+ * This class implements {@link Comparable} for easy comparisons of result
+ * nodes, e.g. when sorting or computing top-K nodes.
  * 
  * @lucene.experimental
  */
-public class FacetResultNode {
+public class FacetResultNode implements Comparable<FacetResultNode> {
 
   public static final List<FacetResultNode> EMPTY_SUB_RESULTS = Collections.emptyList();
   
@@ -70,6 +73,15 @@ public class FacetResultNode {
   public FacetResultNode(int ordinal, double value) {
     this.ordinal = ordinal;
     this.value = value;
+  }
+
+  @Override
+  public int compareTo(FacetResultNode o) {
+    int res = Double.compare(value, o.value);
+    if (res == 0) {
+      res = ordinal - o.ordinal;
+    }
+    return res;
   }
   
   @Override

@@ -11,7 +11,6 @@ import java.util.Map.Entry;
 import org.apache.lucene.facet.params.CategoryListParams;
 import org.apache.lucene.facet.params.CategoryListParams.OrdinalPolicy;
 import org.apache.lucene.facet.params.FacetSearchParams;
-import org.apache.lucene.facet.search.FacetRequest.FacetArraysSource;
 import org.apache.lucene.facet.search.FacetRequest.ResultMode;
 import org.apache.lucene.facet.search.FacetRequest.SortOrder;
 import org.apache.lucene.facet.search.FacetsCollector.MatchingDocs;
@@ -152,24 +151,18 @@ public class TaxonomyFacetsAccumulator extends FacetsAccumulator {
   
   /**
    * Creates a {@link FacetResultsHandler} that matches the given
-   * {@link FacetRequest}.
+   * {@link FacetRequest}, using the {@link OrdinalValueResolver}.
    */
-  protected FacetResultsHandler createFacetResultsHandler(FacetRequest fr) {
+  protected FacetResultsHandler createFacetResultsHandler(FacetRequest fr, OrdinalValueResolver resolver) {
     if (fr.getDepth() == 1 && fr.getSortOrder() == SortOrder.DESCENDING) {
-      FacetArraysSource fas = fr.getFacetArraysSource();
-      if (fas == FacetArraysSource.INT) {
-        return new IntFacetResultsHandler(taxonomyReader, fr, facetArrays);
-      }
-      
-      if (fas == FacetArraysSource.FLOAT) {
-        return new FloatFacetResultsHandler(taxonomyReader, fr, facetArrays);
-      }
+      return new DepthOneFacetResultsHandler(taxonomyReader, fr, facetArrays, resolver);
     }
 
     if (fr.getResultMode() == ResultMode.PER_NODE_IN_TREE) {
-      return new TopKInEachNodeHandler(taxonomyReader, fr, facetArrays);
-    } 
-    return new TopKFacetResultsHandler(taxonomyReader, fr, facetArrays);
+      return new TopKInEachNodeHandler(taxonomyReader, fr, resolver, facetArrays);
+    } else {
+      return new TopKFacetResultsHandler(taxonomyReader, fr, resolver, facetArrays);
+    }
   }
 
   /**
@@ -212,7 +205,7 @@ public class TaxonomyFacetsAccumulator extends FacetsAccumulator {
         }
       }
       
-      FacetResultsHandler frh = createFacetResultsHandler(fr);
+      FacetResultsHandler frh = createFacetResultsHandler(fr, aggregator.createOrdinalValueResolver(fr, facetArrays));
       res.add(frh.compute());
     }
     return res;

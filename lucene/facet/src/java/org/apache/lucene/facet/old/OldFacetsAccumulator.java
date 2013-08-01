@@ -24,6 +24,9 @@ import org.apache.lucene.facet.search.FacetResult;
 import org.apache.lucene.facet.search.FacetsAccumulator;
 import org.apache.lucene.facet.search.FacetsAggregator;
 import org.apache.lucene.facet.search.FacetsCollector.MatchingDocs;
+import org.apache.lucene.facet.search.OrdinalValueResolver;
+import org.apache.lucene.facet.search.OrdinalValueResolver.FloatValueResolver;
+import org.apache.lucene.facet.search.OrdinalValueResolver.IntValueResolver;
 import org.apache.lucene.facet.search.SumScoreFacetRequest;
 import org.apache.lucene.facet.search.TaxonomyFacetsAccumulator;
 import org.apache.lucene.facet.search.TopKFacetResultsHandler;
@@ -172,7 +175,7 @@ public class OldFacetsAccumulator extends TaxonomyFacetsAccumulator {
           for (FacetRequest fr : searchParams.facetRequests) {
             // Handle and merge only facet requests which were not already handled.  
             if (handledRequests.add(fr)) {
-              PartitionsFacetResultsHandler frHndlr = createFacetResultsHandler(fr);
+              PartitionsFacetResultsHandler frHndlr = createFacetResultsHandler(fr, createOrdinalValueResolver(fr));
               IntermediateFacetResult res4fr = frHndlr.fetchPartitionResult(offset);
               IntermediateFacetResult oldRes = fr2tmpRes.get(fr);
               if (oldRes != null) {
@@ -189,7 +192,7 @@ public class OldFacetsAccumulator extends TaxonomyFacetsAccumulator {
       // gather results from all requests into a list for returning them
       List<FacetResult> res = new ArrayList<FacetResult>();
       for (FacetRequest fr : searchParams.facetRequests) {
-        PartitionsFacetResultsHandler frHndlr = createFacetResultsHandler(fr);
+        PartitionsFacetResultsHandler frHndlr = createFacetResultsHandler(fr, createOrdinalValueResolver(fr));
         IntermediateFacetResult tmpResult = fr2tmpRes.get(fr);
         if (tmpResult == null) {
           // Add empty FacetResult:
@@ -217,11 +220,11 @@ public class OldFacetsAccumulator extends TaxonomyFacetsAccumulator {
   }
 
   @Override
-  public PartitionsFacetResultsHandler createFacetResultsHandler(FacetRequest fr) {
+  public PartitionsFacetResultsHandler createFacetResultsHandler(FacetRequest fr, OrdinalValueResolver resolver) {
     if (fr.getResultMode() == ResultMode.PER_NODE_IN_TREE) {
-      return new TopKInEachNodeHandler(taxonomyReader, fr, facetArrays);
+      return new TopKInEachNodeHandler(taxonomyReader, fr, resolver, facetArrays);
     } else {
-      return new TopKFacetResultsHandler(taxonomyReader, fr, facetArrays);
+      return new TopKFacetResultsHandler(taxonomyReader, fr, resolver, facetArrays);
     }
   }
   
@@ -246,6 +249,24 @@ public class OldFacetsAccumulator extends TaxonomyFacetsAccumulator {
     return mayComplement() && (docids.size() > indexReader.numDocs() * getComplementThreshold()) ;
   }
 
+  /**
+   * Creates an {@link OrdinalValueResolver} for the given {@link FacetRequest}.
+   * By default this method supports {@link CountFacetRequest} and
+   * {@link SumScoreFacetRequest}. You should override if you are using other
+   * requests with this accumulator.
+   */
+  public OrdinalValueResolver createOrdinalValueResolver(FacetRequest fr) {
+    if (fr instanceof CountFacetRequest) {
+      return new IntValueResolver(facetArrays);
+    } else if (fr instanceof SumScoreFacetRequest) {
+      return new FloatValueResolver(facetArrays);
+    } else if (fr instanceof OverSampledFacetRequest) {
+      return createOrdinalValueResolver(((OverSampledFacetRequest) fr).orig);
+    } else {
+      throw new IllegalArgumentException("unrecognized FacetRequest " + fr.getClass());
+    }
+  }
+  
   /**
    * Iterate over the documents for this partition and fill the facet arrays with the correct
    * count/complement count/value.
@@ -344,7 +365,7 @@ public class OldFacetsAccumulator extends TaxonomyFacetsAccumulator {
       }
     } else if (fr instanceof SumScoreFacetRequest) {
       if (isUsingComplements) {
-        throw new IllegalArgumentException("complements are not supported by this SumScoreFacetRequest");
+        throw new IllegalArgumentException("complements are not supported by SumScoreFacetRequest");
       } else {
         return new ScoringAggregator(facetArrays.getFloatArray());
       }

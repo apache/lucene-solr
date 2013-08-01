@@ -184,7 +184,7 @@ public class TestTopKInEachNodeResultHandler extends FacetTestCase {
       }
       // now rearrange
       double [] expectedValues00 = { 6.0, 1.0, 5.0, 3.0, 2.0 };
-      fr = sfa.createFacetResultsHandler(cfra23).rearrangeFacetResult(fr);
+      fr = sfa.createFacetResultsHandler(cfra23, sfa.createOrdinalValueResolver(cfra23)).rearrangeFacetResult(fr);
       i = 0;
       for (FacetResultNode node : parentRes.subResults) {
         assertEquals(expectedValues00[i++], node.value, Double.MIN_VALUE);

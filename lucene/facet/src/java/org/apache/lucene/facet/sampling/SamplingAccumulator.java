@@ -10,6 +10,7 @@ import org.apache.lucene.facet.params.FacetSearchParams;
 import org.apache.lucene.facet.partitions.PartitionsFacetResultsHandler;
 import org.apache.lucene.facet.sampling.Sampler.SampleResult;
 import org.apache.lucene.facet.search.FacetArrays;
+import org.apache.lucene.facet.search.FacetRequest;
 import org.apache.lucene.facet.search.FacetResult;
 import org.apache.lucene.facet.search.FacetsAccumulator;
 import org.apache.lucene.facet.taxonomy.TaxonomyReader;
@@ -90,7 +91,8 @@ public class SamplingAccumulator extends OldFacetsAccumulator {
     List<FacetResult> results = new ArrayList<FacetResult>();
     for (FacetResult fres : sampleRes) {
       // for sure fres is not null because this is guaranteed by the delegee.
-      PartitionsFacetResultsHandler frh = createFacetResultsHandler(fres.getFacetRequest());
+      FacetRequest fr = fres.getFacetRequest();
+      PartitionsFacetResultsHandler frh = createFacetResultsHandler(fr, createOrdinalValueResolver(fr));
       if (samplerFixer != null) {
         // fix the result of current request
         samplerFixer.fixResult(docids, fres, samplingRatio);
@@ -106,7 +108,7 @@ public class SamplingAccumulator extends OldFacetsAccumulator {
       // final labeling if allowed (because labeling is a costly operation)
       if (fres.getFacetResultNode().ordinal == TaxonomyReader.INVALID_ORDINAL) {
         // category does not exist, add an empty result
-        results.add(emptyResult(fres.getFacetResultNode().ordinal, fres.getFacetRequest()));
+        results.add(emptyResult(fres.getFacetResultNode().ordinal, fr));
       } else {
         frh.labelResult(fres);
         results.add(fres);
