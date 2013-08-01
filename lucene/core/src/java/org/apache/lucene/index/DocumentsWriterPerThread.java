@@ -403,8 +403,8 @@ class DocumentsWriterPerThread {
     ++numDocsInRAM;
   }
 
-  // Buffer a specific docID for deletion.  Currently only
-  // used when we hit a exception when adding a document
+  // Buffer a specific docID for deletion. Currently only
+  // used when we hit an exception when adding a document
   void deleteDocID(int docIDUpto) {
     pendingDeletes.addDocID(docIDUpto);
     // NOTE: we do not trigger flush here.  This is
