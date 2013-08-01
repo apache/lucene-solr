@@ -91,9 +91,7 @@ public class SegmentWriteState {
     this.context = context;
   }
   
-  /**
-   * Create a shallow {@link SegmentWriteState} copy final a format ID
-   */
+  /** Create a shallow copy of {@link SegmentWriteState} with a new segment suffix. */
   public SegmentWriteState(SegmentWriteState state, String segmentSuffix) {
     infoStream = state.infoStream;
     directory = state.directory;

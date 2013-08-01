@@ -33,9 +33,9 @@ import org.apache.lucene.util.RamUsageEstimator;
  * deletes are pushed (on flush in DocumentsWriter), these
  * deletes are converted to a FrozenDeletes instance. */
 
-// NOTE: we are sync'd by BufferedDeletes, ie, all access to
-// instances of this class is via sync'd methods on
-// BufferedDeletes
+// NOTE: instances of this class are accessed either via a private
+// instance on DocumentWriterPerThread, or via sync'd code by
+// DocumentsWriterDeleteQueue
 
 class BufferedDeletes {
 
@@ -136,6 +136,9 @@ class BufferedDeletes {
     }
 
     terms.put(term, Integer.valueOf(docIDUpto));
+    // note that if current != null then it means there's already a buffered
+    // delete on that term, therefore we seem to over-count. this over-counting
+    // is done to respect IndexWriterConfig.setMaxBufferedDeleteTerms.
     numTermDeletes.incrementAndGet();
     if (current == null) {
       bytesUsed.addAndGet(BYTES_PER_DEL_TERM + term.bytes.length + (RamUsageEstimator.NUM_BYTES_CHAR * term.field().length()));
