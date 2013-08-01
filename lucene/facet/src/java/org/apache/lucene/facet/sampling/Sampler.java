@@ -7,7 +7,6 @@ import java.util.List;
 import org.apache.lucene.facet.old.ScoredDocIDs;
 import org.apache.lucene.facet.params.FacetIndexingParams;
 import org.apache.lucene.facet.params.FacetSearchParams;
-import org.apache.lucene.facet.search.FacetArrays;
 import org.apache.lucene.facet.search.FacetRequest;
 import org.apache.lucene.facet.search.FacetResult;
 import org.apache.lucene.facet.search.FacetResultNode;
@@ -211,16 +210,6 @@ public abstract class Sampler {
     @Override
     public FacetsAggregator createFacetsAggregator(FacetIndexingParams fip) {
       return orig.createFacetsAggregator(fip);
-    }
-    
-    @Override
-    public FacetArraysSource getFacetArraysSource() {
-      return orig.getFacetArraysSource();
-    }
-
-    @Override
-    public double getValueOf(FacetArrays arrays, int idx) {
-      return orig.getValueOf(arrays, idx);
     }
   }
 

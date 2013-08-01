@@ -36,14 +36,4 @@ public class CountFacetRequest extends FacetRequest {
     return CountingFacetsAggregator.create(fip.getCategoryListParams(categoryPath));
   }
   
-  @Override
-  public double getValueOf(FacetArrays arrays, int ordinal) {
-    return arrays.getIntArray()[ordinal];
-  }
-
-  @Override
-  public FacetArraysSource getFacetArraysSource() {
-    return FacetArraysSource.INT;
-  }
-  
 }

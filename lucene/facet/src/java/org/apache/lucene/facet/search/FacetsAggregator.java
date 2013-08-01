@@ -46,4 +46,11 @@ public interface FacetsAggregator {
   /** Returns {@code true} if this aggregator requires document scores. */
   public boolean requiresDocScores();
   
+  /**
+   * Creates the appropriate {@link OrdinalValueResolver} for this aggregator
+   * and the given {@link FacetRequest}. The request is passed so that compound
+   * aggregators can return the correct {@link OrdinalValueResolver}.
+   */
+  public OrdinalValueResolver createOrdinalValueResolver(FacetRequest facetRequest, FacetArrays arrays);
+  
 }

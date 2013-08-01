@@ -1,7 +1,6 @@
 package org.apache.lucene.facet.associations;
 
 import org.apache.lucene.facet.params.FacetIndexingParams;
-import org.apache.lucene.facet.search.FacetArrays;
 import org.apache.lucene.facet.search.FacetRequest;
 import org.apache.lucene.facet.search.FacetsAggregator;
 import org.apache.lucene.facet.taxonomy.CategoryPath;
@@ -44,14 +43,4 @@ public class SumIntAssociationFacetRequest extends FacetRequest {
     return new SumIntAssociationFacetsAggregator();
   }
   
-  @Override
-  public FacetArraysSource getFacetArraysSource() {
-    return FacetArraysSource.INT;
-  }
-
-  @Override
-  public double getValueOf(FacetArrays arrays, int ordinal) {
-    return arrays.getIntArray()[ordinal];
-  }
-
 }

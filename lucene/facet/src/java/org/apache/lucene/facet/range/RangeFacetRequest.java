@@ -20,7 +20,6 @@ package org.apache.lucene.facet.range;
 import java.util.List;
 
 import org.apache.lucene.facet.params.FacetIndexingParams;
-import org.apache.lucene.facet.search.FacetArrays;
 import org.apache.lucene.facet.search.FacetRequest;
 import org.apache.lucene.facet.search.FacetsAggregator;
 import org.apache.lucene.facet.taxonomy.CategoryPath;
@@ -50,16 +49,6 @@ public class RangeFacetRequest<T extends Range> extends FacetRequest {
   @Override
   public FacetsAggregator createFacetsAggregator(FacetIndexingParams fip) {
     return null;
-  }
-  
-  @Override
-  public double getValueOf(FacetArrays arrays, int ordinal) {
-    throw new UnsupportedOperationException();
-  }
-
-  @Override
-  public FacetArraysSource getFacetArraysSource() {
-    throw new UnsupportedOperationException();
   }
   
 }

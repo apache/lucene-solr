@@ -57,23 +57,6 @@ public abstract class FacetRequest {
   }
   
   /**
-   * Specifies which array of {@link FacetArrays} should be used to resolve
-   * values. When set to {@link #INT} or {@link #FLOAT}, allows creating an
-   * optimized {@link FacetResultsHandler}, which does not call
-   * {@link FacetRequest#getValueOf(FacetArrays, int)} for every ordinal.
-   * <p>
-   * If set to {@link #BOTH}, the {@link FacetResultsHandler} will use
-   * {@link FacetRequest#getValueOf(FacetArrays, int)} to resolve ordinal
-   * values, although it is recommended that you consider writing a specialized
-   * {@link FacetResultsHandler}.
-   * <p>
-   * Can also be set to {@link #NONE}, to indicate that this
-   * {@link FacetRequest} does not use {@link FacetArrays} to aggregate its
-   * result categories. Such requests won't use {@link FacetResultsHandler}.
-   */
-  public enum FacetArraysSource { INT, FLOAT, BOTH, NONE }
-  
-  /**
    * Defines which categories to return. If {@link #DESCENDING} (the default),
    * the highest {@link FacetRequest#numResults} weighted categories will be
    * returned, otherwise the lowest ones.
@@ -160,12 +143,6 @@ public abstract class FacetRequest {
   }
   
   /**
-   * Returns the {@link FacetArraysSource} this request uses in
-   * {@link #getValueOf(FacetArrays, int)}.
-   */
-  public abstract FacetArraysSource getFacetArraysSource();
-  
-  /**
    * Allows to specify the number of categories to label. By default all
    * returned categories are labeled.
    * <p>
@@ -186,24 +163,6 @@ public abstract class FacetRequest {
   public final SortOrder getSortOrder() {
     return sortOrder;
   }
-  
-  /**
-   * Return the weight of the requested category ordinal. A {@link FacetRequest}
-   * is responsible for resolving the weight of a category given the
-   * {@link FacetArrays} and {@link #getFacetArraysSource()}. E.g. a counting
-   * request will probably return the value of the category from
-   * {@link FacetArrays#getIntArray()} while an average-weighting request will
-   * compute the value using both arrays.
-   * 
-   * @param arrays
-   *          the arrays used to aggregate the categories weights.
-   * @param ordinal
-   *          the category ordinal for which to return the weight.
-   */
-  // TODO perhaps instead of getValueOf we can have a postProcess(FacetArrays)
-  // That, together with getFacetArraysSource should allow ResultHandlers to
-  // efficiently obtain the values from the arrays directly
-  public abstract double getValueOf(FacetArrays arrays, int ordinal);
   
   @Override
   public int hashCode() {

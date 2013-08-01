@@ -7,6 +7,8 @@ import org.apache.lucene.facet.search.FacetArrays;
 import org.apache.lucene.facet.search.FacetRequest;
 import org.apache.lucene.facet.search.FacetsAggregator;
 import org.apache.lucene.facet.search.FacetsCollector.MatchingDocs;
+import org.apache.lucene.facet.search.OrdinalValueResolver;
+import org.apache.lucene.facet.search.OrdinalValueResolver.IntValueResolver;
 import org.apache.lucene.index.BinaryDocValues;
 import org.apache.lucene.util.BytesRef;
 
@@ -79,6 +81,11 @@ public class SumIntAssociationFacetsAggregator implements FacetsAggregator {
   @Override
   public void rollupValues(FacetRequest fr, int ordinal, int[] children, int[] siblings, FacetArrays facetArrays) {
     // NO-OP: this aggregator does no rollup values to the parents.
+  }
+
+  @Override
+  public OrdinalValueResolver createOrdinalValueResolver(FacetRequest facetRequest, FacetArrays arrays) {
+    return new IntValueResolver(arrays);
   }
 
 }
