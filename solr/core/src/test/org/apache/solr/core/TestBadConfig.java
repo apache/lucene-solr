@@ -27,6 +27,15 @@ public class TestBadConfig extends AbstractBadConfigTestBase {
     assertConfigs("bad_solrconfig.xml","schema.xml","unset.sys.property");
   }
 
+  public void testMultipleIndexConfigs() throws Exception {
+      assertConfigs("bad-solrconfig-multiple-indexconfigs.xml", "schema12.xml",
+                    "indexConfig");
+  }
+  public void testMultipleCFS() throws Exception {
+      assertConfigs("bad-solrconfig-multiple-cfs.xml", "schema12.xml",
+                    "useCompoundFile");
+  }
+
   public void testUpdateLogButNoVersionField() throws Exception {
     
     System.setProperty("enable.update.log", "true");
