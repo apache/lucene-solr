@@ -117,15 +117,19 @@ public class SolrIndexConfig {
       def = new SolrIndexConfig(solrConfig);
     }
 
+    // sanity check: this will throw an error for us if there is more then one
+    // config section
+    Object unused = solrConfig.getNode(prefix, false);
+
     luceneVersion = solrConfig.luceneMatchVersion;
 
     // Assert that end-of-life parameters or syntax is not in our config.
     // Warn for luceneMatchVersion's before LUCENE_36, fail fast above
     assertWarnOrFail("The <mergeScheduler>myclass</mergeScheduler> syntax is no longer supported in solrconfig.xml. Please use syntax <mergeScheduler class=\"myclass\"/> instead.",
-        !((solrConfig.get(prefix+"/mergeScheduler/text()",null) != null) && (solrConfig.get(prefix+"/mergeScheduler/@class",null) == null)),
+        !((solrConfig.getNode(prefix+"/mergeScheduler",false) != null) && (solrConfig.get(prefix+"/mergeScheduler/@class",null) == null)),
         true);
     assertWarnOrFail("The <mergePolicy>myclass</mergePolicy> syntax is no longer supported in solrconfig.xml. Please use syntax <mergePolicy class=\"myclass\"/> instead.",
-        !((solrConfig.get(prefix+"/mergePolicy/text()",null) != null) && (solrConfig.get(prefix+"/mergePolicy/@class",null) == null)),
+        !((solrConfig.getNode(prefix+"/mergePolicy",false) != null) && (solrConfig.get(prefix+"/mergePolicy/@class",null) == null)),
         true);
     assertWarnOrFail("The <luceneAutoCommit>true|false</luceneAutoCommit> parameter is no longer valid in solrconfig.xml.",
         solrConfig.get(prefix+"/luceneAutoCommit", null) == null,

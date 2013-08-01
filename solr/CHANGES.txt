@@ -61,6 +61,15 @@ Apache ZooKeeper 3.4.5
 Upgrading from Solr 4.4.0
 ----------------------
 
+* XML configuration parsing is now more strict about situations where a single
+  setting is allowed but multiple values are found.  In the past, one value
+  would be chosen arbitrarily and silently.  Starting with 4.5, configuration 
+  parsing will fail with an error in situations like this.  If you see error 
+  messages such as "solrconfig.xml contains more than one value for config path: 
+  indexConfig/infoStream" check your solrconfig.xml file for multiple occurrences 
+  of "infoStream" and delete the one that you do not wish to use.  See SOLR-4953
+  for more details.
+
 Detailed Change List
 ----------------------
 
@@ -106,6 +115,9 @@ Other Changes
 * SOLR-5056: Improve type safety of ConfigSolr class. (Alan Woodward)
 
 * SOLR-4951: Better randomization of MergePolicy in Solr tests (hossman)
+
+* SOLR-4953: Make XML Configuration parsing fail if an xpath matches multiple 
+  nodes when only a single value is expected.  (hossman)
 
 ==================  4.4.0 ==================
 

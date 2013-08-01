@@ -233,14 +233,13 @@ public class Config {
   }
 
   public Node getNode(String path, Document doc, boolean errIfMissing) {
-   XPath xpath = xpathFactory.newXPath();
-   Node nd = null;
-   String xstr = normalize(path);
+    XPath xpath = xpathFactory.newXPath();
+    String xstr = normalize(path);
 
     try {
-      nd = (Node)xpath.evaluate(xstr, doc, XPathConstants.NODE);
-
-      if (nd==null) {
+      NodeList nodes = (NodeList)xpath.evaluate(xstr, doc, 
+                                                XPathConstants.NODESET);
+      if (nodes==null || 0 == nodes.getLength() ) {
         if (errIfMissing) {
           throw new RuntimeException(name + " missing "+path);
         } else {
@@ -248,7 +247,11 @@ public class Config {
           return null;
         }
       }
-
+      if ( 1 < nodes.getLength() ) {
+        throw new SolrException( SolrException.ErrorCode.SERVER_ERROR,
+                                 name + " contains more than one value for config path: " + path);
+      }
+      Node nd = nodes.item(0);
       log.trace(name + ":" + path + "=" + nd);
       return nd;
 
