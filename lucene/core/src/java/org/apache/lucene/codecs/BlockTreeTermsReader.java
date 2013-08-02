@@ -1707,7 +1707,6 @@ public class BlockTreeTermsReader extends FieldsProducer {
             if (arc.output != NO_OUTPUT) {
               output = fstOutputs.add(output, arc.output);
             }
-
             // if (DEBUG) {
             //   System.out.println("    index: follow label=" + toHex(target.bytes[target.offset + targetUpto]&0xff) + " arc.output=" + arc.output + " arc.nfo=" + arc.nextFinalOutput);
             // }
