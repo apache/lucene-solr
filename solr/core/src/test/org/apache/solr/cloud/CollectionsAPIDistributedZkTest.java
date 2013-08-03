@@ -57,6 +57,7 @@ import org.apache.solr.update.SolrCmdDistributor.Request;
 import org.apache.solr.util.DefaultSolrThreadFactory;
 import org.junit.Before;
 import org.junit.BeforeClass;
+import org.junit.Ignore;
 
 import javax.management.MBeanServer;
 import javax.management.MBeanServerFactory;
@@ -91,6 +92,7 @@ import static org.apache.solr.common.params.ShardParams._ROUTE_;
  * Tests the Cloud Collections API.
  */
 @Slow
+@Ignore("SOLR-5113")
 public class CollectionsAPIDistributedZkTest extends AbstractFullDistribZkTestBase {
   
   private static final String DEFAULT_COLLECTION = "collection1";
