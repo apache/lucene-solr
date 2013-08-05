@@ -127,30 +127,11 @@ public class BasicFunctionalityTest extends SolrTestCaseJ4 {
   public void testSomeStuff() throws Exception {
     clearIndex();
 
-    // test merge factor picked up
-    // and for rate limited settings
     SolrCore core = h.getCore();
 
-    RefCounted<IndexWriter> iwr = ((DirectUpdateHandler2) core
-        .getUpdateHandler()).getSolrCoreState().getIndexWriter(core);
-    try {
-      IndexWriter iw = iwr.get();
-      assertEquals("Mergefactor was not picked up", 8, ((LogMergePolicy) iw.getConfig().getMergePolicy()).getMergeFactor());
-      
-      Directory dir = iw.getDirectory();
-      
-      if (dir instanceof MockDirectoryWrapper) {
-        dir = ((MockDirectoryWrapper)dir).getDelegate();
-      }
-      
-      assertTrue(dir.getClass().getName(), dir instanceof RateLimitedDirectoryWrapper);
-      assertEquals(Double.valueOf(1000000), ((RateLimitedDirectoryWrapper)dir).getMaxWriteMBPerSec(Context.DEFAULT));
-      assertEquals(Double.valueOf(2000000), ((RateLimitedDirectoryWrapper)dir).getMaxWriteMBPerSec(Context.FLUSH));
-      assertEquals(Double.valueOf(3000000), ((RateLimitedDirectoryWrapper)dir).getMaxWriteMBPerSec(Context.MERGE));
-      assertEquals(Double.valueOf(4000000), ((RateLimitedDirectoryWrapper)dir).getMaxWriteMBPerSec(Context.READ));
-    } finally {
-      iwr.decref();
-    }
+    // test that we got the expected config, not just hardcoded defaults
+    assertNotNull(core.getRequestHandler("mock"));
+
     // test stats call
     NamedList stats = core.getStatistics();
     assertEquals("collection1", stats.get("coreName"));

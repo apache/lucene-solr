@@ -49,20 +49,8 @@
 
   <luceneMatchVersion>${tests.luceneMatchVersion:LUCENE_CURRENT}</luceneMatchVersion>
 
-  <indexConfig>
-    <mergeScheduler class="org.apache.lucene.index.ConcurrentMergeScheduler"/>
-    <writeLockTimeout>1000</writeLockTimeout>
-    <mergeFactor>8</mergeFactor>
-    <useCompoundFile>${useCompoundFile:false}</useCompoundFile>
-    <!-- for better multi-segment testing, we are using slower
-    indexing properties of maxBufferedDocs=10 and LogDocMergePolicy.
-    -->
-    <maxBufferedDocs>10</maxBufferedDocs>
-    <mergePolicy class="org.apache.lucene.index.LogDocMergePolicy"/>
-    <lockType>native</lockType>
-    <unlockOnStartup>true</unlockOnStartup>
-  </indexConfig>
-  
+  <xi:include href="solrconfig.snippet.randomindexconfig.xml" xmlns:xi="http://www.w3.org/2001/XInclude"/>
+
   <updateHandler class="solr.DirectUpdateHandler2">
 
     <!-- autocommit pending docs if certain criteria are met
