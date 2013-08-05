@@ -105,6 +105,7 @@ public abstract class AbstractZkTestCase extends SolrTestCaseJ4 {
     putConfig(zkClient, solrhome, config, "solrconfig.xml");
     putConfig(zkClient, solrhome, schema, "schema.xml");
 
+    putConfig(zkClient, solrhome, "solrconfig.snippet.randomindexconfig.xml");
     putConfig(zkClient, solrhome, "stopwords.txt");
     putConfig(zkClient, solrhome, "protwords.txt");
     putConfig(zkClient, solrhome, "currency.xml");
