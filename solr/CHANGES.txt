@@ -119,6 +119,10 @@ Other Changes
 * SOLR-4953: Make XML Configuration parsing fail if an xpath matches multiple 
   nodes when only a single value is expected.  (hossman)
 
+* The routing parameter "shard.keys" is deprecated as part of SOLR-5017 .The new parameter name is '_route_' .
+  The old parameter should continue to work for another release  (Noble Paul)
+
+
 ==================  4.4.0 ==================
 
 Versions of Major Components
