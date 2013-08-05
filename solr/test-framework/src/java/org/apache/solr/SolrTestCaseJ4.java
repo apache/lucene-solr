@@ -21,8 +21,11 @@ import com.carrotsearch.randomizedtesting.RandomizedContext;
 import com.carrotsearch.randomizedtesting.annotations.ThreadLeakFilters;
 import com.carrotsearch.randomizedtesting.rules.SystemPropertiesRestoreRule;
 import org.apache.commons.io.FileUtils;
+import org.apache.lucene.analysis.MockAnalyzer;
+import org.apache.lucene.index.IndexWriterConfig;
 import org.apache.lucene.util.IOUtils;
 import org.apache.lucene.util.LuceneTestCase;
+import org.apache.lucene.util._TestUtil;
 import org.apache.lucene.util.QuickPatchThreadsFilter;
 import org.apache.solr.client.solrj.util.ClientUtils;
 import org.apache.solr.common.SolrException;
@@ -112,13 +115,13 @@ public abstract class SolrTestCaseJ4 extends LuceneTestCase {
   private static void beforeClass() {
     System.setProperty("jetty.testMode", "true");
     
-    System.setProperty("useCompoundFile", Boolean.toString(random().nextBoolean()));
     System.setProperty("enable.update.log", usually() ? "true" : "false");
     System.setProperty("tests.shardhandler.randomSeed", Long.toString(random().nextLong()));
     setupLogging();
     startTrackingSearchers();
     startTrackingZkClients();
     ignoreException("ignore_exception");
+    newRandomConfig();
   }
 
   @AfterClass
@@ -180,6 +183,28 @@ public abstract class SolrTestCaseJ4 extends LuceneTestCase {
     SolrResourceLoader loader = new SolrResourceLoader(solrHome.getAbsolutePath());
     h = new TestHarness(loader, ConfigSolr.fromFile(loader, new File(solrHome, "solr.xml")));
     lrf = h.getRequestFactory("standard", 0, 20, CommonParams.VERSION, "2.2");
+  }
+  
+  /** sets system properties based on 
+   * {@link #newIndexWriterConfig(org.apache.lucene.util.Version, org.apache.lucene.analysis.Analyzer)}
+   * 
+   * configs can use these system properties to vary the indexwriter settings
+   */
+  public static void newRandomConfig() {
+    IndexWriterConfig iwc = newIndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer(random()));
+
+    System.setProperty("useCompoundFile", String.valueOf(iwc.getUseCompoundFile()));
+
+    System.setProperty("solr.tests.maxBufferedDocs", String.valueOf(iwc.getMaxBufferedDocs()));
+    System.setProperty("solr.tests.ramBufferSizeMB", String.valueOf(iwc.getRAMBufferSizeMB()));
+    System.setProperty("solr.tests.mergeScheduler", iwc.getMergeScheduler().getClass().getName());
+
+    // don't ask iwc.getMaxThreadStates(), sometimes newIWC uses 
+    // RandomDocumentsWriterPerThreadPool and all hell breaks loose
+    int maxIndexingThreads = rarely(random())
+      ? _TestUtil.nextInt(random(), 5, 20) // crazy value
+      : _TestUtil.nextInt(random(), 1, 4); // reasonable value
+    System.setProperty("solr.tests.maxIndexingThreads", String.valueOf(maxIndexingThreads));
   }
 
   @Override
