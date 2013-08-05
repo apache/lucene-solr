@@ -129,14 +129,15 @@ public class TestConfig extends SolrTestCaseJ4 {
 
   // sanity check that sys propertis are working as expected
   public void testSanityCheckTestSysPropsAreUsed() throws Exception {
-    final boolean expectCFS 
-      = Boolean.parseBoolean(System.getProperty("useCompoundFile"));
 
     SolrConfig sc = new SolrConfig(new SolrResourceLoader("solr/collection1"), "solrconfig-basic.xml", null);
     SolrIndexConfig sic = sc.indexConfig;
-    assertEquals("default ramBufferSizeMB", 100.0D, sic.ramBufferSizeMB, 0.0D);
-    assertEquals("default LockType", SolrIndexConfig.LOCK_TYPE_NATIVE, sic.lockType);
-    assertEquals("useCompoundFile sysprop", expectCFS, sic.useCompoundFile);
+
+    assertEquals("ramBufferSizeMB sysprop", 
+                 Double.parseDouble(System.getProperty("solr.tests.ramBufferSizeMB")), 
+                                    sic.ramBufferSizeMB, 0.0D);
+    assertEquals("useCompoundFile sysprop", 
+                 Boolean.parseBoolean(System.getProperty("useCompoundFile")), sic.useCompoundFile);
   }
 
 }

@@ -22,6 +22,18 @@ A solrconfig.xml snippet containing indexConfig settings for randomized testing.
 
 -->
 <indexConfig>
-  <useCompoundFile>${useCompoundFile:false}</useCompoundFile>
+  <!-- allways use this randomized policy -->
   <mergePolicy class="org.apache.solr.util.RandomMergePolicy" />
+  
+  <useCompoundFile>${useCompoundFile:false}</useCompoundFile>
+
+  <maxBufferedDocs>${solr.tests.maxBufferedDocs}</maxBufferedDocs>
+  <maxIndexingThreads>${solr.tests.maxIndexingThreads}</maxIndexingThreads>
+  <ramBufferSizeMB>${solr.tests.ramBufferSizeMB}</ramBufferSizeMB>
+
+  <mergeScheduler class="${solr.tests.mergeScheduler}" />
+
+  <writeLockTimeout>1000</writeLockTimeout>
+  <commitLockTimeout>10000</commitLockTimeout>
+  <lockType>single</lockType>
 </indexConfig>
