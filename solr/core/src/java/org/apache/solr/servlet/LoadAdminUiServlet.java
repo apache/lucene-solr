@@ -26,6 +26,7 @@ import javax.servlet.http.HttpServlet;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
+import com.google.inject.Singleton;
 import org.apache.commons.io.IOUtils;
 import org.apache.commons.lang.StringUtils;
 import org.apache.commons.lang.StringEscapeUtils;
@@ -37,6 +38,7 @@ import org.apache.solr.core.SolrCore;
  * 
  * @since solr 4.0
  */
+@Singleton
 public final class LoadAdminUiServlet extends HttpServlet {
 
   @Override

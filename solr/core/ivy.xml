@@ -55,6 +55,18 @@
     <dependency org="com.google.protobuf" name="protobuf-java" rev="2.4.0a" conf="compile.hadoop->*"/>
     <dependency org="com.googlecode.concurrentlinkedhashmap" name="concurrentlinkedhashmap-lru" rev="1.2" conf="compile.hadoop->*"/>
 
+    <dependency org="com.google.inject" name="guice" rev="3.0" conf="compile->*"/>
+    <dependency org="com.google.inject.extensions" name="guice-multibindings" rev="3.0" conf="compile->*"/>
+    <dependency org="com.google.inject.extensions" name="guice-servlet" rev="3.0" conf="compile->*"/>
+    <dependency org="javax.inject" name="javax.inject" rev="1" conf="compile->*"/>
+    <dependency org="aopalliance" name="aopalliance" rev="1.0" conf="compile->*"/>
+    <!--<dependency org="javax.inject" name="javax.inject" rev="1" conf="compile->*"/>-->
+    <!--<dependency org="javax.inject" name="javax.inject-tck" rev="" conf="compile->*"/>-->
+    <!--<dependency org="org.sonatype.sisu.inject" name="cglib" rev="2.2.1-v20090111" conf="compile->*"/>
+    <dependency org="org.sonatype.sisu.inject" name="cglib" rev="" conf="compile->*"/>-->
+
+
+
     <!-- Hadoop DfsMiniCluster Dependencies-->
     <dependency org="org.apache.hadoop" name="hadoop-common" rev="&hadoop.version;" conf="test.DfsMiniCluster->*">
       <artifact name="hadoop-common" type="test" ext="jar" maven:classifier="tests" />

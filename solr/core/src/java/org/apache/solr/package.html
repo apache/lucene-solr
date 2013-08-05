@@ -25,5 +25,51 @@ Commonly reused classes and interfaces (deprecated package, do not add new class
 
 
 </p>
+<!-- Change this to official, once have it all in place, for now use as
+ a scratch pad-->
+<h2>API Planning Scratch Pad</h2>
+
+<h3>Admin</h3>
+<p>
+/admin
+  <ul>
+  <li>/collections</li>
+  <li>/info
+    <!-- New -->
+  <ul><li>/stats</li></ul>
+  </li>
+  <li>/zookeeper</li>
+  <li>/plugins</li>
+  </ul>
+</p>
+<h4>UI</h4>
+<p>
+
+</p>
+<h3>Per Collection</h3>
+<p>
+/collections/{collection}
+  <ul>
+  <li>/schema
+    <ul>/...</ul>
+  </li>
+  <!-- New -->
+  <li>/config
+  <ul>
+    <li></li></ul></li>
+  <li>/documents -- Access to documents, not everything is a "search", so just capture it here in that we are operating over documents. Similar to Select.
+    Post handles adding multiple documents
+  <ul>
+    <li>/{id} -- Realtime get, Update at a per document level</li>
+  </ul></li>
+  </ul>
+</p>
+<h4>Request Handlers</h4>
+
+<h3>Legacy</h3>
+<p></p>
+<h2>Security</h2>
+<p>Restlet makes it incredibly easy to offer HTTPS and Authorization schemes.  We should
+take advantage of this to secure the APIs</p>
 </body>
 </html>

@@ -18,6 +18,7 @@
 package org.apache.solr.core;
 
 import com.google.common.collect.Maps;
+import com.google.inject.Singleton;
 import org.apache.solr.cloud.ZkController;
 import org.apache.solr.cloud.ZkSolrResourceLoader;
 import org.apache.solr.common.SolrException;
@@ -66,6 +67,7 @@ import static com.google.common.base.Preconditions.checkNotNull;
  *
  * @since solr 1.3
  */
+@Singleton
 public class CoreContainer {
 
   protected static final Logger log = LoggerFactory.getLogger(CoreContainer.class);
@@ -100,7 +102,7 @@ public class CoreContainer {
   {
     log.info("New CoreContainer " + System.identityHashCode(this));
   }
-
+  //TODO: simplify this stuff.
   /**
    * Create a new CoreContainer using system properties to detect the solr home
    * directory.  The container's cores are not loaded.

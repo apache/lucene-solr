@@ -58,7 +58,7 @@ import org.apache.solr.core.SolrCore;
 import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.request.SolrQueryRequestBase;
 
-
+//TODO: change to be Guice injected, probably can get rid of this container class all together and just take in multibinding of SolrRequestParser
 public class SolrRequestParsers 
 {
   final Logger log = LoggerFactory.getLogger(SolrRequestParsers.class);

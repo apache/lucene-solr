@@ -18,6 +18,7 @@ package org.apache.solr.rest.schema;
 
 import org.apache.solr.common.params.CommonParams;
 import org.apache.solr.common.util.SimpleOrderedMap;
+import org.apache.solr.request.SolrQueryRequestDecoder;
 import org.apache.solr.schema.IndexSchema;
 import org.apache.solr.schema.SchemaField;
 import org.restlet.resource.ResourceException;
@@ -36,19 +37,19 @@ abstract class BaseFieldResource extends BaseSchemaResource {
   private boolean showDefaults;
 
   protected LinkedHashSet<String> getRequestedFields() {
-    return requestedFields; 
+    return requestedFields;
   }
-  
 
-  protected BaseFieldResource() {
-    super();
+
+  protected BaseFieldResource(SolrQueryRequestDecoder requestDecoder) {
+    super(requestDecoder);
   }
 
   /**
    * Pulls the "fl" param from the request and splits it to get the
    * requested list of fields.  The (Dynamic)FieldCollectionResource classes
    * will then restrict the fields sent back in the response to those
-   * on this list.  The (Dynamic)FieldResource classes ignore this list, 
+   * on this list.  The (Dynamic)FieldResource classes ignore this list,
    * since the (dynamic) field is specified in the URL path, rather than
    * in a query parameter.
    * <p/>
@@ -66,7 +67,7 @@ abstract class BaseFieldResource extends BaseSchemaResource {
         if (fields.length > 0) {
           requestedFields = new LinkedHashSet<String>();
           for (String field : fields) {
-            if ( ! field.trim().isEmpty()) {
+            if (!field.trim().isEmpty()) {
               requestedFields.add(field.trim());
             }
           }
@@ -76,7 +77,8 @@ abstract class BaseFieldResource extends BaseSchemaResource {
     }
   }
 
-  /** Get the properties for a given field.
+  /**
+   * Get the properties for a given field.
    *
    * @param field not required to exist in the schema
    */
@@ -85,10 +87,10 @@ abstract class BaseFieldResource extends BaseSchemaResource {
       return null;
     }
     SimpleOrderedMap<Object> properties = field.getNamedPropertyValues(showDefaults);
-    if ( ! getSchema().getFields().containsKey(field.getName())) {
+    if (!getSchema().getFields().containsKey(field.getName())) {
       String dynamicBase = getSchema().getDynamicPattern(field.getName());
       // Add dynamicBase property if it's different from the field name. 
-      if ( ! field.getName().equals(dynamicBase)) {
+      if (!field.getName().equals(dynamicBase)) {
         properties.add(DYNAMIC_BASE, dynamicBase);
       }
     }

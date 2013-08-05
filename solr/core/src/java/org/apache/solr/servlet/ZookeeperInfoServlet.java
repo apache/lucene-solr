@@ -30,6 +30,7 @@ import javax.servlet.http.HttpServlet;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
+import com.google.inject.Singleton;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.IOUtils;
 import org.noggit.CharArr;
@@ -51,13 +52,15 @@ import org.slf4j.LoggerFactory;
  *
  * @since solr 4.0
  */
+
+@Singleton
 public final class ZookeeperInfoServlet extends HttpServlet {
   static final Logger log = LoggerFactory.getLogger(ZookeeperInfoServlet.class);
   
   @Override
   public void init() {
   }
-
+  //TODO: why not just override service?
   @Override
   public void doGet(HttpServletRequest request,
                     HttpServletResponse response)

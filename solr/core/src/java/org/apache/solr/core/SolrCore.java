@@ -1914,9 +1914,10 @@ public final class SolrCore implements SolrInfoMBean {
   }
 
   
-  
+  //TODO: make this stuff injectable
   private QueryResponseWriter defaultResponseWriter;
   private final Map<String, QueryResponseWriter> responseWriters = new HashMap<String, QueryResponseWriter>();
+
   public static final Map<String ,QueryResponseWriter> DEFAULT_RESPONSE_WRITERS ;
   static{
     HashMap<String, QueryResponseWriter> m= new HashMap<String, QueryResponseWriter>();

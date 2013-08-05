@@ -18,6 +18,7 @@ package org.apache.solr.rest.schema;
  */
 
 import org.apache.solr.common.util.SimpleOrderedMap;
+import org.apache.solr.request.SolrQueryRequestDecoder;
 import org.apache.solr.schema.FieldType;
 import org.apache.solr.schema.IndexSchema;
 import org.restlet.resource.ResourceException;
@@ -30,8 +31,8 @@ import java.util.List;
 abstract class BaseFieldTypeResource extends BaseSchemaResource {
   private boolean showDefaults;
 
-  protected BaseFieldTypeResource() {
-    super();
+  protected BaseFieldTypeResource(SolrQueryRequestDecoder requestDecoder) {
+    super(requestDecoder);
   }
 
   @Override
@@ -41,8 +42,10 @@ abstract class BaseFieldTypeResource extends BaseSchemaResource {
       showDefaults = getSolrRequest().getParams().getBool(SHOW_DEFAULTS, false);
     }
   }
-  
-  /** Used by subclasses to collect field type properties */
+
+  /**
+   * Used by subclasses to collect field type properties
+   */
   protected SimpleOrderedMap<Object> getFieldTypeProperties(FieldType fieldType) {
     SimpleOrderedMap<Object> properties = fieldType.getNamedPropertyValues(showDefaults);
     properties.add(IndexSchema.FIELDS, getFieldsWithFieldType(fieldType));
@@ -50,10 +53,14 @@ abstract class BaseFieldTypeResource extends BaseSchemaResource {
     return properties;
   }
 
-  
-  /** Return a list of names of Fields that have the given FieldType */
+
+  /**
+   * Return a list of names of Fields that have the given FieldType
+   */
   protected abstract List<String> getFieldsWithFieldType(FieldType fieldType);
 
-  /** Return a list of names of DynamicFields that have the given FieldType */
+  /**
+   * Return a list of names of DynamicFields that have the given FieldType
+   */
   protected abstract List<String> getDynamicFieldsWithFieldType(FieldType fieldType);
 }
