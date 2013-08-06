@@ -17,6 +17,8 @@ package org.apache.solr.core;
  * limitations under the License.
  */
 
+import org.apache.solr.update.SolrIndexConfigTest;
+
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.AtomicReader;
 import org.apache.lucene.index.AtomicReaderContext;
@@ -25,6 +27,7 @@ import org.apache.lucene.index.SegmentInfo;
 import org.apache.lucene.index.IndexWriterConfig;
 import org.apache.lucene.index.MergePolicy;
 import org.apache.lucene.index.TieredMergePolicy;
+import org.apache.lucene.index.ConcurrentMergeScheduler;
 import org.apache.solr.core.SolrCore;
 import org.apache.solr.util.RefCounted;
 import org.apache.solr.search.SolrIndexSearcher;
@@ -32,6 +35,7 @@ import org.apache.solr.SolrTestCaseJ4;
 import org.junit.After;
 import java.util.concurrent.atomic.AtomicInteger;
 
+/** @see SolrIndexConfigTest */
 public class TestMergePolicyConfig extends SolrTestCaseJ4 {
   
   private static AtomicInteger docIdCounter = new AtomicInteger(42);
