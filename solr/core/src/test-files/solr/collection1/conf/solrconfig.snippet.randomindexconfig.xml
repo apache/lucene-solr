@@ -38,5 +38,10 @@ A solrconfig.xml snippet containing indexConfig settings for randomized testing.
 
   <writeLockTimeout>1000</writeLockTimeout>
   <commitLockTimeout>10000</commitLockTimeout>
-  <lockType>single</lockType>
+
+  <!-- this sys property is not set by SolrTestCaseJ4 because almost all tests should
+       use the single process lockType for speed - but tests that explicitly need
+       to vary the lockType canset it as needed.
+  -->
+  <lockType>${solr.tests.lockType:single}</lockType>
 </indexConfig>
