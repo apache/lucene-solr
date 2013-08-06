@@ -146,6 +146,9 @@ API Changes
   should match for its high and low frequent sub-queries. Previously this was only
   supported on the low frequent terms query. (Simon Willnauer)  
 
+* LUCENE-5156: CompressingTermVectors TermsEnum no longer supports ord().
+  (Robert Muir)
+
 Optimizations
 
 * LUCENE-5088: Added TermFilter to filter docs by a specific term.
