@@ -75,6 +75,9 @@ Bug Fixes
 * SOLR-5087 - CoreAdminHandler.handleMergeAction generating NullPointerException
  (Patrick Hunt via Erick Erickson)
 
+* SOLR-5107: Fixed NPE when using numTerms=0 in LukeRequestHandler
+  (Ahmet Arslan, hossman)
+
 Optimizations
 ----------------------
 
