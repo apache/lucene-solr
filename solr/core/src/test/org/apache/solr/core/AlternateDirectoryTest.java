@@ -25,20 +25,28 @@ import org.apache.solr.SolrTestCaseJ4;
 import org.junit.BeforeClass;
 import org.junit.Test;
 
+/**
+ * test that configs can override the DirectoryFactory and 
+ * IndexReaderFactory used in solr.
+ */
 public class AlternateDirectoryTest extends SolrTestCaseJ4 {
   @BeforeClass
   public static void beforeClass() throws Exception {
     initCore("solrconfig-altdirectory.xml", "schema.xml");
   }
 
-  /**
-   * Simple test to ensure that alternate IndexReaderFactory is being used.
-   */
-  @Test
   public void testAltDirectoryUsed() throws Exception {
     assertQ(req("q","*:*","qt","standard"));
     assertTrue(TestFSDirectoryFactory.openCalled);
     assertTrue(TestIndexReaderFactory.newReaderCalled);
+  }
+  
+  public void testAltReaderUsed() throws Exception {
+    IndexReaderFactory readerFactory = h.getCore().getIndexReaderFactory();
+    assertNotNull("Factory is null", readerFactory);
+    assertEquals("readerFactory is wrong class",
+                 AlternateDirectoryTest.TestIndexReaderFactory.class.getName(), 
+                 readerFactory.getClass().getName());
   }
 
   static public class TestFSDirectoryFactory extends StandardDirectoryFactory {
