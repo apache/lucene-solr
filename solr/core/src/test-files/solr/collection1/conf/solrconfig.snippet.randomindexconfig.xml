@@ -22,8 +22,11 @@ A solrconfig.xml snippet containing indexConfig settings for randomized testing.
 
 -->
 <indexConfig>
-  <!-- allways use this randomized policy -->
-  <mergePolicy class="org.apache.solr.util.RandomMergePolicy" />
+  <!-- this sys property is not set by SolrTestCaseJ4 because we ideally want to use
+       the RandomMergePolicy in all tests - but some tests expect very specific
+       Merge behavior, so those tests can set it as needed.
+  -->
+  <mergePolicy class="${solr.tests.mergePolicy:org.apache.solr.util.RandomMergePolicy}" />
   
   <useCompoundFile>${useCompoundFile:false}</useCompoundFile>
 
