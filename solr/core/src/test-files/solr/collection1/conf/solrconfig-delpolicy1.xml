@@ -25,12 +25,27 @@
   <requestHandler name="standard" class="solr.StandardRequestHandler"/>
 
   <indexConfig>
-   <useCompoundFile>${useCompoundFile:false}</useCompoundFile>
-   <deletionPolicy class="solr.SolrDeletionPolicy">
-    <str name="keepOptimizedOnly">true</str>
-    <str name="maxCommitsToKeep">3</str>
-    <str name="maxCommitAge">100MILLISECONDS</str>
-   </deletionPolicy>
+    <!-- we can't include solrconfig.snippet.randomindexconfig.xml because we need
+         to configure an explicit deletion policy, but we still wnat to randomize as much 
+         as possible. 
+    -->
+    <mergePolicy class="${solr.tests.mergePolicy:org.apache.solr.util.RandomMergePolicy}" />
+    <useCompoundFile>${useCompoundFile:false}</useCompoundFile>
+
+    <maxBufferedDocs>${solr.tests.maxBufferedDocs}</maxBufferedDocs>
+    <maxIndexingThreads>${solr.tests.maxIndexingThreads}</maxIndexingThreads>
+    <ramBufferSizeMB>${solr.tests.ramBufferSizeMB}</ramBufferSizeMB>
+    
+    <mergeScheduler class="${solr.tests.mergeScheduler}" />
+    
+    <lockType>single</lockType>
+
+
+    <deletionPolicy class="solr.SolrDeletionPolicy">
+      <str name="keepOptimizedOnly">true</str>
+      <str name="maxCommitsToKeep">3</str>
+      <str name="maxCommitAge">100MILLISECONDS</str>
+    </deletionPolicy>
   </indexConfig>
 
 </config>
