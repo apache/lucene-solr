@@ -62,12 +62,14 @@ public class SolrCoreCheckLockOnStartupTest extends SolrTestCaseJ4 {
 
     ignoreException("locked");
     try {
+      System.setProperty("solr.tests.lockType","simple");
       //opening a new core on the same index
-      initCore("solrconfig-simplelock.xml", "schema.xml");
+      initCore("solrconfig-basic.xml", "schema.xml");
       if (checkForCoreInitException(LockObtainFailedException.class))
         return;
       fail("Expected " + LockObtainFailedException.class.getSimpleName());
     } finally {
+      System.clearProperty("solr.tests.lockType");
       unIgnoreException("locked");
       indexWriter.close();
       directory.close();
@@ -86,13 +88,15 @@ public class SolrCoreCheckLockOnStartupTest extends SolrTestCaseJ4 {
 
     ignoreException("locked");
     try {
+      System.setProperty("solr.tests.lockType","native");
       //opening a new core on the same index
-      initCore("solrconfig-nativelock.xml", "schema.xml");
+      initCore("solrconfig-basic.xml", "schema.xml");
       CoreContainer cc = h.getCoreContainer();
       if (checkForCoreInitException(LockObtainFailedException.class))
         return;
       fail("Expected " + LockObtainFailedException.class.getSimpleName());
     } finally {
+      System.clearProperty("solr.tests.lockType");
       unIgnoreException("locked");
       indexWriter.close();
       directory.close();
