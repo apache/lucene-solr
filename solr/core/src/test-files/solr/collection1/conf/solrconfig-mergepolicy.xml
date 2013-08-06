@@ -36,6 +36,10 @@
       <bool name="useCompoundFile">${useCompoundFile:false}</bool>
 
     </mergePolicy>
+    <mergeScheduler class="org.apache.lucene.index.ConcurrentMergeScheduler">
+      <int name="maxMergeCount">987</int>
+      <int name="maxThreadCount">42</int>
+    </mergeScheduler>
   </indexConfig>
 
   <requestHandler name="standard" class="solr.StandardRequestHandler"></requestHandler>
