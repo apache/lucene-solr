@@ -46,6 +46,12 @@ New Features
 * SOLR-3359: Added analyzer attribute/property to SynonymFilterFactory.
   (Ryo Onodera via Koji Sekiguchi)
 
+Bugs
+
+* LUCENE-5160: Handle the case where reading from a file or FileChannel returns -1, which
+  could happen in rare cases where something happens to the file between the time we start the
+  read loop (where we check the length) and when we actually do the read. (gsingers, yonik, Robert Muir, Uwe Schindler)
+
 Optimizations
 
 * LUCENE-4848: Use Java 7 NIO2-FileChannel instead of RandomAccessFile
