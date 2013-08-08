@@ -63,6 +63,10 @@ Bug Fixes
   seek/lookup which can cause sideeffects if done on a cached FST root arc.
   (Simon Willnauer)
 
+* LUCENE-5160: Handle the case where reading from a file or FileChannel returns -1, which
+  could happen in rare cases where something happens to the file between the time we start the
+  read loop (where we check the length) and when we actually do the read. (gsingers, yonik, Robert Muir, Uwe Schindler)
+
 API Changes
 
 * LUCENE-5094: Add ramBytesUsed() to MultiDocValues.OrdinalMap.
