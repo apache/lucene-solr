@@ -88,6 +88,10 @@ public class ExtractingRequestHandlerTest extends SolrTestCaseJ4 {
     assertU(commit());
     assertQ(req("title:Welcome"), "//*[@numFound='1']");
 
+    assertQ(req("extractedContent:distinctwords"),      "//*[@numFound='0']");
+    assertQ(req("extractedContent:distinct"),           "//*[@numFound='1']");
+    assertQ(req("extractedContent:words"),              "//*[@numFound='2']");
+    assertQ(req("extractedContent:\"distinct words\""), "//*[@numFound='1']");
 
     loadLocal("extraction/simple.html",
       "literal.id","simple2",
