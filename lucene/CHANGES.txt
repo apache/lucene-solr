@@ -165,6 +165,9 @@ Optimizations
 * LUCENE-5140: Fixed a performance regression of span queries caused by
   LUCENE-4946. (Alan Woodward, Adrien Grand)
 
+* LUCENE-5150: Make WAH8DocIdSet able to inverse its encoding in order to
+  compress dense sets efficiently as well. (Adrien Grand)
+
 Documentation
 
 * LUCENE-4894: remove facet userguide as it was outdated. Partially absorbed into
