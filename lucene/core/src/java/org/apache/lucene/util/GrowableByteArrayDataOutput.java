@@ -47,9 +47,7 @@ public final class GrowableByteArrayDataOutput extends DataOutput {
   @Override
   public void writeBytes(byte[] b, int off, int len) {
     final int newLength = length + len;
-    if (newLength > bytes.length) {
-      bytes = ArrayUtil.grow(bytes, newLength);
-    }
+    bytes = ArrayUtil.grow(bytes, newLength);
     System.arraycopy(b, off, bytes, length, len);
     length = newLength;
   }

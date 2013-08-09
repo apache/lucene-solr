@@ -35,31 +35,33 @@ import org.apache.lucene.util.packed.PackedInts;
  * <p>This implementation doesn't support random-access but has a fast
  * {@link DocIdSetIterator} which can advance in logarithmic time thanks to
  * an index.</p>
- * <p>The compression scheme is simplistic and should work well with sparse doc
- * id sets while being only slightly larger than a {@link FixedBitSet} for
- * incompressible sets (overhead&lt;2% in the worst case) in spite of the index.</p>
+ * <p>The compression scheme is simplistic and should work well with sparse and
+ * very dense doc id sets while being only slightly larger than a
+ * {@link FixedBitSet} for incompressible sets (overhead&lt;2% in the worst
+ * case) in spite of the index.</p>
  * <p><b>Format</b>: The format is byte-aligned. An 8-bits word is either clean,
- * meaning composed only of zeros, or dirty, meaning that it contains at least one
- * bit set. The idea is to encode sequences of clean words using run-length
- * encoding and to leave sequences of dirty words as-is.</p>
+ * meaning composed only of zeros or ones, or dirty, meaning that it contains
+ * between 1 and 7 bits set. The idea is to encode sequences of clean words
+ * using run-length encoding and to leave sequences of dirty words as-is.</p>
  * <table>
  *   <tr><th>Token</th><th>Clean length+</th><th>Dirty length+</th><th>Dirty words</th></tr>
  *   <tr><td>1 byte</td><td>0-n bytes</td><td>0-n bytes</td><td>0-n bytes</td></tr>
  * </table>
  * <ul>
- *   <li><b>Token</b> encodes the number of clean words minus 2 on the first 4
- * bits and the number of dirty words minus 1 on the last 4 bits. The
- * higher-order bit is a continuation bit, meaning that the number is incomplete
- * and needs additional bytes to be read.</li>
+ *   <li><b>Token</b> encodes whether clean means full of zeros or ones in the
+ * first bit, the number of clean words minus 2 on the next 3 bits and the
+ * number of dirty words on the last 4 bits. The higher-order bit is a
+ * continuation bit, meaning that the number is incomplete and needs additional
+ * bytes to be read.</li>
  *   <li><b>Clean length+</b>: If clean length has its higher-order bit set,
  * you need to read a {@link DataInput#readVInt() vint}, shift it by 3 bits on
  * the left side and add it to the 3 bits which have been read in the token.</li>
  *   <li><b>Dirty length+</b> works the same way as <b>Clean length+</b> but
- * for the length of dirty words.</li>
+ * on 4 bits and for the length of dirty words.</li>
  *   <li><b>Dirty words</b> are the dirty words, there are <b>Dirty length</b>
  * of them.</li>
  * </ul>
- * <p>This format cannot encode sequences of less than 2 clean words and 1 dirty
+ * <p>This format cannot encode sequences of less than 2 clean words and 0 dirty
  * word. The reason is that if you find a single clean word, you should rather
  * encode it as a dirty word. This takes the same space as starting a new
  * sequence (since you need one byte for the token) but will be lighter to
@@ -67,10 +69,9 @@ import org.apache.lucene.util.packed.PackedInts;
  * sequence may start directly with a dirty word, the clean length is encoded
  * directly, without subtracting 2.</p>
  * <p>There is an additional restriction on the format: the sequence of dirty
- * words must start and end with a non-null word and is not allowed to contain
- * two consecutive null words. This restriction exists to make sure no space is
- * wasted and to make sure iterators can read the next doc ID by reading at most
- * 2 dirty words.</p>
+ * words is not allowed to contain two consecutive clean words. This restriction
+ * exists to make sure no space is wasted and to make sure iterators can read
+ * the next doc ID by reading at most 2 dirty words.</p>
  * @lucene.experimental
  */
 public final class WAH8DocIdSet extends DocIdSet {
@@ -83,9 +84,9 @@ public final class WAH8DocIdSet extends DocIdSet {
   private static final int MIN_INDEX_INTERVAL = 8;
 
   /** Default index interval. */
-  public static final int DEFAULT_INDEX_INTERVAL = MIN_INDEX_INTERVAL;
+  public static final int DEFAULT_INDEX_INTERVAL = 24;
 
-  private static final MonotonicAppendingLongBuffer SINGLE_ZERO_BUFFER = new MonotonicAppendingLongBuffer();
+  private static final MonotonicAppendingLongBuffer SINGLE_ZERO_BUFFER = new MonotonicAppendingLongBuffer(1, 64, PackedInts.COMPACT);
   private static WAH8DocIdSet EMPTY = new WAH8DocIdSet(new byte[0], 0, 1, SINGLE_ZERO_BUFFER, SINGLE_ZERO_BUFFER);
 
   static {
@@ -230,6 +231,7 @@ public final class WAH8DocIdSet extends DocIdSet {
     int numSequences;
     int indexInterval;
     int cardinality;
+    boolean reverse;
 
     WordBuilder() {
       out = new GrowableByteArrayDataOutput(1024);
@@ -256,34 +258,45 @@ public final class WAH8DocIdSet extends DocIdSet {
       return this;
     }
 
-    void writeHeader(int cleanLength) throws IOException {
+    void writeHeader(boolean reverse, int cleanLength, int dirtyLength) throws IOException {
       final int cleanLengthMinus2 = cleanLength - 2;
-      final int dirtyLengthMinus1 = dirtyWords.length - 1;
       assert cleanLengthMinus2 >= 0;
-      assert dirtyLengthMinus1 >= 0;
-      int token = ((cleanLengthMinus2 & 0x07) << 4) | (dirtyLengthMinus1 & 0x07);
-      if (cleanLengthMinus2 > 0x07) {
+      assert dirtyLength >= 0;
+      int token = ((cleanLengthMinus2 & 0x03) << 4) | (dirtyLength & 0x07);
+      if (reverse) {
         token |= 1 << 7;
       }
-      if (dirtyLengthMinus1 > 0x07) {
+      if (cleanLengthMinus2 > 0x03) {
+        token |= 1 << 6;
+      }
+      if (dirtyLength > 0x07) {
         token |= 1 << 3;
       }
       out.writeByte((byte) token);
-      if (cleanLengthMinus2 > 0x07) {
-        out.writeVInt(cleanLengthMinus2 >>> 3);
+      if (cleanLengthMinus2 > 0x03) {
+        out.writeVInt(cleanLengthMinus2 >>> 2);
       }
-      if (dirtyLengthMinus1 > 0x07) {
-        out.writeVInt(dirtyLengthMinus1 >>> 3);
+      if (dirtyLength > 0x07) {
+        out.writeVInt(dirtyLength >>> 3);
       }
     }
 
-    void writeSequence(int cleanLength) {
+    private boolean sequenceIsConsistent() {
+      for (int i = 1; i < dirtyWords.length; ++i) {
+        assert dirtyWords.bytes[i-1] != 0 || dirtyWords.bytes[i] != 0;
+        assert dirtyWords.bytes[i-1] != (byte) 0xFF || dirtyWords.bytes[i] != (byte) 0xFF;
+      }
+      return true;
+    }
+
+    void writeSequence() {
+      assert sequenceIsConsistent();
       try {
-        writeHeader(cleanLength);
-        out.writeBytes(dirtyWords.bytes, dirtyWords.length);
+        writeHeader(reverse, clean, dirtyWords.length);
       } catch (IOException cannotHappen) {
         throw new AssertionError(cannotHappen);
       }
+      out.writeBytes(dirtyWords.bytes, 0, dirtyWords.length);
       dirtyWords.length = 0;
       ++numSequences;
     }
@@ -292,20 +305,57 @@ public final class WAH8DocIdSet extends DocIdSet {
       assert wordNum > lastWordNum;
       assert word != 0;
 
-      if (lastWordNum == -1) {
-        clean = 2 + wordNum; // special case for the 1st sequence
-        dirtyWords.writeByte(word);
+      if (!reverse) {
+        if (lastWordNum == -1) {
+          clean = 2 + wordNum; // special case for the 1st sequence
+          dirtyWords.writeByte(word);
+        } else {
+          switch (wordNum - lastWordNum) {
+            case 1:
+              if (word == (byte) 0xFF && dirtyWords.bytes[dirtyWords.length-1] == (byte) 0xFF) {
+                --dirtyWords.length;
+                writeSequence();
+                reverse = true;
+                clean = 2;
+              } else {
+                dirtyWords.writeByte(word);
+              }
+              break;
+            case 2:
+              dirtyWords.writeByte((byte) 0);
+              dirtyWords.writeByte(word);
+              break;
+            default:
+              writeSequence();
+              clean = wordNum - lastWordNum - 1;
+              dirtyWords.writeByte(word);
+          }
+        }
       } else {
+        assert lastWordNum >= 0;
         switch (wordNum - lastWordNum) {
           case 1:
-            dirtyWords.writeByte(word);
+            if (word == (byte) 0xFF) {
+              if (dirtyWords.length == 0) {
+                ++clean;
+              } else if (dirtyWords.bytes[dirtyWords.length - 1] == (byte) 0xFF) {
+                --dirtyWords.length;
+                writeSequence();
+                clean = 2;
+              } else {
+                dirtyWords.writeByte(word);
+              }
+            } else {
+              dirtyWords.writeByte(word);
+            }
             break;
           case 2:
             dirtyWords.writeByte((byte) 0);
             dirtyWords.writeByte(word);
             break;
           default:
-            writeSequence(clean);
+            writeSequence();
+            reverse = false;
             clean = wordNum - lastWordNum - 1;
             dirtyWords.writeByte(word);
         }
@@ -320,7 +370,7 @@ public final class WAH8DocIdSet extends DocIdSet {
         assert lastWordNum == -1;
         return EMPTY;
       }
-      writeSequence(clean);
+      writeSequence();
       final byte[] data = Arrays.copyOf(out.bytes, out.length);
 
       // Now build the index
@@ -444,20 +494,43 @@ public final class WAH8DocIdSet extends DocIdSet {
     return new Iterator(data, cardinality, indexInterval, positions, wordNums);
   }
 
-  static int readLength(ByteArrayDataInput in, int len) {
-    if ((len & 0x08) == 0) {
-      // no continuation bit
-      return len;
+  static int readCleanLength(ByteArrayDataInput in, int token) {
+    int len = (token >>> 4) & 0x07;
+    final int startPosition = in.getPosition();
+    if ((len & 0x04) != 0) {
+      len = (len & 0x03) | (in.readVInt() << 2);
     }
-    return (len & 0x07) | (in.readVInt() << 3);
+    if (startPosition != 1) {
+      len += 2;
+    }
+    return len;
+  }
+
+  static int readDirtyLength(ByteArrayDataInput in, int token) {
+    int len = token & 0x0F;
+    if ((len & 0x08) != 0) {
+      len = (len & 0x07) | (in.readVInt() << 3);
+    }
+    return len;
   }
 
   static class Iterator extends DocIdSetIterator {
+
+    /* Using the index can be costly for close targets. */
+    static int indexThreshold(int cardinality, int indexInterval) {
+      // Short sequences encode for 3 words (2 clean words and 1 dirty byte),
+      // don't advance if we are going to read less than 3 x indexInterval
+      // sequences
+      long indexThreshold = 3L * 3 * indexInterval;
+      return (int) Math.min(Integer.MAX_VALUE, indexThreshold);
+    }
 
     final ByteArrayDataInput in;
     final int cardinality;
     final int indexInterval;
     final MonotonicAppendingLongBuffer positions, wordNums;
+    final int indexThreshold;
+    int allOnesLength;
     int dirtyLength;
 
     int wordNum; // byte offset
@@ -478,6 +551,7 @@ public final class WAH8DocIdSet extends DocIdSet {
       bitList = 0;
       sequenceNum = -1;
       docID = -1;
+      indexThreshold = indexThreshold(cardinality, indexInterval);
     }
 
     boolean readSequence() {
@@ -486,40 +560,64 @@ public final class WAH8DocIdSet extends DocIdSet {
         return false;
       }
       final int token = in.readByte() & 0xFF;
-      final int cleanLength = (in.getPosition() == 1 ? 0 : 2) + readLength(in, token >>> 4);
-      wordNum += cleanLength;
-      dirtyLength = 1 + readLength(in, token & 0x0F);
+      if ((token & (1 << 7)) == 0) {
+        final int cleanLength = readCleanLength(in, token);
+        wordNum += cleanLength;
+      } else {
+        allOnesLength = readCleanLength(in, token);
+      }
+      dirtyLength = readDirtyLength(in, token);
+      assert in.length() - in.getPosition() >= dirtyLength : in.getPosition() + " " + in.length() + " " + dirtyLength;
       ++sequenceNum;
       return true;
     }
 
     void skipDirtyBytes(int count) {
       assert count >= 0;
-      assert count <= dirtyLength;
-      in.skipBytes(count);
+      assert count <= allOnesLength + dirtyLength;
       wordNum += count;
-      dirtyLength -= count;
+      if (count <= allOnesLength) {
+        allOnesLength -= count;
+      } else {
+        count -= allOnesLength;
+        allOnesLength = 0;
+        in.skipBytes(count);
+        dirtyLength -= count;
+      }
     }
 
     void skipDirtyBytes() {
+      wordNum += allOnesLength + dirtyLength;
       in.skipBytes(dirtyLength);
-      wordNum += dirtyLength;
+      allOnesLength = 0;
       dirtyLength = 0;
     }
 
     void nextWord() {
-      if (dirtyLength == 0 && !readSequence()) {
+      if (allOnesLength > 0) {
+        word = (byte) 0xFF;
+        ++wordNum;
+        --allOnesLength;
         return;
       }
-      word = in.readByte();
-      if (word == 0) {
+      if (dirtyLength > 0) {
         word = in.readByte();
-        assert word != 0; // there can never be two consecutive null dirty words
         ++wordNum;
         --dirtyLength;
+        if (word != 0) {
+          return;
+        }
+        if (dirtyLength > 0) {
+          word = in.readByte();
+          ++wordNum;
+          --dirtyLength;
+          assert word != 0; // never more than one consecutive 0
+          return;
+        }
       }
-      ++wordNum;
-      --dirtyLength;
+      if (readSequence()) {
+        nextWord();
+      }
     }
 
     int forwardBinarySearch(int targetWordNum) {
@@ -558,20 +656,20 @@ public final class WAH8DocIdSet extends DocIdSet {
     void advanceWord(int targetWordNum) {
       assert targetWordNum > wordNum;
       int delta = targetWordNum - wordNum;
-      if (delta <= dirtyLength + 1) {
-        if (delta > 1) {
-          skipDirtyBytes(delta - 1);
-        }
+      if (delta <= allOnesLength + dirtyLength + 1) {
+        skipDirtyBytes(delta - 1);
       } else {
         skipDirtyBytes();
         assert dirtyLength == 0;
-        // use the index
-        final int i = forwardBinarySearch(targetWordNum);
-        final int position = (int) positions.get(i);
-        if (position > in.getPosition()) { // if the binary search returned a backward offset, don't move
-          wordNum = (int) wordNums.get(i) - 1;
-          in.setPosition(position);
-          sequenceNum = i * indexInterval - 1;
+        if (delta > indexThreshold) {
+          // use the index
+          final int i = forwardBinarySearch(targetWordNum);
+          final int position = (int) positions.get(i);
+          if (position > in.getPosition()) { // if the binary search returned a backward offset, don't move
+            wordNum = (int) wordNums.get(i) - 1;
+            in.setPosition(position);
+            sequenceNum = i * indexInterval - 1;
+          }
         }
 
         while (true) {
@@ -579,7 +677,7 @@ public final class WAH8DocIdSet extends DocIdSet {
             return;
           }
           delta = targetWordNum - wordNum;
-          if (delta <= dirtyLength + 1) {
+          if (delta <= allOnesLength + dirtyLength + 1) {
             if (delta > 1) {
               skipDirtyBytes(delta - 1);
             }
