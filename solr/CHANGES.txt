@@ -111,6 +111,9 @@ Bug Fixes
   TIKA for convenience to support plain text extraction without using the
   HTML elements. This bug resulted in glued words.  (hossman, Uwe Schindler)
 
+* SOLR-5121: zkcli usage help for makepath doesn't match actual command.
+  (Daniel Collins via Mark Miller)
+
 Optimizations
 ----------------------
 
