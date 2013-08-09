@@ -77,6 +77,7 @@ import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
 import com.google.common.collect.Sets;
 import com.google.common.io.Closeables;
+import com.google.common.io.Closer;
 
 /**
  * Search results clustering engine based on Carrot2 clustering algorithms.
@@ -140,7 +141,13 @@ public class CarrotClusteringEngine extends SearchClusteringEngine {
             + ". Using the default " + resource + " from Carrot JAR.");          
         return new IResource[] {};
       } finally {
-        if (resourceStream != null) Closeables.closeQuietly(resourceStream);
+        if (resourceStream != null) {
+          try {
+            resourceStream.close();
+          } catch (IOException e) {
+            // ignore.
+          }
+        }
       }
 
       log.info("Loaded Solr resource: " + resourceName);

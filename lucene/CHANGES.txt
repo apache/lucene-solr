@@ -23,10 +23,6 @@ Changes in backwards compatibility policy
   not positioned. This change affects all classes that inherit from
   DocIdSetIterator, including DocsEnum and DocsAndPositionsEnum. (Adrien Grand)
 
-* LUCENE-5089: Update to Morfologik 1.6.0. MorfologikAnalyzer and MorfologikFilter 
-  no longer support multiple "dictionaries" as there is only one dictionary available.
-  (Dawid Weiss)
-
 * LUCENE-5127: Reduce RAM usage of FixedGapTermsIndex. Remove 
   IndexWriterConfig.setTermIndexInterval, IndexWriterConfig.setReaderTermsIndexDivisor,
   and termsIndexDivisor from StandardDirectoryReader. These options have been no-ops
@@ -38,10 +34,6 @@ New Features
 
 * LUCENE-4747: Move to Java 7 as minimum Java version.
   (Robert Muir, Uwe Schindler)
-
-* LUCENE-5089: Update to Morfologik 1.6.0. MorfologikAnalyzer and MorfologikFilter 
-  no longer support multiple "dictionaries" as there is only one dictionary available.
-  (Dawid Weiss)
 
 * SOLR-3359: Added analyzer attribute/property to SynonymFilterFactory.
   (Ryo Onodera via Koji Sekiguchi)
@@ -183,6 +175,10 @@ Changes in backwards compatibility policy
 * LUCENE-5141: CheckIndex.fixIndex(Status,Codec) is now
   CheckIndex.fixIndex(Status). If you used to pass a codec to this method, just
   remove it from the arguments. (Adrien Grand)
+
+* LUCENE-5089, SOLR-5126: Update to Morfologik 1.7.1. MorfologikAnalyzer and MorfologikFilter 
+  no longer support multiple "dictionaries" as there is only one dictionary available.
+  (Dawid Weiss)
 
 ======================= Lucene 4.4.0 =======================
 

@@ -25,7 +25,7 @@ $Id$
 Versions of Major Components
 ---------------------
 Apache Tika 1.4
-Carrot2 3.6.2
+Carrot2 3.8.0
 Velocity 1.7 and Velocity Tools 2.0
 Apache UIMA 2.3.1
 Apache ZooKeeper 3.4.5
@@ -53,7 +53,7 @@ Other Changes
 Versions of Major Components
 ---------------------
 Apache Tika 1.4
-Carrot2 3.6.2
+Carrot2 3.8.0
 Velocity 1.7 and Velocity Tools 2.0
 Apache UIMA 2.3.1
 Apache ZooKeeper 3.4.5
@@ -75,6 +75,9 @@ Detailed Change List
 
 New Features
 ----------------------
+
+* SOLR-5126: Update Carrot2 clustering to version 3.8.0, update Morfologik 
+  to version 1.7.1 (Dawid Weiss)
 
 * SOLR-2345: Enhanced geodist() to work with an RPT field, provided that the
   field is referenced via 'sfield' and the query point is constant.
