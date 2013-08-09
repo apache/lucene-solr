@@ -115,6 +115,10 @@ Optimizations
 Other Changes
 ----------------------
 
+* SOLR-4708: Enable ClusteringComponent by default in collection1 example.
+  The solr.clustering.enabled system property is set to 'true' by default.
+  (ehatcher, Dawid Weiss)
+
 * SOLR-4914: Factor out core list persistence and discovery into a
   new CoresLocator interface. (Alan Woodward)
 

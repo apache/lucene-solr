@@ -48,13 +48,10 @@
     ends) will be included.
   -->
   <lib dir="../../dist/" regex="solr-cell-\d.*\.jar" />
-  <lib dir="../../dist/" regex="solr-clustering-\d.*\.jar" />
   <!--
     If a dir option (with or without a regex) is used and nothing is
     found that matches, it will be ignored
   -->
-  <lib dir="../../contrib/clustering/lib/downloads/" />
-  <lib dir="../../contrib/clustering/lib/" />
   <lib dir="/total/crap/dir/ignored" />
   <!--
     an exact path can be used to specify a specific file. This will
@@ -593,68 +590,6 @@
     </lst>
     <arr name="last-components">
       <str>tvComponent</str>
-    </arr>
-  </requestHandler>
-
-  <!--
-    Clustering Component http://wiki.apache.org/solr/ClusteringComponent
-    This relies on third party jars which are not included in the
-    release. To use this component (and the "/clustering" handler) Those
-    jars will need to be downloaded, and you'll need to set the
-    solr.cluster.enabled system property when running solr... java
-    -Dsolr.clustering.enabled=true -jar start.jar
-  -->
-  <searchComponent name="clusteringComponent"
-    enable="${solr.clustering.enabled:false}" class="org.apache.solr.handler.clustering.ClusteringComponent">
-    <!-- Declare an engine -->
-    <lst name="engine">
-      <!-- The name, only one can be named "default" -->
-      <str name="name">default</str>
-      <!--
-        Class name of Carrot2 clustering algorithm. Currently available
-        algorithms are: *
-        org.carrot2.clustering.lingo.LingoClusteringAlgorithm *
-        org.carrot2.clustering.stc.STCClusteringAlgorithm See
-        http://project.carrot2.org/algorithms.html for the algorithm's
-        characteristics.
-      -->
-      <str name="carrot.algorithm">org.carrot2.clustering.lingo.LingoClusteringAlgorithm</str>
-      <!--
-        Overriding values for Carrot2 default algorithm attributes. For
-        a description of all available attributes, see:
-        http://download.carrot2.org/stable/manual/#chapter.components.
-        Use attribute key as name attribute of str elements below. These
-        can be further overridden for individual requests by specifying
-        attribute key as request parameter name and attribute value as
-        parameter value.
-      -->
-      <str name="LingoClusteringAlgorithm.desiredClusterCountBase">20</str>
-    </lst>
-    <lst name="engine">
-      <str name="name">stc</str>
-      <str name="carrot.algorithm">org.carrot2.clustering.stc.STCClusteringAlgorithm</str>
-    </lst>
-  </searchComponent>
-  <requestHandler name="/clustering" enable="${solr.clustering.enabled:false}"
-    class="solr.SearchHandler">
-    <lst name="defaults">
-      <bool name="clustering">true</bool>
-      <str name="clustering.engine">default</str>
-      <bool name="clustering.results">true</bool>
-      <!-- The title field -->
-      <str name="carrot.title">name</str>
-      <str name="carrot.url">id</str>
-      <!-- The field to cluster on -->
-      <str name="carrot.snippet">features</str>
-      <!-- produce summaries -->
-      <bool name="carrot.produceSummary">true</bool>
-      <!-- the maximum number of labels per cluster -->
-      <!--<int name="carrot.numDescriptions">5</int>-->
-      <!-- produce sub clusters -->
-      <bool name="carrot.outputSubClusters">false</bool>
-    </lst>
-    <arr name="last-components">
-      <str>clusteringComponent</str>
     </arr>
   </requestHandler>
 
