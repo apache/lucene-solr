@@ -131,6 +131,10 @@ Changes in backwards compatibility policy
   CheckIndex.fixIndex(Status). If you used to pass a codec to this method, just
   remove it from the arguments. (Adrien Grand)
 
+* LUCENE-5089, SOLR-5126: Update to Morfologik 1.7.1. MorfologikAnalyzer and MorfologikFilter 
+  no longer support multiple "dictionaries" as there is only one dictionary available.
+  (Dawid Weiss)
+
 ======================= Lucene 4.4.0 =======================
 
 Changes in backwards compatibility policy
