@@ -112,6 +112,10 @@ Bug Fixes
   seek/lookup which can cause sideeffects if done on a cached FST root arc.
   (Simon Willnauer)
 
+* LUCENE-5161: Fix default chunk sizes in FSDirectory.java to not be unnecessarily large,
+  and fix setReadChunkSize to always work regardless of whether the machine is 32bit
+  or 64bit.  (Uwe Schindler, Robert Muir)
+
 API Changes
 
 * LUCENE-5094: Add ramBytesUsed() to MultiDocValues.OrdinalMap.

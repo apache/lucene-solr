@@ -112,12 +112,9 @@ import org.apache.lucene.util.Constants;
 public abstract class FSDirectory extends Directory {
 
   /**
-   * Default read chunk size.  This is a conditional default: on 32bit JVMs, it defaults to 100 MB.  On 64bit JVMs, it's
-   * <code>Integer.MAX_VALUE</code>.
-   *
-   * @see #setReadChunkSize
+   * Default read chunk size: 2*{@link BufferedIndexInput#MERGE_BUFFER_SIZE}.
    */
-  public static final int DEFAULT_READ_CHUNK_SIZE = Constants.JRE_IS_64BIT ? Integer.MAX_VALUE : 100 * 1024 * 1024;
+  public static final int DEFAULT_READ_CHUNK_SIZE = BufferedIndexInput.MERGE_BUFFER_SIZE * 2;
 
   protected final File directory; // The underlying filesystem directory
   protected final Set<String> staleFiles = synchronizedSet(new HashSet<String>()); // Files written, but not yet sync'ed
@@ -370,20 +367,13 @@ public abstract class FSDirectory extends Directory {
    * already-opened {@link IndexInput}s.  You should call
    * this before attempting to open an index on the
    * directory.</p>
-   *
-   * <p> <b>NOTE</b>: This value should be as large as
-   * possible to reduce any possible performance impact.  If
-   * you still encounter an incorrect OutOfMemoryError,
-   * trying lowering the chunk size.</p>
    */
   public final void setReadChunkSize(int chunkSize) {
     // LUCENE-1566
     if (chunkSize <= 0) {
       throw new IllegalArgumentException("chunkSize must be positive");
     }
-    if (!Constants.JRE_IS_64BIT) {
-      this.chunkSize = chunkSize;
-    }
+    this.chunkSize = chunkSize;
   }
 
   /**
