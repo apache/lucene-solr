@@ -19,7 +19,6 @@ package org.apache.lucene.analysis.morfologik;
 
 import java.io.IOException;
 import java.io.Reader;
-import java.io.StringReader;
 import java.util.TreeSet;
 
 import org.apache.lucene.analysis.Analyzer;
@@ -73,7 +72,7 @@ public class TestMorfologikAnalyzer extends BaseTokenStreamTestCase {
 
   @SuppressWarnings("unused")
   private void dumpTokens(String input) throws IOException {
-    TokenStream ts = getTestAnalyzer().tokenStream("dummy", new StringReader(input));
+    TokenStream ts = getTestAnalyzer().tokenStream("dummy", input);
     ts.reset();
 
     MorphosyntacticTagsAttribute attribute = ts.getAttribute(MorphosyntacticTagsAttribute.class);
