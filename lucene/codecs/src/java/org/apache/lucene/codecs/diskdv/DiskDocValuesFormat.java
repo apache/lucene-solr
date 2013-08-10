@@ -53,7 +53,8 @@ public final class DiskDocValuesFormat extends DocValuesFormat {
   public static final String META_CODEC = "DiskDocValuesMetadata";
   public static final String META_EXTENSION = "dvdm";
   public static final int VERSION_START = 0;
-  public static final int VERSION_CURRENT = VERSION_START;
+  public static final int VERSION_COMPRESSED_TERMS = 1;
+  public static final int VERSION_CURRENT = VERSION_COMPRESSED_TERMS;
   public static final byte NUMERIC = 0;
   public static final byte BINARY = 1;
   public static final byte SORTED = 2;

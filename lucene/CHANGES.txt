@@ -123,6 +123,9 @@ Optimizations
 * LUCENE-5150: Make WAH8DocIdSet able to inverse its encoding in order to
   compress dense sets efficiently as well. (Adrien Grand)
 
+* LUCENE-5159: Prefix-code the sorted/sortedset value dictionaries in DiskDV.
+  (Robert Muir)
+
 Documentation
 
 * LUCENE-4894: remove facet userguide as it was outdated. Partially absorbed into

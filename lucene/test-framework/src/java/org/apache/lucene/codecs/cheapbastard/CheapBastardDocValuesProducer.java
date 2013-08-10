@@ -27,6 +27,7 @@ import java.util.Map;
 
 import org.apache.lucene.codecs.CodecUtil;
 import org.apache.lucene.codecs.DocValuesProducer;
+import org.apache.lucene.codecs.diskdv.DiskDocValuesConsumer;
 import org.apache.lucene.codecs.diskdv.DiskDocValuesFormat;
 import org.apache.lucene.index.BinaryDocValues;
 import org.apache.lucene.index.CorruptIndexException;
@@ -58,7 +59,7 @@ class CheapBastardDocValuesProducer extends DocValuesProducer {
     final int version;
     try {
       version = CodecUtil.checkHeader(in, metaCodec, 
-                                      DiskDocValuesFormat.VERSION_START,
+                                      DiskDocValuesFormat.VERSION_CURRENT,
                                       DiskDocValuesFormat.VERSION_CURRENT);
       numerics = new HashMap<Integer,NumericEntry>();
       ords = new HashMap<Integer,NumericEntry>();
@@ -80,7 +81,7 @@ class CheapBastardDocValuesProducer extends DocValuesProducer {
       String dataName = IndexFileNames.segmentFileName(state.segmentInfo.name, state.segmentSuffix, dataExtension);
       data = state.directory.openInput(dataName, state.context);
       final int version2 = CodecUtil.checkHeader(data, dataCodec, 
-                                                 DiskDocValuesFormat.VERSION_START,
+                                                 DiskDocValuesFormat.VERSION_CURRENT,
                                                  DiskDocValuesFormat.VERSION_CURRENT);
       if (version != version2) {
         throw new CorruptIndexException("Versions mismatch");
@@ -193,6 +194,10 @@ class CheapBastardDocValuesProducer extends DocValuesProducer {
   
   static BinaryEntry readBinaryEntry(IndexInput meta) throws IOException {
     BinaryEntry entry = new BinaryEntry();
+    int format = meta.readVInt();
+    if (format != DiskDocValuesConsumer.BINARY_FIXED_UNCOMPRESSED && format != DiskDocValuesConsumer.BINARY_VARIABLE_UNCOMPRESSED) {
+      throw new CorruptIndexException("Unexpected format for binary entry: " + format + ", input=" + meta);
+    }
     entry.minLength = meta.readVInt();
     entry.maxLength = meta.readVInt();
     entry.count = meta.readVLong();

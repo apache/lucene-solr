@@ -78,5 +78,10 @@ public final class MonotonicBlockPackedReader {
     final int idx = (int) (index & blockMask);
     return minValues[block] + (long) (idx * averages[block]) + zigZagDecode(subReaders[block].get(idx));
   }
+  
+  /** Returns the number of values */
+  public long size() {
+    return valueCount;
+  }
 
 }
