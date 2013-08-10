@@ -27,9 +27,11 @@ import org.apache.lucene.index.FieldInfo;
 import org.apache.lucene.index.IndexFileNames;
 import org.apache.lucene.index.SegmentWriteState;
 import org.apache.lucene.store.IndexOutput;
+import org.apache.lucene.store.RAMOutputStream;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.IOUtils;
 import org.apache.lucene.util.MathUtil;
+import org.apache.lucene.util.StringHelper;
 import org.apache.lucene.util.packed.BlockPackedWriter;
 import org.apache.lucene.util.packed.MonotonicBlockPackedWriter;
 import org.apache.lucene.util.packed.PackedInts;
@@ -38,6 +40,7 @@ import org.apache.lucene.util.packed.PackedInts;
 public class DiskDocValuesConsumer extends DocValuesConsumer {
 
   static final int BLOCK_SIZE = 16384;
+  static final int ADDRESS_INTERVAL = 16;
 
   /** Compressed using packed blocks of ints. */
   public static final int DELTA_COMPRESSED = 0;
@@ -45,6 +48,13 @@ public class DiskDocValuesConsumer extends DocValuesConsumer {
   public static final int GCD_COMPRESSED = 1;
   /** Compressed by giving IDs to unique values. */
   public static final int TABLE_COMPRESSED = 2;
+  
+  /** Uncompressed binary, written directly (fixed length). */
+  public static final int BINARY_FIXED_UNCOMPRESSED = 0;
+  /** Uncompressed binary, written directly (variable length). */
+  public static final int BINARY_VARIABLE_UNCOMPRESSED = 1;
+  /** Compressed binary with shared prefixes */
+  public static final int BINARY_PREFIX_COMPRESSED = 2;
 
   final IndexOutput data, meta;
   final int maxDoc;
@@ -173,7 +183,7 @@ public class DiskDocValuesConsumer extends DocValuesConsumer {
   }
 
   @Override
-  public void addBinaryField(FieldInfo field, final Iterable<BytesRef> values) throws IOException {
+  public void addBinaryField(FieldInfo field, Iterable<BytesRef> values) throws IOException {
     // write the byte[] data
     meta.writeVInt(field.number);
     meta.writeByte(DiskDocValuesFormat.BINARY);
@@ -187,6 +197,7 @@ public class DiskDocValuesConsumer extends DocValuesConsumer {
       data.writeBytes(v.bytes, v.offset, v.length);
       count++;
     }
+    meta.writeVInt(minLength == maxLength ? BINARY_FIXED_UNCOMPRESSED : BINARY_VARIABLE_UNCOMPRESSED);
     meta.writeVInt(minLength);
     meta.writeVInt(maxLength);
     meta.writeVLong(count);
@@ -208,12 +219,68 @@ public class DiskDocValuesConsumer extends DocValuesConsumer {
       writer.finish();
     }
   }
+  
+  protected void addTermsDict(FieldInfo field, final Iterable<BytesRef> values) throws IOException {
+    // first check if its a "fixed-length" terms dict
+    int minLength = Integer.MAX_VALUE;
+    int maxLength = Integer.MIN_VALUE;
+    for (BytesRef v : values) {
+      minLength = Math.min(minLength, v.length);
+      maxLength = Math.max(maxLength, v.length);
+    }
+    if (minLength == maxLength) {
+      // no index needed: direct addressing by mult
+      addBinaryField(field, values);
+    } else {
+      // header
+      meta.writeVInt(field.number);
+      meta.writeByte(DiskDocValuesFormat.BINARY);
+      meta.writeVInt(BINARY_PREFIX_COMPRESSED);
+      // now write the bytes: sharing prefixes within a block
+      final long startFP = data.getFilePointer();
+      // currently, we have to store the delta from expected for every 1/nth term
+      // we could avoid this, but its not much and less overall RAM than the previous approach!
+      RAMOutputStream addressBuffer = new RAMOutputStream();
+      MonotonicBlockPackedWriter termAddresses = new MonotonicBlockPackedWriter(addressBuffer, BLOCK_SIZE);
+      BytesRef lastTerm = new BytesRef();
+      long count = 0;
+      for (BytesRef v : values) {
+        if (count % ADDRESS_INTERVAL == 0) {
+          termAddresses.add(data.getFilePointer() - startFP);
+          // force the first term in a block to be abs-encoded
+          lastTerm.length = 0;
+        }
+        
+        // prefix-code
+        int sharedPrefix = StringHelper.bytesDifference(lastTerm, v);
+        data.writeVInt(sharedPrefix);
+        data.writeVInt(v.length - sharedPrefix);
+        data.writeBytes(v.bytes, v.offset + sharedPrefix, v.length - sharedPrefix);
+        lastTerm.copyBytes(v);
+        count++;
+      }
+      final long indexStartFP = data.getFilePointer();
+      // write addresses of indexed terms
+      termAddresses.finish();
+      addressBuffer.writeTo(data);
+      addressBuffer = null;
+      termAddresses = null;
+      meta.writeVInt(minLength);
+      meta.writeVInt(maxLength);
+      meta.writeVLong(count);
+      meta.writeLong(startFP);
+      meta.writeVInt(ADDRESS_INTERVAL);
+      meta.writeLong(indexStartFP);
+      meta.writeVInt(PackedInts.VERSION_CURRENT);
+      meta.writeVInt(BLOCK_SIZE);
+    }
+  }
 
   @Override
   public void addSortedField(FieldInfo field, Iterable<BytesRef> values, Iterable<Number> docToOrd) throws IOException {
     meta.writeVInt(field.number);
     meta.writeByte(DiskDocValuesFormat.SORTED);
-    addBinaryField(field, values);
+    addTermsDict(field, values);
     addNumericField(field, docToOrd, false);
   }
   
@@ -222,7 +289,7 @@ public class DiskDocValuesConsumer extends DocValuesConsumer {
     meta.writeVInt(field.number);
     meta.writeByte(DiskDocValuesFormat.SORTED_SET);
     // write the ord -> byte[] as a binary field
-    addBinaryField(field, values);
+    addTermsDict(field, values);
     // write the stream of ords as a numeric field
     // NOTE: we could return an iterator that delta-encodes these within a doc
     addNumericField(field, ords, false);
