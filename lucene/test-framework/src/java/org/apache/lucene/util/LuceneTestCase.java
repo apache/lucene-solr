@@ -20,6 +20,7 @@ package org.apache.lucene.util;
 import java.io.*;
 import java.lang.annotation.*;
 import java.lang.reflect.Constructor;
+import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 import java.util.*;
 import java.util.concurrent.*;
@@ -1150,8 +1151,9 @@ public abstract class LuceneTestCase extends Assert {
     try {
       d = CommandLineUtil.newFSDirectory(clazz, file);
     } catch (Exception e) {
-      d = FSDirectory.open(file);
+      Rethrow.rethrow(e);
     }
+    d.setReadChunkSize(_TestUtil.nextInt(random(), 8, 32678));
     return d;
   }
 

@@ -67,6 +67,10 @@ Bug Fixes
   could happen in rare cases where something happens to the file between the time we start the
   read loop (where we check the length) and when we actually do the read. (gsingers, yonik, Robert Muir, Uwe Schindler)
 
+* LUCENE-5161: Fix default chunk sizes in FSDirectory.java to not be unnecessarily large,
+  and fix setReadChunkSize to always work regardless of whether the machine is 32bit
+  or 64bit.  (Uwe Schindler, Robert Muir)
+
 API Changes
 
 * LUCENE-5094: Add ramBytesUsed() to MultiDocValues.OrdinalMap.
