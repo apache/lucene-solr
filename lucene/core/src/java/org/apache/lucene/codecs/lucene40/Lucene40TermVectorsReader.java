@@ -433,7 +433,7 @@ public class Lucene40TermVectorsReader extends TermVectorsReader implements Clos
 
     // NOTE: slow!  (linear scan)
     @Override
-    public SeekStatus seekCeil(BytesRef text, boolean useCache)
+    public SeekStatus seekCeil(BytesRef text)
       throws IOException {
       if (nextTerm != 0) {
         final int cmp = text.compareTo(term);

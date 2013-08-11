@@ -104,8 +104,8 @@
                 <bundledSignature>jdk-deprecated</bundledSignature>
               </bundledSignatures>
               <signaturesFiles>
+                <signaturesFile>${top-level}/lucene/tools/forbiddenApis/base.txt</signaturesFile>
                 <signaturesFile>${top-level}/lucene/tools/forbiddenApis/tests.txt</signaturesFile>
-                <signaturesFile>${top-level}/lucene/tools/forbiddenApis/executors.txt</signaturesFile>
               </signaturesFiles>
             </configuration>
             <goals>

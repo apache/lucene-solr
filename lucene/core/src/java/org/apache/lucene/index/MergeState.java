@@ -77,6 +77,7 @@ public class MergeState {
           ++del;
         }
       }
+      docMap.freeze();
       final int numDeletedDocs = del;
       assert docMap.size() == maxDoc;
       return new DocMap() {

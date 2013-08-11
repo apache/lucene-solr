@@ -60,8 +60,7 @@ public class GenerateHTMLStripCharFilterSupplementaryMacros {
 
   static void outputHeader() {
     System.out.print(APACHE_LICENSE);
-    System.out.print("// Generated using ICU4J " + VersionInfo.ICU_VERSION.toString() + " on ");
-    System.out.println(DATE_FORMAT.format(new Date()));
+    System.out.println("// Generated using ICU4J " + VersionInfo.ICU_VERSION.toString());
     System.out.println("// by " + GenerateHTMLStripCharFilterSupplementaryMacros.class.getName());
     System.out.print(NL + NL);
   }

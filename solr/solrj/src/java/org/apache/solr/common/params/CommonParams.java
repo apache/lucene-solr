@@ -59,6 +59,23 @@ public interface CommonParams {
   
   /** number of documents to return starting at "start" */
   public static final String ROWS ="rows";
+
+  // SOLR-4228 start
+  /** handler value for SolrPing */
+  public static final String PING_HANDLER = "/admin/ping";
+  
+  /** "action" parameter for SolrPing */
+  public static final String ACTION = "action";
+  
+  /** "disable" value for SolrPing action */
+  public static final String DISABLE = "disable";
+  
+  /** "enable" value for SolrPing action */
+  public static final String ENABLE = "enable";
+  
+  /** "ping" value for SolrPing action */
+  public static final String PING = "ping";
+  // SOLR-4228 end
   
   //Issue 1726 start
   /** score of the last document of the previous page */

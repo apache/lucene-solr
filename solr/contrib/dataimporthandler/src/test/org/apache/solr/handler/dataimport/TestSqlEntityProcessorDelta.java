@@ -165,13 +165,13 @@ public class TestSqlEntityProcessorDelta extends AbstractSqlEntityProcessorTestC
   @Override
   protected String deltaQueriesPersonTable() {
     return 
-        "deletedPkQuery=''SELECT ID FROM PEOPLE WHERE DELETED='Y' AND last_modified &gt;='${dih.last_index_time}' '' " +
+        "deletedPkQuery=''SELECT ID FROM PEOPLE WHERE DELETED='Y' AND last_modified &gt;='${dih.People.last_index_time}' '' " +
         "deltaImportQuery=''SELECT ID, NAME, COUNTRY_CODE FROM PEOPLE where ID=${dih.delta.ID} '' " +
         "deltaQuery=''" +
-        "SELECT ID FROM PEOPLE WHERE DELETED!='Y' AND last_modified &gt;='${dih.last_index_time}' " +
+        "SELECT ID FROM PEOPLE WHERE DELETED!='Y' AND last_modified &gt;='${dih.People.last_index_time}' " +
         (useParentDeltaQueryParam ? "" : 
         "UNION DISTINCT " +
-        "SELECT ID FROM PEOPLE WHERE DELETED!='Y' AND COUNTRY_CODE IN (SELECT CODE FROM COUNTRIES WHERE last_modified &gt;='${dih.last_index_time}') "
+        "SELECT ID FROM PEOPLE WHERE DELETED!='Y' AND COUNTRY_CODE IN (SELECT CODE FROM COUNTRIES WHERE last_modified &gt;='${dih.People.last_index_time}') "
         ) + "'' "
     ;
   }

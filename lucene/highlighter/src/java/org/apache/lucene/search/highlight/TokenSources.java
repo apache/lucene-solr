@@ -36,7 +36,6 @@ import org.apache.lucene.util.ArrayUtil;
 import org.apache.lucene.util.BytesRef;
 
 import java.io.IOException;
-import java.io.StringReader;
 import java.util.ArrayList;
 import java.util.Comparator;
 
@@ -314,7 +313,7 @@ public class TokenSources {
   public static TokenStream getTokenStream(String field, String contents,
       Analyzer analyzer) {
     try {
-      return analyzer.tokenStream(field, new StringReader(contents));
+      return analyzer.tokenStream(field, contents);
     } catch (IOException ex) {
       throw new RuntimeException(ex);
     }

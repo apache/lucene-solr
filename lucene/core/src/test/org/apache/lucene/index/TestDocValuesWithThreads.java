@@ -87,23 +87,17 @@ public class TestDocValuesWithThreads extends LuceneTestCase {
               BytesRef scratch2 = new BytesRef();
               for(int iter=0;iter<iters;iter++) {
                 int docID = threadRandom.nextInt(numDocs);
-                switch(threadRandom.nextInt(6)) {
+                switch(threadRandom.nextInt(4)) {
                 case 0:
-                  assertEquals((byte) numbers.get(docID).longValue(), FieldCache.DEFAULT.getBytes(ar, "number", false).get(docID));
-                  break;
-                case 1:
-                  assertEquals((short) numbers.get(docID).longValue(), FieldCache.DEFAULT.getShorts(ar, "number", false).get(docID));
-                  break;
-                case 2:
                   assertEquals((int) numbers.get(docID).longValue(), FieldCache.DEFAULT.getInts(ar, "number", false).get(docID));
                   break;
-                case 3:
+                case 1:
                   assertEquals(numbers.get(docID).longValue(), FieldCache.DEFAULT.getLongs(ar, "number", false).get(docID));
                   break;
-                case 4:
+                case 2:
                   assertEquals(Float.intBitsToFloat((int) numbers.get(docID).longValue()), FieldCache.DEFAULT.getFloats(ar, "number", false).get(docID), 0.0f);
                   break;
-                case 5:
+                case 3:
                   assertEquals(Double.longBitsToDouble(numbers.get(docID).longValue()), FieldCache.DEFAULT.getDoubles(ar, "number", false).get(docID), 0.0);
                   break;
                 }

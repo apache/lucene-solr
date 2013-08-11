@@ -18,7 +18,6 @@ package org.apache.lucene.queryparser.analyzing;
  */
 
 import java.io.IOException;
-import java.io.StringReader;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
@@ -165,7 +164,7 @@ public class AnalyzingQueryParser extends org.apache.lucene.queryparser.classic.
     String analyzed = null;
     TokenStream stream = null;
     try{
-      stream = getAnalyzer().tokenStream(field, new StringReader(chunk));
+      stream = getAnalyzer().tokenStream(field, chunk);
       stream.reset();
       CharTermAttribute termAtt = stream.getAttribute(CharTermAttribute.class);
       // get first and hopefully only output token

@@ -58,6 +58,15 @@ import org.apache.solr.util.plugin.SolrCoreAware;
  * <b>at least one of each</b> to be selected.
  * </p>
  * <p>
+ * The following additional selector may be specified as a &lt;bool&gt; - when specified
+ * as false, only fields that <b>do not</b> match a schema field/dynamic field are selected;
+ * when specified as true, only fields that <b>do</b> match a schema field/dynamic field are
+ * selected:
+ * </p>
+ * <ul>
+ *   <li><code>fieldNameMatchesSchemaField</code> - selecting specific fields based on whether or not they match a schema field</li>
+ * </ul>
+ * <p>
  * One or more <code>excludes</code> &lt;lst&gt; params may also be specified, 
  * containing any of the above criteria, identifying fields to be excluded 
  * from seelction even if they match the selection criteria.  As with the main 
@@ -71,7 +80,7 @@ import org.apache.solr.util.plugin.SolrCoreAware;
  * fields will be mutated if the name starts with "foo" <i>or</i> "bar"; 
  * <b>unless</b> the field name contains the substring "SKIP" <i>or</i> 
  * the fieldType is (or subclasses) DateField.  Meaning a field named 
- * "foo_SKIP" is gaurunteed not to be selected, but a field named "bar_smith" 
+ * "foo_SKIP" is guaranteed not to be selected, but a field named "bar_smith" 
  * that uses StrField will be selected.
  * </p>
  * <pre class="prettyprint">
@@ -106,6 +115,13 @@ public abstract class FieldMutatingUpdateProcessorFactory
     public Set<String> typeName = Collections.emptySet();
     public Collection<String> typeClass = Collections.emptyList();
     public Collection<Pattern> fieldRegex = Collections.emptyList();
+    public Boolean fieldNameMatchesSchemaField = null; // null => not specified
+
+    public boolean noSelectorsSpecified() {
+      return typeClass.isEmpty()  && typeName.isEmpty() 
+          && fieldRegex.isEmpty() && fieldName.isEmpty() 
+          && null == fieldNameMatchesSchemaField;
+    }
   }
 
   private SelectorParams inclusions = new SelectorParams();
@@ -121,7 +137,6 @@ public abstract class FieldMutatingUpdateProcessorFactory
                             " inform(SolrCore) never called???");
   }
 
-  @SuppressWarnings("unchecked")
   public static SelectorParams parseSelectorParams(NamedList args) {
     SelectorParams params = new SelectorParams();
     
@@ -145,13 +160,41 @@ public abstract class FieldMutatingUpdateProcessorFactory
     // resolve this into actual Class objects later
     params.typeClass = oneOrMany(args, "typeClass");
 
+    // getBooleanArg() returns null if the arg is not specified
+    params.fieldNameMatchesSchemaField = getBooleanArg(args, "fieldNameMatchesSchemaField");
+    
     return params;
   }
-                                                            
+                               
+  public static Collection<SelectorParams> parseSelectorExclusionParams(NamedList args) {
+    Collection<SelectorParams> exclusions = new ArrayList<SelectorParams>();
+    List<Object> excList = args.getAll("exclude");
+    for (Object excObj : excList) {
+      if (null == excObj) {
+        throw new SolrException
+            (SERVER_ERROR, "'exclude' init param can not be null");
+      }
+      if (! (excObj instanceof NamedList) ) {
+        throw new SolrException
+            (SERVER_ERROR, "'exclude' init param must be <lst/>");
+      }
+      NamedList exc = (NamedList) excObj;
+      exclusions.add(parseSelectorParams(exc));
+      if (0 < exc.size()) {
+        throw new SolrException(SERVER_ERROR,
+            "Unexpected 'exclude' init sub-param(s): '" +
+                args.getName(0) + "'");
+      }
+      // call once per instance
+      args.remove("exclude");
+    }
+    return exclusions;
+  }
+  
 
   /**
    * Handles common initialization related to source fields for 
-   * constructoring the FieldNameSelector to be used.
+   * constructing the FieldNameSelector to be used.
    *
    * Will error if any unexpected init args are found, so subclasses should
    * remove any subclass-specific init args before calling this method.
@@ -161,27 +204,8 @@ public abstract class FieldMutatingUpdateProcessorFactory
   public void init(NamedList args) {
 
     inclusions = parseSelectorParams(args);
+    exclusions = parseSelectorExclusionParams(args);
 
-    List<Object> excList = args.getAll("exclude");
-    for (Object excObj : excList) {
-      if (null == excObj) {
-        throw new SolrException
-          (SERVER_ERROR, "'exclude' init param can not be null"); 
-      }
-      if (! (excObj instanceof NamedList) ) {
-        throw new SolrException
-          (SERVER_ERROR, "'exclude' init param must be <lst/>"); 
-      }
-      NamedList exc = (NamedList) excObj;
-      exclusions.add(parseSelectorParams(exc));
-      if (0 < exc.size()) {
-        throw new SolrException(SERVER_ERROR, 
-                                "Unexpected 'exclude' init sub-param(s): '" + 
-                                args.getName(0) + "'");
-      }
-      // call once per instance
-      args.remove("exclude");
-    }
     if (0 < args.size()) {
       throw new SolrException(SERVER_ERROR, 
                               "Unexpected init param(s): '" + 
@@ -195,25 +219,13 @@ public abstract class FieldMutatingUpdateProcessorFactory
     
     selector = 
       FieldMutatingUpdateProcessor.createFieldNameSelector
-      (core.getResourceLoader(),
-       core,
-       inclusions.fieldName,
-       inclusions.typeName,
-       inclusions.typeClass,
-       inclusions.fieldRegex,
-       getDefaultSelector(core));
+          (core.getResourceLoader(), core, inclusions, getDefaultSelector(core));
 
     for (SelectorParams exc : exclusions) {
       selector = FieldMutatingUpdateProcessor.wrap
         (selector,
          FieldMutatingUpdateProcessor.createFieldNameSelector
-         (core.getResourceLoader(),
-          core,
-          exc.fieldName,
-          exc.typeName,
-          exc.typeClass,
-          exc.fieldRegex,
-          FieldMutatingUpdateProcessor.SELECT_NO_FIELDS));
+             (core.getResourceLoader(), core, exc, FieldMutatingUpdateProcessor.SELECT_NO_FIELDS));
     }
   }
   
@@ -270,7 +282,28 @@ public abstract class FieldMutatingUpdateProcessorFactory
     return result;
   }
 
+  /**
+   * Removes the first instance of the key from NamedList, returning the Boolean
+   * that key referred to, or null if the key is not specified.
+   * @exception SolrException invalid type or structure
+   */
+  public static Boolean getBooleanArg(final NamedList args, final String key) {
+    Boolean bool;
+    List values = args.getAll(key);
+    if (0 == values.size()) {
+      return null;
+    }
+    if (values.size() > 1) {
+      throw new SolrException(SERVER_ERROR, "Only one '" + key + "' is allowed");
+    }
+    Object o = args.remove(key);
+    if (o instanceof Boolean) {
+      bool = (Boolean)o;
+    } else if (o instanceof CharSequence) {
+      bool = Boolean.parseBoolean(o.toString());
+    } else {
+      throw new SolrException(SERVER_ERROR, "'" + key + "' must have type 'bool' or 'str'; found " + o.getClass());
+    }
+    return bool;
+  }
 }
-
-
-

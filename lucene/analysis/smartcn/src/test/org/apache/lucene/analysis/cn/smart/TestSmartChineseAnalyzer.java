@@ -19,7 +19,6 @@ package org.apache.lucene.analysis.cn.smart;
 
 import java.io.IOException;
 import java.io.Reader;
-import java.io.StringReader;
 import java.util.Random;
 
 import org.apache.lucene.analysis.BaseTokenStreamTestCase;
@@ -185,7 +184,7 @@ public class TestSmartChineseAnalyzer extends BaseTokenStreamTestCase {
       sb.append("我购买了道具和服装。");
     }
     Analyzer analyzer = new SmartChineseAnalyzer(TEST_VERSION_CURRENT);
-    TokenStream stream = analyzer.tokenStream("", new StringReader(sb.toString()));
+    TokenStream stream = analyzer.tokenStream("", sb.toString());
     stream.reset();
     while (stream.incrementToken()) {
     }
@@ -198,7 +197,7 @@ public class TestSmartChineseAnalyzer extends BaseTokenStreamTestCase {
       sb.append("我购买了道具和服装");
     }
     Analyzer analyzer = new SmartChineseAnalyzer(TEST_VERSION_CURRENT);
-    TokenStream stream = analyzer.tokenStream("", new StringReader(sb.toString()));
+    TokenStream stream = analyzer.tokenStream("", sb.toString());
     stream.reset();
     while (stream.incrementToken()) {
     }

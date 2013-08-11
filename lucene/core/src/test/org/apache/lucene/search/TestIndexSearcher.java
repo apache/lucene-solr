@@ -29,9 +29,11 @@ import org.apache.lucene.index.RandomIndexWriter;
 import org.apache.lucene.index.Term;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.util.BytesRef;
+import org.apache.lucene.util.IOUtils;
 import org.apache.lucene.util.LuceneTestCase;
 import org.apache.lucene.util.NamedThreadFactory;
 import org.apache.lucene.util._TestUtil;
+import org.junit.Test;
 
 public class TestIndexSearcher extends LuceneTestCase {
   Directory dir;
@@ -116,4 +118,25 @@ public class TestIndexSearcher extends LuceneTestCase {
     
     _TestUtil.shutdownExecutorService(service);
   }
+  
+  @Test
+  public void testSearchAfterPassedMaxDoc() throws Exception {
+    // LUCENE-5128: ensure we get a meaningful message if searchAfter exceeds maxDoc
+    Directory dir = newDirectory();
+    RandomIndexWriter w = new RandomIndexWriter(random(), dir);
+    w.addDocument(new Document());
+    IndexReader r = w.getReader();
+    w.close();
+    
+    IndexSearcher s = new IndexSearcher(r);
+    try {
+      s.searchAfter(new ScoreDoc(r.maxDoc(), 0.54f), new MatchAllDocsQuery(), 10);
+      fail("should have hit IllegalArgumentException when searchAfter exceeds maxDoc");
+    } catch (IllegalArgumentException e) {
+      // ok
+    } finally {
+      IOUtils.close(r, dir);
+    }
+  }
+  
 }

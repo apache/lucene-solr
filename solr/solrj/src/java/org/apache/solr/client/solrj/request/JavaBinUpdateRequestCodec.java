@@ -16,17 +16,20 @@
  */
 package org.apache.solr.client.solrj.request;
 
-import org.apache.solr.common.SolrInputDocument;
-import org.apache.solr.common.params.ModifiableSolrParams;
-import org.apache.solr.common.params.SolrParams;
-import org.apache.solr.common.util.FastInputStream;
-import org.apache.solr.common.util.JavaBinCodec;
-import org.apache.solr.common.util.NamedList;
-
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.Iterator;
+import java.util.List;
+
+import org.apache.solr.common.SolrInputDocument;
+import org.apache.solr.common.params.ModifiableSolrParams;
+import org.apache.solr.common.params.SolrParams;
+import org.apache.solr.common.util.DataInputInputStream;
+import org.apache.solr.common.util.JavaBinCodec;
+import org.apache.solr.common.util.NamedList;
 
 /**
  * Provides methods for marshalling an UpdateRequest to a NamedList which can be serialized in the javabin format and
@@ -94,7 +97,7 @@ public class JavaBinUpdateRequestCodec {
       private boolean seenOuterMostDocIterator = false;
         
       @Override
-      public NamedList readNamedList(FastInputStream dis) throws IOException {
+      public NamedList readNamedList(DataInputInputStream dis) throws IOException {
         int sz = readSize(dis);
         NamedList nl = new NamedList();
         if (namedList[0] == null) {
@@ -109,7 +112,7 @@ public class JavaBinUpdateRequestCodec {
       }
 
       @Override
-      public List readIterator(FastInputStream fis) throws IOException {
+      public List readIterator(DataInputInputStream fis) throws IOException {
 
         // default behavior for reading any regular Iterator in the stream
         if (seenOuterMostDocIterator) return super.readIterator(fis);
@@ -120,7 +123,7 @@ public class JavaBinUpdateRequestCodec {
         return readOuterMostDocIterator(fis);
       }
 
-      private List readOuterMostDocIterator(FastInputStream fis) throws IOException {
+      private List readOuterMostDocIterator(DataInputInputStream fis) throws IOException {
         NamedList params = (NamedList) namedList[0].getVal(0);
         updateRequest.setParams(new ModifiableSolrParams(SolrParams.toSolrParams(params)));
         if (handler == null) return super.readIterator(fis);

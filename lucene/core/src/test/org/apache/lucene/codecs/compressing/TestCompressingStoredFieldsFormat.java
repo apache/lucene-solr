@@ -49,6 +49,7 @@ public class TestCompressingStoredFieldsFormat extends BaseStoredFieldsFormatTes
     iwConf.setCodec(CompressingCodec.randomInstance(random()));
     // disable CFS because this test checks file names
     iwConf.setMergePolicy(newLogMergePolicy(false));
+    iwConf.setUseCompoundFile(false);
     RandomIndexWriter iw = new RandomIndexWriter(random(), dir, iwConf);
 
     final Document validDoc = new Document();

@@ -112,7 +112,7 @@
                 <!-- <bundledSignature>jdk-system-out</bundledSignature> -->
               </bundledSignatures>
               <signaturesFiles>
-                <signaturesFile>${top-level}/lucene/tools/forbiddenApis/executors.txt</signaturesFile>
+                <signaturesFile>${top-level}/lucene/tools/forbiddenApis/base.txt</signaturesFile>
               </signaturesFiles>
             </configuration>
             <goals>

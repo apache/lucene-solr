@@ -22,7 +22,6 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.io.Reader;
-import java.io.StringReader;
 import java.util.HashSet;
 import java.util.Set;
 
@@ -328,7 +327,7 @@ public class MemoryIndexTest extends BaseTokenStreamTestCase {
     
     // now reuse and check again
     TermsEnum te = reader.terms("foo").iterator(null);
-    assertTrue(te.seekExact(new BytesRef("bar"), true));
+    assertTrue(te.seekExact(new BytesRef("bar")));
     disi = te.docs(null, disi, DocsEnum.FLAG_NONE);
     docid = disi.docID();
     assertEquals(-1, docid);
@@ -362,7 +361,7 @@ public class MemoryIndexTest extends BaseTokenStreamTestCase {
       
       // now reuse and check again
       TermsEnum te = reader.terms("foo").iterator(null);
-      assertTrue(te.seekExact(new BytesRef("bar"), true));
+      assertTrue(te.seekExact(new BytesRef("bar")));
       disi = te.docsAndPositions(null, disi);
       docid = disi.docID();
       assertEquals(-1, docid);
@@ -378,7 +377,7 @@ public class MemoryIndexTest extends BaseTokenStreamTestCase {
     SpanQuery wrappedquery = new SpanMultiTermQueryWrapper<RegexpQuery>(regex);
         
     MemoryIndex mindex = new MemoryIndex(random().nextBoolean(),  random().nextInt(50) * 1024 * 1024);
-    mindex.addField("field", new MockAnalyzer(random()).tokenStream("field", new StringReader("hello there")));
+    mindex.addField("field", new MockAnalyzer(random()).tokenStream("field", "hello there"));
 
     // This throws an NPE
     assertEquals(0, mindex.search(wrappedquery), 0.00001f);
@@ -390,7 +389,7 @@ public class MemoryIndexTest extends BaseTokenStreamTestCase {
     SpanQuery wrappedquery = new SpanOrQuery(new SpanMultiTermQueryWrapper<RegexpQuery>(regex));
 
     MemoryIndex mindex = new MemoryIndex(random().nextBoolean(),  random().nextInt(50) * 1024 * 1024);
-    mindex.addField("field", new MockAnalyzer(random()).tokenStream("field", new StringReader("hello there")));
+    mindex.addField("field", new MockAnalyzer(random()).tokenStream("field", "hello there"));
 
     // This passes though
     assertEquals(0, mindex.search(wrappedquery), 0.00001f);

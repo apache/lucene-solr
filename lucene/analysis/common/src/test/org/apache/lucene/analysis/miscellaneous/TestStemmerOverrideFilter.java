@@ -78,7 +78,7 @@ public class TestStemmerOverrideFilter extends BaseTokenStreamTestCase {
       char[] charArray = randomRealisticUnicodeString.toCharArray();
       StringBuilder builder = new StringBuilder();
       for (int j = 0; j < charArray.length;) {
-        int cp = Character.codePointAt(charArray, j);
+        int cp = Character.codePointAt(charArray, j, charArray.length);
         if (!Character.isWhitespace(cp)) {
           builder.appendCodePoint(cp);
         }

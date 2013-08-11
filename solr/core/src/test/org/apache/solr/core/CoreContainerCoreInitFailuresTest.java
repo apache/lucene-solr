@@ -17,23 +17,17 @@
 
 package org.apache.solr.core;
 
-import java.util.Map;
-import java.util.Collection;
-import java.util.regex.Pattern;
-
-import java.io.File;
-
-import org.apache.solr.common.SolrException;
-import org.apache.solr.SolrTestCaseJ4;
-
-import org.apache.lucene.util.IOUtils;
-
 import org.apache.commons.io.FileUtils;
-
+import org.apache.lucene.util.IOUtils;
+import org.apache.solr.SolrTestCaseJ4;
+import org.apache.solr.common.SolrException;
+import org.junit.After;
 import org.xml.sax.SAXParseException;
 
-import org.junit.Before;
-import org.junit.After;
+import java.io.File;
+import java.util.Collection;
+import java.util.Map;
+import java.util.regex.Pattern;
 
 public class CoreContainerCoreInitFailuresTest extends SolrTestCaseJ4 {
   
@@ -44,8 +38,7 @@ public class CoreContainerCoreInitFailuresTest extends SolrTestCaseJ4 {
     // would be nice to do this in an @Before method,
     // but junit doesn't let @Before methods have test names
     solrHome = new File(TEMP_DIR, this.getClass().getName() + "_" + dirSuffix);
-    assertTrue("Failed to mkdirs solrhome", solrHome.mkdirs());
-    cc = new CoreContainer(solrHome.getAbsolutePath());
+    assertTrue("Failed to mkdirs solrhome [" + solrHome + "]", solrHome.mkdirs());
   }
 
   @After
@@ -68,7 +61,7 @@ public class CoreContainerCoreInitFailuresTest extends SolrTestCaseJ4 {
     Map<String,Exception> failures = null;
     Collection<String> cores = null;
     Exception fail = null;
-    
+
     init("empty_flow");
 
     // solr.xml
@@ -77,7 +70,8 @@ public class CoreContainerCoreInitFailuresTest extends SolrTestCaseJ4 {
 
     // ----
     // init the CoreContainer
-    cc.load(solrHome.getAbsolutePath(), solrXml);
+    cc = new CoreContainer(solrHome.getAbsolutePath());
+    cc.load();
 
     // check that we have the cores we expect
     cores = cc.getCoreNames();
@@ -150,22 +144,23 @@ public class CoreContainerCoreInitFailuresTest extends SolrTestCaseJ4 {
     FileUtils.write(solrXml, BAD_SOLR_XML, IOUtils.CHARSET_UTF_8.toString());
 
     // our "ok" collection
-    FileUtils.copyFile(getFile("solr/collection1/conf/solrconfig-basic.xml"),
+    FileUtils.copyFile(getFile("solr/collection1/conf/solrconfig-defaults.xml"),
                        FileUtils.getFile(solrHome, "col_ok", "conf", "solrconfig.xml"));
     FileUtils.copyFile(getFile("solr/collection1/conf/schema-minimal.xml"),
                        FileUtils.getFile(solrHome, "col_ok", "conf", "schema.xml"));
-    
+
     // our "bad" collection
     ignoreException(Pattern.quote("DummyMergePolicy"));
     FileUtils.copyFile(getFile("solr/collection1/conf/bad-mp-solrconfig.xml"),
                        FileUtils.getFile(solrHome, "col_bad", "conf", "solrconfig.xml"));
     FileUtils.copyFile(getFile("solr/collection1/conf/schema-minimal.xml"),
                        FileUtils.getFile(solrHome, "col_bad", "conf", "schema.xml"));
-    
-    
+
+
     // -----
     // init the  CoreContainer with the mix of ok/bad cores
-    cc.load(solrHome.getAbsolutePath(), solrXml);
+    cc = new CoreContainer(solrHome.getAbsolutePath());
+    cc.load();
     
     // check that we have the cores we expect
     cores = cc.getCoreNames();
@@ -198,7 +193,7 @@ public class CoreContainerCoreInitFailuresTest extends SolrTestCaseJ4 {
 
     // -----
     // "fix" the bad collection
-    FileUtils.copyFile(getFile("solr/collection1/conf/solrconfig-basic.xml"),
+    FileUtils.copyFile(getFile("solr/collection1/conf/solrconfig-defaults.xml"),
                        FileUtils.getFile(solrHome, "col_bad", "conf", "solrconfig.xml"));
     final CoreDescriptor fixed = new CoreDescriptor(cc, "col_bad", "col_bad");
     cc.register("col_bad", cc.create(fixed), false);
@@ -293,8 +288,8 @@ public class CoreContainerCoreInitFailuresTest extends SolrTestCaseJ4 {
       fail("corrupt solrconfig.xml failed to trigger exception from reload");
     } catch (SolrException e) {
       assertTrue("We're supposed to have a wrapped SAXParserException here, but we don't",
-          e.getCause() instanceof SAXParseException);
-      SAXParseException se = (SAXParseException)e.getCause();
+          e.getCause().getCause() instanceof SAXParseException);
+      SAXParseException se = (SAXParseException)e.getCause().getCause();
       assertTrue("reload exception doesn't refer to slrconfig.xml " + se.getSystemId(),
           0 < se.getSystemId().indexOf("solrconfig.xml"));
 
@@ -318,13 +313,13 @@ public class CoreContainerCoreInitFailuresTest extends SolrTestCaseJ4 {
     fail = failures.get("col_bad");
     assertNotNull("null failure for test core", fail);
     assertTrue("init failure isn't SAXParseException",
-               fail instanceof SAXParseException);
+               fail.getCause() instanceof SAXParseException);
     assertTrue("init failure doesn't mention problem: " + fail.toString(),
-               0 < ((SAXParseException)fail).getSystemId().indexOf("solrconfig.xml"));
+               0 < ((SAXParseException)fail.getCause()).getSystemId().indexOf("solrconfig.xml"));
 
     // ----
     // fix col_bad's config (again) and RELOAD to fix failure
-    FileUtils.copyFile(getFile("solr/collection1/conf/solrconfig-basic.xml"),
+    FileUtils.copyFile(getFile("solr/collection1/conf/solrconfig-defaults.xml"),
                        FileUtils.getFile(solrHome, "col_bad", "conf", "solrconfig.xml"));
     cc.reload("col_bad");
     

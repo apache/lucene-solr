@@ -120,8 +120,8 @@ public class PointVectorStrategy extends SpatialStrategy {
   }
 
   @Override
-  public ValueSource makeDistanceValueSource(Point queryPoint) {
-    return new DistanceValueSource(this, queryPoint);
+  public ValueSource makeDistanceValueSource(Point queryPoint, double multiplier) {
+    return new DistanceValueSource(this, queryPoint, multiplier);
   }
 
   @Override

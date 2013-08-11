@@ -17,7 +17,6 @@ package org.apache.lucene.replicator;
  * limitations under the License.
  */
 
-import java.net.SocketException;
 import java.util.Random;
 
 import org.apache.http.conn.ClientConnectionManager;
@@ -125,12 +124,14 @@ public abstract class ReplicatorTestCase extends LuceneTestCase {
     return server;
   }
   
-  /**
-   * Returns a {@link Server}'s port. This method assumes that no
-   * {@link Connector}s were added to the Server besides the default one.
-   */
-  public static int serverPort(Server httpServer) {
-    return httpServer.getConnectors()[0].getLocalPort();
+  /** Returns a {@link Server}'s port. */
+  public static int serverPort(Server server) {
+    return server.getConnectors()[0].getLocalPort();
+  }
+  
+  /** Returns a {@link Server}'s host. */
+  public static String serverHost(Server server) {
+    return server.getConnectors()[0].getHost();
   }
   
   /**

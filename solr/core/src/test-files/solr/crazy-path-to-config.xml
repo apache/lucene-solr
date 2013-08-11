@@ -24,14 +24,11 @@
 <config>
   <luceneMatchVersion>${tests.luceneMatchVersion:LUCENE_CURRENT}</luceneMatchVersion>
 
-  <indexConfig>
-    <lockType>single</lockType>
-  </indexConfig>
+  <xi:include href="collection1/conf/solrconfig.snippet.randomindexconfig.xml" xmlns:xi="http://www.w3.org/2001/XInclude"/>
 
   <updateHandler class="solr.DirectUpdateHandler2">
     <commitIntervalLowerBound>0</commitIntervalLowerBound>
   </updateHandler>
-
 
   <query>
     <maxBooleanClauses>1024</maxBooleanClauses>
@@ -54,12 +51,9 @@
   <queryResponseWriter name="useless" class="org.apache.solr.OutputWriterTest$UselessOutputWriter" startup="lazy"/>
   <queryResponseWriter name="xslt" class="solr.XSLTResponseWriter"/>
 
-
   <admin>
     <defaultQuery>solr</defaultQuery>
     <gettableFiles>solrconfig.xml schema.xml</gettableFiles>
   </admin>
-
-
 
 </config>

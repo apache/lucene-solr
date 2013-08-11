@@ -17,8 +17,6 @@ package org.apache.solr.cloud;
  * limitations under the License.
  */
 
-import java.io.File;
-
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.common.cloud.SolrZkClient;
 import org.apache.solr.common.cloud.ZooKeeperException;
@@ -30,6 +28,8 @@ import org.junit.Before;
 import org.junit.Test;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
+import java.io.File;
 
 public class TestZkChroot extends SolrTestCaseJ4 {
   protected static Logger log = LoggerFactory.getLogger(TestZkChroot.class);
@@ -91,7 +91,7 @@ public class TestZkChroot extends SolrTestCaseJ4 {
     SolrZkClient zkClient2 = null;
     
     try {
-      cores = new CoreContainer(home, new File(home, "solr.xml"));
+      cores = CoreContainer.createAndLoad(home, new File(home, "solr.xml"));
       zkClient = cores.getZkController().getZkClient();
       
       assertTrue(zkClient.exists("/clusterstate.json", true));
@@ -122,7 +122,7 @@ public class TestZkChroot extends SolrTestCaseJ4 {
           AbstractZkTestCase.TIMEOUT);
       assertFalse("Path '" + chroot + "' should not exist before the test",
           zkClient.exists(chroot, true));
-      cores = new CoreContainer(home, new File(home, "solr.xml"));
+      cores = CoreContainer.createAndLoad(home, new File(home, "solr.xml"));
       fail("There should be a zk exception, as the initial path doesn't exist");
     } catch (ZooKeeperException e) {
       // expected
@@ -150,7 +150,7 @@ public class TestZkChroot extends SolrTestCaseJ4 {
           AbstractZkTestCase.TIMEOUT);
       assertFalse("Path '" + chroot + "' should not exist before the test",
           zkClient.exists(chroot, true));
-      cores = new CoreContainer(home, new File(home, "solr.xml"));
+      cores = CoreContainer.createAndLoad(home, new File(home, "solr.xml"));
       assertTrue(
           "solrconfig.xml should have been uploaded to zk to the correct config directory",
           zkClient.exists(chroot + ZkController.CONFIGS_ZKNODE + "/"
@@ -176,7 +176,7 @@ public class TestZkChroot extends SolrTestCaseJ4 {
       assertTrue(zkClient.exists(chroot, true));
       assertFalse(zkClient.exists(chroot + "/clusterstate.json", true));
       
-      cores = new CoreContainer(home, new File(home, "solr.xml"));
+      cores = CoreContainer.createAndLoad(home, new File(home, "solr.xml"));
       assertTrue(zkClient.exists(chroot + "/clusterstate.json", true));
     } finally {
       if (cores != null) cores.shutdown();

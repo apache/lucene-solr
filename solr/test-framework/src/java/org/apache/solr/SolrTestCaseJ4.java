@@ -17,26 +17,36 @@
 
 package org.apache.solr;
 
-import java.io.*;
-import java.util.*;
-import java.util.logging.*;
-
-import javax.xml.xpath.XPathExpressionException;
-
+import com.carrotsearch.randomizedtesting.RandomizedContext;
+import com.carrotsearch.randomizedtesting.annotations.ThreadLeakFilters;
+import com.carrotsearch.randomizedtesting.rules.SystemPropertiesRestoreRule;
 import org.apache.commons.io.FileUtils;
-import org.apache.lucene.util.Constants;
+import org.apache.lucene.analysis.MockAnalyzer;
+import org.apache.lucene.index.IndexWriterConfig;
+import org.apache.lucene.util.IOUtils;
 import org.apache.lucene.util.LuceneTestCase;
+import org.apache.lucene.util._TestUtil;
 import org.apache.lucene.util.QuickPatchThreadsFilter;
 import org.apache.solr.client.solrj.util.ClientUtils;
-import org.apache.solr.common.*;
+import org.apache.solr.common.SolrException;
+import org.apache.solr.common.SolrInputDocument;
+import org.apache.solr.common.SolrInputField;
 import org.apache.solr.common.cloud.SolrZkClient;
-import org.apache.solr.common.params.*;
+import org.apache.solr.common.params.CommonParams;
+import org.apache.solr.common.params.ModifiableSolrParams;
+import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.common.util.XML;
+import org.apache.solr.core.ConfigSolr;
+import org.apache.solr.core.ConfigSolrXmlOld;
 import org.apache.solr.core.CoreContainer;
+import org.apache.solr.core.CoreDescriptor;
 import org.apache.solr.core.SolrConfig;
 import org.apache.solr.core.SolrCore;
+import org.apache.solr.core.SolrResourceLoader;
 import org.apache.solr.handler.JsonUpdateRequestHandler;
-import org.apache.solr.request.*;
+import org.apache.solr.request.LocalSolrQueryRequest;
+import org.apache.solr.request.SolrQueryRequest;
+import org.apache.solr.request.SolrRequestHandler;
 import org.apache.solr.schema.IndexSchema;
 import org.apache.solr.schema.SchemaField;
 import org.apache.solr.search.SolrIndexSearcher;
@@ -44,7 +54,10 @@ import org.apache.solr.servlet.DirectSolrConnection;
 import org.apache.solr.util.AbstractSolrTestCase;
 import org.apache.solr.util.RevertDefaultThreadHandlerRule;
 import org.apache.solr.util.TestHarness;
-import org.junit.*;
+import org.junit.AfterClass;
+import org.junit.BeforeClass;
+import org.junit.ClassRule;
+import org.junit.Rule;
 import org.junit.rules.RuleChain;
 import org.junit.rules.TestRule;
 import org.noggit.CharArr;
@@ -54,9 +67,24 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.xml.sax.SAXException;
 
-import com.carrotsearch.randomizedtesting.RandomizedContext;
-import com.carrotsearch.randomizedtesting.annotations.ThreadLeakFilters;
-import com.carrotsearch.randomizedtesting.rules.SystemPropertiesRestoreRule;
+import javax.xml.xpath.XPathExpressionException;
+import java.io.File;
+import java.io.IOException;
+import java.io.StringWriter;
+import java.util.ArrayList;
+import java.util.Comparator;
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.LinkedHashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.Properties;
+import java.util.logging.ConsoleHandler;
+import java.util.logging.Handler;
+import java.util.logging.Level;
+import java.util.regex.Pattern;
+
+import static com.google.common.base.Preconditions.checkNotNull;
 
 /**
  * A junit4 Solr test harness that extends LuceneTestCaseJ4. To change which core is used when loading the schema and solrconfig.xml, simply
@@ -69,7 +97,7 @@ import com.carrotsearch.randomizedtesting.rules.SystemPropertiesRestoreRule;
     QuickPatchThreadsFilter.class
 })
 public abstract class SolrTestCaseJ4 extends LuceneTestCase {
-  private static String coreName = CoreContainer.DEFAULT_DEFAULT_CORE_NAME;
+  private static String coreName = ConfigSolrXmlOld.DEFAULT_DEFAULT_CORE_NAME;
   public static int DEFAULT_CONNECTION_TIMEOUT = 15000;  // default socket connection timeout in ms
 
 
@@ -86,11 +114,14 @@ public abstract class SolrTestCaseJ4 extends LuceneTestCase {
   @SuppressWarnings("unused")
   private static void beforeClass() {
     System.setProperty("jetty.testMode", "true");
+    System.setProperty("enable.update.log", usually() ? "true" : "false");
     System.setProperty("tests.shardhandler.randomSeed", Long.toString(random().nextLong()));
+    System.setProperty("solr.clustering.enabled", "false");
     setupLogging();
     startTrackingSearchers();
     startTrackingZkClients();
     ignoreException("ignore_exception");
+    newRandomConfig();
   }
 
   @AfterClass
@@ -101,9 +132,11 @@ public abstract class SolrTestCaseJ4 extends LuceneTestCase {
     endTrackingSearchers();
     endTrackingZkClients();
     resetFactory();
-    coreName = CoreContainer.DEFAULT_DEFAULT_CORE_NAME;
+    coreName = ConfigSolrXmlOld.DEFAULT_DEFAULT_CORE_NAME;
     System.clearProperty("jetty.testMode");
     System.clearProperty("tests.shardhandler.randomSeed");
+    System.clearProperty("enable.update.log");
+    System.clearProperty("useCompoundFile");
   }
 
   private static boolean changedFactory = false;
@@ -132,6 +165,47 @@ public abstract class SolrTestCaseJ4 extends LuceneTestCase {
     }
   }
 
+  /**
+   * Call this from @BeforeClass to set up the test harness and update handler with no cores.
+   *
+   * @param solrHome The solr home directory.
+   * @param xmlStr - the text of an XML file to use. If null, use the what's the absolute minimal file.
+   * @throws Exception Lost of file-type things can go wrong.
+   */
+  public static void setupNoCoreTest(File solrHome, String xmlStr) throws Exception {
+
+    File tmpFile = new File(solrHome, ConfigSolr.SOLR_XML_FILE);
+    if (xmlStr == null) {
+      xmlStr = "<solr></solr>";
+    }
+    FileUtils.write(tmpFile, xmlStr, IOUtils.CHARSET_UTF_8.toString());
+
+    SolrResourceLoader loader = new SolrResourceLoader(solrHome.getAbsolutePath());
+    h = new TestHarness(loader, ConfigSolr.fromFile(loader, new File(solrHome, "solr.xml")));
+    lrf = h.getRequestFactory("standard", 0, 20, CommonParams.VERSION, "2.2");
+  }
+  
+  /** sets system properties based on 
+   * {@link #newIndexWriterConfig(org.apache.lucene.util.Version, org.apache.lucene.analysis.Analyzer)}
+   * 
+   * configs can use these system properties to vary the indexwriter settings
+   */
+  public static void newRandomConfig() {
+    IndexWriterConfig iwc = newIndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer(random()));
+
+    System.setProperty("useCompoundFile", String.valueOf(iwc.getUseCompoundFile()));
+
+    System.setProperty("solr.tests.maxBufferedDocs", String.valueOf(iwc.getMaxBufferedDocs()));
+    System.setProperty("solr.tests.ramBufferSizeMB", String.valueOf(iwc.getRAMBufferSizeMB()));
+    System.setProperty("solr.tests.mergeScheduler", iwc.getMergeScheduler().getClass().getName());
+
+    // don't ask iwc.getMaxThreadStates(), sometimes newIWC uses 
+    // RandomDocumentsWriterPerThreadPool and all hell breaks loose
+    int maxIndexingThreads = rarely(random())
+      ? _TestUtil.nextInt(random(), 5, 20) // crazy value
+      : _TestUtil.nextInt(random(), 1, 4); // reasonable value
+    System.setProperty("solr.tests.maxIndexingThreads", String.valueOf(maxIndexingThreads));
+  }
 
   @Override
   public void setUp() throws Exception {
@@ -340,6 +414,9 @@ public abstract class SolrTestCaseJ4 extends LuceneTestCase {
    * The directory used to story the index managed by the TestHarness h
    */
   protected static File dataDir;
+  
+  // hack due to File dataDir
+  protected static String hdfsDataDir;
 
   /**
    * Initializes things your test might need
@@ -390,12 +467,45 @@ public abstract class SolrTestCaseJ4 extends LuceneTestCase {
   public static void createCore() {
     assertNotNull(testSolrHome);
     solrConfig = TestHarness.createConfig(testSolrHome, coreName, getSolrConfigFile());
-    h = new TestHarness( coreName,
-            dataDir.getAbsolutePath(),
+    h = new TestHarness( coreName, hdfsDataDir == null ? dataDir.getAbsolutePath() : hdfsDataDir,
             solrConfig,
             getSchemaFile());
     lrf = h.getRequestFactory
             ("standard",0,20,CommonParams.VERSION,"2.2");
+  }
+
+  public static CoreContainer createCoreContainer(String solrHome, String solrXML) {
+    testSolrHome = checkNotNull(solrHome);
+    if (dataDir == null)
+      createTempDir();
+    h = new TestHarness(solrHome, solrXML);
+    lrf = h.getRequestFactory("standard", 0, 20, CommonParams.VERSION, "2.2");
+    return h.getCoreContainer();
+  }
+
+  public static CoreContainer createDefaultCoreContainer(String solrHome) {
+    testSolrHome = checkNotNull(solrHome);
+    if (dataDir == null)
+      createTempDir();
+    h = new TestHarness("collection1", dataDir.getAbsolutePath(), "solrconfig.xml", "schema.xml");
+    lrf = h.getRequestFactory("standard", 0, 20, CommonParams.VERSION, "2.2");
+    return h.getCoreContainer();
+  }
+
+  public static boolean hasInitException(String message) {
+    for (Map.Entry<String, Exception> entry : h.getCoreContainer().getCoreInitFailures().entrySet()) {
+      if (entry.getValue().getMessage().indexOf(message) != -1)
+        return true;
+    }
+    return false;
+  }
+
+  public static boolean hasInitException(Class<? extends Exception> exceptionType) {
+    for (Map.Entry<String, Exception> entry : h.getCoreContainer().getCoreInitFailures().entrySet()) {
+      if (exceptionType.isAssignableFrom(entry.getValue().getClass()))
+        return true;
+    }
+    return false;
   }
 
   /** Subclasses that override setUp can optionally call this method
@@ -561,7 +671,7 @@ public abstract class SolrTestCaseJ4 extends LuceneTestCase {
   /**
    * Validates a query matches some JSON test expressions and closes the
    * query. The text expression is of the form path:JSON.  To facilitate
-   * easy embedding in Java strings, the JSON can have double quotes
+   * easy embedding in Java strings, the JSON tests can have double quotes
    * replaced with single quotes.
    * <p>
    * Please use this with care: this makes it easy to match complete
@@ -596,7 +706,7 @@ public abstract class SolrTestCaseJ4 extends LuceneTestCase {
 
       for (String test : tests) {
         if (test == null || test.length()==0) continue;
-        String testJSON = test.replace('\'', '"');
+        String testJSON = json(test);
 
         try {
           failed = true;
@@ -630,23 +740,29 @@ public abstract class SolrTestCaseJ4 extends LuceneTestCase {
   /** Makes sure a query throws a SolrException with the listed response code */
   public static void assertQEx(String message, SolrQueryRequest req, int code ) {
     try {
+      ignoreException(".");
       h.query(req);
       fail( message );
     } catch (SolrException sex) {
       assertEquals( code, sex.code() );
     } catch (Exception e2) {
       throw new RuntimeException("Exception during query", e2);
+    } finally {
+      unIgnoreException(".");
     }
   }
 
   public static void assertQEx(String message, SolrQueryRequest req, SolrException.ErrorCode code ) {
     try {
+      ignoreException(".");
       h.query(req);
       fail( message );
     } catch (SolrException e) {
       assertEquals( code.code, e.code() );
     } catch (Exception e2) {
       throw new RuntimeException("Exception during query", e2);
+    } finally {
+      unIgnoreException(".");
     }
   }
 
@@ -852,6 +968,24 @@ public abstract class SolrTestCaseJ4 extends LuceneTestCase {
     }
     return sd;
   }
+
+  /** Converts "test JSON" and returns standard JSON.
+   *  Currently this only consists of changing unescaped single quotes to double quotes,
+   *  and escaped single quotes to single quotes.
+   *
+   * The primary purpose is to be able to easily embed JSON strings in a JAVA string
+   * with the best readability.
+   *
+   * This transformation is automatically applied to JSON test srings (like assertJQ).
+   */
+  public static String json(String testJSON) {
+    testJSON = nonEscapedSingleQuotePattern.matcher(testJSON).replaceAll("\"");
+    testJSON = escapedSingleQuotePattern.matcher(testJSON).replaceAll("'");
+    return testJSON;
+  }
+  private static Pattern nonEscapedSingleQuotePattern = Pattern.compile("(?<!\\\\)\'");
+  private static Pattern escapedSingleQuotePattern = Pattern.compile("\\\\\'");
+
 
   /** Creates JSON from a SolrInputDocument.  Doesn't currently handle boosts. */
   public static String json(SolrInputDocument doc) {
@@ -1444,12 +1578,12 @@ public abstract class SolrTestCaseJ4 extends LuceneTestCase {
     return result;
   }
 
-  public void assertXmlFile(final File file, String... xpath)
+  public static void assertXmlFile(final File file, String... xpath)
       throws IOException, SAXException {
 
     try {
       String xml = FileUtils.readFileToString(file, "UTF-8");
-      String results = h.validateXPath(xml, xpath);
+      String results = TestHarness.validateXPath(xml, xpath);
       if (null != results) {
         String msg = "File XPath failure: file=" + file.getPath() + " xpath="
             + results + "\n\nxml was: " + xml;
@@ -1465,8 +1599,56 @@ public abstract class SolrTestCaseJ4 extends LuceneTestCase {
     File subHome = new File(dstRoot, "conf");
     assertTrue("Failed to make subdirectory ", dstRoot.mkdirs());
     String top = SolrTestCaseJ4.TEST_HOME() + "/collection1/conf";
-    FileUtils.copyFile(new File(top, "schema-tiny.xml"), new File(subHome, "schema-tiny.xml"));
-    FileUtils.copyFile(new File(top, "solrconfig-minimal.xml"), new File(subHome, "solrconfig-minimal.xml"));
+    FileUtils.copyFile(new File(top, "schema-tiny.xml"), new File(subHome, "schema.xml"));
+    FileUtils.copyFile(new File(top, "solrconfig-minimal.xml"), new File(subHome, "solrconfig.xml"));
+    FileUtils.copyFile(new File(top, "solrconfig.snippet.randomindexconfig.xml"), new File(subHome, "solrconfig.snippet.randomindexconfig.xml"));
+  }
+
+  public static CoreDescriptorBuilder buildCoreDescriptor(CoreContainer container, String name, String instancedir) {
+    return new CoreDescriptorBuilder(container, name, instancedir);
+  }
+
+  public static class CoreDescriptorBuilder {
+
+    final String name;
+    final String instanceDir;
+    final CoreContainer container;
+    final Properties properties = new Properties();
+
+    public CoreDescriptorBuilder(CoreContainer container, String name, String instancedir) {
+      this.name = name;
+      this.instanceDir = instancedir;
+      this.container = container;
+    }
+
+    public CoreDescriptorBuilder withSchema(String schema) {
+      properties.setProperty(CoreDescriptor.CORE_SCHEMA, schema);
+      return this;
+    }
+
+    public CoreDescriptorBuilder withConfig(String config) {
+      properties.setProperty(CoreDescriptor.CORE_CONFIG, config);
+      return this;
+    }
+
+    public CoreDescriptorBuilder withDataDir(String datadir) {
+      properties.setProperty(CoreDescriptor.CORE_DATADIR, datadir);
+      return this;
+    }
+
+    public CoreDescriptor build() {
+      return new CoreDescriptor(container, name, instanceDir, properties);
+    }
+
+    public CoreDescriptorBuilder isTransient(boolean isTransient) {
+      properties.setProperty(CoreDescriptor.CORE_TRANSIENT, Boolean.toString(isTransient));
+      return this;
+    }
+
+    public CoreDescriptorBuilder loadOnStartup(boolean loadOnStartup) {
+      properties.setProperty(CoreDescriptor.CORE_LOADONSTARTUP, Boolean.toString(loadOnStartup));
+      return this;
+    }
   }
 
 }

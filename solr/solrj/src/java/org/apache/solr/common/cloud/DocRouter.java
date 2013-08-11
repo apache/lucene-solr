@@ -17,12 +17,11 @@ package org.apache.solr.common.cloud;
  * limitations under the License.
  */
 
-import org.noggit.JSONWriter;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.SolrInputDocument;
 import org.apache.solr.common.params.SolrParams;
-import org.apache.solr.common.util.Hash;
 import org.apache.solr.common.util.StrUtils;
+import org.noggit.JSONWriter;
 
 import java.util.ArrayList;
 import java.util.Collection;
@@ -39,6 +38,7 @@ import java.util.Map;
 public abstract class DocRouter {
   public static final String DEFAULT_NAME = CompositeIdRouter.NAME;
   public static final DocRouter DEFAULT = new CompositeIdRouter();
+  public static final String ROUTE_FIELD = "routeField";
 
   public static DocRouter getDocRouter(Object routerSpec) {
     DocRouter router = routerMap.get(routerSpec);

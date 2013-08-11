@@ -92,7 +92,6 @@ public final class MockSepPostingsFormat extends PostingsFormat {
       indexReader = new FixedGapTermsIndexReader(state.directory,
                                                        state.fieldInfos,
                                                        state.segmentInfo.name,
-                                                       state.termsIndexDivisor,
                                                        BytesRef.getUTF8SortedAsUnicodeComparator(),
                                                        state.segmentSuffix, state.context);
       success = true;
@@ -110,7 +109,6 @@ public final class MockSepPostingsFormat extends PostingsFormat {
                                                 state.segmentInfo,
                                                 postingsReader,
                                                 state.context,
-                                                1024,
                                                 state.segmentSuffix);
       success = true;
       return ret;

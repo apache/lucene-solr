@@ -4,6 +4,7 @@ import java.io.IOException;
 
 import org.apache.lucene.facet.params.CategoryListParams;
 import org.apache.lucene.facet.search.FacetsCollector.MatchingDocs;
+import org.apache.lucene.facet.search.OrdinalValueResolver.IntValueResolver;
 import org.apache.lucene.facet.taxonomy.TaxonomyReader;
 
 /*
@@ -58,6 +59,11 @@ public abstract class IntRollupFacetsAggregator implements FacetsAggregator {
   @Override
   public final boolean requiresDocScores() {
     return false;
+  }
+  
+  @Override
+  public OrdinalValueResolver createOrdinalValueResolver(FacetRequest facetRequest, FacetArrays arrays) {
+    return new IntValueResolver(arrays);
   }
   
 }

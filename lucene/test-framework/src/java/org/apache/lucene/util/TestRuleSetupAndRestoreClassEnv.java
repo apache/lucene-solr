@@ -18,10 +18,12 @@ package org.apache.lucene.util;
  */
 
 import java.io.PrintStream;
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Date;
 import java.util.HashMap;
 import java.util.HashSet;
+import java.util.List;
 import java.util.Locale;
 import java.util.Map;
 import java.util.Random;
@@ -84,6 +86,9 @@ final class TestRuleSetupAndRestoreClassEnv extends AbstractBeforeAfterRule {
 
     @Override
     public void message(String component, String message) {
+      if ("TP".equals(component)) {
+        return; // ignore test points!
+      }
       final String name;
       if (Thread.currentThread().getName().startsWith("TEST-")) {
         // The name of the main thread is way too
@@ -170,8 +175,9 @@ final class TestRuleSetupAndRestoreClassEnv extends AbstractBeforeAfterRule {
       final DocValuesFormat dvFormat;
       if ("random".equals(TEST_DOCVALUESFORMAT)) {
         // pick one from SPI
-        String formats[] = DocValuesFormat.availableDocValuesFormats().toArray(new String[0]);
-        dvFormat = DocValuesFormat.forName(formats[random.nextInt(formats.length)]);
+        List<String> formats = new ArrayList<String>(DocValuesFormat.availableDocValuesFormats());
+        formats.remove("Facet42");
+        dvFormat = DocValuesFormat.forName(formats.get(random.nextInt(formats.size())));
       } else {
         dvFormat = DocValuesFormat.forName(TEST_DOCVALUESFORMAT);
       }

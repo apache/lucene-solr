@@ -33,7 +33,6 @@ import org.apache.lucene.search.WildcardQuery;
 import org.apache.lucene.util.BytesRef;
 
 import java.io.IOException;
-import java.io.StringReader;
 import java.util.Collection;
 import java.util.LinkedList;
 
@@ -86,7 +85,7 @@ public class SimpleNaiveBayesClassifier implements Classifier<BytesRef> {
 
   private String[] tokenizeDoc(String doc) throws IOException {
     Collection<String> result = new LinkedList<String>();
-    TokenStream tokenStream = analyzer.tokenStream(textFieldName, new StringReader(doc));
+    TokenStream tokenStream = analyzer.tokenStream(textFieldName, doc);
     CharTermAttribute charTermAttribute = tokenStream.addAttribute(CharTermAttribute.class);
     tokenStream.reset();
     while (tokenStream.incrementToken()) {

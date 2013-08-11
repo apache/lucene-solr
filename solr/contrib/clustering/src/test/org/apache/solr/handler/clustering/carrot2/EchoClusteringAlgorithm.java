@@ -15,7 +15,6 @@ package org.apache.solr.handler.clustering.carrot2;
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-import java.util.Collections;
 import java.util.List;
 
 import org.carrot2.core.Cluster;

@@ -61,7 +61,7 @@ public class TestFieldsReader extends LuceneTestCase {
     }
     dir = newDirectory();
     IndexWriterConfig conf = newIndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer(random())).setMergePolicy(newLogMergePolicy());
-    ((LogMergePolicy) conf.getMergePolicy()).setUseCompoundFile(false);
+    conf.getMergePolicy().setNoCFSRatio(0.0);
     IndexWriter writer = new IndexWriter(dir, conf);
     writer.addDocument(testDoc);
     writer.close();
@@ -170,12 +170,11 @@ public class TestFieldsReader extends LuceneTestCase {
     @Override
     public void readInternal(byte[] b, int offset, int length) throws IOException {
       simOutage();
+      delegate.seek(getFilePointer());
       delegate.readBytes(b, offset, length);
     }
     @Override
     public void seekInternal(long pos) throws IOException {
-      //simOutage();
-      delegate.seek(pos);
     }
     @Override
     public long length() {
@@ -187,7 +186,14 @@ public class TestFieldsReader extends LuceneTestCase {
     }
     @Override
     public FaultyIndexInput clone() {
-      return new FaultyIndexInput(delegate.clone());
+      FaultyIndexInput i = new FaultyIndexInput(delegate.clone());
+      // seek the clone to our current position
+      try {
+        i.seek(getFilePointer());
+      } catch (IOException e) {
+        throw new RuntimeException();
+      }
+      return i;
     }
   }
 
@@ -197,8 +203,9 @@ public class TestFieldsReader extends LuceneTestCase {
 
     try {
       Directory dir = new FaultyFSDirectory(indexDir);
-      IndexWriter writer = new IndexWriter(dir, newIndexWriterConfig( 
-          TEST_VERSION_CURRENT, new MockAnalyzer(random())).setOpenMode(OpenMode.CREATE));
+      IndexWriterConfig iwc = newIndexWriterConfig( 
+          TEST_VERSION_CURRENT, new MockAnalyzer(random())).setOpenMode(OpenMode.CREATE);
+      IndexWriter writer = new IndexWriter(dir, iwc);
       for(int i=0;i<2;i++)
         writer.addDocument(testDoc);
       writer.forceMerge(1);

@@ -1,7 +1,7 @@
 package org.apache.lucene.facet.search;
 
+import org.apache.lucene.facet.params.FacetIndexingParams;
 import org.apache.lucene.facet.taxonomy.CategoryPath;
-import org.apache.lucene.facet.taxonomy.TaxonomyReader;
 
 /*
  * Licensed to the Apache Software Foundation (ASF) under one or more
@@ -34,19 +34,8 @@ public class SumScoreFacetRequest extends FacetRequest {
   }
 
   @Override
-  public Aggregator createAggregator(boolean useComplements, FacetArrays arrays, TaxonomyReader taxonomy) {
-    assert !useComplements : "complements are not supported by this FacetRequest";
-    return new ScoringAggregator(arrays.getFloatArray());
+  public FacetsAggregator createFacetsAggregator(FacetIndexingParams fip) {
+    return new SumScoreFacetsAggregator();
   }
-
-  @Override
-  public double getValueOf(FacetArrays arrays, int ordinal) {
-    return arrays.getFloatArray()[ordinal];
-  }
-
-  @Override
-  public FacetArraysSource getFacetArraysSource() {
-    return FacetArraysSource.FLOAT;
-  }
-
+  
 }

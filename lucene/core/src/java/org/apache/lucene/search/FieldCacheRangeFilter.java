@@ -193,109 +193,7 @@ public abstract class FieldCacheRangeFilter<T> extends Filter {
       }
     };
   }
-  
-  /**
-   * Creates a numeric range filter using {@link FieldCache#getBytes(AtomicReader,String,boolean)}. This works with all
-   * byte fields containing exactly one numeric term in the field. The range can be half-open by setting one
-   * of the values to <code>null</code>.
-   */
-  public static FieldCacheRangeFilter<Byte> newByteRange(String field, Byte lowerVal, Byte upperVal, boolean includeLower, boolean includeUpper) {
-    return newByteRange(field, null, lowerVal, upperVal, includeLower, includeUpper);
-  }
-  
-  /**
-   * Creates a numeric range filter using {@link FieldCache#getBytes(AtomicReader,String,FieldCache.ByteParser,boolean)}. This works with all
-   * byte fields containing exactly one numeric term in the field. The range can be half-open by setting one
-   * of the values to <code>null</code>.
-   */
-  public static FieldCacheRangeFilter<Byte> newByteRange(String field, FieldCache.ByteParser parser, Byte lowerVal, Byte upperVal, boolean includeLower, boolean includeUpper) {
-    return new FieldCacheRangeFilter<Byte>(field, parser, lowerVal, upperVal, includeLower, includeUpper) {
-      @Override
-      public DocIdSet getDocIdSet(AtomicReaderContext context, Bits acceptDocs) throws IOException {
-        final byte inclusiveLowerPoint, inclusiveUpperPoint;
-        if (lowerVal != null) {
-          final byte i = lowerVal.byteValue();
-          if (!includeLower && i == Byte.MAX_VALUE)
-            return null;
-          inclusiveLowerPoint = (byte) (includeLower ?  i : (i + 1));
-        } else {
-          inclusiveLowerPoint = Byte.MIN_VALUE;
-        }
-        if (upperVal != null) {
-          final byte i = upperVal.byteValue();
-          if (!includeUpper && i == Byte.MIN_VALUE)
-            return null;
-          inclusiveUpperPoint = (byte) (includeUpper ? i : (i - 1));
-        } else {
-          inclusiveUpperPoint = Byte.MAX_VALUE;
-        }
-        
-        if (inclusiveLowerPoint > inclusiveUpperPoint)
-          return null;
-        
-        final FieldCache.Bytes values = FieldCache.DEFAULT.getBytes(context.reader(), field, (FieldCache.ByteParser) parser, false);
-        return new FieldCacheDocIdSet(context.reader().maxDoc(), acceptDocs) {
-          @Override
-          protected boolean matchDoc(int doc) {
-            final byte value = values.get(doc);
-            return value >= inclusiveLowerPoint && value <= inclusiveUpperPoint;
-          }
-        };
-      }
-    };
-  }
-  
-  /**
-   * Creates a numeric range filter using {@link FieldCache#getShorts(AtomicReader,String,boolean)}. This works with all
-   * short fields containing exactly one numeric term in the field. The range can be half-open by setting one
-   * of the values to <code>null</code>.
-   */
-  public static FieldCacheRangeFilter<Short> newShortRange(String field, Short lowerVal, Short upperVal, boolean includeLower, boolean includeUpper) {
-    return newShortRange(field, null, lowerVal, upperVal, includeLower, includeUpper);
-  }
-  
-  /**
-   * Creates a numeric range filter using {@link FieldCache#getShorts(AtomicReader,String,FieldCache.ShortParser,boolean)}. This works with all
-   * short fields containing exactly one numeric term in the field. The range can be half-open by setting one
-   * of the values to <code>null</code>.
-   */
-  public static FieldCacheRangeFilter<Short> newShortRange(String field, FieldCache.ShortParser parser, Short lowerVal, Short upperVal, boolean includeLower, boolean includeUpper) {
-    return new FieldCacheRangeFilter<Short>(field, parser, lowerVal, upperVal, includeLower, includeUpper) {
-      @Override
-      public DocIdSet getDocIdSet(AtomicReaderContext context, Bits acceptDocs) throws IOException {
-        final short inclusiveLowerPoint, inclusiveUpperPoint;
-        if (lowerVal != null) {
-          short i = lowerVal.shortValue();
-          if (!includeLower && i == Short.MAX_VALUE)
-            return null;
-          inclusiveLowerPoint = (short) (includeLower ? i : (i + 1));
-        } else {
-          inclusiveLowerPoint = Short.MIN_VALUE;
-        }
-        if (upperVal != null) {
-          short i = upperVal.shortValue();
-          if (!includeUpper && i == Short.MIN_VALUE)
-            return null;
-          inclusiveUpperPoint = (short) (includeUpper ? i : (i - 1));
-        } else {
-          inclusiveUpperPoint = Short.MAX_VALUE;
-        }
-        
-        if (inclusiveLowerPoint > inclusiveUpperPoint)
-          return null;
-        
-        final FieldCache.Shorts values = FieldCache.DEFAULT.getShorts(context.reader(), field, (FieldCache.ShortParser) parser, false);
-        return new FieldCacheDocIdSet(context.reader().maxDoc(), acceptDocs) {
-          @Override
-          protected boolean matchDoc(int doc) {
-            final short value = values.get(doc);
-            return value >= inclusiveLowerPoint && value <= inclusiveUpperPoint;
-          }
-        };
-      }
-    };
-  }
-  
+
   /**
    * Creates a numeric range filter using {@link FieldCache#getInts(AtomicReader,String,boolean)}. This works with all
    * int fields containing exactly one numeric term in the field. The range can be half-open by setting one
@@ -521,7 +419,7 @@ public abstract class FieldCacheRangeFilter<T> extends Filter {
   }
 
   @Override
-  @SuppressWarnings({"unchecked","rawtypes"})
+  @SuppressWarnings({"rawtypes"})
   public final boolean equals(Object o) {
     if (this == o) return true;
     if (!(o instanceof FieldCacheRangeFilter)) return false;

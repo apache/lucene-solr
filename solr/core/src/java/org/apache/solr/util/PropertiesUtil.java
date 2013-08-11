@@ -129,4 +129,24 @@ public class PropertiesUtil {
     }
   }
 
+  /**
+   * Parse the given String value as an integer.  If the string cannot
+   * be parsed, returns the default
+   * @param value    the value to parse
+   * @param defValue the default to return if the value cannot be parsed
+   * @return an integer version of the passed in value
+   */
+  public static Integer toInteger(String value, Integer defValue) {
+    try {
+      return Integer.parseInt(value);
+    }
+    catch (NumberFormatException e) {
+      return defValue;
+    }
+  }
+
+  public static boolean toBoolean(String value) {
+    return "true".equalsIgnoreCase(value) || "on".equalsIgnoreCase(value);
+  }
+
 }

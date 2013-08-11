@@ -167,7 +167,7 @@ public abstract class FacetsCollector extends Collector {
    * FacetsAccumulator} from {@link FacetsAccumulator#create}.
    */
   public static FacetsCollector create(FacetSearchParams fsp, IndexReader indexReader, TaxonomyReader taxoReader) {
-    return create(FacetsAccumulator.create(fsp, indexReader, taxoReader));
+    return create(FacetsAccumulator.create(fsp, indexReader, taxoReader, null));
   }
 
   /**

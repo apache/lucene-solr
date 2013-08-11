@@ -19,6 +19,9 @@ package org.apache.lucene.analysis.wikipedia;
 
 import org.apache.lucene.analysis.tokenattributes.CharTermAttribute;
 
+/**
+ * JFlex-generated tokenizer that is aware of Wikipedia syntax.
+ */
 %%
 
 %class WikipediaTokenizerImpl

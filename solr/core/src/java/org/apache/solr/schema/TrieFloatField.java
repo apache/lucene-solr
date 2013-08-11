@@ -33,7 +33,7 @@ package org.apache.solr.schema;
  * @see Float
  * @see <a href="http://java.sun.com/docs/books/jls/third_edition/html/typesValues.html#4.2.3">Java Language Specification, s4.2.3</a>
  */
-public class TrieFloatField extends TrieField {
+public class TrieFloatField extends TrieField implements FloatValueFieldType {
   {
     type=TrieTypes.FLOAT;
   }

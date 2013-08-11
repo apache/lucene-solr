@@ -29,15 +29,17 @@ import org.apache.lucene.facet.taxonomy.TaxonomyReader;
 public abstract class FacetResultsHandler {
 
   public final TaxonomyReader taxonomyReader;
-
   public final FacetRequest facetRequest;
   
+  protected final OrdinalValueResolver resolver;
   protected final FacetArrays facetArrays;
 
-  public FacetResultsHandler(TaxonomyReader taxonomyReader, FacetRequest facetRequest, FacetArrays facetArrays) {
+  public FacetResultsHandler(TaxonomyReader taxonomyReader, FacetRequest facetRequest, OrdinalValueResolver resolver, 
+      FacetArrays facetArrays) {
     this.taxonomyReader = taxonomyReader;
     this.facetRequest = facetRequest;
     this.facetArrays = facetArrays;
+    this.resolver = resolver;
   }
 
   /** Computes the {@link FacetResult} for the given {@link FacetArrays}. */

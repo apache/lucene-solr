@@ -376,7 +376,7 @@
    <field name="intDefault" type="sint" indexed="true" stored="true" default="42" multiValued="false"/>
    <field name="signatureField" type="string" indexed="true" stored="false"/>
    
-
+   <field name="_version_" type="long" indexed="true" stored="true" multiValued="false" />
    
    <!-- Dynamic field definitions.  If a field name is not found, dynamicFields
         will be used if the name matches any of the patterns.

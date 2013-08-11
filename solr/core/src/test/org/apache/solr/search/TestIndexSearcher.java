@@ -16,6 +16,7 @@
  */
 package org.apache.solr.search;
 
+import org.apache.lucene.index.LogDocMergePolicy;
 import org.apache.lucene.index.AtomicReaderContext;
 import org.apache.lucene.index.IndexReaderContext;
 import org.apache.lucene.index.ReaderUtil;
@@ -34,6 +35,11 @@ public class TestIndexSearcher extends SolrTestCaseJ4 {
 
   @BeforeClass
   public static void beforeClass() throws Exception {
+
+    // we need a consistent segmentation because reopen test validation
+    // dependso n merges not happening when it doesn't expect
+    System.setProperty("solr.tests.mergePolicy", LogDocMergePolicy.class.getName());
+
     initCore("solrconfig.xml","schema.xml");
   }
   

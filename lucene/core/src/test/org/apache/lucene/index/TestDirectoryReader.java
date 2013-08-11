@@ -20,6 +20,7 @@ package org.apache.lucene.index;
 import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.IOException;
+import java.nio.file.NoSuchFileException;
 import java.util.Collection;
 import java.util.HashSet;
 import java.util.Iterator;
@@ -32,6 +33,7 @@ import org.apache.lucene.codecs.lucene41.Lucene41PostingsFormat;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
 import org.apache.lucene.document.FieldType;
+import org.apache.lucene.document.IntField;
 import org.apache.lucene.document.StoredField;
 import org.apache.lucene.document.StringField;
 import org.apache.lucene.document.TextField;
@@ -428,8 +430,8 @@ void assertTermDocsCount(String msg,
     }
     try {
       DirectoryReader.open(fileDirName);
-      fail("opening DirectoryReader on empty directory failed to produce FileNotFoundException");
-    } catch (FileNotFoundException e) {
+      fail("opening DirectoryReader on empty directory failed to produce FileNotFoundException/NoSuchFileException");
+    } catch (FileNotFoundException | NoSuchFileException e) {
       // GOOD
     }
     rmDir(fileDirName);
@@ -470,8 +472,8 @@ public void testFilesOpenClose() throws IOException {
     Directory dir = newFSDirectory(dirFile);
     try {
       DirectoryReader.open(dir);
-      fail("expected FileNotFoundException");
-    } catch (FileNotFoundException e) {
+      fail("expected FileNotFoundException/NoSuchFileException");
+    } catch (FileNotFoundException | NoSuchFileException e) {
       // expected
     }
 
@@ -480,8 +482,8 @@ public void testFilesOpenClose() throws IOException {
     // Make sure we still get a CorruptIndexException (not NPE):
     try {
       DirectoryReader.open(dir);
-      fail("expected FileNotFoundException");
-    } catch (FileNotFoundException e) {
+      fail("expected FileNotFoundException/NoSuchFileException");
+    } catch (FileNotFoundException | NoSuchFileException e) {
       // expected
     }
     
@@ -763,7 +765,7 @@ public void testFilesOpenClose() throws IOException {
             setMergePolicy(newLogMergePolicy(10))
     );
     Document doc = new Document();
-    doc.add(newStringField("number", "17", Field.Store.NO));
+    doc.add(new IntField("number", 17, Field.Store.NO));
     writer.addDocument(doc);
     writer.commit();
   
@@ -817,54 +819,6 @@ public void testFilesOpenClose() throws IOException {
     }
     r2.close();
     writer.close();
-    dir.close();
-  }
-  
-  // LUCENE-1609: don't load terms index
-  public void testNoTermsIndex() throws Throwable {
-    Directory dir = newDirectory();
-    IndexWriter writer = new IndexWriter(dir, newIndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer(random())).setCodec(_TestUtil.alwaysPostingsFormat(new Lucene41PostingsFormat())));
-    Document doc = new Document();
-    doc.add(newTextField("field", "a b c d e f g h i j k l m n o p q r s t u v w x y z", Field.Store.NO));
-    doc.add(newTextField("number", "0 1 2 3 4 5 6 7 8 9", Field.Store.NO));
-    writer.addDocument(doc);
-    writer.addDocument(doc);
-    writer.close();
-  
-    DirectoryReader r = DirectoryReader.open(dir, -1);
-    try {
-      r.docFreq(new Term("field", "f"));
-      fail("did not hit expected exception");
-    } catch (IllegalStateException ise) {
-      // expected
-    }
-  
-    assertEquals(-1, ((SegmentReader) r.leaves().get(0).reader()).getTermInfosIndexDivisor());
-    writer = new IndexWriter(
-        dir,
-        newIndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer(random())).
-            setCodec(_TestUtil.alwaysPostingsFormat(new Lucene41PostingsFormat())).
-            setMergePolicy(newLogMergePolicy(10))
-    );
-    writer.addDocument(doc);
-    writer.close();
-  
-    // LUCENE-1718: ensure re-open carries over no terms index:
-    DirectoryReader r2 = DirectoryReader.openIfChanged(r);
-    assertNotNull(r2);
-    assertNull(DirectoryReader.openIfChanged(r2));
-    r.close();
-    List<AtomicReaderContext> leaves = r2.leaves();
-    assertEquals(2, leaves.size());
-    for(AtomicReaderContext ctx : leaves) {
-      try {
-        ctx.reader().docFreq(new Term("field", "f"));
-        fail("did not hit expected exception");
-      } catch (IllegalStateException ise) {
-        // expected
-      }
-    }
-    r2.close();
     dir.close();
   }
   

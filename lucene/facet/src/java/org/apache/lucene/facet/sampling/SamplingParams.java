@@ -28,23 +28,23 @@ public class SamplingParams {
    * Default factor by which more results are requested over the sample set.
    * @see SamplingParams#getOversampleFactor()
    */
-  public static final double DEFAULT_OVERSAMPLE_FACTOR = 2d;
+  public static final double DEFAULT_OVERSAMPLE_FACTOR = 1d;
   
   /**
    * Default ratio between size of sample to original size of document set.
-   * @see Sampler#getSampleSet(org.apache.lucene.facet.search.ScoredDocIDs)
+   * @see Sampler#getSampleSet(org.apache.lucene.facet.old.ScoredDocIDs)
    */
   public static final double DEFAULT_SAMPLE_RATIO = 0.01;
   
   /**
    * Default maximum size of sample.
-   * @see Sampler#getSampleSet(org.apache.lucene.facet.search.ScoredDocIDs)
+   * @see Sampler#getSampleSet(org.apache.lucene.facet.old.ScoredDocIDs)
    */
   public static final int DEFAULT_MAX_SAMPLE_SIZE = 10000;
   
   /**
    * Default minimum size of sample.
-   * @see Sampler#getSampleSet(org.apache.lucene.facet.search.ScoredDocIDs)
+   * @see Sampler#getSampleSet(org.apache.lucene.facet.old.ScoredDocIDs)
    */
   public static final int DEFAULT_MIN_SAMPLE_SIZE = 100;
   
@@ -59,11 +59,13 @@ public class SamplingParams {
   private double sampleRatio = DEFAULT_SAMPLE_RATIO;
   private int samplingThreshold = DEFAULT_SAMPLING_THRESHOLD;
   private double oversampleFactor = DEFAULT_OVERSAMPLE_FACTOR;
+
+  private SampleFixer sampleFixer = null;
   
   /**
    * Return the maxSampleSize.
    * In no case should the resulting sample size exceed this value.  
-   * @see Sampler#getSampleSet(org.apache.lucene.facet.search.ScoredDocIDs)
+   * @see Sampler#getSampleSet(org.apache.lucene.facet.old.ScoredDocIDs)
    */
   public final int getMaxSampleSize() {
     return maxSampleSize;
@@ -72,7 +74,7 @@ public class SamplingParams {
   /**
    * Return the minSampleSize.
    * In no case should the resulting sample size be smaller than this value.  
-   * @see Sampler#getSampleSet(org.apache.lucene.facet.search.ScoredDocIDs)
+   * @see Sampler#getSampleSet(org.apache.lucene.facet.old.ScoredDocIDs)
    */
   public final int getMinSampleSize() {
     return minSampleSize;
@@ -80,7 +82,7 @@ public class SamplingParams {
 
   /**
    * @return the sampleRatio
-   * @see Sampler#getSampleSet(org.apache.lucene.facet.search.ScoredDocIDs)
+   * @see Sampler#getSampleSet(org.apache.lucene.facet.old.ScoredDocIDs)
    */
   public final double getSampleRatio() {
     return sampleRatio;
@@ -166,4 +168,29 @@ public class SamplingParams {
     this.oversampleFactor = oversampleFactor;
   }
 
+  /**
+   * @return {@link SampleFixer} to be used while fixing the sampled results, if
+   *         <code>null</code> no fixing will be performed
+   */
+  public SampleFixer getSampleFixer() {
+    return sampleFixer;
+  }
+
+  /**
+   * Set a {@link SampleFixer} to be used while fixing the sampled results.
+   * {@code null} means no fixing will be performed
+   */
+  public void setSampleFixer(SampleFixer sampleFixer) {
+    this.sampleFixer = sampleFixer;
+  }
+
+  /**
+   * Returns whether over-sampling should be done. By default returns
+   * {@code true} when {@link #getSampleFixer()} is not {@code null} and
+   * {@link #getOversampleFactor()} &gt; 1, {@code false} otherwise.
+   */
+  public boolean shouldOverSample() {
+    return sampleFixer != null && oversampleFactor > 1d;
+  }
+  
 }

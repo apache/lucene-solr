@@ -17,6 +17,7 @@ package org.apache.lucene.facet.range;
  * limitations under the License.
  */
 
+import java.io.IOException;
 import java.util.Collections;
 import java.util.HashSet;
 import java.util.List;
@@ -37,13 +38,15 @@ import org.apache.lucene.facet.params.FacetIndexingParams;
 import org.apache.lucene.facet.params.FacetSearchParams;
 import org.apache.lucene.facet.search.CountFacetRequest;
 import org.apache.lucene.facet.search.DrillDownQuery;
-import org.apache.lucene.facet.search.DrillSideways.DrillSidewaysResult;
 import org.apache.lucene.facet.search.DrillSideways;
+import org.apache.lucene.facet.search.DrillSideways.DrillSidewaysResult;
 import org.apache.lucene.facet.search.FacetRequest;
 import org.apache.lucene.facet.search.FacetResult;
 import org.apache.lucene.facet.search.FacetResultNode;
 import org.apache.lucene.facet.search.FacetsAccumulator;
 import org.apache.lucene.facet.search.FacetsCollector;
+import org.apache.lucene.facet.sortedset.SortedSetDocValuesFacetFields;
+import org.apache.lucene.facet.sortedset.SortedSetDocValuesReaderState;
 import org.apache.lucene.facet.taxonomy.CategoryPath;
 import org.apache.lucene.facet.taxonomy.TaxonomyReader;
 import org.apache.lucene.facet.taxonomy.directory.DirectoryTaxonomyReader;
@@ -74,15 +77,12 @@ public class TestRangeAccumulator extends FacetTestCase {
     IndexReader r = w.getReader();
     w.close();
 
-    FacetSearchParams fsp = new FacetSearchParams(
-                                new RangeFacetRequest<LongRange>("field",
-                                                      new LongRange("less than 10", 0L, true, 10L, false),
-                                                      new LongRange("less than or equal to 10", 0L, true, 10L, true),
-                                                      new LongRange("over 90", 90L, false, 100L, false),
-                                                      new LongRange("90 or above", 90L, true, 100L, false),
-                                                      new LongRange("over 1000", 1000L, false, Long.MAX_VALUE, false)));
-
-    RangeAccumulator a = new RangeAccumulator(fsp, r);
+    RangeAccumulator a = new RangeAccumulator(new RangeFacetRequest<LongRange>("field",
+        new LongRange("less than 10", 0L, true, 10L, false),
+        new LongRange("less than or equal to 10", 0L, true, 10L, true),
+        new LongRange("over 90", 90L, false, 100L, false),
+        new LongRange("90 or above", 90L, true, 100L, false),
+        new LongRange("over 1000", 1000L, false, Long.MAX_VALUE, false)));
     
     FacetsCollector fc = FacetsCollector.create(a);
 
@@ -97,15 +97,15 @@ public class TestRangeAccumulator extends FacetTestCase {
   }
 
   /** Tests single request that mixes Range and non-Range
-   *  faceting, with DrillSideways. */
-  public void testMixedRangeAndNonRange() throws Exception {
+   *  faceting, with DrillSideways and taxonomy. */
+  public void testMixedRangeAndNonRangeTaxonomy() throws Exception {
     Directory d = newDirectory();
     RandomIndexWriter w = new RandomIndexWriter(random(), d);
     Directory td = newDirectory();
     DirectoryTaxonomyWriter tw = new DirectoryTaxonomyWriter(td, IndexWriterConfig.OpenMode.CREATE);
     FacetFields ff = new FacetFields(tw);
 
-    for(long l=0;l<100;l++) {
+    for (long l = 0; l < 100; l++) {
       Document doc = new Document();
       // For computing range facet counts:
       doc.add(new NumericDocValuesField("field", l));
@@ -122,7 +122,7 @@ public class TestRangeAccumulator extends FacetTestCase {
       w.addDocument(doc);
     }
 
-    IndexReader r = w.getReader();
+    final IndexReader r = w.getReader();
     w.close();
 
     final TaxonomyReader tr = new DirectoryTaxonomyReader(tw);
@@ -130,32 +130,32 @@ public class TestRangeAccumulator extends FacetTestCase {
 
     IndexSearcher s = newSearcher(r);
 
-    final FacetSearchParams fsp = new FacetSearchParams(
-                                new CountFacetRequest(new CategoryPath("dim"), 2),
-                                new RangeFacetRequest<LongRange>("field",
-                                                      new LongRange("less than 10", 0L, true, 10L, false),
-                                                      new LongRange("less than or equal to 10", 0L, true, 10L, true),
-                                                      new LongRange("over 90", 90L, false, 100L, false),
-                                                      new LongRange("90 or above", 90L, true, 100L, false),
-                                                      new LongRange("over 1000", 1000L, false, Long.MAX_VALUE, false)));
-
+    final CountFacetRequest countRequest = new CountFacetRequest(new CategoryPath("dim"), 2);
+    final RangeFacetRequest<LongRange> rangeRequest = new RangeFacetRequest<LongRange>("field",
+                          new LongRange("less than 10", 0L, true, 10L, false),
+                          new LongRange("less than or equal to 10", 0L, true, 10L, true),
+                          new LongRange("over 90", 90L, false, 100L, false),
+                          new LongRange("90 or above", 90L, true, 100L, false),
+                          new LongRange("over 1000", 1000L, false, Long.MAX_VALUE, false));
+    FacetSearchParams fsp = new FacetSearchParams(countRequest, rangeRequest);
+    
     final Set<String> dimSeen = new HashSet<String>();
 
     DrillSideways ds = new DrillSideways(s, tr) {
         @Override
         protected FacetsAccumulator getDrillDownAccumulator(FacetSearchParams fsp) {
           checkSeen(fsp);
-          return RangeFacetsAccumulatorWrapper.create(fsp, searcher.getIndexReader(), tr);
+          return FacetsAccumulator.create(fsp, r, tr, null);
         }
 
         @Override
         protected FacetsAccumulator getDrillSidewaysAccumulator(String dim, FacetSearchParams fsp) {
           checkSeen(fsp);
-          return RangeFacetsAccumulatorWrapper.create(fsp, searcher.getIndexReader(), tr);
+          return FacetsAccumulator.create(fsp, r, tr, null);
         }
 
         private void checkSeen(FacetSearchParams fsp) {
-          // Each dim should should up only once, across
+          // Each dim should up only once, across
           // both drillDown and drillSideways requests:
           for(FacetRequest fr : fsp.facetRequests) {
             String dim = fr.categoryPath.components[0];
@@ -204,6 +204,111 @@ public class TestRangeAccumulator extends FacetTestCase {
     IOUtils.close(tr, td, r, d);
   }
 
+  /** Tests single request that mixes Range and non-Range
+   *  faceting, with DrillSideways and SortedSet. */
+  public void testMixedRangeAndNonRangeSortedSet() throws Exception {
+    assumeTrue("Test requires SortedSetDV support", defaultCodecSupportsSortedSet());
+    Directory d = newDirectory();
+    RandomIndexWriter w = new RandomIndexWriter(random(), d);
+    SortedSetDocValuesFacetFields ff = new SortedSetDocValuesFacetFields();
+
+    for (long l = 0; l < 100; l++) {
+      Document doc = new Document();
+      // For computing range facet counts:
+      doc.add(new NumericDocValuesField("field", l));
+      // For drill down by numeric range:
+      doc.add(new LongField("field", l, Field.Store.NO));
+
+      CategoryPath cp;
+      if ((l&3) == 0) {
+        cp = new CategoryPath("dim", "a");
+      } else {
+        cp = new CategoryPath("dim", "b");
+      }
+      ff.addFields(doc, Collections.singletonList(cp));
+      w.addDocument(doc);
+    }
+
+    final IndexReader r = w.getReader();
+    w.close();
+
+    IndexSearcher s = newSearcher(r);
+    final SortedSetDocValuesReaderState state = new SortedSetDocValuesReaderState(s.getIndexReader());
+
+    final CountFacetRequest countRequest = new CountFacetRequest(new CategoryPath("dim"), 2);
+    final RangeFacetRequest<LongRange> rangeRequest = new RangeFacetRequest<LongRange>("field",
+                          new LongRange("less than 10", 0L, true, 10L, false),
+                          new LongRange("less than or equal to 10", 0L, true, 10L, true),
+                          new LongRange("over 90", 90L, false, 100L, false),
+                          new LongRange("90 or above", 90L, true, 100L, false),
+                          new LongRange("over 1000", 1000L, false, Long.MAX_VALUE, false));
+    FacetSearchParams fsp = new FacetSearchParams(countRequest, rangeRequest);
+    
+    final Set<String> dimSeen = new HashSet<String>();
+
+    DrillSideways ds = new DrillSideways(s, state) {
+        @Override
+        protected FacetsAccumulator getDrillDownAccumulator(FacetSearchParams fsp) throws IOException {
+          checkSeen(fsp);
+          return FacetsAccumulator.create(fsp, state, null);
+        }
+
+        @Override
+        protected FacetsAccumulator getDrillSidewaysAccumulator(String dim, FacetSearchParams fsp) throws IOException {
+          checkSeen(fsp);
+          return FacetsAccumulator.create(fsp, state, null);
+        }
+
+        private void checkSeen(FacetSearchParams fsp) {
+          // Each dim should up only once, across
+          // both drillDown and drillSideways requests:
+          for(FacetRequest fr : fsp.facetRequests) {
+            String dim = fr.categoryPath.components[0];
+            assertFalse("dim " + dim + " already seen", dimSeen.contains(dim));
+            dimSeen.add(dim);
+          }
+        }
+
+        @Override
+        protected boolean scoreSubDocsAtOnce() {
+          return random().nextBoolean();
+        }
+      };
+
+    // First search, no drill downs:
+    DrillDownQuery ddq = new DrillDownQuery(FacetIndexingParams.DEFAULT, new MatchAllDocsQuery());
+    DrillSidewaysResult dsr = ds.search(null, ddq, 10, fsp);
+
+    assertEquals(100, dsr.hits.totalHits);
+    assertEquals(2, dsr.facetResults.size());
+    assertEquals("dim (0)\n  b (75)\n  a (25)\n", FacetTestUtils.toSimpleString(dsr.facetResults.get(0)));
+    assertEquals("field (0)\n  less than 10 (10)\n  less than or equal to 10 (11)\n  over 90 (9)\n  90 or above (10)\n  over 1000 (0)\n", FacetTestUtils.toSimpleString(dsr.facetResults.get(1)));
+
+    // Second search, drill down on dim=b:
+    ddq = new DrillDownQuery(FacetIndexingParams.DEFAULT, new MatchAllDocsQuery());
+    ddq.add(new CategoryPath("dim", "b"));
+    dimSeen.clear();
+    dsr = ds.search(null, ddq, 10, fsp);
+
+    assertEquals(75, dsr.hits.totalHits);
+    assertEquals(2, dsr.facetResults.size());
+    assertEquals("dim (0)\n  b (75)\n  a (25)\n", FacetTestUtils.toSimpleString(dsr.facetResults.get(0)));
+    assertEquals("field (0)\n  less than 10 (7)\n  less than or equal to 10 (8)\n  over 90 (7)\n  90 or above (8)\n  over 1000 (0)\n", FacetTestUtils.toSimpleString(dsr.facetResults.get(1)));
+
+    // Third search, drill down on "less than or equal to 10":
+    ddq = new DrillDownQuery(FacetIndexingParams.DEFAULT, new MatchAllDocsQuery());
+    ddq.add("field", NumericRangeQuery.newLongRange("field", 0L, 10L, true, true));
+    dimSeen.clear();
+    dsr = ds.search(null, ddq, 10, fsp);
+
+    assertEquals(11, dsr.hits.totalHits);
+    assertEquals(2, dsr.facetResults.size());
+    assertEquals("dim (0)\n  b (8)\n  a (3)\n", FacetTestUtils.toSimpleString(dsr.facetResults.get(0)));
+    assertEquals("field (0)\n  less than 10 (10)\n  less than or equal to 10 (11)\n  over 90 (9)\n  90 or above (10)\n  over 1000 (0)\n", FacetTestUtils.toSimpleString(dsr.facetResults.get(1)));
+
+    IOUtils.close(r, d);
+  }
+
   public void testBasicDouble() throws Exception {
     Directory d = newDirectory();
     RandomIndexWriter w = new RandomIndexWriter(random(), d);
@@ -211,22 +316,19 @@ public class TestRangeAccumulator extends FacetTestCase {
     DoubleDocValuesField field = new DoubleDocValuesField("field", 0.0);
     doc.add(field);
     for(long l=0;l<100;l++) {
-      field.setDoubleValue((double) l);
+      field.setDoubleValue(l);
       w.addDocument(doc);
     }
 
     IndexReader r = w.getReader();
     w.close();
 
-    FacetSearchParams fsp = new FacetSearchParams(
-                                new RangeFacetRequest<DoubleRange>("field",
-                                                      new DoubleRange("less than 10", 0.0, true, 10.0, false),
-                                                      new DoubleRange("less than or equal to 10", 0.0, true, 10.0, true),
-                                                      new DoubleRange("over 90", 90.0, false, 100.0, false),
-                                                      new DoubleRange("90 or above", 90.0, true, 100.0, false),
-                                                      new DoubleRange("over 1000", 1000.0, false, Double.POSITIVE_INFINITY, false)));
-
-    RangeAccumulator a = new RangeAccumulator(fsp, r);
+    RangeAccumulator a = new RangeAccumulator(new RangeFacetRequest<DoubleRange>("field",
+        new DoubleRange("less than 10", 0.0, true, 10.0, false),
+        new DoubleRange("less than or equal to 10", 0.0, true, 10.0, true),
+        new DoubleRange("over 90", 90.0, false, 100.0, false),
+        new DoubleRange("90 or above", 90.0, true, 100.0, false),
+        new DoubleRange("over 1000", 1000.0, false, Double.POSITIVE_INFINITY, false)));
     
     FacetsCollector fc = FacetsCollector.create(a);
 
@@ -247,22 +349,19 @@ public class TestRangeAccumulator extends FacetTestCase {
     FloatDocValuesField field = new FloatDocValuesField("field", 0.0f);
     doc.add(field);
     for(long l=0;l<100;l++) {
-      field.setFloatValue((float) l);
+      field.setFloatValue(l);
       w.addDocument(doc);
     }
 
     IndexReader r = w.getReader();
     w.close();
 
-    FacetSearchParams fsp = new FacetSearchParams(
-                                new RangeFacetRequest<FloatRange>("field",
-                                                      new FloatRange("less than 10", 0.0f, true, 10.0f, false),
-                                                      new FloatRange("less than or equal to 10", 0.0f, true, 10.0f, true),
-                                                      new FloatRange("over 90", 90.0f, false, 100.0f, false),
-                                                      new FloatRange("90 or above", 90.0f, true, 100.0f, false),
-                                                      new FloatRange("over 1000", 1000.0f, false, Float.POSITIVE_INFINITY, false)));
-
-    RangeAccumulator a = new RangeAccumulator(fsp, r);
+    RangeAccumulator a = new RangeAccumulator(new RangeFacetRequest<FloatRange>("field",
+        new FloatRange("less than 10", 0.0f, true, 10.0f, false),
+        new FloatRange("less than or equal to 10", 0.0f, true, 10.0f, true),
+        new FloatRange("over 90", 90.0f, false, 100.0f, false),
+        new FloatRange("90 or above", 90.0f, true, 100.0f, false),
+        new FloatRange("over 1000", 1000.0f, false, Float.POSITIVE_INFINITY, false)));
     
     FacetsCollector fc = FacetsCollector.create(a);
 
@@ -335,8 +434,7 @@ public class TestRangeAccumulator extends FacetTestCase {
         }
       }
 
-      FacetSearchParams fsp = new FacetSearchParams(new RangeFacetRequest<LongRange>("field", ranges));
-      FacetsCollector fc = FacetsCollector.create(new RangeAccumulator(fsp, r));
+      FacetsCollector fc = FacetsCollector.create(new RangeAccumulator(new RangeFacetRequest<LongRange>("field", ranges)));
       s.search(new MatchAllDocsQuery(), fc);
       List<FacetResult> results = fc.getFacetResults();
       assertEquals(1, results.size());
@@ -350,7 +448,7 @@ public class TestRangeAccumulator extends FacetTestCase {
         assertEquals("field/r" + rangeID, subNode.label.toString('/'));
         assertEquals(expectedCounts[rangeID], (int) subNode.value);
 
-        LongRange range = (LongRange) ((RangeFacetRequest) results.get(0).getFacetRequest()).ranges[rangeID];
+        LongRange range = (LongRange) ((RangeFacetRequest<?>) results.get(0).getFacetRequest()).ranges[rangeID];
 
         // Test drill-down:
         DrillDownQuery ddq = new DrillDownQuery(FacetIndexingParams.DEFAULT);
@@ -422,8 +520,7 @@ public class TestRangeAccumulator extends FacetTestCase {
         }
       }
 
-      FacetSearchParams fsp = new FacetSearchParams(new RangeFacetRequest<FloatRange>("field", ranges));
-      FacetsCollector fc = FacetsCollector.create(new RangeAccumulator(fsp, r));
+      FacetsCollector fc = FacetsCollector.create(new RangeAccumulator(new RangeFacetRequest<FloatRange>("field", ranges)));
       s.search(new MatchAllDocsQuery(), fc);
       List<FacetResult> results = fc.getFacetResults();
       assertEquals(1, results.size());
@@ -437,7 +534,7 @@ public class TestRangeAccumulator extends FacetTestCase {
         assertEquals("field/r" + rangeID, subNode.label.toString('/'));
         assertEquals(expectedCounts[rangeID], (int) subNode.value);
 
-        FloatRange range = (FloatRange) ((RangeFacetRequest) results.get(0).getFacetRequest()).ranges[rangeID];
+        FloatRange range = (FloatRange) ((RangeFacetRequest<?>) results.get(0).getFacetRequest()).ranges[rangeID];
 
         // Test drill-down:
         DrillDownQuery ddq = new DrillDownQuery(FacetIndexingParams.DEFAULT);
@@ -509,8 +606,7 @@ public class TestRangeAccumulator extends FacetTestCase {
         }
       }
 
-      FacetSearchParams fsp = new FacetSearchParams(new RangeFacetRequest<DoubleRange>("field", ranges));
-      FacetsCollector fc = FacetsCollector.create(new RangeAccumulator(fsp, r));
+      FacetsCollector fc = FacetsCollector.create(new RangeAccumulator(new RangeFacetRequest<DoubleRange>("field", ranges)));
       s.search(new MatchAllDocsQuery(), fc);
       List<FacetResult> results = fc.getFacetResults();
       assertEquals(1, results.size());
@@ -524,7 +620,7 @@ public class TestRangeAccumulator extends FacetTestCase {
         assertEquals("field/r" + rangeID, subNode.label.toString('/'));
         assertEquals(expectedCounts[rangeID], (int) subNode.value);
 
-        DoubleRange range = (DoubleRange) ((RangeFacetRequest) results.get(0).getFacetRequest()).ranges[rangeID];
+        DoubleRange range = (DoubleRange) ((RangeFacetRequest<?>) results.get(0).getFacetRequest()).ranges[rangeID];
 
         // Test drill-down:
         DrillDownQuery ddq = new DrillDownQuery(FacetIndexingParams.DEFAULT);

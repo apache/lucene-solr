@@ -301,7 +301,7 @@ public class TestPostingsOffsets extends LuceneTestCase {
       final FieldCache.Ints docIDToID = FieldCache.DEFAULT.getInts(sub, "id", false);
       for(String term : terms) {
         //System.out.println("  term=" + term);
-        if (termsEnum.seekExact(new BytesRef(term), random().nextBoolean())) {
+        if (termsEnum.seekExact(new BytesRef(term))) {
           docs = termsEnum.docs(null, docs);
           assertNotNull(docs);
           int doc;

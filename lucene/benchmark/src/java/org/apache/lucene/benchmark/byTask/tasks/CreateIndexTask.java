@@ -119,14 +119,9 @@ public class CreateIndexTask extends PerfTask {
       
       if (mergeScheduler.equals("org.apache.lucene.index.ConcurrentMergeScheduler")) {
         ConcurrentMergeScheduler cms = (ConcurrentMergeScheduler) iwConf.getMergeScheduler();
-        int v = config.get("concurrent.merge.scheduler.max.thread.count", -1);
-        if (v != -1) {
-          cms.setMaxThreadCount(v);
-        }
-        v = config.get("concurrent.merge.scheduler.max.merge.count", -1);
-        if (v != -1) {
-          cms.setMaxMergeCount(v);
-        }
+        int maxThreadCount = config.get("concurrent.merge.scheduler.max.thread.count", ConcurrentMergeScheduler.DEFAULT_MAX_THREAD_COUNT);
+        int maxMergeCount = config.get("concurrent.merge.scheduler.max.merge.count", ConcurrentMergeScheduler.DEFAULT_MAX_MERGE_COUNT);
+        cms.setMaxMergesAndThreads(maxMergeCount, maxThreadCount);
       }
     }
 
@@ -151,13 +146,10 @@ public class CreateIndexTask extends PerfTask {
       } catch (Exception e) {
         throw new RuntimeException("unable to instantiate class '" + mergePolicy + "' as merge policy", e);
       }
+      iwConf.getMergePolicy().setNoCFSRatio(isCompound ? 1.0 : 0.0);
       if(iwConf.getMergePolicy() instanceof LogMergePolicy) {
         LogMergePolicy logMergePolicy = (LogMergePolicy) iwConf.getMergePolicy();
-        logMergePolicy.setUseCompoundFile(isCompound);
         logMergePolicy.setMergeFactor(config.get("merge.factor",OpenIndexTask.DEFAULT_MERGE_PFACTOR));
-      } else if(iwConf.getMergePolicy() instanceof TieredMergePolicy) {
-        TieredMergePolicy tieredMergePolicy = (TieredMergePolicy) iwConf.getMergePolicy();
-        tieredMergePolicy.setUseCompoundFile(isCompound);
       }
     }
     final double ramBuffer = config.get("ram.flush.mb",OpenIndexTask.DEFAULT_RAM_FLUSH_MB);

@@ -1,9 +1,7 @@
 package org.apache.lucene.facet.sampling;
 
+import org.apache.lucene.facet.old.OldFacetsAccumulator;
 import org.apache.lucene.facet.params.FacetSearchParams;
-import org.apache.lucene.facet.sampling.Sampler;
-import org.apache.lucene.facet.sampling.SamplingAccumulator;
-import org.apache.lucene.facet.search.StandardFacetsAccumulator;
 import org.apache.lucene.facet.taxonomy.TaxonomyReader;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.util.LuceneTestCase.Slow;
@@ -29,7 +27,7 @@ import org.apache.lucene.util.LuceneTestCase.Slow;
 public class SamplingAccumulatorTest extends BaseSampleTestTopK {
 
   @Override
-  protected StandardFacetsAccumulator getSamplingAccumulator(Sampler sampler, TaxonomyReader taxoReader, 
+  protected OldFacetsAccumulator getSamplingAccumulator(Sampler sampler, TaxonomyReader taxoReader, 
       IndexReader indexReader, FacetSearchParams searchParams) {
     return new SamplingAccumulator(sampler, searchParams, indexReader, taxoReader);
   }

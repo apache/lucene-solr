@@ -155,6 +155,9 @@ public class SimpleFSDirectory extends FSDirectory {
               readLength = chunkSize;
             }
             final int i = file.read(b, offset + total, readLength);
+            if (i < 0){//be defensive here, even though we checked before hand, something could have changed
+             throw new EOFException("read past EOF: " + this + " off: " + offset + " len: " + len + " total: " + total + " readLen: " + readLength + " end: " + end);
+            }
             total += i;
           } while (total < len);
         } catch (OutOfMemoryError e) {

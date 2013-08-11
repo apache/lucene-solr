@@ -54,12 +54,14 @@ public class HunspellStemFilterFactory extends TokenFilterFactory implements Res
   private static final String PARAM_AFFIX = "affix";
   private static final String PARAM_IGNORE_CASE = "ignoreCase";
   private static final String PARAM_STRICT_AFFIX_PARSING = "strictAffixParsing";
+  private static final String PARAM_RECURSION_CAP = "recursionCap";
 
   private final String dictionaryArg;
   private final String affixFile;
   private final boolean ignoreCase;
   private final boolean strictAffixParsing;
   private HunspellDictionary dictionary;
+  private int recursionCap;
   
   /** Creates a new HunspellStemFilterFactory */
   public HunspellStemFilterFactory(Map<String,String> args) {
@@ -69,6 +71,7 @@ public class HunspellStemFilterFactory extends TokenFilterFactory implements Res
     affixFile = get(args, PARAM_AFFIX);
     ignoreCase = getBoolean(args, PARAM_IGNORE_CASE, false);
     strictAffixParsing = getBoolean(args, PARAM_STRICT_AFFIX_PARSING, true);
+    recursionCap = getInt(args, PARAM_RECURSION_CAP, 2);
     if (!args.isEmpty()) {
       throw new IllegalArgumentException("Unknown parameters: " + args);
     }
@@ -111,6 +114,6 @@ public class HunspellStemFilterFactory extends TokenFilterFactory implements Res
    */
   @Override
   public TokenStream create(TokenStream tokenStream) {
-    return new HunspellStemFilter(tokenStream, dictionary);
+    return new HunspellStemFilter(tokenStream, dictionary, recursionCap);
   }
 }

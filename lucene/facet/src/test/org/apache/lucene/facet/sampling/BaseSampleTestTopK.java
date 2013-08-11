@@ -3,18 +3,14 @@ package org.apache.lucene.facet.sampling;
 import java.util.List;
 import java.util.Random;
 
+import org.apache.lucene.facet.old.OldFacetsAccumulator;
 import org.apache.lucene.facet.params.FacetIndexingParams;
 import org.apache.lucene.facet.params.FacetSearchParams;
-import org.apache.lucene.facet.sampling.RandomSampler;
-import org.apache.lucene.facet.sampling.RepeatableSampler;
-import org.apache.lucene.facet.sampling.Sampler;
-import org.apache.lucene.facet.sampling.SamplingParams;
 import org.apache.lucene.facet.search.BaseTestTopK;
 import org.apache.lucene.facet.search.FacetRequest;
+import org.apache.lucene.facet.search.FacetRequest.ResultMode;
 import org.apache.lucene.facet.search.FacetResult;
 import org.apache.lucene.facet.search.FacetsCollector;
-import org.apache.lucene.facet.search.StandardFacetsAccumulator;
-import org.apache.lucene.facet.search.FacetRequest.ResultMode;
 import org.apache.lucene.facet.taxonomy.TaxonomyReader;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.Term;
@@ -60,7 +56,7 @@ public abstract class BaseSampleTestTopK extends BaseTestTopK {
     return res;
   }
   
-  protected abstract StandardFacetsAccumulator getSamplingAccumulator(Sampler sampler, TaxonomyReader taxoReader, 
+  protected abstract OldFacetsAccumulator getSamplingAccumulator(Sampler sampler, TaxonomyReader taxoReader, 
       IndexReader indexReader, FacetSearchParams searchParams);
   
   /**
@@ -94,7 +90,7 @@ public abstract class BaseSampleTestTopK extends BaseTestTopK {
         for (int nTrial = 0; nTrial < RETRIES; nTrial++) {
           try {
             // complement with sampling!
-            final Sampler sampler = createSampler(nTrial, useRandomSampler);
+            final Sampler sampler = createSampler(nTrial, useRandomSampler, samplingSearchParams);
             
             assertSampling(expectedResults, q, sampler, samplingSearchParams, false);
             assertSampling(expectedResults, q, sampler, samplingSearchParams, true);
@@ -123,19 +119,25 @@ public abstract class BaseSampleTestTopK extends BaseTestTopK {
   
   private FacetsCollector samplingCollector(final boolean complement, final Sampler sampler,
       FacetSearchParams samplingSearchParams) {
-    StandardFacetsAccumulator sfa = getSamplingAccumulator(sampler, taxoReader, indexReader, samplingSearchParams);
-    sfa.setComplementThreshold(complement ? StandardFacetsAccumulator.FORCE_COMPLEMENT : StandardFacetsAccumulator.DISABLE_COMPLEMENT);
+    OldFacetsAccumulator sfa = getSamplingAccumulator(sampler, taxoReader, indexReader, samplingSearchParams);
+    sfa.setComplementThreshold(complement ? OldFacetsAccumulator.FORCE_COMPLEMENT : OldFacetsAccumulator.DISABLE_COMPLEMENT);
     return FacetsCollector.create(sfa);
   }
   
-  private Sampler createSampler(int nTrial, boolean useRandomSampler) {
+  private Sampler createSampler(int nTrial, boolean useRandomSampler, FacetSearchParams sParams) {
     SamplingParams samplingParams = new SamplingParams();
     
+    /*
+     * Set sampling to Exact fixing with TakmiSampleFixer as it is not easy to
+     * validate results with amortized results. 
+     */
+    samplingParams.setSampleFixer(new TakmiSampleFixer(indexReader, taxoReader, sParams));
+        
     final double retryFactor = Math.pow(1.01, nTrial);
+    samplingParams.setOversampleFactor(5.0 * retryFactor); // Oversampling 
     samplingParams.setSampleRatio(0.8 * retryFactor);
     samplingParams.setMinSampleSize((int) (100 * retryFactor));
     samplingParams.setMaxSampleSize((int) (10000 * retryFactor));
-    samplingParams.setOversampleFactor(5.0 * retryFactor);
     samplingParams.setSamplingThreshold(11000); //force sampling
 
     Sampler sampler = useRandomSampler ? 

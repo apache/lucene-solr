@@ -45,7 +45,7 @@ public class TaxonomyMergeUtils {
     // merge the taxonomies
     destTaxWriter.addTaxonomy(srcTaxDir, map);
     int ordinalMap[] = map.getMap();
-    DirectoryReader reader = DirectoryReader.open(srcIndexDir, -1);
+    DirectoryReader reader = DirectoryReader.open(srcIndexDir);
     List<AtomicReaderContext> leaves = reader.leaves();
     int numReaders = leaves.size();
     AtomicReader wrappedLeaves[] = new AtomicReader[numReaders];

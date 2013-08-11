@@ -459,7 +459,7 @@ public class TestBlockJoin extends LuceneTestCase {
     for(int parentDocID=0;parentDocID<numParentDocs;parentDocID++) {
       Document parentDoc = new Document();
       Document parentJoinDoc = new Document();
-      Field id = newStringField("parentID", ""+parentDocID, Field.Store.YES);
+      Field id = new IntField("parentID", parentDocID, Field.Store.YES);
       parentDoc.add(id);
       parentJoinDoc.add(id);
       parentJoinDoc.add(newStringField("isParent", "x", Field.Store.NO));
@@ -472,8 +472,8 @@ public class TestBlockJoin extends LuceneTestCase {
       }
 
       if (doDeletes) {
-        parentDoc.add(newStringField("blockID", ""+parentDocID, Field.Store.NO));
-        parentJoinDoc.add(newStringField("blockID", ""+parentDocID, Field.Store.NO));
+        parentDoc.add(new IntField("blockID", parentDocID, Field.Store.NO));
+        parentJoinDoc.add(new IntField("blockID", parentDocID, Field.Store.NO));
       }
 
       final List<Document> joinDocs = new ArrayList<>();
@@ -497,7 +497,7 @@ public class TestBlockJoin extends LuceneTestCase {
         Document joinChildDoc = new Document();
         joinDocs.add(joinChildDoc);
 
-        Field childID = newStringField("childID", ""+childDocID, Field.Store.YES);
+        Field childID = new IntField("childID", childDocID, Field.Store.YES);
         childDoc.add(childID);
         joinChildDoc.add(childID);
 
@@ -522,7 +522,7 @@ public class TestBlockJoin extends LuceneTestCase {
         }
 
         if (doDeletes) {
-          joinChildDoc.add(newStringField("blockID", ""+parentDocID, Field.Store.NO));
+          joinChildDoc.add(new IntField("blockID", parentDocID, Field.Store.NO));
         }
 
         w.addDocument(childDoc);
@@ -541,8 +541,10 @@ public class TestBlockJoin extends LuceneTestCase {
       if (VERBOSE) {
         System.out.println("DELETE parentID=" + deleteID);
       }
-      w.deleteDocuments(new Term("blockID", ""+deleteID));
-      joinW.deleteDocuments(new Term("blockID", ""+deleteID));
+      BytesRef term = new BytesRef();
+      NumericUtils.intToPrefixCodedBytes(deleteID, 0, term);
+      w.deleteDocuments(new Term("blockID", term));
+      joinW.deleteDocuments(new Term("blockID", term));
     }
 
     final IndexReader r = w.getReader();

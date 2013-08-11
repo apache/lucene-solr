@@ -15,7 +15,7 @@
  limitations under the License.
 */
 
-var loglevel_path = null;
+var loglevel_path = app.config.solr_path + '/admin/info/logging';
 var frame_element = null;
 
 var logging_handler = function( response, text_status, xhr )
@@ -99,17 +99,20 @@ var logging_handler = function( response, text_status, xhr )
         logger_content += '<span class="ns">' + logger_name.join( '.' ).esc() + '.</span>';
       }
 
-      logger_content += '<span class="name">' + display_name.esc() + '</span>' + "\n";
+      logger_content += '<span class="name">' + ( display_name ? display_name.esc() : '<em>empty</em>' ) + '</span>' + "\n";
       logger_content += '</a>';
 
       logger_content += levels;
 
-      var child_logger_content = logger_tree( logger.name );
-      if( child_logger_content )
+      if( !!logger.name )
       {
-        logger_content += '<ul>';
-        logger_content += child_logger_content;
-        logger_content += '</ul>';
+        var child_logger_content = logger_tree( logger.name );
+        if( child_logger_content )
+        {
+          logger_content += '<ul>';
+          logger_content += child_logger_content;
+          logger_content += '</ul>';
+        }
       }
 
       logger_content += '</li>';
@@ -406,8 +409,6 @@ sammy.get
   /^#\/(~logging)$/,
   function( context )
   {
-    var core_basepath = $( '[data-basepath]', app.menu_element ).attr( 'data-basepath' );
-    loglevel_path = core_basepath + '/admin/logging';
     var content_element = $( '#content' );
 
     $.get
@@ -492,8 +493,6 @@ sammy.get
   /^#\/(~logging)\/level$/,
   function( context )
   {
-    var core_basepath = $( '[data-basepath]', app.menu_element ).attr( 'data-basepath' );
-    loglevel_path = core_basepath + '/admin/logging';
     var content_element = $( '#content' );
 
     $.get

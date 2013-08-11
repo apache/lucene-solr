@@ -16,13 +16,6 @@ package org.apache.solr.schema;
  * limitations under the License.
  */
 
-import java.io.File;
-import java.io.FileInputStream;
-import java.util.Collections;
-import java.util.HashMap;
-import java.util.Map;
-import java.util.regex.Pattern;
-
 import org.apache.commons.io.FileUtils;
 import org.apache.commons.io.IOUtils;
 import org.apache.solr.common.SolrException;
@@ -35,6 +28,13 @@ import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.response.SolrQueryResponse;
 import org.junit.After;
 import org.junit.Before;
+
+import java.io.File;
+import java.io.FileInputStream;
+import java.util.Collections;
+import java.util.HashMap;
+import java.util.Map;
+import java.util.regex.Pattern;
 
 public class TestManagedSchema extends AbstractBadConfigTestBase {
 
@@ -55,7 +55,9 @@ public class TestManagedSchema extends AbstractBadConfigTestBase {
     FileUtils.copyFileToDirectory(new File(testHomeConfDir, "solrconfig-mutable-managed-schema.xml"), tmpConfDir);
     FileUtils.copyFileToDirectory(new File(testHomeConfDir, "solrconfig-managed-schema.xml"), tmpConfDir);
     FileUtils.copyFileToDirectory(new File(testHomeConfDir, "solrconfig-basic.xml"), tmpConfDir);
+    FileUtils.copyFileToDirectory(new File(testHomeConfDir, "solrconfig.snippet.randomindexconfig.xml"), tmpConfDir);
     FileUtils.copyFileToDirectory(new File(testHomeConfDir, "schema-one-field-no-dynamic-field.xml"), tmpConfDir);
+    FileUtils.copyFileToDirectory(new File(testHomeConfDir, "schema-one-field-no-dynamic-field-unique-key.xml"), tmpConfDir);
     FileUtils.copyFileToDirectory(new File(testHomeConfDir, "schema-minimal.xml"), tmpConfDir);
     FileUtils.copyFileToDirectory(new File(testHomeConfDir, "schema_codec.xml"), tmpConfDir);
     FileUtils.copyFileToDirectory(new File(testHomeConfDir, "schema-bm25.xml"), tmpConfDir);
@@ -120,7 +122,6 @@ public class TestManagedSchema extends AbstractBadConfigTestBase {
   
   private void assertSchemaResource(String collection, String expectedSchemaResource) throws Exception {
     final CoreContainer cores = h.getCoreContainer();
-    cores.setPersistent(false);
     final CoreAdminHandler admin = new CoreAdminHandler(cores);
     SolrQueryRequest request = req(CoreAdminParams.ACTION, CoreAdminParams.CoreAdminAction.STATUS.toString());
     SolrQueryResponse response = new SolrQueryResponse();
@@ -385,4 +386,39 @@ public class TestManagedSchema extends AbstractBadConfigTestBase {
     assertQ(req(fieldName + ":thing"), "//*[@numFound='1']");
   }
 
+  public void testPersistUniqueKey() throws Exception {
+    assertSchemaResource(collection, "managed-schema");
+    deleteCore();
+    File managedSchemaFile = new File(tmpConfDir, "managed-schema");
+    assertTrue(managedSchemaFile.delete()); // Delete managed-schema so it won't block parsing a new schema
+    initCore("solrconfig-mutable-managed-schema.xml", "schema-one-field-no-dynamic-field-unique-key.xml", tmpSolrHome.getPath());
+
+    assertTrue(managedSchemaFile.exists());
+    String managedSchemaContents = FileUtils.readFileToString(managedSchemaFile, "UTF-8");
+    assertFalse(managedSchemaContents.contains("\"new_field\""));
+
+    Map<String,Object> options = new HashMap<String,Object>();
+    options.put("stored", "false");
+    IndexSchema oldSchema = h.getCore().getLatestSchema();
+    assertEquals("str", oldSchema.getUniqueKeyField().getName());
+    String fieldName = "new_field";
+    String fieldType = "string";
+    SchemaField newField = oldSchema.newField(fieldName, fieldType, options);
+    IndexSchema newSchema = oldSchema.addField(newField);
+    assertEquals("str", newSchema.getUniqueKeyField().getName());
+    h.getCore().setLatestSchema(newSchema);
+    log.info("####close harness");
+    h.close();
+    log.info("####close harness end");
+    initCore();
+
+    assertTrue(managedSchemaFile.exists());
+    FileInputStream stream = new FileInputStream(managedSchemaFile);
+    managedSchemaContents = IOUtils.toString(stream, "UTF-8");
+    stream.close(); // Explicitly close so that Windows can delete this file
+    assertTrue(managedSchemaContents.contains("<field name=\"new_field\" type=\"string\" stored=\"false\"/>"));
+    IndexSchema newNewSchema = h.getCore().getLatestSchema();
+    assertNotNull(newNewSchema.getUniqueKeyField());
+    assertEquals("str", newNewSchema.getUniqueKeyField().getName());
+  }
 }

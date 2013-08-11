@@ -4,6 +4,7 @@ import java.io.IOException;
 
 import org.apache.lucene.facet.params.CategoryListParams;
 import org.apache.lucene.facet.search.FacetsCollector.MatchingDocs;
+import org.apache.lucene.facet.search.OrdinalValueResolver.FloatValueResolver;
 import org.apache.lucene.facet.taxonomy.TaxonomyReader;
 import org.apache.lucene.util.IntsRef;
 
@@ -75,6 +76,11 @@ public class SumScoreFacetsAggregator implements FacetsAggregator {
   @Override
   public boolean requiresDocScores() {
     return true;
+  }
+
+  @Override
+  public OrdinalValueResolver createOrdinalValueResolver(FacetRequest facetRequest, FacetArrays arrays) {
+    return new FloatValueResolver(arrays);
   }
   
 }

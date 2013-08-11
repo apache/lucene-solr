@@ -24,13 +24,17 @@
   
   <directoryFactory name="DirectoryFactory" class="${solr.directoryFactory:solr.RAMDirectoryFactory}">
     <!-- used to keep RAM reqs down for HdfsDirectoryFactory -->
+    <bool name="solr.hdfs.blockcache.enabled">${solr.hdfs.blockcache.enabled:true}</bool>
     <int name="solr.hdfs.blockcache.blocksperbank">${solr.hdfs.blockcache.blocksperbank:1024}</int>
+    <str name="solr.hdfs.home">${solr.hdfs.home:}</str>
+    <str name="solr.hdfs.confdir">${solr.hdfs.confdir:}</str>
   </directoryFactory>
   
   <dataDir>${solr.data.dir:}</dataDir>
 
   <indexConfig>
     <lockType>${solr.lock.type:native}</lockType>
+    <useCompoundFile>${useCompoundFile:false}</useCompoundFile>
   </indexConfig>
 
   <!-- an update processor the explicitly excludes distrib to test

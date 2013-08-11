@@ -134,13 +134,15 @@ public class DocBuilder {
       indexerNamespace.put(INDEX_START_TIME, dataImporter.getIndexStartTime());
       indexerNamespace.put("request", new HashMap<String,Object>(reqParams.getRawParams()));
       for (Entity entity : dataImporter.getConfig().getEntities()) {
-        String key = entity.getName() + "." + SolrWriter.LAST_INDEX_KEY;
-        Object lastIndex = persistedProperties.get(key);
-        if (lastIndex != null && lastIndex instanceof Date) {
-          indexerNamespace.put(key, lastIndex);
+        Map<String, Object> entityNamespace = new HashMap<String, Object>();        
+        String key = SolrWriter.LAST_INDEX_KEY;
+        Object lastIndex = persistedProperties.get(entity.getName() + "." + key);
+        if (lastIndex != null) {
+          entityNamespace.put(SolrWriter.LAST_INDEX_KEY, lastIndex);
         } else  {
-          indexerNamespace.put(key, EPOCH);
+          entityNamespace.put(SolrWriter.LAST_INDEX_KEY, EPOCH);
         }
+        indexerNamespace.put(entity.getName(), entityNamespace);
       }
       resolver.addNamespace(ConfigNameConstants.IMPORTER_NS_SHORT, indexerNamespace);
       resolver.addNamespace(ConfigNameConstants.IMPORTER_NS, indexerNamespace);

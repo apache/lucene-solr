@@ -21,7 +21,6 @@ import java.io.BufferedReader;
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.InputStreamReader;
-import java.io.StringReader;
 import java.text.Collator;
 import java.util.List;
 import java.util.Locale;
@@ -49,6 +48,7 @@ import org.apache.lucene.index.IndexWriterConfig.OpenMode;
 import org.apache.lucene.index.IndexWriterConfig;
 import org.apache.lucene.index.LogDocMergePolicy;
 import org.apache.lucene.index.LogMergePolicy;
+import org.apache.lucene.index.MergePolicy;
 import org.apache.lucene.index.MultiFields;
 import org.apache.lucene.index.SegmentInfos;
 import org.apache.lucene.index.SerialMergeScheduler;
@@ -754,7 +754,7 @@ public class TestPerfTasksLogic extends BenchmarkTestCase {
     assertEquals(2, writer.getConfig().getMaxBufferedDocs());
     assertEquals(IndexWriterConfig.DISABLE_AUTO_FLUSH, (int) writer.getConfig().getRAMBufferSizeMB());
     assertEquals(3, ((LogMergePolicy) writer.getConfig().getMergePolicy()).getMergeFactor());
-    assertFalse(((LogMergePolicy) writer.getConfig().getMergePolicy()).getUseCompoundFile());
+    assertEquals(0.0d, writer.getConfig().getMergePolicy().getNoCFSRatio(), 0.0);
     writer.close();
     Directory dir = benchmark.getRunData().getDirectory();
     IndexReader reader = DirectoryReader.open(dir);
@@ -978,8 +978,8 @@ public class TestPerfTasksLogic extends BenchmarkTestCase {
   
   private void assertEqualCollation(Analyzer a1, Analyzer a2, String text)
       throws Exception {
-    TokenStream ts1 = a1.tokenStream("bogus", new StringReader(text));
-    TokenStream ts2 = a2.tokenStream("bogus", new StringReader(text));
+    TokenStream ts1 = a1.tokenStream("bogus", text);
+    TokenStream ts2 = a2.tokenStream("bogus", text);
     ts1.reset();
     ts2.reset();
     TermToBytesRefAttribute termAtt1 = ts1.addAttribute(TermToBytesRefAttribute.class);
@@ -1029,7 +1029,7 @@ public class TestPerfTasksLogic extends BenchmarkTestCase {
     Benchmark benchmark = execBenchmark(getAnalyzerFactoryConfig
         ("shingle-analyzer", "StandardTokenizer,ShingleFilter"));
     benchmark.getRunData().getAnalyzer().tokenStream
-        ("bogus", new StringReader(text)).close();
+        ("bogus", text).close();
     BaseTokenStreamTestCase.assertAnalyzesTo(benchmark.getRunData().getAnalyzer(), text,
                                              new String[] { "one", "one two", "two", "two three",
                                                             "three", "three four", "four", "four five",

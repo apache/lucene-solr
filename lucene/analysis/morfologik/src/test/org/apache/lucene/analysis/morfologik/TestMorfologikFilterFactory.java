@@ -18,8 +18,8 @@ package org.apache.lucene.analysis.morfologik;
  */
 
 import java.io.StringReader;
+import java.util.Collections;
 import java.util.HashMap;
-import java.util.Map;
 
 import org.apache.lucene.analysis.BaseTokenStreamTestCase;
 import org.apache.lucene.analysis.MockTokenizer;
@@ -31,10 +31,7 @@ import org.apache.lucene.analysis.TokenStream;
 public class TestMorfologikFilterFactory extends BaseTokenStreamTestCase {
   public void testCreateDictionary() throws Exception {
     StringReader reader = new StringReader("rowery bilety");
-    Map<String,String> initParams = new HashMap<String,String>();
-    initParams.put(MorfologikFilterFactory.DICTIONARY_SCHEMA_ATTRIBUTE,
-        "morfologik");
-    MorfologikFilterFactory factory = new MorfologikFilterFactory(initParams);
+    MorfologikFilterFactory factory = new MorfologikFilterFactory(Collections.<String,String>emptyMap());
     TokenStream stream = new MockTokenizer(reader, MockTokenizer.WHITESPACE, false);
     stream = factory.create(stream);
     assertTokenStreamContents(stream, new String[] {"rower", "bilet"});

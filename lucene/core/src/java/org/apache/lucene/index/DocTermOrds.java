@@ -659,7 +659,7 @@ public class DocTermOrds {
     }
 
     @Override
-    public SeekStatus seekCeil(BytesRef target, boolean useCache) throws IOException {
+    public SeekStatus seekCeil(BytesRef target) throws IOException {
 
       // already here
       if (term != null && term.equals(target)) {
@@ -729,7 +729,7 @@ public class DocTermOrds {
         //System.out.println("  do seek term=" + base.utf8ToString());
         ord = idx << indexIntervalBits;
         delta = (int) (targetOrd - ord);
-        final TermsEnum.SeekStatus seekStatus = termsEnum.seekCeil(base, true);
+        final TermsEnum.SeekStatus seekStatus = termsEnum.seekCeil(base);
         assert seekStatus == TermsEnum.SeekStatus.FOUND;
       } else {
         //System.out.println("seek w/in block");

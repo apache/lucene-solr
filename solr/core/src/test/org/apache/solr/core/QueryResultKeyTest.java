@@ -38,7 +38,7 @@ public class QueryResultKeyTest extends SolrTestCaseJ4 {
     // the hashcode should be the same even when the list
     // of filters is in a different order
     
-    Sort sort = new Sort(new SortField("test", SortField.Type.BYTE));
+    Sort sort = new Sort(new SortField("test", SortField.Type.INT));
     List<Query> filters = new ArrayList<Query>();
     filters.add(new TermQuery(new Term("test", "field")));
     filters.add(new TermQuery(new Term("test2", "field2")));

@@ -16,11 +16,12 @@
  */
 package org.apache.solr.handler.dataimport;
 
-import java.io.ByteArrayInputStream;
-import java.io.ByteArrayOutputStream;
+import java.io.StringReader;
+import java.io.StringWriter;
 import java.util.Map;
 import java.util.Properties;
 
+import org.apache.lucene.util.IOUtils;
 import org.apache.solr.common.cloud.SolrZkClient;
 import org.apache.zookeeper.KeeperException.NodeExistsException;
 import org.slf4j.Logger;
@@ -63,10 +64,10 @@ public class ZKPropertiesWriter extends SimplePropertiesWriter {
   public void persist(Map<String, Object> propObjs) {
     Properties existing = mapToProperties(readIndexerProperties());
     existing.putAll(mapToProperties(propObjs));
-    ByteArrayOutputStream output = new ByteArrayOutputStream();
+    StringWriter output = new StringWriter();
     try {
-      existing.store(output, "");
-      byte[] bytes = output.toByteArray();
+      existing.store(output, null);
+      byte[] bytes = output.toString().getBytes(IOUtils.CHARSET_UTF_8);
       if (!zkClient.exists(path, false)) {
         try {
           zkClient.makePath(path, false);
@@ -89,8 +90,7 @@ public class ZKPropertiesWriter extends SimplePropertiesWriter {
     try {
       byte[] data = zkClient.getData(path, null, null, false);
       if (data != null) {
-        ByteArrayInputStream input = new ByteArrayInputStream(data);
-        props.load(input);
+        props.load(new StringReader(new String(data, "UTF-8")));
       }
     } catch (Throwable e) {
       log.warn(

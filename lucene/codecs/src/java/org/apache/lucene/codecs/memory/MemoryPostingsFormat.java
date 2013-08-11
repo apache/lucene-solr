@@ -335,11 +335,11 @@ public final class MemoryPostingsFormat extends PostingsFormat {
     
     public FSTDocsEnum reset(BytesRef bufferIn, Bits liveDocs, int numDocs) {
       assert numDocs > 0;
-      if (buffer.length < bufferIn.length - bufferIn.offset) {
-        buffer = ArrayUtil.grow(buffer, bufferIn.length - bufferIn.offset);
+      if (buffer.length < bufferIn.length) {
+        buffer = ArrayUtil.grow(buffer, bufferIn.length);
       }
-      in.reset(buffer, 0, bufferIn.length - bufferIn.offset);
-      System.arraycopy(bufferIn.bytes, bufferIn.offset, buffer, 0, bufferIn.length - bufferIn.offset);
+      in.reset(buffer, 0, bufferIn.length);
+      System.arraycopy(bufferIn.bytes, bufferIn.offset, buffer, 0, bufferIn.length);
       this.liveDocs = liveDocs;
       docID = -1;
       accum = 0;
@@ -472,11 +472,11 @@ public final class MemoryPostingsFormat extends PostingsFormat {
       //   System.out.println("  " + Integer.toHexString(bufferIn.bytes[i]&0xFF));
       // }
 
-      if (buffer.length < bufferIn.length - bufferIn.offset) {
-        buffer = ArrayUtil.grow(buffer, bufferIn.length - bufferIn.offset);
+      if (buffer.length < bufferIn.length) {
+        buffer = ArrayUtil.grow(buffer, bufferIn.length);
       }
       in.reset(buffer, 0, bufferIn.length - bufferIn.offset);
-      System.arraycopy(bufferIn.bytes, bufferIn.offset, buffer, 0, bufferIn.length - bufferIn.offset);
+      System.arraycopy(bufferIn.bytes, bufferIn.offset, buffer, 0, bufferIn.length);
       this.liveDocs = liveDocs;
       docID = -1;
       accum = 0;
@@ -632,6 +632,7 @@ public final class MemoryPostingsFormat extends PostingsFormat {
     private int docFreq;
     private long totalTermFreq;
     private BytesRefFSTEnum.InputOutput<BytesRef> current;
+    private BytesRef postingsSpare = new BytesRef();
 
     public FSTTermsEnum(FieldInfo field, FST<BytesRef> fst) {
       this.field = field;
@@ -640,21 +641,23 @@ public final class MemoryPostingsFormat extends PostingsFormat {
 
     private void decodeMetaData() {
       if (!didDecode) {
-        buffer.reset(current.output.bytes, 0, current.output.length);
+        buffer.reset(current.output.bytes, current.output.offset, current.output.length);
         docFreq = buffer.readVInt();
         if (field.getIndexOptions() != IndexOptions.DOCS_ONLY) {
           totalTermFreq = docFreq + buffer.readVLong();
         } else {
           totalTermFreq = -1;
         }
-        current.output.offset = buffer.getPosition();
+        postingsSpare.bytes = current.output.bytes;
+        postingsSpare.offset = buffer.getPosition();
+        postingsSpare.length = current.output.length - (buffer.getPosition() - current.output.offset);
         //System.out.println("  df=" + docFreq + " totTF=" + totalTermFreq + " offset=" + buffer.getPosition() + " len=" + current.output.length);
         didDecode = true;
       }
     }
 
     @Override
-    public boolean seekExact(BytesRef text, boolean useCache /* ignored */) throws IOException {
+    public boolean seekExact(BytesRef text) throws IOException {
       //System.out.println("te.seekExact text=" + field.name + ":" + text.utf8ToString() + " this=" + this);
       current = fstEnum.seekExact(text);
       didDecode = false;
@@ -662,7 +665,7 @@ public final class MemoryPostingsFormat extends PostingsFormat {
     }
 
     @Override
-    public SeekStatus seekCeil(BytesRef text, boolean useCache /* ignored */) throws IOException {
+    public SeekStatus seekCeil(BytesRef text) throws IOException {
       //System.out.println("te.seek text=" + field.name + ":" + text.utf8ToString() + " this=" + this);
       current = fstEnum.seekCeil(text);
       if (current == null) {
@@ -699,7 +702,7 @@ public final class MemoryPostingsFormat extends PostingsFormat {
           docsEnum = new FSTDocsEnum(field.getIndexOptions(), field.hasPayloads());
         }
       }
-      return docsEnum.reset(current.output, liveDocs, docFreq);
+      return docsEnum.reset(this.postingsSpare, liveDocs, docFreq);
     }
 
     @Override
@@ -720,7 +723,7 @@ public final class MemoryPostingsFormat extends PostingsFormat {
         }
       }
       //System.out.println("D&P reset this=" + this);
-      return docsAndPositionsEnum.reset(current.output, liveDocs, docFreq);
+      return docsAndPositionsEnum.reset(postingsSpare, liveDocs, docFreq);
     }
 
     @Override

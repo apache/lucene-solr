@@ -42,6 +42,7 @@ public class SolrTestCaseJ4Test extends SolrTestCaseJ4 {
     String top = SolrTestCaseJ4.TEST_HOME() + "/collection1/conf";
     FileUtils.copyFile(new File(top, "schema-tiny.xml"), new File(subHome, "schema-tiny.xml"));
     FileUtils.copyFile(new File(top, "solrconfig-minimal.xml"), new File(subHome, "solrconfig-minimal.xml"));
+    FileUtils.copyFile(new File(top, "solrconfig.snippet.randomindexconfig.xml"), new File(subHome, "solrconfig.snippet.randomindexconfig.xml"));
 
     FileUtils.copyDirectory(new File(tmpSolrHome, "core0"), new File(tmpSolrHome, "core1"));
 

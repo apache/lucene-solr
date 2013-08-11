@@ -66,10 +66,12 @@ public class Log4jWatcher extends LogWatcher<LoggingEvent> {
 
   @Override
   public void setLogLevel(String category, String level) {
+    org.apache.log4j.Logger log;
     if(LoggerInfo.ROOT_NAME.equals(category)) {
-      category = "";
+      log = org.apache.log4j.LogManager.getRootLogger();
+    } else {
+      log = org.apache.log4j.Logger.getLogger(category);
     }
-    org.apache.log4j.Logger log = org.apache.log4j.Logger.getLogger(category);
     if(level==null||"unset".equals(level)||"null".equals(level)) {
       log.setLevel(null);
     }

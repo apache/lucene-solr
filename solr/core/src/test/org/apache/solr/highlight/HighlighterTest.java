@@ -30,7 +30,6 @@ import org.junit.After;
 import org.junit.BeforeClass;
 import org.junit.Test;
 
-import java.io.StringReader;
 import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
@@ -175,7 +174,7 @@ public class HighlighterTest extends SolrTestCaseJ4 {
   public void testTermOffsetsTokenStream() throws Exception {
     String[] multivalued = { "a b c d", "e f g", "h", "i j k l m n" };
     Analyzer a1 = new WhitespaceAnalyzer(TEST_VERSION_CURRENT);
-    TokenStream tokenStream = a1.tokenStream("", new StringReader("a b c d e f g h i j k l m n"));
+    TokenStream tokenStream = a1.tokenStream("", "a b c d e f g h i j k l m n");
     tokenStream.reset();
 
     TermOffsetsTokenStream tots = new TermOffsetsTokenStream(
@@ -183,7 +182,7 @@ public class HighlighterTest extends SolrTestCaseJ4 {
     for( String v : multivalued ){
       TokenStream ts1 = tots.getMultiValuedTokenStream( v.length() );
       Analyzer a2 = new WhitespaceAnalyzer(TEST_VERSION_CURRENT);
-      TokenStream ts2 = a2.tokenStream("", new StringReader(v));
+      TokenStream ts2 = a2.tokenStream("", v);
       ts2.reset();
 
       while (ts1.incrementToken()) {

@@ -19,6 +19,7 @@
 
 <config>
   <luceneMatchVersion>${tests.luceneMatchVersion:LUCENE_CURRENT}</luceneMatchVersion>
+  <xi:include href="solrconfig.snippet.randomindexconfig.xml" xmlns:xi="http://www.w3.org/2001/XInclude"/>
     <!--  The DirectoryFactory to use for indexes.
         solr.StandardDirectoryFactory, the default, is filesystem based.
         solr.RAMDirectoryFactory is memory based and not persistent. -->
@@ -48,7 +49,6 @@
     </listener>
     <listener event="newSearcher"
               class="org.apache.solr.core.MockEventListener" />
-
 
     <!-- a firstSearcher event is fired whenever a new searcher is being
          prepared but there is no current registered searcher to handle

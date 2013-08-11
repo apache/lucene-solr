@@ -24,8 +24,8 @@ $Id$
 
 Versions of Major Components
 ---------------------
-Apache Tika 1.3
-Carrot2 3.6.2
+Apache Tika 1.4
+Carrot2 3.8.0
 Velocity 1.7 and Velocity Tools 2.0
 Apache UIMA 2.3.1
 Apache ZooKeeper 3.4.5
@@ -33,7 +33,8 @@ Apache ZooKeeper 3.4.5
 Upgrading from Solr 4.x
 ----------------------
 
-TBD...
+The "file" attribute of infoStream in solrconfig.xml is removed. Control this 
+via your logging configuration (org.apache.solr.update.LoggingInfoStream) instead.
 
 Detailed Change List
 ----------------------
@@ -44,11 +45,107 @@ Other Changes
 * SOLR-4622: Hardcoded SolrCloud defaults for hostContext and hostPort that
   were deprecated in 4.3 have been removed completely. (hossman)
 
+* SOLR-4792: Stop shipping a .war. (Robert Muir)
+
+
+==================  4.5.0 ==================
+
+Versions of Major Components
+---------------------
+Apache Tika 1.4
+Carrot2 3.8.0
+Velocity 1.7 and Velocity Tools 2.0
+Apache UIMA 2.3.1
+Apache ZooKeeper 3.4.5
+
+Upgrading from Solr 4.4.0
+----------------------
+
+* XML configuration parsing is now more strict about situations where a single
+  setting is allowed but multiple values are found.  In the past, one value
+  would be chosen arbitrarily and silently.  Starting with 4.5, configuration 
+  parsing will fail with an error in situations like this.  If you see error 
+  messages such as "solrconfig.xml contains more than one value for config path: 
+  indexConfig/infoStream" check your solrconfig.xml file for multiple occurrences 
+  of "infoStream" and delete the one that you do not wish to use.  See SOLR-4953
+  for more details.
+
+Detailed Change List
+----------------------
+
+New Features
+----------------------
+
+* SOLR-5126: Update Carrot2 clustering to version 3.8.0, update Morfologik 
+  to version 1.7.1 (Dawid Weiss)
+
+* SOLR-2345: Enhanced geodist() to work with an RPT field, provided that the
+  field is referenced via 'sfield' and the query point is constant.
+  (David Smiley)
+
+* SOLR-5082: The encoding of URL-encoded query parameters can be changed with
+  the "ie" (input encoding) parameter, e.g. "select?q=m%FCller&ie=ISO-8859-1".
+  The default is UTF-8. To change the encoding of POSTed content, use the
+  "Content-Type" HTTP header.  (Uwe Schindler, David Smiley)
+* SOLR-4221: Custom sharding (Noble Paul)
+* SOLR-4808: Persist and use router,replicationFactor and maxShardsPerNode at Collection and Shard level (Noble Paul, Shalin Mangar)
+* SOLR-5006: CREATESHARD command for 'implicit' shards (Noble Paul)
+* SOLR-5017: Allow sharding based on the value of a field (Noble Paul)
+* SOLR-4222:create custom sharded collection via collections API (Noble Paul)
+
+Bug Fixes
+----------------------
+
+* SOLR-3633: web UI reports an error if CoreAdminHandler says there are no
+  SolrCores (steffkes)
+  
+* SOLR-4489: SpellCheckComponent can throw StringIndexOutOfBoundsException
+  when generating collations involving multiple word-break corrections.
+  (James Dyer)
+
+* SOLR-5107: Fixed NPE when using numTerms=0 in LukeRequestHandler
+  (Ahmet Arslan, hossman)
+
+* SOLR-4679, SOLR-4908, SOLR-5124: Text extracted from HTML or PDF files
+  using Solr Cell was missing ignorable whitespace, which is inserted by
+  TIKA for convenience to support plain text extraction without using the
+  HTML elements. This bug resulted in glued words.  (hossman, Uwe Schindler)
+
+* SOLR-5121: zkcli usage help for makepath doesn't match actual command.
+  (Daniel Collins via Mark Miller)
+
+Optimizations
+----------------------
+
+* SOLR-5044: Admin UI - Note on Core-Admin about directories while creating 
+  core (seffkes)
+
+Other Changes
+----------------------
+
+* SOLR-4708: Enable ClusteringComponent by default in collection1 example.
+  The solr.clustering.enabled system property is set to 'true' by default.
+  (ehatcher, Dawid Weiss)
+
+* SOLR-4914: Factor out core list persistence and discovery into a
+  new CoresLocator interface. (Alan Woodward)
+
+* SOLR-5056: Improve type safety of ConfigSolr class. (Alan Woodward)
+
+* SOLR-4951: Better randomization of MergePolicy in Solr tests (hossman)
+
+* SOLR-4953: Make XML Configuration parsing fail if an xpath matches multiple 
+  nodes when only a single value is expected.  (hossman)
+
+* The routing parameter "shard.keys" is deprecated as part of SOLR-5017 .The new parameter name is '_route_' .
+  The old parameter should continue to work for another release  (Noble Paul)
+
+
 ==================  4.4.0 ==================
 
 Versions of Major Components
 ---------------------
-Apache Tika 1.3
+Apache Tika 1.4
 Carrot2 3.6.2
 Velocity 1.7 and Velocity Tools 2.0
 Apache UIMA 2.3.1
@@ -57,9 +154,30 @@ Apache ZooKeeper 3.4.5
 Upgrading from Solr 4.3.0
 ----------------------
 
+* TieredMergePolicy and the various subtypes of LogMergePolicy no longer have 
+  an explicit "setUseCompoundFile" method.  Instead the behavior of new 
+  segments is determined by the IndexWriter configuration, and the MergePolicy 
+  is only consulted to determine if merge segements should use the compound 
+  file format (based on the value of "setNoCFSRatio").  If you have explicitly 
+  configured one of these classes using <mergePolicy> and include an init arg 
+  like this...
+     <bool name="useCompoundFile">true</bool>
+  ...this will now be treated as if you specified...
+     <useCompoundFile>true</useCompoundFile> 
+  ...directly on the <indexConfig> (overriding any value already set using that
+  syntax) and a warning will be logged to updated your configuration.  Users 
+  with an explicitly declared <mergePolicy> are encouraged to review the 
+  current javadocs for their MergePolicy subclass and review their configured 
+  options carefully.  See SOLR-4941, SOLR-4934 and LUCENE-5038 for more 
+  information.
+
 * SOLR-4778: The signature of LogWatcher.registerListener has changed, from
   (ListenerConfig, CoreContainer) to (ListenerConfig).  Users implementing their
   own LogWatcher classes will need to change their code accordingly.
+
+* LUCENE-5063: ByteField and ShortField have been deprecated and will be removed
+  in 5.0. If you are still using these field types, you should migrate your
+  fields to TrieIntField.
   
 Detailed Change List
 ----------------------
@@ -69,8 +187,9 @@ New Features
 
 * SOLR-3251: Dynamically add fields to schema. (Steve Rowe, Robert Muir, yonik)   
 
-* SOLR-4761: Add option to plugin a merged segment warmer into solrconfig.xml
-  (Mark Miller, Mike McCandless, Robert Muir)
+* SOLR-4761, SOLR-4976: Add option to plugin a merged segment warmer into solrconfig.xml. 
+  Info about segments warmed in the background is available via infostream.
+  (Mark Miller, Ryan Ernst, Mike McCandless, Robert Muir)
 
 * SOLR-3240: Add "spellcheck.collateMaxCollectDocs" option so that when testing
   potential Collations against the index, SpellCheckComponent will only collect
@@ -83,6 +202,61 @@ New Features
 * SOLR-4234: Add support for binary files in ZooKeeper. (Eric Pugh via Mark Miller)
 
 * SOLR-4048: Add findRecursive method to NamedList. (Shawn Heisey)
+
+* SOLR-4228: SolrJ's SolrPing object has new methods for ping, enable, and
+  disable. (Shawn Heisey, hossman, Steve Rowe)
+  
+* SOLR-4893: Extend FieldMutatingUpdateProcessor.ConfigurableFieldNameSelector
+  to enable checking whether a field matches any schema field.  To select field
+  names that don't match any fields or dynamic fields in the schema, add
+  <bool name="fieldNameMatchesSchemaField">false</bool> to an update
+  processor's configuration in solrconfig.xml.  (Steve Rowe, hossman)
+
+* SOLR-4921: Admin UI now supports adding documents to Solr (gsingers, steffkes)
+
+* SOLR-4916: Add support to write and read Solr index files and transaction log
+  files to and from HDFS. (phunt, Mark Miller, Greg Chanan)
+  
+* SOLR-4892: Add FieldMutatingUpdateProcessorFactory subclasses 
+  Parse{Date,Integer,Long,Float,Double,Boolean}UpdateProcessorFactory. These
+  factories have a default selector that matches all fields that either don’t
+  match any schema field, or are in the schema with the corresponding
+  typeClass. If they see a value that is not a CharSequence, or can't parse
+  the value, they leave it as is. For multi-valued fields, these processors
+  will not convert any values unless all are first successfully parsed, or 
+  already are instances of the target class. Ordering the processors, e.g.
+  [Boolean, Long, Double, Date] will allow e.g. values ["2", "5", "8.6"] to
+  be left alone by the Boolean and Long processors, but then converted by the
+  Double processor.  (Steve Rowe, hossman)
+
+* SOLR-4972: Add PUT command to ZkCli tool. (Roman Shaposhnik via Mark Miller)
+
+* SOLR-4973: Adding getter method for defaultCollection on CloudSolrServer.
+  (Furkan KAMACI via Mark Miller)
+  
+* SOLR-4897: Add solr/example/example-schemaless/, an example config set
+  for schemaless mode. (Steve Rowe)
+
+* SOLR-4655: Add option to have Overseer assign generic node names so that
+  new addresses can host shards without naming confusion. (Mark Miller, Anshum Gupta)
+
+* SOLR-4977: Add option to send IndexWriter's infostream to the logging system.
+  (Ryan Ernst via Robert Muir)
+
+* SOLR-4693: A "deleteshard" collections API that unloads all replicas of a given
+  shard and then removes it from the cluster state. It will remove only those shards
+  which are INACTIVE or have no range (created for custom sharding).
+  (Anshum Gupta, shalin)
+
+* SOLR-5003: CSV Update Handler supports optionally adding the line number/row id to 
+  a document (gsingers)
+
+* SOLR-5010: Add support for creating copy fields to the Schema REST API (gsingers)
+
+* SOLR-4991: Register QParserPlugins as SolrInfoMBeans (ehatcher)
+
+* SOLR-4943: Add a new system wide info admin handler that exposes the system info
+  that could previously only be retrieved using a SolrCore. (Mark Miller)
 
 Bug Fixes
 ----------------------
@@ -104,6 +278,137 @@ Bug Fixes
 
 * SOLR-4842: Fix facet.field local params from affecting other facet.field's.
   (ehatcher, hossman)
+
+* SOLR-4814: If a SolrCore cannot be created it should remove any information it 
+  published about itself from ZooKeeper. (Mark Miller)
+
+* SOLR-4863: Removed non-existent attribute sourceId from dynamic JMX stats
+  to fix AttributeNotFoundException (suganuma, hossman via shalin)
+
+* SOLR-4891: JsonLoader should preserve field value types from the JSON content stream.
+  (Steve Rowe)
+ 
+* SOLR-4805: SolreCore#reload should not call preRegister and publish a DOWN state to
+  ZooKeeper. (Mark Miller, Jared Rodriguez)
+
+* SOLR-4899: When reconnecting after ZooKeeper expiration, we need to be willing to wait 
+  forever, not just for 30 seconds. (Mark Miller)
+
+* SOLR-4920: JdbcDataSource incorrectly suppresses exceptions when retrieving a connection from
+  a JNDI context and falls back to trying to use DriverManager to obtain a connection. Additionally,
+  if a SQLException is thrown while initializing a connection, such as in setAutoCommit(), the
+  connection will not be closed. (Chris Eldredge via shalin)
+
+* SOLR-4915: The root cause should be returned to the user when a SolrCore create call fails.
+  (Mark Miller)
+
+* SOLR-4925 : Collection create throws NPE when 'numShards' param is missing (Noble Paul)
+
+* SOLR-4910: persisting solr.xml is broken. More stringent testing of persistence fixed
+  up a number of issues and several bugs with persistence. Among them are
+  > don't persisting implicit properties
+  > should persist zkHost in the <solr> tag (user's list)
+  > reloading a core that has transient="true" returned an error. reload should load
+    a transient core if it's not yet loaded.
+  > No longer persisting loadOnStartup or transient core properties if they were not
+    specified in the original solr.xml
+  > Testing flushed out the fact that you couldn't swap a core marked transient=true
+    loadOnStartup=false because it hadn't been loaded yet.
+  > SOLR-4862, CREATE fails to persist schema, config, and dataDir
+  > SOLR-4363, not persisting coreLoadThreads in <solr> tag
+  > SOLR-3900, logWatcher properties not persisted
+  > SOLR-4850, cores defined as loadOnStartup=true, transient=false can't be searched
+  (Erick Erickson)
+
+* SOLR-4923: Commits to non leaders as part of a request that also contain updates
+  can execute out of order. (hossman, Ricardo Merizalde, Mark Miller)
+
+* SOLR-4932: persisting solr.xml saves some parameters it shouldn't when they weren't
+  defined in the original. Benign since the default values are saved, but still incorrect.
+  (Erick Erickson, thanks Shawn Heisey for helping test!)
+
+* SOLR-4934, SOLR-4941: Fix handling of <mergePolicy> init arg 
+  "useCompoundFile" needed after changes in LUCENE-5038 (hossman)
+
+* SOLR-4456: Admin UI: Displays dashboard even if Solr is down (steffkes)
+
+* SOLR-4949: UI Analysis page dropping characters from input box (steffkes)
+
+* SOLR-4960: Fix race conditions in shutdown of CoreContainer
+  and getCore that could cause a request to attempt to use a core that
+  has shut down. (yonik)
+
+* SOLR-4926: Fixed rare replication bug that normally only manifested when 
+  using compound file format. (yonik, Mark Miller)
+  
+* SOLR-4974: Outgrowth of SOLR-4960 that includes transient cores and pending cores
+  (Erick Erickson)
+
+* SOLR-3369: shards.tolerant=true is broken for group queries
+  (Russell Black, Martijn van Groningen, Jabouille jean Charles, Ryan McKinley via shalin)
+
+* SOLR-4452: Hunspell stemmer should not merge duplicate dictionary entries (janhoy)
+
+* SOLR-5000: ManagedIndexSchema doesn't persist uniqueKey tag after calling addFields
+  method. (Jun Ohtani, Steve Rowe)
+  
+* SOLR-4982: Creating a core while referencing system properties looks like it loses files
+  Actually, instanceDir, config, dataDir and schema are not dereferenced properly
+  when creating cores that reference sys vars (e.g. &dataDir=${dir}). In the dataDir
+  case in particular this leads to the index being put in a directory literally named
+  ${dir} but on restart the sysvar will be properly dereferenced.
+
+* SOLR-4788: Multiple Entities DIH delta import: dataimporter.[entityName].last_index_time
+  is empty. (chakming wong, James Dyer via shalin)
+
+* SOLR-4978: Time is stripped from datetime column when imported into Solr date field
+  if convertType=true. (Bill Au, shalin)
+
+* SOLR-5019: spurious ConcurrentModificationException when spell check component
+  was in use with filters. (yonik)
+  
+* SOLR-5018: The Overseer should avoid publishing the state for collections that do not 
+  exist under the /collections zk node. (Mark Miller)
+
+* SOLR-5028,SOLR-5029: ShardHandlerFactory was not being created properly when
+  using new-style solr.xml, and was not being persisted properly when using
+  old-style.  (Tomás Fernández Löbbe, Ryan Ernst, Alan Woodward)
+
+* SOLR-4997: The splitshard api doesn't call commit on new sub shards before
+  switching shard states. Multiple bugs related to sub shard recovery and
+  replication are also fixed. (shalin)
+
+* SOLR-5034: A facet.query that parses or analyzes down to a null Query would
+  throw a NPE. Fixed. (David Smiley)
+  
+* SOLR-5039: Admin/Schema Browser displays -1 for term counts for multiValued fields.
+
+* SOLR-5037: The CSV loader now accepts field names that are not in the schema.
+  (gsingers, ehatcher, Steve Rowe)
+
+Optimizations
+----------------------
+
+* SOLR-4923: Commit to all nodes in a collection in parallel rather than locally and
+  then to all other nodes. (hossman, Ricardo Merizalde, Mark Miller)
+
+* SOLR-3838: Admin UI - Multiple filter queries are not supported in Query UI (steffkes)
+
+* SOLR-4719 : Admin UI - Default to wt=json on Query-Screen (steffkes)
+
+* SOLR-4611: Admin UI - Analysis-Urls with empty parameters create empty result table
+  (steffkes)
+
+* SOLR-4955: Admin UI - Show address bar on top for Schema + Config (steffkes)
+
+* SOLR-4412: New parameter langid.lcmap to map detected language code to be placed 
+  in "language" field (janhoy)
+
+* SOLR-4815: Admin-UI - DIH: Let "commit" be checked by default (steffkes)
+
+* SOLR-5002: optimize numDocs(Query,DocSet) when filterCache is null (Robert Muir)
+
+* SOLR-5012: optimize search with filter when filterCache is null (Robert Muir)
 
 Other Changes
 ----------------------
@@ -133,6 +438,26 @@ Other Changes
 
 * SOLR-4448: Allow the solr internal load balancer to be more easily pluggable.
   (Philip Hoy via Robert Muir)
+  
+* SOLR-4224: Refactor JavaBinCodec input stream definition to enhance reuse.
+  (phunt via Mark Miller)
+
+* SOLR-4931: SolrDeletionPolicy onInit and onCommit methods changed to override
+  exact signatures (with generics) from IndexDeletionPolicy (shalin)
+
+* SOLR-4942: test improvements to randomize use of compound files (hosman)
+
+* SOLR-4966: CSS, JS and other files in webapp without license (uschindler,
+  steffkes)
+
+* SOLR-4986: Upgrade to Tika 1.4 (Markus Jelsma via janhoy)
+
+* SOLR-4948, SOLR-5009: Tidied up CoreContainer construction logic.
+  (Alan Woodward, Uwe Schindler, Steve Rowe)
+
+* LUCENE-5107: Properties files by Solr are now written in UTF-8 encoding,
+  Unicode is no longer escaped. Reading of legacy properties files with
+  \u escapes is still possible.  (Uwe Schindler, Robert Muir)
 
 ==================  4.3.1 ==================
 
@@ -193,6 +518,33 @@ Bug Fixes
 * SOLR-4734: Leader election fails with an NPE if there is no UpdateLog.
  (Mark Miller, Alexander Eibner)
 
+* SOLR-4868: Setting the log level for the log4j root category results in
+  adding a new category, the empty string. (Shawn Heisey)
+
+* SOLR-4855: DistributedUpdateProcessor doesn't check for peer sync requests (shalin)
+
+* SOLR-4867: Admin UI - setting loglevel on root throws RangeError (steffkes)
+
+* SOLR-4870: RecentUpdates.update() does not increment numUpdates loop counter
+  (Alexey Kudinov via shalin)
+
+* SOLR-4877, LUCENE-5023: Removed SolrIndexSearcher#getDocSetNC()'s special
+  case for handling TermQuery to prevent NullPointerException if reader does
+  not have fields.  (Bao Yang Yang, Uwe Schindler)
+
+* SOLR-4881: Fix DocumentAnalysisRequestHandler to correctly use
+  EmptyEntityResolver to prevent loading of external entities like
+  UpdateRequestHandler does.  (Hossman, Uwe Schindler)
+
+* SOLR-4858: SolrCore reloading was broken when the UpdateLog
+  was enabled.  (Hossman, Anshum Gupta, Alexey Serba, Mark Miller, yonik)
+
+* SOLR-4853: Fixed SolrJettyTestBase so it may be reused by end users
+  (hossman)
+
+* SOLR-4744: Update failure on sub shard is not propagated to clients by parent
+  shard (Anshum Gupta, yonik, shalin)
+  
 Other Changes
 ----------------------
 

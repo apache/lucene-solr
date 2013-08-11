@@ -7,6 +7,8 @@ import org.apache.lucene.facet.search.FacetArrays;
 import org.apache.lucene.facet.search.FacetRequest;
 import org.apache.lucene.facet.search.FacetsAggregator;
 import org.apache.lucene.facet.search.FacetsCollector.MatchingDocs;
+import org.apache.lucene.facet.search.OrdinalValueResolver;
+import org.apache.lucene.facet.search.OrdinalValueResolver.IntValueResolver;
 import org.apache.lucene.index.BinaryDocValues;
 import org.apache.lucene.util.BytesRef;
 
@@ -53,23 +55,20 @@ public class SumIntAssociationFacetsAggregator implements FacetsAggregator {
     int doc = 0;
     while (doc < length && (doc = matchingDocs.bits.nextSetBit(doc)) != -1) {
       dv.get(doc, bytes);
-      if (bytes.length == 0) {
-        continue; // no associations for this document
+      if (bytes.length > 0) {
+        // aggreate association values for ordinals
+        int bytesUpto = bytes.offset + bytes.length;
+        int pos = bytes.offset;
+        while (pos < bytesUpto) {
+          int ordinal = ((bytes.bytes[pos++] & 0xFF) << 24) | ((bytes.bytes[pos++] & 0xFF) << 16)
+              | ((bytes.bytes[pos++] & 0xFF) <<  8) | (bytes.bytes[pos++] & 0xFF);
+          
+          int value = ((bytes.bytes[pos++] & 0xFF) << 24) | ((bytes.bytes[pos++] & 0xFF) << 16)
+              | ((bytes.bytes[pos++] & 0xFF) <<  8) | (bytes.bytes[pos++] & 0xFF);
+          
+          values[ordinal] += value;
+        }
       }
-
-      // aggreate association values for ordinals
-      int bytesUpto = bytes.offset + bytes.length;
-      int pos = bytes.offset;
-      while (pos < bytesUpto) {
-        int ordinal = ((bytes.bytes[pos++] & 0xFF) << 24) | ((bytes.bytes[pos++] & 0xFF) << 16)
-            | ((bytes.bytes[pos++] & 0xFF) <<  8) | (bytes.bytes[pos++] & 0xFF);
-        
-        int value = ((bytes.bytes[pos++] & 0xFF) << 24) | ((bytes.bytes[pos++] & 0xFF) << 16)
-            | ((bytes.bytes[pos++] & 0xFF) <<  8) | (bytes.bytes[pos++] & 0xFF);
-
-        values[ordinal] += value;
-      }
-      
       ++doc;
     }
   }
@@ -82,6 +81,11 @@ public class SumIntAssociationFacetsAggregator implements FacetsAggregator {
   @Override
   public void rollupValues(FacetRequest fr, int ordinal, int[] children, int[] siblings, FacetArrays facetArrays) {
     // NO-OP: this aggregator does no rollup values to the parents.
+  }
+
+  @Override
+  public OrdinalValueResolver createOrdinalValueResolver(FacetRequest facetRequest, FacetArrays arrays) {
+    return new IntValueResolver(arrays);
   }
 
 }

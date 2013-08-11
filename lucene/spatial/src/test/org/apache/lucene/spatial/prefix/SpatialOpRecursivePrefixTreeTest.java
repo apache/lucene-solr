@@ -58,6 +58,8 @@ import static com.spatial4j.core.shape.SpatialRelation.WITHIN;
 
 public class SpatialOpRecursivePrefixTreeTest extends StrategyTestCase {
 
+  static final int ITERATIONS = 10;//Test Iterations
+
   private SpatialPrefixTree grid;
 
   @Before
@@ -81,31 +83,43 @@ public class SpatialOpRecursivePrefixTreeTest extends StrategyTestCase {
   }
 
   @Test
-  @Repeat(iterations = 10)
+  @Repeat(iterations = ITERATIONS)
   public void testIntersects() throws IOException {
     mySetup(-1);
     doTest(SpatialOperation.Intersects);
   }
 
   @Test
-  @Repeat(iterations = 10)
+  @Repeat(iterations = ITERATIONS)
   public void testWithin() throws IOException {
     mySetup(-1);
     doTest(SpatialOperation.IsWithin);
   }
 
   @Test
-  @Repeat(iterations = 10)
+  @Repeat(iterations = ITERATIONS)
   public void testContains() throws IOException {
     mySetup(-1);
     doTest(SpatialOperation.Contains);
   }
 
   @Test
-  @Repeat(iterations = 10)
+  @Repeat(iterations = ITERATIONS)
   public void testDisjoint() throws IOException {
     mySetup(-1);
     doTest(SpatialOperation.IsDisjointTo);
+  }
+
+  /** See LUCENE-5062, {@link ContainsPrefixTreeFilter#multiOverlappingIndexedShapes}. */
+  @Test
+  public void testContainsPairOverlap() throws IOException {
+    mySetup(3);
+    adoc("0", new ShapePair(ctx.makeRectangle(0, 33, -128, 128), ctx.makeRectangle(33, 128, -128, 128), true));
+    commit();
+    Query query = strategy.makeQuery(new SpatialArgs(SpatialOperation.Contains,
+        ctx.makeRectangle(0, 128, -16, 128)));
+    SearchResults searchResults = executeQuery(query, 1);
+    assertEquals(1, searchResults.numFound);
   }
 
   @Test
@@ -172,6 +186,13 @@ public class SpatialOpRecursivePrefixTreeTest extends StrategyTestCase {
   }
 
   private void doTest(final SpatialOperation operation) throws IOException {
+    //first show that when there's no data, a query will result in no results
+    {
+      Query query = strategy.makeQuery(new SpatialArgs(operation, randomRectangle()));
+      SearchResults searchResults = executeQuery(query, 1);
+      assertEquals(0, searchResults.numFound);
+    }
+
     final boolean biasContains = (operation == SpatialOperation.Contains);
 
     Map<String, Shape> indexedShapes = new LinkedHashMap<String, Shape>();
@@ -182,10 +203,10 @@ public class SpatialOpRecursivePrefixTreeTest extends StrategyTestCase {
       Shape indexedShape;
       Shape indexedShapeGS; //(grid-snapped)
       int R = random().nextInt(12);
-      if (R == 0) {//1 in 10
+      if (R == 0) {//1 in 12
         indexedShape = null; //no shape for this doc
         indexedShapeGS = null;
-      } else if (R % 4 == 0) {//3 in 12
+      } else if (R % 3 == 0) {//4-1 in 12
         //comprised of more than one shape
         Rectangle shape1 = randomRectangle();
         Rectangle shape2 = randomRectangle();
@@ -334,9 +355,10 @@ public class SpatialOpRecursivePrefixTreeTest extends StrategyTestCase {
     @Override
     public SpatialRelation relate(Shape other) {
       SpatialRelation r = relateApprox(other);
-      if (r != INTERSECTS)
+      if (r != INTERSECTS && !(r == WITHIN && biasContainsThenWithin))
         return r;
-      //See if the correct answer is actually Contains
+      //See if the correct answer is actually Contains, when the indexed shapes are adjacent,
+      // creating a larger shape that contains the input shape.
       Rectangle oRect = (Rectangle)other;
       boolean pairTouches = shape1.relate(shape2).intersects();
       if (!pairTouches)

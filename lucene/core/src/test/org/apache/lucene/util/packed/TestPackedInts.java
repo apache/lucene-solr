@@ -540,6 +540,28 @@ public class TestPackedInts extends LuceneTestCase {
     }
   }
 
+  public void testPackedIntsNull() {
+    // must be > 10 for the bulk reads below
+    int size = _TestUtil.nextInt(random(), 11, 256);
+    Reader packedInts = new PackedInts.NullReader(size);
+    assertEquals(0, packedInts.get(_TestUtil.nextInt(random(), 0, size - 1)));
+    long[] arr = new long[size + 10];
+    int r;
+    Arrays.fill(arr, 1);
+    r = packedInts.get(0, arr, 0, size - 1);
+    assertEquals(size - 1, r);
+    for (r--; r >= 0; r--) {
+      assertEquals(0, arr[r]);
+    }
+    Arrays.fill(arr, 1);
+    r = packedInts.get(10, arr, 0, size + 10);
+    assertEquals(size - 10, r);
+    for (int i = 0; i < size - 10; i++) {
+      assertEquals(0, arr[i]);
+    }
+
+  }
+
   public void testBulkGet() {
     final int valueCount = 1111;
     final int index = random().nextInt(valueCount);
@@ -650,13 +672,133 @@ public class TestPackedInts extends LuceneTestCase {
     wrt.set(99, (1 << 23) - 1);
     assertEquals(1 << 10, wrt.get(valueCount - 1));
     wrt.set(1, Long.MAX_VALUE);
+    wrt.set(2, -3);
+    assertEquals(64, wrt.getBitsPerValue());
     assertEquals(1 << 10, wrt.get(valueCount - 1));
     assertEquals(Long.MAX_VALUE, wrt.get(1));
+    assertEquals(-3L, wrt.get(2));
     assertEquals(2, wrt.get(4));
     assertEquals((1 << 23) - 1, wrt.get(99));
     assertEquals(10, wrt.get(7));
     assertEquals(99, wrt.get(valueCount - 10));
     assertEquals(1 << 10, wrt.get(valueCount - 1));
+    assertEquals(RamUsageEstimator.sizeOf(wrt), wrt.ramBytesUsed());
+  }
+
+  public void testPagedGrowableWriter() {
+    int pageSize = 1 << (_TestUtil.nextInt(random(), 6, 30));
+    // supports 0 values?
+    PagedGrowableWriter writer = new PagedGrowableWriter(0, pageSize, _TestUtil.nextInt(random(), 1, 64), random().nextFloat());
+    assertEquals(0, writer.size());
+
+    // compare against AppendingDeltaPackedLongBuffer
+    AppendingDeltaPackedLongBuffer buf = new AppendingDeltaPackedLongBuffer();
+    int size = random().nextInt(1000000);
+    long max = 5;
+    for (int i = 0; i < size; ++i) {
+      buf.add(_TestUtil.nextLong(random(), 0, max));
+      if (rarely()) {
+        max = PackedInts.maxValue(rarely() ? _TestUtil.nextInt(random(), 0, 63) : _TestUtil.nextInt(random(), 0, 31));
+      }
+    }
+    writer = new PagedGrowableWriter(size, pageSize, _TestUtil.nextInt(random(), 1, 64), random().nextFloat());
+    assertEquals(size, writer.size());
+    for (int i = size - 1; i >= 0; --i) {
+      writer.set(i, buf.get(i));
+    }
+    for (int i = 0; i < size; ++i) {
+      assertEquals(buf.get(i), writer.get(i));
+    }
+
+    // test ramBytesUsed
+    assertEquals(RamUsageEstimator.sizeOf(writer), writer.ramBytesUsed(), 8);
+
+    // test copy
+    PagedGrowableWriter copy = writer.resize(_TestUtil.nextLong(random(), writer.size() / 2, writer.size() * 3 / 2));
+    for (long i = 0; i < copy.size(); ++i) {
+      if (i < writer.size()) {
+        assertEquals(writer.get(i), copy.get(i));
+      } else {
+        assertEquals(0, copy.get(i));
+      }
+    }
+
+    // test grow
+    PagedGrowableWriter grow = writer.grow(_TestUtil.nextLong(random(), writer.size() / 2, writer.size() * 3 / 2));
+    for (long i = 0; i < grow.size(); ++i) {
+      if (i < writer.size()) {
+        assertEquals(writer.get(i), grow.get(i));
+      } else {
+        assertEquals(0, grow.get(i));
+      }
+    }
+  }
+
+  public void testPagedMutable() {
+    final int bitsPerValue = _TestUtil.nextInt(random(), 1, 64);
+    final long max = PackedInts.maxValue(bitsPerValue);
+    int pageSize = 1 << (_TestUtil.nextInt(random(), 6, 30));
+    // supports 0 values?
+    PagedMutable writer = new PagedMutable(0, pageSize, bitsPerValue, random().nextFloat() / 2);
+    assertEquals(0, writer.size());
+
+    // compare against AppendingDeltaPackedLongBuffer
+    AppendingDeltaPackedLongBuffer buf = new AppendingDeltaPackedLongBuffer();
+    int size = random().nextInt(1000000);
+    
+    for (int i = 0; i < size; ++i) {
+      buf.add(bitsPerValue == 64 ? random().nextLong() : _TestUtil.nextLong(random(), 0, max));
+    }
+    writer = new PagedMutable(size, pageSize, bitsPerValue, random().nextFloat());
+    assertEquals(size, writer.size());
+    for (int i = size - 1; i >= 0; --i) {
+      writer.set(i, buf.get(i));
+    }
+    for (int i = 0; i < size; ++i) {
+      assertEquals(buf.get(i), writer.get(i));
+    }
+
+    // test ramBytesUsed
+    assertEquals(RamUsageEstimator.sizeOf(writer) - RamUsageEstimator.sizeOf(writer.format), writer.ramBytesUsed());
+
+    // test copy
+    PagedMutable copy = writer.resize(_TestUtil.nextLong(random(), writer.size() / 2, writer.size() * 3 / 2));
+    for (long i = 0; i < copy.size(); ++i) {
+      if (i < writer.size()) {
+        assertEquals(writer.get(i), copy.get(i));
+      } else {
+        assertEquals(0, copy.get(i));
+      }
+    }
+
+    // test grow
+    PagedMutable grow = writer.grow(_TestUtil.nextLong(random(), writer.size() / 2, writer.size() * 3 / 2));
+    for (long i = 0; i < grow.size(); ++i) {
+      if (i < writer.size()) {
+        assertEquals(writer.get(i), grow.get(i));
+      } else {
+        assertEquals(0, grow.get(i));
+      }
+    }
+  }
+
+  // memory hole
+  @Ignore
+  public void testPagedGrowableWriterOverflow() {
+    final long size = _TestUtil.nextLong(random(), 2 * (long) Integer.MAX_VALUE, 3 * (long) Integer.MAX_VALUE);
+    final int pageSize = 1 << (_TestUtil.nextInt(random(), 16, 30));
+    final PagedGrowableWriter writer = new PagedGrowableWriter(size, pageSize, 1, random().nextFloat());
+    final long index = _TestUtil.nextLong(random(), (long) Integer.MAX_VALUE, size - 1);
+    writer.set(index, 2);
+    assertEquals(2, writer.get(index));
+    for (int i = 0; i < 1000000; ++i) {
+      final long idx = _TestUtil.nextLong(random(), 0, size);
+      if (idx == index) {
+        assertEquals(2, writer.get(idx));
+      } else {
+        assertEquals(0, writer.get(idx));
+      }
+    }
   }
 
   public void testSave() throws IOException {
@@ -804,23 +946,46 @@ public class TestPackedInts extends LuceneTestCase {
     return true;
   }
 
+  enum DataType {
+    PACKED,
+    DELTA_PACKED,
+    MONOTONIC
+  }
+
+
   public void testAppendingLongBuffer() {
+
     final long[] arr = new long[RandomInts.randomIntBetween(random(), 1, 1000000)];
-    for (int bpv : new int[] {0, 1, 63, 64, RandomInts.randomIntBetween(random(), 2, 62)}) {
-      for (boolean monotonic : new boolean[] {true, false}) {
+    float[] ratioOptions = new float[]{PackedInts.DEFAULT, PackedInts.COMPACT, PackedInts.FAST};
+    for (int bpv : new int[]{0, 1, 63, 64, RandomInts.randomIntBetween(random(), 2, 62)}) {
+      for (DataType dataType : DataType.values()) {
+        final int pageSize = 1 << _TestUtil.nextInt(random(), 6, 20);
+        final int initialPageCount = _TestUtil.nextInt(random(), 0, 16);
+        float acceptableOverheadRatio = ratioOptions[_TestUtil.nextInt(random(), 0, ratioOptions.length - 1)];
         AbstractAppendingLongBuffer buf;
         final int inc;
-        if (monotonic) {
-          buf = new MonotonicAppendingLongBuffer();
-          inc = _TestUtil.nextInt(random(), -1000, 1000);
-        } else {
-          buf = new AppendingLongBuffer();
-          inc = 0;
+        switch (dataType) {
+          case PACKED:
+            buf = new AppendingPackedLongBuffer(initialPageCount, pageSize, acceptableOverheadRatio);
+            inc = 0;
+            break;
+          case DELTA_PACKED:
+            buf = new AppendingDeltaPackedLongBuffer(initialPageCount, pageSize, acceptableOverheadRatio);
+            inc = 0;
+            break;
+          case MONOTONIC:
+            buf = new MonotonicAppendingLongBuffer(initialPageCount, pageSize, acceptableOverheadRatio);
+            inc = _TestUtil.nextInt(random(), -1000, 1000);
+            break;
+          default:
+            throw new RuntimeException("added a type and forgot to add it here?");
+
         }
+
         if (bpv == 0) {
           arr[0] = random().nextLong();
           for (int i = 1; i < arr.length; ++i) {
-            arr[i] = arr[i-1] + inc;
+            arr[i] = arr[i - 1] + inc;
           }
         } else if (bpv == 64) {
           for (int i = 0; i < arr.length; ++i) {
@@ -832,10 +997,24 @@ public class TestPackedInts extends LuceneTestCase {
             arr[i] = minValue + inc * i + random().nextLong() & PackedInts.maxValue(bpv); // _TestUtil.nextLong is too slow
           }
         }
+
         for (int i = 0; i < arr.length; ++i) {
           buf.add(arr[i]);
         }
         assertEquals(arr.length, buf.size());
+        if (random().nextBoolean()) {
+          buf.freeze();
+          if (random().nextBoolean()) {
+            // Make sure double freeze doesn't break anything
+            buf.freeze();
+          }
+        }
+        assertEquals(arr.length, buf.size());
+
+        for (int i = 0; i < arr.length; ++i) {
+          assertEquals(arr[i], buf.get(i));
+        }
+
         final AbstractAppendingLongBuffer.Iterator it = buf.iterator();
         for (int i = 0; i < arr.length; ++i) {
           if (random().nextBoolean()) {
@@ -844,15 +1023,30 @@ public class TestPackedInts extends LuceneTestCase {
           assertEquals(arr[i], it.next());
         }
         assertFalse(it.hasNext());
-        
-        for (int i = 0; i < arr.length; ++i) {
-          assertEquals(arr[i], buf.get(i));
+
+
+        long[] target = new long[arr.length + 1024]; // check the request for more is OK.
+        for (int i = 0; i < arr.length; i += _TestUtil.nextInt(random(), 0, 10000)) {
+          int lenToRead = random().nextInt(buf.pageSize() * 2) + 1;
+          lenToRead = Math.min(lenToRead, target.length - i);
+          int lenToCheck = Math.min(lenToRead, arr.length - i);
+          int off = i;
+          while (off < arr.length && lenToRead > 0) {
+            int read = buf.get(off, target, off, lenToRead);
+            assertTrue(read > 0);
+            assertTrue(read <= lenToRead);
+            lenToRead -= read;
+            off += read;
+          }
+
+          for (int j = 0; j < lenToCheck; j++) {
+            assertEquals(arr[j + i], target[j + i]);
+          }
         }
-  
+
         final long expectedBytesUsed = RamUsageEstimator.sizeOf(buf);
         final long computedBytesUsed = buf.ramBytesUsed();
-        assertEquals("got " + computedBytesUsed + ", expected: " + expectedBytesUsed,
-            expectedBytesUsed, computedBytesUsed);
+        assertEquals(expectedBytesUsed, computedBytesUsed);
       }
     }
   }

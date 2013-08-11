@@ -11,6 +11,8 @@ including, but not limited to:
   - Apache Lucene Java
   - Apache Commons
   - Apache Geronimo (stax API)
+  - Apache Blur
+  - Apache Hadoop
 
 This product includes the JQuery JavaScript library created by John Resig.
 Copyright (c) 2010 John Resig, http://jquery.com/
@@ -20,6 +22,42 @@ Copyright (c) 2012, Michael Bostock, https://github.com/mbostock/d3
 
 This product includes the highlight.js Javascript library created by Ivan Sagalaev
 Copyright (c) 2006, Ivan Sagalaev, https://github.com/isagalaev/highlight.js
+
+This product includes the ZeroClipboard.js Javascript library created by Jon Rohan, James M. Greene
+Copyright (c) 2012 Jon Rohan, James M. Greene, https://github.com/zeroclipboard/ZeroClipboard
+
+This product includes the Chosen Javascript library created by Patrick Filler
+Copyright (c) 2011-2013 by Harvest, https://github.com/harvesthq/chosen
+
+This product includes jquery.ajaxfileupload.js Javascript library created by Jordan Feldstein
+Copyright (c) 2011 Jordan Feldstein, https://github.com/jfeldstein/jQuery.AjaxFileUpload.js
+
+This product includes jquery.blockUI.js Javascript library created by Mike Alsup
+Copyright (c) 2007-2013 M. Alsup https://github.com/malsup/blockui/
+
+This product includes jquery.cookie.js Javascript library created by Klaus Hartl
+Copyright (c) 2013 Klaus Hartl, https://github.com/carhartl/jquery-cookie
+
+This product includes jquery.form Javascript library created by Mike Alsup
+Copyright 2006-2013 (c) M. Alsup, https://github.com/malsup/form/
+
+This product includes the jstree Javascript library created by Ivan Bozhanov
+Copyright (c) 2013 Ivan Bozhanov, https://github.com/vakata/jstree
+
+This product includes the Sammy.js Javascript library created by Aaron Quint
+Copyright (c) 2008 Aaron Quint, Quirkey NYC, LLC, https://github.com/quirkey/sammy
+
+This product includes jquery.timeago.js Javascript library by Ryan McGeary
+Copyright (c) 2008-2013, Ryan McGeary, https://github.com/rmm5t/jquery-timeago
+
+This product includes linker.js Javascript library created by Michalis Tzikas & Vasilis Lolos
+Copyright (C) 2011 by Michalis Tzikas & Vasilis Lolos, https://github.com/lolos/jquery-Linker/
+
+This product includes require.js Javascript library created by James Burke
+Copyright (C) 2010-2013 James Burke, https://github.com/jrburke/requirejs
+
+This product includes fugue icons created by Yusuke Kamiyamane
+Copyright (C) 2013 Yusuke Kamiyamane, https://github.com/yusukekamiyamane/fugue-icons
 
 stax-utils library: https://stax-utils.dev.java.net/
 Copyright (c) 2004, Christian Niles, unit12.net
@@ -35,6 +73,12 @@ License: Common Development and Distribution License (CDDL) v1.0 (https://glassf
 
 HSQL Database (HSQLDB): http://hsqldb.org/
 License: http://hsqldb.org/web/hsqlLicense.html
+
+Jersey Core: https://jersey.java.net/
+License: Common Development and Distribution License (CDDL) v1.0 (https://glassfish.dev.java.net/public/CDDLv1.0.html)
+
+The HdfsDirectory and BlockDirectory were derived from
+the Apache Blur incubating project and are Apache License 2.0.
 
 =========================================================================
 ==  Apache Lucene Notice                                               ==
@@ -510,3 +554,11 @@ Restlet is a registered trademark of Restlet S.A.S.
 This product contains software developed by the Restlet project.
 
 See http://www.restlet.org/
+
+=========================================================================
+==     Protocol Buffers Notice                                         ==
+=========================================================================
+
+Protocol Buffers - Google's data interchange format
+Copyright 2008 Google Inc.
+http://code.google.com/apis/protocolbuffers/

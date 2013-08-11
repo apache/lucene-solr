@@ -331,7 +331,7 @@ public class SimpleTextTermVectorsReader extends TermVectorsReader {
     }
     
     @Override
-    public SeekStatus seekCeil(BytesRef text, boolean useCache) throws IOException {
+    public SeekStatus seekCeil(BytesRef text) throws IOException {
       iterator = terms.tailMap(text).entrySet().iterator();
       if (!iterator.hasNext()) {
         return SeekStatus.END;

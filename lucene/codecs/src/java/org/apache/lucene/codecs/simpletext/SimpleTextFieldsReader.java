@@ -109,7 +109,7 @@ class SimpleTextFieldsReader extends FieldsProducer {
     }
 
     @Override
-    public boolean seekExact(BytesRef text, boolean useCache /* ignored */) throws IOException {
+    public boolean seekExact(BytesRef text) throws IOException {
 
       final BytesRefFSTEnum.InputOutput<PairOutputs.Pair<Long,PairOutputs.Pair<Long,Long>>> result = fstEnum.seekExact(text);
       if (result != null) {
@@ -125,7 +125,7 @@ class SimpleTextFieldsReader extends FieldsProducer {
     }
 
     @Override
-    public SeekStatus seekCeil(BytesRef text, boolean useCache /* ignored */) throws IOException {
+    public SeekStatus seekCeil(BytesRef text) throws IOException {
 
       //System.out.println("seek to text=" + text.utf8ToString());
       final BytesRefFSTEnum.InputOutput<PairOutputs.Pair<Long,PairOutputs.Pair<Long,Long>>> result = fstEnum.seekCeil(text);
@@ -513,7 +513,7 @@ class SimpleTextFieldsReader extends FieldsProducer {
     }
 
     private void loadTerms() throws IOException {
-      PositiveIntOutputs posIntOutputs = PositiveIntOutputs.getSingleton(false);
+      PositiveIntOutputs posIntOutputs = PositiveIntOutputs.getSingleton();
       final Builder<PairOutputs.Pair<Long,PairOutputs.Pair<Long,Long>>> b;
       final PairOutputs<Long,Long> outputsInner = new PairOutputs<Long,Long>(posIntOutputs, posIntOutputs);
       final PairOutputs<Long,PairOutputs.Pair<Long,Long>> outputs = new PairOutputs<Long,PairOutputs.Pair<Long,Long>>(posIntOutputs,

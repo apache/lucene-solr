@@ -24,6 +24,9 @@
 
   <import file="../common-build.xml"/>
 
+  <property name="moman.commit-hash" value="5c5c2a1e4dea" />
+  <property name="moman.url" value="https://bitbucket.org/jpbarrette/moman/get/${moman.commit-hash}.zip" />
+
   <path id="classpath"/>
   
   <path id="test.classpath">
@@ -109,36 +112,24 @@
     <fixcrlf srcdir="src/java/org/apache/lucene/util/packed" includes="BulkOperation*.java,Direct*.java,Packed64SingleBlock.java,Packed*ThreeBlocks.py" encoding="UTF-8"/>
   </target>
 
-  <target name="createLevAutomata" depends="check-moman,clone-moman,pull-moman">
+  <target name="createLevAutomata" depends="check-moman,download-moman">
     <createLevAutomaton n="1"/>
     <createLevAutomaton n="2"/>
   </target>
   
   <target name="check-moman">
-    <condition property="moman.cloned">
-      <available file="${build.dir}/moman"/>
-    </condition>
+    <available file="${build.dir}/moman" property="moman.downloaded"/>
   </target>
 
-  <target name="clone-moman" unless="moman.cloned">
-    <mkdir dir="${build.dir}"/>
-    <exec dir="${build.dir}" 
-          executable="${hg.exe}" failonerror="true">
-      <arg value="clone"/>
-      <arg value="-r"/>
-      <arg value="${moman.rev}"/>
-      <arg value="${moman.url}"/>
-      <arg value="moman"/>
-    </exec>
+  <target name="download-moman" unless="moman.downloaded">
+    <mkdir dir="${build.dir}/moman"/>
+    <get src="${moman.url}" dest="${build.dir}/moman.zip"/>
+    <unzip dest="${build.dir}/moman" src="${build.dir}/moman.zip">
+      <cutdirsmapper dirs="1"/>
+    </unzip>
+    <delete file="${build.dir}/moman.zip"/>
   </target>
 
-  <target name="pull-moman" if="moman.cloned">
-    <exec dir="${build.dir}/moman" 
-          executable="${hg.exe}" failonerror="true">
-      <arg value="pull"/>
-      <arg value="-f"/>
-      <arg value="-r"/>
-      <arg value="${moman.rev}"/>
-    </exec>
-  </target>
+  <target name="regenerate" depends="createLevAutomata,createPackedIntSources"/>
+
 </project>

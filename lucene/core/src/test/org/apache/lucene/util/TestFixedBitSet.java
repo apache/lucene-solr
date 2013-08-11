@@ -22,7 +22,16 @@ import java.util.BitSet;
 
 import org.apache.lucene.search.DocIdSetIterator;
 
-public class TestFixedBitSet extends LuceneTestCase {
+public class TestFixedBitSet extends BaseDocIdSetTestCase<FixedBitSet> {
+
+  @Override
+  public FixedBitSet copyOf(BitSet bs, int length) throws IOException {
+    final FixedBitSet set = new FixedBitSet(length);
+    for (int doc = bs.nextSetBit(0); doc != -1; doc = bs.nextSetBit(doc + 1)) {
+      set.set(doc);
+    }
+    return set;
+  }
 
   void doGet(BitSet a, FixedBitSet b) {
     int max = b.length();

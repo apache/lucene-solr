@@ -183,7 +183,9 @@
     <forbidden-apis internalRuntimeForbidden="true" classpathref="forbidden-apis.classpath">
       <bundledSignatures name="jdk-unsafe-${javac.target}"/>
       <bundledSignatures name="jdk-deprecated-${javac.target}"/>
-      <signaturesFileSet file="${common.dir}/tools/forbiddenApis/executors.txt"/>
+      <signaturesFileSet dir="${common.dir}/tools/forbiddenApis">
+        <include name="base.txt" />
+      </signaturesFileSet>
       <fileset dir="${basedir}/build" includes="**/*.class" />
     </forbidden-apis>
   </target>
@@ -345,7 +347,7 @@
   </target>
 
   <!-- rat-sources-typedef is *not* a useless dependency. do not remove -->
-  <target name="rat-sources" depends="rat-sources-typedef">
+  <target name="rat-sources" depends="rat-sources-typedef,common.rat-sources">
     <subant target="rat-sources" failonerror="true" inheritall="false">
       <propertyset refid="uptodate.and.compiled.properties"/>
       <fileset dir="core" includes="build.xml"/>
@@ -606,6 +608,15 @@
 
   <target name="jar-checksums" depends="resolve">
     <jar-checksum-macro srcdir="${common.dir}" dstdir="${common.dir}/licenses"/>
+  </target>
+
+  <target name="regenerate">
+    <subant target="regenerate" failonerror="true" inheritall="false">
+      <propertyset refid="uptodate.and.compiled.properties"/>
+      <fileset dir="core" includes="build.xml"/>
+      <fileset dir="test-framework" includes="build.xml"/>
+    </subant>
+    <modules-crawl target="regenerate"/>
   </target>
 
 </project>

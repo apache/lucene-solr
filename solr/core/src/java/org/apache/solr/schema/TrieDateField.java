@@ -55,7 +55,7 @@ import java.io.IOException;
  * @see DateField
  * @see TrieField
  */
-public class TrieDateField extends DateField {
+public class TrieDateField extends DateField implements DateValueFieldType {
 
   final TrieField wrappedField = new TrieField() {{
     type = TrieTypes.DATE;

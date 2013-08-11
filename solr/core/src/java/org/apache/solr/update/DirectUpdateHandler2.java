@@ -31,6 +31,7 @@ import java.util.concurrent.Future;
 import java.util.concurrent.atomic.AtomicLong;
 
 import org.apache.lucene.document.Document;
+import org.apache.lucene.index.DirectoryReader;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.IndexWriter;
 import org.apache.lucene.index.Term;
@@ -108,6 +109,8 @@ public class DirectUpdateHandler2 extends UpdateHandler implements SolrCoreState
     softCommitTracker = new CommitTracker("Soft", core, softCommitDocsUpperBound, softCommitTimeUpperBound, true, true);
     
     commitWithinSoftCommit = updateHandlerInfo.commitWithinSoftCommit;
+
+
   }
   
   public DirectUpdateHandler2(SolrCore core, UpdateHandler updateHandler) {
@@ -125,6 +128,13 @@ public class DirectUpdateHandler2 extends UpdateHandler implements SolrCoreState
     softCommitTracker = new CommitTracker("Soft", core, softCommitDocsUpperBound, softCommitTimeUpperBound, updateHandlerInfo.openSearcher, true);
     
     commitWithinSoftCommit = updateHandlerInfo.commitWithinSoftCommit;
+
+    UpdateLog existingLog = updateHandler.getUpdateLog();
+    if (this.ulog != null && this.ulog == existingLog) {
+      // If we are reusing the existing update log, inform the log that it's update handler has changed.
+      // We do this as late as possible.
+      this.ulog.init(this, core);
+    }
   }
 
   private void deleteAll() throws IOException {
@@ -423,11 +433,11 @@ public class DirectUpdateHandler2 extends UpdateHandler implements SolrCoreState
 
     log.info("start " + cmd);
     
-    IndexReader[] readers = cmd.readers;
-    if (readers != null && readers.length > 0) {
+    List<DirectoryReader> readers = cmd.readers;
+    if (readers != null && readers.size() > 0) {
       RefCounted<IndexWriter> iw = solrCoreState.getIndexWriter(core);
       try {
-        iw.get().addIndexes(readers);
+        iw.get().addIndexes(readers.toArray(new IndexReader[readers.size()]));
       } finally {
         iw.decref();
       }
@@ -531,11 +541,17 @@ public class DirectUpdateHandler2 extends UpdateHandler implements SolrCoreState
           }
           
           // SolrCore.verbose("writer.commit() start writer=",writer);
-          final Map<String,String> commitData = new HashMap<String,String>();
-          commitData.put(SolrIndexWriter.COMMIT_TIME_MSEC_KEY,
-              String.valueOf(System.currentTimeMillis()));
-          writer.setCommitData(commitData);
-          writer.commit();
+
+          if (writer.hasUncommittedChanges()) {
+            final Map<String,String> commitData = new HashMap<String,String>();
+            commitData.put(SolrIndexWriter.COMMIT_TIME_MSEC_KEY,
+                String.valueOf(System.currentTimeMillis()));
+            writer.setCommitData(commitData);
+            writer.commit();
+          } else {
+            log.info("No uncommitted changes. Skipping IW.commit.");
+          }
+
           // SolrCore.verbose("writer.commit() end");
           numDocsPending.set(0);
           callPostCommitCallbacks();

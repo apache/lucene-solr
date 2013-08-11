@@ -262,7 +262,7 @@ public class CharArrayMap<V> extends AbstractMap<Object,V> {
     if (ignoreCase) {
       for(int i=0;i<len;) {
         final int codePointAt = charUtils.codePointAt(text1, off+i, limit);
-        if (Character.toLowerCase(codePointAt) != charUtils.codePointAt(text2, i))
+        if (Character.toLowerCase(codePointAt) != charUtils.codePointAt(text2, i, text2.length))
           return false;
         i += Character.charCount(codePointAt); 
       }
@@ -282,7 +282,7 @@ public class CharArrayMap<V> extends AbstractMap<Object,V> {
     if (ignoreCase) {
       for(int i=0;i<len;) {
         final int codePointAt = charUtils.codePointAt(text1, i);
-        if (Character.toLowerCase(codePointAt) != charUtils.codePointAt(text2, i))
+        if (Character.toLowerCase(codePointAt) != charUtils.codePointAt(text2, i, text2.length))
           return false;
         i += Character.charCount(codePointAt);
       }

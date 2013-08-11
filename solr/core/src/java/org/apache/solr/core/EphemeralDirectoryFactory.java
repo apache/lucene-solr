@@ -51,4 +51,16 @@ public abstract class EphemeralDirectoryFactory extends CachingDirectoryFactory 
   public boolean isAbsolute(String path) {
     return true;
   }
+  
+  
+  @Override
+  public void remove(Directory dir) throws IOException {
+    // ram dir does not persist its dir anywhere
+  }
+  
+  @Override
+  public void remove(String path) throws IOException {
+    // ram dir does not persist its dir anywhere
+  }
+
 }

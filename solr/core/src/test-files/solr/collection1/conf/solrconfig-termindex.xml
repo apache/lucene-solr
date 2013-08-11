@@ -31,7 +31,7 @@
   <directoryFactory name="DirectoryFactory" class="${solr.directoryFactory:solr.RAMDirectoryFactory}"/>
 
   <indexConfig>
-    <termIndexInterval>256</termIndexInterval>
+    <useCompoundFile>${useCompoundFile:false}</useCompoundFile>
     <mergePolicy class="org.apache.lucene.index.TieredMergePolicy"/>
     <mergeScheduler class="org.apache.lucene.index.ConcurrentMergeScheduler"/>
   </indexConfig>
@@ -39,9 +39,7 @@
   <updateHandler class="solr.DirectUpdateHandler2">
   </updateHandler>
 
-  <indexReaderFactory name="IndexReaderFactory" class="org.apache.solr.core.StandardIndexReaderFactory">
-    <int name="setTermIndexDivisor">12</int>
-  </indexReaderFactory >
+  <indexReaderFactory name="IndexReaderFactory" class="org.apache.solr.core.StandardIndexReaderFactory"/>
 
   <requestHandler name="standard" class="solr.StandardRequestHandler"></requestHandler>
 

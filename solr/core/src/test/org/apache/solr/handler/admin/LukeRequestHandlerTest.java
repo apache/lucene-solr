@@ -17,16 +17,17 @@
 
 package org.apache.solr.handler.admin;
 
-import java.util.Arrays;
-import java.util.EnumSet;
-
 import org.apache.solr.common.luke.FieldFlag;
 import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.schema.IndexSchema;
 import org.apache.solr.util.AbstractSolrTestCase;
+import org.apache.solr.util.TestHarness;
 import org.junit.Before;
 import org.junit.BeforeClass;
 import org.junit.Test;
+
+import java.util.Arrays;
+import java.util.EnumSet;
 
 /**
  * :TODO: currently only tests some of the utilities in the LukeRequestHandler
@@ -35,6 +36,7 @@ public class LukeRequestHandlerTest extends AbstractSolrTestCase {
 
   @BeforeClass
   public static void beforeClass() throws Exception {
+    System.setProperty("enable.update.log", "false"); // schema12 doesn't support _version_
     initCore("solrconfig.xml", "schema12.xml");
   }
 
@@ -155,7 +157,7 @@ public class LukeRequestHandlerTest extends AbstractSolrTestCase {
     try {
       // First, determine that the two fields ARE there
       String response = h.query(req);
-      assertNull(h.validateXPath(response,
+      assertNull(TestHarness.validateXPath(response,
           getFieldXPathPrefix("solr_t") + "[@name='index']",
           getFieldXPathPrefix("solr_s") + "[@name='index']"
       ));
@@ -164,7 +166,7 @@ public class LukeRequestHandlerTest extends AbstractSolrTestCase {
       for (String f : Arrays.asList("solr_ti",
           "solr_td", "solr_pl", "solr_dt", "solr_b")) {
 
-        assertNotNull(h.validateXPath(response,
+        assertNotNull(TestHarness.validateXPath(response,
             getFieldXPathPrefix(f) + "[@name='index']"));
 
       }
@@ -174,7 +176,7 @@ public class LukeRequestHandlerTest extends AbstractSolrTestCase {
       for (String f : Arrays.asList("solr_t", "solr_s", "solr_ti",
           "solr_td", "solr_pl", "solr_dt", "solr_b")) {
 
-        assertNull(h.validateXPath(response,
+        assertNull(TestHarness.validateXPath(response,
             getFieldXPathPrefix(f) + "[@name='index']"));
       }
     } catch (Exception e) {
@@ -182,11 +184,34 @@ public class LukeRequestHandlerTest extends AbstractSolrTestCase {
     }
   }
 
+  public void testNumTerms() throws Exception {
+    final String f = "name";
+    for (String n : new String[] {"2", "3", "100", "99999"}) {
+      assertQ(req("qt", "/admin/luke", "fl", f, "numTerms", n),
+              field(f) + "lst[@name='topTerms']/int[@name='Apache']",
+              field(f) + "lst[@name='topTerms']/int[@name='Solr']",
+              "count("+field(f)+"lst[@name='topTerms']/int)=2");
+    }
+    
+    assertQ(req("qt", "/admin/luke", "fl", f, "numTerms", "1"),
+            // no garuntee which one we find
+            "count("+field(f)+"lst[@name='topTerms']/int)=1");
+
+    assertQ(req("qt", "/admin/luke", "fl", f, "numTerms", "0"),
+            "count("+field(f)+"lst[@name='topTerms']/int)=0");
+
+    // field with no terms shouldn't error
+    for (String n : new String[] {"0", "1", "2", "100", "99999"}) {
+      assertQ(req("qt", "/admin/luke", "fl", "bogus_s", "numTerms", n),
+              "count("+field(f)+"lst[@name='topTerms']/int)=0");
+    }
+  }
+
   public void testCopyFieldLists() throws Exception {
     SolrQueryRequest req = req("qt", "/admin/luke", "show", "schema");
 
     String xml = h.query(req);
-    String r = h.validateXPath
+    String r = TestHarness.validateXPath
       (xml,
        field("text") + "/arr[@name='copySources']/str[.='title']",
        field("text") + "/arr[@name='copySources']/str[.='subject']",
@@ -216,7 +241,7 @@ public class LukeRequestHandlerTest extends AbstractSolrTestCase {
 
     SolrQueryRequest req = req("qt", "/admin/luke", "show", "schema", "indent", "on");
     String xml = h.query(req);
-    String result = h.validateXPath(xml, field("bday") + "/arr[@name='copyDests']/str[.='catchall_t']");
+    String result = TestHarness.validateXPath(xml, field("bday") + "/arr[@name='copyDests']/str[.='catchall_t']");
     assertNull(xml, result);
 
     // Put back the configuration expected by the rest of the tests in this suite

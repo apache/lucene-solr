@@ -26,6 +26,7 @@ import org.apache.lucene.analysis.tokenattributes.CharTermAttribute;
 import org.apache.lucene.analysis.tokenattributes.OffsetAttribute;
 import org.apache.lucene.analysis.tokenattributes.PositionIncrementAttribute;
 import org.apache.lucene.analysis.tokenattributes.PositionLengthAttribute;
+import org.apache.lucene.analysis.util.CharacterUtils;
 import org.apache.lucene.util.Version;
 
 /**
@@ -33,6 +34,7 @@ import org.apache.lucene.util.Version;
  * <a name="version"/>
  * <p>You must specify the required {@link Version} compatibility when
  * creating a {@link NGramTokenFilter}. As of Lucene 4.4, this token filters:<ul>
+ * <li>handles supplementary characters correctly,</li>
  * <li>emits all n-grams for the same token at the same position,</li>
  * <li>does not modify offsets,</li>
  * <li>sorts n-grams by their offset in the original token first, then
@@ -42,6 +44,10 @@ import org.apache.lucene.util.Version;
  * {@link Version#LUCENE_44} in the constructor but this is not recommended as
  * it will lead to broken {@link TokenStream}s that will cause highlighting
  * bugs.
+ * <p>If you were using this {@link TokenFilter} to perform partial highlighting,
+ * this won't work anymore since this filter doesn't update offsets. You should
+ * modify your analysis chain to use {@link NGramTokenizer}, and potentially
+ * override {@link NGramTokenizer#isTokenChar(int)} to perform pre-tokenization.
  */
 public final class NGramTokenFilter extends TokenFilter {
   public static final int DEFAULT_MIN_NGRAM_SIZE = 1;
@@ -51,6 +57,7 @@ public final class NGramTokenFilter extends TokenFilter {
 
   private char[] curTermBuffer;
   private int curTermLength;
+  private int curCodePointCount;
   private int curGramSize;
   private int curPos;
   private int curPosInc, curPosLen;
@@ -59,6 +66,7 @@ public final class NGramTokenFilter extends TokenFilter {
   private boolean hasIllegalOffsets; // only if the length changed before this filter
 
   private final Version version;
+  private final CharacterUtils charUtils;
   private final CharTermAttribute termAtt = addAttribute(CharTermAttribute.class);
   private final PositionIncrementAttribute posIncAtt;
   private final PositionLengthAttribute posLenAtt;
@@ -75,6 +83,9 @@ public final class NGramTokenFilter extends TokenFilter {
   public NGramTokenFilter(Version version, TokenStream input, int minGram, int maxGram) {
     super(new LengthFilter(version, input, minGram, Integer.MAX_VALUE));
     this.version = version;
+    this.charUtils = version.onOrAfter(Version.LUCENE_44)
+        ? CharacterUtils.getInstance(version)
+        : CharacterUtils.getJava4Instance();
     if (minGram < 1) {
       throw new IllegalArgumentException("minGram must be greater than zero");
     }
@@ -126,6 +137,7 @@ public final class NGramTokenFilter extends TokenFilter {
         } else {
           curTermBuffer = termAtt.buffer().clone();
           curTermLength = termAtt.length();
+          curCodePointCount = charUtils.codePointCount(termAtt);
           curGramSize = minGram;
           curPos = 0;
           curPosInc = posIncAtt.getPositionIncrement();
@@ -138,13 +150,15 @@ public final class NGramTokenFilter extends TokenFilter {
         }
       }
       if (version.onOrAfter(Version.LUCENE_44)) {
-        if (curGramSize > maxGram || curPos + curGramSize > curTermLength) {
+        if (curGramSize > maxGram || (curPos + curGramSize) > curCodePointCount) {
           ++curPos;
           curGramSize = minGram;
         }
-        if (curPos + curGramSize <= curTermLength) {
+        if ((curPos + curGramSize) <= curCodePointCount) {
           clearAttributes();
-          termAtt.copyBuffer(curTermBuffer, curPos, curGramSize);
+          final int start = charUtils.offsetByCodePoints(curTermBuffer, 0, curTermLength, 0, curPos);
+          final int end = charUtils.offsetByCodePoints(curTermBuffer, 0, curTermLength, start, curGramSize);
+          termAtt.copyBuffer(curTermBuffer, start, end - start);
           posIncAtt.setPositionIncrement(curPosInc);
           curPosInc = 0;
           posLenAtt.setPositionLength(curPosLen);

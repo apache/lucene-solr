@@ -46,9 +46,10 @@ def run(command):
     raise RuntimeError(msg)
 
 def runAndSendGPGPassword(command, password):
-  p = subprocess.Popen(command, shell=True, stdout=subprocess.PIPE, stderr=subprocess.STDOUT, stdin=subprocess.PIPE)
+  p = subprocess.Popen(command, shell=True, bufsize=0, stdout=subprocess.PIPE, stderr=subprocess.STDOUT, stdin=subprocess.PIPE)
   f = open(LOG, 'ab')
   while True:
+    p.stdout.flush()
     line = p.stdout.readline()
     if len(line) == 0:
       break
@@ -114,7 +115,7 @@ def prepare(root, version, gpgKeyID, gpgPassword, doTest):
   
   print('  lucene prepare-release')
   os.chdir('lucene')
-  cmd = 'ant -Dversion=%s -Dspecversion=%s' % (version, version)
+  cmd = 'ant -Dversion=%s' % version
   if gpgKeyID is not None:
     cmd += ' -Dgpg.key=%s prepare-release' % gpgKeyID
   else:
@@ -127,7 +128,7 @@ def prepare(root, version, gpgKeyID, gpgPassword, doTest):
   
   print('  solr prepare-release')
   os.chdir('../solr')
-  cmd = 'ant -Dversion=%s -Dspecversion=%s' % (version, version)
+  cmd = 'ant -Dversion=%s' % version
   if gpgKeyID is not None:
     cmd += ' -Dgpg.key=%s prepare-release' % gpgKeyID
   else:

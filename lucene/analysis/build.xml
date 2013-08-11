@@ -139,5 +139,9 @@
   <target name="-ecj-javadoc-lint">
     <forall-analyzers target="-ecj-javadoc-lint"/>
   </target>
+
+  <target name="regenerate">
+    <forall-analyzers target="regenerate"/>
+  </target>
 	
 </project>

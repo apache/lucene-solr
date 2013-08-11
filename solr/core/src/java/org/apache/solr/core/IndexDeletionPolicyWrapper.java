@@ -100,7 +100,7 @@ public final class IndexDeletionPolicyWrapper extends IndexDeletionPolicy {
     }
   }
 
-  private List<IndexCommitWrapper> wrap(List<IndexCommit> list) {
+  private List<IndexCommitWrapper> wrap(List<? extends IndexCommit> list) {
     List<IndexCommitWrapper> result = new ArrayList<IndexCommitWrapper>();
     for (IndexCommit indexCommit : list) result.add(new IndexCommitWrapper(indexCommit));
     return result;
@@ -130,7 +130,7 @@ public final class IndexDeletionPolicyWrapper extends IndexDeletionPolicy {
    * Internal use for Lucene... do not explicitly call.
    */
   @Override
-  public void onInit(List list) throws IOException {
+  public void onInit(List<? extends IndexCommit> list) throws IOException {
     List<IndexCommitWrapper> wrapperList = wrap(list);
     deletionPolicy.onInit(wrapperList);
     updateCommitPoints(wrapperList);
@@ -141,7 +141,7 @@ public final class IndexDeletionPolicyWrapper extends IndexDeletionPolicy {
    * Internal use for Lucene... do not explicitly call.
    */
   @Override
-  public void onCommit(List list) throws IOException {
+  public void onCommit(List<? extends IndexCommit> list) throws IOException {
     List<IndexCommitWrapper> wrapperList = wrap(list);
     deletionPolicy.onCommit(wrapperList);
     updateCommitPoints(wrapperList);

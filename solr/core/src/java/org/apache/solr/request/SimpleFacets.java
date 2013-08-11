@@ -295,7 +295,9 @@ public class SimpleFacets {
         // TODO: slight optimization would prevent double-parsing of any localParams
         Query qobj = QParser.getParser(q, null, req).getQuery();
 
-        if (params.getBool(GroupParams.GROUP_FACET, false)) {
+        if (qobj == null) {
+          res.add(key, 0);
+        } else if (params.getBool(GroupParams.GROUP_FACET, false)) {
           res.add(key, getGroupedFacetQueryCount(qobj));
         } else {
           res.add(key, searcher.numDocs(qobj, docs));
@@ -766,7 +768,7 @@ public class SimpleFacets {
       // facet.offset when sorting by index order.
 
       if (startTermBytes != null) {
-        if (termsEnum.seekCeil(startTermBytes, true) == TermsEnum.SeekStatus.END) {
+        if (termsEnum.seekCeil(startTermBytes) == TermsEnum.SeekStatus.END) {
           termsEnum = null;
         } else {
           term = termsEnum.term();

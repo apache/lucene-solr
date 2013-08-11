@@ -17,7 +17,6 @@ package org.apache.lucene.index;
  * limitations under the License.
  */
 
-import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.io.PrintStream;
 import java.util.ArrayList;
@@ -613,10 +612,6 @@ public final class SegmentInfos implements Cloneable, Iterable<SegmentInfoPerCom
           IndexInput genInput = null;
           try {
             genInput = directory.openInput(IndexFileNames.SEGMENTS_GEN, IOContext.READONCE);
-          } catch (FileNotFoundException e) {
-            if (infoStream != null) {
-              message("segments.gen open: FileNotFoundException " + e);
-            }
           } catch (IOException e) {
             if (infoStream != null) {
               message("segments.gen open: IOException " + e);

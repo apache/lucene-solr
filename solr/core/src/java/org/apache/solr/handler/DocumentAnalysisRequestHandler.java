@@ -35,6 +35,7 @@ import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.schema.FieldType;
 import org.apache.solr.schema.IndexSchema;
 import org.apache.solr.schema.SchemaField;
+import org.apache.solr.util.EmptyEntityResolver;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -90,6 +91,8 @@ public class DocumentAnalysisRequestHandler extends AnalysisRequestHandlerBase {
     super.init(args);
 
     inputFactory = XMLInputFactory.newInstance();
+    EmptyEntityResolver.configureXMLInputFactory(inputFactory);
+    inputFactory.setXMLReporter(xmllog);
     try {
       // The java 1.6 bundled stax parser (sjsxp) does not currently have a thread-safe
       // XMLInputFactory, as that implementation tries to cache and reuse the
@@ -103,7 +106,6 @@ public class DocumentAnalysisRequestHandler extends AnalysisRequestHandlerBase {
       // isimplementation specific.
       log.debug("Unable to set the 'reuse-instance' property for the input factory: " + inputFactory);
     }
-    inputFactory.setXMLReporter(xmllog);
   }
 
   /**

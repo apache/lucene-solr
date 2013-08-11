@@ -116,6 +116,22 @@ public abstract class LanguageIdentifierUpdateProcessorFactoryTestCase extends S
   }
 
   @Test
+  public void testMapLangcode() throws Exception {
+    parameters = new ModifiableSolrParams();
+    parameters.add("langid.fl", "name");
+    parameters.add("langid.lcmap", "zh_cn:zh zh_tw:zh");
+    parameters.set("langid.enforceSchema", "false");
+    liProcessor = createLangIdProcessor(parameters);
+
+    assertEquals("zh", liProcessor.resolveLanguage("zh_cn", "NA"));
+    assertEquals("zh", liProcessor.resolveLanguage("zh_tw", "NA"));
+    assertEquals("no", liProcessor.resolveLanguage("no", "NA"));
+    List<DetectedLanguage> langs = new ArrayList<DetectedLanguage>();
+    langs.add(new DetectedLanguage("zh_cn", 0.8));
+    assertEquals("zh", liProcessor.resolveLanguage(langs, "NA"));
+  }
+
+  @Test
   public void testPreExisting() throws Exception {
     SolrInputDocument doc;
     parameters = new ModifiableSolrParams();

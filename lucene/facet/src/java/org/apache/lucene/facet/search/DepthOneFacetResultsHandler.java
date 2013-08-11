@@ -9,6 +9,7 @@ import java.util.Comparator;
 import org.apache.lucene.facet.search.FacetRequest.SortOrder;
 import org.apache.lucene.facet.taxonomy.ParallelTaxonomyArrays;
 import org.apache.lucene.facet.taxonomy.TaxonomyReader;
+import org.apache.lucene.util.CollectionUtil;
 import org.apache.lucene.util.PriorityQueue;
 
 /*
@@ -31,12 +32,11 @@ import org.apache.lucene.util.PriorityQueue;
 /**
  * A {@link FacetResultsHandler} which counts the top-K facets at depth 1 only
  * and always labels all result categories. The results are always sorted by
- * value, in descending order. Sub-classes are responsible to pull the values
- * from the corresponding {@link FacetArrays}.
+ * value, in descending order.
  * 
  * @lucene.experimental
  */
-public abstract class DepthOneFacetResultsHandler extends FacetResultsHandler {
+public class DepthOneFacetResultsHandler extends FacetResultsHandler {
   
   private static class FacetResultNodeQueue extends PriorityQueue<FacetResultNode> {
     
@@ -51,40 +51,19 @@ public abstract class DepthOneFacetResultsHandler extends FacetResultsHandler {
     
     @Override
     protected boolean lessThan(FacetResultNode a, FacetResultNode b) {
-      if (a.value < b.value) return true;
-      if (a.value > b.value) return false;
-      // both have the same value, break tie by ordinal
-      return a.ordinal < b.ordinal;
+      return a.compareTo(b)  < 0;
     }
     
   }
 
-  public DepthOneFacetResultsHandler(TaxonomyReader taxonomyReader, FacetRequest facetRequest, FacetArrays facetArrays) {
-    super(taxonomyReader, facetRequest, facetArrays);
+  public DepthOneFacetResultsHandler(TaxonomyReader taxonomyReader, FacetRequest facetRequest, FacetArrays facetArrays, 
+      OrdinalValueResolver resolver) {
+    super(taxonomyReader, facetRequest, resolver, facetArrays);
     assert facetRequest.getDepth() == 1 : "this handler only computes the top-K facets at depth 1";
     assert facetRequest.numResults == facetRequest.getNumLabel() : "this handler always labels all top-K results";
     assert facetRequest.getSortOrder() == SortOrder.DESCENDING : "this handler always sorts results in descending order";
   }
 
-  /** Returnt the value of the requested ordinal. Called once for the result root. */
-  protected abstract double valueOf(int ordinal);
-  
-  /**
-   * Add the siblings of {@code ordinal} to the given list. This is called
-   * whenever the number of results is too high (&gt; taxonomy size), instead of
-   * adding them to a {@link PriorityQueue}.
-   */
-  protected abstract void addSiblings(int ordinal, int[] siblings, ArrayList<FacetResultNode> nodes) throws IOException;
-  
-  /**
-   * Add the siblings of {@code ordinal} to the given {@link PriorityQueue}. The
-   * given {@link PriorityQueue} is already filled with sentinel objects, so
-   * implementations are encouraged to use {@link PriorityQueue#top()} and
-   * {@link PriorityQueue#updateTop()} for best performance.  Returns the total
-   * number of siblings.
-   */
-  protected abstract int addSiblings(int ordinal, int[] siblings, PriorityQueue<FacetResultNode> pq);
-  
   @Override
   public final FacetResult compute() throws IOException {
     ParallelTaxonomyArrays arrays = taxonomyReader.getParallelTaxonomyArrays();
@@ -93,23 +72,28 @@ public abstract class DepthOneFacetResultsHandler extends FacetResultsHandler {
     
     int rootOrd = taxonomyReader.getOrdinal(facetRequest.categoryPath);
         
-    FacetResultNode root = new FacetResultNode(rootOrd, valueOf(rootOrd));
+    FacetResultNode root = new FacetResultNode(rootOrd, resolver.valueOf(rootOrd));
     root.label = facetRequest.categoryPath;
     if (facetRequest.numResults > taxonomyReader.getSize()) {
       // specialize this case, user is interested in all available results
       ArrayList<FacetResultNode> nodes = new ArrayList<FacetResultNode>();
-      int child = children[rootOrd];
-      addSiblings(child, siblings, nodes);
-      Collections.sort(nodes, new Comparator<FacetResultNode>() {
+      int ordinal = children[rootOrd];
+      while (ordinal != TaxonomyReader.INVALID_ORDINAL) {
+        double value = resolver.valueOf(ordinal);
+        if (value > 0) {
+          FacetResultNode node = new FacetResultNode(ordinal, value);
+          node.label = taxonomyReader.getPath(ordinal);
+          nodes.add(node);
+        }
+        ordinal = siblings[ordinal];
+      }
+
+      CollectionUtil.introSort(nodes, Collections.reverseOrder(new Comparator<FacetResultNode>() {
         @Override
         public int compare(FacetResultNode o1, FacetResultNode o2) {
-          int value = (int) (o2.value - o1.value);
-          if (value == 0) {
-            value = o2.ordinal - o1.ordinal;
-          }
-          return value;
+          return o1.compareTo(o2);
         }
-      });
+      }));
       
       root.subResults = nodes;
       return new FacetResult(facetRequest, root, nodes.size());
@@ -117,7 +101,21 @@ public abstract class DepthOneFacetResultsHandler extends FacetResultsHandler {
     
     // since we use sentinel objects, we cannot reuse PQ. but that's ok because it's not big
     PriorityQueue<FacetResultNode> pq = new FacetResultNodeQueue(facetRequest.numResults, true);
-    int numSiblings = addSiblings(children[rootOrd], siblings, pq);
+    int ordinal = children[rootOrd];
+    FacetResultNode top = pq.top();
+    int numSiblings = 0;
+    while (ordinal != TaxonomyReader.INVALID_ORDINAL) {
+      double value = resolver.valueOf(ordinal);
+      if (value > 0) {
+        ++numSiblings;
+        if (value > top.value) {
+          top.value = value;
+          top.ordinal = ordinal;
+          top = pq.updateTop();
+        }
+      }
+      ordinal = siblings[ordinal];
+    }
 
     // pop() the least (sentinel) elements
     int pqsize = pq.size();

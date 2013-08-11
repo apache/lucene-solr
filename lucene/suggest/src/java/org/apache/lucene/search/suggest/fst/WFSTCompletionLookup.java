@@ -101,7 +101,7 @@ public class WFSTCompletionLookup extends Lookup {
     TermFreqIterator iter = new WFSTTermFreqIteratorWrapper(iterator);
     IntsRef scratchInts = new IntsRef();
     BytesRef previous = null;
-    PositiveIntOutputs outputs = PositiveIntOutputs.getSingleton(true);
+    PositiveIntOutputs outputs = PositiveIntOutputs.getSingleton();
     Builder<Long> builder = new Builder<Long>(FST.INPUT_TYPE.BYTE1, outputs);
     while ((scratch = iter.next()) != null) {
       long cost = iter.weight();
@@ -136,7 +136,7 @@ public class WFSTCompletionLookup extends Lookup {
   @Override
   public boolean load(InputStream input) throws IOException {
     try {
-      this.fst = new FST<Long>(new InputStreamDataInput(input), PositiveIntOutputs.getSingleton(true));
+      this.fst = new FST<Long>(new InputStreamDataInput(input), PositiveIntOutputs.getSingleton());
     } finally {
       IOUtils.close(input);
     }

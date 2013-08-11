@@ -26,7 +26,8 @@ import org.apache.lucene.util.ByteBlockPool.DirectTrackingAllocator;
 import org.apache.lucene.util.ByteBlockPool;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.Counter;
-import org.apache.lucene.util.packed.AppendingLongBuffer;
+import org.apache.lucene.util.packed.AppendingDeltaPackedLongBuffer;
+import org.apache.lucene.util.packed.PackedInts;
 
 import static org.apache.lucene.util.ByteBlockPool.BYTE_BLOCK_SIZE;
 
@@ -36,14 +37,14 @@ import static org.apache.lucene.util.ByteBlockPool.BYTE_BLOCK_SIZE;
 class BinaryDocValuesWriter extends DocValuesWriter {
 
   private final ByteBlockPool pool;
-  private final AppendingLongBuffer lengths;
+  private final AppendingDeltaPackedLongBuffer lengths;
   private final FieldInfo fieldInfo;
   private int addedValues = 0;
 
   public BinaryDocValuesWriter(FieldInfo fieldInfo, Counter iwBytesUsed) {
     this.fieldInfo = fieldInfo;
     this.pool = new ByteBlockPool(new DirectTrackingAllocator(iwBytesUsed));
-    this.lengths = new AppendingLongBuffer();
+    this.lengths = new AppendingDeltaPackedLongBuffer(PackedInts.COMPACT);
   }
 
   public void addValue(int docID, BytesRef value) {
@@ -90,7 +91,7 @@ class BinaryDocValuesWriter extends DocValuesWriter {
   // iterates over the values we have in ram
   private class BytesIterator implements Iterator<BytesRef> {
     final BytesRef value = new BytesRef();
-    final AppendingLongBuffer.Iterator lengthsIterator = lengths.iterator();
+    final AppendingDeltaPackedLongBuffer.Iterator lengthsIterator = lengths.iterator();
     final int size = (int) lengths.size();
     final int maxDoc;
     int upto;

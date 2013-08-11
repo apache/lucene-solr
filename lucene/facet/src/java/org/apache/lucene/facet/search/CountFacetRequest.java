@@ -1,8 +1,7 @@
 package org.apache.lucene.facet.search;
 
-import org.apache.lucene.facet.complements.ComplementCountingAggregator;
+import org.apache.lucene.facet.params.FacetIndexingParams;
 import org.apache.lucene.facet.taxonomy.CategoryPath;
-import org.apache.lucene.facet.taxonomy.TaxonomyReader;
 
 /*
  * Licensed to the Apache Software Foundation (ASF) under one or more
@@ -33,23 +32,8 @@ public class CountFacetRequest extends FacetRequest {
   }
 
   @Override
-  public Aggregator createAggregator(boolean useComplements, FacetArrays arrays, TaxonomyReader taxonomy) {
-    // we rely on that, if needed, result is cleared by arrays!
-    int[] a = arrays.getIntArray();
-    if (useComplements) {
-      return new ComplementCountingAggregator(a);
-    }
-    return new CountingAggregator(a);
-  }
-
-  @Override
-  public double getValueOf(FacetArrays arrays, int ordinal) {
-    return arrays.getIntArray()[ordinal];
-  }
-
-  @Override
-  public FacetArraysSource getFacetArraysSource() {
-    return FacetArraysSource.INT;
+  public FacetsAggregator createFacetsAggregator(FacetIndexingParams fip) {
+    return CountingFacetsAggregator.create(fip.getCategoryListParams(categoryPath));
   }
   
 }

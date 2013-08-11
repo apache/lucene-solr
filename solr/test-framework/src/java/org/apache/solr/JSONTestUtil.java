@@ -21,6 +21,8 @@ import org.noggit.ObjectBuilder;
 import org.apache.solr.common.util.StrUtils;
 
 import java.util.*;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 
 public class JSONTestUtil {
@@ -179,6 +181,13 @@ class CollectionTester {
     // generic fallback
     if (!expected.equals(val)) {
 
+      if (expected instanceof String) {
+        String str = (String)expected;
+        if (str.length() > 6 && str.startsWith("///") && str.endsWith("///")) {
+          return handleSpecialString(str);
+        }
+      }
+
       // make an exception for some numerics
       if ((expected instanceof Integer && val instanceof Long || expected instanceof Long && val instanceof Integer)
           && ((Number)expected).longValue() == ((Number)val).longValue()) {
@@ -195,6 +204,29 @@ class CollectionTester {
 
     // setErr("unknown expected type " + expected.getClass().getName());
     return true;
+  }
+
+  private boolean handleSpecialString(String str) {
+    String code = str.substring(3,str.length()-3);
+    if ("ignore".equals(code)) {
+      return true;
+    } else if (code.startsWith("regex:")) {
+      String regex = code.substring("regex:".length());
+      if (!(val instanceof String)) {
+        setErr("mismatch: '" + expected + "'!='" + val + "', value is not a string");
+        return false;
+      }
+      Pattern pattern = Pattern.compile(regex);
+      Matcher matcher = pattern.matcher((String)val);
+      if (matcher.find()) {
+        return true;
+      }
+      setErr("mismatch: '" + expected + "'!='" + val + "', regex does not match");
+      return false;
+    }
+
+    setErr("mismatch: '" + expected + "'!='" + val + "'");
+    return false;
   }
 
   boolean matchList() {

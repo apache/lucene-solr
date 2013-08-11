@@ -82,6 +82,57 @@ import org.apache.commons.lang.StringUtils;
  *                             v=$shipping}&lt;/str&gt;
  *   &lt;/lst&gt;
  * &lt;/requestHandler&gt;</pre>
+ *
+ * <p>
+ * A slightly more interesting variant of the <code>shipping</code> example above, would be
+ * to combine the switch parser with the frange parser, to allow the client to specify an 
+ * arbitrary "max shipping" amount that will be used to build a filter if and only if a 
+ * value is specified.  Example:
+ * </p>
+ * <pre class="prettyprint">
+ * &lt;requestHandler name="/select" class="solr.SearchHandler"&gt;
+ *   &lt;lst name="invariants"&gt;
+ *     &lt;str name="shipping_fq"&gt;{!frange u=$shipping}shipping_cost&lt;/str&gt;
+ *   &lt;/lst&gt;
+ *   &lt;lst name="defaults"&gt;
+ *     &lt;str name="shipping"&gt;any&lt;/str&gt;
+ *   &lt;/lst&gt;
+ *   &lt;lst name="appends"&gt;
+ *     &lt;str name="fq"&gt;{!switch case='*:*'
+ *                             case.any='*:*'
+ *                             default=$shipping_fq
+ *                             v=$shipping}&lt;/str&gt;
+ *   &lt;/lst&gt;
+ * &lt;/requestHandler&gt;</pre>
+ *
+ * <p>
+ * With the above configuration a client that specifies <code>shipping=any</code>, or 
+ * does not specify a <code>shipping</code> param at all, will not have the results 
+ * filtered.  But if a client specifies a numeric value (ie: <code>shipping=10</code>, 
+ * <code>shipping=5</code>, etc..) then the results will be limited to documents whose 
+ * <code>shipping_cost</code> field has a value less then that number.
+ * </p>
+ *
+ * <p>
+ * A similar use case would be to combine the switch parser with the bbox parser to 
+ * support an optional geographic filter that is applied if and only if the client 
+ * specifies a <code>location</code> param containing a lat,lon pair to be used as 
+ * the center of the bounding box:
+ * </p>
+ * <pre class="prettyprint">
+ * &lt;requestHandler name="/select" class="solr.SearchHandler"&gt;
+ *   &lt;lst name="invariants"&gt;
+ *     &lt;str name="bbox_fq"&gt;{!bbox pt=$location sfield=geo d=$dist}&lt;/str&gt;
+ *   &lt;/lst&gt;
+ *   &lt;lst name="defaults"&gt;
+ *     &lt;str name="dist"&gt;100&lt;/str&gt;
+ *   &lt;/lst&gt;
+ *   &lt;lst name="appends"&gt;
+ *     &lt;str name="fq"&gt;{!switch case='*:*' 
+ *                             default=$bbox_fq 
+ *                             v=$location}&lt;/str&gt;
+ *   &lt;/lst&gt;
+ * &lt;/requestHandler&gt;</pre>
  */
 public class SwitchQParserPlugin extends QParserPlugin {
   public static String NAME = "switch";

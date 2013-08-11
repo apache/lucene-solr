@@ -167,7 +167,6 @@ public abstract class DirectoryFactory implements NamedListInitializedPlugin,
    */
   public abstract void release(Directory directory) throws IOException;
   
-  
   /**
    * Normalize a given path.
    * 
@@ -229,5 +228,21 @@ public abstract class DirectoryFactory implements NamedListInitializedPlugin,
     }
     return isSuccess;
   }
-  
+
+  /**
+   * If your implementation can count on delete-on-last-close semantics
+   * or throws an exception when trying to remove a file in use, return
+   * false (eg NFS). Otherwise, return true. Defaults to returning false.
+   * 
+   * @return true if factory impl requires that Searcher's explicitly
+   * reserve commit points.
+   */
+  public boolean searchersReserveCommitPoints() {
+    return false;
+  }
+
+  public String getDataHome(CoreDescriptor cd) throws IOException {
+    // by default, we go off the instance directory
+    return normalize(SolrResourceLoader.normalizeDir(cd.getInstanceDir()) + cd.getDataDir());
+  }
 }

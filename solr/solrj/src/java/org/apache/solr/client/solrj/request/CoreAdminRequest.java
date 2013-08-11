@@ -17,21 +17,21 @@
 
 package org.apache.solr.client.solrj.request;
 
-import java.io.IOException;
-import java.util.Collection;
-import java.util.List;
-import java.util.Arrays;
-
 import org.apache.solr.client.solrj.SolrRequest;
 import org.apache.solr.client.solrj.SolrServer;
 import org.apache.solr.client.solrj.SolrServerException;
 import org.apache.solr.client.solrj.response.CoreAdminResponse;
 import org.apache.solr.common.cloud.ZkStateReader;
-import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.common.params.CoreAdminParams;
-import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.common.params.CoreAdminParams.CoreAdminAction;
+import org.apache.solr.common.params.ModifiableSolrParams;
+import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.common.util.ContentStream;
+
+import java.io.IOException;
+import java.util.Arrays;
+import java.util.Collection;
+import java.util.List;
 
 /**
  * This class is experimental and subject to change.
@@ -534,6 +534,7 @@ public class CoreAdminRequest extends SolrRequest
     return req.process( server );
   }
 
+  @Deprecated
   public static CoreAdminResponse persist(String fileName, SolrServer server) throws SolrServerException, IOException 
   {
     CoreAdminRequest.Persist req = new CoreAdminRequest.Persist();

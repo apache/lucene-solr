@@ -49,7 +49,12 @@ import org.apache.lucene.codecs.lucene42.Lucene42Codec;
 import org.apache.lucene.codecs.perfield.PerFieldPostingsFormat;
 import org.apache.lucene.document.BinaryDocValuesField;
 import org.apache.lucene.document.Document;
+import org.apache.lucene.document.DoubleField;
 import org.apache.lucene.document.Field;
+import org.apache.lucene.document.FieldType.NumericType;
+import org.apache.lucene.document.FloatField;
+import org.apache.lucene.document.IntField;
+import org.apache.lucene.document.LongField;
 import org.apache.lucene.document.NumericDocValuesField;
 import org.apache.lucene.document.SortedDocValuesField;
 import org.apache.lucene.index.AtomicReader;
@@ -78,14 +83,15 @@ import org.apache.lucene.index.Terms;
 import org.apache.lucene.index.TermsEnum;
 import org.apache.lucene.index.TieredMergePolicy;
 import org.apache.lucene.search.FieldDoc;
-import org.apache.lucene.search.FilteredQuery.FilterStrategy;
 import org.apache.lucene.search.FilteredQuery;
+import org.apache.lucene.search.FilteredQuery.FilterStrategy;
 import org.apache.lucene.search.ScoreDoc;
 import org.apache.lucene.search.TopDocs;
 import org.apache.lucene.store.CompoundFileDirectory;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.IOContext;
 import org.junit.Assert;
+
 import com.carrotsearch.randomizedtesting.RandomizedContext;
 import com.carrotsearch.randomizedtesting.generators.RandomInts;
 import com.carrotsearch.randomizedtesting.generators.RandomPicks;
@@ -260,17 +266,6 @@ public class _TestUtil {
     }
   }
 
-  // NOTE: only works for TMP and LMP!!
-  public static void setUseCompoundFile(MergePolicy mp, boolean v) {
-    if (mp instanceof TieredMergePolicy) {
-      ((TieredMergePolicy) mp).setUseCompoundFile(v);
-    } else if (mp instanceof LogMergePolicy) {
-      ((LogMergePolicy) mp).setUseCompoundFile(v);
-    } else {
-      throw new IllegalArgumentException("cannot set compound file for MergePolicy " + mp);
-    }
-  }
-
   /** start and end are BOTH inclusive */
   public static int nextInt(Random r, int start, int end) {
     return RandomInts.randomIntBetween(r, start, end);
@@ -293,7 +288,11 @@ public class _TestUtil {
   }
 
   public static String randomSimpleString(Random r, int maxLength) {
-    final int end = nextInt(r, 0, maxLength);
+    return randomSimpleString(r, 0, maxLength);
+  }
+  
+  public static String randomSimpleString(Random r, int minLength, int maxLength) {
+    final int end = nextInt(r, minLength, maxLength);
     if (end == 0) {
       // allow 0 length
       return "";
@@ -319,7 +318,7 @@ public class _TestUtil {
   }
 
   public static String randomSimpleString(Random r) {
-    return randomSimpleString(r, 10);
+    return randomSimpleString(r, 0, 10);
   }
 
   /** Returns random string, including full unicode range. */
@@ -762,17 +761,17 @@ public class _TestUtil {
     if (mp instanceof LogMergePolicy) {
       LogMergePolicy lmp = (LogMergePolicy) mp;
       lmp.setMergeFactor(Math.min(5, lmp.getMergeFactor()));
-      lmp.setUseCompoundFile(true);
+      lmp.setNoCFSRatio(1.0);
     } else if (mp instanceof TieredMergePolicy) {
       TieredMergePolicy tmp = (TieredMergePolicy) mp;
       tmp.setMaxMergeAtOnce(Math.min(5, tmp.getMaxMergeAtOnce()));
       tmp.setSegmentsPerTier(Math.min(5, tmp.getSegmentsPerTier()));
-      tmp.setUseCompoundFile(true);
+      tmp.setNoCFSRatio(1.0);
     }
     MergeScheduler ms = w.getConfig().getMergeScheduler();
     if (ms instanceof ConcurrentMergeScheduler) {
-      ((ConcurrentMergeScheduler) ms).setMaxThreadCount(2);
-      ((ConcurrentMergeScheduler) ms).setMaxMergeCount(3);
+      // wtf... shouldnt it be even lower since its 1 by default?!?!
+      ((ConcurrentMergeScheduler) ms).setMaxMergesAndThreads(3, 2);
     }
   }
 
@@ -879,6 +878,7 @@ public class _TestUtil {
       final Field field1 = (Field) f;
       final Field field2;
       final DocValuesType dvType = field1.fieldType().docValueType();
+      final NumericType numType = field1.fieldType().numericType();
       if (dvType != null) {
         switch(dvType) {
           case NUMERIC:
@@ -892,6 +892,23 @@ public class _TestUtil {
             break;
           default:
             throw new IllegalStateException("unknown Type: " + dvType);
+        }
+      } else if (numType != null) {
+        switch (numType) {
+          case INT:
+            field2 = new IntField(field1.name(), field1.numericValue().intValue(), field1.fieldType());
+            break;
+          case FLOAT:
+            field2 = new FloatField(field1.name(), field1.numericValue().intValue(), field1.fieldType());
+            break;
+          case LONG:
+            field2 = new LongField(field1.name(), field1.numericValue().intValue(), field1.fieldType());
+            break;
+          case DOUBLE:
+            field2 = new DoubleField(field1.name(), field1.numericValue().intValue(), field1.fieldType());
+            break;
+          default:
+            throw new IllegalStateException("unknown Type: " + numType);
         }
       } else {
         field2 = new Field(field1.name(), field1.stringValue(), field1.fieldType());
@@ -911,7 +928,7 @@ public class _TestUtil {
       return null;
     }
     final TermsEnum termsEnum = terms.iterator(null);
-    if (!termsEnum.seekExact(term, random.nextBoolean())) {
+    if (!termsEnum.seekExact(term)) {
       return null;
     }
     return docs(random, termsEnum, liveDocs, reuse, flags);

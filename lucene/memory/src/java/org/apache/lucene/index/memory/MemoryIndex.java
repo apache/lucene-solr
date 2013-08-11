@@ -18,7 +18,6 @@ package org.apache.lucene.index.memory;
  */
 
 import java.io.IOException;
-import java.io.StringReader;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.Comparator;
@@ -291,7 +290,7 @@ public class MemoryIndex {
     
     TokenStream stream;
     try {
-      stream = analyzer.tokenStream(fieldName, new StringReader(text));
+      stream = analyzer.tokenStream(fieldName, text);
     } catch (IOException ex) {
       throw new RuntimeException(ex);
     }
@@ -886,13 +885,13 @@ public class MemoryIndex {
     
 
       @Override
-      public boolean seekExact(BytesRef text, boolean useCache) {
+      public boolean seekExact(BytesRef text) {
         termUpto = binarySearch(text, br, 0, info.terms.size()-1, info.terms, info.sortedTerms, BytesRef.getUTF8SortedAsUnicodeComparator());
         return termUpto >= 0;
       }
 
       @Override
-      public SeekStatus seekCeil(BytesRef text, boolean useCache) {
+      public SeekStatus seekCeil(BytesRef text) {
         termUpto = binarySearch(text, br, 0, info.terms.size()-1, info.terms, info.sortedTerms, BytesRef.getUTF8SortedAsUnicodeComparator());
         if (termUpto < 0) { // not found; choose successor
           termUpto = -termUpto-1;

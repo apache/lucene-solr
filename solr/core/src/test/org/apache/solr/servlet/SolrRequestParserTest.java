@@ -44,6 +44,10 @@ import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.common.util.ContentStream;
 import org.apache.solr.core.SolrCore;
 import org.apache.solr.request.SolrQueryRequest;
+import org.apache.solr.servlet.SolrRequestParsers.MultipartRequestParser;
+import org.apache.solr.servlet.SolrRequestParsers.FormDataRequestParser;
+import org.apache.solr.servlet.SolrRequestParsers.RawRequestParser;
+import org.apache.solr.servlet.SolrRequestParsers.StandardRequestParser;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.junit.Test;
@@ -236,6 +240,38 @@ public class SolrRequestParserTest extends SolrTestCaseJ4 {
       assertEquals( "contentType: "+contentType, "\u00FC", p.get("qt") );
       assertArrayEquals( "contentType: "+contentType, new String[]{"foo","bar"}, p.getParams("dup") );
     }
+  }
+  
+  @Test
+  public void testStandardParseParamsAndFillStreamsISO88591() throws Exception
+  {
+    final String getParams = "qt=%FC&dup=foo&ie=iso-8859-1&dup=%FC", postParams = "qt2=%FC&q=hello&d%75p=bar";
+    final byte[] postBytes = postParams.getBytes("US-ASCII");
+    final String contentType = "application/x-www-form-urlencoded; charset=iso-8859-1";
+    
+    // Set up the expected behavior
+    HttpServletRequest request = createMock(HttpServletRequest.class);
+    expect(request.getMethod()).andReturn("POST").anyTimes();
+    expect(request.getContentType()).andReturn( contentType ).anyTimes();
+    expect(request.getQueryString()).andReturn(getParams).anyTimes();
+    expect(request.getContentLength()).andReturn(postBytes.length).anyTimes();
+    expect(request.getInputStream()).andReturn(new ServletInputStream() {
+      private final ByteArrayInputStream in = new ByteArrayInputStream(postBytes);
+      @Override public int read() { return in.read(); }
+    });
+    replay(request);
+    
+    MultipartRequestParser multipart = new MultipartRequestParser( 2048 );
+    RawRequestParser raw = new RawRequestParser();
+    FormDataRequestParser formdata = new FormDataRequestParser( 2048 );
+    StandardRequestParser standard = new StandardRequestParser( multipart, raw, formdata );
+    
+    SolrParams p = standard.parseParamsAndFillStreams(request, new ArrayList<ContentStream>());
+    
+    assertEquals( "contentType: "+contentType, "hello", p.get("q") );
+    assertEquals( "contentType: "+contentType, "\u00FC", p.get("qt") );
+    assertEquals( "contentType: "+contentType, "\u00FC", p.get("qt2") );
+    assertArrayEquals( "contentType: "+contentType, new String[]{"foo","\u00FC","bar"}, p.getParams("dup") );
   }
   
   @Test

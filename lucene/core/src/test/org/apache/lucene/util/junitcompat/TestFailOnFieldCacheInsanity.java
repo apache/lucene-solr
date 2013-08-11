@@ -69,6 +69,7 @@ public class TestFailOnFieldCacheInsanity extends WithNestedTests {
     for(Failure f : r.getFailures()) {
       if (f.getMessage().indexOf("Insane") != -1) {
         insane = true;
+        break;
       }
     }
     Assert.assertTrue(insane);

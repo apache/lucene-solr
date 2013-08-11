@@ -58,7 +58,7 @@
     <echo>Compiling XML QueryParser Demo WAR</echo>
 
     <war destfile="${build.dir}/lucene-xml-query-demo.war" webxml="src/resources/org/apache/lucene/demo/xmlparser/WEB-INF/web.xml">
-      <fileset dir="src/resources/org/apache/lucene/demo/xmlparser/"/>
+      <fileset dir="${resources.dir}/org/apache/lucene/demo/xmlparser/"/>
       <lib dir="${build.dir}">
         <include name="${final.name}.jar"/>
       </lib>

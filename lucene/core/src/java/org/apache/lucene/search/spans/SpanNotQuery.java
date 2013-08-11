@@ -31,16 +31,36 @@ import java.util.Collection;
 import java.util.Map;
 import java.util.Set;
 
-/** Removes matches which overlap with another SpanQuery. */
+/** Removes matches which overlap with another SpanQuery or 
+ * within a x tokens before or y tokens after another SpanQuery. */
 public class SpanNotQuery extends SpanQuery implements Cloneable {
   private SpanQuery include;
   private SpanQuery exclude;
+  private final int pre;
+  private final int post;
 
   /** Construct a SpanNotQuery matching spans from <code>include</code> which
    * have no overlap with spans from <code>exclude</code>.*/
   public SpanNotQuery(SpanQuery include, SpanQuery exclude) {
+     this(include, exclude, 0, 0);
+  }
+
+  
+  /** Construct a SpanNotQuery matching spans from <code>include</code> which
+   * have no overlap with spans from <code>exclude</code> within 
+   * <code>dist</code> tokens of <code>include</code>. */
+  public SpanNotQuery(SpanQuery include, SpanQuery exclude, int dist) {
+     this(include, exclude, dist, dist);
+  }
+  
+  /** Construct a SpanNotQuery matching spans from <code>include</code> which
+   * have no overlap with spans from <code>exclude</code> within 
+   * <code>pre</code> tokens before or <code>post</code> tokens of <code>include</code>. */
+  public SpanNotQuery(SpanQuery include, SpanQuery exclude, int pre, int post) {
     this.include = include;
     this.exclude = exclude;
+    this.pre = (pre >=0) ? pre : 0;
+    this.post = (post >= 0) ? post : 0;
 
     if (!include.getField().equals(exclude.getField()))
       throw new IllegalArgumentException("Clauses must have same field.");
@@ -65,6 +85,10 @@ public class SpanNotQuery extends SpanQuery implements Cloneable {
     buffer.append(include.toString(field));
     buffer.append(", ");
     buffer.append(exclude.toString(field));
+    buffer.append(", ");
+    buffer.append(Integer.toString(pre));
+    buffer.append(", ");
+    buffer.append(Integer.toString(post));
     buffer.append(")");
     buffer.append(ToStringUtils.boost(getBoost()));
     return buffer.toString();
@@ -72,7 +96,8 @@ public class SpanNotQuery extends SpanQuery implements Cloneable {
 
   @Override
   public SpanNotQuery clone() {
-    SpanNotQuery spanNotQuery = new SpanNotQuery((SpanQuery)include.clone(),(SpanQuery) exclude.clone());
+    SpanNotQuery spanNotQuery = new SpanNotQuery((SpanQuery)include.clone(),
+          (SpanQuery) exclude.clone(), pre, post);
     spanNotQuery.setBoost(getBoost());
     return  spanNotQuery;
   }
@@ -98,13 +123,13 @@ public class SpanNotQuery extends SpanQuery implements Cloneable {
 
             while (moreExclude                    // while exclude is before
                    && includeSpans.doc() == excludeSpans.doc()
-                   && excludeSpans.end() <= includeSpans.start()) {
+                   && excludeSpans.end() <= includeSpans.start() - pre) {
               moreExclude = excludeSpans.next();  // increment exclude
             }
 
             if (!moreExclude                      // if no intersection
                 || includeSpans.doc() != excludeSpans.doc()
-                || includeSpans.end() <= excludeSpans.start())
+                || includeSpans.end()+post <= excludeSpans.start())
               break;                              // we found a match
 
             moreInclude = includeSpans.next();    // intersected: keep scanning
@@ -126,13 +151,13 @@ public class SpanNotQuery extends SpanQuery implements Cloneable {
 
           while (moreExclude                      // while exclude is before
                  && includeSpans.doc() == excludeSpans.doc()
-                 && excludeSpans.end() <= includeSpans.start()) {
+                 && excludeSpans.end() <= includeSpans.start()-pre) {
             moreExclude = excludeSpans.next();    // increment exclude
           }
 
           if (!moreExclude                      // if no intersection
                 || includeSpans.doc() != excludeSpans.doc()
-                || includeSpans.end() <= excludeSpans.start())
+                || includeSpans.end()+post <= excludeSpans.start())
             return true;                          // we found a match
 
           return next();                          // scan to next match
@@ -199,22 +224,27 @@ public class SpanNotQuery extends SpanQuery implements Cloneable {
     /** Returns true iff <code>o</code> is equal to this. */
   @Override
   public boolean equals(Object o) {
-    if (this == o) return true;
-    if (!(o instanceof SpanNotQuery)) return false;
+    if (!super.equals(o))
+      return false;
 
     SpanNotQuery other = (SpanNotQuery)o;
     return this.include.equals(other.include)
             && this.exclude.equals(other.exclude)
-            && this.getBoost() == other.getBoost();
+            && this.pre == other.pre 
+            && this.post == other.post;
   }
 
   @Override
   public int hashCode() {
-    int h = include.hashCode();
-    h = (h<<1) | (h >>> 31);  // rotate left
+    int h = super.hashCode();
+    h = Integer.rotateLeft(h, 1);
+    h ^= include.hashCode();
+    h = Integer.rotateLeft(h, 1);
     h ^= exclude.hashCode();
-    h = (h<<1) | (h >>> 31);  // rotate left
-    h ^= Float.floatToRawIntBits(getBoost());
+    h = Integer.rotateLeft(h, 1);
+    h ^= pre;
+    h = Integer.rotateLeft(h, 1);
+    h ^= post;
     return h;
   }
 

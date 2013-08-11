@@ -84,7 +84,8 @@ public class TestSpans extends LuceneTestCase {
     "u2 xx u1 u2",
     "u2 u1 xx u2",
     "u1 u2 xx u2",
-    "t1 t2 t1 t3 t2 t3"
+    "t1 t2 t1 t3 t2 t3",
+    "s2 s1 s1 xx xx s2 xx s2 xx s1 xx xx xx xx xx s2 xx"
   };
 
   public SpanTermQuery makeSpanTermQuery(String text) {
@@ -502,4 +503,52 @@ public class TestSpans extends LuceneTestCase {
     reader.close();
     dir.close();
   }
+  
+  
+  public void testSpanNots() throws Throwable{
+     assertEquals("SpanNotIncludeExcludeSame1", 0, spanCount("s2", "s2", 0, 0), 0);
+     assertEquals("SpanNotIncludeExcludeSame2", 0, spanCount("s2", "s2", 10, 10), 0);
+     
+     //focus on behind
+     assertEquals("SpanNotS2NotS1_6_0", 1, spanCount("s2", "s1", 6, 0));
+     assertEquals("SpanNotS2NotS1_5_0", 2, spanCount("s2", "s1", 5, 0));
+     assertEquals("SpanNotS2NotS1_3_0", 3, spanCount("s2", "s1", 3, 0));
+     assertEquals("SpanNotS2NotS1_2_0", 4, spanCount("s2", "s1", 2, 0));
+     assertEquals("SpanNotS2NotS1_0_0", 4, spanCount("s2", "s1", 0, 0));
+     
+     //focus on both
+     assertEquals("SpanNotS2NotS1_3_1", 2, spanCount("s2", "s1", 3, 1));
+     assertEquals("SpanNotS2NotS1_2_1", 3, spanCount("s2", "s1", 2, 1));
+     assertEquals("SpanNotS2NotS1_1_1", 3, spanCount("s2", "s1", 1, 1));
+     assertEquals("SpanNotS2NotS1_10_10", 0, spanCount("s2", "s1", 10, 10));
+     
+     //focus on ahead
+     assertEquals("SpanNotS1NotS2_10_10", 0, spanCount("s1", "s2", 10, 10));  
+     assertEquals("SpanNotS1NotS2_0_1", 3, spanCount("s1", "s2", 0, 1));  
+     assertEquals("SpanNotS1NotS2_0_2", 3, spanCount("s1", "s2", 0, 2));  
+     assertEquals("SpanNotS1NotS2_0_3", 2, spanCount("s1", "s2", 0, 3));  
+     assertEquals("SpanNotS1NotS2_0_4", 1, spanCount("s1", "s2", 0, 4));
+     assertEquals("SpanNotS1NotS2_0_8", 0, spanCount("s1", "s2", 0, 8));
+     
+     //exclude doesn't exist
+     assertEquals("SpanNotS1NotS3_8_8", 3, spanCount("s1", "s3", 8, 8));
+
+     //include doesn't exist
+     assertEquals("SpanNotS3NotS1_8_8", 0, spanCount("s3", "s1", 8, 8));
+
+  }
+  
+  private int spanCount(String include, String exclude, int pre, int post) throws IOException{
+     SpanTermQuery iq = new SpanTermQuery(new Term(field, include));
+     SpanTermQuery eq = new SpanTermQuery(new Term(field, exclude));
+     SpanNotQuery snq = new SpanNotQuery(iq, eq, pre, post);
+     Spans spans = MultiSpansWrapper.wrap(searcher.getTopReaderContext(), snq);
+
+     int i = 0;
+     while (spans.next()){
+        i++;
+     }
+     return i;
+  }
+  
 }

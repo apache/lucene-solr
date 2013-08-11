@@ -3,6 +3,7 @@ package org.apache.lucene.facet.taxonomy;
 import java.util.Arrays;
 
 import org.apache.lucene.facet.FacetTestCase;
+import org.apache.lucene.util._TestUtil;
 import org.junit.Test;
 
 /*
@@ -271,6 +272,33 @@ public class TestCategoryPath extends FacetTestCase {
       cp.copyFullPath(buf, 0, ':');
       fail("expected exception");
     } catch (IllegalArgumentException iae) {
+      // expected
+    }
+  }
+
+  @Test
+  public void testLongPath() throws Exception {
+    String bigComp = null;
+    while (true) {
+      int len = CategoryPath.MAX_CATEGORY_PATH_LENGTH;
+      bigComp = _TestUtil.randomSimpleString(random(), len, len);
+      if (bigComp.indexOf('\u001f') != -1) {
+        continue;
+      }
+      break;
+    }
+
+    try {
+      assertNotNull(new CategoryPath("dim", bigComp));
+      fail("long paths should not be allowed; len=" + bigComp.length());
+    } catch (IllegalArgumentException e) {
+      // expected
+    }
+
+    try {
+      assertNotNull(new CategoryPath("dim\u001f" + bigComp, '\u001f'));
+      fail("long paths should not be allowed; len=" + bigComp.length());
+    } catch (IllegalArgumentException e) {
       // expected
     }
   }

@@ -185,9 +185,9 @@ public class AssertingAtomicReader extends FilterAtomicReader {
     }
 
     @Override
-    public SeekStatus seekCeil(BytesRef term, boolean useCache) throws IOException {
+    public SeekStatus seekCeil(BytesRef term) throws IOException {
       assert term.isValid();
-      SeekStatus result = super.seekCeil(term, useCache);
+      SeekStatus result = super.seekCeil(term);
       if (result == SeekStatus.END) {
         state = State.UNPOSITIONED;
       } else {
@@ -197,9 +197,9 @@ public class AssertingAtomicReader extends FilterAtomicReader {
     }
 
     @Override
-    public boolean seekExact(BytesRef text, boolean useCache) throws IOException {
+    public boolean seekExact(BytesRef text) throws IOException {
       assert text.isValid();
-      if (super.seekExact(text, useCache)) {
+      if (super.seekExact(text)) {
         state = State.POSITIONED;
         return true;
       } else {

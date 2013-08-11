@@ -41,7 +41,7 @@ public class TestMultiThreadTermVectors extends LuceneTestCase {
     super.setUp();
     directory = newDirectory();
     IndexWriter writer = new IndexWriter(directory, newIndexWriterConfig( TEST_VERSION_CURRENT, new MockAnalyzer(random())).setMergePolicy(newLogMergePolicy()));
-    //writer.setUseCompoundFile(false);
+    //writer.setNoCFSRatio(0.0);
     //writer.infoStream = System.out;
     FieldType customType = new FieldType(TextField.TYPE_STORED);
     customType.setTokenized(false);

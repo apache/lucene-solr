@@ -65,8 +65,8 @@ public class TestNoMergePolicy extends LuceneTestCase {
       if (m.getName().equals("clone")) {
         continue;
       }
-      if (m.getDeclaringClass() != Object.class) {
-        assertTrue(m + " is not overridden !", m.getDeclaringClass() == NoMergePolicy.class);
+      if (m.getDeclaringClass() != Object.class && !Modifier.isFinal(m.getModifiers())) {
+        assertTrue(m + " is not overridden ! ", m.getDeclaringClass() == NoMergePolicy.class);
       }
     }
   }

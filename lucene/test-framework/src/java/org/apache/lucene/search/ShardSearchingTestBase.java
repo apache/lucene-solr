@@ -185,7 +185,7 @@ public abstract class ShardSearchingTestBase extends LuceneTestCase {
     }
     try {
       for(Term term : terms) {
-        final TermContext termContext = TermContext.build(s.getIndexReader().getContext(), term, false);
+        final TermContext termContext = TermContext.build(s.getIndexReader().getContext(), term);
         stats.put(term, s.termStatistics(term, termContext));
       }
     } finally {
@@ -370,20 +370,35 @@ public abstract class ShardSearchingTestBase extends LuceneTestCase {
       @Override
       public TopDocs searchAfter(ScoreDoc after, Query query, int numHits) throws IOException {
         final TopDocs[] shardHits = new TopDocs[nodeVersions.length];
+        // results are merged in that order: score, shardIndex, doc. therefore we set
+        // after to after.score and depending on the nodeID we set doc to either:
+        // - not collect any more documents with that score (only with worse score)
+        // - collect more documents with that score (and worse) following the last collected document
+        // - collect all documents with that score (and worse)
         ScoreDoc shardAfter = new ScoreDoc(after.doc, after.score);
-        for(int nodeID=0;nodeID<nodeVersions.length;nodeID++) {
+        for (int nodeID = 0; nodeID < nodeVersions.length; nodeID++) {
           if (nodeID < after.shardIndex) {
-            // If score is tied then no docs in this shard
-            // should be collected:
-            shardAfter.doc = Integer.MAX_VALUE;
+            // all documents with after.score were already collected, so collect
+            // only documents with worse scores.
+            final NodeState.ShardIndexSearcher s = nodes[nodeID].acquire(nodeVersions);
+            try {
+              // Setting after.doc to reader.maxDoc-1 is a way to tell
+              // TopScoreDocCollector that no more docs with that score should
+              // be collected. note that in practice the shard which sends the
+              // request to a remote shard won't have reader.maxDoc at hand, so
+              // it will send some arbitrary value which will be fixed on the
+              // other end.
+              shardAfter.doc = s.getIndexReader().maxDoc() - 1;
+            } finally {
+              nodes[nodeID].release(s);
+            }
           } else if (nodeID == after.shardIndex) {
-            // If score is tied then we break according to
-            // docID (like normal):  
+            // collect all documents following the last collected doc with
+            // after.score + documents with worse scores.  
             shardAfter.doc = after.doc;
           } else {
-            // If score is tied then all docs in this shard
-            // should be collected, because they come after
-            // the previous bottom:
+            // all documents with after.score (and worse) should be collected
+            // because they didn't make it to top-N in the previous round.
             shardAfter.doc = -1;
           }
           if (nodeID == myNodeID) {

@@ -148,7 +148,7 @@ final class JustCompileSearchSpans {
   static final class JustCompileSpanScorer extends SpanScorer {
 
     protected JustCompileSpanScorer(Spans spans, Weight weight,
-        Similarity.SloppySimScorer docScorer) throws IOException {
+        Similarity.SimScorer docScorer) throws IOException {
       super(spans, weight, docScorer);
     }
 

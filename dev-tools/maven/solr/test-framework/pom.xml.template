@@ -72,6 +72,7 @@
       <groupId>org.eclipse.jetty</groupId>
       <artifactId>jetty-util</artifactId>
     </dependency>
+
     <!-- If your tests don't use BaseDistributedSearchTestCase or SolrJettyTestBase,
          you can exclude the two Jetty dependencies below. -->
     <dependency>
@@ -127,9 +128,9 @@
                 <bundledSignature>commons-io-unsafe-${commons-io.version}</bundledSignature>
               </bundledSignatures>
               <signaturesFiles>
+                <signaturesFile>${top-level}/lucene/tools/forbiddenApis/base.txt</signaturesFile>
                 <signaturesFile>${top-level}/lucene/tools/forbiddenApis/servlet-api.txt</signaturesFile>
                 <signaturesFile>${top-level}/lucene/tools/forbiddenApis/tests.txt</signaturesFile>
-                <signaturesFile>${top-level}/lucene/tools/forbiddenApis/executors.txt</signaturesFile>
               </signaturesFiles>
             </configuration>
             <goals>

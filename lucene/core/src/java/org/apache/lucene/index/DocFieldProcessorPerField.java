@@ -17,12 +17,7 @@ package org.apache.lucene.index;
  * limitations under the License.
  */
 
-import java.util.HashMap;
-import java.util.Map;
-
 import org.apache.lucene.util.ArrayUtil;
-import org.apache.lucene.util.BytesRef;
-import org.apache.lucene.util.Counter;
 import org.apache.lucene.util.RamUsageEstimator;
 
 /**
@@ -33,19 +28,16 @@ final class DocFieldProcessorPerField {
 
   final DocFieldConsumerPerField consumer;
   final FieldInfo fieldInfo;
-  private final Counter bytesUsed;
 
   DocFieldProcessorPerField next;
   int lastGen = -1;
 
   int fieldCount;
   IndexableField[] fields = new IndexableField[1];
-  private final Map<FieldInfo,String> dvFields = new HashMap<FieldInfo,String>();
 
   public DocFieldProcessorPerField(final DocFieldProcessor docFieldProcessor, final FieldInfo fieldInfo) {
     this.consumer = docFieldProcessor.consumer.addField(fieldInfo);
     this.fieldInfo = fieldInfo;
-    this.bytesUsed = docFieldProcessor.bytesUsed;
   }
 
   public void addField(IndexableField field) {

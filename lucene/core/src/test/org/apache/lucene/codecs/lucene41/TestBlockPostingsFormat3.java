@@ -86,7 +86,7 @@ public class TestBlockPostingsFormat3 extends LuceneTestCase {
     iwc.setCodec(_TestUtil.alwaysPostingsFormat(new Lucene41PostingsFormat())); 
     // TODO we could actually add more fields implemented with different PFs
     // or, just put this test into the usual rotation?
-    RandomIndexWriter iw = new RandomIndexWriter(random(), dir, iwc);
+    RandomIndexWriter iw = new RandomIndexWriter(random(), dir, iwc.clone());
     Document doc = new Document();
     FieldType docsOnlyType = new FieldType(TextField.TYPE_NOT_STORED);
     // turn this on for a cross-check
@@ -138,7 +138,7 @@ public class TestBlockPostingsFormat3 extends LuceneTestCase {
     verify(dir);
     _TestUtil.checkIndex(dir); // for some extra coverage, checkIndex before we forceMerge
     iwc.setOpenMode(OpenMode.APPEND);
-    IndexWriter iw2 = new IndexWriter(dir, iwc);
+    IndexWriter iw2 = new IndexWriter(dir, iwc.clone());
     iw2.forceMerge(1);
     iw2.close();
     verify(dir);
@@ -235,21 +235,21 @@ public class TestBlockPostingsFormat3 extends LuceneTestCase {
       leftEnum = leftTerms.iterator(leftEnum);
       rightEnum = rightTerms.iterator(rightEnum);
       
-      assertEquals(leftEnum.seekExact(b, false), rightEnum.seekExact(b, false));
-      assertEquals(leftEnum.seekExact(b, true), rightEnum.seekExact(b, true));
+      assertEquals(leftEnum.seekExact(b), rightEnum.seekExact(b));
+      assertEquals(leftEnum.seekExact(b), rightEnum.seekExact(b));
       
       SeekStatus leftStatus;
       SeekStatus rightStatus;
       
-      leftStatus = leftEnum.seekCeil(b, false);
-      rightStatus = rightEnum.seekCeil(b, false);
+      leftStatus = leftEnum.seekCeil(b);
+      rightStatus = rightEnum.seekCeil(b);
       assertEquals(leftStatus, rightStatus);
       if (leftStatus != SeekStatus.END) {
         assertEquals(leftEnum.term(), rightEnum.term());
       }
       
-      leftStatus = leftEnum.seekCeil(b, true);
-      rightStatus = rightEnum.seekCeil(b, true);
+      leftStatus = leftEnum.seekCeil(b);
+      rightStatus = rightEnum.seekCeil(b);
       assertEquals(leftStatus, rightStatus);
       if (leftStatus != SeekStatus.END) {
         assertEquals(leftEnum.term(), rightEnum.term());

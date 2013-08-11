@@ -19,12 +19,6 @@ package org.apache.lucene.queries.function;
 
 import org.apache.lucene.index.DirectoryReader;
 import org.apache.lucene.index.IndexReader;
-import org.apache.lucene.queries.function.FunctionQuery;
-import org.apache.lucene.queries.function.ValueSource;
-import org.apache.lucene.queries.function.valuesource.ByteFieldSource;
-import org.apache.lucene.queries.function.valuesource.FloatFieldSource;
-import org.apache.lucene.queries.function.valuesource.IntFieldSource;
-import org.apache.lucene.queries.function.valuesource.ShortFieldSource;
 import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.search.QueryUtils;
 import org.apache.lucene.search.ScoreDoc;
@@ -48,20 +42,6 @@ public class TestFieldScoreQuery extends FunctionTestSetup {
   @BeforeClass
   public static void beforeClass() throws Exception {
     createIndex(true);
-  }
-
-  /** Test that FieldScoreQuery of Type.BYTE returns docs in expected order. */
-  @Test
-  public void testRankByte () throws Exception {
-    // INT field values are small enough to be parsed as byte
-    doTestRank(BYTE_VALUESOURCE);
-  }
-
-  /** Test that FieldScoreQuery of Type.SHORT returns docs in expected order. */
-  @Test
-  public void testRankShort () throws Exception {
-    // INT field values are small enough to be parsed as short
-    doTestRank(SHORT_VALUESOURCE);
   }
 
   /** Test that FieldScoreQuery of Type.INT returns docs in expected order. */
@@ -97,20 +77,6 @@ public class TestFieldScoreQuery extends FunctionTestSetup {
       prevID = resID;
     }
     r.close();
-  }
-
-  /** Test that FieldScoreQuery of Type.BYTE returns the expected scores. */
-  @Test
-  public void testExactScoreByte () throws Exception {
-    // INT field values are small enough to be parsed as byte
-    doTestExactScore(BYTE_VALUESOURCE);
-  }
-
-  /** Test that FieldScoreQuery of Type.SHORT returns the expected scores. */
-  @Test
-  public void testExactScoreShort () throws  Exception {
-    // INT field values are small enough to be parsed as short
-    doTestExactScore(SHORT_VALUESOURCE);
   }
 
   /** Test that FieldScoreQuery of Type.INT returns the expected scores. */

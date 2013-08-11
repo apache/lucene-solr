@@ -21,6 +21,8 @@
   <description>Lucene Tools</description>
 
   <property name="build.dir" location="../build/tools"/>
+  
+  <property name="rat.additional-includes" value="forbiddenApis/**,prettify/**"/>
 
   <import file="../common-build.xml"/>
 

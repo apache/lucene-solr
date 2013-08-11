@@ -19,6 +19,7 @@ package org.apache.lucene.index;
 
 import java.io.FileNotFoundException;
 import java.io.IOException;
+import java.nio.file.NoSuchFileException;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
@@ -51,9 +52,6 @@ import org.apache.lucene.store.NoSuchDirectoryException;
 */
 public abstract class DirectoryReader extends BaseCompositeReader<AtomicReader> {
 
-  /** Default termInfosIndexDivisor. */
-  public static final int DEFAULT_TERMS_INDEX_DIVISOR = 1;
-
   /** The index directory. */
   protected final Directory directory;
   
@@ -63,29 +61,7 @@ public abstract class DirectoryReader extends BaseCompositeReader<AtomicReader> 
    * @throws IOException if there is a low-level IO error
    */
   public static DirectoryReader open(final Directory directory) throws IOException {
-    return StandardDirectoryReader.open(directory, null, DEFAULT_TERMS_INDEX_DIVISOR);
-  }
-  
-  /** Expert: Returns a IndexReader reading the index in the given
-   *  Directory with the given termInfosIndexDivisor.
-   * @param directory the index directory
-   * @param termInfosIndexDivisor Subsamples which indexed
-   *  terms are loaded into RAM. This has the same effect as {@link
-   *  IndexWriterConfig#setTermIndexInterval} except that setting
-   *  must be done at indexing time while this setting can be
-   *  set per reader.  When set to N, then one in every
-   *  N*termIndexInterval terms in the index is loaded into
-   *  memory.  By setting this to a value > 1 you can reduce
-   *  memory usage, at the expense of higher latency when
-   *  loading a TermInfo.  The default value is 1.  Set this
-   *  to -1 to skip loading the terms index entirely.
-   *  <b>NOTE:</b> divisor settings &gt; 1 do not apply to all PostingsFormat
-   *  implementations, including the default one in this release. It only makes
-   *  sense for terms indexes that can efficiently re-sample terms at load time.
-   * @throws IOException if there is a low-level IO error
-   */
-  public static DirectoryReader open(final Directory directory, int termInfosIndexDivisor) throws IOException {
-    return StandardDirectoryReader.open(directory, null, termInfosIndexDivisor);
+    return StandardDirectoryReader.open(directory, null);
   }
   
   /**
@@ -117,29 +93,7 @@ public abstract class DirectoryReader extends BaseCompositeReader<AtomicReader> 
    * @throws IOException if there is a low-level IO error
    */
   public static DirectoryReader open(final IndexCommit commit) throws IOException {
-    return StandardDirectoryReader.open(commit.getDirectory(), commit, DEFAULT_TERMS_INDEX_DIVISOR);
-  }
-
-  /** Expert: returns an IndexReader reading the index in the given
-   *  {@link IndexCommit} and termInfosIndexDivisor.
-   * @param commit the commit point to open
-   * @param termInfosIndexDivisor Subsamples which indexed
-   *  terms are loaded into RAM. This has the same effect as {@link
-   *  IndexWriterConfig#setTermIndexInterval} except that setting
-   *  must be done at indexing time while this setting can be
-   *  set per reader.  When set to N, then one in every
-   *  N*termIndexInterval terms in the index is loaded into
-   *  memory.  By setting this to a value > 1 you can reduce
-   *  memory usage, at the expense of higher latency when
-   *  loading a TermInfo.  The default value is 1.  Set this
-   *  to -1 to skip loading the terms index entirely.
-   *  <b>NOTE:</b> divisor settings &gt; 1 do not apply to all PostingsFormat
-   *  implementations, including the default one in this release. It only makes
-   *  sense for terms indexes that can efficiently re-sample terms at load time.
-   * @throws IOException if there is a low-level IO error
-   */
-  public static DirectoryReader open(final IndexCommit commit, int termInfosIndexDivisor) throws IOException {
-    return StandardDirectoryReader.open(commit.getDirectory(), commit, termInfosIndexDivisor);
+    return StandardDirectoryReader.open(commit.getDirectory(), commit);
   }
 
   /**
@@ -291,7 +245,7 @@ public abstract class DirectoryReader extends BaseCompositeReader<AtomicReader> 
           // IOException allowed to throw there, in case
           // segments_N is corrupt
           sis.read(dir, fileName);
-        } catch (FileNotFoundException fnfe) {
+        } catch (FileNotFoundException | NoSuchFileException fnfe) {
           // LUCENE-948: on NFS (and maybe others), if
           // you have writers switching back and forth
           // between machines, it's very likely that the

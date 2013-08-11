@@ -17,11 +17,7 @@ package org.apache.lucene.facet;
  * limitations under the License.
  */
 
-/**
- * Required so that userguide files are copied as part of javadocs generation.
- * Otherwise, if the root facet package contains no classes, doc-files aren't
- * copied.
- */
+/** Required for javadocs generation. */
 public final class FacetPackage {
   
   private FacetPackage() {}

@@ -57,8 +57,6 @@ final class SegmentCoreReaders {
   final DocValuesProducer dvProducer;
   final DocValuesProducer normsProducer;
 
-  final int termsIndexDivisor;
-  
   private final SegmentReader owner;
   
   final StoredFieldsReader fieldsReaderOrig;
@@ -100,11 +98,7 @@ final class SegmentCoreReaders {
   private final Set<CoreClosedListener> coreClosedListeners = 
       Collections.synchronizedSet(new LinkedHashSet<CoreClosedListener>());
   
-  SegmentCoreReaders(SegmentReader owner, Directory dir, SegmentInfoPerCommit si, IOContext context, int termsIndexDivisor) throws IOException {
-    
-    if (termsIndexDivisor == 0) {
-      throw new IllegalArgumentException("indexDivisor must be < 0 (don't load terms index) or greater than 0 (got 0)");
-    }
+  SegmentCoreReaders(SegmentReader owner, Directory dir, SegmentInfoPerCommit si, IOContext context) throws IOException {
     
     final Codec codec = si.info.getCodec();
     final Directory cfsDir; // confusing name: if (cfs) its the cfsdir, otherwise its the segment's directory.
@@ -120,9 +114,8 @@ final class SegmentCoreReaders {
       }
       fieldInfos = codec.fieldInfosFormat().getFieldInfosReader().read(cfsDir, si.info.name, IOContext.READONCE);
 
-      this.termsIndexDivisor = termsIndexDivisor;
       final PostingsFormat format = codec.postingsFormat();
-      final SegmentReadState segmentReadState = new SegmentReadState(cfsDir, si.info, fieldInfos, context, termsIndexDivisor);
+      final SegmentReadState segmentReadState = new SegmentReadState(cfsDir, si.info, fieldInfos, context);
       // Ask codec for its Fields
       fields = format.fieldsProducer(segmentReadState);
       assert fields != null;

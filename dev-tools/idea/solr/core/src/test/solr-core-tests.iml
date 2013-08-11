@@ -11,8 +11,10 @@
     <orderEntry type="sourceFolder" forTests="false" />
     <orderEntry type="library" scope="TEST" name="JUnit" level="project" />
     <orderEntry type="library" scope="TEST" name="Solr core library" level="project" />
+    <orderEntry type="library" scope="TEST" name="Solr core test library" level="project" />
     <orderEntry type="library" scope="TEST" name="Solrj library" level="project" />
     <orderEntry type="library" scope="TEST" name="Solr example library" level="project" />
+    <orderEntry type="library" scope="TEST" name="Solr test framework library" level="project" />
     <orderEntry type="module" scope="TEST" module-name="lucene-test-framework" />
     <orderEntry type="module" scope="TEST" module-name="solr-test-framework" />
     <orderEntry type="module" scope="TEST" module-name="solr-core-test-files" />

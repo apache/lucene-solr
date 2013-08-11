@@ -18,8 +18,6 @@ package org.apache.lucene.index;
  */
 
 import java.io.IOException;
-import java.io.StringReader;
-
 import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.analysis.MockAnalyzer;
 import org.apache.lucene.analysis.TokenStream;
@@ -49,7 +47,7 @@ public class TestLongPostings extends LuceneTestCase {
       if (other != null && s.equals(other)) {
         continue;
       }
-      final TokenStream ts = a.tokenStream("foo", new StringReader(s));
+      final TokenStream ts = a.tokenStream("foo", s);
       final TermToBytesRefAttribute termAtt = ts.getAttribute(TermToBytesRefAttribute.class);
       final BytesRef termBytes = termAtt.getBytesRef();
       ts.reset();

@@ -214,7 +214,7 @@ public class IndexWriter implements Closeable, TwoPhaseCommit {
   private final Analyzer analyzer;    // how to analyze text
 
   private volatile long changeCount; // increments every time a change is completed
-  private long lastCommitChangeCount; // last changeCount that was committed
+  private volatile long lastCommitChangeCount; // last changeCount that was committed
 
   private List<SegmentInfoPerCommit> rollbackSegments;      // list of segmentInfo we will fallback to if the commit fails
 
@@ -630,10 +630,13 @@ public class IndexWriter implements Closeable, TwoPhaseCommit {
 
   /**
    * Constructs a new IndexWriter per the settings given in <code>conf</code>.
-   * Note that the passed in {@link IndexWriterConfig} is
-   * privately cloned; if you need to make subsequent "live"
-   * changes to the configuration use {@link #getConfig}.
+   * If you want to make "live" changes to this writer instance, use
+   * {@link #getConfig()}.
+   * 
    * <p>
+   * <b>NOTE:</b> after ths writer is created, the given configuration instance
+   * cannot be passed to another writer. If you intend to do so, you should
+   * {@link IndexWriterConfig#clone() clone} it beforehand.
    * 
    * @param d
    *          the index directory. The index is either created or appended
@@ -648,7 +651,8 @@ public class IndexWriter implements Closeable, TwoPhaseCommit {
    *           IO error
    */
   public IndexWriter(Directory d, IndexWriterConfig conf) throws IOException {
-    config = new LiveIndexWriterConfig(conf.clone());
+    conf.setIndexWriter(this); // prevent reuse by other instances
+    config = new LiveIndexWriterConfig(conf);
     directory = d;
     analyzer = config.getAnalyzer();
     infoStream = config.getInfoStream();
@@ -2269,10 +2273,6 @@ public class IndexWriter implements Closeable, TwoPhaseCommit {
     }
   }
 
-  synchronized boolean useCompoundFile(SegmentInfoPerCommit segmentInfo) throws IOException {
-    return mergePolicy.useCompoundFile(segmentInfos, segmentInfo);
-  }
-
   private synchronized void resetMergeExceptions() {
     mergeExceptions = new ArrayList<MergePolicy.OneMerge>();
     mergeGen++;
@@ -2428,15 +2428,16 @@ public class IndexWriter implements Closeable, TwoPhaseCommit {
    * close the writer. See <a href="#OOME">above</a> for details.
    * 
    * <p>
+   * <b>NOTE:</b> empty segments are dropped by this method and not added to this
+   * index.
+   * 
+   * <p>
    * <b>NOTE:</b> this method merges all given {@link IndexReader}s in one
    * merge. If you intend to merge a large number of readers, it may be better
    * to call this method multiple times, each time with a small set of readers.
    * In principle, if you use a merge policy with a {@code mergeFactor} or
    * {@code maxMergeAtOnce} parameter, you should pass that many readers in one
-   * call. Also, if the given readers are {@link DirectoryReader}s, they can be
-   * opened with {@code termIndexInterval=-1} to save RAM, since during merge
-   * the in-memory structure is not used. See
-   * {@link DirectoryReader#open(Directory, int)}.
+   * call.
    * 
    * <p>
    * <b>NOTE</b>: if you call {@link #close(boolean)} with <tt>false</tt>, which
@@ -2461,11 +2462,20 @@ public class IndexWriter implements Closeable, TwoPhaseCommit {
       String mergedName = newSegmentName();
       final List<AtomicReader> mergeReaders = new ArrayList<AtomicReader>();
       for (IndexReader indexReader : readers) {
-        numDocs += indexReader.numDocs();
-        for (AtomicReaderContext ctx : indexReader.leaves()) {
-          mergeReaders.add(ctx.reader());
+        if (indexReader.numDocs() > 0) {
+          numDocs += indexReader.numDocs();
+          for (AtomicReaderContext ctx : indexReader.leaves()) {
+            if (ctx.reader().numDocs() > 0) { // drop empty (or all deleted) segments
+              mergeReaders.add(ctx.reader());
+            }
+          }
         }
       }
+      
+      if (mergeReaders.isEmpty()) { // no segments with documents to add
+        return;
+      }
+      
       final IOContext context = new IOContext(new MergeInfo(numDocs, -1, true, -1));
 
       // TODO: somehow we should fix this merge so it's
@@ -2475,7 +2485,7 @@ public class IndexWriter implements Closeable, TwoPhaseCommit {
       SegmentInfo info = new SegmentInfo(directory, Constants.LUCENE_MAIN_VERSION, mergedName, -1,
                                          false, codec, null, null);
 
-      SegmentMerger merger = new SegmentMerger(mergeReaders, info, infoStream, trackingDir, config.getTermIndexInterval(),
+      SegmentMerger merger = new SegmentMerger(mergeReaders, info, infoStream, trackingDir,
                                                MergeState.CheckAbort.NONE, globalFieldNumberMap, context);
 
       MergeState mergeState;
@@ -2826,6 +2836,11 @@ public class IndexWriter implements Closeable, TwoPhaseCommit {
     commitInternal();
   }
 
+  /** Returns true if there are changes that have not been committed */
+  public final boolean hasUncommittedChanges() {
+    return changeCount != lastCommitChangeCount;
+  }
+
   private final void commitInternal() throws IOException {
 
     if (infoStream.isEnabled("IW")) {
@@ -2865,8 +2880,8 @@ public class IndexWriter implements Closeable, TwoPhaseCommit {
         if (infoStream.isEnabled("IW")) {
           infoStream.message("IW", "commit: wrote segments file \"" + pendingCommit.getSegmentsFileName() + "\"");
         }
-        lastCommitChangeCount = pendingCommitChangeCount;
         segmentInfos.updateGeneration(pendingCommit);
+        lastCommitChangeCount = pendingCommitChangeCount;
         rollbackSegments = pendingCommit.createBackupSegmentInfos();
         deleter.checkpoint(pendingCommit, true);
       } finally {
@@ -3652,7 +3667,7 @@ public class IndexWriter implements Closeable, TwoPhaseCommit {
         // Hold onto the "live" reader; we will use this to
         // commit merged deletes
         final ReadersAndLiveDocs rld = readerPool.get(info, true);
-        SegmentReader reader = rld.getMergeReader(context);
+        SegmentReader reader = rld.getReader(context);
         assert reader != null;
 
         // Carefully pull the most recent live docs:
@@ -3709,7 +3724,7 @@ public class IndexWriter implements Closeable, TwoPhaseCommit {
       // we pass merge.getMergeReaders() instead of merge.readers to allow the
       // OneMerge to return a view over the actual segments to merge
       final SegmentMerger merger = new SegmentMerger(merge.getMergeReaders(),
-          merge.info.info, infoStream, dirWrapper, config.getTermIndexInterval(),
+          merge.info.info, infoStream, dirWrapper,
           checkAbort, globalFieldNumberMap, context);
 
       merge.checkAborted(directory);
@@ -4162,7 +4177,10 @@ public class IndexWriter implements Closeable, TwoPhaseCommit {
   //   startCommitMergeDeletes
   //   startMergeInit
   //   DocumentsWriter.ThreadState.init start
-  boolean testPoint(String name) {
+  private final boolean testPoint(String message) {
+    if (infoStream.isEnabled("TP")) {
+      infoStream.message("TP", message);
+    }
     return true;
   }
 

@@ -38,6 +38,8 @@ import org.apache.lucene.codecs.FieldsProducer;
 import org.apache.lucene.codecs.PostingsConsumer;
 import org.apache.lucene.codecs.TermStats;
 import org.apache.lucene.codecs.TermsConsumer;
+import org.apache.lucene.document.Document;
+import org.apache.lucene.document.Field;
 import org.apache.lucene.index.FieldInfo.DocValuesType;
 import org.apache.lucene.index.FieldInfo.IndexOptions;
 import org.apache.lucene.store.Directory;
@@ -353,9 +355,12 @@ public abstract class BasePostingsFormatTestCase extends LuceneTestCase {
       fields.put(field, postings);
       Set<String> seenTerms = new HashSet<String>();
 
-      // TODO:
-      //final int numTerms = atLeast(10);
-      final int numTerms = 4;
+      int numTerms;
+      if (random().nextInt(10) == 7) {
+        numTerms = atLeast(50);
+      } else {
+        numTerms = _TestUtil.nextInt(random(), 2, 20);
+      }
 
       for(int termUpto=0;termUpto<numTerms;termUpto++) {
         String term = _TestUtil.randomSimpleString(random());
@@ -483,7 +488,7 @@ public abstract class BasePostingsFormatTestCase extends LuceneTestCase {
 
     SegmentWriteState writeState = new SegmentWriteState(null, dir,
                                                          segmentInfo, newFieldInfos,
-                                                         32, null, new IOContext(new FlushInfo(maxDoc, bytes)));
+                                                         null, new IOContext(new FlushInfo(maxDoc, bytes)));
     FieldsConsumer fieldsConsumer = codec.postingsFormat().fieldsConsumer(writeState);
 
     for(Map.Entry<String,Map<BytesRef,Long>> fieldEnt : fields.entrySet()) {
@@ -567,7 +572,7 @@ public abstract class BasePostingsFormatTestCase extends LuceneTestCase {
 
     currentFieldInfos = newFieldInfos;
 
-    SegmentReadState readState = new SegmentReadState(dir, segmentInfo, newFieldInfos, IOContext.DEFAULT, 1);
+    SegmentReadState readState = new SegmentReadState(dir, segmentInfo, newFieldInfos, IOContext.DEFAULT);
 
     return codec.postingsFormat().fieldsProducer(readState);
   }
@@ -594,6 +599,10 @@ public abstract class BasePostingsFormatTestCase extends LuceneTestCase {
     if (VERBOSE) {
       System.out.println("  verifyEnum: options=" + options + " maxTestOptions=" + maxTestOptions);
     }
+
+    // Make sure TermsEnum really is positioned on the
+    // expected term:
+    assertEquals(term, termsEnum.term());
 
     // 50% of the time time pass liveDocs:
     boolean useLiveDocs = options.contains(Option.LIVE_DOCS) && random().nextBoolean();
@@ -983,7 +992,7 @@ public abstract class BasePostingsFormatTestCase extends LuceneTestCase {
       termsEnum = terms.iterator(null);
 
       if (!useTermState) {
-        assertTrue(termsEnum.seekExact(fieldAndTerm.term, true));
+        assertTrue(termsEnum.seekExact(fieldAndTerm.term));
       } else {
         termsEnum.seekExact(fieldAndTerm.term, termState);
       }
@@ -1129,5 +1138,90 @@ public abstract class BasePostingsFormatTestCase extends LuceneTestCase {
       dir.close();
       _TestUtil.rmDir(path);
     }
+  }
+  
+  public void testEmptyField() throws Exception {
+    Directory dir = newDirectory();
+    IndexWriterConfig iwc = newIndexWriterConfig(TEST_VERSION_CURRENT, null);
+    iwc.setCodec(getCodec());
+    RandomIndexWriter iw = new RandomIndexWriter(random(), dir, iwc);
+    Document doc = new Document();
+    doc.add(newStringField("", "something", Field.Store.NO));
+    iw.addDocument(doc);
+    DirectoryReader ir = iw.getReader();
+    AtomicReader ar = getOnlySegmentReader(ir);
+    Fields fields = ar.fields();
+    int fieldCount = fields.size();
+    // -1 is allowed, if the codec doesn't implement fields.size():
+    assertTrue(fieldCount == 1 || fieldCount == -1);
+    Terms terms = ar.terms("");
+    assertNotNull(terms);
+    TermsEnum termsEnum = terms.iterator(null);
+    assertNotNull(termsEnum.next());
+    assertEquals(termsEnum.term(), new BytesRef("something"));
+    assertNull(termsEnum.next());
+    ir.close();
+    iw.close();
+    dir.close();
+  }
+  
+  public void testEmptyFieldAndEmptyTerm() throws Exception {
+    Directory dir = newDirectory();
+    IndexWriterConfig iwc = newIndexWriterConfig(TEST_VERSION_CURRENT, null);
+    iwc.setCodec(getCodec());
+    RandomIndexWriter iw = new RandomIndexWriter(random(), dir, iwc);
+    Document doc = new Document();
+    doc.add(newStringField("", "", Field.Store.NO));
+    iw.addDocument(doc);
+    DirectoryReader ir = iw.getReader();
+    AtomicReader ar = getOnlySegmentReader(ir);
+    Fields fields = ar.fields();
+    int fieldCount = fields.size();
+    // -1 is allowed, if the codec doesn't implement fields.size():
+    assertTrue(fieldCount == 1 || fieldCount == -1);
+    Terms terms = ar.terms("");
+    assertNotNull(terms);
+    TermsEnum termsEnum = terms.iterator(null);
+    assertNotNull(termsEnum.next());
+    assertEquals(termsEnum.term(), new BytesRef(""));
+    assertNull(termsEnum.next());
+    ir.close();
+    iw.close();
+    dir.close();
+  }
+  
+  // tests that ghost fields still work
+  // TODO: can this be improved?
+  public void testGhosts() throws Exception {
+    Directory dir = newDirectory();
+    IndexWriterConfig iwc = newIndexWriterConfig(TEST_VERSION_CURRENT, null);
+    iwc.setCodec(getCodec());
+    iwc.setMergePolicy(newLogMergePolicy());
+    RandomIndexWriter iw = new RandomIndexWriter(random(), dir, iwc);
+    Document doc = new Document();
+    iw.addDocument(doc);
+    doc.add(newStringField("ghostField", "something", Field.Store.NO));
+    iw.addDocument(doc);
+    iw.forceMerge(1);
+    iw.deleteDocuments(new Term("ghostField", "something")); // delete the only term for the field
+    iw.forceMerge(1);
+    DirectoryReader ir = iw.getReader();
+    AtomicReader ar = getOnlySegmentReader(ir);
+    Fields fields = ar.fields();
+    // Ghost busting terms dict impls will have
+    // fields.size() == 0; all others must be == 1:
+    assertTrue(fields.size() <= 1);
+    Terms terms = fields.terms("ghostField");
+    if (terms != null) {
+      TermsEnum termsEnum = terms.iterator(null);
+      BytesRef term = termsEnum.next();
+      if (term != null) {
+        DocsEnum docsEnum = termsEnum.docs(null, null);
+        assertTrue(docsEnum.nextDoc() == DocsEnum.NO_MORE_DOCS);
+      }
+    }
+    ir.close();
+    iw.close();
+    dir.close();
   }
 }

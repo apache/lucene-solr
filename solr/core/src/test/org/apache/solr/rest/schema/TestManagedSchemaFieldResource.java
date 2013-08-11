@@ -58,22 +58,21 @@ public class TestManagedSchemaFieldResource extends RestTestBase {
   @Test
   public void testAddFieldBadFieldType() throws Exception {
     assertJPut("/schema/fields/newfield",
-        "{\"type\":\"not_in_there_at_all\",\"stored\":\"false\"}",
+        json( "{'type':'not_in_there_at_all','stored':'false'}" ),
         "/error/msg==\"Field \\'newfield\\': Field type \\'not_in_there_at_all\\' not found.\"");
   }
 
   @Test
   public void testAddFieldMismatchedName() throws Exception {
     assertJPut("/schema/fields/newfield",
-        "{\"name\":\"something_else\",\"type\":\"text\",\"stored\":\"false\"}",
-        "/error/msg==\"Field name in the request body \\'something_else\\'"
-            + " doesn\\'t match field name in the request URL \\'newfield\\'\"");
+        json( "{'name':'something_else','type':'text','stored':'false'}" ),
+        "/error/msg=='///regex:newfield///'");
   }
   
   @Test
   public void testAddFieldBadProperty() throws Exception {
     assertJPut("/schema/fields/newfield",
-        "{\"type\":\"text\",\"no_property_with_this_name\":\"false\"}",
+        json( "{'type':'text','no_property_with_this_name':'false'}" ),
         "/error/msg==\"java.lang.IllegalArgumentException: Invalid field property: no_property_with_this_name\"");
   }
   
@@ -85,7 +84,7 @@ public class TestManagedSchemaFieldResource extends RestTestBase {
             "/response/lst[@name='error']/int[@name='code'] = '404'");
     
     assertJPut("/schema/fields/newfield",
-        "{\"type\":\"text\",\"stored\":\"false\"}",
+        json( "{'type':'text','stored':'false'}" ),
         "/responseHeader/status==0");
     
     assertQ("/schema/fields/newfield?indent=on&wt=xml",
@@ -100,6 +99,42 @@ public class TestManagedSchemaFieldResource extends RestTestBase {
             "/response/result[@name='response'][@numFound='1']",
             "count(/response/result[@name='response']/doc/*) = 1",
             "/response/result[@name='response']/doc/str[@name='id'][.='123']");
+  }
+
+  @Test
+  public void testAddCopyField() throws Exception {
+    assertQ("/schema/fields/newfield2?indent=on&wt=xml",
+            "count(/response/lst[@name='field']) = 0",
+            "/response/lst[@name='responseHeader']/int[@name='status'] = '404'",
+            "/response/lst[@name='error']/int[@name='code'] = '404'");
+
+    assertJPut("/schema/fields/fieldA",
+        "{\"type\":\"text\",\"stored\":\"false\"}",
+        "/responseHeader/status==0");
+    assertJPut("/schema/fields/fieldB",
+        "{\"type\":\"text\",\"stored\":\"false\", \"copyFields\":[\"fieldA\"]}",
+        "/responseHeader/status==0");
+    assertJPut("/schema/fields/fieldC",
+        "{\"type\":\"text\",\"stored\":\"false\", \"copyFields\":\"fieldA\"}",
+        "/responseHeader/status==0");
+
+    assertQ("/schema/fields/fieldB?indent=on&wt=xml",
+            "count(/response/lst[@name='field']) = 1",
+            "/response/lst[@name='responseHeader']/int[@name='status'] = '0'");
+    assertQ("/schema/copyfields/?indent=on&wt=xml&source.fl=fieldB",
+        "count(/response/arr[@name='copyFields']/lst) = 1"
+    );
+    assertQ("/schema/copyfields/?indent=on&wt=xml&source.fl=fieldC",
+        "count(/response/arr[@name='copyFields']/lst) = 1"
+    );
+    //fine to pass in empty list, just won't do anything
+    assertJPut("/schema/fields/fieldD",
+        "{\"type\":\"text\",\"stored\":\"false\", \"copyFields\":[]}",
+        "/responseHeader/status==0");
+    //some bad usages
+    assertJPut("/schema/fields/fieldF",
+        "{\"type\":\"text\",\"stored\":\"false\", \"copyFields\":[\"some_nonexistent_field_ignore_exception\"]}",
+        "/error/msg==\"copyField dest :\\'some_nonexistent_field_ignore_exception\\' is not an explicit field and doesn\\'t match a dynamicField.\"");
   }
 
   @Test
@@ -142,5 +177,59 @@ public class TestManagedSchemaFieldResource extends RestTestBase {
         "count(/response/result[@name='response']/doc/*) = 1",
         "/response/result[@name='response']/doc/str[@name='id'][.='456']");
   }
+
+  @Test
+  public void testPostCopy() throws Exception {
+    assertJPost("/schema/fields",
+        json(    "[{'name':'fieldA','type':'text','stored':'false'},"
+               + " {'name':'fieldB','type':'text','stored':'false'},"
+               + " {'name':'fieldC','type':'text','stored':'false', 'copyFields':['fieldB']}]" ),
+                "/responseHeader/status==0");
+    assertQ("/schema/copyfields/?indent=on&wt=xml&source.fl=fieldC",
+        "count(/response/arr[@name='copyFields']/lst) = 1"
+    );
+    assertJPost("/schema/fields",
+              "[{\"name\":\"fieldD\",\"type\":\"text\",\"stored\":\"false\"},"
+               + "{\"name\":\"fieldE\",\"type\":\"text\",\"stored\":\"false\"},"
+               + " {\"name\":\"fieldF\",\"type\":\"text\",\"stored\":\"false\", \"copyFields\":[\"fieldD\",\"fieldE\"]},"
+               + " {\"name\":\"fieldG\",\"type\":\"text\",\"stored\":\"false\", \"copyFields\":\"fieldD\"}"//single
+               + "]",
+                "/responseHeader/status==0");
+    assertQ("/schema/copyfields/?indent=on&wt=xml&source.fl=fieldF",
+        "count(/response/arr[@name='copyFields']/lst) = 2"
+    );
+    //passing in an empty list is perfectly acceptable, it just won't do anything
+    assertJPost("/schema/fields",
+        "[{\"name\":\"fieldX\",\"type\":\"text\",\"stored\":\"false\"},"
+            + "{\"name\":\"fieldY\",\"type\":\"text\",\"stored\":\"false\"},"
+            + " {\"name\":\"fieldZ\",\"type\":\"text\",\"stored\":\"false\", \"copyFields\":[]}]",
+        "/responseHeader/status==0");
+    //some bad usages
+
+    assertJPost("/schema/fields",
+              "[{\"name\":\"fieldH\",\"type\":\"text\",\"stored\":\"false\"},"
+               + "{\"name\":\"fieldI\",\"type\":\"text\",\"stored\":\"false\"},"
+               + " {\"name\":\"fieldJ\",\"type\":\"text\",\"stored\":\"false\", \"copyFields\":[\"some_nonexistent_field_ignore_exception\"]}]",
+                "/error/msg==\"copyField dest :\\'some_nonexistent_field_ignore_exception\\' is not an explicit field and doesn\\'t match a dynamicField.\"");
+  }
+
+  @Test
+  public void testPostCopyFields() throws Exception {
+    assertJPost("/schema/fields",
+              "[{\"name\":\"fieldA\",\"type\":\"text\",\"stored\":\"false\"},"
+               + "{\"name\":\"fieldB\",\"type\":\"text\",\"stored\":\"false\"},"
+               + "{\"name\":\"fieldC\",\"type\":\"text\",\"stored\":\"false\"},"
+                  + "{\"name\":\"fieldD\",\"type\":\"text\",\"stored\":\"false\"},"
+               + " {\"name\":\"fieldE\",\"type\":\"text\",\"stored\":\"false\"}]",
+                "/responseHeader/status==0");
+    assertJPost("/schema/copyfields", "[{\"source\":\"fieldA\", \"dest\":\"fieldB\"},{\"source\":\"fieldD\", \"dest\":[\"fieldC\", \"fieldE\"]}]", "/responseHeader/status==0");
+    assertQ("/schema/copyfields/?indent=on&wt=xml&source.fl=fieldA",
+        "count(/response/arr[@name='copyFields']/lst) = 1");
+    assertQ("/schema/copyfields/?indent=on&wt=xml&source.fl=fieldD",
+        "count(/response/arr[@name='copyFields']/lst) = 2");
+    assertJPost("/schema/copyfields", "[{\"source\":\"some_nonexistent_field_ignore_exception\", \"dest\":[\"fieldA\"]}]", "/error/msg==\"copyField source :\\'some_nonexistent_field_ignore_exception\\' is not a glob and doesn\\'t match any explicit field or dynamicField.\"");
+    assertJPost("/schema/copyfields", "[{\"source\":\"fieldD\", \"dest\":[\"some_nonexistent_field_ignore_exception\"]}]", "/error/msg==\"copyField dest :\\'some_nonexistent_field_ignore_exception\\' is not an explicit field and doesn\\'t match a dynamicField.\"");
+  }
+
 }
 

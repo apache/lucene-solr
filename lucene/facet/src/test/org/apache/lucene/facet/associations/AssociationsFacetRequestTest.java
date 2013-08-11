@@ -1,8 +1,6 @@
 package org.apache.lucene.facet.associations;
 
-import java.util.HashMap;
 import java.util.List;
-import java.util.Map;
 
 import org.apache.lucene.analysis.MockAnalyzer;
 import org.apache.lucene.analysis.MockTokenizer;
@@ -10,9 +8,9 @@ import org.apache.lucene.document.Document;
 import org.apache.lucene.facet.FacetTestCase;
 import org.apache.lucene.facet.params.FacetSearchParams;
 import org.apache.lucene.facet.search.FacetResult;
-import org.apache.lucene.facet.search.FacetsAccumulator;
 import org.apache.lucene.facet.search.FacetsAggregator;
 import org.apache.lucene.facet.search.FacetsCollector;
+import org.apache.lucene.facet.search.TaxonomyFacetsAccumulator;
 import org.apache.lucene.facet.taxonomy.CategoryPath;
 import org.apache.lucene.facet.taxonomy.TaxonomyWriter;
 import org.apache.lucene.facet.taxonomy.directory.DirectoryTaxonomyReader;
@@ -69,14 +67,18 @@ public class AssociationsFacetRequestTest extends FacetTestCase {
     AssociationsFacetFields assocFacetFields = new AssociationsFacetFields(taxoWriter);
     
     // index documents, 50% have only 'b' and all have 'a'
-    for (int i = 0; i < 100; i++) {
+    for (int i = 0; i < 110; i++) {
       Document doc = new Document();
       CategoryAssociationsContainer associations = new CategoryAssociationsContainer();
-      associations.setAssociation(aint, new CategoryIntAssociation(2));
-      associations.setAssociation(afloat, new CategoryFloatAssociation(0.5f));
-      if (i % 2 == 0) { // 50
-        associations.setAssociation(bint, new CategoryIntAssociation(3));
-        associations.setAssociation(bfloat, new CategoryFloatAssociation(0.2f));
+      // every 11th document is added empty, this used to cause the association
+      // aggregators to go into an infinite loop
+      if (i % 11 != 0) {
+        associations.setAssociation(aint, new CategoryIntAssociation(2));
+        associations.setAssociation(afloat, new CategoryFloatAssociation(0.5f));
+        if (i % 2 == 0) { // 50
+          associations.setAssociation(bint, new CategoryIntAssociation(3));
+          associations.setAssociation(bfloat, new CategoryFloatAssociation(0.2f));
+        }
       }
       assocFacetFields.addFields(doc, associations);
       writer.addDocument(doc);
@@ -103,12 +105,12 @@ public class AssociationsFacetRequestTest extends FacetTestCase {
     
     // facet requests for two facets
     FacetSearchParams fsp = new FacetSearchParams(
-        new AssociationIntSumFacetRequest(aint, 10),
-        new AssociationIntSumFacetRequest(bint, 10));
+        new SumIntAssociationFacetRequest(aint, 10),
+        new SumIntAssociationFacetRequest(bint, 10));
     
     Query q = new MatchAllDocsQuery();
     
-    FacetsAccumulator fa = new FacetsAccumulator(fsp, reader, taxo) {
+    TaxonomyFacetsAccumulator fa = new TaxonomyFacetsAccumulator(fsp, reader, taxo) {
       @Override
       public FacetsAggregator getAggregator() {
         return new SumIntAssociationFacetsAggregator();
@@ -135,12 +137,12 @@ public class AssociationsFacetRequestTest extends FacetTestCase {
     
     // facet requests for two facets
     FacetSearchParams fsp = new FacetSearchParams(
-        new AssociationFloatSumFacetRequest(afloat, 10),
-        new AssociationFloatSumFacetRequest(bfloat, 10));
+        new SumFloatAssociationFacetRequest(afloat, 10),
+        new SumFloatAssociationFacetRequest(bfloat, 10));
     
     Query q = new MatchAllDocsQuery();
     
-    FacetsAccumulator fa = new FacetsAccumulator(fsp, reader, taxo) {
+    TaxonomyFacetsAccumulator fa = new TaxonomyFacetsAccumulator(fsp, reader, taxo) {
       @Override
       public FacetsAggregator getAggregator() {
         return new SumFloatAssociationFacetsAggregator();
@@ -167,27 +169,14 @@ public class AssociationsFacetRequestTest extends FacetTestCase {
     
     // facet requests for two facets
     FacetSearchParams fsp = new FacetSearchParams(
-        new AssociationIntSumFacetRequest(aint, 10),
-        new AssociationIntSumFacetRequest(bint, 10),
-        new AssociationFloatSumFacetRequest(afloat, 10),
-        new AssociationFloatSumFacetRequest(bfloat, 10));
+        new SumIntAssociationFacetRequest(aint, 10),
+        new SumIntAssociationFacetRequest(bint, 10),
+        new SumFloatAssociationFacetRequest(afloat, 10),
+        new SumFloatAssociationFacetRequest(bfloat, 10));
     
     Query q = new MatchAllDocsQuery();
     
-    final SumIntAssociationFacetsAggregator sumInt = new SumIntAssociationFacetsAggregator();
-    final SumFloatAssociationFacetsAggregator sumFloat = new SumFloatAssociationFacetsAggregator();
-    final Map<CategoryPath,FacetsAggregator> aggregators = new HashMap<CategoryPath,FacetsAggregator>();
-    aggregators.put(aint, sumInt);
-    aggregators.put(bint, sumInt);
-    aggregators.put(afloat, sumFloat);
-    aggregators.put(bfloat, sumFloat);
-    FacetsAccumulator fa = new FacetsAccumulator(fsp, reader, taxo) {
-      @Override
-      public FacetsAggregator getAggregator() {
-        return new MultiAssociationsFacetsAggregator(aggregators);
-      }
-    };
-    FacetsCollector fc = FacetsCollector.create(fa);
+    FacetsCollector fc = FacetsCollector.create(fsp, reader, taxo);
     
     IndexSearcher searcher = newSearcher(reader);
     searcher.search(q, fc);
@@ -200,6 +189,6 @@ public class AssociationsFacetRequestTest extends FacetTestCase {
     assertEquals("Wrong count for category 'b'!",10f, (float) res.get(3).getFacetResultNode().value, 0.00001);
     
     taxo.close();
-  }  
+  }
   
 }

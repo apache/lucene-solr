@@ -27,7 +27,7 @@ package org.apache.solr.schema;
  * 
  * @see Long
  */
-public class TrieLongField extends TrieField {
+public class TrieLongField extends TrieField implements LongValueFieldType {
   {
     type=TrieTypes.LONG;
   }

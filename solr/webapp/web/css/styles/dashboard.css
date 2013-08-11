@@ -1,3 +1,22 @@
+/*
+
+Licensed to the Apache Software Foundation (ASF) under one or more
+contributor license agreements.  See the NOTICE file distributed with
+this work for additional information regarding copyright ownership.
+The ASF licenses this file to You under the Apache License, Version 2.0
+(the "License"); you may not use this file except in compliance with
+the License.  You may obtain a copy of the License at
+
+http://www.apache.org/licenses/LICENSE-2.0
+
+Unless required by applicable law or agreed to in writing, software
+distributed under the License is distributed on an "AS IS" BASIS,
+WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+See the License for the specific language governing permissions and
+limitations under the License.
+
+*/
+
 #content #dashboard .block
 {
   background-image: none;
@@ -94,24 +113,25 @@
   display: none;
 }
 
-#content #dashboard #dataimport
+#content #dashboard #instance
 {
   float: right;
 }
 
+#content #dashboard #instance .dir_impl
+{
+  margin-top: 10px;
+}
 
 #content #dashboard #admin-extra
 {
-  float: right;
+  float: left;
 }
 
-#content #dashboard #system h2 { background-image: url( ../../img/ico/server.png ); }
-#content #dashboard #statistics h2 { background-image: url( ../../img/ico/chart.png ); }
-#content #dashboard #replication h2 { background-image: url( ../../img/ico/node.png ); }
-#content #dashboard #replication.master h2 { background-image: url( ../../img/ico/node-master.png ); }
-#content #dashboard #replication.slave h2 { background-image: url( ../../img/ico/node-slave.png ); }
-#content #dashboard #dataimport h2 { background-image: url( ../../img/ico/document-import.png ); }
-#content #dashboard #admin-extra h2 { background-image: url( ../../img/ico/plus-button.png ); }
+#content #dashboard #healthcheck
+{
+  float: right;
+}
 
 #content #dashboard #healthcheck .ico
 {
@@ -125,3 +145,11 @@
 {
   background-image: url( ../../img/ico/tick.png );
 }
+
+#content #dashboard #system h2 { background-image: url( ../../img/ico/server.png ); }
+#content #dashboard #statistics h2 { background-image: url( ../../img/ico/chart.png ); }
+#content #dashboard #replication h2 { background-image: url( ../../img/ico/node.png ); }
+#content #dashboard #replication.master h2 { background-image: url( ../../img/ico/node-master.png ); }
+#content #dashboard #replication.slave h2 { background-image: url( ../../img/ico/node-slave.png ); }
+#content #dashboard #instance h2 { background-image: url( ../../img/ico/server.png ); }
+#content #dashboard #admin-extra h2 { background-image: url( ../../img/ico/plus-button.png ); }

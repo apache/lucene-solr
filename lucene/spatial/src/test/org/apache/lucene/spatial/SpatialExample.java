@@ -162,7 +162,8 @@ public class SpatialExample extends LuceneTestCase {
     //--Match all, order by distance ascending
     {
       Point pt = ctx.makePoint(60, -50);
-      ValueSource valueSource = strategy.makeDistanceValueSource(pt);//the distance (in degrees)
+      double degToKm = DistanceUtils.degrees2Dist(1, DistanceUtils.EARTH_MEAN_RADIUS_KM);
+      ValueSource valueSource = strategy.makeDistanceValueSource(pt, degToKm);//the distance (in km)
       Sort distSort = new Sort(valueSource.getSortField(false)).rewrite(indexSearcher);//false=asc dist
       TopDocs docs = indexSearcher.search(new MatchAllDocsQuery(), 10, distSort);
       assertDocMatchedIds(indexSearcher, docs, 4, 20, 2);
