@@ -31,6 +31,7 @@ import java.util.concurrent.Future;
 
 import org.apache.lucene.util.ThreadInterruptedException;
 import org.apache.lucene.util.Constants;
+import org.apache.lucene.util.IOUtils;
 
 /**
  * Base class for Directory implementations that store index
@@ -112,13 +113,16 @@ import org.apache.lucene.util.Constants;
 public abstract class FSDirectory extends Directory {
 
   /**
-   * Default read chunk size: 2*{@link BufferedIndexInput#MERGE_BUFFER_SIZE}.
+   * Default read chunk size: 8192 bytes (this is the size up to which the JDK
+     does not allocate additional arrays while reading/writing)
+     @deprecated This constant is no longer used since Lucene 4.5.
    */
-  public static final int DEFAULT_READ_CHUNK_SIZE = BufferedIndexInput.MERGE_BUFFER_SIZE * 2;
+  @Deprecated
+  public static final int DEFAULT_READ_CHUNK_SIZE = 8192;
 
   protected final File directory; // The underlying filesystem directory
   protected final Set<String> staleFiles = synchronizedSet(new HashSet<String>()); // Files written, but not yet sync'ed
-  private int chunkSize = DEFAULT_READ_CHUNK_SIZE; // LUCENE-1566
+  private int chunkSize = DEFAULT_READ_CHUNK_SIZE;
 
   // returns the canonical version of the directory, creating it if it doesn't exist.
   private static File getCanonicalPath(File file) throws IOException {
@@ -352,24 +356,11 @@ public abstract class FSDirectory extends Directory {
   }
 
   /**
-   * Sets the maximum number of bytes read at once from the
-   * underlying file during {@link IndexInput#readBytes}.
-   * The default value is {@link #DEFAULT_READ_CHUNK_SIZE};
-   *
-   * <p> This was introduced due to <a
-   * href="http://bugs.sun.com/bugdatabase/view_bug.do?bug_id=6478546">Sun
-   * JVM Bug 6478546</a>, which throws an incorrect
-   * OutOfMemoryError when attempting to read too many bytes
-   * at once.  It only happens on 32bit JVMs with a large
-   * maximum heap size.</p>
-   *
-   * <p>Changes to this value will not impact any
-   * already-opened {@link IndexInput}s.  You should call
-   * this before attempting to open an index on the
-   * directory.</p>
+   * This setting has no effect anymore.
+   * @deprecated This is no longer used since Lucene 4.5.
    */
+  @Deprecated
   public final void setReadChunkSize(int chunkSize) {
-    // LUCENE-1566
     if (chunkSize <= 0) {
       throw new IllegalArgumentException("chunkSize must be positive");
     }
@@ -377,12 +368,11 @@ public abstract class FSDirectory extends Directory {
   }
 
   /**
-   * The maximum number of bytes to read at once from the
-   * underlying file during {@link IndexInput#readBytes}.
-   * @see #setReadChunkSize
+   * This setting has no effect anymore.
+   * @deprecated This is no longer used since Lucene 4.5.
    */
+  @Deprecated
   public final int getReadChunkSize() {
-    // LUCENE-1566
     return chunkSize;
   }
 
@@ -390,23 +380,35 @@ public abstract class FSDirectory extends Directory {
    * Writes output with {@link RandomAccessFile#write(byte[], int, int)}
    */
   protected static class FSIndexOutput extends BufferedIndexOutput {
+    /**
+     * The maximum chunk size is 8192 bytes, because {@link RandomAccessFile} mallocs
+     * a native buffer outside of stack if the write buffer size is larger.
+     */
+    private static final int CHUNK_SIZE = 8192;
+    
     private final FSDirectory parent;
     private final String name;
     private final RandomAccessFile file;
     private volatile boolean isOpen; // remember if the file is open, so that we don't try to close it more than once
     
     public FSIndexOutput(FSDirectory parent, String name) throws IOException {
+      super(CHUNK_SIZE);
       this.parent = parent;
       this.name = name;
       file = new RandomAccessFile(new File(parent.directory, name), "rw");
       isOpen = true;
     }
 
-    /** output methods: */
     @Override
-    public void flushBuffer(byte[] b, int offset, int size) throws IOException {
+    protected void flushBuffer(byte[] b, int offset, int size) throws IOException {
       assert isOpen;
-      file.write(b, offset, size);
+      while (size > 0) {
+        final int toWrite = Math.min(CHUNK_SIZE, size);
+        file.write(b, offset, toWrite);
+        offset += toWrite;
+        size -= toWrite;
+      }
+      assert size == 0;
     }
     
     @Override
@@ -414,21 +416,14 @@ public abstract class FSDirectory extends Directory {
       parent.onIndexOutputClosed(name);
       // only close the file if it has not been closed yet
       if (isOpen) {
-        boolean success = false;
+        IOException priorE = null;
         try {
           super.close();
-          success = true;
+        } catch (IOException ioe) {
+          priorE = ioe;
         } finally {
           isOpen = false;
-          if (!success) {
-            try {
-              file.close();
-            } catch (Throwable t) {
-              // Suppress so we don't mask original exception
-            }
-          } else {
-            file.close();
-          }
+          IOUtils.closeWhileHandlingException(priorE, file);
         }
       }
     }

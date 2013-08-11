@@ -1139,7 +1139,6 @@ public abstract class LuceneTestCase extends Assert {
     } catch (NoSuchMethodException | InstantiationException | IllegalAccessException | InvocationTargetException e) {
       Rethrow.rethrow(e);
     }
-    d.setReadChunkSize(_TestUtil.nextInt(random(), 8, 32678));
     return d;
   }
 

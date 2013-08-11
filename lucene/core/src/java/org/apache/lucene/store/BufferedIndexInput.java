@@ -23,7 +23,7 @@ import java.io.IOException;
 /** Base implementation class for buffered {@link IndexInput}. */
 public abstract class BufferedIndexInput extends IndexInput {
 
-  /** Default buffer size set to 1024*/
+  /** Default buffer size set to {@value #BUFFER_SIZE}. */
   public static final int BUFFER_SIZE = 1024;
   
   // The normal read buffer size defaults to 1024, but
@@ -33,7 +33,7 @@ public abstract class BufferedIndexInput extends IndexInput {
   // BufferedIndexInputs created during merging.  See
   // LUCENE-888 for details.
   /**
-   * A buffer size for merges set to 4096
+   * A buffer size for merges set to {@value #MERGE_BUFFER_SIZE}.
    */
   public static final int MERGE_BUFFER_SIZE = 4096;
 
@@ -115,15 +115,14 @@ public abstract class BufferedIndexInput extends IndexInput {
 
   @Override
   public final void readBytes(byte[] b, int offset, int len, boolean useBuffer) throws IOException {
-
-    if(len <= (bufferLength-bufferPosition)){
+    int available = bufferLength - bufferPosition;
+    if(len <= available){
       // the buffer contains enough data to satisfy this request
       if(len>0) // to allow b to be null if len is 0...
         System.arraycopy(buffer, bufferPosition, b, offset, len);
       bufferPosition+=len;
     } else {
       // the buffer does not have enough data. First serve all we've got.
-      int available = bufferLength - bufferPosition;
       if(available > 0){
         System.arraycopy(buffer, bufferPosition, b, offset, available);
         offset += available;
