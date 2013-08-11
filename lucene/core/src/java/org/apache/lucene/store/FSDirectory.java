@@ -112,17 +112,8 @@ import org.apache.lucene.util.IOUtils;
  */
 public abstract class FSDirectory extends Directory {
 
-  /**
-   * Default read chunk size: 8192 bytes (this is the size up to which the JDK
-     does not allocate additional arrays while reading/writing)
-     @deprecated This constant is no longer used since Lucene 4.5.
-   */
-  @Deprecated
-  public static final int DEFAULT_READ_CHUNK_SIZE = 8192;
-
   protected final File directory; // The underlying filesystem directory
   protected final Set<String> staleFiles = synchronizedSet(new HashSet<String>()); // Files written, but not yet sync'ed
-  private int chunkSize = DEFAULT_READ_CHUNK_SIZE;
 
   // returns the canonical version of the directory, creating it if it doesn't exist.
   private static File getCanonicalPath(File file) throws IOException {
@@ -353,27 +344,6 @@ public abstract class FSDirectory extends Directory {
   @Override
   public String toString() {
     return this.getClass().getName() + "@" + directory + " lockFactory=" + getLockFactory();
-  }
-
-  /**
-   * This setting has no effect anymore.
-   * @deprecated This is no longer used since Lucene 4.5.
-   */
-  @Deprecated
-  public final void setReadChunkSize(int chunkSize) {
-    if (chunkSize <= 0) {
-      throw new IllegalArgumentException("chunkSize must be positive");
-    }
-    this.chunkSize = chunkSize;
-  }
-
-  /**
-   * This setting has no effect anymore.
-   * @deprecated This is no longer used since Lucene 4.5.
-   */
-  @Deprecated
-  public final int getReadChunkSize() {
-    return chunkSize;
   }
 
   /**
