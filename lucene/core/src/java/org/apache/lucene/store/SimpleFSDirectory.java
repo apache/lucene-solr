@@ -55,7 +55,7 @@ public class SimpleFSDirectory extends FSDirectory {
   public IndexInput openInput(String name, IOContext context) throws IOException {
     ensureOpen();
     final File path = new File(directory, name);
-    return new SimpleFSIndexInput("SimpleFSIndexInput(path=\"" + path.getPath() + "\")", path, context, getReadChunkSize());
+    return new SimpleFSIndexInput("SimpleFSIndexInput(path=\"" + path.getPath() + "\")", path, context);
   }
 
   @Override
@@ -74,7 +74,7 @@ public class SimpleFSDirectory extends FSDirectory {
       @Override
       public IndexInput openSlice(String sliceDescription, long offset, long length) {
         return new SimpleFSIndexInput("SimpleFSIndexInput(" + sliceDescription + " in path=\"" + file.getPath() + "\" slice=" + offset + ":" + (offset+length) + ")", descriptor, offset,
-            length, BufferedIndexInput.bufferSize(context), getReadChunkSize());
+            length, BufferedIndexInput.bufferSize(context));
       }
 
       @Override
@@ -93,13 +93,18 @@ public class SimpleFSDirectory extends FSDirectory {
    * {@link RandomAccessFile#read(byte[], int, int)}.  
    */
   protected static class SimpleFSIndexInput extends FSIndexInput {
+    /**
+     * The maximum chunk size is 8192 bytes, because {@link RandomAccessFile} mallocs
+     * a native buffer outside of stack if the read buffer size is larger.
+     */
+    private static final int CHUNK_SIZE = 8192;
   
-    public SimpleFSIndexInput(String resourceDesc, File path, IOContext context, int chunkSize) throws IOException {
-      super(resourceDesc, path, context, chunkSize);
+    public SimpleFSIndexInput(String resourceDesc, File path, IOContext context) throws IOException {
+      super(resourceDesc, path, context);
     }
     
-    public SimpleFSIndexInput(String resourceDesc, RandomAccessFile file, long off, long length, int bufferSize, int chunkSize) {
-      super(resourceDesc, file, off, length, bufferSize, chunkSize);
+    public SimpleFSIndexInput(String resourceDesc, RandomAccessFile file, long off, long length, int bufferSize) {
+      super(resourceDesc, file, off, length, bufferSize);
     }
   
     /** IndexInput methods */
@@ -116,29 +121,16 @@ public class SimpleFSDirectory extends FSDirectory {
         }
 
         try {
-          do {
-            final int readLength;
-            if (total + chunkSize > len) {
-              readLength = len - total;
-            } else {
-              // LUCENE-1566 - work around JVM Bug by breaking very large reads into chunks
-              readLength = chunkSize;
+          while (total < len) {
+            final int toRead = Math.min(CHUNK_SIZE, len - total);
+            final int i = file.read(b, offset + total, toRead);
+            if (i < 0) { // be defensive here, even though we checked before hand, something could have changed
+             throw new EOFException("read past EOF: " + this + " off: " + offset + " len: " + len + " total: " + total + " chunkLen: " + toRead + " end: " + end);
             }
-            final int i = file.read(b, offset + total, readLength);
-            if (i < 0){//be defensive here, even though we checked before hand, something could have changed
-             throw new EOFException("read past EOF: " + this + " off: " + offset + " len: " + len + " total: " + total + " readLen: " + readLength + " end: " + end);
-            }
+            assert i > 0 : "RandomAccessFile.read with non zero-length toRead must always read at least one byte";
             total += i;
-          } while (total < len);
-        } catch (OutOfMemoryError e) {
-          // propagate OOM up and add a hint for 32bit VM Users hitting the bug
-          // with a large chunk size in the fast path.
-          final OutOfMemoryError outOfMemoryError = new OutOfMemoryError(
-              "OutOfMemoryError likely caused by the Sun VM Bug described in "
-              + "https://issues.apache.org/jira/browse/LUCENE-1566; try calling FSDirectory.setReadChunkSize "
-              + "with a value smaller than the current chunk size (" + chunkSize + ")");
-          outOfMemoryError.initCause(e);
-          throw outOfMemoryError;
+          }
+          assert total == len;
         } catch (IOException ioe) {
           throw new IOException(ioe.getMessage() + ": " + this, ioe);
         }

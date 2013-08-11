@@ -63,13 +63,10 @@ Bug Fixes
   seek/lookup which can cause sideeffects if done on a cached FST root arc.
   (Simon Willnauer)
 
-* LUCENE-5160: Handle the case where reading from a file or FileChannel returns -1, which
-  could happen in rare cases where something happens to the file between the time we start the
-  read loop (where we check the length) and when we actually do the read. (gsingers, yonik, Robert Muir, Uwe Schindler)
-
-* LUCENE-5161: Fix default chunk sizes in FSDirectory.java to not be unnecessarily large,
-  and fix setReadChunkSize to always work regardless of whether the machine is 32bit
-  or 64bit.  (Uwe Schindler, Robert Muir)
+* LUCENE-5160: Handle the case where reading from a file or FileChannel returns -1,
+  which could happen in rare cases where something happens to the file between the
+  time we start the read loop (where we check the length) and when we actually do
+  the read. (gsingers, yonik, Robert Muir, Uwe Schindler)
 
 API Changes
 
@@ -105,6 +102,11 @@ API Changes
 
 * LUCENE-5156: CompressingTermVectors TermsEnum no longer supports ord().
   (Robert Muir)
+
+* LUCENE-5161, LUCENE-5164: Fix default chunk sizes in FSDirectory to not be
+  unnecessarily large (now 8192 bytes); also use chunking when writing to index
+  files. FSDirectory#setReadChunkSize() is now deprecated and will be removed
+  in Lucene 5.0.  (Uwe Schindler, Robert Muir, gsingers)
 
 Optimizations
 

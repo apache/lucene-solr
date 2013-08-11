@@ -133,52 +133,66 @@ public class TestDirectory extends LuceneTestCase {
   // Test that different instances of FSDirectory can coexist on the same
   // path, can read, write, and lock files.
   public void testDirectInstantiation() throws Exception {
-    File path = _TestUtil.getTempDir("testDirectInstantiation");
+    final File path = _TestUtil.getTempDir("testDirectInstantiation");
+    
+    final byte[] largeBuffer = new byte[random().nextInt(256*1024)], largeReadBuffer = new byte[largeBuffer.length];
+    for (int i = 0; i < largeBuffer.length; i++) {
+      largeBuffer[i] = (byte) i; // automatically loops with modulo
+    }
 
-    int sz = 3;
-    Directory[] dirs = new Directory[sz];
+    final FSDirectory[] dirs = new FSDirectory[] {
+      new SimpleFSDirectory(path, null),
+      new NIOFSDirectory(path, null),
+      new MMapDirectory(path, null)
+    };
 
-    dirs[0] = new SimpleFSDirectory(path, null);
-    dirs[1] = new NIOFSDirectory(path, null);
-    dirs[2] = new MMapDirectory(path, null);
-
-    for (int i=0; i<sz; i++) {
-      Directory dir = dirs[i];
+    for (int i=0; i<dirs.length; i++) {
+      FSDirectory dir = dirs[i];
       dir.ensureOpen();
       String fname = "foo." + i;
       String lockname = "foo" + i + ".lck";
       IndexOutput out = dir.createOutput(fname, newIOContext(random()));
       out.writeByte((byte)i);
+      out.writeBytes(largeBuffer, largeBuffer.length);
       out.close();
 
-      for (int j=0; j<sz; j++) {
-        Directory d2 = dirs[j];
+      for (int j=0; j<dirs.length; j++) {
+        FSDirectory d2 = dirs[j];
         d2.ensureOpen();
         assertTrue(d2.fileExists(fname));
-        assertEquals(1, d2.fileLength(fname));
+        assertEquals(1 + largeBuffer.length, d2.fileLength(fname));
 
-        // don't test read on MMapDirectory, since it can't really be
-        // closed and will cause a failure to delete the file.
-        if (d2 instanceof MMapDirectory) continue;
+        // don't do read tests if unmapping is not supported!
+        if (d2 instanceof MMapDirectory && !((MMapDirectory) d2).getUseUnmap())
+          continue;
         
         IndexInput input = d2.openInput(fname, newIOContext(random()));
         assertEquals((byte)i, input.readByte());
+        // read array with buffering enabled
+        Arrays.fill(largeReadBuffer, (byte)0);
+        input.readBytes(largeReadBuffer, 0, largeReadBuffer.length, true);
+        assertArrayEquals(largeBuffer, largeReadBuffer);
+        // read again without using buffer
+        input.seek(1L);
+        Arrays.fill(largeReadBuffer, (byte)0);
+        input.readBytes(largeReadBuffer, 0, largeReadBuffer.length, false);
+        assertArrayEquals(largeBuffer, largeReadBuffer);        
         input.close();
       }
 
       // delete with a different dir
-      dirs[(i+1)%sz].deleteFile(fname);
+      dirs[(i+1)%dirs.length].deleteFile(fname);
 
-      for (int j=0; j<sz; j++) {
-        Directory d2 = dirs[j];
+      for (int j=0; j<dirs.length; j++) {
+        FSDirectory d2 = dirs[j];
         assertFalse(d2.fileExists(fname));
       }
 
       Lock lock = dir.makeLock(lockname);
       assertTrue(lock.obtain());
 
-      for (int j=0; j<sz; j++) {
-        Directory d2 = dirs[j];
+      for (int j=0; j<dirs.length; j++) {
+        FSDirectory d2 = dirs[j];
         Lock lock2 = d2.makeLock(lockname);
         try {
           assertFalse(lock2.obtain(1));
@@ -190,13 +204,13 @@ public class TestDirectory extends LuceneTestCase {
       lock.release();
       
       // now lock with different dir
-      lock = dirs[(i+1)%sz].makeLock(lockname);
+      lock = dirs[(i+1)%dirs.length].makeLock(lockname);
       assertTrue(lock.obtain());
       lock.release();
     }
 
-    for (int i=0; i<sz; i++) {
-      Directory dir = dirs[i];
+    for (int i=0; i<dirs.length; i++) {
+      FSDirectory dir = dirs[i];
       dir.ensureOpen();
       dir.close();
       assertFalse(dir.isOpen);

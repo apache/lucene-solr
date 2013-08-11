@@ -77,7 +77,7 @@ public class NIOFSDirectory extends FSDirectory {
   @Override
   public IndexInput openInput(String name, IOContext context) throws IOException {
     ensureOpen();
-    return new NIOFSIndexInput(new File(getDirectory(), name), context, getReadChunkSize());
+    return new NIOFSIndexInput(new File(getDirectory(), name), context);
   }
   
   @Override
@@ -96,7 +96,7 @@ public class NIOFSDirectory extends FSDirectory {
       @Override
       public IndexInput openSlice(String sliceDescription, long offset, long length) {
         return new NIOFSIndexInput(sliceDescription, path, descriptor, descriptor.getChannel(), offset,
-            length, BufferedIndexInput.bufferSize(context), getReadChunkSize());
+            length, BufferedIndexInput.bufferSize(context));
       }
 
       @Override
@@ -114,18 +114,22 @@ public class NIOFSDirectory extends FSDirectory {
    * Reads bytes with {@link FileChannel#read(ByteBuffer, long)}
    */
   protected static class NIOFSIndexInput extends FSIndexInput {
-
+    /**
+     * The maximum chunk size for reads of 16384 bytes.
+     */
+    private static final int CHUNK_SIZE = 16384;
+    
     private ByteBuffer byteBuf; // wraps the buffer for NIO
 
     final FileChannel channel;
 
-    public NIOFSIndexInput(File path, IOContext context, int chunkSize) throws IOException {
-      super("NIOFSIndexInput(path=\"" + path + "\")", path, context, chunkSize);
+    public NIOFSIndexInput(File path, IOContext context) throws IOException {
+      super("NIOFSIndexInput(path=\"" + path + "\")", path, context);
       channel = file.getChannel();
     }
     
-    public NIOFSIndexInput(String sliceDescription, File path, RandomAccessFile file, FileChannel fc, long off, long length, int bufferSize, int chunkSize) {
-      super("NIOFSIndexInput(" + sliceDescription + " in path=\"" + path + "\" slice=" + off + ":" + (off+length) + ")", file, off, length, bufferSize, chunkSize);
+    public NIOFSIndexInput(String sliceDescription, File path, RandomAccessFile file, FileChannel fc, long off, long length, int bufferSize) {
+      super("NIOFSIndexInput(" + sliceDescription + " in path=\"" + path + "\" slice=" + off + ":" + (off+length) + ")", file, off, length, bufferSize);
       channel = fc;
       isClone = true;
     }
@@ -138,23 +142,17 @@ public class NIOFSDirectory extends FSDirectory {
 
     @Override
     protected void readInternal(byte[] b, int offset, int len) throws IOException {
-
       final ByteBuffer bb;
 
       // Determine the ByteBuffer we should use
-      if (b == buffer && 0 == offset) {
+      if (b == buffer) {
         // Use our own pre-wrapped byteBuf:
         assert byteBuf != null;
-        byteBuf.clear();
-        byteBuf.limit(len);
         bb = byteBuf;
+        byteBuf.clear().position(offset);
       } else {
         bb = ByteBuffer.wrap(b, offset, len);
       }
-
-      int readOffset = bb.position();
-      int readLength = bb.limit() - readOffset;
-      assert readLength == len;
 
       long pos = getFilePointer() + off;
       
@@ -163,33 +161,20 @@ public class NIOFSDirectory extends FSDirectory {
       }
 
       try {
+        int readLength = len;
         while (readLength > 0) {
-          final int limit;
-          if (readLength > chunkSize) {
-            // LUCENE-1566 - work around JVM Bug by breaking
-            // very large reads into chunks
-            limit = readOffset + chunkSize;
-          } else {
-            limit = readOffset + readLength;
+          final int toRead = Math.min(CHUNK_SIZE, readLength);
+          bb.limit(bb.position() + toRead);
+          assert bb.remaining() == toRead;
+          final int i = channel.read(bb, pos);
+          if (i < 0) { // be defensive here, even though we checked before hand, something could have changed
+            throw new EOFException("read past EOF: " + this + " off: " + offset + " len: " + len + " pos: " + pos + " chunkLen: " + toRead + " end: " + end);
           }
-          bb.limit(limit);
-          int i = channel.read(bb, pos);
-          if (i < 0){//be defensive here, even though we checked before hand, something could have changed
-            throw new EOFException("read past EOF: " + this + " off: " + offset + " len: " + len + " pos: " + pos + " limit: " + limit + " end: " + end);
-          }
+          assert i > 0 : "FileChannel.read with non zero-length bb.remaining() must always read at least one byte (FileChannel is in blocking mode, see spec of ReadableByteChannel)";
           pos += i;
-          readOffset += i;
           readLength -= i;
         }
-      } catch (OutOfMemoryError e) {
-        // propagate OOM up and add a hint for 32bit VM Users hitting the bug
-        // with a large chunk size in the fast path.
-        final OutOfMemoryError outOfMemoryError = new OutOfMemoryError(
-              "OutOfMemoryError likely caused by the Sun VM Bug described in "
-              + "https://issues.apache.org/jira/browse/LUCENE-1566; try calling FSDirectory.setReadChunkSize "
-              + "with a value smaller than the current chunk size (" + chunkSize + ")");
-        outOfMemoryError.initCause(e);
-        throw outOfMemoryError;
+        assert readLength == 0;
       } catch (IOException ioe) {
         throw new IOException(ioe.getMessage() + ": " + this, ioe);
       }

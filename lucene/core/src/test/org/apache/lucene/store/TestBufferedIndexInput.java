@@ -81,24 +81,6 @@ public class TestBufferedIndexInput extends LuceneTestCase {
   public void testReadBytes() throws Exception {
     MyBufferedIndexInput input = new MyBufferedIndexInput();
     runReadBytes(input, BufferedIndexInput.BUFFER_SIZE, random());
-
-    // This tests the workaround code for LUCENE-1566 where readBytesInternal
-    // provides a workaround for a JVM Bug that incorrectly raises a OOM Error
-    // when a large byte buffer is passed to a file read.
-    // NOTE: this does only test the chunked reads and NOT if the Bug is triggered.
-    //final int tmpFileSize = 1024 * 1024 * 5;
-    final int inputBufferSize = 128;
-    File tmpInputFile = _TestUtil.createTempFile("IndexInput", "tmpFile", TEMP_DIR);
-    tmpInputFile.deleteOnExit();
-    writeBytes(tmpInputFile, TEST_FILE_LENGTH);
-
-    // run test with chunk size of 10 bytes
-    runReadBytesAndClose(new SimpleFSIndexInput("SimpleFSIndexInput(path=\"" + tmpInputFile + "\")", tmpInputFile,
-        newIOContext(random()), 10), inputBufferSize, random());
-
-    // run test with chunk size of 10 bytes
-    runReadBytesAndClose(new NIOFSIndexInput(tmpInputFile,
-        newIOContext(random()), 10), inputBufferSize, random());
   }
 
   private void runReadBytesAndClose(IndexInput input, int bufferSize, Random r)
@@ -208,6 +190,7 @@ public class TestBufferedIndexInput extends LuceneTestCase {
     private static byte byten(long n){
       return (byte)(n*n%256);
     }
+    
     private static class MyBufferedIndexInput extends BufferedIndexInput {
       private long pos;
       private long len;
