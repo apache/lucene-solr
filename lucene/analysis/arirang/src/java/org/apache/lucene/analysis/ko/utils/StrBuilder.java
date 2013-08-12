@@ -1076,8 +1076,6 @@ public class StrBuilder implements Cloneable {
    *   append(it.next());
    * }
    * </pre>
-   * Note that for this simple example, you should use
-   * {@link #appendWithSeparators(Collection, String)}.
    * 
    * @param separator  the separator to use, null means no separator
    * @return this, to enable chaining
@@ -1134,8 +1132,6 @@ public class StrBuilder implements Cloneable {
    *   append(it.next());
    * }
    * </pre>
-   * Note that for this simple example, you should use
-   * {@link #appendWithSeparators(Collection, String)}.
    * 
    * @param separator  the separator to use
    * @return this, to enable chaining
@@ -1181,8 +1177,6 @@ public class StrBuilder implements Cloneable {
    *   append(list.get(i));
    * }
    * </pre>
-   * Note that for this simple example, you should use
-   * {@link #appendWithSeparators(Collection, String)}.
    * 
    * @param separator  the separator to use, null means no separator
    * @param loopIndex  the loop index
@@ -1208,8 +1202,6 @@ public class StrBuilder implements Cloneable {
    *   append(list.get(i));
    * }
    * </pre>
-   * Note that for this simple example, you should use
-   * {@link #appendWithSeparators(Collection, String)}.
    * 
    * @param separator  the separator to use
    * @param loopIndex  the loop index
