@@ -133,6 +133,11 @@ public class ClientUtils
         }
       }
     }
+    
+    for (SolrInputDocument childDocument : doc.getChildDocuments()) {
+      writeXML(childDocument, writer);
+    }
+    
     writer.write("</doc>");
   }
 

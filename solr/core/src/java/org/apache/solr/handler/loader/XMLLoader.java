@@ -16,50 +16,51 @@ package org.apache.solr.handler.loader;
  * limitations under the License.
  */
 
+import com.google.common.collect.Lists;
+import org.apache.commons.io.IOUtils;
+import org.apache.solr.common.SolrException;
+import org.apache.solr.common.SolrInputDocument;
+import org.apache.solr.common.params.CommonParams;
 import org.apache.solr.common.params.ModifiableSolrParams;
-import org.apache.solr.update.processor.UpdateRequestProcessor;
-import org.apache.solr.update.AddUpdateCommand;
-import org.apache.solr.update.CommitUpdateCommand;
-import org.apache.solr.update.RollbackUpdateCommand;
-import org.apache.solr.update.DeleteUpdateCommand;
-import org.apache.solr.util.xslt.TransformerProvider;
-import org.apache.solr.request.SolrQueryRequest;
-import org.apache.solr.response.SolrQueryResponse;
+import org.apache.solr.common.params.SolrParams;
+import org.apache.solr.common.params.UpdateParams;
 import org.apache.solr.common.util.ContentStream;
 import org.apache.solr.common.util.ContentStreamBase;
 import org.apache.solr.common.util.StrUtils;
 import org.apache.solr.common.util.XMLErrorLogger;
-import org.apache.solr.common.SolrException;
-import org.apache.solr.common.SolrInputDocument;
-import org.apache.solr.common.params.CommonParams;
-import org.apache.solr.common.params.SolrParams;
-import org.apache.solr.common.params.UpdateParams;
 import org.apache.solr.core.SolrConfig;
 import org.apache.solr.handler.RequestHandlerUtils;
 import org.apache.solr.handler.UpdateRequestHandler;
+import org.apache.solr.request.SolrQueryRequest;
+import org.apache.solr.response.SolrQueryResponse;
+import org.apache.solr.update.AddUpdateCommand;
+import org.apache.solr.update.CommitUpdateCommand;
+import org.apache.solr.update.DeleteUpdateCommand;
+import org.apache.solr.update.RollbackUpdateCommand;
+import org.apache.solr.update.processor.UpdateRequestProcessor;
 import org.apache.solr.util.EmptyEntityResolver;
-import org.apache.commons.io.IOUtils;
+import org.apache.solr.util.xslt.TransformerProvider;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.xml.sax.InputSource;
 import org.xml.sax.XMLReader;
 
-import javax.xml.stream.XMLStreamReader;
-import javax.xml.stream.XMLStreamException;
+import javax.xml.parsers.SAXParserFactory;
 import javax.xml.stream.FactoryConfigurationError;
-import javax.xml.stream.XMLStreamConstants;
 import javax.xml.stream.XMLInputFactory;
+import javax.xml.stream.XMLStreamConstants;
+import javax.xml.stream.XMLStreamException;
+import javax.xml.stream.XMLStreamReader;
 import javax.xml.transform.Transformer;
 import javax.xml.transform.TransformerException;
 import javax.xml.transform.dom.DOMResult;
 import javax.xml.transform.dom.DOMSource;
 import javax.xml.transform.sax.SAXSource;
-import javax.xml.parsers.SAXParserFactory;
-
 import java.io.ByteArrayInputStream;
-import java.io.InputStream;
 import java.io.IOException;
+import java.io.InputStream;
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -381,6 +382,7 @@ public class XMLLoader extends ContentStreamLoader {
     float boost = 1.0f;
     boolean isNull = false;
     String update = null;
+    Collection<SolrInputDocument> subDocs = null;
     Map<String, Map<String, Object>> updateMap = null;
     boolean complete = false;
     while (!complete) {
@@ -395,9 +397,14 @@ public class XMLLoader extends ContentStreamLoader {
 
         case XMLStreamConstants.END_ELEMENT:
           if ("doc".equals(parser.getLocalName())) {
+            if (subDocs != null && !subDocs.isEmpty()) {
+              doc.addChildDocuments(subDocs);
+              subDocs = null;
+            }
             complete = true;
             break;
           } else if ("field".equals(parser.getLocalName())) {
+            // should I warn in some text has been found too
             Object v = isNull ? null : text.toString();
             if (update != null) {
               if (updateMap == null) updateMap = new HashMap<String, Map<String, Object>>();
@@ -425,34 +432,43 @@ public class XMLLoader extends ContentStreamLoader {
             }
             doc.addField(name, v, boost);
             boost = 1.0f;
+            // field is over
+            name = null;
           }
           break;
 
         case XMLStreamConstants.START_ELEMENT:
           text.setLength(0);
           String localName = parser.getLocalName();
-          if (!"field".equals(localName)) {
-            log.warn("unexpected XML tag doc/" + localName);
-            throw new SolrException(SolrException.ErrorCode.BAD_REQUEST,
-                    "unexpected XML tag doc/" + localName);
+          if ("doc".equals(localName)) {
+            if (subDocs == null)
+              subDocs = Lists.newArrayList();
+            subDocs.add(readDoc(parser));
           }
-          boost = 1.0f;
-          update = null;
-          isNull = false;
-          String attrVal = "";
-          for (int i = 0; i < parser.getAttributeCount(); i++) {
-            attrName = parser.getAttributeLocalName(i);
-            attrVal = parser.getAttributeValue(i);
-            if ("name".equals(attrName)) {
-              name = attrVal;
-            } else if ("boost".equals(attrName)) {
-              boost = Float.parseFloat(attrVal);
-            } else if ("null".equals(attrName)) {
-              isNull = StrUtils.parseBoolean(attrVal);
-            } else if ("update".equals(attrName)) {
-              update = attrVal;
-            } else {
-              log.warn("Unknown attribute doc/field/@" + attrName);
+          else {
+            if (!"field".equals(localName)) {
+              log.warn("unexpected XML tag doc/" + localName);
+              throw new SolrException(SolrException.ErrorCode.BAD_REQUEST,
+                  "unexpected XML tag doc/" + localName);
+            }
+            boost = 1.0f;
+            update = null;
+            isNull = false;
+            String attrVal = "";
+            for (int i = 0; i < parser.getAttributeCount(); i++) {
+              attrName = parser.getAttributeLocalName(i);
+              attrVal = parser.getAttributeValue(i);
+              if ("name".equals(attrName)) {
+                name = attrVal;
+              } else if ("boost".equals(attrName)) {
+                boost = Float.parseFloat(attrVal);
+              } else if ("null".equals(attrName)) {
+                isNull = StrUtils.parseBoolean(attrVal);
+              } else if ("update".equals(attrName)) {
+                update = attrVal;
+              } else {
+                log.warn("Unknown attribute doc/field/@" + attrName);
+              }
             }
           }
           break;

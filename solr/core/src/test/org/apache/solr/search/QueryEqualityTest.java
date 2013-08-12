@@ -298,6 +298,13 @@ public class QueryEqualityTest extends SolrTestCaseJ4 {
     }
   }
 
+  public void testBlockJoin() throws Exception {
+    assertQueryEquals("parent", "{!parent which=foo_s:parent}dude",
+        "{!parent which=foo_s:parent}dude");
+    assertQueryEquals("child", "{!child of=foo_s:parent}dude",
+        "{!child of=foo_s:parent}dude");
+  }
+
   public void testQuerySurround() throws Exception {
     assertQueryEquals("surround", "{!surround}and(apache,solr)", 
                       "and(apache,solr)", "apache AND solr");

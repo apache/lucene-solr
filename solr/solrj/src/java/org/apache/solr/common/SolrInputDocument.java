@@ -18,9 +18,12 @@
 package org.apache.solr.common;
 
 import java.io.Serializable;
+import java.util.ArrayList;
 import java.util.Collection;
+import java.util.Collections;
 import java.util.Iterator;
 import java.util.LinkedHashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
@@ -36,13 +39,16 @@ public class SolrInputDocument implements Map<String,SolrInputField>, Iterable<S
 {
   private final Map<String,SolrInputField> _fields;
   private float _documentBoost = 1.0f;
-
+  private List<SolrInputDocument> _childDocuments;
+  
   public SolrInputDocument() {
     _fields = new LinkedHashMap<String,SolrInputField>();
+    _childDocuments = new ArrayList<SolrInputDocument>();
   }
   
   public SolrInputDocument(Map<String,SolrInputField> fields) {
     _fields = fields;
+    _childDocuments = new ArrayList<SolrInputDocument>();
   }
   
   /**
@@ -52,7 +58,10 @@ public class SolrInputDocument implements Map<String,SolrInputField>, Iterable<S
   public void clear()
   {
     if( _fields != null ) {
-      _fields.clear();
+      _fields.clear();      
+    }
+    if (_childDocuments != null) {
+      _childDocuments.clear();
     }
   }
 
@@ -189,7 +198,7 @@ public class SolrInputDocument implements Map<String,SolrInputField>, Iterable<S
   @Override
   public String toString()
   {
-    return "SolrInputDocument" + _fields.values();
+    return "SolrInputDocument(fields: " + _fields.values() + ", childs: " + _childDocuments + ")";
   }
   
   public SolrInputDocument deepCopy() {
@@ -199,6 +208,12 @@ public class SolrInputDocument implements Map<String,SolrInputField>, Iterable<S
       clone._fields.put(fieldEntry.getKey(), fieldEntry.getValue().deepCopy());
     }
     clone._documentBoost = _documentBoost;
+    
+    clone._childDocuments = new ArrayList<SolrInputDocument>(_childDocuments.size());
+    for (SolrInputDocument child : _childDocuments) {
+      clone._childDocuments.add(child.deepCopy());  
+    }    
+    
     return clone;
   }
 
@@ -259,5 +274,24 @@ public class SolrInputDocument implements Map<String,SolrInputField>, Iterable<S
   @Override
   public Collection<SolrInputField> values() {
     return _fields.values();
+  }
+  
+  public void addChildDocument(SolrInputDocument child) {
+    _childDocuments.add(child);
+  }
+  
+  public void addChildDocuments(Collection<SolrInputDocument> childs) {
+    for (SolrInputDocument child : childs) {
+      addChildDocument(child);
+    }
+  }
+  
+  public List<SolrInputDocument> getChildDocuments() {
+    return _childDocuments;
+  }
+  
+  public boolean hasChildDocuments() {
+    boolean isEmpty = (_childDocuments == null || _childDocuments.isEmpty());
+    return !isEmpty;
   }
 }

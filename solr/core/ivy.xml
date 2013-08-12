@@ -41,6 +41,7 @@
     <dependency org="org.restlet.jee" name="org.restlet" rev="2.1.1" conf="compile->*"/>
     <dependency org="org.restlet.jee" name="org.restlet.ext.servlet" rev="2.1.1" conf="compile->*"/>
     <dependency org="joda-time" name="joda-time" rev="2.2" conf="compile->*"/>
+    <dependency org="dom4j" name="dom4j" rev="1.6.1" transitive="false"/>
 
     <dependency org="javax.servlet" name="javax.servlet-api" rev="3.0.1" conf="test->*"/>
     <dependency org="org.easymock" name="easymock" rev="3.0" conf="test->*"/>

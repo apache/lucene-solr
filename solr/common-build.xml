@@ -82,6 +82,7 @@
     <pathelement location="${grouping.jar}"/>
     <pathelement location="${queries.jar}"/>
     <pathelement location="${queryparser.jar}"/>
+    <pathelement location="${join.jar}"/>
   </path>
 
   <path id="solr.base.classpath">
@@ -141,7 +142,7 @@
 
   <target name="prep-lucene-jars" 
   	      depends="jar-lucene-core, jar-analyzers-phonetic, jar-analyzers-kuromoji, jar-codecs, jar-suggest, jar-highlighter, jar-memory,
-  	               jar-misc, jar-spatial, jar-grouping, jar-queries, jar-queryparser">
+  	               jar-misc, jar-spatial, jar-grouping, jar-queries, jar-queryparser, jar-join">
   	  <property name="solr.deps.compiled" value="true"/>
   </target>
 	
