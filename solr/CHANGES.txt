@@ -118,7 +118,7 @@ Optimizations
 ----------------------
 
 * SOLR-5044: Admin UI - Note on Core-Admin about directories while creating 
-  core (seffkes)
+  core (steffkes)
 
 Other Changes
 ----------------------
