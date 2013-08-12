@@ -421,4 +421,24 @@ public class TestManagedSchema extends AbstractBadConfigTestBase {
     assertNotNull(newNewSchema.getUniqueKeyField());
     assertEquals("str", newNewSchema.getUniqueKeyField().getName());
   }
+
+  public void testAddFieldThenReload() throws Exception {
+    deleteCore();
+    File managedSchemaFile = new File(tmpConfDir, "managed-schema");
+    assertTrue(managedSchemaFile.delete()); // Delete managed-schema so it won't block parsing a new schema
+    initCore("solrconfig-mutable-managed-schema.xml", "schema-one-field-no-dynamic-field.xml", tmpSolrHome.getPath());
+
+    String fieldName = "new_text_field";
+    assertNull("Field '" + fieldName + "' is present in the schema",
+        h.getCore().getLatestSchema().getFieldOrNull(fieldName));
+
+    Map<String,Object> options = new HashMap<String,Object>();
+    IndexSchema oldSchema = h.getCore().getLatestSchema();
+    String fieldType = "text";
+    SchemaField newField = oldSchema.newField(fieldName, fieldType, options);
+    IndexSchema newSchema = oldSchema.addField(newField);
+    h.getCore().setLatestSchema(newSchema);
+
+    h.reload();
+  }
 }
