@@ -111,6 +111,10 @@ Bug Fixes
   time we start the read loop (where we check the length) and when we actually do
   the read. (gsingers, yonik, Robert Muir, Uwe Schindler)
 
+* LUCENE-5166: PostingsHighlighter would throw IOOBE if a term spanned the maxLength
+  boundary, made it into the top-N and went to the formatter.
+  (Manuel Amoabeng, Michael McCandless, Robert Muir)
+
 API Changes
 
 * LUCENE-5094: Add ramBytesUsed() to MultiDocValues.OrdinalMap.
