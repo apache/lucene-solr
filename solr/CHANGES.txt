@@ -113,6 +113,9 @@ Bug Fixes
 
 * SOLR-5121: zkcli usage help for makepath doesn't match actual command.
   (Daniel Collins via Mark Miller)
+  
+* SOLR-5119: Managed schema problems after adding fields via Schema Rest API.
+  (Nils Kübler, Steve Rowe)
 
 Optimizations
 ----------------------

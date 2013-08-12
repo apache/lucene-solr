@@ -389,6 +389,9 @@ public final class ManagedIndexSchema extends IndexSchema {
     newSchema.uniqueKeyField = uniqueKeyField;
     newSchema.uniqueKeyFieldName = uniqueKeyFieldName;
     newSchema.uniqueKeyFieldType = uniqueKeyFieldType;
+    
+    // After the schema is persisted, resourceName is the same as managedSchemaResourceName
+    newSchema.resourceName = managedSchemaResourceName;
 
     if (includeFieldDataStructures) {
       // These need new collections, since addFields() can add members to them
