@@ -87,6 +87,81 @@ public class TestPostingsHighlighter extends LuceneTestCase {
     dir.close();
   }
   
+  public void testFormatWithMatchExceedingContentLength() throws Exception {
+          
+    int maxLength = 17;
+    String bodyText = "123 5678 01234 TEST";
+    
+    final Analyzer analyzer = new MockAnalyzer(random());
+    
+    Directory dir = newDirectory();
+    IndexWriterConfig iwc = newIndexWriterConfig(TEST_VERSION_CURRENT, analyzer);
+    iwc.setMergePolicy(newLogMergePolicy());
+    RandomIndexWriter iw = new RandomIndexWriter(random(), dir, iwc);
+    
+    final FieldType fieldType = new FieldType(TextField.TYPE_STORED);
+    fieldType.setIndexOptions(IndexOptions.DOCS_AND_FREQS_AND_POSITIONS_AND_OFFSETS);
+    final Field body = new Field("body", bodyText, fieldType);
+    
+    Document doc = new Document();
+    doc.add(body);
+    
+    iw.addDocument(doc);
+    
+    IndexReader ir = iw.getReader();
+    iw.close();
+    
+    IndexSearcher searcher = newSearcher(ir);
+    
+    Query query = new TermQuery(new Term("body", "test"));
+    
+    TopDocs topDocs = searcher.search(query, null, 10, Sort.INDEXORDER);
+    assertEquals(1, topDocs.totalHits);
+    
+    PostingsHighlighter highlighter = new PostingsHighlighter(maxLength);
+    String snippets[] = highlighter.highlight("body", query, searcher, topDocs);
+    
+    
+    assertEquals(1, snippets.length);
+    // LUCENE-5166: no snippet
+    assertEquals("123 5678 01234 TE", snippets[0]);
+    
+    ir.close();
+    dir.close();
+  }
+  
+  // simple test highlighting last word.
+  public void testHighlightLastWord() throws Exception {
+    Directory dir = newDirectory();
+    IndexWriterConfig iwc = newIndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer(random()));
+    iwc.setMergePolicy(newLogMergePolicy());
+    RandomIndexWriter iw = new RandomIndexWriter(random(), dir, iwc);
+    
+    FieldType offsetsType = new FieldType(TextField.TYPE_STORED);
+    offsetsType.setIndexOptions(IndexOptions.DOCS_AND_FREQS_AND_POSITIONS_AND_OFFSETS);
+    Field body = new Field("body", "", offsetsType);
+    Document doc = new Document();
+    doc.add(body);
+    
+    body.setStringValue("This is a test");
+    iw.addDocument(doc);
+    
+    IndexReader ir = iw.getReader();
+    iw.close();
+    
+    IndexSearcher searcher = newSearcher(ir);
+    PostingsHighlighter highlighter = new PostingsHighlighter();
+    Query query = new TermQuery(new Term("body", "test"));
+    TopDocs topDocs = searcher.search(query, null, 10, Sort.INDEXORDER);
+    assertEquals(1, topDocs.totalHits);
+    String snippets[] = highlighter.highlight("body", query, searcher, topDocs);
+    assertEquals(1, snippets.length);
+    assertEquals("This is a <b>test</b>", snippets[0]);
+    
+    ir.close();
+    dir.close();
+  }
+  
   // simple test with one sentence documents.
   public void testOneSentence() throws Exception {
     Directory dir = newDirectory();

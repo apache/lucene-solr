@@ -72,6 +72,7 @@ import java.io.File;
 import java.io.IOException;
 import java.io.StringWriter;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Comparator;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -969,6 +970,10 @@ public abstract class SolrTestCaseJ4 extends LuceneTestCase {
     return sd;
   }
 
+  public static List<SolrInputDocument> sdocs(SolrInputDocument... docs) {
+    return Arrays.asList(docs);
+  }
+
   /** Converts "test JSON" and returns standard JSON.
    *  Currently this only consists of changing unescaped single quotes to double quotes,
    *  and escaped single quotes to single quotes.
@@ -1527,7 +1532,7 @@ public abstract class SolrTestCaseJ4 extends LuceneTestCase {
   }
 
   /** Return a Map from field value to a list of document ids */
-  Map<Comparable, List<Comparable>> invertField(Map<Comparable, Doc> model, String field) {
+  public Map<Comparable, List<Comparable>> invertField(Map<Comparable, Doc> model, String field) {
     Map<Comparable, List<Comparable>> value_to_id = new HashMap<Comparable, List<Comparable>>();
 
     // invert field

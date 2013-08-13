@@ -20,6 +20,8 @@ import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.core.SolrInfoMBean;
 import org.apache.solr.request.SolrQueryRequest;
+import org.apache.solr.search.join.BlockJoinChildQParserPlugin;
+import org.apache.solr.search.join.BlockJoinParentQParserPlugin;
 import org.apache.solr.util.plugin.NamedListInitializedPlugin;
 
 import java.net.URL;
@@ -47,7 +49,9 @@ public abstract class QParserPlugin implements NamedListInitializedPlugin, SolrI
     JoinQParserPlugin.NAME, JoinQParserPlugin.class,
     SurroundQParserPlugin.NAME, SurroundQParserPlugin.class,
     SwitchQParserPlugin.NAME, SwitchQParserPlugin.class,
-    MaxScoreQParserPlugin.NAME, MaxScoreQParserPlugin.class
+    MaxScoreQParserPlugin.NAME, MaxScoreQParserPlugin.class,
+    BlockJoinParentQParserPlugin.NAME, BlockJoinParentQParserPlugin.class,
+    BlockJoinChildQParserPlugin.NAME, BlockJoinChildQParserPlugin.class
   };
 
   /** return a {@link QParser} */

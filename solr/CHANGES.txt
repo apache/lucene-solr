@@ -113,12 +113,15 @@ Bug Fixes
 
 * SOLR-5121: zkcli usage help for makepath doesn't match actual command.
   (Daniel Collins via Mark Miller)
+  
+* SOLR-5119: Managed schema problems after adding fields via Schema Rest API.
+  (Nils Kübler, Steve Rowe)
 
 Optimizations
 ----------------------
 
 * SOLR-5044: Admin UI - Note on Core-Admin about directories while creating 
-  core (seffkes)
+  core (steffkes)
 
 Other Changes
 ----------------------
@@ -178,6 +181,7 @@ Upgrading from Solr 4.3.0
 * LUCENE-5063: ByteField and ShortField have been deprecated and will be removed
   in 5.0. If you are still using these field types, you should migrate your
   fields to TrieIntField.
+
   
 Detailed Change List
 ----------------------
@@ -257,6 +261,16 @@ New Features
 
 * SOLR-4943: Add a new system wide info admin handler that exposes the system info
   that could previously only be retrieved using a SolrCore. (Mark Miller)
+
+* SOLR-3076: Block joins.  Documents and their sub-documents must be indexed
+  as a block.
+  {!parent which=<allParents>}<someChildren>  takes in a query that matches child
+     documents and results in matches on their parents.
+  {!child of=<allParents>}<someParents>  takes in a query that matches some parent
+     documents and results in matches on their children.
+  (Mikhail Khludnev, Vadim Kirilchuk, Alan Woodward, Tom Burton-West, Mike McCandless,
+  hossman, yonik)
+
 
 Bug Fixes
 ----------------------
