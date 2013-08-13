@@ -20,16 +20,6 @@
 
 package org.apache.solr.update;
 
-import java.io.IOException;
-import java.net.URL;
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.concurrent.ExecutionException;
-import java.util.concurrent.Future;
-import java.util.concurrent.atomic.AtomicLong;
-
 import org.apache.lucene.document.Document;
 import org.apache.lucene.index.DirectoryReader;
 import org.apache.lucene.index.IndexReader;
@@ -56,11 +46,21 @@ import org.apache.solr.schema.IndexSchema;
 import org.apache.solr.schema.SchemaField;
 import org.apache.solr.search.FunctionRangeQuery;
 import org.apache.solr.search.QParser;
-import org.apache.solr.search.SyntaxError;
 import org.apache.solr.search.QueryUtils;
 import org.apache.solr.search.SolrIndexSearcher;
+import org.apache.solr.search.SyntaxError;
 import org.apache.solr.search.function.ValueSourceRangeFilter;
 import org.apache.solr.util.RefCounted;
+
+import java.io.IOException;
+import java.net.URL;
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.concurrent.ExecutionException;
+import java.util.concurrent.Future;
+import java.util.concurrent.atomic.AtomicLong;
 
 /**
  * <code>DirectUpdateHandler2</code> implements an UpdateHandler where documents are added
@@ -199,19 +199,23 @@ public class DirectUpdateHandler2 extends UpdateHandler implements SolrCoreState
             // normal update
             
             Term updateTerm;
-            Term idTerm = new Term(idField.getName(), cmd.getIndexedId());
+            Term idTerm = new Term(cmd.isBlock() ? "_root_" : idField.getName(), cmd.getIndexedId());
             boolean del = false;
             if (cmd.updateTerm == null) {
               updateTerm = idTerm;
             } else {
+              // this is only used by the dedup update processor
               del = true;
               updateTerm = cmd.updateTerm;
             }
-            
-            Document luceneDocument = cmd.getLuceneDocument();
-            // SolrCore.verbose("updateDocument",updateTerm,luceneDocument,writer);
-            writer.updateDocument(updateTerm, luceneDocument,
-                schema.getAnalyzer());
+
+            if (cmd.isBlock()) {
+              writer.updateDocuments(updateTerm, cmd, schema.getAnalyzer());
+            } else {
+              Document luceneDocument = cmd.getLuceneDocument();
+              // SolrCore.verbose("updateDocument",updateTerm,luceneDocument,writer);
+              writer.updateDocument(updateTerm, luceneDocument, schema.getAnalyzer());
+            }
             // SolrCore.verbose("updateDocument",updateTerm,"DONE");
             
             if (del) { // ensure id remains unique
@@ -234,7 +238,12 @@ public class DirectUpdateHandler2 extends UpdateHandler implements SolrCoreState
           
         } else {
           // allow duplicates
-          writer.addDocument(cmd.getLuceneDocument(), schema.getAnalyzer());
+          if (cmd.isBlock()) {
+            writer.addDocuments(cmd, schema.getAnalyzer());
+          } else {
+            writer.addDocument(cmd.getLuceneDocument(), schema.getAnalyzer());
+          }
+
           if (ulog != null) ulog.add(cmd);
         }
         

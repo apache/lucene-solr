@@ -27,10 +27,15 @@ import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.schema.IndexSchema;
 import org.apache.solr.schema.SchemaField;
 
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.Iterator;
+import java.util.List;
+
 /**
  *
  */
-public class AddUpdateCommand extends UpdateCommand {
+public class AddUpdateCommand extends UpdateCommand implements Iterable<Document> {
    // optional id in "internal" indexed form... if it is needed and not supplied,
    // it will be obtained from the doc.
    private BytesRef indexedId;
@@ -143,8 +148,64 @@ public class AddUpdateCommand extends UpdateCommand {
     }
     return id;
   }
-  
-   @Override
+
+  public boolean isBlock() {
+    return solrDoc.hasChildDocuments();
+  }
+
+  @Override
+  public Iterator<Document> iterator() {
+    return new Iterator<Document>() {
+      Iterator<SolrInputDocument> iter;
+
+      {
+        List<SolrInputDocument> all = flatten(solrDoc);
+
+        SchemaField uniq = req.getSchema().getUniqueKeyField();
+        String idField = getHashableId();
+
+        for (SolrInputDocument sdoc : all) {
+          sdoc.setField("_root_", idField);      // should this be a string or the same type as the ID?
+          // TODO: if possible concurrent modification exception (if SolrInputDocument not cloned and is being forwarded to replicas)
+          // then we could add this field to the generated lucene document instead.
+        }
+
+        iter = all.iterator();
+     }
+
+      @Override
+      public boolean hasNext() {
+        return iter.hasNext();
+      }
+
+      @Override
+      public Document next() {
+        return DocumentBuilder.toDocument(iter.next(), req.getSchema());
+      }
+
+      @Override
+      public void remove() {
+        throw new UnsupportedOperationException();
+      }
+    };
+  }
+
+  private List<SolrInputDocument> flatten(SolrInputDocument root) {
+    List<SolrInputDocument> unwrappedDocs = new ArrayList<SolrInputDocument>();
+    recUnwrapp(unwrappedDocs, root);
+    Collections.reverse(unwrappedDocs);
+    return unwrappedDocs;
+  }
+
+  private void recUnwrapp(List<SolrInputDocument> unwrappedDocs, SolrInputDocument currentDoc) {
+    unwrappedDocs.add(currentDoc);
+    for (SolrInputDocument child : currentDoc.getChildDocuments()) {
+      recUnwrapp(unwrappedDocs, child);
+    }
+  }
+
+
+  @Override
   public String toString() {
      StringBuilder sb = new StringBuilder(super.toString());
      sb.append(",id=").append(getPrintableId());
@@ -153,4 +214,6 @@ public class AddUpdateCommand extends UpdateCommand {
      sb.append('}');
      return sb.toString();
    }
- }
+
+
+}

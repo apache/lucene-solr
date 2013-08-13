@@ -120,6 +120,12 @@
       initialSize="512"
       autowarmCount="0"/>
 
+    <cache name="perSegFilter"
+      class="solr.search.LRUCache"
+      size="10"
+      initialSize="0"
+      autowarmCount="10" />
+
     <!-- If true, stored fields that are not requested will be loaded lazily.
     -->
     <enableLazyFieldLoading>true</enableLazyFieldLoading>
@@ -553,3 +559,4 @@
   </updateRequestProcessorChain>  
 
 </config>
+
