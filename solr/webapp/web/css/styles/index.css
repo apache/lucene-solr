@@ -147,8 +147,6 @@ limitations under the License.
 
 #content #index #instance h2 { background-image: url( ../../img/ico/server.png ); }
 #content #index #instance .start_time dt span { background-image: url( ../../img/ico/clock-select.png ); }
-#content #index #instance .host dt span { background-image: url( ../../img/ico/globe.png ); }
-#content #index #instance .dir dt span { background-image: url( ../../img/ico/folder.png ); }
 
 #content #index #versions h2 { background-image: url( ../../img/ico/property.png ); }
 #content #index #versions .solr span { background-image: url( ../../img/solr-ico.png ); }

@@ -309,7 +309,7 @@ class JoinQuery extends Query {
       if (prefix == null) {
         term = termsEnum.next();
       } else {
-        if (termsEnum.seekCeil(prefix, true) != TermsEnum.SeekStatus.END) {
+        if (termsEnum.seekCeil(prefix) != TermsEnum.SeekStatus.END) {
           term = termsEnum.term();
         }
       }

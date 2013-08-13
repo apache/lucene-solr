@@ -25,5 +25,6 @@
     <orderEntry type="module" module-name="analysis-common" />
     <orderEntry type="module" module-name="lucene-core" />
     <orderEntry type="module" module-name="queryparser" />
+    <orderEntry type="module" module-name="join" />
   </component>
 </module>

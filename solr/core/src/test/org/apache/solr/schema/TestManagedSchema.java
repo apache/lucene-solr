@@ -16,13 +16,6 @@ package org.apache.solr.schema;
  * limitations under the License.
  */
 
-import java.io.File;
-import java.io.FileInputStream;
-import java.util.Collections;
-import java.util.HashMap;
-import java.util.Map;
-import java.util.regex.Pattern;
-
 import org.apache.commons.io.FileUtils;
 import org.apache.commons.io.IOUtils;
 import org.apache.solr.common.SolrException;
@@ -35,6 +28,13 @@ import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.response.SolrQueryResponse;
 import org.junit.After;
 import org.junit.Before;
+
+import java.io.File;
+import java.io.FileInputStream;
+import java.util.Collections;
+import java.util.HashMap;
+import java.util.Map;
+import java.util.regex.Pattern;
 
 public class TestManagedSchema extends AbstractBadConfigTestBase {
 
@@ -122,7 +122,6 @@ public class TestManagedSchema extends AbstractBadConfigTestBase {
   
   private void assertSchemaResource(String collection, String expectedSchemaResource) throws Exception {
     final CoreContainer cores = h.getCoreContainer();
-    cores.setPersistent(false);
     final CoreAdminHandler admin = new CoreAdminHandler(cores);
     SolrQueryRequest request = req(CoreAdminParams.ACTION, CoreAdminParams.CoreAdminAction.STATUS.toString());
     SolrQueryResponse response = new SolrQueryResponse();
@@ -421,5 +420,25 @@ public class TestManagedSchema extends AbstractBadConfigTestBase {
     IndexSchema newNewSchema = h.getCore().getLatestSchema();
     assertNotNull(newNewSchema.getUniqueKeyField());
     assertEquals("str", newNewSchema.getUniqueKeyField().getName());
+  }
+
+  public void testAddFieldThenReload() throws Exception {
+    deleteCore();
+    File managedSchemaFile = new File(tmpConfDir, "managed-schema");
+    assertTrue(managedSchemaFile.delete()); // Delete managed-schema so it won't block parsing a new schema
+    initCore("solrconfig-mutable-managed-schema.xml", "schema-one-field-no-dynamic-field.xml", tmpSolrHome.getPath());
+
+    String fieldName = "new_text_field";
+    assertNull("Field '" + fieldName + "' is present in the schema",
+        h.getCore().getLatestSchema().getFieldOrNull(fieldName));
+
+    Map<String,Object> options = new HashMap<String,Object>();
+    IndexSchema oldSchema = h.getCore().getLatestSchema();
+    String fieldType = "text";
+    SchemaField newField = oldSchema.newField(fieldName, fieldType, options);
+    IndexSchema newSchema = oldSchema.addField(newField);
+    h.getCore().setLatestSchema(newSchema);
+
+    h.reload();
   }
 }

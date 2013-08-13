@@ -190,6 +190,11 @@ public class JmxMonitoredMap<K, V> extends
     return ObjectName.getInstance(jmxRootName, map);
   }
 
+  /** For test verification */
+  public MBeanServer getServer() {
+    return server;
+  }
+
   /**
    * DynamicMBean is used to dynamically expose all SolrInfoMBean
    * getStatistics() NameList keys as String getters.

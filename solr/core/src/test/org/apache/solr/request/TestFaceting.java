@@ -112,7 +112,7 @@ public class TestFaceting extends SolrTestCaseJ4 {
 
     // test seeking before term
     if (size>0) {
-      assertEquals(size>0, te.seekCeil(new BytesRef("000"), true) != TermsEnum.SeekStatus.END);
+      assertEquals(size>0, te.seekCeil(new BytesRef("000")) != TermsEnum.SeekStatus.END);
       assertEquals(0, te.ord());
       assertEquals(t(0), te.term().utf8ToString());
     }

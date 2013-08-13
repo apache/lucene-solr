@@ -25,7 +25,7 @@ $Id$
 Versions of Major Components
 ---------------------
 Apache Tika 1.4
-Carrot2 3.6.2
+Carrot2 3.8.0
 Velocity 1.7 and Velocity Tools 2.0
 Apache UIMA 2.3.1
 Apache ZooKeeper 3.4.5
@@ -53,7 +53,7 @@ Other Changes
 Versions of Major Components
 ---------------------
 Apache Tika 1.4
-Carrot2 3.6.2
+Carrot2 3.8.0
 Velocity 1.7 and Velocity Tools 2.0
 Apache UIMA 2.3.1
 Apache ZooKeeper 3.4.5
@@ -61,14 +61,88 @@ Apache ZooKeeper 3.4.5
 Upgrading from Solr 4.4.0
 ----------------------
 
+* XML configuration parsing is now more strict about situations where a single
+  setting is allowed but multiple values are found.  In the past, one value
+  would be chosen arbitrarily and silently.  Starting with 4.5, configuration 
+  parsing will fail with an error in situations like this.  If you see error 
+  messages such as "solrconfig.xml contains more than one value for config path: 
+  indexConfig/infoStream" check your solrconfig.xml file for multiple occurrences 
+  of "infoStream" and delete the one that you do not wish to use.  See SOLR-4953
+  for more details.
+
 Detailed Change List
 ----------------------
+
+New Features
+----------------------
+
+* SOLR-5126: Update Carrot2 clustering to version 3.8.0, update Morfologik 
+  to version 1.7.1 (Dawid Weiss)
+
+* SOLR-2345: Enhanced geodist() to work with an RPT field, provided that the
+  field is referenced via 'sfield' and the query point is constant.
+  (David Smiley)
+
+* SOLR-5082: The encoding of URL-encoded query parameters can be changed with
+  the "ie" (input encoding) parameter, e.g. "select?q=m%FCller&ie=ISO-8859-1".
+  The default is UTF-8. To change the encoding of POSTed content, use the
+  "Content-Type" HTTP header.  (Uwe Schindler, David Smiley)
+* SOLR-4221: Custom sharding (Noble Paul)
+* SOLR-4808: Persist and use router,replicationFactor and maxShardsPerNode at Collection and Shard level (Noble Paul, Shalin Mangar)
+* SOLR-5006: CREATESHARD command for 'implicit' shards (Noble Paul)
+* SOLR-5017: Allow sharding based on the value of a field (Noble Paul)
+* SOLR-4222:create custom sharded collection via collections API (Noble Paul)
+
+Bug Fixes
+----------------------
+
+* SOLR-3633: web UI reports an error if CoreAdminHandler says there are no
+  SolrCores (steffkes)
+  
+* SOLR-4489: SpellCheckComponent can throw StringIndexOutOfBoundsException
+  when generating collations involving multiple word-break corrections.
+  (James Dyer)
+
+* SOLR-5107: Fixed NPE when using numTerms=0 in LukeRequestHandler
+  (Ahmet Arslan, hossman)
+
+* SOLR-4679, SOLR-4908, SOLR-5124: Text extracted from HTML or PDF files
+  using Solr Cell was missing ignorable whitespace, which is inserted by
+  TIKA for convenience to support plain text extraction without using the
+  HTML elements. This bug resulted in glued words.  (hossman, Uwe Schindler)
+
+* SOLR-5121: zkcli usage help for makepath doesn't match actual command.
+  (Daniel Collins via Mark Miller)
+  
+* SOLR-5119: Managed schema problems after adding fields via Schema Rest API.
+  (Nils Kübler, Steve Rowe)
+
+Optimizations
+----------------------
+
+* SOLR-5044: Admin UI - Note on Core-Admin about directories while creating 
+  core (steffkes)
 
 Other Changes
 ----------------------
 
+* SOLR-4708: Enable ClusteringComponent by default in collection1 example.
+  The solr.clustering.enabled system property is set to 'true' by default.
+  (ehatcher, Dawid Weiss)
+
 * SOLR-4914: Factor out core list persistence and discovery into a
   new CoresLocator interface. (Alan Woodward)
+
+* SOLR-5056: Improve type safety of ConfigSolr class. (Alan Woodward)
+
+* SOLR-4951: Better randomization of MergePolicy in Solr tests (hossman)
+
+* SOLR-4953: Make XML Configuration parsing fail if an xpath matches multiple 
+  nodes when only a single value is expected.  (hossman)
+
+* The routing parameter "shard.keys" is deprecated as part of SOLR-5017 .The new parameter name is '_route_' .
+  The old parameter should continue to work for another release  (Noble Paul)
+
 
 ==================  4.4.0 ==================
 
@@ -107,6 +181,7 @@ Upgrading from Solr 4.3.0
 * LUCENE-5063: ByteField and ShortField have been deprecated and will be removed
   in 5.0. If you are still using these field types, you should migrate your
   fields to TrieIntField.
+
   
 Detailed Change List
 ----------------------
@@ -186,6 +261,16 @@ New Features
 
 * SOLR-4943: Add a new system wide info admin handler that exposes the system info
   that could previously only be retrieved using a SolrCore. (Mark Miller)
+
+* SOLR-3076: Block joins.  Documents and their sub-documents must be indexed
+  as a block.
+  {!parent which=<allParents>}<someChildren>  takes in a query that matches child
+     documents and results in matches on their parents.
+  {!child of=<allParents>}<someParents>  takes in a query that matches some parent
+     documents and results in matches on their children.
+  (Mikhail Khludnev, Vadim Kirilchuk, Alan Woodward, Tom Burton-West, Mike McCandless,
+  hossman, yonik)
+
 
 Bug Fixes
 ----------------------
@@ -311,6 +396,9 @@ Bug Fixes
   throw a NPE. Fixed. (David Smiley)
   
 * SOLR-5039: Admin/Schema Browser displays -1 for term counts for multiValued fields.
+
+* SOLR-5037: The CSV loader now accepts field names that are not in the schema.
+  (gsingers, ehatcher, Steve Rowe)
 
 Optimizations
 ----------------------

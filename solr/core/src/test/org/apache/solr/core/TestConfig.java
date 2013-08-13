@@ -114,27 +114,6 @@ public class TestConfig extends SolrTestCaseJ4 {
     assertTrue(handler.getHiddenFiles().contains("PROTWORDS.TXT"));
   }
 
-  @Test
-  public void testTermIndexInterval() throws Exception {
-    RefCounted<IndexWriter> iw = ((DirectUpdateHandler2) h.getCore()
-        .getUpdateHandler()).getSolrCoreState().getIndexWriter(h.getCore());
-    int interval = 0;
-    try {
-      IndexWriter writer = iw.get();
-      interval = writer.getConfig().getTermIndexInterval();
-    } finally {
-      iw.decref();
-    }
-    assertEquals(256, interval);
-  }
-
-  @Test
-  public void testTermIndexDivisor() throws Exception {
-    IndexReaderFactory irf = h.getCore().getIndexReaderFactory();
-    StandardIndexReaderFactory sirf = (StandardIndexReaderFactory) irf;
-    assertEquals(12, sirf.termInfosIndexDivisor);
-  }
-
   // If defaults change, add test methods to cover each version
   @Test
   public void testDefaults() throws Exception {
@@ -150,14 +129,15 @@ public class TestConfig extends SolrTestCaseJ4 {
 
   // sanity check that sys propertis are working as expected
   public void testSanityCheckTestSysPropsAreUsed() throws Exception {
-    final boolean expectCFS 
-      = Boolean.parseBoolean(System.getProperty("useCompoundFile"));
 
     SolrConfig sc = new SolrConfig(new SolrResourceLoader("solr/collection1"), "solrconfig-basic.xml", null);
     SolrIndexConfig sic = sc.indexConfig;
-    assertEquals("default ramBufferSizeMB", 100.0D, sic.ramBufferSizeMB, 0.0D);
-    assertEquals("default LockType", SolrIndexConfig.LOCK_TYPE_NATIVE, sic.lockType);
-    assertEquals("useCompoundFile sysprop", expectCFS, sic.useCompoundFile);
+
+    assertEquals("ramBufferSizeMB sysprop", 
+                 Double.parseDouble(System.getProperty("solr.tests.ramBufferSizeMB")), 
+                                    sic.ramBufferSizeMB, 0.0D);
+    assertEquals("useCompoundFile sysprop", 
+                 Boolean.parseBoolean(System.getProperty("useCompoundFile")), sic.useCompoundFile);
   }
 
 }

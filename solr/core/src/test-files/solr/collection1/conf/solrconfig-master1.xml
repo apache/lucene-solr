@@ -22,10 +22,7 @@
   <dataDir>${solr.data.dir:}</dataDir>
   <directoryFactory name="DirectoryFactory" class="${solr.directoryFactory:solr.RAMDirectoryFactory}"/>
 
-  <indexConfig>
-    <lockType>single</lockType>
-    <useCompoundFile>${useCompoundFile:false}</useCompoundFile>
-  </indexConfig>
+  <xi:include href="solrconfig.snippet.randomindexconfig.xml" xmlns:xi="http://www.w3.org/2001/XInclude"/>
 
   <updateHandler class="solr.DirectUpdateHandler2">
   </updateHandler>

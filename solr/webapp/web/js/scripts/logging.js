@@ -15,7 +15,7 @@
  limitations under the License.
 */
 
-var loglevel_path = null;
+var loglevel_path = app.config.solr_path + '/admin/info/logging';
 var frame_element = null;
 
 var logging_handler = function( response, text_status, xhr )
@@ -409,8 +409,6 @@ sammy.get
   /^#\/(~logging)$/,
   function( context )
   {
-    var core_basepath = $( '[data-basepath]', app.menu_element ).attr( 'data-basepath' );
-    loglevel_path = core_basepath + '/admin/logging';
     var content_element = $( '#content' );
 
     $.get
@@ -495,8 +493,6 @@ sammy.get
   /^#\/(~logging)\/level$/,
   function( context )
   {
-    var core_basepath = $( '[data-basepath]', app.menu_element ).attr( 'data-basepath' );
-    loglevel_path = core_basepath + '/admin/logging';
     var content_element = $( '#content' );
 
     $.get

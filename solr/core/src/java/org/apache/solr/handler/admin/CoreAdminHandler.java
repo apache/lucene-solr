@@ -18,6 +18,7 @@
 package org.apache.solr.handler.admin;
 
 import com.google.common.collect.ImmutableMap;
+import com.google.common.collect.Lists;
 import org.apache.commons.io.FileUtils;
 import org.apache.commons.lang.StringUtils;
 import org.apache.lucene.index.DirectoryReader;
@@ -295,17 +296,17 @@ public class CoreAdminHandler extends RequestHandlerBase {
   }
 
 
-  protected void handleMergeAction(SolrQueryRequest req, SolrQueryResponse rsp) throws IOException {
+  protected void handleMergeAction(SolrQueryRequest req, SolrQueryResponse rsp) throws Exception {
     SolrParams params = req.getParams();
     String cname = params.required().get(CoreAdminParams.CORE);
     SolrCore core = coreContainer.getCore(cname);
     SolrQueryRequest wrappedReq = null;
 
-    SolrCore[] sourceCores = null;
-    RefCounted<SolrIndexSearcher>[] searchers = null;
+    List<SolrCore> sourceCores = Lists.newArrayList();
+    List<RefCounted<SolrIndexSearcher>> searchers = Lists.newArrayList();
     // stores readers created from indexDir param values
-    DirectoryReader[] readersToBeClosed = null;
-    Directory[] dirsToBeReleased = null;
+    List<DirectoryReader> readersToBeClosed = Lists.newArrayList();
+    List<Directory> dirsToBeReleased = Lists.newArrayList();
     if (core != null) {
       try {
         String[] dirNames = params.getParams(CoreAdminParams.INDEX_DIR);
@@ -315,38 +316,34 @@ public class CoreAdminHandler extends RequestHandlerBase {
             throw new SolrException( SolrException.ErrorCode.BAD_REQUEST,
                 "At least one indexDir or srcCore must be specified");
 
-          sourceCores = new SolrCore[sources.length];
           for (int i = 0; i < sources.length; i++) {
             String source = sources[i];
             SolrCore srcCore = coreContainer.getCore(source);
             if (srcCore == null)
               throw new SolrException(SolrException.ErrorCode.BAD_REQUEST,
                   "Core: " + source + " does not exist");
-            sourceCores[i] = srcCore;
+            sourceCores.add(srcCore);
           }
         } else  {
-          readersToBeClosed = new DirectoryReader[dirNames.length];
-          dirsToBeReleased = new Directory[dirNames.length];
           DirectoryFactory dirFactory = core.getDirectoryFactory();
           for (int i = 0; i < dirNames.length; i++) {
             Directory dir = dirFactory.get(dirNames[i], DirContext.DEFAULT, core.getSolrConfig().indexConfig.lockType);
-            dirsToBeReleased[i] = dir;
+            dirsToBeReleased.add(dir);
             // TODO: why doesn't this use the IR factory? what is going on here?
-            readersToBeClosed[i] = DirectoryReader.open(dir);
+            readersToBeClosed.add(DirectoryReader.open(dir));
           }
         }
 
-        DirectoryReader[] readers = null;
-        if (readersToBeClosed != null)  {
+        List<DirectoryReader> readers = null;
+        if (readersToBeClosed.size() > 0)  {
           readers = readersToBeClosed;
         } else {
-          readers = new DirectoryReader[sourceCores.length];
-          searchers = new RefCounted[sourceCores.length];
-          for (int i = 0; i < sourceCores.length; i++) {
-            SolrCore solrCore = sourceCores[i];
+          readers = Lists.newArrayList();
+          for (SolrCore solrCore: sourceCores) {
             // record the searchers so that we can decref
-            searchers[i] = solrCore.getSearcher();
-            readers[i] = searchers[i].get().getIndexReader();
+            RefCounted<SolrIndexSearcher> searcher = solrCore.getSearcher();
+            searchers.add(searcher);
+            readers.add(searcher.get().getIndexReader());
           }
         }
 
@@ -356,23 +353,21 @@ public class CoreAdminHandler extends RequestHandlerBase {
         UpdateRequestProcessor processor =
                 processorChain.createProcessor(wrappedReq, rsp);
         processor.processMergeIndexes(new MergeIndexesCommand(readers, req));
+      } catch (Exception e) {
+        // log and rethrow so that if the finally fails we don't lose the original problem
+        log.error("ERROR executing merge:", e);
+        throw e;
       } finally {
-        if (searchers != null) {
-          for (RefCounted<SolrIndexSearcher> searcher : searchers) {
-            if (searcher != null) searcher.decref();
-          }
+        for (RefCounted<SolrIndexSearcher> searcher : searchers) {
+          if (searcher != null) searcher.decref();
         }
-        if (sourceCores != null) {
-          for (SolrCore solrCore : sourceCores) {
-            if (solrCore != null) solrCore.close();
-          }
+        for (SolrCore solrCore : sourceCores) {
+          if (solrCore != null) solrCore.close();
         }
-        if (readersToBeClosed != null) IOUtils.closeWhileHandlingException(readersToBeClosed);
-        if (dirsToBeReleased != null) {
-          for (Directory dir : dirsToBeReleased) {
-            DirectoryFactory dirFactory = core.getDirectoryFactory();
-            dirFactory.release(dir);
-          }
+        IOUtils.closeWhileHandlingException(readersToBeClosed);
+        for (Directory dir : dirsToBeReleased) {
+          DirectoryFactory dirFactory = core.getDirectoryFactory();
+          dirFactory.release(dir);
         }
         if (wrappedReq != null) wrappedReq.close();
         core.close();

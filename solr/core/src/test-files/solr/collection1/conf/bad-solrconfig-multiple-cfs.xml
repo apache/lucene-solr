@@ -16,19 +16,15 @@
  See the License for the specific language governing permissions and
  limitations under the License.
 -->
-<config>
-  <!--
-  Config file used by SolrCoreCheckLockOnStartupTest#testSimpleLockErrorOnStartup
-  It requires the simple lockType
-  -->
-  <jmx />
 
-  <dataDir>${solr.data.dir:}</dataDir>
+<config>
 
   <luceneMatchVersion>${tests.luceneMatchVersion:LUCENE_CURRENT}</luceneMatchVersion>
 
   <indexConfig>
-    <useCompoundFile>${useCompoundFile:false}</useCompoundFile>
-    <lockType>simple</lockType>
+    <!-- BEGIN BAD: multiple useCompoundFile -->
+    <useCompoundFile>true</useCompoundFile>
+    <useCompoundFile>false</useCompoundFile>
   </indexConfig>
+
 </config>

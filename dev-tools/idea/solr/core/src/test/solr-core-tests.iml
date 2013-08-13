@@ -27,5 +27,6 @@
     <orderEntry type="module" scope="TEST" module-name="suggest" />
     <orderEntry type="module" scope="TEST" module-name="spatial" />
     <orderEntry type="module" scope="TEST" module-name="misc" />
+    <orderEntry type="module" scope="TEST" module-name="join" />
   </component>
 </module>

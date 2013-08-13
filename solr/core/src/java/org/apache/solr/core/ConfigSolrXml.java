@@ -126,8 +126,23 @@ public class ConfigSolrXml extends ConfigSolr {
   }
 
   @Override
+  public String getDefaultCoreName() {
+    return "collection1";
+  }
+
+  @Override
+  public boolean isPersistent() {
+    return true;
+  }
+
+  @Override
   protected String getShardHandlerFactoryConfigPath() {
     return "solr/shardHandlerFactory";
+  }
+
+  @Override
+  public String getAdminPath() {
+    return DEFAULT_CORE_ADMIN_PATH;
   }
 
   @Override

@@ -121,6 +121,8 @@ public class FullSolrCloudDistribCmdsTest extends AbstractFullDistribZkTestBase 
     results = query(cloudClient);
     assertEquals(2, results.getResults().getNumFound());
     
+    docId = testIndexQueryDeleteHierarchical(docId);
+    
     testIndexingWithSuss();
     
     // TODO: testOptimisticUpdate(results);
@@ -235,6 +237,75 @@ public class FullSolrCloudDistribCmdsTest extends AbstractFullDistribZkTestBase 
     assertEquals(0, query(cloudClient).getResults().getNumFound());
   }
 
+  private long testIndexQueryDeleteHierarchical(long docId) throws Exception {
+    //index
+    int topDocsNum = atLeast(10);
+    int childsNum = atLeast(10);
+    for (int i = 0; i < topDocsNum; ++i) {
+      UpdateRequest uReq = new UpdateRequest();
+      SolrInputDocument topDocument = new SolrInputDocument();
+      topDocument.addField("id", docId++);
+      topDocument.addField("type_s", "parent");
+      topDocument.addField(i + "parent_f1_s", "v1");
+      topDocument.addField(i + "parent_f2_s", "v2");
+      
+      
+      for (int index = 0; index < childsNum; ++index) {
+        docId = addChildren("child", topDocument, index, false, docId);
+      }
+      
+      uReq.add(topDocument);
+      uReq.process(cloudClient);
+      uReq.process(controlClient);
+    }
+    
+    commit();
+    checkShardConsistency();
+    assertDocCounts(VERBOSE);
+    
+    //query
+    // parents
+    SolrQuery query = new SolrQuery("type_s:parent");
+    QueryResponse results = cloudClient.query(query);
+    assertEquals(topDocsNum, results.getResults().getNumFound());
+    
+    //childs 
+    query = new SolrQuery("type_s:child");
+    results = cloudClient.query(query);
+    assertEquals(topDocsNum * childsNum, results.getResults().getNumFound());
+    
+    //grandchilds
+    query = new SolrQuery("type_s:grand");
+    results = cloudClient.query(query);
+    //each topDoc has t childs where each child has x = 0 + 2 + 4 + ..(t-1)*2 grands
+    //x = 2 * (1 + 2 + 3 +.. (t-1)) => arithmetic summ of t-1 
+    //x = 2 * ((t-1) * t / 2) = t * (t - 1)
+    assertEquals(topDocsNum * childsNum * (childsNum - 1), results.getResults().getNumFound());
+    
+    //delete
+    del("*:*");
+    commit();
+    
+    return docId;
+  }
+  
+  private long addChildren(String prefix, SolrInputDocument topDocument, int childIndex, boolean lastLevel, long docId) {
+    SolrInputDocument childDocument = new SolrInputDocument();
+    childDocument.addField("id", docId++);
+    childDocument.addField("type_s", prefix);
+    for (int index = 0; index < childIndex; ++index) {
+      childDocument.addField(childIndex + prefix + index + "_s", childIndex + "value"+ index);
+    }   
+  
+    if (!lastLevel) {
+      for (int i = 0; i < childIndex * 2; ++i) {
+        docId = addChildren("grand", childDocument, i, true, docId);
+      }
+    }
+    topDocument.addChildDocument(childDocument);
+    return docId;
+  }
+  
   private void testIndexingWithSuss() throws Exception {
     ConcurrentUpdateSolrServer suss = new ConcurrentUpdateSolrServer(
         ((HttpSolrServer) clients.get(0)).getBaseURL(), 3, 1);

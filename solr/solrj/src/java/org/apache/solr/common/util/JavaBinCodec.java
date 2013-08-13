@@ -62,6 +62,7 @@ public class JavaBinCodec {
           END = 15,
 
           SOLRINPUTDOC = 16,
+          SOLRINPUTDOC_CHILDS = 17,
 
           // types that combine tag + length (or other info) in a single byte
           TAG_AND_LEN = (byte) (1 << 5),
@@ -358,6 +359,8 @@ public class JavaBinCodec {
 
   public SolrInputDocument readSolrInputDocument(DataInputInputStream dis) throws IOException {
     int sz = readVInt(dis);
+    dis.readByte(); // skip childDocuments tag
+    int childsSize = readVInt(dis);
     float docBoost = (Float)readVal(dis);
     SolrInputDocument sdoc = new SolrInputDocument();
     sdoc.setDocumentBoost(docBoost);
@@ -374,11 +377,17 @@ public class JavaBinCodec {
       Object fieldVal = readVal(dis);
       sdoc.setField(fieldName, fieldVal, boost);
     }
+    for (int i = 0; i < childsSize; i++) {
+      dis.readByte(); // skip solrinputdoc tag
+      SolrInputDocument child = readSolrInputDocument(dis);
+      sdoc.addChildDocument(child);
+    }
     return sdoc;
   }
 
   public void writeSolrInputDocument(SolrInputDocument sdoc) throws IOException {
     writeTag(SOLRINPUTDOC, sdoc.size());
+    writeTag(SOLRINPUTDOC_CHILDS, sdoc.getChildDocuments().size());    
     writeFloat(sdoc.getDocumentBoost());
     for (SolrInputField inputField : sdoc.values()) {
       if (inputField.getBoost() != 1.0f) {
@@ -386,6 +395,9 @@ public class JavaBinCodec {
       }
       writeExternString(inputField.getName());
       writeVal(inputField.getValue());
+    }
+    for (SolrInputDocument child : sdoc.getChildDocuments()) {
+      writeSolrInputDocument(child);
     }
   }
 

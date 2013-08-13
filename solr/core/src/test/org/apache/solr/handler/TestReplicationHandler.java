@@ -1572,6 +1572,8 @@ public class TestReplicationHandler extends SolrTestCaseJ4 {
 
       copyConfigFile(getSolrConfigFile(), "solrconfig.xml");
       copyConfigFile(getSchemaFile(), "schema.xml");
+      copyConfigFile(CONF_DIR + "solrconfig.snippet.randomindexconfig.xml", 
+                     "solrconfig.snippet.randomindexconfig.xml");
     }
 
     public void tearDown() throws Exception {

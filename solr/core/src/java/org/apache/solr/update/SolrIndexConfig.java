@@ -69,7 +69,6 @@ public class SolrIndexConfig {
   public final String lockType;
   public final PluginInfo mergePolicyInfo;
   public final PluginInfo mergeSchedulerInfo;
-  public final int termIndexInterval;
   
   public final PluginInfo mergedSegmentWarmerInfo;
   
@@ -95,7 +94,6 @@ public class SolrIndexConfig {
     ramBufferSizeMB = 100;
     writeLockTimeout = -1;
     lockType = LOCK_TYPE_NATIVE;
-    termIndexInterval = IndexWriterConfig.DEFAULT_TERM_INDEX_INTERVAL;
     mergePolicyInfo = null;
     mergeSchedulerInfo = null;
     defaultMergePolicyClassName = TieredMergePolicy.class.getName();
@@ -119,15 +117,19 @@ public class SolrIndexConfig {
       def = new SolrIndexConfig(solrConfig);
     }
 
+    // sanity check: this will throw an error for us if there is more then one
+    // config section
+    Object unused = solrConfig.getNode(prefix, false);
+
     luceneVersion = solrConfig.luceneMatchVersion;
 
     // Assert that end-of-life parameters or syntax is not in our config.
     // Warn for luceneMatchVersion's before LUCENE_36, fail fast above
     assertWarnOrFail("The <mergeScheduler>myclass</mergeScheduler> syntax is no longer supported in solrconfig.xml. Please use syntax <mergeScheduler class=\"myclass\"/> instead.",
-        !((solrConfig.get(prefix+"/mergeScheduler/text()",null) != null) && (solrConfig.get(prefix+"/mergeScheduler/@class",null) == null)),
+        !((solrConfig.getNode(prefix+"/mergeScheduler",false) != null) && (solrConfig.get(prefix+"/mergeScheduler/@class",null) == null)),
         true);
     assertWarnOrFail("The <mergePolicy>myclass</mergePolicy> syntax is no longer supported in solrconfig.xml. Please use syntax <mergePolicy class=\"myclass\"/> instead.",
-        !((solrConfig.get(prefix+"/mergePolicy/text()",null) != null) && (solrConfig.get(prefix+"/mergePolicy/@class",null) == null)),
+        !((solrConfig.getNode(prefix+"/mergePolicy",false) != null) && (solrConfig.get(prefix+"/mergePolicy/@class",null) == null)),
         true);
     assertWarnOrFail("The <luceneAutoCommit>true|false</luceneAutoCommit> parameter is no longer valid in solrconfig.xml.",
         solrConfig.get(prefix+"/luceneAutoCommit", null) == null,
@@ -148,7 +150,10 @@ public class SolrIndexConfig {
     mergeSchedulerInfo = getPluginInfo(prefix + "/mergeScheduler", solrConfig, def.mergeSchedulerInfo);
     mergePolicyInfo = getPluginInfo(prefix + "/mergePolicy", solrConfig, def.mergePolicyInfo);
     
-    termIndexInterval = solrConfig.getInt(prefix + "/termIndexInterval", def.termIndexInterval);
+    String val = solrConfig.get(prefix + "/termIndexInterval", null);
+    if (val != null) {
+      throw new IllegalArgumentException("Illegal parameter 'termIndexInterval'");
+    }
 
     boolean infoStreamEnabled = solrConfig.getBool(prefix + "/infoStream", false);
     if(infoStreamEnabled) {
@@ -197,9 +202,6 @@ public class SolrIndexConfig {
 
     if (ramBufferSizeMB != -1)
       iwc.setRAMBufferSizeMB(ramBufferSizeMB);
-
-    if (termIndexInterval != -1)
-      iwc.setTermIndexInterval(termIndexInterval);
 
     if (writeLockTimeout != -1)
       iwc.setWriteLockTimeout(writeLockTimeout);

@@ -124,8 +124,8 @@ public class SolrConfig extends Config {
 
     // Old indexDefaults and mainIndex sections are deprecated and fails fast for luceneMatchVersion=>LUCENE_40.
     // For older solrconfig.xml's we allow the old sections, but never mixed with the new <indexConfig>
-    boolean hasDeprecatedIndexConfig = get("indexDefaults/text()", null) != null || get("mainIndex/text()", null) != null;
-    boolean hasNewIndexConfig = get("indexConfig/text()", null) != null; 
+    boolean hasDeprecatedIndexConfig = (getNode("indexDefaults", false) != null) || (getNode("mainIndex", false) != null);
+    boolean hasNewIndexConfig = getNode("indexConfig", false) != null; 
     if(hasDeprecatedIndexConfig){
       if(luceneMatchVersion.onOrAfter(Version.LUCENE_40)) {
         throw new SolrException(ErrorCode.FORBIDDEN, "<indexDefaults> and <mainIndex> configuration sections are discontinued. Use <indexConfig> instead.");

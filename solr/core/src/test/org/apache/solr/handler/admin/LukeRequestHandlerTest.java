@@ -184,6 +184,29 @@ public class LukeRequestHandlerTest extends AbstractSolrTestCase {
     }
   }
 
+  public void testNumTerms() throws Exception {
+    final String f = "name";
+    for (String n : new String[] {"2", "3", "100", "99999"}) {
+      assertQ(req("qt", "/admin/luke", "fl", f, "numTerms", n),
+              field(f) + "lst[@name='topTerms']/int[@name='Apache']",
+              field(f) + "lst[@name='topTerms']/int[@name='Solr']",
+              "count("+field(f)+"lst[@name='topTerms']/int)=2");
+    }
+    
+    assertQ(req("qt", "/admin/luke", "fl", f, "numTerms", "1"),
+            // no garuntee which one we find
+            "count("+field(f)+"lst[@name='topTerms']/int)=1");
+
+    assertQ(req("qt", "/admin/luke", "fl", f, "numTerms", "0"),
+            "count("+field(f)+"lst[@name='topTerms']/int)=0");
+
+    // field with no terms shouldn't error
+    for (String n : new String[] {"0", "1", "2", "100", "99999"}) {
+      assertQ(req("qt", "/admin/luke", "fl", "bogus_s", "numTerms", n),
+              "count("+field(f)+"lst[@name='topTerms']/int)=0");
+    }
+  }
+
   public void testCopyFieldLists() throws Exception {
     SolrQueryRequest req = req("qt", "/admin/luke", "show", "schema");
 

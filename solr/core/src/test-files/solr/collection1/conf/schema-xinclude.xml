@@ -1,4 +1,7 @@
 <?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE schema [
+        <!ENTITY schema_entity_include SYSTEM "schema-snippet-types.incl">
+]>
 <!--
  Licensed to the Apache Software Foundation (ASF) under one or more
  contributor license agreements.  See the NOTICE file distributed with
@@ -19,6 +22,7 @@
  <types>
   <fieldType name="string" class="solr.StrField"/>
   <xi:include href="schema-snippet-type.xml" />
+  &schema_entity_include;
  </types>
  <fields>
    <xi:include href="schema-snippet-field.xml" />

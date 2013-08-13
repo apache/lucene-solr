@@ -26,6 +26,9 @@ import org.apache.solr.util.AbstractSolrTestCase;
 import org.junit.Assume;
 import org.junit.BeforeClass;
 
+/** 
+ * Test both XInclude as well as more old school "entity includes"
+ */
 public class TestXIncludeConfig extends AbstractSolrTestCase {
 
   @BeforeClass
@@ -62,7 +65,20 @@ public class TestXIncludeConfig extends AbstractSolrTestCase {
                  chain.getFactories()[0].getClass());
 
     IndexSchema schema = core.getLatestSchema();
+    
+    // xinclude
     assertNotNull("ft-included is null", schema.getFieldTypeByName("ft-included"));
     assertNotNull("field-included is null", schema.getFieldOrNull("field-included"));
+
+    // entity include
+    assertNotNull("ft-entity-include1 is null", 
+                  schema.getFieldTypeByName("ft-entity-include1"));
+    assertNotNull("ft-entity-include2 is null", 
+                  schema.getFieldTypeByName("ft-entity-include2"));
+
+    // sanity check
+    assertNull("ft-entity-include3 is not null",  // Does Not Exist Anywhere
+               schema.getFieldTypeByName("ft-entity-include3"));
+
   }
 }

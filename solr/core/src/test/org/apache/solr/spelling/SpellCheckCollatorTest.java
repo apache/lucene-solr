@@ -36,6 +36,7 @@ import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.request.SolrRequestHandler;
 import org.apache.solr.response.SolrQueryResponse;
 import org.junit.BeforeClass;
+import org.junit.Ignore;
 import org.junit.Test;
 
 @Slow
@@ -433,7 +434,9 @@ public class SpellCheckCollatorTest extends SolrTestCaseJ4 {
       );
     }
   }
+
   @Test
+  @Ignore("SOLR-5122: estimates don't seem to make any sense")
   public void testEstimatedHitCounts() throws Exception {
    assertQ(
         req(

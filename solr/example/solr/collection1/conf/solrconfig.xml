@@ -35,7 +35,7 @@
        that you fully re-index after changing this setting as it can
        affect both how text is indexed and queried.
   -->
-  <luceneMatchVersion>LUCENE_50</luceneMatchVersion>
+  <luceneMatchVersion>5.0</luceneMatchVersion>
 
   <!-- <lib/> directives can be used to instruct Solr to load an Jars
        identified and use them to resolve any "plugins" specified in
@@ -257,11 +257,6 @@
     <!--
     <unlockOnStartup>false</unlockOnStartup>
       -->
-    
-    <!-- Expert: Controls how often Lucene loads terms into memory
-         Default is 128 and is likely good for most everyone.
-      -->
-    <!-- <termIndexInterval>128</termIndexInterval> -->
 
     <!-- If true, IndexReaders will be reopened (often more efficient)
          instead of closed and then opened. Default: true
@@ -441,15 +436,6 @@
     <str name="someArg">Some Value</str>
   </indexReaderFactory >
   -->
-  <!-- By explicitly declaring the Factory, the termIndexDivisor can
-       be specified.
-    -->
-  <!--
-     <indexReaderFactory name="IndexReaderFactory" 
-                         class="solr.StandardIndexReaderFactory">
-       <int name="setTermIndexDivisor">12</int>
-     </indexReaderFactory >
-    -->
 
   <!-- ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
        Query section - these settings control query time things like caches
@@ -1385,15 +1371,9 @@
   <!-- Clustering Component
 
        http://wiki.apache.org/solr/ClusteringComponent
-
-       You'll need to set the solr.clustering.enabled system property
-       when running solr to run with clustering enabled:
-
-            java -Dsolr.clustering.enabled=true -jar start.jar
-
     -->
   <searchComponent name="clustering"
-                   enable="${solr.clustering.enabled:false}"
+                   enable="${solr.clustering.enabled:true}"
                    class="solr.clustering.ClusteringComponent" >
     <!-- Declare an engine -->
     <lst name="engine">
@@ -1459,7 +1439,7 @@
     -->
   <requestHandler name="/clustering"
                   startup="lazy"
-                  enable="${solr.clustering.enabled:false}"
+                  enable="${solr.clustering.enabled:true}"
                   class="solr.SearchHandler">
     <lst name="defaults">
       <bool name="clustering">true</bool>

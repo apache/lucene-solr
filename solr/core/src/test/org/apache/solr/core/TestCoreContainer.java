@@ -81,7 +81,6 @@ public class TestCoreContainer extends SolrTestCaseJ4 {
     System.setProperty("shareSchema", "true");
     final CoreContainer cores = init("_shareSchema");
     try {
-      cores.setPersistent(false);
       assertTrue(cores.isShareSchema());
       
       CoreDescriptor descriptor1 = new CoreDescriptor(cores, "core1", "./collection1");
@@ -205,7 +204,6 @@ public class TestCoreContainer extends SolrTestCaseJ4 {
   public void testClassLoaderHierarchy() throws Exception {
     final CoreContainer cc = init("_classLoaderHierarchy");
     try {
-      cc.setPersistent(false);
       ClassLoader sharedLoader = cc.loader.getClassLoader();
       ClassLoader contextLoader = Thread.currentThread().getContextClassLoader();
       assertSame(contextLoader, sharedLoader.getParent());

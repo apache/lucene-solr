@@ -17,30 +17,6 @@ package org.apache.solr.cloud;
  * limitations under the License.
  */
 
-import java.io.File;
-import java.io.IOException;
-import java.lang.management.ManagementFactory;
-import java.util.ArrayList;
-import java.util.Collection;
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.Iterator;
-import java.util.LinkedList;
-import java.util.List;
-import java.util.Map;
-import java.util.Map.Entry;
-import java.util.Set;
-import java.util.concurrent.CompletionService;
-import java.util.concurrent.ExecutorCompletionService;
-import java.util.concurrent.Future;
-import java.util.concurrent.SynchronousQueue;
-import java.util.concurrent.ThreadPoolExecutor;
-import java.util.concurrent.TimeUnit;
-
-import javax.management.MBeanServer;
-import javax.management.MBeanServerFactory;
-import javax.management.ObjectName;
-
 import org.apache.lucene.util.Constants;
 import org.apache.lucene.util.LuceneTestCase.Slow;
 import org.apache.lucene.util._TestUtil;
@@ -50,8 +26,8 @@ import org.apache.solr.client.solrj.SolrServerException;
 import org.apache.solr.client.solrj.impl.CloudSolrServer;
 import org.apache.solr.client.solrj.impl.HttpSolrServer;
 import org.apache.solr.client.solrj.request.CoreAdminRequest;
-import org.apache.solr.client.solrj.request.QueryRequest;
 import org.apache.solr.client.solrj.request.CoreAdminRequest.Create;
+import org.apache.solr.client.solrj.request.QueryRequest;
 import org.apache.solr.client.solrj.response.CoreAdminResponse;
 import org.apache.solr.client.solrj.response.QueryResponse;
 import org.apache.solr.common.SolrException;
@@ -77,6 +53,31 @@ import org.apache.solr.update.SolrCmdDistributor.Request;
 import org.apache.solr.util.DefaultSolrThreadFactory;
 import org.junit.Before;
 import org.junit.BeforeClass;
+
+import javax.management.MBeanServer;
+import javax.management.MBeanServerFactory;
+import javax.management.ObjectName;
+import java.io.File;
+import java.io.IOException;
+import java.lang.management.ManagementFactory;
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.Iterator;
+import java.util.LinkedList;
+import java.util.List;
+import java.util.Map;
+import java.util.Map.Entry;
+import java.util.Set;
+import java.util.concurrent.CompletionService;
+import java.util.concurrent.ExecutorCompletionService;
+import java.util.concurrent.Future;
+import java.util.concurrent.SynchronousQueue;
+import java.util.concurrent.ThreadPoolExecutor;
+import java.util.concurrent.TimeUnit;
+
+import static org.apache.solr.cloud.OverseerCollectionProcessor.REPLICATION_FACTOR;
 
 /**
  * Tests the Cloud Collections API.
@@ -260,7 +261,7 @@ public class CollectionsAPIDistributedZkTest extends AbstractFullDistribZkTestBa
     collectionName = "collection";
     params.set("name", collectionName);
     params.set("numShards", 2);
-    params.set(OverseerCollectionProcessor.REPLICATION_FACTOR, 10);
+    params.set(REPLICATION_FACTOR, 10);
     request = new QueryRequest(params);
     request.setPath("/admin/collections");
     gotExp = false;
@@ -277,7 +278,7 @@ public class CollectionsAPIDistributedZkTest extends AbstractFullDistribZkTestBa
     params.set("action", CollectionAction.CREATE.toString());
     collectionName = "acollection";
     params.set("name", collectionName);
-    params.set(OverseerCollectionProcessor.REPLICATION_FACTOR, 10);
+    params.set(REPLICATION_FACTOR, 10);
     request = new QueryRequest(params);
     request.setPath("/admin/collections");
     gotExp = false;
@@ -294,7 +295,7 @@ public class CollectionsAPIDistributedZkTest extends AbstractFullDistribZkTestBa
     params.set("action", CollectionAction.CREATE.toString());
     collectionName = "acollection";
     params.set("name", collectionName);
-    params.set(OverseerCollectionProcessor.REPLICATION_FACTOR, 10);
+    params.set(REPLICATION_FACTOR, 10);
     params.set("numShards", 0);
     request = new QueryRequest(params);
     request.setPath("/admin/collections");
@@ -361,7 +362,7 @@ public class CollectionsAPIDistributedZkTest extends AbstractFullDistribZkTestBa
     params.set("action", CollectionAction.CREATE.toString());
 
     params.set("numShards", 2);
-    params.set(OverseerCollectionProcessor.REPLICATION_FACTOR, 2);
+    params.set(REPLICATION_FACTOR, 2);
     String collectionName = "nodes_used_collection";
 
     params.set("name", collectionName);
@@ -373,7 +374,7 @@ public class CollectionsAPIDistributedZkTest extends AbstractFullDistribZkTestBa
     numShardsNumReplicaList.add(2);
     numShardsNumReplicaList.add(2);
     checkForCollection("nodes_used_collection", numShardsNumReplicaList , null);
-    
+
     List<String> createNodeList = new ArrayList<String>();
 
     Set<String> liveNodes = cloudClient.getZkStateReader().getClusterState()
@@ -382,7 +383,7 @@ public class CollectionsAPIDistributedZkTest extends AbstractFullDistribZkTestBa
     for (String node : liveNodes) {
       createNodeList.add(node);
     }
-    
+
     DocCollection col = cloudClient.getZkStateReader().getClusterState().getCollection("nodes_used_collection");
     Collection<Slice> slices = col.getSlices();
     for (Slice slice : slices) {
@@ -394,7 +395,7 @@ public class CollectionsAPIDistributedZkTest extends AbstractFullDistribZkTestBa
     assertEquals(createNodeList.toString(), 1, createNodeList.size());
 
   }
-  
+
   private void testCollectionsAPI() throws Exception {
  
     // TODO: fragile - because we dont pass collection.confName, it will only
@@ -545,7 +546,7 @@ public class CollectionsAPIDistributedZkTest extends AbstractFullDistribZkTestBa
     params.set("action", CollectionAction.CREATE.toString());
 
     params.set("numShards", 1);
-    params.set(OverseerCollectionProcessor.REPLICATION_FACTOR, 2);
+    params.set(REPLICATION_FACTOR, 2);
     collectionName = "acollectionafterbaddelete";
 
     params.set("name", collectionName);

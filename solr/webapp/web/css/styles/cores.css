@@ -33,6 +33,11 @@ limitations under the License.
   width: 500px;
 }
 
+#content #cores.empty .requires-core
+{
+  display: none;
+}
+
 #content #cores #frame
 {
   float: right;
@@ -53,6 +58,7 @@ limitations under the License.
 #content #cores #frame .actions
 {
   margin-bottom: 20px;
+  min-height: 30px;
 }
 
 #content #cores .actions div.action
@@ -65,9 +71,19 @@ limitations under the License.
   display: none;
 }
 
+#content #cores .actions form .directory-note
+{
+  background-image: url( ../../img/ico/information-white.png );
+  background-position: 22% 1px;
+  color: #c0c0c0;
+}
+
 #content #cores .actions form .error
 {
-  color: #800;
+  background-image: url( ../../img/ico/cross-button.png );
+  background-position: 22% 1px;
+  color: #c00;
+  font-weight: bold;
   display: none;
 }
 
@@ -88,10 +104,16 @@ limitations under the License.
 #content #cores .actions form input,
 #content #cores .actions form select,
 #content #cores .actions form .buttons,
-#content #cores .actions form .error span
+#content #cores .actions form .note span
 {
   float: right;
-  width: 73%;
+  width: 71%;
+}
+
+#content #cores .actions form .note span
+{
+  padding-left: 3px;
+  padding-right: 3px;
 }
 
 #content #cores .actions form .buttons
@@ -170,7 +192,7 @@ limitations under the License.
   display: none;
   position: absolute;
   left: -50px;
-  top: 40;
+  top: 40px;
   padding: 10px;
 }
 

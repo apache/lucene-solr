@@ -562,7 +562,7 @@ public class QueryElevationComponent extends SearchComponent implements SolrCore
 
         for (String id : elevations.ids) {
           term.copyChars(id);
-          if (seen.contains(id) == false  && termsEnum.seekExact(term, false)) {
+          if (seen.contains(id) == false  && termsEnum.seekExact(term)) {
             docsEnum = termsEnum.docs(liveDocs, docsEnum, DocsEnum.FLAG_NONE);
             if (docsEnum != null) {
               int docId = docsEnum.nextDoc();

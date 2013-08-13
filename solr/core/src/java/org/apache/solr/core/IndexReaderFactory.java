@@ -27,12 +27,8 @@ import org.apache.solr.util.plugin.NamedListInitializedPlugin;
  * Factory used to build a new IndexReader instance.
  */
 public abstract class IndexReaderFactory implements NamedListInitializedPlugin {
-  protected int termInfosIndexDivisor = 1;//IndexReader.DEFAULT_TERMS_INDEX_DIVISOR;  Set this once Lucene makes this public.
   /**
-   * Potentially initializes {@link #termInfosIndexDivisor}.  Overriding classes should call super.init() in order
-   * to make sure termInfosIndexDivisor is set.
-   * <p>
-   * <code>init</code> will be called just once, immediately after creation.
+   * init will be called just once, immediately after creation.
    * <p>
    * The args are user-level initialization parameters that may be specified
    * when declaring an indexReaderFactory in solrconfig.xml
@@ -40,18 +36,10 @@ public abstract class IndexReaderFactory implements NamedListInitializedPlugin {
    */
   @Override
   public void init(NamedList args) {
-    Integer v = (Integer)args.get("setTermIndexDivisor");
-    if (v != null) {
-      termInfosIndexDivisor = v.intValue();
-    }
-  }
-
-  /**
-   *
-   * @return The setting of {@link #termInfosIndexDivisor} 
-   */
-  public int getTermInfosIndexDivisor() {
-    return termInfosIndexDivisor;
+   Object v = args.get("setTermIndexDivisor");
+   if (v != null) {
+     throw new IllegalArgumentException("Illegal parameter 'setTermIndexDivisor'");
+   }
   }
 
   /**
