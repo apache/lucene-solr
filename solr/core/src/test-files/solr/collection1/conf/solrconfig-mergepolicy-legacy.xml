@@ -22,6 +22,7 @@
   <directoryFactory name="DirectoryFactory" class="${solr.directoryFactory:solr.RAMDirectoryFactory}"/>
 
   <indexConfig>
+    <termIndexInterval>256</termIndexInterval>
     <mergeFactor>7</mergeFactor>
     <useCompoundFile>${useCompoundFile:false}</useCompoundFile>
   </indexConfig>

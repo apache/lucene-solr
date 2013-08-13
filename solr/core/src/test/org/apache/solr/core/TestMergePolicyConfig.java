@@ -66,6 +66,7 @@ public class TestMergePolicyConfig extends SolrTestCaseJ4 {
     IndexWriterConfig iwc = solrConfig.indexConfig.toIndexWriterConfig(h.getCore().getLatestSchema());
     assertEquals(expectCFS, iwc.getUseCompoundFile());
 
+    assertEquals("termIndexInteval", 256, iwc.getTermIndexInterval());
 
     TieredMergePolicy tieredMP = assertAndCast(TieredMergePolicy.class,
                                                iwc.getMergePolicy());
