@@ -219,7 +219,7 @@ public class AddBlockUpdateTest extends SolrTestCaseJ4 {
     Element doc1 = root.addElement("doc");
     attachField(doc1, "id", id());
     attachField(doc1, parent, "Y");
-    attachField(doc1, "sample_i", "notanumber");
+    attachField(doc1, "sample_i", "notanumber/ignore_exception");
     Element subDoc1 = doc1.addElement("doc");
     attachField(subDoc1, "id", id());
     attachField(subDoc1, child, "x");
