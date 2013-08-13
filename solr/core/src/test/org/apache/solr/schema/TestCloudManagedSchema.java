@@ -27,6 +27,7 @@ import org.apache.solr.common.SolrException;
 import org.apache.solr.common.params.CoreAdminParams;
 import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.common.util.NamedList;
+import org.junit.BeforeClass;
 
 import java.io.IOException;
 import java.io.InputStream;
@@ -39,9 +40,15 @@ public class TestCloudManagedSchema extends AbstractFullDistribZkTestBase {
     super();
   }
 
+  @BeforeClass
+  public static void initSysProperties() {
+    System.setProperty("managed.schema.mutable", "false");
+    System.setProperty("enable.update.log", "true");
+  }
+
   @Override
   protected String getCloudSolrConfig() {
-    return "solrconfig-tlog-managed-schema.xml";
+    return "solrconfig-managed-schema.xml";
   }
       
   @Override
