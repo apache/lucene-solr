@@ -18,12 +18,16 @@
 package org.apache.solr.core;
 
 import org.apache.lucene.index.IndexWriter;
+import org.apache.lucene.index.IndexWriterConfig;
 import org.apache.lucene.index.TieredMergePolicy;
+import org.apache.lucene.index.ConcurrentMergeScheduler;
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.handler.admin.ShowFileRequestHandler;
 import org.apache.solr.update.DirectUpdateHandler2;
 import org.apache.solr.update.SolrIndexConfig;
 import org.apache.solr.util.RefCounted;
+import org.apache.solr.schema.IndexSchema;
+import org.apache.solr.schema.IndexSchemaFactory;
 import org.junit.BeforeClass;
 import org.junit.Test;
 import org.w3c.dom.Node;
@@ -38,7 +42,7 @@ public class TestConfig extends SolrTestCaseJ4 {
 
   @BeforeClass
   public static void beforeClass() throws Exception {
-    initCore("solrconfig-termindex.xml","schema-reversed.xml");
+    initCore("solrconfig-test-misc.xml","schema-reversed.xml");
   }
 
   @Test
@@ -91,16 +95,6 @@ public class TestConfig extends SolrTestCaseJ4 {
     assertEquals("prefix-proptwo-suffix", node.getTextContent());
   }
 
-  @Test
-  public void testLucene23Upgrades() throws Exception {
-    double bufferSize = solrConfig.indexConfig.ramBufferSizeMB;
-    assertTrue(bufferSize + " does not equal: " + 100, bufferSize == 100);
-    String mergePolicy = solrConfig.indexConfig.mergePolicyInfo.className;
-    assertEquals(TieredMergePolicy.class.getName(), mergePolicy);
-    String mergeSched = solrConfig.indexConfig.mergeSchedulerInfo.className;
-    assertTrue(mergeSched + " is not equal to " + SolrIndexConfig.DEFAULT_MERGE_SCHEDULER_CLASSNAME, mergeSched.equals(SolrIndexConfig.DEFAULT_MERGE_SCHEDULER_CLASSNAME) == true);
-  }
-
   // sometime if the config referes to old things, it must be replaced with new stuff
   @Test
   public void testAutomaticDeprecationSupport() {
@@ -124,6 +118,14 @@ public class TestConfig extends SolrTestCaseJ4 {
     assertEquals("default LockType", SolrIndexConfig.LOCK_TYPE_NATIVE, sic.lockType);
     assertEquals("default useCompoundFile", false, sic.useCompoundFile);
 
+    IndexSchema indexSchema = IndexSchemaFactory.buildIndexSchema("schema.xml", solrConfig);
+    IndexWriterConfig iwc = sic.toIndexWriterConfig(indexSchema);
+
+    assertNotNull("null mp", iwc.getMergePolicy());
+    assertTrue("mp is not TMP", iwc.getMergePolicy() instanceof TieredMergePolicy);
+
+    assertNotNull("null ms", iwc.getMergeScheduler());
+    assertTrue("ms is not CMS", iwc.getMergeScheduler() instanceof ConcurrentMergeScheduler);
   }
 
 

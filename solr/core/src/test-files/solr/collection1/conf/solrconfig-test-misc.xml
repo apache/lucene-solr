@@ -17,38 +17,31 @@
  limitations under the License.
 -->
 
+<!-- used by TestConfig to tests a few misc things relating to:
+     * lib dirs
+     * property substitution
+     * "gettableFiles" option
+-->
 <config>
   <luceneMatchVersion>${tests.luceneMatchVersion:LUCENE_CURRENT}</luceneMatchVersion>
+  <xi:include href="solrconfig.snippet.randomindexconfig.xml" xmlns:xi="http://www.w3.org/2001/XInclude"/>
+  <directoryFactory name="DirectoryFactory" class="${solr.directoryFactory:solr.RAMDirectoryFactory}"/>
+
+  <!-- see TestConfig.testAutomaticDeprecationSupport -->
+  <admin>
+    <defaultQuery>solr</defaultQuery>
+    <gettableFiles>solrconfig.xml schema.xml admin-extra.html</gettableFiles>
+  </admin>
+
   <!-- see TestConfig.testLib() -->
   <lib dir="../../lib-dirs/a" />
   <lib dir="../../lib-dirs/b" regex="b." />
   <lib dir="../../lib-dirs/c" regex="c1" />
   <lib path="../../lib-dirs/d/d1/" />
   
-  <!--  The DirectoryFactory to use for indexes.
-        solr.StandardDirectoryFactory, the default, is filesystem based.
-        solr.RAMDirectoryFactory is memory based and not persistent. -->
   <directoryFactory name="DirectoryFactory" class="${solr.directoryFactory:solr.RAMDirectoryFactory}"/>
 
-  <indexConfig>
-    <useCompoundFile>${useCompoundFile:false}</useCompoundFile>
-    <mergePolicy class="org.apache.lucene.index.TieredMergePolicy"/>
-    <mergeScheduler class="org.apache.lucene.index.ConcurrentMergeScheduler"/>
-  </indexConfig>
-
-  <updateHandler class="solr.DirectUpdateHandler2">
-  </updateHandler>
-
-  <indexReaderFactory name="IndexReaderFactory" class="org.apache.solr.core.StandardIndexReaderFactory"/>
-
-  <requestHandler name="standard" class="solr.StandardRequestHandler"></requestHandler>
-
-  <admin>
-    <defaultQuery>solr</defaultQuery>
-    <gettableFiles>solrconfig.xml schema.xml admin-extra.html</gettableFiles>
-  </admin>
-
-  <!-- test getting system property -->
+  <!-- see TestConfig.testJavaProperty -->
   <propTest attr1="${solr.test.sys.prop1}-$${literal}"
             attr2="${non.existent.sys.prop:default-from-config}">prefix-${solr.test.sys.prop2}-suffix</propTest>
 
