@@ -42,13 +42,16 @@ public class TestAddFieldRealTimeGet extends TestRTGBase {
     tmpSolrHome = new File(tmpSolrHomePath).getAbsoluteFile();
     tmpConfDir = new File(tmpSolrHome, confDir);
     File testHomeConfDir = new File(TEST_HOME(), confDir);
-    final String configFileName = "solrconfig-tlog-mutable-managed-schema.xml";
+    final String configFileName = "solrconfig-managed-schema.xml";
     final String schemaFileName = "schema-id-and-version-fields-only.xml";
     FileUtils.copyFileToDirectory(new File(testHomeConfDir, configFileName), tmpConfDir);
     FileUtils.copyFileToDirectory(new File(testHomeConfDir, schemaFileName), tmpConfDir);
+     FileUtils.copyFileToDirectory(new File(testHomeConfDir, "solrconfig.snippet.randomindexconfig.xml"), tmpConfDir);
 
     // initCore will trigger an upgrade to managed schema, since the solrconfig has
     // <schemaFactory class="ManagedIndexSchemaFactory" ... />
+    System.setProperty("managed.schema.mutable", "true");
+    System.setProperty("enable.update.log", "true");
     initCore(configFileName, schemaFileName, tmpSolrHome.getPath());
   }
 
