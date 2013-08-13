@@ -1232,10 +1232,7 @@ public class TestAddIndexes extends LuceneTestCase {
     IndexReader allDeletedReader = new FilterAtomicReader(w.getReader().leaves().get(0).reader()) {
       @Override
       public Bits getLiveDocs() {
-        return new Bits() {
-          @Override public int length() { return 1; }
-          @Override public boolean get(int index) { return false; }
-        };
+        return new Bits.MatchNoBits(in.maxDoc());
       }
       @Override public boolean hasDeletions() { return true; }
       @Override public int numDocs() { return 0; }
