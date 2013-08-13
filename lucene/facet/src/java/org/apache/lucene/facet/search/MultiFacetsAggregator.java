@@ -1,4 +1,4 @@
-package org.apache.lucene.facet.associations;
+package org.apache.lucene.facet.search;
 
 import java.io.IOException;
 import java.util.ArrayList;
@@ -39,22 +39,21 @@ import org.apache.lucene.facet.taxonomy.CategoryPath;
  * 
  * @lucene.experimental
  */
-public class MultiAssociationsFacetsAggregator implements FacetsAggregator {
+public class MultiFacetsAggregator implements FacetsAggregator {
   
   private final Map<CategoryPath,FacetsAggregator> categoryAggregators;
   private final List<FacetsAggregator> aggregators;
   
   /**
-   * Creates a new {@link MultiAssociationsFacetsAggregator} over the given
-   * aggregators. The mapping is used by
-   * {@link #rollupValues(FacetRequest, int, int[], int[], FacetArrays)} to
-   * rollup the values of the specific category by the corresponding
-   * {@link FacetsAggregator}. However, since each {@link FacetsAggregator}
-   * handles the associations of a specific type, which could cover multiple
-   * categories, the aggregation is done on the unique set of aggregators, which
-   * are identified by their class.
+   * Constructor.
+   * <p>
+   * The mapping is used to rollup the values of the specific category by the
+   * corresponding {@link FacetsAggregator}. It is ok to pass differnet
+   * {@link FacetsAggregator} instances for each {@link CategoryPath} - the
+   * constructor ensures that each aggregator <u>type</u> (determined by its
+   * class) is invoked only once.
    */
-  public MultiAssociationsFacetsAggregator(Map<CategoryPath,FacetsAggregator> aggregators) {
+  public MultiFacetsAggregator(Map<CategoryPath,FacetsAggregator> aggregators) {
     this.categoryAggregators = aggregators;
     
     // make sure that each FacetsAggregator class is invoked only once, or
@@ -87,6 +86,11 @@ public class MultiAssociationsFacetsAggregator implements FacetsAggregator {
       }
     }
     return false;
+  }
+  
+  @Override
+  public OrdinalValueResolver createOrdinalValueResolver(FacetRequest facetRequest, FacetArrays arrays) {
+    return categoryAggregators.get(facetRequest.categoryPath).createOrdinalValueResolver(facetRequest, arrays);
   }
   
 }

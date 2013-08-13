@@ -2,20 +2,16 @@ package org.apache.lucene.facet.search;
 
 import java.io.IOException;
 import java.util.ArrayList;
-import java.util.Collections;
-import java.util.HashSet;
 import java.util.List;
-import java.util.Set;
 
-import org.apache.lucene.facet.encoding.DGapVInt8IntDecoder;
-import org.apache.lucene.facet.params.CategoryListParams;
+import org.apache.lucene.facet.old.OldFacetsAccumulator;
+import org.apache.lucene.facet.params.FacetIndexingParams;
 import org.apache.lucene.facet.params.FacetSearchParams;
-import org.apache.lucene.facet.params.CategoryListParams.OrdinalPolicy;
-import org.apache.lucene.facet.search.FacetRequest.FacetArraysSource;
-import org.apache.lucene.facet.search.FacetRequest.ResultMode;
-import org.apache.lucene.facet.search.FacetRequest.SortOrder;
+import org.apache.lucene.facet.range.RangeAccumulator;
+import org.apache.lucene.facet.range.RangeFacetRequest;
 import org.apache.lucene.facet.search.FacetsCollector.MatchingDocs;
-import org.apache.lucene.facet.taxonomy.ParallelTaxonomyArrays;
+import org.apache.lucene.facet.sortedset.SortedSetDocValuesAccumulator;
+import org.apache.lucene.facet.sortedset.SortedSetDocValuesReaderState;
 import org.apache.lucene.facet.taxonomy.TaxonomyReader;
 import org.apache.lucene.index.IndexReader;
 
@@ -37,48 +33,117 @@ import org.apache.lucene.index.IndexReader;
  */
 
 /**
- * Driver for Accumulating facets of faceted search requests over given
- * documents.
+ * Accumulates the facets defined in the {@link FacetSearchParams}.
  * 
  * @lucene.experimental
  */
-public class FacetsAccumulator {
+public abstract class FacetsAccumulator {
 
-  public final TaxonomyReader taxonomyReader;
-  public final IndexReader indexReader;
-  public final FacetArrays facetArrays;
-  public FacetSearchParams searchParams;
+  // TODO this should be final, but currently SamplingAccumulator modifies the params.
+  // need to review the class and if it's resolved, make it final
+  public /*final*/ FacetSearchParams searchParams;
 
-  /**
-   * Initializes the accumulator with the given search params, index reader and
-   * taxonomy reader. This constructor creates the default {@link FacetArrays},
-   * which do not support reuse. If you want to use {@link ReusingFacetArrays},
-   * you should use the
-   * {@link #FacetsAccumulator(FacetSearchParams, IndexReader, TaxonomyReader, FacetArrays)}
-   * constructor.
-   */
-  public FacetsAccumulator(FacetSearchParams searchParams, IndexReader indexReader, TaxonomyReader taxonomyReader) {
-    this(searchParams, indexReader, taxonomyReader, new FacetArrays(taxonomyReader.getSize()));
+  /** Constructor with the given search params. */
+  protected FacetsAccumulator(FacetSearchParams fsp) {
+    this.searchParams = fsp;
   }
 
   /**
-   * Creates an appropriate {@link FacetsAccumulator},
-   * returning {@link FacetsAccumulator} when all requests
-   * are {@link CountFacetRequest} and only one partition is
-   * in use, otherwise {@link StandardFacetsAccumulator}.
+   * Creates a {@link FacetsAccumulator} for the given facet requests. This
+   * method supports {@link RangeAccumulator} and
+   * {@link TaxonomyFacetsAccumulator} by dividing the facet requests into
+   * {@link RangeFacetRequest} and the rest.
+   * <p>
+   * If both types of facet requests are used, it returns a
+   * {@link MultiFacetsAccumulator} and the facet results returned from
+   * {@link #accumulate(List)} may not be in the same order as the given facet
+   * requests.
+   * 
+   * @param fsp
+   *          the search params define the facet requests and the
+   *          {@link FacetIndexingParams}
+   * @param indexReader
+   *          the {@link IndexReader} used for search
+   * @param taxoReader
+   *          the {@link TaxonomyReader} used for search
+   * @param arrays
+   *          the {@link FacetArrays} which the accumulator should use to store
+   *          the categories weights in. Can be {@code null}.
    */
-  public static FacetsAccumulator create(FacetSearchParams fsp, IndexReader indexReader, TaxonomyReader taxoReader) {
+  public static FacetsAccumulator create(FacetSearchParams fsp, IndexReader indexReader, TaxonomyReader taxoReader, 
+      FacetArrays arrays) {
     if (fsp.indexingParams.getPartitionSize() != Integer.MAX_VALUE) {
-      return new StandardFacetsAccumulator(fsp, indexReader, taxoReader);
+      return new OldFacetsAccumulator(fsp, indexReader, taxoReader, arrays);
     }
     
+    List<FacetRequest> rangeRequests = new ArrayList<FacetRequest>();
+    List<FacetRequest> nonRangeRequests = new ArrayList<FacetRequest>();
     for (FacetRequest fr : fsp.facetRequests) {
-      if (!(fr instanceof CountFacetRequest)) {
-        return new StandardFacetsAccumulator(fsp, indexReader, taxoReader);
+      if (fr instanceof RangeFacetRequest) {
+        rangeRequests.add(fr);
+      } else {
+        nonRangeRequests.add(fr);
+      }
+    }
+
+    if (rangeRequests.isEmpty()) {
+      return new TaxonomyFacetsAccumulator(fsp, indexReader, taxoReader, arrays);
+    } else if (nonRangeRequests.isEmpty()) {
+      return new RangeAccumulator(rangeRequests);
+    } else {
+      FacetSearchParams searchParams = new FacetSearchParams(fsp.indexingParams, nonRangeRequests);
+      FacetsAccumulator accumulator = new TaxonomyFacetsAccumulator(searchParams, indexReader, taxoReader, arrays);
+      RangeAccumulator rangeAccumulator = new RangeAccumulator(rangeRequests);
+      return MultiFacetsAccumulator.wrap(accumulator, rangeAccumulator);
+    }
+  }
+  
+  /**
+   * Creates a {@link FacetsAccumulator} for the given facet requests. This
+   * method supports {@link RangeAccumulator} and
+   * {@link SortedSetDocValuesAccumulator} by dividing the facet requests into
+   * {@link RangeFacetRequest} and the rest.
+   * <p>
+   * If both types of facet requests are used, it returns a
+   * {@link MultiFacetsAccumulator} and the facet results returned from
+   * {@link #accumulate(List)} may not be in the same order as the given facet
+   * requests.
+   * 
+   * @param fsp
+   *          the search params define the facet requests and the
+   *          {@link FacetIndexingParams}
+   * @param state
+   *          the {@link SortedSetDocValuesReaderState} needed for accumulating
+   *          the categories
+   * @param arrays
+   *          the {@link FacetArrays} which the accumulator should use to
+   *          store the categories weights in. Can be {@code null}.
+   */
+  public static FacetsAccumulator create(FacetSearchParams fsp, SortedSetDocValuesReaderState state, FacetArrays arrays) throws IOException {
+    if (fsp.indexingParams.getPartitionSize() != Integer.MAX_VALUE) {
+      throw new IllegalArgumentException("only default partition size is supported by this method: " + fsp.indexingParams.getPartitionSize());
+    }
+    
+    List<FacetRequest> rangeRequests = new ArrayList<FacetRequest>();
+    List<FacetRequest> nonRangeRequests = new ArrayList<FacetRequest>();
+    for (FacetRequest fr : fsp.facetRequests) {
+      if (fr instanceof RangeFacetRequest) {
+        rangeRequests.add(fr);
+      } else {
+        nonRangeRequests.add(fr);
       }
     }
     
-    return new FacetsAccumulator(fsp, indexReader, taxoReader);
+    if (rangeRequests.isEmpty()) {
+      return new SortedSetDocValuesAccumulator(state, fsp, arrays);
+    } else if (nonRangeRequests.isEmpty()) {
+      return new RangeAccumulator(rangeRequests);
+    } else {
+      FacetSearchParams searchParams = new FacetSearchParams(fsp.indexingParams, nonRangeRequests);
+      FacetsAccumulator accumulator = new SortedSetDocValuesAccumulator(state, searchParams, arrays);
+      RangeAccumulator rangeAccumulator = new RangeAccumulator(rangeRequests);
+      return MultiFacetsAccumulator.wrap(accumulator, rangeAccumulator);
+    }
   }
   
   /** Returns an empty {@link FacetResult}. */
@@ -89,69 +154,6 @@ public class FacetsAccumulator {
   }
   
   /**
-   * Initializes the accumulator with the given parameters as well as
-   * {@link FacetArrays}. Note that the accumulator doesn't call
-   * {@link FacetArrays#free()}. If you require that (only makes sense if you
-   * use {@link ReusingFacetArrays}, you should do it after you've finished with
-   * the accumulator.
-   */
-  public FacetsAccumulator(FacetSearchParams searchParams, IndexReader indexReader, TaxonomyReader taxonomyReader, 
-      FacetArrays facetArrays) {
-    this.facetArrays = facetArrays;
-    this.indexReader = indexReader;
-    this.taxonomyReader = taxonomyReader;
-    this.searchParams = searchParams;
-  }
-  
-  /**
-   * Returns the {@link FacetsAggregator} to use for aggregating the categories
-   * found in the result documents. The default implementation returns
-   * {@link CountingFacetsAggregator}, or {@link FastCountingFacetsAggregator}
-   * if all categories can be decoded with {@link DGapVInt8IntDecoder}.
-   */
-  public FacetsAggregator getAggregator() {
-    if (FastCountingFacetsAggregator.verifySearchParams(searchParams)) {
-      return new FastCountingFacetsAggregator();
-    } else {
-      return new CountingFacetsAggregator();
-    }
-  }
-  
-  /**
-   * Creates a {@link FacetResultsHandler} that matches the given
-   * {@link FacetRequest}.
-   */
-  protected FacetResultsHandler createFacetResultsHandler(FacetRequest fr) {
-    if (fr.getDepth() == 1 && fr.getSortOrder() == SortOrder.DESCENDING) {
-      FacetArraysSource fas = fr.getFacetArraysSource();
-      if (fas == FacetArraysSource.INT) {
-        return new IntFacetResultsHandler(taxonomyReader, fr, facetArrays);
-      }
-      
-      if (fas == FacetArraysSource.FLOAT) {
-        return new FloatFacetResultsHandler(taxonomyReader, fr, facetArrays);
-      }
-    }
-
-    if (fr.getResultMode() == ResultMode.PER_NODE_IN_TREE) {
-      return new TopKInEachNodeHandler(taxonomyReader, fr, facetArrays);
-    } 
-    return new TopKFacetResultsHandler(taxonomyReader, fr, facetArrays);
-  }
-
-  protected Set<CategoryListParams> getCategoryLists() {
-    if (searchParams.indexingParams.getAllCategoryListParams().size() == 1) {
-      return Collections.singleton(searchParams.indexingParams.getCategoryListParams(null));
-    }
-    
-    HashSet<CategoryListParams> clps = new HashSet<CategoryListParams>();
-    for (FacetRequest fr : searchParams.facetRequests) {
-      clps.add(searchParams.indexingParams.getCategoryListParams(fr.categoryPath));
-    }
-    return clps;
-  }
-
-  /**
    * Used by {@link FacetsCollector} to build the list of {@link FacetResult
    * facet results} that match the {@link FacetRequest facet requests} that were
    * given in the constructor.
@@ -159,44 +161,12 @@ public class FacetsAccumulator {
    * @param matchingDocs
    *          the documents that matched the query, per-segment.
    */
-  public List<FacetResult> accumulate(List<MatchingDocs> matchingDocs) throws IOException {
-    // aggregate facets per category list (usually onle one category list)
-    FacetsAggregator aggregator = getAggregator();
-    for (CategoryListParams clp : getCategoryLists()) {
-      for (MatchingDocs md : matchingDocs) {
-        aggregator.aggregate(md, clp, facetArrays);
-      }
-    }
-    
-    ParallelTaxonomyArrays arrays = taxonomyReader.getParallelTaxonomyArrays();
-    
-    // compute top-K
-    final int[] children = arrays.children();
-    final int[] siblings = arrays.siblings();
-    List<FacetResult> res = new ArrayList<FacetResult>();
-    for (FacetRequest fr : searchParams.facetRequests) {
-      int rootOrd = taxonomyReader.getOrdinal(fr.categoryPath);
-      if (rootOrd == TaxonomyReader.INVALID_ORDINAL) { // category does not exist
-        // Add empty FacetResult
-        res.add(emptyResult(rootOrd, fr));
-        continue;
-      }
-      CategoryListParams clp = searchParams.indexingParams.getCategoryListParams(fr.categoryPath);
-      if (fr.categoryPath.length > 0) { // someone might ask to aggregate the ROOT category
-        OrdinalPolicy ordinalPolicy = clp.getOrdinalPolicy(fr.categoryPath.components[0]);
-        if (ordinalPolicy == OrdinalPolicy.NO_PARENTS) {
-          // rollup values
-          aggregator.rollupValues(fr, rootOrd, children, siblings, facetArrays);
-        }
-      }
-      
-      FacetResultsHandler frh = createFacetResultsHandler(fr);
-      res.add(frh.compute());
-    }
-    return res;
-  }
+  public abstract List<FacetResult> accumulate(List<MatchingDocs> matchingDocs) throws IOException;
 
-  public boolean requiresDocScores() {
-    return getAggregator().requiresDocScores();
-  }
+  /**
+   * Used by {@link FacetsCollector} to determine if document scores need to be
+   * collected in addition to matching documents.
+   */
+  public abstract boolean requiresDocScores();
+  
 }

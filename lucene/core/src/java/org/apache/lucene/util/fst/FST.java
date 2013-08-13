@@ -171,6 +171,8 @@ public final class FST<T> {
   private final boolean allowArrayArcs;
 
   private Arc<T> cachedRootArcs[];
+  private Arc<T> assertingCachedRootArcs[]; // only set wit assert
+
 
   /** Represents a single arc. */
   public final static class Arc<T> {
@@ -213,7 +215,7 @@ public final class FST<T> {
       }
       return this;
     }
-
+    
     boolean flag(int flag) {
       return FST.flag(flags, flag);
     }
@@ -423,11 +425,18 @@ public final class FST<T> {
       return node;
     }
   }
-
+  
   // Caches first 128 labels
   @SuppressWarnings({"rawtypes","unchecked"})
   private void cacheRootArcs() throws IOException {
     cachedRootArcs = (Arc<T>[]) new Arc[0x80];
+    readRootArcs(cachedRootArcs);
+    
+    assert setAssertingRootArcs(cachedRootArcs);
+    assert assertRootArcs();
+  }
+  
+  public void readRootArcs(Arc<T>[] arcs) throws IOException {
     final Arc<T> arc = new Arc<T>();
     getFirstArc(arc);
     final BytesReader in = getBytesReader();
@@ -436,7 +445,7 @@ public final class FST<T> {
       while(true) {
         assert arc.label != END_LABEL;
         if (arc.label < cachedRootArcs.length) {
-          cachedRootArcs[arc.label] = new Arc<T>().copyFrom(arc);
+          arcs[arc.label] = new Arc<T>().copyFrom(arc);
         } else {
           break;
         }
@@ -446,6 +455,38 @@ public final class FST<T> {
         readNextRealArc(arc, in);
       }
     }
+  }
+  
+  @SuppressWarnings({"rawtypes","unchecked"})
+  private boolean setAssertingRootArcs(Arc<T>[] arcs) throws IOException {
+    assertingCachedRootArcs = (Arc<T>[]) new Arc[arcs.length];
+    readRootArcs(assertingCachedRootArcs);
+    return true;
+  }
+  
+  private boolean assertRootArcs() {
+    assert cachedRootArcs != null;
+    assert assertingCachedRootArcs != null;
+    for (int i = 0; i < cachedRootArcs.length; i++) {
+      final Arc<T> root = cachedRootArcs[i];
+      final Arc<T> asserting = assertingCachedRootArcs[i];
+      if (root != null) { 
+        assert root.arcIdx == asserting.arcIdx;
+        assert root.bytesPerArc == asserting.bytesPerArc;
+        assert root.flags == asserting.flags;
+        assert root.label == asserting.label;
+        assert root.nextArc == asserting.nextArc;
+        assert root.nextFinalOutput.equals(asserting.nextFinalOutput);
+        assert root.node == asserting.node;
+        assert root.numArcs == asserting.numArcs;
+        assert root.output.equals(asserting.output);
+        assert root.posArcsStart == asserting.posArcsStart;
+        assert root.target == asserting.target;
+      } else {
+        assert root == null && asserting == null;
+      } 
+    }
+    return true;
   }
 
   public T getEmptyOutput() {
@@ -1105,7 +1146,7 @@ public final class FST<T> {
   /** Finds an arc leaving the incoming arc, replacing the arc in place.
    *  This returns null if the arc was not found, else the incoming arc. */
   public Arc<T> findTargetArc(int labelToMatch, Arc<T> follow, Arc<T> arc, BytesReader in) throws IOException {
-    assert cachedRootArcs != null;
+    assert assertRootArcs();
 
     if (labelToMatch == END_LABEL) {
       if (follow.isFinal()) {
@@ -1129,7 +1170,7 @@ public final class FST<T> {
     if (follow.target == startNode && labelToMatch < cachedRootArcs.length) {
       final Arc<T> result = cachedRootArcs[labelToMatch];
       if (result == null) {
-        return result;
+        return null;
       } else {
         arc.copyFrom(result);
         return arc;

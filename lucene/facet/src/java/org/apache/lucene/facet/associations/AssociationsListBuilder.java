@@ -54,13 +54,6 @@ public class AssociationsListBuilder implements CategoryListBuilder {
       // build per-association key BytesRef
       CategoryAssociation association = associations.getAssociation(cp);
       
-      if (association == null) {
-        // it is ok to set a null association for a category - it's treated as a
-        // regular category in that case.
-        ++idx;
-        continue;
-      }
-
       BytesRef bytes = res.get(association.getCategoryListID());
       if (bytes == null) {
         bytes = new BytesRef(32);

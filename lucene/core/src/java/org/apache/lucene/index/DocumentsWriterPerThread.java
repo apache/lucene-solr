@@ -403,8 +403,8 @@ class DocumentsWriterPerThread {
     ++numDocsInRAM;
   }
 
-  // Buffer a specific docID for deletion.  Currently only
-  // used when we hit a exception when adding a document
+  // Buffer a specific docID for deletion. Currently only
+  // used when we hit an exception when adding a document
   void deleteDocID(int docIDUpto) {
     pendingDeletes.addDocID(docIDUpto);
     // NOTE: we do not trigger flush here.  This is
@@ -468,7 +468,6 @@ class DocumentsWriterPerThread {
     assert deleteSlice == null : "all deletes must be applied in prepareFlush";
     segmentInfo.setDocCount(numDocsInRAM);
     flushState = new SegmentWriteState(infoStream, directory, segmentInfo, fieldInfos.finish(),
-        writer.getConfig().getTermIndexInterval(),
         pendingDeletes, new IOContext(new FlushInfo(numDocsInRAM, bytesUsed())));
     final double startMBUsed = parent.flushControl.netBytes() / 1024. / 1024.;
 

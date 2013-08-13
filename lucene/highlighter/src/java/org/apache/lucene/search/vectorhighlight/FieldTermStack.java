@@ -145,6 +145,13 @@ public class FieldTermStack {
   }
 
   /**
+   * Return the top TermInfo object of the stack without removing it.
+   */
+  public TermInfo peek() {
+    return termList.peek();
+  }
+
+  /**
    * @param termInfo the TermInfo object to be put on the top of the stack
    */
   public void push( TermInfo termInfo ){

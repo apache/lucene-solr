@@ -84,8 +84,7 @@ public final class NestedPulsingPostingsFormat extends PostingsFormat {
                                                     state.directory, state.fieldInfos, state.segmentInfo,
                                                     pulsingReader,
                                                     state.context,
-                                                    state.segmentSuffix,
-                                                    state.termsIndexDivisor);
+                                                    state.segmentSuffix);
       success = true;
       return ret;
     } finally {

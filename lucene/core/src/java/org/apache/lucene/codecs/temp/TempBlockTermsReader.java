@@ -117,7 +117,7 @@ public class TempBlockTermsReader extends FieldsProducer {
   /** Sole constructor. */
   public TempBlockTermsReader(Directory dir, FieldInfos fieldInfos, SegmentInfo info,
                               TempPostingsReaderBase postingsReader, IOContext ioContext,
-                              String segmentSuffix, int indexDivisor)
+                              String segmentSuffix)
     throws IOException {
     
     this.postingsReader = postingsReader;
@@ -131,13 +131,11 @@ public class TempBlockTermsReader extends FieldsProducer {
 
     try {
       version = readHeader(in);
-      if (indexDivisor != -1) {
-        indexIn = dir.openInput(IndexFileNames.segmentFileName(segment, segmentSuffix, TempBlockTermsWriter.TERMS_INDEX_EXTENSION),
+      indexIn = dir.openInput(IndexFileNames.segmentFileName(segment, segmentSuffix, TempBlockTermsWriter.TERMS_INDEX_EXTENSION),
                                 ioContext);
-        int indexVersion = readIndexHeader(indexIn);
-        if (indexVersion != version) {
-          throw new CorruptIndexException("mixmatched version files: " + in + "=" + version + "," + indexIn + "=" + indexVersion);
-        }
+      int indexVersion = readIndexHeader(indexIn);
+      if (indexVersion != version) {
+        throw new CorruptIndexException("mixmatched version files: " + in + "=" + version + "," + indexIn + "=" + indexVersion);
       }
 
       // Have PostingsReader init itself
@@ -145,9 +143,7 @@ public class TempBlockTermsReader extends FieldsProducer {
 
       // Read per-field details
       seekDir(in, dirOffset);
-      if (indexDivisor != -1) {
-        seekDir(indexIn, indexDirOffset);
-      }
+      seekDir(indexIn, indexDirOffset);
 
       final int numFields = in.readVInt();
       if (numFields < 0) {
@@ -177,15 +173,13 @@ public class TempBlockTermsReader extends FieldsProducer {
         if (sumTotalTermFreq != -1 && sumTotalTermFreq < sumDocFreq) { // #positions must be >= #postings
           throw new CorruptIndexException("invalid sumTotalTermFreq: " + sumTotalTermFreq + " sumDocFreq: " + sumDocFreq + " (resource=" + in + ")");
         }
-        final long indexStartFP = indexDivisor != -1 ? indexIn.readVLong() : 0;
+        final long indexStartFP = indexIn.readVLong();
         FieldReader previous = fields.put(fieldInfo.name, new FieldReader(fieldInfo, numTerms, rootCode, sumTotalTermFreq, sumDocFreq, docCount, indexStartFP, longsSize, indexIn));
         if (previous != null) {
           throw new CorruptIndexException("duplicate field: " + fieldInfo.name + " (resource=" + in + ")");
         }
       }
-      if (indexDivisor != -1) {
-        indexIn.close();
-      }
+      indexIn.close();
 
       success = true;
     } finally {
@@ -1251,7 +1245,7 @@ public class TempBlockTermsReader extends FieldsProducer {
       }
 
       @Override
-      public boolean seekExact(BytesRef text, boolean useCache) {
+      public boolean seekExact(BytesRef text) {
         throw new UnsupportedOperationException();
       }
 
@@ -1266,7 +1260,7 @@ public class TempBlockTermsReader extends FieldsProducer {
       }
 
       @Override
-      public SeekStatus seekCeil(BytesRef text, boolean useCache) {
+      public SeekStatus seekCeil(BytesRef text) {
         throw new UnsupportedOperationException();
       }
     }
@@ -1528,7 +1522,7 @@ public class TempBlockTermsReader extends FieldsProducer {
       }
 
       @Override
-      public boolean seekExact(final BytesRef target, final boolean useCache) throws IOException {
+      public boolean seekExact(final BytesRef target) throws IOException {
 
         if (index == null) {
           throw new IllegalStateException("terms index was not loaded");
@@ -1789,7 +1783,7 @@ public class TempBlockTermsReader extends FieldsProducer {
       }
 
       @Override
-      public SeekStatus seekCeil(final BytesRef target, final boolean useCache) throws IOException {
+      public SeekStatus seekCeil(final BytesRef target) throws IOException {
         if (index == null) {
           throw new IllegalStateException("terms index was not loaded");
         }
@@ -2125,7 +2119,7 @@ public class TempBlockTermsReader extends FieldsProducer {
           // this method catches up all internal state so next()
           // works properly:
           //if (DEBUG) System.out.println("  re-seek to pending term=" + term.utf8ToString() + " " + term);
-          final boolean result = seekExact(term, false);
+          final boolean result = seekExact(term);
           assert result;
         }
 

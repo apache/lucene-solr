@@ -78,15 +78,14 @@ public class IndexAndTaxonomyRevision implements Revision {
     @Override
     protected IndexWriterConfig createIndexWriterConfig(OpenMode openMode) {
       IndexWriterConfig conf = super.createIndexWriterConfig(openMode);
-      conf.setIndexDeletionPolicy(new SnapshotDeletionPolicy(conf.getIndexDeletionPolicy()));
+      sdp = new SnapshotDeletionPolicy(conf.getIndexDeletionPolicy());
+      conf.setIndexDeletionPolicy(sdp);
       return conf;
     }
     
     @Override
     protected IndexWriter openIndexWriter(Directory directory, IndexWriterConfig config) throws IOException {
       writer = super.openIndexWriter(directory, config);
-      // must set it here because IndexWriter clones the config
-      sdp = (SnapshotDeletionPolicy) writer.getConfig().getIndexDeletionPolicy();
       return writer;
     }
     

@@ -24,8 +24,10 @@ import org.apache.lucene.codecs.DocValuesProducer;
 import org.apache.lucene.codecs.DocValuesFormat;
 import org.apache.lucene.codecs.diskdv.DiskDocValuesConsumer;
 import org.apache.lucene.codecs.diskdv.DiskDocValuesFormat;
+import org.apache.lucene.index.FieldInfo;
 import org.apache.lucene.index.SegmentReadState;
 import org.apache.lucene.index.SegmentWriteState;
+import org.apache.lucene.util.BytesRef;
 
 /**
  * DocValues format that keeps everything on disk.
@@ -53,7 +55,13 @@ public final class CheapBastardDocValuesFormat extends DocValuesFormat {
     return new DiskDocValuesConsumer(state, DiskDocValuesFormat.DATA_CODEC, 
                                             DiskDocValuesFormat.DATA_EXTENSION, 
                                             DiskDocValuesFormat.META_CODEC, 
-                                            DiskDocValuesFormat.META_EXTENSION);
+                                            DiskDocValuesFormat.META_EXTENSION) {
+      // don't ever write an index, we dont want to use RAM :)
+      @Override
+      protected void addTermsDict(FieldInfo field, Iterable<BytesRef> values) throws IOException {
+        addBinaryField(field, values);
+      }  
+    };
   }
 
   @Override

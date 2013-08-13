@@ -169,7 +169,6 @@ public final class MockFixedIntBlockPostingsFormat extends PostingsFormat {
       indexReader = new FixedGapTermsIndexReader(state.directory,
                                                        state.fieldInfos,
                                                        state.segmentInfo.name,
-                                                       state.termsIndexDivisor,
                                                        BytesRef.getUTF8SortedAsUnicodeComparator(), state.segmentSuffix,
                                                        IOContext.DEFAULT);
       success = true;
@@ -187,7 +186,6 @@ public final class MockFixedIntBlockPostingsFormat extends PostingsFormat {
                                                 state.segmentInfo,
                                                 postingsReader,
                                                 state.context,
-                                                1024,
                                                 state.segmentSuffix);
       success = true;
       return ret;

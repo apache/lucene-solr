@@ -42,7 +42,7 @@ public class TestSnapshotDeletionPolicy extends LuceneTestCase {
   public static final String INDEX_PATH = "test.snapshots";
   
   protected IndexWriterConfig getConfig(Random random, IndexDeletionPolicy dp) {
-    IndexWriterConfig conf = newIndexWriterConfig( TEST_VERSION_CURRENT, new MockAnalyzer(random));
+    IndexWriterConfig conf = newIndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer(random));
     if (dp != null) {
       conf.setIndexDeletionPolicy(dp);
     }
@@ -323,8 +323,8 @@ public class TestSnapshotDeletionPolicy extends LuceneTestCase {
     int numSnapshots = 2;
     Directory dir = newDirectory();
 
-    IndexWriter writer = new IndexWriter(dir, getConfig(random(), getDeletionPolicy()));
-    SnapshotDeletionPolicy sdp = (SnapshotDeletionPolicy) writer.getConfig().getIndexDeletionPolicy();
+    SnapshotDeletionPolicy sdp = getDeletionPolicy();
+    IndexWriter writer = new IndexWriter(dir, getConfig(random(), sdp));
     prepareIndexAndSnapshots(sdp, writer, numSnapshots);
     writer.close();
 
@@ -333,8 +333,7 @@ public class TestSnapshotDeletionPolicy extends LuceneTestCase {
     // this does the actual rollback
     writer.commit();
     writer.deleteUnusedFiles();
-    //sdp = (SnapshotDeletionPolicy) writer.getConfig().getIndexDeletionPolicy();
-    assertSnapshotExists(dir, sdp, numSnapshots - 1, true);
+    assertSnapshotExists(dir, sdp, numSnapshots - 1, false);
     writer.close();
 
     // but 'snapshot1' files will still exist (need to release snapshot before they can be deleted).

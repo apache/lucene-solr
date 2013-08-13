@@ -4,6 +4,7 @@ import java.io.IOException;
 import java.util.HashMap;
 import java.util.List;
 
+import org.apache.lucene.facet.old.OldFacetsAccumulator;
 import org.apache.lucene.facet.params.FacetIndexingParams;
 import org.apache.lucene.facet.params.FacetSearchParams;
 import org.apache.lucene.search.MatchAllDocsQuery;
@@ -33,8 +34,8 @@ public class TestTopKResultsHandlerRandom extends BaseTestTopK {
       throws IOException {
     Query q = new MatchAllDocsQuery();
     FacetSearchParams facetSearchParams = searchParamsWithRequests(numResults, fip);
-    StandardFacetsAccumulator sfa = new StandardFacetsAccumulator(facetSearchParams, indexReader, taxoReader);
-    sfa.setComplementThreshold(doComplement ? StandardFacetsAccumulator.FORCE_COMPLEMENT : StandardFacetsAccumulator.DISABLE_COMPLEMENT);
+    OldFacetsAccumulator sfa = new OldFacetsAccumulator(facetSearchParams, indexReader, taxoReader);
+    sfa.setComplementThreshold(doComplement ? OldFacetsAccumulator.FORCE_COMPLEMENT : OldFacetsAccumulator.DISABLE_COMPLEMENT);
     FacetsCollector fc = FacetsCollector.create(sfa);
     searcher.search(q, fc);
     List<FacetResult> facetResults = fc.getFacetResults();

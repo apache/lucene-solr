@@ -1,4 +1,9 @@
-package org.apache.lucene.facet.search;
+package org.apache.lucene.facet.associations;
+
+import org.apache.lucene.facet.params.FacetIndexingParams;
+import org.apache.lucene.facet.search.FacetRequest;
+import org.apache.lucene.facet.search.FacetsAggregator;
+import org.apache.lucene.facet.taxonomy.CategoryPath;
 
 /*
  * Licensed to the Apache Software Foundation (ASF) under one or more
@@ -18,26 +23,24 @@ package org.apache.lucene.facet.search;
  */
 
 /**
- * Iterator over document IDs and their scores. Each {@link #next()} retrieves
- * the next docID and its score which can be later be retrieved by
- * {@link #getDocID()} and {@link #getScore()}. <b>NOTE:</b> you must call
- * {@link #next()} before {@link #getDocID()} and/or {@link #getScore()}, or
- * otherwise the returned values are unexpected.
+ * A {@link FacetRequest} for weighting facets according to their float
+ * association by summing the association values.
  * 
  * @lucene.experimental
  */
-public interface ScoredDocIDsIterator {
+public class SumFloatAssociationFacetRequest extends FacetRequest {
 
-  /** Default score used in case scoring is disabled. */
-  public static final float DEFAULT_SCORE = 1.0f;
+  /**
+   * Create a float association facet request for a given node in the
+   * taxonomy.
+   */
+  public SumFloatAssociationFacetRequest(CategoryPath path, int num) {
+    super(path, num);
+  }
 
-  /** Iterate to the next document/score pair. Returns true iff there is such a pair. */
-  public abstract boolean next();
-
-  /** Returns the ID of the current document. */
-  public abstract int getDocID();
-
-  /** Returns the score of the current document. */
-  public abstract float getScore();
-
+  @Override
+  public FacetsAggregator createFacetsAggregator(FacetIndexingParams fip) {
+    return new SumFloatAssociationFacetsAggregator();
+  }
+  
 }

@@ -1,4 +1,4 @@
-package org.apache.lucene.facet.util;
+package org.apache.lucene.facet.old;
 
 import java.io.IOException;
 import java.util.Random;
@@ -10,8 +10,6 @@ import org.apache.lucene.document.Field;
 import org.apache.lucene.document.FieldType;
 import org.apache.lucene.document.StringField;
 import org.apache.lucene.facet.FacetTestCase;
-import org.apache.lucene.facet.search.ScoredDocIDs;
-import org.apache.lucene.facet.search.ScoredDocIDsIterator;
 import org.apache.lucene.index.DirectoryReader;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.RandomIndexWriter;

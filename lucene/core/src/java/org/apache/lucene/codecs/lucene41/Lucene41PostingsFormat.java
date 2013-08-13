@@ -439,8 +439,7 @@ public final class Lucene41PostingsFormat extends PostingsFormat {
                                                     state.segmentInfo,
                                                     postingsReader,
                                                     state.context,
-                                                    state.segmentSuffix,
-                                                    state.termsIndexDivisor);
+                                                    state.segmentSuffix);
       success = true;
       return ret;
     } finally {

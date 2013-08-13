@@ -1,8 +1,7 @@
-package org.apache.lucene.facet.search;
+package org.apache.lucene.facet.old;
 
 import java.io.IOException;
 
-import org.apache.lucene.index.AtomicReaderContext;
 import org.apache.lucene.util.IntsRef;
 
 /*
@@ -23,26 +22,23 @@ import org.apache.lucene.util.IntsRef;
  */
 
 /**
- * Aggregates the categories of documents given to
- * {@link #aggregate(int, float, IntsRef)}. Note that the document IDs are local
- * to the reader given to {@link #setNextReader(AtomicReaderContext)}.
+ * A {@link CountingAggregator} used during complement counting.
  * 
  * @lucene.experimental
  */
-public interface Aggregator {
+public class ComplementCountingAggregator extends CountingAggregator {
 
-  /**
-   * Sets the {@link AtomicReaderContext} for which
-   * {@link #aggregate(int, float, IntsRef)} calls will be made. If this method
-   * returns false, {@link #aggregate(int, float, IntsRef)} should not be called
-   * for this reader.
-   */
-  public boolean setNextReader(AtomicReaderContext context) throws IOException;
-  
-  /**
-   * Aggregate the ordinals of the given document ID (and its score). The given
-   * ordinals offset is always zero.
-   */
-  public void aggregate(int docID, float score, IntsRef ordinals) throws IOException;
-  
+  public ComplementCountingAggregator(int[] counterArray) {
+    super(counterArray);
+  }
+
+  @Override
+  public void aggregate(int docID, float score, IntsRef ordinals) throws IOException {
+    for (int i = 0; i < ordinals.length; i++) {
+      int ord = ordinals.ints[i];
+      assert counterArray[ord] != 0 : "complement aggregation: count is about to become negative for ordinal " + ord;
+      --counterArray[ord];
+    }
+  }
+
 }

@@ -150,7 +150,7 @@ public final class MultiFields extends Fields {
     final Terms terms = getTerms(r, field);
     if (terms != null) {
       final TermsEnum termsEnum = terms.iterator(null);
-      if (termsEnum.seekExact(term, true)) {
+      if (termsEnum.seekExact(term)) {
         return termsEnum.docs(liveDocs, null, flags);
       }
     }
@@ -178,7 +178,7 @@ public final class MultiFields extends Fields {
     final Terms terms = getTerms(r, field);
     if (terms != null) {
       final TermsEnum termsEnum = terms.iterator(null);
-      if (termsEnum.seekExact(term, true)) {
+      if (termsEnum.seekExact(term)) {
         return termsEnum.docsAndPositions(liveDocs, null, flags);
       }
     }

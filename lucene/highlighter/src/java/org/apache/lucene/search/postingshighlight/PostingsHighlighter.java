@@ -459,7 +459,7 @@ public class PostingsHighlighter {
         continue;
       } else if (de == null) {
         postings[i] = EMPTY; // initially
-        if (!termsEnum.seekExact(terms[i], true)) {
+        if (!termsEnum.seekExact(terms[i])) {
           continue; // term not found
         }
         de = postings[i] = termsEnum.docsAndPositions(null, null, DocsAndPositionsEnum.FLAG_OFFSETS);
@@ -506,6 +506,13 @@ public class PostingsHighlighter {
         throw new IllegalArgumentException("field '" + field + "' was indexed without offsets, cannot highlight");
       }
       int end = dp.endOffset();
+      // LUCENE-5166: this hit would span the content limit... however more valid 
+      // hits may exist (they are sorted by start). so we pretend like we never 
+      // saw this term, it won't cause a passage to be added to passageQueue or anything.
+      assert EMPTY.startOffset() == Integer.MAX_VALUE;
+      if (start < contentLength && end > contentLength) {
+        continue;
+      }
       if (start >= current.endOffset) {
         if (current.startOffset >= 0) {
           // finalize current

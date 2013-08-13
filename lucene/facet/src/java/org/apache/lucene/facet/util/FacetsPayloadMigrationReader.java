@@ -90,7 +90,7 @@ public class FacetsPayloadMigrationReader extends FilterAtomicReader {
           Terms terms = fields.terms(term.field());
           if (terms != null) {
             TermsEnum te = terms.iterator(null); // no use for reusing
-            if (te.seekExact(term.bytes(), true)) {
+            if (te.seekExact(term.bytes())) {
               // we're not expected to be called for deleted documents
               dpe = te.docsAndPositions(null, null, DocsAndPositionsEnum.FLAG_PAYLOADS);
             }

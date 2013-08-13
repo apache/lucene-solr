@@ -68,6 +68,7 @@ public class SynonymFilterFactory extends TokenFilterFactory implements Resource
   private final String synonyms;
   private final String format;
   private final boolean expand;
+  private final String analyzerName;
   private final Map<String, String> tokArgs = new HashMap<String, String>();
 
   private SynonymMap map;
@@ -79,7 +80,13 @@ public class SynonymFilterFactory extends TokenFilterFactory implements Resource
     format = get(args, "format");
     expand = getBoolean(args, "expand", true);
 
+    analyzerName = get(args, "analyzer");
     tokenizerFactory = get(args, "tokenizerFactory");
+    if (analyzerName != null && tokenizerFactory != null) {
+      throw new IllegalArgumentException("Analyzer and TokenizerFactory can't be specified both: " +
+                                         analyzerName + " and " + tokenizerFactory);
+    }
+
     if (tokenizerFactory != null) {
       assureMatchVersion();
       tokArgs.put("luceneMatchVersion", getLuceneMatchVersion().toString());
@@ -104,15 +111,20 @@ public class SynonymFilterFactory extends TokenFilterFactory implements Resource
   @Override
   public void inform(ResourceLoader loader) throws IOException {
     final TokenizerFactory factory = tokenizerFactory == null ? null : loadTokenizerFactory(loader, tokenizerFactory);
+    Analyzer analyzer;
     
-    Analyzer analyzer = new Analyzer() {
-      @Override
-      protected TokenStreamComponents createComponents(String fieldName, Reader reader) {
-        Tokenizer tokenizer = factory == null ? new WhitespaceTokenizer(Version.LUCENE_50, reader) : factory.create(reader);
-        TokenStream stream = ignoreCase ? new LowerCaseFilter(Version.LUCENE_50, tokenizer) : tokenizer;
-        return new TokenStreamComponents(tokenizer, stream);
-      }
-    };
+    if (analyzerName != null) {
+      analyzer = loadAnalyzer(loader, analyzerName);
+    } else {
+      analyzer = new Analyzer() {
+        @Override
+        protected TokenStreamComponents createComponents(String fieldName, Reader reader) {
+          Tokenizer tokenizer = factory == null ? new WhitespaceTokenizer(Version.LUCENE_50, reader) : factory.create(reader);
+          TokenStream stream = ignoreCase ? new LowerCaseFilter(Version.LUCENE_50, tokenizer) : tokenizer;
+          return new TokenStreamComponents(tokenizer, stream);
+        }
+      };
+    }
 
     try {
       if (format == null || format.equals("solr")) {
@@ -184,6 +196,19 @@ public class SynonymFilterFactory extends TokenFilterFactory implements Resource
         ((ResourceLoaderAware) tokFactory).inform(loader);
       }
       return tokFactory;
+    } catch (Exception e) {
+      throw new RuntimeException(e);
+    }
+  }
+
+  private Analyzer loadAnalyzer(ResourceLoader loader, String cname) throws IOException {
+    Class<? extends Analyzer> clazz = loader.findClass(cname, Analyzer.class);
+    try {
+      Analyzer analyzer = clazz.getConstructor(Version.class).newInstance(Version.LUCENE_50);
+      if (analyzer instanceof ResourceLoaderAware) {
+        ((ResourceLoaderAware) analyzer).inform(loader);
+      }
+      return analyzer;
     } catch (Exception e) {
       throw new RuntimeException(e);
     }

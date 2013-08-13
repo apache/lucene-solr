@@ -25,7 +25,10 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
+import org.apache.lucene.facet.index.FacetFields;
 import org.apache.lucene.facet.params.FacetSearchParams;
+import org.apache.lucene.facet.sortedset.SortedSetDocValuesFacetFields;
+import org.apache.lucene.facet.sortedset.SortedSetDocValuesReaderState;
 import org.apache.lucene.facet.taxonomy.TaxonomyReader;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.Term;
@@ -70,11 +73,26 @@ public class DrillSideways {
 
   protected final IndexSearcher searcher;
   protected final TaxonomyReader taxoReader;
-
-  /** Create a new {@code DrillSideways} instance. */
+  protected final SortedSetDocValuesReaderState state;
+  
+  /**
+   * Create a new {@code DrillSideways} instance, assuming the categories were
+   * indexed with {@link FacetFields}.
+   */
   public DrillSideways(IndexSearcher searcher, TaxonomyReader taxoReader) {
     this.searcher = searcher;
     this.taxoReader = taxoReader;
+    this.state = null;
+  }
+  
+  /**
+   * Create a new {@code DrillSideways} instance, assuming the categories were
+   * indexed with {@link SortedSetDocValuesFacetFields}.
+   */
+  public DrillSideways(IndexSearcher searcher, SortedSetDocValuesReaderState state) {
+    this.searcher = searcher;
+    this.taxoReader = null;
+    this.state = state;
   }
 
   /** Moves any drill-downs that don't have a corresponding
@@ -440,13 +458,21 @@ public class DrillSideways {
   /** Override this to use a custom drill-down {@link
    *  FacetsAccumulator}. */
   protected FacetsAccumulator getDrillDownAccumulator(FacetSearchParams fsp) throws IOException {
-    return FacetsAccumulator.create(fsp, searcher.getIndexReader(), taxoReader);
+    if (taxoReader != null) {
+      return FacetsAccumulator.create(fsp, searcher.getIndexReader(), taxoReader, null);
+    } else {
+      return FacetsAccumulator.create(fsp, state, null);
+    }
   }
 
   /** Override this to use a custom drill-sideways {@link
    *  FacetsAccumulator}. */
   protected FacetsAccumulator getDrillSidewaysAccumulator(String dim, FacetSearchParams fsp) throws IOException {
-    return FacetsAccumulator.create(fsp, searcher.getIndexReader(), taxoReader);
+    if (taxoReader != null) {
+      return FacetsAccumulator.create(fsp, searcher.getIndexReader(), taxoReader, null);
+    } else {
+      return FacetsAccumulator.create(fsp, state, null);
+    }
   }
 
   /** Override this and return true if your collector

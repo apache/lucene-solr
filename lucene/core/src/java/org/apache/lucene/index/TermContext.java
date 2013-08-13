@@ -78,7 +78,7 @@ public final class TermContext {
    * <p>
    * Note: the given context must be a top-level context.
    */
-  public static TermContext build(IndexReaderContext context, Term term, boolean cache)
+  public static TermContext build(IndexReaderContext context, Term term)
       throws IOException {
     assert context != null && context.isTopLevel;
     final String field = term.field();
@@ -92,7 +92,7 @@ public final class TermContext {
         final Terms terms = fields.terms(field);
         if (terms != null) {
           final TermsEnum termsEnum = terms.iterator(null);
-          if (termsEnum.seekExact(bytes, cache)) { 
+          if (termsEnum.seekExact(bytes)) { 
             final TermState termState = termsEnum.termState();
             //if (DEBUG) System.out.println("    found");
             perReaderTermState.register(termState, ctx.ord, termsEnum.docFreq(), termsEnum.totalTermFreq());

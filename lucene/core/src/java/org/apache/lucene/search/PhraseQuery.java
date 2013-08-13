@@ -37,7 +37,6 @@ import org.apache.lucene.search.similarities.Similarity.SimScorer;
 import org.apache.lucene.search.similarities.Similarity;
 import org.apache.lucene.util.ArrayUtil;
 import org.apache.lucene.util.Bits;
-import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.ToStringUtils;
 
 /** A Query that matches documents containing a particular sequence of terms.
@@ -218,7 +217,7 @@ public class PhraseQuery extends Query {
       TermStatistics termStats[] = new TermStatistics[terms.size()];
       for (int i = 0; i < terms.size(); i++) {
         final Term term = terms.get(i);
-        states[i] = TermContext.build(context, term, true);
+        states[i] = TermContext.build(context, term);
         termStats[i] = searcher.termStatistics(term, states[i]);
       }
       stats = similarity.computeWeight(getBoost(), searcher.collectionStatistics(field), termStats);
@@ -269,7 +268,7 @@ public class PhraseQuery extends Query {
         // PhraseQuery on a field that did not index
         // positions.
         if (postingsEnum == null) {
-          assert te.seekExact(t.bytes(), false) : "termstate found but no term exists in reader";
+          assert te.seekExact(t.bytes()) : "termstate found but no term exists in reader";
           // term does exist, but has no positions
           throw new IllegalStateException("field \"" + t.field() + "\" was indexed without position data; cannot run PhraseQuery (term=" + t.text() + ")");
         }

@@ -130,7 +130,7 @@ class DrillSidewaysQuery extends Query {
             continue;
           }
           for(int i=0;i<drillDownTerms[dim].length;i++) {
-            if (termsEnum.seekExact(drillDownTerms[dim][i].bytes(), false)) {
+            if (termsEnum.seekExact(drillDownTerms[dim][i].bytes())) {
               DocsEnum docsEnum = termsEnum.docs(null, null, 0);
               if (docsEnum != null) {
                 dims[dim].docsEnums[i] = docsEnum;

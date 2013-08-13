@@ -30,8 +30,8 @@ import java.util.Map;
 
 import org.apache.lucene.codecs.BlockTreeTermsReader;
 import org.apache.lucene.codecs.Codec;
-import org.apache.lucene.codecs.PostingsFormat; // javadocs
-import org.apache.lucene.document.FieldType; // for javadocs
+import org.apache.lucene.codecs.PostingsFormat;
+import org.apache.lucene.index.CheckIndex.Status.DocValuesStatus;
 import org.apache.lucene.index.FieldInfo.IndexOptions;
 import org.apache.lucene.search.DocIdSetIterator;
 import org.apache.lucene.store.Directory;
@@ -159,19 +159,6 @@ public class CheckIndex {
        *  segment. */
       public double sizeMB;
 
-      /** Doc store offset, if this segment shares the doc
-       *  store files (stored fields and term vectors) with
-       *  other segments.  This is -1 if it does not share. */
-      public int docStoreOffset = -1;
-    
-      /** String of the shared doc store segment, or null if
-       *  this segment does not share the doc store files. */
-      public String docStoreSegment;
-
-      /** True if the shared doc store files are compound file
-       *  format. */
-      public boolean docStoreCompoundFile;
-
       /** True if this segment has pending deletions. */
       public boolean hasDeletions;
 
@@ -297,10 +284,21 @@ public class CheckIndex {
       DocValuesStatus() {
       }
 
-      /** Number of documents tested. */
-      public int docCount;
       /** Total number of docValues tested. */
       public long totalValueFields;
+      
+      /** Total number of numeric fields */
+      public long totalNumericFields;
+      
+      /** Total number of binary fields */
+      public long totalBinaryFields;
+      
+      /** Total number of sorted fields */
+      public long totalSortedFields;
+      
+      /** Total number of sortedset fields */
+      public long totalSortedSetFields;
+      
       /** Exception thrown during doc values test (null on success) */
       public Throwable error = null;
     }
@@ -535,7 +533,7 @@ public class CheckIndex {
         }
         if (infoStream != null)
           infoStream.print("    test: open reader.........");
-        reader = new SegmentReader(info, DirectoryReader.DEFAULT_TERMS_INDEX_DIVISOR, IOContext.DEFAULT);
+        reader = new SegmentReader(info, IOContext.DEFAULT);
 
         segInfoStat.openReaderPassed = true;
 
@@ -1117,7 +1115,7 @@ public class CheckIndex {
             long totDocCountNoDeletes = 0;
             long totDocFreq = 0;
             for(int i=0;i<seekCount;i++) {
-              if (!termsEnum.seekExact(seekTerms[i], true)) {
+              if (!termsEnum.seekExact(seekTerms[i])) {
                 throw new RuntimeException("seek to existing term " + seekTerms[i] + " failed");
               }
               
@@ -1272,7 +1270,7 @@ public class CheckIndex {
       for (FieldInfo fieldInfo : reader.getFieldInfos()) {
         if (fieldInfo.hasDocValues()) {
           status.totalValueFields++;
-          checkDocValues(fieldInfo, reader, infoStream);
+          checkDocValues(fieldInfo, reader, infoStream, status);
         } else {
           if (reader.getBinaryDocValues(fieldInfo.name) != null ||
               reader.getNumericDocValues(fieldInfo.name) != null ||
@@ -1283,7 +1281,11 @@ public class CheckIndex {
         }
       }
 
-      msg(infoStream, "OK [" + status.docCount + " total doc count; " + status.totalValueFields + " docvalues fields]");
+      msg(infoStream, "OK [" + status.totalValueFields + " docvalues fields; "
+                             + status.totalBinaryFields + " BINARY; " 
+                             + status.totalNumericFields + " NUMERIC; "
+                             + status.totalSortedFields + " SORTED; "
+                             + status.totalSortedSetFields + " SORTED_SET]");
     } catch (Throwable e) {
       msg(infoStream, "ERROR [" + String.valueOf(e.getMessage()) + "]");
       status.error = e;
@@ -1382,9 +1384,10 @@ public class CheckIndex {
     }
   }
   
-  private static void checkDocValues(FieldInfo fi, AtomicReader reader, PrintStream infoStream) throws Exception {
+  private static void checkDocValues(FieldInfo fi, AtomicReader reader, PrintStream infoStream, DocValuesStatus status) throws Exception {
     switch(fi.getDocValuesType()) {
       case SORTED:
+        status.totalSortedFields++;
         checkSortedDocValues(fi.name, reader, reader.getSortedDocValues(fi.name));
         if (reader.getBinaryDocValues(fi.name) != null ||
             reader.getNumericDocValues(fi.name) != null ||
@@ -1393,6 +1396,7 @@ public class CheckIndex {
         }
         break;
       case SORTED_SET:
+        status.totalSortedSetFields++;
         checkSortedSetDocValues(fi.name, reader, reader.getSortedSetDocValues(fi.name));
         if (reader.getBinaryDocValues(fi.name) != null ||
             reader.getNumericDocValues(fi.name) != null ||
@@ -1401,6 +1405,7 @@ public class CheckIndex {
         }
         break;
       case BINARY:
+        status.totalBinaryFields++;
         checkBinaryDocValues(fi.name, reader, reader.getBinaryDocValues(fi.name));
         if (reader.getNumericDocValues(fi.name) != null ||
             reader.getSortedDocValues(fi.name) != null ||
@@ -1409,6 +1414,7 @@ public class CheckIndex {
         }
         break;
       case NUMERIC:
+        status.totalNumericFields++;
         checkNumericDocValues(fi.name, reader, reader.getNumericDocValues(fi.name));
         if (reader.getBinaryDocValues(fi.name) != null ||
             reader.getSortedDocValues(fi.name) != null ||
@@ -1543,7 +1549,7 @@ public class CheckIndex {
                 }
 
                 final DocsEnum postingsDocs2;
-                if (!postingsTermsEnum.seekExact(term, true)) {
+                if (!postingsTermsEnum.seekExact(term)) {
                   throw new RuntimeException("vector term=" + term + " field=" + field + " does not exist in postings; doc=" + j);
                 }
                 postingsPostings = postingsTermsEnum.docsAndPositions(null, postingsPostings);
@@ -1677,7 +1683,7 @@ public class CheckIndex {
    *
    * <p><b>WARNING</b>: Make sure you only call this when the
    *  index is not opened  by any writer. */
-  public void fixIndex(Status result, Codec codec) throws IOException {
+  public void fixIndex(Status result) throws IOException {
     if (result.partial)
       throw new IllegalArgumentException("can only fix an index that was fully checked (this status checked a subset of segments)");
     result.newSegments.changed();
@@ -1732,7 +1738,6 @@ public class CheckIndex {
 
     boolean doFix = false;
     boolean doCrossCheckTermVectors = false;
-    Codec codec = Codec.getDefault(); // only used when fixing
     boolean verbose = false;
     List<String> onlySegments = new ArrayList<String>();
     String indexPath = null;
@@ -1744,13 +1749,6 @@ public class CheckIndex {
         doFix = true;
       } else if ("-crossCheckTermVectors".equals(arg)) {
         doCrossCheckTermVectors = true;
-      } else if ("-codec".equals(arg)) {
-        if (i == args.length-1) {
-          System.out.println("ERROR: missing name for -codec option");
-          System.exit(1);
-        }
-        i++;
-        codec = Codec.forName(args[i]);
       } else if (arg.equals("-verbose")) {
         verbose = true;
       } else if (arg.equals("-segment")) {
@@ -1851,7 +1849,7 @@ public class CheckIndex {
           System.out.println("  " + (5-s) + "...");
         }
         System.out.println("Writing...");
-        checker.fixIndex(result, codec);
+        checker.fixIndex(result);
         System.out.println("OK");
         System.out.println("Wrote new segments file \"" + result.newSegments.getSegmentsFileName() + "\"");
       }

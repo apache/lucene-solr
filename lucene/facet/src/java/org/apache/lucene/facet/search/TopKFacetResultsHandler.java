@@ -34,16 +34,10 @@ import org.apache.lucene.facet.util.ResultSortUtils;
  */
 public class TopKFacetResultsHandler extends PartitionsFacetResultsHandler {
   
-  /**
-   * Construct top-K results handler.
-   * 
-   * @param taxonomyReader
-   *          taxonomy reader
-   * @param facetRequest
-   *          facet request being served
-   */
-  public TopKFacetResultsHandler(TaxonomyReader taxonomyReader, FacetRequest facetRequest, FacetArrays facetArrays) {
-    super(taxonomyReader, facetRequest, facetArrays);
+  /** Construct top-K results handler. */
+  public TopKFacetResultsHandler(TaxonomyReader taxonomyReader, FacetRequest facetRequest, 
+      OrdinalValueResolver resolver, FacetArrays facetArrays) {
+    super(taxonomyReader, facetRequest, resolver, facetArrays);
   }
   
   // fetch top K for specific partition. 
@@ -56,7 +50,7 @@ public class TopKFacetResultsHandler extends PartitionsFacetResultsHandler {
       double value = 0;  
       if (isSelfPartition(ordinal, facetArrays, offset)) {
         int partitionSize = facetArrays.arrayLength;
-        value = facetRequest.getValueOf(facetArrays, ordinal % partitionSize);
+        value = resolver.valueOf(ordinal % partitionSize);
       }
       
       FacetResultNode parentResultNode = new FacetResultNode(ordinal, value);
@@ -158,7 +152,7 @@ public class TopKFacetResultsHandler extends PartitionsFacetResultsHandler {
       // collect it, if belongs to current partition, and then push its kids on itself, if applicable
       if (tosOrdinal >= offset) { // tosOrdinal resides in current partition
         int relativeOrdinal = tosOrdinal % partitionSize;
-        double value = facetRequest.getValueOf(facetArrays, relativeOrdinal);
+        double value = resolver.valueOf(relativeOrdinal);
         if (value != 0 && !Double.isNaN(value)) {
           // Count current ordinal -- the TOS
           if (reusable == null) {

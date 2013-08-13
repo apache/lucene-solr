@@ -27,6 +27,9 @@ import org.apache.lucene.facet.search.FacetsCollector.MatchingDocs;
 /**
  * A {@link FacetsAggregator} which invokes the proper aggregator per
  * {@link CategoryListParams}.
+ * {@link #rollupValues(FacetRequest, int, int[], int[], FacetArrays)} is
+ * delegated to the proper aggregator which handles the
+ * {@link CategoryListParams} the given {@link FacetRequest} belongs to.
  */
 public class PerCategoryListAggregator implements FacetsAggregator {
   
@@ -57,6 +60,12 @@ public class PerCategoryListAggregator implements FacetsAggregator {
       }
     }
     return false;
+  }
+
+  @Override
+  public OrdinalValueResolver createOrdinalValueResolver(FacetRequest facetRequest, FacetArrays arrays) {
+    CategoryListParams clp = fip.getCategoryListParams(facetRequest.categoryPath);
+    return aggregators.get(clp).createOrdinalValueResolver(facetRequest, arrays);
   }
   
 }

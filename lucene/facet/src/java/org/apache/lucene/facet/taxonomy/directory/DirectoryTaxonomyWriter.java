@@ -428,7 +428,7 @@ public class DirectoryTaxonomyWriter implements TaxonomyWriter {
         Terms terms = ctx.reader().terms(Consts.FULL);
         if (terms != null) {
           termsEnum = terms.iterator(termsEnum);
-          if (termsEnum.seekExact(catTerm, true)) {
+          if (termsEnum.seekExact(catTerm)) {
             // liveDocs=null because the taxonomy has no deletes
             docs = termsEnum.docs(null, docs, 0 /* freqs not required */);
             // if the term was found, we know it has exactly one document.

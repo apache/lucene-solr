@@ -16,10 +16,18 @@ package org.apache.lucene.search.vectorhighlight;
  * limitations under the License.
  */
 import java.io.IOException;
+import java.io.Reader;
+import java.util.Arrays;
 
+import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.analysis.MockAnalyzer;
 import org.apache.lucene.analysis.MockTokenFilter;
 import org.apache.lucene.analysis.MockTokenizer;
+import org.apache.lucene.analysis.TokenFilter;
+import org.apache.lucene.analysis.TokenStream;
+import org.apache.lucene.analysis.Tokenizer;
+import org.apache.lucene.analysis.tokenattributes.CharTermAttribute;
+import org.apache.lucene.analysis.tokenattributes.PositionIncrementAttribute;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
 import org.apache.lucene.document.FieldType;
@@ -27,12 +35,14 @@ import org.apache.lucene.document.TextField;
 import org.apache.lucene.index.DirectoryReader;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.IndexWriter;
+import org.apache.lucene.index.RandomIndexWriter;
 import org.apache.lucene.index.Term;
 import org.apache.lucene.queries.CommonTermsQuery;
 import org.apache.lucene.search.BooleanClause.Occur;
 import org.apache.lucene.search.BooleanQuery;
 import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.search.PhraseQuery;
+import org.apache.lucene.search.Query;
 import org.apache.lucene.search.TermQuery;
 import org.apache.lucene.search.TopDocs;
 import org.apache.lucene.store.Directory;
@@ -40,7 +50,8 @@ import org.apache.lucene.util.LuceneTestCase;
 
 
 public class FastVectorHighlighterTest extends LuceneTestCase {
-  
+
+  private static final String FIELD = "text";
   
   public void testSimpleHighlightTest() throws IOException {
     Directory dir = newDirectory();
@@ -286,5 +297,129 @@ public class FastVectorHighlighterTest extends LuceneTestCase {
     reader.close();
     writer.close();
     dir.close();
+  }
+
+  public void testOverlappingPhrases() throws IOException {
+    final Analyzer analyzer = new Analyzer() {
+
+      @Override
+      protected TokenStreamComponents createComponents(String fieldName, Reader reader) {
+        final Tokenizer source = new MockTokenizer(reader);
+        TokenStream sink = source;
+        sink = new SynonymFilter(sink);
+        return new TokenStreamComponents(source, sink);
+      }
+
+    };
+    final Directory directory = newDirectory();
+    RandomIndexWriter iw = new RandomIndexWriter(random(), directory, analyzer);
+    Document doc = new Document();
+    FieldType withVectors = new FieldType(TextField.TYPE_STORED);
+    withVectors.setStoreTermVectors(true);
+    withVectors.setStoreTermVectorPositions(true);
+    withVectors.setStoreTermVectorOffsets(true);
+    doc.add(new Field(FIELD, "a b c", withVectors));
+    iw.addDocument(doc);
+    DirectoryReader ir = iw.getReader();
+
+    // Disjunction of two overlapping phrase queries
+    final PhraseQuery pq1 = new PhraseQuery();
+    pq1.add(new Term(FIELD, "a"), 0);
+    pq1.add(new Term(FIELD, "b"), 1);
+    pq1.add(new Term(FIELD, "c"), 2);
+
+    final PhraseQuery pq2 = new PhraseQuery();
+    pq2.add(new Term(FIELD, "a"), 0);
+    pq2.add(new Term(FIELD, "B"), 1);
+    pq2.add(new Term(FIELD, "c"), 2);
+
+    final BooleanQuery bq = new BooleanQuery();
+    bq.add(pq1, Occur.SHOULD);
+    bq.add(pq2, Occur.SHOULD);
+
+    // Single phrase query with two terms at the same position
+    final PhraseQuery pq = new PhraseQuery();
+    pq.add(new Term(FIELD, "a"), 0);
+    pq.add(new Term(FIELD, "b"), 1);
+    pq.add(new Term(FIELD, "B"), 1);
+    pq.add(new Term(FIELD, "c"), 2);
+
+    for (Query query : Arrays.asList(pq1, pq2, bq, pq)) {
+      assertEquals(1, new IndexSearcher(ir).search(bq, 1).totalHits);
+
+      FastVectorHighlighter highlighter = new FastVectorHighlighter();
+      FieldQuery fieldQuery  = highlighter.getFieldQuery(query, ir);
+      String[] bestFragments = highlighter.getBestFragments(fieldQuery, ir, 0, FIELD, 1000, 1);
+      assertEquals("<b>a b c</b>", bestFragments[0]);
+    }
+
+    ir.close();
+    iw.close();
+    directory.close();
+  }
+
+  public void testPhraseWithGap() throws IOException {
+    final Directory directory = newDirectory();
+    RandomIndexWriter iw = new RandomIndexWriter(random(), directory, new MockAnalyzer(random(), MockTokenizer.WHITESPACE, false));
+    Document doc = new Document();
+    FieldType withVectors = new FieldType(TextField.TYPE_STORED);
+    withVectors.setStoreTermVectors(true);
+    withVectors.setStoreTermVectorPositions(true);
+    withVectors.setStoreTermVectorOffsets(true);
+    doc.add(new Field(FIELD, "a b c", withVectors));
+    iw.addDocument(doc);
+    DirectoryReader ir = iw.getReader();
+
+    final PhraseQuery pq = new PhraseQuery();
+    pq.add(new Term(FIELD, "c"), 2);
+    pq.add(new Term(FIELD, "a"), 0);
+
+    assertEquals(1, new IndexSearcher(ir).search(pq, 1).totalHits);
+
+    FastVectorHighlighter highlighter = new FastVectorHighlighter();
+    FieldQuery fieldQuery  = highlighter.getFieldQuery(pq, ir);
+    String[] bestFragments = highlighter.getBestFragments(fieldQuery, ir, 0, FIELD, 1000, 1);
+    assertEquals("<b>a</b> b <b>c</b>", bestFragments[0]);
+
+    ir.close();
+    iw.close();
+    directory.close();
+  }
+
+  // Simple token filter that adds 'B' as a synonym of 'b'
+  private static class SynonymFilter extends TokenFilter {
+
+    final CharTermAttribute termAtt = addAttribute(CharTermAttribute.class);
+    final PositionIncrementAttribute posIncAtt = addAttribute(PositionIncrementAttribute.class);
+
+    State pending;
+
+    protected SynonymFilter(TokenStream input) {
+      super(input);
+    }
+
+    @Override
+    public boolean incrementToken() throws IOException {
+      if (pending != null) {
+        restoreState(pending);
+        termAtt.setEmpty().append('B');
+        posIncAtt.setPositionIncrement(0);
+        pending = null;
+        return true;
+      }
+      if (!input.incrementToken()) {
+        return false;
+      }
+      if (termAtt.toString().equals("b")) {
+        pending = captureState();
+      }
+      return true;
+    }
+
+    @Override
+    public void reset() throws IOException {
+      super.reset();
+      pending = null;
+    }
   }
 }

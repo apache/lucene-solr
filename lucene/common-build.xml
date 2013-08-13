@@ -230,9 +230,6 @@
   <property name="svn.exe" value="svn" />
   <property name="perl.exe" value="perl" />
   
-  <property name="hg.exe" value="hg" />
-  <property name="moman.url" value="https://bitbucket.org/jpbarrette/moman" />
-  <property name="moman.rev" value="120" />
   <property name="python.exe" value="python" />
   <property name="python32.exe" value="python3.2" />
 
@@ -445,20 +442,6 @@
     </sequential>
   </macrodef>
 
-  <target name="jflex-uptodate-check">
-    <uptodate property="jflex.files.uptodate">
-      <srcfiles dir="${src.dir}" includes="**/*.jflex" />
-      <mapper type="glob" from="*.jflex" to="*.java"/>
-    </uptodate>
-  </target>
- 
-  <target name="jflex-notice" depends="jflex-uptodate-check" unless="jflex.files.uptodate">
-    <echo>
-      One or more of the JFlex .jflex files is newer than its corresponding
-      .java file.  Run the "jflex" target to regenerate the artifacts.
-    </echo>
-  </target>
-
   <target name="jflex-check">
     <available property="jflex.present" classname="jflex.anttask.JFlexTask">
       <classpath refid="jflex.classpath"/>
@@ -471,7 +454,7 @@
       Please install the jFlex 1.5 version (currently not released)
       from its SVN repository:
 
-       svn co http://jflex.svn.sourceforge.net/svnroot/jflex/trunk jflex
+       svn co -r 623 http://jflex.svn.sourceforge.net/svnroot/jflex/trunk jflex
        cd jflex
        mvn install
 
@@ -2100,6 +2083,8 @@ ${tests-output}/junit4-*.suites     - per-JVM executed suites
     <property name="pegdown.loaded" value="true"/>
   </target>
   
+  <target name="regenerate"/>
+	
   <macrodef name="pegdown">
     <attribute name="todir"/>
     <attribute name="flatten" default="false"/>

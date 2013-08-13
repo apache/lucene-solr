@@ -327,7 +327,7 @@ public class MemoryIndexTest extends BaseTokenStreamTestCase {
     
     // now reuse and check again
     TermsEnum te = reader.terms("foo").iterator(null);
-    assertTrue(te.seekExact(new BytesRef("bar"), true));
+    assertTrue(te.seekExact(new BytesRef("bar")));
     disi = te.docs(null, disi, DocsEnum.FLAG_NONE);
     docid = disi.docID();
     assertEquals(-1, docid);
@@ -361,7 +361,7 @@ public class MemoryIndexTest extends BaseTokenStreamTestCase {
       
       // now reuse and check again
       TermsEnum te = reader.terms("foo").iterator(null);
-      assertTrue(te.seekExact(new BytesRef("bar"), true));
+      assertTrue(te.seekExact(new BytesRef("bar")));
       disi = te.docsAndPositions(null, disi);
       docid = disi.docID();
       assertEquals(-1, docid);

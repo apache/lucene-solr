@@ -1152,7 +1152,7 @@ public class TestIndexWriterDelete extends LuceneTestCase {
     Directory dir = newDirectory();
     IndexWriterConfig iwc = new IndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer(random()));
     iwc.setMaxBufferedDocs(2);
-    IndexWriter w = new IndexWriter(dir, iwc);
+    IndexWriter w = new IndexWriter(dir, iwc.clone());
     Document doc = new Document();
     doc.add(newField("field", "0", StringField.TYPE_NOT_STORED));
     w.addDocument(doc);
@@ -1177,7 +1177,7 @@ public class TestIndexWriterDelete extends LuceneTestCase {
 
     // Segment should have deletions:
     assertTrue(s.contains("has deletions"));
-    w = new IndexWriter(dir, iwc);
+    w = new IndexWriter(dir, iwc.clone());
     w.forceMerge(1);
     w.close();
 

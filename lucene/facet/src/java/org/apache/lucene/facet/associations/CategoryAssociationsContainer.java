@@ -30,11 +30,12 @@ public class CategoryAssociationsContainer implements Iterable<CategoryPath> {
   
   /**
    * Adds the {@link CategoryAssociation} for the given {@link CategoryPath
-   * category}. Overrides any assocation that was previously set. It is ok to
-   * pass {@code null}, in which case the category will be treated as a regular
-   * one (i.e. without association value).
+   * category}. Overrides any assocation that was previously set.
    */
   public void setAssociation(CategoryPath category, CategoryAssociation association) {
+    if (association == null) {
+      throw new IllegalArgumentException("cannot set a null association to a category");
+    }
     categoryAssociations.put(category, association);
   }
   

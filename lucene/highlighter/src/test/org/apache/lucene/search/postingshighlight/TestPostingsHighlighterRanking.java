@@ -173,6 +173,8 @@ public class TestPostingsHighlighterRanking extends LuceneTestCase {
         assertTrue(p.getNumMatches() > 0);
         assertTrue(p.getStartOffset() >= 0);
         assertTrue(p.getStartOffset() <= content.length());
+        assertTrue(p.getEndOffset() >= p.getStartOffset());
+        assertTrue(p.getEndOffset() <= content.length());
         // we use a very simple analyzer. so we can assert the matches are correct
         int lastMatchStart = -1;
         for (int i = 0; i < p.getNumMatches(); i++) {

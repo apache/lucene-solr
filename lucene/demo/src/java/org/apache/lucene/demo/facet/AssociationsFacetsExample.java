@@ -1,27 +1,20 @@
 package org.apache.lucene.demo.facet;
 
 import java.io.IOException;
-import java.util.HashMap;
 import java.util.List;
-import java.util.Map;
 
 import org.apache.lucene.analysis.core.WhitespaceAnalyzer;
 import org.apache.lucene.document.Document;
-import org.apache.lucene.facet.associations.AssociationFloatSumFacetRequest;
-import org.apache.lucene.facet.associations.AssociationIntSumFacetRequest;
 import org.apache.lucene.facet.associations.AssociationsFacetFields;
 import org.apache.lucene.facet.associations.CategoryAssociation;
 import org.apache.lucene.facet.associations.CategoryAssociationsContainer;
 import org.apache.lucene.facet.associations.CategoryFloatAssociation;
 import org.apache.lucene.facet.associations.CategoryIntAssociation;
-import org.apache.lucene.facet.associations.MultiAssociationsFacetsAggregator;
-import org.apache.lucene.facet.associations.SumFloatAssociationFacetsAggregator;
-import org.apache.lucene.facet.associations.SumIntAssociationFacetsAggregator;
+import org.apache.lucene.facet.associations.SumFloatAssociationFacetRequest;
+import org.apache.lucene.facet.associations.SumIntAssociationFacetRequest;
 import org.apache.lucene.facet.index.FacetFields;
 import org.apache.lucene.facet.params.FacetSearchParams;
 import org.apache.lucene.facet.search.FacetResult;
-import org.apache.lucene.facet.search.FacetsAccumulator;
-import org.apache.lucene.facet.search.FacetsAggregator;
 import org.apache.lucene.facet.search.FacetsCollector;
 import org.apache.lucene.facet.taxonomy.CategoryPath;
 import org.apache.lucene.facet.taxonomy.TaxonomyReader;
@@ -135,22 +128,9 @@ public class AssociationsFacetsExample {
     
     CategoryPath tags = new CategoryPath("tags");
     CategoryPath genre = new CategoryPath("genre");
-    FacetSearchParams fsp = new FacetSearchParams(
-        new AssociationIntSumFacetRequest(tags, 10), 
-        new AssociationFloatSumFacetRequest(genre, 10));
-  
-    // every category has a different type of association, so use chain their
-    // respective aggregators.
-    final Map<CategoryPath,FacetsAggregator> aggregators = new HashMap<CategoryPath,FacetsAggregator>();
-    aggregators.put(tags, new SumIntAssociationFacetsAggregator());
-    aggregators.put(genre, new SumFloatAssociationFacetsAggregator());
-    FacetsAccumulator fa = new FacetsAccumulator(fsp, indexReader, taxoReader) {
-      @Override
-      public FacetsAggregator getAggregator() {
-        return new MultiAssociationsFacetsAggregator(aggregators);
-      }
-    };
-    FacetsCollector fc = FacetsCollector.create(fa);
+    FacetSearchParams fsp = new FacetSearchParams(new SumIntAssociationFacetRequest(tags, 10), 
+        new SumFloatAssociationFacetRequest(genre, 10));
+    FacetsCollector fc = FacetsCollector.create(fsp, indexReader, taxoReader);
     
     // MatchAllDocsQuery is for "browsing" (counts facets
     // for all non-deleted docs in the index); normally

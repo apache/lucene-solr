@@ -55,17 +55,31 @@ public final class HunspellStemFilter extends TokenFilter {
   
   private final boolean dedup;
 
+  /** Create a {@link HunspellStemFilter} which deduplicates stems and has a maximum
+   *  recursion level of 2. 
+   *  @see #HunspellStemFilter(TokenStream, HunspellDictionary, int) */
+  public HunspellStemFilter(TokenStream input, HunspellDictionary dictionary) {
+    this(input, dictionary, 2);
+  }
+
   /**
    * Creates a new HunspellStemFilter that will stem tokens from the given TokenStream using affix rules in the provided
    * HunspellDictionary
    *
    * @param input TokenStream whose tokens will be stemmed
    * @param dictionary HunspellDictionary containing the affix rules and words that will be used to stem the tokens
+   * @param recursionCap maximum level of recursion stemmer can go into, defaults to <code>2</code>
    */
-  public HunspellStemFilter(TokenStream input, HunspellDictionary dictionary) {
-    this(input, dictionary, true);
+  public HunspellStemFilter(TokenStream input, HunspellDictionary dictionary, int recursionCap) {
+    this(input, dictionary, true, recursionCap);
   }
-  
+
+  /** Create a {@link HunspellStemFilter} which has a maximum recursion level of 2. 
+   *  @see #HunspellStemFilter(TokenStream, HunspellDictionary, boolean, int) */
+  public HunspellStemFilter(TokenStream input, HunspellDictionary dictionary, boolean dedup) {
+    this(input, dictionary, dedup, 2);
+  }
+
   /**
    * Creates a new HunspellStemFilter that will stem tokens from the given TokenStream using affix rules in the provided
    * HunspellDictionary
@@ -73,11 +87,12 @@ public final class HunspellStemFilter extends TokenFilter {
    * @param input TokenStream whose tokens will be stemmed
    * @param dictionary HunspellDictionary containing the affix rules and words that will be used to stem the tokens
    * @param dedup true if only unique terms should be output.
+   * @param recursionCap maximum level of recursion stemmer can go into, defaults to <code>2</code>
    */
-  public HunspellStemFilter(TokenStream input, HunspellDictionary dictionary, boolean dedup) {
+  public HunspellStemFilter(TokenStream input, HunspellDictionary dictionary, boolean dedup, int recursionCap) {
     super(input);
     this.dedup = dedup;
-    this.stemmer = new HunspellStemmer(dictionary);
+    this.stemmer = new HunspellStemmer(dictionary, recursionCap);
   }
 
   /**

@@ -1,8 +1,4 @@
-package org.apache.lucene.facet.associations;
-
-import org.apache.lucene.facet.search.FacetArrays;
-import org.apache.lucene.facet.search.FacetRequest;
-import org.apache.lucene.facet.taxonomy.CategoryPath;
+package org.apache.lucene.codecs.blockterms;
 
 /*
  * Licensed to the Apache Software Foundation (ASF) under one or more
@@ -21,30 +17,19 @@ import org.apache.lucene.facet.taxonomy.CategoryPath;
  * limitations under the License.
  */
 
+import org.apache.lucene.codecs.Codec;
+import org.apache.lucene.codecs.lucene41vargap.Lucene41VarGapDocFreqInterval;
+import org.apache.lucene.index.BasePostingsFormatTestCase;
+import org.apache.lucene.util._TestUtil;
+
 /**
- * A {@link FacetRequest} for weighting facets according to their float
- * association by summing the association values.
- * 
- * @lucene.experimental
+ * Basic tests of a PF using VariableGap terms dictionary (fixed interval, docFreq threshold)
  */
-public class AssociationFloatSumFacetRequest extends FacetRequest {
-
-  /**
-   * Create a float association facet request for a given node in the
-   * taxonomy.
-   */
-  public AssociationFloatSumFacetRequest(CategoryPath path, int num) {
-    super(path, num);
-  }
+public class TestVarGapFixedIntervalPostingsFormat extends BasePostingsFormatTestCase {
+  private final Codec codec = _TestUtil.alwaysPostingsFormat(new Lucene41VarGapDocFreqInterval(_TestUtil.nextInt(random(), 1, 100), _TestUtil.nextInt(random(), 1, 1000)));
 
   @Override
-  public double getValueOf(FacetArrays arrays, int ordinal) {
-    return arrays.getFloatArray()[ordinal];
+  protected Codec getCodec() {
+    return codec;
   }
-
-  @Override
-  public FacetArraysSource getFacetArraysSource() {
-    return FacetArraysSource.FLOAT;
-  }
-  
 }

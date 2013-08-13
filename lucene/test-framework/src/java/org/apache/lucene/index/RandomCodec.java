@@ -33,6 +33,8 @@ import org.apache.lucene.codecs.asserting.AssertingDocValuesFormat;
 import org.apache.lucene.codecs.asserting.AssertingPostingsFormat;
 import org.apache.lucene.codecs.lucene41.Lucene41PostingsFormat;
 import org.apache.lucene.codecs.lucene41ords.Lucene41WithOrds;
+import org.apache.lucene.codecs.lucene41vargap.Lucene41VarGapDocFreqInterval;
+import org.apache.lucene.codecs.lucene41vargap.Lucene41VarGapFixedInterval;
 import org.apache.lucene.codecs.lucene42.Lucene42Codec;
 import org.apache.lucene.codecs.lucene42.Lucene42DocValuesFormat;
 import org.apache.lucene.codecs.bloom.TestBloomFilteredLucene41Postings;
@@ -137,7 +139,9 @@ public class RandomCodec extends Lucene42Codec {
         new MockVariableIntBlockPostingsFormat( _TestUtil.nextInt(random, 1, 127)),
         new MockRandomPostingsFormat(random),
         new NestedPulsingPostingsFormat(),
-        new Lucene41WithOrds(),
+        new Lucene41WithOrds(_TestUtil.nextInt(random, 1, 1000)),
+        new Lucene41VarGapFixedInterval(_TestUtil.nextInt(random, 1, 1000)),
+        new Lucene41VarGapDocFreqInterval(_TestUtil.nextInt(random, 1, 100), _TestUtil.nextInt(random, 1, 1000)),
         new SimpleTextPostingsFormat(),
         new AssertingPostingsFormat(),
         new MemoryPostingsFormat(true, random.nextFloat()),

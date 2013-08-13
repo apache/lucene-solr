@@ -186,6 +186,13 @@ public class SpatialOpRecursivePrefixTreeTest extends StrategyTestCase {
   }
 
   private void doTest(final SpatialOperation operation) throws IOException {
+    //first show that when there's no data, a query will result in no results
+    {
+      Query query = strategy.makeQuery(new SpatialArgs(operation, randomRectangle()));
+      SearchResults searchResults = executeQuery(query, 1);
+      assertEquals(0, searchResults.numFound);
+    }
+
     final boolean biasContains = (operation == SpatialOperation.Contains);
 
     Map<String, Shape> indexedShapes = new LinkedHashMap<String, Shape>();

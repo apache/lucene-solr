@@ -20,6 +20,7 @@ package org.apache.lucene.util;
 import java.io.*;
 import java.lang.annotation.*;
 import java.lang.reflect.Constructor;
+import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 import java.util.*;
 import java.util.concurrent.*;
@@ -754,15 +755,6 @@ public abstract class LuceneTestCase extends Assert {
       }
     }
     if (r.nextBoolean()) {
-      if (rarely(r)) {
-        // crazy value
-        c.setTermIndexInterval(r.nextBoolean() ? _TestUtil.nextInt(r, 1, 31) : _TestUtil.nextInt(r, 129, 1000));
-      } else {
-        // reasonable value
-        c.setTermIndexInterval(_TestUtil.nextInt(r, 32, 128));
-      }
-    }
-    if (r.nextBoolean()) {
       int maxNumThreadStates = rarely(r) ? _TestUtil.nextInt(r, 5, 20) // crazy value
           : _TestUtil.nextInt(r, 1, 4); // reasonable value
 
@@ -802,22 +794,29 @@ public abstract class LuceneTestCase extends Assert {
       }
     }
 
-    if (rarely(r)) {
-      c.setMergePolicy(new MockRandomMergePolicy(r));
-    } else if (r.nextBoolean()) {
-      c.setMergePolicy(newTieredMergePolicy());
-    } else if (r.nextInt(5) == 0) { 
-      c.setMergePolicy(newAlcoholicMergePolicy());
-    } else {
-      c.setMergePolicy(newLogMergePolicy());
-    }
+    c.setMergePolicy(newMergePolicy(r));
+
     if (rarely(r)) {
       c.setMergedSegmentWarmer(new SimpleMergedSegmentWarmer(c.getInfoStream()));
     }
     c.setUseCompoundFile(r.nextBoolean());
     c.setReaderPooling(r.nextBoolean());
-    c.setReaderTermsIndexDivisor(_TestUtil.nextInt(r, 1, 4));
     return c;
+  }
+
+  public static MergePolicy newMergePolicy(Random r) {
+    if (rarely(r)) {
+      return new MockRandomMergePolicy(r);
+    } else if (r.nextBoolean()) {
+      return newTieredMergePolicy(r);
+    } else if (r.nextInt(5) == 0) { 
+      return newAlcoholicMergePolicy(r, classEnvRule.timeZone);
+    }
+    return newLogMergePolicy(r);
+  }
+
+  public static MergePolicy newMergePolicy() {
+    return newMergePolicy(random());
   }
 
   public static LogMergePolicy newLogMergePolicy() {
@@ -1137,8 +1136,8 @@ public abstract class LuceneTestCase extends Assert {
     FSDirectory d = null;
     try {
       d = CommandLineUtil.newFSDirectory(clazz, file);
-    } catch (Exception e) {
-      d = FSDirectory.open(file);
+    } catch (NoSuchMethodException | InstantiationException | IllegalAccessException | InvocationTargetException e) {
+      Rethrow.rethrow(e);
     }
     return d;
   }
@@ -1751,14 +1750,13 @@ public abstract class LuceneTestCase extends Assert {
         rightEnum = rightTerms.iterator(rightEnum);
       }
 
-      final boolean useCache = random().nextBoolean();
       final boolean seekExact = random().nextBoolean();
 
       if (seekExact) {
-        assertEquals(info, leftEnum.seekExact(b, useCache), rightEnum.seekExact(b, useCache));
+        assertEquals(info, leftEnum.seekExact(b), rightEnum.seekExact(b));
       } else {
-        SeekStatus leftStatus = leftEnum.seekCeil(b, useCache);
-        SeekStatus rightStatus = rightEnum.seekCeil(b, useCache);
+        SeekStatus leftStatus = leftEnum.seekCeil(b);
+        SeekStatus rightStatus = rightEnum.seekCeil(b);
         assertEquals(info, leftStatus, rightStatus);
         if (leftStatus != SeekStatus.END) {
           assertEquals(info, leftEnum.term(), rightEnum.term());

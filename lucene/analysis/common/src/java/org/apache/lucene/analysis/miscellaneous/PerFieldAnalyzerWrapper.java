@@ -84,11 +84,6 @@ public final class PerFieldAnalyzerWrapper extends AnalyzerWrapper {
   }
 
   @Override
-  protected TokenStreamComponents wrapComponents(String fieldName, TokenStreamComponents components) {
-    return components;
-  }
-  
-  @Override
   public String toString() {
     return "PerFieldAnalyzerWrapper(" + fieldAnalyzers + ", default=" + defaultAnalyzer + ")";
   }

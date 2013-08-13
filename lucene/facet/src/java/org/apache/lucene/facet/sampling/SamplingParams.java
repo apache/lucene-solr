@@ -32,19 +32,19 @@ public class SamplingParams {
   
   /**
    * Default ratio between size of sample to original size of document set.
-   * @see Sampler#getSampleSet(org.apache.lucene.facet.search.ScoredDocIDs)
+   * @see Sampler#getSampleSet(org.apache.lucene.facet.old.ScoredDocIDs)
    */
   public static final double DEFAULT_SAMPLE_RATIO = 0.01;
   
   /**
    * Default maximum size of sample.
-   * @see Sampler#getSampleSet(org.apache.lucene.facet.search.ScoredDocIDs)
+   * @see Sampler#getSampleSet(org.apache.lucene.facet.old.ScoredDocIDs)
    */
   public static final int DEFAULT_MAX_SAMPLE_SIZE = 10000;
   
   /**
    * Default minimum size of sample.
-   * @see Sampler#getSampleSet(org.apache.lucene.facet.search.ScoredDocIDs)
+   * @see Sampler#getSampleSet(org.apache.lucene.facet.old.ScoredDocIDs)
    */
   public static final int DEFAULT_MIN_SAMPLE_SIZE = 100;
   
@@ -65,7 +65,7 @@ public class SamplingParams {
   /**
    * Return the maxSampleSize.
    * In no case should the resulting sample size exceed this value.  
-   * @see Sampler#getSampleSet(org.apache.lucene.facet.search.ScoredDocIDs)
+   * @see Sampler#getSampleSet(org.apache.lucene.facet.old.ScoredDocIDs)
    */
   public final int getMaxSampleSize() {
     return maxSampleSize;
@@ -74,7 +74,7 @@ public class SamplingParams {
   /**
    * Return the minSampleSize.
    * In no case should the resulting sample size be smaller than this value.  
-   * @see Sampler#getSampleSet(org.apache.lucene.facet.search.ScoredDocIDs)
+   * @see Sampler#getSampleSet(org.apache.lucene.facet.old.ScoredDocIDs)
    */
   public final int getMinSampleSize() {
     return minSampleSize;
@@ -82,7 +82,7 @@ public class SamplingParams {
 
   /**
    * @return the sampleRatio
-   * @see Sampler#getSampleSet(org.apache.lucene.facet.search.ScoredDocIDs)
+   * @see Sampler#getSampleSet(org.apache.lucene.facet.old.ScoredDocIDs)
    */
   public final double getSampleRatio() {
     return sampleRatio;

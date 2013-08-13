@@ -163,7 +163,7 @@ public class TermQuery extends Query {
     final TermContext termState;
     if (perReaderTermState == null || perReaderTermState.topReaderContext != context) {
       // make TermQuery single-pass if we don't have a PRTS or if the context differs!
-      termState = TermContext.build(context, term, true); // cache term lookups!
+      termState = TermContext.build(context, term);
     } else {
      // PRTS was pre-build for this IS
      termState = this.perReaderTermState;

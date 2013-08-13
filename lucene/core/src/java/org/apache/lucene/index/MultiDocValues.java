@@ -23,8 +23,9 @@ import java.util.List;
 import org.apache.lucene.index.MultiTermsEnum.TermsEnumIndex;
 import org.apache.lucene.index.MultiTermsEnum.TermsEnumWithSlice;
 import org.apache.lucene.util.BytesRef;
-import org.apache.lucene.util.packed.AppendingLongBuffer;
+import org.apache.lucene.util.packed.AppendingPackedLongBuffer;
 import org.apache.lucene.util.packed.MonotonicAppendingLongBuffer;
+import org.apache.lucene.util.packed.PackedInts;
 
 /**
  * A wrapper for CompositeIndexReader providing access to DocValues.
@@ -277,7 +278,7 @@ public class MultiDocValues {
     // globalOrd -> (globalOrd - segmentOrd)
     final MonotonicAppendingLongBuffer globalOrdDeltas;
     // globalOrd -> sub index
-    final AppendingLongBuffer subIndexes;
+    final AppendingPackedLongBuffer subIndexes;
     // segmentOrd -> (globalOrd - segmentOrd)
     final MonotonicAppendingLongBuffer ordDeltas[];
     
@@ -293,8 +294,8 @@ public class MultiDocValues {
       // create the ordinal mappings by pulling a termsenum over each sub's 
       // unique terms, and walking a multitermsenum over those
       this.owner = owner;
-      globalOrdDeltas = new MonotonicAppendingLongBuffer();
-      subIndexes = new AppendingLongBuffer();
+      globalOrdDeltas = new MonotonicAppendingLongBuffer(PackedInts.COMPACT);
+      subIndexes = new AppendingPackedLongBuffer(PackedInts.COMPACT);
       ordDeltas = new MonotonicAppendingLongBuffer[subs.length];
       for (int i = 0; i < ordDeltas.length; i++) {
         ordDeltas[i] = new MonotonicAppendingLongBuffer();

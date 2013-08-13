@@ -3,9 +3,7 @@ package org.apache.lucene.facet.search;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
-import java.util.HashMap;
 import java.util.List;
-import java.util.Map;
 
 import org.apache.lucene.analysis.MockAnalyzer;
 import org.apache.lucene.document.Document;
@@ -13,6 +11,8 @@ import org.apache.lucene.document.Field.Store;
 import org.apache.lucene.document.StringField;
 import org.apache.lucene.facet.FacetTestCase;
 import org.apache.lucene.facet.index.FacetFields;
+import org.apache.lucene.facet.old.AdaptiveFacetsAccumulator;
+import org.apache.lucene.facet.old.OldFacetsAccumulator;
 import org.apache.lucene.facet.params.CategoryListParams;
 import org.apache.lucene.facet.params.FacetIndexingParams;
 import org.apache.lucene.facet.params.FacetSearchParams;
@@ -90,7 +90,7 @@ public class TestFacetsCollector extends FacetTestCase {
     DirectoryTaxonomyReader taxo = new DirectoryTaxonomyReader(taxoDir);
     
     FacetSearchParams sParams = new FacetSearchParams(new SumScoreFacetRequest(new CategoryPath("a"), 10));
-    FacetsAccumulator fa = new FacetsAccumulator(sParams, r, taxo) {
+    TaxonomyFacetsAccumulator fa = new TaxonomyFacetsAccumulator(sParams, r, taxo) {
       @Override
       public FacetsAggregator getAggregator() {
         return new SumScoreFacetsAggregator();
@@ -181,18 +181,7 @@ public class TestFacetsCollector extends FacetTestCase {
         new CountFacetRequest(new CategoryPath("a"), 10), 
         new SumScoreFacetRequest(new CategoryPath("b"), 10));
     
-    Map<CategoryListParams,FacetsAggregator> aggregators = new HashMap<CategoryListParams,FacetsAggregator>();
-    aggregators.put(fip.getCategoryListParams(new CategoryPath("a")), new FastCountingFacetsAggregator());
-    aggregators.put(fip.getCategoryListParams(new CategoryPath("b")), new SumScoreFacetsAggregator());
-    final FacetsAggregator aggregator = new PerCategoryListAggregator(aggregators, fip);
-    FacetsAccumulator fa = new FacetsAccumulator(sParams, r, taxo) {
-      @Override
-      public FacetsAggregator getAggregator() {
-        return aggregator;
-      }
-    };
-    
-    FacetsCollector fc = FacetsCollector.create(fa);
+    FacetsCollector fc = FacetsCollector.create(sParams, r, taxo);
     TopScoreDocCollector topDocs = TopScoreDocCollector.create(10, false);
     newSearcher(r).search(new MatchAllDocsQuery(), MultiCollector.wrap(fc, topDocs));
     
@@ -231,7 +220,7 @@ public class TestFacetsCollector extends FacetTestCase {
     
     FacetSearchParams fsp = new FacetSearchParams(new CountFacetRequest(CategoryPath.EMPTY, 10));
     
-    final FacetsAccumulator fa = random().nextBoolean() ? new FacetsAccumulator(fsp, r, taxo) : new StandardFacetsAccumulator(fsp, r, taxo);
+    final TaxonomyFacetsAccumulator fa = random().nextBoolean() ? new TaxonomyFacetsAccumulator(fsp, r, taxo) : new OldFacetsAccumulator(fsp, r, taxo);
     FacetsCollector fc = FacetsCollector.create(fa);
     newSearcher(r).search(new MatchAllDocsQuery(), fc);
     
@@ -265,7 +254,7 @@ public class TestFacetsCollector extends FacetTestCase {
     FacetSearchParams fsp = new FacetSearchParams(
         new CountFacetRequest(new CategoryPath("a"), 10), 
         new CountFacetRequest(new CategoryPath("b"), 10));
-    final FacetsAccumulator fa = random().nextBoolean() ? new FacetsAccumulator(fsp, r, taxo) : new StandardFacetsAccumulator(fsp, r, taxo);
+    final TaxonomyFacetsAccumulator fa = random().nextBoolean() ? new TaxonomyFacetsAccumulator(fsp, r, taxo) : new OldFacetsAccumulator(fsp, r, taxo);
     final FacetsCollector fc = FacetsCollector.create(fa);
     newSearcher(r).search(new MatchAllDocsQuery(), fc);
     
@@ -297,7 +286,7 @@ public class TestFacetsCollector extends FacetTestCase {
     FacetSearchParams fsp = new FacetSearchParams(
         new CountFacetRequest(new CategoryPath("a"), 10), 
         new CountFacetRequest(new CategoryPath("b"), 10));
-    final FacetsAccumulator fa = random().nextBoolean() ? new FacetsAccumulator(fsp, r, taxo) : new StandardFacetsAccumulator(fsp, r, taxo);
+    final TaxonomyFacetsAccumulator fa = random().nextBoolean() ? new TaxonomyFacetsAccumulator(fsp, r, taxo) : new OldFacetsAccumulator(fsp, r, taxo);
     final FacetsCollector fc = FacetsCollector.create(fa);
     // this should populate the cached results, but doing search should clear the cache
     fc.getFacetResults();
@@ -338,7 +327,7 @@ public class TestFacetsCollector extends FacetTestCase {
 
     // assert IntFacetResultHandler
     FacetSearchParams fsp = new FacetSearchParams(new CountFacetRequest(new CategoryPath("a"), 10));
-    FacetsAccumulator fa = random().nextBoolean() ? new FacetsAccumulator(fsp, r, taxo) : new StandardFacetsAccumulator(fsp, r, taxo);
+    TaxonomyFacetsAccumulator fa = random().nextBoolean() ? new TaxonomyFacetsAccumulator(fsp, r, taxo) : new OldFacetsAccumulator(fsp, r, taxo);
     FacetsCollector fc = FacetsCollector.create(fa);
     newSearcher(r).search(new MatchAllDocsQuery(), fc);
     assertTrue("invalid ordinal for child node: 0", 0 != fc.getFacetResults().get(0).getFacetResultNode().subResults.get(0).ordinal);
@@ -346,14 +335,14 @@ public class TestFacetsCollector extends FacetTestCase {
     // assert IntFacetResultHandler
     fsp = new FacetSearchParams(new SumScoreFacetRequest(new CategoryPath("a"), 10));
     if (random().nextBoolean()) {
-      fa = new FacetsAccumulator(fsp, r, taxo) {
+      fa = new TaxonomyFacetsAccumulator(fsp, r, taxo) {
         @Override
         public FacetsAggregator getAggregator() {
           return new SumScoreFacetsAggregator();
         }
       };
     } else {
-      fa = new StandardFacetsAccumulator(fsp, r, taxo);
+      fa = new OldFacetsAccumulator(fsp, r, taxo);
     }
     fc = FacetsCollector.create(fa);
     newSearcher(r).search(new MatchAllDocsQuery(), fc);
@@ -387,7 +376,7 @@ public class TestFacetsCollector extends FacetTestCase {
     CountFacetRequest cfr = new CountFacetRequest(new CategoryPath("a"), 2);
     cfr.setResultMode(random().nextBoolean() ? ResultMode.GLOBAL_FLAT : ResultMode.PER_NODE_IN_TREE);
     FacetSearchParams fsp = new FacetSearchParams(cfr);
-    final FacetsAccumulator fa = random().nextBoolean() ? new FacetsAccumulator(fsp, r, taxo) : new StandardFacetsAccumulator(fsp, r, taxo);
+    final TaxonomyFacetsAccumulator fa = random().nextBoolean() ? new TaxonomyFacetsAccumulator(fsp, r, taxo) : new OldFacetsAccumulator(fsp, r, taxo);
     FacetsCollector fc = FacetsCollector.create(fa);
     newSearcher(r).search(new MatchAllDocsQuery(), fc);
     
@@ -426,15 +415,15 @@ public class TestFacetsCollector extends FacetTestCase {
     }
     final Sampler sampler = new RandomSampler(sampleParams, random());
     
-    FacetsAccumulator[] accumulators = new FacetsAccumulator[] {
-      new FacetsAccumulator(fsp, indexReader, taxoReader),
-      new StandardFacetsAccumulator(fsp, indexReader, taxoReader),
+    TaxonomyFacetsAccumulator[] accumulators = new TaxonomyFacetsAccumulator[] {
+      new TaxonomyFacetsAccumulator(fsp, indexReader, taxoReader),
+      new OldFacetsAccumulator(fsp, indexReader, taxoReader),
       new SamplingAccumulator(sampler, fsp, indexReader, taxoReader),
       new AdaptiveFacetsAccumulator(fsp, indexReader, taxoReader),
-      new SamplingWrapper(new StandardFacetsAccumulator(fsp, indexReader, taxoReader), sampler)
+      new SamplingWrapper(new OldFacetsAccumulator(fsp, indexReader, taxoReader), sampler)
     };
     
-    for (FacetsAccumulator fa : accumulators) {
+    for (TaxonomyFacetsAccumulator fa : accumulators) {
       FacetsCollector fc = FacetsCollector.create(fa);
       searcher.search(new MatchAllDocsQuery(), fc);
       List<FacetResult> facetResults = fc.getFacetResults();
@@ -444,20 +433,19 @@ public class TestFacetsCollector extends FacetTestCase {
     
     try {
       // SortedSetDocValuesAccumulator cannot even be created in such state
-      assertNull(new SortedSetDocValuesAccumulator(fsp, new SortedSetDocValuesReaderState(indexReader)));
+      assertNull(new SortedSetDocValuesAccumulator(new SortedSetDocValuesReaderState(indexReader), fsp));
       // if this ever changes, make sure FacetResultNode is labeled correctly 
       fail("should not have succeeded to execute a request over a category which wasn't indexed as SortedSetDVField");
     } catch (IllegalArgumentException e) {
       // expected
     }
 
-    fsp = new FacetSearchParams(new RangeFacetRequest<LongRange>("f", new LongRange("grr", 0, true, 1, true)));
-    RangeAccumulator ra = new RangeAccumulator(fsp, indexReader);
+    RangeAccumulator ra = new RangeAccumulator(new RangeFacetRequest<LongRange>("f", new LongRange("grr", 0, true, 1, true)));
     FacetsCollector fc = FacetsCollector.create(ra);
     searcher.search(new MatchAllDocsQuery(), fc);
     List<FacetResult> facetResults = fc.getFacetResults();
     assertNotNull(facetResults);
-    assertEquals("incorrect label returned for RangeAccumulator", fsp.facetRequests.get(0).categoryPath, facetResults.get(0).getFacetResultNode().label);
+    assertEquals("incorrect label returned for RangeAccumulator", new CategoryPath("f"), facetResults.get(0).getFacetResultNode().label);
 
     IOUtils.close(indexReader, taxoReader);
 

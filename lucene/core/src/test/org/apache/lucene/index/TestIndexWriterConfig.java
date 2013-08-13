@@ -37,6 +37,7 @@ import org.apache.lucene.search.similarities.DefaultSimilarity;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.util.InfoStream;
 import org.apache.lucene.util.LuceneTestCase;
+import org.apache.lucene.util.SetOnce.AlreadySetException;
 import org.junit.Test;
 
 public class TestIndexWriterConfig extends LuceneTestCase {
@@ -65,7 +66,6 @@ public class TestIndexWriterConfig extends LuceneTestCase {
     assertEquals(OpenMode.CREATE_OR_APPEND, conf.getOpenMode());
     // we don't need to assert this, it should be unspecified
     assertTrue(IndexSearcher.getDefaultSimilarity() == conf.getSimilarity());
-    assertEquals(IndexWriterConfig.DEFAULT_TERM_INDEX_INTERVAL, conf.getTermIndexInterval());
     assertEquals(IndexWriterConfig.getDefaultWriteLockTimeout(), conf.getWriteLockTimeout());
     assertEquals(IndexWriterConfig.WRITE_LOCK_TIMEOUT, IndexWriterConfig.getDefaultWriteLockTimeout());
     assertEquals(IndexWriterConfig.DEFAULT_MAX_BUFFERED_DELETE_TERMS, conf.getMaxBufferedDeleteTerms());
@@ -74,7 +74,6 @@ public class TestIndexWriterConfig extends LuceneTestCase {
     assertEquals(IndexWriterConfig.DEFAULT_READER_POOLING, conf.getReaderPooling());
     assertTrue(DocumentsWriterPerThread.defaultIndexingChain == conf.getIndexingChain());
     assertNull(conf.getMergedSegmentWarmer());
-    assertEquals(IndexWriterConfig.DEFAULT_READER_TERMS_INDEX_DIVISOR, conf.getReaderTermsIndexDivisor());
     assertEquals(TieredMergePolicy.class, conf.getMergePolicy().getClass());
     assertEquals(ThreadAffinityDocumentsWriterThreadPool.class, conf.getIndexerThreadPool().getClass());
     assertEquals(FlushByRamOrCountsPolicy.class, conf.getFlushPolicy().getClass());
@@ -91,7 +90,6 @@ public class TestIndexWriterConfig extends LuceneTestCase {
     getters.add("getMergeScheduler");
     getters.add("getOpenMode");
     getters.add("getSimilarity");
-    getters.add("getTermIndexInterval");
     getters.add("getWriteLockTimeout");
     getters.add("getDefaultWriteLockTimeout");
     getters.add("getMaxBufferedDeleteTerms");
@@ -103,7 +101,6 @@ public class TestIndexWriterConfig extends LuceneTestCase {
     getters.add("getMaxThreadStates");
     getters.add("getReaderPooling");
     getters.add("getIndexerThreadPool");
-    getters.add("getReaderTermsIndexDivisor");
     getters.add("getFlushPolicy");
     getters.add("getRAMPerThreadHardLimitMB");
     getters.add("getCodec");
@@ -145,18 +142,30 @@ public class TestIndexWriterConfig extends LuceneTestCase {
   @Test
   public void testReuse() throws Exception {
     Directory dir = newDirectory();
-    // test that if the same IWC is reused across two IWs, it is cloned by each.
+    // test that IWC cannot be reused across two IWs
     IndexWriterConfig conf = newIndexWriterConfig(TEST_VERSION_CURRENT, null);
-    RandomIndexWriter iw = new RandomIndexWriter(random(), dir, conf);
-    LiveIndexWriterConfig liveConf1 = iw.w.getConfig();
-    iw.close();
+    new RandomIndexWriter(random(), dir, conf).close();
+
+    // this should fail
+    try {
+      assertNotNull(new RandomIndexWriter(random(), dir, conf));
+      fail("should have hit AlreadySetException");
+    } catch (AlreadySetException e) {
+      // expected
+    }
+
+    // also cloning it won't help, after it has been used already
+    try {
+      assertNotNull(new RandomIndexWriter(random(), dir, conf.clone()));
+      fail("should have hit AlreadySetException");
+    } catch (AlreadySetException e) {
+      // expected
+    }
     
-    iw = new RandomIndexWriter(random(), dir, conf);
-    LiveIndexWriterConfig liveConf2 = iw.w.getConfig();
-    iw.close();
-    
-    // LiveIndexWriterConfig's "copy" constructor doesn't clone objects.
-    assertNotSame("IndexWriterConfig should have been cloned", liveConf1.getMergePolicy(), liveConf2.getMergePolicy());
+    // if it's cloned in advance, it should be ok
+    conf = newIndexWriterConfig(TEST_VERSION_CURRENT, null);
+    new RandomIndexWriter(random(), dir, conf.clone()).close();
+    new RandomIndexWriter(random(), dir, conf.clone()).close();
     
     dir.close();
   }
@@ -187,14 +196,12 @@ public class TestIndexWriterConfig extends LuceneTestCase {
   public void testConstants() throws Exception {
     // Tests that the values of the constants does not change
     assertEquals(1000, IndexWriterConfig.WRITE_LOCK_TIMEOUT);
-    assertEquals(32, IndexWriterConfig.DEFAULT_TERM_INDEX_INTERVAL);
     assertEquals(-1, IndexWriterConfig.DISABLE_AUTO_FLUSH);
     assertEquals(IndexWriterConfig.DISABLE_AUTO_FLUSH, IndexWriterConfig.DEFAULT_MAX_BUFFERED_DELETE_TERMS);
     assertEquals(IndexWriterConfig.DISABLE_AUTO_FLUSH, IndexWriterConfig.DEFAULT_MAX_BUFFERED_DOCS);
     assertEquals(16.0, IndexWriterConfig.DEFAULT_RAM_BUFFER_SIZE_MB, 0.0);
     assertEquals(false, IndexWriterConfig.DEFAULT_READER_POOLING);
     assertEquals(true, IndexWriterConfig.DEFAULT_USE_COMPOUND_FILE_SYSTEM);
-    assertEquals(DirectoryReader.DEFAULT_TERMS_INDEX_DIVISOR, IndexWriterConfig.DEFAULT_READER_TERMS_INDEX_DIVISOR);
   }
 
   @Test
@@ -325,23 +332,6 @@ public class TestIndexWriterConfig extends LuceneTestCase {
     try {
       conf.setRAMBufferSizeMB(IndexWriterConfig.DISABLE_AUTO_FLUSH);
       fail("should not have succeeded to disable ramBufferSizeMB when maxBufferedDocs is disabled as well");
-    } catch (IllegalArgumentException e) {
-      // this is expected
-    }
-
-    // Test setReaderTermsIndexDivisor
-    try {
-      conf.setReaderTermsIndexDivisor(0);
-      fail("should not have succeeded to set termsIndexDivisor to 0");
-    } catch (IllegalArgumentException e) {
-      // this is expected
-    }
-    
-    // Setting to -1 is ok
-    conf.setReaderTermsIndexDivisor(-1);
-    try {
-      conf.setReaderTermsIndexDivisor(-2);
-      fail("should not have succeeded to set termsIndexDivisor to < -1");
     } catch (IllegalArgumentException e) {
       // this is expected
     }

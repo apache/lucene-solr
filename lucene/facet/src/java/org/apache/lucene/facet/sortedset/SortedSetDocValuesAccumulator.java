@@ -32,19 +32,19 @@ import org.apache.lucene.facet.search.FacetRequest;
 import org.apache.lucene.facet.search.FacetResult;
 import org.apache.lucene.facet.search.FacetResultNode;
 import org.apache.lucene.facet.search.FacetsAccumulator;
-import org.apache.lucene.facet.search.FacetsAggregator;
 import org.apache.lucene.facet.search.FacetsCollector.MatchingDocs;
+import org.apache.lucene.facet.search.TaxonomyFacetsAccumulator;
 import org.apache.lucene.facet.taxonomy.CategoryPath;
 import org.apache.lucene.index.AtomicReader;
 import org.apache.lucene.index.IndexReader;
-import org.apache.lucene.index.MultiDocValues.MultiSortedSetDocValues;
 import org.apache.lucene.index.MultiDocValues;
+import org.apache.lucene.index.MultiDocValues.MultiSortedSetDocValues;
 import org.apache.lucene.index.ReaderUtil;
 import org.apache.lucene.index.SortedSetDocValues;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.PriorityQueue;
 
-/** A {@link FacetsAccumulator} that uses previously
+/** A {@link TaxonomyFacetsAccumulator} that uses previously
  *  indexed {@link SortedSetDocValuesFacetFields} to perform faceting,
  *  without require a separate taxonomy index.  Faceting is
  *  a bit slower (~25%), and there is added cost on every
@@ -57,130 +57,40 @@ public class SortedSetDocValuesAccumulator extends FacetsAccumulator {
   final SortedSetDocValuesReaderState state;
   final SortedSetDocValues dv;
   final String field;
-
-  public SortedSetDocValuesAccumulator(FacetSearchParams fsp, SortedSetDocValuesReaderState state) throws IOException {
-    super(fsp, null, null, new FacetArrays(state.getSize()));
+  final FacetArrays facetArrays;
+  
+  /** Constructor with the given facet search params. */
+  public SortedSetDocValuesAccumulator(SortedSetDocValuesReaderState state, FacetSearchParams fsp) 
+      throws IOException {
+    this(state, fsp, null);
+  }
+  
+  public SortedSetDocValuesAccumulator(SortedSetDocValuesReaderState state, FacetSearchParams fsp, FacetArrays arrays) 
+      throws IOException {
+    super(fsp);
     this.state = state;
     this.field = state.getField();
+    this.facetArrays = arrays == null ? new FacetArrays(state.getSize()) : arrays;
     dv = state.getDocValues();
 
     // Check params:
-    for(FacetRequest request : fsp.facetRequests) {
-      if (!(request instanceof CountFacetRequest)) {
-        throw new IllegalArgumentException("this collector only supports CountFacetRequest; got " + request);
+    for (FacetRequest fr : fsp.facetRequests) {
+      if (!(fr instanceof CountFacetRequest)) {
+        throw new IllegalArgumentException("this accumulator only supports CountFacetRequest; got " + fr);
       }
-      if (request.categoryPath.length != 1) {
-        throw new IllegalArgumentException("this collector only supports depth 1 CategoryPath; got " + request.categoryPath);
+      if (fr.categoryPath.length != 1) {
+        throw new IllegalArgumentException("this accumulator only supports 1-level CategoryPath; got " + fr.categoryPath);
       }
-      if (request.getDepth() != 1) {
-        throw new IllegalArgumentException("this collector only supports depth=1; got " + request.getDepth());
+      if (fr.getDepth() != 1) {
+        throw new IllegalArgumentException("this accumulator only supports depth=1; got " + fr.getDepth());
       }
-      String dim = request.categoryPath.components[0];
+      String dim = fr.categoryPath.components[0];
 
       SortedSetDocValuesReaderState.OrdRange ordRange = state.getOrdRange(dim);
       if (ordRange == null) {
         throw new IllegalArgumentException("dim \"" + dim + "\" does not exist");
       }
     }
-  }
-
-  @Override
-  public FacetsAggregator getAggregator() {
-
-    return new FacetsAggregator() {
-
-      @Override
-      public void aggregate(MatchingDocs matchingDocs, CategoryListParams clp, FacetArrays facetArrays) throws IOException {
-
-        AtomicReader reader = matchingDocs.context.reader();
-
-        // LUCENE-5090: make sure the provided reader context "matches"
-        // the top-level reader passed to the
-        // SortedSetDocValuesReaderState, else cryptic
-        // AIOOBE can happen:
-        if (ReaderUtil.getTopLevelContext(matchingDocs.context).reader() != state.origReader) {
-          throw new IllegalStateException("the SortedSetDocValuesReaderState provided to this class does not match the reader being searched; you must create a new SortedSetDocValuesReaderState every time you open a new IndexReader");
-        }
-        
-        SortedSetDocValues segValues = reader.getSortedSetDocValues(field);
-        if (segValues == null) {
-          return;
-        }
-
-        final int[] counts = facetArrays.getIntArray();
-        final int maxDoc = reader.maxDoc();
-        assert maxDoc == matchingDocs.bits.length();
-
-        if (dv instanceof MultiSortedSetDocValues) {
-          MultiDocValues.OrdinalMap ordinalMap = ((MultiSortedSetDocValues) dv).mapping;
-          int segOrd = matchingDocs.context.ord;
-
-          int numSegOrds = (int) segValues.getValueCount();
-
-          if (matchingDocs.totalHits < numSegOrds/10) {
-            // Remap every ord to global ord as we iterate:
-            int doc = 0;
-            while (doc < maxDoc && (doc = matchingDocs.bits.nextSetBit(doc)) != -1) {
-              segValues.setDocument(doc);
-              int term = (int) segValues.nextOrd();
-              while (term != SortedSetDocValues.NO_MORE_ORDS) {
-                counts[(int) ordinalMap.getGlobalOrd(segOrd, term)]++;
-                term = (int) segValues.nextOrd();
-              }
-              ++doc;
-            }
-          } else {
-
-            // First count in seg-ord space:
-            final int[] segCounts = new int[numSegOrds];
-            int doc = 0;
-            while (doc < maxDoc && (doc = matchingDocs.bits.nextSetBit(doc)) != -1) {
-              segValues.setDocument(doc);
-              int term = (int) segValues.nextOrd();
-              while (term != SortedSetDocValues.NO_MORE_ORDS) {
-                segCounts[term]++;
-                term = (int) segValues.nextOrd();
-              }
-              ++doc;
-            }
-
-            // Then, migrate to global ords:
-            for(int ord=0;ord<numSegOrds;ord++) {
-              int count = segCounts[ord];
-              if (count != 0) {
-                counts[(int) ordinalMap.getGlobalOrd(segOrd, ord)] += count;
-              }
-            }
-          }
-        } else {
-          // No ord mapping (e.g., single segment index):
-          // just aggregate directly into counts:
-
-          int doc = 0;
-          while (doc < maxDoc && (doc = matchingDocs.bits.nextSetBit(doc)) != -1) {
-            segValues.setDocument(doc);
-            int term = (int) segValues.nextOrd();
-            while (term != SortedSetDocValues.NO_MORE_ORDS) {
-              counts[term]++;
-              term = (int) segValues.nextOrd();
-            }
-            ++doc;
-          }
-        }
-      }
-
-      @Override
-      public void rollupValues(FacetRequest fr, int ordinal, int[] children, int[] siblings, FacetArrays facetArrays) {
-        // Nothing to do here: we only support flat (dim +
-        // label) facets, and in accumulate we sum up the
-        // count for the dimension.
-      }
-
-      @Override
-      public boolean requiresDocScores() {
-        return false;
-      }
-    };
   }
 
   /** Keeps highest count results. */
@@ -201,14 +111,105 @@ public class SortedSetDocValuesAccumulator extends FacetsAccumulator {
     }
   }
 
+  static class SortedSetAggregator {
+
+    private final SortedSetDocValuesReaderState state;
+    private final String field;
+    private final SortedSetDocValues dv;
+    
+    public SortedSetAggregator(String field, SortedSetDocValuesReaderState state, SortedSetDocValues dv) {
+      this.field = field;
+      this.state = state;
+      this.dv = dv;
+    }
+    
+    public void aggregate(MatchingDocs matchingDocs, FacetArrays facetArrays) throws IOException {
+
+      AtomicReader reader = matchingDocs.context.reader();
+
+      // LUCENE-5090: make sure the provided reader context "matches"
+      // the top-level reader passed to the
+      // SortedSetDocValuesReaderState, else cryptic
+      // AIOOBE can happen:
+      if (ReaderUtil.getTopLevelContext(matchingDocs.context).reader() != state.origReader) {
+        throw new IllegalStateException("the SortedSetDocValuesReaderState provided to this class does not match the reader being searched; you must create a new SortedSetDocValuesReaderState every time you open a new IndexReader");
+      }
+      
+      SortedSetDocValues segValues = reader.getSortedSetDocValues(field);
+      if (segValues == null) {
+        return;
+      }
+
+      final int[] counts = facetArrays.getIntArray();
+      final int maxDoc = reader.maxDoc();
+      assert maxDoc == matchingDocs.bits.length();
+
+      if (dv instanceof MultiSortedSetDocValues) {
+        MultiDocValues.OrdinalMap ordinalMap = ((MultiSortedSetDocValues) dv).mapping;
+        int segOrd = matchingDocs.context.ord;
+
+        int numSegOrds = (int) segValues.getValueCount();
+
+        if (matchingDocs.totalHits < numSegOrds/10) {
+          // Remap every ord to global ord as we iterate:
+          int doc = 0;
+          while (doc < maxDoc && (doc = matchingDocs.bits.nextSetBit(doc)) != -1) {
+            segValues.setDocument(doc);
+            int term = (int) segValues.nextOrd();
+            while (term != SortedSetDocValues.NO_MORE_ORDS) {
+              counts[(int) ordinalMap.getGlobalOrd(segOrd, term)]++;
+              term = (int) segValues.nextOrd();
+            }
+            ++doc;
+          }
+        } else {
+
+          // First count in seg-ord space:
+          final int[] segCounts = new int[numSegOrds];
+          int doc = 0;
+          while (doc < maxDoc && (doc = matchingDocs.bits.nextSetBit(doc)) != -1) {
+            segValues.setDocument(doc);
+            int term = (int) segValues.nextOrd();
+            while (term != SortedSetDocValues.NO_MORE_ORDS) {
+              segCounts[term]++;
+              term = (int) segValues.nextOrd();
+            }
+            ++doc;
+          }
+
+          // Then, migrate to global ords:
+          for(int ord=0;ord<numSegOrds;ord++) {
+            int count = segCounts[ord];
+            if (count != 0) {
+              counts[(int) ordinalMap.getGlobalOrd(segOrd, ord)] += count;
+            }
+          }
+        }
+      } else {
+        // No ord mapping (e.g., single segment index):
+        // just aggregate directly into counts:
+
+        int doc = 0;
+        while (doc < maxDoc && (doc = matchingDocs.bits.nextSetBit(doc)) != -1) {
+          segValues.setDocument(doc);
+          int term = (int) segValues.nextOrd();
+          while (term != SortedSetDocValues.NO_MORE_ORDS) {
+            counts[term]++;
+            term = (int) segValues.nextOrd();
+          }
+          ++doc;
+        }
+      }
+    }
+
+  }
+  
   @Override
   public List<FacetResult> accumulate(List<MatchingDocs> matchingDocs) throws IOException {
 
-    FacetsAggregator aggregator = getAggregator();
-    for (CategoryListParams clp : getCategoryLists()) {
-      for (MatchingDocs md : matchingDocs) {
-        aggregator.aggregate(md, clp, facetArrays);
-      }
+    SortedSetAggregator aggregator = new SortedSetAggregator(field, state, dv);
+    for (MatchingDocs md : matchingDocs) {
+      aggregator.aggregate(md, facetArrays);
     }
 
     // compute top-K
@@ -218,7 +219,7 @@ public class SortedSetDocValuesAccumulator extends FacetsAccumulator {
 
     BytesRef scratch = new BytesRef();
 
-    for(FacetRequest request : searchParams.facetRequests) {
+    for (FacetRequest request : searchParams.facetRequests) {
       String dim = request.categoryPath.components[0];
       SortedSetDocValuesReaderState.OrdRange ordRange = state.getOrdRange(dim);
       // checked in ctor:
@@ -315,4 +316,10 @@ public class SortedSetDocValuesAccumulator extends FacetsAccumulator {
 
     return results;
   }
+  
+  @Override
+  public boolean requiresDocScores() {
+    return false;
+  }
+  
 }

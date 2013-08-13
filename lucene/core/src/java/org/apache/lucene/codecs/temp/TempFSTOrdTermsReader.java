@@ -461,7 +461,7 @@ public class TempFSTOrdTermsReader extends FieldsProducer {
       public BytesRef next() throws IOException {
         if (seekPending) {  // previously positioned, but termOutputs not fetched
           seekPending = false;
-          SeekStatus status = seekCeil(term, false);
+          SeekStatus status = seekCeil(term);
           assert status == SeekStatus.FOUND;  // must positioned on valid term
         }
         updateEnum(fstEnum.next());
@@ -469,13 +469,13 @@ public class TempFSTOrdTermsReader extends FieldsProducer {
       }
 
       @Override
-      public boolean seekExact(BytesRef target, boolean useCache) throws IOException {
+      public boolean seekExact(BytesRef target) throws IOException {
         updateEnum(fstEnum.seekExact(target));
         return term != null;
       }
 
       @Override
-      public SeekStatus seekCeil(BytesRef target, boolean useCache) throws IOException {
+      public SeekStatus seekCeil(BytesRef target) throws IOException {
         updateEnum(fstEnum.seekCeil(target));
         if (term == null) {
           return SeekStatus.END;
@@ -587,17 +587,9 @@ public class TempFSTOrdTermsReader extends FieldsProducer {
         super.decodeStats();
       }
 
-      // nocommit: need testcase for this
       @Override
-      public SeekStatus seekCeil(BytesRef target, boolean useCache) throws IOException {
-        decoded = false;
-        term = doSeekCeil(target);
-        decodeStats();
-        if (term == null) {
-          return SeekStatus.END;
-        } else {
-          return term.equals(target) ? SeekStatus.FOUND : SeekStatus.NOT_FOUND;
-        }
+      public SeekStatus seekCeil(BytesRef target) throws IOException {
+        throw new UnsupportedOperationException();
       }
 
       @Override

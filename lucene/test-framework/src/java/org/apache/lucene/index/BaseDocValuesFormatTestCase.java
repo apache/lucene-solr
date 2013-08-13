@@ -746,16 +746,16 @@ public abstract class BaseDocValuesFormatTestCase extends LuceneTestCase {
     assertEquals(SeekStatus.END, termsEnum.seekCeil(new BytesRef("zzz")));
     
     // seekExact()
-    assertTrue(termsEnum.seekExact(new BytesRef("beer"), true));
+    assertTrue(termsEnum.seekExact(new BytesRef("beer")));
     assertEquals("beer", termsEnum.term().utf8ToString());
     assertEquals(0, termsEnum.ord());
-    assertTrue(termsEnum.seekExact(new BytesRef("hello"), true));
+    assertTrue(termsEnum.seekExact(new BytesRef("hello")));
     assertEquals(Codec.getDefault().toString(), "hello", termsEnum.term().utf8ToString());
     assertEquals(1, termsEnum.ord());
-    assertTrue(termsEnum.seekExact(new BytesRef("world"), true));
+    assertTrue(termsEnum.seekExact(new BytesRef("world")));
     assertEquals("world", termsEnum.term().utf8ToString());
     assertEquals(2, termsEnum.ord());
-    assertFalse(termsEnum.seekExact(new BytesRef("bogus"), true));
+    assertFalse(termsEnum.seekExact(new BytesRef("bogus")));
 
     // seek(ord)
     termsEnum.seekExact(0);
@@ -1022,7 +1022,7 @@ public abstract class BaseDocValuesFormatTestCase extends LuceneTestCase {
 
     writer.close(true);
 
-    DirectoryReader reader = DirectoryReader.open(dir, 1);
+    DirectoryReader reader = DirectoryReader.open(dir);
     assertEquals(1, reader.leaves().size());
   
     IndexSearcher searcher = new IndexSearcher(reader);
@@ -1350,11 +1350,77 @@ public abstract class BaseDocValuesFormatTestCase extends LuceneTestCase {
     dir.close();
   }
   
+  private void doTestSortedVsFieldCache(int minLength, int maxLength) throws Exception {
+    Directory dir = newDirectory();
+    IndexWriterConfig conf = newIndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer(random()));
+    RandomIndexWriter writer = new RandomIndexWriter(random(), dir, conf);
+    Document doc = new Document();
+    Field idField = new StringField("id", "", Field.Store.NO);
+    Field indexedField = new StringField("indexed", "", Field.Store.NO);
+    Field dvField = new SortedDocValuesField("dv", new BytesRef());
+    doc.add(idField);
+    doc.add(indexedField);
+    doc.add(dvField);
+    
+    // index some docs
+    int numDocs = atLeast(300);
+    for (int i = 0; i < numDocs; i++) {
+      idField.setStringValue(Integer.toString(i));
+      final int length;
+      if (minLength == maxLength) {
+        length = minLength; // fixed length
+      } else {
+        length = _TestUtil.nextInt(random(), minLength, maxLength);
+      }
+      String value = _TestUtil.randomSimpleString(random(), length);
+      indexedField.setStringValue(value);
+      dvField.setBytesValue(new BytesRef(value));
+      writer.addDocument(doc);
+      if (random().nextInt(31) == 0) {
+        writer.commit();
+      }
+    }
+    
+    // delete some docs
+    int numDeletions = random().nextInt(numDocs/10);
+    for (int i = 0; i < numDeletions; i++) {
+      int id = random().nextInt(numDocs);
+      writer.deleteDocuments(new Term("id", Integer.toString(id)));
+    }
+    writer.close();
+    
+    // compare
+    DirectoryReader ir = DirectoryReader.open(dir);
+    for (AtomicReaderContext context : ir.leaves()) {
+      AtomicReader r = context.reader();
+      SortedDocValues expected = FieldCache.DEFAULT.getTermsIndex(r, "indexed");
+      SortedDocValues actual = r.getSortedDocValues("dv");
+      assertEquals(r.maxDoc(), expected, actual);
+    }
+    ir.close();
+    dir.close();
+  }
+  
   public void testSortedFixedLengthVsStoredFields() throws Exception {
     int numIterations = atLeast(1);
     for (int i = 0; i < numIterations; i++) {
       int fixedLength = _TestUtil.nextInt(random(), 1, 10);
       doTestSortedVsStoredFields(fixedLength, fixedLength);
+    }
+  }
+  
+  public void testSortedFixedLengthVsFieldCache() throws Exception {
+    int numIterations = atLeast(1);
+    for (int i = 0; i < numIterations; i++) {
+      int fixedLength = _TestUtil.nextInt(random(), 1, 10);
+      doTestSortedVsFieldCache(fixedLength, fixedLength);
+    }
+  }
+  
+  public void testSortedVariableLengthVsFieldCache() throws Exception {
+    int numIterations = atLeast(1);
+    for (int i = 0; i < numIterations; i++) {
+      doTestSortedVsFieldCache(1, 10);
     }
   }
   
@@ -1788,16 +1854,16 @@ public abstract class BaseDocValuesFormatTestCase extends LuceneTestCase {
     assertEquals(SeekStatus.END, termsEnum.seekCeil(new BytesRef("zzz")));
     
     // seekExact()
-    assertTrue(termsEnum.seekExact(new BytesRef("beer"), true));
+    assertTrue(termsEnum.seekExact(new BytesRef("beer")));
     assertEquals("beer", termsEnum.term().utf8ToString());
     assertEquals(0, termsEnum.ord());
-    assertTrue(termsEnum.seekExact(new BytesRef("hello"), true));
+    assertTrue(termsEnum.seekExact(new BytesRef("hello")));
     assertEquals("hello", termsEnum.term().utf8ToString());
     assertEquals(1, termsEnum.ord());
-    assertTrue(termsEnum.seekExact(new BytesRef("world"), true));
+    assertTrue(termsEnum.seekExact(new BytesRef("world")));
     assertEquals("world", termsEnum.term().utf8ToString());
     assertEquals(2, termsEnum.ord());
-    assertFalse(termsEnum.seekExact(new BytesRef("bogus"), true));
+    assertFalse(termsEnum.seekExact(new BytesRef("bogus")));
 
     // seek(ord)
     termsEnum.seekExact(0);
@@ -1905,6 +1971,10 @@ public abstract class BaseDocValuesFormatTestCase extends LuceneTestCase {
     }
   }
   
+  private void assertEquals(int maxDoc, SortedDocValues expected, SortedDocValues actual) throws Exception {
+    assertEquals(maxDoc, new SingletonSortedSetDocValues(expected), new SingletonSortedSetDocValues(actual));
+  }
+  
   private void assertEquals(int maxDoc, SortedSetDocValues expected, SortedSetDocValues actual) throws Exception {
     // can be null for the segment if no docs actually had any SortedDocValues
     // in this case FC.getDocTermsOrds returns EMPTY
@@ -1931,6 +2001,74 @@ public abstract class BaseDocValuesFormatTestCase extends LuceneTestCase {
       expected.lookupTerm(expectedBytes);
       actual.lookupTerm(actualBytes);
       assertEquals(expectedBytes, actualBytes);
+    }
+    
+    // compare termsenum
+    assertEquals(expected.getValueCount(), expected.termsEnum(), actual.termsEnum());
+  }
+  
+  private void assertEquals(long numOrds, TermsEnum expected, TermsEnum actual) throws Exception {
+    BytesRef ref;
+    
+    // sequential next() through all terms
+    while ((ref = expected.next()) != null) {
+      assertEquals(ref, actual.next());
+      assertEquals(expected.ord(), actual.ord());
+      assertEquals(expected.term(), actual.term());
+    }
+    assertNull(actual.next());
+    
+    // sequential seekExact(ord) through all terms
+    for (long i = 0; i < numOrds; i++) {
+      expected.seekExact(i);
+      actual.seekExact(i);
+      assertEquals(expected.ord(), actual.ord());
+      assertEquals(expected.term(), actual.term());
+    }
+    
+    // sequential seekExact(BytesRef) through all terms
+    for (long i = 0; i < numOrds; i++) {
+      expected.seekExact(i);
+      assertTrue(actual.seekExact(expected.term()));
+      assertEquals(expected.ord(), actual.ord());
+      assertEquals(expected.term(), actual.term());
+    }
+    
+    // sequential seekCeil(BytesRef) through all terms
+    for (long i = 0; i < numOrds; i++) {
+      expected.seekExact(i);
+      assertEquals(SeekStatus.FOUND, actual.seekCeil(expected.term()));
+      assertEquals(expected.ord(), actual.ord());
+      assertEquals(expected.term(), actual.term());
+    }
+    
+    // random seekExact(ord)
+    for (long i = 0; i < numOrds; i++) {
+      long randomOrd = _TestUtil.nextLong(random(), 0, numOrds-1);
+      expected.seekExact(randomOrd);
+      actual.seekExact(randomOrd);
+      assertEquals(expected.ord(), actual.ord());
+      assertEquals(expected.term(), actual.term());
+    }
+    
+    // random seekExact(BytesRef)
+    for (long i = 0; i < numOrds; i++) {
+      long randomOrd = _TestUtil.nextLong(random(), 0, numOrds-1);
+      expected.seekExact(randomOrd);
+      actual.seekExact(expected.term());
+      assertEquals(expected.ord(), actual.ord());
+      assertEquals(expected.term(), actual.term());
+    }
+    
+    // random seekCeil(BytesRef)
+    for (long i = 0; i < numOrds; i++) {
+      BytesRef target = new BytesRef(_TestUtil.randomUnicodeString(random()));
+      SeekStatus expectedStatus = expected.seekCeil(target);
+      assertEquals(expectedStatus, actual.seekCeil(target));
+      if (expectedStatus != SeekStatus.END) {
+        assertEquals(expected.ord(), actual.ord());
+        assertEquals(expected.term(), actual.term());
+      }
     }
   }
   

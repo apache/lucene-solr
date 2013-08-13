@@ -157,8 +157,8 @@ public class FilterAtomicReader extends AtomicReader {
     }
 
     @Override
-    public SeekStatus seekCeil(BytesRef text, boolean useCache) throws IOException {
-      return in.seekCeil(text, useCache);
+    public SeekStatus seekCeil(BytesRef text) throws IOException {
+      return in.seekCeil(text);
     }
 
     @Override

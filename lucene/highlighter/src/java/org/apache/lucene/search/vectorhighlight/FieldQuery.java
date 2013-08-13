@@ -17,6 +17,8 @@ package org.apache.lucene.search.vectorhighlight;
  */
 
 import java.io.IOException;
+import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collection;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -39,6 +41,7 @@ import org.apache.lucene.search.PhraseQuery;
 import org.apache.lucene.search.Query;
 import org.apache.lucene.search.TermQuery;
 import org.apache.lucene.search.vectorhighlight.FieldTermStack.TermInfo;
+import org.apache.lucene.util.InPlaceMergeSorter;
 
 /**
  * FieldQuery breaks down query object into terms/phrases and keeps
@@ -330,7 +333,8 @@ public class FieldQuery {
     return root.searchPhrase( phraseCandidate );
   }
   
-  private QueryPhraseMap getRootMap( String fieldName ){
+  /** Get the root map for the given field name. */
+  public QueryPhraseMap getRootMap( String fieldName ){
     return rootMaps.get( fieldMatch ? fieldName : null );
   }
   
@@ -347,6 +351,7 @@ public class FieldQuery {
     boolean terminal;
     int slop;   // valid if terminal == true and phraseHighlight == true
     float boost;  // valid if terminal == true
+    int[] positions; // valid if terminal == true
     int termOrPhraseNumber;   // valid if terminal == true
     FieldQuery fieldQuery;
     Map<String, QueryPhraseMap> subMap = new HashMap<String, QueryPhraseMap>();
@@ -369,38 +374,107 @@ public class FieldQuery {
       return map;
     }
 
-      void add( Query query, IndexReader reader ) {
+    void add( Query query, IndexReader reader ) {
       if( query instanceof TermQuery ){
         addTerm( ((TermQuery)query).getTerm(), query.getBoost() );
       }
       else if( query instanceof PhraseQuery ){
         PhraseQuery pq = (PhraseQuery)query;
-        Term[] terms = pq.getTerms();
-        Map<String, QueryPhraseMap> map = subMap;
-        QueryPhraseMap qpm = null;
-        for( Term term : terms ){
-          qpm = getOrNewMap( map, term.text() );
-          map = qpm.subMap;
-        }
-        qpm.markTerminal( pq.getSlop(), pq.getBoost() );
+        final Term[] terms = pq.getTerms();
+        final int[] positions = pq.getPositions();
+        new InPlaceMergeSorter() {
+
+          @Override
+          protected void swap(int i, int j) {
+            Term tmpTerm = terms[i];
+            terms[i] = terms[j];
+            terms[j] = tmpTerm;
+
+            int tmpPos = positions[i];
+            positions[i] = positions[j];
+            positions[j] = tmpPos;
+          }
+
+          @Override
+          protected int compare(int i, int j) {
+            return positions[i] - positions[j];
+          }
+        }.sort(0, terms.length);
+
+        addToMap(pq, terms, positions, 0, subMap, pq.getSlop());
       }
       else
         throw new RuntimeException( "query \"" + query.toString() + "\" must be flatten first." );
     }
-    
+
+    private int numTermsAtSamePosition(int[] positions, int i) {
+      int numTermsAtSamePosition = 1;
+      for (int j = i + 1; j < positions.length; ++j) {
+        if (positions[j] == positions[i]) {
+          ++numTermsAtSamePosition;
+        }
+      }
+      return numTermsAtSamePosition;
+    }
+
+    private void addToMap(PhraseQuery pq, Term[] terms, int[] positions, int i, Map<String, QueryPhraseMap> map, int slop) {
+      int numTermsAtSamePosition = numTermsAtSamePosition(positions, i);
+      for (int j = 0; j < numTermsAtSamePosition; ++j) {
+        QueryPhraseMap qpm = getOrNewMap(map, terms[i + j].text());
+        if (i + numTermsAtSamePosition == terms.length) {
+          qpm.markTerminal(pq.getSlop(), pq.getBoost(), uniquePositions(positions));
+        } else {
+          addToMap(pq, terms, positions, i + numTermsAtSamePosition, qpm.subMap, slop);
+        }
+      }
+      if (slop > 2 && i + numTermsAtSamePosition < terms.length) {
+        Term[] otherTerms = Arrays.copyOf(terms, terms.length);
+        int[] otherPositions = Arrays.copyOf(positions, positions.length);
+        final int nextTermAtSamePosition = numTermsAtSamePosition(positions, i + numTermsAtSamePosition);
+        System.arraycopy(terms, i + numTermsAtSamePosition, otherTerms, i, nextTermAtSamePosition);
+        System.arraycopy(positions, i + numTermsAtSamePosition, otherPositions, i, nextTermAtSamePosition);
+        System.arraycopy(terms, i, otherTerms, i + nextTermAtSamePosition, numTermsAtSamePosition);
+        System.arraycopy(positions, i, otherPositions, i + nextTermAtSamePosition, numTermsAtSamePosition);
+        addToMap(pq, otherTerms, otherPositions, i, map, slop - 2);
+      }
+    }
+
+    private int[] uniquePositions(int[] positions) {
+      int uniqueCount = 1;
+      for (int i = 1; i < positions.length; ++i) {
+        if (positions[i] != positions[i - 1]) {
+          ++uniqueCount;
+        }
+      }
+      if (uniqueCount == positions.length) {
+        return positions;
+      }
+      int[] result = new int[uniqueCount];
+      result[0] = positions[0];
+      for (int i = 1, j = 1; i < positions.length; ++i) {
+        if (positions[i] != positions[i - 1]) {
+          result[j++] = positions[i];
+        }
+      }
+      return result;
+    }
+
     public QueryPhraseMap getTermMap( String term ){
       return subMap.get( term );
     }
     
     private void markTerminal( float boost ){
-      markTerminal( 0, boost );
+      markTerminal( 0, boost, null );
     }
     
-    private void markTerminal( int slop, float boost ){
-      this.terminal = true;
-      this.slop = slop;
-      this.boost = boost;
-      this.termOrPhraseNumber = fieldQuery.nextTermOrPhraseNumber();
+    private void markTerminal( int slop, float boost, int[] positions ){
+      if (slop > this.slop || (slop == this.slop && boost > this.boost)) {
+        this.terminal = true;
+        this.slop = slop;
+        this.boost = boost;
+        this.termOrPhraseNumber = fieldQuery.nextTermOrPhraseNumber();
+        this.positions = positions;
+      }
     }
     
     public boolean isTerminal(){
@@ -435,15 +509,20 @@ public class FieldQuery {
       // if the candidate is a term, it is valid
       if( phraseCandidate.size() == 1 ) return true;
 
+      
+      assert phraseCandidate.size() == positions.length;
       // else check whether the candidate is valid phrase
       // compare position-gaps between terms to slop
       int pos = phraseCandidate.get( 0 ).getPosition();
+      int totalDistance = 0;
       for( int i = 1; i < phraseCandidate.size(); i++ ){
         int nextPos = phraseCandidate.get( i ).getPosition();
-        if( Math.abs( nextPos - pos - 1 ) > slop ) return false;
+        final int expectedDelta = positions[i] - positions[i - 1];
+        final int actualDelta = nextPos - pos;
+        totalDistance += Math.abs(expectedDelta - actualDelta);
         pos = nextPos;
       }
-      return true;
+      return totalDistance <= slop;
     }
   }
 }

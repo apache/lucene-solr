@@ -525,7 +525,7 @@ public class SpellChecker implements java.io.Closeable {
   
           if (!isEmpty) {
             for (TermsEnum te : termsEnums) {
-              if (te.seekExact(currentTerm, false)) {
+              if (te.seekExact(currentTerm)) {
                 continue terms;
               }
             }

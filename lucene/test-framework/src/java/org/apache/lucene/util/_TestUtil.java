@@ -928,7 +928,7 @@ public class _TestUtil {
       return null;
     }
     final TermsEnum termsEnum = terms.iterator(null);
-    if (!termsEnum.seekExact(term, random.nextBoolean())) {
+    if (!termsEnum.seekExact(term)) {
       return null;
     }
     return docs(random, termsEnum, liveDocs, reuse, flags);

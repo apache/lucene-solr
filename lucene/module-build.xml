@@ -132,6 +132,17 @@
     </ant>
     <property name="queryparser-javadocs.uptodate" value="true"/>
   </target>
+	
+  <property name="join.jar" value="${common.dir}/build/join/lucene-join-${version}.jar"/>
+  <target name="check-join-uptodate" unless="join.uptodate">
+    <module-uptodate name="join" jarfile="${join.jar}" property="join.uptodate"/>
+  </target>
+  <target name="jar-join" unless="join.uptodate" depends="check-join-uptodate">
+    <ant dir="${common.dir}/join" target="jar-core" inheritAll="false">
+      <propertyset refid="uptodate.and.compiled.properties"/>
+	</ant>
+	<property name="join.uptodate" value="true"/>
+  </target>	
   
   <property name="analyzers-common.jar" value="${common.dir}/build/analysis/common/lucene-analyzers-common-${version}.jar"/>
   <target name="check-analyzers-common-uptodate" unless="analyzers-common.uptodate">

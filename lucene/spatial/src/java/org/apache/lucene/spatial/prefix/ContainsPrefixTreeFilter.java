@@ -131,10 +131,11 @@ public class ContainsPrefixTreeFilter extends AbstractPrefixTreeFilter {
 
     private boolean seekExact(Cell cell) throws IOException {
       assert new BytesRef(cell.getTokenBytes()).compareTo(termBytes) > 0;
-
       termBytes.bytes = cell.getTokenBytes();
       termBytes.length = termBytes.bytes.length;
-      return termsEnum.seekExact(termBytes, cell.getLevel() <= 2);
+      if (termsEnum == null)
+        return false;
+      return termsEnum.seekExact(termBytes);
     }
 
     private SmallDocSet getDocs(Cell cell, Bits acceptContains) throws IOException {
@@ -150,6 +151,8 @@ public class ContainsPrefixTreeFilter extends AbstractPrefixTreeFilter {
       assert ! leafCell.equals(lastLeaf);//don't call for same leaf again
       lastLeaf = leafCell;
 
+      if (termsEnum == null)
+        return null;
       BytesRef nextTerm = termsEnum.next();
       if (nextTerm == null) {
         termsEnum = null;//signals all done

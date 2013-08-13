@@ -4,14 +4,15 @@ import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
 
+import org.apache.lucene.facet.old.OldFacetsAccumulator;
+import org.apache.lucene.facet.old.ScoredDocIDs;
 import org.apache.lucene.facet.params.FacetSearchParams;
 import org.apache.lucene.facet.partitions.PartitionsFacetResultsHandler;
 import org.apache.lucene.facet.sampling.Sampler.SampleResult;
 import org.apache.lucene.facet.search.FacetArrays;
+import org.apache.lucene.facet.search.FacetRequest;
 import org.apache.lucene.facet.search.FacetResult;
 import org.apache.lucene.facet.search.FacetsAccumulator;
-import org.apache.lucene.facet.search.ScoredDocIDs;
-import org.apache.lucene.facet.search.StandardFacetsAccumulator;
 import org.apache.lucene.facet.taxonomy.TaxonomyReader;
 import org.apache.lucene.index.IndexReader;
 
@@ -38,10 +39,10 @@ import org.apache.lucene.index.IndexReader;
  * Note two major differences between this class and {@link SamplingWrapper}:
  * <ol>
  * <li>Latter can wrap any other {@link FacetsAccumulator} while this class
- * directly extends {@link StandardFacetsAccumulator}.</li>
+ * directly extends {@link OldFacetsAccumulator}.</li>
  * <li>This class can effectively apply sampling on the complement set of
  * matching document, thereby working efficiently with the complement
- * optimization - see {@link StandardFacetsAccumulator#getComplementThreshold()}
+ * optimization - see {@link OldFacetsAccumulator#getComplementThreshold()}
  * .</li>
  * </ol>
  * <p>
@@ -52,7 +53,7 @@ import org.apache.lucene.index.IndexReader;
  * @see Sampler
  * @lucene.experimental
  */
-public class SamplingAccumulator extends StandardFacetsAccumulator {
+public class SamplingAccumulator extends OldFacetsAccumulator {
   
   private double samplingRatio = -1d;
   private final Sampler sampler;
@@ -90,7 +91,8 @@ public class SamplingAccumulator extends StandardFacetsAccumulator {
     List<FacetResult> results = new ArrayList<FacetResult>();
     for (FacetResult fres : sampleRes) {
       // for sure fres is not null because this is guaranteed by the delegee.
-      PartitionsFacetResultsHandler frh = createFacetResultsHandler(fres.getFacetRequest());
+      FacetRequest fr = fres.getFacetRequest();
+      PartitionsFacetResultsHandler frh = createFacetResultsHandler(fr, createOrdinalValueResolver(fr));
       if (samplerFixer != null) {
         // fix the result of current request
         samplerFixer.fixResult(docids, fres, samplingRatio);
@@ -106,7 +108,7 @@ public class SamplingAccumulator extends StandardFacetsAccumulator {
       // final labeling if allowed (because labeling is a costly operation)
       if (fres.getFacetResultNode().ordinal == TaxonomyReader.INVALID_ORDINAL) {
         // category does not exist, add an empty result
-        results.add(emptyResult(fres.getFacetResultNode().ordinal, fres.getFacetRequest()));
+        results.add(emptyResult(fres.getFacetResultNode().ordinal, fr));
       } else {
         frh.labelResult(fres);
         results.add(fres);

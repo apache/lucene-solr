@@ -33,22 +33,19 @@ final class StandardDirectoryReader extends DirectoryReader {
 
   private final IndexWriter writer;
   private final SegmentInfos segmentInfos;
-  private final int termInfosIndexDivisor;
   private final boolean applyAllDeletes;
   
   /** called only from static open() methods */
   StandardDirectoryReader(Directory directory, AtomicReader[] readers, IndexWriter writer,
-    SegmentInfos sis, int termInfosIndexDivisor, boolean applyAllDeletes) {
+    SegmentInfos sis, boolean applyAllDeletes) {
     super(directory, readers);
     this.writer = writer;
     this.segmentInfos = sis;
-    this.termInfosIndexDivisor = termInfosIndexDivisor;
     this.applyAllDeletes = applyAllDeletes;
   }
 
   /** called from DirectoryReader.open(...) methods */
-  static DirectoryReader open(final Directory directory, final IndexCommit commit,
-                          final int termInfosIndexDivisor) throws IOException {
+  static DirectoryReader open(final Directory directory, final IndexCommit commit) throws IOException {
     return (DirectoryReader) new SegmentInfos.FindSegmentsFile(directory) {
       @Override
       protected Object doBody(String segmentFileName) throws IOException {
@@ -59,7 +56,7 @@ final class StandardDirectoryReader extends DirectoryReader {
           IOException prior = null;
           boolean success = false;
           try {
-            readers[i] = new SegmentReader(sis.info(i), termInfosIndexDivisor, IOContext.READ);
+            readers[i] = new SegmentReader(sis.info(i), IOContext.READ);
             success = true;
           } catch(IOException ex) {
             prior = ex;
@@ -68,7 +65,7 @@ final class StandardDirectoryReader extends DirectoryReader {
               IOUtils.closeWhileHandlingException(prior, readers);
           }
         }
-        return new StandardDirectoryReader(directory, readers, null, sis, termInfosIndexDivisor, false);
+        return new StandardDirectoryReader(directory, readers, null, sis, false);
       }
     }.run(commit);
   }
@@ -119,12 +116,11 @@ final class StandardDirectoryReader extends DirectoryReader {
       }
     }
     return new StandardDirectoryReader(dir, readers.toArray(new SegmentReader[readers.size()]),
-      writer, segmentInfos, writer.getConfig().getReaderTermsIndexDivisor(), applyAllDeletes);
+      writer, segmentInfos, applyAllDeletes);
   }
 
   /** This constructor is only used for {@link #doOpenIfChanged(SegmentInfos)} */
-  private static DirectoryReader open(Directory directory, SegmentInfos infos, List<? extends AtomicReader> oldReaders,
-    int termInfosIndexDivisor) throws IOException {
+  private static DirectoryReader open(Directory directory, SegmentInfos infos, List<? extends AtomicReader> oldReaders) throws IOException {
 
     // we put the old SegmentReaders in a map, that allows us
     // to lookup a reader using its segment name
@@ -162,7 +158,7 @@ final class StandardDirectoryReader extends DirectoryReader {
         if (newReaders[i] == null || infos.info(i).info.getUseCompoundFile() != newReaders[i].getSegmentInfo().info.getUseCompoundFile()) {
 
           // this is a new reader; in case we hit an exception we can close it safely
-          newReader = new SegmentReader(infos.info(i), termInfosIndexDivisor, IOContext.READ);
+          newReader = new SegmentReader(infos.info(i), IOContext.READ);
           readerShared[i] = false;
           newReaders[i] = newReader;
         } else {
@@ -212,7 +208,7 @@ final class StandardDirectoryReader extends DirectoryReader {
         }
       }
     }    
-    return new StandardDirectoryReader(directory, newReaders, null, infos, termInfosIndexDivisor, false);
+    return new StandardDirectoryReader(directory, newReaders, null, infos, false);
   }
 
   @Override
@@ -313,7 +309,7 @@ final class StandardDirectoryReader extends DirectoryReader {
   }
 
   DirectoryReader doOpenIfChanged(SegmentInfos infos) throws IOException {
-    return StandardDirectoryReader.open(directory, infos, getSequentialSubReaders(), termInfosIndexDivisor);
+    return StandardDirectoryReader.open(directory, infos, getSequentialSubReaders());
   }
 
   @Override

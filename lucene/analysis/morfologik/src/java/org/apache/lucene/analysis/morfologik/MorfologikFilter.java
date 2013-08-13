@@ -20,6 +20,7 @@ package org.apache.lucene.analysis.morfologik;
 
 import java.io.IOException;
 import java.util.*;
+import java.util.regex.Pattern;
 
 import morfologik.stemming.*;
 
@@ -82,71 +83,29 @@ public class MorfologikFilter extends TokenFilter {
   }
 
   /**
-   * The tag encoding format has been changing in Morfologik from version
-   * to version. Let's keep both variants and determine which one to run
-   * based on this flag.
+   * A pattern used to split lemma forms.
    */
-  private final static boolean multipleTagsPerLemma = true;
+  private final static Pattern lemmaSplitter = Pattern.compile("\\+|\\|");
 
   private void popNextLemma() {
-    if (multipleTagsPerLemma) {
-      // One tag (concatenated) per lemma.
-      final WordData lemma = lemmaList.get(lemmaListIndex++);
-      termAtt.setEmpty().append(lemma.getStem());
-      CharSequence tag = lemma.getTag();
-      if (tag != null) {
-        String[] tags = tag.toString().split("\\+|\\|");
-        for (int i = 0; i < tags.length; i++) {
-          if (tagsList.size() <= i) {
-            tagsList.add(new StringBuilder());
-          }
-          StringBuilder buffer = tagsList.get(i);
-          buffer.setLength(0);
-          buffer.append(tags[i]);
+    // One tag (concatenated) per lemma.
+    final WordData lemma = lemmaList.get(lemmaListIndex++);
+    termAtt.setEmpty().append(lemma.getStem());
+    CharSequence tag = lemma.getTag();
+    if (tag != null) {
+      String[] tags = lemmaSplitter.split(tag.toString());
+      for (int i = 0; i < tags.length; i++) {
+        if (tagsList.size() <= i) {
+          tagsList.add(new StringBuilder());
         }
-        tagsAtt.setTags(tagsList.subList(0, tags.length));
-      } else {
-        tagsAtt.setTags(Collections.<StringBuilder> emptyList());
+        StringBuilder buffer = tagsList.get(i);
+        buffer.setLength(0);
+        buffer.append(tags[i]);
       }
+      tagsAtt.setTags(tagsList.subList(0, tags.length));
     } else {
-      // One tag (concatenated) per stem (lemma repeated).
-      CharSequence currentStem;
-      int tags = 0;
-      do {
-        final WordData lemma = lemmaList.get(lemmaListIndex++);
-        currentStem = lemma.getStem();
-        final CharSequence tag = lemma.getTag();
-        if (tag != null) {
-          if (tagsList.size() <= tags) {
-            tagsList.add(new StringBuilder());
-          }
-  
-          final StringBuilder buffer = tagsList.get(tags++);  
-          buffer.setLength(0);
-          buffer.append(lemma.getTag());
-        }
-      } while (lemmaListIndex < lemmaList.size() &&
-               equalCharSequences(lemmaList.get(lemmaListIndex).getStem(), currentStem));
-
-      // Set the lemma's base form and tags as attributes.
-      termAtt.setEmpty().append(currentStem);
-      tagsAtt.setTags(tagsList.subList(0, tags));
+      tagsAtt.setTags(Collections.<StringBuilder> emptyList());
     }
-  }
-
-  /**
-   * Compare two char sequences for equality. Assumes non-null arguments. 
-   */
-  private static final boolean equalCharSequences(CharSequence s1, CharSequence s2) {
-    int len1 = s1.length();
-    int len2 = s2.length();
-    if (len1 != len2) return false;
-    for (int i = len1; --i >= 0;) {
-      if (s1.charAt(i) != s2.charAt(i)) { 
-        return false; 
-      }
-    }
-    return true;
   }
 
   /**

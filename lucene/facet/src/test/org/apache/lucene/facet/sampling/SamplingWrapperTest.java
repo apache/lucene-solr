@@ -1,13 +1,10 @@
 package org.apache.lucene.facet.sampling;
 
+import org.apache.lucene.facet.old.OldFacetsAccumulator;
+import org.apache.lucene.facet.params.FacetSearchParams;
+import org.apache.lucene.facet.taxonomy.TaxonomyReader;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.util.LuceneTestCase.Slow;
-
-import org.apache.lucene.facet.params.FacetSearchParams;
-import org.apache.lucene.facet.sampling.Sampler;
-import org.apache.lucene.facet.sampling.SamplingWrapper;
-import org.apache.lucene.facet.search.StandardFacetsAccumulator;
-import org.apache.lucene.facet.taxonomy.TaxonomyReader;
 
 /*
  * Licensed to the Apache Software Foundation (ASF) under one or more
@@ -30,9 +27,9 @@ import org.apache.lucene.facet.taxonomy.TaxonomyReader;
 public class SamplingWrapperTest extends BaseSampleTestTopK {
 
   @Override
-  protected StandardFacetsAccumulator getSamplingAccumulator(Sampler sampler, TaxonomyReader taxoReader, 
+  protected OldFacetsAccumulator getSamplingAccumulator(Sampler sampler, TaxonomyReader taxoReader, 
       IndexReader indexReader, FacetSearchParams searchParams) {
-    return new SamplingWrapper(new StandardFacetsAccumulator(searchParams, indexReader, taxoReader), sampler);
+    return new SamplingWrapper(new OldFacetsAccumulator(searchParams, indexReader, taxoReader), sampler);
   }
   
 }

@@ -54,8 +54,8 @@ public class TestSegmentMerger extends LuceneTestCase {
     SegmentInfoPerCommit info1 = DocHelper.writeDoc(random(), merge1Dir, doc1);
     DocHelper.setupDoc(doc2);
     SegmentInfoPerCommit info2 = DocHelper.writeDoc(random(), merge2Dir, doc2);
-    reader1 = new SegmentReader(info1, DirectoryReader.DEFAULT_TERMS_INDEX_DIVISOR, newIOContext(random()));
-    reader2 = new SegmentReader(info2, DirectoryReader.DEFAULT_TERMS_INDEX_DIVISOR, newIOContext(random()));
+    reader1 = new SegmentReader(info1, newIOContext(random()));
+    reader2 = new SegmentReader(info2, newIOContext(random()));
   }
 
   @Override
@@ -81,7 +81,7 @@ public class TestSegmentMerger extends LuceneTestCase {
     final SegmentInfo si = new SegmentInfo(mergedDir, Constants.LUCENE_MAIN_VERSION, mergedSegment, -1, false, codec, null, null);
 
     SegmentMerger merger = new SegmentMerger(Arrays.<AtomicReader>asList(reader1, reader2),
-        si, InfoStream.getDefault(), mergedDir, IndexWriterConfig.DEFAULT_TERM_INDEX_INTERVAL,
+        si, InfoStream.getDefault(), mergedDir,
         MergeState.CheckAbort.NONE, new FieldInfos.FieldNumbers(), newIOContext(random()));
     MergeState mergeState = merger.merge();
     int docsMerged = mergeState.segmentInfo.getDocCount();
@@ -91,7 +91,7 @@ public class TestSegmentMerger extends LuceneTestCase {
                                                          new SegmentInfo(mergedDir, Constants.LUCENE_MAIN_VERSION, mergedSegment, docsMerged,
                                                                          false, codec, null, null),
                                                          0, -1L),
-                                                   DirectoryReader.DEFAULT_TERMS_INDEX_DIVISOR, newIOContext(random()));
+                                                   newIOContext(random()));
     assertTrue(mergedReader != null);
     assertTrue(mergedReader.numDocs() == 2);
     StoredDocument newDoc1 = mergedReader.document(0);

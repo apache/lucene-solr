@@ -7,6 +7,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
+import org.apache.lucene.facet.params.FacetIndexingParams;
 import org.apache.lucene.facet.taxonomy.CategoryPath;
 import org.apache.lucene.facet.taxonomy.TaxonomyReader;
 import org.apache.lucene.util.CollectionUtil;
@@ -96,6 +97,11 @@ public class FacetResult {
         Map<CategoryPath, FacetResultNode> mergedNodes = new HashMap<CategoryPath,FacetResultNode>();
         FacetArrays arrays = dimArrays != null ? dimArrays.get(frs.get(0).getFacetRequest().categoryPath.components[0]) : null;
         for (FacetResult fr : frs) {
+          FacetRequest freq = fr.getFacetRequest();
+          OrdinalValueResolver resolver = null;
+          if (arrays != null) {
+            resolver = freq.createFacetsAggregator(FacetIndexingParams.DEFAULT).createOrdinalValueResolver(freq, arrays);
+          }
           FacetResultNode frn = fr.getFacetResultNode();
           FacetResultNode merged = mergedNodes.get(frn.label);
           if (merged == null) {
@@ -104,7 +110,10 @@ public class FacetResult {
             FacetResultNode parentNode = null;
             while (parent.length > 0 && (parentNode = mergedNodes.get(parent)) == null) {
               int parentOrd = taxoReader.getOrdinal(parent);
-              double parentValue = arrays != null ? fr.getFacetRequest().getValueOf(arrays, parentOrd) : -1;
+              double parentValue = -1;
+              if (arrays != null) {
+                parentValue = resolver.valueOf(parentOrd);
+              }
               parentNode = new FacetResultNode(parentOrd, parentValue);
               parentNode.label = parent;
               parentNode.subResults = new ArrayList<FacetResultNode>();
@@ -153,12 +162,7 @@ public class FacetResult {
         }
         FacetRequest dummy = new FacetRequest(min, frs.get(0).getFacetRequest().numResults) {
           @Override
-          public double getValueOf(FacetArrays arrays, int idx) {
-            throw new UnsupportedOperationException("not supported by this request");
-          }
-          
-          @Override
-          public FacetArraysSource getFacetArraysSource() {
+          public FacetsAggregator createFacetsAggregator(FacetIndexingParams fip) {
             throw new UnsupportedOperationException("not supported by this request");
           }
         };

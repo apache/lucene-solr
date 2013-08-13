@@ -62,8 +62,9 @@ import org.apache.lucene.util.PriorityQueue;
  */
 public class TopKInEachNodeHandler extends PartitionsFacetResultsHandler {
 
-  public TopKInEachNodeHandler(TaxonomyReader taxonomyReader, FacetRequest facetRequest, FacetArrays facetArrays) {
-    super(taxonomyReader, facetRequest, facetArrays);
+  public TopKInEachNodeHandler(TaxonomyReader taxonomyReader, FacetRequest facetRequest, OrdinalValueResolver resolver, 
+      FacetArrays facetArrays) {
+    super(taxonomyReader, facetRequest, resolver, facetArrays);
   }
 
   /**
@@ -112,8 +113,8 @@ public class TopKInEachNodeHandler extends PartitionsFacetResultsHandler {
     // this will grow into the returned IntermediateFacetResult
     IntToObjectMap<AACO> AACOsOfOnePartition = new IntToObjectMap<AACO>();
 
-    int partitionSize = facetArrays.arrayLength; // all partitions, except, possibly, the last,
-    // have the same length. Hence modulo is OK.
+    // all partitions, except, possibly, the last, have the same length. Hence modulo is OK.
+    int partitionSize = facetArrays.arrayLength;
 
     int depth = facetRequest.getDepth();
 
@@ -123,7 +124,7 @@ public class TopKInEachNodeHandler extends PartitionsFacetResultsHandler {
           facetRequest, AACOsOfOnePartition);
       if (isSelfPartition(rootNode, facetArrays, offset)) {
         tempFRWH.isRootNodeIncluded = true;
-        tempFRWH.rootNodeValue = this.facetRequest.getValueOf(facetArrays, rootNode % partitionSize);
+        tempFRWH.rootNodeValue = resolver.valueOf(rootNode % partitionSize);
       }
       return tempFRWH;
     }
@@ -267,7 +268,7 @@ public class TopKInEachNodeHandler extends PartitionsFacetResultsHandler {
 
         while (tosOrdinal >= offset) { // while tosOrdinal belongs to the given partition; here, too, we use the fact
           // that TaxonomyReader.INVALID_ORDINAL == -1 < offset
-          double value = facetRequest.getValueOf(facetArrays, tosOrdinal % partitionSize);
+          double value = resolver.valueOf(tosOrdinal % partitionSize);
           if (value != 0) { // the value of yc is not 0, it is to be considered.  
             totalNumOfDescendantsConsidered++;
 
@@ -338,7 +339,7 @@ public class TopKInEachNodeHandler extends PartitionsFacetResultsHandler {
         facetRequest, AACOsOfOnePartition);
     if (isSelfPartition(rootNode, facetArrays, offset)) {
       tempFRWH.isRootNodeIncluded = true;
-      tempFRWH.rootNodeValue = this.facetRequest.getValueOf(facetArrays, rootNode % partitionSize);
+      tempFRWH.rootNodeValue = resolver.valueOf(rootNode % partitionSize);
     }
     tempFRWH.totalNumOfFacetsConsidered = totalNumOfDescendantsConsidered;
     return tempFRWH;
@@ -374,7 +375,7 @@ public class TopKInEachNodeHandler extends PartitionsFacetResultsHandler {
     int ret = 0;
     if (offset <= ordinal) {
       // ordinal belongs to the current partition
-      if (0 != facetRequest.getValueOf(facetArrays, ordinal % partitionSize)) {
+      if (0 != resolver.valueOf(ordinal % partitionSize)) {
         ret++;
       }
     }
