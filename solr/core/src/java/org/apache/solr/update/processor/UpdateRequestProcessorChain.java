@@ -112,6 +112,8 @@ public final class UpdateRequestProcessorChain implements PluginInfoInitialized
       (null != info.name ? info.name : "") + "\"" + 
       (info.isDefault() ? " (default)" : "");
 
+    log.info("creating " + infomsg);
+
     // wrap in an ArrayList so we know we know we can do fast index lookups 
     // and that add(int,Object) is supported
     List<UpdateRequestProcessorFactory> list = new ArrayList
