@@ -389,21 +389,7 @@ public abstract class Analyzer implements Closeable {
    * A predefined {@link ReuseStrategy}  that reuses the same components for
    * every field.
    */
-  public static final ReuseStrategy GLOBAL_REUSE_STRATEGY = new GlobalReuseStrategy();
-  
-  /**
-   * Implementation of {@link ReuseStrategy} that reuses the same components for
-   * every field.
-   * @deprecated This implementation class will be hidden in Lucene 5.0.
-   *   Use {@link Analyzer#GLOBAL_REUSE_STRATEGY} instead!
-   */
-  @Deprecated
-  public final static class GlobalReuseStrategy extends ReuseStrategy {
-    
-    /** Sole constructor. (For invocation by subclass constructors, typically implicit.)
-     * @deprecated Don't create instances of this class, use {@link Analyzer#GLOBAL_REUSE_STRATEGY} */
-    @Deprecated
-    public GlobalReuseStrategy() {}
+  public static final ReuseStrategy GLOBAL_REUSE_STRATEGY = new ReuseStrategy() {
 
     @Override
     public TokenStreamComponents getReusableComponents(Analyzer analyzer, String fieldName) {
@@ -414,27 +400,13 @@ public abstract class Analyzer implements Closeable {
     public void setReusableComponents(Analyzer analyzer, String fieldName, TokenStreamComponents components) {
       setStoredValue(analyzer, components);
     }
-  }
+  };
 
   /**
    * A predefined {@link ReuseStrategy} that reuses components per-field by
    * maintaining a Map of TokenStreamComponent per field name.
    */
-  public static final ReuseStrategy PER_FIELD_REUSE_STRATEGY = new PerFieldReuseStrategy();
-  
-  /**
-   * Implementation of {@link ReuseStrategy} that reuses components per-field by
-   * maintaining a Map of TokenStreamComponent per field name.
-   * @deprecated This implementation class will be hidden in Lucene 5.0.
-   *   Use {@link Analyzer#PER_FIELD_REUSE_STRATEGY} instead!
-   */
-  @Deprecated
-  public static class PerFieldReuseStrategy extends ReuseStrategy {
-
-    /** Sole constructor. (For invocation by subclass constructors, typically implicit.)
-     * @deprecated Don't create instances of this class, use {@link Analyzer#PER_FIELD_REUSE_STRATEGY} */
-    @Deprecated
-    public PerFieldReuseStrategy() {}
+  public static final ReuseStrategy PER_FIELD_REUSE_STRATEGY = new ReuseStrategy() {
 
     @SuppressWarnings("unchecked")
     @Override
@@ -453,6 +425,6 @@ public abstract class Analyzer implements Closeable {
       }
       componentsPerField.put(fieldName, components);
     }
-  }
+  };
 
 }
