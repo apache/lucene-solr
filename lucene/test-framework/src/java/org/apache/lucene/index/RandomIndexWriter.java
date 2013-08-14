@@ -343,7 +343,7 @@ public class RandomIndexWriter implements Closeable {
     w.forceMerge(maxSegmentCount);
   }
   
-  private static final class TestPointInfoStream extends InfoStream {
+  static final class TestPointInfoStream extends InfoStream {
     private final InfoStream delegate;
     private final TestPoint testPoint;
     

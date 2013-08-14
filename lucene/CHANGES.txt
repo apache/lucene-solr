@@ -129,6 +129,9 @@ API Changes
   Analyzer. Analyzer adds a getter to retrieve the strategy for this use-case.
   (Uwe Schindler, Robert Muir, Shay Banon)
 
+* LUCENE-5173: Lucene never writes segments with 0 documents anymore.
+  (Shai Erera, Uwe Schindler, Robert Muir)
+
 Optimizations
 
 * LUCENE-5088: Added TermFilter to filter docs by a specific term.
