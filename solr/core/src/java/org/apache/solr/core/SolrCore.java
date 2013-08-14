@@ -898,6 +898,7 @@ public final class SolrCore implements SolrInfoMBean {
       def = map.get(null);
     } 
     if (def == null) {
+      log.info("no updateRequestProcessorChain defined as default, creating implicit default");
       // construct the default chain
       UpdateRequestProcessorFactory[] factories = new UpdateRequestProcessorFactory[]{
               new LogUpdateProcessorFactory(),
