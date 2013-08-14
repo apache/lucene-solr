@@ -126,7 +126,8 @@ Optimizations
 * SOLR-5044: Admin UI - Note on Core-Admin about directories while creating 
   core (steffkes)
 
-* SOLR-5134: Have HdfsIndexOutput extend BufferedIndexOutput. (Mark Miller)
+* SOLR-5134: Have HdfsIndexOutput extend BufferedIndexOutput. 
+  (Mark Miller, Uwe Schindler)
 
 Other Changes
 ----------------------

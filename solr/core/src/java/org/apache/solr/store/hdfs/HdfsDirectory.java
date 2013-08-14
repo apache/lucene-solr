@@ -34,8 +34,8 @@ import org.apache.lucene.store.IOContext;
 import org.apache.lucene.store.IndexInput;
 import org.apache.lucene.store.IndexOutput;
 import org.apache.lucene.store.NoLockFactory;
+import org.apache.lucene.util.IOUtils;
 import org.apache.solr.store.blockcache.CustomBufferedIndexInput;
-import org.apache.solr.util.IOUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -63,7 +63,7 @@ public class HdfsDirectory extends Directory {
         fileSystem.mkdirs(hdfsDirPath);
       }
     } catch (Exception e) {
-      IOUtils.closeQuietly(fileSystem);
+      org.apache.solr.util.IOUtils.closeQuietly(fileSystem);
       throw new RuntimeException("Problem creating directory: " + hdfsDirPath,
           e);
     }
@@ -225,12 +225,14 @@ public class HdfsDirectory extends Directory {
     
     @Override
     public void close() throws IOException {
+      IOException priorE = null;
       try {
         super.close();
-      } catch (Throwable t) {
-        LOG.error("Error while closing", t);
+      } catch (IOException ioe) {
+        priorE = ioe;
+      } finally {
+        IOUtils.closeWhileHandlingException(priorE, writer);
       }
-      writer.close();
     }
 
     @Override
