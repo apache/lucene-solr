@@ -17,6 +17,7 @@ package org.apache.solr.store.hdfs;
  * limitations under the License.
  */
 
+import java.io.Closeable;
 import java.io.IOException;
 import java.util.EnumSet;
 
@@ -31,7 +32,7 @@ import org.apache.lucene.store.DataOutput;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-public class HdfsFileWriter extends DataOutput {
+public class HdfsFileWriter extends DataOutput implements Closeable {
   public static Logger LOG = LoggerFactory.getLogger(HdfsFileWriter.class);
   
   public static final String HDFS_SYNC_BLOCK = "solr.hdfs.sync.block";
