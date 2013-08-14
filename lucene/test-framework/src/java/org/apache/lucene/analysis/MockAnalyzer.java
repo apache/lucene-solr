@@ -60,7 +60,7 @@ public final class MockAnalyzer extends Analyzer {
    * @param filter DFA describing how terms should be filtered (set of stopwords, etc)
    */
   public MockAnalyzer(Random random, CharacterRunAutomaton runAutomaton, boolean lowerCase, CharacterRunAutomaton filter) {
-    super(new PerFieldReuseStrategy());
+    super(PER_FIELD_REUSE_STRATEGY);
     // TODO: this should be solved in a different way; Random should not be shared (!).
     this.random = new Random(random.nextLong());
     this.runAutomaton = runAutomaton;

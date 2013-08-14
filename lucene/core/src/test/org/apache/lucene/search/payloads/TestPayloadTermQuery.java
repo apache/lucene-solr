@@ -64,7 +64,7 @@ public class TestPayloadTermQuery extends LuceneTestCase {
   private static class PayloadAnalyzer extends Analyzer {
 
     private PayloadAnalyzer() {
-      super(new PerFieldReuseStrategy());
+      super(PER_FIELD_REUSE_STRATEGY);
     }
 
     @Override

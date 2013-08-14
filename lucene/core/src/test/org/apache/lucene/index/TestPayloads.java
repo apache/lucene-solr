@@ -363,11 +363,11 @@ public class TestPayloads extends LuceneTestCase {
         Map<String,PayloadData> fieldToData = new HashMap<String,PayloadData>();
 
         public PayloadAnalyzer() {
-          super(new PerFieldReuseStrategy());
+          super(PER_FIELD_REUSE_STRATEGY);
         }
         
         public PayloadAnalyzer(String field, byte[] data, int offset, int length) {
-            super(new PerFieldReuseStrategy());
+            super(PER_FIELD_REUSE_STRATEGY);
             setPayloadData(field, data, offset, length);
         }
 

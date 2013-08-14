@@ -67,7 +67,7 @@ public class TestBlockPostingsFormat3 extends LuceneTestCase {
   // creates 8 fields with different options and does "duels" of fields against each other
   public void test() throws Exception {
     Directory dir = newDirectory();
-    Analyzer analyzer = new Analyzer(new Analyzer.PerFieldReuseStrategy()) {
+    Analyzer analyzer = new Analyzer(Analyzer.PER_FIELD_REUSE_STRATEGY) {
       @Override
       protected TokenStreamComponents createComponents(String fieldName, Reader reader) {
         Tokenizer tokenizer = new MockTokenizer(reader);
