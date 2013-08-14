@@ -116,6 +116,10 @@ Bug Fixes
   
 * SOLR-5119: Managed schema problems after adding fields via Schema Rest API.
   (Nils Kübler, Steve Rowe)
+  
+* SOLR-5133: HdfsUpdateLog can fail to close a FileSystem instance if init 
+  is called more than once. (Mark Miller)
+  
 
 Optimizations
 ----------------------
