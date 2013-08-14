@@ -52,12 +52,18 @@ final class SegmentMerger {
 
   // note, just like in codec apis Directory 'dir' is NOT the same as segmentInfo.dir!!
   SegmentMerger(List<AtomicReader> readers, SegmentInfo segmentInfo, InfoStream infoStream, Directory dir,
-                MergeState.CheckAbort checkAbort, FieldInfos.FieldNumbers fieldNumbers, IOContext context) {
+                MergeState.CheckAbort checkAbort, FieldInfos.FieldNumbers fieldNumbers, IOContext context) throws IOException {
     mergeState = new MergeState(readers, segmentInfo, infoStream, checkAbort);
     directory = dir;
     this.codec = segmentInfo.getCodec();
     this.context = context;
     this.fieldInfosBuilder = new FieldInfos.Builder(fieldNumbers);
+    mergeState.segmentInfo.setDocCount(setDocMaps());
+  }
+  
+  /** True if any merging should happen */
+  boolean shouldMerge() {
+    return mergeState.segmentInfo.getDocCount() > 0;
   }
 
   /**
@@ -67,14 +73,15 @@ final class SegmentMerger {
    * @throws IOException if there is a low-level IO error
    */
   MergeState merge() throws IOException {
+    if (!shouldMerge()) {
+      throw new IllegalStateException("Merge would result in 0 document segment");
+    }
     // NOTE: it's important to add calls to
     // checkAbort.work(...) if you make any changes to this
     // method that will spend alot of time.  The frequency
     // of this check impacts how long
     // IndexWriter.close(false) takes to actually stop the
     // threads.
-    
-    mergeState.segmentInfo.setDocCount(setDocMaps());
     mergeFieldInfos();
     setMatchingSegmentReaders();
     long t0 = 0;

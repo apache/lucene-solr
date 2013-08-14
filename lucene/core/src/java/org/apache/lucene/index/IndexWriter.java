@@ -2462,18 +2462,10 @@ public class IndexWriter implements Closeable, TwoPhaseCommit {
       String mergedName = newSegmentName();
       final List<AtomicReader> mergeReaders = new ArrayList<AtomicReader>();
       for (IndexReader indexReader : readers) {
-        if (indexReader.numDocs() > 0) {
-          numDocs += indexReader.numDocs();
-          for (AtomicReaderContext ctx : indexReader.leaves()) {
-            if (ctx.reader().numDocs() > 0) { // drop empty (or all deleted) segments
-              mergeReaders.add(ctx.reader());
-            }
-          }
+        numDocs += indexReader.numDocs();
+        for (AtomicReaderContext ctx : indexReader.leaves()) {
+          mergeReaders.add(ctx.reader());
         }
-      }
-      
-      if (mergeReaders.isEmpty()) { // no segments with documents to add
-        return;
       }
       
       final IOContext context = new IOContext(new MergeInfo(numDocs, -1, true, -1));
@@ -2487,6 +2479,10 @@ public class IndexWriter implements Closeable, TwoPhaseCommit {
 
       SegmentMerger merger = new SegmentMerger(mergeReaders, info, infoStream, trackingDir,
                                                MergeState.CheckAbort.NONE, globalFieldNumberMap, context);
+      
+      if (!merger.shouldMerge()) {
+        return;
+      }
 
       MergeState mergeState;
       boolean success = false;
@@ -3733,7 +3729,12 @@ public class IndexWriter implements Closeable, TwoPhaseCommit {
       MergeState mergeState;
       boolean success3 = false;
       try {
-        mergeState = merger.merge();
+        if (!merger.shouldMerge()) {
+          // would result in a 0 document segment: nothing to merge!
+          mergeState = new MergeState(new ArrayList<AtomicReader>(), merge.info.info, infoStream, checkAbort);
+        } else {
+          mergeState = merger.merge();
+        }
         success3 = true;
       } finally {
         if (!success3) {
@@ -3748,12 +3749,16 @@ public class IndexWriter implements Closeable, TwoPhaseCommit {
       // Record which codec was used to write the segment
 
       if (infoStream.isEnabled("IW")) {
-        infoStream.message("IW", "merge codec=" + codec + " docCount=" + merge.info.info.getDocCount() + "; merged segment has " +
+        if (merge.info.info.getDocCount() == 0) {
+          infoStream.message("IW", "merge away fully deleted segments");
+        } else {
+          infoStream.message("IW", "merge codec=" + codec + " docCount=" + merge.info.info.getDocCount() + "; merged segment has " +
                            (mergeState.fieldInfos.hasVectors() ? "vectors" : "no vectors") + "; " +
                            (mergeState.fieldInfos.hasNorms() ? "norms" : "no norms") + "; " + 
                            (mergeState.fieldInfos.hasDocValues() ? "docValues" : "no docValues") + "; " + 
                            (mergeState.fieldInfos.hasProx() ? "prox" : "no prox") + "; " + 
                            (mergeState.fieldInfos.hasProx() ? "freqs" : "no freqs"));
+        }
       }
 
       // Very important to do this before opening the reader
@@ -3958,8 +3963,8 @@ public class IndexWriter implements Closeable, TwoPhaseCommit {
   /** Only for testing.
    *
    * @lucene.internal */
-  void keepFullyDeletedSegments() {
-    keepFullyDeletedSegments = true;
+  void setKeepFullyDeletedSegments(boolean v) {
+    keepFullyDeletedSegments = v;
   }
 
   boolean getKeepFullyDeletedSegments() {

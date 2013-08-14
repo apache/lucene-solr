@@ -793,9 +793,9 @@ public class _TestUtil {
     try {
       // Carefully invoke what is a package-private (test
       // only, internal) method on IndexWriter:
-      Method m = IndexWriter.class.getDeclaredMethod("keepFullyDeletedSegments");
+      Method m = IndexWriter.class.getDeclaredMethod("setKeepFullyDeletedSegments", boolean.class);
       m.setAccessible(true);
-      m.invoke(w);
+      m.invoke(w, Boolean.TRUE);
     } catch (Exception e) {
       // Should not happen?
       throw new RuntimeException(e);

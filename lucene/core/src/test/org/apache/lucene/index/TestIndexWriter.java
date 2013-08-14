@@ -49,6 +49,7 @@ import org.apache.lucene.index.IndexWriterConfig.OpenMode;
 import org.apache.lucene.search.DocIdSetIterator;
 import org.apache.lucene.search.FieldCache;
 import org.apache.lucene.search.IndexSearcher;
+import org.apache.lucene.search.MatchAllDocsQuery;
 import org.apache.lucene.search.ScoreDoc;
 import org.apache.lucene.search.TermQuery;
 import org.apache.lucene.store.AlreadyClosedException;
@@ -68,6 +69,7 @@ import org.apache.lucene.util.Bits;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.IOUtils;
 import org.apache.lucene.util.LuceneTestCase;
+import org.apache.lucene.util.SetOnce;
 import org.apache.lucene.util.ThreadInterruptedException;
 import org.apache.lucene.util._TestUtil;
 import org.apache.lucene.util.packed.PackedInts;
@@ -2186,6 +2188,34 @@ public class TestIndexWriter extends LuceneTestCase {
     assertTrue(writer.hasUncommittedChanges());
 
     writer.close();
+    dir.close();
+  }
+  
+  public void testMergeAllDeleted() throws IOException {
+    Directory dir = newDirectory();
+    IndexWriterConfig iwc = newIndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer(random()));
+    final SetOnce<IndexWriter> iwRef = new SetOnce<IndexWriter>();
+    iwc.setInfoStream(new RandomIndexWriter.TestPointInfoStream(iwc.getInfoStream(), new RandomIndexWriter.TestPoint() {
+      @Override
+      public void apply(String message) {
+        if ("startCommitMerge".equals(message)) {
+          iwRef.get().setKeepFullyDeletedSegments(false);
+        } else if ("startMergeInit".equals(message)) {
+          iwRef.get().setKeepFullyDeletedSegments(true);
+        }
+      }
+    }));
+    IndexWriter evilWriter = new IndexWriter(dir, iwc);
+    iwRef.set(evilWriter);
+    for (int i = 0; i < 1000; i++) {
+      addDoc(evilWriter);
+      if (random().nextInt(17) == 0) {
+        evilWriter.commit();
+      }
+    }
+    evilWriter.deleteDocuments(new MatchAllDocsQuery());
+    evilWriter.forceMerge(1);
+    evilWriter.close();
     dir.close();
   }
 }

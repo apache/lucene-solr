@@ -496,6 +496,11 @@ public class CheckIndex {
       msg(infoStream, "  " + (1+i) + " of " + numSegments + ": name=" + info.info.name + " docCount=" + info.info.getDocCount());
       segInfoStat.name = info.info.name;
       segInfoStat.docCount = info.info.getDocCount();
+      
+      final String version = info.info.getVersion();
+      if (info.info.getDocCount() <= 0 && version != null && versionComparator.compare(version, "4.5") >= 0) {
+        throw new RuntimeException("illegal number of documents: maxDoc=" + info.info.getDocCount());
+      }
 
       int toLoseDocCount = info.info.getDocCount();
 
