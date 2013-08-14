@@ -25,6 +25,7 @@ import org.apache.solr.client.solrj.SolrQuery;
 import org.apache.solr.client.solrj.SolrServerException;
 import org.apache.solr.client.solrj.impl.CloudSolrServer;
 import org.apache.solr.client.solrj.impl.HttpSolrServer;
+import org.apache.solr.client.solrj.impl.HttpSolrServer.RemoteSolrException;
 import org.apache.solr.client.solrj.request.CoreAdminRequest;
 import org.apache.solr.client.solrj.request.CoreAdminRequest.Create;
 import org.apache.solr.client.solrj.request.QueryRequest;
@@ -57,6 +58,7 @@ import org.junit.BeforeClass;
 import javax.management.MBeanServer;
 import javax.management.MBeanServerFactory;
 import javax.management.ObjectName;
+
 import java.io.File;
 import java.io.IOException;
 import java.lang.management.ManagementFactory;
@@ -147,12 +149,49 @@ public class CollectionsAPIDistributedZkTest extends AbstractFullDistribZkTestBa
     testCollectionsAPI();
     testErrorHandling();
     deletePartiallyCreatedCollection();
+    deleteCollectionRemovesStaleZkCollectionsNode();
+    
+    // last
     deleteCollectionWithDownNodes();
     if (DEBUG) {
       super.printLayout();
     }
   }
   
+  private void deleteCollectionRemovesStaleZkCollectionsNode() throws Exception {
+    
+    // we can use this client because we just want base url
+    final String baseUrl = getBaseUrl((HttpSolrServer) clients.get(0));
+    
+    String collectionName = "out_of_sync_collection";
+    
+    List<Integer> numShardsNumReplicaList = new ArrayList<Integer>();
+    numShardsNumReplicaList.add(2);
+    numShardsNumReplicaList.add(1);
+    
+    
+    cloudClient.getZkStateReader().getZkClient().makePath(ZkStateReader.COLLECTIONS_ZKNODE + "/" + collectionName, true);
+    
+    ModifiableSolrParams params = new ModifiableSolrParams();
+    params.set("action", CollectionAction.DELETE.toString());
+    params.set("name", collectionName);
+    QueryRequest request = new QueryRequest(params);
+    request.setPath("/admin/collections");
+
+    try {
+      NamedList<Object> resp = createNewSolrServer("", baseUrl)
+          .request(request);
+      fail("Expected to fail, because collection is not in clusterstate");
+    } catch (RemoteSolrException e) {
+      
+    }
+    
+    checkForMissingCollection(collectionName);
+    
+    assertFalse(cloudClient.getZkStateReader().getZkClient().exists(ZkStateReader.COLLECTIONS_ZKNODE + "/" + collectionName, true));
+    
+  }
+
   private void deletePartiallyCreatedCollection() throws Exception {
     final String baseUrl = getBaseUrl((HttpSolrServer) clients.get(0));
     String collectionName = "halfdeletedcollection";
