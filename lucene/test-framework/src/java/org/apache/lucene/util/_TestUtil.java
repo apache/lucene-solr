@@ -25,7 +25,6 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
 import java.io.PrintStream;
-import java.lang.reflect.Method;
 import java.math.BigDecimal;
 import java.math.BigInteger;
 import java.nio.CharBuffer;
@@ -787,19 +786,6 @@ public class _TestUtil {
       }
     });
     Assert.assertEquals("Reflection does not produce same map", reflectedValues, map);
-  }
-
-  public static void keepFullyDeletedSegments(IndexWriter w) {
-    try {
-      // Carefully invoke what is a package-private (test
-      // only, internal) method on IndexWriter:
-      Method m = IndexWriter.class.getDeclaredMethod("setKeepFullyDeletedSegments", boolean.class);
-      m.setAccessible(true);
-      m.invoke(w, Boolean.TRUE);
-    } catch (Exception e) {
-      // Should not happen?
-      throw new RuntimeException(e);
-    }
   }
   
   /** 
