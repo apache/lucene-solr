@@ -120,12 +120,13 @@ Bug Fixes
 * SOLR-5133: HdfsUpdateLog can fail to close a FileSystem instance if init 
   is called more than once. (Mark Miller)
   
-
 Optimizations
 ----------------------
 
 * SOLR-5044: Admin UI - Note on Core-Admin about directories while creating 
   core (steffkes)
+
+* SOLR-5134: Have HdfsIndexOutput extend BufferedIndexOutput. (Mark Miller)
 
 Other Changes
 ----------------------
