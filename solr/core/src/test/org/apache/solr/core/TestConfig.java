@@ -70,6 +70,11 @@ public class TestConfig extends SolrTestCaseJ4 {
       assertNull("should not have been able to find " + f, data);
     }
   }
+  @Test
+  public void testDisableRequetsHandler() throws Exception {
+    assertNull(h.getCore().getRequestHandler("disabled"));
+    assertNotNull(h.getCore().getRequestHandler("enabled"));
+  }
 
   @Test
   public void testJavaProperty() {
