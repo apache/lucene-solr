@@ -17,8 +17,17 @@ package org.apache.solr.cloud;
  * the License.
  */
 
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.Collections;
+import java.util.HashMap;
+import java.util.LinkedHashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.Map.Entry;
+import java.util.Set;
+
 import org.apache.solr.common.SolrException;
-import org.apache.solr.common.SolrException.ErrorCode;
 import org.apache.solr.common.cloud.ClosableThread;
 import org.apache.solr.common.cloud.ClusterState;
 import org.apache.solr.common.cloud.DocCollection;
@@ -35,16 +44,6 @@ import org.apache.zookeeper.CreateMode;
 import org.apache.zookeeper.KeeperException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-
-import java.util.ArrayList;
-import java.util.Collection;
-import java.util.Collections;
-import java.util.HashMap;
-import java.util.LinkedHashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.Map.Entry;
-import java.util.Set;
 
 /**
  * Cluster leader. Responsible node assignments, cluster state file?
@@ -294,17 +293,6 @@ public class Overseer {
       private ClusterState updateState(ClusterState state, final ZkNodeProps message) {
         final String collection = message.getStr(ZkStateReader.COLLECTION_PROP);
         assert collection.length() > 0 : message;
-        
-        try {
-          if (!zkClient.exists(ZkStateReader.COLLECTIONS_ZKNODE + "/" + collection, true)) {
-            log.warn("Could not find collection node for " + collection + ", skipping publish state");
-          }
-        } catch (KeeperException e) {
-          throw new SolrException(ErrorCode.SERVER_ERROR, e);
-        } catch (InterruptedException e) {
-          Thread.currentThread().interrupt();
-          throw new SolrException(ErrorCode.SERVER_ERROR, e);
-        }
         
         String coreNodeName = message.getStr(ZkStateReader.CORE_NODE_NAME_PROP);
         if (coreNodeName == null) {

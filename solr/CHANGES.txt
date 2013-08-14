@@ -119,6 +119,9 @@ Bug Fixes
   
 * SOLR-5133: HdfsUpdateLog can fail to close a FileSystem instance if init 
   is called more than once. (Mark Miller)
+
+* SOLR-5135: Harden Collection API deletion of /collections/$collection 
+  ZooKeeper node. (Mark Miller)
   
 Optimizations
 ----------------------
