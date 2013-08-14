@@ -19,6 +19,8 @@ package org.apache.solr.client.solrj.embedded;
 
 import org.apache.solr.client.solrj.MultiCoreExampleTestBase;
 import org.apache.solr.client.solrj.SolrServer;
+import org.apache.solr.core.CoreContainer;
+import org.apache.solr.core.SolrCore;
 
 /**
  * This runs SolrServer test using 
@@ -33,6 +35,19 @@ public class MultiCoreEmbeddedTest extends MultiCoreExampleTestBase {
     // TODO: fix this test to use MockDirectoryFactory
     System.clearProperty("solr.directoryFactory");
     super.setUp();
+    setupCoreContainer();
+    SolrCore.log.info("CORES=" + cores + " : " + cores.getCoreNames());
+  }
+  
+  protected void setupCoreContainer() {
+    cores = new CoreContainer();
+    cores.load();
+  }
+  
+  @Override
+  public void tearDown() throws Exception {
+    cores.shutdown();
+    super.tearDown();
   }
 
   @Override

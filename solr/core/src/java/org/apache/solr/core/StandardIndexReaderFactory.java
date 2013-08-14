@@ -19,6 +19,7 @@ package org.apache.solr.core;
 import java.io.IOException;
 
 import org.apache.lucene.index.DirectoryReader;
+import org.apache.lucene.index.IndexWriter;
 import org.apache.lucene.store.Directory;
 
 /**
@@ -26,11 +27,17 @@ import org.apache.lucene.store.Directory;
  * {@link DirectoryReader}.
  * 
  * @see DirectoryReader#open(Directory)
+ * @see DirectoryReader#open(IndexWriter, boolean)
  */
 public class StandardIndexReaderFactory extends IndexReaderFactory {
   
   @Override
   public DirectoryReader newReader(Directory indexDir, SolrCore core) throws IOException {
     return DirectoryReader.open(indexDir, termInfosIndexDivisor);
+  }
+
+  @Override
+  public DirectoryReader newReader(IndexWriter writer, SolrCore core) throws IOException {
+    return DirectoryReader.open(writer, true);
   }
 }
