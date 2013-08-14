@@ -490,7 +490,8 @@ public class TestIndexWriterOnDiskFull extends LuceneTestCase {
             setReaderPooling(true).
             setMergePolicy(newLogMergePolicy(2))
     );
-    _TestUtil.keepFullyDeletedSegments(w);
+    // we can do this because we add/delete/add (and dont merge to "nothing")
+    w.setKeepFullyDeletedSegments(true);
 
     Document doc = new Document();
 

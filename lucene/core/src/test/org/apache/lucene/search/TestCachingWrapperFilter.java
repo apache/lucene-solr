@@ -173,7 +173,6 @@ public class TestCachingWrapperFilter extends LuceneTestCase {
             // asserts below requires no unexpected merges:
             setMergePolicy(newLogMergePolicy(10))
     );
-    _TestUtil.keepFullyDeletedSegments(writer.w);
 
     // NOTE: cannot use writer.getReader because RIW (on
     // flipping a coin) may give us a newly opened reader,
