@@ -83,6 +83,13 @@ New features
   FacetsAggregator.createOrdinalValueResolver. This gives better options for
   resolving an ordinal's value by FacetAggregators. (Shai Erera)
 
+* LUCENE-5165: Add SuggestStopFilter, to be used with analyzing
+  suggesters, so that a stop word at the very end of the lookup query,
+  and without any trailing token characters, will be preserved.  This
+  enables query "a" to suggest apple; see 
+  http://blog.mikemccandless.com/2013/08/suggeststopfilter-carefully-removes.html
+  for details.
+
 Bug Fixes
 
 * LUCENE-5116: IndexWriter.addIndexes(IndexReader...) should drop empty (or all

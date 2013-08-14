@@ -25,11 +25,8 @@ import java.util.Locale;
 import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.analysis.MockAnalyzer;
 import org.apache.lucene.analysis.MockTokenizer;
-import org.apache.lucene.search.BooleanClause;
-import org.apache.lucene.search.BooleanQuery;
-import org.apache.lucene.search.PrefixQuery;
-import org.apache.lucene.search.Query;
-import org.apache.lucene.search.TermQuery;
+import org.apache.lucene.analysis.core.StopFilter;
+import org.apache.lucene.analysis.util.CharArraySet;
 import org.apache.lucene.search.suggest.Lookup.LookupResult;
 import org.apache.lucene.search.suggest.TermFreqPayload;
 import org.apache.lucene.search.suggest.TermFreqPayloadArrayIterator;
@@ -294,63 +291,38 @@ public class AnalyzingInfixSuggesterTest extends LuceneTestCase {
     suggester.close();
   }
 
-  public void testForkLastToken() throws Exception {
-    Analyzer a = new Analyzer() {
+  public void testSuggestStopFilter() throws Exception {
+    final CharArraySet stopWords = StopFilter.makeStopSet(TEST_VERSION_CURRENT, "a");
+    Analyzer indexAnalyzer = new Analyzer() {
         @Override
         protected TokenStreamComponents createComponents(String fieldName, Reader reader) {
           MockTokenizer tokens = new MockTokenizer(reader);
-          // ForkLastTokenFilter is a bit evil:
-          tokens.setEnableChecks(false);
           return new TokenStreamComponents(tokens,
-                                           new StopKeywordFilter(TEST_VERSION_CURRENT,
-                                                                 new ForkLastTokenFilter(tokens), StopKeywordFilter.makeStopSet(TEST_VERSION_CURRENT, "a")));
+                                           new StopFilter(TEST_VERSION_CURRENT, tokens, stopWords));
+        }
+      };
+
+    Analyzer queryAnalyzer = new Analyzer() {
+        @Override
+        protected TokenStreamComponents createComponents(String fieldName, Reader reader) {
+          MockTokenizer tokens = new MockTokenizer(reader);
+          return new TokenStreamComponents(tokens,
+                                           new SuggestStopFilter(tokens, stopWords));
+        }
+      };
+
+    File tempDir = _TestUtil.getTempDir("AnalyzingInfixSuggesterTest");
+
+    AnalyzingInfixSuggester suggester = new AnalyzingInfixSuggester(TEST_VERSION_CURRENT, tempDir, indexAnalyzer, queryAnalyzer, 3) {
+        @Override
+        protected Directory getDirectory(File path) {
+          return newDirectory();
         }
       };
 
     TermFreqPayload keys[] = new TermFreqPayload[] {
       new TermFreqPayload("a bob for apples", 10, new BytesRef("foobaz")),
     };
-
-    File tempDir = _TestUtil.getTempDir("AnalyzingInfixSuggesterTest");
-
-    AnalyzingInfixSuggester suggester = new AnalyzingInfixSuggester(TEST_VERSION_CURRENT, tempDir, a, a, 3) {
-        @Override
-        protected Query finishQuery(BooleanQuery in, boolean allTermsRequired) {
-          List<BooleanClause> clauses = in.clauses();
-          if (clauses.size() >= 2 && allTermsRequired) {
-            String t1 = getTerm(clauses.get(clauses.size()-2).getQuery());
-            String t2 = getTerm(clauses.get(clauses.size()-1).getQuery());
-            if (t1.equals(t2)) {
-              // The last 2 tokens came from
-              // ForkLastTokenFilter; we remove them and
-              // replace them with a MUST BooleanQuery that
-              // SHOULDs the two of them together:
-              BooleanQuery sub = new BooleanQuery();
-              BooleanClause other = clauses.get(clauses.size()-2);
-              sub.add(new BooleanClause(clauses.get(clauses.size()-2).getQuery(), BooleanClause.Occur.SHOULD));
-              sub.add(new BooleanClause(clauses.get(clauses.size()-1).getQuery(), BooleanClause.Occur.SHOULD));
-              clauses.subList(clauses.size()-2, clauses.size()).clear();
-              clauses.add(new BooleanClause(sub, BooleanClause.Occur.MUST));
-            }
-          }
-          return in;
-        }
-
-        private String getTerm(Query query) {
-          if (query instanceof TermQuery) {
-            return ((TermQuery) query).getTerm().text();
-          } else if (query instanceof PrefixQuery) {
-            return ((PrefixQuery) query).getPrefix().text();
-          } else {
-            return null;
-          }
-        }
-
-        @Override
-        protected Directory getDirectory(File path) {
-          return newDirectory();
-        }
-      };
 
     suggester.build(new TermFreqPayloadArrayIterator(keys));
     List<LookupResult> results = suggester.lookup(_TestUtil.stringToCharSequence("a", random()), 10, true, true);
