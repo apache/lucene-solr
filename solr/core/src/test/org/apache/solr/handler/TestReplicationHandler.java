@@ -346,6 +346,9 @@ public class TestReplicationHandler extends SolrTestCaseJ4 {
   public void testNoWriter() throws Exception {
     useFactory(null);    // force a persistent directory
 
+    // read-only setting (no opening from indexwriter)
+    System.setProperty("solr.tests.reopenReaders", "false");
+    try {
     // stop and start so they see the new directory setting
     slaveJetty.stop();
     masterJetty.stop();
@@ -356,6 +359,9 @@ public class TestReplicationHandler extends SolrTestCaseJ4 {
     slaveClient.commit();
     slaveJetty.stop();
     slaveJetty.start(true);
+    } finally {
+      System.clearProperty("solr.tests.reopenReaders"); // dont mess with other tests
+    }
 
     // Currently we open a writer on-demand.  This is to test that we are correctly testing
     // the code path when SolrDeletionPolicy.getLatestCommit() returns null.

@@ -795,19 +795,6 @@ public final class SolrCore implements SolrInfoMBean {
         }
       }
       
-      // Open the searcher *before* the update handler so we don't end up
-      // opening
-      // one in the middle.
-      // With lockless commits in Lucene now, this probably shouldn't be an
-      // issue anymore
-      
-      try {
-        getSearcher(false, false, null, true);
-      } finally {
-        newReaderCreator = null;
-        if (iwRef != null) iwRef.decref();
-      }
-      
       String updateHandlerClass = solrConfig.getUpdateHandlerInfo().className;
       
       if (updateHandler == null) {
@@ -819,6 +806,13 @@ public final class SolrCore implements SolrInfoMBean {
                 : updateHandlerClass, updateHandler);
       }
       infoRegistry.put("updateHandler", this.updateHandler);
+
+      try {
+        getSearcher(false, false, null, true);
+      } finally {
+        newReaderCreator = null;
+        if (iwRef != null) iwRef.decref();
+      }
       
       // Finally tell anyone who wants to know
       resourceLoader.inform(resourceLoader);
@@ -1430,6 +1424,16 @@ public final class SolrCore implements SolrInfoMBean {
           // so that we pick up any uncommitted changes and so we don't go backwards
           // in time on a core reload
           DirectoryReader newReader = newReaderCreator.call();
+          tmp = new SolrIndexSearcher(this, newIndexDir, getLatestSchema(), getSolrConfig().indexConfig, 
+              (realtime ? "realtime":"main"), newReader, true, !realtime, true, directoryFactory);
+        } else if (solrConfig.reopenReaders) {
+          RefCounted<IndexWriter> writer = getUpdateHandler().getSolrCoreState().getIndexWriter(this);
+          DirectoryReader newReader = null;
+          try {
+            newReader = indexReaderFactory.newReader(writer.get(), this);
+          } finally {
+            writer.decref();
+          }
           tmp = new SolrIndexSearcher(this, newIndexDir, getLatestSchema(), getSolrConfig().indexConfig, 
               (realtime ? "realtime":"main"), newReader, true, !realtime, true, directoryFactory);
         } else {

@@ -122,6 +122,9 @@ Bug Fixes
 
 * SOLR-5135: Harden Collection API deletion of /collections/$collection 
   ZooKeeper node. (Mark Miller)
+
+* SOLR-4764: When using NRT, just init the first reader from IndexWriter.
+  (Robert Muir, Mark Miller)
   
 Optimizations
 ----------------------
