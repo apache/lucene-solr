@@ -148,6 +148,7 @@ public final class QueryAutoStopWordAnalyzer extends AnalyzerWrapper {
       IndexReader indexReader,
       Collection<String> fields,
       int maxDocFreq) throws IOException {
+    super(delegate.getReuseStrategy());
     this.matchVersion = matchVersion;
     this.delegate = delegate;
     

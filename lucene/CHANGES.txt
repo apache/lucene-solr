@@ -155,6 +155,16 @@ API Changes
   files. FSDirectory#setReadChunkSize() is now deprecated and will be removed
   in Lucene 5.0.  (Uwe Schindler, Robert Muir, gsingers)
 
+* LUCENE-5170: Analyzer.ReuseStrategy instances are now stateless and can
+  be reused in other Analyzer instances, which was not possible before.
+  Lucene ships now with stateless singletons for per field and global reuse.
+  Legacy code can still instantiate the deprecated implementation classes,
+  but new code should use the constants. Implementors of custom strategies
+  have to take care of new method signatures. AnalyzerWrapper can now be
+  configured to use a custom strategy, too, ideally the one from the wrapped
+  Analyzer. Analyzer adds a getter to retrieve the strategy for this use-case.
+  (Uwe Schindler, Robert Muir, Shay Banon)
+
 Optimizations
 
 * LUCENE-5088: Added TermFilter to filter docs by a specific term.
@@ -179,6 +189,9 @@ Optimizations
 * LUCENE-5159: Prefix-code the sorted/sortedset value dictionaries in DiskDV.
   (Robert Muir)
 
+* LUCENE-5170: Fixed several wrapper analyzers to inherit the reuse strategy
+  of the wrapped Analyzer.  (Uwe Schindler, Robert Muir, Shay Banon)
+  
 Documentation
 
 * LUCENE-4894: remove facet userguide as it was outdated. Partially absorbed into
@@ -193,6 +206,10 @@ Changes in backwards compatibility policy
 * LUCENE-5089, SOLR-5126: Update to Morfologik 1.7.1. MorfologikAnalyzer and MorfologikFilter 
   no longer support multiple "dictionaries" as there is only one dictionary available.
   (Dawid Weiss)
+
+* LUCENE-5170: Changed method signatures of Analyzer.ReuseStrategy to take
+  Analyzer. Closeable interface was removed because the class was changed to
+  be stateless.  (Uwe Schindler, Robert Muir, Shay Banon)
 
 ======================= Lucene 4.4.0 =======================
 

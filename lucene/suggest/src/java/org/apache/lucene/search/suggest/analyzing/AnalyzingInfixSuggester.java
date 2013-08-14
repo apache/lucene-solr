@@ -99,10 +99,10 @@ public class AnalyzingInfixSuggester extends Lookup implements Closeable {
   protected final static String TEXT_FIELD_NAME = "text";
 
   private final Analyzer queryAnalyzer;
-  private final Analyzer indexAnalyzer;
-  private final Version matchVersion;
+  final Analyzer indexAnalyzer;
+  final Version matchVersion;
   private final File indexPath;
-  private final int minPrefixChars;
+  final int minPrefixChars;
   private Directory dir;
 
   /** {@link IndexSearcher} used for lookups. */
@@ -193,7 +193,7 @@ public class AnalyzingInfixSuggester extends Lookup implements Closeable {
     AtomicReader r = null;
     boolean success = false;
     try {
-      Analyzer gramAnalyzer = new AnalyzerWrapper() {
+      Analyzer gramAnalyzer = new AnalyzerWrapper(Analyzer.PER_FIELD_REUSE_STRATEGY) {
           @Override
           protected Analyzer getWrappedAnalyzer(String fieldName) {
             return indexAnalyzer;
