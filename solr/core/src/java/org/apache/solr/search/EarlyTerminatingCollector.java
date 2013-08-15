@@ -29,11 +29,14 @@ import org.apache.lucene.search.Scorer;
  * </p>
  */
 public class EarlyTerminatingCollector extends Collector {
-  private int numCollected;
-  private int lastDocId = -1;
-  private int maxDocsToCollect;
-  private Collector delegate;
-  
+
+  private final int maxDocsToCollect;
+  private final Collector delegate;
+
+  private int numCollected = 0;
+  private int prevReaderCumulativeSize = 0;
+  private int currentReaderSize = 0;  
+
   /**
    * <p>
    *  Wraps a {@link Collector}, throwing {@link EarlyTerminatingCollectorException} 
@@ -44,42 +47,40 @@ public class EarlyTerminatingCollector extends Collector {
    * 
    */
   public EarlyTerminatingCollector(Collector delegate, int maxDocsToCollect) {
+    assert 0 < maxDocsToCollect;
+    assert null != delegate;
+
     this.delegate = delegate;
     this.maxDocsToCollect = maxDocsToCollect;
   }
 
+  /**
+   * This collector requires that docs be collected in order, otherwise
+   * the computed number of scanned docs in the resulting 
+   * {@link EarlyTerminatingCollectorException} will be meaningless.
+   */
   @Override
   public boolean acceptsDocsOutOfOrder() {
-    return delegate.acceptsDocsOutOfOrder();
+    return false;
   }
 
   @Override
   public void collect(int doc) throws IOException {
     delegate.collect(doc);
-    lastDocId = doc;    
     numCollected++;  
-    if(numCollected==maxDocsToCollect) {
-      throw new EarlyTerminatingCollectorException(numCollected, lastDocId);
+    if(maxDocsToCollect <= numCollected) {
+      throw new EarlyTerminatingCollectorException
+        (numCollected, prevReaderCumulativeSize + (doc + 1));
     }
   }
   @Override
   public void setNextReader(AtomicReaderContext context) throws IOException {
-    delegate.setNextReader(context);    
+    prevReaderCumulativeSize += currentReaderSize; // not current any more
+    currentReaderSize = context.reader().maxDoc() - 1;
+    delegate.setNextReader(context);
   }
   @Override
   public void setScorer(Scorer scorer) throws IOException {
     delegate.setScorer(scorer);    
-  }
-  public int getNumCollected() {
-    return numCollected;
-  }
-  public void setNumCollected(int numCollected) {
-    this.numCollected = numCollected;
-  }
-  public int getLastDocId() {
-    return lastDocId;
-  }
-  public void setLastDocId(int lastDocId) {
-    this.lastDocId = lastDocId;
   }
 }
