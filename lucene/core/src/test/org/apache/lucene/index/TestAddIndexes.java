@@ -1229,14 +1229,7 @@ public class TestAddIndexes extends LuceneTestCase {
     Directory src = newDirectory(), dest = newDirectory();
     RandomIndexWriter w = new RandomIndexWriter(random(), src);
     w.addDocument(new Document());
-    IndexReader allDeletedReader = new FilterAtomicReader(w.getReader().leaves().get(0).reader()) {
-      @Override
-      public Bits getLiveDocs() {
-        return new Bits.MatchNoBits(in.maxDoc());
-      }
-      @Override public boolean hasDeletions() { return true; }
-      @Override public int numDocs() { return 0; }
-    };
+    IndexReader allDeletedReader = new AllDeletedFilterReader(w.getReader().leaves().get(0).reader());
     w.close();
     
     w = new RandomIndexWriter(random(), dest);
