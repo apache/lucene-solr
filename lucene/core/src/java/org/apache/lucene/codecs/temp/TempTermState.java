@@ -20,6 +20,7 @@ import java.util.Arrays;
 
 import org.apache.lucene.index.DocsEnum; // javadocs
 import org.apache.lucene.codecs.TempPostingsReaderBase; // javadocs
+import org.apache.lucene.index.OrdTermState;
 import org.apache.lucene.index.TermState;
 import org.apache.lucene.store.ByteArrayDataInput;
 
@@ -28,7 +29,7 @@ import org.apache.lucene.store.ByteArrayDataInput;
  * to produce a {@link DocsEnum} without re-seeking the
  * terms dict.
  */
-public class TempTermState extends TermState {
+public class TempTermState extends OrdTermState {
   /** how many docs have this term */
   public int docFreq;
   /** total number of occurrences of this term */
@@ -36,6 +37,8 @@ public class TempTermState extends TermState {
 
   /** the term's ord in the current block */
   public int termBlockOrd;
+  /** fp into the terms dict primary file (_X.tim) that holds this term */
+  public long blockFilePointer;
 
   /** Sole constructor. (For invocation by subclass 
    *  constructors, typically implicit.) */
@@ -46,13 +49,15 @@ public class TempTermState extends TermState {
   public void copyFrom(TermState _other) {
     assert _other instanceof TempTermState : "can not copy from " + _other.getClass().getName();
     TempTermState other = (TempTermState) _other;
+    super.copyFrom(_other);
     docFreq = other.docFreq;
     totalTermFreq = other.totalTermFreq;
     termBlockOrd = other.termBlockOrd;
+    blockFilePointer = other.blockFilePointer;
   }
 
   @Override
   public String toString() {
-    return "docFreq=" + docFreq + " totalTermFreq=" + totalTermFreq + " termBlockOrd=" + termBlockOrd;
+    return "docFreq=" + docFreq + " totalTermFreq=" + totalTermFreq + " termBlockOrd=" + termBlockOrd + " blockFP=" + blockFilePointer;
   }
 }

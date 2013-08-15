@@ -56,7 +56,7 @@ import org.apache.lucene.util.packed.PackedInts;
  *
  *   <li> 
  *   <b>Block structure</b>: 
- *   <p>When the postings are long enough, TempBlockPostingsFormat will try to encode most integer data 
+ *   <p>When the postings are long enough, TempBlockTreePostingsFormat will try to encode most integer data 
  *      as a packed block.</p> 
  *   <p>Take a term with 259 documents as an example, the first 256 document ids are encoded as two packed 
  *      blocks, while the remaining 3 are encoded as one VInt block. </p>
@@ -116,7 +116,7 @@ import org.apache.lucene.util.packed.PackedInts;
  * field along with per-term statistics (such as docfreq)
  * and pointers to the frequencies, positions, payload and
  * skip data in the .doc, .pos, and .pay files.
- * See {@link TempBlockTermsWriter} for more details on the format.
+ * See {@link TempBlockTreeTermsWriter} for more details on the format.
  * </p>
  *
  * <p>NOTE: The term dictionary can plug into different postings implementations:
@@ -159,7 +159,7 @@ import org.apache.lucene.util.packed.PackedInts;
  *    <li>SkipFPDelta determines the position of this term's SkipData within the .doc
  *        file. In particular, it is the length of the TermFreq data.
  *        SkipDelta is only stored if DocFreq is not smaller than SkipMinimum
- *        (i.e. 8 in TempBlockPostingsFormat).</li>
+ *        (i.e. 8 in TempBlockTreePostingsFormat).</li>
  *    <li>SingletonDocID is an optimization when a term only appears in one document. In this case, instead
  *        of writing a file pointer to the .doc file (DocFPDelta), and then a VIntBlock at that location, the 
  *        single document ID is written to the term dictionary.</li>
@@ -172,7 +172,7 @@ import org.apache.lucene.util.packed.PackedInts;
  * <dd>
  * <b>Term Index</b>
  * <p>The .tip file contains an index into the term dictionary, so that it can be 
- * accessed randomly.  See {@link TempBlockTermsWriter} for more details on the format.</p>
+ * accessed randomly.  See {@link TempBlockTreeTermsWriter} for more details on the format.</p>
  * </dd>
  * </dl>
  *
@@ -239,7 +239,7 @@ import org.apache.lucene.util.packed.PackedInts;
  *       We use this trick since the definition of skip entry is a little different from base interface.
  *       In {@link MultiLevelSkipListWriter}, skip data is assumed to be saved for
  *       skipInterval<sup>th</sup>, 2*skipInterval<sup>th</sup> ... posting in the list. However, 
- *       in TempBlockPostingsFormat, the skip data is saved for skipInterval+1<sup>th</sup>, 
+ *       in TempBlockTreePostingsFormat, the skip data is saved for skipInterval+1<sup>th</sup>, 
  *       2*skipInterval+1<sup>th</sup> ... posting (skipInterval==PackedBlockSize in this case). 
  *       When DocFreq is multiple of PackedBlockSize, MultiLevelSkipListWriter will expect one 
  *       more skip data than TempSkipWriter. </li>
@@ -352,7 +352,7 @@ import org.apache.lucene.util.packed.PackedInts;
  * @lucene.experimental
  */
 
-public final class TempBlockPostingsFormat extends PostingsFormat {
+public final class TempBlockTreePostingsFormat extends PostingsFormat {
   /**
    * Filename extension for document number, frequencies, and skip data.
    * See chapter: <a href="#Frequencies">Frequencies and Skip Data</a>
@@ -381,18 +381,18 @@ public final class TempBlockPostingsFormat extends PostingsFormat {
   // NOTE: must be multiple of 64 because of PackedInts long-aligned encoding/decoding
   public final static int BLOCK_SIZE = 128;
 
-  /** Creates {@code TempBlockPostingsFormat} with default
+  /** Creates {@code TempBlockTreePostingsFormat} with default
    *  settings. */
-  public TempBlockPostingsFormat() {
-    this(TempBlockTermsWriter.DEFAULT_MIN_BLOCK_SIZE, TempBlockTermsWriter.DEFAULT_MAX_BLOCK_SIZE);
+  public TempBlockTreePostingsFormat() {
+    this(TempBlockTreeTermsWriter.DEFAULT_MIN_BLOCK_SIZE, TempBlockTreeTermsWriter.DEFAULT_MAX_BLOCK_SIZE);
   }
 
-  /** Creates {@code TempBlockPostingsFormat} with custom
+  /** Creates {@code TempBlockTreePostingsFormat} with custom
    *  values for {@code minBlockSize} and {@code
    *  maxBlockSize} passed to block terms dictionary.
-   *  @see TempBlockTermsWriter#TempBlockTermsWriter(SegmentWriteState,TempPostingsWriterBase,int,int) */
-  public TempBlockPostingsFormat(int minTermBlockSize, int maxTermBlockSize) {
-    super("TempBlock");
+   *  @see TempBlockTreeTermsWriter#TempBlockTreeTermsWriter(SegmentWriteState,TempPostingsWriterBase,int,int) */
+  public TempBlockTreePostingsFormat(int minTermBlockSize, int maxTermBlockSize) {
+    super("TempBlockTree");
     this.minTermBlockSize = minTermBlockSize;
     assert minTermBlockSize > 1;
     this.maxTermBlockSize = maxTermBlockSize;
@@ -410,7 +410,7 @@ public final class TempBlockPostingsFormat extends PostingsFormat {
 
     boolean success = false;
     try {
-      FieldsConsumer ret = new TempBlockTermsWriter(state, 
+      FieldsConsumer ret = new TempBlockTreeTermsWriter(state, 
                                                     postingsWriter,
                                                     minTermBlockSize, 
                                                     maxTermBlockSize);
@@ -432,7 +432,7 @@ public final class TempBlockPostingsFormat extends PostingsFormat {
                                                                 state.segmentSuffix);
     boolean success = false;
     try {
-      FieldsProducer ret = new TempBlockTermsReader(state.directory,
+      FieldsProducer ret = new TempBlockTreeTermsReader(state.directory,
                                                     state.fieldInfos,
                                                     state.segmentInfo,
                                                     postingsReader,

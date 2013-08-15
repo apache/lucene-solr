@@ -71,7 +71,7 @@ public final class TempPostingsReader extends TempPostingsReaderBase {
     IndexInput posIn = null;
     IndexInput payIn = null;
     try {
-      docIn = dir.openInput(IndexFileNames.segmentFileName(segmentInfo.name, segmentSuffix, TempBlockPostingsFormat.DOC_EXTENSION),
+      docIn = dir.openInput(IndexFileNames.segmentFileName(segmentInfo.name, segmentSuffix, TempBlockTreePostingsFormat.DOC_EXTENSION),
                             ioContext);
       CodecUtil.checkHeader(docIn,
                             TempPostingsWriter.DOC_CODEC,
@@ -80,7 +80,7 @@ public final class TempPostingsReader extends TempPostingsReaderBase {
       forUtil = new ForUtil(docIn);
 
       if (fieldInfos.hasProx()) {
-        posIn = dir.openInput(IndexFileNames.segmentFileName(segmentInfo.name, segmentSuffix, TempBlockPostingsFormat.POS_EXTENSION),
+        posIn = dir.openInput(IndexFileNames.segmentFileName(segmentInfo.name, segmentSuffix, TempBlockTreePostingsFormat.POS_EXTENSION),
                               ioContext);
         CodecUtil.checkHeader(posIn,
                               TempPostingsWriter.POS_CODEC,
@@ -88,7 +88,7 @@ public final class TempPostingsReader extends TempPostingsReaderBase {
                               TempPostingsWriter.VERSION_CURRENT);
 
         if (fieldInfos.hasPayloads() || fieldInfos.hasOffsets()) {
-          payIn = dir.openInput(IndexFileNames.segmentFileName(segmentInfo.name, segmentSuffix, TempBlockPostingsFormat.PAY_EXTENSION),
+          payIn = dir.openInput(IndexFileNames.segmentFileName(segmentInfo.name, segmentSuffix, TempBlockTreePostingsFormat.PAY_EXTENSION),
                                 ioContext);
           CodecUtil.checkHeader(payIn,
                                 TempPostingsWriter.PAY_CODEC,

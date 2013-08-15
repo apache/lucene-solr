@@ -72,9 +72,9 @@ import org.apache.lucene.codecs.PostingsBaseFormat;  // javadoc
  *  does not support a pluggable terms index
  *  implementation).
  *
- *  <p><b>NOTE</b>: this terms dictionary does not support
- *  index divisor when opening an IndexReader.  Instead, you
- *  can change the min/maxItemsPerBlock during indexing.</p>
+ *  <p><b>NOTE</b>: this terms dictionary supports
+ *  min/maxItemsPerBlock during indexing to control how
+ *  much memory the terms index uses.</p>
  *
  *  <p>The data structure used by this implementation is very
  *  similar to a burst trie
@@ -86,17 +86,17 @@ import org.apache.lucene.codecs.PostingsBaseFormat;  // javadoc
  *  option to see summary statistics on the blocks in the
  *  dictionary.
  *
- *  See {@link TempBlockTermsWriter}.
+ *  See {@link TempBlockTreeTermsWriter}.
  *
  * @lucene.experimental
  */
 
-public class TempBlockTermsReader extends FieldsProducer {
+public class TempBlockTreeTermsReader extends FieldsProducer {
 
   // Open input to the main terms dict file (_X.tib)
   private final IndexInput in;
 
-  //private static final boolean DEBUG = TempBlockTermsWriter.DEBUG;
+  //private static final boolean DEBUG = TempBlockTreeTermsWriter.DEBUG;
 
   // Reads the terms dict entries, to gather state to
   // produce DocsEnum on demand
@@ -115,7 +115,7 @@ public class TempBlockTermsReader extends FieldsProducer {
   private final int version;
 
   /** Sole constructor. */
-  public TempBlockTermsReader(Directory dir, FieldInfos fieldInfos, SegmentInfo info,
+  public TempBlockTreeTermsReader(Directory dir, FieldInfos fieldInfos, SegmentInfo info,
                               TempPostingsReaderBase postingsReader, IOContext ioContext,
                               String segmentSuffix)
     throws IOException {
@@ -123,7 +123,7 @@ public class TempBlockTermsReader extends FieldsProducer {
     this.postingsReader = postingsReader;
 
     this.segment = info.name;
-    in = dir.openInput(IndexFileNames.segmentFileName(segment, segmentSuffix, TempBlockTermsWriter.TERMS_EXTENSION),
+    in = dir.openInput(IndexFileNames.segmentFileName(segment, segmentSuffix, TempBlockTreeTermsWriter.TERMS_EXTENSION),
                        ioContext);
 
     boolean success = false;
@@ -131,7 +131,7 @@ public class TempBlockTermsReader extends FieldsProducer {
 
     try {
       version = readHeader(in);
-      indexIn = dir.openInput(IndexFileNames.segmentFileName(segment, segmentSuffix, TempBlockTermsWriter.TERMS_INDEX_EXTENSION),
+      indexIn = dir.openInput(IndexFileNames.segmentFileName(segment, segmentSuffix, TempBlockTreeTermsWriter.TERMS_INDEX_EXTENSION),
                                 ioContext);
       int indexVersion = readIndexHeader(indexIn);
       if (indexVersion != version) {
@@ -192,10 +192,10 @@ public class TempBlockTermsReader extends FieldsProducer {
 
   /** Reads terms file header. */
   private int readHeader(IndexInput input) throws IOException {
-    int version = CodecUtil.checkHeader(input, TempBlockTermsWriter.TERMS_CODEC_NAME,
-                          TempBlockTermsWriter.TERMS_VERSION_START,
-                          TempBlockTermsWriter.TERMS_VERSION_CURRENT);
-    if (version < TempBlockTermsWriter.TERMS_VERSION_APPEND_ONLY) {
+    int version = CodecUtil.checkHeader(input, TempBlockTreeTermsWriter.TERMS_CODEC_NAME,
+                          TempBlockTreeTermsWriter.TERMS_VERSION_START,
+                          TempBlockTreeTermsWriter.TERMS_VERSION_CURRENT);
+    if (version < TempBlockTreeTermsWriter.TERMS_VERSION_APPEND_ONLY) {
       dirOffset = input.readLong();
     }
     return version;
@@ -203,10 +203,10 @@ public class TempBlockTermsReader extends FieldsProducer {
 
   /** Reads index file header. */
   private int readIndexHeader(IndexInput input) throws IOException {
-    int version = CodecUtil.checkHeader(input, TempBlockTermsWriter.TERMS_INDEX_CODEC_NAME,
-                          TempBlockTermsWriter.TERMS_INDEX_VERSION_START,
-                          TempBlockTermsWriter.TERMS_INDEX_VERSION_CURRENT);
-    if (version < TempBlockTermsWriter.TERMS_INDEX_VERSION_APPEND_ONLY) {
+    int version = CodecUtil.checkHeader(input, TempBlockTreeTermsWriter.TERMS_INDEX_CODEC_NAME,
+                          TempBlockTreeTermsWriter.TERMS_INDEX_VERSION_START,
+                          TempBlockTreeTermsWriter.TERMS_INDEX_VERSION_CURRENT);
+    if (version < TempBlockTreeTermsWriter.TERMS_INDEX_VERSION_APPEND_ONLY) {
       indexDirOffset = input.readLong(); 
     }
     return version;
@@ -215,7 +215,7 @@ public class TempBlockTermsReader extends FieldsProducer {
   /** Seek {@code input} to the directory offset. */
   private void seekDir(IndexInput input, long dirOffset)
       throws IOException {
-    if (version >= TempBlockTermsWriter.TERMS_INDEX_VERSION_APPEND_ONLY) {
+    if (version >= TempBlockTreeTermsWriter.TERMS_INDEX_VERSION_APPEND_ONLY) {
       input.seek(input.length() - 8);
       dirOffset = input.readLong();
     }
@@ -462,7 +462,7 @@ public class TempBlockTermsReader extends FieldsProducer {
     FieldReader(FieldInfo fieldInfo, long numTerms, BytesRef rootCode, long sumTotalTermFreq, long sumDocFreq, int docCount, long indexStartFP, int longsSize, IndexInput indexIn) throws IOException {
       assert numTerms > 0;
       this.fieldInfo = fieldInfo;
-      //DEBUG = TempBlockTermsReader.DEBUG && fieldInfo.name.equals("id");
+      //DEBUG = TempBlockTreeTermsReader.DEBUG && fieldInfo.name.equals("id");
       this.numTerms = numTerms;
       this.sumTotalTermFreq = sumTotalTermFreq; 
       this.sumDocFreq = sumDocFreq; 
@@ -474,7 +474,7 @@ public class TempBlockTermsReader extends FieldsProducer {
       //   System.out.println("BTTR: seg=" + segment + " field=" + fieldInfo.name + " rootBlockCode=" + rootCode + " divisor=" + indexDivisor);
       // }
 
-      rootBlockFP = (new ByteArrayDataInput(rootCode.bytes, rootCode.offset, rootCode.length)).readVLong() >>> TempBlockTermsWriter.OUTPUT_FLAGS_NUM_BITS;
+      rootBlockFP = (new ByteArrayDataInput(rootCode.bytes, rootCode.offset, rootCode.length)).readVLong() >>> TempBlockTreeTermsWriter.OUTPUT_FLAGS_NUM_BITS;
 
       if (indexIn != null) {
         final IndexInput clone = indexIn.clone();
@@ -684,7 +684,7 @@ public class TempBlockTermsReader extends FieldsProducer {
             // Skip first long -- has redundant fp, hasTerms
             // flag, isFloor flag
             final long code = floorDataReader.readVLong();
-            if ((code & TempBlockTermsWriter.OUTPUT_FLAG_IS_FLOOR) != 0) {
+            if ((code & TempBlockTreeTermsWriter.OUTPUT_FLAG_IS_FLOOR) != 0) {
               numFollowFloorBlocks = floorDataReader.readVInt();
               nextFloorLabel = floorDataReader.readByte() & 0xff;
               // if (DEBUG) System.out.println("    numFollowFloorBlocks=" + numFollowFloorBlocks + " nextFloorLabel=" + nextFloorLabel);
@@ -844,7 +844,7 @@ public class TempBlockTermsReader extends FieldsProducer {
         // }
         runAutomaton = compiled.runAutomaton;
         compiledAutomaton = compiled;
-        in = TempBlockTermsReader.this.in.clone();
+        in = TempBlockTreeTermsReader.this.in.clone();
         stack = new Frame[5];
         for(int idx=0;idx<stack.length;idx++) {
           stack[idx] = new Frame(idx);
@@ -1334,7 +1334,7 @@ public class TempBlockTermsReader extends FieldsProducer {
       // Not private to avoid synthetic access$NNN methods
       void initIndexInput() {
         if (this.in == null) {
-          this.in = TempBlockTermsReader.this.in.clone();
+          this.in = TempBlockTreeTermsReader.this.in.clone();
         }
       }
 
@@ -1464,11 +1464,11 @@ public class TempBlockTermsReader extends FieldsProducer {
       Frame pushFrame(FST.Arc<BytesRef> arc, BytesRef frameData, int length) throws IOException {
         scratchReader.reset(frameData.bytes, frameData.offset, frameData.length);
         final long code = scratchReader.readVLong();
-        final long fpSeek = code >>> TempBlockTermsWriter.OUTPUT_FLAGS_NUM_BITS;
+        final long fpSeek = code >>> TempBlockTreeTermsWriter.OUTPUT_FLAGS_NUM_BITS;
         final Frame f = getFrame(1+currentFrame.ord);
-        f.hasTerms = (code & TempBlockTermsWriter.OUTPUT_FLAG_HAS_TERMS) != 0;
+        f.hasTerms = (code & TempBlockTreeTermsWriter.OUTPUT_FLAG_HAS_TERMS) != 0;
         f.hasTermsOrig = f.hasTerms;
-        f.isFloor = (code & TempBlockTermsWriter.OUTPUT_FLAG_IS_FLOOR) != 0;
+        f.isFloor = (code & TempBlockTreeTermsWriter.OUTPUT_FLAG_IS_FLOOR) != 0;
         if (f.isFloor) {
           f.setFloorData(scratchReader, frameData);
         }
@@ -2048,9 +2048,9 @@ public class TempBlockTermsReader extends FieldsProducer {
             assert f != null;
             final BytesRef prefix = new BytesRef(term.bytes, 0, f.prefix);
             if (f.nextEnt == -1) {
-              out.println("    frame " + (isSeekFrame ? "(seek)" : "(next)") + " ord=" + ord + " fp=" + f.fp + (f.isFloor ? (" (fpOrig=" + f.fpOrig + ")") : "") + " prefixLen=" + f.prefix + " prefix=" + prefix + (f.nextEnt == -1 ? "" : (" (of " + f.entCount + ")")) + " hasTerms=" + f.hasTerms + " isFloor=" + f.isFloor + " code=" + ((f.fp<<TempBlockTermsWriter.OUTPUT_FLAGS_NUM_BITS) + (f.hasTerms ? TempBlockTermsWriter.OUTPUT_FLAG_HAS_TERMS:0) + (f.isFloor ? TempBlockTermsWriter.OUTPUT_FLAG_IS_FLOOR:0)) + " isLastInFloor=" + f.isLastInFloor + " mdUpto=" + f.metaDataUpto + " tbOrd=" + f.getTermBlockOrd());
+              out.println("    frame " + (isSeekFrame ? "(seek)" : "(next)") + " ord=" + ord + " fp=" + f.fp + (f.isFloor ? (" (fpOrig=" + f.fpOrig + ")") : "") + " prefixLen=" + f.prefix + " prefix=" + prefix + (f.nextEnt == -1 ? "" : (" (of " + f.entCount + ")")) + " hasTerms=" + f.hasTerms + " isFloor=" + f.isFloor + " code=" + ((f.fp<<TempBlockTreeTermsWriter.OUTPUT_FLAGS_NUM_BITS) + (f.hasTerms ? TempBlockTreeTermsWriter.OUTPUT_FLAG_HAS_TERMS:0) + (f.isFloor ? TempBlockTreeTermsWriter.OUTPUT_FLAG_IS_FLOOR:0)) + " isLastInFloor=" + f.isLastInFloor + " mdUpto=" + f.metaDataUpto + " tbOrd=" + f.getTermBlockOrd());
             } else {
-              out.println("    frame " + (isSeekFrame ? "(seek, loaded)" : "(next, loaded)") + " ord=" + ord + " fp=" + f.fp + (f.isFloor ? (" (fpOrig=" + f.fpOrig + ")") : "") + " prefixLen=" + f.prefix + " prefix=" + prefix + " nextEnt=" + f.nextEnt + (f.nextEnt == -1 ? "" : (" (of " + f.entCount + ")")) + " hasTerms=" + f.hasTerms + " isFloor=" + f.isFloor + " code=" + ((f.fp<<TempBlockTermsWriter.OUTPUT_FLAGS_NUM_BITS) + (f.hasTerms ? TempBlockTermsWriter.OUTPUT_FLAG_HAS_TERMS:0) + (f.isFloor ? TempBlockTermsWriter.OUTPUT_FLAG_IS_FLOOR:0)) + " lastSubFP=" + f.lastSubFP + " isLastInFloor=" + f.isLastInFloor + " mdUpto=" + f.metaDataUpto + " tbOrd=" + f.getTermBlockOrd());
+              out.println("    frame " + (isSeekFrame ? "(seek, loaded)" : "(next, loaded)") + " ord=" + ord + " fp=" + f.fp + (f.isFloor ? (" (fpOrig=" + f.fpOrig + ")") : "") + " prefixLen=" + f.prefix + " prefix=" + prefix + " nextEnt=" + f.nextEnt + (f.nextEnt == -1 ? "" : (" (of " + f.entCount + ")")) + " hasTerms=" + f.hasTerms + " isFloor=" + f.isFloor + " code=" + ((f.fp<<TempBlockTreeTermsWriter.OUTPUT_FLAGS_NUM_BITS) + (f.hasTerms ? TempBlockTreeTermsWriter.OUTPUT_FLAG_HAS_TERMS:0) + (f.isFloor ? TempBlockTreeTermsWriter.OUTPUT_FLAG_IS_FLOOR:0)) + " lastSubFP=" + f.lastSubFP + " isLastInFloor=" + f.isLastInFloor + " mdUpto=" + f.metaDataUpto + " tbOrd=" + f.getTermBlockOrd());
             }
             if (index != null) {
               assert !isSeekFrame || f.arc != null: "isSeekFrame=" + isSeekFrame + " f.arc=" + f.arc;
@@ -2065,7 +2065,7 @@ public class TempBlockTermsReader extends FieldsProducer {
               } else if (isSeekFrame && !f.isFloor) {
                 final ByteArrayDataInput reader = new ByteArrayDataInput(output.bytes, output.offset, output.length);
                 final long codeOrig = reader.readVLong();
-                final long code = (f.fp << TempBlockTermsWriter.OUTPUT_FLAGS_NUM_BITS) | (f.hasTerms ? TempBlockTermsWriter.OUTPUT_FLAG_HAS_TERMS:0) | (f.isFloor ? TempBlockTermsWriter.OUTPUT_FLAG_IS_FLOOR:0);
+                final long code = (f.fp << TempBlockTreeTermsWriter.OUTPUT_FLAGS_NUM_BITS) | (f.hasTerms ? TempBlockTreeTermsWriter.OUTPUT_FLAG_HAS_TERMS:0) | (f.isFloor ? TempBlockTreeTermsWriter.OUTPUT_FLAG_IS_FLOOR:0);
                 if (codeOrig != code) {
                   out.println("      broken seek state: output code=" + codeOrig + " doesn't match frame code=" + code);
                   throw new RuntimeException("seek state is broken");

@@ -178,20 +178,20 @@ import org.apache.lucene.codecs.CodecUtil;
  *       sub-block, and its file pointer.
  * </ul>
  *
- * @see TempBlockTermsReader
+ * @see TempBlockTreeTermsReader
  * @lucene.experimental
  */
 
-public class TempBlockTermsWriter extends FieldsConsumer {
+public class TempBlockTreeTermsWriter extends FieldsConsumer {
 
   /** Suggested default value for the {@code
    *  minItemsInBlock} parameter to {@link
-   *  #TempBlockTermsWriter(SegmentWriteState,TempPostingsWriterBase,int,int)}. */
+   *  #TempBlockTreeTermsWriter(SegmentWriteState,TempPostingsWriterBase,int,int)}. */
   public final static int DEFAULT_MIN_BLOCK_SIZE = 25;
 
   /** Suggested default value for the {@code
    *  maxItemsInBlock} parameter to {@link
-   *  #TempBlockTermsWriter(SegmentWriteState,TempPostingsWriterBase,int,int)}. */
+   *  #TempBlockTreeTermsWriter(SegmentWriteState,TempPostingsWriterBase,int,int)}. */
   public final static int DEFAULT_MAX_BLOCK_SIZE = 48;
 
   //public final static boolean DEBUG = false;
@@ -268,7 +268,7 @@ public class TempBlockTermsWriter extends FieldsConsumer {
    *  sub-blocks) per block will aim to be between
    *  minItemsPerBlock and maxItemsPerBlock, though in some
    *  cases the blocks may be smaller than the min. */
-  public TempBlockTermsWriter(
+  public TempBlockTreeTermsWriter(
                               SegmentWriteState state,
                               TempPostingsWriterBase postingsWriter,
                               int minItemsInBlock,
