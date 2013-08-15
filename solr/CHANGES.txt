@@ -126,6 +126,10 @@ Bug Fixes
 * SOLR-4764: When using NRT, just init the first reader from IndexWriter.
   (Robert Muir, Mark Miller)
   
+* SOLR-5122: Fixed bug in spellcheck.collateMaxCollectDocs.  Eliminates risk 
+  of divide by zero, and makes estimated hit counts meaningful in non-optimized
+  indexes.  (hossman)
+
 Optimizations
 ----------------------
 
