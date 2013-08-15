@@ -28,6 +28,7 @@ public class AllDeletedFilterReader extends FilterAtomicReader {
   public AllDeletedFilterReader(AtomicReader in) {
     super(in);
     liveDocs = new Bits.MatchNoBits(in.maxDoc());
+    assert maxDoc() == 0 || hasDeletions();
   }
 
   @Override
