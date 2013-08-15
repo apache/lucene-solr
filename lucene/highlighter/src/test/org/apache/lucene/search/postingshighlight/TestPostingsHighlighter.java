@@ -86,11 +86,41 @@ public class TestPostingsHighlighter extends LuceneTestCase {
     ir.close();
     dir.close();
   }
+
+  public void testFormatWithMatchExceedingContentLength2() throws Exception {
+    
+    String bodyText = "123 TEST 01234 TEST";
+
+    String[] snippets = formatWithMatchExceedingContentLength(bodyText);
+    
+    assertEquals(1, snippets.length);
+    assertEquals("123 <b>TEST</b> 01234 TE", snippets[0]);
+  }
+
+  public void testFormatWithMatchExceedingContentLength3() throws Exception {
+    
+    String bodyText = "123 5678 01234 TEST TEST";
+    
+    String[] snippets = formatWithMatchExceedingContentLength(bodyText);
+    
+    assertEquals(1, snippets.length);
+    assertEquals("123 5678 01234 TE", snippets[0]);
+  }
   
   public void testFormatWithMatchExceedingContentLength() throws Exception {
-          
-    int maxLength = 17;
+    
     String bodyText = "123 5678 01234 TEST";
+    
+    String[] snippets = formatWithMatchExceedingContentLength(bodyText);
+    
+    assertEquals(1, snippets.length);
+    // LUCENE-5166: no snippet
+    assertEquals("123 5678 01234 TE", snippets[0]);
+  }
+
+  private String[] formatWithMatchExceedingContentLength(String bodyText) throws IOException {
+    
+    int maxLength = 17;
     
     final Analyzer analyzer = new MockAnalyzer(random());
     
@@ -122,12 +152,9 @@ public class TestPostingsHighlighter extends LuceneTestCase {
     String snippets[] = highlighter.highlight("body", query, searcher, topDocs);
     
     
-    assertEquals(1, snippets.length);
-    // LUCENE-5166: no snippet
-    assertEquals("123 5678 01234 TE", snippets[0]);
-    
     ir.close();
     dir.close();
+    return snippets;
   }
   
   // simple test highlighting last word.
