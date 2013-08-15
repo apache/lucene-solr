@@ -563,7 +563,7 @@ public class PostingsHighlighter {
           start = dp.startOffset();
           end = dp.endOffset();
         }
-        if (start >= current.endOffset) {
+        if (start >= current.endOffset || end > contentLength) {
           pq.offer(off);
           break;
         }
