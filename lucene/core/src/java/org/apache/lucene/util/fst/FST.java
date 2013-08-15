@@ -1140,7 +1140,6 @@ public final class FST<T> {
   /** Finds an arc leaving the incoming arc, replacing the arc in place.
    *  This returns null if the arc was not found, else the incoming arc. */
   public Arc<T> findTargetArc(int labelToMatch, Arc<T> follow, Arc<T> arc, BytesReader in) throws IOException {
-    assert assertRootArcs();
 
     if (labelToMatch == END_LABEL) {
       if (follow.isFinal()) {
@@ -1162,6 +1161,10 @@ public final class FST<T> {
 
     // Short-circuit if this arc is in the root arc cache:
     if (follow.target == startNode && labelToMatch < cachedRootArcs.length) {
+      
+      // LUCENE-5152: detect tricky cases where caller
+      // modified previously returned cached root-arcs:
+      assert assertRootArcs();
       final Arc<T> result = cachedRootArcs[labelToMatch];
       if (result == null) {
         return null;
