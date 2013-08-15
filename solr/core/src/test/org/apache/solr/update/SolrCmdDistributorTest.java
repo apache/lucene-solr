@@ -23,6 +23,8 @@ import java.util.Collections;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicInteger;
 
+import org.apache.lucene.index.LogDocMergePolicy;
+
 import org.apache.solr.BaseDistributedSearchTestCase;
 import org.apache.solr.client.solrj.SolrQuery;
 import org.apache.solr.client.solrj.SolrServer;
@@ -45,7 +47,16 @@ import org.apache.solr.update.SolrCmdDistributor.Response;
 import org.apache.solr.update.SolrCmdDistributor.StdNode;
 import org.apache.solr.update.processor.DistributedUpdateProcessor;
 
+import org.junit.BeforeClass;
+
 public class SolrCmdDistributorTest extends BaseDistributedSearchTestCase {
+  @BeforeClass
+  public static void beforeClass() throws Exception {
+
+    // we can't use the Randomized merge policy because the test depends on
+    // being able to call optimize to have all deletes expunged.
+    System.setProperty("solr.tests.mergePolicy", LogDocMergePolicy.class.getName());
+  }
   private UpdateShardHandler updateShardHandler;
   
   public SolrCmdDistributorTest() {
