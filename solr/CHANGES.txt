@@ -65,7 +65,9 @@ New Features
 * SOLR-5017: Allow sharding based on the value of a field (Noble Paul)
 * SOLR-4222: create custom sharded collection via collections API (Noble Paul)
 * SOLR-5156: Enhance ZkCLI to allow uploading of arbitrary files to ZK.
-
+* SOLR-4718: Allow solr.xml to be stored in ZooKeeper
+* SOLR-5156: Enhance ZkCLI to allow uploading of arbitrary files to ZK.
+err
 Bug Fixes
 ----------------------
 
