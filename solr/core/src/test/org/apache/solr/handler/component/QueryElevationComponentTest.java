@@ -22,6 +22,7 @@ import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.IOUtils;
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.common.params.CommonParams;
+import org.apache.solr.common.params.GroupParams;
 import org.apache.solr.common.params.MapSolrParams;
 import org.apache.solr.common.params.QueryElevationParams;
 import org.apache.solr.util.FileUtils;
@@ -100,6 +101,208 @@ public class QueryElevationComponentTest extends SolrTestCaseJ4 {
           "//result/doc[2]/bool[@name='[elevated]'][.='false']",
           "//result/doc[3]/bool[@name='[elevated]'][.='false']"
       );
+    } finally {
+      delete();
+    }
+  }
+
+  @Test
+  public void testGroupedQuery() throws Exception {
+    try {
+      init("schema11.xml");
+      clearIndex();
+      assertU(commit());
+      assertU(adoc("id", "1", "text", "XXXX XXXX", "str_s", "a"));
+      assertU(adoc("id", "2", "text", "XXXX AAAA", "str_s", "b"));
+      assertU(adoc("id", "3", "text", "ZZZZ", "str_s", "c"));
+      assertU(adoc("id", "4", "text", "XXXX ZZZZ", "str_s", "d"));
+      assertU(adoc("id", "5", "text", "ZZZZ ZZZZ", "str_s", "e"));
+      assertU(adoc("id", "6", "text", "AAAA AAAA AAAA", "str_s", "f"));
+      assertU(adoc("id", "7", "text", "AAAA AAAA ZZZZ", "str_s", "g"));
+      assertU(adoc("id", "8", "text", "XXXX", "str_s", "h"));
+      assertU(adoc("id", "9", "text", "YYYY ZZZZ", "str_s", "i"));
+      
+      assertU(adoc("id", "22", "text", "XXXX ZZZZ AAAA", "str_s", "b"));
+      assertU(adoc("id", "66", "text", "XXXX ZZZZ AAAA", "str_s", "f"));
+      assertU(adoc("id", "77", "text", "XXXX ZZZZ AAAA", "str_s", "g"));
+     
+      assertU(commit());
+
+      final String groups = "//arr[@name='groups']";
+
+      assertQ("non-elevated group query", 
+              req(CommonParams.Q, "AAAA", 
+                  CommonParams.QT, "/elevate",
+                  GroupParams.GROUP_FIELD, "str_s", 
+                  GroupParams.GROUP, "true",
+                  GroupParams.GROUP_TOTAL_COUNT, "true", 
+                  GroupParams.GROUP_LIMIT, "100", 
+                  QueryElevationParams.ENABLE, "false",
+                  CommonParams.FL, "id, score, [elevated]")
+              , "//*[@name='ngroups'][.='3']"
+              , "//*[@name='matches'][.='6']"
+
+              , groups +"/lst[1]//doc[1]/float[@name='id'][.='6.0']"
+              , groups +"/lst[1]//doc[1]/bool[@name='[elevated]'][.='false']"
+              , groups +"/lst[1]//doc[2]/float[@name='id'][.='66.0']"
+              , groups +"/lst[1]//doc[2]/bool[@name='[elevated]'][.='false']"
+
+              , groups +"/lst[2]//doc[1]/float[@name='id'][.='7.0']"
+              , groups +"/lst[2]//doc[1]/bool[@name='[elevated]'][.='false']"
+              , groups +"/lst[2]//doc[2]/float[@name='id'][.='77.0']"
+              , groups +"/lst[2]//doc[2]/bool[@name='[elevated]'][.='false']"
+
+              , groups +"/lst[3]//doc[1]/float[@name='id'][.='2.0']"
+              , groups +"/lst[3]//doc[1]/bool[@name='[elevated]'][.='false']"
+              , groups +"/lst[3]//doc[2]/float[@name='id'][.='22.0']"
+              , groups +"/lst[3]//doc[2]/bool[@name='[elevated]'][.='false']"
+              );
+
+      assertQ("elevated group query", 
+              req(CommonParams.Q, "AAAA", 
+                  CommonParams.QT, "/elevate",
+                  GroupParams.GROUP_FIELD, "str_s", 
+                  GroupParams.GROUP, "true",
+                  GroupParams.GROUP_TOTAL_COUNT, "true",
+                  GroupParams.GROUP_LIMIT, "100", 
+                  CommonParams.FL, "id, score, [elevated]")
+              , "//*[@name='ngroups'][.='3']"
+              , "//*[@name='matches'][.='6']"
+
+              , groups +"/lst[1]//doc[1]/float[@name='id'][.='7.0']"
+              , groups +"/lst[1]//doc[1]/bool[@name='[elevated]'][.='true']"
+              , groups +"/lst[1]//doc[2]/float[@name='id'][.='77.0']"
+              , groups +"/lst[1]//doc[2]/bool[@name='[elevated]'][.='false']"
+
+              , groups +"/lst[2]//doc[1]/float[@name='id'][.='6.0']"
+              , groups +"/lst[2]//doc[1]/bool[@name='[elevated]'][.='false']"
+              , groups +"/lst[2]//doc[2]/float[@name='id'][.='66.0']"
+              , groups +"/lst[2]//doc[2]/bool[@name='[elevated]'][.='false']"
+
+              , groups +"/lst[3]//doc[1]/float[@name='id'][.='2.0']"
+              , groups +"/lst[3]//doc[1]/bool[@name='[elevated]'][.='false']"
+              , groups +"/lst[3]//doc[2]/float[@name='id'][.='22.0']"
+              , groups +"/lst[3]//doc[2]/bool[@name='[elevated]'][.='false']"
+              );
+
+      assertQ("non-elevated because sorted group query", 
+              req(CommonParams.Q, "AAAA", 
+                  CommonParams.QT, "/elevate",
+                  CommonParams.SORT, "id asc",
+                  GroupParams.GROUP_FIELD, "str_s", 
+                  GroupParams.GROUP, "true",
+                  GroupParams.GROUP_TOTAL_COUNT, "true", 
+                  GroupParams.GROUP_LIMIT, "100", 
+                  CommonParams.FL, "id, score, [elevated]")
+              , "//*[@name='ngroups'][.='3']"
+              , "//*[@name='matches'][.='6']"
+
+              , groups +"/lst[1]//doc[1]/float[@name='id'][.='2.0']"
+              , groups +"/lst[1]//doc[1]/bool[@name='[elevated]'][.='false']"
+              , groups +"/lst[1]//doc[2]/float[@name='id'][.='22.0']"
+              , groups +"/lst[1]//doc[2]/bool[@name='[elevated]'][.='false']"
+
+              , groups +"/lst[2]//doc[1]/float[@name='id'][.='6.0']"
+              , groups +"/lst[2]//doc[1]/bool[@name='[elevated]'][.='false']"
+              , groups +"/lst[2]//doc[2]/float[@name='id'][.='66.0']"
+              , groups +"/lst[2]//doc[2]/bool[@name='[elevated]'][.='false']"
+
+              , groups +"/lst[3]//doc[1]/float[@name='id'][.='7.0']"
+              , groups +"/lst[3]//doc[1]/bool[@name='[elevated]'][.='true']"
+              , groups +"/lst[3]//doc[2]/float[@name='id'][.='77.0']"
+              , groups +"/lst[3]//doc[2]/bool[@name='[elevated]'][.='false']"
+              );
+
+      assertQ("force-elevated sorted group query", 
+              req(CommonParams.Q, "AAAA", 
+                  CommonParams.QT, "/elevate",
+                  CommonParams.SORT, "id asc",
+                  QueryElevationParams.FORCE_ELEVATION, "true", 
+                  GroupParams.GROUP_FIELD, "str_s", 
+                  GroupParams.GROUP, "true",
+                  GroupParams.GROUP_TOTAL_COUNT, "true", 
+                  GroupParams.GROUP_LIMIT, "100", 
+                  CommonParams.FL, "id, score, [elevated]")
+              , "//*[@name='ngroups'][.='3']"
+              , "//*[@name='matches'][.='6']"
+
+              , groups +"/lst[1]//doc[1]/float[@name='id'][.='7.0']"
+              , groups +"/lst[1]//doc[1]/bool[@name='[elevated]'][.='true']"
+              , groups +"/lst[1]//doc[2]/float[@name='id'][.='77.0']"
+              , groups +"/lst[1]//doc[2]/bool[@name='[elevated]'][.='false']"
+
+              , groups +"/lst[2]//doc[1]/float[@name='id'][.='2.0']"
+              , groups +"/lst[2]//doc[1]/bool[@name='[elevated]'][.='false']"
+              , groups +"/lst[2]//doc[2]/float[@name='id'][.='22.0']"
+              , groups +"/lst[2]//doc[2]/bool[@name='[elevated]'][.='false']"
+
+              , groups +"/lst[3]//doc[1]/float[@name='id'][.='6.0']"
+              , groups +"/lst[3]//doc[1]/bool[@name='[elevated]'][.='false']"
+              , groups +"/lst[3]//doc[2]/float[@name='id'][.='66.0']"
+              , groups +"/lst[3]//doc[2]/bool[@name='[elevated]'][.='false']"
+              );
+
+
+      assertQ("non-elevated because of sort within group query", 
+              req(CommonParams.Q, "AAAA", 
+                  CommonParams.QT, "/elevate",
+                  CommonParams.SORT, "id asc",
+                  GroupParams.GROUP_SORT, "id desc", 
+                  GroupParams.GROUP_FIELD, "str_s", 
+                  GroupParams.GROUP, "true",
+                  GroupParams.GROUP_TOTAL_COUNT, "true", 
+                  GroupParams.GROUP_LIMIT, "100", 
+                  CommonParams.FL, "id, score, [elevated]")
+              , "//*[@name='ngroups'][.='3']"
+              , "//*[@name='matches'][.='6']"
+
+              , groups +"/lst[1]//doc[1]/float[@name='id'][.='22.0']"
+              , groups +"/lst[1]//doc[1]/bool[@name='[elevated]'][.='false']"
+              , groups +"/lst[1]//doc[2]/float[@name='id'][.='2.0']"
+              , groups +"/lst[1]//doc[2]/bool[@name='[elevated]'][.='false']"
+
+              , groups +"/lst[2]//doc[1]/float[@name='id'][.='66.0']"
+              , groups +"/lst[2]//doc[1]/bool[@name='[elevated]'][.='false']"
+              , groups +"/lst[2]//doc[2]/float[@name='id'][.='6.0']"
+              , groups +"/lst[2]//doc[2]/bool[@name='[elevated]'][.='false']"
+
+              , groups +"/lst[3]//doc[1]/float[@name='id'][.='77.0']"
+              , groups +"/lst[3]//doc[1]/bool[@name='[elevated]'][.='false']"
+              , groups +"/lst[3]//doc[2]/float[@name='id'][.='7.0']"
+              , groups +"/lst[3]//doc[2]/bool[@name='[elevated]'][.='true']"
+              );
+
+
+      assertQ("force elevated sort within sorted group query", 
+              req(CommonParams.Q, "AAAA", 
+                  CommonParams.QT, "/elevate",
+                  CommonParams.SORT, "id asc",
+                  GroupParams.GROUP_SORT, "id desc", 
+                  QueryElevationParams.FORCE_ELEVATION, "true", 
+                  GroupParams.GROUP_FIELD, "str_s", 
+                  GroupParams.GROUP, "true",
+                  GroupParams.GROUP_TOTAL_COUNT, "true", 
+                  GroupParams.GROUP_LIMIT, "100", 
+                  CommonParams.FL, "id, score, [elevated]")
+              , "//*[@name='ngroups'][.='3']"
+              , "//*[@name='matches'][.='6']"
+
+              , groups +"/lst[1]//doc[1]/float[@name='id'][.='7.0']"
+              , groups +"/lst[1]//doc[1]/bool[@name='[elevated]'][.='true']"
+              , groups +"/lst[1]//doc[2]/float[@name='id'][.='77.0']"
+              , groups +"/lst[1]//doc[2]/bool[@name='[elevated]'][.='false']"
+
+              , groups +"/lst[2]//doc[1]/float[@name='id'][.='22.0']"
+              , groups +"/lst[2]//doc[1]/bool[@name='[elevated]'][.='false']"
+              , groups +"/lst[2]//doc[2]/float[@name='id'][.='2.0']"
+              , groups +"/lst[2]//doc[2]/bool[@name='[elevated]'][.='false']"
+
+              , groups +"/lst[3]//doc[1]/float[@name='id'][.='66.0']"
+              , groups +"/lst[3]//doc[1]/bool[@name='[elevated]'][.='false']"
+              , groups +"/lst[3]//doc[2]/float[@name='id'][.='6.0']"
+              , groups +"/lst[3]//doc[2]/bool[@name='[elevated]'][.='false']"
+              );
+
     } finally {
       delete();
     }

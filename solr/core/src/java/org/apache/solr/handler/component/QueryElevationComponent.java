@@ -44,6 +44,7 @@ import org.apache.solr.common.SolrException;
 import org.apache.solr.common.params.QueryElevationParams;
 import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.schema.IndexSchema;
+import org.apache.solr.search.grouping.GroupingSpecification;
 import org.apache.solr.util.DOMUtil;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.common.util.SimpleOrderedMap;
@@ -424,23 +425,25 @@ public class QueryElevationComponent extends SearchComponent implements SolrCore
         }));
       } else {
         // Check if the sort is based on score
-        boolean modify = false;
         SortField[] current = sortSpec.getSort().getSort();
-        ArrayList<SortField> sorts = new ArrayList<SortField>(current.length + 1);
-        // Perhaps force it to always sort by score
-        if (force && current[0].getType() != SortField.Type.SCORE) {
-          sorts.add(new SortField("_elevate_", comparator, true));
-          modify = true;
+        Sort modified = this.modifySort(current, force, comparator);
+        if(modified != null) {
+          sortSpec.setSort(modified);
         }
-        for (SortField sf : current) {
-          if (sf.getType() == SortField.Type.SCORE) {
-            sorts.add(new SortField("_elevate_", comparator, !sf.getReverse()));
-            modify = true;
-          }
-          sorts.add(sf);
+      }
+
+      // alter the sorting in the grouping specification if there is one
+      GroupingSpecification groupingSpec = rb.getGroupingSpec();
+      if(groupingSpec != null) {
+        SortField[] groupSort = groupingSpec.getGroupSort().getSort();
+        Sort modGroupSort = this.modifySort(groupSort, force, comparator);
+        if(modGroupSort != null) {
+          groupingSpec.setGroupSort(modGroupSort);
         }
-        if (modify) {
-          sortSpec.setSort(new Sort(sorts.toArray(new SortField[sorts.size()])));
+        SortField[] withinGroupSort = groupingSpec.getSortWithinGroup().getSort();
+        Sort modWithinGroupSort = this.modifySort(withinGroupSort, force, comparator);
+        if(modWithinGroupSort != null) {
+          groupingSpec.setSortWithinGroup(modWithinGroupSort);
         }
       }
     }
@@ -464,6 +467,25 @@ public class QueryElevationComponent extends SearchComponent implements SolrCore
         rb.addDebugInfo("queryBoosting", dbg);
       }
     }
+  }
+
+  private Sort modifySort(SortField[] current, boolean force, ElevationComparatorSource comparator) {
+    boolean modify = false;
+    ArrayList<SortField> sorts = new ArrayList<SortField>(current.length + 1);
+    // Perhaps force it to always sort by score
+    if (force && current[0].getType() != SortField.Type.SCORE) {
+      sorts.add(new SortField("_elevate_", comparator, true));
+      modify = true;
+    }
+    for (SortField sf : current) {
+      if (sf.getType() == SortField.Type.SCORE) {
+        sorts.add(new SortField("_elevate_", comparator, !sf.getReverse()));
+        modify = true;
+      }
+      sorts.add(sf);
+    }
+
+    return modify ? new Sort(sorts.toArray(new SortField[sorts.size()])) : null;
   }
 
   @Override

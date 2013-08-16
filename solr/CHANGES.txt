@@ -131,6 +131,9 @@ Bug Fixes
   of divide by zero, and makes estimated hit counts meaningful in non-optimized
   indexes.  (hossman)
   
+* SOLR-3936: Fixed QueryElevationComponent sorting when used with Grouping
+  (Michael Garski via hossman)
+
 Optimizations
 ----------------------
 
