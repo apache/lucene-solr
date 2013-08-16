@@ -410,7 +410,8 @@ public class CoreAdminHandler extends RequestHandlerBase {
         "Missing parameter [" + CoreAdminParams.NAME + "]");
     String instancedir = params.get(CoreAdminParams.INSTANCE_DIR);
     if (StringUtils.isEmpty(instancedir)) {
-      instancedir = name; // Already relative to solrHome, we haven't been given an absolute path.
+      instancedir = name; // will be resolved later against solr.home
+      //instancedir = container.getSolrHome() + "/" + name;
     }
 
     Properties coreProps = new Properties();

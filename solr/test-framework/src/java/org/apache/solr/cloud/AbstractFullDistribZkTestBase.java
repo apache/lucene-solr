@@ -17,8 +17,10 @@ package org.apache.solr.cloud;
  * limitations under the License.
  */
 
+import org.apache.commons.io.FilenameUtils;
 import org.apache.http.params.CoreConnectionPNames;
 import org.apache.lucene.util.LuceneTestCase.Slow;
+import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.client.solrj.SolrQuery;
 import org.apache.solr.client.solrj.SolrRequest;
 import org.apache.solr.client.solrj.SolrServer;
@@ -44,6 +46,7 @@ import org.apache.solr.common.params.CollectionParams.CollectionAction;
 import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.common.util.StrUtils;
+import org.apache.solr.core.SolrResourceLoader;
 import org.junit.After;
 import org.junit.AfterClass;
 import org.junit.Before;
@@ -455,13 +458,44 @@ public abstract class AbstractFullDistribZkTestBase extends AbstractDistribZkTes
   }
   
   public JettySolrRunner createJetty(File solrHome, String dataDir, String shardList, String solrConfigOverride, String schemaOverride) throws Exception {
-
-    JettySolrRunner jetty = new JettySolrRunner(solrHome.getAbsolutePath(), context, 0, solrConfigOverride, schemaOverride, false, getExtraServlets());
+    // randomly test a relative solr.home path
+    if (random().nextBoolean()) {
+      solrHome = getRelativeSolrHomePath(solrHome);
+    }
+    
+    JettySolrRunner jetty = new JettySolrRunner(solrHome.getPath(), context, 0, solrConfigOverride, schemaOverride, false, getExtraServlets());
     jetty.setShards(shardList);
     jetty.setDataDir(getDataDir(dataDir));
     jetty.start();
     
     return jetty;
+  }
+
+  private File getRelativeSolrHomePath(File solrHome) {
+    String path = SolrResourceLoader.normalizeDir(new File(".").getAbsolutePath());
+    String base = new File(solrHome.getPath()).getAbsolutePath();
+    
+    if (base.startsWith("."));
+    base.replaceFirst("\\.", new File(".").getName());
+    
+    if (path.endsWith(File.separator + ".")) {
+      path = path.substring(0, path.length() - 2);
+    }
+    
+    int splits = path.split(File.separator).length;
+    
+    StringBuilder p = new StringBuilder();
+    for (int i = 0; i < splits - 2; i++) {
+      p.append(".." + File.separator);
+    }   
+    
+    String prefix = FilenameUtils.getPrefix(path);
+    if (base.startsWith(prefix)) {
+      base = base.substring(prefix.length());
+    }
+
+    solrHome = new File(p.toString() + base);
+    return solrHome;
   }
   
   protected void updateMappingsFromZk(List<JettySolrRunner> jettys,
