@@ -21,6 +21,9 @@ import org.apache.lucene.index.*;
 import org.apache.lucene.index.MergePolicy.MergeSpecification;
 import org.apache.lucene.util.LuceneTestCase;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 import java.util.Map;
 import java.io.IOException;
 
@@ -32,6 +35,8 @@ import java.io.IOException;
  */
 public final class RandomMergePolicy extends MergePolicy {
 
+  public static Logger log = LoggerFactory.getLogger(RandomMergePolicy.class);
+  
   /** 
    * Not private so tests can inspect it, 
    * Not final so it can be set on clone
@@ -45,6 +50,8 @@ public final class RandomMergePolicy extends MergePolicy {
     super(inner.getNoCFSRatio(), 
           (long) (inner.getMaxCFSSegmentSizeMB() * 1024 * 1024));
     this.inner = inner;
+    log.info("RandomMergePolicy wrapping {}: {}",
+             inner.getClass(), inner);
   }
 
   public RandomMergePolicy clone() {
