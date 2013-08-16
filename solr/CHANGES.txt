@@ -129,6 +129,8 @@ Bug Fixes
 * SOLR-5122: Fixed bug in spellcheck.collateMaxCollectDocs.  Eliminates risk 
   of divide by zero, and makes estimated hit counts meaningful in non-optimized
   indexes.  (hossman)
+  
+* SOLR-5164: Can not create a collection via collections API (cloud mode) (Erick Erickson)
 
 Optimizations
 ----------------------
