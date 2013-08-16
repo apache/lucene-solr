@@ -2,8 +2,8 @@ package org.apache.lucene.codecs.compressing;
 
 import org.apache.lucene.codecs.DocValuesFormat;
 import org.apache.lucene.codecs.NormsFormat;
-import org.apache.lucene.codecs.lucene42.Lucene42DocValuesFormat;
-import org.apache.lucene.codecs.lucene42.Lucene42NormsFormat;
+import org.apache.lucene.codecs.lucene42.Lucene42DocValuesFormat; // nocommit
+import org.apache.lucene.codecs.lucene42.Lucene42NormsFormat; // nocommit
 import org.apache.lucene.util.packed.PackedInts;
 
 /*

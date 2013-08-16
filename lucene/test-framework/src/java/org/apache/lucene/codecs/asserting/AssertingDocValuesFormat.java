@@ -24,7 +24,7 @@ import java.util.NoSuchElementException;
 import org.apache.lucene.codecs.DocValuesConsumer;
 import org.apache.lucene.codecs.DocValuesFormat;
 import org.apache.lucene.codecs.DocValuesProducer;
-import org.apache.lucene.codecs.lucene42.Lucene42DocValuesFormat;
+import org.apache.lucene.codecs.lucene45.Lucene45DocValuesFormat;
 import org.apache.lucene.index.AssertingAtomicReader;
 import org.apache.lucene.index.BinaryDocValues;
 import org.apache.lucene.index.FieldInfo;
@@ -39,10 +39,10 @@ import org.apache.lucene.util.FixedBitSet;
 import org.apache.lucene.util.OpenBitSet;
 
 /**
- * Just like {@link Lucene42DocValuesFormat} but with additional asserts.
+ * Just like {@link Lucene45DocValuesFormat} but with additional asserts.
  */
 public class AssertingDocValuesFormat extends DocValuesFormat {
-  private final DocValuesFormat in = new Lucene42DocValuesFormat();
+  private final DocValuesFormat in = new Lucene45DocValuesFormat();
   
   public AssertingDocValuesFormat() {
     super("Asserting");

@@ -1,4 +1,4 @@
-package org.apache.lucene.codecs.diskdv;
+package org.apache.lucene.codecs.lucene45;
 
 /*
  * Licensed to the Apache Software Foundation (ASF) under one or more
@@ -37,8 +37,8 @@ import org.apache.lucene.util.packed.BlockPackedWriter;
 import org.apache.lucene.util.packed.MonotonicBlockPackedWriter;
 import org.apache.lucene.util.packed.PackedInts;
 
-/** writer for {@link DiskDocValuesFormat} */
-public class DiskDocValuesConsumer extends DocValuesConsumer {
+/** writer for {@link Lucene45DocValuesFormat} */
+public class Lucene45DocValuesConsumer extends DocValuesConsumer {
 
   static final int BLOCK_SIZE = 16384;
   static final int ADDRESS_INTERVAL = 16;
@@ -60,15 +60,15 @@ public class DiskDocValuesConsumer extends DocValuesConsumer {
   final IndexOutput data, meta;
   final int maxDoc;
   
-  public DiskDocValuesConsumer(SegmentWriteState state, String dataCodec, String dataExtension, String metaCodec, String metaExtension) throws IOException {
+  public Lucene45DocValuesConsumer(SegmentWriteState state, String dataCodec, String dataExtension, String metaCodec, String metaExtension) throws IOException {
     boolean success = false;
     try {
       String dataName = IndexFileNames.segmentFileName(state.segmentInfo.name, state.segmentSuffix, dataExtension);
       data = state.directory.createOutput(dataName, state.context);
-      CodecUtil.writeHeader(data, dataCodec, DiskDocValuesFormat.VERSION_CURRENT);
+      CodecUtil.writeHeader(data, dataCodec, Lucene45DocValuesFormat.VERSION_CURRENT);
       String metaName = IndexFileNames.segmentFileName(state.segmentInfo.name, state.segmentSuffix, metaExtension);
       meta = state.directory.createOutput(metaName, state.context);
-      CodecUtil.writeHeader(meta, metaCodec, DiskDocValuesFormat.VERSION_CURRENT);
+      CodecUtil.writeHeader(meta, metaCodec, Lucene45DocValuesFormat.VERSION_CURRENT);
       maxDoc = state.segmentInfo.getDocCount();
       success = true;
     } finally {
@@ -140,7 +140,7 @@ public class DiskDocValuesConsumer extends DocValuesConsumer {
       format = DELTA_COMPRESSED;
     }
     meta.writeVInt(field.number);
-    meta.writeByte(DiskDocValuesFormat.NUMERIC);
+    meta.writeByte(Lucene45DocValuesFormat.NUMERIC);
     meta.writeVInt(format);
     meta.writeVInt(PackedInts.VERSION_CURRENT);
     meta.writeLong(data.getFilePointer());
@@ -189,7 +189,7 @@ public class DiskDocValuesConsumer extends DocValuesConsumer {
   public void addBinaryField(FieldInfo field, Iterable<BytesRef> values) throws IOException {
     // write the byte[] data
     meta.writeVInt(field.number);
-    meta.writeByte(DiskDocValuesFormat.BINARY);
+    meta.writeByte(Lucene45DocValuesFormat.BINARY);
     int minLength = Integer.MAX_VALUE;
     int maxLength = Integer.MIN_VALUE;
     final long startFP = data.getFilePointer();
@@ -242,7 +242,7 @@ public class DiskDocValuesConsumer extends DocValuesConsumer {
     } else {
       // header
       meta.writeVInt(field.number);
-      meta.writeByte(DiskDocValuesFormat.BINARY);
+      meta.writeByte(Lucene45DocValuesFormat.BINARY);
       meta.writeVInt(BINARY_PREFIX_COMPRESSED);
       // now write the bytes: sharing prefixes within a block
       final long startFP = data.getFilePointer();
@@ -315,7 +315,7 @@ public class DiskDocValuesConsumer extends DocValuesConsumer {
       values = MissingOrdRemapper.insertEmptyValue(values);
     }
     meta.writeVInt(field.number);
-    meta.writeByte(DiskDocValuesFormat.SORTED);
+    meta.writeByte(Lucene45DocValuesFormat.SORTED);
     addTermsDict(field, values);
     addNumericField(field, docToOrd, false);
   }
@@ -323,7 +323,7 @@ public class DiskDocValuesConsumer extends DocValuesConsumer {
   @Override
   public void addSortedSetField(FieldInfo field, Iterable<BytesRef> values, Iterable<Number> docToOrdCount, Iterable<Number> ords) throws IOException {
     meta.writeVInt(field.number);
-    meta.writeByte(DiskDocValuesFormat.SORTED_SET);
+    meta.writeByte(Lucene45DocValuesFormat.SORTED_SET);
     // write the ord -> byte[] as a binary field
     addTermsDict(field, values);
     // write the stream of ords as a numeric field
@@ -332,7 +332,7 @@ public class DiskDocValuesConsumer extends DocValuesConsumer {
     
     // write the doc -> ord count as a absolute index to the stream
     meta.writeVInt(field.number);
-    meta.writeByte(DiskDocValuesFormat.NUMERIC);
+    meta.writeByte(Lucene45DocValuesFormat.NUMERIC);
     meta.writeVInt(DELTA_COMPRESSED);
     meta.writeVInt(PackedInts.VERSION_CURRENT);
     meta.writeLong(data.getFilePointer());

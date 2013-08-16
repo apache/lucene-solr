@@ -17,35 +17,26 @@ package org.apache.lucene.codecs.diskdv;
  * limitations under the License.
  */
 
-import static org.apache.lucene.codecs.diskdv.DiskDocValuesConsumer.DELTA_COMPRESSED;
-import static org.apache.lucene.codecs.diskdv.DiskDocValuesConsumer.GCD_COMPRESSED;
-import static org.apache.lucene.codecs.diskdv.DiskDocValuesConsumer.TABLE_COMPRESSED;
-
-import static org.apache.lucene.codecs.diskdv.DiskDocValuesConsumer.BINARY_FIXED_UNCOMPRESSED;
-import static org.apache.lucene.codecs.diskdv.DiskDocValuesConsumer.BINARY_VARIABLE_UNCOMPRESSED;
-import static org.apache.lucene.codecs.diskdv.DiskDocValuesConsumer.BINARY_PREFIX_COMPRESSED;
+import static org.apache.lucene.codecs.lucene45.Lucene45DocValuesConsumer.DELTA_COMPRESSED;
+import static org.apache.lucene.codecs.lucene45.Lucene45DocValuesConsumer.GCD_COMPRESSED;
+import static org.apache.lucene.codecs.lucene45.Lucene45DocValuesConsumer.TABLE_COMPRESSED;
 
 import java.io.IOException;
-import java.util.Comparator;
 import java.util.HashMap;
 import java.util.Map;
 
 import org.apache.lucene.codecs.CodecUtil;
 import org.apache.lucene.codecs.DocValuesProducer;
-import org.apache.lucene.codecs.DocValuesProducer.SortedSetDocsWithField;
+import org.apache.lucene.codecs.lucene45.Lucene45DocValuesConsumer;
+import org.apache.lucene.codecs.lucene45.Lucene45DocValuesFormat;
 import org.apache.lucene.index.BinaryDocValues;
 import org.apache.lucene.index.CorruptIndexException;
-import org.apache.lucene.index.DocsAndPositionsEnum;
-import org.apache.lucene.index.DocsEnum;
 import org.apache.lucene.index.FieldInfo;
-import org.apache.lucene.index.FieldInfos;
 import org.apache.lucene.index.IndexFileNames;
 import org.apache.lucene.index.NumericDocValues;
 import org.apache.lucene.index.SegmentReadState;
 import org.apache.lucene.index.SortedDocValues;
 import org.apache.lucene.index.SortedSetDocValues;
-import org.apache.lucene.index.TermsEnum;
-import org.apache.lucene.index.TermsEnum.SeekStatus;
 import org.apache.lucene.store.IndexInput;
 import org.apache.lucene.util.Bits;
 import org.apache.lucene.util.BytesRef;
@@ -56,32 +47,28 @@ import org.apache.lucene.util.packed.PackedInts;
 
 class DiskDocValuesProducer extends DocValuesProducer {
   private final Map<Integer,NumericEntry> numerics;
-  private final Map<Integer,BinaryEntry> binaries;
   private final Map<Integer,NumericEntry> ords;
   private final Map<Integer,NumericEntry> ordIndexes;
+  private final Map<Integer,BinaryEntry> binaries;
   private final IndexInput data;
   private final int maxDoc;
-
-  // memory-resident structures
-  private final Map<Integer,MonotonicBlockPackedReader> addressInstances = new HashMap<Integer,MonotonicBlockPackedReader>();
-  private final Map<Integer,MonotonicBlockPackedReader> ordIndexInstances = new HashMap<Integer,MonotonicBlockPackedReader>();
   
   DiskDocValuesProducer(SegmentReadState state, String dataCodec, String dataExtension, String metaCodec, String metaExtension) throws IOException {
     String metaName = IndexFileNames.segmentFileName(state.segmentInfo.name, state.segmentSuffix, metaExtension);
+    this.maxDoc = state.segmentInfo.getDocCount();
     // read in the entries from the metadata file.
     IndexInput in = state.directory.openInput(metaName, state.context);
-    this.maxDoc = state.segmentInfo.getDocCount();
     boolean success = false;
     final int version;
     try {
       version = CodecUtil.checkHeader(in, metaCodec, 
-                                      DiskDocValuesFormat.VERSION_CURRENT,
-                                      DiskDocValuesFormat.VERSION_CURRENT);
+                                      Lucene45DocValuesFormat.VERSION_CURRENT,
+                                      Lucene45DocValuesFormat.VERSION_CURRENT);
       numerics = new HashMap<Integer,NumericEntry>();
       ords = new HashMap<Integer,NumericEntry>();
       ordIndexes = new HashMap<Integer,NumericEntry>();
       binaries = new HashMap<Integer,BinaryEntry>();
-      readFields(in, state.fieldInfos);
+      readFields(in);
 
       success = true;
     } finally {
@@ -97,10 +84,10 @@ class DiskDocValuesProducer extends DocValuesProducer {
       String dataName = IndexFileNames.segmentFileName(state.segmentInfo.name, state.segmentSuffix, dataExtension);
       data = state.directory.openInput(dataName, state.context);
       final int version2 = CodecUtil.checkHeader(data, dataCodec, 
-                                                 DiskDocValuesFormat.VERSION_CURRENT,
-                                                 DiskDocValuesFormat.VERSION_CURRENT);
+                                                 Lucene45DocValuesFormat.VERSION_CURRENT,
+                                                 Lucene45DocValuesFormat.VERSION_CURRENT);
       if (version != version2) {
-        throw new CorruptIndexException("Format versions mismatch");
+        throw new CorruptIndexException("Versions mismatch");
       }
 
       success = true;
@@ -109,61 +96,62 @@ class DiskDocValuesProducer extends DocValuesProducer {
         IOUtils.closeWhileHandlingException(this.data);
       }
     }
+
   }
   
-  private void readFields(IndexInput meta, FieldInfos infos) throws IOException {
+  private void readFields(IndexInput meta) throws IOException {
     int fieldNumber = meta.readVInt();
     while (fieldNumber != -1) {
       byte type = meta.readByte();
-      if (type == DiskDocValuesFormat.NUMERIC) {
+      if (type == Lucene45DocValuesFormat.NUMERIC) {
         numerics.put(fieldNumber, readNumericEntry(meta));
-      } else if (type == DiskDocValuesFormat.BINARY) {
+      } else if (type == Lucene45DocValuesFormat.BINARY) {
         BinaryEntry b = readBinaryEntry(meta);
         binaries.put(fieldNumber, b);
-      } else if (type == DiskDocValuesFormat.SORTED) {
+      } else if (type == Lucene45DocValuesFormat.SORTED) {
         // sorted = binary + numeric
         if (meta.readVInt() != fieldNumber) {
-          throw new CorruptIndexException("sorted entry for field: " + fieldNumber + " is corrupt (resource=" + meta + ")");
+          throw new CorruptIndexException("sorted entry for field: " + fieldNumber + " is corrupt");
         }
-        if (meta.readByte() != DiskDocValuesFormat.BINARY) {
-          throw new CorruptIndexException("sorted entry for field: " + fieldNumber + " is corrupt (resource=" + meta + ")");
+        if (meta.readByte() != Lucene45DocValuesFormat.BINARY) {
+          throw new CorruptIndexException("sorted entry for field: " + fieldNumber + " is corrupt");
         }
         BinaryEntry b = readBinaryEntry(meta);
         binaries.put(fieldNumber, b);
         
         if (meta.readVInt() != fieldNumber) {
-          throw new CorruptIndexException("sorted entry for field: " + fieldNumber + " is corrupt (resource=" + meta + ")");
+          throw new CorruptIndexException("sorted entry for field: " + fieldNumber + " is corrupt");
         }
-        if (meta.readByte() != DiskDocValuesFormat.NUMERIC) {
-          throw new CorruptIndexException("sorted entry for field: " + fieldNumber + " is corrupt (resource=" + meta + ")");
+        if (meta.readByte() != Lucene45DocValuesFormat.NUMERIC) {
+          throw new CorruptIndexException("sorted entry for field: " + fieldNumber + " is corrupt");
         }
         NumericEntry n = readNumericEntry(meta);
         ords.put(fieldNumber, n);
-      } else if (type == DiskDocValuesFormat.SORTED_SET) {
+      } else if (type == Lucene45DocValuesFormat.SORTED_SET) {
         // sortedset = binary + numeric + ordIndex
         if (meta.readVInt() != fieldNumber) {
-          throw new CorruptIndexException("sortedset entry for field: " + fieldNumber + " is corrupt (resource=" + meta + ")");
+          throw new CorruptIndexException("sortedset entry for field: " + fieldNumber + " is corrupt");
         }
-        if (meta.readByte() != DiskDocValuesFormat.BINARY) {
-          throw new CorruptIndexException("sortedset entry for field: " + fieldNumber + " is corrupt (resource=" + meta + ")");
+        if (meta.readByte() != Lucene45DocValuesFormat.BINARY) {
+          throw new CorruptIndexException("sortedset entry for field: " + fieldNumber + " is corrupt");
         }
         BinaryEntry b = readBinaryEntry(meta);
         binaries.put(fieldNumber, b);
         
         if (meta.readVInt() != fieldNumber) {
-          throw new CorruptIndexException("sortedset entry for field: " + fieldNumber + " is corrupt (resource=" + meta + ")");
+          throw new CorruptIndexException("sortedset entry for field: " + fieldNumber + " is corrupt");
         }
-        if (meta.readByte() != DiskDocValuesFormat.NUMERIC) {
-          throw new CorruptIndexException("sortedset entry for field: " + fieldNumber + " is corrupt (resource=" + meta + ")");
+        if (meta.readByte() != Lucene45DocValuesFormat.NUMERIC) {
+          throw new CorruptIndexException("sortedset entry for field: " + fieldNumber + " is corrupt");
         }
         NumericEntry n1 = readNumericEntry(meta);
         ords.put(fieldNumber, n1);
         
         if (meta.readVInt() != fieldNumber) {
-          throw new CorruptIndexException("sortedset entry for field: " + fieldNumber + " is corrupt (resource=" + meta + ")");
+          throw new CorruptIndexException("sortedset entry for field: " + fieldNumber + " is corrupt");
         }
-        if (meta.readByte() != DiskDocValuesFormat.NUMERIC) {
-          throw new CorruptIndexException("sortedset entry for field: " + fieldNumber + " is corrupt (resource=" + meta + ")");
+        if (meta.readByte() != Lucene45DocValuesFormat.NUMERIC) {
+          throw new CorruptIndexException("sortedset entry for field: " + fieldNumber + " is corrupt");
         }
         NumericEntry n2 = readNumericEntry(meta);
         ordIndexes.put(fieldNumber, n2);
@@ -209,27 +197,18 @@ class DiskDocValuesProducer extends DocValuesProducer {
   
   static BinaryEntry readBinaryEntry(IndexInput meta) throws IOException {
     BinaryEntry entry = new BinaryEntry();
-    entry.format = meta.readVInt();
+    int format = meta.readVInt();
+    if (format != Lucene45DocValuesConsumer.BINARY_FIXED_UNCOMPRESSED && format != Lucene45DocValuesConsumer.BINARY_VARIABLE_UNCOMPRESSED) {
+      throw new CorruptIndexException("Unexpected format for binary entry: " + format + ", input=" + meta);
+    }
     entry.minLength = meta.readVInt();
     entry.maxLength = meta.readVInt();
     entry.count = meta.readVLong();
     entry.offset = meta.readLong();
-    switch(entry.format) {
-      case BINARY_FIXED_UNCOMPRESSED:
-        break;
-      case BINARY_PREFIX_COMPRESSED:
-        entry.addressInterval = meta.readVInt();
-        entry.addressesOffset = meta.readLong();
-        entry.packedIntsVersion = meta.readVInt();
-        entry.blockSize = meta.readVInt();
-        break;
-      case BINARY_VARIABLE_UNCOMPRESSED:
-        entry.addressesOffset = meta.readLong();
-        entry.packedIntsVersion = meta.readVInt();
-        entry.blockSize = meta.readVInt();
-        break;
-      default:
-        throw new CorruptIndexException("Unknown format: " + entry.format + ", input=" + meta);
+    if (entry.minLength != entry.maxLength) {
+      entry.addressesOffset = meta.readLong();
+      entry.packedIntsVersion = meta.readVInt();
+      entry.blockSize = meta.readVInt();
     }
     return entry;
   }
@@ -237,10 +216,10 @@ class DiskDocValuesProducer extends DocValuesProducer {
   @Override
   public NumericDocValues getNumeric(FieldInfo field) throws IOException {
     NumericEntry entry = numerics.get(field.number);
-    return getNumeric(entry);
+    return getNumeric(field, entry);
   }
   
-  LongNumericDocValues getNumeric(NumericEntry entry) throws IOException {
+  private LongNumericDocValues getNumeric(FieldInfo field, final NumericEntry entry) throws IOException {
     final IndexInput data = this.data.clone();
     data.seek(entry.offset);
 
@@ -264,12 +243,12 @@ class DiskDocValuesProducer extends DocValuesProducer {
           }
         };
       case TABLE_COMPRESSED:
-        final long table[] = entry.table;
+        final long[] table = entry.table;
         final int bitsRequired = PackedInts.bitsRequired(table.length - 1);
         final PackedInts.Reader ords = PackedInts.getDirectReaderNoHeader(data, PackedInts.Format.PACKED, entry.packedIntsVersion, (int) entry.count, bitsRequired);
         return new LongNumericDocValues() {
           @Override
-          public long get(long id) {
+          long get(long id) {
             return table[(int) ords.get((int) id)];
           }
         };
@@ -281,15 +260,10 @@ class DiskDocValuesProducer extends DocValuesProducer {
   @Override
   public BinaryDocValues getBinary(FieldInfo field) throws IOException {
     BinaryEntry bytes = binaries.get(field.number);
-    switch(bytes.format) {
-      case BINARY_FIXED_UNCOMPRESSED:
-        return getFixedBinary(field, bytes);
-      case BINARY_VARIABLE_UNCOMPRESSED:
-        return getVariableBinary(field, bytes);
-      case BINARY_PREFIX_COMPRESSED:
-        return getCompressedBinary(field, bytes);
-      default:
-        throw new AssertionError();
+    if (bytes.minLength == bytes.maxLength) {
+      return getFixedBinary(field, bytes);
+    } else {
+      return getVariableBinary(field, bytes);
     }
   }
   
@@ -318,22 +292,13 @@ class DiskDocValuesProducer extends DocValuesProducer {
   
   private BinaryDocValues getVariableBinary(FieldInfo field, final BinaryEntry bytes) throws IOException {
     final IndexInput data = this.data.clone();
-    
-    final MonotonicBlockPackedReader addresses;
-    synchronized (addressInstances) {
-      MonotonicBlockPackedReader addrInstance = addressInstances.get(field.number);
-      if (addrInstance == null) {
-        data.seek(bytes.addressesOffset);
-        addrInstance = new MonotonicBlockPackedReader(data, bytes.packedIntsVersion, bytes.blockSize, bytes.count, false);
-        addressInstances.put(field.number, addrInstance);
-      }
-      addresses = addrInstance;
-    }
+    data.seek(bytes.addressesOffset);
 
+    final MonotonicBlockPackedReader addresses = new MonotonicBlockPackedReader(data, bytes.packedIntsVersion, bytes.blockSize, bytes.count, true);
     return new LongBinaryDocValues() {
       @Override
       public void get(long id, BytesRef result) {
-        long startAddress = bytes.offset + (id == 0 ? 0 : addresses.get(id-1));
+        long startAddress = bytes.offset + (id == 0 ? 0 : + addresses.get(id-1));
         long endAddress = bytes.offset + addresses.get(id);
         int length = (int) (endAddress - startAddress);
         try {
@@ -352,39 +317,11 @@ class DiskDocValuesProducer extends DocValuesProducer {
     };
   }
 
-  private BinaryDocValues getCompressedBinary(FieldInfo field, final BinaryEntry bytes) throws IOException {
-    final IndexInput data = this.data.clone();
-    final long interval = bytes.addressInterval;
-
-    final MonotonicBlockPackedReader addresses;
-    synchronized (addressInstances) {
-      MonotonicBlockPackedReader addrInstance = addressInstances.get(field.number);
-      if (addrInstance == null) {
-        data.seek(bytes.addressesOffset);
-        final long size;
-        if (bytes.count % interval == 0) {
-          size = bytes.count / interval;
-        } else {
-          size = 1L + bytes.count / interval;
-        }
-        addrInstance = new MonotonicBlockPackedReader(data, bytes.packedIntsVersion, bytes.blockSize, size, false);
-        addressInstances.put(field.number, addrInstance);
-      }
-      addresses = addrInstance;
-    }
-    
-    return new CompressedBinaryDocValues(bytes, addresses, data);
-  }
-
   @Override
   public SortedDocValues getSorted(FieldInfo field) throws IOException {
     final int valueCount = (int) binaries.get(field.number).count;
     final BinaryDocValues binary = getBinary(field);
-    NumericEntry entry = ords.get(field.number);
-    IndexInput data = this.data.clone();
-    data.seek(entry.offset);
-    final BlockPackedReader ordinals = new BlockPackedReader(data, entry.packedIntsVersion, entry.blockSize, entry.count, true);
-    
+    final NumericDocValues ordinals = getNumeric(field, ords.get(field.number));
     return new SortedDocValues() {
 
       @Override
@@ -401,46 +338,18 @@ class DiskDocValuesProducer extends DocValuesProducer {
       public int getValueCount() {
         return valueCount;
       }
-
-      @Override
-      public int lookupTerm(BytesRef key) {
-        if (binary instanceof CompressedBinaryDocValues) {
-          return (int) ((CompressedBinaryDocValues)binary).lookupTerm(key);
-        } else {
-        return super.lookupTerm(key);
-        }
-      }
-
-      @Override
-      public TermsEnum termsEnum() {
-        if (binary instanceof CompressedBinaryDocValues) {
-          return ((CompressedBinaryDocValues)binary).getTermsEnum();
-        } else {
-          return super.termsEnum();
-        }
-      }
     };
   }
 
   @Override
   public SortedSetDocValues getSortedSet(FieldInfo field) throws IOException {
     final long valueCount = binaries.get(field.number).count;
-    // we keep the byte[]s and list of ords on disk, these could be large
     final LongBinaryDocValues binary = (LongBinaryDocValues) getBinary(field);
-    final LongNumericDocValues ordinals = getNumeric(ords.get(field.number));
-    // but the addresses to the ord stream are in RAM
-    final MonotonicBlockPackedReader ordIndex;
-    synchronized (ordIndexInstances) {
-      MonotonicBlockPackedReader ordIndexInstance = ordIndexInstances.get(field.number);
-      if (ordIndexInstance == null) {
-        NumericEntry entry = ordIndexes.get(field.number);
-        IndexInput data = this.data.clone();
-        data.seek(entry.offset);
-        ordIndexInstance = new MonotonicBlockPackedReader(data, entry.packedIntsVersion, entry.blockSize, entry.count, false);
-        ordIndexInstances.put(field.number, ordIndexInstance);
-      }
-      ordIndex = ordIndexInstance;
-    }
+    final LongNumericDocValues ordinals = getNumeric(field, ords.get(field.number));
+    NumericEntry entry = ordIndexes.get(field.number);
+    IndexInput data = this.data.clone();
+    data.seek(entry.offset);
+    final MonotonicBlockPackedReader ordIndex = new MonotonicBlockPackedReader(data, entry.packedIntsVersion, entry.blockSize, entry.count, true);
     
     return new SortedSetDocValues() {
       long offset;
@@ -472,31 +381,11 @@ class DiskDocValuesProducer extends DocValuesProducer {
       public long getValueCount() {
         return valueCount;
       }
-      
-      @Override
-      public long lookupTerm(BytesRef key) {
-        if (binary instanceof CompressedBinaryDocValues) {
-          return ((CompressedBinaryDocValues)binary).lookupTerm(key);
-        } else {
-          return super.lookupTerm(key);
-        }
-      }
-
-      @Override
-      public TermsEnum termsEnum() {
-        if (binary instanceof CompressedBinaryDocValues) {
-          return ((CompressedBinaryDocValues)binary).getTermsEnum();
-        } else {
-          return super.termsEnum();
-        }
-      }
     };
   }
-
+  
   @Override
   public Bits getDocsWithField(FieldInfo field) throws IOException {
-    // nocommit: only use this if the field's entry has missing values (write that),
-    // otherwise return MatchAllBits
     if (field.getDocValuesType() == FieldInfo.DocValuesType.SORTED_SET) {
       return new SortedSetDocsWithField(getSortedSet(field), maxDoc);
     } else {
@@ -525,12 +414,10 @@ class DiskDocValuesProducer extends DocValuesProducer {
   static class BinaryEntry {
     long offset;
 
-    int format;
     long count;
     int minLength;
     int maxLength;
     long addressesOffset;
-    long addressInterval;
     int packedIntsVersion;
     int blockSize;
   }
@@ -552,205 +439,5 @@ class DiskDocValuesProducer extends DocValuesProducer {
     }
     
     abstract void get(long id, BytesRef Result);
-  }
-  
-  // in the compressed case, we add a few additional operations for
-  // more efficient reverse lookup and enumeration
-  static class CompressedBinaryDocValues extends LongBinaryDocValues {
-    final BinaryEntry bytes;
-    final long interval;
-    final long numValues;
-    final long numIndexValues;
-    final MonotonicBlockPackedReader addresses;
-    final IndexInput data;
-    final TermsEnum termsEnum;
-    
-    public CompressedBinaryDocValues(BinaryEntry bytes, MonotonicBlockPackedReader addresses, IndexInput data) throws IOException {
-      this.bytes = bytes;
-      this.interval = bytes.addressInterval;
-      this.addresses = addresses;
-      this.data = data;
-      this.numValues = bytes.count;
-      this.numIndexValues = addresses.size();
-      this.termsEnum = getTermsEnum(data);
-    }
-    
-    @Override
-    public void get(long id, BytesRef result) {
-      try {
-        termsEnum.seekExact(id);
-        BytesRef term = termsEnum.term();
-        result.bytes = term.bytes;
-        result.offset = term.offset;
-        result.length = term.length;
-      } catch (IOException e) {
-        throw new RuntimeException(e);
-      }
-    }
-    
-    long lookupTerm(BytesRef key) {
-      try {
-        SeekStatus status = termsEnum.seekCeil(key);
-        if (status == SeekStatus.END) {
-          return -numValues-1;
-        } else if (status == SeekStatus.FOUND) {
-          return termsEnum.ord();
-        } else {
-          return -termsEnum.ord()-1;
-        }
-      } catch (IOException bogus) {
-        throw new RuntimeException(bogus);
-      }
-    }
-    
-    TermsEnum getTermsEnum() {
-      try {
-        return getTermsEnum(data.clone());
-      } catch (IOException e) {
-        throw new RuntimeException(e);
-      }
-    }
-    
-    private TermsEnum getTermsEnum(final IndexInput input) throws IOException {
-      input.seek(bytes.offset);
-      
-      return new TermsEnum() {
-        private long currentOrd = -1;
-        // TODO: maxLength is negative when all terms are merged away...
-        private final BytesRef termBuffer = new BytesRef(bytes.maxLength < 0 ? 0 : bytes.maxLength);
-        private final BytesRef term = new BytesRef(); // TODO: paranoia?
-
-        @Override
-        public BytesRef next() throws IOException {
-          if (doNext() == null) {
-            return null;
-          } else {
-            setTerm();
-            return term;
-          }
-        }
-        
-        private BytesRef doNext() throws IOException {
-          if (++currentOrd >= numValues) {
-            return null;
-          } else {
-            int start = input.readVInt();
-            int suffix = input.readVInt();
-            input.readBytes(termBuffer.bytes, start, suffix);
-            termBuffer.length = start + suffix;
-            return termBuffer;
-          }
-        }
-
-        @Override
-        public SeekStatus seekCeil(BytesRef text) throws IOException {
-          // binary-search just the index values to find the block,
-          // then scan within the block
-          long low = 0;
-          long high = numIndexValues-1;
-
-          while (low <= high) {
-            long mid = (low + high) >>> 1;
-            doSeek(mid * interval);
-            int cmp = termBuffer.compareTo(text);
-
-            if (cmp < 0) {
-              low = mid + 1;
-            } else if (cmp > 0) {
-              high = mid - 1;
-            } else {
-              // we got lucky, found an indexed term
-              setTerm();
-              return SeekStatus.FOUND;
-            }
-          }
-          
-          if (numIndexValues == 0) {
-            return SeekStatus.END;
-          }
-          
-          // block before insertion point
-          long block = low-1;
-          doSeek(block < 0 ? -1 : block * interval);
-          
-          while (doNext() != null) {
-            int cmp = termBuffer.compareTo(text);
-            if (cmp == 0) {
-              setTerm();
-              return SeekStatus.FOUND;
-            } else if (cmp > 0) {
-              setTerm();
-              return SeekStatus.NOT_FOUND;
-            }
-          }
-          
-          return SeekStatus.END;
-        }
-
-        @Override
-        public void seekExact(long ord) throws IOException {
-          doSeek(ord);
-          setTerm();
-        }
-        
-        private void doSeek(long ord) throws IOException {
-          long block = ord / interval;
-
-          if (ord >= currentOrd && block == currentOrd / interval) {
-            // seek within current block
-          } else {
-            // position before start of block
-            currentOrd = ord - ord % interval - 1;
-            input.seek(bytes.offset + addresses.get(block));
-          }
-          
-          while (currentOrd < ord) {
-            doNext();
-          }
-        }
-        
-        private void setTerm() {
-          // TODO: is there a cleaner way
-          term.bytes = new byte[termBuffer.length];
-          term.offset = 0;
-          term.copyBytes(termBuffer);
-        }
-
-        @Override
-        public BytesRef term() throws IOException {
-          return term;
-        }
-
-        @Override
-        public long ord() throws IOException {
-          return currentOrd;
-        }
-        
-        @Override
-        public Comparator<BytesRef> getComparator() {
-          return BytesRef.getUTF8SortedAsUnicodeComparator();
-        }
-
-        @Override
-        public int docFreq() throws IOException {
-          throw new UnsupportedOperationException();
-        }
-
-        @Override
-        public long totalTermFreq() throws IOException {
-          return -1;
-        }
-
-        @Override
-        public DocsEnum docs(Bits liveDocs, DocsEnum reuse, int flags) throws IOException {
-          throw new UnsupportedOperationException();
-        }
-
-        @Override
-        public DocsAndPositionsEnum docsAndPositions(Bits liveDocs, DocsAndPositionsEnum reuse, int flags) throws IOException {
-          throw new UnsupportedOperationException();
-        }
-      };
-    }
   }
 }

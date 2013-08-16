@@ -28,6 +28,7 @@ import org.apache.lucene.codecs.lucene42.Lucene42NormsFormat;
 import org.apache.lucene.index.SegmentReadState;
 import org.apache.lucene.index.SegmentWriteState;
 
+// nocommit
 /**
  * Just like {@link Lucene42NormsFormat} but with additional asserts.
  */

@@ -1410,7 +1410,7 @@ public class CheckIndex {
   private static void checkNumericDocValues(String fieldName, AtomicReader reader, NumericDocValues ndv, Bits docsWithField) {
     for (int i = 0; i < reader.maxDoc(); i++) {
       long value = ndv.get(i);
-      if (docsWithField.get(i) == false && value > 0) {
+      if (docsWithField.get(i) == false && value != 0) {
         throw new RuntimeException("dv for field: " + fieldName + " is marked missing but has value=" + value + " for doc: " + i);
       }
     }

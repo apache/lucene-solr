@@ -3,7 +3,7 @@ package org.apache.solr.core;
 import org.apache.lucene.codecs.Codec;
 import org.apache.lucene.codecs.DocValuesFormat;
 import org.apache.lucene.codecs.PostingsFormat;
-import org.apache.lucene.codecs.lucene42.Lucene42Codec;
+import org.apache.lucene.codecs.lucene45.Lucene45Codec;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.schema.SchemaField;
 import org.apache.solr.util.plugin.SolrCoreAware;
@@ -51,7 +51,7 @@ public class SchemaCodecFactory extends CodecFactory implements SolrCoreAware {
   @Override
   public void init(NamedList args) {
     super.init(args);
-    codec = new Lucene42Codec() {
+    codec = new Lucene45Codec() {
       @Override
       public PostingsFormat getPostingsFormatForField(String field) {
         final SchemaField fieldOrNull = core.getLatestSchema().getFieldOrNull(field);

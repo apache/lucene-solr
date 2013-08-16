@@ -78,10 +78,12 @@ public class BBoxSimilarityValueSource extends ValueSource {
 
       @Override
       public float floatVal(int doc) {
+        double minXVal = minX.get(doc);
+        double maxXVal = maxX.get(doc);
         // make sure it has minX and area
-        if (validMinX.get(doc) && validMaxX.get(doc)) {
+        if ((minXVal != 0 || validMinX.get(doc)) && (maxXVal != 0 || validMaxX.get(doc))) {
           rect.reset(
-              minX.get(doc), maxX.get(doc),
+              minXVal, maxXVal,
               minY.get(doc), maxY.get(doc));
           return (float) similarity.score(rect, null);
         } else {

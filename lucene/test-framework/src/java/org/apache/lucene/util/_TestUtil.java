@@ -44,7 +44,7 @@ import java.util.zip.ZipFile;
 import org.apache.lucene.codecs.Codec;
 import org.apache.lucene.codecs.DocValuesFormat;
 import org.apache.lucene.codecs.PostingsFormat;
-import org.apache.lucene.codecs.lucene42.Lucene42Codec;
+import org.apache.lucene.codecs.lucene45.Lucene45Codec;
 import org.apache.lucene.codecs.perfield.PerFieldDocValuesFormat;
 import org.apache.lucene.codecs.perfield.PerFieldPostingsFormat;
 import org.apache.lucene.document.BinaryDocValuesField;
@@ -703,7 +703,7 @@ public class _TestUtil {
     if (LuceneTestCase.VERBOSE) {
       System.out.println("forcing postings format to:" + format);
     }
-    return new Lucene42Codec() {
+    return new Lucene45Codec() {
       @Override
       public PostingsFormat getPostingsFormatForField(String field) {
         return format;
@@ -721,7 +721,7 @@ public class _TestUtil {
     if (LuceneTestCase.VERBOSE) {
       System.out.println("forcing docvalues format to:" + format);
     }
-    return new Lucene42Codec() {
+    return new Lucene45Codec() {
       @Override
       public DocValuesFormat getDocValuesFormatForField(String field) {
         return format;
@@ -757,9 +757,12 @@ public class _TestUtil {
     }
   }
 
+  // nocommit: remove this, push this test to Lucene40/Lucene42 codec tests
   public static boolean fieldSupportsHugeBinaryDocValues(String field) {
     String dvFormat = getDocValuesFormat(field);
-    return dvFormat.equals("CheapBastard") ||
+    System.out.println(dvFormat);
+    return dvFormat.equals("Lucene45") ||
+      dvFormat.equals("Asserting") || 
       dvFormat.equals("Disk") ||
       dvFormat.equals("SimpleText");
   }

@@ -42,6 +42,7 @@ import org.apache.lucene.facet.params.FacetIndexingParams;
  * 
  * @lucene.experimental
  */
+// nocommit
 public class Facet42Codec extends Lucene42Codec {
 
   private final Set<String> facetFields;

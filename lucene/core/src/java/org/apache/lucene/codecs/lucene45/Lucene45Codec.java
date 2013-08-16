@@ -1,4 +1,4 @@
-package org.apache.lucene.codecs.lucene40;
+package org.apache.lucene.codecs.lucene45;
 
 /*
  * Licensed to the Apache Software Foundation (ASF) under one or more
@@ -18,47 +18,62 @@ package org.apache.lucene.codecs.lucene40;
  */
 
 import org.apache.lucene.codecs.Codec;
+import org.apache.lucene.codecs.DocValuesFormat;
 import org.apache.lucene.codecs.FieldInfosFormat;
 import org.apache.lucene.codecs.FilterCodec;
 import org.apache.lucene.codecs.LiveDocsFormat;
+import org.apache.lucene.codecs.NormsFormat;
 import org.apache.lucene.codecs.PostingsFormat;
 import org.apache.lucene.codecs.SegmentInfoFormat;
-import org.apache.lucene.codecs.DocValuesFormat;
-import org.apache.lucene.codecs.NormsFormat;
 import org.apache.lucene.codecs.StoredFieldsFormat;
 import org.apache.lucene.codecs.TermVectorsFormat;
+import org.apache.lucene.codecs.lucene40.Lucene40LiveDocsFormat;
+import org.apache.lucene.codecs.lucene40.Lucene40SegmentInfoFormat;
+import org.apache.lucene.codecs.lucene41.Lucene41StoredFieldsFormat;
+import org.apache.lucene.codecs.lucene42.Lucene42FieldInfosFormat;
+import org.apache.lucene.codecs.lucene42.Lucene42NormsFormat;
+import org.apache.lucene.codecs.lucene42.Lucene42TermVectorsFormat;
+import org.apache.lucene.codecs.perfield.PerFieldDocValuesFormat;
 import org.apache.lucene.codecs.perfield.PerFieldPostingsFormat;
 
 /**
- * Implements the Lucene 4.0 index format, with configurable per-field postings formats.
+ * Implements the Lucene 4.5 index format, with configurable per-field postings
+ * and docvalues formats.
  * <p>
  * If you want to reuse functionality of this codec in another codec, extend
  * {@link FilterCodec}.
  *
- * @see org.apache.lucene.codecs.lucene40 package documentation for file format details.
- * @deprecated Only for reading old 4.0 segments
+ * @see org.apache.lucene.codecs.lucene45 package documentation for file format details.
+ * @lucene.experimental
  */
-// NOTE: if we make largish changes in a minor release, easier to just make Lucene42Codec or whatever
+// NOTE: if we make largish changes in a minor release, easier to just make Lucene46Codec or whatever
 // if they are backwards compatible or smallish we can probably do the backwards in the postingsreader
 // (it writes a minor version, etc).
-@Deprecated
-public class Lucene40Codec extends Codec {
-  private final StoredFieldsFormat fieldsFormat = new Lucene40StoredFieldsFormat();
-  private final TermVectorsFormat vectorsFormat = new Lucene40TermVectorsFormat();
-  private final FieldInfosFormat fieldInfosFormat = new Lucene40FieldInfosFormat();
+public class Lucene45Codec extends Codec {
+  private final StoredFieldsFormat fieldsFormat = new Lucene41StoredFieldsFormat();
+  private final TermVectorsFormat vectorsFormat = new Lucene42TermVectorsFormat();
+  private final FieldInfosFormat fieldInfosFormat = new Lucene42FieldInfosFormat();
   private final SegmentInfoFormat infosFormat = new Lucene40SegmentInfoFormat();
   private final LiveDocsFormat liveDocsFormat = new Lucene40LiveDocsFormat();
   
   private final PostingsFormat postingsFormat = new PerFieldPostingsFormat() {
     @Override
     public PostingsFormat getPostingsFormatForField(String field) {
-      return Lucene40Codec.this.getPostingsFormatForField(field);
+      return Lucene45Codec.this.getPostingsFormatForField(field);
+    }
+  };
+  
+  
+  private final DocValuesFormat docValuesFormat = new PerFieldDocValuesFormat() {
+    @Override
+    public DocValuesFormat getDocValuesFormatForField(String field) {
+      return Lucene45Codec.this.getDocValuesFormatForField(field);
     }
   };
 
   /** Sole constructor. */
-  public Lucene40Codec() {
-    super("Lucene40");
+  public Lucene45Codec() {
+    super("Lucene45");
   }
   
   @Override
@@ -77,7 +92,7 @@ public class Lucene40Codec extends Codec {
   }
   
   @Override
-  public FieldInfosFormat fieldInfosFormat() {
+  public final FieldInfosFormat fieldInfosFormat() {
     return fieldInfosFormat;
   }
   
@@ -86,20 +101,6 @@ public class Lucene40Codec extends Codec {
     return infosFormat;
   }
   
-  private final DocValuesFormat defaultDVFormat = new Lucene40DocValuesFormat();
-
-  @Override
-  public DocValuesFormat docValuesFormat() {
-    return defaultDVFormat;
-  }
-
-  private final NormsFormat normsFormat = new Lucene40NormsFormat();
-
-  @Override
-  public NormsFormat normsFormat() {
-    return normsFormat;
-  }
-
   @Override
   public final LiveDocsFormat liveDocsFormat() {
     return liveDocsFormat;
@@ -108,11 +109,33 @@ public class Lucene40Codec extends Codec {
   /** Returns the postings format that should be used for writing 
    *  new segments of <code>field</code>.
    *  
-   *  The default implementation always returns "Lucene40"
+   *  The default implementation always returns "Lucene41"
    */
   public PostingsFormat getPostingsFormatForField(String field) {
     return defaultFormat;
   }
   
-  private final PostingsFormat defaultFormat = PostingsFormat.forName("Lucene40");
+  /** Returns the docvalues format that should be used for writing 
+   *  new segments of <code>field</code>.
+   *  
+   *  The default implementation always returns "Lucene45"
+   */
+  public DocValuesFormat getDocValuesFormatForField(String field) {
+    return defaultDVFormat;
+  }
+  
+  @Override
+  public final DocValuesFormat docValuesFormat() {
+    return docValuesFormat;
+  }
+
+  private final PostingsFormat defaultFormat = PostingsFormat.forName("Lucene41");
+  private final DocValuesFormat defaultDVFormat = DocValuesFormat.forName("Lucene45");
+
+  private final NormsFormat normsFormat = new Lucene42NormsFormat();
+
+  @Override
+  public final NormsFormat normsFormat() {
+    return normsFormat;
+  }
 }

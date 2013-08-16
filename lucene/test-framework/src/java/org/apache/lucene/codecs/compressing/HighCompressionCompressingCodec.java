@@ -21,6 +21,7 @@ import org.apache.lucene.util.packed.PackedInts;
  * limitations under the License.
  */
 
+// nocommit
 /** CompressionCodec that uses {@link CompressionMode#HIGH_COMPRESSION} */
 public class HighCompressionCompressingCodec extends CompressingCodec {
 
