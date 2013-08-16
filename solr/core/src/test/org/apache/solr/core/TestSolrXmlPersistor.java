@@ -35,7 +35,7 @@ public class TestSolrXmlPersistor {
 
     final String solrxml = "<solr><cores adminHandler=\"/admin\"/></solr>";
 
-    SolrXMLCoresLocator persistor = new SolrXMLCoresLocator(new File("testfile.xml"), solrxml, null);
+    SolrXMLCoresLocator persistor = new SolrXMLCoresLocator(solrxml, null);
     assertEquals(persistor.buildSolrXML(EMPTY_CD_LIST),
         "<solr><cores adminHandler=\"/admin\"></cores></solr>");
 
@@ -45,7 +45,7 @@ public class TestSolrXmlPersistor {
   public void emptyCoresTagIsPersisted() {
     final String solrxml = "<solr><cores adminHandler=\"/admin\"></cores></solr>";
 
-    SolrXMLCoresLocator persistor = new SolrXMLCoresLocator(new File("testfile.xml"), solrxml, null);
+    SolrXMLCoresLocator persistor = new SolrXMLCoresLocator(solrxml, null);
     assertEquals(persistor.buildSolrXML(EMPTY_CD_LIST), "<solr><cores adminHandler=\"/admin\"></cores></solr>");
   }
 
@@ -53,7 +53,7 @@ public class TestSolrXmlPersistor {
   public void emptySolrXmlIsPersisted() {
     final String solrxml = "<solr></solr>";
 
-    SolrXMLCoresLocator persistor = new SolrXMLCoresLocator(new File("testfile.xml"), solrxml, null);
+    SolrXMLCoresLocator persistor = new SolrXMLCoresLocator(solrxml, null);
     assertEquals(persistor.buildSolrXML(EMPTY_CD_LIST), "<solr><cores></cores></solr>");
   }
 
@@ -68,7 +68,7 @@ public class TestSolrXmlPersistor {
     final CoreDescriptor cd = new CoreDescriptor(cc, "testcore", "instance/dir/");
     List<CoreDescriptor> cds = ImmutableList.of(cd);
 
-    SolrXMLCoresLocator persistor = new SolrXMLCoresLocator(new File("testfile.xml"), solrxml, null);
+    SolrXMLCoresLocator persistor = new SolrXMLCoresLocator(solrxml, null);
     assertEquals(persistor.buildSolrXML(cds),
           "<solr><cores>" + SolrXMLCoresLocator.NEWLINE
         + "    <core name=\"testcore\" instanceDir=\"instance/dir/\"/>" + SolrXMLCoresLocator.NEWLINE
@@ -89,7 +89,7 @@ public class TestSolrXmlPersistor {
           "</cores>" +
         "</solr>";
 
-    SolrXMLCoresLocator locator = new SolrXMLCoresLocator(new File("testfile.xml"), solrxml, null);
+    SolrXMLCoresLocator locator = new SolrXMLCoresLocator(solrxml, null);
     assertTrue(locator.getTemplate().contains("{{CORES_PLACEHOLDER}}"));
     assertTrue(locator.getTemplate().contains("<shardHandlerFactory "));
     assertTrue(locator.getTemplate().contains("${socketTimeout:500}"));
@@ -107,15 +107,14 @@ public class TestSolrXmlPersistor {
           "</cores>" +
         "</solr>";
 
-    SolrXMLCoresLocator locator = new SolrXMLCoresLocator(new File("testfile.xml"), solrxml, null);
+    SolrXMLCoresLocator locator = new SolrXMLCoresLocator(solrxml, null);
     assertTrue(locator.getTemplate().contains("{{CORES_PLACEHOLDER}}"));
     assertTrue(locator.getTemplate().contains("<shardHandlerFactory "));
   }
 
   @Test
   public void complexXmlIsParsed() {
-    SolrXMLCoresLocator locator = new SolrXMLCoresLocator(new File("testfile.xml"),
-                                        TestSolrXmlPersistence.SOLR_XML_LOTS_SYSVARS, null);
+    SolrXMLCoresLocator locator = new SolrXMLCoresLocator(TestSolrXmlPersistence.SOLR_XML_LOTS_SYSVARS, null);
     assertTrue(locator.getTemplate().contains("{{CORES_PLACEHOLDER}}"));
   }
 

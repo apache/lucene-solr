@@ -61,10 +61,7 @@ public abstract class ConfigSolr {
       else {
         inputStream = new FileInputStream(configFile);
       }
-      ByteArrayOutputStream baos = new ByteArrayOutputStream();
-      ByteStreams.copy(inputStream, baos);
-      String originalXml = IOUtils.toString(new ByteArrayInputStream(baos.toByteArray()), "UTF-8");
-      return fromInputStream(loader, new ByteArrayInputStream(baos.toByteArray()), configFile, originalXml);
+      return fromInputStream(loader, inputStream);
     }
     catch (Exception e) {
       throw new SolrException(SolrException.ErrorCode.SERVER_ERROR,
@@ -76,13 +73,17 @@ public abstract class ConfigSolr {
   }
 
   public static ConfigSolr fromString(String xml) {
-    return fromInputStream(null, new ByteArrayInputStream(xml.getBytes(Charsets.UTF_8)), null, xml);
+    return fromInputStream(null, new ByteArrayInputStream(xml.getBytes(Charsets.UTF_8)));
   }
 
-  public static ConfigSolr fromInputStream(SolrResourceLoader loader, InputStream is, File file, String originalXml) {
+  public static ConfigSolr fromInputStream(SolrResourceLoader loader, InputStream is) {
     try {
-      Config config = new Config(loader, null, new InputSource(is), null, false);
-      return fromConfig(config, file, originalXml);
+      ByteArrayOutputStream baos = new ByteArrayOutputStream();
+      ByteStreams.copy(is, baos);
+      String originalXml = IOUtils.toString(new ByteArrayInputStream(baos.toByteArray()), "UTF-8");
+      ByteArrayInputStream dup = new ByteArrayInputStream(baos.toByteArray());
+      Config config = new Config(loader, null, new InputSource(dup), null, false);
+      return fromConfig(config, originalXml);
     }
     catch (Exception e) {
       throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, e);
@@ -93,9 +94,9 @@ public abstract class ConfigSolr {
     return fromFile(loader, new File(solrHome, SOLR_XML_FILE));
   }
 
-  public static ConfigSolr fromConfig(Config config, File file, String originalXml) {
+  public static ConfigSolr fromConfig(Config config, String originalXml) {
     boolean oldStyle = (config.getNode("solr/cores", false) != null);
-    return oldStyle ? new ConfigSolrXmlOld(config, file, originalXml)
+    return oldStyle ? new ConfigSolrXmlOld(config, originalXml)
                     : new ConfigSolrXml(config);
   }
   
