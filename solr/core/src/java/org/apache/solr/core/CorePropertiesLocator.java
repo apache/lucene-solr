@@ -31,7 +31,6 @@ import java.io.IOException;
 import java.io.InputStreamReader;
 import java.io.OutputStreamWriter;
 import java.io.Writer;
-import java.util.Date;
 import java.util.List;
 import java.util.Properties;
 
@@ -78,6 +77,7 @@ public class CorePropertiesLocator implements CoresLocator {
     Properties p = buildCoreProperties(cd);
     Writer os = null;
     try {
+      propfile.getParentFile().mkdirs();
       os = new OutputStreamWriter(new FileOutputStream(propfile), Charsets.UTF_8);
       p.store(os, "Written by CorePropertiesLocator");
     }
