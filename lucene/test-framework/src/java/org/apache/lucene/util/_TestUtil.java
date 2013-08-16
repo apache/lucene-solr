@@ -59,12 +59,12 @@ import org.apache.lucene.document.NumericDocValuesField;
 import org.apache.lucene.document.SortedDocValuesField;
 import org.apache.lucene.index.AtomicReader;
 import org.apache.lucene.index.AtomicReaderContext;
-import org.apache.lucene.index.CheckIndex;
 import org.apache.lucene.index.CheckIndex.Status.DocValuesStatus;
 import org.apache.lucene.index.CheckIndex.Status.FieldNormStatus;
 import org.apache.lucene.index.CheckIndex.Status.StoredFieldStatus;
 import org.apache.lucene.index.CheckIndex.Status.TermIndexStatus;
 import org.apache.lucene.index.CheckIndex.Status.TermVectorStatus;
+import org.apache.lucene.index.CheckIndex;
 import org.apache.lucene.index.ConcurrentMergeScheduler;
 import org.apache.lucene.index.DocsAndPositionsEnum;
 import org.apache.lucene.index.DocsEnum;
@@ -743,14 +743,25 @@ public class _TestUtil {
       return p.getName();
     }
   }
+
+  public static String getDocValuesFormat(String field) {
+    return getDocValuesFormat(Codec.getDefault(), field);
+  }
   
   public static String getDocValuesFormat(Codec codec, String field) {
-    DocValuesFormat d = codec.docValuesFormat();
-    if (d instanceof PerFieldDocValuesFormat) {
-      return ((PerFieldDocValuesFormat)d).getDocValuesFormatForField(field).getName();
+    DocValuesFormat f = codec.docValuesFormat();
+    if (f instanceof PerFieldDocValuesFormat) {
+      return ((PerFieldDocValuesFormat) f).getDocValuesFormatForField(field).getName();
     } else {
-      return d.getName();
+      return f.getName();
     }
+  }
+
+  public static boolean fieldSupportsHugeBinaryDocValues(String field) {
+    String dvFormat = getDocValuesFormat(field);
+    return dvFormat.equals("CheapBastard") ||
+      dvFormat.equals("Disk") ||
+      dvFormat.equals("SimpleText");
   }
 
   public static boolean anyFilesExceptWriteLock(Directory dir) throws IOException {

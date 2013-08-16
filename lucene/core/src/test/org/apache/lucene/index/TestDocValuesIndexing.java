@@ -326,31 +326,7 @@ public class TestDocValuesIndexing extends LuceneTestCase {
     iwriter.close();
     directory.close();
   }
-  
-  public void testTooLargeBytes() throws IOException {
-    Analyzer analyzer = new MockAnalyzer(random());
 
-    Directory directory = newDirectory();
-    // we don't use RandomIndexWriter because it might add more docvalues than we expect !!!!1
-    IndexWriterConfig iwc = newIndexWriterConfig(TEST_VERSION_CURRENT, analyzer);
-    iwc.setMergePolicy(newLogMergePolicy());
-    IndexWriter iwriter = new IndexWriter(directory, iwc);
-    Document doc = new Document();
-    byte bytes[] = new byte[100000];
-    BytesRef b = new BytesRef(bytes);
-    random().nextBytes(bytes);
-    doc.add(new BinaryDocValuesField("dv", b));
-    try {
-      iwriter.addDocument(doc);
-      fail("did not get expected exception");
-    } catch (IllegalArgumentException expected) {
-      // expected
-    }
-    iwriter.close();
-
-    directory.close();
-  }
-  
   public void testTooLargeSortedBytes() throws IOException {
     Analyzer analyzer = new MockAnalyzer(random());
 

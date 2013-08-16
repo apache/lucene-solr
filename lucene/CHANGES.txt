@@ -122,6 +122,11 @@ Bug Fixes
   boundary, made it into the top-N and went to the formatter.
   (Manuel Amoabeng, Michael McCandless, Robert Muir)
 
+* LUCENE-4583: Indexing core no longer enforces a limit on maximum
+  length binary doc values fields, but individual codecs (including
+  the default one) have their own limits (David Smiley, Robert Muir,
+  Mike McCandless)
+
 API Changes
 
 * LUCENE-5094: Add ramBytesUsed() to MultiDocValues.OrdinalMap.

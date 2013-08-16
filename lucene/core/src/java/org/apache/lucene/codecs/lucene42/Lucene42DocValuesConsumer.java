@@ -37,14 +37,14 @@ import org.apache.lucene.util.IOUtils;
 import org.apache.lucene.util.IntsRef;
 import org.apache.lucene.util.MathUtil;
 import org.apache.lucene.util.fst.Builder;
-import org.apache.lucene.util.fst.FST;
 import org.apache.lucene.util.fst.FST.INPUT_TYPE;
+import org.apache.lucene.util.fst.FST;
 import org.apache.lucene.util.fst.PositiveIntOutputs;
 import org.apache.lucene.util.fst.Util;
 import org.apache.lucene.util.packed.BlockPackedWriter;
 import org.apache.lucene.util.packed.MonotonicBlockPackedWriter;
-import org.apache.lucene.util.packed.PackedInts;
 import org.apache.lucene.util.packed.PackedInts.FormatAndBits;
+import org.apache.lucene.util.packed.PackedInts;
 
 /**
  * Writer for {@link Lucene42DocValuesFormat}
@@ -220,6 +220,9 @@ class Lucene42DocValuesConsumer extends DocValuesConsumer {
     final long startFP = data.getFilePointer();
     for(BytesRef v : values) {
       final int length = v == null ? 0 : v.length;
+      if (length > Lucene42DocValuesFormat.MAX_BINARY_FIELD_LENGTH) {
+        throw new IllegalArgumentException("DocValuesField \"" + field.name + "\" is too large, must be <= " + Lucene42DocValuesFormat.MAX_BINARY_FIELD_LENGTH);
+      }
       minLength = Math.min(minLength, length);
       maxLength = Math.max(maxLength, length);
       if (v != null) {
