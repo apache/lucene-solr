@@ -30,5 +30,11 @@ public class TestLucene40DocValuesFormat extends BaseDocValuesFormatTestCase {
   protected Codec getCodec() {
     return codec;
   }
-  
+
+  // LUCENE-4583: This codec should throw IAE on huge binary values:
+  @Override
+  protected boolean codecAcceptsHugeBinaryValues(String field) {
+    return false;
+  }
+
 }

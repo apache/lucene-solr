@@ -30,4 +30,9 @@ public class TestLucene42DocValuesFormat extends BaseCompressingDocValuesFormatT
   protected Codec getCodec() {
     return codec;
   }
+
+  @Override
+  protected boolean codecAcceptsHugeBinaryValues(String field) {
+    return false;
+  }
 }

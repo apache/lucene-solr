@@ -156,6 +156,9 @@ class Lucene40DocValuesWriter extends DocValuesConsumer {
     int minLength = Integer.MAX_VALUE;
     int maxLength = Integer.MIN_VALUE;
     for (BytesRef b : values) {
+      if (b.length > Lucene40DocValuesFormat.MAX_BINARY_FIELD_LENGTH) {
+        throw new IllegalArgumentException("DocValuesField \"" + field.name + "\" is too large, must be <= " + Lucene40DocValuesFormat.MAX_BINARY_FIELD_LENGTH);
+      }
       minLength = Math.min(minLength, b.length);
       maxLength = Math.max(maxLength, b.length);
       if (uniqueValues != null) {

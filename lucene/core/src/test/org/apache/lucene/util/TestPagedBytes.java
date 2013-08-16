@@ -22,6 +22,7 @@ import java.util.*;
 
 import org.apache.lucene.store.BaseDirectoryWrapper;
 import org.apache.lucene.store.DataInput;
+import org.apache.lucene.store.DataOutput;
 import org.apache.lucene.store.IOContext;
 import org.apache.lucene.store.IndexInput;
 import org.apache.lucene.store.IndexOutput;
@@ -30,6 +31,9 @@ import org.junit.Ignore;
 
 public class TestPagedBytes extends LuceneTestCase {
 
+  // Writes random byte/s to "normal" file in dir, then
+  // copies into PagedBytes and verifies with
+  // PagedBytes.Reader: 
   public void testDataInputOutput() throws Exception {
     Random random = random();
     for(int iter=0;iter<5*RANDOM_MULTIPLIER;iter++) {
@@ -90,6 +94,60 @@ public class TestPagedBytes extends LuceneTestCase {
     }
   }
 
+  // Writes random byte/s into PagedBytes via
+  // .getDataOutput(), then verifies with
+  // PagedBytes.getDataInput(): 
+  public void testDataInputOutput2() throws Exception {
+    Random random = random();
+    for(int iter=0;iter<5*RANDOM_MULTIPLIER;iter++) {
+      final int blockBits = _TestUtil.nextInt(random, 1, 20);
+      final int blockSize = 1 << blockBits;
+      final PagedBytes p = new PagedBytes(blockBits);
+      final DataOutput out = p.getDataOutput();
+      final int numBytes = random().nextInt(10000000);
+
+      final byte[] answer = new byte[numBytes];
+      random().nextBytes(answer);
+      int written = 0;
+      while(written < numBytes) {
+        if (random().nextInt(10) == 7) {
+          out.writeByte(answer[written++]);
+        } else {
+          int chunk = Math.min(random().nextInt(1000), numBytes - written);
+          out.writeBytes(answer, written, chunk);
+          written += chunk;
+        }
+      }
+
+      final PagedBytes.Reader reader = p.freeze(random.nextBoolean());
+
+      final DataInput in = p.getDataInput();
+
+      final byte[] verify = new byte[numBytes];
+      int read = 0;
+      while(read < numBytes) {
+        if (random().nextInt(10) == 7) {
+          verify[read++] = in.readByte();
+        } else {
+          int chunk = Math.min(random().nextInt(1000), numBytes - read);
+          in.readBytes(verify, read, chunk);
+          read += chunk;
+        }
+      }
+      assertTrue(Arrays.equals(answer, verify));
+
+      final BytesRef slice = new BytesRef();
+      for(int iter2=0;iter2<100;iter2++) {
+        final int pos = random.nextInt(numBytes-1);
+        final int len = random.nextInt(Math.min(blockSize+1, numBytes - pos));
+        reader.fillSlice(slice, pos, len);
+        for(int byteUpto=0;byteUpto<len;byteUpto++) {
+          assertEquals(answer[pos + byteUpto], slice.bytes[slice.offset + byteUpto]);
+        }
+      }
+    }
+  }
+
   @Ignore // memory hole
   public void testOverflow() throws IOException {
     BaseDirectoryWrapper dir = newFSDirectory(_TestUtil.getTempDir("testOverflow"));
@@ -126,4 +184,5 @@ public class TestPagedBytes extends LuceneTestCase {
     in.close();
     dir.close();
   }
+
 }

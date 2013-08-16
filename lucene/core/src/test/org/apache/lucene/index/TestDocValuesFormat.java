@@ -19,6 +19,7 @@ package org.apache.lucene.index;
 
 import org.apache.lucene.codecs.Codec;
 import org.apache.lucene.util.LuceneTestCase.SuppressCodecs;
+import org.apache.lucene.util._TestUtil;
 
 /** Tests the codec configuration defined by LuceneTestCase randomly
  *  (typically a mix across different fields).
@@ -29,5 +30,10 @@ public class TestDocValuesFormat extends BaseDocValuesFormatTestCase {
   @Override
   protected Codec getCodec() {
     return Codec.getDefault();
+  }
+
+  @Override
+  protected boolean codecAcceptsHugeBinaryValues(String field) {
+    return _TestUtil.fieldSupportsHugeBinaryDocValues(field);
   }
 }

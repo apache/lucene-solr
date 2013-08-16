@@ -36,6 +36,7 @@ import org.apache.lucene.store.IndexInput;
 // other "shift/mask big arrays". there are too many of these classes!
 public final class PagedBytes {
   private final List<byte[]> blocks = new ArrayList<byte[]>();
+  // TODO: these are unused?
   private final List<Integer> blockEnd = new ArrayList<Integer>();
   private final int blockSize;
   private final int blockBits;
@@ -44,6 +45,7 @@ public final class PagedBytes {
   private boolean frozen;
   private int upto;
   private byte[] currentBlock;
+  private final long bytesUsedPerBlock;
 
   private static final byte[] EMPTY_BYTES = new byte[0];
 
@@ -77,13 +79,13 @@ public final class PagedBytes {
      * given length. Iff the slice spans across a block border this method will
      * allocate sufficient resources and copy the paged data.
      * <p>
-     * Slices spanning more than one block are not supported.
+     * Slices spanning more than two blocks are not supported.
      * </p>
      * @lucene.internal 
      **/
     public void fillSlice(BytesRef b, long start, int length) {
       assert length >= 0: "length=" + length;
-      assert length <= blockSize+1;
+      assert length <= blockSize+1: "length=" + length;
       final int index = (int) (start >> blockBits);
       final int offset = (int) (start & blockMask);
       b.length = length;
@@ -134,6 +136,7 @@ public final class PagedBytes {
     this.blockBits = blockBits;
     blockMask = blockSize-1;
     upto = blockSize;
+    bytesUsedPerBlock = blockSize + RamUsageEstimator.NUM_BYTES_ARRAY_HEADER + RamUsageEstimator.NUM_BYTES_OBJECT_REF;
   }
 
   /** Read this many bytes from in */
@@ -216,6 +219,11 @@ public final class PagedBytes {
     } else {
       return (blocks.size() * ((long) blockSize)) + upto;
     }
+  }
+
+  /** Return approx RAM usage in bytes. */
+  public long ramBytesUsed() {
+    return (blocks.size() + (currentBlock != null ? 1 : 0)) * bytesUsedPerBlock;
   }
 
   /** Copy bytes in, writing the length as a 1 or 2 byte

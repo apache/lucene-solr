@@ -118,8 +118,17 @@ import org.apache.lucene.util.packed.BlockPackedWriter;
  *   <p>SortedSet entries store the list of ordinals in their BinaryData as a
  *      sequences of increasing {@link DataOutput#writeVLong vLong}s, delta-encoded.</p>       
  * </ol>
+ * <p>
+ * Limitations:
+ * <ul>
+ *   <li> Binary doc values can be at most {@link #MAX_BINARY_FIELD_LENGTH} in length.
+ * </ul>
  */
 public final class Lucene42DocValuesFormat extends DocValuesFormat {
+
+  /** Maximum length for each binary doc values field. */
+  public static final int MAX_BINARY_FIELD_LENGTH = (1 << 15) - 2;
+  
   final float acceptableOverheadRatio;
   
   /** 
