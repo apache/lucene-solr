@@ -21,6 +21,8 @@ import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
 
+import org.apache.lucene.store.DataInput;
+import org.apache.lucene.store.DataOutput;
 import org.apache.lucene.store.IndexInput;
 
 /** Represents a logical byte[] as a series of pages.  You
@@ -34,6 +36,7 @@ import org.apache.lucene.store.IndexInput;
 // other "shift/mask big arrays". there are too many of these classes!
 public final class PagedBytes {
   private final List<byte[]> blocks = new ArrayList<byte[]>();
+  // TODO: these are unused?
   private final List<Integer> blockEnd = new ArrayList<Integer>();
   private final int blockSize;
   private final int blockBits;
@@ -42,6 +45,7 @@ public final class PagedBytes {
   private boolean frozen;
   private int upto;
   private byte[] currentBlock;
+  private final long bytesUsedPerBlock;
 
   private static final byte[] EMPTY_BYTES = new byte[0];
 
@@ -75,13 +79,13 @@ public final class PagedBytes {
      * given length. Iff the slice spans across a block border this method will
      * allocate sufficient resources and copy the paged data.
      * <p>
-     * Slices spanning more than one block are not supported.
+     * Slices spanning more than two blocks are not supported.
      * </p>
      * @lucene.internal 
      **/
     public void fillSlice(BytesRef b, long start, int length) {
       assert length >= 0: "length=" + length;
-      assert length <= blockSize+1;
+      assert length <= blockSize+1: "length=" + length;
       final int index = (int) (start >> blockBits);
       final int offset = (int) (start & blockMask);
       b.length = length;
@@ -132,6 +136,7 @@ public final class PagedBytes {
     this.blockBits = blockBits;
     blockMask = blockSize-1;
     upto = blockSize;
+    bytesUsedPerBlock = blockSize + RamUsageEstimator.NUM_BYTES_ARRAY_HEADER + RamUsageEstimator.NUM_BYTES_OBJECT_REF;
   }
 
   /** Read this many bytes from in */
@@ -216,6 +221,11 @@ public final class PagedBytes {
     }
   }
 
+  /** Return approx RAM usage in bytes. */
+  public long ramBytesUsed() {
+    return (blocks.size() + (currentBlock != null ? 1 : 0)) * bytesUsedPerBlock;
+  }
+
   /** Copy bytes in, writing the length as a 1 or 2 byte
    *  vInt prefix. */
   // TODO: this really needs to be refactored into fieldcacheimpl!
@@ -248,5 +258,149 @@ public final class PagedBytes {
     upto += bytes.length;
 
     return pointer;
+  }
+
+  public final class PagedBytesDataInput extends DataInput {
+    private int currentBlockIndex;
+    private int currentBlockUpto;
+    private byte[] currentBlock;
+
+    PagedBytesDataInput() {
+      currentBlock = blocks.get(0);
+    }
+
+    @Override
+    public PagedBytesDataInput clone() {
+      PagedBytesDataInput clone = getDataInput();
+      clone.setPosition(getPosition());
+      return clone;
+    }
+
+    /** Returns the current byte position. */
+    public long getPosition() {
+      return (long) currentBlockIndex * blockSize + currentBlockUpto;
+    }
+  
+    /** Seek to a position previously obtained from
+     *  {@link #getPosition}. */
+    public void setPosition(long pos) {
+      currentBlockIndex = (int) (pos >> blockBits);
+      currentBlock = blocks.get(currentBlockIndex);
+      currentBlockUpto = (int) (pos & blockMask);
+    }
+
+    @Override
+    public byte readByte() {
+      if (currentBlockUpto == blockSize) {
+        nextBlock();
+      }
+      return currentBlock[currentBlockUpto++];
+    }
+
+    @Override
+    public void readBytes(byte[] b, int offset, int len) {
+      assert b.length >= offset + len;
+      final int offsetEnd = offset + len;
+      while (true) {
+        final int blockLeft = blockSize - currentBlockUpto;
+        final int left = offsetEnd - offset;
+        if (blockLeft < left) {
+          System.arraycopy(currentBlock, currentBlockUpto,
+                           b, offset,
+                           blockLeft);
+          nextBlock();
+          offset += blockLeft;
+        } else {
+          // Last block
+          System.arraycopy(currentBlock, currentBlockUpto,
+                           b, offset,
+                           left);
+          currentBlockUpto += left;
+          break;
+        }
+      }
+    }
+
+    private void nextBlock() {
+      currentBlockIndex++;
+      currentBlockUpto = 0;
+      currentBlock = blocks.get(currentBlockIndex);
+    }
+  }
+
+  public final class PagedBytesDataOutput extends DataOutput {
+    @Override
+    public void writeByte(byte b) {
+      if (upto == blockSize) {
+        if (currentBlock != null) {
+          blocks.add(currentBlock);
+          blockEnd.add(upto);
+        }
+        currentBlock = new byte[blockSize];
+        upto = 0;
+      }
+      currentBlock[upto++] = b;
+    }
+
+    @Override
+    public void writeBytes(byte[] b, int offset, int length) {
+      assert b.length >= offset + length;
+      if (length == 0) {
+        return;
+      }
+
+      if (upto == blockSize) {
+        if (currentBlock != null) {
+          blocks.add(currentBlock);
+          blockEnd.add(upto);
+        }
+        currentBlock = new byte[blockSize];
+        upto = 0;
+      }
+          
+      final int offsetEnd = offset + length;
+      while(true) {
+        final int left = offsetEnd - offset;
+        final int blockLeft = blockSize - upto;
+        if (blockLeft < left) {
+          System.arraycopy(b, offset, currentBlock, upto, blockLeft);
+          blocks.add(currentBlock);
+          blockEnd.add(blockSize);
+          currentBlock = new byte[blockSize];
+          upto = 0;
+          offset += blockLeft;
+        } else {
+          // Last block
+          System.arraycopy(b, offset, currentBlock, upto, left);
+          upto += left;
+          break;
+        }
+      }
+    }
+
+    /** Return the current byte position. */
+    public long getPosition() {
+      return getPointer();
+    }
+  }
+
+  /** Returns a DataInput to read values from this
+   *  PagedBytes instance. */
+  public PagedBytesDataInput getDataInput() {
+    if (!frozen) {
+      throw new IllegalStateException("must call freeze() before getDataInput");
+    }
+    return new PagedBytesDataInput();
+  }
+
+  /** Returns a DataOutput that you may use to write into
+   *  this PagedBytes instance.  If you do this, you should
+   *  not call the other writing methods (eg, copy);
+   *  results are undefined. */
+  public PagedBytesDataOutput getDataOutput() {
+    if (frozen) {
+      throw new IllegalStateException("cannot get DataOutput after freeze()");
+    }
+    return new PagedBytesDataOutput();
   }
 }
