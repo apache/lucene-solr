@@ -229,7 +229,7 @@ Changes in backwards compatibility policy
 Build
 
 * SOLR-5159: Manifest includes non-parsed maven variables. 
-  (Artem Karenko via Steve Rowe)
+  (Artem Karpenko via Steve Rowe)
 
 ======================= Lucene 4.4.0 =======================
 
