@@ -91,7 +91,8 @@ New Features
 * SOLR-4808: Persist and use router,replicationFactor and maxShardsPerNode at Collection and Shard level (Noble Paul, Shalin Mangar)
 * SOLR-5006: CREATESHARD command for 'implicit' shards (Noble Paul)
 * SOLR-5017: Allow sharding based on the value of a field (Noble Paul)
-* SOLR-4222:create custom sharded collection via collections API (Noble Paul)
+* SOLR-4222: create custom sharded collection via collections API (Noble Paul)
+* SOLR-5156: Enhance ZkCLI to allow uploading of arbitrary files to ZK.
 
 Bug Fixes
 ----------------------
@@ -130,8 +131,6 @@ Bug Fixes
   of divide by zero, and makes estimated hit counts meaningful in non-optimized
   indexes.  (hossman)
   
-* SOLR-5164: Can not create a collection via collections API (cloud mode) (Erick Erickson)
-
 Optimizations
 ----------------------
 
