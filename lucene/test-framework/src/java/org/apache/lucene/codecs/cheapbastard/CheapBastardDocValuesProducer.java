@@ -27,6 +27,7 @@ import java.util.Map;
 
 import org.apache.lucene.codecs.CodecUtil;
 import org.apache.lucene.codecs.DocValuesProducer;
+import org.apache.lucene.codecs.DocValuesProducer.SortedSetDocsWithField;
 import org.apache.lucene.codecs.diskdv.DiskDocValuesConsumer;
 import org.apache.lucene.codecs.diskdv.DiskDocValuesFormat;
 import org.apache.lucene.index.BinaryDocValues;
@@ -38,6 +39,7 @@ import org.apache.lucene.index.SegmentReadState;
 import org.apache.lucene.index.SortedDocValues;
 import org.apache.lucene.index.SortedSetDocValues;
 import org.apache.lucene.store.IndexInput;
+import org.apache.lucene.util.Bits;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.IOUtils;
 import org.apache.lucene.util.packed.BlockPackedReader;
@@ -50,9 +52,11 @@ class CheapBastardDocValuesProducer extends DocValuesProducer {
   private final Map<Integer,NumericEntry> ordIndexes;
   private final Map<Integer,BinaryEntry> binaries;
   private final IndexInput data;
+  private final int maxDoc;
   
   CheapBastardDocValuesProducer(SegmentReadState state, String dataCodec, String dataExtension, String metaCodec, String metaExtension) throws IOException {
     String metaName = IndexFileNames.segmentFileName(state.segmentInfo.name, state.segmentSuffix, metaExtension);
+    this.maxDoc = state.segmentInfo.getDocCount();
     // read in the entries from the metadata file.
     IndexInput in = state.directory.openInput(metaName, state.context);
     boolean success = false;
@@ -379,6 +383,15 @@ class CheapBastardDocValuesProducer extends DocValuesProducer {
         return valueCount;
       }
     };
+  }
+  
+  @Override
+  public Bits getDocsWithField(FieldInfo field) throws IOException {
+    if (field.getDocValuesType() == FieldInfo.DocValuesType.SORTED_SET) {
+      return new SortedSetDocsWithField(getSortedSet(field), maxDoc);
+    } else {
+      return new Bits.MatchAllBits(maxDoc);
+    }
   }
 
   @Override

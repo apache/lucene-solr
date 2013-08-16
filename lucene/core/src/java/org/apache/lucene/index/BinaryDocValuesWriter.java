@@ -26,6 +26,8 @@ import org.apache.lucene.util.ByteBlockPool.DirectTrackingAllocator;
 import org.apache.lucene.util.ByteBlockPool;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.Counter;
+import org.apache.lucene.util.OpenBitSet;
+import org.apache.lucene.util.RamUsageEstimator;
 import org.apache.lucene.util.packed.AppendingDeltaPackedLongBuffer;
 import org.apache.lucene.util.packed.PackedInts;
 
@@ -38,6 +40,9 @@ class BinaryDocValuesWriter extends DocValuesWriter {
 
   private final ByteBlockPool pool;
   private final AppendingDeltaPackedLongBuffer lengths;
+  private final OpenBitSet docsWithField;
+  private final Counter iwBytesUsed;
+  private long bytesUsed;
   private final FieldInfo fieldInfo;
   private int addedValues = 0;
 
@@ -45,6 +50,10 @@ class BinaryDocValuesWriter extends DocValuesWriter {
     this.fieldInfo = fieldInfo;
     this.pool = new ByteBlockPool(new DirectTrackingAllocator(iwBytesUsed));
     this.lengths = new AppendingDeltaPackedLongBuffer(PackedInts.COMPACT);
+    this.iwBytesUsed = iwBytesUsed;
+    this.docsWithField = new OpenBitSet();
+    this.bytesUsed = docsWithFieldBytesUsed();
+    iwBytesUsed.addAndGet(bytesUsed);
   }
 
   public void addValue(int docID, BytesRef value) {
@@ -66,6 +75,19 @@ class BinaryDocValuesWriter extends DocValuesWriter {
     addedValues++;
     lengths.add(value.length);
     pool.append(value);
+    docsWithField.set(docID);
+    updateBytesUsed();
+  }
+  
+  private long docsWithFieldBytesUsed() {
+    // nocommit: this is not correct
+    return docsWithField.getBits().length*RamUsageEstimator.NUM_BYTES_LONG;
+  }
+  
+  private void updateBytesUsed() {
+    final long newBytesUsed = docsWithFieldBytesUsed();
+    iwBytesUsed.addAndGet(newBytesUsed - bytesUsed);
+    bytesUsed = newBytesUsed;
   }
 
   @Override
@@ -111,19 +133,23 @@ class BinaryDocValuesWriter extends DocValuesWriter {
       if (!hasNext()) {
         throw new NoSuchElementException();
       }
+      final BytesRef v;
       if (upto < size) {
         int length = (int) lengthsIterator.next();
         value.grow(length);
         value.length = length;
         pool.readBytes(byteOffset, value.bytes, value.offset, value.length);
         byteOffset += length;
+        if (docsWithField.get(upto)) {
+          v = value;
+        } else {
+          v = null;
+        }
       } else {
-        // This is to handle last N documents not having
-        // this DV field in the end of the segment:
-        value.length = 0;
+        v = null;
       }
       upto++;
-      return value;
+      return v;
     }
 
     @Override

@@ -52,6 +52,7 @@ import org.apache.lucene.search.ScoreDoc;
 import org.apache.lucene.search.TermQuery;
 import org.apache.lucene.search.TopDocs;
 import org.apache.lucene.store.Directory;
+import org.apache.lucene.util.Bits;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.BytesRefHash;
 import org.apache.lucene.util.LuceneTestCase;
@@ -1073,8 +1074,10 @@ public abstract class BaseDocValuesFormatTestCase extends LuceneTestCase {
       doc.add(newTextField("id", "noValue", Field.Store.YES));
       w.addDocument(doc);
     }
-    BytesRef bytesRef = new BytesRef();
-    hash.add(bytesRef); // add empty value for the gaps
+    if (!codecSupportsDocsWithField("field")) {
+      BytesRef bytesRef = new BytesRef();
+      hash.add(bytesRef); // add empty value for the gaps
+    }
     if (rarely()) {
       w.commit();
     }
@@ -2196,6 +2199,206 @@ public abstract class BaseDocValuesFormatTestCase extends LuceneTestCase {
       };
       doTestNumericsVsStoredFields(longs);
     }
+  }
+  
+  public void testTwoNumbersOneMissing() throws IOException {
+    assumeTrue("Codec does not support getDocsWithField", codecSupportsDocsWithField("dv1"));
+    Directory directory = newDirectory();
+    IndexWriterConfig conf = newIndexWriterConfig(TEST_VERSION_CURRENT, null);
+    conf.setMergePolicy(newLogMergePolicy());
+    RandomIndexWriter iw = new RandomIndexWriter(random(), directory, conf);
+    Document doc = new Document();
+    doc.add(new StringField("id", "0", Field.Store.YES));
+    doc.add(new NumericDocValuesField("dv1", 0));
+    iw.addDocument(doc);
+    doc = new Document();
+    doc.add(new StringField("id", "1", Field.Store.YES));
+    iw.addDocument(doc);
+    iw.forceMerge(1);
+    iw.close();
+    
+    IndexReader ir = DirectoryReader.open(directory);
+    assertEquals(1, ir.leaves().size());
+    AtomicReader ar = ir.leaves().get(0).reader();
+    NumericDocValues dv = ar.getNumericDocValues("dv1");
+    assertEquals(0, dv.get(0));
+    assertEquals(0, dv.get(1));
+    Bits docsWithField = ar.getDocsWithField("dv1");
+    assertTrue(docsWithField.get(0));
+    assertFalse(docsWithField.get(1));
+    ir.close();
+    directory.close();
+  }
+  
+  public void testTwoNumbersOneMissingWithMerging() throws IOException {
+    assumeTrue("Codec does not support getDocsWithField", codecSupportsDocsWithField("dv1"));
+    Directory directory = newDirectory();
+    IndexWriterConfig conf = newIndexWriterConfig(TEST_VERSION_CURRENT, null);
+    conf.setMergePolicy(newLogMergePolicy());
+    RandomIndexWriter iw = new RandomIndexWriter(random(), directory, conf);
+    Document doc = new Document();
+    doc.add(new StringField("id", "0", Field.Store.YES));
+    doc.add(new NumericDocValuesField("dv1", 0));
+    iw.addDocument(doc);
+    iw.commit();
+    doc = new Document();
+    doc.add(new StringField("id", "1", Field.Store.YES));
+    iw.addDocument(doc);
+    iw.forceMerge(1);
+    iw.close();
+    
+    IndexReader ir = DirectoryReader.open(directory);
+    assertEquals(1, ir.leaves().size());
+    AtomicReader ar = ir.leaves().get(0).reader();
+    NumericDocValues dv = ar.getNumericDocValues("dv1");
+    assertEquals(0, dv.get(0));
+    assertEquals(0, dv.get(1));
+    Bits docsWithField = ar.getDocsWithField("dv1");
+    assertTrue(docsWithField.get(0));
+    assertFalse(docsWithField.get(1));
+    ir.close();
+    directory.close();
+  }
+  
+  public void testThreeNumbersOneMissingWithMerging() throws IOException {
+    assumeTrue("Codec does not support getDocsWithField", codecSupportsDocsWithField("dv1"));
+    Directory directory = newDirectory();
+    IndexWriterConfig conf = newIndexWriterConfig(TEST_VERSION_CURRENT, null);
+    conf.setMergePolicy(newLogMergePolicy());
+    RandomIndexWriter iw = new RandomIndexWriter(random(), directory, conf);
+    Document doc = new Document();
+    doc.add(new StringField("id", "0", Field.Store.YES));
+    doc.add(new NumericDocValuesField("dv1", 0));
+    iw.addDocument(doc);
+    doc = new Document();
+    doc.add(new StringField("id", "1", Field.Store.YES));
+    iw.addDocument(doc);
+    iw.commit();
+    doc = new Document();
+    doc.add(new StringField("id", "2", Field.Store.YES));
+    doc.add(new NumericDocValuesField("dv1", 5));
+    iw.addDocument(doc);
+    iw.forceMerge(1);
+    iw.close();
+    
+    IndexReader ir = DirectoryReader.open(directory);
+    assertEquals(1, ir.leaves().size());
+    AtomicReader ar = ir.leaves().get(0).reader();
+    NumericDocValues dv = ar.getNumericDocValues("dv1");
+    assertEquals(0, dv.get(0));
+    assertEquals(0, dv.get(1));
+    assertEquals(5, dv.get(2));
+    Bits docsWithField = ar.getDocsWithField("dv1");
+    assertTrue(docsWithField.get(0));
+    assertFalse(docsWithField.get(1));
+    assertTrue(docsWithField.get(2));
+    ir.close();
+    directory.close();
+  }
+  
+  public void testTwoBytesOneMissing() throws IOException {
+    assumeTrue("Codec does not support getDocsWithField", codecSupportsDocsWithField("dv1"));
+    Directory directory = newDirectory();
+    IndexWriterConfig conf = newIndexWriterConfig(TEST_VERSION_CURRENT, null);
+    conf.setMergePolicy(newLogMergePolicy());
+    RandomIndexWriter iw = new RandomIndexWriter(random(), directory, conf);
+    Document doc = new Document();
+    doc.add(new StringField("id", "0", Field.Store.YES));
+    doc.add(new BinaryDocValuesField("dv1", new BytesRef()));
+    iw.addDocument(doc);
+    doc = new Document();
+    doc.add(new StringField("id", "1", Field.Store.YES));
+    iw.addDocument(doc);
+    iw.forceMerge(1);
+    iw.close();
+    
+    IndexReader ir = DirectoryReader.open(directory);
+    assertEquals(1, ir.leaves().size());
+    AtomicReader ar = ir.leaves().get(0).reader();
+    BinaryDocValues dv = ar.getBinaryDocValues("dv1");
+    BytesRef ref = new BytesRef();
+    dv.get(0, ref);
+    assertEquals(new BytesRef(), ref);
+    dv.get(1, ref);
+    assertEquals(new BytesRef(), ref);
+    Bits docsWithField = ar.getDocsWithField("dv1");
+    assertTrue(docsWithField.get(0));
+    assertFalse(docsWithField.get(1));
+    ir.close();
+    directory.close();
+  }
+  
+  public void testTwoBytesOneMissingWithMerging() throws IOException {
+    assumeTrue("Codec does not support getDocsWithField", codecSupportsDocsWithField("dv1"));
+    Directory directory = newDirectory();
+    IndexWriterConfig conf = newIndexWriterConfig(TEST_VERSION_CURRENT, null);
+    conf.setMergePolicy(newLogMergePolicy());
+    RandomIndexWriter iw = new RandomIndexWriter(random(), directory, conf);
+    Document doc = new Document();
+    doc.add(new StringField("id", "0", Field.Store.YES));
+    doc.add(new BinaryDocValuesField("dv1", new BytesRef()));
+    iw.addDocument(doc);
+    iw.commit();
+    doc = new Document();
+    doc.add(new StringField("id", "1", Field.Store.YES));
+    iw.addDocument(doc);
+    iw.forceMerge(1);
+    iw.close();
+    
+    IndexReader ir = DirectoryReader.open(directory);
+    assertEquals(1, ir.leaves().size());
+    AtomicReader ar = ir.leaves().get(0).reader();
+    BinaryDocValues dv = ar.getBinaryDocValues("dv1");
+    BytesRef ref = new BytesRef();
+    dv.get(0, ref);
+    assertEquals(new BytesRef(), ref);
+    dv.get(1, ref);
+    assertEquals(new BytesRef(), ref);
+    Bits docsWithField = ar.getDocsWithField("dv1");
+    assertTrue(docsWithField.get(0));
+    assertFalse(docsWithField.get(1));
+    ir.close();
+    directory.close();
+  }
+  
+  public void testThreeBytesOneMissingWithMerging() throws IOException {
+    assumeTrue("Codec does not support getDocsWithField", codecSupportsDocsWithField("dv1"));
+    Directory directory = newDirectory();
+    IndexWriterConfig conf = newIndexWriterConfig(TEST_VERSION_CURRENT, null);
+    conf.setMergePolicy(newLogMergePolicy());
+    RandomIndexWriter iw = new RandomIndexWriter(random(), directory, conf);
+    Document doc = new Document();
+    doc.add(new StringField("id", "0", Field.Store.YES));
+    doc.add(new BinaryDocValuesField("dv1", new BytesRef()));
+    iw.addDocument(doc);
+    doc = new Document();
+    doc.add(new StringField("id", "1", Field.Store.YES));
+    iw.addDocument(doc);
+    iw.commit();
+    doc = new Document();
+    doc.add(new StringField("id", "2", Field.Store.YES));
+    doc.add(new BinaryDocValuesField("dv1", new BytesRef("boo")));
+    iw.addDocument(doc);
+    iw.forceMerge(1);
+    iw.close();
+    
+    IndexReader ir = DirectoryReader.open(directory);
+    assertEquals(1, ir.leaves().size());
+    AtomicReader ar = ir.leaves().get(0).reader();
+    BinaryDocValues dv = ar.getBinaryDocValues("dv1");
+    BytesRef ref = new BytesRef();
+    dv.get(0, ref);
+    assertEquals(new BytesRef(), ref);
+    dv.get(1, ref);
+    assertEquals(new BytesRef(), ref);
+    dv.get(2, ref);
+    assertEquals(new BytesRef("boo"), ref);
+    Bits docsWithField = ar.getDocsWithField("dv1");
+    assertTrue(docsWithField.get(0));
+    assertFalse(docsWithField.get(1));
+    assertTrue(docsWithField.get(2));
+    ir.close();
+    directory.close();
   }
 
 }

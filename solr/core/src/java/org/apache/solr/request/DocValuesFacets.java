@@ -221,6 +221,7 @@ public class DocValuesFacets {
         if (schemaField.multiValued()) {
           missingCount = SimpleFacets.getFieldMissingCount(searcher,docs,schemaField.getName());
         } else {
+          // nocommit: support missing count (ord = -1) for single-valued here.
           missingCount = 0; // single-valued dv is implicitly 0
         }
       }

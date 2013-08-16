@@ -30,6 +30,7 @@ import org.apache.lucene.codecs.TermVectorsWriter;
 import org.apache.lucene.index.FieldInfo.DocValuesType;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.IOContext;
+import org.apache.lucene.util.Bits;
 import org.apache.lucene.util.IOUtils;
 import org.apache.lucene.util.InfoStream;
 
@@ -156,24 +157,32 @@ final class SegmentMerger {
         if (type != null) {
           if (type == DocValuesType.NUMERIC) {
             List<NumericDocValues> toMerge = new ArrayList<NumericDocValues>();
+            List<Bits> docsWithField = new ArrayList<Bits>();
             for (AtomicReader reader : mergeState.readers) {
               NumericDocValues values = reader.getNumericDocValues(field.name);
+              Bits bits = reader.getDocsWithField(field.name);
               if (values == null) {
                 values = NumericDocValues.EMPTY;
+                bits = new Bits.MatchNoBits(reader.maxDoc());
               }
               toMerge.add(values);
+              docsWithField.add(bits);
             }
-            consumer.mergeNumericField(field, mergeState, toMerge);
+            consumer.mergeNumericField(field, mergeState, toMerge, docsWithField);
           } else if (type == DocValuesType.BINARY) {
             List<BinaryDocValues> toMerge = new ArrayList<BinaryDocValues>();
+            List<Bits> docsWithField = new ArrayList<Bits>();
             for (AtomicReader reader : mergeState.readers) {
               BinaryDocValues values = reader.getBinaryDocValues(field.name);
+              Bits bits = reader.getDocsWithField(field.name);
               if (values == null) {
                 values = BinaryDocValues.EMPTY;
+                bits = new Bits.MatchNoBits(reader.maxDoc());
               }
               toMerge.add(values);
+              docsWithField.add(bits);
             }
-            consumer.mergeBinaryField(field, mergeState, toMerge);
+            consumer.mergeBinaryField(field, mergeState, toMerge, docsWithField);
           } else if (type == DocValuesType.SORTED) {
             List<SortedDocValues> toMerge = new ArrayList<SortedDocValues>();
             for (AtomicReader reader : mergeState.readers) {
@@ -216,14 +225,16 @@ final class SegmentMerger {
       for (FieldInfo field : mergeState.fieldInfos) {
         if (field.hasNorms()) {
           List<NumericDocValues> toMerge = new ArrayList<NumericDocValues>();
+          List<Bits> docsWithField = new ArrayList<Bits>();
           for (AtomicReader reader : mergeState.readers) {
             NumericDocValues norms = reader.getNormValues(field.name);
             if (norms == null) {
               norms = NumericDocValues.EMPTY;
             }
             toMerge.add(norms);
+            docsWithField.add(new Bits.MatchAllBits(reader.maxDoc()));
           }
-          consumer.mergeNumericField(field, mergeState, toMerge);
+          consumer.mergeNumericField(field, mergeState, toMerge, docsWithField);
         }
       }
       success = true;

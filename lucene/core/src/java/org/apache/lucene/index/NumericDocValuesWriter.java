@@ -23,6 +23,8 @@ import java.util.NoSuchElementException;
 
 import org.apache.lucene.codecs.DocValuesConsumer;
 import org.apache.lucene.util.Counter;
+import org.apache.lucene.util.OpenBitSet;
+import org.apache.lucene.util.RamUsageEstimator;
 import org.apache.lucene.util.packed.AppendingDeltaPackedLongBuffer;
 import org.apache.lucene.util.packed.PackedInts;
 
@@ -35,14 +37,18 @@ class NumericDocValuesWriter extends DocValuesWriter {
   private AppendingDeltaPackedLongBuffer pending;
   private final Counter iwBytesUsed;
   private long bytesUsed;
+  private final OpenBitSet docsWithField;
   private final FieldInfo fieldInfo;
+  private final boolean trackDocsWithField;
 
-  public NumericDocValuesWriter(FieldInfo fieldInfo, Counter iwBytesUsed) {
+  public NumericDocValuesWriter(FieldInfo fieldInfo, Counter iwBytesUsed, boolean trackDocsWithField) {
     pending = new AppendingDeltaPackedLongBuffer(PackedInts.COMPACT);
-    bytesUsed = pending.ramBytesUsed();
+    docsWithField = new OpenBitSet();
+    bytesUsed = pending.ramBytesUsed() + docsWithFieldBytesUsed();
     this.fieldInfo = fieldInfo;
     this.iwBytesUsed = iwBytesUsed;
     iwBytesUsed.addAndGet(bytesUsed);
+    this.trackDocsWithField = trackDocsWithField;
   }
 
   public void addValue(int docID, long value) {
@@ -56,12 +62,20 @@ class NumericDocValuesWriter extends DocValuesWriter {
     }
 
     pending.add(value);
+    if (trackDocsWithField) {
+      docsWithField.set(docID);
+    }
 
     updateBytesUsed();
   }
+  
+  private long docsWithFieldBytesUsed() {
+    // nocommit: this is not correct
+    return docsWithField.getBits().length*RamUsageEstimator.NUM_BYTES_LONG;
+  }
 
   private void updateBytesUsed() {
-    final long newBytesUsed = pending.ramBytesUsed();
+    final long newBytesUsed = pending.ramBytesUsed() + docsWithFieldBytesUsed();
     iwBytesUsed.addAndGet(newBytesUsed - bytesUsed);
     bytesUsed = newBytesUsed;
   }
@@ -109,14 +123,18 @@ class NumericDocValuesWriter extends DocValuesWriter {
       if (!hasNext()) {
         throw new NoSuchElementException();
       }
-      long value;
+      Long value;
       if (upto < size) {
-        value = iter.next();
+        long v = iter.next();
+        if (!trackDocsWithField || docsWithField.get(upto)) {
+          value = v;
+        } else {
+          value = null;
+        }
       } else {
-        value = 0;
+        value = trackDocsWithField ? null : MISSING;
       }
       upto++;
-      // TODO: make reusable Number
       return value;
     }
 

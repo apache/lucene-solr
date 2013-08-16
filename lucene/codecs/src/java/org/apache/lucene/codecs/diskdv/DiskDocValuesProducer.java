@@ -32,6 +32,7 @@ import java.util.Map;
 
 import org.apache.lucene.codecs.CodecUtil;
 import org.apache.lucene.codecs.DocValuesProducer;
+import org.apache.lucene.codecs.DocValuesProducer.SortedSetDocsWithField;
 import org.apache.lucene.index.BinaryDocValues;
 import org.apache.lucene.index.CorruptIndexException;
 import org.apache.lucene.index.DocsAndPositionsEnum;
@@ -59,6 +60,7 @@ class DiskDocValuesProducer extends DocValuesProducer {
   private final Map<Integer,NumericEntry> ords;
   private final Map<Integer,NumericEntry> ordIndexes;
   private final IndexInput data;
+  private final int maxDoc;
 
   // memory-resident structures
   private final Map<Integer,MonotonicBlockPackedReader> addressInstances = new HashMap<Integer,MonotonicBlockPackedReader>();
@@ -68,6 +70,7 @@ class DiskDocValuesProducer extends DocValuesProducer {
     String metaName = IndexFileNames.segmentFileName(state.segmentInfo.name, state.segmentSuffix, metaExtension);
     // read in the entries from the metadata file.
     IndexInput in = state.directory.openInput(metaName, state.context);
+    this.maxDoc = state.segmentInfo.getDocCount();
     boolean success = false;
     final int version;
     try {
@@ -488,6 +491,17 @@ class DiskDocValuesProducer extends DocValuesProducer {
         }
       }
     };
+  }
+
+  @Override
+  public Bits getDocsWithField(FieldInfo field) throws IOException {
+    // nocommit: only use this if the field's entry has missing values (write that),
+    // otherwise return MatchAllBits
+    if (field.getDocValuesType() == FieldInfo.DocValuesType.SORTED_SET) {
+      return new SortedSetDocsWithField(getSortedSet(field), maxDoc);
+    } else {
+      return new Bits.MatchAllBits(maxDoc);
+    }
   }
 
   @Override

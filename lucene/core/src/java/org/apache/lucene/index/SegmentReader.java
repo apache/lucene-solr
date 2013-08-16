@@ -224,6 +224,12 @@ public final class SegmentReader extends AtomicReader {
   }
 
   @Override
+  public Bits getDocsWithField(String field) throws IOException {
+    ensureOpen();
+    return core.getDocsWithField(field);
+  }
+
+  @Override
   public BinaryDocValues getBinaryDocValues(String field) throws IOException {
     ensureOpen();
     return core.getBinaryDocValues(field);

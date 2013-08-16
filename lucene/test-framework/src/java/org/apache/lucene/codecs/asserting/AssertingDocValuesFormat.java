@@ -33,6 +33,7 @@ import org.apache.lucene.index.SegmentReadState;
 import org.apache.lucene.index.SegmentWriteState;
 import org.apache.lucene.index.SortedDocValues;
 import org.apache.lucene.index.SortedSetDocValues;
+import org.apache.lucene.util.Bits;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.FixedBitSet;
 import org.apache.lucene.util.OpenBitSet;
@@ -75,11 +76,10 @@ public class AssertingDocValuesFormat extends DocValuesFormat {
     public void addNumericField(FieldInfo field, Iterable<Number> values) throws IOException {
       int count = 0;
       for (Number v : values) {
-        assert v != null;
         count++;
       }
       assert count == maxDoc;
-      checkIterator(values.iterator(), maxDoc);
+      checkIterator(values.iterator(), maxDoc, true);
       in.addNumericField(field, values);
     }
     
@@ -87,12 +87,11 @@ public class AssertingDocValuesFormat extends DocValuesFormat {
     public void addBinaryField(FieldInfo field, Iterable<BytesRef> values) throws IOException {
       int count = 0;
       for (BytesRef b : values) {
-        assert b != null;
-        assert b.isValid();
+        assert b == null || b.isValid();
         count++;
       }
       assert count == maxDoc;
-      checkIterator(values.iterator(), maxDoc);
+      checkIterator(values.iterator(), maxDoc, true);
       in.addBinaryField(field, values);
     }
     
@@ -117,15 +116,17 @@ public class AssertingDocValuesFormat extends DocValuesFormat {
       for (Number v : docToOrd) {
         assert v != null;
         int ord = v.intValue();
-        assert ord >= 0 && ord < valueCount;
-        seenOrds.set(ord);
+        assert ord >= -1 && ord < valueCount;
+        if (ord >= 0) {
+          seenOrds.set(ord);
+        }
         count++;
       }
       
       assert count == maxDoc;
       assert seenOrds.cardinality() == valueCount;
-      checkIterator(values.iterator(), valueCount);
-      checkIterator(docToOrd.iterator(), maxDoc);
+      checkIterator(values.iterator(), valueCount, false);
+      checkIterator(docToOrd.iterator(), maxDoc, false);
       in.addSortedField(field, values, docToOrd);
     }
     
@@ -169,18 +170,18 @@ public class AssertingDocValuesFormat extends DocValuesFormat {
       
       assert docCount == maxDoc;
       assert seenOrds.cardinality() == valueCount;
-      checkIterator(values.iterator(), valueCount);
-      checkIterator(docToOrdCount.iterator(), maxDoc);
-      checkIterator(ords.iterator(), ordCount);
+      checkIterator(values.iterator(), valueCount, false);
+      checkIterator(docToOrdCount.iterator(), maxDoc, false);
+      checkIterator(ords.iterator(), ordCount, false);
       in.addSortedSetField(field, values, docToOrdCount, ords);
     }
 
-    private <T> void checkIterator(Iterator<T> iterator, long expectedSize) {
+    private <T> void checkIterator(Iterator<T> iterator, long expectedSize, boolean allowNull) {
       for (long i = 0; i < expectedSize; i++) {
         boolean hasNext = iterator.hasNext();
         assert hasNext;
         T v = iterator.next();
-        assert v != null;
+        assert allowNull || v != null;
         try {
           iterator.remove();
           throw new AssertionError("broken iterator (supports remove): " + iterator);
@@ -243,6 +244,15 @@ public class AssertingDocValuesFormat extends DocValuesFormat {
       SortedSetDocValues values = in.getSortedSet(field);
       assert values != null;
       return new AssertingAtomicReader.AssertingSortedSetDocValues(values, maxDoc);
+    }
+    
+    @Override
+    public Bits getDocsWithField(FieldInfo field) throws IOException {
+      assert field.getDocValuesType() != null;
+      Bits bits = in.getDocsWithField(field);
+      assert bits != null;
+      assert bits.length() == maxDoc;
+      return bits; // TODO: add AssertingBits w/ bounds check
     }
 
     @Override

@@ -78,7 +78,7 @@ class SimpleTextDocValuesWriter extends DocValuesConsumer {
     long minValue = Long.MAX_VALUE;
     long maxValue = Long.MIN_VALUE;
     for(Number n : values) {
-      long v = n.longValue();
+      long v = n == null ? 0 : n.longValue();
       minValue = Math.min(minValue, v);
       maxValue = Math.max(maxValue, v);
     }
@@ -112,12 +112,18 @@ class SimpleTextDocValuesWriter extends DocValuesConsumer {
 
     // second pass to write the values
     for(Number n : values) {
-      long value = n.longValue();
+      long value = n == null ? 0 : n.longValue();
       assert value >= minValue;
       Number delta = BigInteger.valueOf(value).subtract(BigInteger.valueOf(minValue));
       String s = encoder.format(delta);
       assert s.length() == patternString.length();
       SimpleTextUtil.write(data, s, scratch);
+      SimpleTextUtil.writeNewline(data);
+      if (n == null) {
+        SimpleTextUtil.write(data, "F", scratch);
+      } else {
+        SimpleTextUtil.write(data, "T", scratch);
+      }
       SimpleTextUtil.writeNewline(data);
       numDocsWritten++;
       assert numDocsWritten <= numDocs;
@@ -132,7 +138,8 @@ class SimpleTextDocValuesWriter extends DocValuesConsumer {
     assert field.getDocValuesType() == DocValuesType.BINARY;
     int maxLength = 0;
     for(BytesRef value : values) {
-      maxLength = Math.max(maxLength, value.length);
+      final int length = value == null ? 0 : value.length;
+      maxLength = Math.max(maxLength, length);
     }
     writeFieldEntry(field, FieldInfo.DocValuesType.BINARY);
 
@@ -155,17 +162,26 @@ class SimpleTextDocValuesWriter extends DocValuesConsumer {
     int numDocsWritten = 0;
     for(BytesRef value : values) {
       // write length
+      final int length = value == null ? 0 : value.length;
       SimpleTextUtil.write(data, LENGTH);
-      SimpleTextUtil.write(data, encoder.format(value.length), scratch);
+      SimpleTextUtil.write(data, encoder.format(length), scratch);
       SimpleTextUtil.writeNewline(data);
         
       // write bytes -- don't use SimpleText.write
       // because it escapes:
-      data.writeBytes(value.bytes, value.offset, value.length);
+      if (value != null) {
+        data.writeBytes(value.bytes, value.offset, value.length);
+      }
 
       // pad to fit
-      for (int i = value.length; i < maxLength; i++) {
+      for (int i = length; i < maxLength; i++) {
         data.writeByte((byte)' ');
+      }
+      SimpleTextUtil.writeNewline(data);
+      if (value == null) {
+        SimpleTextUtil.write(data, "F", scratch);
+      } else {
+        SimpleTextUtil.write(data, "T", scratch);
       }
       SimpleTextUtil.writeNewline(data);
       numDocsWritten++;
@@ -209,7 +225,7 @@ class SimpleTextDocValuesWriter extends DocValuesConsumer {
     SimpleTextUtil.writeNewline(data);
     final DecimalFormat encoder = new DecimalFormat(sb.toString(), new DecimalFormatSymbols(Locale.ROOT));
     
-    int maxOrdBytes = Integer.toString(valueCount).length();
+    int maxOrdBytes = Long.toString(valueCount+1L).length();
     sb.setLength(0);
     for (int i = 0; i < maxOrdBytes; i++) {
       sb.append('0');
@@ -246,7 +262,7 @@ class SimpleTextDocValuesWriter extends DocValuesConsumer {
     assert valuesSeen == valueCount;
 
     for(Number ord : docToOrd) {
-      SimpleTextUtil.write(data, ordEncoder.format(ord.intValue()), scratch);
+      SimpleTextUtil.write(data, ordEncoder.format(ord.longValue()+1), scratch);
       SimpleTextUtil.writeNewline(data);
     }
   }

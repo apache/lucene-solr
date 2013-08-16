@@ -25,6 +25,7 @@ import java.util.NoSuchElementException;
 
 import org.apache.lucene.codecs.CodecUtil;
 import org.apache.lucene.codecs.DocValuesConsumer;
+import org.apache.lucene.codecs.MissingOrdRemapper;
 import org.apache.lucene.index.FieldInfo;
 import org.apache.lucene.index.IndexFileNames;
 import org.apache.lucene.index.SegmentWriteState;
@@ -106,7 +107,8 @@ class Lucene42DocValuesConsumer extends DocValuesConsumer {
 
       long count = 0;
       for (Number nv : values) {
-        final long v = nv.longValue();
+        // TODO: support this as MemoryDVFormat (and be smart about missing maybe)
+        final long v = nv == null ? 0 : nv.longValue();
 
         if (gcd != 1) {
           if (v < Long.MIN_VALUE / 2 || v > Long.MAX_VALUE / 2) {
@@ -142,7 +144,7 @@ class Lucene42DocValuesConsumer extends DocValuesConsumer {
       if (formatAndBits.bitsPerValue == 8 && minValue >= Byte.MIN_VALUE && maxValue <= Byte.MAX_VALUE) {
         meta.writeByte(UNCOMPRESSED); // uncompressed
         for (Number nv : values) {
-          data.writeByte((byte) nv.longValue());
+          data.writeByte(nv == null ? 0 : (byte) nv.longValue());
         }
       } else {
         meta.writeByte(TABLE_COMPRESSED); // table-compressed
@@ -160,7 +162,7 @@ class Lucene42DocValuesConsumer extends DocValuesConsumer {
 
         final PackedInts.Writer writer = PackedInts.getWriterNoHeader(data, formatAndBits.format, maxDoc, formatAndBits.bitsPerValue, PackedInts.DEFAULT_BUFFER_SIZE);
         for(Number nv : values) {
-          writer.add(encode.get(nv.longValue()));
+          writer.add(encode.get(nv == null ? 0 : nv.longValue()));
         }
         writer.finish();
       }
@@ -173,7 +175,8 @@ class Lucene42DocValuesConsumer extends DocValuesConsumer {
 
       final BlockPackedWriter writer = new BlockPackedWriter(data, BLOCK_SIZE);
       for (Number nv : values) {
-        writer.add((nv.longValue() - minValue) / gcd);
+        long value = nv == null ? 0 : nv.longValue();
+        writer.add((value - minValue) / gcd);
       }
       writer.finish();
     } else {
@@ -184,7 +187,7 @@ class Lucene42DocValuesConsumer extends DocValuesConsumer {
 
       final BlockPackedWriter writer = new BlockPackedWriter(data, BLOCK_SIZE);
       for (Number nv : values) {
-        writer.add(nv.longValue());
+        writer.add(nv == null ? 0 : nv.longValue());
       }
       writer.finish();
     }
@@ -216,9 +219,12 @@ class Lucene42DocValuesConsumer extends DocValuesConsumer {
     int maxLength = Integer.MIN_VALUE;
     final long startFP = data.getFilePointer();
     for(BytesRef v : values) {
-      minLength = Math.min(minLength, v.length);
-      maxLength = Math.max(maxLength, v.length);
-      data.writeBytes(v.bytes, v.offset, v.length);
+      final int length = v == null ? 0 : v.length;
+      minLength = Math.min(minLength, length);
+      maxLength = Math.max(maxLength, length);
+      if (v != null) {
+        data.writeBytes(v.bytes, v.offset, v.length);
+      }
     }
     meta.writeLong(startFP);
     meta.writeLong(data.getFilePointer() - startFP);
@@ -234,7 +240,9 @@ class Lucene42DocValuesConsumer extends DocValuesConsumer {
       final MonotonicBlockPackedWriter writer = new MonotonicBlockPackedWriter(data, BLOCK_SIZE);
       long addr = 0;
       for (BytesRef v : values) {
-        addr += v.length;
+        if (v != null) {
+          addr += v.length;
+        }
         writer.add(addr);
       }
       writer.finish();
@@ -262,6 +270,33 @@ class Lucene42DocValuesConsumer extends DocValuesConsumer {
 
   @Override
   public void addSortedField(FieldInfo field, Iterable<BytesRef> values, Iterable<Number> docToOrd) throws IOException {
+    // three cases for simulating the old writer:
+    // 1. no missing
+    // 2. missing (and empty string in use): remap ord=-1 -> ord=0
+    // 3. missing (and empty string not in use): remap all ords +1, insert empty string into values
+    boolean anyMissing = false;
+    for (Number n : docToOrd) {
+      if (n.longValue() == -1) {
+        anyMissing = true;
+        break;
+      }
+    }
+    
+    boolean hasEmptyString = false;
+    for (BytesRef b : values) {
+      hasEmptyString = b.length == 0;
+      break;
+    }
+    
+    if (!anyMissing) {
+      // nothing to do
+    } else if (hasEmptyString) {
+      docToOrd = MissingOrdRemapper.mapMissingToOrd0(docToOrd);
+    } else {
+      docToOrd = MissingOrdRemapper.mapAllOrds(docToOrd);
+      values = MissingOrdRemapper.insertEmptyValue(values);
+    }
+    
     // write the ordinals as numerics
     addNumericField(field, docToOrd, false);
     

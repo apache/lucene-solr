@@ -569,7 +569,7 @@ public class TestFieldCache extends LuceneTestCase {
       assertEquals(2, sortedSet.getValueCount());
     
       bits = FieldCache.DEFAULT.getDocsWithField(ar, "sortedset");
-      assertTrue(bits instanceof Bits.MatchAllBits);
+      assertTrue(bits.get(0));
     }
     
     ir.close();

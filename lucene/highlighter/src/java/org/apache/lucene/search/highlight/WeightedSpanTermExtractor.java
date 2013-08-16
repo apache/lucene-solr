@@ -422,6 +422,11 @@ public class WeightedSpanTermExtractor {
     public NumericDocValues getNormValues(String field) throws IOException {
       return super.getNormValues(FIELD_NAME);
     }
+
+    @Override
+    public Bits getDocsWithField(String field) throws IOException {
+      return super.getDocsWithField(FIELD_NAME);
+    }
   }
 
   /**

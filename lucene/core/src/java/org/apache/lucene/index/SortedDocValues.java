@@ -37,7 +37,8 @@ public abstract class SortedDocValues extends BinaryDocValues {
    * Returns the ordinal for the specified docID.
    * @param  docID document ID to lookup
    * @return ordinal for the document: this is dense, starts at 0, then
-   *         increments by 1 for the next value in sorted order. 
+   *         increments by 1 for the next value in sorted order. Note that
+   *         missing values are indicated by -1.
    */
   public abstract int getOrd(int docID);
 
@@ -71,7 +72,7 @@ public abstract class SortedDocValues extends BinaryDocValues {
   public static final SortedDocValues EMPTY = new SortedDocValues() {
     @Override
     public int getOrd(int docID) {
-      return 0;
+      return -1;
     }
 
     @Override
@@ -83,7 +84,7 @@ public abstract class SortedDocValues extends BinaryDocValues {
 
     @Override
     public int getValueCount() {
-      return 1;
+      return 0;
     }
   };
 

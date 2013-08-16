@@ -23,6 +23,7 @@ import java.util.HashSet;
 
 import org.apache.lucene.codecs.CodecUtil;
 import org.apache.lucene.codecs.DocValuesConsumer;
+import org.apache.lucene.codecs.MissingOrdRemapper;
 import org.apache.lucene.index.FieldInfo;
 import org.apache.lucene.index.IndexFileNames;
 import org.apache.lucene.index.SegmentWriteState;
@@ -92,8 +93,9 @@ public class DiskDocValuesConsumer extends DocValuesConsumer {
     if (optimizeStorage) {
       uniqueValues = new HashSet<>();
 
+      // nocommit: impl null values (ideally smartly)
       for (Number nv : values) {
-        final long v = nv.longValue();
+        final long v = nv == null ? 0 : nv.longValue();
 
         if (gcd != 1) {
           if (v < Long.MIN_VALUE / 2 || v > Long.MAX_VALUE / 2) {
@@ -151,14 +153,15 @@ public class DiskDocValuesConsumer extends DocValuesConsumer {
         meta.writeLong(gcd);
         final BlockPackedWriter quotientWriter = new BlockPackedWriter(data, BLOCK_SIZE);
         for (Number nv : values) {
-          quotientWriter.add((nv.longValue() - minValue) / gcd);
+          long value = nv == null ? 0 : nv.longValue();
+          quotientWriter.add((value - minValue) / gcd);
         }
         quotientWriter.finish();
         break;
       case DELTA_COMPRESSED:
         final BlockPackedWriter writer = new BlockPackedWriter(data, BLOCK_SIZE);
         for (Number nv : values) {
-          writer.add(nv.longValue());
+          writer.add(nv == null ? 0 : nv.longValue());
         }
         writer.finish();
         break;
@@ -173,7 +176,7 @@ public class DiskDocValuesConsumer extends DocValuesConsumer {
         final int bitsRequired = PackedInts.bitsRequired(uniqueValues.size() - 1);
         final PackedInts.Writer ordsWriter = PackedInts.getWriterNoHeader(data, PackedInts.Format.PACKED, (int) count, bitsRequired, PackedInts.DEFAULT_BUFFER_SIZE);
         for (Number nv : values) {
-          ordsWriter.add(encode.get(nv.longValue()));
+          ordsWriter.add(encode.get(nv == null ? 0 : nv.longValue()));
         }
         ordsWriter.finish();
         break;
@@ -192,9 +195,12 @@ public class DiskDocValuesConsumer extends DocValuesConsumer {
     final long startFP = data.getFilePointer();
     long count = 0;
     for(BytesRef v : values) {
-      minLength = Math.min(minLength, v.length);
-      maxLength = Math.max(maxLength, v.length);
-      data.writeBytes(v.bytes, v.offset, v.length);
+      final int length = v == null ? 0 : v.length;
+      minLength = Math.min(minLength, length);
+      maxLength = Math.max(maxLength, length);
+      if (v != null) {
+        data.writeBytes(v.bytes, v.offset, v.length);
+      }
       count++;
     }
     meta.writeVInt(minLength == maxLength ? BINARY_FIXED_UNCOMPRESSED : BINARY_VARIABLE_UNCOMPRESSED);
@@ -213,7 +219,9 @@ public class DiskDocValuesConsumer extends DocValuesConsumer {
       final MonotonicBlockPackedWriter writer = new MonotonicBlockPackedWriter(data, BLOCK_SIZE);
       long addr = 0;
       for (BytesRef v : values) {
-        addr += v.length;
+        if (v != null) {
+          addr += v.length;
+        }
         writer.add(addr);
       }
       writer.finish();
@@ -278,6 +286,34 @@ public class DiskDocValuesConsumer extends DocValuesConsumer {
 
   @Override
   public void addSortedField(FieldInfo field, Iterable<BytesRef> values, Iterable<Number> docToOrd) throws IOException {
+    // nocommit: remove this hack and support missing!
+
+    // three cases for simulating the old writer:
+    // 1. no missing
+    // 2. missing (and empty string in use): remap ord=-1 -> ord=0
+    // 3. missing (and empty string not in use): remap all ords +1, insert empty string into values
+    boolean anyMissing = false;
+    for (Number n : docToOrd) {
+      if (n.longValue() == -1) {
+        anyMissing = true;
+        break;
+      }
+    }
+    
+    boolean hasEmptyString = false;
+    for (BytesRef b : values) {
+      hasEmptyString = b.length == 0;
+      break;
+    }
+    
+    if (!anyMissing) {
+      // nothing to do
+    } else if (hasEmptyString) {
+      docToOrd = MissingOrdRemapper.mapMissingToOrd0(docToOrd);
+    } else {
+      docToOrd = MissingOrdRemapper.mapAllOrds(docToOrd);
+      values = MissingOrdRemapper.insertEmptyValue(values);
+    }
     meta.writeVInt(field.number);
     meta.writeByte(DiskDocValuesFormat.SORTED);
     addTermsDict(field, values);

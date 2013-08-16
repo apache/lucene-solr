@@ -45,6 +45,7 @@ import org.apache.lucene.codecs.Codec;
 import org.apache.lucene.codecs.DocValuesFormat;
 import org.apache.lucene.codecs.PostingsFormat;
 import org.apache.lucene.codecs.lucene42.Lucene42Codec;
+import org.apache.lucene.codecs.perfield.PerFieldDocValuesFormat;
 import org.apache.lucene.codecs.perfield.PerFieldPostingsFormat;
 import org.apache.lucene.document.BinaryDocValuesField;
 import org.apache.lucene.document.Document;
@@ -740,6 +741,15 @@ public class _TestUtil {
       return ((PerFieldPostingsFormat)p).getPostingsFormatForField(field).getName();
     } else {
       return p.getName();
+    }
+  }
+  
+  public static String getDocValuesFormat(Codec codec, String field) {
+    DocValuesFormat d = codec.docValuesFormat();
+    if (d instanceof PerFieldDocValuesFormat) {
+      return ((PerFieldDocValuesFormat)d).getDocValuesFormatForField(field).getName();
+    } else {
+      return d.getName();
     }
   }
 
