@@ -482,7 +482,7 @@ public abstract class AbstractFullDistribZkTestBase extends AbstractDistribZkTes
       path = path.substring(0, path.length() - 2);
     }
     
-    int splits = path.split(File.separator).length;
+    int splits = path.split("\\" + File.separator).length;
     
     StringBuilder p = new StringBuilder();
     for (int i = 0; i < splits - 2; i++) {
