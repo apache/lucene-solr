@@ -36,6 +36,7 @@ import org.apache.lucene.util.IntsRef;
 import org.apache.lucene.util.fst.Builder;
 import org.apache.lucene.util.fst.FST;
 import org.apache.lucene.util.fst.Util;
+import org.apache.lucene.codecs.BlockTermState;
 import org.apache.lucene.codecs.TempPostingsWriterBase;
 import org.apache.lucene.codecs.PostingsConsumer;
 import org.apache.lucene.codecs.FieldsConsumer;
@@ -67,7 +68,7 @@ public class TempFSTTermsWriter extends FieldsConsumer {
     boolean success = false;
     try {
       writeHeader(out);
-      this.postingsWriter.start(out); 
+      this.postingsWriter.init(out); 
       success = true;
     } finally {
       if (!success) {
@@ -167,12 +168,14 @@ public class TempFSTTermsWriter extends FieldsConsumer {
     @Override
     public void finishTerm(BytesRef text, TermStats stats) throws IOException {
       // write term meta data into fst
+      final BlockTermState state = postingsWriter.newTermState();
       final TempTermOutputs.TempMetaData meta = new TempTermOutputs.TempMetaData();
       meta.longs = new long[longsSize];
       meta.bytes = null;
-      meta.docFreq = stats.docFreq;
-      meta.totalTermFreq = stats.totalTermFreq;
-      postingsWriter.finishTerm(meta.longs, metaWriter, stats);
+      meta.docFreq = state.docFreq = stats.docFreq;
+      meta.totalTermFreq = state.totalTermFreq = stats.totalTermFreq;
+      postingsWriter.finishTerm(state);
+      postingsWriter.encodeTerm(meta.longs, metaWriter, fieldInfo, state, true);
       final int bytesSize = (int)metaWriter.getFilePointer();
       if (bytesSize > 0) {
         meta.bytes = new byte[bytesSize];

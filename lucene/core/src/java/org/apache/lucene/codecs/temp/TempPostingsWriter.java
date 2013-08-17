@@ -25,6 +25,7 @@ import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
 
+import org.apache.lucene.codecs.BlockTermState;
 import org.apache.lucene.codecs.CodecUtil;
 import org.apache.lucene.codecs.TempPostingsWriterBase;
 import org.apache.lucene.codecs.TermStats;
@@ -74,13 +75,16 @@ public final class TempPostingsWriter extends TempPostingsWriterBase {
   final IndexOutput posOut;
   final IndexOutput payOut;
 
+  final static IntBlockTermState emptyState = new IntBlockTermState();
+  IntBlockTermState lastState;
+
   // How current field indexes postings:
   private boolean fieldHasFreqs;
   private boolean fieldHasPositions;
   private boolean fieldHasOffsets;
   private boolean fieldHasPayloads;
 
-  // Holds starting file pointers for each term:
+  // Holds starting file pointers for current term:
   private long docTermStartFP;
   private long posTermStartFP;
   private long payTermStartFP;
@@ -189,8 +193,22 @@ public final class TempPostingsWriter extends TempPostingsWriterBase {
     this(state, PackedInts.COMPACT);
   }
 
+  private final static class IntBlockTermState extends BlockTermState {
+    long docTermStartFP = 0;
+    long posTermStartFP = 0;
+    long payTermStartFP = 0;
+    long skipOffset = -1;
+    long lastPosBlockOffset = -1;
+    int singletonDocID = -1;
+  }
+
   @Override
-  public void start(IndexOutput termsOut) throws IOException {
+  public IntBlockTermState newTermState() {
+    return new IntBlockTermState();
+  }
+
+  @Override
+  public void init(IndexOutput termsOut) throws IOException {
     CodecUtil.writeHeader(termsOut, TERMS_CODEC, VERSION_CURRENT);
     termsOut.writeVInt(BLOCK_SIZE);
   }
@@ -205,6 +223,7 @@ public final class TempPostingsWriter extends TempPostingsWriterBase {
     fieldHasOffsets = indexOptions.compareTo(IndexOptions.DOCS_AND_FREQS_AND_POSITIONS_AND_OFFSETS) >= 0;
     fieldHasPayloads = fieldInfo.hasPayloads();
     skipWriter.setField(fieldHasPositions, fieldHasOffsets, fieldHasPayloads);
+    lastState = emptyState;
     if (fieldHasPositions) {
       if (fieldHasPayloads || fieldHasOffsets) {
         return 3;  // doc + pos + pay FP
@@ -359,19 +378,18 @@ public final class TempPostingsWriter extends TempPostingsWriterBase {
     }
   }
 
-  // nocommit explain about the "don't care" values
-
   /** Called when we are done adding docs to this term */
   @Override
-  public void finishTerm(long[] longs, DataOutput out, TermStats stats) throws IOException {
-    assert stats.docFreq > 0;
+  public void finishTerm(BlockTermState _state) throws IOException {
+    IntBlockTermState state = (IntBlockTermState) _state;
+    assert state.docFreq > 0;
 
     // TODO: wasteful we are counting this (counting # docs
     // for this term) in two places?
-    assert stats.docFreq == docCount: stats.docFreq + " vs " + docCount;
+    assert state.docFreq == docCount: state.docFreq + " vs " + docCount;
 
     // if (DEBUG) {
-    //   System.out.println("FPW.finishTerm docFreq=" + stats.docFreq);
+    //   System.out.println("FPW.finishTerm docFreq=" + state.docFreq);
     // }
 
     // if (DEBUG) {
@@ -382,7 +400,7 @@ public final class TempPostingsWriter extends TempPostingsWriterBase {
     
     // docFreq == 1, don't write the single docid/freq to a separate file along with a pointer to it.
     final int singletonDocID;
-    if (stats.docFreq == 1) {
+    if (state.docFreq == 1) {
       // pulse the singleton docid into the term dictionary, freq is implicitly totalTermFreq
       singletonDocID = docDeltaBuffer[0];
     } else {
@@ -413,8 +431,8 @@ public final class TempPostingsWriter extends TempPostingsWriterBase {
 
       // totalTermFreq is just total number of positions(or payloads, or offsets)
       // associated with current term.
-      assert stats.totalTermFreq != -1;
-      if (stats.totalTermFreq > BLOCK_SIZE) {
+      assert state.totalTermFreq != -1;
+      if (state.totalTermFreq > BLOCK_SIZE) {
         // record file offset for last pos in last block
         lastPosBlockOffset = posOut.getFilePointer() - posTermStartFP;
       } else {
@@ -479,7 +497,7 @@ public final class TempPostingsWriter extends TempPostingsWriterBase {
         }
       }
       // if (DEBUG) {
-      //   System.out.println("  totalTermFreq=" + stats.totalTermFreq + " lastPosBlockOffset=" + lastPosBlockOffset);
+      //   System.out.println("  totalTermFreq=" + state.totalTermFreq + " lastPosBlockOffset=" + lastPosBlockOffset);
       // }
     } else {
       lastPosBlockOffset = -1;
@@ -498,35 +516,48 @@ public final class TempPostingsWriter extends TempPostingsWriterBase {
       //   System.out.println("  no skip: docCount=" + docCount);
       // }
     }
-
     // if (DEBUG) {
     //   System.out.println("  payStartFP=" + payStartFP);
     // }
-
-    // write metadata
-    longs[0] = docTermStartFP;
-    if (fieldHasPositions) {
-      longs[1] = posTermStartFP;
-      if (fieldHasPayloads || fieldHasOffsets) {
-        longs[2] = payTermStartFP;
-      }
-    }
-    if (singletonDocID != -1) {
-      out.writeVInt(singletonDocID);
-    }
-    if (fieldHasPositions) {
-      if (lastPosBlockOffset != -1) {
-        out.writeVLong(lastPosBlockOffset);
-      }
-    }
-    if (skipOffset != -1) {
-      out.writeVLong(skipOffset);
-    }
-
+    state.docTermStartFP = docTermStartFP;
+    state.posTermStartFP = posTermStartFP;
+    state.payTermStartFP = payTermStartFP;
+    state.singletonDocID = singletonDocID;
+    state.skipOffset = skipOffset;
+    state.lastPosBlockOffset = lastPosBlockOffset;
     docBufferUpto = 0;
     posBufferUpto = 0;
     lastDocID = 0;
     docCount = 0;
+  }
+  
+  // nocommit explain about the "don't care" values
+
+  @Override
+  public void encodeTerm(long[] longs, DataOutput out, FieldInfo fieldInfo, BlockTermState _state, boolean absolute) throws IOException {
+    IntBlockTermState state = (IntBlockTermState)_state;
+    if (absolute) {
+      lastState = emptyState;
+    }
+    longs[0] = state.docTermStartFP - lastState.docTermStartFP;
+    if (fieldHasPositions) {
+      longs[1] = state.posTermStartFP - lastState.posTermStartFP;
+      if (fieldHasPayloads || fieldHasOffsets) {
+        longs[2] = state.payTermStartFP - lastState.payTermStartFP;
+      }
+    }
+    if (state.singletonDocID != -1) {
+      out.writeVInt(state.singletonDocID);
+    }
+    if (fieldHasPositions) {
+      if (state.lastPosBlockOffset != -1) {
+        out.writeVLong(state.lastPosBlockOffset);
+      }
+    }
+    if (state.skipOffset != -1) {
+      out.writeVLong(state.skipOffset);
+    }
+    lastState = state;
   }
 
   @Override

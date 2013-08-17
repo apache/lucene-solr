@@ -28,6 +28,7 @@ import org.apache.lucene.codecs.FieldsConsumer;
 import org.apache.lucene.codecs.PostingsConsumer;
 import org.apache.lucene.codecs.TempPostingsWriterBase;
 import org.apache.lucene.codecs.TermStats;
+import org.apache.lucene.codecs.BlockTermState;
 import org.apache.lucene.codecs.TermsConsumer;
 import org.apache.lucene.index.FieldInfo;
 import org.apache.lucene.index.FieldInfo.IndexOptions;
@@ -113,7 +114,7 @@ public class TempBlockTermsWriter extends FieldsConsumer {
       
       //System.out.println("BTW.init seg=" + state.segmentName);
       
-      postingsWriter.start(out); // have consumer write its format/header
+      postingsWriter.init(out); // have consumer write its format/header
       success = true;
     } finally {
       if (!success) {
@@ -166,9 +167,7 @@ public class TempBlockTermsWriter extends FieldsConsumer {
   
   private static class TermEntry {
     public final BytesRef term = new BytesRef();
-    public TermStats stats;
-    public long[] longs;
-    public byte[] bytes;
+    public BlockTermState state;
   }
 
   class TermsWriter extends TermsConsumer {
@@ -245,12 +244,10 @@ public class TempBlockTermsWriter extends FieldsConsumer {
       }
       final TermEntry te = pendingTerms[pendingCount];
       te.term.copyBytes(text);
-      te.stats = stats;
-      te.longs = new long[longsSize];
-      postingsWriter.finishTerm(te.longs, bytesWriter, stats);
-      te.bytes = new byte[(int) bytesWriter.getFilePointer()];
-      bytesWriter.writeTo(te.bytes, 0);
-      bytesWriter.reset();
+      te.state = postingsWriter.newTermState();
+      te.state.docFreq = stats.docFreq;
+      te.state.totalTermFreq = stats.totalTermFreq;
+      postingsWriter.finishTerm(te.state);
 
       pendingCount++;
       numTerms++;
@@ -297,6 +294,7 @@ public class TempBlockTermsWriter extends FieldsConsumer {
     }
 
     private final RAMOutputStream bytesWriter = new RAMOutputStream();
+    private final RAMOutputStream bufferWriter = new RAMOutputStream();
 
     private void flushBlock() throws IOException {
       //System.out.println("BTW.flushBlock seg=" + segment + " pendingCount=" + pendingCount + " fp=" + out.getFilePointer());
@@ -330,11 +328,11 @@ public class TempBlockTermsWriter extends FieldsConsumer {
       // TODO: cutover to better intblock codec.  simple64?
       // write prefix, suffix first:
       for(int termCount=0;termCount<pendingCount;termCount++) {
-        final TermStats stats = pendingTerms[termCount].stats;
-        assert stats != null;
-        bytesWriter.writeVInt(stats.docFreq);
+        final BlockTermState state = pendingTerms[termCount].state;
+        assert state != null;
+        bytesWriter.writeVInt(state.docFreq);
         if (fieldInfo.getIndexOptions() != IndexOptions.DOCS_ONLY) {
-          bytesWriter.writeVLong(stats.totalTermFreq-stats.docFreq);
+          bytesWriter.writeVLong(state.totalTermFreq-state.docFreq);
         }
       }
       out.writeVInt((int) bytesWriter.getFilePointer());
@@ -342,16 +340,17 @@ public class TempBlockTermsWriter extends FieldsConsumer {
       bytesWriter.reset();
 
       // 4th pass: write the metadata 
-      long[] lastLongs = new long[longsSize];
-      Arrays.fill(lastLongs, 0);
+      long[] longs = new long[longsSize];
+      boolean absolute = true;
       for(int termCount=0;termCount<pendingCount;termCount++) {
-        final long[] longs = pendingTerms[termCount].longs;
-        final byte[] bytes = pendingTerms[termCount].bytes;
+        final BlockTermState state = pendingTerms[termCount].state;
+        postingsWriter.encodeTerm(longs, bufferWriter, fieldInfo, state, absolute);
         for (int i = 0; i < longsSize; i++) {
-          bytesWriter.writeVLong(longs[i] - lastLongs[i]);
+          bytesWriter.writeVLong(longs[i]);
         }
-        lastLongs = longs;
-        bytesWriter.writeBytes(bytes, 0, bytes.length);
+        bufferWriter.writeTo(bytesWriter);
+        bufferWriter.reset();
+        absolute = false;
       }
       out.writeVInt((int) bytesWriter.getFilePointer());
       bytesWriter.writeTo(out);

@@ -37,6 +37,7 @@ import org.apache.lucene.util.fst.Builder;
 import org.apache.lucene.util.fst.FST;
 import org.apache.lucene.util.fst.PositiveIntOutputs;
 import org.apache.lucene.util.fst.Util;
+import org.apache.lucene.codecs.BlockTermState;
 import org.apache.lucene.codecs.TempPostingsWriterBase;
 import org.apache.lucene.codecs.PostingsConsumer;
 import org.apache.lucene.codecs.FieldsConsumer;
@@ -75,7 +76,7 @@ public class TempFSTOrdTermsWriter extends FieldsConsumer {
       this.blockOut = state.directory.createOutput(termsBlockFileName, state.context);
       writeHeader(indexOut);
       writeHeader(blockOut);
-      this.postingsWriter.start(blockOut); 
+      this.postingsWriter.init(blockOut); 
       success = true;
     } finally {
       if (!success) {
@@ -218,9 +219,14 @@ public class TempFSTOrdTermsWriter extends FieldsConsumer {
       } else {
         statsOut.writeVInt(stats.docFreq);
       }
-      postingsWriter.finishTerm(longs, metaBytesOut, stats);
+      BlockTermState state = postingsWriter.newTermState();
+      state.docFreq = stats.docFreq;
+      state.totalTermFreq = stats.totalTermFreq;
+      postingsWriter.finishTerm(state);
+      postingsWriter.encodeTerm(longs, metaBytesOut, fieldInfo, state, false);
       for (int i = 0; i < longsSize; i++) {
-        metaLongsOut.writeVLong(longs[i] - lastLongs[i]);
+        metaLongsOut.writeVLong(longs[i]);
+        lastLongs[i] += longs[i];
       }
       metaLongsOut.writeVLong(metaBytesOut.getFilePointer() - lastMetaBytesFP);
 
@@ -228,7 +234,6 @@ public class TempFSTOrdTermsWriter extends FieldsConsumer {
       numTerms++;
 
       lastMetaBytesFP = metaBytesOut.getFilePointer();
-      lastLongs = longs;
     }
 
     @Override
@@ -260,7 +265,7 @@ public class TempFSTOrdTermsWriter extends FieldsConsumer {
       lastBlockStatsFP = statsOut.getFilePointer();
       lastBlockMetaLongsFP = metaLongsOut.getFilePointer();
       lastBlockMetaBytesFP = metaBytesOut.getFilePointer();
-      lastBlockLongs = lastLongs;
+      System.arraycopy(lastLongs, 0, lastBlockLongs, 0, longsSize);
     }
   }
 }

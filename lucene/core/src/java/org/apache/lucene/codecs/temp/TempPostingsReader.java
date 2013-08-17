@@ -154,11 +154,6 @@ public final class TempPostingsReader extends TempPostingsReaderBase {
     // freq is always implicitly totalTermFreq in this case.
     int singletonDocID;
 
-    // Only used by the "primary" TermState -- clones don't
-    // copy this (basically they are "transient"):
-    ByteArrayDataInput bytesReader;  // TODO: should this NOT be in the TermState...?
-    byte[] bytes;
-
     @Override
     public IntBlockTermState clone() {
       IntBlockTermState other = new IntBlockTermState();
@@ -176,11 +171,6 @@ public final class TempPostingsReader extends TempPostingsReaderBase {
       lastPosBlockOffset = other.lastPosBlockOffset;
       skipOffset = other.skipOffset;
       singletonDocID = other.singletonDocID;
-
-      // Do not copy bytes, bytesReader (else TermState is
-      // very heavy, ie drags around the entire block's
-      // byte[]).  On seek back, if next() is in fact used
-      // (rare!), they will be re-read from disk.
     }
 
     @Override

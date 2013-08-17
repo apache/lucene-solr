@@ -42,6 +42,7 @@ import org.apache.lucene.util.fst.FST;
 import org.apache.lucene.util.fst.NoOutputs;
 import org.apache.lucene.util.fst.Util;
 import org.apache.lucene.util.packed.PackedInts;
+import org.apache.lucene.codecs.BlockTermState;
 import org.apache.lucene.codecs.TempPostingsWriterBase;
 import org.apache.lucene.codecs.PostingsConsumer;
 import org.apache.lucene.codecs.FieldsConsumer;
@@ -310,7 +311,7 @@ public class TempBlockTreeTermsWriter extends FieldsConsumer {
 
       // System.out.println("BTW.init seg=" + state.segmentName);
 
-      postingsWriter.start(out);                          // have consumer write its format/header
+      postingsWriter.init(out);                          // have consumer write its format/header
       success = true;
     } finally {
       if (!success) {
@@ -364,18 +365,13 @@ public class TempBlockTreeTermsWriter extends FieldsConsumer {
 
   private static final class PendingTerm extends PendingEntry {
     public final BytesRef term;
-    // stats
-    public final TermStats stats;
-    // metadata
-    public long[] longs;
-    public byte[] bytes;
+    // stats + metadata
+    public final BlockTermState state;
 
-    public PendingTerm(BytesRef term, TermStats stats, long[] longs, byte[] bytes) {
+    public PendingTerm(BytesRef term, BlockTermState state) {
       super(true);
       this.term = term;
-      this.stats = stats;
-      this.longs = longs;
-      this.bytes = bytes;
+      this.state = state;
     }
 
     @Override
@@ -857,14 +853,15 @@ public class TempBlockTreeTermsWriter extends FieldsConsumer {
 
       int termCount;
 
-      long[] lastLongs = new long[longsSize];
-      Arrays.fill(lastLongs, 0);
+      long[] longs = new long[longsSize];
+      boolean absolute = true;
 
       if (isLeafBlock) {
         subIndices = null;
         for (PendingEntry ent : slice) {
           assert ent.isTerm;
           PendingTerm term = (PendingTerm) ent;
+          BlockTermState state = term.state;
           final int suffix = term.term.length - prefixLength;
           // if (DEBUG) {
           //   BytesRef suffixBytes = new BytesRef(suffix);
@@ -877,19 +874,21 @@ public class TempBlockTreeTermsWriter extends FieldsConsumer {
           suffixWriter.writeBytes(term.term.bytes, prefixLength, suffix);
 
           // Write term stats, to separate byte[] blob:
-          statsWriter.writeVInt(term.stats.docFreq);
+          statsWriter.writeVInt(state.docFreq);
           if (fieldInfo.getIndexOptions() != IndexOptions.DOCS_ONLY) {
-            assert term.stats.totalTermFreq >= term.stats.docFreq: term.stats.totalTermFreq + " vs " + term.stats.docFreq;
-            statsWriter.writeVLong(term.stats.totalTermFreq - term.stats.docFreq);
+            assert state.totalTermFreq >= state.docFreq: state.totalTermFreq + " vs " + state.docFreq;
+            statsWriter.writeVLong(state.totalTermFreq - state.docFreq);
           }
 
           // Write term meta data
+          postingsWriter.encodeTerm(longs, bytesWriter, fieldInfo, state, absolute);
           for (int pos = 0; pos < longsSize; pos++) {
-            assert term.longs[pos] >= 0;
-            metaWriter.writeVLong(term.longs[pos] - lastLongs[pos]);
+            assert longs[pos] >= 0;
+            metaWriter.writeVLong(longs[pos]);
           }
-          lastLongs = term.longs;
-          metaWriter.writeBytes(term.bytes, 0, term.bytes.length);
+          bytesWriter.writeTo(metaWriter);
+          bytesWriter.reset();
+          absolute = false;
         }
         termCount = length;
       } else {
@@ -898,6 +897,7 @@ public class TempBlockTreeTermsWriter extends FieldsConsumer {
         for (PendingEntry ent : slice) {
           if (ent.isTerm) {
             PendingTerm term = (PendingTerm) ent;
+            BlockTermState state = term.state;
             final int suffix = term.term.length - prefixLength;
             // if (DEBUG) {
             //   BytesRef suffixBytes = new BytesRef(suffix);
@@ -911,10 +911,10 @@ public class TempBlockTreeTermsWriter extends FieldsConsumer {
             suffixWriter.writeBytes(term.term.bytes, prefixLength, suffix);
 
             // Write term stats, to separate byte[] blob:
-            statsWriter.writeVInt(term.stats.docFreq);
+            statsWriter.writeVInt(state.docFreq);
             if (fieldInfo.getIndexOptions() != IndexOptions.DOCS_ONLY) {
-              assert term.stats.totalTermFreq >= term.stats.docFreq;
-              statsWriter.writeVLong(term.stats.totalTermFreq - term.stats.docFreq);
+              assert state.totalTermFreq >= state.docFreq;
+              statsWriter.writeVLong(state.totalTermFreq - state.docFreq);
             }
 
             // TODO: now that terms dict "sees" these longs,
@@ -926,12 +926,14 @@ public class TempBlockTreeTermsWriter extends FieldsConsumer {
             // separate anymore:
 
             // Write term meta data
+            postingsWriter.encodeTerm(longs, bytesWriter, fieldInfo, state, absolute);
             for (int pos = 0; pos < longsSize; pos++) {
-              assert term.longs[pos] >= 0;
-              metaWriter.writeVLong(term.longs[pos] - lastLongs[pos]);
+              assert longs[pos] >= 0;
+              metaWriter.writeVLong(longs[pos]);
             }
-            lastLongs = term.longs;
-            metaWriter.writeBytes(term.bytes, 0, term.bytes.length);
+            bytesWriter.writeTo(metaWriter);
+            bytesWriter.reset();
+            absolute = false;
 
             termCount++;
           } else {
@@ -1045,14 +1047,12 @@ public class TempBlockTreeTermsWriter extends FieldsConsumer {
       //if (DEBUG) System.out.println("BTTW.finishTerm term=" + fieldInfo.name + ":" + toString(text) + " seg=" + segment + " df=" + stats.docFreq);
 
       blockBuilder.add(Util.toIntsRef(text, scratchIntsRef), noOutputs.getNoOutput());
+      BlockTermState state = postingsWriter.newTermState();
+      state.docFreq = stats.docFreq;
+      state.totalTermFreq = stats.totalTermFreq;
+      postingsWriter.finishTerm(state);
 
-      long[] longs = new long[longsSize];
-      postingsWriter.finishTerm(longs, metaWriter, stats);
-      byte[] bytes = new byte[(int)metaWriter.getFilePointer()];
-      metaWriter.writeTo(bytes, 0);
-      metaWriter.reset();
-
-      PendingTerm term = new PendingTerm(BytesRef.deepCopyOf(text), stats, longs, bytes);
+      PendingTerm term = new PendingTerm(BytesRef.deepCopyOf(text), state);
       pending.add(term);
       numTerms++;
     }
@@ -1104,6 +1104,7 @@ public class TempBlockTreeTermsWriter extends FieldsConsumer {
     private final RAMOutputStream suffixWriter = new RAMOutputStream();
     private final RAMOutputStream statsWriter = new RAMOutputStream();
     private final RAMOutputStream metaWriter = new RAMOutputStream();
+    private final RAMOutputStream bytesWriter = new RAMOutputStream();
   }
 
   @Override

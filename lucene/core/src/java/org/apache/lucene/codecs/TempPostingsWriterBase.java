@@ -49,7 +49,10 @@ public abstract class TempPostingsWriterBase extends PostingsConsumer implements
   /** Called once after startup, before any terms have been
    *  added.  Implementations typically write a header to
    *  the provided {@code termsOut}. */
-  public abstract void start(IndexOutput termsOut) throws IOException;
+  public abstract void init(IndexOutput termsOut) throws IOException;
+
+  /** Return a newly created empty TermState */
+  public abstract BlockTermState newTermState() throws IOException;
 
   /** Start a new term.  Note that a matching call to {@link
    *  #finishTerm(long[], DataOutput, TermStats)} is done, only if the term has at least one
@@ -57,8 +60,15 @@ public abstract class TempPostingsWriterBase extends PostingsConsumer implements
   public abstract void startTerm() throws IOException;
 
   /** Finishes the current term.  The provided {@link
-   *  TermStats} contains the term's summary statistics. */
-  public abstract void finishTerm(long[] longs, DataOutput out, TermStats stats) throws IOException;
+   *  BlockTermState} contains the term's summary statistics, 
+   *  and will holds metadata from PBF when returned*/
+  public abstract void finishTerm(BlockTermState state) throws IOException;
+
+  /**
+   * Encode metadata as long[] and byte[]. {@code absolute} controls 
+   * whether current term is delta encoded according to latest term.
+   */
+  public abstract void encodeTerm(long[] longs, DataOutput out, FieldInfo fieldInfo, BlockTermState state, boolean absolute) throws IOException;
 
   /** 
    * Return the fixed length of longs,
