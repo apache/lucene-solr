@@ -151,8 +151,8 @@ Other Changes
   The solr.clustering.enabled system property is set to 'true' by default.
   (ehatcher, Dawid Weiss)
 
-* SOLR-4914: Factor out core list persistence and discovery into a
-  new CoresLocator interface. (Alan Woodward)
+* SOLR-4914, SOLR-5162: Factor out core list persistence and discovery into a
+  new CoresLocator interface. (Alan Woodward, Shawn Heisey)
 
 * SOLR-5056: Improve type safety of ConfigSolr class. (Alan Woodward)
 
