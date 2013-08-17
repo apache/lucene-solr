@@ -24,6 +24,7 @@ import java.util.Iterator;
 import java.util.TreeMap;
 import java.util.Arrays;
 
+import org.apache.lucene.codecs.BlockTermState;
 import org.apache.lucene.codecs.CodecUtil;
 import org.apache.lucene.codecs.FieldsProducer;
 import org.apache.lucene.codecs.TempPostingsReaderBase;
@@ -293,7 +294,7 @@ public class TempBlockTermsReader extends FieldsProducer {
     // Iterates through terms in this field
     private final class SegmentTermsEnum extends TermsEnum {
       private final IndexInput in;
-      private final TempTermState state;
+      private final BlockTermState state;
       private final boolean doOrd;
       private final FieldAndTerm fieldTerm = new FieldAndTerm();
       private final TermsIndexReaderBase.FieldIndexEnum indexEnum;
@@ -696,8 +697,8 @@ public class TempBlockTermsReader extends FieldsProducer {
       @Override
       public void seekExact(BytesRef target, TermState otherState) {
         //System.out.println("BTR.seekExact termState target=" + target.utf8ToString() + " " + target + " this=" + this);
-        assert otherState != null && otherState instanceof TempTermState;
-        assert !doOrd || ((TempTermState) otherState).ord < numTerms;
+        assert otherState != null && otherState instanceof BlockTermState;
+        assert !doOrd || ((BlockTermState) otherState).ord < numTerms;
         state.copyFrom(otherState);
         seekPending = true;
         indexIsCurrent = false;

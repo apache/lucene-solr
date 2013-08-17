@@ -54,6 +54,7 @@ import org.apache.lucene.util.fst.BytesRefFSTEnum.InputOutput;
 import org.apache.lucene.util.fst.FST;
 import org.apache.lucene.util.fst.Outputs;
 import org.apache.lucene.util.fst.Util;
+import org.apache.lucene.codecs.BlockTermState;
 import org.apache.lucene.codecs.FieldsProducer;
 import org.apache.lucene.codecs.TempPostingsReaderBase;
 import org.apache.lucene.codecs.CodecUtil;
@@ -225,7 +226,7 @@ public class TempFSTTermsReader extends FieldsProducer {
       BytesRef term;
 
       /* Current term stats + decoded metadata (customized by PBF) */
-      final TempTermState state;
+      final BlockTermState state;
 
       /* Current term stats + undecoded metadata (long[] & byte[]) */
       TempTermOutputs.TempMetaData meta;

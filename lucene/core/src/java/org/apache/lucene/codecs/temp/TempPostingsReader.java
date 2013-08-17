@@ -24,6 +24,7 @@ import static org.apache.lucene.codecs.lucene41.ForUtil.MAX_ENCODED_SIZE;
 import java.io.IOException;
 import java.util.Arrays;
 
+import org.apache.lucene.codecs.BlockTermState;
 import org.apache.lucene.codecs.CodecUtil;
 import org.apache.lucene.codecs.TempPostingsReaderBase;
 import org.apache.lucene.index.DocsAndPositionsEnum;
@@ -144,7 +145,7 @@ public final class TempPostingsReader extends TempPostingsReaderBase {
   }
 
   // Must keep final because we do non-standard clone
-  private final static class IntBlockTermState extends TempTermState {
+  private final static class IntBlockTermState extends BlockTermState {
     long docStartFP;
     long posStartFP;
     long payStartFP;
@@ -190,7 +191,7 @@ public final class TempPostingsReader extends TempPostingsReaderBase {
   }
 
   @Override
-  public void decodeTerm(long[] longs, DataInput in, FieldInfo fieldInfo, TempTermState _termState)
+  public void decodeTerm(long[] longs, DataInput in, FieldInfo fieldInfo, BlockTermState _termState)
     throws IOException {
     final IntBlockTermState termState = (IntBlockTermState) _termState;
     final boolean fieldHasPositions = fieldInfo.getIndexOptions().compareTo(IndexOptions.DOCS_AND_FREQS_AND_POSITIONS) >= 0;
@@ -226,7 +227,7 @@ public final class TempPostingsReader extends TempPostingsReaderBase {
   }
     
   @Override
-  public DocsEnum docs(FieldInfo fieldInfo, TempTermState termState, Bits liveDocs, DocsEnum reuse, int flags) throws IOException {
+  public DocsEnum docs(FieldInfo fieldInfo, BlockTermState termState, Bits liveDocs, DocsEnum reuse, int flags) throws IOException {
     BlockDocsEnum docsEnum;
     if (reuse instanceof BlockDocsEnum) {
       docsEnum = (BlockDocsEnum) reuse;
@@ -242,7 +243,7 @@ public final class TempPostingsReader extends TempPostingsReaderBase {
   // TODO: specialize to liveDocs vs not
   
   @Override
-  public DocsAndPositionsEnum docsAndPositions(FieldInfo fieldInfo, TempTermState termState, Bits liveDocs,
+  public DocsAndPositionsEnum docsAndPositions(FieldInfo fieldInfo, BlockTermState termState, Bits liveDocs,
                                                DocsAndPositionsEnum reuse, int flags)
     throws IOException {
 

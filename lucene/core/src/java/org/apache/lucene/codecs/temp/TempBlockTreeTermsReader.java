@@ -57,6 +57,7 @@ import org.apache.lucene.util.fst.FST;
 import org.apache.lucene.util.fst.Outputs;
 import org.apache.lucene.util.fst.Util;
 import org.apache.lucene.codecs.FieldsProducer;
+import org.apache.lucene.codecs.BlockTermState;
 import org.apache.lucene.codecs.TempPostingsReaderBase;
 import org.apache.lucene.codecs.CodecUtil;
 import org.apache.lucene.codecs.PostingsBaseFormat;  // javadoc
@@ -619,7 +620,7 @@ public class TempBlockTreeTermsReader extends FieldsProducer {
 
         FST.Arc<BytesRef> arc;
 
-        final TempTermState termState;
+        final BlockTermState termState;
   
         // metadata buffer, holding monotonical values
         public long[] longs;
@@ -2230,7 +2231,7 @@ public class TempBlockTreeTermsReader extends FieldsProducer {
         // }
         assert clearEOF();
         if (target.compareTo(term) != 0 || !termExists) {
-          assert otherState != null && otherState instanceof TempTermState;
+          assert otherState != null && otherState instanceof BlockTermState;
           currentFrame = staticFrame;
           currentFrame.state.copyFrom(otherState);
           term.copyBytes(target);
@@ -2318,7 +2319,7 @@ public class TempBlockTreeTermsReader extends FieldsProducer {
         // metaData
         int metaDataUpto;
 
-        final TempTermState state;
+        final BlockTermState state;
 
         // metadata buffer, holding monotonical values
         public long[] longs;

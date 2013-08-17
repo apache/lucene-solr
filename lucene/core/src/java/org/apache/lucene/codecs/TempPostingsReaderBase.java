@@ -26,7 +26,6 @@ import org.apache.lucene.index.FieldInfo;
 import org.apache.lucene.store.IndexInput;
 import org.apache.lucene.store.DataInput;
 import org.apache.lucene.util.Bits;
-import org.apache.lucene.codecs.temp.TempTermState;
 
 /** The core terms dictionaries (BlockTermsReader,
  *  BlockTreeTermsReader) interact with a single instance
@@ -54,18 +53,18 @@ public abstract class TempPostingsReaderBase implements Closeable {
   public abstract void init(IndexInput termsIn) throws IOException;
 
   /** Return a newly created empty TermState */
-  public abstract TempTermState newTermState() throws IOException;
+  public abstract BlockTermState newTermState() throws IOException;
 
   /** Actually decode metadata for next term */
-  public abstract void decodeTerm(long[] longs, DataInput in, FieldInfo fieldInfo, TempTermState state) throws IOException;
+  public abstract void decodeTerm(long[] longs, DataInput in, FieldInfo fieldInfo, BlockTermState state) throws IOException;
 
   /** Must fully consume state, since after this call that
    *  TermState may be reused. */
-  public abstract DocsEnum docs(FieldInfo fieldInfo, TempTermState state, Bits skipDocs, DocsEnum reuse, int flags) throws IOException;
+  public abstract DocsEnum docs(FieldInfo fieldInfo, BlockTermState state, Bits skipDocs, DocsEnum reuse, int flags) throws IOException;
 
   /** Must fully consume state, since after this call that
    *  TermState may be reused. */
-  public abstract DocsAndPositionsEnum docsAndPositions(FieldInfo fieldInfo, TempTermState state, Bits skipDocs, DocsAndPositionsEnum reuse,
+  public abstract DocsAndPositionsEnum docsAndPositions(FieldInfo fieldInfo, BlockTermState state, Bits skipDocs, DocsAndPositionsEnum reuse,
                                                         int flags) throws IOException;
 
   @Override

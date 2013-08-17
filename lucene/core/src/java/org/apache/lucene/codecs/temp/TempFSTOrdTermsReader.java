@@ -56,6 +56,7 @@ import org.apache.lucene.util.fst.FST;
 import org.apache.lucene.util.fst.Outputs;
 import org.apache.lucene.util.fst.PositiveIntOutputs;
 import org.apache.lucene.util.fst.Util;
+import org.apache.lucene.codecs.BlockTermState;
 import org.apache.lucene.codecs.FieldsProducer;
 import org.apache.lucene.codecs.TempPostingsReaderBase;
 import org.apache.lucene.codecs.CodecUtil;
@@ -263,7 +264,7 @@ public class TempFSTOrdTermsReader extends FieldsProducer {
       long ord;
 
       /* Current term stats + decoded metadata (customized by PBF) */
-      final TempTermState state;
+      final BlockTermState state;
 
       /* Datainput to load stats & metadata */
       final ByteArrayDataInput statsReader = new ByteArrayDataInput();
