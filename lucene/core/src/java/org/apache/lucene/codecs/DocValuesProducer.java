@@ -75,6 +75,7 @@ public abstract class DocValuesProducer implements Closeable {
     final SortedDocValues in;
     final int maxDoc;
     
+    /** Creates a {@link Bits} returning true if the document has a value */
     public SortedDocsWithField(SortedDocValues in, int maxDoc) {
       this.in = in;
       this.maxDoc = maxDoc;
@@ -102,6 +103,7 @@ public abstract class DocValuesProducer implements Closeable {
     final SortedSetDocValues in;
     final int maxDoc;
     
+    /** Creates a {@link Bits} returning true if the document has a value */
     public SortedSetDocsWithField(SortedSetDocValues in, int maxDoc) {
       this.in = in;
       this.maxDoc = maxDoc;

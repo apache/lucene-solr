@@ -25,6 +25,7 @@ import static org.apache.lucene.codecs.lucene45.Lucene45DocValuesConsumer.BINARY
 import static org.apache.lucene.codecs.lucene45.Lucene45DocValuesConsumer.BINARY_VARIABLE_UNCOMPRESSED;
 import static org.apache.lucene.codecs.lucene45.Lucene45DocValuesConsumer.BINARY_PREFIX_COMPRESSED;
 
+import java.io.Closeable; // javadocs
 import java.io.IOException;
 import java.util.Comparator;
 import java.util.HashMap;
@@ -53,7 +54,8 @@ import org.apache.lucene.util.packed.BlockPackedReader;
 import org.apache.lucene.util.packed.MonotonicBlockPackedReader;
 import org.apache.lucene.util.packed.PackedInts;
 
-public class Lucene45DocValuesProducer extends DocValuesProducer {
+/** reader for {@link Lucene45DocValuesFormat} */
+public class Lucene45DocValuesProducer extends DocValuesProducer implements Closeable {
   private final Map<Integer,NumericEntry> numerics;
   private final Map<Integer,BinaryEntry> binaries;
   private final Map<Integer,NumericEntry> ords;
@@ -65,6 +67,7 @@ public class Lucene45DocValuesProducer extends DocValuesProducer {
   private final Map<Integer,MonotonicBlockPackedReader> addressInstances = new HashMap<Integer,MonotonicBlockPackedReader>();
   private final Map<Integer,MonotonicBlockPackedReader> ordIndexInstances = new HashMap<Integer,MonotonicBlockPackedReader>();
   
+  /** expert: instantiates a new reader */
   protected Lucene45DocValuesProducer(SegmentReadState state, String dataCodec, String dataExtension, String metaCodec, String metaExtension) throws IOException {
     String metaName = IndexFileNames.segmentFileName(state.segmentInfo.name, state.segmentSuffix, metaExtension);
     // read in the entries from the metadata file.
@@ -317,6 +320,8 @@ public class Lucene45DocValuesProducer extends DocValuesProducer {
     };
   }
   
+  /** returns an address instance for variable-length binary values.
+   *  @lucene.internal */
   protected MonotonicBlockPackedReader getAddressInstance(IndexInput data, FieldInfo field, BinaryEntry bytes) throws IOException {
     final MonotonicBlockPackedReader addresses;
     synchronized (addressInstances) {
@@ -358,6 +363,8 @@ public class Lucene45DocValuesProducer extends DocValuesProducer {
     };
   }
   
+  /** returns an address instance for prefix-compressed binary values. 
+   * @lucene.internal */
   protected MonotonicBlockPackedReader getIntervalInstance(IndexInput data, FieldInfo field, BinaryEntry bytes) throws IOException {
     final MonotonicBlockPackedReader addresses;
     final long interval = bytes.addressInterval;
@@ -434,6 +441,8 @@ public class Lucene45DocValuesProducer extends DocValuesProducer {
     };
   }
   
+  /** returns an address instance for sortedset ordinal lists
+   * @lucene.internal */
   protected MonotonicBlockPackedReader getOrdIndexInstance(IndexInput data, FieldInfo field, NumericEntry entry) throws IOException {
     final MonotonicBlockPackedReader ordIndex;
     synchronized (ordIndexInstances) {
@@ -509,7 +518,7 @@ public class Lucene45DocValuesProducer extends DocValuesProducer {
     };
   }
   
-  public Bits getMissingBits(final long offset) throws IOException {
+  private Bits getMissingBits(final long offset) throws IOException {
     if (offset == -1) {
       return new Bits.MatchAllBits(maxDoc);
     } else {
@@ -557,13 +566,20 @@ public class Lucene45DocValuesProducer extends DocValuesProducer {
     data.close();
   }
   
+  /** metadata entry for a numeric docvalues field */
   protected static class NumericEntry {
+    private NumericEntry() {}
+    /** offset to the bitset representing docsWithField, or -1 if no documents have missing values */
     long missingOffset;
+    /** offset to the actual numeric values */
     public long offset;
 
-    public int format;
+    int format;
+    /** packed ints version used to encode these numerics */
     public int packedIntsVersion;
+    /** count of values written */
     public long count;
+    /** packed ints blocksize */
     public int blockSize;
     
     long minValue;
@@ -571,17 +587,26 @@ public class Lucene45DocValuesProducer extends DocValuesProducer {
     long table[];
   }
   
+  /** metadata entry for a binary docvalues field */
   protected static class BinaryEntry {
+    private BinaryEntry() {}
+    /** offset to the bitset representing docsWithField, or -1 if no documents have missing values */
     long missingOffset;
+    /** offset to the actual binary values */
     long offset;
 
     int format;
+    /** count of values written */
     public long count;
     int minLength;
     int maxLength;
+    /** offset to the addressing data that maps a value to its slice of the byte[] */
     public long addressesOffset;
+    /** interval of shared prefix chunks (when using prefix-compressed binary) */
     public long addressInterval;
+    /** packed ints version used to encode addressing information */
     public int packedIntsVersion;
+    /** packed ints blocksize */
     public int blockSize;
   }
   

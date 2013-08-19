@@ -17,6 +17,7 @@ package org.apache.lucene.codecs.lucene45;
  * limitations under the License.
  */
 
+import java.io.Closeable; // javadocs
 import java.io.IOException;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -37,7 +38,7 @@ import org.apache.lucene.util.packed.MonotonicBlockPackedWriter;
 import org.apache.lucene.util.packed.PackedInts;
 
 /** writer for {@link Lucene45DocValuesFormat} */
-public class Lucene45DocValuesConsumer extends DocValuesConsumer {
+public class Lucene45DocValuesConsumer extends DocValuesConsumer implements Closeable {
 
   static final int BLOCK_SIZE = 16384;
   static final int ADDRESS_INTERVAL = 16;
@@ -59,6 +60,7 @@ public class Lucene45DocValuesConsumer extends DocValuesConsumer {
   final IndexOutput data, meta;
   final int maxDoc;
   
+  /** expert: Creates a new writer */
   public Lucene45DocValuesConsumer(SegmentWriteState state, String dataCodec, String dataExtension, String metaCodec, String metaExtension) throws IOException {
     boolean success = false;
     try {
@@ -273,6 +275,7 @@ public class Lucene45DocValuesConsumer extends DocValuesConsumer {
     }
   }
   
+  /** expert: writes a value dictionary for a sorted/sortedset field */
   protected void addTermsDict(FieldInfo field, final Iterable<BytesRef> values) throws IOException {
     // first check if its a "fixed-length" terms dict
     int minLength = Integer.MAX_VALUE;

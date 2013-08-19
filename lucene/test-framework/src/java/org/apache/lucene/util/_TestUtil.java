@@ -757,14 +757,13 @@ public class _TestUtil {
     }
   }
 
-  // nocommit: remove this, push this test to Lucene40/Lucene42 codec tests
+  // TODO: remove this, push this test to Lucene40/Lucene42 codec tests
   public static boolean fieldSupportsHugeBinaryDocValues(String field) {
     String dvFormat = getDocValuesFormat(field);
-    System.out.println(dvFormat);
-    return dvFormat.equals("Lucene45") ||
-      dvFormat.equals("Asserting") || 
-      dvFormat.equals("Disk") ||
-      dvFormat.equals("SimpleText");
+    if (dvFormat.equals("Lucene40") || dvFormat.equals("Lucene42")) {
+      return false;
+    }
+    return true;
   }
 
   public static boolean anyFilesExceptWriteLock(Directory dir) throws IOException {

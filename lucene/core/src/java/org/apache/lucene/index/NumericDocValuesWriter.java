@@ -70,8 +70,8 @@ class NumericDocValuesWriter extends DocValuesWriter {
   }
   
   private long docsWithFieldBytesUsed() {
-    // nocommit: this is not correct
-    return docsWithField.getBits().length*RamUsageEstimator.NUM_BYTES_LONG;
+    // size of the long[] + some overhead
+    return RamUsageEstimator.sizeOf(docsWithField.getBits()) + 64;
   }
 
   private void updateBytesUsed() {
