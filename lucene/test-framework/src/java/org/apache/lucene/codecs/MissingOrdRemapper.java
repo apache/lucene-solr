@@ -22,11 +22,9 @@ import org.apache.lucene.util.BytesRef;
  */
 
 /** 
- * a utility class to write missing values for SORTED_SET as if they were the empty string
+ * a utility class to write missing values for SORTED as if they were the empty string
  * (to simulate pre-Lucene4.5 dv behavior for testing old codecs)
  */
-// nocommit: move this to test-framework with all the impersonators of
-// these old codecs once new memory/disk codecs are written that support missing
 public class MissingOrdRemapper {
   
   /** insert an empty byte[] to the front of this iterable */
