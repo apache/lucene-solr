@@ -200,6 +200,10 @@ public final class TempPostingsWriter extends TempPostingsWriterBase {
     long skipOffset = -1;
     long lastPosBlockOffset = -1;
     int singletonDocID = -1;
+    @Override
+    public String toString() {
+      return super.toString() + " docStartFP=" + docTermStartFP + " posStartFP=" + posTermStartFP + " payStartFP=" + payTermStartFP + " lastPosBlockOffset=" + lastPosBlockOffset + " singletonDocID=" + singletonDocID;
+    }
   }
 
   @Override

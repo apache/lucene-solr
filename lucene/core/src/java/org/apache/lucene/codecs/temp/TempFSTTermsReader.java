@@ -94,7 +94,7 @@ public class TempFSTTermsReader extends FieldsProducer {
       success = true;
     } finally {
       if (!success) {
-        in.close();
+        IOUtils.closeWhileHandlingException(in);
       }
     }
   }

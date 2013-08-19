@@ -51,7 +51,7 @@ public class RAMOutputStream extends IndexOutput {
   }
 
   /** Copy the current contents of this buffer to the named output. */
-  public void writeTo(IndexOutput out) throws IOException {
+  public void writeTo(DataOutput out) throws IOException {
     flush();
     final long end = file.length;
     long pos = 0;

@@ -100,7 +100,7 @@ public class TempFSTOrdTermsReader extends FieldsProducer {
         checkFieldSummary(state.segmentInfo, current, previous);
       }
     } finally {
-      IOUtils.close(indexIn, blockIn);
+      IOUtils.closeWhileHandlingException(indexIn, blockIn);
     }
   }
 
@@ -323,7 +323,7 @@ public class TempFSTOrdTermsReader extends FieldsProducer {
         if (metaBlockOrd != oldBlockOrd) {
           refillMetadata();
         }
-        metaBytesReader.reset(metaBytesBlock, bytesStart[upto], bytesLength[upto]);
+        metaBytesReader.setPosition(bytesStart[upto]);
         postingsReader.decodeTerm(longs[upto], metaBytesReader, fieldInfo, state, true);
       }
 

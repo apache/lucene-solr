@@ -19,3 +19,6 @@ org.apache.lucene.codecs.memory.MemoryPostingsFormat
 org.apache.lucene.codecs.bloom.BloomFilteringPostingsFormat
 org.apache.lucene.codecs.memory.DirectPostingsFormat
 org.apache.lucene.codecs.temp.TempBlockPostingsFormat
+org.apache.lucene.codecs.temp.TempPulsing41PostingsFormat
+org.apache.lucene.codecs.temp.TempFSTPulsing41PostingsFormat
+org.apache.lucene.codecs.temp.TempFSTOrdPulsing41PostingsFormat

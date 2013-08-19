@@ -223,10 +223,10 @@ public class TempFSTOrdTermsWriter extends FieldsConsumer {
       state.docFreq = stats.docFreq;
       state.totalTermFreq = stats.totalTermFreq;
       postingsWriter.finishTerm(state);
-      postingsWriter.encodeTerm(longs, metaBytesOut, fieldInfo, state, false);
+      postingsWriter.encodeTerm(longs, metaBytesOut, fieldInfo, state, true);
       for (int i = 0; i < longsSize; i++) {
-        metaLongsOut.writeVLong(longs[i]);
-        lastLongs[i] += longs[i];
+        metaLongsOut.writeVLong(longs[i] - lastLongs[i]);
+        lastLongs[i] = longs[i];
       }
       metaLongsOut.writeVLong(metaBytesOut.getFilePointer() - lastMetaBytesFP);
 
