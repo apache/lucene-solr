@@ -760,7 +760,7 @@ public class _TestUtil {
   // TODO: remove this, push this test to Lucene40/Lucene42 codec tests
   public static boolean fieldSupportsHugeBinaryDocValues(String field) {
     String dvFormat = getDocValuesFormat(field);
-    if (dvFormat.equals("Lucene40") || dvFormat.equals("Lucene42")) {
+    if (dvFormat.equals("Lucene40") || dvFormat.equals("Lucene42") || dvFormat.equals("Memory")) {
       return false;
     }
     return true;

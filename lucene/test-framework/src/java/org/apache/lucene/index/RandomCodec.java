@@ -40,6 +40,7 @@ import org.apache.lucene.codecs.lucene45.Lucene45DocValuesFormat;
 import org.apache.lucene.codecs.bloom.TestBloomFilteredLucene41Postings;
 import org.apache.lucene.codecs.diskdv.DiskDocValuesFormat;
 import org.apache.lucene.codecs.memory.DirectPostingsFormat;
+import org.apache.lucene.codecs.memory.MemoryDocValuesFormat;
 import org.apache.lucene.codecs.memory.MemoryPostingsFormat;
 import org.apache.lucene.codecs.mockintblock.MockFixedIntBlockPostingsFormat;
 import org.apache.lucene.codecs.mockintblock.MockVariableIntBlockPostingsFormat;
@@ -149,6 +150,7 @@ public class RandomCodec extends Lucene45Codec {
     addDocValues(avoidCodecs,
         new Lucene45DocValuesFormat(),
         new DiskDocValuesFormat(),
+        new MemoryDocValuesFormat(),
         new SimpleTextDocValuesFormat(),
         new AssertingDocValuesFormat());
 
