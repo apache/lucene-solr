@@ -255,7 +255,7 @@ final class NumericFacets {
 
       if (zeros && (limit < 0 || result.size() < limit)) { // need to merge with the term dict
         if (!sf.indexed()) {
-          throw new IllegalStateException("Cannot use " + FacetParams.FACET_MINCOUNT + "=0 on a field which is not indexed");
+          throw new IllegalStateException("Cannot use " + FacetParams.FACET_MINCOUNT + "=0 on field " + sf.getName() + " which is not indexed");
         }
         // Add zeros until there are limit results
         final Set<String> alreadySeen = new HashSet<String>();

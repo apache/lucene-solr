@@ -650,6 +650,43 @@ public abstract class BaseDocValuesFormatTestCase extends LuceneTestCase {
     ireader.close();
     directory.close();
   }
+  
+  public void testSortedMergeAwayAllValues() throws IOException {
+    Directory directory = newDirectory();
+    Analyzer analyzer = new MockAnalyzer(random());
+    IndexWriterConfig iwconfig = newIndexWriterConfig(TEST_VERSION_CURRENT, analyzer);
+    iwconfig.setMergePolicy(newLogMergePolicy());
+    RandomIndexWriter iwriter = new RandomIndexWriter(random(), directory, iwconfig);
+    
+    Document doc = new Document();
+    doc.add(new StringField("id", "0", Field.Store.NO));
+    iwriter.addDocument(doc);    
+    doc = new Document();
+    doc.add(new StringField("id", "1", Field.Store.NO));
+    doc.add(new SortedDocValuesField("field", new BytesRef("hello")));
+    iwriter.addDocument(doc);
+    iwriter.commit();
+    iwriter.deleteDocuments(new Term("id", "1"));
+    iwriter.forceMerge(1);
+    
+    DirectoryReader ireader = iwriter.getReader();
+    iwriter.close();
+    
+    SortedDocValues dv = getOnlySegmentReader(ireader).getSortedDocValues("field");
+    if (codecSupportsDocsWithField("field")) {
+      assertEquals(-1, dv.getOrd(0));
+      assertEquals(0, dv.getValueCount());
+    } else {
+      assertEquals(0, dv.getOrd(0));
+      assertEquals(1, dv.getValueCount());
+      BytesRef ref = new BytesRef();
+      dv.lookupOrd(0, ref);
+      assertEquals(new BytesRef(), ref);
+    }
+    
+    ireader.close();
+    directory.close();
+  }
 
   public void testBytesWithNewline() throws IOException {
     Analyzer analyzer = new MockAnalyzer(random());
