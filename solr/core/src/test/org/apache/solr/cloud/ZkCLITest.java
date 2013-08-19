@@ -18,10 +18,14 @@ package org.apache.solr.cloud;
  */
 
 import java.io.File;
+import java.io.FileInputStream;
+import java.io.FileNotFoundException;
+import java.io.InputStream;
 import java.util.Collection;
 import java.util.List;
 
 import org.apache.commons.io.FileUtils;
+import org.apache.commons.io.IOUtils;
 import org.apache.commons.io.filefilter.RegexFileFilter;
 import org.apache.commons.io.filefilter.TrueFileFilter;
 import org.apache.solr.SolrTestCaseJ4;
@@ -50,7 +54,8 @@ public class ZkCLITest extends SolrTestCaseJ4 {
   private String solrHome;
 
   private SolrZkClient zkClient;
-  
+
+  protected static final String SOLR_HOME = SolrTestCaseJ4.TEST_HOME();
   
   @BeforeClass
   public static void beforeClass() {
@@ -141,7 +146,7 @@ public class ZkCLITest extends SolrTestCaseJ4 {
 
   @Test
   public void testPut() throws Exception {
-    // test bootstrap_conf
+    // test put
     String data = "my data";
     String[] args = new String[] {"-zkhost", zkServer.getZkAddress(), "-cmd",
         "put", "/data.txt", data};
@@ -151,7 +156,41 @@ public class ZkCLITest extends SolrTestCaseJ4 {
 
     assertArrayEquals(zkClient.getData("/data.txt", null, null, true), data.getBytes("UTF-8"));
   }
-  
+
+  @Test
+  public void testPutFile() throws Exception {
+    // test put file
+    String[] args = new String[] {"-zkhost", zkServer.getZkAddress(), "-cmd",
+        "putfile", "/solr.xml", SOLR_HOME + File.separator + "solr-stress-new.xml"};
+    ZkCLI.main(args);
+
+    String fromZk = new String(zkClient.getData("/solr.xml", null, null, true), "UTF-8");
+    File locFile = new File(SOLR_HOME + File.separator + "solr-stress-new.xml");
+    InputStream is = new FileInputStream(locFile);
+    String fromLoc;
+    try {
+      fromLoc = new String(IOUtils.toByteArray(is), "UTF-8");
+    } finally {
+      IOUtils.closeQuietly(is);
+    }
+    assertEquals("Should get back what we put in ZK", fromZk, fromLoc);
+  }
+
+  @Test
+  public void testPutFileNotExists() throws Exception {
+    // test put file
+    String[] args = new String[] {"-zkhost", zkServer.getZkAddress(), "-cmd",
+        "putfile", "/solr.xml", SOLR_HOME + File.separator + "not-there.xml"};
+    try {
+      ZkCLI.main(args);
+      fail("Should have had a file not found exception");
+    } catch (FileNotFoundException fne) {
+      String msg = fne.getMessage();
+      assertTrue("Didn't find expected error message containing 'not-there.xml' in " + msg,
+          msg.indexOf("not-there.xml") != -1);
+    }
+  }
+
   @Test
   public void testList() throws Exception {
     zkClient.makePath("/test", true);

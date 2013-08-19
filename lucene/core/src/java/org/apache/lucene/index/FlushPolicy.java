@@ -20,6 +20,7 @@ import java.util.Iterator;
 
 import org.apache.lucene.index.DocumentsWriterPerThreadPool.ThreadState;
 import org.apache.lucene.store.Directory;
+import org.apache.lucene.util.InfoStream;
 import org.apache.lucene.util.SetOnce;
 
 /**
@@ -52,8 +53,8 @@ import org.apache.lucene.util.SetOnce;
  * @see IndexWriterConfig#setFlushPolicy(FlushPolicy)
  */
 abstract class FlushPolicy implements Cloneable {
-  protected SetOnce<DocumentsWriter> writer = new SetOnce<DocumentsWriter>();
   protected LiveIndexWriterConfig indexWriterConfig;
+  protected InfoStream infoStream;
 
   /**
    * Called for each delete term. If this is a delete triggered due to an update
@@ -93,9 +94,9 @@ abstract class FlushPolicy implements Cloneable {
   /**
    * Called by DocumentsWriter to initialize the FlushPolicy
    */
-  protected synchronized void init(DocumentsWriter docsWriter) {
-    writer.set(docsWriter);
-    indexWriterConfig = docsWriter.indexWriter.getConfig();
+  protected synchronized void init(LiveIndexWriterConfig indexWriterConfig) {
+    this.indexWriterConfig = indexWriterConfig;
+    infoStream = indexWriterConfig.getInfoStream();
   }
 
   /**
@@ -127,8 +128,8 @@ abstract class FlushPolicy implements Cloneable {
   }
   
   private boolean assertMessage(String s) {
-    if (writer.get().infoStream.isEnabled("FP")) {
-      writer.get().infoStream.message("FP", s);
+    if (infoStream.isEnabled("FP")) {
+      infoStream.message("FP", s);
     }
     return true;
   }
@@ -142,8 +143,8 @@ abstract class FlushPolicy implements Cloneable {
       // should not happen
       throw new RuntimeException(e);
     }
-    clone.writer = new SetOnce<DocumentsWriter>();
     clone.indexWriterConfig = null;
+    clone.infoStream = null; 
     return clone;
   }
 }

@@ -91,7 +91,9 @@ New Features
 * SOLR-4808: Persist and use router,replicationFactor and maxShardsPerNode at Collection and Shard level (Noble Paul, Shalin Mangar)
 * SOLR-5006: CREATESHARD command for 'implicit' shards (Noble Paul)
 * SOLR-5017: Allow sharding based on the value of a field (Noble Paul)
-* SOLR-4222:create custom sharded collection via collections API (Noble Paul)
+* SOLR-4222: create custom sharded collection via collections API (Noble Paul)
+* SOLR-4718: Allow solr.xml to be stored in ZooKeeper
+* SOLR-5156: Enhance ZkCLI to allow uploading of arbitrary files to ZK.
 
 Bug Fixes
 ----------------------
@@ -130,7 +132,14 @@ Bug Fixes
   of divide by zero, and makes estimated hit counts meaningful in non-optimized
   indexes.  (hossman)
   
-* SOLR-5164: Can not create a collection via collections API (cloud mode) (Erick Erickson)
+* SOLR-3936: Fixed QueryElevationComponent sorting when used with Grouping
+  (Michael Garski via hossman)
+
+* SOLR-5171: SOLR Admin gui works in IE9, breaks in IE10. (Joseph L Howard via
+  steffkes)
+
+* SOLR-5174: Admin UI - Query View doesn't highlight (json) Result if it 
+  contains HTML Tags (steffkes)
 
 Optimizations
 ----------------------
@@ -148,8 +157,8 @@ Other Changes
   The solr.clustering.enabled system property is set to 'true' by default.
   (ehatcher, Dawid Weiss)
 
-* SOLR-4914: Factor out core list persistence and discovery into a
-  new CoresLocator interface. (Alan Woodward)
+* SOLR-4914, SOLR-5162: Factor out core list persistence and discovery into a
+  new CoresLocator interface. (Alan Woodward, Shawn Heisey)
 
 * SOLR-5056: Improve type safety of ConfigSolr class. (Alan Woodward)
 

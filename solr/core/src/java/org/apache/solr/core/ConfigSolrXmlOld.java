@@ -55,15 +55,15 @@ public class ConfigSolrXmlOld extends ConfigSolr {
     return "solr/cores/shardHandlerFactory";
   }
 
-  public ConfigSolrXmlOld(Config config, File configFile, String originalXML) {
+  public ConfigSolrXmlOld(Config config, String originalXML) {
     super(config);
     try {
       checkForIllegalConfig();
       fillPropMap();
       config.substituteProperties();
       initCoreList();
-      this.persistor = isPersistent() ? new SolrXMLCoresLocator(configFile, originalXML, this)
-                                      : new SolrXMLCoresLocator.NonPersistingLocator(configFile, originalXML, this);
+      this.persistor = isPersistent() ? new SolrXMLCoresLocator(originalXML, this)
+                                      : new SolrXMLCoresLocator.NonPersistingLocator(originalXML, this);
     }
     catch (IOException e) {
       throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, e);

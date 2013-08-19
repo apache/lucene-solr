@@ -119,6 +119,9 @@ public class CoreDescriptor {
   /** The properties for this core, as available through getProperty() */
   protected final Properties coreProperties = new Properties();
 
+  /** The properties for this core, substitutable by resource loaders */
+  protected final Properties substitutableProperties = new Properties();
+
   /**
    * Create a new CoreDescriptor.
    * @param container       the CoreDescriptor's container
@@ -160,6 +163,7 @@ public class CoreDescriptor {
     }
 
     loadExtraProperties();
+    buildSubstitutableProperties();
 
     // TODO maybe make this a CloudCoreDescriptor subclass?
     if (container.isZooKeeperAware()) {
@@ -198,6 +202,20 @@ public class CoreDescriptor {
       } finally {
         IOUtils.closeQuietly(in);
       }
+    }
+  }
+
+  /**
+   * Create the properties object used by resource loaders, etc, for property
+   * substitution.  The default solr properties are prefixed with 'solr.core.', so,
+   * e.g., 'name' becomes 'solr.core.name'
+   */
+  protected void buildSubstitutableProperties() {
+    for (String propName : coreProperties.stringPropertyNames()) {
+      String propValue = coreProperties.getProperty(propName);
+      if (!isUserDefinedProperty(propName))
+        propName = "solr.core." + propName;
+      substitutableProperties.setProperty(propName, propValue);
     }
   }
 
@@ -336,11 +354,11 @@ public class CoreDescriptor {
   }
 
   /**
-   * Returns all properties defined on this CoreDescriptor
-   * @return all properties defined on this CoreDescriptor
+   * Returns all substitutable properties defined on this CoreDescriptor
+   * @return all substitutable properties defined on this CoreDescriptor
    */
-  public Properties getCoreProperties() {
-    return coreProperties;
+  public Properties getSubstitutableProperties() {
+    return substitutableProperties;
   }
 
   @Override

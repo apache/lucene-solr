@@ -1702,7 +1702,6 @@ public class TestIndexWriter extends LuceneTestCase {
 
       w.deleteAll();
       w.commit();
-
       // Make sure we accumulate no files except for empty
       // segments_N and segments.gen:
       assertTrue(d.listAll().length <= 2);
