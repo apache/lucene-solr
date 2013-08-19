@@ -45,7 +45,6 @@ Optimizations
   on Windows if NIOFSDirectory is used, mmapped files are still locked.
   (Michael Poindexter, Robert Muir, Uwe Schindler)
 
-
 ======================= Lucene 4.5.0 =======================
 
 New features
@@ -206,6 +205,13 @@ Optimizations
 
 * LUCENE-5170: Fixed several wrapper analyzers to inherit the reuse strategy
   of the wrapped Analyzer.  (Uwe Schindler, Robert Muir, Shay Banon)
+
+* LUCENE-5006: Simplified DocumentsWriter and DocumentsWriterPerThread
+  synchronization and concurrent interaction with IndexWriter. DWPT is now
+  only setup once and has no reset logic. All segment publishing and state
+  transition from DWPT into IndexWriter is now done via an Event-Queue
+  processed from within the IndexWriter in order to prevent suituations
+  where DWPT or DW calling int IW causing deadlocks. (Simon Willnauer)
   
 Documentation
 
