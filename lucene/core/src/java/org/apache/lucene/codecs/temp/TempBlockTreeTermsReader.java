@@ -799,13 +799,9 @@ public class TempBlockTreeTermsReader extends FieldsProducer {
 
           // lazily catch up on metadata decode:
           final int limit = getTermBlockOrd();
+          boolean absolute = metaDataUpto == 0;
           assert limit > 0;
 
-          if (metaDataUpto == 0) {
-            Arrays.fill(longs, 0);
-          }
-          final int longSize = longs.length;
-      
           // TODO: better API would be "jump straight to term=N"???
           while (metaDataUpto < limit) {
 
@@ -824,12 +820,13 @@ public class TempBlockTreeTermsReader extends FieldsProducer {
               termState.totalTermFreq = termState.docFreq + statsReader.readVLong();
             }
             // metadata 
-            for (int i = 0; i < longSize; i++) {
-              longs[i] += bytesReader.readVLong();
+            for (int i = 0; i < longsSize; i++) {
+              longs[i] = bytesReader.readVLong();
             }
-            postingsReader.decodeTerm(longs, bytesReader, fieldInfo, termState);
+            postingsReader.decodeTerm(longs, bytesReader, fieldInfo, termState, absolute);
 
             metaDataUpto++;
+            absolute = false;
           }
           termState.termBlockOrd = metaDataUpto;
         }
@@ -2623,13 +2620,9 @@ public class TempBlockTreeTermsReader extends FieldsProducer {
 
           // lazily catch up on metadata decode:
           final int limit = getTermBlockOrd();
+          boolean absolute = metaDataUpto == 0;
           assert limit > 0;
 
-          if (metaDataUpto == 0) {
-            Arrays.fill(longs, 0);
-          }
-          final int longSize = longs.length;
-      
           // TODO: better API would be "jump straight to term=N"???
           while (metaDataUpto < limit) {
 
@@ -2648,12 +2641,13 @@ public class TempBlockTreeTermsReader extends FieldsProducer {
               state.totalTermFreq = state.docFreq + statsReader.readVLong();
             }
             // metadata 
-            for (int i = 0; i < longSize; i++) {
-              longs[i] += bytesReader.readVLong();
+            for (int i = 0; i < longsSize; i++) {
+              longs[i] = bytesReader.readVLong();
             }
-            postingsReader.decodeTerm(longs, bytesReader, fieldInfo, state);
+            postingsReader.decodeTerm(longs, bytesReader, fieldInfo, state, absolute);
 
             metaDataUpto++;
+            absolute = false;
           }
           state.termBlockOrd = metaDataUpto;
         }

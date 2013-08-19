@@ -326,7 +326,7 @@ public class TempFSTTermsReader extends FieldsProducer {
           if (meta.bytes != null) {
             bytesReader.reset(meta.bytes, 0, meta.bytes.length);
           }
-          postingsReader.decodeTerm(meta.longs, bytesReader, fieldInfo, state);
+          postingsReader.decodeTerm(meta.longs, bytesReader, fieldInfo, state, true);
           decoded = true;
         }
       }
@@ -473,7 +473,7 @@ public class TempFSTTermsReader extends FieldsProducer {
           if (meta.bytes != null) {
             bytesReader.reset(meta.bytes, 0, meta.bytes.length);
           }
-          postingsReader.decodeTerm(meta.longs, bytesReader, fieldInfo, state);
+          postingsReader.decodeTerm(meta.longs, bytesReader, fieldInfo, state, true);
           decoded = true;
         }
       }

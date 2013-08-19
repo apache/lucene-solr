@@ -831,12 +831,11 @@ public class TempBlockTermsReader extends FieldsProducer {
 
           // lazily catch up on metadata decode:
           final int limit = state.termBlockOrd;
+          boolean absolute = metaDataUpto == 0;
           // We must set/incr state.termCount because
           // postings impl can look at this
           state.termBlockOrd = metaDataUpto;
-          if (metaDataUpto == 0) {
-            Arrays.fill(longs, 0);
-          }
+          
           // TODO: better API would be "jump straight to term=N"???
           while (metaDataUpto < limit) {
             //System.out.println("  decode mdUpto=" + metaDataUpto);
@@ -858,11 +857,12 @@ public class TempBlockTermsReader extends FieldsProducer {
             }
             // metadata
             for (int i = 0; i < longs.length; i++) {
-              longs[i] += bytesReader.readVLong();
+              longs[i] = bytesReader.readVLong();
             }
-            postingsReader.decodeTerm(longs, bytesReader, fieldInfo, state);
+            postingsReader.decodeTerm(longs, bytesReader, fieldInfo, state, absolute);
             metaDataUpto++;
             state.termBlockOrd++;
+            absolute = false;
           }
         } else {
           //System.out.println("  skip! seekPending");

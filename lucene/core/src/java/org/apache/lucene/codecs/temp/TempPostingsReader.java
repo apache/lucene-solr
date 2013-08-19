@@ -191,18 +191,23 @@ public final class TempPostingsReader extends TempPostingsReaderBase {
   }
 
   @Override
-  public void decodeTerm(long[] longs, DataInput in, FieldInfo fieldInfo, BlockTermState _termState)
+  public void decodeTerm(long[] longs, DataInput in, FieldInfo fieldInfo, BlockTermState _termState, boolean absolute)
     throws IOException {
     final IntBlockTermState termState = (IntBlockTermState) _termState;
     final boolean fieldHasPositions = fieldInfo.getIndexOptions().compareTo(IndexOptions.DOCS_AND_FREQS_AND_POSITIONS) >= 0;
     final boolean fieldHasOffsets = fieldInfo.getIndexOptions().compareTo(IndexOptions.DOCS_AND_FREQS_AND_POSITIONS_AND_OFFSETS) >= 0;
     final boolean fieldHasPayloads = fieldInfo.hasPayloads();
-    
-    termState.docStartFP = longs[0];
+   
+    if (absolute) {
+      termState.docStartFP = 0;
+      termState.posStartFP = 0;
+      termState.payStartFP = 0;
+    }
+    termState.docStartFP += longs[0];
     if (fieldHasPositions) {
-      termState.posStartFP = longs[1];
+      termState.posStartFP += longs[1];
       if (fieldHasOffsets || fieldHasPayloads) {
-        termState.payStartFP = longs[2];
+        termState.payStartFP += longs[2];
       }
     }
 

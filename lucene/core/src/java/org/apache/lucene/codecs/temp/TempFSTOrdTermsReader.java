@@ -324,7 +324,7 @@ public class TempFSTOrdTermsReader extends FieldsProducer {
           refillMetadata();
         }
         metaBytesReader.reset(metaBytesBlock, bytesStart[upto], bytesLength[upto]);
-        postingsReader.decodeTerm(longs[upto], metaBytesReader, fieldInfo, state);
+        postingsReader.decodeTerm(longs[upto], metaBytesReader, fieldInfo, state, true);
       }
 
       /** Load current stats shard */
