@@ -135,6 +135,9 @@ Bug Fixes
 * SOLR-3936: Fixed QueryElevationComponent sorting when used with Grouping
   (Michael Garski via hossman)
 
+* SOLR-5171: SOLR Admin gui works in IE9, breaks in IE10. (Joseph L Howard via
+  steffkes)
+
 Optimizations
 ----------------------
 
