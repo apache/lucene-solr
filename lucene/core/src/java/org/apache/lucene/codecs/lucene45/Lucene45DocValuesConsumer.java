@@ -23,7 +23,6 @@ import java.util.HashSet;
 
 import org.apache.lucene.codecs.CodecUtil;
 import org.apache.lucene.codecs.DocValuesConsumer;
-import org.apache.lucene.codecs.MissingOrdRemapper;
 import org.apache.lucene.index.FieldInfo;
 import org.apache.lucene.index.IndexFileNames;
 import org.apache.lucene.index.SegmentWriteState;
@@ -88,14 +87,20 @@ public class Lucene45DocValuesConsumer extends DocValuesConsumer {
     long minValue = Long.MAX_VALUE;
     long maxValue = Long.MIN_VALUE;
     long gcd = 0;
+    boolean missing = false;
     // TODO: more efficient?
     HashSet<Long> uniqueValues = null;
     if (optimizeStorage) {
       uniqueValues = new HashSet<>();
 
-      // nocommit: impl null values (ideally smartly)
       for (Number nv : values) {
-        final long v = nv == null ? 0 : nv.longValue();
+        final long v;
+        if (nv == null) {
+          v = 0;
+          missing = true;
+        } else {
+          v = nv.longValue();
+        }
 
         if (gcd != 1) {
           if (v < Long.MIN_VALUE / 2 || v > Long.MAX_VALUE / 2) {
@@ -142,6 +147,12 @@ public class Lucene45DocValuesConsumer extends DocValuesConsumer {
     meta.writeVInt(field.number);
     meta.writeByte(Lucene45DocValuesFormat.NUMERIC);
     meta.writeVInt(format);
+    if (missing) {
+      meta.writeLong(data.getFilePointer());
+      writeMissingBitset(values);
+    } else {
+      meta.writeLong(-1L);
+    }
     meta.writeVInt(PackedInts.VERSION_CURRENT);
     meta.writeLong(data.getFilePointer());
     meta.writeVLong(count);
@@ -184,6 +195,27 @@ public class Lucene45DocValuesConsumer extends DocValuesConsumer {
         throw new AssertionError();
     }
   }
+  
+  // TODO: in some cases representing missing with minValue-1 wouldn't take up additional space and so on,
+  // but this is very simple, and algorithms only check this for values of 0 anyway (doesnt slow down normal decode)
+  void writeMissingBitset(Iterable<?> values) throws IOException {
+    byte bits = 0;
+    int count = 0;
+    for (Object v : values) {
+      if (count == 8) {
+        data.writeByte(bits);
+        count = 0;
+        bits = 0;
+      }
+      if (v != null) {
+        bits |= 1 << (count & 7);
+      }
+      count++;
+    }
+    if (count > 0) {
+      data.writeByte(bits);
+    }
+  }
 
   @Override
   public void addBinaryField(FieldInfo field, Iterable<BytesRef> values) throws IOException {
@@ -194,8 +226,15 @@ public class Lucene45DocValuesConsumer extends DocValuesConsumer {
     int maxLength = Integer.MIN_VALUE;
     final long startFP = data.getFilePointer();
     long count = 0;
+    boolean missing = false;
     for(BytesRef v : values) {
-      final int length = v == null ? 0 : v.length;
+      final int length;
+      if (v == null) {
+        length = 0;
+        missing = true;
+      } else {
+        length = v.length;
+      }
       minLength = Math.min(minLength, length);
       maxLength = Math.max(maxLength, length);
       if (v != null) {
@@ -204,6 +243,12 @@ public class Lucene45DocValuesConsumer extends DocValuesConsumer {
       count++;
     }
     meta.writeVInt(minLength == maxLength ? BINARY_FIXED_UNCOMPRESSED : BINARY_VARIABLE_UNCOMPRESSED);
+    if (missing) {
+      meta.writeLong(data.getFilePointer());
+      writeMissingBitset(values);
+    } else {
+      meta.writeLong(-1L);
+    }
     meta.writeVInt(minLength);
     meta.writeVInt(maxLength);
     meta.writeVLong(count);
@@ -244,6 +289,7 @@ public class Lucene45DocValuesConsumer extends DocValuesConsumer {
       meta.writeVInt(field.number);
       meta.writeByte(Lucene45DocValuesFormat.BINARY);
       meta.writeVInt(BINARY_PREFIX_COMPRESSED);
+      meta.writeLong(-1L);
       // now write the bytes: sharing prefixes within a block
       final long startFP = data.getFilePointer();
       // currently, we have to store the delta from expected for every 1/nth term
@@ -286,34 +332,6 @@ public class Lucene45DocValuesConsumer extends DocValuesConsumer {
 
   @Override
   public void addSortedField(FieldInfo field, Iterable<BytesRef> values, Iterable<Number> docToOrd) throws IOException {
-    // nocommit: remove this hack and support missing!
-
-    // three cases for simulating the old writer:
-    // 1. no missing
-    // 2. missing (and empty string in use): remap ord=-1 -> ord=0
-    // 3. missing (and empty string not in use): remap all ords +1, insert empty string into values
-    boolean anyMissing = false;
-    for (Number n : docToOrd) {
-      if (n.longValue() == -1) {
-        anyMissing = true;
-        break;
-      }
-    }
-    
-    boolean hasEmptyString = false;
-    for (BytesRef b : values) {
-      hasEmptyString = b.length == 0;
-      break;
-    }
-    
-    if (!anyMissing) {
-      // nothing to do
-    } else if (hasEmptyString) {
-      docToOrd = MissingOrdRemapper.mapMissingToOrd0(docToOrd);
-    } else {
-      docToOrd = MissingOrdRemapper.mapAllOrds(docToOrd);
-      values = MissingOrdRemapper.insertEmptyValue(values);
-    }
     meta.writeVInt(field.number);
     meta.writeByte(Lucene45DocValuesFormat.SORTED);
     addTermsDict(field, values);
@@ -334,6 +352,7 @@ public class Lucene45DocValuesConsumer extends DocValuesConsumer {
     meta.writeVInt(field.number);
     meta.writeByte(Lucene45DocValuesFormat.NUMERIC);
     meta.writeVInt(DELTA_COMPRESSED);
+    meta.writeLong(-1L);
     meta.writeVInt(PackedInts.VERSION_CURRENT);
     meta.writeLong(data.getFilePointer());
     meta.writeVLong(maxDoc);

@@ -1372,8 +1372,11 @@ public abstract class LuceneTestCase extends Assert {
   /** Returns true if the codec for the field "supports" docsWithField 
    * (other codecs return MatchAllBits, because you couldnt write missing values before) */
   public static boolean codecSupportsDocsWithField(String field) {
-    // currently only one codec!
-    return _TestUtil.getDocValuesFormat(Codec.getDefault(), field).equals("SimpleText");
+    String name = _TestUtil.getDocValuesFormat(Codec.getDefault(), field);
+    if (name.equals("Lucene40") || name.equals("Lucene42")) {
+      return false;
+    }
+    return true;
   }
 
   public void assertReaderEquals(String info, IndexReader leftReader, IndexReader rightReader) throws IOException {

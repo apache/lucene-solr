@@ -53,7 +53,7 @@ import org.apache.lucene.util.packed.BlockPackedReader;
 import org.apache.lucene.util.packed.MonotonicBlockPackedReader;
 import org.apache.lucene.util.packed.PackedInts;
 
-class Lucene45DocValuesProducer extends DocValuesProducer {
+public class Lucene45DocValuesProducer extends DocValuesProducer {
   private final Map<Integer,NumericEntry> numerics;
   private final Map<Integer,BinaryEntry> binaries;
   private final Map<Integer,NumericEntry> ords;
@@ -65,7 +65,7 @@ class Lucene45DocValuesProducer extends DocValuesProducer {
   private final Map<Integer,MonotonicBlockPackedReader> addressInstances = new HashMap<Integer,MonotonicBlockPackedReader>();
   private final Map<Integer,MonotonicBlockPackedReader> ordIndexInstances = new HashMap<Integer,MonotonicBlockPackedReader>();
   
-  Lucene45DocValuesProducer(SegmentReadState state, String dataCodec, String dataExtension, String metaCodec, String metaExtension) throws IOException {
+  protected Lucene45DocValuesProducer(SegmentReadState state, String dataCodec, String dataExtension, String metaCodec, String metaExtension) throws IOException {
     String metaName = IndexFileNames.segmentFileName(state.segmentInfo.name, state.segmentSuffix, metaExtension);
     // read in the entries from the metadata file.
     IndexInput in = state.directory.openInput(metaName, state.context);
@@ -176,6 +176,7 @@ class Lucene45DocValuesProducer extends DocValuesProducer {
   static NumericEntry readNumericEntry(IndexInput meta) throws IOException {
     NumericEntry entry = new NumericEntry();
     entry.format = meta.readVInt();
+    entry.missingOffset = meta.readLong();
     entry.packedIntsVersion = meta.readVInt();
     entry.offset = meta.readLong();
     entry.count = meta.readVLong();
@@ -209,6 +210,7 @@ class Lucene45DocValuesProducer extends DocValuesProducer {
   static BinaryEntry readBinaryEntry(IndexInput meta) throws IOException {
     BinaryEntry entry = new BinaryEntry();
     entry.format = meta.readVInt();
+    entry.missingOffset = meta.readLong();
     entry.minLength = meta.readVInt();
     entry.maxLength = meta.readVInt();
     entry.count = meta.readVLong();
@@ -315,9 +317,7 @@ class Lucene45DocValuesProducer extends DocValuesProducer {
     };
   }
   
-  private BinaryDocValues getVariableBinary(FieldInfo field, final BinaryEntry bytes) throws IOException {
-    final IndexInput data = this.data.clone();
-    
+  protected MonotonicBlockPackedReader getAddressInstance(IndexInput data, FieldInfo field, BinaryEntry bytes) throws IOException {
     final MonotonicBlockPackedReader addresses;
     synchronized (addressInstances) {
       MonotonicBlockPackedReader addrInstance = addressInstances.get(field.number);
@@ -328,6 +328,13 @@ class Lucene45DocValuesProducer extends DocValuesProducer {
       }
       addresses = addrInstance;
     }
+    return addresses;
+  }
+  
+  private BinaryDocValues getVariableBinary(FieldInfo field, final BinaryEntry bytes) throws IOException {
+    final IndexInput data = this.data.clone();
+    
+    final MonotonicBlockPackedReader addresses = getAddressInstance(data, field, bytes);
 
     return new LongBinaryDocValues() {
       @Override
@@ -350,12 +357,10 @@ class Lucene45DocValuesProducer extends DocValuesProducer {
       }
     };
   }
-
-  private BinaryDocValues getCompressedBinary(FieldInfo field, final BinaryEntry bytes) throws IOException {
-    final IndexInput data = this.data.clone();
-    final long interval = bytes.addressInterval;
-
+  
+  protected MonotonicBlockPackedReader getIntervalInstance(IndexInput data, FieldInfo field, BinaryEntry bytes) throws IOException {
     final MonotonicBlockPackedReader addresses;
+    final long interval = bytes.addressInterval;
     synchronized (addressInstances) {
       MonotonicBlockPackedReader addrInstance = addressInstances.get(field.number);
       if (addrInstance == null) {
@@ -371,6 +376,14 @@ class Lucene45DocValuesProducer extends DocValuesProducer {
       }
       addresses = addrInstance;
     }
+    return addresses;
+  }
+
+
+  private BinaryDocValues getCompressedBinary(FieldInfo field, final BinaryEntry bytes) throws IOException {
+    final IndexInput data = this.data.clone();
+
+    final MonotonicBlockPackedReader addresses = getIntervalInstance(data, field, bytes);
     
     return new CompressedBinaryDocValues(bytes, addresses, data);
   }
@@ -420,26 +433,30 @@ class Lucene45DocValuesProducer extends DocValuesProducer {
       }
     };
   }
-
-  @Override
-  public SortedSetDocValues getSortedSet(FieldInfo field) throws IOException {
-    final long valueCount = binaries.get(field.number).count;
-    // we keep the byte[]s and list of ords on disk, these could be large
-    final LongBinaryDocValues binary = (LongBinaryDocValues) getBinary(field);
-    final LongNumericDocValues ordinals = getNumeric(ords.get(field.number));
-    // but the addresses to the ord stream are in RAM
+  
+  protected MonotonicBlockPackedReader getOrdIndexInstance(IndexInput data, FieldInfo field, NumericEntry entry) throws IOException {
     final MonotonicBlockPackedReader ordIndex;
     synchronized (ordIndexInstances) {
       MonotonicBlockPackedReader ordIndexInstance = ordIndexInstances.get(field.number);
       if (ordIndexInstance == null) {
-        NumericEntry entry = ordIndexes.get(field.number);
-        IndexInput data = this.data.clone();
         data.seek(entry.offset);
         ordIndexInstance = new MonotonicBlockPackedReader(data, entry.packedIntsVersion, entry.blockSize, entry.count, false);
         ordIndexInstances.put(field.number, ordIndexInstance);
       }
       ordIndex = ordIndexInstance;
     }
+    return ordIndex;
+  }
+
+  @Override
+  public SortedSetDocValues getSortedSet(FieldInfo field) throws IOException {
+    final IndexInput data = this.data.clone();
+    final long valueCount = binaries.get(field.number).count;
+    // we keep the byte[]s and list of ords on disk, these could be large
+    final LongBinaryDocValues binary = (LongBinaryDocValues) getBinary(field);
+    final LongNumericDocValues ordinals = getNumeric(ords.get(field.number));
+    // but the addresses to the ord stream are in RAM
+    final MonotonicBlockPackedReader ordIndex = getOrdIndexInstance(data, field, ordIndexes.get(field.number));
     
     return new SortedSetDocValues() {
       long offset;
@@ -491,15 +508,47 @@ class Lucene45DocValuesProducer extends DocValuesProducer {
       }
     };
   }
+  
+  public Bits getMissingBits(final long offset) throws IOException {
+    if (offset == -1) {
+      return new Bits.MatchAllBits(maxDoc);
+    } else {
+      final IndexInput in = data.clone();
+      return new Bits() {
+
+        @Override
+        public boolean get(int index) {
+          try {
+            in.seek(offset + (index >> 3));
+            return (in.readByte() & (1 << (index & 7))) != 0;
+          } catch (IOException e) {
+            throw new RuntimeException(e);
+          }
+        }
+
+        @Override
+        public int length() {
+          return maxDoc;
+        }
+      };
+    }
+  }
 
   @Override
   public Bits getDocsWithField(FieldInfo field) throws IOException {
-    // nocommit: only use this if the field's entry has missing values (write that),
-    // otherwise return MatchAllBits
-    if (field.getDocValuesType() == FieldInfo.DocValuesType.SORTED_SET) {
-      return new SortedSetDocsWithField(getSortedSet(field), maxDoc);
-    } else {
-      return new Bits.MatchAllBits(maxDoc);
+    switch(field.getDocValuesType()) {
+      case SORTED_SET:
+        return new SortedSetDocsWithField(getSortedSet(field), maxDoc);
+      case SORTED:
+        return new SortedDocsWithField(getSorted(field), maxDoc);
+      case BINARY:
+        BinaryEntry be = binaries.get(field.number);
+        return getMissingBits(be.missingOffset);
+      case NUMERIC:
+        NumericEntry ne = numerics.get(field.number);
+        return getMissingBits(ne.missingOffset);
+      default:
+        throw new AssertionError();
     }
   }
 
@@ -508,30 +557,32 @@ class Lucene45DocValuesProducer extends DocValuesProducer {
     data.close();
   }
   
-  static class NumericEntry {
-    long offset;
+  protected static class NumericEntry {
+    long missingOffset;
+    public long offset;
 
-    int format;
-    int packedIntsVersion;
-    long count;
-    int blockSize;
+    public int format;
+    public int packedIntsVersion;
+    public long count;
+    public int blockSize;
     
     long minValue;
     long gcd;
     long table[];
   }
   
-  static class BinaryEntry {
+  protected static class BinaryEntry {
+    long missingOffset;
     long offset;
 
     int format;
-    long count;
+    public long count;
     int minLength;
     int maxLength;
-    long addressesOffset;
-    long addressInterval;
-    int packedIntsVersion;
-    int blockSize;
+    public long addressesOffset;
+    public long addressInterval;
+    public int packedIntsVersion;
+    public int blockSize;
   }
   
   // internally we compose complex dv (sorted/sortedset) from other ones

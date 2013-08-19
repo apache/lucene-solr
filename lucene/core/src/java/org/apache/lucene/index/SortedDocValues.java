@@ -43,7 +43,7 @@ public abstract class SortedDocValues extends BinaryDocValues {
   public abstract int getOrd(int docID);
 
   /** Retrieves the value for the specified ordinal.
-   * @param ord ordinal to lookup
+   * @param ord ordinal to lookup (must be &gt;= 0 and &lt {@link #getValueCount()})
    * @param result will be populated with the ordinal's value
    * @see #getOrd(int) 
    */

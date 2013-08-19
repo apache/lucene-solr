@@ -438,14 +438,14 @@ public class AssertingAtomicReader extends FilterAtomicReader {
       this.in = in;
       this.maxDoc = maxDoc;
       this.valueCount = in.getValueCount();
-      assert valueCount >= 1 && valueCount <= maxDoc;
+      assert valueCount >= 0 && valueCount <= maxDoc;
     }
 
     @Override
     public int getOrd(int docID) {
       assert docID >= 0 && docID < maxDoc;
       int ord = in.getOrd(docID);
-      assert ord >= 0 && ord < valueCount;
+      assert ord >= -1 && ord < valueCount;
       return ord;
     }
 

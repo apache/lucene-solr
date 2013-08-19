@@ -321,12 +321,8 @@ class SimpleTextDocValuesReader extends DocValuesProducer {
       @Override
       public void lookupOrd(int ord, BytesRef result) {
         try {
-          if (ord == -1) {
-            result.length = 0;
-            return;
-          }
-          if (ord < -1 || ord >= field.numValues) {
-            throw new IndexOutOfBoundsException("ord must be -1 .. " + (field.numValues-1) + "; got " + ord);
+          if (ord < 0 || ord >= field.numValues) {
+            throw new IndexOutOfBoundsException("ord must be 0 .. " + (field.numValues-1) + "; got " + ord);
           }
           in.seek(field.dataStartFilePointer + ord * (9 + field.pattern.length() + field.maxLength));
           SimpleTextUtil.readLine(in, scratch);

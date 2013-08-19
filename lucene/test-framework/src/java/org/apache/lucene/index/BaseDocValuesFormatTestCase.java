@@ -696,7 +696,10 @@ public abstract class BaseDocValuesFormatTestCase extends LuceneTestCase {
     BytesRef scratch = new BytesRef();
     dv.lookupOrd(dv.getOrd(0), scratch);
     assertEquals(new BytesRef("hello world 2"), scratch);
-    dv.lookupOrd(dv.getOrd(1), scratch);
+    if (codecSupportsDocsWithField("dv")) {
+      assertEquals(-1, dv.getOrd(1));
+    }
+    dv.get(1, scratch);
     assertEquals(new BytesRef(""), scratch);
     ireader.close();
     directory.close();
