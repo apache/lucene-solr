@@ -1232,6 +1232,73 @@ public abstract class BaseDocValuesFormatTestCase extends LuceneTestCase {
     dir.close();
   }
   
+  private void doTestMissingVsFieldCache(final long minValue, final long maxValue) throws Exception {
+    doTestMissingVsFieldCache(new LongProducer() {
+      @Override
+      long next() {
+        return _TestUtil.nextLong(random(), minValue, maxValue);
+      }
+    });
+  }
+  
+  private void doTestMissingVsFieldCache(LongProducer longs) throws Exception {
+    assumeTrue("Codec does not support getDocsWithField", codecSupportsDocsWithField("dv"));
+    Directory dir = newDirectory();
+    IndexWriterConfig conf = newIndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer(random()));
+    RandomIndexWriter writer = new RandomIndexWriter(random(), dir, conf);
+    Field idField = new StringField("id", "", Field.Store.NO);
+    Field indexedField = newStringField("indexed", "", Field.Store.NO);
+    Field dvField = new NumericDocValuesField("dv", 0);
+
+    
+    // index some docs
+    int numDocs = atLeast(300);
+    // numDocs should be always > 256 so that in case of a codec that optimizes
+    // for numbers of values <= 256, all storage layouts are tested
+    assert numDocs > 256;
+    for (int i = 0; i < numDocs; i++) {
+      idField.setStringValue(Integer.toString(i));
+      long value = longs.next();
+      indexedField.setStringValue(Long.toString(value));
+      dvField.setLongValue(value);
+      Document doc = new Document();
+      doc.add(idField);
+      // 1/4 of the time we neglect to add the fields
+      if (random().nextInt(4) > 0) {
+        doc.add(indexedField);
+        doc.add(dvField);
+      }
+      writer.addDocument(doc);
+      if (random().nextInt(31) == 0) {
+        writer.commit();
+      }
+    }
+    
+    // delete some docs
+    int numDeletions = random().nextInt(numDocs/10);
+    for (int i = 0; i < numDeletions; i++) {
+      int id = random().nextInt(numDocs);
+      writer.deleteDocuments(new Term("id", Integer.toString(id)));
+    }
+
+    // merge some segments and ensure that at least one of them has more than
+    // 256 values
+    writer.forceMerge(numDocs / 256);
+
+    writer.close();
+    
+    // compare
+    DirectoryReader ir = DirectoryReader.open(dir);
+    for (AtomicReaderContext context : ir.leaves()) {
+      AtomicReader r = context.reader();
+      Bits expected = FieldCache.DEFAULT.getDocsWithField(r, "indexed");
+      Bits actual = FieldCache.DEFAULT.getDocsWithField(r, "dv");
+      assertEquals(expected, actual);
+    }
+    ir.close();
+    dir.close();
+  }
+  
   public void testBooleanNumericsVsStoredFields() throws Exception {
     int numIterations = atLeast(1);
     for (int i = 0; i < numIterations; i++) {
@@ -1246,10 +1313,24 @@ public abstract class BaseDocValuesFormatTestCase extends LuceneTestCase {
     }
   }
   
+  public void testByteMissingVsFieldCache() throws Exception {
+    int numIterations = atLeast(1);
+    for (int i = 0; i < numIterations; i++) {
+      doTestMissingVsFieldCache(Byte.MIN_VALUE, Byte.MAX_VALUE);
+    }
+  }
+  
   public void testShortNumericsVsStoredFields() throws Exception {
     int numIterations = atLeast(1);
     for (int i = 0; i < numIterations; i++) {
       doTestNumericsVsStoredFields(Short.MIN_VALUE, Short.MAX_VALUE);
+    }
+  }
+  
+  public void testShortMissingVsFieldCache() throws Exception {
+    int numIterations = atLeast(1);
+    for (int i = 0; i < numIterations; i++) {
+      doTestMissingVsFieldCache(Short.MIN_VALUE, Short.MAX_VALUE);
     }
   }
   
@@ -1260,10 +1341,24 @@ public abstract class BaseDocValuesFormatTestCase extends LuceneTestCase {
     }
   }
   
+  public void testIntMissingVsFieldCache() throws Exception {
+    int numIterations = atLeast(1);
+    for (int i = 0; i < numIterations; i++) {
+      doTestMissingVsFieldCache(Integer.MIN_VALUE, Integer.MAX_VALUE);
+    }
+  }
+  
   public void testLongNumericsVsStoredFields() throws Exception {
     int numIterations = atLeast(1);
     for (int i = 0; i < numIterations; i++) {
       doTestNumericsVsStoredFields(Long.MIN_VALUE, Long.MAX_VALUE);
+    }
+  }
+  
+  public void testLongMissingVsFieldCache() throws Exception {
+    int numIterations = atLeast(1);
+    for (int i = 0; i < numIterations; i++) {
+      doTestMissingVsFieldCache(Long.MIN_VALUE, Long.MAX_VALUE);
     }
   }
   
@@ -2012,6 +2107,13 @@ public abstract class BaseDocValuesFormatTestCase extends LuceneTestCase {
     int numIterations = atLeast(1);
     for (int i = 0; i < numIterations; i++) {
       doTestSortedSetVsStoredFields(1, 10);
+    }
+  }
+
+  private void assertEquals(Bits expected, Bits actual) throws Exception {
+    assertEquals(expected.length(), actual.length());
+    for (int i = 0; i < expected.length(); i++) {
+      assertEquals(expected.get(i), actual.get(i));
     }
   }
   
