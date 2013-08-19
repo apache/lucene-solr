@@ -2498,6 +2498,7 @@ public abstract class BaseDocValuesFormatTestCase extends LuceneTestCase {
     d.close();
   }
 
+  // nocommit: get this out of here and into the deprecated codecs (4.0, 4.2)
   public void testHugeBinaryValueLimit() throws Exception {
     // We only test DVFormats that have a limit
     assumeFalse("test requires codec with limits on max binary field length", codecAcceptsHugeBinaryValues("field"));

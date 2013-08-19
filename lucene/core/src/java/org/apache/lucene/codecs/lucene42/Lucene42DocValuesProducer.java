@@ -17,11 +17,6 @@ package org.apache.lucene.codecs.lucene42;
  * limitations under the License.
  */
 
-import static org.apache.lucene.codecs.lucene42.Lucene42DocValuesConsumer.DELTA_COMPRESSED;
-import static org.apache.lucene.codecs.lucene42.Lucene42DocValuesConsumer.GCD_COMPRESSED;
-import static org.apache.lucene.codecs.lucene42.Lucene42DocValuesConsumer.TABLE_COMPRESSED;
-import static org.apache.lucene.codecs.lucene42.Lucene42DocValuesConsumer.UNCOMPRESSED;
-
 import java.io.IOException;
 import java.util.Comparator;
 import java.util.HashMap;
@@ -78,6 +73,22 @@ class Lucene42DocValuesProducer extends DocValuesProducer {
       new HashMap<Integer,FST<Long>>();
   
   private final int maxDoc;
+  
+  
+  static final byte NUMBER = 0;
+  static final byte BYTES = 1;
+  static final byte FST = 2;
+
+  static final int BLOCK_SIZE = 4096;
+  
+  static final byte DELTA_COMPRESSED = 0;
+  static final byte TABLE_COMPRESSED = 1;
+  static final byte UNCOMPRESSED = 2;
+  static final byte GCD_COMPRESSED = 3;
+  
+  static final int VERSION_START = 0;
+  static final int VERSION_GCD_COMPRESSION = 1;
+  static final int VERSION_CURRENT = VERSION_GCD_COMPRESSION;
     
   Lucene42DocValuesProducer(SegmentReadState state, String dataCodec, String dataExtension, String metaCodec, String metaExtension) throws IOException {
     maxDoc = state.segmentInfo.getDocCount();
@@ -88,8 +99,8 @@ class Lucene42DocValuesProducer extends DocValuesProducer {
     final int version;
     try {
       version = CodecUtil.checkHeader(in, metaCodec, 
-                                      Lucene42DocValuesConsumer.VERSION_START,
-                                      Lucene42DocValuesConsumer.VERSION_CURRENT);
+                                      VERSION_START,
+                                      VERSION_CURRENT);
       numerics = new HashMap<Integer,NumericEntry>();
       binaries = new HashMap<Integer,BinaryEntry>();
       fsts = new HashMap<Integer,FSTEntry>();
@@ -109,8 +120,8 @@ class Lucene42DocValuesProducer extends DocValuesProducer {
       String dataName = IndexFileNames.segmentFileName(state.segmentInfo.name, state.segmentSuffix, dataExtension);
       data = state.directory.openInput(dataName, state.context);
       final int version2 = CodecUtil.checkHeader(data, dataCodec, 
-                                                 Lucene42DocValuesConsumer.VERSION_START,
-                                                 Lucene42DocValuesConsumer.VERSION_CURRENT);
+                                                 VERSION_START,
+                                                 VERSION_CURRENT);
       if (version != version2) {
         throw new CorruptIndexException("Format versions mismatch");
       }
@@ -127,7 +138,7 @@ class Lucene42DocValuesProducer extends DocValuesProducer {
     int fieldNumber = meta.readVInt();
     while (fieldNumber != -1) {
       int fieldType = meta.readByte();
-      if (fieldType == Lucene42DocValuesConsumer.NUMBER) {
+      if (fieldType == NUMBER) {
         NumericEntry entry = new NumericEntry();
         entry.offset = meta.readLong();
         entry.format = meta.readByte();
@@ -140,11 +151,11 @@ class Lucene42DocValuesProducer extends DocValuesProducer {
           default:
                throw new CorruptIndexException("Unknown format: " + entry.format + ", input=" + meta);
         }
-        if (entry.format != Lucene42DocValuesConsumer.UNCOMPRESSED) {
+        if (entry.format != UNCOMPRESSED) {
           entry.packedIntsVersion = meta.readVInt();
         }
         numerics.put(fieldNumber, entry);
-      } else if (fieldType == Lucene42DocValuesConsumer.BYTES) {
+      } else if (fieldType == BYTES) {
         BinaryEntry entry = new BinaryEntry();
         entry.offset = meta.readLong();
         entry.numBytes = meta.readLong();
@@ -155,7 +166,7 @@ class Lucene42DocValuesProducer extends DocValuesProducer {
           entry.blockSize = meta.readVInt();
         }
         binaries.put(fieldNumber, entry);
-      } else if (fieldType == Lucene42DocValuesConsumer.FST) {
+      } else if (fieldType == FST) {
         FSTEntry entry = new FSTEntry();
         entry.offset = meta.readLong();
         entry.numOrds = meta.readVLong();

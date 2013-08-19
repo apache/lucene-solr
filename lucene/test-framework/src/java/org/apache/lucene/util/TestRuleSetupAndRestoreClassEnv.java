@@ -40,6 +40,7 @@ import org.apache.lucene.codecs.lucene40.Lucene40RWCodec;
 import org.apache.lucene.codecs.lucene40.Lucene40RWPostingsFormat;
 import org.apache.lucene.codecs.lucene41.Lucene41RWCodec;
 import org.apache.lucene.codecs.lucene42.Lucene42Codec;
+import org.apache.lucene.codecs.lucene42.Lucene42RWCodec;
 import org.apache.lucene.codecs.lucene45.Lucene45Codec;
 import org.apache.lucene.codecs.simpletext.SimpleTextCodec;
 import org.apache.lucene.index.RandomCodec;
@@ -147,7 +148,6 @@ final class TestRuleSetupAndRestoreClassEnv extends AbstractBeforeAfterRule {
     
     savedCodec = Codec.getDefault();
     int randomVal = random.nextInt(10);
-    // nocommit: 4.2 impersonator
     if ("Lucene40".equals(TEST_CODEC) || ("random".equals(TEST_CODEC) &&
                                           "random".equals(TEST_POSTINGSFORMAT) &&
                                           "random".equals(TEST_DOCVALUESFORMAT) &&
@@ -163,6 +163,13 @@ final class TestRuleSetupAndRestoreClassEnv extends AbstractBeforeAfterRule {
                                                  !shouldAvoidCodec("Lucene41"))) { 
       codec = Codec.forName("Lucene41");
       assert codec instanceof Lucene41RWCodec : "fix your classpath to have tests-framework.jar before lucene-core.jar";
+    } else if ("Lucene42".equals(TEST_CODEC) || ("random".equals(TEST_CODEC) &&
+                                                 "random".equals(TEST_POSTINGSFORMAT) &&
+                                                 "random".equals(TEST_DOCVALUESFORMAT) &&
+                                                  randomVal == 2 &&
+                                                  !shouldAvoidCodec("Lucene42"))) { 
+      codec = Codec.forName("Lucene42");
+      assert codec instanceof Lucene42RWCodec : "fix your classpath to have tests-framework.jar before lucene-core.jar";
     } else if (("random".equals(TEST_POSTINGSFORMAT) == false) || ("random".equals(TEST_DOCVALUESFORMAT) == false)) {
       // the user wired postings or DV: this is messy
       // refactor into RandomCodec....

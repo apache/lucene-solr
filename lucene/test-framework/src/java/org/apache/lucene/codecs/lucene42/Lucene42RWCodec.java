@@ -1,8 +1,4 @@
-package org.apache.lucene.codecs.compressing;
-
-import org.apache.lucene.codecs.NormsFormat;
-import org.apache.lucene.codecs.lucene42.Lucene42NormsFormat;
-import org.apache.lucene.util.packed.PackedInts;
+package org.apache.lucene.codecs.lucene42;
 
 /*
  * Licensed to the Apache Software Foundation (ASF) under one or more
@@ -21,23 +17,23 @@ import org.apache.lucene.util.packed.PackedInts;
  * limitations under the License.
  */
 
-/** CompressionCodec that uses {@link CompressionMode#HIGH_COMPRESSION} */
-public class HighCompressionCompressingCodec extends CompressingCodec {
+import org.apache.lucene.codecs.DocValuesFormat;
+import org.apache.lucene.codecs.NormsFormat;
 
-  /** Constructor that allows to configure the chunk size. */
-  public HighCompressionCompressingCodec(int chunkSize, boolean withSegmentSuffix) {
-    super("HighCompressionCompressingStoredFields",
-          withSegmentSuffix ? "HighCompressionCompressingStoredFields" : "",
-          CompressionMode.HIGH_COMPRESSION, chunkSize);
-  }
+/**
+ * Read-write version of {@link Lucene42Codec} for testing.
+ */
+public class Lucene42RWCodec extends Lucene42Codec {
+  private static final DocValuesFormat dv = new Lucene42RWDocValuesFormat();
+  private static final NormsFormat norms = new Lucene42NormsFormat();
 
-  /** Default constructor. */
-  public HighCompressionCompressingCodec() {
-    this(1 << 14, false);
+  @Override
+  public DocValuesFormat getDocValuesFormatForField(String field) {
+    return dv;
   }
 
   @Override
   public NormsFormat normsFormat() {
-    return new Lucene42NormsFormat(PackedInts.COMPACT);
+    return norms;
   }
 }

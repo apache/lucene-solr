@@ -1,4 +1,4 @@
-package org.apache.lucene.facet.codecs.facet42;
+package org.apache.lucene.facet.codecs.facet45;
 
 /*
  * Licensed to the Apache Software Foundation (ASF) under one or more
@@ -21,12 +21,13 @@ import java.util.HashSet;
 import java.util.Set;
 
 import org.apache.lucene.codecs.DocValuesFormat;
-import org.apache.lucene.codecs.lucene42.Lucene42Codec;
+import org.apache.lucene.codecs.lucene45.Lucene45Codec;
+import org.apache.lucene.facet.codecs.facet42.Facet42DocValuesFormat;
 import org.apache.lucene.facet.params.CategoryListParams;
 import org.apache.lucene.facet.params.FacetIndexingParams;
 
 /**
- * Same as {@link Lucene42Codec} except it uses {@link Facet42DocValuesFormat}
+ * Same as {@link Lucene45Codec} except it uses {@link Facet42DocValuesFormat}
  * for facet fields (faster-but-more-RAM-consuming doc values).
  * 
  * <p>
@@ -42,16 +43,14 @@ import org.apache.lucene.facet.params.FacetIndexingParams;
  * 
  * @lucene.experimental
  */
-// nocommit
-public class Facet42Codec extends Lucene42Codec {
+public class Facet45Codec extends Lucene45Codec {
 
   private final Set<String> facetFields;
   private final DocValuesFormat facetsDVFormat = DocValuesFormat.forName("Facet42");
-  private final DocValuesFormat lucene42DVFormat = DocValuesFormat.forName("Lucene42");
 
   // must have that for SPI purposes
   /** Default constructor, uses {@link FacetIndexingParams#DEFAULT}. */
-  public Facet42Codec() {
+  public Facet45Codec() {
     this(FacetIndexingParams.DEFAULT);
   }
 
@@ -60,7 +59,7 @@ public class Facet42Codec extends Lucene42Codec {
    * {@link DocValuesFormat} for the fields that are returned by
    * {@link FacetIndexingParams#getAllCategoryListParams()}.
    */
-  public Facet42Codec(FacetIndexingParams fip) {
+  public Facet45Codec(FacetIndexingParams fip) {
     if (fip.getPartitionSize() != Integer.MAX_VALUE) {
       throw new IllegalArgumentException("this Codec does not support partitions");
     }
@@ -75,8 +74,7 @@ public class Facet42Codec extends Lucene42Codec {
     if (facetFields.contains(field)) {
       return facetsDVFormat;
     } else {
-      return lucene42DVFormat;
+      return super.getDocValuesFormatForField(field);
     }
   }
-  
 }
