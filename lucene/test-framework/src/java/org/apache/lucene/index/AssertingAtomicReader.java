@@ -608,6 +608,32 @@ public class AssertingAtomicReader extends FilterAtomicReader {
     }
   }
 
+  @Override
+  public Bits getLiveDocs() {
+    Bits liveDocs = super.getLiveDocs();
+    if (liveDocs != null) {
+      assert maxDoc() == liveDocs.length();
+    } else {
+      assert maxDoc() == numDocs();
+      assert !hasDeletions();
+    }
+    return liveDocs;
+  }
+
+  @Override
+  public Bits getDocsWithField(String field) throws IOException {
+    Bits docsWithField = super.getDocsWithField(field);
+    FieldInfo fi = getFieldInfos().fieldInfo(field);
+    if (docsWithField != null) {
+      assert fi != null;
+      assert fi.hasDocValues();
+      assert maxDoc() == docsWithField.length();
+    } else {
+      assert fi == null || fi.hasDocValues() == false;
+    }
+    return docsWithField;
+  }
+
   // this is the same hack as FCInvisible
   @Override
   public Object getCoreCacheKey() {
