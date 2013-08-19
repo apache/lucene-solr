@@ -138,6 +138,9 @@ Bug Fixes
 * SOLR-5171: SOLR Admin gui works in IE9, breaks in IE10. (Joseph L Howard via
   steffkes)
 
+* SOLR-5174: Admin UI - Query View doesn't highlight (json) Result if it 
+  contains HTML Tags (steffkes)
+
 Optimizations
 ----------------------
 

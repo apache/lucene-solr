@@ -552,7 +552,7 @@ var solr_admin = function( app_config )
       json_str = JSON.stringify( JSON.parse( json_str ), undefined, 2 );
     }
 
-    return json_str;
+    return json_str.esc();
   };
 
   this.format_number = function format_number( number )
