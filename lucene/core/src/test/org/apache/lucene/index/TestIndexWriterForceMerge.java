@@ -83,7 +83,7 @@ public class TestIndexWriterForceMerge extends LuceneTestCase {
     IndexWriter writer = new IndexWriter(dir, newIndexWriterConfig(
       TEST_VERSION_CURRENT, new MockAnalyzer(random()))
       .setMaxBufferedDocs(2).setMergePolicy(ldmp).setMergeScheduler(new ConcurrentMergeScheduler()));
-
+    
     for(int iter=0;iter<10;iter++) {
       for(int i=0;i<19;i++)
         writer.addDocument(doc);
@@ -96,7 +96,6 @@ public class TestIndexWriterForceMerge extends LuceneTestCase {
       sis.read(dir);
 
       final int segCount = sis.size();
-
       writer.forceMerge(7);
       writer.commit();
       writer.waitForMerges();
@@ -108,7 +107,7 @@ public class TestIndexWriterForceMerge extends LuceneTestCase {
       if (segCount < 7)
         assertEquals(segCount, optSegCount);
       else
-        assertEquals(7, optSegCount);
+        assertEquals("seg: " + segCount, 7, optSegCount);
     }
     writer.close();
     dir.close();
