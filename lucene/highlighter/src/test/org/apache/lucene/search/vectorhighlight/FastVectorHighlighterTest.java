@@ -47,6 +47,7 @@ import org.apache.lucene.search.TermQuery;
 import org.apache.lucene.search.TopDocs;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.util.LuceneTestCase;
+import org.apache.lucene.util._TestUtil;
 
 
 public class FastVectorHighlighterTest extends LuceneTestCase {
@@ -294,6 +295,49 @@ public class FastVectorHighlighterTest extends LuceneTestCase {
     bestFragments = highlighter.getBestFragments(fieldQuery, reader, hits.scoreDocs[1].doc, "field", 1000, 1);
     assertEquals("Hello this is a piece of <b>text</b> that is <b>very</b> <b>long</b> and contains too much preamble and the meat is really here which says kennedy has been shot", bestFragments[0]);
 
+    reader.close();
+    writer.close();
+    dir.close();
+  }
+  
+  public void testLotsOfPhrases() throws IOException {
+    Directory dir = newDirectory();
+    IndexWriter writer = new IndexWriter(dir, newIndexWriterConfig(TEST_VERSION_CURRENT,  new MockAnalyzer(random(), MockTokenizer.SIMPLE, true, MockTokenFilter.ENGLISH_STOPSET)));
+    FieldType type = new FieldType(TextField.TYPE_STORED);
+    type.setStoreTermVectorOffsets(true);
+    type.setStoreTermVectorPositions(true);
+    type.setStoreTermVectors(true);
+    type.freeze();
+    String[] terms = { "org", "apache", "lucene"};
+    int iters = atLeast(1000);
+    StringBuilder builder = new StringBuilder();
+    for (int i = 0; i < iters; i++) {
+      builder.append(terms[random().nextInt(terms.length)]).append(" ");
+      if (random().nextInt(6) == 3) {
+        builder.append("solr").append(" ");
+      }
+    }
+      Document doc = new Document();
+      Field field = new Field("field", builder.toString(), type);
+      doc.add(field);
+      writer.addDocument(doc);
+    PhraseQuery query = new PhraseQuery();
+    query.add(new Term("field", "org"));
+    query.add(new Term("field", "apache"));
+    query.add(new Term("field", "lucene"));
+    
+   
+    FastVectorHighlighter highlighter = new FastVectorHighlighter();
+    IndexReader reader = DirectoryReader.open(writer, true);
+    IndexSearcher searcher = newSearcher(reader);
+    TopDocs hits = searcher.search(query, 10);
+    assertEquals(1, hits.totalHits);
+    FieldQuery fieldQuery  = highlighter.getFieldQuery(query, reader);
+    String[] bestFragments = highlighter.getBestFragments(fieldQuery, reader, hits.scoreDocs[0].doc, "field", 1000, 1);
+    for (int i = 0; i < bestFragments.length; i++) {
+      String result = bestFragments[i].replaceAll("<b>org apache lucene</b>", "FOOBAR");
+      assertFalse(result.contains("org apache lucene"));
+    }
     reader.close();
     writer.close();
     dir.close();
