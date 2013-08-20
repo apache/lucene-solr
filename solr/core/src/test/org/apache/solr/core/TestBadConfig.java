@@ -27,6 +27,10 @@ public class TestBadConfig extends AbstractBadConfigTestBase {
     assertConfigs("bad_solrconfig.xml","schema.xml","unset.sys.property");
   }
 
+  public void testMultipleDirectoryFactories() throws Exception {
+      assertConfigs("bad-solrconfig-multiple-dirfactory.xml", "schema12.xml",
+                    "directoryFactory");
+  }
   public void testMultipleIndexConfigs() throws Exception {
       assertConfigs("bad-solrconfig-multiple-indexconfigs.xml", "schema12.xml",
                     "indexConfig");

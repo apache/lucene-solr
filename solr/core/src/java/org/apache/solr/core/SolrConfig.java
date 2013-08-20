@@ -17,6 +17,7 @@
 
 package org.apache.solr.core;
 
+import static org.apache.solr.core.SolrConfig.PluginOpts.*;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.SolrException.ErrorCode;
 import org.apache.solr.schema.IndexSchemaFactory;
@@ -70,7 +71,15 @@ public class SolrConfig extends Config {
   
   public static final String DEFAULT_CONF_FILE = "solrconfig.xml";
 
-
+  static enum PluginOpts { 
+    MULTI_OK, 
+    REQUIRE_NAME,
+    REQUIRE_CLASS,
+    // EnumSet.of and/or EnumSet.copyOf(Collection) are anoying
+    // because of type determination
+    NOOP
+    }
+  
   /** Creates a default instance from the solrconfig.xml. */
   public SolrConfig()
   throws ParserConfigurationException, IOException, SAXException {
@@ -207,27 +216,46 @@ public class SolrConfig extends Config {
     }
      maxWarmingSearchers = getInt("query/maxWarmingSearchers",Integer.MAX_VALUE);
 
-     loadPluginInfo(SolrRequestHandler.class,"requestHandler",true, true);
-     loadPluginInfo(QParserPlugin.class,"queryParser",true, true);
-     loadPluginInfo(QueryResponseWriter.class,"queryResponseWriter",true, true);
-     loadPluginInfo(ValueSourceParser.class,"valueSourceParser",true, true);
-     loadPluginInfo(TransformerFactory.class,"transformer",true, true);
-     loadPluginInfo(SearchComponent.class,"searchComponent",true, true);
-     loadPluginInfo(QueryConverter.class,"queryConverter",true, true);
+     loadPluginInfo(SolrRequestHandler.class,"requestHandler",
+                    REQUIRE_NAME, REQUIRE_CLASS, MULTI_OK);
+     loadPluginInfo(QParserPlugin.class,"queryParser",
+                    REQUIRE_NAME, REQUIRE_CLASS, MULTI_OK);
+     loadPluginInfo(QueryResponseWriter.class,"queryResponseWriter",
+                    REQUIRE_NAME, REQUIRE_CLASS, MULTI_OK);
+     loadPluginInfo(ValueSourceParser.class,"valueSourceParser",
+                    REQUIRE_NAME, REQUIRE_CLASS, MULTI_OK);
+     loadPluginInfo(TransformerFactory.class,"transformer",
+                    REQUIRE_NAME, REQUIRE_CLASS, MULTI_OK);
+     loadPluginInfo(SearchComponent.class,"searchComponent",
+                    REQUIRE_NAME, REQUIRE_CLASS, MULTI_OK);
+
+     // TODO: WTF is up with queryConverter???
+     // it aparently *only* works as a singleton? - SOLR-4304
+     // and even then -- only if there is a single SpellCheckComponent
+     // because of queryConverter.setAnalyzer
+     loadPluginInfo(QueryConverter.class,"queryConverter",
+                    REQUIRE_NAME, REQUIRE_CLASS);
 
      // this is hackish, since it picks up all SolrEventListeners,
      // regardless of when/how/why they are used (or even if they are 
      // declared outside of the appropriate context) but there's no nice 
      // way around that in the PluginInfo framework
-     loadPluginInfo(SolrEventListener.class, "//listener",false, true);
+     loadPluginInfo(SolrEventListener.class, "//listener", 
+                    REQUIRE_CLASS, MULTI_OK);
 
-     loadPluginInfo(DirectoryFactory.class,"directoryFactory",false, true);
-     loadPluginInfo(IndexDeletionPolicy.class,indexConfigPrefix+"/deletionPolicy",false, true);
-     loadPluginInfo(CodecFactory.class,"codecFactory",false, false);
-     loadPluginInfo(IndexReaderFactory.class,"indexReaderFactory",false, true);
-     loadPluginInfo(UpdateRequestProcessorChain.class,"updateRequestProcessorChain",false, false);
-     loadPluginInfo(UpdateLog.class,"updateHandler/updateLog",false, false);
-     loadPluginInfo(IndexSchemaFactory.class,"schemaFactory",false, true);
+     loadPluginInfo(DirectoryFactory.class,"directoryFactory", 
+                    REQUIRE_CLASS);
+     loadPluginInfo(IndexDeletionPolicy.class,indexConfigPrefix+"/deletionPolicy", 
+                    REQUIRE_CLASS);
+     loadPluginInfo(CodecFactory.class,"codecFactory", 
+                    REQUIRE_CLASS);
+     loadPluginInfo(IndexReaderFactory.class,"indexReaderFactory", 
+                    REQUIRE_CLASS);
+     loadPluginInfo(UpdateRequestProcessorChain.class,"updateRequestProcessorChain", 
+                    MULTI_OK);
+     loadPluginInfo(UpdateLog.class,"updateHandler/updateLog");
+     loadPluginInfo(IndexSchemaFactory.class,"schemaFactory", 
+                    REQUIRE_CLASS);
 
      updateHandlerInfo = loadUpdatehandlerInfo();
 
@@ -245,8 +273,19 @@ public class SolrConfig extends Config {
             getBool("updateHandler/commitWithin/softCommit",true));
   }
 
-  private void loadPluginInfo(Class clazz, String tag, boolean requireName, boolean requireClass) {
+  private void loadPluginInfo(Class clazz, String tag, PluginOpts... opts) {
+    EnumSet<PluginOpts> options = EnumSet.<PluginOpts>of(NOOP, opts);
+    boolean requireName = options.contains(REQUIRE_NAME);
+    boolean requireClass = options.contains(REQUIRE_CLASS);
+
     List<PluginInfo> result = readPluginInfos(tag, requireName, requireClass);
+
+    if (1 < result.size() && ! options.contains(MULTI_OK)) {
+        throw new SolrException
+          (SolrException.ErrorCode.SERVER_ERROR,
+           "Found " + result.size() + " configuration sections when at most "
+           + "1 is allowed matching expression: " + tag);
+    }
     if(!result.isEmpty()) pluginStore.put(clazz.getName(),result);
   }
 
@@ -446,7 +485,15 @@ public class SolrConfig extends Config {
   }
   public PluginInfo getPluginInfo(String  type){
     List<PluginInfo> result = pluginStore.get(type);
-    return result == null || result.isEmpty() ? null: result.get(0);
+    if (result == null || result.isEmpty()) {
+      return null;
+    }
+    if (1 == result.size()) {
+      return result.get(0);
+    }
+
+    throw new SolrException(SolrException.ErrorCode.SERVER_ERROR,
+                            "Multiple plugins configured for type: " + type);
   }
   
   private void initLibs() {

@@ -66,9 +66,10 @@ Upgrading from Solr 4.4.0
   would be chosen arbitrarily and silently.  Starting with 4.5, configuration 
   parsing will fail with an error in situations like this.  If you see error 
   messages such as "solrconfig.xml contains more than one value for config path: 
-  indexConfig/infoStream" check your solrconfig.xml file for multiple occurrences 
-  of "infoStream" and delete the one that you do not wish to use.  See SOLR-4953
-  for more details.
+  XXXXX" or "Found Z configuration sections when at most 1 is allowed matching 
+  expression: XXXXX" check your solrconfig.xml file for multiple occurrences of 
+  XXXXX and delete the ones that you do not wish to use.  See SOLR-4953 & 
+  SOLR-5108 for more details.
 
 Detailed Change List
 ----------------------
@@ -164,8 +165,9 @@ Other Changes
 
 * SOLR-4951: Better randomization of MergePolicy in Solr tests (hossman)
 
-* SOLR-4953: Make XML Configuration parsing fail if an xpath matches multiple 
-  nodes when only a single value is expected.  (hossman)
+* SOLR-4953, SOLR-5108: Make XML Configuration parsing fail if an xpath matches 
+  multiple nodes when only a single value or plugin instance is expected.  
+  (hossman)
 
 * The routing parameter "shard.keys" is deprecated as part of SOLR-5017 .The new parameter name is '_route_' .
   The old parameter should continue to work for another release  (Noble Paul)

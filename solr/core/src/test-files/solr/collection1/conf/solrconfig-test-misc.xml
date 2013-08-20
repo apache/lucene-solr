@@ -39,8 +39,6 @@
   <lib dir="../../lib-dirs/c" regex="c1" />
   <lib path="../../lib-dirs/d/d1/" />
   
-  <directoryFactory name="DirectoryFactory" class="${solr.directoryFactory:solr.RAMDirectoryFactory}"/>
-
   <!-- see TestConfig.testJavaProperty -->
   <propTest attr1="${solr.test.sys.prop1}-$${literal}"
             attr2="${non.existent.sys.prop:default-from-config}">prefix-${solr.test.sys.prop2}-suffix</propTest>
