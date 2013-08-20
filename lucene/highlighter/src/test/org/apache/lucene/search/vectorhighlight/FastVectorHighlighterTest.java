@@ -309,7 +309,7 @@ public class FastVectorHighlighterTest extends LuceneTestCase {
     type.setStoreTermVectors(true);
     type.freeze();
     String[] terms = { "org", "apache", "lucene"};
-    int iters = atLeast(1000);
+    int iters = 1000; // don't let it go too big, or jenkins will stack overflow: atLeast(1000);
     StringBuilder builder = new StringBuilder();
     for (int i = 0; i < iters; i++) {
       builder.append(terms[random().nextInt(terms.length)]).append(" ");
