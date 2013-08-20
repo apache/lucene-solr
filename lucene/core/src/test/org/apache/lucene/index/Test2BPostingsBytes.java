@@ -130,14 +130,12 @@ public class Test2BPostingsBytes extends LuceneTestCase {
     int index;
     int n;
 
-    public MyTokenStream() {
-      termAtt.setLength(1);
-      termAtt.buffer()[0] = 'a';
-    }
-    
     @Override
     public boolean incrementToken() {
       if (index < n) {
+        clearAttributes();
+        termAtt.buffer()[0] = 'a';
+        termAtt.setLength(1);
         index++;
         return true;
       }

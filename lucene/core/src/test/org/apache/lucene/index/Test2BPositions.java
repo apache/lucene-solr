@@ -88,14 +88,12 @@ public class Test2BPositions extends LuceneTestCase {
     private final PositionIncrementAttribute posIncAtt = addAttribute(PositionIncrementAttribute.class);
     int index;
 
-    public MyTokenStream() {
-      termAtt.setLength(1);
-      termAtt.buffer()[0] = 'a';
-    }
-    
     @Override
     public boolean incrementToken() {
       if (index < 52) {
+        clearAttributes();
+        termAtt.setLength(1);
+        termAtt.buffer()[0] = 'a';
         posIncAtt.setPositionIncrement(1+index);
         index++;
         return true;
