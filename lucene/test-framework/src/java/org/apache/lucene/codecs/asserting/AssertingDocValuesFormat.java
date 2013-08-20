@@ -175,32 +175,74 @@ public class AssertingDocValuesFormat extends DocValuesFormat {
       checkIterator(ords.iterator(), ordCount, false);
       in.addSortedSetField(field, values, docToOrdCount, ords);
     }
-
-    private <T> void checkIterator(Iterator<T> iterator, long expectedSize, boolean allowNull) {
-      for (long i = 0; i < expectedSize; i++) {
-        boolean hasNext = iterator.hasNext();
-        assert hasNext;
-        T v = iterator.next();
-        assert allowNull || v != null;
-        try {
-          iterator.remove();
-          throw new AssertionError("broken iterator (supports remove): " + iterator);
-        } catch (UnsupportedOperationException expected) {
-          // ok
-        }
-      }
-      assert !iterator.hasNext();
-      try {
-        iterator.next();
-        throw new AssertionError("broken iterator (allows next() when hasNext==false) " + iterator);
-      } catch (NoSuchElementException expected) {
-        // ok
-      }
-    }
     
     @Override
     public void close() throws IOException {
       in.close();
+    }
+  }
+  
+  static class AssertingNormsConsumer extends DocValuesConsumer {
+    private final DocValuesConsumer in;
+    private final int maxDoc;
+    
+    AssertingNormsConsumer(DocValuesConsumer in, int maxDoc) {
+      this.in = in;
+      this.maxDoc = maxDoc;
+    }
+
+    @Override
+    public void addNumericField(FieldInfo field, Iterable<Number> values) throws IOException {
+      int count = 0;
+      for (Number v : values) {
+        assert v != null;
+        count++;
+      }
+      assert count == maxDoc;
+      checkIterator(values.iterator(), maxDoc, false);
+      in.addNumericField(field, values);
+    }
+
+    @Override
+    public void close() throws IOException {
+      in.close();
+    }
+
+    @Override
+    public void addBinaryField(FieldInfo field, Iterable<BytesRef> values) throws IOException {
+      throw new IllegalStateException();
+    }
+
+    @Override
+    public void addSortedField(FieldInfo field, Iterable<BytesRef> values, Iterable<Number> docToOrd) throws IOException {
+      throw new IllegalStateException();
+    }
+
+    @Override
+    public void addSortedSetField(FieldInfo field, Iterable<BytesRef> values, Iterable<Number> docToOrdCount, Iterable<Number> ords) throws IOException {
+      throw new IllegalStateException();
+    }
+  }
+  
+  private static <T> void checkIterator(Iterator<T> iterator, long expectedSize, boolean allowNull) {
+    for (long i = 0; i < expectedSize; i++) {
+      boolean hasNext = iterator.hasNext();
+      assert hasNext;
+      T v = iterator.next();
+      assert allowNull || v != null;
+      try {
+        iterator.remove();
+        throw new AssertionError("broken iterator (supports remove): " + iterator);
+      } catch (UnsupportedOperationException expected) {
+        // ok
+      }
+    }
+    assert !iterator.hasNext();
+    try {
+      iterator.next();
+      throw new AssertionError("broken iterator (allows next() when hasNext==false) " + iterator);
+    } catch (NoSuchElementException expected) {
+      // ok
     }
   }
   
@@ -252,7 +294,7 @@ public class AssertingDocValuesFormat extends DocValuesFormat {
       Bits bits = in.getDocsWithField(field);
       assert bits != null;
       assert bits.length() == maxDoc;
-      return bits; // TODO: add AssertingBits w/ bounds check
+      return new AssertingAtomicReader.AssertingBits(bits);
     }
 
     @Override

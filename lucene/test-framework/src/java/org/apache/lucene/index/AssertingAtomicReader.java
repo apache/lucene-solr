@@ -607,12 +607,33 @@ public class AssertingAtomicReader extends FilterAtomicReader {
       return null;
     }
   }
+  
+  /** Wraps a Bits but with additional asserts */
+  public static class AssertingBits implements Bits {
+    final Bits in;
+    
+    public AssertingBits(Bits in) {
+      this.in = in;
+    }
+    
+    @Override
+    public boolean get(int index) {
+      assert index >= 0 && index < length();
+      return in.get(index);
+    }
+
+    @Override
+    public int length() {
+      return in.length();
+    }
+  }
 
   @Override
   public Bits getLiveDocs() {
     Bits liveDocs = super.getLiveDocs();
     if (liveDocs != null) {
       assert maxDoc() == liveDocs.length();
+      liveDocs = new AssertingBits(liveDocs);
     } else {
       assert maxDoc() == numDocs();
       assert !hasDeletions();
@@ -628,6 +649,7 @@ public class AssertingAtomicReader extends FilterAtomicReader {
       assert fi != null;
       assert fi.hasDocValues();
       assert maxDoc() == docsWithField.length();
+      docsWithField = new AssertingBits(docsWithField);
     } else {
       assert fi == null || fi.hasDocValues() == false;
     }

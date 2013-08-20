@@ -28,7 +28,6 @@ import java.util.Locale;
 import java.util.Map;
 
 import org.apache.lucene.codecs.DocValuesProducer;
-import org.apache.lucene.codecs.DocValuesProducer.SortedSetDocsWithField;
 import org.apache.lucene.index.BinaryDocValues;
 import org.apache.lucene.index.CorruptIndexException;
 import org.apache.lucene.index.FieldInfo;
@@ -431,16 +430,17 @@ class SimpleTextDocValuesReader extends DocValuesProducer {
   
   @Override
   public Bits getDocsWithField(FieldInfo field) throws IOException {
-    if (field.getDocValuesType() == FieldInfo.DocValuesType.SORTED_SET) {
-      return new SortedSetDocsWithField(getSortedSet(field), maxDoc);
-    } else if (field.getDocValuesType() == FieldInfo.DocValuesType.SORTED) {
-      return new SortedDocsWithField(getSorted(field), maxDoc);
-    } else if (field.getDocValuesType() == FieldInfo.DocValuesType.BINARY) {
-      return getBinaryDocsWithField(field);
-    } else if (field.getDocValuesType() == FieldInfo.DocValuesType.NUMERIC) {
-      return getNumericDocsWithField(field);
-    } else {
-      return new Bits.MatchAllBits(maxDoc);
+    switch (field.getDocValuesType()) {
+      case SORTED_SET:
+        return new SortedSetDocsWithField(getSortedSet(field), maxDoc);
+      case SORTED:
+        return new SortedDocsWithField(getSorted(field), maxDoc);
+      case BINARY:
+        return getBinaryDocsWithField(field);
+      case NUMERIC:
+        return getNumericDocsWithField(field);
+      default:
+        throw new AssertionError();
     }
   }
 
