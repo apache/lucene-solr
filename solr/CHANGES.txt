@@ -96,6 +96,10 @@ New Features
 * SOLR-4718: Allow solr.xml to be stored in ZooKeeper
 * SOLR-5156: Enhance ZkCLI to allow uploading of arbitrary files to ZK.
 
+* SOLR-5165: Single-valued docValues fields no longer require a default value.
+  Additionally they work with sortMissingFirst, sortMissingLast, facet.missing, 
+  exists() in function queries, etc.  (Robert Muir)
+
 Bug Fixes
 ----------------------
 

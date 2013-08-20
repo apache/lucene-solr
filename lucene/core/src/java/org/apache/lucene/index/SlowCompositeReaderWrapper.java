@@ -92,6 +92,12 @@ public final class SlowCompositeReaderWrapper extends AtomicReader {
   }
 
   @Override
+  public Bits getDocsWithField(String field) throws IOException {
+    ensureOpen();
+    return MultiDocValues.getDocsWithField(in, field);
+  }
+
+  @Override
   public BinaryDocValues getBinaryDocValues(String field) throws IOException {
     ensureOpen();
     return MultiDocValues.getBinaryValues(in, field);

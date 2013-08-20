@@ -24,6 +24,7 @@ import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.analysis.MockAnalyzer;
 import org.apache.lucene.codecs.Codec;
 import org.apache.lucene.document.Document;
+import org.apache.lucene.document.NumericDocValuesField;
 import org.apache.lucene.document.SortedSetDocValuesField;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.util.BytesRef;
@@ -49,7 +50,7 @@ public class TestDuelingCodecs extends LuceneTestCase {
   public void setUp() throws Exception {
     super.setUp();
 
-    // for now its SimpleText vs Lucene42(random postings format)
+    // for now its SimpleText vs Lucene45(random postings format)
     // as this gives the best overall coverage. when we have more
     // codecs we should probably pick 2 from Codec.availableCodecs()
     
@@ -133,6 +134,11 @@ public class TestDuelingCodecs extends LuceneTestCase {
       String split[] = title.split("\\s+");
       for (String trash : split) {
         document.add(new SortedSetDocValuesField("sortedset", new BytesRef(trash)));
+      }
+      // add a numeric dv field sometimes
+      document.removeFields("sparsenumeric");
+      if (random.nextInt(4) == 2) {
+        document.add(new NumericDocValuesField("sparsenumeric", random.nextInt()));
       }
       writer.addDocument(document);
     }

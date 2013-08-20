@@ -1,4 +1,4 @@
-package org.apache.lucene.codecs.lucene42;
+package org.apache.lucene.codecs.memory;
 
 /*
  * Licensed to the Apache Software Foundation (ASF) under one or more
@@ -45,30 +45,25 @@ import org.apache.lucene.util.packed.MonotonicBlockPackedWriter;
 import org.apache.lucene.util.packed.PackedInts.FormatAndBits;
 import org.apache.lucene.util.packed.PackedInts;
 
+import static org.apache.lucene.codecs.memory.MemoryDocValuesProducer.VERSION_CURRENT;
+import static org.apache.lucene.codecs.memory.MemoryDocValuesProducer.BLOCK_SIZE;
+import static org.apache.lucene.codecs.memory.MemoryDocValuesProducer.BYTES;
+import static org.apache.lucene.codecs.memory.MemoryDocValuesProducer.NUMBER;
+import static org.apache.lucene.codecs.memory.MemoryDocValuesProducer.FST;
+import static org.apache.lucene.codecs.memory.MemoryDocValuesProducer.DELTA_COMPRESSED;
+import static org.apache.lucene.codecs.memory.MemoryDocValuesProducer.GCD_COMPRESSED;
+import static org.apache.lucene.codecs.memory.MemoryDocValuesProducer.TABLE_COMPRESSED;
+import static org.apache.lucene.codecs.memory.MemoryDocValuesProducer.UNCOMPRESSED;
+
 /**
- * Writer for {@link Lucene42DocValuesFormat}
+ * Writer for {@link MemoryDocValuesFormat}
  */
-class Lucene42DocValuesConsumer extends DocValuesConsumer {
-  static final int VERSION_START = 0;
-  static final int VERSION_GCD_COMPRESSION = 1;
-  static final int VERSION_CURRENT = VERSION_GCD_COMPRESSION;
-  
-  static final byte NUMBER = 0;
-  static final byte BYTES = 1;
-  static final byte FST = 2;
-
-  static final int BLOCK_SIZE = 4096;
-  
-  static final byte DELTA_COMPRESSED = 0;
-  static final byte TABLE_COMPRESSED = 1;
-  static final byte UNCOMPRESSED = 2;
-  static final byte GCD_COMPRESSED = 3;
-
+class MemoryDocValuesConsumer extends DocValuesConsumer {
   final IndexOutput data, meta;
   final int maxDoc;
   final float acceptableOverheadRatio;
   
-  Lucene42DocValuesConsumer(SegmentWriteState state, String dataCodec, String dataExtension, String metaCodec, String metaExtension, float acceptableOverheadRatio) throws IOException {
+  MemoryDocValuesConsumer(SegmentWriteState state, String dataCodec, String dataExtension, String metaCodec, String metaExtension, float acceptableOverheadRatio) throws IOException {
     this.acceptableOverheadRatio = acceptableOverheadRatio;
     maxDoc = state.segmentInfo.getDocCount();
     boolean success = false;
@@ -99,6 +94,7 @@ class Lucene42DocValuesConsumer extends DocValuesConsumer {
     long minValue = Long.MAX_VALUE;
     long maxValue = Long.MIN_VALUE;
     long gcd = 0;
+    boolean missing = false;
     // TODO: more efficient?
     HashSet<Long> uniqueValues = null;
     if (optimizeStorage) {
@@ -106,7 +102,13 @@ class Lucene42DocValuesConsumer extends DocValuesConsumer {
 
       long count = 0;
       for (Number nv : values) {
-        final long v = nv.longValue();
+        final long v;
+        if (nv == null) {
+          v = 0;
+          missing = true;
+        } else {
+          v = nv.longValue();
+        }
 
         if (gcd != 1) {
           if (v < Long.MIN_VALUE / 2 || v > Long.MAX_VALUE / 2) {
@@ -134,6 +136,15 @@ class Lucene42DocValuesConsumer extends DocValuesConsumer {
       }
       assert count == maxDoc;
     }
+    
+    if (missing) {
+      long start = data.getFilePointer();
+      writeMissingBitset(values);
+      meta.writeLong(start);
+      meta.writeLong(data.getFilePointer() - start);
+    } else {
+      meta.writeLong(-1L);
+    }
 
     if (uniqueValues != null) {
       // small number of unique values
@@ -142,7 +153,7 @@ class Lucene42DocValuesConsumer extends DocValuesConsumer {
       if (formatAndBits.bitsPerValue == 8 && minValue >= Byte.MIN_VALUE && maxValue <= Byte.MAX_VALUE) {
         meta.writeByte(UNCOMPRESSED); // uncompressed
         for (Number nv : values) {
-          data.writeByte((byte) nv.longValue());
+          data.writeByte(nv == null ? 0 : (byte) nv.longValue());
         }
       } else {
         meta.writeByte(TABLE_COMPRESSED); // table-compressed
@@ -160,7 +171,7 @@ class Lucene42DocValuesConsumer extends DocValuesConsumer {
 
         final PackedInts.Writer writer = PackedInts.getWriterNoHeader(data, formatAndBits.format, maxDoc, formatAndBits.bitsPerValue, PackedInts.DEFAULT_BUFFER_SIZE);
         for(Number nv : values) {
-          writer.add(encode.get(nv.longValue()));
+          writer.add(encode.get(nv == null ? 0 : nv.longValue()));
         }
         writer.finish();
       }
@@ -173,7 +184,8 @@ class Lucene42DocValuesConsumer extends DocValuesConsumer {
 
       final BlockPackedWriter writer = new BlockPackedWriter(data, BLOCK_SIZE);
       for (Number nv : values) {
-        writer.add((nv.longValue() - minValue) / gcd);
+        long value = nv == null ? 0 : nv.longValue();
+        writer.add((value - minValue) / gcd);
       }
       writer.finish();
     } else {
@@ -184,7 +196,7 @@ class Lucene42DocValuesConsumer extends DocValuesConsumer {
 
       final BlockPackedWriter writer = new BlockPackedWriter(data, BLOCK_SIZE);
       for (Number nv : values) {
-        writer.add(nv.longValue());
+        writer.add(nv == null ? 0 : nv.longValue());
       }
       writer.finish();
     }
@@ -215,16 +227,34 @@ class Lucene42DocValuesConsumer extends DocValuesConsumer {
     int minLength = Integer.MAX_VALUE;
     int maxLength = Integer.MIN_VALUE;
     final long startFP = data.getFilePointer();
+    boolean missing = false;
     for(BytesRef v : values) {
-      if (v.length > Lucene42DocValuesFormat.MAX_BINARY_FIELD_LENGTH) {
-        throw new IllegalArgumentException("DocValuesField \"" + field.name + "\" is too large, must be <= " + Lucene42DocValuesFormat.MAX_BINARY_FIELD_LENGTH);
+      final int length;
+      if (v == null) {
+        length = 0;
+        missing = true;
+      } else {
+        length = v.length;
       }
-      minLength = Math.min(minLength, v.length);
-      maxLength = Math.max(maxLength, v.length);
-      data.writeBytes(v.bytes, v.offset, v.length);
+      if (length > MemoryDocValuesFormat.MAX_BINARY_FIELD_LENGTH) {
+        throw new IllegalArgumentException("DocValuesField \"" + field.name + "\" is too large, must be <= " + MemoryDocValuesFormat.MAX_BINARY_FIELD_LENGTH);
+      }
+      minLength = Math.min(minLength, length);
+      maxLength = Math.max(maxLength, length);
+      if (v != null) {
+        data.writeBytes(v.bytes, v.offset, v.length);
+      }
     }
     meta.writeLong(startFP);
     meta.writeLong(data.getFilePointer() - startFP);
+    if (missing) {
+      long start = data.getFilePointer();
+      writeMissingBitset(values);
+      meta.writeLong(start);
+      meta.writeLong(data.getFilePointer() - start);
+    } else {
+      meta.writeLong(-1L);
+    }
     meta.writeVInt(minLength);
     meta.writeVInt(maxLength);
     
@@ -237,7 +267,9 @@ class Lucene42DocValuesConsumer extends DocValuesConsumer {
       final MonotonicBlockPackedWriter writer = new MonotonicBlockPackedWriter(data, BLOCK_SIZE);
       long addr = 0;
       for (BytesRef v : values) {
-        addr += v.length;
+        if (v != null) {
+          addr += v.length;
+        }
         writer.add(addr);
       }
       writer.finish();
@@ -261,6 +293,27 @@ class Lucene42DocValuesConsumer extends DocValuesConsumer {
       fst.save(data);
     }
     meta.writeVLong(ord);
+  }
+  
+  // TODO: in some cases representing missing with minValue-1 wouldn't take up additional space and so on,
+  // but this is very simple, and algorithms only check this for values of 0 anyway (doesnt slow down normal decode)
+  void writeMissingBitset(Iterable<?> values) throws IOException {
+    long bits = 0;
+    int count = 0;
+    for (Object v : values) {
+      if (count == 64) {
+        data.writeLong(bits);
+        count = 0;
+        bits = 0;
+      }
+      if (v != null) {
+        bits |= 1L << (count & 0x3f);
+      }
+      count++;
+    }
+    if (count > 0) {
+      data.writeLong(bits);
+    }
   }
 
   @Override

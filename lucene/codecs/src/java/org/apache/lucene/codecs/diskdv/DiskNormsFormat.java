@@ -1,4 +1,4 @@
-package org.apache.lucene.codecs.cheapbastard;
+package org.apache.lucene.codecs.diskdv;
 
 /*
  * Licensed to the Apache Software Foundation (ASF) under one or more
@@ -22,25 +22,25 @@ import java.io.IOException;
 import org.apache.lucene.codecs.DocValuesConsumer;
 import org.apache.lucene.codecs.DocValuesProducer;
 import org.apache.lucene.codecs.NormsFormat;
-import org.apache.lucene.codecs.diskdv.DiskDocValuesConsumer;
+import org.apache.lucene.codecs.lucene45.Lucene45DocValuesConsumer;
 import org.apache.lucene.index.SegmentReadState;
 import org.apache.lucene.index.SegmentWriteState;
 
 /** Norms format that keeps all norms on disk */
-public final class CheapBastardNormsFormat extends NormsFormat {
+public final class DiskNormsFormat extends NormsFormat {
 
   @Override
   public DocValuesConsumer normsConsumer(SegmentWriteState state) throws IOException {
-    return new DiskDocValuesConsumer(state, DATA_CODEC, DATA_EXTENSION, META_CODEC, META_EXTENSION);
+    return new Lucene45DocValuesConsumer(state, DATA_CODEC, DATA_EXTENSION, META_CODEC, META_EXTENSION);
   }
 
   @Override
   public DocValuesProducer normsProducer(SegmentReadState state) throws IOException {
-    return new CheapBastardDocValuesProducer(state, DATA_CODEC, DATA_EXTENSION, META_CODEC, META_EXTENSION);
+    return new DiskDocValuesProducer(state, DATA_CODEC, DATA_EXTENSION, META_CODEC, META_EXTENSION);
   }
   
-  static final String DATA_CODEC = "CheapBastardNormsData";
-  static final String DATA_EXTENSION = "cbnd";
-  static final String META_CODEC = "CheapBastardNormsMetadata";
-  static final String META_EXTENSION = "cbnm";
+  static final String DATA_CODEC = "DiskNormsData";
+  static final String DATA_EXTENSION = "dnvd";
+  static final String META_CODEC = "DiskNormsMetadata";
+  static final String META_EXTENSION = "dnvm";
 }

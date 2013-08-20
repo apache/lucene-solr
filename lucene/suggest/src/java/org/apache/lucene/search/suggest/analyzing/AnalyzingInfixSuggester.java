@@ -34,7 +34,7 @@ import org.apache.lucene.analysis.TokenStream;
 import org.apache.lucene.analysis.ngram.EdgeNGramTokenFilter;
 import org.apache.lucene.analysis.tokenattributes.CharTermAttribute;
 import org.apache.lucene.analysis.tokenattributes.OffsetAttribute;
-import org.apache.lucene.codecs.lucene42.Lucene42Codec;
+import org.apache.lucene.codecs.lucene45.Lucene45Codec;
 import org.apache.lucene.document.BinaryDocValuesField;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
@@ -161,7 +161,7 @@ public class AnalyzingInfixSuggester extends Lookup implements Closeable {
    *  codec to use. */
   protected IndexWriterConfig getIndexWriterConfig(Version matchVersion, Analyzer indexAnalyzer) {
     IndexWriterConfig iwc = new IndexWriterConfig(matchVersion, indexAnalyzer);
-    iwc.setCodec(new Lucene42Codec());
+    iwc.setCodec(new Lucene45Codec());
     iwc.setOpenMode(IndexWriterConfig.OpenMode.CREATE);
     return iwc;
   }

@@ -404,6 +404,11 @@ public class TestDocSet extends LuceneTestCase {
       }
 
       @Override
+      public Bits getDocsWithField(String field) throws IOException {
+        return null;
+      }
+
+      @Override
       public NumericDocValues getNormValues(String field) {
         return null;
       }

@@ -190,8 +190,9 @@ final class NumericFacets {
         }
         docsWithField = FieldCache.DEFAULT.getDocsWithField(ctx.reader(), fieldName);
       }
-      if (docsWithField.get(doc - ctx.docBase)) {
-        hashTable.add(doc, longs.get(doc - ctx.docBase), 1);
+      long v = longs.get(doc - ctx.docBase);
+      if (v != 0 || docsWithField.get(doc - ctx.docBase)) {
+        hashTable.add(doc, v, 1);
       } else {
         ++missingCount;
       }
@@ -254,7 +255,7 @@ final class NumericFacets {
 
       if (zeros && (limit < 0 || result.size() < limit)) { // need to merge with the term dict
         if (!sf.indexed()) {
-          throw new IllegalStateException("Cannot use " + FacetParams.FACET_MINCOUNT + "=0 on a field which is not indexed");
+          throw new IllegalStateException("Cannot use " + FacetParams.FACET_MINCOUNT + "=0 on field " + sf.getName() + " which is not indexed");
         }
         // Add zeros until there are limit results
         final Set<String> alreadySeen = new HashSet<String>();

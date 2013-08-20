@@ -756,6 +756,11 @@ public class MemoryIndex {
       return null;
     }
 
+    @Override
+    public Bits getDocsWithField(String field) throws IOException {
+      return null;
+    }
+
     private class MemoryFields extends Fields {
       @Override
       public Iterator<String> iterator() {
