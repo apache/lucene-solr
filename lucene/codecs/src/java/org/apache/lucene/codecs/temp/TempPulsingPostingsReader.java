@@ -70,10 +70,12 @@ public class TempPulsingPostingsReader extends TempPostingsReaderBase {
     version = CodecUtil.checkHeader(termsIn, TempPulsingPostingsWriter.CODEC,
                                     TempPulsingPostingsWriter.VERSION_START, 
                                     TempPulsingPostingsWriter.VERSION_CURRENT);
-    // nocommit: here open file to load field summary
     maxPositions = termsIn.readVInt();
     wrappedPostingsReader.init(termsIn);
-    if (version >= TempPulsingPostingsWriter.VERSION_META_ARRAY) {
+    if (wrappedPostingsReader instanceof TempPulsingPostingsReader || 
+        version < TempPulsingPostingsWriter.VERSION_META_ARRAY) {
+      fields = null;
+    } else {
       fields = new TreeMap<Integer, Integer>();
       String summaryFileName = IndexFileNames.segmentFileName(segmentState.segmentInfo.name, segmentState.segmentSuffix, TempPulsingPostingsWriter.SUMMARY_EXTENSION);
       IndexInput in = null;
@@ -90,9 +92,6 @@ public class TempPulsingPostingsReader extends TempPostingsReaderBase {
       } finally {
         IOUtils.closeWhileHandlingException(in);
       }
-    } else {
-      assert false;
-      fields = null;
     }
   }
 
@@ -164,11 +163,6 @@ public class TempPulsingPostingsReader extends TempPostingsReaderBase {
     long count = fieldInfo.getIndexOptions().compareTo(IndexOptions.DOCS_AND_FREQS_AND_POSITIONS) >= 0 ? termState.totalTermFreq : termState.docFreq;
     //System.out.println("  count=" + count + " threshold=" + maxPositions);
 
-    // term dict have no chance to init this
-    // nocommit: nuke this?
-    if (termState.termBlockOrd == 0) {  
-      termState.wrappedTermState.termBlockOrd = 0;
-    }
     if (count <= maxPositions) {
       // Inlined into terms dict -- just read the byte[] blob in,
       // but don't decode it now (we only decode when a DocsEnum
@@ -183,14 +177,12 @@ public class TempPulsingPostingsReader extends TempPostingsReaderBase {
       // blob for this term)...
       in.readBytes(termState.postings, 0, termState.postingsSize);
       //System.out.println("  inlined bytes=" + termState.postingsSize);
-      termState.absolute = absolute ? true : termState.absolute;
+      termState.absolute = termState.absolute || absolute;
     } else {
       //System.out.println("  not inlined");
-      final int longsSize = fields.get(fieldInfo.number);
+      final int longsSize = fields == null ? 0 : fields.get(fieldInfo.number);
       if (termState.longs == null) {
         termState.longs = new long[longsSize];
-      } else {
-        assert termState.longs.length == longsSize;
       }
       for (int i = 0; i < longsSize; i++) {
         termState.longs[i] = in.readVLong();
@@ -199,7 +191,6 @@ public class TempPulsingPostingsReader extends TempPostingsReaderBase {
       termState.wrappedTermState.docFreq = termState.docFreq;
       termState.wrappedTermState.totalTermFreq = termState.totalTermFreq;
       wrappedPostingsReader.decodeTerm(termState.longs, in, fieldInfo, termState.wrappedTermState, termState.absolute);
-      termState.wrappedTermState.termBlockOrd++;
       termState.absolute = false;
     }
   }

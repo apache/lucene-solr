@@ -384,7 +384,6 @@ public final class TempPulsingPostingsWriter extends TempPostingsWriterBase {
     assert empty.length == 0;
     this.absolute = this.absolute || absolute;
     if (state.bytes == null) {
-      assert longsSize > 0;
       wrappedPostingsWriter.encodeTerm(longs, buffer, fieldInfo, state.wrappedState, this.absolute);
       for (int i = 0; i < longsSize; i++) {
         out.writeVLong(longs[i]);
@@ -395,14 +394,17 @@ public final class TempPulsingPostingsWriter extends TempPostingsWriterBase {
     } else {
       out.writeVInt(state.bytes.length);
       out.writeBytes(state.bytes, 0, state.bytes.length);
-      this.absolute = absolute ? true : this.absolute;
+      this.absolute = this.absolute || absolute;
     }
   }
 
   @Override
   public void close() throws IOException {
     wrappedPostingsWriter.close();
-    assert (VERSION_CURRENT >= VERSION_META_ARRAY);
+    if (wrappedPostingsWriter instanceof TempPulsingPostingsWriter ||
+        VERSION_CURRENT < VERSION_META_ARRAY) {
+      return;
+    }
     String summaryFileName = IndexFileNames.segmentFileName(segmentState.segmentInfo.name, segmentState.segmentSuffix, SUMMARY_EXTENSION);
     IndexOutput out = null;
     try {

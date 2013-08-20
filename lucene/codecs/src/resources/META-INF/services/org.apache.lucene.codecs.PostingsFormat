@@ -22,3 +22,4 @@ org.apache.lucene.codecs.temp.TempBlockPostingsFormat
 org.apache.lucene.codecs.temp.TempPulsing41PostingsFormat
 org.apache.lucene.codecs.temp.TempFSTPulsing41PostingsFormat
 org.apache.lucene.codecs.temp.TempFSTOrdPulsing41PostingsFormat
+org.apache.lucene.codecs.temp.TempNestedPulsingPostingsFormat
